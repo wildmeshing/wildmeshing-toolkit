@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/wildmeshing/wmtk/components/wildmeshing/WildmeshingOptions.hpp File Reference</title>
+<title>Wildmeshing Toolkit: components/wildmeshing/wmtk/components/wildmeshing/internal/WildmeshingOptions.hpp File Reference</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -113,23 +113,22 @@ $(document).ready(function(){initNavTree('_wildmeshing_options_8hpp.html',''); i
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
-<a href="#namespaces">Namespaces</a> &#124;
-<a href="#func-members">Functions</a>  </div>
+<a href="#namespaces">Namespaces</a>  </div>
   <div class="headertitle">
 <div class="title">WildmeshingOptions.hpp File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><code>#include &lt;nlohmann/json.hpp&gt;</code><br />
+<div class="textblock"><code>#include &lt;<a class="el" href="_mesh_8hpp_source.html">wmtk/Mesh.hpp</a>&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for WildmeshingOptions.hpp:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="_wildmeshing_options_8hpp__incl.svg" width="246" height="142"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="_wildmeshing_options_8hpp__incl.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 </div><div class="textblock"><div class="dynheader">
 This graph shows which files directly or indirectly include this file:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="_wildmeshing_options_8hpp__dep__incl.svg" width="246" height="171"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="_wildmeshing_options_8hpp__dep__incl.svg" width="100%" height="506"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 </div>
@@ -137,13 +136,9 @@ This graph shows which files directly or indirectly include this file:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1_wildmeshing_options_attributes.html">wmtk::components::WildmeshingOptionsAttributes</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1_envelope_options.html">wmtk::components::EnvelopeOptions</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1_wildmeshing_options_envelope_mesh.html">wmtk::components::WildmeshingOptionsEnvelopeMesh</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1_wildmeshing_options_envelope.html">wmtk::components::WildmeshingOptionsEnvelope</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1_wildmeshing_options.html">wmtk::components::WildmeshingOptions</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1_wild_meshing_options.html">wmtk::components::WildMeshingOptions</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
@@ -152,17 +147,6 @@ Namespaces</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespacewmtk_1_1components"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html">wmtk::components</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
-Functions</h2></td></tr>
-<tr class="memitem:a4b7ae61d3538ea2dad99602cfb263a0e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a4b7ae61d3538ea2dad99602cfb263a0e">wmtk::components::NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE</a> (WildmeshingOptionsAttributes, position, replace_double_coordinate)</td></tr>
-<tr class="separator:a4b7ae61d3538ea2dad99602cfb263a0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af9a4dead429f27b7965c9f2a4366a8f2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#af9a4dead429f27b7965c9f2a4366a8f2">wmtk::components::NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE</a> (WildmeshingOptionsEnvelopeMesh, mesh, position)</td></tr>
-<tr class="separator:af9a4dead429f27b7965c9f2a4366a8f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3ba4ceae8267640d56736f0153c842ca"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a3ba4ceae8267640d56736f0153c842ca">wmtk::components::NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE</a> (WildmeshingOptionsEnvelope, geometry, thickness, constrained_position)</td></tr>
-<tr class="separator:a3ba4ceae8267640d56736f0153c842ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad49e4bf6f8010bcb0ab273597e7d4075"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#ad49e4bf6f8010bcb0ab273597e7d4075">wmtk::components::NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE</a> (WildmeshingOptions, attributes, pass_through, passes, input, scheduler_update_frequency, envelopes, target_edge_length, target_max_amips, intermediate_output, output)</td></tr>
-<tr class="separator:ad49e4bf6f8010bcb0ab273597e7d4075"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->
@@ -170,7 +154,7 @@ Functions</h2></td></tr>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_4159a15857c3db24c0108ee97728a2c8.html">wildmeshing</a></li><li class="navelem"><a class="el" href="dir_b2bd87946e475b905a8c0acb88000f04.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_1faca6707345788539c9485f4230f90c.html">components</a></li><li class="navelem"><a class="el" href="dir_aaa3d7618951df964605592567363b32.html">wildmeshing</a></li><li class="navelem"><a class="el" href="_wildmeshing_options_8hpp.html">WildmeshingOptions.hpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_4159a15857c3db24c0108ee97728a2c8.html">wildmeshing</a></li><li class="navelem"><a class="el" href="dir_b2bd87946e475b905a8c0acb88000f04.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_1faca6707345788539c9485f4230f90c.html">components</a></li><li class="navelem"><a class="el" href="dir_aaa3d7618951df964605592567363b32.html">wildmeshing</a></li><li class="navelem"><a class="el" href="dir_34405df1b0f114342a10510febdfdb54.html">internal</a></li><li class="navelem"><a class="el" href="_wildmeshing_options_8hpp.html">WildmeshingOptions.hpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

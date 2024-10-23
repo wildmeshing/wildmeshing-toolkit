@@ -187,7 +187,7 @@ $(document).ready(function(){initNavTree('_swap23_energy_before_invariant_8cpp_s
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;                positions_double[old_tets[i][3]][2],</div>
 <div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;            }});</div>
 <div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;            <span class="keywordflow">if</span> (energy &gt; old_energy_max) old_energy_max = energy;</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;            old_energy_max = std::max(energy, old_energy_max);</div>
 <div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        } <span class="keywordflow">else</span> {</div>
 <div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;            <span class="keyword">auto</span> energy = <a class="code" href="namespacewmtk_1_1function_1_1utils.html#a818b9b16f06339c34d08eceeb5342470">wmtk::function::utils::Tet_AMIPS_energy</a>({{</div>
 <div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;                positions_double[old_tets[i][1]][0],</div>
@@ -204,7 +204,7 @@ $(document).ready(function(){initNavTree('_swap23_energy_before_invariant_8cpp_s
 <div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;                positions_double[old_tets[i][3]][2],</div>
 <div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;            }});</div>
 <div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160; </div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            <span class="keywordflow">if</span> (energy &gt; old_energy_max) old_energy_max = energy;</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            old_energy_max = std::max(energy, old_energy_max);</div>
 <div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;        }</div>
 <div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    }</div>
 <div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160; </div>
@@ -229,7 +229,7 @@ $(document).ready(function(){initNavTree('_swap23_energy_before_invariant_8cpp_s
 <div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;                positions_double[new_tets[i][3]][2],</div>
 <div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;            }});</div>
 <div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160; </div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;            <span class="keywordflow">if</span> (energy &gt; new_energy_max) new_energy_max = energy;</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;            new_energy_max = std::max(energy, new_energy_max);</div>
 <div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        } <span class="keywordflow">else</span> {</div>
 <div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;            <span class="keyword">auto</span> energy = <a class="code" href="namespacewmtk_1_1function_1_1utils.html#a818b9b16f06339c34d08eceeb5342470">wmtk::function::utils::Tet_AMIPS_energy</a>({{</div>
 <div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;                positions_double[new_tets[i][1]][0],</div>
@@ -246,7 +246,7 @@ $(document).ready(function(){initNavTree('_swap23_energy_before_invariant_8cpp_s
 <div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;                positions_double[new_tets[i][3]][2],</div>
 <div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;            }});</div>
 <div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160; </div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;            <span class="keywordflow">if</span> (energy &gt; new_energy_max) new_energy_max = energy;</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;            new_energy_max = std::max(energy, new_energy_max);</div>
 <div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;        }</div>
 <div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    }</div>
 <div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160; </div>

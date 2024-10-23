@@ -139,7 +139,7 @@ $(document).ready(function(){initNavTree('to__points_8cpp_source.html',''); init
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> pts_acc = mesh.<a class="code" href="classwmtk_1_1_mesh.html#a4a20dcdac339e7a4f6f8a6570114cbe6">create_const_accessor</a>&lt;<span class="keywordtype">double</span>&gt;(pts_attr);</div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> vs = mesh.<a class="code" href="classwmtk_1_1_mesh.html#a6d2a546c8f661bf6386cf845a1693d2f">get_all</a>(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>);</div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    Eigen::AlignedBox&lt;double, Eigen::Dynamic&gt; bbox(pts_acc.dimension());</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    Eigen::AlignedBox&lt;double, Eigen::Dynamic&gt; <a class="code" href="structwmtk_1_1components_1_1internal_1_1bbox.html">bbox</a>(pts_acc.dimension());</div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    int64_t box_size = <a class="code" href="namespacewmtk.html#ad12ad5f8ec07682b8da79699a2628b6a">std::pow</a>(2, pts_acc.dimension());</div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
@@ -148,46 +148,46 @@ $(document).ready(function(){initNavTree('to__points_8cpp_source.html',''); init
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    int64_t index = 0;</div>
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; v : vs) {</div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        pts.row(index) &lt;&lt; pts_acc.const_vector_attribute(v).transpose();</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        bbox.extend(pts.row(index).transpose());</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        <a class="code" href="structwmtk_1_1components_1_1internal_1_1bbox.html">bbox</a>.extend(pts.row(index).transpose());</div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        ++index;</div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    }</div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(</div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        <span class="stringliteral">&quot;Input bbox max {}, min {}, diag {}, potential target edge length: {}&quot;</span>,</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        bbox.max(),</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        bbox.min(),</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        bbox.diagonal().norm(),</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        bbox.diagonal().norm() * options.<a class="code" href="classwmtk_1_1components_1_1_to_pts_options.html#acd0e371ce46f36d625aca065692dede2">box_scale</a>);</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <a class="code" href="structwmtk_1_1components_1_1internal_1_1bbox.html">bbox</a>.max(),</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        <a class="code" href="structwmtk_1_1components_1_1internal_1_1bbox.html">bbox</a>.min(),</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        <a class="code" href="structwmtk_1_1components_1_1internal_1_1bbox.html">bbox</a>.diagonal().norm(),</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <a class="code" href="structwmtk_1_1components_1_1internal_1_1bbox.html">bbox</a>.diagonal().norm() * options.<a class="code" href="classwmtk_1_1components_1_1_to_pts_options.html#acd0e371ce46f36d625aca065692dede2">box_scale</a>);</div>
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="keywordflow">if</span> (options.<a class="code" href="classwmtk_1_1components_1_1_to_pts_options.html#aee6e478bc699377eae6cba0fc186154e">add_box</a> &amp;&amp; !options.<a class="code" href="classwmtk_1_1components_1_1_to_pts_options.html#ab9584c0af71595bb67023ac4352d38f4">add_grid</a>) {</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        <span class="keyword">auto</span> center = bbox.center();</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <span class="keyword">auto</span> r = bbox.diagonal() / 2.;</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        <span class="keyword">auto</span> center = <a class="code" href="structwmtk_1_1components_1_1internal_1_1bbox.html">bbox</a>.center();</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <span class="keyword">auto</span> r = <a class="code" href="structwmtk_1_1components_1_1internal_1_1bbox.html">bbox</a>.diagonal() / 2.;</div>
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        bbox.min() = center - options.<a class="code" href="classwmtk_1_1components_1_1_to_pts_options.html#acd0e371ce46f36d625aca065692dede2">box_scale</a> * r;</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        bbox.max() = center + options.<a class="code" href="classwmtk_1_1components_1_1_to_pts_options.html#acd0e371ce46f36d625aca065692dede2">box_scale</a> * r;</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        <a class="code" href="structwmtk_1_1components_1_1internal_1_1bbox.html">bbox</a>.min() = center - options.<a class="code" href="classwmtk_1_1components_1_1_to_pts_options.html#acd0e371ce46f36d625aca065692dede2">box_scale</a> * r;</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        <a class="code" href="structwmtk_1_1components_1_1internal_1_1bbox.html">bbox</a>.max() = center + options.<a class="code" href="classwmtk_1_1components_1_1_to_pts_options.html#acd0e371ce46f36d625aca065692dede2">box_scale</a> * r;</div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
 <div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        <span class="keywordflow">for</span> (int64_t d = 0; d &lt; box_size; ++d) {</div>
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;            std::bitset&lt;32&gt; bits = d;</div>
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;            <span class="keywordflow">for</span> (int64_t i = 0; i &lt; pts.cols(); ++i) {</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;                pts(index, i) = bits[i] == 0 ? bbox.min()[i] : bbox.max()[i];</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;                pts(index, i) = bits[i] == 0 ? <a class="code" href="structwmtk_1_1components_1_1internal_1_1bbox.html">bbox</a>.min()[i] : <a class="code" href="structwmtk_1_1components_1_1internal_1_1bbox.html">bbox</a>.max()[i];</div>
 <div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;            }</div>
 <div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;            ++index;</div>
 <div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        }</div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    }</div>
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keywordflow">if</span> (options.<a class="code" href="classwmtk_1_1components_1_1_to_pts_options.html#ab9584c0af71595bb67023ac4352d38f4">add_grid</a>) {</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">double</span> bbox_diag = bbox.diagonal().norm();</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">double</span> bbox_diag = <a class="code" href="structwmtk_1_1components_1_1internal_1_1bbox.html">bbox</a>.diagonal().norm();</div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span> r = Eigen::VectorXd::Ones(pts_acc.dimension()) * bbox_diag;</div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">double</span> grid_spacing = options.<a class="code" href="classwmtk_1_1components_1_1_to_pts_options.html#a1bd41fb7e777ce8615f3ed9359cdb808">grid_spacing</a>;</div>
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        bbox.min() -= options.<a class="code" href="classwmtk_1_1components_1_1_to_pts_options.html#acd0e371ce46f36d625aca065692dede2">box_scale</a> * r;</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        bbox.max() += options.<a class="code" href="classwmtk_1_1components_1_1_to_pts_options.html#acd0e371ce46f36d625aca065692dede2">box_scale</a> * r;</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <a class="code" href="structwmtk_1_1components_1_1internal_1_1bbox.html">bbox</a>.min() -= options.<a class="code" href="classwmtk_1_1components_1_1_to_pts_options.html#acd0e371ce46f36d625aca065692dede2">box_scale</a> * r;</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        <a class="code" href="structwmtk_1_1components_1_1internal_1_1bbox.html">bbox</a>.max() += options.<a class="code" href="classwmtk_1_1components_1_1_to_pts_options.html#acd0e371ce46f36d625aca065692dede2">box_scale</a> * r;</div>
 <div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        <span class="comment">// Eigen::VectorXi res = (diag / grid_spacing).cast&lt;int&gt;();</span></div>
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
 <div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        <span class="comment">// // TODO: remove the hack</span></div>
 <div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        <span class="comment">// // hack grid spacing as relative</span></div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        <span class="keyword">const</span> Eigen::VectorXi res = (bbox.diagonal() / (bbox_diag * grid_spacing)).cast&lt;<span class="keywordtype">int</span>&gt;() +</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        <span class="keyword">const</span> Eigen::VectorXi res = (<a class="code" href="structwmtk_1_1components_1_1internal_1_1bbox.html">bbox</a>.diagonal() / (bbox_diag * grid_spacing)).cast&lt;<span class="keywordtype">int</span>&gt;() +</div>
 <div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;                                    Eigen::VectorXi::Ones(pts_acc.dimension());</div>
 <div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
 <div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        Eigen::MatrixXd background_V;</div>
@@ -204,9 +204,9 @@ $(document).ready(function(){initNavTree('to__points_8cpp_source.html',''); init
 <div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;                <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt;= res[1]; ++j) {</div>
 <div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;                    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt;= res[0]; ++i) {</div>
 <div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;                        <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Eigen::Vector3d</a> iii(i, j, k);</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;                        <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Eigen::Vector3d</a> ttmp = bbox.diagonal().array() * iii.array();</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;                        <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Eigen::Vector3d</a> ttmp = <a class="code" href="structwmtk_1_1components_1_1internal_1_1bbox.html">bbox</a>.diagonal().array() * iii.array();</div>
 <div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;                        background_V.row(v_index(i, j, k)) =</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;                            bbox.min().array() + ttmp.array() / res.cast&lt;<span class="keywordtype">double</span>&gt;().array();</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;                            <a class="code" href="structwmtk_1_1components_1_1internal_1_1bbox.html">bbox</a>.min().array() + ttmp.array() / res.cast&lt;<span class="keywordtype">double</span>&gt;().array();</div>
 <div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;                    }</div>
 <div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;                }</div>
 <div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;            }</div>
@@ -214,10 +214,10 @@ $(document).ready(function(){initNavTree('to__points_8cpp_source.html',''); init
 <div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160; </div>
 <div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(</div>
 <div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;            <span class="stringliteral">&quot;Grid bbox max {}, min {}, diag {}, potential target edge length: {}&quot;</span>,</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;            bbox.max(),</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;            bbox.min(),</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;            bbox.diagonal().norm(),</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;            bbox.diagonal().norm() * options.<a class="code" href="classwmtk_1_1components_1_1_to_pts_options.html#acd0e371ce46f36d625aca065692dede2">box_scale</a>);</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;            <a class="code" href="structwmtk_1_1components_1_1internal_1_1bbox.html">bbox</a>.max(),</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;            <a class="code" href="structwmtk_1_1components_1_1internal_1_1bbox.html">bbox</a>.min(),</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;            <a class="code" href="structwmtk_1_1components_1_1internal_1_1bbox.html">bbox</a>.diagonal().norm(),</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;            <a class="code" href="structwmtk_1_1components_1_1internal_1_1bbox.html">bbox</a>.diagonal().norm() * options.<a class="code" href="classwmtk_1_1components_1_1_to_pts_options.html#acd0e371ce46f36d625aca065692dede2">box_scale</a>);</div>
 <div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;        <span class="comment">// else 2d and 1d</span></div>
 <div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160; </div>
 <div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;        <span class="keywordflow">if</span> (options.<a class="code" href="classwmtk_1_1components_1_1_to_pts_options.html#afa4331f070db9b6b1b9f4c52c2fd1309">min_dist</a> &gt;= 0) {</div>
@@ -334,6 +334,7 @@ $(document).ready(function(){initNavTree('to__points_8cpp_source.html',''); init
 <div class="ttc" id="anamespacewmtk_html_a8f74118e77f6f9bce5ebc12a1be515f3"><div class="ttname"><a href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">wmtk::Vector3d</a></div><div class="ttdeci">Vector&lt; double, 3 &gt; Vector3d</div><div class="ttdef"><b>Definition:</b> <a href="_types_8hpp_source.html#l00039">Types.hpp:39</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_ad12ad5f8ec07682b8da79699a2628b6a"><div class="ttname"><a href="namespacewmtk.html#ad12ad5f8ec07682b8da79699a2628b6a">wmtk::pow</a></div><div class="ttdeci">Rational pow(const Rational &amp;x, int p)</div><div class="ttdef"><b>Definition:</b> <a href="_rational_8cpp_source.html#l00166">Rational.cpp:166</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6"><div class="ttname"><a href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::PrimitiveType::Vertex</a></div><div class="ttdeci">@ Vertex</div></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1internal_1_1bbox_html"><div class="ttname"><a href="structwmtk_1_1components_1_1internal_1_1bbox.html">wmtk::components::internal::bbox</a></div><div class="ttdef"><b>Definition:</b> <a href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8hpp_source.html#l00012">edge_insertion.hpp:13</a></div></div>
 <div class="ttc" id="ato__points_8hpp_html"><div class="ttname"><a href="to__points_8hpp.html">to_points.hpp</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->

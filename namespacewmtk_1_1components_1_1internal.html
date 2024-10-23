@@ -121,6 +121,12 @@ $(document).ready(function(){initNavTree('namespacewmtk_1_1components_1_1interna
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1internal_1_1bbox.html">bbox</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1internal_1_1_segment.html">Segment</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1internal_1_1_edge_ins_options.html">EdgeInsOptions</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1internal_1_1_export_cache_options.html">ExportCacheOptions</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1internal_1_1_get_all_meshes_options.html">GetAllMeshesOptions</a></td></tr>
@@ -159,6 +165,35 @@ Functions</h2></td></tr>
 <tr class="separator:a2b8f841c866f2be5ad04a5b453746b6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae00fb07c978db1538564754acf291d2e"><td class="memItemLeft" align="right" valign="top">std::tuple&lt; Eigen::MatrixXd, Eigen::MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#ae00fb07c978db1538564754acf291d2e">delaunay_geogram</a> (Eigen::Ref&lt; const Eigen::MatrixXd &gt; points)</td></tr>
 <tr class="separator:ae00fb07c978db1538564754acf291d2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6452fa478207c51a1fc5eb2b97852fe3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_rational.html">wmtk::Rational</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a6452fa478207c51a1fc5eb2b97852fe3">det</a> (const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">wmtk::Vector2r</a> &amp;a, const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">wmtk::Vector2r</a> &amp;b)</td></tr>
+<tr class="separator:a6452fa478207c51a1fc5eb2b97852fe3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae07bcf44b9a30908c57ef1141925a30d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#ae07bcf44b9a30908c57ef1141925a30d">is_point_inside_triangle</a> (const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">wmtk::Vector2r</a> &amp;P, const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">wmtk::Vector2r</a> &amp;A, const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">wmtk::Vector2r</a> &amp;B, const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">wmtk::Vector2r</a> &amp;C)</td></tr>
+<tr class="separator:ae07bcf44b9a30908c57ef1141925a30d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad6dd95bb64070b2dd64d2041cf5cb0cb"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#ad6dd95bb64070b2dd64d2041cf5cb0cb">segment_segment_inter</a> (const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;s0, const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;e0, const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;s1, const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;e1, <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;res, <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &amp;t0, <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &amp;t1)</td></tr>
+<tr class="separator:ad6dd95bb64070b2dd64d2041cf5cb0cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afc502bac5509e365d5a208281ae10bfd"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#afc502bac5509e365d5a208281ae10bfd">is_point_in_bbox</a> (const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;point, const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;bbox_min, const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;bbox_max)</td></tr>
+<tr class="separator:afc502bac5509e365d5a208281ae10bfd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afb02865bc0111fa89da9af8f9aa3bf17"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#afb02865bc0111fa89da9af8f9aa3bf17">is_bbox_intersect</a> (const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;bbox_min_0, const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;bbox_max_0, const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;bbox_min_1, const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;bbox_max_1)</td></tr>
+<tr class="separator:afb02865bc0111fa89da9af8f9aa3bf17"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04c9caea6f1062f9766b9498a3c05db4"><td class="memItemLeft" align="right" valign="top">std::array&lt; <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">wmtk::Vector2r</a>, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a04c9caea6f1062f9766b9498a3c05db4">compute_bbox</a> (const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">wmtk::Vector2r</a> &amp;p0, const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">wmtk::Vector2r</a> &amp;p1, const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">wmtk::Vector2r</a> &amp;p2)</td></tr>
+<tr class="separator:a04c9caea6f1062f9766b9498a3c05db4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a39697cfa8998a52a9f713a110dc5355a"><td class="memItemLeft" align="right" valign="top">std::array&lt; <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">wmtk::Vector2r</a>, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a39697cfa8998a52a9f713a110dc5355a">compute_bbox</a> (const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">wmtk::Vector2r</a> &amp;p0, const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">wmtk::Vector2r</a> &amp;p1)</td></tr>
+<tr class="separator:a39697cfa8998a52a9f713a110dc5355a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a138ff1ef357875114e008086b11c4884"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a138ff1ef357875114e008086b11c4884">is_colinear</a> (const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;p0, const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;p1, const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;q0, const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;q1)</td></tr>
+<tr class="separator:a138ff1ef357875114e008086b11c4884"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a67871209c792c9e3f33f412fc8f96b33"><td class="memItemLeft" align="right" valign="top">std::vector&lt; int64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a67871209c792c9e3f33f412fc8f96b33">cyclic_order</a> (const std::vector&lt; <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &gt; &amp;V)</td></tr>
+<tr class="separator:a67871209c792c9e3f33f412fc8f96b33"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab4c25d7adfea4bd856ae2ebf7d6720b1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#ab4c25d7adfea4bd856ae2ebf7d6720b1">dfs_triangulate_aux</a> (int64_t v, std::vector&lt; std::vector&lt; std::tuple&lt; int64_t, bool, bool &gt;&gt;&gt; &amp;VV, std::vector&lt; <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &gt; &amp;V_pos, std::vector&lt; int64_t &gt; &amp;stack, std::vector&lt; int &gt; &amp;in_stack, std::vector&lt; int &gt; &amp;is_on_input, std::vector&lt; int &gt; &amp;is_used, std::vector&lt; std::vector&lt; int64_t &gt;&gt; &amp;in_stack_idx, const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;prev_vector, const int64_t v_prev, std::vector&lt; std::array&lt; int64_t, 3 &gt;&gt; &amp;FV, std::vector&lt; std::array&lt; int, 3 &gt;&gt; &amp;local_e_on_input)</td></tr>
+<tr class="separator:ab4c25d7adfea4bd856ae2ebf7d6720b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0498fb5c37d5840dff0123c6623f93fd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a0498fb5c37d5840dff0123c6623f93fd">dfs_triangulate</a> (std::vector&lt; std::vector&lt; std::tuple&lt; int64_t, bool, bool &gt;&gt;&gt; &amp;VV, std::vector&lt; <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &gt; &amp;V_pos, std::vector&lt; std::array&lt; int64_t, 3 &gt;&gt; &amp;FV, std::vector&lt; std::array&lt; int, 3 &gt;&gt; &amp;local_e_on_input)</td></tr>
+<tr class="separator:a0498fb5c37d5840dff0123c6623f93fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abdf0e65326bccb762e8182f1329f3fe8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#abdf0e65326bccb762e8182f1329f3fe8">edge_insertion</a> (<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;_trimesh, <a class="el" href="classwmtk_1_1_edge_mesh.html">EdgeMesh</a> &amp;edgemesh, std::vector&lt; <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &gt; &amp;v_final, std::vector&lt; std::array&lt; int64_t, 3 &gt;&gt; &amp;FV_new, std::vector&lt; std::array&lt; int, 3 &gt;&gt; &amp;local_e_on_input)</td></tr>
+<tr class="separator:abdf0e65326bccb762e8182f1329f3fe8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad827cdbb96806fb2e4c19c644277f3c3"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#ad827cdbb96806fb2e4c19c644277f3c3">segment_segment_inter</a> (const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;s0, const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;e0, const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;s1, const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;e1, <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;res)</td></tr>
+<tr class="memdesc:ad827cdbb96806fb2e4c19c644277f3c3"><td class="mdescLeft">&#160;</td><td class="mdescRight">include the intersection on edgepoints  <a href="namespacewmtk_1_1components_1_1internal.html#ad827cdbb96806fb2e4c19c644277f3c3">More...</a><br /></td></tr>
+<tr class="separator:ad827cdbb96806fb2e4c19c644277f3c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6e145840773d19878e49e735c6f22b63"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a6e145840773d19878e49e735c6f22b63">NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE</a> (<a class="el" href="structwmtk_1_1components_1_1internal_1_1_edge_ins_options.html">EdgeInsOptions</a>, edges, triangles, output)</td></tr>
+<tr class="separator:a6e145840773d19878e49e735c6f22b63"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a163f2df8912b357a44313f201d62cdc2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a163f2df8912b357a44313f201d62cdc2">NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE</a> (<a class="el" href="structwmtk_1_1components_1_1internal_1_1_export_cache_options.html">ExportCacheOptions</a>, folder)</td></tr>
 <tr class="separator:a163f2df8912b357a44313f201d62cdc2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab4d5aa85b7e849adbde7c7fedc6453bf"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#ab4d5aa85b7e849adbde7c7fedc6453bf">NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE</a> (<a class="el" href="structwmtk_1_1components_1_1internal_1_1_get_all_meshes_options.html">GetAllMeshesOptions</a>, input, name)</td></tr>
@@ -187,6 +222,18 @@ Functions</h2></td></tr>
 <tr class="separator:a5167173a30d388b3b1f1cd81cd6a167a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a41722ce1685a7dec1703284ea7b17090"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a41722ce1685a7dec1703284ea7b17090">NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE</a> (<a class="el" href="structwmtk_1_1components_1_1internal_1_1_tag_intersection_values.html">TagIntersectionValues</a>, vertex_values, edge_values, face_values, tetrahedron_values)</td></tr>
 <tr class="separator:a41722ce1685a7dec1703284ea7b17090"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a28a63b9ae929bfe3ccb0fa3a266a272c"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::pair&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt;, std::string &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a28a63b9ae929bfe3ccb0fa3a266a272c">wildmeshing2d</a> (const <a class="el" href="structwmtk_1_1components_1_1_wild_meshing_options.html">WildMeshingOptions</a> &amp;options)</td></tr>
+<tr class="separator:a28a63b9ae929bfe3ccb0fa3a266a272c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a798951bc2a6b1069a5ae8c946ddfdecd"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::pair&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt;, std::string &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a798951bc2a6b1069a5ae8c946ddfdecd">wildmeshing3d</a> (const <a class="el" href="structwmtk_1_1components_1_1_wild_meshing_options.html">WildMeshingOptions</a> &amp;options)</td></tr>
+<tr class="separator:a798951bc2a6b1069a5ae8c946ddfdecd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0491eb9c1367516834d4a82bd82b29d8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a0491eb9c1367516834d4a82bd82b29d8">adjust_sizing_field</a> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &gt; &amp;coordinate_handle, const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; double &gt; &amp;edge_length_handle, const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; double &gt; &amp;sizing_field_scalar_handle, const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; double &gt; &amp;energy_handle, const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; double &gt; &amp;target_edge_length_handle, const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; char &gt; &amp;visited_handle, const double stop_energy, const double current_max_energy, const double initial_target_edge_length, const double min_target_edge_length)</td></tr>
+<tr class="separator:a0491eb9c1367516834d4a82bd82b29d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a730c91c02cf76e39d147c65e49d224f7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a730c91c02cf76e39d147c65e49d224f7">set_operation_energy_filter</a> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &gt; &amp;coordinate_handle, const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; double &gt; &amp;energy_handle, const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; char &gt; &amp;energy_filter_handle, const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; char &gt; &amp;visited_handle, const double stop_energy, const double current_max_energy, const double initial_target_edge_length)</td></tr>
+<tr class="separator:a730c91c02cf76e39d147c65e49d224f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af341a4c0f56c927af751378846a6b82e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#af341a4c0f56c927af751378846a6b82e">set_operation_energy_filter_after_sizing_field</a> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &gt; &amp;coordinate_handle, const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; double &gt; &amp;energy_handle, const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; char &gt; &amp;energy_filter_handle, const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; char &gt; &amp;visited_handle, const double stop_energy, const double current_max_energy, const double initial_target_edge_length)</td></tr>
+<tr class="separator:af341a4c0f56c927af751378846a6b82e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a66008da64b893ecbb8b75400af012cb3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a66008da64b893ecbb8b75400af012cb3">write</a> (const std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt; &amp;mesh, const std::string &amp;out_dir, const std::string &amp;name, const std::string &amp;vname, const int64_t index, const bool intermediate_output)</td></tr>
+<tr class="separator:a66008da64b893ecbb8b75400af012cb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a18a56f1ee7f5d72c7557922789a96802"><td class="memItemLeft" align="right" valign="top">Eigen::VectorXd&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a18a56f1ee7f5d72c7557922789a96802">winding_number</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;surface)</td></tr>
 <tr class="separator:a18a56f1ee7f5d72c7557922789a96802"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afb68ce2cd6102c4f403bb39329da8a02"><td class="memItemLeft" align="right" valign="top">Eigen::VectorXd&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#afb68ce2cd6102c4f403bb39329da8a02">winding_number_internal</a> (const Eigen::MatrixXd &amp;query_points, const Eigen::MatrixXd &amp;surface_V, const <a class="el" href="namespacewmtk.html#ae2013f5a8b3c4a8df232b70b5bf9a146">MatrixX</a>&lt; int64_t &gt; &amp;surface_F)</td></tr>
@@ -196,7 +243,7 @@ Functions</h2></td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="a919ba35151931f21305c895ea3d52a2b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a919ba35151931f21305c895ea3d52a2b">&#9670;&nbsp;</a></span>adjust_sizing_field()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a919ba35151931f21305c895ea3d52a2b">&#9670;&nbsp;</a></span>adjust_sizing_field() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -279,7 +326,7 @@ Functions</h2></td></tr>
 
 <p class="reference">References <a class="el" href="classwmtk_1_1_mesh.html#aa2b952c0d3894043f513a86fbbd910ff">wmtk::Mesh::create_accessor()</a>, <a class="el" href="classwmtk_1_1_mesh.html#a4a20dcdac339e7a4f6f8a6570114cbe6">wmtk::Mesh::create_const_accessor()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8cpp_source.html#l00018">wmtk::Mesh::get_all()</a>, <a class="el" href="link_8cpp_source.html#l00084">wmtk::simplex::link()</a>, <a class="el" href="_logger_8cpp_source.html#l00058">wmtk::logger()</a>, <a class="el" href="classwmtk_1_1_mesh.html#a0f1e2ecf58dcc8a2c86309cb11d1fe95">wmtk::Mesh::orient_vertices()</a>, <a class="el" href="classwmtk_1_1_mesh.html#a965a8a24158c4aa8580c57ba09f885f7">wmtk::Mesh::switch_tuple()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="_mesh_8hpp_source.html#l00991">wmtk::Mesh::top_simplex_type()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, <a class="el" href="_simplex_8hpp_source.html#l00056">wmtk::simplex::Simplex::vertex()</a>, and <a class="el" href="faces__single__dimension_8cpp_source.html#l00009">wmtk::simplex::vertices()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="internal_2periodic__optimization_8cpp_source.html#l00112">periodic_optimization()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="internal_2periodic__optimization_8cpp_source.html#l00112">periodic_optimization()</a>, and <a class="el" href="wildmeshing3d_8cpp_source.html#l00087">wildmeshing3d()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -289,7 +336,99 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_a919ba35151931f21305c895ea3d52a2b_icgraph.svg" width="100%" height="300"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_a919ba35151931f21305c895ea3d52a2b_icgraph.svg" width="100%" height="388"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a0491eb9c1367516834d4a82bd82b29d8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0491eb9c1367516834d4a82bd82b29d8">&#9670;&nbsp;</a></span>adjust_sizing_field() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::internal::adjust_sizing_field </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>m</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>coordinate_handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; double &gt; &amp;&#160;</td>
+          <td class="paramname"><em>edge_length_handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; double &gt; &amp;&#160;</td>
+          <td class="paramname"><em>sizing_field_scalar_handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; double &gt; &amp;&#160;</td>
+          <td class="paramname"><em>energy_handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; double &gt; &amp;&#160;</td>
+          <td class="paramname"><em>target_edge_length_handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; char &gt; &amp;&#160;</td>
+          <td class="paramname"><em>visited_handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>stop_energy</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>current_max_energy</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>initial_target_edge_length</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>min_target_edge_length</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="wildmeshing3d_8cpp_source.html#l01493">1493</a> of file <a class="el" href="wildmeshing3d_8cpp_source.html">wildmeshing3d.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="classwmtk_1_1_mesh.html#aa2b952c0d3894043f513a86fbbd910ff">wmtk::Mesh::create_accessor()</a>, <a class="el" href="classwmtk_1_1_mesh.html#a4a20dcdac339e7a4f6f8a6570114cbe6">wmtk::Mesh::create_const_accessor()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8cpp_source.html#l00018">wmtk::Mesh::get_all()</a>, <a class="el" href="link_8cpp_source.html#l00084">wmtk::simplex::link()</a>, <a class="el" href="_logger_8cpp_source.html#l00058">wmtk::logger()</a>, <a class="el" href="classwmtk_1_1_mesh.html#a0f1e2ecf58dcc8a2c86309cb11d1fe95">wmtk::Mesh::orient_vertices()</a>, <a class="el" href="classwmtk_1_1_mesh.html#a965a8a24158c4aa8580c57ba09f885f7">wmtk::Mesh::switch_tuple()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="_mesh_8hpp_source.html#l00991">wmtk::Mesh::top_simplex_type()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, <a class="el" href="_simplex_8hpp_source.html#l00056">wmtk::simplex::Simplex::vertex()</a>, and <a class="el" href="faces__single__dimension_8cpp_source.html#l00009">wmtk::simplex::vertices()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_a0491eb9c1367516834d4a82bd82b29d8_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
@@ -348,6 +487,108 @@ Here is the call graph for this function:</div>
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_aa5cef5f50f316f60f46180e6f84752f6_icgraph.svg" width="447" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a39697cfa8998a52a9f713a110dc5355a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a39697cfa8998a52a9f713a110dc5355a">&#9670;&nbsp;</a></span>compute_bbox() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::array&lt;<a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">wmtk::Vector2r</a>, 2&gt; wmtk::components::internal::compute_bbox </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">wmtk::Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>p0</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">wmtk::Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>p1</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00190">190</a> of file <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html">edge_insertion.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a04c9caea6f1062f9766b9498a3c05db4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a04c9caea6f1062f9766b9498a3c05db4">&#9670;&nbsp;</a></span>compute_bbox() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::array&lt;<a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">wmtk::Vector2r</a>, 2&gt; wmtk::components::internal::compute_bbox </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">wmtk::Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>p0</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">wmtk::Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>p1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">wmtk::Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>p2</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00163">163</a> of file <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html">edge_insertion.cpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00483">edge_insertion()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_a04c9caea6f1062f9766b9498a3c05db4_icgraph.svg" width="100%" height="300"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a67871209c792c9e3f33f412fc8f96b33"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a67871209c792c9e3f33f412fc8f96b33">&#9670;&nbsp;</a></span>cyclic_order()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;int64_t&gt; wmtk::components::internal::cyclic_order </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>V</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00221">221</a> of file <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html">edge_insertion.cpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00259">dfs_triangulate_aux()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_a67871209c792c9e3f33f412fc8f96b33_icgraph.svg" width="100%" height="300"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
@@ -456,6 +697,272 @@ Here is the call graph for this function:</div>
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_ae00fb07c978db1538564754acf291d2e_icgraph.svg" width="100%" height="434"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a6452fa478207c51a1fc5eb2b97852fe3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6452fa478207c51a1fc5eb2b97852fe3">&#9670;&nbsp;</a></span>det()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1_rational.html">wmtk::Rational</a> wmtk::components::internal::det </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">wmtk::Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>a</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">wmtk::Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>b</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00027">27</a> of file <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html">edge_insertion.cpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00032">is_point_inside_triangle()</a>, <a class="el" href="orient_8cpp_source.html#l00194">wmtk::utils::wmtk_orient2d()</a>, and <a class="el" href="orient_8cpp_source.html#l00075">wmtk::utils::wmtk_orient3d()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_a6452fa478207c51a1fc5eb2b97852fe3_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a0498fb5c37d5840dff0123c6623f93fd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0498fb5c37d5840dff0123c6623f93fd">&#9670;&nbsp;</a></span>dfs_triangulate()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::internal::dfs_triangulate </td>
+          <td>(</td>
+          <td class="paramtype">std::vector&lt; std::vector&lt; std::tuple&lt; int64_t, bool, bool &gt;&gt;&gt; &amp;&#160;</td>
+          <td class="paramname"><em>VV</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>V_pos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; std::array&lt; int64_t, 3 &gt;&gt; &amp;&#160;</td>
+          <td class="paramname"><em>FV</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; std::array&lt; int, 3 &gt;&gt; &amp;&#160;</td>
+          <td class="paramname"><em>local_e_on_input</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00431">431</a> of file <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html">edge_insertion.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00259">dfs_triangulate_aux()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00483">edge_insertion()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_a0498fb5c37d5840dff0123c6623f93fd_cgraph.svg" width="100%" height="300"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_a0498fb5c37d5840dff0123c6623f93fd_icgraph.svg" width="100%" height="300"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="ab4c25d7adfea4bd856ae2ebf7d6720b1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab4c25d7adfea4bd856ae2ebf7d6720b1">&#9670;&nbsp;</a></span>dfs_triangulate_aux()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::internal::dfs_triangulate_aux </td>
+          <td>(</td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>v</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; std::vector&lt; std::tuple&lt; int64_t, bool, bool &gt;&gt;&gt; &amp;&#160;</td>
+          <td class="paramname"><em>VV</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>V_pos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; int64_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>stack</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; int &gt; &amp;&#160;</td>
+          <td class="paramname"><em>in_stack</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; int &gt; &amp;&#160;</td>
+          <td class="paramname"><em>is_on_input</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; int &gt; &amp;&#160;</td>
+          <td class="paramname"><em>is_used</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; std::vector&lt; int64_t &gt;&gt; &amp;&#160;</td>
+          <td class="paramname"><em>in_stack_idx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>prev_vector</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const int64_t&#160;</td>
+          <td class="paramname"><em>v_prev</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; std::array&lt; int64_t, 3 &gt;&gt; &amp;&#160;</td>
+          <td class="paramname"><em>FV</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; std::array&lt; int, 3 &gt;&gt; &amp;&#160;</td>
+          <td class="paramname"><em>local_e_on_input</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00259">259</a> of file <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html">edge_insertion.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00221">cyclic_order()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00431">dfs_triangulate()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_ab4c25d7adfea4bd856ae2ebf7d6720b1_cgraph.svg" width="470" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_ab4c25d7adfea4bd856ae2ebf7d6720b1_icgraph.svg" width="100%" height="300"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="abdf0e65326bccb762e8182f1329f3fe8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abdf0e65326bccb762e8182f1329f3fe8">&#9670;&nbsp;</a></span>edge_insertion()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::internal::edge_insertion </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>_trimesh</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1_edge_mesh.html">EdgeMesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>edgemesh</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>v_final</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; std::array&lt; int64_t, 3 &gt;&gt; &amp;&#160;</td>
+          <td class="paramname"><em>FV_new</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; std::array&lt; int, 3 &gt;&gt; &amp;&#160;</td>
+          <td class="paramname"><em>local_e_on_input</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00483">483</a> of file <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html">edge_insertion.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8hpp_source.html#l00064">wmtk::components::internal::Segment::bbox_max</a>, <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8hpp_source.html#l00064">wmtk::components::internal::Segment::bbox_min</a>, <a class="el" href="_tri_face_split_8hpp_source.html#l00028">wmtk::operations::composite::TriFaceSplit::collapse()</a>, <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00163">compute_bbox()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00209">wmtk::Mesh::consolidate()</a>, <a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aa68e55eab4f30286567022eafb9fa79f6">wmtk::operations::CopyOther</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00067">wmtk::MeshCRTP&lt; Derived &gt;::create_accessor()</a>, <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00431">dfs_triangulate()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_simplex_8hpp_source.html#l00061">wmtk::simplex::Simplex::edge()</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00077">wmtk::simplex::edges()</a>, <a class="el" href="_simplex_8hpp_source.html#l00063">wmtk::simplex::Simplex::face()</a>, <a class="el" href="_mesh_8cpp_source.html#l00018">wmtk::Mesh::get_all()</a>, <a class="el" href="_mesh_8hpp_source.html#l00912">wmtk::Mesh::get_attribute_handle()</a>, <a class="el" href="_eigen_matrix_writer_8cpp_source.html#l00026">wmtk::utils::EigenMatrixWriter::get_EV_matrix()</a>, <a class="el" href="_eigen_matrix_writer_8cpp_source.html#l00021">wmtk::utils::EigenMatrixWriter::get_FV_matrix()</a>, <a class="el" href="_eigen_matrix_writer_8cpp_source.html#l00005">wmtk::utils::EigenMatrixWriter::get_position_matrix()</a>, <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00147">is_bbox_intersect()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00055">wmtk::TriMesh::is_boundary()</a>, <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00212">is_colinear()</a>, <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8hpp_source.html#l00066">wmtk::components::internal::Segment::is_on_input</a>, <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00138">is_point_in_bbox()</a>, <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00032">is_point_inside_triangle()</a>, <a class="el" href="namespacewmtk_1_1operations.html#a0f7187ee4d2329532768f79fb8f55a50a6adf97f83acf6453d4a6a4b1070f3754">wmtk::operations::None</a>, <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8hpp_source.html#l00062">wmtk::components::internal::Segment::p0</a>, <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8hpp_source.html#l00062">wmtk::components::internal::Segment::p1</a>, <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8hpp_source.html#l00069">wmtk::components::internal::Segment::points_on_segment</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00011">wmtk::Mesh::register_attribute()</a>, <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00102">segment_segment_inter()</a>, <a class="el" href="_mesh_8cpp_source.html#l00092">wmtk::Mesh::serialize()</a>, <a class="el" href="_edge_collapse_8cpp_source.html#l00092">wmtk::operations::EdgeCollapse::set_new_attribute_strategy()</a>, <a class="el" href="_edge_split_8cpp_source.html#l00085">wmtk::operations::EdgeSplit::set_new_attribute_strategy()</a>, <a class="el" href="_tri_face_split_8hpp_source.html#l00027">wmtk::operations::composite::TriFaceSplit::split()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00096">wmtk::TriMesh::switch_tuple()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00135">wmtk::MeshCRTP&lt; Derived &gt;::switch_tuples()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2edge__insertion_8cpp_source.html#l00021">wmtk::components::edge_insertion()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_abdf0e65326bccb762e8182f1329f3fe8_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_abdf0e65326bccb762e8182f1329f3fe8_icgraph.svg" width="451" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 
@@ -581,8 +1088,268 @@ Here is the caller graph for this function:</div>
 
 </div>
 </div>
+<a id="afb02865bc0111fa89da9af8f9aa3bf17"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afb02865bc0111fa89da9af8f9aa3bf17">&#9670;&nbsp;</a></span>is_bbox_intersect()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::internal::is_bbox_intersect </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>bbox_min_0</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>bbox_max_0</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>bbox_min_1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>bbox_max_1</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00147">147</a> of file <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html">edge_insertion.cpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00483">edge_insertion()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_afb02865bc0111fa89da9af8f9aa3bf17_icgraph.svg" width="100%" height="300"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a138ff1ef357875114e008086b11c4884"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a138ff1ef357875114e008086b11c4884">&#9670;&nbsp;</a></span>is_colinear()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::internal::is_colinear </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>p0</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>p1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>q0</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>q1</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00212">212</a> of file <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html">edge_insertion.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="orient_8cpp_source.html#l00178">wmtk::utils::wmtk_orient2d()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00483">edge_insertion()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_a138ff1ef357875114e008086b11c4884_cgraph.svg" width="100%" height="300"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_a138ff1ef357875114e008086b11c4884_icgraph.svg" width="100%" height="300"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="afc502bac5509e365d5a208281ae10bfd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afc502bac5509e365d5a208281ae10bfd">&#9670;&nbsp;</a></span>is_point_in_bbox()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::internal::is_point_in_bbox </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>point</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>bbox_min</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>bbox_max</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00138">138</a> of file <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html">edge_insertion.cpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00483">edge_insertion()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_afc502bac5509e365d5a208281ae10bfd_icgraph.svg" width="100%" height="300"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="ae07bcf44b9a30908c57ef1141925a30d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae07bcf44b9a30908c57ef1141925a30d">&#9670;&nbsp;</a></span>is_point_inside_triangle()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int wmtk::components::internal::is_point_inside_triangle </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">wmtk::Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>P</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">wmtk::Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>A</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">wmtk::Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>B</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">wmtk::Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>C</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">point</td><td></td></tr>
+    <tr><td class="paramname">t1</td><td></td></tr>
+    <tr><td class="paramname">t2</td><td></td></tr>
+    <tr><td class="paramname">t3</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>int -1: outside 0: inside 1: on AB 2: on BC 3: on AC 4:on A 5: on B 6:on C </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00032">32</a> of file <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html">edge_insertion.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_rational_8cpp_source.html#l00328">wmtk::abs()</a>, and <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00027">det()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00483">edge_insertion()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_ae07bcf44b9a30908c57ef1141925a30d_cgraph.svg" width="499" height="88"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_ae07bcf44b9a30908c57ef1141925a30d_icgraph.svg" width="100%" height="300"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a6e145840773d19878e49e735c6f22b63"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6e145840773d19878e49e735c6f22b63">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[1/8]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">wmtk::components::internal::NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structwmtk_1_1components_1_1internal_1_1_edge_ins_options.html">EdgeInsOptions</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">edges&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">triangles&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">output&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a163f2df8912b357a44313f201d62cdc2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a163f2df8912b357a44313f201d62cdc2">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[1/7]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a163f2df8912b357a44313f201d62cdc2">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[2/8]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -610,7 +1377,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <a id="ab4d5aa85b7e849adbde7c7fedc6453bf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab4d5aa85b7e849adbde7c7fedc6453bf">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[2/7]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab4d5aa85b7e849adbde7c7fedc6453bf">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[3/8]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -644,7 +1411,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <a id="a54b94df0200765de12723783395d875f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a54b94df0200765de12723783395d875f">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[3/7]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a54b94df0200765de12723783395d875f">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[4/8]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -672,7 +1439,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <a id="a82ea78e67966e7a58c4f86b0c3cad0ab"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a82ea78e67966e7a58c4f86b0c3cad0ab">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[4/7]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a82ea78e67966e7a58c4f86b0c3cad0ab">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[5/8]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -700,7 +1467,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <a id="a5167173a30d388b3b1f1cd81cd6a167a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5167173a30d388b3b1f1cd81cd6a167a">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[5/7]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a5167173a30d388b3b1f1cd81cd6a167a">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[6/8]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -746,7 +1513,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <a id="a41722ce1685a7dec1703284ea7b17090"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a41722ce1685a7dec1703284ea7b17090">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[6/7]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a41722ce1685a7dec1703284ea7b17090">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[7/8]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -792,7 +1559,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <a id="ac37ed3f255d6cb7b44f2423cf4079170"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac37ed3f255d6cb7b44f2423cf4079170">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[7/7]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ac37ed3f255d6cb7b44f2423cf4079170">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[8/8]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -919,7 +1686,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="internal_2periodic__optimization_8cpp_source.html#l00112">112</a> of file <a class="el" href="internal_2periodic__optimization_8cpp_source.html">periodic_optimization.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="internal_2periodic__optimization_8cpp_source.html#l01185">adjust_sizing_field()</a>, <a class="el" href="utils_2_a_m_i_p_s_8hpp_source.html#l00020">wmtk::function::utils::amips()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00048">wmtk::SchedulerStats::collecting_time</a>, <a class="el" href="consolidate_8cpp_source.html#l00013">wmtk::multimesh::consolidate()</a>, <a class="el" href="namespacewmtk_1_1operations.html#a0f7187ee4d2329532768f79fb8f55a50a5fb63579fc981698f97d55bfecb213ea">wmtk::operations::Copy</a>, <a class="el" href="classwmtk_1_1_mesh.html#aa2b952c0d3894043f513a86fbbd910ff">wmtk::Mesh::create_accessor()</a>, <a class="el" href="classwmtk_1_1_mesh.html#a4a20dcdac339e7a4f6f8a6570114cbe6">wmtk::Mesh::create_const_accessor()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_scheduler_8hpp_source.html#l00050">wmtk::SchedulerStats::executing_time</a>, <a class="el" href="_mesh_8cpp_source.html#l00018">wmtk::Mesh::get_all()</a>, <a class="el" href="_mesh_8hpp_source.html#l00912">wmtk::Mesh::get_attribute_handle()</a>, <a class="el" href="link__condition_8cpp_source.html#l00043">wmtk::simplex::link_condition()</a>, <a class="el" href="_logger_8cpp_source.html#l00058">wmtk::logger()</a>, <a class="el" href="namespacewmtk_1_1operations.html#a66f2eeff5a03569f85abf655b0f64d48a3d6c9ac08ada31c184094bbc67afe00d">wmtk::operations::Mean</a>, <a class="el" href="namespacewmtk_1_1operations.html#a0f7187ee4d2329532768f79fb8f55a50a6adf97f83acf6453d4a6a4b1070f3754">wmtk::operations::None</a>, <a class="el" href="_scheduler_8hpp_source.html#l00023">wmtk::SchedulerStats::number_of_failed_operations()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00030">wmtk::SchedulerStats::number_of_performed_operations()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00016">wmtk::SchedulerStats::number_of_successful_operations()</a>, <a class="el" href="classwmtk_1_1_mesh.html#a0f1e2ecf58dcc8a2c86309cb11d1fe95">wmtk::Mesh::orient_vertices()</a>, <a class="el" href="output_8cpp_source.html#l00015">wmtk::components::output::output()</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00017">wmtk::PE</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00005">PF</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00006">PT</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00016">wmtk::PV</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00011">wmtk::Mesh::register_attribute()</a>, <a class="el" href="_scheduler_8cpp_source.html#l00037">wmtk::Scheduler::run_operation_on_all()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00049">wmtk::SchedulerStats::sorting_time</a>, <a class="el" href="classwmtk_1_1_mesh.html#a965a8a24158c4aa8580c57ba09f885f7">wmtk::Mesh::switch_tuple()</a>, <a class="el" href="_mesh_8hpp_source.html#l00962">wmtk::Mesh::switch_tuples()</a>, <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html#l00374">wmtk::function::Tet_AMIPS_energy()</a>, <a class="el" href="utils_2_a_m_i_p_s_8cpp_source.html#l00380">wmtk::function::utils::Tet_AMIPS_energy()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="_mesh_8hpp_source.html#l00991">wmtk::Mesh::top_simplex_type()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00009">wmtk::simplex::vertices()</a>, <a class="el" href="orient_8cpp_source.html#l00075">wmtk::utils::wmtk_orient3d()</a>, and <a class="el" href="internal_2periodic__optimization_8cpp_source.html#l01161">write()</a>.</p>
+<p class="reference">References <a class="el" href="internal_2periodic__optimization_8cpp_source.html#l01185">adjust_sizing_field()</a>, <a class="el" href="utils_2_a_m_i_p_s_8hpp_source.html#l00020">wmtk::function::utils::amips()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00048">wmtk::SchedulerStats::collecting_time</a>, <a class="el" href="consolidate_8cpp_source.html#l00013">wmtk::multimesh::consolidate()</a>, <a class="el" href="namespacewmtk_1_1operations.html#a0f7187ee4d2329532768f79fb8f55a50a5fb63579fc981698f97d55bfecb213ea">wmtk::operations::Copy</a>, <a class="el" href="classwmtk_1_1_mesh.html#aa2b952c0d3894043f513a86fbbd910ff">wmtk::Mesh::create_accessor()</a>, <a class="el" href="classwmtk_1_1_mesh.html#a4a20dcdac339e7a4f6f8a6570114cbe6">wmtk::Mesh::create_const_accessor()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_scheduler_8hpp_source.html#l00050">wmtk::SchedulerStats::executing_time</a>, <a class="el" href="_mesh_8cpp_source.html#l00018">wmtk::Mesh::get_all()</a>, <a class="el" href="_mesh_8hpp_source.html#l00912">wmtk::Mesh::get_attribute_handle()</a>, <a class="el" href="link__condition_8cpp_source.html#l00043">wmtk::simplex::link_condition()</a>, <a class="el" href="_logger_8cpp_source.html#l00058">wmtk::logger()</a>, <a class="el" href="namespacewmtk_1_1operations.html#a66f2eeff5a03569f85abf655b0f64d48a3d6c9ac08ada31c184094bbc67afe00d">wmtk::operations::Mean</a>, <a class="el" href="namespacewmtk_1_1operations.html#a0f7187ee4d2329532768f79fb8f55a50a6adf97f83acf6453d4a6a4b1070f3754">wmtk::operations::None</a>, <a class="el" href="_scheduler_8hpp_source.html#l00023">wmtk::SchedulerStats::number_of_failed_operations()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00030">wmtk::SchedulerStats::number_of_performed_operations()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00016">wmtk::SchedulerStats::number_of_successful_operations()</a>, <a class="el" href="classwmtk_1_1_mesh.html#a0f1e2ecf58dcc8a2c86309cb11d1fe95">wmtk::Mesh::orient_vertices()</a>, <a class="el" href="output_8cpp_source.html#l00015">wmtk::components::output::output()</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00017">wmtk::PE</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00005">PF</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00006">PT</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00016">wmtk::PV</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00011">wmtk::Mesh::register_attribute()</a>, <a class="el" href="_scheduler_8cpp_source.html#l00037">wmtk::Scheduler::run_operation_on_all()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00049">wmtk::SchedulerStats::sorting_time</a>, <a class="el" href="classwmtk_1_1_mesh.html#a965a8a24158c4aa8580c57ba09f885f7">wmtk::Mesh::switch_tuple()</a>, <a class="el" href="_mesh_8hpp_source.html#l00962">wmtk::Mesh::switch_tuples()</a>, <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html#l00375">wmtk::function::Tet_AMIPS_energy()</a>, <a class="el" href="utils_2_a_m_i_p_s_8cpp_source.html#l00380">wmtk::function::utils::Tet_AMIPS_energy()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="_mesh_8hpp_source.html#l00991">wmtk::Mesh::top_simplex_type()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00009">wmtk::simplex::vertices()</a>, <a class="el" href="orient_8cpp_source.html#l00075">wmtk::utils::wmtk_orient3d()</a>, and <a class="el" href="internal_2periodic__optimization_8cpp_source.html#l01161">write()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="periodic__optimization_8cpp_source.html#l00018">wmtk::components::periodic_optimization()</a>.</p>
 <div class="dynheader">
@@ -937,8 +1704,132 @@ Here is the caller graph for this function:</div>
 
 </div>
 </div>
+<a id="ad827cdbb96806fb2e4c19c644277f3c3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad827cdbb96806fb2e4c19c644277f3c3">&#9670;&nbsp;</a></span>segment_segment_inter() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::internal::segment_segment_inter </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>s0</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>e0</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>s1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>e1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>res</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>include the intersection on edgepoints </p>
+
+</div>
+</div>
+<a id="ad6dd95bb64070b2dd64d2041cf5cb0cb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad6dd95bb64070b2dd64d2041cf5cb0cb">&#9670;&nbsp;</a></span>segment_segment_inter() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::internal::segment_segment_inter </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>s0</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>e0</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>s1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>e1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespacewmtk.html#ae5436e9784ad52a9866cbc0d54c1d0a2">Vector2r</a> &amp;&#160;</td>
+          <td class="paramname"><em>res</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1_rational.html">Rational</a> &amp;&#160;</td>
+          <td class="paramname"><em>t0</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1_rational.html">Rational</a> &amp;&#160;</td>
+          <td class="paramname"><em>t1</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00102">102</a> of file <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html">edge_insertion.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_rational_8cpp_source.html#l00015">wmtk::Rational::get_sign()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00483">edge_insertion()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_ad6dd95bb64070b2dd64d2041cf5cb0cb_cgraph.svg" width="448" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_ad6dd95bb64070b2dd64d2041cf5cb0cb_icgraph.svg" width="100%" height="300"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
 <a id="a19eecddab1770fc126938f03715626b0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a19eecddab1770fc126938f03715626b0">&#9670;&nbsp;</a></span>set_operation_energy_filter()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a19eecddab1770fc126938f03715626b0">&#9670;&nbsp;</a></span>set_operation_energy_filter() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1002,10 +1893,166 @@ Here is the caller graph for this function:</div>
 <p class="definition">Definition at line <a class="el" href="internal_2periodic__optimization_8cpp_source.html#l01323">1323</a> of file <a class="el" href="internal_2periodic__optimization_8cpp_source.html">periodic_optimization.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="classwmtk_1_1_mesh.html#aa2b952c0d3894043f513a86fbbd910ff">wmtk::Mesh::create_accessor()</a>, <a class="el" href="classwmtk_1_1_mesh.html#a4a20dcdac339e7a4f6f8a6570114cbe6">wmtk::Mesh::create_const_accessor()</a>, <a class="el" href="_mesh_8cpp_source.html#l00018">wmtk::Mesh::get_all()</a>, <a class="el" href="k__ring_8cpp_source.html#l00006">wmtk::simplex::k_ring()</a>, <a class="el" href="classwmtk_1_1_mesh.html#a0f1e2ecf58dcc8a2c86309cb11d1fe95">wmtk::Mesh::orient_vertices()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="_mesh_8hpp_source.html#l00991">wmtk::Mesh::top_simplex_type()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, <a class="el" href="_simplex_8hpp_source.html#l00056">wmtk::simplex::Simplex::vertex()</a>, and <a class="el" href="faces__single__dimension_8cpp_source.html#l00009">wmtk::simplex::vertices()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="wildmeshing3d_8cpp_source.html#l00087">wildmeshing3d()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_a19eecddab1770fc126938f03715626b0_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_a19eecddab1770fc126938f03715626b0_icgraph.svg" width="100%" height="300"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a730c91c02cf76e39d147c65e49d224f7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a730c91c02cf76e39d147c65e49d224f7">&#9670;&nbsp;</a></span>set_operation_energy_filter() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::internal::set_operation_energy_filter </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>m</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>coordinate_handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; double &gt; &amp;&#160;</td>
+          <td class="paramname"><em>energy_handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; char &gt; &amp;&#160;</td>
+          <td class="paramname"><em>energy_filter_handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; char &gt; &amp;&#160;</td>
+          <td class="paramname"><em>visited_handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>stop_energy</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>current_max_energy</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>initial_target_edge_length</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="wildmeshing3d_8cpp_source.html#l01631">1631</a> of file <a class="el" href="wildmeshing3d_8cpp_source.html">wildmeshing3d.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="classwmtk_1_1_mesh.html#aa2b952c0d3894043f513a86fbbd910ff">wmtk::Mesh::create_accessor()</a>, <a class="el" href="classwmtk_1_1_mesh.html#a4a20dcdac339e7a4f6f8a6570114cbe6">wmtk::Mesh::create_const_accessor()</a>, <a class="el" href="_mesh_8cpp_source.html#l00018">wmtk::Mesh::get_all()</a>, <a class="el" href="k__ring_8cpp_source.html#l00006">wmtk::simplex::k_ring()</a>, <a class="el" href="classwmtk_1_1_mesh.html#a0f1e2ecf58dcc8a2c86309cb11d1fe95">wmtk::Mesh::orient_vertices()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="_mesh_8hpp_source.html#l00991">wmtk::Mesh::top_simplex_type()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, <a class="el" href="_simplex_8hpp_source.html#l00056">wmtk::simplex::Simplex::vertex()</a>, and <a class="el" href="faces__single__dimension_8cpp_source.html#l00009">wmtk::simplex::vertices()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_a730c91c02cf76e39d147c65e49d224f7_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="af341a4c0f56c927af751378846a6b82e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af341a4c0f56c927af751378846a6b82e">&#9670;&nbsp;</a></span>set_operation_energy_filter_after_sizing_field()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::internal::set_operation_energy_filter_after_sizing_field </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>m</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>coordinate_handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; double &gt; &amp;&#160;</td>
+          <td class="paramname"><em>energy_handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; char &gt; &amp;&#160;</td>
+          <td class="paramname"><em>energy_filter_handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; char &gt; &amp;&#160;</td>
+          <td class="paramname"><em>visited_handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>stop_energy</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>current_max_energy</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>initial_target_edge_length</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="wildmeshing3d_8cpp_source.html#l01678">1678</a> of file <a class="el" href="wildmeshing3d_8cpp_source.html">wildmeshing3d.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="classwmtk_1_1_mesh.html#aa2b952c0d3894043f513a86fbbd910ff">wmtk::Mesh::create_accessor()</a>, <a class="el" href="classwmtk_1_1_mesh.html#a4a20dcdac339e7a4f6f8a6570114cbe6">wmtk::Mesh::create_const_accessor()</a>, <a class="el" href="_mesh_8cpp_source.html#l00018">wmtk::Mesh::get_all()</a>, <a class="el" href="link_8cpp_source.html#l00084">wmtk::simplex::link()</a>, <a class="el" href="classwmtk_1_1_mesh.html#a0f1e2ecf58dcc8a2c86309cb11d1fe95">wmtk::Mesh::orient_vertices()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="_mesh_8hpp_source.html#l00991">wmtk::Mesh::top_simplex_type()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, <a class="el" href="_simplex_8hpp_source.html#l00056">wmtk::simplex::Simplex::vertex()</a>, and <a class="el" href="faces__single__dimension_8cpp_source.html#l00009">wmtk::simplex::vertices()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_af341a4c0f56c927af751378846a6b82e_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
@@ -1080,6 +2127,78 @@ Here is the caller graph for this function:</div>
 <p class="definition">Definition at line <a class="el" href="_tag_intersection_options_8cpp_source.html#l00007">7</a> of file <a class="el" href="_tag_intersection_options_8cpp_source.html">TagIntersectionOptions.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_tag_intersection_options_8hpp_source.html#l00044">wmtk::components::internal::TagIntersectionOptions::attributes</a>, <a class="el" href="_tag_intersection_options_8hpp_source.html#l00042">wmtk::components::internal::TagIntersectionOptions::input</a>, <a class="el" href="_tag_intersection_options_8hpp_source.html#l00043">wmtk::components::internal::TagIntersectionOptions::output</a>, <a class="el" href="_tag_intersection_options_8hpp_source.html#l00046">wmtk::components::internal::TagIntersectionOptions::output_attributes</a>, <a class="el" href="_tag_intersection_options_8hpp_source.html#l00047">wmtk::components::internal::TagIntersectionOptions::output_values</a>, <a class="el" href="_tag_intersection_options_8hpp_source.html#l00048">wmtk::components::internal::TagIntersectionOptions::pass_through</a>, and <a class="el" href="_tag_intersection_options_8hpp_source.html#l00045">wmtk::components::internal::TagIntersectionOptions::values</a>.</p>
+
+</div>
+</div>
+<a id="a28a63b9ae929bfe3ccb0fa3a266a272c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a28a63b9ae929bfe3ccb0fa3a266a272c">&#9670;&nbsp;</a></span>wildmeshing2d()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; std::pair&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt;, std::string &gt; &gt; wmtk::components::internal::wildmeshing2d </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="structwmtk_1_1components_1_1_wild_meshing_options.html">WildMeshingOptions</a> &amp;&#160;</td>
+          <td class="paramname"><em>options</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="wildmeshing2d_8cpp_source.html#l00087">87</a> of file <a class="el" href="wildmeshing2d_8cpp_source.html">wildmeshing2d.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_operation_8hpp_source.html#l00048">wmtk::operations::Operation::add_invariant()</a>, <a class="el" href="_operation_8cpp_source.html#l00065">wmtk::operations::Operation::add_transfer_strategy()</a>, <a class="el" href="utils_2_a_m_i_p_s_8hpp_source.html#l00020">wmtk::function::utils::amips()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00048">wmtk::SchedulerStats::collecting_time</a>, <a class="el" href="consolidate_8cpp_source.html#l00013">wmtk::multimesh::consolidate()</a>, <a class="el" href="namespacewmtk_1_1operations.html#a0f7187ee4d2329532768f79fb8f55a50a5fb63579fc981698f97d55bfecb213ea">wmtk::operations::Copy</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00030">wmtk::components::WildMeshingOptions::envelopes</a>, <a class="el" href="_scheduler_8hpp_source.html#l00050">wmtk::SchedulerStats::executing_time</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00019">wmtk::components::WildMeshingOptions::input_mesh</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00020">wmtk::components::WildMeshingOptions::input_mesh_position</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00024">wmtk::components::WildMeshingOptions::intermediate_output</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00028">wmtk::components::WildMeshingOptions::intermediate_output_name</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00027">wmtk::components::WildMeshingOptions::intermediate_output_path</a>, <a class="el" href="link__condition_8cpp_source.html#l00043">wmtk::simplex::link_condition()</a>, <a class="el" href="_logger_8cpp_source.html#l00058">wmtk::logger()</a>, <a class="el" href="make__cast__attribute__transfer__strategy_8cpp_source.html#l00007">wmtk::operations::attribute_update::make_cast_attribute_transfer_strategy()</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00023">wmtk::components::WildMeshingOptions::max_passes</a>, <a class="el" href="namespacewmtk_1_1operations.html#a66f2eeff5a03569f85abf655b0f64d48a3d6c9ac08ada31c184094bbc67afe00d">wmtk::operations::Mean</a>, <a class="el" href="namespacewmtk_1_1operations.html#a0f7187ee4d2329532768f79fb8f55a50a6adf97f83acf6453d4a6a4b1070f3754">wmtk::operations::None</a>, <a class="el" href="_scheduler_8hpp_source.html#l00023">wmtk::SchedulerStats::number_of_failed_operations()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00030">wmtk::SchedulerStats::number_of_performed_operations()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00016">wmtk::SchedulerStats::number_of_successful_operations()</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00031">wmtk::components::WildMeshingOptions::pass_through</a>, <a class="el" href="classwmtk_1_1operations_1_1_operation.html#a55110365dd31bcf41716087c9df8c57d">wmtk::operations::Operation::primitive_type()</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00025">wmtk::components::WildMeshingOptions::replace_double_coordinate</a>, <a class="el" href="_scheduler_8cpp_source.html#l00037">wmtk::Scheduler::run_operation_on_all()</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00026">wmtk::components::WildMeshingOptions::scheduler_update_frequency</a>, <a class="el" href="_operation_8hpp_source.html#l00050">wmtk::operations::Operation::set_priority()</a>, <a class="el" href="_scheduler_8cpp_source.html#l00393">wmtk::Scheduler::set_update_frequency()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00049">wmtk::SchedulerStats::sorting_time</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00021">wmtk::components::WildMeshingOptions::target_edge_length</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00022">wmtk::components::WildMeshingOptions::target_max_amips</a>, <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html#l00375">wmtk::function::Tet_AMIPS_energy()</a>, <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html#l00473">wmtk::function::Tri_AMIPS_energy()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, <a class="el" href="_simplex_8hpp_source.html#l00056">wmtk::simplex::Simplex::vertex()</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00009">wmtk::simplex::vertices()</a>, <a class="el" href="orient_8cpp_source.html#l00178">wmtk::utils::wmtk_orient2d()</a>, and <a class="el" href="internal_2periodic__optimization_8cpp_source.html#l01161">write()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="wildmeshing_8cpp_source.html#l00010">wmtk::components::wildmeshing()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_a28a63b9ae929bfe3ccb0fa3a266a272c_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_a28a63b9ae929bfe3ccb0fa3a266a272c_icgraph.svg" width="503" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a798951bc2a6b1069a5ae8c946ddfdecd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a798951bc2a6b1069a5ae8c946ddfdecd">&#9670;&nbsp;</a></span>wildmeshing3d()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; std::pair&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt;, std::string &gt; &gt; wmtk::components::internal::wildmeshing3d </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="structwmtk_1_1components_1_1_wild_meshing_options.html">WildMeshingOptions</a> &amp;&#160;</td>
+          <td class="paramname"><em>options</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="wildmeshing3d_8cpp_source.html#l00087">87</a> of file <a class="el" href="wildmeshing3d_8cpp_source.html">wildmeshing3d.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="internal_2periodic__optimization_8cpp_source.html#l01185">adjust_sizing_field()</a>, <a class="el" href="utils_2_a_m_i_p_s_8hpp_source.html#l00020">wmtk::function::utils::amips()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00048">wmtk::SchedulerStats::collecting_time</a>, <a class="el" href="consolidate_8cpp_source.html#l00013">wmtk::multimesh::consolidate()</a>, <a class="el" href="namespacewmtk_1_1operations.html#a0f7187ee4d2329532768f79fb8f55a50a5fb63579fc981698f97d55bfecb213ea">wmtk::operations::Copy</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00030">wmtk::components::WildMeshingOptions::envelopes</a>, <a class="el" href="_scheduler_8hpp_source.html#l00050">wmtk::SchedulerStats::executing_time</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00019">wmtk::components::WildMeshingOptions::input_mesh</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00020">wmtk::components::WildMeshingOptions::input_mesh_position</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00024">wmtk::components::WildMeshingOptions::intermediate_output</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00028">wmtk::components::WildMeshingOptions::intermediate_output_name</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00027">wmtk::components::WildMeshingOptions::intermediate_output_path</a>, <a class="el" href="link__condition_8cpp_source.html#l00043">wmtk::simplex::link_condition()</a>, <a class="el" href="_logger_8cpp_source.html#l00058">wmtk::logger()</a>, <a class="el" href="make__cast__attribute__transfer__strategy_8cpp_source.html#l00007">wmtk::operations::attribute_update::make_cast_attribute_transfer_strategy()</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00023">wmtk::components::WildMeshingOptions::max_passes</a>, <a class="el" href="namespacewmtk_1_1operations.html#a66f2eeff5a03569f85abf655b0f64d48a3d6c9ac08ada31c184094bbc67afe00d">wmtk::operations::Mean</a>, <a class="el" href="namespacewmtk_1_1operations.html#a0f7187ee4d2329532768f79fb8f55a50a6adf97f83acf6453d4a6a4b1070f3754">wmtk::operations::None</a>, <a class="el" href="_scheduler_8hpp_source.html#l00023">wmtk::SchedulerStats::number_of_failed_operations()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00030">wmtk::SchedulerStats::number_of_performed_operations()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00016">wmtk::SchedulerStats::number_of_successful_operations()</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00031">wmtk::components::WildMeshingOptions::pass_through</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00017">wmtk::PE</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00005">PF</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00006">PT</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00016">wmtk::PV</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00025">wmtk::components::WildMeshingOptions::replace_double_coordinate</a>, <a class="el" href="_scheduler_8cpp_source.html#l00037">wmtk::Scheduler::run_operation_on_all()</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00026">wmtk::components::WildMeshingOptions::scheduler_update_frequency</a>, <a class="el" href="internal_2periodic__optimization_8cpp_source.html#l01323">set_operation_energy_filter()</a>, <a class="el" href="_scheduler_8cpp_source.html#l00393">wmtk::Scheduler::set_update_frequency()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00049">wmtk::SchedulerStats::sorting_time</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00021">wmtk::components::WildMeshingOptions::target_edge_length</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00022">wmtk::components::WildMeshingOptions::target_max_amips</a>, <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html#l00375">wmtk::function::Tet_AMIPS_energy()</a>, <a class="el" href="utils_2_a_m_i_p_s_8cpp_source.html#l00380">wmtk::function::utils::Tet_AMIPS_energy()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html#l00473">wmtk::function::Tri_AMIPS_energy()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00009">wmtk::simplex::vertices()</a>, <a class="el" href="orient_8cpp_source.html#l00075">wmtk::utils::wmtk_orient3d()</a>, and <a class="el" href="internal_2periodic__optimization_8cpp_source.html#l01161">write()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="wildmeshing_8cpp_source.html#l00010">wmtk::components::wildmeshing()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_a798951bc2a6b1069a5ae8c946ddfdecd_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_a798951bc2a6b1069a5ae8c946ddfdecd_icgraph.svg" width="503" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
 
 </div>
 </div>
@@ -1174,7 +2293,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <a id="af3655ebb89360c7fe41a0ac2828e9895"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af3655ebb89360c7fe41a0ac2828e9895">&#9670;&nbsp;</a></span>write()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#af3655ebb89360c7fe41a0ac2828e9895">&#9670;&nbsp;</a></span>write() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1227,7 +2346,7 @@ Here is the caller graph for this function:</div>
 
 <p class="reference">References <a class="el" href="test__component__delaunay_8cpp_source.html#l00015">data_dir</a>, and <a class="el" href="_mesh_8cpp_source.html#l00092">wmtk::Mesh::serialize()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="internal_2periodic__optimization_8cpp_source.html#l00112">periodic_optimization()</a>, and <a class="el" href="wildmeshing_8cpp_source.html#l00407">wmtk::components::wildmeshing()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="internal_2periodic__optimization_8cpp_source.html#l00112">periodic_optimization()</a>, <a class="el" href="wildmeshing__old_8cpp_source.html#l00407">wmtk::components::wildmeshing()</a>, <a class="el" href="wildmeshing2d_8cpp_source.html#l00087">wildmeshing2d()</a>, and <a class="el" href="wildmeshing3d_8cpp_source.html#l00087">wildmeshing3d()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1237,9 +2356,65 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_af3655ebb89360c7fe41a0ac2828e9895_icgraph.svg" width="100%" height="378"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_af3655ebb89360c7fe41a0ac2828e9895_icgraph.svg" width="100%" height="476"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
+
+</div>
+</div>
+<a id="a66008da64b893ecbb8b75400af012cb3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a66008da64b893ecbb8b75400af012cb3">&#9670;&nbsp;</a></span>write() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::internal::write </td>
+          <td>(</td>
+          <td class="paramtype">const std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>mesh</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>out_dir</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>vname</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const int64_t&#160;</td>
+          <td class="paramname"><em>index</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const bool&#160;</td>
+          <td class="paramname"><em>intermediate_output</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="wildmeshing__utils_8cpp_source.html#l00006">6</a> of file <a class="el" href="wildmeshing__utils_8cpp_source.html">wildmeshing_utils.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="test__component__delaunay_8cpp_source.html#l00015">data_dir</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>.</p>
 
 </div>
 </div>

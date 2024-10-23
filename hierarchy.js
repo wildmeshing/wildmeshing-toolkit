@@ -34,6 +34,7 @@ var hierarchy =
     [ "wmtk::operations::AttributeTransferConfiguration", "classwmtk_1_1operations_1_1_attribute_transfer_configuration.html", null ],
     [ "wmtk::operations::internal::AttributeTransferConfigurationPimpl", "classwmtk_1_1operations_1_1internal_1_1_attribute_transfer_configuration_pimpl.html", null ],
     [ "wmtk::function::utils::AutoDiffRAII", "classwmtk_1_1function_1_1utils_1_1_auto_diff_r_a_i_i.html", null ],
+    [ "wmtk::components::internal::bbox", "structwmtk_1_1components_1_1internal_1_1bbox.html", null ],
     [ "wmtk::multimesh::BoundaryChecker", "classwmtk_1_1multimesh_1_1_boundary_checker.html", null ],
     [ "wmtk::io::Cache", "classwmtk_1_1io_1_1_cache.html", null ],
     [ "wmtk::io::CachedMultiMesh", "classwmtk_1_1io_1_1_cached_multi_mesh.html", null ],
@@ -82,6 +83,8 @@ var hierarchy =
     [ "wmtk::utils::DynamicArray< wmtk::Tuple >", "classwmtk_1_1utils_1_1_dynamic_array.html", null ],
     [ "wmtk::operations::tri_mesh::EdgeOperationData::EarData", "structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_ear_data.html", null ],
     [ "wmtk::operations::tet_mesh::EdgeOperationData::EarTet", "structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_ear_tet.html", null ],
+    [ "wmtk::components::EdgeInsertionMeshes", "structwmtk_1_1components_1_1_edge_insertion_meshes.html", null ],
+    [ "wmtk::components::internal::EdgeInsOptions", "structwmtk_1_1components_1_1internal_1_1_edge_ins_options.html", null ],
     [ "wmtk::operations::EdgeOperationData", "classwmtk_1_1operations_1_1_edge_operation_data.html", [
       [ "wmtk::operations::edge_mesh::EdgeOperationData", "classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html", [
         [ "wmtk::EdgeMesh::EdgeMeshOperationExecutor", "classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html", null ]
@@ -128,6 +131,7 @@ var hierarchy =
         ] ]
       ] ]
     ] ],
+    [ "wmtk::components::EnvelopeOptions", "structwmtk_1_1components_1_1_envelope_options.html", null ],
     [ "wmtk::simplex::utils::MeshSimplexComparator::Equal", "classwmtk_1_1simplex_1_1utils_1_1_mesh_simplex_comparator_1_1_equal.html", null ],
     [ "wmtk::utils::metaprogramming::detail::DefaultComparatorType::Equal", "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_default_comparator_type_1_1_equal.html", null ],
     [ "wmtk::components::internal::ExportCacheOptions", "structwmtk_1_1components_1_1internal_1_1_export_cache_options.html", null ],
@@ -216,6 +220,8 @@ var hierarchy =
       [ "wmtk::invariants::CollapseSoftEnergyBeforeInvariant", "classwmtk_1_1invariants_1_1_collapse_soft_energy_before_invariant.html", null ],
       [ "wmtk::invariants::EdgeValenceInvariant", "classwmtk_1_1invariants_1_1_edge_valence_invariant.html", null ],
       [ "wmtk::invariants::EnvelopeInvariant", "classwmtk_1_1invariants_1_1_envelope_invariant.html", null ],
+      [ "wmtk::invariants::FrozenOppVertexInvariant", "classwmtk_1_1invariants_1_1_frozen_opp_vertex_invariant.html", null ],
+      [ "wmtk::invariants::FrozenVertexInvariant", "classwmtk_1_1invariants_1_1_frozen_vertex_invariant.html", null ],
       [ "wmtk::invariants::FunctionInvariant", "classwmtk_1_1invariants_1_1_function_invariant.html", null ],
       [ "wmtk::invariants::FusionEdgeInvariant", "classwmtk_1_1invariants_1_1_fusion_edge_invariant.html", null ],
       [ "wmtk::invariants::InteriorSimplexInvariant", "classwmtk_1_1invariants_1_1_interior_simplex_invariant.html", [
@@ -362,6 +368,7 @@ var hierarchy =
     ] ],
     [ "wmtk::Scheduler", "classwmtk_1_1_scheduler.html", null ],
     [ "wmtk::SchedulerStats", "classwmtk_1_1_scheduler_stats.html", null ],
+    [ "wmtk::components::internal::Segment", "classwmtk_1_1components_1_1internal_1_1_segment.html", null ],
     [ "wmtk::components::shortest_edge_collapse::ShortestEdgeCollapseOptions", "structwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse_options.html", null ],
     [ "wmtk::simplex::Simplex", "classwmtk_1_1simplex_1_1_simplex.html", null ],
     [ "wmtk::simplex::SimplexCollection", "classwmtk_1_1simplex_1_1_simplex_collection.html", null ],
@@ -421,6 +428,7 @@ var hierarchy =
     [ "wmtk::simplex::internal::VisitedArray< T, ArraySize >", "classwmtk_1_1simplex_1_1internal_1_1_visited_array.html", null ],
     [ "wmtk::simplex::internal::VisitedArray< int64_t >", "classwmtk_1_1simplex_1_1internal_1_1_visited_array.html", null ],
     [ "wmtk::simplex::internal::VisitedArray< wmtk::simplex::IdSimplex >", "classwmtk_1_1simplex_1_1internal_1_1_visited_array.html", null ],
+    [ "wmtk::components::WildMeshingOptions", "structwmtk_1_1components_1_1_wild_meshing_options.html", null ],
     [ "wmtk::components::WildmeshingOptions", "structwmtk_1_1components_1_1_wildmeshing_options.html", null ],
     [ "wmtk::components::WildmeshingOptionsAttributes", "structwmtk_1_1components_1_1_wildmeshing_options_attributes.html", null ],
     [ "wmtk::components::WildmeshingOptionsEnvelope", "structwmtk_1_1components_1_1_wildmeshing_options_envelope.html", null ],

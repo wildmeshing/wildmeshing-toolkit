@@ -8,6 +8,8 @@ var dir_9f42d488f21f30bdc75c62948fa574ea =
       [ "Iterator", "classwmtk_1_1utils_1_1_dynamic_array_1_1_iterator.html", "classwmtk_1_1utils_1_1_dynamic_array_1_1_iterator" ]
     ] ],
     [ "DynamicArray.hxx", "_dynamic_array_8hxx.html", null ],
+    [ "edge_insertion.cpp", "src_2wmtk_2utils_2edge__insertion_8cpp.html", "src_2wmtk_2utils_2edge__insertion_8cpp" ],
+    [ "edge_insertion.hpp", "src_2wmtk_2utils_2edge__insertion_8hpp.html", "src_2wmtk_2utils_2edge__insertion_8hpp" ],
     [ "edgemesh_topology_initialization.cpp", "edgemesh__topology__initialization_8cpp.html", "edgemesh__topology__initialization_8cpp" ],
     [ "edgemesh_topology_initialization.h", "edgemesh__topology__initialization_8h.html", "edgemesh__topology__initialization_8h" ],
     [ "EigenMatrixWriter.cpp", "_eigen_matrix_writer_8cpp.html", null ],

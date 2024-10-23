@@ -26,6 +26,11 @@ var dir_5421ed8c8fde3f7a08a046a47d931eae =
       [ "EnvelopeInvariant", "classwmtk_1_1invariants_1_1_envelope_invariant.html", "classwmtk_1_1invariants_1_1_envelope_invariant" ]
     ] ],
     [ "find_invariant_in_collection_by_type.hpp", "find__invariant__in__collection__by__type_8hpp.html", "find__invariant__in__collection__by__type_8hpp" ],
+    [ "FrozenVertexInvariant.cpp", "_frozen_vertex_invariant_8cpp.html", null ],
+    [ "FrozenVertexInvariant.hpp", "_frozen_vertex_invariant_8hpp.html", [
+      [ "FrozenVertexInvariant", "classwmtk_1_1invariants_1_1_frozen_vertex_invariant.html", "classwmtk_1_1invariants_1_1_frozen_vertex_invariant" ],
+      [ "FrozenOppVertexInvariant", "classwmtk_1_1invariants_1_1_frozen_opp_vertex_invariant.html", "classwmtk_1_1invariants_1_1_frozen_opp_vertex_invariant" ]
+    ] ],
     [ "FunctionInvariant.cpp", "_function_invariant_8cpp.html", null ],
     [ "FunctionInvariant.hpp", "_function_invariant_8hpp.html", [
       [ "FunctionInvariant", "classwmtk_1_1invariants_1_1_function_invariant.html", "classwmtk_1_1invariants_1_1_function_invariant" ]

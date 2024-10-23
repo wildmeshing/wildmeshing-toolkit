@@ -21,6 +21,7 @@ var namespacewmtk_1_1components =
     [ "shortest_edge_collapse", "namespacewmtk_1_1components_1_1shortest__edge__collapse.html", "namespacewmtk_1_1components_1_1shortest__edge__collapse" ],
     [ "triangle_insertion", "namespacewmtk_1_1components_1_1triangle__insertion.html", "namespacewmtk_1_1components_1_1triangle__insertion" ],
     [ "utils", "namespacewmtk_1_1components_1_1utils.html", "namespacewmtk_1_1components_1_1utils" ],
+    [ "EdgeInsertionMeshes", "structwmtk_1_1components_1_1_edge_insertion_meshes.html", "structwmtk_1_1components_1_1_edge_insertion_meshes" ],
     [ "TagAttribute", "classwmtk_1_1components_1_1_tag_attribute.html", "classwmtk_1_1components_1_1_tag_attribute" ],
     [ "Marching", "classwmtk_1_1components_1_1_marching.html", "classwmtk_1_1components_1_1_marching" ],
     [ "MarchingOptions", "structwmtk_1_1components_1_1_marching_options.html", "structwmtk_1_1components_1_1_marching_options" ],
@@ -36,6 +37,8 @@ var namespacewmtk_1_1components =
     [ "cmp_s", "structwmtk_1_1components_1_1cmp__s.html", "structwmtk_1_1components_1_1cmp__s" ],
     [ "cmp_l", "structwmtk_1_1components_1_1cmp__l.html", "structwmtk_1_1components_1_1cmp__l" ],
     [ "ToPtsOptions", "classwmtk_1_1components_1_1_to_pts_options.html", "classwmtk_1_1components_1_1_to_pts_options" ],
+    [ "EnvelopeOptions", "structwmtk_1_1components_1_1_envelope_options.html", "structwmtk_1_1components_1_1_envelope_options" ],
+    [ "WildMeshingOptions", "structwmtk_1_1components_1_1_wild_meshing_options.html", "structwmtk_1_1components_1_1_wild_meshing_options" ],
     [ "WildmeshingOptionsAttributes", "structwmtk_1_1components_1_1_wildmeshing_options_attributes.html", "structwmtk_1_1components_1_1_wildmeshing_options_attributes" ],
     [ "WildmeshingOptionsEnvelopeMesh", "structwmtk_1_1components_1_1_wildmeshing_options_envelope_mesh.html", "structwmtk_1_1components_1_1_wildmeshing_options_envelope_mesh" ],
     [ "WildmeshingOptionsEnvelope", "structwmtk_1_1components_1_1_wildmeshing_options_envelope.html", "structwmtk_1_1components_1_1_wildmeshing_options_envelope" ],
@@ -47,6 +50,7 @@ var namespacewmtk_1_1components =
     [ "collapsing", "namespacewmtk_1_1components.html#a75ce3ac04f8f77568dd676d12fdcc844", null ],
     [ "delaunay", "namespacewmtk_1_1components.html#a12bd8646c56df6a1f46dba67ab86ebd7", null ],
     [ "delaunay_exec", "namespacewmtk_1_1components.html#ae83ffb7414718eb36eadf02c893b9daa", null ],
+    [ "edge_insertion", "namespacewmtk_1_1components.html#a1d95b8c424d645d432babf8ba5765e36", null ],
     [ "export_cache", "namespacewmtk_1_1components.html#a182500af164c908b6c855c267327d312", null ],
     [ "gather_attributes", "namespacewmtk_1_1components.html#a0271fbc50dba277ddd2d1d3e32d1fb3d", null ],
     [ "gather_attributes", "namespacewmtk_1_1components.html#a7447d90d4590819b69239d895ea5dc86", null ],
@@ -82,5 +86,6 @@ var namespacewmtk_1_1components =
     [ "to_points", "namespacewmtk_1_1components.html#a1703c2264e52b16281828951556f8b11", null ],
     [ "vector_unique", "namespacewmtk_1_1components.html#aa0ee421954a6b56f1b280700fb55f807", null ],
     [ "wildmeshing", "namespacewmtk_1_1components.html#ac6ca52668bd22e164d4baf59ec533864", null ],
-    [ "winding_number", "namespacewmtk_1_1components.html#a888d10781e8251534aa853eb50316732", null ]
+    [ "wildmeshing", "namespacewmtk_1_1components.html#a7c75b44e67ee059f20849f2ea5e04e49", null ],
+    [ "winding_number", "namespacewmtk_1_1components.html#a48154fbe1e5414336fe2337b0ec56dd2", null ]
 ];

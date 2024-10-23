@@ -119,65 +119,14 @@ $(document).ready(function(){initNavTree('wildmeshing_8cpp.html',''); initResiza
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &quot;<a class="el" href="wildmeshing_8hpp_source.html">wildmeshing.hpp</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="_wildmeshing_options_8hpp_source.html">WildmeshingOptions.hpp</a>&quot;</code><br />
-<code>#include &lt;<a class="el" href="_mesh_8hpp_source.html">wmtk/Mesh.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_scheduler_8hpp_source.html">wmtk/Scheduler.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_tet_mesh_8hpp_source.html">wmtk/TetMesh.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_tri_mesh_8hpp_source.html">wmtk/TriMesh.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="cast__attribute_8hpp_source.html">wmtk/utils/cast_attribute.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="get__attributes_8hpp_source.html">wmtk/components/utils/get_attributes.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="consolidate_8hpp_source.html">wmtk/multimesh/consolidate.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_logger_8hpp_source.html">wmtk/utils/Logger.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_split_new_attribute_strategy_8hpp_source.html">wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_attribute_transfer_strategy_8hpp_source.html">wmtk/operations/attribute_update/AttributeTransferStrategy.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="make__cast__attribute__transfer__strategy_8hpp_source.html">wmtk/operations/attribute_update/make_cast_attribute_transfer_strategy.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_a_m_i_p_s_optimization_smoothing_8hpp_source.html">wmtk/operations/AMIPSOptimizationSmoothing.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_and_operation_sequence_8hpp_source.html">wmtk/operations/AndOperationSequence.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_edge_collapse_8hpp_source.html">wmtk/operations/EdgeCollapse.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_edge_split_8hpp_source.html">wmtk/operations/EdgeSplit.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_min_operation_sequence_8hpp_source.html">wmtk/operations/MinOperationSequence.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_optimization_smoothing_8hpp_source.html">wmtk/operations/OptimizationSmoothing.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_or_operation_sequence_8hpp_source.html">wmtk/operations/OrOperationSequence.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_rounding_8hpp_source.html">wmtk/operations/Rounding.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_tet_wild_tangential_laplacian_smoothing_8hpp_source.html">wmtk/operations/TetWildTangentialLaplacianSmoothing.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_project_operation_8hpp_source.html">wmtk/operations/composite/ProjectOperation.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_tet_edge_swap_8hpp_source.html">wmtk/operations/composite/TetEdgeSwap.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_tet_face_swap_8hpp_source.html">wmtk/operations/composite/TetFaceSwap.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_tri_edge_swap_8hpp_source.html">wmtk/operations/composite/TriEdgeSwap.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_local_neighbors_sum_function_8hpp_source.html">wmtk/function/LocalNeighborsSumFunction.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_per_simplex_function_8hpp_source.html">wmtk/function/PerSimplexFunction.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="simplex_2_a_m_i_p_s_8hpp_source.html">wmtk/function/simplex/AMIPS.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="utils_2_a_m_i_p_s_8hpp_source.html">wmtk/function/utils/amips.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_collapse_energy_before_invariant_8hpp_source.html">wmtk/invariants/CollapseEnergyBeforeInvariant.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_collapse_soft_energy_before_invariant_8hpp_source.html">wmtk/invariants/CollapseSoftEnergyBeforeInvariant.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_edge_valence_invariant_8hpp_source.html">wmtk/invariants/EdgeValenceInvariant.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_energy_filter_invariant_8hpp_source.html">wmtk/invariants/EnergyFilterInvariant.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_envelope_invariant_8hpp_source.html">wmtk/invariants/EnvelopeInvariant.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_function_invariant_8hpp_source.html">wmtk/invariants/FunctionInvariant.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_interior_edge_invariant_8hpp_source.html">wmtk/invariants/InteriorEdgeInvariant.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_interior_simplex_invariant_8hpp_source.html">wmtk/invariants/InteriorSimplexInvariant.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_interior_vertex_invariant_8hpp_source.html">wmtk/invariants/InteriorVertexInvariant.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_max_function_invariant_8hpp_source.html">wmtk/invariants/MaxFunctionInvariant.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_multi_mesh_link_condition_invariant_8hpp_source.html">wmtk/invariants/MultiMeshLinkConditionInvariant.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_no_boundary_collapse_to_interior_invariant_8hpp_source.html">wmtk/invariants/NoBoundaryCollapseToInteriorInvariant.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_no_child_mesh_attaching_invariant_8hpp_source.html">wmtk/invariants/NoChildMeshAttachingInvariant.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_rounded_invariant_8hpp_source.html">wmtk/invariants/RoundedInvariant.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_separate_substructures_invariant_8hpp_source.html">wmtk/invariants/SeparateSubstructuresInvariant.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_simplex_inversion_invariant_8hpp_source.html">wmtk/invariants/SimplexInversionInvariant.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_swap23_energy_before_invariant_8hpp_source.html">wmtk/invariants/Swap23EnergyBeforeInvariant.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_swap32_energy_before_invariant_8hpp_source.html">wmtk/invariants/Swap32EnergyBeforeInvariant.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_swap44_energy_before_invariant_8hpp_source.html">wmtk/invariants/Swap44EnergyBeforeInvariant.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_swap56_energy_before_invariant_8hpp_source.html">wmtk/invariants/Swap56EnergyBeforeInvariant.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_todo_invariant_8hpp_source.html">wmtk/invariants/TodoInvariant.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="extract__child__mesh__from__tag_8hpp_source.html">wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_rational_8hpp_source.html">wmtk/utils/Rational.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="orient_8hpp_source.html">wmtk/utils/orient.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_mesh_reader_8hpp_source.html">wmtk/io/MeshReader.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_paraview_writer_8hpp_source.html">wmtk/io/ParaviewWriter.hpp</a>&gt;</code><br />
-<code>#include &lt;queue&gt;</code><br />
-<code>#include &lt;<a class="el" href="k__ring_8hpp_source.html">wmtk/simplex/k_ring.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="link_8hpp_source.html">wmtk/simplex/link.hpp</a>&gt;</code><br />
-<code>#include &lt;fstream&gt;</code><br />
+<code>#include &quot;<a class="el" href="wildmeshing2d_8hpp_source.html">internal/wildmeshing2d.hpp</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="wildmeshing3d_8hpp_source.html">internal/wildmeshing3d.hpp</a>&quot;</code><br />
+</div><div class="textblock"><div class="dynheader">
+Include dependency graph for wildmeshing.cpp:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="wildmeshing_8cpp__incl.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
 </div>
 <p><a href="wildmeshing_8cpp_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
@@ -190,14 +139,8 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a16475fcf3c7cd34eedc9f49d036dde97"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a16475fcf3c7cd34eedc9f49d036dde97">wmtk::components::adjust_sizing_field</a> (Mesh &amp;m, const TypedAttributeHandle&lt; Rational &gt; &amp;coordinate_handle, const TypedAttributeHandle&lt; double &gt; &amp;edge_length_handle, const TypedAttributeHandle&lt; double &gt; &amp;sizing_field_scalar_handle, const TypedAttributeHandle&lt; double &gt; &amp;energy_handle, const TypedAttributeHandle&lt; double &gt; &amp;target_edge_length_handle, const TypedAttributeHandle&lt; char &gt; &amp;visited_handle, const double stop_energy, const double current_max_energy, const double initial_target_edge_length, const double min_target_edge_length)</td></tr>
-<tr class="separator:a16475fcf3c7cd34eedc9f49d036dde97"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad47dd9f4c68a8e70914d5a910e5fc0e4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#ad47dd9f4c68a8e70914d5a910e5fc0e4">wmtk::components::set_operation_energy_filter</a> (Mesh &amp;m, const TypedAttributeHandle&lt; Rational &gt; &amp;coordinate_handle, const TypedAttributeHandle&lt; double &gt; &amp;energy_handle, const TypedAttributeHandle&lt; char &gt; &amp;energy_filter_handle, const TypedAttributeHandle&lt; char &gt; &amp;visited_handle, const double stop_energy, const double current_max_energy, const double initial_target_edge_length)</td></tr>
-<tr class="separator:ad47dd9f4c68a8e70914d5a910e5fc0e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4eb70b5440518ea86de4ae32116cd345"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a4eb70b5440518ea86de4ae32116cd345">wmtk::components::set_operation_energy_filter_after_sizing_field</a> (Mesh &amp;m, const TypedAttributeHandle&lt; Rational &gt; &amp;coordinate_handle, const TypedAttributeHandle&lt; double &gt; &amp;energy_handle, const TypedAttributeHandle&lt; char &gt; &amp;energy_filter_handle, const TypedAttributeHandle&lt; char &gt; &amp;visited_handle, const double stop_energy, const double current_max_energy, const double initial_target_edge_length)</td></tr>
-<tr class="separator:a4eb70b5440518ea86de4ae32116cd345"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac6ca52668bd22e164d4baf59ec533864"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#ac6ca52668bd22e164d4baf59ec533864">wmtk::components::wildmeshing</a> (const utils::Paths &amp;paths, const <a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> &amp;j, io::Cache &amp;cache)</td></tr>
-<tr class="separator:ac6ca52668bd22e164d4baf59ec533864"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7c75b44e67ee059f20849f2ea5e04e49"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::pair&lt; std::shared_ptr&lt; Mesh &gt;, std::string &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a7c75b44e67ee059f20849f2ea5e04e49">wmtk::components::wildmeshing</a> (const WildMeshingOptions &amp;option)</td></tr>
+<tr class="separator:a7c75b44e67ee059f20849f2ea5e04e49"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

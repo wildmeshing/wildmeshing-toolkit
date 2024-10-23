@@ -73,6 +73,9 @@ var annotated_dup =
           [ "NamedMultiMesh", "classwmtk_1_1components_1_1input_1_1_named_multi_mesh.html", "classwmtk_1_1components_1_1input_1_1_named_multi_mesh" ]
         ] ],
         [ "internal", "namespacewmtk_1_1components_1_1internal.html", [
+          [ "bbox", "structwmtk_1_1components_1_1internal_1_1bbox.html", "structwmtk_1_1components_1_1internal_1_1bbox" ],
+          [ "Segment", "classwmtk_1_1components_1_1internal_1_1_segment.html", "classwmtk_1_1components_1_1internal_1_1_segment" ],
+          [ "EdgeInsOptions", "structwmtk_1_1components_1_1internal_1_1_edge_ins_options.html", "structwmtk_1_1components_1_1internal_1_1_edge_ins_options" ],
           [ "ExportCacheOptions", "structwmtk_1_1components_1_1internal_1_1_export_cache_options.html", "structwmtk_1_1components_1_1internal_1_1_export_cache_options" ],
           [ "GetAllMeshesOptions", "structwmtk_1_1components_1_1internal_1_1_get_all_meshes_options.html", "structwmtk_1_1components_1_1internal_1_1_get_all_meshes_options" ],
           [ "ImportCacheOptions", "structwmtk_1_1components_1_1internal_1_1_import_cache_options.html", "structwmtk_1_1components_1_1internal_1_1_import_cache_options" ],
@@ -109,6 +112,7 @@ var annotated_dup =
         [ "utils", "namespacewmtk_1_1components_1_1utils.html", [
           [ "ComponentOptionsBase", "structwmtk_1_1components_1_1utils_1_1_component_options_base.html", "structwmtk_1_1components_1_1utils_1_1_component_options_base" ]
         ] ],
+        [ "EdgeInsertionMeshes", "structwmtk_1_1components_1_1_edge_insertion_meshes.html", "structwmtk_1_1components_1_1_edge_insertion_meshes" ],
         [ "TagAttribute", "classwmtk_1_1components_1_1_tag_attribute.html", "classwmtk_1_1components_1_1_tag_attribute" ],
         [ "Marching", "classwmtk_1_1components_1_1_marching.html", "classwmtk_1_1components_1_1_marching" ],
         [ "MarchingOptions", "structwmtk_1_1components_1_1_marching_options.html", "structwmtk_1_1components_1_1_marching_options" ],
@@ -124,6 +128,8 @@ var annotated_dup =
         [ "cmp_s", "structwmtk_1_1components_1_1cmp__s.html", "structwmtk_1_1components_1_1cmp__s" ],
         [ "cmp_l", "structwmtk_1_1components_1_1cmp__l.html", "structwmtk_1_1components_1_1cmp__l" ],
         [ "ToPtsOptions", "classwmtk_1_1components_1_1_to_pts_options.html", "classwmtk_1_1components_1_1_to_pts_options" ],
+        [ "EnvelopeOptions", "structwmtk_1_1components_1_1_envelope_options.html", "structwmtk_1_1components_1_1_envelope_options" ],
+        [ "WildMeshingOptions", "structwmtk_1_1components_1_1_wild_meshing_options.html", "structwmtk_1_1components_1_1_wild_meshing_options" ],
         [ "WildmeshingOptionsAttributes", "structwmtk_1_1components_1_1_wildmeshing_options_attributes.html", "structwmtk_1_1components_1_1_wildmeshing_options_attributes" ],
         [ "WildmeshingOptionsEnvelopeMesh", "structwmtk_1_1components_1_1_wildmeshing_options_envelope_mesh.html", "structwmtk_1_1components_1_1_wildmeshing_options_envelope_mesh" ],
         [ "WildmeshingOptionsEnvelope", "structwmtk_1_1components_1_1_wildmeshing_options_envelope.html", "structwmtk_1_1components_1_1_wildmeshing_options_envelope" ],
@@ -152,6 +158,8 @@ var annotated_dup =
         [ "CollapseSoftEnergyBeforeInvariant", "classwmtk_1_1invariants_1_1_collapse_soft_energy_before_invariant.html", "classwmtk_1_1invariants_1_1_collapse_soft_energy_before_invariant" ],
         [ "EdgeValenceInvariant", "classwmtk_1_1invariants_1_1_edge_valence_invariant.html", "classwmtk_1_1invariants_1_1_edge_valence_invariant" ],
         [ "EnvelopeInvariant", "classwmtk_1_1invariants_1_1_envelope_invariant.html", "classwmtk_1_1invariants_1_1_envelope_invariant" ],
+        [ "FrozenVertexInvariant", "classwmtk_1_1invariants_1_1_frozen_vertex_invariant.html", "classwmtk_1_1invariants_1_1_frozen_vertex_invariant" ],
+        [ "FrozenOppVertexInvariant", "classwmtk_1_1invariants_1_1_frozen_opp_vertex_invariant.html", "classwmtk_1_1invariants_1_1_frozen_opp_vertex_invariant" ],
         [ "FunctionInvariant", "classwmtk_1_1invariants_1_1_function_invariant.html", "classwmtk_1_1invariants_1_1_function_invariant" ],
         [ "FusionEdgeInvariant", "classwmtk_1_1invariants_1_1_fusion_edge_invariant.html", "classwmtk_1_1invariants_1_1_fusion_edge_invariant" ],
         [ "InteriorEdgeInvariant", "classwmtk_1_1invariants_1_1_interior_edge_invariant.html", "classwmtk_1_1invariants_1_1_interior_edge_invariant" ],

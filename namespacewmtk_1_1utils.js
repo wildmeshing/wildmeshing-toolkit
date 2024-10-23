@@ -37,6 +37,7 @@ var namespacewmtk_1_1utils =
     [ "primitive_range", "namespacewmtk_1_1utils.html#aad86a1efd04407e94f9bd5f92b3ed5d0", null ],
     [ "primitive_range", "namespacewmtk_1_1utils.html#a8dab5bd8df4c7c658413914f37210244", null ],
     [ "rational_to_interval", "namespacewmtk_1_1utils.html#a7249bf35b7f8ef39d74da6ad336da021", null ],
+    [ "segment_intersection_rational", "namespacewmtk_1_1utils.html#ae13725c4c4ed9995dbf10ac0c1639628", null ],
     [ "set_random_seed", "namespacewmtk_1_1utils.html#a64740d03539293929ff81b84cd082485", null ],
     [ "triangle_3d_area", "namespacewmtk_1_1utils.html#a8f0aa51f02854bf0163c6baa0301f576", null ],
     [ "triangle_signed_2d_area", "namespacewmtk_1_1utils.html#ac944349a1bb3d0459995baad96b9c1d4", null ],
@@ -51,6 +52,7 @@ var namespacewmtk_1_1utils =
     [ "wmtk_orient1d", "namespacewmtk_1_1utils.html#a1c5198487b4421eb17ef97f5b8d410a3", null ],
     [ "wmtk_orient2d", "namespacewmtk_1_1utils.html#a262780be4273f42d2840b444247dfb54", null ],
     [ "wmtk_orient2d", "namespacewmtk_1_1utils.html#a6310fa1d5aca1db566ef5eb4508ec956", null ],
+    [ "wmtk_orient2d", "namespacewmtk_1_1utils.html#ac737a587a5be3c4be65dce46abd4ad2c", null ],
     [ "wmtk_orient3d", "namespacewmtk_1_1utils.html#ae9909d772a51855effa0ab75c701df5c", null ],
     [ "wmtk_orient3d", "namespacewmtk_1_1utils.html#a30615d6bfe6a3e2098e965dc7a29d527", null ],
     [ "wmtk_orient3d", "namespacewmtk_1_1utils.html#a34133dc338089a5141f8e84feecb81ce", null ]

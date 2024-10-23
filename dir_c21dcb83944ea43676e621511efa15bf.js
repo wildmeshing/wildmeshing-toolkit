@@ -4,6 +4,7 @@ var dir_c21dcb83944ea43676e621511efa15bf =
     [ "test_component_adaptive_tessellation.cpp", "test__component__adaptive__tessellation_8cpp.html", null ],
     [ "test_component_CDT.cpp", "test__component___c_d_t_8cpp.html", null ],
     [ "test_component_delaunay.cpp", "test__component__delaunay_8cpp.html", "test__component__delaunay_8cpp" ],
+    [ "test_component_edge_insertion.cpp", "test__component__edge__insertion_8cpp.html", null ],
     [ "test_component_export_cache.cpp", "test__component__export__cache_8cpp.html", "test__component__export__cache_8cpp" ],
     [ "test_component_fusion.cpp", "test__component__fusion_8cpp.html", "test__component__fusion_8cpp" ],
     [ "test_component_get_all_meshes.cpp", "test__component__get__all__meshes_8cpp.html", null ],
