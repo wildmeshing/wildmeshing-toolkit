@@ -1,0 +1,26 @@
+[
+    {
+        "pointer": "/",
+        "type": "object",
+        "required": [
+            "edges",
+            "triangles",
+            "output"
+        ]
+    },
+    {
+        "pointer": "/edges",
+        "type": "string",
+        "doc": "edges (edgemesh) to insert"
+    },
+    {
+        "pointer": "/triangles",
+        "type": "string",
+        "doc": "trimesh as background"
+    },
+    {
+        "pointer": "/output",
+        "type": "string",
+        "doc": "output mesh"
+    }
+]

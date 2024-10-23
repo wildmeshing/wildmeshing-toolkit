@@ -1,12 +1,14 @@
 #pragma once
 
-#include <nlohmann/json.hpp>
-#include <wmtk/io/Cache.hpp>
+#include <string>
+#include <wmtk/Mesh.hpp>
 
-#include <wmtk/components/utils/Paths.hpp>
+#include "internal/WildmeshingOptions.hpp"
+
 
 namespace wmtk::components {
 
-void wildmeshing(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache);
+std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing(
+    const WildMeshingOptions& option);
 
 } // namespace wmtk::components
