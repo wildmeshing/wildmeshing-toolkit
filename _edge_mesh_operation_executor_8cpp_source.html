@@ -364,36 +364,37 @@ $(document).ready(function(){initNavTree('_edge_mesh_operation_executor_8cpp_sou
 <div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160; </div>
 <div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;    <span class="comment">// update ve</span></div>
 <div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;    {</div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;        ve_accessor.index_access().scalar_attribute(m_spine_vids[1]) = m_neighbor_eids[1];</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;    }</div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160; </div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;    update_cell_hash();</div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;    delete_simplices();</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160; </div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;    <span class="keyword">const</span> int64_t ret_eid = m_neighbor_eids[0] == -1 ? m_neighbor_eids[1] : m_neighbor_eids[0];</div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;    <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> ret_tuple = m_mesh.edge_tuple_from_id(ret_eid);</div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160; </div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;    <span class="keywordflow">if</span> (m_mesh.id_vertex(ret_tuple) != m_spine_vids[1]) {</div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;        ret_tuple = m_mesh.switch_vertex(ret_tuple);</div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;    }</div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;    <span class="keywordflow">return</span> ret_tuple;</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;}</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160; </div>
-<div class="line"><a name="l00265"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6998653a06ffa3f2a1c147adaaa378c4">  265</a></span>&#160;std::vector&lt;int64_t&gt; <a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6998653a06ffa3f2a1c147adaaa378c4">EdgeMesh::EdgeMeshOperationExecutor::request_simplex_indices</a>(</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> type,</div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;    int64_t count)</div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;{</div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;    m_mesh.guarantee_more_attributes(type, count);</div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;    <span class="keywordflow">return</span> m_mesh.request_simplex_indices(type, count);</div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;}</div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160; </div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;} <span class="comment">// namespace wmtk</span></div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;        ve_accessor.index_access().scalar_attribute(m_spine_vids[1]) =</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;            (m_neighbor_eids[1] != -1) ? m_neighbor_eids[1] : m_neighbor_eids[0];</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;    }</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160; </div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;    update_cell_hash();</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;    delete_simplices();</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160; </div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;    <span class="keyword">const</span> int64_t ret_eid = m_neighbor_eids[0] == -1 ? m_neighbor_eids[1] : m_neighbor_eids[0];</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;    <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> ret_tuple = m_mesh.edge_tuple_from_id(ret_eid);</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160; </div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;    <span class="keywordflow">if</span> (m_mesh.id_vertex(ret_tuple) != m_spine_vids[1]) {</div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;        ret_tuple = m_mesh.switch_vertex(ret_tuple);</div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;    }</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;    <span class="keywordflow">return</span> ret_tuple;</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;}</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160; </div>
+<div class="line"><a name="l00266"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6998653a06ffa3f2a1c147adaaa378c4">  266</a></span>&#160;std::vector&lt;int64_t&gt; <a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6998653a06ffa3f2a1c147adaaa378c4">EdgeMesh::EdgeMeshOperationExecutor::request_simplex_indices</a>(</div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> type,</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;    int64_t count)</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;{</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;    m_mesh.guarantee_more_attributes(type, count);</div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;    <span class="keywordflow">return</span> m_mesh.request_simplex_indices(type, count);</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;}</div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160; </div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;} <span class="comment">// namespace wmtk</span></div>
 <div class="ttc" id="a_edge_mesh_operation_executor_8hpp_html"><div class="ttname"><a href="_edge_mesh_operation_executor_8hpp.html">EdgeMeshOperationExecutor.hpp</a></div></div>
 <div class="ttc" id="a_split_alternate_facet_data_8hpp_html"><div class="ttname"><a href="_split_alternate_facet_data_8hpp.html">SplitAlternateFacetData.hpp</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_a1205a3f179088ad8391dc241f6a579f4"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a1205a3f179088ad8391dc241f6a579f4">wmtk::EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh</a></div><div class="ttdeci">Tuple collapse_edge_single_mesh()</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00202">EdgeMeshOperationExecutor.cpp:202</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_a397c28d8884e2ad28f26b66271a369c8"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a397c28d8884e2ad28f26b66271a369c8">wmtk::EdgeMesh::EdgeMeshOperationExecutor::update_hash_in_map</a></div><div class="ttdeci">void update_hash_in_map(EdgeMesh &amp;child_mesh)</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00189">EdgeMeshOperationExecutor.cpp:189</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_a4d67a0864de3401b710f5f98f950707f"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a4d67a0864de3401b710f5f98f950707f">wmtk::EdgeMesh::EdgeMeshOperationExecutor::EdgeMeshOperationExecutor</a></div><div class="ttdeci">EdgeMeshOperationExecutor(EdgeMesh &amp;m, const Tuple &amp;operating_tuple)</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00007">EdgeMeshOperationExecutor.cpp:7</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_a6998653a06ffa3f2a1c147adaaa378c4"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6998653a06ffa3f2a1c147adaaa378c4">wmtk::EdgeMesh::EdgeMeshOperationExecutor::request_simplex_indices</a></div><div class="ttdeci">std::vector&lt; int64_t &gt; request_simplex_indices(const PrimitiveType type, int64_t count)</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00265">EdgeMeshOperationExecutor.cpp:265</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_a6998653a06ffa3f2a1c147adaaa378c4"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6998653a06ffa3f2a1c147adaaa378c4">wmtk::EdgeMesh::EdgeMeshOperationExecutor::request_simplex_indices</a></div><div class="ttdeci">std::vector&lt; int64_t &gt; request_simplex_indices(const PrimitiveType type, int64_t count)</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00266">EdgeMeshOperationExecutor.cpp:266</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_a6ad543bba903587765029481d2e22551"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6ad543bba903587765029481d2e22551">wmtk::EdgeMesh::EdgeMeshOperationExecutor::update_cell_hash</a></div><div class="ttdeci">void update_cell_hash()</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00046">EdgeMeshOperationExecutor.cpp:46</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_a6bdc1a1b0f87a7d34095177947029f5c"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6bdc1a1b0f87a7d34095177947029f5c">wmtk::EdgeMesh::EdgeMeshOperationExecutor::collapse_edge</a></div><div class="ttdeci">void collapse_edge()</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00194">EdgeMeshOperationExecutor.cpp:194</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_a8257fd21c81468784498229162810af3"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a8257fd21c81468784498229162810af3">wmtk::EdgeMesh::EdgeMeshOperationExecutor::get_split_simplices_to_delete</a></div><div class="ttdeci">static const std::array&lt; std::vector&lt; int64_t &gt;, 2 &gt; get_split_simplices_to_delete(const Tuple &amp;tuple, const EdgeMesh &amp;m)</div><div class="ttdoc">gather all simplices that are deleted in a split</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00049">EdgeMeshOperationExecutor.cpp:49</a></div></div>
