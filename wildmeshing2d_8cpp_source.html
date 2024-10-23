@@ -1329,17 +1329,53 @@ $(document).ready(function(){initNavTree('wildmeshing2d_8cpp_source.html',''); i
 <div class="line"><a name="l01249"></a><span class="lineno"> 1249</span>&#160;        <span class="keywordflow">if</span> (max_energy &lt;= target_max_amips &amp;&amp; is_double) <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l01250"></a><span class="lineno"> 1250</span>&#160;    }</div>
 <div class="line"><a name="l01251"></a><span class="lineno"> 1251</span>&#160; </div>
-<div class="line"><a name="l01252"></a><span class="lineno"> 1252</span>&#160;    std::vector&lt;std::pair&lt;std::shared_ptr&lt;Mesh&gt;, std::string&gt;&gt; all_meshes;</div>
-<div class="line"><a name="l01253"></a><span class="lineno"> 1253</span>&#160;    all_meshes.push_back(std::make_pair(mesh, <span class="stringliteral">&quot;main&quot;</span>));</div>
-<div class="line"><a name="l01254"></a><span class="lineno"> 1254</span>&#160; </div>
-<div class="line"><a name="l01255"></a><span class="lineno"> 1255</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; p : multimesh_meshes) {</div>
-<div class="line"><a name="l01256"></a><span class="lineno"> 1256</span>&#160;        all_meshes.push_back(p);</div>
-<div class="line"><a name="l01257"></a><span class="lineno"> 1257</span>&#160;    }</div>
-<div class="line"><a name="l01258"></a><span class="lineno"> 1258</span>&#160; </div>
-<div class="line"><a name="l01259"></a><span class="lineno"> 1259</span>&#160;    <span class="keywordflow">return</span> all_meshes;</div>
-<div class="line"><a name="l01260"></a><span class="lineno"> 1260</span>&#160;}</div>
-<div class="line"><a name="l01261"></a><span class="lineno"> 1261</span>&#160; </div>
-<div class="line"><a name="l01262"></a><span class="lineno"> 1262</span>&#160;} <span class="comment">// namespace wmtk::components::internal</span></div>
+<div class="line"><a name="l01252"></a><span class="lineno"> 1252</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">logger</a>().info(<span class="stringliteral">&quot;----------------------- Postprocess Collapse -----------------------&quot;</span>);</div>
+<div class="line"><a name="l01253"></a><span class="lineno"> 1253</span>&#160; </div>
+<div class="line"><a name="l01254"></a><span class="lineno"> 1254</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">logger</a>().info(<span class="stringliteral">&quot;Executing collapse ...&quot;</span>);</div>
+<div class="line"><a name="l01255"></a><span class="lineno"> 1255</span>&#160; </div>
+<div class="line"><a name="l01256"></a><span class="lineno"> 1256</span>&#160;    <span class="keyword">auto</span> post_stats = scheduler.<a class="code" href="classwmtk_1_1_scheduler.html#a246ccf6605333ebb7c020aa8fae1e959">run_operation_on_all</a>(*collapse_then_round, visited_edge_flag_t);</div>
+<div class="line"><a name="l01257"></a><span class="lineno"> 1257</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">logger</a>().info(</div>
+<div class="line"><a name="l01258"></a><span class="lineno"> 1258</span>&#160;        <span class="stringliteral">&quot;Executed {}, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, &quot;</span></div>
+<div class="line"><a name="l01259"></a><span class="lineno"> 1259</span>&#160;        <span class="stringliteral">&quot;executing: {}&quot;</span>,</div>
+<div class="line"><a name="l01260"></a><span class="lineno"> 1260</span>&#160;        <span class="stringliteral">&quot;preprocessing collapse&quot;</span>,</div>
+<div class="line"><a name="l01261"></a><span class="lineno"> 1261</span>&#160;        post_stats.number_of_performed_operations(),</div>
+<div class="line"><a name="l01262"></a><span class="lineno"> 1262</span>&#160;        post_stats.number_of_successful_operations(),</div>
+<div class="line"><a name="l01263"></a><span class="lineno"> 1263</span>&#160;        post_stats.number_of_failed_operations(),</div>
+<div class="line"><a name="l01264"></a><span class="lineno"> 1264</span>&#160;        post_stats.collecting_time,</div>
+<div class="line"><a name="l01265"></a><span class="lineno"> 1265</span>&#160;        post_stats.sorting_time,</div>
+<div class="line"><a name="l01266"></a><span class="lineno"> 1266</span>&#160;        post_stats.executing_time);</div>
+<div class="line"><a name="l01267"></a><span class="lineno"> 1267</span>&#160; </div>
+<div class="line"><a name="l01268"></a><span class="lineno"> 1268</span>&#160;    <span class="comment">// compute max energy</span></div>
+<div class="line"><a name="l01269"></a><span class="lineno"> 1269</span>&#160;    max_energy = std::numeric_limits&lt;double&gt;::lowest();</div>
+<div class="line"><a name="l01270"></a><span class="lineno"> 1270</span>&#160;    min_energy = std::numeric_limits&lt;double&gt;::max();</div>
+<div class="line"><a name="l01271"></a><span class="lineno"> 1271</span>&#160;    avg_energy = 0;</div>
+<div class="line"><a name="l01272"></a><span class="lineno"> 1272</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; t : mesh-&gt;get_all(mesh-&gt;top_simplex_type())) {</div>
+<div class="line"><a name="l01273"></a><span class="lineno"> 1273</span>&#160;        <span class="comment">// double e = amips-&gt;get_value(simplex::Simplex(mesh-&gt;top_simplex_type(), t));</span></div>
+<div class="line"><a name="l01274"></a><span class="lineno"> 1274</span>&#160;        <span class="keywordtype">double</span> e = amips_accessor.scalar_attribute(t);</div>
+<div class="line"><a name="l01275"></a><span class="lineno"> 1275</span>&#160;        max_energy = std::max(max_energy, e);</div>
+<div class="line"><a name="l01276"></a><span class="lineno"> 1276</span>&#160;        min_energy = std::min(min_energy, e);</div>
+<div class="line"><a name="l01277"></a><span class="lineno"> 1277</span>&#160;        avg_energy += e;</div>
+<div class="line"><a name="l01278"></a><span class="lineno"> 1278</span>&#160;    }</div>
+<div class="line"><a name="l01279"></a><span class="lineno"> 1279</span>&#160; </div>
+<div class="line"><a name="l01280"></a><span class="lineno"> 1280</span>&#160;    avg_energy = avg_energy / mesh-&gt;get_all(mesh-&gt;top_simplex_type()).size();</div>
+<div class="line"><a name="l01281"></a><span class="lineno"> 1281</span>&#160; </div>
+<div class="line"><a name="l01282"></a><span class="lineno"> 1282</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">logger</a>().info(</div>
+<div class="line"><a name="l01283"></a><span class="lineno"> 1283</span>&#160;        <span class="stringliteral">&quot;Max AMIPS Energy: {}, Min AMIPS Energy: {}, Avg AMIPS Energy: {}&quot;</span>,</div>
+<div class="line"><a name="l01284"></a><span class="lineno"> 1284</span>&#160;        max_energy,</div>
+<div class="line"><a name="l01285"></a><span class="lineno"> 1285</span>&#160;        min_energy,</div>
+<div class="line"><a name="l01286"></a><span class="lineno"> 1286</span>&#160;        avg_energy);</div>
+<div class="line"><a name="l01287"></a><span class="lineno"> 1287</span>&#160; </div>
+<div class="line"><a name="l01288"></a><span class="lineno"> 1288</span>&#160;    std::vector&lt;std::pair&lt;std::shared_ptr&lt;Mesh&gt;, std::string&gt;&gt; all_meshes;</div>
+<div class="line"><a name="l01289"></a><span class="lineno"> 1289</span>&#160;    all_meshes.push_back(std::make_pair(mesh, <span class="stringliteral">&quot;main&quot;</span>));</div>
+<div class="line"><a name="l01290"></a><span class="lineno"> 1290</span>&#160; </div>
+<div class="line"><a name="l01291"></a><span class="lineno"> 1291</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; p : multimesh_meshes) {</div>
+<div class="line"><a name="l01292"></a><span class="lineno"> 1292</span>&#160;        all_meshes.push_back(p);</div>
+<div class="line"><a name="l01293"></a><span class="lineno"> 1293</span>&#160;    }</div>
+<div class="line"><a name="l01294"></a><span class="lineno"> 1294</span>&#160; </div>
+<div class="line"><a name="l01295"></a><span class="lineno"> 1295</span>&#160;    <span class="keywordflow">return</span> all_meshes;</div>
+<div class="line"><a name="l01296"></a><span class="lineno"> 1296</span>&#160;}</div>
+<div class="line"><a name="l01297"></a><span class="lineno"> 1297</span>&#160; </div>
+<div class="line"><a name="l01298"></a><span class="lineno"> 1298</span>&#160;} <span class="comment">// namespace wmtk::components::internal</span></div>
 <div class="ttc" id="a_a_m_i_p_s_optimization_smoothing_8hpp_html"><div class="ttname"><a href="_a_m_i_p_s_optimization_smoothing_8hpp.html">AMIPSOptimizationSmoothing.hpp</a></div></div>
 <div class="ttc" id="a_and_operation_sequence_8hpp_html"><div class="ttname"><a href="_and_operation_sequence_8hpp.html">AndOperationSequence.hpp</a></div></div>
 <div class="ttc" id="a_attribute_transfer_strategy_8hpp_html"><div class="ttname"><a href="_attribute_transfer_strategy_8hpp.html">AttributeTransferStrategy.hpp</a></div></div>
@@ -1392,7 +1428,7 @@ $(document).ready(function(){initNavTree('wildmeshing2d_8cpp_source.html',''); i
 <div class="ttc" id="aclasswmtk_1_1_rational_html"><div class="ttname"><a href="classwmtk_1_1_rational.html">wmtk::Rational</a></div><div class="ttdef"><b>Definition:</b> <a href="_rational_8hpp_source.html#l00012">Rational.hpp:13</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_scheduler_html"><div class="ttname"><a href="classwmtk_1_1_scheduler.html">wmtk::Scheduler</a></div><div class="ttdef"><b>Definition:</b> <a href="_scheduler_8hpp_source.html#l00088">Scheduler.hpp:89</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_scheduler_html_a246ccf6605333ebb7c020aa8fae1e959"><div class="ttname"><a href="classwmtk_1_1_scheduler.html#a246ccf6605333ebb7c020aa8fae1e959">wmtk::Scheduler::run_operation_on_all</a></div><div class="ttdeci">SchedulerStats run_operation_on_all(operations::Operation &amp;op)</div><div class="ttdef"><b>Definition:</b> <a href="_scheduler_8cpp_source.html#l00037">Scheduler.cpp:37</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_scheduler_html_a66fbec5a3bc1c0009a19dd8d4cef3d0e"><div class="ttname"><a href="classwmtk_1_1_scheduler.html#a66fbec5a3bc1c0009a19dd8d4cef3d0e">wmtk::Scheduler::set_update_frequency</a></div><div class="ttdeci">void set_update_frequency(std::optional&lt; size_t &gt; &amp;&amp;freq={})</div><div class="ttdef"><b>Definition:</b> <a href="_scheduler_8cpp_source.html#l00393">Scheduler.cpp:393</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_scheduler_html_a66fbec5a3bc1c0009a19dd8d4cef3d0e"><div class="ttname"><a href="classwmtk_1_1_scheduler.html#a66fbec5a3bc1c0009a19dd8d4cef3d0e">wmtk::Scheduler::set_update_frequency</a></div><div class="ttdeci">void set_update_frequency(std::optional&lt; size_t &gt; &amp;&amp;freq={})</div><div class="ttdef"><b>Definition:</b> <a href="_scheduler_8cpp_source.html#l00397">Scheduler.cpp:397</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_scheduler_stats_html"><div class="ttname"><a href="classwmtk_1_1_scheduler_stats.html">wmtk::SchedulerStats</a></div><div class="ttdef"><b>Definition:</b> <a href="_scheduler_8hpp_source.html#l00008">Scheduler.hpp:9</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_scheduler_stats_html_a621a52d1a1a294fa9915e12df4604dc8"><div class="ttname"><a href="classwmtk_1_1_scheduler_stats.html#a621a52d1a1a294fa9915e12df4604dc8">wmtk::SchedulerStats::number_of_failed_operations</a></div><div class="ttdeci">int64_t number_of_failed_operations() const</div><div class="ttdoc">Returns the number of failed operations performed by the scheduler.</div><div class="ttdef"><b>Definition:</b> <a href="_scheduler_8hpp_source.html#l00023">Scheduler.hpp:23</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_scheduler_stats_html_a6eb636bacf541d1f62a86bfffa3b4b0e"><div class="ttname"><a href="classwmtk_1_1_scheduler_stats.html#a6eb636bacf541d1f62a86bfffa3b4b0e">wmtk::SchedulerStats::number_of_performed_operations</a></div><div class="ttdeci">int64_t number_of_performed_operations() const</div><div class="ttdoc">Returns the number of performed operations performed by the scheduler.</div><div class="ttdef"><b>Definition:</b> <a href="_scheduler_8hpp_source.html#l00030">Scheduler.hpp:30</a></div></div>
