@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
 
     const fs::path input_file = resolve_paths(json_input_file, {j["input_path"], j["input"]});
 
-    std::shared_ptr<Mesh> mesh_in = wmtk::components::input::input(input_file);
+    std::shared_ptr<Mesh> mesh_in = wmtk::components::input::input(input_file, true);
 
     attribute::MeshAttributeHandle pos_handle =
         mesh_in->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);

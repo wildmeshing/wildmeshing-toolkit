@@ -16,12 +16,13 @@ class InputOptions;
  * It can read .msh and .hdf5 file format.
  *
  * @param file The mesh file.
- * @param ignore_z Ignore the z-component of points and generate a mesh with 2D positions.
+ * @param ignore_z_if_zero Ignore the z-component of points if it is zero and generate a mesh with
+ * 2D positions.
  * @param tetrahedron_attributes Read tetrahedron attributes from an .msh file.
  */
 std::shared_ptr<Mesh> input(
     const std::filesystem::path& file,
-    const bool ignore_z = false,
+    const bool ignore_z_if_zero = false,
     const std::vector<std::string>& tetrahedron_attributes = {});
 
 NamedMultiMesh input(const InputOptions& options);
