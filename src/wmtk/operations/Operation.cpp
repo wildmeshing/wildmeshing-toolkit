@@ -441,6 +441,29 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                 operation_log["is_skipped"] = true;
                             }
                         }
+                        // DEBUG:
+                        if (false) {
+                            auto [F_all, V_all, F_flag] =
+                                static_cast<TriMesh&>(mesh()).get_FV_Fflag();
+                            igl::writeOBJ(
+                                OperationLogPath + "/VF_all_after_operation_" +
+                                    std::to_string(succ_operations_count) + ".obj",
+                                V_all,
+                                F_all);
+                            // write flag to a text file
+                            std::ofstream flag_file(
+                                OperationLogPath + "/F_flag_after_operation_" +
+                                std::to_string(succ_operations_count) + ".txt");
+                            if (flag_file.is_open()) {
+                                for (int i = 0; i < F_flag.size(); ++i) {
+                                    flag_file << F_flag[i] << " ";
+                                }
+                                flag_file.close();
+                            } else {
+                                std::cerr << "unable to open file for writing\n";
+                            }
+                        }
+
                     } else if (mesh().top_simplex_type() == PrimitiveType::Tetrahedron) {
                         // TODO: implement this for tetrahedron mesh
                         auto [T_after, V_after, id_map_after, v_id_map_after] =
@@ -526,6 +549,7 @@ bool Operation::before(const simplex::Simplex& simplex) const
             }
         }
     }
+
 
     return true;
 }

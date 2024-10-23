@@ -73,6 +73,9 @@ public:
     // get F, V from mesh
     std::tuple<Eigen::MatrixXi, Eigen::MatrixXd> get_FV();
 
+    // DEBUG: for debug code use only
+    std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int>> get_FV_Fflag();
+
     std::vector<std::vector<TypedAttributeHandle<int64_t>>> connectivity_attributes()
         const override;
 

@@ -27,6 +27,8 @@ using json = nlohmann::json;
 #include "render_utils.hpp"
 #include "track_operations.hpp"
 
+// #define DEBUG_CURVES
+
 void back_track_map(
     path dirPath,
     std::vector<query_point>& query_points,
@@ -347,7 +349,12 @@ void back_track_lines(path dirPath, query_curve& curve, bool do_forward = false)
         } else {
             // std::cout << "This Operations is not implemented" << std::endl;
         }
-
+#ifdef DEBUG_CURVES
+        // save the curve
+        std::string curve_file = "./curve_debug/curve_" + std::to_string(file_id) + ".json";
+        std::vector<query_curve> curves{curve};
+        save_query_curves(curves, curve_file);
+#endif
         file.close();
     }
 }
@@ -829,6 +836,7 @@ void forward_track_line_app(
 
     save_query_curves(curves, "curves.in");
 
+
     // for (auto& curve : curves) {
     //     back_track_lines(operation_logs_dir, curve, true);
     // }
@@ -905,7 +913,8 @@ void check_iso_lines(
         igl::opengl::glfw::Viewer viewer;
         viewer.data().set_mesh(V_out, F_out);
         viewer.data().point_size /= 3;
-        for (const auto& curve : curves_out) {
+        for (int i = 0; i < curves_out.size(); i++) {
+            const auto& curve = curves_out[i];
             for (const auto& seg : curve.segments) {
                 Eigen::MatrixXd pts(2, 3);
                 for (int i = 0; i < 2; i++) {
@@ -1044,6 +1053,420 @@ void check_iso_lines(
     std::cout << "count curve_out intersection" << std::endl;
     count_curve_intersection(curves_out);
 }
+
+#ifdef DEBUG_CURVES
+void check_iso_lines_step_by_step(
+    const Eigen::MatrixXd& V_in,
+    const Eigen::MatrixXi& F_in,
+    const Eigen::MatrixXd& V_out,
+    const Eigen::MatrixXi& F_out,
+    const path& operation_logs_dir)
+{
+    std::vector<query_curve> curves_in = load_query_curves("curves.in");
+    namespace fs = std::filesystem;
+    int file_id = -1;
+    int step_size = 1;
+    int view_mode = 0;
+    auto key_down = [&](igl::opengl::glfw::Viewer& viewer, unsigned char key, int modifier) {
+        if (key == '1') {
+            file_id += step_size;
+            std::cout << "file_id: " << file_id << std::endl;
+        }
+
+        if (key == '0') {
+            file_id -= step_size;
+            std::cout << "file_id: " << file_id << std::endl;
+        }
+
+        if (key == '=') {
+            step_size *= 10;
+            std::cout << "step_size: " << step_size << std::endl;
+        }
+
+        if (key == '-') {
+            if (step_size > 1) step_size /= 10;
+            std::cout << "step_size: " << step_size << std::endl;
+        }
+
+        if (key == ' ') {
+            view_mode = 0;
+        }
+
+        if (key == '8') {
+            view_mode = 1;
+        }
+
+        if (key == '9') {
+            view_mode = 2;
+        }
+
+        if (key == '6') {
+            view_mode = 3;
+        }
+
+        if (key == '7') {
+            view_mode = 4;
+        }
+
+        if (file_id >= 0) {
+            if (view_mode == 0) {
+                // read obj from file
+                Eigen::MatrixXd V_cur, Vt_cur, Vn_cur;
+                Eigen::MatrixXi F_cur, Ft_cur, Fn_cur;
+                fs::path MeshfilePath = operation_logs_dir / ("VF_all_after_operation_" +
+                                                              std::to_string(file_id) + ".obj");
+                igl::readOBJ(MeshfilePath.string(), V_cur, Vt_cur, Vn_cur, F_cur, Ft_cur, Fn_cur);
+
+                // read F_flag_after_operation_*.txt
+                std::vector<int> F_flag;
+                fs::path F_flag_path = operation_logs_dir / ("F_flag_after_operation_" +
+                                                             std::to_string(file_id) + ".txt");
+                std::ifstream file(F_flag_path.string());
+                if (file.is_open()) {
+                    int flag;
+                    while (file >> flag) {
+                        F_flag.push_back(flag);
+                    }
+                    file.close();
+                }
+
+                // read curve from file
+                std::vector<query_curve> curves_cur =
+                    load_query_curves("curve_debug/curve_" + std::to_string(file_id) + ".json");
+
+                // build new F, clean up the ones in F_cur that F_flag is 0
+                Eigen::MatrixXi F_new;
+                int count = 0;
+                for (int i = 0; i < F_cur.rows(); i++) {
+                    if (F_flag[i] == 1) {
+                        F_new.conservativeResize(count + 1, 3);
+                        F_new.row(count) = F_cur.row(i);
+                        count++;
+                    }
+                }
+
+                viewer.data().clear();
+                viewer.data().set_mesh(V_cur, F_new);
+                viewer.core().align_camera_center(V_in, F_in);
+                // viewer.data().point_size /= 3;
+
+                for (const auto& curve : curves_cur) {
+                    for (const auto& seg : curve.segments) {
+                        Eigen::MatrixXd pts(2, 3);
+                        for (int i = 0; i < 2; i++) {
+                            Eigen::Vector3d p(0, 0, 0);
+                            for (int j = 0; j < 3; j++) {
+                                p += V_cur.row(seg.fv_ids[j]) * seg.bcs[i](j);
+                            }
+                            pts.row(i) = p;
+                        }
+                        viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
+                        viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
+                        viewer.data().add_edges(
+                            pts.row(0),
+                            pts.row(1),
+                            Eigen::RowVector3d(1, 0, 0));
+                    }
+                }
+            } else {
+                fs::path filePath =
+                    operation_logs_dir / ("operation_log_" + std::to_string(file_id) + ".json");
+                std::ifstream file(filePath);
+                json operation_log;
+                file >> operation_log;
+
+                std::cout << "Trace Operations number: " << file_id << std::endl;
+                std::string operation_name;
+                operation_name = operation_log["operation_name"];
+
+                Eigen::MatrixXi F_after, F_before;
+                Eigen::MatrixXd V_after, V_before;
+                std::vector<int64_t> id_map_after, id_map_before;
+                std::vector<int64_t> v_id_map_after, v_id_map_before;
+
+                if (operation_name == "TriEdgeSwap" || operation_name == "AttributesUpdate") {
+                    std::cout << "This Operations is" << operation_name << std::endl;
+                    bool is_skipped;
+
+                    parse_non_collapse_file(
+                        operation_log,
+                        is_skipped,
+                        V_before,
+                        F_before,
+                        id_map_before,
+                        v_id_map_before,
+                        V_after,
+                        F_after,
+                        id_map_after,
+                        v_id_map_after);
+                } else if (operation_name == "EdgeCollapse") {
+                    std::cout << "This Operations is EdgeCollapse" << std::endl;
+                    Eigen::MatrixXd UV_joint;
+                    std::vector<int64_t> v_id_map_joint;
+
+                    parse_edge_collapse_file(
+                        operation_log,
+                        UV_joint,
+                        F_before,
+                        F_after,
+                        v_id_map_joint,
+                        id_map_before,
+                        id_map_after);
+
+                    V_before = UV_joint;
+                    V_after = UV_joint;
+                    v_id_map_before = v_id_map_joint;
+                    v_id_map_after = v_id_map_joint;
+                }
+
+                viewer.data().clear();
+                if (view_mode == 1) {
+                    viewer.data().set_mesh(V_before, F_before);
+                    viewer.core().align_camera_center(V_before, F_before);
+                    // read curve and draw
+                    if (file_id > 0) {
+                        std::vector<query_curve> curves_cur = load_query_curves(
+                            "curve_debug/curve_" + std::to_string(file_id - 1) + ".json");
+                        for (const auto& curve : curves_cur) {
+                            for (const auto& seg : curve.segments) {
+                                if (std::find(
+                                        id_map_before.begin(),
+                                        id_map_before.end(),
+                                        seg.f_id) == id_map_before.end()) {
+                                    continue;
+                                }
+                                Eigen::MatrixXd pts(2, 2);
+                                for (int i = 0; i < 2; i++) {
+                                    Eigen::Vector2d p(0, 0);
+                                    for (int j = 0; j < 3; j++) {
+                                        if (std::find(
+                                                v_id_map_before.begin(),
+                                                v_id_map_before.end(),
+                                                seg.fv_ids[j]) == v_id_map_before.end()) {
+                                            std::cout << "not found" << std::endl;
+                                        }
+                                        int id = std::distance(
+                                            v_id_map_before.begin(),
+                                            std::find(
+                                                v_id_map_before.begin(),
+                                                v_id_map_before.end(),
+                                                seg.fv_ids[j]));
+
+                                        if (seg.bcs[i](j) < 0 || seg.bcs[i](j) > 1) {
+                                            std::cout << "Error: bcs out of range" << std::endl;
+                                            std::cout << "seg.bcs[i](j): " << seg.bcs[i](j)
+                                                      << std::endl;
+                                        }
+                                        p += V_before.row(id) * seg.bcs[i](j);
+                                    }
+                                    pts.row(i) = p;
+                                }
+                                viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
+                                viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
+                                viewer.data().add_edges(
+                                    pts.row(0),
+                                    pts.row(1),
+                                    Eigen::RowVector3d(1, 0, 0));
+                            }
+                        }
+                    }
+                } else if (view_mode == 2) {
+                    viewer.data().set_mesh(V_after, F_after);
+                    viewer.core().align_camera_center(V_before, F_before);
+                    // read curve and draw
+                    std::vector<query_curve> curves_cur =
+                        load_query_curves("curve_debug/curve_" + std::to_string(file_id) + ".json");
+                    for (const auto& curve : curves_cur) {
+                        for (const auto& seg : curve.segments) {
+                            if (std::find(id_map_after.begin(), id_map_after.end(), seg.f_id) ==
+                                id_map_after.end()) {
+                                continue;
+                            }
+                            Eigen::MatrixXd pts(2, 2);
+                            for (int i = 0; i < 2; i++) {
+                                Eigen::Vector2d p(0, 0);
+                                for (int j = 0; j < 3; j++) {
+                                    if (std::find(
+                                            v_id_map_after.begin(),
+                                            v_id_map_after.end(),
+                                            seg.fv_ids[j]) == v_id_map_after.end()) {
+                                        std::cout << "not found" << std::endl;
+                                    }
+                                    int offset_for_collapse = 0;
+                                    if (operation_name == "EdgeCollapse") {
+                                        offset_for_collapse = 1;
+                                    }
+                                    int id = std::distance(
+                                        v_id_map_after.begin(),
+                                        std::find(
+                                            v_id_map_after.begin() + offset_for_collapse,
+                                            v_id_map_after.end(),
+                                            seg.fv_ids[j]));
+                                    if (seg.bcs[i](j) < 0 || seg.bcs[i](j) > 1) {
+                                        std::cout << "Error: bcs out of range" << std::endl;
+                                        std::cout << "seg.bcs[i](j): " << seg.bcs[i](j)
+                                                  << std::endl;
+                                    }
+
+                                    p += V_after.row(id) * seg.bcs[i](j);
+                                }
+                                pts.row(i) = p;
+                            }
+                            viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
+                            viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
+                            viewer.data().add_edges(
+                                pts.row(0),
+                                pts.row(1),
+                                Eigen::RowVector3d(1, 0, 0));
+                        }
+                    }
+                } else if (view_mode == 3) {
+                    Eigen::MatrixXd V_cur, Vt_cur, Vn_cur;
+                    Eigen::MatrixXi F_cur, Ft_cur, Fn_cur;
+                    fs::path MeshfilePath =
+                        operation_logs_dir /
+                        ("VF_all_after_operation_" + std::to_string(file_id - 1) + ".obj");
+                    igl::readOBJ(
+                        MeshfilePath.string(),
+                        V_cur,
+                        Vt_cur,
+                        Vn_cur,
+                        F_cur,
+                        Ft_cur,
+                        Fn_cur);
+                    Eigen::MatrixXi F_slice(id_map_before.size(), 3);
+                    for (int i = 0; i < id_map_before.size(); i++) {
+                        F_slice.row(i) = F_cur.row(id_map_before[i]);
+                    }
+
+                    viewer.data().set_mesh(V_cur, F_slice);
+                    viewer.core().align_camera_center(V_cur, F_slice);
+                    // read curve and draw
+                    if (file_id > 0) {
+                        std::vector<query_curve> curves_cur = load_query_curves(
+                            "curve_debug/curve_" + std::to_string(file_id - 1) + ".json");
+                        for (const auto& curve : curves_cur) {
+                            for (const auto& seg : curve.segments) {
+                                if (std::find(
+                                        id_map_before.begin(),
+                                        id_map_before.end(),
+                                        seg.f_id) == id_map_before.end()) {
+                                    continue;
+                                }
+                                Eigen::MatrixXd pts(2, 3);
+                                for (int i = 0; i < 2; i++) {
+                                    Eigen::Vector3d p(0, 0, 0);
+                                    for (int j = 0; j < 3; j++) {
+                                        p += V_cur.row(seg.fv_ids[j]) * seg.bcs[i](j);
+                                    }
+                                    pts.row(i) = p;
+                                }
+                                viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
+                                viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
+                                viewer.data().add_edges(
+                                    pts.row(0),
+                                    pts.row(1),
+                                    Eigen::RowVector3d(1, 0, 0));
+                            }
+                        }
+                    }
+                } else if (view_mode == 4) {
+                    Eigen::MatrixXd V_cur, Vt_cur, Vn_cur;
+                    Eigen::MatrixXi F_cur, Ft_cur, Fn_cur;
+                    fs::path MeshfilePath = operation_logs_dir / ("VF_all_after_operation_" +
+                                                                  std::to_string(file_id) + ".obj");
+                    igl::readOBJ(
+                        MeshfilePath.string(),
+                        V_cur,
+                        Vt_cur,
+                        Vn_cur,
+                        F_cur,
+                        Ft_cur,
+                        Fn_cur);
+                    Eigen::MatrixXi F_slice(id_map_after.size(), 3);
+                    for (int i = 0; i < id_map_after.size(); i++) {
+                        F_slice.row(i) = F_cur.row(id_map_after[i]);
+                    }
+
+                    viewer.data().set_mesh(V_cur, F_slice);
+                    viewer.core().align_camera_center(V_cur, F_slice);
+                    // read curve and draw
+                    if (file_id > 0) {
+                        std::vector<query_curve> curves_cur = load_query_curves(
+                            "curve_debug/curve_" + std::to_string(file_id) + ".json");
+                        for (const auto& curve : curves_cur) {
+                            for (const auto& seg : curve.segments) {
+                                if (std::find(id_map_after.begin(), id_map_after.end(), seg.f_id) ==
+                                    id_map_after.end()) {
+                                    continue;
+                                }
+                                Eigen::MatrixXd pts(2, 3);
+                                for (int i = 0; i < 2; i++) {
+                                    Eigen::Vector3d p(0, 0, 0);
+                                    for (int j = 0; j < 3; j++) {
+                                        p += V_cur.row(seg.fv_ids[j]) * seg.bcs[i](j);
+                                    }
+                                    pts.row(i) = p;
+                                }
+                                viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
+                                viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
+                                viewer.data().add_edges(
+                                    pts.row(0),
+                                    pts.row(1),
+                                    Eigen::RowVector3d(1, 0, 0));
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            viewer.data().clear();
+            viewer.data().set_mesh(V_in, F_in);
+            // viewer.data().point_size /= 3;
+            for (const auto curve_origin : curves_in) {
+                for (const auto& seg : curve_origin.segments) {
+                    Eigen::MatrixXd pts(2, 3);
+                    for (int i = 0; i < 2; i++) {
+                        Eigen::Vector3d p(0, 0, 0);
+                        for (int j = 0; j < 3; j++) {
+                            p += V_in.row(seg.fv_ids[j]) * seg.bcs[i](j);
+                        }
+                        pts.row(i) = p;
+                    }
+                    viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
+                    viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
+                    viewer.data().add_edges(pts.row(0), pts.row(1), Eigen::RowVector3d(1, 0, 0));
+                }
+            }
+        }
+
+        return false;
+    };
+
+    igl::opengl::glfw::Viewer viewer;
+
+    // read obj from file
+    viewer.data().set_mesh(V_in, F_in);
+    viewer.data().point_size /= 3;
+    for (const auto curve_origin : curves_in) {
+        for (const auto& seg : curve_origin.segments) {
+            Eigen::MatrixXd pts(2, 3);
+            for (int i = 0; i < 2; i++) {
+                Eigen::Vector3d p(0, 0, 0);
+                for (int j = 0; j < 3; j++) {
+                    p += V_in.row(seg.fv_ids[j]) * seg.bcs[i](j);
+                }
+                pts.row(i) = p;
+            }
+            viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
+            viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
+            viewer.data().add_edges(pts.row(0), pts.row(1), Eigen::RowVector3d(1, 0, 0));
+        }
+    }
+    viewer.callback_key_down = key_down;
+    viewer.launch();
+}
+#endif
 
 int main(int argc, char** argv)
 {
@@ -1276,17 +1699,7 @@ int main(int argc, char** argv)
             Fn_in_obj);
         forward_track_line_app(V_in, F_in, Vt_in_obj, Ft_in_obj, V_out, F_out, operation_logs_dir);
     } else if (application_name == "check_iso_lines") {
-        // Eigen::MatrixXd V_in_obj, Vt_in_obj, Vn_in_obj;
-        // Eigen::MatrixXi F_in_obj, Ft_in_obj, Fn_in_obj;
-        // std::cout << "\nloading input obj file..." << std::endl;
-        // igl::readOBJ(
-        //     input_obj_file.string(),
-        //     V_in_obj,
-        //     Vt_in_obj,
-        //     Vn_in_obj,
-        //     F_in_obj,
-        //     Ft_in_obj,
-        //     Fn_in_obj);
+        // check_iso_lines_step_by_step(V_in, F_in, V_out, F_out, operation_logs_dir);
         std::vector<query_curve> curves_in = load_query_curves("curves.in");
         std::vector<query_curve> curves_out = load_query_curves("curves.out");
         check_iso_lines(V_in, F_in, V_out, F_out, curves_in, curves_out);

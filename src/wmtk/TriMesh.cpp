@@ -577,4 +577,45 @@ std::tuple<Eigen::MatrixXi, Eigen::MatrixXd> TriMesh::get_FV()
     return std::make_tuple(F_mat, V_mat);
 }
 
+// get F,V from mesh
+std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int>> TriMesh::get_FV_Fflag()
+{
+    // consolidate();
+    const attribute::Accessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
+
+    const auto pos_handle = get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    const auto pos = create_const_accessor<double>(pos_handle);
+
+    const attribute::Accessor<int64_t> fv_accessor = create_const_accessor<int64_t>(m_fv_handle);
+
+    const int64_t nF = capacity(PrimitiveType::Triangle);
+    const int64_t nV = capacity(PrimitiveType::Vertex);
+
+    Eigen::MatrixXi F_mat(nF, 3);
+
+    Eigen::MatrixXd V_mat(nV, pos.dimension());
+
+    std::vector<int> F_flag(nF, 1);
+    for (int64_t i = 0; i < nF; ++i) {
+        if (f_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
+            F_flag[i] = 0;
+        }
+        auto fv = fv_accessor.index_access().const_vector_attribute<3>(i);
+        F_mat.row(i) << (int)fv(0), (int)fv(1), (int)fv(2);
+    }
+
+    for (int64_t i = 0; i < nV; ++i) {
+        if (pos.dimension() == 2) {
+            auto v = pos.index_access().const_vector_attribute<2>(i);
+            V_mat.row(i) << v(0), v(1);
+        } else {
+            auto v = pos.index_access().const_vector_attribute<3>(i);
+            V_mat.row(i) << v(0), v(1), v(2);
+        }
+    }
+
+    return std::make_tuple(F_mat, V_mat, F_flag);
+}
+
+
 } // namespace wmtk

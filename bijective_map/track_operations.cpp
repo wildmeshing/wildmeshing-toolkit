@@ -601,6 +601,9 @@ void handle_one_segment(
 
         // find the rest intersections
         while (current_fid != target_fid) {
+            // std::cout << "current_fid: " << current_fid << std::endl;
+            // std::cout << "target_fid: " << target_fid << std::endl;
+
             int next_edge_id = -1;
             for (int edge_id = 0; edge_id < 3; edge_id++) {
                 if (edge_id == current_edge_id) continue;
