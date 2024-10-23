@@ -223,7 +223,7 @@ void shortest_edge_collapse(Mesh& mesh_in, const ShortestEdgeCollapseOptions& op
             auto pos_collapse_strategy =
                 std::make_shared<wmtk::operations::CollapseNewAttributeStrategy<double>>(
                     pos_handle);
-            pos_collapse_strategy->set_strategy(wmtk::operations::CollapseBasicStrategy::CopyOther);
+            pos_collapse_strategy->set_strategy(wmtk::operations::CollapseBasicStrategy::Default);
             pos_collapse_strategy->set_simplex_predicate(
                 wmtk::operations::BasicSimplexPredicate::IsInterior);
             collapse->set_new_attribute_strategy(pos_handle, pos_collapse_strategy);
