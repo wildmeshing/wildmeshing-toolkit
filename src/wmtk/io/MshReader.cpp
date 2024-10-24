@@ -16,6 +16,12 @@
 #include "predicates.h"
 
 namespace wmtk::io {
+
+namespace {
+
+constexpr static int64_t AUTO_EMBEDDED_DIMENSION = -2;
+}
+
 MshReader::MshReader() = default;
 MshReader::~MshReader() = default;
 
@@ -53,11 +59,12 @@ std::shared_ptr<Mesh> MshReader::read(
 // attributes on tets in a tetmesh
 std::shared_ptr<Mesh> MshReader::read(
     const std::filesystem::path& filename,
-    const int64_t embedded_dimension,
+    const std::optional<int64_t>& embedded_dimension,
     const std::vector<std::vector<std::string>>& extra_attributes)
 {
     m_spec = mshio::load_msh(filename.string());
-    m_embedded_dimension = embedded_dimension == -1 ? get_embedded_dimension() : embedded_dimension;
+    m_embedded_dimension =
+        embedded_dimension.has_value() ? get_embedded_dimension() : embedded_dimension.value();
 
 
     return generate(extra_attributes);
@@ -65,10 +72,11 @@ std::shared_ptr<Mesh> MshReader::read(
 
 std::shared_ptr<Mesh> MshReader::read(
     const std::filesystem::path& filename,
-    const int64_t embedded_dimension)
+    const std::optional<int64_t>& embedded_dimension)
 {
     m_spec = mshio::load_msh(filename.string());
-    m_embedded_dimension = embedded_dimension == -1 ? get_embedded_dimension() : embedded_dimension;
+    m_embedded_dimension =
+        embedded_dimension.has_value() ? get_embedded_dimension() : embedded_dimension.value();
 
 
     return generate();
@@ -317,9 +325,8 @@ void MshReader::extract_element_attribute(
     }
 }
 
-auto MshReader::generate(
-    const std::optional<std::vector<std::vector<std::string>>>& extra_attributes_opt)
-    -> std::shared_ptr<Mesh>
+auto MshReader::generate(const std::optional<std::vector<std::vector<std::string>>>&
+                             extra_attributes_opt) -> std::shared_ptr<Mesh>
 {
     std::shared_ptr<Mesh> res;
     switch (get_mesh_dimension()) {
