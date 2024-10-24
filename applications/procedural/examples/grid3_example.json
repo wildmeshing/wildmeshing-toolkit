@@ -1,87 +1,26 @@
-
 {
-        "grid": {
-          "coordinates": {
+    "grid": {
+        "coordinates": {
             "name": "vertices",
             "spacing": [
-              1,
-              1,
-              1
+                1,
+                1,
+                1
             ]
-          },
-          "dimensions": [
+        },
+        "dimensions": [
             10,
             10,
             10
-          ],
-          "tiling": "freudenthal"
-        },
-        "name": "grid3d",
-        "type": "grid",
-    {
-      "output": {
+        ],
+        "tiling": "freudenthal"
+    },
+    "output": {
         "attributes": {
-          "position": "vertices"
+            "position": "vertices"
         },
         "file": "grid3d_out",
-        "input": "grid3d"
-      }
-    },
-    {
-      "get_all_meshes": {
-        "input": "grid2d_mm",
-        "name": "grid2d_mm"
-      }
-    },
-    {
-      "output": {
-        "attributes": {
-          "position": "vertices"
-        },
-        "file": "grid2d_out",
-        "input": "grid2d_mm_"
-      }
-    },
-    {
-      "output": {
-        "attributes": {
-          "position": "vertices"
-        },
-        "file": "grid3d_out",
-        "input": "grid3d_mm_"
-      }
+        "type": ".vtu"
+
     }
-  ],
-  "tests": {
-    "edges": [
-      300,
-      7000,
-      320,
-      7930
-    ],
-    "faces": [
-      200,
-      12000,
-      200,
-      12600
-    ],
-    "meshes": [
-      "grid2d_tiled",
-      "grid3d_tiled",
-      "grid2d",
-      "grid3d"
-    ],
-    "tetrahedra": [
-      0,
-      6000,
-      0,
-      6000
-    ],
-    "vertices": [
-      100,
-      1000,
-      121,
-      1331
-    ]
-  }
 }

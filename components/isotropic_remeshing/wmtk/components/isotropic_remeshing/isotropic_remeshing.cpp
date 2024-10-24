@@ -4,13 +4,12 @@
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/invariants/FusionEdgeInvariant.hpp>
-#include <wmtk/invariants/InvariantCollection.hpp>
-#include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
-#include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
-#include <wmtk/invariants/MinEdgeLengthInvariant.hpp>
-#include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
-#include <wmtk/invariants/ValenceImprovementInvariant.hpp>
 #include <wmtk/invariants/InteriorSimplexInvariant.hpp>
+#include <wmtk/invariants/InvariantCollection.hpp>
+#include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
+#include <wmtk/invariants/MinEdgeLengthInvariant.hpp>
+#include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
+#include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/invariants/uvEdgeInvariant.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
@@ -22,7 +21,6 @@
 #include <wmtk/operations/attribute_new/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
-#include <wmtk/operations/composite/TriEdgeSwap.hpp>
 #include <wmtk/operations/utils/VertexLaplacianSmooth.hpp>
 #include <wmtk/operations/utils/VertexTangentialLaplacianSmooth.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -31,6 +29,7 @@
 #include <Eigen/Geometry>
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include "IsotropicRemeshingOptions.hpp"
+#include "internal/configure_swap.hpp"
 
 namespace wmtk::components::isotropic_remeshing {
 // compute the length relative to the bounding box diagonal
@@ -60,11 +59,11 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
 
     auto position = options.position_attribute;
 
-    if (position.mesh().top_simplex_type() != PrimitiveType::Triangle) {
-        log_and_throw_error(
-            "isotropic remeshing works only for triangle meshes: {}",
-            primitive_type_name(position.mesh().top_simplex_type()));
-    }
+    // if (position.mesh().top_simplex_type() != PrimitiveType::Triangle) {
+    //     log_and_throw_error(
+    //         "isotropic remeshing works only for triangle meshes: {}",
+    //         primitive_type_name(position.mesh().top_simplex_type()));
+    // }
 
     auto pass_through_attributes = options.pass_through_attributes;
     auto other_positions = options.other_position_attributes;
@@ -95,9 +94,10 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
         options.inversion_position_attribute;
 
 
-    assert(dynamic_cast<TriMesh*>(&position.mesh()) != nullptr);
+    // assert(dynamic_cast<TriMesh*>(&position.mesh()) != nullptr);
 
-    TriMesh& mesh = static_cast<TriMesh&>(position.mesh());
+    // TriMesh& mesh = static_cast<TriMesh&>(position.mesh());
+    Mesh& mesh = position.mesh();
 
     const double length_min = (4. / 5.) * length;
     const double length_max = (4. / 3.) * length;
@@ -122,16 +122,15 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
     auto invariant_interior_vertex = std::make_shared<invariants::InvariantCollection>(mesh);
 
     auto set_all_invariants = [&](auto&& m) {
-        invariant_interior_edge->add(
-            std::make_shared<invariants::InteriorSimplexInvariant>(m, PrimitiveType::Edge));
-        invariant_interior_vertex->add(
-            std::make_shared<invariants::InteriorSimplexInvariant>(m, PrimitiveType::Vertex));
+        // TODO: this used to do vertex+edge, but just checkign for vertex should be sufficient?
+        for (PrimitiveType pt = PrimitiveType::Vertex; pt < m.top_simplex_type(); pt = pt + 1) {
+            invariant_interior_vertex->add(
+                std::make_shared<invariants::InteriorSimplexInvariant>(m, pt));
+        }
     };
     multimesh::MultiMeshVisitor visitor(set_all_invariants);
     visitor.execute_from_root(mesh);
 
-    auto invariant_valence_improve =
-        std::make_shared<invariants::ValenceImprovementInvariant>(mesh);
 
     auto invariant_mm_map = std::make_shared<MultiMeshMapValidInvariant>(mesh);
 
@@ -175,7 +174,6 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
     ops.push_back(op_split);
 
 
-
     //////////////////////////////////////////
     // collapse
     wmtk::logger().debug("Configure isotropic remeshing collapse");
@@ -206,6 +204,7 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
             op_collapse->set_new_attribute_strategy(p, tmp);
         }
     } else if (options.use_for_periodic) {
+        assert(false); // TODO: make fusion simplex invariant
         op_collapse->add_invariant(
             std::make_shared<invariants::FusionEdgeInvariant>(mesh, mesh.get_multi_mesh_root()));
         for (auto& p : positions) {
@@ -227,46 +226,19 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
 
     //////////////////////////////////////////
     // swap
+    std::shared_ptr<operations::Operation> op_swap = configure_swap(mesh, options);
+
+    // adds common invariants like inversion check and asserts taht the swap is ready for prime time
     wmtk::logger().debug("Configure isotropic remeshing swap");
-    auto op_swap = std::make_shared<composite::TriEdgeSwap>(mesh);
+
     op_swap->add_invariant(invariant_interior_edge);
-
-    // hack for uv
-    if (options.fix_uv_seam) {
-        op_swap->add_invariant(
-            std::make_shared<invariants::uvEdgeInvariant>(mesh, other_positions.front().mesh()));
-    }
-
-    op_swap->add_invariant(invariant_valence_improve);
-    op_swap->collapse().add_invariant(invariant_link_condition);
-    op_swap->collapse().add_invariant(invariant_mm_map);
-    for (auto& p : positions) {
-        op_swap->split().set_new_attribute_strategy(
-            p,
-            SplitBasicStrategy::None,
-            SplitRibBasicStrategy::Mean);
-    }
-    if (position_for_inversion) {
-        op_swap->collapse().add_invariant(std::make_shared<SimplexInversionInvariant<double>>(
-            position_for_inversion.value().mesh(),
-            position_for_inversion.value().as<double>()));
-    }
-
-    for (auto& p : positions)
-        op_swap->collapse().set_new_attribute_strategy(p, CollapseBasicStrategy::CopyOther);
-    for (const auto& attr : pass_through_attributes) {
-        op_swap->split().set_new_attribute_strategy(attr);
-        op_swap->collapse().set_new_attribute_strategy(attr);
-    }
-    assert(op_swap->split().attribute_new_all_configured());
-    assert(op_swap->collapse().attribute_new_all_configured());
     ops.push_back(op_swap);
 
 
     //////////////////////////////////////////
     // smooth
     auto op_smooth = std::make_shared<AttributesUpdateWithFunction>(mesh);
-    if (position.dimension() == 3) {
+    if (position.dimension() == 3 && mesh.top_simplex_type() == PrimitiveType::Triangle) {
         op_smooth->set_function(VertexTangentialLaplacianSmooth(position));
     } else {
         op_smooth->set_function(VertexLaplacianSmooth(position));

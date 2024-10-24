@@ -8,7 +8,7 @@ namespace wmtk::multimesh::utils {
 bool check_child_maps_valid(const Mesh& m)
 {
     bool ok = true;
-    for (const auto& [cptr, attr] : m.m_multi_mesh_manager.m_children) {
+    for (const auto& [cptr, attr] : m.m_multi_mesh_manager.children()) {
         const auto& child = *cptr;
         auto map_accessor = m.create_const_accessor(attr);
 

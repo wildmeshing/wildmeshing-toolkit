@@ -24,8 +24,13 @@ std::shared_ptr<Mesh> input(
 
 NamedMultiMesh input(const InputOptions& options)
 {
-    if (!std::filesystem::exists(options.file)) {
-        log_and_throw_error("file [{}] not found", options.file.string());
+    std::filesystem::path file = options.file;
+    if(options.working_directory.has_value() && file.is_relative()) {
+        file = options.working_directory.value() / file;
+    }
+
+    if (!std::filesystem::exists(file)) {
+        log_and_throw_error("file [{}] not found", file.string());
     }
 
     std::shared_ptr<Mesh> mesh;
@@ -41,9 +46,9 @@ NamedMultiMesh input(const InputOptions& options)
         }
     } else {
         if (options.imported_attributes.has_value()) {
-            mesh = wmtk::io::read_mesh(options.file, options.imported_attributes.value());
+            mesh = wmtk::io::read_mesh(file, options.imported_attributes.value());
         } else {
-            mesh = wmtk::io::read_mesh(options.file);
+            mesh = wmtk::io::read_mesh(file);
         }
     }
     assert(mesh->is_connectivity_valid());

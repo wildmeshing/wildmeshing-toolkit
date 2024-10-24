@@ -2,14 +2,18 @@
 
 #include <wmtk/simplex/faces_single_dimension.hpp>
 #include <wmtk/simplex/link.hpp>
+#include <wmtk/TriMesh.hpp>
 
 
 namespace wmtk::invariants {
-ValenceImprovementInvariant::ValenceImprovementInvariant(const Mesh& m)
+ValenceImprovementInvariant::ValenceImprovementInvariant(const TriMesh& m)
     : Invariant(m, true, false, false)
 {}
 bool ValenceImprovementInvariant::before(const simplex::Simplex& simplex) const
 {
+    if(mesh().is_boundary(simplex)) {
+        return false;
+    }
     const Tuple& t = simplex.tuple();
 
     assert(simplex.primitive_type() == PrimitiveType::Edge);

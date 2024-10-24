@@ -3,12 +3,14 @@
 #include <wmtk/attribute/AttributeHandle.hpp>
 #include "Invariant.hpp"
 
+namespace wmtk {
+    class TriMesh;
+}
 namespace wmtk::invariants {
 class ValenceImprovementInvariant : public Invariant
 {
 public:
-    ValenceImprovementInvariant(const Mesh& m);
-    using Invariant::Invariant;
+    ValenceImprovementInvariant(const TriMesh& m);
 
     bool before(const simplex::Simplex& t) const override;
 };

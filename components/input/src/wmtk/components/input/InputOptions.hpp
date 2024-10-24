@@ -14,6 +14,8 @@ public:
     std::filesystem::path file;
     std::optional<std::vector<std::vector<std::string>>> imported_attributes;
 
+    std::optional<std::filesystem::path> working_directory;
+
 
     nlohmann::json name_spec;
 
