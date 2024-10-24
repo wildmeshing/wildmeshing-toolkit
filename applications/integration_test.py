@@ -2,6 +2,7 @@ import unittest
 
 import sys
 import os
+import platform
 import json
 import subprocess
 import tempfile
@@ -86,6 +87,11 @@ class IntegrationTest(unittest.TestCase):
                     print(res.stdout.decode('utf-8'))
 
                 self.assertEqual(res.returncode, 0, f"{res.returncode} != 0")
+
+                if "platform" in config and config["platform"] != "" and config["platform"] != platform.system():
+                    print(f"Skipping checks for {test_file_name} because the platform is {platform.system()} and the test is for {config['platform']}")
+                    continue
+
                 with open(oracle_file.name, "r") as fp:
                     result = json.load(fp)
 
