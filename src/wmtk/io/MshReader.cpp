@@ -37,11 +37,11 @@ int MshReader::get_mesh_dimension() const
 
 std::shared_ptr<Mesh> MshReader::read(
     const std::filesystem::path& filename,
-    const bool ignore_z,
+    const bool ignore_z_if_zero,
     const std::vector<std::string>& attrs)
 {
     m_spec = mshio::load_msh(filename.string());
-    m_embedded_dimension = ignore_z ? 2 : 3;
+    m_embedded_dimension = ignore_z_if_zero ? AUTO_EMBEDDED_DIMENSION : 3;
 
     std::vector<std::vector<std::string>> split_attrs(get_mesh_dimension() + 1);
 
@@ -131,14 +131,16 @@ void MshReader::extract_vertices()
     assert(block != nullptr);
 
     const size_t num_vertices = block->num_nodes_in_block;
+    const auto embedded_dimension =
+        m_embedded_dimension == AUTO_EMBEDDED_DIMENSION ? 3 : m_embedded_dimension;
+    V.resize(num_vertices, embedded_dimension);
 
-    V.resize(num_vertices, m_embedded_dimension);
     // previously this code returned if false, but later on there is an assumption the vertex block
     // is filled out  so it is now an assertion
     assert(num_vertices > 0);
 
-    assert(m_embedded_dimension <= 3);
-    assert(m_embedded_dimension > 0);
+    assert(embedded_dimension <= 3);
+    assert(embedded_dimension > 0);
 
     using Vector = wmtk::Vector<double, 3>;
     using ConstMapType = typename Vector::ConstMapType;
@@ -147,7 +149,16 @@ void MshReader::extract_vertices()
     for (size_t i = 0; i < num_vertices; i++) {
         size_t tag = block->tags[i] - tag_offset;
         ConstMapType vec(block->data.data() + i * 3);
-        V.row(tag) = vec.head(m_embedded_dimension).transpose();
+        V.row(tag) = vec.head(embedded_dimension).transpose();
+    }
+
+    if (m_embedded_dimension == AUTO_EMBEDDED_DIMENSION) {
+        const double max = V.col(2).array().maxCoeff();
+        const double min = V.col(2).array().minCoeff();
+
+        if (min == 0 && max == 0) {
+            V = V.leftCols(2).eval();
+        }
     }
 }
 
@@ -306,8 +317,9 @@ void MshReader::extract_element_attribute(
     }
 }
 
-auto MshReader::generate(const std::optional<std::vector<std::vector<std::string>>>&
-                             extra_attributes_opt) -> std::shared_ptr<Mesh>
+auto MshReader::generate(
+    const std::optional<std::vector<std::vector<std::string>>>& extra_attributes_opt)
+    -> std::shared_ptr<Mesh>
 {
     std::shared_ptr<Mesh> res;
     switch (get_mesh_dimension()) {
