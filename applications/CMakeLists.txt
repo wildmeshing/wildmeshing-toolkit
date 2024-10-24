@@ -92,10 +92,20 @@ enable_testing()
 find_package(Python REQUIRED)
 
 
+#add_test(
+#    NAME wmtk_integration_test
+#    COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/integration_test.py
+#    -c ${CMAKE_BINARY_DIR}/test_config.json
+#    -b ${CMAKE_BINARY_DIR}/applications
+#)
+foreach(APP_TEST ${WMTK_APPLICATION_TEST_NAMES})
 add_test(
-    NAME wmtk_integration_test
+    NAME "wmtk_integration_test_${APP_TEST}"
     COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/integration_test.py
-    -c ${CMAKE_BINARY_DIR}/test_config.json
-    -b ${CMAKE_BINARY_DIR}/applications
+    -c "${CMAKE_BINARY_DIR}/test_config.json"
+    -b "${CMAKE_BINARY_DIR}/applications"
+    -s "${APP_TEST}"
 )
+
+    endforeach()
 endif()
