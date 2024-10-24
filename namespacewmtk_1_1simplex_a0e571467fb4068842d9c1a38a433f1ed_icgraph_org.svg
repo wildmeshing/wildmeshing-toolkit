@@ -111,7 +111,7 @@
 </g>
 </g>
 <!-- Node1&#45;&gt;Node9 -->
-<g id="edge8" class="edge">
+<g id="edge9" class="edge">
 <title>Node1&#45;&gt;Node9</title>
 <path fill="none" stroke="midnightblue" d="M661.07,-131.42C643.17,-106.81 607.79,-63.13 567,-39.5 561.14,-36.11 554.81,-33.19 548.29,-30.68"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="658.4,-133.71 667.04,-139.84 664.11,-129.66 658.4,-133.71"/>
@@ -120,32 +120,38 @@
 <g id="node7" class="node">
 <title>Node7</title>
 <g id="a_node7"><a xlink:href="classwmtk_1_1_tet_mesh.html#aebe3bb44a6eeb9c14334e202dcaee91d" target="_top" xlink:title="check if a simplex (encoded as a tuple/primitive pair) lies on a boundary or not">
-<polygon fill="none" stroke="black" points="166.5,-55 166.5,-74 322.5,-74 322.5,-55 166.5,-55"/>
-<text text-anchor="middle" x="244.5" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::TetMesh::is_boundary</text>
+<polygon fill="none" stroke="black" points="166.5,-90 166.5,-109 322.5,-109 322.5,-90 166.5,-90"/>
+<text text-anchor="middle" x="244.5" y="-97" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::TetMesh::is_boundary</text>
 </a>
 </g>
 </g>
 <!-- Node6&#45;&gt;Node7 -->
 <g id="edge6" class="edge">
 <title>Node6&#45;&gt;Node7</title>
-<path fill="none" stroke="midnightblue" d="M383.33,-64.5C363.28,-64.5 342.1,-64.5 322.52,-64.5"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="383.38,-68 393.38,-64.5 383.38,-61 383.38,-68"/>
+<path fill="none" stroke="midnightblue" d="M383.33,-78.06C357.81,-82.03 330.46,-86.28 306.9,-89.95"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="384.04,-81.49 393.38,-76.5 382.96,-74.57 384.04,-81.49"/>
 </g>
 <!-- Node8 -->
 <g id="node8" class="node">
 <title>Node8</title>
 <g id="a_node8"><a xlink:href="namespacewmtk_1_1simplex.html#aead7bf4f261c58bdb33bd0bf7fcd541d" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="0,-49.5 0,-79.5 113,-79.5 113,-49.5 0,-49.5"/>
-<text text-anchor="start" x="8" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::simplex::link</text>
-<text text-anchor="middle" x="56.5" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">_condition</text>
+<polygon fill="none" stroke="black" points="0,-65.5 0,-95.5 113,-95.5 113,-65.5 0,-65.5"/>
+<text text-anchor="start" x="8" y="-83.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::simplex::link</text>
+<text text-anchor="middle" x="56.5" y="-72.5" font-family="Helvetica,sans-Serif" font-size="10.00">_condition</text>
 </a>
 </g>
+</g>
+<!-- Node6&#45;&gt;Node8 -->
+<g id="edge8" class="edge">
+<title>Node6&#45;&gt;Node8</title>
+<path fill="none" stroke="midnightblue" d="M383.06,-67.89C301.54,-71.05 182.43,-75.66 113.16,-78.34"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="383.45,-71.38 393.3,-67.49 383.17,-64.38 383.45,-71.38"/>
 </g>
 <!-- Node7&#45;&gt;Node8 -->
 <g id="edge7" class="edge">
 <title>Node7&#45;&gt;Node8</title>
-<path fill="none" stroke="midnightblue" d="M156.18,-64.5C141.58,-64.5 126.79,-64.5 113.26,-64.5"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="156.24,-68 166.24,-64.5 156.24,-61 156.24,-68"/>
+<path fill="none" stroke="midnightblue" d="M156.18,-90.58C141.58,-89.09 126.79,-87.58 113.26,-86.2"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="155.93,-94.07 166.24,-91.61 156.64,-87.11 155.93,-94.07"/>
 </g>
 <!-- Node10 -->
 <g id="node10" class="node">
@@ -158,7 +164,7 @@
 </g>
 </g>
 <!-- Node9&#45;&gt;Node10 -->
-<g id="edge9" class="edge">
+<g id="edge10" class="edge">
 <title>Node9&#45;&gt;Node10</title>
 <path fill="none" stroke="midnightblue" d="M365.47,-15.5C357.03,-15.5 348.53,-15.5 340.16,-15.5"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="365.73,-19 375.73,-15.5 365.73,-12 365.73,-19"/>

@@ -1,5 +1,6 @@
 var NAVTREEINDEX27 =
 {
+"test__component__delaunay_8cpp_source.html":[10,0,0,20,3],
 "test__component__edge__insertion_8cpp.html":[10,0,0,20,4],
 "test__component__edge__insertion_8cpp_source.html":[10,0,0,20,4],
 "test__component__export__cache_8cpp.html":[10,0,0,20,5],
@@ -248,6 +249,5 @@ var NAVTREEINDEX27 =
 "top__dimension__cofaces_8cpp.html#ae228a117fd1620a12ebdae0f8d39ced8":[10,0,2,0,7,55,12],
 "top__dimension__cofaces_8cpp_source.html":[10,0,2,0,7,55],
 "top__dimension__cofaces_8hpp.html":[10,0,2,0,7,56],
-"top__dimension__cofaces_8hpp.html#a0101f27eb2ad82814390b92ab1a4d1a0":[10,0,2,0,7,56,11],
-"top__dimension__cofaces_8hpp.html#a044763e14a4d5077fb312d47681cd137":[10,0,2,0,7,56,9]
+"top__dimension__cofaces_8hpp.html#a0101f27eb2ad82814390b92ab1a4d1a0":[10,0,2,0,7,56,11]
 };

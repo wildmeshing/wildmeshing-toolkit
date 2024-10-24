@@ -131,7 +131,7 @@ $(document).ready(function(){initNavTree('shortest__edge__collapse_8hpp_source.h
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">double</span> length_rel,</div>
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    std::optional&lt;bool&gt; lock_boundary = {},</div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    std::optional&lt;double&gt; envelope_size = {},</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    std::optional&lt;attribute::MeshAttributeHandle&gt; inversion_position_handle = {},</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keywordtype">bool</span> check_inversion = <span class="keyword">false</span>,</div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="keyword">const</span> std::vector&lt;attribute::MeshAttributeHandle&gt;&amp; pass_through = {});</div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;} <span class="comment">// namespace wmtk::components::shortest_edge_collapse</span></div>
@@ -139,7 +139,7 @@ $(document).ready(function(){initNavTree('shortest__edge__collapse_8hpp_source.h
 <div class="ttc" id="a_shortest_edge_collapse_options_8hpp_html"><div class="ttname"><a href="_shortest_edge_collapse_options_8hpp.html">ShortestEdgeCollapseOptions.hpp</a></div></div>
 <div class="ttc" id="a_tri_mesh_8hpp_html"><div class="ttname"><a href="_tri_mesh_8hpp.html">TriMesh.hpp</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_1_1shortest__edge__collapse_html"><div class="ttname"><a href="namespacewmtk_1_1components_1_1shortest__edge__collapse.html">wmtk::components::shortest_edge_collapse</a></div><div class="ttdef"><b>Definition:</b> <a href="shortest__edge__collapse_8cpp_source.html#l00025">shortest_edge_collapse.cpp:25</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_1_1shortest__edge__collapse_html_a13c53b8b70fc1b63e7bdb22318139dd9"><div class="ttname"><a href="namespacewmtk_1_1components_1_1shortest__edge__collapse.html#a13c53b8b70fc1b63e7bdb22318139dd9">wmtk::components::shortest_edge_collapse::shortest_edge_collapse</a></div><div class="ttdeci">void shortest_edge_collapse(Mesh &amp;mesh, const ShortestEdgeCollapseOptions &amp;options)</div><div class="ttdoc">Perform shortest-edge collapse on a triangular surface mesh.</div><div class="ttdef"><b>Definition:</b> <a href="shortest__edge__collapse_8cpp_source.html#l00027">shortest_edge_collapse.cpp:27</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_1_1shortest__edge__collapse_html_a13c53b8b70fc1b63e7bdb22318139dd9"><div class="ttname"><a href="namespacewmtk_1_1components_1_1shortest__edge__collapse.html#a13c53b8b70fc1b63e7bdb22318139dd9">wmtk::components::shortest_edge_collapse::shortest_edge_collapse</a></div><div class="ttdeci">void shortest_edge_collapse(Mesh &amp;mesh_in, const ShortestEdgeCollapseOptions &amp;options)</div><div class="ttdoc">Perform shortest-edge collapse on a triangular surface mesh.</div><div class="ttdef"><b>Definition:</b> <a href="shortest__edge__collapse_8cpp_source.html#l00027">shortest_edge_collapse.cpp:27</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->

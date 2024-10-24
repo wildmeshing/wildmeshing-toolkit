@@ -138,7 +138,7 @@ var namespacewmtk =
     [ "opt_logger", "namespacewmtk.html#a9bf9fa5eaec03a3e61a023a35f84f0e0", null ],
     [ "pow", "namespacewmtk.html#ad12ad5f8ec07682b8da79699a2628b6a", null ],
     [ "primitive_type_name", "namespacewmtk.html#a339897f6efeb23a997750141f12892ee", null ],
-    [ "read_mesh", "namespacewmtk.html#adb1edeb39c4e0ef98ecc5afeed46891c", null ],
+    [ "read_mesh", "namespacewmtk.html#af24627a5c84ab4c028897599edbcd7fe", null ],
     [ "set_logger", "namespacewmtk.html#a3daa7951a5f8b78cf4600dc047fcc180", null ],
     [ "set_opt_logger", "namespacewmtk.html#a07c0763251462f47de92300937f82374", null ],
     [ "tetmesh_topology_initialization", "namespacewmtk.html#aac234519fdba455df7cd063360b24a44", null ],

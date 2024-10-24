@@ -46,11 +46,12 @@ var NAVTREEINDEX26 =
 "structwmtk_1_1components_1_1procedural_1_1_triangle_fan_options_1_1_coordinates.html#ab0446d790c0d75cc0159be099abe99b8":[9,0,2,2,5,5,0,3],
 "structwmtk_1_1components_1_1procedural_1_1_triangle_fan_options_1_1_coordinates.html#adf6907d3c90746db9d86a556d679a8e1":[9,0,2,2,5,5,0,0],
 "structwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse_options.html":[9,0,2,2,6,0],
-"structwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse_options.html#a052a54670c69bade842cbc673e2a45cb":[9,0,2,2,6,0,0],
-"structwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse_options.html#a2161581a6160fc740b56b3d8281a81f8":[9,0,2,2,6,0,4],
-"structwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse_options.html#a3324f6a6866b7112c8f1f117186184b8":[9,0,2,2,6,0,1],
+"structwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse_options.html#a052a54670c69bade842cbc673e2a45cb":[9,0,2,2,6,0,1],
+"structwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse_options.html#a1e8e414fe82b51a4473fe05a741875af":[9,0,2,2,6,0,4],
+"structwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse_options.html#a2161581a6160fc740b56b3d8281a81f8":[9,0,2,2,6,0,5],
 "structwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse_options.html#a4e4513e992145362b26b1b940d33c740":[9,0,2,2,6,0,2],
-"structwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse_options.html#a5c824a65e6cfab97d575a74f7efa0b37":[9,0,2,2,6,0,5],
+"structwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse_options.html#a5c824a65e6cfab97d575a74f7efa0b37":[9,0,2,2,6,0,6],
+"structwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse_options.html#a89c147a8cf58a2449047a2a7a58323f9":[9,0,2,2,6,0,0],
 "structwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse_options.html#ac14ec8fc99713478612d2cce24055f8f":[9,0,2,2,6,0,3],
 "structwmtk_1_1components_1_1utils_1_1_component_options_base.html":[9,0,2,2,8,0],
 "structwmtk_1_1components_1_1utils_1_1_component_options_base.html#a0c0080c3f34078bd6d4e10aafe34df3e":[9,0,2,2,8,0,1],
@@ -248,6 +249,5 @@ var NAVTREEINDEX26 =
 "test__component__delaunay_8cpp.html#a8efb223c76864bc1dde445456c339570":[10,0,0,20,3,5],
 "test__component__delaunay_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d":[10,0,0,20,3,0],
 "test__component__delaunay_8cpp.html#ab8a46e1482a21c41b01ca68f4f0144dc":[10,0,0,20,3,6],
-"test__component__delaunay_8cpp.html#acb7587bf366fbe69f76207823219dd76":[10,0,0,20,3,1],
-"test__component__delaunay_8cpp_source.html":[10,0,0,20,3]
+"test__component__delaunay_8cpp.html#acb7587bf366fbe69f76207823219dd76":[10,0,0,20,3,1]
 };

@@ -133,21 +133,22 @@ $(document).ready(function(){initNavTree('input_8hpp_source.html',''); initResiz
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="comment"> * It can read .msh and .hdf5 file format.</span></div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment"> *</span></div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment"> * @param file The mesh file.</span></div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="comment"> * @param ignore_z Ignore the z-component of points and generate a mesh with 2D positions.</span></div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="comment"> * @param tetrahedron_attributes Read tetrahedron attributes from an .msh file.</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="comment"> */</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;std::shared_ptr&lt;Mesh&gt; <a class="code" href="namespacewmtk_1_1components_1_1input.html#a0892eb5d3d15317d5a447ce4035e7318">input</a>(</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    <span class="keyword">const</span> std::filesystem::path&amp; file,</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">bool</span> ignore_z = <span class="keyword">false</span>,</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    <span class="keyword">const</span> std::vector&lt;std::string&gt;&amp; tetrahedron_attributes = {});</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;NamedMultiMesh <a class="code" href="namespacewmtk_1_1components_1_1input.html#a0892eb5d3d15317d5a447ce4035e7318">input</a>(<span class="keyword">const</span> InputOptions&amp; options);</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;} <span class="comment">// namespace wmtk::components::input</span></div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="comment"> * @param ignore_z_if_zero Ignore the z-component of points if it is zero and generate a mesh with</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="comment"> * 2D positions.</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="comment"> * @param tetrahedron_attributes Read tetrahedron attributes from an .msh file.</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="comment"> */</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;std::shared_ptr&lt;Mesh&gt; <a class="code" href="namespacewmtk_1_1components_1_1input.html#a324e10679ed262426e707cacb92aaf01">input</a>(</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <span class="keyword">const</span> std::filesystem::path&amp; file,</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">bool</span> ignore_z_if_zero = <span class="keyword">false</span>,</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <span class="keyword">const</span> std::vector&lt;std::string&gt;&amp; tetrahedron_attributes = {});</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;NamedMultiMesh <a class="code" href="namespacewmtk_1_1components_1_1input.html#a324e10679ed262426e707cacb92aaf01">input</a>(<span class="keyword">const</span> InputOptions&amp; options);</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;} <span class="comment">// namespace wmtk::components::input</span></div>
 <div class="ttc" id="a_mesh_8hpp_html"><div class="ttname"><a href="_mesh_8hpp.html">Mesh.hpp</a></div></div>
 <div class="ttc" id="a_named_multi_mesh_8hpp_html"><div class="ttname"><a href="_named_multi_mesh_8hpp.html">NamedMultiMesh.hpp</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_1_1input_html"><div class="ttname"><a href="namespacewmtk_1_1components_1_1input.html">wmtk::components::input</a></div><div class="ttdef"><b>Definition:</b> <a href="src_2wmtk_2components_2input_2input_8cpp_source.html#l00008">input.cpp:8</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_1_1input_html_a0892eb5d3d15317d5a447ce4035e7318"><div class="ttname"><a href="namespacewmtk_1_1components_1_1input.html#a0892eb5d3d15317d5a447ce4035e7318">wmtk::components::input::input</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; input(const std::filesystem::path &amp;file, const bool ignore_z, const std::vector&lt; std::string &gt; &amp;tetrahedron_attributes)</div><div class="ttdef"><b>Definition:</b> <a href="src_2wmtk_2components_2input_2input_8cpp_source.html#l00010">input.cpp:10</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_1_1input_html_a324e10679ed262426e707cacb92aaf01"><div class="ttname"><a href="namespacewmtk_1_1components_1_1input.html#a324e10679ed262426e707cacb92aaf01">wmtk::components::input::input</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; input(const std::filesystem::path &amp;file, const bool ignore_z_if_zero, const std::vector&lt; std::string &gt; &amp;tetrahedron_attributes)</div><div class="ttdef"><b>Definition:</b> <a href="src_2wmtk_2components_2input_2input_8cpp_source.html#l00010">input.cpp:10</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->
