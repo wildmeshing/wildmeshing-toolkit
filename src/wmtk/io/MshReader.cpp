@@ -157,7 +157,7 @@ void MshReader::extract_vertices()
         const double min = V.col(2).array().minCoeff();
 
         if (min == 0 && max == 0) {
-            V = V.leftCols(2);
+            V = V.leftCols(2).eval();
         }
     }
 }
