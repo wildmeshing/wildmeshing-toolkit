@@ -273,10 +273,6 @@ generate_raw_tetmesh_from_input_surface(
     }
 
     for (int64_t i = 0; i < tets_final.size(); ++i) {
-        assert(tets_final[i][0] >= 0);
-        assert(tets_final[i][1] >= 0);
-        assert(tets_final[i][2] >= 0);
-        assert(tets_final[i][3] >= 0);
         assert(tets_final[i][0] < V_final_rational.rows());
         assert(tets_final[i][1] < V_final_rational.rows());
         assert(tets_final[i][2] < V_final_rational.rows());

@@ -169,6 +169,21 @@ public:
      */
     std::vector<Tuple> get_all(PrimitiveType type) const;
 
+    std::vector<simplex::IdSimplex> get_all_id_simplex(PrimitiveType type) const;
+    /**
+     * @brief Retrieve the IdSimplex that is represented by the tuple and primitive type.
+     */
+    simplex::IdSimplex get_id_simplex(const Tuple& tuple, PrimitiveType pt) const;
+
+    simplex::IdSimplex get_id_simplex(const simplex::Simplex& s) const;
+
+    /**
+     * @brief Convert an IdSimplex into a Simplex.
+     */
+    simplex::Simplex get_simplex(const simplex::IdSimplex& s) const;
+
+    Tuple get_tuple_from_id_simplex(const simplex::IdSimplex& s) const;
+
     /**
      * Consolidate the attributes, moving all valid simplexes at the beginning of the corresponding
      * vector
@@ -762,6 +777,8 @@ public:
         return m_multi_mesh_manager.has_child_mesh_in_dimension(dimension);
     }
 
+    bool has_child_mesh() const { return m_multi_mesh_manager.has_child_mesh(); }
+
     /*
      * @brief returns if the other mesh is part of the same multi-mesh structure
      * @param other the other being mesh being checked
@@ -854,6 +871,9 @@ private:
      * @return vector of Tuples referring to each type
      */
     std::vector<Tuple> get_all(PrimitiveType type, const bool include_deleted) const;
+    std::vector<simplex::IdSimplex> get_all_id_simplex(
+        PrimitiveType type,
+        const bool include_deleted) const;
 };
 
 

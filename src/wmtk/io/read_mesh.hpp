@@ -25,7 +25,7 @@ std::shared_ptr<Mesh> read_mesh(
 
 std::shared_ptr<Mesh> read_mesh(
     const std::filesystem::path& filename,
-    const bool ignore_z = false,
+    const bool ignore_z_if_zero = false,
     const std::vector<std::string>& tetrahedron_attributes = {},
     FileType file_type = FileType::Auto);
 

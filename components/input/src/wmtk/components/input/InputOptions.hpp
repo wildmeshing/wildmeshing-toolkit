@@ -20,7 +20,7 @@ public:
     nlohmann::json name_spec;
 
     bool old_mode = false;
-    bool ignore_z = false;
+    bool ignore_z_if_zero = false;
 
     bool operator==(const InputOptions& o) const;
 };

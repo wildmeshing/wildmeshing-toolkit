@@ -51,7 +51,7 @@ class IntegrationTest(unittest.TestCase):
             test_file = os.path.join(config_folder, test_file_name)
 
             print(f"Test file: {test_file}")
-            self.assertTrue(os.path.exists(test_file))
+            self.assertTrue(os.path.exists(test_file), f"{test_file} does not exist")
 
             with open(test_file) as f:
                 try:
@@ -85,12 +85,12 @@ class IntegrationTest(unittest.TestCase):
                     print(res.stderr.decode('utf-8'))
                     print(res.stdout.decode('utf-8'))
 
-                self.assertEqual(res.returncode, 0)
+                self.assertEqual(res.returncode, 0, f"{res.returncode} != 0")
                 with open(oracle_file.name, "r") as fp:
                     result = json.load(fp)
 
                 for check in checks:
-                    self.assertTrue(result[check], test_oracle[check])
+                    self.assertEqual(result[check], test_oracle[check], f"{result[check]} != {test_oracle[check]}")
 
                 if len(checks) == 0 and not has_checks:
                     for k in test_oracle:
@@ -98,7 +98,7 @@ class IntegrationTest(unittest.TestCase):
                             continue
 
                         self.assertTrue(k in result)
-                        self.assertEqual(result[k], test_oracle[k])
+                        self.assertEqual(result[k], test_oracle[k], f"{result[k]} != {test_oracle[k]}")
 
 
         self.assertTrue(True)

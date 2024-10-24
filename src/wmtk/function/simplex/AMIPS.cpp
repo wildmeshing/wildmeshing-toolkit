@@ -4,6 +4,7 @@
 #include <wmtk/function/utils/SimplexGetter.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/utils/Rational.hpp>
+#include <wmtk/utils/orient.hpp>
 
 
 namespace wmtk::function {
@@ -431,7 +432,7 @@ double Tet_AMIPS_energy(const std::array<double, 12>& T)
 
 } // namespace
 
-double Tri_AMIPS_energy(const std::array<double, 6>& T)
+double Tri_AMIPS_energy_aux(const std::array<double, 6>& T)
 {
     double helper_0[6];
     helper_0[0] = T[0];
@@ -454,7 +455,9 @@ double Tri_AMIPS_energy(const std::array<double, 6>& T)
          (helper_3 - helper_4) * (0.577350269189626 * helper_1 + 0.577350269189626 * helper_2 -
                                   1.15470053837925 * helper_6));
 
-    if (std::abs(denom) < 1e-12) return std::numeric_limits<double>::infinity();
+    denom = std::abs(denom) * wmtk::utils::wmtk_orient2d(T[0], T[1], T[2], T[3], T[4], T[5]);
+
+    // if (std::abs(denom) < 1e-12) return std::numeric_limits<double>::infinity();
 
     return -(helper_1 * (-1.33333333333333 * helper_1 + 0.666666666666667 * helper_2 + helper_7) +
              helper_2 * (0.666666666666667 * helper_1 - 1.33333333333333 * helper_2 + helper_7) +
@@ -465,6 +468,36 @@ double Tri_AMIPS_energy(const std::array<double, 6>& T)
              helper_6 * (0.666666666666667 * helper_1 + 0.666666666666667 * helper_2 -
                          1.33333333333333 * helper_6)) /
            denom;
+}
+
+double Tri_AMIPS_energy(const std::array<double, 6>& T)
+{
+    static const double sqrt3 = sqrt(3);
+    static const Rational two_third = Rational(2) / Rational(3);
+
+    double res = Tri_AMIPS_energy_aux(T);
+
+    // Maybe use tet_is_energy_unstable
+    if (res > 1e8 || res <= 0) {
+        std::array<Rational, 6> r_T;
+        for (int j = 0; j < 6; j++) {
+            r_T[j] = T[j];
+        }
+
+        const auto tmp = r_T[0] * r_T[3] - r_T[0] * r_T[5] - r_T[1] * r_T[2] + r_T[1] * r_T[4] +
+                         r_T[2] * r_T[5] - r_T[3] * r_T[4];
+
+        if (tmp <= 0) return std::numeric_limits<double>::infinity();
+
+        const auto res_r = two_third * sqrt3 *
+                           (r_T[0] * r_T[0] - r_T[0] * r_T[2] - r_T[0] * r_T[4] + r_T[1] * r_T[1] -
+                            r_T[1] * r_T[3] - r_T[1] * r_T[5] + r_T[2] * r_T[2] - r_T[2] * r_T[4] +
+                            r_T[3] * r_T[3] - r_T[3] * r_T[5] + r_T[4] * r_T[4] + r_T[5] * r_T[5]) /
+                           tmp;
+        return res_r.to_double();
+    } else {
+        return res;
+    }
 }
 
 void Tri_AMIPS_jacobian(const std::array<double, 6>& T, Eigen::Vector2d& result_0)

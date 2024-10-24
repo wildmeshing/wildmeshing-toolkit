@@ -28,8 +28,13 @@ add_subdirectory("procedural/wmtk/components/procedural")
 add_subdirectory("tetwild_simplification/wmtk/components/tetwild_simplification")
 add_subdirectory("isotropic_remeshing/wmtk/components/isotropic_remeshing")
 
-add_subdirectory("shortestedge_collapse/wmtk/components/shortestedge_collapse")
+add_subdirectory("winding_number/wmtk/components/winding_number")
+add_subdirectory("wildmeshing/wmtk/components/wildmeshing")
+
+add_subdirectory("shortest_edge_collapse/wmtk/components/shortest_edge_collapse")
 add_subdirectory("CDT/wmtk/components/CDT")
+
+add_subdirectory("edge_insertion/wmtk/components/edge_insertion")
 
 # add_component("export_cache")
 # add_component("import_cache")
@@ -41,7 +46,6 @@ add_subdirectory("CDT/wmtk/components/CDT")
 # add_component("fusion")
 # add_component("winding_number")
 # add_component("periodic_optimization")
-# add_component("shortestedge_collapse")
 
 
 

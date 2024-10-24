@@ -5,12 +5,10 @@ wmtk_add_application(cdt_sec_app
 
 
 
-
-# delaunay requires the input component and the delaunay component
 target_link_libraries(cdt_sec_app PRIVATE
 wmtk::input
 wmtk::multimesh
-wmtk::shortestedge_collapse
+wmtk::shortest_edge_collapse
 wmtk::CDT
 wmtk::output)
 

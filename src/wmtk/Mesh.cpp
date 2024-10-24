@@ -20,6 +20,54 @@ std::vector<Tuple> Mesh::get_all(PrimitiveType type) const
     return get_all(type, false);
 }
 
+std::vector<simplex::IdSimplex> Mesh::get_all_id_simplex(PrimitiveType type) const
+{
+    return get_all_id_simplex(type, false);
+}
+
+simplex::IdSimplex Mesh::get_id_simplex(const Tuple& tuple, PrimitiveType pt) const
+{
+    return simplex::IdSimplex(pt, id(tuple, pt));
+}
+
+simplex::IdSimplex Mesh::get_id_simplex(const simplex::Simplex& s) const
+{
+    return simplex::IdSimplex(s.primitive_type(), id(s.tuple(), s.primitive_type()));
+}
+
+simplex::Simplex Mesh::get_simplex(const simplex::IdSimplex& s) const
+{
+    const Tuple& t = tuple_from_id(s.primitive_type(), s.index());
+    return simplex::Simplex(*this, s.primitive_type(), t);
+}
+
+Tuple Mesh::get_tuple_from_id_simplex(const simplex::IdSimplex& s) const
+{
+    return tuple_from_id(s.primitive_type(), s.index());
+}
+
+std::vector<simplex::IdSimplex> Mesh::get_all_id_simplex(
+    PrimitiveType type,
+    const bool include_deleted) const
+{
+    std::vector<simplex::IdSimplex> ret;
+
+    if (static_cast<int8_t>(type) > top_cell_dimension()) return ret;
+
+    const int64_t cap = capacity(type);
+
+    const attribute::Accessor<char> flag_accessor = get_flag_accessor(type);
+    const attribute::CachingAccessor<char>& flag_accessor_indices = flag_accessor.index_access();
+    ret.reserve(cap);
+    for (size_t index = 0; index < cap; ++index) {
+        if (flag_accessor_indices.const_scalar_attribute(index) & 1)
+            ret.emplace_back(simplex::IdSimplex(type, index));
+        else if (include_deleted)
+            ret.emplace_back();
+    }
+    return ret;
+}
+
 
 std::vector<Tuple> Mesh::get_all(PrimitiveType type, const bool include_deleted) const
 {

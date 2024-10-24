@@ -29,6 +29,7 @@ std::tuple<std::shared_ptr<wmtk::TetMesh>, ChildMeshes> triangle_insertion(
     const std::string& bg_position,
     const TriMesh& mesh_in,
     const std::string& in_position,
+    std::vector<attribute::MeshAttributeHandle>& pass_through,
     bool round,
     bool track_submeshes,
     bool make_child_free)
@@ -125,6 +126,8 @@ std::tuple<std::shared_ptr<wmtk::TetMesh>, ChildMeshes> triangle_insertion(
             }
         }
 
+        pass_through.push_back(surface_handle);
+
 
         // get multimesh from tag
 
@@ -156,6 +159,9 @@ std::tuple<std::shared_ptr<wmtk::TetMesh>, ChildMeshes> triangle_insertion(
         auto nonmanifold_edge_handle =
             tetmesh->register_attribute<int64_t>("nonmanifold_edge", PrimitiveType::Edge, 1);
         auto nonmanifold_edge_accessor = tetmesh->create_accessor<int64_t>(nonmanifold_edge_handle);
+
+        pass_through.push_back(open_boundary_handle);
+        pass_through.push_back(nonmanifold_edge_handle);
 
         // register edge tags
         bool has_openboundary = false;
@@ -219,6 +225,8 @@ std::tuple<std::shared_ptr<wmtk::TetMesh>, ChildMeshes> triangle_insertion(
         /* ---------------------bounding box-------------------------*/
         auto bbox_handle = tetmesh->register_attribute<int64_t>("bbox", PrimitiveType::Triangle, 1);
         auto bbox_accessor = tetmesh->create_accessor<int64_t>(bbox_handle);
+
+        pass_through.push_back(bbox_handle);
 
         logger().info("Annotating bounding box boundary");
         for (const auto& f : tetmesh->get_all(PrimitiveType::Triangle)) {

@@ -9,12 +9,13 @@ namespace wmtk::components::input {
 
 std::shared_ptr<Mesh> input(
     const std::filesystem::path& file,
-    const bool ignore_z,
+    const bool ignore_z_if_zero,
     const std::vector<std::string>& tetrahedron_attributes)
 {
     InputOptions options;
     options.old_mode = true;
     options.file = file;
+    options.ignore_z_if_zero = ignore_z_if_zero;
     if (!tetrahedron_attributes.empty()) {
         options.imported_attributes = {{}, {}, {}, tetrahedron_attributes};
     }
@@ -37,11 +38,11 @@ NamedMultiMesh input(const InputOptions& options)
     if (options.old_mode) {
         if (options.imported_attributes.has_value()) {
             mesh = wmtk::io::read_mesh(
-                file,
-                options.ignore_z,
+                options.file,
+                options.ignore_z_if_zero,
                 options.imported_attributes->at(3));
         } else {
-            mesh = wmtk::io::read_mesh(file, options.ignore_z);
+            mesh = wmtk::io::read_mesh(options.file, options.ignore_z_if_zero);
         }
     } else {
         if (options.imported_attributes.has_value()) {

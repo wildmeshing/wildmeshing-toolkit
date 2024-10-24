@@ -1,0 +1,28 @@
+{
+  "test_directory": "unit_test",
+  "tests": [
+    "shortest_edge_collapse_out.json",
+    "sec_volume_boundary_extreme_out.json",
+    "sec_volume_boundary_inversion_out.json",
+    "sec_volume_boundary_out.json",
+    "sec_volume_interior_out.json",
+    "sec_volume_inversion_out.json",
+    "sec_volume_out.json",
+    "sec_surface_boundary_extreme_out.json",
+    "sec_surface_boundary_out.json",
+    "sec_surface_interior_out.json",
+    "sec_surface_out.json",
+    "sec_surface_boundary_inversion_out.json",
+    "sec_surface_inversion_out.json",
+    "sec_surface_envelope_out.json",
+    "sec_volume_envelope_out.json",
+    "sec_line_face_out.json",
+    "sec_line_out.json",
+    "sec_line_sun_out.json",
+    "sec_surface_lock_out.json",
+    "sec_volume_lock_out.json"
+  ],
+  "input_tag": "input",
+  "oracle_tag": "report",
+  "input_directory_tag": "input_path"
+}

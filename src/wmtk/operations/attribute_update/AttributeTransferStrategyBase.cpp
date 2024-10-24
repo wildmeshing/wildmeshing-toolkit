@@ -49,15 +49,22 @@ std::vector<Tuple> AttributeTransferStrategyBase::get_parent_simplices(
     if (my_primitive_type != parent_primitive_type) {
         // lambda for running either of the cases
         std::vector<Tuple> r;
-        for (const auto& parent_tup : parent_tuples) {
-            std::vector<Tuple> c = simplex::neighbors_single_dimension_tuples(
+        if (parent_tuples.size() == 1) {
+            r = simplex::neighbors_single_dimension_tuples(
                 m,
-                simplex::Simplex(m, my_primitive_type, parent_tup),
+                simplex::Simplex(m, my_primitive_type, parent_tuples[0]),
                 parent_primitive_type);
-            std::copy(c.begin(), c.end(), std::back_inserter(r));
-        }
-        if (parent_tuples.size() > 1) {
-            simplex::utils::unique_homogeneous_simplices_inline(m, parent_primitive_type, r);
+        } else {
+            for (const auto& parent_tup : parent_tuples) {
+                std::vector<Tuple> c = simplex::neighbors_single_dimension_tuples(
+                    m,
+                    simplex::Simplex(m, my_primitive_type, parent_tup),
+                    parent_primitive_type);
+                std::copy(c.begin(), c.end(), std::back_inserter(r));
+            }
+            if (parent_tuples.size() > 1) {
+                simplex::utils::unique_homogeneous_simplices_inline(m, parent_primitive_type, r);
+            }
         }
         parent_tuples = std::move(r);
     }

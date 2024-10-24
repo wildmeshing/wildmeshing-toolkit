@@ -21,7 +21,7 @@ void adl_serializer<wmtk::components::input::InputOptions>::to_json(json& j, con
 
     if (v.old_mode) {
         j["old_mode"] = true;
-        j["ignore_z"] = v.ignore_z;
+        j["ignore_z"] = v.ignore_z_if_zero;
         if (v.imported_attributes.has_value()) {
             const auto& imported_attrs = v.imported_attributes.value();
             if (imported_attrs.size() > 3) {
@@ -64,7 +64,7 @@ void adl_serializer<wmtk::components::input::InputOptions>::from_json(const json
 
 
     if (v.old_mode) {
-        v.ignore_z = j.contains("ignore_z") ? bool(j["ignore_z"]) : false;
+        v.ignore_z_if_zero = j.contains("ignore_z") ? bool(j["ignore_z"]) : false;
         if (j.contains("tetrahedron_attributes")) {
             v.imported_attributes = {
                 {},

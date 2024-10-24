@@ -29,7 +29,7 @@ TEST_CASE("component_input", "[components][input]")
             {"tetrahedron_attributes", json::array()}};
         auto opts = component_json.get<wmtk::components::input::InputOptions>();
         CHECK(opts.file == input_file);
-        CHECK(opts.ignore_z == false);
+        CHECK(opts.ignore_z_if_zero == false);
         CHECK(opts.old_mode == true);
         CHECK(opts.old_mode == true);
         REQUIRE(opts.imported_attributes.has_value());

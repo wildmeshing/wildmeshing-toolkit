@@ -29,11 +29,13 @@ if(WIN32)
         NAMES
             gmp.dll
             libgmp-10.dll
+            gmp-10.dll
         PATHS
             ENV GMP_DIR
             ${LIB_INSTALL_DIR}
         PATH_SUFFIXES
             lib
+            bin
     )
     list(APPEND GMP_EXTRA_VARS GMP_RUNTIME_LIB)
 endif()
@@ -45,7 +47,7 @@ find_package_handle_standard_args(GMP
         GMP_LIBRARIES
         ${GMP_EXTRA_VARS}
     REASON_FAILURE_MESSAGE
-        "GMP is not installed on your system. Either install GMP using your preferred package manager, or disable libigl modules that depend on GMP, such as CORK and CGAL. See LibiglOptions.cmake.sample for configuration options. Do not forget to delete your <build>/CMakeCache.txt for the changes to take effect."
+        "GMP is not installed on your system. Install GMP using your preferred package manager. Do not forget to delete your <build>/CMakeCache.txt for the changes to take effect."
 )
 mark_as_advanced(GMP_INCLUDES GMP_LIBRARIES)
 

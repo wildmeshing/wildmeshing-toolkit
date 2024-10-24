@@ -40,9 +40,24 @@ if(WMTK_ENABLE_APPLICATION_tetwild_simplification)
 add_subdirectory(tetwild_simplification)
 endif()
 
+option(WMTK_ENABLE_APPLICATION_tetwild "Runs tetwild application" ON)
+if(WMTK_ENABLE_APPLICATION_tetwild)
+add_subdirectory(tetwild)
+endif()
+
+option(WMTK_ENABLE_APPLICATION_triwild "Runs triwild application" ON)
+if(WMTK_ENABLE_APPLICATION_triwild)
+add_subdirectory(triwild)
+endif()
+
 option(WMTK_ENABLE_APPLICATION_cdt_sec "Runs cdt_sec application" ON)
 if(WMTK_ENABLE_APPLICATION_cdt_sec)
 add_subdirectory(cdt_sec)
+endif()
+
+option(WMTK_ENABLE_APPLICATION_shortest_edge_collapse "Runs shortest-edge collapse application" ON)
+if(WMTK_ENABLE_APPLICATION_shortest_edge_collapse)
+add_subdirectory(shortest_edge_collapse)
 endif()
 
 option(WMTK_ENABLE_APPLICATION_insertion "Runs insertion application" ON)

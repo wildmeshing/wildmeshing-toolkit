@@ -7,7 +7,7 @@ namespace wmtk {
 class Mesh;
 
 namespace multimesh {
-    class MultiMeshManager;
+class MultiMeshManager;
 }
 template <typename Derived>
 class MeshCRTP;
@@ -30,8 +30,9 @@ class Simplex
     friend class NavigatableSimplex;
     PrimitiveType m_primitive_type;
     Tuple m_tuple;
-    // the mesh class can use this index value to cache/accelerate operations
+
 public:
+    // the mesh class can use this index value to cache/accelerate operations
     Simplex(const PrimitiveType& ptype, const Tuple& t)
         : m_primitive_type{ptype}
         , m_tuple{t}
@@ -39,6 +40,7 @@ public:
 
 
     Simplex() = default;
+    // TODO: deprecate
     Simplex(const Mesh& m, const PrimitiveType& ptype, const Tuple& t);
 
     Simplex(const Simplex&) = default;
@@ -50,25 +52,30 @@ public:
     int64_t dimension() const { return get_primitive_type_id(m_primitive_type); }
     const Tuple& tuple() const { return m_tuple; }
 
+    // TODO: deprecate
     static Simplex vertex(const Mesh& m, const Tuple& t)
     {
         return Simplex(PrimitiveType::Vertex, t);
     }
+    // TODO: deprecate
     static Simplex edge(const Mesh& m, const Tuple& t) { return Simplex(PrimitiveType::Edge, t); }
+    // TODO: deprecate
     static Simplex face(const Mesh& m, const Tuple& t)
     {
         return Simplex(PrimitiveType::Triangle, t);
     }
+    // TODO: deprecate
     static Simplex tetrahedron(const Mesh& m, const Tuple& t)
     {
         return Simplex(PrimitiveType::Tetrahedron, t);
     }
 
+    static Simplex vertex(const Tuple& t) { return Simplex(PrimitiveType::Vertex, t); }
+    static Simplex edge(const Tuple& t) { return Simplex(PrimitiveType::Edge, t); }
+    static Simplex face(const Tuple& t) { return Simplex(PrimitiveType::Triangle, t); }
+    static Simplex tetrahedron(const Tuple& t) { return Simplex(PrimitiveType::Tetrahedron, t); }
+
     // these operations are only internally defined if caching is enabled to make sure there's a
     // consistent semantic when simplex id caching is enabled vs not
-#if defined(WMTK_ENABLE_SIMPLEX_ID_CACHING)
-    bool operator==(const Simplex& o) const;
-    bool operator<(const Simplex& o) const;
-#endif
 };
 } // namespace wmtk::simplex

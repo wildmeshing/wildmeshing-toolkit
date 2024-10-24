@@ -15,7 +15,7 @@
 #include <wmtk/components/input/input.hpp>
 #include <wmtk/components/multimesh/multimesh.hpp>
 #include <wmtk/components/output/output.hpp>
-#include <wmtk/components/shortestedge_collapse/shortestedge_collapse.hpp>
+#include <wmtk/components/shortest_edge_collapse/shortest_edge_collapse.hpp>
 
 
 #include "cdt_sec_spec.hpp"
@@ -102,14 +102,17 @@ int main(int argc, char* argv[])
         parent_mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
     {
-        components::ShortestEdgeCollapseOptions options;
+        using namespace components::shortest_edge_collapse;
+
+        ShortestEdgeCollapseOptions options;
         options.position_handle = child_mesh_position_handle;
+        options.other_position_handles.emplace_back(parent_mesh_position_handle);
         options.length_rel = j["length_rel"];
         options.envelope_size = j["envelope_size"];
-        options.inversion_position_handle = parent_mesh_position_handle;
+        options.check_inversions = true;
         options.pass_through_attributes = pass_through;
 
-        components::shortestedge_collapse(static_cast<TriMesh&>(*child_mesh), options);
+        shortest_edge_collapse(*parent_mesh, options);
     }
 
     wmtk::components::output::output(*parent_mesh, output_file, "vertices");
