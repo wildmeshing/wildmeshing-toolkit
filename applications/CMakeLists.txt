@@ -20,7 +20,7 @@ if(WMTK_ENABLE_APPLICATION_marching)
 add_subdirectory(marching)
 endif()
 
-option(WMTK_ENABLE_APPLICATION_procedural "Runs procedural application" OFF)
+option(WMTK_ENABLE_APPLICATION_procedural "Runs procedural application" ON)
 if(WMTK_ENABLE_APPLICATION_procedural)
 add_subdirectory(procedural)
 endif()
