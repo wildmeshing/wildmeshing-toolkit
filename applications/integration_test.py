@@ -16,9 +16,8 @@ def fix_path(path):
 class IntegrationTest(unittest.TestCase):
     BINARY_FOLDER = fix_path(os.environ['WMTK_BINARY_FOLDER']) if "WMTK_BINARY_FOLDER" in os.environ else None
     CONFIG_FILE = fix_path(os.environ['WMTK_CONFIG_FILE']) if "WMTK_CONFIG_FILE" in os.environ else None
-    TEST = None
 
-    def __init__(self, name, test_config):
+    def __init__(self, name, test_config, configs_to_run = None): 
         super().__init__()
         self.working_dir_fp = tempfile.TemporaryDirectory()
         self.working_dir = self.working_dir_fp.name
@@ -37,10 +36,15 @@ class IntegrationTest(unittest.TestCase):
             config = json.load(fp)
         self.config = config
 
+        if configs_to_run is not None:
+            self.config["tests"] = configs_to_run
+
         if "test_directory" in config:
             self.config_folder = os.path.join(self.config_folder, config["test_directory"])
 
-        self.executable = os.path.join(IntegrationTest.BINARY_FOLDER, self.name)
+        self.executable = os.path.abspath(os.path.join(IntegrationTest.BINARY_FOLDER, self.name))
+
+        self.extra_flags = test_config["extra_flags"].split()
 
 
 
@@ -48,18 +52,15 @@ class IntegrationTest(unittest.TestCase):
         self.working_dir_fp.cleanup()
 
 
-    def execute_json(self, json_file_path, use_tmp_wd = True):
+    def execute_json(self, json_file_path):
 
-        cmd = [self.executable, "-j", json_file_path]
-        if use_tmp_wd:
-            res = subprocess.run(cmd, cwd=self.working_dir, capture_output=True)
-        else:
-            res = subprocess.run(cmd, capture_output=True)
+        cmd = [self.executable] +self.extra_flags + [ "-j", json_file_path]
+        res = subprocess.run(cmd, cwd=self.working_dir, capture_output=True)
 
         if res.returncode != 0:
             print(f"Error running [{' '.join(cmd)}]")
             print(res.stderr.decode('utf-8'))
-        print(res.stdout.decode('utf-8'))
+            print(res.stdout.decode('utf-8'))
         return res
 
     def create_reporter(self, input_json_file, output_json_file):
@@ -73,13 +74,13 @@ class IntegrationTest(unittest.TestCase):
         # prepare it with reporter data
         input_tag = self.config["input_tag"]
         oracle_tag = self.config["oracle_tag"]
-        input_js[oracle_tag] = output_json_file
+        input_js[oracle_tag] = os.path.abspath(os.path.join(self.config_folder, output_json_file))
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as input_json:
+        with tempfile.NamedTemporaryFile(mode='w', delete=True) as input_json:
             json.dump(input_js, input_json)
-            input_json.close()
+            input_json.file.close()
 
-            res = self.execute_json(input_json.name, False)
+            res = self.execute_json(input_json.name)
 
 
         assert(res.returncode == 0)
@@ -108,21 +109,21 @@ class IntegrationTest(unittest.TestCase):
                 print(f"Caught exception while loading file {test_file}: {e}")
                 raise e
 
-        input = test_oracle[input_tag].copy()
-        with tempfile.NamedTemporaryFile(mode='r', delete=False) as oracle_file:
-            oracle_file.close()
+        input_js = test_oracle[input_tag].copy()
+        with tempfile.NamedTemporaryFile(mode='r', delete=True) as oracle_file:
+            oracle_file.file.close()
 
-            input[oracle_tag] = oracle_file.name
+            input_js[oracle_tag] = oracle_file.name
 
-            if root_tag in input:
-                if not os.path.isabs(input[root_tag]):
-                    input[root_tag] = os.path.join(self.config_folder, input[root_tag])
+            if root_tag in input_js:
+                if not os.path.isabs(input_js[root_tag]):
+                    input_js[root_tag] = os.path.join(self.config_folder, input_js[root_tag])
             else:
-                input[root_tag] = self.config_folder
+                input_js[root_tag] = self.config_folder
 
-            with tempfile.NamedTemporaryFile(mode='w', delete=False) as input_json:
-                json.dump(input, input_json)
-                input_json.close()
+            with tempfile.NamedTemporaryFile(mode='w', delete=True) as input_json:
+                json.dump(input_js, input_json)
+                input_json.file.close()
 
 
                 res = self.execute_json(input_json.name)
@@ -147,6 +148,7 @@ class IntegrationTest(unittest.TestCase):
 
 
     def runTest(self):
+        print(self.config)
         for test_file_name in self.config["tests"]:
             with self.subTest(msg=f"{self.name}-{test_file_name}"):
                 print("Running test", test_file_name)
@@ -161,17 +163,16 @@ def load_config_json(config_file):
 
         if "skip" in config:
             del config["skip"]
-        if IntegrationTest.TEST and IntegrationTest.TEST in config:
-            del config[IntegrationTest.TEST]
     return config
 
-def make_suite(config_file, single = None):
+def make_suite(config_file, single_application = None, single_config = None):
     config = load_config_json(config_file)
 
     suite = unittest.TestSuite()
     for key,value in config.items():
-        if single is None or key == single:
-            suite.addTest(IntegrationTest(key,value))
+        if single_application is None or key == single_application:
+            # expects a list of configs to run
+            suite.addTest(IntegrationTest(key,value, None if single_config is None else [single_config]))
     return suite
 
 
@@ -184,17 +185,17 @@ if __name__ == '__main__':
                     prog='WMTK Integration Test',
                     description='Run integration tests for WMTK')
 
-    parser.add_argument('-c', '--test_config', help="Path to the json config file")
+    parser.add_argument('-c', '--test_config', help="Path to the json config file for integration testing parameters")
     parser.add_argument('-b', '--binary_folder', help="Path to the folder that contains the apps binaries")
-    parser.add_argument('-s', '--single', help="Single test to run")
-    parser.add_argument('-t', '--test', help="Runs a single test")
+    parser.add_argument('-t', '--test-application', help="Runs tests for a single application")
+    parser.add_argument('-s', '--test-script', help="Runs a particular test script")
 
     subparsers = parser.add_subparsers(help="subcommand help", dest="subcommand")
     create_parser = subparsers.add_parser(name="create",help="create integration test json")
 
     create_parser.add_argument("-b", '--binary', help="NAme of the binary being run")
     create_parser.add_argument("-i", '--input', help="input config")
-    create_parser.add_argument("-o", '--output', help="output config")
+    create_parser.add_argument("-o", '--output', help="output config filename, placed in config folder")
 
     args = parser.parse_args()
 
@@ -218,16 +219,15 @@ if __name__ == '__main__':
 
 
 
-    IntegrationTest.TEST = args.test
     IntegrationTest.BINARY_FOLDER = bin_dir
     IntegrationTest.CONFIG_FILE = config_file
 
-    print(args)
 
 
     # no subcommand chosen so we just run
     if args.subcommand is None:
-        suite = make_suite(config_file, args.single)
+        # test_application and test_script are None if not set
+        suite = make_suite(config_file, args.test_application, args.test_script)
 
         runner = unittest.TextTestRunner()
         runner.run(suite)
