@@ -5,15 +5,37 @@ The applications are executables using the WMTK toolkit and its components. Ther
 ## Integration Tests
 
 ### Input json requirements
-An application must be able to take a JSON settings file as input, e.g., `-j app_test.json`. This settings file must also contain a path to write statistics in a JSON file. These statistics are used for the integration test later on. The statistics JSON must also contain an entry named `"input"` which contains the settings JSON. The input directory need to contain a `input_directory_tag` to specify relative paths. Following the example from before that means it must contain:
+An application must be able to take a JSON settings file as input, e.g., `-j example.json`. This settings file must also contain a path to write statistics in a JSON file. These statistics are used for the integration test later on. The statistics JSON must also contain an entry named `"input"` which contains the settings JSON. The input directory need to contain a `input_directory_tag` to specify relative paths. Following the example from before that means it must contain:
 
 ```
-"input" : { ... content of app_test.json ... }
+{
+    ...
+    "input" : { ... content of example.json ... }
+    ...
+}
 ```
+
+#### Converting an settings json to an integration test 
+The `applications/integration_test.py` script is capable of generating integration test data from a build folder (where a `test_config.json` exists and `applications` folder with binaries exists as well)
+
+```bash
+python ../applications/integration_test.py create -b <application_name> -i <path_to_settings_json> -o <output_test_filename>
+```
+The input is a path to the script json file that should be executed, wheras the output is just a file name.
+This is because `output_test_filename` is automatically placed in the proper folder for the particular application chosen. TODO: automatically add it to the list of tests tested against.
+
+#### Converting an integration test json to a settings json
+
+The `jq` command can be used to concisely extract the input component from an integration
+```bash
+jq ".input" integration_test_config.json
+```
+
+
 
 ### Configuration
 
-The application must contain a configuration file for the integration test (e.g., `app_test_config.json`), that contains
+The application must contain a configuration file for the integration test (e.g., `example_config.json`), that contains
 
 ```json
 {
@@ -44,10 +66,11 @@ The application must contain a configuration file for the integration test (e.g.
 
 To register an integration test you need to add
 ```cmake
-wmtk_register_integration_test(<app_exec_name>
-    <path_to_test_config>
-    <github_repo_with_data>
-    <git_hash>)
+wmtk_register_integration_test(
+    EXEC_NAME <app_exec_name>
+    CONFIG_FILE <path_to_test_config>
+    GIT_REPOSITORY <github_repo_with_data>
+    GIT_TAG <git_hash>)
 ```
 `app_exec_name` is the name of the executable of your application.
 
@@ -65,3 +88,4 @@ Go in the build folder and run
 ```bash
 python ../applications/integration_test.py
 ```
+
