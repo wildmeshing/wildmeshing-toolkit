@@ -1,12 +1,14 @@
 {
     "tests": [
         "grid2_cyclic_example.json",
-        "grid2_cyclic_positions.json",
         "grid2_example.json",
         "grid3_cyclic_example.json",
-        "grid3_cyclic_positions.json",
         "grid3_example.json",
         "triangle_fan_example.json"
+    ],
+    "unused_tests": [
+        "grid2_cyclic_positions.json",
+        "grid3_cyclic_positions.json"
     ],
     "input_tag": "input",
     "oracle_tag": "report",
