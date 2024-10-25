@@ -11,23 +11,23 @@ def fix_path(path):
     cwd = os.getcwd()
     return path if os.path.isabs(path) else os.path.join(cwd, path)
 
+    
+
 class IntegrationTest(unittest.TestCase):
-    BINARY_FOLDER = None
-    CONFIG_FILE = None
+    BINARY_FOLDER = fix_path(os.environ['WMTK_BINARY_FOLDER']) if "WMTK_BINARY_FOLDER" in os.environ else None
+    CONFIG_FILE = fix_path(os.environ['WMTK_CONFIG_FILE']) if "WMTK_CONFIG_FILE" in os.environ else None
     TEST = None
 
-    def setUp(self):
-        if "WMTK_BINARY_FOLDER" in os.environ:
-            IntegrationTest.BINARY_FOLDER = fix_path(os.environ['WMTK_BINARY_FOLDER'])
-        if "WMTK_CONFIG_FILE" in os.environ:
-            IntegrationTest.CONFIG_FILE = fix_path(os.environ['WMTK_CONFIG_FILE'])
-
+    def __init__(self, name, config):
+        super().__init__()
         self.working_dir_fp = tempfile.TemporaryDirectory()
         self.working_dir = self.working_dir_fp.name
-        print('Running all integration tests in', self.working_dir)
 
-        with open(IntegrationTest.CONFIG_FILE) as fp:
-            self.main_config = json.load(fp)
+        self.name = name
+        self.config = config
+        print(f'Loading integration test [{name}] in {self.working_dir}')
+
+
 
     def tearDown(self):
         self.working_dir_fp.cleanup()
@@ -103,27 +103,41 @@ class IntegrationTest(unittest.TestCase):
 
         self.assertTrue(True)
 
-    def test_all(self):
-        for key in self.main_config:
+
+    def runTest(self):
+        with self.subTest(msg=self.name):
+            print("Running test for", self.name)
+
+
+            my_config = self.config
+
+            file = my_config["config_file"]
+
+            with open(file) as fp:
+                config = json.load(fp)
+
+            data_folder = None if "data_folder" not in my_config else my_config["data_folder"]
+            config_folder = data_folder if "config_folder" not in my_config else my_config["config_folder"]
+            self.run_one(self.name, config_folder, config)
+
+
+def make_suite(config_file, single = None):
+
+    suite = unittest.TestSuite()
+    with open(config_file) as fp:
+        config = json.load(fp)
+        for key,value in config.items():
             if key == "skip":
                 continue
             if IntegrationTest.TEST and key != IntegrationTest.TEST:
                 continue
+            if single is None or key == single:
+                suite.addTest(IntegrationTest(key,value))
+    return suite
 
-            with self.subTest(msg=key):
-                print("Running test for", key)
 
+            
 
-                my_config = self.main_config[key]
-
-                file = my_config["config_file"]
-
-                with open(file) as fp:
-                    config = json.load(fp)
-
-                data_folder = None if "data_folder" not in my_config else my_config["data_folder"]
-                config_folder = data_folder if "config_folder" not in my_config else my_config["config_folder"]
-                self.run_one(key, config_folder, config)
 
 
 if __name__ == '__main__':
@@ -133,6 +147,7 @@ if __name__ == '__main__':
 
     parser.add_argument('-c', '--test_config', help="Path to the json config file")
     parser.add_argument('-b', '--binary_folder', help="Path to the folder that contains the apps binaries")
+    parser.add_argument('-s', '--single', help="Single test to run")
     parser.add_argument('-t', '--test', help="Runs a single test")
     args = parser.parse_args()
 
@@ -144,27 +159,25 @@ if __name__ == '__main__':
     cwd = os.getcwd()
     if tcin:
         config_file = fix_path(tcin)
-        sys.argv.pop()
-        sys.argv.pop()
     else:
         config_file = os.path.join(cwd, "test_config.json")
 
 
     if bfin:
         bin_dir = fix_path(bfin)
-        sys.argv.pop()
-        sys.argv.pop()
     else:
         bin_dir = os.path.join(cwd, "applications")
 
 
-    if args.test:
-        sys.argv.pop()
-        sys.argv.pop()
 
 
     IntegrationTest.TEST = args.test
     IntegrationTest.BINARY_FOLDER = bin_dir
     IntegrationTest.CONFIG_FILE = config_file
 
-    unittest.main()
+    suite = make_suite(config_file, args.single)
+
+    runner = unittest.TextTestRunner()
+    runner.run(suite)
+    #unittest.main()
+

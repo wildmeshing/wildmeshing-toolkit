@@ -21,6 +21,7 @@ macro(wmtk_register_integration_test )
         set(_CONFIG_PATH ${DATA_DIR})
     endif()
 
+    list (APPEND WMTK_APPLICATION_TEST_NAMES "${_EXEC_NAME}")
     list (APPEND WMTK_TEST_CONFIG 
         "\"${_EXEC_NAME}\":
         {
@@ -30,4 +31,5 @@ macro(wmtk_register_integration_test )
         }")
 
     SET(WMTK_TEST_CONFIG ${WMTK_TEST_CONFIG} PARENT_SCOPE)
+    SET(WMTK_APPLICATION_TEST_NAMES ${WMTK_APPLICATION_TEST_NAMES} PARENT_SCOPE)
 endmacro()
