@@ -81,6 +81,7 @@ int run(const fs::path& config_path)
         out_opts.position_attribute = *coordinate_handle_opt;
         wmtk::components::output::output(*mesh, out_opts);
     }
+    }
 
     if (j.contains("report")) {
         const std::string report = j["report"];
@@ -98,7 +99,6 @@ int run(const fs::path& config_path)
     return 0;
 }
 
-/*
 void fill_config(const fs::path& output_path, const auto& specific_options)
 {
     wmtk::logger().info("Filling config for {}", specific_options.name());
@@ -193,4 +193,3 @@ int main(int argc, char* argv[])
     assert(exit_mode != -1); // "Some subcommand should have updated the exit mode"
     return exit_mode;
 }
-*/
