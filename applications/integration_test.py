@@ -231,7 +231,15 @@ if __name__ == '__main__':
 
         runner = unittest.TextTestRunner()
         result = runner.run(suite)
-        assert(result.errors == 0)
+        if len(result.errors) > 0 or len(result.failures) > 0:
+            for s,error in result.errors:
+                print("While running: ", s)
+                print(error)
+            for s,failure in result.failures:
+                print("While running: ", s)
+                print(failure)
+            assert(len(result.errors) == 0)
+            assert(len(result.failures) == 0)
     elif args.subcommand == "create":
         config = load_config_json(config_file)
         binary = args.binary
