@@ -130,9 +130,6 @@ class IntegrationTest(unittest.TestCase):
 
                 self.assertEqual(res.returncode, 0, f"{res.returncode} != 0")
 
-                if "platform" in config and config["platform"] != "" and config["platform"] != platform.system():
-                    print(f"Skipping checks for {test_file_name} because the platform is {platform.system()} and the test is for {config['platform']}")
-                    continue
 
                 with open(oracle_file.name, "r") as fp:
                     result = json.load(fp)
@@ -175,6 +172,9 @@ def make_suite(config_file, single_application = None, single_config = None):
 
     suite = unittest.TestSuite()
     for key,value in config.items():
+        if "platform" in value and value["platform"] != "" and value["platform"] != platform.system():
+            print(f"Skipping checks for application {key} because the platform is {platform.system()} and the test is for {config['platform']}")
+            continue
         if single_application is None or key == single_application:
             # expects a list of configs to run
             suite.addTest(IntegrationTest(key,value, None if single_config is None else [single_config]))
