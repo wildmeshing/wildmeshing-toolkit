@@ -183,13 +183,17 @@ int main(int argc, char* argv[])
     });
 
     spdlog::info(
-        "{} {} {} {}",
+        "run{} config{} disk{} triangle{} grid{}",
+        run_cmd->parsed(),
         config_cmd->parsed(),
         disk_cmd->parsed(),
         triangle_fan_cmd->parsed(),
         grid_cmd->parsed());
-    ;
 
+
+    if(run_cmd->parsed()) {
+        exit_mode = 0;
+    }
     assert(exit_mode != -1); // "Some subcommand should have updated the exit mode"
     return exit_mode;
 }
