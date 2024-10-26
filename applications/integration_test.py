@@ -2,6 +2,7 @@ import unittest
 
 import sys
 import os
+import platform
 import json
 import subprocess
 import tempfile
@@ -128,6 +129,8 @@ class IntegrationTest(unittest.TestCase):
                 res = self.execute_json(input_json.name)
 
                 self.assertEqual(res.returncode, 0, f"{res.returncode} != 0")
+
+
                 with open(oracle_file.name, "r") as fp:
                     result = json.load(fp)
 
@@ -169,6 +172,9 @@ def make_suite(config_file, single_application = None, single_config = None):
 
     suite = unittest.TestSuite()
     for key,value in config.items():
+        if "platform" in value and value["platform"] != "" and value["platform"] != platform.system():
+            print(f"Skipping checks for application {key} because the platform is {platform.system()} and the test is for {config['platform']}")
+            continue
         if single_application is None or key == single_application:
             # expects a list of configs to run
             suite.addTest(IntegrationTest(key,value, None if single_config is None else [single_config]))
