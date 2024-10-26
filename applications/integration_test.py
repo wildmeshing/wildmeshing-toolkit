@@ -230,7 +230,8 @@ if __name__ == '__main__':
         suite = make_suite(config_file, args.test_application, args.test_script)
 
         runner = unittest.TextTestRunner()
-        runner.run(suite)
+        result = runner.run(suite)
+        assert(result.errors == 0)
     elif args.subcommand == "create":
         config = load_config_json(config_file)
         binary = args.binary
