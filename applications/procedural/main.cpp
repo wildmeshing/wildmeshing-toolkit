@@ -4,12 +4,14 @@
 #include <CLI/CLI.hpp>
 #include <filesystem>
 #include <nlohmann/json.hpp>
+#include <wmtk/applications/utils/element_count_report.hpp>
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <wmtk/components/output/OutputOptions.hpp>
 #include <wmtk/components/output/output.hpp>
+#include <wmtk/components/output/OutputOptions.hpp>
 #include <wmtk/components/utils/resolve_path.hpp>
 
 #include <wmtk/TriMesh.hpp>
@@ -71,14 +73,32 @@ int run(const fs::path& config_path)
     }
 
 
-    auto out_opts = j["output"].get<wmtk::components::output::OutputOptions>();
+    if (!j.contains("output")) {
+        wmtk::logger().info("procedural_app: No output path provided");
+    } else {
     if (coordinate_handle_opt.has_value()) {
+        auto out_opts = j["output"].get<wmtk::components::output::OutputOptions>();
         out_opts.position_attribute = *coordinate_handle_opt;
+        wmtk::components::output::output(*mesh, out_opts);
     }
-    wmtk::components::output::output(*mesh, out_opts);
+
+    if (j.contains("report")) {
+        const std::string report = j["report"];
+        if (!report.empty()) {
+            nlohmann::json out_json;
+            out_json.update(wmtk::applications::utils::element_count_report_named(*mesh));
+            j.erase("report");
+            out_json["input"] = j;
+
+
+            std::ofstream ofs(report);
+            ofs << out_json;
+        }
+    }
     return 0;
 }
 
+/*
 void fill_config(const fs::path& output_path, const auto& specific_options)
 {
     wmtk::logger().info("Filling config for {}", specific_options.name());
@@ -173,3 +193,4 @@ int main(int argc, char* argv[])
     assert(exit_mode != -1); // "Some subcommand should have updated the exit mode"
     return exit_mode;
 }
+*/

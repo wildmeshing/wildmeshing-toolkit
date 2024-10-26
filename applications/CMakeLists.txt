@@ -20,7 +20,7 @@ if(WMTK_ENABLE_APPLICATION_marching)
 add_subdirectory(marching)
 endif()
 
-option(WMTK_ENABLE_APPLICATION_procedural "Runs procedural application" OFF)
+option(WMTK_ENABLE_APPLICATION_procedural "Runs procedural application" ON)
 if(WMTK_ENABLE_APPLICATION_procedural)
 add_subdirectory(procedural)
 endif()
@@ -92,10 +92,23 @@ enable_testing()
 find_package(Python REQUIRED)
 
 
+#add_test(
+#    NAME wmtk_integration_test
+#    COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/integration_test.py
+#    -c ${CMAKE_BINARY_DIR}/test_config.json
+#    -b ${CMAKE_BINARY_DIR}/applications
+#)
+MESSAGE(STATUS "${WMTK_APPLICATION_TEST_NAMES}")
+foreach(APP_TEST ${WMTK_APPLICATION_TEST_NAMES})
+    MESSAGE(STATUS "${APP_TEST}")
+
 add_test(
-    NAME wmtk_integration_test
+    NAME "wmtk_integration_test_${APP_TEST}"
     COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/integration_test.py
-    -c ${CMAKE_BINARY_DIR}/test_config.json
-    -b ${CMAKE_BINARY_DIR}/applications
+    -c "${CMAKE_BINARY_DIR}/test_config.json"
+    -b "${CMAKE_BINARY_DIR}/applications"
+    -t "${APP_TEST}"
 )
+
+    endforeach()
 endif()
