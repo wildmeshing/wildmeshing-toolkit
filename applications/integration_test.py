@@ -68,7 +68,6 @@ class IntegrationTest(unittest.TestCase):
         # load the input json
         with open(input_json_file) as f:
             input_js = json.load(f)
-            f.close()
 
 
         # prepare it with reporter data
@@ -121,7 +120,7 @@ class IntegrationTest(unittest.TestCase):
             else:
                 input_js[root_tag] = self.config_folder
 
-            with tempfile.NamedTemporaryFile(mode='w', delete=True) as input_json:
+            with tempfile.NamedTemporaryFile(mode='w', delete=False) as input_json:
                 json.dump(input_js, input_json)
                 input_json.file.close()
 
