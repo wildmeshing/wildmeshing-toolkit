@@ -68,7 +68,6 @@ class IntegrationTest(unittest.TestCase):
         # load the input json
         with open(input_json_file) as f:
             input_js = json.load(f)
-            f.close()
 
 
         # prepare it with reporter data
@@ -121,7 +120,7 @@ class IntegrationTest(unittest.TestCase):
             else:
                 input_js[root_tag] = self.config_folder
 
-            with tempfile.NamedTemporaryFile(mode='w', delete=True) as input_json:
+            with tempfile.NamedTemporaryFile(mode='w', delete=False) as input_json:
                 json.dump(input_js, input_json)
                 input_json.file.close()
 
@@ -230,7 +229,16 @@ if __name__ == '__main__':
         suite = make_suite(config_file, args.test_application, args.test_script)
 
         runner = unittest.TextTestRunner()
-        runner.run(suite)
+        result = runner.run(suite)
+        if len(result.errors) > 0 or len(result.failures) > 0:
+            for s,error in result.errors:
+                print("While running: ", s)
+                print(error)
+            for s,failure in result.failures:
+                print("While running: ", s)
+                print(failure)
+            assert(len(result.errors) == 0)
+            assert(len(result.failures) == 0)
     elif args.subcommand == "create":
         config = load_config_json(config_file)
         binary = args.binary
