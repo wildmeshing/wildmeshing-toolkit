@@ -2,6 +2,7 @@ import unittest
 
 import sys
 import os
+import platform
 import json
 import subprocess
 import tempfile
@@ -68,7 +69,6 @@ class IntegrationTest(unittest.TestCase):
         # load the input json
         with open(input_json_file) as f:
             input_js = json.load(f)
-            f.close()
 
 
         # prepare it with reporter data
@@ -121,7 +121,7 @@ class IntegrationTest(unittest.TestCase):
             else:
                 input_js[root_tag] = self.config_folder
 
-            with tempfile.NamedTemporaryFile(mode='w', delete=True) as input_json:
+            with tempfile.NamedTemporaryFile(mode='w', delete=False) as input_json:
                 json.dump(input_js, input_json)
                 input_json.file.close()
 
@@ -129,6 +129,8 @@ class IntegrationTest(unittest.TestCase):
                 res = self.execute_json(input_json.name)
 
                 self.assertEqual(res.returncode, 0, f"{res.returncode} != 0")
+
+
                 with open(oracle_file.name, "r") as fp:
                     result = json.load(fp)
 
@@ -170,6 +172,9 @@ def make_suite(config_file, single_application = None, single_config = None):
 
     suite = unittest.TestSuite()
     for key,value in config.items():
+        if "platform" in value and value["platform"] != "" and value["platform"] != platform.system():
+            print(f"Skipping checks for application {key} because the platform is {platform.system()} and the test is for {config['platform']}")
+            continue
         if single_application is None or key == single_application:
             # expects a list of configs to run
             suite.addTest(IntegrationTest(key,value, None if single_config is None else [single_config]))
@@ -230,7 +235,16 @@ if __name__ == '__main__':
         suite = make_suite(config_file, args.test_application, args.test_script)
 
         runner = unittest.TextTestRunner()
-        runner.run(suite)
+        result = runner.run(suite)
+        if len(result.errors) > 0 or len(result.failures) > 0:
+            for s,error in result.errors:
+                print("While running: ", s)
+                print(error)
+            for s,failure in result.failures:
+                print("While running: ", s)
+                print(failure)
+            assert(len(result.errors) == 0)
+            assert(len(result.failures) == 0)
     elif args.subcommand == "create":
         config = load_config_json(config_file)
         binary = args.binary
