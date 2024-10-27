@@ -4,7 +4,7 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/components/input/input.hpp>
 #include "tools/TriMesh_examples.hpp"
-#include "wmtk/components/input/NamedMultiMesh.hpp"
+#include "wmtk/components/multimesh/NamedMultiMesh.hpp"
 
 #include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 
@@ -21,7 +21,7 @@ auto make_mesh()
 auto make_child(wmtk::Mesh& m, const std::vector<int64_t>& path)
 {
     if (path.size() == 0) {
-        // input root mesh already exists so nothing to be done
+        // multimesh root mesh already exists so nothing to be done
         return;
     }
     for (size_t j = 0; j < path.size(); ++j) {
@@ -40,11 +40,11 @@ auto make_child(wmtk::Mesh& m, const std::vector<int64_t>& path)
 } // namespace
 
 
-TEST_CASE("named_multimesh_parse", "[components][input]")
+TEST_CASE("named_multimesh_parse", "[components][multimesh]")
 {
     {
         auto m = make_mesh();
-        wmtk::components::input::NamedMultiMesh named_mm;
+        wmtk::components::multimesh::NamedMultiMesh named_mm;
         named_mm.set_mesh(*m);
 
         named_mm.set_name("roo");
@@ -60,7 +60,7 @@ TEST_CASE("named_multimesh_parse", "[components][input]")
         make_child(*m, {0});
 
 
-        wmtk::components::input::NamedMultiMesh named_mm;
+        wmtk::components::multimesh::NamedMultiMesh named_mm;
         named_mm.set_mesh(*m);
         {
             nlohmann::json js;
@@ -76,7 +76,7 @@ TEST_CASE("named_multimesh_parse", "[components][input]")
             named_mm.get_mesh("roo.child").shared_from_this());
     }
     {
-        wmtk::components::input::NamedMultiMesh named_mm;
+        wmtk::components::multimesh::NamedMultiMesh named_mm;
         nlohmann::json js;
         js["roo"] = nlohmann::json("child");
         named_mm.set_names(js);
@@ -84,7 +84,7 @@ TEST_CASE("named_multimesh_parse", "[components][input]")
         CHECK(std::vector<int64_t>{0} == named_mm.get_id("roo.child"));
     }
     {
-        wmtk::components::input::NamedMultiMesh named_mm;
+        wmtk::components::multimesh::NamedMultiMesh named_mm;
         nlohmann::json js;
         js["roo"]["child"] = {};
         named_mm.set_names(js);
@@ -93,7 +93,7 @@ TEST_CASE("named_multimesh_parse", "[components][input]")
     }
 
     {
-        wmtk::components::input::NamedMultiMesh named_mm;
+        wmtk::components::multimesh::NamedMultiMesh named_mm;
         auto m = make_mesh();
         {
             make_child(*m, {0});

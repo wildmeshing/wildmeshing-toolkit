@@ -4,7 +4,7 @@
 #include <vector>
 #include <wmtk/Mesh.hpp>
 #include "internal/split_path.hpp"
-namespace wmtk::components::input {
+namespace wmtk::components::multimesh {
 
 struct NamedMultiMesh::Node
 {
@@ -147,4 +147,4 @@ NamedMultiMesh::NamedMultiMesh(const NamedMultiMesh& o)
     : m_root(o.m_root)
     , m_name_root(std::make_unique<Node>(*o.m_name_root))
 {}
-} // namespace wmtk::components::input
+} // namespace wmtk::components::multimesh

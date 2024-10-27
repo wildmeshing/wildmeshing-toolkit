@@ -22,7 +22,7 @@ std::shared_ptr<Mesh> input(
     return input(options).root().shared_from_this();
 }
 
-NamedMultiMesh input(const InputOptions& options)
+multimesh::NamedMultiMesh input(const InputOptions& options)
 {
     if (!std::filesystem::exists(options.file)) {
         log_and_throw_error("file [{}] not found", options.file.string());
@@ -49,7 +49,7 @@ NamedMultiMesh input(const InputOptions& options)
     assert(mesh->is_connectivity_valid());
 
 
-    NamedMultiMesh mm;
+    multimesh::NamedMultiMesh mm;
     mm.set_mesh(*mesh);
     mm.set_names(options.name_spec);
 

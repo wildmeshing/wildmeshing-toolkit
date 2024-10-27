@@ -3,9 +3,9 @@
 #include "internal/split_path.hpp"
 #include <wmtk/utils/Logger.hpp>
 
-#include "input.hpp"
+#include "multimesh.hpp"
 
-namespace wmtk::components::input {
+namespace wmtk::components::multimesh {
 
 
 NamedMultiMesh& MeshCollection::add_mesh(NamedMultiMesh m)
@@ -14,10 +14,10 @@ NamedMultiMesh& MeshCollection::add_mesh(NamedMultiMesh m)
     return it->second;
 }
 
-NamedMultiMesh& MeshCollection::add_mesh(const InputOptions& opts)
-{
-    return add_mesh(input(opts));
-}
+//NamedMultiMesh& MeshCollection::add_mesh(const InputOptions& opts)
+//{
+//    return add_mesh(multimesh(opts));
+//}
 
 
 const NamedMultiMesh& MeshCollection::get_named_multimesh(const std::string_view& path) const
@@ -49,4 +49,4 @@ NamedMultiMesh& MeshCollection::get_named_multimesh(const std::string_view& path
     }
     return m_meshes.at(nmm_name);
 }
-} // namespace wmtk::components::input
+} // namespace wmtk::components::multimesh

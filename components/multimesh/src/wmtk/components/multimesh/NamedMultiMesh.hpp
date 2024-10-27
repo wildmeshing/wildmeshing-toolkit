@@ -7,7 +7,7 @@ class Mesh;
 }
 
 
-namespace wmtk::components::input {
+namespace wmtk::components::multimesh {
 
 // allows for accessing a mesh by a string ID
 // The IDs are loaded through a json format, and hte root node can either have a name or be hte
@@ -44,4 +44,4 @@ private:
     std::unique_ptr<Node> m_name_root;
 };
 
-} // namespace wmtk::components::input
+} // namespace wmtk::components::multimesh
