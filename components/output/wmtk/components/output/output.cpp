@@ -8,6 +8,7 @@
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "OutputOptions.hpp"
+#include <wmtk/components/multimesh/NamedMultiMesh.hpp>
 
 
 namespace wmtk::components::output {
@@ -78,6 +79,14 @@ void output(
         throw std::runtime_error(
                 fmt::format("Unable to write file [{}] of extension [{}]",
                     opts.file, opts.type));
+}
+
+void output(
+    const multimesh::NamedMultiMesh& mesh,
+    const OutputOptions& opts)
+{
+    output(mesh.root(), opts);
+
 }
 
 } // namespace wmtk::components

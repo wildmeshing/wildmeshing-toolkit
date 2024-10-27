@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <nlohmann/json.hpp>
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
+#include <wmtk/components/utils/json_macros.hpp>
 
 
 namespace wmtk::components::output {
@@ -14,19 +15,14 @@ struct OutputOptions
     // some formats (?msh?) have a dedicated slot for positions
     std::variant<wmtk::attribute::MeshAttributeHandle, std::string> position_attribute;
 
+    std::optional<std::filesystem::path> mesh_name_path;
 
     // This was intended to be implemenetd easily with default, too lazy to properly implement now without c++20
     //bool operator==(const OutputOptions& o) const;
+
+
+    WMTK_NLOHMANN_JSON_FRIEND_DECLARATION(OutputOptions)
 };
 } // namespace wmtk::components::output
 
 
-namespace nlohmann {
-template <>
-struct adl_serializer<wmtk::components::output::OutputOptions>
-{
-    using Type = wmtk::components::output::OutputOptions;
-    static void to_json(json& j, const Type& v);
-    static void from_json(const json& j, Type& v);
-};
-} // namespace nlohmann
