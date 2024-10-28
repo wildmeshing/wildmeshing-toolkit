@@ -184,10 +184,7 @@ void longest_edge_split(Mesh& mesh_in, const LongestEdgeSplitOptions& options)
 
 
     for (const auto& attr : pass_through_attributes) {
-        split->set_new_attribute_strategy(
-            attr,
-            wmtk::operations::SplitBasicStrategy::None,
-            wmtk::operations::SplitRibBasicStrategy::None);
+        split->set_new_attribute_strategy(attr);
     }
 
     auto propagate_position = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd { return P; };
