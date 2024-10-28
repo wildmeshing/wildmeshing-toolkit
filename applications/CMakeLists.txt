@@ -60,6 +60,11 @@ if(WMTK_ENABLE_APPLICATION_shortest_edge_collapse)
 add_subdirectory(shortest_edge_collapse)
 endif()
 
+option(WMTK_ENABLE_APPLICATION_longest_edge_split "Runs longest-edge split application" ON)
+if(WMTK_ENABLE_APPLICATION_longest_edge_split)
+add_subdirectory(longest_edge_split)
+endif()
+
 option(WMTK_ENABLE_APPLICATION_insertion "Runs insertion application" ON)
 if(WMTK_ENABLE_APPLICATION_insertion)
 add_subdirectory(insertion)
