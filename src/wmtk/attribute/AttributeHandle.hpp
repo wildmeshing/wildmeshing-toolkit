@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <type_traits>
 
 // TODO: is this abstraction still necessary? the original attempt was to have a generic index that
