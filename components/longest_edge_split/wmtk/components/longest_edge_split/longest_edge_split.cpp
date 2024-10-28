@@ -2,25 +2,17 @@
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/Scheduler.hpp>
-#include <wmtk/components/utils/get_attributes.hpp>
-#include <wmtk/invariants/EnvelopeInvariant.hpp>
 #include <wmtk/invariants/InteriorSimplexInvariant.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
-#include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
-#include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
-#include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
-#include <wmtk/invariants/uvEdgeInvariant.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
 #include <wmtk/multimesh/consolidate.hpp>
-#include <wmtk/operations/AttributesUpdate.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/attribute_new/NewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include <wmtk/utils/Logger.hpp>
-
 
 namespace wmtk::components::longest_edge_split {
 
@@ -119,15 +111,10 @@ void longest_edge_split(Mesh& mesh_in, const LongestEdgeSplitOptions& options)
         return -edge_length_accessor.const_scalar_attribute(s.tuple());
     };
     pass_through_attributes.push_back(edge_length_attribute);
-    auto todo = std::make_shared<TodoLargerInvariant>(
-        mesh,
-        edge_length_attribute.as<double>(),
-        4. / 3. * length_abs);
+    auto todo =
+        std::make_shared<TodoLargerInvariant>(mesh, edge_length_attribute.as<double>(), length_abs);
 
     //////////////////////////invariants
-
-    auto invariant_link_condition = std::make_shared<MultiMeshLinkConditionInvariant>(mesh);
-
     auto invariant_interior_edge = std::make_shared<invariants::InvariantCollection>(mesh);
     auto invariant_interior_vertex = std::make_shared<invariants::InvariantCollection>(mesh);
 
@@ -150,7 +137,6 @@ void longest_edge_split(Mesh& mesh_in, const LongestEdgeSplitOptions& options)
     // split
     auto split = std::make_shared<wmtk::operations::EdgeSplit>(mesh);
     split->add_invariant(todo);
-    split->add_invariant(invariant_link_condition);
     split->add_invariant(invariant_mm_map);
 
 
@@ -202,26 +188,8 @@ void longest_edge_split(Mesh& mesh_in, const LongestEdgeSplitOptions& options)
     Scheduler scheduler;
     SchedulerStats pass_stats =
         scheduler.run_operation_on_all(*split, visited_edge_flag.as<char>());
-    // SchedulerStats pass_stats = scheduler.run_operation_on_all(*split);
-
-
-    // // debug code
-    // for (const auto& e : mesh.get_all(PrimitiveType::Edge)) {
-    //     if (mesh.is_boundary(PrimitiveType::Edge, e)) {
-    //         logger().error("after sec mesh has nonmanifold edges");
-    //     }
-    // }
 
     wmtk::multimesh::consolidate(mesh);
-
-    logger().info(
-        "Executed {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",
-        pass_stats.number_of_performed_operations(),
-        pass_stats.number_of_successful_operations(),
-        pass_stats.number_of_failed_operations(),
-        pass_stats.collecting_time,
-        pass_stats.sorting_time,
-        pass_stats.executing_time);
 }
 
 void longest_edge_split(
