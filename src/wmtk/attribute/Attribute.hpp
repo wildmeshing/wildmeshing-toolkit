@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Eigen/Core>
-#include <memory>
 #include <vector>
 #include <wmtk/utils/MerkleTreeInteriorNode.hpp>
 #include "MapTypes.hpp"

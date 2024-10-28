@@ -2,13 +2,9 @@
 #include <wmtk/operations/internal/SplitAlternateFacetData.hpp>
 #include <wmtk/simplex/IdSimplexCollection.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
-#include <wmtk/simplex/boundary.hpp>
-#include <wmtk/simplex/closed_star.hpp>
 #include <wmtk/simplex/faces.hpp>
 #include <wmtk/simplex/faces_single_dimension.hpp>
 #include <wmtk/simplex/half_closed_star_iterable.hpp>
-#include <wmtk/simplex/link.hpp>
-#include <wmtk/simplex/link_single_dimension.hpp>
 #include <wmtk/simplex/link_single_dimension_iterable.hpp>
 #include <wmtk/simplex/open_star.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
