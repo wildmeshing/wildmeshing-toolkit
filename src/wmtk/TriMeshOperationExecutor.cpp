@@ -22,7 +22,6 @@
 #include <wmtk/simplex/closed_star_iterable.hpp>
 #include <wmtk/simplex/faces.hpp>
 #include <wmtk/simplex/open_star.hpp>
-#include <wmtk/simplex/open_star_iterable.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/simplex/top_dimension_cofaces_iterable.hpp>
 #include <wmtk/simplex/utils/SimplexComparisons.hpp>

@@ -1,11 +1,8 @@
 #pragma once
 
-#include <memory>
 #include <type_traits>
 #include "MeshAttributeHandle.hpp"
 #include "internal/MapTypes.hpp"
-#include "wmtk/Tuple.hpp"
-#include "wmtk/Types.hpp"
 
 #include <Eigen/Dense>
 

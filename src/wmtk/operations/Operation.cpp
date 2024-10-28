@@ -1,15 +1,9 @@
 #include "Operation.hpp"
-#include <spdlog/spdlog.h>
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
 #include <wmtk/simplex/IdSimplexCollection.hpp>
-#include <wmtk/simplex/closed_star.hpp>
 #include <wmtk/simplex/closed_star_iterable.hpp>
-#include <wmtk/simplex/cofaces_single_dimension_iterable.hpp>
-#include <wmtk/simplex/link_single_dimension_iterable.hpp>
-#include <wmtk/simplex/open_star_iterable.hpp>
-#include <wmtk/simplex/top_dimension_cofaces.hpp>
 
 
 // it's ugly but for teh visitor we need these included
