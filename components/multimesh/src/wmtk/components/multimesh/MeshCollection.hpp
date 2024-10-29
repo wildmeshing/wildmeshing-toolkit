@@ -1,6 +1,7 @@
 #pragma once
 #include <map>
 #include "NamedMultiMesh.hpp"
+#include <memory>
 
 namespace wmtk::components::multimesh {
 
@@ -20,6 +21,6 @@ public:
 
 
 private:
-    std::map<std::string_view, NamedMultiMesh> m_meshes;
+    std::map<std::string_view, std::unique_ptr<NamedMultiMesh>> m_meshes;
 };
 } // namespace wmtk::components::multimesh
