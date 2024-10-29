@@ -17,6 +17,9 @@ void adl_serializer<wmtk::components::input::InputOptions>::to_json(json& j, con
     if (!v.name_spec.is_null()) {
         assert(!v.name_spec_file.has_value());
         j["name_spec"] = v.name_spec;
+    } else if(v.name_spec_file.has_value()) {
+        j["name_spec_file"] = v.name_spec_file.value();
+
     }
     if (v.old_mode) {
         j["old_mode"] = true;
@@ -43,6 +46,9 @@ void adl_serializer<wmtk::components::input::InputOptions>::from_json(const json
     v.file = j["file"].get<std::filesystem::path>();
     if (j.contains("name_spec")) {
         v.name_spec = j["name_spec"];
+    }
+    if (j.contains("name_spec_file")) {
+        v.name_spec_file = j["name_spec_file"];
     }
 
     v.old_mode = false;

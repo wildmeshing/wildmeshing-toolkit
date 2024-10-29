@@ -15,6 +15,7 @@ public:
     std::optional<std::vector<std::vector<std::string>>> imported_attributes;
 
 
+    // either you can have a name spec in json or you can have it in a file
     nlohmann::json name_spec;
     std::optional<std::filesystem::path> name_spec_file;
 
