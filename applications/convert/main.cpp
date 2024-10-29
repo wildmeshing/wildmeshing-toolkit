@@ -27,13 +27,16 @@ using namespace wmtk;
 namespace fs = std::filesystem;
 
 namespace {
-void merge_meshes(wmtk::components::multimesh::MeshCollection& mc, const nlohmann::json& js)
+std::shared_ptr<wmtk::Mesh> merge_meshes(
+    wmtk::components::multimesh::MeshCollection& mc,
+    const nlohmann::json& js)
 {
     for (const auto& [parent, child_datas] : js.items()) {
         auto& parent_mesh = mc.get_mesh(parent);
         if (child_datas.is_string()) {
             auto& child_mesh = mc.get_mesh(child_datas.get<std::string>());
             components::multimesh::from_facet_bijection(parent_mesh, child_mesh);
+            return parent_mesh.shared_from_this();
 
         } else if (child_datas.is_object()) {
             const std::string type = child_datas["type"];
@@ -42,6 +45,7 @@ void merge_meshes(wmtk::components::multimesh::MeshCollection& mc, const nlohman
                 const std::string child_name = child_datas["name"];
                 auto& child_mesh = mc.get_mesh(child_name);
                 components::multimesh::from_facet_bijection(parent_mesh, child_mesh);
+                return parent_mesh.shared_from_this();
 
             } else if (type == "boundary") {
                 const int64_t dimension = child_datas["dimension"];
@@ -53,9 +57,11 @@ void merge_meshes(wmtk::components::multimesh::MeshCollection& mc, const nlohman
                     parent_mesh,
                     wmtk::get_primitive_type_from_id(dimension),
                     boundary_attr_name);
+                return parent_mesh.shared_from_this();
             }
         }
     }
+    return nullptr;
 }
 } // namespace
 
@@ -71,22 +77,27 @@ int run(const fs::path& config_path /*, const std::optional<fs::path>& name_spec
     }
 
     wmtk::components::multimesh::MeshCollection meshes;
+    std::shared_ptr<wmtk::Mesh> output_mesh;
     if (j["input"].is_array()) {
         for (const auto& in_opts_js : j["input"]) {
             wmtk::components::input::InputOptions opts = in_opts_js;
             meshes.add_mesh(wmtk::components::input::input(opts));
         }
-        merge_meshes(meshes, j["tree"]);
+        output_mesh = merge_meshes(meshes, j["tree"]);
 
     } else {
         wmtk::components::input::InputOptions opts = j["input"];
-        meshes.add_mesh(wmtk::components::input::input(opts));
+        output_mesh =
+            meshes.add_mesh(wmtk::components::input::input(opts)).root().shared_from_this();
     }
 
 
     if (!j.contains("output")) {
         wmtk::logger().info("convert: No output path provided");
     } else {
+        auto opts = j["output"].get<wmtk::components::output::OutputOptions>();
+
+        wmtk::components::output::output(*output_mesh, opts);
     }
 
 
