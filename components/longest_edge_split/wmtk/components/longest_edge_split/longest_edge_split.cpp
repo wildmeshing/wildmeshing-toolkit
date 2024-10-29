@@ -149,25 +149,10 @@ void longest_edge_split(Mesh& mesh_in, const LongestEdgeSplitOptions& options)
     split->set_priority(long_edges_first_priority);
     split->add_transfer_strategy(edge_length_update);
 
-    if (options.lock_boundary) {
-        if (mesh_in.top_simplex_type() != PrimitiveType::Edge) {
-            split->add_invariant(invariant_interior_edge);
-        }
-        // set split towards boundary
-        for (const auto& pos_handle : position_handles) {
-            auto pos_split_strategy =
-                std::make_shared<wmtk::operations::SplitNewAttributeStrategy<double>>(pos_handle);
-            pos_split_strategy->set_strategy(wmtk::operations::SplitBasicStrategy::Default);
-            pos_split_strategy->set_simplex_predicate(
-                wmtk::operations::BasicSimplexPredicate::IsInterior);
-            split->set_new_attribute_strategy(pos_handle, pos_split_strategy);
-        }
-    } else {
-        for (const auto& pos_handle : position_handles) {
-            split->set_new_attribute_strategy(pos_handle);
-        }
-    }
 
+    for (const auto& pos_handle : position_handles) {
+        split->set_new_attribute_strategy(pos_handle);
+    }
 
     for (const auto& attr : pass_through_attributes) {
         split->set_new_attribute_strategy(attr);
@@ -189,6 +174,15 @@ void longest_edge_split(Mesh& mesh_in, const LongestEdgeSplitOptions& options)
     SchedulerStats pass_stats =
         scheduler.run_operation_on_all(*split, visited_edge_flag.as<char>());
 
+    logger().info(
+        "Executed {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",
+        pass_stats.number_of_performed_operations(),
+        pass_stats.number_of_successful_operations(),
+        pass_stats.number_of_failed_operations(),
+        pass_stats.collecting_time,
+        pass_stats.sorting_time,
+        pass_stats.executing_time);
+
     wmtk::multimesh::consolidate(mesh);
 }
 
@@ -196,15 +190,11 @@ void longest_edge_split(
     Mesh& mesh,
     const attribute::MeshAttributeHandle& position_handle,
     const double length_rel,
-    std::optional<bool> lock_boundary,
     const std::vector<attribute::MeshAttributeHandle>& pass_through)
 {
     LongestEdgeSplitOptions options;
     options.position_handle = position_handle;
     options.length_rel = length_rel;
-    if (lock_boundary) {
-        options.lock_boundary = lock_boundary.value();
-    }
 
     options.pass_through_attributes = pass_through;
     longest_edge_split(mesh, options);

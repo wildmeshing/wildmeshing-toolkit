@@ -107,7 +107,6 @@ int main(int argc, char* argv[])
         }
 
         options.length_rel = j["length_rel"];
-        options.lock_boundary = j["lock_boundary"];
 
         longest_edge_split(mesh, options);
     }

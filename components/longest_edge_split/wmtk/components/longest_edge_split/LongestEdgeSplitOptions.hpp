@@ -19,10 +19,6 @@ struct LongestEdgeSplitOptions
      * The desired edge length relative to the AABB.
      */
     double length_rel;
-    /**
-     * Are boundary vertices allowed to be split?
-     */
-    bool lock_boundary = false;
 
     /**
      * Any other attribute goes here. They are handled with the default attribute behavior.

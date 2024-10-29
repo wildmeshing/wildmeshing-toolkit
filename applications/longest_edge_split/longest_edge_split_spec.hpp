@@ -13,7 +13,6 @@ nlohmann::json longest_edge_split_spec = R"(
     ],
     "optional": [
       "length_rel",
-      "lock_boundary",
       "report",
       "input_path",
       "use_multimesh"
@@ -32,12 +31,6 @@ nlohmann::json longest_edge_split_spec = R"(
     "type": "float",
     "default": 0.1,
     "doc": "The desired edge length relative to the AABB."
-  },
-  {
-    "pointer": "/lock_boundary",
-    "type": "bool",
-    "default": false,
-    "doc": "Are boundary vertices allowed to be split?"
   },
   {
     "pointer": "/report",

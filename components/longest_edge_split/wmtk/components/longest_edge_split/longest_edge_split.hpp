@@ -29,7 +29,6 @@ void longest_edge_split(
     Mesh& mesh,
     const attribute::MeshAttributeHandle& position_handle,
     const double length_rel,
-    std::optional<bool> lock_boundary = {},
     const std::vector<attribute::MeshAttributeHandle>& pass_through = {});
 
 } // namespace wmtk::components::longest_edge_split
