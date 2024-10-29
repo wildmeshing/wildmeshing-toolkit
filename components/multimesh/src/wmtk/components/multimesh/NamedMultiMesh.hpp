@@ -27,7 +27,7 @@ public:
     void set_names(const nlohmann::json& js);
     void set_root(Mesh& m);
 
-    void get_names(nlohmann::json& js);
+    std::unique_ptr<nlohmann::json> get_names_json() const;
 
     std::string_view root_name() const;
     std::string name(const std::vector<int64_t>& id) const;

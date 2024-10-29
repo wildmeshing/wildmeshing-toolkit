@@ -53,7 +53,18 @@ struct NamedMultiMesh::Node
             m_child_indexer.emplace(m_children[j]->name, j);
         }
     }
+    friend void to_json(
+        nlohmann::json& nlohmann_json_j,
+        const NamedMultiMesh::Node& nlohmann_json_t)
+    {
+        nlohmann::json arr = nlohmann::json::array();
+        for (const auto& c_ptr : nlohmann_json_t.m_children) {
+            arr.emplace_back(*c_ptr);
+        }
+        nlohmann_json_j["name"] = arr;
+    }
 };
+
 
 void NamedMultiMesh::set_root(Mesh& m)
 {
@@ -74,11 +85,10 @@ Mesh& NamedMultiMesh::get_mesh(const std::string_view& path) const
 
 auto NamedMultiMesh::get_id(const std::string_view& path) const -> std::vector<int64_t>
 {
-
 #if defined(WMTK_ENABLED_CPP20)
     std::ranges::view auto split = internal::split_path(path);
 #else
-        auto split = internal::split_path(path);
+    auto split = internal::split_path(path);
 #endif
 
     std::vector<int64_t> indices;
@@ -136,15 +146,27 @@ std::string NamedMultiMesh::name(const std::vector<int64_t>& id) const
 
 NamedMultiMesh::NamedMultiMesh() = default;
 NamedMultiMesh::~NamedMultiMesh() = default;
-//NamedMultiMesh::NamedMultiMesh(NamedMultiMesh&&) = default;
-//auto NamedMultiMesh::operator=(NamedMultiMesh&&) -> NamedMultiMesh& = default;
-auto NamedMultiMesh::operator=(const NamedMultiMesh& o) -> NamedMultiMesh& {
-     m_root = o.m_root;
-     m_name_root=std::make_unique<Node>(*o.m_name_root);
-     return *this;
+// NamedMultiMesh::NamedMultiMesh(NamedMultiMesh&&) = default;
+// auto NamedMultiMesh::operator=(NamedMultiMesh&&) -> NamedMultiMesh& = default;
+auto NamedMultiMesh::operator=(const NamedMultiMesh& o) -> NamedMultiMesh&
+{
+    m_root = o.m_root;
+    m_name_root = std::make_unique<Node>(*o.m_name_root);
+    return *this;
 }
 NamedMultiMesh::NamedMultiMesh(const NamedMultiMesh& o)
     : m_root(o.m_root)
     , m_name_root(std::make_unique<Node>(*o.m_name_root))
 {}
+
+
+std::unique_ptr<nlohmann::json> NamedMultiMesh::get_names_json() const
+{
+    auto js_ptr = std::make_unique<nlohmann::json>();
+    auto& js = *js_ptr;
+    js = *m_name_root;
+
+
+    return js_ptr;
+}
 } // namespace wmtk::components::multimesh

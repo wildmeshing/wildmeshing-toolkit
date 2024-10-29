@@ -2,6 +2,7 @@
 #include "OutputOptions.hpp"
 #include <fmt/std.h>
 #include <wmtk/Mesh.hpp>
+#include <wmtk/components/utils/json_utils.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 
@@ -9,10 +10,14 @@ namespace wmtk::components::output {
 
 WMTK_NLOHMANN_JSON_FRIEND_TO_JSON_PROTOTYPE(OutputOptions)
 {
+    WMTK_NLOHMANN_ASSIGN_TYPE_TO_JSON(file, type)
+    if (nlohmann_json_t.mesh_name_path.has_value()) {
+        nlohmann_json_j["mesh_name_path"] = nlohmann_json_t.mesh_name_path.value();
+    }
     //
-    nlohmann_json_j["file"] = nlohmann_json_t.file.string();
+    // nlohmann_json_j["file"] = nlohmann_json_t.file.string();
 
-    nlohmann_json_j["type"] = nlohmann_json_t.type;
+    // nlohmann_json_j["type"] = nlohmann_json_t.type;
 
     nlohmann_json_j["position_attribute"] = std::visit(
         [](const auto& attr) -> std::string {
@@ -28,18 +33,25 @@ WMTK_NLOHMANN_JSON_FRIEND_TO_JSON_PROTOTYPE(OutputOptions)
 WMTK_NLOHMANN_JSON_FRIEND_FROM_JSON_PROTOTYPE(OutputOptions)
 {
     if (nlohmann_json_j.is_string()) {
-        nlohmann_json_t.file = nlohmann_json_j.get<std::string>();
+        nlohmann_json_t.file = nlohmann_json_j.get<std::filesystem::path>();
     } else {
-    nlohmann_json_t.file = nlohmann_json_j["file"].get<std::string>();
+        nlohmann_json_t.file = nlohmann_json_j["file"].get<std::filesystem::path>();
     }
     if (nlohmann_json_j.contains("type")) {
         nlohmann_json_t.type = nlohmann_json_j["type"];
     } else {
         nlohmann_json_t.type = nlohmann_json_t.file.extension().string();
-        wmtk::logger().debug("Guessing extension type of [{}] is [{}]", nlohmann_json_t.file, nlohmann_json_t.type);
+        wmtk::logger().debug(
+            "Guessing extension type of [{}] is [{}]",
+            nlohmann_json_t.file,
+            nlohmann_json_t.type);
     }
     if (nlohmann_json_j.contains("position_attribute")) {
         nlohmann_json_t.position_attribute = nlohmann_json_j["position_attribute"];
     }
+
+    if (nlohmann_json_j.contains("mesh_name_path")) {
+        nlohmann_json_t.mesh_name_path = nlohmann_json_j["mesh_name_path"];
+    }
 }
-} // namespace nlohmann
+} // namespace wmtk::components::output

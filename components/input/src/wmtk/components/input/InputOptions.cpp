@@ -1,5 +1,6 @@
 #include "InputOptions.hpp"
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/components/utils/json_utils.hpp>
 
 
 namespace wmtk::components::input {
@@ -11,13 +12,16 @@ namespace nlohmann {
 void adl_serializer<wmtk::components::input::InputOptions>::to_json(json& j, const Type& v)
 {
     //
+    j["file"] = v.file;
     j["file"] = v.file.string();
     if (!v.name_spec.is_null()) {
+        assert(!v.name_spec_file.has_value());
         j["name_spec"] = v.name_spec;
     }
     if (v.old_mode) {
         j["old_mode"] = true;
-        j["ignore_z"] = v.ignore_z_if_zero;
+        j["ignore_z"] = v.ignore_z_if_zero; // keep around for deprecation purposes
+        //j["ignore_z_if_zero"] = v.ignore_z_if_zero;
         if (v.imported_attributes.has_value()) {
             const auto& imported_attrs = v.imported_attributes.value();
             if (imported_attrs.size() > 3) {
@@ -33,10 +37,10 @@ void adl_serializer<wmtk::components::input::InputOptions>::to_json(json& j, con
 void adl_serializer<wmtk::components::input::InputOptions>::from_json(const json& j, Type& v)
 {
     if (j.is_string()) {
-        v.file = j.get<std::string>();
+        v.file = j.get<std::filesystem::path>();
         return;
     }
-    v.file = j["file"].get<std::string>();
+    v.file = j["file"].get<std::filesystem::path>();
     if (j.contains("name_spec")) {
         v.name_spec = j["name_spec"];
     }
@@ -58,6 +62,8 @@ void adl_serializer<wmtk::components::input::InputOptions>::from_json(const json
 
     if (v.old_mode) {
         v.ignore_z_if_zero = j.contains("ignore_z") ? bool(j["ignore_z"]) : false;
+        // overwrite old ignore_z
+        //v.ignore_z_if_zero = j.contains("ignore_z_if_zero") ? bool(j["ignore_z_if_zero"]) : false;
         if (j.contains("tetrahedron_attributes")) {
             v.imported_attributes = {
                 {},

@@ -16,6 +16,7 @@ public:
 
 
     nlohmann::json name_spec;
+    std::optional<std::filesystem::path> name_spec_file;
 
     bool old_mode = false;
     bool ignore_z_if_zero = false;

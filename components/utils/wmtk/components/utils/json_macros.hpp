@@ -14,3 +14,11 @@
 // place this to define the prototype of the from_json function
 #define WMTK_NLOHMANN_JSON_FRIEND_FROM_JSON_PROTOTYPE(Type)\
     void from_json(const nlohmann::json& nlohmann_json_j, Type& nlohmann_json_t)
+
+#define WMTK_NLOHMANN_ASSIGN_TYPE_TO_JSON(...)  \
+    { NLOHMANN_JSON_EXPAND(NLOHMANN_JSON_PASTE(NLOHMANN_JSON_TO, __VA_ARGS__)) }
+
+#define WMTK_NLOHMANN_ASSIGN_TYPE_FROM_JSON(...)  \
+    { NLOHMANN_JSON_EXPAND(NLOHMANN_JSON_PASTE(NLOHMANN_JSON_FROM, __VA_ARGS__)) }
+
+

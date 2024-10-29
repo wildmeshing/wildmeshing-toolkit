@@ -87,6 +87,12 @@ void output(
 {
     output(mesh.root(), opts);
 
+    if(opts.mesh_name_path.has_value()) {
+        const auto& path = opts.mesh_name_path.value();
+        std::ofstream ofs(path);
+        ofs<< *mesh.get_names_json();
+    }
+
 }
 
 } // namespace wmtk::components
