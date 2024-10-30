@@ -6,7 +6,6 @@
 #include <wmtk/autogen/tet_mesh/is_ccw.hpp>
 #include <wmtk/autogen/tet_mesh/local_switch_tuple.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
-#include <wmtk/simplex/cofaces_single_dimension.hpp>
 #include <wmtk/simplex/cofaces_single_dimension_iterable.hpp>
 #include <wmtk/simplex/open_star.hpp>
 #include <wmtk/utils/Logger.hpp>

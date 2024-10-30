@@ -11,6 +11,11 @@ struct ShortestEdgeCollapseOptions
      */
     attribute::MeshAttributeHandle position_handle;
     /**
+     * If this mesh is part of a multimesh, specify the vertex positions of all other meshes here,
+     * if they have any.
+     */
+    std::vector<attribute::MeshAttributeHandle> other_position_handles;
+    /**
      * The desired edge length relative to the AABB.
      */
     double length_rel;
@@ -26,7 +31,7 @@ struct ShortestEdgeCollapseOptions
      * If this attribute is specified, it is used to check for inversions. The mesh must be of top
      * dimension, e.g., a TriMesh in 2D or a TetMesh in 3D.
      */
-    attribute::MeshAttributeHandle inversion_position_handle;
+    bool check_inversions = false;
     /**
      * Any other attribute goes here. They are handled with the default attribute behavior.
      */

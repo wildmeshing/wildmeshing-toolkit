@@ -80,7 +80,7 @@ std::shared_ptr<Mesh> read_mesh(
 
 std::shared_ptr<Mesh> read_mesh(
     const std::filesystem::path& filename,
-    const bool ignore_z,
+    const bool ignore_z_if_zero,
     const std::vector<std::string>& tetrahedron_attributes,
     FileType file_type)
 {
@@ -94,7 +94,7 @@ std::shared_ptr<Mesh> read_mesh(
     }
     case FileType::Msh: {
         MshReader reader;
-        return reader.read(filename, ignore_z, tetrahedron_attributes);
+        return reader.read(filename, ignore_z_if_zero, tetrahedron_attributes);
     }
     default:
     case FileType::Auto: {

@@ -11,7 +11,7 @@ namespace wmtk::components::shortest_edge_collapse {
  *
  * This function generates new attributes that are not removed automatically.
  *
- * @param mesh The triangular surface mesh.
+ * @param mesh The root mesh.
  * @param options All options required for performing the shortest-edge collapse.
  */
 void shortest_edge_collapse(Mesh& mesh, const ShortestEdgeCollapseOptions& options);
@@ -31,7 +31,7 @@ void shortest_edge_collapse(
     const double length_rel,
     std::optional<bool> lock_boundary = {},
     std::optional<double> envelope_size = {},
-    std::optional<attribute::MeshAttributeHandle> inversion_position_handle = {},
+    bool check_inversion = false,
     const std::vector<attribute::MeshAttributeHandle>& pass_through = {});
 
 } // namespace wmtk::components::shortest_edge_collapse

@@ -2,21 +2,18 @@
     "grid": {
         "cycles": [
             true,
-            true,
+            true
         ],
         "dimensions": [
             10,
             10
         ],
-        "tiling": "freudenthal"
+        "tiling": "diagonal"
     },
-    "name": "grid2d_tiled",
-    "type": "grid"
-      "output": {
+    "output": {
         "attributes": {
-          "position": "vertices"
+            "position": "vertices"
         },
-        "file": "grid2d",
-        "input": "grid2d"
-      }
+        "file": "grid2d_cyclic_positions"
+    }
 }

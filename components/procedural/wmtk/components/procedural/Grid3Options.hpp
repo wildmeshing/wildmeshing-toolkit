@@ -23,7 +23,14 @@ public:
         NLOHMANN_DEFINE_TYPE_INTRUSIVE(Coordinates, name, spacing);
     };
     std::optional<Coordinates> coordinates;
-    std::optional<std::string> get_coordinate_name() const { if(coordinates.has_value()) { return coordinates.value().name;} else { return {}; } }
+    std::optional<std::string> get_coordinate_name() const
+    {
+        if (coordinates.has_value()) {
+            return coordinates.value().name;
+        } else {
+            return {};
+        }
+    }
     friend void to_json(nlohmann::json& nlohmann_json_j, const Grid3Options& nlohmann_json_t)
     {
         nlohmann_json_j["tiling"] = tiling_names[static_cast<size_t>(nlohmann_json_t.tiling_type)];
@@ -63,9 +70,11 @@ public:
                 b[j] = c[j];
             }
         }
-        if (const auto& coords = nlohmann_json_j["coordinates"]; !coords.is_null()) {
-            if (nlohmann_json_j["coordinates"]["spacing"][0] > 0)
-                nlohmann_json_t.coordinates = coords.get<Coordinates>();
+        if (nlohmann_json_j.contains("coordinates")) {
+            if (const auto& coords = nlohmann_json_j["coordinates"]; !coords.is_null()) {
+                if (nlohmann_json_j["coordinates"]["spacing"][0] > 0)
+                    nlohmann_json_t.coordinates = coords.get<Coordinates>();
+            }
         }
     }
 };
