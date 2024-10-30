@@ -83,20 +83,26 @@ int run(const fs::path& config_path /*, const std::optional<fs::path>& name_spec
             wmtk::components::input::InputOptions opts = in_opts_js;
             meshes.add_mesh(wmtk::components::input::input(opts));
         }
-        output_mesh = merge_meshes(meshes, j["tree"]);
-
     } else {
         wmtk::components::input::InputOptions opts = j["input"];
         output_mesh =
             meshes.add_mesh(wmtk::components::input::input(opts)).root().shared_from_this();
     }
 
+    if (j.contains("tree")) {
+        output_mesh = merge_meshes(meshes, j["tree"]);
+    }
 
     if (!j.contains("output")) {
         wmtk::logger().info("convert: No output path provided");
+    } else if (j["output"].is_object()) {
+        for (const auto& [mesh_path, out_opts_js] : j["output"].items()) {
+            auto opts = out_opts_js.get<wmtk::components::output::OutputOptions>();
+
+            wmtk::components::output::output(meshes.get_mesh(mesh_path), opts);
+        }
     } else {
         auto opts = j["output"].get<wmtk::components::output::OutputOptions>();
-
         wmtk::components::output::output(*output_mesh, opts);
     }
 

@@ -1,10 +1,10 @@
 #include "input.hpp"
 
+#include <fstream>
 #include <wmtk/io/read_mesh.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include "InputOptions.hpp"
-#include <fstream>
 
 namespace wmtk::components::input {
 
@@ -52,9 +52,9 @@ multimesh::NamedMultiMesh input(const InputOptions& options)
 
     multimesh::NamedMultiMesh mm;
     mm.set_mesh(*mesh);
-    if(!options.name_spec.is_null()) {
-    mm.set_names(options.name_spec);
-    } else if(options.name_spec_file.has_value()) {
+    if (!options.name_spec.is_null()) {
+        mm.set_names(options.name_spec);
+    } else if (options.name_spec_file.has_value()) {
         std::ifstream ifs(options.name_spec_file.value());
         nlohmann::json js;
         ifs >> js;

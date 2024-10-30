@@ -61,7 +61,7 @@ struct NamedMultiMesh::Node
         for (const auto& c_ptr : nlohmann_json_t.m_children) {
             arr.emplace_back(*c_ptr);
         }
-        nlohmann_json_j["name"] = arr;
+        nlohmann_json_j[nlohmann_json_t.name] = arr;
     }
 };
 
@@ -144,7 +144,7 @@ std::string NamedMultiMesh::name(const std::vector<int64_t>& id) const
     return fmt::format("{}", fmt::join(names, "."));
 }
 
-NamedMultiMesh::NamedMultiMesh() = default;
+NamedMultiMesh::NamedMultiMesh(): m_name_root(std::make_unique<Node>()) {}
 NamedMultiMesh::~NamedMultiMesh() = default;
 // NamedMultiMesh::NamedMultiMesh(NamedMultiMesh&&) = default;
 // auto NamedMultiMesh::operator=(NamedMultiMesh&&) -> NamedMultiMesh& = default;
