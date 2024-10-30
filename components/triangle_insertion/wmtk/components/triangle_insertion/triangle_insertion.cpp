@@ -249,6 +249,8 @@ std::tuple<std::shared_ptr<wmtk::TetMesh>, ChildMeshes> triangle_insertion(
         auto nonmanifold_vertex_accessor =
             tetmesh->create_accessor<int64_t>(nonmanifold_vertex_handle);
 
+        pass_through.push_back(nonmanifold_vertex_handle);
+
         for (const auto& v : tetmesh->get_all(PrimitiveType::Vertex)) {
             int64_t on_open_boundary_cnt = 0;
             int64_t on_nonmanifold_edge_cnt = 0;
