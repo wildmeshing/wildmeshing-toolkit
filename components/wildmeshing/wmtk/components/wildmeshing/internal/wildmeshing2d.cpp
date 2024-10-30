@@ -1285,6 +1285,8 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
         min_energy,
         avg_energy);
 
+    multimesh::consolidate(*mesh);
+
     std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> all_meshes;
     all_meshes.push_back(std::make_pair(mesh, "main"));
 
