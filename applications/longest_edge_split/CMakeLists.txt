@@ -17,4 +17,4 @@ wmtk_register_integration_test(
     EXEC_NAME longest_edge_split_app
     CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/longest_edge_split_test_config.json
     GIT_REPOSITORY "https://github.com/wildmeshing/data.git"
-    GIT_TAG 8df646b1c658cac1a2d9ea7ab40d47b176e98700)
+    GIT_TAG aee3f80f6af1384f466e649dc286474e91a1caa8)
