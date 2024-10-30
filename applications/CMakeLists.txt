@@ -32,12 +32,7 @@ add_application(triwild ON)
 add_application(cdt_sec ON)
 add_application(shortest_edge_collapse ON)
 add_application(insertion ON)
-
-
-
-
-
-
+add_application(longest_edge_split ON)
 
 
 wmtk_generate_test_config("${WMTK_TEST_CONFIG}")
