@@ -1,5 +1,7 @@
 var NAVTREEINDEX16 =
 {
+"classwmtk_1_1simplex_1_1_navigatable_simplex.html#a73a4306a604b3a0cc9e39f34e89fc6ba":[9,0,2,8,13,4],
+"classwmtk_1_1simplex_1_1_navigatable_simplex.html#a879700ac5fee24e202d49791117cce69":[9,0,2,8,13,0],
 "classwmtk_1_1simplex_1_1_navigatable_simplex.html#abe7eed04c9b19fa7d1552393671f9d24":[9,0,2,8,13,1],
 "classwmtk_1_1simplex_1_1_open_star_iterable.html":[9,0,2,8,11],
 "classwmtk_1_1simplex_1_1_open_star_iterable.html#a1fb7ae86e0c1f4bd7f15fdee6751cc93":[9,0,2,8,11,3],
@@ -247,7 +249,5 @@ var NAVTREEINDEX16 =
 "classwmtk_1_1utils_1_1detail_1_1_primitive_type_range_1_1iterator.html#a9d48c9b3d3984736f843ff1d3b5730ae":[9,0,2,9,0,0,0,5],
 "classwmtk_1_1utils_1_1detail_1_1_primitive_type_range_1_1iterator.html#ab9a19c3e797f49e2c8babdc7da289875":[9,0,2,9,0,0,0,2],
 "classwmtk_1_1utils_1_1detail_1_1_primitive_type_range_1_1iterator.html#adbab0df86ee11de5122f667cf46a434b":[9,0,2,9,0,0,0,1],
-"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_default_comparator_type.html":[9,0,2,9,1,0,7],
-"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_default_comparator_type_1_1_equal.html":[9,0,2,9,1,0,7,0],
-"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_default_comparator_type_1_1_equal.html#a37becc2f109cb4bcc1a82cf0ede2affb":[9,0,2,9,1,0,7,0,0]
+"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_default_comparator_type.html":[9,0,2,9,1,0,7]
 };

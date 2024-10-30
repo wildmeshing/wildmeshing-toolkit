@@ -4,6 +4,7 @@ var namespacewmtk_1_1components =
     [ "input", "namespacewmtk_1_1components_1_1input.html", "namespacewmtk_1_1components_1_1input" ],
     [ "internal", "namespacewmtk_1_1components_1_1internal.html", "namespacewmtk_1_1components_1_1internal" ],
     [ "isotropic_remeshing", "namespacewmtk_1_1components_1_1isotropic__remeshing.html", "namespacewmtk_1_1components_1_1isotropic__remeshing" ],
+    [ "longest_edge_split", "namespacewmtk_1_1components_1_1longest__edge__split.html", "namespacewmtk_1_1components_1_1longest__edge__split" ],
     [ "multimesh", "namespacewmtk_1_1components_1_1multimesh.html", [
       [ "MultiMeshType", "namespacewmtk_1_1components_1_1multimesh.html#a4fee03e23971feff7d37c1f9be2c1f85", [
         [ "UV", "namespacewmtk_1_1components_1_1multimesh.html#a4fee03e23971feff7d37c1f9be2c1f85adeaa2adbeb26802ae61609c3f3642d82", null ],

@@ -9,6 +9,7 @@ var dir_409f97388efe006bc3438b95e9edef48 =
     [ "import_cache", "dir_364dc4d2e2e8f725fe93794021b11fff.html", "dir_364dc4d2e2e8f725fe93794021b11fff" ],
     [ "input", "dir_667f484269a706bdfedaceac6b9e3e52.html", "dir_667f484269a706bdfedaceac6b9e3e52" ],
     [ "isotropic_remeshing", "dir_81e5a7a1ba2a30fb997609ae36325f79.html", "dir_81e5a7a1ba2a30fb997609ae36325f79" ],
+    [ "longest_edge_split", "dir_15f033c611b23f7c282da242824224f5.html", "dir_15f033c611b23f7c282da242824224f5" ],
     [ "main", "dir_55723cd06f2b25e55e8027257a94553b.html", "dir_55723cd06f2b25e55e8027257a94553b" ],
     [ "marching", "dir_9a5be04ba4a42993c3d4af74be2caec9.html", "dir_9a5be04ba4a42993c3d4af74be2caec9" ],
     [ "mesh_info", "dir_16fe362307cb3199b99b583dba3301ec.html", "dir_16fe362307cb3199b99b583dba3301ec" ],

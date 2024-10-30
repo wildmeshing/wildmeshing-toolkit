@@ -1,5 +1,7 @@
 var NAVTREEINDEX14 =
 {
+"classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#ae3aad387cde5d744e158ca1134b6ff26":[9,0,2,7,15,10],
+"classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#af0bf0b5d09ece987dcb12d524729bd1d":[9,0,2,7,15,11],
 "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#af72084a0af62c320bbaa2e4387b68b26":[9,0,2,7,15,16],
 "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#af912c69770945e15dc0a3ef6c3f0cda8":[9,0,2,7,15,3],
 "classwmtk_1_1operations_1_1_split_new_attribute_topo_info.html":[9,0,2,7,16],
@@ -247,7 +249,5 @@ var NAVTREEINDEX14 =
 "classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a8af96f573f1a561ab9dda9375c2a2a4c":[9,0,2,7,5,1,13],
 "classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a92ff9553709b0dd789f749cacaffa25e":[9,0,2,7,5,1,19],
 "classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#ab5a7eef3670caf86dfc4529bda83d402":[9,0,2,7,5,1,17],
-"classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#ab6565d369cf4a4918676220a157adc84":[9,0,2,7,5,1,3],
-"classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#abbc7494d3fd150b1d4f23d43645c0ac8":[9,0,2,7,5,1,6],
-"classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#abc8b6457a14397473e764ef629dfcc75":[9,0,2,7,5,1,18]
+"classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#ab6565d369cf4a4918676220a157adc84":[9,0,2,7,5,1,3]
 };

@@ -92,6 +92,9 @@ var annotated_dup =
         [ "isotropic_remeshing", "namespacewmtk_1_1components_1_1isotropic__remeshing.html", [
           [ "IsotropicRemeshingOptions", "structwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing_options.html", "structwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing_options" ]
         ] ],
+        [ "longest_edge_split", "namespacewmtk_1_1components_1_1longest__edge__split.html", [
+          [ "LongestEdgeSplitOptions", "structwmtk_1_1components_1_1longest__edge__split_1_1_longest_edge_split_options.html", "structwmtk_1_1components_1_1longest__edge__split_1_1_longest_edge_split_options" ]
+        ] ],
         [ "output", "namespacewmtk_1_1components_1_1output.html", [
           [ "OutputOptions", "structwmtk_1_1components_1_1output_1_1_output_options.html", "structwmtk_1_1components_1_1output_1_1_output_options" ]
         ] ],

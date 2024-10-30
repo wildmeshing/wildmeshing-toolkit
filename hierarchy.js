@@ -259,6 +259,7 @@ var hierarchy =
     [ "wmtk::utils::metaprogramming::detail::DefaultComparatorType::Less", "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_default_comparator_type_1_1_less.html", null ],
     [ "wmtk::simplex::LinkIterable", "classwmtk_1_1simplex_1_1_link_iterable.html", null ],
     [ "wmtk::simplex::LinkSingleDimensionIterable", "classwmtk_1_1simplex_1_1_link_single_dimension_iterable.html", null ],
+    [ "wmtk::components::longest_edge_split::LongestEdgeSplitOptions", "structwmtk_1_1components_1_1longest__edge__split_1_1_longest_edge_split_options.html", null ],
     [ "wmtk::multimesh::Mappable", "classwmtk_1_1multimesh_1_1_mappable.html", [
       [ "wmtk::multimesh::MappableContainer", "classwmtk_1_1multimesh_1_1_mappable_container.html", null ]
     ] ],
@@ -428,8 +429,8 @@ var hierarchy =
     [ "wmtk::simplex::internal::VisitedArray< T, ArraySize >", "classwmtk_1_1simplex_1_1internal_1_1_visited_array.html", null ],
     [ "wmtk::simplex::internal::VisitedArray< int64_t >", "classwmtk_1_1simplex_1_1internal_1_1_visited_array.html", null ],
     [ "wmtk::simplex::internal::VisitedArray< wmtk::simplex::IdSimplex >", "classwmtk_1_1simplex_1_1internal_1_1_visited_array.html", null ],
-    [ "wmtk::components::WildMeshingOptions", "structwmtk_1_1components_1_1_wild_meshing_options.html", null ],
     [ "wmtk::components::WildmeshingOptions", "structwmtk_1_1components_1_1_wildmeshing_options.html", null ],
+    [ "wmtk::components::WildMeshingOptions", "structwmtk_1_1components_1_1_wild_meshing_options.html", null ],
     [ "wmtk::components::WildmeshingOptionsAttributes", "structwmtk_1_1components_1_1_wildmeshing_options_attributes.html", null ],
     [ "wmtk::components::WildmeshingOptionsEnvelope", "structwmtk_1_1components_1_1_wildmeshing_options_envelope.html", null ],
     [ "wmtk::components::WildmeshingOptionsEnvelopeMesh", "structwmtk_1_1components_1_1_wildmeshing_options_envelope_mesh.html", null ],
