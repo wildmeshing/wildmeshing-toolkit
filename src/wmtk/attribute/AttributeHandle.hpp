@@ -1,6 +1,6 @@
 #pragma once
+#include <cstdint>
 #include <type_traits>
-#include "wmtk/PrimitiveType.hpp"
 
 // TODO: is this abstraction still necessary? the original attempt was to have a generic index that
 // avoided passing templates around, but in the end we still obtained a TypedAttributeHandle<T> and
@@ -33,7 +33,7 @@ public:
     friend class Mesh;
 
     int64_t index = -1;
-    AttributeHandle(int64_t i)
+    AttributeHandle(int64_t i) noexcept
         : index(i)
     {}
 
@@ -45,10 +45,10 @@ public:
     AttributeHandle& operator=(AttributeHandle&&) = default;
 
 
-    bool operator==(const AttributeHandle& other) const { return index == other.index; }
-    bool operator<(const AttributeHandle& other) const { return index < other.index; }
+    bool operator==(const AttributeHandle& other) const noexcept { return index == other.index; }
+    bool operator<(const AttributeHandle& other) const noexcept { return index < other.index; }
 
-    bool is_valid() const { return index != -1; }
+    bool is_valid() const noexcept { return index != -1; }
 };
 
 } // namespace attribute

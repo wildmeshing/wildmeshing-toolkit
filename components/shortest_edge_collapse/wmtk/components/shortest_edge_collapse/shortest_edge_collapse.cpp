@@ -24,23 +24,51 @@
 
 namespace wmtk::components::shortest_edge_collapse {
 
-void shortest_edge_collapse(Mesh& mesh, const ShortestEdgeCollapseOptions& options)
+void shortest_edge_collapse(Mesh& mesh_in, const ShortestEdgeCollapseOptions& options)
 {
-    if (mesh.top_simplex_type() != PrimitiveType::Triangle &&
-        mesh.top_simplex_type() != PrimitiveType::Tetrahedron) {
+    if (mesh_in.top_simplex_type() != PrimitiveType::Edge &&
+        mesh_in.top_simplex_type() != PrimitiveType::Triangle &&
+        mesh_in.top_simplex_type() != PrimitiveType::Tetrahedron) {
         log_and_throw_error(
-            "shortest edge collapse works only for triangle or tet meshes: {}",
-            primitive_type_name(mesh.top_simplex_type()));
+            "shortest edge collapse works only for edge, triangle, or tet meshes: {}",
+            primitive_type_name(mesh_in.top_simplex_type()));
     }
 
-    const attribute::MeshAttributeHandle& position_handle = options.position_handle;
-    const attribute::MeshAttributeHandle& inversion_position_handle =
-        options.inversion_position_handle;
+    if (!mesh_in.is_multi_mesh_root()) {
+        log_and_throw_error("The mesh passed in shortest_edge_collapse must be the root mesh");
+    }
 
-    // TriMesh& mesh = static_cast<TriMesh&>(position_handle.mesh());
+    attribute::MeshAttributeHandle position_handle = options.position_handle;
+    std::vector<attribute::MeshAttributeHandle> other_position_handles =
+        options.other_position_handles;
+
+    Mesh& mesh = position_handle.mesh();
+
+    std::vector<attribute::MeshAttributeHandle> inversion_position_handles;
+    if (options.check_inversions) {
+        if (position_handle.mesh().top_cell_dimension() == position_handle.dimension()) {
+            logger().info("Adding inversion check on collapsing mesh.");
+            inversion_position_handles.emplace_back(position_handle);
+        }
+        for (auto& h : other_position_handles) {
+            if (h.mesh().top_cell_dimension() == h.dimension()) {
+                logger().info("Adding inversion check on other mesh.");
+                inversion_position_handles.emplace_back(h);
+            }
+        }
+
+        if (inversion_position_handles.empty()) {
+            logger().warn("Shortest-edge collapse should check for inversions but there was no "
+                          "position handle that is valid for inversion checks.");
+        }
+    }
 
     std::vector<attribute::MeshAttributeHandle> pass_through_attributes =
         options.pass_through_attributes;
+
+    for (auto& h : other_position_handles) {
+        pass_through_attributes.emplace_back(h);
+    }
 
     /////////////////////////////////////////////
 
@@ -128,17 +156,14 @@ void shortest_edge_collapse(Mesh& mesh, const ShortestEdgeCollapseOptions& optio
         invariant_interior_vertex->add(
             std::make_shared<invariants::InteriorSimplexInvariant>(m, PrimitiveType::Vertex));
     };
-    multimesh::MultiMeshVisitor visitor(set_all_invariants);
+    wmtk::multimesh::MultiMeshVisitor visitor(set_all_invariants);
     visitor.execute_from_root(mesh);
 
     auto invariant_mm_map = std::make_shared<MultiMeshMapValidInvariant>(mesh);
 
     ////////////// positions
     std::vector<attribute::MeshAttributeHandle> position_handles;
-    position_handles.push_back(position_handle);
-    if (inversion_position_handle.is_valid()) {
-        position_handles.push_back(inversion_position_handle);
-    }
+    position_handles.emplace_back(position_handle);
 
     //////////////////////////////////////////
     // collapse
@@ -149,18 +174,38 @@ void shortest_edge_collapse(Mesh& mesh, const ShortestEdgeCollapseOptions& optio
 
 
     if (options.envelope_size) {
-        collapse->add_invariant(std::make_shared<wmtk::invariants::EnvelopeInvariant>(
-            position_handle,
-            bbdiag * options.envelope_size.value(),
-            position_handle));
+        const double env_size = bbdiag * options.envelope_size.value();
+        bool envelope_added = false;
+
+        if (position_handle.mesh().top_cell_dimension() < position_handle.dimension()) {
+            logger().info("Adding envelope check on collapsing mesh.");
+            collapse->add_invariant(std::make_shared<wmtk::invariants::EnvelopeInvariant>(
+                position_handle,
+                env_size,
+                position_handle));
+            envelope_added = true;
+        }
+
+        for (auto& h : other_position_handles) {
+            if (h.mesh().top_cell_dimension() < h.dimension()) {
+                logger().info("Adding envelope check on other mesh.");
+                collapse->add_invariant(
+                    std::make_shared<wmtk::invariants::EnvelopeInvariant>(h, env_size, h));
+                envelope_added = true;
+            }
+        }
+
+        if (!envelope_added) {
+            logger().warn("Shortest-edge collapse should check for inversion but there was no "
+                          "position handle that is valid for inversion checks.");
+        }
     }
 
-
-    if (inversion_position_handle.is_valid()) {
-        collapse->add_invariant(std::make_shared<SimplexInversionInvariant<double>>(
-            inversion_position_handle.mesh(),
-            inversion_position_handle.as<double>()));
+    for (auto& h : inversion_position_handles) {
+        collapse->add_invariant(
+            std::make_shared<SimplexInversionInvariant<double>>(h.mesh(), h.as<double>()));
     }
+
     collapse->set_new_attribute_strategy(
         visited_edge_flag,
         wmtk::operations::CollapseBasicStrategy::None);
@@ -170,13 +215,15 @@ void shortest_edge_collapse(Mesh& mesh, const ShortestEdgeCollapseOptions& optio
     collapse->add_transfer_strategy(edge_length_update);
 
     if (options.lock_boundary) {
-        collapse->add_invariant(invariant_interior_edge);
+        if (mesh_in.top_simplex_type() != PrimitiveType::Edge) {
+            collapse->add_invariant(invariant_interior_edge);
+        }
         // set collapse towards boundary
         for (const auto& pos_handle : position_handles) {
             auto pos_collapse_strategy =
                 std::make_shared<wmtk::operations::CollapseNewAttributeStrategy<double>>(
                     pos_handle);
-            pos_collapse_strategy->set_strategy(wmtk::operations::CollapseBasicStrategy::CopyOther);
+            pos_collapse_strategy->set_strategy(wmtk::operations::CollapseBasicStrategy::Default);
             pos_collapse_strategy->set_simplex_predicate(
                 wmtk::operations::BasicSimplexPredicate::IsInterior);
             collapse->set_new_attribute_strategy(pos_handle, pos_collapse_strategy);
@@ -194,6 +241,16 @@ void shortest_edge_collapse(Mesh& mesh, const ShortestEdgeCollapseOptions& optio
         collapse->set_new_attribute_strategy(attr);
     }
 
+    auto propagate_position = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd { return P; };
+    for (auto& h : other_position_handles) {
+        auto transfer_position =
+            std::make_shared<operations::SingleAttributeTransferStrategy<double, double>>(
+                h,
+                position_handle,
+                propagate_position);
+        collapse->add_transfer_strategy(transfer_position);
+    }
+
 
     //////////////////////////////////////////
     Scheduler scheduler;
@@ -208,7 +265,7 @@ void shortest_edge_collapse(Mesh& mesh, const ShortestEdgeCollapseOptions& optio
     //     }
     // }
 
-    multimesh::consolidate(mesh);
+    wmtk::multimesh::consolidate(mesh);
 
     logger().info(
         "Executed {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",
@@ -226,7 +283,7 @@ void shortest_edge_collapse(
     const double length_rel,
     std::optional<bool> lock_boundary,
     std::optional<double> envelope_size,
-    std::optional<attribute::MeshAttributeHandle> inversion_position_handle,
+    bool check_inversion,
     const std::vector<attribute::MeshAttributeHandle>& pass_through)
 {
     ShortestEdgeCollapseOptions options;
@@ -236,9 +293,7 @@ void shortest_edge_collapse(
         options.lock_boundary = lock_boundary.value();
     }
     options.envelope_size = envelope_size;
-    if (inversion_position_handle) {
-        options.inversion_position_handle = inversion_position_handle.value();
-    }
+
     options.pass_through_attributes = pass_through;
     shortest_edge_collapse(mesh, options);
 }

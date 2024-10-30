@@ -1,11 +1,8 @@
-#include <spdlog/spdlog.h>
-
-#include <wmtk/io/MeshWriter.hpp>
-#include <wmtk/io/ParaviewWriter.hpp>
-#include <wmtk/utils/Rational.hpp>
-#include <wmtk/utils/vector_hash.hpp>
 #include "AttributeManager.hpp"
-#include "PerThreadAttributeScopeStacks.hpp"
+
+#include <spdlog/spdlog.h>
+#include <wmtk/io/MeshWriter.hpp>
+#include <wmtk/utils/Rational.hpp>
 namespace wmtk::attribute {
 AttributeManager::AttributeManager(int64_t size)
     : m_char_attributes(size)
@@ -280,15 +277,19 @@ std::vector<MeshAttributeHandle::HandleVariant> AttributeManager::get_all_attrib
 
         const std::vector<MeshAttributes<T>>& mesh_attributes = get<T>();
         for (size_t pt_index = 0; pt_index < mesh_attributes.size(); ++pt_index) {
-                const PrimitiveType pt = get_primitive_type_from_id(pt_index);
+            const PrimitiveType pt = get_primitive_type_from_id(pt_index);
 
-            auto handle_converter = [pt](const AttributeHandle& h)  -> TypedAttributeHandle<T> {
+            auto handle_converter = [pt](const AttributeHandle& h) -> TypedAttributeHandle<T> {
                 return {h, pt};
-                return TypedAttributeHandle<T>{h,pt};
+                return TypedAttributeHandle<T>{h, pt};
             };
             size_t count = mesh_attributes[pt_index].attribute_count();
             const auto active_handles = mesh_attributes[pt_index].active_attributes();
-            std::transform(active_handles.begin(), active_handles.end(), std::back_inserter(handles), handle_converter);
+            std::transform(
+                active_handles.begin(),
+                active_handles.end(),
+                std::back_inserter(handles),
+                handle_converter);
         }
     };
     run(double{});
@@ -337,7 +338,7 @@ void AttributeManager::clear_attributes(
                     customs.get<T>()[get_primitive_type_id(val.primitive_type())].emplace_back(
                         val.base_handle());
                 } else {
-                assert(false); // this code doesn't work with hybrid rational types
+                    assert(false); // this code doesn't work with hybrid rational types
                 }
             },
             attr);

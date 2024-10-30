@@ -1,6 +1,5 @@
 #include "AttributeScopeHandle.hpp"
 #include "AttributeManager.hpp"
-#include "AttributeScope.hpp"
 namespace wmtk::attribute {
 AttributeScopeHandle::AttributeScopeHandle(AttributeManager& manager)
     : m_manager(manager)

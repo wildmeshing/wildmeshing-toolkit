@@ -18,7 +18,7 @@ public:
     ~MshReader();
     std::shared_ptr<Mesh> read(
         const std::filesystem::path& filename,
-        const bool ignore_z,
+        const bool ignore_z_if_zero,
         const std::vector<std::string>& extra_facet_attributes = {});
     std::shared_ptr<Mesh> read(
         const std::filesystem::path& filename,
@@ -90,6 +90,8 @@ private:
 
     Eigen::MatrixXd V;
     MatrixXl S;
+
+    static const int64_t AUTO_EMBEDDED_DIMENSION = -2;
 };
 
 } // namespace wmtk::io

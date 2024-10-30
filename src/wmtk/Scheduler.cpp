@@ -1,10 +1,6 @@
 #include "Scheduler.hpp"
 
-#include <cassert>
-#include "Mesh.hpp"
-
 #include <wmtk/attribute/TypedAttributeHandle.hpp>
-#include <wmtk/multimesh/utils/check_map_valid.hpp>
 #include <wmtk/simplex/k_ring.hpp>
 #include <wmtk/simplex/link.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
@@ -124,6 +120,10 @@ SchedulerStats Scheduler::run_operation_on_all(
     SchedulerStats res;
     int64_t success = -1;
     std::vector<std::pair<int64_t, double>> order;
+
+    for (const auto& t : tups) {
+        flag_accessor.scalar_attribute(t) = char(1);
+    }
 
     do {
         SchedulerStats internal_stats;

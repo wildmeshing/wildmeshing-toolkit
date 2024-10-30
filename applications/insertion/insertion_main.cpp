@@ -70,14 +70,16 @@ int main(int argc, char* argv[])
         "tet mesh has {} vertices",
         tet_mesh->get_all(PrimitiveType::Vertex).size());
 
-
     const std::string bg_post = j["bg_pos_attr_name"];
     const std::string tri_pos = j["tri_pos_attr_name"];
+
+    std::vector<attribute::MeshAttributeHandle> _pass_through;
     auto [out, _] = wmtk::components::triangle_insertion::triangle_insertion(
         static_cast<const TetMesh&>(*tet_mesh),
         bg_post,
         static_cast<const TriMesh&>(*tri_mesh),
         tri_pos,
+        _pass_through,
         j["round"],
         j["track_submeshes"],
         j["make_child_free"]);
