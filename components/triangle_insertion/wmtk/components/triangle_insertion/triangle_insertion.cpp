@@ -64,10 +64,10 @@ std::tuple<std::shared_ptr<wmtk::TetMesh>, ChildMeshes> triangle_insertion(
         utils::generate_raw_tetmesh_from_input_surface(V, F, Vbg, Fbg);
 
     ChildMeshes child_meshes;
-    std::shared_ptr<Mesh> surface_mesh = child_meshes.surface_mesh;
-    std::shared_ptr<Mesh> open_boundary_mesh = child_meshes.open_boundary_mesh;
-    std::shared_ptr<Mesh> nonmanifold_edge_mesh = child_meshes.nonmanifold_edge_mesh;
-    std::shared_ptr<Mesh> bbox_mesh = child_meshes.bbox_mesh;
+    std::shared_ptr<Mesh>& surface_mesh = child_meshes.surface_mesh;
+    std::shared_ptr<Mesh>& open_boundary_mesh = child_meshes.open_boundary_mesh;
+    std::shared_ptr<Mesh>& nonmanifold_edge_mesh = child_meshes.nonmanifold_edge_mesh;
+    std::shared_ptr<Mesh>& bbox_mesh = child_meshes.bbox_mesh;
 
     /* -------------rounding------------ */
 
