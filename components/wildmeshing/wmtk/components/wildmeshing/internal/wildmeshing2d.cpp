@@ -50,15 +50,12 @@
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/MaxFunctionInvariant.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
+#include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
 #include <wmtk/invariants/NoBoundaryCollapseToInteriorInvariant.hpp>
 #include <wmtk/invariants/NoChildMeshAttachingInvariant.hpp>
 #include <wmtk/invariants/RoundedInvariant.hpp>
 #include <wmtk/invariants/SeparateSubstructuresInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
-#include <wmtk/invariants/Swap23EnergyBeforeInvariant.hpp>
-#include <wmtk/invariants/Swap32EnergyBeforeInvariant.hpp>
-#include <wmtk/invariants/Swap44EnergyBeforeInvariant.hpp>
-#include <wmtk/invariants/Swap56EnergyBeforeInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
 
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
@@ -637,6 +634,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
 
     auto setup_collapse = [&](std::shared_ptr<EdgeCollapse>& collapse) {
         collapse->add_invariant(invariant_separate_substructures);
+        collapse->add_invariant(std::make_shared<MultiMeshMapValidInvariant>(*mesh));
         collapse->add_invariant(link_condition);
         collapse->add_invariant(inversion_invariant);
         collapse->add_invariant(function_invariant);

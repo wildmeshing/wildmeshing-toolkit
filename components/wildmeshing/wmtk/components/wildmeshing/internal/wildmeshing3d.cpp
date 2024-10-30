@@ -49,6 +49,7 @@
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/MaxFunctionInvariant.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
+#include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
 #include <wmtk/invariants/NoBoundaryCollapseToInteriorInvariant.hpp>
 #include <wmtk/invariants/NoChildMeshAttachingInvariant.hpp>
 #include <wmtk/invariants/RoundedInvariant.hpp>
@@ -597,6 +598,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing3d(
 
     auto setup_collapse = [&](std::shared_ptr<EdgeCollapse>& collapse) {
         collapse->add_invariant(invariant_separate_substructures);
+        collapse->add_invariant(std::make_shared<MultiMeshMapValidInvariant>(*mesh));
         collapse->add_invariant(link_condition);
         collapse->add_invariant(inversion_invariant);
         // collapse->add_invariant(function_invariant);
@@ -637,7 +639,9 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing3d(
         1));
 
     collapse1->set_new_attribute_strategy(pt_attribute, clps_strat1);
-    collapse1->set_new_attribute_strategy(sizing_field_scalar_attribute, clps_strat1);
+    collapse1->set_new_attribute_strategy(
+        sizing_field_scalar_attribute,
+        CollapseBasicStrategy::CopyOther);
     setup_collapse(collapse1);
 
     auto collapse2 = std::make_shared<EdgeCollapse>(*mesh);
@@ -648,7 +652,9 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing3d(
         0));
 
     collapse2->set_new_attribute_strategy(pt_attribute, clps_strat2);
-    collapse2->set_new_attribute_strategy(sizing_field_scalar_attribute, clps_strat2);
+    collapse2->set_new_attribute_strategy(
+        sizing_field_scalar_attribute,
+        CollapseBasicStrategy::CopyTuple);
     setup_collapse(collapse2);
 
     auto collapse = std::make_shared<OrOperationSequence>(*mesh);
