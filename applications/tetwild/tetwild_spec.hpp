@@ -29,11 +29,6 @@ nlohmann::json tetwild_spec = R"(
     "default": 0.001
 },
 {
-    "pointer": "/length_rel",
-    "type": "float",
-    "default": 0.1
-},
-{
     "pointer": "/skip_simplification",
     "type": "bool",
     "default": false
