@@ -137,8 +137,6 @@ void longest_edge_split(Mesh& mesh_in, const LongestEdgeSplitOptions& options)
     // split
     auto split = std::make_shared<wmtk::operations::EdgeSplit>(mesh);
     split->add_invariant(todo);
-    split->add_invariant(invariant_mm_map);
-
 
     split->set_new_attribute_strategy(
         visited_edge_flag,
