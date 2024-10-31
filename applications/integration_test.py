@@ -29,7 +29,8 @@ class IntegrationTest(unittest.TestCase):
 
         self.data_folder = None if "data_folder" not in test_config else test_config["data_folder"]
         self.config_folder = self.data_folder if "config_folder" not in test_config else test_config["config_folder"]
-        print(f'Loading integration test [{name}] in {self.working_dir}, running {('all (slow and fast)' if self.run_all else 'fast')} tests')
+        msg = 'all (slow and fast)' if self.run_all else 'fast'
+        print(f'Loading integration test [{name}] in {self.working_dir}, running {msg} tests')
 
 
         file = test_config["config_file"]
