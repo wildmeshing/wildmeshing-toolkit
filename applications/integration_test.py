@@ -30,7 +30,7 @@ class IntegrationTest(unittest.TestCase):
         self.data_folder = None if "data_folder" not in test_config else test_config["data_folder"]
         self.config_folder = self.data_folder if "config_folder" not in test_config else test_config["config_folder"]
         msg = 'all (slow and fast)' if self.run_all else 'fast'
-        print(f'Loading integration test [{name}] in {self.working_dir}, running {msg} tests')
+        print(f'Loading integration test [{name}] in {self.working_dir}, running {msg} tests', flush=True)
 
 
         file = test_config["config_file"]
@@ -61,9 +61,9 @@ class IntegrationTest(unittest.TestCase):
         res = subprocess.run(cmd, cwd=self.working_dir, capture_output=True)
 
         if res.returncode != 0:
-            print(f"Error running [{' '.join(cmd)}]")
-            print(res.stderr.decode('utf-8'))
-            print(res.stdout.decode('utf-8'))
+            print(f"Error running [{' '.join(cmd)}]", flush=True)
+            print(res.stderr.decode('utf-8'), flush=True)
+            print(res.stdout.decode('utf-8'), flush=True)
         return res
 
     def create_reporter(self, input_json_file, output_json_file):
@@ -108,7 +108,7 @@ class IntegrationTest(unittest.TestCase):
             try:
                 test_oracle = json.load(f)
             except Exception as e:
-                print(f"Caught exception while loading file {test_file}: {e}")
+                print(f"Caught exception while loading file {test_file}: {e}", flush=True)
                 raise e
 
         input_js = test_oracle[input_tag].copy()
@@ -154,16 +154,16 @@ class IntegrationTest(unittest.TestCase):
     def runTest(self):
         for test_file_name in self.config["tests"]:
             with self.subTest(msg=f"{self.name}-{test_file_name}"):
-                print("Running test", test_file_name)
+                print("Running test", test_file_name, flush=True)
                 test_file = os.path.join(self.config_folder, test_file_name)
-                print(f"Test file: {test_file}")
+                print(f"Test file: {test_file}", flush=True)
                 self.run_one(test_file)
         if self.run_all and "release_only_tests" in self.config:
             for test_file_name in self.config["release_only_tests"]:
                 with self.subTest(msg=f"{self.name}-{test_file_name}"):
-                    print("Running slow test", test_file_name)
+                    print("Running slow test", test_file_name, flush=True)
                     test_file = os.path.join(self.config_folder, test_file_name)
-                    print(f"Test file: {test_file}")
+                    print(f"Test file: {test_file}", flush=True)
                     self.run_one(test_file)
 
 
@@ -181,7 +181,7 @@ def make_suite(config_file, single_application = None, single_config = None, run
     suite = unittest.TestSuite()
     for key,value in config.items():
         if "platform" in value and value["platform"] != "" and value["platform"] != platform.system():
-            print(f"Skipping checks for application {key} because the platform is {platform.system()} and the test is for {config['platform']}")
+            print(f"Skipping checks for application {key} because the platform is {platform.system()} and the test is for {config['platform']}", flush=True))
             continue
         if single_application is None or key == single_application:
             # expects a list of configs to run
@@ -245,11 +245,11 @@ if __name__ == '__main__':
         result = runner.run(suite)
         if len(result.errors) > 0 or len(result.failures) > 0:
             for s,error in result.errors:
-                print("While running: ", s)
-                print(error)
+                print("While running: ", s, flush=True)
+                print(error, flush=True)
             for s,failure in result.failures:
-                print("While running: ", s)
-                print(failure)
+                print("While running: ", s, flush=True)
+                print(failure, flush=True)
             assert(len(result.errors) == 0)
             assert(len(result.failures) == 0)
     elif args.subcommand == "create":
