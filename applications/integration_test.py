@@ -181,7 +181,7 @@ def make_suite(config_file, single_application = None, single_config = None, run
     suite = unittest.TestSuite()
     for key,value in config.items():
         if "platform" in value and value["platform"] != "" and value["platform"] != platform.system():
-            print(f"Skipping checks for application {key} because the platform is {platform.system()} and the test is for {config['platform']}", flush=True))
+            print(f"Skipping checks for application {key} because the platform is {platform.system()} and the test is for {config['platform']}", flush=True)
             continue
         if single_application is None or key == single_application:
             # expects a list of configs to run
