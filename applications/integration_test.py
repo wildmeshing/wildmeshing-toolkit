@@ -12,22 +12,23 @@ def fix_path(path):
     cwd = os.getcwd()
     return path if os.path.isabs(path) else os.path.join(cwd, path)
 
-    
+
 
 class IntegrationTest(unittest.TestCase):
     BINARY_FOLDER = fix_path(os.environ['WMTK_BINARY_FOLDER']) if "WMTK_BINARY_FOLDER" in os.environ else None
     CONFIG_FILE = fix_path(os.environ['WMTK_CONFIG_FILE']) if "WMTK_CONFIG_FILE" in os.environ else None
 
-    def __init__(self, name, test_config, configs_to_run = None): 
+    def __init__(self, name, test_config, configs_to_run = None, run_all = False):
         super().__init__()
         self.working_dir_fp = tempfile.TemporaryDirectory()
         self.working_dir = self.working_dir_fp.name
 
         self.name = name
         self.test_config = test_config
+        self.run_all = run_all
 
         self.data_folder = None if "data_folder" not in test_config else test_config["data_folder"]
-        self.config_folder = data_folder if "config_folder" not in test_config else test_config["config_folder"]
+        self.config_folder = self.data_folder if "config_folder" not in test_config else test_config["config_folder"]
         print(f'Loading integration test [{name}] in {self.working_dir}')
 
 
@@ -150,13 +151,19 @@ class IntegrationTest(unittest.TestCase):
 
 
     def runTest(self):
-        print(self.config)
         for test_file_name in self.config["tests"]:
             with self.subTest(msg=f"{self.name}-{test_file_name}"):
                 print("Running test", test_file_name)
                 test_file = os.path.join(self.config_folder, test_file_name)
                 print(f"Test file: {test_file}")
                 self.run_one(test_file)
+        if self.run_all and "slow_tests" in self.config:
+            for test_file_name in self.config["slow_tests"]:
+                with self.subTest(msg=f"{self.name}-{test_file_name}"):
+                    print("Running slow test", test_file_name)
+                    test_file = os.path.join(self.config_folder, test_file_name)
+                    print(f"Test file: {test_file}")
+                    self.run_one(test_file)
 
 
 def load_config_json(config_file):
@@ -167,7 +174,7 @@ def load_config_json(config_file):
             del config["skip"]
     return config
 
-def make_suite(config_file, single_application = None, single_config = None):
+def make_suite(config_file, single_application = None, single_config = None, run_all = False):
     config = load_config_json(config_file)
 
     suite = unittest.TestSuite()
@@ -177,11 +184,9 @@ def make_suite(config_file, single_application = None, single_config = None):
             continue
         if single_application is None or key == single_application:
             # expects a list of configs to run
-            suite.addTest(IntegrationTest(key,value, None if single_config is None else [single_config]))
+            suite.addTest(IntegrationTest(key,value, None if single_config is None else [single_config], run_all))
     return suite
 
-
-            
 
 
 
@@ -194,11 +199,12 @@ if __name__ == '__main__':
     parser.add_argument('-b', '--binary_folder', help="Path to the folder that contains the apps binaries")
     parser.add_argument('-t', '--test-application', help="Runs tests for a single application")
     parser.add_argument('-s', '--test-script', help="Runs a particular test script")
+    parser.add_argument('-a', '--all-tests', help="Runs all tests, including slow ones", action='store_true')
 
     subparsers = parser.add_subparsers(help="subcommand help", dest="subcommand")
     create_parser = subparsers.add_parser(name="create",help="create integration test json")
 
-    create_parser.add_argument("-b", '--binary', help="NAme of the binary being run")
+    create_parser.add_argument("-b", '--binary', help="Name of the binary being run")
     create_parser.add_argument("-i", '--input', help="input config")
     create_parser.add_argument("-o", '--output', help="output config filename, placed in config folder")
 
@@ -232,7 +238,7 @@ if __name__ == '__main__':
     # no subcommand chosen so we just run
     if args.subcommand is None:
         # test_application and test_script are None if not set
-        suite = make_suite(config_file, args.test_application, args.test_script)
+        suite = make_suite(config_file, args.test_application, args.test_script, args.all_tests)
 
         runner = unittest.TextTestRunner()
         result = runner.run(suite)
