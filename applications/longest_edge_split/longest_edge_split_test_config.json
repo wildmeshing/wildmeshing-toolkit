@@ -4,11 +4,11 @@
     "les_line_face_out.json",
     "les_line_out.json",
     "les_line_sun_out.json",
-    "les_surface_boundary_extreme_out.json",
     "les_surface_boundary_out.json",
     "les_volume_out.json"
   ],
   "release_only_tests": [
+    "les_surface_boundary_extreme_out.json",
     "les_volume_boundary_extreme_out.json",
     "les_surface_interior_out.json",
     "les_surface_out.json",
