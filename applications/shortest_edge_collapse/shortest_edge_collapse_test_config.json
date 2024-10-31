@@ -13,7 +13,7 @@
     "sec_line_sun_out.json",
     "sec_surface_lock_out.json"
   ],
-  "slow_tests": [
+  "release_only_tests": [
     "shortest_edge_collapse_out.json",
     "sec_volume_boundary_extreme_out.json",
     "sec_volume_boundary_inversion_out.json",

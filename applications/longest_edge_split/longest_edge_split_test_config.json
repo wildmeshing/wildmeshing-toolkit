@@ -8,7 +8,7 @@
     "les_surface_boundary_out.json",
     "les_volume_out.json"
   ],
-  "slow_tests": [
+  "release_only_tests": [
     "les_volume_boundary_extreme_out.json",
     "les_surface_interior_out.json",
     "les_surface_out.json",

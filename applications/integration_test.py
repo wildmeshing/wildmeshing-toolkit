@@ -158,8 +158,8 @@ class IntegrationTest(unittest.TestCase):
                 test_file = os.path.join(self.config_folder, test_file_name)
                 print(f"Test file: {test_file}")
                 self.run_one(test_file)
-        if self.run_all and "slow_tests" in self.config:
-            for test_file_name in self.config["slow_tests"]:
+        if self.run_all and "release_only_tests" in self.config:
+            for test_file_name in self.config["release_only_tests"]:
                 with self.subTest(msg=f"{self.name}-{test_file_name}"):
                     print("Running slow test", test_file_name)
                     test_file = os.path.join(self.config_folder, test_file_name)

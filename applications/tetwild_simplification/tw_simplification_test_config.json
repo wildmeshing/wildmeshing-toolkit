@@ -1,7 +1,7 @@
 {
     "test_directory": "unit_test",
     "tests": [],
-    "slow_tests": [
+    "release_only_tests": [
         "tetwild_simplification_out.json"
     ],
     "input_tag": "input",
