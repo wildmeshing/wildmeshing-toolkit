@@ -32,6 +32,7 @@ add_subdirectory("winding_number/wmtk/components/winding_number")
 add_subdirectory("wildmeshing/wmtk/components/wildmeshing")
 
 add_subdirectory("shortest_edge_collapse/wmtk/components/shortest_edge_collapse")
+add_subdirectory("longest_edge_split/wmtk/components/longest_edge_split")
 add_subdirectory("CDT/wmtk/components/CDT")
 
 add_subdirectory("edge_insertion/wmtk/components/edge_insertion")
