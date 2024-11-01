@@ -1,5 +1,6 @@
 var NAVTREEINDEX26 =
 {
+"structwmtk_1_1components_1_1internal_1_1_tag_intersection_options.html#adedd4b74a73d148160aae760bf026be2":[9,0,2,2,2,13,5],
 "structwmtk_1_1components_1_1internal_1_1_tag_intersection_options.html#ae8147e2a0bdbb8978b909dab98915b81":[9,0,2,2,2,13,6],
 "structwmtk_1_1components_1_1internal_1_1_tag_intersection_values.html":[9,0,2,2,2,12],
 "structwmtk_1_1components_1_1internal_1_1_tag_intersection_values.html#a0f2bbe1f69ac7e67925b4ba3fcda6f3e":[9,0,2,2,2,12,0],
@@ -248,6 +249,5 @@ var NAVTREEINDEX26 =
 "subgroup__transformations_8cpp.html#ab9e08de18cd4f688c5779cda8a13b384":[10,0,2,0,1,2,2,9],
 "subgroup__transformations_8cpp.html#ad40d86dc89d9610db246328a2f3cbe21":[10,0,2,0,1,2,2,1],
 "subgroup__transformations_8cpp.html#af661714659a42265f5fd29d7b25e72aa":[10,0,2,0,1,2,2,6],
-"subgroup__transformations_8cpp_source.html":[10,0,2,0,1,2,2],
-"subgroup__transformations_8hpp.html":[10,0,2,0,1,2,3]
+"subgroup__transformations_8cpp_source.html":[10,0,2,0,1,2,2]
 };

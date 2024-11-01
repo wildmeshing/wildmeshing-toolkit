@@ -1,5 +1,6 @@
 var NAVTREEINDEX10 =
 {
+"classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_image.html#ab5be22183d9932cfe915e35f84b3eae0":[9,0,2,2,0,0,3,2],
 "classwmtk_1_1components_1_1input_1_1_input_options.html":[9,0,2,2,1,0],
 "classwmtk_1_1components_1_1input_1_1_input_options.html#a00a225e1a9b1aceb9697749db4ac1ff4":[9,0,2,2,1,0,1],
 "classwmtk_1_1components_1_1input_1_1_input_options.html#a0c981c09bba9a87c77dfd3bfc6975631":[9,0,2,2,1,0,3],
@@ -248,6 +249,5 @@ var NAVTREEINDEX10 =
 "classwmtk_1_1invariants_1_1_edge_valence_invariant.html#a645ae4416957c1396da936475c27bd97":[9,0,2,4,4,1],
 "classwmtk_1_1invariants_1_1_edge_valence_invariant.html#a766e57656585236e28bc8786744a8697":[9,0,2,4,4,0],
 "classwmtk_1_1invariants_1_1_edge_valence_invariant.html#afaa685a02d9fb6254f91003e788df630":[9,0,2,4,4,2],
-"classwmtk_1_1invariants_1_1_envelope_invariant.html":[9,0,2,4,5],
-"classwmtk_1_1invariants_1_1_envelope_invariant.html#a28b2f11435f8aa1982f84db589ed3b08":[9,0,2,4,5,4]
+"classwmtk_1_1invariants_1_1_envelope_invariant.html":[9,0,2,4,5]
 };

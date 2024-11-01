@@ -31,5 +31,6 @@ var classwmtk_1_1_tuple =
     [ "m_global_cid", "classwmtk_1_1_tuple.html#aa9bafeb81b4d3fd6270e3455d7b15e69", null ],
     [ "m_local_eid", "classwmtk_1_1_tuple.html#a8c04aeb01e397c0d6875027ec10537e2", null ],
     [ "m_local_fid", "classwmtk_1_1_tuple.html#ab545a470bd56805326c4b14a6c5ef0b8", null ],
-    [ "m_local_vid", "classwmtk_1_1_tuple.html#a11df1551a5946604bf1b990fcf8978ad", null ]
+    [ "m_local_vid", "classwmtk_1_1_tuple.html#a11df1551a5946604bf1b990fcf8978ad", null ],
+    [ "m_pad", "classwmtk_1_1_tuple.html#ac58dfb7ea1ac97bc85dd7bf1fd230e19", null ]
 ];
