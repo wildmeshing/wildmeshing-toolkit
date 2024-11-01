@@ -61,17 +61,17 @@ std::vector<std::array<Tuple, 2>> SplitNewAttributeTopoInfo::output_split_simpli
     const Tuple& output_tuple,
     PrimitiveType pt) const
 {
-    return m_mesh.parent_scope([&]() -> std::vector<std::array<Tuple, 2>> {
-        switch (get_primitive_type_id(pt)) {
-        case 0: {
-            return {};
-        }
-        case 1: {
-            return {ret_data.split_output_edges(m_mesh)};
-        }
-        default: return {};
-        }
-    });
+    int64_t id = get_primitive_type_id(pt);
+
+    switch (id) {
+    case 0: {
+        return {};
+    }
+    case 1: {
+        return {ret_data.split_output_edges(m_mesh)};
+    }
+    default: return {};
+    }
 }
 
 std::vector<Tuple> SplitNewAttributeTopoInfo::input_split_simplices(
