@@ -56,6 +56,7 @@
 #include <wmtk/invariants/RoundedInvariant.hpp>
 #include <wmtk/invariants/SeparateSubstructuresInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
+#include <wmtk/invariants/Swap2dUnroundedVertexInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
 
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
@@ -735,6 +736,8 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
         if (is_edge) op.set_priority(long_edges_first);
 
         op.add_invariant(simplex_invariant);
+        op.add_invariant(
+            std::make_shared<Swap2dUnroundedVertexInvariant>(*mesh, pt_attribute.as<Rational>()));
         op.add_invariant(inversion_invariant);
         op.add_invariant(function_invariant);
 
