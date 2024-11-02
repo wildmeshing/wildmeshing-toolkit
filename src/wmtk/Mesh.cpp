@@ -111,7 +111,16 @@ bool Mesh::is_boundary(const simplex::Simplex& s) const
 
 bool Mesh::is_valid(const Tuple& tuple) const
 {
-    return !tuple.is_null() && !is_removed(tuple);
+    const bool nullity = tuple.is_null();
+    const bool removed = is_removed(tuple);
+    const bool bad = nullity || removed;
+#if !defined(NDEBUG)
+    if(bad) {
+        logger().debug("Mesh::is_valid failed, got nullity:{} removedness:{}", nullity, removed);
+
+    }
+#endif
+    return !bad;
 }
 
 bool Mesh::is_removed(const Tuple& tuple) const

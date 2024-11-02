@@ -14,6 +14,8 @@ set(SRC_FILES
     internal/configure_swap.cpp
     internal/configure_collapse.hpp
     internal/configure_collapse.cpp
+    internal/configure_split.hpp
+    internal/configure_split.cpp
     )
 
 

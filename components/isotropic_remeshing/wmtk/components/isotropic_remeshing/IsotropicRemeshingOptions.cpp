@@ -3,16 +3,49 @@
 #include <algorithm>
 #include <nlohmann/json.hpp>
 
-#define DEFAULT_PARSABLE_ARGS                                                                \
-    iterations, length_abs, length_rel, lock_boundary, use_for_periodic, \
-        fix_uv_seam
+#include <wmtk/Mesh.hpp>
+
+#define DEFAULT_PARSABLE_ARGS \
+    iterations, length_abs, length_rel, lock_boundary, use_for_periodic, fix_uv_seam
 
 namespace wmtk::components::isotropic_remeshing {
+namespace {
 
+// compute the length relative to the bounding box diagonal
+double relative_to_absolute_length(
+    const attribute::MeshAttributeHandle& position,
+    const double length_rel)
+{
+    auto pos = position.mesh().create_const_accessor<double>(position);
+    const auto vertices = position.mesh().get_all(PrimitiveType::Vertex);
+    Eigen::AlignedBox<double, Eigen::Dynamic> bbox(pos.dimension());
+
+
+    for (const auto& v : vertices) {
+        bbox.extend(pos.const_vector_attribute(v));
+    }
+
+    const double diag_length = bbox.sizes().norm();
+
+    return length_rel * diag_length;
+}
+} // namespace
+
+double IsotropicRemeshingOptions::get_absolute_length() const
+{
+    double length = length_abs;
+    if (length_abs < 0) {
+        if (length_rel < 0) {
+            throw std::runtime_error("Either absolute or relative length must be set!");
+        }
+        length = relative_to_absolute_length(position_attribute, length_rel);
+    }
+    return length;
+}
 void to_json(nlohmann::json& nlohmann_json_j, const IsotropicRemeshingOptions& nlohmann_json_t)
 {
     NLOHMANN_JSON_EXPAND(NLOHMANN_JSON_PASTE(NLOHMANN_JSON_TO, DEFAULT_PARSABLE_ARGS));
-    if(nlohmann_json_t.envelope_size.has_value()) {
+    if (nlohmann_json_t.envelope_size.has_value()) {
         nlohmann_json_j["envelope_size"] = nlohmann_json_t.envelope_size.value();
     }
     {
@@ -34,8 +67,8 @@ void from_json(const nlohmann::json& nlohmann_json_j, IsotropicRemeshingOptions&
 
         ));
 
-    if(nlohmann_json_j.contains("envelope_size")) {
-         nlohmann_json_t.envelope_size = nlohmann_json_j["envelope_size"].get<double>();
+    if (nlohmann_json_j.contains("envelope_size")) {
+        nlohmann_json_t.envelope_size = nlohmann_json_j["envelope_size"].get<double>();
     }
 
     assert(nlohmann_json_j.contains("edge_swap_mode"));
@@ -63,7 +96,7 @@ void IsotropicRemeshingOptions::write_json(nlohmann::json& js) const
 
 std::vector<wmtk::attribute::MeshAttributeHandle> IsotropicRemeshingOptions::all_positions() const
 {
-    auto r = other_position_attributes;
+    std::vector<wmtk::attribute::MeshAttributeHandle> r = other_position_attributes;
     r.emplace_back(position_attribute);
     if (inversion_position_attribute.has_value()) {
         r.emplace_back(inversion_position_attribute.value());

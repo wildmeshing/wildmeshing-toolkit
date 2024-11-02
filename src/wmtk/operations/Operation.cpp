@@ -65,9 +65,6 @@ void Operation::add_transfer_strategy(
 
 std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simplex)
 {
-    if (!mesh().is_valid(simplex)) {
-        return {};
-    }
     if (!before(simplex)) {
         return {};
     }
@@ -104,7 +101,8 @@ bool Operation::before(const simplex::Simplex& simplex) const
     //     return false;
     // }
 
-    if (mesh().is_removed(simplex.tuple()) || !mesh().is_valid(simplex)) {
+    // we assume the current MeshType's is_valid calls Mesh::is_valid first, which checks if the simplex is removed or not 
+    if(!mesh().is_valid(simplex)) {
         return false;
     }
 

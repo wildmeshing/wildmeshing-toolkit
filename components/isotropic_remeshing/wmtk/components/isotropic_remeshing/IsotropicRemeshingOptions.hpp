@@ -32,6 +32,12 @@ struct IsotropicRemeshingOptions
     void load_json(const nlohmann::json& js);
     void write_json(nlohmann::json& js) const;
 
+
+    // transforms the absoltue or relative length paramters into an absolute length parameter
+    double get_absolute_length() const;
+
+
+
     friend void to_json(nlohmann::json& nlohmann_json_j, const IsotropicRemeshingOptions& nlohmann_json_t);
     friend void from_json(
         const nlohmann::json& nlohmann_json_j,
