@@ -7,13 +7,6 @@
 #include "local_id_table_offset.hpp"
 
 namespace wmtk::autogen::tri_mesh {
-inline bool is_ccw(const Tuple& tuple)
-{
-    assert(tuple_is_valid_for_ccw(tuple));
-    using namespace utils;
-    const int64_t offset = local_id_table_offset(tuple);
-    return auto_2d_table_ccw[offset] == 1;
-}
 inline bool tuple_is_valid_for_ccw(const Tuple& tuple)
 {
     using namespace utils;
@@ -22,5 +15,12 @@ inline bool tuple_is_valid_for_ccw(const Tuple& tuple)
     }
     const int64_t offset = local_id_table_offset(tuple);
     return auto_2d_table_ccw[offset] != -1;
+}
+inline bool is_ccw(const Tuple& tuple)
+{
+    assert(tuple_is_valid_for_ccw(tuple));
+    using namespace utils;
+    const int64_t offset = local_id_table_offset(tuple);
+    return auto_2d_table_ccw[offset] == 1;
 }
 } // namespace wmtk::autogen::tri_mesh
