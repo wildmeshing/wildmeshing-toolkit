@@ -1,7 +1,6 @@
 
 #pragma once
 #include <wmtk/PrimitiveType.hpp>
-#include <wmtk/utils/Rational.hpp>
 #include "AttributeHandle.hpp"
 namespace wmtk {
 class Mesh;
