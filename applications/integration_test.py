@@ -150,21 +150,20 @@ class IntegrationTest(unittest.TestCase):
 
         self.assertTrue(True)
 
+    def runTestFile(self, test_file_name):
+        with self.subTest(msg=f"{self.name}-{test_file_name}"):
+            print("Running test", test_file_name, flush=True)
+            test_file = os.path.join(self.config_folder, test_file_name)
+            print(f"Test file: {test_file}", flush=True)
+            self.run_one(test_file)
+
 
     def runTest(self):
         for test_file_name in self.config["tests"]:
-            with self.subTest(msg=f"{self.name}-{test_file_name}"):
-                print("Running test", test_file_name, flush=True)
-                test_file = os.path.join(self.config_folder, test_file_name)
-                print(f"Test file: {test_file}", flush=True)
-                self.run_one(test_file)
+            self.runTestFile(test_file_name)
         if self.run_all and "release_only_tests" in self.config:
             for test_file_name in self.config["release_only_tests"]:
-                with self.subTest(msg=f"{self.name}-{test_file_name}"):
-                    print("Running slow test", test_file_name, flush=True)
-                    test_file = os.path.join(self.config_folder, test_file_name)
-                    print(f"Test file: {test_file}", flush=True)
-                    self.run_one(test_file)
+                self.runTestFile(test_file_name)
 
 
 def load_config_json(config_file):
