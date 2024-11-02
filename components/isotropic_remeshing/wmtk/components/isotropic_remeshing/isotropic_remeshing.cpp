@@ -158,7 +158,7 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
     wmtk::logger().debug("Configure isotropic remeshing split");
     auto op_split = std::make_shared<EdgeSplit>(mesh);
     op_split->add_invariant(invariant_min_edge_length);
-    if (options.lock_boundary && !options.use_for_periodic && !options.dont_disable_split) {
+    if (options.lock_boundary && !options.use_for_periodic && options.edge_swap_mode != EdgeSwapMode::Skip) {
         op_split->add_invariant(invariant_interior_edge);
     }
     for (auto& p : positions) {

@@ -4,14 +4,17 @@
 #include <nlohmann/json.hpp>
 
 #define DEFAULT_PARSABLE_ARGS                                                                \
-    iterations, length_abs, length_rel, lock_boundary, use_for_periodic, dont_disable_split, \
-        fix_uv_seam, envelope_size
+    iterations, length_abs, length_rel, lock_boundary, use_for_periodic, \
+        fix_uv_seam
 
 namespace wmtk::components::isotropic_remeshing {
 
 void to_json(nlohmann::json& nlohmann_json_j, const IsotropicRemeshingOptions& nlohmann_json_t)
 {
     NLOHMANN_JSON_EXPAND(NLOHMANN_JSON_PASTE(NLOHMANN_JSON_TO, DEFAULT_PARSABLE_ARGS));
+    if(nlohmann_json_t.envelope_size.has_value()) {
+        nlohmann_json_j["envelope_size"] = nlohmann_json_t.envelope_size.value();
+    }
     {
         std::string name;
         switch (nlohmann_json_t.edge_swap_mode) {
@@ -30,6 +33,11 @@ void from_json(const nlohmann::json& nlohmann_json_j, IsotropicRemeshingOptions&
         DEFAULT_PARSABLE_ARGS
 
         ));
+
+    if(nlohmann_json_j.contains("envelope_size")) {
+         nlohmann_json_t.envelope_size = nlohmann_json_j["envelope_size"].get<double>();
+    }
+
     assert(nlohmann_json_j.contains("edge_swap_mode"));
     const std::string swap_name = nlohmann_json_j["edge_swap_mode"].get<std::string>();
     if (swap_name == "amips") {

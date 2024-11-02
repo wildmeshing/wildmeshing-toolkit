@@ -41,12 +41,17 @@ int main(int argc, char* argv[])
     //    wmtk::applications::isotropic_remeshing::spec,
     //    json_input_file);
 
+    spdlog::warn("File is {}", json_input_file.string());
     std::ifstream ifs(json_input_file);
     nlohmann::json j = nlohmann::json::parse(ifs);
 
     const auto input_js = j["input"];
 
-    const auto input_opts = input_js.get<wmtk::components::input::InputOptions>();
+
+    auto input_opts = input_js.get<wmtk::components::input::InputOptions>();
+    if(j.contains("root")) {
+        input_opts.working_directory = j["root"];
+    }
 
 
     wmtk::components::input::MeshCollection mc;

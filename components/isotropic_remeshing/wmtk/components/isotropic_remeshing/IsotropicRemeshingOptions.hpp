@@ -22,12 +22,11 @@ struct IsotropicRemeshingOptions
     double length_rel = 0;
     bool lock_boundary = true;
     bool use_for_periodic = false;
-    bool dont_disable_split = false;
     bool fix_uv_seam = true;
 
     EdgeSwapMode edge_swap_mode = EdgeSwapMode::Skip;
 
-    double envelope_size = 1e-3;
+    std::optional<double> envelope_size; // 1e-3
 
 
     void load_json(const nlohmann::json& js);
