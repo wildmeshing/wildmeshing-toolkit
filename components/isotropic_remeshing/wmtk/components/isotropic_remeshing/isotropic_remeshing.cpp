@@ -131,7 +131,7 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
 
 
     assert(op_collapse->attribute_new_all_configured());
-    ops.push_back(op_collapse);
+    // ops.push_back(op_collapse);
 
 
     //////////////////////////////////////////
