@@ -51,7 +51,7 @@ WMTK_NLOHMANN_JSON_FRIEND_FROM_JSON_PROTOTYPE(OutputOptions)
     }
 
     if (nlohmann_json_j.contains("mesh_name_path")) {
-        nlohmann_json_t.mesh_name_path = nlohmann_json_j["mesh_name_path"];
+        nlohmann_json_t.mesh_name_path = nlohmann_json_j["mesh_name_path"].get<std::filesystem::path>();
     }
 }
 } // namespace wmtk::components::output
