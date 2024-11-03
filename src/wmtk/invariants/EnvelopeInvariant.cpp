@@ -1,3 +1,11 @@
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
+#endif
+#include <Eigen/Dense>
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 #include "EnvelopeInvariant.hpp"
 
 #include <wmtk/Mesh.hpp>

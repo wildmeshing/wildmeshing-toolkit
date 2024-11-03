@@ -80,6 +80,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # ###############################################################################
 
 # Dependencies
+include(eigen)
 include(fmt)
 include(paraviewo)
 include(spdlog)
