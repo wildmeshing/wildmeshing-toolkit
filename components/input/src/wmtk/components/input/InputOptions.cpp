@@ -48,7 +48,7 @@ void adl_serializer<wmtk::components::input::InputOptions>::from_json(const json
         v.name_spec = j["name_spec"];
     }
     if (j.contains("name_spec_file")) {
-        v.name_spec_file = j["name_spec_file"];
+        v.name_spec_file = j["name_spec_file"].get<std::filesystem::path>();
     }
 
     v.old_mode = false;
