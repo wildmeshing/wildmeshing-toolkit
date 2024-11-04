@@ -1,0 +1,23 @@
+{
+    "input": {
+        "file": "100071_sf.msh",
+        "name_spec":
+        "main"
+    },
+    "root": "/home/mtao/git/wildmeshing-toolkit/data/aa0abd4658bb064515ee7cc2a7be87aa",
+    "position_attribute": "vertices",
+    "other_position_attributes": [
+        "vertices"
+    ],
+    "iterations": 30,
+    "length_rel": 0.01,
+    "length_abs": -1,
+    "use_for_periodic": false,
+    "edge_swap_mode": "valence",
+    "fix_uv_seam": false,
+    "lock_boundary": false,
+    "output": {
+    "file": "100071_sf",
+    "type": ".vtu"
+    }
+}
