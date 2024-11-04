@@ -2,7 +2,6 @@
 
 #include "Invariant.hpp"
 
-#include <Eigen/Dense>
 
 #include <memory>
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
