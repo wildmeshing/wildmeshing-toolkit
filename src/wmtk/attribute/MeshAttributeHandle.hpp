@@ -6,7 +6,6 @@
 #include <wmtk/utils/Rational.hpp>
 //
 #include "TypedAttributeHandle.hpp"
-#include "utils/HybridRationalAttribute.hpp"
 
 #include <variant>
 
@@ -34,14 +33,13 @@ public:
         TypedAttributeHandle<char>,
         TypedAttributeHandle<int64_t>,
         TypedAttributeHandle<double>,
-        TypedAttributeHandle<wmtk::Rational>,
-        utils::HybridRationalAttribute<Eigen::Dynamic>>;
+        TypedAttributeHandle<wmtk::Rational>>;
 
     // Convenience class for identifying attribute types
     using ValueVariant = std::
         variant<char, int64_t, double, wmtk::Rational, std::tuple<char, wmtk::Rational, double>>;
 
-    enum class HeldType { Char = 0, Int64 = 1, Double = 2, Rational = 3, HybridRational = 4 };
+    enum class HeldType { Char = 0, Int64 = 1, Double = 2, Rational = 3 };
 
     template <HeldType Type>
     using held_handle_type = std::variant_alternative_t<size_t(Type), HandleVariant>;
@@ -150,7 +148,7 @@ public:
     // return the dimension of the attribute (i.e the number of values stored per simplex)
     int64_t dimension() const;
 
-    // std::string name() const;
+     std::string name() const;
 
 
 private:
@@ -227,8 +225,6 @@ inline constexpr auto MeshAttributeHandle::held_type_from_handle() -> HeldType
         return HeldType::Int64;
     } else if constexpr (std::is_same_v<T, TypedAttributeHandle<wmtk::Rational>>) {
         return HeldType::Rational;
-    } else if constexpr (std::is_same_v<T, utils::HybridRationalAttribute<>>) {
-        return HeldType::HybridRational;
     }
     // If a compiler complains about the potentiality of no return value then a type accepted by the
     // HAndleVariant is not being represented properly. If the comppiler is simply unhappy to not

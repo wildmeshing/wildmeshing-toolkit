@@ -6,7 +6,10 @@ endif()
 
 set(SRC_FILES
     output.cpp
-	output.hpp)
+	output.hpp
+    OutputOptions.hpp
+    OutputOptions.cpp
+    )
 
 
 

@@ -4,19 +4,23 @@
 #include <CLI/CLI.hpp>
 #include <filesystem>
 #include <nlohmann/json.hpp>
+#include <wmtk/applications/utils/element_count_report.hpp>
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <wmtk/components/input/input.hpp>
 #include <wmtk/components/output/output.hpp>
+#include <wmtk/components/output/OutputOptions.hpp>
 #include <wmtk/components/utils/resolve_path.hpp>
 
+#include <wmtk/TriMesh.hpp>
 #include <wmtk/components/procedural/ProceduralOptions.hpp>
 #include <wmtk/components/procedural/make_mesh.hpp>
 #include "spec.hpp"
 
 using namespace wmtk::components;
+using namespace wmtk::applications;
 using namespace wmtk;
 namespace fs = std::filesystem;
 
@@ -38,20 +42,14 @@ int main(int argc, char* argv[])
         j = nlohmann::json::parse(ifs);
 
         jse::JSE spec_engine;
-        bool r = spec_engine.verify_json(j, procedural_spec);
+        bool r = spec_engine.verify_json(j, applications::procedural::spec);
         if (!r) {
             wmtk::logger().error("{}", spec_engine.log2str());
             return 1;
         } else {
-            j = spec_engine.inject_defaults(j, procedural_spec);
+            j = spec_engine.inject_defaults(j, applications::procedural::spec);
         }
     }
-
-    const fs::path input_path_in = j["input_path"];
-
-    const fs::path root = input_path_in.empty() ? json_input_file : input_path_in;
-
-    fs::path input_file = wmtk::components::utils::resolve_path(j["input"], root);
 
 
     wmtk::components::procedural::ProceduralOptions options =
@@ -84,12 +82,27 @@ int main(int argc, char* argv[])
     }
 
 
-    const std::string output_path = j["output"];
-    if (coordinate_handle_opt.has_value()) {
-        wmtk::components::output(*mesh, output_path, *coordinate_handle_opt);
+    if (!j.contains("output")) {
+        wmtk::logger().info("procedural_app: No output path provided");
     } else {
-        assert(output_path.size() > 4);
-        assert(output_path.substr(output_path.size() - 4) == ".hdf5");
-        wmtk::components::output_hdf5(*mesh, j["output"]);
+        auto opts = j["output"].get<wmtk::components::output::OutputOptions>();
+        if (coordinate_handle_opt.has_value()) {
+            opts.position_attribute = *coordinate_handle_opt;
+            wmtk::components::output::output(*mesh, opts);
+        }
+    }
+
+    if (j.contains("report")) {
+        const std::string report = j["report"];
+        if (!report.empty()) {
+            nlohmann::json out_json;
+            out_json.update(wmtk::applications::utils::element_count_report_named(*mesh));
+            j.erase("report");
+            out_json["input"] = j;
+
+
+            std::ofstream ofs(report);
+            ofs << out_json;
+        }
     }
 }

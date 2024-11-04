@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
 
     const fs::path input_file = resolve_paths(json_input_file, {j["input_path"], j["input"]});
 
-    std::shared_ptr<Mesh> mesh_in = wmtk::components::input(input_file);
+    std::shared_ptr<Mesh> mesh_in = wmtk::components::input::input(input_file);
     Mesh& mesh = *mesh_in;
 
 
@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
         wmtk::components::marching(mesh, options);
     }
 
-    wmtk::components::output(mesh, j["output"], pos_handle);
+    wmtk::components::output::output(mesh, j["output"], pos_handle);
 
     const std::string report = j["report"];
     if (!report.empty()) {

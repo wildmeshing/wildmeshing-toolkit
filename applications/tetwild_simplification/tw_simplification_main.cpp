@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
     const fs::path input_file =
         wmtk::components::utils::resolve_paths(json_input_file, {j["root"], j["input"]});
 
-    auto mesh = wmtk::components::input(input_file);
+    auto mesh = wmtk::components::input::input(input_file);
     wmtk::logger().info("mesh has {} vertices", mesh->get_all(PrimitiveType::Vertex).size());
 
     if (mesh->top_simplex_type() != PrimitiveType::Triangle)
@@ -66,7 +66,7 @@ int main(int argc, char* argv[])
         j["sample_envelope"]);
 
     std::string output_file = j["output"];
-    wmtk::components::output(*out, output_file, "vertices");
+    wmtk::components::output::output(*out, output_file, "vertices");
 
     const std::string report = j["report"];
     if (!report.empty()) {

@@ -12,10 +12,10 @@ class BaseCollapseNewAttributeStrategy : public NewAttributeStrategy
 {
 public:
     using ReturnData = wmtk::multimesh::operations::CollapseReturnData;
-    using OperationTupleData = wmtk::multimesh::operations::OperationTupleData;
+    using OperationInOutData = wmtk::multimesh::operations::OperationInOutData;
 
 
-    virtual void update(Mesh& m, const ReturnData& ret_data, const OperationTupleData& tuples)
+    virtual void update(Mesh& m, const ReturnData& ret_data, const OperationInOutData& tuples)
         const = 0;
 };
 
@@ -24,7 +24,7 @@ class CollapseNewAttributeStrategy : public BaseCollapseNewAttributeStrategy
 {
 public:
     using ReturnData = BaseCollapseNewAttributeStrategy::ReturnData;
-    using OperationTupleData = BaseCollapseNewAttributeStrategy::OperationTupleData;
+    using OperationInOutData = BaseCollapseNewAttributeStrategy::OperationInOutData;
     using ReturnVariant = ReturnData::ReturnVariant;
 
     using VecType = VectorX<T>;
@@ -36,7 +36,7 @@ public:
 
     CollapseNewAttributeStrategy(const wmtk::attribute::MeshAttributeHandle& h);
 
-    void update(Mesh& m, const ReturnData& ret_data, const OperationTupleData& tuples)
+    void update(Mesh& m, const ReturnData& ret_data, const OperationInOutData& tuples)
         const override;
 
 
@@ -54,9 +54,13 @@ public:
         return {m_handle};
     }
 
+    bool invalid_state() const final override;
+    std::string name() const final override;
+
 private:
     wmtk::attribute::MeshAttributeHandle m_handle;
     CollapseFuncType m_collapse_op;
+    bool m_will_throw = false;
     std::unique_ptr<CollapseNewAttributeTopoInfo> m_topo_info;
 
     void assign_collapsed(

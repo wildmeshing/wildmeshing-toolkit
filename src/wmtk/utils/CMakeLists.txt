@@ -67,8 +67,13 @@ set(SRC_FILES
     EigenMatrixWriter.hpp
     EigenMatrixWriter.cpp
 
+    edge_insertion.hpp
+    edge_insertion.cpp
     Stopwatch.hpp
     Stopwatch.cpp
+
+    DynamicArray.hpp
+    DynamicArray.hxx
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

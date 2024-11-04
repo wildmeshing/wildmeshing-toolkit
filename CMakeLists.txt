@@ -80,6 +80,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # ###############################################################################
 
 # Dependencies
+include(eigen)
 include(fmt)
 include(paraviewo)
 include(spdlog)
@@ -98,7 +99,7 @@ include(CDT)
 add_library(wildmeshing_toolkit)
 add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
 target_link_libraries(wildmeshing_toolkit PUBLIC wmtk_coverage_config)
-set_property(TARGET wildmeshing_toolkit PROPERTY COMPILE_WARNING_AS_ERROR  OFF)
+set_property(TARGET wildmeshing_toolkit PROPERTY COMPILE_WARNING_AS_ERROR  ON)
 
 
 add_subdirectory(src)
@@ -116,6 +117,7 @@ target_compile_definitions(wildmeshing_toolkit PUBLIC NOMINMAX)
 option(WMTK_USE_CXX20 "Sets WMTK to use C++20, defaults to C++17")
 if(WMTK_USE_CXX20)
 target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_20)
+target_compile_definitions(wildmeshing_toolkit PUBLIC -DWMTK_ENABLED_CPP20)
 else()
 target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
 endif()

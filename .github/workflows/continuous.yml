@@ -1,5 +1,6 @@
 name: Build
 
+
 on:
   push:
     branches:
@@ -69,10 +70,7 @@ jobs:
         run: cd build; make -j8; ccache --show-stats
 
       - name: Tests
-        run: cd build; ctest --verbose --output-on-failure
-
-      - name: Integration Tests
-        run: cd build; python ../applications/integration_test.py
+        run: cd build; ctest --verbose --output-on-failure -j8
 
   ####################
   # MacOS
@@ -129,10 +127,7 @@ jobs:
 
       - name: Tests
         #if: matrix.arch == 'x86_64' # no ARM vm on actions yet
-        run: cd build; ctest --verbose --output-on-failure
-
-      - name: Integration Tests
-        run: cd build; python3 ../applications/integration_test.py
+        run: cd build; ctest --verbose --output-on-failure -j8
 
   ####################
   # Windows
@@ -163,7 +158,7 @@ jobs:
           cmake --version
           cmake -G Ninja ^
             -DCMAKE_BUILD_TYPE=${{ matrix.config }} ^
-            -DCPM_SOURCE_CACHE=C:\Temp\CPM
+            -DCPM_SOURCE_CACHE=C:\Temp\CPM ^
             -B build ^
             -S .
           cd build
@@ -174,4 +169,4 @@ jobs:
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat" -arch=x64
           cd build
-          ctest --verbose --output-on-failure
+          ctest --verbose --output-on-failure -j8

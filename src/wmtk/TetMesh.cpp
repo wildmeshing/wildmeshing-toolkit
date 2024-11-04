@@ -6,7 +6,7 @@
 #include <wmtk/autogen/tet_mesh/is_ccw.hpp>
 #include <wmtk/autogen/tet_mesh/local_switch_tuple.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
-#include <wmtk/simplex/cofaces_single_dimension.hpp>
+#include <wmtk/simplex/cofaces_single_dimension_iterable.hpp>
 #include <wmtk/simplex/open_star.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -369,7 +369,7 @@ bool TetMesh::is_boundary_face(const Tuple& tuple) const
 
 bool TetMesh::is_boundary_edge(const Tuple& edge) const
 {
-    for (const Tuple& f : simplex::cofaces_single_dimension_tuples(
+    for (const Tuple& f : simplex::cofaces_single_dimension_iterable(
              *this,
              simplex::Simplex::edge(*this, edge),
              PrimitiveType::Triangle)) {

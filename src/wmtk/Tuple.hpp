@@ -1,7 +1,7 @@
 #pragma once
 
+#include <array>
 #include "PrimitiveType.hpp"
-
 
 namespace wmtk {
 
@@ -47,6 +47,7 @@ private:
     int8_t m_local_vid = -1;
     int8_t m_local_eid = -1;
     int8_t m_local_fid = -1;
+    std::array<int8_t, 5> m_pad = {{0, 0, 0, 0, 0}}; // align Tuple with 2*int64_t
 
 public:
     friend class Mesh;

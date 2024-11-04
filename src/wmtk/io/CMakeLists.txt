@@ -17,5 +17,8 @@ set(SRC_FILES
 
     CachedMultiMesh.hpp
     CachedMultiMesh.cpp
+
+    read_mesh.hpp
+    read_mesh.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

@@ -1,7 +1,6 @@
 
 #pragma once
 #include <wmtk/PrimitiveType.hpp>
-#include <wmtk/utils/Rational.hpp>
 #include "AttributeHandle.hpp"
 namespace wmtk {
 class Mesh;
@@ -13,10 +12,6 @@ template <typename T, int Dim>
 class AccessorBase;
 template <typename T, typename MeshType, int Dim>
 class Accessor;
-namespace utils {
-template <int D>
-class HybridRationalAttribute;
-}
 
 class AttributeManager;
 
@@ -43,8 +38,6 @@ private:
     friend class Accessor;
     friend class AttributeManager;
     friend class wmtk::hash<TypedAttributeHandle<T>>;
-    template <int D>
-    friend class utils::HybridRationalAttribute;
     wmtk::attribute::AttributeHandle m_base_handle;
     wmtk::PrimitiveType m_primitive_type = wmtk::PrimitiveType::Vertex;
 

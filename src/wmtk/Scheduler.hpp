@@ -1,7 +1,7 @@
 #pragma once
 
 #include <spdlog/common.h>
-#include "operations/Operation.hpp"
+#include <wmtk/operations/Operation.hpp>
 
 namespace wmtk {
 

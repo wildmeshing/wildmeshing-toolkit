@@ -42,7 +42,7 @@ bool CollapseEnergyBeforeInvariantDouble::before(const simplex::Simplex& s) cons
             const Tuple v1 = mesh().switch_tuple(v0, PV);
             const simplex::Simplex v0_s(mesh(), PV, v0);
             const simplex::Simplex v1_s(mesh(), PV, v1);
-            const auto v1_pos = position_accessor.const_vector_attribute(v1);
+            // const auto v1_pos = position_accessor.const_vector_attribute(v1);
 
             // TODO: check sort and clean
             const auto& v0_incident_tets =
@@ -145,7 +145,7 @@ bool CollapseEnergyBeforeInvariantDouble::before(const simplex::Simplex& s) cons
             const Tuple v1 = mesh().switch_tuple(v0, PV);
             const simplex::Simplex v0_s(mesh(), PV, v0);
             const simplex::Simplex v1_s(mesh(), PV, v1);
-            const auto v0_pos = position_accessor.const_vector_attribute(v0);
+            // const auto v0_pos = position_accessor.const_vector_attribute(v0);
 
             // TODO: check sort and clean
             const auto& v0_incident_tets =
