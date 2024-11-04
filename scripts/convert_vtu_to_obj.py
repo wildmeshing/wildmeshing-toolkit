@@ -1,6 +1,12 @@
 import meshio as mio 
 import sys
 
+"""
+This script is for convert surface vtu files to triangle/line .obj file
+
+usage: python convert_vtu_to_obj.py <input_file_name.vtu> <output_file_name>
+"""
+
 def __main__():
     input_path,output_path = sys.argv[1:]
     
