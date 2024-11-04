@@ -226,7 +226,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing3d(
         PrimitiveType::Edge,
         1,
         false,
-        options.target_edge_length); // defaults to target edge length
+        target_edge_length); // defaults to target edge length
 
     // Target edge length update
     const double min_edge_length = [&]() -> double {
