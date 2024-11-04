@@ -17,6 +17,7 @@
 #include <wmtk/components/multimesh/multimesh.hpp>
 #include <wmtk/components/output/output.hpp>
 #include <wmtk/components/shortest_edge_collapse/shortest_edge_collapse.hpp>
+#include <wmtk/components/wildmeshing/wildmeshing.hpp>
 
 
 #include "cdt_sec_spec.hpp"
@@ -58,7 +59,7 @@ int main(int argc, char* argv[])
     auto mesh = wmtk::components::input::input(input_file);
     wmtk::logger().info("mesh has {} vertices", mesh->get_all(PrimitiveType::Vertex).size());
 
-    auto mesh_after_cdt = wmtk::components::CDT(static_cast<const TriMesh&>(*mesh), true, false);
+    auto mesh_after_cdt = wmtk::components::CDT(static_cast<const TriMesh&>(*mesh), true, true);
 
     attribute::MeshAttributeHandle mesh_after_cdt_position_handle;
 
@@ -96,28 +97,63 @@ int main(int argc, char* argv[])
         parent_mesh->get_attribute_handle<int64_t>("is_boundary", PrimitiveType::Triangle);
     pass_through.push_back(boundary_handle);
 
-    auto child_mesh_position_handle =
-        child_mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    // auto child_mesh_position_handle =
+    //     child_mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
-    attribute::MeshAttributeHandle parent_mesh_position_handle =
-        parent_mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    // attribute::MeshAttributeHandle parent_mesh_position_handle =
+    //     parent_mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
-    {
-        using namespace components::shortest_edge_collapse;
+    // {
+    //     using namespace components::shortest_edge_collapse;
 
-        ShortestEdgeCollapseOptions options;
-        options.position_handle = child_mesh_position_handle;
-        options.other_position_handles.emplace_back(parent_mesh_position_handle);
-        options.length_rel = j["length_rel"];
-        options.envelope_size = j["envelope_size"];
-        options.check_inversions = true;
-        options.pass_through_attributes = pass_through;
+    //     ShortestEdgeCollapseOptions options;
+    //     options.position_handle = child_mesh_position_handle;
+    //     options.other_position_handles.emplace_back(parent_mesh_position_handle);
+    //     options.length_rel = j["length_rel"];
+    //     options.envelope_size = j["envelope_size"];
+    //     options.check_inversions = true;
+    //     options.pass_through_attributes = pass_through;
 
-        shortest_edge_collapse(*parent_mesh, options);
-    }
+    //     shortest_edge_collapse(*parent_mesh, options);
+    // }
 
-    wmtk::components::output::output(*parent_mesh, output_file, "vertices");
-    wmtk::components::output::output(*child_mesh, output_file + "_surface", "vertices");
+    std::vector<wmtk::components::EnvelopeOptions> enves;
+
+    wmtk::components::EnvelopeOptions e_surface;
+    e_surface.envelope_name = "surface";
+    e_surface.envelope_constrained_mesh = child_mesh;
+    e_surface.envelope_geometry_mesh = child_mesh;
+    e_surface.constrained_position_name = "vertices";
+    e_surface.geometry_position_name = "vertices";
+    e_surface.thickness = j["envelope_size"];
+
+    enves.push_back(e_surface);
+
+    wmtk::components::WildMeshingOptions wmo;
+    wmo.input_mesh = parent_mesh;
+    wmo.input_mesh_position = "vertices";
+    wmo.target_edge_length = j["length_rel"];
+    wmo.target_max_amips = 50;
+    wmo.max_passes = 10;
+    wmo.intermediate_output = false;
+    wmo.replace_double_coordinate = false;
+    wmo.scheduler_update_frequency = 0;
+    wmo.intermediate_output_path = "";
+    wmo.intermediate_output_name = j["output"];
+    wmo.envelopes = enves;
+    wmo.pass_through = pass_through;
+    wmo.skip_split = false;
+    wmo.skip_collapse = false;
+    wmo.skip_swap = false;
+    wmo.skip_smooth = true;
+
+    auto meshes_after_wildmeshing = wildmeshing(wmo);
+
+    wmtk::components::output::output(*meshes_after_wildmeshing[0].first, output_file, "vertices");
+    wmtk::components::output::output(
+        *meshes_after_wildmeshing[1].first,
+        output_file + "_surface",
+        "vertices");
 
     const std::string report = j["report"];
     if (!report.empty()) {

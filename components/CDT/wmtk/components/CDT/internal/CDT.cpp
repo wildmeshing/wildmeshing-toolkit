@@ -2,9 +2,14 @@
 
 //
 #include "CDT.hpp"
+#include <wmtk/Scheduler.hpp>
+#include <wmtk/operations/Rounding.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include <wmtk/utils/orient.hpp>
+
+#include <wmtk/invariants/SimplexInversionInvariant.hpp>
+
 #include "cdt_lib.hpp"
 #include "get_vf.hpp"
 
@@ -79,6 +84,27 @@ std::shared_ptr<wmtk::TetMesh> CDT_internal(
         }
 
         mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, *tm);
+
+        auto rounding_pt_attribute =
+            tm->get_attribute_handle_typed<Rational>("vertices", PrimitiveType::Vertex);
+
+
+        auto rounding = std::make_shared<wmtk::operations::Rounding>(*tm, rounding_pt_attribute);
+        rounding->add_invariant(
+            std::make_shared<SimplexInversionInvariant<Rational>>(*tm, rounding_pt_attribute));
+
+        Scheduler scheduler;
+        auto stats = scheduler.run_operation_on_all(*rounding);
+
+        logger().info(
+            "Executed rounding, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
+            "executing: {}",
+            stats.number_of_performed_operations(),
+            stats.number_of_successful_operations(),
+            stats.number_of_failed_operations(),
+            stats.collecting_time,
+            stats.sorting_time,
+            stats.executing_time);
     } else {
         MatrixX<double> V_double;
         V_double.resize(V_final_str.size(), 3);

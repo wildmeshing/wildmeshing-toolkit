@@ -11,6 +11,7 @@ wmtk::multimesh
 wmtk::cdt_optimization
 wmtk::shortest_edge_collapse
 wmtk::CDT
+wmtk::wildmeshing
 wmtk::output)
 
 wmtk_register_integration_test(EXEC_NAME cdt_sec_app
