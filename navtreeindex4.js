@@ -1,5 +1,9 @@
 var NAVTREEINDEX4 =
 {
+"_wildmeshing_options__old_8hpp_source.html":[10,0,0,26,0,0,0,5],
+"_winding_number_options_8hpp.html":[10,0,0,27,0,0,0,0,2],
+"_winding_number_options_8hpp.html#ac37ed3f255d6cb7b44f2423cf4079170":[10,0,0,27,0,0,0,0,2,1],
+"_winding_number_options_8hpp_source.html":[10,0,0,27,0,0,0,0,2],
 "adaptive__tessellation_8cpp.html":[10,0,0,0,0,0,0,1],
 "adaptive__tessellation_8cpp_source.html":[10,0,0,0,0,0,0,1],
 "annotated.html":[9,0],
@@ -237,17 +241,13 @@ var NAVTREEINDEX4 =
 "classwmtk_1_1_energy_filter_invariant.html#acc0f76008a189003956a2d9ab20deb4f":[9,0,2,16,3],
 "classwmtk_1_1_energy_filter_invariant.html#ad02bf0ce1881d2ad7d1f3048391d25d4":[9,0,2,16,1],
 "classwmtk_1_1_energy_filter_invariant.html#adceafcda92a28a7cdd429ce0e5dfd1cf":[9,0,2,16,4],
-"classwmtk_1_1_h_d_f5_reader.html":[9,0,2,32],
-"classwmtk_1_1_h_d_f5_reader.html#a24253eae6c0cdca26556f7dee93d7a7c":[9,0,2,32,3],
-"classwmtk_1_1_h_d_f5_reader.html#a2524f46ffeb8b8b9af898e7b2993bc00":[9,0,2,32,1],
-"classwmtk_1_1_h_d_f5_reader.html#a590a9a7f8fcaf06216053ae632fac286":[9,0,2,32,2],
-"classwmtk_1_1_h_d_f5_reader.html#a89d59a7791e00a5d0b71abfe22507ddf":[9,0,2,32,0],
-"classwmtk_1_1_h_d_f5_writer.html":[9,0,2,33],
-"classwmtk_1_1_h_d_f5_writer.html#a0b87c686187c037bfab16ecfa20d996e":[9,0,2,33,4],
-"classwmtk_1_1_h_d_f5_writer.html#a1eebb1ec68768e8fdfe78abe3a4c1688":[9,0,2,33,1],
-"classwmtk_1_1_h_d_f5_writer.html#a39e285f6d3c0f30d3d2601ed5f44d4f3":[9,0,2,33,12],
-"classwmtk_1_1_h_d_f5_writer.html#a54da8819b21835c0a73c7b85bd95409a":[9,0,2,33,6],
-"classwmtk_1_1_h_d_f5_writer.html#a570b98e13be3f1279cd1355ea8f411d2":[9,0,2,33,3],
-"classwmtk_1_1_h_d_f5_writer.html#a70a4b783b94f3f92be91a5365d8ca454":[9,0,2,33,0],
-"classwmtk_1_1_h_d_f5_writer.html#a7b750afd9b35c8460da761e55529dc31":[9,0,2,33,11]
+"classwmtk_1_1_h_d_f5_reader.html":[9,0,2,33],
+"classwmtk_1_1_h_d_f5_reader.html#a24253eae6c0cdca26556f7dee93d7a7c":[9,0,2,33,3],
+"classwmtk_1_1_h_d_f5_reader.html#a2524f46ffeb8b8b9af898e7b2993bc00":[9,0,2,33,1],
+"classwmtk_1_1_h_d_f5_reader.html#a590a9a7f8fcaf06216053ae632fac286":[9,0,2,33,2],
+"classwmtk_1_1_h_d_f5_reader.html#a89d59a7791e00a5d0b71abfe22507ddf":[9,0,2,33,0],
+"classwmtk_1_1_h_d_f5_writer.html":[9,0,2,34],
+"classwmtk_1_1_h_d_f5_writer.html#a0b87c686187c037bfab16ecfa20d996e":[9,0,2,34,4],
+"classwmtk_1_1_h_d_f5_writer.html#a1eebb1ec68768e8fdfe78abe3a4c1688":[9,0,2,34,1],
+"classwmtk_1_1_h_d_f5_writer.html#a39e285f6d3c0f30d3d2601ed5f44d4f3":[9,0,2,34,12]
 };

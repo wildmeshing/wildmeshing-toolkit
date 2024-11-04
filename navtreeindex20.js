@@ -1,5 +1,15 @@
 var NAVTREEINDEX20 =
 {
+"internal_2winding__number_8hpp_source.html":[10,0,0,27,0,0,0,0,1],
+"is__ccw_8cpp.html":[10,0,2,0,1,9],
+"is__ccw_8cpp.html#a365ab61cb89e1b96e57747b7a3a97558":[10,0,2,0,1,9,0],
+"is__ccw_8cpp.html#ac29d917dc0d4499209fc0a43367fafd5":[10,0,2,0,1,9,1],
+"is__ccw_8cpp_source.html":[10,0,2,0,1,9],
+"is__ccw_8hpp.html":[10,0,2,0,1,10],
+"is__ccw_8hpp.html#a365ab61cb89e1b96e57747b7a3a97558":[10,0,2,0,1,10,0],
+"is__ccw_8hpp.html#ac29d917dc0d4499209fc0a43367fafd5":[10,0,2,0,1,10,1],
+"is__ccw_8hpp_source.html":[10,0,2,0,1,10],
+"isotropic__remeshing_8cpp.html":[10,0,0,8,0,0,0,0],
 "isotropic__remeshing_8cpp.html#a29b35d3b827e910361072ce0fc57f3ee":[10,0,0,8,0,0,0,0,1],
 "isotropic__remeshing_8cpp.html#a5bcab5e634086e092020a2edb03a010b":[10,0,0,8,0,0,0,0,0],
 "isotropic__remeshing_8cpp_source.html":[10,0,0,8,0,0,0,0],
@@ -239,15 +249,5 @@ var NAVTREEINDEX20 =
 "multimesh_8hpp.html#a4fee03e23971feff7d37c1f9be2c1f85ac101058e7ea21bbbf2a5ac893088e90b":[10,0,0,13,0,0,0,0,10,0,2],
 "multimesh_8hpp.html#a4fee03e23971feff7d37c1f9be2c1f85adeaa2adbeb26802ae61609c3f3642d82":[10,0,0,13,0,0,0,0,10,0,0],
 "multimesh_8hpp.html#a4fee03e23971feff7d37c1f9be2c1f85ae234de581c9c5ef91322f1469a585f9e":[10,0,0,13,0,0,0,0,10,0,1],
-"multimesh_8hpp.html#a5af816bd3804ba5430992812b388eb6b":[10,0,0,13,0,0,0,0,10,1],
-"multimesh_8hpp_source.html":[10,0,0,13,0,0,0,0,10],
-"multimesh__from__tag_8cpp.html":[10,0,0,14,0,0,0,1],
-"multimesh__from__tag_8cpp.html#ac309092566399cef68679a1bb8107d1e":[10,0,0,14,0,0,0,1,0],
-"multimesh__from__tag_8cpp_source.html":[10,0,0,14,0,0,0,1],
-"multimesh__from__tag_8hpp.html":[10,0,0,14,0,0,0,2],
-"multimesh__from__tag_8hpp.html#ac309092566399cef68679a1bb8107d1e":[10,0,0,14,0,0,0,2,0],
-"multimesh__from__tag_8hpp_source.html":[10,0,0,14,0,0,0,2],
-"named__multimesh_8cpp.html":[10,0,0,7,1,1],
-"named__multimesh_8cpp.html#a95dcae20de8ef7ced729ef8e299faf25":[10,0,0,7,1,1,1],
-"named__multimesh_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d":[10,0,0,7,1,1,0]
+"multimesh_8hpp.html#a5af816bd3804ba5430992812b388eb6b":[10,0,0,13,0,0,0,0,10,1]
 };

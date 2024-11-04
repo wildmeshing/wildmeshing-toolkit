@@ -1,5 +1,15 @@
 var NAVTREEINDEX19 =
 {
+"from__boundary_8hpp.html":[10,0,0,13,0,0,0,0,4],
+"from__boundary_8hpp.html#adb526f96e146395c4e26c3dbf5aba389":[10,0,0,13,0,0,0,0,4,0],
+"from__boundary_8hpp_source.html":[10,0,0,13,0,0,0,0,4],
+"from__facet__bijection_8cpp.html":[10,0,0,13,0,0,0,0,5],
+"from__facet__bijection_8cpp.html#a520cff3557e74c0a0d648947dc42280f":[10,0,0,13,0,0,0,0,5,0],
+"from__facet__bijection_8cpp_source.html":[10,0,0,13,0,0,0,0,5],
+"from__facet__bijection_8hpp.html":[10,0,0,13,0,0,0,0,6],
+"from__facet__bijection_8hpp.html#a520cff3557e74c0a0d648947dc42280f":[10,0,0,13,0,0,0,0,6,0],
+"from__facet__bijection_8hpp_source.html":[10,0,0,13,0,0,0,0,6],
+"from__tag_8cpp.html":[10,0,0,13,0,0,0,0,7],
 "from__tag_8cpp.html#a89507b95304fafebdef81b6876544d03":[10,0,0,13,0,0,0,0,7,0],
 "from__tag_8cpp_source.html":[10,0,0,13,0,0,0,0,7],
 "from__tag_8hpp.html":[10,0,0,13,0,0,0,0,8],
@@ -163,8 +173,8 @@ var NAVTREEINDEX19 =
 "import__cache_8hpp.html":[10,0,0,6,0,0,0,1],
 "import__cache_8hpp.html#a0cdf23b4ed7ff0a739f4e29a086b7ae3":[10,0,0,6,0,0,0,1,0],
 "import__cache_8hpp_source.html":[10,0,0,6,0,0,0,1],
-"index.html":[],
 "index.html":[0],
+"index.html":[],
 "index.html#autotoc_md1":[0,0],
 "index.html#autotoc_md10":[0,2,3],
 "index.html#autotoc_md11":[0,2,4],
@@ -239,15 +249,5 @@ var NAVTREEINDEX19 =
 "internal_2winding__number_8cpp_source.html":[10,0,0,27,0,0,0,0,0],
 "internal_2winding__number_8hpp.html":[10,0,0,27,0,0,0,0,1],
 "internal_2winding__number_8hpp.html#a18a56f1ee7f5d72c7557922789a96802":[10,0,0,27,0,0,0,0,1,0],
-"internal_2winding__number_8hpp.html#afb68ce2cd6102c4f403bb39329da8a02":[10,0,0,27,0,0,0,0,1,1],
-"internal_2winding__number_8hpp_source.html":[10,0,0,27,0,0,0,0,1],
-"is__ccw_8cpp.html":[10,0,2,0,1,9],
-"is__ccw_8cpp.html#a365ab61cb89e1b96e57747b7a3a97558":[10,0,2,0,1,9,0],
-"is__ccw_8cpp.html#ac29d917dc0d4499209fc0a43367fafd5":[10,0,2,0,1,9,1],
-"is__ccw_8cpp_source.html":[10,0,2,0,1,9],
-"is__ccw_8hpp.html":[10,0,2,0,1,10],
-"is__ccw_8hpp.html#a365ab61cb89e1b96e57747b7a3a97558":[10,0,2,0,1,10,0],
-"is__ccw_8hpp.html#ac29d917dc0d4499209fc0a43367fafd5":[10,0,2,0,1,10,1],
-"is__ccw_8hpp_source.html":[10,0,2,0,1,10],
-"isotropic__remeshing_8cpp.html":[10,0,0,8,0,0,0,0]
+"internal_2winding__number_8hpp.html#afb68ce2cd6102c4f403bb39329da8a02":[10,0,0,27,0,0,0,0,1,1]
 };

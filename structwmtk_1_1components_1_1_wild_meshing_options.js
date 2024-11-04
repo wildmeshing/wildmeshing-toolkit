@@ -10,6 +10,10 @@ var structwmtk_1_1components_1_1_wild_meshing_options =
     [ "pass_through", "structwmtk_1_1components_1_1_wild_meshing_options.html#a89311e001191d94c4fb5fb8bd3aa917f", null ],
     [ "replace_double_coordinate", "structwmtk_1_1components_1_1_wild_meshing_options.html#a150ca64dd6d4f291a4f797cdd2ea662b", null ],
     [ "scheduler_update_frequency", "structwmtk_1_1components_1_1_wild_meshing_options.html#aec5c8a36e0d3d04a0ef96c4f3da0a96f", null ],
+    [ "skip_collapse", "structwmtk_1_1components_1_1_wild_meshing_options.html#af3f125ecfa67bdfbd66c956c71b6a78f", null ],
+    [ "skip_smooth", "structwmtk_1_1components_1_1_wild_meshing_options.html#acb3b895580baf7d390839a9fae2ea3e2", null ],
+    [ "skip_split", "structwmtk_1_1components_1_1_wild_meshing_options.html#ac71188c951fc1ca00de3a940f71cfa15", null ],
+    [ "skip_swap", "structwmtk_1_1components_1_1_wild_meshing_options.html#a3a1d192238323c382456fe45c0cba42a", null ],
     [ "target_edge_length", "structwmtk_1_1components_1_1_wild_meshing_options.html#a4e72b11bf8eb31bd4152095345d3fbd0", null ],
     [ "target_max_amips", "structwmtk_1_1components_1_1_wild_meshing_options.html#a48ba0ea5b96ae277fadda309b90f08c8", null ]
 ];
