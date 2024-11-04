@@ -89,33 +89,13 @@ int main(int argc, char* argv[])
     }
 
     std::string output_file = j["output"];
-    wmtk::components::output::output(*parent_mesh, output_file + "_before_sec", "vertices");
-    wmtk::components::output::output(*child_mesh, output_file + "_surface_before_sec", "vertices");
+    wmtk::components::output::output(*parent_mesh, output_file + "_before_opt", "vertices");
+    wmtk::components::output::output(*child_mesh, output_file + "_surface_before_opt", "vertices");
 
     std::vector<attribute::MeshAttributeHandle> pass_through;
     auto boundary_handle =
         parent_mesh->get_attribute_handle<int64_t>("is_boundary", PrimitiveType::Triangle);
     pass_through.push_back(boundary_handle);
-
-    // auto child_mesh_position_handle =
-    //     child_mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-
-    // attribute::MeshAttributeHandle parent_mesh_position_handle =
-    //     parent_mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-
-    // {
-    //     using namespace components::shortest_edge_collapse;
-
-    //     ShortestEdgeCollapseOptions options;
-    //     options.position_handle = child_mesh_position_handle;
-    //     options.other_position_handles.emplace_back(parent_mesh_position_handle);
-    //     options.length_rel = j["length_rel"];
-    //     options.envelope_size = j["envelope_size"];
-    //     options.check_inversions = true;
-    //     options.pass_through_attributes = pass_through;
-
-    //     shortest_edge_collapse(*parent_mesh, options);
-    // }
 
     std::vector<wmtk::components::EnvelopeOptions> enves;
 
