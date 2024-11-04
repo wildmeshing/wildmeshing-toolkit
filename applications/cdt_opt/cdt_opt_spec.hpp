@@ -2,7 +2,7 @@
 #include <nlohmann/json.hpp>
 namespace {
 
-nlohmann::json cdt_sec_spec = R"(
+nlohmann::json cdt_opt_spec = R"(
 [
     {
         "pointer": "/",

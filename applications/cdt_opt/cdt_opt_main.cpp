@@ -20,7 +20,7 @@
 #include <wmtk/components/wildmeshing/wildmeshing.hpp>
 
 
-#include "cdt_sec_spec.hpp"
+#include "cdt_opt_spec.hpp"
 
 using namespace wmtk;
 namespace fs = std::filesystem;
@@ -45,12 +45,12 @@ int main(int argc, char* argv[])
         j = nlohmann::json::parse(ifs);
 
         jse::JSE spec_engine;
-        bool r = spec_engine.verify_json(j, cdt_sec_spec);
+        bool r = spec_engine.verify_json(j, cdt_opt_spec);
         if (!r) {
             wmtk::logger().error("{}", spec_engine.log2str());
             return 1;
         } else {
-            j = spec_engine.inject_defaults(j, cdt_sec_spec);
+            j = spec_engine.inject_defaults(j, cdt_opt_spec);
         }
     }
 
