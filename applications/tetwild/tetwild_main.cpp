@@ -172,6 +172,10 @@ int main(int argc, char* argv[])
     wmo.intermediate_output_name = j["output"];
     wmo.envelopes = enves;
     wmo.pass_through = pass_through;
+    wmo.skip_split = j["skip_split"];
+    wmo.skip_collapse = j["skip_collapse"];
+    wmo.skip_swap = j["skip_swap"];
+    wmo.skip_smooth = j["skip_smooth"];
 
     auto meshes_after_tetwild = wildmeshing(wmo);
     auto main_mesh_after_tetwild = meshes_after_tetwild[0].first;

@@ -609,11 +609,14 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
 
     split_sequence->set_priority(long_edges_first);
 
-    ops.emplace_back(split_sequence);
-    ops_name.emplace_back("SPLIT");
 
-    ops.emplace_back(rounding);
-    ops_name.emplace_back("rounding");
+    if (!options.skip_split) {
+        ops.emplace_back(split_sequence);
+        ops_name.emplace_back("SPLIT");
+
+        ops.emplace_back(rounding);
+        ops_name.emplace_back("rounding");
+    }
 
 
     //////////////////////////////////
@@ -718,11 +721,13 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
         collapse_then_round->add_transfer_strategy(s);
     }
 
-    ops.emplace_back(collapse_then_round);
-    ops_name.emplace_back("COLLAPSE");
+    if (!options.skip_collapse) {
+        ops.emplace_back(collapse_then_round);
+        ops_name.emplace_back("COLLAPSE");
 
-    ops.emplace_back(rounding);
-    ops_name.emplace_back("rounding");
+        ops.emplace_back(rounding);
+        ops_name.emplace_back("rounding");
+    }
 
     //////////////////////////////////
     // 3) Swap
@@ -804,11 +809,13 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
     auto swap = std::make_shared<TriEdgeSwap>(*mesh);
     setup_swap(*swap, swap->collapse(), swap->split(), interior_edge);
 
-    ops.push_back(swap);
-    ops_name.push_back("swap");
+    if (!options.skip_swap) {
+        ops.push_back(swap);
+        ops_name.push_back("swap");
 
-    ops.emplace_back(rounding);
-    ops_name.emplace_back("rounding");
+        ops.emplace_back(rounding);
+        ops_name.emplace_back("rounding");
+    }
 
     // 4) Smoothing
     // //////////////////////////////////////
@@ -894,13 +901,16 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
     }
     // proj_smoothing->add_transfer_strategy(target_edge_length_update);
 
-    for (int i = 0; i < 1; ++i) {
-        ops.push_back(proj_smoothing);
-        ops_name.push_back("SMOOTHING");
-    }
+    if (!options.skip_smooth) {
+        for (int i = 0; i < 1; ++i) {
+            // some old code to do smoothing several times, maybe useful later
+            ops.push_back(proj_smoothing);
+            ops_name.push_back("SMOOTHING");
+        }
 
-    ops.emplace_back(rounding);
-    ops_name.emplace_back("rounding");
+        ops.emplace_back(rounding);
+        ops_name.emplace_back("rounding");
+    }
 
     write(
         mesh,

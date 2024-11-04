@@ -16,7 +16,11 @@ nlohmann::json tetwild_spec = R"(
           "skip_simplification",
           "target_max_amips",
           "max_passes",
-          "intermediate_output"
+          "intermediate_output",
+          "skip_split",
+          "skip_collapse",
+          "skip_swap",
+          "skip_smooth"
         ]
 },
 {
@@ -52,6 +56,26 @@ nlohmann::json tetwild_spec = R"(
     "pointer": "/max_passes",
     "type": "int",
     "default": 10
+},
+{
+    "pointer": "/skip_split",
+    "type": "bool",
+    "default": false
+},
+{
+    "pointer": "/skip_collapse",
+    "type": "bool",
+    "default": false
+},
+{
+    "pointer": "/skip_swap",
+    "type": "bool",
+    "default": false
+},
+{
+    "pointer": "/skip_smooth",
+    "type": "bool",
+    "default": false
 },
 {
     "pointer": "/output",
