@@ -14,9 +14,13 @@ nlohmann::json tetwild_spec = R"(
           "envelope_size",
           "target_edge_length",
           "skip_simplification",
-          "max_amips",
+          "target_max_amips",
           "max_passes",
-          "intermediate_output"
+          "intermediate_output",
+          "skip_split",
+          "skip_collapse",
+          "skip_swap",
+          "skip_smooth"
         ]
 },
 {
@@ -29,11 +33,6 @@ nlohmann::json tetwild_spec = R"(
     "default": 0.001
 },
 {
-    "pointer": "/length_rel",
-    "type": "float",
-    "default": 0.1
-},
-{
     "pointer": "/skip_simplification",
     "type": "bool",
     "default": false
@@ -44,14 +43,39 @@ nlohmann::json tetwild_spec = R"(
     "default": false
 },
 {
-    "pointer": "/max_amips",
+    "pointer": "/target_max_amips",
     "type": "float",
     "default": 10.0
+},
+{
+    "pointer": "/target_edge_length",
+    "type": "float",
+    "default": 0.05
 },
 {
     "pointer": "/max_passes",
     "type": "int",
     "default": 10
+},
+{
+    "pointer": "/skip_split",
+    "type": "bool",
+    "default": false
+},
+{
+    "pointer": "/skip_collapse",
+    "type": "bool",
+    "default": false
+},
+{
+    "pointer": "/skip_swap",
+    "type": "bool",
+    "default": false
+},
+{
+    "pointer": "/skip_smooth",
+    "type": "bool",
+    "default": false
 },
 {
     "pointer": "/output",
