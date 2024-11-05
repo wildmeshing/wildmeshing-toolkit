@@ -37,6 +37,21 @@ TetMesh two_ears()
     return m;
 }
 
+TetMesh two_ears_with_positions()
+{
+    TetMesh m = two_ears();
+    Eigen::Matrix<double, 6, 3> V;
+    V.row(0) = Eigen::Vector3d(0., 0., 2);
+    V.row(1) = Eigen::Vector3d(-1., 0., 0);
+    V.row(2) = Eigen::Vector3d(1, 0., 0);
+    V.row(3) = Eigen::Vector3d(0., 1, 0);
+    V.row(4) = Eigen::Vector3d(1.5, 0.5, 0.5);
+    V.row(5) = Eigen::Vector3d(-1.5, 0.5, 0.5);
+
+    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
+    return m;
+}
+
 TetMesh three_incident_tets()
 {
     TetMesh m;

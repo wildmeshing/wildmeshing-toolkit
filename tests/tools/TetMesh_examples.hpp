@@ -33,6 +33,7 @@ TetMesh one_ear();
 //
 
 TetMesh two_ears();
+TetMesh two_ears_with_positions();
 
 //        0 ---------- 4
 //       / \\        // \ .

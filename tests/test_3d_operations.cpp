@@ -12,7 +12,9 @@
 #include <wmtk/operations/composite/TetCellSplit.hpp>
 #include <wmtk/operations/composite/TetEdgeSwap.hpp>
 #include <wmtk/operations/composite/TetFaceSwap.hpp>
-
+#ifdef WMTK_RECORD_OPERATIONS
+#include <wmtk/Record_Operations.hpp>
+#endif
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include "tools/DEBUG_TetMesh.hpp"
@@ -25,13 +27,12 @@ using namespace wmtk::tests_3d;
 
 using TM = TetMesh;
 using MapResult = typename Eigen::Matrix<int64_t, Eigen::Dynamic, 1>::MapType;
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
 using TMOE = decltype(std::declval<DEBUG_TetMesh>().get_tmoe(
     wmtk::Tuple(),
     std::declval<attribute::Accessor<int64_t>&>()));
 #else
-using TMOE = decltype(std::declval<DEBUG_TetMesh>().get_tmoe(
-    wmtk::Tuple()));
+using TMOE = decltype(std::declval<DEBUG_TetMesh>().get_tmoe(wmtk::Tuple()));
 #endif
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
@@ -153,7 +154,7 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
 
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 #else
@@ -179,7 +180,7 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         DEBUG_TetMesh m = one_ear();
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 0, 0);
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 #else
@@ -199,7 +200,7 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 0, 0);
 
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 #else
@@ -219,7 +220,7 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 4, 1);
 
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 #else
@@ -237,7 +238,7 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 2);
 
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 #else
@@ -254,7 +255,7 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         DEBUG_TetMesh m = six_cycle_tets();
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 0);
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 #else
@@ -475,6 +476,9 @@ TEST_CASE("tet_edge_split", "[operations][split][3d]")
 
 TEST_CASE("tet_edge_collapse", "[operations][collapse][3d]")
 {
+#ifdef WMTK_RECORD_OPERATIONS
+    OperationLogPath = generatePathNameWithCurrentTime();
+#endif
     using namespace operations;
     SECTION("two_ears_collapse_mid")
     {
@@ -485,10 +489,12 @@ TEST_CASE("tet_edge_collapse", "[operations][collapse][3d]")
         //      \   /       \  \\ 3
         //        1 --------- 2/      tuple edge 1-2
         //
-        DEBUG_TetMesh m = two_ears();
+        DEBUG_TetMesh m = two_ears_with_positions();
+        auto pos_handle = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+
         EdgeCollapse op(m);
         op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
-
+        op.set_new_attribute_strategy(pos_handle, wmtk::operations::CollapseBasicStrategy::Mean);
         CHECK(
             m.id(
                 m.switch_vertex(m.switch_edge(m.edge_tuple_between_v1_v2(1, 2, 0))),
@@ -515,9 +521,12 @@ TEST_CASE("tet_edge_collapse", "[operations][collapse][3d]")
         //      \   /       \  \\ 3
         //        1 --------- 2/      tuple edge 1-2
         //
-        DEBUG_TetMesh m = two_ears();
+        DEBUG_TetMesh m = two_ears_with_positions();
+        auto pos_handle = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+
         EdgeCollapse op(m);
         op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.set_new_attribute_strategy(pos_handle, wmtk::operations::CollapseBasicStrategy::Mean);
 
         CHECK(
             m.id(

@@ -2,8 +2,10 @@
 #include <unordered_map>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/simplex/cofaces_single_dimension.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
-
+#include <wmtk/utils/TupleInspector.hpp>
+#include <wmtk/utils/mesh_utils.hpp>
 // TODO: we also need fid_maps
 namespace wmtk::operations::utils {
 std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<int64_t>>
@@ -116,7 +118,10 @@ get_local_trimesh_before_collapse(const wmtk::TriMesh& mesh, const wmtk::simplex
 }
 
 std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<int64_t>>
-get_local_tetmesh(const wmtk::TetMesh& mesh, const wmtk::simplex::Simplex& simplex)
+get_local_tetmesh(
+    const wmtk::TetMesh& mesh,
+    const wmtk::simplex::Simplex& simplex,
+    bool get_boundary = false)
 {
     // Get the vertex position attribute handle
     auto pos_handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
@@ -151,7 +156,7 @@ get_local_tetmesh(const wmtk::TetMesh& mesh, const wmtk::simplex::Simplex& simpl
             }
 
             T(tet_count, i) = global_to_local_map[global_vid];
-            if (i == 3) {
+            if (i == 2) {
                 cur_v = mesh.switch_tuples(
                     cur_v,
                     {PrimitiveType::Triangle,
@@ -175,6 +180,34 @@ get_local_tetmesh(const wmtk::TetMesh& mesh, const wmtk::simplex::Simplex& simpl
             pos.const_vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, pair.first));
     }
 
+    if (get_boundary) {
+        const auto triangle_coface =
+            wmtk::simplex::cofaces_single_dimension(mesh, simplex, PrimitiveType::Triangle)
+                .simplex_vector(PrimitiveType::Triangle);
+
+        int face_count = 0;
+        Eigen::MatrixXi F_bd(0, 3);
+        for (auto& t_tuples : triangle_coface) {
+            if (!mesh.is_boundary(t_tuples)) {
+                continue;
+            }
+            Tuple cur_v = t_tuples.tuple();
+            if (mesh.is_ccw(cur_v)) {
+                cur_v = mesh.switch_edge(cur_v);
+            }
+            Eigen::MatrixXi F_temp(1, 3);
+            for (int i = 0; i < 3; i++) {
+                int64_t global_vid = mesh.id(wmtk::simplex::Simplex::vertex(mesh, cur_v));
+                F_temp(0, i) = global_to_local_map[global_vid];
+                cur_v = mesh.switch_tuples(
+                    cur_v,
+                    {PrimitiveType::Edge, PrimitiveType::Vertex}); // Next vertex
+            }
+            F_bd.conservativeResize(F_bd.rows() + 1, 3);
+            F_bd.row(face_count) = F_temp;
+            face_count++;
+        }
+    }
     return std::make_tuple(T, V, t_local_to_global, v_local_to_global);
 }
 
@@ -206,6 +239,7 @@ get_local_tetmesh_before_collapse(const wmtk::TetMesh& mesh, const wmtk::simplex
     for (const auto& t_tuple : cofaces) {
         // get 4 vertices
         Tuple cur_v = t_tuple.tuple();
+
         if (mesh.is_ccw(cur_v)) {
             cur_v = mesh.switch_edge(cur_v);
         }
@@ -216,7 +250,7 @@ get_local_tetmesh_before_collapse(const wmtk::TetMesh& mesh, const wmtk::simplex
                 vertex_count++;
             }
             T(tet_count, i) = global_to_local_map[global_vid];
-            if (i == 3) {
+            if (i == 2) {
                 cur_v = mesh.switch_tuples(
                     cur_v,
                     {PrimitiveType::Triangle,
@@ -228,6 +262,9 @@ get_local_tetmesh_before_collapse(const wmtk::TetMesh& mesh, const wmtk::simplex
                     {PrimitiveType::Edge, PrimitiveType::Vertex}); // next vertex
             }
         }
+
+        t_local_to_global[tet_count] = mesh.id(t_tuple);
+        tet_count++;
     }
 
     Eigen::MatrixXd V(vertex_count, pos.dimension());
@@ -238,7 +275,44 @@ get_local_tetmesh_before_collapse(const wmtk::TetMesh& mesh, const wmtk::simplex
         V.row(pair.second) =
             pos.const_vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, pair.first));
     }
-    return std::make_tuple(T, V, t_local_to_global, v_local_to_global);
-}
+
+    // TODO: get local triangle mesh if it is on the boudnary
+
+    if (mesh.is_boundary(simplex)) {
+        const auto triangle_coface0 =
+            wmtk::simplex::cofaces_single_dimension(mesh, v0, PrimitiveType::Triangle);
+        const auto triangle_coface1 =
+            wmtk::simplex::cofaces_single_dimension(mesh, v1, PrimitiveType::Triangle);
+        auto triangle_cofaces =
+            simplex::SimplexCollection::get_union(triangle_coface0, triangle_coface1)
+                .simplex_vector(PrimitiveType::Triangle);
+
+        int face_count = 0;
+        Eigen::MatrixXi F_bd(0, 3);
+
+        for (const auto& f_tuple : triangle_cofaces) {
+            if (!mesh.is_boundary(f_tuple)) {
+                continue;
+            }
+            Tuple cur_v = f_tuple.tuple();
+            if (mesh.is_ccw(cur_v)) {
+                cur_v = mesh.switch_edge(cur_v);
+            }
+            Eigen::MatrixXi F_temp(1, 3);
+            for (int i = 0; i < 3; i++) {
+                int64_t global_vid = mesh.id(wmtk::simplex::Simplex::vertex(mesh, cur_v));
+                F_temp(0, i) = global_to_local_map[global_vid];
+                cur_v = mesh.switch_tuples(
+                    cur_v,
+                    {PrimitiveType::Edge, PrimitiveType::Vertex}); // next vertex
+            }
+            F_bd.conservativeResize(F_bd.rows() + 1, 3);
+            F_bd.row(face_count) = F_temp;
+            face_count++;
+        }
+
+
+        return std::make_tuple(T, V, t_local_to_global, v_local_to_global);
+    }
 
 } // namespace wmtk::operations::utils
