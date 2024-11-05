@@ -27,20 +27,19 @@ Tuple vector2_to_tuple(const Eigen::Ref<const Vector2l>& v)
     const Tuple* data = reinterpret_cast<const Tuple*>(v.data());
     return *data;
 }
-Vector<int64_t, 5> tuple_to_vector5(const Tuple& t)
+Vector<int64_t, 4> tuple_to_vector5(const Tuple& t)
 {
-    Vector<int64_t, 5> v;
+    Vector<int64_t, 4> v;
     v(0) = wmtk::utils::TupleInspector::local_vid(t);
     v(1) = wmtk::utils::TupleInspector::local_eid(t);
     v(2) = wmtk::utils::TupleInspector::local_fid(t);
     v(3) = wmtk::utils::TupleInspector::global_cid(t);
-    v(4) = wmtk::utils::TupleInspector::hash(t);
     return v;
 }
 
 Tuple vector5_to_tuple(const Eigen::Ref<const Vector5l>& v)
 {
-    return Tuple(v(0), v(1), v(2), v(3), v(4));
+    return Tuple(v(0), v(1), v(2), v(3));
 }
 
 Vector<int64_t, TUPLE_SIZE> tuple_to_vector(const Tuple& t)

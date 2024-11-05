@@ -9,10 +9,7 @@ class EdgeOperationData : public wmtk::operations::EdgeOperationData
 {
 public:
     EdgeOperationData() = default;
-    EdgeOperationData(const EdgeOperationData&) = default;
     EdgeOperationData(EdgeOperationData&&) = default;
-
-    EdgeOperationData& operator=(const EdgeOperationData&) = default;
     EdgeOperationData& operator=(EdgeOperationData&&) = default;
     //           C
     //         /  \ .
@@ -85,15 +82,10 @@ public:
     std::array<Tuple, 2> split_output_edges(const TriMesh&) const;
     std::vector<std::array<Tuple, 2>> split_output_faces(const TriMesh&) const;
 
+    std::vector<simplex::Simplex> new_vertices(const Mesh&) const;
 
     std::array<std::vector<int64_t>, 3> simplex_ids_to_delete;
     std::vector<int64_t> cell_ids_to_update_hash;
-
-    // for multimesh we need to know which global ids are modified to trigger
-    // for every simplex dimension (We have 3 in trimesh):
-    // a list of [simplex index, {all versions of that simplex}]
-    std::vector<std::vector<std::tuple<int64_t, std::vector<Tuple>>>>
-        global_simplex_ids_with_potentially_modified_hashes;
 
 
     // common simplicies
@@ -104,7 +96,11 @@ public:
     std::vector<IncidentFaceData> m_incident_face_datas;
 
     std::array<int64_t, 2> split_spine_eids = std::array<int64_t, 2>{{-1, -1}};
+    // in a free mesh this encodes the new vertex added to one of the faces
     int64_t split_new_vid = -1;
+
+    std::array<int64_t, 2> m_free_split_v;
+    std::array<int64_t, 2> m_free_split_e;
 
     bool is_collapse = false;
 };

@@ -3,11 +3,6 @@ set(SRC_FILES
     Cache.cpp
     Cache.hpp
 
-    CacheStack.hpp
-    CacheStack.cpp
-    SubCacheHandle.hpp
-    SubCacheHandle.cpp
-
     HDF5Reader.hpp
     HDF5Reader.cpp
     HDF5Writer.hpp
@@ -22,5 +17,8 @@ set(SRC_FILES
 
     CachedMultiMesh.hpp
     CachedMultiMesh.cpp
+
+    read_mesh.hpp
+    read_mesh.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

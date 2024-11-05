@@ -8,58 +8,53 @@ using namespace wmtk;
 
 TEST_CASE("tuple_is_null", "[tuple]")
 {
-    Tuple a(0, 0, 0, 0, 0);
+    Tuple a(0, 0, 0, 0);
     CHECK(!a.is_null());
 
-    Tuple b(0, 0, 0, -1, 0);
+    Tuple b(0, 0, 0, -1);
     CHECK(b.is_null());
 
-    Tuple c(-1, -1, -1, -1, -1);
+    Tuple c(-1, -1, -1, -1);
     CHECK(c.is_null());
 
-    Tuple d(-1, -1, -1, 0, -1);
+    Tuple d(-1, -1, -1, 0);
     CHECK(!d.is_null());
 
-    Tuple e(-1, -1, -1, -2, -1);
+    Tuple e(-1, -1, -1, -2);
     CHECK(!e.is_null());
 }
 TEST_CASE("tuple_comparison", "[tuple]")
 {
-    { // check that equals are detected properly
-        Tuple a(0, 0, 0, 0, 0);
-        Tuple b(0, 0, 0, 0, 0);
+    { // check that equals works
+        Tuple a(0, 0, 0, 0);
+        Tuple b(0, 0, 0, 0);
         CHECK(a == b);
         CHECK(a.same_ids(b));
     }
-    {// check that diff ids are equivalent
-     {Tuple a(1, 0, 0, 0, 0);
-    Tuple b(0, 0, 0, 0, 0);
-    CHECK(a != b);
-    CHECK(!a.same_ids(b));
-}
-{
-    Tuple a(0, 1, 0, 0, 0);
-    Tuple b(0, 0, 0, 0, 0);
-    CHECK(a != b);
-    CHECK(!a.same_ids(b));
-}
-{
-    Tuple a(0, 0, 1, 0, 0);
-    Tuple b(0, 0, 0, 0, 0);
-    CHECK(a != b);
-    CHECK(!a.same_ids(b));
-}
-{
-    Tuple a(0, 0, 0, 1, 0);
-    Tuple b(0, 0, 0, 0, 0);
-    CHECK(a != b);
-    CHECK(!a.same_ids(b));
-}
-}
-{
-    Tuple a(0, 0, 0, 0, 1);
-    Tuple b(0, 0, 0, 0, 0);
-    CHECK(a != b);
-    CHECK(a.same_ids(b));
-}
+    { // check that diff ids are equivalent
+        {
+            Tuple a(1, 0, 0, 0);
+            Tuple b(0, 0, 0, 0);
+            CHECK(a != b);
+            CHECK(!a.same_ids(b));
+        }
+        {
+            Tuple a(0, 1, 0, 0);
+            Tuple b(0, 0, 0, 0);
+            CHECK(a != b);
+            CHECK(!a.same_ids(b));
+        }
+        {
+            Tuple a(0, 0, 1, 0);
+            Tuple b(0, 0, 0, 0);
+            CHECK(a != b);
+            CHECK(!a.same_ids(b));
+        }
+        {
+            Tuple a(0, 0, 0, 1);
+            Tuple b(0, 0, 0, 0);
+            CHECK(a != b);
+            CHECK(!a.same_ids(b));
+        }
+    }
 }

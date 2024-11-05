@@ -142,14 +142,14 @@ std::vector<simplex::Simplex> TetEdgeSwap::execute(const simplex::Simplex& simpl
     if (able_to_return_edges) {
         for (int64_t i = 0; i < edges_generated_by_swap.size(); ++i) {
             edges_generated_by_swap[i] =
-                simplex::Simplex::edge(mesh(), resurrect_tuple(edges_generated_by_swap[i].tuple()));
+                simplex::Simplex::edge(mesh(), edges_generated_by_swap[i].tuple());
         }
 
         return edges_generated_by_swap;
     } else {
         for (int64_t i = 0; i < faces_generated_by_swap.size(); ++i) {
             faces_generated_by_swap[i] =
-                simplex::Simplex::face(mesh(), resurrect_tuple(faces_generated_by_swap[i].tuple()));
+                simplex::Simplex::face(mesh(), faces_generated_by_swap[i].tuple());
         }
 
         return faces_generated_by_swap;

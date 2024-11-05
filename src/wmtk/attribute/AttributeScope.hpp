@@ -9,8 +9,6 @@ namespace wmtk {
 
 
 namespace attribute {
-template <typename T>
-class AttributeScopeStack;
 template <typename T, int Dim>
 class CachingAccessor;
 
@@ -20,7 +18,6 @@ class AttributeScope : public AttributeCache<T>
 public:
     template <typename U, int D>
     friend class CachingAccessor;
-    friend class AttributeScopeStack<T>;
     AttributeScope();
     AttributeScope(const AttributeScope&) = delete;
     AttributeScope& operator=(const AttributeScope&) = delete;

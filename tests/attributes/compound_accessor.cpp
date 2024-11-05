@@ -2,7 +2,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/attribute/Attribute.hpp>
-#include <wmtk/attribute/AttributeScopeStack.hpp>
 #include <wmtk/attribute/internal/CompoundAccessor.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include <wmtk/utils/Logger.hpp>

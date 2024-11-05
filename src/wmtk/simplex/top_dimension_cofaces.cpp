@@ -8,6 +8,7 @@
 #include <set>
 
 #include <wmtk/EdgeMesh.hpp>
+#include <wmtk/PointMesh.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 
@@ -23,7 +24,7 @@ void top_dimension_cofaces_tuples_vertex(
     const Tuple& t_in,
     std::vector<Tuple>& collection)
 {
-    assert(mesh.is_valid_slow(t_in));
+    assert(mesh.is_valid(t_in));
     Tuple t = t_in;
     do {
         collection.emplace_back(t);
@@ -166,7 +167,7 @@ void top_dimension_cofaces_tuples_edge(
     //}
 
 
-    assert(mesh.is_valid_slow(input));
+    assert(mesh.is_valid(input));
     Tuple t = input;
     do {
         collection.emplace_back(t);
@@ -181,21 +182,38 @@ void top_dimension_cofaces_tuples_edge(
         return;
     }
 
-    t = mesh.switch_face(input);
+    t = input;
 
-    if (mesh.is_boundary_face(t)) {
+    if (mesh.is_boundary_face(mesh.switch_face(t))) {
         return;
     }
-    t = mesh.switch_tuples(t, {PrimitiveType::Tetrahedron, PrimitiveType::Triangle});
+
+    t = mesh.switch_tuples(t, {PrimitiveType::Triangle, PrimitiveType::Tetrahedron});
 
     do {
         collection.emplace_back(t);
 
-        if (mesh.is_boundary_face(t)) {
+        if (mesh.is_boundary_face(mesh.switch_face(t))) {
             break;
         }
-        t = mesh.switch_tuples(t, {PrimitiveType::Tetrahedron, PrimitiveType::Triangle});
+        t = mesh.switch_tuples(t, {PrimitiveType::Triangle, PrimitiveType::Tetrahedron});
     } while (true);
+
+    // t = mesh.switch_face(input);
+
+    // if (mesh.is_boundary_face(t)) {
+    //     return;
+    // }
+    // t = mesh.switch_tuples(t, {PrimitiveType::Tetrahedron, PrimitiveType::Triangle});
+
+    // do {
+    //     collection.emplace_back(t);
+
+    //     if (mesh.is_boundary_face(t)) {
+    //         break;
+    //     }
+    //     t = mesh.switch_tuples(t, {PrimitiveType::Tetrahedron, PrimitiveType::Triangle});
+    // } while (true);
 }
 
 void top_dimension_cofaces_tuples_face(
@@ -271,7 +289,7 @@ void top_dimension_cofaces_tuples_vertex(
     const Tuple& t_in,
     SimplexCollection& collection)
 {
-    assert(mesh.is_valid_slow(t_in));
+    assert(mesh.is_valid(t_in));
     std::set<Tuple, wmtk::utils::TupleCellLessThan> touched_cells;
     std::queue<Tuple> q;
     q.push(t_in);
@@ -420,6 +438,30 @@ void top_dimension_cofaces(
 }
 
 void top_dimension_cofaces_tuples(
+    const PointMesh& mesh,
+    const Simplex& simplex,
+    SimplexCollection& collection)
+{
+    switch (simplex.primitive_type()) {
+    case PrimitiveType::Vertex: {
+        collection.add(simplex);
+        break;
+    }
+    case PrimitiveType::Edge: {
+        log_and_throw_error("top_dimension_cofaces_tuples not implemented for Edge in PointMesh");
+        break;
+    }
+    case PrimitiveType::Triangle: {
+        log_and_throw_error("top_dimension_cofaces_tuples not implemented for Face in PointMesh");
+    }
+    case PrimitiveType::Tetrahedron:
+        log_and_throw_error(
+            "top_dimension_cofaces_tuples not implemented for Tetrahedron in PointMesh");
+    default: assert(false); break;
+    }
+}
+
+void top_dimension_cofaces_tuples(
     const EdgeMesh& mesh,
     const Simplex& simplex,
     SimplexCollection& collection)
@@ -505,15 +547,40 @@ void top_dimension_cofaces_tuples(
     case PrimitiveType::Tetrahedron:
         top_dimension_cofaces_tuples(static_cast<const TetMesh&>(mesh), simplex, collection);
         break;
-    case PrimitiveType::Vertex:
     case PrimitiveType::Edge:
         top_dimension_cofaces_tuples(static_cast<const EdgeMesh&>(mesh), simplex, collection);
+        break;
+    case PrimitiveType::Vertex:
+        top_dimension_cofaces_tuples(static_cast<const PointMesh&>(mesh), simplex, collection);
         break;
     default: log_and_throw_error("unknown mesh type in top_dimension_cofaces_tuples");
     }
 }
 
 
+void top_dimension_cofaces_tuples(
+    const PointMesh& mesh,
+    const Simplex& simplex,
+    std::vector<Tuple>& collection)
+{
+    switch (simplex.primitive_type()) {
+    case PrimitiveType::Vertex: {
+        collection.emplace_back(simplex.tuple());
+        break;
+    }
+    case PrimitiveType::Edge: {
+        log_and_throw_error("top_dimension_cofaces_tuples not implemented for Edge in PointMesh");
+        break;
+    }
+    case PrimitiveType::Triangle: {
+        log_and_throw_error("top_dimension_cofaces_tuples not implemented for Face in PointMesh");
+    }
+    case PrimitiveType::Tetrahedron:
+        log_and_throw_error(
+            "top_dimension_cofaces_tuples not implemented for Tetrahedron in PointMesh");
+    default: assert(false); break;
+    }
+}
 void top_dimension_cofaces_tuples(
     const EdgeMesh& mesh,
     const Simplex& simplex,
@@ -602,9 +669,11 @@ void top_dimension_cofaces_tuples(
     case PrimitiveType::Tetrahedron:
         top_dimension_cofaces_tuples(static_cast<const TetMesh&>(mesh), simplex, tuples);
         break;
-    case PrimitiveType::Vertex:
     case PrimitiveType::Edge:
         top_dimension_cofaces_tuples(static_cast<const EdgeMesh&>(mesh), simplex, tuples);
+        break;
+    case PrimitiveType::Vertex:
+        top_dimension_cofaces_tuples(static_cast<const PointMesh&>(mesh), simplex, tuples);
         break;
     default: assert(false); //"unknown mesh type in top_dimension_cofaces_tuples"
     }
@@ -659,6 +728,13 @@ top_dimension_cofaces(const Mesh& mesh, const Simplex& simplex, const bool sort_
     return collection;
 }
 
+std::vector<Tuple> top_dimension_cofaces_tuples(const PointMesh& mesh, const Simplex& simplex)
+{
+    std::vector<Tuple> collection;
+    top_dimension_cofaces_tuples(mesh, simplex, collection);
+    return collection;
+}
+
 
 std::vector<Tuple> top_dimension_cofaces_tuples(const EdgeMesh& mesh, const Simplex& simplex)
 {
@@ -688,9 +764,10 @@ std::vector<Tuple> top_dimension_cofaces_tuples(const Mesh& mesh, const Simplex&
         return top_dimension_cofaces_tuples(static_cast<const TriMesh&>(mesh), simplex);
     case PrimitiveType::Tetrahedron:
         return top_dimension_cofaces_tuples(static_cast<const TetMesh&>(mesh), simplex);
-    case PrimitiveType::Vertex:
     case PrimitiveType::Edge:
         return top_dimension_cofaces_tuples(static_cast<const EdgeMesh&>(mesh), simplex);
+    case PrimitiveType::Vertex:
+        return top_dimension_cofaces_tuples(static_cast<const PointMesh&>(mesh), simplex);
     default:
         assert(false);
         throw std::runtime_error("unknown mesh type in top_dimension_cofaces_tuples");

@@ -28,16 +28,26 @@
 
 #include "multimesh/attribute/UseParentScopeRAII.hpp"
 
+#include "simplex/IdSimplex.hpp"
+#include "simplex/NavigatableSimplex.hpp"
 #include "simplex/Simplex.hpp"
 
 
 // if we have concepts then switch_tuples uses forward_iterator concept
-#if defined(__cpp_concepts)
-#include <iterator>
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+#include <ranges>
 #endif
 
 
 namespace wmtk {
+namespace tests {
+class DEBUG_Mesh;
+namespace tools {
+
+class TestTools;
+
+}
+} // namespace tests
 // thread management tool that we will PImpl
 namespace attribute {
 class AttributeManager;
@@ -50,6 +60,9 @@ class Operation;
 class EdgeCollapse;
 class EdgeSplit;
 class EdgeOperationData;
+namespace internal {
+class CollapseAlternateFacetData;
+}
 namespace utils {
 class UpdateEdgeOperationMultiMeshMapFunctor;
 }
@@ -92,6 +105,8 @@ class TupleTag;
 class Mesh : public std::enable_shared_from_this<Mesh>, public wmtk::utils::MerkleTreeInteriorNode
 {
 public:
+    friend class tests::tools::TestTools;
+    friend class tests::DEBUG_Mesh;
     template <typename T, int Dim>
     friend class attribute::AccessorBase;
     template <typename T, typename MeshType, int Dim>
@@ -115,26 +130,19 @@ public:
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     friend class simplex::RawSimplex;
     friend class simplex::Simplex;
+    friend class simplex::IdSimplex;
     friend class simplex::SimplexCollection;
     friend class simplex::utils::SimplexComparisons;
     friend class operations::Operation;
     friend class operations::EdgeCollapse;
     friend class operations::EdgeSplit;
     friend class operations::EdgeOperationData;
-
-    friend void operations::utils::update_vertex_operation_multimesh_map_hash(
-        Mesh& m,
-        const simplex::SimplexCollection& vertex_closed_star,
-        attribute::Accessor<int64_t>& parent_hash_accessor);
-
-    friend void operations::utils::update_vertex_operation_hashes(
-        Mesh& m,
-        const Tuple& vertex,
-        attribute::Accessor<int64_t>& hash_accessor);
+    friend class operations::internal::CollapseAlternateFacetData;
 
 
     int64_t top_cell_dimension() const;
     PrimitiveType top_simplex_type() const;
+    bool is_free() const;
 
     // attribute directly hashes its "children" components so it overrides "child_hashes"
     std::map<std::string, const wmtk::utils::Hashable*> child_hashables() const override;
@@ -159,6 +167,21 @@ public:
      * @return vector of Tuples referring to each type
      */
     std::vector<Tuple> get_all(PrimitiveType type) const;
+
+    std::vector<simplex::IdSimplex> get_all_id_simplex(PrimitiveType type) const;
+    /**
+     * @brief Retrieve the IdSimplex that is represented by the tuple and primitive type.
+     */
+    simplex::IdSimplex get_id_simplex(const Tuple& tuple, PrimitiveType pt) const;
+
+    simplex::IdSimplex get_id_simplex(const simplex::Simplex& s) const;
+
+    /**
+     * @brief Convert an IdSimplex into a Simplex.
+     */
+    simplex::Simplex get_simplex(const simplex::IdSimplex& s) const;
+
+    Tuple get_tuple_from_id_simplex(const simplex::IdSimplex& s) const;
 
     /**
      * Consolidate the attributes, moving all valid simplexes at the beginning of the corresponding
@@ -252,6 +275,8 @@ public:
         const std::vector<attribute::MeshAttributeHandle::HandleVariant>& keep_attributes);
     void clear_attributes();
     void clear_attributes(const std::vector<attribute::MeshAttributeHandle>& keep_attributes);
+    void delete_attribute(const attribute::MeshAttributeHandle& to_delete);
+    void delete_attribute(const attribute::MeshAttributeHandle::HandleVariant& to_delete);
 
 
     // creates a scope as int64_t as the AttributeScopeHandle exists
@@ -271,15 +296,7 @@ public:
 
 
     const attribute::Accessor<char> get_flag_accessor(PrimitiveType type) const;
-    const attribute::Accessor<int64_t> get_cell_hash_accessor() const;
     const attribute::Accessor<char> get_const_flag_accessor(PrimitiveType type) const;
-    const attribute::Accessor<int64_t> get_const_cell_hash_accessor() const;
-
-
-    int64_t get_cell_hash(int64_t cell_index, const attribute::Accessor<int64_t>& hash_accessor)
-        const;
-    // utility function for getting a cell's hash - slow because it creates a new accessor
-    int64_t get_cell_hash_slow(int64_t cell_index) const;
 
 
     bool operator==(const Mesh& other) const;
@@ -287,67 +304,10 @@ public:
     void assert_capacity_valid() const;
     virtual bool is_connectivity_valid() const = 0;
 
+    virtual std::vector<Tuple> orient_vertices(const Tuple& t) const = 0;
+
 protected: // member functions
     attribute::Accessor<char> get_flag_accessor(PrimitiveType type);
-    attribute::Accessor<int64_t> get_cell_hash_accessor();
-
-    /**
-     * @brief update hash in given cell
-     *
-     * @param cell tuple in which the hash should be updated
-     * @param hash_accessor hash accessor
-     */
-    void update_cell_hash(const Tuple& cell, attribute::Accessor<int64_t>& hash_accessor);
-
-    /**
-     * @brief update hashes in given cells
-     *
-     * @param cells vector of tuples in which the hash should be updated
-     * @param hash_accessor hash accessor
-     */
-    void update_cell_hashes(
-        const std::vector<Tuple>& cells,
-        attribute::Accessor<int64_t>& hash_accessor);
-    /**
-     * @brief same as `update_cell_hashes` but slow because it creates a new accessor
-     */
-    /**
-     * @brief update hash in given cell
-     *
-     * @param cell tuple in which the hash should be updated
-     * @param hash_accessor hash accessor
-     */
-    void update_cell_hash(const int64_t cell_index, attribute::Accessor<int64_t>& hash_accessor);
-
-    /**
-     * @brief update hashes in given cells
-     *
-     * @param cells vector of tuples in which the hash should be updated
-     * @param hash_accessor hash accessor
-     */
-    void update_cell_hashes(
-        const std::vector<int64_t>& cell_indices,
-        attribute::Accessor<int64_t>& hash_accessor);
-
-    void update_cell_hashes_slow(const std::vector<Tuple>& cells);
-
-    /**
-     * @brief return the same tuple but with updated hash
-     *
-     * This function should only be used in operations to create a valid return tuple in a known
-     * position.
-     *
-     * @param tuple tuple with potentially outdated hash
-     * @param hash_accessor hash accessor
-     * @return tuple with updated hash
-     */
-    Tuple resurrect_tuple(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
-        const;
-
-    /**
-     * @brief same as `resurrect_tuple` but slow because it creates a new accessor
-     */
-    Tuple resurrect_tuple_slow(const Tuple& tuple);
 
 
 protected:
@@ -359,6 +319,7 @@ protected:
      * @return Tuple
      */
     virtual Tuple tuple_from_id(const PrimitiveType type, const int64_t gid) const = 0;
+    simplex::NavigatableSimplex simplex_from_id(const PrimitiveType type, const int64_t gid) const;
     std::vector<std::vector<int64_t>> simplices_to_gids(
         const std::vector<std::vector<simplex::Simplex>>& simplices) const;
     /**
@@ -411,8 +372,8 @@ public:
 
     // Performs a sequence of switch_tuple operations in the order specified in op_sequence.
     // in debug mode this will assert a failure, in release this will return a null tuple
-#if defined(__cpp_concepts)
-    template <std::forward_iterator ContainerType>
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+    template <std::ranges::forward_range ContainerType>
 #else
     template <typename ContainerType>
 #endif
@@ -422,8 +383,8 @@ public:
         const;
 
     // Performs a sequence of switch_tuple operations in the order specified in op_sequence.
-#if defined(__cpp_concepts)
-    template <std::forward_iterator ContainerType>
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+    template <std::ranges::forward_range ContainerType>
 #else
     template <typename ContainerType>
 #endif
@@ -471,6 +432,7 @@ public:
 
 
     bool is_hash_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const;
+    bool is_hash_valid(const Tuple& tuple) const;
 
     /**
      * @brief check validity of tuple including its hash
@@ -481,11 +443,24 @@ public:
      * @return true if is valid
      * @return false
      */
-    virtual bool is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
-        const = 0;
-    bool is_valid_slow(const Tuple& tuple) const;
+    virtual bool is_valid(const Tuple& tuple) const;
 
-    virtual bool is_removed(const Tuple& tuple) const;
+    // whether the tuple refers to a removed / invalid dart in the mesh
+    bool is_removed(const Tuple& tuple) const;
+    // whether the tuple refers to a removed / invalid simplex in the mesh
+    bool is_removed(const Tuple& tuple, PrimitiveType pt) const;
+
+protected:
+    // whether the tuple refers to a removed / invalid facet
+    bool is_removed(int64_t index) const;
+    // whether the tuple refers to a removed / invalid simplex
+    bool is_removed(int64_t index, PrimitiveType pt) const;
+
+public:
+    /**
+     * @brief Check if the cached id in a simplex is up-to-date.
+     */
+    bool is_valid(const simplex::Simplex& s) const;
 
 
     //============================
@@ -558,6 +533,7 @@ public:
      * mesh will be invalidated by deregistration.
      */
     void deregister_child_mesh(const std::shared_ptr<Mesh>& child_mesh_ptr);
+
 
 private:
     /**
@@ -800,6 +776,8 @@ public:
         return m_multi_mesh_manager.has_child_mesh_in_dimension(dimension);
     }
 
+    bool has_child_mesh() const { return m_multi_mesh_manager.has_child_mesh(); }
+
     /*
      * @brief returns if the other mesh is part of the same multi-mesh structure
      * @param other the other being mesh being checked
@@ -825,6 +803,9 @@ protected:
         * @return int64_t id of the entity
     */
     int64_t id(const Tuple& tuple, PrimitiveType type) const;
+
+    int64_t id(const simplex::NavigatableSimplex& s) const { return s.index(); }
+    int64_t id(const simplex::IdSimplex& s) const { return s.index(); }
     /// Forwarding version of id on simplices that does id caching
     virtual int64_t id(const simplex::Simplex& s) const = 0;
     /// Internal utility to allow id to be virtual with a non-virtual overload in derived -Mesh classes.
@@ -856,6 +837,9 @@ protected: // THese are protected so unit tests can access - do not use manually
 
     int64_t m_top_cell_dimension = -1;
 
+    // assumes no adjacency data exists
+    bool m_is_free = false;
+
 private:
     // PImpl'd manager of per-thread update stacks
     // Every time a new access scope is requested the manager creates another level of indirection
@@ -886,6 +870,9 @@ private:
      * @return vector of Tuples referring to each type
      */
     std::vector<Tuple> get_all(PrimitiveType type, const bool include_deleted) const;
+    std::vector<simplex::IdSimplex> get_all_id_simplex(
+        PrimitiveType type,
+        const bool include_deleted) const;
 };
 
 
@@ -967,8 +954,8 @@ inline decltype(auto) Mesh::parent_scope(Functor&& f, Args&&... args) const
     return std::invoke(std::forward<Functor>(f), std::forward<Args>(args)...);
 }
 
-#if defined(__cpp_concepts)
-template <std::forward_iterator ContainerType>
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+template <std::ranges::forward_range ContainerType>
 #else
 template <typename ContainerType>
 #endif
@@ -992,6 +979,10 @@ inline Tuple Mesh::switch_tuples(const Tuple& tuple, const ContainerType& sequen
     }
     return r;
 }
+inline bool Mesh::is_free() const
+{
+    return m_is_free;
+}
 
 inline int64_t Mesh::top_cell_dimension() const
 {
@@ -1006,8 +997,8 @@ inline PrimitiveType Mesh::top_simplex_type() const
 }
 
 
-#if defined(__cpp_concepts)
-template <std::forward_iterator ContainerType>
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+template <std::ranges::forward_range ContainerType>
 #else
 template <typename ContainerType>
 #endif

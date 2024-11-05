@@ -1,11 +1,8 @@
-#include <spdlog/spdlog.h>
-
-#include <wmtk/io/MeshWriter.hpp>
-#include <wmtk/io/ParaviewWriter.hpp>
-#include <wmtk/utils/Rational.hpp>
-#include <wmtk/utils/vector_hash.hpp>
 #include "AttributeManager.hpp"
-#include "PerThreadAttributeScopeStacks.hpp"
+
+#include <spdlog/spdlog.h>
+#include <wmtk/io/MeshWriter.hpp>
+#include <wmtk/utils/Rational.hpp>
 namespace wmtk::attribute {
 AttributeManager::AttributeManager(int64_t size)
     : m_char_attributes(size)
@@ -280,13 +277,19 @@ std::vector<MeshAttributeHandle::HandleVariant> AttributeManager::get_all_attrib
 
         const std::vector<MeshAttributes<T>>& mesh_attributes = get<T>();
         for (size_t pt_index = 0; pt_index < mesh_attributes.size(); ++pt_index) {
+            const PrimitiveType pt = get_primitive_type_from_id(pt_index);
+
+            auto handle_converter = [pt](const AttributeHandle& h) -> TypedAttributeHandle<T> {
+                return {h, pt};
+                return TypedAttributeHandle<T>{h, pt};
+            };
             size_t count = mesh_attributes[pt_index].attribute_count();
-            for (int64_t index = 0; index < count; ++index) {
-                TypedAttributeHandle<T> t;
-                t.m_base_handle.index = index;
-                t.m_primitive_type = get_primitive_type_from_id(pt_index);
-                handles.emplace_back(t);
-            }
+            const auto active_handles = mesh_attributes[pt_index].active_attributes();
+            std::transform(
+                active_handles.begin(),
+                active_handles.end(),
+                std::back_inserter(handles),
+                handle_converter);
         }
     };
     run(double{});
@@ -334,6 +337,8 @@ void AttributeManager::clear_attributes(
                     using T = typename HandleType::Type;
                     customs.get<T>()[get_primitive_type_id(val.primitive_type())].emplace_back(
                         val.base_handle());
+                } else {
+                    assert(false); // this code doesn't work with hybrid rational types
                 }
             },
             attr);
@@ -343,8 +348,9 @@ void AttributeManager::clear_attributes(
     auto run = [&](auto t) {
         using T = typename std::decay_t<decltype(t)>;
         auto& mycustoms = customs.get<T>();
+        const auto& attributes = get<T>();
 
-        for (size_t ptype_id = 0; ptype_id < m_char_attributes.size(); ++ptype_id) {
+        for (size_t ptype_id = 0; ptype_id < attributes.size(); ++ptype_id) {
             const PrimitiveType primitive_type = get_primitive_type_from_id(ptype_id);
 
 
@@ -356,6 +362,20 @@ void AttributeManager::clear_attributes(
     run(int64_t{});
     run(char{});
     run(Rational{});
+}
+void AttributeManager::delete_attribute(
+    const attribute::MeshAttributeHandle::HandleVariant& to_delete)
+{
+    std::visit(
+        [&](auto&& val) noexcept {
+            using HandleType = typename std::decay_t<decltype(val)>;
+            if constexpr (attribute::MeshAttributeHandle::template handle_type_is_basic<
+                              HandleType>()) {
+                using T = typename HandleType::Type;
+                get<T>(val).remove_attribute(val.base_handle());
+            }
+        },
+        to_delete);
 }
 
 } // namespace wmtk::attribute

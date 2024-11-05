@@ -13,6 +13,7 @@ Mesh::Mesh(Mesh&& other)
     : m_attribute_manager(std::move(other.m_attribute_manager))
     , m_multi_mesh_manager(std::move(other.m_multi_mesh_manager))
     , m_top_cell_dimension(other.m_top_cell_dimension)
+    , m_is_free(other.m_is_free)
 {
     m_flag_handles = std::move(other.m_flag_handles);
     m_cell_hash_handle = std::move(other.m_cell_hash_handle);
@@ -26,6 +27,7 @@ Mesh& Mesh::operator=(Mesh&& other)
     m_flag_handles = std::move(other.m_flag_handles);
     m_top_cell_dimension = other.m_top_cell_dimension;
     m_cell_hash_handle = std::move(other.m_cell_hash_handle);
+    m_is_free = other.m_is_free;
 
     return *this;
 }
@@ -48,5 +50,8 @@ Mesh::Mesh(const int64_t& dimension, const int64_t& max_primitive_type_id, Primi
 }
 
 
-Mesh::~Mesh() = default;
+Mesh::~Mesh() {
+
+    m_multi_mesh_manager.detach_children();
+}
 } // namespace wmtk

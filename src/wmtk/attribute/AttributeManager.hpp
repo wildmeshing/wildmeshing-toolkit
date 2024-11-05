@@ -122,6 +122,8 @@ public:
      */
     void clear_attributes(
         const std::vector<attribute::MeshAttributeHandle::HandleVariant>& custom_attributes);
+    void delete_attribute(
+        const attribute::MeshAttributeHandle::HandleVariant& to_delete);
 };
 
 template <typename T>

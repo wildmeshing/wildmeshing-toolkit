@@ -5,11 +5,11 @@ endif()
 message(STATUS "Third-party: creating target 'igl::core'")
 
 include(FetchContent)
-FetchContent_Declare(
+CPMAddPackage(
     libigl
     GIT_REPOSITORY https://github.com/libigl/libigl.git
     GIT_TAG 3ea7f9480967fcf6bf02ce9b993c0ea6d2fc45f6
+    OPTIONS LIBIGL_INSTALL OFF
 )
 # include(eigen)
-option(LIBIGL_INSTALL "Enable installation of libigl targets" ON)
 FetchContent_MakeAvailable(libigl)

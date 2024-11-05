@@ -17,4 +17,30 @@ const int64_t auto_2d_table_complete_vertex[3][2] = {{0, 2}, {1, 0}, {2, 1}};
 
 const int64_t auto_2d_table_complete_edge[3][2] = {{1, 0}, {2, 1}, {0, 2}};
 
+const int8_t auto_valid_tuples[6][2] = {{0, 1}, {0, 2}, {1, 0}, {1, 2}, {2, 0}, {2, 1}};
+
+const int8_t auto_valid_tuple_indices[6] = {1, 2, 3, 5, 6, 7};
+
+const int8_t auto_all_to_valid_tuple_indices[9] = {-1, 0, 1, 2, -1, 3, 4, 5, -1};
+
+const int8_t auto_valid_switch_table[6][2] = {{5, 1}, {3, 0}, {4, 3}, {1, 2}, {2, 5}, {0, 4}};
+
+const int8_t auto_valid_switch_product_table[6][6] = {
+    {1, 0, 4, 5, 2, 3},
+    {0, 1, 2, 3, 4, 5},
+    {3, 2, 5, 4, 0, 1},
+    {2, 3, 0, 1, 5, 4},
+    {5, 4, 3, 2, 1, 0},
+    {4, 5, 1, 0, 3, 2}};
+
+const int8_t auto_valid_switch_inverse_table[6] = {0, 1, 5, 3, 4, 2};
+
+const int8_t auto_valid_tuple_switch_indices[4] = {3, 0, 1, 4};
+
+const int8_t subdart_preserving_action_1[6][3] =
+    {{4, 1, 0}, {4, 0, 1}, {1, 4, 0}, {0, 4, 1}, {1, 0, 4}, {0, 1, 4}};
+
+const int8_t max_subdart_preservation_dimension_1[6][3] =
+    {{0, 2, 1}, {0, 1, 2}, {2, 0, 1}, {1, 0, 2}, {2, 1, 0}, {1, 2, 0}};
+
 } // namespace wmtk::autogen::tri_mesh

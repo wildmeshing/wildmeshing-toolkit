@@ -2,7 +2,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/attribute/Attribute.hpp>
-#include <wmtk/attribute/AttributeScopeStack.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "../tools/DEBUG_PointMesh.hpp"
 #include "../tools/DEBUG_TriMesh.hpp"
@@ -33,12 +32,21 @@ template <typename VectorAcc>
 void check(DEBUG_PointMesh& m, VectorAcc& va, bool for_zeros = false)
 {
     auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
+    auto vertices_id = m.get_all_id_simplex(wmtk::PrimitiveType::Vertex);
     size_t dimension = va.dimension();
     Eigen::Matrix<typename VectorAcc::Scalar, Eigen::Dynamic, 1> x;
     bool is_scalar = va.dimension() == 1;
     x.resize(va.dimension());
-    for (const wmtk::Tuple& tup : vertices) {
+    for (size_t j = 0; j < vertices.size(); ++j) {
+        const wmtk::Tuple& tup = vertices[j];
+        const wmtk::simplex::IdSimplex& ids = vertices_id[j];
         int64_t id = m.id(tup);
+        int64_t id2 = m.id(ids);
+        REQUIRE(id == id2);
+        REQUIRE(va.const_vector_attribute(tup) == va.const_vector_attribute(tup));
+        if (is_scalar) {
+            REQUIRE(va.const_scalar_attribute(tup) == va.const_scalar_attribute(tup));
+        }
         if (for_zeros) {
             CHECK((va.const_vector_attribute(tup).array() == 0).all());
             if (is_scalar) {

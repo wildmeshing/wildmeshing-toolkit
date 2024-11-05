@@ -1,6 +1,7 @@
 #pragma once
 
-#include "operations/Operation.hpp"
+#include <spdlog/common.h>
+#include <wmtk/operations/Operation.hpp>
 
 namespace wmtk {
 
@@ -77,9 +78,11 @@ public:
         return res / sub_stats.size();
     }
 
-private:
+    // private:
     int64_t m_num_op_success = 0;
     int64_t m_num_op_fail = 0;
+
+    void print_update_log(size_t total, spdlog::level::level_enum = spdlog::level::info) const;
 };
 
 class Scheduler
@@ -92,11 +95,20 @@ public:
     SchedulerStats run_operation_on_all(
         operations::Operation& op,
         const TypedAttributeHandle<char>& flag_handle);
+    SchedulerStats run_operation_on_all_coloring(
+        operations::Operation& op,
+        const TypedAttributeHandle<int64_t>& color_handle);
 
     const SchedulerStats& stats() const { return m_stats; }
 
+    void set_update_frequency(std::optional<size_t>&& freq = {});
+
 private:
     SchedulerStats m_stats;
+    std::optional<size_t> m_update_frequency = {};
+
+    void log(const size_t total);
+    void log(const SchedulerStats& stats, const size_t total);
 };
 
 } // namespace wmtk

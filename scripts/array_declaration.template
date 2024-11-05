@@ -1,6 +1,0 @@
-{%- macro print_dimensions(data) %}
-  {%- if data is sequence -%}
-  [{{ data|length }}]{{ print_dimensions(data[0]) }}
-  {%- endif -%}
-{% endmacro -%}
-const long {{ table.name }}{{ print_dimensions(table.data) }}

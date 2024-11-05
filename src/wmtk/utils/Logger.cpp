@@ -6,6 +6,14 @@
 #include <sstream>
 
 namespace wmtk {
+bool has_user_overloaded_logger_level() {
+    const char* val = std::getenv("WMTK_LOGGER_LEVEL");
+    if(val == nullptr) {
+        return false;
+    }
+    std::string env_val = val;
+    return !env_val.empty();
+}
 
 namespace {
 inline void load_env_levels(spdlog::logger& logger)

@@ -1,4 +1,5 @@
 #include "CollapseNewAttributeStrategy.hpp"
+#include <fmt/format.h>
 #include <wmtk/utils/primitive_range.hpp>
 
 #include <wmtk/operations/edge_mesh/CollapseNewAttributeTopoInfo.hpp>
@@ -6,6 +7,16 @@
 #include <wmtk/operations/tri_mesh/CollapseNewAttributeTopoInfo.hpp>
 
 namespace wmtk::operations {
+template <typename T>
+bool CollapseNewAttributeStrategy<T>::invalid_state() const
+{
+    return m_will_throw;
+}
+template <typename T>
+std::string CollapseNewAttributeStrategy<T>::name() const
+{
+    return fmt::format("CollapseNewAttributeStrategy[{}]", m_handle.name());
+}
 
 template <typename T>
 typename CollapseNewAttributeStrategy<T>::CollapseFuncType
@@ -107,9 +118,13 @@ CollapseNewAttributeStrategy<T>::CollapseNewAttributeStrategy(
     , m_collapse_op(nullptr)
 {
     assert(h.holds<T>());
-    set_strategy(CollapseBasicStrategy::Throw);
 
     auto& mesh = m_handle.mesh();
+    if (mesh.is_free()) {
+        set_strategy(CollapseBasicStrategy::None);
+    } else {
+        set_strategy(CollapseBasicStrategy::Throw);
+    }
 
     if (mesh.top_simplex_type() == PrimitiveType::Edge) {
         m_topo_info =
@@ -127,36 +142,41 @@ CollapseNewAttributeStrategy<T>::CollapseNewAttributeStrategy(
 
 template <typename T>
 void CollapseNewAttributeStrategy<T>::update(
+    Mesh& m,
     const ReturnData& data,
-    const OperationTupleData& op_datas)
+    const OperationInOutData& op_datas) const
 {
     if (!bool(m_collapse_op)) {
         return;
     }
+    assert(!mesh().is_free()); // attribute new is not valid on free meshes
 
     if (op_datas.find(&mesh()) == op_datas.end()) return;
-    const std::vector<std::array<Tuple, 2>>& tuple_pairs = op_datas.at(&mesh());
+    assert(&mesh() == &m);
+    const std::vector<std::tuple<simplex::NavigatableSimplex, Tuple>>& tuple_pairs =
+        op_datas.at(&mesh());
+
+    const PrimitiveType pt = primitive_type();
+    auto acc = m.create_accessor(m_handle.as<T>());
 
     for (const auto& tuple_pair : tuple_pairs) {
-        const Tuple& input_tuple = tuple_pair[0];
-        const Tuple& output_tuple = tuple_pair[1];
+        const simplex::NavigatableSimplex& input_simplex = std::get<0>(tuple_pair);
+        const Tuple& output_tuple = std::get<1>(tuple_pair);
 
-        simplex::Simplex input_simplex = mesh().parent_scope(
-            [this, &input_tuple]() { return simplex::Simplex::edge(mesh(), input_tuple); });
 
         const auto& return_data_variant = data.get_variant(mesh(), input_simplex);
 
-        PrimitiveType pt = primitive_type();
-        //for (const PrimitiveType pt : wmtk::utils::primitive_below(mesh().top_simplex_type()))
+        // for (const PrimitiveType pt : wmtk::utils::primitive_below(mesh().top_simplex_type()))
         {
-            auto merged_simps = m_topo_info->merged_simplices(return_data_variant, input_tuple, pt);
+            auto merged_simps =
+                m_topo_info->merged_simplices(return_data_variant, input_simplex.tuple(), pt);
             auto new_simps = m_topo_info->new_simplices(return_data_variant, output_tuple, pt);
 
 
             assert(merged_simps.size() == new_simps.size());
 
             for (size_t s = 0; s < merged_simps.size(); ++s) {
-                assign_collapsed(pt, merged_simps[s], new_simps[s]);
+                assign_collapsed(acc, merged_simps[s], new_simps[s]);
             }
         }
     }
@@ -165,24 +185,21 @@ void CollapseNewAttributeStrategy<T>::update(
 
 template <typename T>
 void CollapseNewAttributeStrategy<T>::assign_collapsed(
-    PrimitiveType pt,
+    wmtk::attribute::Accessor<T>& acc,
     const std::array<Tuple, 2>& input_simplices,
-    const Tuple& final_simplex)
+    const Tuple& final_simplex) const
 {
     if (!bool(m_collapse_op)) {
         return;
     }
-    if (pt != primitive_type()) {
-        return;
-    }
-    auto acc = m_handle.mesh().create_accessor(m_handle.as<T>());
+    assert(acc.primitive_type() == primitive_type());
     auto old_values = m_handle.mesh().parent_scope([&]() {
         return std::make_tuple(
             acc.const_vector_attribute(input_simplices[0]),
             acc.const_vector_attribute(input_simplices[1]));
     });
 
-    const auto old_pred = this->evaluate_predicate(pt, input_simplices);
+    const auto old_pred = this->evaluate_predicate(acc.primitive_type(), input_simplices);
 
     VecType a, b;
     std::tie(a, b) = old_values;
@@ -197,11 +214,13 @@ template <typename T>
 void CollapseNewAttributeStrategy<T>::set_strategy(CollapseFuncType&& f)
 {
     m_collapse_op = std::move(f);
+    m_will_throw = false;
 }
 template <typename T>
 void CollapseNewAttributeStrategy<T>::set_strategy(CollapseBasicStrategy optype)
 {
     set_strategy(standard_collapse_strategy(optype));
+    m_will_throw = optype == CollapseBasicStrategy::Throw;
 }
 
 

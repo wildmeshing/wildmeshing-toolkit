@@ -74,6 +74,7 @@ std::vector<int64_t> Mesh::request_simplex_indices(PrimitiveType type, int64_t c
     attribute::CachingAccessor<char>& flag_accessor_indices = flag_accessor.index_access();
 
     for (const int64_t simplex_index : ret) {
+        // wmtk::logger().trace("Activating {}-simplex {}", primitive_id, simplex_index);
         flag_accessor_indices.scalar_attribute(simplex_index) |= 0x1;
     }
 
@@ -184,7 +185,17 @@ void Mesh::clear_attributes(const std::vector<attribute::MeshAttributeHandle>& k
         mptr->clear_attributes(handles);
     }
 }
+void Mesh::delete_attribute(const attribute::MeshAttributeHandle& to_delete)
+{
+    assert(this == &to_delete.mesh());
 
+    delete_attribute(to_delete.handle());
+}
+
+void Mesh::delete_attribute(const attribute::MeshAttributeHandle::HandleVariant& to_delete)
+{
+    m_attribute_manager.delete_attribute(to_delete);
+}
 multimesh::attribute::AttributeScopeHandle Mesh::create_scope()
 {
     return multimesh::attribute::AttributeScopeHandle(*this);
@@ -222,9 +233,12 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
     // Use new2oldmap to compact all attributes
     auto run = [&](auto&& mesh_attrs) {
         for (int64_t d = 0; d < mesh_attrs.size(); ++d) {
-            mesh_attrs[d].reserve(new2old[d].size());
-            for (auto& h : mesh_attrs[d].m_attributes) {
-                h->consolidate(new2old[d]);
+            auto& ma = mesh_attrs[d];
+            const auto& n2o = new2old[d];
+            ma.reserve(n2o.size());
+
+            for (auto& h : ma.active_attributes()) {
+                ma.attribute(h).consolidate(n2o);
             }
         }
     };

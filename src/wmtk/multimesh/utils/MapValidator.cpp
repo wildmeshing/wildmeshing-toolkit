@@ -59,7 +59,7 @@ bool MapValidator::check_child_map_attributes_valid() const
 
                             );
                         }
-                    } else if (!child.is_valid_slow(target_mesh_base_tuple)) {
+                    } else if (!child.is_valid(target_mesh_base_tuple)) {
                         wmtk::logger().error(
                             "Map from parent {} to child {} on tuple {} (dim {}) fails on  {} -> "
                             "{}",
@@ -109,7 +109,7 @@ bool MapValidator::check_parent_map_attribute_valid() const
 
             );
             ok = false;
-        } else if (!parent.is_valid_slow(target_mesh_base_tuple)) {
+        } else if (!parent.is_valid(target_mesh_base_tuple)) {
             wmtk::logger().error(
                 "Map from child {} to parent {} on tuple {} (dim {}) fails on  {} -> "
                 "{}",

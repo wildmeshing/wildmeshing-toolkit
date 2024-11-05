@@ -53,7 +53,7 @@ void DEBUG_TriMesh::reserve_more_attributes(const std::vector<int64_t>& sizes)
     Mesh::reserve_more_attributes(sizes);
 }
 
-auto DEBUG_TriMesh::edge_tuple_between_v1_v2(const int64_t v1, const int64_t v2, const int64_t fid)
+auto DEBUG_TriMesh::edge_tuple_with_vs_and_t(const int64_t v1, const int64_t v2, const int64_t fid)
     const -> Tuple
 {
     const attribute::Accessor<int64_t> fv = create_const_accessor<int64_t>(m_fv_handle);
@@ -70,7 +70,7 @@ auto DEBUG_TriMesh::edge_tuple_between_v1_v2(const int64_t v1, const int64_t v2,
             local_vid2 = i;
         }
     }
-    return Tuple(local_vid1, (3 - local_vid1 - local_vid2) % 3, -1, fid, get_cell_hash_slow(fid));
+    return Tuple(local_vid1, (3 - local_vid1 - local_vid2) % 3, -1, fid);
 }
 
 auto DEBUG_TriMesh::edge_tuple_from_vids(const int64_t v1, const int64_t v2) const -> Tuple
@@ -94,8 +94,7 @@ auto DEBUG_TriMesh::edge_tuple_from_vids(const int64_t v1, const int64_t v2) con
                 local_vid1,
                 (3 - local_vid1 - local_vid2) % 3,
                 -1,
-                fid,
-                get_cell_hash_slow(fid));
+                fid);
         }
     }
     return Tuple();
@@ -160,16 +159,9 @@ void DEBUG_TriMesh::reserve_attributes(PrimitiveType type, int64_t size)
 }
 
 
-attribute::Accessor<int64_t> DEBUG_TriMesh::get_cell_hash_accessor()
-{
-    return TriMesh::get_cell_hash_accessor();
-}
-/**
- * @brief returns the TriMeshOperationExecutor
- */
-auto DEBUG_TriMesh::get_tmoe(const Tuple& t, wmtk::attribute::Accessor<int64_t>& hash_accessor)
+auto DEBUG_TriMesh::get_tmoe(const Tuple& t)
     -> TriMeshOperationExecutor
 {
-    return TriMeshOperationExecutor(*this, t, hash_accessor);
+    return TriMeshOperationExecutor(*this, t);
 }
 } // namespace wmtk::tests

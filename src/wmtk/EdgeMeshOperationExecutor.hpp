@@ -7,18 +7,14 @@ namespace wmtk {
 class EdgeMesh::EdgeMeshOperationExecutor : public operations::edge_mesh::EdgeOperationData
 {
 public:
-    EdgeMeshOperationExecutor(
-        EdgeMesh& m,
-        const Tuple& operating_tuple,
-        attribute::Accessor<int64_t>& hash_acc);
+    EdgeMeshOperationExecutor(EdgeMesh& m, const Tuple& operating_tuple);
     void delete_simplices();
     void update_cell_hash();
 
     std::array<attribute::Accessor<char>, 2> flag_accessors;
-    attribute::Accessor<int64_t,EdgeMesh> ee_accessor;
-    attribute::Accessor<int64_t,EdgeMesh> ev_accessor;
-    attribute::Accessor<int64_t,EdgeMesh> ve_accessor;
-    attribute::Accessor<int64_t>& hash_accessor;
+    attribute::Accessor<int64_t, EdgeMesh> ee_accessor;
+    attribute::Accessor<int64_t, EdgeMesh> ev_accessor;
+    attribute::Accessor<int64_t, EdgeMesh> ve_accessor;
 
     /**
      * @brief gather all simplices that are deleted in a split

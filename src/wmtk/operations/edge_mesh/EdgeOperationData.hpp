@@ -8,6 +8,9 @@ namespace wmtk::operations::edge_mesh {
 class EdgeOperationData : public wmtk::operations::EdgeOperationData
 {
 public:
+    EdgeOperationData() = default;
+    EdgeOperationData(EdgeOperationData&&) = default;
+    EdgeOperationData& operator=(EdgeOperationData&&) = default;
     std::array<std::vector<int64_t>, 2> simplex_ids_to_delete;
     std::vector<int64_t> cell_ids_to_update_hash;
 
@@ -15,8 +18,11 @@ public:
     std::array<int64_t, 2> m_split_e = std::array<int64_t, 2>{{-1, -1}};
     int64_t m_split_v;
 
+    std::array<int64_t,2> m_free_split_v;
+
     std::array<Tuple, 2> input_endpoints(const EdgeMesh& m) const;
     std::array<Tuple, 2> split_output_edges(const EdgeMesh&) const;
+    std::vector<simplex::Simplex> new_vertices(const Mesh& m) const;
 
     bool m_is_self_loop = false;
     // common simplicies

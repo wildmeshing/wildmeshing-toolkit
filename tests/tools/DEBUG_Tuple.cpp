@@ -6,12 +6,11 @@ namespace wmtk::tests {
 DEBUG_Tuple::operator std::string() const
 {
     return fmt::format(
-        "(gid {}:lids{},{},{}:hash{})",
+        "(gid {}:lids{},{},{})",
         global_cid(),
         local_vid(),
         local_eid(),
-        local_fid(),
-        hash());
+        local_fid());
 }
 
 } // namespace wmtk::tests

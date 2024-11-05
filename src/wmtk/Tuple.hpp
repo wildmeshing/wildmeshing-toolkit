@@ -1,7 +1,7 @@
 #pragma once
 
+#include <array>
 #include "PrimitiveType.hpp"
-
 
 namespace wmtk {
 
@@ -24,7 +24,12 @@ class TupleInspector;
 }
 namespace operations {
 class Operation;
-}
+namespace internal {
+class SplitAlternateFacetData;
+class CollapseAlternateFacetData;
+} // namespace internal
+class EdgeOperationData;
+} // namespace operations
 namespace utils {
 // for identifying unique top level simplices between tuples
 class TupleCellLessThan;
@@ -42,7 +47,7 @@ private:
     int8_t m_local_vid = -1;
     int8_t m_local_eid = -1;
     int8_t m_local_fid = -1;
-    int8_t m_hash = -1;
+    std::array<int8_t, 5> m_pad = {{0, 0, 0, 0, 0}}; // align Tuple with 2*int64_t
 
 public:
     friend class Mesh;
@@ -54,6 +59,9 @@ public:
     template <typename T, typename MeshType, int Dim>
     friend class attribute::Accessor;
     friend class operations::Operation;
+    friend class operations::internal::SplitAlternateFacetData;
+    friend class operations::internal::CollapseAlternateFacetData;
+    friend class operations::EdgeOperationData;
     friend class utils::TupleCellLessThan;
     friend class utils::TupleInspector;
     friend class components::internal::MultiMeshFromTag;
@@ -61,7 +69,7 @@ public:
     // friend Mesh::is_ccw(const Tuple& tuple) const;
     // friend Mesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const;
 
-    Tuple(int8_t local_vid, int8_t local_eid, int8_t local_fid, int64_t global_cid, int8_t hash);
+    Tuple(int8_t local_vid, int8_t local_eid, int8_t local_fid, int64_t global_cid);
 
     //         v2
     //       /    \.
@@ -83,24 +91,29 @@ public:
 
     /// Checks if a tuple is "null". This merely implies the global index is -1
     bool is_null() const;
-    Tuple with_updated_hash(int64_t new_hash) const;
 
 private:
     int8_t local_vid() const;
     int8_t local_eid() const;
     int8_t local_fid() const;
 };
-inline Tuple::Tuple(
-    int8_t local_vid,
-    int8_t local_eid,
-    int8_t local_fid,
-    int64_t global_cid,
-    int8_t hash)
+inline Tuple::Tuple(int8_t local_vid, int8_t local_eid, int8_t local_fid, int64_t global_cid)
     : m_global_cid(global_cid)
     , m_local_vid(local_vid)
     , m_local_eid(local_eid)
     , m_local_fid(local_fid)
-    , m_hash(hash)
 {}
+// #if !defined(WMTK_ENABLE_HASH_UPDATE)
+// inline Tuple::Tuple(
+//     int8_t local_vid,
+//     int8_t local_eid,
+//     int8_t local_fid,
+//     int64_t global_cid)
+//     : m_global_cid(global_cid)
+//     , m_local_vid(local_vid)
+//     , m_local_eid(local_eid)
+//     , m_local_fid(local_fid)
+//{}
+// #endif
 } // namespace wmtk
 #include "Tuple.hxx"

@@ -2,8 +2,17 @@ set(SRC_FILES
     AMIPSOptimizationSmoothing.hpp
     AMIPSOptimizationSmoothing.cpp
 
+    AMIPSOptimizationSmoothingPeriodic.hpp
+    AMIPSOptimizationSmoothingPeriodic.cpp
+
     AttributesUpdate.hpp
     AttributesUpdate.cpp
+
+    AttributeTransferEdge.hpp
+    AttributeTransferEdge.cpp
+
+    AttributeTransferConfiguration.hpp
+    AttributeTransferConfiguration.cpp
 
     Operation.hpp
     Operation.cpp
@@ -37,6 +46,9 @@ set(SRC_FILES
 
     Rounding.hpp
     Rounding.cpp
+
+    TetWildTangentialLaplacianSmoothing.hpp
+    TetWildTangentialLaplacianSmoothing.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
@@ -52,3 +64,4 @@ add_subdirectory(composite)
 #
 add_subdirectory(utils)
 #
+add_subdirectory(internal)

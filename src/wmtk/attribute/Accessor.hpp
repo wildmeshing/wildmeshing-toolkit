@@ -1,6 +1,7 @@
 #pragma once
 #include "CachingAccessor.hpp"
 #include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/simplex/IdSimplex.hpp>
 
 namespace wmtk {
 class Mesh;
@@ -30,7 +31,6 @@ public:
     friend class wmtk::PointMesh;
     using Scalar = T;
 
-    friend class internal::AttributeMapCache<T>;
     using BaseType = AccessorBase<T, Dim>;
     using CachingBaseType = CachingAccessor<T, Dim>;
 
@@ -49,26 +49,23 @@ public:
     Accessor(const Accessor<T, OMType, D>& o);
 
 
+    // =============
+    // Access methods
+    // =============
+    // NOTE: If any compilation warnings occur check that there is an overload for an index method
+
     T const_topological_scalar_attribute(const Tuple& t, PrimitiveType pt) const;
-    T& topological_scalar_attribute(const Tuple& t);
-    T& topological_scalar_attribute(const simplex::Simplex& t);
+    template <typename ArgType>
+    T& topological_scalar_attribute(const ArgType& t);
+    template <typename ArgType>
+    T const_scalar_attribute(const ArgType& t) const;
+    template <typename ArgType>
+    T& scalar_attribute(const ArgType& t);
 
-    T const_scalar_attribute(const Tuple& t) const;
-    T& scalar_attribute(const Tuple& t);
-
-    template <int D = Dim>
-    ConstMapResult<D> const_vector_attribute(const Tuple& t) const;
-    template <int D = Dim>
-    MapResult<D> vector_attribute(const Tuple& t);
-
-    T const_scalar_attribute(const simplex::Simplex& t) const;
-    T& scalar_attribute(const simplex::Simplex& t);
-
-    template <int D = Dim>
-    ConstMapResult<D> const_vector_attribute(const simplex::Simplex& t) const;
-    template <int D = Dim>
-    MapResult<D> vector_attribute(const simplex::Simplex& t);
-
+    template < int D = Dim, typename ArgType = wmtk::Tuple>
+    ConstMapResult<D> const_vector_attribute(const ArgType& t) const;
+    template < int D = Dim, typename ArgType = wmtk::Tuple>
+    MapResult<D> vector_attribute(const ArgType& t);
 
     using BaseType::dimension; // const() -> int64_t
     using BaseType::reserved_size; // const() -> int64_t
@@ -85,8 +82,11 @@ public:
     const MeshType& mesh() const { return static_cast<const MeshType&>(BaseType::mesh()); }
 
 protected:
+
     int64_t index(const Tuple& t) const;
     int64_t index(const simplex::Simplex& t) const;
+    int64_t index(const simplex::IdSimplex& t) const;
+
     using CachingBaseType::base_type;
     CachingBaseType& caching_base_type() { return *this; }
     const CachingBaseType& caching_base_type() const { return *this; }

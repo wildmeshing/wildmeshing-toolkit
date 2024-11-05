@@ -15,12 +15,12 @@ public:
     static std::pair<Tuple, Tuple> new_spine_edges(const Mesh& mesh, const Tuple& new_vertex);
 
 
-    std::shared_ptr<operations::BaseSplitNewAttributeStrategy> get_new_attribute_strategy(
+    std::shared_ptr<const operations::BaseSplitNewAttributeStrategy> get_new_attribute_strategy(
         const attribute::MeshAttributeHandle& attribute) const;
 
     void set_new_attribute_strategy(
         const attribute::MeshAttributeHandle& attribute,
-        const std::shared_ptr<operations::BaseSplitNewAttributeStrategy>& other);
+        const std::shared_ptr<const operations::BaseSplitNewAttributeStrategy>& other);
 
     void set_new_attribute_strategy(
         const attribute::MeshAttributeHandle& attribute,
@@ -36,8 +36,15 @@ public:
     std::vector<simplex::Simplex> unmodified_primitives(
         const simplex::Simplex& simplex) const override;
 
+
+    void clear_attribute_new_strategies();
+
+    // checks through attribute new for throws, prints to the logger if so
+    bool attribute_new_all_configured() const;
+
 private:
-    std::vector<std::shared_ptr<operations::BaseSplitNewAttributeStrategy>> m_new_attr_strategies;
+    std::vector<std::shared_ptr<const operations::BaseSplitNewAttributeStrategy>>
+        m_new_attr_strategies;
 };
 
 } // namespace wmtk::operations

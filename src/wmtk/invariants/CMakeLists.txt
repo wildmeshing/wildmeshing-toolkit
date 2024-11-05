@@ -67,6 +67,13 @@ set(SRC_FILES
     Swap56EnergyBeforeInvariant.hpp
     Swap56EnergyBeforeInvariant.cpp
 
+    Swap44EnergyBeforeInvariantDouble.hpp
+    Swap44EnergyBeforeInvariantDouble.cpp
+    Swap32EnergyBeforeInvariantDouble.hpp
+    Swap32EnergyBeforeInvariantDouble.cpp
+    Swap56EnergyBeforeInvariantDouble.hpp
+    Swap56EnergyBeforeInvariantDouble.cpp
+
     SeparateSubstructuresInvariant.hpp
     SeparateSubstructuresInvariant.cpp
 
@@ -75,10 +82,21 @@ set(SRC_FILES
 
     CollapseEnergyBeforeInvariant.hpp
     CollapseEnergyBeforeInvariant.cpp
+    CollapseSoftEnergyBeforeInvariant.hpp
+    CollapseSoftEnergyBeforeInvariant.cpp
+    CollapseEnergyBeforeInvariantDouble.hpp
+    CollapseEnergyBeforeInvariantDouble.cpp
 
     NoChildMeshAttachingInvariant.hpp
     NoChildMeshAttachingInvariant.cpp
 
+    EnergyFilterInvariant.hpp
+    EnergyFilterInvariant.cpp
+
+    FrozenVertexInvariant.hpp
+    FrozenVertexInvariant.cpp
+    Swap2dUnroundedVertexInvariant.hpp
+    Swap2dUnroundedVertexInvariant.cpp
     
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

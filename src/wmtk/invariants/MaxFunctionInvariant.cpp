@@ -54,14 +54,6 @@ bool MaxFunctionInvariant::after(
 
     const double after = max(top_dimension_tuples_after);
 
-
-    // debug code
-    // if (!(after < before)) {
-    //     std::cout << "after check: before: " << before << ", after: " << after << std::endl;
-    //     std::cout << "before tet size: " << top_dimension_tuples_before.size()
-    //               << ", after tet size: " << top_dimension_tuples_after.size() << std::endl;
-    // }
-
     return after <= before;
 }
 } // namespace wmtk::invariants

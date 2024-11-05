@@ -63,9 +63,15 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
                 wmtk::utils::TupleInspector::as_string(parent_tuple_from_child),
                 wmtk::utils::TupleInspector::as_string(child_tuple_from_child),
                 wmtk::utils::TupleInspector::as_string(child_tuple));
-            assert(child_mesh.is_valid_slow(child_tuple_from_child));
-            CHECK(child_mesh.is_valid_slow(child_tuple_from_child));
-            CHECK(my_mesh.is_valid_slow(parent_tuple_from_child));
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
+            assert(child_mesh.is_valid_with_hash(child_tuple_from_child));
+            CHECK(child_mesh.is_valid_with_hash(child_tuple_from_child));
+            CHECK(my_mesh.is_valid_with_hash(parent_tuple_from_child));
+#else
+            assert(child_mesh.is_valid(child_tuple_from_child));
+            CHECK(child_mesh.is_valid(child_tuple_from_child));
+            CHECK(my_mesh.is_valid(parent_tuple_from_child));
+#endif
         }
 
         // 3. test if map is symmetric

@@ -4,7 +4,7 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/Primitive.hpp>
 #include <wmtk/operations/tri_mesh/EdgeOperationData.hpp>
-#include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/simplex/NavigatableSimplex.hpp>
 #include <wmtk/simplex/utils/MeshSimplexComparator.hpp>
 #include <wmtk/utils/mesh_type_from_primitive_type.hpp>
 #include <wmtk/utils/metaprogramming/MeshVariantTraits.hpp>
@@ -41,7 +41,7 @@ public:
             NodeFunctor,
             MeshVariantTraits,
             wmtk::simplex::utils::MeshSimplexComparator,
-            simplex::Simplex>;
+            simplex::NavigatableSimplex>;
     using CacheType = ReturnDataType;
 
     using TypeHelper = wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnType<
@@ -91,7 +91,7 @@ public:
      * NodeFunctor Return type
      * */
     template <typename MeshType>
-    void execute_mesh(MeshType&& mesh, const simplex::Simplex& simplex)
+    void execute_mesh(MeshType&& mesh, const simplex::NavigatableSimplex& simplex)
     {
         static_assert(
             !std::is_same_v<std::decay_t<MeshType>, Mesh>,
@@ -111,18 +111,22 @@ public:
      * NodeFunctor Return type
      * */
     // even if you try to use an interior mesh node this always just uses the root
-    void execute_from_root(Mesh& mesh, const simplex::Simplex& simplex)
+    void execute_from_root(Mesh& mesh, const simplex::NavigatableSimplex& simplex)
     {
         // if the user passed in a mesh class lets try re-invoking with a derived type
         Mesh& root_base_mesh = mesh.get_multi_mesh_root();
         auto mesh_root_variant = wmtk::utils::metaprogramming::as_mesh_variant(root_base_mesh);
-        const simplex::Simplex root_simplex = mesh.map_to_root(simplex);
-        assert(root_base_mesh.is_valid_slow(root_simplex.tuple()));
+
+        const simplex::Simplex root_simplex_nonav =  mesh.map_to_root(simplex);
+        assert(root_base_mesh.is_valid(root_simplex_nonav.tuple()));
+        const simplex::NavigatableSimplex root_simplex(root_base_mesh, root_simplex_nonav);
+        assert(root_base_mesh.is_valid(root_simplex.tuple()));
         Executor exec(*this);
         std::visit([&](auto&& root) { execute_mesh(root.get(), root_simplex); }, mesh_root_variant);
     }
 
     const CacheType& cache() const { return m_cache; }
+    CacheType take_cache() { return std::move(m_cache); }
     auto node_events() const { return m_cache.keys(); }
     const auto& edge_events() const { return m_edge_events; }
 
@@ -155,7 +159,7 @@ public:
             NodeFunctor,
             MeshVariantTraits,
             wmtk::simplex::utils::MeshSimplexComparator,
-            simplex::Simplex>;
+            simplex::NavigatableSimplex>;
     constexpr static bool HasReturnCache =
         !wmtk::utils::metaprogramming::
             all_return_void_v<NodeFunctor, MeshVariantTraits, simplex::Simplex>;
@@ -180,7 +184,7 @@ public:
      * @param simplex the simplex whose subgraph will be run
      * */
     template <typename MeshType>
-    void execute(MeshType&& mesh, const simplex::Simplex& simplex)
+    void execute(MeshType&& mesh, const simplex::NavigatableSimplex& simplex)
     {
         static_assert(std::is_base_of_v<Mesh, std::decay_t<MeshType>>);
         run(std::forward<MeshType>(mesh), simplex);
@@ -193,9 +197,9 @@ private:
      * @param simplex the simplex whose subgraph will be run
      * */
     template <typename MeshType_>
-    void run(MeshType_&& current_mesh, const simplex::Simplex& simplex)
+    void run(MeshType_&& current_mesh, const simplex::NavigatableSimplex& simplex)
     {
-        assert(current_mesh.is_valid_slow(simplex.tuple()));
+        assert(current_mesh.is_valid(simplex.tuple()));
         using MeshType = std::decay_t<MeshType_>;
 
 
@@ -216,7 +220,7 @@ private:
         // pre-compute all of  the child tuples in case the node functor changes the mesh that
         // breaks the traversal down
         auto& child_datas = current_mesh.m_multi_mesh_manager.children();
-        std::vector<std::vector<simplex::Simplex>> mapped_child_simplices;
+        std::vector<std::vector<simplex::NavigatableSimplex>> mapped_child_simplices;
         mapped_child_simplices.reserve(child_datas.size());
 
 
@@ -230,10 +234,19 @@ private:
             [&](const auto& child_data) {
                 Mesh& child_mesh = *child_data.mesh;
 
-                auto r = current_mesh.map_to_child(child_mesh, simplex);
+                const std::vector<simplex::Simplex> _r =
+                    current_mesh.map_to_child(child_mesh, simplex);
+                std::vector<simplex::NavigatableSimplex> r;
+                std::transform(
+                    _r.begin(),
+                    _r.end(),
+                    std::back_inserter(r),
+                    [&](const simplex::Simplex& s) {
+                        return simplex::NavigatableSimplex(child_mesh, s);
+                    });
 #if !defined(NDEBUG)
                 for (const auto& s : r) {
-                    assert(child_mesh.is_valid_slow(s.tuple()));
+                    assert(child_mesh.is_valid(s.tuple()));
                 }
 #endif
 
@@ -250,7 +263,7 @@ private:
 
 #if !defined(NDEBUG)
             for (const auto& s : simplices) {
-                assert(child_mesh_base.is_valid_slow(s.tuple()));
+                assert(child_mesh_base.is_valid(s.tuple()));
             }
 #endif
 
@@ -280,8 +293,8 @@ private:
                     assert(MeshDim >= ChildDim);
 
                     if constexpr (MeshDim >= ChildDim) {
-                        for (const simplex::Simplex& child_simplex : simplices) {
-                            assert(child_mesh.is_valid_slow(child_simplex.tuple()));
+                        for (const simplex::NavigatableSimplex& child_simplex : simplices) {
+                            assert(child_mesh.is_valid(child_simplex.tuple()));
 
                             run(child_mesh, child_simplex);
 
@@ -309,7 +322,7 @@ private:
         if constexpr (CurHasReturn) {
             auto current_return = visitor.m_node_functor(current_mesh, simplex);
 
-            m_return_data.add(current_return, current_mesh, simplex);
+            m_return_data.add(std::move(current_return), current_mesh, simplex);
         } else {
             visitor.m_node_functor(current_mesh, simplex);
         }

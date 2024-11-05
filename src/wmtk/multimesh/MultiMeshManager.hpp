@@ -2,12 +2,15 @@
 
 #include <tuple>
 #include <wmtk/Tuple.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/attribute/AttributeScopeHandle.hpp>
 #include <wmtk/attribute/MeshAttributes.hpp>
 // included to make a friend as this requires IDs
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
-#include <wmtk/operations/utils/UpdateVertexMultiMeshMapHash.hpp>
 #include <wmtk/utils/MerkleTreeInteriorNode.hpp>
+
+// debug function that reads into this structure
+#include "utils/check_map_valid.hpp"
 
 
 
@@ -15,9 +18,12 @@ namespace wmtk {
 
 class Mesh;
 class HDF5Reader;
-namespace operations::utils {
+namespace operations {
+class EdgeOperationData;
+namespace utils {
 class UpdateEdgeOperationMultiMeshMapFunctor;
 }
+} // namespace operations
 namespace attribute {
 template <typename T, typename MeshType, int Dim>
 class Accessor;
@@ -64,10 +70,7 @@ public:
     template <typename Visitor>
     friend class multimesh::MultiMeshSimplexVisitorExecutor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
-    friend void operations::utils::update_vertex_operation_multimesh_map_hash(
-        Mesh& m,
-        const simplex::SimplexCollection& vertex_closed_star,
-        wmtk::attribute::Accessor<int64_t>& parent_hash_accessor);
+
     template <typename NodeFunctor>
     friend class multimesh::MultiMeshVisitor;
     template <typename Visitor>
@@ -88,6 +91,9 @@ public:
     // attribute directly hashes its "children" components so it overrides "child_hashes"
     std::map<std::string, const wmtk::utils::Hashable*> child_hashables() const override;
     std::map<std::string, std::size_t> child_hashes() const override;
+
+
+    void detach_children();
 
     //=========================================================
     // Storage of MultiMesh
@@ -350,6 +356,8 @@ public:
         return m_has_child_mesh_in_dimension[dimension];
     }
 
+    bool has_child_mesh() const;
+
 protected:
     // Storage of a child mesh (a pointer from the mesh + the map from this mesh -> the child)
     struct ChildData
@@ -445,6 +453,11 @@ protected: // protected to enable unit testing
         const std::vector<std::tuple<int64_t, std::vector<Tuple>>>& simplices_to_update,
         const std::vector<std::tuple<int64_t, std::array<int64_t, 2>>>& split_cell_maps = {});
 
+    void update_maps_from_edge_operation(
+        Mesh& my_mesh,
+        PrimitiveType primitive_type,
+        const operations::EdgeOperationData& operation_data);
+
 
     // uses the available parameters to find a tuple that is equivalent to old_smiplex but using
     // still-existing top level simplices. by equivalent each sub-simplex of old_simplex's tuple
@@ -499,6 +512,12 @@ protected: // protected to enable unit testing
         int64_t child_gid);
 
 
+    // ===============================================================================
+    // ===============================================================================
+    // ===============================================================================
+    // ===============================================================================
+
+
     // internal function for mapping up a multimesh tree by a certain number of edges
     //
     // @return the mesh found at the top and the tuple that was found
@@ -543,14 +562,6 @@ public:
      * @param vertex operating vertex tuple
      * @param hash_accessor hash accessor of m
      */
-    static void update_vertex_operation_hashes_internal(
-        Mesh& m,
-        const Tuple& vertex,
-        wmtk::attribute::Accessor<int64_t>& hash_accessor);
-    static void update_vertex_operation_multimesh_map_hash_internal(
-        Mesh& m,
-        const simplex::SimplexCollection& vertex_closed_star,
-        wmtk::attribute::Accessor<int64_t>& parent_hash_accessor);
 
 public:
     // remove after bug fix

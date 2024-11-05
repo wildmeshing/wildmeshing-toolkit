@@ -39,7 +39,7 @@ TEST_CASE("MinIncidentValenceInvariant", "[invariants][2D]")
         const DEBUG_TriMesh m = one_ear();
         const MinIncidentValenceInvariant inv(m, 3);
 
-        const Simplex e_mid = Simplex::edge(m, m.edge_tuple_between_v1_v2(0, 1, 0));
+        const Simplex e_mid = Simplex::edge(m, m.edge_tuple_with_vs_and_t(0, 1, 0));
 
         for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
             const Simplex e = Simplex::edge(m, t);
@@ -70,9 +70,9 @@ TEST_CASE("MultiMeshEdgeTopologyInvariant", "[invariants][2D]")
     DEBUG_TriMesh mesh = single_triangle();
     auto tag_handle = mesh.register_attribute<int64_t>("is_boundary", wmtk::PrimitiveType::Edge, 1);
     auto tag_accessor = mesh.create_accessor<int64_t>(tag_handle);
-    Tuple e0 = mesh.edge_tuple_between_v1_v2(1, 2, 0);
-    Tuple e1 = mesh.edge_tuple_between_v1_v2(0, 2, 0);
-    Tuple e2 = mesh.edge_tuple_between_v1_v2(0, 1, 0);
+    Tuple e0 = mesh.edge_tuple_with_vs_and_t(1, 2, 0);
+    Tuple e1 = mesh.edge_tuple_with_vs_and_t(0, 2, 0);
+    Tuple e2 = mesh.edge_tuple_with_vs_and_t(0, 1, 0);
 
     tag_accessor.scalar_attribute(e0) = 1;
     tag_accessor.scalar_attribute(e1) = 1;
@@ -125,7 +125,7 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tri", "[invariants]")
         // mark edge(s)
         {
             auto edge_tag_acc = m.create_accessor<int64_t>(edge_tag_handle);
-            edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(6, 7, 5)) = tag_val;
+            edge_tag_acc.scalar_attribute(m.edge_tuple_with_vs_and_t(6, 7, 5)) = tag_val;
 
             // tag boundary
             for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
@@ -135,18 +135,18 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tri", "[invariants]")
             }
         }
 
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(6, 7, 5))));
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(5, 6, 3))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(6, 3, 4))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(6, 7, 5))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(5, 6, 3))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(6, 3, 4))));
     }
     SECTION("3-6-7-3")
     {
         // mark edge(s)
         {
             auto edge_tag_acc = m.create_accessor<int64_t>(edge_tag_handle);
-            edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(6, 7, 5)) = tag_val;
-            edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(3, 6, 5)) = tag_val;
-            edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(7, 3, 5)) = tag_val;
+            edge_tag_acc.scalar_attribute(m.edge_tuple_with_vs_and_t(6, 7, 5)) = tag_val;
+            edge_tag_acc.scalar_attribute(m.edge_tuple_with_vs_and_t(3, 6, 5)) = tag_val;
+            edge_tag_acc.scalar_attribute(m.edge_tuple_with_vs_and_t(7, 3, 5)) = tag_val;
 
             // tag boundary
             for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
@@ -156,20 +156,20 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tri", "[invariants]")
             }
         }
 
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(6, 7, 5))));
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(3, 6, 5))));
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(7, 3, 5))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(10, 6, 9))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(12, 13, 14))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(6, 7, 5))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(3, 6, 5))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(7, 3, 5))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(10, 6, 9))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(12, 13, 14))));
     }
     SECTION("5-6-7-8")
     {
         // mark edge(s)
         {
             auto edge_tag_acc = m.create_accessor<int64_t>(edge_tag_handle);
-            edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(5, 6, 3)) = tag_val;
-            edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(6, 7, 5)) = tag_val;
-            edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(7, 8, 7)) = tag_val;
+            edge_tag_acc.scalar_attribute(m.edge_tuple_with_vs_and_t(5, 6, 3)) = tag_val;
+            edge_tag_acc.scalar_attribute(m.edge_tuple_with_vs_and_t(6, 7, 5)) = tag_val;
+            edge_tag_acc.scalar_attribute(m.edge_tuple_with_vs_and_t(7, 8, 7)) = tag_val;
 
             // tag boundary
             for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
@@ -179,11 +179,11 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tri", "[invariants]")
             }
         }
 
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(6, 2, 3))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(6, 7, 5))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(5, 6, 3))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(3, 6, 5))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(2, 5, 3))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(6, 2, 3))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(6, 7, 5))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(5, 6, 3))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(3, 6, 5))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(2, 5, 3))));
     }
 }
 
@@ -212,7 +212,7 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tet", "[invariants]")
         // mark edge(s)
         {
             auto edge_tag_acc = m.create_accessor<int64_t>(edge_tag_handle);
-            edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(2, 3, 0)) = tag_val;
+            edge_tag_acc.scalar_attribute(m.edge_tuple_with_vs_and_t(2, 3, 0)) = tag_val;
 
             //// tag boundary
             // for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
@@ -222,16 +222,16 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tet", "[invariants]")
             // }
         }
 
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(2, 3, 0))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(0, 2, 0))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(2, 3, 0))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(0, 2, 0))));
     }
     SECTION("0-2-7")
     {
         // mark edge(s)
         {
             auto edge_tag_acc = m.create_accessor<int64_t>(edge_tag_handle);
-            edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(0, 2, 0)) = tag_val;
-            edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(2, 7, 4)) = tag_val;
+            edge_tag_acc.scalar_attribute(m.edge_tuple_with_vs_and_t(0, 2, 0)) = tag_val;
+            edge_tag_acc.scalar_attribute(m.edge_tuple_with_vs_and_t(2, 7, 4)) = tag_val;
         }
 
         for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
@@ -243,14 +243,14 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tet", "[invariants]")
         // mark edge(s)
         {
             auto edge_tag_acc = m.create_accessor<int64_t>(edge_tag_handle);
-            edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(0, 2, 0)) = tag_val;
-            edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(2, 3, 0)) = tag_val;
+            edge_tag_acc.scalar_attribute(m.edge_tuple_with_vs_and_t(0, 2, 0)) = tag_val;
+            edge_tag_acc.scalar_attribute(m.edge_tuple_with_vs_and_t(2, 3, 0)) = tag_val;
         }
 
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(0, 2, 0))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(2, 3, 0))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(6, 2, 4))));
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(3, 0, 0))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(0, 2, 0))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(2, 3, 0))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(6, 2, 4))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(3, 0, 0))));
     }
     SECTION("f023-f273")
     {
@@ -278,12 +278,12 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tet", "[invariants]")
             }
         }
 
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(0, 2, 0))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(0, 3, 0))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(2, 7, 4))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(3, 7, 4))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(0, 4, 1))));
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(2, 3, 0))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(0, 2, 0))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(0, 3, 0))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(2, 7, 4))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(3, 7, 4))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(0, 4, 1))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(2, 3, 0))));
     }
     SECTION("f023-f234")
     {
@@ -311,12 +311,12 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tet", "[invariants]")
             }
         }
 
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(0, 2, 0))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(0, 3, 0))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(2, 7, 4))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(4, 5, 2))));
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(2, 3, 0))));
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(0, 4, 1))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(0, 2, 0))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(0, 3, 0))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(2, 7, 4))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(4, 5, 2))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(2, 3, 0))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(0, 4, 1))));
     }
     SECTION("f023")
     {
@@ -343,12 +343,12 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tet", "[invariants]")
             }
         }
 
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(0, 2, 0))));
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(0, 3, 0))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(2, 7, 4))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(4, 5, 2))));
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(2, 3, 0))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(0, 4, 1))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(0, 2, 0))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(0, 3, 0))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(2, 7, 4))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(4, 5, 2))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(2, 3, 0))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(0, 4, 1))));
     }
     SECTION("f_boundaries")
     {
@@ -428,16 +428,16 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_in_2_by_3_by_1_tet", "[invari
             }
         }
 
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(0, 1, 0))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(0, 4, 2))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(5, 6, 8))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(17, 5, 7))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(4, 5, 2))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(0, 1, 0))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(0, 4, 2))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(5, 6, 8))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(17, 5, 7))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(4, 5, 2))));
 
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(2, 7, 10))));
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(7, 10, 26))));
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(7, 6, 11))));
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(18, 6, 8))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(2, 7, 10))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(7, 10, 26))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(7, 6, 11))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(18, 6, 8))));
     }
 
     SECTION("half_bottom_plane_plus_face_1-7-18")
@@ -468,14 +468,14 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_in_2_by_3_by_1_tet", "[invari
             }
         }
 
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(3, 7, 10))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(11, 7, 26))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(3, 7, 10))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(11, 7, 26))));
 
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(2, 7, 10))));
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(7, 10, 26))));
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(7, 6, 11))));
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(18, 6, 8))));
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(5, 6, 8))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(2, 7, 10))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(7, 10, 26))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(7, 6, 11))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(18, 6, 8))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(5, 6, 8))));
 
         int failed_num = 0;
         for (const Tuple& edge : m.get_all(PrimitiveType::Edge)) {
@@ -530,12 +530,12 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_in_2_by_3_by_1_tet", "[invari
                 edge_tag_acc.scalar_attribute(e) = tag_val;
             }
         }
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(17, 18, 7))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(19, 23, 28))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(17, 18, 7))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(19, 23, 28))));
 
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(13, 2, 6))));
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(18, 5, 8))));
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(0, 13, 4))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(13, 2, 6))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(18, 5, 8))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(0, 13, 4))));
 
         int success_num = 0;
         for (const Tuple& edge : m.get_all(PrimitiveType::Edge)) {
@@ -591,9 +591,9 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_in_2_by_3_by_1_tet", "[invari
             }
         }
 
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(12, 13, 1))));
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(0, 13, 1))));
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(5, 13, 9))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(12, 13, 1))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(0, 13, 1))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(5, 13, 9))));
 
         int failed_num = 0;
         for (const Tuple& edge : m.get_all(PrimitiveType::Edge)) {
@@ -659,10 +659,10 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_in_2_by_3_by_1_tet", "[invari
             }
         }
 
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(2, 13, 5))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(2, 13, 5))));
 
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(0, 13, 1))));
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(5, 13, 9))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(0, 13, 1))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(5, 13, 9))));
 
         int failed_num = 0;
         for (const Tuple& edge : m.get_all(PrimitiveType::Edge)) {
@@ -761,20 +761,20 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_in_2_by_2_by_2_tet", "[invari
             }
         }
 
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(10, 13, 7))));
-        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(12, 13, 30))));
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(1, 9, 0))));
-        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_between_v1_v2(13, 15, 12))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(10, 13, 7))));
+        CHECK(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(12, 13, 30))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(1, 9, 0))));
+        CHECK_FALSE(inv.before(Simplex::edge(m, m.edge_tuple_with_vs_and_t(13, 15, 12))));
 
         // // LOOK HERE!
         // // I don't know if this should be fail, since this vertex should be order-3?
-        // CHECK_FALSE(inv.before(Simplex::edge(m,m.edge_tuple_between_v1_v2(12, 13, 30))));
+        // CHECK_FALSE(inv.before(Simplex::edge(m,m.edge_tuple_with_vs_and_t(12, 13, 30))));
 
         // // tag the intersection face
         // face_tag_acc.scalar_attribute(m.face_tuple_from_vids(12, 13, 15)) = tag_val;
         // face_tag_acc.scalar_attribute(m.face_tuple_from_vids(13, 16, 15)) = tag_val;
 
-        // CHECK_FALSE(inv.before(Simplex::edge(m,m.edge_tuple_between_v1_v2(12, 13, 30))));
+        // CHECK_FALSE(inv.before(Simplex::edge(m,m.edge_tuple_with_vs_and_t(12, 13, 30))));
     }
 }
 

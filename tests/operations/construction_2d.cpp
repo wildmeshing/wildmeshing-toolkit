@@ -25,12 +25,15 @@ constexpr PrimitiveType PE = PrimitiveType::Edge;
 void test_split(DEBUG_TriMesh& m, const Tuple& e, bool should_succeed)
 {
     using namespace operations;
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     auto old_hash = m.hash();
+#endif
 
 
     EdgeSplit op(m);
     bool result = !op(Simplex::edge(m, e)).empty(); // should run the split
     REQUIRE(should_succeed == result);
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     auto updated_hash = m.hash();
     if (should_succeed) { // try to run again to make sure we cant do an op twice
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
@@ -41,6 +44,7 @@ void test_split(DEBUG_TriMesh& m, const Tuple& e, bool should_succeed)
     } else {
         CHECK(old_hash == m.hash()); // check that a failed op returns to original state
     }
+#endif
 }
 void test_split(DEBUG_TriMesh& mesh, int64_t edge_index, bool should_succeed)
 {
@@ -55,7 +59,9 @@ void test_collapse(DEBUG_TriMesh& m, const Tuple& e, bool should_succeed)
 {
     using namespace operations;
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     auto old_hash = m.hash();
+#endif
     EdgeCollapse op(m);
     op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
 
@@ -64,6 +70,7 @@ void test_collapse(DEBUG_TriMesh& m, const Tuple& e, bool should_succeed)
     REQUIRE(m.is_connectivity_valid());
     REQUIRE(should_succeed == result);
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     auto updated_hash = m.hash();
     if (should_succeed) { // try to run again to make sure we cant do an op twice
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
@@ -74,6 +81,7 @@ void test_collapse(DEBUG_TriMesh& m, const Tuple& e, bool should_succeed)
     } else {
         CHECK(old_hash == m.hash()); // check that a failed op returns to original state
     }
+#endif
 }
 void test_collapse(DEBUG_TriMesh& mesh, int64_t edge_index, bool should_succeed)
 {
@@ -142,7 +150,7 @@ TEST_CASE("get per face data")
             m.initialize(tris);
         }
         REQUIRE(m.is_connectivity_valid());
-        Tuple edge = m.edge_tuple_between_v1_v2(0, 2, 0);
+        Tuple edge = m.edge_tuple_with_vs_and_t(0, 2, 0);
         REQUIRE(m.id(edge, PrimitiveType::Vertex) == 0);
         REQUIRE(m.id(edge, PrimitiveType::Face) == 0);
         REQUIRE(
@@ -178,7 +186,7 @@ TEST_CASE("get per face data")
             m.initialize(tris);
         }
         REQUIRE(m.is_connectivity_valid());
-        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        Tuple edge = m.edge_tuple_with_vs_and_t(1, 2, 0);
         auto state = m.get_tmoe();
         TMOE::PerFaceData face_data = state.get_per_face_data(edge);
         REQUIRE(face_data.V_C_id == 0);
@@ -211,7 +219,7 @@ TEST_CASE("get per face data")
             m.initialize(tris);
         }
         REQUIRE(m.is_connectivity_valid());
-        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        Tuple edge = m.edge_tuple_with_vs_and_t(1, 2, 0);
         auto state = m.get_tmoe();
         TMOE::PerFaceData face_data = state.get_per_face_data(edge);
         REQUIRE(face_data.V_C_id == 0);

@@ -6,6 +6,8 @@ namespace wmtk::operations {
 
 NewAttributeStrategy::~NewAttributeStrategy() = default;
 
+//NewAttributeStrategy::NewAttributeStrategy(const wmtk::attribute::MeshAttributeHandle& handle) {
+//}
 
 const Mesh& NewAttributeStrategy::mesh() const
 {
@@ -31,7 +33,7 @@ void NewAttributeStrategy::set_simplex_predicate(BasicSimplexPredicate f)
 
 std::bitset<2> NewAttributeStrategy::evaluate_predicate(
     PrimitiveType pt,
-    const std::array<Tuple, 2>& simplices)
+    const std::array<Tuple, 2>& simplices) const
 {
     if (!bool(m_simplex_predicate)) {
         std::bitset<2> pred(0);

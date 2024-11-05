@@ -39,6 +39,7 @@ using Vector5l = Vector<int64_t, 5>;
 using Vector3d = Vector<double, 3>;
 
 using Vector3r = Vector<Rational, 3>;
+using Vector2r = Vector<Rational, 2>;
 
 using RowVector2d = RowVector<double, 2>;
 using RowVector3d = RowVector<double, 3>;
@@ -50,5 +51,7 @@ using RowVectors2d = RowVectors<double, 2>;
 using RowVectors3d = RowVectors<double, 3>;
 
 using RowVectors3r = RowVectors<Rational, 3>;
+using RowVectors2r = RowVectors<Rational, 2>;
 
+using MatrixXl = MatrixX<int64_t>;
 } // namespace wmtk

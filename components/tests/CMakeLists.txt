@@ -4,17 +4,14 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/recipes/tests")
 include(catch2)
 include(wmtk_data)
 
-set(WMTK_COMPONENT_TEST_TARGET ${WMTK_COMPONENT_PREFIX}_tests)
+set(WMTK_COMPONENT_TEST_TARGET wmtk_component_tests CACHE STRING "Name of component test binary.")
 
-add_executable(${WMTK_COMPONENT_TEST_TARGET} ${WMTKC_TEST_SOURCES})
-target_sources(${WMTK_COMPONENT_TEST_TARGET} PRIVATE integration_test.cpp)
-
+add_executable(${WMTK_COMPONENT_TEST_TARGET})
 
 target_link_libraries(${WMTK_COMPONENT_TEST_TARGET} PUBLIC
 wmtk_test_tools
 Catch2::Catch2WithMain
-wmtk::components)
-target_include_directories(${WMTK_COMPONENT_TEST_TARGET} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+wmtk::component_utils)
 target_compile_definitions(${WMTK_COMPONENT_TEST_TARGET} PRIVATE WMTK_TEST_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\")
 
 
@@ -23,7 +20,7 @@ list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(Catch)
 
 
-wmtk_copy_dll(${WMTK_COMPONENT_PREFIX}_tests)
+wmtk_copy_dll(${WMTK_COMPONENT_TEST_TARGET})
 
 # Register unit tests
-catch_discover_tests(${WMTK_COMPONENT_PREFIX}_tests)
+catch_discover_tests(${WMTK_COMPONENT_TEST_TARGET})

@@ -1,8 +1,11 @@
 #pragma once
+#if defined(MTAO_DEBUG_MESH_COMP)
+#include <spdlog/spdlog.h>
+#endif
+//
 #include <wmtk/utils/Rational.hpp>
 //
 #include "TypedAttributeHandle.hpp"
-#include "utils/HybridRationalAttribute.hpp"
 
 #include <variant>
 
@@ -30,14 +33,13 @@ public:
         TypedAttributeHandle<char>,
         TypedAttributeHandle<int64_t>,
         TypedAttributeHandle<double>,
-        TypedAttributeHandle<wmtk::Rational>,
-        utils::HybridRationalAttribute<Eigen::Dynamic>>;
+        TypedAttributeHandle<wmtk::Rational>>;
 
     // Convenience class for identifying attribute types
     using ValueVariant = std::
         variant<char, int64_t, double, wmtk::Rational, std::tuple<char, wmtk::Rational, double>>;
 
-    enum class HeldType { Char = 0, Int64 = 1, Double = 2, Rational = 3, HybridRational = 4 };
+    enum class HeldType { Char = 0, Int64 = 1, Double = 2, Rational = 3 };
 
     template <HeldType Type>
     using held_handle_type = std::variant_alternative_t<size_t(Type), HandleVariant>;
@@ -72,6 +74,19 @@ public:
 
     bool operator==(const MeshAttributeHandle& o) const
     {
+#if defined(MTAO_DEBUG_MESH_COMP)
+        std::visit(
+            [&](const auto& h, const auto& oh) {
+                spdlog::warn(
+                    "{} {} == {} {}",
+                    std::string(h),
+                    fmt::ptr(m_mesh),
+                    std::string(oh),
+                    fmt::ptr(m_mesh));
+            },
+            m_handle,
+            o.m_handle);
+#endif
         return m_handle == o.m_handle && m_mesh == o.m_mesh;
     }
 
@@ -90,7 +105,7 @@ public:
 
 
     template <typename T>
-    auto as() const -> const held_handle_type<held_type_from_primitive<T>()>& ;
+    auto as() const -> const held_handle_type<held_type_from_primitive<T>()>&;
 
     template <HeldType Type>
     auto as_from_held_type() const -> const held_handle_type<Type>&;
@@ -133,7 +148,7 @@ public:
     // return the dimension of the attribute (i.e the number of values stored per simplex)
     int64_t dimension() const;
 
-    // std::string name() const;
+     std::string name() const;
 
 
 private:
@@ -142,7 +157,8 @@ private:
 };
 
 template <typename T>
-inline auto MeshAttributeHandle::as() const -> const held_handle_type<held_type_from_primitive<T>()>& 
+inline auto MeshAttributeHandle::as() const
+    -> const held_handle_type<held_type_from_primitive<T>()>&
 {
     return as_from_held_type<held_type_from_primitive<T>()>();
 }
@@ -182,8 +198,7 @@ inline bool MeshAttributeHandle::holds_basic_type() const
         m_handle);
 }
 template <MeshAttributeHandle::HeldType Type>
-inline auto MeshAttributeHandle::as_from_held_type() const
-    -> const held_handle_type<Type>& 
+inline auto MeshAttributeHandle::as_from_held_type() const -> const held_handle_type<Type>&
 {
     return std::get<held_handle_type<Type>>(m_handle);
 }
@@ -210,8 +225,6 @@ inline constexpr auto MeshAttributeHandle::held_type_from_handle() -> HeldType
         return HeldType::Int64;
     } else if constexpr (std::is_same_v<T, TypedAttributeHandle<wmtk::Rational>>) {
         return HeldType::Rational;
-    } else if constexpr (std::is_same_v<T, utils::HybridRationalAttribute<>>) {
-        return HeldType::HybridRational;
     }
     // If a compiler complains about the potentiality of no return value then a type accepted by the
     // HAndleVariant is not being represented properly. If the comppiler is simply unhappy to not

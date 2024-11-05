@@ -105,11 +105,11 @@ std::vector<simplex::Simplex> ProjectOperation::execute(const simplex::Simplex& 
                 pair.first.mesh().create_accessor(pair.first.as<double>());
 
             for (const auto& t : mapped_tuples_after) {
-                const auto p = accessor.const_vector_attribute(t);
+                auto p = accessor.vector_attribute(t);
                 SimpleBVH::VectorMax3d nearest_point;
                 double sq_dist;
                 pair.second->nearest_facet(p, nearest_point, sq_dist);
-                accessor.vector_attribute(t) = nearest_point;
+                p = nearest_point;
             }
         } else {
             assert((pair.first.holds<Rational>()));
@@ -117,12 +117,26 @@ std::vector<simplex::Simplex> ProjectOperation::execute(const simplex::Simplex& 
                 pair.first.mesh().create_accessor(pair.first.as<Rational>());
 
             for (const auto& t : mapped_tuples_after) {
-                const Eigen::Vector3d p = accessor.const_vector_attribute(t).cast<double>();
-                SimpleBVH::VectorMax3d nearest_point;
-                double sq_dist;
-                pair.second->nearest_facet(p, nearest_point, sq_dist);
-                for (int64_t d = 0; d < pair.first.dimension(); ++d) {
-                    accessor.vector_attribute(t)[d] = Rational(nearest_point[d], true);
+                auto p_map = accessor.vector_attribute(t);
+
+                if (p_map.rows() == 3) {
+                    const Eigen::Vector3d p = p_map.cast<double>();
+                    SimpleBVH::VectorMax3d nearest_point;
+                    double sq_dist;
+                    pair.second->nearest_facet(p, nearest_point, sq_dist);
+                    for (int64_t d = 0; d < pair.first.dimension(); ++d) {
+                        p_map(d) = Rational(nearest_point[d], true);
+                    }
+                } else if (p_map.rows() == 2) {
+                    const Eigen::Vector2d p = p_map.cast<double>();
+                    SimpleBVH::VectorMax3d nearest_point;
+                    double sq_dist;
+                    pair.second->nearest_facet(p, nearest_point, sq_dist);
+                    for (int64_t d = 0; d < pair.first.dimension(); ++d) {
+                        p_map(d) = Rational(nearest_point[d], true);
+                    }
+                } else {
+                    throw std::runtime_error("wrong vector dimension");
                 }
             }
         }

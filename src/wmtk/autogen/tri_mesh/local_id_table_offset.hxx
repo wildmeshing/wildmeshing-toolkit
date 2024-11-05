@@ -6,8 +6,8 @@ namespace wmtk::autogen::tri_mesh {
 // computes the offset of a tuple's local ids in the tables
 inline int64_t local_id_table_offset(const Tuple& tuple)
 {
-    using namespace utils;
-    return TupleInspector::local_vid(tuple) * 3 + TupleInspector::local_eid(tuple);
+    return wmtk::utils::TupleInspector::local_vid(tuple) * 3 +
+           wmtk::utils::TupleInspector::local_eid(tuple);
 }
 
 inline std::array<int64_t, 2> lvid_leid_from_table_offset(int64_t table_offset)

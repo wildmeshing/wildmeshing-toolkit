@@ -2,8 +2,8 @@
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
-#include <wmtk/simplex/closed_star.hpp>
-#include <wmtk/simplex/top_dimension_cofaces.hpp>
+#include <wmtk/simplex/IdSimplexCollection.hpp>
+#include <wmtk/simplex/closed_star_iterable.hpp>
 
 
 // it's ugly but for teh visitor we need these included
@@ -23,7 +23,7 @@ Operation::Operation(Mesh& mesh)
 Operation::~Operation() = default;
 
 
-std::shared_ptr<operations::AttributeTransferStrategyBase> Operation::get_transfer_strategy(
+std::shared_ptr<const operations::AttributeTransferStrategyBase> Operation::get_transfer_strategy(
     const attribute::MeshAttributeHandle& attribute)
 {
     assert(attribute.is_same_mesh(mesh()));
@@ -35,9 +35,14 @@ std::shared_ptr<operations::AttributeTransferStrategyBase> Operation::get_transf
     throw std::runtime_error("unable to find attribute");
 }
 
+void Operation::clear_attribute_transfer_strategies()
+{
+    m_attr_transfer_strategies.clear();
+}
+
 void Operation::set_transfer_strategy(
     const attribute::MeshAttributeHandle& attribute,
-    const std::shared_ptr<operations::AttributeTransferStrategyBase>& other)
+    const std::shared_ptr<const operations::AttributeTransferStrategyBase>& other)
 {
     assert(attribute.is_same_mesh(mesh()));
 
@@ -52,34 +57,38 @@ void Operation::set_transfer_strategy(
 }
 
 void Operation::add_transfer_strategy(
-    const std::shared_ptr<operations::AttributeTransferStrategyBase>& other)
+    const std::shared_ptr<const operations::AttributeTransferStrategyBase>& other)
 {
+    spdlog::debug("Adding a transfer");
     m_attr_transfer_strategies.emplace_back(other);
 }
 
 std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simplex)
 {
+    if (!mesh().is_valid(simplex)) {
+        return {};
+    }
     if (!before(simplex)) {
         return {};
     }
 
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    const auto simplex_resurrect =
-        simplex::Simplex(mesh(), simplex.primitive_type(), resurrect_tuple(simplex.tuple()));
-#else
     const auto simplex_resurrect = simplex;
-#endif
 
     auto scope = mesh().create_scope();
     assert(simplex.primitive_type() == primitive_type());
 
-    auto unmods = unmodified_primitives(simplex_resurrect);
-    auto mods = execute(simplex_resurrect);
-    if (!mods.empty()) { // success should be marked here
-        apply_attribute_transfer(mods);
-        if (after(unmods, mods)) {
-            return mods; // scope destructor is called
+    try {
+        auto unmods = unmodified_primitives(simplex_resurrect);
+        auto mods = execute(simplex_resurrect);
+        if (!mods.empty()) { // success should be marked here
+            apply_attribute_transfer(mods);
+            if (after(unmods, mods)) {
+                return mods; // scope destructor is called
+            }
         }
+    } catch (const std::exception& e) {
+        scope.mark_failed();
+        throw e;
     }
     scope.mark_failed();
     return {}; // scope destructor is called
@@ -95,16 +104,11 @@ bool Operation::before(const simplex::Simplex& simplex) const
     //     return false;
     // }
 
-    if (mesh().is_removed(simplex.tuple())) {
+    if (mesh().is_removed(simplex.tuple()) || !mesh().is_valid(simplex)) {
         return false;
     }
 
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    const auto simplex_resurrect =
-        simplex::Simplex(mesh(), simplex.primitive_type(), resurrect_tuple(simplex.tuple()));
-#else
     const auto simplex_resurrect = simplex;
-#endif
 
     // map simplex to the invariant mesh
     const Mesh& invariant_mesh = m_invariants.mesh();
@@ -137,51 +141,52 @@ bool Operation::after(
 
 void Operation::apply_attribute_transfer(const std::vector<simplex::Simplex>& direct_mods)
 {
-    simplex::SimplexCollection all(m_mesh);
-    for (const auto& s : direct_mods) {
-        all.add(simplex::closed_star(m_mesh, s, false));
+    if (m_attr_transfer_strategies.size() == 0) {
+        return;
     }
-    all.sort_and_clean();
+
+    simplex::IdSimplexCollection all(m_mesh);
+    all.reserve(100);
+
+
+    for (const auto& s : direct_mods) {
+        if (!s.tuple().is_null()) {
+            for (const simplex::IdSimplex& ss : simplex::closed_star_iterable(m_mesh, s)) {
+                all.add(ss);
+            }
+        }
+    }
+    if (direct_mods.size() > 1) {
+        all.sort_and_clean();
+    }
+
     for (const auto& at_ptr : m_attr_transfer_strategies) {
         if (&m_mesh == &(at_ptr->mesh())) {
-            for (const auto& s : all.simplex_vector()) {
+            for (const simplex::IdSimplex& s : all.simplex_vector()) {
                 if (s.primitive_type() == at_ptr->primitive_type()) {
-                    at_ptr->run(s);
+                    at_ptr->run(m_mesh.get_simplex(s));
                 }
             }
         } else {
             auto& at_mesh = at_ptr->mesh();
             auto at_mesh_simplices = m_mesh.map(at_mesh, direct_mods);
 
-            simplex::SimplexCollection at_mesh_all(at_mesh);
-            for (const auto& s : at_mesh_simplices) {
-                at_mesh_all.add(simplex::closed_star(at_mesh, s));
+            simplex::IdSimplexCollection at_mesh_all(at_mesh);
+            for (const simplex::Simplex& s : at_mesh_simplices) {
+                for (const simplex::IdSimplex& ss : simplex::closed_star_iterable(at_mesh, s)) {
+                    at_mesh_all.add(ss);
+                }
             }
 
             at_mesh_all.sort_and_clean();
 
-            for (const auto& s : at_mesh_all.simplex_vector()) {
+            for (const simplex::IdSimplex& s : at_mesh_all.simplex_vector()) {
                 if (s.primitive_type() == at_ptr->primitive_type()) {
-                    at_ptr->run(s);
+                    at_ptr->run(at_mesh.get_simplex(s));
                 }
             }
         }
     }
-}
-
-Tuple Operation::resurrect_tuple(const Tuple& tuple) const
-{
-    return mesh().resurrect_tuple(tuple, hash_accessor());
-}
-
-attribute::Accessor<int64_t> Operation::hash_accessor()
-{
-    return m_mesh.get_cell_hash_accessor();
-}
-
-const attribute::Accessor<int64_t> Operation::hash_accessor() const
-{
-    return m_mesh.get_const_cell_hash_accessor();
 }
 
 

@@ -14,6 +14,17 @@
 #include "utils/multi_mesh_edge_split.hpp"
 
 namespace wmtk::operations {
+bool EdgeSplit::attribute_new_all_configured() const
+{
+    bool all_configured = true;
+    for (const auto& strat : m_new_attr_strategies) {
+        if (strat->invalid_state()) {
+            all_configured = false;
+            wmtk::logger().warn("Attribute new {} was not configured", strat->name());
+        }
+    }
+    return all_configured;
+}
 
 EdgeSplit::EdgeSplit(Mesh& m)
     : Operation(m)
@@ -56,8 +67,8 @@ std::vector<simplex::Simplex> EdgeSplit::unmodified_primitives(
 }
 
 
-std::shared_ptr<operations::BaseSplitNewAttributeStrategy> EdgeSplit::get_new_attribute_strategy(
-    const attribute::MeshAttributeHandle& attribute) const
+std::shared_ptr<const operations::BaseSplitNewAttributeStrategy>
+EdgeSplit::get_new_attribute_strategy(const attribute::MeshAttributeHandle& attribute) const
 {
     for (auto& s : m_new_attr_strategies) {
         if (s->matches_attribute(attribute)) return s;
@@ -66,9 +77,14 @@ std::shared_ptr<operations::BaseSplitNewAttributeStrategy> EdgeSplit::get_new_at
     throw std::runtime_error("unable to find attribute");
 }
 
+
+void EdgeSplit::clear_attribute_new_strategies()
+{
+    m_new_attr_strategies.clear();
+}
 void EdgeSplit::set_new_attribute_strategy(
     const attribute::MeshAttributeHandle& attribute,
-    const std::shared_ptr<operations::BaseSplitNewAttributeStrategy>& other)
+    const std::shared_ptr<const operations::BaseSplitNewAttributeStrategy>& other)
 {
     for (size_t i = 0; i < m_new_attr_strategies.size(); ++i) {
         if (m_new_attr_strategies[i]->matches_attribute(attribute)) {

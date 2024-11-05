@@ -11,7 +11,7 @@ include(CPM)
 CPMAddPackage(
     NAME simple_bvh
     GITHUB_REPOSITORY geometryprocessing/SimpleBVH
-    GIT_TAG 995e179142cc30799464b8124b02ff509709bf06
+    GIT_TAG 786e248023b0dfd563a725f8988670c7b2426827
 )
 
 set_target_properties(simple_bvh PROPERTIES FOLDER third_party)

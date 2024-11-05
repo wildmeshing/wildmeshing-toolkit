@@ -85,7 +85,8 @@ Cache::~Cache()
         }
 
         if (fs::exists(m_cache_dir)) {
-            wmtk::logger().warn("Could not remove cache folder {}", fs::absolute(m_cache_dir));
+            const std::string path = fs::absolute(m_cache_dir).string();
+            wmtk::logger().warn("Could not remove cache folder {}", path);
         }
     }
 }
@@ -178,6 +179,16 @@ void Cache::flush_multimeshes()
     for (auto& pr : m_multimeshes) {
         pr.second.flush();
     }
+}
+
+std::vector<std::string> Cache::mesh_names()
+{
+    std::vector<std::string> names;
+    for (const auto& fp : m_file_paths) {
+        names.emplace_back(fp.first);
+    }
+
+    return names;
 }
 
 void Cache::write_mesh(

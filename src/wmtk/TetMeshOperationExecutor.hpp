@@ -7,19 +7,18 @@ namespace wmtk {
 class TetMesh::TetMeshOperationExecutor : public operations::tet_mesh::EdgeOperationData
 {
 public:
-    TetMeshOperationExecutor(TetMesh& m, const Tuple& operating_tuple, attribute::Accessor<int64_t>& hash_acc);
+    TetMeshOperationExecutor(TetMesh& m, const Tuple& operating_tuple);
     void delete_simplices();
     void update_cell_hash();
 
     std::array<attribute::Accessor<char>, 4> flag_accessors;
-    attribute::Accessor<int64_t,TetMesh> tt_accessor;
-    attribute::Accessor<int64_t,TetMesh> tf_accessor;
-    attribute::Accessor<int64_t,TetMesh> te_accessor;
-    attribute::Accessor<int64_t,TetMesh> tv_accessor;
-    attribute::Accessor<int64_t,TetMesh> vt_accessor;
-    attribute::Accessor<int64_t,TetMesh> et_accessor;
-    attribute::Accessor<int64_t,TetMesh> ft_accessor;
-    attribute::Accessor<int64_t>& hash_accessor;
+    attribute::Accessor<int64_t,TetMesh>& tt_accessor;
+    attribute::Accessor<int64_t,TetMesh>& tf_accessor;
+    attribute::Accessor<int64_t,TetMesh>& te_accessor;
+    attribute::Accessor<int64_t,TetMesh>& tv_accessor;
+    attribute::Accessor<int64_t,TetMesh>& vt_accessor;
+    attribute::Accessor<int64_t,TetMesh>& et_accessor;
+    attribute::Accessor<int64_t,TetMesh>& ft_accessor;
 
 
     /**
