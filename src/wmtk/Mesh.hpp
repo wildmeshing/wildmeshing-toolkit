@@ -497,6 +497,11 @@ public:
      */
     std::vector<std::shared_ptr<Mesh>> get_all_child_meshes() const;
 
+    /**
+     * @brief returns all meshes in multimesh
+     */
+    std::vector<std::shared_ptr<const Mesh>> get_all_meshes() const;
+
 
     /**
      * @brief returns a unique identifier for this mesh within a single multimesh structure

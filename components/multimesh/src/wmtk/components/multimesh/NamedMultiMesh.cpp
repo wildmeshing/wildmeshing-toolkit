@@ -1,6 +1,7 @@
 #include "NamedMultiMesh.hpp"
 #include <fmt/ranges.h>
 #include <nlohmann/json.hpp>
+#include <span>
 #include <vector>
 #include <wmtk/Mesh.hpp>
 #include "internal/split_path.hpp"
@@ -45,6 +46,16 @@ struct NamedMultiMesh::Node
         }
         update_child_names();
     }
+
+    void get_name_tokens(const std::span<int64_t>& t, std::vector<std::string_view>& toks) const
+    {
+        toks.emplace_back(name);
+        if (!t.empty()) {
+            const auto& child = *m_children[t.front()];
+            child.get_name_tokens(t.subspan<1>(), toks);
+        }
+    }
+
 
     void update_child_names()
     {
@@ -144,7 +155,9 @@ std::string NamedMultiMesh::name(const std::vector<int64_t>& id) const
     return fmt::format("{}", fmt::join(names, "."));
 }
 
-NamedMultiMesh::NamedMultiMesh(): m_name_root(std::make_unique<Node>()) {}
+NamedMultiMesh::NamedMultiMesh()
+    : m_name_root(std::make_unique<Node>())
+{}
 NamedMultiMesh::~NamedMultiMesh() = default;
 // NamedMultiMesh::NamedMultiMesh(NamedMultiMesh&&) = default;
 // auto NamedMultiMesh::operator=(NamedMultiMesh&&) -> NamedMultiMesh& = default;
@@ -168,5 +181,21 @@ std::unique_ptr<nlohmann::json> NamedMultiMesh::get_names_json() const
 
 
     return js_ptr;
+}
+
+std::map<std::string, std::shared_ptr<const Mesh>> NamedMultiMesh::all_meshes() const
+{
+    std::map<std::string, std::shared_ptr<const Mesh>> meshes;
+    for (const auto& mptr : m_root->get_all_meshes()) {
+        meshes.emplace(get_name(*mptr), mptr);
+    }
+    return meshes;
+}
+std::string NamedMultiMesh::get_name(const Mesh& m) const
+{
+    std::vector<std::string_view> toks;
+    auto id = m.absolute_multi_mesh_id();
+    m_name_root->get_name_tokens(id, toks);
+    return fmt::format("{}", fmt::join(toks, "."));
 }
 } // namespace wmtk::components::multimesh

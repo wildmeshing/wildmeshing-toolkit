@@ -17,11 +17,11 @@ class NamedMultiMesh
 {
 public:
     NamedMultiMesh();
-    //NamedMultiMesh(NamedMultiMesh&&);
+    // NamedMultiMesh(NamedMultiMesh&&);
     NamedMultiMesh(const NamedMultiMesh&);
     ~NamedMultiMesh();
-   // auto operator=(NamedMultiMesh&&) -> NamedMultiMesh&;
-   auto operator=(const NamedMultiMesh&) -> NamedMultiMesh&;
+    // auto operator=(NamedMultiMesh&&) -> NamedMultiMesh&;
+    auto operator=(const NamedMultiMesh&) -> NamedMultiMesh&;
 
     void set_name(const std::string_view& root_name = "");
     void set_names(const nlohmann::json& js);
@@ -39,6 +39,12 @@ public:
 
     Mesh& root() { return *m_root; }
     const Mesh& root() const { return *m_root; }
+
+
+    std::map<std::string, std::shared_ptr<const Mesh>> all_meshes() const;
+
+    // returns the name of a mesh if it lies in this multimesh
+    std::string get_name(const Mesh& m) const;
 
 private:
     struct Node;

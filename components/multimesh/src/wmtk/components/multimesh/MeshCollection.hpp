@@ -19,6 +19,7 @@ public:
     Mesh& get_mesh(const std::string_view& path);
 
 
+    std::map<std::string, std::shared_ptr<const Mesh>> all_meshes() const;
 
 private:
     std::map<std::string_view, std::unique_ptr<NamedMultiMesh>> m_meshes;
