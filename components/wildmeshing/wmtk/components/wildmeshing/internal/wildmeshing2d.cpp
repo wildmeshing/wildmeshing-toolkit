@@ -50,15 +50,13 @@
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/MaxFunctionInvariant.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
+#include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
 #include <wmtk/invariants/NoBoundaryCollapseToInteriorInvariant.hpp>
 #include <wmtk/invariants/NoChildMeshAttachingInvariant.hpp>
 #include <wmtk/invariants/RoundedInvariant.hpp>
 #include <wmtk/invariants/SeparateSubstructuresInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
-#include <wmtk/invariants/Swap23EnergyBeforeInvariant.hpp>
-#include <wmtk/invariants/Swap32EnergyBeforeInvariant.hpp>
-#include <wmtk/invariants/Swap44EnergyBeforeInvariant.hpp>
-#include <wmtk/invariants/Swap56EnergyBeforeInvariant.hpp>
+#include <wmtk/invariants/Swap2dUnroundedVertexInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
 
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
@@ -611,11 +609,14 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
 
     split_sequence->set_priority(long_edges_first);
 
-    ops.emplace_back(split_sequence);
-    ops_name.emplace_back("SPLIT");
 
-    ops.emplace_back(rounding);
-    ops_name.emplace_back("rounding");
+    if (!options.skip_split) {
+        ops.emplace_back(split_sequence);
+        ops_name.emplace_back("SPLIT");
+
+        ops.emplace_back(rounding);
+        ops_name.emplace_back("rounding");
+    }
 
 
     //////////////////////////////////
@@ -637,6 +638,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
 
     auto setup_collapse = [&](std::shared_ptr<EdgeCollapse>& collapse) {
         collapse->add_invariant(invariant_separate_substructures);
+        collapse->add_invariant(std::make_shared<MultiMeshMapValidInvariant>(*mesh));
         collapse->add_invariant(link_condition);
         collapse->add_invariant(inversion_invariant);
         collapse->add_invariant(function_invariant);
@@ -719,11 +721,13 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
         collapse_then_round->add_transfer_strategy(s);
     }
 
-    ops.emplace_back(collapse_then_round);
-    ops_name.emplace_back("COLLAPSE");
+    if (!options.skip_collapse) {
+        ops.emplace_back(collapse_then_round);
+        ops_name.emplace_back("COLLAPSE");
 
-    ops.emplace_back(rounding);
-    ops_name.emplace_back("rounding");
+        ops.emplace_back(rounding);
+        ops_name.emplace_back("rounding");
+    }
 
     //////////////////////////////////
     // 3) Swap
@@ -737,6 +741,8 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
         if (is_edge) op.set_priority(long_edges_first);
 
         op.add_invariant(simplex_invariant);
+        op.add_invariant(
+            std::make_shared<Swap2dUnroundedVertexInvariant>(*mesh, pt_attribute.as<Rational>()));
         op.add_invariant(inversion_invariant);
         op.add_invariant(function_invariant);
 
@@ -803,11 +809,13 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
     auto swap = std::make_shared<TriEdgeSwap>(*mesh);
     setup_swap(*swap, swap->collapse(), swap->split(), interior_edge);
 
-    ops.push_back(swap);
-    ops_name.push_back("swap");
+    if (!options.skip_swap) {
+        ops.push_back(swap);
+        ops_name.push_back("swap");
 
-    ops.emplace_back(rounding);
-    ops_name.emplace_back("rounding");
+        ops.emplace_back(rounding);
+        ops_name.emplace_back("rounding");
+    }
 
     // 4) Smoothing
     // //////////////////////////////////////
@@ -893,13 +901,16 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
     }
     // proj_smoothing->add_transfer_strategy(target_edge_length_update);
 
-    for (int i = 0; i < 1; ++i) {
-        ops.push_back(proj_smoothing);
-        ops_name.push_back("SMOOTHING");
-    }
+    if (!options.skip_smooth) {
+        for (int i = 0; i < 1; ++i) {
+            // some old code to do smoothing several times, maybe useful later
+            ops.push_back(proj_smoothing);
+            ops_name.push_back("SMOOTHING");
+        }
 
-    ops.emplace_back(rounding);
-    ops_name.emplace_back("rounding");
+        ops.emplace_back(rounding);
+        ops_name.emplace_back("rounding");
+    }
 
     write(
         mesh,
@@ -1284,6 +1295,8 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
         max_energy,
         min_energy,
         avg_energy);
+
+    multimesh::consolidate(*mesh);
 
     std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> all_meshes;
     all_meshes.push_back(std::make_pair(mesh, "main"));

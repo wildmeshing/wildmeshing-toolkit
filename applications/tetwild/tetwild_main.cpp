@@ -34,6 +34,7 @@ using wmtk::components::utils::resolve_paths;
 
 int main(int argc, char* argv[])
 {
+    opt_logger().set_level(spdlog::level::off);
     CLI::App app{argv[0]};
 
     app.ignore_case();
@@ -69,7 +70,7 @@ int main(int argc, char* argv[])
         auto [out, stats] = tetwild_simplification(
             static_cast<const TriMesh&>(*mesh),
             "vertices",
-            j["target_edge_length"]);
+            j["envelope_size"]);
         mesh_after_simp = out;
     }
 
@@ -102,6 +103,14 @@ int main(int argc, char* argv[])
         true,
         true,
         false);
+
+    std::string output_file = j["output"];
+
+    wmtk::components::output::output(*main_mesh, output_file + "_after_insertion", "vertices");
+    wmtk::components::output::output(
+        *child_meshes.surface_mesh,
+        output_file + "_surface_after_insertion",
+        "vertices");
 
     std::vector<wmtk::components::EnvelopeOptions> enves;
 
@@ -163,11 +172,13 @@ int main(int argc, char* argv[])
     wmo.intermediate_output_name = j["output"];
     wmo.envelopes = enves;
     wmo.pass_through = pass_through;
+    wmo.skip_split = j["skip_split"];
+    wmo.skip_collapse = j["skip_collapse"];
+    wmo.skip_swap = j["skip_swap"];
+    wmo.skip_smooth = j["skip_smooth"];
 
     auto meshes_after_tetwild = wildmeshing(wmo);
     auto main_mesh_after_tetwild = meshes_after_tetwild[0].first;
-
-    std::string output_file = j["output"];
 
     std::shared_ptr<Mesh> surface_mesh;
     for (int64_t i = 1; i < meshes_after_tetwild.size(); ++i) {
