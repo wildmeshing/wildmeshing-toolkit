@@ -27,6 +27,11 @@ struct WildMeshingOptions
     std::string intermediate_output_path;
     std::string intermediate_output_name;
 
+    bool skip_split;
+    bool skip_collapse;
+    bool skip_swap;
+    bool skip_smooth;
+
     std::vector<EnvelopeOptions> envelopes;
     std::vector<attribute::MeshAttributeHandle> pass_through;
 };
