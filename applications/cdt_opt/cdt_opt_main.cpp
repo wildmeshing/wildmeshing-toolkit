@@ -113,8 +113,8 @@ int main(int argc, char* argv[])
     wmo.input_mesh = parent_mesh;
     wmo.input_mesh_position = "vertices";
     wmo.target_edge_length = j["length_rel"];
-    wmo.target_max_amips = 50;
-    wmo.max_passes = 10;
+    wmo.target_max_amips = j["target_max_amips"];
+    wmo.max_passes = j["max_passes"];
     wmo.intermediate_output = false;
     wmo.replace_double_coordinate = false;
     wmo.scheduler_update_frequency = 0;
