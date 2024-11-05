@@ -1,7 +1,6 @@
 var searchData=
 [
-  ['check_5fchild_5fmaps_5fvalid_6037',['check_child_maps_valid',['../classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a2f3313e4a190244445364db313798d44',1,'wmtk::multimesh::MultiMeshManager']]],
-  ['check_5fparent_5fmap_5fvalid_6038',['check_parent_map_valid',['../classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a2c0fb4cf4b9a4b7ea2dce61d5edbfc0c',1,'wmtk::multimesh::MultiMeshManager']]],
-  ['tuplecelllessthan_6039',['TupleCellLessThan',['../classwmtk_1_1_tuple.html#a2fca612d7ba852efcc016bb57e8c31c8',1,'wmtk::Tuple']]],
-  ['tupleinspector_6040',['TupleInspector',['../classwmtk_1_1_tuple.html#a00f77e1ba6b596b7ff8c3c11d52e567c',1,'wmtk::Tuple']]]
+  ['mapvalidator_6052',['MapValidator',['../classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#ac8ea5bcbd3c200a53a9c8037c38db7ad',1,'wmtk::multimesh::MultiMeshManager']]],
+  ['tuplecelllessthan_6053',['TupleCellLessThan',['../classwmtk_1_1_tuple.html#a2fca612d7ba852efcc016bb57e8c31c8',1,'wmtk::Tuple']]],
+  ['tupleinspector_6054',['TupleInspector',['../classwmtk_1_1_tuple.html#a00f77e1ba6b596b7ff8c3c11d52e567c',1,'wmtk::Tuple']]]
 ];

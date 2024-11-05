@@ -1,5 +1,17 @@
 var NAVTREEINDEX20 =
 {
+"internal_2periodic__optimization_8cpp.html#af3655ebb89360c7fe41a0ac2828e9895":[10,0,0,16,0,0,0,0,0,3],
+"internal_2periodic__optimization_8cpp_source.html":[10,0,0,16,0,0,0,0,0],
+"internal_2periodic__optimization_8hpp.html":[10,0,0,16,0,0,0,0,1],
+"internal_2periodic__optimization_8hpp.html#a8890d5e5bb5f11779d4e40e07882253a":[10,0,0,16,0,0,0,0,1,0],
+"internal_2periodic__optimization_8hpp_source.html":[10,0,0,16,0,0,0,0,1],
+"internal_2winding__number_8cpp.html":[10,0,0,27,0,0,0,0,0],
+"internal_2winding__number_8cpp.html#a18a56f1ee7f5d72c7557922789a96802":[10,0,0,27,0,0,0,0,0,0],
+"internal_2winding__number_8cpp.html#afb68ce2cd6102c4f403bb39329da8a02":[10,0,0,27,0,0,0,0,0,1],
+"internal_2winding__number_8cpp_source.html":[10,0,0,27,0,0,0,0,0],
+"internal_2winding__number_8hpp.html":[10,0,0,27,0,0,0,0,1],
+"internal_2winding__number_8hpp.html#a18a56f1ee7f5d72c7557922789a96802":[10,0,0,27,0,0,0,0,1,0],
+"internal_2winding__number_8hpp.html#afb68ce2cd6102c4f403bb39329da8a02":[10,0,0,27,0,0,0,0,1,1],
 "internal_2winding__number_8hpp_source.html":[10,0,0,27,0,0,0,0,1],
 "is__ccw_8cpp.html":[10,0,2,0,1,9],
 "is__ccw_8cpp.html#a365ab61cb89e1b96e57747b7a3a97558":[10,0,2,0,1,9,0],
@@ -237,17 +249,5 @@ var NAVTREEINDEX20 =
 "multimesh_2utils_2local__switch__tuple_8cpp.html#af9c45a14e7a1550a7f54d461b61c5c04":[10,0,2,0,5,2,13,0],
 "multimesh_2utils_2local__switch__tuple_8cpp_source.html":[10,0,2,0,5,2,13],
 "multimesh_2utils_2local__switch__tuple_8hpp.html":[10,0,2,0,5,2,14],
-"multimesh_2utils_2local__switch__tuple_8hpp.html#a35bfe2b004961f1f59b80cc181de7443":[10,0,2,0,5,2,14,1],
-"multimesh_2utils_2local__switch__tuple_8hpp.html#af71d6d20a76616d671ae5f53350107b4":[10,0,2,0,5,2,14,2],
-"multimesh_2utils_2local__switch__tuple_8hpp.html#af9c45a14e7a1550a7f54d461b61c5c04":[10,0,2,0,5,2,14,0],
-"multimesh_2utils_2local__switch__tuple_8hpp_source.html":[10,0,2,0,5,2,14],
-"multimesh_8cpp.html":[10,0,0,13,0,0,0,0,9],
-"multimesh_8cpp.html#a5af816bd3804ba5430992812b388eb6b":[10,0,0,13,0,0,0,0,9,0],
-"multimesh_8cpp_source.html":[10,0,0,13,0,0,0,0,9],
-"multimesh_8hpp.html":[10,0,0,13,0,0,0,0,10],
-"multimesh_8hpp.html#a4fee03e23971feff7d37c1f9be2c1f85":[10,0,0,13,0,0,0,0,10,0],
-"multimesh_8hpp.html#a4fee03e23971feff7d37c1f9be2c1f85ac101058e7ea21bbbf2a5ac893088e90b":[10,0,0,13,0,0,0,0,10,0,2],
-"multimesh_8hpp.html#a4fee03e23971feff7d37c1f9be2c1f85adeaa2adbeb26802ae61609c3f3642d82":[10,0,0,13,0,0,0,0,10,0,0],
-"multimesh_8hpp.html#a4fee03e23971feff7d37c1f9be2c1f85ae234de581c9c5ef91322f1469a585f9e":[10,0,0,13,0,0,0,0,10,0,1],
-"multimesh_8hpp.html#a5af816bd3804ba5430992812b388eb6b":[10,0,0,13,0,0,0,0,10,1]
+"multimesh_2utils_2local__switch__tuple_8hpp.html#a35bfe2b004961f1f59b80cc181de7443":[10,0,2,0,5,2,14,1]
 };

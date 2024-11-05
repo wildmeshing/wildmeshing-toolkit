@@ -199,7 +199,8 @@ var annotated_dup =
         [ "utils", "namespacewmtk_1_1multimesh_1_1utils.html", [
           [ "internal", "namespacewmtk_1_1multimesh_1_1utils_1_1internal.html", [
             [ "TupleTag", "classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html", "classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag" ]
-          ] ]
+          ] ],
+          [ "MapValidator", "classwmtk_1_1multimesh_1_1utils_1_1_map_validator.html", "classwmtk_1_1multimesh_1_1utils_1_1_map_validator" ]
         ] ],
         [ "MultiMeshSimplexVisitor", "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html", "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor" ],
         [ "MultiMeshVisitor", "classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html", "classwmtk_1_1multimesh_1_1_multi_mesh_visitor" ],

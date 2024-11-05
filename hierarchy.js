@@ -264,6 +264,7 @@ var hierarchy =
     [ "wmtk::multimesh::Mappable", "classwmtk_1_1multimesh_1_1_mappable.html", [
       [ "wmtk::multimesh::MappableContainer", "classwmtk_1_1multimesh_1_1_mappable_container.html", null ]
     ] ],
+    [ "wmtk::multimesh::utils::MapValidator", "classwmtk_1_1multimesh_1_1utils_1_1_map_validator.html", null ],
     [ "wmtk::components::Marching", "classwmtk_1_1components_1_1_marching.html", null ],
     [ "wmtk::components::MarchingOptions", "structwmtk_1_1components_1_1_marching_options.html", null ],
     [ "wmtk::utils::mesh_type_from_dimension< DIM >", "structwmtk_1_1utils_1_1mesh__type__from__dimension.html", null ],

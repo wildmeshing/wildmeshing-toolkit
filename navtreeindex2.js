@@ -1,5 +1,9 @@
 var NAVTREEINDEX2 =
 {
+"_msh_reader_8hpp_source.html":[10,0,2,0,4,12],
+"_multi_mesh_edge_collapse_functor_8cpp.html":[10,0,2,0,6,7,4],
+"_multi_mesh_edge_collapse_functor_8cpp_source.html":[10,0,2,0,6,7,4],
+"_multi_mesh_edge_collapse_functor_8hpp.html":[10,0,2,0,6,7,5],
 "_multi_mesh_edge_collapse_functor_8hpp_source.html":[10,0,2,0,6,7,5],
 "_multi_mesh_edge_split_functor_8cpp.html":[10,0,2,0,6,7,6],
 "_multi_mesh_edge_split_functor_8cpp_source.html":[10,0,2,0,6,7,6],
@@ -245,9 +249,5 @@ var NAVTREEINDEX2 =
 "_simplex_collection_8hpp_source.html":[10,0,2,0,7,54],
 "_simplex_comparisons_8hpp.html":[10,0,2,0,7,2,3],
 "_simplex_comparisons_8hpp_source.html":[10,0,2,0,7,2,3],
-"_simplex_comparisons_8hxx.html":[10,0,2,0,7,2,4],
-"_simplex_comparisons_8hxx_source.html":[10,0,2,0,7,2,4],
-"_simplex_dart_8cpp.html":[10,0,2,0,1,17],
-"_simplex_dart_8cpp.html#a42aa50bb30d352c53ffecc30d9d57c16":[10,0,2,0,1,17,1],
-"_simplex_dart_8cpp.html#a905e001c434a9fd491377817f701cb43":[10,0,2,0,1,17,2]
+"_simplex_comparisons_8hxx.html":[10,0,2,0,7,2,4]
 };

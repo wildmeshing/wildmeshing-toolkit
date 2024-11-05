@@ -1,5 +1,9 @@
 var NAVTREEINDEX3 =
 {
+"_simplex_comparisons_8hxx_source.html":[10,0,2,0,7,2,4],
+"_simplex_dart_8cpp.html":[10,0,2,0,1,17],
+"_simplex_dart_8cpp.html#a42aa50bb30d352c53ffecc30d9d57c16":[10,0,2,0,1,17,1],
+"_simplex_dart_8cpp.html#a905e001c434a9fd491377817f701cb43":[10,0,2,0,1,17,2],
 "_simplex_dart_8cpp.html#abfa23a38c45ba55cfb9246f43a0761ef":[10,0,2,0,1,17,0],
 "_simplex_dart_8cpp_source.html":[10,0,2,0,1,17],
 "_simplex_dart_8hpp.html":[10,0,2,0,1,18],
@@ -245,9 +249,5 @@ var NAVTREEINDEX3 =
 "_volume_remesher_triangle_insertion_8hpp_source.html":[10,0,2,0,8,51],
 "_wildmeshing_options_8hpp.html":[10,0,0,26,0,0,0,0,6],
 "_wildmeshing_options_8hpp_source.html":[10,0,0,26,0,0,0,0,6],
-"_wildmeshing_options__old_8hpp.html":[10,0,0,26,0,0,0,5],
-"_wildmeshing_options__old_8hpp.html#a3ba4ceae8267640d56736f0153c842ca":[10,0,0,26,0,0,0,5,6],
-"_wildmeshing_options__old_8hpp.html#a4b7ae61d3538ea2dad99602cfb263a0e":[10,0,0,26,0,0,0,5,5],
-"_wildmeshing_options__old_8hpp.html#ad49e4bf6f8010bcb0ab273597e7d4075":[10,0,0,26,0,0,0,5,4],
-"_wildmeshing_options__old_8hpp.html#af9a4dead429f27b7965c9f2a4366a8f2":[10,0,0,26,0,0,0,5,7]
+"_wildmeshing_options__old_8hpp.html":[10,0,0,26,0,0,0,5]
 };
