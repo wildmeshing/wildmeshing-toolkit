@@ -34,7 +34,6 @@ add_subdirectory("wildmeshing/wmtk/components/wildmeshing")
 add_subdirectory("shortest_edge_collapse/wmtk/components/shortest_edge_collapse")
 add_subdirectory("longest_edge_split/wmtk/components/longest_edge_split")
 add_subdirectory("CDT/wmtk/components/CDT")
-add_subdirectory("cdt_optimization/wmtk/components/cdt_optimization")
 
 add_subdirectory("edge_insertion/wmtk/components/edge_insertion")
 

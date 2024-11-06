@@ -8,8 +8,6 @@ wmtk_add_application(cdt_opt_app
 target_link_libraries(cdt_opt_app PRIVATE
 wmtk::input
 wmtk::multimesh
-wmtk::cdt_optimization
-wmtk::shortest_edge_collapse
 wmtk::CDT
 wmtk::wildmeshing
 wmtk::output)
