@@ -1,8 +1,5 @@
 #include "Scheduler.hpp"
 
-#include <algorithm>
-#include <execution>
-
 #include <wmtk/attribute/TypedAttributeHandle.hpp>
 #include <wmtk/simplex/k_ring.hpp>
 #include <wmtk/simplex/link.hpp>
@@ -476,31 +473,27 @@ SchedulerStats Scheduler::run_operation_on_all_with_coloring(
         std::atomic_int fail_cnt = 0;
 
         if (parallel_execution) {
-            std::for_each(
-                std::execution::par,
-                one_color_vertices.begin(),
-                one_color_vertices.end(),
-                [&](const simplex::Simplex& s) {
-                    const auto mods = op(s);
-                    if (mods.empty()) {
-                        fail_cnt++;
-                    } else {
-                        suc_cnt++;
+            tbb::parallel_for(
+                tbb::blocked_range<int64_t>(0, one_color_vertices.size()),
+                [&](tbb::blocked_range<int64_t> r) {
+                    for (int64_t k = r.begin(); k < r.end(); ++k) {
+                        auto mods = op(one_color_vertices[k]);
+                        if (mods.empty()) {
+                            fail_cnt++;
+                        } else {
+                            suc_cnt++;
+                        }
                     }
                 });
         } else {
-            std::for_each(
-                std::execution::seq,
-                one_color_vertices.begin(),
-                one_color_vertices.end(),
-                [&](const simplex::Simplex& s) {
-                    const auto mods = op(s);
-                    if (mods.empty()) {
-                        fail_cnt++;
-                    } else {
-                        suc_cnt++;
-                    }
-                });
+            for (const simplex::Simplex& s : one_color_vertices) {
+                auto mods = op(s);
+                if (mods.empty()) {
+                    fail_cnt++;
+                } else {
+                    suc_cnt++;
+                }
+            }
         }
 
         res.m_num_op_success = suc_cnt;
