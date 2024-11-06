@@ -1,0 +1,19 @@
+{
+    "input": {
+        "file": "ogre.hdf5",
+        "name_spec": 
+        {
+            "position": "uv"
+        }
+    }, 
+    "output": {
+        "position": {
+            "file": "ogre_pos.vtu",
+            "position_attribute": "vertices"
+        },
+        "position.uv": {
+            "file": "ogre_uv.vtu",
+            "position_attribute": "vertices"
+        }
+    }
+}

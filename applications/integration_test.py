@@ -28,6 +28,10 @@ class IntegrationTest(unittest.TestCase):
         self.run_all = run_all
 
         self.data_folder = None if "data_folder" not in test_config else test_config["data_folder"]
+        if self.data_folder is None:
+            self.data_folder = None if "input_directory_tag" not in test_config else test_config["input_directory_tag"]
+        print(f"Data folder {self.data_folder}")
+
         self.config_folder = self.data_folder if "config_folder" not in test_config else test_config["config_folder"]
         msg = 'all (slow and fast)' if self.run_all else 'fast'
         print(f'Loading integration test [{name}] in {self.working_dir}, running {msg} tests', flush=True)
@@ -44,6 +48,14 @@ class IntegrationTest(unittest.TestCase):
 
         if "test_directory" in config:
             self.config_folder = os.path.join(self.config_folder, config["test_directory"])
+            if "test_data_directory" not in config:
+                # some applications assume taht these follow together
+                self.data_folder = os.path.join(self.data_folder, config["test_directory"])
+        if "test_data_directory" in config:
+            self.data_folder = os.path.join(self.data_folder, config["test_directory"])
+
+        print(f"Data folder {self.data_folder}")
+
 
         self.executable = os.path.abspath(os.path.join(IntegrationTest.BINARY_FOLDER, self.name))
 
@@ -119,9 +131,10 @@ class IntegrationTest(unittest.TestCase):
 
             if root_tag in input_js:
                 if not os.path.isabs(input_js[root_tag]):
-                    input_js[root_tag] = os.path.join(self.config_folder, input_js[root_tag])
+
+                    input_js[root_tag] = os.path.join(self.data_folder, input_js[root_tag])
             else:
-                input_js[root_tag] = self.config_folder
+                input_js[root_tag] = self.data_folder
 
             with tempfile.NamedTemporaryFile(mode='w', delete=False) as input_json:
                 json.dump(input_js, input_json)

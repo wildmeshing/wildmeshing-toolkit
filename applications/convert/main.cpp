@@ -76,6 +76,8 @@ int run(const fs::path& config_path /*, const std::optional<fs::path>& name_spec
         // }
     }
 
+    spdlog::warn("{}", j.dump(2));
+
     wmtk::components::multimesh::MeshCollection meshes;
     std::shared_ptr<wmtk::Mesh> output_mesh;
     if (j["input"].is_array()) {
@@ -107,19 +109,22 @@ int run(const fs::path& config_path /*, const std::optional<fs::path>& name_spec
     }
 
 
-    // if (j.contains("report")) {
-    //     const std::string report = j["report"];
-    //     if (!report.empty()) {
-    //         nlohmann::json out_json;
-    //         out_json.update(wmtk::applications::utils::element_count_report_named(*mesh));
-    //         j.erase("report");
-    //         out_json["input"] = j;
+     if (j.contains("report")) {
+         const std::string report = j["report"];
+         if (!report.empty()) {
+             nlohmann::json out_json;
+             auto& stats = out_json["stats"];
+             for(const auto& [name, meshptr]: meshes.all_meshes()) {
+                 stats[name] = wmtk::applications::utils::element_count_report_named(*meshptr);
+             }
+             j.erase("report");
+             out_json["input"] = j;
 
 
-    //        std::ofstream ofs(report);
-    //        ofs << out_json;
-    //    }
-    //}
+            std::ofstream ofs(report);
+            ofs << out_json;
+        }
+    }
     return 0;
 }
 

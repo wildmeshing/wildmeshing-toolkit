@@ -1,0 +1,23 @@
+{
+    "input": [
+        {
+            "file": "_pos.msh",
+            "name_spec": "position"
+        },
+        {
+            "file": "_tex.msh",
+            "name_spec": "uv"
+        }
+    ],
+    "tree": {
+        "position": "uv"
+
+    },
+
+    "output": {
+        "file": "ogre.hdf5",
+        "type": ".hdf5"
+    }
+
+
+}

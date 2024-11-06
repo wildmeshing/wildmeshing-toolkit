@@ -1,0 +1,22 @@
+{
+    "input": [
+        {
+            "file": "_pos.msh",
+            "name_spec": "position"
+        }
+    ],
+    "tree": {
+        "position": {
+            "type": "boundary",
+            "dimension": 1
+        }
+
+    },
+
+    "output": {
+        "file": "ogre_boundary.hdf5",
+        "type": ".hdf5"
+    }
+
+
+}
