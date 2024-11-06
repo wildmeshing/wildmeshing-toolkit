@@ -7,17 +7,10 @@
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/random_seed.hpp>
+#include <wmtk/utils/tbb_parallel_for.hpp>
 
 #include <polysolve/Utils.hpp>
 
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wredundant-decls"
-#endif
-#include <tbb/parallel_for.h>
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
 
 // #include <tbb/task_arena.h>
 #include <atomic>
