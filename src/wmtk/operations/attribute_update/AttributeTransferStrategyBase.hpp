@@ -71,7 +71,7 @@ public:
 
     // runs the transfer on every simplex - good for initializing an attribute that will be
     // managed by transfer
-    void run_on_all() const;
+    void run_on_all(bool parallel = false) const;
 
 private:
     attribute::MeshAttributeHandle m_handle;

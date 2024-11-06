@@ -2,6 +2,7 @@
 #include "AttributeTransferStrategyBase.hpp"
 #include <wmtk/Mesh.hpp>
 #include <wmtk/simplex/neighbors_single_dimension.hpp>
+#include <wmtk/utils/tbb_parallel_for.hpp>
 
 #include <wmtk/simplex/utils/unique_homogeneous_simplices.hpp>
 
@@ -16,13 +17,23 @@ const Mesh& AttributeTransferStrategyBase::mesh() const
     return const_cast<const Mesh&>(const_cast<AttributeTransferStrategyBase*>(this)->mesh());
 }
 
-void AttributeTransferStrategyBase::run_on_all() const
+void AttributeTransferStrategyBase::run_on_all(bool parallel) const
 {
     const PrimitiveType pt = m_handle.primitive_type();
     auto tuples = m_handle.mesh().get_all(pt);
 
-    for (const Tuple& t : tuples) {
-        run(simplex::Simplex(m_handle.mesh(), pt, t));
+    if (parallel) {
+        tbb::parallel_for(
+            tbb::blocked_range<int64_t>(0, tuples.size()),
+            [&](tbb::blocked_range<int64_t> r) {
+                for (int64_t k = r.begin(); k < r.end(); ++k) {
+                    run(simplex::Simplex(m_handle.mesh(), pt, tuples[k]));
+                }
+            });
+    } else {
+        for (const Tuple& t : tuples) {
+            run(simplex::Simplex(m_handle.mesh(), pt, t));
+        }
     }
 }
 
