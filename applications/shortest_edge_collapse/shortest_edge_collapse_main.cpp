@@ -13,7 +13,9 @@
 #include <wmtk/components/utils/resolve_path.hpp>
 
 #include "shortest_edge_collapse_spec.hpp"
-
+#ifdef WMTK_RECORD_OPERATIONS
+#include <wmtk/Record_Operations.hpp>
+#endif
 using namespace wmtk;
 namespace fs = std::filesystem;
 
@@ -58,7 +60,9 @@ int main(int argc, char* argv[])
             j = spec_engine.inject_defaults(j, shortest_edge_collapse_spec);
         }
     }
-
+#ifdef WMTK_RECORD_OPERATIONS
+    OperationLogPath = generatePathNameWithCurrentTime();
+#endif
     const fs::path input_file = resolve_paths(json_input_file, {j["input_path"], j["input"]});
 
     std::shared_ptr<Mesh> mesh_in = wmtk::components::input::input(input_file, true);

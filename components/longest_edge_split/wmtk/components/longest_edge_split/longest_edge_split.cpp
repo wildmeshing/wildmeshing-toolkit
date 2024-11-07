@@ -9,6 +9,7 @@
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
 #include <wmtk/multimesh/consolidate.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
+#include <wmtk/operations/MeshConsolidate.hpp>
 #include <wmtk/operations/attribute_new/NewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
@@ -181,7 +182,9 @@ void longest_edge_split(Mesh& mesh_in, const LongestEdgeSplitOptions& options)
         pass_stats.sorting_time,
         pass_stats.executing_time);
 
-    wmtk::multimesh::consolidate(mesh);
+    // wmtk::multimesh::consolidate(mesh);
+    auto op_consolidate = wmtk::operations::MeshConsolidate(mesh);
+    op_consolidate(simplex::Simplex(mesh, PrimitiveType::Vertex, Tuple()));
 }
 
 void longest_edge_split(

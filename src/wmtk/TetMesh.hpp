@@ -9,9 +9,19 @@ namespace operations::utils {
 class MultiMeshEdgeSplitFunctor;
 class MultiMeshEdgeCollapseFunctor;
 class UpdateEdgeOperationMultiMeshMapFunctor;
-std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<int64_t>>
+std::tuple<
+    Eigen::MatrixXi,
+    Eigen::MatrixXd,
+    Eigen::MatrixXi,
+    std::vector<int64_t>,
+    std::vector<int64_t>>
 get_local_tetmesh(const TetMesh& mesh, const simplex::Simplex& simplex, bool get_boundary);
-std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<int64_t>>
+std::tuple<
+    Eigen::MatrixXi,
+    Eigen::MatrixXd,
+    Eigen::MatrixXi,
+    std::vector<int64_t>,
+    std::vector<int64_t>>
 get_local_tetmesh_before_collapse(const TetMesh& mesh, const simplex::Simplex& simplex);
 } // namespace operations::utils
 class TetMesh : public MeshCRTP<TetMesh>
@@ -22,12 +32,22 @@ public:
     friend class operations::utils::MultiMeshEdgeCollapseFunctor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
 
-    friend std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<int64_t>>
+    friend std::tuple<
+        Eigen::MatrixXi,
+        Eigen::MatrixXd,
+        Eigen::MatrixXi,
+        std::vector<int64_t>,
+        std::vector<int64_t>>
     operations::utils::get_local_tetmesh(
         const TetMesh& mesh,
         const simplex::Simplex& simplex,
         bool get_boundary);
-    friend std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<int64_t>>
+    friend std::tuple<
+        Eigen::MatrixXi,
+        Eigen::MatrixXd,
+        Eigen::MatrixXi,
+        std::vector<int64_t>,
+        std::vector<int64_t>>
     operations::utils::get_local_tetmesh_before_collapse(
         const TetMesh& mesh,
         const simplex::Simplex& simplex);

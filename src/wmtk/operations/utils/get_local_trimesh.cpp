@@ -117,7 +117,12 @@ get_local_trimesh_before_collapse(const wmtk::TriMesh& mesh, const wmtk::simplex
     return std::make_tuple(F, V, f_local_to_global, v_local_to_global);
 }
 
-std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<int64_t>>
+std::tuple<
+    Eigen::MatrixXi,
+    Eigen::MatrixXd,
+    Eigen::MatrixXi,
+    std::vector<int64_t>,
+    std::vector<int64_t>>
 get_local_tetmesh(
     const wmtk::TetMesh& mesh,
     const wmtk::simplex::Simplex& simplex,
@@ -180,13 +185,13 @@ get_local_tetmesh(
             pos.const_vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, pair.first));
     }
 
+    Eigen::MatrixXi F_bd(0, 3);
     if (get_boundary) {
         const auto triangle_coface =
             wmtk::simplex::cofaces_single_dimension(mesh, simplex, PrimitiveType::Triangle)
                 .simplex_vector(PrimitiveType::Triangle);
 
         int face_count = 0;
-        Eigen::MatrixXi F_bd(0, 3);
         for (auto& t_tuples : triangle_coface) {
             if (!mesh.is_boundary(t_tuples)) {
                 continue;
@@ -208,10 +213,15 @@ get_local_tetmesh(
             face_count++;
         }
     }
-    return std::make_tuple(T, V, t_local_to_global, v_local_to_global);
+    return std::make_tuple(T, V, F_bd, t_local_to_global, v_local_to_global);
 }
 
-std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<int64_t>>
+std::tuple<
+    Eigen::MatrixXi,
+    Eigen::MatrixXd,
+    Eigen::MatrixXi,
+    std::vector<int64_t>,
+    std::vector<int64_t>>
 get_local_tetmesh_before_collapse(const wmtk::TetMesh& mesh, const wmtk::simplex::Simplex& simplex)
 {
     assert(simplex.primitive_type() == PrimitiveType::Edge);
@@ -278,6 +288,7 @@ get_local_tetmesh_before_collapse(const wmtk::TetMesh& mesh, const wmtk::simplex
 
     // TODO: get local triangle mesh if it is on the boudnary
 
+    Eigen::MatrixXi F_bd(0, 3);
     if (mesh.is_boundary(simplex)) {
         const auto triangle_coface0 =
             wmtk::simplex::cofaces_single_dimension(mesh, v0, PrimitiveType::Triangle);
@@ -288,7 +299,6 @@ get_local_tetmesh_before_collapse(const wmtk::TetMesh& mesh, const wmtk::simplex
                 .simplex_vector(PrimitiveType::Triangle);
 
         int face_count = 0;
-        Eigen::MatrixXi F_bd(0, 3);
 
         for (const auto& f_tuple : triangle_cofaces) {
             if (!mesh.is_boundary(f_tuple)) {
@@ -312,7 +322,7 @@ get_local_tetmesh_before_collapse(const wmtk::TetMesh& mesh, const wmtk::simplex
         }
     }
 
-    return std::make_tuple(T, V, t_local_to_global, v_local_to_global);
+    return std::make_tuple(T, V, F_bd, t_local_to_global, v_local_to_global);
 }
 
 } // namespace wmtk::operations::utils

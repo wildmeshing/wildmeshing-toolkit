@@ -477,13 +477,14 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                         }
 
                     } else if (mesh().top_simplex_type() == PrimitiveType::Tetrahedron) {
+                        bool is_simplex_boundary = mesh().is_boundary(simplex);
                         // TODO: implement this for tetrahedron mesh
-                        auto [T_after, V_after, id_map_after, v_id_map_after] =
+                        auto [T_after, V_after, F_bd_after, id_map_after, v_id_map_after] =
                             utils::get_local_tetmesh(
                                 static_cast<const TetMesh&>(mesh()),
                                 mods[0],
-                                false);
-                        auto [T_before, V_before, id_map_before, v_id_map_before] =
+                                is_simplex_boundary);
+                        auto [T_before, V_before, F_bd_before, id_map_before, v_id_map_before] =
                             mesh().parent_scope(
                                 [&](const simplex::Simplex& s) {
                                     if (operation_name == "EdgeCollapse")
@@ -493,7 +494,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                     return utils::get_local_tetmesh(
                                         static_cast<const TetMesh&>(mesh()),
                                         s,
-                                        false);
+                                        is_simplex_boundary);
                                 },
                                 simplex);
                         // STORE information to logfile
@@ -501,12 +502,17 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                         operation_log["T_after"]["values"] = matrix_to_json(T_after);
                         operation_log["V_after"]["rows"] = V_after.rows();
                         operation_log["V_after"]["values"] = matrix_to_json(V_after);
+                        operation_log["F_bd_after"]["rows"] = F_bd_after.rows();
+                        operation_log["F_bd_after"]["values"] = matrix_to_json(F_bd_after);
                         operation_log["T_id_map_after"] = id_map_after;
                         operation_log["V_id_map_after"] = v_id_map_after;
+
                         operation_log["T_before"]["rows"] = T_before.rows();
                         operation_log["T_before"]["values"] = matrix_to_json(T_before);
                         operation_log["V_before"]["rows"] = V_before.rows();
                         operation_log["V_before"]["values"] = matrix_to_json(V_before);
+                        operation_log["F_bd_before"]["rows"] = F_bd_before.rows();
+                        operation_log["F_bd_before"]["values"] = matrix_to_json(F_bd_before);
                         operation_log["T_id_map_before"] = id_map_before;
                         operation_log["V_id_map_before"] = v_id_map_before;
                     }

@@ -16,6 +16,7 @@
 #include <wmtk/multimesh/consolidate.hpp>
 #include <wmtk/operations/AttributesUpdate.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
+#include <wmtk/operations/MeshConsolidate.hpp>
 #include <wmtk/operations/attribute_new/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_new/NewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
@@ -265,7 +266,9 @@ void shortest_edge_collapse(Mesh& mesh_in, const ShortestEdgeCollapseOptions& op
     //     }
     // }
 
-    wmtk::multimesh::consolidate(mesh);
+    // wmtk::multimesh::consolidate(mesh);
+    auto op_consolidate = wmtk::operations::MeshConsolidate(mesh);
+    op_consolidate(simplex::Simplex(mesh, PrimitiveType::Vertex, Tuple()));
 
     logger().info(
         "Executed {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",
