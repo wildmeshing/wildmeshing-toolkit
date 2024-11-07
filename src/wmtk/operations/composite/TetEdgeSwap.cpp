@@ -12,10 +12,16 @@ TetEdgeSwap::TetEdgeSwap(Mesh& m, int64_t collapse_index)
     , m_split(m)
     , m_collapse(m)
     , m_collapse_index(collapse_index)
-{}
+{
+    operation_name = "TetEdgeSwap";
+}
 
 std::vector<simplex::Simplex> TetEdgeSwap::execute(const simplex::Simplex& simplex)
 {
+    // TODO: set it not to record for now
+    m_split.set_not_record();
+    m_collapse.set_not_record();
+
     const auto split_simplicies = m_split(simplex);
     if (split_simplicies.empty()) return {};
     assert(split_simplicies.size() == 1);

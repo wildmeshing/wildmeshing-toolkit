@@ -12,7 +12,9 @@ ProjectOperation::ProjectOperation(
     const attribute::MeshAttributeHandle& project_to_mesh,
     attribute::MeshAttributeHandle& child_mesh_coordinates)
     : ProjectOperation(main_op, {std::make_pair(project_to_mesh, child_mesh_coordinates)})
-{}
+{
+    operation_name = "ProjectOperation";
+}
 
 
 ProjectOperation::ProjectOperation(

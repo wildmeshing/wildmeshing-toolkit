@@ -139,7 +139,6 @@ public:
     friend class operations::EdgeOperationData;
     friend class operations::internal::CollapseAlternateFacetData;
 
-
     int64_t top_cell_dimension() const;
     PrimitiveType top_simplex_type() const;
     bool is_free() const;

@@ -7,7 +7,9 @@ namespace wmtk::operations {
 
 AttributesUpdate::AttributesUpdate(Mesh& m)
     : Operation(m)
-{}
+{
+    operation_name = "AttributesUpdate";
+}
 
 std::vector<simplex::Simplex> AttributesUpdate::unmodified_primitives(
     const simplex::Simplex& simplex) const

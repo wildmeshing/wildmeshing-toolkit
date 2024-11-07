@@ -64,20 +64,31 @@ bool SimplexInversionInvariant<T>::after(
     } else if (mesh().top_simplex_type() == PrimitiveType::Triangle) {
         const TriMesh& mymesh = static_cast<const TriMesh&>(mesh());
         const auto accessor = mymesh.create_const_accessor(m_coordinate_handle);
-        assert(accessor.dimension() == 2);
+        // assert(accessor.dimension() == 2);
 
         for (const Tuple& tuple : top_dimension_tuples_after) {
             Tuple ccw_tuple = tuple;
             if (!mymesh.is_ccw(tuple)) {
                 ccw_tuple = mymesh.switch_tuple(tuple, PrimitiveType::Vertex);
             }
-            const Eigen::Vector2<T> p0 = accessor.const_vector_attribute(ccw_tuple);
-            const Eigen::Vector2<T> p1 = accessor.const_vector_attribute(
-                mymesh.switch_tuple(ccw_tuple, PrimitiveType::Vertex));
-            const Eigen::Vector2<T> p2 = accessor.const_vector_attribute(
-                mymesh.switch_tuples(ccw_tuple, {PrimitiveType::Edge, PrimitiveType::Vertex}));
+            if (accessor.dimension() == 2) {
+                const Eigen::Vector2<T> p0 = accessor.const_vector_attribute(ccw_tuple);
+                const Eigen::Vector2<T> p1 = accessor.const_vector_attribute(
+                    mymesh.switch_tuple(ccw_tuple, PrimitiveType::Vertex));
+                const Eigen::Vector2<T> p2 = accessor.const_vector_attribute(
+                    mymesh.switch_tuples(ccw_tuple, {PrimitiveType::Edge, PrimitiveType::Vertex}));
 
-            if (utils::wmtk_orient2d(p0, p1, p2) <= 0) return false;
+                // if (utils::wmtk_orient2d(p0, p1, p2) <= 0) return false;
+                if (utils::triangle_signed_2d_area(p0, p1, p2) <= 1e-12) return false;
+            } else {
+                const Eigen::Vector3<T> p0 = accessor.const_vector_attribute(ccw_tuple);
+                const Eigen::Vector3<T> p1 = accessor.const_vector_attribute(
+                    mymesh.switch_tuple(ccw_tuple, PrimitiveType::Vertex));
+                const Eigen::Vector3<T> p2 = accessor.const_vector_attribute(
+                    mymesh.switch_tuples(ccw_tuple, {PrimitiveType::Edge, PrimitiveType::Vertex}));
+
+                if (utils::triangle_3d_area_sq(p0, p1, p2) < 1e-12) return false;
+            }
         }
 
         return true;

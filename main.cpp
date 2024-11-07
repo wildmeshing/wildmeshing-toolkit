@@ -3,7 +3,9 @@
 #include <filesystem>
 #include <wmtk/components/run_components.hpp>
 #include <wmtk/utils/Logger.hpp>
-
+#ifdef WMTK_RECORD_OPERATIONS
+#include <wmtk/Record_Operations.hpp>
+#endif
 using json = nlohmann::json;
 
 int main(int argc, char** argv)
@@ -36,6 +38,10 @@ int main(int argc, char** argv)
         spec_json = json::parse(f);
     }
     if (!spec_json.contains("root_path")) spec_json["root_path"] = json_input_file;
+
+#ifdef WMTK_RECORD_OPERATIONS
+    OperationLogPath = generatePathNameWithCurrentTime();
+#endif
 
     const auto start = std::chrono::high_resolution_clock::now();
 

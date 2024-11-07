@@ -4,14 +4,14 @@
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/invariants/FusionEdgeInvariant.hpp>
-#include <wmtk/invariants/InvariantCollection.hpp>
-#include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
-#include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
-#include <wmtk/invariants/MinEdgeLengthInvariant.hpp>
-#include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
-#include <wmtk/invariants/ValenceImprovementInvariant.hpp>
 #include <wmtk/invariants/InteriorSimplexInvariant.hpp>
+#include <wmtk/invariants/InvariantCollection.hpp>
+#include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
+#include <wmtk/invariants/MinEdgeLengthInvariant.hpp>
+#include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
+#include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
+#include <wmtk/invariants/ValenceImprovementInvariant.hpp>
 #include <wmtk/invariants/uvEdgeInvariant.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
@@ -19,6 +19,7 @@
 #include <wmtk/operations/AttributesUpdate.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
+#include <wmtk/operations/MeshConsolidate.hpp>
 #include <wmtk/operations/attribute_new/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
@@ -172,8 +173,7 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
         op_split->set_new_attribute_strategy(attr);
     }
     assert(op_split->attribute_new_all_configured());
-    ops.push_back(op_split);
-
+    // ops.push_back(op_split);
 
 
     //////////////////////////////////////////
@@ -303,7 +303,9 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
             pass_stats += scheduler.run_operation_on_all(*op);
         }
 
-        multimesh::consolidate(mesh);
+        auto op_consolidate = MeshConsolidate(mesh);
+        op_consolidate(simplex::Simplex(mesh, PrimitiveType::Vertex, Tuple()));
+        // multimesh::consolidate(mesh);
 
         logger().info(
             "Executed {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",
@@ -314,7 +316,7 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
             pass_stats.sorting_time,
             pass_stats.executing_time);
 
-        multimesh::consolidate(mesh);
+        // multimesh::consolidate(mesh);
     }
 }
 } // namespace wmtk::components::isotropic_remeshing

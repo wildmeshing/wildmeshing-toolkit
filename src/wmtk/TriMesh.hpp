@@ -12,6 +12,10 @@ namespace operations::utils {
 class MultiMeshEdgeSplitFunctor;
 class MultiMeshEdgeCollapseFunctor;
 class UpdateEdgeOperationMultiMeshMapFunctor;
+std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<int64_t>>
+get_local_trimesh(const TriMesh& mesh, const simplex::Simplex& simplex);
+std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<int64_t>>
+get_local_trimesh_before_collapse(const TriMesh& mesh, const simplex::Simplex& simplex);
 } // namespace operations::utils
 
 
@@ -24,6 +28,15 @@ public:
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     template <typename U, typename MeshType, int Dim>
     friend class attribute::Accessor;
+
+
+    friend std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<int64_t>>
+    operations::utils::get_local_trimesh(const TriMesh& mesh, const simplex::Simplex& simplex);
+    friend std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<int64_t>>
+    operations::utils::get_local_trimesh_before_collapse(
+        const TriMesh& mesh,
+        const simplex::Simplex& simplex);
+
     using MeshCRTP<TriMesh>::create_accessor;
     using MeshCRTP<TriMesh>::create_const_accessor;
     TriMesh();
@@ -56,6 +69,12 @@ public:
     bool is_valid(const Tuple& tuple) const final override;
 
     bool is_connectivity_valid() const final override;
+
+    // get F, V from mesh
+    std::tuple<Eigen::MatrixXi, Eigen::MatrixXd> get_FV();
+
+    // DEBUG: for debug code use only
+    std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int>> get_FV_Fflag();
 
     std::vector<std::vector<TypedAttributeHandle<int64_t>>> connectivity_attributes()
         const override;

@@ -29,6 +29,8 @@ bool EdgeSplit::attribute_new_all_configured() const
 EdgeSplit::EdgeSplit(Mesh& m)
     : Operation(m)
 {
+    operation_name = "EdgeSplit";
+
     auto collect_attrs = [&](auto&& mesh) {
         // can have const variant values here so gotta filter htose out
         if constexpr (!std::is_const_v<std::remove_reference_t<decltype(mesh)>>) {

@@ -47,9 +47,3 @@ add_subdirectory("edge_insertion/wmtk/components/edge_insertion")
 # add_component("fusion")
 # add_component("winding_number")
 # add_component("periodic_optimization")
-
-
-
-
-
-

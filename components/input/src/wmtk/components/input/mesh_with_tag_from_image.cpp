@@ -3,7 +3,7 @@
 #include <filesystem>
 #include <wmtk/utils/mesh_utils.hpp>
 
-#define STB_IMAGE_IMPLEMENTATION
+// #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
 namespace wmtk::components::input {

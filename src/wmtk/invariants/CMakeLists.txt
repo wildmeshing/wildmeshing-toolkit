@@ -67,6 +67,8 @@ set(SRC_FILES
     Swap56EnergyBeforeInvariant.hpp
     Swap56EnergyBeforeInvariant.cpp
 
+    Swap23EnergyBeforeInvariantDouble.hpp
+    Swap23EnergyBeforeInvariantDouble.cpp
     Swap44EnergyBeforeInvariantDouble.hpp
     Swap44EnergyBeforeInvariantDouble.cpp
     Swap32EnergyBeforeInvariantDouble.hpp
@@ -97,6 +99,5 @@ set(SRC_FILES
     FrozenVertexInvariant.cpp
     Swap2dUnroundedVertexInvariant.hpp
     Swap2dUnroundedVertexInvariant.cpp
-    
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
