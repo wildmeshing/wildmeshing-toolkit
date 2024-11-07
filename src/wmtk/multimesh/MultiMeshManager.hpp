@@ -12,6 +12,7 @@
 #include <wmtk/utils/MerkleTreeInteriorNode.hpp>
 
 
+
 namespace wmtk {
 
 class Mesh;
@@ -36,6 +37,10 @@ template <typename NodeFunctor>
 class MultiMeshVisitor;
 template <typename Visitor>
 class MultiMeshVisitorExecutor;
+
+namespace utils {
+    class MapValidator;
+}
 
 } // namespace multimesh
 class Mesh;
@@ -71,8 +76,7 @@ public:
     friend class multimesh::MultiMeshVisitorExecutor;
     friend class wmtk::HDF5Reader;
 
-    friend bool utils::check_child_maps_valid(const Mesh& m);
-    friend bool utils::check_parent_map_valid(const Mesh& m);
+    friend class utils::MapValidator;
 
 
     // @param the max dimension of the mesh we will get passed
