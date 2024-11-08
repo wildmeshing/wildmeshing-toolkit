@@ -1,5 +1,15 @@
 var NAVTREEINDEX14 =
 {
+"classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html#aa5bf8a5fdf8527d9843f3f578c646b41":[9,0,2,7,18,9],
+"classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html#ac5cd8fe704e6576b71278a3c4bac1296":[9,0,2,7,18,13],
+"classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html#ace0810cb6960ee2a01d35b2db20006c3":[9,0,2,7,18,7],
+"classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html#ace66a79835e575308bbd1d0b5b3b47c5":[9,0,2,7,18,1],
+"classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html#afc2500dd9feeea3f48880c3f1f0d4b48":[9,0,2,7,18,3],
+"classwmtk_1_1operations_1_1_split_new_attribute_strategy.html":[9,0,2,7,15],
+"classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a03bf6054eec5d87d4faaeccbbad48ecf":[9,0,2,7,15,0],
+"classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a0435f2af604239de539271d971914b4d":[9,0,2,7,15,24],
+"classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a1282c0c0bb587db235a9c40f9a78471f":[9,0,2,7,15,21],
+"classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a1a58edd9b054d9b7ef6e04dd64c8893b":[9,0,2,7,15,25],
 "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a1e5f10fabe4fddc6683b125556a9a947":[9,0,2,7,15,1],
 "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a276e9e5f7fc4e194577d117312c173fd":[9,0,2,7,15,9],
 "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a300e2227384eb243a10cbe928f738f8a":[9,0,2,7,15,13],
@@ -239,15 +249,5 @@ var NAVTREEINDEX14 =
 "classwmtk_1_1operations_1_1tet__mesh_1_1_split_new_attribute_topo_info.html#a2c96432af46ce669391eeb11235d36c3":[9,0,2,7,4,2,4],
 "classwmtk_1_1operations_1_1tet__mesh_1_1_split_new_attribute_topo_info.html#a349188cd4bedd0d453c4222ebacfc809":[9,0,2,7,4,2,3],
 "classwmtk_1_1operations_1_1tet__mesh_1_1_split_new_attribute_topo_info.html#a403432505d92a55636997308d5e7d7f7":[9,0,2,7,4,2,5],
-"classwmtk_1_1operations_1_1tet__mesh_1_1_split_new_attribute_topo_info.html#a441a9c4f75c4ef0deb4ce2c50ac0d7c5":[9,0,2,7,4,2,0],
-"classwmtk_1_1operations_1_1tet__mesh_1_1_split_new_attribute_topo_info.html#a6befd253666cff855e9a281acef70bdc":[9,0,2,7,4,2,2],
-"classwmtk_1_1operations_1_1tet__mesh_1_1_split_new_attribute_topo_info.html#a71e2acca2721521eeae48626b9c647cf":[9,0,2,7,4,2,8],
-"classwmtk_1_1operations_1_1tet__mesh_1_1_split_new_attribute_topo_info.html#a89bd25c4ffb57ea07683a822dc5aae05":[9,0,2,7,4,2,1],
-"classwmtk_1_1operations_1_1tet__mesh_1_1_split_new_attribute_topo_info.html#a9180d699743360b3201dceb314c03573":[9,0,2,7,4,2,11],
-"classwmtk_1_1operations_1_1tet__mesh_1_1_split_new_attribute_topo_info.html#ad9accab561eaf9d919c5a97e18a5b25d":[9,0,2,7,4,2,7],
-"classwmtk_1_1operations_1_1tet__mesh_1_1_split_new_attribute_topo_info.html#af22dfc9e2b57708643a3cb5c8aa52cec":[9,0,2,7,4,2,9],
-"classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_topo_info.html":[9,0,2,7,5,0],
-"classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_topo_info.html#a4f79b8bd619b631be623472c2934b91a":[9,0,2,7,5,0,3],
-"classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_topo_info.html#a73a5dd3f5de8d409626289c50775a939":[9,0,2,7,5,0,0],
-"classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_topo_info.html#acbba0b976e6fd3d1c93eee417bacb7e8":[9,0,2,7,5,0,2]
+"classwmtk_1_1operations_1_1tet__mesh_1_1_split_new_attribute_topo_info.html#a441a9c4f75c4ef0deb4ce2c50ac0d7c5":[9,0,2,7,4,2,0]
 };

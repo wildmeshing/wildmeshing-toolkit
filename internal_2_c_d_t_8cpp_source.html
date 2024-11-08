@@ -119,121 +119,154 @@ $(document).ready(function(){initNavTree('internal_2_c_d_t_8cpp_source.html','')
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160; </div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment">//</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="internal_2_c_d_t_8hpp.html">CDT.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_logger_8hpp.html">wmtk/utils/Logger.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="mesh__utils_8hpp.html">wmtk/utils/mesh_utils.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="orient_8hpp.html">wmtk/utils/orient.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="cdt__lib_8hpp.html">cdt_lib.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="get__vf_8hpp.html">get_vf.hpp</a>&quot;</span></div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_scheduler_8hpp.html">wmtk/Scheduler.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_rounding_8hpp.html">wmtk/operations/Rounding.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_logger_8hpp.html">wmtk/utils/Logger.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="mesh__utils_8hpp.html">wmtk/utils/mesh_utils.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="orient_8hpp.html">wmtk/utils/orient.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160; </div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components_1_1internal.html">wmtk::components::internal</a> {</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_simplex_inversion_invariant_8hpp.html">wmtk/invariants/SimplexInversionInvariant.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160; </div>
-<div class="line"><a name="l00013"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components_1_1internal.html#aa5cef5f50f316f60f46180e6f84752f6">   13</a></span>&#160;std::shared_ptr&lt;wmtk::TetMesh&gt; <a class="code" href="namespacewmtk_1_1components_1_1internal.html#aa5cef5f50f316f60f46180e6f84752f6">CDT_internal</a>(</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a>&amp; m,</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    std::vector&lt;std::array&lt;bool, 4&gt;&gt;&amp; local_f_on_input,</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    <span class="keywordtype">bool</span> inner_only,</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    <span class="keywordtype">bool</span> rational_output)</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;{</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="keyword">auto</span> [vdat, fdat] = <a class="code" href="namespacewmtk_1_1components_1_1internal.html#ae96e456a97cc6bb91612325fce6c6abb">get_vf</a>(m);</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    std::vector&lt;double&gt; V_tmp;</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    uint32_t npts, ntri;</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    std::tie(V_tmp, npts) = vdat;</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    std::vector&lt;uint32_t&gt; F;</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    std::tie(F, ntri) = fdat;</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    std::vector&lt;std::array&lt;int64_t, 4&gt;&gt; T_final;</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    std::vector&lt;std::array&lt;std::string, 3&gt;&gt; V_final_str;</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="cdt__lib_8hpp.html">cdt_lib.hpp</a>&quot;</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="get__vf_8hpp.html">get_vf.hpp</a>&quot;</span></div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160; </div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components_1_1internal.html">wmtk::components::internal</a> {</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160; </div>
+<div class="line"><a name="l00018"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components_1_1internal.html#aa5cef5f50f316f60f46180e6f84752f6">   18</a></span>&#160;std::shared_ptr&lt;wmtk::TetMesh&gt; <a class="code" href="namespacewmtk_1_1components_1_1internal.html#aa5cef5f50f316f60f46180e6f84752f6">CDT_internal</a>(</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a>&amp; m,</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    std::vector&lt;std::array&lt;bool, 4&gt;&gt;&amp; local_f_on_input,</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <span class="keywordtype">bool</span> inner_only,</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="keywordtype">bool</span> rational_output)</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;{</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <span class="keyword">auto</span> [vdat, fdat] = <a class="code" href="namespacewmtk_1_1components_1_1internal.html#ae96e456a97cc6bb91612325fce6c6abb">get_vf</a>(m);</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    std::vector&lt;double&gt; V_tmp;</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    uint32_t npts, ntri;</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    std::tie(V_tmp, npts) = vdat;</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    std::vector&lt;uint32_t&gt; F;</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <a class="code" href="namespacecdt__lib.html#a40192b03240def7444809efadd874e75">cdt_lib::cdt_to_string</a>(</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;        V_tmp,</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        npts,</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        F,</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        ntri,</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        local_f_on_input,</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        T_final,</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        V_final_str,</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        inner_only);</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <a class="code" href="namespacewmtk.html#ae2013f5a8b3c4a8df232b70b5bf9a146">MatrixX&lt;int64_t&gt;</a> T;</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    T.resize(T_final.size(), 4);</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    std::tie(F, ntri) = fdat;</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    std::vector&lt;std::array&lt;int64_t, 4&gt;&gt; T_final;</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    std::vector&lt;std::array&lt;std::string, 3&gt;&gt; V_final_str;</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; </div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <a class="code" href="namespacecdt__lib.html#a40192b03240def7444809efadd874e75">cdt_lib::cdt_to_string</a>(</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        V_tmp,</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        npts,</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        F,</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        ntri,</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        local_f_on_input,</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        T_final,</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        V_final_str,</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        inner_only);</div>
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; T_final.size(); ++i) {</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        T(i, 0) = T_final[i][0];</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        T(i, 1) = T_final[i][1];</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        T(i, 2) = T_final[i][2];</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        T(i, 3) = T_final[i][3];</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    }</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    std::shared_ptr&lt;wmtk::TetMesh&gt; tm = std::make_shared&lt;wmtk::TetMesh&gt;();</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    tm-&gt;initialize(T);</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <a class="code" href="namespacewmtk.html#ae2013f5a8b3c4a8df232b70b5bf9a146">MatrixX&lt;Rational&gt;</a> V;</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    V.resize(V_final_str.size(), 3);</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; V_final_str.size(); ++i) {</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        V(i, 0).init_from_binary(V_final_str[i][0]);</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        V(i, 1).init_from_binary(V_final_str[i][1]);</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        V(i, 2).init_from_binary(V_final_str[i][2]);</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    }</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keywordflow">if</span> (rational_output) {</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        <span class="comment">// check inversion</span></div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <span class="keywordflow">for</span> (int64_t i = 0; i &lt; T_final.size(); ++i) {</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;            <span class="keywordflow">if</span> (<a class="code" href="namespacewmtk_1_1utils.html#a34133dc338089a5141f8e84feecb81ce">wmtk::utils::wmtk_orient3d</a>(</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;                    V.row(T(i, 0)),</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;                    V.row(T(i, 1)),</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;                    V.row(T(i, 2)),</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;                    V.row(T(i, 3))) &lt; 0) {</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;                <span class="keyword">auto</span> tmp = T(i, 0);</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;                T(i, 0) = T(i, 1);</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;                T(i, 1) = tmp;</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;                <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(<span class="stringliteral">&quot;inverted tet rational, swap 0 1&quot;</span>);</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;            }</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        }</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        <a class="code" href="namespacewmtk_1_1mesh__utils.html#ad92eb4095d516f6a20e25587f9effe80">mesh_utils::set_matrix_attribute</a>(V, <span class="stringliteral">&quot;vertices&quot;</span>, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>, *tm);</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        <a class="code" href="namespacewmtk.html#ae2013f5a8b3c4a8df232b70b5bf9a146">MatrixX&lt;double&gt;</a> V_double;</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        V_double.resize(V_final_str.size(), 3);</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <a class="code" href="namespacewmtk.html#ae2013f5a8b3c4a8df232b70b5bf9a146">MatrixX&lt;int64_t&gt;</a> T;</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    T.resize(T_final.size(), 4);</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; T_final.size(); ++i) {</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        T(i, 0) = T_final[i][0];</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        T(i, 1) = T_final[i][1];</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        T(i, 2) = T_final[i][2];</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        T(i, 3) = T_final[i][3];</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    }</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    std::shared_ptr&lt;wmtk::TetMesh&gt; tm = std::make_shared&lt;wmtk::TetMesh&gt;();</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    tm-&gt;initialize(T);</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <a class="code" href="namespacewmtk.html#ae2013f5a8b3c4a8df232b70b5bf9a146">MatrixX&lt;Rational&gt;</a> V;</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    V.resize(V_final_str.size(), 3);</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; V_final_str.size(); ++i) {</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        V(i, 0).init_from_binary(V_final_str[i][0]);</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        V(i, 1).init_from_binary(V_final_str[i][1]);</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        V(i, 2).init_from_binary(V_final_str[i][2]);</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    }</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <span class="keywordflow">if</span> (rational_output) {</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        <span class="comment">// check inversion</span></div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        <span class="keywordflow">for</span> (int64_t i = 0; i &lt; T_final.size(); ++i) {</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;            <span class="keywordflow">if</span> (<a class="code" href="namespacewmtk_1_1utils.html#a34133dc338089a5141f8e84feecb81ce">wmtk::utils::wmtk_orient3d</a>(</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;                    V.row(T(i, 0)),</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;                    V.row(T(i, 1)),</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;                    V.row(T(i, 2)),</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;                    V.row(T(i, 3))) &lt; 0) {</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;                <span class="keyword">auto</span> tmp = T(i, 0);</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;                T(i, 0) = T(i, 1);</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;                T(i, 1) = tmp;</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;                <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(<span class="stringliteral">&quot;inverted tet rational, swap 0 1&quot;</span>);</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;            }</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        }</div>
 <div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        V_double = V.cast&lt;<span class="keywordtype">double</span>&gt;();</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        <a class="code" href="namespacewmtk_1_1mesh__utils.html#ad92eb4095d516f6a20e25587f9effe80">mesh_utils::set_matrix_attribute</a>(V, <span class="stringliteral">&quot;vertices&quot;</span>, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>, *tm);</div>
 <div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        <span class="comment">// check inversion</span></div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        <span class="keywordflow">for</span> (int64_t i = 0; i &lt; T_final.size(); ++i) {</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            <span class="keywordflow">if</span> (<a class="code" href="namespacewmtk_1_1utils.html#a34133dc338089a5141f8e84feecb81ce">wmtk::utils::wmtk_orient3d</a>(</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;                    V_double.row(T(i, 0)),</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;                    V_double.row(T(i, 1)),</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;                    V_double.row(T(i, 2)),</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;                    V_double.row(T(i, 3))) &lt; 0) {</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;                <span class="keyword">auto</span> tmp = T(i, 0);</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;                T(i, 0) = T(i, 1);</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;                T(i, 1) = tmp;</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        <span class="keyword">auto</span> rounding_pt_attribute =</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;            tm-&gt;get_attribute_handle_typed&lt;<a class="code" href="classwmtk_1_1_rational.html">Rational</a>&gt;(<span class="stringliteral">&quot;vertices&quot;</span>, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>);</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160; </div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;        <span class="keyword">auto</span> rounding = std::make_shared&lt;wmtk::operations::Rounding&gt;(*tm, rounding_pt_attribute);</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        rounding-&gt;add_invariant(</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;            std::make_shared&lt;<a class="code" href="classwmtk_1_1_simplex_inversion_invariant.html">SimplexInversionInvariant&lt;Rational&gt;</a>&gt;(*tm, rounding_pt_attribute));</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;        <a class="code" href="classwmtk_1_1_scheduler.html">Scheduler</a> scheduler;</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        <span class="keyword">auto</span> stats = scheduler.<a class="code" href="classwmtk_1_1_scheduler.html#a246ccf6605333ebb7c020aa8fae1e959">run_operation_on_all</a>(*rounding);</div>
 <div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160; </div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;                <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(<span class="stringliteral">&quot;inverted tet double, swap 0 1&quot;</span>);</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;            }</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;        }</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160; </div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        <a class="code" href="namespacewmtk_1_1mesh__utils.html#ad92eb4095d516f6a20e25587f9effe80">mesh_utils::set_matrix_attribute</a>(V_double, <span class="stringliteral">&quot;vertices&quot;</span>, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>, *tm);</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    }</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160; </div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160; </div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    <span class="keywordflow">return</span> tm;</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;}</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160; </div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;} <span class="comment">// namespace wmtk::components::internal</span></div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">logger</a>().info(</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;            <span class="stringliteral">&quot;Executed rounding, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, &quot;</span></div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;            <span class="stringliteral">&quot;executing: {}&quot;</span>,</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;            stats.number_of_performed_operations(),</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;            stats.number_of_successful_operations(),</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;            stats.number_of_failed_operations(),</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;            stats.collecting_time,</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;            stats.sorting_time,</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;            stats.executing_time);</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;        <a class="code" href="namespacewmtk.html#ae2013f5a8b3c4a8df232b70b5bf9a146">MatrixX&lt;double&gt;</a> V_double;</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;        V_double.resize(V_final_str.size(), 3);</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160; </div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;        V_double = V.cast&lt;<span class="keywordtype">double</span>&gt;();</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160; </div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;        <span class="comment">// check inversion</span></div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        <span class="keywordflow">for</span> (int64_t i = 0; i &lt; T_final.size(); ++i) {</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;            <span class="keywordflow">if</span> (<a class="code" href="namespacewmtk_1_1utils.html#a34133dc338089a5141f8e84feecb81ce">wmtk::utils::wmtk_orient3d</a>(</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;                    V_double.row(T(i, 0)),</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;                    V_double.row(T(i, 1)),</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;                    V_double.row(T(i, 2)),</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;                    V_double.row(T(i, 3))) &lt; 0) {</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;                <span class="keyword">auto</span> tmp = T(i, 0);</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;                T(i, 0) = T(i, 1);</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;                T(i, 1) = tmp;</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160; </div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;                <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(<span class="stringliteral">&quot;inverted tet double, swap 0 1&quot;</span>);</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;            }</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;        }</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160; </div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;        <a class="code" href="namespacewmtk_1_1mesh__utils.html#ad92eb4095d516f6a20e25587f9effe80">mesh_utils::set_matrix_attribute</a>(V_double, <span class="stringliteral">&quot;vertices&quot;</span>, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>, *tm);</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;    }</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160; </div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160; </div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;    <span class="keywordflow">return</span> tm;</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;}</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160; </div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;} <span class="comment">// namespace wmtk::components::internal</span></div>
 <div class="ttc" id="a_logger_8hpp_html"><div class="ttname"><a href="_logger_8hpp.html">Logger.hpp</a></div></div>
+<div class="ttc" id="a_rounding_8hpp_html"><div class="ttname"><a href="_rounding_8hpp.html">Rounding.hpp</a></div></div>
+<div class="ttc" id="a_scheduler_8hpp_html"><div class="ttname"><a href="_scheduler_8hpp.html">Scheduler.hpp</a></div></div>
+<div class="ttc" id="a_simplex_inversion_invariant_8hpp_html"><div class="ttname"><a href="_simplex_inversion_invariant_8hpp.html">SimplexInversionInvariant.hpp</a></div></div>
 <div class="ttc" id="acdt__lib_8hpp_html"><div class="ttname"><a href="cdt__lib_8hpp.html">cdt_lib.hpp</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_rational_html"><div class="ttname"><a href="classwmtk_1_1_rational.html">wmtk::Rational</a></div><div class="ttdef"><b>Definition:</b> <a href="_rational_8hpp_source.html#l00012">Rational.hpp:13</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_scheduler_html"><div class="ttname"><a href="classwmtk_1_1_scheduler.html">wmtk::Scheduler</a></div><div class="ttdef"><b>Definition:</b> <a href="_scheduler_8hpp_source.html#l00088">Scheduler.hpp:89</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_scheduler_html_a246ccf6605333ebb7c020aa8fae1e959"><div class="ttname"><a href="classwmtk_1_1_scheduler.html#a246ccf6605333ebb7c020aa8fae1e959">wmtk::Scheduler::run_operation_on_all</a></div><div class="ttdeci">SchedulerStats run_operation_on_all(operations::Operation &amp;op)</div><div class="ttdef"><b>Definition:</b> <a href="_scheduler_8cpp_source.html#l00033">Scheduler.cpp:33</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_simplex_inversion_invariant_html"><div class="ttname"><a href="classwmtk_1_1_simplex_inversion_invariant.html">wmtk::SimplexInversionInvariant</a></div><div class="ttdef"><b>Definition:</b> <a href="_simplex_inversion_invariant_8hpp_source.html#l00008">SimplexInversionInvariant.hpp:9</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_tri_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_8hpp_source.html#l00018">TriMesh.hpp:19</a></div></div>
 <div class="ttc" id="aget__vf_8hpp_html"><div class="ttname"><a href="get__vf_8hpp.html">get_vf.hpp</a></div></div>
 <div class="ttc" id="ainternal_2_c_d_t_8hpp_html"><div class="ttname"><a href="internal_2_c_d_t_8hpp.html">CDT.hpp</a></div></div>
 <div class="ttc" id="amesh__utils_8hpp_html"><div class="ttname"><a href="mesh__utils_8hpp.html">mesh_utils.hpp</a></div></div>
 <div class="ttc" id="anamespacecdt__lib_html_a40192b03240def7444809efadd874e75"><div class="ttname"><a href="namespacecdt__lib.html#a40192b03240def7444809efadd874e75">cdt_lib::cdt_to_string</a></div><div class="ttdeci">void cdt_to_string(const std::vector&lt; double &gt; &amp;V, const uint32_t npts, const std::vector&lt; uint32_t &gt; &amp;F, const uint32_t ntri, std::vector&lt; std::array&lt; bool, 4 &gt;&gt; &amp;local_f_on_input, std::vector&lt; std::array&lt; int64_t, 4 &gt;&gt; &amp;T_final, std::vector&lt; std::array&lt; std::string, 3 &gt;&gt; &amp;V_final, bool inner_only)</div><div class="ttdef"><b>Definition:</b> <a href="cdt__lib_8cpp_source.html#l00166">cdt_lib.cpp:166</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_1_1internal_html"><div class="ttname"><a href="namespacewmtk_1_1components_1_1internal.html">wmtk::components::internal</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00014">Tuple.hpp:14</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_1_1internal_html_aa5cef5f50f316f60f46180e6f84752f6"><div class="ttname"><a href="namespacewmtk_1_1components_1_1internal.html#aa5cef5f50f316f60f46180e6f84752f6">wmtk::components::internal::CDT_internal</a></div><div class="ttdeci">std::shared_ptr&lt; wmtk::TetMesh &gt; CDT_internal(const wmtk::TriMesh &amp;m, std::vector&lt; std::array&lt; bool, 4 &gt;&gt; &amp;local_f_on_input, bool inner_only, bool rational_output)</div><div class="ttdef"><b>Definition:</b> <a href="internal_2_c_d_t_8cpp_source.html#l00013">CDT.cpp:13</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_1_1internal_html_aa5cef5f50f316f60f46180e6f84752f6"><div class="ttname"><a href="namespacewmtk_1_1components_1_1internal.html#aa5cef5f50f316f60f46180e6f84752f6">wmtk::components::internal::CDT_internal</a></div><div class="ttdeci">std::shared_ptr&lt; wmtk::TetMesh &gt; CDT_internal(const wmtk::TriMesh &amp;m, std::vector&lt; std::array&lt; bool, 4 &gt;&gt; &amp;local_f_on_input, bool inner_only, bool rational_output)</div><div class="ttdef"><b>Definition:</b> <a href="internal_2_c_d_t_8cpp_source.html#l00018">CDT.cpp:18</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_1_1internal_html_ae96e456a97cc6bb91612325fce6c6abb"><div class="ttname"><a href="namespacewmtk_1_1components_1_1internal.html#ae96e456a97cc6bb91612325fce6c6abb">wmtk::components::internal::get_vf</a></div><div class="ttdeci">std::tuple&lt; std::pair&lt; std::vector&lt; double &gt;, uint32_t &gt;, std::pair&lt; std::vector&lt; uint32_t &gt;, uint32_t &gt; &gt; get_vf(const TriMesh &amp;trimesh)</div><div class="ttdef"><b>Definition:</b> <a href="get__vf_8cpp_source.html#l00009">get_vf.cpp:9</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1mesh__utils_html_ad92eb4095d516f6a20e25587f9effe80"><div class="ttname"><a href="namespacewmtk_1_1mesh__utils.html#ad92eb4095d516f6a20e25587f9effe80">wmtk::mesh_utils::set_matrix_attribute</a></div><div class="ttdeci">attribute::MeshAttributeHandle set_matrix_attribute(const Mat &amp;data, const std::string &amp;name, const PrimitiveType &amp;type, Mesh &amp;mesh)</div><div class="ttdef"><b>Definition:</b> <a href="mesh__utils_8hpp_source.html#l00009">mesh_utils.hpp:9</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1utils_html_a34133dc338089a5141f8e84feecb81ce"><div class="ttname"><a href="namespacewmtk_1_1utils.html#a34133dc338089a5141f8e84feecb81ce">wmtk::utils::wmtk_orient3d</a></div><div class="ttdeci">int wmtk_orient3d(const Eigen::Ref&lt; const Eigen::Vector3&lt; Rational &gt;&gt; &amp;p0, const Eigen::Ref&lt; const Eigen::Vector3&lt; Rational &gt;&gt; &amp;p1, const Eigen::Ref&lt; const Eigen::Vector3&lt; Rational &gt;&gt; &amp;p2, const Eigen::Ref&lt; const Eigen::Vector3&lt; Rational &gt;&gt; &amp;p3)</div><div class="ttdef"><b>Definition:</b> <a href="orient_8cpp_source.html#l00075">orient.cpp:75</a></div></div>

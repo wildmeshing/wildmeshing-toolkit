@@ -206,6 +206,7 @@ var hierarchy =
       [ "wmtk::RoundedInvariant", "classwmtk_1_1_rounded_invariant.html", null ],
       [ "wmtk::SimplexInversionInvariant< T >", "classwmtk_1_1_simplex_inversion_invariant.html", null ],
       [ "wmtk::Swap23EnergyBeforeInvariant", "classwmtk_1_1_swap23_energy_before_invariant.html", null ],
+      [ "wmtk::Swap2dEdgeLengthInvariant", "classwmtk_1_1_swap2d_edge_length_invariant.html", null ],
       [ "wmtk::Swap2dUnroundedVertexInvariant", "classwmtk_1_1_swap2d_unrounded_vertex_invariant.html", null ],
       [ "wmtk::Swap32EnergyBeforeInvariant", "classwmtk_1_1_swap32_energy_before_invariant.html", null ],
       [ "wmtk::Swap32EnergyBeforeInvariantDouble", "classwmtk_1_1_swap32_energy_before_invariant_double.html", null ],

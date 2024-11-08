@@ -1,5 +1,15 @@
 var NAVTREEINDEX24 =
 {
+"namespacewmtk_1_1simplex_1_1utils.html#a358c30268c189fc8f00538b520aab4f8":[8,0,10,10,1,4],
+"namespacewmtk_1_1simplex_1_1utils.html#a4574c04349610938cff950c33e8033c2":[8,0,10,10,1,3],
+"namespacewmtk_1_1simplex_1_1utils.html#aa306c7de45015f9be0e104fca1aacad2":[8,0,10,10,1,5],
+"namespacewmtk_1_1simplex_1_1utils.html#ac63b7720749de23b2125f3f9c26f609f":[8,0,10,10,1,6],
+"namespacewmtk_1_1simplex_1_1utils.html#accca10e19c43ac50ef093dceba76e556":[8,0,10,10,1,2],
+"namespacewmtk_1_1tests.html":[8,0,10,11],
+"namespacewmtk_1_1tests_1_1tools.html":[8,0,10,11,0],
+"namespacewmtk_1_1utils.html":[8,0,10,12],
+"namespacewmtk_1_1utils.html#a02b16973a282fa6a4702845ea983d170":[8,0,10,12,16],
+"namespacewmtk_1_1utils.html#a0dca8cd0cb666277e80d2b93286cfb65":[8,0,10,12,28],
 "namespacewmtk_1_1utils.html#a1ad2b2ed039a61345428e98be2347dbc":[8,0,10,12,25],
 "namespacewmtk_1_1utils.html#a1c5198487b4421eb17ef97f5b8d410a3":[8,0,10,12,49],
 "namespacewmtk_1_1utils.html#a216f2306e90d409a64e86d49e5ef31e2":[8,0,10,12,23],
@@ -239,15 +249,5 @@ var NAVTREEINDEX24 =
 "simplex_2_a_m_i_p_s_8cpp.html#a1b329f7277ad003d215e82a05b95339b":[10,0,2,0,2,0,0,1],
 "simplex_2_a_m_i_p_s_8cpp.html#a8573ef05c1016e7127e37128472dcc35":[10,0,2,0,2,0,0,6],
 "simplex_2_a_m_i_p_s_8cpp.html#a9567d869f1e3e762ec382755de6da7df":[10,0,2,0,2,0,0,7],
-"simplex_2_a_m_i_p_s_8cpp.html#a9e3b11628e6438129ff662e14c320619":[10,0,2,0,2,0,0,0],
-"simplex_2_a_m_i_p_s_8cpp.html#aaf870bcc28609797d92b0a7812fef5f0":[10,0,2,0,2,0,0,2],
-"simplex_2_a_m_i_p_s_8cpp.html#ac01c542b5c742bfb6ce210eca1511e90":[10,0,2,0,2,0,0,9],
-"simplex_2_a_m_i_p_s_8cpp.html#acd1fbbd6c163ab50ae7d2f684690f439":[10,0,2,0,2,0,0,4],
-"simplex_2_a_m_i_p_s_8cpp.html#ae671fa9e27ca8687ce906dc2cda5287f":[10,0,2,0,2,0,0,8],
-"simplex_2_a_m_i_p_s_8cpp_source.html":[10,0,2,0,2,0,0],
-"simplex_2_a_m_i_p_s_8hpp.html":[10,0,2,0,2,0,1],
-"simplex_2_a_m_i_p_s_8hpp.html#a198aa9739019d6fdb0c869dcefe468b7":[10,0,2,0,2,0,1,3],
-"simplex_2_a_m_i_p_s_8hpp.html#a8573ef05c1016e7127e37128472dcc35":[10,0,2,0,2,0,1,5],
-"simplex_2_a_m_i_p_s_8hpp.html#a9567d869f1e3e762ec382755de6da7df":[10,0,2,0,2,0,1,6],
-"simplex_2_a_m_i_p_s_8hpp.html#a9e3b11628e6438129ff662e14c320619":[10,0,2,0,2,0,1,1]
+"simplex_2_a_m_i_p_s_8cpp.html#a9e3b11628e6438129ff662e14c320619":[10,0,2,0,2,0,0,0]
 };
