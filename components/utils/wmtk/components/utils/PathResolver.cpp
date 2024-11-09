@@ -36,7 +36,7 @@ struct PathResolver::Impl
 
     void add_path(const std::filesystem::path& path) { m_paths.emplace_back(path); }
 
-    std::pair<std::filesystem::path, bool> resolve(const std::filesystem::path& path)
+    std::pair<std::filesystem::path, bool> resolve(const std::filesystem::path& path) const
     {
         for (const auto& p : path) {
             auto res = try_resolving_path(p, path);
@@ -54,8 +54,14 @@ struct PathResolver::Impl
 
 
 PathResolver::PathResolver()
-    : m_impl(std::make_unique<Impl>())
+    : PathResolver(".")
 {}
+
+PathResolver::PathResolver(const std::filesystem::path& path)
+    : m_impl(std::make_unique<Impl>())
+{
+    m_impl->add_path(path);
+}
 PathResolver::PathResolver(PathResolver&& o) = default;
 PathResolver::PathResolver(const PathResolver& o)
     : m_impl(std::make_unique<Impl>(*o.m_impl))
@@ -68,12 +74,18 @@ PathResolver& PathResolver::operator=(const PathResolver& o)
 }
 PathResolver::~PathResolver() = default;
 
+
+void PathResolver::clear_paths()
+{
+    m_impl->m_paths.clear();
+}
 void PathResolver::add_path(const std::filesystem::path& path)
 {
     m_impl->add_path(path);
 }
 
-std::pair<std::filesystem::path, bool> PathResolver::resolve(const std::filesystem::path& path)
+std::pair<std::filesystem::path, bool> PathResolver::resolve(
+    const std::filesystem::path& path) const
 {
     return m_impl->resolve(path);
 }

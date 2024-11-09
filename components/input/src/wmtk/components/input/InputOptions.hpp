@@ -6,11 +6,18 @@
 #include <optional>
 #include <vector>
 
+namespace wmtk::components {
+    namespace utils {
+    class PathResolver;
+    }
+}
 namespace wmtk::components::input {
 
 class InputOptions
 {
 public:
+    InputOptions();
+    ~InputOptions();
     std::filesystem::path file;
     std::optional<std::vector<std::vector<std::string>>> imported_attributes;
 
@@ -23,6 +30,7 @@ public:
     bool ignore_z_if_zero = false;
 
     bool operator==(const InputOptions& o) const;
+
 };
 
 

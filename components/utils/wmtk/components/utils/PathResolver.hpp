@@ -12,7 +12,9 @@ namespace wmtk::components::utils {
 class PathResolver
 {
 public:
+    // defaults to the path ".", i.e the working directory
     PathResolver();
+    PathResolver(const std::filesystem::path& path);
     ~PathResolver();
     PathResolver(PathResolver&&);
     PathResolver(const PathResolver&);
@@ -20,9 +22,10 @@ public:
     PathResolver& operator=(const PathResolver&);
 
     void add_path(const std::filesystem::path& path);
+    void clear_paths();
 
     // always returns a weakly_canonical upon success
-    std::pair<std::filesystem::path, bool> resolve(const std::filesystem::path& path);
+    std::pair<std::filesystem::path, bool> resolve(const std::filesystem::path& path) const;
 
     std::vector<std::filesystem::path> get_paths() const;
 

@@ -1,12 +1,16 @@
 #include "InputOptions.hpp"
-#include <wmtk/utils/Logger.hpp>
+#include <wmtk/components/utils/PathResolver.hpp>
 #include <wmtk/components/utils/json_utils.hpp>
+#include <wmtk/utils/Logger.hpp>
 
 
 namespace wmtk::components::input {
 
+InputOptions::InputOptions() = default;
+InputOptions::~InputOptions() = default;
 bool InputOptions::operator==(const InputOptions& o) const = default;
-}
+
+} // namespace wmtk::components::input
 
 namespace nlohmann {
 void adl_serializer<wmtk::components::input::InputOptions>::to_json(json& j, const Type& v)
@@ -17,14 +21,15 @@ void adl_serializer<wmtk::components::input::InputOptions>::to_json(json& j, con
     if (!v.name_spec.is_null()) {
         assert(!v.name_spec_file.has_value());
         j["name_spec"] = v.name_spec;
-    } else if(v.name_spec_file.has_value()) {
+    } else if (v.name_spec_file.has_value()) {
         j["name_spec_file"] = v.name_spec_file.value();
-
     }
+
+
     if (v.old_mode) {
         j["old_mode"] = true;
         j["ignore_z"] = v.ignore_z_if_zero; // keep around for deprecation purposes
-        //j["ignore_z_if_zero"] = v.ignore_z_if_zero;
+        // j["ignore_z_if_zero"] = v.ignore_z_if_zero;
         if (v.imported_attributes.has_value()) {
             const auto& imported_attrs = v.imported_attributes.value();
             if (imported_attrs.size() > 3) {
@@ -51,6 +56,7 @@ void adl_serializer<wmtk::components::input::InputOptions>::from_json(const json
         v.name_spec_file = j["name_spec_file"].get<std::filesystem::path>();
     }
 
+
     v.old_mode = false;
     if (j.contains("old_mode")) {
         v.old_mode = bool(j["old_mode"]);
@@ -69,7 +75,8 @@ void adl_serializer<wmtk::components::input::InputOptions>::from_json(const json
     if (v.old_mode) {
         v.ignore_z_if_zero = j.contains("ignore_z") ? bool(j["ignore_z"]) : false;
         // overwrite old ignore_z
-        //v.ignore_z_if_zero = j.contains("ignore_z_if_zero") ? bool(j["ignore_z_if_zero"]) : false;
+        // v.ignore_z_if_zero = j.contains("ignore_z_if_zero") ? bool(j["ignore_z_if_zero"]) :
+        // false;
         if (j.contains("tetrahedron_attributes")) {
             v.imported_attributes = {
                 {},
@@ -84,4 +91,5 @@ void adl_serializer<wmtk::components::input::InputOptions>::from_json(const json
         }
     }
 }
+
 } // namespace nlohmann

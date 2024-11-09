@@ -78,6 +78,16 @@ class IntegrationTest(unittest.TestCase):
             print(res.stdout.decode('utf-8'), flush=True)
         return res
 
+    def get_root_path(self, input_js):
+        root_tag = self.config["input_directory_tag"]
+        if root_tag in input_js:
+            if not os.path.isabs(input_js[root_tag]):
+
+                return os.path.join(self.data_folder, input_js[root_tag])
+        
+        return self.data_folder
+
+
     def create_reporter(self, input_json_file, output_json_file):
 
         # load the input json
@@ -86,9 +96,11 @@ class IntegrationTest(unittest.TestCase):
 
 
         # prepare it with reporter data
-        input_tag = self.config["input_tag"]
         oracle_tag = self.config["oracle_tag"]
+        root_tag = self.config["input_directory_tag"]
+
         input_js[oracle_tag] = os.path.abspath(os.path.join(self.config_folder, output_json_file))
+        input_js[root_tag ] = self.get_root_path(input_js)
 
         with tempfile.NamedTemporaryFile(mode='w', delete=True) as input_json:
             json.dump(input_js, input_json)
@@ -129,12 +141,8 @@ class IntegrationTest(unittest.TestCase):
 
             input_js[oracle_tag] = oracle_file.name
 
-            if root_tag in input_js:
-                if not os.path.isabs(input_js[root_tag]):
-
-                    input_js[root_tag] = os.path.join(self.data_folder, input_js[root_tag])
-            else:
-                input_js[root_tag] = self.data_folder
+                
+            input_js[root_tag] = self.get_root_path(input_js)
 
             with tempfile.NamedTemporaryFile(mode='w', delete=False) as input_json:
                 json.dump(input_js, input_json)
