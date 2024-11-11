@@ -82,6 +82,10 @@ void Operation::add_transfer_strategy(
 
 std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simplex)
 {
+    // Make it special for MeshConsolidate
+    if (operation_name == "MeshConsolidate") {
+        return execute(simplex);
+    }
     if (!mesh().is_valid(simplex)) {
         return {};
     }
@@ -110,8 +114,9 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 #ifdef WMTK_RECORD_OPERATIONS
 
             if (m_record && operation_name != "MeshConsolidate") {
-                if (succ_operations_count % 10000 == 0)
+                if (succ_operations_count % 10000 == 0) {
                     std::cout << "operation id: " << succ_operations_count << "\n";
+                }
 
                 // create a local atlas file
                 // std::cout << "operation " << operation_name << " is successful\n";
@@ -477,13 +482,18 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                         }
 
                     } else if (mesh().top_simplex_type() == PrimitiveType::Tetrahedron) {
-                        bool is_simplex_boundary = mesh().is_boundary(simplex);
-                        // TODO: implement this for tetrahedron mesh
+                        // TODO: BUG!!!! need to change this is_boundary to parent_scope
+                        bool is_simplex_boundary = mesh().parent_scope(
+                            [&](const simplex::Simplex& s) { return mesh().is_boundary(s); },
+                            simplex);
+                        // TODO: what about swap operation?
+                        bool need_get_boundary_surface =
+                            is_simplex_boundary && operation_name == "EdgeCollapse";
                         auto [T_after, V_after, F_bd_after, id_map_after, v_id_map_after] =
                             utils::get_local_tetmesh(
                                 static_cast<const TetMesh&>(mesh()),
                                 mods[0],
-                                is_simplex_boundary);
+                                is_simplex_boundary && operation_name == "EdgeCollapse");
                         auto [T_before, V_before, F_bd_before, id_map_before, v_id_map_before] =
                             mesh().parent_scope(
                                 [&](const simplex::Simplex& s) {
@@ -494,9 +504,10 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                     return utils::get_local_tetmesh(
                                         static_cast<const TetMesh&>(mesh()),
                                         s,
-                                        is_simplex_boundary);
+                                        is_simplex_boundary && operation_name == "EdgeCollapse");
                                 },
                                 simplex);
+
                         // STORE information to logfile
                         operation_log["T_after"]["rows"] = T_after.rows();
                         operation_log["T_after"]["values"] = matrix_to_json(T_after);
