@@ -1,7 +1,7 @@
 {
     "input": [
         {
-            "file": "_pos.msh",
+            "file": "blub_open.msh",
             "name_spec": "position"
         }
     ],
@@ -10,13 +10,11 @@
             "type": "boundary",
             "dimension": 1
         }
-
     },
-
     "output": {
-        "file": "ogre_boundary.hdf5",
-        "type": ".hdf5"
+        "position": {
+            "file": "blub.hdf5",
+            "type": ".hdf5"
+        }
     }
-
-
 }

@@ -131,6 +131,7 @@ class IntegrationTest(unittest.TestCase):
         with open(test_file) as f:
             try:
                 test_oracle = json.load(f)
+                f.close()
             except Exception as e:
                 print(f"Caught exception while loading file {test_file}: {e}", flush=True)
                 raise e

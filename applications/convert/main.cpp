@@ -34,9 +34,13 @@ std::shared_ptr<wmtk::Mesh> merge_meshes(
 {
     for (const auto& [parent, child_datas] : js.items()) {
         auto& parent_mesh = mc.get_mesh(parent);
+        auto& parent_named_mesh = mc.get_named_multimesh(parent);
         if (child_datas.is_string()) {
-            auto& child_mesh = mc.get_mesh(child_datas.get<std::string>());
+            const auto child_name = child_datas.get<std::string>();
+            auto& child_mesh = mc.get_mesh(child_name);
+            auto& child_named_mesh = mc.get_named_multimesh(child_name);
             components::multimesh::from_facet_bijection(parent_mesh, child_mesh);
+            parent_named_mesh.append_child_mesh_names(parent_mesh, child_named_mesh);
             return parent_mesh.shared_from_this();
 
         } else if (child_datas.is_object()) {
@@ -45,7 +49,9 @@ std::shared_ptr<wmtk::Mesh> merge_meshes(
             if (type == "facet_bijection") {
                 const std::string child_name = child_datas["name"];
                 auto& child_mesh = mc.get_mesh(child_name);
+                auto& child_named_mesh = mc.get_named_multimesh(child_name);
                 components::multimesh::from_facet_bijection(parent_mesh, child_mesh);
+                parent_named_mesh.append_child_mesh_names(parent_mesh, child_named_mesh);
                 return parent_mesh.shared_from_this();
 
             } else if (type == "boundary") {
@@ -54,10 +60,19 @@ std::shared_ptr<wmtk::Mesh> merge_meshes(
                 if (child_datas.contains("boundary_attribute_name")) {
                     boundary_attr_name = child_datas["boundary_attribute_name"];
                 }
-                components::multimesh::from_boundary(
+
+                std::string boundary_mesh_name = fmt::format("boundary_{}", dimension);
+                if (child_datas.contains("boundary_mesh_name")) {
+                    boundary_mesh_name = child_datas["boundary_mesh_name"];
+                }
+                auto mptr = components::multimesh::from_boundary(
                     parent_mesh,
                     wmtk::get_primitive_type_from_id(dimension),
                     boundary_attr_name);
+
+                auto& child_named_mesh = mc.emplace_mesh(*mptr, boundary_mesh_name);
+                parent_named_mesh.append_child_mesh_names(parent_mesh, child_named_mesh);
+
                 return parent_mesh.shared_from_this();
             }
         }
@@ -82,7 +97,7 @@ int run(const fs::path& config_path /*, const std::optional<fs::path>& name_spec
     wmtk::components::multimesh::MeshCollection meshes;
     components::utils::PathResolver path_resolver;
 
-    if(j.contains("root")) {
+    if (j.contains("root")) {
         path_resolver = j["root"];
     }
 
@@ -94,8 +109,9 @@ int run(const fs::path& config_path /*, const std::optional<fs::path>& name_spec
         }
     } else {
         wmtk::components::input::InputOptions opts = j["input"];
-        output_mesh =
-            meshes.add_mesh(wmtk::components::input::input(opts, path_resolver)).root().shared_from_this();
+        output_mesh = meshes.add_mesh(wmtk::components::input::input(opts, path_resolver))
+                          .root()
+                          .shared_from_this();
     }
 
     if (j.contains("tree")) {
@@ -116,16 +132,17 @@ int run(const fs::path& config_path /*, const std::optional<fs::path>& name_spec
     }
 
 
-     if (j.contains("report")) {
-         const std::string report = j["report"];
-         if (!report.empty()) {
-             nlohmann::json out_json;
-             auto& stats = out_json["stats"];
-             for(const auto& [name, meshptr]: meshes.all_meshes()) {
-                 stats[name] = wmtk::applications::utils::element_count_report_named(*meshptr);
-             }
-             j.erase("report");
-             out_json["input"] = j;
+    if (j.contains("report")) {
+        const std::string report = j["report"];
+        meshes.make_canonical();
+        if (!report.empty()) {
+            nlohmann::json out_json;
+            auto& stats = out_json["stats"];
+            for (const auto& [name, mesh] : meshes.all_meshes()) {
+                stats[name] = wmtk::applications::utils::element_count_report_named(mesh);
+            }
+            j.erase("report");
+            out_json["input"] = j;
 
 
             std::ofstream ofs(report);

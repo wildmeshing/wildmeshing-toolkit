@@ -241,19 +241,25 @@ std::vector<std::shared_ptr<Mesh>> Mesh::get_all_child_meshes() const
 
 std::vector<std::shared_ptr<const Mesh>> Mesh::get_all_meshes() const
 {
-    std::vector<std::shared_ptr<const Mesh>> meshes;
-    std::queue<std::shared_ptr<Mesh const>> queue;
-    //std::queue<Mesh const*> queue;
-    meshes.emplace_back(this);
-    while(!queue.empty()) {
-        const auto& cur = queue.front();
-        //Mesh const* cur = queue.front();
-        queue.pop();
-        meshes.emplace_back(cur->shared_from_this());
-        for(const auto& m: cur->get_child_meshes()) {
-            queue.emplace(m.get());
-        }
+    auto meshes2 = get_all_child_meshes();
+    std::vector<std::shared_ptr<Mesh const>> meshes;
+    meshes.emplace_back(shared_from_this());
+    for(const auto& m: meshes2) {
+        meshes.emplace_back(m);
     }
     return meshes;
+    //std::queue<std::shared_ptr<Mesh const>> queue;
+    ////std::queue<Mesh const*> queue;
+    //meshes.emplace_back(this);
+    //while(!queue.empty()) {
+    //    const auto& cur = queue.front();
+    //    //Mesh const* cur = queue.front();
+    //    queue.pop();
+    //    meshes.emplace_back(cur->shared_from_this());
+    //    for(const auto& m: cur->get_child_meshes()) {
+    //        queue.emplace(m.get());
+    //    }
+    //}
+    //return meshes;
 }
 } // namespace wmtk

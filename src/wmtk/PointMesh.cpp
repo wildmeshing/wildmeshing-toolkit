@@ -6,6 +6,7 @@ Tuple PointMesh::vertex_tuple_from_id(int64_t id) const
     return Tuple(-1, -1, -1, id);
 }
 
+PointMesh::~PointMesh() = default;
 PointMesh::PointMesh()
     : MeshCRTP<PointMesh>(0)
 {}
