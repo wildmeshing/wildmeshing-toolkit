@@ -1,11 +1,17 @@
 {
-    "input": {
-        "file": "ogre.hdf5",
-        "name_spec": 
-        {
-            "position": "uv"
-        }
-    }, 
+    "input": [
+      {
+        "file": "unit_test/meshes/camel.msh",
+        "name_spec": "position"
+      },
+      {
+        "file": "unit_test/meshes/cameluv.msh",
+        "name_spec": "uv"
+      }
+    ],
+    "tree": {
+      "position": "uv"
+    },
     "output": {
         "position": {
             "file": "ogre_pos.vtu",
