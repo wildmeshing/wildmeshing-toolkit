@@ -1,5 +1,6 @@
 #include "NamedMultiMesh.hpp"
 #include <fmt/ranges.h>
+#include <spdlog/spdlog.h>
 #include <nlohmann/json.hpp>
 #include <span>
 #include <vector>
@@ -51,7 +52,11 @@ struct NamedMultiMesh::Node
     {
         toks.emplace_back(name);
         if (!t.empty()) {
-            const auto& child = *m_children[t.front()];
+            const size_t index = t.front();
+            assert(index >= 0);
+            assert(index < m_children.size());
+            assert(bool(m_children[index]));
+            const auto& child = *m_children[index];
             child.get_name_tokens(t.subspan<1>(), toks);
         }
     }
@@ -194,7 +199,10 @@ std::map<std::string, std::shared_ptr<const Mesh>> NamedMultiMesh::all_meshes() 
 std::string NamedMultiMesh::get_name(const Mesh& m) const
 {
     std::vector<std::string_view> toks;
-    auto id = m.absolute_multi_mesh_id();
+    auto id = wmtk::multimesh::MultiMeshManager::relative_id(
+        m_root->absolute_multi_mesh_id(),
+
+        m.absolute_multi_mesh_id());
     m_name_root->get_name_tokens(id, toks);
     return fmt::format("{}", fmt::join(toks, "."));
 }

@@ -20,6 +20,7 @@
 #include "wmtk/components/multimesh/MeshCollection.hpp"
 #include "wmtk/components/multimesh/from_boundary.hpp"
 #include "wmtk/components/multimesh/from_facet_bijection.hpp"
+#include "wmtk/components/utils/PathResolver.hpp"
 
 using namespace wmtk::components;
 using namespace wmtk::applications;
@@ -79,16 +80,22 @@ int run(const fs::path& config_path /*, const std::optional<fs::path>& name_spec
     spdlog::warn("{}", j.dump(2));
 
     wmtk::components::multimesh::MeshCollection meshes;
+    components::utils::PathResolver path_resolver;
+
+    if(j.contains("root")) {
+        path_resolver = j["root"];
+    }
+
     std::shared_ptr<wmtk::Mesh> output_mesh;
     if (j["input"].is_array()) {
         for (const auto& in_opts_js : j["input"]) {
             wmtk::components::input::InputOptions opts = in_opts_js;
-            meshes.add_mesh(wmtk::components::input::input(opts));
+            meshes.add_mesh(wmtk::components::input::input(opts, path_resolver));
         }
     } else {
         wmtk::components::input::InputOptions opts = j["input"];
         output_mesh =
-            meshes.add_mesh(wmtk::components::input::input(opts)).root().shared_from_this();
+            meshes.add_mesh(wmtk::components::input::input(opts, path_resolver)).root().shared_from_this();
     }
 
     if (j.contains("tree")) {

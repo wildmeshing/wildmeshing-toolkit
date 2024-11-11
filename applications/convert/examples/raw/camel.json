@@ -13,8 +13,10 @@
         "position": "uv"
     },
     "output": {
-        "file": "camel.hdf5",
-        "type": ".hdf5"
+        "position": {
+            "file": "camel.hdf5",
+            "type": ".hdf5"
+        }
     }
 
 }

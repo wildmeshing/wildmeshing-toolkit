@@ -1,6 +1,5 @@
 #include "PathResolver.hpp"
 #include "json_utils.hpp"
-#include "resolve_path.hpp"
 
 
 namespace fs = std::filesystem;
@@ -23,7 +22,7 @@ std::pair<std::filesystem::path, bool> PathResolver::try_resolving_path(
 
     const fs::path resolved_path = fs::weakly_canonical(potential_base / path);
 
-    return {resolved_path, true};
+    return {resolved_path, fs::exists(resolved_path)};
 }
 
 struct PathResolver::Impl
@@ -38,7 +37,7 @@ struct PathResolver::Impl
 
     std::pair<std::filesystem::path, bool> resolve(const std::filesystem::path& path) const
     {
-        for (const auto& p : path) {
+        for (const auto& p : m_paths) {
             auto res = try_resolving_path(p, path);
             const auto& [new_path, succeeded] = res;
             if (succeeded) {
