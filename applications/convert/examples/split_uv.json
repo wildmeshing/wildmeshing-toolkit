@@ -11,15 +11,16 @@
       }
     ],
     "output": {
-        "position": {
-            "file": "ogre_pos.vtu",
-            "position_attribute": "vertices"
-        },
-        "position.uv": {
-            "file": "ogre_uv.vtu",
-            "position_attribute": "vertices"
-        }
-    }
+      "position": {
+        "file": "ogre_pos.vtu",
+        "position_attribute": "vertices"
+      },
+      "position.uv": {
+        "file": "ogre_uv.vtu",
+        "position_attribute": "vertices"
+      }
+    },
+    "root": "/home/mtao/.local/cpm/wmtk_data/aa0abd4658bb064515ee7cc2a7be87aa",
     "tree": {
       "position": "uv"
     }

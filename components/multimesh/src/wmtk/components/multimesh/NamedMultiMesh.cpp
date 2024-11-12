@@ -283,5 +283,7 @@ void NamedMultiMesh::append_child_mesh_names(const Mesh& parent, const NamedMult
     } else if (child_size < id) {
         *cur_mesh->m_children[id] = *o.m_name_root;
     }
+    cur_mesh->update_child_names();
+
 }
 } // namespace wmtk::components::multimesh
