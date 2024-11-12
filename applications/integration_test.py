@@ -54,7 +54,6 @@ class IntegrationTest(unittest.TestCase):
         if "test_data_directory" in config:
             self.data_folder = os.path.join(self.data_folder, config["test_directory"])
 
-        print(f"Data folder {self.data_folder}")
 
 
         self.executable = os.path.abspath(os.path.join(IntegrationTest.BINARY_FOLDER, self.name))
