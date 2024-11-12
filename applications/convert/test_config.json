@@ -1,5 +1,9 @@
 {
     "tests": [
+        "camel.json", 
+        "camel_split_uv.json", 
+        "make_boundary.json", 
+        "split_uv.json"
     ],
     "input_tag": "input",
     "oracle_tag": "report",
