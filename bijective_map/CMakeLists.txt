@@ -17,5 +17,15 @@ target_link_libraries(bijective_map_app
     CLI11::CLI11
     igl::core igl::opengl igl::glfw igl::stb
 )
-
 target_compile_features(bijective_map_app PUBLIC cxx_std_17)
+
+add_executable(bijective_map_app_tet bijective_map_app_tet.cpp track_operations_tet.hpp)
+target_link_libraries(bijective_map_app_tet
+    wmtk::toolkit
+    wmtk::data
+
+    # wmtk::components
+    CLI11::CLI11
+    igl::core igl::opengl igl::glfw igl::stb
+)
+target_compile_features(bijective_map_app_tet PUBLIC cxx_std_17)
