@@ -25,7 +25,12 @@ NamedMultiMesh& MeshCollection::add_mesh(NamedMultiMesh m)
 const NamedMultiMesh& MeshCollection::get_named_multimesh(const std::string_view& path) const
 {
     using namespace std;
-    const auto nmm_name = *internal::split_path(path).begin();
+#if defined(WMTK_ENABLED_CPP20)
+    std::ranges::view auto split = internal::split_path(path);
+#else
+    auto split = internal::split_path(path);
+#endif
+    const auto nmm_name = *split.begin();
     if (nmm_name.empty() && m_meshes.size() == 1) {
         wmtk::logger().debug("MeshCollection accessed with an empty name, but has only 1 mesh so "
                              "assuming that is the right mesh");
