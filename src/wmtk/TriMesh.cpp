@@ -347,10 +347,6 @@ bool TriMesh::is_valid(const Tuple& tuple) const
 
     if (!is_connectivity_valid) {
 #if !defined(NDEBUG)
-        assert(tuple.m_local_vid >= 0);
-        assert(tuple.m_local_eid >= 0);
-        assert(tuple.m_global_cid);
-        assert(autogen::tri_mesh::tuple_is_valid_for_ccw(tuple));
         logger().debug(
             "tuple.m_local_vid={} >= 0 && tuple.m_local_eid={} >= 0 &&"
             " tuple.m_global_cid={} >= 0 &&"
@@ -359,7 +355,10 @@ bool TriMesh::is_valid(const Tuple& tuple) const
             tuple.m_local_eid,
             tuple.m_global_cid,
             autogen::tri_mesh::tuple_is_valid_for_ccw(tuple));
-        ;
+        assert(tuple.m_local_vid >= 0);
+        assert(tuple.m_local_eid >= 0);
+        assert(tuple.m_global_cid >= 0);
+        assert(autogen::tri_mesh::tuple_is_valid_for_ccw(tuple));
 #endif
         return false;
     }

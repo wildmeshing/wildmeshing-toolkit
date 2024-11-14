@@ -216,7 +216,19 @@ bool EdgeMesh::is_valid(const Tuple& tuple) const
         return false;
     }
 
-    if (tuple.m_local_vid < 0 || tuple.m_global_cid < 0) return false;
+    const bool is_connectivity_valid = tuple.m_local_vid < 0 || tuple.m_global_cid < 0;
+    if (!is_connectivity_valid) {
+#if !defined(NDEBUG)
+        logger().debug(
+            "tuple.m_local_vid={} >= 0"
+            " tuple.m_global_cid={} >= 0",
+            tuple.m_local_vid,
+            tuple.m_global_cid);
+        assert(tuple.m_local_vid >= 0);
+        assert(tuple.m_global_cid >= 0);
+#endif
+        return false;
+    }
     return true;
 }
 
