@@ -35,7 +35,7 @@ struct NamedMultiMesh::Node
     std::string name;
     std::vector<std::unique_ptr<Node>> m_children;
 
-    std::map<std::string_view, int64_t> m_child_indexer;
+    std::map<std::string, int64_t> m_child_indexer;
     void set_names(const nlohmann::json& js)
     {
         if (js.is_null()) {
@@ -135,7 +135,7 @@ bool NamedMultiMesh::has_mesh(const std::string_view& path) const
     Node const* cur_mesh = m_name_root.get();
     assert(*split.begin() == cur_mesh->name || *split.begin() == "");
     for (const auto& token : std::ranges::views::drop(split, 1)) {
-        auto it = cur_mesh->m_child_indexer.find(token);
+        auto it = cur_mesh->m_child_indexer.find(std::string(token));
         if (it == cur_mesh->m_child_indexer.end()) {
             return false;
         } else {
@@ -157,7 +157,7 @@ auto NamedMultiMesh::get_id(const std::string_view& path) const -> std::vector<i
     Node const* cur_mesh = m_name_root.get();
     assert(*split.begin() == cur_mesh->name || *split.begin() == "");
     for (const auto& token : std::ranges::views::drop(split, 1)) {
-        int64_t index = cur_mesh->m_child_indexer.at(token);
+        int64_t index = cur_mesh->m_child_indexer.at(std::string(token));
         indices.emplace_back(index);
         cur_mesh = cur_mesh->m_children[index].get();
     }
@@ -284,6 +284,5 @@ void NamedMultiMesh::append_child_mesh_names(const Mesh& parent, const NamedMult
         *cur_mesh->m_children[id] = *o.m_name_root;
     }
     cur_mesh->update_child_names();
-
 }
 } // namespace wmtk::components::multimesh
