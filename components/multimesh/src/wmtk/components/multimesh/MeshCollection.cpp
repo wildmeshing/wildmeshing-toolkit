@@ -22,22 +22,6 @@ NamedMultiMesh& MeshCollection::add_mesh(NamedMultiMesh m)
 // }
 
 
-const NamedMultiMesh& MeshCollection::get_named_multimesh(const std::string_view& path) const
-{
-    using namespace std;
-#if defined(WMTK_ENABLED_CPP20)
-    std::ranges::view auto split = internal::split_path(path);
-#else
-    auto split = internal::split_path(path);
-#endif
-    const auto nmm_name = *split.begin();
-    if (nmm_name.empty() && m_meshes.size() == 1) {
-        wmtk::logger().debug("MeshCollection accessed with an empty name, but has only 1 mesh so "
-                             "assuming that is the right mesh");
-        return *m_meshes.begin()->second;
-    }
-    return *m_meshes.at(nmm_name);
-}
 const Mesh& MeshCollection::get_mesh(const std::string_view& path) const
 {
     return get_named_multimesh(path).get_mesh(path);
@@ -65,10 +49,32 @@ bool MeshCollection::has_mesh(const std::string_view& path) const
     }
 }
 
+const NamedMultiMesh& MeshCollection::get_named_multimesh(const std::string_view& path) const
+{
+    using namespace std;
+#if defined(WMTK_ENABLED_CPP20)
+    std::ranges::view auto split = internal::split_path(path);
+#else
+    auto split = internal::split_path(path);
+#endif
+    const auto nmm_name = *split.begin();
+    if (nmm_name.empty() && m_meshes.size() == 1) {
+        wmtk::logger().debug("MeshCollection accessed with an empty name, but has only 1 mesh so "
+                             "assuming that is the right mesh");
+        return *m_meshes.begin()->second;
+    }
+    return *m_meshes.at(nmm_name);
+}
 NamedMultiMesh& MeshCollection::get_named_multimesh(const std::string_view& path)
 {
     using namespace std;
-    const std::string_view nmm_name = *internal::split_path(path).begin();
+    using namespace std;
+#if defined(WMTK_ENABLED_CPP20)
+    std::ranges::view auto split = internal::split_path(path);
+#else
+    auto split = internal::split_path(path);
+#endif
+    const auto nmm_name = *split.begin();
     if (nmm_name.empty() && m_meshes.size() == 1) {
         wmtk::logger().debug("MeshCollection accessed with an empty name, but has only 1 mesh so "
                              "assuming that is the right mesh");
