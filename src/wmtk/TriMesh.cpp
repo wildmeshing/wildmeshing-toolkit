@@ -8,7 +8,7 @@
 
 namespace wmtk {
 
-    TriMesh::~TriMesh() = default;
+TriMesh::~TriMesh() = default;
 TriMesh::TriMesh()
     : MeshCRTP<TriMesh>(2)
     , m_vf_handle(register_attribute_typed<int64_t>("m_vf", PrimitiveType::Vertex, 1, false, -1))
@@ -17,7 +17,6 @@ TriMesh::TriMesh()
     , m_fe_handle(register_attribute_typed<int64_t>("m_fe", PrimitiveType::Triangle, 3, false, -1))
     , m_ff_handle(register_attribute_typed<int64_t>("m_ff", PrimitiveType::Triangle, 3, false, -1))
 {
-        spdlog::warn("Trimesh constructor {}", fmt::ptr(this));
     make_cached_accessors();
 }
 
@@ -33,7 +32,6 @@ void TriMesh::make_cached_accessors()
 TriMesh::TriMesh(TriMesh&& o)
     : MeshCRTP<TriMesh>(std::move(o))
 {
-        spdlog::warn("Trimesh constructor {}", fmt::ptr(this));
     m_vf_handle = o.m_vf_handle;
     m_ef_handle = o.m_ef_handle;
     m_fv_handle = o.m_fv_handle;
