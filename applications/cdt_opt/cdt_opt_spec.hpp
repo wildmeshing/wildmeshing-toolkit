@@ -2,7 +2,7 @@
 #include <nlohmann/json.hpp>
 namespace {
 
-nlohmann::json cdt_sec_spec = R"(
+nlohmann::json cdt_opt_spec = R"(
 [
     {
         "pointer": "/",
@@ -12,7 +12,9 @@ nlohmann::json cdt_sec_spec = R"(
           "root",
           "report",
           "envelope_size",
-          "length_rel"
+          "length_rel",
+          "target_max_amips",
+          "max_passes"
         ]
 },
 {
@@ -28,6 +30,16 @@ nlohmann::json cdt_sec_spec = R"(
     "pointer": "/length_rel",
     "type": "float",
     "default": 0.1
+},
+{
+    "pointer": "/target_max_amips",
+    "type": "float",
+    "default": 50
+},
+{
+    "pointer": "/max_passes",
+    "type": "int",
+    "default": 10
 },
 {
     "pointer": "/output",

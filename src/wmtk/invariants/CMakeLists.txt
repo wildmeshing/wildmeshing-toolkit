@@ -93,6 +93,8 @@ set(SRC_FILES
     EnergyFilterInvariant.hpp
     EnergyFilterInvariant.cpp
 
+    Swap2dEdgeLengthInvariant.hpp
+    Swap2dEdgeLengthInvariant.cpp
     FrozenVertexInvariant.hpp
     FrozenVertexInvariant.cpp
     Swap2dUnroundedVertexInvariant.hpp
