@@ -28,6 +28,10 @@ class IntegrationTest(unittest.TestCase):
         self.run_all = run_all
 
         self.data_folder = None if "data_folder" not in test_config else test_config["data_folder"]
+        if self.data_folder is None:
+            self.data_folder = None if "input_directory_tag" not in test_config else test_config["input_directory_tag"]
+        print(f"Data folder {self.data_folder}")
+
         self.config_folder = self.data_folder if "config_folder" not in test_config else test_config["config_folder"]
         msg = 'all (slow and fast)' if self.run_all else 'fast'
         print(f'Loading integration test [{name}] in {self.working_dir}, running {msg} tests', flush=True)
@@ -44,6 +48,13 @@ class IntegrationTest(unittest.TestCase):
 
         if "test_directory" in config:
             self.config_folder = os.path.join(self.config_folder, config["test_directory"])
+            if "test_data_directory" not in config:
+                # some applications assume taht these follow together
+                self.data_folder = os.path.join(self.data_folder, config["test_directory"])
+        if "test_data_directory" in config:
+            self.data_folder = os.path.join(self.data_folder, config["test_directory"])
+
+
 
         self.executable = os.path.abspath(os.path.join(IntegrationTest.BINARY_FOLDER, self.name))
 
@@ -66,6 +77,16 @@ class IntegrationTest(unittest.TestCase):
             print(res.stdout.decode('utf-8'), flush=True)
         return res
 
+    def get_root_path(self, input_js):
+        root_tag = self.config["input_directory_tag"]
+        if root_tag in input_js:
+            if not os.path.isabs(input_js[root_tag]):
+
+                return os.path.join(self.data_folder, input_js[root_tag])
+        
+        return self.data_folder
+
+
     def create_reporter(self, input_json_file, output_json_file):
 
         # load the input json
@@ -74,9 +95,11 @@ class IntegrationTest(unittest.TestCase):
 
 
         # prepare it with reporter data
-        input_tag = self.config["input_tag"]
         oracle_tag = self.config["oracle_tag"]
+        root_tag = self.config["input_directory_tag"]
+
         input_js[oracle_tag] = os.path.abspath(os.path.join(self.config_folder, output_json_file))
+        input_js[root_tag ] = self.get_root_path(input_js)
 
         with tempfile.NamedTemporaryFile(mode='w', delete=True) as input_json:
             json.dump(input_js, input_json)
@@ -107,6 +130,7 @@ class IntegrationTest(unittest.TestCase):
         with open(test_file) as f:
             try:
                 test_oracle = json.load(f)
+                f.close()
             except Exception as e:
                 print(f"Caught exception while loading file {test_file}: {e}", flush=True)
                 raise e
@@ -117,11 +141,8 @@ class IntegrationTest(unittest.TestCase):
 
             input_js[oracle_tag] = oracle_file.name
 
-            if root_tag in input_js:
-                if not os.path.isabs(input_js[root_tag]):
-                    input_js[root_tag] = os.path.join(self.config_folder, input_js[root_tag])
-            else:
-                input_js[root_tag] = self.config_folder
+                
+            input_js[root_tag] = self.get_root_path(input_js)
 
             with tempfile.NamedTemporaryFile(mode='w', delete=False) as input_json:
                 json.dump(input_js, input_json)

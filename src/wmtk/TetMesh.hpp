@@ -20,6 +20,7 @@ public:
     template <typename U, typename MeshType, int Dim>
     friend class attribute::Accessor;
     TetMesh();
+    ~TetMesh() override;
     TetMesh(const TetMesh& o) = delete;
     TetMesh(TetMesh&& o);
     TetMesh& operator=(const TetMesh& o) = delete;

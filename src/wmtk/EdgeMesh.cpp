@@ -5,6 +5,7 @@
 #include <numeric>
 #include <wmtk/utils/Logger.hpp>
 namespace wmtk {
+    EdgeMesh::~EdgeMesh() = default;
 EdgeMesh::EdgeMesh()
     : MeshCRTP<EdgeMesh>(1)
     , m_ve_handle(register_attribute_typed<int64_t>("m_ve", PrimitiveType::Vertex, 1, false, -1))

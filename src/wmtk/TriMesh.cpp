@@ -7,6 +7,8 @@
 #include <wmtk/utils/Logger.hpp>
 
 namespace wmtk {
+
+TriMesh::~TriMesh() = default;
 TriMesh::TriMesh()
     : MeshCRTP<TriMesh>(2)
     , m_vf_handle(register_attribute_typed<int64_t>("m_vf", PrimitiveType::Vertex, 1, false, -1))

@@ -22,6 +22,7 @@ public:
     friend class operations::utils::MultiMeshEdgeCollapseFunctor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     EdgeMesh();
+    ~EdgeMesh() override;
     EdgeMesh(const EdgeMesh& o) = delete;
     EdgeMesh(EdgeMesh&& o) = default;
     EdgeMesh& operator=(const EdgeMesh& o) = delete;

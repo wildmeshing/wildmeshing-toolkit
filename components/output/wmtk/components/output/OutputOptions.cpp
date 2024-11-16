@@ -2,23 +2,24 @@
 #include "OutputOptions.hpp"
 #include <fmt/std.h>
 #include <wmtk/Mesh.hpp>
+#include <wmtk/components/utils/json_utils.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 
 namespace wmtk::components::output {
 
-//bool OutputOptions::operator==(const OutputOptions& o) const = default;
-}
-
-namespace nlohmann {
-void adl_serializer<wmtk::components::output::OutputOptions>::to_json(json& j, const Type& v)
+WMTK_NLOHMANN_JSON_FRIEND_TO_JSON_PROTOTYPE(OutputOptions)
 {
+    WMTK_NLOHMANN_ASSIGN_TYPE_TO_JSON(file, type)
+    if (nlohmann_json_t.mesh_name_path.has_value()) {
+        nlohmann_json_j["mesh_name_path"] = nlohmann_json_t.mesh_name_path.value();
+    }
     //
-    j["file"] = v.file.string();
+    // nlohmann_json_j["file"] = nlohmann_json_t.file.string();
 
-    j["type"] = v.type;
+    // nlohmann_json_j["type"] = nlohmann_json_t.type;
 
-    j["position_attribute"] = std::visit(
+    nlohmann_json_j["position_attribute"] = std::visit(
         [](const auto& attr) -> std::string {
             using T = std::decay_t<decltype(attr)>;
             if constexpr (std::is_same_v<std::string, T>) {
@@ -27,23 +28,30 @@ void adl_serializer<wmtk::components::output::OutputOptions>::to_json(json& j, c
                 return attr.mesh().get_attribute_name(attr.handle());
             }
         },
-        v.position_attribute);
+        nlohmann_json_t.position_attribute);
 }
-void adl_serializer<wmtk::components::output::OutputOptions>::from_json(const json& j, Type& v)
+WMTK_NLOHMANN_JSON_FRIEND_FROM_JSON_PROTOTYPE(OutputOptions)
 {
-    if (j.is_string()) {
-        v.file = j.get<std::string>();
+    if (nlohmann_json_j.is_string()) {
+        nlohmann_json_t.file = nlohmann_json_j.get<std::filesystem::path>();
     } else {
-    v.file = j["file"].get<std::string>();
+        nlohmann_json_t.file = nlohmann_json_j["file"].get<std::filesystem::path>();
     }
-    if (j.contains("type")) {
-        v.type = j["type"];
+    if (nlohmann_json_j.contains("type")) {
+        nlohmann_json_t.type = nlohmann_json_j["type"];
     } else {
-        v.type = v.file.extension().string();
-        wmtk::logger().debug("Guessing extension type of [{}] is [{}]", v.file, v.type);
+        nlohmann_json_t.type = nlohmann_json_t.file.extension().string();
+        wmtk::logger().debug(
+            "Guessing extension type of [{}] is [{}]",
+            nlohmann_json_t.file,
+            nlohmann_json_t.type);
     }
-    if (j.contains("position_attribute")) {
-        v.position_attribute = j["position_attribute"];
+    if (nlohmann_json_j.contains("position_attribute")) {
+        nlohmann_json_t.position_attribute = nlohmann_json_j["position_attribute"];
+    }
+
+    if (nlohmann_json_j.contains("mesh_name_path")) {
+        nlohmann_json_t.mesh_name_path = nlohmann_json_j["mesh_name_path"].get<std::filesystem::path>();
     }
 }
-} // namespace nlohmann
+} // namespace wmtk::components::output

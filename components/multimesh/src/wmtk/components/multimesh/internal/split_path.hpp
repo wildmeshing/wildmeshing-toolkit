@@ -3,7 +3,7 @@
 #include <string_view>
 #include <sstream>
 
-namespace wmtk::components::input::internal {
+namespace wmtk::components::multimesh::internal {
 
 inline auto split_path(const std::string_view& view)
 {
@@ -34,4 +34,4 @@ inline auto split_path(const std::string_view& view)
     return tokens;
 #endif
 }
-} // namespace wmtk::components::input::internal
+} // namespace wmtk::components::multimesh::internal
