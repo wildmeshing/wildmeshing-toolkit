@@ -83,6 +83,7 @@ int run(const fs::path& config_path)
     }
     }
 
+    spdlog::warn("W {}", j.dump(2));
     if (j.contains("report")) {
         const std::string report = j["report"];
         if (!report.empty()) {
@@ -93,6 +94,7 @@ int run(const fs::path& config_path)
 
 
             std::ofstream ofs(report);
+            spdlog::warn("W {}", j.dump(2));
             ofs << out_json;
         }
     }
@@ -150,6 +152,7 @@ int main(int argc, char* argv[])
 
     int exit_mode = -1;
 
+    /*
     run_cmd->callback([&]() {
         spdlog::warn("YOW!");
         assert(json_input_file.has_value());
@@ -189,10 +192,11 @@ int main(int argc, char* argv[])
         disk_cmd->parsed(),
         triangle_fan_cmd->parsed(),
         grid_cmd->parsed());
+    */
 
 
     if(run_cmd->parsed()) {
-        exit_mode = 0;
+        exit_mode = run(json_input_file.value());
     }
     assert(exit_mode != -1); // "Some subcommand should have updated the exit mode"
     return exit_mode;
