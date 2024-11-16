@@ -4,9 +4,10 @@
 #include <filesystem>
 #include <nlohmann/json.hpp>
 #include <wmtk/applications/utils/parse_jse.hpp>
-#include <wmtk/components/input/MeshCollection.hpp>
 #include <wmtk/components/input/InputOptions.hpp>
-#include <wmtk/components/input/utils/get_attribute.hpp>
+#include <wmtk/components/multimesh/MeshCollection.hpp>
+#include <wmtk/components/multimesh/utils/get_attribute.hpp>
+#include "wmtk/components/utils/PathResolver.hpp"
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -14,8 +15,8 @@
 #include <wmtk/components/input/input.hpp>
 #include <wmtk/components/isotropic_remeshing/IsotropicRemeshingOptions.hpp>
 #include <wmtk/components/isotropic_remeshing/isotropic_remeshing.hpp>
-#include <wmtk/components/output/output.hpp>
 #include <wmtk/components/output/OutputOptions.hpp>
+#include <wmtk/components/output/output.hpp>
 #include <wmtk/components/utils/resolve_path.hpp>
 
 #include "make_multimesh.hpp"
@@ -37,27 +38,31 @@ int main(int argc, char* argv[])
         ->check(CLI::ExistingFile);
     CLI11_PARSE(app, argc, argv);
 
-    //nlohmann::json j = wmtk::applications::utils::parse_jse(
-    //    wmtk::applications::isotropic_remeshing::spec,
-    //    json_input_file);
+    // nlohmann::json j = wmtk::applications::utils::parse_jse(
+    //     wmtk::applications::isotropic_remeshing::spec,
+    //     json_input_file);
 
     spdlog::warn("File is {}", json_input_file.string());
     std::ifstream ifs(json_input_file);
     nlohmann::json j = nlohmann::json::parse(ifs);
 
     const auto input_js = j["input"];
+    components::utils::PathResolver path_resolver;
 
-
-    auto input_opts = input_js.get<wmtk::components::input::InputOptions>();
-    if(j.contains("root")) {
-        input_opts.working_directory = j["root"];
+    if (j.contains("root")) {
+        path_resolver = j["root"];
     }
 
 
-    wmtk::components::input::MeshCollection mc;
-    auto& named_mesh = mc.add_mesh(input_opts);
+    auto input_opts = input_js.get<wmtk::components::input::InputOptions>();
+
+
+    wmtk::components::multimesh::MeshCollection mc;
+
+    auto& named_mesh = mc.add_mesh(wmtk::components::input::input(input_opts, path_resolver));
+
     auto mesh_ptr = named_mesh.root().shared_from_this();
-    if(input_js.contains("multimesh")) {
+    if (input_js.contains("multimesh")) {
         mesh_ptr = make_multimesh(*mesh_ptr, input_js["multimesh"]);
 
         spdlog::info("{} children", mesh_ptr->get_all_child_meshes().size());
@@ -68,28 +73,27 @@ int main(int argc, char* argv[])
 
     options.load_json(j);
 
-    options.position_attribute = wmtk::components::input::utils::get_attribute(
-            mc, j["position_attribute"]);
+    options.position_attribute =
+        wmtk::components::multimesh::utils::get_attribute(mc, j["position_attribute"]);
 
     if (j.contains("inversion_position_attribute")) {
-    options.inversion_position_attribute = wmtk::components::input::utils::get_attribute(
-            mc, j["inversion_position_attribute"]);
+        options.inversion_position_attribute = wmtk::components::multimesh::utils::get_attribute(
+            mc,
+            j["inversion_position_attribute"]);
     }
-    if(j.contains("other_position_attributes")) {
-    for (const auto& other : j["other_position_attributes"]) {
-        options.other_position_attributes.emplace_back(
-                wmtk::components::input::utils::get_attribute(
-            mc, other));
+    if (j.contains("other_position_attributes")) {
+        for (const auto& other : j["other_position_attributes"]) {
+            options.other_position_attributes.emplace_back(
+                wmtk::components::multimesh::utils::get_attribute(mc, other));
+        }
     }
+    if (j.contains("pass_through_attributes")) {
+        for (const auto& other : j["pass_through_attributes"]) {
+            options.pass_through_attributes.emplace_back(
+                wmtk::components::multimesh::utils::get_attribute(mc, other));
+        }
     }
-    if(j.contains("pass_through_attributes")) {
-    for (const auto& other : j["pass_through_attributes"]) {
-        options.pass_through_attributes.emplace_back(
-                wmtk::components::input::utils::get_attribute(
-            mc, other));
-    }
-    }
-    for(const auto& attr: options.pass_through_attributes) {
+    for (const auto& attr : options.pass_through_attributes) {
         spdlog::info("Pass through: {}", attr.name());
     }
 
