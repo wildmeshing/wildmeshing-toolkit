@@ -4,8 +4,13 @@
 
 #include <wmtk/Mesh.hpp>
 
-#include "NamedMultiMesh.hpp"
-namespace wmtk::components::input {
+#include <wmtk/components/multimesh/NamedMultiMesh.hpp>
+namespace wmtk::components {
+namespace utils {
+class PathResolver;
+}
+
+namespace input {
 class InputOptions;
 
 
@@ -25,6 +30,11 @@ std::shared_ptr<Mesh> input(
     const bool ignore_z_if_zero = false,
     const std::vector<std::string>& tetrahedron_attributes = {});
 
-NamedMultiMesh input(const InputOptions& options);
+multimesh::NamedMultiMesh input(
+    const InputOptions& options,
+    const components::utils::PathResolver& resolver);
 
-} // namespace wmtk::components::input
+multimesh::NamedMultiMesh input(const InputOptions& options);
+
+} // namespace input
+} // namespace wmtk::components

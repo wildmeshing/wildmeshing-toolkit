@@ -6,6 +6,9 @@
 
 
 namespace wmtk::components {
+    namespace multimesh {
+        class NamedMultiMesh;
+    }
 
     namespace output {
         struct OutputOptions;
@@ -61,6 +64,10 @@ void output(
 
 void output(
     const Mesh& mesh,
+    const OutputOptions&);
+
+void output(
+    const multimesh::NamedMultiMesh& mesh,
     const OutputOptions&);
 
 /**

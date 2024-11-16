@@ -13,6 +13,7 @@
 namespace wmtk {
 
 using namespace autogen;
+TetMesh::~TetMesh() = default;
 
 TetMesh::TetMesh()
     : MeshCRTP<TetMesh>(3)

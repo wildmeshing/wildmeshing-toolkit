@@ -14,3 +14,4 @@ set(SRC_FILES
 
 
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
+target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC wmtk::multimesh) 

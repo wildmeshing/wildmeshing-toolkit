@@ -31,6 +31,7 @@ public:
     TriMesh& operator=(const TriMesh& o) = delete;
     TriMesh(TriMesh&& o);
     TriMesh& operator=(TriMesh&& o);
+    ~TriMesh() override;
     void make_cached_accessors();
 
 

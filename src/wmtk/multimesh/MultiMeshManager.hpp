@@ -13,7 +13,6 @@
 #include "utils/check_map_valid.hpp"
 
 
-
 namespace wmtk {
 
 class Mesh;
@@ -40,7 +39,7 @@ template <typename Visitor>
 class MultiMeshVisitorExecutor;
 
 namespace utils {
-    class MapValidator;
+class MapValidator;
 }
 
 } // namespace multimesh
@@ -533,6 +532,7 @@ protected: // protected to enable unit testing
         const std::vector<int64_t>& local_id_path) const;
 
 
+public:
     static std::vector<int64_t> least_upper_bound_id(
         const std::vector<int64_t>& a,
         const std::vector<int64_t>& b);

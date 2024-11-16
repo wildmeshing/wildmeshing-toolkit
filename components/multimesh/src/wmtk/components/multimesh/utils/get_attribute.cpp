@@ -3,7 +3,7 @@
 #include <wmtk/Mesh.hpp>
 #include "..//MeshCollection.hpp"
 #include "wmtk/utils/Logger.hpp"
-namespace wmtk::components::input::utils {
+namespace wmtk::components::multimesh::utils {
 
 wmtk::attribute::MeshAttributeHandle get_attribute(const Mesh& mesh, const nlohmann::json& js)
 {
@@ -77,11 +77,11 @@ wmtk::attribute::MeshAttributeHandle get_attribute(const Mesh& mesh, const nlohm
 }
 
 wmtk::attribute::MeshAttributeHandle get_attribute(
-    const wmtk::components::input::MeshCollection& mc,
+    const wmtk::components::multimesh::MeshCollection& mc,
     const nlohmann::json& js)
 {
     const std::string name = js.contains("mesh") ? js["mesh"] : "";
     const auto& mesh = mc.get_mesh(name);
     return get_attribute(mesh, js);
 }
-} // namespace wmtk::components::input::utils
+} // namespace wmtk::components::multimesh::utils
