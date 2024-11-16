@@ -155,6 +155,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ad3c7d8fb567608e42391e1e4d59c237d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3ad1e1da89aec444a4c0b7f2f9efdd0c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a3ad1e1da89aec444a4c0b7f2f9efdd0c">operator=</a> (<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;&amp;o)</td></tr>
 <tr class="separator:a3ad1e1da89aec444a4c0b7f2f9efdd0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afb62907ec36379f27dd6a0f3deb8d301"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#afb62907ec36379f27dd6a0f3deb8d301">~TriMesh</a> () override</td></tr>
+<tr class="separator:afb62907ec36379f27dd6a0f3deb8d301"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6844917af29492582c929e6b53b462f8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a6844917af29492582c929e6b53b462f8">make_cached_accessors</a> ()</td></tr>
 <tr class="separator:a6844917af29492582c929e6b53b462f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a17b808a46d1a31efc12d555e6721bd02"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a17b808a46d1a31efc12d555e6721bd02">switch_tuple</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;tuple, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> type) const final override</td></tr>
@@ -404,6 +406,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a64befe40e4c1e1c00ead66ed8adef232 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a64befe40e4c1e1c00ead66ed8adef232">get_all_child_meshes</a> () const</td></tr>
 <tr class="memdesc:a64befe40e4c1e1c00ead66ed8adef232 inherit pub_methods_classwmtk_1_1_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns all multimesh child meshes  <a href="classwmtk_1_1_mesh.html#a64befe40e4c1e1c00ead66ed8adef232">More...</a><br /></td></tr>
 <tr class="separator:a64befe40e4c1e1c00ead66ed8adef232 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aba46f9c47f89784ed555dcf3835daaec inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#aba46f9c47f89784ed555dcf3835daaec">get_all_meshes</a> () const</td></tr>
+<tr class="memdesc:aba46f9c47f89784ed555dcf3835daaec inherit pub_methods_classwmtk_1_1_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns all meshes in multimesh  <a href="classwmtk_1_1_mesh.html#aba46f9c47f89784ed555dcf3835daaec">More...</a><br /></td></tr>
+<tr class="separator:aba46f9c47f89784ed555dcf3835daaec inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2102fdea06a0c543437e67d77aeb2013 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">std::vector&lt; int64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a2102fdea06a0c543437e67d77aeb2013">absolute_multi_mesh_id</a> () const</td></tr>
 <tr class="memdesc:a2102fdea06a0c543437e67d77aeb2013 inherit pub_methods_classwmtk_1_1_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns a unique identifier for this mesh within a single multimesh structure  <a href="classwmtk_1_1_mesh.html#a2102fdea06a0c543437e67d77aeb2013">More...</a><br /></td></tr>
 <tr class="separator:a2102fdea06a0c543437e67d77aeb2013 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -659,9 +664,9 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00010">10</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00012">12</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00021">make_cached_accessors()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00023">make_cached_accessors()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -713,15 +718,40 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00030">30</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00032">32</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_tri_mesh_8hpp_source.html#l00090">m_ef_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00093">m_fe_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00094">m_ff_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00092">m_fv_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00089">m_vf_handle</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00021">make_cached_accessors()</a>.</p>
+<p class="reference">References <a class="el" href="_tri_mesh_8hpp_source.html#l00091">m_ef_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00094">m_fe_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00095">m_ff_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00093">m_fv_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00090">m_vf_handle</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00023">make_cached_accessors()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tri_mesh_ad3c7d8fb567608e42391e1e4d59c237d_cgraph.svg" width="395" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
+
+</div>
+</div>
+<a id="afb62907ec36379f27dd6a0f3deb8d301"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afb62907ec36379f27dd6a0f3deb8d301">&#9670;&nbsp;</a></span>~TriMesh()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">wmtk::TriMesh::~TriMesh </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">default</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 </div>
 </div>
@@ -754,9 +784,9 @@ Here is the call graph for this function:</div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#aae611243b3b57b86a41c2ee673ef81d7">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00524">524</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00526">526</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_tri_mesh_8hpp_source.html#l00090">m_ef_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00093">m_fe_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00094">m_ff_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00092">m_fv_handle</a>, and <a class="el" href="_tri_mesh_8hpp_source.html#l00089">m_vf_handle</a>.</p>
+<p class="reference">References <a class="el" href="_tri_mesh_8hpp_source.html#l00091">m_ef_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00094">m_fe_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00095">m_ff_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00093">m_fv_handle</a>, and <a class="el" href="_tri_mesh_8hpp_source.html#l00090">m_vf_handle</a>.</p>
 
 </div>
 </div>
@@ -784,11 +814,11 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00305">305</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00307">307</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="tri__mesh_2autogenerated__tables_8cpp_source.html#l00018">wmtk::autogen::tri_mesh::auto_2d_table_complete_edge</a>, <a class="el" href="_mesh_8hpp_source.html#l01015">wmtk::MeshCRTP&lt; TriMesh &gt;::id()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00167">is_ccw()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00338">is_valid()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00097">m_ef_accessor</a>, and <a class="el" href="_tri_mesh_8hpp_source.html#l00099">m_fe_accessor</a>.</p>
+<p class="reference">References <a class="el" href="tri__mesh_2autogenerated__tables_8cpp_source.html#l00018">wmtk::autogen::tri_mesh::auto_2d_table_complete_edge</a>, <a class="el" href="_mesh_8hpp_source.html#l01020">wmtk::MeshCRTP&lt; TriMesh &gt;::id()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00169">is_ccw()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00340">is_valid()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00098">m_ef_accessor</a>, and <a class="el" href="_tri_mesh_8hpp_source.html#l00100">m_fe_accessor</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00265">tuple_from_id()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00267">tuple_from_id()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -828,11 +858,11 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00326">326</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00328">328</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="tri__mesh_2autogenerated__tables_8cpp_source.html#l00016">wmtk::autogen::tri_mesh::auto_2d_table_complete_vertex</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00167">is_ccw()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00338">is_valid()</a>.</p>
+<p class="reference">References <a class="el" href="tri__mesh_2autogenerated__tables_8cpp_source.html#l00016">wmtk::autogen::tri_mesh::auto_2d_table_complete_vertex</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00169">is_ccw()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00340">is_valid()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00265">tuple_from_id()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00267">tuple_from_id()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -882,9 +912,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00124">124</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00125">125</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8cpp_source.html#l00112">wmtk::Mesh::is_valid()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00099">m_fe_accessor</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00098">m_fv_accessor</a>, <a class="el" href="_tuple_8hpp_source.html#l00046">wmtk::Tuple::m_global_cid</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8cpp_source.html#l00112">wmtk::Mesh::is_valid()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00100">m_fe_accessor</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00099">m_fv_accessor</a>, <a class="el" href="_tuple_8hpp_source.html#l00046">wmtk::Tuple::m_global_cid</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00153">wmtk::TriMesh::TriMeshOperationExecutor::get_collapse_simplices_to_delete()</a>, and <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00139">wmtk::TriMesh::TriMeshOperationExecutor::get_split_simplices_to_delete()</a>.</p>
 <div class="dynheader">
@@ -926,9 +956,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00074">74</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00075">75</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, and <a class="el" href="_mesh_8hpp_source.html#l01015">wmtk::MeshCRTP&lt; TriMesh &gt;::id()</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, and <a class="el" href="_mesh_8hpp_source.html#l01020">wmtk::MeshCRTP&lt; TriMesh &gt;::id()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -962,9 +992,9 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00075">75</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00076">76</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l01015">wmtk::MeshCRTP&lt; TriMesh &gt;::id()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l01020">wmtk::MeshCRTP&lt; TriMesh &gt;::id()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -998,9 +1028,9 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00073">73</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00074">74</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l01015">wmtk::MeshCRTP&lt; TriMesh &gt;::id()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l01020">wmtk::MeshCRTP&lt; TriMesh &gt;::id()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00038">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement()</a>.</p>
 <div class="dynheader">
@@ -1044,9 +1074,9 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00224">224</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00226">226</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_tri_mesh_8cpp_source.html#l00173">initialize()</a>, <a class="el" href="_mesh_8hpp_source.html#l00982">wmtk::Mesh::is_free()</a>, <a class="el" href="_mesh_8hpp_source.html#l00841">wmtk::Mesh::m_is_free</a>, and <a class="el" href="trimesh__topology__initialization_8cpp_source.html#l00010">wmtk::trimesh_topology_initialization()</a>.</p>
+<p class="reference">References <a class="el" href="_tri_mesh_8cpp_source.html#l00175">initialize()</a>, <a class="el" href="_mesh_8hpp_source.html#l00987">wmtk::Mesh::is_free()</a>, <a class="el" href="_mesh_8hpp_source.html#l00846">wmtk::Mesh::m_is_free</a>, and <a class="el" href="trimesh__topology__initialization_8cpp_source.html#l00010">wmtk::trimesh_topology_initialization()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1100,11 +1130,11 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00173">173</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00175">175</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh__attributes_8cpp_source.html#l00084">wmtk::Mesh::capacity()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8cpp_source.html#l00158">wmtk::Mesh::get_flag_accessor()</a>, <a class="el" href="_accessor_8hpp_source.html#l00095">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::index_access()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00090">m_ef_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00093">m_fe_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00094">m_ff_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00092">m_fv_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00089">m_vf_handle</a>, <a class="el" href="_caching_accessor_8hxx_source.html#l00054">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::scalar_attribute()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00097">wmtk::Mesh::set_capacities()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, <a class="el" href="classwmtk_1_1attribute_1_1_caching_accessor.html#a6869b1252af8463481fa82925ce9ae0d">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::vector_attribute()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="_mesh__attributes_8cpp_source.html#l00084">wmtk::Mesh::capacity()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8cpp_source.html#l00158">wmtk::Mesh::get_flag_accessor()</a>, <a class="el" href="_accessor_8hpp_source.html#l00095">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::index_access()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00091">m_ef_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00094">m_fe_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00095">m_ff_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00093">m_fv_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00090">m_vf_handle</a>, <a class="el" href="_caching_accessor_8hxx_source.html#l00054">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::scalar_attribute()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00097">wmtk::Mesh::set_capacities()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, <a class="el" href="classwmtk_1_1attribute_1_1_caching_accessor.html#a6869b1252af8463481fa82925ce9ae0d">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::vector_attribute()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="axis__aligned__fusion_8cpp_source.html#l00018">wmtk::components::multimesh::axis_aligned_fusion()</a>, <a class="el" href="_multi_mesh_from_tag_8cpp_source.html#l00377">wmtk::components::internal::MultiMeshFromTag::compute_substructure_mesh()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00224">initialize()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00233">initialize_free()</a>, and <a class="el" href="_disk_options_8cpp_source.html#l00010">wmtk::components::procedural::make_mesh()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="axis__aligned__fusion_8cpp_source.html#l00018">wmtk::components::multimesh::axis_aligned_fusion()</a>, <a class="el" href="_multi_mesh_from_tag_8cpp_source.html#l00377">wmtk::components::internal::MultiMeshFromTag::compute_substructure_mesh()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00226">initialize()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00235">initialize_free()</a>, and <a class="el" href="_disk_options_8cpp_source.html#l00010">wmtk::components::procedural::make_mesh()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1136,9 +1166,9 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00233">233</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00235">235</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_tri_mesh_8cpp_source.html#l00173">initialize()</a>.</p>
+<p class="reference">References <a class="el" href="_tri_mesh_8cpp_source.html#l00175">initialize()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_multi_mesh_from_tag_8cpp_source.html#l00320">wmtk::components::internal::MultiMeshFromTag::create_substructure_soup()</a>.</p>
 <div class="dynheader">
@@ -1181,7 +1211,7 @@ false otherwise </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="_mesh_8cpp_source.html#l00423">423</a> of file <a class="el" href="_mesh_8cpp_source.html">Mesh.cpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00369">is_connectivity_valid()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00371">is_connectivity_valid()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -1238,9 +1268,9 @@ false otherwise </dd></dl>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a24e1e157ff89e7898a48ce737bb4b23a">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00055">55</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00057">57</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00069">is_boundary_edge()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00075">is_boundary_vertex()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00071">is_boundary_edge()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00077">is_boundary_vertex()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00483">wmtk::components::internal::edge_insertion()</a>, and <a class="el" href="link__condition_8cpp_source.html#l00060">wmtk::simplex::link_condition()</a>.</p>
 <div class="dynheader">
@@ -1299,11 +1329,11 @@ false otherwise </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00069">69</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00071">71</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_tri_mesh_8cpp_source.html#l00338">is_valid()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00100">m_ff_accessor</a>, and <a class="el" href="_tuple_8hpp_source.html#l00048">wmtk::Tuple::m_local_eid</a>.</p>
+<p class="reference">References <a class="el" href="_tri_mesh_8cpp_source.html#l00340">is_valid()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00101">m_ff_accessor</a>, and <a class="el" href="_tuple_8hpp_source.html#l00048">wmtk::Tuple::m_local_eid</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00055">is_boundary()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00075">is_boundary_vertex()</a>, <a class="el" href="link__condition_8cpp_source.html#l00060">wmtk::simplex::link_condition()</a>, and <a class="el" href="test__component__isotropic__remeshing_8cpp_source.html#l00742">TEST_CASE()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00057">is_boundary()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00077">is_boundary_vertex()</a>, <a class="el" href="link__condition_8cpp_source.html#l00060">wmtk::simplex::link_condition()</a>, and <a class="el" href="test__component__isotropic__remeshing_8cpp_source.html#l00742">TEST_CASE()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1335,11 +1365,11 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00075">75</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00077">77</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_tri_mesh_8cpp_source.html#l00069">is_boundary_edge()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00116">switch_edge()</a>, and <a class="el" href="_tri_mesh_8hpp_source.html#l00120">switch_face()</a>.</p>
+<p class="reference">References <a class="el" href="_tri_mesh_8cpp_source.html#l00071">is_boundary_edge()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00117">switch_edge()</a>, and <a class="el" href="_tri_mesh_8hpp_source.html#l00121">switch_face()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_edge_valence_energy_8cpp_source.html#l00013">wmtk::function::EdgeValenceEnergy::get_value()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00055">is_boundary()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_edge_valence_energy_8cpp_source.html#l00013">wmtk::function::EdgeValenceEnergy::get_value()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00057">is_boundary()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1392,11 +1422,11 @@ false </dd></dl>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a56d57041196b23cfa33661c9488c9c4b">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00167">167</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00169">169</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="tri__mesh_2is__ccw_8hxx_source.html#l00010">wmtk::autogen::tri_mesh::is_ccw()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00338">is_valid()</a>.</p>
+<p class="reference">References <a class="el" href="tri__mesh_2is__ccw_8hxx_source.html#l00010">wmtk::autogen::tri_mesh::is_ccw()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00340">is_valid()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_simplex_inversion_invariant_8cpp_source.html#l00022">wmtk::SimplexInversionInvariant&lt; T &gt;::after()</a>, <a class="el" href="mesh__utils_8cpp_source.html#l00029">wmtk::mesh_utils::compute_vertex_normal()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00305">edge_tuple_from_id()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00326">face_tuple_from_id()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00096">switch_tuple()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00286">vertex_tuple_from_id()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_simplex_inversion_invariant_8cpp_source.html#l00022">wmtk::SimplexInversionInvariant&lt; T &gt;::after()</a>, <a class="el" href="mesh__utils_8cpp_source.html#l00029">wmtk::mesh_utils::compute_vertex_normal()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00307">edge_tuple_from_id()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00328">face_tuple_from_id()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00098">switch_tuple()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00288">vertex_tuple_from_id()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1437,11 +1467,11 @@ Here is the caller graph for this function:</div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#ac0fc5a0ccd8949ea39848ea00c5b925f">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00369">369</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00371">371</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh__attributes_8cpp_source.html#l00084">wmtk::Mesh::capacity()</a>, <a class="el" href="_caching_accessor_8hxx_source.html#l00069">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::const_scalar_attribute()</a>, <a class="el" href="classwmtk_1_1attribute_1_1_caching_accessor.html#ab7a79d239fdc3d22fbc0c3a83a5c50bc">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8cpp_source.html#l00158">wmtk::Mesh::get_flag_accessor()</a>, <a class="el" href="_accessor_8hpp_source.html#l00095">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::index_access()</a>, <a class="el" href="_mesh_8cpp_source.html#l00106">is_boundary()</a>, <a class="el" href="_logger_8cpp_source.html#l00058">wmtk::logger()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00090">m_ef_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00093">m_fe_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00094">m_ff_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00092">m_fv_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00089">m_vf_handle</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="_mesh__attributes_8cpp_source.html#l00084">wmtk::Mesh::capacity()</a>, <a class="el" href="_caching_accessor_8hxx_source.html#l00069">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::const_scalar_attribute()</a>, <a class="el" href="classwmtk_1_1attribute_1_1_caching_accessor.html#ab7a79d239fdc3d22fbc0c3a83a5c50bc">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8cpp_source.html#l00158">wmtk::Mesh::get_flag_accessor()</a>, <a class="el" href="_accessor_8hpp_source.html#l00095">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::index_access()</a>, <a class="el" href="_mesh_8cpp_source.html#l00106">is_boundary()</a>, <a class="el" href="_logger_8cpp_source.html#l00058">wmtk::logger()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00091">m_ef_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00094">m_fe_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00095">m_ff_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00093">m_fv_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00090">m_vf_handle</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_multi_mesh_from_tag_8cpp_source.html#l00377">wmtk::components::internal::MultiMeshFromTag::compute_substructure_mesh()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00338">is_valid()</a>, <a class="el" href="isotropic__remeshing_8cpp_source.html#l00056">wmtk::components::isotropic_remeshing::isotropic_remeshing()</a>, and <a class="el" href="test__component__isotropic__remeshing_8cpp_source.html#l00984">TEST_CASE()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_multi_mesh_from_tag_8cpp_source.html#l00377">wmtk::components::internal::MultiMeshFromTag::compute_substructure_mesh()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00340">is_valid()</a>, <a class="el" href="isotropic__remeshing_8cpp_source.html#l00056">wmtk::components::isotropic_remeshing::isotropic_remeshing()</a>, and <a class="el" href="test__component__isotropic__remeshing_8cpp_source.html#l00984">TEST_CASE()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1495,11 +1525,11 @@ false </dd></dl>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_mesh.html#a8cc8686f0688613806f43720b6db49e7">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00338">338</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00340">340</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_tri_mesh_8cpp_source.html#l00369">is_connectivity_valid()</a>, <a class="el" href="_mesh_8cpp_source.html#l00112">wmtk::Mesh::is_valid()</a>, <a class="el" href="_logger_8cpp_source.html#l00058">wmtk::logger()</a>, <a class="el" href="_tuple_8hpp_source.html#l00046">wmtk::Tuple::m_global_cid</a>, <a class="el" href="_tuple_8hpp_source.html#l00048">wmtk::Tuple::m_local_eid</a>, <a class="el" href="_tuple_8hpp_source.html#l00047">wmtk::Tuple::m_local_vid</a>, and <a class="el" href="tri__mesh_2is__ccw_8hxx_source.html#l00017">wmtk::autogen::tri_mesh::tuple_is_valid_for_ccw()</a>.</p>
+<p class="reference">References <a class="el" href="_tri_mesh_8cpp_source.html#l00371">is_connectivity_valid()</a>, <a class="el" href="_mesh_8cpp_source.html#l00112">wmtk::Mesh::is_valid()</a>, <a class="el" href="_logger_8cpp_source.html#l00058">wmtk::logger()</a>, <a class="el" href="_tuple_8hpp_source.html#l00046">wmtk::Tuple::m_global_cid</a>, <a class="el" href="_tuple_8hpp_source.html#l00048">wmtk::Tuple::m_local_eid</a>, <a class="el" href="_tuple_8hpp_source.html#l00047">wmtk::Tuple::m_local_vid</a>, and <a class="el" href="tri__mesh_2is__ccw_8hxx_source.html#l00017">wmtk::autogen::tri_mesh::tuple_is_valid_for_ccw()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00305">edge_tuple_from_id()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00326">face_tuple_from_id()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00069">is_boundary_edge()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00167">is_ccw()</a>, <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00360">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00096">switch_tuple()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00307">edge_tuple_from_id()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00328">face_tuple_from_id()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00071">is_boundary_edge()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00169">is_ccw()</a>, <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00360">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00098">switch_tuple()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1530,11 +1560,11 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00021">21</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00023">23</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_tri_mesh_8hpp_source.html#l00097">m_ef_accessor</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00090">m_ef_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00099">m_fe_accessor</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00093">m_fe_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00100">m_ff_accessor</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00094">m_ff_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00098">m_fv_accessor</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00092">m_fv_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00096">m_vf_accessor</a>, and <a class="el" href="_tri_mesh_8hpp_source.html#l00089">m_vf_handle</a>.</p>
+<p class="reference">References <a class="el" href="_tri_mesh_8hpp_source.html#l00098">m_ef_accessor</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00091">m_ef_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00100">m_fe_accessor</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00094">m_fe_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00101">m_ff_accessor</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00095">m_ff_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00099">m_fv_accessor</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00093">m_fv_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00097">m_vf_accessor</a>, and <a class="el" href="_tri_mesh_8hpp_source.html#l00090">m_vf_handle</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00041">operator=()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00010">TriMesh()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00043">operator=()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00012">TriMesh()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -1586,9 +1616,9 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00041">41</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00043">43</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_tri_mesh_8hpp_source.html#l00090">m_ef_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00093">m_fe_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00094">m_ff_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00092">m_fv_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00089">m_vf_handle</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00021">make_cached_accessors()</a>, and <a class="el" href="classwmtk_1_1_mesh.html#a95023adc2c48442ea624fdc111ba278b">wmtk::Mesh::operator=()</a>.</p>
+<p class="reference">References <a class="el" href="_tri_mesh_8hpp_source.html#l00091">m_ef_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00094">m_fe_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00095">m_ff_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00093">m_fv_handle</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00090">m_vf_handle</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00023">make_cached_accessors()</a>, and <a class="el" href="classwmtk_1_1_mesh.html#a95023adc2c48442ea624fdc111ba278b">wmtk::Mesh::operator=()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1624,7 +1654,7 @@ Here is the call graph for this function:</div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a0f1e2ecf58dcc8a2c86309cb11d1fe95">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00539">539</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00541">541</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_tuple_8hpp_source.html#l00046">wmtk::Tuple::m_global_cid</a>.</p>
 
@@ -1654,11 +1684,11 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00116">116</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00117">117</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00096">switch_tuple()</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00098">switch_tuple()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="mesh__utils_8cpp_source.html#l00007">wmtk::mesh_utils::compute_face_normal_area_weighted()</a>, <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00153">wmtk::TriMesh::TriMeshOperationExecutor::get_collapse_simplices_to_delete()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00075">is_boundary_vertex()</a>, and <a class="el" href="open__star_8cpp_source.html#l00025">wmtk::simplex::open_star()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="mesh__utils_8cpp_source.html#l00007">wmtk::mesh_utils::compute_face_normal_area_weighted()</a>, <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00153">wmtk::TriMesh::TriMeshOperationExecutor::get_collapse_simplices_to_delete()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00077">is_boundary_vertex()</a>, and <a class="el" href="open__star_8cpp_source.html#l00025">wmtk::simplex::open_star()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1698,11 +1728,11 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00120">120</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00121">121</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_tri_mesh_8cpp_source.html#l00096">switch_tuple()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>.</p>
+<p class="reference">References <a class="el" href="_tri_mesh_8cpp_source.html#l00098">switch_tuple()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00075">is_boundary_vertex()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00077">is_boundary_vertex()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1764,11 +1794,11 @@ Here is the caller graph for this function:</div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a965a8a24158c4aa8580c57ba09f885f7">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00096">96</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00098">98</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8hpp_source.html#l01015">wmtk::MeshCRTP&lt; TriMesh &gt;::id()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00167">is_ccw()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00338">is_valid()</a>, <a class="el" href="tri__mesh_2local__switch__tuple_8hxx_source.html#l00012">wmtk::autogen::tri_mesh::local_switch_tuple()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00099">m_fe_accessor</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00100">m_ff_accessor</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00098">m_fv_accessor</a>, <a class="el" href="_tuple_8hpp_source.html#l00048">wmtk::Tuple::m_local_eid</a>, <a class="el" href="_tuple_8hpp_source.html#l00049">wmtk::Tuple::m_local_fid</a>, <a class="el" href="_tuple_8hpp_source.html#l00047">wmtk::Tuple::m_local_vid</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8hpp_source.html#l01020">wmtk::MeshCRTP&lt; TriMesh &gt;::id()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00169">is_ccw()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00340">is_valid()</a>, <a class="el" href="tri__mesh_2local__switch__tuple_8hxx_source.html#l00012">wmtk::autogen::tri_mesh::local_switch_tuple()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00100">m_fe_accessor</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00101">m_ff_accessor</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00099">m_fv_accessor</a>, <a class="el" href="_tuple_8hpp_source.html#l00048">wmtk::Tuple::m_local_eid</a>, <a class="el" href="_tuple_8hpp_source.html#l00049">wmtk::Tuple::m_local_fid</a>, <a class="el" href="_tuple_8hpp_source.html#l00047">wmtk::Tuple::m_local_vid</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_simplex_inversion_invariant_8cpp_source.html#l00022">wmtk::SimplexInversionInvariant&lt; T &gt;::after()</a>, <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00483">wmtk::components::internal::edge_insertion()</a>, <a class="el" href="tri__mesh_2_edge_operation_data_8cpp_source.html#l00023">wmtk::operations::tri_mesh::EdgeOperationData::input_endpoints()</a>, <a class="el" href="link__condition_8cpp_source.html#l00060">wmtk::simplex::link_condition()</a>, <a class="el" href="link__condition_8cpp_source.html#l00012">wmtk::simplex::link_condition_closed_trimesh()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00116">switch_edge()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00120">switch_face()</a>, and <a class="el" href="_tri_mesh_8hpp_source.html#l00112">switch_vertex()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_simplex_inversion_invariant_8cpp_source.html#l00022">wmtk::SimplexInversionInvariant&lt; T &gt;::after()</a>, <a class="el" href="components_2edge__insertion_2wmtk_2components_2edge__insertion_2internal_2edge__insertion_8cpp_source.html#l00483">wmtk::components::internal::edge_insertion()</a>, <a class="el" href="tri__mesh_2_edge_operation_data_8cpp_source.html#l00023">wmtk::operations::tri_mesh::EdgeOperationData::input_endpoints()</a>, <a class="el" href="link__condition_8cpp_source.html#l00060">wmtk::simplex::link_condition()</a>, <a class="el" href="link__condition_8cpp_source.html#l00012">wmtk::simplex::link_condition_closed_trimesh()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00117">switch_edge()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00121">switch_face()</a>, and <a class="el" href="_tri_mesh_8hpp_source.html#l00113">switch_vertex()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1808,9 +1838,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00112">112</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00113">113</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_tri_mesh_8cpp_source.html#l00096">switch_tuple()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="_tri_mesh_8cpp_source.html#l00098">switch_tuple()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="mesh__utils_8cpp_source.html#l00007">wmtk::mesh_utils::compute_face_normal_area_weighted()</a>, <a class="el" href="mesh__utils_8cpp_source.html#l00029">wmtk::mesh_utils::compute_vertex_normal()</a>, and <a class="el" href="_edge_valence_energy_8cpp_source.html#l00013">wmtk::function::EdgeValenceEnergy::get_value()</a>.</p>
 <div class="dynheader">
@@ -1868,9 +1898,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00242">242</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00244">244</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_tri_mesh_8hpp_source.html#l00099">m_fe_accessor</a>, and <a class="el" href="_tri_mesh_8hpp_source.html#l00098">m_fv_accessor</a>.</p>
+<p class="reference">References <a class="el" href="_tri_mesh_8hpp_source.html#l00100">m_fe_accessor</a>, and <a class="el" href="_tri_mesh_8hpp_source.html#l00099">m_fv_accessor</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00360">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()()</a>, and <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00038">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement()</a>.</p>
 <div class="dynheader">
@@ -1927,9 +1957,9 @@ Here is the caller graph for this function:</div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a60165ceb4c2db2731df90e4ac100637d">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00265">265</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00267">267</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00305">edge_tuple_from_id()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00326">face_tuple_from_id()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00286">vertex_tuple_from_id()</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00307">edge_tuple_from_id()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00328">face_tuple_from_id()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00288">vertex_tuple_from_id()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1963,11 +1993,11 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00286">286</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00288">288</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="tri__mesh_2autogenerated__tables_8cpp_source.html#l00016">wmtk::autogen::tri_mesh::auto_2d_table_complete_vertex</a>, <a class="el" href="_mesh_8hpp_source.html#l01015">wmtk::MeshCRTP&lt; TriMesh &gt;::id()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00167">is_ccw()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00098">m_fv_accessor</a>, and <a class="el" href="_tri_mesh_8hpp_source.html#l00096">m_vf_accessor</a>.</p>
+<p class="reference">References <a class="el" href="tri__mesh_2autogenerated__tables_8cpp_source.html#l00016">wmtk::autogen::tri_mesh::auto_2d_table_complete_vertex</a>, <a class="el" href="_mesh_8hpp_source.html#l01020">wmtk::MeshCRTP&lt; TriMesh &gt;::id()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00169">is_ccw()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00099">m_fv_accessor</a>, and <a class="el" href="_tri_mesh_8hpp_source.html#l00097">m_vf_accessor</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00265">tuple_from_id()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00267">tuple_from_id()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -2017,7 +2047,7 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00517">517</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8cpp_source.html#l00519">519</a> of file <a class="el" href="_tri_mesh_8cpp_source.html">TriMesh.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_tuple_8hpp_source.html#l00046">wmtk::Tuple::m_global_cid</a>.</p>
 
@@ -2070,7 +2100,7 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00124">124</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00125">125</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
 
 </div>
 </div>
@@ -2167,9 +2197,9 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00097">97</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00098">98</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00305">edge_tuple_from_id()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00021">make_cached_accessors()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00307">edge_tuple_from_id()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00023">make_cached_accessors()</a>.</p>
 
 </div>
 </div>
@@ -2193,9 +2223,9 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00090">90</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00091">91</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00524">connectivity_attributes()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00173">initialize()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00369">is_connectivity_valid()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00021">make_cached_accessors()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00041">operator=()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00030">TriMesh()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00526">connectivity_attributes()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00175">initialize()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00371">is_connectivity_valid()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00023">make_cached_accessors()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00043">operator=()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00032">TriMesh()</a>.</p>
 
 </div>
 </div>
@@ -2219,9 +2249,9 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00099">99</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00100">100</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00305">edge_tuple_from_id()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00124">id()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00021">make_cached_accessors()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00096">switch_tuple()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00242">tuple_from_global_ids()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00307">edge_tuple_from_id()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00125">id()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00023">make_cached_accessors()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00098">switch_tuple()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00244">tuple_from_global_ids()</a>.</p>
 
 </div>
 </div>
@@ -2245,9 +2275,9 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00093">93</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00094">94</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00524">connectivity_attributes()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00173">initialize()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00369">is_connectivity_valid()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00021">make_cached_accessors()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00041">operator=()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00030">TriMesh()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00526">connectivity_attributes()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00175">initialize()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00371">is_connectivity_valid()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00023">make_cached_accessors()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00043">operator=()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00032">TriMesh()</a>.</p>
 
 </div>
 </div>
@@ -2271,9 +2301,9 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00100">100</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00101">101</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00069">is_boundary_edge()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00021">make_cached_accessors()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00096">switch_tuple()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00071">is_boundary_edge()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00023">make_cached_accessors()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00098">switch_tuple()</a>.</p>
 
 </div>
 </div>
@@ -2297,9 +2327,9 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00094">94</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00095">95</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00524">connectivity_attributes()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00173">initialize()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00369">is_connectivity_valid()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00021">make_cached_accessors()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00041">operator=()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00030">TriMesh()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00526">connectivity_attributes()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00175">initialize()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00371">is_connectivity_valid()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00023">make_cached_accessors()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00043">operator=()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00032">TriMesh()</a>.</p>
 
 </div>
 </div>
@@ -2323,9 +2353,9 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00098">98</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00099">99</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tri_mesh_8hpp_source.html#l00124">id()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00021">make_cached_accessors()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00096">switch_tuple()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00242">tuple_from_global_ids()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00286">vertex_tuple_from_id()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tri_mesh_8hpp_source.html#l00125">id()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00023">make_cached_accessors()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00098">switch_tuple()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00244">tuple_from_global_ids()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00288">vertex_tuple_from_id()</a>.</p>
 
 </div>
 </div>
@@ -2349,9 +2379,9 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00092">92</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00093">93</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00524">connectivity_attributes()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00173">initialize()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00369">is_connectivity_valid()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00021">make_cached_accessors()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00041">operator=()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00030">TriMesh()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00526">connectivity_attributes()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00175">initialize()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00371">is_connectivity_valid()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00023">make_cached_accessors()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00043">operator=()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00032">TriMesh()</a>.</p>
 
 </div>
 </div>
@@ -2375,9 +2405,9 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00096">96</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00097">97</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00021">make_cached_accessors()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00286">vertex_tuple_from_id()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00023">make_cached_accessors()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00288">vertex_tuple_from_id()</a>.</p>
 
 </div>
 </div>
@@ -2401,9 +2431,9 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00089">89</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_8hpp_source.html#l00090">90</a> of file <a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00524">connectivity_attributes()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00173">initialize()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00369">is_connectivity_valid()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00021">make_cached_accessors()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00041">operator=()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00030">TriMesh()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00526">connectivity_attributes()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00175">initialize()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00371">is_connectivity_valid()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00023">make_cached_accessors()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00043">operator=()</a>, and <a class="el" href="_tri_mesh_8cpp_source.html#l00032">TriMesh()</a>.</p>
 
 </div>
 </div>

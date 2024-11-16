@@ -121,34 +121,45 @@ $(document).ready(function(){initNavTree('input_8hpp_source.html',''); initResiz
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160; </div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_mesh_8hpp.html">wmtk/Mesh.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160; </div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_named_multi_mesh_8hpp.html">NamedMultiMesh.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components_1_1input.html">wmtk::components::input</a> {</div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="keyword">class </span>InputOptions;</div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160; </div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160; </div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="comment">/*</span></div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="comment"> * @brief Read a mesh from file.</span></div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="comment"> *</span></div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="comment"> * This method wraps MeshReader::read_mesh and adds some validity checks.</span></div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="comment"> * It can read .msh and .hdf5 file format.</span></div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment"> *</span></div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment"> * @param file The mesh file.</span></div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="comment"> * @param ignore_z_if_zero Ignore the z-component of points if it is zero and generate a mesh with</span></div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="comment"> * 2D positions.</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="comment"> * @param tetrahedron_attributes Read tetrahedron attributes from an .msh file.</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="comment"> */</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;std::shared_ptr&lt;Mesh&gt; <a class="code" href="namespacewmtk_1_1components_1_1input.html#a324e10679ed262426e707cacb92aaf01">input</a>(</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <span class="keyword">const</span> std::filesystem::path&amp; file,</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">bool</span> ignore_z_if_zero = <span class="keyword">false</span>,</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <span class="keyword">const</span> std::vector&lt;std::string&gt;&amp; tetrahedron_attributes = {});</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;NamedMultiMesh <a class="code" href="namespacewmtk_1_1components_1_1input.html#a324e10679ed262426e707cacb92aaf01">input</a>(<span class="keyword">const</span> InputOptions&amp; options);</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;} <span class="comment">// namespace wmtk::components::input</span></div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_named_multi_mesh_8hpp.html">wmtk/components/multimesh/NamedMultiMesh.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html">wmtk::components</a> {</div>
+<div class="line"><a name="l00009"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components_1_1utils.html">    9</a></span>&#160;<span class="keyword">namespace </span>utils {</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1components_1_1utils_1_1_path_resolver.html">PathResolver</a>;</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;}</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160; </div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components_1_1input.html#a324e10679ed262426e707cacb92aaf01">input</a> {</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="keyword">class </span>InputOptions;</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160; </div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment">/*</span></div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment"> * @brief Read a mesh from file.</span></div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="comment"> *</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="comment"> * This method wraps MeshReader::read_mesh and adds some validity checks.</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="comment"> * It can read .msh and .hdf5 file format.</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="comment"> *</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="comment"> * @param file The mesh file.</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="comment"> * @param ignore_z_if_zero Ignore the z-component of points if it is zero and generate a mesh with</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="comment"> * 2D positions.</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="comment"> * @param tetrahedron_attributes Read tetrahedron attributes from an .msh file.</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="comment"> */</span></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;std::shared_ptr&lt;Mesh&gt; <a class="code" href="namespacewmtk_1_1components_1_1input.html#a324e10679ed262426e707cacb92aaf01">input</a>(</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <span class="keyword">const</span> std::filesystem::path&amp; file,</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">bool</span> ignore_z_if_zero = <span class="keyword">false</span>,</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keyword">const</span> std::vector&lt;std::string&gt;&amp; tetrahedron_attributes = {});</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;multimesh::NamedMultiMesh <a class="code" href="namespacewmtk_1_1components_1_1input.html#a324e10679ed262426e707cacb92aaf01">input</a>(</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keyword">const</span> InputOptions&amp; options,</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1components_1_1utils_1_1_path_resolver.html">components::utils::PathResolver</a>&amp; resolver);</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;multimesh::NamedMultiMesh <a class="code" href="namespacewmtk_1_1components_1_1input.html#a324e10679ed262426e707cacb92aaf01">input</a>(<span class="keyword">const</span> InputOptions&amp; options);</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;} <span class="comment">// namespace input</span></div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
 <div class="ttc" id="a_mesh_8hpp_html"><div class="ttname"><a href="_mesh_8hpp.html">Mesh.hpp</a></div></div>
 <div class="ttc" id="a_named_multi_mesh_8hpp_html"><div class="ttname"><a href="_named_multi_mesh_8hpp.html">NamedMultiMesh.hpp</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_1_1input_html"><div class="ttname"><a href="namespacewmtk_1_1components_1_1input.html">wmtk::components::input</a></div><div class="ttdef"><b>Definition:</b> <a href="src_2wmtk_2components_2input_2input_8cpp_source.html#l00008">input.cpp:8</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_1_1input_html_a324e10679ed262426e707cacb92aaf01"><div class="ttname"><a href="namespacewmtk_1_1components_1_1input.html#a324e10679ed262426e707cacb92aaf01">wmtk::components::input::input</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; input(const std::filesystem::path &amp;file, const bool ignore_z_if_zero, const std::vector&lt; std::string &gt; &amp;tetrahedron_attributes)</div><div class="ttdef"><b>Definition:</b> <a href="src_2wmtk_2components_2input_2input_8cpp_source.html#l00010">input.cpp:10</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1components_1_1utils_1_1_path_resolver_html"><div class="ttname"><a href="classwmtk_1_1components_1_1utils_1_1_path_resolver.html">wmtk::components::utils::PathResolver</a></div><div class="ttdef"><b>Definition:</b> <a href="_path_resolver_8hpp_source.html#l00012">PathResolver.hpp:13</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_1_1input_html_a324e10679ed262426e707cacb92aaf01"><div class="ttname"><a href="namespacewmtk_1_1components_1_1input.html#a324e10679ed262426e707cacb92aaf01">wmtk::components::input::input</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; input(const std::filesystem::path &amp;file, const bool ignore_z_if_zero, const std::vector&lt; std::string &gt; &amp;tetrahedron_attributes)</div><div class="ttdef"><b>Definition:</b> <a href="src_2wmtk_2components_2input_2input_8cpp_source.html#l00012">input.cpp:12</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_html"><div class="ttname"><a href="namespacewmtk_1_1components.html">wmtk::components</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00014">Tuple.hpp:14</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->

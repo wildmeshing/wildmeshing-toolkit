@@ -2,6 +2,7 @@ var classwmtk_1_1_edge_mesh =
 [
     [ "EdgeMeshOperationExecutor", "classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html", "classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor" ],
     [ "EdgeMesh", "classwmtk_1_1_edge_mesh.html#a330407336160b1ebe762267f214787b3", null ],
+    [ "~EdgeMesh", "classwmtk_1_1_edge_mesh.html#aa7afedd14fd602beb08931fe35856d5f", null ],
     [ "EdgeMesh", "classwmtk_1_1_edge_mesh.html#ac355ae75cec3230b301784fc95a2e1f7", null ],
     [ "EdgeMesh", "classwmtk_1_1_edge_mesh.html#ae87962eecc998a73c8cfb23457ef2127", null ],
     [ "connectivity_attributes", "classwmtk_1_1_edge_mesh.html#afebb96e4c7a3cea00d27003e8664e682", null ],

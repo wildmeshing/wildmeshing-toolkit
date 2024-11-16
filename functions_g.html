@@ -147,6 +147,9 @@ $(document).ready(function(){initNavTree('functions_g.html',''); initResizable()
 <li>get_all_id_simplex()
 : <a class="el" href="classwmtk_1_1_mesh.html#a7c4d2d73a53aa94cfae3b27b6b1cd188">wmtk::Mesh</a>
 </li>
+<li>get_all_meshes()
+: <a class="el" href="classwmtk_1_1_mesh.html#aba46f9c47f89784ed555dcf3835daaec">wmtk::Mesh</a>
+</li>
 <li>get_alternative()
 : <a class="el" href="classwmtk_1_1operations_1_1internal_1_1_collapse_alternate_facet_data.html#aec408f6fcc5cb735d8761af17631bff9">wmtk::operations::internal::CollapseAlternateFacetData</a>
 , <a class="el" href="classwmtk_1_1operations_1_1internal_1_1_split_alternate_facet_data.html#a1e89ba699efda4818d81a6b8d2f38057">wmtk::operations::internal::SplitAlternateFacetData</a>
@@ -265,7 +268,7 @@ $(document).ready(function(){initNavTree('functions_g.html',''); initResizable()
 , <a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html#ad543cc6ef0d7b7a93a0984d9050d6542">wmtk::function::PerSimplexFunction</a>
 </li>
 <li>get_id()
-: <a class="el" href="classwmtk_1_1components_1_1input_1_1_named_multi_mesh.html#a739742a7706120fcd260a7e02ec0e802">wmtk::components::input::NamedMultiMesh</a>
+: <a class="el" href="classwmtk_1_1components_1_1multimesh_1_1_named_multi_mesh.html#a82922e3282c58bad71202638eb1213d9">wmtk::components::multimesh::NamedMultiMesh</a>
 , <a class="el" href="classwmtk_1_1io_1_1_cached_multi_mesh.html#addd82d2162444af1e704bd82bfba5973">wmtk::io::CachedMultiMesh</a>
 , <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a31b56eba1f5bd731f738170979d38bfc">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;</a>
 </li>
@@ -285,7 +288,7 @@ $(document).ready(function(){initNavTree('functions_g.html',''); initResizable()
 : <a class="el" href="structwmtk_1_1utils_1_1metaprogramming_1_1_derived_reference_wrapper_variant_traits.html#aae08741ce6262ff06bee06b9375117f4">wmtk::utils::metaprogramming::DerivedReferenceWrapperVariantTraits&lt; BaseType_, DerivedTypes &gt;</a>
 </li>
 <li>get_index_access()
-: <a class="el" href="classwmtk_1_1_mesh.html#a271e61e94542997f75528bc97cd91dba">wmtk::Mesh</a>
+: <a class="el" href="classwmtk_1_1_mesh.html#a6b07cce62863ad5aafb1bf6d43d7032b">wmtk::Mesh</a>
 </li>
 <li>get_int64_t_matrix()
 : <a class="el" href="classwmtk_1_1utils_1_1_eigen_matrix_writer.html#ab6ea4733784a08f80e81b23769f5fb5c">wmtk::utils::EigenMatrixWriter</a>
@@ -309,9 +312,9 @@ $(document).ready(function(){initNavTree('functions_g.html',''); initResizable()
 , <a class="el" href="classwmtk_1_1multimesh_1_1_mappable_container.html#a468f5c77f3df34068f747f7368655340">wmtk::multimesh::MappableContainer</a>
 </li>
 <li>get_mesh()
-: <a class="el" href="classwmtk_1_1components_1_1input_1_1_mesh_collection.html#a02947d8208d42d708e14b8062620ead3">wmtk::components::input::MeshCollection</a>
-, <a class="el" href="classwmtk_1_1components_1_1input_1_1_named_multi_mesh.html#af4463a3ea84498f46b563cd14d535308">wmtk::components::input::NamedMultiMesh</a>
-, <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a4ef54a8e7430a902df5014352472ce1d">wmtk::multimesh::MultiMeshManager</a>
+: <a class="el" href="classwmtk_1_1components_1_1multimesh_1_1_mesh_collection.html#a3cc1949bb7772a2a6b0ea752c0d3e330">wmtk::components::multimesh::MeshCollection</a>
+, <a class="el" href="classwmtk_1_1components_1_1multimesh_1_1_named_multi_mesh.html#a4872fdeb1da1b70569807a0d77c6df52">wmtk::components::multimesh::NamedMultiMesh</a>
+, <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a1132d6f08fabc488320cd62fac5aede1">wmtk::multimesh::MultiMeshManager</a>
 </li>
 <li>get_mesh_dimension()
 : <a class="el" href="classwmtk_1_1io_1_1_msh_reader.html#a1f8099e61f9e5fe8192d6b3a39848d31">wmtk::io::MshReader</a>
@@ -331,9 +334,16 @@ $(document).ready(function(){initNavTree('functions_g.html',''); initResizable()
 <li>get_name()
 : <a class="el" href="classwmtk_1_1attribute_1_1_attribute_manager.html#ab37901c560fe81350c6e2ec34ff3769c">wmtk::attribute::AttributeManager</a>
 , <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#aef8124419e388035c985a41da7ed31af">wmtk::attribute::MeshAttributes&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1components_1_1multimesh_1_1_named_multi_mesh.html#a9105befd95d9890a7a15b737242df306">wmtk::components::multimesh::NamedMultiMesh</a>
+</li>
+<li>get_name_tokens()
+: <a class="el" href="structwmtk_1_1components_1_1multimesh_1_1_named_multi_mesh_1_1_node.html#a00d371179761ac582a6c1b0571e49867">wmtk::components::multimesh::NamedMultiMesh::Node</a>
 </li>
 <li>get_named_multimesh()
-: <a class="el" href="classwmtk_1_1components_1_1input_1_1_mesh_collection.html#a22149f29cc2e5f17cd41cbf8a1d795ca">wmtk::components::input::MeshCollection</a>
+: <a class="el" href="classwmtk_1_1components_1_1multimesh_1_1_mesh_collection.html#ad7b463d3d98eb288ce104807a3a93bf1">wmtk::components::multimesh::MeshCollection</a>
+</li>
+<li>get_names_json()
+: <a class="el" href="classwmtk_1_1components_1_1multimesh_1_1_named_multi_mesh.html#affcb36c6f47762b0d02b242fb143a3d7">wmtk::components::multimesh::NamedMultiMesh</a>
 </li>
 <li>get_neighbor_action()
 : <a class="el" href="classwmtk_1_1operations_1_1internal_1_1_collapse_alternate_facet_option_data.html#a363fb2114790d2591c476c3910c298c3">wmtk::operations::internal::CollapseAlternateFacetOptionData</a>
@@ -356,6 +366,9 @@ $(document).ready(function(){initNavTree('functions_g.html',''); initResizable()
 </li>
 <li>get_parent_simplices()
 : <a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#a6883c6416f61c4ee06588a86c3b8d731">wmtk::operations::AttributeTransferStrategyBase</a>
+</li>
+<li>get_paths()
+: <a class="el" href="classwmtk_1_1components_1_1utils_1_1_path_resolver.html#ad0e74018df50b95e658190864a3ebb30">wmtk::components::utils::PathResolver</a>
 </li>
 <li>get_pixel()
 : <a class="el" href="classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_image.html#af2afb5c0ad583f9a70673bdc63c5604f">wmtk::components::adaptive_tessellation::image::Image</a>
@@ -422,7 +435,7 @@ $(document).ready(function(){initNavTree('functions_g.html',''); initResizable()
 : <a class="el" href="classwmtk_1_1attribute_1_1internal_1_1_attribute_flat_cache.html#ad76436d47fe791cf798e7ec4859790b2">wmtk::attribute::internal::AttributeFlatCache&lt; T &gt;</a>
 , <a class="el" href="classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html#afe397c848c0b37f2177601fcd3e60739">wmtk::attribute::internal::AttributeTransactionStack&lt; T &gt;</a>
 , <a class="el" href="classwmtk_1_1function_1_1_a_m_i_p_s.html#af9abca3d72a09a1b5f792fb7f94f7076">wmtk::function::AMIPS</a>
-, <a class="el" href="classwmtk_1_1function_1_1_edge_valence_energy.html#a0291a2ea4195c09041145d2cad95e15e">wmtk::function::EdgeValenceEnergy</a>
+, <a class="el" href="classwmtk_1_1function_1_1_edge_valence_energy.html#af25dd9d07e1f9d18c92c7a3395f271c1">wmtk::function::EdgeValenceEnergy</a>
 , <a class="el" href="classwmtk_1_1function_1_1_function.html#aa277b93dae1b12c39055bdc5b3115b59">wmtk::function::Function</a>
 , <a class="el" href="classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a0b81383595fa81fb270266bb6cee71da">wmtk::function::LocalNeighborsSumFunction</a>
 , <a class="el" href="classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a5dbdaadd8398ba89b96ae7e799d6c7e7">wmtk::function::PerSimplexAutodiffFunction</a>

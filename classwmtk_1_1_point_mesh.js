@@ -1,6 +1,7 @@
 var classwmtk_1_1_point_mesh =
 [
     [ "PointMesh", "classwmtk_1_1_point_mesh.html#a3a1cdbc84bb649965b4bb0d909612e2b", null ],
+    [ "~PointMesh", "classwmtk_1_1_point_mesh.html#aad18c9cd4b788ee90c41a79c94166ddc", null ],
     [ "PointMesh", "classwmtk_1_1_point_mesh.html#a9323586140fbd128b9d52c3d6a6ccae8", null ],
     [ "PointMesh", "classwmtk_1_1_point_mesh.html#a6c0360ab8ded4739f03a92a2b712db7f", null ],
     [ "PointMesh", "classwmtk_1_1_point_mesh.html#a5f83f6c3b15def317996412459972a3e", null ],

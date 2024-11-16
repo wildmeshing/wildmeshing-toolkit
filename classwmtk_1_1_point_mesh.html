@@ -140,6 +140,8 @@ Collaboration diagram for wmtk::PointMesh:</div>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a3a1cdbc84bb649965b4bb0d909612e2b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_point_mesh.html#a3a1cdbc84bb649965b4bb0d909612e2b">PointMesh</a> ()</td></tr>
 <tr class="separator:a3a1cdbc84bb649965b4bb0d909612e2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aad18c9cd4b788ee90c41a79c94166ddc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_point_mesh.html#aad18c9cd4b788ee90c41a79c94166ddc">~PointMesh</a> () override</td></tr>
+<tr class="separator:aad18c9cd4b788ee90c41a79c94166ddc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9323586140fbd128b9d52c3d6a6ccae8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_point_mesh.html#a9323586140fbd128b9d52c3d6a6ccae8">PointMesh</a> (int64_t size)</td></tr>
 <tr class="separator:a9323586140fbd128b9d52c3d6a6ccae8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6c0360ab8ded4739f03a92a2b712db7f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_point_mesh.html#a6c0360ab8ded4739f03a92a2b712db7f">PointMesh</a> (const <a class="el" href="classwmtk_1_1_point_mesh.html">PointMesh</a> &amp;o)=delete</td></tr>
@@ -385,6 +387,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a64befe40e4c1e1c00ead66ed8adef232 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a64befe40e4c1e1c00ead66ed8adef232">get_all_child_meshes</a> () const</td></tr>
 <tr class="memdesc:a64befe40e4c1e1c00ead66ed8adef232 inherit pub_methods_classwmtk_1_1_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns all multimesh child meshes  <a href="classwmtk_1_1_mesh.html#a64befe40e4c1e1c00ead66ed8adef232">More...</a><br /></td></tr>
 <tr class="separator:a64befe40e4c1e1c00ead66ed8adef232 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aba46f9c47f89784ed555dcf3835daaec inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#aba46f9c47f89784ed555dcf3835daaec">get_all_meshes</a> () const</td></tr>
+<tr class="memdesc:aba46f9c47f89784ed555dcf3835daaec inherit pub_methods_classwmtk_1_1_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns all meshes in multimesh  <a href="classwmtk_1_1_mesh.html#aba46f9c47f89784ed555dcf3835daaec">More...</a><br /></td></tr>
+<tr class="separator:aba46f9c47f89784ed555dcf3835daaec inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2102fdea06a0c543437e67d77aeb2013 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">std::vector&lt; int64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a2102fdea06a0c543437e67d77aeb2013">absolute_multi_mesh_id</a> () const</td></tr>
 <tr class="memdesc:a2102fdea06a0c543437e67d77aeb2013 inherit pub_methods_classwmtk_1_1_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns a unique identifier for this mesh within a single multimesh structure  <a href="classwmtk_1_1_mesh.html#a2102fdea06a0c543437e67d77aeb2013">More...</a><br /></td></tr>
 <tr class="separator:a2102fdea06a0c543437e67d77aeb2013 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -600,7 +605,32 @@ Additional Inherited Members</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_point_mesh_8cpp_source.html#l00009">9</a> of file <a class="el" href="_point_mesh_8cpp_source.html">PointMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_point_mesh_8cpp_source.html#l00010">10</a> of file <a class="el" href="_point_mesh_8cpp_source.html">PointMesh.cpp</a>.</p>
+
+</div>
+</div>
+<a id="aad18c9cd4b788ee90c41a79c94166ddc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aad18c9cd4b788ee90c41a79c94166ddc">&#9670;&nbsp;</a></span>~PointMesh()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">wmtk::PointMesh::~PointMesh </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">default</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 </div>
 </div>
@@ -620,9 +650,9 @@ Additional Inherited Members</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_point_mesh_8cpp_source.html#l00014">14</a> of file <a class="el" href="_point_mesh_8cpp_source.html">PointMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_point_mesh_8cpp_source.html#l00015">15</a> of file <a class="el" href="_point_mesh_8cpp_source.html">PointMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_point_mesh_8cpp_source.html#l00050">initialize()</a>.</p>
+<p class="reference">References <a class="el" href="_point_mesh_8cpp_source.html#l00051">initialize()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -713,7 +743,7 @@ Here is the call graph for this function:</div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#aae611243b3b57b86a41c2ee673ef81d7">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_point_mesh_8cpp_source.html#l00076">76</a> of file <a class="el" href="_point_mesh_8cpp_source.html">PointMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_point_mesh_8cpp_source.html#l00077">77</a> of file <a class="el" href="_point_mesh_8cpp_source.html">PointMesh.cpp</a>.</p>
 
 </div>
 </div>
@@ -751,7 +781,7 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_point_mesh_8hpp_source.html#l00060">60</a> of file <a class="el" href="_point_mesh_8hpp_source.html">PointMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_point_mesh_8hpp_source.html#l00061">61</a> of file <a class="el" href="_point_mesh_8hpp_source.html">PointMesh.hpp</a>.</p>
 
 <p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_tuple_8hpp_source.html#l00046">wmtk::Tuple::m_global_cid</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
@@ -773,11 +803,11 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_point_mesh_8cpp_source.html#l00050">50</a> of file <a class="el" href="_point_mesh_8cpp_source.html">PointMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_point_mesh_8cpp_source.html#l00051">51</a> of file <a class="el" href="_point_mesh_8cpp_source.html">PointMesh.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_mesh__attributes_8cpp_source.html#l00084">wmtk::Mesh::capacity()</a>, <a class="el" href="_mesh_8cpp_source.html#l00158">wmtk::Mesh::get_flag_accessor()</a>, <a class="el" href="_accessor_8hpp_source.html#l00095">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::index_access()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00089">wmtk::Mesh::reserve_attributes_to_fit()</a>, <a class="el" href="_caching_accessor_8hxx_source.html#l00054">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::scalar_attribute()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00097">wmtk::Mesh::set_capacities()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_multi_mesh_from_tag_8cpp_source.html#l00377">wmtk::components::internal::MultiMeshFromTag::compute_substructure_mesh()</a>, <a class="el" href="_multi_mesh_from_tag_8cpp_source.html#l00320">wmtk::components::internal::MultiMeshFromTag::create_substructure_soup()</a>, and <a class="el" href="_point_mesh_8cpp_source.html#l00014">PointMesh()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_multi_mesh_from_tag_8cpp_source.html#l00377">wmtk::components::internal::MultiMeshFromTag::compute_substructure_mesh()</a>, <a class="el" href="_multi_mesh_from_tag_8cpp_source.html#l00320">wmtk::components::internal::MultiMeshFromTag::create_substructure_soup()</a>, and <a class="el" href="_point_mesh_8cpp_source.html#l00015">PointMesh()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -867,9 +897,9 @@ false otherwise </dd></dl>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a24e1e157ff89e7898a48ce737bb4b23a">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_point_mesh_8cpp_source.html#l00029">29</a> of file <a class="el" href="_point_mesh_8cpp_source.html">PointMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_point_mesh_8cpp_source.html#l00030">30</a> of file <a class="el" href="_point_mesh_8cpp_source.html">PointMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_point_mesh_8cpp_source.html#l00044">is_boundary_vertex()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_point_mesh_8cpp_source.html#l00045">is_boundary_vertex()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -920,9 +950,9 @@ false otherwise </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_point_mesh_8cpp_source.html#l00044">44</a> of file <a class="el" href="_point_mesh_8cpp_source.html">PointMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_point_mesh_8cpp_source.html#l00045">45</a> of file <a class="el" href="_point_mesh_8cpp_source.html">PointMesh.cpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_point_mesh_8cpp_source.html#l00029">is_boundary()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_point_mesh_8cpp_source.html#l00030">is_boundary()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -969,7 +999,7 @@ false </dd></dl>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a56d57041196b23cfa33661c9488c9c4b">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_point_mesh_8cpp_source.html#l00024">24</a> of file <a class="el" href="_point_mesh_8cpp_source.html">PointMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_point_mesh_8cpp_source.html#l00025">25</a> of file <a class="el" href="_point_mesh_8cpp_source.html">PointMesh.cpp</a>.</p>
 
 </div>
 </div>
@@ -998,7 +1028,7 @@ false </dd></dl>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#ac0fc5a0ccd8949ea39848ea00c5b925f">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_point_mesh_8hpp_source.html#l00039">39</a> of file <a class="el" href="_point_mesh_8hpp_source.html">PointMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_point_mesh_8hpp_source.html#l00040">40</a> of file <a class="el" href="_point_mesh_8hpp_source.html">PointMesh.hpp</a>.</p>
 
 </div>
 </div>
@@ -1040,7 +1070,7 @@ false </dd></dl>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_mesh.html#a8cc8686f0688613806f43720b6db49e7">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_point_mesh_8cpp_source.html#l00061">61</a> of file <a class="el" href="_point_mesh_8cpp_source.html">PointMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_point_mesh_8cpp_source.html#l00062">62</a> of file <a class="el" href="_point_mesh_8cpp_source.html">PointMesh.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_mesh_8cpp_source.html#l00112">wmtk::Mesh::is_valid()</a>.</p>
 <div class="dynheader">
@@ -1130,7 +1160,7 @@ Here is the call graph for this function:</div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a0f1e2ecf58dcc8a2c86309cb11d1fe95">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_point_mesh_8cpp_source.html#l00083">83</a> of file <a class="el" href="_point_mesh_8cpp_source.html">PointMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_point_mesh_8cpp_source.html#l00084">84</a> of file <a class="el" href="_point_mesh_8cpp_source.html">PointMesh.cpp</a>.</p>
 
 </div>
 </div>
@@ -1180,7 +1210,7 @@ Here is the call graph for this function:</div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a965a8a24158c4aa8580c57ba09f885f7">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_point_mesh_8cpp_source.html#l00020">20</a> of file <a class="el" href="_point_mesh_8cpp_source.html">PointMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_point_mesh_8cpp_source.html#l00021">21</a> of file <a class="el" href="_point_mesh_8cpp_source.html">PointMesh.cpp</a>.</p>
 
 </div>
 </div>
@@ -1229,7 +1259,7 @@ Here is the call graph for this function:</div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a60165ceb4c2db2731df90e4ac100637d">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_point_mesh_8cpp_source.html#l00070">70</a> of file <a class="el" href="_point_mesh_8cpp_source.html">PointMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_point_mesh_8cpp_source.html#l00071">71</a> of file <a class="el" href="_point_mesh_8cpp_source.html">PointMesh.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="_point_mesh_8cpp_source.html#l00004">vertex_tuple_from_id()</a>.</p>
 <div class="dynheader">
@@ -1267,7 +1297,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_point_mesh_8cpp_source.html#l00004">4</a> of file <a class="el" href="_point_mesh_8cpp_source.html">PointMesh.cpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_point_mesh_8cpp_source.html#l00070">tuple_from_id()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_point_mesh_8cpp_source.html#l00071">tuple_from_id()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">

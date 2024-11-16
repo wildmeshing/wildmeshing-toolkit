@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/input/src/wmtk/components/input/internal/split_path.hpp Source File</title>
+<title>Wildmeshing Toolkit: components/multimesh/src/wmtk/components/multimesh/internal/split_path.hpp Source File</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -120,9 +120,9 @@ $(document).ready(function(){initNavTree('split__path_8hpp_source.html',''); ini
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;string_view&gt;</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;sstream&gt;</span></div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160; </div>
-<div class="line"><a name="l00006"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components_1_1input_1_1internal.html">    6</a></span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components_1_1input_1_1internal.html">wmtk::components::input::internal</a> {</div>
+<div class="line"><a name="l00006"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components_1_1multimesh_1_1internal.html">    6</a></span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components_1_1multimesh_1_1internal.html">wmtk::components::multimesh::internal</a> {</div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160; </div>
-<div class="line"><a name="l00008"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components_1_1input_1_1internal.html#a653e7d326e49bb052a0b2b15c635bf1c">    8</a></span>&#160;<span class="keyword">inline</span> <span class="keyword">auto</span> <a class="code" href="namespacewmtk_1_1components_1_1input_1_1internal.html#a653e7d326e49bb052a0b2b15c635bf1c">split_path</a>(<span class="keyword">const</span> std::string_view&amp; view)</div>
+<div class="line"><a name="l00008"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components_1_1multimesh_1_1internal.html#a3b2338b45b680494e5501c97baa6f456">    8</a></span>&#160;<span class="keyword">inline</span> <span class="keyword">auto</span> <a class="code" href="namespacewmtk_1_1components_1_1multimesh_1_1internal.html#a3b2338b45b680494e5501c97baa6f456">split_path</a>(<span class="keyword">const</span> std::string_view&amp; view)</div>
 <div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;{</div>
 <div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#if defined(WMTK_ENABLED_CPP20)</span></div>
 <div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;    <span class="keyword">using namespace </span><a class="code" href="namespacestd.html">std</a>;</div>
@@ -151,17 +151,17 @@ $(document).ready(function(){initNavTree('split__path_8hpp_source.html',''); ini
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keywordflow">return</span> tokens;</div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="preprocessor">#endif</span></div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;}</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;} <span class="comment">// namespace wmtk::components::input::internal</span></div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;} <span class="comment">// namespace wmtk::components::multimesh::internal</span></div>
 <div class="ttc" id="anamespacestd_html"><div class="ttname"><a href="namespacestd.html">std</a></div><div class="ttdef"><b>Definition:</b> <a href="autodiff_8h_source.html#l00995">autodiff.h:995</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_1_1input_1_1internal_html"><div class="ttname"><a href="namespacewmtk_1_1components_1_1input_1_1internal.html">wmtk::components::input::internal</a></div><div class="ttdef"><b>Definition:</b> <a href="split__path_8hpp_source.html#l00006">split_path.hpp:6</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_1_1input_1_1internal_html_a653e7d326e49bb052a0b2b15c635bf1c"><div class="ttname"><a href="namespacewmtk_1_1components_1_1input_1_1internal.html#a653e7d326e49bb052a0b2b15c635bf1c">wmtk::components::input::internal::split_path</a></div><div class="ttdeci">auto split_path(const std::string_view &amp;view)</div><div class="ttdef"><b>Definition:</b> <a href="split__path_8hpp_source.html#l00008">split_path.hpp:8</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_1_1multimesh_1_1internal_html"><div class="ttname"><a href="namespacewmtk_1_1components_1_1multimesh_1_1internal.html">wmtk::components::multimesh::internal</a></div><div class="ttdef"><b>Definition:</b> <a href="split__path_8hpp_source.html#l00006">split_path.hpp:6</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_1_1multimesh_1_1internal_html_a3b2338b45b680494e5501c97baa6f456"><div class="ttname"><a href="namespacewmtk_1_1components_1_1multimesh_1_1internal.html#a3b2338b45b680494e5501c97baa6f456">wmtk::components::multimesh::internal::split_path</a></div><div class="ttdeci">auto split_path(const std::string_view &amp;view)</div><div class="ttdef"><b>Definition:</b> <a href="split__path_8hpp_source.html#l00008">split_path.hpp:8</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_667f484269a706bdfedaceac6b9e3e52.html">input</a></li><li class="navelem"><a class="el" href="dir_5f57092b8419fdeb518c00168d2dd84a.html">src</a></li><li class="navelem"><a class="el" href="dir_b9fef9ea6beedc7082beadc273d398e7.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_54575a43c3f271410d0321342281e5f6.html">components</a></li><li class="navelem"><a class="el" href="dir_d146c543c5f2328619f7b19e3cfe59c6.html">input</a></li><li class="navelem"><a class="el" href="dir_b39540a0766c1daf78e760ea689785eb.html">internal</a></li><li class="navelem"><a class="el" href="split__path_8hpp.html">split_path.hpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_70e3a2ee9e25893df7f24c6156c1d472.html">multimesh</a></li><li class="navelem"><a class="el" href="dir_6abf6f13df217c782767f6a0a9ff14a8.html">src</a></li><li class="navelem"><a class="el" href="dir_c31842a4f31cc7008914677070ccbda8.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_4b1cf5d592a01ed4c6d8e9a0954cca2b.html">components</a></li><li class="navelem"><a class="el" href="dir_5ed31316642ba9bde544467a58fa3c0f.html">multimesh</a></li><li class="navelem"><a class="el" href="dir_26901374d6e0c8c0d0a2ff3d49830812.html">internal</a></li><li class="navelem"><a class="el" href="split__path_8hpp.html">split_path.hpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

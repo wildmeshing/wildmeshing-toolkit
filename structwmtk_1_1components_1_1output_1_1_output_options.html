@@ -129,10 +129,12 @@ Public Attributes</h2></td></tr>
 <tr class="separator:ae2eafe3ae8b868aaea7b9c5702ee6f2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abd9847648f190084e35699fd084e334b"><td class="memItemLeft" align="right" valign="top">std::variant&lt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a>, std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1output_1_1_output_options.html#abd9847648f190084e35699fd084e334b">position_attribute</a></td></tr>
 <tr class="separator:abd9847648f190084e35699fd084e334b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aad80aafbc81a8bdefb96a7f1aee5f642"><td class="memItemLeft" align="right" valign="top">std::optional&lt; std::filesystem::path &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1output_1_1_output_options.html#aad80aafbc81a8bdefb96a7f1aee5f642">mesh_name_path</a></td></tr>
+<tr class="separator:aad80aafbc81a8bdefb96a7f1aee5f642"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="_output_options_8hpp_source.html#l00008">8</a> of file <a class="el" href="_output_options_8hpp_source.html">OutputOptions.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_output_options_8hpp_source.html#l00009">9</a> of file <a class="el" href="_output_options_8hpp_source.html">OutputOptions.hpp</a>.</p>
 </div><h2 class="groupheader">Member Data Documentation</h2>
 <a id="a0b81111f966099cf776f25cf5c65a43b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0b81111f966099cf776f25cf5c65a43b">&#9670;&nbsp;</a></span>file</h2>
@@ -146,9 +148,27 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_output_options_8hpp_source.html#l00010">10</a> of file <a class="el" href="_output_options_8hpp_source.html">OutputOptions.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_output_options_8hpp_source.html#l00011">11</a> of file <a class="el" href="_output_options_8hpp_source.html">OutputOptions.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_output_options_8cpp_source.html#l00032">nlohmann::adl_serializer&lt; wmtk::components::output::OutputOptions &gt;::from_json()</a>, <a class="el" href="output_8cpp_source.html#l00053">wmtk::components::output::output()</a>, and <a class="el" href="_output_options_8cpp_source.html#l00014">nlohmann::adl_serializer&lt; wmtk::components::output::OutputOptions &gt;::to_json()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="output_8cpp_source.html#l00054">wmtk::components::output::output()</a>.</p>
+
+</div>
+</div>
+<a id="aad80aafbc81a8bdefb96a7f1aee5f642"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aad80aafbc81a8bdefb96a7f1aee5f642">&#9670;&nbsp;</a></span>mesh_name_path</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::optional&lt;std::filesystem::path&gt; wmtk::components::output::OutputOptions::mesh_name_path</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_output_options_8hpp_source.html#l00019">19</a> of file <a class="el" href="_output_options_8hpp_source.html">OutputOptions.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="output_8cpp_source.html#l00084">wmtk::components::output::output()</a>.</p>
 
 </div>
 </div>
@@ -164,9 +184,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_output_options_8hpp_source.html#l00015">15</a> of file <a class="el" href="_output_options_8hpp_source.html">OutputOptions.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_output_options_8hpp_source.html#l00016">16</a> of file <a class="el" href="_output_options_8hpp_source.html">OutputOptions.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_output_options_8cpp_source.html#l00032">nlohmann::adl_serializer&lt; wmtk::components::output::OutputOptions &gt;::from_json()</a>, <a class="el" href="output_8cpp_source.html#l00053">wmtk::components::output::output()</a>, and <a class="el" href="_output_options_8cpp_source.html#l00014">nlohmann::adl_serializer&lt; wmtk::components::output::OutputOptions &gt;::to_json()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="output_8cpp_source.html#l00054">wmtk::components::output::output()</a>.</p>
 
 </div>
 </div>
@@ -182,9 +202,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_output_options_8hpp_source.html#l00012">12</a> of file <a class="el" href="_output_options_8hpp_source.html">OutputOptions.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_output_options_8hpp_source.html#l00013">13</a> of file <a class="el" href="_output_options_8hpp_source.html">OutputOptions.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_output_options_8cpp_source.html#l00032">nlohmann::adl_serializer&lt; wmtk::components::output::OutputOptions &gt;::from_json()</a>, <a class="el" href="output_8cpp_source.html#l00053">wmtk::components::output::output()</a>, and <a class="el" href="_output_options_8cpp_source.html#l00014">nlohmann::adl_serializer&lt; wmtk::components::output::OutputOptions &gt;::to_json()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="output_8cpp_source.html#l00054">wmtk::components::output::output()</a>.</p>
 
 </div>
 </div>

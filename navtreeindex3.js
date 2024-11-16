@@ -1,5 +1,13 @@
 var NAVTREEINDEX3 =
 {
+"_simplex_8hpp_source.html":[10,0,2,0,7,52],
+"_simplex_collection_8cpp.html":[10,0,2,0,7,53],
+"_simplex_collection_8cpp_source.html":[10,0,2,0,7,53],
+"_simplex_collection_8hpp.html":[10,0,2,0,7,54],
+"_simplex_collection_8hpp_source.html":[10,0,2,0,7,54],
+"_simplex_comparisons_8hpp.html":[10,0,2,0,7,2,3],
+"_simplex_comparisons_8hpp_source.html":[10,0,2,0,7,2,3],
+"_simplex_comparisons_8hxx.html":[10,0,2,0,7,2,4],
 "_simplex_comparisons_8hxx_source.html":[10,0,2,0,7,2,4],
 "_simplex_dart_8cpp.html":[10,0,2,0,1,17],
 "_simplex_dart_8cpp.html#a42aa50bb30d352c53ffecc30d9d57c16":[10,0,2,0,1,17,1],
@@ -241,13 +249,5 @@ var NAVTREEINDEX3 =
 "_vertex_laplacian_smooth_8hpp_source.html":[10,0,2,0,6,7,11],
 "_vertex_tangential_laplacian_smooth_8cpp.html":[10,0,2,0,6,7,12],
 "_vertex_tangential_laplacian_smooth_8cpp_source.html":[10,0,2,0,6,7,12],
-"_vertex_tangential_laplacian_smooth_8hpp.html":[10,0,2,0,6,7,13],
-"_vertex_tangential_laplacian_smooth_8hpp_source.html":[10,0,2,0,6,7,13],
-"_visited_array_8hpp.html":[10,0,2,0,7,0,8],
-"_visited_array_8hpp_source.html":[10,0,2,0,7,0,8],
-"_volume_remesher_triangle_insertion_8cpp.html":[10,0,2,0,8,50],
-"_volume_remesher_triangle_insertion_8cpp.html#a3787bc051f3f90a7a2f0571c47f01957":[10,0,2,0,8,50,0],
-"_volume_remesher_triangle_insertion_8cpp_source.html":[10,0,2,0,8,50],
-"_volume_remesher_triangle_insertion_8hpp.html":[10,0,2,0,8,51],
-"_volume_remesher_triangle_insertion_8hpp.html#a3787bc051f3f90a7a2f0571c47f01957":[10,0,2,0,8,51,0]
+"_vertex_tangential_laplacian_smooth_8hpp.html":[10,0,2,0,6,7,13]
 };

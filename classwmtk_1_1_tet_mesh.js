@@ -2,6 +2,7 @@ var classwmtk_1_1_tet_mesh =
 [
     [ "TetMeshOperationExecutor", "classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html", "classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor" ],
     [ "TetMesh", "classwmtk_1_1_tet_mesh.html#ae1a969015cd4809934ecfa862dd95a12", null ],
+    [ "~TetMesh", "classwmtk_1_1_tet_mesh.html#ae14f4a474cbea97e16e99be9a73c8593", null ],
     [ "TetMesh", "classwmtk_1_1_tet_mesh.html#a13854ec540ec4388124b4447ae082527", null ],
     [ "TetMesh", "classwmtk_1_1_tet_mesh.html#a2ed8c8bad128a0bbb814197ee24aa036", null ],
     [ "connectivity_attributes", "classwmtk_1_1_tet_mesh.html#a4cfc3812d7b8a79e5d47ca2d4dc7652a", null ],

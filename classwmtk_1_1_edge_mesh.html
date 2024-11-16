@@ -146,6 +146,8 @@ Classes</h2></td></tr>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a330407336160b1ebe762267f214787b3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_edge_mesh.html#a330407336160b1ebe762267f214787b3">EdgeMesh</a> ()</td></tr>
 <tr class="separator:a330407336160b1ebe762267f214787b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa7afedd14fd602beb08931fe35856d5f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_edge_mesh.html#aa7afedd14fd602beb08931fe35856d5f">~EdgeMesh</a> () override</td></tr>
+<tr class="separator:aa7afedd14fd602beb08931fe35856d5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac355ae75cec3230b301784fc95a2e1f7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_edge_mesh.html#ac355ae75cec3230b301784fc95a2e1f7">EdgeMesh</a> (const <a class="el" href="classwmtk_1_1_edge_mesh.html">EdgeMesh</a> &amp;o)=delete</td></tr>
 <tr class="separator:ac355ae75cec3230b301784fc95a2e1f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae87962eecc998a73c8cfb23457ef2127"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_edge_mesh.html#ae87962eecc998a73c8cfb23457ef2127">EdgeMesh</a> (<a class="el" href="classwmtk_1_1_edge_mesh.html">EdgeMesh</a> &amp;&amp;o)=default</td></tr>
@@ -397,6 +399,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a64befe40e4c1e1c00ead66ed8adef232 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a64befe40e4c1e1c00ead66ed8adef232">get_all_child_meshes</a> () const</td></tr>
 <tr class="memdesc:a64befe40e4c1e1c00ead66ed8adef232 inherit pub_methods_classwmtk_1_1_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns all multimesh child meshes  <a href="classwmtk_1_1_mesh.html#a64befe40e4c1e1c00ead66ed8adef232">More...</a><br /></td></tr>
 <tr class="separator:a64befe40e4c1e1c00ead66ed8adef232 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aba46f9c47f89784ed555dcf3835daaec inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#aba46f9c47f89784ed555dcf3835daaec">get_all_meshes</a> () const</td></tr>
+<tr class="memdesc:aba46f9c47f89784ed555dcf3835daaec inherit pub_methods_classwmtk_1_1_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns all meshes in multimesh  <a href="classwmtk_1_1_mesh.html#aba46f9c47f89784ed555dcf3835daaec">More...</a><br /></td></tr>
+<tr class="separator:aba46f9c47f89784ed555dcf3835daaec inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2102fdea06a0c543437e67d77aeb2013 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">std::vector&lt; int64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a2102fdea06a0c543437e67d77aeb2013">absolute_multi_mesh_id</a> () const</td></tr>
 <tr class="memdesc:a2102fdea06a0c543437e67d77aeb2013 inherit pub_methods_classwmtk_1_1_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns a unique identifier for this mesh within a single multimesh structure  <a href="classwmtk_1_1_mesh.html#a2102fdea06a0c543437e67d77aeb2013">More...</a><br /></td></tr>
 <tr class="separator:a2102fdea06a0c543437e67d77aeb2013 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -632,9 +637,34 @@ Additional Inherited Members</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00008">8</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00009">9</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+
+</div>
+</div>
+<a id="aa7afedd14fd602beb08931fe35856d5f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa7afedd14fd602beb08931fe35856d5f">&#9670;&nbsp;</a></span>~EdgeMesh()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">wmtk::EdgeMesh::~EdgeMesh </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">default</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 </div>
 </div>
@@ -719,9 +749,9 @@ Additional Inherited Members</h2></td></tr>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#aae611243b3b57b86a41c2ee673ef81d7">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00262">262</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00263">263</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_edge_mesh_8hpp_source.html#l00080">m_ee_handle</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00079">m_ev_handle</a>, and <a class="el" href="_edge_mesh_8hpp_source.html#l00077">m_ve_handle</a>.</p>
+<p class="reference">References <a class="el" href="_edge_mesh_8hpp_source.html#l00081">m_ee_handle</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00080">m_ev_handle</a>, and <a class="el" href="_edge_mesh_8hpp_source.html#l00078">m_ve_handle</a>.</p>
 
 </div>
 </div>
@@ -749,11 +779,11 @@ Additional Inherited Members</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00187">187</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00188">188</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_edge_mesh_8cpp_source.html#l00213">is_valid()</a>.</p>
+<p class="reference">References <a class="el" href="_edge_mesh_8cpp_source.html#l00214">is_valid()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_edge_mesh_8cpp_source.html#l00147">tuple_from_id()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_edge_mesh_8cpp_source.html#l00148">tuple_from_id()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -803,9 +833,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_edge_mesh_8hpp_source.html#l00097">97</a> of file <a class="el" href="_edge_mesh_8hpp_source.html">EdgeMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_mesh_8hpp_source.html#l00098">98</a> of file <a class="el" href="_edge_mesh_8hpp_source.html">EdgeMesh.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#ada896c7e7910630ca0d3424baa3c3258">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00079">m_ev_handle</a>, <a class="el" href="_tuple_8hpp_source.html#l00046">wmtk::Tuple::m_global_cid</a>, <a class="el" href="_tuple_8hpp_source.html#l00047">wmtk::Tuple::m_local_vid</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#ada896c7e7910630ca0d3424baa3c3258">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00080">m_ev_handle</a>, <a class="el" href="_tuple_8hpp_source.html#l00046">wmtk::Tuple::m_global_cid</a>, <a class="el" href="_tuple_8hpp_source.html#l00047">wmtk::Tuple::m_local_vid</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -839,9 +869,9 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_edge_mesh_8hpp_source.html#l00063">63</a> of file <a class="el" href="_edge_mesh_8hpp_source.html">EdgeMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_mesh_8hpp_source.html#l00064">64</a> of file <a class="el" href="_edge_mesh_8hpp_source.html">EdgeMesh.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, and <a class="el" href="_mesh_8hpp_source.html#l01015">wmtk::MeshCRTP&lt; EdgeMesh &gt;::id()</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, and <a class="el" href="_mesh_8hpp_source.html#l01020">wmtk::MeshCRTP&lt; EdgeMesh &gt;::id()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_edge_mesh_operation_executor_8cpp_source.html#l00059">wmtk::EdgeMesh::EdgeMeshOperationExecutor::get_collapse_simplices_to_delete()</a>, and <a class="el" href="_edge_mesh_operation_executor_8cpp_source.html#l00049">wmtk::EdgeMesh::EdgeMeshOperationExecutor::get_split_simplices_to_delete()</a>.</p>
 <div class="dynheader">
@@ -883,9 +913,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_edge_mesh_8hpp_source.html#l00062">62</a> of file <a class="el" href="_edge_mesh_8hpp_source.html">EdgeMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_mesh_8hpp_source.html#l00063">63</a> of file <a class="el" href="_edge_mesh_8hpp_source.html">EdgeMesh.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l01015">wmtk::MeshCRTP&lt; EdgeMesh &gt;::id()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l01020">wmtk::MeshCRTP&lt; EdgeMesh &gt;::id()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_edge_mesh_operation_executor_8cpp_source.html#l00059">wmtk::EdgeMesh::EdgeMeshOperationExecutor::get_collapse_simplices_to_delete()</a>.</p>
 <div class="dynheader">
@@ -929,11 +959,11 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00131">131</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00132">132</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="edgemesh__topology__initialization_8cpp_source.html#l00008">wmtk::edgemesh_topology_initialization()</a>, <a class="el" href="_mesh_8hpp_source.html#l00982">wmtk::Mesh::is_free()</a>, and <a class="el" href="_mesh_8hpp_source.html#l00841">wmtk::Mesh::m_is_free</a>.</p>
+<p class="reference">References <a class="el" href="edgemesh__topology__initialization_8cpp_source.html#l00008">wmtk::edgemesh_topology_initialization()</a>, <a class="el" href="_mesh_8hpp_source.html#l00987">wmtk::Mesh::is_free()</a>, and <a class="el" href="_mesh_8hpp_source.html#l00846">wmtk::Mesh::m_is_free</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_multi_mesh_from_tag_8cpp_source.html#l00377">wmtk::components::internal::MultiMeshFromTag::compute_substructure_mesh()</a>, and <a class="el" href="_edge_mesh_8cpp_source.html#l00140">initialize_free()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_multi_mesh_from_tag_8cpp_source.html#l00377">wmtk::components::internal::MultiMeshFromTag::compute_substructure_mesh()</a>, and <a class="el" href="_edge_mesh_8cpp_source.html#l00141">initialize_free()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -981,9 +1011,9 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00097">97</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00098">98</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh__attributes_8cpp_source.html#l00084">wmtk::Mesh::capacity()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8cpp_source.html#l00158">wmtk::Mesh::get_flag_accessor()</a>, <a class="el" href="_accessor_8hpp_source.html#l00095">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::index_access()</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00080">m_ee_handle</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00079">m_ev_handle</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00077">m_ve_handle</a>, <a class="el" href="_caching_accessor_8hxx_source.html#l00054">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::scalar_attribute()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00097">wmtk::Mesh::set_capacities()</a>, <a class="el" href="classwmtk_1_1attribute_1_1_caching_accessor.html#a6869b1252af8463481fa82925ce9ae0d">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::vector_attribute()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="_mesh__attributes_8cpp_source.html#l00084">wmtk::Mesh::capacity()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8cpp_source.html#l00158">wmtk::Mesh::get_flag_accessor()</a>, <a class="el" href="_accessor_8hpp_source.html#l00095">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::index_access()</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00081">m_ee_handle</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00080">m_ev_handle</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00078">m_ve_handle</a>, <a class="el" href="_caching_accessor_8hxx_source.html#l00054">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::scalar_attribute()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00097">wmtk::Mesh::set_capacities()</a>, <a class="el" href="classwmtk_1_1attribute_1_1_caching_accessor.html#a6869b1252af8463481fa82925ce9ae0d">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::vector_attribute()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1009,9 +1039,9 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00140">140</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00141">141</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_edge_mesh_8cpp_source.html#l00131">initialize()</a>.</p>
+<p class="reference">References <a class="el" href="_edge_mesh_8cpp_source.html#l00132">initialize()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_multi_mesh_from_tag_8cpp_source.html#l00320">wmtk::components::internal::MultiMeshFromTag::create_substructure_soup()</a>.</p>
 <div class="dynheader">
@@ -1103,9 +1133,9 @@ false otherwise </dd></dl>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a24e1e157ff89e7898a48ce737bb4b23a">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00016">16</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00017">17</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00030">is_boundary_vertex()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00031">is_boundary_vertex()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1156,11 +1186,11 @@ false otherwise </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00030">30</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00031">31</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#ada896c7e7910630ca0d3424baa3c3258">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00213">is_valid()</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00080">m_ee_handle</a>, and <a class="el" href="_tuple_8hpp_source.html#l00047">wmtk::Tuple::m_local_vid</a>.</p>
+<p class="reference">References <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#ada896c7e7910630ca0d3424baa3c3258">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00214">is_valid()</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00081">m_ee_handle</a>, and <a class="el" href="_tuple_8hpp_source.html#l00047">wmtk::Tuple::m_local_vid</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_edge_mesh_8cpp_source.html#l00016">is_boundary()</a>, <a class="el" href="link__condition_8cpp_source.html#l00043">wmtk::simplex::link_condition()</a>, and <a class="el" href="top__dimension__cofaces_8cpp_source.html#l00464">wmtk::simplex::top_dimension_cofaces_tuples()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_edge_mesh_8cpp_source.html#l00017">is_boundary()</a>, <a class="el" href="link__condition_8cpp_source.html#l00043">wmtk::simplex::link_condition()</a>, and <a class="el" href="top__dimension__cofaces_8cpp_source.html#l00464">wmtk::simplex::top_dimension_cofaces_tuples()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1213,11 +1243,11 @@ false </dd></dl>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a56d57041196b23cfa33661c9488c9c4b">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00091">91</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00092">92</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_edge_mesh_8cpp_source.html#l00213">is_valid()</a>, and <a class="el" href="_tuple_8hpp_source.html#l00047">wmtk::Tuple::m_local_vid</a>.</p>
+<p class="reference">References <a class="el" href="_edge_mesh_8cpp_source.html#l00214">is_valid()</a>, and <a class="el" href="_tuple_8hpp_source.html#l00047">wmtk::Tuple::m_local_vid</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_edge_mesh_8cpp_source.html#l00037">switch_tuple()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_edge_mesh_8cpp_source.html#l00038">switch_tuple()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1258,9 +1288,9 @@ Here is the caller graph for this function:</div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#ac0fc5a0ccd8949ea39848ea00c5b925f">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00223">223</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00224">224</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh__attributes_8cpp_source.html#l00084">wmtk::Mesh::capacity()</a>, <a class="el" href="_caching_accessor_8hxx_source.html#l00069">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::const_scalar_attribute()</a>, <a class="el" href="classwmtk_1_1attribute_1_1_caching_accessor.html#ab7a79d239fdc3d22fbc0c3a83a5c50bc">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8cpp_source.html#l00158">wmtk::Mesh::get_flag_accessor()</a>, <a class="el" href="_accessor_8hpp_source.html#l00095">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::index_access()</a>, <a class="el" href="_logger_8cpp_source.html#l00058">wmtk::logger()</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00080">m_ee_handle</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00079">m_ev_handle</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00077">m_ve_handle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="_mesh__attributes_8cpp_source.html#l00084">wmtk::Mesh::capacity()</a>, <a class="el" href="_caching_accessor_8hxx_source.html#l00069">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::const_scalar_attribute()</a>, <a class="el" href="classwmtk_1_1attribute_1_1_caching_accessor.html#ab7a79d239fdc3d22fbc0c3a83a5c50bc">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8cpp_source.html#l00158">wmtk::Mesh::get_flag_accessor()</a>, <a class="el" href="_accessor_8hpp_source.html#l00095">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::index_access()</a>, <a class="el" href="_logger_8cpp_source.html#l00058">wmtk::logger()</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00081">m_ee_handle</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00080">m_ev_handle</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00078">m_ve_handle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_multi_mesh_from_tag_8cpp_source.html#l00377">wmtk::components::internal::MultiMeshFromTag::compute_substructure_mesh()</a>.</p>
 <div class="dynheader">
@@ -1316,11 +1346,11 @@ false </dd></dl>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_mesh.html#a8cc8686f0688613806f43720b6db49e7">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00213">213</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00214">214</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_mesh_8cpp_source.html#l00112">wmtk::Mesh::is_valid()</a>, <a class="el" href="_tuple_8hpp_source.html#l00046">wmtk::Tuple::m_global_cid</a>, and <a class="el" href="_tuple_8hpp_source.html#l00047">wmtk::Tuple::m_local_vid</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_edge_mesh_8cpp_source.html#l00187">edge_tuple_from_id()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00030">is_boundary_vertex()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00091">is_ccw()</a>, <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00360">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()()</a>, and <a class="el" href="_edge_mesh_8cpp_source.html#l00037">switch_tuple()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_edge_mesh_8cpp_source.html#l00188">edge_tuple_from_id()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00031">is_boundary_vertex()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00092">is_ccw()</a>, <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00360">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()()</a>, and <a class="el" href="_edge_mesh_8cpp_source.html#l00038">switch_tuple()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1414,7 +1444,7 @@ Here is the caller graph for this function:</div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a0f1e2ecf58dcc8a2c86309cb11d1fe95">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00273">273</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00274">274</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_tuple_8hpp_source.html#l00046">wmtk::Tuple::m_global_cid</a>.</p>
 
@@ -1444,9 +1474,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_edge_mesh_8hpp_source.html#l00093">93</a> of file <a class="el" href="_edge_mesh_8hpp_source.html">EdgeMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_mesh_8hpp_source.html#l00094">94</a> of file <a class="el" href="_edge_mesh_8hpp_source.html">EdgeMesh.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, and <a class="el" href="_edge_mesh_8cpp_source.html#l00037">switch_tuple()</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, and <a class="el" href="_edge_mesh_8cpp_source.html#l00038">switch_tuple()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="top__dimension__cofaces_8cpp_source.html#l00464">wmtk::simplex::top_dimension_cofaces_tuples()</a>.</p>
 <div class="dynheader">
@@ -1510,11 +1540,11 @@ Here is the caller graph for this function:</div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a965a8a24158c4aa8580c57ba09f885f7">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00037">37</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00038">38</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#ada896c7e7910630ca0d3424baa3c3258">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="classwmtk_1_1attribute_1_1_caching_accessor.html#ab7a79d239fdc3d22fbc0c3a83a5c50bc">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8hpp_source.html#l01015">wmtk::MeshCRTP&lt; EdgeMesh &gt;::id()</a>, <a class="el" href="_accessor_8hpp_source.html#l00095">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::index_access()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00091">is_ccw()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00213">is_valid()</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00080">m_ee_handle</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00079">m_ev_handle</a>, <a class="el" href="_tuple_8hpp_source.html#l00046">wmtk::Tuple::m_global_cid</a>, <a class="el" href="_tuple_8hpp_source.html#l00048">wmtk::Tuple::m_local_eid</a>, <a class="el" href="_tuple_8hpp_source.html#l00049">wmtk::Tuple::m_local_fid</a>, <a class="el" href="_tuple_8hpp_source.html#l00047">wmtk::Tuple::m_local_vid</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#ada896c7e7910630ca0d3424baa3c3258">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="classwmtk_1_1attribute_1_1_caching_accessor.html#ab7a79d239fdc3d22fbc0c3a83a5c50bc">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8hpp_source.html#l01020">wmtk::MeshCRTP&lt; EdgeMesh &gt;::id()</a>, <a class="el" href="_accessor_8hpp_source.html#l00095">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::index_access()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00092">is_ccw()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00214">is_valid()</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00081">m_ee_handle</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00080">m_ev_handle</a>, <a class="el" href="_tuple_8hpp_source.html#l00046">wmtk::Tuple::m_global_cid</a>, <a class="el" href="_tuple_8hpp_source.html#l00048">wmtk::Tuple::m_local_eid</a>, <a class="el" href="_tuple_8hpp_source.html#l00049">wmtk::Tuple::m_local_fid</a>, <a class="el" href="_tuple_8hpp_source.html#l00047">wmtk::Tuple::m_local_vid</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_simplex_inversion_invariant_8cpp_source.html#l00022">wmtk::SimplexInversionInvariant&lt; T &gt;::after()</a>, <a class="el" href="_edge_mesh_operation_executor_8cpp_source.html#l00059">wmtk::EdgeMesh::EdgeMeshOperationExecutor::get_collapse_simplices_to_delete()</a>, <a class="el" href="edge__mesh_2_edge_operation_data_8cpp_source.html#l00018">wmtk::operations::edge_mesh::EdgeOperationData::input_endpoints()</a>, <a class="el" href="link__condition_8cpp_source.html#l00043">wmtk::simplex::link_condition()</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00093">switch_edge()</a>, and <a class="el" href="_edge_mesh_8hpp_source.html#l00089">switch_vertex()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_simplex_inversion_invariant_8cpp_source.html#l00022">wmtk::SimplexInversionInvariant&lt; T &gt;::after()</a>, <a class="el" href="_edge_mesh_operation_executor_8cpp_source.html#l00059">wmtk::EdgeMesh::EdgeMeshOperationExecutor::get_collapse_simplices_to_delete()</a>, <a class="el" href="edge__mesh_2_edge_operation_data_8cpp_source.html#l00018">wmtk::operations::edge_mesh::EdgeOperationData::input_endpoints()</a>, <a class="el" href="link__condition_8cpp_source.html#l00043">wmtk::simplex::link_condition()</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00094">switch_edge()</a>, and <a class="el" href="_edge_mesh_8hpp_source.html#l00090">switch_vertex()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1554,9 +1584,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_edge_mesh_8hpp_source.html#l00089">89</a> of file <a class="el" href="_edge_mesh_8hpp_source.html">EdgeMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_mesh_8hpp_source.html#l00090">90</a> of file <a class="el" href="_edge_mesh_8hpp_source.html">EdgeMesh.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_edge_mesh_8cpp_source.html#l00037">switch_tuple()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="_edge_mesh_8cpp_source.html#l00038">switch_tuple()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1600,9 +1630,9 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00195">195</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00196">196</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="classwmtk_1_1attribute_1_1_caching_accessor.html#ab7a79d239fdc3d22fbc0c3a83a5c50bc">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="_accessor_8hpp_source.html#l00095">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::index_access()</a>, and <a class="el" href="_edge_mesh_8hpp_source.html#l00079">m_ev_handle</a>.</p>
+<p class="reference">References <a class="el" href="classwmtk_1_1attribute_1_1_caching_accessor.html#ab7a79d239fdc3d22fbc0c3a83a5c50bc">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="_accessor_8hpp_source.html#l00095">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::index_access()</a>, and <a class="el" href="_edge_mesh_8hpp_source.html#l00080">m_ev_handle</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00360">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()()</a>.</p>
 <div class="dynheader">
@@ -1665,9 +1695,9 @@ Here is the caller graph for this function:</div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a60165ceb4c2db2731df90e4ac100637d">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00147">147</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00148">148</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00187">edge_tuple_from_id()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="_edge_mesh_8cpp_source.html#l00170">vertex_tuple_from_id()</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00188">edge_tuple_from_id()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="_edge_mesh_8cpp_source.html#l00171">vertex_tuple_from_id()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1701,11 +1731,11 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00170">170</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_mesh_8cpp_source.html#l00171">171</a> of file <a class="el" href="_edge_mesh_8cpp_source.html">EdgeMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_caching_accessor_8hxx_source.html#l00069">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::const_scalar_attribute()</a>, <a class="el" href="classwmtk_1_1attribute_1_1_caching_accessor.html#ab7a79d239fdc3d22fbc0c3a83a5c50bc">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="_mesh_8hpp_source.html#l01015">wmtk::MeshCRTP&lt; EdgeMesh &gt;::id()</a>, <a class="el" href="_accessor_8hpp_source.html#l00095">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::index_access()</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00079">m_ev_handle</a>, and <a class="el" href="_edge_mesh_8hpp_source.html#l00077">m_ve_handle</a>.</p>
+<p class="reference">References <a class="el" href="_caching_accessor_8hxx_source.html#l00069">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::const_scalar_attribute()</a>, <a class="el" href="classwmtk_1_1attribute_1_1_caching_accessor.html#ab7a79d239fdc3d22fbc0c3a83a5c50bc">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="_mesh_8hpp_source.html#l01020">wmtk::MeshCRTP&lt; EdgeMesh &gt;::id()</a>, <a class="el" href="_accessor_8hpp_source.html#l00095">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::index_access()</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00080">m_ev_handle</a>, and <a class="el" href="_edge_mesh_8hpp_source.html#l00078">m_ve_handle</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_edge_mesh_8cpp_source.html#l00147">tuple_from_id()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_edge_mesh_8cpp_source.html#l00148">tuple_from_id()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1768,7 +1798,7 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_edge_mesh_8hpp_source.html#l00097">97</a> of file <a class="el" href="_edge_mesh_8hpp_source.html">EdgeMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_mesh_8hpp_source.html#l00098">98</a> of file <a class="el" href="_edge_mesh_8hpp_source.html">EdgeMesh.hpp</a>.</p>
 
 </div>
 </div>
@@ -1865,9 +1895,9 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_edge_mesh_8hpp_source.html#l00080">80</a> of file <a class="el" href="_edge_mesh_8hpp_source.html">EdgeMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_mesh_8hpp_source.html#l00081">81</a> of file <a class="el" href="_edge_mesh_8hpp_source.html">EdgeMesh.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_edge_mesh_8cpp_source.html#l00262">connectivity_attributes()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00097">initialize()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00030">is_boundary_vertex()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00223">is_connectivity_valid()</a>, and <a class="el" href="_edge_mesh_8cpp_source.html#l00037">switch_tuple()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_edge_mesh_8cpp_source.html#l00263">connectivity_attributes()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00098">initialize()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00031">is_boundary_vertex()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00224">is_connectivity_valid()</a>, and <a class="el" href="_edge_mesh_8cpp_source.html#l00038">switch_tuple()</a>.</p>
 
 </div>
 </div>
@@ -1891,9 +1921,9 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_edge_mesh_8hpp_source.html#l00079">79</a> of file <a class="el" href="_edge_mesh_8hpp_source.html">EdgeMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_mesh_8hpp_source.html#l00080">80</a> of file <a class="el" href="_edge_mesh_8hpp_source.html">EdgeMesh.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_edge_mesh_8cpp_source.html#l00262">connectivity_attributes()</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00097">id()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00097">initialize()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00223">is_connectivity_valid()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00037">switch_tuple()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00195">tuple_from_global_ids()</a>, and <a class="el" href="_edge_mesh_8cpp_source.html#l00170">vertex_tuple_from_id()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_edge_mesh_8cpp_source.html#l00263">connectivity_attributes()</a>, <a class="el" href="_edge_mesh_8hpp_source.html#l00098">id()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00098">initialize()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00224">is_connectivity_valid()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00038">switch_tuple()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00196">tuple_from_global_ids()</a>, and <a class="el" href="_edge_mesh_8cpp_source.html#l00171">vertex_tuple_from_id()</a>.</p>
 
 </div>
 </div>
@@ -1917,9 +1947,9 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_edge_mesh_8hpp_source.html#l00077">77</a> of file <a class="el" href="_edge_mesh_8hpp_source.html">EdgeMesh.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_mesh_8hpp_source.html#l00078">78</a> of file <a class="el" href="_edge_mesh_8hpp_source.html">EdgeMesh.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_edge_mesh_8cpp_source.html#l00262">connectivity_attributes()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00097">initialize()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00223">is_connectivity_valid()</a>, and <a class="el" href="_edge_mesh_8cpp_source.html#l00170">vertex_tuple_from_id()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_edge_mesh_8cpp_source.html#l00263">connectivity_attributes()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00098">initialize()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00224">is_connectivity_valid()</a>, and <a class="el" href="_edge_mesh_8cpp_source.html#l00171">vertex_tuple_from_id()</a>.</p>
 
 </div>
 </div>

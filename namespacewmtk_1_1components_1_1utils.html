@@ -123,6 +123,8 @@ $(document).ready(function(){initNavTree('namespacewmtk_1_1components_1_1utils.h
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1utils_1_1_component_options_base.html">ComponentOptionsBase</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1utils_1_1_path_resolver.html">PathResolver</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
@@ -133,6 +135,10 @@ Functions</h2></td></tr>
 <tr class="separator:a582e503d9bd8bb51b2ccb8d351367b02"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af6aefcc543c7737abce06f5f8bad7dbd"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1utils.html#af6aefcc543c7737abce06f5f8bad7dbd">get_attributes</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> &amp;attribute_names)</td></tr>
 <tr class="separator:af6aefcc543c7737abce06f5f8bad7dbd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a626714ae9ec8a00e0ebf9cabc3b62a76"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1utils.html#a626714ae9ec8a00e0ebf9cabc3b62a76">WMTK_NLOHMANN_JSON_FRIEND_TO_JSON_PROTOTYPE</a> (<a class="el" href="classwmtk_1_1components_1_1utils_1_1_path_resolver.html">PathResolver</a>)</td></tr>
+<tr class="separator:a626714ae9ec8a00e0ebf9cabc3b62a76"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abb616373a5f4c0082ac0039a22925b8c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1utils.html#abb616373a5f4c0082ac0039a22925b8c">WMTK_NLOHMANN_JSON_FRIEND_FROM_JSON_PROTOTYPE</a> (<a class="el" href="classwmtk_1_1components_1_1utils_1_1_path_resolver.html">PathResolver</a>)</td></tr>
+<tr class="separator:abb616373a5f4c0082ac0039a22925b8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1acf8217338a8bcffd00f279a2873791"><td class="memItemLeft" align="right" valign="top">fs::path&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1utils.html#a1acf8217338a8bcffd00f279a2873791">resolve_path</a> (const fs::path &amp;root, const fs::path &amp;path)</td></tr>
 <tr class="separator:a1acf8217338a8bcffd00f279a2873791"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9ff846440f75e199f9f9fd3a80c4e3e8"><td class="memItemLeft" align="right" valign="top">fs::path&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1utils.html#a9ff846440f75e199f9f9fd3a80c4e3e8">resolve_paths</a> (const fs::path &amp;root, const std::initializer_list&lt; fs::path &gt; &amp;paths)</td></tr>
@@ -224,7 +230,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="get__attributes_8cpp_source.html#l00014">14</a> of file <a class="el" href="get__attributes_8cpp_source.html">get_attributes.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l00912">wmtk::Mesh::get_attribute_handle()</a>, <a class="el" href="_mesh_8hpp_source.html#l00932">wmtk::Mesh::has_attribute()</a>, <a class="el" href="_logger_8cpp_source.html#l00101">wmtk::log_and_throw_error()</a>, <a class="el" href="primitive__range_8cpp_source.html#l00029">wmtk::utils::primitive_below()</a>, and <a class="el" href="_mesh_8hpp_source.html#l00991">wmtk::Mesh::top_simplex_type()</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l00917">wmtk::Mesh::get_attribute_handle()</a>, <a class="el" href="_mesh_8hpp_source.html#l00937">wmtk::Mesh::has_attribute()</a>, <a class="el" href="_logger_8cpp_source.html#l00101">wmtk::log_and_throw_error()</a>, <a class="el" href="primitive__range_8cpp_source.html#l00029">wmtk::utils::primitive_below()</a>, and <a class="el" href="_mesh_8hpp_source.html#l00996">wmtk::Mesh::top_simplex_type()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="get__attributes_8cpp_source.html#l00049">get_attribute()</a>, and <a class="el" href="get__attributes_8cpp_source.html#l00067">get_attributes()</a>.</p>
 <div class="dynheader">
@@ -475,6 +481,46 @@ Here is the call graph for this function:</div>
 
 <p>Call <code><a class="el" href="namespacewmtk_1_1components_1_1utils.html#a1acf8217338a8bcffd00f279a2873791">resolve_path()</a></code> to concatenate several paths. </p>
 <p>The behavior resembles: <code>root / path_1 / path_2 / path_3 / ...</code> </p>
+
+</div>
+</div>
+<a id="abb616373a5f4c0082ac0039a22925b8c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abb616373a5f4c0082ac0039a22925b8c">&#9670;&nbsp;</a></span>WMTK_NLOHMANN_JSON_FRIEND_FROM_JSON_PROTOTYPE()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">wmtk::components::utils::WMTK_NLOHMANN_JSON_FRIEND_FROM_JSON_PROTOTYPE </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1components_1_1utils_1_1_path_resolver.html">PathResolver</a>&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_path_resolver_8cpp_source.html#l00101">101</a> of file <a class="el" href="_path_resolver_8cpp_source.html">PathResolver.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a626714ae9ec8a00e0ebf9cabc3b62a76"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a626714ae9ec8a00e0ebf9cabc3b62a76">&#9670;&nbsp;</a></span>WMTK_NLOHMANN_JSON_FRIEND_TO_JSON_PROTOTYPE()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">wmtk::components::utils::WMTK_NLOHMANN_JSON_FRIEND_TO_JSON_PROTOTYPE </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1components_1_1utils_1_1_path_resolver.html">PathResolver</a>&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_path_resolver_8cpp_source.html#l00097">97</a> of file <a class="el" href="_path_resolver_8cpp_source.html">PathResolver.cpp</a>.</p>
 
 </div>
 </div>

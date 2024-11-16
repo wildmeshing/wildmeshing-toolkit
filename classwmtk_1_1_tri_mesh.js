@@ -4,6 +4,7 @@ var classwmtk_1_1_tri_mesh =
     [ "TriMesh", "classwmtk_1_1_tri_mesh.html#ad8e216e5a4c5267481b80a63299c1a98", null ],
     [ "TriMesh", "classwmtk_1_1_tri_mesh.html#adeb8abf458f2cdb4aea0ecce54e70884", null ],
     [ "TriMesh", "classwmtk_1_1_tri_mesh.html#ad3c7d8fb567608e42391e1e4d59c237d", null ],
+    [ "~TriMesh", "classwmtk_1_1_tri_mesh.html#afb62907ec36379f27dd6a0f3deb8d301", null ],
     [ "connectivity_attributes", "classwmtk_1_1_tri_mesh.html#a097d918fb55892f43c080e0c569ab75b", null ],
     [ "edge_tuple_from_id", "classwmtk_1_1_tri_mesh.html#ae68edb47957a4207ffb2e40f2f3686a8", null ],
     [ "face_tuple_from_id", "classwmtk_1_1_tri_mesh.html#a16693e4d11c3791da89396b412ae48db", null ],

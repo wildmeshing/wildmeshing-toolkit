@@ -5,18 +5,7 @@ var namespacewmtk_1_1components =
     [ "internal", "namespacewmtk_1_1components_1_1internal.html", "namespacewmtk_1_1components_1_1internal" ],
     [ "isotropic_remeshing", "namespacewmtk_1_1components_1_1isotropic__remeshing.html", "namespacewmtk_1_1components_1_1isotropic__remeshing" ],
     [ "longest_edge_split", "namespacewmtk_1_1components_1_1longest__edge__split.html", "namespacewmtk_1_1components_1_1longest__edge__split" ],
-    [ "multimesh", "namespacewmtk_1_1components_1_1multimesh.html", [
-      [ "MultiMeshType", "namespacewmtk_1_1components_1_1multimesh.html#a4fee03e23971feff7d37c1f9be2c1f85", [
-        [ "UV", "namespacewmtk_1_1components_1_1multimesh.html#a4fee03e23971feff7d37c1f9be2c1f85adeaa2adbeb26802ae61609c3f3642d82", null ],
-        [ "Boundary", "namespacewmtk_1_1components_1_1multimesh.html#a4fee03e23971feff7d37c1f9be2c1f85ae234de581c9c5ef91322f1469a585f9e", null ],
-        [ "Tag", "namespacewmtk_1_1components_1_1multimesh.html#a4fee03e23971feff7d37c1f9be2c1f85ac101058e7ea21bbbf2a5ac893088e90b", null ]
-      ] ],
-      [ "axis_aligned_fusion", "namespacewmtk_1_1components_1_1multimesh.html#afd7e3fbf6613b1570cf648edfea6c9b9", null ],
-      [ "from_boundary", "namespacewmtk_1_1components_1_1multimesh.html#adb526f96e146395c4e26c3dbf5aba389", null ],
-      [ "from_facet_bijection", "namespacewmtk_1_1components_1_1multimesh.html#a520cff3557e74c0a0d648947dc42280f", null ],
-      [ "from_tag", "namespacewmtk_1_1components_1_1multimesh.html#a89507b95304fafebdef81b6876544d03", null ],
-      [ "multimesh", "namespacewmtk_1_1components_1_1multimesh.html#a5af816bd3804ba5430992812b388eb6b", null ]
-    ] ],
+    [ "multimesh", "namespacewmtk_1_1components_1_1multimesh.html", "namespacewmtk_1_1components_1_1multimesh" ],
     [ "output", "namespacewmtk_1_1components_1_1output.html", "namespacewmtk_1_1components_1_1output" ],
     [ "procedural", "namespacewmtk_1_1components_1_1procedural.html", "namespacewmtk_1_1components_1_1procedural" ],
     [ "shortest_edge_collapse", "namespacewmtk_1_1components_1_1shortest__edge__collapse.html", "namespacewmtk_1_1components_1_1shortest__edge__collapse" ],

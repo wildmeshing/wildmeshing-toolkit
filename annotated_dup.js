@@ -2,7 +2,6 @@ var annotated_dup =
 [
     [ "nlohmann", "namespacenlohmann.html", [
       [ "adl_serializer< wmtk::components::input::InputOptions >", "structnlohmann_1_1adl__serializer_3_01wmtk_1_1components_1_1input_1_1_input_options_01_4.html", "structnlohmann_1_1adl__serializer_3_01wmtk_1_1components_1_1input_1_1_input_options_01_4" ],
-      [ "adl_serializer< wmtk::components::output::OutputOptions >", "structnlohmann_1_1adl__serializer_3_01wmtk_1_1components_1_1output_1_1_output_options_01_4.html", "structnlohmann_1_1adl__serializer_3_01wmtk_1_1components_1_1output_1_1_output_options_01_4" ],
       [ "adl_serializer< std::filesystem::path >", "structnlohmann_1_1adl__serializer_3_01std_1_1filesystem_1_1path_01_4.html", null ]
     ] ],
     [ "std", "namespacestd.html", [
@@ -68,9 +67,7 @@ var annotated_dup =
           ] ]
         ] ],
         [ "input", "namespacewmtk_1_1components_1_1input.html", [
-          [ "InputOptions", "classwmtk_1_1components_1_1input_1_1_input_options.html", "classwmtk_1_1components_1_1input_1_1_input_options" ],
-          [ "MeshCollection", "classwmtk_1_1components_1_1input_1_1_mesh_collection.html", "classwmtk_1_1components_1_1input_1_1_mesh_collection" ],
-          [ "NamedMultiMesh", "classwmtk_1_1components_1_1input_1_1_named_multi_mesh.html", "classwmtk_1_1components_1_1input_1_1_named_multi_mesh" ]
+          [ "InputOptions", "classwmtk_1_1components_1_1input_1_1_input_options.html", "classwmtk_1_1components_1_1input_1_1_input_options" ]
         ] ],
         [ "internal", "namespacewmtk_1_1components_1_1internal.html", [
           [ "bbox", "structwmtk_1_1components_1_1internal_1_1bbox.html", "structwmtk_1_1components_1_1internal_1_1bbox" ],
@@ -95,6 +92,10 @@ var annotated_dup =
         [ "longest_edge_split", "namespacewmtk_1_1components_1_1longest__edge__split.html", [
           [ "LongestEdgeSplitOptions", "structwmtk_1_1components_1_1longest__edge__split_1_1_longest_edge_split_options.html", "structwmtk_1_1components_1_1longest__edge__split_1_1_longest_edge_split_options" ]
         ] ],
+        [ "multimesh", "namespacewmtk_1_1components_1_1multimesh.html", [
+          [ "MeshCollection", "classwmtk_1_1components_1_1multimesh_1_1_mesh_collection.html", "classwmtk_1_1components_1_1multimesh_1_1_mesh_collection" ],
+          [ "NamedMultiMesh", "classwmtk_1_1components_1_1multimesh_1_1_named_multi_mesh.html", "classwmtk_1_1components_1_1multimesh_1_1_named_multi_mesh" ]
+        ] ],
         [ "output", "namespacewmtk_1_1components_1_1output.html", [
           [ "OutputOptions", "structwmtk_1_1components_1_1output_1_1_output_options.html", "structwmtk_1_1components_1_1output_1_1_output_options" ]
         ] ],
@@ -113,7 +114,8 @@ var annotated_dup =
           [ "ChildMeshes", "classwmtk_1_1components_1_1triangle__insertion_1_1_child_meshes.html", "classwmtk_1_1components_1_1triangle__insertion_1_1_child_meshes" ]
         ] ],
         [ "utils", "namespacewmtk_1_1components_1_1utils.html", [
-          [ "ComponentOptionsBase", "structwmtk_1_1components_1_1utils_1_1_component_options_base.html", "structwmtk_1_1components_1_1utils_1_1_component_options_base" ]
+          [ "ComponentOptionsBase", "structwmtk_1_1components_1_1utils_1_1_component_options_base.html", "structwmtk_1_1components_1_1utils_1_1_component_options_base" ],
+          [ "PathResolver", "classwmtk_1_1components_1_1utils_1_1_path_resolver.html", "classwmtk_1_1components_1_1utils_1_1_path_resolver" ]
         ] ],
         [ "EdgeInsertionMeshes", "structwmtk_1_1components_1_1_edge_insertion_meshes.html", "structwmtk_1_1components_1_1_edge_insertion_meshes" ],
         [ "TagAttribute", "classwmtk_1_1components_1_1_tag_attribute.html", "classwmtk_1_1components_1_1_tag_attribute" ],
