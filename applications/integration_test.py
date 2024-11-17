@@ -76,8 +76,10 @@ class IntegrationTest(unittest.TestCase):
 
         if res.returncode != 0:
             print(f"Error running [{' '.join(cmd)}] from working directory [{self.working_dir}]")
-            print(res.stderr.decode('utf-8'), flush=True)
-            print(res.stdout.decode('utf-8'), flush=True)
+            # in verbose mode the stderr/stdout buffers were already flushed
+            if not self.verbose:
+                print(res.stderr.decode('utf-8'), flush=True)
+                print(res.stdout.decode('utf-8'), flush=True)
         return res
 
     def get_root_path(self, input_js):
