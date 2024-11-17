@@ -3,6 +3,7 @@
 #include <CLI/CLI.hpp>
 #include <filesystem>
 #include <nlohmann/json.hpp>
+#include <wmtk/applications/utils/element_count_report.hpp>
 #include <wmtk/applications/utils/parse_jse.hpp>
 #include <wmtk/components/input/InputOptions.hpp>
 #include <wmtk/components/multimesh/MeshCollection.hpp>
@@ -110,4 +111,20 @@ int main(int argc, char* argv[])
     auto out_opts = j["output"].get<wmtk::components::output::OutputOptions>();
     out_opts.position_attribute = options.position_attribute;
     wmtk::components::output::output(*mesh_ptr, out_opts);
+
+    if (j.contains("report")) {
+        const std::string report = j["report"];
+        mc.make_canonical();
+        if (!report.empty()) {
+            nlohmann::json out_json;
+            auto& stats = out_json["stats"];
+            stats = wmtk::applications::utils::element_count_report_named(mc);
+            j.erase("report");
+            out_json["input"] = j;
+
+
+            std::ofstream ofs(report);
+            ofs << out_json;
+        }
+    }
 }

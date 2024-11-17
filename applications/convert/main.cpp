@@ -138,9 +138,7 @@ int run(const fs::path& config_path /*, const std::optional<fs::path>& name_spec
         if (!report.empty()) {
             nlohmann::json out_json;
             auto& stats = out_json["stats"];
-            for (const auto& [name, mesh] : meshes.all_meshes()) {
-                stats[name] = wmtk::applications::utils::element_count_report_named(mesh);
-            }
+            stats = wmtk::applications::utils::element_count_report_named(meshes);
             j.erase("report");
             out_json["input"] = j;
 
