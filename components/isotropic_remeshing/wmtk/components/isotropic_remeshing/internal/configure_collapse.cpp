@@ -4,6 +4,7 @@
 #include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
+#include <wmtk/invariants/SeparateSubstructuresInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/invariants/uvEdgeInvariant.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
@@ -11,20 +12,31 @@
 #include "../IsotropicRemeshingOptions.hpp"
 namespace wmtk::components::isotropic_remeshing::internal {
 
-
-std::shared_ptr<invariants::InvariantCollection> collapse_invariants(
+std::shared_ptr<invariants::InvariantCollection> collapse_core_invariants(
     Mesh& m,
     const IsotropicRemeshingOptions& options)
 {
     auto& root = m.get_multi_mesh_root();
     auto ic_root = std::make_shared<invariants::InvariantCollection>(root);
-
     auto invariant_link_condition =
         std::make_shared<wmtk::invariants::MultiMeshLinkConditionInvariant>(root);
 
     auto invariant_mm_map = std::make_shared<MultiMeshMapValidInvariant>(root);
     ic_root->add(invariant_link_condition);
     ic_root->add(invariant_mm_map);
+    if (options.separate_substructures) {
+        auto invariant_separate_substructures =
+            std::make_shared<invariants::SeparateSubstructuresInvariant>(root);
+        ic_root->add(invariant_separate_substructures);
+    }
+    return ic_root;
+}
+
+std::shared_ptr<invariants::InvariantCollection> collapse_invariants(
+    Mesh& m,
+    const IsotropicRemeshingOptions& options)
+{
+    auto ic_root = collapse_core_invariants(m, options);
 
     auto ic = std::make_shared<invariants::InvariantCollection>(m);
     const std::optional<attribute::MeshAttributeHandle>& position_for_inversion =

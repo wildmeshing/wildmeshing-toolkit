@@ -18,6 +18,9 @@ struct IsotropicRemeshingOptions;
 
 namespace internal {
 
+std::shared_ptr<invariants::InvariantCollection> collapse_core_invariants(
+    Mesh& m,
+    const IsotropicRemeshingOptions&);
 
 std::shared_ptr<invariants::InvariantCollection> collapse_invariants(
     Mesh& m,

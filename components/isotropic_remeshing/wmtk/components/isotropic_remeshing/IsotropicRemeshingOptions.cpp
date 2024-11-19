@@ -5,8 +5,7 @@
 
 #include <wmtk/Mesh.hpp>
 
-#define DEFAULT_PARSABLE_ARGS \
-    iterations, length_abs, length_rel, lock_boundary, use_for_periodic, fix_uv_seam
+#define DEFAULT_PARSABLE_ARGS iterations, lock_boundary, use_for_periodic, fix_uv_seam
 
 namespace wmtk::components::isotropic_remeshing {
 namespace {
@@ -45,6 +44,13 @@ double IsotropicRemeshingOptions::get_absolute_length() const
 void to_json(nlohmann::json& nlohmann_json_j, const IsotropicRemeshingOptions& nlohmann_json_t)
 {
     NLOHMANN_JSON_EXPAND(NLOHMANN_JSON_PASTE(NLOHMANN_JSON_TO, DEFAULT_PARSABLE_ARGS));
+
+    if (nlohmann_json_t.length_abs != 0) {
+        NLOHMANN_JSON_EXPAND(NLOHMANN_JSON_PASTE(NLOHMANN_JSON_TO, length_abs));
+    } else {
+        assert(nlohmann_json_t.length_rel != 0);
+        NLOHMANN_JSON_EXPAND(NLOHMANN_JSON_PASTE(NLOHMANN_JSON_TO, length_rel));
+    }
     if (nlohmann_json_t.envelope_size.has_value()) {
         nlohmann_json_j["envelope_size"] = nlohmann_json_t.envelope_size.value();
     }
@@ -66,6 +72,12 @@ void from_json(const nlohmann::json& nlohmann_json_j, IsotropicRemeshingOptions&
         DEFAULT_PARSABLE_ARGS
 
         ));
+    if (nlohmann_json_j.contains("length_abs")) {
+        NLOHMANN_JSON_EXPAND(NLOHMANN_JSON_PASTE(NLOHMANN_JSON_FROM, length_abs));
+    } else {
+        assert(nlohmann_json_j.contains("length_rel"));
+        NLOHMANN_JSON_EXPAND(NLOHMANN_JSON_PASTE(NLOHMANN_JSON_FROM, length_rel));
+    }
 
     if (nlohmann_json_j.contains("envelope_size")) {
         nlohmann_json_t.envelope_size = nlohmann_json_j["envelope_size"].get<double>();

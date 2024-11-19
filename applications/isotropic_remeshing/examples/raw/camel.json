@@ -1,0 +1,13 @@
+{
+    "input": {
+        "file": "unit_test/meshes/camel.msh"
+    },
+        "position_attribute": "vertices",
+        "iterations": 2,
+        "length_rel": 1,
+        "lock_boundary": true,
+        "output": {
+            "path": "output.hdf5",
+            "type": "hdf5"
+        }
+}

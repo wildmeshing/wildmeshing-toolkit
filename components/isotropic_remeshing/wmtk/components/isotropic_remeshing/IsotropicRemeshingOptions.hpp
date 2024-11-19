@@ -1,8 +1,8 @@
 #pragma once
 #include <memory>
-#include <wmtk/attribute/MeshAttributeHandle.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <optional>
+#include <wmtk/attribute/MeshAttributeHandle.hpp>
 #include "EdgeSwapMode.hpp"
 
 
@@ -15,6 +15,9 @@ struct IsotropicRemeshingOptions
     wmtk::attribute::MeshAttributeHandle position_attribute;
     std::optional<wmtk::attribute::MeshAttributeHandle> inversion_position_attribute;
     std::vector<wmtk::attribute::MeshAttributeHandle> other_position_attributes;
+    std::optional<wmtk::attribute::MeshAttributeHandle> sizing_field_attribute;
+    std::optional<wmtk::attribute::MeshAttributeHandle> visited_edge_flag;
+    std::optional<wmtk::attribute::MeshAttributeHandle> target_edge_length;
 
     std::vector<wmtk::attribute::MeshAttributeHandle> pass_through_attributes;
     int64_t iterations = 10;
@@ -23,6 +26,8 @@ struct IsotropicRemeshingOptions
     bool lock_boundary = true;
     bool use_for_periodic = false;
     bool fix_uv_seam = true;
+    // this should be true for periodic
+    bool separate_substructures = false;
 
     EdgeSwapMode edge_swap_mode = EdgeSwapMode::Skip;
 
@@ -37,8 +42,9 @@ struct IsotropicRemeshingOptions
     double get_absolute_length() const;
 
 
-
-    friend void to_json(nlohmann::json& nlohmann_json_j, const IsotropicRemeshingOptions& nlohmann_json_t);
+    friend void to_json(
+        nlohmann::json& nlohmann_json_j,
+        const IsotropicRemeshingOptions& nlohmann_json_t);
     friend void from_json(
         const nlohmann::json& nlohmann_json_j,
         IsotropicRemeshingOptions& nlohmann_json_t);

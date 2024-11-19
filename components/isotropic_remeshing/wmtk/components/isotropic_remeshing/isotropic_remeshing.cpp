@@ -111,14 +111,14 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
 
     assert(mesh.is_connectivity_valid());
 
-    std::vector<std::shared_ptr<Operation>> ops;
+    std::vector<std::pair<std::string, std::shared_ptr<Operation>>> ops;
 
     // split
     wmtk::logger().debug("Configure isotropic remeshing split");
     auto op_split = std::make_shared<EdgeSplit>(mesh);
     configure_split(*op_split, mesh, options);
     assert(op_split->attribute_new_all_configured());
-    ops.push_back(op_split);
+    ops.emplace_back("split",op_split);
 
 
     //////////////////////////////////////////
@@ -131,7 +131,7 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
 
 
     assert(op_collapse->attribute_new_all_configured());
-    ops.push_back(op_collapse);
+    ops.emplace_back("collapse",op_collapse);
 
 
     //////////////////////////////////////////
@@ -141,7 +141,7 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
     // adds common invariants like inversion check and asserts taht the swap is ready for prime time
     wmtk::logger().debug("Configure isotropic remeshing swap");
 
-    ops.push_back(op_swap);
+    ops.emplace_back("swap",op_swap);
 
 
     //////////////////////////////////////////
@@ -170,7 +170,7 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
     }
 
     if (update_position) op_smooth->add_transfer_strategy(update_position);
-    ops.push_back(op_smooth);
+    ops.emplace_back("smooth",op_smooth);
 
 
     //////////////////////////////////////////
@@ -179,9 +179,22 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
         wmtk::logger().info("Iteration {}", i);
 
         SchedulerStats pass_stats;
-        for (size_t j = 0; j < ops.size(); ++j) {
-            const auto& op = ops[j];
-            pass_stats += scheduler.run_operation_on_all(*op);
+        for(const auto& [name, opptr]: ops) {
+            if(!bool(opptr)) {
+                spdlog::warn("op {} is empty", name);
+                continue;
+            }
+            const auto stats = scheduler.run_operation_on_all(*opptr);
+        logger().info(
+            "Executed {} {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",
+            stats.number_of_performed_operations(),
+            name,
+            stats.number_of_successful_operations(),
+            stats.number_of_failed_operations(),
+            stats.collecting_time,
+            stats.sorting_time,
+            stats.executing_time);
+            pass_stats += stats;
         }
 
         multimesh::consolidate(mesh);
