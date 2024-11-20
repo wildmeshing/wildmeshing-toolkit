@@ -33,6 +33,8 @@ set(SRC_FILES
     #
     Accessor.hxx
     Accessor.hpp
+    
+    AttributeType.hpp
 
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

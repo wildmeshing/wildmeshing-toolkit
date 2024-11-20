@@ -26,6 +26,7 @@ public:
     // auto operator=(NamedMultiMesh&&) -> NamedMultiMesh&;
     auto operator=(const NamedMultiMesh&) -> NamedMultiMesh&;
 
+    /// sets just the name of the root mesh, keeping child names the same
     void set_name(const std::string_view& root_name = "");
     void set_names(const nlohmann::json& js);
     void set_root(Mesh& m);

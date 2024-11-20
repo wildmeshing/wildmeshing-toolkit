@@ -4,7 +4,8 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/components/input/input.hpp>
 #include "tools/TriMesh_examples.hpp"
-#include "wmtk/components/multimesh/NamedMultiMesh.hpp"
+#include <wmtk/components/multimesh/NamedMultiMesh.hpp>
+#include <wmtk/components/multimesh/utils/get_attribute.hpp>
 
 #include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 
@@ -126,5 +127,56 @@ TEST_CASE("named_multimesh_parse", "[components][multimesh]")
         CHECK(
             m->get_multi_mesh_child_mesh({1, 1}).shared_from_this() ==
             named_mm.get_mesh(".child.c2").shared_from_this());
+    }
+}
+
+TEST_CASE("named_multimesh_parse", "[components][multimesh]")
+{
+    {
+        auto m = make_mesh();
+        wmtk::components::multimesh::NamedMultiMesh named_mm;
+        named_mm.set_mesh(*m);
+
+        named_mm.set_name("roo");
+
+        wmtk::components::multimesh::utils::get_attribute(named_mm, 
+    }
+
+
+    {
+        auto m = make_mesh();
+        make_child(*m, {0});
+
+
+        wmtk::components::multimesh::NamedMultiMesh named_mm;
+        named_mm.set_mesh(*m);
+        {
+            nlohmann::json js;
+            js["roo"] = nlohmann::json::array({"child"});
+            named_mm.set_names(js);
+        }
+        CHECK(std::vector<int64_t>{} == named_mm.get_id("roo"));
+        CHECK(std::vector<int64_t>{0} == named_mm.get_id("roo.child"));
+        CHECK(m == named_mm.root().shared_from_this());
+        CHECK(m == named_mm.get_mesh("roo").shared_from_this());
+        CHECK(
+            m->get_multi_mesh_child_mesh({0}).shared_from_this() ==
+            named_mm.get_mesh("roo.child").shared_from_this());
+    }
+    {
+        wmtk::components::multimesh::NamedMultiMesh named_mm;
+        nlohmann::json js;
+        js["roo"] = nlohmann::json("child");
+        named_mm.set_names(js);
+        CHECK(std::vector<int64_t>{} == named_mm.get_id("roo"));
+        CHECK(std::vector<int64_t>{0} == named_mm.get_id("roo.child"));
+    }
+    {
+        wmtk::components::multimesh::NamedMultiMesh named_mm;
+        nlohmann::json js;
+        js["roo"]["child"] = {};
+        named_mm.set_names(js);
+        CHECK(std::vector<int64_t>{} == named_mm.get_id("roo"));
+        CHECK(std::vector<int64_t>{0} == named_mm.get_id("roo.child"));
     }
 }

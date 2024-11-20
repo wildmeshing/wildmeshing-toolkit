@@ -23,12 +23,15 @@ set(SRC_FILES
 
     NamedMultiMesh.hpp
     NamedMultiMesh.cpp
-    utils/get_attribute.hpp
-    utils/get_attribute.cpp
     internal/split_path.hpp
 
     MeshCollection.hpp
     MeshCollection.cpp
+
+    AttributeDescription.hpp
+
+    utils/get_attribute.hpp
+    utils/get_attribute.cpp
 )
 
 include(stb)
