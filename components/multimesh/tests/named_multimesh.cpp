@@ -250,3 +250,45 @@ TEST_CASE("named_multimesh_parse_attributes", "[components][multimesh]")
                                      {".child/double_test", 0, AT::Double}));
     }
 }
+
+TEST_CASE("multimesh_attribute_description_json", "[components][multimesh]")
+{
+    using AT = wmtk::attribute::AttributeType;
+    using AD = wmtk::components::multimesh::utils::AttributeDescription;
+    using JS = nlohmann::json;
+    auto check = [](const AD& ad, const JS& js) {
+        JS js2 = ad;
+        CHECK(js2 == js);
+        CHECK(ad == js.get<AD>());
+    };
+    {
+        AD ad{"double_test", 0, AT::Double};
+        JS js{{"path", "double_test"}, {"dimension", 0}, {"type", "double"}};
+        check(ad, js);
+    }
+    {
+        AD ad{"rational_test", 0, AT::Rational};
+        JS js{{"path", "rational_test"}, {"dimension", 0}, {"type", "rational"}};
+        check(ad, js);
+    }
+    {
+        AD ad{"int_test", 0, AT::Int64};
+        JS js{{"path", "int_test"}, {"dimension", 0}, {"type", "int"}};
+        check(ad, js);
+    }
+    {
+        AD ad{"char_test", 0, AT::Char};
+        JS js{{"path", "char_test"}, {"dimension", 0}, {"type", "char"}};
+        check(ad, js);
+    }
+    {
+        AD ad{"double_test", 1, AT::Double};
+        JS js{{"path", "double_test"}, {"dimension", 1}, {"type", "double"}};
+        check(ad, js);
+    }
+    {
+        AD ad{"double_test", 2, AT::Double};
+        JS js{{"path", "double_test"}, {"dimension", 2}, {"type", "double"}};
+        check(ad, js);
+    }
+}
