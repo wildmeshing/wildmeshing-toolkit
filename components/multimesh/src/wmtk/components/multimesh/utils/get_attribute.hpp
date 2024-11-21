@@ -32,9 +32,5 @@ wmtk::attribute::MeshAttributeHandle get_attribute(
     const Mesh& mesh,
     const AttributeDescription& description);
 
-wmtk::attribute::MeshAttributeHandle get_attribute_from_json(const Mesh& m, const nlohmann::json& js);
-wmtk::attribute::MeshAttributeHandle get_attribute_from_json(
-    const wmtk::components::multimesh::MeshCollection& m,
-    const nlohmann::json& js);
 }
 } // namespace wmtk::components::multimesh::utils
