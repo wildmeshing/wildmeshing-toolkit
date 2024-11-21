@@ -8,10 +8,11 @@
 namespace wmtk::components::multimesh {
 
 
-NamedMultiMesh& MeshCollection::add_mesh(NamedMultiMesh m)
+NamedMultiMesh& MeshCollection::add_mesh(NamedMultiMesh&& m)
 {
     auto mptr = std::make_unique<NamedMultiMesh>(std::move(m));
     auto [it, did] = m_meshes.emplace(mptr->root_name(), std::move(mptr));
+
 
     return *it->second;
 }
@@ -51,6 +52,7 @@ bool MeshCollection::has_mesh(const std::string_view& path) const
 
 const NamedMultiMesh& MeshCollection::get_named_multimesh(const std::string_view& path) const
 {
+    assert(!m_meshes.empty());
     using namespace std;
 #if defined(WMTK_ENABLED_CPP20)
     std::ranges::view auto split = internal::split_path(path);
@@ -62,6 +64,19 @@ const NamedMultiMesh& MeshCollection::get_named_multimesh(const std::string_view
         wmtk::logger().debug("MeshCollection accessed with an empty name, but has only 1 mesh so "
                              "assuming that is the right mesh");
         return *m_meshes.begin()->second;
+    }
+    if (auto it = m_meshes.find(nmm_name); it == m_meshes.end()) {
+        std::vector<std::string_view> names;
+        std::transform(
+            m_meshes.begin(),
+            m_meshes.end(),
+            std::back_inserter(names),
+            [](const auto& pr) { return pr.first; });
+        wmtk::logger().error(
+            "Was unable to find root mesh name {} among {} names [{}] in MeshCollection",
+            nmm_name,
+            m_meshes.size(),
+            fmt::join(names, ","));
     }
     return *m_meshes.at(nmm_name);
 }
@@ -80,7 +95,12 @@ NamedMultiMesh& MeshCollection::get_named_multimesh(const std::string_view& path
                              "assuming that is the right mesh");
         return *m_meshes.begin()->second;
     }
-    return *m_meshes.at(nmm_name);
+    try {
+        return *m_meshes.at(nmm_name);
+    } catch (const std::runtime_error& e) {
+        wmtk::logger().warn("Failed to find mesh named {} in mesh list. Path was ", nmm_name, path);
+        throw e;
+    }
 }
 std::map<std::string, const Mesh&> MeshCollection::all_meshes() const
 // std::map<std::string, std::shared_ptr<const Mesh>> MeshCollection::all_meshes() const

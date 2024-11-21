@@ -1,28 +1,28 @@
 
 #include "get_attribute.hpp"
-#include <wmtk/Mesh.hpp>
-#include "..//MeshCollection.hpp"
-#include "wmtk/utils/Logger.hpp"
-#include "get_attribute.hpp"
 #include <ranges>
 #include <wmtk/Mesh.hpp>
-#include "../AttributeDescription.hpp"
-#include "../MeshCollection.hpp"
-#include "NamedMultiMesh.hpp"
+#include "..//MeshCollection.hpp"
+#include "../NamedMultiMesh.hpp"
+#include "AttributeDescription.hpp"
+#include "get_attribute.hpp"
+#include "wmtk/utils/Logger.hpp"
 
 namespace wmtk::components::multimesh::utils {
 
-wmtk::attribute::MeshAttributeHandle get_attribute_from_json(const Mesh& mesh, const nlohmann::json& js)
+wmtk::attribute::MeshAttributeHandle get_attribute_from_json(
+    const Mesh& mesh,
+    const nlohmann::json& js)
 {
-    if(js.is_string()) {
+    if (js.is_string()) {
         spdlog::trace("Parsing {} as just a name", js.dump());
     }
     const std::string name = js.is_string() ? js.get<std::string>() : js["name"].get<std::string>();
     std::string type_name = js.contains("type") ? js["type"] : "";
     int simplex_dim = js.contains("simplex") ? js["simplex"].get<int>() : -1;
 
-    auto try_types= [&](int index) {
-            const PrimitiveType pt = wmtk::get_primitive_type_from_id(index);
+    auto try_types = [&](int index) {
+        const PrimitiveType pt = wmtk::get_primitive_type_from_id(index);
         // search
         if (mesh.has_attribute<double>(name, pt)) {
             type_name = "double";
@@ -42,16 +42,15 @@ wmtk::attribute::MeshAttributeHandle get_attribute_from_json(const Mesh& mesh, c
 
 
     // if simplex dim is missing then both simplex dim and type name is populated
-    if(simplex_dim == -1) {
-        for(int j = 0 ; j < mesh.top_cell_dimension(); ++j) {
-            if(try_types(j)) {
+    if (simplex_dim == -1) {
+        for (int j = 0; j < mesh.top_cell_dimension(); ++j) {
+            if (try_types(j)) {
                 simplex_dim = j;
                 break;
             }
-
         }
         // if simplex dim was tehre but type name not populated we populate
-    } else if(type_name.empty()) {
+    } else if (type_name.empty()) {
         try_types(simplex_dim);
     }
     // only other case is both are populated, which is fine
@@ -89,7 +88,7 @@ wmtk::attribute::MeshAttributeHandle get_attribute_from_json(
 {
     const std::string name = js.contains("mesh") ? js["mesh"] : "";
     const auto& mesh = mc.get_mesh(name);
-    return get_attribute(mesh, js);
+    return get_attribute_from_json(mesh, js);
 }
 
 namespace detail {
@@ -106,6 +105,9 @@ auto decompose_attribute_path(std::string_view attribute_path)
 
     std::array<std::string_view, 2> ret;
     std::ranges::copy(tmp, ret.begin());
+    if (ret[1].empty()) {
+        std::swap(ret[0], ret[1]);
+    }
     return ret;
 #else
 
@@ -180,7 +182,7 @@ wmtk::attribute::MeshAttributeHandle get_attribute(
     return detail::get_attribute(
         mesh.get_mesh(mesh_path),
         attribute_name,
-        description.primitive_type,
+        description.primitive_type(),
         description.type);
 }
 wmtk::attribute::MeshAttributeHandle get_attribute(
@@ -188,10 +190,12 @@ wmtk::attribute::MeshAttributeHandle get_attribute(
     const AttributeDescription& description)
 {
     auto [mesh_path, attribute_name] = detail::decompose_attribute_path(description);
+
+    const Mesh& nmm = mesh.get_mesh(mesh_path);
     return detail::get_attribute(
-        mesh.get_mesh(mesh_path),
+        nmm,
         attribute_name,
-        description.primitive_type,
+        description.primitive_type(),
         description.type);
 }
 
@@ -203,7 +207,7 @@ wmtk::attribute::MeshAttributeHandle get_attribute(
     return detail::get_attribute(
         mesh,
         attribute_name,
-        description.primitive_type,
+        description.primitive_type(),
         description.type);
 }
 

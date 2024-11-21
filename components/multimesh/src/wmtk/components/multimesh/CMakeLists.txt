@@ -28,7 +28,8 @@ set(SRC_FILES
     MeshCollection.hpp
     MeshCollection.cpp
 
-    AttributeDescription.hpp
+    utils/AttributeDescription.hpp
+    utils/AttributeDescription.cpp
 
     utils/get_attribute.hpp
     utils/get_attribute.cpp

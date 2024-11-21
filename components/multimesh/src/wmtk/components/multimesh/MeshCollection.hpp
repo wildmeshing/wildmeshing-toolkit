@@ -9,7 +9,7 @@ class InputOptions;
 class MeshCollection
 {
 public:
-    NamedMultiMesh& add_mesh(NamedMultiMesh o);
+    NamedMultiMesh& add_mesh(NamedMultiMesh&& o);
     template <typename... Args>
     NamedMultiMesh& emplace_mesh(Args&&... args)
     {

@@ -7,12 +7,12 @@ class Mesh;
 namespace components::multimesh {
 class NamedMultiMesh;
 class MeshCollection;
-struct AttributeDescription;
 }
 } // namespace wmtk
 
 namespace wmtk::components::multimesh {
 namespace utils {
+struct AttributeDescription;
 //
 // desires json that has
 // * name (str for attribute name)
