@@ -341,6 +341,23 @@ bool TetMesh::is_valid(const Tuple& tuple) const
                                        autogen::tet_mesh::tuple_is_valid_for_ccw(tuple);
 
     if (!is_connectivity_valid) {
+#if !defined(NDEBUG)
+        logger().debug(
+            "tuple.m_local_vid={} >= 0 && tuple.m_local_eid={} >= 0 &&"
+            "tuple.m_local_fid={} >= 0 &&"
+            " tuple.m_global_cid={} >= 0 &&"
+            " autogen::tet_mesh::tuple_is_valid_for_ccw(tuple)={}",
+            tuple.m_local_vid,
+            tuple.m_local_eid,
+            tuple.m_local_fid,
+            tuple.m_global_cid,
+            autogen::tet_mesh::tuple_is_valid_for_ccw(tuple));
+        assert(tuple.m_local_vid >= 0);
+        assert(tuple.m_local_eid >= 0);
+        assert(tuple.m_local_fid >= 0);
+        assert(tuple.m_global_cid >= 0);
+        assert(autogen::tet_mesh::tuple_is_valid_for_ccw(tuple));
+#endif
         return false;
     }
 
