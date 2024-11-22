@@ -4,6 +4,7 @@
 #include <wmtk/invariants/Swap32EnergyBeforeInvariant.hpp>
 #include <wmtk/invariants/Swap44EnergyBeforeInvariant.hpp>
 #include <wmtk/invariants/Swap56EnergyBeforeInvariant.hpp>
+#include <wmtk/invariants/EdgeValenceInvariant.hpp>
 #include <wmtk/operations/MinOperationSequence.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include <wmtk/operations/composite/TetEdgeSwap.hpp>
@@ -11,6 +12,7 @@
 #include "configure_collapse.hpp"
 #include "configure_split.hpp"
 #include "configure_swap.hpp"
+#include <wmtk/utils/orient.hpp>
 namespace wmtk::components::isotropic_remeshing::internal {
 
 namespace {
@@ -164,18 +166,19 @@ tet_swap44(TetMesh& mesh, const IsotropicRemeshingOptions& options, int64_t inde
         constexpr static PrimitiveType PF = PrimitiveType::Triangle;
         constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
 
-        auto accessor = mesh->create_const_accessor(pt_attribute.as<Rational>());
+        assert(options.position_attribute.holds<wmtk::Rational>());
+        auto accessor = mesh.create_const_accessor(options.position_attribute.as<Rational>());
 
         // get the coords of the vertices
         // input edge end points
         const Tuple e0 = t.tuple();
-        const Tuple e1 = mesh->switch_tuple(e0, PV);
+        const Tuple e1 = mesh.switch_tuple(e0, PV);
         // other four vertices
         std::array<Tuple, 4> v;
         auto iter_tuple = e0;
         for (int64_t i = 0; i < 4; ++i) {
-            v[i] = mesh->switch_tuples(iter_tuple, {PE, PV});
-            iter_tuple = mesh->switch_tuples(iter_tuple, {PF, PT});
+            v[i] = mesh.switch_tuples(iter_tuple, {PE, PV});
+            iter_tuple = mesh.switch_tuples(iter_tuple, {PF, PT});
         }
 
         if (iter_tuple != e0) return 0;
@@ -247,7 +250,8 @@ tet_swap44(TetMesh& mesh, const IsotropicRemeshingOptions& options, int64_t inde
     };
 
     swap44->set_value_function(swap44_energy_check);
-    swap44->add_invariant(std::make_shared<EdgeValenceInvariant>(*mesh, 4));
+    swap44->add_invariant(std::make_shared<wmtk::invariants::EdgeValenceInvariant>(mesh, 4));
+    return swap44;
 }
 // std::shared_ptr<wmtk::operations::Operation>
 // tet_swap44(TetMesh& mesh, const IsotropicRemeshingOptions& options, int64_t index)
