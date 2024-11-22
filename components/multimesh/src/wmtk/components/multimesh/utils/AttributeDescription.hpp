@@ -10,6 +10,14 @@ namespace wmtk::components::multimesh::utils {
 // the minimal information to uniquely extract an attribute handle
 struct AttributeDescription
 {
+    // Avoiding defining any constructors to enable aggregate construction
+    //AttributeDescription() = default;
+    //AttributeDescription(const AttributeDescription&) = default;
+    //AttributeDescription(AttributeDescription&&) = default;
+    //AttributeDescription& operator=(const AttributeDescription&) = default;
+    //AttributeDescription& operator=(AttributeDescription&&) = default;
+    //~AttributeDescription() = default;
+
     std::string path;
     uint8_t dimension; // internally the primitive type
     attribute::AttributeType type;

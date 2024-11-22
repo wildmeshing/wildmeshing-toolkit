@@ -156,12 +156,12 @@ TEST_CASE("named_multimesh_parse_attributes", "[components][multimesh]")
 
         using AT = wmtk::attribute::AttributeType;
 
-
+using AD = wmtk::components::multimesh::utils::AttributeDescription;
         { // double check that path extraction is working
-            std::vector<wmtk::components::multimesh::utils::AttributeDescription> double_ads;
-            double_ads.emplace_back("double_test", 0, AT::Double);
-            double_ads.emplace_back("/double_test", 0, AT::Double);
-            double_ads.emplace_back("roo/double_test", 0, AT::Double);
+            std::vector<AD> double_ads;
+            double_ads.emplace_back(AD{"double_test", 0, AT::Double});
+            double_ads.emplace_back(AD{"/double_test", 0, AT::Double});
+            double_ads.emplace_back(AD{"roo/double_test", 0, AT::Double});
 
 
             for (const auto& ad : double_ads) {
@@ -179,15 +179,15 @@ TEST_CASE("named_multimesh_parse_attributes", "[components][multimesh]")
             CHECK(
                 rational_test_handle == wmtk::components::multimesh::utils::get_attribute(
                                             named_mm,
-                                            {"rational_test", 0, AT::Rational}));
+                                            AD{"rational_test", 0, AT::Rational}));
             CHECK(
                 int_test_handle == wmtk::components::multimesh::utils::get_attribute(
                                        named_mm,
-                                       {"int_test", 0, AT::Int64}));
+                                       AD{"int_test", 0, AT::Int64}));
             CHECK(
                 char_test_handle == wmtk::components::multimesh::utils::get_attribute(
                                         named_mm,
-                                        {"char_test", 0, AT::Char}));
+                                        AD{"char_test", 0, AT::Char}));
         }
         { // check that other simplex types work
             auto edge_handle =
@@ -197,17 +197,18 @@ TEST_CASE("named_multimesh_parse_attributes", "[components][multimesh]")
             CHECK(
                 edge_handle == wmtk::components::multimesh::utils::get_attribute(
                                    named_mm,
-                                   {"double_test", 1, AT::Double}));
+                                   AD{"double_test", 1, AT::Double}));
             CHECK(
                 tri_handle == wmtk::components::multimesh::utils::get_attribute(
                                   named_mm,
-                                  {"double_test", 2, AT::Double}));
+                                  AD{"double_test", 2, AT::Double}));
             // TODO: lazy about testing tet
         }
     }
 
 
     {
+    using AD = wmtk::components::multimesh::utils::AttributeDescription;
         auto m = make_mesh();
         auto children = make_child(*m, {0});
         REQUIRE(children.size() == 1);
@@ -231,23 +232,23 @@ TEST_CASE("named_multimesh_parse_attributes", "[components][multimesh]")
         CHECK(
             attr_handle == wmtk::components::multimesh::utils::get_attribute(
                                named_mm,
-                               {"double_test", 0, AT::Double}));
+                               AD{"double_test", 0, AT::Double}));
         CHECK(
             attr_handle == wmtk::components::multimesh::utils::get_attribute(
                                named_mm,
-                               {"/double_test", 0, AT::Double}));
+                               AD{"/double_test", 0, AT::Double}));
         CHECK(
             attr_handle == wmtk::components::multimesh::utils::get_attribute(
                                named_mm,
-                               {"roo/double_test", 0, AT::Double}));
+                               AD{"roo/double_test", 0, AT::Double}));
         CHECK(
             child_attr_handle == wmtk::components::multimesh::utils::get_attribute(
                                      named_mm,
-                                     {"roo.child/double_test", 0, AT::Double}));
+                                     AD{"roo.child/double_test", 0, AT::Double}));
         CHECK(
             child_attr_handle == wmtk::components::multimesh::utils::get_attribute(
                                      named_mm,
-                                     {".child/double_test", 0, AT::Double}));
+                                     AD{".child/double_test", 0, AT::Double}));
     }
 }
 
