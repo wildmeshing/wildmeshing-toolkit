@@ -17,15 +17,22 @@ class NamedMultiMesh
 {
 public:
     NamedMultiMesh();
-    explicit NamedMultiMesh(Mesh& m, const std::string& root_name);
     NamedMultiMesh(Mesh& m, const std::string_view& root_name);
     explicit NamedMultiMesh(Mesh& m, const nlohmann::json& root_name);
+
+    // Explicit constructors to remove ambiguities between string_view and json constructors
+    explicit NamedMultiMesh(Mesh& m, const std::string& root_name);
+    template <size_t N>
+    explicit NamedMultiMesh(Mesh& m, const char name[N])
+        : NamedMultiMesh(m, std::string_view(name))
+    {}
     // NamedMultiMesh(NamedMultiMesh&&);
     NamedMultiMesh(const NamedMultiMesh&);
     ~NamedMultiMesh();
     // auto operator=(NamedMultiMesh&&) -> NamedMultiMesh&;
     auto operator=(const NamedMultiMesh&) -> NamedMultiMesh&;
 
+    /// sets just the name of the root mesh, keeping child names the same
     void set_name(const std::string_view& root_name = "");
     void set_names(const nlohmann::json& js);
     void set_root(Mesh& m);
