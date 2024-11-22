@@ -6,6 +6,7 @@
 #include <wmtk/invariants/Swap56EnergyBeforeInvariant.hpp>
 #include <wmtk/invariants/EdgeValenceInvariant.hpp>
 #include <wmtk/operations/MinOperationSequence.hpp>
+#include <wmtk/operations/OrOperationSequence.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include <wmtk/operations/composite/TetEdgeSwap.hpp>
 #include "../IsotropicRemeshingOptions.hpp"
@@ -107,7 +108,7 @@ void configure_core_tet_swap(
 
 } // namespace
 std::shared_ptr<wmtk::operations::Operation>
-tet_swap56(TetMesh& mesh, const IsotropicRemeshingOptions& options, int64_t index)
+tet_swap56(TetMesh& mesh, const IsotropicRemeshingOptions& options)
 {
     TetMesh& tetmesh = static_cast<TetMesh&>(mesh);
     auto swap56 = std::make_shared<operations::MinOperationSequence>(mesh);
@@ -138,7 +139,7 @@ tet_swap56(TetMesh& mesh, const IsotropicRemeshingOptions& options, int64_t inde
 //
 //
 std::shared_ptr<wmtk::operations::Operation>
-tet_swap44(TetMesh& mesh, const IsotropicRemeshingOptions& options, int64_t index)
+tet_swap44(TetMesh& mesh, const IsotropicRemeshingOptions& options)
 {
     // swap44
 
@@ -310,11 +311,49 @@ std::shared_ptr<wmtk::operations::Operation> tet_swap(
     TetMesh& mesh,
     const IsotropicRemeshingOptions& options)
 {
-    // auto swap_all = std::make_shared<OrOperationSequence>(*mesh);
-    // swap_all->add_operation(swap32);
-    // swap_all->add_operation(swap44);
-    // swap_all->add_operation(swap56);
-    // swap_all->add_transfer_strategy(tag_update);
-    // swap_all->add_transfer_strategy(energy_filter_update);
+    auto swap_all = std::make_shared<wmtk::operations::OrOperationSequence>(mesh);
+     //swap_all->add_operation(tet_swap32(mesh,options));
+     swap_all->add_operation(tet_swap44(mesh,options));
+     swap_all->add_operation(tet_swap56(mesh,options));
+
+
+    //////////////////////////////////
+    // energy filter flag
+    //////////////////////////////////
+    auto& position_mesh = const_cast<Mesh&>(options.position_attribute.mesh());
+    auto energy_filter_handle =
+        position_mesh
+            .register_attribute<char>("energy_filter", PrimitiveType::Vertex, 1, false, char(1));
+
+    auto energy_filter_accessor = position_mesh.create_accessor<char>(energy_filter_handle);
+
+    auto update_energy_filter_func = [](const Eigen::MatrixX<double>& P) -> Eigen::VectorX<char> {
+        return Eigen::VectorX<char>::Constant(1, char(1));
+    };
+    auto energy_filter_update =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<char, double>>(
+            energy_filter_handle,
+            options.position_attribute,
+            update_energy_filter_func);
+
+    //////////////////////////////////
+    // renew flags
+    //////////////////////////////////
+    auto visited_edge_flag_handle =
+        position_mesh
+            .register_attribute<char>("visited_edge", PrimitiveType::Edge, 1, false, char(1));
+
+    auto update_flag_func = [](const Eigen::MatrixX<double>& P) -> Eigen::VectorX<char> {
+        return Eigen::VectorX<char>::Constant(1, char(1));
+    };
+    auto tag_update =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<char, double>>(
+            visited_edge_flag_handle,
+            options.position_attribute,
+            update_flag_func);
+
+     swap_all->add_transfer_strategy(tag_update);
+     swap_all->add_transfer_strategy(energy_filter_update);
+     return swap_all;
 }
 } // namespace wmtk::components::isotropic_remeshing::internal
