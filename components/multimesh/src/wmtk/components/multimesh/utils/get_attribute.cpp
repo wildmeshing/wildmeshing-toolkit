@@ -33,16 +33,16 @@ auto decompose_attribute_path(std::string_view attribute_path)
 
     std::array<std::string, 2> ret;
     std::vector<std::string> tmp;
-    if (view.empty()) {
+    if (attribute_path.empty()) {
         tmp.emplace_back("");
         tmp.emplace_back("");
 
     } else {
-        std::string v = std::string(view);
+        std::string v = std::string(attribute_path);
         std::istringstream iss(v);
         std::string token;
         if (v.size() > 0 && v[0] == '/') {
-            r.emplace_back("");
+            tmp.emplace_back("");
         }
         while (std::getline(iss, token, '/')) {
             if (!token.empty()) tmp.emplace_back(token);
@@ -50,7 +50,7 @@ auto decompose_attribute_path(std::string_view attribute_path)
         // at most 2 tokens are allowed
         assert(tmp.size() <= 2);
         if (tmp.size() == 1) {
-            tmp = {"", r[0]};
+            tmp = {"", tmp[0]};
         }
     }
     return std::array<std::string, 2>{{tmp[0], tmp[1]}};
