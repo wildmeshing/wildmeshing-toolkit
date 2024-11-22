@@ -3,9 +3,13 @@
         "file": "unit_test/meshes/camel.msh"
     },
         "position_attribute": "vertices",
-        "iterations": 2,
+        "iterations": 30,
         "length_rel": 1,
+        "length_abs": -1,
         "lock_boundary": true,
+        "use_for_periodic": false,
+        "dont_disable_split": false,
+        "fix_uv_seam": false,
         "output": {
             "path": "output.hdf5",
             "type": "hdf5"
