@@ -7,27 +7,123 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/MeshReader.hpp>
+#include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/orient.hpp>
+
+#include "track_operations_tet.hpp"
 using namespace wmtk;
 
 // igl, nothing for now
 
 // applications
+Eigen::MatrixXd readVertices(const std::string& filename)
+{
+    std::ifstream file(filename);
+    std::string line;
+    std::vector<std::vector<double>> data;
+    std::getline(file, line);
+
+    while (std::getline(file, line)) {
+        std::istringstream s(line);
+        std::string field;
+        std::vector<double> row;
+        while (std::getline(s, field, ',')) {
+            row.push_back(std::stod(field));
+        }
+        data.push_back(row);
+    }
+
+    Eigen::MatrixXd V(data.size(), data[0].size());
+    for (size_t i = 0; i < data.size(); ++i) {
+        for (size_t j = 0; j < data[0].size(); ++j) {
+            V(i, j) = data[i][j];
+        }
+    }
+    return V;
+}
+
+Eigen::MatrixXi readTetrahedrons(const std::string& filename)
+{
+    std::ifstream file(filename);
+    std::string line;
+    std::vector<std::vector<int>> data;
+
+    std::getline(file, line);
+
+    while (std::getline(file, line)) {
+        std::istringstream s(line);
+        std::string field;
+        std::vector<int> row;
+
+        while (std::getline(s, field, ',')) {
+            row.push_back(std::stoi(field));
+        }
+        data.push_back(row);
+    }
+
+    Eigen::MatrixXi T(data.size(), data[0].size());
+    for (size_t i = 0; i < data.size(); ++i) {
+        for (size_t j = 0; j < data[0].size(); ++j) {
+            T(i, j) = data[i][j];
+        }
+    }
+    return T;
+}
+
 
 int main(int argc, char** argv)
 {
-    CLI::App app{"bijective_map_app"};
+    CLI::App app{"bijective_map_app_tet"};
+    std::filesystem::path initial_mesh_file;
     std::string application_name = "back";
     app.add_option("-a, --app", application_name, "Application name");
-
+    app.add_option("-i, --input", initial_mesh_file, "Initial mesh file")->required(true);
     CLI11_PARSE(app, argc, argv);
 
     std::cout << "Application name: " << application_name << std::endl;
+    auto init_mesh_ptr = wmtk::read_mesh(initial_mesh_file);
 
+    // write initial mesh to vtu
+    std::cout << "Writing initial mesh to vtu" << std::endl;
+    wmtk::io::ParaviewWriter
+        writer("initial_mesh", "vertices", *init_mesh_ptr, true, true, true, true);
+    init_mesh_ptr->serialize(writer);
 
     // TODO:
-    // 1. read the input mesh, or just dump it to something that paraview can read?
     // 2. figure out how to read the outputmesh in vtu format
-    // 3. for the first experiment, nee
+    auto T_out = readTetrahedrons("T_matrix.csv");
+    auto V_out = readVertices("V_matrix.csv");
+    // TODO: for now, first we convert it with TV matrix
+
+    // get points in T,V out
+    // sample points
+    std::vector<query_point_tet> query_points;
+    for (int i = 0; i < T_out.rows() / 100; i++) {
+        query_point_tet qp;
+        qp.t_id = i * 100;
+        qp.bc = Eigen::Vector4d(0.25, 0.25, 0.25, 0.25);
+        qp.tv_ids = T_out.row(i * 100);
+        query_points.push_back(qp);
+    }
+
+    // compute postion and save to file
+    {
+        std::vector<Eigen::Vector3d> positions;
+        for (int i = 0; i < query_points.size(); i++) {
+            auto& qp = query_points[i];
+            Eigen::Vector3d p(0, 0, 0);
+            for (int j = 0; j < 4; j++) {
+                p += V_out.row(qp.tv_ids[j]) * qp.bc(j);
+            }
+            positions.push_back(p);
+        }
+        // write to file
+        std::ofstream file("positions.csv");
+        for (int i = 0; i < positions.size(); i++) {
+            file << positions[i][0] << "," << positions[i][1] << ", " << positions[i][2] << "\n";
+        }
+        file.close();
+    }
+
     return 0;
 }

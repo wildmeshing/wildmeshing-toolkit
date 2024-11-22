@@ -20,13 +20,13 @@ struct query_point_tet
 struct query_segment_tet
 {
     int64_t t_id; // tet id
-    Eigen::Vector3d bcs[2]; // barycentric coordinates
-    Eigen::Vector3i fv_ids; // face vertex ids
+    Eigen::Vector4d bcs[2]; // barycentric coordinates
+    Eigen::Vector4i tv_ids; // face vertex ids
 };
 
 struct query_curve_tet
 {
-    std::vector<query_segment> segments;
+    std::vector<query_segment_tet> segments;
     std::vector<int> next_segment_ids;
 };
 
@@ -34,7 +34,7 @@ void handle_consolidate_tet(
     const std::vector<int64_t>& tet_ids_maps,
     const std::vector<int64_t>& vertex_ids_maps,
     std::vector<query_point_tet>& query_points,
-    bool forward = false);
+    bool forward = false)
 {
     std::cout << "Handling Consolidate" << std::endl;
     if (!forward) {
@@ -158,7 +158,7 @@ void handle_local_mapping_tet(
     const Eigen::MatrixXi& F_after,
     const std::vector<int64_t>& id_map_after,
     const std::vector<int64_t>& v_id_map_after,
-    std::vector<query_point>& query_points);
+    std::vector<query_point_tet>& query_points);
 
 void parse_consolidate_file_tet(
     const json& operation_log,
