@@ -70,6 +70,23 @@ Eigen::MatrixXi readTetrahedrons(const std::string& filename)
     return T;
 }
 
+void wriet_points_to_file(
+    const std::vector<query_point_tet>& query_points,
+    const Eigen::MatrixXd& V,
+    const std::string& filename)
+{
+    std::ofstream file(filename);
+    for (int i = 0; i < query_points.size(); i++) {
+        auto& qp = query_points[i];
+        Eigen::Vector3d p(0, 0, 0);
+        for (int j = 0; j < 4; j++) {
+            p += qp.bc(j) * V.row(qp.tv_ids[j]);
+        }
+        file << p[0] << "," << p[1] << ", " << p[2] << "\n";
+    }
+    file.close();
+}
+
 
 int main(int argc, char** argv)
 {
@@ -96,7 +113,7 @@ int main(int argc, char** argv)
     // TODO: for now, first we convert it with TV matrix
 
     // get points in T,V out
-    // sample points
+    // sample points, id every 100 points
     std::vector<query_point_tet> query_points;
     for (int i = 0; i < T_out.rows() / 100; i++) {
         query_point_tet qp;
@@ -107,23 +124,9 @@ int main(int argc, char** argv)
     }
 
     // compute postion and save to file
-    {
-        std::vector<Eigen::Vector3d> positions;
-        for (int i = 0; i < query_points.size(); i++) {
-            auto& qp = query_points[i];
-            Eigen::Vector3d p(0, 0, 0);
-            for (int j = 0; j < 4; j++) {
-                p += V_out.row(qp.tv_ids[j]) * qp.bc(j);
-            }
-            positions.push_back(p);
-        }
-        // write to file
-        std::ofstream file("positions.csv");
-        for (int i = 0; i < positions.size(); i++) {
-            file << positions[i][0] << "," << positions[i][1] << ", " << positions[i][2] << "\n";
-        }
-        file.close();
-    }
+    wriet_points_to_file(query_points, V_out, "points_after_remesh.csv");
+
+    // TODO: do back tracking
 
     return 0;
 }
