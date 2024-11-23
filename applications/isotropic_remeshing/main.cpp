@@ -8,6 +8,7 @@
 #include <wmtk/components/input/InputOptions.hpp>
 #include <wmtk/components/multimesh/MeshCollection.hpp>
 #include <wmtk/components/multimesh/utils/get_attribute.hpp>
+#include <wmtk/components/multimesh/utils/AttributeDescription.hpp>
 #include "wmtk/components/utils/PathResolver.hpp"
 
 #include <wmtk/Mesh.hpp>
