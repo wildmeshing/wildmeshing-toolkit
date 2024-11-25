@@ -3,13 +3,8 @@ var classwmtk_1_1attribute_1_1_mesh_attribute_handle =
     [ "HandleVariant", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a3f01d299c0c53fed0cb1d3d3068c1f60", null ],
     [ "held_handle_type", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a668ff6ca474494a3dda2883f6856d03c", null ],
     [ "held_primitive_type", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a0522660700bc90fc462141027c811ab8", null ],
+    [ "HeldType", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a6a7018183de3b5122e6768af7583902d", null ],
     [ "ValueVariant", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ad3399195a55099a6304e29cf7f78b517", null ],
-    [ "HeldType", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ab16f5783132a7a0861b1526fc881dfa6", [
-      [ "Char", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ab16f5783132a7a0861b1526fc881dfa6a8e95e84813830072b7516cfaa7dbc1a9", null ],
-      [ "Int64", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ab16f5783132a7a0861b1526fc881dfa6afbde23b11d7e59af7828e81144c8b487", null ],
-      [ "Double", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ab16f5783132a7a0861b1526fc881dfa6ad909d38d705ce75386dd86e611a82f5b", null ],
-      [ "Rational", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ab16f5783132a7a0861b1526fc881dfa6a1987a88c6ff10363e43d25ead3066ad8", null ]
-    ] ],
     [ "MeshAttributeHandle", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ad2e1dc27f24f87abad3d32c75a979110", null ],
     [ "MeshAttributeHandle", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#af524b682360b4fcad51376a69922698d", null ],
     [ "MeshAttributeHandle", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#af406505d419182a1087c58e9b1599c26", null ],

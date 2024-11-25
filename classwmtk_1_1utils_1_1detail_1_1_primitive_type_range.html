@@ -113,8 +113,8 @@ $(document).ready(function(){initNavTree('classwmtk_1_1utils_1_1detail_1_1_primi
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
-<a href="#pri-types">Private Types</a> &#124;
-<a href="#pri-methods">Private Member Functions</a> &#124;
+<a href="#pub-types">Public Types</a> &#124;
+<a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="classwmtk_1_1utils_1_1detail_1_1_primitive_type_range-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">wmtk::utils::detail::PrimitiveTypeRange&lt; Start, End, Inverted &gt; Class Template Reference</div>  </div>
@@ -128,15 +128,15 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1detail_1_1_primitive_type_range_1_1iterator.html">iterator</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-types"></a>
-Private Types</h2></td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
+Public Types</h2></td></tr>
 <tr class="memitem:ae2230bc5f723eab8bd92670c008d50e6"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1detail_1_1_primitive_type_range.html#ae2230bc5f723eab8bd92670c008d50e6">integral_type</a> = std::underlying_type_t&lt; <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> &gt;</td></tr>
 <tr class="separator:ae2230bc5f723eab8bd92670c008d50e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a50515fb6ad5a9dcbe60e610df5bd98ea"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1detail_1_1_primitive_type_range.html#a50515fb6ad5a9dcbe60e610df5bd98ea">const_iterator</a> = <a class="el" href="classwmtk_1_1utils_1_1detail_1_1_primitive_type_range_1_1iterator.html">iterator</a></td></tr>
 <tr class="separator:a50515fb6ad5a9dcbe60e610df5bd98ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
-Private Member Functions</h2></td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
+Public Member Functions</h2></td></tr>
 <tr class="memitem:a0ecbea9df508e58354246779bf5d5df3"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1detail_1_1_primitive_type_range.html#a0ecbea9df508e58354246779bf5d5df3">begin</a> () const -&gt; <a class="el" href="classwmtk_1_1utils_1_1detail_1_1_primitive_type_range_1_1iterator.html">iterator</a></td></tr>
 <tr class="separator:a0ecbea9df508e58354246779bf5d5df3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeb75ddba3f4821d439cfa4d30f76e6eb"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1detail_1_1_primitive_type_range.html#aeb75ddba3f4821d439cfa4d30f76e6eb">end</a> () const -&gt; <a class="el" href="classwmtk_1_1utils_1_1detail_1_1_primitive_type_range_1_1iterator.html">iterator</a></td></tr>
@@ -160,22 +160,14 @@ class wmtk::utils::detail::PrimitiveTypeRange&lt; Start, End, Inverted &gt;</h3>
 <div class="memproto">
 <div class="memtemplate">
 template&lt;std::underlying_type_t&lt; PrimitiveType &gt; Start, std::underlying_type_t&lt; PrimitiveType &gt; End, bool Inverted = (Start &gt; End)&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">using <a class="el" href="classwmtk_1_1utils_1_1detail_1_1_primitive_type_range.html">wmtk::utils::detail::PrimitiveTypeRange</a>&lt; Start, End, Inverted &gt;::<a class="el" href="classwmtk_1_1utils_1_1detail_1_1_primitive_type_range.html#a50515fb6ad5a9dcbe60e610df5bd98ea">const_iterator</a> =  <a class="el" href="classwmtk_1_1utils_1_1detail_1_1_primitive_type_range_1_1iterator.html">iterator</a></td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="primitive__range__iter_8hpp_source.html#l00071">71</a> of file <a class="el" href="primitive__range__iter_8hpp_source.html">primitive_range_iter.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="primitive__range__iter_8hpp_source.html#l00072">72</a> of file <a class="el" href="primitive__range__iter_8hpp_source.html">primitive_range_iter.hpp</a>.</p>
 
 </div>
 </div>
@@ -186,22 +178,14 @@ template&lt;std::underlying_type_t&lt; PrimitiveType &gt; Start, std::underlying
 <div class="memproto">
 <div class="memtemplate">
 template&lt;std::underlying_type_t&lt; PrimitiveType &gt; Start, std::underlying_type_t&lt; PrimitiveType &gt; End, bool Inverted = (Start &gt; End)&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">using <a class="el" href="classwmtk_1_1utils_1_1detail_1_1_primitive_type_range.html">wmtk::utils::detail::PrimitiveTypeRange</a>&lt; Start, End, Inverted &gt;::<a class="el" href="classwmtk_1_1utils_1_1detail_1_1_primitive_type_range.html#ae2230bc5f723eab8bd92670c008d50e6">integral_type</a> =  std::underlying_type_t&lt;<a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a>&gt;</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="primitive__range__iter_8hpp_source.html#l00016">16</a> of file <a class="el" href="primitive__range__iter_8hpp_source.html">primitive_range_iter.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="primitive__range__iter_8hpp_source.html#l00017">17</a> of file <a class="el" href="primitive__range__iter_8hpp_source.html">primitive_range_iter.hpp</a>.</p>
 
 </div>
 </div>
@@ -226,12 +210,12 @@ template&lt;std::underlying_type_t&lt; PrimitiveType &gt; Start, std::underlying
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">private</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="primitive__range__iter_8hpp_source.html#l00073">73</a> of file <a class="el" href="primitive__range__iter_8hpp_source.html">primitive_range_iter.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="primitive__range__iter_8hpp_source.html#l00074">74</a> of file <a class="el" href="primitive__range__iter_8hpp_source.html">primitive_range_iter.hpp</a>.</p>
 
 </div>
 </div>
@@ -255,12 +239,12 @@ template&lt;std::underlying_type_t&lt; PrimitiveType &gt; Start, std::underlying
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">private</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="primitive__range__iter_8hpp_source.html#l00075">75</a> of file <a class="el" href="primitive__range__iter_8hpp_source.html">primitive_range_iter.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="primitive__range__iter_8hpp_source.html#l00076">76</a> of file <a class="el" href="primitive__range__iter_8hpp_source.html">primitive_range_iter.hpp</a>.</p>
 
 </div>
 </div>
@@ -284,12 +268,12 @@ template&lt;std::underlying_type_t&lt; PrimitiveType &gt; Start, std::underlying
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">private</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="primitive__range__iter_8hpp_source.html#l00076">76</a> of file <a class="el" href="primitive__range__iter_8hpp_source.html">primitive_range_iter.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="primitive__range__iter_8hpp_source.html#l00077">77</a> of file <a class="el" href="primitive__range__iter_8hpp_source.html">primitive_range_iter.hpp</a>.</p>
 
 </div>
 </div>
@@ -313,12 +297,12 @@ template&lt;std::underlying_type_t&lt; PrimitiveType &gt; Start, std::underlying
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">private</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="primitive__range__iter_8hpp_source.html#l00074">74</a> of file <a class="el" href="primitive__range__iter_8hpp_source.html">primitive_range_iter.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="primitive__range__iter_8hpp_source.html#l00075">75</a> of file <a class="el" href="primitive__range__iter_8hpp_source.html">primitive_range_iter.hpp</a>.</p>
 
 </div>
 </div>

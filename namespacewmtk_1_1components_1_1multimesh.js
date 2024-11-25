@@ -3,10 +3,7 @@ var namespacewmtk_1_1components_1_1multimesh =
     [ "internal", "namespacewmtk_1_1components_1_1multimesh_1_1internal.html", [
       [ "split_path", "namespacewmtk_1_1components_1_1multimesh_1_1internal.html#a3b2338b45b680494e5501c97baa6f456", null ]
     ] ],
-    [ "utils", "namespacewmtk_1_1components_1_1multimesh_1_1utils.html", [
-      [ "get_attribute", "namespacewmtk_1_1components_1_1multimesh_1_1utils.html#a82a563f96651e9672a844de497d8c141", null ],
-      [ "get_attribute", "namespacewmtk_1_1components_1_1multimesh_1_1utils.html#a42acef0ee3742a3474f07c928a31fa92", null ]
-    ] ],
+    [ "utils", "namespacewmtk_1_1components_1_1multimesh_1_1utils.html", "namespacewmtk_1_1components_1_1multimesh_1_1utils" ],
     [ "MeshCollection", "classwmtk_1_1components_1_1multimesh_1_1_mesh_collection.html", "classwmtk_1_1components_1_1multimesh_1_1_mesh_collection" ],
     [ "NamedMultiMesh", "classwmtk_1_1components_1_1multimesh_1_1_named_multi_mesh.html", "classwmtk_1_1components_1_1multimesh_1_1_named_multi_mesh" ],
     [ "MultiMeshType", "namespacewmtk_1_1components_1_1multimesh.html#a4fee03e23971feff7d37c1f9be2c1f85", [

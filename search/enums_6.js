@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['multimeshtype_5995',['MultiMeshType',['../namespacewmtk_1_1components_1_1multimesh.html#a4fee03e23971feff7d37c1f9be2c1f85',1,'wmtk::components::multimesh']]]
+  ['primitivetype_6082',['PrimitiveType',['../namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345',1,'wmtk']]]
 ];

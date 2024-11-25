@@ -37,6 +37,11 @@ var annotated_dup =
         [ "CachingAccessor", "classwmtk_1_1attribute_1_1_caching_accessor.html", "classwmtk_1_1attribute_1_1_caching_accessor" ],
         [ "AttributeScope", "classwmtk_1_1attribute_1_1_attribute_scope.html", "classwmtk_1_1attribute_1_1_attribute_scope" ],
         [ "AttributeScopeHandle", "classwmtk_1_1attribute_1_1_attribute_scope_handle.html", "classwmtk_1_1attribute_1_1_attribute_scope_handle" ],
+        [ "type_from_attribute_type_enum", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum.html", null ],
+        [ "type_from_attribute_type_enum< AttributeType::Char >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_char_01_4.html", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_char_01_4" ],
+        [ "type_from_attribute_type_enum< AttributeType::Double >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_double_01_4.html", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_double_01_4" ],
+        [ "type_from_attribute_type_enum< AttributeType::Int64 >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_int64_01_4.html", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_int64_01_4" ],
+        [ "type_from_attribute_type_enum< AttributeType::Rational >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_rational_01_4.html", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_rational_01_4" ],
         [ "MeshAttributeHandle", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html", "classwmtk_1_1attribute_1_1_mesh_attribute_handle" ],
         [ "TupleAccessor", "classwmtk_1_1attribute_1_1_tuple_accessor.html", "classwmtk_1_1attribute_1_1_tuple_accessor" ]
       ] ],
@@ -93,6 +98,14 @@ var annotated_dup =
           [ "LongestEdgeSplitOptions", "structwmtk_1_1components_1_1longest__edge__split_1_1_longest_edge_split_options.html", "structwmtk_1_1components_1_1longest__edge__split_1_1_longest_edge_split_options" ]
         ] ],
         [ "multimesh", "namespacewmtk_1_1components_1_1multimesh.html", [
+          [ "utils", "namespacewmtk_1_1components_1_1multimesh_1_1utils.html", [
+            [ "detail", "namespacewmtk_1_1components_1_1multimesh_1_1utils_1_1detail.html", [
+              [ "attribute_ambiguous_error", "classwmtk_1_1components_1_1multimesh_1_1utils_1_1detail_1_1attribute__ambiguous__error.html", "classwmtk_1_1components_1_1multimesh_1_1utils_1_1detail_1_1attribute__ambiguous__error" ],
+              [ "attribute_error", "classwmtk_1_1components_1_1multimesh_1_1utils_1_1detail_1_1attribute__error.html", "classwmtk_1_1components_1_1multimesh_1_1utils_1_1detail_1_1attribute__error" ],
+              [ "attribute_missing_error", "classwmtk_1_1components_1_1multimesh_1_1utils_1_1detail_1_1attribute__missing__error.html", "classwmtk_1_1components_1_1multimesh_1_1utils_1_1detail_1_1attribute__missing__error" ]
+            ] ],
+            [ "AttributeDescription", "structwmtk_1_1components_1_1multimesh_1_1utils_1_1_attribute_description.html", "structwmtk_1_1components_1_1multimesh_1_1utils_1_1_attribute_description" ]
+          ] ],
           [ "MeshCollection", "classwmtk_1_1components_1_1multimesh_1_1_mesh_collection.html", "classwmtk_1_1components_1_1multimesh_1_1_mesh_collection" ],
           [ "NamedMultiMesh", "classwmtk_1_1components_1_1multimesh_1_1_named_multi_mesh.html", "classwmtk_1_1components_1_1multimesh_1_1_named_multi_mesh" ]
         ] ],

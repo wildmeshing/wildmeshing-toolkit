@@ -23,6 +23,7 @@ var hierarchy =
     [ "wmtk::utils::metaprogramming::tuple::detail::as_variant_type< T >", "structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1as__variant__type.html", null ],
     [ "wmtk::utils::metaprogramming::tuple::detail::as_variant_type< std::tuple< Ts... > >", "structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1as__variant__type_3_01std_1_1tuple_3_01_ts_8_8_8_01_4_01_4.html", null ],
     [ "wmtk::attribute::internal::AttributeCacheData< T >", "classwmtk_1_1attribute_1_1internal_1_1_attribute_cache_data.html", null ],
+    [ "wmtk::components::multimesh::utils::AttributeDescription", "structwmtk_1_1components_1_1multimesh_1_1utils_1_1_attribute_description.html", null ],
     [ "wmtk::attribute::internal::AttributeFlatCache< T >", "classwmtk_1_1attribute_1_1internal_1_1_attribute_flat_cache.html", [
       [ "wmtk::attribute::AttributeScope< T >", "classwmtk_1_1attribute_1_1_attribute_scope.html", null ]
     ] ],
@@ -348,6 +349,12 @@ var hierarchy =
     [ "wmtk::components::procedural::ProceduralOptions", "structwmtk_1_1components_1_1procedural_1_1_procedural_options.html", null ],
     [ "wmtk::components::Random", "classwmtk_1_1components_1_1_random.html", null ],
     [ "wmtk::utils::RandomSeedSingleton", "classwmtk_1_1utils_1_1_random_seed_singleton.html", null ],
+    [ "std::range_error", null, [
+      [ "wmtk::components::multimesh::utils::detail::attribute_error", "classwmtk_1_1components_1_1multimesh_1_1utils_1_1detail_1_1attribute__error.html", [
+        [ "wmtk::components::multimesh::utils::detail::attribute_ambiguous_error", "classwmtk_1_1components_1_1multimesh_1_1utils_1_1detail_1_1attribute__ambiguous__error.html", null ],
+        [ "wmtk::components::multimesh::utils::detail::attribute_missing_error", "classwmtk_1_1components_1_1multimesh_1_1utils_1_1detail_1_1attribute__missing__error.html", null ]
+      ] ]
+    ] ],
     [ "wmtk::Rational", "classwmtk_1_1_rational.html", null ],
     [ "wmtk::simplex::RawSimplex", "classwmtk_1_1simplex_1_1_raw_simplex.html", null ],
     [ "wmtk::simplex::RawSimplexCollection", "classwmtk_1_1simplex_1_1_raw_simplex_collection.html", null ],
@@ -414,6 +421,11 @@ var hierarchy =
     [ "wmtk::utils::TupleCellLessThan", "classwmtk_1_1utils_1_1_tuple_cell_less_than.html", null ],
     [ "wmtk::utils::TupleInspector", "classwmtk_1_1utils_1_1_tuple_inspector.html", null ],
     [ "wmtk::multimesh::utils::internal::TupleTag", "classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html", null ],
+    [ "wmtk::attribute::type_from_attribute_type_enum< AT >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum.html", null ],
+    [ "wmtk::attribute::type_from_attribute_type_enum< AttributeType::Char >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_char_01_4.html", null ],
+    [ "wmtk::attribute::type_from_attribute_type_enum< AttributeType::Double >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_double_01_4.html", null ],
+    [ "wmtk::attribute::type_from_attribute_type_enum< AttributeType::Int64 >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_int64_01_4.html", null ],
+    [ "wmtk::attribute::type_from_attribute_type_enum< AttributeType::Rational >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_rational_01_4.html", null ],
     [ "wmtk::attribute::TypedAttributeHandle< T >", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html", null ],
     [ "wmtk::attribute::TypedAttributeHandle< char >", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html", null ],
     [ "wmtk::attribute::TypedAttributeHandle< double >", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html", null ],

@@ -113,14 +113,22 @@ $(document).ready(function(){initNavTree('get__attribute_8cpp.html',''); initRes
 <div class="header">
   <div class="summary">
 <a href="#namespaces">Namespaces</a> &#124;
+<a href="#define-members">Macros</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">get_attribute.cpp File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &quot;<a class="el" href="get__attribute_8hpp_source.html">get_attribute.hpp</a>&quot;</code><br />
+<code>#include &lt;ranges&gt;</code><br />
 <code>#include &lt;<a class="el" href="_mesh_8hpp_source.html">wmtk/Mesh.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="primitive__range_8hpp_source.html">wmtk/utils/primitive_range.hpp</a>&gt;</code><br />
 <code>#include &quot;<a class="el" href="_mesh_collection_8hpp_source.html">..//MeshCollection.hpp</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="_named_multi_mesh_8hpp_source.html">../NamedMultiMesh.hpp</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="_attribute_description_8hpp_source.html">AttributeDescription.hpp</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="attribute__ambiguous__error_8hpp_source.html">detail/attribute_ambiguous_error.hpp</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="attribute__missing__error_8hpp_source.html">detail/attribute_missing_error.hpp</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="named__error__text_8hpp_source.html">detail/named_error_text.hpp</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="_logger_8hpp_source.html">wmtk/utils/Logger.hpp</a>&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for get_attribute.cpp:</div>
@@ -141,14 +149,58 @@ Namespaces</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespacewmtk_1_1components_1_1multimesh_1_1utils"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1multimesh_1_1utils.html">wmtk::components::multimesh::utils</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:namespacewmtk_1_1components_1_1multimesh_1_1utils_1_1detail"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1multimesh_1_1utils_1_1detail.html">wmtk::components::multimesh::utils::detail</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
+Macros</h2></td></tr>
+<tr class="memitem:af83aef093a06598906fc9c0c05cc8a31"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="get__attribute_8cpp.html#af83aef093a06598906fc9c0c05cc8a31">ENTRY</a>(TYPE)</td></tr>
+<tr class="separator:af83aef093a06598906fc9c0c05cc8a31"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a82a563f96651e9672a844de497d8c141"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1multimesh_1_1utils.html#a82a563f96651e9672a844de497d8c141">wmtk::components::multimesh::utils::get_attribute</a> (const Mesh &amp;mesh, const <a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> &amp;js)</td></tr>
-<tr class="separator:a82a563f96651e9672a844de497d8c141"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a42acef0ee3742a3474f07c928a31fa92"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1multimesh_1_1utils.html#a42acef0ee3742a3474f07c928a31fa92">wmtk::components::multimesh::utils::get_attribute</a> (const <a class="el" href="classwmtk_1_1components_1_1multimesh_1_1_mesh_collection.html">wmtk::components::multimesh::MeshCollection</a> &amp;mc, const <a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> &amp;js)</td></tr>
-<tr class="separator:a42acef0ee3742a3474f07c928a31fa92"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a507f4067057ab5ecbf8539fea4a801d9"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1multimesh_1_1utils_1_1detail.html#a507f4067057ab5ecbf8539fea4a801d9">wmtk::components::multimesh::utils::detail::decompose_attribute_path</a> (std::string_view attribute_path)</td></tr>
+<tr class="separator:a507f4067057ab5ecbf8539fea4a801d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa6788baf2094e6eb73db5c71f4939ef8"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1multimesh_1_1utils_1_1detail.html#aa6788baf2094e6eb73db5c71f4939ef8">wmtk::components::multimesh::utils::detail::decompose_attribute_path</a> (const AttributeDescription &amp;description)</td></tr>
+<tr class="separator:aa6788baf2094e6eb73db5c71f4939ef8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a74ad95cd049405e25bc2b4e5355bdc54"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a74ad95cd049405e25bc2b4e5355bdc54"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1multimesh_1_1utils_1_1detail.html#a74ad95cd049405e25bc2b4e5355bdc54">wmtk::components::multimesh::utils::detail::get_attribute</a> (const Mesh &amp;mesh, const std::string_view &amp;name, PrimitiveType pt)</td></tr>
+<tr class="separator:a74ad95cd049405e25bc2b4e5355bdc54"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7eb947b31a7ef2085883e6c338cd692e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1multimesh_1_1utils_1_1detail.html#a7eb947b31a7ef2085883e6c338cd692e">wmtk::components::multimesh::utils::detail::get_attribute</a> (const Mesh &amp;mesh, const std::string_view &amp;name, PrimitiveType pt, <a class="el" href="namespacewmtk_1_1attribute.html#a9557a29293cbe11f080093a4af4a91f7">wmtk::attribute::AttributeType</a> type)</td></tr>
+<tr class="separator:a7eb947b31a7ef2085883e6c338cd692e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a78277f8fd7049c37f9b2c54eb81d116f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1multimesh_1_1utils_1_1detail.html#a78277f8fd7049c37f9b2c54eb81d116f">wmtk::components::multimesh::utils::detail::get_attribute</a> (const Mesh &amp;mesh, const std::string_view &amp;name, std::optional&lt; PrimitiveType &gt; pt, std::optional&lt; <a class="el" href="namespacewmtk_1_1attribute.html#a9557a29293cbe11f080093a4af4a91f7">wmtk::attribute::AttributeType</a> &gt; type)</td></tr>
+<tr class="separator:a78277f8fd7049c37f9b2c54eb81d116f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a82d42640978a9aa4ba485febac8b68d0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1multimesh_1_1utils.html#a82d42640978a9aa4ba485febac8b68d0">wmtk::components::multimesh::utils::get_attribute</a> (const NamedMultiMesh &amp;mesh, const AttributeDescription &amp;description)</td></tr>
+<tr class="separator:a82d42640978a9aa4ba485febac8b68d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1eac550ca6bf9c018ad2a02e42be03f2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1multimesh_1_1utils.html#a1eac550ca6bf9c018ad2a02e42be03f2">wmtk::components::multimesh::utils::get_attribute</a> (const MeshCollection &amp;mesh, const AttributeDescription &amp;description)</td></tr>
+<tr class="separator:a1eac550ca6bf9c018ad2a02e42be03f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f3b795fd6df47b640ac0e210dd540f2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1multimesh_1_1utils.html#a6f3b795fd6df47b640ac0e210dd540f2">wmtk::components::multimesh::utils::get_attribute</a> (const Mesh &amp;mesh, const AttributeDescription &amp;description)</td></tr>
+<tr class="separator:a6f3b795fd6df47b640ac0e210dd540f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Macro Definition Documentation</h2>
+<a id="af83aef093a06598906fc9c0c05cc8a31"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af83aef093a06598906fc9c0c05cc8a31">&#9670;&nbsp;</a></span>ENTRY</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define ENTRY</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">TYPE</td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Value:</b><div class="fragment"><div class="line">    <span class="keywordflow">case</span> TYPE:                                                                        \</div>
+<div class="line">        return get_attribute&lt;wmtk::attribute::type_from_attribute_type_enum_t&lt;TYPE&gt;&gt;( \</div>
+<div class="line">            mesh,                                                                     \</div>
+<div class="line">            name,                                                                     \</div>
+<div class="line">            pt);</div>
+</div><!-- fragment -->
+</div>
+</div>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->

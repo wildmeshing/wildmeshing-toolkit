@@ -124,21 +124,27 @@ $(document).ready(function(){initNavTree('json__macros_8hpp_source.html',''); in
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">    friend void to_json(nlohmann::json&amp; nlohmann_json_j, const Type&amp; nlohmann_json_t);\</span></div>
 <div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">    friend void from_json(const nlohmann::json&amp; nlohmann_json_j, Type&amp; nlohmann_json_t);</span></div>
 <div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160; </div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160; </div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="comment">// place this to define the prototype of the to_json function</span></div>
-<div class="line"><a name="l00012"></a><span class="lineno"><a class="line" href="json__macros_8hpp.html#aaeccd16dfca3724950a8cb6b6bdeebf1">   12</a></span>&#160;<span class="preprocessor">#define WMTK_NLOHMANN_JSON_FRIEND_TO_JSON_PROTOTYPE(Type)\</span></div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">    void to_json(nlohmann::json&amp; nlohmann_json_j, const Type&amp; nlohmann_json_t)</span></div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="comment">// place this to define the prototype of the from_json function</span></div>
-<div class="line"><a name="l00015"></a><span class="lineno"><a class="line" href="json__macros_8hpp.html#ab4858d28536b60bb21d470067edc1775">   15</a></span>&#160;<span class="preprocessor">#define WMTK_NLOHMANN_JSON_FRIEND_FROM_JSON_PROTOTYPE(Type)\</span></div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="preprocessor">    void from_json(const nlohmann::json&amp; nlohmann_json_j, Type&amp; nlohmann_json_t)</span></div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160; </div>
-<div class="line"><a name="l00018"></a><span class="lineno"><a class="line" href="json__macros_8hpp.html#a1fadfca6e00bb9a2606545b61dc3cd55">   18</a></span>&#160;<span class="preprocessor">#define WMTK_NLOHMANN_ASSIGN_TYPE_TO_JSON(...)  \</span></div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="preprocessor">    { NLOHMANN_JSON_EXPAND(NLOHMANN_JSON_PASTE(NLOHMANN_JSON_TO, __VA_ARGS__)) }</span></div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160; </div>
-<div class="line"><a name="l00021"></a><span class="lineno"><a class="line" href="json__macros_8hpp.html#a3d51af81bd82bb92c068d33e12ca1934">   21</a></span>&#160;<span class="preprocessor">#define WMTK_NLOHMANN_ASSIGN_TYPE_FROM_JSON(...)  \</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">    { NLOHMANN_JSON_EXPAND(NLOHMANN_JSON_PASTE(NLOHMANN_JSON_FROM, __VA_ARGS__)) }</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="comment">// place these in the class for which serialization is desired</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno"><a class="line" href="json__macros_8hpp.html#a3a58bcdc60f8ca6249f32eeccd544ba8">   11</a></span>&#160;<span class="preprocessor">#define WMTK_NLOHMANN_JSON_DECLARATION(Type)\</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="preprocessor">    void to_json(nlohmann::json&amp; nlohmann_json_j, const Type&amp; nlohmann_json_t);\</span></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">    void from_json(const nlohmann::json&amp; nlohmann_json_j, Type&amp; nlohmann_json_t);</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160; </div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160; </div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="comment">// place this to define the prototype of the to_json function</span></div>
+<div class="line"><a name="l00017"></a><span class="lineno"><a class="line" href="json__macros_8hpp.html#aaeccd16dfca3724950a8cb6b6bdeebf1">   17</a></span>&#160;<span class="preprocessor">#define WMTK_NLOHMANN_JSON_FRIEND_TO_JSON_PROTOTYPE(Type)\</span></div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="preprocessor">    void to_json(nlohmann::json&amp; nlohmann_json_j, const Type&amp; nlohmann_json_t)</span></div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="comment">// place this to define the prototype of the from_json function</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno"><a class="line" href="json__macros_8hpp.html#ab4858d28536b60bb21d470067edc1775">   20</a></span>&#160;<span class="preprocessor">#define WMTK_NLOHMANN_JSON_FRIEND_FROM_JSON_PROTOTYPE(Type)\</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">    void from_json(const nlohmann::json&amp; nlohmann_json_j, Type&amp; nlohmann_json_t)</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
+<div class="line"><a name="l00023"></a><span class="lineno"><a class="line" href="json__macros_8hpp.html#a1fadfca6e00bb9a2606545b61dc3cd55">   23</a></span>&#160;<span class="preprocessor">#define WMTK_NLOHMANN_ASSIGN_TYPE_TO_JSON(...)  \</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">    { NLOHMANN_JSON_EXPAND(NLOHMANN_JSON_PASTE(NLOHMANN_JSON_TO, __VA_ARGS__)) }</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
+<div class="line"><a name="l00026"></a><span class="lineno"><a class="line" href="json__macros_8hpp.html#a3d51af81bd82bb92c068d33e12ca1934">   26</a></span>&#160;<span class="preprocessor">#define WMTK_NLOHMANN_ASSIGN_TYPE_FROM_JSON(...)  \</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">    { NLOHMANN_JSON_EXPAND(NLOHMANN_JSON_PASTE(NLOHMANN_JSON_FROM, __VA_ARGS__)) }</span></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->

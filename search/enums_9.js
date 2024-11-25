@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['tilingtype_6001',['TilingType',['../classwmtk_1_1components_1_1procedural_1_1_grid2_options.html#abfc24a8ae4ab763891980c82d3d47652',1,'wmtk::components::procedural::Grid2Options::TilingType()'],['../classwmtk_1_1components_1_1procedural_1_1_grid3_options.html#ab388bcb5eabe4f7ea4d0c68ba10017de',1,'wmtk::components::procedural::Grid3Options::TilingType()']]]
+  ['wrappingmode_6088',['WrappingMode',['../namespacewmtk_1_1components_1_1adaptive__tessellation_1_1image.html#a5718de370807d62b030d0d93ed8863a3',1,'wmtk::components::adaptive_tessellation::image']]]
 ];
