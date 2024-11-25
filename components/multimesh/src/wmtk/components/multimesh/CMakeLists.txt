@@ -33,6 +33,14 @@ set(SRC_FILES
 
     utils/get_attribute.hpp
     utils/get_attribute.cpp
+    utils/detail/attribute_error.hpp
+
+    utils/detail/named_error_text.hpp
+    utils/detail/named_error_text.cpp
+    utils/detail/attribute_ambiguous_error.hpp
+    utils/detail/attribute_ambiguous_error.cpp
+    utils/detail/attribute_missing_error.hpp
+    utils/detail/attribute_missing_error.cpp
 )
 
 include(stb)

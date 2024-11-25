@@ -13,6 +13,7 @@ template <
     bool Inverted = (Start > End)>
 class PrimitiveTypeRange
 {
+    public:
     using integral_type = std::underlying_type_t<PrimitiveType>;
     class iterator
     {
@@ -103,7 +104,7 @@ auto primitive_above()
 }
 // returns a vector of primitives including the endpoint
 template <PrimitiveType End, bool LowerToUpper = true>
-primitive_below()
+auto primitive_below()
 {
     constexpr static PrimitiveType Start = PrimitiveType::Vertex;
     using integral_type = std::underlying_type_t<PrimitiveType>;

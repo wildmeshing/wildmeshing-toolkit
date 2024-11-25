@@ -2,15 +2,17 @@
 #include "get_attribute.hpp"
 #include <ranges>
 #include <wmtk/Mesh.hpp>
+#include <wmtk/utils/primitive_range.hpp>
 #include "..//MeshCollection.hpp"
 #include "../NamedMultiMesh.hpp"
 #include "AttributeDescription.hpp"
+#include "detail/attribute_ambiguous_error.hpp"
+#include "detail/attribute_missing_error.hpp"
+#include "detail/named_error_text.hpp"
 #include "get_attribute.hpp"
 #include "wmtk/utils/Logger.hpp"
 
 namespace wmtk::components::multimesh::utils {
-
-
 namespace detail {
 // turns an attribute path mesh.path/attrname to mesh.path attrname
 // std::array<std::string_view, 2>
@@ -66,16 +68,23 @@ template <typename T>
 wmtk::attribute::MeshAttributeHandle
 get_attribute(const Mesh& mesh, const std::string_view& name, PrimitiveType pt)
 {
-    return mesh.get_attribute_handle<T>(std::string(name), pt);
+    if (mesh.has_attribute<T>(std::string(name), pt)) {
+        return mesh.get_attribute_handle<T>(std::string(name), pt);
+    } else {
+        throw attribute_missing_error::make(
+            std::string(name),
+            wmtk::get_primitive_type_id(pt),
+            wmtk::attribute ::attribute_type_enum_from_type<T>());
+    }
 }
 
 wmtk::attribute::MeshAttributeHandle get_attribute(
     const Mesh& mesh,
     const std::string_view& name,
     PrimitiveType pt,
-    attribute::AttributeType type)
+    wmtk::attribute::AttributeType type)
 {
-    using AT = attribute::AttributeType;
+    using AT = wmtk::attribute::AttributeType;
     switch (type) {
 #define ENTRY(TYPE)                                                                   \
     case TYPE:                                                                        \
@@ -91,6 +100,65 @@ wmtk::attribute::MeshAttributeHandle get_attribute(
     default: assert(false);
     }
     return {};
+}
+wmtk::attribute::MeshAttributeHandle get_attribute(
+    const Mesh& mesh,
+    const std::string_view& name,
+    std::optional<PrimitiveType> pt,
+    std::optional<wmtk::attribute::AttributeType> type)
+{
+    using AT = wmtk::attribute::AttributeType;
+    // This order matches wmtk::components::utils::get_attributes
+    constexpr static std::array<AT, 4> types{{AT::Char, AT::Int64, AT::Double, AT::Rational}};
+    // constexpr static std::array<AT, 4> types{{AT::Int64, AT::Double, AT::Char, AT::Rational}};
+    std::vector<AttributeDescription> possibilities;
+    wmtk::attribute::MeshAttributeHandle ret;
+    auto add_option = [&](PrimitiveType prim, AT t) {
+        ret = get_attribute(mesh, name, prim, t);
+
+        uint8_t dimension = wmtk::get_primitive_type_id(prim);
+        possibilities.emplace_back(AttributeDescription{name, dimension, t});
+    };
+    if (pt.has_value() && type.has_value()) {
+        add_option(pt.value(), type.value());
+
+    } else if (pt.has_value()) {
+        for (AT at : types) {
+            try {
+                add_option(pt.value(), at);
+            } catch (const attribute_missing_error& e) {
+                continue;
+            }
+        }
+    } else if (type.has_value()) {
+        for (PrimitiveType p : wmtk::utils::primitive_below(mesh.top_simplex_type())) {
+            try {
+                add_option(p, type.value());
+            } catch (const attribute_missing_error& e) {
+                continue;
+            }
+        }
+    } else {
+        for (AT at : types) {
+            for (PrimitiveType p : wmtk::utils::primitive_below(mesh.top_simplex_type())) {
+                try {
+                    add_option(p, at);
+                } catch (const attribute_missing_error& e) {
+                    continue;
+                }
+            }
+        }
+    }
+
+
+    if (possibilities.empty()) {
+        throw attribute_missing_error::make(name, pt, type);
+    } else if (possibilities.size() > 1) {
+        throw attribute_ambiguous_error::make(possibilities, name,pt,type);
+    }
+
+    assert(ret.is_valid());
+    return ret;
 }
 } // namespace detail
 
