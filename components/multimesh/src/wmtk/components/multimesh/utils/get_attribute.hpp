@@ -5,11 +5,14 @@
 namespace wmtk {
 class Mesh;
 namespace components::multimesh {
+class NamedMultiMesh;
 class MeshCollection;
-}
+} // namespace components::multimesh
 } // namespace wmtk
 
-namespace wmtk::components::multimesh::utils {
+namespace wmtk::components::multimesh {
+namespace utils {
+struct AttributeDescription;
 //
 // desires json that has
 // * name (str for attribute name)
@@ -18,9 +21,19 @@ namespace wmtk::components::multimesh::utils {
 // * simplex (int, dimension attribute belongs to
 // if type and simplex are missing code will search in lexicographical of (primitive_type, type)
 //    where double < int < char < rational for type
+//
+// this is somewhat redundant to wmtk::components::utils::get_attributes, but is designed around
+// supporting multimesh paths.
 
-wmtk::attribute::MeshAttributeHandle get_attribute(const Mesh& m, const nlohmann::json& js);
 wmtk::attribute::MeshAttributeHandle get_attribute(
-    const wmtk::components::multimesh::MeshCollection& m,
-    const nlohmann::json& js);
-} // namespace wmtk::components::multimesh::utils
+    const NamedMultiMesh& mesh,
+    const AttributeDescription& description);
+wmtk::attribute::MeshAttributeHandle get_attribute(
+    const MeshCollection& mesh,
+    const AttributeDescription& description);
+wmtk::attribute::MeshAttributeHandle get_attribute(
+    const Mesh& mesh,
+    const AttributeDescription& description);
+
+} // namespace utils
+} // namespace wmtk::components::multimesh

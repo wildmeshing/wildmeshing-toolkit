@@ -157,7 +157,12 @@ auto NamedMultiMesh::get_id(const std::string_view& path) const -> std::vector<i
     Node const* cur_mesh = m_name_root.get();
     assert(*split.begin() == cur_mesh->name || *split.begin() == "");
     for (const auto& token : std::ranges::views::drop(split, 1)) {
+        // try {
         int64_t index = cur_mesh->m_child_indexer.at(std::string(token));
+        //} catch(const std::runtime_error& e) {
+        //    wmtk::logger().warn("Failed to find mesh named {} in mesh list. Path was ", nmm_name,
+        //    path); throw e;
+        //}
         indices.emplace_back(index);
         cur_mesh = cur_mesh->m_children[index].get();
     }

@@ -5,8 +5,10 @@
 //
 #include <wmtk/utils/Rational.hpp>
 //
+#include "AttributeType.hpp"
 #include "TypedAttributeHandle.hpp"
 
+#include <tuple>
 #include <variant>
 
 namespace wmtk {
@@ -39,7 +41,7 @@ public:
     using ValueVariant = std::
         variant<char, int64_t, double, wmtk::Rational, std::tuple<char, wmtk::Rational, double>>;
 
-    enum class HeldType { Char = 0, Int64 = 1, Double = 2, Rational = 3 };
+    using HeldType = AttributeType;
 
     template <HeldType Type>
     using held_handle_type = std::variant_alternative_t<size_t(Type), HandleVariant>;
@@ -89,7 +91,6 @@ public:
 #endif
         return m_handle == o.m_handle && m_mesh == o.m_mesh;
     }
-
 
     // reutrns if the target mesh is the same as the one represented in the handle
     bool is_same_mesh(const Mesh&) const;
@@ -148,7 +149,7 @@ public:
     // return the dimension of the attribute (i.e the number of values stored per simplex)
     int64_t dimension() const;
 
-     std::string name() const;
+    std::string name() const;
 
 
 private:
@@ -217,22 +218,7 @@ inline constexpr auto MeshAttributeHandle::held_type_from_primitive() -> HeldTyp
 template <typename T>
 inline constexpr auto MeshAttributeHandle::held_type_from_handle() -> HeldType
 {
-    if constexpr (std::is_same_v<T, TypedAttributeHandle<char>>) {
-        return HeldType::Char;
-    } else if constexpr (std::is_same_v<T, TypedAttributeHandle<double>>) {
-        return HeldType::Double;
-    } else if constexpr (std::is_same_v<T, TypedAttributeHandle<int64_t>>) {
-        return HeldType::Int64;
-    } else if constexpr (std::is_same_v<T, TypedAttributeHandle<wmtk::Rational>>) {
-        return HeldType::Rational;
-    }
-    // If a compiler complains about the potentiality of no return value then a type accepted by the
-    // HAndleVariant is not being represented properly. If the comppiler is simply unhappy to not
-    // see a return then we should hack a default return value in an else statement with an asswert
-    // :(.
-    else {
-        return HeldType::Char;
-    }
+    return attribute_type_enum_from_type<typename T::Type>();
 }
 
 inline PrimitiveType MeshAttributeHandle::primitive_type() const

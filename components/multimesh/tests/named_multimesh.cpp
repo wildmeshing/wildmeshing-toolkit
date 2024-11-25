@@ -3,41 +3,16 @@
 #include <nlohmann/json.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/components/input/input.hpp>
-#include "tools/TriMesh_examples.hpp"
-#include "wmtk/components/multimesh/NamedMultiMesh.hpp"
+#include <wmtk/components/multimesh/NamedMultiMesh.hpp>
+#include <wmtk/components/multimesh/utils/AttributeDescription.hpp>
+#include <wmtk/components/multimesh/utils/get_attribute.hpp>
+#include <wmtk/utils/Logger.hpp>
 
-#include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
+#include "utils.hpp"
 
 using json = nlohmann::json;
 
-namespace {
-const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
-auto make_mesh()
-{
-    return wmtk::tests::disk(5);
-}
-
-auto make_child(wmtk::Mesh& m, const std::vector<int64_t>& path)
-{
-    if (path.size() == 0) {
-        // multimesh root mesh already exists so nothing to be done
-        return;
-    }
-    for (size_t j = 0; j < path.size(); ++j) {
-        std::vector<int64_t> p(path.begin(), path.begin() + j);
-        auto& cur_mesh = m.get_multi_mesh_mesh(p);
-        int64_t child_index = path[j];
-        const auto child_meshes = cur_mesh.get_child_meshes();
-        for (int64_t index = child_meshes.size(); index <= child_index; ++index) {
-            auto new_mesh = make_mesh();
-            auto map = wmtk::multimesh::same_simplex_dimension_bijection(cur_mesh, *new_mesh);
-
-            cur_mesh.register_child_mesh(new_mesh, map);
-        }
-    }
-}
-} // namespace
 
 
 TEST_CASE("named_multimesh_parse", "[components][multimesh]")
@@ -128,3 +103,4 @@ TEST_CASE("named_multimesh_parse", "[components][multimesh]")
             named_mm.get_mesh(".child.c2").shared_from_this());
     }
 }
+

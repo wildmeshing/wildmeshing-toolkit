@@ -23,12 +23,24 @@ set(SRC_FILES
 
     NamedMultiMesh.hpp
     NamedMultiMesh.cpp
-    utils/get_attribute.hpp
-    utils/get_attribute.cpp
     internal/split_path.hpp
 
     MeshCollection.hpp
     MeshCollection.cpp
+
+    utils/AttributeDescription.hpp
+    utils/AttributeDescription.cpp
+
+    utils/get_attribute.hpp
+    utils/get_attribute.cpp
+    utils/detail/attribute_error.hpp
+
+    utils/detail/named_error_text.hpp
+    utils/detail/named_error_text.cpp
+    utils/detail/attribute_ambiguous_error.hpp
+    utils/detail/attribute_ambiguous_error.cpp
+    utils/detail/attribute_missing_error.hpp
+    utils/detail/attribute_missing_error.cpp
 )
 
 include(stb)
