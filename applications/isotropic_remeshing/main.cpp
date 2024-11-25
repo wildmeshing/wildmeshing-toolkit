@@ -4,11 +4,12 @@
 #include <filesystem>
 #include <nlohmann/json.hpp>
 #include <wmtk/applications/utils/element_count_report.hpp>
+#include <wmtk/applications/utils/get_integration_test_data_root.hpp>
 #include <wmtk/applications/utils/parse_jse.hpp>
 #include <wmtk/components/input/InputOptions.hpp>
 #include <wmtk/components/multimesh/MeshCollection.hpp>
-#include <wmtk/components/multimesh/utils/get_attribute.hpp>
 #include <wmtk/components/multimesh/utils/AttributeDescription.hpp>
+#include <wmtk/components/multimesh/utils/get_attribute.hpp>
 #include "wmtk/components/utils/PathResolver.hpp"
 
 #include <wmtk/Mesh.hpp>
@@ -35,8 +36,14 @@ int main(int argc, char* argv[])
     app.ignore_case();
 
     fs::path json_input_file;
+    fs::path json_integration_config_file;
     app.add_option("-j, --json", json_input_file, "json specification file")
         ->required(true)
+        ->check(CLI::ExistingFile);
+    app.add_option(
+           "-i, --integration-test-config",
+           json_integration_config_file,
+           "Test config file for integration test")
         ->check(CLI::ExistingFile);
     CLI11_PARSE(app, argc, argv);
 
@@ -53,6 +60,11 @@ int main(int argc, char* argv[])
 
     if (j.contains("root")) {
         path_resolver = j["root"];
+    }
+    if (!json_integration_config_file.empty()) {
+        auto path = wmtk::applications::utils::get_integration_test_data_root(
+            json_integration_config_file,
+            argv[0]);
     }
 
 

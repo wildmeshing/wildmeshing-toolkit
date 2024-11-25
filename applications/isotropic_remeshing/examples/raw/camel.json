@@ -1,6 +1,6 @@
 {
     "input": {
-        "file": "unit_test/meshes/camel.msh"
+        "file": "unit_test/meshes/camel.msh",
         "name_spec": {"pos": "uv"}
     },
     "root": "/home/mtao/git/wildmeshing-toolkit/data/aa0abd4658bb064515ee7cc2a7be87aa",
@@ -9,6 +9,7 @@
         "length_rel": 1,
         "length_abs": -1,
         "lock_boundary": true,
+        "edge_swap_mode": "valence",
         "use_for_periodic": false,
         "dont_disable_split": false,
         "fix_uv_seam": false,
