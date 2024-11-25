@@ -8,6 +8,7 @@
 #include <wmtk/components/multimesh/axis_aligned_fusion.hpp>
 
 #include <wmtk/components/multimesh/utils/get_attribute.hpp>
+#include <wmtk/components/multimesh/utils/AttributeDescription.hpp>
 #include <wmtk/components/input/input.hpp>
 #include <wmtk/components/input/InputOptions.hpp>
 
