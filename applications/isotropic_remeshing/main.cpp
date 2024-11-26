@@ -65,6 +65,7 @@ int main(int argc, char* argv[])
         auto path = wmtk::applications::utils::get_integration_test_data_root(
             json_integration_config_file,
             argv[0]);
+        path_resolver.add_path(path);
     }
 
 
