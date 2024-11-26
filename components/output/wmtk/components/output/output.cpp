@@ -71,14 +71,14 @@ void output(
         for (int64_t d = 0; d <= mesh.top_cell_dimension(); ++d) {
             out[d] = true;
         }
-        ParaviewWriter writer(opts.file,name, mesh, out[0], out[1], out[2], out[3]);
+        ParaviewWriter writer(opts.path,name, mesh, out[0], out[1], out[2], out[3]);
         mesh.serialize(writer);
     } else if (opts.type == ".hdf5") {
-        output_hdf5(mesh, opts.file);
+        output_hdf5(mesh, opts.path);
     } else
         throw std::runtime_error(
                 fmt::format("Unable to write file [{}] of extension [{}]",
-                    opts.file, opts.type));
+                    opts.path, opts.type));
 }
 
 void output(

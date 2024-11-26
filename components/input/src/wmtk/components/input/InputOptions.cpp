@@ -16,8 +16,8 @@ namespace nlohmann {
 void adl_serializer<wmtk::components::input::InputOptions>::to_json(json& j, const Type& v)
 {
     //
-    j["file"] = v.file;
-    j["file"] = v.file.string();
+    j["path"] = v.path;
+    j["path"] = v.path.string();
     if (!v.name_spec.is_null()) {
         assert(!v.name_spec_file.has_value());
         j["name_spec"] = v.name_spec;
@@ -44,10 +44,15 @@ void adl_serializer<wmtk::components::input::InputOptions>::to_json(json& j, con
 void adl_serializer<wmtk::components::input::InputOptions>::from_json(const json& j, Type& v)
 {
     if (j.is_string()) {
-        v.file = j.get<std::filesystem::path>();
+        v.path= j.get<std::filesystem::path>();
         return;
+    } else if(j.contains("path")) {
+        v.path = j["path"].get<std::filesystem::path>();
+    } else if(j.contains("file")) {
+        wmtk::logger().warn("InputOptions using file is deprecated, use file");
+        v.path = j["file"].get<std::filesystem::path>();
     }
-    v.file = j["file"].get<std::filesystem::path>();
+
     if (j.contains("name_spec")) {
         v.name_spec = j["name_spec"];
     }

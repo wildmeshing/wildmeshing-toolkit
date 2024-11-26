@@ -16,7 +16,7 @@ std::shared_ptr<Mesh> input(
 {
     InputOptions options;
     options.old_mode = true;
-    options.file = file;
+    options.path = file;
     options.ignore_z_if_zero = ignore_z_if_zero;
     if (!tetrahedron_attributes.empty()) {
         options.imported_attributes = {{}, {}, {}, tetrahedron_attributes};
@@ -33,7 +33,7 @@ multimesh::NamedMultiMesh input(
     const InputOptions& options,
     const components::utils::PathResolver& resolver)
 {
-    const auto [file_path, found] = resolver.resolve(options.file);
+    const auto [file_path, found] = resolver.resolve(options.path);
     if (!found) {
         const auto& paths = resolver.get_paths();
         std::vector<std::string> path_strs;
@@ -46,7 +46,7 @@ multimesh::NamedMultiMesh input(
         log_and_throw_error(
             "file [{}] not found (input path was [{}], paths searched were [{}]",
             file_path.string(),
-            options.file.string(),
+            options.path.string(),
             fmt::join(path_strs, ","));
     }
 

@@ -18,7 +18,7 @@ class InputOptions
 public:
     InputOptions();
     ~InputOptions();
-    std::filesystem::path file;
+    std::filesystem::path path;
     std::optional<std::vector<std::vector<std::string>>> imported_attributes;
 
 

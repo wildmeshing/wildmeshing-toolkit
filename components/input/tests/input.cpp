@@ -28,7 +28,7 @@ TEST_CASE("component_input", "[components][input]")
             {"ignore_z", false},
             {"tetrahedron_attributes", json::array()}};
         auto opts = component_json.get<wmtk::components::input::InputOptions>();
-        CHECK(opts.file == input_file);
+        CHECK(opts.path == input_file);
         CHECK(opts.ignore_z_if_zero == false);
         CHECK(opts.old_mode == true);
         CHECK(opts.old_mode == true);
@@ -50,7 +50,7 @@ TEST_CASE("component_input", "[components][input]")
         nlohmann::json js = "path";
         REQUIRE(js.is_string());
         auto opts = js.get<wmtk::components::input::InputOptions>();
-        CHECK(opts.file.string() == "path");
+        CHECK(opts.path.string() == "path");
     }
 
     SECTION("should throw")
