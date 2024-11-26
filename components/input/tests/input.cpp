@@ -23,7 +23,7 @@ TEST_CASE("component_input", "[components][input]")
         auto a = wmtk::components::input::input(input_file, false, {});
 
         json component_json = {
-            {"file", input_file.string()},
+            {"path", input_file.string()},
             {"old_mode", true},
             {"ignore_z", false},
             {"tetrahedron_attributes", json::array()}};
@@ -58,7 +58,7 @@ TEST_CASE("component_input", "[components][input]")
         //         json component_json = {
         //             {"type", "input"},
         //             {"name", "input_mesh"},
-        //             {"file", "In case you ever name your file like that: What is wrong with
+        //             {"path", "In case you ever name your file like that: What is wrong with
         //             you?"},
         //             {"ignore_z", false},
         //             {"tetrahedron_attributes", json::array()}};

@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <nlohmann/json.hpp>
 #include <wmtk/applications/utils/element_count_report.hpp>
+#include <wmtk/applications/utils/get_integration_test_data_root.hpp>
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -81,24 +82,26 @@ std::shared_ptr<wmtk::Mesh> merge_meshes(
 }
 } // namespace
 
-int run(const fs::path& config_path /*, const std::optional<fs::path>& name_spec_file*/)
+int run_js(
+    const std::string_view& app_name,
+    const nlohmann::json& j,
+    const std::optional<fs::path>& name_spec_file,
+    const std::optional<fs::path>& integration_test_config_file)
 {
-    nlohmann::json j;
-    {
-        std::ifstream ifs(config_path);
-        j = nlohmann::json::parse(ifs);
-        // if (name_spec_file.has_value()) {
-        //     j["name"] = nlohmann::json::parse(std::ifstream(name_spec_file.value()));
-        // }
-    }
-
-    spdlog::warn("{}", j.dump(2));
-
+    // if (name_spec_file.has_value()) {
+    //     j["name"] = nlohmann::json::parse(std::ifstream(name_spec_file.value()));
+    // }
     wmtk::components::multimesh::MeshCollection meshes;
     components::utils::PathResolver path_resolver;
 
     if (j.contains("root")) {
         path_resolver = j["root"];
+    }
+    if (integration_test_config_file.has_value()) {
+        auto path = wmtk::applications::utils::get_integration_test_data_root(
+            integration_test_config_file.value(),
+            app_name);
+        path_resolver.add_path(path);
     }
 
     std::shared_ptr<wmtk::Mesh> output_mesh;
@@ -133,14 +136,15 @@ int run(const fs::path& config_path /*, const std::optional<fs::path>& name_spec
 
 
     if (j.contains("report")) {
+        nlohmann::json jnew = j;
         const std::string report = j["report"];
         meshes.make_canonical();
         if (!report.empty()) {
             nlohmann::json out_json;
             auto& stats = out_json["stats"];
             stats = wmtk::applications::utils::element_count_report_named(meshes);
-            j.erase("report");
-            out_json["input"] = j;
+            jnew.erase("report");
+            out_json["input"] = jnew;
 
 
             std::ofstream ofs(report);
@@ -150,6 +154,18 @@ int run(const fs::path& config_path /*, const std::optional<fs::path>& name_spec
     return 0;
 }
 
+int run(
+    const std::string_view& app_name,
+    const fs::path& config_path,
+    const std::optional<fs::path>& name_spec_file,
+    const std::optional<fs::path>& integration_test_config_file)
+{
+    nlohmann::json j;
+    std::ifstream ifs(config_path);
+    j = nlohmann::json::parse(ifs);
+
+    return run_js(app_name, j, name_spec_file, integration_test_config_file);
+}
 
 int main(int argc, char* argv[])
 {
@@ -158,13 +174,43 @@ int main(int argc, char* argv[])
     app.ignore_case();
 
     fs::path json_input_file;
+    std::optional<fs::path> json_integration_config_file;
+    std::optional<std::string> json_integration_app_name;
     std::optional<fs::path> name_spec_file;
 
-    CLI::App* run_cmd; // = app.add_subcommand("run", "Run application");
-    run_cmd = &app;
+    auto add_it_path = [&](CLI::App& a) {
+        a.add_option(
+             "-c, --integration-test-config",
+             json_integration_config_file,
+             "Test config file for integration test")
+            ->check(CLI::ExistingFile);
+        a.add_option(
+             "-a, --integration-test-app",
+             json_integration_config_file,
+             "Test config file for integration test")
+            ->check(CLI::ExistingFile);
+    };
+
+    CLI::App* run_cmd = app.add_subcommand("run", "Run application");
     run_cmd->add_option("-j, --json", json_input_file, "json specification file")
         ->required(true)
         ->check(CLI::ExistingFile);
+
+    add_it_path(*run_cmd);
+
+
+    fs::path input;
+    fs::path output;
+    std::string type;
+    CLI::App* type_cmd = app.add_subcommand("type", "Convert mesh to another type");
+    type_cmd->add_option("-i, --input", input, "input file")
+        ->required(true)
+        ->check(CLI::ExistingFile);
+
+    type_cmd->add_option("-o, --output", output, "output file");
+    type_cmd->add_option("-t, --type", type, "output file type");
+    add_it_path(*type_cmd);
+
 
     // run_cmd->add_option("-n, --name_spec", name_spec_file, "json specification file")
     //     ->check(CLI::ExistingFile);
@@ -172,7 +218,6 @@ int main(int argc, char* argv[])
     CLI11_PARSE(app, argc, argv);
 
     // someday may add other suboptions
-    assert(run_cmd->parsed());
 
     // if (!json_input_file.has_value() && !fill_config_path.has_value()) {
     //     wmtk::logger().error("An input json file with [-j] is required unless blank config "
@@ -187,7 +232,25 @@ int main(int argc, char* argv[])
     //     assert(json_input_file.has_value());
     //     exit_mode = run(json_input_file.value());
     // });
-    exit_mode = run(json_input_file /*, name_spec_file*/);
+    if (run_cmd->parsed()) {
+        exit_mode = run(argv[0], json_input_file, name_spec_file, json_integration_config_file);
+    } else {
+        wmtk::components::input::InputOptions in;
+        in.path = input;
+        wmtk::components::output::OutputOptions out;
+        out.path = output;
+        out.position_attribute = "vertices";
+        if (!type.empty() && type[0] != '.') {
+            type = '.' + type;
+        }
+        out.type = type;
+
+        nlohmann::json js;
+        js["input"] = in;
+        js["output"][""] = out;
+
+        exit_mode = run_js(argv[0], js, name_spec_file, json_integration_config_file);
+    }
 
 
     assert(exit_mode != -1); // "Some subcommand should have updated the exit mode"

@@ -5,6 +5,7 @@
 #include <span>
 #include <vector>
 #include <wmtk/Mesh.hpp>
+#include <wmtk/utils/Logger.hpp>
 #include "internal/split_path.hpp"
 namespace wmtk::components::multimesh {
 
@@ -77,7 +78,11 @@ struct NamedMultiMesh::Node
     {
         m_child_indexer.clear();
         for (size_t j = 0; j < m_children.size(); ++j) {
-            m_child_indexer.emplace(m_children[j]->name, j);
+            const auto& n = m_children[j]->name;
+            if (m_child_indexer.contains(n)) {
+                throw std::runtime_error(fmt::format("Child indexer saw the name {} twice", name));
+            }
+            m_child_indexer.emplace(n, j);
         }
     }
     friend void to_json(
@@ -111,6 +116,7 @@ NamedMultiMesh::NamedMultiMesh(Mesh& m, const nlohmann::json& root_name)
 void NamedMultiMesh::set_root(Mesh& m)
 {
     m_root = m.shared_from_this();
+    populate_default_names();
 }
 
 void NamedMultiMesh::set_mesh(Mesh& m)
@@ -157,14 +163,17 @@ auto NamedMultiMesh::get_id(const std::string_view& path) const -> std::vector<i
     Node const* cur_mesh = m_name_root.get();
     assert(*split.begin() == cur_mesh->name || *split.begin() == "");
     for (const auto& token : std::ranges::views::drop(split, 1)) {
-        // try {
-        int64_t index = cur_mesh->m_child_indexer.at(std::string(token));
-        //} catch(const std::runtime_error& e) {
-        //    wmtk::logger().warn("Failed to find mesh named {} in mesh list. Path was ", nmm_name,
-        //    path); throw e;
-        //}
-        indices.emplace_back(index);
-        cur_mesh = cur_mesh->m_children[index].get();
+        try {
+            int64_t index = cur_mesh->m_child_indexer.at(std::string(token));
+            indices.emplace_back(index);
+            cur_mesh = cur_mesh->m_children[index].get();
+        } catch (const std::runtime_error& e) {
+            wmtk::logger().warn(
+                "Failed to find mesh named {} in mesh list. Path was {}",
+                token,
+                path);
+            throw e;
+        }
     }
 
     return indices;
@@ -201,6 +210,38 @@ void NamedMultiMesh::set_names(const nlohmann::json& js)
     }
 }
 
+void NamedMultiMesh::populate_default_names()
+{
+    std::function<void(Node&, const Mesh& m)> sdn;
+    sdn = [&sdn](Node& n, const Mesh& m) {
+        const auto& children = m.get_child_meshes();
+        spdlog::info("Injecting into {} children", children.size());
+        if (n.m_children.size() < children.size()) {
+            n.m_children.resize(children.size());
+        }
+
+        for (size_t j = 0; j < children.size(); ++j) {
+            auto& nnptr = n.m_children[j];
+            if (!bool(nnptr)) {
+                nnptr = std::make_unique<Node>();
+            }
+            auto& nn = *nnptr;
+            if (nn.name.empty()) {
+                nn.name = fmt::format("{}", j);
+                spdlog::info("Gave child name {}", nn.name);
+            }
+        }
+        for (size_t j = 0; j < children.size(); ++j) {
+            sdn(*n.m_children[j], *children[j]);
+        }
+    };
+    assert(bool(m_name_root));
+    if (m_name_root->name.empty()) {
+        m_name_root->name = "0";
+    }
+    sdn(*m_name_root, *m_root);
+}
+
 std::string_view NamedMultiMesh::root_name() const
 {
     assert(bool(m_name_root));
@@ -208,6 +249,10 @@ std::string_view NamedMultiMesh::root_name() const
     return m_name_root->name;
 }
 std::string NamedMultiMesh::name(const std::vector<int64_t>& id) const
+{
+    return get_name(id);
+}
+std::string NamedMultiMesh::get_name(const std::vector<int64_t>& id) const
 {
     std::vector<std::string_view> names;
     Node const* cur_mesh = m_name_root.get();
@@ -217,6 +262,23 @@ std::string NamedMultiMesh::name(const std::vector<int64_t>& id) const
         names.emplace_back(cur_mesh->name);
     }
     return fmt::format("{}", fmt::join(names, "."));
+}
+
+auto NamedMultiMesh::get_node(const std::vector<int64_t>& id) const -> const Node&
+{
+    Node const* cur_mesh = m_name_root.get();
+    for (const auto& index : id) {
+        cur_mesh = cur_mesh->m_children[index].get();
+    }
+    return *cur_mesh;
+}
+auto NamedMultiMesh::get_node(const std::vector<int64_t>& id) -> Node&
+{
+    Node* cur_mesh = m_name_root.get();
+    for (const auto& index : id) {
+        cur_mesh = cur_mesh->m_children[index].get();
+    }
+    return *cur_mesh;
 }
 
 NamedMultiMesh::NamedMultiMesh()
