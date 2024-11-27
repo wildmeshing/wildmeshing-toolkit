@@ -92,7 +92,7 @@ TEST_CASE("paraview_2d", "[io]")
     mesh->serialize(writer);
 }
 
-TEST_CASE("paraview_2d_vtag", "[io]")
+TEST_CASE("paraview_2d_vtag", "[io.]")
 {
     auto mesh = read_mesh(WMTK_DATA_DIR "/fan.msh");
     mesh->register_attribute<int64_t>("tag", PrimitiveType::Triangle, 1);
