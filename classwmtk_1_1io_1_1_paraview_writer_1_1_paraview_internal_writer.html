@@ -128,8 +128,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ae02778e33028cff0d79fafc67e403a32"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acdbd638f64b56ac897a003f84f2ba196"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1io_1_1_paraview_writer_1_1_paraview_internal_writer.html#acdbd638f64b56ac897a003f84f2ba196">init</a> (const std::filesystem::path &amp;filename, const std::string &amp;vertices_name, const Eigen::MatrixXi &amp;elements, const bool enabled)</td></tr>
 <tr class="separator:acdbd638f64b56ac897a003f84f2ba196"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5e440b4a694c9c1f908ff36853095fdd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1io_1_1_paraview_writer_1_1_paraview_internal_writer.html#a5e440b4a694c9c1f908ff36853095fdd">write</a> (const std::string &amp;name, const int64_t stride, const std::vector&lt; double &gt; &amp;val)</td></tr>
-<tr class="separator:a5e440b4a694c9c1f908ff36853095fdd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7297d2e49c0eb7b9f4ef77413496fc16"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1io_1_1_paraview_writer_1_1_paraview_internal_writer.html#a7297d2e49c0eb7b9f4ef77413496fc16">write</a> (const std::string &amp;name, const int64_t stride, const std::vector&lt; double &gt; &amp;val, const bool is_cell_field)</td></tr>
+<tr class="separator:a7297d2e49c0eb7b9f4ef77413496fc16"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8016027e7d30619de3f1e9308598da2b"><td class="memItemLeft" align="right" valign="top">Eigen::MatrixXd &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1io_1_1_paraview_writer_1_1_paraview_internal_writer.html#a8016027e7d30619de3f1e9308598da2b">vertices</a> ()</td></tr>
 <tr class="separator:a8016027e7d30619de3f1e9308598da2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -169,7 +169,7 @@ Private Attributes</h2></td></tr>
 
 <p class="definition">Definition at line <a class="el" href="_paraview_writer_8cpp_source.html#l00015">15</a> of file <a class="el" href="_paraview_writer_8cpp_source.html">ParaviewWriter.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_paraview_writer_8hpp_source.html#l00043">m_paraview_file</a>.</p>
+<p class="reference">References <a class="el" href="_paraview_writer_8hpp_source.html#l00047">m_paraview_file</a>.</p>
 
 </div>
 </div>
@@ -190,7 +190,7 @@ Private Attributes</h2></td></tr>
 
 <p class="definition">Definition at line <a class="el" href="_paraview_writer_8cpp_source.html#l00034">34</a> of file <a class="el" href="_paraview_writer_8cpp_source.html">ParaviewWriter.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_paraview_writer_8hpp_source.html#l00046">m_elements</a>, <a class="el" href="_paraview_writer_8hpp_source.html#l00041">m_enabled</a>, <a class="el" href="_paraview_writer_8hpp_source.html#l00039">m_filename</a>, <a class="el" href="_paraview_writer_8hpp_source.html#l00043">m_paraview_file</a>, and <a class="el" href="_paraview_writer_8hpp_source.html#l00045">m_vertices</a>.</p>
+<p class="reference">References <a class="el" href="_paraview_writer_8hpp_source.html#l00050">m_elements</a>, <a class="el" href="_paraview_writer_8hpp_source.html#l00045">m_enabled</a>, <a class="el" href="_paraview_writer_8hpp_source.html#l00043">m_filename</a>, <a class="el" href="_paraview_writer_8hpp_source.html#l00047">m_paraview_file</a>, and <a class="el" href="_paraview_writer_8hpp_source.html#l00049">m_vertices</a>.</p>
 
 </div>
 </div>
@@ -235,7 +235,7 @@ Private Attributes</h2></td></tr>
 
 <p class="definition">Definition at line <a class="el" href="_paraview_writer_8cpp_source.html#l00021">21</a> of file <a class="el" href="_paraview_writer_8cpp_source.html">ParaviewWriter.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_paraview_writer_8hpp_source.html#l00046">m_elements</a>, <a class="el" href="_paraview_writer_8hpp_source.html#l00041">m_enabled</a>, <a class="el" href="_paraview_writer_8hpp_source.html#l00039">m_filename</a>, and <a class="el" href="_paraview_writer_8hpp_source.html#l00037">m_vertices_name</a>.</p>
+<p class="reference">References <a class="el" href="_paraview_writer_8hpp_source.html#l00050">m_elements</a>, <a class="el" href="_paraview_writer_8hpp_source.html#l00045">m_enabled</a>, <a class="el" href="_paraview_writer_8hpp_source.html#l00043">m_filename</a>, and <a class="el" href="_paraview_writer_8hpp_source.html#l00041">m_vertices_name</a>.</p>
 
 </div>
 </div>
@@ -262,14 +262,14 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_paraview_writer_8hpp_source.html#l00034">34</a> of file <a class="el" href="_paraview_writer_8hpp_source.html">ParaviewWriter.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_paraview_writer_8hpp_source.html#l00038">38</a> of file <a class="el" href="_paraview_writer_8hpp_source.html">ParaviewWriter.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_paraview_writer_8hpp_source.html#l00045">m_vertices</a>.</p>
+<p class="reference">References <a class="el" href="_paraview_writer_8hpp_source.html#l00049">m_vertices</a>.</p>
 
 </div>
 </div>
-<a id="a5e440b4a694c9c1f908ff36853095fdd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5e440b4a694c9c1f908ff36853095fdd">&#9670;&nbsp;</a></span>write()</h2>
+<a id="a7297d2e49c0eb7b9f4ef77413496fc16"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7297d2e49c0eb7b9f4ef77413496fc16">&#9670;&nbsp;</a></span>write()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -290,7 +290,13 @@ Private Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const std::vector&lt; double &gt; &amp;&#160;</td>
-          <td class="paramname"><em>val</em>&#160;</td>
+          <td class="paramname"><em>val</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const bool&#160;</td>
+          <td class="paramname"><em>is_cell_field</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -302,7 +308,7 @@ Private Attributes</h2></td></tr>
 
 <p class="definition">Definition at line <a class="el" href="_paraview_writer_8cpp_source.html#l00040">40</a> of file <a class="el" href="_paraview_writer_8cpp_source.html">ParaviewWriter.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_paraview_writer_8hpp_source.html#l00043">m_paraview_file</a>.</p>
+<p class="reference">References <a class="el" href="_paraview_writer_8hpp_source.html#l00047">m_paraview_file</a>.</p>
 
 </div>
 </div>
@@ -327,7 +333,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_paraview_writer_8hpp_source.html#l00046">46</a> of file <a class="el" href="_paraview_writer_8hpp_source.html">ParaviewWriter.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_paraview_writer_8hpp_source.html#l00050">50</a> of file <a class="el" href="_paraview_writer_8hpp_source.html">ParaviewWriter.hpp</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_paraview_writer_8cpp_source.html#l00021">init()</a>, and <a class="el" href="_paraview_writer_8cpp_source.html#l00034">~ParaviewInternalWriter()</a>.</p>
 
@@ -353,7 +359,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_paraview_writer_8hpp_source.html#l00041">41</a> of file <a class="el" href="_paraview_writer_8hpp_source.html">ParaviewWriter.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_paraview_writer_8hpp_source.html#l00045">45</a> of file <a class="el" href="_paraview_writer_8hpp_source.html">ParaviewWriter.hpp</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_paraview_writer_8cpp_source.html#l00021">init()</a>, and <a class="el" href="_paraview_writer_8cpp_source.html#l00034">~ParaviewInternalWriter()</a>.</p>
 
@@ -379,7 +385,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_paraview_writer_8hpp_source.html#l00039">39</a> of file <a class="el" href="_paraview_writer_8hpp_source.html">ParaviewWriter.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_paraview_writer_8hpp_source.html#l00043">43</a> of file <a class="el" href="_paraview_writer_8hpp_source.html">ParaviewWriter.hpp</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_paraview_writer_8cpp_source.html#l00021">init()</a>, and <a class="el" href="_paraview_writer_8cpp_source.html#l00034">~ParaviewInternalWriter()</a>.</p>
 
@@ -405,7 +411,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_paraview_writer_8hpp_source.html#l00043">43</a> of file <a class="el" href="_paraview_writer_8hpp_source.html">ParaviewWriter.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_paraview_writer_8hpp_source.html#l00047">47</a> of file <a class="el" href="_paraview_writer_8hpp_source.html">ParaviewWriter.hpp</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_paraview_writer_8cpp_source.html#l00015">ParaviewInternalWriter()</a>, <a class="el" href="_paraview_writer_8cpp_source.html#l00040">write()</a>, and <a class="el" href="_paraview_writer_8cpp_source.html#l00034">~ParaviewInternalWriter()</a>.</p>
 
@@ -431,9 +437,9 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_paraview_writer_8hpp_source.html#l00045">45</a> of file <a class="el" href="_paraview_writer_8hpp_source.html">ParaviewWriter.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_paraview_writer_8hpp_source.html#l00049">49</a> of file <a class="el" href="_paraview_writer_8hpp_source.html">ParaviewWriter.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_paraview_writer_8hpp_source.html#l00034">vertices()</a>, and <a class="el" href="_paraview_writer_8cpp_source.html#l00034">~ParaviewInternalWriter()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_paraview_writer_8hpp_source.html#l00038">vertices()</a>, and <a class="el" href="_paraview_writer_8cpp_source.html#l00034">~ParaviewInternalWriter()</a>.</p>
 
 </div>
 </div>
@@ -457,7 +463,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_paraview_writer_8hpp_source.html#l00037">37</a> of file <a class="el" href="_paraview_writer_8hpp_source.html">ParaviewWriter.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_paraview_writer_8hpp_source.html#l00041">41</a> of file <a class="el" href="_paraview_writer_8hpp_source.html">ParaviewWriter.hpp</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_paraview_writer_8cpp_source.html#l00021">init()</a>.</p>
 
