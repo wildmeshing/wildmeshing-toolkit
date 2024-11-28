@@ -28,7 +28,11 @@ private:
             const Eigen::MatrixXi& elements,
             const bool enabled);
 
-        void write(const std::string& name, const int64_t stride, const std::vector<double>& val);
+        void write(
+            const std::string& name,
+            const int64_t stride,
+            const std::vector<double>& val,
+            const bool is_cell_field);
 
 
         Eigen::MatrixXd& vertices() { return m_vertices; }
