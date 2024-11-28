@@ -139,7 +139,12 @@ bool NamedMultiMesh::has_mesh(const std::string_view& path) const
     auto split = internal::split_path(path);
 #endif
     Node const* cur_mesh = m_name_root.get();
-    assert(*split.begin() == cur_mesh->name || *split.begin() == "");
+    const std::string& cur_name = cur_mesh->name;
+    const bool same_name = *split.begin() == cur_mesh->name;
+    const bool empty_name = *split.begin() == "";
+    if(!(same_name || empty_name)) {
+        return false;
+    }
     for (const auto& token : std::ranges::views::drop(split, 1)) {
         auto it = cur_mesh->m_child_indexer.find(std::string(token));
         if (it == cur_mesh->m_child_indexer.end()) {
