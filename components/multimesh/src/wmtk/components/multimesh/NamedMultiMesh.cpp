@@ -1,6 +1,5 @@
 #include "NamedMultiMesh.hpp"
 #include <fmt/ranges.h>
-#include <spdlog/spdlog.h>
 #include <nlohmann/json.hpp>
 #include <span>
 #include <vector>
@@ -89,11 +88,12 @@ struct NamedMultiMesh::Node
         nlohmann::json& nlohmann_json_j,
         const NamedMultiMesh::Node& nlohmann_json_t)
     {
-        nlohmann::json arr = nlohmann::json::array();
+        nlohmann::json value;
         for (const auto& c_ptr : nlohmann_json_t.m_children) {
-            arr.emplace_back(*c_ptr);
+            value.update(*c_ptr);
         }
-        nlohmann_json_j[nlohmann_json_t.name] = arr;
+        value["ptr"] = fmt::format("{}", fmt::ptr(&nlohmann_json_t));
+        nlohmann_json_j[nlohmann_json_t.name] = value;
     }
 };
 
@@ -142,7 +142,7 @@ bool NamedMultiMesh::has_mesh(const std::string_view& path) const
     const std::string& cur_name = cur_mesh->name;
     const bool same_name = *split.begin() == cur_mesh->name;
     const bool empty_name = *split.begin() == "";
-    if(!(same_name || empty_name)) {
+    if (!(same_name || empty_name)) {
         return false;
     }
     for (const auto& token : std::ranges::views::drop(split, 1)) {
@@ -166,13 +166,39 @@ auto NamedMultiMesh::get_id(const std::string_view& path) const -> std::vector<i
 
     std::vector<int64_t> indices;
     Node const* cur_mesh = m_name_root.get();
-    assert(*split.begin() == cur_mesh->name || *split.begin() == "");
+    const bool same_name = *split.begin() == cur_mesh->name;
+    const bool empty_name = *split.begin() == "";
+    if (!(same_name || empty_name)) {
+        throw std::out_of_range(fmt::format(
+            "Root name [{}] of path [{}] was not either empty or [{}]",
+            *split.begin(),
+            path,
+            cur_mesh->name));
+    }
     for (const auto& token : std::ranges::views::drop(split, 1)) {
         try {
+            if (cur_mesh->m_child_indexer.size() == 0) {
+                if (!cur_mesh->m_children.empty()) {
+                    throw std::runtime_error(fmt::format(
+                        "Child indexer wasn't initialized after children were populated (child "
+                        "indexer size {} and child size {} different)",
+                        cur_mesh->m_child_indexer.size(),
+                        cur_mesh->m_children.size()));
+                } else {
+                    throw std::out_of_range(fmt::format(
+                        "Could not parse {} from name {} because child indexer was empty\nFull "
+                        "Tree: {}\nCurrent subtree: {}",
+                        token,
+                        path,
+                        nlohmann::json(*m_name_root).dump(2),
+                        nlohmann::json(*cur_mesh).dump(2)));
+                }
+            }
+
             int64_t index = cur_mesh->m_child_indexer.at(std::string(token));
             indices.emplace_back(index);
             cur_mesh = cur_mesh->m_children[index].get();
-        } catch (const std::runtime_error& e) {
+        } catch (const std::out_of_range& e) {
             wmtk::logger().warn(
                 "Failed to find mesh named {} in mesh list. Path was {}",
                 token,
@@ -217,10 +243,12 @@ void NamedMultiMesh::set_names(const nlohmann::json& js)
 
 void NamedMultiMesh::populate_default_names()
 {
+    if(!bool(m_name_root)) {
+        m_name_root = std::make_unique<Node>();
+    }
     std::function<void(Node&, const Mesh& m)> sdn;
     sdn = [&sdn](Node& n, const Mesh& m) {
         const auto& children = m.get_child_meshes();
-        spdlog::info("Injecting into {} children", children.size());
         if (n.m_children.size() < children.size()) {
             n.m_children.resize(children.size());
         }
@@ -233,12 +261,12 @@ void NamedMultiMesh::populate_default_names()
             auto& nn = *nnptr;
             if (nn.name.empty()) {
                 nn.name = fmt::format("{}", j);
-                spdlog::info("Gave child name {}", nn.name);
             }
         }
         for (size_t j = 0; j < children.size(); ++j) {
             sdn(*n.m_children[j], *children[j]);
         }
+        n.update_child_names();
     };
     assert(bool(m_name_root));
     if (m_name_root->name.empty()) {
@@ -342,11 +370,6 @@ void NamedMultiMesh::append_child_mesh_names(const Mesh& parent, const NamedMult
     const auto child_relid = wmtk::multimesh::MultiMeshManager::relative_id(
         parent.absolute_multi_mesh_id(),
         o.root().absolute_multi_mesh_id());
-    spdlog::error(
-        "{} {} {}",
-        fmt::join(parent.absolute_multi_mesh_id(), ","),
-        fmt::join(o.root().absolute_multi_mesh_id(), ","),
-        fmt::join(child_relid, ","));
     assert(child_relid.size() == 1);
 
     const int64_t& id = child_relid[0];

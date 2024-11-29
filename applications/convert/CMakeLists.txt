@@ -21,5 +21,5 @@ wmtk_register_integration_test(
     CONFIG_PATH ${CMAKE_CURRENT_SOURCE_DIR}/examples
     GIT_REPOSITORY "https://github.com/wildmeshing/data.git"
     GIT_TAG 363f8e860673a4e4f68df6465b99e86809c96283
-    #EXTRA_ARGUMENTS run
+    EXTRA_ARGUMENTS run
 )
