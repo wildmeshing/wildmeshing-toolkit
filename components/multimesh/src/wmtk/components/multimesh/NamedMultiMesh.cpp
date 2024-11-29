@@ -332,11 +332,12 @@ NamedMultiMesh::NamedMultiMesh(const NamedMultiMesh& o)
 {}
 
 
-std::unique_ptr<nlohmann::json> NamedMultiMesh::get_names_json() const
+std::unique_ptr<nlohmann::json> NamedMultiMesh::get_names_json(const std::string_view& path) const
 {
     auto js_ptr = std::make_unique<nlohmann::json>();
     auto& js = *js_ptr;
-    js = *m_name_root;
+    const auto id = get_id(path);
+    js = get_node(id);
 
 
     return js_ptr;

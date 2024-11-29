@@ -3,6 +3,7 @@
 #include <fmt/std.h>
 #include <type_traits>
 #include <wmtk/Mesh.hpp>
+#include <wmtk/components/multimesh/MeshCollection.hpp>
 #include <wmtk/components/multimesh/NamedMultiMesh.hpp>
 #include <wmtk/components/utils/resolve_path.hpp>
 #include <wmtk/io/HDF5Writer.hpp>
@@ -77,14 +78,27 @@ void output(const Mesh& mesh, const OutputOptions& opts)
             fmt::format("Unable to write file [{}] of extension [{}]", opts.path, opts.type));
 }
 
-void output(const multimesh::NamedMultiMesh& mesh, const OutputOptions& opts)
+void output(
+    const multimesh::NamedMultiMesh& mesh,
+    const OutputOptions& opts,
+    const std::string_view& mesh_path)
 {
-    output(mesh.root(), opts);
+    output(mesh.get_mesh(mesh_path), opts);
 
     if (opts.mesh_name_path.has_value()) {
         const auto& path = opts.mesh_name_path.value();
         std::ofstream ofs(path);
-        ofs << *mesh.get_names_json();
+        ofs << *mesh.get_names_json(mesh_path);
+    }
+}
+
+void output(
+    const multimesh::MeshCollection& mesh_col,
+    const std::map<std::string, OutputOptions>& opts)
+{
+    for (const auto& [path, single_opts] : opts) {
+        const multimesh::NamedMultiMesh& nmm = mesh_col.get_named_multimesh(path);
+        output(nmm, single_opts, path);
     }
 }
 

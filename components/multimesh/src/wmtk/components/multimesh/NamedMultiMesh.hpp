@@ -40,7 +40,7 @@ public:
     void set_root(Mesh& m);
     void append_child_mesh_names(const Mesh& parent, const NamedMultiMesh& o);
 
-    std::unique_ptr<nlohmann::json> get_names_json() const;
+    std::unique_ptr<nlohmann::json> get_names_json(const std::string_view& path) const;
 
     std::string_view root_name() const;
     std::string name(const std::vector<int64_t>& id) const;
