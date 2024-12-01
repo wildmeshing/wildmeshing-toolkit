@@ -123,15 +123,9 @@ int run_js(
 
     if (!j.contains("output")) {
         wmtk::logger().info("convert: No output path provided");
-    } else if (j["output"].is_object()) {
-        for (const auto& [mesh_path, out_opts_js] : j["output"].items()) {
-            auto opts = out_opts_js.get<wmtk::components::output::OutputOptions>();
-
-            wmtk::components::output::output(meshes.get_mesh(mesh_path), opts);
-        }
     } else {
-        auto opts = j["output"].get<wmtk::components::output::OutputOptions>();
-        wmtk::components::output::output(*output_mesh, opts);
+        std::map<std::string, wmtk::components::output::OutputOptions> output_opts = j["output"];
+        wmtk::components::output::output(meshes, output_opts);
     }
 
 

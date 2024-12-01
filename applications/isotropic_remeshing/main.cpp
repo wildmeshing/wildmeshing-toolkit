@@ -29,6 +29,8 @@ using namespace wmtk::components;
 using namespace wmtk;
 namespace fs = std::filesystem;
 
+constexpr static std::string root_attribute_name = "root";
+
 int main(int argc, char* argv[])
 {
     CLI::App app{argv[0]};
@@ -58,8 +60,8 @@ int main(int argc, char* argv[])
     const auto input_js = j["input"];
     components::utils::PathResolver path_resolver;
 
-    if (j.contains("root")) {
-        path_resolver = j["root"];
+    if (j.contains(root_attribute_name)) {
+        path_resolver = j[root_attribute_name];
     }
     if (!json_integration_config_file.empty()) {
         auto path = wmtk::applications::utils::get_integration_test_data_root(
@@ -134,11 +136,14 @@ int main(int argc, char* argv[])
             auto& stats = out_json["stats"];
             stats = wmtk::applications::utils::element_count_report_named(mc);
             j.erase("report");
+            if (j.contains(root_attribute_name)) {
+                j.erase(root_attribute_name);
+            }
             out_json["input"] = j;
 
 
             std::ofstream ofs(report);
-            ofs << out_json;
+            ofs << std::setw(2) << out_json;
         }
     }
 }
