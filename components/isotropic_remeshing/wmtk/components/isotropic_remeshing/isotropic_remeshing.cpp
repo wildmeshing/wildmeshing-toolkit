@@ -3,6 +3,9 @@
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/components/multimesh/MeshCollection.hpp>
+#include <wmtk/components/output/output.hpp>
+#include <wmtk/components/output/utils/format.hpp>
 #include <wmtk/invariants/FusionEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorSimplexInvariant.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
@@ -89,7 +92,7 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
                 std::make_shared<invariants::InteriorSimplexInvariant>(m, pt));
         }
     };
-    multimesh::MultiMeshVisitor visitor(set_all_invariants);
+    wmtk::multimesh::MultiMeshVisitor visitor(set_all_invariants);
     visitor.execute_from_root(mesh);
 
 
@@ -118,7 +121,7 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
     auto op_split = std::make_shared<EdgeSplit>(mesh);
     configure_split(*op_split, mesh, options);
     assert(op_split->attribute_new_all_configured());
-    ops.emplace_back("split",op_split);
+    ops.emplace_back("split", op_split);
 
 
     //////////////////////////////////////////
@@ -131,7 +134,7 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
 
 
     assert(op_collapse->attribute_new_all_configured());
-    ops.emplace_back("collapse",op_collapse);
+    ops.emplace_back("collapse", op_collapse);
 
 
     //////////////////////////////////////////
@@ -141,7 +144,7 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
     // adds common invariants like inversion check and asserts taht the swap is ready for prime time
     wmtk::logger().debug("Configure isotropic remeshing swap");
 
-    ops.emplace_back("swap",op_swap);
+    ops.emplace_back("swap", op_swap);
 
 
     //////////////////////////////////////////
@@ -170,34 +173,52 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
     }
 
     if (update_position) op_smooth->add_transfer_strategy(update_position);
-    ops.emplace_back("smooth",op_smooth);
+    ops.emplace_back("smooth", op_smooth);
+
+    auto log_mesh = [&](int64_t index) {
+        spdlog::warn(
+            "{} {}",
+            options.intermediate_output_format.empty(),
+            options.mesh_collection == nullptr);
+        if (options.intermediate_output_format.empty() && options.mesh_collection == nullptr) {
+            wmtk::logger().error("Failed to log using intermediate_output_format because "
+                                 "no MeshCollection was attached");
+            return;
+        }
+        for (const auto& [name, opts] : options.intermediate_output_format) {
+            auto opt = wmtk::components::output::utils::format(opts, index);
+            wmtk::components::output::output(options.mesh_collection->get_mesh(name), opt);
+        }
+    };
+
+    log_mesh(0);
 
 
     //////////////////////////////////////////
     Scheduler scheduler;
-    for (long i = 0; i < options.iterations; ++i) {
+    for (long i = 1; i <= options.iterations; ++i) {
         wmtk::logger().info("Iteration {}", i);
 
         SchedulerStats pass_stats;
-        for(const auto& [name, opptr]: ops) {
-            if(!bool(opptr)) {
+        for (const auto& [name, opptr] : ops) {
+            if (!bool(opptr)) {
                 spdlog::warn("op {} is empty", name);
                 continue;
             }
             const auto stats = scheduler.run_operation_on_all(*opptr);
-        logger().info(
-            "Executed {} {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",
-            stats.number_of_performed_operations(),
-            name,
-            stats.number_of_successful_operations(),
-            stats.number_of_failed_operations(),
-            stats.collecting_time,
-            stats.sorting_time,
-            stats.executing_time);
+            logger().info(
+                "Executed {} {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",
+                stats.number_of_performed_operations(),
+                name,
+                stats.number_of_successful_operations(),
+                stats.number_of_failed_operations(),
+                stats.collecting_time,
+                stats.sorting_time,
+                stats.executing_time);
             pass_stats += stats;
         }
 
-        multimesh::consolidate(mesh);
+        wmtk::multimesh::consolidate(mesh);
 
         logger().info(
             "Executed {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",
@@ -208,7 +229,8 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
             pass_stats.sorting_time,
             pass_stats.executing_time);
 
-        multimesh::consolidate(mesh);
+        wmtk::multimesh::consolidate(mesh);
+        log_mesh(i);
     }
 }
 } // namespace wmtk::components::isotropic_remeshing

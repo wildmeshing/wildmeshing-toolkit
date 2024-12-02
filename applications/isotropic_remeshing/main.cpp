@@ -114,6 +114,10 @@ int main(int argc, char* argv[])
         spdlog::info("Pass through: {}", attr.name());
     }
 
+    options.mesh_collection = &mc;
+    if(j.contains("intermediate_output_format")) {
+        options.intermediate_output_format = j["intermediate_output_format"];
+    }
     wmtk::components::isotropic_remeshing::isotropic_remeshing(options);
 
     // input uv mesh

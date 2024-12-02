@@ -1,6 +1,6 @@
 {
     "input": {
-        "file": "100071_sf.msh",
+        "path": "100071_sf.msh",
         "name_spec":
         "main"
     },
@@ -16,7 +16,7 @@
     "fix_uv_seam": false,
     "lock_boundary": false,
     "output": {
-    "file": "100071_sf",
+    "path": "100071_sf",
     "type": ".vtu"
     }
 }

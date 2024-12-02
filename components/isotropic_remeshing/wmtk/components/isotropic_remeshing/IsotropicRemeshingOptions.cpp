@@ -64,6 +64,10 @@ void to_json(nlohmann::json& nlohmann_json_j, const IsotropicRemeshingOptions& n
         }
         nlohmann_json_j["edge_swap_mode"] = name;
     }
+
+    if (!nlohmann_json_t.intermediate_output_format.empty()) {
+        NLOHMANN_JSON_EXPAND(NLOHMANN_JSON_PASTE(NLOHMANN_JSON_TO, intermediate_output_format));
+    }
 }
 void from_json(const nlohmann::json& nlohmann_json_j, IsotropicRemeshingOptions& nlohmann_json_t)
 {
@@ -95,6 +99,9 @@ void from_json(const nlohmann::json& nlohmann_json_j, IsotropicRemeshingOptions&
         throw std::runtime_error(fmt::format(
             "Expected edge_swap_mode to be one of [amips,valence,skip], got [{}]",
             swap_name));
+    }
+    if (!nlohmann_json_j.contains("intermediate_output_format")) {
+        NLOHMANN_JSON_EXPAND(NLOHMANN_JSON_PASTE(NLOHMANN_JSON_FROM, intermediate_output_format));
     }
 }
 void IsotropicRemeshingOptions::load_json(const nlohmann::json& js)

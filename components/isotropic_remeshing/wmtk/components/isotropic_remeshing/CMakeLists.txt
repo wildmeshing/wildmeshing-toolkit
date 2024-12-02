@@ -24,4 +24,4 @@ set(SRC_FILES
 
 #CURRENT_COMPONENT_LIB_NAME is set from the main cmake
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
-target_link_libraries(wmtk_${COMPONENT_NAME} PRIVATE nlohmann_json)
+target_link_libraries(wmtk_${COMPONENT_NAME} PRIVATE nlohmann_json wmtk::output)

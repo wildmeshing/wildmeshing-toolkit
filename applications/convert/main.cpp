@@ -185,28 +185,28 @@ int main(int argc, char* argv[])
             ->check(CLI::ExistingFile);
     };
 
-    CLI::App* run_cmd = app.add_subcommand("run", "Run application");
-    run_cmd->add_option("-j, --json", json_input_file, "json specification file")
+    CLI::App* json_cmd = app.add_subcommand("json", "Run application using a json");
+    json_cmd->add_option("-j, --json", json_input_file, "json specification file")
         ->required(true)
         ->check(CLI::ExistingFile);
 
-    add_it_path(*run_cmd);
+    add_it_path(*json_cmd);
 
 
     fs::path input;
     fs::path output;
     std::string type;
-    CLI::App* type_cmd = app.add_subcommand("type", "Convert mesh to another type");
-    type_cmd->add_option("-i, --input", input, "input file")
+    CLI::App* run_cmd = app.add_subcommand("run", "Convert mesh to another type");
+    run_cmd->add_option("-i, --input", input, "input file")
         ->required(true)
         ->check(CLI::ExistingFile);
 
-    type_cmd->add_option("-o, --output", output, "output file");
-    type_cmd->add_option("-t, --type", type, "output file type");
-    add_it_path(*type_cmd);
+    run_cmd->add_option("-o, --output", output, "output file");
+    run_cmd->add_option("-t, --type", type, "output file type, knows [vtu,hdf5]");
+    add_it_path(*run_cmd);
 
 
-    // run_cmd->add_option("-n, --name_spec", name_spec_file, "json specification file")
+    // json_cmd->add_option("-n, --name_spec", name_spec_file, "json specification file")
     //     ->check(CLI::ExistingFile);
 
     CLI11_PARSE(app, argc, argv);
@@ -221,12 +221,12 @@ int main(int argc, char* argv[])
 
     int exit_mode = -1;
 
-    // run_cmd->callback([&]() {
+    // json_cmd->callback([&]() {
     //     spdlog::warn("YOW!");
     //     assert(json_input_file.has_value());
     //     exit_mode = run(json_input_file.value());
     // });
-    if (run_cmd->parsed()) {
+    if (json_cmd->parsed()) {
         exit_mode = run(argv[0], json_input_file, name_spec_file, json_integration_config_file);
     } else {
         wmtk::components::input::InputOptions in;

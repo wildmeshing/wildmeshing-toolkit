@@ -1,12 +1,12 @@
 #include <fmt/format.h>
 #include <wmtk/components/output/OutputOptions.hpp>
-namespace wmtk::components::output::options {
+namespace wmtk::components::output::utils {
 
 template <typename... Args>
 auto format(const OutputOptions& input, Args&&... args) -> OutputOptions
 {
     OutputOptions opt = input;
-    opt.path = fmt::format(input.path, std::forward<Args>(args)...);
+    opt.path = fmt::format(fmt::runtime(input.path.string()), std::forward<Args>(args)...);
 
     return opt;
 }

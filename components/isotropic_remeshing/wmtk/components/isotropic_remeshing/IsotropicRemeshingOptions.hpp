@@ -3,8 +3,16 @@
 #include <nlohmann/json_fwd.hpp>
 #include <optional>
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
+#include <wmtk/components/output/OutputOptions.hpp>
 #include "EdgeSwapMode.hpp"
 
+
+namespace wmtk::components::multimesh {
+class MeshCollection;
+}
+namespace wmtk::components::output {
+class MeshCollection;
+}
 
 namespace wmtk::components::isotropic_remeshing {
 
@@ -50,6 +58,12 @@ struct IsotropicRemeshingOptions
         IsotropicRemeshingOptions& nlohmann_json_t);
 
     std::vector<wmtk::attribute::MeshAttributeHandle> all_positions() const;
+
+
+    wmtk::components::multimesh::MeshCollection* mesh_collection;
+    // format for outputting intermediate results. Assumed to just be a frame number, i.e something
+    // like format("path_{}.hdf5",0) to generate path_0.hdf5
+    std::map<std::string, wmtk::components::output::OutputOptions> intermediate_output_format;
 };
 
 
