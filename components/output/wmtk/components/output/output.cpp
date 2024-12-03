@@ -61,6 +61,7 @@ void output(const Mesh& mesh, const OutputOptions& opts)
                 if constexpr (std::is_same_v<T, std::string>) {
                     return v;
                 } else if constexpr (std::is_same_v<T, wmtk::attribute::MeshAttributeHandle>) {
+                    assert(v.is_valid());
                     return v.name();
                 }
             },

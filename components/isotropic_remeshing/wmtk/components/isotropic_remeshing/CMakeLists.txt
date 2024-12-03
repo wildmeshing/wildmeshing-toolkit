@@ -7,6 +7,10 @@ endif()
 set(SRC_FILES
     IsotropicRemeshingOptions.cpp
     IsotropicRemeshingOptions.hpp
+
+    IsotropicRemeshing.cpp
+    IsotropicRemeshing.hpp
+
 	isotropic_remeshing.hpp
     isotropic_remeshing.cpp
 

@@ -340,7 +340,7 @@ Tuple TriMesh::face_tuple_from_id(int64_t id) const
 bool TriMesh::is_valid(const Tuple& tuple) const
 {
     if (!Mesh::is_valid(tuple)) {
-        logger().debug("Tuple was null and therefore not valid");
+        logger().trace("Tuple was null and therefore not valid");
         return false;
     }
     const bool is_connectivity_valid = tuple.m_local_vid >= 0 && tuple.m_local_eid >= 0 &&
@@ -349,7 +349,7 @@ bool TriMesh::is_valid(const Tuple& tuple) const
 
     if (!is_connectivity_valid) {
 #if !defined(NDEBUG)
-        logger().debug(
+        logger().trace(
             "tuple.m_local_vid={} >= 0 && tuple.m_local_eid={} >= 0 &&"
             " tuple.m_global_cid={} >= 0 &&"
             " autogen::tri_mesh::tuple_is_valid_for_ccw(tuple)={}",

@@ -16,6 +16,7 @@
     "edge_swap_mode3": "valence",
     "fix_uv_seam": false,
     "lock_boundary": false,
+    "envelope_size": 1e-3,
     "output": {
         "path": "tetwild_fig8_mid",
         "type": ".vtu"
@@ -23,7 +24,8 @@
     "intermediate_output_format": {
         "main": {
         "path": "tetwild_fig8_mid_{:04}",
-        "type": ".vtu"
+        "type": ".vtu",
+        "position_attribute": "vertices"
         }
     }
 }
