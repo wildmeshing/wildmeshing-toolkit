@@ -64,6 +64,10 @@ IsotropicRemeshing::IsotropicRemeshing(const IsotropicRemeshingOptions& opts)
     // swap
 
     m_operations.emplace_back("swap", configure_swap());
+
+    //////////////////////////////////////////
+    // smooth
+    m_operations.emplace_back("smooth", configure_smooth());
 }
 
 std::vector<wmtk::attribute::MeshAttributeHandle> IsotropicRemeshing::all_envelope_positions() const
@@ -76,8 +80,7 @@ std::vector<wmtk::attribute::MeshAttributeHandle> IsotropicRemeshing::all_envelo
             }
         };
 
-        try_add(m_options.position_attribute);
-        for (const auto& h : m_options.other_position_attributes) {
+        for (const auto& h : m_options.all_positions()) {
             try_add(h);
         }
     }
@@ -114,9 +117,6 @@ void IsotropicRemeshing::run()
     Mesh& mesh = position.mesh();
 
 
-    //////////////////////////////////////////
-    // smooth
-    m_operations.emplace_back("smooth", configure_smooth());
 
     auto log_mesh = [&](int64_t index) {
         if (m_options.intermediate_output_format.empty() && m_options.mesh_collection == nullptr) {

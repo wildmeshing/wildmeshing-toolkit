@@ -4,16 +4,27 @@
         "name_spec": {"pos": "uv"}
     },
         "position_attribute": "vertices",
-        "iterations": 5,
+        "iterations": 30,
         "length_rel": 0.01,
-        "length_abs": -1,
         "lock_boundary": true,
         "edge_swap_mode": "valence",
         "use_for_periodic": false,
         "dont_disable_split": false,
         "fix_uv_seam": false,
         "output": {
-            "path": "output.hdf5",
+            "path": "camel.hdf5",
             "type": ".hdf5"
+        },
+        "intermediate_output_format": {
+            "pos": {
+                "path": "camel_{:04}",
+                "type": ".vtu",
+                "position_attribute": "vertices"
+            },
+            "pos.uv": {
+                "path": "camel_uv_{:04}",
+                "type": ".vtu",
+                "position_attribute": "vertices"
+            }
         }
 }
