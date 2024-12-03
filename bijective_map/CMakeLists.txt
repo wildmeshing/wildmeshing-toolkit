@@ -19,7 +19,7 @@ target_link_libraries(bijective_map_app
 )
 target_compile_features(bijective_map_app PUBLIC cxx_std_17)
 
-add_executable(bijective_map_app_tet bijective_map_app_tet.cpp track_operations_tet.hpp track_operations_tet.cpp)
+add_executable(bijective_map_app_tet bijective_map_app_tet.cpp track_operations_tet.hpp track_operations_tet.cpp FindPointTetMesh.cpp)
 target_link_libraries(bijective_map_app_tet
     wmtk::toolkit
     wmtk::data
@@ -29,3 +29,8 @@ target_link_libraries(bijective_map_app_tet
     igl::core igl::opengl igl::glfw igl::stb
 )
 target_compile_features(bijective_map_app_tet PUBLIC cxx_std_17)
+
+add_executable(test_find_point_tet test_findpointtetmesh.cpp FindPointTetMesh.cpp)
+target_link_libraries(test_find_point_tet
+    igl::core
+)

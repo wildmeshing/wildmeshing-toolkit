@@ -76,11 +76,11 @@ void handle_consolidat_tet(
 // split/swap/smooth operations
 void handle_local_mapping_tet(
     const Eigen::MatrixXd& V_before,
-    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXi& T_before,
     const std::vector<int64_t>& id_map_before,
     const std::vector<int64_t>& v_id_map_before,
     const Eigen::MatrixXd& V_after,
-    const Eigen::MatrixXi& F_after,
+    const Eigen::MatrixXi& T_after,
     const std::vector<int64_t>& id_map_after,
     const std::vector<int64_t>& v_id_map_after,
     std::vector<query_point_tet>& query_points);
