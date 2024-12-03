@@ -1,5 +1,5 @@
 #include "track_operations_tet.hpp"
-
+#include "FindPointTetMesh.hpp"
 
 // helper function to convert json to matrix
 template <typename Matrix>
@@ -141,5 +141,7 @@ void handle_local_mapping_tet(
         }
 
         // compute bc of the p in (V, T)_before
+        auto result = findTetContainingPoint(V_before, T_before, p);
+        
     }
 }
