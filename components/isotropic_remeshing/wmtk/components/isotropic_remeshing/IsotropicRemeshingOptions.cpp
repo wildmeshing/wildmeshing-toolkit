@@ -100,7 +100,7 @@ void from_json(const nlohmann::json& nlohmann_json_j, IsotropicRemeshingOptions&
             "Expected edge_swap_mode to be one of [amips,valence,skip], got [{}]",
             swap_name));
     }
-    if (!nlohmann_json_j.contains("intermediate_output_format")) {
+    if (nlohmann_json_j.contains("intermediate_output_format")) {
         NLOHMANN_JSON_EXPAND(NLOHMANN_JSON_PASTE(NLOHMANN_JSON_FROM, intermediate_output_format));
     }
 }
