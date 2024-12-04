@@ -87,6 +87,29 @@ void wriet_points_to_file(
     file.close();
 }
 
+void track_point_one_operation_tet(
+    const json& operation_log,
+    std::vector<query_point_tet>& query_points,
+    bool do_forward = false,
+    bool use_rational = false)
+{
+    std::string operation_name;
+    operation_name = operation_log["operation_name"];
+
+    if (operation_name == "MeshConsolidate") {
+        std::cout << "This Operations is Consolidate" << std::endl;
+        std::vector<int64_t> tet_ids_maps;
+        std::vector<int64_t> vertex_ids_maps;
+        // TODO: parse consolidate file
+        parse_consolidate_file_tet(operation_log, tet_ids_maps, vertex_ids_maps);
+
+        handle_consolidate_tet(tet_ids_maps, vertex_ids_maps, query_points, do_forward);
+
+    } else if (operation_name == "EdgeCollapse") {
+    } else {
+    }
+}
+
 
 int main(int argc, char** argv)
 {

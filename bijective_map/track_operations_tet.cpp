@@ -18,6 +18,7 @@ Matrix json_to_matrix(const json& js)
     return mat;
 }
 
+// point version
 void handle_consolidate_tet(
     const std::vector<int64_t>& tet_ids_maps,
     const std::vector<int64_t>& vertex_ids_maps,
@@ -63,6 +64,7 @@ void handle_consolidate_tet(
     }
 }
 
+// curve version
 void handle_consolidat_tet(
     const std::vector<int64_t>& tet_ids_maps,
     const std::vector<int64_t>& vertex_ids_maps,
@@ -156,4 +158,35 @@ void handle_local_mapping_tet(
         }
         qp.bc /= qp.bc.sum(); // normalize
     }
+}
+
+void parse_consolidate_file_tet(
+    const json& operation_log,
+    std::vector<int64_t>& tet_ids_maps,
+    std::vector<int64_t>& vertex_ids_maps)
+{
+    tet_ids_maps = operation_log["new2old"][3].get<std::vector<int64_t>>();
+    vertex_ids_maps = operation_log["new2old"][0].get<std::vector<int64_t>>();
+}
+
+void parse_non_collapse_file_tet(
+    const json& operation_log,
+    Eigen::MatrixXd& V_before,
+    Eigen::MatrixXi& T_before,
+    std::vector<int64_t>& id_map_before,
+    std::vector<int64_t>& v_id_map_before,
+    Eigen::MatrixXd& V_after,
+    Eigen::MatrixXi& T_after,
+    std::vector<int64_t>& id_map_after,
+    std::vector<int64_t>& v_id_map_after)
+{
+    T_before = json_to_matrix<Eigen::MatrixXi>(operation_log["T_before"]);
+    V_before = json_to_matrix<Eigen::MatrixXd>(operation_log["V_before"]);
+    id_map_before = operation_log["T_id_map_before"].get<std::vector<int64_t>>();
+    v_id_map_before = operation_log["V_id_map_before"].get<std::vector<int64_t>>();
+
+    T_after = json_to_matrix<Eigen::MatrixXi>(operation_log["T_after"]);
+    V_after = json_to_matrix<Eigen::MatrixXd>(operation_log["V_after"]);
+    id_map_after = operation_log["T_id_map_after"].get<std::vector<int64_t>>();
+    v_id_map_after = operation_log["V_id_map_after"].get<std::vector<int64_t>>();
 }
