@@ -146,10 +146,14 @@ void Operation::apply_attribute_transfer(const std::vector<simplex::Simplex>& di
     simplex::IdSimplexCollection all(m_mesh);
     all.reserve(100);
 
+    assert(m_mesh.is_connectivity_valid());
 
     for (const auto& s : direct_mods) {
         if (!s.tuple().is_null()) {
+            assert(m_mesh.is_valid(s));
             for (const simplex::IdSimplex& ss : simplex::closed_star_iterable(m_mesh, s)) {
+                // trying to get a simplex and this crashes
+                m_mesh.get_simplex(ss);
                 all.add(ss);
             }
         }
