@@ -142,6 +142,18 @@ void handle_local_mapping_tet(
 
         // compute bc of the p in (V, T)_before
         auto result = findTetContainingPoint(V_before, T_before, p);
-        
+        auto [t_id_before, bc_before] = result;
+        if (t_id_before == -1) {
+            std::cout << "Error: Point not in T_before" << std::endl;
+            continue;
+        }
+
+        // update the query point
+        qp.t_id = id_map_before[t_id_before];
+        for (int i = 0; i < 4; i++) {
+            qp.tv_ids[i] = v_id_map_before[T_before(t_id_before, i)];
+            qp.bc(i) = std::max(0.0, std::min(1.0, bc_before(i)));
+        }
+        qp.bc /= qp.bc.sum(); // normalize
     }
 }
