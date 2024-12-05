@@ -55,6 +55,8 @@ foreach(MESH_TYPE edge_mesh tri_mesh tet_mesh)
 
             subdart_maximal_action_to_face.hpp
             subdart_maximal_action_to_face.cpp
+
+            get_tuple_from_simplex_local_id.hpp
             )
         set(SRC_FILES ${SRC_FILES} ${MESH_TYPE}/${FILE_NAME})
     endforeach()

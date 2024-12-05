@@ -17,12 +17,19 @@
 #include <wmtk/autogen/tri_mesh/is_ccw.hpp>
 #include <wmtk/autogen/tri_mesh/local_id_table_offset.hpp>
 #include <wmtk/autogen/tri_mesh/local_switch_tuple.hpp>
-#include "tools/all_valid_local_tuples.hpp"
+#include "../tools/all_valid_local_tuples.hpp"
 
 using namespace wmtk;
 using namespace wmtk::autogen;
 using namespace wmtk::tests;
 
+namespace {
+
+auto get_array_range(const auto& array) -> std::array<decltype(&array[0]), 2>
+{
+    return std::array<decltype(&array[0]), 2>{{array, array + std::size(array)}};
+}
+} // namespace
 
 TEST_CASE("tuple_autogen_sizes", "[tuple]")
 {
@@ -32,9 +39,6 @@ TEST_CASE("tuple_autogen_sizes", "[tuple]")
     REQUIRE(all_valid_local_tuples(PrimitiveType::Triangle).size() == valid_face);
     REQUIRE(all_valid_local_tuples(PrimitiveType::Tetrahedron).size() == valid_tet);
 
-    auto get_array_range = [](const auto& array) -> std::array<decltype(&array[0]), 2> {
-        return std::array<decltype(&array[0]), 2>{{array, array + std::size(array)}};
-    };
     { // ccw check
         { // tri
             auto ccw_range = get_array_range(tri_mesh::auto_2d_table_ccw);
@@ -220,5 +224,38 @@ TEST_CASE("tuple_autogen_switch_still_valid", "[tuple]")
             //     pt)));
             // }
         }
+    }
+}
+TEST_CASE("tuple_autogen_is_ccw", "[tuple]")
+{
+    for (const auto& ve : tri_mesh::auto_2d_table_complete_vertex) {
+        wmtk::Tuple t(ve[0], ve[1], -1, 0);
+        CHECK(tri_mesh::is_ccw(t));
+        CHECK(tuple_is_valid_for_ccw(PrimitiveType::Triangle, t));
+        CHECK(is_ccw(PrimitiveType::Triangle, t));
+    }
+    for (const auto& ve : tri_mesh::auto_2d_table_complete_edge) {
+        wmtk::Tuple t(ve[0], ve[1], -1, 0);
+        CHECK(tri_mesh::is_ccw(t));
+        CHECK(tuple_is_valid_for_ccw(PrimitiveType::Triangle, t));
+        CHECK(is_ccw(PrimitiveType::Triangle, t));
+    }
+    for (const auto& ve : tet_mesh::auto_3d_table_complete_vertex) {
+        wmtk::Tuple t(ve[0], ve[1], ve[2], 0);
+        CHECK(tet_mesh::is_ccw(t));
+        CHECK(tuple_is_valid_for_ccw(PrimitiveType::Tetrahedron, t));
+        CHECK(is_ccw(PrimitiveType::Tetrahedron, t));
+    }
+    for (const auto& ve : tet_mesh::auto_3d_table_complete_edge) {
+        wmtk::Tuple t(ve[0], ve[1], ve[2], 0);
+        CHECK(tet_mesh::is_ccw(t));
+        CHECK(tuple_is_valid_for_ccw(PrimitiveType::Tetrahedron, t));
+        CHECK(is_ccw(PrimitiveType::Tetrahedron, t));
+    }
+    for (const auto& ve : tet_mesh::auto_3d_table_complete_face) {
+        wmtk::Tuple t(ve[0], ve[1], ve[2], 0);
+        CHECK(tet_mesh::is_ccw(t));
+        CHECK(tuple_is_valid_for_ccw(PrimitiveType::Tetrahedron, t));
+        CHECK(is_ccw(PrimitiveType::Tetrahedron, t));
     }
 }
