@@ -12,6 +12,7 @@
 
 #include "track_operations_tet.hpp"
 using namespace wmtk;
+using path = std::filesystem::path;
 
 // igl, nothing for now
 
@@ -100,13 +101,91 @@ void track_point_one_operation_tet(
         std::cout << "This Operations is Consolidate" << std::endl;
         std::vector<int64_t> tet_ids_maps;
         std::vector<int64_t> vertex_ids_maps;
-        // TODO: parse consolidate file
         parse_consolidate_file_tet(operation_log, tet_ids_maps, vertex_ids_maps);
 
         handle_consolidate_tet(tet_ids_maps, vertex_ids_maps, query_points, do_forward);
 
     } else if (operation_name == "EdgeCollapse") {
+        // TODO: handle edge collapse
+        std::cout << "This Operations is EdgeCollapse" << std::endl;
+        std::cout << "Not implemented yet" << std::endl;
     } else {
+        std::cout << "This Operations is " << operation_name << std::endl;
+        Eigen::MatrixXi T_after, T_before;
+        Eigen::MatrixXd V_after, V_before;
+        std::vector<int64_t> id_map_after, id_map_before;
+        std::vector<int64_t> v_id_map_after, v_id_map_before;
+        parse_non_collapse_file_tet(
+            operation_log,
+            V_before,
+            T_before,
+            id_map_before,
+            v_id_map_before,
+            V_after,
+            T_after,
+            id_map_after,
+            v_id_map_after);
+
+        if (do_forward) {
+            handle_local_mapping_tet(
+                V_after,
+                T_after,
+                id_map_after,
+                v_id_map_after,
+                V_before,
+                T_before,
+                id_map_before,
+                v_id_map_before,
+                query_points);
+        } else {
+            handle_local_mapping_tet(
+                V_before,
+                T_before,
+                id_map_before,
+                v_id_map_before,
+                V_after,
+                T_after,
+                id_map_after,
+                v_id_map_after,
+                query_points);
+        }
+    }
+}
+
+void track_point_tet(
+    path dirPath,
+    std::vector<query_point_tet>& query_points,
+    bool do_forward = false,
+    bool use_rational = false)
+{
+    namespace fs = std::filesystem;
+    int maxIndex = -1;
+
+    for (const auto& entry : fs::directory_iterator(dirPath)) {
+        if (entry.path().filename().string().find("operation_log_") != std::string::npos) {
+            ++maxIndex;
+        }
+    }
+
+    for (int i = maxIndex; i >= 0; --i) {
+        int file_id = i;
+        if (do_forward) {
+            file_id = maxIndex - i;
+        }
+
+        fs::path filePath = dirPath / ("operation_log_" + std::to_string(file_id) + ".json");
+        std::ifstream file(filePath);
+        if (!file.is_open()) {
+            std::cerr << "Failed to open file: " << filePath << std::endl;
+            continue;
+        }
+        json operation_log;
+        file >> operation_log;
+
+        std::cout << "Trace Operations number: " << file_id << std::endl;
+        track_point_one_operation_tet(operation_log, query_points, do_forward, use_rational);
+
+        file.close();
     }
 }
 
