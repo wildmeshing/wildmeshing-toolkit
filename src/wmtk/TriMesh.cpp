@@ -5,6 +5,7 @@
 #include <wmtk/autogen/tri_mesh/is_ccw.hpp>
 #include <wmtk/autogen/tri_mesh/local_switch_tuple.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include "wmtk/autogen/tri_mesh/get_tuple_from_simplex_local_id.hpp"
 
 namespace wmtk {
 
@@ -291,12 +292,7 @@ Tuple TriMesh::vertex_tuple_from_id(int64_t id) const
     auto fv = m_fv_accessor->index_access().const_vector_attribute<3>(f);
     for (int64_t i = 0; i < 3; ++i) {
         if (fv(i) == id) {
-            assert(autogen::tri_mesh::auto_2d_table_complete_vertex[i][0] == i);
-            const int64_t leid = autogen::tri_mesh::auto_2d_table_complete_vertex[i][1];
-            Tuple v_tuple = Tuple(i, leid, -1, f);
-            // accessor as parameter
-            assert(is_ccw(v_tuple)); // is_ccw also checks for validity
-            return v_tuple;
+            return autogen::tri_mesh::get_tuple_from_simplex_local_vertex_id(i, f);
         }
     }
     assert(false); // "vertex_tuple_from_id failed"
@@ -310,14 +306,7 @@ Tuple TriMesh::edge_tuple_from_id(int64_t id) const
     auto fe = m_fe_accessor->index_access().const_vector_attribute<3>(f);
     for (int64_t i = 0; i < 3; ++i) {
         if (fe(i) == id) {
-            assert(autogen::tri_mesh::auto_2d_table_complete_edge[i][1] == i);
-            const int64_t lvid = autogen::tri_mesh::auto_2d_table_complete_edge[i][0];
-
-
-            Tuple e_tuple = Tuple(lvid, i, -1, f);
-            assert(is_ccw(e_tuple));
-            assert(is_valid(e_tuple));
-            return e_tuple;
+            return autogen::tri_mesh::get_tuple_from_simplex_local_edge_id(i, f);
         }
     }
     assert(false); // "edge_tuple_from_id failed"

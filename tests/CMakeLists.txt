@@ -59,7 +59,6 @@ target_link_libraries(wmtk_test_tools PUBLIC
 set(TEST_SOURCES
     test_topology.cpp
     test_mesh.cpp
-    test_autogen.cpp
     test_tuple.cpp
     test_tuple_1d.cpp
     test_tuple_2d.cpp
