@@ -1,9 +1,9 @@
 {
     "input": {
-        "path": "unit_test/meshes/camel.msh",
+        "path": "multimesh/camel.hdf5",
         "name_spec": {"pos": "uv"}
     },
-        "position_attribute": "vertices",
+        "position_attribute": "pos/vertices",
         "iterations": 30,
         "length_rel": 0.01,
         "lock_boundary": true,

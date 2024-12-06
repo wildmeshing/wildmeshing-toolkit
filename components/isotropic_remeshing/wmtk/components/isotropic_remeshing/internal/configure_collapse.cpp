@@ -57,6 +57,7 @@ std::shared_ptr<invariants::InvariantCollection> collapse_invariants(
         length_min * length_min);
     ic->add(invariant_max_edge_length);
 
+    /*
 
     // hack for uv
     if (options.fix_uv_seam) {
@@ -74,6 +75,7 @@ std::shared_ptr<invariants::InvariantCollection> collapse_invariants(
         auto invariant_interior_edge = std::make_shared<invariants::InvariantCollection>(m);
         ic->add(invariant_interior_edge);
     }
+    */
     return ic;
 }
 

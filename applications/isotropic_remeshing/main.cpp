@@ -86,12 +86,19 @@ int main(int argc, char* argv[])
     }
 
 
+    if(!mc.is_valid()) {
+        wmtk::logger().error("Input mesh did not match the name specification, going to throw an exception to help debugging");
+        mc.is_valid(true);
+    }
+
     wmtk::components::isotropic_remeshing::IsotropicRemeshingOptions options;
 
     options.load_json(j);
 
     options.position_attribute =
         wmtk::components::multimesh::utils::get_attribute(mc, j["position_attribute"]);
+
+    assert(options.position_attribute.is_valid());
 
     if (j.contains("inversion_position_attribute")) {
         options.inversion_position_attribute = wmtk::components::multimesh::utils::get_attribute(
