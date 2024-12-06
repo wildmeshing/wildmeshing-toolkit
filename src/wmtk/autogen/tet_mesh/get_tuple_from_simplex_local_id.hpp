@@ -14,15 +14,7 @@ inline Tuple get_tuple_from_simplex_local_vertex_id(int8_t local_id, int64_t glo
     assert(local_id < 4);
     const auto& arr = autogen::tet_mesh::auto_3d_table_complete_vertex[local_id];
     const auto& [lvid, leid, lfid] = arr;
-    assert(lvid == local_id);
-
-
-    if (lvid < 0 || leid < 0 || lfid < 0) {
-        throw std::runtime_error("tuple_from_vertex_id failed");
-    }
     Tuple tuple = Tuple(lvid, leid, lfid, global_id);
-    // accessor as parameter
-    assert(is_ccw(tuple)); // is_ccw also checks for validity
     return tuple;
 }
 inline Tuple get_tuple_from_simplex_local_edge_id(int8_t local_id, int64_t global_id)
@@ -31,15 +23,7 @@ inline Tuple get_tuple_from_simplex_local_edge_id(int8_t local_id, int64_t globa
     assert(local_id < 6);
     const auto& arr = autogen::tet_mesh::auto_3d_table_complete_edge[local_id];
     const auto& [lvid, leid, lfid] = arr;
-    assert(leid == local_id);
-
-
-    if (lvid < 0 || leid < 0 || lfid < 0) {
-        throw std::runtime_error("tuple_from_edge_id failed");
-    }
     Tuple tuple = Tuple(lvid, leid, lfid, global_id);
-    // accessor as parameter
-    assert(is_ccw(tuple)); // is_ccw also checks for validity
     return tuple;
 }
 inline Tuple get_tuple_from_simplex_local_face_id(int8_t local_id, int64_t global_id)
@@ -48,15 +32,7 @@ inline Tuple get_tuple_from_simplex_local_face_id(int8_t local_id, int64_t globa
     assert(local_id < 4);
     const auto& arr = autogen::tet_mesh::auto_3d_table_complete_face[local_id];
     const auto& [lvid, leid, lfid] = arr;
-    assert(lfid == local_id);
-
-
-    if (lvid < 0 || leid < 0 || lfid < 0) {
-        throw std::runtime_error("tuple_from_face_id failed");
-    }
     Tuple tuple = Tuple(lvid, leid, lfid, global_id);
-    // accessor as parameter
-    assert(is_ccw(tuple)); // is_ccw also checks for validity
     return tuple;
 }
 inline Tuple get_tuple_from_simplex_local_id(PrimitiveType pt, int8_t local_id, int64_t global_fid)
