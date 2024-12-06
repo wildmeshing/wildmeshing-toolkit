@@ -1,5 +1,9 @@
 var NAVTREEINDEX21 =
 {
+"make__unique_8cpp.html#a4574c04349610938cff950c33e8033c2":[10,0,2,0,7,2,0,1],
+"make__unique_8cpp.html#accca10e19c43ac50ef093dceba76e556":[10,0,2,0,7,2,0,0],
+"make__unique_8cpp_source.html":[10,0,2,0,7,2,0],
+"make__unique_8hpp.html":[10,0,2,0,7,2,1],
 "make__unique_8hpp.html#a4574c04349610938cff950c33e8033c2":[10,0,2,0,7,2,1,1],
 "make__unique_8hpp.html#accca10e19c43ac50ef093dceba76e556":[10,0,2,0,7,2,1,0],
 "make__unique_8hpp_source.html":[10,0,2,0,7,2,1],
@@ -157,8 +161,8 @@ var NAVTREEINDEX21 =
 "namespacemembers_enum.html":[8,1,4],
 "namespacemembers_eval.html":[8,1,5],
 "namespacemembers_f.html":[8,1,0,5],
-"namespacemembers_func.html":[8,1,1,0],
 "namespacemembers_func.html":[8,1,1],
+"namespacemembers_func.html":[8,1,1,0],
 "namespacemembers_func_b.html":[8,1,1,1],
 "namespacemembers_func_c.html":[8,1,1,2],
 "namespacemembers_func_d.html":[8,1,1,3],
@@ -245,9 +249,5 @@ var NAVTREEINDEX21 =
 "namespacewmtk.html#a6ce769f4c1328170db11e553c05deb3c":[8,0,10,85],
 "namespacewmtk.html#a6e1c6430b3ab10597053a0dc742daffa":[8,0,10,59],
 "namespacewmtk.html#a71c70b23475a8313d0109f43cae0ca43":[8,0,10,97],
-"namespacewmtk.html#a731bef3001a94ad9a5fa2dcdeec43dcc":[8,0,10,63],
-"namespacewmtk.html#a74159b2980a810f63934969e068e93fe":[8,0,10,96],
-"namespacewmtk.html#a79cca18cd26ba3e868151125118d25a2":[8,0,10,115],
-"namespacewmtk.html#a7a8dda70f25e9761964aadcefbbd88a9":[8,0,10,51],
-"namespacewmtk.html#a7cd29ea3ae1ea8514a37f9cca2bfdf99":[8,0,10,67]
+"namespacewmtk.html#a731bef3001a94ad9a5fa2dcdeec43dcc":[8,0,10,63]
 };

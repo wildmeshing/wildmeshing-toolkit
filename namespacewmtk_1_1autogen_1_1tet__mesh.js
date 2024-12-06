@@ -5,6 +5,10 @@ var namespacewmtk_1_1autogen_1_1tet__mesh =
       [ "switch_primitive_to_valid_tuple_index", "namespacewmtk_1_1autogen_1_1tet__mesh_1_1internal.html#a4fbbf52081facf6ec267ed45fb93c0c9", null ]
     ] ],
     [ "SimplexDart", "classwmtk_1_1autogen_1_1tet__mesh_1_1_simplex_dart.html", "classwmtk_1_1autogen_1_1tet__mesh_1_1_simplex_dart" ],
+    [ "get_tuple_from_simplex_local_edge_id", "namespacewmtk_1_1autogen_1_1tet__mesh.html#a50eff5fc77ad4dfae58652fc90962a67", null ],
+    [ "get_tuple_from_simplex_local_face_id", "namespacewmtk_1_1autogen_1_1tet__mesh.html#a64fc7d3a4d78cb72a252766d82d635ff", null ],
+    [ "get_tuple_from_simplex_local_id", "namespacewmtk_1_1autogen_1_1tet__mesh.html#ae91463a7afc70d11e43474d6f4ca866f", null ],
+    [ "get_tuple_from_simplex_local_vertex_id", "namespacewmtk_1_1autogen_1_1tet__mesh.html#ad9ca32a4ca77c1eb80946322d8a432db", null ],
     [ "is_ccw", "namespacewmtk_1_1autogen_1_1tet__mesh.html#a4243da89f13477619412eb6b6820fd7f", null ],
     [ "local_id_table_offset", "namespacewmtk_1_1autogen_1_1tet__mesh.html#ace6b80b1be9aec0d6a5ac5d144b40965", null ],
     [ "local_switch_tuple", "namespacewmtk_1_1autogen_1_1tet__mesh.html#a3742632b545c5a67fda78a6b4112cc9a", null ],

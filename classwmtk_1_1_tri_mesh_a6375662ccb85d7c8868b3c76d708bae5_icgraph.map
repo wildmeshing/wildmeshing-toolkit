@@ -1,42 +1,40 @@
 <map id="wmtk::TriMesh::is_connectivity_valid" name="wmtk::TriMesh::is_connectivity_valid">
-<area shape="rect" id="node1" title=" " alt="" coords="2120,1177,2343,1218"/>
-<area shape="rect" id="node2" href="$classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#a96647e9413f2b7e13dd17f02cf29b12d" title="Create a manifold mesh from the substructure." alt="" coords="1843,1132,2062,1188"/>
-<area shape="rect" id="node9" href="$classwmtk_1_1_tri_mesh.html#a611704f60f24669e957325c7cb79f200" title="check validity of tuple including its hash" alt="" coords="1865,856,2040,883"/>
-<area shape="rect" id="node38" href="$namespacewmtk_1_1components_1_1isotropic__remeshing.html#a5bcab5e634086e092020a2edb03a010b" title=" " alt="" coords="1833,1213,2072,1254"/>
-<area shape="rect" id="node40" href="$test__component__isotropic__remeshing_8cpp.html#aceca2caa1612565bd919bd8cf0ea0232" title=" " alt="" coords="1905,1279,2000,1306"/>
-<area shape="rect" id="node3" href="$namespacewmtk_1_1components.html#a1d95b8c424d645d432babf8ba5765e36" title=" " alt="" coords="5,812,192,853"/>
-<area shape="rect" id="node4" href="$namespacewmtk_1_1components.html#ac309092566399cef68679a1bb8107d1e" title="Generate a multi&#45;mesh from a mesh with a tag that represents the substructure, the mesh is changed." alt="" coords="1552,1205,1777,1246"/>
-<area shape="rect" id="node6" href="$namespacewmtk_1_1components.html#a4166e4880553cfacbf79ac3515a637cd" title=" " alt="" coords="1561,1270,1768,1312"/>
-<area shape="rect" id="node7" href="$test__component__multimesh__from__tag_8cpp.html#a18cd3d411cfadc472201c20662d62869" title=" " alt="" coords="1617,1088,1712,1115"/>
-<area shape="rect" id="node8" href="$namespacewmtk_1_1components_1_1triangle__insertion.html#a23509bfe845d018ac65e2759fb77c608" title=" " alt="" coords="1561,1140,1769,1181"/>
-<area shape="rect" id="node5" href="$test__component__multimesh__from__tag_8cpp.html#a2b0208caf4b963a36a43604c3e7cf34a" title=" " alt="" coords="1365,1212,1460,1239"/>
-<area shape="rect" id="node10" href="$classwmtk_1_1_tri_mesh.html#ae68edb47957a4207ffb2e40f2f3686a8" title=" " alt="" coords="1334,972,1491,1013"/>
-<area shape="rect" id="node12" href="$classwmtk_1_1_tri_mesh.html#a16693e4d11c3791da89396b412ae48db" title=" " alt="" coords="1336,906,1489,948"/>
-<area shape="rect" id="node13" href="$classwmtk_1_1_tri_mesh.html#ac603f7969b10c674eb00e007a507a530" title=" " alt="" coords="1039,83,1281,110"/>
-<area shape="rect" id="node20" href="$classwmtk_1_1_tri_mesh.html#accbde91fccacdfdfd997e20d9ee9eb22" title="TODO this needs dimension?" alt="" coords="1581,806,1749,832"/>
-<area shape="rect" id="node24" href="$classwmtk_1_1_tri_mesh.html#a17b808a46d1a31efc12d555e6721bd02" title="switch the orientation of the Tuple of the given dimension" alt="" coords="1329,550,1496,592"/>
-<area shape="rect" id="node37" href="$classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html#aac119196791985369035cec5059809fd" title=" " alt="" coords="1544,958,1785,1014"/>
-<area shape="rect" id="node11" href="$classwmtk_1_1_tri_mesh.html#a359c853dd0fa71a15fc8fc24837e0325" title="internal function that returns the tuple of requested type, and has the global index cid" alt="" coords="1081,906,1239,948"/>
-<area shape="rect" id="node14" href="$classwmtk_1_1_tri_mesh.html#a2e568aaaffd6e68904c5cecd8256ed93" title="check if a simplex (encoded as a tuple/primitive pair) lies on a boundary or not" alt="" coords="497,239,701,266"/>
-<area shape="rect" id="node16" href="$namespacewmtk_1_1simplex.html#aad86388bdc8c1685d7d55fad016f0ca2" title=" " alt="" coords="267,148,418,189"/>
-<area shape="rect" id="node17" href="$classwmtk_1_1_tri_mesh.html#a1d5d124897281d6a649098213173fdb5" title=" " alt="" coords="769,236,973,277"/>
-<area shape="rect" id="node19" href="$test__component__isotropic__remeshing_8cpp.html#a9e0dd9408a6fe42f1fb8e8764f740dda" title=" " alt="" coords="824,32,919,59"/>
-<area shape="rect" id="node15" href="$namespacewmtk_1_1components_1_1internal.html#abdf0e65326bccb762e8182f1329f3fe8" title=" " alt="" coords="240,600,445,641"/>
-<area shape="rect" id="node18" href="$classwmtk_1_1function_1_1_edge_valence_energy.html#af25dd9d07e1f9d18c92c7a3395f271c1" title="This function is defined over a simplex (normally a triangle or tetrahedron)." alt="" coords="493,345,704,386"/>
-<area shape="rect" id="node21" href="$classwmtk_1_1_simplex_inversion_invariant.html#a1163728175bfbd4dc26f4861019ee591" title="we assume with local vid order (v0,v1,v2,v3) has positive volume (orient3d(v0,v1,v2,..." alt="" coords="1041,732,1279,773"/>
-<area shape="rect" id="node22" href="$namespacewmtk_1_1mesh__utils.html#ace9d707a188783f870a878d0623418d0" title="compute the normalized vertex normal from the incident area weighted face normals" alt="" coords="497,534,700,576"/>
-<area shape="rect" id="node36" href="$classwmtk_1_1_tri_mesh.html#a6165486fcd93cad88ad55456bd7efbba" title=" " alt="" coords="1329,841,1496,882"/>
-<area shape="rect" id="node23" href="$classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth.html#a6bdafc81c42b34cdafe1b229217d819c" title=" " alt="" coords="242,519,443,575"/>
-<area shape="rect" id="node25" href="$classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#abde449107fdbb8d53b331d0071109a33" title=" " alt="" coords="1060,651,1260,707"/>
-<area shape="rect" id="node28" href="$namespacewmtk_1_1simplex.html#a3b3266f811539b7df8d85a51552bc1f7" title=" " alt="" coords="501,118,696,160"/>
-<area shape="rect" id="node29" href="$classwmtk_1_1_tri_mesh.html#a79010f8baac63245558c846aafea10d0" title=" " alt="" coords="1057,367,1263,394"/>
-<area shape="rect" id="node34" href="$classwmtk_1_1_tri_mesh.html#a0ecb0fd199e840ff9f3d206abc10a64b" title=" " alt="" coords="1059,279,1261,306"/>
-<area shape="rect" id="node35" href="$classwmtk_1_1_tri_mesh.html#ada97686704b8c13ca21853028a4074b8" title=" " alt="" coords="1077,509,1243,550"/>
-<area shape="rect" id="node26" href="$classwmtk_1_1operations_1_1tri__mesh_1_1_split_new_attribute_topo_info.html#a5f44117bceeaae70d0c4b87f7db7af0a" title=" " alt="" coords="762,651,981,707"/>
-<area shape="rect" id="node27" href="$classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_topo_info.html#ad62f4f6e69a6bb038ae1cfd3021e8f4a" title=" " alt="" coords="764,731,979,787"/>
-<area shape="rect" id="node30" href="$namespacewmtk_1_1mesh__utils.html#a07c6f8b4fe4d3bf868a521ac66aee027" title="compute area vector of face" alt="" coords="765,484,978,525"/>
-<area shape="rect" id="node32" href="$classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a17977fc07ce1f6618c8dd6e5cef42e6e" title="gather all simplices that are deleted in a collapse" alt="" coords="752,352,991,408"/>
-<area shape="rect" id="node33" href="$namespacewmtk_1_1simplex.html#a57782c66cdc76e978dfac308de1edd1b" title=" " alt="" coords="776,302,967,328"/>
-<area shape="rect" id="node31" href="$namespacewmtk_1_1mesh__utils.html#a05b2e8377c52bd2da29a3b2c38bef90d" title="compute the normalized face normal based on the vertex positions" alt="" coords="497,469,700,510"/>
-<area shape="rect" id="node39" href="$test__component__isotropic__remeshing_8cpp.html#a51ae85bc413e9940267e8a366e0bcc9f" title=" " alt="" coords="1617,1336,1712,1363"/>
+<area shape="rect" id="node1" title=" " alt="" coords="2120,1027,2343,1069"/>
+<area shape="rect" id="node2" href="$classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#a96647e9413f2b7e13dd17f02cf29b12d" title="Create a manifold mesh from the substructure." alt="" coords="1843,983,2062,1039"/>
+<area shape="rect" id="node9" href="$classwmtk_1_1_tri_mesh.html#a611704f60f24669e957325c7cb79f200" title="check validity of tuple including its hash" alt="" coords="1865,693,2040,720"/>
+<area shape="rect" id="node36" href="$namespacewmtk_1_1components_1_1isotropic__remeshing.html#a5bcab5e634086e092020a2edb03a010b" title=" " alt="" coords="1833,1063,2072,1105"/>
+<area shape="rect" id="node38" href="$test__component__isotropic__remeshing_8cpp.html#aceca2caa1612565bd919bd8cf0ea0232" title=" " alt="" coords="1905,1129,2000,1156"/>
+<area shape="rect" id="node3" href="$namespacewmtk_1_1components.html#a1d95b8c424d645d432babf8ba5765e36" title=" " alt="" coords="5,774,192,815"/>
+<area shape="rect" id="node4" href="$namespacewmtk_1_1components.html#ac309092566399cef68679a1bb8107d1e" title="Generate a multi&#45;mesh from a mesh with a tag that represents the substructure, the mesh is changed." alt="" coords="1552,1055,1777,1097"/>
+<area shape="rect" id="node6" href="$namespacewmtk_1_1components.html#a4166e4880553cfacbf79ac3515a637cd" title=" " alt="" coords="1561,1121,1768,1162"/>
+<area shape="rect" id="node7" href="$test__component__multimesh__from__tag_8cpp.html#a18cd3d411cfadc472201c20662d62869" title=" " alt="" coords="1617,888,1712,915"/>
+<area shape="rect" id="node8" href="$namespacewmtk_1_1components_1_1triangle__insertion.html#a23509bfe845d018ac65e2759fb77c608" title=" " alt="" coords="1561,990,1769,1031"/>
+<area shape="rect" id="node5" href="$test__component__multimesh__from__tag_8cpp.html#a2b0208caf4b963a36a43604c3e7cf34a" title=" " alt="" coords="1365,1063,1460,1089"/>
+<area shape="rect" id="node10" href="$classwmtk_1_1_tri_mesh.html#a16693e4d11c3791da89396b412ae48db" title=" " alt="" coords="1336,873,1489,914"/>
+<area shape="rect" id="node12" href="$classwmtk_1_1_tri_mesh.html#ac603f7969b10c674eb00e007a507a530" title=" " alt="" coords="1039,107,1281,133"/>
+<area shape="rect" id="node19" href="$classwmtk_1_1_tri_mesh.html#accbde91fccacdfdfd997e20d9ee9eb22" title="TODO this needs dimension?" alt="" coords="1581,763,1749,789"/>
+<area shape="rect" id="node23" href="$classwmtk_1_1_tri_mesh.html#a17b808a46d1a31efc12d555e6721bd02" title="switch the orientation of the Tuple of the given dimension" alt="" coords="1329,617,1496,658"/>
+<area shape="rect" id="node35" href="$classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html#aac119196791985369035cec5059809fd" title=" " alt="" coords="1544,485,1785,541"/>
+<area shape="rect" id="node11" href="$classwmtk_1_1_tri_mesh.html#a359c853dd0fa71a15fc8fc24837e0325" title="internal function that returns the tuple of requested type, and has the global index cid" alt="" coords="1081,873,1239,914"/>
+<area shape="rect" id="node13" href="$classwmtk_1_1_tri_mesh.html#a2e568aaaffd6e68904c5cecd8256ed93" title="check if a simplex (encoded as a tuple/primitive pair) lies on a boundary or not" alt="" coords="497,275,701,301"/>
+<area shape="rect" id="node15" href="$namespacewmtk_1_1simplex.html#aad86388bdc8c1685d7d55fad016f0ca2" title=" " alt="" coords="267,179,418,221"/>
+<area shape="rect" id="node16" href="$classwmtk_1_1_tri_mesh.html#a1d5d124897281d6a649098213173fdb5" title=" " alt="" coords="769,259,973,301"/>
+<area shape="rect" id="node18" href="$test__component__isotropic__remeshing_8cpp.html#a9e0dd9408a6fe42f1fb8e8764f740dda" title=" " alt="" coords="824,5,919,32"/>
+<area shape="rect" id="node14" href="$namespacewmtk_1_1components_1_1internal.html#abdf0e65326bccb762e8182f1329f3fe8" title=" " alt="" coords="240,623,445,665"/>
+<area shape="rect" id="node17" href="$classwmtk_1_1function_1_1_edge_valence_energy.html#af25dd9d07e1f9d18c92c7a3395f271c1" title="This function is defined over a simplex (normally a triangle or tetrahedron)." alt="" coords="493,377,704,418"/>
+<area shape="rect" id="node20" href="$classwmtk_1_1_simplex_inversion_invariant.html#a1163728175bfbd4dc26f4861019ee591" title="we assume with local vid order (v0,v1,v2,v3) has positive volume (orient3d(v0,v1,v2,..." alt="" coords="1041,755,1279,797"/>
+<area shape="rect" id="node21" href="$namespacewmtk_1_1mesh__utils.html#ace9d707a188783f870a878d0623418d0" title="compute the normalized vertex normal from the incident area weighted face normals" alt="" coords="497,558,700,599"/>
+<area shape="rect" id="node22" href="$classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth.html#a6bdafc81c42b34cdafe1b229217d819c" title=" " alt="" coords="242,543,443,599"/>
+<area shape="rect" id="node24" href="$classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#abde449107fdbb8d53b331d0071109a33" title=" " alt="" coords="1060,675,1260,731"/>
+<area shape="rect" id="node27" href="$namespacewmtk_1_1simplex.html#a3b3266f811539b7df8d85a51552bc1f7" title=" " alt="" coords="501,209,696,250"/>
+<area shape="rect" id="node28" href="$classwmtk_1_1_tri_mesh.html#a79010f8baac63245558c846aafea10d0" title=" " alt="" coords="1057,405,1263,432"/>
+<area shape="rect" id="node33" href="$classwmtk_1_1_tri_mesh.html#a0ecb0fd199e840ff9f3d206abc10a64b" title=" " alt="" coords="1059,311,1261,337"/>
+<area shape="rect" id="node34" href="$classwmtk_1_1_tri_mesh.html#ada97686704b8c13ca21853028a4074b8" title=" " alt="" coords="1077,533,1243,574"/>
+<area shape="rect" id="node25" href="$classwmtk_1_1operations_1_1tri__mesh_1_1_split_new_attribute_topo_info.html#a5f44117bceeaae70d0c4b87f7db7af0a" title=" " alt="" coords="762,675,981,731"/>
+<area shape="rect" id="node26" href="$classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_topo_info.html#ad62f4f6e69a6bb038ae1cfd3021e8f4a" title=" " alt="" coords="764,755,979,811"/>
+<area shape="rect" id="node29" href="$namespacewmtk_1_1mesh__utils.html#a07c6f8b4fe4d3bf868a521ac66aee027" title="compute area vector of face" alt="" coords="765,507,978,549"/>
+<area shape="rect" id="node31" href="$classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a17977fc07ce1f6618c8dd6e5cef42e6e" title="gather all simplices that are deleted in a collapse" alt="" coords="752,325,991,381"/>
+<area shape="rect" id="node32" href="$namespacewmtk_1_1simplex.html#a57782c66cdc76e978dfac308de1edd1b" title=" " alt="" coords="776,405,967,432"/>
+<area shape="rect" id="node30" href="$namespacewmtk_1_1mesh__utils.html#a05b2e8377c52bd2da29a3b2c38bef90d" title="compute the normalized face normal based on the vertex positions" alt="" coords="497,493,700,534"/>
+<area shape="rect" id="node37" href="$test__component__isotropic__remeshing_8cpp.html#a51ae85bc413e9940267e8a366e0bcc9f" title=" " alt="" coords="1617,1187,1712,1213"/>
 </map>

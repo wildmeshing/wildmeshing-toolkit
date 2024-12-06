@@ -133,6 +133,10 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:ab2181bbf6d736a5f2be421343615d2c3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1autogen_1_1edge__mesh.html#ab2181bbf6d736a5f2be421343615d2c3">get_tuple_from_simplex_local_vertex_id</a> (int8_t local_id, int64_t global_id)</td></tr>
+<tr class="separator:ab2181bbf6d736a5f2be421343615d2c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a89f2bbe9833a5808c43d7db32c1af9c3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1autogen_1_1edge__mesh.html#a89f2bbe9833a5808c43d7db32c1af9c3">get_tuple_from_simplex_local_id</a> (<a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> pt, int8_t local_id, int64_t global_fid)</td></tr>
+<tr class="separator:a89f2bbe9833a5808c43d7db32c1af9c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae81f8da85475a6ccd7e65b4350abe0dc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1autogen_1_1edge__mesh.html#ae81f8da85475a6ccd7e65b4350abe0dc">is_ccw</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
 <tr class="separator:ae81f8da85475a6ccd7e65b4350abe0dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afb3d180f181d8352f0abb21cac35788f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1autogen_1_1edge__mesh.html#afb3d180f181d8352f0abb21cac35788f">tuple_is_valid_for_ccw</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
@@ -177,6 +181,104 @@ Variables</h2></td></tr>
 <tr class="separator:aec20051bc7c7a8c4b980c4d7e453e029"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
+<a id="a89f2bbe9833a5808c43d7db32c1af9c3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a89f2bbe9833a5808c43d7db32c1af9c3">&#9670;&nbsp;</a></span>get_tuple_from_simplex_local_id()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> wmtk::autogen::edge_mesh::get_tuple_from_simplex_local_id </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a>&#160;</td>
+          <td class="paramname"><em>pt</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int8_t&#160;</td>
+          <td class="paramname"><em>local_id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>global_fid</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="edge__mesh_2get__tuple__from__simplex__local__id_8hpp_source.html#l00018">18</a> of file <a class="el" href="edge__mesh_2get__tuple__from__simplex__local__id_8hpp_source.html">get_tuple_from_simplex_local_id.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="edge__mesh_2get__tuple__from__simplex__local__id_8hpp_source.html#l00011">get_tuple_from_simplex_local_vertex_id()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1autogen_1_1edge__mesh_a89f2bbe9833a5808c43d7db32c1af9c3_cgraph.svg" width="418" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="ab2181bbf6d736a5f2be421343615d2c3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab2181bbf6d736a5f2be421343615d2c3">&#9670;&nbsp;</a></span>get_tuple_from_simplex_local_vertex_id()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> wmtk::autogen::edge_mesh::get_tuple_from_simplex_local_vertex_id </td>
+          <td>(</td>
+          <td class="paramtype">int8_t&#160;</td>
+          <td class="paramname"><em>local_id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>global_id</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="edge__mesh_2get__tuple__from__simplex__local__id_8hpp_source.html#l00011">11</a> of file <a class="el" href="edge__mesh_2get__tuple__from__simplex__local__id_8hpp_source.html">get_tuple_from_simplex_local_id.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="edge__mesh_2get__tuple__from__simplex__local__id_8hpp_source.html#l00018">get_tuple_from_simplex_local_id()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1autogen_1_1edge__mesh_ab2181bbf6d736a5f2be421343615d2c3_icgraph.svg" width="418" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
 <a id="ae81f8da85475a6ccd7e65b4350abe0dc"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae81f8da85475a6ccd7e65b4350abe0dc">&#9670;&nbsp;</a></span>is_ccw()</h2>
 
