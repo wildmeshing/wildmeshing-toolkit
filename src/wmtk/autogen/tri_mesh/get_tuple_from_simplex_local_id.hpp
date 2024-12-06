@@ -9,6 +9,9 @@
 namespace wmtk::autogen::tri_mesh {
     inline Tuple get_tuple_from_simplex_local_vertex_id(int8_t local_id, int64_t global_fid) {
 
+    assert(local_id >= 0);
+    assert(local_id < 3);
+
             assert(autogen::tri_mesh::auto_2d_table_complete_vertex[local_id][0] == local_id);
             const int64_t leid = autogen::tri_mesh::auto_2d_table_complete_vertex[local_id][1];
             Tuple v_tuple = Tuple(local_id, leid, -1, global_fid);
@@ -17,6 +20,8 @@ namespace wmtk::autogen::tri_mesh {
             return v_tuple;
     }
     inline Tuple get_tuple_from_simplex_local_edge_id(int8_t local_id, int64_t global_fid) {
+    assert(local_id >= 0);
+    assert(local_id < 3);
             assert(autogen::tri_mesh::auto_2d_table_complete_edge[local_id][1] == local_id);
             const int64_t lvid = autogen::tri_mesh::auto_2d_table_complete_edge[local_id][0];
 
