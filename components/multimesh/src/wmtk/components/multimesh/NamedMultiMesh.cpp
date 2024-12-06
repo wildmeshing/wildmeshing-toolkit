@@ -84,6 +84,27 @@ struct NamedMultiMesh::Node
             m_child_indexer.emplace(n, j);
         }
     }
+
+
+    std::vector<std::string> get_all_paths(const std::string_view& prefix = "") const
+    {
+        std::vector<std::string> paths;
+
+        std::string path;
+        if (prefix.empty()) {
+            path = this->name;
+        } else {
+            path = fmt::format("{}.{}", prefix, this->name);
+        }
+        paths.emplace_back(path);
+        for (const auto& c : m_children) {
+            auto n2 = c->get_all_paths(path);
+            std::copy(n2.begin(), n2.end(), std::back_inserter(paths));
+        }
+
+        return paths;
+    }
+
     friend void to_json(
         nlohmann::json& nlohmann_json_j,
         const NamedMultiMesh::Node& nlohmann_json_t)
@@ -243,7 +264,7 @@ void NamedMultiMesh::set_names(const nlohmann::json& js)
 
 void NamedMultiMesh::populate_default_names()
 {
-    if(!bool(m_name_root)) {
+    if (!bool(m_name_root)) {
         m_name_root = std::make_unique<Node>();
     }
     std::function<void(Node&, const Mesh& m)> sdn;
@@ -291,7 +312,7 @@ std::string NamedMultiMesh::get_name(const std::vector<int64_t>& id) const
     Node const* cur_mesh = m_name_root.get();
     names.emplace_back(root_name());
     for (const auto& index : id) {
-        cur_mesh = cur_mesh->m_children[index].get();
+        cur_mesh = cur_mesh->m_children.at(index).get();
         names.emplace_back(cur_mesh->name);
     }
     return fmt::format("{}", fmt::join(names, "."));
@@ -380,5 +401,45 @@ void NamedMultiMesh::append_child_mesh_names(const Mesh& parent, const NamedMult
         *cur_mesh->m_children[id] = *o.m_name_root;
     }
     cur_mesh->update_child_names();
+}
+bool NamedMultiMesh::is_valid(bool pass_exceptions) const
+{
+    // check that every mesh has a valid name
+    auto throw_or_except = [pass_exceptions](const auto& e) {
+        if (pass_exceptions) {
+            throw e;
+        }
+        return false;
+    };
+    for (const auto& mptr : m_root->get_all_meshes()) {
+        try {
+            wmtk::logger().trace(
+                "checking if NamedMultiMesh is valid for mesh with relative path [{}] and local "
+                "path [{}]",
+                fmt::join(get_id(*mptr), ","),
+                fmt::join(mptr->absolute_multi_mesh_id(), ","));
+            get_name(*mptr);
+        } catch (const std::range_error& e) {
+            return throw_or_except(e);
+        } catch (const std::runtime_error& e) {
+            return throw_or_except(e);
+        }
+    }
+
+    const auto all_paths = m_name_root->get_all_paths();
+    if (all_paths.empty()) {
+        nlohmann::json js = *m_name_root;
+        throw std::runtime_error("No paths exist in mesh");
+    }
+    for (const std::string& path : all_paths) {
+        try {
+            wmtk::logger().trace("checking if NamedMultiMesh is valid for path {}", path);
+            get_mesh(path);
+        } catch (const std::runtime_error& e) {
+            return throw_or_except(e);
+        }
+    }
+
+    return true;
 }
 } // namespace wmtk::components::multimesh

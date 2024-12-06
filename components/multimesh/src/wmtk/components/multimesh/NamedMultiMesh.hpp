@@ -63,6 +63,10 @@ public:
     std::string get_name(const Mesh& m) const;
 
 
+    // checks whether the meshes / nodes are synchronized. Passes thrown errors if desired
+    bool is_valid(bool pass_exceptions = false) const;
+
+
 private:
     struct Node;
     const Node& get_node(const std::vector<int64_t>& id) const;
