@@ -24,6 +24,7 @@
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributeHandle.hpp"
 #include "attribute/MeshAttributes.hpp"
+#include "attribute/FlagAccessor.hpp"
 #include "multimesh/attribute/AttributeScopeHandle.hpp"
 
 #include "multimesh/attribute/UseParentScopeRAII.hpp"
@@ -296,7 +297,7 @@ public:
 
 
     const attribute::Accessor<char> get_flag_accessor(PrimitiveType type) const;
-    const attribute::Accessor<char> get_const_flag_accessor(PrimitiveType type) const;
+    const attribute::FlagAccessor<Mesh> get_const_flag_accessor(PrimitiveType type) const;
 
 
     bool operator==(const Mesh& other) const;
