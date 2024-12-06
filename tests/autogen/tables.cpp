@@ -271,49 +271,51 @@ TEST_CASE("tuple_autogen_is_ccw", "[tuple]")
 TEST_CASE("tuple_autogen_from_id_is_ccw", "[tuple]")
 {
     for (int i = 0; i < 2; ++i) {
-        Tuple t = wmtk::autogen::edge_mesh::get_tuple_from_simplex_local_vertex_id(i);
+        Tuple t = wmtk::autogen::edge_mesh::get_tuple_from_simplex_local_vertex_id(i, 0);
         Tuple t2 =
-            wmtk::autogen::edge_mesh::get_tuple_from_simplex_local_id(PrimitiveType::Vertex, i);
+            wmtk::autogen::edge_mesh::get_tuple_from_simplex_local_id(PrimitiveType::Vertex, i, 0);
         CHECK(t == t2);
         CHECK(edge_mesh::tuple_is_valid_for_ccw(t));
         // edge mesh does not always have a ccw tuple for every simplex
         CHECK(edge_mesh::is_ccw(t) == (i == 0));
     }
     for (int i = 0; i < 3; ++i) {
-        Tuple t = wmtk::autogen::tri_mesh::get_tuple_from_simplex_local_vertex_id(i);
+        Tuple t = wmtk::autogen::tri_mesh::get_tuple_from_simplex_local_vertex_id(i, 0);
         Tuple t2 =
-            wmtk::autogen::tri_mesh::get_tuple_from_simplex_local_id(PrimitiveType::Vertex, i);
+            wmtk::autogen::tri_mesh::get_tuple_from_simplex_local_id(PrimitiveType::Vertex, i, 0);
         CHECK(t == t2);
         CHECK(tri_mesh::tuple_is_valid_for_ccw(t));
         CHECK(tri_mesh::is_ccw(t));
     }
     for (int i = 0; i < 3; ++i) {
-        Tuple t = wmtk::autogen::tri_mesh::get_tuple_from_simplex_local_edge_id(i);
-        Tuple t2 = wmtk::autogen::tri_mesh::get_tuple_from_simplex_local_id(PrimitiveType::Edge, i);
+        Tuple t = wmtk::autogen::tri_mesh::get_tuple_from_simplex_local_edge_id(i, 0);
+        Tuple t2 =
+            wmtk::autogen::tri_mesh::get_tuple_from_simplex_local_id(PrimitiveType::Edge, i, 0);
         CHECK(t == t2);
         CHECK(tri_mesh::tuple_is_valid_for_ccw(t));
         CHECK(tri_mesh::is_ccw(t));
     }
 
     for (int i = 0; i < 4; ++i) {
-        Tuple t = wmtk::autogen::tet_mesh::get_tuple_from_simplex_local_vertex_id(i);
+        Tuple t = wmtk::autogen::tet_mesh::get_tuple_from_simplex_local_vertex_id(i, 0);
         Tuple t2 =
-            wmtk::autogen::tet_mesh::get_tuple_from_simplex_local_id(PrimitiveType::Vertex, i);
+            wmtk::autogen::tet_mesh::get_tuple_from_simplex_local_id(PrimitiveType::Vertex, i, 0);
         CHECK(t == t2);
         CHECK(tet_mesh::tuple_is_valid_for_ccw(t));
         CHECK(tet_mesh::is_ccw(t));
     }
     for (int i = 0; i < 6; ++i) {
-        Tuple t = wmtk::autogen::tet_mesh::get_tuple_from_simplex_local_edge_id(i);
-        Tuple t2 = wmtk::autogen::tet_mesh::get_tuple_from_simplex_local_id(PrimitiveType::Edge, i);
+        Tuple t = wmtk::autogen::tet_mesh::get_tuple_from_simplex_local_edge_id(i, 0);
+        Tuple t2 =
+            wmtk::autogen::tet_mesh::get_tuple_from_simplex_local_id(PrimitiveType::Edge, i, 0);
         CHECK(t == t2);
         CHECK(tet_mesh::tuple_is_valid_for_ccw(t));
         CHECK(tet_mesh::is_ccw(t));
     }
     for (int i = 0; i < 4; ++i) {
-        Tuple t = wmtk::autogen::tet_mesh::get_tuple_from_simplex_local_face_id(i);
+        Tuple t = wmtk::autogen::tet_mesh::get_tuple_from_simplex_local_face_id(i, 0);
         Tuple t2 =
-            wmtk::autogen::tet_mesh::get_tuple_from_simplex_local_id(PrimitiveType::Triangle, i);
+            wmtk::autogen::tet_mesh::get_tuple_from_simplex_local_id(PrimitiveType::Triangle, i, 0);
         CHECK(t == t2);
         CHECK(tet_mesh::tuple_is_valid_for_ccw(t));
         CHECK(tet_mesh::is_ccw(t));
