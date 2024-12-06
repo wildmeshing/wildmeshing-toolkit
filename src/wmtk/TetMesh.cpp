@@ -3,6 +3,7 @@
 
 #include <wmtk/utils/tetmesh_topology_initialization.h>
 #include <numeric>
+#include <wmtk/autogen/tet_mesh/get_tuple_from_simplex_local_id.hpp>
 #include <wmtk/autogen/tet_mesh/is_ccw.hpp>
 #include <wmtk/autogen/tet_mesh/local_switch_tuple.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
@@ -162,13 +163,7 @@ Tuple TetMesh::vertex_tuple_from_id(int64_t id) const
         }
     }
 
-    const auto [nlvid, leid, lfid] = autogen::tet_mesh::auto_3d_table_complete_vertex[lvid];
-    assert(lvid == nlvid);
-
-    if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("vertex_tuple_from_id failed");
-
-    Tuple v_tuple = Tuple(lvid, leid, lfid, t);
-    assert(is_ccw(v_tuple));
+    Tuple v_tuple = autogen::tet_mesh::get_tuple_from_simplex_local_vertex_id(lvid, t);
     assert(is_valid(v_tuple));
     return v_tuple;
 }
@@ -186,14 +181,7 @@ Tuple TetMesh::edge_tuple_from_id(int64_t id) const
             break;
         }
     }
-    const auto [lvid, nleid, lfid] = autogen::tet_mesh::auto_3d_table_complete_edge[leid];
-    assert(leid == nleid);
-
-
-    if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("edge_tuple_from_id failed");
-
-    Tuple e_tuple = Tuple(lvid, leid, lfid, t);
-    assert(is_ccw(e_tuple));
+    Tuple e_tuple = autogen::tet_mesh::get_tuple_from_simplex_local_edge_id(leid, t);
     assert(is_valid(e_tuple));
     return e_tuple;
 }
@@ -212,13 +200,9 @@ Tuple TetMesh::face_tuple_from_id(int64_t id) const
         }
     }
 
-    const auto [lvid, leid, nlfid] = autogen::tet_mesh::auto_3d_table_complete_face[lfid];
-    assert(lfid == nlfid);
 
-    if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("face_tuple_from_id failed");
-
-    Tuple f_tuple = Tuple(lvid, leid, lfid, t);
-    assert(is_ccw(f_tuple));
+    assert(lfid >= 0);
+    Tuple f_tuple = autogen::tet_mesh::get_tuple_from_simplex_local_face_id(lfid, t);
     assert(is_valid(f_tuple));
     return f_tuple;
 }
