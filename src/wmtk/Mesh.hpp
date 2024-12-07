@@ -296,7 +296,7 @@ public:
     decltype(auto) parent_scope(Functor&& f, Args&&... args) const;
 
 
-    const attribute::Accessor<char> get_flag_accessor(PrimitiveType type) const;
+    const attribute::FlagAccessor<Mesh> get_flag_accessor(PrimitiveType type) const;
     const attribute::FlagAccessor<Mesh> get_const_flag_accessor(PrimitiveType type) const;
 
 
@@ -308,7 +308,7 @@ public:
     virtual std::vector<Tuple> orient_vertices(const Tuple& t) const = 0;
 
 protected: // member functions
-    attribute::Accessor<char> get_flag_accessor(PrimitiveType type);
+    attribute::FlagAccessor<> get_flag_accessor(PrimitiveType type);
 
 
 protected:
