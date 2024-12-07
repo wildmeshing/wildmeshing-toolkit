@@ -34,8 +34,7 @@ void DEBUG_TriMesh::print_vf() const
     auto f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
     for (int64_t id = 0; id < capacity(PrimitiveType::Triangle); ++id) {
         auto fv = fv_accessor.const_vector_attribute(id);
-        if (f_flag_accessor.const_scalar_attribute(tuple_from_id(PrimitiveType::Triangle, id)) ==
-            0) {
+        if (!f_flag_accessor.is_active(tuple_from_id(PrimitiveType::Triangle, id))) {
             std::cout << "face " << id << " is deleted" << std::endl;
         } else {
             std::cout << fv(0) << " " << fv(1) << " " << fv(2) << std::endl;
