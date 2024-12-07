@@ -99,6 +99,31 @@ public:
         operations::Operation& op,
         const TypedAttributeHandle<int64_t>& color_handle);
 
+    /**
+     * @brief Add vertex colors to perform vertex optimization in parallel.
+     *
+     * @param color_handle A vertex int64_t scalar attribute representing the color.
+     * @return number of colors
+     */
+    int64_t color_vertices(attribute::MeshAttributeHandle& color_handle);
+
+    /**
+     * @brief Run op on all vertices in parallel using the coloring.
+     *
+     * Potential race conditions!!!
+     * Attribute transfer applies changes to the entire closed star, which leads to race conditions
+     * for any transfer to edges or vertices. Do not use this function in that case!!!
+     *
+     * @param op The operation, must be of primitive type vertex.
+     * @param color_handle The attribute holding the vertex int64_t scalar coloring scheme.
+     * @param num_colors The number of different colors. If negative, the coloring is initialized.
+     */
+    SchedulerStats run_operation_on_all_with_coloring(
+        operations::Operation& op,
+        attribute::MeshAttributeHandle& color_handle,
+        int64_t num_colors = -1,
+        bool parallel_execution = true);
+
     const SchedulerStats& stats() const { return m_stats; }
 
     void set_update_frequency(std::optional<size_t>&& freq = {});

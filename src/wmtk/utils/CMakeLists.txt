@@ -21,6 +21,8 @@ set(SRC_FILES
     orient.hpp
     orient.cpp
 
+    tbb_parallel_for.hpp
+
     TupleInspector.cpp
     triangle_areas.hpp
     triangle_areas.cpp

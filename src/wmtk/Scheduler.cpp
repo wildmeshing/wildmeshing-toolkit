@@ -3,20 +3,14 @@
 #include <wmtk/attribute/TypedAttributeHandle.hpp>
 #include <wmtk/simplex/k_ring.hpp>
 #include <wmtk/simplex/link.hpp>
+#include <wmtk/simplex/link_single_dimension_iterable.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/random_seed.hpp>
+#include <wmtk/utils/tbb_parallel_for.hpp>
 
 #include <polysolve/Utils.hpp>
 
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wredundant-decls"
-#endif
-#include <tbb/parallel_for.h>
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
 
 // #include <tbb/task_arena.h>
 #include <atomic>
@@ -368,6 +362,136 @@ SchedulerStats Scheduler::run_operation_on_all_coloring(
     //     res.number_of_performed_operations(),
     //     res.number_of_successful_operations(),
     //     res.number_of_failed_operations());
+
+    m_stats += res;
+
+    return res;
+}
+
+int64_t Scheduler::color_vertices(attribute::MeshAttributeHandle& color_handle)
+{
+    if (color_handle.primitive_type() != PrimitiveType::Vertex) {
+        log_and_throw_error("Color handle must be of primitive type vertex.");
+    }
+    if (color_handle.held_type() != attribute::MeshAttributeHandle::HeldType::Int64) {
+        log_and_throw_error("Color handle must be of type int64_t.");
+    }
+    if (color_handle.dimension() != 1) {
+        log_and_throw_error("Color handle must be of dimension 1.");
+    }
+
+    Mesh& m = color_handle.mesh();
+
+    auto acc = m.create_accessor<int64_t>(color_handle);
+
+    const auto vertices = m.get_all(PrimitiveType::Vertex);
+    for (const Tuple& t : vertices) {
+        acc.scalar_attribute(t) = -1;
+    }
+
+    int64_t max_color = -1;
+
+    for (const Tuple& t : vertices) {
+        const simplex::Simplex v(m, PrimitiveType::Vertex, t);
+        auto link_vertices = simplex::link_single_dimension_iterable(m, v, PrimitiveType::Vertex);
+
+        std::vector<int64_t> neighbor_colors;
+
+        for (const Tuple& neighbor_tuple : link_vertices) {
+            // max_neighbor = std::max(acc.const_scalar_attribute(neighbor_tuple), max_neighbor);
+            const int64_t c = acc.const_scalar_attribute(neighbor_tuple);
+            if (c >= 0) {
+                neighbor_colors.emplace_back(c);
+            }
+        }
+        const int64_t t_color = first_available_color(neighbor_colors);
+
+        acc.scalar_attribute(t) = t_color;
+        max_color = std::max(max_color, t_color);
+    }
+
+
+    logger().info("{} vertices with {} different colors", vertices.size(), max_color + 1);
+
+    return max_color + 1;
+}
+
+SchedulerStats Scheduler::run_operation_on_all_with_coloring(
+    operations::Operation& op,
+    attribute::MeshAttributeHandle& color_handle,
+    int64_t num_colors,
+    bool parallel_execution)
+{
+    if (&op.mesh() != &color_handle.mesh()) {
+        log_and_throw_error("Operation and color handle do not belong to the same mesh!");
+    }
+    if (color_handle.primitive_type() != PrimitiveType::Vertex) {
+        log_and_throw_error("Color handle must be of primitive type vertex.");
+    }
+    if (color_handle.held_type() != attribute::MeshAttributeHandle::HeldType::Int64) {
+        log_and_throw_error("Color handle must be of type int64_t.");
+    }
+    if (color_handle.dimension() != 1) {
+        log_and_throw_error("Color handle must be of dimension 1.");
+    }
+
+    if (num_colors < 0) {
+        num_colors = color_vertices(color_handle);
+    }
+
+    Mesh& m = op.mesh();
+
+    auto color_acc = m.create_const_accessor<int64_t>(color_handle);
+
+    const auto vertices = m.get_all(op.primitive_type());
+
+    std::vector<std::vector<simplex::Simplex>> colored_vertices;
+    colored_vertices.resize(num_colors);
+
+    for (int64_t color = 0; color < num_colors; ++color) {
+        colored_vertices[color].reserve(vertices.size() / num_colors);
+    }
+
+    for (const Tuple& t : vertices) {
+        colored_vertices[color_acc.const_scalar_attribute(t)].emplace_back(
+            m,
+            op.primitive_type(),
+            t);
+    }
+
+    SchedulerStats res;
+
+    for (auto& one_color_vertices : colored_vertices) {
+        std::atomic_int suc_cnt = 0;
+        std::atomic_int fail_cnt = 0;
+
+        if (parallel_execution) {
+            tbb::parallel_for(
+                tbb::blocked_range<int64_t>(0, one_color_vertices.size()),
+                [&](tbb::blocked_range<int64_t> r) {
+                    for (int64_t k = r.begin(); k < r.end(); ++k) {
+                        auto mods = op(one_color_vertices[k]);
+                        if (mods.empty()) {
+                            fail_cnt++;
+                        } else {
+                            suc_cnt++;
+                        }
+                    }
+                });
+        } else {
+            for (const simplex::Simplex& s : one_color_vertices) {
+                auto mods = op(s);
+                if (mods.empty()) {
+                    fail_cnt++;
+                } else {
+                    suc_cnt++;
+                }
+            }
+        }
+
+        res.m_num_op_success = suc_cnt;
+        res.m_num_op_fail = fail_cnt;
+    }
 
     m_stats += res;
 
