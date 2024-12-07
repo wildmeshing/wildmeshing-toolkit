@@ -11,7 +11,7 @@ public:
     void delete_simplices();
     void update_cell_hash();
 
-    std::array<attribute::Accessor<char>, 4> flag_accessors;
+    std::array<attribute::FlagAccessor<TetMesh>, 4> flag_accessors;
     attribute::Accessor<int64_t,TetMesh>& tt_accessor;
     attribute::Accessor<int64_t,TetMesh>& tf_accessor;
     attribute::Accessor<int64_t,TetMesh>& te_accessor;

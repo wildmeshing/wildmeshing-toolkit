@@ -103,10 +103,11 @@ void TetMesh::initialize(
     auto te_accessor = create_accessor<int64_t>(m_te_handle);
     auto tf_accessor = create_accessor<int64_t>(m_tf_handle);
     auto tt_accessor = create_accessor<int64_t>(m_tt_handle);
-    attribute::Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
-    attribute::Accessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
-    attribute::Accessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
-    attribute::Accessor<char> t_flag_accessor = get_flag_accessor(PrimitiveType::Tetrahedron);
+    attribute::FlagAccessor<TetMesh> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
+    attribute::FlagAccessor<TetMesh> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
+    attribute::FlagAccessor<TetMesh> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
+    attribute::FlagAccessor<TetMesh> t_flag_accessor =
+        get_flag_accessor(PrimitiveType::Tetrahedron);
 
     // iterate over the matrices and fill attributes
     for (int64_t i = 0; i < capacity(PrimitiveType::Tetrahedron); ++i) {
@@ -114,22 +115,23 @@ void TetMesh::initialize(
         te_accessor.index_access().vector_attribute<6>(i) = TE.row(i).transpose();
         tf_accessor.index_access().vector_attribute<4>(i) = TF.row(i).transpose();
         tt_accessor.index_access().vector_attribute<4>(i) = TT.row(i).transpose();
-        t_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
+        t_flag_accessor.index_access().activate(i);
+        e_flag_accessor.index_access().activate(i);
     }
     // m_vt
     for (int64_t i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
         vt_accessor.index_access().scalar_attribute(i) = VT(i);
-        v_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
+        v_flag_accessor.index_access().activate(i);
     }
     // m_et
     for (int64_t i = 0; i < capacity(PrimitiveType::Edge); ++i) {
         et_accessor.index_access().scalar_attribute(i) = ET(i);
-        e_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
+        e_flag_accessor.index_access().activate(i);
     }
     // m_ft
     for (int64_t i = 0; i < capacity(PrimitiveType::Triangle); ++i) {
         ft_accessor.index_access().scalar_attribute(i) = FT(i);
-        f_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
+        f_flag_accessor.index_access().activate(i);
     }
 }
 
@@ -405,14 +407,17 @@ bool TetMesh::is_connectivity_valid() const
     const attribute::Accessor<int64_t> vt_accessor = create_const_accessor<int64_t>(m_vt_handle);
     const attribute::Accessor<int64_t> et_accessor = create_const_accessor<int64_t>(m_et_handle);
     const attribute::Accessor<int64_t> ft_accessor = create_const_accessor<int64_t>(m_ft_handle);
-    const attribute::Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
-    const attribute::Accessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
-    const attribute::Accessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
-    const attribute::Accessor<char> t_flag_accessor = get_flag_accessor(PrimitiveType::Tetrahedron);
+    const attribute::FlagAccessor<TetMesh> v_flag_accessor =
+        get_flag_accessor(PrimitiveType::Vertex);
+    const attribute::FlagAccessor<TetMesh> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
+    const attribute::FlagAccessor<TetMesh> f_flag_accessor =
+        get_flag_accessor(PrimitiveType::Triangle);
+    const attribute::FlagAccessor<TetMesh> t_flag_accessor =
+        get_flag_accessor(PrimitiveType::Tetrahedron);
 
     // VT and TV
     for (int64_t i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
-        if (v_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
+        if (!v_flag_accessor.index_access().is_active(i)) {
             wmtk::logger().debug("Vertex {} is deleted", i);
             continue;
         }
@@ -431,7 +436,7 @@ bool TetMesh::is_connectivity_valid() const
 
     // ET and TE
     for (int64_t i = 0; i < capacity(PrimitiveType::Edge); ++i) {
-        if (e_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
+        if (!e_flag_accessor.index_access().is_active(i)) {
             wmtk::logger().debug("Edge {} is deleted", i);
             continue;
         }
@@ -450,7 +455,7 @@ bool TetMesh::is_connectivity_valid() const
 
     // FT and TF
     for (int64_t i = 0; i < capacity(PrimitiveType::Triangle); ++i) {
-        if (f_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
+        if (!f_flag_accessor.index_access().is_active(i)) {
             wmtk::logger().debug("Face {} is deleted", i);
             continue;
         }
@@ -469,7 +474,7 @@ bool TetMesh::is_connectivity_valid() const
 
     // TF and TT
     for (int64_t i = 0; i < capacity(PrimitiveType::Tetrahedron); ++i) {
-        if (t_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
+        if (!t_flag_accessor.index_access().is_active(i)) {
             wmtk::logger().debug("Tet {} is deleted", i);
             continue;
         }
