@@ -33,14 +33,9 @@ std::vector<simplex::Simplex> AttributesUpdate::execute(const simplex::Simplex& 
     //
     // assert(!mesh().is_valid(simplex.tuple(), accessor));
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-    auto new_tuple = resurrect_tuple(simplex.tuple());
-#else
-    auto new_tuple = simplex.tuple();
-#endif
-    assert(mesh().is_valid(new_tuple));
+    assert(mesh().is_valid(simplex.tuple()));
 
-    return {simplex::Simplex(mesh(), primitive_type(), new_tuple)};
+    return {simplex};
 }
 
 AttributesUpdateWithFunction::AttributesUpdateWithFunction(Mesh& m)

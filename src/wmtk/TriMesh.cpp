@@ -370,6 +370,41 @@ bool TriMesh::is_connectivity_valid() const
     const attribute::FlagAccessor<TriMesh> f_flag_accessor =
         get_flag_accessor(PrimitiveType::Triangle);
 
+
+    for (int64_t i = 0; i < capacity(PrimitiveType::Triangle); ++i) {
+        if (!f_flag_accessor.index_access().is_active(i)) {
+            wmtk::logger().debug("Face {} is deleted", i);
+            continue;
+        }
+        auto fe = fe_accessor.index_access().const_vector_attribute<3>(i);
+        auto fv = fv_accessor.index_access().const_vector_attribute<3>(i);
+
+        bool bad_face = false;
+
+        for (int64_t j = 0; j < 3; ++j) {
+            int64_t ei = fe(j);
+            int64_t vi = fv(j);
+            if (!e_flag_accessor.index_access().is_active(ei)) {
+                wmtk::logger().debug(
+                    "Face {} refers to edge {} at local index {} which was deleted",
+                    i,
+                    ei,
+                    j);
+                bad_face = true;
+            }
+            if (!v_flag_accessor.index_access().is_active(vi)) {
+                wmtk::logger().debug(
+                    "Face {} refers to vertex{} at local index {} which was deleted",
+                    i,
+                    vi,
+                    j);
+                bad_face = true;
+            }
+        }
+        if (bad_face) {
+            return false;
+        }
+    }
     // EF and FE
     for (int64_t i = 0; i < capacity(PrimitiveType::Edge); ++i) {
         if (!e_flag_accessor.index_access().is_active(i)) {

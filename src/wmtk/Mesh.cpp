@@ -152,16 +152,7 @@ bool Mesh::is_removed(int64_t index, PrimitiveType pt) const
 
 bool Mesh::is_valid(const simplex::Simplex& s) const
 {
-#if defined(WMTK_ENABLE_SIMPLEX_ID_CACHING)
-    if (!is_valid(s.tuple())) {
-        return false;
-    } else {
-        const int64_t id_tuple = id(s.tuple(), s.primitive_type());
-        return id_tuple == s.m_index;
-    }
-#else
     return is_valid(s.tuple()) && !is_removed(s.tuple(), s.primitive_type());
-#endif
 }
 
 
