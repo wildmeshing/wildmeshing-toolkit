@@ -34,6 +34,7 @@ wmtk_register_integration_test(
     GIT_TAG 
     363f8e860673a4e4f68df6465b99e86809c96283
     CONFIG_PATH ${CMAKE_CURRENT_SOURCE_DIR}/examples
+
 )
 #
 #wmtk_register_integration_test(
