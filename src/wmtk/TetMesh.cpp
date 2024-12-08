@@ -421,9 +421,9 @@ bool TetMesh::is_connectivity_valid() const
             wmtk::logger().debug("Tet {} is deleted", i);
             continue;
         }
-        auto tf = tf_accessor.index_access().const_vector_attribute<3>(i);
-        auto te = te_accessor.index_access().const_vector_attribute<3>(i);
-        auto tv = tv_accessor.index_access().const_vector_attribute<3>(i);
+        auto tf = tf_accessor.index_access().const_vector_attribute<4>(i);
+        auto te = te_accessor.index_access().const_vector_attribute<6>(i);
+        auto tv = tv_accessor.index_access().const_vector_attribute<4>(i);
 
         bool bad_face = false;
         for (int64_t j = 0; j < 6; ++j) {
@@ -438,7 +438,7 @@ bool TetMesh::is_connectivity_valid() const
             }
         }
 
-        for (int64_t j = 0; j < 3; ++j) {
+        for (int64_t j = 0; j < 4; ++j) {
             int64_t vi = tv(j);
             int64_t fi = tf(j);
             if (!v_flag_accessor.index_access().is_active(vi)) {
