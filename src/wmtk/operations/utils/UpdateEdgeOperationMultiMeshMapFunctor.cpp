@@ -88,9 +88,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
 
 
                 //  check also the flag accessor of child mesh
-                const char child_flag =
-                    child_cell_flag_accessor.const_scalar_attribute(child_tuple);
-                bool child_tuple_exists = 1 == (child_flag & 1);
+                const bool child_tuple_exists = child_cell_flag_accessor.is_active(child_tuple);
                 if (!child_tuple_exists) {
                     continue;
                 }
@@ -184,9 +182,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     }
 
 
-                    const char child_flag =
-                        child_cell_flag_accessor.const_scalar_attribute(child_tuple);
-                    bool child_tuple_exists = 1 == (child_flag & 1);
+                    bool child_tuple_exists = child_cell_flag_accessor.is_active(child_tuple);
                     if (!child_tuple_exists) {
                         continue;
                     }
@@ -294,9 +290,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                         }
 
 
-                        const char child_flag =
-                            child_cell_flag_accessor.const_scalar_attribute(child_tuple);
-                        bool child_tuple_exists = 1 == (child_flag & 1);
+                        bool child_tuple_exists = child_cell_flag_accessor.is_active(child_tuple);
                         if (!child_tuple_exists) {
                             continue;
                         }

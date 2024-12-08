@@ -33,7 +33,7 @@ void DEBUG_EdgeMesh::print_ve() const
     auto e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
     for (int64_t id = 0; id < capacity(PrimitiveType::Edge); ++id) {
         auto ev = ev_accessor.const_vector_attribute(id);
-        if (e_flag_accessor.const_scalar_attribute(tuple_from_id(PrimitiveType::Edge, id)) == 0) {
+        if (!e_flag_accessor.is_active(tuple_from_id(PrimitiveType::Edge, id))) {
             std::cout << "edge " << id << " is deleted" << std::endl;
         } else {
             std::cout << ev(0) << " " << ev(1) << std::endl;
@@ -111,6 +111,6 @@ auto DEBUG_EdgeMesh::get_emoe(const Tuple& t) -> EdgeMeshOperationExecutor
 bool DEBUG_EdgeMesh::is_simplex_deleted(PrimitiveType type, const int64_t id) const
 {
     const auto flag_accessor = get_flag_accessor(type);
-    return flag_accessor.index_access().scalar_attribute(id) == 0;
+    return !flag_accessor.index_access().is_active(id) ;
 }
 } // namespace wmtk::tests

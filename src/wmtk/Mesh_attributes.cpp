@@ -47,8 +47,8 @@ std::vector<int64_t> Mesh::request_simplex_indices(PrimitiveType type, int64_t c
     int64_t current_capacity = capacity(type);
 
     // enable newly requested simplices
-    attribute::Accessor<char> flag_accessor = get_flag_accessor(type);
-    int64_t max_size = flag_accessor.reserved_size();
+    attribute::FlagAccessor<Mesh> flag_accessor = get_flag_accessor(type);
+    int64_t max_size = flag_accessor.base_accessor().reserved_size();
 
     if (current_capacity + count > max_size) {
         logger().warn(
@@ -71,11 +71,11 @@ std::vector<int64_t> Mesh::request_simplex_indices(PrimitiveType type, int64_t c
 
     m_attribute_manager.m_capacities[primitive_id] = new_capacity;
 
-    attribute::CachingAccessor<char>& flag_accessor_indices = flag_accessor.index_access();
+    attribute::IndexFlagAccessor<Mesh>& flag_accessor_indices = flag_accessor.index_access();
 
     for (const int64_t simplex_index : ret) {
         // wmtk::logger().trace("Activating {}-simplex {}", primitive_id, simplex_index);
-        flag_accessor_indices.scalar_attribute(simplex_index) |= 0x1;
+        flag_accessor_indices.activate(simplex_index);
     }
 
     return ret;
@@ -218,10 +218,10 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
 
     // Initialize both maps
     for (int64_t d = 0; d < tcp; d++) {
-        attribute::Accessor<char> flag_accessor =
+        attribute::FlagAccessor<Mesh> flag_accessor =
             get_flag_accessor(wmtk::get_primitive_type_from_id(d));
         for (int64_t i = 0; i < capacity(wmtk::get_primitive_type_from_id(d)); ++i) {
-            if (flag_accessor.index_access().scalar_attribute(i) & 1) {
+            if (flag_accessor.index_access().is_active(i)) {
                 old2new[d].push_back(new2old[d].size());
                 new2old[d].push_back(old2new[d].size() - 1); // -1 since we just pushed into it
             } else {
