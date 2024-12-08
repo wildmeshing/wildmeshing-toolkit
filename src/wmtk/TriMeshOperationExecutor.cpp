@@ -129,7 +129,7 @@ void TriMesh::TriMeshOperationExecutor::delete_simplices()
             d,
             fmt::join(simplex_ids_to_delete[d], ","));
         for (const int64_t id : simplex_ids_to_delete[d]) {
-            flag_accessors[d].index_access().scalar_attribute(id) = 0;
+            flag_accessors[d].index_access().deactivate(id);
         }
     }
 }

@@ -64,8 +64,8 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
 
         // CHECK_THROWS(m.tuple_from_id(PrimitiveType::Vertex, 4));
 
-        REQUIRE(face_flag_accessor.index_access().const_scalar_attribute(2) == 0);
-        REQUIRE(face_flag_accessor.index_access().const_scalar_attribute(7) == 0);
+        REQUIRE(face_flag_accessor.index_access().is_active(2) == false);
+        REQUIRE(face_flag_accessor.index_access().is_active(7) == false);
         CHECK(fv_accessor.vector_attribute(0)[1] == 5);
         CHECK(fv_accessor.vector_attribute(1)[0] == 5);
         CHECK(fv_accessor.vector_attribute(3)[0] == 5);
@@ -84,8 +84,8 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
 
         // CHECK_THROWS(m.tuple_from_id(PrimitiveType::Vertex, 4));
 
-        REQUIRE(face_flag_accessor.index_access().const_scalar_attribute(0) == 0);
-        REQUIRE(face_flag_accessor.index_access().const_scalar_attribute(1) == 0);
+        REQUIRE(face_flag_accessor.index_access().is_active(0) == false);
+        REQUIRE(face_flag_accessor.index_access().is_active(1) == false);
 
         CHECK(fv_accessor.vector_attribute(2)[0] == 0);
         CHECK(fv_accessor.vector_attribute(5)[2] == 0);
@@ -125,7 +125,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
 
         // CHECK_THROWS(m.tuple_from_id(PrimitiveType::Vertex, 0));
 
-        REQUIRE(face_flag_accessor.index_access().const_scalar_attribute(1) == 0);
+        REQUIRE(face_flag_accessor.index_access().is_active(1) == false);
 
         CHECK(fv_accessor.vector_attribute(0)[2] == 1);
     }
