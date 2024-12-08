@@ -11,7 +11,7 @@ public:
     void delete_simplices();
     void update_cell_hash();
 
-    std::array<attribute::Accessor<char>, 2> flag_accessors;
+    std::array<attribute::FlagAccessor<EdgeMesh>, 2> flag_accessors;
     attribute::Accessor<int64_t, EdgeMesh> ee_accessor;
     attribute::Accessor<int64_t, EdgeMesh> ev_accessor;
     attribute::Accessor<int64_t, EdgeMesh> ve_accessor;
