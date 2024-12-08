@@ -410,6 +410,53 @@ bool TetMesh::is_connectivity_valid() const
     const attribute::Accessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
     const attribute::Accessor<char> t_flag_accessor = get_flag_accessor(PrimitiveType::Tetrahedron);
 
+
+    for (int64_t i = 0; i < capacity(PrimitiveType::Tetrahedron); ++i) {
+        if (!t_flag_accessor.index_access().is_active(i)) {
+            wmtk::logger().debug("Tet {} is deleted", i);
+            continue;
+        }
+        auto tf = tf_accessor.index_access().const_vector_attribute<3>(i);
+        auto te = te_accessor.index_access().const_vector_attribute<3>(i);
+        auto tv = tv_accessor.index_access().const_vector_attribute<3>(i);
+
+        bool bad_face = false;
+        for (int64_t j = 0; j < 6; ++j) {
+            int64_t ei = te(j);
+            if (!e_flag_accessor.index_access().is_active(ei)) {
+                wmtk::logger().debug(
+                    "Tet {} refers to face {} at local index {} which was deleted",
+                    i,
+                    ei,
+                    j);
+                bad_face = true;
+            }
+        }
+
+        for (int64_t j = 0; j < 3; ++j) {
+            int64_t vi = tv(j);
+            int64_t fi = tf(j);
+            if (!v_flag_accessor.index_access().is_active(vi)) {
+                wmtk::logger().debug(
+                    "Tet {} refers to vertex{} at local index {} which was deleted",
+                    i,
+                    vi,
+                    j);
+                bad_face = true;
+            }
+            if (!f_flag_accessor.index_access().is_active(fi)) {
+                wmtk::logger().debug(
+                    "Tet {} refers to vertex{} at local index {} which was deleted",
+                    i,
+                    fi,
+                    j);
+                bad_face = true;
+            }
+        }
+        if (bad_face) {
+            return false;
+        }
+    }
     // VT and TV
     for (int64_t i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
         if (v_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
