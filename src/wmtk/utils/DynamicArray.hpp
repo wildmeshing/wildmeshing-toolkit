@@ -2,6 +2,7 @@
 
 #include <array>
 #include <vector>
+#include <cstdint>
 
 namespace wmtk::utils {
 
@@ -13,6 +14,7 @@ public:
     class Iterator
     {
     public:
+        using value_type = T;
         Iterator(const DynamicArray* container, const uint64_t index = 0);
         Iterator operator++();
         bool operator!=(const Iterator& other) const;
@@ -22,6 +24,10 @@ public:
         const DynamicArray* m_container;
         uint64_t m_index = 0;
     };
+
+    using value_type = T;
+    using iterator_type = Iterator;
+    using const_iterator_type = Iterator;
 
 
     T& operator[](const uint64_t index);
