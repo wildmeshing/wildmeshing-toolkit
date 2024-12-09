@@ -373,7 +373,7 @@ bool TriMesh::is_connectivity_valid() const
 
     for (int64_t i = 0; i < capacity(PrimitiveType::Triangle); ++i) {
         if (!f_flag_accessor.index_access().is_active(i)) {
-            wmtk::logger().debug("Face {} is deleted", i);
+            wmtk::logger().trace("Face {} is deleted", i);
             continue;
         }
         auto fe = fe_accessor.index_access().const_vector_attribute<3>(i);
@@ -408,7 +408,7 @@ bool TriMesh::is_connectivity_valid() const
     // EF and FE
     for (int64_t i = 0; i < capacity(PrimitiveType::Edge); ++i) {
         if (!e_flag_accessor.index_access().is_active(i)) {
-            wmtk::logger().debug("Edge {} is deleted", i);
+            wmtk::logger().trace("Edge {} is deleted", i);
             continue;
         }
         int cnt = 0;
@@ -437,7 +437,7 @@ bool TriMesh::is_connectivity_valid() const
     for (int64_t i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
         const int64_t vf = vf_accessor.index_access().const_scalar_attribute(i);
         if (!v_flag_accessor.index_access().is_active(i)) {
-            wmtk::logger().debug("Vertex {} is deleted", i);
+            wmtk::logger().trace("Vertex {} is deleted", i);
             continue;
         }
         int cnt = 0;
@@ -463,7 +463,7 @@ bool TriMesh::is_connectivity_valid() const
     // FE and EF
     for (int64_t i = 0; i < capacity(PrimitiveType::Triangle); ++i) {
         if (!f_flag_accessor.index_access().is_active(i)) {
-            wmtk::logger().debug("Face {} is deleted", i);
+            wmtk::logger().trace("Face {} is deleted", i);
             continue;
         }
         auto fe = fe_accessor.index_access().const_vector_attribute<3>(i);

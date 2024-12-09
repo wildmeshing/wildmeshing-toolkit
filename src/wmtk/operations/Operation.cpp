@@ -74,9 +74,18 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
     auto scope = mesh().create_scope();
     assert(simplex.primitive_type() == primitive_type());
 
+#if defined(MTAO_CONSTANTLY_VERIFY_MESH)
+    assert(mesh().is_connectivity_valid());
+#endif
     try {
         auto unmods = unmodified_primitives(simplex_resurrect);
+#if defined(MTAO_CONSTANTLY_VERIFY_MESH)
+    assert(mesh().is_connectivity_valid());
+#endif
         auto mods = execute(simplex_resurrect);
+#if defined(MTAO_CONSTANTLY_VERIFY_MESH)
+    assert(mesh().is_connectivity_valid());
+#endif
         if (!mods.empty()) { // success should be marked here
             apply_attribute_transfer(mods);
             if (after(unmods, mods)) {
