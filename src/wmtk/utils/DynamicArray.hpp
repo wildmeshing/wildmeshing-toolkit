@@ -18,6 +18,7 @@ public:
         Iterator(const DynamicArray* container, const uint64_t index = 0);
         Iterator operator++();
         bool operator!=(const Iterator& other) const;
+        bool operator==(const Iterator& other) const;
         T operator*();
 
     private:
