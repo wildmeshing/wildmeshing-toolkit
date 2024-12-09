@@ -123,6 +123,10 @@ else()
 target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
 endif()
 
+option(WMTK_MTAO_CONSTANTLY_VERIFY_MESH "verify mesh" OFF)
+if(WMTK_MTAO_CONSTANTLY_VERIFY_MESH)
+    target_compile_options(wildmeshing_toolkit PUBLIC  -DMTAO_CONSTANTLY_VERIFY_MESH)
+endif()
 #target_compile_options(wildmeshing_toolkit PUBLIC  -fconcepts)
 
 # the max dimension an attribute can be - default is to be any size (a dynamic size), but this can be set to a number like 6
