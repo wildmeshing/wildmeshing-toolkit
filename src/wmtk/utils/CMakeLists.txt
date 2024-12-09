@@ -15,6 +15,7 @@ set(SRC_FILES
     mesh_utils.hpp
     mesh_utils.cpp
     TupleInspector.hpp
+    DisjointSet.hpp
 
     filter_pointers_to_derived.hpp
 
