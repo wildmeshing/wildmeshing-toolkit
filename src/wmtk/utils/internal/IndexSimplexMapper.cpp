@@ -236,4 +236,18 @@ template int64_t IndexSimplexMapper::get_index<0>(const std::array<int64_t, 1>& 
 template int64_t IndexSimplexMapper::get_index<1>(const std::array<int64_t, 2>& s) const;
 template int64_t IndexSimplexMapper::get_index<2>(const std::array<int64_t, 3>& s) const;
 template int64_t IndexSimplexMapper::get_index<3>(const std::array<int64_t, 4>& s) const;
+
+template const std::map<std::array<int64_t, 0 + 1>, int64_t>& IndexSimplexMapper::simplex_map<0>()
+    const;
+template const std::vector<std::array<int64_t, 0 + 1>>& IndexSimplexMapper::simplices<0>() const;
+
+template const std::map<std::array<int64_t, 1 + 1>, int64_t>& IndexSimplexMapper::simplex_map<1>()
+    const;
+template const std::vector<std::array<int64_t, 1 + 1>>& IndexSimplexMapper::simplices<1>() const;
+template const std::map<std::array<int64_t, 2 + 1>, int64_t>& IndexSimplexMapper::simplex_map<2>()
+    const;
+template const std::vector<std::array<int64_t, 2 + 1>>& IndexSimplexMapper::simplices<2>() const;
+template const std::map<std::array<int64_t, 3 + 1>, int64_t>& IndexSimplexMapper::simplex_map<3>()
+    const;
+template const std::vector<std::array<int64_t, 3 + 1>>& IndexSimplexMapper::simplices<3>() const;
 } // namespace wmtk::utils::internal
