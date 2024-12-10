@@ -78,6 +78,9 @@ set(SRC_FILES
 
     internal/IndexSimplexMapper.hpp
     internal/IndexSimplexMapper.cpp
+
+    verify_simplex_index_valences.hpp
+    verify_simplex_index_valences.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
