@@ -75,6 +75,9 @@ set(SRC_FILES
 
     DynamicArray.hpp
     DynamicArray.hxx
+
+    internal/IndexSimplexMapper.hpp
+    internal/IndexSimplexMapper.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

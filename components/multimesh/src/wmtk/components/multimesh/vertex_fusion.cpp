@@ -2,6 +2,7 @@
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/TetMesh.hpp>
+#include <wmtk/EdgeMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/utils/DisjointSet.hpp>
 
@@ -11,20 +12,21 @@
 #include <wmtk/utils/mesh_utils.hpp>
 
 #include "from_facet_bijection.hpp"
+#include <wmtk/Types.hpp>
 
 
 namespace wmtk::components::multimesh {
 
-std::shared_ptr<Mesh> vertex_fusion(Mesh& mesh, double eps)
+std::shared_ptr<Mesh> vertex_fusion(const attribute::MeshAttributeHandle& attr, const std::string_view& name, double eps)
 {
+    Mesh& mesh = const_cast<Mesh&>(attr.mesh());
     // get mesh dimension and checks
     int64_t mesh_dim = mesh.top_cell_dimension();
 
 
     // TODO: a lot of matrix copies to remove
 
-    MatrixX<double> V;
-    MatrixX<int64_t> S;
+    Eigen::MatrixX<double> V;
 
     wmtk::utils::EigenMatrixWriter writer;
     mesh.serialize(writer);
@@ -41,21 +43,10 @@ std::shared_ptr<Mesh> vertex_fusion(Mesh& mesh, double eps)
     Eigen::RowVectorXd max_pos = V_rescale.colwise().maxCoeff();
 
     Eigen::RowVectorXd range = max_pos - min_pos;
-    V_rescale = V_rescale.rowwise() / range;
+    V_rescale = V_rescale.array().rowwise() / range.array();
 
-    switch (mesh_dim) {
-    case (2): {
-        writer.get_FV_matrix(S);
-
-        assert(S.rows() == mesh.get_all(PrimitiveType::Triangle).size());
-    }
-    case 3: {
-        writer.get_TV_matrix(S);
-        assert(S.rows() == mesh.get_all(PrimitiveType::Tetrahedron).size());
-    }
-
-    default: throw std::runtime_error("mesh dimension not supported");
-    }
+    MatrixXl S = writer.get_simplex_vertex_matrix();
+    assert(S.rows() == mesh.get_all(mesh.top_simplex_type()).size());
 
     std::map<int64_t, int64_t> vertex_map;
     std::vector<size_t> vertex_roots;
@@ -93,8 +84,13 @@ std::shared_ptr<Mesh> vertex_fusion(Mesh& mesh, double eps)
 
 
     std::shared_ptr<Mesh> root_mesh;
-
     switch (mesh_dim) {
+    case 1: {
+        auto fusion_mesh = std::make_shared<EdgeMesh>();
+        fusion_mesh->initialize(S_new);
+        root_mesh = fusion_mesh;
+        break;
+    }
     case 2: {
         auto fusion_mesh = std::make_shared<TriMesh>();
         fusion_mesh->initialize(S_new);
@@ -115,7 +111,7 @@ std::shared_ptr<Mesh> vertex_fusion(Mesh& mesh, double eps)
     Mesh& parent = *root_mesh;
 
     from_facet_bijection(parent, child);
-    mesh_utils::set_matrix_attribute(V_new, "vertices", PrimitiveType::Vertex, *root_mesh);
+    mesh_utils::set_matrix_attribute(V_new, std::string(name), PrimitiveType::Vertex, *root_mesh);
     return root_mesh;
 }
 } // namespace wmtk::components::multimesh
