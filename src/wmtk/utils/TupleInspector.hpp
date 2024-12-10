@@ -37,6 +37,10 @@ public:
     }
 
     static int64_t global_cid(const Tuple& t) { return t.m_global_cid; }
+    static int64_t global_id(const Mesh& m, const Tuple& t, PrimitiveType pt)
+    {
+        return m.id(pt, t);
+    }
     static std::string as_string(const Tuple& t);
 };
 } // namespace wmtk::utils

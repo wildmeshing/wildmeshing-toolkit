@@ -12,7 +12,7 @@ public:
     TriMeshOperationExecutor(TriMesh& m, const Tuple& operating_tuple);
     void delete_simplices();
 
-    std::array<attribute::Accessor<char>, 3> flag_accessors;
+    std::array<attribute::FlagAccessor<TriMesh>, 3> flag_accessors;
     attribute::Accessor<int64_t, TriMesh>& ff_accessor;
     attribute::Accessor<int64_t, TriMesh>& fe_accessor;
     attribute::Accessor<int64_t, TriMesh>& fv_accessor;

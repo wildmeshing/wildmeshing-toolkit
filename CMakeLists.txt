@@ -44,6 +44,7 @@ endif()
 project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit" LANGUAGES C CXX)
 
 # ###############################################################################
+option(WMTK_ENABLE_APPLICATIONS "Enable applications (required for any applications to build)" ${WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT})
 option(WMTK_BUILD_DOCS "Build doxygen" OFF)
 option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option due to use of TBB
 
@@ -122,6 +123,10 @@ else()
 target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
 endif()
 
+option(WMTK_MTAO_CONSTANTLY_VERIFY_MESH "verify mesh" OFF)
+if(WMTK_MTAO_CONSTANTLY_VERIFY_MESH)
+    target_compile_options(wildmeshing_toolkit PUBLIC  -DMTAO_CONSTANTLY_VERIFY_MESH)
+endif()
 #target_compile_options(wildmeshing_toolkit PUBLIC  -fconcepts)
 
 # the max dimension an attribute can be - default is to be any size (a dynamic size), but this can be set to a number like 6
@@ -207,5 +212,7 @@ endif()
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     add_subdirectory(tests)
+endif()
+if(WMTK_ENABLE_APPLICATIONS)
     add_subdirectory(applications)
 endif()

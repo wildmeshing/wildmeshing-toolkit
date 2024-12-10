@@ -30,10 +30,19 @@ CollapseReturnData multi_mesh_edge_collapse(
     multimesh::MultiMeshSimplexVisitor visitor(
         std::integral_constant<int64_t, 1>{}, // specify that this runs over edges
         MultiMeshEdgeCollapseFunctor{});
+#if defined(MTAO_CONSTANTLY_VERIFY_MESH)
+    assert(mesh.is_connectivity_valid());
+#endif
     visitor.execute_from_root(mesh, t);
 
+#if defined(MTAO_CONSTANTLY_VERIFY_MESH)
+    assert(mesh.is_connectivity_valid());
+#endif
     multimesh::MultiMeshSimplexEventVisitor event_visitor(visitor);
     event_visitor.run_on_nodes(UpdateEdgeOperationMultiMeshMapFunctor{});
+#if defined(MTAO_CONSTANTLY_VERIFY_MESH)
+    assert(mesh.is_connectivity_valid());
+#endif
 
     auto cache = visitor.take_cache();
 
@@ -49,8 +58,14 @@ CollapseReturnData multi_mesh_edge_collapse(
         }
     };
 
+#if defined(MTAO_CONSTANTLY_VERIFY_MESH)
+    assert(mesh.is_connectivity_valid());
+#endif
     multimesh::MultiMeshVisitor(update_attributes).execute_from_root(mesh);
 
+#if defined(MTAO_CONSTANTLY_VERIFY_MESH)
+    assert(mesh.is_connectivity_valid());
+#endif
     return cache;
 }
 std::vector<simplex::Simplex> multi_mesh_edge_collapse_with_modified_simplices(

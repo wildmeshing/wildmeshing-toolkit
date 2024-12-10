@@ -1,6 +1,8 @@
 #include "MultiMeshManager.hpp"
 #include <cassert>
 #include <wmtk/utils/vector_hash.hpp>
+// debug function that reads into this structure
+#include "utils/check_map_valid.hpp"
 //#include <fmt/ranges.h>
 #include <functional>
 #include <wmtk/Mesh.hpp>
@@ -689,10 +691,10 @@ std::vector<std::array<Tuple, 2>> MultiMeshManager::same_simplex_dimension_surje
     for (int64_t index = 0; index < size; ++index) {
         const Tuple ct = child.tuple_from_id(primitive_type, index);
         const Tuple pt = parent.tuple_from_id(primitive_type, parent_simplices.at(index));
-        if ((parent_flag_accessor.const_scalar_attribute(pt) & 1) == 0) {
+        if (!(parent_flag_accessor.is_active(pt))) {
             continue;
         }
-        if ((child_flag_accessor.const_scalar_attribute(ct) & 1) == 0) {
+        if (!(child_flag_accessor.is_active(ct))) {
             continue;
         }
 
