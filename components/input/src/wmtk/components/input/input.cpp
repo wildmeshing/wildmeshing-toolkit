@@ -6,6 +6,7 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include "InputOptions.hpp"
+#include <wmtk/utils/verify_simplex_index_valences.hpp>
 
 namespace wmtk::components::input {
 
@@ -50,6 +51,7 @@ multimesh::NamedMultiMesh input(
             fmt::join(path_strs, ","));
     }
 
+
     std::shared_ptr<Mesh> mesh;
 
     if (options.old_mode) {
@@ -80,6 +82,14 @@ multimesh::NamedMultiMesh input(
         nlohmann::json js;
         ifs >> js;
         mm.set_names(js);
+    }
+    if(options.validate) {
+        for(const auto& mptr: mm.root().get_all_meshes()) {
+            if(!wmtk::utils::verify_simplex_index_valences(*mptr)) {
+                throw std::runtime_error(fmt::format("Mesh {} was not valid, check env WMTK_LOGGER_LEVEL=debug for more info", mm.get_name(*mptr)));
+            }
+        }
+
     }
 
     return mm;
