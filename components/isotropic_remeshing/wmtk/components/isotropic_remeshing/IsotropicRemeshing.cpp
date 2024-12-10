@@ -51,23 +51,23 @@ IsotropicRemeshing::IsotropicRemeshing(const IsotropicRemeshingOptions& opts)
     }
 
     // split
-    m_operations.emplace_back("split", configure_split());
+    m_operations.emplace_back("split", m_split = configure_split());
 
 
     //////////////////////////////////////////
     // collapse
 
-    m_operations.emplace_back("collapse", configure_collapse());
+    m_operations.emplace_back("collapse", m_collapse = configure_collapse());
 
 
     //////////////////////////////////////////
     // swap
 
-    m_operations.emplace_back("swap", configure_swap());
+    m_operations.emplace_back("swap", m_swap = configure_swap());
 
     //////////////////////////////////////////
     // smooth
-    m_operations.emplace_back("smooth", configure_smooth());
+    m_operations.emplace_back("smooth", m_smooth = configure_smooth());
 }
 
 std::vector<wmtk::attribute::MeshAttributeHandle> IsotropicRemeshing::all_envelope_positions() const

@@ -33,6 +33,11 @@ private:
     IsotropicRemeshingOptions m_options;
 
 
+    std::shared_ptr<operations::EdgeSplit> m_split;
+    std::shared_ptr<operations::EdgeCollapse> m_collapse;
+    std::shared_ptr<operations::Operation> m_swap;
+    std::shared_ptr<operations::AttributesUpdateWithFunction> m_smooth;
+
     std::vector<std::pair<std::string, std::shared_ptr<operations::Operation>>> m_operations;
     std::vector<std::shared_ptr<wmtk::invariants::EnvelopeInvariant>> m_envelope_invariants;
 
