@@ -38,7 +38,7 @@ simplex::IdSimplex Mesh::get_id_simplex(const simplex::Simplex& s) const
 simplex::Simplex Mesh::get_simplex(const simplex::IdSimplex& s) const
 {
     const Tuple& t = tuple_from_id(s.primitive_type(), s.index());
-    return simplex::Simplex(*this, s.primitive_type(), t);
+    return simplex::Simplex(s.primitive_type(), t);
 }
 
 Tuple Mesh::get_tuple_from_id_simplex(const simplex::IdSimplex& s) const
@@ -56,11 +56,11 @@ std::vector<simplex::IdSimplex> Mesh::get_all_id_simplex(
 
     const int64_t cap = capacity(type);
 
-    const attribute::Accessor<char> flag_accessor = get_flag_accessor(type);
-    const attribute::CachingAccessor<char>& flag_accessor_indices = flag_accessor.index_access();
+    const attribute::FlagAccessor<> flag_accessor = get_flag_accessor(type);
+    const attribute::IndexFlagAccessor<>& flag_accessor_indices = flag_accessor.index_access();
     ret.reserve(cap);
     for (size_t index = 0; index < cap; ++index) {
-        if (flag_accessor_indices.const_scalar_attribute(index) & 1)
+        if (flag_accessor_indices.is_active(index))
             ret.emplace_back(simplex::IdSimplex(type, index));
         else if (include_deleted)
             ret.emplace_back();
@@ -77,14 +77,15 @@ std::vector<Tuple> Mesh::get_all(PrimitiveType type, const bool include_deleted)
 
     const int64_t cap = capacity(type);
 
-    const attribute::Accessor<char> flag_accessor = get_flag_accessor(type);
-    const attribute::CachingAccessor<char>& flag_accessor_indices = flag_accessor.index_access();
+    const attribute::FlagAccessor<> flag_accessor = get_flag_accessor(type);
+    const attribute::IndexFlagAccessor<>& flag_accessor_indices = flag_accessor.index_access();
     ret.reserve(cap);
     for (size_t index = 0; index < cap; ++index) {
-        if (flag_accessor_indices.const_scalar_attribute(index) & 1)
+        if (flag_accessor_indices.is_active(index)) {
             ret.emplace_back(tuple_from_id(type, index));
-        else if (include_deleted)
+        } else if (include_deleted) {
             ret.emplace_back();
+        }
     }
     return ret;
 }
@@ -111,7 +112,16 @@ bool Mesh::is_boundary(const simplex::Simplex& s) const
 
 bool Mesh::is_valid(const Tuple& tuple) const
 {
-    return !tuple.is_null() && !is_removed(tuple);
+    const bool nullity = tuple.is_null();
+    const bool removed = is_removed(tuple);
+    const bool bad = nullity || removed;
+#if !defined(NDEBUG)
+    if(bad) {
+        logger().debug("Mesh::is_valid failed, got nullity:{} removedness:{}", nullity, removed);
+
+    }
+#endif
+    return !bad;
 }
 
 bool Mesh::is_removed(const Tuple& tuple) const
@@ -137,35 +147,28 @@ bool Mesh::is_removed(int64_t index) const
 bool Mesh::is_removed(int64_t index, PrimitiveType pt) const
 {
     const auto& flag_accessor = get_const_flag_accessor(pt);
-    return !(flag_accessor.index_access().const_scalar_attribute(index) & 0x1);
+    return !flag_accessor.index_access().is_active(index);
 }
 
 bool Mesh::is_valid(const simplex::Simplex& s) const
 {
-#if defined(WMTK_ENABLE_SIMPLEX_ID_CACHING)
-    if (!is_valid(s.tuple())) {
-        return false;
-    } else {
-        const int64_t id_tuple = id(s.tuple(), s.primitive_type());
-        return id_tuple == s.m_index;
-    }
-#else
     return is_valid(s.tuple()) && !is_removed(s.tuple(), s.primitive_type());
-#endif
 }
 
 
-const attribute::Accessor<char> Mesh::get_flag_accessor(PrimitiveType type) const
+const attribute::FlagAccessor<Mesh> Mesh::get_flag_accessor(PrimitiveType type) const
 {
     return get_const_flag_accessor(type);
 }
-const attribute::Accessor<char> Mesh::get_const_flag_accessor(PrimitiveType type) const
+const attribute::FlagAccessor<Mesh> Mesh::get_const_flag_accessor(PrimitiveType type) const
 {
-    return create_const_accessor(m_flag_handles.at(get_primitive_type_id(type)));
+    return attribute::FlagAccessor<Mesh>(
+        create_const_accessor(m_flag_handles.at(get_primitive_type_id(type))));
 }
-attribute::Accessor<char> Mesh::get_flag_accessor(PrimitiveType type)
+attribute::FlagAccessor<Mesh> Mesh::get_flag_accessor(PrimitiveType type)
 {
-    return create_accessor(m_flag_handles.at(get_primitive_type_id(type)));
+    return attribute::FlagAccessor<Mesh>(
+        create_accessor(m_flag_handles.at(get_primitive_type_id(type))));
 }
 
 

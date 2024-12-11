@@ -68,7 +68,7 @@ std::shared_ptr<Mesh> read_mesh(
     }
     case FileType::Msh: {
         MshReader reader;
-        return reader.read(filename, -1, retrieved_attributes);
+        return reader.read(filename, {}, retrieved_attributes);
     }
     default:
     case FileType::Auto: {

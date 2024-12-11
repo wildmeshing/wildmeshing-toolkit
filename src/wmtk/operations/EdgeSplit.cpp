@@ -20,7 +20,7 @@ bool EdgeSplit::attribute_new_all_configured() const
     for (const auto& strat : m_new_attr_strategies) {
         if (strat->invalid_state()) {
             all_configured = false;
-            wmtk::logger().warn("Attribute new {} was not configured", strat->name());
+            wmtk::logger().warn("Split attribute new {} was not configured", strat->name());
         }
     }
     return all_configured;

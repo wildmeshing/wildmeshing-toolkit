@@ -1,0 +1,30 @@
+{
+    "input": {
+        "path": "unit_test/meshes/small3d.msh",
+        "validate": true,
+        "name_spec":
+        "main"
+    },
+    "position_attribute": "vertices",
+    "other_position_attributes": [
+        "vertices"
+    ],
+    "iterations": 100,
+    "length_rel": 0.2,
+    "use_for_periodic": false,
+    "edge_swap_mode": "valence",
+    "fix_uv_seam": false,
+    "lock_boundary": false,
+    "envelope_size": 1e-3,
+    "output": {
+        "path": "tetwild_fig8_mid",
+        "type": ".vtu"
+    },
+    "intermediate_output_format": {
+        "main": {
+        "path": "tetwild_fig8_mid_{:04}",
+        "type": ".vtu",
+        "position_attribute": "vertices"
+        }
+    }
+}

@@ -8,7 +8,7 @@
 namespace wmtk::components::output {
 struct OutputOptions
 {
-    std::filesystem::path file;
+    std::filesystem::path path;
 
     std::string type;
 

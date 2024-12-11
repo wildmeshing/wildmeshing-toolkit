@@ -31,6 +31,8 @@ public:
 
     std::map<std::string, const Mesh&> all_meshes() const;
 
+    // checks whether the meshes / nodes are synchronized. Passes thrown errors if desired
+    bool is_valid(bool pass_exceptions = false) const;
 private:
     std::map<std::string_view, std::unique_ptr<NamedMultiMesh>> m_meshes;
 };

@@ -1,1 +1,31 @@
-{"edges":300,"faces":200,"input":{"grid":{"coordinates":{"name":"vertices","spacing":[1,1]},"cycles":[true,true],"dimensions":[10,10],"tiling":"diagonal"},"output":{"attributes":{"position":"vertices"},"file":"grid2d_cyclic.hdf5"}},"vertices":100}
+{
+  "edges": 300,
+  "faces": 200,
+  "input": {
+    "grid": {
+      "coordinates": {
+        "name": "vertices",
+        "spacing": [
+          1,
+          1
+        ]
+      },
+      "cycles": [
+        true,
+        true
+      ],
+      "dimensions": [
+        10,
+        10
+      ],
+      "tiling": "diagonal"
+    },
+    "output": {
+      "attributes": {
+        "position": "vertices"
+      },
+      "file": "grid2d_cyclic.hdf5"
+    }
+  },
+  "vertices": 100
+}

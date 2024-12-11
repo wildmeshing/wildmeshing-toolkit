@@ -77,9 +77,5 @@ public:
 
     // these operations are only internally defined if caching is enabled to make sure there's a
     // consistent semantic when simplex id caching is enabled vs not
-#if defined(WMTK_ENABLE_SIMPLEX_ID_CACHING)
-    bool operator==(const Simplex& o) const;
-    bool operator<(const Simplex& o) const;
-#endif
 };
 } // namespace wmtk::simplex

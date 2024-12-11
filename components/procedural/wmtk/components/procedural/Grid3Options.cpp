@@ -7,7 +7,7 @@
 
 
 namespace wmtk::components::procedural {
-const std::array<std::string, 2> Grid3Options::tiling_names = {{"bcc", "freudenthal"}};
+const std::array<std::string, 2> Grid3Options::Grid3Options::tiling_names = {{"bcc", "freudenthal"}};
 
 namespace {
 std::shared_ptr<TetMesh> make_freudenthal_mesh(const Grid3Options& opt)
@@ -103,4 +103,49 @@ std::shared_ptr<TetMesh> make_mesh(const Grid3Options& opt)
     throw std::runtime_error("failed to select a tiling type");
     return nullptr;
 }
+
+    void to_json(nlohmann::json& nlohmann_json_j, const Grid3Options& nlohmann_json_t)
+    {
+        nlohmann_json_j["tiling"] = Grid3Options::tiling_names[static_cast<size_t>(nlohmann_json_t.tiling_type)];
+        if (nlohmann_json_t.coordinates.has_value()) {
+            nlohmann_json_j["coordinates"] = *nlohmann_json_t.coordinates;
+        }
+        nlohmann_json_j["dimensions"] = nlohmann_json_t.dimensions;
+        {
+            const auto& b = nlohmann_json_t.cycles;
+            std::array<bool, 3> bs{{b[0], b[1], b[2]}};
+            nlohmann_json_j["cycles"] = bs;
+        }
+    }
+    void from_json(const nlohmann::json& nlohmann_json_j, Grid3Options& nlohmann_json_t)
+    {
+        nlohmann_json_t.dimensions = nlohmann_json_j["dimensions"].get<std::array<int64_t, 3>>();
+        {
+            const std::string tiling = nlohmann_json_j["tiling"];
+            bool found = false;
+            for (size_t j = 0; j < Grid3Options::tiling_names.size(); ++j) {
+                if (tiling == Grid3Options::tiling_names[j]) {
+                    found = true;
+                    nlohmann_json_t.tiling_type = static_cast<Grid3Options::TilingType>(j);
+                }
+            }
+            if (!found) {
+                throw std::runtime_error(fmt::format(
+                    "Tiling type was not found, got [{}], expected one of {{[{}]}}",
+                    tiling,
+                    fmt::join(Grid3Options::tiling_names, "],[")));
+            }
+        }
+        {
+            auto& b = nlohmann_json_t.cycles;
+            const auto& c = nlohmann_json_j["cycles"];
+            for (int j = 0; j < 3; ++j) {
+                b[j] = c[j];
+            }
+        }
+        if (const auto& coords = nlohmann_json_j["coordinates"]; !coords.is_null()) {
+            if (nlohmann_json_j["coordinates"]["spacing"][0] > 0)
+                nlohmann_json_t.coordinates = coords.get<Grid3Options::Coordinates>();
+        }
+    }
 } // namespace wmtk::components::procedural

@@ -116,32 +116,40 @@ wmtk::attribute::MeshAttributeHandle get_attribute(
     auto add_option = [&](PrimitiveType prim, AT t) {
         ret = get_attribute(mesh, name, prim, t);
 
+        assert(ret.is_valid());
         uint8_t dimension = wmtk::get_primitive_type_id(prim);
         possibilities.emplace_back(AttributeDescription{name, dimension, t});
     };
     if (pt.has_value() && type.has_value()) {
+        wmtk::logger().debug("Reading attribute {} with pt {} and type {}", name, primitive_type_name(pt.value()), attribute_type_name(type.value()));
         add_option(pt.value(), type.value());
 
     } else if (pt.has_value()) {
+        wmtk::logger().debug("Reading attribute {} with pt {}", name, primitive_type_name(pt.value()));
         for (AT at : types) {
             try {
+                wmtk::logger().trace("Attempting to read attribute {} with pt {} and guess {}", name, primitive_type_name(pt.value()), attribute_type_name(at));
                 add_option(pt.value(), at);
             } catch (const attribute_missing_error& e) {
                 continue;
             }
         }
     } else if (type.has_value()) {
+        wmtk::logger().debug("Reading attribute {} with and type {}", name,attribute_type_name(type.value()));
         for (PrimitiveType p : wmtk::utils::primitive_below(mesh.top_simplex_type())) {
             try {
+                    wmtk::logger().trace("Attempting to read attribute {} with guess pt {} and type {}", name, primitive_type_name(p), attribute_type_name(type.value()));
                 add_option(p, type.value());
             } catch (const attribute_missing_error& e) {
                 continue;
             }
         }
     } else {
+        wmtk::logger().debug("Reading attribute {}", name);
         for (AT at : types) {
             for (PrimitiveType p : wmtk::utils::primitive_below(mesh.top_simplex_type())) {
                 try {
+                    wmtk::logger().trace("Attempting to read attribute {} with guess pt {} and guess type {}", name, primitive_type_name(p), attribute_type_name(at));
                     add_option(p, at);
                 } catch (const attribute_missing_error& e) {
                     continue;

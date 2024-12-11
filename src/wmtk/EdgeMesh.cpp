@@ -5,7 +5,7 @@
 #include <numeric>
 #include <wmtk/utils/Logger.hpp>
 namespace wmtk {
-    EdgeMesh::~EdgeMesh() = default;
+EdgeMesh::~EdgeMesh() = default;
 EdgeMesh::EdgeMesh()
     : MeshCRTP<EdgeMesh>(1)
     , m_ve_handle(register_attribute_typed<int64_t>("m_ve", PrimitiveType::Vertex, 1, false, -1))
@@ -111,8 +111,8 @@ void EdgeMesh::initialize(
     attribute::Accessor<int64_t> ee_accessor = create_accessor<int64_t>(m_ee_handle);
     attribute::Accessor<int64_t> ve_accessor = create_accessor<int64_t>(m_ve_handle);
 
-    attribute::Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
-    attribute::Accessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
+    attribute::FlagAccessor<EdgeMesh> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
+    attribute::FlagAccessor<EdgeMesh> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
 
     // iterate over the matrices and fill attributes
 
@@ -120,12 +120,12 @@ void EdgeMesh::initialize(
         ev_accessor.index_access().vector_attribute<2>(i) = EV.row(i).transpose();
         ee_accessor.index_access().vector_attribute<2>(i) = EE.row(i).transpose();
 
-        e_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
+        e_flag_accessor.index_access().activate(i);
     }
     // m_ve
     for (int64_t i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
         ve_accessor.index_access().scalar_attribute(i) = VE(i);
-        v_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
+        v_flag_accessor.index_access().activate(i);
     }
 }
 
@@ -239,12 +239,14 @@ bool EdgeMesh::is_connectivity_valid() const
     const attribute::Accessor<int64_t> ev_accessor = create_const_accessor<int64_t>(m_ev_handle);
     const attribute::Accessor<int64_t> ee_accessor = create_const_accessor<int64_t>(m_ee_handle);
     const attribute::Accessor<int64_t> ve_accessor = create_const_accessor<int64_t>(m_ve_handle);
-    const attribute::Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
-    const attribute::Accessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
+    const attribute::FlagAccessor<EdgeMesh> v_flag_accessor =
+        get_flag_accessor(PrimitiveType::Vertex);
+    const attribute::FlagAccessor<EdgeMesh> e_flag_accessor =
+        get_flag_accessor(PrimitiveType::Edge);
 
     // VE and EV
     for (int64_t i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
-        if (v_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
+        if (!v_flag_accessor.index_access().is_active(i)) {
             wmtk::logger().debug("Vertex {} is deleted", i);
             continue;
         }
@@ -262,7 +264,7 @@ bool EdgeMesh::is_connectivity_valid() const
 
     // EV and EE
     for (int64_t i = 0; i < capacity(PrimitiveType::Edge); ++i) {
-        if (e_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
+        if (!e_flag_accessor.index_access().is_active(i)) {
             wmtk::logger().debug("Edge {} is deleted", i);
             continue;
         }

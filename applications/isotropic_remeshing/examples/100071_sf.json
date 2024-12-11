@@ -1,0 +1,30 @@
+{
+  "input": {
+    "edge_swap_mode": "valence",
+    "fix_uv_seam": false,
+    "input": {
+      "file": "100071_sf.msh",
+      "name_spec": "main"
+    },
+    "iterations": 5,
+    "length_abs": -1,
+    "length_rel": 0.01,
+    "lock_boundary": false,
+    "other_position_attributes": [
+      "vertices"
+    ],
+    "output": {
+      "file": "100071_sf",
+      "type": ".vtu"
+    },
+    "position_attribute": "vertices",
+    "use_for_periodic": false
+  },
+  "stats": {
+    "main": {
+      "edges": 642213,
+      "faces": 428142,
+      "vertices": 214067
+    }
+  }
+}

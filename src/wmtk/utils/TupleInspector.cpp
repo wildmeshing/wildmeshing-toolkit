@@ -1,5 +1,6 @@
 #include "TupleInspector.hpp"
 
+#include <wmtk/Mesh.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 namespace wmtk::utils {

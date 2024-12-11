@@ -24,8 +24,15 @@ tri_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(
     TriMesh& m,
     const simplex::Simplex& s) const
 {
+    assert(m.is_valid(s));
     TriMesh::TriMeshOperationExecutor exec(m, s.tuple());
+#if defined(MTAO_CONSTANTLY_VERIFY_MESH)
+    assert(m.is_connectivity_valid());
+#endif
     exec.collapse_edge();
+#if defined(MTAO_CONSTANTLY_VERIFY_MESH)
+    assert(m.is_connectivity_valid());
+#endif
     return std::move(static_cast<tri_mesh::EdgeOperationData&>(exec));
 }
 tet_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(

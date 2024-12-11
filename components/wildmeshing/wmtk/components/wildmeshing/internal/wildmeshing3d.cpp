@@ -88,7 +88,10 @@ using namespace invariants;
 std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing3d(
     const WildMeshingOptions& options)
 {
-    auto mesh = options.input_mesh;
+    auto mesh = std::dynamic_pointer_cast<TetMesh>(options.input_mesh);
+    if(!bool(mesh)) {
+        throw std::runtime_error("input mesh of wildmeshing3d must be a tetmesh");
+    }
 
     if (!mesh->is_connectivity_valid()) {
         throw std::runtime_error("input mesh for wildmeshing connectivity invalid");
