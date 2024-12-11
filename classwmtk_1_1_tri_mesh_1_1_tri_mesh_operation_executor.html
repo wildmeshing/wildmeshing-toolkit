@@ -232,8 +232,8 @@ Static Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a2747ed843f2f47d5f1e865eb71a829d5"><td class="memItemLeft" align="right" valign="top">std::array&lt; <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor</a>&lt; char &gt;, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a2747ed843f2f47d5f1e865eb71a829d5">flag_accessors</a></td></tr>
-<tr class="separator:a2747ed843f2f47d5f1e865eb71a829d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5dbbe51d0df39f066ebfa31daa5322c6"><td class="memItemLeft" align="right" valign="top">std::array&lt; <a class="el" href="classwmtk_1_1attribute_1_1_flag_accessor.html">attribute::FlagAccessor</a>&lt; <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &gt;, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a5dbbe51d0df39f066ebfa31daa5322c6">flag_accessors</a></td></tr>
+<tr class="separator:a5dbbe51d0df39f066ebfa31daa5322c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9214a911b1cdbade692563dbe7308f1b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor</a>&lt; int64_t, <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a9214a911b1cdbade692563dbe7308f1b">ff_accessor</a></td></tr>
 <tr class="separator:a9214a911b1cdbade692563dbe7308f1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad45678a7d8a3d9ffc7bad92f8cd3cf94"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor</a>&lt; int64_t, <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ad45678a7d8a3d9ffc7bad92f8cd3cf94">fe_accessor</a></td></tr>
@@ -332,7 +332,7 @@ Additional Inherited Members</h2></td></tr>
 
 <p class="definition">Definition at line <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00103">103</a> of file <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html">TriMeshOperationExecutor.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8cpp_source.html#l00158">wmtk::Mesh::get_flag_accessor()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8cpp_source.html#l00159">wmtk::Mesh::get_flag_accessor()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -567,7 +567,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00153">153</a> of file <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html">TriMeshOperationExecutor.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_simplex_collection_8cpp_source.html#l00043">wmtk::simplex::SimplexCollection::add()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="faces_8cpp_source.html#l00010">wmtk::simplex::faces()</a>, <a class="el" href="_primitive_type_8hpp_source.html#l00018">wmtk::get_primitive_type_id()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00125">wmtk::TriMesh::id()</a>, <a class="el" href="_mesh_8hpp_source.html#l00987">wmtk::Mesh::is_free()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00117">wmtk::TriMesh::switch_edge()</a>, <a class="el" href="top__dimension__cofaces__iterable_8cpp_source.html#l00005">wmtk::simplex::top_dimension_cofaces_iterable()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="_simplex_collection_8cpp_source.html#l00043">wmtk::simplex::SimplexCollection::add()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="faces_8cpp_source.html#l00010">wmtk::simplex::faces()</a>, <a class="el" href="_primitive_type_8hpp_source.html#l00018">wmtk::get_primitive_type_id()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00125">wmtk::TriMesh::id()</a>, <a class="el" href="_mesh_8hpp_source.html#l00988">wmtk::Mesh::is_free()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00117">wmtk::TriMesh::switch_edge()</a>, <a class="el" href="top__dimension__cofaces__iterable_8cpp_source.html#l00005">wmtk::simplex::top_dimension_cofaces_iterable()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -925,14 +925,14 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a2747ed843f2f47d5f1e865eb71a829d5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2747ed843f2f47d5f1e865eb71a829d5">&#9670;&nbsp;</a></span>flag_accessors</h2>
+<a id="a5dbbe51d0df39f066ebfa31daa5322c6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5dbbe51d0df39f066ebfa31daa5322c6">&#9670;&nbsp;</a></span>flag_accessors</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::array&lt;<a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor</a>&lt;char&gt;, 3&gt; wmtk::TriMesh::TriMeshOperationExecutor::flag_accessors</td>
+          <td class="memname">std::array&lt;<a class="el" href="classwmtk_1_1attribute_1_1_flag_accessor.html">attribute::FlagAccessor</a>&lt;<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a>&gt;, 3&gt; wmtk::TriMesh::TriMeshOperationExecutor::flag_accessors</td>
         </tr>
       </table>
 </div><div class="memdoc">

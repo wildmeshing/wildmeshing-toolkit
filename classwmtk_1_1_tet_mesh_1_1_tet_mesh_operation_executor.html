@@ -230,8 +230,8 @@ Static Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:ab4fdcdfb8f059458f3452349a8ad6ee0"><td class="memItemLeft" align="right" valign="top">std::array&lt; <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor</a>&lt; char &gt;, 4 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#ab4fdcdfb8f059458f3452349a8ad6ee0">flag_accessors</a></td></tr>
-<tr class="separator:ab4fdcdfb8f059458f3452349a8ad6ee0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1cf894747405d59db86fd1306c6d6f0b"><td class="memItemLeft" align="right" valign="top">std::array&lt; <a class="el" href="classwmtk_1_1attribute_1_1_flag_accessor.html">attribute::FlagAccessor</a>&lt; <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &gt;, 4 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a1cf894747405d59db86fd1306c6d6f0b">flag_accessors</a></td></tr>
+<tr class="separator:a1cf894747405d59db86fd1306c6d6f0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a20202e72e0e5d1b3950a70975d732268"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor</a>&lt; int64_t, <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a20202e72e0e5d1b3950a70975d732268">tt_accessor</a></td></tr>
 <tr class="separator:a20202e72e0e5d1b3950a70975d732268"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a79746c79ac18063c15bbd6b0ebbe4efe"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor</a>&lt; int64_t, <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a79746c79ac18063c15bbd6b0ebbe4efe">tf_accessor</a></td></tr>
@@ -339,7 +339,7 @@ Additional Inherited Members</h2></td></tr>
 
 <p class="definition">Definition at line <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html#l00095">95</a> of file <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html">TetMeshOperationExecutor.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8cpp_source.html#l00158">wmtk::Mesh::get_flag_accessor()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8cpp_source.html#l00159">wmtk::Mesh::get_flag_accessor()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -494,7 +494,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html#l00022">22</a> of file <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html">TetMeshOperationExecutor.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_tet_mesh_8hpp_source.html#l00073">wmtk::TetMesh::id_tet()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00366">wmtk::TetMesh::is_boundary_face()</a>, <a class="el" href="_tet_mesh_operation_executor_8hpp_source.html#l00108">m_mesh</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00121">wmtk::TetMesh::switch_face()</a>, and <a class="el" href="_tet_mesh_8hpp_source.html#l00125">wmtk::TetMesh::switch_tetrahedron()</a>.</p>
+<p class="reference">References <a class="el" href="_tet_mesh_8hpp_source.html#l00073">wmtk::TetMesh::id_tet()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00368">wmtk::TetMesh::is_boundary_face()</a>, <a class="el" href="_tet_mesh_operation_executor_8hpp_source.html#l00108">m_mesh</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00121">wmtk::TetMesh::switch_face()</a>, and <a class="el" href="_tet_mesh_8hpp_source.html#l00125">wmtk::TetMesh::switch_tetrahedron()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -710,14 +710,14 @@ Here is the caller graph for this function:</div>
 
 </div>
 </div>
-<a id="ab4fdcdfb8f059458f3452349a8ad6ee0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab4fdcdfb8f059458f3452349a8ad6ee0">&#9670;&nbsp;</a></span>flag_accessors</h2>
+<a id="a1cf894747405d59db86fd1306c6d6f0b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1cf894747405d59db86fd1306c6d6f0b">&#9670;&nbsp;</a></span>flag_accessors</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::array&lt;<a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor</a>&lt;char&gt;, 4&gt; wmtk::TetMesh::TetMeshOperationExecutor::flag_accessors</td>
+          <td class="memname">std::array&lt;<a class="el" href="classwmtk_1_1attribute_1_1_flag_accessor.html">attribute::FlagAccessor</a>&lt;<a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a>&gt;, 4&gt; wmtk::TetMesh::TetMeshOperationExecutor::flag_accessors</td>
         </tr>
       </table>
 </div><div class="memdoc">

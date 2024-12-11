@@ -1,5 +1,7 @@
 var NAVTREEINDEX4 =
 {
+"_update_strategy_collection_8hpp.html":[10,0,2,0,5,0,6],
+"_update_strategy_collection_8hpp_source.html":[10,0,2,0,5,0,6],
 "_use_parent_scope_r_a_i_i_8cpp.html":[10,0,2,0,5,0,7],
 "_use_parent_scope_r_a_i_i_8cpp_source.html":[10,0,2,0,5,0,7],
 "_use_parent_scope_r_a_i_i_8hpp.html":[10,0,2,0,5,0,8],
@@ -247,7 +249,5 @@ var NAVTREEINDEX4 =
 "classwmtk_1_1_edge_mesh.html#a7736ba2bb588d8aa81511cc42502bf68":[9,0,2,15,22],
 "classwmtk_1_1_edge_mesh.html#a7b8a8315153163fff07fd644c887c394":[9,0,2,15,35],
 "classwmtk_1_1_edge_mesh.html#a830d7c95df87c69a47132c9aa992f128":[9,0,2,15,28],
-"classwmtk_1_1_edge_mesh.html#a83db0c93833dacdfb169807d8ba4b6ca":[9,0,2,15,17],
-"classwmtk_1_1_edge_mesh.html#a858527dd650e9b888f757f3e70f0940e":[9,0,2,15,29],
-"classwmtk_1_1_edge_mesh.html#a90181e4a8ae3981f82ac6620fe978fc5":[9,0,2,15,9]
+"classwmtk_1_1_edge_mesh.html#a83db0c93833dacdfb169807d8ba4b6ca":[9,0,2,15,17]
 };

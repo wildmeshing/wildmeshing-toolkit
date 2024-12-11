@@ -22,6 +22,8 @@ var namespacewmtk_1_1attribute =
     [ "type_from_attribute_type_enum< AttributeType::Double >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_double_01_4.html", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_double_01_4" ],
     [ "type_from_attribute_type_enum< AttributeType::Int64 >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_int64_01_4.html", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_int64_01_4" ],
     [ "type_from_attribute_type_enum< AttributeType::Rational >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_rational_01_4.html", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_rational_01_4" ],
+    [ "IndexFlagAccessor", "classwmtk_1_1attribute_1_1_index_flag_accessor.html", "classwmtk_1_1attribute_1_1_index_flag_accessor" ],
+    [ "FlagAccessor", "classwmtk_1_1attribute_1_1_flag_accessor.html", "classwmtk_1_1attribute_1_1_flag_accessor" ],
     [ "MeshAttributeHandle", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html", "classwmtk_1_1attribute_1_1_mesh_attribute_handle" ],
     [ "TupleAccessor", "classwmtk_1_1attribute_1_1_tuple_accessor.html", "classwmtk_1_1attribute_1_1_tuple_accessor" ],
     [ "AttributeCache", "namespacewmtk_1_1attribute.html#a4ca9acf6e5e8cc431e42433aaf3dd481", null ],
