@@ -247,17 +247,23 @@ bool EdgeMesh::is_connectivity_valid() const
     // VE and EV
     for (int64_t i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
         if (!v_flag_accessor.index_access().is_active(i)) {
-            wmtk::logger().debug("Vertex {} is deleted", i);
             continue;
         }
         int cnt = 0;
         for (int64_t j = 0; j < 2; ++j) {
             if (ev_accessor.index_access().const_vector_attribute<2>(
-                    ve_accessor.index_access().const_scalar_attribute(i))[j] == i) {
+                    ve_accessor.index_access().const_scalar_attribute(i))(j) == i) {
                 cnt++;
             }
         }
         if (cnt == 0) {
+            int64_t idx = ve_accessor.index_access().const_scalar_attribute(i);
+            wmtk::logger().error(
+                "EV[VE[{}]={},:]] ({}) = doesn't contain {}",
+                i,
+                idx,
+                fmt::join(ev_accessor.index_access().const_vector_attribute<2>(idx), ","),
+                i);
             return false;
         }
     }
@@ -265,7 +271,6 @@ bool EdgeMesh::is_connectivity_valid() const
     // EV and EE
     for (int64_t i = 0; i < capacity(PrimitiveType::Edge); ++i) {
         if (!e_flag_accessor.index_access().is_active(i)) {
-            wmtk::logger().debug("Edge {} is deleted", i);
             continue;
         }
         // TODO: need to handle cornor case (self-loop)
