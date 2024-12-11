@@ -198,9 +198,9 @@ void TriMesh::initialize(
     attribute::Accessor<int64_t> vf_accessor = create_accessor<int64_t>(m_vf_handle);
     attribute::Accessor<int64_t> ef_accessor = create_accessor<int64_t>(m_ef_handle);
 
-    attribute::Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
-    attribute::Accessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
-    attribute::Accessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
+    attribute::FlagAccessor<TriMesh> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
+    attribute::FlagAccessor<TriMesh> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
+    attribute::FlagAccessor<TriMesh> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
 
     // iterate over the matrices and fill attributes
     for (int64_t i = 0; i < capacity(PrimitiveType::Triangle); ++i) {
@@ -208,19 +208,19 @@ void TriMesh::initialize(
         fe_accessor.index_access().vector_attribute<3>(i) = FE.row(i).transpose();
         ff_accessor.index_access().vector_attribute<3>(i) = FF.row(i).transpose();
 
-        f_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
+        f_flag_accessor.index_access().activate(i);
     }
     // m_vf
     for (int64_t i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
         auto& vf = vf_accessor.index_access().scalar_attribute(i);
         vf = VF(i);
-        v_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
+        v_flag_accessor.index_access().activate(i);
     }
     // m_ef
     for (int64_t i = 0; i < capacity(PrimitiveType::Edge); ++i) {
         auto& ef = ef_accessor.index_access().scalar_attribute(i);
         ef = EF(i);
-        e_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
+        e_flag_accessor.index_access().activate(i);
     }
 }
 
@@ -329,7 +329,7 @@ Tuple TriMesh::face_tuple_from_id(int64_t id) const
 bool TriMesh::is_valid(const Tuple& tuple) const
 {
     if (!Mesh::is_valid(tuple)) {
-        logger().debug("Tuple was null and therefore not valid");
+        logger().trace("Tuple was null and therefore not valid");
         return false;
     }
     const bool is_connectivity_valid = tuple.m_local_vid >= 0 && tuple.m_local_eid >= 0 &&
@@ -338,7 +338,7 @@ bool TriMesh::is_valid(const Tuple& tuple) const
 
     if (!is_connectivity_valid) {
 #if !defined(NDEBUG)
-        logger().debug(
+        logger().trace(
             "tuple.m_local_vid={} >= 0 && tuple.m_local_eid={} >= 0 &&"
             " tuple.m_global_cid={} >= 0 &&"
             " autogen::tri_mesh::tuple_is_valid_for_ccw(tuple)={}",
@@ -364,14 +364,49 @@ bool TriMesh::is_connectivity_valid() const
     const attribute::Accessor<int64_t> ff_accessor = create_const_accessor<int64_t>(m_ff_handle);
     const attribute::Accessor<int64_t> vf_accessor = create_const_accessor<int64_t>(m_vf_handle);
     const attribute::Accessor<int64_t> ef_accessor = create_const_accessor<int64_t>(m_ef_handle);
-    const attribute::Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
-    const attribute::Accessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
-    const attribute::Accessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
+    const attribute::FlagAccessor<TriMesh> v_flag_accessor =
+        get_flag_accessor(PrimitiveType::Vertex);
+    const attribute::FlagAccessor<TriMesh> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
+    const attribute::FlagAccessor<TriMesh> f_flag_accessor =
+        get_flag_accessor(PrimitiveType::Triangle);
 
+
+    for (int64_t i = 0; i < capacity(PrimitiveType::Triangle); ++i) {
+        if (!f_flag_accessor.index_access().is_active(i)) {
+            continue;
+        }
+        auto fe = fe_accessor.index_access().const_vector_attribute<3>(i);
+        auto fv = fv_accessor.index_access().const_vector_attribute<3>(i);
+
+        bool bad_face = false;
+
+        for (int64_t j = 0; j < 3; ++j) {
+            int64_t ei = fe(j);
+            int64_t vi = fv(j);
+            if (!e_flag_accessor.index_access().is_active(ei)) {
+                wmtk::logger().error(
+                    "Face {} refers to edge {} at local index {} which was deleted",
+                    i,
+                    ei,
+                    j);
+                bad_face = true;
+            }
+            if (!v_flag_accessor.index_access().is_active(vi)) {
+                wmtk::logger().error(
+                    "Face {} refers to vertex{} at local index {} which was deleted",
+                    i,
+                    vi,
+                    j);
+                bad_face = true;
+            }
+        }
+        if (bad_face) {
+            return false;
+        }
+    }
     // EF and FE
     for (int64_t i = 0; i < capacity(PrimitiveType::Edge); ++i) {
-        if (e_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
-            wmtk::logger().debug("Edge {} is deleted", i);
+        if (!e_flag_accessor.index_access().is_active(i)) {
             continue;
         }
         int cnt = 0;
@@ -384,7 +419,7 @@ bool TriMesh::is_connectivity_valid() const
             }
         }
         if (cnt == 0) {
-            wmtk::logger().debug(
+            wmtk::logger().error(
                 "EF[{0}] {1} and FE:[EF[{0}]] = {2} are not "
                 "compatible ",
                 i,
@@ -399,8 +434,7 @@ bool TriMesh::is_connectivity_valid() const
     // VF and FV
     for (int64_t i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
         const int64_t vf = vf_accessor.index_access().const_scalar_attribute(i);
-        if (v_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
-            wmtk::logger().debug("Vertex {} is deleted", i);
+        if (!v_flag_accessor.index_access().is_active(i)) {
             continue;
         }
         int cnt = 0;
@@ -412,7 +446,7 @@ bool TriMesh::is_connectivity_valid() const
             }
         }
         if (cnt == 0) {
-            wmtk::logger().debug(
+            wmtk::logger().error(
                 "VF and FV not compatible, could not find VF[{}] = {} "
                 "in FV[{}] = [{}]",
                 i,
@@ -425,8 +459,7 @@ bool TriMesh::is_connectivity_valid() const
 
     // FE and EF
     for (int64_t i = 0; i < capacity(PrimitiveType::Triangle); ++i) {
-        if (f_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
-            wmtk::logger().debug("Face {} is deleted", i);
+        if (!f_flag_accessor.index_access().is_active(i)) {
             continue;
         }
         auto fe = fe_accessor.index_access().const_vector_attribute<3>(i);
@@ -438,7 +471,7 @@ bool TriMesh::is_connectivity_valid() const
             if (is_boundary) {
                 auto ef = ef_accessor.index_access().const_scalar_attribute(fe(j));
                 if (ef != i) {
-                    wmtk::logger().debug(
+                    wmtk::logger().error(
                         "Even though local edge {} of face {} is "
                         "boundary (global eid is {}), "
                         "ef[{}] = {} != {}",
@@ -452,7 +485,7 @@ bool TriMesh::is_connectivity_valid() const
                 }
             } else {
                 if (neighbor_fid == i) {
-                    logger().warn(
+                    logger().error(
                         "Connectivity check cannot work when mapping a "
                         "face to itself (face {})",
                         i);
@@ -476,7 +509,7 @@ bool TriMesh::is_connectivity_valid() const
                         }
                     }
                     if (edge_shared_count != 1) {
-                        wmtk::logger().debug(
+                        wmtk::logger().error(
                             "face {} with fe={} neighbor fe[{}] = {} "
                             "was unable to find itself "
                             "uniquely (found {})",
@@ -488,7 +521,7 @@ bool TriMesh::is_connectivity_valid() const
                         return false;
                     }
                 } else {
-                    wmtk::logger().debug(
+                    wmtk::logger().error(
                         "face {} with ff={} neighbor ff[{}] = {} was "
                         "unable to find itself",
                         i,

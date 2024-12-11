@@ -24,6 +24,7 @@
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributeHandle.hpp"
 #include "attribute/MeshAttributes.hpp"
+#include "attribute/FlagAccessor.hpp"
 #include "multimesh/attribute/AttributeScopeHandle.hpp"
 
 #include "multimesh/attribute/UseParentScopeRAII.hpp"
@@ -295,8 +296,8 @@ public:
     decltype(auto) parent_scope(Functor&& f, Args&&... args) const;
 
 
-    const attribute::Accessor<char> get_flag_accessor(PrimitiveType type) const;
-    const attribute::Accessor<char> get_const_flag_accessor(PrimitiveType type) const;
+    const attribute::FlagAccessor<Mesh> get_flag_accessor(PrimitiveType type) const;
+    const attribute::FlagAccessor<Mesh> get_const_flag_accessor(PrimitiveType type) const;
 
 
     bool operator==(const Mesh& other) const;
@@ -307,7 +308,7 @@ public:
     virtual std::vector<Tuple> orient_vertices(const Tuple& t) const = 0;
 
 protected: // member functions
-    attribute::Accessor<char> get_flag_accessor(PrimitiveType type);
+    attribute::FlagAccessor<> get_flag_accessor(PrimitiveType type);
 
 
 protected:
