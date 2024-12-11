@@ -71,7 +71,7 @@ Eigen::MatrixXi readTetrahedrons(const std::string& filename)
     return T;
 }
 
-void wriet_points_to_file(
+void write_points_to_file(
     const std::vector<query_point_tet>& query_points,
     const Eigen::MatrixXd& V,
     const std::string& filename)
@@ -194,25 +194,29 @@ int main(int argc, char** argv)
 {
     CLI::App app{"bijective_map_app_tet"};
     std::filesystem::path initial_mesh_file;
+    std::filesystem::path operation_logs_dir;
     std::string application_name = "back";
     app.add_option("-a, --app", application_name, "Application name");
     app.add_option("-i, --input", initial_mesh_file, "Initial mesh file")->required(true);
+    app.add_option("-l, --logs", operation_logs_dir, "Operation logs directory")->required(true);
     CLI11_PARSE(app, argc, argv);
 
     std::cout << "Application name: " << application_name << std::endl;
     auto init_mesh_ptr = wmtk::read_mesh(initial_mesh_file);
 
     // write initial mesh to vtu
-    std::cout << "Writing initial mesh to vtu" << std::endl;
-    wmtk::io::ParaviewWriter
-        writer("initial_mesh", "vertices", *init_mesh_ptr, true, true, true, true);
-    init_mesh_ptr->serialize(writer);
+    // std::cout << "Writing initial mesh to vtu" << std::endl;
+    // wmtk::io::ParaviewWriter
+    //     writer("initial_mesh", "vertices", *init_mesh_ptr, true, true, true, true);
+    // init_mesh_ptr->serialize(writer);
 
     // TODO:
     // 2. figure out how to read the outputmesh in vtu format
-    auto T_out = readTetrahedrons("T_matrix.csv");
-    auto V_out = readVertices("V_matrix.csv");
+    auto T_out = readTetrahedrons("T_matrix_out.csv");
+    auto V_out = readVertices("V_matrix_out.csv");
     // TODO: for now, first we convert it with TV matrix
+    auto T_in = readTetrahedrons("T_matrix_in.csv");
+    auto V_in = readVertices("V_matrix_in.csv");
 
     // get points in T,V out
     // sample points, id every 100 points
@@ -226,9 +230,18 @@ int main(int argc, char** argv)
     }
 
     // compute postion and save to file
-    wriet_points_to_file(query_points, V_out, "points_after_remesh.csv");
+    std::cout << "Writing points to file after remesh" << std::endl;
+    write_points_to_file(query_points, V_out, "points_after_remesh.csv");
 
     // TODO: do back tracking
+    if (application_name == "back") {
+        std::cout << "Back tracking" << std::endl;
+        track_point_tet(operation_logs_dir, query_points, false, false);
+
+        std::cout << "Writing points to file after back tracking" << std::endl;
+        // TODO: this should be V_in
+        write_points_to_file(query_points, V_in, "points_after_back_tracking.csv");
+    }
 
     return 0;
 }

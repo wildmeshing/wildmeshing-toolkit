@@ -150,6 +150,10 @@ void handle_local_mapping_tet(
             continue;
         }
 
+        // write out the change
+        std::cout << "Change: " << qp.t_id << "->" << id_map_before[t_id_before] << std::endl;
+        std::cout << "BC:" << qp.bc.transpose() << "->" << bc_before.transpose() << std::endl;
+
         // update the query point
         qp.t_id = id_map_before[t_id_before];
         for (int i = 0; i < 4; i++) {
