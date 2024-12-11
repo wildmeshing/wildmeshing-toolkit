@@ -40,6 +40,9 @@ IsotropicRemeshing::~IsotropicRemeshing() = default;
 IsotropicRemeshing::IsotropicRemeshing(const IsotropicRemeshingOptions& opts)
     : m_options(opts)
 {
+    if(!m_options.position_attribute.is_valid()) {
+        throw std::runtime_error("Isotropic remeshing run without a valid position attribute");
+    }
     if (m_options.envelope_size.has_value()) {
         for (const auto& h : all_envelope_positions()) {
             auto envelope_invariant = std::make_shared<invariants::EnvelopeInvariant>(

@@ -39,6 +39,7 @@ bool verify_simplex_index_valences(const Mesh& m, const internal::IndexSimplexMa
     constexpr static int meshD = get_primitive_type_id(mesh_pt);
     constexpr static int D = get_primitive_type_id(pt);
 
+
     std::vector<std::set<int64_t>> cofaces(mapper.simplices<D>().size());
     for (size_t j = 0; j < mapper.simplices<meshD>().size(); ++j) {
         for (const auto& face_index : mapper.faces<meshD, D>(j)) {
@@ -47,9 +48,10 @@ bool verify_simplex_index_valences(const Mesh& m, const internal::IndexSimplexMa
     }
 
     if (mesh_pt == pt + 1) {
-        for (const auto& cof : cofaces) {
+        for(size_t j = 0; j < cofaces.size(); ++j) {
+            const auto& cof = cofaces[j];
             if (cof.size() > 2) {
-                wmtk::logger().warn("More than 2 cofaces for a boundary simplex");
+                wmtk::logger().warn(fmt::format("More than 2 {}-cofaces (facet indices={}) for a boundary {}-simplex [{}]", D, fmt::join(cof,","), meshD, fmt::join(mapper.simplices<D>()[j],",")));
                 return false;
             }
         }
@@ -63,14 +65,16 @@ bool verify_simplex_index_valences(const Mesh& m, const internal::IndexSimplexMa
 
         std::array<int64_t, D + 1> i = indices<D>(m, mapper, s);
         const auto& cof2 = cofaces[mapper.get_index<D>(i)];
-        wmtk::logger().debug("Looking at {}-simplex {} on a {}", D, fmt::join(i, ","), meshD);
+        wmtk::logger().debug("Looking at {}-simplex {} on a {}-mesh", D, fmt::join(i, ","), meshD);
 
 
         if (cof.size() != cof2.size()) {
             wmtk::logger().warn(
-                "Cofaces size mismatch on simplex {}, mesh got (len{}), indices got [{}] "
+                "Cofaces size mismatch on {}-simplex {}, {}-mesh got (len{}), indices got [{}] "
                 "(len{})",
+                D,
                 fmt::join(i, ","),
+                meshD,
                 cof.size(),
                 fmt::join(cof2, ","),
                 cof2.size());

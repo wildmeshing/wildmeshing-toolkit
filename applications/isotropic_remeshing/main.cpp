@@ -125,6 +125,7 @@ int main(int argc, char* argv[])
     if(j.contains("intermediate_output_format")) {
         options.intermediate_output_format = j["intermediate_output_format"];
     }
+    assert(options.position_attribute.is_valid());
     wmtk::components::isotropic_remeshing::isotropic_remeshing(options);
 
     // input uv mesh
