@@ -40,17 +40,11 @@ IsotropicRemeshing::~IsotropicRemeshing() = default;
 IsotropicRemeshing::IsotropicRemeshing(const IsotropicRemeshingOptions& opts)
     : m_options(opts)
 {
-    if(!m_options.position_attribute.is_valid()) {
+    if (!m_options.position_attribute.is_valid()) {
         throw std::runtime_error("Isotropic remeshing run without a valid position attribute");
     }
     if (m_options.envelope_size.has_value()) {
-        for (const auto& h : all_envelope_positions()) {
-            auto envelope_invariant = std::make_shared<invariants::EnvelopeInvariant>(
-                h,
-                m_options.envelope_size.value(),
-                h);
-            m_envelope_invariants.emplace_back(envelope_invariant);
-        }
+        make_envelopes();
     }
 
     // split
@@ -118,7 +112,6 @@ void IsotropicRemeshing::run()
 
     auto position = m_options.position_attribute;
     Mesh& mesh = position.mesh();
-
 
 
     auto log_mesh = [&](int64_t index) {
@@ -279,5 +272,24 @@ std::shared_ptr<operations::AttributesUpdateWithFunction> IsotropicRemeshing::co
 
     if (update_position) op_smooth->add_transfer_strategy(update_position);
     return op_smooth;
+}
+void IsotropicRemeshing::make_envelopes()
+{
+    if (!m_options.envelope_size.has_value()) {
+        throw std::runtime_error(
+            "Could not create envelopes because options do not have an envelope size");
+    }
+    auto envelope_positions = all_envelope_positions();
+
+    std::transform(
+        envelope_positions.begin(),
+        envelope_positions.end(),
+        std::back_inserter(m_envelope_invariants),
+        [&](const wmtk::attribute::MeshAttributeHandle& mah) {
+            return std::make_shared<invariants::EnvelopeInvariant>(
+                mah,
+                std::sqrt(2) * m_options.envelope_size.value(),
+                mah);
+        });
 }
 } // namespace wmtk::components::isotropic_remeshing

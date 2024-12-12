@@ -381,6 +381,10 @@ std::string NamedMultiMesh::get_name(const Mesh& m) const
     m_name_root->get_name_tokens(id, toks);
     return fmt::format("{}", fmt::join(toks, "."));
 }
+
+    std::string NamedMultiMesh::get_path(const wmtk::attribute::MeshAttributeHandle& m) const {
+        return fmt::format("{}/{}", get_name(m.mesh()), m.name());
+    }
 void NamedMultiMesh::append_child_mesh_names(const Mesh& parent, const NamedMultiMesh& o)
 {
     const std::vector<int64_t> parent_id = get_id(parent);

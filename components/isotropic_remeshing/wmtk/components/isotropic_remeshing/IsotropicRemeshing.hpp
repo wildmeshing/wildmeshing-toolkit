@@ -28,6 +28,7 @@ public:
 private:
     std::vector<wmtk::attribute::MeshAttributeHandle> all_envelope_positions() const;
     static bool is_envelope_position(const wmtk::attribute::MeshAttributeHandle& position);
+    void make_envelopes();
 
 private:
     IsotropicRemeshingOptions m_options;

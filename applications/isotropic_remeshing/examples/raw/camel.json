@@ -4,6 +4,7 @@
         "name_spec": {"pos": "uv"}
     },
         "position_attribute": "pos/vertices",
+        "other_position_attributes": "pos.uv/vertices",
         "iterations": 30,
         "length_rel": 0.01,
         "lock_boundary": true,

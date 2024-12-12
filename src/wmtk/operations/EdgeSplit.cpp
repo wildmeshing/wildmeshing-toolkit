@@ -20,7 +20,7 @@ bool EdgeSplit::attribute_new_all_configured() const
     for (const auto& strat : m_new_attr_strategies) {
         if (strat->invalid_state()) {
             all_configured = false;
-            wmtk::logger().warn("Split attribute new {} was not configured", strat->name());
+            wmtk::logger().warn("Split attribute new {} was not configured ({})", strat->name(),fmt::ptr(strat.get()));
         }
     }
     return all_configured;
@@ -86,11 +86,22 @@ void EdgeSplit::set_new_attribute_strategy(
     const attribute::MeshAttributeHandle& attribute,
     const std::shared_ptr<const operations::BaseSplitNewAttributeStrategy>& other)
 {
+    bool done = false;
     for (size_t i = 0; i < m_new_attr_strategies.size(); ++i) {
         if (m_new_attr_strategies[i]->matches_attribute(attribute)) {
+            if(done) {
+                throw std::runtime_error("Two of one attr strat");
+            }
+            auto old = m_new_attr_strategies[i];
             m_new_attr_strategies[i] = other;
-            return;
+            spdlog::warn("attribute new moving from {} to {}", fmt::ptr(old.get()), fmt::ptr(other.get()));
+            other->invalid_state();
+            done = true;
+            //return;
         }
+    }
+    if(done) {
+        return ;
     }
 
     throw std::runtime_error("unable to find attribute");

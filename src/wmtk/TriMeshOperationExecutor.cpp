@@ -183,9 +183,6 @@ TriMesh::TriMeshOperationExecutor::get_collapse_simplices_to_delete(
             std::sort(ids[i].begin(), ids[i].end());
         }
     }
-    for(int j = 0; j < 3; ++j) {
-        spdlog::info("Going to delete {}-simplices {}", j, fmt::join(ids[j],","));
-    }
 
     return ids;
 }
@@ -346,7 +343,6 @@ void TriMesh::TriMeshOperationExecutor::replace_incident_face(IncidentFaceData& 
     auto old_fv = fv_accessor.index_access().const_vector_attribute(f_old).eval();
     auto old_fe = fe_accessor.index_access().const_vector_attribute(f_old).eval();
     auto old_ff = ff_accessor.index_access().const_vector_attribute(f_old).eval();
-    spdlog::info("FV{} = {} at beginning", f_old, fmt::join(old_fv,","));
 
     // f0
     for (int j = 0; j < 2; ++j) {
@@ -409,7 +405,6 @@ void TriMesh::TriMeshOperationExecutor::replace_incident_face(IncidentFaceData& 
         ef_accessor.index_access().scalar_attribute(se) = f;
         // assign each vertex one face
         logger().trace("vf[{}] = {}", m_spine_vids[j], f);
-        spdlog::info("FV{} = {} at end", f, fmt::join(fv,","));
         vf_accessor.index_access().scalar_attribute(m_spine_vids[j]) = f;
     }
 
@@ -641,7 +636,6 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge_precompute()
         m_incident_face_datas.emplace_back(get_incident_face_data(f));
     }
 
-    spdlog::info("{} faces", m_incident_face_datas.size());
     assert(m_incident_face_datas.size() <= 2);
     if (m_incident_face_datas[0].fid != m_mesh.id_face(m_operating_tuple)) {
         assert(m_incident_face_datas.size() == 2);
@@ -711,7 +705,6 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge()
         const int64_t& v0 = m_spine_vids[0];
         const int64_t& v1 = m_spine_vids[1];
 
-        wmtk::logger().info("Edge {} to {} - {} has face neighbors {}", v0, v1,v0, fmt::join(v0_neighbors,","));
 
         // replace v0 by v1 in incident faces
         for (const int64_t fid : v0_neighbors) {
@@ -726,14 +719,12 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge()
                 continue;
             }
             auto fv = fv_accessor.index_access().vector_attribute(fid);
-            spdlog::info("FV{} = {} went from ", fid, fmt::join(fv,","));
             for (int64_t i = 0; i < 3; ++i) {
                 if (fv[i] == v0) {
                     fv[i] = v1;
                     break;
                 }
             }
-            spdlog::info("to FV{} = {}", fid, fmt::join(fv,","));
         }
 
         const int64_t& ret_eid = m_incident_face_datas[0].ears[1].eid;

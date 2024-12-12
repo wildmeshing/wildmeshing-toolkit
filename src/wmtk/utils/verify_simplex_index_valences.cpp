@@ -31,6 +31,7 @@ indices(const Mesh& m, const internal::IndexSimplexMapper& mapper, const simplex
             r[j] = mapper.id(id);
         }
     }
+
     return r;
 }
 template <PrimitiveType mesh_pt, PrimitiveType pt>
@@ -48,10 +49,15 @@ bool verify_simplex_index_valences(const Mesh& m, const internal::IndexSimplexMa
     }
 
     if (mesh_pt == pt + 1) {
-        for(size_t j = 0; j < cofaces.size(); ++j) {
+        for (size_t j = 0; j < cofaces.size(); ++j) {
             const auto& cof = cofaces[j];
             if (cof.size() > 2) {
-                wmtk::logger().warn(fmt::format("More than 2 {}-cofaces (facet indices={}) for a boundary {}-simplex [{}]", D, fmt::join(cof,","), meshD, fmt::join(mapper.simplices<D>()[j],",")));
+                wmtk::logger().warn(fmt::format(
+                    "More than 2 {}-cofaces (facet indices={}) for a boundary {}-simplex [{}]",
+                    D,
+                    fmt::join(cof, ","),
+                    meshD,
+                    fmt::join(mapper.simplices<D>()[j], ",")));
                 return false;
             }
         }

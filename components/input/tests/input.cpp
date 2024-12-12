@@ -26,6 +26,7 @@ TEST_CASE("component_input", "[components][input]")
             {"path", input_file.string()},
             {"old_mode", true},
             {"ignore_z", false},
+            {"validate", false},
             {"tetrahedron_attributes", json::array()}};
         auto opts = component_json.get<wmtk::components::input::InputOptions>();
         CHECK(opts.path == input_file);

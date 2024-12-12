@@ -4,6 +4,9 @@
 
 namespace wmtk {
 class Mesh;
+namespace attribute {
+    class MeshAttributeHandle;
+}
 }
 
 
@@ -62,6 +65,7 @@ public:
     // returns the name of a mesh if it lies in this multimesh
     std::string get_name(const Mesh& m) const;
 
+    std::string get_path(const wmtk::attribute::MeshAttributeHandle& m) const;
 
     // checks whether the meshes / nodes are synchronized. Passes thrown errors if desired
     bool is_valid(bool pass_exceptions = false) const;

@@ -133,4 +133,11 @@ bool MeshCollection::is_valid(bool pass_exceptions) const
     }
     return true;
 }
+
+    //std::vector<const NamedMultiMesh*> get_named_multimeshes(const Mesh& m) const {
+
+    //    for(const& [_, nmm]: m_meshes) {
+    //        if(m.is_string
+    //    }
+    //}
 } // namespace wmtk::components::multimesh

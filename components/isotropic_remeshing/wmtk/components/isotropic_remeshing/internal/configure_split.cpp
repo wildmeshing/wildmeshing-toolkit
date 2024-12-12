@@ -30,10 +30,10 @@ std::shared_ptr<invariants::InvariantCollection> split_invariants(
 
 void configure_split(operations::EdgeSplit& es, Mesh& m, const IsotropicRemeshingOptions& options)
 {
+    es.attribute_new_all_configured();
     auto invars = split_invariants(m, options);
     es.add_invariant(invars);
     for (auto& p : options.all_positions()) {
-        spdlog::info("Writng split attribute new for {}", p.name());
         es.set_new_attribute_strategy(p, operations::SplitBasicStrategy::None, operations::SplitRibBasicStrategy::Mean);
     }
     for (const auto& attr : options.pass_through_attributes) {

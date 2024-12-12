@@ -25,6 +25,9 @@ public:
     NamedMultiMesh& get_named_multimesh(const std::string_view& path);
     Mesh& get_mesh(const std::string_view& path);
 
+
+    //std::vector<const NamedMultiMesh*> get_named_multimeshes(const Mesh&) const;
+
     // over time meshes can merge and have aliases
     // Thsi operation removes meshes whose naming structure aren't the root of a naming tree
     void make_canonical();
