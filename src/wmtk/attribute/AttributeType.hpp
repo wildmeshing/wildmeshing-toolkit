@@ -5,32 +5,36 @@ namespace wmtk::attribute {
 enum class AttributeType { Char = 0, Int64 = 1, Double = 2, Rational = 3 };
 
 template <AttributeType AT>
-struct type_from_attribute_type_enum
+struct attribute_type_traits
 {
 };
 template <>
-struct type_from_attribute_type_enum<AttributeType::Char>
+struct attribute_type_traits<AttributeType::Char>
 {
     using type = char;
+    const static std::string_view name;
 };
 template <>
-struct type_from_attribute_type_enum<AttributeType::Double>
+struct attribute_type_traits<AttributeType::Double>
 {
     using type = double;
+    const static std::string_view name;
 };
 template <>
-struct type_from_attribute_type_enum<AttributeType::Int64>
+struct attribute_type_traits<AttributeType::Int64>
 {
     using type = int64_t;
+    const static std::string_view name;
 };
 template <>
-struct type_from_attribute_type_enum<AttributeType::Rational>
+struct attribute_type_traits<AttributeType::Rational>
 {
     using type = wmtk::Rational;
+    const static std::string_view name;
 };
 
 template <AttributeType AT>
-using type_from_attribute_type_enum_t = typename type_from_attribute_type_enum<AT>::type;
+using type_from_attribute_type_enum_t = typename attribute_type_traits<AT>::type;
 
 template <typename T>
 inline constexpr auto attribute_type_enum_from_type() -> AttributeType
@@ -53,4 +57,5 @@ inline constexpr auto attribute_type_enum_from_type() -> AttributeType
         return AttributeType::Char;
     }
 }
+const std::string_view attribute_type_name(AttributeType pt);
 } // namespace wmtk::attribute
