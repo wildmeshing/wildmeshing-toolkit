@@ -24,6 +24,7 @@ tri_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(
     TriMesh& m,
     const simplex::Simplex& s) const
 {
+    assert(m.is_valid(s));
     TriMesh::TriMeshOperationExecutor exec(m, s.tuple());
     exec.collapse_edge();
     return std::move(static_cast<tri_mesh::EdgeOperationData&>(exec));

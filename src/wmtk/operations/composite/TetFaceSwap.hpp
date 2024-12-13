@@ -37,7 +37,7 @@ namespace wmtk::operations::composite {
 class TetFaceSwap : public Operation
 {
 public:
-    TetFaceSwap(Mesh& m);
+    TetFaceSwap(TetMesh& m);
 
     PrimitiveType primitive_type() const override { return PrimitiveType::Triangle; }
 

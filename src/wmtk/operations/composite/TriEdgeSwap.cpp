@@ -4,10 +4,8 @@
 
 namespace wmtk::operations::composite {
 
-TriEdgeSwap::TriEdgeSwap(Mesh& m)
-    : Operation(m)
-    , m_split(m)
-    , m_collapse(m)
+TriEdgeSwap::TriEdgeSwap(TriMesh& m)
+    : EdgeSwap(m)
 {}
 
 
@@ -21,7 +19,7 @@ std::vector<simplex::Simplex> TriEdgeSwap::execute(const simplex::Simplex& simpl
     //  \     /
     //   \   /
     //    \ /
-    const auto split_simplicies = m_split(simplex);
+    const auto split_simplicies = split()(simplex);
     if (split_simplicies.empty()) return {};
     assert(split_simplicies.size() == 1);
 
@@ -47,7 +45,7 @@ std::vector<simplex::Simplex> TriEdgeSwap::execute(const simplex::Simplex& simpl
     //   \ | /
     //    \|/
     const auto collapse_simplicies =
-        m_collapse(simplex::Simplex(mesh(), m_collapse.primitive_type(), collapse_input_tuple));
+        collapse()(simplex::Simplex(mesh(), collapse().primitive_type(), collapse_input_tuple));
     if (collapse_simplicies.empty()) return {};
     assert(collapse_simplicies.size() == 1);
 
