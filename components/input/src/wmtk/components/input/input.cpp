@@ -6,6 +6,7 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include "InputOptions.hpp"
+#include <wmtk/utils/verify_simplex_index_valences.hpp>
 
 namespace wmtk::components::input {
 
@@ -16,7 +17,7 @@ std::shared_ptr<Mesh> input(
 {
     InputOptions options;
     options.old_mode = true;
-    options.file = file;
+    options.path = file;
     options.ignore_z_if_zero = ignore_z_if_zero;
     if (!tetrahedron_attributes.empty()) {
         options.imported_attributes = {{}, {}, {}, tetrahedron_attributes};
@@ -33,7 +34,7 @@ multimesh::NamedMultiMesh input(
     const InputOptions& options,
     const components::utils::PathResolver& resolver)
 {
-    const auto [file_path, found] = resolver.resolve(options.file);
+    const auto [file_path, found] = resolver.resolve(options.path);
     if (!found) {
         const auto& paths = resolver.get_paths();
         std::vector<std::string> path_strs;
@@ -46,9 +47,10 @@ multimesh::NamedMultiMesh input(
         log_and_throw_error(
             "file [{}] not found (input path was [{}], paths searched were [{}]",
             file_path.string(),
-            options.file.string(),
+            options.path.string(),
             fmt::join(path_strs, ","));
     }
+
 
     std::shared_ptr<Mesh> mesh;
 
@@ -80,6 +82,14 @@ multimesh::NamedMultiMesh input(
         nlohmann::json js;
         ifs >> js;
         mm.set_names(js);
+    }
+    if(options.validate) {
+        for(const auto& mptr: mm.root().get_all_meshes()) {
+            if(!wmtk::utils::verify_simplex_index_valences(*mptr)) {
+                throw std::runtime_error(fmt::format("Mesh {} was not valid, check env WMTK_LOGGER_LEVEL=debug for more info", mm.get_name(*mptr)));
+            }
+        }
+
     }
 
     return mm;

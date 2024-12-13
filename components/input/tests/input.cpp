@@ -23,12 +23,13 @@ TEST_CASE("component_input", "[components][input]")
         auto a = wmtk::components::input::input(input_file, false, {});
 
         json component_json = {
-            {"file", input_file.string()},
+            {"path", input_file.string()},
             {"old_mode", true},
             {"ignore_z", false},
+            {"validate", false},
             {"tetrahedron_attributes", json::array()}};
         auto opts = component_json.get<wmtk::components::input::InputOptions>();
-        CHECK(opts.file == input_file);
+        CHECK(opts.path == input_file);
         CHECK(opts.ignore_z_if_zero == false);
         CHECK(opts.old_mode == true);
         CHECK(opts.old_mode == true);
@@ -50,7 +51,7 @@ TEST_CASE("component_input", "[components][input]")
         nlohmann::json js = "path";
         REQUIRE(js.is_string());
         auto opts = js.get<wmtk::components::input::InputOptions>();
-        CHECK(opts.file.string() == "path");
+        CHECK(opts.path.string() == "path");
     }
 
     SECTION("should throw")
@@ -58,7 +59,7 @@ TEST_CASE("component_input", "[components][input]")
         //         json component_json = {
         //             {"type", "input"},
         //             {"name", "input_mesh"},
-        //             {"file", "In case you ever name your file like that: What is wrong with
+        //             {"path", "In case you ever name your file like that: What is wrong with
         //             you?"},
         //             {"ignore_z", false},
         //             {"tetrahedron_attributes", json::array()}};
