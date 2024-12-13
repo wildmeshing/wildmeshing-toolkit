@@ -121,11 +121,11 @@ wmtk::attribute::MeshAttributeHandle get_attribute(
         possibilities.emplace_back(AttributeDescription{name, dimension, t});
     };
     if (pt.has_value() && type.has_value()) {
-        wmtk::logger().debug("Reading attribute {} with pt {} and type {}", name, primitive_type_name(pt.value()), attribute_type_name(type.value()));
+        wmtk::logger().trace("Reading attribute {} with pt {} and type {}", name, primitive_type_name(pt.value()), attribute_type_name(type.value()));
         add_option(pt.value(), type.value());
 
     } else if (pt.has_value()) {
-        wmtk::logger().debug("Reading attribute {} with pt {}", name, primitive_type_name(pt.value()));
+        wmtk::logger().trace("Reading attribute {} with pt {}", name, primitive_type_name(pt.value()));
         for (AT at : types) {
             try {
                 wmtk::logger().trace("Attempting to read attribute {} with pt {} and guess {}", name, primitive_type_name(pt.value()), attribute_type_name(at));
@@ -135,7 +135,7 @@ wmtk::attribute::MeshAttributeHandle get_attribute(
             }
         }
     } else if (type.has_value()) {
-        wmtk::logger().debug("Reading attribute {} with and type {}", name,attribute_type_name(type.value()));
+        wmtk::logger().trace("Reading attribute {} with and type {}", name,attribute_type_name(type.value()));
         for (PrimitiveType p : wmtk::utils::primitive_below(mesh.top_simplex_type())) {
             try {
                     wmtk::logger().trace("Attempting to read attribute {} with guess pt {} and type {}", name, primitive_type_name(p), attribute_type_name(type.value()));
@@ -145,7 +145,7 @@ wmtk::attribute::MeshAttributeHandle get_attribute(
             }
         }
     } else {
-        wmtk::logger().debug("Reading attribute {}", name);
+        wmtk::logger().trace("Reading attribute {}", name);
         for (AT at : types) {
             for (PrimitiveType p : wmtk::utils::primitive_below(mesh.top_simplex_type())) {
                 try {
