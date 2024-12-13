@@ -64,19 +64,6 @@ std::shared_ptr<wmtk::operations::composite::EdgeSwap> tri_swap(
 
 } // namespace
 
-std::shared_ptr<wmtk::operations::Operation> configure_swap(
-    Mesh& mesh,
-    const IsotropicRemeshingOptions& options)
-{
-    if (mesh.top_simplex_type() == PrimitiveType::Triangle) {
-        return std::static_pointer_cast<wmtk::operations::Operation>(
-            tri_swap(static_cast<TriMesh&>(mesh), options));
-    } else {
-        assert(false);
-    }
-    return {};
-}
-
 
 void configure_swap_transfer(
     operations::composite::EdgeSwap& swap,

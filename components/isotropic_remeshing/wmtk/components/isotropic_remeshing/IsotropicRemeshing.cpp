@@ -1,38 +1,42 @@
 
 #include "IsotropicRemeshing.hpp"
-#include <wmtk/EdgeMesh.hpp>
+
+// main execution tools
 #include <wmtk/Scheduler.hpp>
-#include <wmtk/TriMesh.hpp>
-#include <wmtk/components/multimesh/MeshCollection.hpp>
-#include <wmtk/components/output/output.hpp>
-#include <wmtk/components/output/utils/format.hpp>
+#include <wmtk/multimesh/consolidate.hpp>
+
+
+//
 #include <wmtk/invariants/EnvelopeInvariant.hpp>
-#include <wmtk/invariants/FusionEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorSimplexInvariant.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
+
+// utils for setting invariants
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
-#include <wmtk/invariants/uvEdgeInvariant.hpp>
-#include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
-#include <wmtk/multimesh/consolidate.hpp>
+// meshvisitor requires knowing all the mesh types
+#include <wmtk/EdgeMesh.hpp>
+#include <wmtk/PointMesh.hpp>
+#include <wmtk/TetMesh.hpp>
+#include <wmtk/TriMesh.hpp>
+
+#include <wmtk/utils/Logger.hpp>
+
+// for logging meshes
+#include <wmtk/components/multimesh/MeshCollection.hpp>
+#include <wmtk/components/output/output.hpp>
+#include <wmtk/components/output/utils/format.hpp>
+
+
+// op types
 #include <wmtk/operations/AttributesUpdate.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
-#include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
-#include <wmtk/operations/utils/VertexLaplacianSmooth.hpp>
-#include <wmtk/operations/utils/VertexTangentialLaplacianSmooth.hpp>
-#include <wmtk/utils/Logger.hpp>
-
-
+#include <wmtk/operations/composite/EdgeSwap.hpp>
+//
 #include <Eigen/Geometry>
-#include <wmtk/invariants/InvariantCollection.hpp>
-
-#include <wmtk/Mesh.hpp>
-#include "internal/configure_collapse.hpp"
-#include "internal/configure_split.hpp"
-#include "internal/configure_swap.hpp"
 
 
 namespace wmtk::components::isotropic_remeshing {
@@ -47,24 +51,47 @@ IsotropicRemeshing::IsotropicRemeshing(const IsotropicRemeshingOptions& opts)
         make_envelopes();
     }
 
+    make_interior_invariants();
+
+    configure_split();
+    // configure_swap();
+    configure_collapse();
+    configure_smooth();
+
     // split
-    m_operations.emplace_back("split", m_split = configure_split());
+    if (m_split) {
+        m_operations.emplace_back("split", m_split);
+    } else {
+        wmtk::logger().warn("Running Isotropic Remeshing without a split configured");
+    }
 
 
     //////////////////////////////////////////
     // collapse
 
-    m_operations.emplace_back("collapse", m_collapse = configure_collapse());
+    if (m_collapse) {
+        m_operations.emplace_back("collapse", m_collapse);
+    } else {
+        wmtk::logger().warn("Running Isotropic Remeshing without a collapse configured");
+    }
 
 
     //////////////////////////////////////////
     // swap
 
-    m_operations.emplace_back("swap", m_swap = configure_swap());
+    if (m_swap) {
+        m_operations.emplace_back("swap", m_swap);
+    } else {
+        wmtk::logger().warn("Running Isotropic Remeshing without a swap configured");
+    }
 
     //////////////////////////////////////////
     // smooth
-    m_operations.emplace_back("smooth", m_smooth = configure_smooth());
+    if (m_smooth) {
+        m_operations.emplace_back("smooth", m_smooth);
+    } else {
+        wmtk::logger().warn("Running Isotropic Remeshing without a smooth configured");
+    }
 }
 
 std::vector<wmtk::attribute::MeshAttributeHandle> IsotropicRemeshing::all_envelope_positions() const
@@ -89,6 +116,24 @@ bool IsotropicRemeshing::is_envelope_position(const wmtk::attribute::MeshAttribu
     return position.mesh().top_cell_dimension() < position.dimension();
 }
 
+
+void IsotropicRemeshing::make_interior_invariants()
+{
+    auto position = m_options.position_attribute;
+    Mesh& mesh = position.mesh();
+    auto invariant_interior_vertex = std::make_shared<invariants::InvariantCollection>(mesh);
+
+    auto set_all_invariants = [&](auto&& m) {
+        // TODO: this used to do vertex+edge, but just checkign for vertex should be sufficient?
+        for (PrimitiveType pt = PrimitiveType::Vertex; pt < m.top_simplex_type(); pt = pt + 1) {
+            invariant_interior_vertex->add(
+                std::make_shared<invariants::InteriorSimplexInvariant>(m, pt));
+        }
+    };
+    wmtk::multimesh::MultiMeshVisitor visitor(set_all_invariants);
+    visitor.execute_from_root(mesh);
+    m_interior_position_invariants = invariant_interior_vertex;
+}
 
 void IsotropicRemeshing::run()
 {
@@ -141,7 +186,7 @@ void IsotropicRemeshing::run()
                 continue;
             }
             const auto stats = scheduler.run_operation_on_all(*opptr);
-            logger().debug(
+            logger().info(
                 "Executed {} {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",
                 stats.number_of_performed_operations(),
                 name,
@@ -170,109 +215,6 @@ void IsotropicRemeshing::run()
 }
 
 
-std::shared_ptr<operations::EdgeSplit> IsotropicRemeshing::configure_split()
-{
-    wmtk::logger().debug("Configure isotropic remeshing split");
-    wmtk::Mesh& mesh = m_options.position_attribute.mesh();
-    auto op = std::make_shared<operations::EdgeSplit>(mesh);
-    internal::configure_split(*op, mesh, m_options);
-    assert(op->attribute_new_all_configured());
-    return op;
-}
-std::shared_ptr<operations::EdgeCollapse> IsotropicRemeshing::configure_collapse()
-{
-    wmtk::logger().debug("Configure isotropic remeshing collapse");
-    wmtk::Mesh& mesh = m_options.position_attribute.mesh();
-    auto op = std::make_shared<operations::EdgeCollapse>(mesh);
-    internal::configure_collapse(*op, mesh, m_options);
-    assert(op->attribute_new_all_configured());
-    return op;
-}
-std::shared_ptr<operations::Operation> IsotropicRemeshing::configure_swap()
-{
-    // adds common invariants like inversion check and asserts taht the swap is ready for prime time
-    wmtk::logger().debug("Configure isotropic remeshing swap");
-    wmtk::Mesh& mesh = m_options.position_attribute.mesh();
-    auto op = std::make_shared<operations::EdgeSplit>(mesh);
-    internal::configure_split(*op, mesh, m_options);
-    return op;
-}
-
-std::shared_ptr<operations::AttributesUpdateWithFunction> IsotropicRemeshing::configure_smooth()
-{
-    auto position = m_options.position_attribute;
-    Mesh& mesh = position.mesh();
-    auto pass_through_attributes = m_options.pass_through_attributes;
-    auto other_positions = m_options.other_position_attributes;
-    assert(mesh.is_connectivity_valid());
-
-    std::vector<attribute::MeshAttributeHandle> positions = other_positions;
-    positions.push_back(position);
-    // if (position.mesh().top_simplex_type() != PrimitiveType::Triangle) {
-    //     log_and_throw_error(
-    //         "isotropic remeshing works only for triangle meshes: {}",
-    //         primitive_type_name(position.mesh().top_simplex_type()));
-    // }
-
-
-    // clear attributes
-    std::vector<attribute::MeshAttributeHandle> keeps = pass_through_attributes;
-    keeps.emplace_back(position);
-    keeps.insert(keeps.end(), other_positions.begin(), other_positions.end());
-
-    auto op_smooth = std::make_shared<operations::AttributesUpdateWithFunction>(mesh);
-    auto update_position_func = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
-        return P.col(0);
-    };
-    std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
-        update_position;
-    std::optional<attribute::MeshAttributeHandle> position_for_inversion =
-        m_options.inversion_position_attribute;
-
-    auto invariant_interior_vertex = std::make_shared<invariants::InvariantCollection>(mesh);
-
-    auto set_all_invariants = [&](auto&& m) {
-        // TODO: this used to do vertex+edge, but just checkign for vertex should be sufficient?
-        for (PrimitiveType pt = PrimitiveType::Vertex; pt < m.top_simplex_type(); pt = pt + 1) {
-            invariant_interior_vertex->add(
-                std::make_shared<invariants::InteriorSimplexInvariant>(m, pt));
-        }
-    };
-    wmtk::multimesh::MultiMeshVisitor visitor(set_all_invariants);
-    visitor.execute_from_root(mesh);
-    if (!m_options.other_position_attributes.empty()) {
-        update_position =
-            std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
-                other_positions.front(),
-                position,
-                update_position_func);
-    }
-
-    if (position.dimension() == 3 && mesh.top_simplex_type() == PrimitiveType::Triangle) {
-        op_smooth->set_function(operations::VertexTangentialLaplacianSmooth(position));
-    } else {
-        op_smooth->set_function(operations::VertexLaplacianSmooth(position));
-    }
-
-    if (m_options.lock_boundary) {
-        op_smooth->add_invariant(invariant_interior_vertex);
-    }
-
-    // hack for uv
-    if (m_options.fix_uv_seam) {
-        op_smooth->add_invariant(
-            std::make_shared<invariants::uvEdgeInvariant>(mesh, other_positions.front().mesh()));
-    }
-
-    if (position_for_inversion) {
-        op_smooth->add_invariant(std::make_shared<SimplexInversionInvariant<double>>(
-            position_for_inversion.value().mesh(),
-            position_for_inversion.value().as<double>()));
-    }
-
-    if (update_position) op_smooth->add_transfer_strategy(update_position);
-    return op_smooth;
-}
 void IsotropicRemeshing::make_envelopes()
 {
     if (!m_options.envelope_size.has_value()) {
@@ -281,15 +223,24 @@ void IsotropicRemeshing::make_envelopes()
     }
     auto envelope_positions = all_envelope_positions();
 
+    std::vector<std::shared_ptr<invariants::EnvelopeInvariant>> envelope_invariants;
+
     std::transform(
         envelope_positions.begin(),
         envelope_positions.end(),
-        std::back_inserter(m_envelope_invariants),
+        std::back_inserter(envelope_invariants),
         [&](const wmtk::attribute::MeshAttributeHandle& mah) {
             return std::make_shared<invariants::EnvelopeInvariant>(
                 mah,
                 std::sqrt(2) * m_options.envelope_size.value(),
                 mah);
         });
+
+    m_envelope_invariants = std::make_shared<invariants::InvariantCollection>(
+        m_options.position_attribute.mesh().get_multi_mesh_root());
+
+    for (const auto& invar : envelope_invariants) {
+        m_envelope_invariants->add(invar);
+    }
 }
 } // namespace wmtk::components::isotropic_remeshing

@@ -11,6 +11,11 @@ set(SRC_FILES
     IsotropicRemeshing.cpp
     IsotropicRemeshing.hpp
 
+    IsotropicRemeshing_split.cpp
+    IsotropicRemeshing_collapse.cpp
+    IsotropicRemeshing_smooth.cpp
+    IsotropicRemeshing_swap.cpp
+
 	isotropic_remeshing.hpp
     isotropic_remeshing.cpp
 
