@@ -219,12 +219,12 @@ void ParaviewWriter::write_internal(
         for (int i = 0; i < m_writers.size(); ++i) {
             if (m_enabled[i]) m_writers[i].vertices() = V;
         }
-    } else if (m_enabled[type]) {
-        m_writers[type].write(name, stride, val, true);
     } else if (type == 0) { // vertex attrs are always written
         for (size_t i = 0; i < m_writers.size(); ++i) {
             if (m_enabled[i]) m_writers[i].write(name, stride, val, false);
         }
+    } else if (m_enabled[type]) {
+        m_writers[type].write(name, stride, val, true);
     }
 }
 
