@@ -61,7 +61,7 @@ const NamedMultiMesh& MeshCollection::get_named_multimesh(const std::string_view
 #endif
     const auto nmm_name = *split.begin();
     if (nmm_name.empty() && m_meshes.size() == 1) {
-        wmtk::logger().debug("MeshCollection accessed with an empty name, but has only 1 mesh so "
+        wmtk::logger().trace("MeshCollection accessed with an empty name, but has only 1 mesh so "
                              "assuming that is the right mesh");
         return *m_meshes.begin()->second;
     }
@@ -91,7 +91,7 @@ NamedMultiMesh& MeshCollection::get_named_multimesh(const std::string_view& path
 #endif
     const auto nmm_name = *split.begin();
     if (nmm_name.empty() && m_meshes.size() == 1) {
-        wmtk::logger().debug("MeshCollection accessed with an empty name, but has only 1 mesh so "
+        wmtk::logger().trace("MeshCollection accessed with an empty name, but has only 1 mesh so "
                              "assuming that is the right mesh");
         return *m_meshes.begin()->second;
     }
