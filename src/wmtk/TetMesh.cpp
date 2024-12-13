@@ -328,7 +328,7 @@ bool TetMesh::is_valid(const Tuple& tuple) const
 
     if (!is_connectivity_valid) {
 #if !defined(NDEBUG)
-        logger().debug(
+        logger().trace(
             "tuple.m_local_vid={} >= 0 && tuple.m_local_eid={} >= 0 &&"
             "tuple.m_local_fid={} >= 0 &&"
             " tuple.m_global_cid={} >= 0 &&"
@@ -418,7 +418,6 @@ bool TetMesh::is_connectivity_valid() const
 
     for (int64_t i = 0; i < capacity(PrimitiveType::Tetrahedron); ++i) {
         if (!t_flag_accessor.index_access().is_active(i)) {
-            wmtk::logger().debug("Tet {} is deleted", i);
             continue;
         }
         auto tf = tf_accessor.index_access().const_vector_attribute<4>(i);
@@ -429,8 +428,8 @@ bool TetMesh::is_connectivity_valid() const
         for (int64_t j = 0; j < 6; ++j) {
             int64_t ei = te(j);
             if (!e_flag_accessor.index_access().is_active(ei)) {
-                wmtk::logger().debug(
-                    "Tet {} refers to face {} at local index {} which was deleted",
+                wmtk::logger().error(
+                    "Tet {} refers to edge {} at local index {} which was deleted",
                     i,
                     ei,
                     j);
@@ -442,7 +441,7 @@ bool TetMesh::is_connectivity_valid() const
             int64_t vi = tv(j);
             int64_t fi = tf(j);
             if (!v_flag_accessor.index_access().is_active(vi)) {
-                wmtk::logger().debug(
+                wmtk::logger().error(
                     "Tet {} refers to vertex{} at local index {} which was deleted",
                     i,
                     vi,
@@ -450,11 +449,8 @@ bool TetMesh::is_connectivity_valid() const
                 bad_face = true;
             }
             if (!f_flag_accessor.index_access().is_active(fi)) {
-                wmtk::logger().debug(
-                    "Tet {} refers to vertex{} at local index {} which was deleted",
-                    i,
-                    fi,
-                    j);
+                wmtk::logger()
+                    .error("Tet {} refers to face{} at local index {} which was deleted", i, fi, j);
                 bad_face = true;
             }
         }
@@ -465,7 +461,6 @@ bool TetMesh::is_connectivity_valid() const
     // VT and TV
     for (int64_t i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
         if (!v_flag_accessor.index_access().is_active(i)) {
-            wmtk::logger().debug("Vertex {} is deleted", i);
             continue;
         }
         int cnt = 0;
@@ -484,7 +479,6 @@ bool TetMesh::is_connectivity_valid() const
     // ET and TE
     for (int64_t i = 0; i < capacity(PrimitiveType::Edge); ++i) {
         if (!e_flag_accessor.index_access().is_active(i)) {
-            wmtk::logger().debug("Edge {} is deleted", i);
             continue;
         }
         int cnt = 0;
@@ -503,7 +497,6 @@ bool TetMesh::is_connectivity_valid() const
     // FT and TF
     for (int64_t i = 0; i < capacity(PrimitiveType::Triangle); ++i) {
         if (!f_flag_accessor.index_access().is_active(i)) {
-            wmtk::logger().debug("Face {} is deleted", i);
             continue;
         }
         int cnt = 0;
@@ -522,7 +515,6 @@ bool TetMesh::is_connectivity_valid() const
     // TF and TT
     for (int64_t i = 0; i < capacity(PrimitiveType::Tetrahedron); ++i) {
         if (!t_flag_accessor.index_access().is_active(i)) {
-            wmtk::logger().debug("Tet {} is deleted", i);
             continue;
         }
 
@@ -531,7 +523,7 @@ bool TetMesh::is_connectivity_valid() const
             if (nb == -1) {
                 if (ft_accessor.index_access().const_scalar_attribute(
                         tf_accessor.index_access().const_vector_attribute<4>(i)(j)) != i) {
-                    wmtk::logger().info("fail TF and TT 1");
+                    wmtk::logger().error("FT[TF[{},{}]] != {}", i, j, i);
                     return false;
                 }
                 continue;
@@ -546,13 +538,24 @@ bool TetMesh::is_connectivity_valid() const
                 }
             }
             if (cnt != 1) {
-                wmtk::logger().info("fail TF and TT 2");
+                wmtk::logger().error("Tet {} was adjacent to tet {} {} <= 1 times", nb, i, cnt);
                 return false;
             }
 
             if (tf_accessor.index_access().const_vector_attribute<4>(i)(j) !=
                 tf_accessor.index_access().const_vector_attribute<4>(nb)(id_in_nb)) {
-                wmtk::logger().info("fail TF and TT 3");
+                wmtk::logger().error(
+                    "TF[{},{}] = {} != {} = TF[{},{}] even though TT[{},{}] == {}",
+                    i,
+                    j,
+                    tf_accessor.index_access().const_vector_attribute<4>(i)(j),
+                    tf_accessor.index_access().const_vector_attribute<4>(nb)(id_in_nb),
+                    nb,
+                    id_in_nb,
+                    i,
+                    j,
+                    nb);
+
                 return false;
             }
         }
