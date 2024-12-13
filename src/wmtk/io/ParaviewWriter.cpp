@@ -5,7 +5,9 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
 
+#include <paraviewo/VTMWriter.hpp>
 #include <paraviewo/VTUWriter.hpp>
+
 // #include <paraviewo/HDF5VTUWriter.hpp>
 
 #include <sstream>
@@ -147,6 +149,14 @@ ParaviewWriter::ParaviewWriter(
     m_writers[1].init(filename.string() + "_edges.vtu", vertices_name, cells[1], m_enabled[1]);
     m_writers[2].init(filename.string() + "_faces.vtu", vertices_name, cells[2], m_enabled[2]);
     m_writers[3].init(filename.string() + "_tets.vtu", vertices_name, cells[3], m_enabled[3]);
+
+    paraviewo::VTMWriter vtm;
+    if (m_enabled[0]) vtm.add_dataset("verts", "mesh", filename.string() + "_verts.vtu");
+    if (m_enabled[1]) vtm.add_dataset("edges", "mesh", filename.string() + "_edges.vtu");
+    if (m_enabled[2]) vtm.add_dataset("faces", "mesh", filename.string() + "_faces.vtu");
+    if (m_enabled[3]) vtm.add_dataset("tets", "mesh", filename.string() + "_tets.vtu");
+
+    vtm.save(filename.string() + ".vtm");
 }
 
 void ParaviewWriter::write(
