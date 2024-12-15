@@ -34,6 +34,7 @@ public:
     bool is_boundary_edge(const Tuple& tuple) const;
     bool is_boundary_face(const Tuple& tuple) const;
 
+    using Mesh::is_valid;
     bool is_valid(const Tuple& tuple) const final override;
 
     void initialize(

@@ -44,6 +44,7 @@ public:
         Eigen::Ref<const RowVectors2l> EE,
         Eigen::Ref<const VectorXl> VE);
 
+    using Mesh::is_valid;
     bool is_valid(const Tuple& tuple) const final override;
 
     bool is_connectivity_valid() const override;
