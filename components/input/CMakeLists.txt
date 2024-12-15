@@ -1,3 +1,5 @@
 set(COMPONENT_NAME input)
 add_subdirectory("src/wmtk/components/input")
+if(WMTK_ENABLE_COMPONENT_TESTS)
 add_subdirectory("tests")
+endif()

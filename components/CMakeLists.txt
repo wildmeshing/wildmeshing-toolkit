@@ -8,7 +8,9 @@ include(add_component_test)
 # wmtk::component_utils
 add_subdirectory(utils)
 
-if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
+option(WMTK_ENABLE_COMPONENT_TESTS "Enable unit tests for components" ${WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT})
+
+if(WMTK_ENABLE_COMPONENT_TESTS)
     add_subdirectory(tests)
 endif()
 
