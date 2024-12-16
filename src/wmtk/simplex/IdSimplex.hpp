@@ -6,6 +6,9 @@
 namespace wmtk {
 class Mesh;
 class Tuple;
+namespace utils::internal {
+    class IndexSimplexMapper;
+}
 } // namespace wmtk
 namespace wmtk::simplex {
 
@@ -16,6 +19,7 @@ class IdSimplex
 public:
     friend class wmtk::Mesh;
     friend class NavigatableSimplex;
+    friend class wmtk::utils::internal::IndexSimplexMapper;
     IdSimplex() = default;
     IdSimplex(const NavigatableSimplex& s);
     bool valid() const { return m_index == -1; }
