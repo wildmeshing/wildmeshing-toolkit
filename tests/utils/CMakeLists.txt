@@ -8,5 +8,7 @@ set(TEST_SOURCES
     test_rational.cpp
     random.cpp
     test_dynamic_array.cpp
+    disjoint_set.cpp
+    valence_checker.cpp
 )
 target_sources(wmtk_tests PRIVATE ${TEST_SOURCES})
