@@ -19,8 +19,10 @@
 
 #include "CLI/CLI.hpp"
 #include "wmtk/components/multimesh/MeshCollection.hpp"
+#include "wmtk/components/multimesh/axis_aligned_periodic.hpp"
 #include "wmtk/components/multimesh/from_boundary.hpp"
 #include "wmtk/components/multimesh/from_facet_bijection.hpp"
+#include "wmtk/components/multimesh/utils/get_attribute.hpp"
 #include "wmtk/components/utils/PathResolver.hpp"
 
 using namespace wmtk::components;
@@ -76,9 +78,23 @@ std::shared_ptr<wmtk::Mesh> merge_meshes(
 
                 return parent_mesh.shared_from_this();
             }
+        } else if (type == "axis_aligned_periodic") {
+            std::string position_attr_name = child_datas["position_attribute"];
+            auto mah = wmtk::components::multimesh::utils::get_attribute(position_attr_name);
+
+            std::vector<bool> mask = child_datas["axes"];
+            std::string output_mesh_name = child_datas["fused_mesh_name"];
+            auto mptr = components::multimesh::axis_aligned_fusion(mah, boundary_attr_name);
+
+            nlohmann::json js;
+            js[output_mesh_name] = nmm.get_names_json();
+            mc.add_mesh(*mptr, js;
+
+            return mptr;
         }
     }
-    return nullptr;
+}
+return nullptr;
 }
 } // namespace
 
