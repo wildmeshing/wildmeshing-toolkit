@@ -14,6 +14,9 @@ void IsotropicRemeshing::configure_swap()
 {
     // adds common invariants like inversion check and asserts taht the swap is ready for prime time
     wmtk::logger().debug("Configure isotropic remeshing swap");
+    if (m_options.edge_swap_mode == EdgeSwapMode::Skip) {
+        return;
+    }
     wmtk::Mesh& mesh = m_options.position_attribute.mesh();
     switch (mesh.top_simplex_type()) {
     case PrimitiveType::Triangle:

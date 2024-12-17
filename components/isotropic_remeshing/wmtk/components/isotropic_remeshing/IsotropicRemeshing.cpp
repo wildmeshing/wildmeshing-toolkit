@@ -54,7 +54,7 @@ IsotropicRemeshing::IsotropicRemeshing(const IsotropicRemeshingOptions& opts)
     make_interior_invariants();
 
     configure_split();
-    // configure_swap();
+    configure_swap();
     configure_collapse();
     configure_smooth();
 
@@ -81,8 +81,9 @@ IsotropicRemeshing::IsotropicRemeshing(const IsotropicRemeshingOptions& opts)
 
     if (m_swap) {
         m_operations.emplace_back("swap", m_swap);
-    } else {
-        wmtk::logger().warn("Running Isotropic Remeshing without a swap configured");
+    } else if (m_options.edge_swap_mode != EdgeSwapMode::Skip) {
+        wmtk::logger().warn("Running Isotropic Remeshing without a swap configured despite being "
+                            "supposed to use them");
     }
 
     //////////////////////////////////////////

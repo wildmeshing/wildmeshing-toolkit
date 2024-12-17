@@ -37,13 +37,21 @@ std::shared_ptr<wmtk::operations::composite::EdgeSwap> tri_swap(
             mesh,
             options.other_position_attributes.front().mesh()));
     }
-
-    auto invariant_valence_improve =
-        std::make_shared<invariants::ValenceImprovementInvariant>(mesh);
-
     auto collapse_invars = collapse_invariants(mesh, options);
-    swap->add_invariant(invariant_valence_improve);
-    swap->add_invariant(collapse_invars);
+
+    switch (options.edge_swap_mode) {
+    case EdgeSwapMode::Valence: {
+        auto invariant_valence_improve =
+            std::make_shared<invariants::ValenceImprovementInvariant>(mesh);
+        swap->add_invariant(invariant_valence_improve);
+    }
+    case EdgeSwapMode::AMIPS: {
+    }
+    case EdgeSwapMode::Skip: {
+        assert(false);
+    }
+    }
+    swap->collapse().add_invariant(collapse_invars);
 
     for (const auto& p : options.all_positions()) {
         swap->split().set_new_attribute_strategy(
