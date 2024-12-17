@@ -25,12 +25,17 @@ public:
     NamedMultiMesh& get_named_multimesh(const std::string_view& path);
     Mesh& get_mesh(const std::string_view& path);
 
+
+    //std::vector<const NamedMultiMesh*> get_named_multimeshes(const Mesh&) const;
+
     // over time meshes can merge and have aliases
     // Thsi operation removes meshes whose naming structure aren't the root of a naming tree
     void make_canonical();
 
     std::map<std::string, const Mesh&> all_meshes() const;
 
+    // checks whether the meshes / nodes are synchronized. Passes thrown errors if desired
+    bool is_valid(bool pass_exceptions = false) const;
 private:
     std::map<std::string_view, std::unique_ptr<NamedMultiMesh>> m_meshes;
 };

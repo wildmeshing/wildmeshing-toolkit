@@ -15,6 +15,7 @@ set(SRC_FILES
     mesh_utils.hpp
     mesh_utils.cpp
     TupleInspector.hpp
+    DisjointSet.hpp
 
     filter_pointers_to_derived.hpp
 
@@ -74,6 +75,14 @@ set(SRC_FILES
 
     DynamicArray.hpp
     DynamicArray.hxx
+
+    DisjointSet.hpp
+    internal/IndexSimplexMapper.hpp
+    internal/IndexSimplexMapper.cpp
+ 
+    verify_simplex_index_valences.hpp
+    verify_simplex_index_valences.cpp
+
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

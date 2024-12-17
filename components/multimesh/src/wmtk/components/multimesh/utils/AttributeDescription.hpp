@@ -6,7 +6,13 @@
 #include <wmtk/components/utils/json_macros.hpp>
 
 namespace wmtk::attribute {
+    class MeshAttributeHandle;
 WMTK_NLOHMANN_JSON_DECLARATION(AttributeType)
+}
+
+namespace wmtk::components::multimesh {
+    class MeshColleciton;
+    class NamedMultiMesh;
 }
 
 namespace wmtk::components::multimesh::utils {
@@ -26,6 +32,13 @@ struct AttributeDescription
     AttributeDescription& operator=(const AttributeDescription&) = default;
     AttributeDescription& operator=(AttributeDescription&&) = default;
     ~AttributeDescription() = default;
+
+    // path will just be the attribute name
+    AttributeDescription(const wmtk::attribute::MeshAttributeHandle&);
+    // path will be the longest multimesh name possible
+    //AttributeDescription(const MeshCollection& mc, const wmtk::attribute::MeshAttributeHandle&);
+    // a canonical per-path multimesh
+    AttributeDescription(const NamedMultiMesh& mc, const wmtk::attribute::MeshAttributeHandle&);
 
     AttributeDescription(
         const std::string_view& p,
@@ -52,8 +65,12 @@ struct AttributeDescription
 
     auto operator<=>(const AttributeDescription&) const -> std::strong_ordering;
     auto operator==(const AttributeDescription&) const -> bool;
+    operator std::string() const;
 
 
     WMTK_NLOHMANN_JSON_FRIEND_DECLARATION(AttributeDescription)
+    private:
+        // helper constructor so we can override the path while still reading off other properties from the MAH
+    AttributeDescription(const std::string_view& p, const wmtk::attribute::MeshAttributeHandle&);
 };
 } // namespace wmtk::components::multimesh::utils
