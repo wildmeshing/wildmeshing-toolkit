@@ -54,6 +54,7 @@ public:
     void initialize(Eigen::Ref<const RowVectors3l> F, bool make_free = false);
     void initialize_free(int64_t count);
 
+    using Mesh::is_valid;
     bool is_valid(const Tuple& tuple) const final override;
 
     bool is_connectivity_valid() const final override;
