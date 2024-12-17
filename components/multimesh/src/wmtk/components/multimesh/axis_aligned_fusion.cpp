@@ -16,6 +16,10 @@ namespace wmtk::components::multimesh {
 std::shared_ptr<Mesh>
 axis_aligned_fusion(const Mesh& mesh, const std::vector<bool>& operating_axis, double eps)
 {
+
+    return axis_aligned_fusion(mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex), operating_axis, eps);
+
+
 }
 
 std::shared_ptr<Mesh>

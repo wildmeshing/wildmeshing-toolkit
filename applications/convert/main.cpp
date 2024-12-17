@@ -19,9 +19,10 @@
 
 #include "CLI/CLI.hpp"
 #include "wmtk/components/multimesh/MeshCollection.hpp"
-#include "wmtk/components/multimesh/axis_aligned_periodic.hpp"
+#include "wmtk/components/multimesh/axis_aligned_fusion.hpp"
 #include "wmtk/components/multimesh/from_boundary.hpp"
 #include "wmtk/components/multimesh/from_facet_bijection.hpp"
+#include "wmtk/components/multimesh/utils/AttributeDescription.hpp"
 #include "wmtk/components/multimesh/utils/get_attribute.hpp"
 #include "wmtk/components/utils/PathResolver.hpp"
 
@@ -77,24 +78,33 @@ std::shared_ptr<wmtk::Mesh> merge_meshes(
                 parent_named_mesh.append_child_mesh_names(parent_mesh, child_named_mesh);
 
                 return parent_mesh.shared_from_this();
+            } else if (type == "axis_aligned_periodic") {
+                std::string position_attr_path = child_datas["position_attribute"];
+                wmtk::components::multimesh::utils::AttributeDescription ad;
+                ad.path = position_attr_path;
+                auto mah = wmtk::components::multimesh::utils::get_attribute(mc, ad);
+
+                std::vector<bool> mask = child_datas["axes"];
+                std::string output_mesh_name = child_datas["fused_mesh_name"];
+                std::optional<double> eps;
+                if (child_datas.contains("epsilon")) {
+                    eps = child_datas["epsilon"].get<double>();
+                }
+                if (!eps.has_value()) {
+                    eps = 1e-10;
+                }
+                auto mptr = components::multimesh::axis_aligned_fusion(mah, mask, eps.value());
+                const auto& nmm = mc.get_named_multimesh(position_attr_path);
+
+                nlohmann::json jsout;
+                jsout[output_mesh_name] = *nmm.get_names_json();
+                mc.add_mesh(wmtk::components::multimesh::NamedMultiMesh(*mptr, jsout));
+
+                return mptr;
             }
-        } else if (type == "axis_aligned_periodic") {
-            std::string position_attr_name = child_datas["position_attribute"];
-            auto mah = wmtk::components::multimesh::utils::get_attribute(position_attr_name);
-
-            std::vector<bool> mask = child_datas["axes"];
-            std::string output_mesh_name = child_datas["fused_mesh_name"];
-            auto mptr = components::multimesh::axis_aligned_fusion(mah, boundary_attr_name);
-
-            nlohmann::json js;
-            js[output_mesh_name] = nmm.get_names_json();
-            mc.add_mesh(*mptr, js;
-
-            return mptr;
         }
     }
-}
-return nullptr;
+    return nullptr;
 }
 } // namespace
 
