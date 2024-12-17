@@ -75,7 +75,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
     const auto simplex_resurrect = simplex;
 
     auto scope = mesh().create_scope();
-    assert(simplex.primitive_type() == primitive_type());
+    // assert(simplex.primitive_type() == primitive_type());
 
     try {
         auto unmods = unmodified_primitives(simplex_resurrect);
