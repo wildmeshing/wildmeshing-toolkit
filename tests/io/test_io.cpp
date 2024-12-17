@@ -89,17 +89,17 @@ TEST_CASE("paraview_2d", "[io]")
     auto mesh = read_mesh(WMTK_DATA_DIR "/fan.msh");
 
     ParaviewWriter writer("paraview_2d", "vertices", *mesh, true, true, true, false);
-    mesh->serialize(writer);
+    CHECK_NOTHROW(mesh->serialize(writer));
 }
 
-TEST_CASE("paraview_2d_vtag", "[io.]")
+TEST_CASE("paraview_2d_vtag", "[io]")
 {
     auto mesh = read_mesh(WMTK_DATA_DIR "/fan.msh");
     mesh->register_attribute<int64_t>("tag", PrimitiveType::Triangle, 1);
     mesh->register_attribute<int64_t>("tag1", PrimitiveType::Vertex, 1);
 
-    ParaviewWriter writer("paraview_2d_vtag", "vertices", *mesh, false, false, true, false);
-    mesh->serialize(writer);
+    ParaviewWriter writer("paraview_2d_vtag", "vertices", *mesh, true, true, true, false);
+    CHECK_NOTHROW(mesh->serialize(writer));
 }
 
 TEST_CASE("hdf5_3d", "[io]")
@@ -110,7 +110,7 @@ TEST_CASE("hdf5_3d", "[io]")
     mesh.initialize(T);
 
     HDF5Writer writer("hdf5_3d.hdf5");
-    mesh.serialize(writer);
+    CHECK_NOTHROW(mesh.serialize(writer));
 }
 
 TEST_CASE("hdf5_multimesh", "[io]")
@@ -157,7 +157,7 @@ TEST_CASE("paraview_3d", "[io]")
     mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, mesh);
 
     ParaviewWriter writer("paraview_3d", "vertices", mesh, true, true, true, true);
-    mesh.serialize(writer);
+    CHECK_NOTHROW(mesh.serialize(writer));
 }
 
 TEST_CASE("msh_3d", "[io]")
@@ -303,5 +303,5 @@ TEST_CASE("attribute_after_split", "[io][.]")
 
     // attribute_after_split_edges.hdf contains a 1 in the "test_attribute"
     ParaviewWriter writer("attribute_after_split", "vertices", m, true, true, true, false);
-    m.serialize(writer);
+    CHECK_NOTHROW(m.serialize(writer));
 }
