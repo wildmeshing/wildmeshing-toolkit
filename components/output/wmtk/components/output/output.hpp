@@ -8,6 +8,7 @@
 namespace wmtk::components {
     namespace multimesh {
         class NamedMultiMesh;
+        class  MeshCollection;
     }
 
     namespace output {
@@ -68,7 +69,12 @@ void output(
 
 void output(
     const multimesh::NamedMultiMesh& mesh,
-    const OutputOptions&);
+    const OutputOptions&, const std::string_view& mesh_path = "");
+
+
+void output(
+    const multimesh::MeshCollection& mesh,
+    const std::map<std::string, OutputOptions>&);
 
 /**
  * @brief Write the mesh to file.

@@ -116,6 +116,12 @@ typename DynamicArray<T, ArraySize>::Iterator DynamicArray<T, ArraySize>::Iterat
 }
 
 template <typename T, uint64_t ArraySize>
+bool DynamicArray<T, ArraySize>::Iterator::operator==(const Iterator& other) const
+{
+    return m_index == other.m_index;
+}
+
+template <typename T, uint64_t ArraySize>
 bool DynamicArray<T, ArraySize>::Iterator::operator!=(const Iterator& other) const
 {
     return m_index != other.m_index;

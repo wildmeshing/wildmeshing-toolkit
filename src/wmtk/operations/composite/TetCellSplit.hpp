@@ -18,7 +18,7 @@ namespace wmtk::operations::composite {
 class TetCellSplit : public Operation
 {
 public:
-    TetCellSplit(Mesh& m);
+    TetCellSplit(TetMesh& m);
 
     PrimitiveType primitive_type() const override { return PrimitiveType::Tetrahedron; }
 

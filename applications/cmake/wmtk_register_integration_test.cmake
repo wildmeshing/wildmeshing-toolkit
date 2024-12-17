@@ -31,6 +31,8 @@ macro(wmtk_register_integration_test )
         \"extra_flags\":\"${_EXTRA_ARGUMENTS}\"
         }")
 
+        set_property(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.." APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_CONFIG_PATH}")
+
     SET(WMTK_TEST_CONFIG ${WMTK_TEST_CONFIG} PARENT_SCOPE)
     SET(WMTK_APPLICATION_TEST_NAMES ${WMTK_APPLICATION_TEST_NAMES} PARENT_SCOPE)
 endmacro()

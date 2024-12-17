@@ -16,15 +16,14 @@ namespace nlohmann {
 void adl_serializer<wmtk::components::input::InputOptions>::to_json(json& j, const Type& v)
 {
     //
-    j["file"] = v.file;
-    j["file"] = v.file.string();
+    j["path"] = v.path.string();
+    j["validate"] = v.validate;
     if (!v.name_spec.is_null()) {
         assert(!v.name_spec_file.has_value());
         j["name_spec"] = v.name_spec;
     } else if (v.name_spec_file.has_value()) {
         j["name_spec_file"] = v.name_spec_file.value();
     }
-
 
     if (v.old_mode) {
         j["old_mode"] = true;
@@ -45,10 +44,18 @@ void adl_serializer<wmtk::components::input::InputOptions>::to_json(json& j, con
 void adl_serializer<wmtk::components::input::InputOptions>::from_json(const json& j, Type& v)
 {
     if (j.is_string()) {
-        v.file = j.get<std::filesystem::path>();
+        v.path= j.get<std::filesystem::path>();
         return;
+    } else if(j.contains("path")) {
+        v.path = j["path"].get<std::filesystem::path>();
+    } else if(j.contains("file")) {
+        wmtk::logger().warn("InputOptions using file is deprecated, use file");
+        v.path = j["file"].get<std::filesystem::path>();
     }
-    v.file = j["file"].get<std::filesystem::path>();
+    if (j.contains("validate")) {
+        v.validate = j["validate"];
+    }
+
     if (j.contains("name_spec")) {
         v.name_spec = j["name_spec"];
     }
@@ -85,9 +92,8 @@ void adl_serializer<wmtk::components::input::InputOptions>::from_json(const json
                 j["tetrahedron_attributes"].get<std::vector<std::string>>()};
         }
     } else {
-        if (v.imported_attributes.has_value()) {
-            v.imported_attributes =
-                j["imported_attributes"].get<std::vector<std::vector<std::string>>>();
+        if (j.contains("imported_attributes")) {
+            v.imported_attributes = j["imported_attributes"].get<std::vector<std::vector<std::string>>>();
         }
     }
 }

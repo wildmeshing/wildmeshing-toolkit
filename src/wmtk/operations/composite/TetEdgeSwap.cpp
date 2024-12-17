@@ -7,16 +7,14 @@
 #include <wmtk/Mesh.hpp>
 
 namespace wmtk::operations::composite {
-TetEdgeSwap::TetEdgeSwap(Mesh& m, int64_t collapse_index)
-    : Operation(m)
-    , m_split(m)
-    , m_collapse(m)
+TetEdgeSwap::TetEdgeSwap(TetMesh& m, int64_t collapse_index)
+    : EdgeSwap(m)
     , m_collapse_index(collapse_index)
 {}
 
 std::vector<simplex::Simplex> TetEdgeSwap::execute(const simplex::Simplex& simplex)
 {
-    const auto split_simplicies = m_split(simplex);
+    const auto split_simplicies = split()(simplex);
     if (split_simplicies.empty()) return {};
     assert(split_simplicies.size() == 1);
 
@@ -135,7 +133,7 @@ std::vector<simplex::Simplex> TetEdgeSwap::execute(const simplex::Simplex& simpl
 
     // do collapse
     const auto collapse_simplicies =
-        m_collapse(simplex::Simplex(mesh(), m_collapse.primitive_type(), collapse_tuple));
+        collapse()(simplex::Simplex(mesh(), collapse().primitive_type(), collapse_tuple));
     if (collapse_simplicies.empty()) return {};
     assert(collapse_simplicies.size() == 1);
 

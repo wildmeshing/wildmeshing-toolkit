@@ -1,0 +1,27 @@
+{
+    "input": {
+        "file": "periodic_data/0101_2_clean.msh",
+        "multimesh": {
+            "fusion": {
+                "fusion": [true,true]
+            }
+        },
+        "name_spec": {
+            "periodic": {
+                "position"
+            }
+        }
+    },
+    "inversion_position_attribute": {
+        "mesh": "periodic.position",
+        "name": "vertices"
+    },
+    "position_attribute": {
+        "mesh": "periodic.position",
+        "name": "vertices"
+    },
+    "iterations": 100,
+    "length_rel": 0.03,
+    "lock_boundary": true,
+    "use_for_periodic": true,
+}

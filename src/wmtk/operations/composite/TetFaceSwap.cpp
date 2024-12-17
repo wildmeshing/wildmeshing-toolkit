@@ -2,7 +2,7 @@
 #include <wmtk/Mesh.hpp>
 
 namespace wmtk::operations::composite {
-TetFaceSwap::TetFaceSwap(Mesh& m)
+TetFaceSwap::TetFaceSwap(TetMesh& m)
     : Operation(m)
     , m_split(m)
     , m_collapse(m)
