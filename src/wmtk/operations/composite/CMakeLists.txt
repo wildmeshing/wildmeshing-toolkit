@@ -17,5 +17,8 @@ set(SRC_FILES
 
     ProjectOperation.cpp
     ProjectOperation.hpp
+
+    TriFaceSplit_alt.hpp
+    TriFaceSplit_alt.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
