@@ -8,6 +8,8 @@ set(TEST_SOURCES
     old_wmtk_attributecollection.cpp
 
     transaction_stack.cpp
+
+    attribute_type.cpp
 )
 target_sources(wmtk_tests PRIVATE ${TEST_SOURCES})
 

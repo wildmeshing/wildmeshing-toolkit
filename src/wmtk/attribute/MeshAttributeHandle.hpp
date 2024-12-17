@@ -10,6 +10,7 @@
 
 #include <tuple>
 #include <variant>
+#include <tuple>
 
 namespace wmtk {
 class Mesh;
@@ -76,21 +77,13 @@ public:
 
     bool operator==(const MeshAttributeHandle& o) const
     {
-#if defined(MTAO_DEBUG_MESH_COMP)
-        std::visit(
-            [&](const auto& h, const auto& oh) {
-                spdlog::warn(
-                    "{} {} == {} {}",
-                    std::string(h),
-                    fmt::ptr(m_mesh),
-                    std::string(oh),
-                    fmt::ptr(m_mesh));
-            },
-            m_handle,
-            o.m_handle);
-#endif
-        return m_handle == o.m_handle && m_mesh == o.m_mesh;
+        return std::tie(m_mesh, m_handle) == std::tie(o.m_mesh, o.m_handle);
     }
+    bool operator<(const MeshAttributeHandle& o) const
+    {
+        return std::tie(m_mesh, m_handle) < std::tie(o.m_mesh, o.m_handle);
+    }
+
 
     // reutrns if the target mesh is the same as the one represented in the handle
     bool is_same_mesh(const Mesh&) const;
