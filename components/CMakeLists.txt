@@ -37,6 +37,8 @@ add_subdirectory("CDT/wmtk/components/CDT")
 
 add_subdirectory("edge_insertion/wmtk/components/edge_insertion")
 
+add_subdirectory("simplicial_embedding/wmtk/components/simplicial_embedding")
+
 # add_component("export_cache")
 # add_component("import_cache")
 # add_component("mesh_info")
