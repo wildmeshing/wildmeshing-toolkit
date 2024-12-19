@@ -110,10 +110,12 @@ void SimplicialEmbedding::regularize_tags(bool generate_simplicial_embedding)
     if (m_mesh.has_attribute<double>("vertices", PrimitiveType::Vertex)) {
         const auto pos_handle =
             m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-        SimplexInversionInvariant<double> inv(pos_handle.mesh(), pos_handle.as<double>());
+        if (pos_handle.dimension() == m_mesh.top_cell_dimension() - 1) {
+            SimplexInversionInvariant<double> inv(pos_handle.mesh(), pos_handle.as<double>());
 
-        if (!inv.after({}, m_mesh.get_all(m_mesh.top_simplex_type()))) {
-            logger().error("Mesh is not inversion free BEFORE simplicial embedding!");
+            if (!inv.after({}, m_mesh.get_all(m_mesh.top_simplex_type()))) {
+                logger().error("Mesh is not inversion free BEFORE simplicial embedding!");
+            }
         }
     }
 
@@ -295,8 +297,12 @@ void SimplicialEmbedding::regularize_tags(bool generate_simplicial_embedding)
             m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
         SimplexInversionInvariant<double> inv(pos_handle.mesh(), pos_handle.as<double>());
 
-        if (!inv.after({}, m_mesh.get_all(m_mesh.top_simplex_type()))) {
-            logger().error("Mesh is not inversion free after simplicial embedding!");
+        if (pos_handle.dimension() == m_mesh.top_cell_dimension() - 1) {
+            SimplexInversionInvariant<double> inv(pos_handle.mesh(), pos_handle.as<double>());
+
+            if (!inv.after({}, m_mesh.get_all(m_mesh.top_simplex_type()))) {
+                logger().error("Mesh is not inversion free after simplicial embedding!");
+            }
         }
     }
 }
