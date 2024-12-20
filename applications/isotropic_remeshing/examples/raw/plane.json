@@ -1,0 +1,31 @@
+{
+    "input": {
+        "path": "plane_dense.hdf5",
+        "0path": "2d/4triangles.msh",
+        "name_spec": "pos"
+    },
+    "use_split": false,
+    "use_collapse": false,
+    "0use_smooth": false,
+    "0use_swap": false,
+        "position_attribute": "pos/vertices",
+        "inversion_position_attribute": "pos/vertices",
+        "iterations": 5,
+        "length_rel": 0.05,
+        "envelope_size": 1e-2,
+        "lock_boundary": false,
+        "edge_swap_mode": "valence",
+        "use_for_periodic": false,
+        "fix_uv_seam": false,
+        "output": {
+            "path": "plane.hdf5",
+            "type": ".hdf5"
+        },
+        "intermediate_output_format": {
+            "pos": {
+                "path": "plane_{:04}",
+                "type": ".vtu",
+                "position_attribute": "vertices"
+            }
+        }
+}
