@@ -78,6 +78,11 @@ void configure_swap_transfer(
     const attribute::MeshAttributeHandle& vertex_handle)
 {
     swap.split().set_new_attribute_strategy(vertex_handle);
+
+    swap.split().set_new_attribute_strategy(
+        vertex_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::Mean);
     swap.collapse().set_new_attribute_strategy(
         vertex_handle,
         wmtk::operations::CollapseBasicStrategy::CopyOther);

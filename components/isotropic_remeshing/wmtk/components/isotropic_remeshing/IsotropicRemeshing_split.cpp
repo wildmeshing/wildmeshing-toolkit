@@ -23,6 +23,11 @@ void IsotropicRemeshing::configure_split()
     wmtk::Mesh& mesh = m_options.position_attribute.mesh();
     auto op = std::make_shared<operations::EdgeSplit>(mesh);
     internal::configure_split(*op, mesh, m_options);
+
+    if (m_options.lock_boundary && !m_options.use_for_periodic) {
+        op->add_invariant(m_interior_position_invariants);
+    }
+
     assert(op->attribute_new_all_configured());
     m_split = op;
 }

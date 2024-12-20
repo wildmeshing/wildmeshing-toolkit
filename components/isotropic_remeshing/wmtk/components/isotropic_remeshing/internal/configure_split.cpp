@@ -5,8 +5,8 @@
 #include <wmtk/invariants/MinEdgeLengthInvariant.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
-#include "../IsotropicRemeshingOptions.hpp"
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
+#include "../IsotropicRemeshingOptions.hpp"
 
 namespace wmtk::components::isotropic_remeshing::internal {
 std::shared_ptr<invariants::InvariantCollection> split_invariants(
@@ -20,11 +20,6 @@ std::shared_ptr<invariants::InvariantCollection> split_invariants(
         options.position_attribute.as<double>(),
         length_max * length_max);
     ic->add(invariant_min_edge_length);
-    if (options.lock_boundary && !options.use_for_periodic &&
-        options.edge_swap_mode != EdgeSwapMode::Skip) {
-        auto invariant_interior_edge = std::make_shared<invariants::InvariantCollection>(m);
-        ic->add(invariant_interior_edge);
-    }
     return ic;
 }
 
@@ -34,7 +29,10 @@ void configure_split(operations::EdgeSplit& es, Mesh& m, const IsotropicRemeshin
     auto invars = split_invariants(m, options);
     es.add_invariant(invars);
     for (auto& p : options.all_positions()) {
-        es.set_new_attribute_strategy(p, operations::SplitBasicStrategy::None, operations::SplitRibBasicStrategy::Mean);
+        es.set_new_attribute_strategy(
+            p,
+            operations::SplitBasicStrategy::None,
+            operations::SplitRibBasicStrategy::Mean);
     }
     for (const auto& attr : options.pass_through_attributes) {
         es.set_new_attribute_strategy(attr);

@@ -53,45 +53,49 @@ IsotropicRemeshing::IsotropicRemeshing(const IsotropicRemeshingOptions& opts)
 
     make_interior_invariants();
 
-    configure_split();
-    configure_swap();
-    configure_collapse();
-    configure_smooth();
 
     // split
-    if (m_split) {
+    if (m_options.use_split) {
+        configure_split();
+        assert(bool(m_split));
         m_operations.emplace_back("split", m_split);
     } else {
-        wmtk::logger().warn("Running Isotropic Remeshing without a split configured");
+        wmtk::logger().info("Running Isotropic Remeshing without a split configured");
     }
 
 
     //////////////////////////////////////////
     // collapse
 
-    if (m_collapse) {
+    if (m_options.use_collapse) {
+        configure_collapse();
+        assert(bool(m_collapse));
         m_operations.emplace_back("collapse", m_collapse);
     } else {
-        wmtk::logger().warn("Running Isotropic Remeshing without a collapse configured");
+        wmtk::logger().info("Running Isotropic Remeshing without a collapse configured");
     }
 
 
     //////////////////////////////////////////
     // swap
 
-    if (m_swap) {
+    if (m_options.use_swap) {
+        configure_swap();
+        assert(bool(m_smooth));
         m_operations.emplace_back("swap", m_swap);
     } else if (m_options.edge_swap_mode != EdgeSwapMode::Skip) {
-        wmtk::logger().warn("Running Isotropic Remeshing without a swap configured despite being "
+        wmtk::logger().info("Running Isotropic Remeshing without a swap configured despite being "
                             "supposed to use them");
     }
 
     //////////////////////////////////////////
     // smooth
-    if (m_smooth) {
+    if (m_options.use_smooth) {
+        configure_smooth();
+        assert(bool(m_smooth));
         m_operations.emplace_back("smooth", m_smooth);
     } else {
-        wmtk::logger().warn("Running Isotropic Remeshing without a smooth configured");
+        wmtk::logger().info("Running Isotropic Remeshing without a smooth configured");
     }
 }
 
@@ -123,6 +127,7 @@ void IsotropicRemeshing::make_interior_invariants()
     auto position = m_options.position_attribute;
     Mesh& mesh = position.mesh();
     auto invariant_interior_vertex = std::make_shared<invariants::InvariantCollection>(mesh);
+    m_interior_edge_invariants = std::make_shared<invariants::InvariantCollection>(mesh);
 
     auto set_all_invariants = [&](auto&& m) {
         // TODO: this used to do vertex+edge, but just checkign for vertex should be sufficient?
@@ -130,6 +135,9 @@ void IsotropicRemeshing::make_interior_invariants()
             invariant_interior_vertex->add(
                 std::make_shared<invariants::InteriorSimplexInvariant>(m, pt));
         }
+
+        m_interior_edge_invariants->add(
+            std::make_shared<invariants::InteriorSimplexInvariant>(m, PrimitiveType::Edge));
     };
     wmtk::multimesh::MultiMeshVisitor visitor(set_all_invariants);
     visitor.execute_from_root(mesh);
@@ -215,6 +223,10 @@ void IsotropicRemeshing::run()
     }
 }
 
+void IsotropicRemeshing::make_envelope_invariants()
+{
+    make_envelopes();
+}
 
 void IsotropicRemeshing::make_envelopes()
 {
@@ -225,6 +237,7 @@ void IsotropicRemeshing::make_envelopes()
     auto envelope_positions = all_envelope_positions();
 
     std::vector<std::shared_ptr<invariants::EnvelopeInvariant>> envelope_invariants;
+
 
     std::transform(
         envelope_positions.begin(),

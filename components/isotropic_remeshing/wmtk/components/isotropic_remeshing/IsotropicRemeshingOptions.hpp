@@ -34,6 +34,11 @@ struct IsotropicRemeshingOptions
     bool lock_boundary = true;
     bool use_for_periodic = false;
     bool fix_uv_seam = true;
+
+    bool use_split = true;
+    bool use_swap = true;
+    bool use_collapse = true;
+    bool use_smooth = true;
     // this should be true for periodic
     bool separate_substructures = false;
 

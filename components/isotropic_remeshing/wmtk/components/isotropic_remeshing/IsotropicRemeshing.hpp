@@ -33,6 +33,7 @@ private:
     std::vector<wmtk::attribute::MeshAttributeHandle> all_envelope_positions() const;
     static bool is_envelope_position(const wmtk::attribute::MeshAttributeHandle& position);
     void make_envelopes();
+    void make_envelope_invariants();
     void make_interior_invariants();
 
 private:
@@ -49,6 +50,7 @@ private:
     std::shared_ptr<wmtk::invariants::InvariantCollection> m_envelope_invariants;
 
     std::shared_ptr<wmtk::invariants::InvariantCollection> m_interior_position_invariants;
+    std::shared_ptr<wmtk::invariants::InvariantCollection> m_interior_edge_invariants;
 
     void configure_split();
     void configure_collapse();

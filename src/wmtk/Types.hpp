@@ -19,6 +19,8 @@ template <typename T>
 using VectorX = Vector<T, Eigen::Dynamic>;
 
 template <typename T>
+using Vector1 = Vector<T, 1>;
+template <typename T>
 using Vector2 = Vector<T, 2>;
 template <typename T>
 using Vector3 = Vector<T, 3>;

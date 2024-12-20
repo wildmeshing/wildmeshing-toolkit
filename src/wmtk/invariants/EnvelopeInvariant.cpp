@@ -164,7 +164,11 @@ EnvelopeInvariant::EnvelopeInvariant(
     } else {
         throw std::runtime_error("Envelope mesh handle type invlid");
     }
-    assert(bool(m_bvh));
+    assert(has_envelope());
+}
+bool EnvelopeInvariant::has_envelope() const
+{
+    return bool(m_bvh) || bool(m_envelope);
 }
 
 bool EnvelopeInvariant::after(

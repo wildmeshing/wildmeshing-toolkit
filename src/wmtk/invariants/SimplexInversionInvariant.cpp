@@ -13,9 +13,11 @@ namespace wmtk {
 template <typename T>
 SimplexInversionInvariant<T>::SimplexInversionInvariant(
     const Mesh& m,
-    const TypedAttributeHandle<T>& coordinate)
+    const TypedAttributeHandle<T>& coordinate,
+    bool inverted)
     : Invariant(m, true, false, true)
     , m_coordinate_handle(coordinate)
+    , m_inverted(inverted)
 {}
 
 template <typename T>
@@ -42,21 +44,6 @@ bool SimplexInversionInvariant<T>::after(
                     utils::wmtk_orient3d(p0, p1, p2, p3));
                 return false;
             }
-
-            // const Eigen::Vector3<T> p0 = accessor.const_vector_attribute(t);
-            // const Eigen::Vector3<T> p1 =
-            //     accessor.const_vector_attribute(mymesh.switch_tuple(t, PrimitiveType::Vertex));
-            // const Eigen::Vector3<T> p2 = accessor.const_vector_attribute(
-            //     mymesh.switch_tuples(t, {PrimitiveType::Edge, PrimitiveType::Vertex}));
-            // const Eigen::Vector3<T> p3 = accessor.const_vector_attribute(mymesh.switch_tuples(
-            //     t,
-            //     {PrimitiveType::Triangle, PrimitiveType::Edge, PrimitiveType::Vertex}));
-
-            // if (mymesh.is_ccw(t)) {
-            //     if (utils::wmtk_orient3d(p3, p0, p1, p2) <= 0) return false;
-            // } else {
-            //     if (utils::wmtk_orient3d(p3, p0, p2, p1) <= 0) return false;
-            // }
         }
 
         return true;
@@ -91,13 +78,63 @@ bool SimplexInversionInvariant<T>::after(
             T p1 =
                 accessor.const_scalar_attribute(mymesh.switch_tuple(tuple, PrimitiveType::Vertex));
 
-            if (utils::wmtk_orient1d(p0, 01) >= 0) return false;
+            // was orient1d(p0,p1) >= 0, whic his equivalent to
+            // orient1d(p1,p0)
+            if (is_oriented(p1, p0)) return false;
         }
 
         return true;
     }
 
     return true;
+}
+
+template <typename T>
+bool SimplexInversionInvariant<T>::is_oriented(
+    const Eigen::Ref<const Vector1<T>>& p0,
+    const Eigen::Ref<const Vector1<T>>& p1) const
+{
+    return is_oriented(p0.x(), p0.x());
+}
+template <typename T>
+bool SimplexInversionInvariant<T>::is_oriented(const T& p0, const T& p1) const
+{
+    //
+    const int orient = utils::wmtk_orient1d(p0, p1);
+    if (m_inverted) {
+        return orient >= 0;
+    } else {
+        return orient <= 0;
+    }
+}
+template <typename T>
+bool SimplexInversionInvariant<T>::is_oriented(
+    const Eigen::Ref<const Vector2<T>>& p0,
+    const Eigen::Ref<const Vector2<T>>& p1,
+    const Eigen::Ref<const Vector2<T>>& p2) const
+{
+    //
+    const int orient = utils::wmtk_orient2d(p0, p1, p2);
+    if (m_inverted) {
+        return orient >= 0;
+    } else {
+        return orient <= 0;
+    }
+}
+template <typename T>
+bool SimplexInversionInvariant<T>::is_oriented(
+    const Eigen::Ref<const Vector3<T>>& p0,
+    const Eigen::Ref<const Vector3<T>>& p1,
+    const Eigen::Ref<const Vector3<T>>& p2,
+    const Eigen::Ref<const Vector3<T>>& p3) const
+{
+    const int orient = utils::wmtk_orient3d(p0, p1, p2, p3);
+    if (m_inverted) {
+        return orient >= 0;
+    } else {
+        return orient <= 0;
+    }
+    //
 }
 
 template class SimplexInversionInvariant<double>;

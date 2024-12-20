@@ -1,12 +1,14 @@
 #include "IsotropicRemeshingOptions.hpp"
 #include <fmt/format.h>
 #include <algorithm>
-#include <wmtk/utils/Logger.hpp>
 #include <nlohmann/json.hpp>
+#include <wmtk/utils/Logger.hpp>
 
 #include <wmtk/Mesh.hpp>
 
-#define DEFAULT_PARSABLE_ARGS iterations, lock_boundary, use_for_periodic, fix_uv_seam
+#define DEFAULT_PARSABLE_ARGS                                                             \
+    iterations, lock_boundary, use_for_periodic, fix_uv_seam, intermediate_output_format, \
+        use_split, use_swap, use_collapse, use_smooth
 
 namespace wmtk::components::isotropic_remeshing {
 namespace {
@@ -16,8 +18,9 @@ double relative_to_absolute_length(
     const attribute::MeshAttributeHandle& position,
     const double length_rel)
 {
-    if(!position.is_valid()) {
-        throw std::runtime_error("Could not convert relative to absolute length because position attr was invalid");
+    if (!position.is_valid()) {
+        throw std::runtime_error(
+            "Could not convert relative to absolute length because position attr was invalid");
     }
     auto pos = position.mesh().create_const_accessor<double>(position);
     const auto vertices = position.mesh().get_all(PrimitiveType::Vertex);
@@ -29,7 +32,10 @@ double relative_to_absolute_length(
     }
 
     const double diag_length = bbox.sizes().norm();
-    wmtk::logger().debug("computed absolute target length using relative factor {} on bbox diagonal {}", length_rel, diag_length);
+    wmtk::logger().debug(
+        "computed absolute target length using relative factor {} on bbox diagonal {}",
+        length_rel,
+        diag_length);
 
     return length_rel * diag_length;
 }
@@ -44,7 +50,10 @@ double IsotropicRemeshingOptions::get_absolute_length() const
         }
         length = relative_to_absolute_length(position_attribute, length_rel);
     } else {
-    wmtk::logger().debug("get_absolute_length using absolute length value {} {}", length, length_abs);
+        wmtk::logger().debug(
+            "get_absolute_length using absolute length value {} {}",
+            length,
+            length_abs);
     }
     return length;
 }
@@ -78,11 +87,9 @@ void to_json(nlohmann::json& nlohmann_json_j, const IsotropicRemeshingOptions& n
 }
 void from_json(const nlohmann::json& nlohmann_json_j, IsotropicRemeshingOptions& nlohmann_json_t)
 {
-    NLOHMANN_JSON_EXPAND(NLOHMANN_JSON_PASTE(
-        NLOHMANN_JSON_FROM,
-        DEFAULT_PARSABLE_ARGS
+    WMTK_NLOHMANN_JSON_DECLARE_DEFAULT_OBJECT(IsotropicRemeshingOptions);
+    WMTK_NLOHMANN_ASSIGN_TYPE_FROM_JSON_WITH_DEFAULT(DEFAULT_PARSABLE_ARGS);
 
-        ));
     if (nlohmann_json_j.contains("length_abs")) {
         NLOHMANN_JSON_EXPAND(NLOHMANN_JSON_PASTE(NLOHMANN_JSON_FROM, length_abs));
         wmtk::logger().debug("Got an absolute length {}", nlohmann_json_t.length_abs);
@@ -108,9 +115,6 @@ void from_json(const nlohmann::json& nlohmann_json_j, IsotropicRemeshingOptions&
         throw std::runtime_error(fmt::format(
             "Expected edge_swap_mode to be one of [amips,valence,skip], got [{}]",
             swap_name));
-    }
-    if (nlohmann_json_j.contains("intermediate_output_format")) {
-        NLOHMANN_JSON_EXPAND(NLOHMANN_JSON_PASTE(NLOHMANN_JSON_FROM, intermediate_output_format));
     }
 }
 void IsotropicRemeshingOptions::load_json(const nlohmann::json& js)
