@@ -13,17 +13,20 @@
 using json = nlohmann::json;
 
 
-
-
 TEST_CASE("named_multimesh_parse", "[components][multimesh]")
 {
     {
         auto m = make_mesh();
         wmtk::components::multimesh::NamedMultiMesh named_mm;
         named_mm.set_mesh(*m);
+        CHECK(std::vector<int64_t>{} == named_mm.get_id(""));
+        CHECK(std::vector<int64_t>{} == named_mm.get_id("0"));
+        CHECK(m == named_mm.get_mesh("").shared_from_this());
 
         named_mm.set_name("roo");
 
+        CHECK(std::vector<int64_t>{} == named_mm.get_id(""));
+        CHECK(m == named_mm.get_mesh("").shared_from_this());
         CHECK(std::vector<int64_t>{} == named_mm.get_id("roo"));
         CHECK(m == named_mm.root().shared_from_this());
         CHECK(m == named_mm.get_mesh("roo").shared_from_this());
@@ -37,6 +40,20 @@ TEST_CASE("named_multimesh_parse", "[components][multimesh]")
 
         wmtk::components::multimesh::NamedMultiMesh named_mm;
         named_mm.set_mesh(*m);
+
+        //CHECK(std::vector<int64_t>{} == named_mm.get_id(""));
+        //CHECK(std::vector<int64_t>{} == named_mm.get_id("0"));
+        //CHECK(m == named_mm.get_mesh("").shared_from_this());
+
+        CHECK(std::vector<int64_t>{0} == named_mm.get_id("0.0"));
+        CHECK(std::vector<int64_t>{0} == named_mm.get_id(".0"));
+
+        CHECK(
+            m->get_multi_mesh_child_mesh({0}).shared_from_this() ==
+            named_mm.get_mesh("0.0").shared_from_this());
+        CHECK(
+            m->get_multi_mesh_child_mesh({0}).shared_from_this() ==
+            named_mm.get_mesh(".0").shared_from_this());
         {
             nlohmann::json js;
             js["roo"] = nlohmann::json::array({"child"});
@@ -76,6 +93,18 @@ TEST_CASE("named_multimesh_parse", "[components][multimesh]")
             make_child(*m, {1, 1});
 
             named_mm.set_mesh(*m);
+
+
+            CHECK(std::vector<int64_t>{} == named_mm.get_id(""));
+            auto check = [&](const std::vector<int64_t>& name) {
+                CHECK(name == named_mm.get_id(fmt::format(".{}", fmt::join(name, "."))));
+            };
+            check({0});
+            check({1});
+            check({0, 0});
+            check({1, 0});
+            check({1, 1});
+            check({0, 0, 0});
         }
         {
             nlohmann::json js;

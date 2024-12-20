@@ -124,4 +124,20 @@ void MeshCollection::make_canonical()
         }
     }
 }
+bool MeshCollection::is_valid(bool pass_exceptions) const
+{
+    for (const auto& [name, nmmptr] : m_meshes) {
+        if (!nmmptr->is_valid(pass_exceptions)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+    //std::vector<const NamedMultiMesh*> get_named_multimeshes(const Mesh& m) const {
+
+    //    for(const& [_, nmm]: m_meshes) {
+    //        if(m.is_string
+    //    }
+    //}
 } // namespace wmtk::components::multimesh

@@ -22,11 +22,11 @@ public:
         const std::vector<std::string>& extra_facet_attributes = {});
     std::shared_ptr<Mesh> read(
         const std::filesystem::path& filename,
-        const int64_t embedded_dimension,
+        const std::optional<int64_t>& embedded_dimension,
         const std::vector<std::vector<std::string>>& extra_attributes);
     std::shared_ptr<Mesh> read(
         const std::filesystem::path& filename,
-        const int64_t embedded_dimension = -1);
+        const std::optional<int64_t>& embedded_dimension = {});
 
 private:
     const mshio::NodeBlock* get_vertex_block(int DIM) const;
@@ -90,8 +90,6 @@ private:
 
     Eigen::MatrixXd V;
     MatrixXl S;
-
-    static const int64_t AUTO_EMBEDDED_DIMENSION = -2;
 };
 
 } // namespace wmtk::io

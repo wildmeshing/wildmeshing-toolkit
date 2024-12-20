@@ -1,7 +1,9 @@
 {
-    "test_directory": "examples",
+    "test_directory": "",
     "tests": [
-        "delaunay_out.json"
+        "100071_sf.json",
+        "small.json",
+        "tetwild_fig8_mid.json"
     ],
     "input_tag": "input",
     "oracle_tag": "report",

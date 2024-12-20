@@ -34,13 +34,12 @@ bool both_map_to_child(const Mesh& parent, const Mesh& child, const Tuple& input
     assert(parent_type > child_type);
     const PrimitiveType collapsed_simplex_type = std::min(child_type + 1, parent_type);
     auto opposite = [&parent, collapsed_simplex_type](Tuple t) {
-        //switch(collapsed_simplex_type) {
-        //    case PrimitiveType::Tetrahedron:
-        //    t = parent.switch_tuples(t, {PrimitiveType::Vertex, PrimitiveType::Edge, PrimitiveType::Triangle});
-        //    case PrimitiveType::Triangle:
-        //    t = parent.switch_tuples(t, {PrimitiveType::Vertex, PrimitiveType::Edge});
-        //    case PrimitiveType::Edge:
-        //    t = parent.switch_tuple(t, PrimitiveType::Vertex);
+        // switch(collapsed_simplex_type) {
+        //     case PrimitiveType::Tetrahedron:
+        //     t = parent.switch_tuples(t, {PrimitiveType::Vertex, PrimitiveType::Edge,
+        //     PrimitiveType::Triangle}); case PrimitiveType::Triangle: t = parent.switch_tuples(t,
+        //     {PrimitiveType::Vertex, PrimitiveType::Edge}); case PrimitiveType::Edge: t =
+        //     parent.switch_tuple(t, PrimitiveType::Vertex);
 
         //    default:
         //    case PrimitiveType::Vertex:
@@ -71,13 +70,14 @@ bool any_pairs_both_map_to_child(
     assert(edge.primitive_type() == PrimitiveType::Edge);
     const PrimitiveType parent_type = parent.top_simplex_type();
     const PrimitiveType child_type = child.top_simplex_type();
-    assert(parent_type > child_type);
     if (parent_type == child_type) {
         // if the meshes are the same dimension then there isn't a pair, so this function returns
         // false
         return false;
     } else if (parent_type == child_type + 1) {
         return both_map_to_child(parent, child, edge.tuple());
+    } else {
+        assert(parent_type > child_type);
     }
     for (const Tuple& tuple :
          simplex::cofaces_single_dimension_iterable(parent, edge, child.top_simplex_type() + 1)) {

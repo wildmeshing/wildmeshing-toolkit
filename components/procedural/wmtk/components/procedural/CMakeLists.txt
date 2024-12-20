@@ -5,6 +5,7 @@ if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
 endif()
 
 set(SRC_FILES
+    ProceduralOptions.cpp
     ProceduralOptions.hpp
     Grid2Options.hpp
     Grid2Options.cpp

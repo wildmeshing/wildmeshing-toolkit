@@ -8,13 +8,15 @@ include(add_component_test)
 # wmtk::component_utils
 add_subdirectory(utils)
 
-if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
+option(WMTK_ENABLE_COMPONENT_TESTS "Enable unit tests for components" ${WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT})
+
+if(WMTK_ENABLE_COMPONENT_TESTS)
     add_subdirectory(tests)
 endif()
 
 # list of all components
-add_subdirectory("input")
-add_subdirectory("multimesh")
+add_subdirectory(input)
+add_subdirectory(multimesh)
 add_subdirectory("output/wmtk/components/output")
 add_subdirectory("delaunay/wmtk/components/delaunay")
 add_subdirectory("to_points/wmtk/components/to_points")

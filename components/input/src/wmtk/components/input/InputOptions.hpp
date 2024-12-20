@@ -18,14 +18,20 @@ class InputOptions
 public:
     InputOptions();
     ~InputOptions();
-    std::filesystem::path file;
+    std::filesystem::path path;
     std::optional<std::vector<std::vector<std::string>>> imported_attributes;
+
 
 
     // either you can have a name spec in json or you can have it in a file
     nlohmann::json name_spec;
     std::optional<std::filesystem::path> name_spec_file;
 
+    bool validate = false;
+
+
+
+    // many applications use ignore_z_if_zero and imported attribute sonly works for tets. This flag enables that
     bool old_mode = false;
     bool ignore_z_if_zero = false;
 

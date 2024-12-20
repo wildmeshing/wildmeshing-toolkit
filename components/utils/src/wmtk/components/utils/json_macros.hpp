@@ -27,4 +27,11 @@
     { NLOHMANN_JSON_EXPAND(NLOHMANN_JSON_PASTE(NLOHMANN_JSON_FROM, __VA_ARGS__)) }
 
 
+// Before declaring assignment with a default you need to construct a default object
+#define WMTK_NLOHMANN_JSON_DECLARE_DEFAULT_OBJECT(Type)\
+        const Type nlohmann_json_default_obj{};
+
+#define WMTK_NLOHMANN_ASSIGN_TYPE_FROM_JSON_WITH_DEFAULT(...)  \
+    { NLOHMANN_JSON_EXPAND(NLOHMANN_JSON_PASTE(NLOHMANN_JSON_FROM_WITH_DEFAULT, __VA_ARGS__)) }// if nlohmann_json_default_obj doesn't exist call WMTK_NLOHMANN_JSON_DECLARE_DEFAULT_OBJECT
+
 
