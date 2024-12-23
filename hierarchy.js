@@ -397,6 +397,8 @@ var hierarchy =
     [ "wmtk::autogen::tri_mesh::SimplexDart", "classwmtk_1_1autogen_1_1tri__mesh_1_1_simplex_dart.html", null ],
     [ "wmtk::simplex::internal::SimplexEqualFunctor", "structwmtk_1_1simplex_1_1internal_1_1_simplex_equal_functor.html", null ],
     [ "wmtk::simplex::internal::SimplexLessFunctor", "structwmtk_1_1simplex_1_1internal_1_1_simplex_less_functor.html", null ],
+    [ "wmtk::components::internal::SimplicialEmbedding", "classwmtk_1_1components_1_1internal_1_1_simplicial_embedding.html", null ],
+    [ "wmtk::components::SimplicialEmbeddingOptions", "structwmtk_1_1components_1_1_simplicial_embedding_options.html", null ],
     [ "wmtk::operations::internal::SplitAlternateFacetData", "classwmtk_1_1operations_1_1internal_1_1_split_alternate_facet_data.html", null ],
     [ "wmtk::operations::internal::SplitAlternateFacetOptionData", "classwmtk_1_1operations_1_1internal_1_1_split_alternate_facet_option_data.html", null ],
     [ "wmtk::operations::SplitNewAttributeTopoInfo", "classwmtk_1_1operations_1_1_split_new_attribute_topo_info.html", [
@@ -450,8 +452,8 @@ var hierarchy =
     [ "wmtk::simplex::internal::VisitedArray< T, ArraySize >", "classwmtk_1_1simplex_1_1internal_1_1_visited_array.html", null ],
     [ "wmtk::simplex::internal::VisitedArray< int64_t >", "classwmtk_1_1simplex_1_1internal_1_1_visited_array.html", null ],
     [ "wmtk::simplex::internal::VisitedArray< wmtk::simplex::IdSimplex >", "classwmtk_1_1simplex_1_1internal_1_1_visited_array.html", null ],
-    [ "wmtk::components::WildMeshingOptions", "structwmtk_1_1components_1_1_wild_meshing_options.html", null ],
     [ "wmtk::components::WildmeshingOptions", "structwmtk_1_1components_1_1_wildmeshing_options.html", null ],
+    [ "wmtk::components::WildMeshingOptions", "structwmtk_1_1components_1_1_wild_meshing_options.html", null ],
     [ "wmtk::components::WildmeshingOptionsAttributes", "structwmtk_1_1components_1_1_wildmeshing_options_attributes.html", null ],
     [ "wmtk::components::WildmeshingOptionsEnvelope", "structwmtk_1_1components_1_1_wildmeshing_options_envelope.html", null ],
     [ "wmtk::components::WildmeshingOptionsEnvelopeMesh", "structwmtk_1_1components_1_1_wildmeshing_options_envelope_mesh.html", null ],

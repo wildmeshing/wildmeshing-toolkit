@@ -167,6 +167,8 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1_periodic_optimization_options.html">PeriodicOptimizationOptions</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1_simplicial_embedding_options.html">SimplicialEmbeddingOptions</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1_tag_intersection.html">TagIntersection</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1_random.html">Random</a></td></tr>
@@ -247,6 +249,8 @@ Functions</h2></td></tr>
 <tr class="separator:a7447d90d4590819b69239d895ea5dc86"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7cec0c38121ddd036af26c760311d0e8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a7cec0c38121ddd036af26c760311d0e8">regular_space</a> (const utils::Paths &amp;paths, const <a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> &amp;j, <a class="el" href="classwmtk_1_1io_1_1_cache.html">io::Cache</a> &amp;cache)</td></tr>
 <tr class="separator:a7cec0c38121ddd036af26c760311d0e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abab23cfb68442b5652e27826a47ba553"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#abab23cfb68442b5652e27826a47ba553">simplicial_embedding</a> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;mesh, const <a class="el" href="structwmtk_1_1components_1_1_simplicial_embedding_options.html">SimplicialEmbeddingOptions</a> &amp;options)</td></tr>
+<tr class="separator:abab23cfb68442b5652e27826a47ba553"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0271fbc50dba277ddd2d1d3e32d1fb3d"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a0271fbc50dba277ddd2d1d3e32d1fb3d">gather_attributes</a> (<a class="el" href="classwmtk_1_1io_1_1_cache.html">io::Cache</a> &amp;cache, const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;mesh, const <a class="el" href="structwmtk_1_1components_1_1internal_1_1_tag_intersection_options.html">internal::TagIntersectionOptions</a> &amp;options)</td></tr>
 <tr class="separator:a0271fbc50dba277ddd2d1d3e32d1fb3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7de20dc23c12ed780d05e5e37b1f6bb7"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a7de20dc23c12ed780d05e5e37b1f6bb7">mod3</a> (int j)</td></tr>
@@ -2094,6 +2098,52 @@ Here is the caller graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_a4eb70b5440518ea86de4ae32116cd345_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="abab23cfb68442b5652e27826a47ba553"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abab23cfb68442b5652e27826a47ba553">&#9670;&nbsp;</a></span>simplicial_embedding()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::simplicial_embedding </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>mesh</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structwmtk_1_1components_1_1_simplicial_embedding_options.html">SimplicialEmbeddingOptions</a> &amp;&#160;</td>
+          <td class="paramname"><em>options</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="simplicial__embedding_8cpp_source.html#l00013">13</a> of file <a class="el" href="simplicial__embedding_8cpp_source.html">simplicial_embedding.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_mesh__attributes_8cpp_source.html#l00170">wmtk::Mesh::clear_attributes()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00209">wmtk::Mesh::consolidate()</a>, <a class="el" href="_simplicial_embedding_options_8hpp_source.html#l00025">wmtk::components::SimplicialEmbeddingOptions::generate_simplicial_embedding</a>, <a class="el" href="_simplicial_embedding_options_8hpp_source.html#l00020">wmtk::components::SimplicialEmbeddingOptions::pass_through_attributes</a>, <a class="el" href="primitive__range_8cpp_source.html#l00029">wmtk::utils::primitive_below()</a>, <a class="el" href="_simplicial_embedding_8cpp_source.html#l00053">wmtk::components::internal::SimplicialEmbedding::regularize_tags()</a>, <a class="el" href="_simplicial_embedding_options_8hpp_source.html#l00012">wmtk::components::SimplicialEmbeddingOptions::tag_attributes</a>, <a class="el" href="_mesh_8hpp_source.html#l00997">wmtk::Mesh::top_simplex_type()</a>, and <a class="el" href="_simplicial_embedding_options_8hpp_source.html#l00016">wmtk::components::SimplicialEmbeddingOptions::value</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="test__simplicial__embedding_8cpp_source.html#l00016">TEST_CASE()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_abab23cfb68442b5652e27826a47ba553_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_abab23cfb68442b5652e27826a47ba553_icgraph.svg" width="372" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 

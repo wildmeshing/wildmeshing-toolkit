@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 523;
+var viewWidth = 711;
 var viewHeight = 128;
 var sectionId = 'dynsection-1';
 </script>
@@ -58,9 +58,9 @@ var sectionId = 'dynsection-1';
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title=" ">
-<polygon fill="#bfbfbf" stroke="black" points="185,-89.5 185,-119.5 334,-119.5 334,-89.5 185,-89.5"/>
-<text text-anchor="start" x="193" y="-107.5" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/operations</text>
-<text text-anchor="middle" x="259.5" y="-96.5" font-family="Helvetica,sans-Serif" font-size="10.00">/composite/TriFaceSplit.hpp</text>
+<polygon fill="#bfbfbf" stroke="black" points="276,-89.5 276,-119.5 425,-119.5 425,-89.5 276,-89.5"/>
+<text text-anchor="start" x="284" y="-107.5" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/operations</text>
+<text text-anchor="middle" x="350.5" y="-96.5" font-family="Helvetica,sans-Serif" font-size="10.00">/composite/TriFaceSplit.hpp</text>
 </a>
 </g>
 </g>
@@ -77,8 +77,8 @@ var sectionId = 'dynsection-1';
 <!-- Node1&#45;&gt;Node2 -->
 <g id="edge1" class="edge">
 <title>Node1&#45;&gt;Node2</title>
-<path fill="none" stroke="midnightblue" d="M215.8,-85.55C183.05,-72.09 138.87,-53.94 108.68,-41.54"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="214.56,-88.82 225.14,-89.38 217.22,-82.35 214.56,-88.82"/>
+<path fill="none" stroke="midnightblue" d="M284.41,-86.94C247.05,-77.4 199.55,-64.96 157.5,-53 145.03,-49.45 131.57,-45.41 119.2,-41.61"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="283.61,-90.35 294.17,-89.43 285.34,-83.57 283.61,-90.35"/>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
@@ -94,8 +94,8 @@ var sectionId = 'dynsection-1';
 <!-- Node1&#45;&gt;Node3 -->
 <g id="edge2" class="edge">
 <title>Node1&#45;&gt;Node3</title>
-<path fill="none" stroke="midnightblue" d="M259.5,-79.16C259.5,-68.83 259.5,-56.94 259.5,-47.18"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="256,-79.2 259.5,-89.2 263,-79.21 256,-79.2"/>
+<path fill="none" stroke="midnightblue" d="M325.57,-82.68C312.31,-71.61 296.11,-58.07 283.06,-47.18"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="323.46,-85.48 333.38,-89.2 327.95,-80.11 323.46,-85.48"/>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
@@ -112,8 +112,26 @@ var sectionId = 'dynsection-1';
 <!-- Node1&#45;&gt;Node4 -->
 <g id="edge3" class="edge">
 <title>Node1&#45;&gt;Node4</title>
-<path fill="none" stroke="midnightblue" d="M302.9,-85.48C326.53,-75.66 356.15,-63.36 382.02,-52.62"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="301.38,-82.32 293.49,-89.38 304.07,-88.78 301.38,-82.32"/>
+<path fill="none" stroke="midnightblue" d="M375.61,-82.76C386.92,-73.41 400.37,-62.3 412.23,-52.5"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="373.29,-80.14 367.8,-89.2 377.74,-85.53 373.29,-80.14"/>
+</g>
+<!-- Node5 -->
+<g id="node5" class="node">
+<title>Node5</title>
+<g id="a_node5"><a xlink:href="_simplicial_embedding_8cpp.html" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="532.5,-0.5 532.5,-52.5 702.5,-52.5 702.5,-0.5 532.5,-0.5"/>
+<text text-anchor="start" x="540.5" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">components/simplicial</text>
+<text text-anchor="start" x="540.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">_embedding/wmtk/components</text>
+<text text-anchor="start" x="540.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">/simplicial_embedding/internal</text>
+<text text-anchor="middle" x="617.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">/SimplicialEmbedding.cpp</text>
+</a>
+</g>
+</g>
+<!-- Node1&#45;&gt;Node5 -->
+<g id="edge4" class="edge">
+<title>Node1&#45;&gt;Node5</title>
+<path fill="none" stroke="midnightblue" d="M409.65,-86.66C445.68,-76.41 492.32,-63.13 532.28,-51.76"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="408.44,-83.37 399.78,-89.47 410.36,-90.1 408.44,-83.37"/>
 </g>
 </g>
 </svg>
