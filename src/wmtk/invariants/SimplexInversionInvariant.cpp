@@ -64,7 +64,7 @@ bool SimplexInversionInvariant<T>::after(
             const Eigen::Vector2<T> p2 = accessor.const_vector_attribute(
                 mymesh.switch_tuples(ccw_tuple, {PrimitiveType::Edge, PrimitiveType::Vertex}));
 
-            if (utils::wmtk_orient2d(p0, p1, p2) <= 0) return false;
+            if (!is_oriented(p0, p1, p2)) return false;
         }
 
         return true;
@@ -78,9 +78,7 @@ bool SimplexInversionInvariant<T>::after(
             T p1 =
                 accessor.const_scalar_attribute(mymesh.switch_tuple(tuple, PrimitiveType::Vertex));
 
-            // was orient1d(p0,p1) >= 0, whic his equivalent to
-            // orient1d(p1,p0)
-            if (is_oriented(p1, p0)) return false;
+            if (!is_oriented(p0, p1)) return false;
         }
 
         return true;
@@ -94,7 +92,7 @@ bool SimplexInversionInvariant<T>::is_oriented(
     const Eigen::Ref<const Vector1<T>>& p0,
     const Eigen::Ref<const Vector1<T>>& p1) const
 {
-    return is_oriented(p0.x(), p0.x());
+    return is_oriented(p0.x(), p1.x());
 }
 template <typename T>
 bool SimplexInversionInvariant<T>::is_oriented(const T& p0, const T& p1) const
@@ -102,9 +100,9 @@ bool SimplexInversionInvariant<T>::is_oriented(const T& p0, const T& p1) const
     //
     const int orient = utils::wmtk_orient1d(p0, p1);
     if (m_inverted) {
-        return orient >= 0;
+        return orient < 0;
     } else {
-        return orient <= 0;
+        return orient > 0;
     }
 }
 template <typename T>
@@ -116,9 +114,9 @@ bool SimplexInversionInvariant<T>::is_oriented(
     //
     const int orient = utils::wmtk_orient2d(p0, p1, p2);
     if (m_inverted) {
-        return orient >= 0;
+        return orient < 0;
     } else {
-        return orient <= 0;
+        return orient > 0;
     }
 }
 template <typename T>
@@ -130,9 +128,9 @@ bool SimplexInversionInvariant<T>::is_oriented(
 {
     const int orient = utils::wmtk_orient3d(p0, p1, p2, p3);
     if (m_inverted) {
-        return orient >= 0;
+        return orient < 0;
     } else {
-        return orient <= 0;
+        return orient > 0;
     }
     //
 }
