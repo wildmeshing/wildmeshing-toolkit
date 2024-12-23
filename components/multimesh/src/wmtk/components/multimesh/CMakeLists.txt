@@ -10,6 +10,9 @@ set(SRC_FILES
     from_facet_bijection.hpp
     from_facet_bijection.cpp
 
+    vertex_fusion.hpp
+    vertex_fusion.cpp
+
 
     from_boundary.hpp
     from_boundary.cpp

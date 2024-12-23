@@ -1,4 +1,6 @@
 #include "EigenMatrixWriter.hpp"
+#include <fmt/format.h>
+#include <typeinfo>
 
 namespace wmtk::utils {
 
@@ -28,16 +30,66 @@ void EigenMatrixWriter::get_EV_matrix(MatrixX<int64_t>& matrix)
     get_int64_t_matrix("m_ev", PrimitiveType::Edge, matrix);
 }
 
+auto EigenMatrixWriter::get_simplex_vertex_matrix() const -> MatrixXl
+{
+    const static std::array<std::pair<std::string, PrimitiveType>, 3> keys = {
+        {std::make_pair("m_tv", PrimitiveType::Tetrahedron),
+         std::make_pair("m_fv", PrimitiveType::Triangle),
+         std::make_pair("m_ev", PrimitiveType::Edge)}};
+    for (const auto& [n, pt] : keys) {
+        try {
+            return get_matrix<int64_t>(n, pt);
+        } catch (const std::out_of_range& e) {
+            continue;
+        }
+    }
+    assert(false);
+    return {};
+}
+
+template <typename T>
+bool EigenMatrixWriter::has_matrix(const std::string& name, const PrimitiveType type)
+    const
+{
+    try {
+        get_matrix<T>(name,type);
+    } catch (const std::out_of_range& e) {
+        return false;
+    }
+    return true;
+}
+
+template <typename T>
+Eigen::MatrixX<T> EigenMatrixWriter::get_matrix(const std::string& name, const PrimitiveType type)
+    const
+{
+    auto pair = std::make_pair(name, type);
+    try {
+        if constexpr (std::is_same_v<T, char>) {
+            return chars.at(pair);
+        } else if constexpr (std::is_same_v<T, double>) {
+            return doubles.at(pair);
+        } else if constexpr (std::is_same_v<T, int64_t>) {
+            return int64_ts.at(pair);
+        } else if constexpr (std::is_same_v<T, Rational>) {
+            return Rationals.at(pair);
+        }
+    } catch (const std::out_of_range& e) {
+        throw std::out_of_range(fmt::format(
+            "No attribute named {} with primitive {} found on {}",
+            name,
+            primitive_type_name(type),
+            typeid(T).name()));
+    }
+    return {};
+}
+
 void EigenMatrixWriter::get_double_matrix(
     const std::string& name,
     const PrimitiveType type,
     MatrixX<double>& matrix)
 {
-    if (doubles.find(std::make_pair(name, type)) != doubles.end()) {
-        matrix = doubles[std::make_pair(name, type)];
-    } else {
-        throw std::runtime_error("No attribute named " + name);
-    }
+    matrix = get_matrix<double>(name, type);
 }
 
 void EigenMatrixWriter::get_int64_t_matrix(
@@ -45,11 +97,7 @@ void EigenMatrixWriter::get_int64_t_matrix(
     const PrimitiveType type,
     MatrixX<int64_t>& matrix)
 {
-    if (int64_ts.find(std::make_pair(name, type)) != int64_ts.end()) {
-        matrix = int64_ts[std::make_pair(name, type)];
-    } else {
-        throw std::runtime_error("No attribute named " + name);
-    }
+    matrix = get_matrix<int64_t>(name, type);
 }
 
 void EigenMatrixWriter::get_char_matrix(
@@ -57,11 +105,7 @@ void EigenMatrixWriter::get_char_matrix(
     const PrimitiveType type,
     MatrixX<char>& matrix)
 {
-    if (chars.find(std::make_pair(name, type)) != chars.end()) {
-        matrix = chars[std::make_pair(name, type)];
-    } else {
-        throw std::runtime_error("No attribute named " + name);
-    }
+    matrix = get_matrix<char>(name, type);
 }
 
 void EigenMatrixWriter::get_Rational_matrix(
@@ -69,11 +113,7 @@ void EigenMatrixWriter::get_Rational_matrix(
     const PrimitiveType type,
     MatrixX<Rational>& matrix)
 {
-    if (Rationals.find(std::make_pair(name, type)) != Rationals.end()) {
-        matrix = Rationals[std::make_pair(name, type)];
-    } else {
-        throw std::runtime_error("No attribute named " + name);
-    }
+    matrix = get_matrix<Rational>(name, type);
 }
 
 template <typename T>
@@ -146,5 +186,21 @@ void EigenMatrixWriter::write_capacities(const std::vector<int64_t>& capacities)
     return;
 }
 
+template 
+Eigen::MatrixX<char> EigenMatrixWriter::get_matrix<char>(const std::string& name, const PrimitiveType type) const;
+template 
+Eigen::MatrixX<double> EigenMatrixWriter::get_matrix<double>(const std::string& name, const PrimitiveType type) const;
+template 
+Eigen::MatrixX<int64_t> EigenMatrixWriter::get_matrix<int64_t>(const std::string& name, const PrimitiveType type) const;
+template 
+Eigen::MatrixX<Rational> EigenMatrixWriter::get_matrix<Rational>(const std::string& name, const PrimitiveType type) const;
 
+template 
+bool EigenMatrixWriter::has_matrix<char>(const std::string& name, const PrimitiveType type) const;
+template 
+bool EigenMatrixWriter::has_matrix<double>(const std::string& name, const PrimitiveType type) const;
+template 
+bool EigenMatrixWriter::has_matrix<int64_t>(const std::string& name, const PrimitiveType type) const;
+template 
+bool EigenMatrixWriter::has_matrix<Rational>(const std::string& name, const PrimitiveType type) const;
 } // namespace wmtk::utils

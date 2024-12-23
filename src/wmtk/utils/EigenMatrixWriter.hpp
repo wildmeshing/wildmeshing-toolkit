@@ -18,6 +18,17 @@ public:
     void get_FV_matrix(MatrixX<int64_t>& matrix);
     void get_EV_matrix(MatrixX<int64_t>& matrix);
 
+    MatrixXl get_TV_matrix() const;
+    MatrixXl get_FV_matrix() const;
+    MatrixXl get_EV_matrix() const;
+
+    // automatically detects TV/FV/EV by looking for the largets one
+    MatrixXl get_simplex_vertex_matrix() const;
+
+    template <typename T>
+    bool has_matrix(const std::string& name, const PrimitiveType type) const;
+    template <typename T>
+    Eigen::MatrixX<T> get_matrix(const std::string& name, const PrimitiveType type) const;
     void
     get_double_matrix(const std::string& name, const PrimitiveType type, MatrixX<double>& matrix);
     void

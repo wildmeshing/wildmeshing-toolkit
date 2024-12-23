@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Eigen/Core>
+#include <wmtk/Types.hpp>
 #include <wmtk/attribute/TypedAttributeHandle.hpp>
 #include "Invariant.hpp"
 
@@ -8,7 +10,10 @@ template <typename T>
 class SimplexInversionInvariant : public Invariant
 {
 public:
-    SimplexInversionInvariant(const Mesh& m, const TypedAttributeHandle<T>& coordinate);
+    SimplexInversionInvariant(
+        const Mesh& m,
+        const TypedAttributeHandle<T>& coordinate,
+        bool inverted = false);
     using Invariant::Invariant;
 
     /**
@@ -19,7 +24,21 @@ public:
         const override;
 
 private:
+    bool is_oriented(const T& p0, const T& p1) const;
+    bool is_oriented(const Eigen::Ref<const Vector1<T>>& p0, const Eigen::Ref<const Vector1<T>>& p1)
+        const;
+    bool is_oriented(
+        const Eigen::Ref<const Vector2<T>>& p0,
+        const Eigen::Ref<const Vector2<T>>& p1,
+        const Eigen::Ref<const Vector2<T>>& p2) const;
+    bool is_oriented(
+        const Eigen::Ref<const Vector3<T>>& p0,
+        const Eigen::Ref<const Vector3<T>>& p1,
+        const Eigen::Ref<const Vector3<T>>& p2,
+        const Eigen::Ref<const Vector3<T>>& p3) const;
+
     const TypedAttributeHandle<T> m_coordinate_handle;
+    bool m_inverted = false;
 };
 
 } // namespace wmtk

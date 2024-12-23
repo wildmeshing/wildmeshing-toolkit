@@ -65,9 +65,6 @@ void Operation::add_transfer_strategy(
 
 std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simplex)
 {
-    if (!mesh().is_valid(simplex)) {
-        return {};
-    }
     if (!before(simplex)) {
         return {};
     }
@@ -104,7 +101,8 @@ bool Operation::before(const simplex::Simplex& simplex) const
     //     return false;
     // }
 
-    if (mesh().is_removed(simplex.tuple()) || !mesh().is_valid(simplex)) {
+    // we assume the current MeshType's is_valid calls Mesh::is_valid first, which checks if the simplex is removed or not 
+    if(!mesh().is_valid(simplex)) {
         return false;
     }
 
@@ -152,8 +150,9 @@ void Operation::apply_attribute_transfer(const std::vector<simplex::Simplex>& di
     for (const auto& s : direct_mods) {
         if (!s.tuple().is_null()) {
             assert(m_mesh.is_valid(s));
-            assert(m_mesh.get_const_flag_accessor(s.primitive_type()).is_active(s));
             for (const simplex::IdSimplex& ss : simplex::closed_star_iterable(m_mesh, s)) {
+                // trying to get a simplex and this crashes
+                m_mesh.get_simplex(ss);
                 all.add(ss);
             }
         }
@@ -165,6 +164,7 @@ void Operation::apply_attribute_transfer(const std::vector<simplex::Simplex>& di
     for (const auto& at_ptr : m_attr_transfer_strategies) {
         if (&m_mesh == &(at_ptr->mesh())) {
             for (const simplex::IdSimplex& s : all.simplex_vector()) {
+                assert(m_mesh.get_const_flag_accessor(s.primitive_type()).is_active(s));
                 if (s.primitive_type() == at_ptr->primitive_type()) {
                     at_ptr->run(m_mesh.get_simplex(s));
                 }

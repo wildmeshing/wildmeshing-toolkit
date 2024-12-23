@@ -1,6 +1,6 @@
 function(add_component_test COMPONENT_TARGET_NAME ...)
 
-    if(NOT WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
+    if(NOT WMTK_ENABLE_COMPONENT_TESTS)
         return()
     endif()
     list(REMOVE_AT ARGV 0)
