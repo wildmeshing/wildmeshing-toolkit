@@ -61,6 +61,8 @@ int main(int argc, char* argv[])
     auto mesh = wmtk::components::input::input(input_file);
     wmtk::logger().info("mesh has {} vertices", mesh->get_all(PrimitiveType::Vertex).size());
 
+    const std::string output_file = j["output"];
+
     auto input_pos_handle = mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
     auto [tetmesh, surface_mesh] = wmtk::components::multimesh::multimesh(
@@ -72,13 +74,6 @@ int main(int argc, char* argv[])
         -1,
         -1);
     wmtk::logger().info("registered boundary child mesh");
-
-    const std::string output_file = j["output"];
-
-    wmtk::components::output::output(
-        *surface_mesh,
-        output_file + "_surface_mesh_before_split",
-        "vertices");
 
     // handles and updates
     std::vector<attribute::MeshAttributeHandle> pass_through_attributes;
@@ -95,10 +90,59 @@ int main(int argc, char* argv[])
         surface_mesh
             ->register_attribute<int64_t>("visited_face", PrimitiveType::Triangle, 1, false, 0);
 
+    auto surface_vertex_idx_handle = surface_mesh->register_attribute<int64_t>(
+        "surface_vertex_idx",
+        PrimitiveType::Vertex,
+        1,
+        false,
+        -1);
+
+    auto tet_vertex_idx_handle =
+        tetmesh->register_attribute<int64_t>("tet_vertex_idx", PrimitiveType::Vertex, 1, false, -1);
+
+    auto tet_new_vertex_belonging_handle =
+        tetmesh->register_attribute<int64_t>("tet_belonging", PrimitiveType::Vertex, 3, false, -1);
+
+    auto surface_new_vertex_belonging_handle =
+        surface_mesh
+            ->register_attribute<int64_t>("surface_belonging", PrimitiveType::Vertex, 3, false, -1);
+
+    auto surface_vertex_idx_accessor =
+        surface_mesh->create_accessor<int64_t>(surface_vertex_idx_handle);
+    auto tet_vertex_idx_accessor = tetmesh->create_accessor<int64_t>(tet_vertex_idx_handle);
+    auto tet_new_vertex_belonging_accessor =
+        tetmesh->create_accessor<int64_t>(tet_new_vertex_belonging_handle);
+    auto surface_new_vertex_belonging_accessor =
+        surface_mesh->create_accessor<int64_t>(surface_new_vertex_belonging_handle);
+
+
+    int64_t v_idx = 0;
+    for (const auto& v : tetmesh->get_all(PrimitiveType::Vertex)) {
+        tet_vertex_idx_accessor.scalar_attribute(v) = v_idx;
+        v_idx++;
+    }
+
+    for (const auto& v : surface_mesh->get_all(PrimitiveType::Vertex)) {
+        const auto tet_v = surface_mesh->map_to_parent(simplex::Simplex::vertex(*surface_mesh, v));
+        surface_vertex_idx_accessor.scalar_attribute(v) =
+            tet_vertex_idx_accessor.const_scalar_attribute(tet_v);
+    }
+
     pass_through_attributes.push_back(boundary_handle);
     pass_through_attributes.push_back(visited_face_flag_handle);
     pass_through_attributes.push_back(surface_mesh_pos_handle);
     pass_through_attributes.push_back(tetmesh_pos_handle);
+
+    pass_through_attributes.push_back(tet_vertex_idx_handle);
+    pass_through_attributes.push_back(surface_vertex_idx_handle);
+    pass_through_attributes.push_back(tet_new_vertex_belonging_handle);
+    pass_through_attributes.push_back(surface_new_vertex_belonging_handle);
+
+    wmtk::components::output::output(*tetmesh, output_file + "_before_split", "vertices");
+    wmtk::components::output::output(
+        *surface_mesh,
+        output_file + "_surface_mesh_before_split",
+        "vertices");
 
     // Facesplit
     auto visited_face_accessor = surface_mesh->create_accessor<int64_t>(visited_face_flag_handle);
@@ -113,7 +157,7 @@ int main(int argc, char* argv[])
             wmtk::operations::SplitRibBasicStrategy::None);
         facesplit.collapse().set_new_attribute_strategy(
             attr,
-            wmtk::operations::CollapseBasicStrategy::None);
+            wmtk::operations::CollapseBasicStrategy::CopyOther);
     }
 
     const auto& original_surface_cnt = surface_mesh->get_all(PrimitiveType::Triangle).size();
@@ -147,6 +191,10 @@ int main(int argc, char* argv[])
             const Vector3d& p1 = surface_pos_accessor.const_vector_attribute(v1);
             const Vector3d& p2 = surface_pos_accessor.const_vector_attribute(v2);
 
+            const int64_t v0_idx = surface_vertex_idx_accessor.const_scalar_attribute(v0);
+            const int64_t v1_idx = surface_vertex_idx_accessor.const_scalar_attribute(v1);
+            const int64_t v2_idx = surface_vertex_idx_accessor.const_scalar_attribute(v2);
+
             // std::cout << "p0: " << p0 << std::endl;
             // std::cout << "p1: " << p1 << std::endl;
             // std::cout << "p2: " << p2 << std::endl;
@@ -164,6 +212,12 @@ int main(int argc, char* argv[])
 
             // assign new position
             surface_pos_accessor.vector_attribute(new_v) = (p0 + p1 + p2) / 3.;
+
+            // assign new vertex belonging
+            surface_new_vertex_belonging_accessor.vector_attribute(new_v) =
+                Vector3l(v0_idx, v1_idx, v2_idx);
+            tet_new_vertex_belonging_accessor.vector_attribute(surface_mesh->map_to_parent_tuple(
+                simplex::Simplex::vertex(*surface_mesh, new_v))) = Vector3l(v0_idx, v1_idx, v2_idx);
 
             // std::cout << "new_v: " << surface_pos_accessor.vector_attribute(new_v) << std::endl;
 
