@@ -40,11 +40,11 @@ add_subdirectory("CDT/wmtk/components/CDT")
 add_subdirectory("edge_insertion/wmtk/components/edge_insertion")
 
 add_subdirectory("simplicial_embedding/wmtk/components/simplicial_embedding")
+add_subdirectory("regular_space/wmtk/components/regular_space")
 
 # add_component("export_cache")
 # add_component("import_cache")
 # add_component("mesh_info")
-add_component("regular_space")
 # add_component("tag_intersection")
 # add_component("wildmeshing")
 # add_component("get_all_meshes")
