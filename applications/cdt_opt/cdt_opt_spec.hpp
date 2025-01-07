@@ -39,7 +39,7 @@ nlohmann::json cdt_opt_spec = R"(
 {
     "pointer": "/max_passes",
     "type": "int",
-    "default": 10
+    "default": 30
 },
 {
     "pointer": "/output",

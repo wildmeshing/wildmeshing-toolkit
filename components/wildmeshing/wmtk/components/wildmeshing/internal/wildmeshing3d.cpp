@@ -1266,8 +1266,10 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing3d(
     double old_avg_energy = avg_energy;
     int iii = 0;
     bool is_double = false;
-    for (int64_t i = 0; i < options.max_passes; ++i) {
-        logger().info("--------------------------- Pass {} ---------------------------", i);
+    // for (int64_t i = 0; i < options.max_passes; ++i) {
+    int64_t pass_id = 0;
+    while (pass_id < options.max_passes || !is_double) {
+        logger().info("--------------------------- Pass {} ---------------------------", pass_id);
 
         SchedulerStats pass_stats;
         int jj = 0;
@@ -1364,7 +1366,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing3d(
             options.intermediate_output_path,
             options.intermediate_output_name,
             options.input_mesh_position,
-            i + 1,
+            pass_id + 1,
             options.intermediate_output);
 
         assert(mesh->is_connectivity_valid());
@@ -1409,7 +1411,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing3d(
 
 
         // adjust sizing field
-        if (i > 0 && old_max_energy - max_energy < 5e-1 &&
+        if (pass_id > 0 && old_max_energy - max_energy < 5e-1 &&
             (old_avg_energy - avg_energy) / avg_energy < 0.1) {
             wmtk::logger().info("adjusting sizing field ...");
 
@@ -1489,6 +1491,8 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing3d(
 
         // stop at good quality
         if (max_energy <= target_max_amips && is_double) break;
+
+        pass_id++;
     }
 
     std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> all_meshes;
