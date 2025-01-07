@@ -1,4 +1,3 @@
-set(COMPONENT_NAME isotropic_remeshing)
 add_component(${COMPONENT_NAME})
 if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
     return()
@@ -33,4 +32,5 @@ set(SRC_FILES
 
 #CURRENT_COMPONENT_LIB_NAME is set from the main cmake
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
-target_link_libraries(wmtk_${COMPONENT_NAME} PRIVATE nlohmann_json wmtk::output)
+target_link_libraries(wmtk_${COMPONENT_NAME} PRIVATE nlohmann_json)
+target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC wmtk::output)
