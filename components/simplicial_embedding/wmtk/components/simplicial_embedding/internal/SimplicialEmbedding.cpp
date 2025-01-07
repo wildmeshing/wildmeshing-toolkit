@@ -197,7 +197,7 @@ void SimplicialEmbedding::regularize_tags(bool generate_simplicial_embedding)
             break;
         }
         case PrimitiveType::Triangle: { // face split
-            composite::TriFaceSplit op_face_split(m_mesh);
+            composite::TriFaceSplit op_face_split(static_cast<TriMesh&>(m_mesh));
             op_face_split.add_invariant(std::make_shared<TodoInvariant>(
                 m_mesh,
                 std::get<attribute::TypedAttributeHandle<int64_t>>(todo_handle.handle())));
@@ -239,7 +239,7 @@ void SimplicialEmbedding::regularize_tags(bool generate_simplicial_embedding)
             break;
         }
         case PrimitiveType::Tetrahedron: { // tet split
-            composite::TetCellSplit op_tet_split(m_mesh);
+            composite::TetCellSplit op_tet_split(static_cast<TetMesh&>(m_mesh));
             op_tet_split.add_invariant(std::make_shared<TodoInvariant>(
                 m_mesh,
                 std::get<attribute::TypedAttributeHandle<int64_t>>(todo_handle.handle())));
