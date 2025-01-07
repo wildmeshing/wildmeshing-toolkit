@@ -44,9 +44,11 @@ std::shared_ptr<wmtk::operations::composite::EdgeSwap> tri_swap(
         auto invariant_valence_improve =
             std::make_shared<invariants::ValenceImprovementInvariant>(mesh);
         swap->add_invariant(invariant_valence_improve);
+        break;
     }
     case EdgeSwapMode::AMIPS: {
     }
+    default:
     case EdgeSwapMode::Skip: {
         assert(false);
     }
