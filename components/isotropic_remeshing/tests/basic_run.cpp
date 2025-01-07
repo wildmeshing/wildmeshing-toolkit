@@ -16,7 +16,8 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing]")
     opts.edge_swap_mode = wmtk::components::isotropic_remeshing::EdgeSwapMode::Valence;
 
     opts.envelope_size = 1e-3;
-    opts.length_rel = 1e-2;
+    opts.length_rel = 1e-1;
+    opts.fix_uv_seam = false;
 
     wmtk::components::isotropic_remeshing::isotropic_remeshing(opts);
     spdlog::info("hi");

@@ -46,6 +46,7 @@ void IsotropicRemeshing::configure_swap()
         auto invariant_valence_improve =
             std::make_shared<invariants::ValenceImprovementInvariant>(*tri);
         m_swap->add_invariant(invariant_valence_improve);
+        break;
     }
     case EdgeSwapMode::AMIPS: {
     }

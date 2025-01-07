@@ -81,7 +81,7 @@ IsotropicRemeshing::IsotropicRemeshing(const IsotropicRemeshingOptions& opts)
 
     if (m_options.use_swap) {
         configure_swap();
-        assert(bool(m_smooth));
+        assert(bool(m_swap));
         m_operations.emplace_back("swap", m_swap);
     } else if (m_options.edge_swap_mode != EdgeSwapMode::Skip) {
         wmtk::logger().info("Running Isotropic Remeshing without a swap configured despite being "
