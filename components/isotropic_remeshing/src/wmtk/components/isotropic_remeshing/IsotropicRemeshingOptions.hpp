@@ -33,7 +33,7 @@ struct IsotropicRemeshingOptions
     double length_rel = 0;
     bool lock_boundary = true;
     bool use_for_periodic = false;
-    bool fix_uv_seam = true;
+    bool fix_uv_seam = false;
 
     bool use_split = true;
     bool use_swap = true;
