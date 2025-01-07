@@ -567,8 +567,8 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing3d(
     auto split_sequence = std::make_shared<OrOperationSequence>(*mesh);
     split_sequence->add_operation(split_then_round);
     split_sequence->add_operation(split_unrounded);
-    split_sequence->add_invariant(
-        std::make_shared<EnergyFilterInvariant>(*mesh, energy_filter_attribute.as<char>()));
+    // split_sequence->add_invariant(
+    //     std::make_shared<EnergyFilterInvariant>(*mesh, energy_filter_attribute.as<char>()));
 
     split_sequence->set_priority(long_edges_first);
 
@@ -669,8 +669,8 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing3d(
     collapse_then_round->add_operation(rounding);
 
     collapse_then_round->set_priority(short_edges_first);
-    collapse_then_round->add_invariant(
-        std::make_shared<EnergyFilterInvariant>(*mesh, energy_filter_attribute.as<char>()));
+    // collapse_then_round->add_invariant(
+    //     std::make_shared<EnergyFilterInvariant>(*mesh, energy_filter_attribute.as<char>()));
 
 
     for (auto& s : update_child_position) {
@@ -1049,8 +1049,8 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing3d(
     auto swap_then_round = std::make_shared<AndOperationSequence>(*mesh);
     swap_then_round->add_operation(swap_all);
     swap_then_round->add_operation(rounding);
-    swap_then_round->add_invariant(
-        std::make_shared<EnergyFilterInvariant>(*mesh, energy_filter_attribute.as<char>()));
+    // swap_then_round->add_invariant(
+    //     std::make_shared<EnergyFilterInvariant>(*mesh, energy_filter_attribute.as<char>()));
     swap_then_round->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
     swap_then_round->add_invariant(std::make_shared<NoChildMeshAttachingInvariant>(*mesh));
 
@@ -1139,8 +1139,8 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing3d(
 
     proj_smoothing->add_invariant(envelope_invariant);
     proj_smoothing->add_invariant(inversion_invariant);
-    proj_smoothing->add_invariant(
-        std::make_shared<EnergyFilterInvariant>(*mesh, energy_filter_attribute.as<char>()));
+    // proj_smoothing->add_invariant(
+    //     std::make_shared<EnergyFilterInvariant>(*mesh, energy_filter_attribute.as<char>()));
 
     proj_smoothing->add_transfer_strategy(amips_update);
     proj_smoothing->add_transfer_strategy(edge_length_update);
