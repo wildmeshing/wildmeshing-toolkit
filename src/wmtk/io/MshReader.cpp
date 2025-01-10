@@ -317,9 +317,8 @@ void MshReader::extract_element_attribute(
     }
 }
 
-auto MshReader::generate(
-    const std::optional<std::vector<std::vector<std::string>>>& extra_attributes_opt)
-    -> std::shared_ptr<Mesh>
+auto MshReader::generate(const std::optional<std::vector<std::vector<std::string>>>&
+                             extra_attributes_opt) -> std::shared_ptr<Mesh>
 {
     std::shared_ptr<Mesh> res;
     switch (get_mesh_dimension()) {
@@ -384,7 +383,7 @@ void MshReader::validate<3>()
             // swap col 0 and 1 of S
             S.col(0).swap(S.col(1));
             wmtk::logger().info(
-                "Input tet orientation is inverted, swapping col 0 and 1 of TV matirx.");
+                "Input tet orientation is inverted, swapping col 0 and 1 of TV matrix.");
         }
     }
 
