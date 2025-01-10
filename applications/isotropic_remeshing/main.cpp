@@ -126,6 +126,14 @@ int main(int argc, char* argv[])
         options.intermediate_output_format = j["intermediate_output_format"];
     }
     assert(options.position_attribute.is_valid());
+
+
+    auto out_opts = j["output"].get<wmtk::components::output::OutputOptions>();
+    out_opts.position_attribute = options.position_attribute;
+
+
+
+
     wmtk::components::isotropic_remeshing::isotropic_remeshing(options);
 
     // input uv mesh
@@ -136,8 +144,6 @@ int main(int argc, char* argv[])
     // call isotropic_remeshing
 
 
-    auto out_opts = j["output"].get<wmtk::components::output::OutputOptions>();
-    out_opts.position_attribute = options.position_attribute;
     wmtk::components::output::output(*mesh_ptr, out_opts);
 
     if (j.contains("report")) {
