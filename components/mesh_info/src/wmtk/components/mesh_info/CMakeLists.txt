@@ -10,7 +10,11 @@ set(SRC_FILES
 
     simplex/volumes.hpp
     simplex/volumes.cpp
-    simplex/operators/VolumeOperarator.hpp
+    simplex/operators/VolumeOperator.hpp
+
+    simplex/dihedral_angle.hpp
+    simplex/dihedral_angle.cpp
+    simplex/operators/DihedralAngleOperator.hpp
 )
 
 
