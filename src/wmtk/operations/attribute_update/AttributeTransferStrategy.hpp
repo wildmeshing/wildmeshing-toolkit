@@ -1,4 +1,5 @@
 #pragma once
+#include <fmt/format.h>
 #include <wmtk/Mesh.hpp>
 #include "AttributeTransferStrategyBase.hpp"
 
@@ -22,9 +23,7 @@ public:
 };
 
 
-template <
-    typename MyType,
-    typename ParentType>
+template <typename MyType, typename ParentType>
 class SingleAttributeTransferStrategyBase : public AttributeTransferStrategy<MyType>
 {
 public:
@@ -46,7 +45,8 @@ public:
     }
 
 
-    const attribute::MeshAttributeHandle& parent_handle() const { return  m_parent_handle;}
+    const attribute::MeshAttributeHandle& parent_handle() const { return m_parent_handle; }
+
 protected:
     attribute::MeshAttributeHandle m_parent_handle;
 };
@@ -59,18 +59,19 @@ template <
     typename ParentType,
     int MyDim = Eigen::Dynamic,
     int ParentDim = Eigen::Dynamic>
-class SingleAttributeTransferStrategy : public SingleAttributeTransferStrategyBase<MyType, ParentType>
+class SingleAttributeTransferStrategy
+    : public SingleAttributeTransferStrategyBase<MyType, ParentType>
 {
 public:
-    using BaseType = SingleAttributeTransferStrategyBase<MyType,ParentType>;
+    using BaseType = SingleAttributeTransferStrategyBase<MyType, ParentType>;
     using BaseType::handle;
+    using BaseType::matches_attribute;
+    using BaseType::mesh;
     using BaseType::parent_handle;
     using BaseType::primitive_type;
-    using BaseType::mesh;
-    using BaseType::matches_attribute;
 
     using MyVecType = Vector<MyType, MyDim>;
-    using ParentMatType = ColVectors<ParentType, MyDim>;
+    using ParentMatType = ColVectors<ParentType, ParentDim>;
 
 
     // you can pass as many COLUMN vectors as you want to the function depending on the relative
@@ -123,10 +124,9 @@ private:
 //     FunctorType&& f) -> SingleAttributeTransferStrategy<MyType, ParentType>;
 
 template <typename MyType, typename ParentType>
-SingleAttributeTransferStrategyBase<MyType, ParentType>::
-    SingleAttributeTransferStrategyBase(
-        const attribute::MeshAttributeHandle& me,
-        const attribute::MeshAttributeHandle& parent)
+SingleAttributeTransferStrategyBase<MyType, ParentType>::SingleAttributeTransferStrategyBase(
+    const attribute::MeshAttributeHandle& me,
+    const attribute::MeshAttributeHandle& parent)
     : AttributeTransferStrategy<MyType>(me)
     , m_parent_handle(parent)
 {
@@ -140,9 +140,28 @@ SingleAttributeTransferStrategy<MyType, ParentType, MyDim, ParentDim>::
         const attribute::MeshAttributeHandle& me,
         const attribute::MeshAttributeHandle& parent,
         FunctorType&& f)
-    : SingleAttributeTransferStrategyBase<MyType,ParentType>(me,parent)
+    : SingleAttributeTransferStrategyBase<MyType, ParentType>(me, parent)
     , m_functor(f)
 {
+    if (ParentDim != Eigen::Dynamic) {
+        const int parent_dim = parent_handle().mesh().get_attribute_dimension(
+            parent_handle().template as<ParentType>());
+        if (parent_dim != ParentDim) {
+            throw std::runtime_error(fmt::format(
+                "Attribute Transfer expects parent to be {}-dimensional but got {}",
+                ParentDim,
+                parent_dim));
+        }
+    }
+    if (MyDim != Eigen::Dynamic) {
+        const int my_dim = handle().mesh().get_attribute_dimension(handle().template as<MyType>());
+        if (my_dim != MyDim) {
+            throw std::runtime_error(fmt::format(
+                "Attribute Transfer expects my to be {}-dimensional but got {}",
+                MyDim,
+                my_dim));
+        }
+    }
 }
 template <typename MyType, typename ParentType, int MyDim, int ParentDim>
 SingleAttributeTransferStrategy<MyType, ParentType, MyDim, ParentDim>::
@@ -162,7 +181,13 @@ auto SingleAttributeTransferStrategy<MyType, ParentType, MyDim, ParentDim>::read
     auto simps =
         AttributeTransferStrategyBase::get_parent_simplices(handle(), parent_handle(), my_simplex);
 
-    MatrixX<ParentType> A(
+#if !defined(NDEBUG)
+    if (simps.size() == 0) {
+        throw std::runtime_error("SingleAttributeTransferStrategy got no simplices");
+    }
+#endif
+
+    ParentMatType A(
         parent_handle().mesh().get_attribute_dimension(parent_handle().template as<ParentType>()),
         simps.size());
 
@@ -191,8 +216,7 @@ void SingleAttributeTransferStrategy<MyType, ParentType, MyDim, ParentDim>::run(
     }
 }
 template <typename MyType, typename ParentType>
-PrimitiveType
-SingleAttributeTransferStrategyBase<MyType, ParentType>::parent_primitive_type() const
+PrimitiveType SingleAttributeTransferStrategyBase<MyType, ParentType>::parent_primitive_type() const
 {
     return m_parent_handle.primitive_type();
 }
