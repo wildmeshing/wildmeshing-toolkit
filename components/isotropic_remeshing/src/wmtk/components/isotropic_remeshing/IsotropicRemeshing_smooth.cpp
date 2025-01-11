@@ -89,9 +89,9 @@ void IsotropicRemeshing::configure_smooth()
             position_for_inversion.value().mesh(),
             position_for_inversion.value().as<double>()));
     }
-    // if (m_envelope_invariants) {
-    //     op_smooth->add_invariant(m_envelope_invariants);
-    // }
+    if (m_envelope_invariants) {
+        op_smooth->add_invariant(m_envelope_invariants);
+    }
 
     if (update_position) proj_op->add_transfer_strategy(update_position);
 }

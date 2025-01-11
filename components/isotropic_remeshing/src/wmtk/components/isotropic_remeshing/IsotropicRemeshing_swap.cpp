@@ -67,9 +67,9 @@ void IsotropicRemeshing::configure_swap()
     m_swap->collapse().add_invariant(internal::collapse_core_invariants(mesh, m_options));
 
 
-    // if (m_envelope_invariants) {
-    //     m_swap->add_invariant(m_envelope_invariants);
-    // }
+     if (m_envelope_invariants) {
+         m_swap->add_invariant(m_envelope_invariants);
+     }
 
 
     for (const auto& p : m_options.all_positions()) {
