@@ -18,9 +18,38 @@ public:
 
     // bool matches_attribute(
     //     const wmtk::attribute::MeshAttributeHandle& attr,
-    //     const simplex::Simplex& s) const final override;
+    //     const simplex::Simplex& s) const final;
 };
 
+
+template <
+    typename MyType,
+    typename ParentType>
+class SingleAttributeTransferStrategyBase : public AttributeTransferStrategy<MyType>
+{
+public:
+    using AttributeTransferStrategy<MyType>::handle;
+    using AttributeTransferStrategy<MyType>::primitive_type;
+    using AttributeTransferStrategy<MyType>::mesh;
+    using AttributeTransferStrategy<MyType>::matches_attribute;
+
+    SingleAttributeTransferStrategyBase(
+        const attribute::MeshAttributeHandle& my_handle,
+        const attribute::MeshAttributeHandle& parent_handle);
+
+
+    PrimitiveType parent_primitive_type() const;
+
+    std::vector<wmtk::attribute::MeshAttributeHandle> sources() const final
+    {
+        return {m_parent_handle};
+    }
+
+
+    const attribute::MeshAttributeHandle& parent_handle() const { return  m_parent_handle;}
+protected:
+    attribute::MeshAttributeHandle m_parent_handle;
+};
 /**
  * @tparam MyType The type to which transfer should go to.
  * @tparam ParentType The type that causes the change in MyType.
@@ -30,10 +59,11 @@ template <
     typename ParentType,
     int MyDim = Eigen::Dynamic,
     int ParentDim = Eigen::Dynamic>
-class SingleAttributeTransferStrategy : public AttributeTransferStrategy<MyType>
+class SingleAttributeTransferStrategy : public SingleAttributeTransferStrategyBase<MyType, ParentType>
 {
 public:
     using AttributeTransferStrategy<MyType>::handle;
+    using SingleAttributeTransferStrategy<MyType,ParentType>::parent_handle;
     using AttributeTransferStrategy<MyType>::primitive_type;
     using AttributeTransferStrategy<MyType>::mesh;
     using AttributeTransferStrategy<MyType>::matches_attribute;
@@ -59,19 +89,13 @@ public:
         const attribute::MeshAttributeHandle& parent_handle,
         FunctorWithoutSimplicesType&& = nullptr);
 
-    void run(const simplex::Simplex& s) const final override;
+    void run(const simplex::Simplex& s) const final;
 
-
-    PrimitiveType parent_primitive_type() const;
 
     static FunctorType make_nosimplices_func(FunctorWithoutSimplicesType&& fp)
     {
         return
             [fp](const ParentMatType& a, const std::vector<Tuple>&) -> MyVecType { return fp(a); };
-    }
-    std::vector<wmtk::attribute::MeshAttributeHandle> sources() const final override
-    {
-        return {m_parent_handle};
     }
 
 
@@ -81,7 +105,6 @@ protected:
 
 private:
     FunctorType m_functor;
-    attribute::MeshAttributeHandle m_parent_handle;
 };
 
 // template <typename MyType, typename ParentType>
@@ -98,18 +121,27 @@ private:
 //     const attribute::MeshAttributeHandle&,
 //     FunctorType&& f) -> SingleAttributeTransferStrategy<MyType, ParentType>;
 
+template <typename MyType, typename ParentType>
+SingleAttributeTransferStrategyBase<MyType, ParentType>::
+    SingleAttributeTransferStrategyBase(
+        const attribute::MeshAttributeHandle& me,
+        const attribute::MeshAttributeHandle& parent)
+    : AttributeTransferStrategy<MyType>(me)
+    , m_parent_handle(parent)
+{
+    assert(me.template holds<MyType>());
+    assert(parent.template holds<ParentType>());
+}
+
 template <typename MyType, typename ParentType, int MyDim, int ParentDim>
 SingleAttributeTransferStrategy<MyType, ParentType, MyDim, ParentDim>::
     SingleAttributeTransferStrategy(
         const attribute::MeshAttributeHandle& me,
         const attribute::MeshAttributeHandle& parent,
         FunctorType&& f)
-    : AttributeTransferStrategy<MyType>(me)
+    : SingleAttributeTransferStrategyBase<MyType,ParentType>(me,parent)
     , m_functor(f)
-    , m_parent_handle(parent)
 {
-    assert(me.template holds<MyType>());
-    assert(parent.template holds<ParentType>());
 }
 template <typename MyType, typename ParentType, int MyDim, int ParentDim>
 SingleAttributeTransferStrategy<MyType, ParentType, MyDim, ParentDim>::
@@ -125,12 +157,12 @@ auto SingleAttributeTransferStrategy<MyType, ParentType, MyDim, ParentDim>::read
     const simplex::Simplex& my_simplex) const -> std::pair<ParentMatType, std::vector<Tuple>>
 {
     auto acc =
-        m_parent_handle.mesh().create_const_accessor(m_parent_handle.template as<ParentType>());
+        parent_handle().mesh().create_const_accessor(parent_handle().template as<ParentType>());
     auto simps =
-        AttributeTransferStrategyBase::get_parent_simplices(handle(), m_parent_handle, my_simplex);
+        AttributeTransferStrategyBase::get_parent_simplices(handle(), parent_handle(), my_simplex);
 
     MatrixX<ParentType> A(
-        m_parent_handle.mesh().get_attribute_dimension(m_parent_handle.template as<ParentType>()),
+        parent_handle().mesh().get_attribute_dimension(parent_handle().template as<ParentType>()),
         simps.size());
 
     using Index = Eigen::Index;
@@ -157,9 +189,9 @@ void SingleAttributeTransferStrategy<MyType, ParentType, MyDim, ParentDim>::run(
         acc.template vector_attribute<MyDim>(s.tuple()) = m_functor(parent_data, simps);
     }
 }
-template <typename MyType, typename ParentType, int MyDim, int ParentDim>
+template <typename MyType, typename ParentType>
 PrimitiveType
-SingleAttributeTransferStrategy<MyType, ParentType, MyDim, ParentDim>::parent_primitive_type() const
+SingleAttributeTransferStrategyBase<MyType, ParentType>::parent_primitive_type() const
 {
     return m_parent_handle.primitive_type();
 }
