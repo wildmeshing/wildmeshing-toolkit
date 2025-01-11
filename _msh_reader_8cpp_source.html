@@ -434,114 +434,113 @@ $(document).ready(function(){initNavTree('_msh_reader_8cpp_source.html',''); ini
 <div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;    }</div>
 <div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;}</div>
 <div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160; </div>
-<div class="line"><a name="l00320"></a><span class="lineno"><a class="line" href="classwmtk_1_1io_1_1_msh_reader.html#ae10ae0cded86934a6283d0706735561f">  320</a></span>&#160;<span class="keyword">auto</span> <a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#ae10ae0cded86934a6283d0706735561f">MshReader::generate</a>(</div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;    <span class="keyword">const</span> std::optional&lt;std::vector&lt;std::vector&lt;std::string&gt;&gt;&gt;&amp; extra_attributes_opt)</div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;    -&gt; std::shared_ptr&lt;Mesh&gt;</div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;{</div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;    std::shared_ptr&lt;Mesh&gt; res;</div>
-<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;    <span class="keywordflow">switch</span> (get_mesh_dimension()) {</div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;    <span class="keywordflow">case</span> 3: res = generateT&lt;3&gt;(); <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;    <span class="keywordflow">case</span> 2: res = generateT&lt;2&gt;(); <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;    <span class="keywordflow">case</span> 1: res = generateT&lt;1&gt;(); <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;    <span class="keywordflow">default</span>:</div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;    <span class="keywordflow">case</span> 0: res = std::make_shared&lt;PointMesh&gt;();</div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;    }</div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;    assert(V.size() &gt; 0);</div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160; </div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;    <span class="keywordflow">if</span> (extra_attributes_opt.has_value()) {</div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span>&amp; extra_attributes = extra_attributes_opt.value();</div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;        <span class="comment">// save all valid scalar attributes on tets</span></div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;        std::set&lt;std::string&gt; valid_attr_names;</div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; data : m_spec.element_data) {</div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;            <span class="comment">// validness: int_tags[2] stores the dimension of an element_data, which should</span></div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;            <span class="comment">// match the size of tets</span></div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;            <span class="keywordflow">if</span> (data.header.int_tags[2] != get_num_simplex_elements(3)) {</div>
-<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;                <span class="keywordflow">continue</span>;</div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;            }</div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;            valid_attr_names.insert(data.header.string_tags.front());</div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;        }</div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> dim = 0; dim &lt; extra_attributes.size(); ++dim) {</div>
-<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;            <span class="keyword">const</span> <span class="keyword">auto</span>&amp; attr_names = extra_attributes[dim];</div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">const</span> std::string&amp; attr : attr_names) {</div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;                <span class="keywordflow">if</span> (valid_attr_names.count(attr) == 0) {</div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;                    <a class="code" href="namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925">log_and_throw_error</a>(<span class="stringliteral">&quot;Attribute &quot;</span> + attr + <span class="stringliteral">&quot; does not exist in the msh file.&quot;</span>);</div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;                }</div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;                extract_element_attribute(*res, attr, <a class="code" href="namespacewmtk.html#a3b08a5d7fb42f02c54bae85758b39f59">get_primitive_type_from_id</a>(dim));</div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;            }</div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;        }</div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;    }</div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;    <a class="code" href="namespacewmtk_1_1mesh__utils.html#ad92eb4095d516f6a20e25587f9effe80">mesh_utils::set_matrix_attribute</a>(V, <span class="stringliteral">&quot;vertices&quot;</span>, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>, *res);</div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;    <span class="keywordflow">return</span> res;</div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;}</div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160; </div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;<span class="keyword">template</span> &lt;<span class="keywordtype">int</span> DIM&gt;</div>
-<div class="line"><a name="l00361"></a><span class="lineno"><a class="line" href="classwmtk_1_1io_1_1_msh_reader.html#aa42c417a47b9af758a8509b320b494b3">  361</a></span>&#160;<span class="keyword">auto</span> <a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#aa42c417a47b9af758a8509b320b494b3">MshReader::generateT</a>() -&gt; std::shared_ptr&lt;wmtk::utils::mesh_type_from_dimension_t&lt;DIM&gt;&gt;</div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;{</div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;    extract&lt;DIM&gt;();</div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;    validate&lt;DIM&gt;();</div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;    <span class="keywordflow">return</span> construct&lt;DIM&gt;();</div>
-<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;}</div>
-<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160; </div>
-<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;<span class="keyword">template</span> &lt;<span class="keywordtype">int</span> DIM&gt;</div>
-<div class="line"><a name="l00369"></a><span class="lineno"><a class="line" href="classwmtk_1_1io_1_1_msh_reader.html#a4b44c3da035bed8dd308df69b48f860c">  369</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#a4b44c3da035bed8dd308df69b48f860c">MshReader::validate</a>()</div>
-<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;{}</div>
-<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160; </div>
-<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
-<div class="line"><a name="l00373"></a><span class="lineno"><a class="line" href="classwmtk_1_1io_1_1_msh_reader.html#ab48bcfed792dcb59c7f417fd2cf44486">  373</a></span>&#160;<span class="keywordtype">void</span> MshReader::validate&lt;3&gt;()</div>
-<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;{</div>
-<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;    assert(<a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#ad1aeb80303b1daedc6e851aed8575447">V</a>.cols() == 3);</div>
-<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;    <a class="code" href="namespacewmtk_1_1utils.html#a5f6998f980cb239bfc739e9600e3d03e">exactinit</a>();</div>
-<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;    {</div>
-<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;        <span class="comment">// check inversion</span></div>
-<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160; </div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;        <span class="keyword">auto</span> Vs = <a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#ad1aeb80303b1daedc6e851aed8575447">V</a>(<a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#afb6cea87fc002c6657e3678453ebaf63">S</a>.row(0), Eigen::all);</div>
+<div class="line"><a name="l00320"></a><span class="lineno"><a class="line" href="classwmtk_1_1io_1_1_msh_reader.html#ae10ae0cded86934a6283d0706735561f">  320</a></span>&#160;<span class="keyword">auto</span> <a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#ae10ae0cded86934a6283d0706735561f">MshReader::generate</a>(<span class="keyword">const</span> std::optional&lt;std::vector&lt;std::vector&lt;std::string&gt;&gt;&gt;&amp;</div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;                             extra_attributes_opt) -&gt; std::shared_ptr&lt;Mesh&gt;</div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;{</div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;    std::shared_ptr&lt;Mesh&gt; res;</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;    <span class="keywordflow">switch</span> (get_mesh_dimension()) {</div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;    <span class="keywordflow">case</span> 3: res = generateT&lt;3&gt;(); <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;    <span class="keywordflow">case</span> 2: res = generateT&lt;2&gt;(); <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;    <span class="keywordflow">case</span> 1: res = generateT&lt;1&gt;(); <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;    <span class="keywordflow">default</span>:</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;    <span class="keywordflow">case</span> 0: res = std::make_shared&lt;PointMesh&gt;();</div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;    }</div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;    assert(V.size() &gt; 0);</div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160; </div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;    <span class="keywordflow">if</span> (extra_attributes_opt.has_value()) {</div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span>&amp; extra_attributes = extra_attributes_opt.value();</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;        <span class="comment">// save all valid scalar attributes on tets</span></div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;        std::set&lt;std::string&gt; valid_attr_names;</div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; data : m_spec.element_data) {</div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;            <span class="comment">// validness: int_tags[2] stores the dimension of an element_data, which should</span></div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;            <span class="comment">// match the size of tets</span></div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;            <span class="keywordflow">if</span> (data.header.int_tags[2] != get_num_simplex_elements(3)) {</div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;                <span class="keywordflow">continue</span>;</div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;            }</div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;            valid_attr_names.insert(data.header.string_tags.front());</div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;        }</div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> dim = 0; dim &lt; extra_attributes.size(); ++dim) {</div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;            <span class="keyword">const</span> <span class="keyword">auto</span>&amp; attr_names = extra_attributes[dim];</div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">const</span> std::string&amp; attr : attr_names) {</div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;                <span class="keywordflow">if</span> (valid_attr_names.count(attr) == 0) {</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;                    <a class="code" href="namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925">log_and_throw_error</a>(<span class="stringliteral">&quot;Attribute &quot;</span> + attr + <span class="stringliteral">&quot; does not exist in the msh file.&quot;</span>);</div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;                }</div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;                extract_element_attribute(*res, attr, <a class="code" href="namespacewmtk.html#a3b08a5d7fb42f02c54bae85758b39f59">get_primitive_type_from_id</a>(dim));</div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;            }</div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;        }</div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;    }</div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;    <a class="code" href="namespacewmtk_1_1mesh__utils.html#ad92eb4095d516f6a20e25587f9effe80">mesh_utils::set_matrix_attribute</a>(V, <span class="stringliteral">&quot;vertices&quot;</span>, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>, *res);</div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;    <span class="keywordflow">return</span> res;</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;}</div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160; </div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;<span class="keyword">template</span> &lt;<span class="keywordtype">int</span> DIM&gt;</div>
+<div class="line"><a name="l00360"></a><span class="lineno"><a class="line" href="classwmtk_1_1io_1_1_msh_reader.html#aa42c417a47b9af758a8509b320b494b3">  360</a></span>&#160;<span class="keyword">auto</span> <a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#aa42c417a47b9af758a8509b320b494b3">MshReader::generateT</a>() -&gt; std::shared_ptr&lt;wmtk::utils::mesh_type_from_dimension_t&lt;DIM&gt;&gt;</div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;{</div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;    extract&lt;DIM&gt;();</div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;    validate&lt;DIM&gt;();</div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;    <span class="keywordflow">return</span> construct&lt;DIM&gt;();</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;}</div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160; </div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;<span class="keyword">template</span> &lt;<span class="keywordtype">int</span> DIM&gt;</div>
+<div class="line"><a name="l00368"></a><span class="lineno"><a class="line" href="classwmtk_1_1io_1_1_msh_reader.html#a4b44c3da035bed8dd308df69b48f860c">  368</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#a4b44c3da035bed8dd308df69b48f860c">MshReader::validate</a>()</div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;{}</div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160; </div>
+<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
+<div class="line"><a name="l00372"></a><span class="lineno"><a class="line" href="classwmtk_1_1io_1_1_msh_reader.html#ab48bcfed792dcb59c7f417fd2cf44486">  372</a></span>&#160;<span class="keywordtype">void</span> MshReader::validate&lt;3&gt;()</div>
+<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;{</div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;    assert(<a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#ad1aeb80303b1daedc6e851aed8575447">V</a>.cols() == 3);</div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;    <a class="code" href="namespacewmtk_1_1utils.html#a5f6998f980cb239bfc739e9600e3d03e">exactinit</a>();</div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;    {</div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;        <span class="comment">// check inversion</span></div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160; </div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;        <span class="keyword">auto</span> Vs = <a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#ad1aeb80303b1daedc6e851aed8575447">V</a>(<a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#afb6cea87fc002c6657e3678453ebaf63">S</a>.row(0), Eigen::all);</div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160; </div>
 <div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160; </div>
-<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160; </div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="namespacewmtk_1_1utils.html#a34133dc338089a5141f8e84feecb81ce">wmtk::utils::wmtk_orient3d</a>(Vs.transpose()) &lt; 0) {</div>
-<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;            <span class="comment">// swap col 0 and 1 of S</span></div>
-<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;            <a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#afb6cea87fc002c6657e3678453ebaf63">S</a>.col(0).swap(<a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#afb6cea87fc002c6657e3678453ebaf63">S</a>.col(1));</div>
-<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;            <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(</div>
-<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;                <span class="stringliteral">&quot;Input tet orientation is inverted, swapping col 0 and 1 of TV matirx.&quot;</span>);</div>
-<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;        }</div>
-<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;    }</div>
-<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160; </div>
-<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;    {</div>
-<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;        <span class="comment">// check consistency</span></div>
-<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;        <span class="keywordflow">for</span> (int64_t i = 0; i &lt; <a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#afb6cea87fc002c6657e3678453ebaf63">S</a>.rows(); i++) {</div>
-<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;            <span class="keyword">auto</span> row = <a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#afb6cea87fc002c6657e3678453ebaf63">S</a>.row(i);</div>
-<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;            <span class="keyword">auto</span> Vs = <a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#ad1aeb80303b1daedc6e851aed8575447">V</a>(row, Eigen::all);</div>
-<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;            <span class="keyword">auto</span> orient = <a class="code" href="namespacewmtk_1_1utils.html#a34133dc338089a5141f8e84feecb81ce">wmtk::utils::wmtk_orient3d</a>(Vs.transpose());</div>
-<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160; </div>
-<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;            <span class="keywordflow">if</span> (orient &lt; 0) {</div>
-<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;                std::swap(row.x(), row.y());</div>
-<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;                <span class="comment">// log_and_throw_error(&quot;Input tet orientation is inconsistent.&quot;);</span></div>
-<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;            } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (orient == 0) {</div>
-<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;                <a class="code" href="namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925">log_and_throw_error</a>(<span class="stringliteral">&quot;Input tet is degenerated.&quot;</span>);</div>
-<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;            }</div>
-<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;        }</div>
-<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;    }</div>
-<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160; </div>
-<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;    {</div>
-<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;        <span class="comment">// check consistency</span></div>
-<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;        <span class="keywordflow">for</span> (int64_t i = 0; i &lt; <a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#afb6cea87fc002c6657e3678453ebaf63">S</a>.rows(); i++) {</div>
-<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;            <span class="keyword">auto</span> row = <a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#afb6cea87fc002c6657e3678453ebaf63">S</a>.row(i);</div>
-<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;            <span class="keyword">auto</span> Vs = <a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#ad1aeb80303b1daedc6e851aed8575447">V</a>(row, Eigen::all);</div>
-<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;            <span class="keyword">auto</span> orient = <a class="code" href="namespacewmtk_1_1utils.html#a34133dc338089a5141f8e84feecb81ce">wmtk::utils::wmtk_orient3d</a>(Vs.transpose());</div>
-<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160; </div>
-<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;            <span class="keywordflow">if</span> (orient &lt; 0) {</div>
-<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;                <span class="keyword">auto</span> a = Vs.row(0);</div>
-<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;                <span class="keyword">auto</span> b = Vs.row(1);</div>
-<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;                <span class="keyword">auto</span> tmp = a.eval();</div>
-<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;                a = b;</div>
-<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;                b = a;</div>
-<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;                <span class="comment">// log_and_throw_error(&quot;Input tet orientation is inconsistent.&quot;);</span></div>
-<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;            } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (orient == 0) {</div>
-<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;                <a class="code" href="namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925">log_and_throw_error</a>(<span class="stringliteral">&quot;Input tet is degenerated.&quot;</span>);</div>
-<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;            }</div>
-<div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160;        }</div>
-<div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;    }</div>
-<div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;}</div>
-<div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160;} <span class="comment">// namespace wmtk::io</span></div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="namespacewmtk_1_1utils.html#a34133dc338089a5141f8e84feecb81ce">wmtk::utils::wmtk_orient3d</a>(Vs.transpose()) &lt; 0) {</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;            <span class="comment">// swap col 0 and 1 of S</span></div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;            <a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#afb6cea87fc002c6657e3678453ebaf63">S</a>.col(0).swap(<a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#afb6cea87fc002c6657e3678453ebaf63">S</a>.col(1));</div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;            <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(</div>
+<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;                <span class="stringliteral">&quot;Input tet orientation is inverted, swapping col 0 and 1 of TV matrix.&quot;</span>);</div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;        }</div>
+<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;    }</div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160; </div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;    {</div>
+<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;        <span class="comment">// check consistency</span></div>
+<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;        <span class="keywordflow">for</span> (int64_t i = 0; i &lt; <a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#afb6cea87fc002c6657e3678453ebaf63">S</a>.rows(); i++) {</div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;            <span class="keyword">auto</span> row = <a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#afb6cea87fc002c6657e3678453ebaf63">S</a>.row(i);</div>
+<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;            <span class="keyword">auto</span> Vs = <a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#ad1aeb80303b1daedc6e851aed8575447">V</a>(row, Eigen::all);</div>
+<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;            <span class="keyword">auto</span> orient = <a class="code" href="namespacewmtk_1_1utils.html#a34133dc338089a5141f8e84feecb81ce">wmtk::utils::wmtk_orient3d</a>(Vs.transpose());</div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160; </div>
+<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;            <span class="keywordflow">if</span> (orient &lt; 0) {</div>
+<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;                std::swap(row.x(), row.y());</div>
+<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;                <span class="comment">// log_and_throw_error(&quot;Input tet orientation is inconsistent.&quot;);</span></div>
+<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;            } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (orient == 0) {</div>
+<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;                <a class="code" href="namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925">log_and_throw_error</a>(<span class="stringliteral">&quot;Input tet is degenerated.&quot;</span>);</div>
+<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;            }</div>
+<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;        }</div>
+<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;    }</div>
+<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160; </div>
+<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;    {</div>
+<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;        <span class="comment">// check consistency</span></div>
+<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;        <span class="keywordflow">for</span> (int64_t i = 0; i &lt; <a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#afb6cea87fc002c6657e3678453ebaf63">S</a>.rows(); i++) {</div>
+<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;            <span class="keyword">auto</span> row = <a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#afb6cea87fc002c6657e3678453ebaf63">S</a>.row(i);</div>
+<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;            <span class="keyword">auto</span> Vs = <a class="code" href="classwmtk_1_1io_1_1_msh_reader.html#ad1aeb80303b1daedc6e851aed8575447">V</a>(row, Eigen::all);</div>
+<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;            <span class="keyword">auto</span> orient = <a class="code" href="namespacewmtk_1_1utils.html#a34133dc338089a5141f8e84feecb81ce">wmtk::utils::wmtk_orient3d</a>(Vs.transpose());</div>
+<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160; </div>
+<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;            <span class="keywordflow">if</span> (orient &lt; 0) {</div>
+<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;                <span class="keyword">auto</span> a = Vs.row(0);</div>
+<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;                <span class="keyword">auto</span> b = Vs.row(1);</div>
+<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;                <span class="keyword">auto</span> tmp = a.eval();</div>
+<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;                a = b;</div>
+<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;                b = a;</div>
+<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;                <span class="comment">// log_and_throw_error(&quot;Input tet orientation is inconsistent.&quot;);</span></div>
+<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;            } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (orient == 0) {</div>
+<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;                <a class="code" href="namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925">log_and_throw_error</a>(<span class="stringliteral">&quot;Input tet is degenerated.&quot;</span>);</div>
+<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;            }</div>
+<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;        }</div>
+<div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160;    }</div>
+<div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;}</div>
+<div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;} <span class="comment">// namespace wmtk::io</span></div>
 <div class="ttc" id="a_edge_mesh_8hpp_html"><div class="ttname"><a href="_edge_mesh_8hpp.html">EdgeMesh.hpp</a></div></div>
 <div class="ttc" id="a_logger_8hpp_html"><div class="ttname"><a href="_logger_8hpp.html">Logger.hpp</a></div></div>
 <div class="ttc" id="a_mesh_attribute_handle_8hpp_html"><div class="ttname"><a href="_mesh_attribute_handle_8hpp.html">MeshAttributeHandle.hpp</a></div></div>
@@ -562,13 +561,13 @@ $(document).ready(function(){initNavTree('_msh_reader_8cpp_source.html',''); ini
 <div class="ttc" id="aclasswmtk_1_1io_1_1_msh_reader_html_a1f8099e61f9e5fe8192d6b3a39848d31"><div class="ttname"><a href="classwmtk_1_1io_1_1_msh_reader.html#a1f8099e61f9e5fe8192d6b3a39848d31">wmtk::io::MshReader::get_mesh_dimension</a></div><div class="ttdeci">int get_mesh_dimension() const</div><div class="ttdef"><b>Definition:</b> <a href="_msh_reader_8cpp_source.html#l00028">MshReader.cpp:28</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1io_1_1_msh_reader_html_a3689c227f8530e7bca87439436cd9f12"><div class="ttname"><a href="classwmtk_1_1io_1_1_msh_reader.html#a3689c227f8530e7bca87439436cd9f12">wmtk::io::MshReader::get_embedded_dimension</a></div><div class="ttdeci">int get_embedded_dimension() const</div><div class="ttdef"><b>Definition:</b> <a href="_msh_reader_8cpp_source.html#l00119">MshReader.cpp:119</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1io_1_1_msh_reader_html_a48fc419cdcb88643477f8beb204b1775"><div class="ttname"><a href="classwmtk_1_1io_1_1_msh_reader.html#a48fc419cdcb88643477f8beb204b1775">wmtk::io::MshReader::AUTO_EMBEDDED_DIMENSION</a></div><div class="ttdeci">static const int64_t AUTO_EMBEDDED_DIMENSION</div><div class="ttdef"><b>Definition:</b> <a href="_msh_reader_8hpp_source.html#l00094">MshReader.hpp:94</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1io_1_1_msh_reader_html_a4b44c3da035bed8dd308df69b48f860c"><div class="ttname"><a href="classwmtk_1_1io_1_1_msh_reader.html#a4b44c3da035bed8dd308df69b48f860c">wmtk::io::MshReader::validate</a></div><div class="ttdeci">void validate()</div><div class="ttdef"><b>Definition:</b> <a href="_msh_reader_8cpp_source.html#l00369">MshReader.cpp:369</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1io_1_1_msh_reader_html_a4b44c3da035bed8dd308df69b48f860c"><div class="ttname"><a href="classwmtk_1_1io_1_1_msh_reader.html#a4b44c3da035bed8dd308df69b48f860c">wmtk::io::MshReader::validate</a></div><div class="ttdeci">void validate()</div><div class="ttdef"><b>Definition:</b> <a href="_msh_reader_8cpp_source.html#l00368">MshReader.cpp:368</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1io_1_1_msh_reader_html_a679c3c7ab52537cca9b91987defa3c39"><div class="ttname"><a href="classwmtk_1_1io_1_1_msh_reader.html#a679c3c7ab52537cca9b91987defa3c39">wmtk::io::MshReader::read</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; read(const std::filesystem::path &amp;filename, const bool ignore_z_if_zero, const std::vector&lt; std::string &gt; &amp;extra_facet_attributes={})</div><div class="ttdef"><b>Definition:</b> <a href="_msh_reader_8cpp_source.html#l00038">MshReader.cpp:38</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1io_1_1_msh_reader_html_a75ab4b51346d697c4d904002d321da66"><div class="ttname"><a href="classwmtk_1_1io_1_1_msh_reader.html#a75ab4b51346d697c4d904002d321da66">wmtk::io::MshReader::MshReader</a></div><div class="ttdeci">MshReader()</div></div>
 <div class="ttc" id="aclasswmtk_1_1io_1_1_msh_reader_html_a79db3c3275d9c13b9803e68187219101"><div class="ttname"><a href="classwmtk_1_1io_1_1_msh_reader.html#a79db3c3275d9c13b9803e68187219101">wmtk::io::MshReader::m_embedded_dimension</a></div><div class="ttdeci">int64_t m_embedded_dimension</div><div class="ttdef"><b>Definition:</b> <a href="_msh_reader_8hpp_source.html#l00088">MshReader.hpp:88</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1io_1_1_msh_reader_html_a7ca2db2c7edd0cf82b2ab1f306614e19"><div class="ttname"><a href="classwmtk_1_1io_1_1_msh_reader.html#a7ca2db2c7edd0cf82b2ab1f306614e19">wmtk::io::MshReader::get_num_vertices</a></div><div class="ttdeci">size_t get_num_vertices(int DIM) const</div><div class="ttdef"><b>Definition:</b> <a href="_msh_reader_8cpp_source.html#l00098">MshReader.cpp:98</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1io_1_1_msh_reader_html_a98c93bd9eacf52627a2a78ce3f3fb726"><div class="ttname"><a href="classwmtk_1_1io_1_1_msh_reader.html#a98c93bd9eacf52627a2a78ce3f3fb726">wmtk::io::MshReader::get_vertex_block</a></div><div class="ttdeci">const mshio::NodeBlock * get_vertex_block(int DIM) const</div><div class="ttdef"><b>Definition:</b> <a href="_msh_reader_8cpp_source.html#l00078">MshReader.cpp:78</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1io_1_1_msh_reader_html_aa42c417a47b9af758a8509b320b494b3"><div class="ttname"><a href="classwmtk_1_1io_1_1_msh_reader.html#aa42c417a47b9af758a8509b320b494b3">wmtk::io::MshReader::generateT</a></div><div class="ttdeci">auto generateT() -&gt; std::shared_ptr&lt; wmtk::utils::mesh_type_from_dimension_t&lt; DIM &gt;&gt;</div><div class="ttdef"><b>Definition:</b> <a href="_msh_reader_8cpp_source.html#l00361">MshReader.cpp:361</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1io_1_1_msh_reader_html_aa42c417a47b9af758a8509b320b494b3"><div class="ttname"><a href="classwmtk_1_1io_1_1_msh_reader.html#aa42c417a47b9af758a8509b320b494b3">wmtk::io::MshReader::generateT</a></div><div class="ttdeci">auto generateT() -&gt; std::shared_ptr&lt; wmtk::utils::mesh_type_from_dimension_t&lt; DIM &gt;&gt;</div><div class="ttdef"><b>Definition:</b> <a href="_msh_reader_8cpp_source.html#l00360">MshReader.cpp:360</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1io_1_1_msh_reader_html_aab06b4e9c36bcfd06703be31876d67fa"><div class="ttname"><a href="classwmtk_1_1io_1_1_msh_reader.html#aab06b4e9c36bcfd06703be31876d67fa">wmtk::io::MshReader::~MshReader</a></div><div class="ttdeci">~MshReader()</div></div>
 <div class="ttc" id="aclasswmtk_1_1io_1_1_msh_reader_html_ac7c34ba358c98d510b56e9ebf680c390"><div class="ttname"><a href="classwmtk_1_1io_1_1_msh_reader.html#ac7c34ba358c98d510b56e9ebf680c390">wmtk::io::MshReader::extract</a></div><div class="ttdeci">void extract()</div><div class="ttdef"><b>Definition:</b> <a href="_msh_reader_8cpp_source.html#l00023">MshReader.cpp:23</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1io_1_1_msh_reader_html_ad1aeb80303b1daedc6e851aed8575447"><div class="ttname"><a href="classwmtk_1_1io_1_1_msh_reader.html#ad1aeb80303b1daedc6e851aed8575447">wmtk::io::MshReader::V</a></div><div class="ttdeci">Eigen::MatrixXd V</div><div class="ttdef"><b>Definition:</b> <a href="_msh_reader_8hpp_source.html#l00091">MshReader.hpp:91</a></div></div>
