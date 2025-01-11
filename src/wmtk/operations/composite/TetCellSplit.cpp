@@ -5,7 +5,7 @@
 namespace wmtk::operations::composite {
 
 
-TetCellSplit::TetCellSplit(Mesh& m)
+TetCellSplit::TetCellSplit(TetMesh& m)
     : Operation(m)
     , m_split(m)
     , m_collapse(m)

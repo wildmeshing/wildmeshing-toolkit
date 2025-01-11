@@ -173,7 +173,7 @@ void RegularSpace::regularize_tags()
             break;
         }
         case PrimitiveType::Triangle: { // face split
-            composite::TriFaceSplit op_face_split(m_mesh);
+            composite::TriFaceSplit op_face_split(static_cast<TriMesh&>(m_mesh));
             op_face_split.add_invariant(std::make_shared<TodoInvariant>(
                 m_mesh,
                 std::get<attribute::TypedAttributeHandle<int64_t>>(todo_handle.handle())));
@@ -209,7 +209,7 @@ void RegularSpace::regularize_tags()
         case PrimitiveType::Tetrahedron: {
             log_and_throw_error("Regular space component not implemented for TetMeshes.");
         }
-        default: log_and_throw_error("unknown primitive type: {}", ta.m_ptype); break;
+        default: log_and_throw_error("unknown primitive type: {}", primitive_type_name(ta.m_ptype)); break;
         }
     }
 }

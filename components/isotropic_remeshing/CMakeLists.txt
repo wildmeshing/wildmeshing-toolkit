@@ -1,0 +1,8 @@
+set(COMPONENT_NAME isotropic_remeshing)
+add_subdirectory("src/wmtk/components/isotropic_remeshing")
+if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
+    return()
+endif()
+if(WMTK_ENABLE_COMPONENT_TESTS)
+add_subdirectory("tests")
+endif()

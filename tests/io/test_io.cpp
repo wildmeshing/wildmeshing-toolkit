@@ -95,8 +95,9 @@ TEST_CASE("paraview_2d", "[io]")
 TEST_CASE("paraview_2d_vtag", "[io]")
 {
     auto mesh = read_mesh(WMTK_DATA_DIR "/fan.msh");
-    mesh->register_attribute<int64_t>("tag", PrimitiveType::Triangle, 1);
-    mesh->register_attribute<int64_t>("tag1", PrimitiveType::Vertex, 1);
+    // a,b are not used, but prevents a nodiscard warning
+    auto a = mesh->register_attribute<int64_t>("tag", PrimitiveType::Triangle, 1);
+    auto b = mesh->register_attribute<int64_t>("tag1", PrimitiveType::Vertex, 1);
 
     ParaviewWriter writer("paraview_2d_vtag", "vertices", *mesh, true, true, true, false);
     CHECK_NOTHROW(mesh->serialize(writer));

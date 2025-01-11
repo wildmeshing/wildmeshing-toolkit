@@ -705,6 +705,7 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge()
         const int64_t& v0 = m_spine_vids[0];
         const int64_t& v1 = m_spine_vids[1];
 
+
         // replace v0 by v1 in incident faces
         for (const int64_t fid : v0_neighbors) {
             bool is_fid_deleted = false;
@@ -754,6 +755,9 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge()
 
     delete_simplices();
 
+#if defined(MTAO_CONSTANTLY_VERIFY_MESH)
+    assert(m_mesh.is_connectivity_valid());
+#endif
 
     // return a ccw tuple from left ear if it exists, otherwise return a ccw tuple from right ear
     // return m_mesh.tuple_from_id(PrimitiveType::Vertex, v1);

@@ -18,10 +18,12 @@ class IntegrationTest(unittest.TestCase):
     BINARY_FOLDER = fix_path(os.environ['WMTK_BINARY_FOLDER']) if "WMTK_BINARY_FOLDER" in os.environ else None
     CONFIG_FILE = fix_path(os.environ['WMTK_CONFIG_FILE']) if "WMTK_CONFIG_FILE" in os.environ else None
 
-    def __init__(self, name, test_config, configs_to_run = None, run_all = False):
+    # verbose = print stdout / stderr to the screen
+    def __init__(self, name, test_config, configs_to_run = None, run_all = False, verbose=False):
         super().__init__()
         self.working_dir_fp = tempfile.TemporaryDirectory()
         self.working_dir = self.working_dir_fp.name
+        self.verbose= verbose
 
         self.name = name
         self.test_config = test_config
@@ -69,12 +71,15 @@ class IntegrationTest(unittest.TestCase):
     def execute_json(self, json_file_path):
 
         cmd = [self.executable] +self.extra_flags + [ "-j", json_file_path]
-        res = subprocess.run(cmd, cwd=self.working_dir, capture_output=True)
+        # capture input if we're not going to already print stuff
+        res = subprocess.run(cmd, cwd=self.working_dir, capture_output=not self.verbose)
 
         if res.returncode != 0:
-            print(f"Error running [{' '.join(cmd)}]", flush=True)
-            print(res.stderr.decode('utf-8'), flush=True)
-            print(res.stdout.decode('utf-8'), flush=True)
+            print(f"Error running [{' '.join(cmd)}] from working directory [{self.working_dir}]")
+            # in verbose mode the stderr/stdout buffers were already flushed
+            if not self.verbose:
+                print(res.stderr.decode('utf-8'), flush=True)
+                print(res.stdout.decode('utf-8'), flush=True)
         return res
 
     def get_root_path(self, input_js):
@@ -171,21 +176,20 @@ class IntegrationTest(unittest.TestCase):
 
         self.assertTrue(True)
 
+    def runTestFile(self, test_file_name):
+        with self.subTest(msg=f"{self.name}-{test_file_name}"):
+            print("Running test", test_file_name, flush=True)
+            test_file = os.path.join(self.config_folder, test_file_name)
+            print(f"Test file: {test_file}", flush=True)
+            self.run_one(test_file)
+
 
     def runTest(self):
         for test_file_name in self.config["tests"]:
-            with self.subTest(msg=f"{self.name}-{test_file_name}"):
-                print("Running test", test_file_name, flush=True)
-                test_file = os.path.join(self.config_folder, test_file_name)
-                print(f"Test file: {test_file}", flush=True)
-                self.run_one(test_file)
+            self.runTestFile(test_file_name)
         if self.run_all and "release_only_tests" in self.config:
             for test_file_name in self.config["release_only_tests"]:
-                with self.subTest(msg=f"{self.name}-{test_file_name}"):
-                    print("Running slow test", test_file_name, flush=True)
-                    test_file = os.path.join(self.config_folder, test_file_name)
-                    print(f"Test file: {test_file}", flush=True)
-                    self.run_one(test_file)
+                self.runTestFile(test_file_name)
 
 
 def load_config_json(config_file):
@@ -196,7 +200,7 @@ def load_config_json(config_file):
             del config["skip"]
     return config
 
-def make_suite(config_file, single_application = None, single_config = None, run_all = False):
+def make_suite(config_file, single_application = None, single_config = None, run_all = False, verbose=False):
     config = load_config_json(config_file)
 
     suite = unittest.TestSuite()
@@ -206,7 +210,7 @@ def make_suite(config_file, single_application = None, single_config = None, run
             continue
         if single_application is None or key == single_application:
             # expects a list of configs to run
-            suite.addTest(IntegrationTest(key,value, None if single_config is None else [single_config], run_all))
+            suite.addTest(IntegrationTest(key,value, None if single_config is None else [single_config], run_all, verbose=verbose))
     return suite
 
 
@@ -222,6 +226,7 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--test-application', help="Runs tests for a single application")
     parser.add_argument('-s', '--test-script', help="Runs a particular test script")
     parser.add_argument('-a', '--all-tests', help="Runs all tests, including slow ones", action='store_true')
+    parser.add_argument("-v", '--verbose', help="print execution data verbosely", action='store_true')
 
     subparsers = parser.add_subparsers(help="subcommand help", dest="subcommand")
     create_parser = subparsers.add_parser(name="create",help="create integration test json")
@@ -229,6 +234,7 @@ if __name__ == '__main__':
     create_parser.add_argument("-b", '--binary', help="Name of the binary being run")
     create_parser.add_argument("-i", '--input', help="input config")
     create_parser.add_argument("-o", '--output', help="output config filename, placed in config folder")
+    create_parser.add_argument("-v", '--verbose', help="print execution data verbosely", action='store_true')
 
     args = parser.parse_args()
 
@@ -260,7 +266,7 @@ if __name__ == '__main__':
     # no subcommand chosen so we just run
     if args.subcommand is None:
         # test_application and test_script are None if not set
-        suite = make_suite(config_file, args.test_application, args.test_script, args.all_tests)
+        suite = make_suite(config_file, args.test_application, args.test_script, args.all_tests, verbose=args.verbose)
 
         runner = unittest.TextTestRunner()
         result = runner.run(suite)
@@ -277,7 +283,7 @@ if __name__ == '__main__':
         config = load_config_json(config_file)
         binary = args.binary
         my_config = config[binary]
-        test = IntegrationTest(binary,my_config)
+        test = IntegrationTest(binary,my_config, verbose=args.verbose)
         test.create_reporter(args.input,args.output)
         pass
 

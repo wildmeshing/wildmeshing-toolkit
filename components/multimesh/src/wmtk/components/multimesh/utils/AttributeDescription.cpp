@@ -1,5 +1,8 @@
 #include "AttributeDescription.hpp"
 #include <nlohmann/json.hpp>
+#include <fmt/format.h>
+#include <wmtk/attribute/MeshAttributeHandle.hpp>
+#include <wmtk/components/multimesh/NamedMultiMesh.hpp>
 
 #include <wmtk/components/utils/json_serialize_enum.hpp>
 namespace wmtk::attribute {
@@ -64,6 +67,23 @@ std::optional<PrimitiveType> AttributeDescription::primitive_type() const
         return get_primitive_type_from_id(d);
     } else {
         return {};
+    }
+}
+AttributeDescription::AttributeDescription(const std::string_view& p, const wmtk::attribute::MeshAttributeHandle&mah): path(p), dimension(get_primitive_type_id(mah.primitive_type())), type(mah.held_type()) {}
+AttributeDescription::AttributeDescription(const wmtk::attribute::MeshAttributeHandle&mah):AttributeDescription(mah.name(), mah) {
+}
+//AttributeDescription::AttributeDescription(const MeshCollection& mc, const wmtk::attribute::MeshAttributeHandle&mah): AttributeDescription(mc.get_path(mah), mah) {}
+AttributeDescription::AttributeDescription(const NamedMultiMesh& mc, const wmtk::attribute::MeshAttributeHandle&mah): AttributeDescription(mc.get_path(mah), mah) {}
+
+AttributeDescription::operator std::string() const {
+    if(dimension.has_value() && type.has_value()) {
+    return fmt::format("AttributeDescription({},t={},s={})", path, attribute::attribute_type_name(type.value()),dimension.value());
+    } else if(dimension.has_value()) {
+    return fmt::format("AttributeDescription({},s={})", path,dimension.value());
+    } else if(type.has_value()) {
+    return fmt::format("AttributeDescription({},t={})",path, attribute::attribute_type_name(type.value()));
+    } else {
+    return fmt::format("AttributeDescription({})", path);
     }
 }
 

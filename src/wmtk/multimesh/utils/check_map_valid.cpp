@@ -18,6 +18,6 @@ bool check_child_maps_valid(const Mesh& m)
 bool check_parent_map_valid(const Mesh& m)
 {
     MapValidator validator(m);
-    return validator.check_child_map_attributes_valid();
+    return validator.check_parent_map_attribute_valid();
 }
 } // namespace wmtk::multimesh::utils

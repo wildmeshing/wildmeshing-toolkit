@@ -4,7 +4,7 @@ add_library(wmtk_application_utils)
 add_subdirectory(src/wmtk/applications/utils)
 
 
-target_link_libraries(wmtk_application_utils wildmeshing_toolkit nlohmann_json)
+target_link_libraries(wmtk_application_utils wildmeshing_toolkit nlohmann_json wmtk::multimesh wmtk::output)
 
 target_include_directories(wmtk_application_utils INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 

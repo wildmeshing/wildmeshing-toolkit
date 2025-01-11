@@ -1,0 +1,30 @@
+{
+  "input": {
+    "dont_disable_split": false,
+    "edge_swap_mode": "valence",
+    "fix_uv_seam": false,
+    "input": {
+      "file": "unit_test/meshes/camel.msh",
+      "name_spec": {
+        "pos": "uv"
+      }
+    },
+    "iterations": 5,
+    "length_abs": -1,
+    "length_rel": 0.01,
+    "lock_boundary": true,
+    "output": {
+      "path": "output.hdf5",
+      "type": ".hdf5"
+    },
+    "position_attribute": "vertices",
+    "use_for_periodic": false
+  },
+  "stats": {
+    "pos": {
+      "edges": 333069,
+      "faces": 221098,
+      "vertices": 111972
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+    "input": {
+        "path": "multimesh/camel.hdf5",
+        "name_spec": {"pos": "uv"}
+    },
+        "position_attributes": "pos.uv/vertices",
+        "other_position_attribute": "pos/vertices",
+        "iterations": 60,
+        "length_rel": 0.01,
+        "envelope_size": 1e-2,
+        "lock_boundary": true,
+        "edge_swap_mode": "valence",
+        "use_for_periodic": false,
+        "dont_disable_split": false,
+        "fix_uv_seam": true,
+        "output": {
+            "path": "camel.hdf5",
+            "type": ".hdf5"
+        },
+        "intermediate_output_format": {
+            "pos": {
+                "path": "cameluv_{:04}",
+                "type": ".vtu",
+                "position_attribute": "vertices"
+            },
+            "pos.uv": {
+                "path": "cameluv_uv_{:04}",
+                "type": ".vtu",
+                "position_attribute": "vertices"
+            }
+        }
+}

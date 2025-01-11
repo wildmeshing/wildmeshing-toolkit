@@ -20,7 +20,7 @@ namespace wmtk::operations::composite {
 class TriFaceSplit : public Operation
 {
 public:
-    TriFaceSplit(Mesh& m);
+    TriFaceSplit(TriMesh& m);
 
     PrimitiveType primitive_type() const override { return PrimitiveType::Triangle; }
 

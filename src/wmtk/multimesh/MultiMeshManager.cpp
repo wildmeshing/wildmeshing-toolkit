@@ -1,6 +1,8 @@
 #include "MultiMeshManager.hpp"
 #include <cassert>
 #include <wmtk/utils/vector_hash.hpp>
+// debug function that reads into this structure
+#include "utils/check_map_valid.hpp"
 //#include <fmt/ranges.h>
 #include <functional>
 #include <wmtk/Mesh.hpp>
