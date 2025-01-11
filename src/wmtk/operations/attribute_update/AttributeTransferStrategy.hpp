@@ -25,7 +25,11 @@ public:
  * @tparam MyType The type to which transfer should go to.
  * @tparam ParentType The type that causes the change in MyType.
  */
-template <typename MyType, typename ParentType>
+template <
+    typename MyType,
+    typename ParentType,
+    int MyDim = Eigen::Dynamic,
+    int ParentDim = Eigen::Dynamic>
 class SingleAttributeTransferStrategy : public AttributeTransferStrategy<MyType>
 {
 public:
@@ -34,12 +38,8 @@ public:
     using AttributeTransferStrategy<MyType>::mesh;
     using AttributeTransferStrategy<MyType>::matches_attribute;
 
-    template <typename T>
-    using VecType = VectorX<T>;
-    template <typename T>
-    using MatType = MatrixX<T>;
-    using MyVecType = VecType<MyType>;
-    using ParentMatType = MatType<ParentType>;
+    using MyVecType = Vector<MyType, MyDim>;
+    using ParentMatType = ColVectors<ParentType, MyDim>;
 
 
     // you can pass as many COLUMN vectors as you want to the function depending on the relative
@@ -98,11 +98,12 @@ private:
 //     const attribute::MeshAttributeHandle&,
 //     FunctorType&& f) -> SingleAttributeTransferStrategy<MyType, ParentType>;
 
-template <typename MyType, typename ParentType>
-SingleAttributeTransferStrategy<MyType, ParentType>::SingleAttributeTransferStrategy(
-    const attribute::MeshAttributeHandle& me,
-    const attribute::MeshAttributeHandle& parent,
-    FunctorType&& f)
+template <typename MyType, typename ParentType, int MyDim, int ParentDim>
+SingleAttributeTransferStrategy<MyType, ParentType, MyDim, ParentDim>::
+    SingleAttributeTransferStrategy(
+        const attribute::MeshAttributeHandle& me,
+        const attribute::MeshAttributeHandle& parent,
+        FunctorType&& f)
     : AttributeTransferStrategy<MyType>(me)
     , m_functor(f)
     , m_parent_handle(parent)
@@ -110,16 +111,17 @@ SingleAttributeTransferStrategy<MyType, ParentType>::SingleAttributeTransferStra
     assert(me.template holds<MyType>());
     assert(parent.template holds<ParentType>());
 }
-template <typename MyType, typename ParentType>
-SingleAttributeTransferStrategy<MyType, ParentType>::SingleAttributeTransferStrategy(
-    const attribute::MeshAttributeHandle& me,
-    const attribute::MeshAttributeHandle& parent,
-    FunctorWithoutSimplicesType&& f)
+template <typename MyType, typename ParentType, int MyDim, int ParentDim>
+SingleAttributeTransferStrategy<MyType, ParentType, MyDim, ParentDim>::
+    SingleAttributeTransferStrategy(
+        const attribute::MeshAttributeHandle& me,
+        const attribute::MeshAttributeHandle& parent,
+        FunctorWithoutSimplicesType&& f)
     : SingleAttributeTransferStrategy(me, parent, make_nosimplices_func(std::move(f)))
 {}
 
-template <typename MyType, typename ParentType>
-auto SingleAttributeTransferStrategy<MyType, ParentType>::read_parent_values(
+template <typename MyType, typename ParentType, int MyDim, int ParentDim>
+auto SingleAttributeTransferStrategy<MyType, ParentType, MyDim, ParentDim>::read_parent_values(
     const simplex::Simplex& my_simplex) const -> std::pair<ParentMatType, std::vector<Tuple>>
 {
     auto acc =
@@ -133,12 +135,13 @@ auto SingleAttributeTransferStrategy<MyType, ParentType>::read_parent_values(
 
     using Index = Eigen::Index;
     for (Index j = 0; j < Index(simps.size()); ++j) {
-        A.col(j) = acc.const_vector_attribute(simps[j]);
+        A.col(j) = acc.template const_vector_attribute<ParentDim>(simps[j]);
     }
     return std::make_pair(std::move(A), std::move(simps));
 }
-template <typename MyType, typename ParentType>
-void SingleAttributeTransferStrategy<MyType, ParentType>::run(const simplex::Simplex& s) const
+template <typename MyType, typename ParentType, int MyDim, int ParentDim>
+void SingleAttributeTransferStrategy<MyType, ParentType, MyDim, ParentDim>::run(
+    const simplex::Simplex& s) const
 {
     assert(mesh().is_valid(s.tuple()));
     if (s.primitive_type() != primitive_type()) {
@@ -151,11 +154,12 @@ void SingleAttributeTransferStrategy<MyType, ParentType>::run(const simplex::Sim
         if (simps.empty()) return;
         auto acc = const_cast<Mesh&>(mesh()).create_accessor(handle().template as<MyType>());
 
-        acc.vector_attribute(s.tuple()) = m_functor(parent_data, simps);
+        acc.template vector_attribute<MyDim>(s.tuple()) = m_functor(parent_data, simps);
     }
 }
-template <typename MyType, typename ParentType>
-PrimitiveType SingleAttributeTransferStrategy<MyType, ParentType>::parent_primitive_type() const
+template <typename MyType, typename ParentType, int MyDim, int ParentDim>
+PrimitiveType
+SingleAttributeTransferStrategy<MyType, ParentType, MyDim, ParentDim>::parent_primitive_type() const
 {
     return m_parent_handle.primitive_type();
 }

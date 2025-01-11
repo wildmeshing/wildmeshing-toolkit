@@ -7,6 +7,10 @@ set(SRC_FILES
     mesh_info.hpp
     element_count_report.hpp
     element_count_report.cpp
+
+    simplex/volumes.hpp
+    simplex/volumes.cpp
+    simplex/operators/VolumeOperarator.hpp
 )
 
 

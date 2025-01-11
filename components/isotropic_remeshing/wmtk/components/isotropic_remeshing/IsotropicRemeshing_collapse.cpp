@@ -24,6 +24,7 @@ void IsotropicRemeshing::configure_collapse()
     internal::configure_collapse(*op, mesh, m_options);
 
     if (m_envelope_invariants) {
+        spdlog::info("Attaching envelope invariants");
         op->add_invariant(m_envelope_invariants);
     }
     assert(op->attribute_new_all_configured());

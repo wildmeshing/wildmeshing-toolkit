@@ -4,6 +4,9 @@
 #include <wmtk/utils/Rational.hpp>
 
 namespace wmtk {
+
+template <typename T, int R>
+using ColVectors = Eigen::Matrix<T, R, Eigen::Dynamic>;
 template <typename T, int C>
 using RowVectors = Eigen::Matrix<T, Eigen::Dynamic, C>;
 
