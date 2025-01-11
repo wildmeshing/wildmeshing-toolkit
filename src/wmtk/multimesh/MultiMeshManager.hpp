@@ -335,6 +335,8 @@ public:
         const Mesh& other_mesh,
         const simplex::Simplex& my_simplex) const;
 
+    bool can_map_up(const Mesh& my_mesh, const Mesh& other_mesh) const;
+
     /* @brief obtains the root mesh of this multi-mesh tree
      *
      * @param my_mesh the mesh that this structure is owned by
@@ -521,6 +523,12 @@ protected: // protected to enable unit testing
     // @return the mesh found at the top and the tuple that was found
     std::pair<const Mesh&, Tuple>
     map_up_to_tuples(const Mesh& my_mesh, const simplex::Simplex& simplex, int64_t depth) const;
+
+    std::pair<const Mesh&, Tuple>
+    map_up_to_tuples(const Mesh& my_mesh, const Tuple& tuple, int64_t depth) const;
+
+    std::pair<const Mesh&, Tuple>
+    map_up_to_tuples(const Mesh& my_mesh, const Mesh& other, const Tuple& tuple) const;
 
     // internal function for mapping down a multimesh tree by following a sequence of ids
     //

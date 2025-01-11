@@ -22,9 +22,9 @@
 #include "Types.hpp"
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
+#include "attribute/FlagAccessor.hpp"
 #include "attribute/MeshAttributeHandle.hpp"
 #include "attribute/MeshAttributes.hpp"
-#include "attribute/FlagAccessor.hpp"
 #include "multimesh/attribute/AttributeScopeHandle.hpp"
 
 #include "multimesh/attribute/UseParentScopeRAII.hpp"
@@ -91,7 +91,7 @@ template <typename Visitor>
 class MultiMeshVisitorExecutor;
 
 namespace utils {
-    class MapValidator;
+class MapValidator;
 namespace internal {
 class TupleTag;
 }
@@ -624,6 +624,10 @@ public:
      * */
     simplex::Simplex map_to_parent(const simplex::Simplex& my_simplex) const;
 
+    Tuple map_up_to_tuples(const Mesh& other_mesh, const Tuple& my_simplex) const;
+
+    simplex::Simplex map_up_to(const Mesh& other_mesh, const simplex::Simplex& my_simplex) const;
+
     /**
      * @brief maps a simplex from this mesh to the root mesh
      *
@@ -758,6 +762,12 @@ public:
      * check if the returned vector is empty rather than call this function.
      */
     bool can_map(const Mesh& other_mesh, const simplex::Simplex& my_simplex) const;
+
+    /*
+     * @brief identifies if the simplices of this mesh can be mapped to other
+     *
+     */
+    bool can_map_up_to(const Mesh& other_mesh) const;
 
     /**
      * @brief wrapper function to update hashes (for parent mesh *this and its child meshes) after

@@ -1,6 +1,6 @@
 #include "Mesh.hpp"
-#include <queue>
 #include <numeric>
+#include <queue>
 
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -34,6 +34,12 @@ void Mesh::update_child_handles()
 bool Mesh::is_from_same_multi_mesh_structure(const Mesh& other) const
 {
     return &get_multi_mesh_root() == &other.get_multi_mesh_root();
+}
+
+bool Mesh::can_map_up_to(const Mesh& other) const
+{
+    return is_from_same_multi_mesh_structure(other) &&
+           m_multi_mesh_manager.can_map_up(*this, other);
 }
 
 bool Mesh::can_map(const Mesh& other_mesh, const simplex::Simplex& my_simplex) const
@@ -94,6 +100,17 @@ std::vector<simplex::Simplex> Mesh::lub_map(
     return ret;
 }
 
+Tuple Mesh::map_up_to_tuples(const Mesh& other_mesh, const Tuple& t) const
+{
+    return std::get<1>(m_multi_mesh_manager.map_up_to_tuples(*this, other_mesh, t));
+}
+
+simplex::Simplex Mesh::map_up_to(const Mesh& other_mesh, const simplex::Simplex& my_simplex) const
+{
+    return simplex::Simplex(
+        my_simplex.primitive_type(),
+        map_up_to_tuples(other_mesh, my_simplex.tuple()));
+}
 
 simplex::Simplex Mesh::map_to_parent(const simplex::Simplex& my_simplex) const
 {
@@ -244,15 +261,15 @@ std::vector<std::shared_ptr<const Mesh>> Mesh::get_all_meshes() const
     auto meshes2 = get_all_child_meshes();
     std::vector<std::shared_ptr<Mesh const>> meshes;
     meshes.emplace_back(shared_from_this());
-    for(const auto& m: meshes2) {
+    for (const auto& m : meshes2) {
         meshes.emplace_back(m);
     }
     return meshes;
-    //std::queue<std::shared_ptr<Mesh const>> queue;
+    // std::queue<std::shared_ptr<Mesh const>> queue;
     ////std::queue<Mesh const*> queue;
-    //meshes.emplace_back(this);
-    //while(!queue.empty()) {
-    //    const auto& cur = queue.front();
+    // meshes.emplace_back(this);
+    // while(!queue.empty()) {
+    //     const auto& cur = queue.front();
     //    //Mesh const* cur = queue.front();
     //    queue.pop();
     //    meshes.emplace_back(cur->shared_from_this());
@@ -260,6 +277,6 @@ std::vector<std::shared_ptr<const Mesh>> Mesh::get_all_meshes() const
     //        queue.emplace(m.get());
     //    }
     //}
-    //return meshes;
+    // return meshes;
 }
 } // namespace wmtk

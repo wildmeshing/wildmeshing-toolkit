@@ -1,4 +1,5 @@
 #include "faces_single_dimension.hpp"
+#include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
 #include <cassert>
 constexpr wmtk::PrimitiveType PV = wmtk::PrimitiveType::Vertex;
 constexpr wmtk::PrimitiveType PE = wmtk::PrimitiveType::Edge;
@@ -6,6 +7,7 @@ constexpr wmtk::PrimitiveType PF = wmtk::PrimitiveType::Triangle;
 constexpr wmtk::PrimitiveType PT = wmtk::PrimitiveType::Tetrahedron;
 
 namespace wmtk::simplex {
+    namespace {
 std::vector<Tuple> vertices(const Mesh& m, const Simplex& simplex)
 {
     if (simplex.primitive_type() == PrimitiveType::Vertex) {
@@ -184,6 +186,7 @@ void faces(SimplexCollection& simplex_collection, const Simplex& simplex)
 
     assert(false); // "unknown primitive type"
 }
+}
 
 SimplexCollection
 faces_single_dimension(const Mesh& mesh, const Simplex& simplex, const PrimitiveType face_type)
@@ -227,6 +230,17 @@ std::vector<Tuple> faces_single_dimension_tuples(
     }
 
     return {};
+}
+std::vector<simplex::Simplex> faces_single_dimension_simplices(
+    const Mesh& mesh,
+    const Simplex& simplex,
+    const PrimitiveType face_type)
+{
+
+    return utils::tuple_vector_to_homogeneous_simplex_vector(
+        mesh,
+        faces_single_dimension_tuples(mesh, simplex, face_type),
+        face_type);
 }
 
 } // namespace wmtk::simplex

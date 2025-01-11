@@ -44,29 +44,43 @@ std::vector<Tuple> AttributeTransferStrategyBase::get_parent_simplices(
 
 
     // the set of simplices that can be traversed without crossing a mesh-mesh edge more than once
-    std::vector<Tuple> parent_tuples = m.lub_map_tuples(parent, s);
+    std::vector<Tuple> parent_tuples;
 
-    if (my_primitive_type != parent_primitive_type) {
-        // lambda for running either of the cases
-        std::vector<Tuple> r;
-        if (parent_tuples.size() == 1) {
-            r = simplex::neighbors_single_dimension_tuples(
-                m,
-                simplex::Simplex(m, my_primitive_type, parent_tuples[0]),
-                parent_primitive_type);
+    // lambda for running either of the cases
+    std::vector<Tuple> r;
+    if (m.can_map_up_to(parent)) {
+        if (&m == &parent) {
+            parent_tuples = simplex::neighbors_single_dimension_tuples(m, s, parent_primitive_type);
         } else {
-            for (const auto& parent_tup : parent_tuples) {
-                std::vector<Tuple> c = simplex::neighbors_single_dimension_tuples(
-                    m,
-                    simplex::Simplex(m, my_primitive_type, parent_tup),
-                    parent_primitive_type);
-                std::copy(c.begin(), c.end(), std::back_inserter(r));
-            }
-            if (parent_tuples.size() > 1) {
-                simplex::utils::unique_homogeneous_simplices_inline(m, parent_primitive_type, r);
-            }
+            const simplex::Simplex s2 = m.map_up_to(parent, s);
+            parent_tuples =
+                simplex::neighbors_single_dimension_tuples(m, s2, parent_primitive_type);
         }
-        parent_tuples = std::move(r);
+    } else {
+        parent_tuples = m.lub_map_tuples(parent, s);
+        if (my_primitive_type != parent_primitive_type) {
+            if (parent_tuples.size() == 1) {
+                r = simplex::neighbors_single_dimension_tuples(
+                    m,
+                    simplex::Simplex(m, my_primitive_type, parent_tuples[0]),
+                    parent_primitive_type);
+            } else {
+                for (const auto& parent_tup : parent_tuples) {
+                    std::vector<Tuple> c = simplex::neighbors_single_dimension_tuples(
+                        m,
+                        simplex::Simplex(m, my_primitive_type, parent_tup),
+                        parent_primitive_type);
+                    std::copy(c.begin(), c.end(), std::back_inserter(r));
+                }
+                if (parent_tuples.size() > 1) {
+                    simplex::utils::unique_homogeneous_simplices_inline(
+                        m,
+                        parent_primitive_type,
+                        r);
+                }
+            }
+            parent_tuples = std::move(r);
+        }
     }
     return parent_tuples;
 }

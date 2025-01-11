@@ -62,11 +62,12 @@ template <
 class SingleAttributeTransferStrategy : public SingleAttributeTransferStrategyBase<MyType, ParentType>
 {
 public:
-    using AttributeTransferStrategy<MyType>::handle;
-    using SingleAttributeTransferStrategy<MyType,ParentType>::parent_handle;
-    using AttributeTransferStrategy<MyType>::primitive_type;
-    using AttributeTransferStrategy<MyType>::mesh;
-    using AttributeTransferStrategy<MyType>::matches_attribute;
+    using BaseType = SingleAttributeTransferStrategyBase<MyType,ParentType>;
+    using BaseType::handle;
+    using BaseType::parent_handle;
+    using BaseType::primitive_type;
+    using BaseType::mesh;
+    using BaseType::matches_attribute;
 
     using MyVecType = Vector<MyType, MyDim>;
     using ParentMatType = ColVectors<ParentType, MyDim>;

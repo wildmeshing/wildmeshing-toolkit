@@ -16,8 +16,9 @@ std::shared_ptr<wmtk::operations::AttributeTransferStrategyBase> volumes(
             using VT = std::decay_t<decltype(v)>::Type;
             return std::make_shared<operators::VolumeOperator<VT, PT>>(vol, pos);
         },
-        pos.handle(),
-        vol.handle());
+        vol.handle(),
+        pos.handle()
+        );
     if (run) {
         ret->run_on_all();
     }

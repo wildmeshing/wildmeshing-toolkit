@@ -85,4 +85,9 @@ std::vector<Tuple> faces_single_dimension_tuples(
     const Mesh& mesh,
     const Simplex& simplex,
     const PrimitiveType face_type);
+
+std::vector<simplex::Simplex> faces_single_dimension_simplices(
+    const Mesh& mesh,
+    const Simplex& simplex,
+    const PrimitiveType face_type);
 } // namespace wmtk::simplex

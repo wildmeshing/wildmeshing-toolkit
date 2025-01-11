@@ -436,11 +436,34 @@ std::pair<const Mesh&, Tuple> MultiMeshManager::map_up_to_tuples(
     const simplex::Simplex& my_simplex,
     int64_t depth) const
 {
+    return map_up_to_tuples(my_mesh, my_simplex.tuple(), depth);
+}
+
+std::pair<const Mesh&, Tuple>
+MultiMeshManager::map_up_to_tuples(const Mesh& my_mesh, const Mesh& other, const Tuple& tuple) const
+{
+    assert(my_mesh.is_from_same_multi_mesh_structure(other));
+    assert(can_map_up(my_mesh, other));
     assert((&my_mesh.m_multi_mesh_manager) == this);
-    const PrimitiveType pt = my_simplex.primitive_type();
 
     // get a root tuple by converting the tuple up parent meshes until root is found
-    Tuple cur_tuple = my_simplex.tuple();
+    Tuple cur_tuple = tuple;
+    const Mesh* cur_mesh = &my_mesh;
+    while (cur_mesh != &other) {
+        cur_tuple = cur_mesh->m_multi_mesh_manager.map_tuple_to_parent_tuple(*cur_mesh, cur_tuple);
+        cur_mesh = cur_mesh->m_multi_mesh_manager.m_parent;
+        assert(cur_mesh != nullptr);
+    }
+    return std::pair<const Mesh&, Tuple>(*cur_mesh, cur_tuple);
+}
+
+std::pair<const Mesh&, Tuple>
+MultiMeshManager::map_up_to_tuples(const Mesh& my_mesh, const Tuple& tuple, int64_t depth) const
+{
+    assert((&my_mesh.m_multi_mesh_manager) == this);
+
+    // get a root tuple by converting the tuple up parent meshes until root is found
+    Tuple cur_tuple = tuple;
     const Mesh* cur_mesh = &my_mesh;
     for (int64_t d = 0; d < depth; ++d) {
         cur_tuple = cur_mesh->m_multi_mesh_manager.map_tuple_to_parent_tuple(*cur_mesh, cur_tuple);
@@ -450,7 +473,8 @@ std::pair<const Mesh&, Tuple> MultiMeshManager::map_up_to_tuples(
     // assert(cur_mesh->m_multi_mesh_manager
     //            .is_root()); // cur_mesh == nullptr if we just walked past the root node so we stop
 
-    // bieng lazy about how i set cur_mesh to nullptr above - could simplify the loop to optimize
+    // bieng lazy about how i set cur_mesh to nullptr above - could simplify the loop to
+    // optimize
     return std::pair<const Mesh&, Tuple>(*cur_mesh, cur_tuple);
 }
 
@@ -503,20 +527,23 @@ std::vector<Tuple> MultiMeshManager::map_tuples(
 {
     const auto my_id = absolute_id();
     const auto other_id = other_mesh.absolute_multi_mesh_id();
+    const int depth = my_id.size();
 
-    int64_t depth = my_id.size();
 
-    auto [root_ref, tuple] = map_up_to_tuples(my_mesh, my_simplex, depth);
-    const simplex::Simplex simplex(root_ref, my_simplex.primitive_type(), tuple);
+    auto [root_ref, tuple] = map_up_to_tuples(my_mesh, my_simplex.tuple(), depth);
+    const simplex::Simplex simplex(my_simplex.primitive_type(), tuple);
 
     return root_ref.m_multi_mesh_manager.map_down_relative_tuples(root_ref, simplex, other_id);
 }
+
 
 std::vector<Tuple> MultiMeshManager::lub_map_tuples(
     const Mesh& my_mesh,
     const Mesh& other_mesh,
     const simplex::Simplex& my_simplex) const
 {
+    // with lub mapping we don't have the chance of mapping back to ourselves and seeing multiple
+    // tuples
     if (&my_mesh == &other_mesh) {
         return {my_simplex.tuple()};
     }
@@ -524,9 +551,9 @@ std::vector<Tuple> MultiMeshManager::lub_map_tuples(
     const auto other_id = other_mesh.absolute_multi_mesh_id();
     const auto lub_id = least_upper_bound_id(my_id, other_id);
 
-    int64_t depth = my_id.size() - lub_id.size();
+    const int depth = my_id.size() - lub_id.size();;
 
-    auto [local_root_ref, tuple] = map_up_to_tuples(my_mesh, my_simplex, depth);
+    auto [local_root_ref, tuple] = map_up_to_tuples(my_mesh, my_simplex.tuple(), depth);
     assert(other_mesh.m_multi_mesh_manager.is_child(other_mesh, local_root_ref));
 
     const simplex::Simplex simplex(local_root_ref, my_simplex.primitive_type(), tuple);
@@ -648,8 +675,8 @@ std::vector<Tuple> MultiMeshManager::map_to_child_tuples(
     int64_t child_id,
     const simplex::Simplex& my_simplex) const
 {
-    // this is just to do a little redirection for simpplifying map_to_child (and potentially for a
-    // visitor pattern)
+    // this is just to do a little redirection for simpplifying map_to_child (and potentially
+    // for a visitor pattern)
     return map_to_child_tuples(my_mesh, m_children.at(child_id), my_simplex);
 }
 
@@ -956,4 +983,17 @@ bool MultiMeshManager::can_map_child(
     return !root_ref.m_multi_mesh_manager.map_down_relative_tuples(root_ref, simplex, other_id)
                 .empty();
 }
+
+bool MultiMeshManager::can_map_up(const Mesh& my_mesh, const Mesh& other_mesh) const
+{
+    const Mesh* cur_mesh = &my_mesh;
+    while (cur_mesh != &other_mesh) {
+        cur_mesh = cur_mesh->m_multi_mesh_manager.m_parent;
+        if (cur_mesh == nullptr) {
+            return false;
+        }
+    }
+    return true;
+}
+
 } // namespace wmtk::multimesh
