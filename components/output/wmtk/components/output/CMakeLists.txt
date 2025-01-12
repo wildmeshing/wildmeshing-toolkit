@@ -9,6 +9,7 @@ set(SRC_FILES
 	output.hpp
     OutputOptions.hpp
     OutputOptions.cpp
+    utils/format.hpp
     )
 
 
