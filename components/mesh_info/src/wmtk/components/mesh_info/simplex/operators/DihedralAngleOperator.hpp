@@ -2,6 +2,8 @@
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include <wmtk/simplex/Simplex.hpp>
+#include <spdlog/spdlog.h>
+#include <fmt/ranges.h>
 #include <wmtk/utils/triangle_areas.hpp>
 namespace wmtk {
 class Mesh;
@@ -40,7 +42,7 @@ public:
         auto& angle = acc.scalar_attribute(s.tuple());
         if (pmesh.is_boundary(s)) {
             angle = 0;
-        } else if constexpr(std::is_same_v<ParentType, double>) { // only supports double for now due to needing a sqrt
+        } else if constexpr(std::is_same_v<ParentType, double> && std::is_same_v<MyType, double>) { // only supports double for now due to needing a sqrt
             auto pos_acc = parent_handle().mesh().template create_const_accessor<ParentType, 3>(
                 parent_handle()
                 );
@@ -62,14 +64,15 @@ public:
                 pmesh.switch_tuples(s.tuple(), {PrimitiveType::Vertex}));
 
             auto c = pos_acc.const_vector_attribute(
-                pmesh.switch_tuples(s.tuple(), {PrimitiveType::Edge}));
+                pmesh.switch_tuples(s.tuple(), {PrimitiveType::Edge, PrimitiveType::Vertex}));
             auto d = pos_acc.const_vector_attribute(
-                pmesh.switch_tuples(s.tuple(), {PrimitiveType::Triangle, PrimitiveType::Edge}));
+                pmesh.switch_tuples(s.tuple(), {PrimitiveType::Triangle, PrimitiveType::Edge, PrimitiveType::Vertex}));
 
             auto ban = (b - a).eval();
             ParentType normSquared = ban.squaredNorm();
             auto ca = (c - a).eval();
             auto da = (d - a).eval();
+
             ca.noalias() = ca - (ca.dot(ban) / normSquared)* ban;
             da.noalias() = da - (da.dot(ban) / normSquared)* ban;
 

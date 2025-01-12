@@ -25,50 +25,42 @@ std::shared_ptr<wmtk::operations::AttributeTransferStrategyBase> dihedral_angles
     return ret;
 }
 template <typename T>
-std::shared_ptr<wmtk::operations::AttributeTransferStrategyBase> dihedral_angles(
-    const attribute::MeshAttributeHandle& mah,
-    wmtk::PrimitiveType primitive_type,
-    const std::string_view& name,
-    bool run)
+std::shared_ptr<wmtk::operations::AttributeTransferStrategyBase>
+dihedral_angles(const attribute::MeshAttributeHandle& mah, const std::string_view& name, bool run)
 {
-    return dihedral_angles<T>(mah, const_cast<Mesh&>(mah.mesh()), primitive_type, name, run);
+    return dihedral_angles<T>(mah, const_cast<Mesh&>(mah.mesh()), name, run);
 }
 
 template <typename T>
 std::shared_ptr<wmtk::operations::AttributeTransferStrategyBase> dihedral_angles(
     const attribute::MeshAttributeHandle& mah,
     Mesh& mesh,
-    wmtk::PrimitiveType primitive_type,
     const std::string_view& name,
     bool run)
 {
-    auto vol_attr = mesh.register_attribute<T>(std::string(name), primitive_type, 1);
+    auto vol_attr = mesh.register_attribute<T>(std::string(name), PrimitiveType::Edge, 1);
     return dihedral_angles(mah, vol_attr, run);
 }
 
 template std::shared_ptr<wmtk::operations::AttributeTransferStrategyBase> dihedral_angles<double>(
     const attribute::MeshAttributeHandle& m,
     Mesh&,
-    wmtk::PrimitiveType primitive_type,
     const std::string_view& name,
     bool run);
 template std::shared_ptr<wmtk::operations::AttributeTransferStrategyBase>
 dihedral_angles<wmtk::Rational>(
     const attribute::MeshAttributeHandle& m,
     Mesh&,
-    wmtk::PrimitiveType primitive_type,
     const std::string_view& name,
     bool run);
 
 template std::shared_ptr<wmtk::operations::AttributeTransferStrategyBase> dihedral_angles<double>(
     const attribute::MeshAttributeHandle& m,
-    wmtk::PrimitiveType primitive_type,
     const std::string_view& name,
     bool run);
 template std::shared_ptr<wmtk::operations::AttributeTransferStrategyBase>
 dihedral_angles<wmtk::Rational>(
     const attribute::MeshAttributeHandle& m,
-    wmtk::PrimitiveType primitive_type,
     const std::string_view& name,
     bool run);
 
