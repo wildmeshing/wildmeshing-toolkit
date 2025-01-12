@@ -223,12 +223,25 @@ void MultiMeshManager::register_child_mesh(
     const int64_t new_child_id = int64_t(m_children.size());
 
     m_has_child_mesh_in_dimension[child_mesh.top_cell_dimension()] = true;
+    if (child_mesh_ptr->has_attribute<int64_t>(
+            child_to_parent_map_attribute_name(),
+            child_primitive_type)) {
+        spdlog::warn("Child mesh already had a parent attribute. is it root? {}", is_root());
+    }
+    if (my_mesh.has_attribute<int64_t>(
+            parent_to_child_map_attribute_name(new_child_id),
+            child_primitive_type)) {
+        spdlog::warn(
+            "Mesh already had a child attribute named in slot {}",
+            fmt::join(absolute_id(), ","),
+            new_child_id);
+    }
 
     auto child_to_parent_handle = child_mesh.register_attribute_typed<int64_t>(
         child_to_parent_map_attribute_name(),
         child_primitive_type,
         wmtk::multimesh::utils::TWO_TUPLE_SIZE,
-        false,
+        true,
         wmtk::multimesh::utils::DEFAULT_TUPLES_VALUES);
 
     // TODO: make sure that this attribute doesnt already exist
@@ -236,7 +249,7 @@ void MultiMeshManager::register_child_mesh(
         parent_to_child_map_attribute_name(new_child_id),
         child_primitive_type,
         wmtk::multimesh::utils::TWO_TUPLE_SIZE,
-        false,
+        true,
         wmtk::multimesh::utils::DEFAULT_TUPLES_VALUES);
 
 
@@ -551,7 +564,8 @@ std::vector<Tuple> MultiMeshManager::lub_map_tuples(
     const auto other_id = other_mesh.absolute_multi_mesh_id();
     const auto lub_id = least_upper_bound_id(my_id, other_id);
 
-    const int depth = my_id.size() - lub_id.size();;
+    const int depth = my_id.size() - lub_id.size();
+    ;
 
     auto [local_root_ref, tuple] = map_up_to_tuples(my_mesh, my_simplex.tuple(), depth);
     assert(other_mesh.m_multi_mesh_manager.is_child(other_mesh, local_root_ref));
@@ -935,7 +949,7 @@ bool MultiMeshManager::is_child(
     return true;
 }
 
-void MultiMeshManager::serialize(MeshWriter& writer, const Mesh* local_root) const
+void MultiMeshManager::serialize(io::MeshWriter& writer, const Mesh* local_root) const
 {
     for (const auto& c : m_children) {
         c.mesh->serialize(writer, local_root);

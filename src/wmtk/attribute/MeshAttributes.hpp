@@ -15,7 +15,9 @@
 
 namespace wmtk {
 
+namespace io {
 class MeshWriter;
+}
 class Mesh;
 namespace attribute {
 template <typename T, int Dim>
@@ -42,7 +44,7 @@ public:
     MeshAttributes& operator=(const MeshAttributes& o) = delete;
     MeshAttributes& operator=(MeshAttributes&& o) = default;
 
-    void serialize(const int dim, MeshWriter& writer) const;
+    void serialize(const int dim, io::MeshWriter& writer) const;
 
     // attribute directly hashes its "child_hashables" components so it overrides "child_hashes"
     std::map<std::string, const wmtk::utils::Hashable*> child_hashables() const override;

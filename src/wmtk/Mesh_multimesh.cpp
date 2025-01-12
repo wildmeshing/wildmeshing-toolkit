@@ -75,6 +75,75 @@ std::vector<simplex::Simplex> Mesh::map(
     return ret;
 }
 
+std::vector<const Mesh*> Mesh::mappable_meshes(const simplex::Simplex& my_simplex) const
+{
+    assert(is_valid(my_simplex));
+    const Mesh* parent = this;
+    while (!parent->is_multi_mesh_root()) {
+        parent = parent->m_multi_mesh_manager.m_parent;
+    }
+
+    return parent->mappable_child_meshes(map_to_root(my_simplex));
+}
+std::vector<const Mesh*> Mesh::mappable_child_meshes(const simplex::Simplex& my_simplex) const
+{
+    assert(is_valid(my_simplex));
+    std::vector<const Mesh*> ret;
+    spdlog::warn(
+        "mappable_child_meshes: {} has {} children",
+        fmt::join(absolute_multi_mesh_id(), ","),
+        m_multi_mesh_manager.m_children.size());
+    for (const auto& child : m_multi_mesh_manager.m_children) {
+        const auto& mesh = *child.mesh;
+        auto child_simplices = map_to_child(mesh, my_simplex);
+        spdlog::info("Checking child has {}", child_simplices.size());
+        if (child_simplices.empty()) {
+            continue;
+        }
+
+        for (const auto& s : child_simplices) {
+            spdlog::info("Trying child simplex");
+            auto children = mesh.mappable_child_meshes(s);
+            ret.insert(ret.end(), children.begin(), children.end());
+        }
+        ret.emplace_back(&mesh);
+    }
+    spdlog::info("done");
+    return ret;
+}
+
+std::map<const Mesh*, std::vector<simplex::Simplex>> Mesh::map_all(
+    const simplex::Simplex& my_simplex) const
+{
+    assert(is_valid(my_simplex));
+    const Mesh* parent = this;
+    while (!parent->is_multi_mesh_root()) {
+        parent = parent->m_multi_mesh_manager.m_parent;
+    }
+
+    return parent->map_all_children(map_to_root(my_simplex));
+}
+std::map<const Mesh*, std::vector<simplex::Simplex>> Mesh::map_all_children(
+    const simplex::Simplex& my_simplex) const
+{
+    assert(is_valid(my_simplex));
+    std::map<const Mesh*, std::vector<simplex::Simplex>> ret;
+    for (const auto& child : m_multi_mesh_manager.m_children) {
+        const auto& mesh = *child.mesh;
+        auto child_simplices = map_to_child(mesh, my_simplex);
+        if (child_simplices.empty()) {
+            continue;
+        }
+
+        for (const auto& s : child_simplices) {
+            auto children = mesh.map_all_children(s);
+            ret.merge(std::move(children));
+        }
+        ret[&mesh] = std::move(child_simplices);
+    }
+    return ret;
+}
+
 std::vector<simplex::Simplex> Mesh::lub_map(
     const Mesh& other_mesh,
     const simplex::Simplex& my_simplex) const
@@ -132,6 +201,7 @@ std::vector<simplex::Simplex> Mesh::map_to_child(
         throw std::runtime_error(
             "Attempted to map between two simplices in different multi-mesh structures");
     }
+    assert(is_valid(my_simplex));
     return m_multi_mesh_manager.map_to_child(*this, child_mesh, my_simplex);
 }
 

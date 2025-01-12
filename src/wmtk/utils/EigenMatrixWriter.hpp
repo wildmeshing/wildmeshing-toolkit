@@ -73,12 +73,15 @@ public:
         const int64_t stride,
         const std::vector<Rational>& val,
         const Rational& default_val) override;
+    void set_position_attribute_name(const std::string_view& name);
 
 private:
     std::map<std::pair<std::string, PrimitiveType>, MatrixX<double>> doubles;
     std::map<std::pair<std::string, PrimitiveType>, MatrixX<int64_t>> int64_ts;
     std::map<std::pair<std::string, PrimitiveType>, MatrixX<char>> chars;
     std::map<std::pair<std::string, PrimitiveType>, MatrixX<Rational>> Rationals;
+
+    std::string m_position_attribute_name = "vertices";
 
     template <typename T>
     void write_internal(

@@ -114,6 +114,19 @@ std::map<std::string, const Mesh&> MeshCollection::all_meshes() const
     return meshes;
 }
 
+std::map<std::string, const Mesh&> MeshCollection::all_roots(bool only_true_roots) const
+{
+    // std::map<std::string, std::shared_ptr<const Mesh>> meshes;
+    std::map<std::string, const Mesh&> meshes;
+    for (const auto& [name, nnptr] : m_meshes) {
+        const auto& mesh = nnptr->root();
+        if (!only_true_roots || mesh.is_multi_mesh_root()) {
+            meshes.emplace(name, mesh);
+        }
+    }
+    return meshes;
+}
+
 void MeshCollection::make_canonical()
 {
     for (auto it = m_meshes.begin(); it != m_meshes.end();) {
@@ -134,10 +147,10 @@ bool MeshCollection::is_valid(bool pass_exceptions) const
     return true;
 }
 
-    //std::vector<const NamedMultiMesh*> get_named_multimeshes(const Mesh& m) const {
+// std::vector<const NamedMultiMesh*> get_named_multimeshes(const Mesh& m) const {
 
-    //    for(const& [_, nmm]: m_meshes) {
-    //        if(m.is_string
-    //    }
-    //}
+//    for(const& [_, nmm]: m_meshes) {
+//        if(m.is_string
+//    }
+//}
 } // namespace wmtk::components::multimesh

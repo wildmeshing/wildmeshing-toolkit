@@ -8,6 +8,7 @@ set(SRC_FILES
     HDF5Writer.hpp
     HDF5Writer.cpp
     MeshWriter.hpp
+    MeshWriter.cpp
     MeshReader.hpp
     MeshReader.cpp
     MshReader.hpp

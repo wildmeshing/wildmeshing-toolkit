@@ -349,7 +349,7 @@ public:
     Mesh& get_root_mesh(Mesh& my_mesh);
     std::vector<std::shared_ptr<Mesh>> get_child_meshes() const;
 
-    void serialize(MeshWriter& writer, const Mesh* local_root = nullptr) const;
+    void serialize(io::MeshWriter& writer, const Mesh* local_root = nullptr) const;
 
     bool has_child_mesh_in_dimension(int64_t dimension) const
     {

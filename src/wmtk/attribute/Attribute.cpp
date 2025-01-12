@@ -9,7 +9,7 @@ namespace wmtk::attribute {
 
 
 template <typename T>
-void Attribute<T>::serialize(const std::string& name, const int dim, MeshWriter& writer) const
+void Attribute<T>::serialize(const std::string& name, const int dim, io::MeshWriter& writer) const
 {
     auto& stack = get_local_scope_stack();
     writer.write(name, dim, dimension(), m_data, m_default_value);

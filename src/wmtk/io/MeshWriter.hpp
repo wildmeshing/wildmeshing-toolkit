@@ -54,5 +54,5 @@ protected:
 
 } // namespace wmtk
 namespace wmtk {
-    using MeshWriter = io::MeshWriter;
+    class MeshWriter: public io::MeshWriter {};
 }

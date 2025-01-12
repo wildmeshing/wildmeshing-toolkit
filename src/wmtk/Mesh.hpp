@@ -79,7 +79,8 @@ class SimplexComparisons;
 
 namespace io {
 class ParaviewWriter;
-}
+class MeshWriter;
+} // namespace io
 namespace multimesh {
 template <int64_t cell_dimension, typename NodeFunctor>
 class MultiMeshSimplexVisitor;
@@ -161,7 +162,7 @@ public:
     Mesh& operator=(Mesh&& other);
     virtual ~Mesh();
 
-    void serialize(MeshWriter& writer, const Mesh* local_root = nullptr) const;
+    void serialize(io::MeshWriter& writer, const Mesh* local_root = nullptr) const;
 
     /**
      * Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index
@@ -226,46 +227,48 @@ public:
 
 public:
     template <typename T>
-    bool has_attribute(
+    [[nodiscard]] bool has_attribute(
         const std::string& name,
         const PrimitiveType ptype) const; // block standard topology tools
 
     template <typename T>
-    attribute::MeshAttributeHandle get_attribute_handle(
+    [[nodiscard]] attribute::MeshAttributeHandle get_attribute_handle(
         const std::string& name,
         const PrimitiveType ptype) const; // block standard topology tools
 
     template <typename T>
-    attribute::TypedAttributeHandle<T> get_attribute_handle_typed(
+    [[nodiscard]] attribute::TypedAttributeHandle<T> get_attribute_handle_typed(
         const std::string& name,
         const PrimitiveType ptype) const; // block standard topology tools
 
 
     template <typename T, int D = Eigen::Dynamic>
-    attribute::Accessor<T, Mesh, D> create_accessor(const attribute::MeshAttributeHandle& handle);
+    [[nodiscard]] attribute::Accessor<T, Mesh, D> create_accessor(
+        const attribute::MeshAttributeHandle& handle);
 
 
     template <typename T, int D = Eigen::Dynamic>
-    const attribute::Accessor<T, Mesh, D> create_const_accessor(
+    [[nodiscard]] const attribute::Accessor<T, Mesh, D> create_const_accessor(
         const attribute::MeshAttributeHandle& handle) const;
 
     template <typename T, int D = Eigen::Dynamic>
-    attribute::Accessor<T, Mesh, D> create_accessor(const TypedAttributeHandle<T>& handle);
+    [[nodiscard]] attribute::Accessor<T, Mesh, D> create_accessor(
+        const TypedAttributeHandle<T>& handle);
 
     template <typename T, int D = Eigen::Dynamic>
-    const attribute::Accessor<T, Mesh, D> create_const_accessor(
+    [[nodiscard]] const attribute::Accessor<T, Mesh, D> create_const_accessor(
         const TypedAttributeHandle<T>& handle) const;
 
     template <typename T>
-    int64_t get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
+    [[nodiscard]] int64_t get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
 
     template <typename T>
-    const T& get_attribute_default_value(const TypedAttributeHandle<T>& handle) const;
+    [[nodiscard]] const T& get_attribute_default_value(const TypedAttributeHandle<T>& handle) const;
 
     template <typename T>
-    std::string get_attribute_name(const TypedAttributeHandle<T>& handle) const;
+    [[nodiscard]] std::string get_attribute_name(const TypedAttributeHandle<T>& handle) const;
 
-    std::string get_attribute_name(
+    [[nodiscard]] std::string get_attribute_name(
         const attribute::MeshAttributeHandle::HandleVariant& handle) const;
 
     /**
@@ -294,7 +297,7 @@ public:
      * @returns The return value of f.
      */
     template <typename Functor, typename... Args>
-    decltype(auto) parent_scope(Functor&& f, Args&&... args) const;
+    [[nodiscard]] decltype(auto) parent_scope(Functor&& f, Args&&... args) const;
 
 
     const attribute::FlagAccessor<Mesh> get_flag_accessor(PrimitiveType type) const;
@@ -569,6 +572,16 @@ public:
     std::vector<simplex::Simplex> map(const Mesh& other_mesh, const simplex::Simplex& my_simplex)
         const;
 
+    std::map<const Mesh*, std::vector<simplex::Simplex>> map_all(
+        const simplex::Simplex& my_simplex) const;
+
+
+    std::map<const Mesh*, std::vector<simplex::Simplex>> map_all_children(
+        const simplex::Simplex& my_simplex) const;
+
+    std::vector<const Mesh*> mappable_meshes(const simplex::Simplex& my_simplex) const;
+
+    std::vector<const Mesh*> mappable_child_meshes(const simplex::Simplex& my_simplex) const;
 
     /*
      * @brief map a collection of simplices to another mesh

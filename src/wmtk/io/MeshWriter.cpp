@@ -1,4 +1,3 @@
-#pragma once
 #include <wmtk/Mesh.hpp>
 #include "MeshWriter.hpp"
 

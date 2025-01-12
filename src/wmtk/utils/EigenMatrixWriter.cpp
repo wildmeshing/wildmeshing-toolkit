@@ -4,14 +4,18 @@
 
 namespace wmtk::utils {
 
+void EigenMatrixWriter::set_position_attribute_name(const std::string_view& name)
+{
+    m_position_attribute_name = name;
+}
 void EigenMatrixWriter::get_position_matrix(MatrixX<double>& matrix)
 {
-    get_double_matrix("vertices", PrimitiveType::Vertex, matrix);
+    get_double_matrix(m_position_attribute_name, PrimitiveType::Vertex, matrix);
 }
 
 void EigenMatrixWriter::get_position_matrix(MatrixX<Rational>& matrix)
 {
-    get_Rational_matrix("vertices", PrimitiveType::Vertex, matrix);
+    get_Rational_matrix(m_position_attribute_name, PrimitiveType::Vertex, matrix);
 }
 
 
@@ -48,11 +52,10 @@ auto EigenMatrixWriter::get_simplex_vertex_matrix() const -> MatrixXl
 }
 
 template <typename T>
-bool EigenMatrixWriter::has_matrix(const std::string& name, const PrimitiveType type)
-    const
+bool EigenMatrixWriter::has_matrix(const std::string& name, const PrimitiveType type) const
 {
     try {
-        get_matrix<T>(name,type);
+        get_matrix<T>(name, type);
     } catch (const std::out_of_range& e) {
         return false;
     }
@@ -186,21 +189,28 @@ void EigenMatrixWriter::write_capacities(const std::vector<int64_t>& capacities)
     return;
 }
 
-template 
-Eigen::MatrixX<char> EigenMatrixWriter::get_matrix<char>(const std::string& name, const PrimitiveType type) const;
-template 
-Eigen::MatrixX<double> EigenMatrixWriter::get_matrix<double>(const std::string& name, const PrimitiveType type) const;
-template 
-Eigen::MatrixX<int64_t> EigenMatrixWriter::get_matrix<int64_t>(const std::string& name, const PrimitiveType type) const;
-template 
-Eigen::MatrixX<Rational> EigenMatrixWriter::get_matrix<Rational>(const std::string& name, const PrimitiveType type) const;
+template Eigen::MatrixX<char> EigenMatrixWriter::get_matrix<char>(
+    const std::string& name,
+    const PrimitiveType type) const;
+template Eigen::MatrixX<double> EigenMatrixWriter::get_matrix<double>(
+    const std::string& name,
+    const PrimitiveType type) const;
+template Eigen::MatrixX<int64_t> EigenMatrixWriter::get_matrix<int64_t>(
+    const std::string& name,
+    const PrimitiveType type) const;
+template Eigen::MatrixX<Rational> EigenMatrixWriter::get_matrix<Rational>(
+    const std::string& name,
+    const PrimitiveType type) const;
 
-template 
-bool EigenMatrixWriter::has_matrix<char>(const std::string& name, const PrimitiveType type) const;
-template 
-bool EigenMatrixWriter::has_matrix<double>(const std::string& name, const PrimitiveType type) const;
-template 
-bool EigenMatrixWriter::has_matrix<int64_t>(const std::string& name, const PrimitiveType type) const;
-template 
-bool EigenMatrixWriter::has_matrix<Rational>(const std::string& name, const PrimitiveType type) const;
+template bool EigenMatrixWriter::has_matrix<char>(const std::string& name, const PrimitiveType type)
+    const;
+template bool EigenMatrixWriter::has_matrix<double>(
+    const std::string& name,
+    const PrimitiveType type) const;
+template bool EigenMatrixWriter::has_matrix<int64_t>(
+    const std::string& name,
+    const PrimitiveType type) const;
+template bool EigenMatrixWriter::has_matrix<Rational>(
+    const std::string& name,
+    const PrimitiveType type) const;
 } // namespace wmtk::utils

@@ -8,7 +8,9 @@
 #include "wmtk/attribute/internal/AttributeTransactionStack.hpp"
 
 namespace wmtk {
+namespace io {
 class MeshWriter;
+}
 
 namespace attribute {
 template <typename T, int Dim>
@@ -44,7 +46,7 @@ public:
     template <typename U, int D>
     friend class AccessorBase;
     friend class internal::AttributeTransactionStack<T>;
-    void serialize(const std::string& name, const int dim, MeshWriter& writer) const;
+    void serialize(const std::string& name, const int dim, io::MeshWriter& writer) const;
 
     /**
      * @brief Initialize the attribute.

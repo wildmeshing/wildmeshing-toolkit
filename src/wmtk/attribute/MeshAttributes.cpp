@@ -17,7 +17,7 @@ namespace wmtk::attribute {
 
 
 template <typename T>
-void MeshAttributes<T>::serialize(const int dim, MeshWriter& writer) const
+void MeshAttributes<T>::serialize(const int dim, io::MeshWriter& writer) const
 {
     for (const auto& p : m_handles) {
         const auto& handle = p.second;
