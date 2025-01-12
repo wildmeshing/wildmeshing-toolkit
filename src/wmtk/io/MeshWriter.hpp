@@ -5,11 +5,12 @@
 
 #include <vector>
 
-namespace wmtk {
+namespace wmtk::io {
 
 class MeshWriter
 {
 public:
+    MeshWriter();
     virtual ~MeshWriter() {}
 
     virtual bool write(const int dim) = 0;
@@ -52,3 +53,6 @@ protected:
 };
 
 } // namespace wmtk
+namespace wmtk {
+    using MeshWriter = io::MeshWriter;
+}
