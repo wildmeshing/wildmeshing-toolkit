@@ -1,7 +1,9 @@
 #include "CollapseAlternateFacetData.hpp"
 #include <array>
 #include <vector>
+#include <wmtk/autogen/find_local_dart_action.hpp>
 #include <wmtk/Mesh.hpp>
+#include <wmtk/autogen/subgroup/convert.hpp>
 #include <wmtk/autogen/Dart.hpp>
 #include <wmtk/autogen/SimplexDart.hpp>
 #include <wmtk/autogen/local_dart_action.hpp>
@@ -10,6 +12,9 @@
 #include <wmtk/utils/primitive_range.hpp>
 #include "wmtk/autogen/SimplexDart.hpp"
 #include "wmtk/utils/TupleInspector.hpp"
+#include <wmtk/utils/Logger.hpp>
+#include "ear_actions.hpp"
+#include <wmtk/autogen/utils/share_simplex.hpp>
 
 namespace wmtk::operations::internal {
 namespace {
@@ -70,11 +75,80 @@ std::array<Tuple, 2> CollapseAlternateFacetData::get_alternatives(
     const wmtk::autogen::SimplexDart& sd = wmtk::autogen::SimplexDart::get_singleton(mesh_pt);
     const wmtk::autogen::Dart t_dart = sd.dart_from_tuple(t);
 
+    auto ear_orientations = ear_actions(mesh_pt);
+    for(auto& ear_orientation: ear_orientations) {
+        ear_orientation = sd.product(ear_orientation ,data.input.local_orientation());
+
+    }
+
+
+
+    // As input we recieve 
+    // t = 
+    //   x-----x-----x
+    //   |    / \    |
+    //   |   o   \   |
+    //   |  /  o  \  |
+    //   | /       \ |
+    //   o-----------x
+    //
+    // Input for the edge operation was
+    // input = 
+    //   x-----x-----x
+    //   |    / \    |
+    //   |   /   \   |
+    //   |  /  o  \  |
+    //   | /       \ |
+    //   o-----o-----x
+
+    // lopp = 
+    //   x-----o-----x
+    //   |    / \    |
+    //   |   o   \   |
+    //   |  /  o  \  |
+    //   | /       \ |
+    //   x-----------x
+    //  
+    // ropp =
+    //   x-----o-----x
+    //   |    / \    |
+    //   |   /   o   |
+    //   |  /  o  \  |
+    //   | /       \ |
+    //   x-----------x
+    // lear = 
+    //   x-----o-----x
+    //   | o  / \    |
+    //   |   o   \   |
+    //   |  /     \  |
+    //   | /       \ |
+    //   x-----------x
+    // rear = 
+    //   x-----o-----x
+    //   |    / \  o |
+    //   |   /   o   |
+    //   |  /     \  |
+    //   | /       \ |
+    //   x-----------x
+    //
+    //
+    // we are trying to evaluate 
+
+
+
+    // Find the action such that data.input = action * t_dart
     const int8_t action =
         wmtk::multimesh::utils::find_local_dart_action(mesh_pt, t_dart, data.input);
-    auto map = [&data](const size_t index) -> Tuple {
-        const wmtk::autogen::Dart& transform = data.alts[index];
-        const int8_t& local_boundary_index = data.local_boundary_indices[index];
+    auto map = [action, &sd, &data, ear_orientations](const size_t index) -> Tuple {
+
+        //const int8_t ear_orientation = ear_orientation[index];
+
+        //const int8_t in_ear_action =
+        //    wmtk::autogen::find_local_dart_action(sd, t_dart.local_orientation(), ear_orientation);
+
+        //if(wmtk::autogen::subgroup::can_convert(mesh_pt, mesh_pt - 1, in_ear_action)) {
+
+        //}
         // const PrimitiveType mappable_dart_dimension = a;
         // if (transform.is_null() || mappable_dart_dimension < simplex_dimension) {
         //     return {};

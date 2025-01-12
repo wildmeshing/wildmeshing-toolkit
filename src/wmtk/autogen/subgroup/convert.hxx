@@ -12,7 +12,11 @@ inline int8_t convert(PrimitiveType from, PrimitiveType to, int8_t source)
 inline int8_t convert(int8_t from, int8_t to, int8_t source)
 {
     const int8_t v = remap_table[from - 1][to - 1][source];
-    assert(v != -1);
+    // assert(v != -1);
     return v;
+}
+inline bool can_convert(PrimitiveType from, PrimitiveType to, int8_t source)
+{
+    return convert(from, to, source) != -1;
 }
 } // namespace wmtk::autogen::subgroup

@@ -44,6 +44,8 @@ public:
     //
     Dart convert(const Dart& d, size_t index) const;
 
+    Dart map_dart_to_alt(const wmtk::autogen::SimplexDart& sd, const Dart& d, int8_t index) const;
+
 
 private:
     Dart left_switches(const Mesh& m, const Tuple& t) const;

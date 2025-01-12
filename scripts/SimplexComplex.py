@@ -30,11 +30,12 @@ class SimplexComplex:
         return x + (int((n * (n+1)) / 2) - sum(x),)
 
     def simplicial_set_as_valid_tuple(self, ss):
-            
-            
-
         return tuple(self.__simplices__[d].index(frozenset(ss[:d+1]))
                      for d in range(len(ss)-1))
+
+    def valid_tuple_index_as_simplicial_set(self, index):
+        t = self.valid_tuple_from_valid_index(index)
+        return self.valid_tuple_as_simplicial_set(t)
 
     def simplicial_set_as_valid_tuple_index(self,ss):
         tup = self.simplicial_set_as_valid_tuple(ss)
@@ -120,6 +121,24 @@ def valid_switch_inverse_table(sc):
     size = sc.valid_tuple_size()
     identity_valid_index = sc.simplicial_set_as_valid_tuple_index(tuple(range(len(sc)+1)))
     return [table[i].index(identity_valid_index) for i in range(size)] 
+
+def valid_switch_edge_mirror_table(sc):
+    table = valid_switch_product_table(sc)
+    size = sc.valid_tuple_size()
+
+    def swap_01(s):
+        def f(x):
+            if x == 0: return 1
+            elif x == 1: return 0
+            else: return x
+        return tuple(map(f,s))
+
+
+
+    ss = [sc.valid_tuple_index_as_simplicial_set(i) for i in range(size)]
+    mirror_ss = list(map(swap_01,ss))
+    return list(map(sc.simplicial_set_as_valid_tuple_index,mirror_ss))
+
 
 
 def switches_plus_identity_and_opp(sc):

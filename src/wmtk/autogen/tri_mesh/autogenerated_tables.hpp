@@ -44,6 +44,9 @@ extern const int8_t auto_valid_switch_inverse_table[6];
 // action
 extern const int8_t auto_valid_tuple_switch_indices[4];
 
+// Encodes the action of swapping the first 2 vertices
+extern const int8_t auto_valid_switch_edge_mirror_indices[6];
+
 
 extern const int8_t subdart_preserving_action_1[6][3];
 
