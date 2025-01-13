@@ -23,7 +23,6 @@ std::map<std::string, EigenMeshes> get_meshes(
     {
         for (const auto& [name, mesh] : all_meshes) {
             assert(mesh.is_connectivity_valid());
-            spdlog::info("sizing {}", name);
             mesh.serialize(writer);
 
             EigenMeshes em;

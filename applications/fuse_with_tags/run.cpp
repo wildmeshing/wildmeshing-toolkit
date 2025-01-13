@@ -10,19 +10,35 @@
 #include <wmtk/components/multimesh/MeshCollection.hpp>
 #include "run.hpp"
 
+#include "fuse.hpp"
 
 wmtk::components::multimesh::NamedMultiMesh& run(
-    wmtk::components::multimesh::MeshCollection& collection,
-    const std::string_view& output_name,
-    const std::string_view& tag_format,
-    const std::string_view& position_attribute_name)
+
+    Params& params)
 {
-    auto all_meshes = collection.all_roots();
+    auto all_meshes = params.collection.all_roots();
 
 
-    auto mptr = fuse_eigen(collection, position_attribute_name, tag_format);
-    // wmtk::components::tetwild_simplification(*mptr, std::string(position_attribute_name), 1e-3);
+    // auto mptr = fuse_eigen(params.collection, params.position_attribute_name);
+    //  wmtk::components::tetwild_simplification(*mptr, std::string(position_attribute_name), 1e-3);
+
+    auto mptr = fuse(params.collection, params.alignments, params.position_attribute_name);
 
 
-    return collection.emplace_mesh(*mptr, output_name);
+    spdlog::info("Creating tag attributes");
+    for (wmtk::PrimitiveType pt : {wmtk::PrimitiveType::Vertex, wmtk::PrimitiveType::Edge}) {
+        auto handle = mptr->register_attribute<int64_t>(
+            std::string(fmt::format(fmt::runtime(params.tag_format), 0)),
+            pt,
+            1);
+        auto acc = mptr->create_accessor<int64_t, 1>(handle);
+        spdlog::info("Going into simplices");
+        int count = 0;
+        for (const wmtk::Tuple& t : mptr->get_all(pt)) {
+            if (mptr->mappable_child_meshes(wmtk::simplex::Simplex(pt, t)).size() > 1) {
+                acc.scalar_attribute(t) = 1;
+            }
+        }
+    }
+    return params.collection.emplace_mesh(*mptr, params.output_name);
 }

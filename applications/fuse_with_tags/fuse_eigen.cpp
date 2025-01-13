@@ -68,21 +68,6 @@ std::shared_ptr<wmtk::TriMesh> fuse_eigen(
 
         wmtk::components::multimesh::from_facet_surjection(*mptr, m, i);
     }
-    spdlog::info("Creating tag attributes");
-    for (wmtk::PrimitiveType pt : {wmtk::PrimitiveType::Vertex, wmtk::PrimitiveType::Edge}) {
-        auto handle = mptr->register_attribute<int64_t>(
-            std::string(fmt::format(fmt::runtime(tag_format), 0)),
-            pt,
-            1);
-        auto acc = mptr->create_accessor<int64_t, 1>(handle);
-        spdlog::info("Going into simplices");
-        int count = 0;
-        for (const wmtk::Tuple& t : mptr->get_all(pt)) {
-            if (mptr->mappable_child_meshes(wmtk::simplex::Simplex(pt, t)).size() > 1) {
-                acc.scalar_attribute(t) = 1;
-            }
-        }
-    }
 
     return mptr;
 }

@@ -20,15 +20,11 @@ std::shared_ptr<wmtk::TriMesh> fuse(
     wmtk::components::multimesh::MeshCollection& mc,
     const std::map<std::array<int64_t, 2>, std::vector<std::array<int64_t, 2>>>& to_fuse,
     // const std::map<std::array<int64_t, 2>, std::vector<std::array<Tuple, 2>>>& to_fuse,
-    const std::string_view& position_attribute_name,
-    const std::string& name_format,
-    const std::string_view& tag_format)
+    const std::string_view& position_attribute_name)
 {
     auto all_meshes = mc.all_roots();
     auto ranges = get_meshes(mc, position_attribute_name);
-    auto get_mesh_name = [&](int64_t index) -> std::string {
-        return fmt::format(fmt::runtime(name_format), index);
-    };
+    auto get_mesh_name = [&](int64_t index) -> std::string { return fmt::format("{}", index); };
     int total_F = 0;
     int total_V = 0;
     for (const auto& [name, em] : ranges) {
@@ -36,7 +32,7 @@ std::shared_ptr<wmtk::TriMesh> fuse(
         total_F = std::max<int>(total_F, em.F.end());
     }
 
-    Eigen::MatrixX<int64_t> V(total_V, 3);
+    Eigen::MatrixX<double> V(total_V, 3);
     Eigen::MatrixX<int64_t> F(total_F, 3);
     for (auto& [name, em] : ranges) {
         em.F.M.array() = em.F.M.array() + em.V.start();
@@ -67,8 +63,14 @@ std::shared_ptr<wmtk::TriMesh> fuse(
         }
     }
     */
+    for (const auto& [n, a] : ranges) {
+        spdlog::info("Name: {}", n);
+    }
+
     for (const auto& [inds, pairs] : to_fuse) {
         const auto& [ind_a, ind_b] = inds;
+        spdlog::info("{} {}, {} {}", ind_a, ind_b, get_mesh_name(ind_a), get_mesh_name(ind_b));
+
         const auto& em_a = ranges.at(get_mesh_name(ind_a));
         const auto& em_b = ranges.at(get_mesh_name(ind_b));
 
@@ -88,7 +90,11 @@ std::shared_ptr<wmtk::TriMesh> fuse(
         v = root_indices.at(Vsets.get_root(v));
     }
 
-    V = V(roots, Eigen::all);
+    for (const auto& v : roots) {
+        assert(v < V.rows());
+        assert(v >= 0);
+    }
+    V = V(roots, Eigen::all).eval();
 
 
     spdlog::info("Creating trimesh");
@@ -111,21 +117,6 @@ std::shared_ptr<wmtk::TriMesh> fuse(
         std::iota(i.begin(), i.end(), em.F.start());
 
         wmtk::components::multimesh::from_facet_surjection(*mptr, m, i);
-    }
-    spdlog::info("Creating tag attributes");
-    for (wmtk::PrimitiveType pt : {wmtk::PrimitiveType::Vertex, wmtk::PrimitiveType::Edge}) {
-        auto handle = mptr->register_attribute<int64_t>(
-            std::string(fmt::format(fmt::runtime(tag_format), 0)),
-            pt,
-            1);
-        auto acc = mptr->create_accessor<int64_t, 1>(handle);
-        spdlog::info("Going into simplices");
-        int count = 0;
-        for (const wmtk::Tuple& t : mptr->get_all(pt)) {
-            if (mptr->mappable_child_meshes(wmtk::simplex::Simplex(pt, t)).size() > 1) {
-                acc.scalar_attribute(t) = 1;
-            }
-        }
     }
 
     return mptr;

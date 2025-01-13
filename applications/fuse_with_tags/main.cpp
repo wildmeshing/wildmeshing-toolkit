@@ -5,6 +5,7 @@
 #include <nlohmann/json.hpp>
 #include <wmtk/applications/utils/element_count_report.hpp>
 #include <wmtk/applications/utils/get_integration_test_data_root.hpp>
+#include "read_vid_pairs.hpp"
 #include "run.hpp"
 
 #include <wmtk/Mesh.hpp>
@@ -85,7 +86,18 @@ int run_js(
     }
 
 
-    wmtk::components::multimesh::NamedMultiMesh& nmm = run(meshes, name, tag_format, position_attribute_name);
+    Params params{meshes, name, tag_format, position_attribute_name};
+
+
+    for (const auto& align_file : j["aligns"]) {
+        std::string str = align_file["path"];
+        auto [path, worked] = path_resolver.resolve(str);
+        assert(worked);
+
+        params.alignments.emplace(read_vid_pairs(path));
+    }
+
+    wmtk::components::multimesh::NamedMultiMesh& nmm = run(params);
 
 
     if (!j.contains("output")) {

@@ -11,6 +11,9 @@ wmtk_add_application(fuse_with_tags_app
     fuse_eigen.cpp
     fuse.hpp
     fuse.cpp
+
+    read_vid_pairs.hpp
+    read_vid_pairs.cpp
     )
 
 target_compile_features(fuse_with_tags_app PUBLIC cxx_std_20)
