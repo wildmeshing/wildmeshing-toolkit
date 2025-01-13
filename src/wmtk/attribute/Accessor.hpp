@@ -16,10 +16,12 @@ class DEBUG_EdgeMesh;
 } // namespace tests
 } // namespace wmtk
 namespace wmtk::attribute {
+template <int Dim, typename MeshType>
+class DartAccessor;
 /**
  * A CachingAccessor that uses tuples for accessing attributes instead of indices.
- * As global simplex ids should not be publicly available, this accessor uses the Mesh.id() function
- * to map from a tuple to the global simplex id.
+ * As global simplex ids should not be publicly available, this accessor uses the Mesh.id()
+ * function to map from a tuple to the global simplex id.
  */
 template <typename T, typename MeshType = Mesh, int Dim = Eigen::Dynamic>
 class Accessor : protected CachingAccessor<T, Dim>
@@ -30,6 +32,9 @@ public:
     friend class wmtk::TriMesh;
     friend class wmtk::EdgeMesh;
     friend class wmtk::PointMesh;
+
+    template <int Dim2, typename MeshType2>
+    friend class DartAccessor;
     using Scalar = T;
 
     using BaseType = AccessorBase<T, Dim>;

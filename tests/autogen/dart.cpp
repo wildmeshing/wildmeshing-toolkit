@@ -1,7 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <numeric>
-#include <wmtk/autogen/SimplexDart.hpp>
 #include <wmtk/autogen/SimplexAdjacency.hpp>
+#include <wmtk/autogen/SimplexDart.hpp>
 #include <wmtk/autogen/utils/local_id_table_offset.hpp>
 #include <wmtk/autogen/utils/simplex_index_from_valid_index.hpp>
 
@@ -15,20 +15,22 @@ using namespace wmtk::tests;
 
 namespace {
 
-    template <int D>
-    void check_sa_dim() {
-    static_assert(sizeof(SimplexAdjacency<D>) <= sizeof(int64_t) * (D+1));
-    }
+template <int D>
+void check_sa_dim()
+{
+    static_assert(sizeof(SimplexAdjacency<D>) <= sizeof(int64_t) * (D + 1));
 }
-TEST_CASE("simplex_adjacency_io", "[dart]") {
+} // namespace
+TEST_CASE("simplex_adjacency_io", "[dart]")
+{
     SimplexAdjacency<3> sa;
     check_sa_dim<1>();
     check_sa_dim<2>();
     check_sa_dim<3>();
 
-    sa[0] = Dart(-1,1);
-    sa[1] = Dart(0,2);
-    sa[2] = Dart(5,3);
+    sa[0] = Dart(-1, 1);
+    sa[1] = Dart(0, 2);
+    sa[2] = Dart(5, 3);
 
 
     CHECK(sa[0].global_id() == -1);
@@ -40,13 +42,12 @@ TEST_CASE("simplex_adjacency_io", "[dart]") {
 
     auto saf = sa[0];
     CHECK(saf.global_id() == -1);
-    CHECK(saf.local_orientation() == 5);
+    CHECK(saf.local_orientation() == 1);
 
-    saf = Dart(20,30);
+    saf = Dart(20, 30);
     CHECK(sa[0].global_id() == 20);
     CHECK(sa[0].local_orientation() == 30);
 }
-
 
 
 TEST_CASE("tuple_autogen_valid_indices_equal", "[tuple]")

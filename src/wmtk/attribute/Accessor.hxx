@@ -83,7 +83,7 @@ int64_t Accessor<T, MeshType, Dim>::index(const simplex::IdSimplex& t) const
 template <typename T, typename MeshType, int Dim>
 int64_t Accessor<T, MeshType, Dim>::index(const autogen::Dart& t) const
 {
-    return this->mesh().id(t);
+    return this->mesh().id(t, primitive_type());
 }
 
 template <typename T, typename MeshType, int Dim>
