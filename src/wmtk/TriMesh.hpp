@@ -9,6 +9,9 @@
 #include <Eigen/Core>
 
 namespace wmtk {
+namespace utils {
+class TriMeshInspector;
+}
 namespace operations::utils {
 class MultiMeshEdgeSplitFunctor;
 class MultiMeshEdgeCollapseFunctor;
@@ -19,6 +22,7 @@ class UpdateEdgeOperationMultiMeshMapFunctor;
 class TriMesh : public MeshCRTP<TriMesh>
 {
 public:
+    friend class utils::TriMeshInspector;
     friend class MeshCRTP<TriMesh>;
     friend class operations::utils::MultiMeshEdgeCollapseFunctor;
     friend class operations::utils::MultiMeshEdgeSplitFunctor;

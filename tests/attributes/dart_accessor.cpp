@@ -12,8 +12,8 @@
 TEST_CASE("dart_access", "[dart_accessor]")
 
 {
-    auto mesh = wmtk::tests::single_equilateral_triangle(2);
-    auto pos_handle = mesh.get_attribute_handle<int64_t>("vertices", wmtk::PrimitiveType::Vertex);
+    auto mesh = wmtk::tests::three_neighbors();
+    spdlog::info("Hi");
 
     auto handle = wmtk::attribute::register_dart_attribute(mesh, "dart", true);
 
@@ -27,6 +27,15 @@ TEST_CASE("dart_access", "[dart_accessor]")
         for (wmtk::PrimitiveType pt : {wmtk::PrimitiveType::Vertex, wmtk::PrimitiveType::Edge}) {
             wmtk::Tuple ot = mesh.switch_tuple(t, pt);
             auto od = acc.switch_dart(d, pt);
+            wmtk::autogen::Dart od2 = sd.dart_from_tuple(ot);
+            CHECK(od.as_tuple() == od2.as_tuple());
+        }
+        bool is_boundary_m = mesh.is_boundary(wmtk::PrimitiveType::Edge, t);
+        bool is_boundary_d = acc.is_boundary(d);
+        REQUIRE(is_boundary_m == is_boundary_d);
+        if(is_boundary_m) {
+            wmtk::Tuple ot = mesh.switch_tuple(t, wmtk::PrimitiveType::Triangle);
+            auto od = acc.switch_dart(d, wmtk::PrimitiveType::Triangle);
             wmtk::autogen::Dart od2 = sd.dart_from_tuple(ot);
             CHECK(od.as_tuple() == od2.as_tuple());
         }

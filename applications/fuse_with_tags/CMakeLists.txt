@@ -4,6 +4,13 @@ wmtk_add_application(fuse_with_tags_app
     main.cpp
     run.hpp
     run.cpp
+
+    utils.cpp
+    utils.hpp
+    fuse_eigen.hpp
+    fuse_eigen.cpp
+    fuse.hpp
+    fuse.cpp
     )
 
 target_compile_features(fuse_with_tags_app PUBLIC cxx_std_20)

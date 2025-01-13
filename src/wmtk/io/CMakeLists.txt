@@ -21,5 +21,7 @@ set(SRC_FILES
 
     read_mesh.hpp
     read_mesh.cpp
+    internal/get_attribute_handles.hpp
+    internal/get_attribute_handles.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

@@ -5,6 +5,9 @@
 #include <tuple>
 
 namespace wmtk::autogen {
+class Dart;
+class DartWrap;
+
 template <typename IndexType, typename OrientType>
 class _Dart : public std::tuple<IndexType, OrientType>
 {
@@ -28,10 +31,6 @@ public:
     const tuple_type& as_tuple() const { return static_cast<const tuple_type&>(*this); }
 
     template <typename A, typename B>
-    _Dart(const _Dart<A, B>& o)
-        : tuple_type(o.as_tuple())
-    {}
-    template <typename A, typename B>
     _Dart& operator=(const _Dart<A, B>& o)
     {
         tuple_type::operator=(o.as_tuple());
@@ -39,13 +38,14 @@ public:
     }
 };
 
-class Dart;
-class DartWrap;
-
+template <int64_t Dim>
+class SimplexAdjacency;
 
 class Dart : public _Dart<int64_t, int8_t>
 {
 public:
+    template <int64_t Dim>
+    friend class SimplexAdjacency;
     using _DartType = _Dart<int64_t, int8_t>;
     using _DartType::_DartType;
     using _DartType::global_id;
@@ -54,6 +54,10 @@ public:
     using _DartType::operator=;
     Dart()
         : _Dart(-1, -1)
+    {}
+    template <typename A, typename B>
+    Dart(const _Dart<A, B>& o)
+        : _DartType(o.global_id(), o.local_orientation())
     {}
 };
 

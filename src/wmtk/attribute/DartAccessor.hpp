@@ -49,7 +49,7 @@ public:
 
     const MeshType& mesh() const { return m_base_accessor.mesh(); }
 
-    autogen::Dart switch_facet(int64_t global_id, int8_t local_orientation)
+    autogen::Dart switch_facet(int64_t global_id, int8_t local_orientation) const
     {
         PrimitiveType FT = mesh().top_simplex_type();
         PrimitiveType BT = FT - 1;
@@ -84,14 +84,38 @@ public:
 
     using IndexBaseType::mesh;
 
-    autogen::SimplexAdjacency<Dim>& operator[](const autogen::Dart& t)
+    template <typename IT, typename OT>
+    autogen::SimplexAdjacency<Dim>& operator[](const autogen::_Dart<IT, OT>& t)
     {
         return IndexBaseType::operator[](m_base_accessor.index(t));
     }
-    const autogen::SimplexAdjacency<Dim>& operator[](const autogen::Dart& t) const
+    template <typename IT, typename OT>
+    const autogen::SimplexAdjacency<Dim>& operator[](const autogen::_Dart<IT, OT>& t) const
     {
         return IndexBaseType::operator[](m_base_accessor.index(t));
     }
+
+    template <typename IT, typename OT>
+    int8_t get_boundary_local_index(const autogen::_Dart<IT, OT>& d) const
+    {
+        const PrimitiveType FT = mesh().top_simplex_type();
+        const PrimitiveType BT = FT - 1;
+        const autogen::SimplexDart& sd = autogen::SimplexDart::get_singleton(FT);
+        return sd.simplex_index(d, BT);
+    }
+    template <typename IT, typename OT>
+    autogen::Dart get_neighbor(const autogen::_Dart<IT, OT>& d) const
+    {
+        const auto& sa = (*this)[d];
+        return sa[get_boundary_local_index(d)];
+    }
+    template <typename IT, typename OT>
+    autogen::DartWrap get_neighbor(const autogen::_Dart<IT, OT>& d)
+    {
+        const auto& sa = (*this)[d];
+        return sa[get_boundary_local_index(d)];
+    }
+
     static wmtk::attribute::TypedAttributeHandle<int64_t>
     register_attribute(MeshType& m, const std::string_view& name, bool do_populate = false)
     {
@@ -114,15 +138,10 @@ public:
 
     void fuse(const autogen::Dart& d, const autogen::Dart& od)
     {
-        const PrimitiveType FT = mesh().top_simplex_type();
-        const PrimitiveType BT = FT - 1;
-        const autogen::SimplexDart& sd = autogen::SimplexDart::get_singleton(FT);
-        int8_t local_index = sd.simplex_index(d, BT);
-        int8_t other_local_index = sd.simplex_index(od, BT);
         autogen::SimplexAdjacency<Dim>& sad = (*this)[d];
         autogen::SimplexAdjacency<Dim>& saod = (*this)[od];
-        sad[local_index] = od;
-        saod[other_local_index] = d;
+        sad[get_boundary_local_index(d)] = od;
+        saod[get_boundary_local_index(od)] = d;
     }
     void populate()
     {
@@ -133,6 +152,7 @@ public:
             autogen::Dart d = sd.dart_from_tuple(t);
             if (mesh().is_boundary(BT, t)) {
                 int8_t local_index = sd.simplex_index(d, BT);
+                assert(local_index == get_boundary_local_index(d));
                 autogen::SimplexAdjacency<Dim>& sad = (*this)[d];
                 sad[local_index] = autogen::Dart();
             } else {
@@ -143,24 +163,28 @@ public:
         }
     }
 
-    autogen::Dart switch_facet(const autogen::Dart& d)
-    {
-        return IndexBaseType::switch_facet(d.global_id(), d.local_orientation());
-    }
-    autogen::Dart switch_facet(const autogen::DartWrap& d)
+    template <typename IT, typename OT>
+    autogen::Dart switch_facet(const autogen::_Dart<IT, OT>& d) const
     {
         return IndexBaseType::switch_facet(d.global_id(), d.local_orientation());
     }
 
-    autogen::Dart switch_dart(const autogen::Dart& d, PrimitiveType pt)
+    template <typename IT, typename OT>
+    autogen::Dart switch_dart(const autogen::_Dart<IT, OT>& d, PrimitiveType pt) const
     {
         const PrimitiveType FT = mesh().top_simplex_type();
         if (pt == FT) {
             return switch_facet(d);
         } else {
             const autogen::SimplexDart& sd = autogen::SimplexDart::get_singleton(FT);
-            return sd.act(d, sd.primitive_as_index(pt));
+            autogen::Dart ret = sd.act(d, sd.primitive_as_index(pt));
+            return ret;
         }
+    }
+    template <typename IT, typename OT>
+    bool is_boundary(const autogen::_Dart<IT, OT>& d) const
+    {
+        return get_neighbor(d).is_null();
     }
 };
 

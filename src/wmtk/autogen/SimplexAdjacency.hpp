@@ -16,9 +16,9 @@ public:
 
 
 private:
-    const DartWrap dart_as_tuple(int64_t index) const
+    const Dart dart_as_tuple(int64_t index) const
     {
-        return DartWrap(m_global_ids[index], m_local_orientations[index]);
+        return Dart(m_global_ids[index], m_local_orientations[index]);
     }
     DartWrap dart_as_tuple(int64_t index)
     {

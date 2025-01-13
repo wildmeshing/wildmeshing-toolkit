@@ -68,14 +68,14 @@ Tuple tuple_from_offset_id(PrimitiveType pt, int offset)
     return r;
 }
 
-std::vector<Tuple> all_valid_local_tuples(PrimitiveType pt)
+std::vector<Tuple> all_valid_local_tuples(PrimitiveType pt, int64_t global_id)
 {
     wmtk::autogen::SimplexDart sd(pt);
     std::vector<Tuple> tups;
     size_t size = sd.size();
     tups.reserve(size);
     for (int8_t idx = 0; idx < size; ++idx) {
-        tups.emplace_back(sd.tuple_from_valid_index(0, idx));
+        tups.emplace_back(sd.tuple_from_valid_index(global_id, idx));
     }
 
     return tups;
