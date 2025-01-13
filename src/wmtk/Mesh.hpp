@@ -3,6 +3,7 @@
 #include <Eigen/Core>
 
 #include <initializer_list>
+#include <wmtk/autogen/Dart.hpp>
 
 #include <memory>
 #include <tuple>
@@ -57,6 +58,10 @@ template <typename T, typename MeshType, int Dim>
 class Accessor;
 
 } // namespace attribute
+namespace autogen {
+class Dart;
+class DartWrap;
+} // namespace autogen
 namespace operations {
 class Operation;
 class EdgeCollapse;
@@ -324,6 +329,7 @@ protected:
      * @return Tuple
      */
     virtual Tuple tuple_from_id(const PrimitiveType type, const int64_t gid) const = 0;
+    virtual autogen::Dart dart_from_id(const PrimitiveType type, const int64_t gid) const;
     simplex::NavigatableSimplex simplex_from_id(const PrimitiveType type, const int64_t gid) const;
     std::vector<std::vector<int64_t>> simplices_to_gids(
         const std::vector<std::vector<simplex::Simplex>>& simplices) const;
@@ -836,12 +842,21 @@ protected:
 
     int64_t id(const simplex::NavigatableSimplex& s) const { return s.index(); }
     int64_t id(const simplex::IdSimplex& s) const { return s.index(); }
+    int64_t id(const autogen::Dart& s, PrimitiveType type) const
+    {
+        return id_virtual(s.global_id(), s.local_orientation(), type);
+    }
+    int64_t id(const autogen::DartWrap& s, PrimitiveType type) const
+    {
+        return id_virtual(s.global_id(), s.local_orientation(), type);
+    }
     /// Forwarding version of id on simplices that does id caching
     virtual int64_t id(const simplex::Simplex& s) const = 0;
     /// Internal utility to allow id to be virtual with a non-virtual overload in derived -Mesh classes.
     /// Mesh::id invokes Mesh::id_virtual which is final overriden by MeshCRTP<TriMesh>::id_virtual, which in turn invokes MeshCRTP<TriMesh>::id, and then TriMesh::id.
     /// This circuitous mechanism makes MeshCRTP<TriMesh>::id and TriMesh::id fully inlineable, so code that wants to take in any derived class can get optimized results with MeshCRTP, or for cases where classes want to utilize just TriMesh they can get inline/accelerated usage as well.
     virtual int64_t id_virtual(const Tuple& tuple, PrimitiveType type) const = 0;
+    virtual int64_t id_virtual(int64_t global_id, int8_t orientation, PrimitiveType pt) const = 0;
 
 
     template <typename T, typename MeshType>

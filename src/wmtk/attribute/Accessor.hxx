@@ -71,7 +71,6 @@ int64_t Accessor<T, MeshType, Dim>::index(const simplex::Simplex& t) const
 {
     assert(t.primitive_type() == primitive_type());
     return this->index(t.tuple());
-
 }
 
 template <typename T, typename MeshType, int Dim>
@@ -79,13 +78,17 @@ int64_t Accessor<T, MeshType, Dim>::index(const simplex::IdSimplex& t) const
 {
     assert(t.primitive_type() == primitive_type());
     return this->mesh().id(t);
+}
 
+template <typename T, typename MeshType, int Dim>
+int64_t Accessor<T, MeshType, Dim>::index(const autogen::Dart& t) const
+{
+    return this->mesh().id(t);
 }
 
 template <typename T, typename MeshType, int Dim>
 template <int D, typename ArgType>
-auto Accessor<T, MeshType, Dim>::const_vector_attribute(const ArgType& t) const
-    -> ConstMapResult<D>
+auto Accessor<T, MeshType, Dim>::const_vector_attribute(const ArgType& t) const -> ConstMapResult<D>
 {
     const int64_t idx = this->index(t);
     return CachingBaseType::template const_vector_attribute<D>(idx);
@@ -121,8 +124,6 @@ auto Accessor<T, MeshType, Dim>::topological_scalar_attribute(const ArgType& t) 
     const int64_t idx = this->index(t);
     return CachingBaseType::scalar_attribute(idx);
 }
-
-
 
 
 template <typename T, typename MeshType, int Dim>

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Eigen/Core>
+#include <wmtk/autogen/edge_mesh/SimplexDart.hpp>
 #include <wmtk/operations/edge_mesh/EdgeOperationData.hpp>
 #include "MeshCRTP.hpp"
 #include "Tuple.hpp"
@@ -58,6 +59,7 @@ public:
 
 protected:
     int64_t id(const Tuple& tuple, PrimitiveType type) const;
+    int64_t id(int64_t global_id, int8_t orientation, PrimitiveType pt) const;
     using MeshCRTP<EdgeMesh>::id; // getting the (simplex) prototype
 
     int64_t id_vertex(const Tuple& tuple) const { return id(tuple, PrimitiveType::Vertex); }
@@ -106,6 +108,27 @@ inline int64_t EdgeMesh::id(const Tuple& tuple, PrimitiveType type) const
     }
     case PrimitiveType::Edge: {
         return tuple.m_global_cid;
+    }
+    case PrimitiveType::Triangle:
+    case PrimitiveType::Tetrahedron:
+    default: assert(false); // "Tuple id: Invalid primitive type")
+    }
+
+    return -1;
+}
+
+inline int64_t EdgeMesh::id(int64_t global_id, int8_t orientation, PrimitiveType pt) const
+{
+    int8_t index = autogen::edge_mesh::SimplexDart::simplex_index(pt, orientation);
+    switch (pt) {
+    case PrimitiveType::Vertex: {
+        const attribute::Accessor<int64_t, EdgeMesh> ev_accessor =
+            create_const_accessor<int64_t>(m_ev_handle);
+        auto ev = ev_accessor.index_access().const_vector_attribute<2>(global_id);
+        return ev(index);
+    }
+    case PrimitiveType::Edge: {
+        return global_id;
     }
     case PrimitiveType::Triangle:
     case PrimitiveType::Tetrahedron:

@@ -1,5 +1,6 @@
 #include "Mesh.hpp"
 #include <numeric>
+#include <wmtk/autogen/SimplexDart.hpp>
 
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -44,6 +45,11 @@ simplex::Simplex Mesh::get_simplex(const simplex::IdSimplex& s) const
 Tuple Mesh::get_tuple_from_id_simplex(const simplex::IdSimplex& s) const
 {
     return tuple_from_id(s.primitive_type(), s.index());
+}
+autogen::Dart Mesh::dart_from_id(const PrimitiveType type, const int64_t gid) const
+{
+    const auto& sd = autogen::SimplexDart::get_singleton(top_simplex_type());
+    return sd.dart_from_tuple(tuple_from_id(type, gid));
 }
 
 std::vector<simplex::IdSimplex> Mesh::get_all_id_simplex(
@@ -116,9 +122,8 @@ bool Mesh::is_valid(const Tuple& tuple) const
     const bool removed = is_removed(tuple);
     const bool bad = nullity || removed;
 #if !defined(NDEBUG)
-    if(bad) {
+    if (bad) {
         logger().debug("Mesh::is_valid failed, got nullity:{} removedness:{}", nullity, removed);
-
     }
 #endif
     return !bad;

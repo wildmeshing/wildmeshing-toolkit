@@ -101,18 +101,25 @@ public:
 protected:
     /// Returns the id of a simplex encoded in a tuple
     int64_t id(const Tuple& tuple, PrimitiveType type) const { return derived().id(tuple, type); }
+    int64_t id(int64_t global_id, int8_t orientation, PrimitiveType pt) const
+    {
+        return derived().id(global_id, orientation, pt);
+    }
     /// internal utility for overriding the mesh class's id function without having the final override block the derived class's override
     /// (we can't have Mesh::id be virtual, MeshCRTP<Derived>::id final override, and TriMesh::id. This indirection pushes the final override to this other function
-    int64_t id_virtual(const Tuple& tuple, PrimitiveType type) const final override
+    int64_t id_virtual(const Tuple& tuple, PrimitiveType type) const final
     {
         return id(tuple, type);
+    }
+    int64_t id_virtual(int64_t global_id, int8_t orientation, PrimitiveType pt) const final
+    {
+        return id(global_id, orientation, pt);
     }
 
     /// variant of id that can cache internally held values
     int64_t id(const simplex::Simplex& s) const final override
     {
-
-        return id(s.tuple(),s.primitive_type());
+        return id(s.tuple(), s.primitive_type());
     }
 
     // catch any other Mesh id methods that might emerge by default

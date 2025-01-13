@@ -1,7 +1,8 @@
 #pragma once
-#include "CachingAccessor.hpp"
-#include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/autogen/Dart.hpp>
 #include <wmtk/simplex/IdSimplex.hpp>
+#include <wmtk/simplex/Simplex.hpp>
+#include "CachingAccessor.hpp"
 
 namespace wmtk {
 class Mesh;
@@ -62,9 +63,9 @@ public:
     template <typename ArgType>
     T& scalar_attribute(const ArgType& t);
 
-    template < int D = Dim, typename ArgType = wmtk::Tuple>
+    template <int D = Dim, typename ArgType = wmtk::Tuple>
     ConstMapResult<D> const_vector_attribute(const ArgType& t) const;
-    template < int D = Dim, typename ArgType = wmtk::Tuple>
+    template <int D = Dim, typename ArgType = wmtk::Tuple>
     MapResult<D> vector_attribute(const ArgType& t);
 
     using BaseType::dimension; // const() -> int64_t
@@ -82,10 +83,10 @@ public:
     const MeshType& mesh() const { return static_cast<const MeshType&>(BaseType::mesh()); }
 
 protected:
-
     int64_t index(const Tuple& t) const;
     int64_t index(const simplex::Simplex& t) const;
     int64_t index(const simplex::IdSimplex& t) const;
+    int64_t index(const autogen::Dart& t) const;
 
     using CachingBaseType::base_type;
     CachingBaseType& caching_base_type() { return *this; }

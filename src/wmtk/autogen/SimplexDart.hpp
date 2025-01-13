@@ -57,6 +57,8 @@ public:
 
     wmtk::PrimitiveType simplex_type() const { return m_simplex_type; }
 
+
+
 private:
     const wmtk::PrimitiveType m_simplex_type;
     const binary_op_type m_product;
