@@ -54,6 +54,7 @@ std::shared_ptr<wmtk::TriMesh> fuse(
     int total_F = 0;
     int total_V = 0;
     for (const auto& [name, em] : ranges) {
+         igl::writeOBJ(fmt::format("model_{}.obj", name), em.V.M, em.F.M);
         total_V = std::max<int>(total_V, em.V.end());
         total_F = std::max<int>(total_F, em.F.end());
         // spdlog::info(
