@@ -27,6 +27,13 @@ struct EigenMeshes
 {
     EigenMesh<double> V;
     EigenMesh<int64_t> F;
+
+    bool in_v_range(int64_t index ) const {
+        return index >= V.start() && index < V.end();
+    }
+    bool in_f_range(int64_t index ) const {
+        return index >= F.M.minCoeff()  && index <= F.M.maxCoeff();
+    }
 };
 
 std::map<std::string, EigenMeshes> get_meshes(

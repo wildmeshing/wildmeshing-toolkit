@@ -1,5 +1,6 @@
 #include "fuse.hpp"
 #include <fmt/format.h>
+#include <set>
 #include <fmt/ranges.h>
 #include <igl/writeOBJ.h>
 #include <spdlog/spdlog.h>
@@ -86,7 +87,7 @@ std::shared_ptr<wmtk::TriMesh> fuse(
         // std::cout << F << std::endl;
         // igl::writeOBJ(fmt::format("hihi_{}.obj", name), V, F);
     }
-    // igl::writeOBJ("hihi.obj", V, F);
+     igl::writeOBJ("hihi.obj", V, F);
 
     wmtk::utils::DisjointSet Vsets(total_V);
 
@@ -114,9 +115,9 @@ std::shared_ptr<wmtk::TriMesh> fuse(
 
     check_degen("combo",V,F);
 
-    // for (const auto& [n, a] : ranges) {
-    //     spdlog::info("Name: {}", n);
-    // }
+     for (const auto& [n, a] : ranges) {
+         spdlog::info("Name: {}", n);
+     }
     {
         {
             std::vector<size_t> roots = Vsets.roots();
@@ -134,21 +135,52 @@ std::shared_ptr<wmtk::TriMesh> fuse(
 
     for (const auto& [inds, pairs] : to_fuse) {
         const auto& [ind_a, ind_b] = inds;
+        std::ofstream ofs(fmt::format("pairs_{}_{}.txt", ind_a,ind_b));
+
         // spdlog::info("{} {}, {} {}", ind_a, ind_b, get_mesh_name(ind_a), get_mesh_name(ind_b));
 
         const auto& em_a = ranges.at(get_mesh_name(ind_a));
         const auto& em_b = ranges.at(get_mesh_name(ind_b));
 
+        std::set<int64_t> bad = {22507,218824 , 47400, 218817};
+        auto contains_bad = [&](int64_t x) {
+            return bad.find(x) != bad.end();
+        };
         for (auto [ta, tb] : pairs) {
+            ofs << ta << " " << tb << "\n";
+            assert(ta >= 0);
+            assert(tb >= 0);
+            assert(ta < em_a.V.M.rows());
+            assert(tb < em_b.V.M.rows());
+            int64_t ota = ta;
+            int64_t otb = tb;
             ta += em_a.V.start();
             tb += em_b.V.start();
+
+            if(contains_bad(ta) || contains_bad(ta)) {
+                spdlog::info("meshes:{}, {}->{} {}->{}", fmt::join(inds,","), ota,ta,otb,tb);
+            }
+
+            assert(em_a.in_v_range(ta));
+            assert(em_b.in_v_range(tb));
+            // this is too slow to test
+            //assert(em_a.in_f_range(ta));
+            //assert(em_b.in_f_range(tb));
+
+            assert(ta >= em_a.V.start());
+            assert(tb >= em_b.V.start());
+            assert(ta < em_a.V.end());
+            assert(tb < em_b.V.end());
             // spdlog::info("Merging {} {}", ta, tb);
             Vsets.merge(ta, tb);
+            if(contains_bad(Vsets.get_root(ta)) || contains_bad(Vsets.get_root(tb))) {
+                spdlog::info("post merge got bad:{}, {}->{} {}->{}", fmt::join(inds,","), ota,ta,otb,tb);
+            }
         }
     }
     {
         std::vector<size_t> roots = Vsets.roots();
-        // spdlog::info("roots: {}", fmt::join(roots, ","));
+         // spdlog::info("roots: {}", fmt::join(roots, ","));
         std::map<int64_t, int64_t> root_indices;
         for (size_t j = 0; j < roots.size(); ++j) {
             root_indices[roots[j]] = j;
@@ -159,6 +191,20 @@ std::shared_ptr<wmtk::TriMesh> fuse(
             for (int j = 0; j < total_V; ++j) {
                 counts[root_indices.at(Vsets.get_root(j))]++;
             }
+            for (int j = 0; j < roots.size(); ++j) {
+                if(counts[j] > 2) {
+                    spdlog::info("Root {} (orig {}) got {}", j, roots[j], counts[j]);
+                }
+            }
+            // spdlog::info("{}", fmt::join(counts, ","));
+            std::vector<size_t> freqs(3);
+            for(const auto& freq: counts) {
+                if(freq >= freqs.size()) {
+                    freqs.resize(freq+1);
+                }
+                freqs[freq]++;
+            }
+            spdlog::info("frequency of frequencies {}", fmt::join(freqs, ","));
             // spdlog::info("{}", fmt::join(counts, ","));
         }
 
