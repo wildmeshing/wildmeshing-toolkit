@@ -12,8 +12,7 @@
 
 std::shared_ptr<wmtk::TriMesh> fuse_eigen(
     wmtk::components::multimesh::MeshCollection& mc,
-    const std::string_view& position_attribute_name,
-    const std::string_view& tag_format)
+    const std::string_view& position_attribute_name)
 {
     auto all_meshes = mc.all_roots();
     auto ranges = get_meshes(mc, position_attribute_name);
@@ -52,13 +51,13 @@ std::shared_ptr<wmtk::TriMesh> fuse_eigen(
     igl::writeOBJ("hi", SV, SF);
 
     mptr->initialize(SF);
+    assert(mptr->is_connectivity_valid());
     wmtk::mesh_utils::set_matrix_attribute(
         SV,
         std::string(position_attribute_name),
         wmtk::PrimitiveType::Vertex,
         *mptr);
 
-    assert(mptr->is_connectivity_valid());
     for (const auto& [name, em] : ranges) {
         spdlog::info("Registering {} as child mesh", name);
         auto& m = const_cast<wmtk::Mesh&>(all_meshes.at(name));

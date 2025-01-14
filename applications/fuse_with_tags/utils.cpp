@@ -15,14 +15,14 @@ std::map<std::string, EigenMeshes> get_meshes(
     std::map<std::string, EigenMeshes> ranges;
 
 
-    wmtk::utils::EigenMatrixWriter writer;
-    writer.set_position_attribute_name(position_attribute_name);
 
     int total_V = 0;
     int total_F = 0;
     {
         for (const auto& [name, mesh] : all_meshes) {
             assert(mesh.is_connectivity_valid());
+            wmtk::utils::EigenMatrixWriter writer;
+            writer.set_position_attribute_name(position_attribute_name);
             mesh.serialize(writer);
 
             EigenMeshes em;
@@ -30,8 +30,10 @@ std::map<std::string, EigenMeshes> get_meshes(
             em.F.m_start = total_F;
 
 
+
             writer.get_position_matrix(em.V.M);
             writer.get_FV_matrix(em.F.M);
+            assert(em.F.M.maxCoeff() < em.V.M.rows());
 
             total_V = em.V.end();
             total_F = em.F.end();

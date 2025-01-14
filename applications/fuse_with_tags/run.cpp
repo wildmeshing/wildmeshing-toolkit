@@ -20,7 +20,8 @@ wmtk::components::multimesh::NamedMultiMesh& run(
 
 
     // auto mptr = fuse_eigen(params.collection, params.position_attribute_name);
-    //  wmtk::components::tetwild_simplification(*mptr, std::string(position_attribute_name), 1e-3);
+    //   wmtk::components::tetwild_simplification(*mptr, std::string(position_attribute_name),
+    //   1e-3);
 
     auto mptr = fuse(params.collection, params.alignments, params.position_attribute_name);
 
