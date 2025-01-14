@@ -89,26 +89,19 @@ std::vector<const Mesh*> Mesh::mappable_child_meshes(const simplex::Simplex& my_
 {
     assert(is_valid(my_simplex));
     std::vector<const Mesh*> ret;
-    spdlog::warn(
-        "mappable_child_meshes: {} has {} children",
-        fmt::join(absolute_multi_mesh_id(), ","),
-        m_multi_mesh_manager.m_children.size());
     for (const auto& child : m_multi_mesh_manager.m_children) {
         const auto& mesh = *child.mesh;
         auto child_simplices = map_to_child(mesh, my_simplex);
-        spdlog::info("Checking child has {}", child_simplices.size());
         if (child_simplices.empty()) {
             continue;
         }
 
         for (const auto& s : child_simplices) {
-            spdlog::info("Trying child simplex");
             auto children = mesh.mappable_child_meshes(s);
             ret.insert(ret.end(), children.begin(), children.end());
         }
         ret.emplace_back(&mesh);
     }
-    spdlog::info("done");
     return ret;
 }
 

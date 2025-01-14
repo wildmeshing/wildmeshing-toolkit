@@ -56,7 +56,6 @@ int run_js(
     if (j["input"].is_array()) {
         for (const auto& in_opts_js : j["input"]) {
             wmtk::components::input::InputOptions opts = in_opts_js;
-            spdlog::info("opts: {}", opts.path.string());
             meshes.add_mesh(wmtk::components::input::input(opts, path_resolver));
         }
     } else {

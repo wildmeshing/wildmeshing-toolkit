@@ -24,6 +24,29 @@ std::shared_ptr<wmtk::TriMesh> fuse(
     // const std::map<std::array<int64_t, 2>, std::vector<std::array<Tuple, 2>>>& to_fuse,
     const std::string_view& position_attribute_name)
 {
+
+    auto check_degen = [](const std::string_view& name, const auto& V, const auto& F) {
+        bool ok = true;
+        for (int j = 0; j < F.rows(); ++j) {
+            auto f = F.row(j);
+            for (int k = 0; k < F.cols(); ++k) {
+                int64_t fk = f(k);
+                for (int l = 0; l < F.cols(); ++l) {
+                    if (k == l) {
+                        continue;
+                    }
+                    int64_t fl = f(l);
+                    if (fk == fl) {
+                        spdlog::info("Fail on mesh {}, face {}:  {}", name, j, fmt::join(f,","));
+                        ok = false;
+                    }
+                }
+            }
+        }
+        if(!ok) {
+            throw std::runtime_error("Not ok!");
+        }
+    };
     auto all_meshes = mc.all_roots();
     auto ranges = get_meshes(mc, position_attribute_name);
     auto get_mesh_name = [&](int64_t index) -> std::string { return fmt::format("{}", index); };
@@ -49,6 +72,7 @@ std::shared_ptr<wmtk::TriMesh> fuse(
     F.setConstant(-1);
     V.setConstant(-1);
     for (auto& [name, em] : ranges) {
+        check_degen(name, em.V.M,em.F.M);
         // spdlog::info("Input was {}", name);
         // std::cout << em.V.M << std::endl;
         // spdlog::info("=====");
@@ -88,27 +112,7 @@ std::shared_ptr<wmtk::TriMesh> fuse(
     }
     */
 
-    auto check_degen = [&]() {
-        bool ok = false;
-        for (int j = 0; j < F.rows(); ++j) {
-            auto f = F.row(j);
-            for (int k = 0; k < F.cols(); ++k) {
-                int64_t fk = f(k);
-                for (int l = 0; l < F.cols(); ++l) {
-                    if (k == l) {
-                        continue;
-                    }
-                    int64_t fl = f(l);
-                    if (fk == fl) {
-                        spdlog::info("Fail {}:  {} {}", j, fl, fk);
-                        ok = false;
-                    }
-                }
-            }
-        }
-        assert(ok);
-    };
-    check_degen();
+    check_degen("combo",V,F);
 
     // for (const auto& [n, a] : ranges) {
     //     spdlog::info("Name: {}", n);
@@ -164,7 +168,7 @@ std::shared_ptr<wmtk::TriMesh> fuse(
             v = root_indices.at(Vsets.get_root(v));
         }
         igl::writeOBJ("hi.obj", V, F);
-        check_degen();
+        check_degen("combo",V,F);
 
         for (const auto& v : roots) {
             assert(v < V.rows());
