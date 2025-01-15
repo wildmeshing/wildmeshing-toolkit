@@ -49,7 +49,11 @@ const std::filesystem::path data_dir = WMTK_DATA_DIR;
 TEST_CASE("dart_performance", "[performance][.]")
 {
     const std::filesystem::path meshfile = data_dir / "armadillo.msh";
+#if defined(_NDEBUG)
     const int64_t iterations = 1000;
+#else
+    const int64_t iterations = 100;
+#endif
 
     auto mesh_in = std::static_pointer_cast<wmtk::TriMesh>(wmtk::io::read_mesh(meshfile));
     wmtk::TriMesh& mesh = *mesh_in;
@@ -92,7 +96,8 @@ TEST_CASE("dart_performance", "[performance][.]")
                 bool is_boundary_d = acc.is_boundary(d);
                 if (!is_boundary_d) {
                     auto od = acc.switch_dart(d, wmtk::PrimitiveType::Triangle);
-                    test_acc.scalar_attribute(od) = od.global_id();
+                    wmtk::Tuple ot  = sd.tuple_from_dart(od);
+                    test_acc.scalar_attribute(ot) = od.global_id();
                 }
             }
         }
@@ -115,6 +120,6 @@ TEST_CASE("dart_performance", "[performance][.]")
                 }
             }
         }
-        spdlog::info("Dart Elapsed: {} seconds", sw);
+        spdlog::info("Tuple Elapsed: {} seconds", sw);
     }
 }
