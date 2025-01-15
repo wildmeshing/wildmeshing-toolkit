@@ -62,6 +62,8 @@ public:
 
     T const_topological_scalar_attribute(const Tuple& t, PrimitiveType pt) const;
     template <typename ArgType>
+    T const_topological_scalar_attribute(const ArgType& t) const;
+    template <typename ArgType>
     T& topological_scalar_attribute(const ArgType& t);
     template <typename ArgType>
     T const_scalar_attribute(const ArgType& t) const;

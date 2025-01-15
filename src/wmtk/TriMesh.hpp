@@ -156,12 +156,10 @@ inline int64_t TriMesh::id(int64_t global_id, int8_t orientation, PrimitiveType 
     int8_t index = autogen::tri_mesh::SimplexDart::simplex_index(pt, orientation);
     switch (pt) {
     case PrimitiveType::Vertex: {
-        const auto v = m_fv_accessor->index_access().const_vector_attribute<3>(global_id);
-        return v(index);
+        return m_fv_accessor->index_access().const_scalar_attribute(global_id,index);
     }
     case PrimitiveType::Edge: {
-        const auto v = m_fe_accessor->index_access().const_vector_attribute<3>(global_id);
-        return v(index);
+        return m_fe_accessor->index_access().const_scalar_attribute(global_id,index);
     }
     case PrimitiveType::Triangle: {
         return global_id;

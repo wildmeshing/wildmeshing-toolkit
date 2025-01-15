@@ -162,19 +162,13 @@ inline int64_t TetMesh::id(int64_t global_id, int8_t orientation, PrimitiveType 
     int8_t index = autogen::tet_mesh::SimplexDart::simplex_index(pt, orientation);
     switch (pt) {
     case PrimitiveType::Vertex: {
-        auto tv = m_tv_accessor->index_access().const_vector_attribute<4>(global_id);
-        return tv(index);
-        break;
+        return m_tv_accessor->index_access().const_scalar_attribute(global_id,index);
     }
     case PrimitiveType::Edge: {
-        auto te = m_te_accessor->index_access().const_vector_attribute<6>(global_id);
-        return te(index);
-        break;
+        return m_te_accessor->index_access().const_scalar_attribute(global_id,index);
     }
     case PrimitiveType::Triangle: {
-        auto tf = m_tf_accessor->index_access().const_vector_attribute<4>(global_id);
-        return tf(index);
-        break;
+        return m_tf_accessor->index_access().const_scalar_attribute(global_id,index);
     }
     case PrimitiveType::Tetrahedron: {
         return global_id;

@@ -125,6 +125,14 @@ auto Accessor<T, MeshType, Dim>::topological_scalar_attribute(const ArgType& t) 
     return CachingBaseType::scalar_attribute(idx);
 }
 
+template <typename T, typename MeshType, int Dim>
+template <typename ArgType>
+auto Accessor<T, MeshType, Dim>::const_topological_scalar_attribute(const ArgType& t) const -> T
+{
+    const int64_t idx = this->index(t);
+    return CachingBaseType::const_scalar_attribute(idx);
+}
+
 
 template <typename T, typename MeshType, int Dim>
 T Accessor<T, MeshType, Dim>::const_topological_scalar_attribute(const Tuple& t, PrimitiveType pt)

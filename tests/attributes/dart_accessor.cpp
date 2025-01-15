@@ -49,7 +49,7 @@ const std::filesystem::path data_dir = WMTK_DATA_DIR;
 TEST_CASE("dart_performance", "[performance][.]")
 {
     const std::filesystem::path meshfile = data_dir / "armadillo.msh";
-    const int64_t iterations = 100;
+    const int64_t iterations = 1000;
 
     auto mesh_in = std::static_pointer_cast<wmtk::TriMesh>(wmtk::io::read_mesh(meshfile));
     wmtk::TriMesh& mesh = *mesh_in;
@@ -72,11 +72,31 @@ TEST_CASE("dart_performance", "[performance][.]")
                 bool is_boundary_d = acc.is_boundary(d);
                 if (!is_boundary_d) {
                     auto od = acc.switch_dart(d, wmtk::PrimitiveType::Triangle);
-                    // test_acc.scalar_attribute(od) = od.global_id();
+                    test_acc.scalar_attribute(od) = od.global_id();
                 }
             }
         }
         spdlog::info("Dart Elapsed: {} seconds", sw);
+    }
+    {
+        spdlog::stopwatch sw;
+        auto test_handle =
+            mesh.register_attribute<int64_t>("Test attr", wmtk::PrimitiveType::Edge, 1, true);
+        wmtk::attribute::DartAccessor acc(mesh, handle);
+
+        auto test_acc = mesh.create_accessor<int64_t, 1>(test_handle);
+        for (int j = 0; j < iterations; ++j) {
+            for (const wmtk::Tuple& t : all_tuples) {
+                wmtk::autogen::Dart d = sd.dart_from_tuple(t);
+
+                bool is_boundary_d = acc.is_boundary(d);
+                if (!is_boundary_d) {
+                    auto od = acc.switch_dart(d, wmtk::PrimitiveType::Triangle);
+                    test_acc.scalar_attribute(od) = od.global_id();
+                }
+            }
+        }
+        spdlog::info("Dart from Tuple Elapsed: {} seconds", sw);
     }
 
     {
@@ -91,7 +111,7 @@ TEST_CASE("dart_performance", "[performance][.]")
                 bool is_boundary_m = mesh.is_boundary(wmtk::PrimitiveType::Edge, t);
                 if (!is_boundary_m) {
                     wmtk::Tuple ot = mesh.switch_tuple(t, wmtk::PrimitiveType::Triangle);
-                    // test_acc.scalar_attribute(ot) = wmtk::utils::TupleInspector::global_cid(ot);
+                    test_acc.scalar_attribute(ot) = wmtk::utils::TupleInspector::global_cid(ot);
                 }
             }
         }

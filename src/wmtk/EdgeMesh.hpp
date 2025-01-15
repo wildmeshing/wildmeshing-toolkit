@@ -124,8 +124,7 @@ inline int64_t EdgeMesh::id(int64_t global_id, int8_t orientation, PrimitiveType
     case PrimitiveType::Vertex: {
         const attribute::Accessor<int64_t, EdgeMesh> ev_accessor =
             create_const_accessor<int64_t>(m_ev_handle);
-        auto ev = ev_accessor.index_access().const_vector_attribute<2>(global_id);
-        return ev(index);
+        return ev_accessor.index_access().const_scalar_attribute(global_id,index);
     }
     case PrimitiveType::Edge: {
         return global_id;
