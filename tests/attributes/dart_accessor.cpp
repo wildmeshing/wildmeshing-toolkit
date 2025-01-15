@@ -49,10 +49,10 @@ const std::filesystem::path data_dir = WMTK_DATA_DIR;
 TEST_CASE("dart_performance", "[performance][.]")
 {
     const std::filesystem::path meshfile = data_dir / "armadillo.msh";
-#if defined(_NDEBUG)
-    const int64_t iterations = 1000;
-#else
+#if defined(NDEBUG)
     const int64_t iterations = 100;
+#else
+    const int64_t iterations = 10;
 #endif
 
     auto mesh_in = std::static_pointer_cast<wmtk::TriMesh>(wmtk::io::read_mesh(meshfile));
