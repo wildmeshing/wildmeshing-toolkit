@@ -140,6 +140,8 @@ std::shared_ptr<wmtk::TriMesh> fuse(
 
         // spdlog::info("{} {}, {} {}", ind_a, ind_b, get_mesh_name(ind_a), get_mesh_name(ind_b));
 
+        std::string trim_mesh_name = fmt::format("trim_{}_{}", ind_a, ind_b);
+
         const auto& em_a = ranges.at(get_mesh_name(ind_a));
         const auto& em_b = ranges.at(get_mesh_name(ind_b));
 
