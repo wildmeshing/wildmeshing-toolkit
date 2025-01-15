@@ -25,6 +25,8 @@ void adl_serializer<wmtk::components::input::InputOptions>::to_json(json& j, con
         j["name_spec_file"] = v.name_spec_file.value();
     }
 
+    j["prune_unused_names"] = v.prune_unused_names;
+
     if (v.old_mode) {
         j["old_mode"] = true;
         j["ignore_z"] = v.ignore_z_if_zero; // keep around for deprecation purposes
@@ -54,6 +56,10 @@ void adl_serializer<wmtk::components::input::InputOptions>::from_json(const json
     }
     if (j.contains("validate")) {
         v.validate = j["validate"];
+    }
+
+    if (j.contains("prune_unused_names")) {
+        v.prune_unused_names = j["prune_unused_names"];
     }
 
     if (j.contains("name_spec")) {

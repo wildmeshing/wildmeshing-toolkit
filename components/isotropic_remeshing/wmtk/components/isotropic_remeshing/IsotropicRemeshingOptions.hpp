@@ -27,6 +27,9 @@ struct IsotropicRemeshingOptions
     std::optional<wmtk::attribute::MeshAttributeHandle> visited_edge_flag;
     std::optional<wmtk::attribute::MeshAttributeHandle> target_edge_length;
 
+    // tag attributes can be split into two, or two of the same tag can merge into one
+    std::vector<wmtk::attribute::MeshAttributeHandle> tag_attributes;
+
     std::vector<wmtk::attribute::MeshAttributeHandle> pass_through_attributes;
     int64_t iterations = 10;
     double length_abs = 0;

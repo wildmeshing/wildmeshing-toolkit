@@ -281,9 +281,8 @@ void MultiMeshManager::register_child_mesh(
 
 void MultiMeshManager::deregister_child_mesh(
     Mesh& my_mesh,
-    const std::shared_ptr<Mesh>& child_mesh_ptr)
+    Mesh& child_mesh)
 {
-    Mesh& child_mesh = *child_mesh_ptr;
 
     MultiMeshManager& child_manager = child_mesh.m_multi_mesh_manager;
     MultiMeshManager& parent_manager = my_mesh.m_multi_mesh_manager;
@@ -295,7 +294,7 @@ void MultiMeshManager::deregister_child_mesh(
     ChildData& child_data = parent_manager.m_children[child_id];
     auto& parent_to_child_handle = child_data.map_handle;
 
-    assert(child_data.mesh == child_mesh_ptr);
+    assert(child_data.mesh.get() == &child_mesh);
     assert(child_manager.children()
                .empty()); // The current implementation does not update the attributes properly for
                           // the case that the child also has children
@@ -353,6 +352,14 @@ void MultiMeshManager::register_child_mesh(
     register_child_mesh(my_mesh, child_mesh, child_tuple_my_tuple_map);
 }
 */
+const Mesh& MultiMeshManager::get_parent_mesh(const Mesh& my_mesh) const {
+    assert(m_parent != nullptr);
+    return *m_parent;
+}
+Mesh& MultiMeshManager::get_parent_mesh(Mesh& my_mesh) {
+    assert(m_parent != nullptr);
+    return *m_parent;
+}
 
 const Mesh& MultiMeshManager::get_root_mesh(const Mesh& my_mesh) const
 {

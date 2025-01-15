@@ -8,6 +8,7 @@ enum class SplitRibBasicStrategy {
     CopyTuple,
     CopyOther, // per-dimension "other" simplex option
     Mean,
+    Min,
     Throw,
     None
 };

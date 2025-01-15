@@ -140,6 +140,7 @@ void MeshCollection::make_canonical()
 bool MeshCollection::is_valid(bool pass_exceptions) const
 {
     for (const auto& [name, nmmptr] : m_meshes) {
+        wmtk::logger().trace("MeshCollection validating [{}]", name);
         if (!nmmptr->is_valid(pass_exceptions)) {
             return false;
         }

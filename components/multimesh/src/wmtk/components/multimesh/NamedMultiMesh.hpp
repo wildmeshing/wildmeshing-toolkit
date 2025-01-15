@@ -21,11 +21,17 @@ class NamedMultiMesh
 {
 public:
     NamedMultiMesh();
-    NamedMultiMesh(Mesh& m, const std::string_view& root_name);
-    explicit NamedMultiMesh(Mesh& m, const nlohmann::json& root_name);
+    NamedMultiMesh(Mesh& m, const std::string_view& root_name, bool do_populate_child_names = true);
+    explicit NamedMultiMesh(
+        Mesh& m,
+        const nlohmann::json& root_name,
+        bool do_populate_missing_names = true);
 
     // Explicit constructors to remove ambiguities between string_view and json constructors
-    explicit NamedMultiMesh(Mesh& m, const std::string& root_name);
+    explicit NamedMultiMesh(
+        Mesh& m,
+        const std::string& root_name,
+        bool do_populate_child_names = true);
     template <size_t N>
     explicit NamedMultiMesh(Mesh& m, const char name[N])
         : NamedMultiMesh(m, std::string_view(name))
@@ -40,7 +46,7 @@ public:
     void set_name(const std::string_view& root_name = "");
     void set_names(const nlohmann::json& js);
     void populate_default_names();
-    void set_root(Mesh& m);
+    void set_root(Mesh& m, bool do_populate_unnamed = true);
     void append_child_mesh_names(const Mesh& parent, const NamedMultiMesh& o);
 
     std::unique_ptr<nlohmann::json> get_names_json(const std::string_view& path = "") const;
@@ -48,9 +54,10 @@ public:
     std::string_view root_name() const;
     std::string name(const std::vector<int64_t>& id) const;
     std::string get_name(const std::vector<int64_t>& id) const;
+    bool has_name(const std::vector<int64_t>& id) const;
 
     /// Navigates to the root of the multimesh
-    void set_mesh(Mesh& m);
+    void set_mesh(Mesh& m, bool do_populate_unnamed = true);
     Mesh& get_mesh(const std::string_view& path) const;
     bool has_mesh(const std::string_view& path) const;
     std::vector<int64_t> get_id(const std::string_view& path) const;
@@ -61,9 +68,12 @@ public:
 
 
     std::map<std::string, const Mesh&> all_meshes() const;
+    std::map<std::string, Mesh&> all_meshes();
 
     // returns the name of a mesh if it lies in this multimesh
     std::string get_name(const Mesh& m) const;
+
+    bool has_name(const Mesh& m) const;
 
     std::string get_path(const wmtk::attribute::MeshAttributeHandle& m) const;
 

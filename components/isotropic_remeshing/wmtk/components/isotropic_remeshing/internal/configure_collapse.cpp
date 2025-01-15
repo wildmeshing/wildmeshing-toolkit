@@ -12,12 +12,12 @@
 #include "../IsotropicRemeshingOptions.hpp"
 namespace wmtk::components::isotropic_remeshing::internal {
 
-std::shared_ptr<invariants::InvariantCollection> collapse_core_invariants(
+std::shared_ptr<wmtk::invariants::InvariantCollection> collapse_core_invariants(
     Mesh& m,
     const IsotropicRemeshingOptions& options)
 {
     auto& root = m.get_multi_mesh_root();
-    auto ic_root = std::make_shared<invariants::InvariantCollection>(root);
+    auto ic_root = std::make_shared<wmtk::invariants::InvariantCollection>(root);
     auto invariant_link_condition =
         std::make_shared<wmtk::invariants::MultiMeshLinkConditionInvariant>(root);
 
@@ -26,19 +26,19 @@ std::shared_ptr<invariants::InvariantCollection> collapse_core_invariants(
     ic_root->add(invariant_mm_map);
     if (options.separate_substructures) {
         auto invariant_separate_substructures =
-            std::make_shared<invariants::SeparateSubstructuresInvariant>(root);
+            std::make_shared<wmtk::invariants::SeparateSubstructuresInvariant>(root);
         ic_root->add(invariant_separate_substructures);
     }
     return ic_root;
 }
 
-std::shared_ptr<invariants::InvariantCollection> collapse_invariants(
+std::shared_ptr<wmtk::invariants::InvariantCollection> collapse_invariants(
     Mesh& m,
     const IsotropicRemeshingOptions& options)
 {
     auto ic_root = collapse_core_invariants(m, options);
 
-    auto ic = std::make_shared<invariants::InvariantCollection>(m);
+    auto ic = std::make_shared<wmtk::invariants::InvariantCollection>(m);
     const std::optional<attribute::MeshAttributeHandle>& position_for_inversion =
         options.inversion_position_attribute;
 
@@ -101,7 +101,7 @@ void configure_collapse(
     } else if (options.use_for_periodic) {
         assert(false); // TODO: make fusion simplex invariant
         ec.add_invariant(
-            std::make_shared<invariants::FusionEdgeInvariant>(m, m.get_multi_mesh_root()));
+            std::make_shared<wmtk::invariants::FusionEdgeInvariant>(m, m.get_multi_mesh_root()));
         for (auto& p : positions) {
             ec.set_new_attribute_strategy(p, operations::CollapseBasicStrategy::Mean);
         }

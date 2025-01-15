@@ -29,6 +29,8 @@ public:
 
     bool validate = false;
 
+    bool prune_unused_names = false;
+
 
 
     // many applications use ignore_z_if_zero and imported attribute sonly works for tets. This flag enables that

@@ -110,6 +110,7 @@ TEST_CASE("named_multimesh_parse", "[components][multimesh]")
             nlohmann::json js;
             js["roo"]["c"]["d"]["e"] = {};
             js["roo"]["child"] = nlohmann::json::array({"c1", "c2"});
+            std::cout << js << std::endl;
             named_mm.set_names(js);
         }
         CHECK(std::vector<int64_t>{} == named_mm.get_id("roo"));

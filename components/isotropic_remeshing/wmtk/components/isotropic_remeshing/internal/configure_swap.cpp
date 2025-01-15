@@ -11,6 +11,7 @@
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
 #include "../IsotropicRemeshingOptions.hpp"
+#include "../invariants/SwapPreserveTaggedTopologyInvariant.hpp"
 #include "configure_collapse.hpp"
 
 namespace wmtk::components::isotropic_remeshing::internal {
@@ -33,7 +34,7 @@ std::shared_ptr<wmtk::operations::composite::EdgeSwap> tri_swap(
     auto swap = std::make_shared<wmtk::operations::composite::TriEdgeSwap>(mesh);
     // hack for uv
     if (options.fix_uv_seam) {
-        swap->add_invariant(std::make_shared<invariants::uvEdgeInvariant>(
+        swap->add_invariant(std::make_shared<wmtk::invariants::uvEdgeInvariant>(
             mesh,
             options.other_position_attributes.front().mesh()));
     }
@@ -42,7 +43,7 @@ std::shared_ptr<wmtk::operations::composite::EdgeSwap> tri_swap(
     switch (options.edge_swap_mode) {
     case EdgeSwapMode::Valence: {
         auto invariant_valence_improve =
-            std::make_shared<invariants::ValenceImprovementInvariant>(mesh);
+            std::make_shared<wmtk::invariants::ValenceImprovementInvariant>(mesh);
         swap->add_invariant(invariant_valence_improve);
     }
     case EdgeSwapMode::AMIPS: {
@@ -65,6 +66,21 @@ std::shared_ptr<wmtk::operations::composite::EdgeSwap> tri_swap(
     for (const auto& attr : options.pass_through_attributes) {
         swap->split().set_new_attribute_strategy(attr);
         swap->collapse().set_new_attribute_strategy(attr);
+    }
+
+    for (const auto& p : options.tag_attributes) {
+        swap->split().set_new_attribute_strategy(
+            p,
+            wmtk::operations::SplitBasicStrategy::None,
+            wmtk::operations::SplitRibBasicStrategy::Mean);
+        swap->collapse().set_new_attribute_strategy(
+            p,
+            wmtk::operations::CollapseBasicStrategy::CopyOther);
+        auto invar = std::make_shared<invariants::SwapPreserveTaggedTopologyInvariant>(
+            mesh,
+            p.as<int64_t>(),
+            -1);
+        swap->add_invariant(invar);
     }
     finalize_swap(*swap, options);
     return swap;

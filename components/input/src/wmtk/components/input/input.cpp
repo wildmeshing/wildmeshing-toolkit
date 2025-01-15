@@ -83,6 +83,17 @@ multimesh::NamedMultiMesh input(
         ifs >> js;
         mm.set_names(js);
     }
+
+    if(options.validate) {
+        for(auto& mptr: mm.root().get_all_meshes()) {
+            if(!mm.has_name(*mptr) && !mptr->is_multi_mesh_root()) {
+
+                mptr->get_multi_mesh_parent_mesh().deregister_child_mesh(mptr);
+
+            }
+        }
+    }
+
     if(options.validate) {
         for(const auto& mptr: mm.root().get_all_meshes()) {
             if(!wmtk::utils::verify_simplex_index_valences(*mptr)) {

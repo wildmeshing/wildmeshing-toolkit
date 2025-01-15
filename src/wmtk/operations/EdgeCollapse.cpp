@@ -17,7 +17,7 @@ bool EdgeCollapse::attribute_new_all_configured() const
     for (const auto& strat : m_new_attr_strategies) {
         if (strat->invalid_state()) {
             all_configured = false;
-            wmtk::logger().warn("Attribute new {} was not configured", strat->name());
+            wmtk::logger().warn("Attribute new {} on {}-simplices was not configured on mesh [{}]", strat->name(), get_primitive_type_id(strat->primitive_type()), fmt::join(strat->mesh().absolute_multi_mesh_id(),","));
         }
     }
     return all_configured;

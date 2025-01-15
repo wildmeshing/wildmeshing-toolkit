@@ -42,16 +42,33 @@ struct NamedMultiMesh::Node
             return;
         }
         if (js.is_string()) {
-            auto& child = m_children.emplace_back(std::make_unique<Node>());
+            if (m_children.empty()) {
+                m_children.emplace_back(std::make_unique<Node>());
+            }
+            auto& child = m_children[0];
             child->name = js;
         } else if (js.is_array()) {
-            for (const auto& value : js) {
-                auto& child = m_children.emplace_back(std::make_unique<Node>());
+            size_t needed_nodes = js.size() - m_children.size();
+            if (needed_nodes > 0) {
+                for (size_t j = 0; j < needed_nodes; ++j) {
+                    m_children.emplace_back(std::make_unique<Node>());
+                }
+            }
+            for (size_t j = 0; j < js.size(); ++j) {
+                const auto& value = js.at(j);
+                auto& child = m_children[j];
                 child->name = value;
             }
         } else if (js.is_object()) {
+            size_t needed_nodes = js.size() - m_children.size();
+            if (needed_nodes > 0) {
+                for (size_t j = 0; j < needed_nodes; ++j) {
+                    m_children.emplace_back(std::make_unique<Node>());
+                }
+            }
+            size_t index = 0;
             for (const auto& [key, value] : js.items()) {
-                auto& child = m_children.emplace_back(std::make_unique<Node>());
+                auto& child = m_children[index];
                 child->name = key;
                 child->set_names(value);
             }
@@ -72,6 +89,19 @@ struct NamedMultiMesh::Node
         }
     }
 
+    bool has_name_tokens(const std::span<const int64_t>& t) const
+    {
+        if (!t.empty()) {
+            const size_t index = t.front();
+            if (index < m_children.size() && bool(m_children[index])) {
+                const auto& child = *m_children[index];
+                child.has_name_tokens(t.subspan<1>());
+            } else {
+                return false;
+            }
+        }
+        return true;
+    }
 
     void update_child_names()
     {
@@ -113,36 +143,38 @@ struct NamedMultiMesh::Node
         for (const auto& c_ptr : nlohmann_json_t.m_children) {
             value.update(*c_ptr);
         }
-        value["ptr"] = fmt::format("{}", fmt::ptr(&nlohmann_json_t));
+        value["@ptr"] = fmt::format("{}", fmt::ptr(&nlohmann_json_t));
         nlohmann_json_j[nlohmann_json_t.name] = value;
     }
 };
 
-NamedMultiMesh::NamedMultiMesh(Mesh& m, const std::string& root_name)
+NamedMultiMesh::NamedMultiMesh(Mesh& m, const std::string& root_name, bool do_pop)
 {
-    set_mesh(m);
+    set_mesh(m, do_pop);
     set_name(root_name);
 }
-NamedMultiMesh::NamedMultiMesh(Mesh& m, const std::string_view& root_name)
+NamedMultiMesh::NamedMultiMesh(Mesh& m, const std::string_view& root_name, bool do_pop)
 {
-    set_mesh(m);
+    set_mesh(m, do_pop);
     set_name(root_name);
 }
-NamedMultiMesh::NamedMultiMesh(Mesh& m, const nlohmann::json& root_name)
+NamedMultiMesh::NamedMultiMesh(Mesh& m, const nlohmann::json& root_name, bool do_pop)
 {
-    set_mesh(m);
+    set_mesh(m, do_pop);
     set_names(root_name);
 }
 
-void NamedMultiMesh::set_root(Mesh& m)
+void NamedMultiMesh::set_root(Mesh& m, bool do_populate_unnamed)
 {
     m_root = m.shared_from_this();
-    populate_default_names();
+    if (do_populate_unnamed) {
+        populate_default_names();
+    }
 }
 
-void NamedMultiMesh::set_mesh(Mesh& m)
+void NamedMultiMesh::set_mesh(Mesh& m, bool do_populate_unnamed)
 {
-    set_root(m);
+    set_root(m, do_populate_unnamed);
     // set_root(m.get_multi_mesh_root());
 }
 
@@ -302,6 +334,8 @@ std::string_view NamedMultiMesh::root_name() const
 
     return m_name_root->name;
 }
+
+
 std::string NamedMultiMesh::name(const std::vector<int64_t>& id) const
 {
     return get_name(id);
@@ -364,6 +398,15 @@ std::unique_ptr<nlohmann::json> NamedMultiMesh::get_names_json(const std::string
     return js_ptr;
 }
 
+std::map<std::string, Mesh&> NamedMultiMesh::all_meshes()
+// std::map<std::string, std::shared_ptr<const Mesh>> NamedMultiMesh::all_meshes() const
+{
+    std::map<std::string, Mesh&> meshes;
+    for (const auto& mptr : m_root->get_all_meshes()) {
+        meshes.emplace(get_name(*mptr), *mptr);
+    }
+    return meshes;
+}
 std::map<std::string, const Mesh&> NamedMultiMesh::all_meshes() const
 // std::map<std::string, std::shared_ptr<const Mesh>> NamedMultiMesh::all_meshes() const
 {
@@ -382,9 +425,20 @@ std::string NamedMultiMesh::get_name(const Mesh& m) const
     return fmt::format("{}", fmt::join(toks, "."));
 }
 
-    std::string NamedMultiMesh::get_path(const wmtk::attribute::MeshAttributeHandle& m) const {
-        return fmt::format("{}/{}", get_name(m.mesh()), m.name());
-    }
+bool NamedMultiMesh::has_name(const Mesh& m) const
+{
+    const auto id = get_id(m);
+    return has_name(id);
+}
+bool NamedMultiMesh::has_name(const std::vector<int64_t>& id) const
+{
+    return m_name_root->has_name_tokens(id);
+}
+
+std::string NamedMultiMesh::get_path(const wmtk::attribute::MeshAttributeHandle& m) const
+{
+    return fmt::format("{}/{}", get_name(m.mesh()), m.name());
+}
 void NamedMultiMesh::append_child_mesh_names(const Mesh& parent, const NamedMultiMesh& o)
 {
     const std::vector<int64_t> parent_id = get_id(parent);
@@ -422,6 +476,7 @@ bool NamedMultiMesh::is_valid(bool pass_exceptions) const
                 "path [{}]",
                 fmt::join(get_id(*mptr), ","),
                 fmt::join(mptr->absolute_multi_mesh_id(), ","));
+            nlohmann::json js = *m_name_root;
             get_name(*mptr);
         } catch (const std::range_error& e) {
             return throw_or_except(e);

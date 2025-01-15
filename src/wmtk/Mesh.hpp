@@ -495,8 +495,15 @@ public:
     const Mesh& get_multi_mesh_mesh(const std::vector<int64_t>& absolute_id) const;
 
 
+    // will error out if mesh does not exist
     Mesh& get_multi_mesh_child_mesh(const std::vector<int64_t>& relative_id);
+    // will error out if mesh does not exist
     const Mesh& get_multi_mesh_child_mesh(const std::vector<int64_t>& relative_id) const;
+
+    // will error out if mesh does not exist
+    Mesh& get_multi_mesh_parent_mesh();
+    // will error out if mesh does not exist
+    const Mesh& get_multi_mesh_parent_mesh() const;
 
     /**
      * @brief returns the direct multimesh child meshes for the current mesh
@@ -512,6 +519,7 @@ public:
      * @brief returns all meshes in multimesh
      */
     std::vector<std::shared_ptr<const Mesh>> get_all_meshes() const;
+    std::vector<std::shared_ptr<Mesh>> get_all_meshes() ;
 
 
     /**
@@ -549,6 +557,7 @@ public:
      * mesh will be invalidated by deregistration.
      */
     void deregister_child_mesh(const std::shared_ptr<Mesh>& child_mesh_ptr);
+    void deregister_child_mesh(Mesh& );
 
 
 private:

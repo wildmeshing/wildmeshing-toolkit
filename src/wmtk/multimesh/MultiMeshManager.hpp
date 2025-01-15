@@ -150,7 +150,7 @@ public:
      * mesh becomes the new root for its own children. Attribute handles for the child and parent
      * mesh will be invalidated by deregistration.
      */
-    void deregister_child_mesh(Mesh& my_mesh, const std::shared_ptr<Mesh>& child_mesh_ptr);
+    void deregister_child_mesh(Mesh& my_mesh, Mesh& child_mesh);
 
     /**
      * @brief Clean up child data after deleting attributes.
@@ -347,6 +347,8 @@ public:
      * @param my_mesh the mesh that this structure is owned by
      */
     Mesh& get_root_mesh(Mesh& my_mesh);
+    Mesh& get_parent_mesh(Mesh& my_mesh);
+    const Mesh& get_parent_mesh(const Mesh& my_mesh) const;
     std::vector<std::shared_ptr<Mesh>> get_child_meshes() const;
 
     void serialize(io::MeshWriter& writer, const Mesh* local_root = nullptr) const;

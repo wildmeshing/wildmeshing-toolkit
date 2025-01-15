@@ -120,6 +120,12 @@ int main(int argc, char* argv[])
     for (const auto& attr : options.pass_through_attributes) {
         spdlog::info("Pass through: {}", attr.name());
     }
+    if (j.contains("tag_attributes")) {
+        for (const auto& other : j["tag_attributes"]) {
+            options.tag_attributes.emplace_back(
+                wmtk::components::multimesh::utils::get_attribute(mc, other));
+        }
+    }
 
     options.mesh_collection = &mc;
     if(j.contains("intermediate_output_format")) {

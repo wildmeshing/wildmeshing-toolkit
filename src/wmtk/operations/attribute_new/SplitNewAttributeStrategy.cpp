@@ -109,6 +109,18 @@ typename SplitNewAttributeStrategy<T>::SplitRibFuncType SplitNewAttributeStrateg
                 return b;
             }
         };
+    case SplitRibBasicStrategy::Min:
+        return [](const VT& a, const VT& b, const std::bitset<2>& bs) -> VT {
+            if (bs[0] == bs[1]) {
+                return (a.array() < b.array()).select(a,b);
+
+            } else if (bs[0]) {
+                return a;
+
+            } else {
+                return b;
+            }
+        };
     case SplitRibBasicStrategy::Mean:
         return [](const VT& a, const VT& b, const std::bitset<2>& bs) -> VT {
             if (bs[0] == bs[1]) {
@@ -156,6 +168,20 @@ SplitNewAttributeStrategy<Rational>::standard_split_rib_strategy(
         return [](const VT& a, const VT& b, const std::bitset<2>& bs) -> VT {
             if (!bs[0] && bs[1]) {
                 return a;
+            } else {
+                return b;
+            }
+        };
+    case SplitRibBasicStrategy::Min:
+        return [](const VT& a, const VT& b, const std::bitset<2>& bs) -> VT {
+            if (bs[0] == bs[1]) {
+                return VT::Constant(a.rows(),0);
+                //return (a.array() < b.array()).select(a,b);
+                //return (a.array() == b.array()).select(a, VT::Constant(a.rows(),0));
+
+            } else if (bs[0]) {
+                return a;
+
             } else {
                 return b;
             }

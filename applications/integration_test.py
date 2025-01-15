@@ -106,12 +106,14 @@ class IntegrationTest(unittest.TestCase):
         input_js[oracle_tag] = os.path.abspath(os.path.join(self.config_folder, output_json_file))
         input_js[root_tag ] = self.get_root_path(input_js)
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=True) as input_json:
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as input_json:
             json.dump(input_js, input_json)
             input_json.file.close()
 
             res = self.execute_json(input_json.name)
 
+        if res.returncode != 0:
+            print(res)
 
         assert(res.returncode == 0)
 

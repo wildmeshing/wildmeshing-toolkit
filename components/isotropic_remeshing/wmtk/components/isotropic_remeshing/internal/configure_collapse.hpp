@@ -18,11 +18,11 @@ struct IsotropicRemeshingOptions;
 
 namespace internal {
 
-std::shared_ptr<invariants::InvariantCollection> collapse_core_invariants(
+std::shared_ptr<wmtk::invariants::InvariantCollection> collapse_core_invariants(
     Mesh& m,
     const IsotropicRemeshingOptions&);
 
-std::shared_ptr<invariants::InvariantCollection> collapse_invariants(
+std::shared_ptr<wmtk::invariants::InvariantCollection> collapse_invariants(
     Mesh& m,
     const IsotropicRemeshingOptions&);
 void configure_collapse(operations::EdgeCollapse& ec, Mesh& m, const IsotropicRemeshingOptions&);
