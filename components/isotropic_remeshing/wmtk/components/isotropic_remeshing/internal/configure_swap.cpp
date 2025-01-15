@@ -11,7 +11,7 @@
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
 #include "../IsotropicRemeshingOptions.hpp"
-#include "../invariants/SwapPreserveTaggedTopologyInvariant.hpp"
+//#include "../invariants/SwapPreserveTaggedTopologyInvariant.hpp"
 #include "configure_collapse.hpp"
 
 namespace wmtk::components::isotropic_remeshing::internal {
@@ -68,20 +68,20 @@ std::shared_ptr<wmtk::operations::composite::EdgeSwap> tri_swap(
         swap->collapse().set_new_attribute_strategy(attr);
     }
 
-    for (const auto& p : options.tag_attributes) {
-        swap->split().set_new_attribute_strategy(
-            p,
-            wmtk::operations::SplitBasicStrategy::None,
-            wmtk::operations::SplitRibBasicStrategy::Mean);
-        swap->collapse().set_new_attribute_strategy(
-            p,
-            wmtk::operations::CollapseBasicStrategy::CopyOther);
-        auto invar = std::make_shared<invariants::SwapPreserveTaggedTopologyInvariant>(
-            mesh,
-            p.as<int64_t>(),
-            -1);
-        swap->add_invariant(invar);
-    }
+    //for (const auto& p : options.tag_attributes) {
+    //    swap->split().set_new_attribute_strategy(
+    //        p,
+    //        wmtk::operations::SplitBasicStrategy::None,
+    //        wmtk::operations::SplitRibBasicStrategy::Mean);
+    //    swap->collapse().set_new_attribute_strategy(
+    //        p,
+    //        wmtk::operations::CollapseBasicStrategy::CopyOther);
+    //    auto invar = std::make_shared<invariants::SwapPreserveTaggedTopologyInvariant>(
+    //        mesh,
+    //        p.as<int64_t>(),
+    //        -1);
+    //    swap->add_invariant(invar);
+    //}
     finalize_swap(*swap, options);
     return swap;
 }

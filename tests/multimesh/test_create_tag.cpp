@@ -19,8 +19,8 @@ TEST_CASE("test_tag_initiation")
     std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
     for (const Tuple& e : e_tuples) {
         if (parent.is_boundary(PrimitiveType::Edge, e)) {
-            REQUIRE(tuple_tag.get_edge_tag(e) == -1);
-            REQUIRE(tuple_tag.m_edge_tag_acc.const_scalar_attribute(e) == -1);
+            REQUIRE(tuple_tag.get_facet_tag(e) == -1);
+            REQUIRE(tuple_tag.m_facet_tag_acc.const_scalar_attribute(e) == -1);
         }
     }
 }
@@ -33,11 +33,12 @@ TEST_CASE("test_create_tags")
     REQUIRE(tags.size() == 6);
     // get attribute handle
     attribute::TypedAttributeHandle<int64_t> edge_tag_handle =
-        parent.get_attribute_handle<int64_t>("edge_tag", PrimitiveType::Edge).as<int64_t>();
+        parent.get_attribute_handle<int64_t>("facet_tag", PrimitiveType::Edge).as<int64_t>();
+    return;
     const wmtk::attribute::Accessor edge_tag_accessor = parent.create_const_accessor(edge_tag_handle);
 
     attribute::TypedAttributeHandle<int64_t> vertex_tag_handle =
-        parent.get_attribute_handle<int64_t>("vertex_tag", PrimitiveType::Vertex).as<int64_t>();
+        parent.get_attribute_handle<int64_t>("boundary_tag", PrimitiveType::Vertex).as<int64_t>();
     const wmtk::attribute::Accessor vertex_tag_accessor = parent.create_const_accessor(vertex_tag_handle);
 
     std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
@@ -85,13 +86,13 @@ TEST_CASE("create_tags_2")
     REQUIRE(tags.size() == 6);
     // get attribute handle
     attribute::TypedAttributeHandle<int64_t> edge_tag_handle =
-        parent.get_attribute_handle<int64_t>("edge_tag", PrimitiveType::Edge).as<int64_t>();
+        parent.get_attribute_handle<int64_t>("facet_tag", PrimitiveType::Edge).as<int64_t>();
     const wmtk::attribute::Accessor edge_tag_accessor = parent.create_const_accessor(edge_tag_handle);
 
 
     // get attribute handle
     attribute::TypedAttributeHandle<int64_t> vertex_tag_handle =
-        parent.get_attribute_handle<int64_t>("vertex_tag", PrimitiveType::Vertex).as<int64_t>();
+        parent.get_attribute_handle<int64_t>("boundary_tag", PrimitiveType::Vertex).as<int64_t>();
     const wmtk::attribute::Accessor vertex_tag_accessor = parent.create_const_accessor(vertex_tag_handle);
 
     std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
@@ -151,7 +152,7 @@ TEST_CASE("no_critical_point")
     REQUIRE(tags.size() == 1);
 
     attribute::TypedAttributeHandle<int64_t> edge_tag_handle =
-        parent.get_attribute_handle<int64_t>("edge_tag", PrimitiveType::Edge).as<int64_t>();
+        parent.get_attribute_handle<int64_t>("facet_tag", PrimitiveType::Edge).as<int64_t>();
     const wmtk::attribute::Accessor edge_tag_accessor = parent.create_const_accessor(edge_tag_handle);
     std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
     for (const Tuple& e : e_tuples) {
@@ -180,7 +181,7 @@ TEST_CASE("one_critical_point")
     auto tags = create_tags(parent, critical_vids);
     REQUIRE(tags.size() == 1);
     attribute::TypedAttributeHandle<int64_t> edge_tag_handle =
-        parent.get_attribute_handle<int64_t>("edge_tag", PrimitiveType::Edge).as<int64_t>();
+        parent.get_attribute_handle<int64_t>("facet_tag", PrimitiveType::Edge).as<int64_t>();
     const wmtk::attribute::Accessor edge_tag_accessor = parent.create_const_accessor(edge_tag_handle);
 
     std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);

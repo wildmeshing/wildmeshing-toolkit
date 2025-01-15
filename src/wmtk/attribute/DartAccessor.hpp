@@ -1,6 +1,5 @@
 #pragma once
 
-#include <spdlog/spdlog.h>
 #include <wmtk/autogen/Dart.hpp>
 #include <wmtk/autogen/SimplexAdjacency.hpp>
 #include <wmtk/autogen/SimplexDart.hpp>
@@ -54,16 +53,14 @@ public:
         PrimitiveType FT = mesh().top_simplex_type();
         PrimitiveType BT = FT - 1;
         const autogen::SimplexDart& sd = autogen::SimplexDart::get_singleton(FT);
-        const auto anchor = (*this)[global_id][local_orientation];
-        const auto dual_anchor = (*this)[anchor.global_id()][anchor.local_orientation()];
-        // anchor = A * dual_anchor
 
-        const int8_t act = autogen::find_local_dart_action(
-            sd,
-            dual_anchor.local_orientation(),
-            anchor.local_orientation());
 
-        return autogen::Dart(anchor.global_id(), sd.product(act, local_orientation));
+        const auto anchor = (*this)[global_id][sd.simplex_index(local_orientation, BT)];
+
+
+        return autogen::Dart(
+            anchor.global_id(),
+            sd.product(anchor.local_orientation(), local_orientation));
     }
 
 protected:
@@ -87,12 +84,13 @@ public:
     template <typename IT, typename OT>
     autogen::SimplexAdjacency<Dim>& operator[](const autogen::_Dart<IT, OT>& t)
     {
-        return IndexBaseType::operator[](m_base_accessor.index(t));
+        return IndexBaseType::operator[](t.global_id());
+        // return IndexBaseType::operator[](m_base_accessor.index(t));
     }
     template <typename IT, typename OT>
     const autogen::SimplexAdjacency<Dim>& operator[](const autogen::_Dart<IT, OT>& t) const
     {
-        return IndexBaseType::operator[](m_base_accessor.index(t));
+        return IndexBaseType::operator[](t.global_id());
     }
 
     template <typename IT, typename OT>
@@ -112,14 +110,13 @@ public:
     template <typename IT, typename OT>
     autogen::DartWrap get_neighbor(const autogen::_Dart<IT, OT>& d)
     {
-        const auto& sa = (*this)[d];
+        auto& sa = (*this)[d];
         return sa[get_boundary_local_index(d)];
     }
 
     static wmtk::attribute::TypedAttributeHandle<int64_t>
     register_attribute(MeshType& m, const std::string_view& name, bool do_populate = false)
     {
-        spdlog::info("Starting to register");
         auto handle = m.template register_attribute_typed<int64_t>(
             std::string(name),
             m.top_simplex_type() - 1,
@@ -127,37 +124,35 @@ public:
             false,
             -1);
         if (do_populate) {
-            spdlog::info("Creating accessor");
             DartAccessor acc(m, handle);
-            spdlog::info("Starting to populate");
             acc.populate();
         }
-        spdlog::info("Returning handle");
         return handle;
     }
 
     void fuse(const autogen::Dart& d, const autogen::Dart& od)
     {
-        autogen::SimplexAdjacency<Dim>& sad = (*this)[d];
-        autogen::SimplexAdjacency<Dim>& saod = (*this)[od];
-        sad[get_boundary_local_index(d)] = od;
-        saod[get_boundary_local_index(od)] = d;
+        const PrimitiveType FT = mesh().top_simplex_type();
+        const autogen::SimplexDart& sd = autogen::SimplexDart::get_singleton(FT);
+        int8_t act =
+            autogen::find_local_dart_action(sd, d.local_orientation(), od.local_orientation());
+        int8_t invact = sd.inverse(act);
+        get_neighbor(d) = autogen::Dart{od.global_id(), act};
+        get_neighbor(od) = autogen::Dart{d.global_id(), invact};
     }
     void populate()
     {
-        PrimitiveType FT = mesh().top_simplex_type();
-        PrimitiveType BT = FT - 1;
+        const PrimitiveType FT = mesh().top_simplex_type();
+        const PrimitiveType BT = FT - 1;
         const autogen::SimplexDart& sd = autogen::SimplexDart::get_singleton(FT);
         for (Tuple t : mesh().get_all(BT)) {
             autogen::Dart d = sd.dart_from_tuple(t);
             if (mesh().is_boundary(BT, t)) {
-                int8_t local_index = sd.simplex_index(d, BT);
-                assert(local_index == get_boundary_local_index(d));
-                autogen::SimplexAdjacency<Dim>& sad = (*this)[d];
-                sad[local_index] = autogen::Dart();
+                get_neighbor(d) = autogen::Dart();
             } else {
-                Tuple ot = mesh().switch_tuple(t, FT);
-                autogen::Dart od = sd.dart_from_tuple(t);
+                const Tuple ot = mesh().switch_tuple(t, FT);
+                assert(ot != t);
+                const autogen::Dart od = sd.dart_from_tuple(ot);
                 fuse(d, od);
             }
         }

@@ -68,7 +68,7 @@ struct NamedMultiMesh::Node
             }
             size_t index = 0;
             for (const auto& [key, value] : js.items()) {
-                auto& child = m_children[index];
+                auto& child = m_children[index++];
                 child->name = key;
                 child->set_names(value);
             }

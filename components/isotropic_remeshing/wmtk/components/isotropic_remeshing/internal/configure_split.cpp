@@ -38,10 +38,10 @@ void configure_split(operations::EdgeSplit& es, Mesh& m, const IsotropicRemeshin
         es.set_new_attribute_strategy(attr);
     }
 
-    for (const auto& attr : options.tag_attributes) {
-        //es.set_new_attribute_strategy(attr, wmtk::operations::SplitBasicStrategy::None, wmtk::operations::SplitRibBasicStrategy::None);
-        es.set_new_attribute_strategy(attr, wmtk::operations::SplitBasicStrategy::Copy, wmtk::operations::SplitRibBasicStrategy::Min);
-    }
+    //for (const auto& attr : options.tag_attributes) {
+    //    //es.set_new_attribute_strategy(attr, wmtk::operations::SplitBasicStrategy::None, wmtk::operations::SplitRibBasicStrategy::None);
+    //    es.set_new_attribute_strategy(attr, wmtk::operations::SplitBasicStrategy::Copy, wmtk::operations::SplitRibBasicStrategy::Min);
+    //}
     assert(es.attribute_new_all_configured());
 }
 
