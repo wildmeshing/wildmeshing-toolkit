@@ -115,6 +115,7 @@ int main(int argc, char* argv[])
         for (const auto& other : j["pass_through_attributes"]) {
             options.pass_through_attributes.emplace_back(
                 wmtk::components::multimesh::utils::get_attribute(mc, other));
+            assert(options.pass_through_attributes.back().is_valid());
         }
     }
     for (const auto& attr : options.pass_through_attributes) {

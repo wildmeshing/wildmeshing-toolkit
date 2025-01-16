@@ -20,7 +20,11 @@ bool EdgeSplit::attribute_new_all_configured() const
     for (const auto& strat : m_new_attr_strategies) {
         if (strat->invalid_state()) {
             all_configured = false;
-            wmtk::logger().warn("Attribute new {} on {}-simplices was not configured on mesh [{}]", strat->name(), get_primitive_type_id(strat->primitive_type()), fmt::join(strat->mesh().absolute_multi_mesh_id(),","));
+            wmtk::logger().warn(
+                "Attribute new {} on {}-simplices was not configured on mesh [{}]",
+                strat->name(),
+                get_primitive_type_id(strat->primitive_type()),
+                fmt::join(strat->mesh().absolute_multi_mesh_id(), ","));
         }
     }
     return all_configured;
@@ -39,9 +43,11 @@ EdgeSplit::EdgeSplit(Mesh& m)
                         if constexpr (attribute::MeshAttributeHandle::template handle_type_is_basic<
                                           HandleType>()) {
                             using T = typename HandleType::Type;
-                            m_new_attr_strategies.emplace_back(
-                                std::make_shared<operations::SplitNewAttributeStrategy<T>>(
-                                    attribute::MeshAttributeHandle(mesh, attr)));
+                            if (mesh.top_simplex_type() >= wmtk::PrimitiveType::Edge) {
+                                m_new_attr_strategies.emplace_back(
+                                    std::make_shared<operations::SplitNewAttributeStrategy<T>>(
+                                        attribute::MeshAttributeHandle(mesh, attr)));
+                            }
                         }
                     },
                     attr);
@@ -74,7 +80,7 @@ EdgeSplit::get_new_attribute_strategy(const attribute::MeshAttributeHandle& attr
         if (s->matches_attribute(attribute)) return s;
     }
 
-    throw std::runtime_error("unable to find attribute");
+    throw std::runtime_error("unable to find attribute in get_new_attribute_strategy");
 }
 
 
@@ -89,21 +95,21 @@ void EdgeSplit::set_new_attribute_strategy(
     bool done = false;
     for (size_t i = 0; i < m_new_attr_strategies.size(); ++i) {
         if (m_new_attr_strategies[i]->matches_attribute(attribute)) {
-            if(done) {
+            if (done) {
                 throw std::runtime_error("Two of one attr strat");
             }
             auto old = m_new_attr_strategies[i];
             m_new_attr_strategies[i] = other;
             other->invalid_state();
             done = true;
-            //return;
+            // return;
         }
     }
-    if(done) {
-        return ;
+    if (done) {
+        return;
     }
 
-    throw std::runtime_error("unable to find attribute");
+    throw std::runtime_error("unable to find attribute in set_new_attribute_strategy");
 }
 
 void EdgeSplit::set_new_attribute_strategy(

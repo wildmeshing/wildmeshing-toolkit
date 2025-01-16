@@ -2,14 +2,12 @@
 #include <wmtk/TriMesh.hpp>
 using namespace wmtk;
 std::vector<Tuple> boundary_edges_to_tuples(
-    const wmtk::TriMesh& m,
+    const EigenMeshes& em,
     const std::vector<int64_t>& indices)
 {
     std::vector<Tuple> tups;
     tups.reserve(indices.size());
 
-    auto handle = m.get_attribute_handle<int64_t>("m_fv", wmtk::PrimitiveType::Triangle);
-    auto acc = m.create_const_accessor<int64_t>(handle);
     for (size_t j = 0; j < indices.size() - 1; ++j) {
         int64_t a = indices[j];
         int64_t b = indices[j + 1];
@@ -17,8 +15,8 @@ std::vector<Tuple> boundary_edges_to_tuples(
             continue;
         }
 
-        const auto& fa = em_a.VF.at(a);
-        const auto& fb = em_a.VF.at(b);
+        const auto& fa = em.VF.at(a);
+        const auto& fb = em.VF.at(b);
         // spdlog::info(
         //     "pair {} {} got Faces {}: {}, {}: {}",
         //     ind_a,
@@ -34,7 +32,7 @@ std::vector<Tuple> boundary_edges_to_tuples(
         assert(fs.size() == 1); // must be true for a boundary edge
 
         int64_t fid = fs[0];
-        auto f = em_a.F.M.row(fid);
+        auto f = em.F.M.row(fid);
         // spdlog::info("{} | {} => {} {}", fid, fmt::join(f, ","), a, b);
         int8_t lvid = -1;
         int8_t leid = -1;
@@ -45,22 +43,7 @@ std::vector<Tuple> boundary_edges_to_tuples(
                 leid = k;
             }
         }
-        Tuple& t = tups.emplace_back(lvid, leid, -1, fid + em_a.V.start());
-        std::cout << (acc.const_vector_attribute(Tuple(lvid, leid, -1, fid))).transpose()
-                  << std::endl;
-        assert(
-            acc.const_vector_attribute(Tuple(lvid, leid, -1, fid)) ==
-            V.row(em_a.V.start() + a).transpose());
-        // assert(acc.const_vector_attribute(Tuple(3 -lvid - leid, leid, -1, fid)) ==
-        // V.row(em_b.V.start() + b).transpose());
-        // assert(patch_acc.const_vector_attribute(t) == V.row(em_a.V.start() +
-        // a).transpose());
-        // assert(patch_acc.const_vector_attribute(patch_mesh->switch_vertex(t)) ==
-        // V.row(em_b.V.start() + b).transpose());
-        //  spdlog::info("{} {}", lvid, leid);
-        //  assert(m.is_valid(t));
+        Tuple& t = tups.emplace_back(lvid, leid, -1, fid + em.F.start());
     }
-    edge_meshes[edge_mesh_name] = std::make_tuple(ind_a, std::move(tups));
-    fuse_names_ordered.emplace_back(edge_mesh_name);
-}
+    return tups;
 }

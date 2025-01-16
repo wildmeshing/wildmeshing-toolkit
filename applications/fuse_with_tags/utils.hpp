@@ -18,9 +18,9 @@ struct EigenMesh
     Eigen::MatrixX<T> M;
 
     template <typename D>
-    void assign(Eigen::MatrixBase<D>& m) const
+    void assign(Eigen::MatrixBase<D>& m, T offset = 0) const
     {
-        m.block(start(), 0, M.rows(), M.cols()) = M;
+        m.block(start(), 0, M.rows(), M.cols()) = M.array() + offset;
         // m(Eigen::seq(start(), end()), Eigen::all) = M;
     }
 };
@@ -33,11 +33,10 @@ struct EigenMeshes
 
     void compute_vf();
 
-    bool in_v_range(int64_t index ) const {
-        return index >= V.start() && index < V.end();
-    }
-    bool in_f_range(int64_t index ) const {
-        return index >= F.M.minCoeff()  && index <= F.M.maxCoeff();
+    bool in_v_range(int64_t index) const { return index >= V.start() && index < V.end(); }
+    bool in_f_range(int64_t index) const
+    {
+        return index >= F.M.minCoeff() && index <= F.M.maxCoeff();
     }
 };
 

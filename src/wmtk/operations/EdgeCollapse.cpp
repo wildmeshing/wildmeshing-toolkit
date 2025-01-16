@@ -17,7 +17,11 @@ bool EdgeCollapse::attribute_new_all_configured() const
     for (const auto& strat : m_new_attr_strategies) {
         if (strat->invalid_state()) {
             all_configured = false;
-            wmtk::logger().warn("Attribute new {} on {}-simplices was not configured on mesh [{}]", strat->name(), get_primitive_type_id(strat->primitive_type()), fmt::join(strat->mesh().absolute_multi_mesh_id(),","));
+            wmtk::logger().warn(
+                "Attribute new {} on {}-simplices was not configured on mesh [{}]",
+                strat->name(),
+                get_primitive_type_id(strat->primitive_type()),
+                fmt::join(strat->mesh().absolute_multi_mesh_id(), ","));
         }
     }
     return all_configured;
@@ -39,9 +43,11 @@ EdgeCollapse::EdgeCollapse(Mesh& m)
                         if constexpr (attribute::MeshAttributeHandle::template handle_type_is_basic<
                                           HandleType>()) {
                             using T = typename HandleType::Type;
-                            m_new_attr_strategies.emplace_back(
-                                std::make_shared<operations::CollapseNewAttributeStrategy<T>>(
-                                    attribute::MeshAttributeHandle(mesh, attr)));
+                            if (mesh.top_simplex_type() >= wmtk::PrimitiveType::Edge) {
+                                m_new_attr_strategies.emplace_back(
+                                    std::make_shared<operations::CollapseNewAttributeStrategy<T>>(
+                                        attribute::MeshAttributeHandle(mesh, attr)));
+                            }
                         }
                     },
                     attr);

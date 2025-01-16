@@ -10,10 +10,10 @@
 #include <wmtk/components/multimesh/MeshCollection.hpp>
 #include "run.hpp"
 
-#include "fuse.hpp"
-#include <wmtk/components/multimesh/utils/get_attribute.hpp>
 #include <wmtk/components/multimesh/utils/AttributeDescription.hpp>
+#include <wmtk/components/multimesh/utils/get_attribute.hpp>
 #include <wmtk/utils/cast_attribute.hpp>
+#include "fuse.hpp"
 
 wmtk::components::multimesh::NamedMultiMesh& run(
 
@@ -55,14 +55,23 @@ wmtk::components::multimesh::NamedMultiMesh& run(
     }
     */
     std::vector<std::string> names(pairs.size());
-    auto pos_handle = wmtk::components::multimesh::utils::get_attribute(*mptr, wmtk::components::multimesh::utils::AttributeDescription{params.position_attribute_name,0,{}});
+    auto pos_handle = wmtk::components::multimesh::utils::get_attribute(
+        *mptr,
+        wmtk::components::multimesh::utils::AttributeDescription{
+            params.position_attribute_name,
+            0,
+            {}});
     for (auto& [mesh, name] : pairs) {
-        wmtk::utils::cast_attribute<double>(pos_handle, *mesh, std::string(params.position_attribute_name));
+        wmtk::utils::cast_attribute<double>(
+            pos_handle,
+            *mesh,
+            std::string(params.position_attribute_name));
         auto id = mesh->absolute_multi_mesh_id();
         assert(id.size() == 1);
         names[id[0]] = name;
     }
     nlohmann::ordered_json js;
     js[params.output_name] = names;
+    std::cout << js.dump(2) << std::endl;
     return params.collection.emplace_mesh(*mptr, js);
 }
