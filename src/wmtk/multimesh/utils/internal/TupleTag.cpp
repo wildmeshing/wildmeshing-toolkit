@@ -26,17 +26,17 @@ PrimitiveType TupleTag::boundary_type() const
 
 void TupleTag::initialize()
 {
-    std::vector<Tuple> v_tuples = mesh().get_all(PrimitiveType::Vertex);
-    std::vector<Tuple> e_tuples = mesh().get_all(PrimitiveType::Edge);
+    std::vector<Tuple> v_tuples = mesh().get_all(boundary_type());
+    std::vector<Tuple> e_tuples = mesh().get_all(facet_type());
     // initializing all the facet tags to be -1
     for (const Tuple& e : e_tuples) {
-        if (mesh().is_boundary(PrimitiveType::Edge, e)) {
+        if (mesh().is_boundary(facet_type(), e)) {
             set_facet_tag(e, -1);
         }
     }
     // initializing all the boundary tags to be the boundary id
     for (const Tuple& v : v_tuples) {
-        if (mesh().is_boundary(PrimitiveType::Vertex, v)) {
+        if (mesh().is_boundary(boundary_type(), v)) {
             set_boundary_tag(v, vid(v));
         }
     }
@@ -45,21 +45,63 @@ void TupleTag::initialize()
 std::set<int64_t> TupleTag::run()
 {
     std::set<int64_t> tags;
-    std::vector<Tuple> v_tuples = mesh().get_all(PrimitiveType::Vertex);
-    std::vector<Tuple> e_tuples = mesh().get_all(PrimitiveType::Edge);
-    int64_t vid_max = mesh().capacity(PrimitiveType::Vertex);
+    std::vector<Tuple> v_tuples = mesh().get_all(boundary_type());
+    std::vector<Tuple> e_tuples = mesh().get_all(facet_type());
+    int64_t vid_max = mesh().capacity(boundary_type());
     // the pass to tag all vertices
     for (const Tuple& e : e_tuples) {
-        if (mesh().is_boundary(PrimitiveType::Edge, e)) {
+        if (mesh().is_boundary(facet_type(), e)) {
             run(e);
         }
     }
     // the pass to tag all facets
     int64_t facet_tag = 0;
+
+#if defined(DIMENSION_AGNOSTIC_TAG_PROPAGATION)
     for (const Tuple& e : e_tuples) {
-        if (mesh().is_boundary(PrimitiveType::Edge, e)) {
+        if (mesh().is_boundary(facet_type(), e)) {
+            auto boundary_simplices = wmtk::simplex::faces_single_dimension_tuples(
+                mesh(),
+                wmtk::simplex::Simplex(boundary_type(), e),
+                facet_type());
+            bool all_boundary = false;
+            std::vector<bool> is_critical(boundary_simplices.size());
+            for (size_t j = 0; j < boundary_simplices.size(); ++j) {
+                const Tuple& v = boundary_simplices[j];
+                is_critical[j] = is_critical_boundary(v);
+            }
+            /*
+            // both vertices are critical points
+            if (std::min_element(is_critical.begin(), is_critical.end())) {
+                set_facet_tag(e, facet_tag + vid_max);
+                tags.insert(facet_tag + vid_max);
+                facet_tag++;
+            } else if (std::max_element(is_critical.begin(), is_critical.end())) {
+            } else {
+            for (size_t j = 0; j < boundary_simplices.size(); ++j) {
+                (is_critical_boundary(v1)) {
+                int64_t v2_root = boundary_get_root(v2);
+                set_facet_tag(e, v2_root);
+                tags.insert(v2_root);
+            } else if (is_critical_boundary(v2)) {
+                int64_t v1_root = boundary_get_root(v1);
+                set_facet_tag(e, v1_root);
+                tags.insert(v1_root);
+            } else {
+                int64_t v1_root = boundary_get_root(v1);
+                int64_t v2_root = boundary_get_root(v2);
+                assert(v1_root == v2_root);
+                set_facet_tag(e, v1_root);
+                tags.insert(v1_root);
+            }
+            */
+        }
+    }
+#else
+    for (const Tuple& e : e_tuples) {
+        if (mesh().is_boundary(facet_type(), e)) {
             Tuple v1 = e;
-            Tuple v2 = mesh().switch_tuple(e, PrimitiveType::Vertex);
+            Tuple v2 = mesh().switch_tuple(e, boundary_type());
             // both vertices are critical points
             if (is_critical_boundary(v1) && is_critical_boundary(v2)) {
                 set_facet_tag(e, facet_tag + vid_max);
@@ -82,6 +124,8 @@ std::set<int64_t> TupleTag::run()
             }
         }
     }
+
+#endif
     return tags;
 }
 
@@ -112,12 +156,12 @@ void TupleTag::set_facet_tag(const Tuple& tuple, int64_t tag)
 
 int64_t TupleTag::vid(const Tuple& tuple) const
 {
-    return mesh().id(tuple, PrimitiveType::Vertex);
+    return mesh().id(tuple, boundary_type());
 }
 
 Tuple TupleTag::v_tuple(int64_t vid) const
 {
-    Tuple v_tuple = mesh().tuple_from_id(PrimitiveType::Vertex, vid);
+    Tuple v_tuple = mesh().tuple_from_id(boundary_type(), vid);
     return v_tuple;
 }
 
@@ -167,7 +211,7 @@ void TupleTag::boundary_sets_unify(const Tuple& v1, const Tuple& v2)
 void TupleTag::run(const Tuple& e)
 {
     Tuple v1 = e;
-    Tuple v2 = mesh().switch_tuple(e, PrimitiveType::Vertex);
+    Tuple v2 = mesh().switch_tuple(e, boundary_type());
     int64_t vid1 = vid(v1);
     int64_t vid2 = vid(v2);
     // both vertices are critical points
