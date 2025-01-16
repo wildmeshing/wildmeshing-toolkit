@@ -1,64 +1,28 @@
 {
     "input": {
-        "path": "cad/Box_tagged.hdf5",
-        "name_spec_file": "cad/Box_tagged_names.json"
+        "path": "cad/Box_patched.hdf5",
+        "name_spec_file": "cad/Box_patched_names.json"
     },
-    "position_attribute": "pos/vertex_position",
+    "position_attribute": "combo/vertex_position",
     "other_position_attributes": [
-    "pos.0/vertex_position",
-    "pos.1/vertex_position",
-    "pos.2/vertex_position",
-    "pos.3/vertex_position",
-    "pos.4/vertex_position",
-    "pos.5/vertex_position",
     ],
     "pass_through_attributes": [
-    "pos.0/parameter",
-    "pos.1/parameter",
-    "pos.2/parameter",
-    "pos.3/parameter",
-    "pos.4/parameter",
-    "pos.5/parameter",
-    "pos.0/traced_vertex_interpolation_t",
-    "pos.1/traced_vertex_interpolation_t",
-    "pos.2/traced_vertex_interpolation_t",
-    "pos.3/traced_vertex_interpolation_t",
-    "pos.4/traced_vertex_interpolation_t",
-    "pos.5/traced_vertex_interpolation_t",
-    "pos.0/projected_order",
-    "pos.1/projected_order",
-    "pos.2/projected_order",
-    "pos.3/projected_order",
-    "pos.4/projected_order",
-    "pos.5/projected_order",
-    "pos.0/traced_edge_order",
-    "pos.1/traced_edge_order",
-    "pos.2/traced_edge_order",
-    "pos.3/traced_edge_order",
-    "pos.4/traced_edge_order",
-    "pos.5/traced_edge_order"
+        "combo.trims/edge_labels",
+        "combo.patches/patch_labels"
     ],
-    "static_meshes": [
-    "pos.edge_0",
-    "pos.edge_1",
-    "pos.edge_2",
-    "pos.edge_3",
-    "pos.edge_4",
-    "pos.edge_5",
-    "pos.edge_6",
-    "pos.edge_7",
-    "pos.edge_8",
-    "pos.edge_9",
+    "static_mesh_names": [
+        "combo.critical_points",
+        "combo.trims"
     ],
-    "iterations": 30,
-    "length_rel": 0.01,
+    "iterations": 10,
+    "length_rel": 0.1,
     "use_for_periodic": false,
     "edge_swap_mode": "valence",
-    "use_collapse": false,
     "use_split": true,
-    "use_smooth": false,
+    "use_collapse": false,
     "use_swap": false,
-    "envelope_size": 1e-3,
+    "use_smooth": true,
+    "2envelope_size": 1e-3,
     "fix_uv_seam": false,
     "lock_boundary": false,
     "output": {
@@ -67,6 +31,14 @@
     },
     "output2": {
         "path": "box_tagged_output.hdf5",
-        "type": ".hdf5"
+        "type": ".hdf5",
+        "position_attribute": "vertex_position"
+    },
+    "intermediate_output_format2": {
+        "pos": {
+            "path": "box_{:04}",
+            "type": ".vtu",
+            "position_attribute": "vertex_position"
+        }
     }
 }

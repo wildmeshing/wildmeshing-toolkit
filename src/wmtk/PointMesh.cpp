@@ -76,7 +76,7 @@ Tuple PointMesh::tuple_from_id(const PrimitiveType type, const int64_t gid) cons
 
 std::vector<std::vector<TypedAttributeHandle<int64_t>>> PointMesh::connectivity_attributes() const
 {
-    std::vector<std::vector<TypedAttributeHandle<int64_t>>> handles(0);
+    std::vector<std::vector<TypedAttributeHandle<int64_t>>> handles(1);
 
     return handles;
 }

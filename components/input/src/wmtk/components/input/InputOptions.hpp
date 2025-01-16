@@ -7,10 +7,10 @@
 #include <vector>
 
 namespace wmtk::components {
-    namespace utils {
-    class PathResolver;
-    }
+namespace utils {
+class PathResolver;
 }
+} // namespace wmtk::components
 namespace wmtk::components::input {
 
 class InputOptions
@@ -22,9 +22,8 @@ public:
     std::optional<std::vector<std::vector<std::string>>> imported_attributes;
 
 
-
     // either you can have a name spec in json or you can have it in a file
-    nlohmann::json name_spec;
+    nlohmann::ordered_json name_spec;
     std::optional<std::filesystem::path> name_spec_file;
 
     bool validate = false;
@@ -32,13 +31,12 @@ public:
     bool prune_unused_names = false;
 
 
-
-    // many applications use ignore_z_if_zero and imported attribute sonly works for tets. This flag enables that
+    // many applications use ignore_z_if_zero and imported attribute sonly works for tets. This flag
+    // enables that
     bool old_mode = false;
     bool ignore_z_if_zero = false;
 
     bool operator==(const InputOptions& o) const;
-
 };
 
 

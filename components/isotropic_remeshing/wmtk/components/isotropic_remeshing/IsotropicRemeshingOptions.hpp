@@ -27,8 +27,7 @@ struct IsotropicRemeshingOptions
     std::optional<wmtk::attribute::MeshAttributeHandle> visited_edge_flag;
     std::optional<wmtk::attribute::MeshAttributeHandle> target_edge_length;
 
-    // tag attributes can be split into two, or two of the same tag can merge into one
-    std::vector<wmtk::attribute::MeshAttributeHandle> tag_attributes;
+    std::vector<std::string> static_mesh_names;
 
     std::vector<wmtk::attribute::MeshAttributeHandle> pass_through_attributes;
     int64_t iterations = 10;
@@ -68,7 +67,7 @@ struct IsotropicRemeshingOptions
     std::vector<wmtk::attribute::MeshAttributeHandle> all_positions() const;
 
 
-    wmtk::components::multimesh::MeshCollection* mesh_collection;
+    wmtk::components::multimesh::MeshCollection* mesh_collection = nullptr;
     // format for outputting intermediate results. Assumed to just be a frame number, i.e something
     // like format("path_{}.hdf5",0) to generate path_0.hdf5
     std::map<std::string, wmtk::components::output::OutputOptions> intermediate_output_format;

@@ -13,6 +13,7 @@
 #include <wmtk/utils/DisjointSet.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
+#include "edges_to_tuples.hpp"
 
 #include <wmtk/components/multimesh/MeshCollection.hpp>
 
@@ -100,6 +101,7 @@ fuse(
         // igl::writeOBJ(fmt::format("hihi_{}.obj", name), V, F);
     }
 
+
     auto patch_mesh = std::make_shared<wmtk::TriMesh>();
     named_meshes.emplace_back(patch_mesh, "patches");
 
@@ -109,6 +111,11 @@ fuse(
         "patch_labels",
         wmtk::PrimitiveType::Triangle,
         *patch_mesh);
+    // wmtk::mesh_utils::set_matrix_attribute(
+    //     V,
+    //     std::string(position_attribute_name),
+    //     wmtk::PrimitiveType::Vertex,
+    //     *patch_mesh);
     wmtk::utils::DisjointSet Vsets(total_V);
 
     /*
@@ -149,8 +156,52 @@ fuse(
             // spdlog::info("{}", fmt::join(counts, ","));
         }
     }
-    std::map<std::string, std::tuple<int64_t, std::vector<Tuple>>> edge_meshes;
+    std::map<int64_t, std::tuple<int64_t, std::vector<Tuple>>> edge_meshes;
 
+    bool print = true;
+    std::vector<std::string> fuse_names_ordered;
+
+    int64_t edge_mesh_index = 0; // TODO replace when we have numbers for the pairs
+
+    for (const auto& [inds, pairs] : to_fuse) {
+        const auto& [ind_a, ind_b] = inds;
+        const auto& em_a = ranges.at(get_mesh_name(ind_a));
+        std::vector<int64_t> indices;
+        std::transform(
+            pairs.begin(),
+            pairs.end(),
+            std::back_inserter(indices),
+            [](const auto& pr) -> int64_t { return pr[0]; });
+        std::string trim_mesh_name = fmt::format("trim_{}_{}", ind_a, ind_b);
+        auto tups = boundary_edges_to_tuples(em_a, indices);
+        edge_meshes[edge_mesh_index] = std::make_tuple(ind_a, std::move(tups));
+
+        // std::cout << (acc.const_vector_attribute(Tuple(lvid, leid, -1, fid))).transpose()
+        //           << std::endl;
+        // assert(
+        //     acc.const_vector_attribute(Tuple(lvid, leid, -1, fid)) ==
+        //     V.row(em_a.V.start() + a).transpose());
+        // const Mesh& m = all_meshes.at(get_mesh_name(ind_a));
+        // std::string edge_mesh_name = fmt::format("trim_{}_{}", ind_a, ind_b);
+        // std::cout << "====" << edge_mesh_name << std::endl;
+
+        // auto acc = m.create_const_accessor(m.get_attribute_handle_typed<double>(
+        //     std::string(position_attribute_name),
+        //     PrimitiveType::Vertex));
+        //  auto patch_acc =
+        //  patch_mesh->create_const_accessor(patch_mesh->get_attribute_handle_typed<double>(std::string(position_attribute_name),
+        //  PrimitiveType::Vertex));
+        {
+            // assert(acc.const_vector_attribute(Tuple(3 -lvid - leid, leid, -1, fid)) ==
+            // V.row(em_b.V.start() + b).transpose());
+            // assert(patch_acc.const_vector_attribute(t) == V.row(em_a.V.start() +
+            // a).transpose());
+            // assert(patch_acc.const_vector_attribute(patch_mesh->switch_vertex(t)) ==
+            // V.row(em_b.V.start() + b).transpose());
+            //  spdlog::info("{} {}", lvid, leid);
+            //  assert(m.is_valid(t));
+        }
+    }
 
     for (const auto& [inds, pairs] : to_fuse) {
         const auto& [ind_a, ind_b] = inds;
@@ -158,7 +209,6 @@ fuse(
 
         // spdlog::info("{} {}, {} {}", ind_a, ind_b, get_mesh_name(ind_a), get_mesh_name(ind_b));
 
-        std::string trim_mesh_name = fmt::format("trim_{}_{}", ind_a, ind_b);
 
         const auto& em_a = ranges.at(get_mesh_name(ind_a));
 
@@ -166,58 +216,7 @@ fuse(
         const auto& em_b = ranges.at(get_mesh_name(ind_b));
 
 
-        const Mesh& m = all_meshes.at(get_mesh_name(ind_a));
-        std::string edge_mesh_name = fmt::format("trim_{}_{}", ind_a, ind_b);
-        {
-            std::vector<Tuple> tups;
-            tups.reserve(pairs.size());
-
-            for (size_t j = 0; j < pairs.size() - 1; ++j) {
-                int64_t a = pairs[j][0];
-                int64_t b = pairs[j + 1][0];
-                if (a == b) {
-                    continue;
-                }
-
-                const auto& fa = em_a.VF.at(a);
-                const auto& fb = em_a.VF.at(b);
-                // spdlog::info(
-                //     "pair {} {} got Faces {}: {}, {}: {}",
-                //     ind_a,
-                //     ind_b,
-                //     a,
-                //     fmt::join(fa, ","),
-                //     b,
-                //     fmt::join(fb, ","));
-
-                std::vector<int64_t> fs;
-                std::set_intersection(
-                    fa.begin(),
-                    fa.end(),
-                    fb.begin(),
-                    fb.end(),
-                    std::back_inserter(fs));
-
-                assert(fs.size() == 1); // must be true for a boundary edge
-
-                int64_t fid = fs[0];
-                auto f = em_a.F.M.row(fid);
-                // spdlog::info("{} | {} => {} {}", fid, fmt::join(f, ","), a, b);
-                int8_t lvid = -1;
-                int8_t leid = -1;
-                for (int k = 0; k < 3; ++k) {
-                    if (a == f(k)) {
-                        lvid = k;
-                    } else if (b != f(k)) {
-                        leid = k;
-                    }
-                }
-                Tuple& t = tups.emplace_back(lvid, leid, -1, fid + em_a.V.start());
-                // spdlog::info("{} {}", lvid, leid);
-                // assert(m.is_valid(t));
-            }
-            edge_meshes[edge_mesh_name] = std::make_tuple(ind_a, std::move(tups));
-        }
+        print = false;
 
 
         for (auto [ta, tb] : pairs) {
@@ -276,17 +275,17 @@ fuse(
         }
 
 
-        for (int j = 0; j < F.size(); ++j) {
-            int64_t& v = F(j);
-            v = root_indices.at(Vsets.get_root(v));
-        }
-        check_degen("combo", V, F);
+        // for (int j = 0; j < F.size(); ++j) {
+        //     int64_t& v = F(j);
+        //     v = root_indices.at(Vsets.get_root(v));
+        // }
+        // check_degen("combo", V, F);
 
-        for (const auto& v : roots) {
-            assert(v < V.rows());
-        }
-        V = V(roots, Eigen::all).eval();
-        igl::writeOBJ("hi.obj", V, F);
+        // for (const auto& v : roots) {
+        //     assert(v < V.rows());
+        // }
+        // V = V(roots, Eigen::all).eval();
+        // igl::writeOBJ("hi.obj", V, F);
     }
 
 
@@ -294,12 +293,13 @@ fuse(
     auto mptr = std::make_shared<wmtk::TriMesh>();
 
     mptr->initialize(F);
-    wmtk::mesh_utils::set_matrix_attribute(
+    auto pos_handle = wmtk::mesh_utils::set_matrix_attribute(
         V,
         std::string(position_attribute_name),
         wmtk::PrimitiveType::Vertex,
         *mptr);
 
+    auto pos_acc = mptr->create_accessor<double>(pos_handle);
 
     assert(mptr->is_connectivity_valid());
     /*
@@ -343,38 +343,51 @@ fuse(
     size_t total_edges = 0;
     for (const auto& [name, pr] : edge_meshes) {
         const auto& [mesh_id, tups] = pr;
+        spdlog::info("{} has {} edges", name, tups.size());
         total_edges += tups.size();
     }
     RowVectors2l E(total_edges, 2);
+    E.setConstant(-1);
     VectorX<int64_t> edge_labels(total_edges);
 
     size_t current_vertex_size = 0;
     size_t current_edge_size = 0;
     std::vector<std::array<Tuple, 2>> map(total_edges);
     index = 0;
-    for (const auto& [name, pr] : edge_meshes) {
+    for (const auto& name : fuse_names_ordered) {
+        std::cout << "===" << name << std::endl;
+        // for (const auto& [name, pr] : edge_meshes) {
+        const auto& pr = edge_meshes[name];
         const auto& [mesh_id, tups] = pr;
         const auto& mesh_a = all_meshes.at(get_mesh_name(mesh_id));
         const auto& range_a = ranges.at(get_mesh_name(mesh_id));
 
-        patch_labels.segment(current_edge_size, tups.size()).setConstant(index++);
+        edge_labels.segment(current_edge_size, tups.size()).setConstant(index++);
 
         auto EB = E.block(current_edge_size, 0, tups.size(), 2);
         for (int k = 0; k < tups.size(); ++k) {
             EB.row(k) << current_vertex_size + k, current_vertex_size + k + 1;
-        }
-        for (size_t j = 0; j < tups.size(); ++j) {
-            size_t global_index = current_edge_size + j;
-            auto& m = map[global_index];
+            size_t global_edge_index = current_edge_size + k;
+            auto& m = map[global_edge_index];
 
-            m[0] = Tuple(0, -1, -1, global_index);
-            m[1] = patch_mesh->map_to_parent_tuple(simplex::Simplex(PrimitiveType::Edge, tups[j]));
+            m[0] = Tuple(1, -1, -1, global_edge_index);
+            m[1] = patch_mesh->map_to_parent_tuple(simplex::Simplex(PrimitiveType::Edge, tups[k]));
+            std::cout << pos_acc.const_vector_attribute(tups[k]).transpose() << std::endl;
+            assert(m[1] == tups[k]);
         }
+        std::cout << "===" << std::endl;
         current_vertex_size += tups.size() + 1;
         current_edge_size += tups.size();
     }
     auto em_ptr = std::make_shared<wmtk::EdgeMesh>();
     em_ptr->initialize(E);
+
+    RowVectors3l FE(total_edges, 3);
+
+    FE.leftCols<2>() = E;
+    FE.col(2) = edge_labels;
+    // std::cout << FE << std::endl;
+
 
     wmtk::mesh_utils::set_matrix_attribute(
         edge_labels,

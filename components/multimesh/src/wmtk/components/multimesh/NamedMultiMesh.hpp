@@ -24,7 +24,7 @@ public:
     NamedMultiMesh(Mesh& m, const std::string_view& root_name, bool do_populate_child_names = true);
     explicit NamedMultiMesh(
         Mesh& m,
-        const nlohmann::json& root_name,
+        const nlohmann::ordered_json& root_name,
         bool do_populate_missing_names = true);
 
     // Explicit constructors to remove ambiguities between string_view and json constructors
@@ -44,12 +44,12 @@ public:
 
     /// sets just the name of the root mesh, keeping child names the same
     void set_name(const std::string_view& root_name = "");
-    void set_names(const nlohmann::json& js);
+    void set_names(const nlohmann::ordered_json& js);
     void populate_default_names();
     void set_root(Mesh& m, bool do_populate_unnamed = true);
     void append_child_mesh_names(const Mesh& parent, const NamedMultiMesh& o);
 
-    std::unique_ptr<nlohmann::json> get_names_json(const std::string_view& path = "") const;
+    std::unique_ptr<nlohmann::ordered_json> get_names_json(const std::string_view& path = "") const;
 
     std::string_view root_name() const;
     std::string name(const std::vector<int64_t>& id) const;

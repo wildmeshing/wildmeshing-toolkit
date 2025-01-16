@@ -1,4 +1,5 @@
 #include "configure_swap.hpp"
+#include <wmtk/components/multimesh/MeshCollection.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
@@ -10,6 +11,7 @@
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
+#include "../invariants/NoChildSimplexInvariant.hpp"
 #include "../IsotropicRemeshingOptions.hpp"
 //#include "../invariants/SwapPreserveTaggedTopologyInvariant.hpp"
 #include "configure_collapse.hpp"
@@ -68,6 +70,14 @@ std::shared_ptr<wmtk::operations::composite::EdgeSwap> tri_swap(
         swap->collapse().set_new_attribute_strategy(attr);
     }
 
+    if (options.mesh_collection != nullptr) {
+        for (const auto& mesh_name : options.static_mesh_names) {
+            auto& mesh2 = options.mesh_collection->get_mesh(mesh_name);
+            swap->split().add_invariant(std::make_shared<invariants::NoChildSimplexInvariant>(mesh,mesh2));
+            swap->collapse().add_invariant(std::make_shared<invariants::NoChildSimplexInvariant>(mesh,mesh2));
+
+        }
+    }
     //for (const auto& p : options.tag_attributes) {
     //    swap->split().set_new_attribute_strategy(
     //        p,

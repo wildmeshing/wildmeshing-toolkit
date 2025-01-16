@@ -5,8 +5,8 @@
 #include <wmtk/io/read_mesh.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
-#include "InputOptions.hpp"
 #include <wmtk/utils/verify_simplex_index_valences.hpp>
+#include "InputOptions.hpp"
 
 namespace wmtk::components::input {
 
@@ -78,29 +78,30 @@ multimesh::NamedMultiMesh input(
     if (!options.name_spec.is_null()) {
         mm.set_names(options.name_spec);
     } else if (options.name_spec_file.has_value()) {
-        std::ifstream ifs(options.name_spec_file.value());
-        nlohmann::json js;
+        auto [path, succ] = resolver.resolve(*options.name_spec_file);
+        assert(succ);
+        std::ifstream ifs(path);
+        nlohmann::ordered_json js;
         ifs >> js;
         mm.set_names(js);
     }
 
-    if(options.validate) {
-        for(auto& mptr: mm.root().get_all_meshes()) {
-            if(!mm.has_name(*mptr) && !mptr->is_multi_mesh_root()) {
-
+    if (options.validate) {
+        for (auto& mptr : mm.root().get_all_meshes()) {
+            if (!mm.has_name(*mptr) && !mptr->is_multi_mesh_root()) {
                 mptr->get_multi_mesh_parent_mesh().deregister_child_mesh(mptr);
-
             }
         }
     }
 
-    if(options.validate) {
-        for(const auto& mptr: mm.root().get_all_meshes()) {
-            if(!wmtk::utils::verify_simplex_index_valences(*mptr)) {
-                throw std::runtime_error(fmt::format("Mesh {} was not valid, check env WMTK_LOGGER_LEVEL=debug for more info", mm.get_name(*mptr)));
+    if (options.validate) {
+        for (const auto& mptr : mm.root().get_all_meshes()) {
+            if (!wmtk::utils::verify_simplex_index_valences(*mptr)) {
+                throw std::runtime_error(fmt::format(
+                    "Mesh {} was not valid, check env WMTK_LOGGER_LEVEL=debug for more info",
+                    mm.get_name(*mptr)));
             }
         }
-
     }
 
     return mm;

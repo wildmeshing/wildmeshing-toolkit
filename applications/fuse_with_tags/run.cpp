@@ -11,6 +11,9 @@
 #include "run.hpp"
 
 #include "fuse.hpp"
+#include <wmtk/components/multimesh/utils/get_attribute.hpp>
+#include <wmtk/components/multimesh/utils/AttributeDescription.hpp>
+#include <wmtk/utils/cast_attribute.hpp>
 
 wmtk::components::multimesh::NamedMultiMesh& run(
 
@@ -52,12 +55,14 @@ wmtk::components::multimesh::NamedMultiMesh& run(
     }
     */
     std::vector<std::string> names(pairs.size());
-    for (const auto& [mesh, name] : pairs) {
+    auto pos_handle = wmtk::components::multimesh::utils::get_attribute(*mptr, wmtk::components::multimesh::utils::AttributeDescription{params.position_attribute_name,0,{}});
+    for (auto& [mesh, name] : pairs) {
+        wmtk::utils::cast_attribute<double>(pos_handle, *mesh, std::string(params.position_attribute_name));
         auto id = mesh->absolute_multi_mesh_id();
         assert(id.size() == 1);
         names[id[0]] = name;
     }
-    nlohmann::json js;
+    nlohmann::ordered_json js;
     js[params.output_name] = names;
     return params.collection.emplace_mesh(*mptr, js);
 }

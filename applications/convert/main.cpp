@@ -96,7 +96,7 @@ std::shared_ptr<wmtk::Mesh> merge_meshes(
                 auto mptr = components::multimesh::axis_aligned_fusion(mah, mask, eps.value());
                 const auto& nmm = mc.get_named_multimesh(position_attr_path);
 
-                nlohmann::json jsout;
+                nlohmann::ordered_json jsout;
                 jsout[output_mesh_name] = *nmm.get_names_json();
                 mc.add_mesh(wmtk::components::multimesh::NamedMultiMesh(*mptr, jsout));
 

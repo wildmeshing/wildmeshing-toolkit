@@ -109,7 +109,7 @@ int run_js(
 
 
     if (j.contains("report")) {
-        nlohmann::json jnew = j;
+        nlohmann::ordered_json jnew = j;
         const std::string report = j["report"];
         meshes.make_canonical();
         if (!report.empty()) {

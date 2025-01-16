@@ -36,7 +36,7 @@ struct NamedMultiMesh::Node
     std::vector<std::unique_ptr<Node>> m_children;
 
     std::map<std::string, int64_t> m_child_indexer;
-    void set_names(const nlohmann::json& js)
+    void set_names(const nlohmann::ordered_json& js)
     {
         if (js.is_null()) {
             return;
@@ -136,12 +136,16 @@ struct NamedMultiMesh::Node
     }
 
     friend void to_json(
-        nlohmann::json& nlohmann_json_j,
+        nlohmann::ordered_json& nlohmann_json_j,
         const NamedMultiMesh::Node& nlohmann_json_t)
     {
-        nlohmann::json value;
+        nlohmann::ordered_json value;
         for (const auto& c_ptr : nlohmann_json_t.m_children) {
-            value.update(*c_ptr);
+            nlohmann::ordered_json js = *c_ptr;
+            for(const auto& [k,v]: js.items()) {
+                value[k] = v;
+            }
+            //value.update(js);
         }
         // value["@ptr"] = fmt::format("{}", fmt::ptr(&nlohmann_json_t));
         nlohmann_json_j[nlohmann_json_t.name] = value;
@@ -158,7 +162,7 @@ NamedMultiMesh::NamedMultiMesh(Mesh& m, const std::string_view& root_name, bool 
     set_mesh(m, do_pop);
     set_name(root_name);
 }
-NamedMultiMesh::NamedMultiMesh(Mesh& m, const nlohmann::json& root_name, bool do_pop)
+NamedMultiMesh::NamedMultiMesh(Mesh& m, const nlohmann::ordered_json& root_name, bool do_pop)
 {
     set_mesh(m, do_pop);
     set_names(root_name);
@@ -243,8 +247,8 @@ auto NamedMultiMesh::get_id(const std::string_view& path) const -> std::vector<i
                         "Tree: {}\nCurrent subtree: {}",
                         token,
                         path,
-                        nlohmann::json(*m_name_root).dump(2),
-                        nlohmann::json(*cur_mesh).dump(2)));
+                        nlohmann::ordered_json(*m_name_root).dump(2),
+                        nlohmann::ordered_json(*cur_mesh).dump(2)));
                 }
             }
 
@@ -273,9 +277,9 @@ std::vector<int64_t> NamedMultiMesh::get_id(const Mesh& m) const
 
 void NamedMultiMesh::set_name(const std::string_view& root_name)
 {
-    set_names(nlohmann::json(root_name));
+    set_names(nlohmann::ordered_json(root_name));
 }
-void NamedMultiMesh::set_names(const nlohmann::json& js)
+void NamedMultiMesh::set_names(const nlohmann::ordered_json& js)
 {
     assert(js.is_object() || js.is_string() || js.is_null());
     m_name_root = std::make_unique<Node>();
@@ -387,9 +391,9 @@ NamedMultiMesh::NamedMultiMesh(const NamedMultiMesh& o)
 {}
 
 
-std::unique_ptr<nlohmann::json> NamedMultiMesh::get_names_json(const std::string_view& path) const
+std::unique_ptr<nlohmann::ordered_json> NamedMultiMesh::get_names_json(const std::string_view& path) const
 {
-    auto js_ptr = std::make_unique<nlohmann::json>();
+    auto js_ptr = std::make_unique<nlohmann::ordered_json>();
     auto& js = *js_ptr;
     const auto id = get_id(path);
     js = get_node(id);
@@ -476,7 +480,7 @@ bool NamedMultiMesh::is_valid(bool pass_exceptions) const
                 "path [{}]",
                 fmt::join(get_id(*mptr), ","),
                 fmt::join(mptr->absolute_multi_mesh_id(), ","));
-            nlohmann::json js = *m_name_root;
+            nlohmann::ordered_json js = *m_name_root;
             get_name(*mptr);
         } catch (const std::range_error& e) {
             return throw_or_except(e);
@@ -487,7 +491,7 @@ bool NamedMultiMesh::is_valid(bool pass_exceptions) const
 
     const auto all_paths = m_name_root->get_all_paths();
     if (all_paths.empty()) {
-        nlohmann::json js = *m_name_root;
+        nlohmann::ordered_json js = *m_name_root;
         throw std::runtime_error("No paths exist in mesh");
     }
     for (const std::string& path : all_paths) {

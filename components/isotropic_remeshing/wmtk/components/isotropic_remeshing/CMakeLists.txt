@@ -28,6 +28,9 @@ set(SRC_FILES
     internal/configure_swap.hpp
     internal/configure_swap.cpp
     internal/configure_swap_tetmesh.cpp
+
+    invariants/NoChildSimplexInvariant.hpp
+    invariants/NoChildSimplexInvariant.cpp
     )
 
 

@@ -89,7 +89,8 @@ void output(
     if (opts.mesh_name_path.has_value()) {
         const auto& path = opts.mesh_name_path.value();
         std::ofstream ofs(path);
-        ofs << *mesh.get_names_json(mesh_path);
+        nlohmann::ordered_json js = *mesh.get_names_json(mesh_path);
+        ofs << js;
     }
 }
 
