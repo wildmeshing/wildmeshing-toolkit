@@ -23,23 +23,41 @@ wmtk::components::multimesh::NamedMultiMesh& run(
     //   wmtk::components::tetwild_simplification(*mptr, std::string(position_attribute_name),
     //   1e-3);
 
-    auto mptr = fuse(params.collection, params.alignments, params.position_attribute_name);
+    auto [mptr, pairs] = fuse(params.collection, params.alignments, params.position_attribute_name);
 
 
+    /*
     spdlog::info("Creating tag attributes");
-    for (wmtk::PrimitiveType pt : {wmtk::PrimitiveType::Vertex, wmtk::PrimitiveType::Edge}) {
+    for (wmtk::PrimitiveType pt : {wmtk::PrimitiveType::Triangle, wmtk::PrimitiveType::Edge}) {
         auto handle = mptr->register_attribute<int64_t>(
             std::string(fmt::format(fmt::runtime(params.tag_format), 0)),
             pt,
             1);
         auto acc = mptr->create_accessor<int64_t, 1>(handle);
-        spdlog::info("Going into simplices");
-        int count = 0;
-        for (const wmtk::Tuple& t : mptr->get_all(pt)) {
-            if (mptr->mappable_child_meshes(wmtk::simplex::Simplex(pt, t)).size() > 1) {
-                acc.scalar_attribute(t) = 1;
+        for (const auto& m : mptr->get_all_child_meshes()) {
+            if (m == mptr) {
+                continue;
+            }
+            if (m->top_simplex_type() != pt) {
+                continue;
+            }
+            auto id = m->absolute_multi_mesh_id();
+            assert(id.size() == 1);
+            int64_t ident = id[0];
+            for (const wmtk::Tuple& t : m->get_all(pt)) {
+                auto s = m->map_to_root(simplex::Simplex(pt, t));
+                acc.scalar_attribute(s) = ident;
             }
         }
     }
-    return params.collection.emplace_mesh(*mptr, params.output_name);
+    */
+    std::vector<std::string> names(pairs.size());
+    for (const auto& [mesh, name] : pairs) {
+        auto id = mesh->absolute_multi_mesh_id();
+        assert(id.size() == 1);
+        names[id[0]] = name;
+    }
+    nlohmann::json js;
+    js[params.output_name] = names;
+    return params.collection.emplace_mesh(*mptr, js);
 }

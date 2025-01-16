@@ -6,6 +6,18 @@
 #include <wmtk/utils/EigenMatrixWriter.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
+
+
+void EigenMeshes::compute_vf() {
+    VF.resize(V.M.rows());
+    for(int j = 0; j < F.M.rows(); ++j) {
+        for(const auto& vid: F.M.row(j)) {
+            VF[vid].emplace(j);
+        }
+
+    }
+}
+
 std::map<std::string, EigenMeshes> get_meshes(
     const wmtk::components::multimesh::MeshCollection& mc,
     const std::string_view& position_attribute_name)
@@ -37,8 +49,10 @@ std::map<std::string, EigenMeshes> get_meshes(
 
             total_V = em.V.end();
             total_F = em.F.end();
+            em.compute_vf();
             ranges[name] = std::move(em);
         }
     }
+
     return ranges;
 }

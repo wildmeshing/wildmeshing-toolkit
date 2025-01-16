@@ -143,7 +143,7 @@ struct NamedMultiMesh::Node
         for (const auto& c_ptr : nlohmann_json_t.m_children) {
             value.update(*c_ptr);
         }
-        value["@ptr"] = fmt::format("{}", fmt::ptr(&nlohmann_json_t));
+        // value["@ptr"] = fmt::format("{}", fmt::ptr(&nlohmann_json_t));
         nlohmann_json_j[nlohmann_json_t.name] = value;
     }
 };

@@ -1,5 +1,6 @@
 #pragma once
 #include <Eigen/Core>
+#include <set>
 
 #include <map>
 namespace wmtk::components::multimesh {
@@ -27,6 +28,10 @@ struct EigenMeshes
 {
     EigenMesh<double> V;
     EigenMesh<int64_t> F;
+
+    std::vector<std::set<int64_t>> VF;
+
+    void compute_vf();
 
     bool in_v_range(int64_t index ) const {
         return index >= V.start() && index < V.end();
