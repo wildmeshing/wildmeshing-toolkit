@@ -1,5 +1,6 @@
 
 #include <memory>
+#include <wmtk/components/multimesh/MeshCollection.hpp>
 #include <wmtk/components/output/utils/format.hpp>
 #include <wmtk/invariants/EnvelopeInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
@@ -13,7 +14,6 @@
 #include <wmtk/utils/Logger.hpp>
 #include "IsotropicRemeshing.hpp"
 #include "invariants/NoChildSimplexInvariant.hpp"
-#include <wmtk/components/multimesh/MeshCollection.hpp>
 
 
 namespace wmtk::components::isotropic_remeshing {
@@ -82,14 +82,15 @@ void IsotropicRemeshing::configure_smooth()
 
     // hack for uv
     if (m_options.fix_uv_seam) {
-        proj_op->add_invariant(
-            std::make_shared<wmtk::invariants::uvEdgeInvariant>(mesh, other_positions.front().mesh()));
+        proj_op->add_invariant(std::make_shared<wmtk::invariants::uvEdgeInvariant>(
+            mesh,
+            other_positions.front().mesh()));
     }
     if (m_options.mesh_collection != nullptr) {
         for (const auto& mesh_name : m_options.static_mesh_names) {
             auto& mesh2 = m_options.mesh_collection->get_mesh(mesh_name);
-            op_smooth->add_invariant(std::make_shared<invariants::NoChildSimplexInvariant>(mesh,mesh2));
-
+            op_smooth->add_invariant(
+                std::make_shared<invariants::NoChildSimplexInvariant>(mesh, mesh2));
         }
     }
 

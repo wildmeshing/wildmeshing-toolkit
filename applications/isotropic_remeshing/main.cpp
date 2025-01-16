@@ -10,6 +10,7 @@
 #include <wmtk/components/multimesh/MeshCollection.hpp>
 #include <wmtk/components/multimesh/utils/AttributeDescription.hpp>
 #include <wmtk/components/multimesh/utils/get_attribute.hpp>
+#include <wmtk/components/output/parse_output.hpp>
 #include "wmtk/components/utils/PathResolver.hpp"
 
 #include <wmtk/Mesh.hpp>
@@ -86,8 +87,9 @@ int main(int argc, char* argv[])
     }
 
 
-    if(!mc.is_valid()) {
-        wmtk::logger().error("Input mesh did not match the name specification, going to throw an exception to help debugging");
+    if (!mc.is_valid()) {
+        wmtk::logger().error("Input mesh did not match the name specification, going to throw an "
+                             "exception to help debugging");
         mc.is_valid(true);
     }
 
@@ -123,12 +125,12 @@ int main(int argc, char* argv[])
     }
     if (j.contains("static_mesh_names")) {
         for (const auto& other : j["static_mesh_names"]) {
-            options.static_mesh_names.emplace_back( other);
+            options.static_mesh_names.emplace_back(other);
         }
     }
 
     options.mesh_collection = &mc;
-    if(j.contains("intermediate_output_format")) {
+    if (j.contains("intermediate_output_format")) {
         options.intermediate_output_format = j["intermediate_output_format"];
     }
     assert(options.position_attribute.is_valid());
@@ -142,9 +144,12 @@ int main(int argc, char* argv[])
     // call isotropic_remeshing
 
 
-    auto out_opts = j["output"].get<wmtk::components::output::OutputOptions>();
-    out_opts.position_attribute = options.position_attribute;
-    wmtk::components::output::output(*mesh_ptr, out_opts);
+    auto output_opts = wmtk::components::output::parse_output(j["output"]);
+    wmtk::components::output::output(mc, output_opts);
+
+    // auto out_opts = j["output"].get<wmtk::components::output::OutputOptions>();
+    // out_opts.position_attribute = options.position_attribute;
+    // wmtk::components::output::output(*mesh_ptr, out_opts);
 
     if (j.contains("report")) {
         const std::string report = j["report"];

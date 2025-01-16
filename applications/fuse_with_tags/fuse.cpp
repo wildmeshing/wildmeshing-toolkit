@@ -196,6 +196,7 @@ fuse(
         const auto& [mesh_id, tups] = pr;
         total_edges += tups.size();
     }
+    spdlog::info("Total trim edge count: {}", total_edges);
     RowVectors2l E(total_edges, 2);
     E.setConstant(-1);
     VectorX<int64_t> edge_labels(total_edges);
@@ -212,11 +213,13 @@ fuse(
 
         auto EB = E.block(current_edge_size, 0, tups.size(), 2);
         for (int k = 0; k < tups.size(); ++k) {
-            EB.row(k) << current_vertex_size + k, current_vertex_size + k + 1;
+            auto eb = EB.row(k);
+            eb << current_vertex_size + k, current_vertex_size + k + 1;
+
             size_t global_edge_index = current_edge_size + k;
             auto& m = map[global_edge_index];
 
-            m[0] = Tuple(1, -1, -1, global_edge_index);
+            m[0] = Tuple(0, -1, -1, global_edge_index);
             m[1] = patch_mesh->map_to_parent_tuple(simplex::Simplex(PrimitiveType::Edge, tups[k]));
             assert(m[1] == tups[k]);
         }

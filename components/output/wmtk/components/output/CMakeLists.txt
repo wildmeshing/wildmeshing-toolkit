@@ -10,6 +10,8 @@ set(SRC_FILES
     OutputOptions.hpp
     OutputOptions.cpp
     utils/format.hpp
+    parse_output.hpp
+    parse_output.cpp
     )
 
 

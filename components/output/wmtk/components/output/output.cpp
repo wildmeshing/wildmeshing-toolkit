@@ -98,8 +98,10 @@ void output(
     const multimesh::MeshCollection& mesh_col,
     const std::map<std::string, OutputOptions>& opts)
 {
+    spdlog::info("Trying to write {} meshes", opts.size());
     for (const auto& [path, single_opts] : opts) {
         const multimesh::NamedMultiMesh& nmm = mesh_col.get_named_multimesh(path);
+        spdlog::info("writing mesh {}", path);
         output(nmm, single_opts, path);
     }
 }

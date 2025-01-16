@@ -1,8 +1,8 @@
 #include "configure_swap.hpp"
-#include <wmtk/components/multimesh/MeshCollection.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/components/multimesh/MeshCollection.hpp>
 #include <wmtk/invariants/SeparateSubstructuresInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/invariants/ValenceImprovementInvariant.hpp>
@@ -11,8 +11,8 @@
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
-#include "../invariants/NoChildSimplexInvariant.hpp"
 #include "../IsotropicRemeshingOptions.hpp"
+#include "../invariants/NoChildSimplexInvariant.hpp"
 //#include "../invariants/SwapPreserveTaggedTopologyInvariant.hpp"
 #include "configure_collapse.hpp"
 
@@ -73,25 +73,30 @@ std::shared_ptr<wmtk::operations::composite::EdgeSwap> tri_swap(
     if (options.mesh_collection != nullptr) {
         for (const auto& mesh_name : options.static_mesh_names) {
             auto& mesh2 = options.mesh_collection->get_mesh(mesh_name);
-            swap->split().add_invariant(std::make_shared<invariants::NoChildSimplexInvariant>(mesh,mesh2));
-            swap->collapse().add_invariant(std::make_shared<invariants::NoChildSimplexInvariant>(mesh,mesh2));
-
+            swap->split().add_invariant(std::make_shared<invariants::NoChildSimplexInvariant>(
+                mesh,
+                mesh2,
+                wmtk::PrimitiveType::Vertex));
+            swap->collapse().add_invariant(std::make_shared<invariants::NoChildSimplexInvariant>(
+                mesh,
+                mesh2,
+                wmtk::PrimitiveType::Vertex));
         }
     }
-    //for (const auto& p : options.tag_attributes) {
-    //    swap->split().set_new_attribute_strategy(
-    //        p,
-    //        wmtk::operations::SplitBasicStrategy::None,
-    //        wmtk::operations::SplitRibBasicStrategy::Mean);
-    //    swap->collapse().set_new_attribute_strategy(
-    //        p,
-    //        wmtk::operations::CollapseBasicStrategy::CopyOther);
-    //    auto invar = std::make_shared<invariants::SwapPreserveTaggedTopologyInvariant>(
-    //        mesh,
-    //        p.as<int64_t>(),
-    //        -1);
-    //    swap->add_invariant(invar);
-    //}
+    // for (const auto& p : options.tag_attributes) {
+    //     swap->split().set_new_attribute_strategy(
+    //         p,
+    //         wmtk::operations::SplitBasicStrategy::None,
+    //         wmtk::operations::SplitRibBasicStrategy::Mean);
+    //     swap->collapse().set_new_attribute_strategy(
+    //         p,
+    //         wmtk::operations::CollapseBasicStrategy::CopyOther);
+    //     auto invar = std::make_shared<invariants::SwapPreserveTaggedTopologyInvariant>(
+    //         mesh,
+    //         p.as<int64_t>(),
+    //         -1);
+    //     swap->add_invariant(invar);
+    // }
     finalize_swap(*swap, options);
     return swap;
 }

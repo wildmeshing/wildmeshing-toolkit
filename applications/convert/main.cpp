@@ -15,6 +15,7 @@
 
 #include <wmtk/components/output/OutputOptions.hpp>
 #include <wmtk/components/output/output.hpp>
+#include <wmtk/components/output/parse_output.hpp>
 #include <wmtk/components/utils/resolve_path.hpp>
 
 #include "CLI/CLI.hpp"
@@ -150,7 +151,7 @@ int run_js(
     if (!j.contains("output")) {
         wmtk::logger().info("convert: No output path provided");
     } else {
-        std::map<std::string, wmtk::components::output::OutputOptions> output_opts = j["output"];
+        auto output_opts = wmtk::components::output::parse_output(j["output"]);
         wmtk::components::output::output(meshes, output_opts);
     }
 

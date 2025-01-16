@@ -1,5 +1,6 @@
 #include "configure_collapse.hpp"
 #include <wmtk/Mesh.hpp>
+#include <wmtk/components/multimesh/MeshCollection.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
@@ -10,6 +11,7 @@
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/attribute_new/CollapseNewAttributeStrategy.hpp>
 #include "../IsotropicRemeshingOptions.hpp"
+#include "../invariants/NoChildSimplexInvariant.hpp"
 namespace wmtk::components::isotropic_remeshing::internal {
 
 std::shared_ptr<wmtk::invariants::InvariantCollection> collapse_core_invariants(
@@ -57,6 +59,15 @@ std::shared_ptr<wmtk::invariants::InvariantCollection> collapse_invariants(
         length_min * length_min);
     ic->add(invariant_max_edge_length);
 
+    if (options.mesh_collection != nullptr) {
+        for (const auto& mesh_name : options.static_mesh_names) {
+            auto& mesh2 = options.mesh_collection->get_mesh(mesh_name);
+            ic_root->add(std::make_shared<invariants::NoChildSimplexInvariant>(
+                m,
+                mesh2,
+                PrimitiveType::Vertex));
+        }
+    }
     /*
 
     // hack for uv
