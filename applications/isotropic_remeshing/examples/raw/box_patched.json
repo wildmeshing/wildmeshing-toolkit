@@ -5,6 +5,8 @@
     },
     "position_attribute": "combo/vertex_position",
     "other_position_attributes": [
+        "combo.trims/vertex_position",
+        "combo.patches/vertex_position"
     ],
     "pass_through_attributes": [
         "combo.trims/edge_labels",
@@ -26,15 +28,16 @@
     "fix_uv_seam": false,
     "lock_boundary": false,
     "output": {
-        "path": "box_tagged_output",
-        "type": ".vtu"
+        "combo": {"path": "volume",
+            "type": ".vtu",
+            "position_attribute": "vertex_position"
+        },
+        "combo.trims": {"path": "trims",
+            "type": ".vtu",
+            "position_attribute": "vertex_position"
+        }
     },
-    "output2": {
-        "path": "box_tagged_output.hdf5",
-        "type": ".hdf5",
-        "position_attribute": "vertex_position"
-    },
-    "intermediate_output_format2": {
+    "intermediate_output_format": {
         "pos": {
             "path": "box_{:04}",
             "type": ".vtu",
