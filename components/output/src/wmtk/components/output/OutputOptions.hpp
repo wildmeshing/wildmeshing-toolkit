@@ -23,6 +23,7 @@ struct OutputOptions
     // bool operator==(const OutputOptions& o) const;
 
 
+    bool operator<=>(const OutputOptions& o) const = default;
     WMTK_NLOHMANN_JSON_FRIEND_DECLARATION(OutputOptions)
 };
 } // namespace wmtk::components::output

@@ -11,7 +11,7 @@
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/attribute_new/CollapseNewAttributeStrategy.hpp>
 #include "../IsotropicRemeshingOptions.hpp"
-#include "../invariants/NoChildSimplexInvariant.hpp"
+#include <wmtk/invariants/CannotMapSimplexInvariant.hpp>
 namespace wmtk::components::isotropic_remeshing::internal {
 
 std::shared_ptr<wmtk::invariants::InvariantCollection> collapse_core_invariants(
@@ -62,7 +62,7 @@ std::shared_ptr<wmtk::invariants::InvariantCollection> collapse_invariants(
     if (options.mesh_collection != nullptr) {
         for (const auto& mesh_name : options.static_mesh_names) {
             auto& mesh2 = options.mesh_collection->get_mesh(mesh_name);
-            ic_root->add(std::make_shared<invariants::NoChildSimplexInvariant>(
+            ic_root->add(std::make_shared<wmtk::invariants::CannotMapSimplexInvariant>(
                 m,
                 mesh2,
                 PrimitiveType::Vertex));

@@ -440,4 +440,6 @@ TEST_CASE("swap_multimesh_edge", "[operations][swap][2D]")
         TriEdgeSwap op(m);
         op.add_invariant(std::make_shared<InteriorEdgeInvariant>(m));
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+    }
+}
 

@@ -84,6 +84,11 @@ void output(
     const OutputOptions& opts,
     const std::string_view& mesh_path)
 {
+    spdlog::debug(
+        "writing mesh {} under named mesh {} to {}",
+        mesh_path,
+        mesh.root_name(),
+        opts.path);
     output(mesh.get_mesh(mesh_path), opts);
 
     if (opts.mesh_name_path.has_value()) {
@@ -98,10 +103,18 @@ void output(
     const multimesh::MeshCollection& mesh_col,
     const std::map<std::string, OutputOptions>& opts)
 {
-    spdlog::info("Trying to write {} meshes", opts.size());
     for (const auto& [path, single_opts] : opts) {
         const multimesh::NamedMultiMesh& nmm = mesh_col.get_named_multimesh(path);
-        spdlog::info("writing mesh {}", path);
+        output(nmm, single_opts, path);
+    }
+}
+
+void output(
+    const multimesh::MeshCollection& mesh_col,
+    const std::vector<std::pair<std::string, OutputOptions>>& opts)
+{
+    for (const auto& [path, single_opts] : opts) {
+        const multimesh::NamedMultiMesh& nmm = mesh_col.get_named_multimesh(path);
         output(nmm, single_opts, path);
     }
 }

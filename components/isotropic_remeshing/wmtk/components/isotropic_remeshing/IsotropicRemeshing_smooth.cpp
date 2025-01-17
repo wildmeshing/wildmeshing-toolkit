@@ -13,7 +13,7 @@
 #include <wmtk/operations/utils/VertexTangentialLaplacianSmooth.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "IsotropicRemeshing.hpp"
-#include "invariants/NoChildSimplexInvariant.hpp"
+#include <wmtk/invariants/CannotMapSimplexInvariant.hpp>
 
 
 namespace wmtk::components::isotropic_remeshing {
@@ -90,7 +90,7 @@ void IsotropicRemeshing::configure_smooth()
         for (const auto& mesh_name : m_options.static_mesh_names) {
             auto& mesh2 = m_options.mesh_collection->get_mesh(mesh_name);
             op_smooth->add_invariant(
-                std::make_shared<invariants::NoChildSimplexInvariant>(mesh, mesh2));
+                std::make_shared<invariants::CannotMapSimplexInvariant>(mesh, mesh2));
         }
     }
 

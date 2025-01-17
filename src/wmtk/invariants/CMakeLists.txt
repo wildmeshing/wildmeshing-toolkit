@@ -99,6 +99,9 @@ set(SRC_FILES
     FrozenVertexInvariant.cpp
     Swap2dUnroundedVertexInvariant.hpp
     Swap2dUnroundedVertexInvariant.cpp
+
+CannotMapSimplexInvariant.cpp
+CannotMapSimplexInvariant.hpp
     
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

@@ -34,11 +34,15 @@ WMTK_NLOHMANN_JSON_FRIEND_FROM_JSON_PROTOTYPE(OutputOptions)
 {
     if (nlohmann_json_j.is_string()) {
         nlohmann_json_t.path = nlohmann_json_j.get<std::filesystem::path>();
-    } else if(nlohmann_json_j.contains("path")) {
+    } else if (nlohmann_json_j.contains("path")) {
         nlohmann_json_t.path = nlohmann_json_j["path"].get<std::filesystem::path>();
-    } else if(nlohmann_json_j.contains("file")) {
+    } else if (nlohmann_json_j.contains("file")) {
         wmtk::logger().warn("OutputOptions using file is deprecated, use file");
         nlohmann_json_t.path = nlohmann_json_j["file"].get<std::filesystem::path>();
+    } else {
+        throw std::runtime_error(fmt::format(
+            "OutputOptions from json needs a path of sorts!, input was {}",
+            nlohmann_json_j.dump()));
     }
     if (nlohmann_json_j.contains("type")) {
         nlohmann_json_t.type = nlohmann_json_j["type"];
@@ -54,7 +58,8 @@ WMTK_NLOHMANN_JSON_FRIEND_FROM_JSON_PROTOTYPE(OutputOptions)
     }
 
     if (nlohmann_json_j.contains("mesh_name_path")) {
-        nlohmann_json_t.mesh_name_path = nlohmann_json_j["mesh_name_path"].get<std::filesystem::path>();
+        nlohmann_json_t.mesh_name_path =
+            nlohmann_json_j["mesh_name_path"].get<std::filesystem::path>();
     }
 }
 } // namespace wmtk::components::output

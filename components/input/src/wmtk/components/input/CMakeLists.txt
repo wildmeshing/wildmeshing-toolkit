@@ -1,8 +1,7 @@
-set(COMPONENT_NAME input)
-add_component(${COMPONENT_NAME})
 if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
     return()
 endif()
+add_component(${COMPONENT_NAME})
 set(SRC_FILES
     InputOptions.hpp
     InputOptions.cpp

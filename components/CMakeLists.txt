@@ -18,7 +18,7 @@ endif()
 add_subdirectory(input)
 add_subdirectory(multimesh)
 add_subdirectory(mesh_info)
-add_subdirectory("output/wmtk/components/output")
+add_subdirectory(output)
 add_subdirectory("delaunay/wmtk/components/delaunay")
 add_subdirectory("to_points/wmtk/components/to_points")
 

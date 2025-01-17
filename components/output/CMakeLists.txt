@@ -1,0 +1,5 @@
+set(COMPONENT_NAME output)
+add_subdirectory("src/wmtk/components/output")
+if(WMTK_ENABLE_COMPONENT_TESTS)
+add_subdirectory("tests")
+endif()

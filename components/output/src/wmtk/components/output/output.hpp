@@ -76,6 +76,10 @@ void output(
     const multimesh::MeshCollection& mesh,
     const std::map<std::string, OutputOptions>&);
 
+void output(
+    const multimesh::MeshCollection& mesh,
+    const std::vector<std::pair<std::string, OutputOptions>>&);
+
 /**
  * @brief Write the mesh to file.
  *
