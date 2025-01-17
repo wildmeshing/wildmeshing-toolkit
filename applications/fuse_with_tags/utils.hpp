@@ -1,6 +1,7 @@
 #pragma once
 #include <Eigen/Core>
 #include <set>
+#include <wmtk/Tuple.hpp>
 
 #include <map>
 namespace wmtk::components::multimesh {
@@ -38,6 +39,7 @@ struct EigenMeshes
     {
         return index >= F.M.minCoeff() && index <= F.M.maxCoeff();
     }
+    wmtk::Tuple update_to_fused(const wmtk::Tuple& t) const;
 };
 
 std::map<std::string, EigenMeshes> get_meshes(

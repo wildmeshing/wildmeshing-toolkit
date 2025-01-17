@@ -2,7 +2,6 @@
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 #include <igl/writeOBJ.h>
-#include <spdlog/spdlog.h>
 #include <set>
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/PointMesh.hpp>
@@ -43,16 +42,52 @@ fuse(
         total_F = std::max<int>(total_F, em.F.end());
     }
 
+    std::map<std::string, int64_t> name_to_patch_ids;
+    std::map<int64_t, std::string> patch_ids_to_name;
+
+    // corner vertex id -> {mesh_index, vertex index}
+    std::map<int64_t, std::set<std::pair<int64_t, wmtk::Tuple>>> corner_vertices;
+    for (const auto& [name, mesh] : all_meshes) {
+        const auto& em_a = ranges.at(name);
+        auto patch_handle =
+            mesh.get_attribute_handle_typed<int64_t>("patch_id", wmtk::PrimitiveType::Triangle);
+        auto patch_acc = mesh.create_const_accessor(patch_handle);
+        auto tups = mesh.get_all(wmtk::PrimitiveType::Triangle);
+
+        int64_t patch_id = patch_acc.const_scalar_attribute(tups[0]);
+#if !defined(NDEBUG)
+        for (const Tuple& t : tups) {
+            int64_t v = patch_acc.const_scalar_attribute(t);
+            assert(patch_id == v);
+        }
+#endif
+        name_to_patch_ids[name] = patch_id;
+        patch_ids_to_name[patch_id] = name;
+
+        {
+            auto corner_vertex_handle =
+                mesh.get_attribute_handle_typed<int64_t>("corner_id", wmtk::PrimitiveType::Vertex);
+            auto corner_vertex_acc = mesh.create_const_accessor(corner_vertex_handle);
+            auto tups = mesh.get_all(wmtk::PrimitiveType::Vertex);
+
+            for (const Tuple& t : tups) {
+                int64_t value = corner_vertex_acc.const_scalar_attribute(t);
+                if (value != -1) {
+                    corner_vertices[value].emplace(patch_id, t);
+                }
+            }
+        }
+    }
+
     Eigen::MatrixX<double> V(total_V, 3);
     Eigen::MatrixX<int64_t> F(total_F, 3);
     VectorX<int64_t> patch_labels(total_F);
     F.setConstant(-1);
     V.setConstant(-1);
-    int64_t index = 0; // TODO: replace
     for (auto& [name, em] : ranges) {
         em.F.assign(F, em.V.start());
         em.V.assign(V);
-        patch_labels.segment(em.F.start(), em.F.M.rows()).setConstant(index++);
+        patch_labels.segment(em.F.start(), em.F.M.rows()).setConstant(name_to_patch_ids.at(name));
     }
 
 
@@ -75,11 +110,6 @@ fuse(
             for (size_t j = 0; j < roots.size(); ++j) {
                 root_indices[roots[j]] = j;
             }
-            std::vector<size_t> counts(roots.size());
-            for (int j = 0; j < total_V; ++j) {
-                counts[root_indices.at(Vsets.get_root(j))]++;
-            }
-            // spdlog::info("{}", fmt::join(counts, ","));
         }
     }
     std::map<int64_t, std::tuple<int64_t, std::vector<Tuple>>> edge_meshes;
@@ -87,11 +117,11 @@ fuse(
     bool print = true;
     std::vector<std::string> fuse_names_ordered;
 
-    int64_t edge_mesh_index = 0; // TODO replace when we have numbers for the pairs
 
     for (const auto& [inds, pairs] : to_fuse) {
         const auto& [ind_a, ind_b] = inds;
         const auto& em_a = ranges.at(get_mesh_name(ind_a));
+        const auto& wmtk_mesh = all_meshes.at(get_mesh_name(ind_a));
         std::vector<int64_t> indices;
         std::transform(
             pairs.begin(),
@@ -99,14 +129,25 @@ fuse(
             std::back_inserter(indices),
             [](const auto& pr) -> int64_t { return pr[0]; });
         std::string trim_mesh_name = fmt::format("trim_{}_{}", ind_a, ind_b);
-        spdlog::info(
-            "Trim {} has index {}, with {} pairs {}",
-            trim_mesh_name,
-            edge_mesh_index,
-            pairs.size(),
-            fmt::join(indices, ","));
-        auto tups = boundary_edges_to_tuples(em_a, indices);
-        edge_meshes[edge_mesh_index++] = std::make_tuple(ind_a, std::move(tups));
+        auto tups = boundary_edges_to_tuples(em_a, indices, true);
+        int64_t edge_id = -1;
+        {
+            auto edge_handle = wmtk_mesh.get_attribute_handle_typed<int64_t>(
+                "feature_edge_id",
+                wmtk::PrimitiveType::Edge);
+            auto edge_acc = wmtk_mesh.create_const_accessor(edge_handle);
+
+            auto edge_tups = boundary_edges_to_tuples(em_a, indices, false);
+
+            edge_id = edge_acc.const_scalar_attribute(edge_tups[0]);
+#if !defined(NDEBUG)
+            for (const Tuple& t : edge_tups) {
+                assert(edge_id == edge_acc.const_scalar_attribute(t));
+            }
+            assert(edge_id != -1);
+#endif
+        }
+        edge_meshes[edge_id] = std::make_tuple(ind_a, std::move(tups));
     }
 
     for (const auto& [inds, pairs] : to_fuse) {
@@ -153,42 +194,6 @@ fuse(
     auto pos_acc = mptr->create_accessor<double>(pos_handle);
 
     assert(mptr->is_connectivity_valid());
-    /*
-    for (const auto& [name, em] : ranges) {
-        // spdlog::info("Registering {} as child mesh", name);
-        auto& m = const_cast<wmtk::Mesh&>(all_meshes.at(name));
-
-        named_meshes.emplace_back(m.shared_from_this(), name);
-        std::vector<int64_t> i(em.F.M.rows());
-        assert(em.F.M.rows() == m.get_all(wmtk::PrimitiveType::Triangle).size());
-        std::iota(i.begin(), i.end(), em.F.start());
-
-        wmtk::components::multimesh::from_facet_surjection(*mptr, m, i);
-    }
-
-    for (const auto& [name, pr] : edge_meshes) {
-        const auto& [mesh_id, tups] = pr;
-        const auto& mesh_a = all_meshes.at(get_mesh_name(mesh_id));
-        std::vector<std::array<Tuple, 2>> map(tups.size());
-
-        // spdlog::info("Making edgemesh {} form mesh id {}", name, mesh_id);
-
-        for (size_t j = 0; j < tups.size(); ++j) {
-            mesh_a.is_valid(tups[j]);
-            map[j][0] = Tuple(0, -1, -1, j);
-            map[j][1] = mesh_a.map_to_parent_tuple(simplex::Simplex(PrimitiveType::Edge, tups[j]));
-        }
-        RowVectors2l E(tups.size(), 2);
-        for (int k = 0; k < tups.size(); ++k) {
-            E.row(k) << k, k + 1;
-        }
-        auto em_ptr = std::make_shared<wmtk::EdgeMesh>();
-        em_ptr->initialize(E);
-
-        mptr->register_child_mesh(em_ptr, map);
-        named_meshes.emplace_back(em_ptr, name);
-    }
-    */
     wmtk::components::multimesh::from_facet_bijection(*mptr, *patch_mesh);
 
     size_t total_edges = 0;
@@ -196,7 +201,6 @@ fuse(
         const auto& [mesh_id, tups] = pr;
         total_edges += tups.size();
     }
-    spdlog::info("Total trim edge count: {}", total_edges);
     RowVectors2l E(total_edges, 2);
     E.setConstant(-1);
     VectorX<int64_t> edge_labels(total_edges);
@@ -245,16 +249,32 @@ fuse(
 
     {
         std::vector<std::array<Tuple, 2>> point_tuples;
-        for (const auto& t : em_ptr->get_all(wmtk::PrimitiveType::Vertex)) {
-            simplex::Simplex s(wmtk::PrimitiveType::Vertex, t);
-            auto ss = em_ptr->map(*em_ptr, s);
-            if (ss.size() > 1) {
-                point_tuples.emplace_back(std::array<Tuple, 2>{
-                    {Tuple(-1, -1, -1, point_tuples.size()), em_ptr->map_to_root(s).tuple()}});
+        int64_t max_index = -1;
+        for (const auto& [id, _] : corner_vertices) {
+            assert(id >= 0);
+            max_index = std::max<int64_t>(id, max_index);
+        }
+        point_tuples.resize(max_index + 1);
+        assert(point_tuples.size() == corner_vertices.size());
+
+        for (const auto& [id, pairs] : corner_vertices) {
+            for (const auto& [mesh_id, t] : pairs) {
+                const auto& em = ranges.at(patch_ids_to_name.at(mesh_id));
+                const Tuple t2 = em.update_to_fused(t);
+                //const Tuple t2 = t; // em.update_to_fused(t);
+                assert(mptr->is_valid(t2));
+                point_tuples[id] = std::array<Tuple, 2>{{Tuple(-1, -1, -1, id), t2}};
+                break;
             }
         }
         auto pm = std::make_shared<wmtk::PointMesh>();
         pm->initialize(point_tuples.size());
+        for (const auto& [a, b] : point_tuples) {
+            assert(!a.is_null());
+            assert(!pm->is_removed(a));
+            assert(pm->is_valid(a));
+            assert(mptr->is_valid(b));
+        }
         mptr->register_child_mesh(pm, point_tuples);
         named_meshes.emplace_back(pm, "critical_points");
     }

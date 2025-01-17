@@ -72,6 +72,5 @@ wmtk::components::multimesh::NamedMultiMesh& run(
     }
     nlohmann::ordered_json js;
     js[params.output_name] = names;
-    std::cout << js.dump(2) << std::endl;
     return params.collection.emplace_mesh(*mptr, js);
 }

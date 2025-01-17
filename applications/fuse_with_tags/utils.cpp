@@ -4,17 +4,18 @@
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/components/multimesh/MeshCollection.hpp>
 #include <wmtk/utils/EigenMatrixWriter.hpp>
+#include <wmtk/utils/TupleInspector.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
+#include "wmtk/utils/TupleInspector.hpp"
 
 
-
-void EigenMeshes::compute_vf() {
+void EigenMeshes::compute_vf()
+{
     VF.resize(V.M.rows());
-    for(int j = 0; j < F.M.rows(); ++j) {
-        for(const auto& vid: F.M.row(j)) {
+    for (int j = 0; j < F.M.rows(); ++j) {
+        for (const auto& vid : F.M.row(j)) {
             VF[vid].emplace(j);
         }
-
     }
 }
 
@@ -25,7 +26,6 @@ std::map<std::string, EigenMeshes> get_meshes(
     auto all_meshes = mc.all_roots();
 
     std::map<std::string, EigenMeshes> ranges;
-
 
 
     int total_V = 0;
@@ -42,7 +42,6 @@ std::map<std::string, EigenMeshes> get_meshes(
             em.F.m_start = total_F;
 
 
-
             writer.get_position_matrix(em.V.M);
             writer.get_FV_matrix(em.F.M);
             assert(em.F.M.maxCoeff() < em.V.M.rows());
@@ -55,4 +54,13 @@ std::map<std::string, EigenMeshes> get_meshes(
     }
 
     return ranges;
+}
+wmtk::Tuple EigenMeshes::update_to_fused(const wmtk::Tuple& t) const
+{
+    assert(wmtk::utils::TupleInspector::global_cid(t) < F.M.rows());
+    return wmtk::Tuple(
+        wmtk::utils::TupleInspector::local_vid(t),
+        wmtk::utils::TupleInspector::local_eid(t),
+        wmtk::utils::TupleInspector::local_fid(t),
+        wmtk::utils::TupleInspector::global_cid(t) + F.start());
 }

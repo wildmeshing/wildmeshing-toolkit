@@ -1,9 +1,8 @@
 #include "edges_to_tuples.hpp"
 #include <wmtk/TriMesh.hpp>
 using namespace wmtk;
-std::vector<Tuple> boundary_edges_to_tuples(
-    const EigenMeshes& em,
-    const std::vector<int64_t>& indices)
+std::vector<Tuple>
+boundary_edges_to_tuples(const EigenMeshes& em, const std::vector<int64_t>& indices, bool offset)
 {
     std::vector<Tuple> tups;
     tups.reserve(indices.size());
@@ -43,7 +42,11 @@ std::vector<Tuple> boundary_edges_to_tuples(
                 leid = k;
             }
         }
-        Tuple& t = tups.emplace_back(lvid, leid, -1, fid + em.F.start());
+        if (offset) {
+            Tuple& t = tups.emplace_back(lvid, leid, -1, fid + em.F.start());
+        } else {
+            Tuple& t = tups.emplace_back(lvid, leid, -1, fid);
+        }
     }
     return tups;
 }

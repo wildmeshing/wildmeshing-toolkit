@@ -61,6 +61,7 @@ void PointMesh::initialize(int64_t count)
 
 bool PointMesh::is_valid(const Tuple& tuple) const
 {
+    // return !is_removed(tuple);
     if (!Mesh::is_valid(tuple)) {
         return false;
     }
