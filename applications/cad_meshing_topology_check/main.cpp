@@ -32,25 +32,76 @@ using namespace wmtk;
 namespace fs = std::filesystem;
 
 
-int check_v_to_e(const wmtk::Mesh& point_mesh, const wmtk::Mesh& edge_mesh)
+int check_v_to_e(
+    const wmtk::Mesh& point_mesh,
+    const wmtk::Mesh& edge_mesh,
+    const fs::path& v_to_e_path)
 {
+    nlohmann::json v_to_e_ref_data;
+    std::ifstream ifs(v_to_e_path);
+    v_to_e_ref_data = nlohmann::json::parse(ifs);
+    // Example: Accessing the data
+    std::set<int64_t> global_d_set;
+    for (const auto& [key, value] : v_to_e_ref_data.items()) {
+        auto global_d = std::stoi(key);
+        global_d_set.insert(global_d);
+    }
+    // TODO check if all the vertices are in the v_to_e_ref_data
+    std::set<int64_t> my_global_d_set;
     for (const auto& t : point_mesh.get_all(PrimitiveType::Vertex)) {
         int64_t global_d = wmtk::utils::TupleInspector::global_cid(t);
     }
+    std::set<int64_t> should_be_set, should_not_be_set;
+
+    std::set_difference(
+        global_d_set.begin(),
+        global_d_set.end(),
+        my_global_d_set.begin(),
+        my_global_d_set.end(),
+        std::inserter(should_be_set, should_be_set.begin()));
+
+    std::set_difference(
+        my_global_d_set.begin(),
+        my_global_d_set.end(),
+        global_d_set.begin(),
+        global_d_set.end(),
+        std::inserter(should_not_be_set, should_not_be_set.begin()));
+
+    if (!should_be_set.empty()) {
+        logger().error("Vertices {} SHOULD BE in the v_to_e_ref_data", should_be_set);
+    }
+    if (!should_not_be_set.empty()) {
+        logger().error("Vertices {} should NOT be in the v_to_e_ref_data", should_not_be_set);
+    }
+
     auto edge_label_on_edge_mesh =
         edge_mesh.get_attribute_handle<int64_t>("edge_labels", PrimitiveType::Edge);
     auto edge_acc = edge_mesh.create_const_accessor<int64_t>(edge_label_on_edge_mesh);
     for (const auto& v : point_mesh.get_all(PrimitiveType::Vertex)) {
+        int64_t global_d = wmtk::utils::TupleInspector::global_cid(v);
+        std::set<int64_t> ref_es;
+        if (global_d_set.find(global_d) != global_d_set.end()) {
+            ref_es = v_to_e_ref_data[std::to_string(global_d)].get<std::set<int64_t>>();
+        }
         auto edges = point_mesh.map(edge_mesh, simplex::Simplex(PrimitiveType::Vertex, v));
+        std::set<int64_t> my_es;
         for (const auto& e : edges) {
             int64_t edge_d = edge_acc.const_scalar_attribute(e.tuple());
+            my_es.insert(edge_d);
             // edge_d is next to critical vertex critical_point_tuple.global_id
+        }
+        if (my_es != ref_es) {
+            logger().error("Vertex {} has edges {}", global_d, my_es);
+            logger().error("Vertex {} should have edges {}", global_d, ref_es);
         }
     }
     return 0;
 }
 
-int check_e_to_f(const wmtk::Mesh& edge_mesh, const wmtk::Mesh& triangle_mesh)
+int check_e_to_f(
+    const wmtk::Mesh& edge_mesh,
+    const wmtk::Mesh& triangle_mesh,
+    const fs::path& e_to_f_path)
 {
     for (const auto& t : edge_mesh.get_all(PrimitiveType::Edge)) {
         int64_t global_d = wmtk::utils::TupleInspector::global_cid(t);
@@ -61,6 +112,7 @@ int check_e_to_f(const wmtk::Mesh& edge_mesh, const wmtk::Mesh& triangle_mesh)
         triangle_mesh.create_const_accessor<int64_t>(triangle_label_on_triangle_mesh);
     for (const auto& e : edge_mesh.get_all(PrimitiveType::Edge)) {
         auto triangles = edge_mesh.map(triangle_mesh, simplex::Simplex(PrimitiveType::Edge, e));
+
         for (const auto& t : triangles) {
             int64_t triangle_d = triangle_acc.const_scalar_attribute(t.tuple());
             // edge_d is next to critical vertex critical_point_tuple.global_id
@@ -91,8 +143,12 @@ int check_topology_internal(
     const auto& edge_mesh = mesh->get_multi_mesh_mesh({1});
     const auto& face_mesh = mesh->get_multi_mesh_mesh({0});
 
-    check_v_to_e(point_mesh, edge_mesh);
-    check_e_to_f(edge_mesh, face_mesh);
+    const auto v_to_e_path = j["v_to_e"]["path"];
+    const auto e_to_f_path = j["e_to_f"]["path"];
+
+    check_v_to_e(point_mesh, edge_mesh, v_to_e_path);
+    check_e_to_f(edge_mesh, face_mesh, e_to_f_path);
+
 
     return 0;
 }
