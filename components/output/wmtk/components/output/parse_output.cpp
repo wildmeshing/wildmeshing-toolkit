@@ -3,22 +3,47 @@
 #include <wmtk/utils/Logger.hpp>
 
 namespace wmtk::components::output {
-std::map<std::string, OutputOptions> parse_output(const nlohmann::json& js)
+std::vector<std::tuple<std::string, OutputOptions>> parse_output(const nlohmann::json& js)
 {
-    std::map<std::string, OutputOptions> ret;
-    try {
-        ret = js;
-        return ret;
-    } catch (const std::exception& e) {
-        wmtk::logger().debug(
-            "Output failed to convert output to a vector, assuming just a single was required");
-        try {
-            ret[""] = js;
-            return ret;
-        } catch (const std::exception& e2) {
-            throw e;
+    // try single position
+    std::vector<std::tuple<std::string, OutputOptions>> ret;
+
+    // if it's an array we know we have multiple outputs
+    if (js.is_array()) {
+        for (const auto& val : js) {
+            auto ret2 = parse_output(val);
+            ret.insert(ret.end(), ret2.begin(), ret2.end());
         }
     }
-    return {};
+
+    // try treating this input as a single object
+    try {
+        OutputOptions opt;
+        opt = js;
+
+        ret.emplace_back("", std::move(opt));
+    } catch (const std::exception& e) {
+        wmtk::logger().debug("Output failed to parse as a single path");
+    }
+
+    // try multi-object mode
+    for (const auto& [key, value] : js.items()) {
+        if (value.is_string()) {
+            throw std::runtime_error(fmt::format(
+                "Not allowed to have string output data as a value, input was {}, offending "
+                "name/value were {}/{}",
+                js.dump(),
+                std::string(key),
+                std::string(value)));
+        }
+        if (value.is_array()) {
+            for (auto& val : value) {
+                ret.emplace_back(key, value);
+            }
+        } else {
+            ret.emplace_back(key, value);
+        }
+    }
+    return ret;
 }
 } // namespace wmtk::components::output

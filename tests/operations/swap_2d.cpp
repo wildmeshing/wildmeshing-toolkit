@@ -429,3 +429,15 @@ TEST_CASE("split_face", "[operations][split][2D]")
         CHECK(op(Simplex::face(m, f)).empty());
     }
 }
+
+TEST_CASE("swap_multimesh_edge", "[operations][swap][2D]")
+{
+    using namespace operations::composite;
+
+    SECTION("counter_clockwise")
+    {
+        DEBUG_TriMesh m = interior_edge();
+        TriEdgeSwap op(m);
+        op.add_invariant(std::make_shared<InteriorEdgeInvariant>(m));
+        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+
