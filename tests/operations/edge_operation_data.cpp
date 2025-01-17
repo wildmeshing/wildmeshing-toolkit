@@ -267,11 +267,11 @@ TEST_CASE("collapse_facet_maps_1d", "[operations][data][1D][.]")
 
                 const auto& tup = both[j];
                 // boundary == bits is 1
-                 spdlog::info(
-                    "{}: {} => {}",
-                    j,
-                    wmtk::utils::TupleInspector::as_string(tup),
-                    bits[j]);
+                 //spdlog::info(
+                 //   "{}: {} => {}",
+                 //   j,
+                 //   wmtk::utils::TupleInspector::as_string(tup),
+                    //bits[j]);
                 REQUIRE(tup.is_null() == bits[j]);
                 if (!bits[j]) { // not boundary
                     // check that the tuple returned makes sense

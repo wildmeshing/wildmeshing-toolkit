@@ -139,7 +139,7 @@ std::array<Tuple, 2> CollapseAlternateFacetData::get_alternatives(
     // Find the action such that data.input = action * t_dart
     const int8_t action =
         wmtk::multimesh::utils::find_local_dart_action(mesh_pt, t_dart, data.input);
-    auto map = [action, &sd, &data, ear_orientations](const size_t index) -> Tuple {
+    auto map = [/*action, &sd, &data, ear_orientations*/](const size_t index) -> Tuple {
 
         //const int8_t ear_orientation = ear_orientation[index];
 
