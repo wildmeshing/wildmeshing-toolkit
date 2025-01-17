@@ -31,6 +31,40 @@ using namespace wmtk::applications;
 using namespace wmtk;
 namespace fs = std::filesystem;
 
+void should_have(
+    const nlohmann::json& ref_data,
+    std::set<int64_t>& ref_global_d_set,
+    const std::set<int64_t>& my_global_d_set)
+{
+    // Example: Accessing the data
+
+    for (const auto& [key, value] : ref_data.items()) {
+        auto global_d = std::stoi(key);
+        ref_global_d_set.insert(global_d);
+    }
+
+    std::set<int64_t> should_be_set, should_not_be_set;
+
+    std::set_difference(
+        ref_global_d_set.begin(),
+        ref_global_d_set.end(),
+        my_global_d_set.begin(),
+        my_global_d_set.end(),
+        std::inserter(should_be_set, should_be_set.begin()));
+
+    std::set_difference(
+        my_global_d_set.begin(),
+        my_global_d_set.end(),
+        ref_global_d_set.begin(),
+        ref_global_d_set.end(),
+        std::inserter(should_not_be_set, should_not_be_set.begin()));
+    if (!should_be_set.empty()) {
+        logger().error(" {} SHOULD BE in the output", should_be_set);
+    }
+    if (!should_not_be_set.empty()) {
+        logger().error("{} should NOT be in the output", should_not_be_set);
+    }
+}
 
 int check_v_to_e(
     const wmtk::Mesh& point_mesh,
@@ -40,47 +74,21 @@ int check_v_to_e(
     nlohmann::json v_to_e_ref_data;
     std::ifstream ifs(v_to_e_path);
     v_to_e_ref_data = nlohmann::json::parse(ifs);
-    // Example: Accessing the data
-    std::set<int64_t> global_d_set;
-    for (const auto& [key, value] : v_to_e_ref_data.items()) {
-        auto global_d = std::stoi(key);
-        global_d_set.insert(global_d);
-    }
     // TODO check if all the vertices are in the v_to_e_ref_data
-    std::set<int64_t> my_global_d_set;
+    std::set<int64_t> my_global_d_set, ref_global_d_set;
     for (const auto& t : point_mesh.get_all(PrimitiveType::Vertex)) {
         int64_t global_d = wmtk::utils::TupleInspector::global_cid(t);
+        my_global_d_set.insert(global_d);
     }
-    std::set<int64_t> should_be_set, should_not_be_set;
-
-    std::set_difference(
-        global_d_set.begin(),
-        global_d_set.end(),
-        my_global_d_set.begin(),
-        my_global_d_set.end(),
-        std::inserter(should_be_set, should_be_set.begin()));
-
-    std::set_difference(
-        my_global_d_set.begin(),
-        my_global_d_set.end(),
-        global_d_set.begin(),
-        global_d_set.end(),
-        std::inserter(should_not_be_set, should_not_be_set.begin()));
-
-    if (!should_be_set.empty()) {
-        logger().error("Vertices {} SHOULD BE in the v_to_e_ref_data", should_be_set);
-    }
-    if (!should_not_be_set.empty()) {
-        logger().error("Vertices {} should NOT be in the v_to_e_ref_data", should_not_be_set);
-    }
-
+    logger().info("Checking v_to_e");
+    should_have(v_to_e_ref_data, ref_global_d_set, my_global_d_set);
     auto edge_label_on_edge_mesh =
         edge_mesh.get_attribute_handle<int64_t>("edge_labels", PrimitiveType::Edge);
     auto edge_acc = edge_mesh.create_const_accessor<int64_t>(edge_label_on_edge_mesh);
     for (const auto& v : point_mesh.get_all(PrimitiveType::Vertex)) {
         int64_t global_d = wmtk::utils::TupleInspector::global_cid(v);
         std::set<int64_t> ref_es;
-        if (global_d_set.find(global_d) != global_d_set.end()) {
+        if (ref_global_d_set.find(global_d) != ref_global_d_set.end()) {
             ref_es = v_to_e_ref_data[std::to_string(global_d)].get<std::set<int64_t>>();
         }
         auto edges = point_mesh.map(edge_mesh, simplex::Simplex(PrimitiveType::Vertex, v));
@@ -103,19 +111,41 @@ int check_e_to_f(
     const wmtk::Mesh& triangle_mesh,
     const fs::path& e_to_f_path)
 {
+    nlohmann::json e_to_f_ref_data;
+    std::ifstream ifs(e_to_f_path);
+    e_to_f_ref_data = nlohmann::json::parse(ifs);
+    std::set<int64_t> my_global_d_set, ref_global_d_set;
+
+    auto edge_label_on_edge_mesh =
+        edge_mesh.get_attribute_handle<int64_t>("edge_labels", PrimitiveType::Edge);
+    auto edge_acc = edge_mesh.create_const_accessor<int64_t>(edge_label_on_edge_mesh);
     for (const auto& t : edge_mesh.get_all(PrimitiveType::Edge)) {
-        int64_t global_d = wmtk::utils::TupleInspector::global_cid(t);
+        int64_t global_d = edge_acc.const_scalar_attribute(t);
+        my_global_d_set.insert(global_d);
     }
+    logger().info("Checking e_to_f");
+    should_have(e_to_f_ref_data, ref_global_d_set, my_global_d_set);
     auto triangle_label_on_triangle_mesh =
         triangle_mesh.get_attribute_handle<int64_t>("patch_labels", PrimitiveType::Triangle);
     auto triangle_acc =
         triangle_mesh.create_const_accessor<int64_t>(triangle_label_on_triangle_mesh);
     for (const auto& e : edge_mesh.get_all(PrimitiveType::Edge)) {
-        auto triangles = edge_mesh.map(triangle_mesh, simplex::Simplex(PrimitiveType::Edge, e));
+        int64_t global_d = edge_acc.const_scalar_attribute(e);
+        std::set<int64_t> ref_fs;
+        if (ref_global_d_set.find(global_d) != ref_global_d_set.end()) {
+            ref_fs = e_to_f_ref_data[std::to_string(global_d)].get<std::set<int64_t>>();
+        }
 
+        auto triangles = edge_mesh.map(triangle_mesh, simplex::Simplex(PrimitiveType::Edge, e));
+        std::set<int64_t> my_fs;
         for (const auto& t : triangles) {
             int64_t triangle_d = triangle_acc.const_scalar_attribute(t.tuple());
+            my_fs.insert(triangle_d);
             // edge_d is next to critical vertex critical_point_tuple.global_id
+        }
+        if (my_fs != ref_fs) {
+            logger().error("Edge {} has patches {}", global_d, my_fs);
+            logger().error("Edge {} should have patches {}", global_d, ref_fs);
         }
     }
     return 0;
