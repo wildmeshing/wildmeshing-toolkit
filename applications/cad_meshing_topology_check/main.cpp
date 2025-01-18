@@ -72,15 +72,37 @@ int check_v_to_e(
     const fs::path& v_to_e_path)
 {
     nlohmann::json v_to_e_ref_data;
-    std::ifstream ifs(v_to_e_path);
-    v_to_e_ref_data = nlohmann::json::parse(ifs);
+
+    try {
+        std::ifstream ifs(v_to_e_path);
+        if (!ifs.is_open()) {
+            logger().error("v_to_e {}", v_to_e_path.string());
+            throw std::ios_base::failure("Error: Unable to open file");
+        }
+
+        // Parse the JSON file
+        v_to_e_ref_data = nlohmann::json::parse(ifs);
+
+        // Check if the JSON object is empty
+        if (v_to_e_ref_data.empty()) {
+            throw std::runtime_error("Error: JSON file is empty or invalid.");
+        }
+
+        std::cout << "JSON loaded successfully!" << std::endl;
+        // Further processing of v_to_e_ref_data
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
+    logger().info("Checking v_to_e");
+
     // TODO check if all the vertices are in the v_to_e_ref_data
     std::set<int64_t> my_global_d_set, ref_global_d_set;
     for (const auto& t : point_mesh.get_all(PrimitiveType::Vertex)) {
         int64_t global_d = wmtk::utils::TupleInspector::global_cid(t);
         my_global_d_set.insert(global_d);
     }
-    logger().info("Checking v_to_e");
     should_have(v_to_e_ref_data, ref_global_d_set, my_global_d_set);
     auto edge_label_on_edge_mesh =
         edge_mesh.get_attribute_handle<int64_t>("edge_labels", PrimitiveType::Edge);
@@ -90,6 +112,9 @@ int check_v_to_e(
         std::set<int64_t> ref_es;
         if (ref_global_d_set.find(global_d) != ref_global_d_set.end()) {
             ref_es = v_to_e_ref_data[std::to_string(global_d)].get<std::set<int64_t>>();
+        }
+        if (!point_mesh.is_valid(v)) {
+            logger().critical("Vertex {} is NOT valid", global_d);
         }
         auto edges = point_mesh.map(edge_mesh, simplex::Simplex(PrimitiveType::Vertex, v));
         std::set<int64_t> my_es;
@@ -112,8 +137,33 @@ int check_e_to_f(
     const fs::path& e_to_f_path)
 {
     nlohmann::json e_to_f_ref_data;
-    std::ifstream ifs(e_to_f_path);
-    e_to_f_ref_data = nlohmann::json::parse(ifs);
+
+    try {
+        logger().info("Loading JSON file: {}", e_to_f_path.string());
+        std::ifstream ifs(e_to_f_path);
+        if (!ifs.is_open()) {
+            logger().error("e_to_f {}", e_to_f_path.string());
+            throw std::ios_base::failure("Error: Unable to open file");
+        }
+
+        // Parse the JSON file
+        logger().info("Parsing JSON file");
+        e_to_f_ref_data = nlohmann::json::parse(ifs);
+
+        // Check if the JSON object is empty
+        if (e_to_f_ref_data.empty()) {
+            throw std::runtime_error("Error: JSON file is empty or invalid.");
+        }
+
+        std::cout << "JSON loaded successfully!" << std::endl;
+        // Further processing of e_to_f_ref_data
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
+    logger().info("Checking e_to_f");
+
     std::set<int64_t> my_global_d_set, ref_global_d_set;
 
     auto edge_label_on_edge_mesh =
@@ -123,7 +173,6 @@ int check_e_to_f(
         int64_t global_d = edge_acc.const_scalar_attribute(t);
         my_global_d_set.insert(global_d);
     }
-    logger().info("Checking e_to_f");
     should_have(e_to_f_ref_data, ref_global_d_set, my_global_d_set);
     auto triangle_label_on_triangle_mesh =
         triangle_mesh.get_attribute_handle<int64_t>("patch_labels", PrimitiveType::Triangle);
@@ -167,6 +216,10 @@ int check_topology_internal(
 
     wmtk::components::input::InputOptions opts = j["input"];
     const auto file_path = opts.path;
+    if (!std::filesystem::exists(file_path)) {
+        logger().error("File does not exist: {}", file_path.string());
+        return 1;
+    }
     wmtk::HDF5Reader reader;
     auto mesh = reader.read(file_path);
     const auto& point_mesh = mesh->get_multi_mesh_mesh({2});
@@ -192,7 +245,6 @@ int check_topology(
     nlohmann::json j;
     std::ifstream ifs(config_path);
     j = nlohmann::json::parse(ifs);
-
     return check_topology_internal(j, name_spec_file, integration_test_config_file);
 }
 
