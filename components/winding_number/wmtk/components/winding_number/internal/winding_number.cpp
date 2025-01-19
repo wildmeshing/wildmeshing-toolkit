@@ -28,14 +28,19 @@ Eigen::VectorXd winding_number(const Mesh& m, const TriMesh& surface)
     Eigen::MatrixXd m_pos, surface_pos;
     MatrixX<int64_t> m_FV, surface_FV;
 
-    m_writer.get_position_matrix(m_pos_rational);
-    assert(m_pos_rational.cols() == 3);
-    m_pos.resize(m_pos_rational.rows(), m_pos_rational.cols());
+    if (m.has_attribute<Rational>("vertices", PrimitiveType::Vertex)) {
+        m_writer.get_position_matrix(m_pos_rational);
+        assert(m_pos_rational.cols() == 3);
+        m_pos.resize(m_pos_rational.rows(), m_pos_rational.cols());
 
-    m_pos = m_pos_rational.cast<double>();
-    surface_writer.get_position_matrix(surface_pos_rational);
-    surface_pos.resize(surface_pos_rational.rows(), surface_pos_rational.cols());
-    surface_pos = surface_pos_rational.cast<double>();
+        m_pos = m_pos_rational.cast<double>();
+        surface_writer.get_position_matrix(surface_pos_rational);
+        surface_pos.resize(surface_pos_rational.rows(), surface_pos_rational.cols());
+        surface_pos = surface_pos_rational.cast<double>();
+    } else {
+        m_writer.get_position_matrix(m_pos);
+        surface_writer.get_position_matrix(surface_pos);
+    }
 
     switch (m.top_simplex_type()) {
     case (PrimitiveType::Tetrahedron): {

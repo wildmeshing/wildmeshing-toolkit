@@ -317,8 +317,9 @@ void MshReader::extract_element_attribute(
     }
 }
 
-auto MshReader::generate(const std::optional<std::vector<std::vector<std::string>>>&
-                             extra_attributes_opt) -> std::shared_ptr<Mesh>
+auto MshReader::generate(
+    const std::optional<std::vector<std::vector<std::string>>>& extra_attributes_opt)
+    -> std::shared_ptr<Mesh>
 {
     std::shared_ptr<Mesh> res;
     switch (get_mesh_dimension()) {
@@ -379,48 +380,48 @@ void MshReader::validate<3>()
         auto Vs = V(S.row(0), Eigen::all);
 
 
-        if (wmtk::utils::wmtk_orient3d(Vs.transpose()) < 0) {
-            // swap col 0 and 1 of S
-            S.col(0).swap(S.col(1));
-            wmtk::logger().info(
-                "Input tet orientation is inverted, swapping col 0 and 1 of TV matrix.");
-        }
+        // if (wmtk::utils::wmtk_orient3d(Vs.transpose()) < 0) {
+        //     // swap col 0 and 1 of S
+        //     S.col(0).swap(S.col(1));
+        //     wmtk::logger().info(
+        //         "Input tet orientation is inverted, swapping col 0 and 1 of TV matrix.");
+        // }
     }
 
-    {
-        // check consistency
-        for (int64_t i = 0; i < S.rows(); i++) {
-            auto row = S.row(i);
-            auto Vs = V(row, Eigen::all);
-            auto orient = wmtk::utils::wmtk_orient3d(Vs.transpose());
+    // {
+    //     // check consistency
+    //     for (int64_t i = 0; i < S.rows(); i++) {
+    //         auto row = S.row(i);
+    //         auto Vs = V(row, Eigen::all);
+    //         auto orient = wmtk::utils::wmtk_orient3d(Vs.transpose());
 
-            if (orient < 0) {
-                std::swap(row.x(), row.y());
-                // log_and_throw_error("Input tet orientation is inconsistent.");
-            } else if (orient == 0) {
-                log_and_throw_error("Input tet is degenerated.");
-            }
-        }
-    }
+    //         if (orient < 0) {
+    //             std::swap(row.x(), row.y());
+    //             // log_and_throw_error("Input tet orientation is inconsistent.");
+    //         } else if (orient == 0) {
+    //             log_and_throw_error("Input tet is degenerated.");
+    //         }
+    //     }
+    // }
 
-    {
-        // check consistency
-        for (int64_t i = 0; i < S.rows(); i++) {
-            auto row = S.row(i);
-            auto Vs = V(row, Eigen::all);
-            auto orient = wmtk::utils::wmtk_orient3d(Vs.transpose());
+    // {
+    //     // check consistency
+    //     for (int64_t i = 0; i < S.rows(); i++) {
+    //         auto row = S.row(i);
+    //         auto Vs = V(row, Eigen::all);
+    //         auto orient = wmtk::utils::wmtk_orient3d(Vs.transpose());
 
-            if (orient < 0) {
-                auto a = Vs.row(0);
-                auto b = Vs.row(1);
-                auto tmp = a.eval();
-                a = b;
-                b = a;
-                // log_and_throw_error("Input tet orientation is inconsistent.");
-            } else if (orient == 0) {
-                log_and_throw_error("Input tet is degenerated.");
-            }
-        }
-    }
+    //         if (orient < 0) {
+    //             auto a = Vs.row(0);
+    //             auto b = Vs.row(1);
+    //             auto tmp = a.eval();
+    //             a = b;
+    //             b = a;
+    //             // log_and_throw_error("Input tet orientation is inconsistent.");
+    //         } else if (orient == 0) {
+    //             log_and_throw_error("Input tet is degenerated.");
+    //         }
+    //     }
+    // }
 }
 } // namespace wmtk::io
