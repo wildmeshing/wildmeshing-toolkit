@@ -3,9 +3,9 @@
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
+#include <wmtk/multimesh/utils/MapValidator.hpp>
 #include <wmtk/multimesh/utils/check_map_valid.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
-#include <wmtk/multimesh/utils/check_map_valid.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/simplex/utils/SimplexComparisons.hpp>
@@ -14,7 +14,6 @@
 #include "../tools/DEBUG_Tuple.hpp"
 #include "../tools/EdgeMesh_examples.hpp"
 #include "../tools/TriMesh_examples.hpp"
-#include <wmtk/multimesh/utils/MapValidator.hpp>
 
 using namespace wmtk;
 using namespace wmtk::tests;
@@ -854,7 +853,7 @@ TEST_CASE("test_split_multi_mesh_1D_2D", "[multimesh][1D][2D]")
     // Do another edge_split
     {
         Tuple edge = parent.edge_tuple_with_vs_and_t(1, 2, 3);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(parent.is_valid_with_hash(edge));
 #else
         REQUIRE(parent.is_valid(edge));
@@ -994,12 +993,12 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
             std::vector<simplex::Simplex> children = parent.map_to_child(child0, edge_simplex);
             REQUIRE(children.size() == 1);
             const Simplex& cs = children[0];
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
             REQUIRE(child0.is_valid_with_hash(cs.tuple()));
 #else
             REQUIRE(child0.is_valid(cs.tuple()));
 #endif
-            REQUIRE(wmtk::simplex::utils::SimplexComparisons::equal(child0,cs ,edge_f0_simplex));
+            REQUIRE(wmtk::simplex::utils::SimplexComparisons::equal(child0, cs, edge_f0_simplex));
         }
 
         // CHILD1:
@@ -1014,12 +1013,12 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
             std::vector<simplex::Simplex> children = parent.map_to_child(child1, edge_simplex);
             REQUIRE(children.size() == 1);
             const Simplex& cs = children[0];
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
             REQUIRE(child1.is_valid_with_hash(cs.tuple()));
 #else
             REQUIRE(child1.is_valid(cs.tuple()));
 #endif
-            REQUIRE(wmtk::simplex::utils::SimplexComparisons::equal(child1,cs ,edge_simplex));
+            REQUIRE(wmtk::simplex::utils::SimplexComparisons::equal(child1, cs, edge_simplex));
         }
 
         // CHILD2:
@@ -1047,14 +1046,14 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
             std::cout << std::string(DEBUG_Tuple(edge_f0_simplex.tuple())) << " "
                       << std::string(DEBUG_Tuple(edge_simplex.tuple())) << std::endl;
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
             REQUIRE(child2.is_valid_with_hash(cs0.tuple()));
             REQUIRE(child2.is_valid_with_hash(cs1.tuple()));
 #else
             REQUIRE(child2.is_valid(cs0.tuple()));
             REQUIRE(child2.is_valid(cs1.tuple()));
 #endif
-            REQUIRE(wmtk::simplex::utils::SimplexComparisons::equal(child2,cs0 ,edge_f0_simplex));
+            REQUIRE(wmtk::simplex::utils::SimplexComparisons::equal(child2, cs0, edge_f0_simplex));
             REQUIRE(cs1.tuple() == edge_simplex.tuple());
             REQUIRE(cs1.primitive_type() == edge_simplex.primitive_type());
         }
@@ -1328,6 +1327,10 @@ TEST_CASE("test_deregister_child_mesh", "[multimesh]")
     REQUIRE(!c0_mul_manager.is_root());
     REQUIRE(!c1_mul_manager.is_root());
 
+    DEBUG_MultiMeshManager::run_checks(parent);
+    DEBUG_MultiMeshManager::run_checks(child0);
+    DEBUG_MultiMeshManager::run_checks(child1);
+
     SECTION("remove_0")
     {
         parent.deregister_child_mesh(child0_ptr);
@@ -1343,6 +1346,9 @@ TEST_CASE("test_deregister_child_mesh", "[multimesh]")
         CHECK(p_mul_manager.is_root());
         CHECK(c0_mul_manager.is_root());
         CHECK_FALSE(c1_mul_manager.is_root());
+        DEBUG_MultiMeshManager::run_checks(parent);
+        DEBUG_MultiMeshManager::run_checks(child0);
+        DEBUG_MultiMeshManager::run_checks(child1);
     }
     SECTION("remove_1")
     {
@@ -1359,5 +1365,8 @@ TEST_CASE("test_deregister_child_mesh", "[multimesh]")
         CHECK(p_mul_manager.is_root());
         CHECK(c1_mul_manager.is_root());
         CHECK_FALSE(c0_mul_manager.is_root());
+        DEBUG_MultiMeshManager::run_checks(parent);
+        DEBUG_MultiMeshManager::run_checks(child0);
+        DEBUG_MultiMeshManager::run_checks(child1);
     }
 }

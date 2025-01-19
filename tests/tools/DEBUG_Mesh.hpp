@@ -14,26 +14,24 @@ public:
 
     // uses spdlog to print out a variety of information about the mesh
     void print_state() const;
-    static DEBUG_MultiMeshManager& multi_mesh_manager(Mesh& m) {
+    static DEBUG_MultiMeshManager& multi_mesh_manager(Mesh& m)
+    {
         return reinterpret_cast<DEBUG_MultiMeshManager&>(m.m_multi_mesh_manager);
     }
-    static const DEBUG_MultiMeshManager& multi_mesh_manager(const Mesh& m) {
+    static const DEBUG_MultiMeshManager& multi_mesh_manager(const Mesh& m)
+    {
         return reinterpret_cast<const DEBUG_MultiMeshManager&>(m.m_multi_mesh_manager);
     }
-    static wmtk::attribute::AttributeManager& attribute_manager(Mesh& m) {
+    static wmtk::attribute::AttributeManager& attribute_manager(Mesh& m)
+    {
         return m.m_attribute_manager;
     }
-    static const wmtk::attribute::AttributeManager& attribute_manager(const Mesh& m) {
+    static const wmtk::attribute::AttributeManager& attribute_manager(const Mesh& m)
+    {
         return m.m_attribute_manager;
     }
-    DEBUG_MultiMeshManager& multi_mesh_manager()
-    {
-        return multi_mesh_manager(*this);
-    }
-    const DEBUG_MultiMeshManager& multi_mesh_manager() const
-    {
-        return multi_mesh_manager(*this);
-    }
+    DEBUG_MultiMeshManager& multi_mesh_manager() { return multi_mesh_manager(*this); }
+    const DEBUG_MultiMeshManager& multi_mesh_manager() const { return multi_mesh_manager(*this); }
 
     template <typename T>
     attribute::AccessorBase<T> create_base_accessor(
@@ -60,8 +58,6 @@ public:
 
     using Mesh::id;
     using Mesh::tuple_from_id;
-
-
 };
 
 } // namespace wmtk::tests
