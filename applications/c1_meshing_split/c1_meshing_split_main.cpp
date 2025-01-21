@@ -70,6 +70,8 @@ int main(int argc, char* argv[])
     fs::path para_edge_file =
         resolve_paths(json_input_file, {j["root"], j["parametrization_edges"]});
     fs::path cone_edge_file = resolve_paths(json_input_file, {j["root"], j["adjacent_cone_edges"]});
+    // fs::path cone_vertices_file = resolve_paths(json_input_file, {j["root"],
+    // j["cone_vertices"]});
 
     auto tetmesh = wmtk::components::input::input(tet_file);
     auto surface_mesh = wmtk::components::input::input(surface_file);
@@ -217,6 +219,7 @@ int main(int argc, char* argv[])
         cone_edges.push_back({{a, b}});
     }
 
+
     for (int64_t i = 0; i < cone_edges.size(); ++i) {
         const int64_t v0 = cone_edges[i][0];
         const int64_t v1 = cone_edges[i][1];
@@ -235,6 +238,36 @@ int main(int argc, char* argv[])
             }
         }
     }
+
+    // std::ifstream f_cone_vertices(cone_vertices_file);
+    // std::vector<int64_t> cone_vertices;
+    // while (f_cone_vertices >> a) {
+    //     cone_edges.push_back(a);
+    // }
+
+    // for (int pass = 0; pass < 3; ++pass) {
+    //     auto cmp = [](const std::pair<Tuple, double>& a, const std::pair<Tuple, double>& b) {
+    //         return a.second < b.second;
+    //     };
+    //     std::priority_queue<std::pair<Tuple, double>, std::vector<std::pair<Tuple, double>>, cmp>
+    //         tuple_length;
+    //     for (const auto& e : surface_mesh->get_all(PrimitiveType::Edge)) {
+    //         int64_t ev0 = vid_accessor.const_scalar_attribute(e);
+    //         int64_t ev1 = vid_accessor.const_scalar_attribute(
+    //             surface_mesh->switch_tuple(e, PrimitiveType::Vertex));
+    //         if (std::find(cone_vertices.begin(), cone_vertices.end(), ev0) != cone_vertices.end()
+    //         ||
+    //             std::find(cone_vertices.begin(), cone_vertices.end(), ev1) !=
+    //             cone_vertices.end()) { double length =
+    //             surface_pos_accessor.const_vector_attribute(e) -
+    //                             surface_pos_accessor
+    //                                 .const_vector_attribute(
+    //                                     surface_mesh->switch_tuple(e, PrimitiveType::Vertex))
+    //                                 .norm();
+    //             tuple_length.emplace(e, length);
+    //         }
+    //     }
+    // }
 
     // consolidate the mesh
     wmtk::multimesh::consolidate(*tetmesh);
