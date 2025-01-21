@@ -45,10 +45,6 @@ nlohmann::json c1_meshing_split_spec = R"(
     "pointer": "/adjacent_cone_edges",
     "type": "string"
 },
-// {
-//     "pointer": "/cone_vertices",
-//     "type": "string"
-// },
 {
     "pointer": "/output",
     "type": "string"
