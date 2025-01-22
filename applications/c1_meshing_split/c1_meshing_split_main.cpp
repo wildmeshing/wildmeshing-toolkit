@@ -219,7 +219,8 @@ int main(int argc, char* argv[])
         cone_edges.push_back({{a, b}});
     }
 
-
+    int64_t v_cnt = surface_mesh->get_all(PrimitiveType::Vertex).size();
+    std::vector<std::array<int64_t, 2>> new_cone_edges;
     for (int64_t i = 0; i < cone_edges.size(); ++i) {
         const int64_t v0 = cone_edges[i][0];
         const int64_t v1 = cone_edges[i][1];
@@ -233,11 +234,38 @@ int main(int argc, char* argv[])
             if ((ev0 == v0 && ev1 == v1) || (ev0 == v1 && ev1 == v0)) {
                 auto new_v_tuple =
                     split_op(wmtk::simplex::Simplex::edge(*surface_mesh, e)).front().tuple();
-                vid_accessor.scalar_attribute(new_v_tuple) = -1;
+                vid_accessor.scalar_attribute(new_v_tuple) = v_cnt;
+                new_cone_edges.push_back({{v_cnt, v0}});
+                new_cone_edges.push_back({{v_cnt, v1}});
+                v_cnt++;
+
                 break;
             }
         }
     }
+
+    wmtk::logger().info("2nd split edges");
+    for (int64_t i = 0; i < new_cone_edges.size(); ++i) {
+        const int64_t v0 = new_cone_edges[i][0];
+        const int64_t v1 = new_cone_edges[i][1];
+        wmtk::logger().info("Splitting the edge {} {}", v0, v1);
+        for (auto e : surface_mesh->get_all(PrimitiveType::Edge)) {
+            int64_t ev0 = vid_accessor.const_scalar_attribute(e);
+            int64_t ev1 = vid_accessor.const_scalar_attribute(
+                surface_mesh->switch_tuple(e, PrimitiveType::Vertex));
+            // std::cout << ev0 << ", " << ev1 << std::endl;
+
+            if ((ev0 == v0 && ev1 == v1) || (ev0 == v1 && ev1 == v0)) {
+                auto new_v_tuple =
+                    split_op(wmtk::simplex::Simplex::edge(*surface_mesh, e)).front().tuple();
+                vid_accessor.scalar_attribute(new_v_tuple) = v_cnt;
+                v_cnt++;
+
+                break;
+            }
+        }
+    }
+
 
     // std::ifstream f_cone_vertices(cone_vertices_file);
     // std::vector<int64_t> cone_vertices;
