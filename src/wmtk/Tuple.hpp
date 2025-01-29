@@ -21,7 +21,9 @@ private:
     int8_t m_local_vid = -1;
     int8_t m_local_eid = -1;
     int8_t m_local_fid = -1;
+#ifdef _WIN32
     std::array<int8_t, 5> m_pad = {{0, 0, 0, 0, 0}}; // align Tuple with 2*int64_t
+#endif
 
 public:
     Tuple(int8_t local_vid, int8_t local_eid, int8_t local_fid, int64_t global_cid);
