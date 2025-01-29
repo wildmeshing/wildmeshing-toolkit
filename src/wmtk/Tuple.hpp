@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
 #include <tuple>
 
 namespace wmtk {
@@ -51,12 +52,6 @@ public:
     int8_t local_eid() const;
     int8_t local_fid() const;
 };
-inline Tuple::Tuple(int8_t local_vid, int8_t local_eid, int8_t local_fid, int64_t global_cid)
-    : m_global_cid(global_cid)
-    , m_local_vid(local_vid)
-    , m_local_eid(local_eid)
-    , m_local_fid(local_fid)
-{}
 
 } // namespace wmtk
 #include "Tuple.hxx"
