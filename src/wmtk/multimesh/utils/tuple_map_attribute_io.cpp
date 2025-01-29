@@ -30,10 +30,10 @@ Tuple vector2_to_tuple(const Eigen::Ref<const Vector2l>& v)
 Vector<int64_t, 4> tuple_to_vector5(const Tuple& t)
 {
     Vector<int64_t, 4> v;
-    v(0) = wmtk::utils::TupleInspector::local_vid(t);
-    v(1) = wmtk::utils::TupleInspector::local_eid(t);
-    v(2) = wmtk::utils::TupleInspector::local_fid(t);
-    v(3) = wmtk::utils::TupleInspector::global_cid(t);
+    v(0) = t.local_vid();
+    v(1) = t.local_eid();
+    v(2) = t.local_fid();
+    v(3) = t.global_cid();
     return v;
 }
 

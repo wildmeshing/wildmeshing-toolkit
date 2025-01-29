@@ -1,7 +1,6 @@
 #include "top_dimension_cofaces.hpp"
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleCellLessThanFunctor.hpp>
-#include <wmtk/utils/TupleInspector.hpp>
 #include "utils/tuple_vector_to_homogeneous_simplex_vector.hpp"
 
 #include <queue>
@@ -11,8 +10,6 @@
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
-
-#include "internal/SimplexLessFunctor.hpp"
 
 namespace wmtk::simplex {
 
@@ -82,7 +79,7 @@ void top_dimension_cofaces_tuples_vertex(
     visited.reserve(50);
 
     auto is_visited = [&visited](const Tuple& t) -> bool {
-        const int64_t c = wmtk::utils::TupleInspector::global_cid(t);
+        const int64_t c = t.global_cid();
         for (const int64_t v : visited) {
             if (v == c) {
                 return true;

@@ -64,10 +64,10 @@ TEST_CASE("test_single_tuple_accessor", "[accessor]")
         t_ref = wmtk::Tuple(gid, gid + 1, gid + 2, gid + 3);
         {
             const wmtk::Tuple t2 = tuple_accessor.const_scalar_attribute(tup);
-            CHECK(wmtk::utils::TupleInspector::local_vid(t2) == gid);
-            CHECK(wmtk::utils::TupleInspector::local_eid(t2) == gid + 1);
-            CHECK(wmtk::utils::TupleInspector::local_fid(t2) == gid + 2);
-            CHECK(wmtk::utils::TupleInspector::global_cid(t2) == gid + 3);
+            CHECK(t2.local_vid() == gid);
+            CHECK(t2.local_eid() == gid + 1);
+            CHECK(t2.local_fid() == gid + 2);
+            CHECK(t2.global_cid() == gid + 3);
         }
     }
     for (const wmtk::Tuple& tup : vertices) {
@@ -75,10 +75,10 @@ TEST_CASE("test_single_tuple_accessor", "[accessor]")
         auto v = int64_t_acc.const_vector_attribute(tup);
         const wmtk::Tuple t = tuple_accessor.const_scalar_attribute(tup);
         CHECK(!t.is_null());
-        CHECK(wmtk::utils::TupleInspector::local_vid(t) == gid);
-        CHECK(wmtk::utils::TupleInspector::local_eid(t) == gid + 1);
-        CHECK(wmtk::utils::TupleInspector::local_fid(t) == gid + 2);
-        CHECK(wmtk::utils::TupleInspector::global_cid(t) == gid + 3);
+        CHECK(t.local_vid() == gid);
+        CHECK(t.local_eid() == gid + 1);
+        CHECK(t.local_fid() == gid + 2);
+        CHECK(t.global_cid() == gid + 3);
     }
 }
 
@@ -163,7 +163,7 @@ TEST_CASE("test_multi_tuple_accessor_gid", "[accessor]")
         for (int j = 0; j < tuple_accessor.dimension(); ++j) {
             int64_t value = gid + 2 * j;
             v(2 * j) = value;
-            CHECK(wmtk::utils::TupleInspector::global_cid(t(j)) == value);
+            CHECK(t(j).global_cid() == value);
         }
     }
 }

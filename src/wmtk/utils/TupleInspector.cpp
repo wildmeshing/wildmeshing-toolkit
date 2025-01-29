@@ -7,9 +7,9 @@ std::string TupleInspector::as_string(const Tuple& t)
 {
     return fmt::format(
         "(gid {}:lids[v{},e{},f{}])",
-        global_cid(t),
-        local_vid(t),
-        local_eid(t),
-        local_fid(t));
+        t.global_cid(),
+        t.local_vid(),
+        t.local_eid(),
+        t.local_fid());
 }
 } // namespace wmtk::utils

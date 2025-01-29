@@ -428,8 +428,8 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D][.]")
 
                 const auto& left_dart = dat.alts[0];
                 const auto& right_dart = dat.alts[1];
-                const int8_t left_ear_eid = wmtk::utils::TupleInspector::local_eid(left_ear);
-                const int8_t right_ear_eid = wmtk::utils::TupleInspector::local_eid(right_ear);
+                const int8_t left_ear_eid = left_ear.local_eid();
+                const int8_t right_ear_eid = right_ear.local_eid();
                 CHECK(left_ear_eid == dat.local_boundary_indices[0]);
                 CHECK(right_ear_eid == dat.local_boundary_indices[1]);
 

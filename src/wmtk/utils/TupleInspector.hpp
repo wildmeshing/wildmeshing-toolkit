@@ -10,15 +10,12 @@ namespace wmtk::utils {
 class TupleInspector
 {
 public:
-    static int8_t local_vid(const Tuple& t) { return t.local_vid(); }
-    static int8_t local_eid(const Tuple& t) { return t.local_eid(); }
-    static int8_t local_fid(const Tuple& t) { return t.local_fid(); }
     static int8_t local_id(const Tuple& t, const PrimitiveType pt)
     {
         switch (pt) {
-        case PrimitiveType::Vertex: return local_vid(t);
-        case PrimitiveType::Edge: return local_eid(t);
-        case PrimitiveType::Triangle: return local_fid(t);
+        case PrimitiveType::Vertex: return t.local_vid();
+        case PrimitiveType::Edge: return t.local_eid();
+        case PrimitiveType::Triangle: return t.local_fid();
         case PrimitiveType::Tetrahedron:
         default: assert(false);
         }
@@ -28,15 +25,15 @@ public:
     static int8_t local_id(const PrimitiveType pt, const Tuple& t)
     {
         switch (pt) {
-        case PrimitiveType::Triangle: return local_fid(t);
-        case PrimitiveType::Edge: return local_eid(t);
-        case PrimitiveType::Vertex: return local_vid(t);
-        case PrimitiveType::Tetrahedron: assert(false);
-        default: return -1;
+        case PrimitiveType::Vertex: return t.local_vid();
+        case PrimitiveType::Edge: return t.local_eid();
+        case PrimitiveType::Triangle: return t.local_fid();
+        case PrimitiveType::Tetrahedron:
+        default: assert(false);
         }
+        return -1;
     }
 
-    static int64_t global_cid(const Tuple& t) { return t.global_cid(); }
     static std::string as_string(const Tuple& t);
 };
 } // namespace wmtk::utils
