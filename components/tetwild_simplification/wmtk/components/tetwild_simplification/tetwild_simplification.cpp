@@ -916,8 +916,6 @@ std::tuple<std::shared_ptr<TriMesh>, nlohmann::json> tetwild_simplification(
     double duplicate_tol,
     bool use_sampling)
 {
-    using namespace internal;
-
     wmtk::utils::EigenMatrixWriter writer;
     mesh.serialize(writer);
 
