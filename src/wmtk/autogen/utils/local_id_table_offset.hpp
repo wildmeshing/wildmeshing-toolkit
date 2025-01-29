@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <wmtk/PrimitiveType.hpp>
 #include <wmtk/Tuple.hpp>
 
 namespace wmtk::autogen::utils {

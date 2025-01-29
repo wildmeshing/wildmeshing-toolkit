@@ -136,7 +136,7 @@ inline int64_t TriMesh::id(const Tuple& tuple, PrimitiveType type) const
         return v;
     }
     case PrimitiveType::Triangle: {
-        return tuple.m_global_cid;
+        return tuple.global_cid();
     }
     case PrimitiveType::Tetrahedron: [[fallthrough]];
     default: assert(false); // "Tuple id: Invalid primitive type"

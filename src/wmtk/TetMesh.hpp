@@ -132,21 +132,21 @@ inline int64_t TetMesh::id(const Tuple& tuple, PrimitiveType type) const
     switch (type) {
     case PrimitiveType::Vertex: {
         auto tv = m_tv_accessor->const_vector_attribute<4>(tuple);
-        return tv(tuple.m_local_vid);
+        return tv(tuple.local_vid());
         break;
     }
     case PrimitiveType::Edge: {
         auto te = m_te_accessor->const_vector_attribute<6>(tuple);
-        return te(tuple.m_local_eid);
+        return te(tuple.local_eid());
         break;
     }
     case PrimitiveType::Triangle: {
         auto tf = m_tf_accessor->const_vector_attribute<4>(tuple);
-        return tf(tuple.m_local_fid);
+        return tf(tuple.local_fid());
         break;
     }
     case PrimitiveType::Tetrahedron: {
-        return tuple.m_global_cid;
+        return tuple.global_cid();
         break;
     }
     default: assert(false); // "Tuple id: Invalid primitive type"

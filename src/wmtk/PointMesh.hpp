@@ -34,8 +34,7 @@ public:
     void initialize(int64_t count);
 
 
-    bool is_valid(const Tuple& tuple)
-        const final override;
+    bool is_valid(const Tuple& tuple) const final override;
 
     bool is_connectivity_valid() const override { return true; }
 
@@ -61,7 +60,7 @@ protected:
 inline int64_t PointMesh::id(const Tuple& tuple, PrimitiveType type) const
 {
     switch (type) {
-    case PrimitiveType::Vertex: return tuple.m_global_cid;
+    case PrimitiveType::Vertex: return tuple.global_cid();
     case PrimitiveType::Edge:
     case PrimitiveType::Triangle:
     case PrimitiveType::Tetrahedron:

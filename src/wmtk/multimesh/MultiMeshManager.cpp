@@ -58,18 +58,18 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
     // assert(target_mesh.is_valid(target_mesh_base_tuple));
 
 
-    if (source_mesh_base_tuple.m_global_cid != source_mesh_target_tuple.m_global_cid) {
+    if (source_mesh_base_tuple.global_cid() != source_mesh_target_tuple.global_cid()) {
         // guarantee that the source and target tuples refer to the same simplex
         assert(source_mesh_primitive_type > target_mesh_primitive_type);
         const std::vector<Tuple> equivalent_tuples = simplex::top_dimension_cofaces_tuples(
             source_mesh,
             simplex::Simplex(source_mesh, target_mesh_primitive_type, source_tuple));
         for (const Tuple& t : equivalent_tuples) {
-            if (t.m_global_cid == source_mesh_base_tuple.m_global_cid) {
+            if (t.global_cid() == source_mesh_base_tuple.global_cid()) {
                 // specific for tet->edge
                 if (source_mesh_primitive_type == PrimitiveType::Tetrahedron &&
                     target_mesh_primitive_type == PrimitiveType::Edge) {
-                    if (t.m_local_fid == source_mesh_base_tuple.m_local_fid) {
+                    if (t.local_fid() == source_mesh_base_tuple.local_fid()) {
                         source_mesh_target_tuple = t;
                         break;
                     } else {
@@ -87,16 +87,16 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
 
     if (source_mesh_primitive_type == PrimitiveType::Tetrahedron &&
         target_mesh_primitive_type == PrimitiveType::Edge) {
-        if (source_mesh_target_tuple.m_local_fid != source_mesh_base_tuple.m_local_fid) {
+        if (source_mesh_target_tuple.local_fid() != source_mesh_base_tuple.local_fid()) {
             source_mesh_target_tuple =
                 source_mesh.switch_tuple(source_mesh_target_tuple, PrimitiveType::Triangle);
         }
     }
 
     assert(
-        source_mesh_base_tuple.m_global_cid ==
+        source_mesh_base_tuple.global_cid() ==
         source_mesh_target_tuple
-            .m_global_cid); // make sure that local tuple operations will find a valid sequence
+            .global_cid()); // make sure that local tuple operations will find a valid sequence
 
     // we want to repeat switches from source_base_tuple -> source_tuple to
     // target_base _tuple -> return value

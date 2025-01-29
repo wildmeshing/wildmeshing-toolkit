@@ -1,6 +1,10 @@
 #pragma once
 #include <wmtk/function/PerSimplexFunction.hpp>
 
+namespace wmtk {
+class TriMesh;
+}
+
 namespace wmtk::function {
 
 class EdgeValenceEnergy : public PerSimplexFunction

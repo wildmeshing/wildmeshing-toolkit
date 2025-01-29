@@ -22,9 +22,9 @@
 #include "Types.hpp"
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
+#include "attribute/FlagAccessor.hpp"
 #include "attribute/MeshAttributeHandle.hpp"
 #include "attribute/MeshAttributes.hpp"
-#include "attribute/FlagAccessor.hpp"
 #include "multimesh/attribute/AttributeScopeHandle.hpp"
 
 #include "multimesh/attribute/UseParentScopeRAII.hpp"
@@ -90,7 +90,7 @@ template <typename Visitor>
 class MultiMeshVisitorExecutor;
 
 namespace utils {
-    class MapValidator;
+class MapValidator;
 namespace internal {
 class TupleTag;
 }
@@ -795,7 +795,7 @@ protected:
     // creates a scope as int64_t as the AttributeScopeHandle exists
     [[nodiscard]] attribute::AttributeScopeHandle create_single_mesh_scope();
 
-protected:
+public:
     /**
      * @brief return the global id of the Tuple of the given dimension
      *
@@ -812,6 +812,8 @@ protected:
 
     int64_t id(const simplex::NavigatableSimplex& s) const { return s.index(); }
     int64_t id(const simplex::IdSimplex& s) const { return s.index(); }
+
+protected:
     /// Forwarding version of id on simplices that does id caching
     virtual int64_t id(const simplex::Simplex& s) const = 0;
     /// Internal utility to allow id to be virtual with a non-virtual overload in derived -Mesh classes.

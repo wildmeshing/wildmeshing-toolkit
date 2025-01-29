@@ -23,6 +23,7 @@ TEST_CASE("tuple_is_null", "[tuple]")
     Tuple e(-1, -1, -1, -2);
     CHECK(!e.is_null());
 }
+
 TEST_CASE("tuple_comparison", "[tuple]")
 {
     { // check that equals works
@@ -57,4 +58,19 @@ TEST_CASE("tuple_comparison", "[tuple]")
             CHECK(!a.same_ids(b));
         }
     }
+}
+
+TEST_CASE("tuple_ids", "[tuple]")
+{
+    Tuple a(0, 1, 2, 3);
+    CHECK(a.local_vid() == 0);
+    CHECK(a.local_eid() == 1);
+    CHECK(a.local_fid() == 2);
+    CHECK(a.global_cid() == 3);
+
+    Tuple b;
+    CHECK(b.local_vid() == -1);
+    CHECK(b.local_eid() == -1);
+    CHECK(b.local_fid() == -1);
+    CHECK(b.global_cid() == -1);
 }

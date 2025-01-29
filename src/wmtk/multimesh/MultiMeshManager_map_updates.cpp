@@ -232,7 +232,7 @@ void MultiMeshManager::update_map_tuple_hashes(
                 my_mesh,
                 my_mesh.top_simplex_type(),
                 equivalent_parent_tuples,
-                parent_tuple.m_global_cid);
+                parent_tuple.global_cid());
             // assert(old_tuple_opt.has_value());
             if (!old_tuple_opt.has_value()) {
                 continue;
@@ -335,7 +335,7 @@ std::optional<Tuple> MultiMeshManager::find_valid_tuple_from_split(
     const PrimitiveType primitive_type = old_simplex.primitive_type();
 
     for (const auto& [old_cid, new_cids] : split_cell_maps) {
-        if (old_cid != old_tuple.m_global_cid) {
+        if (old_cid != old_tuple.global_cid()) {
             continue;
         }
 
@@ -349,9 +349,9 @@ std::optional<Tuple> MultiMeshManager::find_valid_tuple_from_split(
         const Tuple& old_cid_tuple = old_tuple_opt.value();
         for (const int64_t new_cid : new_cids) {
             Tuple tuple(
-                old_cid_tuple.m_local_vid,
-                old_cid_tuple.m_local_eid,
-                old_cid_tuple.m_local_fid,
+                old_cid_tuple.local_vid(),
+                old_cid_tuple.local_eid(),
+                old_cid_tuple.local_fid(),
                 new_cid);
 
 

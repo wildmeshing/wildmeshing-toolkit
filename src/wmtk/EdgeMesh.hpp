@@ -102,10 +102,10 @@ inline int64_t EdgeMesh::id(const Tuple& tuple, PrimitiveType type) const
         const attribute::Accessor<int64_t, EdgeMesh> ev_accessor =
             create_const_accessor<int64_t>(m_ev_handle);
         auto ev = ev_accessor.const_vector_attribute<2>(tuple);
-        return ev(tuple.m_local_vid);
+        return ev(tuple.local_vid());
     }
     case PrimitiveType::Edge: {
-        return tuple.m_global_cid;
+        return tuple.global_cid();
     }
     case PrimitiveType::Triangle:
     case PrimitiveType::Tetrahedron:
