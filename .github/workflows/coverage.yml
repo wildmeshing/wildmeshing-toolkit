@@ -67,15 +67,15 @@ jobs:
           cd build
           ctest --verbose --output-on-failure
           lcov --directory . --capture --output-file coverage.info
-          lcov --remove coverage.info '/usr/*' "${HOME}"'/.cache/*' '*tests/*.cpp' '*tests/*.hpp' --output-file coverage.info
+          lcov --remove coverage.info '/usr/*' '*tests/*.cpp' '*tests/*.hpp' --output-file coverage.info
 
       - name: Upload Coverage
         uses: codecov/codecov-action@v4
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
-            flags: wildmeshing # optional
-            files: coverage.info
-            name: wildmeshing # optional
-            fail_ci_if_error: false # optional (default = false)
-            verbose: true # optional (default = false)
+          flags: wildmeshing # optional
+          files: coverage.info
+          name: wildmeshing # optional
+          fail_ci_if_error: false # optional (default = false)
+          verbose: true # optional (default = false)
