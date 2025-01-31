@@ -100,6 +100,7 @@ public:
     template <typename T, typename MeshType, int Dim>
     friend class attribute::Accessor;
     friend class io::ParaviewWriter;
+    friend class HDF5Reader;
     friend class multimesh::attribute::UseParentScopeRAII;
     friend class multimesh::MultiMeshManager;
     friend class attribute::AttributeManager;
