@@ -358,7 +358,7 @@ protected:
 public:
     /**
      * @brief switch the orientation of the Tuple of the given dimension
-     * @note this is not doen in place. Return a new Tuple of the switched state
+     * @note this is not done in place. Return a new Tuple of the switched state
      *
      * @param m
      * @param type  d-0 -> switch vertex
