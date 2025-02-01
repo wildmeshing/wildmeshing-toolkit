@@ -1,7 +1,6 @@
 #pragma once
 
 #include <wmtk/utils/Rational.hpp>
-#include "AttributeScope.hpp"
 #include "internal/AttributeTransactionStack.hpp"
 #include "CachingAccessor.hpp"
 
@@ -12,12 +11,12 @@ inline CachingAccessor<T, Dim>::CachingAccessor(
     Mesh& mesh_in,
     const TypedAttributeHandle<T>& handle)
     : BaseType(mesh_in, handle)
-    , m_cache_stack(attribute().get_local_scope_stack())
+    , m_cache_stack(attribute().get_scope_stack())
 {}
 template <typename T, int Dim>
 CachingAccessor<T, Dim>::CachingAccessor(const Mesh& mesh_in, const TypedAttributeHandle<T>& handle)
     : BaseType(mesh_in, handle)
-    , m_cache_stack(attribute().get_local_scope_stack())
+    , m_cache_stack(attribute().get_scope_stack())
 {}
 
 template <typename T, int Dim>

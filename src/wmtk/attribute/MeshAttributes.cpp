@@ -85,7 +85,7 @@ void MeshAttributes<T>::change_to_parent_scope() const
 {
     for (const auto& attr_ptr : m_attributes) {
         if (bool(attr_ptr)) {
-            auto& stack = attr_ptr->get_local_scope_stack();
+            auto& stack = attr_ptr->get_scope_stack();
 
             stack.change_to_next_scope();
         }
@@ -97,7 +97,7 @@ void MeshAttributes<T>::change_to_child_scope() const
 {
     for (const auto& attr_ptr : m_attributes) {
         if (bool(attr_ptr)) {
-            attr_ptr->get_local_scope_stack().change_to_previous_scope();
+            attr_ptr->get_scope_stack().change_to_previous_scope();
         }
     }
 }

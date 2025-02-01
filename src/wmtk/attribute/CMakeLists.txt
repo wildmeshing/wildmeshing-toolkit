@@ -2,10 +2,6 @@
 set(SRC_FILES
     Attribute.hpp
     Attribute.cpp
-    #AttributeCache.hxx
-    AttributeCache.hpp
-    AttributeScope.hpp
-    AttributeScope.hxx
     MeshAttributes.cpp
     MeshAttributes.hpp
     AttributeManager.hpp

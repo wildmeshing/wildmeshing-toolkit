@@ -102,8 +102,8 @@ public:
     void pop_scope(bool apply_updates);
     void rollback_current_scope();
 
-    const internal::AttributeTransactionStack<T>& get_local_scope_stack() const;
-    internal::AttributeTransactionStack<T>& get_local_scope_stack();
+    const internal::AttributeTransactionStack<T>& get_scope_stack() const;
+    internal::AttributeTransactionStack<T>& get_scope_stack();
 
     /**
      * @brief Consolidate the vector, using the new2old map m provided and resizing the vector to
@@ -179,7 +179,7 @@ public:
 
 private:
     std::vector<T> m_data;
-    PerThreadAttributeScopeStacks<T> m_scope_stacks;
+    internal::AttributeTransactionStack<T> m_scope_stacks;
     int64_t m_dimension = -1;
     T m_default_value = T(0);
 
@@ -335,34 +335,33 @@ inline const T& Attribute<T>::default_value() const
 }
 
 template <typename T>
-inline const internal::AttributeTransactionStack<T>& Attribute<T>::get_local_scope_stack() const
+inline const internal::AttributeTransactionStack<T>& Attribute<T>::get_scope_stack() const
 {
-    return m_scope_stacks.local();
+    return m_scope_stacks;
 }
 template <typename T>
-inline internal::AttributeTransactionStack<T>& Attribute<T>::get_local_scope_stack()
+inline internal::AttributeTransactionStack<T>& Attribute<T>::get_scope_stack()
 {
-    return m_scope_stacks.local();
+    return m_scope_stacks;
 }
 
 template <typename T>
 inline void Attribute<T>::push_scope()
 {
-    m_scope_stacks.local().emplace();
+    m_scope_stacks.emplace();
 }
 template <typename T>
 inline void Attribute<T>::pop_scope(bool apply_updates)
 {
-    m_scope_stacks.local().pop(*this, apply_updates);
+    m_scope_stacks.pop(*this, apply_updates);
 }
 
 template <typename T>
 inline void Attribute<T>::rollback_current_scope()
 {
-    m_scope_stacks.local().rollback_current_scope(*this);
+    m_scope_stacks.rollback_current_scope(*this);
 }
 
 } // namespace attribute
 } // namespace wmtk
 #include "AccessorBase.hpp"
-#include "AttributeCache.hpp"

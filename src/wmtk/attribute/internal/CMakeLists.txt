@@ -1,8 +1,6 @@
 set(SRC_FILES
     hash.hpp
     hash.cpp
-    AttributeCacheData.hpp
-    AttributeCacheData.hxx
     AttributeTransactionStack.hxx
     AttributeTransactionStack.hpp
     )

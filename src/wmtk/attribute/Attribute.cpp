@@ -11,14 +11,14 @@ namespace wmtk::attribute {
 template <typename T>
 void Attribute<T>::serialize(const std::string& name, const int dim, MeshWriter& writer) const
 {
-    auto& stack = get_local_scope_stack();
+    auto& stack = get_scope_stack();
     writer.write(name, dim, dimension(), m_data, m_default_value);
 }
 
 
 template <typename T>
 Attribute<T>::Attribute(const std::string& name, int64_t dimension, T default_value, int64_t size)
-    : m_scope_stacks(PerThreadAttributeScopeStacks<T>{})
+    : m_scope_stacks()
     , m_dimension(dimension)
     , m_default_value(default_value)
     , m_name(name)
