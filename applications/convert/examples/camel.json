@@ -1,0 +1,35 @@
+{
+  "input": {
+    "input": [
+      {
+        "file": "unit_test/meshes/camel.msh",
+        "name_spec": "position"
+      },
+      {
+        "file": "unit_test/meshes/cameluv.msh",
+        "name_spec": "uv"
+      }
+    ],
+    "output": {
+      "position": {
+        "file": "camel.hdf5",
+        "type": ".hdf5"
+      }
+    },
+    "tree": {
+      "position": "uv"
+    }
+  },
+  "stats": {
+    "position": {
+      "edges": 5607,
+      "faces": 3576,
+      "vertices": 2032
+    },
+    "position.uv": {
+      "edges": 5607,
+      "faces": 3576,
+      "vertices": 2032
+    }
+  }
+}

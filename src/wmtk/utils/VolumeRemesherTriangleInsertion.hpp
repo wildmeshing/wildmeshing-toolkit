@@ -10,22 +10,14 @@ class Mesh;
 
 namespace wmtk::utils {
 
-
-std::tuple<std::shared_ptr<wmtk::TetMesh>, std::shared_ptr<wmtk::Mesh>>
-generate_raw_tetmesh_with_surface_from_input(
-    const RowVectors3d& V,
-    const RowVectors3l& F,
-    const double eps_target,
-    const RowVectors3d& bgV = RowVectors3d(),
-    const RowVectors4l& bgF = RowVectors4l());
-
 /**
- * @brief input a triangle surface mesh, embed it into a regular grid and generate a tetmesh,
+ * @brief input a triangle surface mesh, embed it into a background tet mesh,
  * track the input surfaces on the tetmesh
  *
  * @param V input vertex coordinates
  * @param F input FV matrix
- * @param target_edge_length target edge length
+ * @param bgV input background vertex coordinates
+ * @param bgT input background TV (tets) matrix
  * @return [tetmesh ptr, tet local faces on input surface]
  */
 
@@ -33,9 +25,8 @@ std::tuple<std::shared_ptr<wmtk::TetMesh>, std::vector<std::array<bool, 4>>>
 generate_raw_tetmesh_from_input_surface(
     const RowVectors3d& V,
     const RowVectors3l& F,
-    const double eps_target,
-    const RowVectors3d& bgV = RowVectors3d(),
-    const RowVectors4l& bgF = RowVectors4l());
+    const RowVectors3d& bgV,
+    const RowVectors4l& bgT);
 
 
 } // namespace wmtk::utils

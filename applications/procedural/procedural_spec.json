@@ -1,0 +1,38 @@
+[
+    {
+        "pointer": "/",
+        "type": "object",
+        "required": [
+            "triangle_fan"
+        ]
+    },
+    {
+        "pointer": "/",
+        "type": "object",
+        "required": [
+            "disk"
+        ]
+    },
+    {
+        "pointer": "/",
+        "type": "object",
+        "required": [
+            "grid"
+        ]
+    },
+    {
+        "pointer": "/grid",
+        "type": "include",
+        "spec_file": "grid_spec.json"
+    },
+    {
+        "pointer": "/fan",
+        "type": "include",
+        "spec_file": "triangle_fan_spec.json"
+    },
+    {
+        "pointer": "/disk",
+        "type": "include",
+        "spec_file": "disk_spec.json"
+    }
+]

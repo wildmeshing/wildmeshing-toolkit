@@ -2,8 +2,8 @@
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
-#include <wmtk/simplex/closed_star.hpp>
-#include <wmtk/simplex/top_dimension_cofaces.hpp>
+#include <wmtk/simplex/IdSimplexCollection.hpp>
+#include <wmtk/simplex/closed_star_iterable.hpp>
 
 
 // it's ugly but for teh visitor we need these included
@@ -23,7 +23,7 @@ Operation::Operation(Mesh& mesh)
 Operation::~Operation() = default;
 
 
-std::shared_ptr<operations::AttributeTransferStrategyBase> Operation::get_transfer_strategy(
+std::shared_ptr<const operations::AttributeTransferStrategyBase> Operation::get_transfer_strategy(
     const attribute::MeshAttributeHandle& attribute)
 {
     assert(attribute.is_same_mesh(mesh()));
@@ -35,9 +35,14 @@ std::shared_ptr<operations::AttributeTransferStrategyBase> Operation::get_transf
     throw std::runtime_error("unable to find attribute");
 }
 
+void Operation::clear_attribute_transfer_strategies()
+{
+    m_attr_transfer_strategies.clear();
+}
+
 void Operation::set_transfer_strategy(
     const attribute::MeshAttributeHandle& attribute,
-    const std::shared_ptr<operations::AttributeTransferStrategyBase>& other)
+    const std::shared_ptr<const operations::AttributeTransferStrategyBase>& other)
 {
     assert(attribute.is_same_mesh(mesh()));
 
@@ -52,8 +57,9 @@ void Operation::set_transfer_strategy(
 }
 
 void Operation::add_transfer_strategy(
-    const std::shared_ptr<operations::AttributeTransferStrategyBase>& other)
+    const std::shared_ptr<const operations::AttributeTransferStrategyBase>& other)
 {
+    spdlog::debug("Adding a transfer");
     m_attr_transfer_strategies.emplace_back(other);
 }
 
@@ -135,34 +141,50 @@ bool Operation::after(
 
 void Operation::apply_attribute_transfer(const std::vector<simplex::Simplex>& direct_mods)
 {
-    simplex::SimplexCollection all(m_mesh);
+    if (m_attr_transfer_strategies.size() == 0) {
+        return;
+    }
+
+    simplex::IdSimplexCollection all(m_mesh);
+    all.reserve(100);
+
+
     for (const auto& s : direct_mods) {
         if (!s.tuple().is_null()) {
-            all.add(simplex::closed_star(m_mesh, s, false));
+            assert(m_mesh.is_valid(s));
+            assert(m_mesh.get_const_flag_accessor(s.primitive_type()).is_active(s));
+            for (const simplex::IdSimplex& ss : simplex::closed_star_iterable(m_mesh, s)) {
+                all.add(ss);
+            }
         }
     }
-    all.sort_and_clean();
+    if (direct_mods.size() > 1) {
+        all.sort_and_clean();
+    }
+
     for (const auto& at_ptr : m_attr_transfer_strategies) {
         if (&m_mesh == &(at_ptr->mesh())) {
-            for (const auto& s : all.simplex_vector()) {
+            for (const simplex::IdSimplex& s : all.simplex_vector()) {
                 if (s.primitive_type() == at_ptr->primitive_type()) {
-                    at_ptr->run(s);
+                    at_ptr->run(m_mesh.get_simplex(s));
                 }
             }
         } else {
             auto& at_mesh = at_ptr->mesh();
             auto at_mesh_simplices = m_mesh.map(at_mesh, direct_mods);
 
-            simplex::SimplexCollection at_mesh_all(at_mesh);
-            for (const auto& s : at_mesh_simplices) {
-                at_mesh_all.add(simplex::closed_star(at_mesh, s));
+            simplex::IdSimplexCollection at_mesh_all(at_mesh);
+            for (const simplex::Simplex& s : at_mesh_simplices) {
+                for (const simplex::IdSimplex& ss : simplex::closed_star_iterable(at_mesh, s)) {
+                    at_mesh_all.add(ss);
+                }
             }
 
             at_mesh_all.sort_and_clean();
 
-            for (const auto& s : at_mesh_all.simplex_vector()) {
+            for (const simplex::IdSimplex& s : at_mesh_all.simplex_vector()) {
                 if (s.primitive_type() == at_ptr->primitive_type()) {
-                    at_ptr->run(s);
+                    at_ptr->run(at_mesh.get_simplex(s));
                 }
             }
         }

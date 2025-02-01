@@ -6,6 +6,7 @@ Tuple PointMesh::vertex_tuple_from_id(int64_t id) const
     return Tuple(-1, -1, -1, id);
 }
 
+PointMesh::~PointMesh() = default;
 PointMesh::PointMesh()
     : MeshCRTP<PointMesh>(0)
 {}
@@ -51,9 +52,9 @@ void PointMesh::initialize(int64_t count)
 {
     set_capacities({count});
     reserve_attributes_to_fit();
-    attribute::Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
+    attribute::FlagAccessor<PointMesh> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
     for (int64_t i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
-        v_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
+        v_flag_accessor.index_access().activate(i);
     }
 }
 

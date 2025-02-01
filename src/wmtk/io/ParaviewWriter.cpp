@@ -5,7 +5,9 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
 
+#include <paraviewo/VTMWriter.hpp>
 #include <paraviewo/VTUWriter.hpp>
+
 // #include <paraviewo/HDF5VTUWriter.hpp>
 
 #include <sstream>
@@ -40,28 +42,49 @@ ParaviewWriter::ParaviewInternalWriter::~ParaviewInternalWriter()
 void ParaviewWriter::ParaviewInternalWriter::write(
     const std::string& name,
     const int64_t stride,
-    const std::vector<double>& val)
+    const std::vector<double>& val,
+    const bool is_cell_field)
 {
     Eigen::MatrixXd tmp =
         Eigen::Map<const Eigen::MatrixXd>(&val[0], stride, val.size() / stride).transpose();
 
     if (stride == 1 || stride == 2 || stride == 3) {
-        m_paraview_file->add_cell_field(name, tmp);
+        if (is_cell_field) {
+            m_paraview_file->add_cell_field(name, tmp);
+        } else {
+            m_paraview_file->add_field(name, tmp);
+        }
     } else if (stride % 3 == 0) {
         for (int64_t i = 0; i < stride; i += 3) {
-            m_paraview_file->add_cell_field(
-                name + "_" + std::to_string(i / 3),
-                tmp.block(0, i, tmp.rows(), 3));
+            if (is_cell_field) {
+                m_paraview_file->add_cell_field(
+                    name + "_" + std::to_string(i / 3),
+                    tmp.block(0, i, tmp.rows(), 3));
+            } else {
+                m_paraview_file->add_field(
+                    name + "_" + std::to_string(i / 3),
+                    tmp.block(0, i, tmp.rows(), 3));
+            }
         }
     } else if (stride % 2 == 0) {
         for (int64_t i = 0; i < stride; i += 2) {
-            m_paraview_file->add_cell_field(
-                name + "_" + std::to_string(i / 2),
-                tmp.block(0, i, tmp.rows(), 2));
+            if (is_cell_field) {
+                m_paraview_file->add_cell_field(
+                    name + "_" + std::to_string(i / 2),
+                    tmp.block(0, i, tmp.rows(), 2));
+            } else {
+                m_paraview_file->add_field(
+                    name + "_" + std::to_string(i / 2),
+                    tmp.block(0, i, tmp.rows(), 2));
+            }
         }
     } else {
         for (int64_t i = 0; i < stride; ++i) {
-            m_paraview_file->add_cell_field(name + "_" + std::to_string(i), tmp.col(i));
+            if (is_cell_field) {
+                m_paraview_file->add_cell_field(name + "_" + std::to_string(i), tmp.col(i));
+            } else {
+                m_paraview_file->add_field(name + "_" + std::to_string(i), tmp.col(i));
+            }
         }
     }
 }
@@ -126,6 +149,16 @@ ParaviewWriter::ParaviewWriter(
     m_writers[1].init(filename.string() + "_edges.vtu", vertices_name, cells[1], m_enabled[1]);
     m_writers[2].init(filename.string() + "_faces.vtu", vertices_name, cells[2], m_enabled[2]);
     m_writers[3].init(filename.string() + "_tets.vtu", vertices_name, cells[3], m_enabled[3]);
+
+    if (m_enabled[0] + m_enabled[1] + m_enabled[2] + m_enabled[3] > 1) {
+        paraviewo::VTMWriter vtm;
+        if (m_enabled[0]) vtm.add_dataset("verts", "mesh", filename.string() + "_verts.vtu");
+        if (m_enabled[1]) vtm.add_dataset("edges", "mesh", filename.string() + "_edges.vtu");
+        if (m_enabled[2]) vtm.add_dataset("faces", "mesh", filename.string() + "_faces.vtu");
+        if (m_enabled[3]) vtm.add_dataset("tets", "mesh", filename.string() + "_tets.vtu");
+
+        vtm.save(filename.string() + ".vtm");
+    }
 }
 
 void ParaviewWriter::write(
@@ -198,9 +231,13 @@ void ParaviewWriter::write_internal(
         for (int i = 0; i < m_writers.size(); ++i) {
             if (m_enabled[i]) m_writers[i].vertices() = V;
         }
-
-    } else if (m_enabled[type])
-        m_writers[type].write(name, stride, val);
+    } else if (type == 0) { // vertex attrs are always written
+        for (size_t i = 0; i < m_writers.size(); ++i) {
+            if (m_enabled[i]) m_writers[i].write(name, stride, val, false);
+        }
+    } else if (m_enabled[type]) {
+        m_writers[type].write(name, stride, val, true);
+    }
 }
 
 

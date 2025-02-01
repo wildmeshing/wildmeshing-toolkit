@@ -17,5 +17,5 @@ using CollapseReturnData =
         wmtk::operations::utils::MultiMeshEdgeCollapseFunctor,
         wmtk::utils::metaprogramming::MeshVariantTraits,
         wmtk::simplex::utils::MeshSimplexComparator,
-        simplex::Simplex>;
+        simplex::NavigatableSimplex>;
 }

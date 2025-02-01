@@ -2,7 +2,6 @@
 #include <numeric>
 #include <wmtk/attribute/PerThreadAttributeScopeStacks.hpp>
 #include <wmtk/io/MeshWriter.hpp>
-#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
 #include <wmtk/utils/vector_hash.hpp>
 

@@ -44,25 +44,28 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
     const auto& parent_incident_vids = fmoe.incident_vids();
 
     for (const auto& parent_data : parent_incident_datas) {
-        for (int ear_index = 0; ear_index < 2; ++ear_index) {
-            for (auto child_ptr : m.get_child_meshes()) {
-                // no ear replcaement required for free child meshes
-                if (child_ptr->is_free()) {
-                    continue;
-                }
-                if (child_ptr->top_cell_dimension() != 1) {
-                    continue; // only deal with child edgemeshes
-                }
+        // std::cout << parent_data.fid << " has been processed" << std::endl;
 
-                const auto& child_mmmanager = child_ptr->m_multi_mesh_manager;
-                int64_t child_id = child_mmmanager.child_id();
-                auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
-                auto parent_to_child_handle = parent_mmmanager.children().at(child_id).map_handle;
-                auto child_to_parent_accessor = child_ptr->create_accessor(child_to_parent_handle);
-                auto parent_to_child_accessor = m.create_accessor(parent_to_child_handle);
-                auto child_cell_flag_accessor =
-                    child_ptr->get_const_flag_accessor(PrimitiveType::Edge);
+        for (auto child_ptr : m.get_child_meshes()) {
+            // no ear replcaement required for free child meshes
+            if (child_ptr->is_free()) {
+                continue;
+            }
+            if (child_ptr->top_cell_dimension() != 1) {
+                continue; // only deal with child edgemeshes
+            }
 
+            const auto& child_mmmanager = child_ptr->m_multi_mesh_manager;
+            int64_t child_id = child_mmmanager.child_id();
+            auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
+            auto parent_to_child_handle = parent_mmmanager.children().at(child_id).map_handle;
+            auto child_to_parent_accessor = child_ptr->create_accessor(child_to_parent_handle);
+            auto parent_to_child_accessor = m.create_accessor(parent_to_child_handle);
+            auto child_cell_flag_accessor = child_ptr->get_const_flag_accessor(PrimitiveType::Edge);
+
+            std::vector<std::pair<Tuple, Tuple>> update_pairs;
+
+            for (int ear_index = 0; ear_index < 2; ++ear_index) {
                 const int64_t parent_ear_eid_old = parent_data.ears[ear_index].eid;
                 const int64_t parent_merged_eid = parent_data.new_edge_id;
                 const int64_t parent_new_fid = parent_data.merged_edge_fid;
@@ -84,11 +87,8 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                 }
 
 
-
                 //  check also the flag accessor of child mesh
-                const char child_flag =
-                    child_cell_flag_accessor.const_scalar_attribute(child_tuple);
-                bool child_tuple_exists = 1 == (child_flag & 1);
+                const bool child_tuple_exists = child_cell_flag_accessor.is_active(child_tuple);
                 if (!child_tuple_exists) {
                     continue;
                 }
@@ -116,11 +116,15 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                 Tuple new_parent_tuple =
                     m.tuple_from_global_ids(parent_new_fid, parent_merged_eid, parent_new_vid);
 
+                update_pairs.push_back(std::make_pair(new_parent_tuple, child_tuple));
+            }
+
+            for (const auto& pair : update_pairs) {
                 wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
                     parent_to_child_accessor,
                     child_to_parent_accessor,
-                    new_parent_tuple,
-                    child_tuple);
+                    pair.first,
+                    pair.second);
             }
         }
     }
@@ -135,26 +139,27 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
     auto parent_mmmanager = m.m_multi_mesh_manager;
 
     for (const auto& parent_data : parent_incident_tet_datas) {
-        for (int ear_index = 0; ear_index < 2; ++ear_index) {
-            for (auto child_ptr : m.get_child_meshes()) {
-                // no ear replcaement required for free child meshes
-                if (child_ptr->is_free()) {
-                    continue;
-                }
-                if (child_ptr->top_cell_dimension() == 2) {
-                    // handle with child tri mesh
-                    // update merge faces here
-                    const auto& child_mmmanager = child_ptr->m_multi_mesh_manager;
-                    const int64_t child_id = child_mmmanager.child_id();
-                    const auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
-                    const auto parent_to_child_handle =
-                        parent_mmmanager.children().at(child_id).map_handle;
-                    auto child_to_parent_accessor =
-                        child_ptr->create_accessor(child_to_parent_handle);
-                    auto parent_to_child_accessor = m.create_accessor(parent_to_child_handle);
-                    auto child_cell_flag_accessor =
-                        child_ptr->get_const_flag_accessor(PrimitiveType::Triangle);
+        for (auto child_ptr : m.get_child_meshes()) {
+            // no ear replcaement required for free child meshes
+            if (child_ptr->is_free()) {
+                continue;
+            }
+            if (child_ptr->top_cell_dimension() == 2) {
+                // handle with child tri mesh
+                // update merge faces here
+                const auto& child_mmmanager = child_ptr->m_multi_mesh_manager;
+                const int64_t child_id = child_mmmanager.child_id();
+                const auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
+                const auto parent_to_child_handle =
+                    parent_mmmanager.children().at(child_id).map_handle;
+                auto child_to_parent_accessor = child_ptr->create_accessor(child_to_parent_handle);
+                auto parent_to_child_accessor = m.create_accessor(parent_to_child_handle);
+                auto child_cell_flag_accessor =
+                    child_ptr->get_const_flag_accessor(PrimitiveType::Triangle);
 
+                std::vector<std::pair<Tuple, Tuple>> update_pairs;
+
+                for (int ear_index = 0; ear_index < 2; ++ear_index) {
                     const int64_t parent_ear_fid_old = parent_data.ears[ear_index].fid;
                     const int64_t parent_merged_fid = parent_data.new_face_id;
                     const int64_t parent_new_tid =
@@ -177,10 +182,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     }
 
 
-
-                    const char child_flag =
-                        child_cell_flag_accessor.const_scalar_attribute(child_tuple);
-                    bool child_tuple_exists = 1 == (child_flag & 1);
+                    bool child_tuple_exists = child_cell_flag_accessor.is_active(child_tuple);
                     if (!child_tuple_exists) {
                         continue;
                     }
@@ -227,28 +229,33 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                         parent_new_eid,
                         parent_new_vid);
 
+                    update_pairs.push_back(std::make_pair(new_parent_tuple, child_tuple));
+                }
+
+                for (const auto& pair : update_pairs) {
                     wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
                         parent_to_child_accessor,
                         child_to_parent_accessor,
-                        new_parent_tuple,
-                        child_tuple);
+                        pair.first,
+                        pair.second);
+                }
 
+            } else if (child_ptr->top_cell_dimension() == 1) {
+                // handle with child edge mesh
+                // update merge edges here
+                // there are three ear edges per side
+                const auto& child_mmmanager = child_ptr->m_multi_mesh_manager;
+                int64_t child_id = child_mmmanager.child_id();
+                auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
+                auto parent_to_child_handle = parent_mmmanager.children().at(child_id).map_handle;
+                auto child_to_parent_accessor = child_ptr->create_accessor(child_to_parent_handle);
+                auto parent_to_child_accessor = m.create_accessor(parent_to_child_handle);
+                auto child_cell_flag_accessor =
+                    child_ptr->get_const_flag_accessor(PrimitiveType::Edge);
 
-                } else if (child_ptr->top_cell_dimension() == 1) {
-                    // handle with child edge mesh
-                    // update merge edges here
-                    // there are three ear edges per side
-                    const auto& child_mmmanager = child_ptr->m_multi_mesh_manager;
-                    int64_t child_id = child_mmmanager.child_id();
-                    auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
-                    auto parent_to_child_handle =
-                        parent_mmmanager.children().at(child_id).map_handle;
-                    auto child_to_parent_accessor =
-                        child_ptr->create_accessor(child_to_parent_handle);
-                    auto parent_to_child_accessor = m.create_accessor(parent_to_child_handle);
-                    auto child_cell_flag_accessor =
-                        child_ptr->get_const_flag_accessor(PrimitiveType::Edge);
+                std::vector<std::pair<Tuple, Tuple>> update_pairs;
 
+                for (int ear_index = 0; ear_index < 2; ++ear_index) {
                     const int64_t parent_ear_fid_old = parent_data.ears[ear_index].fid;
                     const int64_t parent_merged_fid = parent_data.new_face_id;
                     const int64_t parent_new_tid = parent_data.merged_face_tid;
@@ -283,10 +290,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                         }
 
 
-
-                        const char child_flag =
-                            child_cell_flag_accessor.const_scalar_attribute(child_tuple);
-                        bool child_tuple_exists = 1 == (child_flag & 1);
+                        bool child_tuple_exists = child_cell_flag_accessor.is_active(child_tuple);
                         if (!child_tuple_exists) {
                             continue;
                         }
@@ -317,11 +321,15 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                             parent_new_eids[i],
                             parent_new_vid);
 
+                        update_pairs.push_back(std::make_pair(new_parent_tuple, child_tuple));
+                    }
+
+                    for (const auto& pair : update_pairs) {
                         wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
                             parent_to_child_accessor,
                             child_to_parent_accessor,
-                            new_parent_tuple,
-                            child_tuple);
+                            pair.first,
+                            pair.second);
                     }
                 }
             }

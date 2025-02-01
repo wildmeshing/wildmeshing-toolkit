@@ -18,6 +18,7 @@ public:
     template <typename U, typename MeshType, int Dim>
     friend class attribute::Accessor;
     PointMesh();
+    ~PointMesh() override;
     PointMesh(int64_t size);
     PointMesh(const PointMesh& o) = delete;
     PointMesh(PointMesh&& o) = default;

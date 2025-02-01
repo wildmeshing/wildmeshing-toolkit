@@ -1,33 +1,24 @@
 #pragma once
 #include <wmtk/multimesh/operations/SplitReturnData.hpp>
 #include <wmtk/multimesh/operations/extract_operation_tuples.hpp>
+#include "Enums.hpp"
 #include "NewAttributeStrategy.hpp"
 #include "SplitNewAttributeTopoInfo.hpp"
 
 
 namespace wmtk::operations {
 
-// default operation types
-enum class SplitBasicStrategy { Default, Copy, Half, Throw, None };
-//rib and collapse have hte same prototypes / default funs available
-enum class SplitRibBasicStrategy {
-    Default,
-    CopyTuple,
-    CopyOther, // per-dimension "other" simplex option
-    Mean,
-    Throw,
-    None
-};
 
 // This is necessary because subclass is templated
 class BaseSplitNewAttributeStrategy : public NewAttributeStrategy
 {
 public:
     using ReturnData = wmtk::multimesh::operations::SplitReturnData;
-    using OperationTupleData = wmtk::multimesh::operations::OperationTupleData;
+    using OperationInOutData = wmtk::multimesh::operations::OperationInOutData;
 
 
-    virtual void update(const ReturnData& ret_data, const OperationTupleData& op_data) = 0;
+    virtual void update(Mesh& m, const ReturnData& ret_data, const OperationInOutData& op_data)
+        const = 0;
 };
 
 template <typename T>
@@ -36,7 +27,7 @@ class SplitNewAttributeStrategy : public BaseSplitNewAttributeStrategy
 public:
     using VecType = VectorX<T>;
     using ReturnData = BaseSplitNewAttributeStrategy::ReturnData;
-    using OperationTupleData = BaseSplitNewAttributeStrategy::OperationTupleData;
+    using OperationInOutData = BaseSplitNewAttributeStrategy::OperationInOutData;
     using ReturnVariant = ReturnData::ReturnVariant;
 
     // given two ear $k$-simplices, define a value for the single new $k$-simplex between them
@@ -51,7 +42,8 @@ public:
 
     SplitNewAttributeStrategy(const wmtk::attribute::MeshAttributeHandle& h);
 
-    void update(const ReturnData& ret_data, const OperationTupleData& op_data) override;
+    void update(Mesh& m, const ReturnData& ret_data, const OperationInOutData& op_data)
+        const final override;
 
     void set_rib_strategy(SplitRibFuncType&& f);
     void set_strategy(SplitFuncType&& f);
@@ -61,28 +53,43 @@ public:
 
 
     Mesh& mesh() override;
+    using NewAttributeStrategy::mesh;
     PrimitiveType primitive_type() const override;
     void update_handle_mesh(Mesh& m) override;
     bool matches_attribute(const attribute::MeshAttributeHandle&) const override;
+
+    std::vector<wmtk::attribute::MeshAttributeHandle> targets() const final override
+    {
+        return {m_handle};
+    }
+
+    bool invalid_state() const final override;
+    std::string name() const final override;
 
 private:
     wmtk::attribute::MeshAttributeHandle m_handle;
     SplitRibFuncType m_split_rib_op;
     SplitFuncType m_split_op;
+    bool m_will_throw = false;
+    bool m_will_throw_rib = false;
     std::unique_ptr<SplitNewAttributeTopoInfo> m_topo_info;
 
     void assign_split(
-        PrimitiveType pt,
+        wmtk::attribute::Accessor<T>& accessor,
         const Tuple& input_simplex,
-        const std::array<Tuple, 2>& split_simplices);
+        const std::array<Tuple, 2>& split_simplices) const;
 
     void assign_split_ribs(
-        PrimitiveType pt,
+        wmtk::attribute::Accessor<T>& accessor,
         const std::array<Tuple, 2>& input_ears,
-        const Tuple& final_simplex);
+        const Tuple& final_simplex) const;
 
-    static SplitFuncType standard_split_strategy(SplitBasicStrategy optype);
-    static SplitRibFuncType standard_split_rib_strategy(SplitRibBasicStrategy optype);
+    static SplitFuncType standard_split_strategy(
+        SplitBasicStrategy optype,
+        const std::string_view& = {});
+    static SplitRibFuncType standard_split_rib_strategy(
+        SplitRibBasicStrategy optype,
+        const std::string_view& = {});
 };
 
 

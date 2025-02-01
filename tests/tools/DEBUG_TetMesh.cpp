@@ -286,7 +286,7 @@ int64_t DEBUG_TetMesh::valid_primitive_count(PrimitiveType type) const
     int64_t cnt = 0;
     const auto& flag_accessor = get_const_flag_accessor(type);
     for (int i = 0; i < capacity(type); i++) {
-        if (flag_accessor.index_access().const_scalar_attribute(i) != 0) {
+        if (flag_accessor.index_access().is_active(i)) {
             cnt++;
         }
     }

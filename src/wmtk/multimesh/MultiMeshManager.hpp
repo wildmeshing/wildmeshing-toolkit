@@ -38,6 +38,10 @@ class MultiMeshVisitor;
 template <typename Visitor>
 class MultiMeshVisitorExecutor;
 
+namespace utils {
+class MapValidator;
+}
+
 } // namespace multimesh
 class Mesh;
 namespace simplex {
@@ -72,8 +76,7 @@ public:
     friend class multimesh::MultiMeshVisitorExecutor;
     friend class wmtk::HDF5Reader;
 
-    friend bool utils::check_child_maps_valid(const Mesh& m);
-    friend bool utils::check_parent_map_valid(const Mesh& m);
+    friend class utils::MapValidator;
 
 
     // @param the max dimension of the mesh we will get passed
@@ -352,6 +355,8 @@ public:
         return m_has_child_mesh_in_dimension[dimension];
     }
 
+    bool has_child_mesh() const;
+
 protected:
     // Storage of a child mesh (a pointer from the mesh + the map from this mesh -> the child)
     struct ChildData
@@ -527,6 +532,7 @@ protected: // protected to enable unit testing
         const std::vector<int64_t>& local_id_path) const;
 
 
+public:
     static std::vector<int64_t> least_upper_bound_id(
         const std::vector<int64_t>& a,
         const std::vector<int64_t>& b);

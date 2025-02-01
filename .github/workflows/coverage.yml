@@ -39,7 +39,7 @@ jobs:
 
       - name: Cache Build
         id: cache-build
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ${{ env.CACHE_PATH }}
           key: ${{ runner.os }}-Release-cache-${{ github.sha }}
@@ -70,7 +70,9 @@ jobs:
           lcov --remove coverage.info '/usr/*' "${HOME}"'/.cache/*' '*tests/*.cpp' '*tests/*.hpp' --output-file coverage.info
 
       - name: Upload Coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
             flags: wildmeshing # optional
             files: coverage.info

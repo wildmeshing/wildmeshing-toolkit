@@ -1,0 +1,19 @@
+{
+    "grid": {
+        "cycles": [
+            true,
+            true
+        ],
+        "dimensions": [
+            10,
+            10
+        ],
+        "tiling": "diagonal"
+    },
+    "output": {
+        "attributes": {
+            "position": "vertices"
+        },
+        "file": "grid2d_cyclic_positions"
+    }
+}

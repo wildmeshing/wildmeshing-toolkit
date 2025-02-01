@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
+#include <wmtk/operations/AttributeTransferConfiguration.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
@@ -162,9 +163,20 @@ TEST_CASE("collapse_edge_new_attr", "[operations][collapse][2D]")
     };
     EdgeCollapse op(m);
     op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
-    op.add_transfer_strategy(el_strategy);
-    op.set_new_attribute_strategy(edge_length_handle);
-    op.set_new_attribute_strategy(pos_handle);
+
+    AttributeTransferConfiguration cfg;
+    spdlog::info("Adding transfers");
+    //cfg.add(*el_strategy);
+    //spdlog::info("Adding news");
+    //cfg.add_collapse_new(edge_length_handle);
+    //cfg.add_collapse_new(pos_handle);
+
+    //cfg.apply(op);
+
+     op.add_transfer_strategy(el_strategy);
+     op.set_new_attribute_strategy(edge_length_handle);
+     op.set_new_attribute_strategy(pos_handle);
+    spdlog::info("starting to do sections");
 
     Tuple edge;
 
@@ -212,18 +224,18 @@ TEST_CASE("attribute_strategy_missing", "[operations][split]")
 
     // attributes without update strategy cause an exception in the operation
     std::vector<simplex::Simplex> ret;
-    auto valid_gids = [&](const PrimitiveType& pt) -> std::vector<int64_t>{
+    auto valid_gids = [&](const PrimitiveType& pt) -> std::vector<int64_t> {
         std::vector<int64_t> ret;
         const auto tups = m.get_all(pt);
-        std::transform(tups.begin(),tups.end(), std::back_inserter(ret), [&](const Tuple& t) {
-                return m.id(t,pt);
-                });
+        std::transform(tups.begin(), tups.end(), std::back_inserter(ret), [&](const Tuple& t) {
+            return m.id(t, pt);
+        });
         return ret;
     };
-    const std::vector<int64_t> orig_tris  = valid_gids(PrimitiveType::Triangle);
+    const std::vector<int64_t> orig_tris = valid_gids(PrimitiveType::Triangle);
 
     CHECK_THROWS(ret = op(Simplex::edge(m, edge)));
-    const std::vector<int64_t> new_tris  = valid_gids(PrimitiveType::Triangle);
+    const std::vector<int64_t> new_tris = valid_gids(PrimitiveType::Triangle);
     REQUIRE(orig_tris == new_tris);
     logger().trace("{} {}", wmtk::utils::TupleInspector::as_string(edge), ret.size());
     REQUIRE(m.is_valid(edge));
@@ -386,9 +398,8 @@ TEST_CASE("attr_cast", "[operations][attributes]")
         m.get_attribute_dimension(pos_handle.as<double>()));
 
 
-    wmtk::operations::attribute_update::CastAttributeTransferStrategy<wmtk::Rational, double> caster(
-        pos_rational_handle,
-        pos_handle);
+    wmtk::operations::attribute_update::CastAttributeTransferStrategy<wmtk::Rational, double>
+        caster(pos_rational_handle, pos_handle);
     wmtk::operations::attribute_update::CastAttributeTransferStrategy<double, double> caster2(
         pos_handle2,
         pos_handle);

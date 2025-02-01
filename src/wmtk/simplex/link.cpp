@@ -6,9 +6,80 @@
 
 #include "closed_star.hpp"
 #include "faces.hpp"
+#include "link_single_dimension.hpp"
 #include "top_dimension_cofaces.hpp"
 
+
 namespace wmtk::simplex {
+
+namespace {
+
+void link_vertex(
+    const TriMesh& mesh,
+    const simplex::Simplex& simplex,
+    std::vector<Simplex>& collection)
+{
+    constexpr PrimitiveType PV = PrimitiveType::Vertex;
+    constexpr PrimitiveType PE = PrimitiveType::Edge;
+    constexpr PrimitiveType PF = PrimitiveType::Triangle;
+
+    assert(mesh.is_valid(simplex.tuple()));
+    const Tuple t_in = simplex.tuple();
+    Tuple t = t_in;
+
+    do {
+        const Tuple t_collect = mesh.switch_tuples(t, {PV, PE});
+        collection.emplace_back(simplex::Simplex(mesh, PV, t_collect));
+        collection.emplace_back(simplex::Simplex(mesh, PE, t_collect));
+
+        if (mesh.is_boundary_edge(t)) {
+            break;
+        }
+        t = mesh.switch_tuples(t, {PF, PE});
+    } while (t != t_in);
+
+
+    if (t == t_in && !mesh.is_boundary_edge(t)) {
+        return;
+    }
+
+    t = mesh.switch_edge(t_in);
+
+    collection.emplace_back(simplex::Simplex(mesh, PV, mesh.switch_tuple(t, PV)));
+    if (mesh.is_boundary_edge(t)) {
+        return;
+    }
+    t = mesh.switch_tuples(t, {PF, PE});
+
+    do {
+        const Tuple t_collect = mesh.switch_tuples(t, {PV, PE});
+        collection.emplace_back(simplex::Simplex(mesh, PV, t_collect));
+        collection.emplace_back(simplex::Simplex(mesh, PE, t_collect));
+
+        if (mesh.is_boundary_edge(t)) {
+            break;
+        }
+        t = mesh.switch_tuples(t, {PF, PE});
+    } while (true);
+}
+
+// void link_edge(
+//     const TriMesh& mesh,
+//     const simplex::Simplex& simplex,
+//     std::vector<Simplex>& collection)
+// {
+//     constexpr PrimitiveType PV = PrimitiveType::Vertex;
+//     constexpr PrimitiveType PE = PrimitiveType::Edge;
+//     constexpr PrimitiveType PF = PrimitiveType::Triangle;
+//     const Tuple& t = simplex.tuple();
+
+//     collection.emplace_back(simplex::Simplex(mesh, PV, mesh.switch_tuples(t, {PE, PV})));
+//     if (!mesh.is_boundary_edge(t)) {
+//         collection.emplace_back(simplex::Simplex(mesh, PV, mesh.switch_tuples(t, {PF, PE, PV})));
+//     }
+// }
+
+} // namespace
 
 SimplexCollection link(const Mesh& mesh, const simplex::Simplex& simplex, const bool sort_and_clean)
 {
@@ -27,42 +98,26 @@ SimplexCollection
 link(const TriMesh& mesh, const simplex::Simplex& simplex, const bool sort_and_clean)
 {
     // make use of the fact that the top dimension coface tuples always contain the simplex itself
-    const std::vector<Tuple> cell_tuples = top_dimension_cofaces_tuples(mesh, simplex);
 
-    constexpr PrimitiveType PV = PrimitiveType::Vertex;
-    constexpr PrimitiveType PE = PrimitiveType::Edge;
-
-    std::vector<Simplex> all_cofaces;
     switch (simplex.primitive_type()) {
-    case PrimitiveType::Vertex:
-        all_cofaces.reserve(cell_tuples.size() * 7);
-        for (Tuple t : cell_tuples) {
-            t = mesh.switch_tuples(t, {PV, PE});
-            all_cofaces.emplace_back(Simplex::edge(mesh, t));
-            all_cofaces.emplace_back(Simplex::vertex(mesh, t));
-            t = mesh.switch_tuples(t, {PV});
-            all_cofaces.emplace_back(Simplex::vertex(mesh, t));
+    case PrimitiveType::Vertex: {
+        std::vector<Simplex> link_simplices;
+        link_vertex(mesh, simplex, link_simplices);
+        SimplexCollection collection(mesh, std::move(link_simplices));
+        if (sort_and_clean) {
+            collection.sort();
         }
-        break;
-    case PrimitiveType::Edge:
-        all_cofaces.reserve(cell_tuples.size() * 3);
-        for (Tuple t : cell_tuples) {
-            t = mesh.switch_tuples(t, {PE, PV});
-            all_cofaces.emplace_back(Simplex::vertex(mesh, t));
-        }
-        break;
+        return collection;
+    }
+    case PrimitiveType::Edge: {
+        return link_single_dimension(mesh, simplex, PrimitiveType::Vertex, sort_and_clean);
+    }
     case PrimitiveType::Triangle: break;
     case PrimitiveType::Tetrahedron:
     default: log_and_throw_error("Unknown primitive type in open_star."); break;
     }
 
-    SimplexCollection collection(mesh, std::move(all_cofaces));
-
-    if (sort_and_clean) {
-        collection.sort_and_clean();
-    }
-
-    return collection;
+    return SimplexCollection(mesh);
 }
 
 SimplexCollection

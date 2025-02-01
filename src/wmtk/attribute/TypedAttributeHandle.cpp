@@ -1,3 +1,4 @@
+#include <fmt/format.h>
 #include <cassert>
 #include <tuple>
 #include <wmtk/utils/Rational.hpp>
@@ -5,6 +6,16 @@
 
 namespace wmtk::attribute {
 
+template <typename T>
+TypedAttributeHandle<T>::operator std::string() const
+{
+    return fmt::format(
+        "{}:{}",
+        m_base_handle.index,
+        wmtk::primitive_type_name(m_primitive_type)
+
+    );
+}
 
 template <typename T>
 bool TypedAttributeHandle<T>::operator<(const TypedAttributeHandle<T>& o) const

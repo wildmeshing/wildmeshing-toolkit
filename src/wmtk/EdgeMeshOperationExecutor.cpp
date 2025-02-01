@@ -38,7 +38,7 @@ void EdgeMesh::EdgeMeshOperationExecutor::delete_simplices()
 {
     for (size_t d = 0; d < simplex_ids_to_delete.size(); ++d) {
         for (const int64_t id : simplex_ids_to_delete[d]) {
-            flag_accessors[d].index_access().scalar_attribute(id) = 0;
+            flag_accessors[d].index_access().deactivate(id) ;
         }
     }
 }
@@ -247,7 +247,8 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
 
     // update ve
     {
-        ve_accessor.index_access().scalar_attribute(m_spine_vids[1]) = m_neighbor_eids[1];
+        ve_accessor.index_access().scalar_attribute(m_spine_vids[1]) =
+            (m_neighbor_eids[1] != -1) ? m_neighbor_eids[1] : m_neighbor_eids[0];
     }
 
     update_cell_hash();

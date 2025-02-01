@@ -1,8 +1,7 @@
 #pragma once
 
 // clang-format off
-#include <spdlog/fmt/bundled/ranges.h>
-#include <spdlog/fmt/ostr.h>
+#include <fmt/ranges.h>
 #include <spdlog/spdlog.h>
 // clang-format on
 
@@ -44,6 +43,6 @@ void set_opt_logger(std::shared_ptr<spdlog::logger> logger);
 template <typename... Args>
 [[noreturn]] void log_and_throw_error(const std::string& msg, const Args&... args)
 {
-    log_and_throw_error(fmt::format(msg, args...));
+    log_and_throw_error(fmt::format(fmt::runtime(msg), args...));
 }
 } // namespace wmtk

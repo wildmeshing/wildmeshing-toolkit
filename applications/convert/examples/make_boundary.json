@@ -1,0 +1,33 @@
+{
+  "input": {
+    "input": [
+      {
+        "file": "blub_open.msh",
+        "name_spec": "position"
+      }
+    ],
+    "output": {
+      "position": {
+        "file": "blub.hdf5",
+        "type": ".hdf5"
+      }
+    },
+    "tree": {
+      "position": {
+        "dimension": 1,
+        "type": "boundary"
+      }
+    }
+  },
+  "stats": {
+    "position": {
+      "edges": 17504,
+      "faces": 11648,
+      "vertices": 5857
+    },
+    "position.boundary_1": {
+      "edges": 64,
+      "vertices": 64
+    }
+  }
+}

@@ -1,19 +1,19 @@
 
 #include <cassert>
 #include <functional>
+#include <set>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/autogen/Dart.hpp>
 #include <wmtk/autogen/SimplexDart.hpp>
 #include <wmtk/operations/EdgeOperationData.hpp>
+#include <wmtk/operations/internal/CollapseAlternateFacetData.hpp>
+#include <wmtk/operations/internal/SplitAlternateFacetData.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
 #include "MultiMeshManager.hpp"
 #include "utils/local_switch_tuple.hpp"
 #include "utils/transport_tuple.hpp"
 #include "utils/tuple_map_attribute_io.hpp"
-#include <wmtk/operations/internal/SplitAlternateFacetData.hpp>
-#include <wmtk/operations/internal/CollapseAlternateFacetData.hpp>
-#include <set>
 
 namespace wmtk::multimesh {
 
@@ -28,10 +28,7 @@ Tuple find_valid_tuple(
 {
     return std::visit(
         [&](const auto& facet_data) -> wmtk::Tuple {
-            return facet_data->get_alternative(
-                my_mesh.top_simplex_type(),
-                tuple,
-                primitive_type);
+            return facet_data->get_alternative(my_mesh.top_simplex_type(), tuple, primitive_type);
         },
         data.m_op_data);
 }
@@ -133,7 +130,11 @@ void MultiMeshManager::update_maps_from_edge_operation(
             }
 
 
-            parent_tuple = wmtk::multimesh::find_valid_tuple(my_mesh, parent_tuple, primitive_type, operation_data);
+            parent_tuple = wmtk::multimesh::find_valid_tuple(
+                my_mesh,
+                parent_tuple,
+                primitive_type,
+                operation_data);
 
 
             wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
@@ -217,12 +218,13 @@ void MultiMeshManager::update_map_tuple_hashes(
 
             // check if the map is handled in the ear case
             // if the child simplex is deleted then we can skip it
-            if(child_mesh.is_removed(child_tuple)) {
-                spdlog::info("Perhaps incorrect tuple map {} => {}", wmtk::utils::TupleInspector::as_string(parent_tuple),
-                wmtk::utils::TupleInspector::as_string(child_tuple));
-                //continue;
+            if (child_mesh.is_removed(child_tuple)) {
+                // spdlog::info("Perhaps incorrect tuple map {} => {}",
+                // wmtk::utils::TupleInspector::as_string(parent_tuple),
+                // wmtk::utils::TupleInspector::as_string(child_tuple));
+                // continue;
             }
-            //assert(!child_mesh.is_removed(child_tuple));
+            // assert(!child_mesh.is_removed(child_tuple));
 
             // Find a valid representation of this simplex representation of the original tupl
             Tuple old_tuple;

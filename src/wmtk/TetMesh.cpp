@@ -3,16 +3,18 @@
 
 #include <wmtk/utils/tetmesh_topology_initialization.h>
 #include <numeric>
+#include <wmtk/autogen/tet_mesh/get_tuple_from_simplex_local_id.hpp>
 #include <wmtk/autogen/tet_mesh/is_ccw.hpp>
 #include <wmtk/autogen/tet_mesh/local_switch_tuple.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
-#include <wmtk/simplex/cofaces_single_dimension.hpp>
+#include <wmtk/simplex/cofaces_single_dimension_iterable.hpp>
 #include <wmtk/simplex/open_star.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 namespace wmtk {
 
 using namespace autogen;
+TetMesh::~TetMesh() = default;
 
 TetMesh::TetMesh()
     : MeshCRTP<TetMesh>(3)
@@ -101,10 +103,11 @@ void TetMesh::initialize(
     auto te_accessor = create_accessor<int64_t>(m_te_handle);
     auto tf_accessor = create_accessor<int64_t>(m_tf_handle);
     auto tt_accessor = create_accessor<int64_t>(m_tt_handle);
-    attribute::Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
-    attribute::Accessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
-    attribute::Accessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
-    attribute::Accessor<char> t_flag_accessor = get_flag_accessor(PrimitiveType::Tetrahedron);
+    attribute::FlagAccessor<TetMesh> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
+    attribute::FlagAccessor<TetMesh> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
+    attribute::FlagAccessor<TetMesh> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
+    attribute::FlagAccessor<TetMesh> t_flag_accessor =
+        get_flag_accessor(PrimitiveType::Tetrahedron);
 
     // iterate over the matrices and fill attributes
     for (int64_t i = 0; i < capacity(PrimitiveType::Tetrahedron); ++i) {
@@ -112,22 +115,23 @@ void TetMesh::initialize(
         te_accessor.index_access().vector_attribute<6>(i) = TE.row(i).transpose();
         tf_accessor.index_access().vector_attribute<4>(i) = TF.row(i).transpose();
         tt_accessor.index_access().vector_attribute<4>(i) = TT.row(i).transpose();
-        t_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
+        t_flag_accessor.index_access().activate(i);
+        e_flag_accessor.index_access().activate(i);
     }
     // m_vt
     for (int64_t i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
         vt_accessor.index_access().scalar_attribute(i) = VT(i);
-        v_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
+        v_flag_accessor.index_access().activate(i);
     }
     // m_et
     for (int64_t i = 0; i < capacity(PrimitiveType::Edge); ++i) {
         et_accessor.index_access().scalar_attribute(i) = ET(i);
-        e_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
+        e_flag_accessor.index_access().activate(i);
     }
     // m_ft
     for (int64_t i = 0; i < capacity(PrimitiveType::Triangle); ++i) {
         ft_accessor.index_access().scalar_attribute(i) = FT(i);
-        f_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
+        f_flag_accessor.index_access().activate(i);
     }
 }
 
@@ -161,13 +165,7 @@ Tuple TetMesh::vertex_tuple_from_id(int64_t id) const
         }
     }
 
-    const auto [nlvid, leid, lfid] = autogen::tet_mesh::auto_3d_table_complete_vertex[lvid];
-    assert(lvid == nlvid);
-
-    if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("vertex_tuple_from_id failed");
-
-    Tuple v_tuple = Tuple(lvid, leid, lfid, t);
-    assert(is_ccw(v_tuple));
+    Tuple v_tuple = autogen::tet_mesh::get_tuple_from_simplex_local_vertex_id(lvid, t);
     assert(is_valid(v_tuple));
     return v_tuple;
 }
@@ -185,14 +183,7 @@ Tuple TetMesh::edge_tuple_from_id(int64_t id) const
             break;
         }
     }
-    const auto [lvid, nleid, lfid] = autogen::tet_mesh::auto_3d_table_complete_edge[leid];
-    assert(leid == nleid);
-
-
-    if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("edge_tuple_from_id failed");
-
-    Tuple e_tuple = Tuple(lvid, leid, lfid, t);
-    assert(is_ccw(e_tuple));
+    Tuple e_tuple = autogen::tet_mesh::get_tuple_from_simplex_local_edge_id(leid, t);
     assert(is_valid(e_tuple));
     return e_tuple;
 }
@@ -211,13 +202,9 @@ Tuple TetMesh::face_tuple_from_id(int64_t id) const
         }
     }
 
-    const auto [lvid, leid, nlfid] = autogen::tet_mesh::auto_3d_table_complete_face[lfid];
-    assert(lfid == nlfid);
 
-    if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("face_tuple_from_id failed");
-
-    Tuple f_tuple = Tuple(lvid, leid, lfid, t);
-    assert(is_ccw(f_tuple));
+    assert(lfid >= 0);
+    Tuple f_tuple = autogen::tet_mesh::get_tuple_from_simplex_local_face_id(lfid, t);
     assert(is_valid(f_tuple));
     return f_tuple;
 }
@@ -340,6 +327,23 @@ bool TetMesh::is_valid(const Tuple& tuple) const
                                        autogen::tet_mesh::tuple_is_valid_for_ccw(tuple);
 
     if (!is_connectivity_valid) {
+#if !defined(NDEBUG)
+        logger().trace(
+            "tuple.m_local_vid={} >= 0 && tuple.m_local_eid={} >= 0 &&"
+            "tuple.m_local_fid={} >= 0 &&"
+            " tuple.m_global_cid={} >= 0 &&"
+            " autogen::tet_mesh::tuple_is_valid_for_ccw(tuple)={}",
+            tuple.m_local_vid,
+            tuple.m_local_eid,
+            tuple.m_local_fid,
+            tuple.m_global_cid,
+            autogen::tet_mesh::tuple_is_valid_for_ccw(tuple));
+        assert(tuple.m_local_vid >= 0);
+        assert(tuple.m_local_eid >= 0);
+        assert(tuple.m_local_fid >= 0);
+        assert(tuple.m_global_cid >= 0);
+        assert(autogen::tet_mesh::tuple_is_valid_for_ccw(tuple));
+#endif
         return false;
     }
 
@@ -369,7 +373,7 @@ bool TetMesh::is_boundary_face(const Tuple& tuple) const
 
 bool TetMesh::is_boundary_edge(const Tuple& edge) const
 {
-    for (const Tuple& f : simplex::cofaces_single_dimension_tuples(
+    for (const Tuple& f : simplex::cofaces_single_dimension_iterable(
              *this,
              simplex::Simplex::edge(*this, edge),
              PrimitiveType::Triangle)) {
@@ -403,15 +407,60 @@ bool TetMesh::is_connectivity_valid() const
     const attribute::Accessor<int64_t> vt_accessor = create_const_accessor<int64_t>(m_vt_handle);
     const attribute::Accessor<int64_t> et_accessor = create_const_accessor<int64_t>(m_et_handle);
     const attribute::Accessor<int64_t> ft_accessor = create_const_accessor<int64_t>(m_ft_handle);
-    const attribute::Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
-    const attribute::Accessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
-    const attribute::Accessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
-    const attribute::Accessor<char> t_flag_accessor = get_flag_accessor(PrimitiveType::Tetrahedron);
+    const attribute::FlagAccessor<TetMesh> v_flag_accessor =
+        get_flag_accessor(PrimitiveType::Vertex);
+    const attribute::FlagAccessor<TetMesh> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
+    const attribute::FlagAccessor<TetMesh> f_flag_accessor =
+        get_flag_accessor(PrimitiveType::Triangle);
+    const attribute::FlagAccessor<TetMesh> t_flag_accessor =
+        get_flag_accessor(PrimitiveType::Tetrahedron);
 
+
+    for (int64_t i = 0; i < capacity(PrimitiveType::Tetrahedron); ++i) {
+        if (!t_flag_accessor.index_access().is_active(i)) {
+            continue;
+        }
+        auto tf = tf_accessor.index_access().const_vector_attribute<4>(i);
+        auto te = te_accessor.index_access().const_vector_attribute<6>(i);
+        auto tv = tv_accessor.index_access().const_vector_attribute<4>(i);
+
+        bool bad_face = false;
+        for (int64_t j = 0; j < 6; ++j) {
+            int64_t ei = te(j);
+            if (!e_flag_accessor.index_access().is_active(ei)) {
+                wmtk::logger().error(
+                    "Tet {} refers to edge {} at local index {} which was deleted",
+                    i,
+                    ei,
+                    j);
+                bad_face = true;
+            }
+        }
+
+        for (int64_t j = 0; j < 4; ++j) {
+            int64_t vi = tv(j);
+            int64_t fi = tf(j);
+            if (!v_flag_accessor.index_access().is_active(vi)) {
+                wmtk::logger().error(
+                    "Tet {} refers to vertex{} at local index {} which was deleted",
+                    i,
+                    vi,
+                    j);
+                bad_face = true;
+            }
+            if (!f_flag_accessor.index_access().is_active(fi)) {
+                wmtk::logger()
+                    .error("Tet {} refers to face{} at local index {} which was deleted", i, fi, j);
+                bad_face = true;
+            }
+        }
+        if (bad_face) {
+            return false;
+        }
+    }
     // VT and TV
     for (int64_t i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
-        if (v_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
-            wmtk::logger().debug("Vertex {} is deleted", i);
+        if (!v_flag_accessor.index_access().is_active(i)) {
             continue;
         }
         int cnt = 0;
@@ -429,8 +478,7 @@ bool TetMesh::is_connectivity_valid() const
 
     // ET and TE
     for (int64_t i = 0; i < capacity(PrimitiveType::Edge); ++i) {
-        if (e_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
-            wmtk::logger().debug("Edge {} is deleted", i);
+        if (!e_flag_accessor.index_access().is_active(i)) {
             continue;
         }
         int cnt = 0;
@@ -448,8 +496,7 @@ bool TetMesh::is_connectivity_valid() const
 
     // FT and TF
     for (int64_t i = 0; i < capacity(PrimitiveType::Triangle); ++i) {
-        if (f_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
-            wmtk::logger().debug("Face {} is deleted", i);
+        if (!f_flag_accessor.index_access().is_active(i)) {
             continue;
         }
         int cnt = 0;
@@ -467,8 +514,7 @@ bool TetMesh::is_connectivity_valid() const
 
     // TF and TT
     for (int64_t i = 0; i < capacity(PrimitiveType::Tetrahedron); ++i) {
-        if (t_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
-            wmtk::logger().debug("Tet {} is deleted", i);
+        if (!t_flag_accessor.index_access().is_active(i)) {
             continue;
         }
 
@@ -477,7 +523,7 @@ bool TetMesh::is_connectivity_valid() const
             if (nb == -1) {
                 if (ft_accessor.index_access().const_scalar_attribute(
                         tf_accessor.index_access().const_vector_attribute<4>(i)(j)) != i) {
-                    wmtk::logger().info("fail TF and TT 1");
+                    wmtk::logger().error("FT[TF[{},{}]] != {}", i, j, i);
                     return false;
                 }
                 continue;
@@ -492,13 +538,24 @@ bool TetMesh::is_connectivity_valid() const
                 }
             }
             if (cnt != 1) {
-                wmtk::logger().info("fail TF and TT 2");
+                wmtk::logger().error("Tet {} was adjacent to tet {} {} <= 1 times", nb, i, cnt);
                 return false;
             }
 
             if (tf_accessor.index_access().const_vector_attribute<4>(i)(j) !=
                 tf_accessor.index_access().const_vector_attribute<4>(nb)(id_in_nb)) {
-                wmtk::logger().info("fail TF and TT 3");
+                wmtk::logger().error(
+                    "TF[{},{}] = {} != {} = TF[{},{}] even though TT[{},{}] == {}",
+                    i,
+                    j,
+                    tf_accessor.index_access().const_vector_attribute<4>(i)(j),
+                    tf_accessor.index_access().const_vector_attribute<4>(nb)(id_in_nb),
+                    nb,
+                    id_in_nb,
+                    i,
+                    j,
+                    nb);
+
                 return false;
             }
         }

@@ -1,10 +1,6 @@
 #include "Scheduler.hpp"
 
-#include <cassert>
-#include "Mesh.hpp"
-
 #include <wmtk/attribute/TypedAttributeHandle.hpp>
-#include <wmtk/multimesh/utils/check_map_valid.hpp>
 #include <wmtk/simplex/k_ring.hpp>
 #include <wmtk/simplex/link.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
@@ -13,7 +9,15 @@
 
 #include <polysolve/Utils.hpp>
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wredundant-decls"
+#endif
 #include <tbb/parallel_for.h>
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+
 // #include <tbb/task_arena.h>
 #include <atomic>
 
@@ -112,15 +116,16 @@ SchedulerStats Scheduler::run_operation_on_all(
 
     auto flag_accessor = op.mesh().create_accessor(flag_handle);
     auto tups = op.mesh().get_all(type);
-    for (const auto& t : tups) {
-        flag_accessor.scalar_attribute(t) = char(0);
-    }
 
-    SchedulerStats res = run_operation_on_all(op);
-    int64_t success = res.number_of_successful_operations();
+    SchedulerStats res;
+    int64_t success = -1;
     std::vector<std::pair<int64_t, double>> order;
 
-    while (success > 0) {
+    for (const auto& t : tups) {
+        flag_accessor.scalar_attribute(t) = char(1);
+    }
+
+    do {
         SchedulerStats internal_stats;
         // op.reserve_enough_simplices();
 
@@ -206,7 +211,7 @@ SchedulerStats Scheduler::run_operation_on_all(
         res.sub_stats.push_back(internal_stats);
         m_stats += internal_stats;
         m_stats.sub_stats.push_back(internal_stats);
-    }
+    } while (success > 0);
 
     // // reset flag to 1, not necessaty
     // auto tups = op.mesh().get_all(type);

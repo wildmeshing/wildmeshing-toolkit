@@ -1,0 +1,40 @@
+{
+  "input": {
+    "input": [
+      {
+        "file": "unit_test/meshes/camel.msh",
+        "name_spec": "position"
+      },
+      {
+        "file": "unit_test/meshes/cameluv.msh",
+        "name_spec": "uv"
+      }
+    ],
+    "output": {
+      "position": {
+        "file": "ogre_pos.vtu",
+        "position_attribute": "vertices"
+      },
+      "position.uv": {
+        "file": "ogre_uv.vtu",
+        "position_attribute": "vertices"
+      }
+    },
+    "root": "/home/mtao/.local/cpm/wmtk_data/aa0abd4658bb064515ee7cc2a7be87aa",
+    "tree": {
+      "position": "uv"
+    }
+  },
+  "stats": {
+    "position": {
+      "edges": 5607,
+      "faces": 3576,
+      "vertices": 2032
+    },
+    "position.uv": {
+      "edges": 5607,
+      "faces": 3576,
+      "vertices": 2032
+    }
+  }
+}

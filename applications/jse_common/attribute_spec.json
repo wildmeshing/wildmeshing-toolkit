@@ -1,0 +1,32 @@
+[
+    {
+        "pointer": "/",
+        "type": "object",
+        "required": [
+            "name"
+        ],
+        "optional": [
+            "type",
+            "simplex",
+            "mesh"
+        ]
+    },
+    {
+        "pointer": "/name",
+        "type": "the name of the attribute"
+    },
+    {
+        "pointer": "/mesh",
+        "type": "the name of the mesh the attribute belongs to"
+    },
+    {
+        "pointer": "/type",
+        "type": "string",
+        "doc": "the type of the attribute, one of double/char/int64/rational"
+    },
+    {
+        "pointer": "/simplex",
+        "type": "int",
+        "doc": "the dimension of the simplex the attribute lies on"
+    }
+]

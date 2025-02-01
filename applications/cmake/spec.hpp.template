@@ -1,0 +1,9 @@
+#pragma once
+#include <nlohmann/json.hpp>
+
+
+
+namespace wmtk::applications::APPLICATION_NAME {
+    const static nlohmann::json spec;
+}
+

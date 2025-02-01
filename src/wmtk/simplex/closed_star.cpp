@@ -6,6 +6,7 @@
 
 #include "faces.hpp"
 #include "top_dimension_cofaces.hpp"
+#include "top_dimension_cofaces_iterable.hpp"
 
 namespace wmtk::simplex {
 
