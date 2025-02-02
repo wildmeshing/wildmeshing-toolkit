@@ -16,7 +16,7 @@ constexpr PrimitiveType PE = PrimitiveType::Edge;
 constexpr PrimitiveType PF = PrimitiveType::Triangle;
 constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
 
-TEST_CASE("sub_mesh", "[mesh][sub_mesh]")
+TEST_CASE("submesh", "[mesh][submesh]")
 {
     // basic test for implementing
 }

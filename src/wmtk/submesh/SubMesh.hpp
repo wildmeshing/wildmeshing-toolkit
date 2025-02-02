@@ -1,12 +1,16 @@
 #pragma once
 
-#include "Mesh.hpp"
+#include <map>
+#include <wmtk/PrimitiveType.hpp>
+#include <wmtk/Tuple.hpp>
+#include <wmtk/attribute/TypedAttributeHandle.hpp>
 
+namespace wmtk::submesh {
 
-namespace wmtk {
+class Embedding;
 
 /**
- * Mesh m;
+ * Embedding m;
  * SubMesh s = m.add_sub_mesh();
  * s.add_simplex(IdSimplex);
  * s.add_from_tag(tag_handle, tag_value);
@@ -14,18 +18,21 @@ namespace wmtk {
 class SubMesh
 {
 public:
+    SubMesh(Embedding& embedding, int64_t submesh_id);
     SubMesh() = delete;
     SubMesh(const SubMesh&) = delete;
     SubMesh& operator=(const SubMesh&) = delete;
     SubMesh(SubMesh&&) = delete;
     SubMesh& operator=(SubMesh&&) = delete;
 
-    // throws if `type` is larger than the substructure max dimension of tuple
-    Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const;
+    void add_simplex(const Tuple& tuple, PrimitiveType pt);
 
-    // call open_star_single_dimension if `type` is larger or equal than max dim, use `switch_tuple`
+    // throws if `type` is larger than the substructure max dimension of tuple
+    Tuple switch_tuple(const Tuple& tuple, PrimitiveType pt) const;
+
+    // call open_star_single_dimension if `pt` is larger or equal than max dim, use `switch_tuple`
     // otherwise
-    std::vector<Tuple> switch_tuple_vector(const Tuple& tuple, PrimitiveType type) const;
+    std::vector<Tuple> switch_tuple_vector(const Tuple& tuple, PrimitiveType pt) const;
 
     // 1. get max dim in open star
     // 2. check if any incident max dim facet has less than two neighbors
@@ -43,10 +50,11 @@ public:
         const int64_t tag_value);
 
     // forward to Mesh
-    int64_t id(const Tuple& tuple, PrimitiveType type) const;
+    int64_t id(const Tuple& tuple, PrimitiveType pt) const;
 
 private:
-    Mesh& m_mesh;
+    Embedding& m_embedding;
+    const int64_t m_submesh_id;
 };
 
-} // namespace wmtk
+} // namespace wmtk::submesh

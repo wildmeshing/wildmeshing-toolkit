@@ -47,3 +47,4 @@ add_subdirectory(multimesh)
 #
 add_subdirectory(function)
 
+add_subdirectory(submesh)
