@@ -10,6 +10,10 @@ class TriMesh;
 } // namespace wmtk
 namespace wmtk::attribute {
 
+namespace internal {
+template <typename T>
+class AttributeTransactionStack;
+}
 
 /**
  * An accessor for cached attribute values. This accessor or any of its derivatives should be used
@@ -81,8 +85,8 @@ protected:
     BaseType& base_type() { return *this; }
     const BaseType& base_type() const { return *this; }
 
-private:
-    internal::AttributeTransactionStack<T>& m_cache_stack;
+    internal::AttributeTransactionStack<T>& get_cache_stack();
+    const internal::AttributeTransactionStack<T>& get_cache_stack() const;
 };
 } // namespace wmtk::attribute
 #include "CachingAccessor.hxx"
