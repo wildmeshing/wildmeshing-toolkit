@@ -2,7 +2,6 @@
 #include <Eigen/Core>
 #include <map>
 #include <memory>
-#include <wmtk/attribute/Attribute.hpp>
 #include "VectorTypes.hpp"
 
 
@@ -70,16 +69,14 @@ public:
     /// default mutable vector access
     template <
         int D = Eigen::Dynamic,
-        int D2 = Eigen::Dynamic,
-        int TrueD = D == Eigen::Dynamic ? D2 : D>
-    MapResult<TrueD> vector_attribute(AccessorBase<T, D2>& accessor, int64_t index);
+        int D2 = Eigen::Dynamic>
+    MapResult<std::max(D,D2)> vector_attribute(AccessorBase<T, D2>& accessor, int64_t index);
     /// default immutable vector access
 
     template <
         int D = Eigen::Dynamic,
-        int D2 = Eigen::Dynamic,
-        int TrueD = D == Eigen::Dynamic ? D2 : D>
-    ConstMapResult<TrueD> const_vector_attribute(const AccessorBase<T, D2>& accessor, int64_t index)
+        int D2 = Eigen::Dynamic>
+    ConstMapResult<std::max(D,D2)> const_vector_attribute(const AccessorBase<T, D2>& accessor, int64_t index)
         const;
     /// default mutable scalar access
     template <int D2>
@@ -179,13 +176,14 @@ inline void AttributeTransactionStack<T>::rollback_current_scope(Attribute<T>& a
 }
 
 template <typename T>
-template <int D, int D2, int TrueD>
+template <int D, int D2>
 inline auto AttributeTransactionStack<T>::vector_attribute(
     AccessorBase<T, D2>& accessor,
-    int64_t index) -> MapResult<TrueD>
+    int64_t index) -> MapResult<std::max(D,D2)>
 {
     assert(writing_enabled());
 
+    constexpr static int TrueD = std::max(D,D2);
     static_assert(D == Eigen::Dynamic || D2 == Eigen::Dynamic || D == D2);
     auto data = accessor.template vector_attribute<TrueD>(index);
     assert(data.cols() == 1);
@@ -197,19 +195,18 @@ inline auto AttributeTransactionStack<T>::vector_attribute(
     }
     // we are typically only going to write when caching is enabled so better to optimize for this
     if (!empty()) {
-        // assert(m_scopes.back() == *m_back);
         try_caching(index, data);
-        // m_back->try_caching(index,data);
     }
     return data;
 }
 
 template <typename T>
-template <int D, int D2, int TrueD>
+template <int D, int D2>
 inline auto AttributeTransactionStack<T>::const_vector_attribute(
     const AccessorBase<T, D2>& accessor,
-    int64_t index) const -> ConstMapResult<TrueD>
+    int64_t index) const -> ConstMapResult<std::max(D,D2)>
 {
+    constexpr static int TrueD = std::max(D,D2);
     static_assert(D == Eigen::Dynamic || D2 == Eigen::Dynamic || D == D2);
     if (!at_current_scope()) {
         assert(m_current_transaction_index < m_transaction_starts.size());
@@ -234,7 +231,6 @@ inline auto AttributeTransactionStack<T>::scalar_attribute(
     T& value = accessor.scalar_attribute(index);
     if (!empty()) {
         try_caching(index, value);
-        // m_active->try_caching(index, value);
     }
     return value;
 }
