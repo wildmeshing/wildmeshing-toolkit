@@ -135,16 +135,16 @@ inline auto AccessorBase<T, Dim>::scalar_attribute(const int64_t index) -> T&
 }
 
 template <typename T, int Dim>
-inline T AccessorBase<T, Dim>::const_scalar_attribute(const int64_t index, const int8_t offset)
+inline T AccessorBase<T, Dim>::const_vector_single_value(const int64_t index, const int8_t offset)
     const
 {
-    auto value = attribute().const_scalar_attribute(index, offset);
+    auto value = attribute().template const_vector_single_value<Dim>(index, offset);
     return value;
 }
 template <typename T, int Dim>
-inline auto AccessorBase<T, Dim>::scalar_attribute(const int64_t index, const int8_t offset) -> T&
+inline auto AccessorBase<T, Dim>::vector_single_value(const int64_t index, const int8_t offset) -> T&
 {
-    auto& value = attribute().scalar_attribute(index, offset);
+    auto& value = attribute().template vector_single_value<Dim>(index, offset);
     return value;
 }
 

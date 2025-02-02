@@ -82,17 +82,17 @@ inline T CachingAccessor<T, Dim>::scalar_attribute(const int64_t index) const
 }
 
 template <typename T, int Dim>
-inline auto CachingAccessor<T, Dim>::scalar_attribute(const int64_t index, int8_t offset) -> T&
+inline auto CachingAccessor<T, Dim>::vector_single_value(const int64_t index, int8_t vector_index) -> T&
 {
-    return m_cache_stack.scalar_attribute(*this, index, offset);
+    return m_cache_stack.vector_single_value(*this, index, vector_index);
 }
 
 
 template <typename T, int Dim>
-inline auto CachingAccessor<T, Dim>::const_scalar_attribute(const int64_t index, int8_t offset)
+inline auto CachingAccessor<T, Dim>::const_vector_single_value(const int64_t index, int8_t vector_index)
     const -> T
 {
-    return m_cache_stack.const_scalar_attribute(*this, index, offset);
+    return m_cache_stack.const_vector_single_value(*this, index, vector_index);
 }
 
 // template class CachingAccessor<char>;

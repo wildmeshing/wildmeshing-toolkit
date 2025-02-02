@@ -2,7 +2,7 @@
 
 #include <type_traits>
 #include "MeshAttributeHandle.hpp"
-#include "internal/MapTypes.hpp"
+#include "MapTypes.hpp"
 
 #include <Eigen/Dense>
 
@@ -35,9 +35,9 @@ public:
     using AttributeType = Attribute<T>;
 
     template <int D = Dim>
-    using MapResult = internal::MapResult<T, D>;
+    using MapResult = MapResult<T, D>;
     template <int D = Dim>
-    using ConstMapResult = internal::ConstMapResult<T, D>;
+    using ConstMapResult = ConstMapResult<T, D>;
 
 
 public:
@@ -57,8 +57,8 @@ public:
     T const_scalar_attribute(const int64_t index) const;
     T& scalar_attribute(const int64_t index);
 
-    T const_scalar_attribute(const int64_t index, const int8_t offset) const;
-    T& scalar_attribute(const int64_t index, const int8_t offset);
+    T const_vector_single_value(const int64_t index, const int8_t offset) const;
+    T& vector_single_value(const int64_t index, const int8_t offset);
 
     MeshAttributes<T>& attributes();
     const MeshAttributes<T>& attributes() const;

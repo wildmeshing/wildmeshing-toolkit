@@ -36,10 +36,10 @@ public:
 
     // Eigen::Map<VectorX<T>>
     template <int D = Dim>
-    using MapResult = internal::MapResult<T, D>;
+    using MapResult = typename BaseType::MapResult<D>;
     // Eigen::Map<const VectorX<T>>
     template <int D = Dim>
-    using ConstMapResult = internal::ConstMapResult<T, D>;
+    using ConstMapResult = typename BaseType::ConstMapResult<D>;
 
 
     Accessor(MeshType& m, const TypedAttributeHandle<T>& handle);

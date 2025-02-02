@@ -99,7 +99,7 @@ inline void AttributeTransactionStack<T>::apply_to(
          ++it) {
         const auto& [global, local] = *it;
         auto a = attribute.vector_attribute(global, other);
-        auto b = attribute.const_vector_attribute_from_start(local, m_buffer);
+        auto b = attribute.const_vector_attribute_without_stride(local, m_buffer);
         a = b;
     }
 }

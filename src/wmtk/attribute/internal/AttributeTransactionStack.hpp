@@ -3,7 +3,7 @@
 #include <map>
 #include <memory>
 #include <wmtk/attribute/Attribute.hpp>
-#include "MapTypes.hpp"
+#include "VectorTypes.hpp"
 
 
 namespace wmtk::attribute {
@@ -17,9 +17,9 @@ class AttributeTransactionStack
 {
 public:
     template <int D>
-    using MapResult = internal::MapResult<T, D>;
+    using MapResult = VectorMapType<T, D>;
     template <int D>
-    using ConstMapResult = internal::ConstMapResult<T, D>;
+    using ConstMapResult = ConstVectorMapType<T, D>;
 
 
     AttributeTransactionStack();
@@ -91,7 +91,7 @@ public:
 
     template <int D = Eigen::Dynamic>
     /// specialized immutable scalar access useful for topological operations
-    T const_scalar_attribute(const AccessorBase<T, D>& accessor, int64_t index, int8_t offset)
+    T const_vector_single_value(const AccessorBase<T, D>& accessor, int64_t index, int8_t vector_index)
         const;
 
     void emplace();
@@ -249,15 +249,15 @@ inline auto AttributeTransactionStack<T>::const_scalar_attribute(
 }
 template <typename T>
 template <int D2>
-inline auto AttributeTransactionStack<T>::const_scalar_attribute(
+inline auto AttributeTransactionStack<T>::const_vector_single_value(
     const AccessorBase<T, D2>& accessor,
     int64_t index,
-    int8_t offset) const -> T
+    int8_t vector_index) const -> T
 {
     if (!at_current_scope()) {
-        return const_vector_attribute<D2>(accessor, index)(offset);
+        return const_vector_attribute<D2>(accessor, index)(vector_index);
     } else {
-        return accessor.const_scalar_attribute(index, offset);
+        return accessor.const_vector_single_value(index, vector_index);
     }
 }
 } // namespace internal

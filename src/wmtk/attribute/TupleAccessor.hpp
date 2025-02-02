@@ -17,10 +17,10 @@ public:
 
     // Eigen::Map<VectorX<T>>
     template <int D = Dim>
-    using MapResult = internal::MapResult<Tuple, D>;
+    using MapResult = MapResult<Tuple, D>;
     // Eigen::Map<const VectorX<T>>
     template <int D = Dim>
-    using ConstMapResult = internal::ConstMapResult<Tuple, D>;
+    using ConstMapResult = ConstMapResult<Tuple, D>;
 
 
     const Tuple& const_scalar_attribute(const Tuple& t) const;

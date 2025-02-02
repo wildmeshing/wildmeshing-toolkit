@@ -12,14 +12,14 @@ constexpr static Eigen::Index MAX_ATTR_SIZE = WMTK_MAX_ATTRIBUTE_DIMENSION;
 
 /// Underlying vector type used by attribute is dynamically sized but bounded
 template <typename T, int R = Eigen::Dynamic>
-using VectorResult = Eigen::Matrix<T, R, 1, 0, (R == Eigen::Dynamic ? MAX_ATTR_SIZE : R), 1>;
+using VectorType = Eigen::Matrix<T, R, 1, 0, (R == Eigen::Dynamic ? MAX_ATTR_SIZE : R), 1>;
 
 /// the default map type used by attributes is a map of our vector type.
 /// Though the max size doesn't affect the storage of the map, this affects the
 /// type returned by .eval()
 template <typename T, int R = Eigen::Dynamic>
-using MapResult = typename VectorResult<T, R>::MapType;
+using VectorMapType = typename VectorType<T, R>::MapType;
 template <typename T, int R = Eigen::Dynamic>
-using ConstMapResult = typename VectorResult<T, R>::ConstMapType;
+using ConstVectorMapType = typename VectorType<T, R>::ConstMapType;
 
 } // namespace wmtk::attribute::internal

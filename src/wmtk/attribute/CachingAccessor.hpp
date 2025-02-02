@@ -59,13 +59,13 @@ public:
     ConstMapResult<D> const_vector_attribute(const int64_t index) const;
 
     T const_scalar_attribute(const int64_t index) const;
-    T const_scalar_attribute(const int64_t index, const int8_t offset) const;
+    T const_vector_single_value(const int64_t index, const int8_t vector_index) const;
 
     template <int D = Dim>
     MapResult<D> vector_attribute(const int64_t index);
 
     T& scalar_attribute(const int64_t index);
-    T& scalar_attribute(const int64_t index, const int8_t offset);
+    T& vector_single_value(const int64_t index, const int8_t vector_index);
 
     // deprecated because we should be more explicit in const/nonconst on internal interfaces
     ConstMapResult<> vector_attribute(const int64_t index) const;

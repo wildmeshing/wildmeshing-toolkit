@@ -132,11 +132,11 @@ T Accessor<T, MeshType, Dim>::const_topological_scalar_attribute(const Tuple& t,
     assert(mesh().top_simplex_type() == BaseType::primitive_type());
     switch (pt) {
     case PrimitiveType::Vertex:
-        return CachingBaseType::const_scalar_attribute(t.m_global_cid, t.m_local_vid);
+        return CachingBaseType::const_vector_single_value(t.m_global_cid, t.m_local_vid);
     case PrimitiveType::Edge:
-        return CachingBaseType::const_scalar_attribute(t.m_global_cid, t.m_local_eid);
+        return CachingBaseType::const_vector_single_value(t.m_global_cid, t.m_local_eid);
     case PrimitiveType::Triangle:
-        return CachingBaseType::const_scalar_attribute(t.m_global_cid, t.m_local_fid);
+        return CachingBaseType::const_vector_single_value(t.m_global_cid, t.m_local_fid);
     case PrimitiveType::Tetrahedron: [[fallthrough]];
     default: return T(0);
     }

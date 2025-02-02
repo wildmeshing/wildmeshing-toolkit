@@ -11,7 +11,10 @@ namespace wmtk::attribute {
 template <typename T>
 void Attribute<T>::serialize(const std::string& name, const int dim, MeshWriter& writer) const
 {
-    auto& stack = get_scope_stack();
+#if !defined(NDEBUG)
+    const auto& stack = get_scope_stack();
+    assert(stack.empty());
+#endif
     writer.write(name, dim, dimension(), m_data, m_default_value);
 }
 
@@ -24,9 +27,7 @@ Attribute<T>::Attribute(const std::string& name, int64_t dimension, T default_va
     , m_name(name)
 {
     assert(m_dimension > 0);
-    if (size > 0) {
-        m_data = std::vector<T>(size * dimension, m_default_value);
-    }
+    reserve(size);
 }
 
 template <typename T>
