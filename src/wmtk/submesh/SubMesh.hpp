@@ -79,6 +79,9 @@ public:
 private:
     Embedding& m_embedding;
     const int64_t m_submesh_id;
+
+private:
+    Tuple local_switch_tuple(const Tuple& tuple, PrimitiveType pt) const;
 };
 
 } // namespace wmtk::submesh

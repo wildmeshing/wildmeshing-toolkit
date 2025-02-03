@@ -40,10 +40,72 @@ TEST_CASE("submesh_init", "[mesh][submesh]")
 
     sub.add_simplex(edge45, PE);
 
-    CHECK(sub.contains(edge45, PrimitiveType::Edge));
-    CHECK(sub.contains(edge45, PrimitiveType::Vertex));
-    CHECK(sub.contains(sub.switch_tuple(edge45, PV), PrimitiveType::Vertex));
-    CHECK(sub.top_simplex_type(edge45) == PrimitiveType::Edge);
+    CHECK(sub.contains(edge45, PE));
+    CHECK(sub.contains(edge45, PV));
+    CHECK(sub.contains(sub.switch_tuple(edge45, PV), PV));
+    CHECK(sub.top_simplex_type(edge45) == PE);
+
+    // Test switch_tuple_vector
+    const Tuple edge34 = m.edge_tuple_from_vids(3, 4);
+    sub.add_simplex(edge34, PE);
+    CHECK(sub.contains(edge34, PE));
+    CHECK(sub.contains(edge34, PV));
+    CHECK(sub.contains(sub.switch_tuple(edge34, PV), PV));
+    CHECK(sub.top_simplex_type(edge34) == PE);
+
+    // switch from edge 45 to 43
+    {
+        CHECK_THROWS(sub.switch_tuple(edge34, PE));
+        CHECK_THROWS(sub.switch_tuple_vector(edge45, PV).size() == 1);
+        std::vector<Tuple> v4_edges;
+        REQUIRE_NOTHROW(v4_edges = sub.switch_tuple_vector(edge45, PE));
+        CHECK(v4_edges.size() == 2);
+        CHECK(v4_edges[0] == edge45);
+        CHECK(m.get_id_simplex(v4_edges[1], PE) == m.get_id_simplex(edge34, PE));
+        CHECK(m.get_id_simplex(v4_edges[1], PV) == m.get_id_simplex(edge45, PV));
+    }
+
+    const Tuple edge04 = m.edge_tuple_from_vids(0, 4);
+    sub.add_simplex(edge04, PE);
+    // switch from edge 45 to all others
+    {
+        std::vector<Tuple> v4_edges;
+        REQUIRE_NOTHROW(v4_edges = sub.switch_tuple_vector(edge45, PE));
+        CHECK(v4_edges.size() == 3);
+        CHECK(v4_edges[0] == edge45);
+        for (const Tuple& t : v4_edges) {
+            CHECK(m.get_id_simplex(t, PV) == m.get_id_simplex(edge45, PV));
+        }
+    }
+
+    const Tuple edge54 = sub.switch_tuple(edge45, PV);
+    {
+        std::vector<Tuple> v5_edges;
+        REQUIRE_NOTHROW(v5_edges = sub.switch_tuple_vector(edge54, PE));
+        CHECK(v5_edges.size() == 1);
+        CHECK(v5_edges[0] == edge54);
+    }
+
+    const Tuple face596 = m.face_tuple_from_vids(5, 9, 6);
+    sub.add_simplex(face596, PF);
+    CHECK(sub.top_simplex_type() == PF);
+    const Tuple edge59 = m.edge_tuple_with_vs_and_t(5, 9, 9);
+    {
+        std::vector<Tuple> v5_edges;
+        REQUIRE_NOTHROW(v5_edges = sub.switch_tuple_vector(edge59, PE));
+        CHECK(v5_edges.size() == 3);
+        CHECK(v5_edges[0] == edge59);
+        for (const Tuple& t : v5_edges) {
+            CHECK(m.get_id_simplex(t, PV) == m.get_id_simplex(edge59, PV));
+        }
+
+        // local switch
+        CHECK_NOTHROW(sub.switch_tuple(edge59, PE));
+
+        // face switch
+        CHECK(sub.switch_tuple_vector(face596, PF).size() == 1);
+    }
+
 
     {
         ParaviewWriter writer("submesh_init", "vertices", m, false, true, true, false);
