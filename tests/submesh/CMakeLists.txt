@@ -1,5 +1,5 @@
 # Sources
 set(TEST_SOURCES
-    submesh.cpp
+    test_submesh.cpp
 )
 target_sources(wmtk_tests PRIVATE ${TEST_SOURCES})

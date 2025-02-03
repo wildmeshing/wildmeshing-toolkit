@@ -5,6 +5,12 @@
 #include <wmtk/Tuple.hpp>
 #include <wmtk/attribute/TypedAttributeHandle.hpp>
 
+namespace wmtk {
+namespace simplex {
+class IdSimplex;
+}
+} // namespace wmtk
+
 namespace wmtk::submesh {
 
 class Embedding;
@@ -25,9 +31,27 @@ public:
     SubMesh(SubMesh&&) = delete;
     SubMesh& operator=(SubMesh&&) = delete;
 
-    void add_simplex(const Tuple& tuple, PrimitiveType pt);
+    Mesh& mesh();
+    const Mesh& mesh() const;
 
-    // throws if `type` is larger than the substructure max dimension of tuple
+    void add_simplex(const Tuple& tuple, PrimitiveType pt);
+    void add_simplex(const simplex::IdSimplex& simplex);
+
+    /**
+     * @brief Get the maximum primitive type that has a tag for a given tuple.
+     */
+    PrimitiveType top_simplex_type(const Tuple& tuple) const;
+
+    /**
+     * @brief Get the maximum primitive type that has a tag in the entire mesh.
+     */
+    PrimitiveType top_simplex_type() const;
+
+    /**
+     * @brief Can only perform local switches!
+     *
+     * Throws if `pt` is larger or equal to top_simplex_type(tuple)
+     */
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType pt) const;
 
     // call open_star_single_dimension if `pt` is larger or equal than max dim, use `switch_tuple`
@@ -42,7 +66,7 @@ public:
     bool is_manifold(PrimitiveType pt, const Tuple& tuple) const;
 
     // Check if sub mesh contains the simplex
-    bool contains(PrimitiveType pt, const Tuple& tuple) const;
+    bool contains(const Tuple& tuple, PrimitiveType pt) const;
 
     // must be part of the construction
     void initialize(

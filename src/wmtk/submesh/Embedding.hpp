@@ -22,6 +22,7 @@ public:
     std::shared_ptr<SubMesh> add_submesh();
 
     Mesh& mesh();
+    const Mesh& mesh() const;
 
     attribute::TypedAttributeHandle<int64_t>& tag_handle(const PrimitiveType pt);
     attribute::Accessor<int64_t> tag_accessor(const PrimitiveType pt);

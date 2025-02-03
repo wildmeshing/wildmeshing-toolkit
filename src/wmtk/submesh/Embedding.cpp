@@ -48,6 +48,11 @@ Mesh& Embedding::mesh()
     return *m_mesh;
 }
 
+const Mesh& Embedding::mesh() const
+{
+    return *m_mesh;
+}
+
 attribute::TypedAttributeHandle<int64_t>& Embedding::tag_handle(const PrimitiveType pt)
 {
     return m_tag_handle.at(pt);
