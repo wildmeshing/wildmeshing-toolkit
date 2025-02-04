@@ -43,6 +43,9 @@ TEST_CASE("submesh_init", "[mesh][submesh]")
     CHECK(sub.contains(edge45, PE));
     CHECK(sub.contains(edge45, PV));
     CHECK(sub.contains(sub.switch_tuple(edge45, PV), PV));
+    CHECK(sub.is_boundary(edge45, PE));
+    CHECK(sub.is_boundary(edge45, PV));
+    CHECK(sub.is_boundary(sub.switch_tuple(edge45, PV), PV));
     CHECK(sub.top_simplex_type(edge45) == PE);
 
     // Test switch_tuple_vector
@@ -51,6 +54,8 @@ TEST_CASE("submesh_init", "[mesh][submesh]")
     CHECK(sub.contains(edge34, PE));
     CHECK(sub.contains(edge34, PV));
     CHECK(sub.contains(sub.switch_tuple(edge34, PV), PV));
+    CHECK(sub.is_boundary(edge34, PV));
+    CHECK(!sub.is_boundary(sub.switch_tuple(edge34, PV), PV));
     CHECK(sub.top_simplex_type(edge34) == PE);
 
     // switch from edge 45 to 43
@@ -67,6 +72,8 @@ TEST_CASE("submesh_init", "[mesh][submesh]")
 
     const Tuple edge04 = m.edge_tuple_from_vids(0, 4);
     sub.add_simplex(edge04, PE);
+    CHECK(sub.is_boundary(edge04, PV));
+    CHECK(!sub.is_boundary(sub.switch_tuple(edge04, PV), PV));
     // switch from edge 45 to all others
     {
         std::vector<Tuple> v4_edges;
@@ -89,6 +96,9 @@ TEST_CASE("submesh_init", "[mesh][submesh]")
     const Tuple face596 = m.face_tuple_from_vids(5, 9, 6);
     sub.add_simplex(face596, PF);
     CHECK(sub.top_simplex_type() == PF);
+    CHECK(sub.id(face596, PF) == 9);
+    CHECK(sub.is_boundary(face596, PF));
+    CHECK(sub.is_boundary(m.vertex_tuple_from_id(5), PV));
     const Tuple edge59 = m.edge_tuple_with_vs_and_t(5, 9, 9);
     {
         std::vector<Tuple> v5_edges;
@@ -111,4 +121,33 @@ TEST_CASE("submesh_init", "[mesh][submesh]")
         ParaviewWriter writer("submesh_init", "vertices", m, false, true, true, false);
         CHECK_NOTHROW(m.serialize(writer));
     }
+}
+
+TEST_CASE("submesh_init_from_tag", "[mesh][submesh]")
+{
+    // logger().set_level(spdlog::level::off);
+
+    std::shared_ptr<tests::DEBUG_TriMesh> mesh_in =
+        std::make_shared<tests::DEBUG_TriMesh>(tests::edge_region_with_position());
+
+    tests::DEBUG_TriMesh& m = *mesh_in;
+
+    Embedding emb(mesh_in);
+    std::shared_ptr<SubMesh> sub_ptr = emb.add_submesh();
+    SubMesh& sub = *sub_ptr;
+
+    // register tag attribute
+    {
+        auto tag_handle = m.register_attribute<int64_t>("tag", PF, 1);
+        auto acc = m.create_accessor<int64_t>(tag_handle);
+        acc.scalar_attribute(m.tuple_from_face_id(0)) = 1;
+        acc.scalar_attribute(m.tuple_from_face_id(2)) = 1;
+
+        sub.add_from_tag_attribute<int64_t>(tag_handle.as<int64_t>(), 1);
+    }
+
+    CHECK(sub.top_simplex_type() == PF);
+    CHECK(sub.get_all(PF).size() == 2);
+    CHECK(sub.get_all(PE).size() == 6);
+    CHECK(sub.get_all(PV).size() == 5);
 }

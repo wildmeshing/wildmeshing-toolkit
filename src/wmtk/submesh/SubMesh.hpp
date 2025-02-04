@@ -8,7 +8,8 @@
 namespace wmtk {
 namespace simplex {
 class IdSimplex;
-}
+class Simplex;
+} // namespace simplex
 } // namespace wmtk
 
 namespace wmtk::submesh {
@@ -37,6 +38,8 @@ public:
     void add_simplex(const Tuple& tuple, PrimitiveType pt);
     void add_simplex(const simplex::IdSimplex& simplex);
 
+    std::vector<Tuple> get_all(const PrimitiveType pt) const;
+
     /**
      * @brief Get the maximum primitive type that has a tag for a given tuple.
      */
@@ -58,22 +61,34 @@ public:
     // otherwise
     std::vector<Tuple> switch_tuple_vector(const Tuple& tuple, PrimitiveType pt) const;
 
-    // 1. get max dim in open star
-    // 2. check if any incident max dim facet has less than two neighbors
-    bool is_boundary(PrimitiveType pt, const Tuple& tuple) const;
+    /**
+     * @brief Is the given simplex on the boundary?
+     *
+     * This check is more complex than the one of the mesh itself but follows a similar idea. First,
+     * the top simplex type in the open star is determined. Next, we check if any facet in the star
+     * has less than two top simplices incident.
+     *
+     * Note that the behavior might be unexpected for non-homogenuous or non-manifold simplicial
+     * complexes!
+     */
+    bool is_boundary(const Tuple& tuple, PrimitiveType pt) const;
 
     // This is going to be some ugly recursive stuff I guess...
     bool is_manifold(PrimitiveType pt, const Tuple& tuple) const;
 
     // Check if sub mesh contains the simplex
     bool contains(const Tuple& tuple, PrimitiveType pt) const;
+    bool contains(const simplex::IdSimplex& s) const;
+    bool contains(const simplex::Simplex& s) const;
 
-    // must be part of the construction
-    void initialize(
-        const std::map<PrimitiveType, attribute::TypedAttributeHandle<int64_t>>& tag_attributes,
-        const int64_t tag_value);
+    template <typename T>
+    void add_from_tag_attribute(
+        const attribute::TypedAttributeHandle<T>& tag_attribute,
+        const T tag_value);
 
-    // forward to Mesh
+    /**
+     * Wrapping the simplex id function of Mesh.
+     */
     int64_t id(const Tuple& tuple, PrimitiveType pt) const;
 
 private:
