@@ -2,20 +2,19 @@
 
 #include <wmtk/utils/Rational.hpp>
 #include "CachingAccessor.hpp"
-#include "internal/AttributeTransactionStack.hpp"
 
 namespace wmtk::attribute {
 
 template <typename T, int Dim>
-internal::AttributeTransactionStack<T>& CachingAccessor<T, Dim>::get_cache_stack()
+CachingAttribute<T>& CachingAccessor<T, Dim>::get_cache_stack()
 {
-    return attribute().get_scope_stack();
+    return static_cast<CachingAttribute<T>&>(attribute());
 }
 template <typename T, int Dim>
-const internal::AttributeTransactionStack<T>& CachingAccessor<T, Dim>::get_cache_stack() const
+const CachingAttribute<T>& CachingAccessor<T, Dim>::get_cache_stack() const
 {
     //
-    return attribute().get_scope_stack();
+    return static_cast<const CachingAttribute<T>&>(attribute());
 }
 template <typename T, int Dim>
 inline CachingAccessor<T, Dim>::CachingAccessor(
@@ -53,7 +52,7 @@ template <typename T, int Dim>
 template <int D>
 inline auto CachingAccessor<T, Dim>::vector_attribute(const int64_t index) -> MapResult<D>
 {
-    return get_cache_stack().template vector_attribute<D>(*this, index);
+    return get_cache_stack().template vector_attribute<std::max(D, Dim)>(index);
     // return BaseType::template vector_attribute<D>( index);
 }
 
@@ -61,7 +60,8 @@ inline auto CachingAccessor<T, Dim>::vector_attribute(const int64_t index) -> Ma
 template <typename T, int Dim>
 inline auto CachingAccessor<T, Dim>::scalar_attribute(const int64_t index) -> T&
 {
-    return get_cache_stack().scalar_attribute(*this, index);
+    assert(Dim == Eigen::Dynamic || Dim == 1);
+    return get_cache_stack().scalar_attribute(index);
 }
 
 template <typename T, int Dim>
@@ -69,14 +69,15 @@ template <int D>
 inline auto CachingAccessor<T, Dim>::const_vector_attribute(const int64_t index) const
     -> ConstMapResult<D>
 {
-    return get_cache_stack().template const_vector_attribute<D>(*this, index);
+    return get_cache_stack().template const_vector_attribute<std::max(D, Dim)>(index);
 }
 
 
 template <typename T, int Dim>
 inline auto CachingAccessor<T, Dim>::const_scalar_attribute(const int64_t index) const -> T
 {
-    return get_cache_stack().const_scalar_attribute(*this, index);
+    assert(Dim == Eigen::Dynamic || Dim == 1);
+    return get_cache_stack().const_scalar_attribute(index);
 }
 
 template <typename T, int Dim>
@@ -94,7 +95,7 @@ template <typename T, int Dim>
 inline auto CachingAccessor<T, Dim>::vector_single_value(const int64_t index, int8_t vector_index)
     -> T&
 {
-    return get_cache_stack().vector_single_value(*this, index, vector_index);
+    return get_cache_stack().template vector_single_value<Dim>(index, vector_index);
 }
 
 
@@ -103,7 +104,7 @@ inline auto CachingAccessor<T, Dim>::const_vector_single_value(
     const int64_t index,
     int8_t vector_index) const -> T
 {
-    return get_cache_stack().const_vector_single_value(*this, index, vector_index);
+    return get_cache_stack().template const_vector_single_value<Dim>(index, vector_index);
 }
 
 // template class CachingAccessor<char>;

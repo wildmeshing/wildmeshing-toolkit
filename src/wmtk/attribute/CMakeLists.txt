@@ -6,8 +6,6 @@ set(SRC_FILES
     MeshAttributes.hpp
     AttributeManager.hpp
     AttributeManager.cpp
-    PerThreadAttributeScopeStacks.hpp
-    PerThreadAttributeScopeStacks.cpp
     AttributeScopeHandle.hpp
     AttributeScopeHandle.cpp
 

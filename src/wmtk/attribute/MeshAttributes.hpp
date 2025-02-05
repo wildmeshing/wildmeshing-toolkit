@@ -1,7 +1,7 @@
 #pragma once
 
 #include <wmtk/utils/MerkleTreeInteriorNode.hpp>
-#include "Attribute.hpp"
+#include "CachingAttribute.hpp"
 #include "AttributeHandle.hpp"
 
 
@@ -106,8 +106,8 @@ public:
     std::vector<AttributeHandle> active_attributes() const;
     void assert_capacity_valid(int64_t cap) const;
 
-    Attribute<T>& attribute(const AttributeHandle& handle);
-    const Attribute<T>& attribute(const AttributeHandle& handle) const;
+    CachingAttribute<T>& attribute(const AttributeHandle& handle);
+    const CachingAttribute<T>& attribute(const AttributeHandle& handle) const;
 
     AttributeHandle attribute_handle(const std::string& name) const;
 
@@ -130,16 +130,16 @@ private:
     // The vector held in each Attribute in m_attributes has this size
     int64_t m_reserved_size = -1;
 
-    std::vector<std::unique_ptr<Attribute<T>>> m_attributes;
+    std::vector<std::unique_ptr<CachingAttribute<T>>> m_attributes;
 };
 template <typename T>
-inline Attribute<T>& MeshAttributes<T>::attribute(const AttributeHandle& handle)
+inline CachingAttribute<T>& MeshAttributes<T>::attribute(const AttributeHandle& handle)
 {
-    Attribute<T>& attr = *m_attributes.at(handle.index);
+    CachingAttribute<T>& attr = *m_attributes.at(handle.index);
     return attr;
 }
 template <typename T>
-inline const Attribute<T>& MeshAttributes<T>::attribute(const AttributeHandle& handle) const
+inline const CachingAttribute<T>& MeshAttributes<T>::attribute(const AttributeHandle& handle) const
 {
     return *m_attributes.at(handle.index);
 }

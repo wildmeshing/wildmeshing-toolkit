@@ -153,7 +153,7 @@ public:
     // That is, a TriMesh is a 2, a TetMesh is a 3
     Mesh(const int64_t& dimension);
     // maximum primitive type id for supported attribute primitive locations
-    Mesh(const int64_t& dimension, const int64_t& max_primitive_type_id, PrimitiveType hash_type);
+    Mesh(const int64_t& dimension, const int64_t& max_primitive_type_id);
     Mesh(Mesh&& other);
     Mesh(const Mesh& other) = delete;
     Mesh& operator=(const Mesh& other) = delete;
@@ -864,9 +864,6 @@ private:
      */
     std::vector<TypedAttributeHandle<char>> m_flag_handles;
 
-    // hashes for top level simplices (i.e cells) to identify whether tuples
-    // are invalid or not
-    TypedAttributeHandle<int64_t> m_cell_hash_handle;
 
 
     /**

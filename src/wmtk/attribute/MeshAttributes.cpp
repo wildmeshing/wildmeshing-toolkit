@@ -1,7 +1,6 @@
 #include "MeshAttributes.hpp"
 #include <wmtk/attribute/internal/hash.hpp>
 #include <wmtk/utils/Hashable.hpp>
-#include "PerThreadAttributeScopeStacks.hpp"
 
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -85,9 +84,8 @@ void MeshAttributes<T>::change_to_parent_scope() const
 {
     for (const auto& attr_ptr : m_attributes) {
         if (bool(attr_ptr)) {
-            auto& stack = attr_ptr->get_scope_stack();
 
-            stack.change_to_next_scope();
+            attr_ptr->change_to_next_scope();
         }
     }
 }
@@ -97,7 +95,7 @@ void MeshAttributes<T>::change_to_child_scope() const
 {
     for (const auto& attr_ptr : m_attributes) {
         if (bool(attr_ptr)) {
-            attr_ptr->get_scope_stack().change_to_previous_scope();
+            attr_ptr->change_to_previous_scope();
         }
     }
 }
@@ -125,7 +123,7 @@ AttributeHandle MeshAttributes<T>::register_attribute(
     } else {
         handle.index = m_attributes.size();
         m_attributes.emplace_back(
-            std::make_unique<Attribute<T>>(name, dimension, default_value, reserved_size()));
+            std::make_unique<CachingAttribute<T>>(name, dimension, default_value, reserved_size()));
     }
     m_handles[name] = handle;
 

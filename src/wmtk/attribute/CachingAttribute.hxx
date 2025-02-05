@@ -1,33 +1,35 @@
 
+
 #include <wmtk/Types.hpp>
 #include <wmtk/attribute/AccessorBase.hpp>
 #include <wmtk/utils/Rational.hpp>
-#include "AttributeTransactionStack.hpp"
+#include "CachingAttribute.hpp"
 
 
-namespace wmtk::attribute::internal {
-
-
-template <typename T>
-inline AttributeTransactionStack<T>::AttributeTransactionStack()
-    : m_buffer(64)
-    , m_indices(32)
-    , m_buffer_end(0)
-    , m_indices_end(0)
-{}
-template <typename T>
-inline AttributeTransactionStack<T>::~AttributeTransactionStack() = default;
-
+namespace wmtk::attribute {
 
 template <typename T>
-inline void AttributeTransactionStack<T>::clear()
+inline void CachingAttribute<T>::reset()
 {
-    // m_indices_end = m_transaction_starts.back();
-    // m_buffer_end = m_indices[m_indices_end].second;
+    m_transaction_starts.clear();
+    change_to_current_scope();
+    clear();
 }
 
 template <typename T>
-inline void AttributeTransactionStack<T>::update_buffer_sizes_for_add(size_t data_size)
+inline void CachingAttribute<T>::clear()
+{
+    if(transactions_empty())  {
+        m_indices_end = 0;
+        m_buffer_end = 0;
+    } else {
+    m_indices_end = m_transaction_starts.back();
+    m_buffer_end = m_indices[m_indices_end].second;
+    }
+}
+
+template <typename T>
+inline void CachingAttribute<T>::update_buffer_sizes_for_add(size_t data_size)
 {
     // check sizes
     if (m_indices_end + 1 >= m_indices.size()) {
@@ -43,9 +45,7 @@ inline void AttributeTransactionStack<T>::update_buffer_sizes_for_add(size_t dat
 
 template <typename T>
 template <typename Derived>
-inline void AttributeTransactionStack<T>::try_caching(
-    int64_t index,
-    const Eigen::MatrixBase<Derived>& value)
+inline void CachingAttribute<T>::try_caching(int64_t index, const Eigen::MatrixBase<Derived>& value)
 {
     // basically try_emplace but optimizes to avoid accessing the pointed-to value
 
@@ -69,7 +69,7 @@ inline void AttributeTransactionStack<T>::try_caching(
 }
 
 template <typename T>
-inline void AttributeTransactionStack<T>::try_caching(int64_t index, const T& value)
+inline void CachingAttribute<T>::try_caching(int64_t index, const T& value)
 {
     update_buffer_sizes_for_add(1);
     // assert(m_buffer.size() == m_indices.size());
@@ -83,29 +83,27 @@ inline void AttributeTransactionStack<T>::try_caching(int64_t index, const T& va
 
 
 template <typename T>
-inline void AttributeTransactionStack<T>::apply_to(Attribute<T>& attribute) const
+inline void CachingAttribute<T>::apply_to() 
 {
-    apply_to(attribute, attribute.m_data);
+    apply_to(BaseType::m_data);
 }
 
 template <typename T>
-inline void AttributeTransactionStack<T>::apply_to(
-    const Attribute<T>& attribute,
-    std::vector<T>& other) const
+inline void CachingAttribute<T>::apply_to(std::vector<T>& other) const
 {
     assert(at_current_scope());
     for (auto it = final_transaction_rbegin();
          it != transaction_start_rend(current_transaction_index() - 1);
          ++it) {
         const auto& [global, local] = *it;
-        auto a = attribute.vector_attribute(global, other);
-        auto b = attribute.const_vector_attribute_without_stride(local, m_buffer);
+        auto a = BaseType::vector_attribute(global, other);
+        auto b = BaseType::const_vector_attribute_without_stride(local, m_buffer);
         a = b;
     }
 }
 
 template <typename T>
-inline auto AttributeTransactionStack<T>::get_value(int64_t index) const -> const T*
+inline auto CachingAttribute<T>::get_value(int64_t index) const -> const T*
 {
     for (auto it = transaction_start_begin(current_transaction_index());
          it != final_transaction_end();
@@ -120,7 +118,7 @@ inline auto AttributeTransactionStack<T>::get_value(int64_t index) const -> cons
 }
 
 template <typename T>
-inline void AttributeTransactionStack<T>::emplace()
+inline void CachingAttribute<T>::emplace()
 {
     assert(at_current_scope()); // must only be called on leaf node
 
@@ -128,21 +126,21 @@ inline void AttributeTransactionStack<T>::emplace()
     change_to_current_scope();
 }
 template <typename T>
-inline void AttributeTransactionStack<T>::pop(Attribute<T>& attribute, bool preserve_changes)
+inline void CachingAttribute<T>::pop(bool preserve_changes)
 {
     assert(at_current_scope()); // must only be called on leaf node
     // TODO consider re-enabling
     if (preserve_changes) {
         clear();
     } else {
-        apply_to(attribute);
+        apply_to();
     }
 
 
     m_transaction_starts.pop_back();
 
     change_to_current_scope();
-    if (empty()) {
+    if (transactions_empty()) {
         m_indices_end = 0;
         m_buffer_end = 0;
     }
@@ -150,22 +148,22 @@ inline void AttributeTransactionStack<T>::pop(Attribute<T>& attribute, bool pres
 
 
 template <typename T>
-inline bool AttributeTransactionStack<T>::empty() const
+inline bool CachingAttribute<T>::transactions_empty() const
 {
     return m_transaction_starts.empty();
 }
 
 
 template <typename T>
-inline void AttributeTransactionStack<T>::apply_last_scope(Attribute<T>& attr)
+inline void CachingAttribute<T>::apply_last_scope()
 {
     assert(at_current_scope());
-    assert(!empty());
-    apply_to(attr);
+    assert(!transactions_empty());
+    apply_to();
 }
 
 template <typename T>
-inline void AttributeTransactionStack<T>::change_to_previous_scope()
+inline void CachingAttribute<T>::change_to_previous_scope()
 {
     // if the previous is a nullptr it's fine
     assert(!at_current_scope());
@@ -173,28 +171,28 @@ inline void AttributeTransactionStack<T>::change_to_previous_scope()
 }
 
 template <typename T>
-inline void AttributeTransactionStack<T>::change_to_next_scope()
+inline void CachingAttribute<T>::change_to_next_scope()
 {
     if (at_current_scope()) {
-        assert(!empty());
+        assert(!transactions_empty());
     }
     m_current_transaction_index--;
 }
 template <typename T>
-inline void AttributeTransactionStack<T>::change_to_current_scope()
+inline void CachingAttribute<T>::change_to_current_scope()
 {
     m_current_transaction_index = m_transaction_starts.size();
 }
 template <typename T>
-inline bool AttributeTransactionStack<T>::at_current_scope() const
+inline bool CachingAttribute<T>::at_current_scope() const
 {
     assert(m_current_transaction_index <= m_transaction_starts.size());
     return m_current_transaction_index == m_transaction_starts.size();
 }
 template <typename T>
-inline bool AttributeTransactionStack<T>::writing_enabled() const
+inline bool CachingAttribute<T>::writing_enabled() const
 {
     return at_current_scope();
 }
 
-} // namespace wmtk::attribute::internal
+} // namespace wmtk::attribute

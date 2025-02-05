@@ -54,18 +54,9 @@ TEST_CASE("consolidate", "[mesh][consolidate]")
 
         const int64_t edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-        REQUIRE(m.is_valid_with_hash(edge, hash_accessor));
-#else
         REQUIRE(m.is_valid(edge));
-#endif
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-        auto executor = m.get_emoe(edge, hash_accessor);
-#else
         auto executor = m.get_emoe(edge);
-#endif
 
         executor.split_edge();
         REQUIRE(m.is_connectivity_valid());
@@ -85,12 +76,7 @@ TEST_CASE("consolidate", "[mesh][consolidate]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_with_vs_and_t(4, 5, 2);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-        auto executor = m.get_tmoe(edge, hash_accessor);
-#else
         auto executor = m.get_tmoe(edge);
-#endif
         EdgeCollapse collapse(m);
         collapse(simplex::Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());

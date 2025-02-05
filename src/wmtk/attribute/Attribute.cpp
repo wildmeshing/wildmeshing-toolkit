@@ -1,6 +1,5 @@
 #include "Attribute.hpp"
 #include <numeric>
-#include <wmtk/attribute/PerThreadAttributeScopeStacks.hpp>
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/utils/Rational.hpp>
 #include <wmtk/utils/vector_hash.hpp>
@@ -11,18 +10,13 @@ namespace wmtk::attribute {
 template <typename T>
 void Attribute<T>::serialize(const std::string& name, const int dim, MeshWriter& writer) const
 {
-#if !defined(NDEBUG)
-    const auto& stack = get_scope_stack();
-    assert(stack.empty());
-#endif
     writer.write(name, dim, dimension(), m_data, m_default_value);
 }
 
 
 template <typename T>
 Attribute<T>::Attribute(const std::string& name, int64_t dimension, T default_value, int64_t size)
-    : m_scope_stacks()
-    , m_dimension(dimension)
+    : m_dimension(dimension)
     , m_default_value(default_value)
     , m_name(name)
 {
@@ -66,7 +60,7 @@ bool Attribute<T>::operator==(const Attribute<T>& o) const
 template <typename T>
 void Attribute<T>::reserve(const int64_t size)
 {
-    if (size > (m_data.size() / m_dimension)) {
+    if (size >= 0 && size > reserved_size()) {
         m_data.resize(m_dimension * size, m_default_value);
     }
 }

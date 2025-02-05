@@ -85,8 +85,8 @@ protected:
     BaseType& base_type() { return *this; }
     const BaseType& base_type() const { return *this; }
 
-    internal::AttributeTransactionStack<T>& get_cache_stack();
-    const internal::AttributeTransactionStack<T>& get_cache_stack() const;
+    CachingAttribute<T>& get_cache_stack();
+    const CachingAttribute<T>& get_cache_stack() const;
 };
 } // namespace wmtk::attribute
 #include "CachingAccessor.hxx"

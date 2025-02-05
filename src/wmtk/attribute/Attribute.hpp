@@ -4,8 +4,6 @@
 #include <vector>
 #include <wmtk/utils/MerkleTreeInteriorNode.hpp>
 #include "MapTypes.hpp"
-#include "PerThreadAttributeScopeStacks.hpp"
-#include "wmtk/attribute/internal/AttributeTransactionStack.hpp"
 
 namespace wmtk {
 class MeshWriter;
@@ -14,12 +12,6 @@ namespace attribute {
 template <typename T, int Dim>
 class AccessorBase;
 
-template <typename T>
-class PerThreadAttributeScopeStacks;
-namespace internal {
-template <typename T>
-class AttributeTransactionStack;
-} // namespace internal
 
 /**
  * This class stores data of type T in a vector.
@@ -44,7 +36,6 @@ public:
 
     template <typename U, int D>
     friend class AccessorBase;
-    friend class internal::AttributeTransactionStack<T>;
     void serialize(const std::string& name, const int dim, MeshWriter& writer) const;
 
     /**
@@ -106,12 +97,7 @@ public:
 
     bool operator==(const Attribute<T>& o) const;
 
-    void push_scope();
-    void pop_scope(bool apply_updates);
-    void rollback_current_scope();
 
-    const internal::AttributeTransactionStack<T>& get_scope_stack() const;
-    internal::AttributeTransactionStack<T>& get_scope_stack();
 
     /**
      * @brief Consolidate the vector, using the new2old map m provided and resizing the vector to
@@ -193,9 +179,8 @@ public:
     // computes the "reserved size" but using the passed in data
     int64_t reserved_size(const std::vector<T>& data) const;
 
-private:
+protected:
     std::vector<T> m_data;
-    internal::AttributeTransactionStack<T> m_scope_stacks;
     int64_t m_dimension = -1;
     T m_default_value = T(0);
 
@@ -385,36 +370,6 @@ inline const T& Attribute<T>::default_value() const
     return m_default_value;
 }
 
-template <typename T>
-inline const internal::AttributeTransactionStack<T>& Attribute<T>::get_scope_stack() const
-{
-    return m_scope_stacks;
-}
-template <typename T>
-inline internal::AttributeTransactionStack<T>& Attribute<T>::get_scope_stack()
-{
-    return m_scope_stacks;
-}
-
-//=======================================================
-// Scope members
-//=======================================================
-template <typename T>
-inline void Attribute<T>::push_scope()
-{
-    m_scope_stacks.emplace();
-}
-template <typename T>
-inline void Attribute<T>::pop_scope(bool apply_updates)
-{
-    m_scope_stacks.pop(*this, apply_updates);
-}
-
-template <typename T>
-inline void Attribute<T>::rollback_current_scope()
-{
-    m_scope_stacks.rollback_current_scope(*this);
-}
 
 } // namespace attribute
 } // namespace wmtk

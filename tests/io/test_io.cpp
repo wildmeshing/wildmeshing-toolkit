@@ -8,6 +8,7 @@
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/Rational.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
+#include <wmtk/utils/merkle_tree_diff.hpp>
 
 #include <wmtk/operations/EdgeSplit.hpp>
 
@@ -143,6 +144,11 @@ TEST_CASE("hdf5_multimesh", "[io]")
 
     auto mesh = read_mesh("hdf5_multimesh.hdf5");
 
+    spdlog::info("{}", mesh->child_hashes());
+    spdlog::info("{}", parent.child_hashes());
+    auto diff = wmtk::utils::merkle_tree_diff(*mesh,parent);
+    spdlog::info("{}", diff->dump(2));
+    CHECK(mesh->child_hashes() == parent.child_hashes());
     CHECK(*mesh == parent);
 }
 
