@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <wmtk/PrimitiveType.hpp>
 #include <wmtk/Tuple.hpp>
 #include <wmtk/attribute/TypedAttributeHandle.hpp>
@@ -22,7 +23,7 @@ class Embedding;
  * s.add_simplex(IdSimplex);
  * s.add_from_tag(tag_handle, tag_value);
  */
-class SubMesh
+class SubMesh : public std::enable_shared_from_this<SubMesh>
 {
 public:
     SubMesh(Embedding& embedding, int64_t submesh_id);

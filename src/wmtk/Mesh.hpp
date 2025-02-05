@@ -18,6 +18,7 @@
 
 // basic data for the class
 #include <wmtk/simplex/Simplex.hpp>
+#include "MeshBase.hpp"
 #include "Tuple.hpp"
 #include "Types.hpp"
 #include "attribute/AttributeManager.hpp"
@@ -103,7 +104,9 @@ class TupleTag;
 // * Mesh.cpp
 // * Mesh_attributes.cpp
 // * Mesh_construction.cpp
-class Mesh : public std::enable_shared_from_this<Mesh>, public wmtk::utils::MerkleTreeInteriorNode
+class Mesh : public std::enable_shared_from_this<Mesh>,
+             public MeshBase,
+             public wmtk::utils::MerkleTreeInteriorNode
 {
 public:
     friend class tests::tools::TestTools;
