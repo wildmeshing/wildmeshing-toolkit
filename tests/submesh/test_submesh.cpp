@@ -25,6 +25,7 @@ constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
 TEST_CASE("submesh_init", "[mesh][submesh]")
 {
     // logger().set_level(spdlog::level::off);
+    logger().set_level(spdlog::level::trace);
 
     // basic test for implementing
     std::shared_ptr<tests::DEBUG_TriMesh> mesh_in =
@@ -40,6 +41,8 @@ TEST_CASE("submesh_init", "[mesh][submesh]")
     CHECK_THROWS(sub.top_simplex_type());
 
     sub.add_simplex(edge45, PE);
+    CHECK(sub.top_simplex_type() == PrimitiveType::Edge);
+    CHECK(sub.top_cell_dimension() == 1);
 
     CHECK(sub.contains(edge45, PE));
     CHECK(sub.contains(edge45, PV));
@@ -57,42 +60,28 @@ TEST_CASE("submesh_init", "[mesh][submesh]")
     CHECK(sub.contains(sub.switch_tuple(edge34, PV), PV));
     CHECK(sub.is_boundary(edge34, PV));
     CHECK(!sub.is_boundary(sub.switch_tuple(edge34, PV), PV));
+    CHECK(!sub.is_boundary(edge45, PV));
     CHECK(sub.top_simplex_type(edge34) == PE);
 
     // switch from edge 45 to 43
     {
         CHECK_THROWS(sub.switch_tuple(edge34, PE));
-        CHECK_THROWS(sub.switch_tuple_vector(edge45, PV).size() == 1);
-        std::vector<Tuple> v4_edges;
-        REQUIRE_NOTHROW(v4_edges = sub.switch_tuple_vector(edge45, PE));
-        CHECK(v4_edges.size() == 2);
-        CHECK(v4_edges[0] == edge45);
-        CHECK(m.get_id_simplex(v4_edges[1], PE) == m.get_id_simplex(edge34, PE));
-        CHECK(m.get_id_simplex(v4_edges[1], PV) == m.get_id_simplex(edge45, PV));
+        CHECK_NOTHROW(sub.switch_tuple(edge45, PE));
+        Tuple sw_edge45;
+        REQUIRE_NOTHROW(sw_edge45 = sub.switch_tuple(edge45, PE)); // global switch
+        CHECK(m.get_id_simplex(sw_edge45, PE) == m.get_id_simplex(edge34, PE));
+        CHECK(m.get_id_simplex(sw_edge45, PV) == m.get_id_simplex(edge45, PV));
     }
 
     const Tuple edge04 = m.edge_tuple_from_vids(0, 4);
     sub.add_simplex(edge04, PE);
     CHECK(sub.is_boundary(edge04, PV));
     CHECK(!sub.is_boundary(sub.switch_tuple(edge04, PV), PV));
-    // switch from edge 45 to all others
-    {
-        std::vector<Tuple> v4_edges;
-        REQUIRE_NOTHROW(v4_edges = sub.switch_tuple_vector(edge45, PE));
-        CHECK(v4_edges.size() == 3);
-        CHECK(v4_edges[0] == edge45);
-        for (const Tuple& t : v4_edges) {
-            CHECK(m.get_id_simplex(t, PV) == m.get_id_simplex(edge45, PV));
-        }
-    }
 
     const Tuple edge54 = sub.switch_tuple(edge45, PV);
-    {
-        std::vector<Tuple> v5_edges;
-        REQUIRE_NOTHROW(v5_edges = sub.switch_tuple_vector(edge54, PE));
-        CHECK(v5_edges.size() == 1);
-        CHECK(v5_edges[0] == edge54);
-    }
+    CHECK_THROWS(sub.switch_tuple(edge54, PE));
+    CHECK(m.get_id_simplex(sub.switch_tuple(edge54, PV), PV) == m.get_id_simplex(edge45, PV));
+
 
     const Tuple face596 = m.face_tuple_from_vids(5, 9, 6);
     sub.add_simplex(face596, PF);
@@ -100,21 +89,15 @@ TEST_CASE("submesh_init", "[mesh][submesh]")
     CHECK(sub.id(face596, PF) == 9);
     CHECK(sub.is_boundary(face596, PF));
     CHECK(sub.is_boundary(m.vertex_tuple_from_id(5), PV));
+    // after adding a face, all edges and vertices that are not incident to a face, are boundary
+    CHECK(sub.is_boundary(edge45, PE));
+    CHECK(sub.is_boundary(edge45, PV));
     const Tuple edge59 = m.edge_tuple_with_vs_and_t(5, 9, 9);
     {
-        std::vector<Tuple> v5_edges;
-        REQUIRE_NOTHROW(v5_edges = sub.switch_tuple_vector(edge59, PE));
-        CHECK(v5_edges.size() == 3);
-        CHECK(v5_edges[0] == edge59);
-        for (const Tuple& t : v5_edges) {
-            CHECK(m.get_id_simplex(t, PV) == m.get_id_simplex(edge59, PV));
-        }
-
-        // local switch
+        // local edge switch
         CHECK_NOTHROW(sub.switch_tuple(edge59, PE));
-
-        // face switch
-        CHECK(sub.switch_tuple_vector(face596, PF).size() == 1);
+        // global face switch
+        CHECK_THROWS(sub.switch_tuple(face596, PF));
     }
 
 

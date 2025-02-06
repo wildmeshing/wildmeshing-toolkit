@@ -32,7 +32,10 @@ const Mesh& SubMesh::mesh() const
 void SubMesh::add_simplex(const Tuple& tuple, PrimitiveType pt)
 {
     const int64_t pt_dim = get_primitive_type_id(pt);
-    m_top_cell_dimension = std::max(m_top_cell_dimension, pt_dim);
+    if (m_top_cell_dimension < pt_dim) {
+        logger().trace("Top cell dimension changed from {} to {}", m_top_cell_dimension, pt_dim);
+        m_top_cell_dimension = pt_dim;
+    }
 
     auto acc = m_embedding.tag_accessor(pt);
     acc.scalar_attribute(tuple) |= (int64_t)1 << m_submesh_id;
@@ -119,50 +122,64 @@ Tuple SubMesh::switch_tuple(const Tuple& tuple, PrimitiveType pt) const
     }
     if (pt_id == max_pt_id) {
         // global switch
-        const auto vec = switch_tuple_vector(tuple, pt);
-        if (vec.size() != 2) {
+        const PrimitiveType pt_face = get_primitive_type_from_id(pt_id - 1);
+        const simplex::Simplex s_face(mesh(), pt_face, tuple);
+
+        Tuple other;
+        int64_t other_counter = 0;
+        for (const Tuple& t : simplex::cofaces_single_dimension_iterable(mesh(), s_face, pt)) {
+            if (contains(t, pt)) {
+                ++other_counter;
+                if (other_counter == 2) {
+                    other = t;
+                }
+            }
+        }
+
+        if (other_counter != 2) {
             log_and_throw_error(
                 "SubMesh `switch_tuple` cannot be used on non-manifold or boundary simplices.");
         }
-        return vec[1];
+        return other;
     }
 
     // local switch
     return local_switch_tuple(tuple, pt);
 }
 
-std::vector<Tuple> SubMesh::switch_tuple_vector(const Tuple& tuple, PrimitiveType pt) const
-{
-    const int8_t pt_id = get_primitive_type_id(pt);
-    const int8_t max_pt_id = get_primitive_type_id(top_simplex_type(tuple));
-
-    if (pt_id > max_pt_id) {
-        log_and_throw_error("Required PrimitiveType switch does not exist in submesh.");
-    }
-    if (pt_id == 0) {
-        log_and_throw_error("Cannot perform global switches for vertex PrimitiveType. Use "
-                            "`switch_tuple` instead of `switch_tuple_vector`.");
-    }
-
-    assert(pt_id <= max_pt_id);
-
-    const PrimitiveType pt_face = get_primitive_type_from_id(pt_id - 1);
-
-    const simplex::Simplex s_face(mesh(), pt_face, tuple);
-
-    std::vector<Tuple> neighs;
-    neighs.reserve(2);
-    for (const Tuple& t : simplex::cofaces_single_dimension_iterable(mesh(), s_face, pt)) {
-        if (contains(t, pt)) {
-            neighs.emplace_back(t);
-        }
-    }
-
-    assert(!neighs.empty());
-    assert(neighs[0] == tuple);
-
-    return neighs;
-}
+// std::vector<Tuple> SubMesh::switch_tuple_vector(const Tuple& tuple, PrimitiveType pt) const
+//{
+//     const int8_t pt_id = get_primitive_type_id(pt);
+//     const int8_t max_pt_id = get_primitive_type_id(top_simplex_type(tuple));
+//
+//     if (pt_id > max_pt_id) {
+//         log_and_throw_error("Required PrimitiveType switch does not exist in submesh.");
+//     }
+//     if (pt_id < max_pt_id) {
+//        // log_and_throw_error("Cannot perform global switches for vertex PrimitiveType. Use "
+//        //                     "`switch_tuple` instead of `switch_tuple_vector`.");
+//        return {local_switch_tuple(tuple, pt)};
+//    }
+//
+//    assert(pt_id <= max_pt_id);
+//
+//    const PrimitiveType pt_face = get_primitive_type_from_id(pt_id - 1);
+//
+//    const simplex::Simplex s_face(mesh(), pt_face, tuple);
+//
+//    std::vector<Tuple> neighs;
+//    neighs.reserve(2);
+//    for (const Tuple& t : simplex::cofaces_single_dimension_iterable(mesh(), s_face, pt)) {
+//        if (contains(t, pt)) {
+//            neighs.emplace_back(t);
+//        }
+//    }
+//
+//    assert(!neighs.empty());
+//    assert(neighs[0] == tuple);
+//
+//    return neighs;
+//}
 
 bool SubMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
 {
@@ -170,32 +187,23 @@ bool SubMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
         log_and_throw_error("Cannot check for boundary if simplex is not contained in submesh");
     }
 
-    const simplex::Simplex sim(pt, tuple);
-    // 1. get max dim in open star
-    int8_t top_dim = get_primitive_type_id(pt);
-    for (const simplex::IdSimplex& s : simplex::open_star_iterable(mesh(), sim)) {
-        if (!contains(s)) {
-            continue;
-        }
-        const int8_t dim = get_primitive_type_id(s.primitive_type());
-        top_dim = std::max(top_dim, dim);
-    }
+    const simplex::Simplex s(pt, tuple);
 
-    if (top_dim == 0) {
-        // simplex is an isolated vertex
+    const PrimitiveType top_pt = top_simplex_type();
+    if (top_pt == PrimitiveType::Vertex) {
         return true;
     }
+    const PrimitiveType face_pt = get_primitive_type_from_id(top_cell_dimension() - 1);
 
-    // 2. check if any incident max dim facet has less than two neighbors
-    const PrimitiveType top_pt = get_primitive_type_from_id(top_dim);
-    const PrimitiveType face_pt = get_primitive_type_from_id(top_dim - 1);
+    const auto neighbors = simplex::neighbors_single_dimension(mesh(), s, face_pt);
 
-    for (const simplex::Simplex& face_simplex :
-         simplex::neighbors_single_dimension(mesh(), sim, face_pt)) {
-        // const simplex::Simplex face_simplex(top_pt, face_tuple);
+    // check if any incident facet has less than two neighbors
+    int64_t n_neighbors = 0;
+    for (const simplex::Simplex& face_simplex : neighbors) {
         if (!contains(face_simplex)) {
             continue;
         }
+        ++n_neighbors;
 
         int64_t cell_counter = 0;
         for (const Tuple& cell_tuple :
@@ -207,6 +215,11 @@ bool SubMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
         if (cell_counter < 2) {
             return true;
         }
+    }
+
+    if (n_neighbors == 0) {
+        // this simplex has no cell incident and is therefore considered boundary
+        return true;
     }
 
     return false;

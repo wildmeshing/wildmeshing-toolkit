@@ -67,9 +67,11 @@ public:
      */
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType pt) const override;
 
-    // call open_star_single_dimension if `pt` is larger or equal than max dim, use `switch_tuple`
-    // otherwise
-    std::vector<Tuple> switch_tuple_vector(const Tuple& tuple, PrimitiveType pt) const;
+    /**
+     * This function does not make sense. The proper way to navigate is using
+     * cofaces_single_dimension.
+     */
+    // std::vector<Tuple> switch_tuple_vector(const Tuple& tuple, PrimitiveType pt) const;
 
     /**
      * @brief Is the given simplex on the boundary?
