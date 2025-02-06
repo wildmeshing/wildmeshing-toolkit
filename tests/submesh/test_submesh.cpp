@@ -4,6 +4,7 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
+#include <wmtk/simplex/top_dimension_cofaces_iterable.hpp>
 #include <wmtk/submesh/Embedding.hpp>
 #include <wmtk/submesh/SubMesh.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -150,4 +151,26 @@ TEST_CASE("submesh_init_from_tag", "[mesh][submesh]")
     CHECK(sub.get_all(PF).size() == 2);
     CHECK(sub.get_all(PE).size() == 6);
     CHECK(sub.get_all(PV).size() == 5);
+}
+
+TEST_CASE("submesh_top_dimension_cofaces", "[mesh][submesh]")
+{
+    REQUIRE(false); // test not implemented
+
+    // logger().set_level(spdlog::level::off);
+
+    // basic test for implementing
+    std::shared_ptr<tests::DEBUG_TriMesh> mesh_in =
+        std::make_shared<tests::DEBUG_TriMesh>(tests::edge_region_with_position());
+
+    tests::DEBUG_TriMesh& m = *mesh_in;
+    const Tuple edge45 = m.edge_tuple_from_vids(4, 5);
+
+    Embedding emb(mesh_in);
+    std::shared_ptr<SubMesh> sub_ptr = emb.add_submesh();
+    SubMesh& sub = *sub_ptr;
+
+    CHECK_THROWS(sub.top_simplex_type());
+
+    sub.add_simplex(edge45, PE);
 }

@@ -2,6 +2,7 @@
 
 #include <map>
 #include <memory>
+#include <wmtk/MeshBase.hpp>
 #include <wmtk/PrimitiveType.hpp>
 #include <wmtk/Tuple.hpp>
 #include <wmtk/attribute/TypedAttributeHandle.hpp>
@@ -23,7 +24,7 @@ class Embedding;
  * s.add_simplex(IdSimplex);
  * s.add_from_tag(tag_handle, tag_value);
  */
-class SubMesh : public std::enable_shared_from_this<SubMesh>
+class SubMesh : public std::enable_shared_from_this<SubMesh>, public MeshBase
 {
 public:
     SubMesh(Embedding& embedding, int64_t submesh_id);
@@ -36,6 +37,12 @@ public:
     Mesh& mesh();
     const Mesh& mesh() const;
 
+    /**
+     * @brief Adds a simpex to the submesh.
+     *
+     * The top simplex type of the mesh is updated if the added simplex is of higher dimension than
+     * any other simplex of the submesh.
+     */
     void add_simplex(const Tuple& tuple, PrimitiveType pt);
     void add_simplex(const simplex::IdSimplex& simplex);
 
@@ -51,12 +58,14 @@ public:
      */
     PrimitiveType top_simplex_type() const;
 
+    int64_t top_cell_dimension() const;
+
     /**
      * @brief Can only perform local switches!
      *
      * Throws if `pt` is larger or equal to top_simplex_type(tuple)
      */
-    Tuple switch_tuple(const Tuple& tuple, PrimitiveType pt) const;
+    Tuple switch_tuple(const Tuple& tuple, PrimitiveType pt) const override;
 
     // call open_star_single_dimension if `pt` is larger or equal than max dim, use `switch_tuple`
     // otherwise
@@ -72,6 +81,7 @@ public:
      * Note that the behavior might be unexpected for non-homogenuous or non-manifold simplicial
      * complexes!
      */
+    bool is_boundary(PrimitiveType pt, const Tuple& tuple) const override;
     bool is_boundary(const Tuple& tuple, PrimitiveType pt) const;
 
     // This is going to be some ugly recursive stuff I guess...
@@ -90,11 +100,14 @@ public:
     /**
      * Wrapping the simplex id function of Mesh.
      */
-    int64_t id(const Tuple& tuple, PrimitiveType pt) const;
+    int64_t id(const Tuple& tuple, PrimitiveType pt) const override;
+    int64_t id(const simplex::Simplex& s) const override;
 
 private:
     Embedding& m_embedding;
     const int64_t m_submesh_id;
+
+    int64_t m_top_cell_dimension = -1;
 
 private:
     Tuple local_switch_tuple(const Tuple& tuple, PrimitiveType pt) const;

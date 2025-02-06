@@ -16,10 +16,10 @@ class IdSimplex;
 
 class MeshBase
 {
-private:
-    /* data */
 public:
     // virtual std::vector<Tuple> get_all(PrimitiveType type) const = 0;
+
+    virtual int64_t top_cell_dimension() const = 0;
 
     /**
      * @brief switch the orientation of the Tuple of the given dimension

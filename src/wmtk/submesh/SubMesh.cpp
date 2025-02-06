@@ -31,6 +31,9 @@ const Mesh& SubMesh::mesh() const
 
 void SubMesh::add_simplex(const Tuple& tuple, PrimitiveType pt)
 {
+    const int64_t pt_dim = get_primitive_type_id(pt);
+    m_top_cell_dimension = std::max(m_top_cell_dimension, pt_dim);
+
     auto acc = m_embedding.tag_accessor(pt);
     acc.scalar_attribute(tuple) |= (int64_t)1 << m_submesh_id;
 
@@ -78,18 +81,31 @@ PrimitiveType SubMesh::top_simplex_type(const Tuple& tuple) const
 
 PrimitiveType SubMesh::top_simplex_type() const
 {
-    const Mesh& m = mesh();
+    // const Mesh& m = mesh();
+    //
+    // for (const PrimitiveType& pt : utils::primitive_below(m.top_simplex_type())) {
+    //     const auto tuples = m.get_all(pt);
+    //     for (const Tuple& t : tuples) {
+    //         if (contains(t, pt)) {
+    //             return pt;
+    //         }
+    //     }
+    // }
+    //
+    // log_and_throw_error("No simplex of the tuple contains the submesh tag.");
 
-    for (const PrimitiveType& pt : utils::primitive_below(m.top_simplex_type())) {
-        const auto tuples = m.get_all(pt);
-        for (const Tuple& t : tuples) {
-            if (contains(t, pt)) {
-                return pt;
-            }
-        }
+    if (m_top_cell_dimension < 0) {
+        log_and_throw_error("No simplex of the tuple contains the submesh tag.");
     }
 
-    log_and_throw_error("No simplex of the tuple contains the submesh tag.");
+    return get_primitive_type_from_id(m_top_cell_dimension);
+}
+
+int64_t SubMesh::top_cell_dimension() const
+{
+    assert(m_top_cell_dimension >= 0);
+    assert(m_top_cell_dimension < 4);
+    return m_top_cell_dimension;
 }
 
 Tuple SubMesh::switch_tuple(const Tuple& tuple, PrimitiveType pt) const
@@ -97,10 +113,21 @@ Tuple SubMesh::switch_tuple(const Tuple& tuple, PrimitiveType pt) const
     const int8_t pt_id = get_primitive_type_id(pt);
     const int8_t max_pt_id = get_primitive_type_id(top_simplex_type(tuple));
 
-    if (pt_id >= max_pt_id) {
-        log_and_throw_error("Submesh `switch_tuple` cannot be used for cell switches.");
+    if (pt_id > max_pt_id) {
+        // invalid switch
+        log_and_throw_error("Required PrimitiveType switch does not exist in submesh.");
+    }
+    if (pt_id == max_pt_id) {
+        // global switch
+        const auto vec = switch_tuple_vector(tuple, pt);
+        if (vec.size() != 2) {
+            log_and_throw_error(
+                "SubMesh `switch_tuple` cannot be used on non-manifold or boundary simplices.");
+        }
+        return vec[1];
     }
 
+    // local switch
     return local_switch_tuple(tuple, pt);
 }
 
@@ -137,7 +164,7 @@ std::vector<Tuple> SubMesh::switch_tuple_vector(const Tuple& tuple, PrimitiveTyp
     return neighs;
 }
 
-bool SubMesh::is_boundary(const Tuple& tuple, PrimitiveType pt) const
+bool SubMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
 {
     if (!contains(tuple, pt)) {
         log_and_throw_error("Cannot check for boundary if simplex is not contained in submesh");
@@ -185,6 +212,11 @@ bool SubMesh::is_boundary(const Tuple& tuple, PrimitiveType pt) const
     return false;
 }
 
+bool SubMesh::is_boundary(const Tuple& tuple, PrimitiveType pt) const
+{
+    return is_boundary(pt, tuple);
+}
+
 bool SubMesh::contains(const Tuple& tuple, PrimitiveType pt) const
 {
     const auto acc = m_embedding.tag_accessor(pt);
@@ -205,6 +237,11 @@ bool SubMesh::contains(const simplex::Simplex& s) const
 int64_t SubMesh::id(const Tuple& tuple, PrimitiveType pt) const
 {
     return mesh().id(tuple, pt);
+}
+
+int64_t SubMesh::id(const simplex::Simplex& s) const
+{
+    return id(s.tuple(), s.primitive_type());
 }
 
 Tuple SubMesh::local_switch_tuple(const Tuple& tuple, PrimitiveType pt) const
