@@ -144,7 +144,7 @@ public:
     friend class operations::internal::CollapseAlternateFacetData;
 
 
-    int64_t top_cell_dimension() const;
+    int64_t top_cell_dimension() const override;
     PrimitiveType top_simplex_type() const;
     bool is_free() const;
 
@@ -170,7 +170,7 @@ public:
      * @param type the type of tuple, can be vertex/edge/triangle/tetrahedron
      * @return vector of Tuples referring to each type
      */
-    std::vector<Tuple> get_all(PrimitiveType type) const;
+    std::vector<Tuple> get_all(PrimitiveType type) const override;
 
     std::vector<simplex::IdSimplex> get_all_id_simplex(PrimitiveType type) const;
     /**
@@ -369,7 +369,7 @@ public:
                     d-2 -> switch face
                     d-3 -> switch tetrahedron
     */
-    virtual Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const = 0;
+    virtual Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override = 0;
 
     // NOTE: adding per-simplex utility functions here is _wrong_ and will be removed
 
@@ -432,7 +432,7 @@ public:
      * @return true if this simplex lies on the boundary of the mesh
      * @return false otherwise
      */
-    virtual bool is_boundary(PrimitiveType, const Tuple& tuple) const = 0;
+    virtual bool is_boundary(PrimitiveType, const Tuple& tuple) const override = 0;
 
 
     bool is_hash_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const;
@@ -811,14 +811,14 @@ public:
                     d-3 -> tetrahedron
         * @return int64_t id of the entity
     */
-    int64_t id(const Tuple& tuple, PrimitiveType type) const;
+    int64_t id(const Tuple& tuple, PrimitiveType type) const override;
 
     int64_t id(const simplex::NavigatableSimplex& s) const { return s.index(); }
     int64_t id(const simplex::IdSimplex& s) const { return s.index(); }
 
 protected:
     /// Forwarding version of id on simplices that does id caching
-    virtual int64_t id(const simplex::Simplex& s) const = 0;
+    virtual int64_t id(const simplex::Simplex& s) const override = 0;
     /// Internal utility to allow id to be virtual with a non-virtual overload in derived -Mesh classes.
     /// Mesh::id invokes Mesh::id_virtual which is final overriden by MeshCRTP<TriMesh>::id_virtual, which in turn invokes MeshCRTP<TriMesh>::id, and then TriMesh::id.
     /// This circuitous mechanism makes MeshCRTP<TriMesh>::id and TriMesh::id fully inlineable, so code that wants to take in any derived class can get optimized results with MeshCRTP, or for cases where classes want to utilize just TriMesh they can get inline/accelerated usage as well.

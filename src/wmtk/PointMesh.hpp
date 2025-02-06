@@ -45,7 +45,7 @@ public:
 
 protected:
     using MeshCRTP<PointMesh>::id; // getting the (simplex) prototype
-    int64_t id(const Tuple& tuple, PrimitiveType type) const;
+    int64_t id(const Tuple& tuple, PrimitiveType type) const override;
 
     /**
      * @brief internal function that returns the tuple of requested type, and has the global index

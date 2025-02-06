@@ -63,7 +63,7 @@ public:
 
 protected:
     void make_cached_accessors();
-    int64_t id(const Tuple& tuple, PrimitiveType type) const;
+    int64_t id(const Tuple& tuple, PrimitiveType type) const override;
     using MeshCRTP<TetMesh>::id; // getting the (simplex) prototype
 
 
