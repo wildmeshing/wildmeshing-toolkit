@@ -68,7 +68,7 @@ public:
     std::vector<Tuple> orient_vertices(const Tuple& t) const override;
 
 protected:
-    int64_t id(const Tuple& tuple, PrimitiveType type) const;
+    int64_t id(const Tuple& tuple, PrimitiveType type) const override;
     using MeshCRTP<TriMesh>::id; // getting the (simplex) prototype
 
     int64_t id_vertex(const Tuple& tuple) const { return id(tuple, PrimitiveType::Vertex); }

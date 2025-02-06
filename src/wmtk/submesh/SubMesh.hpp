@@ -33,6 +33,7 @@ public:
     SubMesh& operator=(const SubMesh&) = delete;
     SubMesh(SubMesh&&) = delete;
     SubMesh& operator=(SubMesh&&) = delete;
+    ~SubMesh() override = default;
 
     Mesh& mesh();
     const Mesh& mesh() const;
@@ -46,7 +47,7 @@ public:
     void add_simplex(const Tuple& tuple, PrimitiveType pt);
     void add_simplex(const simplex::IdSimplex& simplex);
 
-    std::vector<Tuple> get_all(const PrimitiveType pt) const;
+    std::vector<Tuple> get_all(const PrimitiveType pt) const override;
 
     /**
      * @brief Get the maximum primitive type that has a tag for a given tuple.
@@ -58,7 +59,7 @@ public:
      */
     PrimitiveType top_simplex_type() const;
 
-    int64_t top_cell_dimension() const;
+    int64_t top_cell_dimension() const override;
 
     /**
      * @brief Can only perform local switches!
