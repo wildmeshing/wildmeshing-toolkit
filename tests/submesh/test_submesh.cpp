@@ -1,9 +1,10 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Mesh.hpp>
-#include <wmtk/TriMesh.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
+#include <wmtk/operations/EdgeCollapse.hpp>
+#include <wmtk/operations/EdgeSplit.hpp>
+#include <wmtk/operations/attribute_new/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/simplex/top_dimension_cofaces_iterable.hpp>
 #include <wmtk/submesh/Embedding.hpp>
 #include <wmtk/submesh/SubMesh.hpp>
@@ -13,7 +14,6 @@
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
 
-#include "tools/DEBUG_EdgeMesh.hpp"
 
 using namespace wmtk;
 using namespace submesh;
@@ -169,14 +169,17 @@ TEST_CASE("submesh_init_multi", "[mesh][submesh]")
         std::make_shared<tests::DEBUG_TriMesh>(tests::edge_region_with_position());
 
     tests::DEBUG_TriMesh& m = *mesh_in;
-    const Tuple edge45 = m.edge_tuple_from_vids(4, 5);
 
     Embedding emb(mesh_in);
+    CHECK_FALSE(emb.has_child_mesh());
+
     std::shared_ptr<SubMesh> sub1_ptr = emb.add_submesh();
     SubMesh& sub1 = *sub1_ptr;
 
     std::shared_ptr<SubMesh> sub2_ptr = emb.add_submesh();
     SubMesh& sub2 = *sub2_ptr;
+
+    CHECK(emb.has_child_mesh());
 
     sub1.add_simplex(m.face_tuple_from_vids(0, 3, 4), PF);
     sub1.add_simplex(m.face_tuple_from_vids(1, 4, 5), PF);
@@ -190,5 +193,151 @@ TEST_CASE("submesh_init_multi", "[mesh][submesh]")
             write("submesh_init_multi_sub1", "vertices", sub1, false, false, true, false));
         CHECK_NOTHROW(
             write("submesh_init_multi_sub2", "vertices", sub2, false, false, true, false));
+    }
+}
+
+TEST_CASE("submesh_split", "[mesh][submesh]")
+{
+    // logger().set_level(spdlog::level::off);
+    // logger().set_level(spdlog::level::trace);
+
+    // basic test for implementing
+    std::shared_ptr<tests::DEBUG_TriMesh> mesh_in =
+        std::make_shared<tests::DEBUG_TriMesh>(tests::edge_region_with_position());
+
+    tests::DEBUG_TriMesh& m = *mesh_in;
+
+    const auto pos = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+
+    Embedding emb(mesh_in);
+    CHECK_FALSE(emb.has_child_mesh());
+
+    std::shared_ptr<SubMesh> sub1_ptr = emb.add_submesh();
+    sub1_ptr->add_simplex(m.face_tuple_from_vids(1, 4, 5), PF);
+
+    std::shared_ptr<SubMesh> sub2_ptr = emb.add_submesh();
+    sub2_ptr->add_simplex(m.face_tuple_from_vids(4, 5, 8), PF);
+
+    CHECK(emb.has_child_mesh());
+
+
+    operations::EdgeSplit split(m);
+    emb.set_split_strategies(split);
+    split.set_new_attribute_strategy(pos);
+
+    const simplex::Simplex edge45(PE, m.edge_tuple_from_vids(4, 5));
+    split(edge45);
+
+    CHECK(sub1_ptr->contains(m.vertex_tuple_from_id(4), PV));
+    CHECK(sub1_ptr->contains(m.edge_tuple_from_vids(4, 10), PE));
+    CHECK(sub1_ptr->contains(m.edge_tuple_from_vids(5, 10), PE));
+    CHECK(sub1_ptr->contains(m.face_tuple_from_vids(4, 10, 1), PF));
+    CHECK(sub1_ptr->contains(m.face_tuple_from_vids(5, 10, 1), PF));
+    CHECK(sub2_ptr->contains(m.vertex_tuple_from_id(4), PV));
+    CHECK(sub2_ptr->contains(m.edge_tuple_from_vids(4, 10), PE));
+    CHECK(sub2_ptr->contains(m.edge_tuple_from_vids(5, 10), PE));
+    CHECK(sub2_ptr->contains(m.face_tuple_from_vids(4, 10, 8), PF));
+    CHECK(sub2_ptr->contains(m.face_tuple_from_vids(5, 10, 8), PF));
+
+    {
+        using submesh::utils::write;
+        CHECK_NOTHROW(write("submesh_split", "vertices", emb, true, true, true, false));
+    }
+}
+
+TEST_CASE("submesh_collapse", "[mesh][submesh]")
+{
+    // logger().set_level(spdlog::level::off);
+    // logger().set_level(spdlog::level::trace);
+
+    // basic test for implementing
+    std::shared_ptr<tests::DEBUG_TriMesh> mesh_in =
+        std::make_shared<tests::DEBUG_TriMesh>(tests::edge_region_with_position());
+
+    tests::DEBUG_TriMesh& m = *mesh_in;
+
+    const auto pos = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+
+    Embedding emb(mesh_in);
+    CHECK_FALSE(emb.has_child_mesh());
+
+    std::shared_ptr<SubMesh> sub1_ptr = emb.add_submesh();
+    sub1_ptr->add_simplex(m.face_tuple_from_vids(1, 4, 5), PF);
+
+    std::shared_ptr<SubMesh> sub2_ptr = emb.add_submesh();
+    sub2_ptr->add_simplex(m.face_tuple_from_vids(4, 5, 8), PF);
+
+    CHECK(emb.has_child_mesh());
+
+
+    operations::EdgeCollapse collapse(m);
+    emb.set_collapse_strategies(collapse);
+    collapse.set_new_attribute_strategy(pos);
+
+    const simplex::Simplex edge45(PE, m.edge_tuple_from_vids(4, 5));
+    collapse(edge45);
+
+    CHECK(sub1_ptr->contains(m.vertex_tuple_from_id(5), PV));
+    CHECK(sub1_ptr->contains(m.edge_tuple_from_vids(5, 1), PE));
+    CHECK(sub2_ptr->contains(m.vertex_tuple_from_id(5), PV));
+    CHECK(sub2_ptr->contains(m.edge_tuple_from_vids(5, 8), PE));
+
+    {
+        using submesh::utils::write;
+        CHECK_NOTHROW(write("submesh_collapse", "vertices", emb, true, true, true, false));
+    }
+}
+
+TEST_CASE("submesh_collapse_towards_submesh", "[mesh][submesh]")
+{
+    // logger().set_level(spdlog::level::off);
+    // logger().set_level(spdlog::level::trace);
+
+    // basic test for implementing
+    std::shared_ptr<tests::DEBUG_TriMesh> mesh_in =
+        std::make_shared<tests::DEBUG_TriMesh>(tests::edge_region_with_position());
+
+    tests::DEBUG_TriMesh& m = *mesh_in;
+
+    const auto pos = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    const auto pos_acc = m.create_const_accessor<double>(pos);
+
+    Embedding emb(mesh_in);
+    CHECK_FALSE(emb.has_child_mesh());
+
+    std::shared_ptr<SubMesh> sub1_ptr = emb.add_submesh();
+    sub1_ptr->add_simplex(m.edge_tuple_from_vids(1, 4), PE);
+    sub1_ptr->add_simplex(m.edge_tuple_from_vids(4, 8), PE);
+
+    // std::shared_ptr<SubMesh> sub2_ptr = emb.add_submesh();
+    // sub2_ptr->add_simplex(m.face_tuple_from_vids(4, 5, 8), PF);
+    Eigen::VectorXd p4 = pos_acc.const_vector_attribute(m.vertex_tuple_from_id(4));
+    Eigen::VectorXd p5 = pos_acc.const_vector_attribute(m.vertex_tuple_from_id(5));
+    CHECK(p4 != p5);
+
+    CHECK(emb.has_child_mesh());
+
+
+    operations::EdgeCollapse collapse(m);
+    auto clps_strat = std::make_shared<operations::CollapseNewAttributeStrategy<double>>(pos);
+    clps_strat->set_simplex_predicate(emb.substructure_predicate());
+    clps_strat->set_strategy(operations::CollapseBasicStrategy::Default);
+
+    emb.set_collapse_strategies(collapse);
+    collapse.set_new_attribute_strategy(pos, clps_strat);
+
+    const simplex::Simplex edge45(PE, m.edge_tuple_from_vids(4, 5));
+    collapse(edge45);
+
+    CHECK(sub1_ptr->contains(m.vertex_tuple_from_id(5), PV));
+    CHECK(sub1_ptr->contains(m.edge_tuple_from_vids(5, 1), PE));
+
+    p5 = pos_acc.const_vector_attribute(m.vertex_tuple_from_id(5));
+    CHECK(p4 == p5);
+
+    {
+        using submesh::utils::write;
+        CHECK_NOTHROW(
+            write("submesh_collapse_towards_submesh", "vertices", emb, true, true, true, false));
     }
 }
