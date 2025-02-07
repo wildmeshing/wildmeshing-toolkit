@@ -98,17 +98,10 @@ public:
         return create_const_accessor<T, Dim>(handle.as<T>());
     }
 
-protected:
     /// Returns the id of a simplex encoded in a tuple
     int64_t id(const Tuple& tuple, PrimitiveType type) const override
     {
         return derived().id(tuple, type);
-    }
-    /// internal utility for overriding the mesh class's id function without having the final override block the derived class's override
-    /// (we can't have Mesh::id be virtual, MeshCRTP<Derived>::id final override, and TriMesh::id. This indirection pushes the final override to this other function
-    int64_t id_virtual(const Tuple& tuple, PrimitiveType type) const final override
-    {
-        return id(tuple, type);
     }
 
     /// variant of id that can cache internally held values
@@ -119,6 +112,14 @@ protected:
 
     // catch any other Mesh id methods that might emerge by default
     using Mesh::id;
+
+protected:
+    /// internal utility for overriding the mesh class's id function without having the final override block the derived class's override
+    /// (we can't have Mesh::id be virtual, MeshCRTP<Derived>::id final override, and TriMesh::id. This indirection pushes the final override to this other function
+    int64_t id_virtual(const Tuple& tuple, PrimitiveType type) const final override
+    {
+        return id(tuple, type);
+    }
 
 
 protected:

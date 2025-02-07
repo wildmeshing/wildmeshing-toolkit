@@ -60,7 +60,37 @@ attribute::TypedAttributeHandle<int64_t>& Embedding::tag_handle(const PrimitiveT
 
 attribute::Accessor<int64_t> Embedding::tag_accessor(const PrimitiveType pt)
 {
-    return m_mesh->create_accessor(m_tag_handle.at(pt));
+    return mesh().create_accessor(m_tag_handle.at(pt));
+}
+
+std::vector<Tuple> Embedding::get_all(PrimitiveType type) const
+{
+    return mesh().get_all(type);
+}
+
+int64_t Embedding::top_cell_dimension() const
+{
+    return mesh().top_cell_dimension();
+}
+
+Tuple Embedding::switch_tuple(const Tuple& tuple, PrimitiveType type) const
+{
+    return mesh().switch_tuple(tuple, type);
+}
+
+bool Embedding::is_boundary(PrimitiveType pt, const Tuple& tuple) const
+{
+    return mesh().is_boundary(pt, tuple);
+}
+
+int64_t Embedding::id(const simplex::Simplex& s) const
+{
+    return mesh().id(s);
+}
+
+int64_t Embedding::id(const Tuple& tuple, PrimitiveType pt) const
+{
+    return mesh().id(tuple, pt);
 }
 
 
