@@ -69,6 +69,18 @@ std::vector<Tuple> SubMesh::get_all(const PrimitiveType pt) const
     return sub;
 }
 
+std::vector<simplex::IdSimplex> SubMesh::get_all_id_simplex(PrimitiveType pt) const
+{
+    const auto all = mesh().get_all_id_simplex(pt);
+    std::vector<simplex::IdSimplex> sub;
+    for (const simplex::IdSimplex& s : all) {
+        if (contains(s)) {
+            sub.emplace_back(s);
+        }
+    }
+    return sub;
+}
+
 PrimitiveType SubMesh::top_simplex_type(const Tuple& tuple) const
 {
     const Mesh& m = mesh();

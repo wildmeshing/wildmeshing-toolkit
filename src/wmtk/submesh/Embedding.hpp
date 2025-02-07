@@ -29,7 +29,8 @@ public:
     attribute::TypedAttributeHandle<int64_t>& tag_handle(const PrimitiveType pt);
     attribute::Accessor<int64_t> tag_accessor(const PrimitiveType pt);
 
-    std::vector<Tuple> get_all(PrimitiveType type) const;
+    std::vector<Tuple> get_all(PrimitiveType type) const override;
+    std::vector<simplex::IdSimplex> get_all_id_simplex(PrimitiveType type) const override;
 
     int64_t top_cell_dimension() const;
 

@@ -48,6 +48,7 @@ public:
     void add_simplex(const simplex::IdSimplex& simplex);
 
     std::vector<Tuple> get_all(const PrimitiveType pt) const override;
+    std::vector<simplex::IdSimplex> get_all_id_simplex(PrimitiveType type) const override;
 
     /**
      * @brief Get the maximum primitive type that has a tag for a given tuple.

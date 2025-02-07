@@ -20,6 +20,7 @@ public:
     virtual ~MeshBase() = default;
 
     virtual std::vector<Tuple> get_all(PrimitiveType type) const = 0;
+    virtual std::vector<simplex::IdSimplex> get_all_id_simplex(PrimitiveType type) const = 0;
 
     virtual int64_t top_cell_dimension() const = 0;
 

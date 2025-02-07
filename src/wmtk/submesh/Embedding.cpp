@@ -68,6 +68,11 @@ std::vector<Tuple> Embedding::get_all(PrimitiveType type) const
     return mesh().get_all(type);
 }
 
+std::vector<simplex::IdSimplex> Embedding::get_all_id_simplex(PrimitiveType type) const
+{
+    return mesh().get_all_id_simplex(type);
+}
+
 int64_t Embedding::top_cell_dimension() const
 {
     return mesh().top_cell_dimension();

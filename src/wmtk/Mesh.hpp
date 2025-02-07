@@ -172,7 +172,7 @@ public:
      */
     std::vector<Tuple> get_all(PrimitiveType type) const override;
 
-    std::vector<simplex::IdSimplex> get_all_id_simplex(PrimitiveType type) const;
+    std::vector<simplex::IdSimplex> get_all_id_simplex(PrimitiveType type) const override;
     /**
      * @brief Retrieve the IdSimplex that is represented by the tuple and primitive type.
      */

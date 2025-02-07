@@ -7,6 +7,7 @@
 #include <wmtk/simplex/top_dimension_cofaces_iterable.hpp>
 #include <wmtk/submesh/Embedding.hpp>
 #include <wmtk/submesh/SubMesh.hpp>
+#include <wmtk/submesh/utils/write.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include "tools/DEBUG_TriMesh.hpp"
@@ -156,4 +157,38 @@ TEST_CASE("submesh_top_dimension_cofaces", "[mesh][submesh]")
     CHECK_THROWS(sub.top_simplex_type());
 
     sub.add_simplex(edge45, PE);
+}
+
+TEST_CASE("submesh_init_multi", "[mesh][submesh]")
+{
+    // logger().set_level(spdlog::level::off);
+    logger().set_level(spdlog::level::trace);
+
+    // basic test for implementing
+    std::shared_ptr<tests::DEBUG_TriMesh> mesh_in =
+        std::make_shared<tests::DEBUG_TriMesh>(tests::edge_region_with_position());
+
+    tests::DEBUG_TriMesh& m = *mesh_in;
+    const Tuple edge45 = m.edge_tuple_from_vids(4, 5);
+
+    Embedding emb(mesh_in);
+    std::shared_ptr<SubMesh> sub1_ptr = emb.add_submesh();
+    SubMesh& sub1 = *sub1_ptr;
+
+    std::shared_ptr<SubMesh> sub2_ptr = emb.add_submesh();
+    SubMesh& sub2 = *sub2_ptr;
+
+    sub1.add_simplex(m.face_tuple_from_vids(0, 3, 4), PF);
+    sub1.add_simplex(m.face_tuple_from_vids(1, 4, 5), PF);
+
+    sub2.add_simplex(m.face_tuple_from_vids(1, 4, 5), PF);
+
+    {
+        using submesh::utils::write;
+        CHECK_NOTHROW(write("submesh_init_multi", "vertices", emb, false, false, true, false));
+        CHECK_NOTHROW(
+            write("submesh_init_multi_sub1", "vertices", sub1, false, false, true, false));
+        CHECK_NOTHROW(
+            write("submesh_init_multi_sub2", "vertices", sub2, false, false, true, false));
+    }
 }
