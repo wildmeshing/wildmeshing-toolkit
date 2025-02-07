@@ -114,6 +114,8 @@ public:
 private:
     void apply_last_scope();
 
+    // purely used for debug printing out the ENTIRE attribute state
+    void print_state(std::string_view prefix) const;
 
 protected:
     std::vector<T> m_buffer = std::vector<T>(64);

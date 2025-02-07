@@ -5,12 +5,51 @@
 #include "CachingAttribute.hpp"
 
 #if defined(WMTK_ENABLED_DEV_MODE)
+#include <fmt/ranges.h>
+#include <spdlog/spdlog.h>
+#include <span>
 #define WMTK_CACHING_ATTRIBUTE_INLINE
+
+
 #else
 #define WMTK_CACHING_ATTRIBUTE_INLINE inline
 #endif
 
 namespace wmtk::attribute {
+template <typename T>
+void CachingAttribute<T>::print_state(std::string_view prefix) const
+{
+    if constexpr (std::is_same_v<T, Rational>) {
+    } else {
+        spdlog::warn(
+            "Attribute {}: [{}] on transaction {} of {}",
+            BaseType::m_name,
+            prefix,
+            m_current_transaction_index,
+            m_transaction_starts.size());
+        spdlog::info("Data: {}", fmt::join(BaseType::m_data, ","));
+        for (size_t j = 0; j < m_transaction_starts.size(); ++j) {
+            size_t start = m_transaction_starts[j];
+            size_t end;
+            if (j == m_transaction_starts.size() - 1) {
+                end = m_indices.size();
+            } else {
+                end = m_transaction_starts[j + 1];
+            }
+            spdlog::info("Detailing transaction {} with value indices {}->{}", j, start, end);
+            for (size_t k = start; k < end; ++k) {
+                const auto& [attr_index, table_index] = m_indices[k];
+                spdlog::info(
+                    "attr index {} has table index {} and value {}",
+                    attr_index,
+                    table_index,
+                    fmt::join(
+                        std::span(m_buffer.data() + table_index, BaseType::dimension()),
+                        ","));
+            }
+        }
+    }
+}
 
 template <typename T>
 auto CachingAttribute<T>::transaction_start_begin(size_t scope_index) const
@@ -269,11 +308,13 @@ WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::emplace()
     assert(at_current_scope()); // must only be called on leaf node
 
     m_transaction_starts.emplace_back(m_indices_end);
+    print_state("new scope");
     change_to_current_scope();
 }
 template <typename T>
 WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::pop(bool preserve_changes)
 {
+    print_state("popping scope");
     assert(at_current_scope()); // must only be called on leaf node
     // TODO consider re-enabling
     if (preserve_changes) {
@@ -284,12 +325,18 @@ WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::pop(bool preserve_change
 
 
     m_transaction_starts.pop_back();
+    spdlog::info(
+        "{}: New scope end is at level {} with indices at {}",
+        BaseType::m_name,
+        m_transaction_starts.size(),
+        m_transaction_starts.back());
 
     change_to_current_scope();
     if (!has_transactions()) {
         m_indices_end = 0;
         m_buffer_end = 0;
     }
+    print_state("done popping scope");
 }
 
 
@@ -307,6 +354,8 @@ WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::change_to_previous_scope
     // if the previous is a nullptr it's fine
     assert(!at_current_scope());
     m_current_transaction_index++;
+
+    print_state("change_to_previous_scope");
 }
 
 template <typename T>
@@ -316,11 +365,13 @@ WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::change_to_next_scope()
         assert(has_transactions());
     }
     m_current_transaction_index--;
+    print_state("change_to_next_scope");
 }
 template <typename T>
 WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::change_to_current_scope()
 {
     m_current_transaction_index = transaction_depth();
+    print_state("change_to_current_scope");
 }
 template <typename T>
 WMTK_CACHING_ATTRIBUTE_INLINE bool CachingAttribute<T>::at_current_scope() const
