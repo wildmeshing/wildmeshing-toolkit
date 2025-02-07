@@ -2,6 +2,8 @@
 set(SRC_FILES
     Attribute.hpp
     Attribute.cpp
+    Attribute.hxx
+
     MeshAttributes.cpp
     MeshAttributes.hpp
     AttributeManager.hpp

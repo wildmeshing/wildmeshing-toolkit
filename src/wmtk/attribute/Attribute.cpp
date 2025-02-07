@@ -123,6 +123,51 @@ void Attribute<T>::index_remap(const std::vector<T>& old2new, const std::vector<
 #if defined(__GNUG__) && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
+}
+
+#if defined(WMTK_ENABLED_DEV_MODE)
+#include "Attribute.hxx"
+
+namespace wmtk::attribute {
+#define VECTOR_DEC(TYPE, D)                                                              \
+    template auto Attribute<TYPE>::const_vector_single_value<D>(                  \
+        int64_t index,                                                                   \
+        int8_t single_index) const -> const TYPE&;                                       \
+    template auto Attribute<TYPE>::vector_single_value<D>(                  \
+        int64_t index,                                                                   \
+        int8_t single_index) -> TYPE&;                                       \
+    template auto Attribute<TYPE>::const_vector_attribute<D>(int64_t index) const \
+        -> ConstMapResult<D>;                                                            \
+    template auto Attribute<TYPE>::vector_attribute<D>(int64_t index) -> MapResult<D>;\
+    template auto Attribute<TYPE>::const_vector_attribute<D>(int64_t index, const std::vector<TYPE>&) const \
+        -> ConstMapResult<D>;                                                            \
+    template auto Attribute<TYPE>::vector_attribute<D>(int64_t index, std::vector<TYPE>&) const -> MapResult<D>;
+
+#define SCALAR_DEC(TYPE)                                                              \
+    template auto Attribute<TYPE>::const_scalar_attribute(int64_t index) const \
+        -> const TYPE&;                                                            \
+    template auto Attribute<TYPE>::scalar_attribute(int64_t index) -> TYPE&;\
+    template auto Attribute<TYPE>::const_scalar_attribute(int64_t index, const std::vector<TYPE>& ) const \
+        -> const TYPE&;                                                            \
+    template auto Attribute<TYPE>::scalar_attribute(int64_t index, std::vector<TYPE>&) const-> TYPE&;
+
+
+#define DEC(TYPE)        \
+    SCALAR_DEC(TYPE) \
+    VECTOR_DEC(TYPE, -1) \
+    VECTOR_DEC(TYPE, 1)  \
+    VECTOR_DEC(TYPE, 2)  \
+    VECTOR_DEC(TYPE, 3)  \
+    VECTOR_DEC(TYPE, 4)  \
+    VECTOR_DEC(TYPE, 5)  \
+    VECTOR_DEC(TYPE, 6)
+
+
+DEC(double)
+DEC(int64_t)
+DEC(Rational)
+DEC(char)
+#endif
 
 
 template class Attribute<char>;
