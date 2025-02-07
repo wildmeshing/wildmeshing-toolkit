@@ -2,8 +2,8 @@
 #include <Eigen/Core>
 #include <map>
 #include <memory>
-#include "internal/VectorTypes.hpp"
 #include "Attribute.hpp"
+#include "internal/VectorTypes.hpp"
 
 
 namespace wmtk::attribute {
@@ -39,11 +39,11 @@ public:
 
     // clears the current active transaction
     void clear();
-    // resets the entire transaction stack. should only really be called in unit tests 
+    // resets the entire transaction stack. should only really be called in unit tests
     void reset();
     int64_t size() const;
 
-    void apply_to() ;
+    void apply_to();
     // applyes to some other buffer that was passed in
     void apply_to(std::vector<T>& other) const;
 
@@ -62,9 +62,6 @@ public:
     //==========
 
 
-    bool transactions_empty() const;
-
-
     bool writing_enabled() const;
 
 
@@ -79,11 +76,11 @@ public:
     T& scalar_attribute(int64_t index);
 
     /// default immutable scalar access
-    T const_scalar_attribute(int64_t index) const;
+    const T& const_scalar_attribute(int64_t index) const;
 
     template <int D = Eigen::Dynamic>
     /// specialized immutable scalar access useful for topological operations
-    T const_vector_single_value(int64_t index, int8_t vector_index) const;
+    const T& const_vector_single_value(int64_t index, int8_t vector_index) const;
 
     void emplace();
     void pop(bool preserve_changes);
@@ -110,9 +107,13 @@ public:
 
     void update_buffer_sizes_for_add(size_t data_size);
 
+    int64_t transaction_depth() const;
+
+    bool has_transactions() const;
 
 private:
     void apply_last_scope();
+
 
 protected:
     std::vector<T> m_buffer = std::vector<T>(64);
@@ -127,126 +128,9 @@ protected:
 };
 
 
-template <typename T>
-auto CachingAttribute<T>::transaction_start_begin(size_t scope_index) const
-
-    -> std::vector<std::pair<size_t, size_t>>::const_iterator
-{
-    return m_indices.begin() + m_transaction_starts[scope_index];
-}
-template <typename T>
-auto CachingAttribute<T>::final_transaction_end() const
-    -> std::vector<std::pair<size_t, size_t>>::const_iterator
-
-{
-    return m_indices.begin() + m_indices_end;
-}
-
-template <typename T>
-auto CachingAttribute<T>::transaction_start_rend(size_t scope_index) const
-    -> std::vector<std::pair<size_t, size_t>>::const_reverse_iterator
-{
-    return std::reverse_iterator(transaction_start_begin(scope_index));
-}
-template <typename T>
-auto CachingAttribute<T>::final_transaction_rbegin() const
-    -> std::vector<std::pair<size_t, size_t>>::const_reverse_iterator
-{
-    return std::reverse_iterator(final_transaction_end());
-}
-
-template <typename T>
-inline int64_t CachingAttribute<T>::size() const
-{
-    return m_transaction_starts.size();
-}
-
-template <typename T>
-inline void CachingAttribute<T>::rollback_current_scope()
-{
-    assert(!transactions_empty());
-    assert(at_current_scope());
-    apply_last_scope();
-}
-
-template <typename T>
-template <int D>
-inline auto CachingAttribute<T>::vector_attribute(int64_t index) -> MapResult<D>
-{
-    assert(writing_enabled());
-
-    auto data = BaseType::template vector_attribute<D>(index);
-    assert(data.cols() == 1);
-    if constexpr (D != Eigen::Dynamic) {
-        assert(data.size() == D);
-    }
-    // we are typically only going to write when caching is enabled so better to optimize for this
-    if (!transactions_empty()) {
-        try_caching(index, data);
-    }
-    return data;
-}
-
-template <typename T>
-template <int D>
-inline auto CachingAttribute<T>::const_vector_attribute(int64_t index) const -> ConstMapResult<D>
-{
-    if (!at_current_scope()) {
-        assert(m_current_transaction_index < m_transaction_starts.size());
-
-        const T* ptr = get_value(index);
-        if (ptr != nullptr) {
-            const int dim = BaseType::dimension();
-            auto dat = ConstMapResult<D>(ptr, dim);
-            return dat;
-        }
-    }
-    return BaseType::template const_vector_attribute<D>(index);
-}
-
-template <typename T>
-inline auto CachingAttribute<T>::scalar_attribute(int64_t index) -> T&
-{
-    assert(writing_enabled());
-    T& value = BaseType::scalar_attribute(index);
-    if (!transactions_empty()) {
-        try_caching(index, value);
-    }
-    return value;
-}
-
-template <typename T>
-inline auto CachingAttribute<T>::const_scalar_attribute(int64_t index) const -> T
-{
-    return const_vector_attribute<1>(index)(0);
-}
-template <typename T>
-template <int D>
-inline auto CachingAttribute<T>::const_vector_single_value(int64_t index, int8_t vector_index) const
-    -> T
-{
-    if (!at_current_scope()) {
-        return const_vector_attribute<D>(index)(vector_index);
-    } else {
-        return BaseType::const_vector_single_value(index, vector_index);
-    }
-}
-
-//=======================================================
-// Scope members
-//=======================================================
-template <typename T>
-inline void CachingAttribute<T>::push_scope()
-{
-    emplace();
-}
-template <typename T>
-inline void CachingAttribute<T>::pop_scope(bool apply_updates)
-{
-    pop(apply_updates);
-}
-
 } // namespace wmtk::attribute
 
 
- #include "CachingAttribute.hxx"
+#if !defined(WMTK_ENABLED_DEV_MODE)
+#include "CachingAttribute.hxx"
+#endif

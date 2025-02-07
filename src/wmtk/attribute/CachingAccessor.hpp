@@ -60,13 +60,13 @@ public:
     bool has_stack() const;
 
     template <int D = Dim>
-    ConstMapResult<D> const_vector_attribute(const int64_t index) const;
+    ConstMapResult<std::max(D, Dim)> const_vector_attribute(const int64_t index) const;
 
     T const_scalar_attribute(const int64_t index) const;
     T const_vector_single_value(const int64_t index, const int8_t vector_index) const;
 
     template <int D = Dim>
-    MapResult<D> vector_attribute(const int64_t index);
+    MapResult<std::max(D, Dim)> vector_attribute(const int64_t index);
 
     T& scalar_attribute(const int64_t index);
     T& vector_single_value(const int64_t index, const int8_t vector_index);
@@ -89,4 +89,6 @@ protected:
     const CachingAttribute<T>& get_cache_stack() const;
 };
 } // namespace wmtk::attribute
+#if !defined(WMTK_ENABLED_DEV_MODE)
 #include "CachingAccessor.hxx"
+#endif

@@ -2,9 +2,6 @@
 #include <wmtk/utils/Rational.hpp>
 #include "AccessorBase.hpp"
 #include "AttributeManager.hpp"
-// #include "MeshAttributeHandle.hpp"
-// #include "MeshAttributes.hpp"
-//#include "wmtk/Mesh.hpp"
 
 namespace wmtk::attribute {
 template <typename T, int Dim>
@@ -142,7 +139,8 @@ inline T AccessorBase<T, Dim>::const_vector_single_value(const int64_t index, co
     return value;
 }
 template <typename T, int Dim>
-inline auto AccessorBase<T, Dim>::vector_single_value(const int64_t index, const int8_t offset) -> T&
+inline auto AccessorBase<T, Dim>::vector_single_value(const int64_t index, const int8_t offset)
+    -> T&
 {
     auto& value = attribute().template vector_single_value<Dim>(index, offset);
     return value;

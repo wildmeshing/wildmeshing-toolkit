@@ -24,6 +24,11 @@ set(SRC_FILES
 
     CachingAccessor.hxx
     CachingAccessor.hpp
+    CachingAccessor.cpp
+
+    CachingAttribute.hxx
+    CachingAttribute.hpp
+    CachingAttribute.cpp
     #
     Accessor.hxx
     Accessor.hpp

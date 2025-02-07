@@ -501,7 +501,9 @@ TEST_CASE("collapse_no_topology_trimesh", "[operations][collapse]")
         return m;
     }(initial_size);
     int64_t size = initial_size;
+    size_t count = 0;
     for (Tuple edge : m.get_all(PrimitiveType::Triangle)) {
+        spdlog::info("Count: {}", count++);
         EdgeCollapse op(m);
         REQUIRE(!op(simplex::Simplex(m, PrimitiveType::Edge, edge)).empty());
         size--;

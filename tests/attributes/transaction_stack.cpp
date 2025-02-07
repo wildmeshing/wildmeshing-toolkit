@@ -39,8 +39,8 @@ TEST_CASE("attribute_transaction_stack", "[attributes]")
         am.m_long_attributes[0].attribute(scalar_handle.base_handle());
 
 
-    REQUIRE(vector_ats.transactions_empty());
-    REQUIRE(scalar_ats.transactions_empty());
+    REQUIRE(!vector_ats.has_transactions());
+    REQUIRE(!scalar_ats.has_transactions());
     auto run_actions = [&]() {
         for (int64_t j = 0; j < vector_ats.reserved_size(); ++j) {
             vector_ats.vector_attribute(j).setConstant(-1);
