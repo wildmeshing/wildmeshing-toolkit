@@ -77,6 +77,9 @@ auto DEBUG_TriMesh::edge_tuple_from_vids(const int64_t v1, const int64_t v2) con
     const attribute::Accessor<int64_t> fv = create_const_accessor<int64_t>(m_fv_handle);
     auto fv_base = create_base_accessor<int64_t>(m_fv_handle);
     for (int64_t fid = 0; fid < capacity(PrimitiveType::Triangle); ++fid) {
+        if (is_removed(fid)) {
+            continue;
+        }
         Tuple face = face_tuple_from_id(fid);
         auto fv0 = fv.const_vector_attribute(face);
         int64_t local_vid1 = -1, local_vid2 = -1;
@@ -89,11 +92,7 @@ auto DEBUG_TriMesh::edge_tuple_from_vids(const int64_t v1, const int64_t v2) con
             }
         }
         if (local_vid1 != -1 && local_vid2 != -1) {
-            return Tuple(
-                local_vid1,
-                (3 - local_vid1 - local_vid2) % 3,
-                -1,
-                fid);
+            return Tuple(local_vid1, (3 - local_vid1 - local_vid2) % 3, -1, fid);
         }
     }
     return Tuple();
@@ -158,8 +157,7 @@ void DEBUG_TriMesh::reserve_attributes(PrimitiveType type, int64_t size)
 }
 
 
-auto DEBUG_TriMesh::get_tmoe(const Tuple& t)
-    -> TriMeshOperationExecutor
+auto DEBUG_TriMesh::get_tmoe(const Tuple& t) -> TriMeshOperationExecutor
 {
     return TriMeshOperationExecutor(*this, t);
 }
