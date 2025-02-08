@@ -128,14 +128,13 @@ void HDF5Writer::write_internal(
     const Data& val,
     const T& default_val)
 {
-    std::stringstream ss;
-    ss << dataset_path() << "/" << type << "/" << name;
+    std::string path = fmt::format("{}/{}/{}", dataset_path(), type, name);
 
-    m_hdf5_file->writeDataset(val, ss.str());
-    m_hdf5_file->writeAttribute(stride, ss.str(), "stride");
-    m_hdf5_file->writeAttribute(default_val, ss.str(), "default_value");
-    m_hdf5_file->writeAttribute(type, ss.str(), "dimension");
-    m_hdf5_file->writeAttribute(get_type<T>(), ss.str(), "type");
+    m_hdf5_file->writeDataset(val, path);
+    m_hdf5_file->writeAttribute(stride, path, "stride");
+    m_hdf5_file->writeAttribute(default_val, path, "default_value");
+    m_hdf5_file->writeAttribute(type, path, "dimension");
+    m_hdf5_file->writeAttribute(get_type<T>(), path, "type");
 }
 
 void HDF5Writer::write_top_simplex_type(const PrimitiveType type)

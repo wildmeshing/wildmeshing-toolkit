@@ -8,9 +8,9 @@ namespace wmtk::attribute {
 
 
 template <typename T>
-void Attribute<T>::serialize(const std::string& name, const int dim, MeshWriter& writer) const
+void Attribute<T>::serialize(const int dim, MeshWriter& writer) const
 {
-    writer.write(name, dim, dimension(), m_data, m_default_value);
+    writer.write(m_name, dim, dimension(), m_data, m_default_value);
 }
 
 

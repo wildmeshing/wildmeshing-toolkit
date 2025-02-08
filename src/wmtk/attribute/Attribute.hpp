@@ -36,7 +36,7 @@ public:
 
     template <typename U, int D>
     friend class AccessorBase;
-    void serialize(const std::string& name, const int dim, MeshWriter& writer) const;
+    void serialize(const int dim, MeshWriter& writer) const;
 
     /**
      * @brief Initialize the attribute.

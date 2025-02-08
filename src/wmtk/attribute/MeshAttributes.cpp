@@ -18,12 +18,10 @@ namespace wmtk::attribute {
 template <typename T>
 void MeshAttributes<T>::serialize(const int dim, MeshWriter& writer) const
 {
-    for (const auto& p : m_handles) {
-        const auto& handle = p.second;
-        const auto& attr_ptr = attribute(handle);
-        if (is_active(handle)) {
-            const auto& attr = *m_attributes[handle.index];
-            attr.serialize(p.first, dim, writer);
+    for(const auto& attr_ptr: m_attributes) {
+        if(bool(attr_ptr)) {
+            spdlog::info("Writing {} {}", attr_ptr->m_name, std::distance(m_attributes.data(),&attr_ptr));
+            attr_ptr->serialize(dim, writer);
         }
     }
 }
