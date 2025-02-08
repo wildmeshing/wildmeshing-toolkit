@@ -11,7 +11,6 @@
 #include <vector>
 
 
-// TODO: this is just a fancy vector for attributes, perhaps this can be recycled / simplified. The reserved quantiy should be held by a level above this abstraction (as multiple types should all have hte same reservation size)
 
 namespace wmtk {
 
@@ -26,7 +25,7 @@ class AccessorBase;
  * It also stores a map so that attributes can be accessed through a name.
  */
 template <typename T>
-class MeshAttributes : public wmtk::utils::MerkleTreeInteriorNode
+class TypedAttributeManager : public wmtk::utils::MerkleTreeInteriorNode
 {
     template <typename U, int D>
     friend class AccessorBase;
@@ -36,11 +35,11 @@ class MeshAttributes : public wmtk::utils::MerkleTreeInteriorNode
 
 
 public:
-    MeshAttributes() = default;
-    MeshAttributes(const MeshAttributes& o) = delete;
-    MeshAttributes(MeshAttributes&& o) = default;
-    MeshAttributes& operator=(const MeshAttributes& o) = delete;
-    MeshAttributes& operator=(MeshAttributes&& o) = default;
+    TypedAttributeManager() = default;
+    TypedAttributeManager(const TypedAttributeManager& o) = delete;
+    TypedAttributeManager(TypedAttributeManager&& o) = default;
+    TypedAttributeManager& operator=(const TypedAttributeManager& o) = delete;
+    TypedAttributeManager& operator=(TypedAttributeManager&& o) = default;
 
     void serialize(const int dim, MeshWriter& writer) const;
 
@@ -79,7 +78,7 @@ public:
     void remove_attribute(const AttributeHandle& attribute);
 
 
-    bool operator==(const MeshAttributes<T>& other) const;
+    bool operator==(const TypedAttributeManager<T>& other) const;
     void push_scope();
     void pop_scope(bool apply_updates = true);
     void rollback_current_scope();
@@ -133,24 +132,24 @@ private:
     std::vector<std::unique_ptr<CachingAttribute<T>>> m_attributes;
 };
 template <typename T>
-inline CachingAttribute<T>& MeshAttributes<T>::attribute(const AttributeHandle& handle)
+inline CachingAttribute<T>& TypedAttributeManager<T>::attribute(const AttributeHandle& handle)
 {
     CachingAttribute<T>& attr = *m_attributes.at(handle.index);
     return attr;
 }
 template <typename T>
-inline const CachingAttribute<T>& MeshAttributes<T>::attribute(const AttributeHandle& handle) const
+inline const CachingAttribute<T>& TypedAttributeManager<T>::attribute(const AttributeHandle& handle) const
 {
     return *m_attributes.at(handle.index);
 }
 
 template <typename T>
-inline int64_t MeshAttributes<T>::dimension(const AttributeHandle& handle) const
+inline int64_t TypedAttributeManager<T>::dimension(const AttributeHandle& handle) const
 {
     return attribute(handle).dimension();
 }
 template <typename T>
-inline const T& MeshAttributes<T>::default_value(const AttributeHandle& handle) const
+inline const T& TypedAttributeManager<T>::default_value(const AttributeHandle& handle) const
 {
     return attribute(handle).default_value();
 }

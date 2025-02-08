@@ -275,7 +275,7 @@ std::vector<MeshAttributeHandle::HandleVariant> AttributeManager::get_all_attrib
     auto run = [&](auto type) {
         using T = std::decay_t<decltype(type)>;
 
-        const std::vector<MeshAttributes<T>>& mesh_attributes = get<T>();
+        const std::vector<TypedAttributeManager<T>>& mesh_attributes = get<T>();
         for (size_t pt_index = 0; pt_index < mesh_attributes.size(); ++pt_index) {
             const PrimitiveType pt = get_primitive_type_from_id(pt_index);
 

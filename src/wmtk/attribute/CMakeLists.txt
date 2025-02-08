@@ -4,8 +4,8 @@ set(SRC_FILES
     Attribute.cpp
     Attribute.hxx
 
-    MeshAttributes.cpp
-    MeshAttributes.hpp
+    TypedAttributeManager.cpp
+    TypedAttributeManager.hpp
     AttributeManager.hpp
     AttributeManager.cpp
     AttributeScopeHandle.hpp

@@ -7,7 +7,7 @@ class Mesh;
 class Rational;
 namespace attribute {
 template <typename T>
-class MeshAttributes;
+class TypedAttributeManager;
 template <typename T, int Dim>
 class AccessorBase;
 template <typename T, typename MeshType, int Dim>
@@ -31,7 +31,7 @@ public:
 
 private:
     friend class wmtk::Mesh;
-    friend class MeshAttributes<T>;
+    friend class TypedAttributeManager<T>;
     template <typename U, int Dim>
     friend class AccessorBase;
     template <typename U, typename MeshType, int Dim>
