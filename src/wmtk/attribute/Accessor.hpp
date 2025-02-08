@@ -54,11 +54,11 @@ public:
     // =============
     // NOTE: If any compilation warnings occur check that there is an overload for an index method
 
-    T const_topological_scalar_attribute(const Tuple& t, PrimitiveType pt) const;
+    const T& const_topological_scalar_attribute(const Tuple& t, PrimitiveType pt) const;
     template <typename ArgType>
     T& topological_scalar_attribute(const ArgType& t);
     template <typename ArgType>
-    T const_scalar_attribute(const ArgType& t) const;
+    const T& const_scalar_attribute(const ArgType& t) const;
     template <typename ArgType>
     T& scalar_attribute(const ArgType& t);
 

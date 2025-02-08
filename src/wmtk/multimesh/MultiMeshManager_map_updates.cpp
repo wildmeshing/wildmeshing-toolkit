@@ -391,7 +391,7 @@ int64_t MultiMeshManager::child_global_cid(
     // 2 is the size of a tuple is 2 longs, global_cid currently gets written to position 3
     // 5 is the size of a tuple is 5 longs, global_cid currently gets written to position 3
     return Mesh::get_index_access(parent_to_child)
-        .vector_attribute(parent_gid)(
+        .const_vector_attribute(parent_gid)(
             wmtk::multimesh::utils::TUPLE_SIZE + wmtk::multimesh::utils::GLOBAL_ID_INDEX);
 }
 int64_t MultiMeshManager::parent_global_cid(
@@ -402,7 +402,7 @@ int64_t MultiMeshManager::parent_global_cid(
     // 2 is the size of a tuple is 2 longs, global_cid currently gets written to position 3
     // 5 is the size of a tuple is 5 longs, global_cid currently gets written to position 2
     return Mesh::get_index_access(child_to_parent)
-        .vector_attribute(child_gid)(
+        .const_vector_attribute(child_gid)(
             wmtk::multimesh::utils::TUPLE_SIZE + wmtk::multimesh::utils::GLOBAL_ID_INDEX);
 }
 
@@ -414,12 +414,12 @@ int64_t MultiMeshManager::parent_local_fid(
 #if defined WMTK_DISABLE_COMPRESSED_MULTIMESH_TUPLE
     // 5 is the size of a tuple is 5 longs, global_cid currently gets written to position 3
     return Mesh::get_index_access(child_to_parent)
-        .vector_attribute(child_gid)(wmtk::multimesh::utils::TUPLE_SIZE + 2);
+        .const_vector_attribute(child_gid)(wmtk::multimesh::utils::TUPLE_SIZE + 2);
 #else
     // pick hte index that isn't teh global id index
     const int64_t v =
         Mesh::get_index_access(child_to_parent)
-            .vector_attribute(child_gid)(
+            .const_vector_attribute(child_gid)(
                 wmtk::multimesh::utils::TUPLE_SIZE + (1 - wmtk::multimesh::utils::GLOBAL_ID_INDEX));
     auto vptr = reinterpret_cast<const int8_t*>(&v);
     return vptr[2];

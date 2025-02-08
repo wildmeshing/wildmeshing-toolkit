@@ -62,8 +62,8 @@ public:
     template <int D = Dim>
     ConstMapResult<std::max(D, Dim)> const_vector_attribute(const int64_t index) const;
 
-    T const_scalar_attribute(const int64_t index) const;
-    T const_vector_single_value(const int64_t index, const int8_t vector_index) const;
+    const T& const_scalar_attribute(const int64_t index) const;
+    const T& const_vector_single_value(const int64_t index, const int8_t vector_index) const;
 
     template <int D = Dim>
     MapResult<std::max(D, Dim)> vector_attribute(const int64_t index);
@@ -71,10 +71,6 @@ public:
     T& scalar_attribute(const int64_t index);
     T& vector_single_value(const int64_t index, const int8_t vector_index);
 
-    // deprecated because we should be more explicit in const/nonconst on internal interfaces
-    ConstMapResult<> vector_attribute(const int64_t index) const;
-    // deprecated because we should be more explicit in const/nonconst on internal interfaces
-    T scalar_attribute(const int64_t index) const;
 
     using BaseType::attribute;
     using BaseType::mesh;

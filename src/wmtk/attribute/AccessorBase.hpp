@@ -13,12 +13,6 @@ namespace wmtk::attribute {
 
 template <typename T>
 class Attribute;
-template <typename T, typename MeshType, int Dim>
-class Accessor;
-template <typename T>
-class MeshAttributes;
-template <typename T>
-class AccessorCache;
 
 // The basic implementation of an accessor using indices.
 // This should never be externally used except within the main accessor
@@ -28,10 +22,6 @@ class AccessorBase
 {
 public:
     using T = _T;
-    friend class AccessorCache<T>;
-    using MeshAttributesType = MeshAttributes<T>;
-    template <typename U, typename MeshType, int D>
-    friend class Accessor;
     using AttributeType = Attribute<T>;
 
     template <int D = Dim>
@@ -54,10 +44,10 @@ public:
     template <int D = Dim>
     MapResult<D> vector_attribute(const int64_t index);
 
-    T const_scalar_attribute(const int64_t index) const;
+    const T& const_scalar_attribute(const int64_t index) const;
     T& scalar_attribute(const int64_t index);
 
-    T const_vector_single_value(const int64_t index, const int8_t offset) const;
+    const T& const_vector_single_value(const int64_t index, const int8_t offset) const;
     T& vector_single_value(const int64_t index, const int8_t offset);
 
 

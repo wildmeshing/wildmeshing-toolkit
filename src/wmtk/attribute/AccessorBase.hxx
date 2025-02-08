@@ -97,7 +97,7 @@ inline auto AccessorBase<T, Dim>::vector_attribute(const int64_t index) -> MapRe
 }
 
 template <typename T, int Dim>
-inline T AccessorBase<T, Dim>::const_scalar_attribute(const int64_t index) const
+inline const T& AccessorBase<T, Dim>::const_scalar_attribute(const int64_t index) const
 {
     auto value = attribute().const_scalar_attribute(index);
     return value;
@@ -110,7 +110,7 @@ inline auto AccessorBase<T, Dim>::scalar_attribute(const int64_t index) -> T&
 }
 
 template <typename T, int Dim>
-inline T AccessorBase<T, Dim>::const_vector_single_value(const int64_t index, const int8_t offset)
+inline const T& AccessorBase<T, Dim>::const_vector_single_value(const int64_t index, const int8_t offset)
     const
 {
     auto value = attribute().template const_vector_single_value<Dim>(index, offset);

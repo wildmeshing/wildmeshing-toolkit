@@ -82,23 +82,12 @@ WMTK_CACHING_ACCESSOR_INLINE auto CachingAccessor<T, Dim>::const_vector_attribut
 
 template <typename T, int Dim>
 WMTK_CACHING_ACCESSOR_INLINE auto CachingAccessor<T, Dim>::const_scalar_attribute(
-    const int64_t index) const -> T
+    const int64_t index) const -> const T&
 {
     assert(Dim == Eigen::Dynamic || Dim == 1);
     return get_cache_stack().const_scalar_attribute(index);
 }
 
-template <typename T, int Dim>
-WMTK_CACHING_ACCESSOR_INLINE auto CachingAccessor<T, Dim>::vector_attribute(
-    const int64_t index) const -> ConstMapResult<>
-{
-    return const_vector_attribute(index);
-}
-template <typename T, int Dim>
-WMTK_CACHING_ACCESSOR_INLINE T CachingAccessor<T, Dim>::scalar_attribute(const int64_t index) const
-{
-    return const_scalar_attribute(index);
-}
 
 template <typename T, int Dim>
 WMTK_CACHING_ACCESSOR_INLINE auto CachingAccessor<T, Dim>::vector_single_value(
@@ -112,7 +101,7 @@ WMTK_CACHING_ACCESSOR_INLINE auto CachingAccessor<T, Dim>::vector_single_value(
 template <typename T, int Dim>
 WMTK_CACHING_ACCESSOR_INLINE auto CachingAccessor<T, Dim>::const_vector_single_value(
     const int64_t index,
-    int8_t vector_index) const -> T
+    int8_t vector_index) const -> const T&
 {
     return get_cache_stack().template const_vector_single_value<Dim>(index, vector_index);
 }
