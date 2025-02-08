@@ -27,18 +27,6 @@ inline const Mesh& AccessorBase<T, Dim>::mesh() const
     return m_mesh;
 }
 
-template <typename T, int Dim>
-inline const AttributeManager& AccessorBase<T, Dim>::attribute_manager() const
-{
-    return mesh().m_attribute_manager;
-}
-
-template <typename T, int Dim>
-inline AttributeManager& AccessorBase<T, Dim>::attribute_manager()
-{
-    return mesh().m_attribute_manager;
-}
-
 
 template <typename T, int Dim>
 inline AccessorBase<T, Dim>::~AccessorBase() = default;
@@ -62,16 +50,6 @@ inline const T& AccessorBase<T, Dim>::default_value() const
     return attribute().default_value();
 }
 
-template <typename T, int Dim>
-inline auto AccessorBase<T, Dim>::attributes() -> MeshAttributes<T>&
-{
-    return attribute_manager().get(m_handle);
-}
-template <typename T, int Dim>
-inline auto AccessorBase<T, Dim>::attributes() const -> const MeshAttributes<T>&
-{
-    return attribute_manager().get(m_handle);
-}
 template <typename T, int Dim>
 inline auto AccessorBase<T, Dim>::attribute() -> Attribute<T>&
 {

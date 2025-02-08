@@ -9,6 +9,7 @@
 #include <wmtk/utils/Rational.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include <wmtk/utils/merkle_tree_diff.hpp>
+#include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 
 #include <wmtk/operations/EdgeSplit.hpp>
 

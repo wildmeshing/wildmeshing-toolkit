@@ -826,20 +826,20 @@ int64_t UpdateEdgeOperationMultiMeshMapFunctor::child_global_cid(
     const attribute::Accessor<int64_t, Mesh, Eigen::Dynamic>& parent_to_child,
     int64_t parent_gid) const
 {
-    return MultiMeshManager::child_global_cid(parent_to_child, parent_gid);
+    return multimesh::MultiMeshManager::child_global_cid(parent_to_child, parent_gid);
 }
 int64_t UpdateEdgeOperationMultiMeshMapFunctor::parent_global_cid(
     const attribute::Accessor<int64_t, Mesh, Eigen::Dynamic>& child_to_parent,
     int64_t child_gid) const
 {
-    return MultiMeshManager::parent_global_cid(child_to_parent, child_gid);
+    return multimesh::MultiMeshManager::parent_global_cid(child_to_parent, child_gid);
 }
 
 int64_t UpdateEdgeOperationMultiMeshMapFunctor::parent_local_fid(
     const attribute::Accessor<int64_t, Mesh, Eigen::Dynamic>& child_to_parent,
     int64_t child_gid) const
 {
-    return MultiMeshManager::parent_local_fid(child_to_parent, child_gid);
+    return multimesh::MultiMeshManager::parent_local_fid(child_to_parent, child_gid);
 }
 
 

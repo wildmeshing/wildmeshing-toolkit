@@ -60,8 +60,6 @@ public:
     T const_vector_single_value(const int64_t index, const int8_t offset) const;
     T& vector_single_value(const int64_t index, const int8_t offset);
 
-    MeshAttributes<T>& attributes();
-    const MeshAttributes<T>& attributes() const;
 
     Attribute<T>& attribute();
     const Attribute<T>& attribute() const;
@@ -84,8 +82,6 @@ protected:
     Mesh& m_mesh;
     Attribute<T>& m_attribute;
 
-    const AttributeManager& attribute_manager() const;
-    AttributeManager& attribute_manager();
 };
 
 

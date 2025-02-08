@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/PointMesh.hpp>

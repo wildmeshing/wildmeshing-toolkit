@@ -14,7 +14,7 @@
 #include "attribute/Accessor.hpp"
 
 // is a member of the Mesh class
-#include "MultiMeshManager.hpp"
+#include "multimesh/MultiMeshManager.hpp"
 
 // basic data for the class
 #include <wmtk/simplex/Simplex.hpp>
@@ -23,7 +23,6 @@
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributeHandle.hpp"
-#include "attribute/MeshAttributes.hpp"
 #include "attribute/FlagAccessor.hpp"
 #include "multimesh/attribute/AttributeScopeHandle.hpp"
 

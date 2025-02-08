@@ -3,10 +3,7 @@
 #include <tuple>
 #include <wmtk/Tuple.hpp>
 #include <wmtk/attribute/Accessor.hpp>
-#include <wmtk/attribute/AttributeScopeHandle.hpp>
-#include <wmtk/attribute/MeshAttributes.hpp>
 // included to make a friend as this requires IDs
-#include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/utils/MerkleTreeInteriorNode.hpp>
 
 // debug function that reads into this structure
@@ -56,11 +53,6 @@ namespace wmtk::multimesh {
 class MultiMeshManager : public wmtk::utils::MerkleTreeInteriorNode
 {
 public:
-    // utility function for mapping the same set of simplices (or a subset of equivalent simplices)
-    friend std::vector<std::array<Tuple, 2>> multimesh::same_simplex_dimension_surjection(
-        const Mesh& parent,
-        const Mesh& child,
-        const std::vector<int64_t>& parent_simplices);
 
     // let the visitor object access the internal details
     template <int64_t cell_dimension, typename NodeFunctor>
@@ -546,7 +538,6 @@ public:
     static bool is_child(const std::vector<int64_t>& child, const std::vector<int64_t>& parent);
     bool is_child(const Mesh& my_mesh, const Mesh& parent_mesh) const;
 
-private:
     // this is defined internally but is preferablly invoked through the multimesh free function
     static std::vector<std::array<Tuple, 2>> same_simplex_dimension_surjection(
         const Mesh& parent,
