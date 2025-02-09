@@ -7,6 +7,7 @@
 #include <fmt/ranges.h>
 #include <spdlog/spdlog.h>
 #include <span>
+#include <ranges>
 #define WMTK_CACHING_ATTRIBUTE_INLINE
 
 
@@ -19,14 +20,14 @@ template <typename T>
 void CachingAttribute<T>::print_state(std::string_view prefix) const
 {
     if constexpr (std::is_same_v<T, Rational>) {
-    } else {
+    } else if constexpr (std::is_same_v<T, char>) {
         spdlog::warn(
             "Attribute {}: [{}] on transaction {} of {}",
             BaseType::m_name,
             prefix,
             m_current_transaction_index,
             m_transaction_starts.size());
-        spdlog::info("Data: {}", fmt::join(BaseType::m_data, ","));
+        spdlog::info("Data: {}", fmt::join(std::views::transform(BaseType::m_data, [](auto&& v) noexcept -> int64_t { return v;}), ","));
         for (size_t j = 0; j < m_transaction_starts.size(); ++j) {
             size_t start = m_transaction_starts[j];
             size_t end;
@@ -36,6 +37,8 @@ void CachingAttribute<T>::print_state(std::string_view prefix) const
                 end = m_transaction_starts[j + 1];
             }
             spdlog::info("Detailing transaction {} with value indices {}->{}", j, start, end);
+            continue;
+
             for (size_t k = start; k < end; ++k) {
                 const auto& [attr_index, table_index] = m_indices[k];
                 spdlog::info(
@@ -135,6 +138,7 @@ WMTK_CACHING_ATTRIBUTE_INLINE auto CachingAttribute<T>::scalar_attribute(int64_t
 {
     assert(writing_enabled());
     T& value = BaseType::scalar_attribute(index);
+    spdlog::info("How many transactions when accessing {}?: {}", index, m_transaction_starts.size());
     if (has_transactions()) {
         try_caching(index, value);
     }
@@ -231,6 +235,10 @@ WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::try_caching(
     int64_t index,
     const Eigen::MatrixBase<Derived>& value)
 {
+    if constexpr(!std::is_same_v<T,wmtk::Rational>) {
+    spdlog::warn("Caching value index {}, {}", index, fmt::join(value,","));
+    }
+    
     // basically try_emplace but optimizes to avoid accessing the pointed-to value
 
     size_t dim = value.size();

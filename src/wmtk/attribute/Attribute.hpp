@@ -33,7 +33,7 @@ public:
     std::map<std::string, size_t> child_hashes() const override;
 
 
-    void serialize(const int dim, MeshWriter& writer) const;
+    void serialize(int dim, MeshWriter& writer) const;
 
     /**
      * @brief Initialize the attribute.
@@ -53,21 +53,21 @@ public:
 
     /// Access the value of an attribute at a particular index. If the dimension of the attribute is known at compile time then the template parameter should be elided to improve performance.
     template <int D = Eigen::Dynamic>
-    ConstMapResult<D> const_vector_attribute(const int64_t index) const;
+    ConstMapResult<D> const_vector_attribute(int64_t index) const;
     /// Access the value of an attribute at a particular index. If the dimension of the attribute is known at compile time then the template parameter should be elided to improve performance.
     template <int D = Eigen::Dynamic>
-    MapResult<D> vector_attribute(const int64_t index);
+    MapResult<D> vector_attribute(int64_t index);
 
     /// Access the value of a scalar attribute
-    const T& const_scalar_attribute(const int64_t index) const;
+    const T& const_scalar_attribute(int64_t index) const;
     /// Access the value of a scalar attribute. Assignment to the returned value will change the value
-    T& scalar_attribute(const int64_t index);
+    T& scalar_attribute(int64_t index);
     /// Access a single entry in a vector attribute. TODO: this might not actually be more performant than
     template <int D = Eigen::Dynamic>
-    const T& const_vector_single_value(const int64_t index, const int8_t vector_index) const;
+    const T& const_vector_single_value(int64_t index, int8_t vector_index) const;
     /// Access to a single a single value of a scalr attribute
     template <int D = Eigen::Dynamic>
-    T& vector_single_value(const int64_t index, const int8_t vector_index);
+    T& vector_single_value(int64_t index, int8_t vector_index);
 
     /**
      * @brief Replace the internal data with `val`.
@@ -85,7 +85,7 @@ public:
      * @brief The number of values for each index.
      */
     int64_t dimension() const;
-    void reserve(const int64_t size);
+    void reserve(int64_t size);
 
     /**
      * @brief returns the default value of this attribute
@@ -115,7 +115,7 @@ public:
      * serialization
      */
     template <int D = Eigen::Dynamic>
-    ConstMapResult<D> const_vector_attribute(const int64_t index, const std::vector<T>& data) const;
+    ConstMapResult<D> const_vector_attribute(int64_t index, const std::vector<T>& data) const;
 
     /**
      * @brief Accesses the attribute using the specified vector as the underlying data

@@ -93,6 +93,9 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 #endif
         auto mods = execute(simplex);
 #ifndef NDEBUG
+        for(size_t j = 0; j <= mesh().top_cell_dimension(); ++j) {
+            mesh().get_const_flag_accessor(get_primitive_type_from_id(j)).base_accessor().attribute().print_state(fmt::format("after operation flag {}", j));
+        }
         for (const auto& s : mods) {
             assert(mesh().is_valid(s.tuple()));
         }

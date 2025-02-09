@@ -23,17 +23,18 @@ public:
         : m_base_accessor{o.m_base_accessor}
     {}
 
+
     bool is_active(int64_t t) const
     {
-        return _is_active(m_base_accessor.index_access().const_scalar_attribute(t));
+        return _is_active(attribute().const_scalar_attribute(t));
     }
     void activate(int64_t t)
     {
-        return _activate(m_base_accessor.index_access().scalar_attribute(t));
+        return _activate(attribute().scalar_attribute(t));
     }
     void deactivate(int64_t t)
     {
-        return _deactivate(m_base_accessor.index_access().scalar_attribute(t));
+        return _deactivate(attribute().scalar_attribute(t));
     }
 
     constexpr static char inverse_mask(FlagBit bit) { return 0xFF ^ static_cast<char>(bit); }
@@ -42,6 +43,9 @@ public:
     BaseAccessor& base_accessor() { return m_base_accessor; }
     const BaseAccessor& base_accessor() const { return m_base_accessor; }
     operator BaseAccessor() const { return m_base_accessor; }
+
+    CachingAttribute<char>& attribute() { return base_accessor().attribute(); }
+    const CachingAttribute<char>& attribute() const { return base_accessor().attribute(); }
 
 protected:
     BaseAccessor m_base_accessor;

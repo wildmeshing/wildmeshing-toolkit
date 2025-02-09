@@ -115,6 +115,7 @@ public:
 private:
     void apply_last_scope();
 
+public:
     // purely used for debug printing out the ENTIRE attribute state
     void print_state(std::string_view prefix) const;
 

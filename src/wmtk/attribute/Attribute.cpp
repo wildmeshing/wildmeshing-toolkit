@@ -8,7 +8,7 @@ namespace wmtk::attribute {
 
 
 template <typename T>
-void Attribute<T>::serialize(const int dim, MeshWriter& writer) const
+void Attribute<T>::serialize(int dim, MeshWriter& writer) const
 {
     writer.write(m_name, dim, dimension(), m_data, m_default_value);
 }
@@ -58,7 +58,7 @@ bool Attribute<T>::operator==(const Attribute<T>& o) const
 
 
 template <typename T>
-void Attribute<T>::reserve(const int64_t size)
+void Attribute<T>::reserve(int64_t size)
 {
     if (size >= 0 && size > reserved_size()) {
         m_data.resize(m_dimension * size, m_default_value);
