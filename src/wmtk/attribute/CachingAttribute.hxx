@@ -1,6 +1,5 @@
 #pragma once
 #include <wmtk/Types.hpp>
-#include <wmtk/attribute/AccessorBase.hpp>
 #include <wmtk/utils/Rational.hpp>
 #include "CachingAttribute.hpp"
 
