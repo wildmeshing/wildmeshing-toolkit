@@ -17,8 +17,6 @@ namespace wmtk {
 class MeshWriter;
 class Mesh;
 namespace attribute {
-template <typename T, int Dim>
-class AccessorBase;
 
 /**
  * Contains all attributes of type T for a single mesh.
@@ -27,8 +25,6 @@ class AccessorBase;
 template <typename T>
 class TypedAttributeManager : public wmtk::utils::MerkleTreeInteriorNode
 {
-    template <typename U, int D>
-    friend class AccessorBase;
 
     typedef Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1>> MapResult;
     typedef Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>> ConstMapResult;

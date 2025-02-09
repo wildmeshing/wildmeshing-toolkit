@@ -64,7 +64,7 @@ TEST_CASE("consolidate_multimesh", "[mesh][consolidate_multimesh]")
         collapse(simplex::Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
 
-        auto fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
+        auto& fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
 
         // CHECK_THROWS(m.tuple_from_id(PrimitiveType::Vertex, 4));
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#if defined(AWFEAF)
 #include <type_traits>
 #include "MeshAttributeHandle.hpp"
 #include "MapTypes.hpp"
@@ -77,3 +78,14 @@ protected:
 
 } // namespace wmtk::attribute
 #include "AccessorBase.hxx"
+
+#else
+
+#include "CachingAttribute.hpp"
+namespace wmtk::attribute {
+template <typename _T, int Dim = Eigen::Dynamic>
+using AccessorBase = CachingAttribute<_T>&;
+
+}
+
+#endif

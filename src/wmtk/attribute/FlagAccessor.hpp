@@ -12,7 +12,7 @@ public:
     static bool _is_active(char value) { return value & static_cast<char>(FlagBit::Active); }
     static void _activate(char& value) { value |= static_cast<char>(FlagBit::Active); }
     static void _deactivate(char& value) { value &= inverse_mask(FlagBit::Active); }
-    using BaseAccessor = Accessor<char, MeshType, 1>;
+    using BaseAccessor = Accessor<char, MeshType, CachingAttribute<char>, 1>;
 
 
     IndexFlagAccessor(BaseAccessor acc)

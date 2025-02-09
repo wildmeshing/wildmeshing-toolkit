@@ -21,8 +21,6 @@ class UpdateEdgeOperationMultiMeshMapFunctor;
 }
 } // namespace operations
 namespace attribute {
-template <typename T, typename MeshType, int Dim>
-class Accessor;
 }
 namespace multimesh {
 template <int64_t cell_dimension, typename NodeFunctor>

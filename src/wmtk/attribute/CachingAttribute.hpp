@@ -13,6 +13,7 @@ template <typename T>
 class CachingAttribute : public Attribute<T>
 {
 public:
+    using Scalar = T;
     using BaseType = Attribute<T>;
     template <int D>
     using MapResult = typename BaseType::MapResult<D>;

@@ -13,7 +13,7 @@ public:
     TupleAccessor(MeshType& m, const TypedAttributeHandle<int64_t>& handle);
     TupleAccessor(const MeshType& m, const TypedAttributeHandle<int64_t>& handle);
     template <int Dim2>
-    TupleAccessor(const Accessor<int64_t, MeshType, Dim2>& accessor);
+    TupleAccessor(const Accessor<int64_t, MeshType, CachingAttribute<int64_t>, Dim2>& accessor);
 
     // Eigen::Map<VectorX<T>>
     template <int D = Dim>

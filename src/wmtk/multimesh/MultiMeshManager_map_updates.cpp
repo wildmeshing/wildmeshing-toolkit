@@ -69,7 +69,7 @@ void MultiMeshManager::update_maps_from_edge_operation(
     if (children().empty()) {
         return;
     }
-    auto parent_flag_accessor = my_mesh.get_const_flag_accessor(primitive_type);
+    //auto parent_flag_accessor = my_mesh.get_const_flag_accessor(primitive_type);
     // auto& update_tuple = [&](const auto& flag_accessor, Tuple& t) -> bool {
     //     if(acc.index_access().
     // };
@@ -91,7 +91,7 @@ void MultiMeshManager::update_maps_from_edge_operation(
         auto maps = get_map_accessors(my_mesh, child_data);
         auto& [parent_to_child_accessor, child_to_parent_accessor] = maps;
 
-        auto child_flag_accessor = child_mesh.get_const_flag_accessor(primitive_type);
+        //auto child_flag_accessor = child_mesh.get_const_flag_accessor(primitive_type);
 
 
         for (const auto& gid : gids) {
@@ -168,7 +168,7 @@ void MultiMeshManager::update_map_tuple_hashes(
 
     const PrimitiveType parent_primitive_type = my_mesh.top_simplex_type();
 
-    auto parent_flag_accessor = my_mesh.get_const_flag_accessor(primitive_type);
+    //auto parent_flag_accessor = my_mesh.get_const_flag_accessor(primitive_type);
     // auto& update_tuple = [&](const auto& flag_accessor, Tuple& t) -> bool {
     //     if(acc.index_access().
     // };
@@ -189,7 +189,7 @@ void MultiMeshManager::update_map_tuple_hashes(
         auto maps = get_map_accessors(my_mesh, child_data);
         auto& [parent_to_child_accessor, child_to_parent_accessor] = maps;
 
-        auto child_flag_accessor = child_mesh.get_const_flag_accessor(primitive_type);
+        //auto child_flag_accessor = child_mesh.get_const_flag_accessor(primitive_type);
 
 
         for (const auto& [original_parent_gid, equivalent_parent_tuples] : simplices_to_update) {
@@ -311,7 +311,7 @@ std::optional<Tuple> MultiMeshManager::find_valid_tuple_from_alternatives(
     PrimitiveType primitive_type,
     const std::vector<Tuple>& tuple_alternatives) const
 {
-    auto parent_flag_accessor = my_mesh.get_const_flag_accessor(primitive_type);
+    //auto parent_flag_accessor = my_mesh.get_const_flag_accessor(primitive_type);
     // find a new sharer by finding a tuple that exists
     auto it = std::find_if(
         tuple_alternatives.begin(),

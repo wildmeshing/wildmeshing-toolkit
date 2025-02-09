@@ -21,12 +21,12 @@ set(SRC_FILES
     MeshAttributeHandle.hpp
     MeshAttributeHandle.cpp
 
-    AccessorBase.hxx
-    AccessorBase.hpp
+    #AccessorBase.hxx
+    #AccessorBase.hpp
 
-    CachingAccessor.hxx
-    CachingAccessor.hpp
-    CachingAccessor.cpp
+    #CachingAccessor.hxx
+    #CachingAccessor.hpp
+    #CachingAccessor.cpp
 
     CachingAttribute.hxx
     CachingAttribute.hpp

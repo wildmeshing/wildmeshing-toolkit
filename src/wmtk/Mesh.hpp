@@ -22,8 +22,8 @@
 #include "Types.hpp"
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
-#include "attribute/MeshAttributeHandle.hpp"
 #include "attribute/FlagAccessor.hpp"
+#include "attribute/MeshAttributeHandle.hpp"
 #include "multimesh/attribute/AttributeScopeHandle.hpp"
 
 #include "multimesh/attribute/UseParentScopeRAII.hpp"
@@ -31,6 +31,7 @@
 #include "simplex/IdSimplex.hpp"
 #include "simplex/NavigatableSimplex.hpp"
 #include "simplex/Simplex.hpp"
+#include "wmtk/attribute/CachingAttribute.hpp"
 
 
 // if we have concepts then switch_tuples uses forward_iterator concept
@@ -51,7 +52,7 @@ class TestTools;
 // thread management tool that we will PImpl
 namespace attribute {
 class AttributeManager;
-template <typename T, typename MeshType, int Dim>
+template <typename T, typename MeshType, typename AttributeType, int Dim>
 class Accessor;
 
 } // namespace attribute
@@ -89,7 +90,7 @@ template <typename Visitor>
 class MultiMeshVisitorExecutor;
 
 namespace utils {
-    class MapValidator;
+class MapValidator;
 namespace internal {
 class TupleTag;
 }
@@ -107,9 +108,7 @@ class Mesh : public std::enable_shared_from_this<Mesh>, public wmtk::utils::Merk
 public:
     friend class tests::tools::TestTools;
     friend class tests::DEBUG_Mesh;
-    template <typename T, int Dim>
-    friend class attribute::AccessorBase;
-    template <typename T, typename MeshType, int Dim>
+    template <typename T, typename MeshType, typename AttributeType, int Dim>
     friend class attribute::Accessor;
     friend class io::ParaviewWriter;
     friend class HDF5Reader;
@@ -240,18 +239,18 @@ public:
 
 
     template <typename T, int D = Eigen::Dynamic>
-    attribute::Accessor<T, Mesh, D> create_accessor(const attribute::MeshAttributeHandle& handle);
+    attribute::Accessor<T, Mesh, attribute::CachingAttribute<T>, D> create_accessor(const attribute::MeshAttributeHandle& handle);
 
 
     template <typename T, int D = Eigen::Dynamic>
-    const attribute::Accessor<T, Mesh, D> create_const_accessor(
+    const attribute::Accessor<T, Mesh, attribute::CachingAttribute<T>, D> create_const_accessor(
         const attribute::MeshAttributeHandle& handle) const;
 
     template <typename T, int D = Eigen::Dynamic>
-    attribute::Accessor<T, Mesh, D> create_accessor(const TypedAttributeHandle<T>& handle);
+    attribute::Accessor<T, Mesh, attribute::CachingAttribute<T>, D> create_accessor(const TypedAttributeHandle<T>& handle);
 
     template <typename T, int D = Eigen::Dynamic>
-    const attribute::Accessor<T, Mesh, D> create_const_accessor(
+    const attribute::Accessor<T, Mesh, attribute::CachingAttribute<T>, D> create_const_accessor(
         const TypedAttributeHandle<T>& handle) const;
 
     template <typename T>
@@ -864,7 +863,6 @@ private:
     std::vector<TypedAttributeHandle<char>> m_flag_handles;
 
 
-
     /**
      * Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index
      * @param type the type of tuple, can be vertex/edge/triangle/tetrahedron
@@ -880,20 +878,20 @@ private:
 
 template <typename T, int D>
 inline auto Mesh::create_accessor(const TypedAttributeHandle<T>& handle)
-    -> attribute::Accessor<T, Mesh, D>
+    -> attribute::Accessor<T, Mesh, attribute::CachingAttribute<T>, D>
 {
-    return attribute::Accessor<T, Mesh, D>(*this, handle);
+    return attribute::Accessor<T, Mesh, attribute::CachingAttribute<T>, D>(*this, handle);
 }
 template <typename T, int D>
 inline auto Mesh::create_const_accessor(const TypedAttributeHandle<T>& handle) const
-    -> const attribute::Accessor<T, Mesh, D>
+    -> const attribute::Accessor<T, Mesh, attribute::CachingAttribute<T>, D>
 {
-    return attribute::Accessor<T, Mesh, D>(*this, handle);
+    return attribute::Accessor<T, Mesh, attribute::CachingAttribute<T>, D>(*this, handle);
 }
 
 template <typename T, int D>
 inline auto Mesh::create_accessor(const attribute::MeshAttributeHandle& handle)
-    -> attribute::Accessor<T, Mesh, D>
+    -> attribute::Accessor<T, Mesh, attribute::CachingAttribute<T>, D>
 {
     assert(&handle.mesh() == this);
     assert(handle.holds<T>());
@@ -903,7 +901,7 @@ inline auto Mesh::create_accessor(const attribute::MeshAttributeHandle& handle)
 
 template <typename T, int D>
 inline auto Mesh::create_const_accessor(const attribute::MeshAttributeHandle& handle) const
-    -> const attribute::Accessor<T, Mesh, D>
+    -> const attribute::Accessor<T, Mesh, attribute::CachingAttribute<T>, D>
 {
     assert(&handle.mesh() == this);
     assert(handle.holds<T>());

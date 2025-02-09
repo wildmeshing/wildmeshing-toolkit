@@ -259,7 +259,7 @@ TEST_CASE("attribute_update_multimesh", "[attribute_updates][multimesh]")
     auto d_pos_handle = d_mesh->register_attribute<double>("pos", PrimitiveType::Vertex, 2);
     auto i_pos_handle = i_mesh->register_attribute<double>("pos", PrimitiveType::Vertex, 2);
 
-    auto d_pos = d_mesh_debug->create_base_accessor(d_pos_handle.as<double>());
+    auto& d_pos = d_mesh_debug->create_base_accessor(d_pos_handle.as<double>());
     REQUIRE(d_pos.reserved_size() == N + 1);
     int rows = N + 1;
     int cols = 2;
@@ -275,7 +275,7 @@ TEST_CASE("attribute_update_multimesh", "[attribute_updates][multimesh]")
             double s = std::sin(theta);
             pos.row(j + 1) << c, s;
         }
-        d_pos.set_attribute(r);
+        d_pos.set(r);
     }
 
     auto average = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd { return P.rowwise().mean(); };
@@ -289,7 +289,7 @@ TEST_CASE("attribute_update_multimesh", "[attribute_updates][multimesh]")
 
     average_strategy_down->run_on_all();
 
-    auto i_pos = i_mesh_debug->create_base_accessor(i_pos_handle.as<double>());
+    auto& i_pos = i_mesh_debug->create_base_accessor(i_pos_handle.as<double>());
 
     REQUIRE(i_pos.reserved_size() == 3 * N);
     for (int n = 0; n < N; ++n) {
@@ -327,7 +327,7 @@ TEST_CASE("attribute_update_multimesh", "[attribute_updates][multimesh]")
     // clear the data
     {
         pos.row(0).setZero();
-        d_pos.set_attribute(r);
+        d_pos.set(r);
     }
     sum_plus_one_strategy_up->run_on_all();
 

@@ -144,7 +144,7 @@ std::shared_ptr<Mesh> HDF5Reader::read_mesh(h5pp::File& hdf5_file, const std::st
 
     const auto dsets = hdf5_file.findDatasets("", root_dataset, -1, 1);
     for (auto& s : dsets) {
-        const std::string dataset = fmt::format("{}/{}",root_dataset , s);
+        const std::string dataset = fmt::format("{}/{}", root_dataset, s);
 
 
         const int64_t stride = hdf5_file.readAttribute<int64_t>(dataset, "stride");
@@ -218,7 +218,11 @@ void HDF5Reader::set_attribute(
             ? mesh.get_attribute_handle<T>(name, pt)
             : mesh.register_attribute<T>(name, pt, stride, false, default_val);
     const attribute::TypedAttributeHandle<T>& thandle = handle.as<T>();
-    spdlog::info("Read handle for {}/{} at index {}", name, get_primitive_type_id(pt), thandle.base_handle().index);
+    spdlog::info(
+        "Read handle for {}/{} at index {}",
+        name,
+        get_primitive_type_id(pt),
+        thandle.base_handle().index);
 
     int64_t handle_dimension = mesh.get_attribute_dimension(thandle);
     if (stride != handle_dimension) {
@@ -228,9 +232,9 @@ void HDF5Reader::set_attribute(
             handle_dimension);
     }
 
-    auto accessor = attribute::AccessorBase<T>(mesh, thandle);
+    auto accessor = mesh.create_accessor<T>(thandle);
 
-    accessor.set_attribute(v);
+    accessor.attribute().set(v);
 }
 
 

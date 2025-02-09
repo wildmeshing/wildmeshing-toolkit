@@ -60,7 +60,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         collapse(Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
 
-        auto fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
+        auto &fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
 
         // CHECK_THROWS(m.tuple_from_id(PrimitiveType::Vertex, 4));
 
@@ -80,7 +80,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         collapse(Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
 
-        auto fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
+        auto& fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
 
         // CHECK_THROWS(m.tuple_from_id(PrimitiveType::Vertex, 4));
 
@@ -121,7 +121,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         op(Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
 
-        auto fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
+        auto& fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
 
         // CHECK_THROWS(m.tuple_from_id(PrimitiveType::Vertex, 0));
 

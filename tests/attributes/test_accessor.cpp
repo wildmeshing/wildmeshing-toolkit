@@ -98,9 +98,9 @@ TEST_CASE("test_accessor_basic", "[accessor]")
     auto int64_t_def1_acc = m.create_accessor(int64_t_def1_handle);
     auto double_def1_acc = m.create_accessor(double_def1_handle);
 
-    auto char_bacc = m.create_base_accessor(char_handle);
-    auto int64_t_bacc = m.create_base_accessor(int64_t_handle);
-    auto double_bacc = m.create_base_accessor(double_handle);
+    auto& char_bacc = m.create_base_accessor(char_handle);
+    auto& int64_t_bacc = m.create_base_accessor(int64_t_handle);
+    auto& double_bacc = m.create_base_accessor(double_handle);
 
     auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
 
@@ -136,22 +136,22 @@ TEST_CASE("test_accessor_basic", "[accessor]")
     // use global set to force all values
     // NOTE that the ugly static casts are in this unit test because we want
     // accessing the low level accessor data to be ugly.
-    // Please keep set_attribute hidden from the public unless some ugly
+    // Please keep set hidden from the public unless some ugly
     // notation like these static asts exists
     {
         std::vector<char> d(size);
         std::iota(d.begin(), d.end(), char(0));
-        char_bacc.set_attribute(d);
+        char_bacc.set(d);
     }
     {
         std::vector<int64_t> d(size);
         std::iota(d.begin(), d.end(), int64_t(0));
-        int64_t_bacc.set_attribute(d);
+        int64_t_bacc.set(d);
     }
     {
         std::vector<double> d(3 * size);
         std::iota(d.begin(), d.end(), double(0));
-        double_bacc.set_attribute(d);
+        double_bacc.set(d);
     }
     for (const wmtk::Tuple& tup : vertices) {
         int64_t id = m.id(tup);
@@ -184,8 +184,8 @@ TEST_CASE("test_accessor_caching", "[accessor]")
         m.register_attribute_typed<int64_t>("int64_t", wmtk::PrimitiveType::Vertex, 1);
     auto double_handle =
         m.register_attribute_typed<double>("double", wmtk::PrimitiveType::Vertex, 3);
-    auto immediate_int64_t_acc = m.create_base_accessor(int64_t_handle);
-    auto immediate_double_acc = m.create_base_accessor(double_handle);
+    auto& immediate_int64_t_acc = m.create_base_accessor(int64_t_handle);
+    auto& immediate_double_acc = m.create_base_accessor(double_handle);
 
     std::vector<int64_t*> int64_t_ptrs;
     std::vector<double*> double_ptrs;
@@ -212,7 +212,7 @@ TEST_CASE("test_accessor_caching", "[accessor]")
         auto int64_t_acc = m.create_accessor(int64_t_handle);
         auto double_acc = m.create_accessor(double_handle);
         {
-            auto depth = int64_t_acc.stack_depth();
+            auto depth = int64_t_acc.attribute().transaction_depth();
             REQUIRE(depth == 1);
 
             // make sure base accessors are not affected
@@ -241,7 +241,7 @@ TEST_CASE("test_accessor_caching", "[accessor]")
 
         for (const wmtk::Tuple& tup : vertices) {
             auto check_id = [&](const auto& va, int id) {
-                using T = typename std::decay_t<decltype(va)>::T;
+                using T = typename std::decay_t<decltype(va)>::Scalar;
                 auto v = va.const_vector_attribute(id);
                 auto x = v.eval();
                 std::iota(x.begin(), x.end(), T(va.dimension() * id));

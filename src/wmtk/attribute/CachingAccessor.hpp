@@ -49,13 +49,13 @@ public:
 
     // returns the size of the underlying attribute
 
-    //using BaseType::dimension; // const() -> int64_t
-    //using BaseType::reserved_size; // const() -> int64_t
+    auto dimension() const -> int64_t;
+    auto reserved_size() const -> int64_t
 
-    //using BaseType::attribute; // access to Attribute object being used here
-    //using BaseType::set_attribute; // (const vector<T>&) -> void
-    // shows the depth of scope stacks if they exist, mostly for debug
-    int64_t stack_depth() const;
+        //using BaseType::attribute; // access to Attribute object being used here
+        //using BaseType::set_attribute; // (const vector<T>&) -> void
+        // shows the depth of scope stacks if they exist, mostly for debug
+        int64_t stack_depth() const;
 
     bool has_stack() const;
 
@@ -71,9 +71,6 @@ public:
     T& scalar_attribute(const int64_t index);
     T& vector_single_value(const int64_t index, const int8_t vector_index);
 
-
-    using BaseType::attribute;
-    using BaseType::mesh;
 
     bool writing_enabled() const;
 

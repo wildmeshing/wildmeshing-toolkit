@@ -12,7 +12,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <polysolve/Utils.hpp>
 #include <wmtk/attribute/Attribute.hpp>
-#include <wmtk/attribute/CachingAccessor.hpp>
 #include <wmtk/attribute/CachingAttribute.hpp>
 
 #include <wmtk/PointMesh.hpp>
@@ -201,40 +200,40 @@ TEST_CASE("attribute_transaction_stack", "[attributes]")
 }
 
 namespace {
-void run(wmtk::attribute::CachingAccessor<int64_t>& accessor)
+void run(wmtk::attribute::CachingAttribute<int64_t>& accessor)
 {
     accessor.scalar_attribute(0) = 3;
 }
-void run_nothrow_fails(wmtk::attribute::CachingAccessor<int64_t>& accessor)
+void run_nothrow_fails(wmtk::attribute::Accessor<int64_t>& accessor)
 {
     wmtk::attribute::AttributeManager& attribute_manager =
         wmtk::tests::DEBUG_Mesh::attribute_manager(accessor.mesh());
     wmtk::attribute::AttributeScopeHandle h(attribute_manager);
-    run(accessor);
+    run(accessor.attribute());
 
     h.mark_failed();
 }
 
-void run_with_throw_inside(wmtk::attribute::CachingAccessor<int64_t>& accessor)
+void run_with_throw_inside(wmtk::attribute::Accessor<int64_t>& accessor)
 {
     // oddly this should succeed because mark failed is never hit
     {
         wmtk::attribute::AttributeManager& attribute_manager =
             wmtk::tests::DEBUG_Mesh::attribute_manager(accessor.mesh());
         wmtk::attribute::AttributeScopeHandle h(attribute_manager);
-        run(accessor);
+        run(accessor.attribute());
         throw std::runtime_error("oh no!");
         h.mark_failed();
     }
 }
-void run_with_throw_outside(wmtk::attribute::CachingAccessor<int64_t>& accessor)
+void run_with_throw_outside(wmtk::attribute::Accessor<int64_t>& accessor)
 {
     // oddly this should succeed because mark failed is never hit
     {
         wmtk::attribute::AttributeManager& attribute_manager =
             wmtk::tests::DEBUG_Mesh::attribute_manager(accessor.mesh());
         wmtk::attribute::AttributeScopeHandle h(attribute_manager);
-        run(accessor);
+        run(accessor.attribute());
         h.mark_failed();
         throw std::runtime_error("oh no!");
     }
@@ -243,7 +242,7 @@ void run_with_throw_outside(wmtk::attribute::CachingAccessor<int64_t>& accessor)
 class Op : public wmtk::operations::Operation
 {
 public:
-    Op(wmtk::attribute::CachingAccessor<int64_t>& acc, bool f, bool dt)
+    Op(wmtk::attribute::Accessor<int64_t>& acc, bool f, bool dt)
         : Operation(acc.mesh())
         , accessor(acc)
         , fail(f)
@@ -252,7 +251,7 @@ public:
     std::vector<wmtk::simplex::Simplex> execute(
         const wmtk::simplex::Simplex& simplex) final override
     {
-        run(accessor);
+        run(accessor.attribute());
         if (do_throw) {
             throw std::runtime_error("fff");
         }
@@ -273,26 +272,26 @@ public:
     }
 
 private:
-    wmtk::attribute::CachingAccessor<int64_t>& accessor;
+    wmtk::attribute::Accessor<int64_t>& accessor;
     bool fail = false;
     bool do_throw = false;
 };
 
-void run_op_succ(wmtk::attribute::CachingAccessor<int64_t>& accessor)
+void run_op_succ(wmtk::attribute::Accessor<int64_t>& accessor)
 {
     Op op(accessor, false, false);
     op(wmtk::simplex::Simplex::vertex(
         accessor.mesh(),
         accessor.mesh().get_all(wmtk::PrimitiveType::Vertex)[0]));
 }
-void run_op_fail(wmtk::attribute::CachingAccessor<int64_t>& accessor)
+void run_op_fail(wmtk::attribute::Accessor<int64_t>& accessor)
 {
     Op op(accessor, true, false);
     op(wmtk::simplex::Simplex::vertex(
         accessor.mesh(),
         accessor.mesh().get_all(wmtk::PrimitiveType::Vertex)[0]));
 }
-void run_op_fail_throw(wmtk::attribute::CachingAccessor<int64_t>& accessor)
+void run_op_fail_throw(wmtk::attribute::Accessor<int64_t>& accessor)
 {
     Op op(accessor, true, true);
     op(wmtk::simplex::Simplex::vertex(
@@ -307,9 +306,9 @@ TEST_CASE("attribute_transaction_throw_fail", "[attributes]")
         auto pm = std::make_shared<wmtk::PointMesh>(20);
 
         auto handle = pm->register_attribute<int64_t>("attr", wmtk::PrimitiveType::Vertex, 1);
-        wmtk::attribute::CachingAccessor<int64_t> acc(*pm, handle.as<int64_t>());
+        wmtk::attribute::Accessor<int64_t> acc(*pm, handle.as<int64_t>());
         return std::
-            tuple<std::shared_ptr<wmtk::PointMesh>, wmtk::attribute::CachingAccessor<int64_t>>(
+            tuple<std::shared_ptr<wmtk::PointMesh>, wmtk::attribute::Accessor<int64_t>>(
                 pm,
                 std::move(acc));
     };
@@ -333,7 +332,7 @@ TEST_CASE("attribute_transaction_throw_fail", "[attributes]")
     CHECK(pm_nothrow_fails->hash() == pm_op_fail_throw->hash());
 
 
-    run(acc_succ);
+    run(acc_succ.attribute());
     run_nothrow_fails(acc_nothrow_fails);
     CHECK_THROWS(run_with_throw_inside(acc_throw_inside));
     CHECK_THROWS(run_with_throw_outside(acc_throw_outside));

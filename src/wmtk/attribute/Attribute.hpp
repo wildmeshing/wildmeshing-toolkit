@@ -9,8 +9,6 @@ namespace wmtk {
 class MeshWriter;
 
 namespace attribute {
-template <typename T, int Dim>
-class AccessorBase;
 
 
 /**
@@ -23,6 +21,7 @@ template <typename T>
 class Attribute : public wmtk::utils::Hashable
 {
 public:
+    using Scalar = T;
     // typedefs
     template <int D = Eigen::Dynamic>
     using MapResult = MapResult<T, D>;
@@ -34,8 +33,6 @@ public:
     std::map<std::string, size_t> child_hashes() const override;
 
 
-    template <typename U, int D>
-    friend class AccessorBase;
     void serialize(const int dim, MeshWriter& writer) const;
 
     /**

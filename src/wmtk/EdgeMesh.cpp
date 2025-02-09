@@ -237,7 +237,7 @@ bool EdgeMesh::is_connectivity_valid() const
 {
     // get accessors for topology
     const attribute::Accessor<int64_t> ev_accessor = create_const_accessor<int64_t>(m_ev_handle);
-    const attribute::Accessor<int64_t> ee_accessor = create_const_accessor<int64_t>(m_ee_handle);
+    // const attribute::Accessor<int64_t> ee_accessor = create_const_accessor<int64_t>(m_ee_handle);
     const attribute::Accessor<int64_t> ve_accessor = create_const_accessor<int64_t>(m_ve_handle);
     const attribute::FlagAccessor<EdgeMesh> v_flag_accessor =
         get_flag_accessor(PrimitiveType::Vertex);
