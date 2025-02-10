@@ -1,6 +1,6 @@
 #include "AttributeManager.hpp"
+#include <fmt/format.h>
 
-#include <spdlog/spdlog.h>
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/utils/Rational.hpp>
 namespace wmtk::attribute {

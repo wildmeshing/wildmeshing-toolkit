@@ -38,15 +38,15 @@ public:
 
     const T* get_value(int64_t index) const;
 
-    // clears the current active transaction
-    void clear();
     // resets the entire transaction stack. should only really be called in unit tests
     void reset();
+    // clears the current active transaction, should only really be called in unit tests
+    void clear();
     int64_t size() const;
 
-    void apply_to();
+    void apply_cache();
     // applyes to some other buffer that was passed in
-    void apply_to(std::vector<T>& other) const;
+    void apply_cache(std::vector<T>& other) const;
 
     const std::vector<T>& buffer() const { return m_buffer; }
     const std::vector<std::pair<size_t, size_t>>& indices() const { return m_indices; }
@@ -117,7 +117,9 @@ private:
 
 public:
     // purely used for debug printing out the ENTIRE attribute state
+#if defined(WMTK_ENABLED_DEV_MODE)
     void print_state(std::string_view prefix) const;
+#endif
 
 protected:
     std::vector<T> m_buffer = std::vector<T>(64);

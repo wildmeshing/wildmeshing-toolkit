@@ -1,7 +1,6 @@
 #pragma once
 #include "Attribute.hpp"
 #if defined(WMTK_ENABLED_DEV_MODE)
-#include <spdlog/spdlog.h>
 #define WMTK_ATTRIBUTE_INLINE
 #else
 #define WMTK_ATTRIBUTE_INLINE inline
@@ -126,13 +125,11 @@ Attribute<T>::vector_single_value(int64_t index, int8_t vector_index, std::vecto
 template <typename T>
 WMTK_ATTRIBUTE_INLINE const T& Attribute<T>::const_scalar_attribute(int64_t index) const
 {
-    // spdlog::info("Accessing const scalar : {}", index);
     return const_scalar_attribute(index, m_data);
 }
 template <typename T>
 WMTK_ATTRIBUTE_INLINE T& Attribute<T>::scalar_attribute(int64_t index)
 {
-    // spdlog::info("Accessing attribute at {}", index);
     return scalar_attribute(index, m_data);
 }
 

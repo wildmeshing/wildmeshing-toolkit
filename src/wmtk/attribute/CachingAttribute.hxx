@@ -16,6 +16,7 @@
 #endif
 
 namespace wmtk::attribute {
+#if defined(WMTK_ENABLED_DEV_MODE)
 template <typename T>
 void CachingAttribute<T>::print_state(std::string_view prefix) const
 {
@@ -54,6 +55,7 @@ void CachingAttribute<T>::print_state(std::string_view prefix) const
         }
     }
 }
+#endif
 
 template <typename T>
 auto CachingAttribute<T>::transaction_start_begin(size_t scope_index) const
@@ -140,13 +142,7 @@ WMTK_CACHING_ATTRIBUTE_INLINE auto CachingAttribute<T>::scalar_attribute(int64_t
 {
     assert(writing_enabled());
     T& value = BaseType::scalar_attribute(index);
-    spdlog::info(
-        "How many transactions when accessing {}?: {} {}",
-        index,
-        m_transaction_starts.size(),
-        has_transactions());
     if (has_transactions()) {
-        spdlog::info("Should be caching a value");
         try_caching(index, value);
     }
     return value;
@@ -156,13 +152,10 @@ template <typename T>
 WMTK_CACHING_ATTRIBUTE_INLINE auto CachingAttribute<T>::const_scalar_attribute(int64_t index) const
     -> const T&
 {
-    // spdlog::info("const scalar Current scope: {}", index, at_current_scope());
     if (!at_current_scope()) {
         assert(m_current_transaction_index < m_transaction_starts.size());
 
-        spdlog::info("Looking for a historical value");
         const T* ptr = get_value(index);
-        spdlog::info("Got {}", fmt::ptr(ptr));
         if (ptr != nullptr) {
             return *ptr;
         }
@@ -214,6 +207,7 @@ WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::reset()
 template <typename T>
 WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::clear()
 {
+    // clearing a scope means nothing?
     if (!has_transactions()) {
         m_indices_end = 0;
         m_buffer_end = 0;
@@ -245,10 +239,6 @@ WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::try_caching(
     int64_t index,
     const Eigen::MatrixBase<Derived>& value)
 {
-    if constexpr (!std::is_same_v<T, wmtk::Rational>) {
-        spdlog::warn("Caching value index {}, {}", index, fmt::join(value, ","));
-    }
-
     // basically try_emplace but optimizes to avoid accessing the pointed-to value
 
     size_t dim = value.size();
@@ -273,14 +263,6 @@ WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::try_caching(
 template <typename T>
 WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::try_caching(int64_t index, const T& value)
 {
-    if constexpr (!std::is_same_v<T, wmtk::Rational>) {
-        spdlog::warn(
-            "Caching value index {}, {}, indices_end = {}, buffer_end = {}",
-            index,
-            value,
-            m_indices_end,
-            m_buffer_end);
-    }
     update_buffer_sizes_for_add(1);
     // assert(m_buffer.size() == m_indices.size());
     m_indices[m_indices_end] = {index, m_buffer_end};
@@ -293,13 +275,13 @@ WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::try_caching(int64_t inde
 
 
 template <typename T>
-WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::apply_to()
+WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::apply_cache()
 {
-    apply_to(BaseType::m_data);
+    apply_cache(BaseType::m_data);
 }
 
 template <typename T>
-WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::apply_to(std::vector<T>& other) const
+WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::apply_cache(std::vector<T>& other) const
 {
     assert(at_current_scope());
     for (auto it = final_transaction_rbegin();
@@ -320,7 +302,6 @@ WMTK_CACHING_ATTRIBUTE_INLINE auto CachingAttribute<T>::get_value(int64_t index)
          ++it) {
         const auto& [global_index, local_index] = *it;
         if (global_index == index) {
-            spdlog::info("Cache hit! {}", global_index);
             const T* ptr = m_buffer.data() + local_index;
             return ptr;
         }
@@ -334,35 +315,25 @@ WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::emplace()
     assert(at_current_scope()); // must only be called on leaf node
 
     m_transaction_starts.emplace_back(m_indices_end);
-    print_state("new scope");
     change_to_current_scope();
 }
 template <typename T>
 WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::pop(bool preserve_changes)
 {
-    print_state("popping scope");
     assert(at_current_scope()); // must only be called on leaf node
     // TODO consider re-enabling
-    if (preserve_changes) {
-        clear();
-    } else {
-        apply_to();
+    if (!preserve_changes) {
+        apply_cache();
     }
 
 
     m_transaction_starts.pop_back();
-    spdlog::info(
-        "{}: New scope end is at level {} with indices at {}",
-        BaseType::m_name,
-        m_transaction_starts.size(),
-        m_transaction_starts.back());
 
     change_to_current_scope();
     if (!has_transactions()) {
         m_indices_end = 0;
         m_buffer_end = 0;
     }
-    print_state("done popping scope");
 }
 
 
@@ -371,7 +342,7 @@ WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::apply_last_scope()
 {
     assert(at_current_scope());
     assert(has_transactions());
-    apply_to();
+    apply_cache();
 }
 
 template <typename T>
@@ -381,7 +352,6 @@ WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::change_to_previous_scope
     assert(!at_current_scope());
     m_current_transaction_index++;
 
-    print_state("change_to_previous_scope");
 }
 
 template <typename T>
@@ -391,13 +361,11 @@ WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::change_to_next_scope()
         assert(has_transactions());
     }
     m_current_transaction_index--;
-    print_state("change_to_next_scope");
 }
 template <typename T>
 WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::change_to_current_scope()
 {
     m_current_transaction_index = transaction_depth();
-    print_state("change_to_current_scope");
 }
 template <typename T>
 WMTK_CACHING_ATTRIBUTE_INLINE bool CachingAttribute<T>::at_current_scope() const

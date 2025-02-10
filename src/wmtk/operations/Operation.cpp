@@ -59,7 +59,6 @@ void Operation::set_transfer_strategy(
 void Operation::add_transfer_strategy(
     const std::shared_ptr<const operations::AttributeTransferStrategyBase>& other)
 {
-    spdlog::debug("Adding a transfer");
     m_attr_transfer_strategies.emplace_back(other);
 }
 
@@ -74,7 +73,6 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 
     assert(mesh().is_valid(simplex.tuple()));
 
-    spdlog::error("Operation creating scope ==================");
     auto scope = mesh().create_scope();
     assert(simplex.primitive_type() == primitive_type());
 
@@ -92,17 +90,8 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
             mesh().parent_scope([&]() { assert(mesh().is_valid(s.tuple())); });
         }
 #endif
-        spdlog::error("Operation exec ==================");
         auto mods = execute(simplex);
-        spdlog::error("Operation exec done ==================");
 #ifndef NDEBUG
-        for (size_t j = 0; j <= mesh().top_cell_dimension(); ++j) {
-            mesh()
-                .get_const_flag_accessor(get_primitive_type_from_id(j))
-                .base_accessor()
-                .attribute()
-                .print_state(fmt::format("after operation flag {}", j));
-        }
         if (!mesh().is_free()) {
             for (const auto& s : mods) {
                 assert(mesh().is_valid(s.tuple()));
@@ -113,17 +102,14 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
         if (!mods.empty()) { // success should be marked here
             apply_attribute_transfer(mods);
             if (after(unmods, mods)) {
-                spdlog::error("Operation success==================");
                 return mods; // scope destructor is called
             }
         }
     } catch (const std::exception& e) {
-        spdlog::error("Operation failed==================");
         scope.mark_failed();
         throw e;
     }
     scope.mark_failed();
-    spdlog::error("Operation failed==================");
     return {}; // scope destructor is called
 }
 
