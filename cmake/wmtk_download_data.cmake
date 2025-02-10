@@ -8,7 +8,6 @@ function(wmtk_download_data DATA_DIR GIT_REPOSITORY GIT_TAG)
     set(NAME wmtk_id_${REPO_HASH})
 
     include(FetchContent)
-    if(ON) 
     FetchContent_Populate(
         wmtk_id
         QUIET
@@ -16,17 +15,6 @@ function(wmtk_download_data DATA_DIR GIT_REPOSITORY GIT_TAG)
         GIT_TAG ${GIT_TAG}
         SOURCE_DIR ${WMTK_DOWNLOAD_DATA_FOLDER}
     )
-else()
-    string(TOLOWER "${NAME}" NAME_LOWER)
-
-    FetchContent_Declare(
-        ${NAME}
-        GIT_REPOSITORY ${GIT_REPOSITORY}
-        GIT_TAG ${GIT_TAG}
-    )
-    set(${NAME_LOWER}_SOURCE_DIR ${WMTK_DOWNLOAD_DATA_FOLDER})
-    FetchContent_MakeAvailable(${NAME})
-endif()
 
     set(DATA_DIR ${WMTK_DOWNLOAD_DATA_FOLDER} PARENT_SCOPE)
 
