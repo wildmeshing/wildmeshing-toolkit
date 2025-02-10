@@ -49,8 +49,9 @@ WMTK_ATTRIBUTE_INLINE auto Attribute<T>::const_vector_attribute_without_stride(
 }
 template <typename T>
 template <int D>
-WMTK_ATTRIBUTE_INLINE auto Attribute<T>::vector_attribute_without_stride(int64_t start, std::vector<T>& data)
-    const -> MapResult<D>
+WMTK_ATTRIBUTE_INLINE auto Attribute<T>::vector_attribute_without_stride(
+    int64_t start,
+    std::vector<T>& data) const -> MapResult<D>
 {
     assert(m_dimension > 0);
     assert(D == Eigen::Dynamic || D == m_dimension);
@@ -65,8 +66,9 @@ WMTK_ATTRIBUTE_INLINE auto Attribute<T>::vector_attribute_without_stride(int64_t
 //=======================================================
 template <typename T>
 template <int D>
-WMTK_ATTRIBUTE_INLINE auto Attribute<T>::const_vector_attribute(int64_t index, const std::vector<T>& data)
-    const -> ConstMapResult<D>
+WMTK_ATTRIBUTE_INLINE auto Attribute<T>::const_vector_attribute(
+    int64_t index,
+    const std::vector<T>& data) const -> ConstMapResult<D>
 {
     int64_t dim = D == Eigen::Dynamic ? m_dimension : D;
     assert(D == Eigen::Dynamic || D == m_dimension);
@@ -107,10 +109,8 @@ WMTK_ATTRIBUTE_INLINE const T& Attribute<T>::const_vector_single_value(
 }
 template <typename T>
 template <int D>
-WMTK_ATTRIBUTE_INLINE T& Attribute<T>::vector_single_value(
-    int64_t index,
-    int8_t vector_index,
-    std::vector<T>& data) const
+WMTK_ATTRIBUTE_INLINE T&
+Attribute<T>::vector_single_value(int64_t index, int8_t vector_index, std::vector<T>& data) const
 {
     assert(D == Eigen::Dynamic || D == m_dimension);
     int64_t dim = D == Eigen::Dynamic ? m_dimension : D;
@@ -126,13 +126,13 @@ WMTK_ATTRIBUTE_INLINE T& Attribute<T>::vector_single_value(
 template <typename T>
 WMTK_ATTRIBUTE_INLINE const T& Attribute<T>::const_scalar_attribute(int64_t index) const
 {
+    // spdlog::info("Accessing const scalar : {}", index);
     return const_scalar_attribute(index, m_data);
 }
 template <typename T>
 WMTK_ATTRIBUTE_INLINE T& Attribute<T>::scalar_attribute(int64_t index)
 {
-
-    spdlog::info("Accessing attribute at {}", index);
+    // spdlog::info("Accessing attribute at {}", index);
     return scalar_attribute(index, m_data);
 }
 
@@ -142,7 +142,8 @@ WMTK_ATTRIBUTE_INLINE T& Attribute<T>::scalar_attribute(int64_t index)
 //=======================================================
 template <typename T>
 template <int D>
-WMTK_ATTRIBUTE_INLINE auto Attribute<T>::const_vector_attribute(int64_t index) const -> ConstMapResult<D>
+WMTK_ATTRIBUTE_INLINE auto Attribute<T>::const_vector_attribute(int64_t index) const
+    -> ConstMapResult<D>
 {
     return const_vector_attribute<D>(index, m_data);
 }
@@ -192,5 +193,5 @@ WMTK_ATTRIBUTE_INLINE const T& Attribute<T>::default_value() const
 }
 
 
-}
+} // namespace wmtk::attribute
 #undef WMTK_ATTRIBUTE_INLINE

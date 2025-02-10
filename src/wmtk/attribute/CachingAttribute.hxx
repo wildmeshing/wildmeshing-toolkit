@@ -156,10 +156,13 @@ template <typename T>
 WMTK_CACHING_ATTRIBUTE_INLINE auto CachingAttribute<T>::const_scalar_attribute(int64_t index) const
     -> const T&
 {
+    // spdlog::info("const scalar Current scope: {}", index, at_current_scope());
     if (!at_current_scope()) {
         assert(m_current_transaction_index < m_transaction_starts.size());
 
+        spdlog::info("Looking for a historical value");
         const T* ptr = get_value(index);
+        spdlog::info("Got {}", fmt::ptr(ptr));
         if (ptr != nullptr) {
             return *ptr;
         }
