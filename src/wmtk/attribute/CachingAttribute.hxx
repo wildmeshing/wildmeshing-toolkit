@@ -6,8 +6,8 @@
 #if defined(WMTK_ENABLED_DEV_MODE)
 #include <fmt/ranges.h>
 #include <spdlog/spdlog.h>
-#include <span>
 #include <ranges>
+#include <span>
 #define WMTK_CACHING_ATTRIBUTE_INLINE
 
 
@@ -21,23 +21,23 @@ void CachingAttribute<T>::print_state(std::string_view prefix) const
 {
     if constexpr (std::is_same_v<T, Rational>) {
     } else if constexpr (std::is_same_v<T, char>) {
+        auto toint = [](auto&& v) noexcept -> int64_t { return v; };
         spdlog::warn(
             "Attribute {}: [{}] on transaction {} of {}",
             BaseType::m_name,
             prefix,
             m_current_transaction_index,
             m_transaction_starts.size());
-        spdlog::info("Data: {}", fmt::join(std::views::transform(BaseType::m_data, [](auto&& v) noexcept -> int64_t { return v;}), ","));
+        spdlog::info("Data: {}", fmt::join(std::views::transform(BaseType::m_data, toint), ","));
         for (size_t j = 0; j < m_transaction_starts.size(); ++j) {
             size_t start = m_transaction_starts[j];
             size_t end;
             if (j == m_transaction_starts.size() - 1) {
-                end = m_indices.size();
+                end = m_indices_end;
             } else {
                 end = m_transaction_starts[j + 1];
             }
             spdlog::info("Detailing transaction {} with value indices {}->{}", j, start, end);
-            continue;
 
             for (size_t k = start; k < end; ++k) {
                 const auto& [attr_index, table_index] = m_indices[k];
@@ -46,7 +46,9 @@ void CachingAttribute<T>::print_state(std::string_view prefix) const
                     attr_index,
                     table_index,
                     fmt::join(
-                        std::span(m_buffer.data() + table_index, BaseType::dimension()),
+                        std::views::transform(
+                            std::span(m_buffer.data() + table_index, BaseType::dimension()),
+                            toint),
                         ","));
             }
         }
@@ -138,8 +140,13 @@ WMTK_CACHING_ATTRIBUTE_INLINE auto CachingAttribute<T>::scalar_attribute(int64_t
 {
     assert(writing_enabled());
     T& value = BaseType::scalar_attribute(index);
-    spdlog::info("How many transactions when accessing {}?: {}", index, m_transaction_starts.size());
+    spdlog::info(
+        "How many transactions when accessing {}?: {} {}",
+        index,
+        m_transaction_starts.size(),
+        has_transactions());
     if (has_transactions()) {
+        spdlog::info("Should be caching a value");
         try_caching(index, value);
     }
     return value;
@@ -235,10 +242,10 @@ WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::try_caching(
     int64_t index,
     const Eigen::MatrixBase<Derived>& value)
 {
-    if constexpr(!std::is_same_v<T,wmtk::Rational>) {
-    spdlog::warn("Caching value index {}, {}", index, fmt::join(value,","));
+    if constexpr (!std::is_same_v<T, wmtk::Rational>) {
+        spdlog::warn("Caching value index {}, {}", index, fmt::join(value, ","));
     }
-    
+
     // basically try_emplace but optimizes to avoid accessing the pointed-to value
 
     size_t dim = value.size();
@@ -263,6 +270,14 @@ WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::try_caching(
 template <typename T>
 WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::try_caching(int64_t index, const T& value)
 {
+    if constexpr (!std::is_same_v<T, wmtk::Rational>) {
+        spdlog::warn(
+            "Caching value index {}, {}, indices_end = {}, buffer_end = {}",
+            index,
+            value,
+            m_indices_end,
+            m_buffer_end);
+    }
     update_buffer_sizes_for_add(1);
     // assert(m_buffer.size() == m_indices.size());
     m_indices[m_indices_end] = {index, m_buffer_end};
@@ -302,6 +317,7 @@ WMTK_CACHING_ATTRIBUTE_INLINE auto CachingAttribute<T>::get_value(int64_t index)
          ++it) {
         const auto& [global_index, local_index] = *it;
         if (global_index == index) {
+            spdlog::info("Cache hit! {}", global_index);
             const T* ptr = m_buffer.data() + local_index;
             return ptr;
         }
