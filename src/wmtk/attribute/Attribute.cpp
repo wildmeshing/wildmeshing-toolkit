@@ -123,6 +123,10 @@ void Attribute<T>::index_remap(const std::vector<T>& old2new, const std::vector<
 #if defined(__GNUG__) && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
+template class Attribute<char>;
+template class Attribute<int64_t>;
+template class Attribute<double>;
+template class Attribute<Rational>;
 }
 
 #if defined(WMTK_ENABLED_DEV_MODE)
@@ -167,11 +171,7 @@ DEC(double)
 DEC(int64_t)
 DEC(Rational)
 DEC(char)
+} // namespace wmtk::attribute
 #endif
 
 
-template class Attribute<char>;
-template class Attribute<int64_t>;
-template class Attribute<double>;
-template class Attribute<Rational>;
-} // namespace wmtk::attribute
