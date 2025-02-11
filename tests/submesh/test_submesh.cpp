@@ -221,8 +221,9 @@ TEST_CASE("submesh_split", "[mesh][submesh]")
     CHECK(emb.has_child_mesh());
 
 
-    operations::EdgeSplit split(m);
-    emb.set_split_strategies(split);
+    // operations::EdgeSplit split(m);
+    // emb.set_split_strategies(split);
+    operations::EdgeSplit split(emb);
     split.set_new_attribute_strategy(pos);
 
     const simplex::Simplex edge45(PE, m.edge_tuple_from_vids(4, 5));
@@ -270,8 +271,9 @@ TEST_CASE("submesh_collapse", "[mesh][submesh]")
     CHECK(emb.has_child_mesh());
 
 
-    operations::EdgeCollapse collapse(m);
-    emb.set_collapse_strategies(collapse);
+    // operations::EdgeCollapse collapse(m);
+    // emb.set_collapse_strategies(collapse);
+    operations::EdgeCollapse collapse(emb);
     collapse.set_new_attribute_strategy(pos);
 
     const simplex::Simplex edge45(PE, m.edge_tuple_from_vids(4, 5));

@@ -8,6 +8,8 @@
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
 #include "utils/multi_mesh_edge_collapse.hpp"
 
+#include <wmtk/submesh/Embedding.hpp>
+
 
 namespace wmtk::operations {
 
@@ -51,6 +53,12 @@ EdgeCollapse::EdgeCollapse(Mesh& m)
 
     multimesh::MultiMeshVisitor custom_attribute_collector(collect_attrs);
     custom_attribute_collector.execute_from_root(m);
+}
+
+EdgeCollapse::EdgeCollapse(submesh::Embedding& m)
+    : EdgeCollapse(m.mesh())
+{
+    m.set_collapse_strategies(*this);
 }
 
 std::vector<simplex::Simplex> EdgeCollapse::execute(const simplex::Simplex& simplex)
