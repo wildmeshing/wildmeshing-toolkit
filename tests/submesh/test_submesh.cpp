@@ -320,12 +320,12 @@ TEST_CASE("submesh_collapse_towards_submesh", "[mesh][submesh]")
     CHECK(emb.has_child_mesh());
 
 
-    operations::EdgeCollapse collapse(m);
+    operations::EdgeCollapse collapse(emb);
+    // emb.set_collapse_strategies(collapse);
     auto clps_strat = std::make_shared<operations::CollapseNewAttributeStrategy<double>>(pos);
     clps_strat->set_simplex_predicate(emb.substructure_predicate());
     clps_strat->set_strategy(operations::CollapseBasicStrategy::Default);
 
-    emb.set_collapse_strategies(collapse);
     collapse.set_new_attribute_strategy(pos, clps_strat);
 
     const simplex::Simplex edge45(PE, m.edge_tuple_from_vids(4, 5));
