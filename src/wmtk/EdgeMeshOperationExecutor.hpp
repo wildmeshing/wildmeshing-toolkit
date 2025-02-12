@@ -9,7 +9,6 @@ class EdgeMesh::EdgeMeshOperationExecutor : public operations::edge_mesh::EdgeOp
 public:
     EdgeMeshOperationExecutor(EdgeMesh& m, const Tuple& operating_tuple);
     void delete_simplices();
-    void update_cell_hash();
 
     std::array<attribute::FlagAccessor<EdgeMesh>, 2> flag_accessors;
     attribute::Accessor<int64_t, EdgeMesh> ee_accessor;
@@ -53,6 +52,5 @@ public:
 
 
 private:
-    void update_hash_in_map(EdgeMesh& child_mesh);
 };
 } // namespace wmtk

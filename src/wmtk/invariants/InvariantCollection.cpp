@@ -1,4 +1,5 @@
 #include "InvariantCollection.hpp"
+#include <spdlog/spdlog.h>
 #include <type_traits>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/simplex/Simplex.hpp>
@@ -86,6 +87,10 @@ bool InvariantCollection::directly_modified_after(
     const std::vector<simplex::Simplex>& simplices_after) const
 {
 #ifndef NDEBUG
+    spdlog::info("Invariant start ==================");
+    spdlog::info("Invariant start ==================");
+    spdlog::info("Invariant start ==================");
+    spdlog::info("Invariant start ==================");
     for (const auto& s : simplices_before) {
         mesh().parent_scope([&]() { assert(mesh().is_valid(s.tuple())); });
     }

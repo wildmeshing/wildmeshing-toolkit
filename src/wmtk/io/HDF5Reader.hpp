@@ -23,6 +23,12 @@ public:
 private:
     std::shared_ptr<Mesh> read_mesh(h5pp::File& hdf5_file, const std::string& dataset);
 
+
+    void read_attribute(
+        h5pp::File& hdf5_file,
+        Mesh& m,
+        const std::string& dataset,
+        const std::string& name);
     template <typename T>
     void set_attribute(
         const T& default_val,

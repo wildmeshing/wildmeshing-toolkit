@@ -43,7 +43,6 @@ void EdgeMesh::EdgeMeshOperationExecutor::delete_simplices()
     }
 }
 
-void EdgeMesh::EdgeMeshOperationExecutor::update_cell_hash() {}
 
 const std::array<std::vector<int64_t>, 2>
 EdgeMesh::EdgeMeshOperationExecutor::get_split_simplices_to_delete(
@@ -166,7 +165,6 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh()
         ve_accessor.index_access().scalar_attribute(m_spine_vids[0]) = m_split_e[0];
         ve_accessor.index_access().scalar_attribute(m_spine_vids[1]) = m_split_e[1];
     }
-    update_cell_hash();
     delete_simplices();
 
     // prepare return Tuple
@@ -186,10 +184,6 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh()
     return ret_edge;
 }
 
-void EdgeMesh::EdgeMeshOperationExecutor::update_hash_in_map(EdgeMesh& child_mesh)
-{
-    // TODO: Implement for multi_mesh in the future
-}
 
 void EdgeMesh::EdgeMeshOperationExecutor::collapse_edge()
 {
@@ -203,7 +197,6 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
 {
     if (m_mesh.is_free()) {
         simplex_ids_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
-        update_cell_hash();
         delete_simplices();
         return Tuple();
         ;
@@ -251,7 +244,6 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
             (m_neighbor_eids[1] != -1) ? m_neighbor_eids[1] : m_neighbor_eids[0];
     }
 
-    update_cell_hash();
     delete_simplices();
 
     const int64_t ret_eid = m_neighbor_eids[0] == -1 ? m_neighbor_eids[1] : m_neighbor_eids[0];

@@ -24,7 +24,7 @@ auto DEBUG_TetMesh::edge_tuple_with_vs_and_t(const int64_t v1, const int64_t v2,
     const -> Tuple
 {
     const attribute::Accessor<int64_t> tv = create_const_accessor<int64_t>(m_tv_handle);
-    auto tv_base = create_base_accessor<int64_t>(m_tv_handle);
+    auto& tv_base = create_base_accessor<int64_t>(m_tv_handle);
     Tuple tet = tet_tuple_from_id(tid);
     auto tv0 = tv.const_vector_attribute(tet);
     REQUIRE(tv0 == tv_base.const_vector_attribute(tid));
@@ -64,7 +64,7 @@ auto DEBUG_TetMesh::face_tuple_with_vs_and_t(
     const int64_t tid) const -> Tuple
 {
     const attribute::Accessor<int64_t> tv = create_const_accessor<int64_t>(m_tv_handle);
-    auto tv_base = create_base_accessor<int64_t>(m_tv_handle);
+    auto& tv_base = create_base_accessor<int64_t>(m_tv_handle);
     Tuple tet = tet_tuple_from_id(tid);
     auto tv0 = tv.const_vector_attribute(tet);
     REQUIRE(tv0 == tv_base.const_vector_attribute(tid));
@@ -114,7 +114,7 @@ auto DEBUG_TetMesh::face_tuple_with_vs_and_t(
 auto DEBUG_TetMesh::edge_tuple_from_vids(const int64_t v1, const int64_t v2) const -> Tuple
 {
     const attribute::Accessor<int64_t> tv = create_const_accessor<int64_t>(m_tv_handle);
-    auto tv_base = create_base_accessor<int64_t>(m_tv_handle);
+    auto& tv_base = create_base_accessor<int64_t>(m_tv_handle);
     for (int64_t tid = 0; tid < capacity(PrimitiveType::Tetrahedron); ++tid) {
         if (is_removed(tid)) {
             continue;
@@ -163,7 +163,7 @@ auto DEBUG_TetMesh::face_tuple_from_vids(const int64_t v1, const int64_t v2, con
     -> Tuple
 {
     const attribute::Accessor<int64_t> tv = create_const_accessor<int64_t>(m_tv_handle);
-    auto tv_base = create_base_accessor<int64_t>(m_tv_handle);
+    auto& tv_base = create_base_accessor<int64_t>(m_tv_handle);
     for (int64_t tid = 0; tid < capacity(PrimitiveType::Tetrahedron); ++tid) {
         Tuple tet = tet_tuple_from_id(tid);
         auto tv0 = tv.const_vector_attribute(tet);
@@ -216,7 +216,7 @@ auto DEBUG_TetMesh::tet_tuple_from_vids(
     const int64_t v4) const -> Tuple
 {
     const attribute::Accessor<int64_t> tv = create_const_accessor<int64_t>(m_tv_handle);
-    auto tv_base = create_base_accessor<int64_t>(m_tv_handle);
+    auto &tv_base = create_base_accessor<int64_t>(m_tv_handle);
     for (int64_t tid = 0; tid < capacity(PrimitiveType::Tetrahedron); ++tid) {
         Tuple tet = tet_tuple_from_id(tid);
         auto tv0 = tv.const_vector_attribute(tet);

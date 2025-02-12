@@ -12,12 +12,12 @@ class hash;
 class Mesh;
 namespace attribute {
 template <typename T>
-class MeshAttributes;
+class TypedAttributeManager;
 template <typename T>
 class TypedAttributeHandle;
 class AttributeManager;
 
-/** @brief Internal handle representation used by MeshAttributes
+/** @brief Internal handle representation used by TypedAttributeManager
  *
  */
 class AttributeHandle
@@ -25,7 +25,7 @@ class AttributeHandle
 protected:
 public:
     template <typename T>
-    friend class MeshAttributes;
+    friend class TypedAttributeManager;
     template <typename T>
     friend class TypedAttributeHandle;
     friend class AttributeManager;

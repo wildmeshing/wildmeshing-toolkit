@@ -1,4 +1,5 @@
 #include "to_points.hpp"
+#include <Eigen/Geometry>
 
 
 #include <bitset>

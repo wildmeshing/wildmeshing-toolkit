@@ -51,19 +51,20 @@ public:
     Tuple tuple_from_tet_id(const int64_t tid);
 
     template <typename T>
-    attribute::AccessorBase<T> create_base_accessor(const TypedAttributeHandle<T>& handle)
+    attribute::Attribute<T>& create_base_accessor(const TypedAttributeHandle<T>& handle)
     {
-        return attribute::AccessorBase<T>(*this, handle);
+        return attribute::Accessor<T>(*this, handle).index_access();
     }
 
     template <typename T>
-    attribute::AccessorBase<T> create_const_base_accessor(
+    const attribute::Attribute<T>& create_const_base_accessor(
         const TypedAttributeHandle<T>& handle) const
     {
-        return attribute::AccessorBase<T>(const_cast<DEBUG_TetMesh&>(*this), handle);
+        const attribute::Accessor<T> acc(const_cast<DEBUG_TetMesh&>(*this), handle);
+        return acc.attribute();
     }
     template <typename T>
-    attribute::AccessorBase<T> create_base_accessor(const TypedAttributeHandle<T>& handle) const
+    const attribute::Attribute<T>& create_base_accessor(const TypedAttributeHandle<T>& handle) const
     {
         return create_const_base_accessor(handle);
     }
@@ -88,8 +89,8 @@ public:
 
     Eigen::Matrix<int64_t, 4, 1> tv_from_tid(const int64_t tid) const
     {
-        auto tv_accessor = create_base_accessor<int64_t>(t_handle(PrimitiveType::Vertex));
-        return tv_accessor.vector_attribute(tid);
+        auto& tv_accessor = create_base_accessor<int64_t>(t_handle(PrimitiveType::Vertex));
+        return tv_accessor.const_vector_attribute(tid);
     }
 };
 

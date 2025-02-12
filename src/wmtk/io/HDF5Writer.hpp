@@ -49,6 +49,8 @@ public:
         const std::vector<Rational>& val,
         const Rational& default_val) override;
 
+    template <typename T>
+    void write_attribute_names(int dim, const std::vector<std::string>& names);
 private:
     std::shared_ptr<h5pp::File> m_hdf5_file;
     std::string m_name;
@@ -62,6 +64,7 @@ private:
         const int64_t stride,
         const Data& val,
         const T& default_val);
+
 };
 
 } // namespace wmtk

@@ -14,9 +14,11 @@ namespace simplex {
 class Simplex;
 }
 namespace attribute {
-template <typename T, typename MeshType, int Dim>
+template <typename T>
+class CachingAttribute;
+template <typename T, typename MeshType, typename AttributeType, int Dim>
 class Accessor;
-}
+} // namespace attribute
 
 namespace operations {
 class EdgeOperationData;
@@ -104,10 +106,14 @@ private:
 
 private:
     int64_t parent_global_cid(
-        const attribute::Accessor<int64_t, Mesh, Eigen::Dynamic>& parent_to_child,
+        const attribute::
+            Accessor<int64_t, Mesh, attribute::CachingAttribute<int64_t>, Eigen::Dynamic>&
+                parent_to_child,
         int64_t parent_gid) const;
     int64_t child_global_cid(
-        const attribute::Accessor<int64_t, Mesh, Eigen::Dynamic>& parent_to_child,
+        const attribute::
+            Accessor<int64_t, Mesh, attribute::CachingAttribute<int64_t>, Eigen::Dynamic>&
+                parent_to_child,
         int64_t parent_gid) const;
     void update_all_hashes(
         Mesh& m,
@@ -118,7 +124,9 @@ private:
 
     // for tet
     int64_t parent_local_fid(
-        const attribute::Accessor<int64_t, Mesh, Eigen::Dynamic>& parent_to_child,
+        const attribute::
+            Accessor<int64_t, Mesh, attribute::CachingAttribute<int64_t>, Eigen::Dynamic>&
+                parent_to_child,
         int64_t parent_gid) const;
 
     void update_ear_replacement(TetMesh& m, const tet_mesh::EdgeOperationData& tmoe) const;

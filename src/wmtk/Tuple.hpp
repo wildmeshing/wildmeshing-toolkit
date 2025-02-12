@@ -16,7 +16,7 @@ class MultiMeshFromTag;
 }
 
 namespace attribute {
-template <typename T, typename MeshType, int Dim>
+template <typename T, typename MeshType, typename AttributeType, int Dim>
 class Accessor;
 }
 namespace utils {
@@ -56,7 +56,7 @@ public:
     friend class TriMesh;
     friend class TetMesh;
     friend class multimesh::MultiMeshManager;
-    template <typename T, typename MeshType, int Dim>
+    template <typename T, typename MeshType, typename AttributeType, int Dim>
     friend class attribute::Accessor;
     friend class operations::Operation;
     friend class operations::internal::SplitAlternateFacetData;

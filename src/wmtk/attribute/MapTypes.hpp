@@ -1,5 +1,5 @@
 #pragma once
-#include "internal/MapTypes.hpp"
+#include "internal/VectorTypes.hpp"
 
 namespace wmtk::attribute {
 
@@ -7,9 +7,9 @@ namespace wmtk::attribute {
 /// Though the max size doesn't affect the storage of the map, this affects the
 /// type returned by .eval()
 template <typename T, int R = Eigen::Dynamic>
-using MapResult = typename internal::VectorResult<T, R>::MapType;
+using MapResult = internal::VectorMapType<T, R>;
 template <typename T, int R = Eigen::Dynamic>
-using ConstMapResult = typename internal::VectorResult<T, R>::ConstMapType;
+using ConstMapResult = internal::ConstVectorMapType<T, R>;
 
 
 } // namespace wmtk::attribute::internal

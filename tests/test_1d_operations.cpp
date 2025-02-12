@@ -35,12 +35,7 @@ TEST_CASE("simplices_to_delete_for_split_1D", "[operations][1D]")
         REQUIRE(m.is_valid(edge));
 
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-        auto executor = m.get_emoe(edge, hash_accessor);
-#else
         auto executor = m.get_emoe(edge);
-#endif
 
         executor.split_edge();
         REQUIRE(m.is_connectivity_valid());
@@ -59,12 +54,7 @@ TEST_CASE("simplices_to_delete_for_split_1D", "[operations][1D]")
         Tuple edge = m.tuple_from_edge_id(edge_id);
         REQUIRE(m.is_valid(edge));
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-        auto executor = m.get_emoe(edge, hash_accessor);
-#else
         auto executor = m.get_emoe(edge);
-#endif
 
         executor.split_edge();
         REQUIRE(m.is_connectivity_valid());
@@ -85,12 +75,7 @@ TEST_CASE("simplices_to_delete_for_collapse_1D", "[operations][1D]")
         const int64_t edge_id = 2;
         Tuple edge = m.tuple_from_edge_id(edge_id);
         REQUIRE(m.is_valid(edge));
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-        auto executor = m.get_emoe(edge, hash_accessor);
-#else
         auto executor = m.get_emoe(edge);
-#endif
 
         executor.collapse_edge();
         // REQUIRE(m.is_connectivity_valid());
@@ -109,12 +94,7 @@ TEST_CASE("simplices_to_delete_for_collapse_1D", "[operations][1D]")
         const int64_t edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
         REQUIRE(m.is_valid(edge));
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-        auto executor = m.get_emoe(edge, hash_accessor);
-#else
         auto executor = m.get_emoe(edge);
-#endif
 
         executor.collapse_edge();
         const auto& ids_to_delete = executor.simplex_ids_to_delete;
@@ -153,9 +133,9 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         CHECK(m.is_simplex_deleted(PE, edge_id));
         CHECK(m.is_simplex_deleted(PV, vertex_id));
 
-        auto ve = m.create_base_accessor<int64_t>(m.ve_handle());
-        auto ee = m.create_base_accessor<int64_t>(m.e_handle(PE));
-        auto ev = m.create_base_accessor<int64_t>(m.e_handle(PV));
+        auto& ve = m.create_base_accessor<int64_t>(m.ve_handle());
+        auto& ee = m.create_base_accessor<int64_t>(m.e_handle(PE));
+        auto& ev = m.create_base_accessor<int64_t>(m.e_handle(PV));
         // check ve, ee, ev
         CHECK(ve.scalar_attribute(3) == 3);
         CHECK(ee.vector_attribute(1)[1] == 3);
@@ -224,9 +204,9 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         CHECK(m.is_simplex_deleted(PE, edge_id));
         CHECK(m.is_simplex_deleted(PV, vertex_id));
 
-        auto ve = m.create_base_accessor<int64_t>(m.ve_handle());
-        auto ee = m.create_base_accessor<int64_t>(m.e_handle(PE));
-        auto ev = m.create_base_accessor<int64_t>(m.e_handle(PV));
+        auto &ve = m.create_base_accessor<int64_t>(m.ve_handle());
+        auto &ee = m.create_base_accessor<int64_t>(m.e_handle(PE));
+        auto &ev = m.create_base_accessor<int64_t>(m.e_handle(PV));
         // check ve, ee, ev
         CHECK(ve.scalar_attribute(1) == 1);
         CHECK(ee.vector_attribute(1)[0] == 1);
@@ -261,9 +241,9 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         CHECK(m.is_simplex_deleted(PV, vertex_id));
 
 
-        auto ve = m.create_base_accessor<int64_t>(m.ve_handle());
-        auto ee = m.create_base_accessor<int64_t>(m.e_handle(PE));
-        auto ev = m.create_base_accessor<int64_t>(m.e_handle(PV));
+        auto &ve = m.create_base_accessor<int64_t>(m.ve_handle());
+        auto &ee = m.create_base_accessor<int64_t>(m.e_handle(PE));
+        auto &ev = m.create_base_accessor<int64_t>(m.e_handle(PV));
         // check ve, ee, ev
         CHECK(ve.scalar_attribute(1) == 1);
         CHECK(ee.vector_attribute(1)[0] == 5);
@@ -299,9 +279,9 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         // check delete
         CHECK(m.is_simplex_deleted(PE, edge_id));
 
-        auto ve = m.create_base_accessor<int64_t>(m.ve_handle());
-        auto ee = m.create_base_accessor<int64_t>(m.e_handle(PE));
-        auto ev = m.create_base_accessor<int64_t>(m.e_handle(PV));
+        auto &ve = m.create_base_accessor<int64_t>(m.ve_handle());
+        auto &ee = m.create_base_accessor<int64_t>(m.e_handle(PE));
+        auto &ev = m.create_base_accessor<int64_t>(m.e_handle(PV));
         // check ve, ee, ev
         CHECK(ve.scalar_attribute(3) == 6);
         CHECK(ve.scalar_attribute(6) == 5);
@@ -343,9 +323,9 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         // check delete
         CHECK(m.is_simplex_deleted(PE, edge_id));
 
-        auto ve = m.create_base_accessor<int64_t>(m.ve_handle());
-        auto ee = m.create_base_accessor<int64_t>(m.e_handle(PE));
-        auto ev = m.create_base_accessor<int64_t>(m.e_handle(PV));
+        auto &ve = m.create_base_accessor<int64_t>(m.ve_handle());
+        auto &ee = m.create_base_accessor<int64_t>(m.e_handle(PE));
+        auto &ev = m.create_base_accessor<int64_t>(m.e_handle(PV));
         // check ve, ee, ev
         CHECK(ve.scalar_attribute(0) == 1);
         CHECK(ve.scalar_attribute(2) == 1);
@@ -385,9 +365,9 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         // check delete
         CHECK(m.is_simplex_deleted(PE, edge_id));
 
-        auto ve = m.create_base_accessor<int64_t>(m.ve_handle());
-        auto ee = m.create_base_accessor<int64_t>(m.e_handle(PE));
-        auto ev = m.create_base_accessor<int64_t>(m.e_handle(PV));
+        auto &ve = m.create_base_accessor<int64_t>(m.ve_handle());
+        auto &ee = m.create_base_accessor<int64_t>(m.e_handle(PE));
+        auto &ev = m.create_base_accessor<int64_t>(m.e_handle(PV));
         // check ve, ee, ev
         CHECK(ve.scalar_attribute(0) == 2);
         CHECK(ve.scalar_attribute(1) == 1);
@@ -426,9 +406,9 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         // check delete
         CHECK(m.is_simplex_deleted(PE, edge_id));
 
-        auto ve = m.create_base_accessor<int64_t>(m.ve_handle());
-        auto ee = m.create_base_accessor<int64_t>(m.e_handle(PE));
-        auto ev = m.create_base_accessor<int64_t>(m.e_handle(PV));
+        auto &ve = m.create_base_accessor<int64_t>(m.ve_handle());
+        auto &ee = m.create_base_accessor<int64_t>(m.e_handle(PE));
+        auto &ev = m.create_base_accessor<int64_t>(m.e_handle(PV));
         // check ve, ee, ev
         CHECK(ve.scalar_attribute(0) == 2);
         CHECK(ve.scalar_attribute(1) == 3);
@@ -470,9 +450,9 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         // check delete
         CHECK(m.is_simplex_deleted(PE, edge_id));
 
-        auto ve = m.create_base_accessor<int64_t>(m.ve_handle());
-        auto ee = m.create_base_accessor<int64_t>(m.e_handle(PE));
-        auto ev = m.create_base_accessor<int64_t>(m.e_handle(PV));
+        auto& ve = m.create_base_accessor<int64_t>(m.ve_handle());
+        auto& ee = m.create_base_accessor<int64_t>(m.e_handle(PE));
+        auto& ev = m.create_base_accessor<int64_t>(m.e_handle(PV));
         // check ve, ee, ev
         CHECK(ve.scalar_attribute(0) == 6);
         CHECK(ve.scalar_attribute(1) == 7);

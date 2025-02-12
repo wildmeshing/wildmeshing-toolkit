@@ -191,7 +191,6 @@ void TetMesh::TetMeshOperationExecutor::delete_simplices()
     }
 }
 
-void TetMesh::TetMeshOperationExecutor::update_cell_hash() {}
 
 const std::array<std::vector<int64_t>, 4>
 TetMesh::TetMeshOperationExecutor::get_split_simplices_to_delete(
@@ -741,7 +740,6 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
 
 
     // update hash and delete simplices
-    update_cell_hash();
     delete_simplices();
 
 
@@ -1065,7 +1063,6 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
     }
 
 
-    update_cell_hash();
     delete_simplices();
 
     // debug code
