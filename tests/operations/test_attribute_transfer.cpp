@@ -5,7 +5,6 @@
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include <wmtk/operations/attribute_update/CastAttributeTransferStrategy.hpp>
-#include <wmtk/utils/TupleInspector.hpp>
 #include <wmtk/utils/cast_attribute.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
@@ -166,16 +165,16 @@ TEST_CASE("collapse_edge_new_attr", "[operations][collapse][2D]")
 
     AttributeTransferConfiguration cfg;
     spdlog::info("Adding transfers");
-    //cfg.add(*el_strategy);
-    //spdlog::info("Adding news");
-    //cfg.add_collapse_new(edge_length_handle);
-    //cfg.add_collapse_new(pos_handle);
+    // cfg.add(*el_strategy);
+    // spdlog::info("Adding news");
+    // cfg.add_collapse_new(edge_length_handle);
+    // cfg.add_collapse_new(pos_handle);
 
-    //cfg.apply(op);
+    // cfg.apply(op);
 
-     op.add_transfer_strategy(el_strategy);
-     op.set_new_attribute_strategy(edge_length_handle);
-     op.set_new_attribute_strategy(pos_handle);
+    op.add_transfer_strategy(el_strategy);
+    op.set_new_attribute_strategy(edge_length_handle);
+    op.set_new_attribute_strategy(pos_handle);
     spdlog::info("starting to do sections");
 
     Tuple edge;
@@ -237,7 +236,7 @@ TEST_CASE("attribute_strategy_missing", "[operations][split]")
     CHECK_THROWS(ret = op(Simplex::edge(m, edge)));
     const std::vector<int64_t> new_tris = valid_gids(PrimitiveType::Triangle);
     REQUIRE(orig_tris == new_tris);
-    logger().trace("{} {}", wmtk::utils::TupleInspector::as_string(edge), ret.size());
+    logger().trace("{} {}", edge.as_string(), ret.size());
     REQUIRE(m.is_valid(edge));
 
     op.set_new_attribute_strategy(pos_handle);

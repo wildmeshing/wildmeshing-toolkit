@@ -2,7 +2,10 @@
 
 #include <array>
 #include <cstdint>
+#include <iostream>
+#include <string>
 #include <tuple>
+#include <wmtk/PrimitiveType.hpp>
 
 namespace wmtk {
 
@@ -53,7 +56,16 @@ public:
     int8_t local_vid() const;
     int8_t local_eid() const;
     int8_t local_fid() const;
+
+    int8_t local_id(const PrimitiveType pt) const;
+
+    std::string as_string() const;
+    explicit operator std::string() const;
+
+    friend std::ostream& operator<<(std::ostream& os, const Tuple& t);
 };
+
+std::ostream& operator<<(std::ostream& os, const Tuple& t);
 
 } // namespace wmtk
 #include "Tuple.hxx"

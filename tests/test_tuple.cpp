@@ -2,6 +2,7 @@
 #include <wmtk/utils/trimesh_topology_initialization.h>
 #include <catch2/catch_test_macros.hpp>
 #include <iostream>
+#include <sstream>
 #include <wmtk/Tuple.hpp>
 
 using namespace wmtk;
@@ -73,4 +74,17 @@ TEST_CASE("tuple_ids", "[tuple]")
     CHECK(b.local_eid() == -1);
     CHECK(b.local_fid() == -1);
     CHECK(b.global_cid() == -1);
+}
+
+TEST_CASE("tuple_as_string", "[tuple]")
+{
+    const Tuple t(0, 1, 2, 3);
+    const std::string expected = "(gid 3 : lids[v0,e1,f2])";
+
+    CHECK(t.as_string() == expected);
+    CHECK(static_cast<std::string>(t) == expected);
+
+    std::stringstream ss;
+    ss << t;
+    CHECK(ss.str() == expected);
 }

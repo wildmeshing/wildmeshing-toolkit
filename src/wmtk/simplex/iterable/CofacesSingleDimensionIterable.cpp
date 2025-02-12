@@ -2,7 +2,6 @@
 
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include <wmtk/utils/TupleInspector.hpp>
 
 namespace wmtk::simplex {
 

@@ -9,7 +9,6 @@
 #include <wmtk/multimesh/utils/find_local_switch_sequence.hpp>
 #include <wmtk/utils/primitive_range.hpp>
 #include "wmtk/autogen/SimplexDart.hpp"
-#include "wmtk/utils/TupleInspector.hpp"
 
 namespace wmtk::operations::internal {
 namespace {
