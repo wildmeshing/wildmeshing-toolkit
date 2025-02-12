@@ -16,4 +16,4 @@ wmtk_register_integration_test(
     EXEC_NAME tw_simplification_app
     CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tw_simplification_test_config.json
     GIT_REPOSITORY "https://github.com/wildmeshing/data.git"
-    GIT_TAG 5a74c7ffda3bf1014875944f59e42a3db39775df)
+    GIT_TAG 6f171d11283d2977913a1b4e6129f9808357baf9)
