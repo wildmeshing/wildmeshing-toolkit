@@ -32,6 +32,9 @@ void TypedAttributeManager<T>::serialize(const int dim, MeshWriter& writer) cons
             }
         });
 
+    attribute_names.erase(std::remove_if(attribute_names.begin(),attribute_names.end(), [](const std::string& name) {
+                return name.empty(); }), attribute_names.end());
+
     HDF5Writer* hdf5_w = dynamic_cast<HDF5Writer*>(&writer);
     if (hdf5_w != nullptr) {
         hdf5_w->write_attribute_names<T>(dim, attribute_names);
