@@ -16,9 +16,9 @@ public:
     using Scalar = T;
     using BaseType = Attribute<T>;
     template <int D>
-    using MapResult = typename BaseType::MapResult<D>;
+    using MapResult = typename BaseType::template MapResult<D>;
     template <int D>
-    using ConstMapResult = typename BaseType::ConstMapResult<D>;
+    using ConstMapResult = typename BaseType::template ConstMapResult<D>;
 
     using BaseType::BaseType;
 
