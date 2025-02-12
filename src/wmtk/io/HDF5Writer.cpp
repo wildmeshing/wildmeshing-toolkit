@@ -21,6 +21,7 @@ namespace {
 template <typename T>
 std::string get_type()
 {
+    assert(false);
     return "";
 }
 
@@ -37,11 +38,21 @@ std::string get_type<double>()
 }
 
 template <>
+std::string get_type<char>()
+{
+    return "char";
+}
+template <>
 std::string get_type<short>()
 {
     return "char";
 }
 
+template <>
+std::string get_type<wmtk::Rational>()
+{
+    return "rational";
+}
 template <>
 std::string get_type<std::string>()
 {
@@ -167,4 +178,23 @@ std::string HDF5Writer::dataset_path() const
 }
 
 
+template <typename T>
+void HDF5Writer::write_attribute_names(int dim, const std::vector<std::string>& names)
+{
+    if (names.empty()) {
+        return;
+    }
+    const static std::string& name = get_type<T>();
+    const std::string path =
+        fmt::format("{}/{}_{}/{}", dataset_path(), "ATTRIBUTE_LIST", name, dim);
+
+    m_hdf5_file->writeDataset(names, path);
+}
+
+template void HDF5Writer::write_attribute_names<double>(int dim, const std::vector<std::string>&);
+template void HDF5Writer::write_attribute_names<int64_t>(int dim, const std::vector<std::string>&);
+template void HDF5Writer::write_attribute_names<char>(int dim, const std::vector<std::string>&);
+template void HDF5Writer::write_attribute_names<wmtk::Rational>(
+    int dim,
+    const std::vector<std::string>&);
 } // namespace wmtk

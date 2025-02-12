@@ -2,6 +2,7 @@
 #include <wmtk/attribute/internal/hash.hpp>
 #include <wmtk/utils/Hashable.hpp>
 
+#include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
@@ -18,9 +19,26 @@ namespace wmtk::attribute {
 template <typename T>
 void TypedAttributeManager<T>::serialize(const int dim, MeshWriter& writer) const
 {
-    for(const auto& attr_ptr: m_attributes) {
-        if(bool(attr_ptr)) {
-            spdlog::info("Writing {} {}", attr_ptr->m_name, std::distance(m_attributes.data(),&attr_ptr));
+    std::vector<std::string> attribute_names;
+    std::transform(
+        m_attributes.begin(),
+        m_attributes.end(),
+        std::back_inserter(attribute_names),
+        [](const auto& ptr) -> std::string {
+            if (ptr) {
+                return ptr->m_name;
+            } else {
+                return {};
+            }
+        });
+
+    HDF5Writer* hdf5_w = dynamic_cast<HDF5Writer*>(&writer);
+    if (hdf5_w != nullptr) {
+        hdf5_w->write_attribute_names<T>(dim, attribute_names);
+    }
+
+    for (const auto& attr_ptr : m_attributes) {
+        if (bool(attr_ptr)) {
             attr_ptr->serialize(dim, writer);
         }
     }
@@ -39,7 +57,8 @@ std::map<std::string, std::size_t> TypedAttributeManager<T>::child_hashes() cons
     return ret;
 }
 template <typename T>
-std::map<std::string, const wmtk::utils::Hashable*> TypedAttributeManager<T>::child_hashables() const
+std::map<std::string, const wmtk::utils::Hashable*> TypedAttributeManager<T>::child_hashables()
+    const
 
 {
     std::map<std::string, const wmtk::utils::Hashable*> ret;
@@ -82,7 +101,6 @@ void TypedAttributeManager<T>::change_to_parent_scope() const
 {
     for (const auto& attr_ptr : m_attributes) {
         if (bool(attr_ptr)) {
-
             attr_ptr->change_to_next_scope();
         }
     }

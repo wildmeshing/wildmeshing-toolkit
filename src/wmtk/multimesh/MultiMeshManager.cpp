@@ -750,6 +750,7 @@ void MultiMeshManager::check_map_valid(const Mesh& my_mesh) const
 
 void MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const ChildData& child_data) const
 {
+#ifndef NDEBUG
     const Mesh& child_mesh = *child_data.mesh;
     const auto parent_to_child_handle = child_data.map_handle;
     PrimitiveType map_type = child_mesh.top_simplex_type();
@@ -848,7 +849,6 @@ void MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const ChildDat
             if (!my_mesh.is_boundary(PrimitiveType::Edge, parent_tuple_from_child)) {
                 auto parent_to_child_accessor =
                     my_mesh.create_const_accessor(parent_to_child_handle);
-#ifndef NDEBUG
                 const Tuple parent_tuple_opp =
                     my_mesh.switch_tuple(parent_tuple_from_child, PrimitiveType::Triangle);
                 assert(
@@ -857,13 +857,13 @@ void MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const ChildDat
                                                   child_mesh,
                                                   parent_to_child_accessor,
                                                   parent_tuple_opp));
-#endif
             }
         } else {
             // TODO: implement other cases
             continue;
         }
     }
+#endif
 }
 
 
