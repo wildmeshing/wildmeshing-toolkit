@@ -1,22 +1,57 @@
 <map id="wmtk::simplex::ClosedStarIterable::Iterator" name="wmtk::simplex::ClosedStarIterable::Iterator">
-<area shape="rect" id="node1" title=" " alt="" coords="2697,469,2895,511"/>
-<area shape="rect" id="node2" href="$classwmtk_1_1_tuple.html" title=" " alt="" coords="925,509,1027,535"/>
-<area shape="rect" id="node12" href="$classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable_1_1_iterator.html" title=" " alt="" coords="2035,497,2253,539"/>
-<area shape="rect" id="node19" href="$classwmtk_1_1simplex_1_1_simplex.html" title=" " alt="" coords="1285,458,1465,485"/>
-<area shape="rect" id="node3" href="$classwmtk_1_1_mesh.html" title=" " alt="" coords="1324,190,1427,217"/>
-<area shape="rect" id="node11" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html" title="Implementation details for how the Mesh class implements multiple meshes." alt="" coords="1685,91,1899,132"/>
-<area shape="rect" id="node13" href="$classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html" title="Iterating through the d&#45;simplices of a mesh can be done in different ways, depending on the simplex d..." alt="" coords="1683,371,1901,412"/>
-<area shape="rect" id="node20" href="$classwmtk_1_1simplex_1_1_closed_star_iterable.html" title="This iterator internally uses TopDimensionCofacesIterable." alt="" coords="2367,421,2564,463"/>
-<area shape="rect" id="node4" title=" " alt="" coords="898,248,1054,289"/>
-<area shape="rect" id="node5" href="$classwmtk_1_1utils_1_1_merkle_tree_interior_node.html" title=" " alt="" coords="363,131,619,158"/>
-<area shape="rect" id="node7" href="$classwmtk_1_1attribute_1_1_attribute_manager.html" title=" " alt="" coords="882,183,1070,224"/>
-<area shape="rect" id="node6" href="$classwmtk_1_1utils_1_1_hashable.html" title=" " alt="" coords="21,131,185,158"/>
-<area shape="rect" id="node8" href="$classwmtk_1_1attribute_1_1_typed_attribute_handle.html" title=" " alt="" coords="863,5,1089,47"/>
-<area shape="rect" id="node9" href="$classwmtk_1_1attribute_1_1_typed_attribute_handle.html" title="Handle that represents attributes for some mesh." alt="" coords="377,5,604,47"/>
-<area shape="rect" id="node10" href="$classwmtk_1_1attribute_1_1_attribute_handle.html" title="Internal handle representation used by MeshAttributes." alt="" coords="9,5,197,47"/>
-<area shape="rect" id="node14" href="$classwmtk_1_1simplex_1_1internal_1_1_visited_array.html" title=" " alt="" coords="1283,313,1468,355"/>
-<area shape="rect" id="node15" href="$classwmtk_1_1simplex_1_1internal_1_1_visited_array.html" title=" " alt="" coords="867,313,1085,355"/>
-<area shape="rect" id="node16" href="$classwmtk_1_1utils_1_1_dynamic_array.html" title=" " alt="" coords="393,313,589,355"/>
-<area shape="rect" id="node17" href="$classwmtk_1_1utils_1_1_dynamic_array.html" title=" " alt="" coords="5,345,201,387"/>
-<area shape="rect" id="node18" href="$classwmtk_1_1utils_1_1_dynamic_array.html" title=" " alt="" coords="643,372,839,413"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="2697,464,2895,504"/>
+<area shape="rect" id="Node000002" href="$classwmtk_1_1simplex_1_1_closed_star_iterable.html" title="This iterator internally uses TopDimensionCofacesIterable." alt="" coords="2367,416,2564,456"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="2578,450,2697,467,2697,472,2577,455"/>
+<area shape="rect" id="Node000003" href="$classwmtk_1_1_mesh.html" title=" " alt="" coords="1324,197,1427,222"/>
+<area shape="poly" id="edge32_Node000001_Node000003" title=" " alt="" coords="1441,211,1600,218,1791,223,2467,223,2523,230,2577,252,2626,283,2670,320,2708,360,2741,399,2785,462,2780,465,2737,402,2704,363,2666,324,2623,287,2574,256,2522,236,2466,228,1791,228,1599,224,1440,216"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="1429,224,1493,241,1705,284,1872,308,2040,331,2254,369,2343,392,2409,413,2407,418,2342,397,2253,375,2039,336,1872,313,1704,290,1491,247,1427,229"/>
+<area shape="rect" id="Node000008" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html" title="Implementation details for how the Mesh class implements multiple meshes." alt="" coords="1685,99,1899,139"/>
+<area shape="poly" id="edge10_Node000008_Node000003" title=" " alt="" coords="1417,189,1491,163,1575,147,1685,130,1686,135,1576,152,1493,168,1419,194"/>
+<area shape="rect" id="Node000014" href="$classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html" title="Iterating through the d&#45;simplices of a mesh can be done in different ways, depending on the simplex d..." alt="" coords="1683,361,1901,401"/>
+<area shape="poly" id="edge19_Node000014_Node000003" title=" " alt="" coords="1400,230,1441,265,1493,298,1537,312,1574,317,1612,319,1659,328,1745,359,1743,364,1658,333,1611,324,1574,322,1536,318,1491,302,1438,270,1397,234"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="898,253,1054,293"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="1067,256,1323,215,1324,220,1068,261"/>
+<area shape="rect" id="Node000005" href="$classwmtk_1_1utils_1_1_merkle_tree_interior_node.html" title=" " alt="" coords="363,139,619,165"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="633,150,922,159,1091,170,1259,187,1324,197,1323,202,1258,192,1091,175,922,165,633,155"/>
+<area shape="rect" id="Node000007" href="$classwmtk_1_1attribute_1_1_attribute_manager.html" title=" " alt="" coords="882,189,1070,229"/>
+<area shape="poly" id="edge7_Node000007_Node000005" title=" " alt="" coords="608,164,643,168,882,196,882,201,642,173,607,169"/>
+<area shape="poly" id="edge9_Node000008_Node000005" title=" " alt="" coords="627,136,643,135,881,123,1067,119,1492,117,1685,116,1685,121,1492,123,1067,125,881,129,643,140,628,141"/>
+<area shape="rect" id="Node000006" href="$classwmtk_1_1utils_1_1_hashable.html" title=" " alt="" coords="21,139,185,165"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="199,149,363,149,363,155,199,155"/>
+<area shape="poly" id="edge6_Node000003_Node000007" title=" " alt="" coords="1084,207,1324,207,1324,212,1084,212"/>
+<area shape="poly" id="edge8_Node000003_Node000008" title=" " alt="" coords="1745,148,1704,167,1659,183,1598,196,1535,205,1427,212,1427,206,1534,200,1597,191,1658,177,1702,162,1742,143"/>
+<area shape="rect" id="Node000009" href="$classwmtk_1_1attribute_1_1_typed_attribute_handle.html" title=" " alt="" coords="863,13,1089,53"/>
+<area shape="poly" id="edge15_Node000003_Node000009" title=" " alt="" coords="1062,55,1159,88,1260,131,1315,164,1359,194,1356,199,1313,168,1257,136,1157,93,1061,60"/>
+<area shape="poly" id="edge11_Node000008_Node000009" title=" " alt="" coords="1103,32,1361,45,1510,59,1659,80,1728,96,1727,101,1658,85,1510,65,1360,51,1103,38"/>
+<area shape="rect" id="Node000010" href="$classwmtk_1_1attribute_1_1_attribute_handle.html" title="Internal handle representation used by MeshAttributes." alt="" coords="9,5,197,45"/>
+<area shape="poly" id="edge12_Node000009_Node000010" title=" " alt="" coords="211,18,225,17,339,17,589,16,839,21,863,22,863,28,839,27,589,22,339,23,225,23,211,23"/>
+<area shape="rect" id="Node000011" href="$classwmtk_1_1attribute_1_1_typed_attribute_handle.html" title="Handle that represents attributes for some mesh." alt="" coords="377,48,604,88"/>
+<area shape="poly" id="edge14_Node000011_Node000010" title=" " alt="" coords="212,35,378,53,377,58,211,40"/>
+<area shape="poly" id="edge13_Node000009_Node000011" title=" " alt="" coords="618,56,862,39,863,44,618,62"/>
+<area shape="rect" id="Node000012" href="$classwmtk_1_1simplex_1_1_simplex.html" title=" " alt="" coords="1285,457,1465,482"/>
+<area shape="poly" id="edge16_Node000002_Node000012" title=" " alt="" coords="1479,468,1722,469,2011,464,2200,454,2366,442,2367,447,2200,459,2011,469,1722,475,1479,474"/>
+<area shape="poly" id="edge20_Node000014_Node000012" title=" " alt="" coords="1465,452,1658,413,1717,399,1719,404,1659,419,1466,457"/>
+<area shape="rect" id="Node000013" href="$classwmtk_1_1_tuple.html" title="The Tuple is the basic navigation tool in our mesh data structure." alt="" coords="925,510,1027,535"/>
+<area shape="poly" id="edge34_Node000001_Node000013" title=" " alt="" coords="1041,534,1192,560,1283,569,1374,573,2467,573,2547,566,2625,548,2695,524,2751,502,2753,507,2697,529,2626,553,2547,571,2467,579,1374,579,1283,575,1192,565,1040,539"/>
+<area shape="poly" id="edge17_Node000012_Node000013" title=" " alt="" coords="1040,512,1285,479,1285,484,1041,517"/>
+<area shape="rect" id="Node000021" href="$classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable_1_1_iterator.html" title=" " alt="" coords="2035,491,2253,531"/>
+<area shape="poly" id="edge31_Node000021_Node000013" title=" " alt="" coords="1041,519,2034,509,2035,514,1041,525"/>
+<area shape="poly" id="edge18_Node000002_Node000014" title=" " alt="" coords="1915,384,2116,395,2343,415,2366,418,2366,423,2342,420,2116,400,1915,389"/>
+<area shape="poly" id="edge30_Node000021_Node000014" title=" " alt="" coords="1885,403,2012,444,2106,488,2104,493,2010,449,1883,408"/>
+<area shape="rect" id="Node000015" href="$classwmtk_1_1utils_1_1_dynamic_array.html" title=" " alt="" coords="643,325,839,365"/>
+<area shape="poly" id="edge21_Node000014_Node000015" title=" " alt="" coords="852,343,1211,347,1434,354,1659,365,1683,367,1682,372,1659,371,1434,360,1211,353,852,348"/>
+<area shape="rect" id="Node000016" href="$classwmtk_1_1utils_1_1_dynamic_array.html" title=" " alt="" coords="5,377,201,417"/>
+<area shape="poly" id="edge22_Node000015_Node000016" title=" " alt="" coords="214,376,225,375,449,356,642,346,643,351,450,361,226,380,215,381"/>
+<area shape="rect" id="Node000018" href="$classwmtk_1_1utils_1_1_dynamic_array.html" title=" " alt="" coords="643,377,839,417"/>
+<area shape="poly" id="edge25_Node000018_Node000016" title=" " alt="" coords="215,395,642,395,642,400,215,400"/>
+<area shape="rect" id="Node000020" href="$classwmtk_1_1utils_1_1_dynamic_array.html" title=" " alt="" coords="393,437,589,477"/>
+<area shape="poly" id="edge28_Node000020_Node000016" title=" " alt="" coords="163,420,226,439,311,451,393,455,392,461,310,456,225,444,162,425"/>
+<area shape="rect" id="Node000017" href="$classwmtk_1_1simplex_1_1internal_1_1_visited_array.html" title=" " alt="" coords="1283,383,1468,423"/>
+<area shape="poly" id="edge23_Node000014_Node000017" title=" " alt="" coords="1482,395,1683,384,1683,390,1482,400"/>
+<area shape="poly" id="edge24_Node000017_Node000018" title=" " alt="" coords="852,396,1282,399,1282,405,852,401"/>
+<area shape="rect" id="Node000019" href="$classwmtk_1_1simplex_1_1internal_1_1_visited_array.html" title=" " alt="" coords="867,445,1085,485"/>
+<area shape="poly" id="edge26_Node000017_Node000019" title=" " alt="" coords="1099,451,1258,428,1296,420,1297,425,1259,433,1100,456"/>
+<area shape="poly" id="edge27_Node000019_Node000020" title=" " alt="" coords="603,456,866,461,866,466,603,462"/>
+<area shape="poly" id="edge33_Node000001_Node000021" title=" " alt="" coords="2267,503,2697,485,2697,491,2267,508"/>
+<area shape="poly" id="edge29_Node000002_Node000021" title=" " alt="" coords="2260,485,2342,467,2393,454,2394,459,2343,472,2261,490"/>
 </map>

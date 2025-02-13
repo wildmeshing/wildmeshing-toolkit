@@ -1,12 +1,21 @@
 <map id="wmtk::function::PerSimplexFunction::embedded_dimension" name="wmtk::function::PerSimplexFunction::embedded_dimension">
-<area shape="rect" id="node1" title=" " alt="" coords="599,235,828,276"/>
-<area shape="rect" id="node2" href="$classwmtk_1_1function_1_1_triangle_a_m_i_p_s.html#a9efeeacdc9da3b8000a13d44be7e62b7" title="This function defines a function f(x) where f is defined over a simplex domain and the variables for ..." alt="" coords="347,5,526,47"/>
-<area shape="rect" id="node3" href="$classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a2acd918687731413b8476532ed726308" title=" " alt="" coords="327,71,546,112"/>
-<area shape="rect" id="node4" href="$classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a8f4a1942d320c2d613d1af447738f1ea" title="get_gradient collects the local neigh and call the gradient of m_function on all simplicies" alt="" coords="323,136,551,177"/>
-<area shape="rect" id="node5" href="$classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a3155c5a79c212490864deb51ad023534" title=" " alt="" coords="329,201,544,243"/>
-<area shape="rect" id="node6" href="$classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a45bfd84c9f092364f449605199731442" title="get_hessian evaluates the hessian of the function f(x) defined wrt the variable x." alt="" coords="323,267,551,308"/>
-<area shape="rect" id="node7" href="$classwmtk_1_1function_1_1_a_m_i_p_s.html#a36709a007132c33f85efe0b4abd16b93" title=" " alt="" coords="352,332,521,373"/>
-<area shape="rect" id="node9" href="$classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a5dbdaadd8398ba89b96ae7e799d6c7e7" title="This function is defined over a simplex (normally a triangle or tetrahedron)." alt="" coords="335,397,538,439"/>
-<area shape="rect" id="node10" href="$classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a0b81383595fa81fb270266bb6cee71da" title="collects the local neigh and call the same m_function on all simplicies" alt="" coords="323,463,551,504"/>
-<area shape="rect" id="node8" href="$classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing.html#a2c409cd3da46f4360119e142ef3c3682" title="returns an empty vector in case of failure" alt="" coords="5,332,275,373"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="599,229,828,269"/>
+<area shape="rect" id="Node000002" href="$classwmtk_1_1function_1_1_triangle_a_m_i_p_s.html#a9efeeacdc9da3b8000a13d44be7e62b7" title="This function defines a function f(x) where f is defined over a simplex domain and the variables for ..." alt="" coords="347,5,526,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="691,219,667,182,635,139,595,96,549,60,525,47,528,42,552,55,598,92,639,135,672,179,696,216"/>
+<area shape="rect" id="Node000003" href="$classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a2acd918687731413b8476532ed726308" title=" " alt="" coords="327,69,546,109"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="680,221,622,171,587,146,549,124,521,112,524,107,552,119,590,141,626,167,684,217"/>
+<area shape="rect" id="Node000004" href="$classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a8f4a1942d320c2d613d1af447738f1ea" title="get_gradient collects the local neigh and call the gradient of m_function on all simplicies" alt="" coords="323,133,551,173"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="652,227,550,188,512,176,514,171,552,183,654,222"/>
+<area shape="rect" id="Node000005" href="$classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a3155c5a79c212490864deb51ad023534" title=" " alt="" coords="329,197,544,237"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="585,237,544,232,545,227,585,232"/>
+<area shape="rect" id="Node000006" href="$classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a45bfd84c9f092364f449605199731442" title="get_hessian evaluates the hessian of the function f(x) defined wrt the variable x." alt="" coords="323,261,551,301"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="586,267,551,271,551,265,585,261"/>
+<area shape="rect" id="Node000007" href="$classwmtk_1_1function_1_1_a_m_i_p_s.html#a36709a007132c33f85efe0b4abd16b93" title=" " alt="" coords="352,325,521,365"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="654,277,552,316,514,328,512,323,550,311,652,272"/>
+<area shape="rect" id="Node000009" href="$classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a5dbdaadd8398ba89b96ae7e799d6c7e7" title="This function is defined over a simplex (normally a triangle or tetrahedron)." alt="" coords="335,389,538,429"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="684,281,626,331,590,357,552,380,524,392,521,387,549,375,587,353,622,327,680,277"/>
+<area shape="rect" id="Node000010" href="$classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a0b81383595fa81fb270266bb6cee71da" title="collects the local neigh and call the same m_function on all simplicies" alt="" coords="323,453,551,493"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="696,283,672,320,639,363,598,407,552,444,529,455,527,451,549,439,595,403,635,360,667,317,691,280"/>
+<area shape="rect" id="Node000008" href="$classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing.html#a2c409cd3da46f4360119e142ef3c3682" title="returns an empty vector in case of failure" alt="" coords="5,325,275,365"/>
+<area shape="poly" id="edge7_Node000007_Node000008" title=" " alt="" coords="338,348,275,348,275,343,338,343"/>
 </map>

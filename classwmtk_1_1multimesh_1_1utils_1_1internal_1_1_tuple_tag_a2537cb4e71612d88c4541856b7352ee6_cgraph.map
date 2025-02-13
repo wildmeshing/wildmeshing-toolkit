@@ -1,19 +1,46 @@
 <map id="wmtk::multimesh::utils::internal::TupleTag::run" name="wmtk::multimesh::utils::internal::TupleTag::run">
-<area shape="rect" id="node1" title="Given an edge, join the sets that contains the two end vertices." alt="" coords="5,144,179,185"/>
-<area shape="rect" id="node2" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a8f9b080854e8a77d377a9a670c1fa9ef" title="Check if a vertex is a critical point." alt="" coords="448,57,621,113"/>
-<area shape="rect" id="node3" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#ad921071b9217221d30d56b51419c78e7" title=" " alt="" coords="904,5,1077,47"/>
-<area shape="rect" id="node6" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a35847b9a3beffb513c76316e366b811e" title=" " alt="" coords="1139,115,1327,156"/>
-<area shape="rect" id="node7" href="$classwmtk_1_1_mesh.html#a965a8a24158c4aa8580c57ba09f885f7" title="switch the orientation of the Tuple of the given dimension" alt="" coords="237,449,389,491"/>
-<area shape="rect" id="node8" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#abf875f1fb984fb5d322e0ac0c9dcc145" title="Given two vertex tuple, join the sets that contain them." alt="" coords="227,137,400,193"/>
-<area shape="rect" id="node4" href="$classwmtk_1_1_mesh.html#a58243712dc3e0d258ad645e7b08870db" title="return the global id of the Tuple of the given dimension" alt="" coords="1172,13,1295,39"/>
-<area shape="rect" id="node5" href="$classwmtk_1_1_mesh.html#a6f6c3b9a1d738d05ec8d84cabfa5e4b4" title="Internal utility to allow id to be virtual with a non&#45;virtual overload in derived &#45;Mesh classes." alt="" coords="1376,13,1547,39"/>
-<area shape="rect" id="node9" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#acf43c71e38eb6f098ea24a73532a3739" title=" " alt="" coords="448,137,621,193"/>
-<area shape="rect" id="node15" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a91abc2743fec235b445ec7b584b8971e" title=" " alt="" coords="448,217,621,273"/>
-<area shape="rect" id="node10" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#adeecacbc367c2e7077608ca4a016a30c" title=" " alt="" coords="904,202,1077,258"/>
-<area shape="rect" id="node12" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#acf1cbc3cfaaebc987060989c98bdf6de" title=" " alt="" coords="669,57,843,113"/>
-<area shape="rect" id="node14" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a74880862626b85c76af2061a637ed0ff" title=" " alt="" coords="669,137,843,193"/>
-<area shape="rect" id="node11" href="$classwmtk_1_1attribute_1_1_accessor.html#a7eb9c2a90fbab4c1d7c7b9a308a6984e" title=" " alt="" coords="1139,209,1328,251"/>
-<area shape="rect" id="node13" href="$classwmtk_1_1_mesh.html#a60165ceb4c2db2731df90e4ac100637d" title="internal function that returns the tuple of requested type, and has the global index cid" alt="" coords="891,71,1091,98"/>
-<area shape="rect" id="node16" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a992e75c8b90a653cf89fa4f92a52fc27" title=" " alt="" coords="669,318,843,374"/>
-<area shape="rect" id="node17" href="$classwmtk_1_1attribute_1_1_accessor.html#a61276629d510c9d13e4ed12610fa1d19" title=" " alt="" coords="896,325,1085,367"/>
+<area shape="rect" id="Node000001" title="Given an edge, join the sets that contains the two end vertices." alt="" coords="5,158,179,198"/>
+<area shape="rect" id="Node000002" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a8f9b080854e8a77d377a9a670c1fa9ef" title="Check if a vertex is a critical point." alt="" coords="448,72,621,127"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="155,155,226,137,333,118,434,106,434,111,334,124,227,142,156,161"/>
+<area shape="rect" id="Node000003" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#ad921071b9217221d30d56b51419c78e7" title=" " alt="" coords="904,22,1077,62"/>
+<area shape="poly" id="edge27_Node000001_Node000003" title=" " alt="" coords="124,156,171,129,226,105,347,64,443,39,542,23,669,9,756,3,843,9,896,17,895,22,842,14,756,8,670,14,543,28,444,44,348,69,228,110,173,134,126,160"/>
+<area shape="rect" id="Node000006" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a7ce74a2272389dcdbd3fd1434480ecb1" title=" " alt="" coords="1139,130,1327,170"/>
+<area shape="poly" id="edge6_Node000001_Node000006" title=" " alt="" coords="114,196,178,257,224,294,276,331,335,366,399,395,465,415,533,422,757,422,810,425,857,430,937,442,974,442,1011,435,1049,418,1089,389,1107,370,1115,349,1118,328,1117,307,1117,260,1123,235,1136,210,1154,191,1174,175,1178,180,1158,195,1141,213,1128,237,1122,261,1123,306,1123,329,1121,351,1111,372,1092,393,1051,423,1012,440,975,447,937,447,856,436,810,430,757,427,533,427,464,420,397,400,333,371,273,336,220,298,174,261,110,200"/>
+<area shape="rect" id="Node000007" href="$classwmtk_1_1_mesh.html#a965a8a24158c4aa8580c57ba09f885f7" title="switch the orientation of the Tuple of the given dimension" alt="" coords="237,462,389,502"/>
+<area shape="poly" id="edge7_Node000001_Node000007" title=" " alt="" coords="101,197,116,246,142,311,179,380,202,412,228,441,243,453,240,457,225,445,198,416,174,383,137,313,111,248,96,199"/>
+<area shape="rect" id="Node000008" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#abf875f1fb984fb5d322e0ac0c9dcc145" title="Given two vertex tuple, join the sets that contain them." alt="" coords="227,151,400,205"/>
+<area shape="poly" id="edge8_Node000001_Node000008" title=" " alt="" coords="179,175,213,175,213,181,179,181"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="581,69,622,49,669,34,725,25,783,22,890,26,890,31,783,27,726,30,670,39,624,54,583,74"/>
+<area shape="rect" id="Node000004" href="$classwmtk_1_1_mesh.html#a58243712dc3e0d258ad645e7b08870db" title="return the global id of the Tuple of the given dimension" alt="" coords="1172,29,1295,55"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="1078,39,1158,39,1158,45,1078,45"/>
+<area shape="poly" id="edge5_Node000003_Node000006" title=" " alt="" coords="1057,60,1092,73,1187,121,1184,125,1090,78,1055,65"/>
+<area shape="rect" id="Node000005" href="$classwmtk_1_1_mesh.html#a6f6c3b9a1d738d05ec8d84cabfa5e4b4" title="Internal utility to allow id to be virtual with a non&#45;virtual overload in derived &#45;Mesh classes." alt="" coords="1376,29,1547,55"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="1295,39,1362,39,1362,45,1295,45"/>
+<area shape="poly" id="edge9_Node000008_Node000002" title=" " alt="" coords="390,148,444,129,445,134,392,153"/>
+<area shape="rect" id="Node000009" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#acf43c71e38eb6f098ea24a73532a3739" title=" " alt="" coords="448,151,621,205"/>
+<area shape="poly" id="edge10_Node000008_Node000009" title=" " alt="" coords="400,175,434,175,434,181,400,181"/>
+<area shape="rect" id="Node000015" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a91abc2743fec235b445ec7b584b8971e" title=" " alt="" coords="448,229,621,284"/>
+<area shape="poly" id="edge21_Node000008_Node000015" title=" " alt="" coords="392,203,445,222,444,227,390,208"/>
+<area shape="rect" id="Node000010" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#adeecacbc367c2e7077608ca4a016a30c" title=" " alt="" coords="904,216,1077,271"/>
+<area shape="poly" id="edge11_Node000009_Node000010" title=" " alt="" coords="618,203,670,215,784,231,890,238,890,244,783,236,669,221,617,208"/>
+<area shape="rect" id="Node000012" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#acf1cbc3cfaaebc987060989c98bdf6de" title=" " alt="" coords="669,72,843,127"/>
+<area shape="poly" id="edge13_Node000009_Node000012" title=" " alt="" coords="612,148,665,129,667,134,613,153"/>
+<area shape="rect" id="Node000014" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a74880862626b85c76af2061a637ed0ff" title=" " alt="" coords="669,151,843,205"/>
+<area shape="poly" id="edge18_Node000009_Node000014" title=" " alt="" coords="622,175,655,175,655,181,622,181"/>
+<area shape="rect" id="Node000011" href="$classwmtk_1_1attribute_1_1_accessor.html#a7eb9c2a90fbab4c1d7c7b9a308a6984e" title=" " alt="" coords="1139,223,1328,263"/>
+<area shape="poly" id="edge12_Node000010_Node000011" title=" " alt="" coords="1078,241,1125,241,1125,246,1078,246"/>
+<area shape="poly" id="edge17_Node000012_Node000003" title=" " alt="" coords="842,76,895,63,896,68,844,81"/>
+<area shape="poly" id="edge14_Node000012_Node000006" title=" " alt="" coords="843,115,891,122,1012,135,1126,143,1125,148,1012,140,890,127,842,120"/>
+<area shape="poly" id="edge16_Node000012_Node000012" title=" " alt="" coords="713,72,713,62,721,53,735,47,756,45,781,49,795,56,793,61,779,54,756,51,736,53,724,57,718,64,718,72"/>
+<area shape="rect" id="Node000013" href="$classwmtk_1_1_mesh.html#a60165ceb4c2db2731df90e4ac100637d" title="internal function that returns the tuple of requested type, and has the global index cid" alt="" coords="891,87,1091,112"/>
+<area shape="poly" id="edge15_Node000012_Node000013" title=" " alt="" coords="843,97,877,97,877,102,843,102"/>
+<area shape="poly" id="edge20_Node000014_Node000003" title=" " alt="" coords="825,148,841,137,856,121,864,106,873,89,889,73,900,66,903,71,892,78,877,93,869,108,860,124,844,141,828,153"/>
+<area shape="poly" id="edge19_Node000014_Node000010" title=" " alt="" coords="844,200,891,213,890,218,842,205"/>
+<area shape="poly" id="edge22_Node000015_Node000010" title=" " alt="" coords="621,258,669,259,756,262,843,259,890,255,891,260,843,265,756,267,669,265,621,263"/>
+<area shape="poly" id="edge25_Node000015_Node000012" title=" " alt="" coords="605,227,619,216,635,197,643,178,651,158,667,138,673,133,677,137,671,141,656,161,648,180,640,200,623,220,608,231"/>
+<area shape="poly" id="edge26_Node000015_Node000014" title=" " alt="" coords="612,227,665,208,667,213,613,232"/>
+<area shape="rect" id="Node000016" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a992e75c8b90a653cf89fa4f92a52fc27" title=" " alt="" coords="669,332,843,387"/>
+<area shape="poly" id="edge23_Node000015_Node000016" title=" " alt="" coords="596,282,685,324,683,329,593,287"/>
+<area shape="rect" id="Node000017" href="$classwmtk_1_1attribute_1_1_accessor.html#a0f003b623a86c7debc0a8c1a3417dabd" title=" " alt="" coords="896,339,1085,379"/>
+<area shape="poly" id="edge24_Node000016_Node000017" title=" " alt="" coords="843,357,882,357,882,362,843,362"/>
 </map>

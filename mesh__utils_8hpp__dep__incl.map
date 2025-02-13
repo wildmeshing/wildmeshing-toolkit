@@ -1,25 +1,47 @@
 <map id="src/wmtk/utils/mesh_utils.hpp" name="src/wmtk/utils/mesh_utils.hpp">
-<area shape="rect" id="node1" title=" " alt="" coords="2479,5,2634,47"/>
-<area shape="rect" id="node2" href="$_msh_reader_8cpp.html" title=" " alt="" coords="5,117,207,143"/>
-<area shape="rect" id="node3" href="$_tet_wild_tangential_laplacian_smoothing_8cpp.html" title=" " alt="" coords="231,102,434,158"/>
-<area shape="rect" id="node4" href="$_vertex_tangential_laplacian_smooth_8cpp.html" title=" " alt="" coords="458,102,687,158"/>
-<area shape="rect" id="node5" href="$mesh__utils_8cpp.html" title=" " alt="" coords="711,109,866,151"/>
-<area shape="rect" id="node6" href="$_volume_remesher_triangle_insertion_8cpp.html" title=" " alt="" coords="891,109,1124,151"/>
-<area shape="rect" id="node7" href="$internal_2_c_d_t_8cpp.html" title=" " alt="" coords="1148,102,1339,158"/>
-<area shape="rect" id="node8" href="$delaunay_8cpp.html" title=" " alt="" coords="1363,102,1574,158"/>
-<area shape="rect" id="node9" href="$components_2edge__insertion_2wmtk_2components_2edge__insertion_2edge__insertion_8cpp.html" title=" " alt="" coords="1597,102,1844,158"/>
-<area shape="rect" id="node10" href="$src_2wmtk_2components_2input_2input_8cpp.html" title=" " alt="" coords="1869,102,2053,158"/>
-<area shape="rect" id="node11" href="$mesh__with__tag__from__image_8cpp.html" title=" " alt="" coords="2077,102,2316,158"/>
-<area shape="rect" id="node12" href="$tests_2_marching_8cpp.html" title=" " alt="" coords="2340,102,2552,158"/>
-<area shape="rect" id="node13" href="$axis__aligned__fusion_8cpp.html" title=" " alt="" coords="2576,95,2759,165"/>
-<area shape="rect" id="node14" href="$_disk_options_8cpp.html" title=" " alt="" coords="2783,102,3003,158"/>
-<area shape="rect" id="node15" href="$_grid2_options_8cpp.html" title=" " alt="" coords="3027,102,3247,158"/>
-<area shape="rect" id="node16" href="$_grid3_options_8cpp.html" title=" " alt="" coords="3271,102,3491,158"/>
-<area shape="rect" id="node17" href="$_triangle_fan_options_8cpp.html" title=" " alt="" coords="3515,102,3735,158"/>
-<area shape="rect" id="node18" href="$test__component__fusion_8cpp.html" title=" " alt="" coords="3759,109,3935,151"/>
-<area shape="rect" id="node19" href="$test__component__regular__space_8cpp.html" title=" " alt="" coords="3959,109,4186,151"/>
-<area shape="rect" id="node20" href="$test__component__wildmeshing_8cpp.html" title=" " alt="" coords="4210,109,4429,151"/>
-<area shape="rect" id="node21" href="$tetwild__simplification_8cpp.html" title=" " alt="" coords="4453,95,4703,165"/>
-<area shape="rect" id="node22" href="$to__points_8cpp.html" title=" " alt="" coords="4727,102,4938,158"/>
-<area shape="rect" id="node23" href="$winding__number_8cpp.html" title=" " alt="" coords="4963,95,5167,165"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="2515,5,2670,45"/>
+<area shape="rect" id="Node000002" href="$internal_2_c_d_t_8cpp.html" title=" " alt="" coords="5,101,196,155"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="2501,30,2003,37,1287,51,606,71,356,83,209,96,177,103,176,98,208,91,356,77,606,65,1287,46,2003,32,2501,25"/>
+<area shape="rect" id="Node000003" href="$delaunay_8cpp.html" title=" " alt="" coords="221,101,431,155"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="2501,29,2086,31,1490,39,1178,47,885,59,633,75,442,96,408,103,407,98,442,91,632,70,885,53,1178,41,1490,33,2086,25,2501,24"/>
+<area shape="rect" id="Node000004" href="$components_2edge__insertion_2wmtk_2components_2edge__insertion_2edge__insertion_8cpp.html" title=" " alt="" coords="455,101,701,155"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="2501,30,2134,35,1617,46,1096,66,878,79,714,96,674,103,673,98,714,91,878,74,1095,60,1617,41,2134,30,2501,25"/>
+<area shape="rect" id="Node000005" href="$src_2wmtk_2components_2input_2input_8cpp.html" title=" " alt="" coords="726,101,910,155"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="2502,30,2171,33,1714,43,1256,63,1066,78,922,96,891,103,890,98,922,91,1065,72,1256,58,1714,38,2171,28,2502,24"/>
+<area shape="rect" id="Node000006" href="$mesh__with__tag__from__image_8cpp.html" title=" " alt="" coords="935,101,1173,155"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="2502,31,1838,52,1460,71,1304,82,1185,96,1147,103,1146,98,1184,91,1303,77,1460,65,1838,46,2501,26"/>
+<area shape="rect" id="Node000007" href="$tests_2marching_8cpp.html" title=" " alt="" coords="1197,101,1409,155"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="2502,32,1950,54,1644,72,1517,83,1421,96,1387,103,1386,98,1420,91,1517,78,1644,67,1950,48,2502,27"/>
+<area shape="rect" id="Node000008" href="$axis__aligned__fusion_8cpp.html" title=" " alt="" coords="1433,93,1616,163"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="2501,28,2337,30,2119,39,1874,59,1749,75,1628,96,1617,98,1616,93,1627,91,1748,70,1873,54,2118,34,2336,25,2501,23"/>
+<area shape="rect" id="Node000009" href="$_disk_options_8cpp.html" title=" " alt="" coords="1640,101,1860,155"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="2502,33,2219,51,2045,70,1872,96,1838,103,1837,98,1871,91,2045,64,2219,46,2501,27"/>
+<area shape="rect" id="Node000010" href="$_grid2_options_8cpp.html" title=" " alt="" coords="1884,101,2104,155"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="2502,39,2323,61,2116,96,2084,103,2083,98,2115,91,2322,56,2501,33"/>
+<area shape="rect" id="Node000011" href="$_grid3_options_8cpp.html" title=" " alt="" coords="2128,101,2348,155"/>
+<area shape="poly" id="edge10_Node000001_Node000011" title=" " alt="" coords="2514,52,2331,103,2330,98,2513,46"/>
+<area shape="rect" id="Node000012" href="$_triangle_fan_options_8cpp.html" title=" " alt="" coords="2372,101,2592,155"/>
+<area shape="poly" id="edge11_Node000001_Node000012" title=" " alt="" coords="2563,57,2513,102,2509,98,2560,53"/>
+<area shape="rect" id="Node000013" href="$test__component__fusion_8cpp.html" title=" " alt="" coords="2617,108,2793,148"/>
+<area shape="poly" id="edge12_Node000001_Node000013" title=" " alt="" coords="2626,52,2685,106,2682,110,2622,56"/>
+<area shape="rect" id="Node000014" href="$test__component__regular__space_8cpp.html" title=" " alt="" coords="2817,108,3043,148"/>
+<area shape="poly" id="edge13_Node000001_Node000014" title=" " alt="" coords="2670,47,2867,105,2866,110,2668,52"/>
+<area shape="rect" id="Node000015" href="$test__component__wildmeshing_8cpp.html" title=" " alt="" coords="3067,108,3286,148"/>
+<area shape="poly" id="edge14_Node000001_Node000015" title=" " alt="" coords="2684,34,2857,56,3056,91,3115,105,3113,110,3055,96,2856,62,2683,39"/>
+<area shape="rect" id="Node000016" href="$tetwild__simplification_8cpp.html" title=" " alt="" coords="3310,93,3561,163"/>
+<area shape="poly" id="edge15_Node000001_Node000016" title=" " alt="" coords="2684,28,2960,49,3129,67,3298,91,3310,93,3309,98,3298,96,3128,72,2959,54,2684,34"/>
+<area shape="rect" id="Node000017" href="$to__points_8cpp.html" title=" " alt="" coords="3585,101,3795,155"/>
+<area shape="poly" id="edge16_Node000001_Node000017" title=" " alt="" coords="2684,24,2851,27,3072,37,3322,57,3449,72,3573,91,3607,98,3606,103,3572,96,3448,77,3322,62,3072,42,2851,32,2684,29"/>
+<area shape="rect" id="Node000018" href="$winding__number_8cpp.html" title=" " alt="" coords="3820,93,4024,163"/>
+<area shape="poly" id="edge17_Node000001_Node000018" title=" " alt="" coords="2684,26,3256,47,3575,66,3707,78,3808,91,3820,93,3819,98,3807,96,3707,83,3575,71,3256,52,2683,32"/>
+<area shape="rect" id="Node000019" href="$_msh_reader_8cpp.html" title=" " alt="" coords="4048,115,4249,141"/>
+<area shape="poly" id="edge18_Node000001_Node000019" title=" " alt="" coords="2684,25,2974,31,3365,43,3753,62,3915,75,4037,91,4080,101,4119,113,4117,118,4079,106,4036,96,3914,81,3753,68,3365,48,2974,36,2683,31"/>
+<area shape="rect" id="Node000020" href="$_tet_wild_tangential_laplacian_smoothing_8cpp.html" title=" " alt="" coords="4274,101,4477,155"/>
+<area shape="poly" id="edge19_Node000001_Node000020" title=" " alt="" coords="2684,25,3015,29,3471,40,3928,59,4119,73,4262,91,4296,98,4295,103,4262,96,4118,79,3928,65,3471,45,3015,34,2684,30"/>
+<area shape="rect" id="Node000021" href="$_vertex_tangential_laplacian_smooth_8cpp.html" title=" " alt="" coords="4501,101,4730,155"/>
+<area shape="poly" id="edge20_Node000001_Node000021" title=" " alt="" coords="2684,25,3055,28,3576,39,4103,59,4323,73,4489,91,4527,98,4526,103,4488,96,4323,78,4103,64,3576,44,3054,34,2684,30"/>
+<area shape="rect" id="Node000022" href="$_volume_remesher_triangle_insertion_8cpp.html" title=" " alt="" coords="4755,108,4988,148"/>
+<area shape="poly" id="edge21_Node000001_Node000022" title=" " alt="" coords="2684,24,3098,27,3694,36,4006,44,4299,56,4552,71,4742,91,4811,105,4809,111,4742,96,4551,77,4299,61,4006,50,3694,41,3098,32,2684,29"/>
+<area shape="rect" id="Node000023" href="$mesh__utils_8cpp.html" title=" " alt="" coords="5013,108,5167,148"/>
+<area shape="poly" id="edge22_Node000001_Node000023" title=" " alt="" coords="2684,25,3187,30,3910,42,4599,62,4852,75,5001,91,5049,105,5048,111,5000,96,4852,80,4599,67,3910,48,3187,36,2684,30"/>
 </map>

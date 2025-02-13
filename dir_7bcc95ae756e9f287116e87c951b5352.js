@@ -11,9 +11,7 @@ var dir_7bcc95ae756e9f287116e87c951b5352 =
     [ "local_switch_tuple.hxx", "tet__mesh_2local__switch__tuple_8hxx.html", "tet__mesh_2local__switch__tuple_8hxx" ],
     [ "simplex_index_from_valid_index.hpp", "tet__mesh_2simplex__index__from__valid__index_8hpp.html", "tet__mesh_2simplex__index__from__valid__index_8hpp" ],
     [ "simplex_index_from_valid_index.hxx", "tet__mesh_2simplex__index__from__valid__index_8hxx.html", "tet__mesh_2simplex__index__from__valid__index_8hxx" ],
-    [ "SimplexDart.hpp", "tet__mesh_2_simplex_dart_8hpp.html", [
-      [ "SimplexDart", "classwmtk_1_1autogen_1_1tet__mesh_1_1_simplex_dart.html", "classwmtk_1_1autogen_1_1tet__mesh_1_1_simplex_dart" ]
-    ] ],
+    [ "SimplexDart.hpp", "tet__mesh_2_simplex_dart_8hpp.html", "tet__mesh_2_simplex_dart_8hpp" ],
     [ "subdart_maximal_action_to_face.cpp", "tet__mesh_2subdart__maximal__action__to__face_8cpp.html", "tet__mesh_2subdart__maximal__action__to__face_8cpp" ],
     [ "subdart_maximal_action_to_face.hpp", "tet__mesh_2subdart__maximal__action__to__face_8hpp.html", "tet__mesh_2subdart__maximal__action__to__face_8hpp" ],
     [ "tuple_from_valid_index.hpp", "tet__mesh_2tuple__from__valid__index_8hpp.html", "tet__mesh_2tuple__from__valid__index_8hpp" ],

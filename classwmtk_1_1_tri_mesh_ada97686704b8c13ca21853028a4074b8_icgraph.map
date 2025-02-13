@@ -1,8 +1,14 @@
 <map id="wmtk::TriMesh::switch_vertex" name="wmtk::TriMesh::switch_vertex">
-<area shape="rect" id="node1" title=" " alt="" coords="767,71,933,112"/>
-<area shape="rect" id="node2" href="$namespacewmtk_1_1mesh__utils.html#a07c6f8b4fe4d3bf868a521ac66aee027" title="compute area vector of face" alt="" coords="505,12,719,53"/>
-<area shape="rect" id="node4" href="$namespacewmtk_1_1mesh__utils.html#ace9d707a188783f870a878d0623418d0" title="compute the normalized vertex normal from the incident area weighted face normals" alt="" coords="255,71,457,112"/>
-<area shape="rect" id="node6" href="$classwmtk_1_1function_1_1_edge_valence_energy.html#af25dd9d07e1f9d18c92c7a3395f271c1" title="This function is defined over a simplex (normally a triangle or tetrahedron)." alt="" coords="507,129,717,171"/>
-<area shape="rect" id="node3" href="$namespacewmtk_1_1mesh__utils.html#a05b2e8377c52bd2da29a3b2c38bef90d" title="compute the normalized face normal based on the vertex positions" alt="" coords="255,5,457,47"/>
-<area shape="rect" id="node5" href="$classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth.html#a6bdafc81c42b34cdafe1b229217d819c" title=" " alt="" coords="5,63,207,119"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="767,69,933,109"/>
+<area shape="rect" id="Node000002" href="$namespacewmtk_1_1mesh__utils.html#a07c6f8b4fe4d3bf868a521ac66aee027" title="compute area vector of face" alt="" coords="505,12,719,52"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="753,69,695,55,696,49,754,64"/>
+<area shape="rect" id="Node000004" href="$namespacewmtk_1_1mesh__utils.html#ace9d707a188783f870a878d0623418d0" title="compute the normalized vertex normal from the incident area weighted face normals" alt="" coords="255,69,457,109"/>
+<area shape="poly" id="edge5_Node000001_Node000004" title=" " alt="" coords="753,92,458,92,458,87,753,87"/>
+<area shape="rect" id="Node000006" href="$classwmtk_1_1function_1_1_edge_valence_energy.html#af25dd9d07e1f9d18c92c7a3395f271c1" title="This function is defined over a simplex (normally a triangle or tetrahedron)." alt="" coords="507,127,717,167"/>
+<area shape="poly" id="edge6_Node000001_Node000006" title=" " alt="" coords="754,115,696,129,695,124,753,110"/>
+<area shape="rect" id="Node000003" href="$namespacewmtk_1_1mesh__utils.html#a05b2e8377c52bd2da29a3b2c38bef90d" title="compute the normalized face normal based on the vertex positions" alt="" coords="255,5,457,45"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="492,32,457,31,458,25,492,26"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="509,58,446,72,445,67,508,53"/>
+<area shape="rect" id="Node000005" href="$classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth.html#a6bdafc81c42b34cdafe1b229217d819c" title=" " alt="" coords="5,62,207,117"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="241,92,207,92,207,87,241,87"/>
 </map>

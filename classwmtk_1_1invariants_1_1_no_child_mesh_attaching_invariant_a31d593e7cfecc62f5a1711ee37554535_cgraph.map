@@ -1,10 +1,39 @@
 <map id="wmtk::invariants::NoChildMeshAttachingInvariant::before" name="wmtk::invariants::NoChildMeshAttachingInvariant::before">
-<area shape="rect" id="node1" title=" " alt="" coords="5,129,196,185"/>
-<area shape="rect" id="node2" href="$classwmtk_1_1_mesh.html#ae897154d1c035113188f81c201fa44c6" title="returns the direct multimesh child meshes for the current mesh" alt="" coords="259,5,428,47"/>
-<area shape="rect" id="node4" href="$classwmtk_1_1invariants_1_1_invariant.html#ac97548bf5f1167cd85081d1bde011139" title=" " alt="" coords="244,71,443,112"/>
-<area shape="rect" id="node5" href="$classwmtk_1_1simplex_1_1_simplex.html#ad2cc0340a0772b7d6f03ba7a781d1163" title=" " alt="" coords="253,136,433,177"/>
-<area shape="rect" id="node6" href="$classwmtk_1_1simplex_1_1_simplex.html#a3650fd31ff1864285502dba66db3c73c" title=" " alt="" coords="253,201,433,243"/>
-<area shape="rect" id="node7" href="$classwmtk_1_1simplex_1_1_simplex.html#a7de67a391b9f48b57f4ecb4c412ccaee" title=" " alt="" coords="253,267,433,308"/>
-<area shape="rect" id="node3" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#aa191a41ae86378fcb29fc80259d07e4a" title=" " alt="" coords="491,5,704,47"/>
-<area shape="rect" id="node8" href="$classwmtk_1_1simplex_1_1_simplex.html#ab6d51ca0c220792c1c09824d152bb53a" title=" " alt="" coords="507,267,687,308"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,262,196,317"/>
+<area shape="rect" id="Node000002" href="$classwmtk_1_1_mesh.html#ae897154d1c035113188f81c201fa44c6" title="returns the direct multimesh child meshes for the current mesh" alt="" coords="259,87,428,127"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="131,260,242,169,296,132,299,136,246,173,134,264"/>
+<area shape="rect" id="Node000004" href="$classwmtk_1_1_mesh.html#ae608f09c361bbc3ccda3b4e02cc28940" title="optimized map fromsimplex from this mesh to one of its direct children" alt="" coords="264,183,423,223"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="177,259,273,225,274,230,179,264"/>
+<area shape="rect" id="Node000012" href="$classwmtk_1_1simplex_1_1_simplex.html#ad2cc0340a0772b7d6f03ba7a781d1163" title=" " alt="" coords="779,255,959,295"/>
+<area shape="poly" id="edge17_Node000001_Node000012" title=" " alt="" coords="196,284,244,283,765,273,765,279,244,288,196,289"/>
+<area shape="rect" id="Node000014" href="$classwmtk_1_1invariants_1_1_invariant.html#ac97548bf5f1167cd85081d1bde011139" title=" " alt="" coords="244,297,443,337"/>
+<area shape="poly" id="edge16_Node000001_Node000014" title=" " alt="" coords="196,298,231,302,230,307,196,303"/>
+<area shape="rect" id="Node000015" href="$classwmtk_1_1simplex_1_1_simplex.html#aca78b1fb0a3c28c0036cf7919bfb0789" title=" " alt="" coords="253,361,433,401"/>
+<area shape="poly" id="edge18_Node000001_Node000015" title=" " alt="" coords="165,314,245,347,266,354,264,359,243,352,163,319"/>
+<area shape="rect" id="Node000016" href="$classwmtk_1_1simplex_1_1_simplex.html#a7de67a391b9f48b57f4ecb4c412ccaee" title=" " alt="" coords="253,425,433,465"/>
+<area shape="poly" id="edge19_Node000001_Node000016" title=" " alt="" coords="129,315,180,364,212,389,245,411,258,418,256,422,243,416,209,393,177,368,125,319"/>
+<area shape="rect" id="Node000003" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#aa191a41ae86378fcb29fc80259d07e4a" title=" " alt="" coords="491,55,705,95"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="428,93,477,87,478,92,429,99"/>
+<area shape="rect" id="Node000005" href="$classwmtk_1_1_mesh.html#ad054c074d4776010002321117ec459e8" title=" " alt="" coords="491,119,705,159"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="422,180,504,159,505,165,423,185"/>
+<area shape="rect" id="Node000009" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#ae79d884089139ad2962aef5f496dbc8c" title="optimized map fromsimplex from this mesh to one of its direct children" alt="" coords="491,183,705,223"/>
+<area shape="poly" id="edge9_Node000004_Node000009" title=" " alt="" coords="423,200,478,200,478,205,423,205"/>
+<area shape="rect" id="Node000006" href="$classwmtk_1_1_mesh.html#aac3ec1ebbe00982ddfe70cc710d8f54e" title="returns a reference to the root of a multimesh tree" alt="" coords="783,23,955,63"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="675,116,704,104,728,88,752,72,770,65,772,70,755,77,731,93,707,109,677,121"/>
+<area shape="rect" id="Node000007" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a434e74f6b295055a45914d41a784124a" title=" " alt="" coords="1032,29,1245,69"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="955,42,1018,44,1018,49,955,47"/>
+<area shape="poly" id="edge7_Node000007_Node000007" title=" " alt="" coords="1090,30,1087,20,1095,10,1112,5,1139,3,1169,6,1185,13,1183,18,1168,11,1139,8,1113,10,1098,15,1092,21,1095,28"/>
+<area shape="rect" id="Node000008" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a7d39339adb56b1798fe817d81bfcc67c" title="Specifies whether this structure is the root of a multi&#45;mesh tree." alt="" coords="1293,67,1507,107"/>
+<area shape="poly" id="edge8_Node000007_Node000008" title=" " alt="" coords="1246,62,1280,67,1279,72,1245,67"/>
+<area shape="rect" id="Node000010" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#ae0a6966669a330ff022fb795818c90f3" title=" " alt="" coords="758,111,979,151"/>
+<area shape="poly" id="edge10_Node000009_Node000010" title=" " alt="" coords="673,180,779,152,780,157,675,185"/>
+<area shape="poly" id="edge14_Node000009_Node000012" title=" " alt="" coords="675,220,780,248,779,254,673,225"/>
+<area shape="rect" id="Node000013" href="$namespacewmtk_1_1simplex_1_1utils.html#a358c30268c189fc8f00538b520aab4f8" title=" " alt="" coords="753,175,984,230"/>
+<area shape="poly" id="edge15_Node000009_Node000013" title=" " alt="" coords="705,200,739,200,739,205,705,205"/>
+<area shape="poly" id="edge13_Node000010_Node000010" title=" " alt="" coords="819,111,816,101,824,92,842,86,869,84,900,87,917,94,915,99,899,92,869,89,843,91,827,96,821,102,824,109"/>
+<area shape="rect" id="Node000011" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a0fdf5c6dbc3b4d5254526fc7e29e3bbd" title="Specifies the child id of this mesh if it a child mesh in a mult&#45;mesh tree." alt="" coords="1032,99,1245,139"/>
+<area shape="poly" id="edge11_Node000010_Node000011" title=" " alt="" coords="979,123,1018,121,1019,127,980,128"/>
+<area shape="poly" id="edge12_Node000011_Node000008" title=" " alt="" coords="1245,103,1279,99,1280,104,1246,108"/>
+<area shape="rect" id="Node000017" href="$classwmtk_1_1simplex_1_1_simplex.html#ab6d51ca0c220792c1c09824d152bb53a" title=" " alt="" coords="508,425,688,465"/>
+<area shape="poly" id="edge20_Node000016_Node000017" title=" " alt="" coords="434,443,494,443,494,448,434,448"/>
 </map>

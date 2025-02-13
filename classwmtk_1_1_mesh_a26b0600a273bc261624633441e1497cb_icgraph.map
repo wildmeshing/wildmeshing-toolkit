@@ -1,32 +1,86 @@
 <map id="wmtk::Mesh::register_attribute" name="wmtk::Mesh::register_attribute">
-<area shape="rect" id="node1" title=" " alt="" coords="1019,437,1179,479"/>
-<area shape="rect" id="node2" href="$classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#a00b7df05e0cd44c1a2d4e6ee39dbaacf" title="Create the adjacency (stored as attribute) of the substructure." alt="" coords="731,138,936,194"/>
-<area shape="rect" id="node3" href="$classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#a96647e9413f2b7e13dd17f02cf29b12d" title="Create a manifold mesh from the substructure." alt="" coords="425,122,644,178"/>
-<area shape="rect" id="node10" href="$namespacewmtk_1_1utils.html#a216f2306e90d409a64e86d49e5ef31e2" title=" " alt="" coords="737,269,930,295"/>
-<area shape="rect" id="node11" href="$namespacewmtk_1_1components_1_1internal.html#abdf0e65326bccb762e8182f1329f3fe8" title=" " alt="" coords="432,17,637,59"/>
-<area shape="rect" id="node12" href="$classwmtk_1_1io_1_1_msh_reader.html#ae8e9b1352d11e9ef4203eaa9172362b5" title=" " alt="" coords="733,320,933,361"/>
-<area shape="rect" id="node13" href="$namespacewmtk_1_1components_1_1multimesh.html#adb526f96e146395c4e26c3dbf5aba389" title=" " alt="" coords="721,437,946,479"/>
-<area shape="rect" id="node14" href="$namespacewmtk_1_1components_1_1multimesh.html#a5af816bd3804ba5430992812b388eb6b" title=" " alt="" coords="422,381,647,423"/>
-<area shape="rect" id="node15" href="$namespacewmtk_1_1components.html#a7447d90d4590819b69239d895ea5dc86" title=" " alt="" coords="735,568,932,609"/>
-<area shape="rect" id="node19" href="$namespacewmtk_1_1components_1_1longest__edge__split.html#a0be451c677a35037d6e49f97356604cb" title="Perform longes&#45;edge split on a mesh." alt="" coords="720,633,947,675"/>
-<area shape="rect" id="node21" href="$namespacewmtk_1_1components_1_1internal.html#a8890d5e5bb5f11779d4e40e07882253a" title=" " alt="" coords="432,228,637,269"/>
-<area shape="rect" id="node22" href="$classwmtk_1_1components_1_1internal_1_1_regular_space.html#af9adef544fff10ba9257d128fd13393c" title=" " alt="" coords="720,503,947,544"/>
-<area shape="rect" id="node24" href="$classwmtk_1_1components_1_1internal_1_1_simplicial_embedding.html#a56a218aa40f62ce6ecdb5ac253553e6c" title="Regularize tags in mesh." alt="" coords="696,699,971,740"/>
-<area shape="rect" id="node27" href="$classwmtk_1_1_h_d_f5_reader.html#a24253eae6c0cdca26556f7dee93d7a7c" title=" " alt="" coords="745,764,922,805"/>
-<area shape="rect" id="node28" href="$namespacewmtk_1_1components_1_1shortest__edge__collapse.html#a13c53b8b70fc1b63e7bdb22318139dd9" title="Perform shortest&#45;edge collapse on a triangular surface mesh." alt="" coords="729,830,937,886"/>
-<area shape="rect" id="node30" href="$test__component__multimesh__from__tag_8cpp.html#a4caad3dd8a6355f2ca66fdb0b0af7999" title=" " alt="" coords="786,910,881,937"/>
-<area shape="rect" id="node4" href="$namespacewmtk_1_1components.html#a1d95b8c424d645d432babf8ba5765e36" title=" " alt="" coords="167,5,354,47"/>
-<area shape="rect" id="node5" href="$namespacewmtk_1_1components.html#ac309092566399cef68679a1bb8107d1e" title="Generate a multi&#45;mesh from a mesh with a tag that represents the substructure, the mesh is changed." alt="" coords="148,71,373,112"/>
-<area shape="rect" id="node7" href="$namespacewmtk_1_1components.html#a4166e4880553cfacbf79ac3515a637cd" title=" " alt="" coords="157,253,364,295"/>
-<area shape="rect" id="node8" href="$test__component__multimesh__from__tag_8cpp.html#a18cd3d411cfadc472201c20662d62869" title=" " alt="" coords="213,137,308,163"/>
-<area shape="rect" id="node9" href="$namespacewmtk_1_1components_1_1triangle__insertion.html#a23509bfe845d018ac65e2759fb77c608" title=" " alt="" coords="157,188,365,229"/>
-<area shape="rect" id="node6" href="$test__component__multimesh__from__tag_8cpp.html#a2b0208caf4b963a36a43604c3e7cf34a" title=" " alt="" coords="5,78,100,105"/>
-<area shape="rect" id="node16" href="$namespacewmtk_1_1components.html#a7cec0c38121ddd036af26c760311d0e8" title=" " alt="" coords="434,503,635,544"/>
-<area shape="rect" id="node17" href="$namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc" title=" " alt="" coords="447,568,623,609"/>
-<area shape="rect" id="node18" href="$test__component__tag__intersection_8cpp.html#ab45075e8d350017b73b4910211afe71a" title=" " alt="" coords="213,575,308,602"/>
-<area shape="rect" id="node20" href="$namespacewmtk_1_1components_1_1longest__edge__split.html#a91cd0e6f904d4c6d1e0000504cc0a257" title="Perform longes&#45;edge split on a mesh." alt="" coords="421,633,648,675"/>
-<area shape="rect" id="node23" href="$test__component__regular__space_8cpp.html#a5e69783b3ce0c074477e3081ab8cf658" title=" " alt="" coords="487,451,582,478"/>
-<area shape="rect" id="node25" href="$namespacewmtk_1_1components.html#abab23cfb68442b5652e27826a47ba553" title=" " alt="" coords="425,699,644,740"/>
-<area shape="rect" id="node26" href="$test__simplicial__embedding_8cpp.html#a49717460104eb5696a0b66b964ff84a0" title=" " alt="" coords="213,706,308,733"/>
-<area shape="rect" id="node29" href="$namespacewmtk_1_1components_1_1shortest__edge__collapse.html#a1be5a09251cc55d3030f671a39c7ed47" title="Perform shortest&#45;edge collapse on a triangular surface mesh." alt="" coords="431,830,639,886"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="1129,538,1289,578"/>
+<area shape="rect" id="Node000002" href="$classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#a00b7df05e0cd44c1a2d4e6ee39dbaacf" title="Create the adjacency (stored as attribute) of the substructure." alt="" coords="841,300,1047,355"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1191,527,1148,451,1117,411,1080,376,1045,356,1048,352,1083,372,1121,407,1152,448,1196,524"/>
+<area shape="rect" id="Node000003" href="$classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#a96647e9413f2b7e13dd17f02cf29b12d" title="Create a manifold mesh from the substructure." alt="" coords="536,300,755,355"/>
+<area shape="poly" id="edge19_Node000001_Node000003" title=" " alt="" coords="1201,525,1190,470,1168,404,1152,371,1132,340,1108,312,1080,290,1035,268,986,256,936,252,885,255,835,263,788,275,708,302,706,297,786,270,834,258,884,250,936,247,987,251,1037,263,1083,285,1112,308,1136,337,1156,368,1173,402,1195,469,1206,524"/>
+<area shape="rect" id="Node000005" href="$namespacewmtk_1_1components_1_1internal.html#aff1250493ee8c47518118b92223c8576" title=" " alt="" coords="5,33,211,73"/>
+<area shape="poly" id="edge20_Node000001_Node000005" title=" " alt="" coords="1204,525,1197,454,1177,362,1161,314,1140,267,1113,223,1079,185,1032,146,981,112,927,84,869,62,810,43,749,29,627,13,506,8,392,13,291,23,208,35,207,30,291,17,392,7,506,3,627,7,750,24,811,38,871,56,929,80,984,108,1035,142,1083,181,1117,220,1145,265,1166,312,1182,361,1202,453,1209,524"/>
+<area shape="rect" id="Node000015" href="$test__component__multimesh__from__tag_8cpp.html#a4caad3dd8a6355f2ca66fdb0b0af7999" title=" " alt="" coords="324,601,419,627"/>
+<area shape="poly" id="edge48_Node000001_Node000015" title=" " alt="" coords="1188,528,1169,500,1145,469,1115,442,1080,420,1042,406,1008,397,977,394,948,395,885,406,807,421,725,430,660,440,630,448,600,460,569,478,534,504,517,525,511,547,504,569,486,591,454,607,420,615,419,609,452,602,482,587,499,567,506,545,513,522,530,500,566,474,598,455,628,443,659,434,724,425,806,415,884,401,947,390,977,389,1009,392,1043,400,1083,416,1118,437,1149,466,1174,496,1193,525"/>
+<area shape="rect" id="Node000017" href="$namespacewmtk_1_1utils.html#a216f2306e90d409a64e86d49e5ef31e2" title=" " alt="" coords="847,431,1041,456"/>
+<area shape="poly" id="edge18_Node000001_Node000017" title=" " alt="" coords="1174,531,1131,499,1080,471,1040,458,1042,453,1082,466,1134,495,1177,527"/>
+<area shape="rect" id="Node000018" href="$classwmtk_1_1io_1_1_msh_reader.html#ae8e9b1352d11e9ef4203eaa9172362b5" title=" " alt="" coords="844,481,1044,521"/>
+<area shape="poly" id="edge21_Node000001_Node000018" title=" " alt="" coords="1115,541,1036,523,1038,518,1117,535"/>
+<area shape="rect" id="Node000019" href="$namespacewmtk_1_1components_1_1multimesh.html#adb526f96e146395c4e26c3dbf5aba389" title=" " alt="" coords="831,595,1057,635"/>
+<area shape="poly" id="edge22_Node000001_Node000019" title=" " alt="" coords="1117,581,1038,598,1036,593,1115,575"/>
+<area shape="rect" id="Node000020" href="$namespacewmtk_1_1components_1_1multimesh.html#a5af816bd3804ba5430992812b388eb6b" title=" " alt="" coords="533,538,758,578"/>
+<area shape="poly" id="edge32_Node000001_Node000020" title=" " alt="" coords="1115,561,758,561,758,555,1115,555"/>
+<area shape="rect" id="Node000021" href="$namespacewmtk_1_1components.html#a7447d90d4590819b69239d895ea5dc86" title=" " alt="" coords="845,723,1043,763"/>
+<area shape="poly" id="edge25_Node000001_Node000021" title=" " alt="" coords="1192,592,1148,654,1118,687,1083,714,1044,731,1042,726,1080,709,1114,683,1144,651,1188,589"/>
+<area shape="rect" id="Node000024" href="$namespacewmtk_1_1components_1_1longest__edge__split.html#a0be451c677a35037d6e49f97356604cb" title="Perform longes&#45;edge split on a mesh." alt="" coords="831,811,1057,851"/>
+<area shape="poly" id="edge29_Node000001_Node000024" title=" " alt="" coords="1199,592,1182,633,1157,683,1124,733,1083,777,1053,798,1020,814,1017,809,1050,794,1080,773,1120,730,1152,680,1177,631,1194,590"/>
+<area shape="rect" id="Node000026" href="$namespacewmtk_1_1components_1_1internal.html#a8890d5e5bb5f11779d4e40e07882253a" title=" " alt="" coords="543,131,748,171"/>
+<area shape="poly" id="edge33_Node000001_Node000026" title=" " alt="" coords="1202,525,1191,465,1169,391,1153,353,1133,316,1109,282,1080,252,1043,225,1002,204,960,187,915,174,828,158,748,152,749,146,828,152,917,168,961,182,1005,199,1046,221,1083,248,1113,278,1137,313,1158,350,1174,389,1196,464,1207,524"/>
+<area shape="rect" id="Node000027" href="$classwmtk_1_1components_1_1internal_1_1_regular_space.html#af9adef544fff10ba9257d128fd13393c" title=" " alt="" coords="831,659,1057,699"/>
+<area shape="poly" id="edge36_Node000001_Node000027" title=" " alt="" coords="1177,589,1133,621,1082,650,1050,662,1048,657,1080,645,1130,616,1173,585"/>
+<area shape="rect" id="Node000030" href="$classwmtk_1_1components_1_1internal_1_1_simplicial_embedding.html#a56a218aa40f62ce6ecdb5ac253553e6c" title="Regularize tags in mesh." alt="" coords="807,875,1081,915"/>
+<area shape="poly" id="edge40_Node000001_Node000030" title=" " alt="" coords="1207,592,1195,651,1173,725,1157,764,1137,801,1113,835,1083,865,1065,877,1062,873,1080,861,1108,832,1133,798,1152,761,1168,723,1190,650,1201,591"/>
+<area shape="rect" id="Node000034" href="$classwmtk_1_1_h_d_f5_reader.html#a24253eae6c0cdca26556f7dee93d7a7c" title=" " alt="" coords="855,939,1033,979"/>
+<area shape="poly" id="edge44_Node000001_Node000034" title=" " alt="" coords="1209,592,1202,663,1182,754,1166,802,1145,848,1117,892,1083,929,1060,945,1034,955,1032,950,1057,940,1080,925,1113,888,1140,846,1161,800,1177,752,1197,662,1204,592"/>
+<area shape="rect" id="Node000035" href="$namespacewmtk_1_1components_1_1shortest__edge__collapse.html#a13c53b8b70fc1b63e7bdb22318139dd9" title="Perform shortest&#45;edge collapse on a triangular surface mesh." alt="" coords="840,1028,1048,1083"/>
+<area shape="poly" id="edge45_Node000001_Node000035" title=" " alt="" coords="1210,592,1203,671,1184,777,1168,834,1146,890,1118,944,1083,993,1060,1014,1033,1030,1031,1026,1057,1010,1079,990,1114,941,1141,888,1163,832,1179,776,1198,670,1205,592"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="828,330,755,330,755,325,828,325"/>
+<area shape="rect" id="Node000004" href="$namespacewmtk_1_1components.html#a1d95b8c424d645d432babf8ba5765e36" title=" " alt="" coords="278,137,465,177"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="608,292,552,240,519,214,483,191,456,179,459,174,485,186,522,209,556,236,612,288"/>
+<area shape="rect" id="Node000007" href="$namespacewmtk_1_1components.html#ac309092566399cef68679a1bb8107d1e" title="Generate a multi&#45;mesh from a mesh with a tag that represents the substructure, the mesh is changed." alt="" coords="259,201,484,241"/>
+<area shape="poly" id="edge7_Node000003_Node000007" title=" " alt="" coords="577,296,483,255,448,243,449,238,485,250,580,292"/>
+<area shape="rect" id="Node000009" href="$namespacewmtk_1_1components.html#a4166e4880553cfacbf79ac3515a637cd" title=" " alt="" coords="268,49,475,89"/>
+<area shape="poly" id="edge9_Node000003_Node000009" title=" " alt="" coords="610,290,530,185,517,160,509,140,500,121,482,103,463,91,466,87,486,99,504,118,514,138,522,158,534,182,614,287"/>
+<area shape="rect" id="Node000010" href="$test__component__multimesh__from__tag_8cpp.html#a2231774bf0d53fb5f6c1b34753afb255" title=" " alt="" coords="324,265,419,291"/>
+<area shape="poly" id="edge10_Node000003_Node000010" title=" " alt="" coords="522,308,418,289,419,284,523,303"/>
+<area shape="rect" id="Node000011" href="$test__component__multimesh__from__tag_8cpp.html#a9a31cb828b93e2ddcf0a5063d4d1c9e6" title=" " alt="" coords="324,315,419,340"/>
+<area shape="poly" id="edge11_Node000003_Node000011" title=" " alt="" coords="522,330,419,330,419,325,522,325"/>
+<area shape="rect" id="Node000012" href="$test__component__multimesh__from__tag_8cpp.html#a7a8f66a094907f369fa10876691f42f9" title=" " alt="" coords="324,364,419,389"/>
+<area shape="poly" id="edge12_Node000003_Node000012" title=" " alt="" coords="523,352,419,371,418,366,522,347"/>
+<area shape="rect" id="Node000013" href="$test__component__multimesh__from__tag_8cpp.html#af55ce8249624ce4d6a3feaad760949a6" title=" " alt="" coords="324,413,419,439"/>
+<area shape="poly" id="edge13_Node000003_Node000013" title=" " alt="" coords="563,363,533,376,510,390,485,403,420,421,418,416,483,398,507,386,531,372,561,358"/>
+<area shape="rect" id="Node000014" href="$test__component__multimesh__from__tag_8cpp.html#a18cd3d411cfadc472201c20662d62869" title=" " alt="" coords="324,463,419,488"/>
+<area shape="poly" id="edge14_Node000003_Node000014" title=" " alt="" coords="551,364,534,376,519,395,511,414,503,433,486,452,453,468,419,475,418,470,451,463,482,448,499,431,506,412,514,392,530,372,548,360"/>
+<area shape="poly" id="edge15_Node000003_Node000015" title=" " alt="" coords="545,365,534,376,517,403,510,430,510,456,513,483,516,510,514,537,506,564,486,591,471,602,454,610,419,617,418,612,453,605,468,597,482,587,501,561,509,536,510,510,508,484,505,457,505,429,512,401,530,372,542,361"/>
+<area shape="rect" id="Node000016" href="$namespacewmtk_1_1components_1_1triangle__insertion.html#a23509bfe845d018ac65e2759fb77c608" title=" " alt="" coords="267,537,475,577"/>
+<area shape="poly" id="edge16_Node000003_Node000016" title=" " alt="" coords="548,364,534,376,522,391,515,406,510,436,505,468,498,484,486,501,461,523,432,539,429,534,458,518,482,498,493,482,500,466,505,436,510,405,517,388,530,372,544,360"/>
+<area shape="poly" id="edge4_Node000004_Node000004" title=" " alt="" coords="416,125,400,118,371,115,346,117,331,122,325,128,328,135,323,137,320,127,328,118,345,112,371,110,402,113,418,120"/>
+<area shape="poly" id="edge5_Node000004_Node000005" title=" " alt="" coords="306,134,159,75,161,70,308,129"/>
+<area shape="rect" id="Node000006" href="$namespacewmtk_1_1components_1_1internal.html#ad827cdbb96806fb2e4c19c644277f3c3" title="include the intersection on edgepoints" alt="" coords="5,137,211,177"/>
+<area shape="poly" id="edge6_Node000004_Node000006" title=" " alt="" coords="264,159,211,159,211,154,264,154"/>
+<area shape="rect" id="Node000008" href="$test__component__multimesh__from__tag_8cpp.html#a2b0208caf4b963a36a43604c3e7cf34a" title=" " alt="" coords="61,208,155,233"/>
+<area shape="poly" id="edge8_Node000007_Node000008" title=" " alt="" coords="245,223,156,223,156,218,245,218"/>
+<area shape="poly" id="edge17_Node000016_Node000016" title=" " alt="" coords="416,525,400,518,371,515,346,517,331,522,325,528,328,535,323,537,320,527,328,518,345,512,371,510,402,513,418,520"/>
+<area shape="poly" id="edge23_Node000019_Node000020" title=" " alt="" coords="825,595,750,581,751,575,826,590"/>
+<area shape="poly" id="edge24_Node000020_Node000020" title=" " alt="" coords="692,526,676,519,645,517,619,519,603,524,597,529,600,537,595,538,592,528,600,519,618,513,645,511,677,514,694,521"/>
+<area shape="rect" id="Node000022" href="$namespacewmtk_1_1components.html#a7cec0c38121ddd036af26c760311d0e8" title=" " alt="" coords="545,702,746,742"/>
+<area shape="poly" id="edge26_Node000021_Node000022" title=" " alt="" coords="831,738,746,732,747,727,832,733"/>
+<area shape="rect" id="Node000023" href="$namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc" title=" " alt="" coords="557,790,733,830"/>
+<area shape="poly" id="edge27_Node000021_Node000023" title=" " alt="" coords="841,769,734,793,733,788,840,764"/>
+<area shape="poly" id="edge28_Node000023_Node000023" title=" " alt="" coords="692,778,676,771,645,769,619,771,603,776,597,781,600,789,595,790,592,780,600,771,618,765,645,763,677,766,694,773"/>
+<area shape="poly" id="edge31_Node000024_Node000024" title=" " alt="" coords="989,800,973,793,944,790,918,792,903,797,897,803,900,810,895,812,892,802,900,792,917,787,944,785,975,787,991,795"/>
+<area shape="rect" id="Node000025" href="$namespacewmtk_1_1components_1_1longest__edge__split.html#a91cd0e6f904d4c6d1e0000504cc0a257" title="Perform longes&#45;edge split on a mesh." alt="" coords="532,854,759,894"/>
+<area shape="poly" id="edge30_Node000024_Node000025" title=" " alt="" coords="817,852,759,860,759,855,817,847"/>
+<area shape="poly" id="edge34_Node000026_Node000009" title=" " alt="" coords="568,130,483,103,443,91,444,86,485,98,570,125"/>
+<area shape="poly" id="edge35_Node000026_Node000026" title=" " alt="" coords="692,120,676,113,645,110,619,112,603,117,597,123,600,130,595,132,592,122,600,112,618,107,645,105,677,107,694,115"/>
+<area shape="poly" id="edge37_Node000027_Node000022" title=" " alt="" coords="817,700,747,710,746,705,816,695"/>
+<area shape="rect" id="Node000028" href="$test__component__regular__space_8cpp.html#a728024a1ea7ac078fd93d4035f705520" title=" " alt="" coords="598,603,693,628"/>
+<area shape="poly" id="edge38_Node000027_Node000028" title=" " alt="" coords="837,659,758,642,692,628,694,623,759,637,838,654"/>
+<area shape="rect" id="Node000029" href="$test__component__regular__space_8cpp.html#a5e69783b3ce0c074477e3081ab8cf658" title=" " alt="" coords="598,652,693,677"/>
+<area shape="poly" id="edge39_Node000027_Node000029" title=" " alt="" coords="817,676,693,670,693,664,817,670"/>
+<area shape="rect" id="Node000031" href="$namespacewmtk_1_1components.html#abab23cfb68442b5652e27826a47ba553" title=" " alt="" coords="536,918,755,958"/>
+<area shape="poly" id="edge41_Node000030_Node000031" title=" " alt="" coords="793,920,755,925,754,920,793,914"/>
+<area shape="rect" id="Node000032" href="$test__simplicial__embedding_8cpp.html#a0e974097f50df389ea6daa673b677ca6" title=" " alt="" coords="324,901,419,927"/>
+<area shape="poly" id="edge42_Node000031_Node000032" title=" " alt="" coords="522,930,419,921,419,915,523,925"/>
+<area shape="rect" id="Node000033" href="$test__simplicial__embedding_8cpp.html#a49717460104eb5696a0b66b964ff84a0" title=" " alt="" coords="324,951,419,976"/>
+<area shape="poly" id="edge43_Node000031_Node000033" title=" " alt="" coords="523,952,419,962,419,956,522,947"/>
+<area shape="poly" id="edge47_Node000035_Node000035" title=" " alt="" coords="988,1017,972,1010,944,1007,920,1009,905,1013,898,1020,898,1028,893,1028,893,1018,902,1009,919,1003,944,1001,974,1004,991,1012"/>
+<area shape="rect" id="Node000036" href="$namespacewmtk_1_1components_1_1shortest__edge__collapse.html#a1be5a09251cc55d3030f671a39c7ed47" title="Perform shortest&#45;edge collapse on a triangular surface mesh." alt="" coords="541,1028,749,1083"/>
+<area shape="poly" id="edge46_Node000035_Node000036" title=" " alt="" coords="826,1058,750,1058,750,1053,826,1053"/>
 </map>

@@ -1,35 +1,16 @@
 var dir_aa61c4bf93d6c6781f6d1544a13a5327 =
 [
-    [ "AttributeCacheData.hpp", "_attribute_cache_data_8hpp.html", [
-      [ "AttributeCacheData", "classwmtk_1_1attribute_1_1internal_1_1_attribute_cache_data.html", "classwmtk_1_1attribute_1_1internal_1_1_attribute_cache_data" ]
-    ] ],
+    [ "AttributeCacheData.hpp", "_attribute_cache_data_8hpp.html", "_attribute_cache_data_8hpp" ],
     [ "AttributeCacheData.hxx", "_attribute_cache_data_8hxx.html", null ],
-    [ "AttributeFlatCache.hpp", "_attribute_flat_cache_8hpp.html", [
-      [ "AttributeFlatCache", "classwmtk_1_1attribute_1_1internal_1_1_attribute_flat_cache.html", "classwmtk_1_1attribute_1_1internal_1_1_attribute_flat_cache" ]
-    ] ],
+    [ "AttributeFlatCache.hpp", "_attribute_flat_cache_8hpp.html", "_attribute_flat_cache_8hpp" ],
     [ "AttributeFlatCache.hxx", "_attribute_flat_cache_8hxx.html", null ],
-    [ "AttributeTransactionStack.hpp", "_attribute_transaction_stack_8hpp.html", [
-      [ "AttributeTransactionStack", "classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html", "classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack" ]
-    ] ],
+    [ "AttributeTransactionStack.hpp", "_attribute_transaction_stack_8hpp.html", "_attribute_transaction_stack_8hpp" ],
     [ "AttributeTransactionStack.hxx", "_attribute_transaction_stack_8hxx.html", null ],
     [ "CheckpointScope.cpp", "_checkpoint_scope_8cpp.html", null ],
-    [ "CheckpointScope.hpp", "_checkpoint_scope_8hpp.html", [
-      [ "CheckpointScope", "classwmtk_1_1attribute_1_1internal_1_1_checkpoint_scope.html", "classwmtk_1_1attribute_1_1internal_1_1_checkpoint_scope" ]
-    ] ],
+    [ "CheckpointScope.hpp", "_checkpoint_scope_8hpp.html", "_checkpoint_scope_8hpp" ],
     [ "CompoundAccessor.hpp", "_compound_accessor_8hpp.html", "_compound_accessor_8hpp" ],
     [ "CompoundAccessor.hxx", "_compound_accessor_8hxx.html", null ],
     [ "hash.cpp", "hash_8cpp.html", null ],
-    [ "hash.hpp", "hash_8hpp.html", [
-      [ "hash", "classwmtk_1_1hash.html", null ],
-      [ "hash< wmtk::attribute::AttributeHandle >", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_attribute_handle_01_4.html", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_attribute_handle_01_4" ],
-      [ "hash< wmtk::attribute::TypedAttributeHandle< T > >", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_typed_attribute_handle_3_01_t_01_4_01_4.html", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_typed_attribute_handle_3_01_t_01_4_01_4" ],
-      [ "hash< wmtk::attribute::MeshAttributeHandle >", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_01_4.html", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_01_4" ],
-      [ "hash< wmtk::attribute::AttributeHandle >", "classstd_1_1hash_3_01wmtk_1_1attribute_1_1_attribute_handle_01_4.html", null ],
-      [ "hash< wmtk::attribute::TypedAttributeHandle< double > >", "classstd_1_1hash_3_01wmtk_1_1attribute_1_1_typed_attribute_handle_3_01double_01_4_01_4.html", null ],
-      [ "hash< wmtk::attribute::TypedAttributeHandle< int64_t > >", "classstd_1_1hash_3_01wmtk_1_1attribute_1_1_typed_attribute_handle_3_01int64__t_01_4_01_4.html", null ],
-      [ "hash< wmtk::attribute::TypedAttributeHandle< char > >", "classstd_1_1hash_3_01wmtk_1_1attribute_1_1_typed_attribute_handle_3_01char_01_4_01_4.html", null ],
-      [ "hash< wmtk::attribute::TypedAttributeHandle< wmtk::Rational > >", "classstd_1_1hash_3_01wmtk_1_1attribute_1_1_typed_attribute_handle_3_01wmtk_1_1_rational_01_4_01_4.html", null ],
-      [ "hash< wmtk::attribute::MeshAttributeHandle >", "classstd_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_01_4.html", null ]
-    ] ],
+    [ "hash.hpp", "hash_8hpp.html", "hash_8hpp" ],
     [ "MapTypes.hpp", "internal_2_map_types_8hpp.html", "internal_2_map_types_8hpp" ]
 ];

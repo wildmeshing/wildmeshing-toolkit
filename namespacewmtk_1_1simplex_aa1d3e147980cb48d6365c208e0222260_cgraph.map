@@ -1,12 +1,25 @@
 <map id="wmtk::simplex::edges" name="wmtk::simplex::edges">
-<area shape="rect" id="node1" title=" " alt="" coords="5,123,172,149"/>
-<area shape="rect" id="node2" href="$classwmtk_1_1simplex_1_1_simplex_collection.html#a1e7079b3b75f70dd28c524556cab76cf" title="Add simplex to the collection." alt="" coords="220,5,497,32"/>
-<area shape="rect" id="node3" href="$classwmtk_1_1simplex_1_1_simplex_collection.html#a0d0c1765c4ed8ffd0f163661111bfb08" title=" " alt="" coords="236,57,481,98"/>
-<area shape="rect" id="node4" href="$classwmtk_1_1simplex_1_1_simplex.html#ad2cc0340a0772b7d6f03ba7a781d1163" title=" " alt="" coords="820,125,1000,166"/>
-<area shape="rect" id="node5" href="$classwmtk_1_1_mesh.html#a7f8a7b7d592fdbf672f2c6c9653487ea" title=" " alt="" coords="283,267,435,309"/>
-<area shape="rect" id="node7" href="$classwmtk_1_1simplex_1_1_simplex.html#a3650fd31ff1864285502dba66db3c73c" title=" " alt="" coords="820,207,1000,249"/>
-<area shape="rect" id="node6" href="$classwmtk_1_1_mesh.html#a58bdbbfa0cd7bd9263241f6501db182a" title="check if a simplex lies on a boundary or not" alt="" coords="564,224,753,251"/>
-<area shape="rect" id="node8" href="$classwmtk_1_1_mesh.html#a965a8a24158c4aa8580c57ba09f885f7" title="switch the orientation of the Tuple of the given dimension" alt="" coords="583,326,735,367"/>
-<area shape="rect" id="node9" href="$classwmtk_1_1_mesh.html#a933f681cf24a63b155c9462280385200" title=" " alt="" coords="829,323,991,365"/>
-<area shape="rect" id="node10" href="$classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9" title=" " alt="" coords="545,392,772,419"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,120,172,145"/>
+<area shape="rect" id="Node000002" href="$classwmtk_1_1simplex_1_1_simplex_collection.html#a1e7079b3b75f70dd28c524556cab76cf" title="Add simplex to the collection." alt="" coords="220,5,497,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="103,118,152,79,184,58,219,41,246,32,247,37,221,46,187,63,155,83,106,122"/>
+<area shape="rect" id="Node000003" href="$classwmtk_1_1simplex_1_1_simplex_collection.html#a0d0c1765c4ed8ffd0f163661111bfb08" title=" " alt="" coords="236,55,481,95"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="149,117,250,96,251,101,150,123"/>
+<area shape="rect" id="Node000004" href="$classwmtk_1_1simplex_1_1_simplex.html#ad2cc0340a0772b7d6f03ba7a781d1163" title=" " alt="" coords="820,129,1000,169"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="172,132,806,144,806,149,172,137"/>
+<area shape="rect" id="Node000005" href="$classwmtk_1_1_mesh.html#a7f8a7b7d592fdbf672f2c6c9653487ea" title=" " alt="" coords="283,289,435,329"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="111,143,317,279,314,283,108,148"/>
+<area shape="rect" id="Node000007" href="$classwmtk_1_1simplex_1_1_simplex.html#aca78b1fb0a3c28c0036cf7919bfb0789" title=" " alt="" coords="820,223,1000,263"/>
+<area shape="poly" id="edge13_Node000001_Node000007" title=" " alt="" coords="172,139,514,175,772,206,825,217,824,223,772,211,513,180,172,144"/>
+<area shape="rect" id="Node000006" href="$classwmtk_1_1_mesh.html#a58bdbbfa0cd7bd9263241f6501db182a" title="check if a simplex lies on a boundary or not" alt="" coords="564,245,753,271"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="435,293,569,270,570,276,435,299"/>
+<area shape="rect" id="Node000008" href="$classwmtk_1_1_mesh.html#a965a8a24158c4aa8580c57ba09f885f7" title="switch the orientation of the Tuple of the given dimension" alt="" coords="583,346,735,386"/>
+<area shape="poly" id="edge9_Node000005_Node000008" title=" " alt="" coords="436,321,569,346,568,352,435,326"/>
+<area shape="rect" id="Node000009" href="$classwmtk_1_1_mesh.html#a933f681cf24a63b155c9462280385200" title=" " alt="" coords="829,338,991,378"/>
+<area shape="poly" id="edge10_Node000005_Node000009" title=" " alt="" coords="435,308,591,316,772,331,816,338,815,343,772,337,590,321,435,313"/>
+<area shape="rect" id="Node000010" href="$classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9" title=" " alt="" coords="545,411,772,436"/>
+<area shape="poly" id="edge11_Node000005_Node000010" title=" " alt="" coords="397,326,465,361,546,395,578,405,576,410,544,401,463,366,394,331"/>
+<area shape="poly" id="edge7_Node000006_Node000004" title=" " alt="" coords="688,243,850,172,852,177,690,248"/>
+<area shape="poly" id="edge6_Node000006_Node000006" title=" " alt="" coords="618,247,609,237,614,227,631,221,659,219,694,223,704,227,708,233,703,236,701,231,693,228,659,224,632,226,617,231,615,236,622,243"/>
+<area shape="poly" id="edge8_Node000006_Node000007" title=" " alt="" coords="753,250,806,247,806,252,754,255"/>
+<area shape="poly" id="edge12_Node000010_Node000009" title=" " alt="" coords="719,408,771,395,830,379,831,384,773,401,720,413"/>
 </map>

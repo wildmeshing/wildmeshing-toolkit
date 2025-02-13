@@ -1,10 +1,10 @@
 var _attribute_type_8hpp =
 [
-    [ "type_from_attribute_type_enum", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum.html", null ],
-    [ "type_from_attribute_type_enum< AttributeType::Char >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_char_01_4.html", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_char_01_4" ],
-    [ "type_from_attribute_type_enum< AttributeType::Double >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_double_01_4.html", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_double_01_4" ],
-    [ "type_from_attribute_type_enum< AttributeType::Int64 >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_int64_01_4.html", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_int64_01_4" ],
-    [ "type_from_attribute_type_enum< AttributeType::Rational >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_rational_01_4.html", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_rational_01_4" ],
+    [ "wmtk::attribute::type_from_attribute_type_enum< AT >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum.html", null ],
+    [ "wmtk::attribute::type_from_attribute_type_enum< AttributeType::Char >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_char_01_4.html", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_char_01_4" ],
+    [ "wmtk::attribute::type_from_attribute_type_enum< AttributeType::Double >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_double_01_4.html", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_double_01_4" ],
+    [ "wmtk::attribute::type_from_attribute_type_enum< AttributeType::Int64 >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_int64_01_4.html", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_int64_01_4" ],
+    [ "wmtk::attribute::type_from_attribute_type_enum< AttributeType::Rational >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_rational_01_4.html", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_rational_01_4" ],
     [ "type_from_attribute_type_enum_t", "_attribute_type_8hpp.html#a81a876515f702f5fe7a67531354514d3", null ],
     [ "AttributeType", "_attribute_type_8hpp.html#a9557a29293cbe11f080093a4af4a91f7", [
       [ "Char", "_attribute_type_8hpp.html#a9557a29293cbe11f080093a4af4a91f7a8e95e84813830072b7516cfaa7dbc1a9", null ],

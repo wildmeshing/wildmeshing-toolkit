@@ -1,9 +1,9 @@
 var _wildmeshing_options__old_8hpp =
 [
-    [ "WildmeshingOptionsAttributes", "structwmtk_1_1components_1_1_wildmeshing_options_attributes.html", "structwmtk_1_1components_1_1_wildmeshing_options_attributes" ],
-    [ "WildmeshingOptionsEnvelopeMesh", "structwmtk_1_1components_1_1_wildmeshing_options_envelope_mesh.html", "structwmtk_1_1components_1_1_wildmeshing_options_envelope_mesh" ],
-    [ "WildmeshingOptionsEnvelope", "structwmtk_1_1components_1_1_wildmeshing_options_envelope.html", "structwmtk_1_1components_1_1_wildmeshing_options_envelope" ],
-    [ "WildmeshingOptions", "structwmtk_1_1components_1_1_wildmeshing_options.html", "structwmtk_1_1components_1_1_wildmeshing_options" ],
+    [ "wmtk::components::WildmeshingOptionsAttributes", "structwmtk_1_1components_1_1_wildmeshing_options_attributes.html", "structwmtk_1_1components_1_1_wildmeshing_options_attributes" ],
+    [ "wmtk::components::WildmeshingOptionsEnvelopeMesh", "structwmtk_1_1components_1_1_wildmeshing_options_envelope_mesh.html", "structwmtk_1_1components_1_1_wildmeshing_options_envelope_mesh" ],
+    [ "wmtk::components::WildmeshingOptionsEnvelope", "structwmtk_1_1components_1_1_wildmeshing_options_envelope.html", "structwmtk_1_1components_1_1_wildmeshing_options_envelope" ],
+    [ "wmtk::components::WildmeshingOptions", "structwmtk_1_1components_1_1_wildmeshing_options.html", "structwmtk_1_1components_1_1_wildmeshing_options" ],
     [ "NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE", "_wildmeshing_options__old_8hpp.html#ad49e4bf6f8010bcb0ab273597e7d4075", null ],
     [ "NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE", "_wildmeshing_options__old_8hpp.html#a4b7ae61d3538ea2dad99602cfb263a0e", null ],
     [ "NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE", "_wildmeshing_options__old_8hpp.html#a3ba4ceae8267640d56736f0153c842ca", null ],

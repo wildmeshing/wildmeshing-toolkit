@@ -1,8 +1,5 @@
 var NAVTREEINDEX2 =
 {
-"_min_edge_length_invariant_8cpp.html":[10,0,2,0,3,34],
-"_min_edge_length_invariant_8cpp_source.html":[10,0,2,0,3,34],
-"_min_edge_length_invariant_8hpp.html":[10,0,2,0,3,35],
 "_min_edge_length_invariant_8hpp.html#a9b637b9518a13236e035ca3ea465fd08":[10,0,2,0,3,35,1],
 "_min_edge_length_invariant_8hpp_source.html":[10,0,2,0,3,35],
 "_min_incident_valence_invariant_8cpp.html":[10,0,2,0,3,36],
@@ -199,11 +196,11 @@ var NAVTREEINDEX2 =
 "_rational_8cpp.html#a3a33e3723b0a8df3cbc746de3637494d":[10,0,2,0,8,35,5],
 "_rational_8cpp.html#a3c18631869b7c8c8cebbf9c068a3369d":[10,0,2,0,8,35,6],
 "_rational_8cpp.html#a415d7a83177f8770f317416478c57cae":[10,0,2,0,8,35,0],
+"_rational_8cpp.html#a5f5c8cda8af3a0443171151b41966755":[10,0,2,0,8,35,8],
 "_rational_8cpp.html#a8eb36706bf335cb0203c315ce87ee002":[10,0,2,0,8,35,4],
 "_rational_8cpp.html#a9330e2f90cac2ea01cff0018ab769333":[10,0,2,0,8,35,7],
 "_rational_8cpp.html#abe32803a4c1f283801ad11d75c725871":[10,0,2,0,8,35,3],
 "_rational_8cpp.html#ad12ad5f8ec07682b8da79699a2628b6a":[10,0,2,0,8,35,10],
-"_rational_8cpp.html#aeba8759732ae3a5aa856be8c27df0c49":[10,0,2,0,8,35,8],
 "_rational_8cpp_source.html":[10,0,2,0,8,35],
 "_rational_8hpp.html":[10,0,2,0,8,36],
 "_rational_8hpp_source.html":[10,0,2,0,8,36],
@@ -249,5 +246,8 @@ var NAVTREEINDEX2 =
 "_sampling_8hpp.html#a42d2d9e68dcc8309b1d6c049d1fa8a43":[10,0,0,0,0,0,0,0,6,5],
 "_sampling_8hpp.html#a42d2d9e68dcc8309b1d6c049d1fa8a43a52c8dd0bca4da5e73b9ba90ef228b7f0":[10,0,0,0,0,0,0,0,6,5,1],
 "_sampling_8hpp.html#a42d2d9e68dcc8309b1d6c049d1fa8a43a786d58c5a8458f01f5c50dfb620c86f1":[10,0,0,0,0,0,0,0,6,5,0],
-"_sampling_8hpp.html#a7fb397130d29df144553a084734ea492":[10,0,0,0,0,0,0,0,6,4]
+"_sampling_8hpp.html#a7fb397130d29df144553a084734ea492":[10,0,0,0,0,0,0,0,6,4],
+"_sampling_8hpp.html#a7fb397130d29df144553a084734ea492ab0e18393c9d9190d969c6c48ace3d89c":[10,0,0,0,0,0,0,0,6,4,0],
+"_sampling_8hpp.html#a7fb397130d29df144553a084734ea492add309e5586dd9ab277c7e1afa9c34bb6":[10,0,0,0,0,0,0,0,6,4,1],
+"_sampling_8hpp_source.html":[10,0,0,0,0,0,0,0,6]
 };

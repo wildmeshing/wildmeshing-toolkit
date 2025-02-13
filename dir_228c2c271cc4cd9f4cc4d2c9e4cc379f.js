@@ -18,9 +18,7 @@ var dir_228c2c271cc4cd9f4cc4d2c9e4cc379f =
     [ "simplex_index_from_valid_index.cpp", "simplex__index__from__valid__index_8cpp.html", "simplex__index__from__valid__index_8cpp" ],
     [ "simplex_index_from_valid_index.hpp", "simplex__index__from__valid__index_8hpp.html", "simplex__index__from__valid__index_8hpp" ],
     [ "SimplexDart.cpp", "_simplex_dart_8cpp.html", "_simplex_dart_8cpp" ],
-    [ "SimplexDart.hpp", "_simplex_dart_8hpp.html", [
-      [ "SimplexDart", "classwmtk_1_1autogen_1_1_simplex_dart.html", "classwmtk_1_1autogen_1_1_simplex_dart" ]
-    ] ],
+    [ "SimplexDart.hpp", "_simplex_dart_8hpp.html", "_simplex_dart_8hpp" ],
     [ "tuple_from_valid_index.cpp", "tuple__from__valid__index_8cpp.html", "tuple__from__valid__index_8cpp" ],
     [ "tuple_from_valid_index.hpp", "tuple__from__valid__index_8hpp.html", "tuple__from__valid__index_8hpp" ],
     [ "valid_index_from_tuple.cpp", "valid__index__from__tuple_8cpp.html", "valid__index__from__tuple_8cpp" ],

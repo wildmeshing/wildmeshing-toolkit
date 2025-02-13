@@ -1,20 +1,40 @@
 <map id="wmtk::operations::EdgeSplit::EdgeSplit" name="wmtk::operations::EdgeSplit::EdgeSplit">
-<area shape="rect" id="node1" title=" " alt="" coords="5,228,211,269"/>
-<area shape="rect" id="node2" href="$classwmtk_1_1_mesh.html#a1d3ffa74e65ca7932d7ed32c3959e2a1" title=" " alt="" coords="286,136,445,177"/>
-<area shape="rect" id="node10" href="$classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html#a4ae1801ee1021dd57a0ede0444efc2d6" title=" " alt="" coords="259,228,472,269"/>
-<area shape="rect" id="node18" href="$classwmtk_1_1operations_1_1_operation.html#a524a78a76bb262cffcaafdd36afa037b" title=" " alt="" coords="261,293,469,335"/>
-<area shape="rect" id="node3" href="$classwmtk_1_1_mesh.html#a1c0d9a42a56f5532b6f278f93560ca5a" title=" " alt="" coords="551,71,702,112"/>
-<area shape="rect" id="node8" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#aa87669e6919f7825ca475a3c9e85d76c" title=" " alt="" coords="526,136,727,177"/>
-<area shape="rect" id="node4" href="$classwmtk_1_1_mesh.html#aae611243b3b57b86a41c2ee673ef81d7" title="Returns a vector of vectors of attribute handles." alt="" coords="793,5,983,47"/>
-<area shape="rect" id="node5" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#ab3962ab9a7904e12b10f73f227296072" title=" " alt="" coords="781,71,995,112"/>
-<area shape="rect" id="node6" href="$classwmtk_1_1attribute_1_1_typed_attribute_handle.html#ad473b36dc43489bad4a345dceac443fa" title=" " alt="" coords="1043,71,1269,112"/>
-<area shape="rect" id="node7" href="$classwmtk_1_1attribute_1_1_attribute_handle.html#afbe0d658f352336562850deaca347fe6" title=" " alt="" coords="1336,71,1524,112"/>
-<area shape="rect" id="node9" href="$namespacewmtk.html#a3b08a5d7fb42f02c54bae85758b39f59" title="Get the primitive type corresponding to its unique integer id." alt="" coords="811,136,965,177"/>
-<area shape="rect" id="node11" href="$namespacewmtk_1_1utils_1_1metaprogramming.html#aa5a891c5f82fc2a28e4fbdfc325b46f0" title=" " alt="" coords="1317,224,1543,265"/>
-<area shape="rect" id="node12" href="$classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html#ad96e498fcc27eeb8993f175015c864b4" title=" " alt="" coords="520,253,733,295"/>
-<area shape="rect" id="node15" href="$classwmtk_1_1_mesh.html#aac3ec1ebbe00982ddfe70cc710d8f54e" title="returns a reference to the root of a multimesh tree" alt="" coords="541,331,713,372"/>
-<area shape="rect" id="node13" href="$classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor.html#ad59739579a81676fc3ab172e80ce8550" title=" " alt="" coords="781,253,995,295"/>
-<area shape="rect" id="node14" href="$classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor.html#a6e0ef7ccec71b521a3bc5eb5df90bef0" title=" " alt="" coords="1049,253,1263,295"/>
-<area shape="rect" id="node16" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a434e74f6b295055a45914d41a784124a" title=" " alt="" coords="781,343,995,384"/>
-<area shape="rect" id="node17" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a7d39339adb56b1798fe817d81bfcc67c" title="Specifies whether this structure is the root of a multi&#45;mesh tree." alt="" coords="1049,343,1263,384"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,223,211,263"/>
+<area shape="rect" id="Node000002" href="$classwmtk_1_1_mesh.html#a1d3ffa74e65ca7932d7ed32c3959e2a1" title=" " alt="" coords="286,133,445,173"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="166,220,293,175,295,180,167,225"/>
+<area shape="rect" id="Node000010" href="$classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html#a4ae1801ee1021dd57a0ede0444efc2d6" title=" " alt="" coords="259,223,472,263"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="211,240,245,240,245,245,211,245"/>
+<area shape="rect" id="Node000018" href="$classwmtk_1_1operations_1_1_operation.html#a741f1c2a8065cf4542ae47f3b6e19c17" title=" " alt="" coords="261,287,469,327"/>
+<area shape="poly" id="edge20_Node000001_Node000018" title=" " alt="" coords="190,260,272,281,271,286,189,265"/>
+<area shape="rect" id="Node000003" href="$classwmtk_1_1_mesh.html#a1c0d9a42a56f5532b6f278f93560ca5a" title=" " alt="" coords="551,69,702,109"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="444,131,537,108,539,113,446,137"/>
+<area shape="rect" id="Node000008" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#aa87669e6919f7825ca475a3c9e85d76c" title=" " alt="" coords="526,133,727,173"/>
+<area shape="poly" id="edge7_Node000002_Node000008" title=" " alt="" coords="445,151,512,151,512,156,445,156"/>
+<area shape="rect" id="Node000004" href="$classwmtk_1_1_mesh.html#aa38529f8d30f4b8a4808c1bce8255623" title="Returns a vector of vectors of attribute handles." alt="" coords="793,5,983,45"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="701,68,792,46,793,51,703,74"/>
+<area shape="rect" id="Node000005" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#ab3962ab9a7904e12b10f73f227296072" title=" " alt="" coords="781,69,995,109"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="702,87,767,87,767,92,702,92"/>
+<area shape="rect" id="Node000006" href="$classwmtk_1_1attribute_1_1_typed_attribute_handle.html#ad473b36dc43489bad4a345dceac443fa" title=" " alt="" coords="1043,69,1269,109"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="995,87,1029,87,1029,92,995,92"/>
+<area shape="rect" id="Node000007" href="$classwmtk_1_1attribute_1_1_attribute_handle.html#afbe0d658f352336562850deaca347fe6" title=" " alt="" coords="1336,69,1524,109"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="1270,87,1322,87,1322,92,1270,92"/>
+<area shape="rect" id="Node000009" href="$namespacewmtk.html#a3b08a5d7fb42f02c54bae85758b39f59" title="Get the primitive type corresponding to its unique integer id." alt="" coords="811,133,965,173"/>
+<area shape="poly" id="edge8_Node000008_Node000009" title=" " alt="" coords="728,151,797,151,797,156,728,156"/>
+<area shape="rect" id="Node000011" href="$namespacewmtk_1_1utils_1_1metaprogramming.html#aa5a891c5f82fc2a28e4fbdfc325b46f0" title=" " alt="" coords="1317,231,1543,271"/>
+<area shape="poly" id="edge10_Node000010_Node000011" title=" " alt="" coords="472,235,520,233,895,225,1059,226,1269,233,1304,235,1304,241,1269,239,1059,231,895,230,520,239,472,240"/>
+<area shape="rect" id="Node000012" href="$classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html#ad96e498fcc27eeb8993f175015c864b4" title=" " alt="" coords="520,248,733,288"/>
+<area shape="poly" id="edge11_Node000010_Node000012" title=" " alt="" coords="473,250,507,254,506,259,472,256"/>
+<area shape="rect" id="Node000015" href="$classwmtk_1_1_mesh.html#aac3ec1ebbe00982ddfe70cc710d8f54e" title="returns a reference to the root of a multimesh tree" alt="" coords="541,324,713,364"/>
+<area shape="poly" id="edge16_Node000010_Node000015" title=" " alt="" coords="440,260,473,272,521,298,563,316,561,321,519,302,471,277,438,265"/>
+<area shape="rect" id="Node000013" href="$classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor.html#ad59739579a81676fc3ab172e80ce8550" title=" " alt="" coords="781,248,995,288"/>
+<area shape="poly" id="edge12_Node000012_Node000013" title=" " alt="" coords="734,265,767,265,767,271,734,271"/>
+<area shape="rect" id="Node000014" href="$classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor.html#a6e0ef7ccec71b521a3bc5eb5df90bef0" title=" " alt="" coords="1049,272,1263,312"/>
+<area shape="poly" id="edge13_Node000013_Node000014" title=" " alt="" coords="995,275,1036,279,1035,284,995,280"/>
+<area shape="poly" id="edge14_Node000014_Node000011" title=" " alt="" coords="1263,273,1303,267,1304,272,1263,279"/>
+<area shape="poly" id="edge15_Node000014_Node000014" title=" " alt="" coords="1107,272,1104,262,1112,253,1129,247,1156,245,1187,248,1204,255,1202,260,1186,253,1156,251,1130,253,1114,257,1109,263,1112,271"/>
+<area shape="rect" id="Node000016" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a434e74f6b295055a45914d41a784124a" title=" " alt="" coords="781,336,995,376"/>
+<area shape="poly" id="edge17_Node000015_Node000016" title=" " alt="" coords="713,345,768,348,767,353,713,351"/>
+<area shape="poly" id="edge18_Node000016_Node000016" title=" " alt="" coords="840,336,837,326,844,317,862,311,888,309,918,312,935,319,933,324,917,317,888,315,863,317,847,321,842,327,845,335"/>
+<area shape="rect" id="Node000017" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a7d39339adb56b1798fe817d81bfcc67c" title="Specifies whether this structure is the root of a multi&#45;mesh tree." alt="" coords="1049,336,1263,376"/>
+<area shape="poly" id="edge19_Node000016_Node000017" title=" " alt="" coords="995,353,1036,353,1036,359,995,359"/>
 </map>

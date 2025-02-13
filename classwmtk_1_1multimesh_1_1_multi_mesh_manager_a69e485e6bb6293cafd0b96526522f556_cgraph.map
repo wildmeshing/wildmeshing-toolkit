@@ -1,13 +1,26 @@
 <map id="wmtk::multimesh::MultiMeshManager::deregister_child_mesh" name="wmtk::multimesh::MultiMeshManager::deregister_child_mesh">
-<area shape="rect" id="node1" title="Deregister a child mesh." alt="" coords="5,136,240,177"/>
-<area shape="rect" id="node2" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a0fdf5c6dbc3b4d5254526fc7e29e3bbd" title="Specifies the child id of this mesh if it a child mesh in a mult&#45;mesh tree." alt="" coords="295,13,509,55"/>
-<area shape="rect" id="node4" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a0b1358f443d3837639573fec15f476c7" title=" " alt="" coords="564,136,777,177"/>
-<area shape="rect" id="node5" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#a8f09c6131e0dbf55f249c5eb97c3216b" title=" " alt="" coords="825,267,1013,308"/>
-<area shape="rect" id="node6" href="$classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9" title=" " alt="" coords="289,86,515,113"/>
-<area shape="rect" id="node8" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#ab71befacebd0a22bb8e75ca5640d9d45" title="Clean up child data after deleting attributes." alt="" coords="288,201,516,243"/>
-<area shape="rect" id="node3" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a7d39339adb56b1798fe817d81bfcc67c" title="Specifies whether this structure is the root of a multi&#45;mesh tree." alt="" coords="564,5,777,47"/>
-<area shape="rect" id="node7" href="$classwmtk_1_1_mesh.html#a933f681cf24a63b155c9462280385200" title=" " alt="" coords="590,71,751,112"/>
-<area shape="rect" id="node9" href="$classwmtk_1_1_mesh.html#a5049277866dd8a895a4d9521b29e6ed6" title=" " alt="" coords="573,201,768,243"/>
-<area shape="rect" id="node10" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a8789badb5de2a644770dcb8cdf6f3bd1" title=" " alt="" coords="564,333,777,389"/>
-<area shape="rect" id="node11" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#adc55e1e34f555ca1639375ba6c013478" title=" " alt="" coords="577,267,765,308"/>
+<area shape="rect" id="Node000001" title="Deregister a child mesh." alt="" coords="5,133,240,173"/>
+<area shape="rect" id="Node000002" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a0fdf5c6dbc3b4d5254526fc7e29e3bbd" title="Specifies the child id of this mesh if it a child mesh in a mult&#45;mesh tree." alt="" coords="295,12,509,52"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="159,131,218,100,287,68,323,54,325,59,289,73,221,105,162,136"/>
+<area shape="rect" id="Node000004" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#ac9820a22f79db746b715952e4af9244f" title=" " alt="" coords="564,133,777,173"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="240,151,550,151,550,156,240,156"/>
+<area shape="rect" id="Node000005" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#a8f09c6131e0dbf55f249c5eb97c3216b" title=" " alt="" coords="825,261,1013,301"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="151,171,218,221,317,284,375,316,436,346,500,371,565,391,624,405,672,411,719,407,776,391,810,375,841,354,890,309,894,313,844,359,812,380,778,396,720,412,672,416,623,410,563,396,498,376,434,351,373,321,315,288,215,225,148,176"/>
+<area shape="rect" id="Node000006" href="$classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9" title=" " alt="" coords="289,83,515,109"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="220,131,325,109,326,114,221,136"/>
+<area shape="rect" id="Node000008" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#ab71befacebd0a22bb8e75ca5640d9d45" title="Clean up child data after deleting attributes." alt="" coords="288,197,516,237"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="211,171,301,192,300,197,210,176"/>
+<area shape="rect" id="Node000003" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a7d39339adb56b1798fe817d81bfcc67c" title="Specifies whether this structure is the root of a multi&#45;mesh tree." alt="" coords="564,5,777,45"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="509,27,550,26,550,31,509,32"/>
+<area shape="rect" id="Node000007" href="$classwmtk_1_1_mesh.html#a933f681cf24a63b155c9462280385200" title=" " alt="" coords="590,69,751,109"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="515,91,576,89,576,94,515,96"/>
+<area shape="poly" id="edge8_Node000008_Node000004" title=" " alt="" coords="486,195,572,174,574,179,487,200"/>
+<area shape="rect" id="Node000009" href="$classwmtk_1_1_mesh.html#a5049277866dd8a895a4d9521b29e6ed6" title=" " alt="" coords="573,197,768,237"/>
+<area shape="poly" id="edge9_Node000008_Node000009" title=" " alt="" coords="516,215,560,215,560,220,516,220"/>
+<area shape="rect" id="Node000010" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a8789badb5de2a644770dcb8cdf6f3bd1" title=" " alt="" coords="564,326,777,381"/>
+<area shape="poly" id="edge11_Node000008_Node000010" title=" " alt="" coords="435,235,494,272,565,311,581,318,579,323,563,316,491,277,432,240"/>
+<area shape="rect" id="Node000011" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#adc55e1e34f555ca1639375ba6c013478" title=" " alt="" coords="577,261,765,301"/>
+<area shape="poly" id="edge12_Node000008_Node000011" title=" " alt="" coords="487,235,574,256,572,261,486,240"/>
+<area shape="poly" id="edge10_Node000009_Node000005" title=" " alt="" coords="750,235,829,255,828,261,748,240"/>
+<area shape="poly" id="edge13_Node000011_Node000005" title=" " alt="" coords="765,279,812,279,812,284,765,284"/>
 </map>

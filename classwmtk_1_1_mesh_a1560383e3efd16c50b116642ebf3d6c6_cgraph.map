@@ -1,20 +1,39 @@
 <map id="wmtk::Mesh::clear_attributes" name="wmtk::Mesh::clear_attributes">
-<area shape="rect" id="node1" title="Remove all custom attributes besides the one passed in." alt="" coords="5,141,217,167"/>
-<area shape="rect" id="node2" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#a835244773a5c602c821f39e4cc730477" title="Remove all custom attributes besides the one passed in." alt="" coords="265,35,455,76"/>
-<area shape="rect" id="node5" href="$classwmtk_1_1_mesh.html#a1d3ffa74e65ca7932d7ed32c3959e2a1" title=" " alt="" coords="281,133,439,175"/>
-<area shape="rect" id="node12" href="$classwmtk_1_1_mesh.html#a4b8fe891dcc922a937e08025c922b532" title="Update the child handles after clearing attributes." alt="" coords="283,231,437,272"/>
-<area shape="rect" id="node3" href="$namespacewmtk.html#a3b08a5d7fb42f02c54bae85758b39f59" title="Get the primitive type corresponding to its unique integer id." alt="" coords="808,5,963,47"/>
-<area shape="rect" id="node4" href="$namespacewmtk.html#a5cf45c152e856196bb734c6f48919a24" title="Get a unique integer id corresponding to each primitive type." alt="" coords="539,35,694,76"/>
-<area shape="rect" id="node6" href="$classwmtk_1_1_mesh.html#a1c0d9a42a56f5532b6f278f93560ca5a" title=" " alt="" coords="541,165,692,207"/>
-<area shape="rect" id="node11" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#aa87669e6919f7825ca475a3c9e85d76c" title=" " alt="" coords="516,100,717,141"/>
-<area shape="rect" id="node7" href="$classwmtk_1_1_mesh.html#aae611243b3b57b86a41c2ee673ef81d7" title="Returns a vector of vectors of attribute handles." alt="" coords="790,100,981,141"/>
-<area shape="rect" id="node8" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#ab3962ab9a7904e12b10f73f227296072" title=" " alt="" coords="779,165,992,207"/>
-<area shape="rect" id="node9" href="$classwmtk_1_1attribute_1_1_typed_attribute_handle.html#ad473b36dc43489bad4a345dceac443fa" title=" " alt="" coords="1040,165,1267,207"/>
-<area shape="rect" id="node10" href="$classwmtk_1_1attribute_1_1_attribute_handle.html#afbe0d658f352336562850deaca347fe6" title=" " alt="" coords="1315,165,1503,207"/>
-<area shape="rect" id="node13" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#ab71befacebd0a22bb8e75ca5640d9d45" title="Clean up child data after deleting attributes." alt="" coords="503,296,731,337"/>
-<area shape="rect" id="node14" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a0b1358f443d3837639573fec15f476c7" title=" " alt="" coords="779,231,992,272"/>
-<area shape="rect" id="node15" href="$classwmtk_1_1_mesh.html#a5049277866dd8a895a4d9521b29e6ed6" title=" " alt="" coords="788,296,983,337"/>
-<area shape="rect" id="node17" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a8789badb5de2a644770dcb8cdf6f3bd1" title=" " alt="" coords="779,362,992,418"/>
-<area shape="rect" id="node18" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#adc55e1e34f555ca1639375ba6c013478" title=" " alt="" coords="791,443,979,484"/>
-<area shape="rect" id="node16" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#a8f09c6131e0dbf55f249c5eb97c3216b" title=" " alt="" coords="1059,369,1247,411"/>
+<area shape="rect" id="Node000001" title="Remove all custom attributes besides the one passed in." alt="" coords="5,138,217,163"/>
+<area shape="rect" id="Node000002" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#a835244773a5c602c821f39e4cc730477" title="Remove all custom attributes besides the one passed in." alt="" coords="265,35,455,75"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="144,135,294,77,296,82,146,140"/>
+<area shape="rect" id="Node000005" href="$classwmtk_1_1_mesh.html#a1d3ffa74e65ca7932d7ed32c3959e2a1" title=" " alt="" coords="281,131,439,171"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="217,148,267,148,267,153,217,153"/>
+<area shape="rect" id="Node000012" href="$classwmtk_1_1_mesh.html#a4b8fe891dcc922a937e08025c922b532" title="Update the child handles after clearing attributes." alt="" coords="283,227,437,267"/>
+<area shape="poly" id="edge12_Node000001_Node000012" title=" " alt="" coords="146,161,296,219,294,224,144,166"/>
+<area shape="rect" id="Node000003" href="$namespacewmtk.html#a3b08a5d7fb42f02c54bae85758b39f59" title="Get the primitive type corresponding to its unique integer id." alt="" coords="808,5,963,45"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="435,32,502,20,579,14,657,12,794,16,794,21,657,18,579,19,503,25,436,37"/>
+<area shape="rect" id="Node000004" href="$namespacewmtk.html#a5cf45c152e856196bb734c6f48919a24" title="Get a unique integer id corresponding to each primitive type." alt="" coords="539,35,694,75"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="455,52,525,52,525,57,455,57"/>
+<area shape="rect" id="Node000006" href="$classwmtk_1_1_mesh.html#a1c0d9a42a56f5532b6f278f93560ca5a" title=" " alt="" coords="541,163,692,203"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="440,158,528,169,528,174,439,163"/>
+<area shape="rect" id="Node000011" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#aa87669e6919f7825ca475a3c9e85d76c" title=" " alt="" coords="516,99,717,139"/>
+<area shape="poly" id="edge10_Node000005_Node000011" title=" " alt="" coords="439,138,502,130,502,136,440,143"/>
+<area shape="rect" id="Node000007" href="$classwmtk_1_1_mesh.html#aa38529f8d30f4b8a4808c1bce8255623" title="Returns a vector of vectors of attribute handles." alt="" coords="790,99,981,139"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="691,162,787,139,788,145,693,167"/>
+<area shape="rect" id="Node000008" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#ab3962ab9a7904e12b10f73f227296072" title=" " alt="" coords="779,163,992,203"/>
+<area shape="poly" id="edge7_Node000006_Node000008" title=" " alt="" coords="692,180,765,180,765,185,692,185"/>
+<area shape="rect" id="Node000009" href="$classwmtk_1_1attribute_1_1_typed_attribute_handle.html#ad473b36dc43489bad4a345dceac443fa" title=" " alt="" coords="1040,163,1267,203"/>
+<area shape="poly" id="edge8_Node000008_Node000009" title=" " alt="" coords="992,180,1026,180,1026,185,992,185"/>
+<area shape="rect" id="Node000010" href="$classwmtk_1_1attribute_1_1_attribute_handle.html#afbe0d658f352336562850deaca347fe6" title=" " alt="" coords="1315,163,1503,203"/>
+<area shape="poly" id="edge9_Node000009_Node000010" title=" " alt="" coords="1267,180,1301,180,1301,185,1267,185"/>
+<area shape="poly" id="edge11_Node000011_Node000003" title=" " alt="" coords="692,96,730,84,824,48,826,53,732,89,694,101"/>
+<area shape="rect" id="Node000013" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#ab71befacebd0a22bb8e75ca5640d9d45" title="Clean up child data after deleting attributes." alt="" coords="503,291,731,331"/>
+<area shape="poly" id="edge13_Node000012_Node000013" title=" " alt="" coords="438,263,523,285,522,290,437,268"/>
+<area shape="rect" id="Node000014" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#ac9820a22f79db746b715952e4af9244f" title=" " alt="" coords="779,227,992,267"/>
+<area shape="poly" id="edge14_Node000013_Node000014" title=" " alt="" coords="701,288,787,267,788,272,702,293"/>
+<area shape="rect" id="Node000015" href="$classwmtk_1_1_mesh.html#a5049277866dd8a895a4d9521b29e6ed6" title=" " alt="" coords="788,291,983,331"/>
+<area shape="poly" id="edge15_Node000013_Node000015" title=" " alt="" coords="731,308,774,308,774,313,731,313"/>
+<area shape="rect" id="Node000017" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a8789badb5de2a644770dcb8cdf6f3bd1" title=" " alt="" coords="779,355,992,410"/>
+<area shape="poly" id="edge17_Node000013_Node000017" title=" " alt="" coords="693,328,770,349,769,354,691,333"/>
+<area shape="rect" id="Node000018" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#adc55e1e34f555ca1639375ba6c013478" title=" " alt="" coords="791,435,979,475"/>
+<area shape="poly" id="edge18_Node000013_Node000018" title=" " alt="" coords="643,329,703,374,780,420,796,427,794,432,777,425,700,379,640,333"/>
+<area shape="rect" id="Node000016" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#a8f09c6131e0dbf55f249c5eb97c3216b" title=" " alt="" coords="1059,363,1247,403"/>
+<area shape="poly" id="edge16_Node000015_Node000016" title=" " alt="" coords="961,328,1066,356,1064,362,960,333"/>
+<area shape="poly" id="edge19_Node000018_Node000016" title=" " alt="" coords="960,432,1064,404,1066,409,961,437"/>
 </map>

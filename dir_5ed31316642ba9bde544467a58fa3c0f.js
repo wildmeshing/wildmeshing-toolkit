@@ -12,16 +12,10 @@ var dir_5ed31316642ba9bde544467a58fa3c0f =
     [ "from_tag.cpp", "from__tag_8cpp.html", "from__tag_8cpp" ],
     [ "from_tag.hpp", "from__tag_8hpp.html", "from__tag_8hpp" ],
     [ "MeshCollection.cpp", "_mesh_collection_8cpp.html", null ],
-    [ "MeshCollection.hpp", "_mesh_collection_8hpp.html", [
-      [ "MeshCollection", "classwmtk_1_1components_1_1multimesh_1_1_mesh_collection.html", "classwmtk_1_1components_1_1multimesh_1_1_mesh_collection" ]
-    ] ],
+    [ "MeshCollection.hpp", "_mesh_collection_8hpp.html", "_mesh_collection_8hpp" ],
     [ "multimesh.cpp", "multimesh_8cpp.html", "multimesh_8cpp" ],
     [ "multimesh.hpp", "multimesh_8hpp.html", "multimesh_8hpp" ],
     [ "MultimeshOptions.hpp", "_multimesh_options_8hpp.html", "_multimesh_options_8hpp" ],
-    [ "NamedMultiMesh.cpp", "_named_multi_mesh_8cpp.html", [
-      [ "Node", "structwmtk_1_1components_1_1multimesh_1_1_named_multi_mesh_1_1_node.html", "structwmtk_1_1components_1_1multimesh_1_1_named_multi_mesh_1_1_node" ]
-    ] ],
-    [ "NamedMultiMesh.hpp", "_named_multi_mesh_8hpp.html", [
-      [ "NamedMultiMesh", "classwmtk_1_1components_1_1multimesh_1_1_named_multi_mesh.html", "classwmtk_1_1components_1_1multimesh_1_1_named_multi_mesh" ]
-    ] ]
+    [ "NamedMultiMesh.cpp", "_named_multi_mesh_8cpp.html", "_named_multi_mesh_8cpp" ],
+    [ "NamedMultiMesh.hpp", "_named_multi_mesh_8hpp.html", "_named_multi_mesh_8hpp" ]
 ];

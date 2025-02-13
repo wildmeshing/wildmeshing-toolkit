@@ -1,33 +1,66 @@
 <map id="src/wmtk/io/Cache.hpp" name="src/wmtk/io/Cache.hpp">
-<area shape="rect" id="node1" title=" " alt="" coords="2131,5,2302,32"/>
-<area shape="rect" id="node2" href="$_cache_8cpp.html" title=" " alt="" coords="291,102,460,129"/>
-<area shape="rect" id="node3" href="$export__cache_8hpp.html" title=" " alt="" coords="484,87,677,143"/>
-<area shape="rect" id="node7" href="$get__all__meshes_8hpp.html" title=" " alt="" coords="962,80,1167,151"/>
-<area shape="rect" id="node9" href="$import__cache_8hpp.html" title=" " alt="" coords="717,87,911,143"/>
-<area shape="rect" id="node11" href="$tests_2input_8cpp.html" title=" " alt="" coords="1255,95,1429,136"/>
-<area shape="rect" id="node12" href="$run__components_8hpp.html" title=" " alt="" coords="1453,95,1700,136"/>
-<area shape="rect" id="node15" href="$mesh__info_8hpp.html" title=" " alt="" coords="1761,87,1947,143"/>
-<area shape="rect" id="node17" href="$test__component__mesh__info_8cpp.html" title=" " alt="" coords="1883,213,2087,255"/>
-<area shape="rect" id="node18" href="$periodic__optimization_8hpp.html" title=" " alt="" coords="2021,80,2257,151"/>
-<area shape="rect" id="node20" href="$regular__space_8cpp.html" title=" " alt="" coords="2371,199,2563,269"/>
-<area shape="rect" id="node21" href="$regular__space_8hpp.html" title=" " alt="" coords="2331,80,2523,151"/>
-<area shape="rect" id="node23" href="$simplicial__embedding_8cpp.html" title=" " alt="" coords="2548,80,2784,151"/>
-<area shape="rect" id="node24" href="$tag__intersection_8hpp.html" title=" " alt="" coords="2809,87,3065,143"/>
-<area shape="rect" id="node27" href="$test__component__fusion_8cpp.html" title=" " alt="" coords="3089,95,3265,136"/>
-<area shape="rect" id="node28" href="$test__component__isotropic__remeshing_8cpp.html" title=" " alt="" coords="3289,87,3456,143"/>
-<area shape="rect" id="node29" href="$test__component__procedural_8cpp.html" title=" " alt="" coords="3481,95,3686,136"/>
-<area shape="rect" id="node30" href="$test__component__wildmeshing_8cpp.html" title=" " alt="" coords="3710,95,3929,136"/>
-<area shape="rect" id="node31" href="$wildmeshing__old_8hpp.html" title=" " alt="" coords="3953,87,4187,143"/>
-<area shape="rect" id="node4" href="$export__cache_8cpp.html" title=" " alt="" coords="5,206,199,262"/>
-<area shape="rect" id="node5" href="$test__component__export__cache_8cpp.html" title=" " alt="" coords="223,213,445,255"/>
-<area shape="rect" id="node6" href="$test__component__import__cache_8cpp.html" title=" " alt="" coords="469,213,693,255"/>
-<area shape="rect" id="node8" href="$get__all__meshes_8cpp.html" title=" " alt="" coords="935,199,1141,269"/>
-<area shape="rect" id="node10" href="$import__cache_8cpp.html" title=" " alt="" coords="717,206,911,262"/>
-<area shape="rect" id="node13" href="$run__components_8cpp.html" title=" " alt="" coords="1165,213,1410,255"/>
-<area shape="rect" id="node14" href="$integration__test_8cpp.html" title=" " alt="" coords="1434,213,1647,255"/>
-<area shape="rect" id="node16" href="$mesh__info_8cpp.html" title=" " alt="" coords="1671,206,1858,262"/>
-<area shape="rect" id="node19" href="$periodic__optimization_8cpp.html" title=" " alt="" coords="2111,199,2347,269"/>
-<area shape="rect" id="node22" href="$test__component__regular__space_8cpp.html" title=" " alt="" coords="2587,213,2814,255"/>
-<area shape="rect" id="node25" href="$tag__intersection_8cpp.html" title=" " alt="" coords="2838,206,3094,262"/>
-<area shape="rect" id="node26" href="$test__component__tag__intersection_8cpp.html" title=" " alt="" coords="3119,213,3360,255"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="2290,5,2461,31"/>
+<area shape="rect" id="Node000002" href="$export__cache_8hpp.html" title=" " alt="" coords="361,86,555,141"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="2277,22,2006,25,1617,33,1165,51,933,64,705,81,555,99,555,94,704,76,932,59,1165,46,1617,28,2005,19,2276,17"/>
+<area shape="rect" id="Node000006" href="$get__all__meshes_8hpp.html" title=" " alt="" coords="962,79,1167,148"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="2276,23,2085,27,1828,36,1536,53,1242,81,1168,93,1167,88,1242,76,1536,48,1827,31,2084,21,2276,17"/>
+<area shape="rect" id="Node000008" href="$import__cache_8hpp.html" title=" " alt="" coords="717,86,911,141"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="2276,24,1605,41,1226,58,1069,69,950,81,911,89,910,83,950,76,1069,63,1226,52,1604,35,2276,18"/>
+<area shape="rect" id="Node000010" href="$tests_2input_8cpp.html" title=" " alt="" coords="1255,93,1429,133"/>
+<area shape="poly" id="edge10_Node000001_Node000010" title=" " alt="" coords="2276,25,1840,44,1609,60,1514,70,1441,81,1390,96,1388,91,1440,76,1513,65,1608,55,1840,39,2276,20"/>
+<area shape="rect" id="Node000011" href="$run__components_8hpp.html" title=" " alt="" coords="1453,93,1700,133"/>
+<area shape="poly" id="edge11_Node000001_Node000011" title=" " alt="" coords="2277,29,2042,49,1764,81,1673,96,1672,91,1763,76,2042,44,2276,24"/>
+<area shape="rect" id="Node000014" href="$mesh__info_8hpp.html" title=" " alt="" coords="1775,86,1962,141"/>
+<area shape="poly" id="edge14_Node000001_Node000014" title=" " alt="" coords="2276,33,2136,53,1981,81,1952,89,1951,83,1980,76,2135,47,2276,28"/>
+<area shape="rect" id="Node000016" href="$test__component__mesh__info_8cpp.html" title=" " alt="" coords="1883,211,2087,251"/>
+<area shape="poly" id="edge29_Node000001_Node000016" title=" " alt="" coords="2276,27,2204,33,2130,44,2066,60,2042,69,2025,81,2004,110,1992,146,1987,181,1986,210,1981,210,1981,181,1986,145,1999,108,2021,77,2040,65,2064,55,2129,39,2203,28,2276,22"/>
+<area shape="rect" id="Node000017" href="$periodic__optimization_8hpp.html" title=" " alt="" coords="2036,79,2272,148"/>
+<area shape="poly" id="edge17_Node000001_Node000017" title=" " alt="" coords="2337,38,2235,81,2233,76,2335,33"/>
+<area shape="rect" id="Node000019" href="$regular__space_8cpp.html" title=" " alt="" coords="2371,196,2563,265"/>
+<area shape="poly" id="edge19_Node000001_Node000019" title=" " alt="" coords="2358,43,2345,60,2337,80,2328,114,2329,129,2336,147,2357,173,2385,194,2382,198,2354,177,2332,149,2324,131,2322,114,2331,78,2341,57,2353,40"/>
+<area shape="rect" id="Node000020" href="$regular__space_8hpp.html" title=" " alt="" coords="2346,79,2538,148"/>
+<area shape="poly" id="edge20_Node000001_Node000020" title=" " alt="" coords="2393,40,2420,77,2416,80,2389,43"/>
+<area shape="rect" id="Node000022" href="$simplicial__embedding_8cpp.html" title=" " alt="" coords="2563,79,2799,148"/>
+<area shape="poly" id="edge23_Node000001_Node000022" title=" " alt="" coords="2427,32,2571,76,2570,81,2425,37"/>
+<area shape="rect" id="Node000023" href="$tag__intersection_8hpp.html" title=" " alt="" coords="2823,86,3079,141"/>
+<area shape="poly" id="edge24_Node000001_Node000023" title=" " alt="" coords="2474,27,2632,48,2810,76,2846,83,2845,89,2810,81,2632,53,2474,33"/>
+<area shape="rect" id="Node000026" href="$test__component__fusion_8cpp.html" title=" " alt="" coords="3103,93,3279,133"/>
+<area shape="poly" id="edge27_Node000001_Node000026" title=" " alt="" coords="2475,17,2599,21,2754,31,2923,48,3092,76,3143,91,3142,96,3091,81,2923,54,2754,36,2599,27,2475,23"/>
+<area shape="rect" id="Node000027" href="$test__component__isotropic__remeshing_8cpp.html" title=" " alt="" coords="3304,86,3471,141"/>
+<area shape="poly" id="edge28_Node000001_Node000027" title=" " alt="" coords="2475,20,2902,39,3128,55,3221,65,3292,76,3320,83,3319,88,3291,81,3220,70,3127,60,2901,44,2474,25"/>
+<area shape="rect" id="Node000028" href="$test__component__procedural_8cpp.html" title=" " alt="" coords="3495,93,3701,133"/>
+<area shape="poly" id="edge30_Node000001_Node000028" title=" " alt="" coords="2474,19,2995,38,3278,54,3395,64,3484,76,3544,91,3543,96,3483,81,3394,70,3277,60,2994,43,2474,24"/>
+<area shape="rect" id="Node000029" href="$test__component__wildmeshing_8cpp.html" title=" " alt="" coords="3725,93,3943,133"/>
+<area shape="poly" id="edge31_Node000001_Node000029" title=" " alt="" coords="2475,18,2747,24,3105,35,3456,52,3602,63,3713,76,3777,91,3775,96,3712,81,3602,68,3456,57,3104,40,2747,29,2474,24"/>
+<area shape="rect" id="Node000030" href="$wildmeshing__old_8hpp.html" title=" " alt="" coords="3967,86,4202,141"/>
+<area shape="poly" id="edge32_Node000001_Node000030" title=" " alt="" coords="2474,18,2792,22,3219,32,3645,50,3822,62,3956,76,3994,83,3993,89,3955,81,3821,67,3645,55,3219,38,2792,28,2474,23"/>
+<area shape="rect" id="Node000031" href="$_cache_8cpp.html" title=" " alt="" coords="4227,101,4396,126"/>
+<area shape="poly" id="edge33_Node000001_Node000031" title=" " alt="" coords="2474,16,2839,16,3342,22,3603,29,3846,40,4056,56,4215,76,4252,86,4286,98,4284,103,4251,91,4213,81,4056,61,3846,46,3602,35,3342,27,2839,21,2474,21"/>
+<area shape="rect" id="Node000003" href="$export__cache_8cpp.html" title=" " alt="" coords="5,203,199,258"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="365,147,184,206,182,201,364,142"/>
+<area shape="rect" id="Node000004" href="$test__component__export__cache_8cpp.html" title=" " alt="" coords="223,211,445,251"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="421,152,356,213,352,209,418,148"/>
+<area shape="rect" id="Node000005" href="$test__component__import__cache_8cpp.html" title=" " alt="" coords="469,211,693,251"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="498,148,562,209,559,213,494,152"/>
+<area shape="rect" id="Node000007" href="$get__all__meshes_8cpp.html" title=" " alt="" coords="935,196,1141,265"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="1056,162,1048,196,1043,195,1051,161"/>
+<area shape="poly" id="edge9_Node000008_Node000005" title=" " alt="" coords="750,149,620,213,618,208,748,144"/>
+<area shape="rect" id="Node000009" href="$import__cache_8cpp.html" title=" " alt="" coords="717,203,911,258"/>
+<area shape="poly" id="edge8_Node000008_Node000009" title=" " alt="" coords="817,154,817,203,811,203,811,154"/>
+<area shape="rect" id="Node000012" href="$run__components_8cpp.html" title=" " alt="" coords="1165,211,1410,251"/>
+<area shape="poly" id="edge12_Node000011_Node000012" title=" " alt="" coords="1518,141,1335,213,1333,208,1516,136"/>
+<area shape="rect" id="Node000013" href="$integration__test_8cpp.html" title=" " alt="" coords="1434,211,1647,251"/>
+<area shape="poly" id="edge13_Node000011_Node000013" title=" " alt="" coords="1569,148,1549,211,1544,210,1564,146"/>
+<area shape="rect" id="Node000015" href="$mesh__info_8cpp.html" title=" " alt="" coords="1671,203,1858,258"/>
+<area shape="poly" id="edge15_Node000014_Node000015" title=" " alt="" coords="1838,153,1791,205,1787,201,1834,149"/>
+<area shape="poly" id="edge16_Node000014_Node000016" title=" " alt="" coords="1906,148,1968,209,1964,212,1903,152"/>
+<area shape="rect" id="Node000018" href="$periodic__optimization_8cpp.html" title=" " alt="" coords="2111,196,2347,265"/>
+<area shape="poly" id="edge18_Node000017_Node000018" title=" " alt="" coords="2186,158,2209,194,2205,197,2181,161"/>
+<area shape="poly" id="edge21_Node000020_Node000019" title=" " alt="" coords="2455,161,2463,195,2457,196,2450,162"/>
+<area shape="rect" id="Node000021" href="$test__component__regular__space_8cpp.html" title=" " alt="" coords="2587,211,2814,251"/>
+<area shape="poly" id="edge22_Node000020_Node000021" title=" " alt="" coords="2531,151,2660,208,2657,213,2529,156"/>
+<area shape="rect" id="Node000024" href="$tag__intersection_8cpp.html" title=" " alt="" coords="2838,203,3094,258"/>
+<area shape="poly" id="edge25_Node000023_Node000024" title=" " alt="" coords="2959,154,2965,203,2960,203,2954,155"/>
+<area shape="rect" id="Node000025" href="$test__component__tag__intersection_8cpp.html" title=" " alt="" coords="3119,211,3360,251"/>
+<area shape="poly" id="edge26_Node000023_Node000025" title=" " alt="" coords="3031,143,3193,208,3191,213,3029,148"/>
 </map>

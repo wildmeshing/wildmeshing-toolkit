@@ -21,7 +21,7 @@ var classwmtk_1_1autogen_1_1_simplex_dart =
     [ "tuple_from_valid_index", "classwmtk_1_1autogen_1_1_simplex_dart.html#ae8d66ad4c172866649e46e37435d0717", null ],
     [ "update_tuple_from_valid_index", "classwmtk_1_1autogen_1_1_simplex_dart.html#a4ccdc5dc677a964c256bf5f2054d5500", null ],
     [ "valid_index_from_tuple", "classwmtk_1_1autogen_1_1_simplex_dart.html#a0d31b6cd1fff49256a80683f375163d0", null ],
-    [ "valid_indices", "classwmtk_1_1autogen_1_1_simplex_dart.html#a29c1926eab7d8d25437f4b851d410710", null ],
+    [ "valid_indices", "classwmtk_1_1autogen_1_1_simplex_dart.html#a2a62263c5e8e9d522bc09d82b877319b", null ],
     [ "m_identity", "classwmtk_1_1autogen_1_1_simplex_dart.html#a00f47796290eec74745b700ee9166b39", null ],
     [ "m_inverse", "classwmtk_1_1autogen_1_1_simplex_dart.html#a41d3cb498d5add752352ae237734d74c", null ],
     [ "m_opposite", "classwmtk_1_1autogen_1_1_simplex_dart.html#ab6bb195ddba34123fa8d4a4bd59c9c45", null ],

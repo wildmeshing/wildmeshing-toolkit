@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['nlohmann_3392',['nlohmann',['../namespacenlohmann.html',1,'']]]
+  ['nlohmann_0',['nlohmann',['../namespacenlohmann.html',1,'']]]
 ];

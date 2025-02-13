@@ -1,52 +1,118 @@
 <map id="wmtk::components::multimesh::from_facet_bijection" name="wmtk::components::multimesh::from_facet_bijection">
-<area shape="rect" id="node1" title=" " alt="" coords="5,603,231,645"/>
-<area shape="rect" id="node2" href="$classwmtk_1_1_mesh.html#abde493ad70eef5e38834fdf647a56c0b" title="register a mesh as the child of this mesh" alt="" coords="279,574,439,615"/>
-<area shape="rect" id="node44" href="$namespacewmtk_1_1multimesh.html#ae9d6749c097baf5c55d25e598ecec6e1" title=" " alt="" coords="487,633,705,674"/>
-<area shape="rect" id="node3" href="$classwmtk_1_1_mesh.html#a82637d24776e0e06e2124ce914c4b40f" title="maps a simplex from this mesh to any other mesh" alt="" coords="503,189,689,216"/>
-<area shape="rect" id="node34" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a4b563821dc0926b66899d0d8a8d32e58" title="register a another mesh as a child of this mesh." alt="" coords="1676,702,1895,743"/>
-<area shape="rect" id="node4" href="$classwmtk_1_1_mesh.html#ad054c074d4776010002321117ec459e8" title=" " alt="" coords="759,182,974,223"/>
-<area shape="rect" id="node8" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#acaaab688faff0e1b2d9142d6cc128e46" title="maps a simplex from this mesh to any other mesh" alt="" coords="760,117,973,158"/>
-<area shape="rect" id="node5" href="$classwmtk_1_1_mesh.html#aac3ec1ebbe00982ddfe70cc710d8f54e" title="returns a reference to the root of a multimesh tree" alt="" coords="1071,179,1243,221"/>
-<area shape="rect" id="node6" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a434e74f6b295055a45914d41a784124a" title=" " alt="" coords="1359,161,1573,202"/>
-<area shape="rect" id="node7" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a7d39339adb56b1798fe817d81bfcc67c" title="Specifies whether this structure is the root of a multi&#45;mesh tree." alt="" coords="1679,161,1892,202"/>
-<area shape="rect" id="node9" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a812e0992812b2c48a889e10ae9e50758" title=" " alt="" coords="1359,71,1573,113"/>
-<area shape="rect" id="node10" href="$classwmtk_1_1_mesh.html#a2102fdea06a0c543437e67d77aeb2013" title="returns a unique identifier for this mesh within a single multimesh structure" alt="" coords="1073,59,1240,101"/>
-<area shape="rect" id="node11" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#aefe5179057c978e227c3349d13578c4a" title=" " alt="" coords="1050,257,1263,298"/>
-<area shape="rect" id="node28" href="$classwmtk_1_1simplex_1_1_simplex.html#ad2cc0340a0772b7d6f03ba7a781d1163" title=" " alt="" coords="2295,183,2475,225"/>
-<area shape="rect" id="node12" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#af6fd8d8b5cc1e8b2c877718b99374f03" title=" " alt="" coords="1333,278,1599,319"/>
-<area shape="rect" id="node33" href="$classwmtk_1_1simplex_1_1_simplex.html#a3650fd31ff1864285502dba66db3c73c" title=" " alt="" coords="1376,343,1556,385"/>
-<area shape="rect" id="node13" href="$classwmtk_1_1_mesh.html#a4a20dcdac339e7a4f6f8a6570114cbe6" title=" " alt="" coords="1710,490,1861,531"/>
-<area shape="rect" id="node14" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a6f9186ced3e97aef2a0af71a3aa5c6a0" title=" " alt="" coords="1647,373,1924,414"/>
-<area shape="rect" id="node15" href="$classwmtk_1_1_mesh.html#a8cc8686f0688613806f43720b6db49e7" title="check validity of tuple including its hash" alt="" coords="2005,505,2165,532"/>
-<area shape="rect" id="node18" href="$namespacewmtk_1_1multimesh_1_1utils.html#a7d748ef4839b09a5460e8af97b9fa678" title=" " alt="" coords="2286,366,2485,407"/>
-<area shape="rect" id="node23" href="$classwmtk_1_1_mesh.html#a965a8a24158c4aa8580c57ba09f885f7" title="switch the orientation of the Tuple of the given dimension" alt="" coords="2009,253,2161,294"/>
-<area shape="rect" id="node24" href="$namespacewmtk_1_1simplex.html#a0101f27eb2ad82814390b92ab1a4d1a0" title=" " alt="" coords="1985,318,2186,359"/>
-<area shape="rect" id="node29" href="$classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9" title=" " alt="" coords="1972,556,2199,583"/>
-<area shape="rect" id="node31" href="$namespacewmtk_1_1multimesh_1_1utils.html#aa0392bf28bb6c304127cf0eea634fee8" title=" " alt="" coords="1999,439,2172,481"/>
-<area shape="rect" id="node16" href="$classwmtk_1_1_tuple.html#a0023f575be92cd5ceeeaaaa3762ea06d" title="Checks if a tuple is &quot;null&quot;. This merely implies the global index is &#45;1." alt="" coords="2310,512,2461,539"/>
-<area shape="rect" id="node17" href="$classwmtk_1_1_mesh.html#ade176d345902d97af8c5da04aa3a095b" title=" " alt="" coords="2292,563,2479,589"/>
-<area shape="rect" id="node19" href="$classwmtk_1_1attribute_1_1_accessor.html#ada896c7e7910630ca0d3424baa3c3258" title=" " alt="" coords="2589,555,2778,597"/>
-<area shape="rect" id="node20" href="$classwmtk_1_1attribute_1_1_tuple_accessor.html#a02e28a9bbd718342f581c95bbe9710a7" title=" " alt="" coords="2572,359,2795,401"/>
-<area shape="rect" id="node21" href="$classwmtk_1_1attribute_1_1_accessor.html#abd60539d5779de287d2a0ec31b16c77a" title=" " alt="" coords="2589,425,2778,466"/>
-<area shape="rect" id="node22" href="$classwmtk_1_1attribute_1_1_tuple_accessor.html#a8d04c3529eb7adeead49e8faa7a119db" title=" " alt="" coords="2572,490,2795,531"/>
-<area shape="rect" id="node25" href="$classwmtk_1_1simplex_1_1_simplex_collection.html#a1e7079b3b75f70dd28c524556cab76cf" title="Add simplex to the collection." alt="" coords="2247,315,2524,341"/>
-<area shape="rect" id="node26" href="$namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925" title=" " alt="" coords="2304,249,2467,290"/>
-<area shape="rect" id="node27" href="$namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06" title="Retrieves the current logger." alt="" coords="2629,256,2737,283"/>
-<area shape="rect" id="node30" href="$classwmtk_1_1_mesh.html#a933f681cf24a63b155c9462280385200" title=" " alt="" coords="2305,713,2466,754"/>
-<area shape="rect" id="node32" href="$namespacewmtk_1_1multimesh_1_1utils_1_1internal.html#a11885fe5aebd05551827804b0142945d" title=" " alt="" coords="2299,432,2472,488"/>
-<area shape="rect" id="node35" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a8bbf1e9eb12a95c6b66bf85d0b900bb6" title=" " alt="" coords="1979,884,2192,940"/>
-<area shape="rect" id="node36" href="$classwmtk_1_1_mesh.html#aa2b952c0d3894043f513a86fbbd910ff" title=" " alt="" coords="2010,687,2161,729"/>
-<area shape="rect" id="node37" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a8789badb5de2a644770dcb8cdf6f3bd1" title=" " alt="" coords="1979,804,2192,860"/>
-<area shape="rect" id="node38" href="$classwmtk_1_1_mesh.html#a3faf39088ce02c2a2f208c762d6f2b52" title=" " alt="" coords="2005,965,2165,1006"/>
-<area shape="rect" id="node41" href="$namespacewmtk_1_1multimesh_1_1utils.html#ab19d57f46b80f20b1b4685ed83e305d5" title=" " alt="" coords="1995,607,2175,663"/>
-<area shape="rect" id="node39" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#ad8c21b193224524ed0f792b0e2d70f83" title=" " alt="" coords="2285,965,2485,1006"/>
-<area shape="rect" id="node40" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#a87216c73c02b436c7f965faa52553f56" title=" " alt="" coords="2589,965,2777,1006"/>
-<area shape="rect" id="node42" href="$namespacewmtk_1_1multimesh_1_1utils.html#aa965e96578f254d53e7ca53d617f5c6a" title=" " alt="" coords="2284,614,2487,655"/>
-<area shape="rect" id="node43" href="$classwmtk_1_1attribute_1_1_tuple_accessor.html#a52f1474c822d1a3d910b74793830014e" title=" " alt="" coords="2572,621,2795,662"/>
-<area shape="rect" id="node45" href="$classwmtk_1_1_mesh.html#a3e8ff83c4a5526a40d18bb9883c6c6c9" title="read in the m_capacities return the upper bound for the number of entities of the given dimension" alt="" coords="1383,775,1549,801"/>
-<area shape="rect" id="node47" href="$namespacewmtk_1_1multimesh.html#a7bd59ab748f0b54f3ab7dc9d625b04ec" title=" " alt="" coords="753,633,980,674"/>
-<area shape="rect" id="node46" href="$namespacewmtk.html#a5cf45c152e856196bb734c6f48919a24" title="Get a unique integer id corresponding to each primitive type." alt="" coords="1708,767,1863,809"/>
-<area shape="rect" id="node48" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a365936d6390d1fe630967491af67a3db" title=" " alt="" coords="1028,625,1285,681"/>
-<area shape="rect" id="node49" href="$classwmtk_1_1_mesh.html#acfa981b31f00aef4438ff5e73bbce2f4" title=" " alt="" coords="1379,607,1553,649"/>
-<area shape="rect" id="node50" href="$classwmtk_1_1_mesh.html#a60165ceb4c2db2731df90e4ac100637d" title="internal function that returns the tuple of requested type, and has the global index cid" alt="" coords="1366,673,1566,700"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,755,231,795"/>
+<area shape="rect" id="Node000002" href="$classwmtk_1_1_mesh.html#a8b92d89ea4f3d41af5fea130727b137c" title="register a mesh as the child of this mesh" alt="" coords="308,723,468,763"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="230,759,294,751,295,756,231,764"/>
+<area shape="rect" id="Node000047" href="$namespacewmtk_1_1multimesh.html#ae9d6749c097baf5c55d25e598ecec6e1" title=" " alt="" coords="279,787,497,827"/>
+<area shape="poly" id="edge62_Node000001_Node000047" title=" " alt="" coords="231,785,265,789,265,795,230,791"/>
+<area shape="rect" id="Node000003" href="$classwmtk_1_1_mesh.html#a82637d24776e0e06e2124ce914c4b40f" title="maps a simplex from this mesh to any other mesh" alt="" coords="565,733,752,758"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="468,741,552,742,552,747,468,746"/>
+<area shape="rect" id="Node000037" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#af1df24920145a685e467ff2bc082e056" title="register a another mesh as a child of this mesh." alt="" coords="1687,300,1905,340"/>
+<area shape="poly" id="edge46_Node000002_Node000037" title=" " alt="" coords="392,722,408,669,438,598,458,561,482,525,511,492,544,465,594,433,639,413,682,401,724,395,814,396,926,400,1191,400,1327,394,1463,379,1588,360,1692,340,1693,345,1589,365,1463,385,1327,399,1191,405,926,405,814,401,724,400,683,406,641,418,596,438,547,469,515,496,487,528,463,564,443,601,413,671,397,723"/>
+<area shape="rect" id="Node000004" href="$classwmtk_1_1_mesh.html#ad054c074d4776010002321117ec459e8" title=" " alt="" coords="820,725,1035,765"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="752,743,806,743,806,748,752,748"/>
+<area shape="rect" id="Node000008" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#acaaab688faff0e1b2d9142d6cc128e46" title="maps a simplex from this mesh to any other mesh" alt="" coords="821,843,1034,883"/>
+<area shape="poly" id="edge8_Node000003_Node000008" title=" " alt="" coords="721,755,773,772,833,801,886,833,883,837,831,806,771,777,719,761"/>
+<area shape="rect" id="Node000005" href="$classwmtk_1_1_mesh.html#aac3ec1ebbe00982ddfe70cc710d8f54e" title="returns a reference to the root of a multimesh tree" alt="" coords="1103,725,1275,765"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="1035,743,1089,743,1089,748,1035,748"/>
+<area shape="rect" id="Node000006" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a434e74f6b295055a45914d41a784124a" title=" " alt="" coords="1370,725,1583,765"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="1276,743,1356,743,1356,748,1276,748"/>
+<area shape="poly" id="edge6_Node000006_Node000006" title=" " alt="" coords="1424,726,1421,716,1429,706,1448,701,1477,699,1510,701,1528,709,1526,714,1508,707,1477,704,1449,706,1432,711,1426,717,1429,724"/>
+<area shape="rect" id="Node000007" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a7d39339adb56b1798fe817d81bfcc67c" title="Specifies whether this structure is the root of a multi&#45;mesh tree." alt="" coords="1689,725,1903,765"/>
+<area shape="poly" id="edge7_Node000006_Node000007" title=" " alt="" coords="1583,743,1675,743,1675,748,1583,748"/>
+<area shape="rect" id="Node000009" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a812e0992812b2c48a889e10ae9e50758" title=" " alt="" coords="1370,928,1583,968"/>
+<area shape="poly" id="edge9_Node000008_Node000009" title=" " alt="" coords="1035,873,1296,911,1364,923,1363,928,1296,916,1034,878"/>
+<area shape="rect" id="Node000010" href="$classwmtk_1_1_mesh.html#a2102fdea06a0c543437e67d77aeb2013" title="returns a unique identifier for this mesh within a single multimesh structure" alt="" coords="1106,925,1273,965"/>
+<area shape="poly" id="edge12_Node000008_Node000010" title=" " alt="" coords="997,880,1035,892,1116,918,1115,923,1034,897,995,885"/>
+<area shape="rect" id="Node000011" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#aefe5179057c978e227c3349d13578c4a" title=" " alt="" coords="1083,795,1296,835"/>
+<area shape="poly" id="edge14_Node000008_Node000011" title=" " alt="" coords="1034,841,1069,834,1070,839,1035,846"/>
+<area shape="rect" id="Node000031" href="$classwmtk_1_1simplex_1_1_simplex.html#ad2cc0340a0772b7d6f03ba7a781d1163" title=" " alt="" coords="2306,867,2486,907"/>
+<area shape="poly" id="edge45_Node000008_Node000031" title=" " alt="" coords="1017,881,1036,893,1054,914,1060,937,1067,957,1084,975,1136,1003,1183,1018,1226,1024,1269,1023,1361,1011,1414,1005,1475,1003,1797,1003,1870,1000,1944,993,2089,968,2219,938,2321,908,2322,913,2220,943,2090,974,1945,998,1871,1005,1797,1008,1475,1008,1415,1011,1361,1017,1269,1029,1226,1030,1181,1023,1134,1008,1081,979,1062,960,1055,938,1049,917,1033,897,1014,885"/>
+<area shape="poly" id="edge11_Node000009_Node000007" title=" " alt="" coords="1508,926,1750,770,1753,775,1511,930"/>
+<area shape="poly" id="edge10_Node000009_Node000009" title=" " alt="" coords="1424,929,1421,918,1429,909,1448,903,1477,901,1510,904,1528,911,1526,916,1508,909,1477,907,1449,909,1432,914,1426,919,1429,927"/>
+<area shape="poly" id="edge13_Node000010_Node000009" title=" " alt="" coords="1273,943,1356,944,1356,950,1273,949"/>
+<area shape="rect" id="Node000012" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#af6fd8d8b5cc1e8b2c877718b99374f03" title=" " alt="" coords="1344,637,1609,677"/>
+<area shape="poly" id="edge15_Node000011_Node000012" title=" " alt="" coords="1267,792,1294,775,1310,754,1317,732,1324,709,1342,687,1350,682,1353,686,1346,691,1329,712,1322,733,1315,756,1298,779,1270,797"/>
+<area shape="poly" id="edge43_Node000011_Node000031" title=" " alt="" coords="1296,832,1344,839,1612,861,1877,875,2113,882,2292,884,2292,889,2113,887,1877,880,1612,867,1344,844,1295,837"/>
+<area shape="rect" id="Node000036" href="$classwmtk_1_1simplex_1_1_simplex.html#aca78b1fb0a3c28c0036cf7919bfb0789" title=" " alt="" coords="1387,789,1567,829"/>
+<area shape="poly" id="edge44_Node000011_Node000036" title=" " alt="" coords="1296,810,1373,809,1373,814,1296,815"/>
+<area shape="poly" id="edge17_Node000012_Node000007" title=" " alt="" coords="1564,675,1610,687,1719,719,1718,724,1609,692,1563,680"/>
+<area shape="rect" id="Node000013" href="$classwmtk_1_1_mesh.html#a357182137d99f1e4a7ff536eadfc0e56" title=" " alt="" coords="1721,573,1871,613"/>
+<area shape="poly" id="edge16_Node000012_Node000013" title=" " alt="" coords="1577,635,1706,608,1708,614,1578,640"/>
+<area shape="rect" id="Node000014" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a6f9186ced3e97aef2a0af71a3aa5c6a0" title=" " alt="" coords="1657,637,1935,677"/>
+<area shape="poly" id="edge18_Node000012_Node000014" title=" " alt="" coords="1610,655,1643,655,1643,660,1610,660"/>
+<area shape="rect" id="Node000015" href="$classwmtk_1_1_tuple.html#aef64a43ff5f5617dbc99d865356bbc25" title=" " alt="" coords="2607,655,2781,681"/>
+<area shape="poly" id="edge19_Node000014_Node000015" title=" " alt="" coords="1895,675,1983,687,2099,688,2285,686,2535,681,2592,677,2593,682,2535,687,2285,692,2099,694,1982,692,1894,680"/>
+<area shape="rect" id="Node000016" href="$classwmtk_1_1_mesh.html#a8cc8686f0688613806f43720b6db49e7" title="check validity of tuple including its hash" alt="" coords="2016,473,2176,498"/>
+<area shape="poly" id="edge20_Node000014_Node000016" title=" " alt="" coords="1915,635,1933,623,1945,611,1951,598,1956,571,1962,543,1969,529,1981,515,2003,501,2006,506,1984,519,1973,532,1967,545,1962,572,1956,600,1949,614,1936,627,1918,639"/>
+<area shape="rect" id="Node000019" href="$classwmtk_1_1_tuple.html#ab5fa210c660a9d678768c15d7c4f78f0" title=" " alt="" coords="2015,753,2177,778"/>
+<area shape="poly" id="edge25_Node000014_Node000019" title=" " alt="" coords="1848,675,1936,711,1984,731,2033,746,2031,751,1982,736,1934,716,1846,680"/>
+<area shape="rect" id="Node000020" href="$namespacewmtk_1_1multimesh_1_1utils.html#a7d748ef4839b09a5460e8af97b9fa678" title=" " alt="" coords="2297,480,2495,520"/>
+<area shape="poly" id="edge26_Node000014_Node000020" title=" " alt="" coords="1911,635,1933,623,1948,608,1956,592,1964,575,1981,559,2035,539,2112,524,2282,504,2283,510,2112,529,2036,544,1984,564,1969,578,1961,594,1953,611,1936,627,1913,640"/>
+<area shape="rect" id="Node000025" href="$classwmtk_1_1_mesh.html#a965a8a24158c4aa8580c57ba09f885f7" title="switch the orientation of the Tuple of the given dimension" alt="" coords="2020,637,2172,677"/>
+<area shape="poly" id="edge31_Node000014_Node000025" title=" " alt="" coords="1935,655,2006,655,2006,660,1935,660"/>
+<area shape="rect" id="Node000026" href="$namespacewmtk_1_1simplex.html#a0101f27eb2ad82814390b92ab1a4d1a0" title=" " alt="" coords="1995,803,2197,843"/>
+<area shape="poly" id="edge32_Node000014_Node000026" title=" " alt="" coords="1871,675,1905,690,1936,711,1953,731,1961,751,1968,769,1984,787,1995,794,1992,798,1981,791,1964,772,1956,753,1948,734,1933,715,1902,695,1869,680"/>
+<area shape="rect" id="Node000032" href="$classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9" title=" " alt="" coords="1983,423,2209,449"/>
+<area shape="poly" id="edge38_Node000014_Node000032" title=" " alt="" coords="1917,635,1933,623,1948,604,1955,584,1956,542,1957,500,1964,479,1981,458,1986,454,1989,458,1985,462,1969,481,1962,501,1961,543,1960,585,1953,607,1937,627,1920,639"/>
+<area shape="rect" id="Node000034" href="$namespacewmtk_1_1multimesh_1_1utils.html#aa0392bf28bb6c304127cf0eea634fee8" title=" " alt="" coords="2009,573,2183,613"/>
+<area shape="poly" id="edge40_Node000014_Node000034" title=" " alt="" coords="1890,635,1995,612,1997,617,1891,640"/>
+<area shape="rect" id="Node000017" href="$classwmtk_1_1_tuple.html#a0023f575be92cd5ceeeaaaa3762ea06d" title="Checks if a tuple is &quot;null&quot;. This merely implies the global index is &#45;1." alt="" coords="2321,430,2471,455"/>
+<area shape="poly" id="edge21_Node000016_Node000017" title=" " alt="" coords="2176,471,2306,453,2307,458,2177,477"/>
+<area shape="rect" id="Node000018" href="$classwmtk_1_1_mesh.html#ade176d345902d97af8c5da04aa3a095b" title=" " alt="" coords="2303,569,2489,594"/>
+<area shape="poly" id="edge22_Node000016_Node000018" title=" " alt="" coords="2138,496,2343,562,2341,567,2136,501"/>
+<area shape="poly" id="edge23_Node000018_Node000015" title=" " alt="" coords="2486,591,2535,603,2599,624,2654,647,2652,652,2597,629,2534,608,2485,597"/>
+<area shape="poly" id="edge24_Node000018_Node000018" title=" " alt="" coords="2349,571,2338,560,2343,550,2363,544,2396,542,2440,546,2451,552,2454,558,2449,561,2447,556,2438,552,2396,547,2364,549,2347,554,2343,560,2352,567"/>
+<area shape="rect" id="Node000021" href="$classwmtk_1_1attribute_1_1_accessor.html#ad6fb9ed9ff56571fe257bf0f4b542368" title=" " alt="" coords="2599,455,2789,495"/>
+<area shape="poly" id="edge27_Node000020_Node000021" title=" " alt="" coords="2495,489,2586,481,2586,486,2496,494"/>
+<area shape="rect" id="Node000022" href="$classwmtk_1_1attribute_1_1_tuple_accessor.html#adf0b07ce3ed74d51723e2beed2d3f25e" title=" " alt="" coords="2583,519,2805,559"/>
+<area shape="poly" id="edge28_Node000020_Node000022" title=" " alt="" coords="2496,510,2569,520,2569,525,2495,516"/>
+<area shape="rect" id="Node000023" href="$classwmtk_1_1attribute_1_1_accessor_base.html#abd60539d5779de287d2a0ec31b16c77a" title=" " alt="" coords="2599,327,2789,367"/>
+<area shape="poly" id="edge29_Node000020_Node000023" title=" " alt="" coords="2494,485,2533,465,2550,444,2556,422,2563,399,2581,377,2588,372,2591,376,2585,381,2568,402,2561,424,2555,447,2536,469,2497,489"/>
+<area shape="rect" id="Node000024" href="$classwmtk_1_1attribute_1_1_tuple_accessor.html#a8d04c3529eb7adeead49e8faa7a119db" title=" " alt="" coords="2583,391,2805,431"/>
+<area shape="poly" id="edge30_Node000020_Node000024" title=" " alt="" coords="2492,477,2534,464,2558,452,2582,440,2603,432,2605,437,2584,445,2560,457,2536,469,2493,482"/>
+<area shape="rect" id="Node000027" href="$classwmtk_1_1simplex_1_1_simplex_collection.html#a1e7079b3b75f70dd28c524556cab76cf" title="Add simplex to the collection." alt="" coords="2257,753,2535,778"/>
+<area shape="poly" id="edge33_Node000026_Node000027" title=" " alt="" coords="2196,800,2257,788,2311,778,2312,783,2258,793,2197,805"/>
+<area shape="rect" id="Node000028" href="$namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925" title=" " alt="" coords="2315,803,2477,843"/>
+<area shape="poly" id="edge34_Node000026_Node000028" title=" " alt="" coords="2197,820,2301,820,2301,825,2197,825"/>
+<area shape="poly" id="edge37_Node000026_Node000031" title=" " alt="" coords="2191,840,2293,862,2292,867,2190,845"/>
+<area shape="rect" id="Node000029" href="$namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06" title="Retrieves the current logger." alt="" coords="2640,810,2748,835"/>
+<area shape="poly" id="edge35_Node000028_Node000029" title=" " alt="" coords="2478,820,2626,820,2626,825,2478,825"/>
+<area shape="rect" id="Node000030" href="$namespacewmtk.html#a3daa7951a5f8b78cf4600dc047fcc180" title="Setup a logger object to be used by WildmeshToolkit." alt="" coords="2853,810,2988,835"/>
+<area shape="poly" id="edge36_Node000029_Node000030" title=" " alt="" coords="2748,820,2839,820,2839,825,2748,825"/>
+<area shape="rect" id="Node000033" href="$classwmtk_1_1_mesh.html#a933f681cf24a63b155c9462280385200" title=" " alt="" coords="2315,365,2477,405"/>
+<area shape="poly" id="edge39_Node000032_Node000033" title=" " alt="" coords="2172,421,2302,398,2302,404,2172,426"/>
+<area shape="rect" id="Node000035" href="$namespacewmtk_1_1multimesh_1_1utils_1_1internal.html#a11885fe5aebd05551827804b0142945d" title=" " alt="" coords="2309,618,2483,673"/>
+<area shape="poly" id="edge41_Node000034_Node000035" title=" " alt="" coords="2168,611,2296,634,2295,639,2167,616"/>
+<area shape="poly" id="edge42_Node000035_Node000034" title=" " alt="" coords="2309,625,2196,605,2197,599,2310,620"/>
+<area shape="poly" id="edge49_Node000037_Node000016" title=" " alt="" coords="1819,338,1889,398,1935,430,1984,458,2006,466,2004,471,1982,462,1932,435,1885,402,1816,342"/>
+<area shape="poly" id="edge61_Node000037_Node000032" title=" " alt="" coords="1838,338,1906,369,1984,401,2032,417,2030,422,1982,407,1903,374,1836,343"/>
+<area shape="poly" id="edge60_Node000037_Node000033" title=" " alt="" coords="1881,337,1983,356,2152,373,2302,380,2301,386,2151,378,1982,361,1880,343"/>
+<area shape="rect" id="Node000038" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a8bbf1e9eb12a95c6b66bf85d0b900bb6" title=" " alt="" coords="1989,293,2203,347"/>
+<area shape="poly" id="edge47_Node000037_Node000038" title=" " alt="" coords="1906,317,1976,317,1976,323,1906,323"/>
+<area shape="rect" id="Node000039" href="$classwmtk_1_1_mesh.html#a5f7e9ae7268c929db6161af3e2c6eb73" title=" " alt="" coords="2021,149,2171,189"/>
+<area shape="poly" id="edge48_Node000037_Node000039" title=" " alt="" coords="1822,298,1892,249,1936,222,1982,199,2006,189,2008,194,1984,204,1938,227,1895,253,1825,302"/>
+<area shape="rect" id="Node000040" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a8789badb5de2a644770dcb8cdf6f3bd1" title=" " alt="" coords="1989,214,2203,269"/>
+<area shape="poly" id="edge50_Node000037_Node000040" title=" " alt="" coords="1872,297,1977,270,1978,275,1874,303"/>
+<area shape="rect" id="Node000041" href="$classwmtk_1_1_mesh.html#a3faf39088ce02c2a2f208c762d6f2b52" title=" " alt="" coords="2016,5,2176,45"/>
+<area shape="poly" id="edge51_Node000037_Node000041" title=" " alt="" coords="1803,299,1827,249,1865,183,1917,114,1948,83,1981,55,2002,43,2005,48,1984,60,1951,87,1921,118,1870,186,1832,251,1808,301"/>
+<area shape="rect" id="Node000044" href="$namespacewmtk_1_1multimesh_1_1utils.html#ab19d57f46b80f20b1b4685ed83e305d5" title=" " alt="" coords="2006,70,2186,125"/>
+<area shape="poly" id="edge54_Node000037_Node000044" title=" " alt="" coords="1811,298,1880,220,1928,175,1981,135,1993,128,1995,133,1984,140,1931,179,1883,224,1815,301"/>
+<area shape="rect" id="Node000042" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#ad8c21b193224524ed0f792b0e2d70f83" title=" " alt="" coords="2296,5,2496,45"/>
+<area shape="poly" id="edge52_Node000041_Node000042" title=" " alt="" coords="2176,23,2282,23,2282,28,2176,28"/>
+<area shape="rect" id="Node000043" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#a87216c73c02b436c7f965faa52553f56" title=" " alt="" coords="2600,5,2788,45"/>
+<area shape="poly" id="edge53_Node000042_Node000043" title=" " alt="" coords="2496,23,2586,23,2586,28,2496,28"/>
+<area shape="rect" id="Node000045" href="$namespacewmtk_1_1multimesh_1_1utils.html#aa965e96578f254d53e7ca53d617f5c6a" title=" " alt="" coords="2295,301,2497,341"/>
+<area shape="poly" id="edge55_Node000044_Node000045" title=" " alt="" coords="2187,122,2211,135,2260,171,2305,213,2373,289,2369,293,2301,217,2257,176,2208,140,2185,127"/>
+<area shape="poly" id="edge56_Node000045_Node000021" title=" " alt="" coords="2499,332,2536,351,2555,374,2562,397,2568,419,2585,441,2591,445,2588,450,2581,445,2563,422,2556,398,2550,376,2533,355,2496,336"/>
+<area shape="poly" id="edge57_Node000045_Node000023" title=" " alt="" coords="2498,327,2586,335,2585,340,2498,333"/>
+<area shape="poly" id="edge58_Node000045_Node000024" title=" " alt="" coords="2498,339,2536,351,2560,363,2584,376,2604,384,2603,389,2582,381,2558,368,2534,356,2496,344"/>
+<area shape="rect" id="Node000046" href="$classwmtk_1_1attribute_1_1_tuple_accessor.html#ab380e89ad00405e1e82f83f4d33ec6b1" title=" " alt="" coords="2583,263,2805,303"/>
+<area shape="poly" id="edge59_Node000045_Node000046" title=" " alt="" coords="2497,306,2568,296,2569,302,2498,311"/>
+<area shape="poly" id="edge66_Node000047_Node000032" title=" " alt="" coords="473,784,496,772,511,760,520,747,529,733,543,718,595,671,639,627,716,553,757,523,803,501,858,488,926,483,1478,483,1614,479,1750,471,1983,448,1983,453,1751,476,1614,485,1478,488,926,488,859,493,805,506,760,528,720,557,643,631,599,675,547,722,533,737,524,750,515,764,499,777,476,789"/>
+<area shape="rect" id="Node000048" href="$classwmtk_1_1_mesh.html#a3e8ff83c4a5526a40d18bb9883c6c6c9" title="read in the m_capacities return the upper bound for the number of entities of the given dimension" alt="" coords="576,891,741,917"/>
+<area shape="poly" id="edge63_Node000047_Node000048" title=" " alt="" coords="446,824,610,884,608,889,444,829"/>
+<area shape="rect" id="Node000050" href="$namespacewmtk_1_1multimesh.html#a7bd59ab748f0b54f3ab7dc9d625b04ec" title=" " alt="" coords="545,787,772,827"/>
+<area shape="poly" id="edge65_Node000047_Node000050" title=" " alt="" coords="498,804,532,804,532,809,498,809"/>
+<area shape="rect" id="Node000049" href="$namespacewmtk.html#a5cf45c152e856196bb734c6f48919a24" title="Get a unique integer id corresponding to each primitive type." alt="" coords="850,907,1005,947"/>
+<area shape="poly" id="edge64_Node000048_Node000049" title=" " alt="" coords="742,908,837,916,836,922,741,914"/>
 </map>

@@ -33,7 +33,7 @@ var classwmtk_1_1_rational =
     [ "operator-", "classwmtk_1_1_rational.html#a9fdca8bcbcac37ccc362650adf90724c", null ],
     [ "operator/", "classwmtk_1_1_rational.html#aeffade37df646739bc64274c5692844d", null ],
     [ "operator<", "classwmtk_1_1_rational.html#a8ca32277b1c27de2a82988604e249500", null ],
-    [ "operator<<", "classwmtk_1_1_rational.html#a3e5c823f52b582982ebe76f198cfe476", null ],
+    [ "operator<<", "classwmtk_1_1_rational.html#a6dd39550656ffb34e1185337f9b41459", null ],
     [ "operator<=", "classwmtk_1_1_rational.html#a2041471a3f7986d58850f02ef75d47e3", null ],
     [ "operator==", "classwmtk_1_1_rational.html#aacd5d3c744248e3e769b428b1af7c773", null ],
     [ "operator>", "classwmtk_1_1_rational.html#a89d3df9a1fa91634efe29491f5ab6d93", null ],

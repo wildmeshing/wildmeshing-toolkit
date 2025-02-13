@@ -2,20 +2,24 @@ var hierarchy =
 [
     [ "wmtk::components::AABBWrapper", "classwmtk_1_1components_1_1_a_a_b_b_wrapper.html", null ],
     [ "wmtk::attribute::AccessorBase< _T, Dim >", "classwmtk_1_1attribute_1_1_accessor_base.html", [
-      [ "wmtk::attribute::CachingAccessor< T, Eigen::Dynamic >", "classwmtk_1_1attribute_1_1_caching_accessor.html", [
+      [ "wmtk::attribute::CachingAccessor< char, Dim >", "classwmtk_1_1attribute_1_1_caching_accessor.html", null ],
+      [ "wmtk::attribute::CachingAccessor< int64_t, Eigen::Dynamic >", "classwmtk_1_1attribute_1_1_caching_accessor.html", null ],
+      [ "wmtk::attribute::CachingAccessor< T, Dim >", "classwmtk_1_1attribute_1_1_caching_accessor.html", [
+        [ "wmtk::attribute::Accessor< char, wmtk::Mesh, 1 >", "classwmtk_1_1attribute_1_1_accessor.html", null ],
+        [ "wmtk::attribute::Accessor< int64_t, wmtk::EdgeMesh >", "classwmtk_1_1attribute_1_1_accessor.html", null ],
+        [ "wmtk::attribute::Accessor< int64_t, wmtk::TetMesh >", "classwmtk_1_1attribute_1_1_accessor.html", null ],
+        [ "wmtk::attribute::Accessor< int64_t, wmtk::TriMesh >", "classwmtk_1_1attribute_1_1_accessor.html", null ],
+        [ "wmtk::attribute::Accessor< int64_t, MeshType >", "classwmtk_1_1attribute_1_1_accessor.html", null ],
+        [ "wmtk::attribute::Accessor< int64_t >", "classwmtk_1_1attribute_1_1_accessor.html", null ],
         [ "wmtk::attribute::Accessor< T, MeshType, Dim >", "classwmtk_1_1attribute_1_1_accessor.html", null ]
       ] ]
     ] ],
-    [ "wmtk::attribute::AccessorBase< T, Eigen::Dynamic >", "classwmtk_1_1attribute_1_1_accessor_base.html", [
-      [ "wmtk::attribute::CachingAccessor< T, Dim >", "classwmtk_1_1attribute_1_1_caching_accessor.html", [
-        [ "wmtk::attribute::Accessor< int64_t >", "classwmtk_1_1attribute_1_1_accessor.html", null ],
-        [ "wmtk::attribute::Accessor< char, wmtk::Mesh, 1 >", "classwmtk_1_1attribute_1_1_accessor.html", null ],
-        [ "wmtk::attribute::Accessor< int64_t, MeshType >", "classwmtk_1_1attribute_1_1_accessor.html", null ],
-        [ "wmtk::attribute::Accessor< int64_t, wmtk::EdgeMesh >", "classwmtk_1_1attribute_1_1_accessor.html", null ],
-        [ "wmtk::attribute::Accessor< int64_t, wmtk::TriMesh >", "classwmtk_1_1attribute_1_1_accessor.html", null ],
-        [ "wmtk::attribute::Accessor< int64_t, wmtk::TetMesh >", "classwmtk_1_1attribute_1_1_accessor.html", null ]
-      ] ]
+    [ "wmtk::attribute::AccessorBase< char, Dim >", "classwmtk_1_1attribute_1_1_accessor_base.html", null ],
+    [ "wmtk::attribute::AccessorBase< int64_t, Dim >", "classwmtk_1_1attribute_1_1_accessor_base.html", null ],
+    [ "wmtk::attribute::AccessorBase< T, Dim >", "classwmtk_1_1attribute_1_1_accessor_base.html", [
+      [ "wmtk::attribute::CachingAccessor< T, Eigen::Dynamic >", "classwmtk_1_1attribute_1_1_caching_accessor.html", null ]
     ] ],
+    [ "wmtk::attribute::AccessorBase< T, Eigen::Dynamic >", "classwmtk_1_1attribute_1_1_accessor_base.html", null ],
     [ "wmtk::attribute::AccessorCache< T >", "classwmtk_1_1attribute_1_1_accessor_cache.html", null ],
     [ "nlohmann::adl_serializer< std::filesystem::path >", "structnlohmann_1_1adl__serializer_3_01std_1_1filesystem_1_1path_01_4.html", null ],
     [ "nlohmann::adl_serializer< wmtk::components::input::InputOptions >", "structnlohmann_1_1adl__serializer_3_01wmtk_1_1components_1_1input_1_1_input_options_01_4.html", null ],
@@ -32,6 +36,8 @@ var hierarchy =
     [ "wmtk::attribute::AttributeScopeHandle", "classwmtk_1_1attribute_1_1_attribute_scope_handle.html", null ],
     [ "wmtk::multimesh::attribute::AttributeScopeHandle", "classwmtk_1_1multimesh_1_1attribute_1_1_attribute_scope_handle.html", null ],
     [ "wmtk::attribute::internal::AttributeTransactionStack< T >", "classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html", null ],
+    [ "wmtk::attribute::internal::AttributeTransactionStack< char >", "classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html", null ],
+    [ "wmtk::attribute::internal::AttributeTransactionStack< int64_t >", "classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html", null ],
     [ "wmtk::operations::AttributeTransferConfiguration", "classwmtk_1_1operations_1_1_attribute_transfer_configuration.html", null ],
     [ "wmtk::operations::internal::AttributeTransferConfigurationPimpl", "classwmtk_1_1operations_1_1internal_1_1_attribute_transfer_configuration_pimpl.html", null ],
     [ "wmtk::function::utils::AutoDiffRAII", "classwmtk_1_1function_1_1utils_1_1_auto_diff_r_a_i_i.html", null ],
@@ -80,7 +86,9 @@ var hierarchy =
     ] ],
     [ "wmtk::components::procedural::DiskOptions", "classwmtk_1_1components_1_1procedural_1_1_disk_options.html", null ],
     [ "wmtk::utils::DynamicArray< T, ArraySize >", "classwmtk_1_1utils_1_1_dynamic_array.html", null ],
+    [ "wmtk::utils::DynamicArray< int64_t, 50 >", "classwmtk_1_1utils_1_1_dynamic_array.html", null ],
     [ "wmtk::utils::DynamicArray< T, 50 >", "classwmtk_1_1utils_1_1_dynamic_array.html", null ],
+    [ "wmtk::utils::DynamicArray< wmtk::simplex::IdSimplex, 50 >", "classwmtk_1_1utils_1_1_dynamic_array.html", null ],
     [ "wmtk::utils::DynamicArray< wmtk::Tuple >", "classwmtk_1_1utils_1_1_dynamic_array.html", null ],
     [ "wmtk::operations::tri_mesh::EdgeOperationData::EarData", "structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_ear_data.html", null ],
     [ "wmtk::operations::tet_mesh::EdgeOperationData::EarTet", "structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_ear_tet.html", null ],
@@ -103,14 +111,14 @@ var hierarchy =
         [ "wmtk::MeshCRTP< EdgeMesh >", "classwmtk_1_1_mesh_c_r_t_p.html", [
           [ "wmtk::EdgeMesh", "classwmtk_1_1_edge_mesh.html", null ]
         ] ],
-        [ "wmtk::MeshCRTP< TriMesh >", "classwmtk_1_1_mesh_c_r_t_p.html", [
-          [ "wmtk::TriMesh", "classwmtk_1_1_tri_mesh.html", null ]
+        [ "wmtk::MeshCRTP< PointMesh >", "classwmtk_1_1_mesh_c_r_t_p.html", [
+          [ "wmtk::PointMesh", "classwmtk_1_1_point_mesh.html", null ]
         ] ],
         [ "wmtk::MeshCRTP< TetMesh >", "classwmtk_1_1_mesh_c_r_t_p.html", [
           [ "wmtk::TetMesh", "classwmtk_1_1_tet_mesh.html", null ]
         ] ],
-        [ "wmtk::MeshCRTP< PointMesh >", "classwmtk_1_1_mesh_c_r_t_p.html", [
-          [ "wmtk::PointMesh", "classwmtk_1_1_point_mesh.html", null ]
+        [ "wmtk::MeshCRTP< TriMesh >", "classwmtk_1_1_mesh_c_r_t_p.html", [
+          [ "wmtk::TriMesh", "classwmtk_1_1_tri_mesh.html", null ]
         ] ],
         [ "wmtk::MeshCRTP< Derived >", "classwmtk_1_1_mesh_c_r_t_p.html", null ]
       ] ],
@@ -199,10 +207,10 @@ var hierarchy =
     [ "wmtk::operations::tet_mesh::EdgeOperationData::IncidentFaceData", "structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_incident_face_data.html", null ],
     [ "wmtk::operations::tri_mesh::EdgeOperationData::IncidentFaceData", "structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html", null ],
     [ "wmtk::operations::tet_mesh::EdgeOperationData::IncidentTetData", "structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_incident_tet_data.html", null ],
-    [ "wmtk::attribute::IndexFlagAccessor< MeshType >", "classwmtk_1_1attribute_1_1_index_flag_accessor.html", null ],
-    [ "wmtk::attribute::IndexFlagAccessor< wmtk::Mesh >", "classwmtk_1_1attribute_1_1_index_flag_accessor.html", [
+    [ "wmtk::attribute::IndexFlagAccessor< MeshType >", "classwmtk_1_1attribute_1_1_index_flag_accessor.html", [
       [ "wmtk::attribute::FlagAccessor< MeshType >", "classwmtk_1_1attribute_1_1_flag_accessor.html", null ]
     ] ],
+    [ "wmtk::attribute::IndexFlagAccessor< wmtk::Mesh >", "classwmtk_1_1attribute_1_1_index_flag_accessor.html", null ],
     [ "wmtk::components::input::InputOptions", "classwmtk_1_1components_1_1input_1_1_input_options.html", null ],
     [ "wmtk::invariants::Invariant", "classwmtk_1_1invariants_1_1_invariant.html", [
       [ "wmtk::EnergyFilterInvariant", "classwmtk_1_1_energy_filter_invariant.html", null ],
@@ -426,7 +434,6 @@ var hierarchy =
     [ "wmtk::Tuple", "classwmtk_1_1_tuple.html", null ],
     [ "wmtk::attribute::TupleAccessor< MeshType, Dim >", "classwmtk_1_1attribute_1_1_tuple_accessor.html", null ],
     [ "wmtk::utils::TupleCellLessThan", "classwmtk_1_1utils_1_1_tuple_cell_less_than.html", null ],
-    [ "wmtk::utils::TupleInspector", "classwmtk_1_1utils_1_1_tuple_inspector.html", null ],
     [ "wmtk::multimesh::utils::internal::TupleTag", "classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html", null ],
     [ "wmtk::attribute::type_from_attribute_type_enum< AT >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum.html", null ],
     [ "wmtk::attribute::type_from_attribute_type_enum< AttributeType::Char >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_char_01_4.html", null ],

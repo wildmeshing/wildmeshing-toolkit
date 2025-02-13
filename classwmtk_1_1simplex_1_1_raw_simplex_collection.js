@@ -14,7 +14,7 @@ var classwmtk_1_1simplex_1_1_raw_simplex_collection =
     [ "contains", "classwmtk_1_1simplex_1_1_raw_simplex_collection.html#a5e57b6cc11d4d1f374bbcef7790966af", null ],
     [ "end", "classwmtk_1_1simplex_1_1_raw_simplex_collection.html#a0603208809839dcd8ace66cc5f7925ba", null ],
     [ "end", "classwmtk_1_1simplex_1_1_raw_simplex_collection.html#af90ed3290a3d81df0bb9d14f1dfbaa58", null ],
-    [ "simplex_vector", "classwmtk_1_1simplex_1_1_raw_simplex_collection.html#ae7d4e42fbb50e58fd0654a40dce8488f", null ],
+    [ "simplex_vector", "classwmtk_1_1simplex_1_1_raw_simplex_collection.html#ac428a3228985fe4b4358290610444027", null ],
     [ "simplex_vector", "classwmtk_1_1simplex_1_1_raw_simplex_collection.html#a002ff09e5ebcd0af41063090ddffab0f", null ],
     [ "sort_and_clean", "classwmtk_1_1simplex_1_1_raw_simplex_collection.html#ad96fbfbec1bfd349670e8dc1f3a8fc9d", null ],
     [ "m_simplices", "classwmtk_1_1simplex_1_1_raw_simplex_collection.html#a3edef1005894715430a02e17e01ef228", null ]

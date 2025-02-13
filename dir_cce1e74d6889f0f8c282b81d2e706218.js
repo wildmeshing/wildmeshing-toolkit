@@ -8,77 +8,36 @@ var dir_cce1e74d6889f0f8c282b81d2e706218 =
     [ "tet_mesh", "dir_0e02c20a22d9fc009c4627095f2ee7a3.html", "dir_0e02c20a22d9fc009c4627095f2ee7a3" ],
     [ "tri_mesh", "dir_d2a8dd70deef9b045ca1207fab048779.html", "dir_d2a8dd70deef9b045ca1207fab048779" ],
     [ "utils", "dir_d170a5af103cbb1c1f336dd3621341a1.html", "dir_d170a5af103cbb1c1f336dd3621341a1" ],
-    [ "AMIPSOptimizationSmoothing.cpp", "_a_m_i_p_s_optimization_smoothing_8cpp.html", [
-      [ "WMTKAMIPSProblem", "classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing_1_1_w_m_t_k_a_m_i_p_s_problem.html", "classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing_1_1_w_m_t_k_a_m_i_p_s_problem" ]
-    ] ],
-    [ "AMIPSOptimizationSmoothing.hpp", "_a_m_i_p_s_optimization_smoothing_8hpp.html", [
-      [ "AMIPSOptimizationSmoothing", "classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing.html", "classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing" ]
-    ] ],
-    [ "AMIPSOptimizationSmoothingPeriodic.cpp", "_a_m_i_p_s_optimization_smoothing_periodic_8cpp.html", [
-      [ "WMTKAMIPSProblem", "classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing_periodic_1_1_w_m_t_k_a_m_i_p_s_problem.html", "classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing_periodic_1_1_w_m_t_k_a_m_i_p_s_problem" ]
-    ] ],
-    [ "AMIPSOptimizationSmoothingPeriodic.hpp", "_a_m_i_p_s_optimization_smoothing_periodic_8hpp.html", [
-      [ "AMIPSOptimizationSmoothingPeriodic", "classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing_periodic.html", "classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing_periodic" ]
-    ] ],
+    [ "AMIPSOptimizationSmoothing.cpp", "_a_m_i_p_s_optimization_smoothing_8cpp.html", "_a_m_i_p_s_optimization_smoothing_8cpp" ],
+    [ "AMIPSOptimizationSmoothing.hpp", "_a_m_i_p_s_optimization_smoothing_8hpp.html", "_a_m_i_p_s_optimization_smoothing_8hpp" ],
+    [ "AMIPSOptimizationSmoothingPeriodic.cpp", "_a_m_i_p_s_optimization_smoothing_periodic_8cpp.html", "_a_m_i_p_s_optimization_smoothing_periodic_8cpp" ],
+    [ "AMIPSOptimizationSmoothingPeriodic.hpp", "_a_m_i_p_s_optimization_smoothing_periodic_8hpp.html", "_a_m_i_p_s_optimization_smoothing_periodic_8hpp" ],
     [ "AndOperationSequence.cpp", "_and_operation_sequence_8cpp.html", null ],
-    [ "AndOperationSequence.hpp", "_and_operation_sequence_8hpp.html", [
-      [ "AndOperationSequence", "classwmtk_1_1operations_1_1_and_operation_sequence.html", "classwmtk_1_1operations_1_1_and_operation_sequence" ]
-    ] ],
+    [ "AndOperationSequence.hpp", "_and_operation_sequence_8hpp.html", "_and_operation_sequence_8hpp" ],
     [ "AttributesUpdate.cpp", "_attributes_update_8cpp.html", null ],
-    [ "AttributesUpdate.hpp", "_attributes_update_8hpp.html", [
-      [ "AttributesUpdate", "classwmtk_1_1operations_1_1_attributes_update.html", "classwmtk_1_1operations_1_1_attributes_update" ],
-      [ "AttributesUpdateWithFunction", "classwmtk_1_1operations_1_1_attributes_update_with_function.html", "classwmtk_1_1operations_1_1_attributes_update_with_function" ]
-    ] ],
-    [ "AttributeTransferConfiguration.cpp", "_attribute_transfer_configuration_8cpp.html", [
-      [ "AttributeTransferConfigurationPimpl", "classwmtk_1_1operations_1_1internal_1_1_attribute_transfer_configuration_pimpl.html", "classwmtk_1_1operations_1_1internal_1_1_attribute_transfer_configuration_pimpl" ]
-    ] ],
-    [ "AttributeTransferConfiguration.hpp", "_attribute_transfer_configuration_8hpp.html", [
-      [ "AttributeTransferConfiguration", "classwmtk_1_1operations_1_1_attribute_transfer_configuration.html", "classwmtk_1_1operations_1_1_attribute_transfer_configuration" ]
-    ] ],
+    [ "AttributesUpdate.hpp", "_attributes_update_8hpp.html", "_attributes_update_8hpp" ],
+    [ "AttributeTransferConfiguration.cpp", "_attribute_transfer_configuration_8cpp.html", "_attribute_transfer_configuration_8cpp" ],
+    [ "AttributeTransferConfiguration.hpp", "_attribute_transfer_configuration_8hpp.html", "_attribute_transfer_configuration_8hpp" ],
     [ "AttributeTransferEdge.cpp", "_attribute_transfer_edge_8cpp.html", null ],
-    [ "AttributeTransferEdge.hpp", "_attribute_transfer_edge_8hpp.html", [
-      [ "AttributeTransferEdge", "classwmtk_1_1operations_1_1_attribute_transfer_edge.html", "classwmtk_1_1operations_1_1_attribute_transfer_edge" ]
-    ] ],
+    [ "AttributeTransferEdge.hpp", "_attribute_transfer_edge_8hpp.html", "_attribute_transfer_edge_8hpp" ],
     [ "EdgeCollapse.cpp", "_edge_collapse_8cpp.html", null ],
-    [ "EdgeCollapse.hpp", "_edge_collapse_8hpp.html", [
-      [ "EdgeCollapse", "classwmtk_1_1operations_1_1_edge_collapse.html", "classwmtk_1_1operations_1_1_edge_collapse" ]
-    ] ],
+    [ "EdgeCollapse.hpp", "_edge_collapse_8hpp.html", "_edge_collapse_8hpp" ],
     [ "EdgeOperationData.cpp", "_edge_operation_data_8cpp.html", null ],
-    [ "EdgeOperationData.hpp", "_edge_operation_data_8hpp.html", [
-      [ "EdgeOperationData", "classwmtk_1_1operations_1_1_edge_operation_data.html", "classwmtk_1_1operations_1_1_edge_operation_data" ]
-    ] ],
+    [ "EdgeOperationData.hpp", "_edge_operation_data_8hpp.html", "_edge_operation_data_8hpp" ],
     [ "EdgeSplit.cpp", "_edge_split_8cpp.html", null ],
-    [ "EdgeSplit.hpp", "_edge_split_8hpp.html", [
-      [ "EdgeSplit", "classwmtk_1_1operations_1_1_edge_split.html", "classwmtk_1_1operations_1_1_edge_split" ]
-    ] ],
+    [ "EdgeSplit.hpp", "_edge_split_8hpp.html", "_edge_split_8hpp" ],
     [ "MinOperationSequence.cpp", "_min_operation_sequence_8cpp.html", null ],
-    [ "MinOperationSequence.hpp", "_min_operation_sequence_8hpp.html", [
-      [ "MinOperationSequence", "classwmtk_1_1operations_1_1_min_operation_sequence.html", "classwmtk_1_1operations_1_1_min_operation_sequence" ]
-    ] ],
+    [ "MinOperationSequence.hpp", "_min_operation_sequence_8hpp.html", "_min_operation_sequence_8hpp" ],
     [ "Operation.cpp", "_operation_8cpp.html", null ],
-    [ "Operation.hpp", "_operation_8hpp.html", [
-      [ "Operation", "classwmtk_1_1operations_1_1_operation.html", "classwmtk_1_1operations_1_1_operation" ]
-    ] ],
+    [ "Operation.hpp", "_operation_8hpp.html", "_operation_8hpp" ],
     [ "OperationSequence.cpp", "_operation_sequence_8cpp.html", null ],
-    [ "OperationSequence.hpp", "_operation_sequence_8hpp.html", [
-      [ "OperationSequence", "classwmtk_1_1operations_1_1_operation_sequence.html", "classwmtk_1_1operations_1_1_operation_sequence" ]
-    ] ],
-    [ "OptimizationSmoothing.cpp", "_optimization_smoothing_8cpp.html", [
-      [ "WMTKProblem", "classwmtk_1_1operations_1_1_optimization_smoothing_1_1_w_m_t_k_problem.html", "classwmtk_1_1operations_1_1_optimization_smoothing_1_1_w_m_t_k_problem" ]
-    ] ],
-    [ "OptimizationSmoothing.hpp", "_optimization_smoothing_8hpp.html", [
-      [ "OptimizationSmoothing", "classwmtk_1_1operations_1_1_optimization_smoothing.html", "classwmtk_1_1operations_1_1_optimization_smoothing" ]
-    ] ],
+    [ "OperationSequence.hpp", "_operation_sequence_8hpp.html", "_operation_sequence_8hpp" ],
+    [ "OptimizationSmoothing.cpp", "_optimization_smoothing_8cpp.html", "_optimization_smoothing_8cpp" ],
+    [ "OptimizationSmoothing.hpp", "_optimization_smoothing_8hpp.html", "_optimization_smoothing_8hpp" ],
     [ "OrOperationSequence.cpp", "_or_operation_sequence_8cpp.html", null ],
-    [ "OrOperationSequence.hpp", "_or_operation_sequence_8hpp.html", [
-      [ "OrOperationSequence", "classwmtk_1_1operations_1_1_or_operation_sequence.html", "classwmtk_1_1operations_1_1_or_operation_sequence" ]
-    ] ],
+    [ "OrOperationSequence.hpp", "_or_operation_sequence_8hpp.html", "_or_operation_sequence_8hpp" ],
     [ "Rounding.cpp", "_rounding_8cpp.html", null ],
-    [ "Rounding.hpp", "_rounding_8hpp.html", [
-      [ "Rounding", "classwmtk_1_1operations_1_1_rounding.html", "classwmtk_1_1operations_1_1_rounding" ]
-    ] ],
+    [ "Rounding.hpp", "_rounding_8hpp.html", "_rounding_8hpp" ],
     [ "TetWildTangentialLaplacianSmoothing.cpp", "_tet_wild_tangential_laplacian_smoothing_8cpp.html", null ],
-    [ "TetWildTangentialLaplacianSmoothing.hpp", "_tet_wild_tangential_laplacian_smoothing_8hpp.html", [
-      [ "TetWildTangentialLaplacianSmoothing", "classwmtk_1_1operations_1_1_tet_wild_tangential_laplacian_smoothing.html", "classwmtk_1_1operations_1_1_tet_wild_tangential_laplacian_smoothing" ]
-    ] ]
+    [ "TetWildTangentialLaplacianSmoothing.hpp", "_tet_wild_tangential_laplacian_smoothing_8hpp.html", "_tet_wild_tangential_laplacian_smoothing_8hpp" ]
 ];

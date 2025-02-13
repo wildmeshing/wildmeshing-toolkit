@@ -2,17 +2,10 @@ var namespaces_dup =
 [
     [ "cdt", "namespacecdt.html", null ],
     [ "cdt_lib", "namespacecdt__lib.html", [
-      [ "Accessors", "md_src_wmtk_attribute__r_e_a_d_m_e.html#autotoc_md18", null ],
-      [ "Handles", "md_src_wmtk_attribute__r_e_a_d_m_e.html#autotoc_md19", null ],
-      [ "Top Dimension Cofaces", "md_src_wmtk_simplex_iterable__r_e_a_d_m_e.html#autotoc_md21", null ],
-      [ "Other Iterables", "md_src_wmtk_simplex_iterable__r_e_a_d_m_e.html#autotoc_md22", null ],
-      [ "Simplex Classes", "md_src_wmtk_simplex__r_e_a_d_m_e.html#autotoc_md24", null ],
-      [ "SimplexCollection", "md_src_wmtk_simplex__r_e_a_d_m_e.html#autotoc_md25", null ],
-      [ "Navigation", "md_src_wmtk_simplex__r_e_a_d_m_e.html#autotoc_md26", null ],
-      [ "cdt_to_string", "namespacecdt__lib.html#a40192b03240def7444809efadd874e75", null ],
-      [ "convert_cdt_to_stl", "namespacecdt__lib.html#ac062c4c4f484d064f21504548bb59cd5", null ],
+      [ "cdt_to_string", "namespacecdt__lib.html#ab7368c314b3a84cba28a1a4c156c85dd", null ],
+      [ "convert_cdt_to_stl", "namespacecdt__lib.html#a755b47a5d5cb774f469c375ffabd31d0", null ],
       [ "convert_trimesh_to_input_plc", "namespacecdt__lib.html#a52084504838ae63f4bee25cc36eafe9b", null ],
-      [ "createSteinerCDT", "namespacecdt__lib.html#a96ddc8cbc15b3576c0b146051b3cd33c", null ]
+      [ "createSteinerCDT", "namespacecdt__lib.html#afaf9b472bc51a18a38c95758875d7b30", null ]
     ] ],
     [ "fastEnvelope", "namespacefast_envelope.html", null ],
     [ "h5pp", "namespaceh5pp.html", null ],

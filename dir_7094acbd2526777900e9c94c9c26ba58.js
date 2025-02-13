@@ -5,9 +5,7 @@ var dir_7094acbd2526777900e9c94c9c26ba58 =
     [ "as_mesh_variant.hpp", "as__mesh__variant_8hpp.html", "as__mesh__variant_8hpp" ],
     [ "as_variant.hpp", "as__variant_8hpp.html", "as__variant_8hpp" ],
     [ "cell_dimension.hpp", "cell__dimension_8hpp.html", "cell__dimension_8hpp" ],
-    [ "DerivedReferenceWrapperVariantTraits.hpp", "_derived_reference_wrapper_variant_traits_8hpp.html", [
-      [ "DerivedReferenceWrapperVariantTraits", "structwmtk_1_1utils_1_1metaprogramming_1_1_derived_reference_wrapper_variant_traits.html", "structwmtk_1_1utils_1_1metaprogramming_1_1_derived_reference_wrapper_variant_traits" ]
-    ] ],
+    [ "DerivedReferenceWrapperVariantTraits.hpp", "_derived_reference_wrapper_variant_traits_8hpp.html", "_derived_reference_wrapper_variant_traits_8hpp" ],
     [ "MeshVariantTraits.cpp", "_mesh_variant_traits_8cpp.html", null ],
     [ "MeshVariantTraits.hpp", "_mesh_variant_traits_8hpp.html", "_mesh_variant_traits_8hpp" ],
     [ "ReferenceWrappedFunctorReturnCache.hpp", "_reference_wrapped_functor_return_cache_8hpp.html", "_reference_wrapped_functor_return_cache_8hpp" ],

@@ -1,15 +1,36 @@
 <map id="wmtk::invariants::CollapseSoftEnergyBeforeInvariant" name="wmtk::invariants::CollapseSoftEnergyBeforeInvariant">
-<area shape="rect" id="node1" title=" " alt="" coords="1977,321,2173,363"/>
-<area shape="rect" id="node2" href="$classwmtk_1_1invariants_1_1_invariant.html" title=" " alt="" coords="1722,82,1921,109"/>
-<area shape="rect" id="node3" href="$classwmtk_1_1_mesh.html" title=" " alt="" coords="1312,99,1415,126"/>
-<area shape="rect" id="node11" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html" title="Implementation details for how the Mesh class implements multiple meshes." alt="" coords="1715,160,1928,201"/>
-<area shape="rect" id="node4" title=" " alt="" coords="821,5,977,47"/>
-<area shape="rect" id="node5" href="$classwmtk_1_1utils_1_1_merkle_tree_interior_node.html" title=" " alt="" coords="348,130,604,157"/>
-<area shape="rect" id="node7" href="$classwmtk_1_1attribute_1_1_attribute_manager.html" title=" " alt="" coords="805,123,993,164"/>
-<area shape="rect" id="node6" href="$classwmtk_1_1utils_1_1_hashable.html" title=" " alt="" coords="17,130,181,157"/>
-<area shape="rect" id="node8" href="$classwmtk_1_1attribute_1_1_typed_attribute_handle.html" title=" " alt="" coords="785,260,1012,301"/>
-<area shape="rect" id="node9" href="$classwmtk_1_1attribute_1_1_typed_attribute_handle.html" title="Handle that represents attributes for some mesh." alt="" coords="363,321,589,363"/>
-<area shape="rect" id="node12" href="$classwmtk_1_1attribute_1_1_typed_attribute_handle.html" title=" " alt="" coords="1036,321,1263,363"/>
-<area shape="rect" id="node13" href="$classwmtk_1_1attribute_1_1_typed_attribute_handle.html" title=" " alt="" coords="1464,396,1691,437"/>
-<area shape="rect" id="node10" href="$classwmtk_1_1attribute_1_1_attribute_handle.html" title="Internal handle representation used by MeshAttributes." alt="" coords="5,321,193,363"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="1836,335,2032,375"/>
+<area shape="rect" id="Node000002" href="$classwmtk_1_1invariants_1_1_invariant.html" title=" " alt="" coords="1581,70,1779,95"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1723,100,1756,120,1788,145,1833,193,1872,246,1924,333,1920,336,1868,249,1829,197,1785,149,1753,124,1720,104"/>
+<area shape="rect" id="Node000003" href="$classwmtk_1_1_mesh.html" title=" " alt="" coords="1231,95,1333,121"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="1347,94,1382,89,1484,83,1580,80,1581,85,1485,88,1383,95,1348,99"/>
+<area shape="rect" id="Node000008" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html" title="Implementation details for how the Mesh class implements multiple meshes." alt="" coords="1573,159,1787,199"/>
+<area shape="poly" id="edge10_Node000008_Node000003" title=" " alt="" coords="1348,109,1443,118,1550,135,1625,156,1623,161,1549,140,1443,123,1347,114"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="821,5,977,45"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="991,29,1084,40,1182,61,1223,76,1258,93,1256,98,1221,81,1181,67,1083,46,990,34"/>
+<area shape="rect" id="Node000005" href="$classwmtk_1_1utils_1_1_merkle_tree_interior_node.html" title=" " alt="" coords="348,127,604,153"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="589,123,628,119,783,104,904,96,1026,95,1181,99,1230,101,1230,107,1181,104,1026,100,904,101,783,109,628,124,589,128"/>
+<area shape="rect" id="Node000007" href="$classwmtk_1_1attribute_1_1_attribute_manager.html" title=" " alt="" coords="805,120,993,160"/>
+<area shape="poly" id="edge7_Node000007_Node000005" title=" " alt="" coords="618,137,805,137,805,143,618,143"/>
+<area shape="poly" id="edge9_Node000008_Node000005" title=" " alt="" coords="590,152,786,169,953,177,1084,178,1383,176,1573,176,1573,182,1383,181,1084,183,953,182,785,175,590,157"/>
+<area shape="rect" id="Node000006" href="$classwmtk_1_1utils_1_1_hashable.html" title=" " alt="" coords="17,127,181,153"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="195,137,348,137,348,143,195,143"/>
+<area shape="poly" id="edge6_Node000003_Node000007" title=" " alt="" coords="1006,128,1230,110,1231,115,1007,134"/>
+<area shape="poly" id="edge8_Node000003_Node000008" title=" " alt="" coords="1559,179,1472,171,1382,155,1341,140,1305,123,1307,118,1343,135,1383,149,1472,166,1560,174"/>
+<area shape="rect" id="Node000009" href="$classwmtk_1_1attribute_1_1_typed_attribute_handle.html" title=" " alt="" coords="785,243,1012,283"/>
+<area shape="poly" id="edge15_Node000003_Node000009" title=" " alt="" coords="961,235,1248,118,1250,123,963,240"/>
+<area shape="poly" id="edge11_Node000008_Node000009" title=" " alt="" coords="1026,259,1269,247,1410,234,1549,213,1618,196,1619,201,1550,219,1410,239,1270,253,1026,264"/>
+<area shape="rect" id="Node000010" href="$classwmtk_1_1attribute_1_1_attribute_handle.html" title="Internal handle representation used by MeshAttributes." alt="" coords="5,373,193,413"/>
+<area shape="poly" id="edge12_Node000009_Node000010" title=" " alt="" coords="146,364,216,331,281,307,347,292,463,274,580,263,691,258,785,257,785,263,691,264,581,269,464,279,349,297,282,313,218,336,149,369"/>
+<area shape="rect" id="Node000011" href="$classwmtk_1_1attribute_1_1_typed_attribute_handle.html" title="Handle that represents attributes for some mesh." alt="" coords="363,307,589,347"/>
+<area shape="poly" id="edge14_Node000011_Node000010" title=" " alt="" coords="207,372,362,344,363,349,208,377"/>
+<area shape="rect" id="Node000012" href="$classwmtk_1_1attribute_1_1_typed_attribute_handle.html" title=" " alt="" coords="785,392,1012,432"/>
+<area shape="poly" id="edge17_Node000012_Node000010" title=" " alt="" coords="181,414,262,433,348,447,464,452,581,448,691,439,785,428,785,433,691,445,582,454,464,457,348,452,261,438,180,419"/>
+<area shape="rect" id="Node000013" href="$classwmtk_1_1attribute_1_1_typed_attribute_handle.html" title=" " alt="" coords="785,328,1012,368"/>
+<area shape="poly" id="edge20_Node000013_Node000010" title=" " alt="" coords="207,398,322,403,461,404,611,399,761,384,827,365,828,371,762,389,612,404,461,410,322,408,207,404"/>
+<area shape="poly" id="edge13_Node000009_Node000011" title=" " alt="" coords="602,305,785,277,786,282,603,310"/>
+<area shape="poly" id="edge18_Node000012_Node000011" title=" " alt="" coords="580,347,629,357,790,389,789,395,627,363,579,352"/>
+<area shape="poly" id="edge21_Node000013_Node000011" title=" " alt="" coords="603,330,785,340,785,345,603,336"/>
+<area shape="poly" id="edge16_Node000001_Node000012" title=" " alt="" coords="1026,402,1836,357,1836,363,1026,408"/>
+<area shape="poly" id="edge19_Node000001_Node000013" title=" " alt="" coords="1026,346,1836,351,1836,357,1026,351"/>
 </map>

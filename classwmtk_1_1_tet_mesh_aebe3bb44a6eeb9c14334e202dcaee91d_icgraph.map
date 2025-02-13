@@ -1,4 +1,9 @@
 <map id="wmtk::TetMesh::is_boundary" name="wmtk::TetMesh::is_boundary">
-<area shape="rect" id="node1" title="check if a simplex (encoded as a tuple/primitive pair) lies on a boundary or not" alt="" coords="204,13,412,39"/>
-<area shape="rect" id="node2" href="$namespacewmtk_1_1simplex.html#aead7bf4f261c58bdb33bd0bf7fcd541d" title=" " alt="" coords="5,5,156,47"/>
+<area shape="rect" id="Node000001" title="returns if a simplex is on the boundary of hte mesh. For anything but dimension &#45; 1 this checks if th..." alt="" coords="460,13,668,38"/>
+<area shape="rect" id="Node000002" href="$classwmtk_1_1_tet_mesh.html#a31b2ec618edb4d478e36f0868a85d86e" title=" " alt="" coords="204,5,412,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="447,37,412,37,412,32,447,32"/>
+<area shape="rect" id="Node000003" href="$namespacewmtk_1_1simplex.html#aead7bf4f261c58bdb33bd0bf7fcd541d" title=" " alt="" coords="5,35,156,75"/>
+<area shape="poly" id="edge4_Node000001_Node000003" title=" " alt="" coords="502,44,412,60,354,64,308,64,204,60,156,59,156,54,204,55,308,59,354,59,412,55,501,39"/>
+<area shape="poly" id="edge2_Node000002_Node000001" title=" " alt="" coords="426,14,460,14,460,19,426,19"/>
+<area shape="poly" id="edge3_Node000002_Node000003" title=" " alt="" coords="190,43,157,48,156,42,190,38"/>
 </map>

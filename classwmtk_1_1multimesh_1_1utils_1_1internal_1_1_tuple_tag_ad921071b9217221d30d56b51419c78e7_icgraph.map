@@ -1,14 +1,34 @@
 <map id="wmtk::multimesh::utils::internal::TupleTag::vid" name="wmtk::multimesh::utils::internal::TupleTag::vid">
-<area shape="rect" id="node1" title=" " alt="" coords="891,143,1064,185"/>
-<area shape="rect" id="node2" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#ad517c516675acd9b4964890cf78ce9c9" title="Go through edges of the parent mesh (triangle mesh) and initialize all the vertex tags to be &#45;1." alt="" coords="669,5,843,61"/>
-<area shape="rect" id="node4" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a8f9b080854e8a77d377a9a670c1fa9ef" title="Check if a vertex is a critical point." alt="" coords="448,296,621,352"/>
-<area shape="rect" id="node8" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a2537cb4e71612d88c4541856b7352ee6" title="Given an edge, join the sets that contains the two end vertices." alt="" coords="5,133,179,174"/>
-<area shape="rect" id="node9" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#acf1cbc3cfaaebc987060989c98bdf6de" title=" " alt="" coords="669,216,843,272"/>
-<area shape="rect" id="node12" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a74880862626b85c76af2061a637ed0ff" title=" " alt="" coords="669,136,843,192"/>
-<area shape="rect" id="node3" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#acca3241a2661355c5351269aa5a275c6" title=" " alt="" coords="448,5,621,61"/>
-<area shape="rect" id="node5" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a76f9d0aa5d7d0de388e17b239faab649" title=" " alt="" coords="227,262,400,303"/>
-<area shape="rect" id="node7" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#abf875f1fb984fb5d322e0ac0c9dcc145" title="Given two vertex tuple, join the sets that contain them." alt="" coords="227,179,400,235"/>
-<area shape="rect" id="node6" href="$namespacewmtk_1_1multimesh_1_1utils.html#a3eeab2c4a43e5e6d5fb50d399a88d0a3" title="Do two passes on the edges of a triangle mesh to create vertex tags and edge tags." alt="" coords="5,262,179,303"/>
-<area shape="rect" id="node10" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#acf43c71e38eb6f098ea24a73532a3739" title=" " alt="" coords="448,216,621,272"/>
-<area shape="rect" id="node11" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a91abc2743fec235b445ec7b584b8971e" title=" " alt="" coords="448,136,621,192"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="891,133,1064,173"/>
+<area shape="rect" id="Node000002" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#ad517c516675acd9b4964890cf78ce9c9" title="Go through edges of the parent mesh (triangle mesh) and initialize all the vertex tags to be &#45;1." alt="" coords="669,5,843,60"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="926,128,841,82,806,62,809,58,844,77,929,124"/>
+<area shape="rect" id="Node000004" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a8f9b080854e8a77d377a9a670c1fa9ef" title="Check if a vertex is a critical point." alt="" coords="448,136,621,191"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="877,158,622,164,621,159,877,152"/>
+<area shape="rect" id="Node000007" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a2537cb4e71612d88c4541856b7352ee6" title="Given an edge, join the sets that contains the two end vertices." alt="" coords="5,139,179,179"/>
+<area shape="poly" id="edge10_Node000001_Node000007" title=" " alt="" coords="877,145,842,142,645,125,559,123,448,126,337,134,227,146,179,151,179,146,226,141,337,128,448,121,559,118,646,120,843,137,877,140"/>
+<area shape="rect" id="Node000009" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#acf1cbc3cfaaebc987060989c98bdf6de" title=" " alt="" coords="669,215,843,269"/>
+<area shape="poly" id="edge11_Node000001_Node000009" title=" " alt="" coords="915,180,825,217,823,212,913,175"/>
+<area shape="rect" id="Node000012" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a74880862626b85c76af2061a637ed0ff" title=" " alt="" coords="669,293,843,348"/>
+<area shape="poly" id="edge18_Node000001_Node000012" title=" " alt="" coords="952,185,905,234,844,284,825,296,822,291,841,280,901,230,948,181"/>
+<area shape="rect" id="Node000003" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#acca3241a2661355c5351269aa5a275c6" title=" " alt="" coords="448,5,621,60"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="655,35,622,35,622,30,655,30"/>
+<area shape="rect" id="Node000005" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a76f9d0aa5d7d0de388e17b239faab649" title=" " alt="" coords="227,301,400,341"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="455,200,450,204,435,219,426,234,417,249,402,267,353,303,349,298,398,263,412,246,421,231,430,216,446,200,451,196"/>
+<area shape="poly" id="edge7_Node000004_Node000007" title=" " alt="" coords="434,165,179,163,179,157,434,160"/>
+<area shape="rect" id="Node000008" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#abf875f1fb984fb5d322e0ac0c9dcc145" title="Given two vertex tuple, join the sets that contain them." alt="" coords="227,197,400,252"/>
+<area shape="poly" id="edge8_Node000004_Node000008" title=" " alt="" coords="435,194,401,203,399,198,434,188"/>
+<area shape="poly" id="edge6_Node000005_Node000005" title=" " alt="" coords="351,289,338,282,313,279,292,281,279,286,275,292,277,300,272,301,269,291,276,282,291,276,313,274,339,277,353,284"/>
+<area shape="rect" id="Node000006" href="$namespacewmtk_1_1multimesh_1_1utils.html#a3eeab2c4a43e5e6d5fb50d399a88d0a3" title="Do two passes on the edges of a triangle mesh to create vertex tags and edge tags." alt="" coords="5,301,179,341"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="213,323,179,323,179,318,213,318"/>
+<area shape="poly" id="edge9_Node000008_Node000007" title=" " alt="" coords="212,198,160,182,161,177,214,193"/>
+<area shape="poly" id="edge12_Node000009_Node000009" title=" " alt="" coords="793,204,779,196,756,193,736,195,724,200,718,206,718,215,713,215,713,204,721,196,735,190,756,188,781,191,795,199"/>
+<area shape="rect" id="Node000010" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#acf43c71e38eb6f098ea24a73532a3739" title=" " alt="" coords="448,293,621,348"/>
+<area shape="poly" id="edge13_Node000009_Node000010" title=" " alt="" coords="666,277,613,296,611,291,665,272"/>
+<area shape="rect" id="Node000011" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a91abc2743fec235b445ec7b584b8971e" title=" " alt="" coords="448,215,621,269"/>
+<area shape="poly" id="edge16_Node000009_Node000011" title=" " alt="" coords="655,245,622,245,622,239,655,239"/>
+<area shape="poly" id="edge14_Node000010_Node000005" title=" " alt="" coords="434,323,400,323,400,318,434,318"/>
+<area shape="poly" id="edge15_Node000010_Node000008" title=" " alt="" coords="457,290,376,254,378,250,459,285"/>
+<area shape="poly" id="edge17_Node000011_Node000008" title=" " alt="" coords="434,237,400,234,400,229,434,231"/>
+<area shape="poly" id="edge19_Node000012_Node000010" title=" " alt="" coords="655,323,622,323,622,318,655,318"/>
+<area shape="poly" id="edge20_Node000012_Node000011" title=" " alt="" coords="665,291,611,272,613,267,666,286"/>
 </map>

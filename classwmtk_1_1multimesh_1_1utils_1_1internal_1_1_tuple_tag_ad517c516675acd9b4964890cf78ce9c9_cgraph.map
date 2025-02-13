@@ -1,11 +1,29 @@
 <map id="wmtk::multimesh::utils::internal::TupleTag::initialize" name="wmtk::multimesh::utils::internal::TupleTag::initialize">
-<area shape="rect" id="node1" title="Go through edges of the parent mesh (triangle mesh) and initialize all the vertex tags to be &#45;1." alt="" coords="5,136,179,192"/>
-<area shape="rect" id="node2" href="$classwmtk_1_1_mesh.html#a6d2a546c8f661bf6386cf845a1693d2f" title="Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index." alt="" coords="236,5,391,32"/>
-<area shape="rect" id="node3" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a35847b9a3beffb513c76316e366b811e" title=" " alt="" coords="449,209,637,250"/>
-<area shape="rect" id="node4" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a8f5c5468701772a7bd72be07ea1ecf81" title=" " alt="" coords="227,56,400,112"/>
-<area shape="rect" id="node6" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a992e75c8b90a653cf89fa4f92a52fc27" title=" " alt="" coords="227,136,400,192"/>
-<area shape="rect" id="node7" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#ad921071b9217221d30d56b51419c78e7" title=" " alt="" coords="227,267,400,309"/>
-<area shape="rect" id="node5" href="$classwmtk_1_1attribute_1_1_accessor.html#a61276629d510c9d13e4ed12610fa1d19" title=" " alt="" coords="448,103,637,145"/>
-<area shape="rect" id="node8" href="$classwmtk_1_1_mesh.html#a58243712dc3e0d258ad645e7b08870db" title="return the global id of the Tuple of the given dimension" alt="" coords="481,275,604,301"/>
-<area shape="rect" id="node9" href="$classwmtk_1_1_mesh.html#a6f6c3b9a1d738d05ec8d84cabfa5e4b4" title="Internal utility to allow id to be virtual with a non&#45;virtual overload in derived &#45;Mesh classes." alt="" coords="685,275,856,301"/>
+<area shape="rect" id="Node000001" title="Go through edges of the parent mesh (triangle mesh) and initialize all the vertex tags to be &#45;1." alt="" coords="5,192,179,247"/>
+<area shape="rect" id="Node000002" href="$classwmtk_1_1_mesh.html#a6d2a546c8f661bf6386cf845a1693d2f" title="Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index." alt="" coords="244,29,399,55"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="108,190,155,126,188,92,225,64,237,57,240,62,228,68,191,96,159,130,112,193"/>
+<area shape="rect" id="Node000003" href="$classwmtk_1_1_mesh.html#a58bdbbfa0cd7bd9263241f6501db182a" title="check if a simplex lies on a boundary or not" alt="" coords="227,103,416,128"/>
+<area shape="poly" id="edge3_Node000001_Node000003" title=" " alt="" coords="131,189,175,162,226,137,246,130,248,135,228,142,178,167,134,194"/>
+<area shape="rect" id="Node000006" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a7ce74a2272389dcdbd3fd1434480ecb1" title=" " alt="" coords="465,303,653,343"/>
+<area shape="poly" id="edge7_Node000001_Node000006" title=" " alt="" coords="131,245,176,273,228,295,284,310,342,318,451,325,451,330,341,324,283,315,226,301,173,277,128,249"/>
+<area shape="rect" id="Node000007" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a8f5c5468701772a7bd72be07ea1ecf81" title=" " alt="" coords="235,152,408,207"/>
+<area shape="poly" id="edge8_Node000001_Node000007" title=" " alt="" coords="179,202,221,194,222,199,179,207"/>
+<area shape="rect" id="Node000009" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a992e75c8b90a653cf89fa4f92a52fc27" title=" " alt="" coords="235,231,408,285"/>
+<area shape="poly" id="edge10_Node000001_Node000009" title=" " alt="" coords="179,231,222,239,221,244,179,237"/>
+<area shape="rect" id="Node000010" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#ad921071b9217221d30d56b51419c78e7" title=" " alt="" coords="235,361,408,401"/>
+<area shape="poly" id="edge12_Node000001_Node000010" title=" " alt="" coords="120,245,167,292,228,340,251,352,249,357,225,344,164,296,116,249"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="284,31,276,21,280,11,296,5,321,3,354,7,366,16,363,20,352,11,321,8,297,10,284,15,281,20,288,27"/>
+<area shape="poly" id="edge4_Node000003_Node000003" title=" " alt="" coords="284,104,276,94,280,84,296,78,321,76,354,80,366,89,363,94,352,85,321,81,297,83,284,88,281,94,288,101"/>
+<area shape="rect" id="Node000004" href="$classwmtk_1_1simplex_1_1_simplex.html#ad2cc0340a0772b7d6f03ba7a781d1163" title=" " alt="" coords="469,127,649,167"/>
+<area shape="poly" id="edge5_Node000003_Node000004" title=" " alt="" coords="416,125,455,131,455,136,415,131"/>
+<area shape="rect" id="Node000005" href="$classwmtk_1_1simplex_1_1_simplex.html#aca78b1fb0a3c28c0036cf7919bfb0789" title=" " alt="" coords="469,63,649,103"/>
+<area shape="poly" id="edge6_Node000003_Node000005" title=" " alt="" coords="415,100,455,95,455,100,416,105"/>
+<area shape="rect" id="Node000008" href="$classwmtk_1_1attribute_1_1_accessor.html#a0f003b623a86c7debc0a8c1a3417dabd" title=" " alt="" coords="464,231,653,271"/>
+<area shape="poly" id="edge9_Node000007_Node000008" title=" " alt="" coords="409,203,480,225,478,230,407,208"/>
+<area shape="poly" id="edge11_Node000009_Node000008" title=" " alt="" coords="408,253,450,252,450,257,408,258"/>
+<area shape="poly" id="edge15_Node000010_Node000006" title=" " alt="" coords="404,358,462,344,463,349,405,363"/>
+<area shape="rect" id="Node000011" href="$classwmtk_1_1_mesh.html#a58243712dc3e0d258ad645e7b08870db" title="return the global id of the Tuple of the given dimension" alt="" coords="497,368,620,393"/>
+<area shape="poly" id="edge13_Node000010_Node000011" title=" " alt="" coords="408,378,484,378,484,383,408,383"/>
+<area shape="rect" id="Node000012" href="$classwmtk_1_1_mesh.html#a6f6c3b9a1d738d05ec8d84cabfa5e4b4" title="Internal utility to allow id to be virtual with a non&#45;virtual overload in derived &#45;Mesh classes." alt="" coords="701,368,872,393"/>
+<area shape="poly" id="edge14_Node000011_Node000012" title=" " alt="" coords="620,378,688,378,688,383,620,383"/>
 </map>

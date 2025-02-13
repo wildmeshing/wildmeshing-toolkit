@@ -1,15 +1,37 @@
 <map id="wmtk::simplex::SimplexCollection::contains" name="wmtk::simplex::SimplexCollection::contains">
-<area shape="rect" id="node1" title="Check if simplex is contained in collection." alt="" coords="1255,229,1500,270"/>
-<area shape="rect" id="node2" href="$namespacewmtk_1_1simplex.html#ad3819c31e843e174b473e7b97446a93f" title=" " alt="" coords="1048,199,1207,241"/>
-<area shape="rect" id="node13" href="$test__component__multimesh__from__tag_8cpp.html#a18cd3d411cfadc472201c20662d62869" title=" " alt="" coords="1080,265,1175,292"/>
-<area shape="rect" id="node3" href="$namespacewmtk_1_1simplex.html#a0e571467fb4068842d9c1a38a433f1ed" title=" " alt="" coords="809,207,1000,233"/>
-<area shape="rect" id="node4" href="$classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html#a30e554417dfffcaedce3a167b351173b" title=" " alt="" coords="519,5,749,61"/>
-<area shape="rect" id="node5" href="$classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#aad043bd04d267b27038ff4e824aed8e0" title="returns an empty vector in case of failure" alt="" coords="528,86,740,127"/>
-<area shape="rect" id="node6" href="$classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a3e496b934eb7e07ae7abaf7b5f8b7d5d" title="gather all simplices that are deleted in a split" alt="" coords="511,152,757,208"/>
-<area shape="rect" id="node7" href="$classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a10c05de7f734bc8f9aa84518512ad5c7" title="gather all simplices that are deleted in a split" alt="" coords="515,232,753,288"/>
-<area shape="rect" id="node8" href="$classwmtk_1_1_tet_mesh.html#a31b2ec618edb4d478e36f0868a85d86e" title=" " alt="" coords="530,313,738,354"/>
-<area shape="rect" id="node11" href="$classwmtk_1_1components_1_1_tag_intersection.html#a7fa5965bec539d0db6775dfd0a9177d7" title="Check if a given simplex is in the intersection of a given set of tag attributes." alt="" coords="507,378,761,419"/>
-<area shape="rect" id="node9" href="$classwmtk_1_1_tet_mesh.html#aebe3bb44a6eeb9c14334e202dcaee91d" title="check if a simplex (encoded as a tuple/primitive pair) lies on a boundary or not" alt="" coords="227,273,435,300"/>
-<area shape="rect" id="node10" href="$namespacewmtk_1_1simplex.html#aead7bf4f261c58bdb33bd0bf7fcd541d" title=" " alt="" coords="5,291,156,333"/>
-<area shape="rect" id="node12" href="$classwmtk_1_1components_1_1_tag_intersection.html#aa089317765f51a727fdde846aad4c276" title=" " alt="" coords="204,378,459,419"/>
+<area shape="rect" id="Node000001" title="Check if simplex is contained in collection." alt="" coords="1280,263,1525,303"/>
+<area shape="rect" id="Node000002" href="$namespacewmtk_1_1simplex.html#ad3819c31e843e174b473e7b97446a93f" title=" " alt="" coords="1073,156,1232,196"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1343,259,1231,210,1203,199,1205,194,1233,206,1345,255"/>
+<area shape="rect" id="Node000013" href="$test__component__multimesh__from__tag_8cpp.html#a2231774bf0d53fb5f6c1b34753afb255" title=" " alt="" coords="1105,221,1200,246"/>
+<area shape="poly" id="edge16_Node000001_Node000013" title=" " alt="" coords="1287,263,1200,245,1201,240,1288,257"/>
+<area shape="rect" id="Node000014" href="$test__component__multimesh__from__tag_8cpp.html#a9a31cb828b93e2ddcf0a5063d4d1c9e6" title=" " alt="" coords="1105,270,1200,295"/>
+<area shape="poly" id="edge17_Node000001_Node000014" title=" " alt="" coords="1266,285,1200,285,1200,280,1266,280"/>
+<area shape="rect" id="Node000015" href="$test__component__multimesh__from__tag_8cpp.html#a7a8f66a094907f369fa10876691f42f9" title=" " alt="" coords="1105,319,1200,345"/>
+<area shape="poly" id="edge18_Node000001_Node000015" title=" " alt="" coords="1288,308,1201,325,1200,320,1287,303"/>
+<area shape="rect" id="Node000016" href="$test__component__multimesh__from__tag_8cpp.html#a18cd3d411cfadc472201c20662d62869" title=" " alt="" coords="1105,369,1200,394"/>
+<area shape="poly" id="edge19_Node000001_Node000016" title=" " alt="" coords="1348,311,1233,360,1199,371,1198,366,1231,355,1346,306"/>
+<area shape="rect" id="Node000003" href="$namespacewmtk_1_1simplex.html#a0e571467fb4068842d9c1a38a433f1ed" title=" " alt="" coords="835,163,1025,189"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="1060,179,1025,179,1025,173,1060,173"/>
+<area shape="poly" id="edge11_Node000003_Node000003" title=" " alt="" coords="970,154,959,145,930,142,906,144,894,149,891,154,898,162,894,165,886,155,890,145,905,139,930,137,961,140,973,149"/>
+<area shape="rect" id="Node000004" href="$classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#aad043bd04d267b27038ff4e824aed8e0" title="returns an empty vector in case of failure" alt="" coords="553,5,765,45"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="906,155,854,106,821,81,785,60,758,48,760,43,788,55,824,77,857,102,909,151"/>
+<area shape="rect" id="Node000005" href="$classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a3e496b934eb7e07ae7abaf7b5f8b7d5d" title="gather all simplices that are deleted in a split" alt="" coords="536,70,783,125"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="871,162,754,127,755,122,873,157"/>
+<area shape="rect" id="Node000006" href="$classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a10c05de7f734bc8f9aa84518512ad5c7" title="gather all simplices that are deleted in a split" alt="" coords="540,149,779,203"/>
+<area shape="poly" id="edge5_Node000003_Node000006" title=" " alt="" coords="821,179,779,179,779,173,821,173"/>
+<area shape="rect" id="Node000007" href="$classwmtk_1_1_tet_mesh.html#a31b2ec618edb4d478e36f0868a85d86e" title=" " alt="" coords="555,228,763,268"/>
+<area shape="poly" id="edge6_Node000003_Node000007" title=" " alt="" coords="870,195,787,217,737,231,736,225,786,212,868,190"/>
+<area shape="rect" id="Node000010" href="$classwmtk_1_1components_1_1_tag_intersection.html#a7fa5965bec539d0db6775dfd0a9177d7" title="Check if a given simplex is in the intersection of a given set of tag attributes." alt="" coords="532,303,787,343"/>
+<area shape="poly" id="edge12_Node000003_Node000010" title=" " alt="" coords="906,200,853,241,788,282,733,305,731,300,785,278,850,237,902,196"/>
+<area shape="rect" id="Node000008" href="$classwmtk_1_1_tet_mesh.html#aebe3bb44a6eeb9c14334e202dcaee91d" title="returns if a simplex is on the boundary of hte mesh. For anything but dimension &#45; 1 this checks if th..." alt="" coords="253,223,461,249"/>
+<area shape="poly" id="edge7_Node000007_Node000008" title=" " alt="" coords="542,255,460,251,460,246,542,249"/>
+<area shape="rect" id="Node000009" href="$namespacewmtk_1_1simplex.html#aead7bf4f261c58bdb33bd0bf7fcd541d" title=" " alt="" coords="18,227,169,267"/>
+<area shape="poly" id="edge10_Node000007_Node000009" title=" " alt="" coords="541,260,484,263,357,266,229,263,169,258,169,253,229,257,357,261,484,257,541,255"/>
+<area shape="poly" id="edge8_Node000008_Node000007" title=" " alt="" coords="474,229,555,233,555,238,474,235"/>
+<area shape="poly" id="edge9_Node000008_Node000009" title=" " alt="" coords="239,243,169,246,169,241,238,238"/>
+<area shape="rect" id="Node000011" href="$classwmtk_1_1components_1_1_tag_intersection.html#ae5eac5ac63c3a6376c3228c26842f49e" title=" " alt="" coords="229,324,484,364"/>
+<area shape="poly" id="edge13_Node000010_Node000011" title=" " alt="" coords="519,335,484,338,484,332,518,330"/>
+<area shape="rect" id="Node000012" href="$namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc" title=" " alt="" coords="5,324,181,364"/>
+<area shape="poly" id="edge14_Node000011_Node000012" title=" " alt="" coords="216,347,182,347,182,341,216,341"/>
+<area shape="poly" id="edge15_Node000012_Node000012" title=" " alt="" coords="138,312,122,305,93,303,68,305,53,309,47,315,50,323,45,324,42,314,50,305,67,299,93,297,124,300,140,307"/>
 </map>

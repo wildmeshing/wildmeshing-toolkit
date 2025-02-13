@@ -1,9 +1,9 @@
 var _sampling_8hpp =
 [
-    [ "Sampling", "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling.html", "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling" ],
-    [ "SamplingAnalyticFunction", "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_analytic_function.html", "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_analytic_function" ],
-    [ "SamplingImage", "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_image.html", "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_image" ],
-    [ "SamplingBicubic", "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_bicubic.html", "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_bicubic" ],
+    [ "wmtk::components::adaptive_tessellation::image::Sampling", "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling.html", "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling" ],
+    [ "wmtk::components::adaptive_tessellation::image::SamplingAnalyticFunction", "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_analytic_function.html", "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_analytic_function" ],
+    [ "wmtk::components::adaptive_tessellation::image::SamplingImage< Derived >", "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_image.html", "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_image" ],
+    [ "wmtk::components::adaptive_tessellation::image::SamplingBicubic", "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_bicubic.html", "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_bicubic" ],
     [ "SAMPLING_MODE", "_sampling_8hpp.html#a7fb397130d29df144553a084734ea492", [
       [ "BICUBIC", "_sampling_8hpp.html#a7fb397130d29df144553a084734ea492ab0e18393c9d9190d969c6c48ace3d89c", null ],
       [ "SPLINE", "_sampling_8hpp.html#a7fb397130d29df144553a084734ea492add309e5586dd9ab277c7e1afa9c34bb6", null ]

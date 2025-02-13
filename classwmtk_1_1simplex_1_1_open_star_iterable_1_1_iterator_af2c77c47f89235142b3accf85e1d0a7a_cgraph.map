@@ -1,12 +1,25 @@
 <map id="wmtk::simplex::OpenStarIterable::Iterator::step_depth_3" name="wmtk::simplex::OpenStarIterable::Iterator::step_depth_3">
-<area shape="rect" id="node1" title="Use breadth first search to find all d&#45;simplices, and iterate through all cofaces in a d&#45;simplex." alt="" coords="5,129,243,171"/>
-<area shape="rect" id="node2" href="$classwmtk_1_1_mesh.html#aadce5155d380ef52a28eefe9e3bf0d29" title="Retrieve the IdSimplex that is represented by the tuple and primitive type." alt="" coords="293,5,443,47"/>
-<area shape="rect" id="node3" href="$namespacewmtk.html#a3b08a5d7fb42f02c54bae85758b39f59" title="Get the primitive type corresponding to its unique integer id." alt="" coords="291,71,445,112"/>
-<area shape="rect" id="node4" href="$classwmtk_1_1simplex_1_1_simplex.html#ad2cc0340a0772b7d6f03ba7a781d1163" title=" " alt="" coords="768,129,948,171"/>
-<area shape="rect" id="node5" href="$classwmtk_1_1_mesh.html#a7f8a7b7d592fdbf672f2c6c9653487ea" title=" " alt="" coords="292,239,444,280"/>
-<area shape="rect" id="node10" href="$classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9" title=" " alt="" coords="493,355,720,382"/>
-<area shape="rect" id="node6" href="$classwmtk_1_1_mesh.html#a58bdbbfa0cd7bd9263241f6501db182a" title="check if a simplex lies on a boundary or not" alt="" coords="512,187,701,214"/>
-<area shape="rect" id="node8" href="$classwmtk_1_1_mesh.html#a965a8a24158c4aa8580c57ba09f885f7" title="switch the orientation of the Tuple of the given dimension" alt="" coords="531,239,683,280"/>
-<area shape="rect" id="node9" href="$classwmtk_1_1_mesh.html#a933f681cf24a63b155c9462280385200" title=" " alt="" coords="777,323,939,364"/>
-<area shape="rect" id="node7" href="$classwmtk_1_1simplex_1_1_simplex.html#a3650fd31ff1864285502dba66db3c73c" title=" " alt="" coords="768,195,948,236"/>
+<area shape="rect" id="Node000001" title="Use breadth first search to find all d&#45;simplices, and iterate through all cofaces in a d&#45;simplex." alt="" coords="5,127,243,167"/>
+<area shape="rect" id="Node000002" href="$classwmtk_1_1_mesh.html#aadce5155d380ef52a28eefe9e3bf0d29" title="Retrieve the IdSimplex that is represented by the tuple and primitive type." alt="" coords="293,5,443,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="159,124,289,55,303,49,306,53,292,60,162,129"/>
+<area shape="rect" id="Node000003" href="$namespacewmtk.html#a3b08a5d7fb42f02c54bae85758b39f59" title="Get the primitive type corresponding to its unique integer id." alt="" coords="291,69,445,109"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="209,124,276,108,278,113,210,129"/>
+<area shape="rect" id="Node000004" href="$classwmtk_1_1simplex_1_1_simplex.html#ad2cc0340a0772b7d6f03ba7a781d1163" title=" " alt="" coords="768,132,948,172"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="243,145,754,149,754,154,243,150"/>
+<area shape="rect" id="Node000005" href="$classwmtk_1_1_mesh.html#a7f8a7b7d592fdbf672f2c6c9653487ea" title=" " alt="" coords="292,259,444,299"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="163,164,320,250,317,255,161,169"/>
+<area shape="rect" id="Node000010" href="$classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9" title=" " alt="" coords="493,374,720,399"/>
+<area shape="poly" id="edge13_Node000001_Node000010" title=" " alt="" coords="142,165,202,236,244,275,292,308,337,330,385,347,480,370,479,375,384,352,335,335,289,313,241,279,198,240,138,169"/>
+<area shape="rect" id="Node000006" href="$classwmtk_1_1_mesh.html#a58bdbbfa0cd7bd9263241f6501db182a" title="check if a simplex lies on a boundary or not" alt="" coords="512,209,701,234"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="444,256,493,244,534,234,535,240,494,249,445,261"/>
+<area shape="rect" id="Node000008" href="$classwmtk_1_1_mesh.html#a965a8a24158c4aa8580c57ba09f885f7" title="switch the orientation of the Tuple of the given dimension" alt="" coords="531,259,683,299"/>
+<area shape="poly" id="edge9_Node000005_Node000008" title=" " alt="" coords="444,276,517,276,517,281,444,281"/>
+<area shape="rect" id="Node000009" href="$classwmtk_1_1_mesh.html#a933f681cf24a63b155c9462280385200" title=" " alt="" coords="777,341,939,381"/>
+<area shape="poly" id="edge10_Node000005_Node000009" title=" " alt="" coords="442,296,494,308,636,332,764,349,763,354,635,337,493,313,441,301"/>
+<area shape="poly" id="edge11_Node000005_Node000010" title=" " alt="" coords="399,297,443,325,494,352,537,368,536,373,492,357,440,330,396,301"/>
+<area shape="poly" id="edge7_Node000006_Node000004" title=" " alt="" coords="653,206,771,173,772,178,654,211"/>
+<area shape="poly" id="edge6_Node000006_Node000006" title=" " alt="" coords="568,210,560,200,564,190,580,184,607,182,640,186,653,195,649,200,638,191,607,187,581,189,568,194,565,200,572,207"/>
+<area shape="rect" id="Node000007" href="$classwmtk_1_1simplex_1_1_simplex.html#aca78b1fb0a3c28c0036cf7919bfb0789" title=" " alt="" coords="768,201,948,241"/>
+<area shape="poly" id="edge8_Node000006_Node000007" title=" " alt="" coords="702,219,754,219,754,224,702,224"/>
+<area shape="poly" id="edge12_Node000010_Node000009" title=" " alt="" coords="720,373,764,368,764,373,721,378"/>
 </map>

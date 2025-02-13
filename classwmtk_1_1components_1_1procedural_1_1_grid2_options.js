@@ -5,7 +5,7 @@ var classwmtk_1_1components_1_1procedural_1_1_grid2_options =
       [ "BCC", "classwmtk_1_1components_1_1procedural_1_1_grid2_options.html#abfc24a8ae4ab763891980c82d3d47652a1fc5efe020980df2413a97ce9f2f586f", null ],
       [ "Diagonal", "classwmtk_1_1components_1_1procedural_1_1_grid2_options.html#abfc24a8ae4ab763891980c82d3d47652a9ac677ee4eec25d9e59707a661d2c5e1", null ]
     ] ],
-    [ "get_coordinate_name", "classwmtk_1_1components_1_1procedural_1_1_grid2_options.html#a14afbe8fb5f69b2820b92e4cb97ae57d", null ],
+    [ "get_coordinate_name", "classwmtk_1_1components_1_1procedural_1_1_grid2_options.html#a569fceda5677a952aec1268d8afa35a3", null ],
     [ "from_json", "classwmtk_1_1components_1_1procedural_1_1_grid2_options.html#a27dd057709511551fd905086f96308a7", null ],
     [ "to_json", "classwmtk_1_1components_1_1procedural_1_1_grid2_options.html#a29fa0efd4968fbc46985cb957d4cac46", null ],
     [ "coordinates", "classwmtk_1_1components_1_1procedural_1_1_grid2_options.html#a85124f400dda802e87505024240613c9", null ],

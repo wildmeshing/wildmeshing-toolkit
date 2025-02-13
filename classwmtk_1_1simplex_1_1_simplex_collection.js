@@ -15,7 +15,7 @@ var classwmtk_1_1simplex_1_1_simplex_collection =
     [ "mesh", "classwmtk_1_1simplex_1_1_simplex_collection.html#a0d0c1765c4ed8ffd0f163661111bfb08", null ],
     [ "operator==", "classwmtk_1_1simplex_1_1_simplex_collection.html#a685bd1949491c0f6d61a69d61b2a1235", null ],
     [ "reserve", "classwmtk_1_1simplex_1_1_simplex_collection.html#a1973c83eede96b64f422049c6fc52976", null ],
-    [ "simplex_vector", "classwmtk_1_1simplex_1_1_simplex_collection.html#a50c54839e34c7b0df73b509fb1199128", null ],
+    [ "simplex_vector", "classwmtk_1_1simplex_1_1_simplex_collection.html#a3c5684abe23553010bb7f87840e9518d", null ],
     [ "simplex_vector", "classwmtk_1_1simplex_1_1_simplex_collection.html#a5f719ceebed01c94aeace9cfbe08183f", null ],
     [ "simplex_vector_tuples", "classwmtk_1_1simplex_1_1_simplex_collection.html#ad76f1f147d2ef6b62c6aff05070464bd", null ],
     [ "size", "classwmtk_1_1simplex_1_1_simplex_collection.html#aa86023a5429af2eaa288fa305399450f", null ],

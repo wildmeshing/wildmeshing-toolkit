@@ -26,7 +26,7 @@ var classwmtk_1_1_tet_mesh =
     [ "is_connectivity_valid", "classwmtk_1_1_tet_mesh.html#ad4ba72346d616d38086be74705865e55", null ],
     [ "is_valid", "classwmtk_1_1_tet_mesh.html#af07828ce32b19a3d5fc8e1cb6f365029", null ],
     [ "make_cached_accessors", "classwmtk_1_1_tet_mesh.html#a3ec8c827ae2a00cea402eb21cc5be56b", null ],
-    [ "operator=", "classwmtk_1_1_tet_mesh.html#a12cadf3aea019a055cbd9b10a8af795d", null ],
+    [ "operator=", "classwmtk_1_1_tet_mesh.html#a6b07522034464f765e661dc73a4d0ee7", null ],
     [ "operator=", "classwmtk_1_1_tet_mesh.html#a77bee9cf6bbb549d3d1e245816443794", null ],
     [ "orient_vertices", "classwmtk_1_1_tet_mesh.html#afd621933bfdf69868fc7becb36645182", null ],
     [ "switch_edge", "classwmtk_1_1_tet_mesh.html#a1ff7ac5989c664b7754dd699fa1e9b1a", null ],
