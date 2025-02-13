@@ -7,7 +7,7 @@ class TupleCellLessThan
 public:
     bool operator()(const Tuple& a, const Tuple& b) const
     {
-        return a.m_global_cid < b.m_global_cid;
+        return a.global_cid() < b.global_cid();
     }
 };
 } // namespace wmtk::utils

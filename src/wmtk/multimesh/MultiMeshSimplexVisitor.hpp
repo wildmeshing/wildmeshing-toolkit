@@ -117,7 +117,7 @@ public:
         Mesh& root_base_mesh = mesh.get_multi_mesh_root();
         auto mesh_root_variant = wmtk::utils::metaprogramming::as_mesh_variant(root_base_mesh);
 
-        const simplex::Simplex root_simplex_nonav =  mesh.map_to_root(simplex);
+        const simplex::Simplex root_simplex_nonav = mesh.map_to_root(simplex);
         assert(root_base_mesh.is_valid(root_simplex_nonav.tuple()));
         const simplex::NavigatableSimplex root_simplex(root_base_mesh, root_simplex_nonav);
         assert(root_base_mesh.is_valid(root_simplex.tuple()));
@@ -301,15 +301,6 @@ private:
                             if constexpr (HasReturnCache && ChildHasReturn && CurHasReturn) {
                                 auto parent_id = m_return_data.get_id(current_mesh, simplex);
                                 auto child_id = m_return_data.get_id(child_mesh, child_simplex);
-                                // logger().trace(
-                                //     "MultiMeshSimplexVisitor[{}=>{}] adding to edges edge simplex
-                                //     {} " "child " "simplex{}",
-                                //     fmt::join(current_mesh.absolute_multi_mesh_id(), ","),
-                                //     fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
-                                //     wmtk::utils::TupleInspector::as_string(
-                                //         std::get<1>(parent_id).tuple()),
-                                //     wmtk::utils::TupleInspector::as_string(
-                                //         std::get<1>(child_id).tuple()));
                                 edge_events.emplace_back(parent_id, child_id);
                             }
                         }

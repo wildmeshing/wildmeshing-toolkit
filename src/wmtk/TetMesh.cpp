@@ -261,7 +261,7 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 
         auto tt = m_tt_accessor->const_vector_attribute<4>(tuple);
 
-        int64_t gcid_new = tt(tuple.m_local_fid);
+        int64_t gcid_new = tt(tuple.local_fid());
 
         /*handle exception here*/
         assert(gcid_new != -1);
@@ -322,26 +322,26 @@ bool TetMesh::is_valid(const Tuple& tuple) const
     if (!Mesh::is_valid(tuple)) {
         return false;
     }
-    const bool is_connectivity_valid = tuple.m_local_vid >= 0 && tuple.m_local_eid >= 0 &&
-                                       tuple.m_local_fid >= 0 && tuple.m_global_cid >= 0 &&
+    const bool is_connectivity_valid = tuple.local_vid() >= 0 && tuple.local_eid() >= 0 &&
+                                       tuple.local_fid() >= 0 && tuple.global_cid() >= 0 &&
                                        autogen::tet_mesh::tuple_is_valid_for_ccw(tuple);
 
     if (!is_connectivity_valid) {
 #if !defined(NDEBUG)
         logger().trace(
-            "tuple.m_local_vid={} >= 0 && tuple.m_local_eid={} >= 0 &&"
-            "tuple.m_local_fid={} >= 0 &&"
-            " tuple.m_global_cid={} >= 0 &&"
+            "tuple.local_vid()={} >= 0 && tuple.local_eid()={} >= 0 &&"
+            "tuple.local_fid()={} >= 0 &&"
+            " tuple.global_cid()={} >= 0 &&"
             " autogen::tet_mesh::tuple_is_valid_for_ccw(tuple)={}",
-            tuple.m_local_vid,
-            tuple.m_local_eid,
-            tuple.m_local_fid,
-            tuple.m_global_cid,
+            tuple.local_vid(),
+            tuple.local_eid(),
+            tuple.local_fid(),
+            tuple.global_cid(),
             autogen::tet_mesh::tuple_is_valid_for_ccw(tuple));
-        assert(tuple.m_local_vid >= 0);
-        assert(tuple.m_local_eid >= 0);
-        assert(tuple.m_local_fid >= 0);
-        assert(tuple.m_global_cid >= 0);
+        assert(tuple.local_vid() >= 0);
+        assert(tuple.local_eid() >= 0);
+        assert(tuple.local_fid() >= 0);
+        assert(tuple.global_cid() >= 0);
         assert(autogen::tet_mesh::tuple_is_valid_for_ccw(tuple));
 #endif
         return false;
@@ -368,7 +368,7 @@ bool TetMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
 bool TetMesh::is_boundary_face(const Tuple& tuple) const
 {
     const attribute::Accessor<int64_t> tt_accessor = create_const_accessor<int64_t>(m_tt_handle);
-    return tt_accessor.const_vector_attribute<4>(tuple)(tuple.m_local_fid) < 0;
+    return tt_accessor.const_vector_attribute<4>(tuple)(tuple.local_fid()) < 0;
 }
 
 bool TetMesh::is_boundary_edge(const Tuple& edge) const
@@ -613,7 +613,7 @@ Tuple TetMesh::tuple_from_global_ids(int64_t tid, int64_t fid, int64_t eid, int6
 
 std::vector<Tuple> TetMesh::orient_vertices(const Tuple& tuple) const
 {
-    int64_t cid = tuple.m_global_cid;
+    int64_t cid = tuple.global_cid();
     return {Tuple(0, 0, 2, cid), Tuple(1, 0, 3, cid), Tuple(2, 1, 1, cid), Tuple(3, 2, 2, cid)};
 }
 

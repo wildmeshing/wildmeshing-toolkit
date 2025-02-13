@@ -2,7 +2,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
-#include <wmtk/utils/TupleInspector.hpp>
 #include "DEBUG_Mesh.hpp"
 
 #include <wmtk/utils/Logger.hpp>
@@ -46,7 +45,7 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
             "[{} -> {}] Checking child tuple {}",
             fmt::join(absolute_id(), ","),
             fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
-            wmtk::utils::TupleInspector::as_string(child_tuple));
+            child_tuple.as_string());
         // 1. test if all maps in child_mesh exisits
         auto [child_tuple_from_child, parent_tuple_from_child] =
             multimesh::utils::read_tuple_map_attribute_slow(
@@ -60,10 +59,10 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
                 "[{} -> {}] Checking asserts from child {} {} (input tuple was {})",
                 fmt::join(absolute_id(), ","),
                 fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
-                wmtk::utils::TupleInspector::as_string(parent_tuple_from_child),
-                wmtk::utils::TupleInspector::as_string(child_tuple_from_child),
-                wmtk::utils::TupleInspector::as_string(child_tuple));
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+                parent_tuple_from_child.as_string(),
+                child_tuple_from_child.as_string(),
+                child_tuple.as_string());
+#if defined(WMTK_ENABLE_HASH_UPDATE)
             assert(child_mesh.is_valid_with_hash(child_tuple_from_child));
             CHECK(child_mesh.is_valid_with_hash(child_tuple_from_child));
             CHECK(my_mesh.is_valid_with_hash(parent_tuple_from_child));
@@ -85,8 +84,8 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
                 "[{} -> {}] Checking asserts from child {} {}",
                 fmt::join(absolute_id(), ","),
                 fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
-                wmtk::utils::TupleInspector::as_string(parent_tuple_from_parent),
-                wmtk::utils::TupleInspector::as_string(child_tuple_from_parent));
+                parent_tuple_from_parent.as_string(),
+                child_tuple_from_parent.as_string());
 
             CHECK(
                 (child_tuple_from_child == child_tuple_from_parent &&
@@ -106,8 +105,10 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
                 if (!child_mesh.is_boundary(PrimitiveType::Edge, cur_child_tuple)) {
                     REQUIRE(!my_mesh.is_boundary(PrimitiveType::Edge, cur_parent_tuple));
 
-                    Tuple child_tuple_opp = child_mesh.switch_tuple(cur_child_tuple, PrimitiveType::Triangle);
-                    Tuple parent_tuple_opp = my_mesh.switch_tuple(cur_parent_tuple, PrimitiveType::Triangle);
+                    Tuple child_tuple_opp =
+                        child_mesh.switch_tuple(cur_child_tuple, PrimitiveType::Triangle);
+                    Tuple parent_tuple_opp =
+                        my_mesh.switch_tuple(cur_parent_tuple, PrimitiveType::Triangle);
                     CHECK(
                         parent_tuple_opp == map_tuple_between_meshes(
                                                 child_mesh,
@@ -115,8 +116,12 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
                                                 child_to_parent_accessor,
                                                 child_tuple_opp));
                 }
-                cur_child_tuple = child_mesh.switch_tuples(cur_child_tuple, {PrimitiveType::Vertex,PrimitiveType::Edge});
-                cur_parent_tuple = my_mesh.switch_tuples(cur_parent_tuple, {PrimitiveType::Vertex,PrimitiveType::Edge});
+                cur_child_tuple = child_mesh.switch_tuples(
+                    cur_child_tuple,
+                    {PrimitiveType::Vertex, PrimitiveType::Edge});
+                cur_parent_tuple = my_mesh.switch_tuples(
+                    cur_parent_tuple,
+                    {PrimitiveType::Vertex, PrimitiveType::Edge});
             }
         } else if (
             map_type == PrimitiveType::Edge &&
@@ -124,7 +129,8 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
             if (!my_mesh.is_boundary(PrimitiveType::Edge, parent_tuple_from_child)) {
                 auto parent_to_child_accessor =
                     my_mesh.create_const_accessor(parent_to_child_handle);
-                const Tuple parent_tuple_opp = my_mesh.switch_tuple(parent_tuple_from_child, PrimitiveType::Triangle);
+                const Tuple parent_tuple_opp =
+                    my_mesh.switch_tuple(parent_tuple_from_child, PrimitiveType::Triangle);
                 CHECK(
                     child_tuple_from_child == map_tuple_between_meshes(
                                                   my_mesh,

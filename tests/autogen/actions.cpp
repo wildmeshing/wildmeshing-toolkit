@@ -5,7 +5,6 @@
 #include <wmtk/autogen/local_switch_tuple.hpp>
 #include <wmtk/autogen/utils/largest_shared_subdart_size.hpp>
 #include <wmtk/autogen/utils/subdart_maximal_action_to_face.hpp>
-#include "tools/DEBUG_Tuple.hpp"
 #include "tools/all_valid_local_tuples.hpp"
 using namespace wmtk;
 using namespace wmtk::autogen;
@@ -180,15 +179,13 @@ TEST_CASE("tuple_autogen_index_dart_map_between_simplices", "[tuple]")
 namespace {
 int8_t equal_subdart_dimension(PrimitiveType mesh_type, const Tuple& a, const Tuple& b)
 {
-    const auto& a_ = reinterpret_cast<const DEBUG_Tuple&>(a);
-    const auto& b_ = reinterpret_cast<const DEBUG_Tuple&>(b);
-    if (a_.local_vid() != b_.local_vid() || mesh_type == PrimitiveType::Vertex) {
+    if (a.local_vid() != b.local_vid() || mesh_type == PrimitiveType::Vertex) {
         return 0;
     }
-    if (a_.local_eid() != b_.local_eid() || mesh_type == PrimitiveType::Edge) {
+    if (a.local_eid() != b.local_eid() || mesh_type == PrimitiveType::Edge) {
         return 1;
     }
-    if (a_.local_fid() != b_.local_fid() || mesh_type == PrimitiveType::Triangle) {
+    if (a.local_fid() != b.local_fid() || mesh_type == PrimitiveType::Triangle) {
         return 2;
     }
     return 3;

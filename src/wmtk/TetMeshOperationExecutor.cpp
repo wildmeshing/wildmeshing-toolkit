@@ -10,7 +10,6 @@
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/simplex/top_dimension_cofaces_iterable.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include <wmtk/utils/TupleInspector.hpp>
 
 namespace wmtk {
 namespace {
@@ -750,9 +749,9 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     assert(return_local_eid > -1);
     assert(return_local_fid > -1);
 
-    assert(return_local_vid == utils::TupleInspector::local_vid(m_operating_tuple));
-    assert(return_local_eid == utils::TupleInspector::local_eid(m_operating_tuple));
-    assert(return_local_fid == utils::TupleInspector::local_fid(m_operating_tuple));
+    assert(return_local_vid == m_operating_tuple.local_vid());
+    assert(return_local_eid == m_operating_tuple.local_eid());
+    assert(return_local_fid == m_operating_tuple.local_fid());
     m_output_tuple = Tuple(return_local_vid, return_local_eid, return_local_fid, return_tid);
 
     assert(m_split_new_vid == m_mesh.id(simplex::Simplex::vertex(m_mesh, m_output_tuple)));
