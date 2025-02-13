@@ -44,11 +44,6 @@
 namespace wmtk {
 namespace tests {
 class DEBUG_Mesh;
-namespace tools {
-
-class TestTools;
-
-}
 } // namespace tests
 // thread management tool that we will PImpl
 namespace attribute {
@@ -69,13 +64,6 @@ namespace utils {
 class UpdateEdgeOperationMultiMeshMapFunctor;
 }
 } // namespace operations
-
-namespace simplex {
-class RawSimplex;
-namespace utils {
-class SimplexComparisons;
-}
-} // namespace simplex
 
 namespace io {
 class ParaviewWriter;
@@ -109,7 +97,6 @@ class Mesh : public std::enable_shared_from_this<Mesh>,
              public wmtk::utils::MerkleTreeInteriorNode
 {
 public:
-    friend class tests::tools::TestTools;
     friend class tests::DEBUG_Mesh;
     template <typename T, int Dim>
     friend class attribute::AccessorBase;
@@ -132,11 +119,6 @@ public:
     friend class multimesh::attribute::AttributeScopeHandle;
     friend class multimesh::utils::internal::TupleTag;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
-    friend class simplex::RawSimplex;
-    friend class simplex::Simplex;
-    friend class simplex::IdSimplex;
-    friend class simplex::SimplexCollection;
-    friend class simplex::utils::SimplexComparisons;
     friend class operations::Operation;
     friend class operations::EdgeCollapse;
     friend class operations::EdgeSplit;

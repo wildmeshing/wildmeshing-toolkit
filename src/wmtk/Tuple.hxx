@@ -1,3 +1,7 @@
+#include "Tuple.hpp"
+
+#include <cassert>
+
 namespace wmtk {
 
 //         v2
@@ -58,6 +62,18 @@ inline int8_t Tuple::local_eid() const
 inline int8_t Tuple::local_fid() const
 {
     return m_local_fid;
+}
+
+inline int8_t Tuple::local_id(const PrimitiveType pt) const
+{
+    switch (pt) {
+    case PrimitiveType::Vertex: return local_vid();
+    case PrimitiveType::Edge: return local_eid();
+    case PrimitiveType::Triangle: return local_fid();
+    case PrimitiveType::Tetrahedron:
+    default: assert(false);
+    }
+    return -1;
 }
 
 } // namespace wmtk

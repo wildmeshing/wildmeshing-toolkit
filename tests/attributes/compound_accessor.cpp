@@ -5,7 +5,6 @@
 #include <wmtk/attribute/internal/CompoundAccessor.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include <wmtk/utils/TupleInspector.hpp>
 #include "../tools/DEBUG_PointMesh.hpp"
 
 
@@ -26,8 +25,9 @@ TEST_CASE("test_single_compound_accessor", "[accessor]")
 
     auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
 
-    wmtk::attribute::internal::CompoundAccessor<2, wmtk::PointMesh, int64_t, double>
-        caccessor(int64_t_acc, double_acc);
+    wmtk::attribute::internal::CompoundAccessor<2, wmtk::PointMesh, int64_t, double> caccessor(
+        int64_t_acc,
+        double_acc);
 
     REQUIRE(int64_t_acc.reserved_size() == size);
     REQUIRE(double_acc.reserved_size() == size);
@@ -42,15 +42,14 @@ TEST_CASE("test_single_compound_accessor", "[accessor]")
         CHECK(iv(1) == -1);
         CHECK(dv(0) == 0);
 
-         auto [iv2,dv2] = caccessor.const_value(tup);
-         CHECK(iv == iv2);
-         CHECK(dv == dv2);
+        auto [iv2, dv2] = caccessor.const_value(tup);
+        CHECK(iv == iv2);
+        CHECK(dv == dv2);
 
-         iv(0) = 2;
-         iv(1) = 3;
-         dv(0) = 0.1;
-         CHECK(iv == iv2);
-         CHECK(dv == dv2);
+        iv(0) = 2;
+        iv(1) = 3;
+        dv(0) = 0.1;
+        CHECK(iv == iv2);
+        CHECK(dv == dv2);
     }
 }
-

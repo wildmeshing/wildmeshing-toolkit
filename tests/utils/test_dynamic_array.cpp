@@ -4,7 +4,6 @@
 #include <wmtk/simplex/RawSimplex.hpp>
 #include <wmtk/simplex/internal/VisitedArray.hpp>
 #include <wmtk/utils/DynamicArray.hpp>
-#include <wmtk/utils/TupleInspector.hpp>
 
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"

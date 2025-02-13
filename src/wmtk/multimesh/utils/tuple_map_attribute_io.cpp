@@ -6,7 +6,6 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/Types.hpp>
-#include <wmtk/utils/TupleInspector.hpp>
 
 #include <wmtk/utils/Logger.hpp>
 

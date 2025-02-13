@@ -98,6 +98,7 @@ public:
         return create_const_accessor<T, Dim>(handle.as<T>());
     }
 
+public:
     /// Returns the id of a simplex encoded in a tuple
     int64_t id(const Tuple& tuple, PrimitiveType type) const override
     {

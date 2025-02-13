@@ -4,7 +4,6 @@
 #include <wmtk/autogen/find_local_dart_action.hpp>
 #include <wmtk/autogen/local_dart_action.hpp>
 #include <wmtk/autogen/local_switch_tuple.hpp>
-#include <wmtk/utils/TupleInspector.hpp>
 #include "ear_actions.hpp"
 namespace wmtk::operations::internal {
 
@@ -15,10 +14,8 @@ CollapseAlternateFacetOptionData::CollapseAlternateFacetOptionData(
     : input(sd.dart_from_tuple(input_tuple))
     , alts({{left_switches(m, input_tuple), right_switches(m, input_tuple)}})
     , local_boundary_indices({{
-          wmtk::utils::TupleInspector::local_id(input_tuple, m.top_simplex_type() - 1),
-          wmtk::utils::TupleInspector::local_id(
-              m.switch_tuple(input_tuple, PrimitiveType::Vertex),
-              m.top_simplex_type() - 1),
+          input_tuple.local_id(m.top_simplex_type() - 1),
+          m.switch_tuple(input_tuple, PrimitiveType::Vertex).local_id(m.top_simplex_type() - 1),
       }})
 {}
 

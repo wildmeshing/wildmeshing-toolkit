@@ -5,10 +5,6 @@ namespace wmtk::autogen::tet_mesh {
 inline int64_t local_id_table_offset(const Tuple& tuple)
 {
     int64_t value = tuple.local_vid() * 6 * 4 + tuple.local_eid() * 4 + tuple.local_fid();
-
-
-    // value = (TupleInspector::local_vid(tuple) * 6 + TupleInspector::local_eid(tuple)) * 4 +
-    //        TupleInspector::local_fid(tuple);
     return value;
 }
 

@@ -51,18 +51,18 @@ public:
     std::vector<std::vector<TypedAttributeHandle<int64_t>>> connectivity_attributes()
         const override;
 
+
     Tuple switch_vertex(const Tuple& tuple) const;
     Tuple switch_edge(const Tuple& tuple) const;
 
     std::vector<Tuple> orient_vertices(const Tuple& tuple) const override;
-
-protected:
     int64_t id(const Tuple& tuple, PrimitiveType type) const final override;
     using MeshCRTP<EdgeMesh>::id; // getting the (simplex) prototype
 
     int64_t id_vertex(const Tuple& tuple) const { return id(tuple, PrimitiveType::Vertex); }
     int64_t id_edge(const Tuple& tuple) const { return id(tuple, PrimitiveType::Edge); }
 
+protected:
     /**
      * @brief internal function that returns the tuple of requested type, and has the global index
      * cid

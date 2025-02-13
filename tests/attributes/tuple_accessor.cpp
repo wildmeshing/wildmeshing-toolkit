@@ -5,7 +5,6 @@
 #include <wmtk/attribute/TupleAccessor.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include <wmtk/utils/TupleInspector.hpp>
 #include "../tools/DEBUG_PointMesh.hpp"
 
 

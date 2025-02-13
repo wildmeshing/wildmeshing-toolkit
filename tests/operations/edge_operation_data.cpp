@@ -15,7 +15,6 @@
 #include <wmtk/operations/internal/SplitAlternateFacetData.hpp>
 #include <wmtk/operations/internal/ear_actions.hpp>
 #include <wmtk/operations/utils/MultiMeshEdgeSplitFunctor.hpp>
-#include <wmtk/utils/TupleInspector.hpp>
 #include <wmtk/utils/primitive_range.hpp>
 #include "../tools/EdgeMesh_examples.hpp"
 #include "../tools/global_ids.hpp"
@@ -160,19 +159,16 @@ TEST_CASE("split_facet_maps_mesh", "[operations][data]")
                 wmtk::autogen::Dart(scm_data.new_facet_indices[0], edge_orientation));
             wmtk::Tuple right_tuple = sd.tuple_from_dart(
                 wmtk::autogen::Dart(scm_data.new_facet_indices[1], edge_orientation));
-            spdlog::info(
-                "{} {}",
-                wmtk::utils::TupleInspector::as_string(left_tuple),
-                wmtk::utils::TupleInspector::as_string(right_tuple));
+            spdlog::info("{} {}", left_tuple.as_string(), right_tuple.as_string());
 
             const auto left_global_ids = wmtk::tests::tools::global_ids(*mesh_ptr, left_tuple);
             const auto right_global_ids = wmtk::tests::tools::global_ids(*mesh_ptr, right_tuple);
 
             spdlog::info(
                 "{}:{} {}:{}",
-                wmtk::utils::TupleInspector::as_string(left_tuple),
+                left_tuple.as_string(),
                 fmt::join(left_global_ids, ","),
-                wmtk::utils::TupleInspector::as_string(right_tuple),
+                right_tuple.as_string(),
                 fmt::join(right_global_ids, ","));
 
             int8_t left_size = wmtk::tests::tools::global_index_max_subdart_size(
@@ -268,7 +264,7 @@ TEST_CASE("collapse_facet_maps_1d", "[operations][data][1D][.]")
                 // spdlog::info(
                 //    "{}: {} => {}",
                 //    j,
-                //    wmtk::utils::TupleInspector::as_string(tup),
+                //    tup.as_string(),
                 //    bits[j]);
                 REQUIRE(tup.is_null() == bits[j]);
                 if (!bits[j]) { // not boundary
@@ -478,11 +474,11 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D][.]")
                 const auto& [c, d] = ret;
                 spdlog::info(
                     "Input {}: Expecteed two alts{} {} => Got two alts{} {}",
-                    wmtk::utils::TupleInspector::as_string(t),
-                    wmtk::utils::TupleInspector::as_string(a),
-                    wmtk::utils::TupleInspector::as_string(b),
-                    wmtk::utils::TupleInspector::as_string(c),
-                    wmtk::utils::TupleInspector::as_string(d));
+                    t.as_string(),
+                    a.as_string(),
+                    b.as_string(),
+                    c.as_string(),
+                    d.as_string());
                 // notation is triangle; vertex, edge (matches global; local vid, local eid)
                 // 0; 1,2 (global: 0; 1,0)
                 // currently: 1;1,0 2;1,2 => 1;1,2 2;1,0
