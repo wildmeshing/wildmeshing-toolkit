@@ -11,7 +11,6 @@
 #include <wmtk/simplex/utils/make_unique.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include <wmtk/utils/TupleInspector.hpp>
 #include <wmtk/utils/vector_hash.hpp>
 #include "utils/local_switch_tuple.hpp"
 #include "utils/transport_tuple.hpp"
@@ -58,18 +57,18 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
     // assert(target_mesh.is_valid(target_mesh_base_tuple));
 
 
-    if (source_mesh_base_tuple.m_global_cid != source_mesh_target_tuple.m_global_cid) {
+    if (source_mesh_base_tuple.global_cid() != source_mesh_target_tuple.global_cid()) {
         // guarantee that the source and target tuples refer to the same simplex
         assert(source_mesh_primitive_type > target_mesh_primitive_type);
         const std::vector<Tuple> equivalent_tuples = simplex::top_dimension_cofaces_tuples(
             source_mesh,
             simplex::Simplex(source_mesh, target_mesh_primitive_type, source_tuple));
         for (const Tuple& t : equivalent_tuples) {
-            if (t.m_global_cid == source_mesh_base_tuple.m_global_cid) {
+            if (t.global_cid() == source_mesh_base_tuple.global_cid()) {
                 // specific for tet->edge
                 if (source_mesh_primitive_type == PrimitiveType::Tetrahedron &&
                     target_mesh_primitive_type == PrimitiveType::Edge) {
-                    if (t.m_local_fid == source_mesh_base_tuple.m_local_fid) {
+                    if (t.local_fid() == source_mesh_base_tuple.local_fid()) {
                         source_mesh_target_tuple = t;
                         break;
                     } else {
@@ -87,16 +86,16 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
 
     if (source_mesh_primitive_type == PrimitiveType::Tetrahedron &&
         target_mesh_primitive_type == PrimitiveType::Edge) {
-        if (source_mesh_target_tuple.m_local_fid != source_mesh_base_tuple.m_local_fid) {
+        if (source_mesh_target_tuple.local_fid() != source_mesh_base_tuple.local_fid()) {
             source_mesh_target_tuple =
                 source_mesh.switch_tuple(source_mesh_target_tuple, PrimitiveType::Triangle);
         }
     }
 
     assert(
-        source_mesh_base_tuple.m_global_cid ==
+        source_mesh_base_tuple.global_cid() ==
         source_mesh_target_tuple
-            .m_global_cid); // make sure that local tuple operations will find a valid sequence
+            .global_cid()); // make sure that local tuple operations will find a valid sequence
 
     // we want to repeat switches from source_base_tuple -> source_tuple to
     // target_base _tuple -> return value
@@ -768,7 +767,7 @@ void MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const ChildDat
             "[{} -> {}] Checking child tuple {}",
             fmt::join(absolute_id(), ","),
             fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
-            wmtk::utils::TupleInspector::as_string(child_tuple));
+            child_tuple.as_string());
         // 1. test if all maps in child_mesh exisits
         auto [child_tuple_from_child, parent_tuple_from_child] =
             multimesh::utils::read_tuple_map_attribute_slow(
@@ -782,9 +781,9 @@ void MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const ChildDat
                 "[{} -> {}] Checking asserts from child {} {} (input tuple was {})",
                 fmt::join(absolute_id(), ","),
                 fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
-                wmtk::utils::TupleInspector::as_string(child_tuple_from_child),
-                wmtk::utils::TupleInspector::as_string(child_tuple_from_child),
-                wmtk::utils::TupleInspector::as_string(child_tuple));
+                child_tuple_from_child.as_string(),
+                child_tuple_from_child.as_string(),
+                child_tuple.as_string());
             assert(child_mesh.is_valid(child_tuple_from_child));
             assert(child_mesh.is_valid(child_tuple_from_child));
             assert(my_mesh.is_valid(parent_tuple_from_child));
@@ -801,8 +800,8 @@ void MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const ChildDat
                 "[{} -> {}] Checking asserts from child {} {}",
                 fmt::join(absolute_id(), ","),
                 fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
-                wmtk::utils::TupleInspector::as_string(parent_tuple_from_parent),
-                wmtk::utils::TupleInspector::as_string(child_tuple_from_parent));
+                parent_tuple_from_parent.as_string(),
+                child_tuple_from_parent.as_string());
 
             assert(
                 (child_tuple_from_child == child_tuple_from_parent &&

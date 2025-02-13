@@ -72,7 +72,7 @@ bool TriMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
 bool TriMesh::is_boundary_edge(const Tuple& tuple) const
 {
     assert(is_valid(tuple));
-    return m_ff_accessor->const_vector_attribute<3>(tuple)(tuple.m_local_eid) < 0;
+    return m_ff_accessor->const_vector_attribute<3>(tuple)(tuple.local_eid()) < 0;
 }
 
 bool TriMesh::is_boundary_vertex(const Tuple& vertex) const
@@ -109,7 +109,7 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 
         auto ff = m_ff_accessor->const_vector_attribute<3>(tuple);
 
-        int64_t gcid_new = ff(tuple.m_local_eid);
+        int64_t gcid_new = ff(tuple.local_eid());
         int64_t lvid_new = -1, leid_new = -1;
 
         auto fv = m_fv_accessor->index_access().const_vector_attribute<3>(gcid_new);
@@ -118,8 +118,8 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 
         if (gfid == gcid_new) {
             // this supports 0,1,0 triangles not 0,0,0 triangles
-            int64_t oleid = tuple.m_local_eid;
-            int64_t olvid = tuple.m_local_vid;
+            int64_t oleid = tuple.local_eid();
+            int64_t olvid = tuple.local_vid();
             for (int64_t i = 0; i < 3; ++i) {
                 if (i != oleid && fe(i) == geid) {
                     leid_new = i;
@@ -153,7 +153,7 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         assert(lvid_new != -1);
         assert(leid_new != -1);
 
-        const Tuple res(lvid_new, leid_new, tuple.m_local_fid, gcid_new);
+        const Tuple res(lvid_new, leid_new, tuple.local_fid(), gcid_new);
         assert(is_valid(res));
         return res;
     }
@@ -332,23 +332,23 @@ bool TriMesh::is_valid(const Tuple& tuple) const
         logger().trace("Tuple was null and therefore not valid");
         return false;
     }
-    const bool is_connectivity_valid = tuple.m_local_vid >= 0 && tuple.m_local_eid >= 0 &&
-                                       tuple.m_global_cid >= 0 &&
+    const bool is_connectivity_valid = tuple.local_vid() >= 0 && tuple.local_eid() >= 0 &&
+                                       tuple.global_cid() >= 0 &&
                                        autogen::tri_mesh::tuple_is_valid_for_ccw(tuple);
 
     if (!is_connectivity_valid) {
 #if !defined(NDEBUG)
         logger().trace(
-            "tuple.m_local_vid={} >= 0 && tuple.m_local_eid={} >= 0 &&"
-            " tuple.m_global_cid={} >= 0 &&"
+            "tuple.local_vid()={} >= 0 && tuple.local_eid()={} >= 0 &&"
+            " tuple.global_cid()={} >= 0 &&"
             " autogen::tri_mesh::tuple_is_valid_for_ccw(tuple)={}",
-            tuple.m_local_vid,
-            tuple.m_local_eid,
-            tuple.m_global_cid,
+            tuple.local_vid(),
+            tuple.local_eid(),
+            tuple.global_cid(),
             autogen::tri_mesh::tuple_is_valid_for_ccw(tuple));
-        assert(tuple.m_local_vid >= 0);
-        assert(tuple.m_local_eid >= 0);
-        assert(tuple.m_global_cid >= 0);
+        assert(tuple.local_vid() >= 0);
+        assert(tuple.local_eid() >= 0);
+        assert(tuple.global_cid() >= 0);
         assert(autogen::tri_mesh::tuple_is_valid_for_ccw(tuple));
 #endif
         return false;
@@ -539,8 +539,7 @@ bool TriMesh::is_connectivity_valid() const
 
 Tuple TriMesh::with_different_cid(const Tuple& t, int64_t cid)
 {
-    Tuple r = t;
-    r.m_global_cid = cid;
+    Tuple r(t.local_vid(), t.local_eid(), t.local_fid(), cid);
     return r;
 }
 
@@ -561,7 +560,7 @@ std::vector<std::vector<TypedAttributeHandle<int64_t>>> TriMesh::connectivity_at
 
 std::vector<Tuple> TriMesh::orient_vertices(const Tuple& tuple) const
 {
-    int64_t cid = tuple.m_global_cid;
+    int64_t cid = tuple.global_cid();
     return {Tuple(0, 2, -1, cid), Tuple(1, 0, -1, cid), Tuple(2, 1, -1, cid)};
 }
 

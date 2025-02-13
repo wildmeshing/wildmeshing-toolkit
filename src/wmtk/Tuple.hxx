@@ -1,10 +1,6 @@
-
-#include <cstddef>
-#include <iostream>
-#include <optional>
-#include <string>
-#include <tuple>
 #include "Tuple.hpp"
+
+#include <cassert>
 
 namespace wmtk {
 
@@ -14,6 +10,12 @@ namespace wmtk {
 //     v0 - - - v1
 //         e2
 
+inline Tuple::Tuple(int8_t local_vid, int8_t local_eid, int8_t local_fid, int64_t global_cid)
+    : m_global_cid(global_cid)
+    , m_local_vid(local_vid)
+    , m_local_eid(local_eid)
+    , m_local_fid(local_fid)
+{}
 
 inline bool Tuple::operator!=(const wmtk::Tuple& t) const
 {
@@ -23,7 +25,6 @@ inline bool Tuple::operator==(const wmtk::Tuple& t) const
 {
     return std::tie(m_local_vid, m_local_eid, m_local_fid, m_global_cid) ==
            std::tie(t.m_local_vid, t.m_local_eid, t.m_local_fid, t.m_global_cid);
-
 }
 
 inline bool Tuple::operator<(const wmtk::Tuple& t) const
@@ -43,6 +44,11 @@ inline bool Tuple::is_null() const
 }
 
 
+inline int64_t Tuple::global_cid() const
+{
+    return m_global_cid;
+}
+
 inline int8_t Tuple::local_vid() const
 {
     return m_local_vid;
@@ -56,6 +62,18 @@ inline int8_t Tuple::local_eid() const
 inline int8_t Tuple::local_fid() const
 {
     return m_local_fid;
+}
+
+inline int8_t Tuple::local_id(const PrimitiveType pt) const
+{
+    switch (pt) {
+    case PrimitiveType::Vertex: return local_vid();
+    case PrimitiveType::Edge: return local_eid();
+    case PrimitiveType::Triangle: return local_fid();
+    case PrimitiveType::Tetrahedron:
+    default: assert(false);
+    }
+    return -1;
 }
 
 } // namespace wmtk

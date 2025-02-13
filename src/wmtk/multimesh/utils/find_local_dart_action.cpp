@@ -6,7 +6,6 @@
 #include <stdexcept>
 #include <wmtk/autogen/SimplexDart.hpp>
 #include <wmtk/autogen/find_local_dart_action.hpp>
-#include <wmtk/utils/TupleInspector.hpp>
 #include "local_switch_tuple.hpp"
 namespace wmtk::multimesh::utils {
 int8_t find_local_dart_action(PrimitiveType pt, const Tuple& source, const Tuple& target)

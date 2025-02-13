@@ -1,9 +1,11 @@
 
 #include "valid_index_from_tuple.hpp"
 #include <cassert>
+#include <wmtk/PrimitiveType.hpp>
 #include <wmtk/autogen/edge_mesh/valid_index_from_tuple.hpp>
 #include <wmtk/autogen/tet_mesh/valid_index_from_tuple.hpp>
 #include <wmtk/autogen/tri_mesh/valid_index_from_tuple.hpp>
+
 namespace wmtk::autogen {
 int8_t valid_index_from_tuple(PrimitiveType mesh_type, const Tuple& t)
 {

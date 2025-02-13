@@ -39,8 +39,6 @@ tools/DEBUG_Mesh.hpp
 tools/DEBUG_Mesh.cpp
 tools/DEBUG_MultiMeshManager.hpp
 tools/DEBUG_MultiMeshManager.cpp
-tools/DEBUG_Tuple.hpp
-tools/DEBUG_Tuple.cpp
 
 )
 add_library(wmtk_test_tools ${TEST_TOOLS})

@@ -4,14 +4,14 @@
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/invariants/FusionEdgeInvariant.hpp>
-#include <wmtk/invariants/InvariantCollection.hpp>
-#include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
-#include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
-#include <wmtk/invariants/MinEdgeLengthInvariant.hpp>
-#include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
-#include <wmtk/invariants/ValenceImprovementInvariant.hpp>
 #include <wmtk/invariants/InteriorSimplexInvariant.hpp>
+#include <wmtk/invariants/InvariantCollection.hpp>
+#include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
+#include <wmtk/invariants/MinEdgeLengthInvariant.hpp>
+#include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
+#include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
+#include <wmtk/invariants/ValenceImprovementInvariant.hpp>
 #include <wmtk/invariants/uvEdgeInvariant.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
@@ -55,9 +55,6 @@ double relative_to_absolute_length(
 
 void isotropic_remeshing(const IsotropicRemeshingOptions& options)
 {
-    using namespace internal;
-
-
     auto position = options.position_attribute;
 
     if (position.mesh().top_simplex_type() != PrimitiveType::Triangle) {
@@ -173,7 +170,6 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
     }
     assert(op_split->attribute_new_all_configured());
     ops.push_back(op_split);
-
 
 
     //////////////////////////////////////////
