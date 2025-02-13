@@ -12,7 +12,6 @@ macro(wmtk_register_integration_test )
 
     include(wmtk_download_data)
     wmtk_download_data()
-    message(STATUS "======================================${DATA_DIR}")
     set(DATA_DIR_LINE  "\"data_folder\":\"${DATA_DIR}\"," )
 
     if(NOT _CONFIG_PATH)

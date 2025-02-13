@@ -7,7 +7,6 @@ endif()
 
 include(wmtk_download_data)
 wmtk_download_data()
-message(STATUS "=========================================================${DATA_DIR}")
 
 add_library(wmtk_data INTERFACE)
 add_library(wmtk::data ALIAS wmtk_data)

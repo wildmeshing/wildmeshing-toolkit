@@ -11,7 +11,6 @@ function(wmtk_download_data)
      )
 
      set(DATA_DIR "${wmtk_data_SOURCE_DIR}" PARENT_SCOPE)
-     message(STATUS "${wmtk_data_SOURCE_DIR}======================")
 
 
 endfunction()
