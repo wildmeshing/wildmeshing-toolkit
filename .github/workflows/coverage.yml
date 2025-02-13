@@ -10,12 +10,13 @@ on:
 
 env:
   CTEST_OUTPUT_ON_FAILURE: ON
-  CTEST_PARALLEL_LEVEL: 2
+  CTEST_PARALLEL_LEVEL: 8
 
 jobs:
   Linux:
     name: ${{ matrix.name }}
-    runs-on: ${{ matrix.os }}
+    runs-on: [self-hosted,Linux]
+    # runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -47,7 +48,7 @@ jobs:
 
       - name: Prepare ccache
         run: |
-          ccache --max-size=1.0G
+          ccache --max-size=10.0G
           ccache -V && ccache --show-stats && ccache --zero-stats
 
       - name: Configure
@@ -60,7 +61,7 @@ jobs:
             -DWMTK_CODE_COVERAGE=ON
 
       - name: Build
-        run: cd build; make -j2; ccache --show-stats
+        run: cd build; make -j8; ccache --show-stats
 
       - name: Run Coverage
         run: |
