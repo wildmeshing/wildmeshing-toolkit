@@ -10,6 +10,12 @@ include(wmtk_add_application)
 include(wmtk_register_integration_test)
 include(wmtk_generate_test_config)
 
+
+include(wmtk_download_data)
+wmtk_download_data(DATA_DIR 
+    https://github.com/wildmeshing/data.git
+    6f171d11283d2977913a1b4e6129f9808357baf9
+    )
 add_subdirectory(utils)
 
 

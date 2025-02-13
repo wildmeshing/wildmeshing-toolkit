@@ -48,6 +48,9 @@ option(WMTK_ENABLE_APPLICATIONS "Enable applications (required for any applicati
 option(WMTK_BUILD_DOCS "Build doxygen" OFF)
 option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option due to use of TBB
 
+
+
+
 option(WMTK_CODE_COVERAGE "Enable coverage reporting" OFF)
 
 add_library(wmtk_coverage_config INTERFACE)
@@ -167,12 +170,11 @@ if(MSVC)
     target_compile_definitions(wildmeshing_toolkit PUBLIC _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS)
 endif()
 
-if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
-    # Unit tests
-    enable_testing()
-    # data for unit tests
-    set(WMTK_DATA_ROOT "${CPM_SOURCE_CACHE}/wmtk_data/" CACHE PATH "Where should the toolkit download and look for test data?")
-endif()
+
+# git repo used for wmtk data if it is required.
+# use wmtk_download_data to obtain the path to the data
+set(WMTK_DATA_REPOSITORY https://github.com/wildmeshing/data.git CACHE STRING "Git repo for testing data" )
+set(WMTK_DATA_TAG 6f171d11283d2977913a1b4e6129f9808357baf9 CACHE STRING "git tag for testing data" )
 
 
 add_subdirectory(components)
@@ -205,8 +207,11 @@ if(WMTK_BUILD_DOCS)
     endif(DOXYGEN_FOUND)
 endif()
 
+
+
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
+    enable_testing()
     add_subdirectory(tests)
 endif()
 if(WMTK_ENABLE_APPLICATIONS)
