@@ -6,7 +6,7 @@ function(wmtk_download_data)
          NAME wmtk_data
          GIT_REPOSITORY ${WMTK_DATA_REPOSITORY}
          GIT_TAG ${WMTK_DATA_TAG}
-         GIT_SHALLOW TRUE
+         GIT_SHALLOW FALSE
          DOWNLOAD_ONLY TRUE
      )
 
