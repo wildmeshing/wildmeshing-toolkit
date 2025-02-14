@@ -3,6 +3,8 @@
 #include "internal/wildmeshing2d.hpp"
 #include "internal/wildmeshing3d.hpp"
 
+#include <wmtk/utils/Logger.hpp>
+
 namespace wmtk::components {
 
 using namespace internal;
@@ -18,6 +20,10 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing(
 
     assert(false);
     return {};
+}
+
+void wildmeshing(const WildMeshingEmbeddingOptions& options) {
+    log_and_throw_error("not implemented");
 }
 
 } // namespace wmtk::components
