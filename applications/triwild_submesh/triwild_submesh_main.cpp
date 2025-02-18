@@ -146,7 +146,6 @@ int main(int argc, char* argv[])
     wmo.target_edge_length = j["target_edge_length"];
     wmo.target_max_amips = j["target_max_amips"];
     wmo.max_passes = j["max_passes"];
-    wmo.intermediate_output = j["intermediate_output"];
     wmo.replace_double_coordinate = false;
     wmo.scheduler_update_frequency = 0;
     wmo.intermediate_output_path = "";
@@ -157,6 +156,7 @@ int main(int argc, char* argv[])
     wmo.skip_collapse = j["skip_collapse"];
     wmo.skip_swap = j["skip_swap"];
     wmo.skip_smooth = j["skip_smooth"];
+    wmo.use_embedding = true;
 
     auto meshes_after_tetwild = wildmeshing(wmo);
     auto main_mesh = meshes_after_tetwild[0].first;
@@ -186,7 +186,7 @@ int main(int argc, char* argv[])
         out_json["input"] = j;
 
         std::ofstream ofs(report);
-        ofs << out_json;
+        ofs << std::setw(4) << out_json;
     }
 
     return 0;

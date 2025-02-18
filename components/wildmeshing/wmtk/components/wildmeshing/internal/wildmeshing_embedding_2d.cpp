@@ -62,6 +62,7 @@
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 
 #include <wmtk/utils/Rational.hpp>
+#include <wmtk/utils/bbox_from_mesh.hpp>
 #include <wmtk/utils/orient.hpp>
 
 #include <wmtk/io/MeshReader.hpp>
@@ -82,6 +83,54 @@ using namespace operations::composite;
 using namespace function;
 using namespace invariants;
 
+std::tuple<double, double, double> min_max_avg_amips(
+    const Mesh& mesh,
+    const attribute::MeshAttributeHandle& amips_handle)
+{
+    const auto amips_accessor = mesh.create_const_accessor<double>(amips_handle);
+
+    // compute max energy
+    double max_energy = std::numeric_limits<double>::lowest();
+    double min_energy = std::numeric_limits<double>::max();
+    double avg_energy = 0;
+    for (const Tuple& t : mesh.get_all(mesh.top_simplex_type())) {
+        double e = amips_accessor.const_scalar_attribute(t);
+        max_energy = std::max(max_energy, e);
+        min_energy = std::min(min_energy, e);
+        avg_energy += e;
+    }
+
+    avg_energy = avg_energy / mesh.get_all(mesh.top_simplex_type()).size();
+
+    logger().info(
+        "Max AMIPS Energy: {:>6.2f}, Min AMIPS Energy: {:>6.2f}, Avg AMIPS Energy: {:>6.2f}",
+        max_energy,
+        min_energy,
+        avg_energy);
+
+    return std::make_tuple(min_energy, max_energy, avg_energy);
+}
+
+void print_stats(const wmtk::SchedulerStats& stats, const std::string& name = "")
+{
+    if (name.empty()) {
+        logger().info(
+            "Executed {} ops (S/F) {}/{}. Time executing: {:.4f}",
+            stats.number_of_performed_operations(),
+            stats.number_of_successful_operations(),
+            stats.number_of_failed_operations(),
+            stats.executing_time);
+    } else {
+        logger().info(
+            "Executed {}, {} ops (S/F) {}/{}. Time executing: {:.4f}",
+            name,
+            stats.number_of_performed_operations(),
+            stats.number_of_successful_operations(),
+            stats.number_of_failed_operations(),
+            stats.executing_time);
+    }
+}
+
 std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding_2d(
     const WildMeshingOptions& options)
 {
@@ -91,13 +140,13 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
         log_and_throw_error("input mesh for wildmeshing connectivity invalid");
     }
 
-    wmtk::logger().trace("Getting rational point handle");
+    logger().trace("Getting rational point handle");
 
     //////////////////////////////////
     // Retriving vertices
     //
     if (options.replace_double_coordinate) {
-        wmtk::logger().trace("Found double attribute");
+        logger().trace("Found double attribute");
         auto pt_double_attribute =
             mesh.get_attribute_handle<double>(options.input_mesh_position, PrimitiveType::Vertex);
 
@@ -118,40 +167,16 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     }
     auto pt_attribute =
         mesh.get_attribute_handle<Rational>(options.input_mesh_position, PrimitiveType::Vertex);
-    wmtk::logger().trace("Getting rational point accessor");
+    logger().trace("Getting rational point accessor");
     auto pt_accessor = mesh.create_accessor(pt_attribute.as<Rational>());
 
-    wmtk::logger().trace("Computing bounding box diagonal");
     //////////////////////////////////
     // computing bbox diagonal
-    Eigen::VectorXd bmin(mesh.top_cell_dimension());
-    bmin.setConstant(std::numeric_limits<double>::max());
-    Eigen::VectorXd bmax(mesh.top_cell_dimension());
-    bmax.setConstant(std::numeric_limits<double>::lowest());
-
-    const auto vertices = mesh.get_all(PrimitiveType::Vertex);
-    for (const auto& v : vertices) {
-        const auto p = pt_accessor.vector_attribute(v).cast<double>();
-        for (int64_t d = 0; d < bmax.size(); ++d) {
-            bmin[d] = std::min(bmin[d], p[d]);
-            bmax[d] = std::max(bmax[d], p[d]);
-        }
-    }
-
-
-    const double bbdiag = (bmax - bmin).norm();
-
-    wmtk::logger().info("bbox max {}, bbox min {}, diag {}", bmax, bmin, bbdiag);
+    const double bbdiag = wmtk::utils::bbox_diagonal_from_mesh(pt_attribute);
+    logger().info("bbox diag = {}", bbdiag);
 
     const double target_edge_length = options.target_edge_length * bbdiag;
-
-    // const double target_edge_length =
-    //     options.target_edge_length * bbdiag /
-    //     std::min(
-    //         2.0,
-    //         1 + options.target_edge_length * 2); // min to prevent bad option.target_edge_length
-
-    wmtk::logger().info("target edge length: {}", target_edge_length);
+    logger().info("target edge length: {}", target_edge_length);
 
     //////////////////////////////////
     // store amips
@@ -193,31 +218,11 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
             compute_amips);
     amips_update->run_on_all();
 
-    double max_amips = std::numeric_limits<double>::lowest();
-    double min_amips = std::numeric_limits<double>::max();
+    double max_amips;
+    double min_amips;
+    double avg_amips;
 
-    for (const auto& t : mesh.get_all(mesh.top_simplex_type())) {
-        // double e = amips->get_value(simplex::Simplex(mesh.top_simplex_type(), t));
-        double e = amips_accessor.scalar_attribute(t);
-        max_amips = std::max(max_amips, e);
-        min_amips = std::min(min_amips, e);
-    }
-
-    logger().info("Initial Max AMIPS Energy: {}, Min AMIPS Energy: {}", max_amips, min_amips);
-
-    //////////////////////////////////
-    // sizing field scalar
-    //////////////////////////////////
-
-    // TODO: add sizing field for 2d
-
-    // auto sizing_field_scalar_attribute = mesh.register_attribute<double>(
-    //     "sizing_field_scalar",
-    //     PrimitiveType::Vertex,
-    //     1,
-    //     false,
-    //     1); // defaults to 1
-
+    std::tie(min_amips, max_amips, avg_amips) = min_max_avg_amips(mesh, amips_attribute);
 
     //////////////////////////////////
     // Storing target edge length
@@ -235,14 +240,14 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
         } else {
             // use envelope thickness if available
             double r = 0;
-            for (const auto& e : options.envelopes) {
+            for (const EnvelopeOptions& e : options.envelopes) {
                 r = std::max(r, e.thickness);
             }
             assert(r > 0);
             return r;
         }
     }();
-    const double target_max_amips = options.target_max_amips;
+    const double& target_max_amips = options.target_max_amips;
 
 
     //////////////////////////////////
@@ -273,34 +278,29 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
 
     auto input_ptr = mesh.get_child_meshes().front();
 
-    int64_t frozen_cnt = 0;
-    for (const auto& v : input_ptr->get_all(PrimitiveType::Vertex)) {
+    for (const Tuple& v : input_ptr->get_all(PrimitiveType::Vertex)) {
         if (input_ptr->is_boundary(PrimitiveType::Vertex, v)) {
             const auto& parent_v =
                 input_ptr->map_to_parent(simplex::Simplex::vertex(*input_ptr, v));
             frozen_vertex_accessor.scalar_attribute(parent_v) = 1;
-            frozen_cnt++;
-        } else {
-            // frozen_vertex_accessor.scalar_attribute(parent_v) = 0; // redundant, just for safe
         }
     }
 
-    frozen_cnt = 0;
-
-    for (const auto& v : mesh.get_all(PrimitiveType::Vertex)) {
-        if (frozen_vertex_accessor.scalar_attribute(v) == 1) {
-            frozen_cnt++;
+    {
+        int64_t frozen_cnt = 0;
+        for (const auto& v : mesh.get_all(PrimitiveType::Vertex)) {
+            if (frozen_vertex_accessor.scalar_attribute(v) == 1) {
+                frozen_cnt++;
+            }
         }
+        logger().info("mesh has {} frozen vertices", frozen_cnt);
     }
-
-    wmtk::logger().info("mesh has {} frozen vertices", frozen_cnt);
 
     //////////////////////////////////
     // default transfer
     auto pass_through_attributes = options.pass_through;
     pass_through_attributes.push_back(edge_length_attribute);
     pass_through_attributes.push_back(amips_attribute);
-    // pass_through_attributes.push_back(target_edge_length_attribute);
 
 
     //////////////////////////////////
@@ -324,33 +324,30 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
 
     auto envelope_invariant = std::make_shared<InvariantCollection>(mesh);
     std::vector<std::shared_ptr<AttributeTransferStrategyBase>> update_child_position,
-        update_parent_position;
+        update_parent_position; // TODO remove for submesh
     std::vector<std::shared_ptr<Mesh>> envelopes;
     std::vector<MeshConstrainPair> mesh_constraint_pairs;
 
     std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> multimesh_meshes;
 
-    for (const auto& e : options.envelopes) {
-        auto& constrained_mesh = *e.envelope_constrained_mesh;
-        auto& geometry_mesh = *e.envelope_geometry_mesh;
+    for (const EnvelopeOptions& e : options.envelopes) {
+        Mesh& constrained_mesh = *e.envelope_constrained_mesh;
+        Mesh& geometry_mesh = *e.envelope_geometry_mesh;
 
-        wmtk::logger().info(
-            "wildmeshing2d: registered {} mesh as envelope constraints",
-            e.envelope_name);
+        logger().info("wildmeshing2d: registered {} mesh as envelope constraints", e.envelope_name);
 
-        const bool geometry_has_double_pos =
+        const bool has_double_pos =
             geometry_mesh.has_attribute<double>(e.geometry_position_name, PrimitiveType::Vertex);
-        const bool geometry_has_rational_pos =
+        const bool has_rational_pos =
             geometry_mesh.has_attribute<Rational>(e.geometry_position_name, PrimitiveType::Vertex);
-        assert(geometry_has_double_pos || geometry_has_rational_pos);
+        assert(has_double_pos ^ has_rational_pos);
 
-        auto geometry_pt_handle = geometry_has_double_pos
-                                      ? geometry_mesh.get_attribute_handle<double>(
-                                            e.geometry_position_name,
-                                            PrimitiveType::Vertex)
-                                      : geometry_mesh.get_attribute_handle<Rational>(
-                                            e.geometry_position_name,
-                                            PrimitiveType::Vertex);
+        auto geometry_pt_handle = has_double_pos ? geometry_mesh.get_attribute_handle<double>(
+                                                       e.geometry_position_name,
+                                                       PrimitiveType::Vertex)
+                                                 : geometry_mesh.get_attribute_handle<Rational>(
+                                                       e.geometry_position_name,
+                                                       PrimitiveType::Vertex);
 
         auto constrained_pt_handle = constrained_mesh.get_attribute_handle<Rational>(
             e.constrained_position_name,
@@ -368,11 +365,11 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
 
         update_parent_position.emplace_back(attribute_update::make_cast_attribute_transfer_strategy(
             /*source=*/constrained_pt_handle,
-            /*target=*/pt_attribute));
+            /*target=*/pt_attribute)); // TODO remove for submesh
 
         update_child_position.emplace_back(attribute_update::make_cast_attribute_transfer_strategy(
             /*source=*/pt_attribute,
-            /*target=*/constrained_pt_handle));
+            /*target=*/constrained_pt_handle)); // TODO remove for submesh
     }
 
 
@@ -380,7 +377,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     // Invariants
     //////////////////////////////////
 
-    wmtk::logger().trace("Going through invariants");
+    logger().trace("Going through invariants");
     auto inversion_invariant =
         std::make_shared<SimplexInversionInvariant<Rational>>(mesh, pt_attribute.as<Rational>());
 
@@ -413,7 +410,8 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     }
 
     auto invariant_separate_substructures =
-        std::make_shared<invariants::SeparateSubstructuresInvariant>(mesh);
+        std::make_shared<invariants::SeparateSubstructuresInvariant>(
+            mesh); // TODO remove for submesh
 
     auto frozen_vertex_invariant = std::make_shared<invariants::FrozenVertexInvariant>(
         mesh,
@@ -439,42 +437,6 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
             pt_attribute,
             update_flag_func);
 
-    //////////////////////////////////
-    // sizing field update flags
-    //////////////////////////////////
-
-
-    // TODO: add with sizing field
-    // auto visited_vertex_flag =
-    //     mesh.register_attribute<char>("visited_vertex", PrimitiveType::Vertex, 1, false,
-    //     char(1));
-    // pass_through_attributes.push_back(visited_vertex_flag);
-
-    //////////////////////////////////
-    // energy filter flag
-    //////////////////////////////////
-
-    // TODO: add energy filter
-
-    // auto energy_filter_attribute =
-    //     mesh.register_attribute<char>("energy_filter", PrimitiveType::Vertex, 1, false,
-    //     char(1));
-
-    // auto energy_filter_accessor = mesh.create_accessor<char>(energy_filter_attribute);
-
-    // auto update_energy_filter_func = [](const Eigen::MatrixX<Rational>& P) ->
-    // Eigen::VectorX<char> {
-    //     // assert(P.cols() == 2);
-    //     // assert(P.rows() == 2 || P.rows() == 3);
-    //     return Eigen::VectorX<char>::Constant(1, char(1));
-    // };
-    // auto energy_filter_update =
-    //     std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<char, Rational>>(
-    //         energy_filter_attribute,
-    //         pt_attribute,
-    //         update_energy_filter_func);
-
-    // pass_through_attributes.push_back(energy_filter_attribute);
 
     //////////////////////////////////
     // Creation of the 4 ops
@@ -504,7 +466,6 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     split->add_invariant(inversion_invariant);
 
     split->set_new_attribute_strategy(pt_attribute);
-    // split->set_new_attribute_strategy(sizing_field_scalar_attribute);
     split->set_new_attribute_strategy(
         visited_edge_flag,
         wmtk::operations::SplitBasicStrategy::None,
@@ -526,12 +487,8 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
             wmtk::operations::SplitRibBasicStrategy::None);
     }
 
-    // split->add_transfer_strategy(amips_update);
     split->add_transfer_strategy(edge_length_update);
     split->add_transfer_strategy(tag_update); // for renew the queue
-    // split->add_transfer_strategy(energy_filter_update);
-
-    // split->add_transfer_strategy(target_edge_length_update);
 
     auto split_then_round = std::make_shared<AndOperationSequence>(mesh);
     split_then_round->add_operation(split);
@@ -574,7 +531,6 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
         });
 
     split_unrounded->set_new_attribute_strategy(pt_attribute, split_unrounded_transfer_strategy);
-    // split_unrounded->set_new_attribute_strategy(sizing_field_scalar_attribute);
     split_unrounded->set_new_attribute_strategy(
         visited_edge_flag,
         wmtk::operations::SplitBasicStrategy::None,
@@ -597,15 +553,10 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     split_unrounded->add_transfer_strategy(amips_update);
     split_unrounded->add_transfer_strategy(edge_length_update);
     split_unrounded->add_transfer_strategy(tag_update); // for renew the queue
-    // split_unrounded->add_transfer_strategy(energy_filter_update);
-
-    // split->add_transfer_strategy(target_edge_length_update);
 
     auto split_sequence = std::make_shared<OrOperationSequence>(mesh);
     split_sequence->add_operation(split_then_round);
     split_sequence->add_operation(split_unrounded);
-    // split_sequence->add_invariant(
-    //     std::make_shared<EnergyFilterInvariant>(mesh, energy_filter_attribute.as<char>()));
 
     split_sequence->set_priority(long_edges_first);
 
@@ -623,13 +574,9 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     // collapse transfer
     //////////////////////////////////
     auto clps_strat1 = std::make_shared<CollapseNewAttributeStrategy<Rational>>(pt_attribute);
-    // clps_strat1->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
-    // clps_strat1->set_strategy(CollapseBasicStrategy::Default);
     clps_strat1->set_strategy(CollapseBasicStrategy::CopyOther);
 
     auto clps_strat2 = std::make_shared<CollapseNewAttributeStrategy<Rational>>(pt_attribute);
-    // clps_strat2->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
-    // clps_strat2->set_strategy(CollapseBasicStrategy::Default);
     clps_strat2->set_strategy(CollapseBasicStrategy::CopyTuple);
 
     //////////////////////////////////
@@ -648,8 +595,6 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
             visited_edge_flag,
             wmtk::operations::CollapseBasicStrategy::None);
 
-        collapse->add_transfer_strategy(tag_update);
-        // collapse->add_transfer_strategy(energy_filter_update);
         for (const auto& attr : pass_through_attributes) {
             collapse->set_new_attribute_strategy(
                 attr,
@@ -658,13 +603,10 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
         collapse->set_new_attribute_strategy(
             target_edge_length_attribute,
             wmtk::operations::CollapseBasicStrategy::None);
-        // THis triggers a segfault in release
-        // solved somehow
-        // collapse->set_priority(short_edges_first);
 
+        collapse->add_transfer_strategy(tag_update);
         collapse->add_transfer_strategy(amips_update);
         collapse->add_transfer_strategy(edge_length_update);
-        // collapse->add_transfer_strategy(target_edge_length_update);
 
         for (auto& s : update_child_position) {
             collapse->add_transfer_strategy(s);
@@ -673,34 +615,20 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
 
     auto collapse1 = std::make_shared<EdgeCollapse>(mesh);
 
-    // TODO: implement for 2d
-    // collapse1->add_invariant(std::make_shared<CollapseEnergyBeforeInvariant>(
-    //     mesh,
-    //     pt_attribute.as<Rational>(),
-    //     amips_attribute.as<double>(),
-    //     1));
-
     collapse1->add_invariant(frozen_vertex_invariant);
     collapse1->set_new_attribute_strategy(pt_attribute, clps_strat1);
     collapse1->set_new_attribute_strategy(
         frozen_vertex_attribute,
         CollapseBasicStrategy::CopyOther);
-    // collapse1->set_new_attribute_strategy(sizing_field_scalar_attribute, clps_strat1);
     setup_collapse(collapse1);
 
     auto collapse2 = std::make_shared<EdgeCollapse>(mesh);
-    // collapse2->add_invariant(std::make_shared<CollapseEnergyBeforeInvariant>(
-    //     mesh,
-    //     pt_attribute.as<Rational>(),
-    //     amips_attribute.as<double>(),
-    //     0));
 
     collapse2->add_invariant(frozen_opp_vertex_invariant);
     collapse2->set_new_attribute_strategy(pt_attribute, clps_strat2);
     collapse2->set_new_attribute_strategy(
         frozen_vertex_attribute,
         CollapseBasicStrategy::CopyTuple);
-    // collapse2->set_new_attribute_strategy(sizing_field_scalar_attribute, clps_strat2);
     setup_collapse(collapse2);
 
     auto collapse = std::make_shared<OrOperationSequence>(mesh);
@@ -713,9 +641,6 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     collapse_then_round->add_operation(rounding);
 
     collapse_then_round->set_priority(short_edges_first);
-    // collapse_then_round->add_invariant(
-    //     std::make_shared<EnergyFilterInvariant>(mesh, energy_filter_attribute.as<char>()));
-
 
     for (auto& s : update_child_position) {
         collapse_then_round->add_transfer_strategy(s);
@@ -749,10 +674,6 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
         op.add_transfer_strategy(amips_update);
         op.add_transfer_strategy(edge_length_update);
         op.add_transfer_strategy(tag_update);
-        // op.add_transfer_strategy(target_edge_length_update);
-        // for (auto& s : update_child_position) {
-        //     op.add_transfer_strategy(s);
-        // }
 
         collapse.add_invariant(invariant_separate_substructures);
         collapse.add_invariant(link_condition);
@@ -787,13 +708,6 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
             target_edge_length_attribute,
             wmtk::operations::CollapseBasicStrategy::None);
 
-        // this might not be necessary
-        // for (auto& s : update_child_position) {
-        //     collapse.add_transfer_strategy(s);
-        //     split.add_transfer_strategy(s);
-        // }
-
-
         for (const auto& attr : pass_through_attributes) {
             split.set_new_attribute_strategy(
                 attr,
@@ -817,53 +731,9 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
         ops_name.emplace_back("rounding");
     }
 
+    /////////////////////////////////////////
     // 4) Smoothing
-    // //////////////////////////////////////
-    // // special smoothing on surface
-    // //////////////////////////////////////
-
-    // if (mesh.top_simplex_type() == PrimitiveType::Tetrahedron) {
-    //     for (auto& pair : mesh_constraint_pairs) {
-    //         if (pair.second.mesh().top_simplex_type() != PrimitiveType::Triangle) continue;
-
-    //         auto& child_mesh = pair.second.mesh();
-    //         auto& child_position_handle = pair.second;
-
-    //         auto lap_smoothing = std::make_shared<TetWildTangentialLaplacianSmoothing>(
-    //             child_mesh,
-    //             child_position_handle.as<Rational>());
-    //         lap_smoothing->add_invariant(std::make_shared<RoundedInvariant>(
-    //             child_mesh,
-    //             child_position_handle.as<Rational>()));
-    //         lap_smoothing->add_invariant(inversion_invariant);
-
-    //         auto proj_lap_smoothing =
-    //             std::make_shared<ProjectOperation>(lap_smoothing, mesh_constraint_pairs);
-    //         proj_lap_smoothing->use_random_priority() = true;
-
-    //         proj_lap_smoothing->add_invariant(envelope_invariant);
-    //         proj_lap_smoothing->add_invariant(inversion_invariant);
-    //         proj_lap_smoothing->add_invariant(
-    //             std::make_shared<EnergyFilterInvariant>(mesh,
-    //             energy_filter_attribute.as<char>()));
-
-    //         proj_lap_smoothing->add_transfer_strategy(amips_update);
-    //         proj_lap_smoothing->add_transfer_strategy(edge_length_update);
-    //         for (auto& s : update_parent_position) { // TODO::this should from only one child
-    //             proj_lap_smoothing->add_transfer_strategy(s);
-    //         }
-    //         for (auto& s : update_child_position) {
-    //             proj_lap_smoothing->add_transfer_strategy(s);
-    //         }
-
-    //         ops.push_back(proj_lap_smoothing);
-    //         ops_name.push_back("LAPLACIAN SMOOTHING");
-    //     }
-    // }
-
-    // auto energy =
-    //     std::make_shared<function::LocalNeighborsSumFunction>(mesh, pt_attribute, *amips);
-    // auto smoothing = std::make_shared<OptimizationSmoothing>(energy);
+    /////////////////////////////////////////
     auto smoothing = std::make_shared<AMIPSOptimizationSmoothing>(mesh, pt_attribute);
     smoothing->add_invariant(std::make_shared<RoundedInvariant>(mesh, pt_attribute.as<Rational>()));
     smoothing->add_invariant(frozen_vertex_invariant);
@@ -872,22 +742,11 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
         smoothing->add_transfer_strategy(s);
     }
 
-    // test code
-    // smoothing->add_invariant(envelope_invariant);
-    // smoothing->add_transfer_strategy(edge_length_update);
-    // ops.push_back(smoothing);
-    // ops_name.push_back("SMOOTHING");
-    // ops.emplace_back(rounding);
-    // ops_name.emplace_back("rounding");
-    //--------
-
     auto proj_smoothing = std::make_shared<ProjectOperation>(smoothing, mesh_constraint_pairs);
-    proj_smoothing->use_random_priority() = true;
+    // proj_smoothing->use_random_priority() = true;
     proj_smoothing->add_invariant(frozen_vertex_invariant);
     proj_smoothing->add_invariant(envelope_invariant);
     proj_smoothing->add_invariant(inversion_invariant);
-    // proj_smoothing->add_invariant(
-    //     std::make_shared<EnergyFilterInvariant>(mesh, energy_filter_attribute.as<char>()));
 
     proj_smoothing->add_transfer_strategy(amips_update);
     proj_smoothing->add_transfer_strategy(edge_length_update);
@@ -898,11 +757,9 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     for (auto& s : update_child_position) {
         proj_smoothing->add_transfer_strategy(s);
     }
-    // proj_smoothing->add_transfer_strategy(target_edge_length_update);
 
     if (!options.skip_smooth) {
         for (int i = 0; i < 1; ++i) {
-            // some old code to do smoothing several times, maybe useful later
             ops.push_back(proj_smoothing);
             ops_name.push_back("SMOOTHING");
         }
@@ -926,7 +783,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
         const size_t freq = options.scheduler_update_frequency;
         scheduler.set_update_frequency(freq == 0 ? std::optional<size_t>{} : freq);
     }
-    int64_t success = 10;
+    // int64_t success = 10;
 
     //////////////////////////////////
     // preprocessing
@@ -940,7 +797,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
             pos.push_back(pt_accessor.const_vector_attribute(vertices[i]));
         }
         if (wmtk::utils::wmtk_orient2d(pos[0], pos[1], pos[2]) <= 0) {
-            wmtk::logger().error("Flipped triangle!");
+            logger().error("Flipped triangle!");
         }
     }
 
@@ -954,18 +811,9 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     wmtk::attribute::TypedAttributeHandle<char> visited_edge_flag_t = visited_edge_flag.as<char>();
 
     pre_stats = scheduler.run_operation_on_all(*collapse_then_round, visited_edge_flag_t);
-    logger().info(
-        "Executed {}, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
-        "executing: {}",
-        "preprocessing collapse",
-        pre_stats.number_of_performed_operations(),
-        pre_stats.number_of_successful_operations(),
-        pre_stats.number_of_failed_operations(),
-        pre_stats.collecting_time,
-        pre_stats.sorting_time,
-        pre_stats.executing_time);
+    print_stats(pre_stats, "preprocessing collapse");
 
-    success = pre_stats.number_of_successful_operations();
+    // int64_t success = pre_stats.number_of_successful_operations();
 
     // verbose logger, can be removed
     int64_t unrounded = 0;
@@ -995,42 +843,14 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
             pos.push_back(pt_accessor.const_vector_attribute(vertices[i]));
         }
         if (wmtk::utils::wmtk_orient2d(pos[0], pos[1], pos[2]) <= 0) {
-            wmtk::logger().error("Flipped triangle!");
+            logger().error("Flipped triangle!");
         }
     }
 
+    std::tie(min_amips, max_amips, avg_amips) = min_max_avg_amips(mesh, amips_attribute);
 
-    // compute max energy
-    double max_energy = std::numeric_limits<double>::lowest();
-    double min_energy = std::numeric_limits<double>::max();
-    double avg_energy = 0;
-    for (const auto& t : mesh.get_all(mesh.top_simplex_type())) {
-        // double e = amips->get_value(simplex::Simplex(mesh.top_simplex_type(), t));
-        double e = amips_accessor.scalar_attribute(t);
-        max_energy = std::max(max_energy, e);
-        min_energy = std::min(min_energy, e);
-        avg_energy += e;
-    }
-
-    avg_energy = avg_energy / mesh.get_all(mesh.top_simplex_type()).size();
-
-    logger().info(
-        "Max AMIPS Energy: {}, Min AMIPS Energy: {}, Avg AMIPS Energy: {}",
-        max_energy,
-        min_energy,
-        avg_energy);
-
-    // std::ofstream file0("quality_plot_pre.csv");
-    // file0 << "tid, quality" << std::endl;
-    // int64_t t_cnt = 0;
-    // for (const auto& t : mesh.get_all(PrimitiveType::Tetrahedron)) {
-    //     t_cnt++;
-    //     file0 << t_cnt << ", " << amips_accessor.scalar_attribute(t) << std::endl;
-    // }
-
-
-    double old_max_energy = max_energy;
-    double old_avg_energy = avg_energy;
+    double old_max_energy = max_amips;
+    double old_avg_energy = min_amips;
     int iii = 0;
     bool is_double = false;
     for (int64_t i = 0; i < options.max_passes; ++i) {
@@ -1043,27 +863,11 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
             SchedulerStats stats;
             if (op->primitive_type() == PrimitiveType::Edge) {
                 stats = scheduler.run_operation_on_all(*op, visited_edge_flag_t);
-                // } else if (ops_name[jj] == "SMOOTHING") {
-                //     // stats = scheduler.run_operation_on_all(*op);
-                //     stats =
-                //         scheduler.run_operation_on_all_coloring(*op,
-                //         coloring_attribute.as<int64_t>());
             } else {
                 stats = scheduler.run_operation_on_all(*op);
             }
             pass_stats += stats;
-            logger().info(
-                "Executed {}, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
-                "executing: {}",
-                ops_name[jj],
-                stats.number_of_performed_operations(),
-                stats.number_of_successful_operations(),
-                stats.number_of_failed_operations(),
-                stats.collecting_time,
-                stats.sorting_time,
-                stats.executing_time);
-
-            success = stats.number_of_successful_operations();
+            print_stats(stats, ops_name[jj]);
 
             // verbose logger, can be removed
             int64_t unrounded = 0;
@@ -1087,43 +891,17 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
                     pos.push_back(pt_accessor.const_vector_attribute(vertices[i]));
                 }
                 if (wmtk::utils::wmtk_orient2d(pos[0], pos[1], pos[2]) <= 0) {
-                    wmtk::logger().error("Flipped triangle!");
+                    logger().error("Flipped triangle!");
                 }
             }
 
-            avg_energy = 0;
-
-            // compute max energy
-            max_energy = std::numeric_limits<double>::lowest();
-            min_energy = std::numeric_limits<double>::max();
-            for (const auto& t : mesh.get_all(mesh.top_simplex_type())) {
-                // double e = amips->get_value(simplex::Simplex(mesh.top_simplex_type(), t));
-                double e = amips_accessor.scalar_attribute(t);
-                max_energy = std::max(max_energy, e);
-                min_energy = std::min(min_energy, e);
-                avg_energy += e;
-            }
-
-            avg_energy = avg_energy / mesh.get_all(mesh.top_simplex_type()).size();
-
-            logger().info(
-                "Max AMIPS Energy: {}, Min AMIPS Energy: {}, Avg AMIPS Energy: {}",
-                max_energy,
-                min_energy,
-                avg_energy);
+            std::tie(min_amips, max_amips, avg_amips) = min_max_avg_amips(mesh, amips_attribute);
 
 
             ++jj;
         }
 
-        logger().info(
-            "Executed {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",
-            pass_stats.number_of_performed_operations(),
-            pass_stats.number_of_successful_operations(),
-            pass_stats.number_of_failed_operations(),
-            pass_stats.collecting_time,
-            pass_stats.sorting_time,
-            pass_stats.executing_time);
+        print_stats(pass_stats);
 
         multimesh::consolidate(mesh);
 
@@ -1137,26 +915,12 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
 
         assert(mesh.is_connectivity_valid());
 
-        // compute max energy
-        max_energy = std::numeric_limits<double>::lowest();
-        min_energy = std::numeric_limits<double>::max();
-        avg_energy = 0;
-        for (const auto& t : mesh.get_all(mesh.top_simplex_type())) {
-            // double e = amips->get_value(simplex::Simplex(mesh.top_simplex_type(), t));
-            double e = amips_accessor.scalar_attribute(t);
-            max_energy = std::max(max_energy, e);
-            min_energy = std::min(min_energy, e);
-            avg_energy += e;
-        }
-
-        avg_energy = avg_energy / mesh.get_all(mesh.top_simplex_type()).size();
-
         int64_t unrounded = 0;
         if (!is_double) {
             bool rational = false;
             for (const auto& v : mesh.get_all(PrimitiveType::Vertex)) {
                 const auto p = pt_accessor.vector_attribute(v);
-                for (int64_t d = 0; d < bmax.size(); ++d) {
+                for (int64_t d = 0; d < pt_accessor.dimension(); ++d) {
                     if (!p[d].is_rounded()) {
                         rational = true;
                         ++unrounded;
@@ -1169,94 +933,15 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
         }
 
         logger().info("Mesh has {} unrounded vertices", unrounded);
-        logger().info(
-            "Max AMIPS Energy: {}, Min AMIPS Energy: {}, Avg AMIPS Energy: {}",
-            max_energy,
-            min_energy,
-            avg_energy);
+        std::tie(min_amips, max_amips, avg_amips) = min_max_avg_amips(mesh, amips_attribute);
 
-
-        // adjust sizing field
-        // if (i > 0 && old_max_energy - max_energy < 5e-1 &&
-        //     (old_avg_energy - avg_energy) / avg_energy < 0.1) {
-        //     wmtk::logger().info("adjusting sizing field ...");
-
-        //     adjust_sizing_field(
-        //         mesh,
-        //         pt_attribute.as<Rational>(),
-        //         edge_length_attribute.as<double>(),
-        //         sizing_field_scalar_attribute.as<double>(),
-        //         amips_attribute.as<double>(),
-        //         target_edge_length_attribute.as<double>(),
-        //         visited_vertex_flag.as<char>(),
-        //         target_max_amips,
-        //         max_energy,
-        //         target_edge_length,
-        //         min_edge_length);
-
-        //     wmtk::logger().info("adjusting sizing field finished");
-
-        //     // wmtk::logger().info("setting energy filter ...");
-        //     // set_operation_energy_filter_after_sizing_field(
-        //     //     mesh,
-        //     //     pt_attribute.as<Rational>(),
-        //     //     amips_attribute.as<double>(),
-        //     //     energy_filter_attribute.as<char>(),
-        //     //     visited_vertex_flag.as<char>(),
-        //     //     target_max_amips,
-        //     //     max_energy,
-        //     //     target_edge_length);
-        //     // wmtk::logger().info("setting energy filter finished");
-
-        //     // int64_t e_cnt = 0;
-        //     // for (const auto& e : mesh.get_all(PrimitiveType::Edge)) {
-        //     //     if (energy_filter_accessor.scalar_attribute(e) == char(1) ||
-        //     //         energy_filter_accessor.scalar_attribute(
-        //     //             mesh.switch_tuple(e, PrimitiveType::Vertex)) == char(1)) {
-        //     //         e_cnt++;
-        //     //     }
-        //     // }
-        //     // wmtk::logger().info(
-        //     //     "{} edges are going to be executed out of {}",
-        //     //     e_cnt,
-        //     //     mesh.get_all(PrimitiveType::Edge).size());
-
-        //     for (const auto& v : mesh.get_all(PrimitiveType::Vertex)) {
-        //         energy_filter_accessor.scalar_attribute(v) = char(1);
-        //     }
-        //     wmtk::logger().info("reset energy filter");
-        // } else {
-        //     wmtk::logger().info("setting energy filter ...");
-        //     set_operation_energy_filter(
-        //         mesh,
-        //         pt_attribute.as<Rational>(),
-        //         amips_attribute.as<double>(),
-        //         energy_filter_attribute.as<char>(),
-        //         visited_vertex_flag.as<char>(),
-        //         target_max_amips,
-        //         max_energy,
-        //         target_edge_length);
-        //     wmtk::logger().info("setting energy filter finished");
-
-        //     int64_t e_cnt = 0;
-        //     for (const auto& e : mesh.get_all(PrimitiveType::Edge)) {
-        //         if (energy_filter_accessor.scalar_attribute(e) == char(1) ||
-        //             energy_filter_accessor.scalar_attribute(
-        //                 mesh.switch_tuple(e, PrimitiveType::Vertex)) == char(1)) {
-        //             e_cnt++;
-        //         }
-        //     }
-        //     wmtk::logger().info(
-        //         "{} edges are going to be executed out of {}",
-        //         e_cnt,
-        //         mesh.get_all(PrimitiveType::Edge).size());
-        // }
-
-        old_max_energy = max_energy;
-        old_avg_energy = avg_energy;
+        old_max_energy = max_amips;
+        old_avg_energy = avg_amips;
 
         // stop at good quality
-        if (max_energy <= target_max_amips && is_double) break;
+        if (max_amips <= target_max_amips && is_double) {
+            break;
+        }
     }
 
     logger().info("----------------------- Postprocess Collapse -----------------------");
@@ -1264,36 +949,9 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     logger().info("Executing collapse ...");
 
     auto post_stats = scheduler.run_operation_on_all(*collapse_then_round, visited_edge_flag_t);
-    logger().info(
-        "Executed {}, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
-        "executing: {}",
-        "preprocessing collapse",
-        post_stats.number_of_performed_operations(),
-        post_stats.number_of_successful_operations(),
-        post_stats.number_of_failed_operations(),
-        post_stats.collecting_time,
-        post_stats.sorting_time,
-        post_stats.executing_time);
+    print_stats(post_stats, "preprocessing collapse");
 
-    // compute max energy
-    max_energy = std::numeric_limits<double>::lowest();
-    min_energy = std::numeric_limits<double>::max();
-    avg_energy = 0;
-    for (const auto& t : mesh.get_all(mesh.top_simplex_type())) {
-        // double e = amips->get_value(simplex::Simplex(mesh.top_simplex_type(), t));
-        double e = amips_accessor.scalar_attribute(t);
-        max_energy = std::max(max_energy, e);
-        min_energy = std::min(min_energy, e);
-        avg_energy += e;
-    }
-
-    avg_energy = avg_energy / mesh.get_all(mesh.top_simplex_type()).size();
-
-    logger().info(
-        "Max AMIPS Energy: {}, Min AMIPS Energy: {}, Avg AMIPS Energy: {}",
-        max_energy,
-        min_energy,
-        avg_energy);
+    std::tie(min_amips, max_amips, avg_amips) = min_max_avg_amips(mesh, amips_attribute);
 
     multimesh::consolidate(mesh);
 
