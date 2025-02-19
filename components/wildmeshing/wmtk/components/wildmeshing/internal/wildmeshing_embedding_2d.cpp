@@ -474,9 +474,6 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
             wmtk::operations::SplitRibBasicStrategy::None);
     }
 
-    split->add_transfer_strategy(edge_length_update);
-    split->add_transfer_strategy(tag_update); // for renew the queue
-
     auto split_then_round = std::make_shared<AndOperationSequence>(mesh);
     split_then_round->add_operation(split);
     split_then_round->add_operation(rounding);
@@ -537,15 +534,15 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
         wmtk::operations::SplitBasicStrategy::Copy,
         wmtk::operations::SplitRibBasicStrategy::Mean);
 
-    split_unrounded->add_transfer_strategy(amips_update);
-    split_unrounded->add_transfer_strategy(edge_length_update);
-    split_unrounded->add_transfer_strategy(tag_update); // for renew the queue
-
     auto split_sequence = std::make_shared<OrOperationSequence>(mesh);
     split_sequence->add_operation(split_then_round);
     split_sequence->add_operation(split_unrounded);
 
     split_sequence->set_priority(long_edges_first);
+
+    split_sequence->add_transfer_strategy(amips_update);
+    split_sequence->add_transfer_strategy(edge_length_update);
+    split_sequence->add_transfer_strategy(tag_update); // for renew the queue
 
 
     if (!options.skip_split) {
@@ -882,6 +879,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
                 }
             }
 
+            amips_update->run_on_all();
             std::tie(min_amips, max_amips, avg_amips) = min_max_avg_amips(mesh, amips_attribute);
 
 
