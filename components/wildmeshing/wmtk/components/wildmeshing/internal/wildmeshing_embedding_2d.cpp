@@ -186,30 +186,17 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     // amips update
     auto compute_amips = [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorXd {
         assert(P.rows() == 2 || P.rows() == 3); // rows --> attribute dimension
-        assert(P.cols() == P.rows() + 1);
-        if (P.cols() == 3) {
-            // triangle
-            assert(P.rows() == 2);
-            std::array<double, 6> pts;
-            for (size_t i = 0; i < 3; ++i) {
-                for (size_t j = 0; j < 2; ++j) {
-                    pts[2 * i + j] = P(j, i).to_double();
-                }
+        assert(P.cols() == 2);
+        // triangle
+        assert(P.rows() == 2);
+        std::array<double, 6> pts;
+        for (size_t i = 0; i < 3; ++i) {
+            for (size_t j = 0; j < 2; ++j) {
+                pts[2 * i + j] = P(j, i).to_double();
             }
-            const double a = Tri_AMIPS_energy(pts);
-            return Eigen::VectorXd::Constant(1, a);
-        } else {
-            // tet
-            assert(P.rows() == 3);
-            std::array<double, 12> pts;
-            for (size_t i = 0; i < 4; ++i) {
-                for (size_t j = 0; j < 3; ++j) {
-                    pts[3 * i + j] = P(j, i).to_double();
-                }
-            }
-            const double a = Tet_AMIPS_energy(pts);
-            return Eigen::VectorXd::Constant(1, a);
         }
+        const double a = Tri_AMIPS_energy(pts);
+        return Eigen::VectorXd::Constant(1, a);
     };
     auto amips_update =
         std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>(
