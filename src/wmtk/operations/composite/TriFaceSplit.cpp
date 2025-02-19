@@ -4,7 +4,7 @@
 
 namespace wmtk::operations::composite {
 
-TriFaceSplit::TriFaceSplit(Mesh& m)
+TriFaceSplit::TriFaceSplit(TriMesh& m)
     : Operation(m)
     , m_split(m)
     , m_collapse(m)

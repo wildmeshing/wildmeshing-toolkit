@@ -22,11 +22,19 @@ public:
 
     ProjectOperation(
         std::shared_ptr<Operation> main_op,
-        const std::vector<MeshConstrainPair>& mesh_constaint_pairs);
+        const std::vector<MeshConstrainPair>& mesh_constaint_pairs = {});
 
     std::vector<simplex::Simplex> execute(const simplex::Simplex& simplex) override;
     PrimitiveType primitive_type() const override { return m_main_op->primitive_type(); }
 
+
+    void add_constraint(
+        const attribute::MeshAttributeHandle& mah,
+        std::shared_ptr<SimpleBVH::BVH> bvh);
+
+    void add_constraint(
+        const attribute::MeshAttributeHandle& mah,
+        const attribute::MeshAttributeHandle& bvh_mesh_attribute);
 
 private:
     using BVHConstrainPair =

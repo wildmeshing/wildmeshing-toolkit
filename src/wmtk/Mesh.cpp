@@ -38,7 +38,7 @@ simplex::IdSimplex Mesh::get_id_simplex(const simplex::Simplex& s) const
 simplex::Simplex Mesh::get_simplex(const simplex::IdSimplex& s) const
 {
     const Tuple& t = tuple_from_id(s.primitive_type(), s.index());
-    return simplex::Simplex(*this, s.primitive_type(), t);
+    return simplex::Simplex(s.primitive_type(), t);
 }
 
 Tuple Mesh::get_tuple_from_id_simplex(const simplex::IdSimplex& s) const
@@ -112,7 +112,16 @@ bool Mesh::is_boundary(const simplex::Simplex& s) const
 
 bool Mesh::is_valid(const Tuple& tuple) const
 {
-    return !tuple.is_null() && !is_removed(tuple);
+    const bool nullity = tuple.is_null();
+    const bool removed = is_removed(tuple);
+    const bool bad = nullity || removed;
+#if !defined(NDEBUG)
+    if(bad) {
+        logger().trace("Mesh::is_valid failed, got nullity:{} removedness:{}", nullity, removed);
+
+    }
+#endif
+    return !bad;
 }
 
 bool Mesh::is_removed(const Tuple& tuple) const
@@ -143,16 +152,7 @@ bool Mesh::is_removed(int64_t index, PrimitiveType pt) const
 
 bool Mesh::is_valid(const simplex::Simplex& s) const
 {
-#if defined(WMTK_ENABLE_SIMPLEX_ID_CACHING)
-    if (!is_valid(s.tuple())) {
-        return false;
-    } else {
-        const int64_t id_tuple = id(s.tuple(), s.primitive_type());
-        return id_tuple == s.m_index;
-    }
-#else
     return is_valid(s.tuple()) && !is_removed(s.tuple(), s.primitive_type());
-#endif
 }
 
 
