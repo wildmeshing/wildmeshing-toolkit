@@ -310,8 +310,8 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     using MeshConstrainPair = ProjectOperation::MeshConstrainPair;
 
     auto envelope_invariant = std::make_shared<InvariantCollection>(mesh);
-    std::vector<std::shared_ptr<AttributeTransferStrategyBase>> update_child_position,
-        update_parent_position; // TODO remove for submesh
+    std::vector<std::shared_ptr<AttributeTransferStrategyBase>>
+        update_child_position; // TODO remove for submesh
     std::vector<std::shared_ptr<Mesh>> envelopes;
     std::vector<MeshConstrainPair> mesh_constraint_pairs;
 
@@ -349,10 +349,6 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
             geometry_pt_handle,
             e.thickness * bbdiag,
             constrained_pt_handle));
-
-        update_parent_position.emplace_back(attribute_update::make_cast_attribute_transfer_strategy(
-            /*source=*/constrained_pt_handle,
-            /*target=*/pt_attribute)); // TODO remove for submesh
 
         update_child_position.emplace_back(attribute_update::make_cast_attribute_transfer_strategy(
             /*source=*/pt_attribute,
@@ -441,6 +437,9 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     rounding->add_invariant(
         std::make_shared<RoundedInvariant>(mesh, pt_attribute.as<Rational>(), true));
     rounding->add_invariant(inversion_invariant);
+    for (auto& s : update_child_position) {
+        rounding->add_transfer_strategy(s);
+    }
 
 
     //////////////////////////////////
@@ -734,9 +733,6 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
 
     proj_smoothing->add_transfer_strategy(amips_update);
     proj_smoothing->add_transfer_strategy(edge_length_update);
-    for (auto& s : update_parent_position) {
-        proj_smoothing->add_transfer_strategy(s);
-    }
 
     for (auto& s : update_child_position) {
         proj_smoothing->add_transfer_strategy(s);
@@ -844,6 +840,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
         int jj = 0;
         for (auto& op : ops) {
             logger().info("Executing {} ...", ops_name[jj]);
+
             SchedulerStats stats;
             if (op->primitive_type() == PrimitiveType::Edge) {
                 stats = scheduler.run_operation_on_all(*op, visited_edge_flag_t);
@@ -854,32 +851,31 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
             print_stats(stats, ops_name[jj]);
 
             // verbose logger, can be removed
-            int64_t unrounded = 0;
-            for (const auto& v : mesh.get_all(PrimitiveType::Vertex)) {
-                const auto p = pt_accessor.vector_attribute(v);
-                for (int64_t d = 0; d < 2; ++d) {
-                    if (!p[d].is_rounded()) {
-                        ++unrounded;
-                        break;
+            {
+                int64_t unrounded = 0;
+                for (const auto& v : mesh.get_all(PrimitiveType::Vertex)) {
+                    const auto p = pt_accessor.const_vector_attribute(v);
+                    for (int64_t d = 0; d < pt_accessor.dimension(); ++d) {
+                        if (!p[d].is_rounded()) {
+                            ++unrounded;
+                        }
                     }
                 }
+                logger().info("Mesh has {} unrounded vertices", unrounded);
             }
 
-            logger().info("Mesh has {} unrounded vertices", unrounded);
-
-            // debug code
-            for (const auto& t : mesh.get_all(mesh.top_simplex_type())) {
-                const auto vertices = mesh.orient_vertices(t);
-                std::vector<Vector2r> pos;
-                for (int i = 0; i < vertices.size(); ++i) {
-                    pos.push_back(pt_accessor.const_vector_attribute(vertices[i]));
-                }
-                if (wmtk::utils::wmtk_orient2d(pos[0], pos[1], pos[2]) <= 0) {
-                    logger().error("Flipped triangle!");
-                }
-            }
-
-            amips_update->run_on_all();
+            //// debug code
+            // for (const auto& t : mesh.get_all(mesh.top_simplex_type())) {
+            //     const auto vertices = mesh.orient_vertices(t);
+            //     std::vector<Vector2r> pos;
+            //     for (int i = 0; i < vertices.size(); ++i) {
+            //         pos.push_back(pt_accessor.const_vector_attribute(vertices[i]));
+            //     }
+            //     if (wmtk::utils::wmtk_orient2d(pos[0], pos[1], pos[2]) <= 0) {
+            //         logger().error("Flipped triangle!");
+            //     }
+            // }
+            //
             std::tie(min_amips, max_amips, avg_amips) = min_max_avg_amips(mesh, amips_attribute);
 
 
