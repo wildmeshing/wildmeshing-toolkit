@@ -19,6 +19,16 @@ namespace wmtk::invariants {
 class EnvelopeInvariant : public Invariant
 {
 public:
+    /**
+     * @brief Creates an envelope for checking if vertices are inside or outside of it.
+     *
+     * The check is performed on the `coordinate`, the envelope is constructed from
+     * `envelope_mesh_coordinate`.
+     *
+     * @param envelope_mesh_coordinate Used for constructing the envelope.
+     * @param envelope_size
+     * @param coordinate This position handle represents the mesh the envelope is tested on.
+     */
     EnvelopeInvariant(
         const attribute::MeshAttributeHandle& envelope_mesh_coordinate,
         double envelope_size,
