@@ -50,6 +50,11 @@ void SubMesh::add_simplex(const Tuple& tuple, PrimitiveType pt)
     }
 }
 
+void SubMesh::add_simplex(const simplex::Simplex& s)
+{
+    add_simplex(s.tuple(), s.primitive_type());
+}
+
 void SubMesh::add_simplex(const simplex::IdSimplex& simplex)
 {
     const PrimitiveType& pt = simplex.primitive_type();

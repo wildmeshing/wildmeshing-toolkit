@@ -49,6 +49,8 @@ public:
     int64_t id(const simplex::Simplex& s) const;
     int64_t id(const Tuple& tuple, PrimitiveType pt) const;
 
+    std::vector<std::shared_ptr<SubMesh>> get_child_meshes() const;
+
     bool has_child_mesh() const;
 
     bool simplex_is_in_submesh(const simplex::Simplex& s) const;
@@ -58,6 +60,7 @@ public:
     void set_collapse_strategies(operations::EdgeCollapse& collapse) const;
 
     std::function<bool(const simplex::Simplex&)> substructure_predicate() const;
+
 
 private:
     std::shared_ptr<Mesh> m_mesh;

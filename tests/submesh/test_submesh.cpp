@@ -8,6 +8,7 @@
 #include <wmtk/simplex/top_dimension_cofaces_iterable.hpp>
 #include <wmtk/submesh/Embedding.hpp>
 #include <wmtk/submesh/SubMesh.hpp>
+#include <wmtk/submesh/utils/submesh_from_multimesh.hpp>
 #include <wmtk/submesh/utils/write.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -341,5 +342,53 @@ TEST_CASE("submesh_collapse_towards_submesh", "[mesh][submesh]")
         using submesh::utils::write;
         CHECK_NOTHROW(
             write("submesh_collapse_towards_submesh", "vertices", emb, true, true, true, false));
+    }
+}
+
+TEST_CASE("submesh_from_multimesh", "[mesh][submesh]")
+{
+    // logger().set_level(spdlog::level::off);
+    // logger().set_level(spdlog::level::trace);
+
+    // basic test for implementing
+    std::shared_ptr<tests::DEBUG_TriMesh> mesh_in =
+        std::make_shared<tests::DEBUG_TriMesh>(tests::edge_region_with_position());
+
+    // add child
+    {
+        std::shared_ptr<tests::DEBUG_TriMesh> child_ptr =
+            std::make_shared<tests::DEBUG_TriMesh>(tests::single_triangle());
+
+        const Tuple child_tuple = child_ptr->face_tuple_from_vids(0, 1, 2);
+        const Tuple parent_tuple = mesh_in->face_tuple_from_vids(8, 9, 5);
+        std::vector<std::array<Tuple, 2>> map_tuples;
+        map_tuples.emplace_back(std::array<Tuple, 2>{child_tuple, parent_tuple});
+        mesh_in->register_child_mesh(child_ptr, map_tuples);
+    }
+    // add child
+    {
+        std::shared_ptr<tests::DEBUG_TriMesh> child_ptr =
+            std::make_shared<tests::DEBUG_TriMesh>(tests::single_triangle());
+
+        const Tuple child_tuple = child_ptr->face_tuple_from_vids(0, 1, 2);
+        const Tuple parent_tuple = mesh_in->face_tuple_from_vids(0, 3, 4);
+        std::vector<std::array<Tuple, 2>> map_tuples;
+        map_tuples.emplace_back(std::array<Tuple, 2>{child_tuple, parent_tuple});
+        mesh_in->register_child_mesh(child_ptr, map_tuples);
+    }
+
+    tests::DEBUG_TriMesh& m = *mesh_in;
+
+    const auto pos = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    const auto pos_acc = m.create_const_accessor<double>(pos);
+
+    auto emb_ptr = submesh::utils::submesh_from_multimesh(mesh_in);
+
+    Embedding& emb = *emb_ptr;
+    CHECK(emb.has_child_mesh());
+    CHECK(emb.get_child_meshes().size() == 2);
+    {
+        using submesh::utils::write;
+        CHECK_NOTHROW(write("submesh_from_multimesh", "vertices", emb, true, true, true, false));
     }
 }

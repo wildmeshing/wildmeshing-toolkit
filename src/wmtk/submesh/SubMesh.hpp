@@ -45,6 +45,7 @@ public:
      * any other simplex of the submesh.
      */
     void add_simplex(const Tuple& tuple, PrimitiveType pt);
+    void add_simplex(const simplex::Simplex& s);
     void add_simplex(const simplex::IdSimplex& simplex);
 
     std::vector<Tuple> get_all(const PrimitiveType pt) const override;

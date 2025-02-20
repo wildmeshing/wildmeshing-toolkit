@@ -191,6 +191,11 @@ int64_t Embedding::id(const Tuple& tuple, PrimitiveType pt) const
     return mesh().id(tuple, pt);
 }
 
+std::vector<std::shared_ptr<SubMesh>> Embedding::get_child_meshes() const
+{
+    return m_submeshes;
+}
+
 bool Embedding::has_child_mesh() const
 {
     return !m_submeshes.empty();
