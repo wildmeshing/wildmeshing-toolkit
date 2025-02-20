@@ -45,4 +45,15 @@ template <typename... Args>
 {
     log_and_throw_error(fmt::format(fmt::runtime(msg), args...));
 }
+
+/**
+ * @brief Calls log_and_throw_error if check is false.
+ */
+template <typename... Args>
+[[noreturn]] void log_assert(const bool check, const std::string& msg, const Args&... args)
+{
+    if (!check) {
+        log_and_throw_error(msg, args...);
+    }
+}
 } // namespace wmtk
