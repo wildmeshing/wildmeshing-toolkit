@@ -59,6 +59,10 @@
 #include <wmtk/invariants/Swap2dUnroundedVertexInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
 
+#include <wmtk/submesh/Embedding.hpp>
+#include <wmtk/submesh/SubMesh.hpp>
+#include <wmtk/submesh/utils/submesh_from_multimesh.hpp>
+
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 
 #include <wmtk/utils/Rational.hpp>
@@ -69,6 +73,7 @@
 #include <wmtk/io/ParaviewWriter.hpp>
 
 #include <queue>
+#include <wmtk/simplex/cofaces_single_dimension_iterable.hpp>
 #include <wmtk/simplex/k_ring.hpp>
 #include <wmtk/simplex/link.hpp>
 
@@ -221,7 +226,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     // amips update
     auto compute_amips = [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorXd {
         assert(P.rows() == 2 || P.rows() == 3); // rows --> attribute dimension
-        assert(P.cols() == 2);
+        assert(P.cols() == 3);
         // triangle
         assert(P.rows() == 2);
         std::array<double, 6> pts;
@@ -287,6 +292,11 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
             compute_edge_length);
     edge_length_update->run_on_all();
 
+    //////////////////////////////////
+    // substructures
+    //////////////////////////////////
+    auto emb_ptr = submesh::utils::submesh_from_multimesh(options.input_mesh);
+    submesh::Embedding emb = *emb_ptr;
 
     //////////////////////////////////
     // compute frozen vertices
@@ -295,15 +305,33 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
         mesh.register_attribute<int64_t>("frozen_vertex", PrimitiveType::Vertex, 1);
     auto frozen_vertex_accessor = mesh.create_accessor(frozen_vertex_attribute.as<int64_t>());
 
-    auto input_ptr = mesh.get_child_meshes().front();
-
-    for (const Tuple& v : input_ptr->get_all(PrimitiveType::Vertex)) {
-        if (input_ptr->is_boundary(PrimitiveType::Vertex, v)) {
-            const auto& parent_v =
-                input_ptr->map_to_parent(simplex::Simplex::vertex(*input_ptr, v));
-            frozen_vertex_accessor.scalar_attribute(parent_v) = 1;
+    for (const auto& sub_ptr : emb.get_child_meshes()) {
+        submesh::SubMesh& sub = *sub_ptr;
+        for (const simplex::IdSimplex& v : sub.get_all_id_simplex(PrimitiveType::Vertex)) {
+            int64_t counter = 0;
+            for (const Tuple& cof : cofaces_single_dimension_iterable(
+                     mesh,
+                     mesh.get_simplex(v),
+                     sub.top_simplex_type())) {
+                if (sub.contains(cof, sub.top_simplex_type())) {
+                    ++counter;
+                }
+            }
+            if (counter != 2) {
+                frozen_vertex_accessor.scalar_attribute(v) = 1;
+            }
         }
     }
+
+    // auto input_ptr = mesh.get_child_meshes().front();
+    //
+    // for (const Tuple& v : input_ptr->get_all(PrimitiveType::Vertex)) {
+    //     if (input_ptr->is_boundary(PrimitiveType::Vertex, v)) {
+    //         const auto& parent_v =
+    //             input_ptr->map_to_parent(simplex::Simplex::vertex(*input_ptr, v));
+    //         frozen_vertex_accessor.scalar_attribute(parent_v) = 1;
+    //     }
+    // }
 
     {
         int64_t frozen_cnt = 0;
@@ -795,7 +823,6 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
         const size_t freq = options.scheduler_update_frequency;
         scheduler.set_update_frequency(freq == 0 ? std::optional<size_t>{} : freq);
     }
-    // int64_t success = 10;
 
     //////////////////////////////////
     // preprocessing

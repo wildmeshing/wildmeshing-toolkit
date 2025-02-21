@@ -20,9 +20,102 @@
 
 
 namespace wmtk {
-
-constexpr PrimitiveType PV = PrimitiveType::Vertex;
+constexpr PrimitiveType PF = PrimitiveType::Triangle;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
+constexpr PrimitiveType PV = PrimitiveType::Vertex;
+
+template <typename T>
+std::shared_ptr<fastEnvelope::FastEnvelope> init_fast_envelope(
+    const attribute::MeshAttributeHandle& envelope_mesh_coordinate,
+    const double envelope_size)
+{
+    const auto& envelope_mesh = envelope_mesh_coordinate.mesh();
+
+    const attribute::Accessor<T> accessor =
+        envelope_mesh.create_const_accessor(envelope_mesh_coordinate.as<T>());
+
+    std::vector<Eigen::Vector3d> vertices;
+    std::vector<Eigen::Vector3i> faces;
+
+    int count = 0;
+    assert(accessor.dimension() == 3);
+
+    const std::vector<Tuple>& facest = envelope_mesh.get_all(PF);
+    for (const auto& f : facest) {
+        if constexpr (std::is_same<T, Rational>()) {
+            Eigen::Vector3d p0 = accessor.const_vector_attribute(f).cast<double>();
+            Eigen::Vector3d p1 =
+                accessor.const_vector_attribute(envelope_mesh.switch_tuple(f, PV)).cast<double>();
+            Eigen::Vector3d p2 =
+                accessor.const_vector_attribute(envelope_mesh.switch_tuples(f, {PE, PV}))
+                    .cast<double>();
+
+            vertices.push_back(p0);
+            vertices.push_back(p1);
+            vertices.push_back(p2);
+        } else {
+            Eigen::Vector3d p0 = accessor.const_vector_attribute(f);
+            Eigen::Vector3d p1 = accessor.const_vector_attribute(envelope_mesh.switch_tuple(f, PV));
+            Eigen::Vector3d p2 =
+                accessor.const_vector_attribute(envelope_mesh.switch_tuples(f, {PE, PV}));
+
+            vertices.push_back(p0);
+            vertices.push_back(p1);
+            vertices.push_back(p2);
+        }
+        faces.emplace_back(count, count + 1, count + 2);
+
+        count += 3;
+    }
+
+    return std::make_shared<fastEnvelope::FastEnvelope>(vertices, faces, envelope_size);
+}
+
+template <typename T>
+std::shared_ptr<SimpleBVH::BVH> init_bvh(
+    const attribute::MeshAttributeHandle& envelope_mesh_coordinate)
+{
+    const auto& envelope_mesh = envelope_mesh_coordinate.mesh();
+
+    const attribute::Accessor<T> accessor =
+        envelope_mesh.create_const_accessor(envelope_mesh_coordinate.as<T>());
+
+    logger().warn("Envelope for edge mesh is using sampling");
+
+    int64_t count = 0;
+    int64_t index = 0;
+
+    const std::vector<Tuple>& edgest = envelope_mesh.get_all(PE);
+
+    Eigen::MatrixXd vertices(2 * edgest.size(), accessor.dimension());
+    Eigen::MatrixXi edges(edgest.size(), 2);
+
+    for (const Tuple& e : edgest) {
+        if constexpr (std::is_same<T, Rational>()) {
+            const auto p0 = accessor.const_vector_attribute(e).cast<double>();
+            const auto p1 =
+                accessor.const_vector_attribute(envelope_mesh.switch_tuple(e, PV)).cast<double>();
+
+            vertices.row(2 * index) = p0;
+            vertices.row(2 * index + 1) = p1;
+        } else {
+            const auto p0 = accessor.const_vector_attribute(e);
+            const auto p1 = accessor.const_vector_attribute(envelope_mesh.switch_tuple(e, PV));
+
+            vertices.row(2 * index) = p0;
+            vertices.row(2 * index + 1) = p1;
+        }
+        edges.row(index) << count, count + 1;
+
+        count += 2;
+        ++index;
+    }
+
+    std::shared_ptr<SimpleBVH::BVH> bvh = std::make_shared<SimpleBVH::BVH>();
+    bvh->init(vertices, edges, 1e-10);
+    return bvh;
+}
+
 } // namespace wmtk
 namespace wmtk::invariants {
 
@@ -36,133 +129,34 @@ EnvelopeInvariant::EnvelopeInvariant(
 {
     const auto& envelope_mesh = envelope_mesh_coordinate.mesh();
 
-    assert(envelope_mesh_coordinate.holds<Rational>() || envelope_mesh_coordinate.holds<double>());
+    // log_assert(
+    //     envelope_mesh_coordinate.holds<Rational>() || envelope_mesh_coordinate.holds<double>(),
+    //     "Envelope mesh handle type invalid");
+
+    if (!(envelope_mesh_coordinate.holds<Rational>() || envelope_mesh_coordinate.holds<double>())) {
+        log_and_throw_error("Envelope mesh handle type invalid");
+    }
+
+    // log_assert(
+    //     envelope_mesh.top_simplex_type() == PF || envelope_mesh.top_simplex_type() == PE,
+    //    "Envelope works only for tri/edges meshes");
+
+    if (!(envelope_mesh.top_simplex_type() == PF || envelope_mesh.top_simplex_type() == PE)) {
+        log_and_throw_error("Envelope works only for tri/edges meshes");
+    }
 
     if (envelope_mesh_coordinate.holds<Rational>()) {
-        // for rational
-        const attribute::Accessor<Rational> accessor =
-            envelope_mesh.create_const_accessor(envelope_mesh_coordinate.as<Rational>());
-
-
-        if (envelope_mesh.top_simplex_type() == PrimitiveType::Triangle) {
-            std::vector<Eigen::Vector3d> vertices;
-            std::vector<Eigen::Vector3i> faces;
-
-            int count = 0;
-            assert(accessor.dimension() == 3);
-
-            const std::vector<Tuple>& facest = envelope_mesh.get_all(wmtk::PrimitiveType::Triangle);
-            for (const auto& f : facest) {
-                Eigen::Vector3d p0 = accessor.const_vector_attribute(f).cast<double>();
-                Eigen::Vector3d p1 =
-                    accessor.const_vector_attribute(envelope_mesh.switch_tuple(f, PV))
-                        .cast<double>();
-                Eigen::Vector3d p2 =
-                    accessor.const_vector_attribute(envelope_mesh.switch_tuples(f, {PE, PV}))
-                        .cast<double>();
-
-                faces.emplace_back(count, count + 1, count + 2);
-                vertices.push_back(p0);
-                vertices.push_back(p1);
-                vertices.push_back(p2);
-
-                count += 3;
-            }
-
-            m_envelope =
-                std::make_shared<fastEnvelope::FastEnvelope>(vertices, faces, envelope_size);
-
-        } else if (envelope_mesh.top_simplex_type() == PrimitiveType::Edge) {
-            logger().warn("Envelope for edge mesh is using sampling");
-
-            int64_t count = 0;
-            int64_t index = 0;
-
-            const std::vector<Tuple>& edgest = envelope_mesh.get_all(wmtk::PrimitiveType::Edge);
-
-            Eigen::MatrixXd vertices(2 * edgest.size(), accessor.dimension());
-            Eigen::MatrixXi edges(edgest.size(), 2);
-
-            for (const auto& e : edgest) {
-                auto p0 = accessor.const_vector_attribute(e).cast<double>();
-                auto p1 = accessor.const_vector_attribute(envelope_mesh.switch_tuple(e, PV))
-                              .cast<double>();
-
-                edges.row(index) << count, count + 1;
-                vertices.row(2 * index) = p0;
-                vertices.row(2 * index + 1) = p1;
-
-                count += 2;
-                ++index;
-            }
-
-            m_bvh = std::make_shared<SimpleBVH::BVH>();
-            m_bvh->init(vertices, edges, 1e-10);
-        } else {
-            throw std::runtime_error("Envelope works only for tri/edges meshes");
+        if (envelope_mesh.top_simplex_type() == PF) {
+            m_envelope = init_fast_envelope<Rational>(envelope_mesh_coordinate, envelope_size);
+        } else if (envelope_mesh.top_simplex_type() == PE) {
+            m_bvh = init_bvh<Rational>(envelope_mesh_coordinate);
         }
     } else if (envelope_mesh_coordinate.holds<double>()) {
-        // for double
-        const attribute::Accessor<double> accessor =
-            envelope_mesh.create_const_accessor(envelope_mesh_coordinate.as<double>());
-
-
-        if (envelope_mesh.top_simplex_type() == PrimitiveType::Triangle) {
-            std::vector<Eigen::Vector3d> vertices;
-            std::vector<Eigen::Vector3i> faces;
-
-            int count = 0;
-            assert(accessor.dimension() == 3);
-
-            const std::vector<Tuple>& facest = envelope_mesh.get_all(wmtk::PrimitiveType::Triangle);
-            for (const auto& f : facest) {
-                Eigen::Vector3d p0 = accessor.const_vector_attribute(f);
-                Eigen::Vector3d p1 =
-                    accessor.const_vector_attribute(envelope_mesh.switch_tuple(f, PV));
-                Eigen::Vector3d p2 =
-                    accessor.const_vector_attribute(envelope_mesh.switch_tuples(f, {PE, PV}));
-
-                faces.emplace_back(count, count + 1, count + 2);
-                vertices.push_back(p0);
-                vertices.push_back(p1);
-                vertices.push_back(p2);
-
-                count += 3;
-            }
-
-            m_envelope =
-                std::make_shared<fastEnvelope::FastEnvelope>(vertices, faces, envelope_size);
-
-        } else if (envelope_mesh.top_simplex_type() == PrimitiveType::Edge) {
-            logger().warn("Envelope for edge mesh is using sampling");
-
-            int64_t count = 0;
-            int64_t index = 0;
-
-            const std::vector<Tuple>& edgest = envelope_mesh.get_all(wmtk::PrimitiveType::Edge);
-
-            Eigen::MatrixXd vertices(2 * edgest.size(), accessor.dimension());
-            Eigen::MatrixXi edges(edgest.size(), 2);
-
-            for (const auto& e : edgest) {
-                auto p0 = accessor.const_vector_attribute(e);
-                auto p1 = accessor.const_vector_attribute(envelope_mesh.switch_tuple(e, PV));
-
-                edges.row(index) << count, count + 1;
-                vertices.row(2 * index) = p0;
-                vertices.row(2 * index + 1) = p1;
-
-                count += 2;
-                ++index;
-            }
-
-            m_bvh = std::make_shared<SimpleBVH::BVH>();
-            m_bvh->init(vertices, edges, 1e-10);
-        } else {
-            throw std::runtime_error("Envelope works only for tri/edges meshes");
+        if (envelope_mesh.top_simplex_type() == PF) {
+            m_envelope = init_fast_envelope<double>(envelope_mesh_coordinate, envelope_size);
+        } else if (envelope_mesh.top_simplex_type() == PE) {
+            m_bvh = init_bvh<double>(envelope_mesh_coordinate);
         }
-    } else {
-        throw std::runtime_error("Envelope mesh handle type invlid");
     }
 }
 

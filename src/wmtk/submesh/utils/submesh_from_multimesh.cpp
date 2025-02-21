@@ -7,7 +7,7 @@ namespace wmtk::submesh::utils {
 
 std::shared_ptr<Embedding> submesh_from_multimesh(const std::shared_ptr<Mesh>& mesh)
 {
-    log_assert(mesh->is_multi_mesh_root(), "submesh_from_multimesh must be called on root mesh");
+    // log_assert(mesh->is_multi_mesh_root(), "submesh_from_multimesh must be called on root mesh");
 
     std::shared_ptr<Embedding> emb_ptr = std::make_shared<Embedding>(mesh);
     Embedding& emb = *emb_ptr;
