@@ -83,9 +83,7 @@ using namespace operations::composite;
 using namespace function;
 using namespace invariants;
 
-std::tuple<double, double, double> min_max_avg_amips(
-    const Mesh& mesh,
-    const attribute::MeshAttributeHandle& amips_handle)
+double compute_max_amips(const Mesh& mesh, const attribute::MeshAttributeHandle& amips_handle)
 {
     const auto amips_accessor = mesh.create_const_accessor<double>(amips_handle);
 
@@ -108,7 +106,7 @@ std::tuple<double, double, double> min_max_avg_amips(
         min_energy,
         avg_energy);
 
-    return std::make_tuple(min_energy, max_energy, avg_energy);
+    return max_energy;
 }
 
 void print_stats(const wmtk::SchedulerStats& stats, const std::string& name = "")
@@ -128,6 +126,43 @@ void print_stats(const wmtk::SchedulerStats& stats, const std::string& name = ""
             stats.number_of_successful_operations(),
             stats.number_of_failed_operations(),
             stats.executing_time);
+    }
+}
+
+void print_unrounded_vertices(const Mesh& mesh, const attribute::MeshAttributeHandle& pt_handle)
+{
+    const auto pt_accessor = mesh.create_const_accessor<Rational>(pt_handle);
+
+    // verbose logger, can be removed
+    int64_t unrounded = 0;
+    for (const auto& v : mesh.get_all(PrimitiveType::Vertex)) {
+        const auto p = pt_accessor.const_vector_attribute(v);
+        for (int64_t d = 0; d < 2; ++d) {
+            if (!p[d].is_rounded()) {
+                ++unrounded;
+                break;
+            }
+        }
+    }
+
+    if (unrounded > 0) {
+        logger().info("Mesh has {} unrounded vertices", unrounded);
+    }
+}
+
+void test_flipped_triangles(const Mesh& mesh, const attribute::MeshAttributeHandle& pt_handle)
+{
+    const auto pt_accessor = mesh.create_const_accessor<Rational>(pt_handle);
+
+    for (const Tuple& t : mesh.get_all(mesh.top_simplex_type())) {
+        const auto vertices = mesh.orient_vertices(t);
+        std::vector<Vector2r> pos;
+        for (int i = 0; i < vertices.size(); ++i) {
+            pos.push_back(pt_accessor.const_vector_attribute(vertices[i]));
+        }
+        if (wmtk::utils::wmtk_orient2d(pos[0], pos[1], pos[2]) <= 0) {
+            logger().error("Flipped triangle!");
+        }
     }
 }
 
@@ -206,10 +241,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     amips_update->run_on_all();
 
     double max_amips;
-    double min_amips;
-    double avg_amips;
-
-    std::tie(min_amips, max_amips, avg_amips) = min_max_avg_amips(mesh, amips_attribute);
+    max_amips = compute_max_amips(mesh, amips_attribute);
 
     //////////////////////////////////
     // Storing target edge length
@@ -770,67 +802,22 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     //////////////////////////////////
 
     // debug code
-    for (const auto& t : mesh.get_all(mesh.top_simplex_type())) {
-        const auto vertices = mesh.orient_vertices(t);
-        std::vector<Vector2r> pos;
-        for (int i = 0; i < vertices.size(); ++i) {
-            pos.push_back(pt_accessor.const_vector_attribute(vertices[i]));
-        }
-        if (wmtk::utils::wmtk_orient2d(pos[0], pos[1], pos[2]) <= 0) {
-            logger().error("Flipped triangle!");
-        }
+    test_flipped_triangles(mesh, pt_attribute);
+
+    {
+        logger().info("----------------------- Preprocess Collapse -----------------------");
+        // logger().info("Executing collapse ...");
+
+        SchedulerStats pre_stats =
+            scheduler.run_operation_on_all(*collapse_then_round, visited_edge_flag.as<char>());
+        print_stats(pre_stats, "preprocessing collapse");
+
+        // verbose logger, can be removed
+        print_unrounded_vertices(mesh, pt_attribute);
+        test_flipped_triangles(mesh, pt_attribute);
+        max_amips = compute_max_amips(mesh, amips_attribute);
     }
 
-    SchedulerStats pre_stats;
-
-    logger().info("----------------------- Preprocess Collapse -----------------------");
-
-    logger().info("Executing collapse ...");
-
-
-    wmtk::attribute::TypedAttributeHandle<char> visited_edge_flag_t = visited_edge_flag.as<char>();
-
-    pre_stats = scheduler.run_operation_on_all(*collapse_then_round, visited_edge_flag_t);
-    print_stats(pre_stats, "preprocessing collapse");
-
-    // int64_t success = pre_stats.number_of_successful_operations();
-
-    // verbose logger, can be removed
-    int64_t unrounded = 0;
-    int64_t frozen = 0;
-    for (const auto& v : mesh.get_all(PrimitiveType::Vertex)) {
-        const auto p = pt_accessor.vector_attribute(v);
-        for (int64_t d = 0; d < 2; ++d) {
-            if (!p[d].is_rounded()) {
-                ++unrounded;
-                break;
-            }
-        }
-
-        if (frozen_vertex_accessor.scalar_attribute(v) == 1) {
-            frozen++;
-        }
-    }
-
-    logger().info("Mesh has {} unrounded vertices", unrounded);
-    logger().error("Mesh has {} frozen vertices", frozen);
-
-    // debug code
-    for (const auto& t : mesh.get_all(mesh.top_simplex_type())) {
-        const auto vertices = mesh.orient_vertices(t);
-        std::vector<Vector2r> pos;
-        for (int i = 0; i < vertices.size(); ++i) {
-            pos.push_back(pt_accessor.const_vector_attribute(vertices[i]));
-        }
-        if (wmtk::utils::wmtk_orient2d(pos[0], pos[1], pos[2]) <= 0) {
-            logger().error("Flipped triangle!");
-        }
-    }
-
-    std::tie(min_amips, max_amips, avg_amips) = min_max_avg_amips(mesh, amips_attribute);
-
-    double old_max_energy = max_amips;
-    double old_avg_energy = min_amips;
     int iii = 0;
     bool is_double = false;
     for (int64_t i = 0; i < options.max_passes; ++i) {
@@ -839,11 +826,11 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
         SchedulerStats pass_stats;
         int jj = 0;
         for (auto& op : ops) {
-            logger().info("Executing {} ...", ops_name[jj]);
+            // logger().info("Executing {} ...", ops_name[jj]);
 
             SchedulerStats stats;
             if (op->primitive_type() == PrimitiveType::Edge) {
-                stats = scheduler.run_operation_on_all(*op, visited_edge_flag_t);
+                stats = scheduler.run_operation_on_all(*op, visited_edge_flag.as<char>());
             } else {
                 stats = scheduler.run_operation_on_all(*op);
             }
@@ -851,33 +838,9 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
             print_stats(stats, ops_name[jj]);
 
             // verbose logger, can be removed
-            {
-                int64_t unrounded = 0;
-                for (const auto& v : mesh.get_all(PrimitiveType::Vertex)) {
-                    const auto p = pt_accessor.const_vector_attribute(v);
-                    for (int64_t d = 0; d < pt_accessor.dimension(); ++d) {
-                        if (!p[d].is_rounded()) {
-                            ++unrounded;
-                        }
-                    }
-                }
-                logger().info("Mesh has {} unrounded vertices", unrounded);
-            }
-
-            //// debug code
-            // for (const auto& t : mesh.get_all(mesh.top_simplex_type())) {
-            //     const auto vertices = mesh.orient_vertices(t);
-            //     std::vector<Vector2r> pos;
-            //     for (int i = 0; i < vertices.size(); ++i) {
-            //         pos.push_back(pt_accessor.const_vector_attribute(vertices[i]));
-            //     }
-            //     if (wmtk::utils::wmtk_orient2d(pos[0], pos[1], pos[2]) <= 0) {
-            //         logger().error("Flipped triangle!");
-            //     }
-            // }
-            //
-            std::tie(min_amips, max_amips, avg_amips) = min_max_avg_amips(mesh, amips_attribute);
-
+            print_unrounded_vertices(mesh, pt_attribute);
+            test_flipped_triangles(mesh, pt_attribute);
+            max_amips = compute_max_amips(mesh, amips_attribute);
 
             ++jj;
         }
@@ -896,28 +859,8 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
 
         assert(mesh.is_connectivity_valid());
 
-        int64_t unrounded = 0;
-        if (!is_double) {
-            bool rational = false;
-            for (const auto& v : mesh.get_all(PrimitiveType::Vertex)) {
-                const auto p = pt_accessor.vector_attribute(v);
-                for (int64_t d = 0; d < pt_accessor.dimension(); ++d) {
-                    if (!p[d].is_rounded()) {
-                        rational = true;
-                        ++unrounded;
-                        break;
-                    }
-                }
-            }
-
-            is_double = !rational;
-        }
-
-        logger().info("Mesh has {} unrounded vertices", unrounded);
-        std::tie(min_amips, max_amips, avg_amips) = min_max_avg_amips(mesh, amips_attribute);
-
-        old_max_energy = max_amips;
-        old_avg_energy = avg_amips;
+        print_unrounded_vertices(mesh, pt_attribute);
+        max_amips = compute_max_amips(mesh, amips_attribute);
 
         // stop at good quality
         if (max_amips <= target_max_amips && is_double) {
@@ -927,12 +870,13 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
 
     logger().info("----------------------- Postprocess Collapse -----------------------");
 
-    logger().info("Executing collapse ...");
+    // logger().info("Executing collapse ...");
 
-    auto post_stats = scheduler.run_operation_on_all(*collapse_then_round, visited_edge_flag_t);
+    auto post_stats =
+        scheduler.run_operation_on_all(*collapse_then_round, visited_edge_flag.as<char>());
     print_stats(post_stats, "preprocessing collapse");
 
-    std::tie(min_amips, max_amips, avg_amips) = min_max_avg_amips(mesh, amips_attribute);
+    max_amips = compute_max_amips(mesh, amips_attribute);
 
     multimesh::consolidate(mesh);
 
