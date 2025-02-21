@@ -392,3 +392,38 @@ TEST_CASE("submesh_from_multimesh", "[mesh][submesh]")
         CHECK_NOTHROW(write("submesh_from_multimesh", "vertices", emb, true, true, true, false));
     }
 }
+
+TEST_CASE("submesh_type_casts", "[mesh][submesh]")
+{
+    logger().set_level(spdlog::level::off);
+    // logger().set_level(spdlog::level::trace);
+
+    // basic test for implementing
+    std::shared_ptr<tests::DEBUG_TriMesh> mesh_in =
+        std::make_shared<tests::DEBUG_TriMesh>(tests::edge_region_with_position());
+
+    tests::DEBUG_TriMesh& m = *mesh_in;
+    CHECK_FALSE(m.has_embedding());
+    const Tuple edge45 = m.edge_tuple_from_vids(4, 5);
+
+    std::shared_ptr<MeshBase> emb_ptr = std::make_shared<Embedding>(mesh_in);
+    CHECK(m.has_embedding());
+    REQUIRE(emb_ptr->mesh_type() == MeshType::Embedding);
+    Embedding& emb = static_cast<Embedding&>(*emb_ptr);
+
+    std::shared_ptr<MeshBase> sub_ptr = emb.add_submesh();
+    CHECK(emb.get_child_meshes().size() == 1);
+    REQUIRE(sub_ptr->mesh_type() == MeshType::SubMesh);
+    SubMesh& sub = static_cast<SubMesh&>(*sub_ptr);
+
+    sub.add_simplex(edge45, PE);
+    CHECK(sub.contains(edge45, PE));
+
+    // test linking of embedding in mesh
+    {
+        Mesh& emb_mesh = emb.mesh();
+        REQUIRE(emb_mesh.has_embedding());
+        Embedding& mesh_emb = emb_mesh.get_embedding();
+        CHECK(&mesh_emb == &emb);
+    }
+}

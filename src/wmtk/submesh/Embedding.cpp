@@ -13,6 +13,8 @@ namespace wmtk::submesh {
 Embedding::Embedding(const std::shared_ptr<Mesh>& mesh)
     : m_mesh(mesh)
 {
+    m_mesh->m_embedding = this;
+
     m_tag_attribute_name[PrimitiveType::Vertex] = "WMTK_submesh_tag_v";
     m_tag_attribute_name[PrimitiveType::Edge] = "WMTK_submesh_tag_e";
     m_tag_attribute_name[PrimitiveType::Triangle] = "WMTK_submesh_tag_f";
@@ -169,6 +171,11 @@ std::vector<simplex::IdSimplex> Embedding::get_all_id_simplex(PrimitiveType type
 int64_t Embedding::top_cell_dimension() const
 {
     return mesh().top_cell_dimension();
+}
+
+MeshType Embedding::mesh_type() const
+{
+    return MeshType::Embedding;
 }
 
 Tuple Embedding::switch_tuple(const Tuple& tuple, PrimitiveType type) const

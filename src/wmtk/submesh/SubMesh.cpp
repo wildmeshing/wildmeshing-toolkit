@@ -99,6 +99,11 @@ PrimitiveType SubMesh::top_simplex_type(const Tuple& tuple) const
     log_and_throw_error("No simplex of the tuple contains the submesh tag.");
 }
 
+MeshType SubMesh::mesh_type() const
+{
+    return MeshType::SubMesh;
+}
+
 PrimitiveType SubMesh::top_simplex_type() const
 {
     // const Mesh& m = mesh();

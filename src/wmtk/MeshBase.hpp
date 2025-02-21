@@ -13,6 +13,15 @@ class Simplex;
 class IdSimplex;
 } // namespace simplex
 
+/**
+ * This enum is used to perform casts at runtime from the MeshBase type to the specific mesh type.
+ *
+ * Something like:
+ * if(emb_ptr->mesh_type() == MeshType::Embedding) {
+ *   Embedding& emb = static_cast<Embedding&>(*emb_ptr);
+ * }
+ */
+enum class MeshType { Mesh, Embedding, SubMesh };
 
 class MeshBase
 {
@@ -23,6 +32,8 @@ public:
     virtual std::vector<simplex::IdSimplex> get_all_id_simplex(PrimitiveType type) const = 0;
 
     virtual int64_t top_cell_dimension() const = 0;
+
+    virtual MeshType mesh_type() const = 0;
 
     /**
      * @brief switch the orientation of the Tuple of the given dimension

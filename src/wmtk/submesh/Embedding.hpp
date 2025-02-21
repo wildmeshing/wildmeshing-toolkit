@@ -44,6 +44,8 @@ public:
 
     int64_t top_cell_dimension() const;
 
+    MeshType mesh_type() const;
+
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const;
     bool is_boundary(PrimitiveType, const Tuple& tuple) const;
     int64_t id(const simplex::Simplex& s) const;

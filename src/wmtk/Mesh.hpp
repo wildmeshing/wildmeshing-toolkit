@@ -86,6 +86,10 @@ class TupleTag;
 } // namespace utils
 } // namespace multimesh
 
+namespace submesh {
+class Embedding;
+}
+
 
 // NOTE: the implementation of this class is split into several files to improve clang-format
 // performance
@@ -118,6 +122,7 @@ public:
     friend class multimesh::MultiMeshVisitorExecutor;
     friend class multimesh::attribute::AttributeScopeHandle;
     friend class multimesh::utils::internal::TupleTag;
+    friend class submesh::Embedding;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     friend class operations::Operation;
     friend class operations::EdgeCollapse;
@@ -129,6 +134,8 @@ public:
     int64_t top_cell_dimension() const override;
     PrimitiveType top_simplex_type() const;
     bool is_free() const;
+
+    MeshType mesh_type() const;
 
     // attribute directly hashes its "children" components so it overrides "child_hashes"
     std::map<std::string, const wmtk::utils::Hashable*> child_hashables() const override;
@@ -776,6 +783,10 @@ public:
      **/
     bool is_from_same_multi_mesh_structure(const Mesh& other) const;
 
+    bool has_embedding() const;
+
+    submesh::Embedding& get_embedding() const;
+
 protected:
     // creates a scope as int64_t as the AttributeScopeHandle exists
     [[nodiscard]] attribute::AttributeScopeHandle create_single_mesh_scope();
@@ -828,6 +839,8 @@ protected: // THese are protected so unit tests can access - do not use manually
     attribute::AttributeManager m_attribute_manager;
 
     multimesh::MultiMeshManager m_multi_mesh_manager;
+
+    submesh::Embedding* m_embedding = nullptr; // a pointer to the embedding (if there is any)
 
     int64_t m_top_cell_dimension = -1;
 
@@ -976,6 +989,11 @@ inline Tuple Mesh::switch_tuples(const Tuple& tuple, const ContainerType& sequen
 inline bool Mesh::is_free() const
 {
     return m_is_free;
+}
+
+inline MeshType Mesh::mesh_type() const
+{
+    return MeshType::Mesh;
 }
 
 inline int64_t Mesh::top_cell_dimension() const
