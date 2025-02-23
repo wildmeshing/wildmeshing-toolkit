@@ -169,6 +169,17 @@ Tuple SubMesh::switch_tuple(const Tuple& tuple, PrimitiveType pt) const
     return local_switch_tuple(tuple, pt);
 }
 
+Tuple SubMesh::switch_tuples(
+    const Tuple& tuple,
+    const std::initializer_list<PrimitiveType>& op_sequence) const
+{
+    Tuple r = tuple;
+    for (const PrimitiveType& primitive : op_sequence) {
+        r = switch_tuple(r, primitive);
+    }
+    return r;
+}
+
 // std::vector<Tuple> SubMesh::switch_tuple_vector(const Tuple& tuple, PrimitiveType pt) const
 //{
 //     const int8_t pt_id = get_primitive_type_id(pt);

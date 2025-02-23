@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
+#include <wmtk/submesh/SubMesh.hpp>
 #include <wmtk/utils/Rational.hpp>
 
 namespace fastEnvelope {
@@ -34,6 +35,11 @@ public:
         double envelope_size,
         const attribute::MeshAttributeHandle& coordinate);
 
+    EnvelopeInvariant(
+        const attribute::MeshAttributeHandle& envelope_mesh_coordinate,
+        double envelope_size,
+        const submesh::SubMesh& sub);
+
     bool after(
         const std::vector<Tuple>& top_dimension_tuples_before,
         const std::vector<Tuple>& top_dimension_tuples_after) const override;
@@ -42,6 +48,8 @@ private:
     std::shared_ptr<fastEnvelope::FastEnvelope> m_envelope = nullptr;
     std::shared_ptr<SimpleBVH::BVH> m_bvh = nullptr;
     const attribute::MeshAttributeHandle m_coordinate_handle;
+
+    const submesh::SubMesh* m_submesh = nullptr;
 
     const double m_envelope_size;
 };

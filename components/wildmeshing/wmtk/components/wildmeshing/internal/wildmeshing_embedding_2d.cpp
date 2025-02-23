@@ -5,18 +5,15 @@
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/Scheduler.hpp>
-#include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/utils/cast_attribute.hpp>
 
-#include <wmtk/components/utils/get_attributes.hpp>
 #include <wmtk/multimesh/consolidate.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
-#include <wmtk/operations/attribute_update/make_cast_attribute_transfer_strategy.hpp>
 
 #include <wmtk/operations/AMIPSOptimizationSmoothing.hpp>
 #include <wmtk/operations/AndOperationSequence.hpp>
@@ -26,10 +23,7 @@
 #include <wmtk/operations/OptimizationSmoothing.hpp>
 #include <wmtk/operations/OrOperationSequence.hpp>
 #include <wmtk/operations/Rounding.hpp>
-#include <wmtk/operations/TetWildTangentialLaplacianSmoothing.hpp>
 #include <wmtk/operations/composite/ProjectOperation.hpp>
-#include <wmtk/operations/composite/TetEdgeSwap.hpp>
-#include <wmtk/operations/composite/TetFaceSwap.hpp>
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
 
 
@@ -63,8 +57,6 @@
 #include <wmtk/submesh/SubMesh.hpp>
 #include <wmtk/submesh/utils/submesh_from_multimesh.hpp>
 
-#include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
-
 #include <wmtk/utils/Rational.hpp>
 #include <wmtk/utils/bbox_from_mesh.hpp>
 #include <wmtk/utils/orient.hpp>
@@ -72,12 +64,8 @@
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 
-#include <queue>
 #include <wmtk/simplex/cofaces_single_dimension_iterable.hpp>
-#include <wmtk/simplex/k_ring.hpp>
-#include <wmtk/simplex/link.hpp>
 
-#include <fstream>
 namespace wmtk::components::internal {
 
 using namespace simplex;
@@ -370,10 +358,9 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     using MeshConstrainPair = ProjectOperation::MeshConstrainPair;
 
     auto envelope_invariant = std::make_shared<InvariantCollection>(mesh);
-    std::vector<std::shared_ptr<AttributeTransferStrategyBase>>
-        update_child_position; // TODO remove for submesh
+
     std::vector<std::shared_ptr<Mesh>> envelopes;
-    std::vector<MeshConstrainPair> mesh_constraint_pairs;
+    std::vector<MeshConstrainPair> mesh_constraint_pairs; // TODO remove
 
     std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> multimesh_meshes;
 
@@ -383,36 +370,19 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
 
         logger().info("wildmeshing2d: registered {} mesh as envelope constraints", e.envelope_name);
 
-        const bool has_double_pos =
-            geometry_mesh.has_attribute<double>(e.geometry_position_name, PrimitiveType::Vertex);
-        const bool has_rational_pos =
-            geometry_mesh.has_attribute<Rational>(e.geometry_position_name, PrimitiveType::Vertex);
-        assert(has_double_pos ^ has_rational_pos);
+        // auto constrained_pt_handle = constrained_mesh.get_attribute_handle<Rational>(
+        //     e.constrained_position_name,
+        //     PrimitiveType::Vertex);
 
-        auto geometry_pt_handle = has_double_pos ? geometry_mesh.get_attribute_handle<double>(
-                                                       e.geometry_position_name,
-                                                       PrimitiveType::Vertex)
-                                                 : geometry_mesh.get_attribute_handle<Rational>(
-                                                       e.geometry_position_name,
-                                                       PrimitiveType::Vertex);
+        // multimesh_meshes.push_back(std::make_pair(e.envelope_constrained_mesh, e.envelope_name));
+        //  pass_through_attributes.emplace_back(constrained_pt_handle);
 
-        auto constrained_pt_handle = constrained_mesh.get_attribute_handle<Rational>(
-            e.constrained_position_name,
-            PrimitiveType::Vertex);
+        // mesh_constraint_pairs.emplace_back(geometry_pt_handle, constrained_pt_handle);
 
-        multimesh_meshes.push_back(std::make_pair(e.envelope_constrained_mesh, e.envelope_name));
-        pass_through_attributes.emplace_back(constrained_pt_handle);
+        submesh::SubMesh& sub = *emb.get_child_meshes()[0];
 
-        mesh_constraint_pairs.emplace_back(geometry_pt_handle, constrained_pt_handle);
-
-        envelope_invariant->add(std::make_shared<EnvelopeInvariant>(
-            geometry_pt_handle,
-            e.thickness * bbdiag,
-            constrained_pt_handle));
-
-        update_child_position.emplace_back(attribute_update::make_cast_attribute_transfer_strategy(
-            /*source=*/pt_attribute,
-            /*target=*/constrained_pt_handle)); // TODO remove for submesh
+        envelope_invariant->add(
+            std::make_shared<EnvelopeInvariant>(pt_attribute, e.thickness * bbdiag, sub));
     }
 
 
@@ -497,9 +467,6 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     rounding->add_invariant(
         std::make_shared<RoundedInvariant>(mesh, pt_attribute.as<Rational>(), true));
     rounding->add_invariant(inversion_invariant);
-    for (auto& s : update_child_position) {
-        rounding->add_transfer_strategy(s);
-    }
 
 
     //////////////////////////////////
@@ -536,10 +503,6 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     auto split_then_round = std::make_shared<AndOperationSequence>(mesh);
     split_then_round->add_operation(split);
     split_then_round->add_operation(rounding);
-
-    for (auto& s : update_child_position) {
-        split_then_round->add_transfer_strategy(s);
-    }
 
     // split unrounded
     auto split_unrounded = std::make_shared<EdgeSplit>(mesh);
@@ -650,10 +613,6 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
         collapse->add_transfer_strategy(tag_update);
         collapse->add_transfer_strategy(amips_update);
         collapse->add_transfer_strategy(edge_length_update);
-
-        for (auto& s : update_child_position) {
-            collapse->add_transfer_strategy(s);
-        }
     };
 
     auto collapse1 = std::make_shared<EdgeCollapse>(mesh);
@@ -684,10 +643,6 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     collapse_then_round->add_operation(rounding);
 
     collapse_then_round->set_priority(short_edges_first);
-
-    for (auto& s : update_child_position) {
-        collapse_then_round->add_transfer_strategy(s);
-    }
 
     if (!options.skip_collapse) {
         ops.emplace_back(collapse_then_round);
@@ -781,9 +736,6 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     smoothing->add_invariant(std::make_shared<RoundedInvariant>(mesh, pt_attribute.as<Rational>()));
     smoothing->add_invariant(frozen_vertex_invariant);
     smoothing->add_invariant(inversion_invariant);
-    for (auto& s : update_child_position) {
-        smoothing->add_transfer_strategy(s);
-    }
 
     auto proj_smoothing = std::make_shared<ProjectOperation>(smoothing, mesh_constraint_pairs);
     // proj_smoothing->use_random_priority() = true;
@@ -794,9 +746,6 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     proj_smoothing->add_transfer_strategy(amips_update);
     proj_smoothing->add_transfer_strategy(edge_length_update);
 
-    for (auto& s : update_child_position) {
-        proj_smoothing->add_transfer_strategy(s);
-    }
 
     if (!options.skip_smooth) {
         for (int i = 0; i < 1; ++i) {

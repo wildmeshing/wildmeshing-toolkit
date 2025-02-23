@@ -72,6 +72,9 @@ public:
      */
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType pt) const override;
 
+    Tuple switch_tuples(const Tuple& tuple, const std::initializer_list<PrimitiveType>& op_sequence)
+        const;
+
     /**
      * This function does not make sense. The proper way to navigate is using
      * cofaces_single_dimension.
