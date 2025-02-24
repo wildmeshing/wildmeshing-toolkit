@@ -9,6 +9,7 @@
 #include "EnvelopeInvariant.hpp"
 
 #include <wmtk/Mesh.hpp>
+#include <wmtk/simplex/IdSimplexCollection.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
 #include <wmtk/simplex/faces_single_dimension.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
@@ -295,18 +296,59 @@ bool EnvelopeInvariant::after(
     const std::vector<Tuple>& top_dimension_tuples_before,
     const std::vector<Tuple>& top_dimension_tuples_after) const
 {
-    /*
-    Modification for submesh:
-    - Get faces of top_dimension_tuples_after that are of type sub.top_simplex_type()
-    - Filter by sub.contains(tuple, pt_top)
-    */
-
     if (top_dimension_tuples_after.empty()) {
         return true;
     }
 
     assert(m_coordinate_handle.holds<Rational>() || m_coordinate_handle.holds<double>());
     assert(m_envelope || m_bvh);
+
+    /*
+    Modification for submesh:
+    - Get faces of top_dimension_tuples_after that are of type sub.top_simplex_type()
+    - Filter by sub.contains(tuple, pt_top)
+    */
+
+    if (m_submesh) {
+        const submesh::SubMesh& sub = *m_submesh;
+
+        const PrimitiveType pt_top = sub.top_simplex_type();
+
+        simplex::IdSimplexCollection tops(mesh());
+        for (const Tuple& t : top_dimension_tuples_after) {
+            if (mesh().top_simplex_type() == pt_top) {
+                if (sub.contains(t, pt_top)) {
+                    tops.add(pt_top, t);
+                }
+                continue;
+            }
+
+            const auto faces = simplex::faces_single_dimension_tuples(
+                mesh(),
+                simplex::Simplex(mesh().top_simplex_type(), t),
+                pt_top);
+
+            for (const Tuple& f : faces) {
+                if (sub.contains(f, pt_top)) {
+                    tops.add(pt_top, f);
+                }
+            }
+        }
+        tops.sort_and_clean();
+
+        if (tops.size() == 0) {
+            return true;
+        }
+
+        if (m_envelope) {
+            return after_with_envelope(tops.simplex_vector_tuples());
+        }
+        if (m_bvh) {
+            return after_with_bvh(tops.simplex_vector_tuples());
+        }
+        assert(false); // this code should be unreachable
+        return false;
+    }
 
     if (m_envelope) {
         return after_with_envelope(top_dimension_tuples_after);
@@ -325,7 +367,9 @@ bool EnvelopeInvariant::after_with_envelope(
     assert(m_envelope);
     assert(m_coordinate_handle.dimension() == 3);
 
-    const PrimitiveType pt_top = mesh().top_simplex_type();
+    const PrimitiveType pt_top =
+        m_submesh ? m_submesh->top_simplex_type() : mesh().top_simplex_type();
+
     if (pt_top == PrimitiveType::Triangle) {
         return after_with_envelope_triangle(top_dimension_tuples_after);
     }
@@ -342,7 +386,6 @@ bool EnvelopeInvariant::after_with_envelope_triangle(
     const std::vector<Tuple>& top_dimension_tuples_after) const
 {
     assert(m_envelope);
-    assert(mesh().top_simplex_type() == PrimitiveType::Triangle);
 
     const bool res = std::visit(
         [&](auto&& tah) noexcept {
@@ -470,11 +513,13 @@ bool EnvelopeInvariant::after_with_bvh(const std::vector<Tuple>& top_dimension_t
 {
     assert(m_bvh);
 
-    const PrimitiveType type = mesh().top_simplex_type();
-    if (type == PrimitiveType::Edge) {
+    const PrimitiveType pt_top =
+        m_submesh ? m_submesh->top_simplex_type() : mesh().top_simplex_type();
+
+    if (pt_top == PrimitiveType::Edge) {
         return after_with_bvh_edge(top_dimension_tuples_after);
     }
-    if (type == PrimitiveType::Vertex) {
+    if (pt_top == PrimitiveType::Vertex) {
         return after_with_bvh_vertex(top_dimension_tuples_after);
     }
 
@@ -484,9 +529,6 @@ bool EnvelopeInvariant::after_with_bvh(const std::vector<Tuple>& top_dimension_t
 bool EnvelopeInvariant::after_with_bvh_edge(
     const std::vector<Tuple>& top_dimension_tuples_after) const
 {
-    assert(m_bvh);
-    assert(mesh().top_simplex_type() == PrimitiveType::Edge);
-
     SimpleBVH::VectorMax3d nearest_point;
     double sq_dist;
 

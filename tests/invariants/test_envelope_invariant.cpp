@@ -1,6 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
+#include <wmtk/submesh/Embedding.hpp>
+#include <wmtk/submesh/SubMesh.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/cast_attribute.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
@@ -58,6 +60,8 @@ std::shared_ptr<DEBUG_PointMesh> construct_point_4(DEBUG_TriMesh& m)
 
 TEST_CASE("envelope_invariant_envelope", "[invariants][envelope]")
 {
+    logger().set_level(spdlog::level::off);
+
     std::shared_ptr<DEBUG_TriMesh> mesh_in =
         std::make_shared<DEBUG_TriMesh>(edge_region_with_position());
     DEBUG_TriMesh& m = *mesh_in;
@@ -189,6 +193,8 @@ TEST_CASE("envelope_invariant_envelope", "[invariants][envelope]")
 
 TEST_CASE("envelope_invariant_bvh", "[invariants][envelope]")
 {
+    logger().set_level(spdlog::level::off);
+
     std::shared_ptr<DEBUG_EdgeMesh> em_ptr = std::make_shared<DEBUG_EdgeMesh>(single_line());
     DEBUG_EdgeMesh& em = *em_ptr;
     {
@@ -275,5 +281,91 @@ TEST_CASE("envelope_invariant_bvh", "[invariants][envelope]")
         auto acc = pm.create_accessor<T>(query_pos_handle);
         acc.vector_attribute(s0)[1] = 1;
         CHECK_FALSE(env_inv.after({}, tops));
+    }
+}
+
+TEST_CASE("envelope_invariant_submesh_edge", "[invariants][envelope]")
+{
+    std::shared_ptr<DEBUG_TriMesh> mesh_in =
+        std::make_shared<DEBUG_TriMesh>(edge_region_with_position());
+    DEBUG_TriMesh& m = *mesh_in;
+
+    auto env_pos_handle = m.get_attribute_handle<double>("vertices", PV);
+
+    submesh::Embedding emb(mesh_in);
+
+    auto sub1_ptr = emb.add_submesh();
+    submesh::SubMesh& sub1 = *sub1_ptr;
+    sub1.add_simplex(m.edge_tuple_from_vids(4, 5), PE);
+
+    EnvelopeInvariant env_inv(env_pos_handle, 1e-2, sub1);
+
+    // SECTION("4")
+    {
+        const Tuple v4 = m.vertex_tuple_from_id(4);
+        const simplex::Simplex s4(PV, v4);
+
+        const auto tops = simplex::top_dimension_cofaces_tuples(m, s4);
+        CHECK(env_inv.after({}, tops));
+
+        auto acc = m.create_accessor<double>(env_pos_handle);
+        acc.vector_attribute(s4)[2] = 1;
+        CHECK_FALSE(env_inv.after({}, tops));
+    }
+    // SECTION("0")
+    {
+        const Tuple v0 = m.vertex_tuple_from_id(0);
+        const simplex::Simplex s0(PV, v0);
+
+        const auto tops = simplex::top_dimension_cofaces_tuples(m, s0);
+        CHECK(env_inv.after({}, tops));
+
+        auto acc = m.create_accessor<double>(env_pos_handle);
+
+        acc.vector_attribute(s0)[2] = 1;
+        CHECK(env_inv.after({}, tops));
+    }
+}
+
+TEST_CASE("envelope_invariant_submesh_triangle", "[invariants][envelope]")
+{
+    std::shared_ptr<DEBUG_TriMesh> mesh_in =
+        std::make_shared<DEBUG_TriMesh>(edge_region_with_position());
+    DEBUG_TriMesh& m = *mesh_in;
+
+    auto env_pos_handle = m.get_attribute_handle<double>("vertices", PV);
+
+    submesh::Embedding emb(mesh_in);
+
+    auto sub_ptr = emb.add_submesh();
+    submesh::SubMesh& sub = *sub_ptr;
+    sub.add_simplex(m.face_tuple_from_vids(4, 5, 1), PF);
+
+    EnvelopeInvariant env_inv(env_pos_handle, 1e-2, sub);
+
+    SECTION("4")
+    {
+        const Tuple v4 = m.vertex_tuple_from_id(4);
+        const simplex::Simplex s4(PV, v4);
+
+        const auto tops = simplex::top_dimension_cofaces_tuples(m, s4);
+        CHECK(env_inv.after({}, tops));
+
+        auto acc = m.create_accessor<double>(env_pos_handle);
+        acc.vector_attribute(s4)[2] = 1;
+        CHECK_FALSE(env_inv.after({}, tops));
+    }
+    SECTION("0")
+    {
+        const Tuple v0 = m.vertex_tuple_from_id(0);
+        const simplex::Simplex s0(PV, v0);
+
+        const auto tops = simplex::top_dimension_cofaces_tuples(m, s0);
+        CHECK(env_inv.after({}, tops));
+
+        auto acc = m.create_accessor<double>(env_pos_handle);
+
+        acc.vector_attribute(s0)[2] = 1;
+        CHECK(env_inv.after({}, tops));
     }
 }
