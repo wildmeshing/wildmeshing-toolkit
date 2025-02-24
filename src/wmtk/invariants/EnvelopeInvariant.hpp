@@ -36,13 +36,23 @@ public:
         const attribute::MeshAttributeHandle& coordinate);
 
     EnvelopeInvariant(
-        const attribute::MeshAttributeHandle& envelope_mesh_coordinate,
+        const attribute::MeshAttributeHandle& pt_attribute,
         double envelope_size,
         const submesh::SubMesh& sub);
 
     bool after(
         const std::vector<Tuple>& top_dimension_tuples_before,
         const std::vector<Tuple>& top_dimension_tuples_after) const override;
+
+private:
+    bool after_with_envelope(const std::vector<Tuple>& top_dimension_tuples_after) const;
+    bool after_with_envelope_triangle(const std::vector<Tuple>& top_dimension_tuples_after) const;
+    bool after_with_envelope_edge(const std::vector<Tuple>& top_dimension_tuples_after) const;
+    bool after_with_envelope_vertex(const std::vector<Tuple>& top_dimension_tuples_after) const;
+
+    bool after_with_bvh(const std::vector<Tuple>& top_dimension_tuples_after) const;
+    bool after_with_bvh_edge(const std::vector<Tuple>& top_dimension_tuples_after) const;
+    bool after_with_bvh_vertex(const std::vector<Tuple>& top_dimension_tuples_after) const;
 
 private:
     std::shared_ptr<fastEnvelope::FastEnvelope> m_envelope = nullptr;

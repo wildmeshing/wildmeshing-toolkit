@@ -287,6 +287,26 @@ TriMesh edge_region_with_position()
     return m;
 }
 
+TriMesh edge_region_with_position_2D()
+{
+    TriMesh m = edge_region();
+
+    Eigen::MatrixXd V;
+    V.resize(10, 2);
+    V.row(0) << 0.5, 1;
+    V.row(1) << 1.5, 1;
+    V.row(2) << 2.5, 1;
+    V.row(3) << 0, 0;
+    V.row(4) << 1, 0;
+    V.row(5) << 2, 0;
+    V.row(6) << 3, 0;
+    V.row(7) << 0.5, -1;
+    V.row(8) << 1.5, -1;
+    V.row(9) << 2.5, -1;
+    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
+    return m;
+}
+
 TriMesh embedded_diamond()
 {
     //      0---1
