@@ -195,8 +195,6 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     }
     auto pt_attribute =
         mesh.get_attribute_handle<Rational>(options.input_mesh_position, PrimitiveType::Vertex);
-    logger().trace("Getting rational point accessor");
-    auto pt_accessor = mesh.create_accessor(pt_attribute.as<Rational>());
 
     //////////////////////////////////
     // computing bbox diagonal
@@ -213,10 +211,9 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     auto amips_accessor = mesh.create_accessor(amips_attribute.as<double>());
     // amips update
     auto compute_amips = [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorXd {
-        assert(P.rows() == 2 || P.rows() == 3); // rows --> attribute dimension
+        assert(P.rows() == 2); // rows --> attribute dimension
         assert(P.cols() == 3);
         // triangle
-        assert(P.rows() == 2);
         std::array<double, 6> pts;
         for (size_t i = 0; i < 3; ++i) {
             for (size_t j = 0; j < 2; ++j) {
@@ -283,7 +280,8 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     //////////////////////////////////
     // substructures
     //////////////////////////////////
-    auto emb_ptr = submesh::utils::submesh_from_multimesh(options.input_mesh);
+    std::map<std::shared_ptr<Mesh>, std::shared_ptr<submesh::SubMesh>> mm_to_submesh_map;
+    auto emb_ptr = submesh::utils::submesh_from_multimesh(options.input_mesh, mm_to_submesh_map);
     submesh::Embedding emb = *emb_ptr;
 
     //////////////////////////////////
@@ -370,16 +368,12 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
 
         logger().info("wildmeshing2d: registered {} mesh as envelope constraints", e.envelope_name);
 
-        // auto constrained_pt_handle = constrained_mesh.get_attribute_handle<Rational>(
-        //     e.constrained_position_name,
-        //     PrimitiveType::Vertex);
+        if (&constrained_mesh != &geometry_mesh) {
+            log_and_throw_error(
+                "wildmeshing2d: constrained and geometry mesh must be the same for submesh usage.");
+        }
 
-        // multimesh_meshes.push_back(std::make_pair(e.envelope_constrained_mesh, e.envelope_name));
-        //  pass_through_attributes.emplace_back(constrained_pt_handle);
-
-        // mesh_constraint_pairs.emplace_back(geometry_pt_handle, constrained_pt_handle);
-
-        submesh::SubMesh& sub = *emb.get_child_meshes()[0];
+        submesh::SubMesh& sub = *mm_to_submesh_map.at(e.envelope_geometry_mesh);
 
         envelope_invariant->add(
             std::make_shared<EnvelopeInvariant>(pt_attribute, e.thickness * bbdiag, sub));

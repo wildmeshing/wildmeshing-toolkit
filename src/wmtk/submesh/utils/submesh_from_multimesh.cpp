@@ -7,6 +7,14 @@ namespace wmtk::submesh::utils {
 
 std::shared_ptr<Embedding> submesh_from_multimesh(const std::shared_ptr<Mesh>& mesh)
 {
+    std::map<std::shared_ptr<Mesh>, std::shared_ptr<SubMesh>> smm;
+    return submesh_from_multimesh(mesh, smm);
+}
+
+std::shared_ptr<Embedding> submesh_from_multimesh(
+    const std::shared_ptr<Mesh>& mesh,
+    std::map<std::shared_ptr<Mesh>, std::shared_ptr<SubMesh>>& submesh_map)
+{
     // log_assert(mesh->is_multi_mesh_root(), "submesh_from_multimesh must be called on root mesh");
 
     std::shared_ptr<Embedding> emb_ptr = std::make_shared<Embedding>(mesh);
@@ -14,6 +22,8 @@ std::shared_ptr<Embedding> submesh_from_multimesh(const std::shared_ptr<Mesh>& m
 
     for (const auto& child_mesh_ptr : mesh->get_child_meshes()) {
         auto sub_ptr = emb.add_submesh();
+
+        submesh_map[child_mesh_ptr] = sub_ptr;
 
         const Mesh& cm = *child_mesh_ptr;
         for (const Tuple& child_tuple : cm.get_all(cm.top_simplex_type())) {

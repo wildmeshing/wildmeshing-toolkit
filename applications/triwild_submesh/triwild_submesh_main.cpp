@@ -114,30 +114,31 @@ int main(int argc, char* argv[])
     }
 
     std::vector<wmtk::components::EnvelopeOptions> enves;
+    {
+        wmtk::components::EnvelopeOptions e;
+        e.envelope_name = "input";
+        e.envelope_constrained_mesh = edgemesh;
+        e.envelope_geometry_mesh = edgemesh;
+        e.constrained_position_name = "vertices";
+        e.geometry_position_name = "vertices";
+        e.thickness = j["envelope_size"];
 
-    wmtk::components::EnvelopeOptions e;
-    e.envelope_name = "input";
-    e.envelope_constrained_mesh = edgemesh;
-    e.envelope_geometry_mesh = edgemesh;
-    e.constrained_position_name = "vertices";
-    e.geometry_position_name = "vertices";
-    e.thickness = j["envelope_size"];
+        if (e.envelope_name == "input") {
+            e.envelope_geometry_mesh = mesh; // set as input
+        }
 
-    if (e.envelope_name == "input") {
-        e.envelope_geometry_mesh = mesh; // set as input
+        enves.push_back(e);
+
+        wmtk::components::EnvelopeOptions e2;
+        e2.envelope_name = "bbox";
+        e2.envelope_constrained_mesh = bboxmesh;
+        e2.envelope_geometry_mesh = bboxmesh;
+        e2.constrained_position_name = "vertices";
+        e2.geometry_position_name = "vertices";
+        e2.thickness = 0.0001;
+
+        enves.push_back(e2);
     }
-
-    enves.push_back(e);
-
-    wmtk::components::EnvelopeOptions e2;
-    e2.envelope_name = "bbox";
-    e2.envelope_constrained_mesh = bboxmesh;
-    e2.envelope_geometry_mesh = bboxmesh;
-    e2.constrained_position_name = "vertices";
-    e2.geometry_position_name = "vertices";
-    e2.thickness = 0.0001;
-
-    enves.push_back(e2);
 
 
     wmtk::components::WildMeshingOptions wmo;

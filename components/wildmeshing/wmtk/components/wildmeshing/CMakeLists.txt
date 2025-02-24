@@ -19,3 +19,6 @@ set(SRC_FILES
     internal/wildmeshing_embedding_2d.cpp)
 
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
+
+add_component_test(wmtk::${COMPONENT_NAME} 
+    ${PROJECT_SOURCE_DIR}/components/tests/wildmeshing/test_wildmeshing.cpp)
