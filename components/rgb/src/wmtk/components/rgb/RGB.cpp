@@ -1,4 +1,4 @@
-#include "rgb.hpp"
+#include "RGB.hpp"
 #include <wmtk/Mesh.hpp>
 #include "RGB1.hpp"
 #include "RGB2.hpp"

@@ -1,4 +1,4 @@
-#include "rgb.hpp"
+#include "RGB.hpp"
 namespace wmtk {
 class TriMesh;
 }
