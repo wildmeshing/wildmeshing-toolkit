@@ -11,13 +11,13 @@ RGBTriEdgeSwap::RGBTriEdgeSwap(
 
 TriMesh& RGBTriEdgeSwap::mesh()
 {
-    auto ptr = dynamic_cast<TriMesh*>(&const_cast<Mesh&>(position_handle().mesh()));
+    auto ptr = dynamic_cast<TriMesh*>(&const_cast<Mesh&>(Operation::mesh()));
     assert(ptr != nullptr);
     return *ptr;
 }
 const TriMesh& RGBTriEdgeSwap::mesh() const
 {
-    auto ptr = dynamic_cast<const TriMesh*>(&position_handle().mesh());
+    auto ptr = dynamic_cast<const TriMesh*>(&Operation::mesh());
     assert(ptr != nullptr);
     return *ptr;
 }

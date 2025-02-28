@@ -44,5 +44,7 @@ private:
 private:
     attribute::MeshAttributeHandle m_triangle_level_handle;
     attribute::MeshAttributeHandle m_edge_level_handle;
+    attribute::Accessor<int64_t, wmtk::TriMesh,2> m_triangle_level_accessor;
+    attribute::Accessor<int64_t, wmtk::TriMesh,2> m_edge_level_accessor;
 };
 } // namespace wmtk::components::rgb::operations
