@@ -124,7 +124,8 @@ void RGBEdgeSplit::red_face_update_based_on_ear_edge(
     const Eigen::Vector2<int64_t>& old_face_color_level)
 {
     assert(old_face_color_level[0] == 1);
-    Eigen::Vector2<int64_t> ear_edge_color_level = m_edge_level_accessor.vector_attribute(ear_edge);
+    Eigen::Vector2<int64_t> ear_edge_color_level =
+        m_edge_level_accessor.const_vector_attribute(ear_edge);
     if (ear_edge_color_level[0] == 0) {
         m_triangle_level_accessor.vector_attribute(new_face) =
             Eigen::Vector2<int64_t>(0, old_face_color_level[1] + 1);
