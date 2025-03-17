@@ -1,11 +1,18 @@
 #include "TriEdgeSwap.hpp"
 
 #include <wmtk/Mesh.hpp>
+#include <wmtk/submesh/Embedding.hpp>
 
 namespace wmtk::operations::composite {
 
 TriEdgeSwap::TriEdgeSwap(Mesh& m)
     : Operation(m)
+    , m_split(m)
+    , m_collapse(m)
+{}
+
+TriEdgeSwap::TriEdgeSwap(submesh::Embedding& m)
+    : Operation(m.mesh())
     , m_split(m)
     , m_collapse(m)
 {}

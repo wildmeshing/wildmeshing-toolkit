@@ -4,6 +4,10 @@
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 
+namespace wmtk::submesh {
+class Embedding;
+}
+
 namespace wmtk::operations::composite {
 /**
  * Performs an edge swap, implemented as a combination of swap and collapse.
@@ -41,6 +45,7 @@ class TriEdgeSwap : public Operation
 {
 public:
     TriEdgeSwap(Mesh& m);
+    TriEdgeSwap(submesh::Embedding& m);
 
     PrimitiveType primitive_type() const override { return PrimitiveType::Edge; }
 

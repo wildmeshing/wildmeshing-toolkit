@@ -303,7 +303,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
                     ++counter;
                 }
             }
-            if (counter != 2) {
+            if (counter < 2) {
                 frozen_vertex_accessor.scalar_attribute(v) = 1;
             }
         }
@@ -412,13 +412,13 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
 
     auto interior_edge = std::make_shared<InteriorEdgeInvariant>(mesh);
 
-    for (const auto& em : multimesh_meshes) {
-        interior_edge->add_boundary(*(em.first));
-    }
+    // for (const auto& em : multimesh_meshes) {
+    //     interior_edge->add_boundary(*(em.first));
+    // }
 
-    auto invariant_separate_substructures =
-        std::make_shared<invariants::SeparateSubstructuresInvariant>(
-            mesh); // TODO remove for submesh
+    // auto invariant_separate_substructures =
+    //     std::make_shared<invariants::SeparateSubstructuresInvariant>(
+    //        mesh); // TODO remove for submesh
 
     auto frozen_vertex_invariant = std::make_shared<invariants::FrozenVertexInvariant>(
         mesh,
@@ -466,7 +466,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     //////////////////////////////////
     // 1) EdgeSplit
     //////////////////////////////////
-    auto split = std::make_shared<EdgeSplit>(mesh);
+    auto split = std::make_shared<EdgeSplit>(emb);
     split->set_priority(long_edges_first);
 
     split->add_invariant(todo_larger);
@@ -499,7 +499,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     split_then_round->add_operation(rounding);
 
     // split unrounded
-    auto split_unrounded = std::make_shared<EdgeSplit>(mesh);
+    auto split_unrounded = std::make_shared<EdgeSplit>(emb);
     split_unrounded->set_priority(long_edges_first);
 
     split_unrounded->add_invariant(todo_larger);
@@ -584,7 +584,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     //////////////////////////////////
 
     auto setup_collapse = [&](std::shared_ptr<EdgeCollapse>& collapse) {
-        collapse->add_invariant(invariant_separate_substructures);
+        // collapse->add_invariant(invariant_separate_substructures);
         collapse->add_invariant(std::make_shared<MultiMeshMapValidInvariant>(mesh));
         collapse->add_invariant(link_condition);
         collapse->add_invariant(inversion_invariant);
@@ -609,7 +609,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
         collapse->add_transfer_strategy(edge_length_update);
     };
 
-    auto collapse1 = std::make_shared<EdgeCollapse>(mesh);
+    auto collapse1 = std::make_shared<EdgeCollapse>(emb);
 
     collapse1->add_invariant(frozen_vertex_invariant);
     collapse1->set_new_attribute_strategy(pt_attribute, clps_strat1);
@@ -618,7 +618,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
         CollapseBasicStrategy::CopyOther);
     setup_collapse(collapse1);
 
-    auto collapse2 = std::make_shared<EdgeCollapse>(mesh);
+    auto collapse2 = std::make_shared<EdgeCollapse>(emb);
 
     collapse2->add_invariant(frozen_opp_vertex_invariant);
     collapse2->set_new_attribute_strategy(pt_attribute, clps_strat2);
@@ -667,7 +667,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
         op.add_transfer_strategy(edge_length_update);
         op.add_transfer_strategy(tag_update);
 
-        collapse.add_invariant(invariant_separate_substructures);
+        // collapse.add_invariant(invariant_separate_substructures);
         collapse.add_invariant(link_condition);
 
 
@@ -712,7 +712,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     };
 
 
-    auto swap = std::make_shared<TriEdgeSwap>(mesh);
+    auto swap = std::make_shared<TriEdgeSwap>(emb);
     setup_swap(*swap, swap->collapse(), swap->split(), interior_edge);
 
     if (!options.skip_swap) {
@@ -731,7 +731,9 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     smoothing->add_invariant(frozen_vertex_invariant);
     smoothing->add_invariant(inversion_invariant);
 
-    auto proj_smoothing = std::make_shared<ProjectOperation>(smoothing, mesh_constraint_pairs);
+    auto proj_smoothing = std::make_shared<ProjectOperation>(
+        smoothing,
+        mesh_constraint_pairs); // TODO adapt for embedding
     // proj_smoothing->use_random_priority() = true;
     proj_smoothing->add_invariant(frozen_vertex_invariant);
     proj_smoothing->add_invariant(envelope_invariant);
