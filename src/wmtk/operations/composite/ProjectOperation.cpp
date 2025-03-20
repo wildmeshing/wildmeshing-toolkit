@@ -2,6 +2,9 @@
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/simplex/faces_single_dimension.hpp>
+#include <wmtk/submesh/Embedding.hpp>
+#include <wmtk/submesh/SubMesh.hpp>
+#include <wmtk/utils/Logger.hpp>
 
 #include <SimpleBVH/BVH.hpp>
 
@@ -18,8 +21,15 @@ ProjectOperation::ProjectOperation(
 ProjectOperation::ProjectOperation(
     std::shared_ptr<Operation> main_op,
     const std::vector<MeshConstrainPair>& mesh_constaint_pairs)
-    : AttributesUpdate(main_op->mesh())
-    , m_main_op(main_op)
+    : ProjectOperation(main_op->mesh(), mesh_constaint_pairs)
+{
+    m_main_op = main_op;
+}
+
+ProjectOperation::ProjectOperation(
+    Mesh& mesh,
+    const std::vector<MeshConstrainPair>& mesh_constaint_pairs)
+    : AttributesUpdate(mesh)
 {
     for (auto& pair : mesh_constaint_pairs) {
         int64_t count = 0;
@@ -84,13 +94,60 @@ ProjectOperation::ProjectOperation(
     }
 }
 
+ProjectOperation::ProjectOperation(
+    std::shared_ptr<Operation> main_op,
+    const submesh::Embedding& emb,
+    const attribute::MeshAttributeHandle& pos_handle)
+    : AttributesUpdate(main_op->mesh())
+    , m_main_op(main_op)
+{
+    const Mesh& m = emb.mesh();
+    assert(&m == &pos_handle.mesh());
+
+    log_and_throw_error("incomplete implementation");
+
+    // Wrapper for the position accessor that works for double and Rational. Probably not the most
+    // efficient code but good enough for what is required here
+    auto get_pos = [&pos_handle, &m](const simplex::IdSimplex& s) -> Eigen::VectorXd {
+        return std::visit(
+            [&m, &s](auto&& tah) noexcept -> Eigen::VectorXd {
+                using HandleType = typename std::decay_t<decltype(tah)>;
+                using AttributeType = typename HandleType::Type;
+
+                const auto accessor = m.create_const_accessor(tah);
+                if constexpr (std::is_same_v<AttributeType, double>) {
+                    return accessor.const_vector_attribute(s);
+                }
+                if constexpr (std::is_same_v<AttributeType, Rational>) {
+                    return accessor.const_vector_attribute(s).cast<double>();
+                }
+                log_and_throw_error("Position attribute must be double or rational");
+            },
+            pos_handle.handle());
+    };
+
+    for (const auto& sub_ptr : emb.get_child_meshes()) {
+        const submesh::SubMesh& sub = *sub_ptr;
+        const PrimitiveType pt = sub.top_simplex_type();
+
+        for (const simplex::IdSimplex& cell : sub.get_all_id_simplex(pt)) {
+            //
+        }
+    }
+}
+
 std::vector<simplex::Simplex> ProjectOperation::execute(const simplex::Simplex& simplex)
 {
-    // mesh has to be the same as the main_op mesh
-    assert(&m_main_op->mesh() == &mesh());
-    const auto main_simplices = (*m_main_op)(simplex);
-    if (main_simplices.empty()) return {};
-    assert(main_simplices.size() == 1);
+    std::vector<simplex::Simplex> main_simplices;
+    if (m_main_op) {
+        // mesh has to be the same as the main_op mesh
+        assert(&m_main_op->mesh() == &mesh());
+        main_simplices = (*m_main_op)(simplex);
+        if (main_simplices.empty()) return {};
+        assert(main_simplices.size() == 1);
+    } else {
+        main_simplices.emplace_back(simplex);
+    }
     const auto main_tup = main_simplices.front().tuple();
 
 
