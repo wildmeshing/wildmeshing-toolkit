@@ -134,16 +134,26 @@ TEST_CASE("test_projection_operation", "[operations][.]")
         update_child_position.emplace_back(attribute_update::make_cast_attribute_transfer_strategy(
             /*source=*/pos_handle,
             /*target=*/child_bnd_pos_handle));
+        std::vector<std::shared_ptr<AttributeTransferStrategyBase>> update_parent_position;
+        update_parent_position.emplace_back(attribute_update::make_cast_attribute_transfer_strategy(
+            /*source=*/child_input_pos_handle,
+            /*target=*/pos_handle));
+        update_parent_position.emplace_back(attribute_update::make_cast_attribute_transfer_strategy(
+            /*source=*/child_bnd_pos_handle,
+            /*target=*/pos_handle));
 
         std::vector<ProjectOperation::MeshConstrainPair> mesh_constraint_pairs;
-        mesh_constraint_pairs.emplace_back(child_input_pos_handle, pos_handle);
-        mesh_constraint_pairs.emplace_back(child_bnd_pos_handle, pos_handle);
+        mesh_constraint_pairs.emplace_back(child_input_pos_handle, child_input_pos_handle);
+        mesh_constraint_pairs.emplace_back(child_bnd_pos_handle, child_bnd_pos_handle);
 
         auto smoothing = std::make_shared<AMIPSOptimizationSmoothing>(m, pos_handle);
         for (auto& s : update_child_position) {
             smoothing->add_transfer_strategy(s);
         }
         auto proj_smoothing = std::make_shared<ProjectOperation>(m, mesh_constraint_pairs);
+        for (auto& s : update_parent_position) {
+            proj_smoothing->add_transfer_strategy(s);
+        }
         for (auto& s : update_child_position) {
             proj_smoothing->add_transfer_strategy(s);
         }
