@@ -109,6 +109,7 @@ TEST_CASE("test_wildmeshing_submesh", "[wildmeshing][.]")
     wmo.replace_double_coordinate = true;
     wmo.intermediate_output_path = "";
     wmo.intermediate_output_name = "out";
+    wmo.intermediate_output = true;
     wmo.envelopes = enves;
     wmo.use_embedding = true;
 

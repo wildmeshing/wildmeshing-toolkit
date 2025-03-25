@@ -205,6 +205,18 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     logger().info("target edge length: {}", target_edge_length);
 
     //////////////////////////////////
+    // substructures
+    //////////////////////////////////
+    std::map<std::shared_ptr<Mesh>, std::shared_ptr<submesh::SubMesh>> mm_to_submesh_map;
+    auto emb_ptr = submesh::utils::submesh_from_multimesh(options.input_mesh, mm_to_submesh_map);
+    submesh::Embedding& emb = *emb_ptr;
+    // deregister all child meshes
+    for (const auto& [child, sub] : mm_to_submesh_map) {
+        mesh.deregister_child_mesh(child);
+    }
+    emb.update_tag_attribute_handles();
+
+    //////////////////////////////////
     // store amips
     auto amips_attribute =
         mesh.register_attribute<double>("wildmeshing_amips", mesh.top_simplex_type(), 1);
@@ -278,13 +290,6 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     edge_length_update->run_on_all();
 
     //////////////////////////////////
-    // substructures
-    //////////////////////////////////
-    std::map<std::shared_ptr<Mesh>, std::shared_ptr<submesh::SubMesh>> mm_to_submesh_map;
-    auto emb_ptr = submesh::utils::submesh_from_multimesh(options.input_mesh, mm_to_submesh_map);
-    submesh::Embedding emb = *emb_ptr;
-
-    //////////////////////////////////
     // compute frozen vertices
     //////////////////////////////////
     auto frozen_vertex_attribute =
@@ -292,7 +297,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     auto frozen_vertex_accessor = mesh.create_accessor(frozen_vertex_attribute.as<int64_t>());
 
     for (const auto& sub_ptr : emb.get_child_meshes()) {
-        submesh::SubMesh& sub = *sub_ptr;
+        const submesh::SubMesh& sub = *sub_ptr;
         for (const simplex::IdSimplex& v : sub.get_all_id_simplex(PrimitiveType::Vertex)) {
             int64_t counter = 0;
             for (const Tuple& cof : cofaces_single_dimension_iterable(
@@ -731,9 +736,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     smoothing->add_invariant(frozen_vertex_invariant);
     smoothing->add_invariant(inversion_invariant);
 
-    auto proj_smoothing = std::make_shared<ProjectOperation>(
-        smoothing,
-        mesh_constraint_pairs); // TODO adapt for embedding
+    auto proj_smoothing = std::make_shared<ProjectOperation>(smoothing, emb, pt_attribute);
     // proj_smoothing->use_random_priority() = true;
     proj_smoothing->add_invariant(frozen_vertex_invariant);
     proj_smoothing->add_invariant(envelope_invariant);
