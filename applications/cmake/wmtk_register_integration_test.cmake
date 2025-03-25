@@ -1,7 +1,7 @@
 macro(wmtk_register_integration_test )
 
  set(options )
- set(oneValueArgs EXEC_NAME CONFIG_FILE GIT_REPOSITORY GIT_TAG CONFIG_PATH EXTRA_ARGUMENTS)
+ set(oneValueArgs EXEC_NAME CONFIG_FILE CONFIG_PATH EXTRA_ARGUMENTS)
  set(multiValueArgs)
  cmake_parse_arguments("" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
     include(CPM)
@@ -9,13 +9,10 @@ macro(wmtk_register_integration_test )
 
     MESSAGE(STATUS "Registering integration test for ${_EXEC_NAME}")
 
-    if(_GIT_REPOSITORY)
-        string(MD5 REPO_HASH "${_GIT_REPOSITORY}${_GIT_TAG}")
 
-        include(wmtk_download_data)
-        wmtk_download_data(DATA_DIR ${_GIT_REPOSITORY} ${_GIT_TAG})
-        set(DATA_DIR_LINE  "\"data_folder\":\"${DATA_DIR}\"," )
-    endif()
+    include(wmtk_download_data)
+    wmtk_download_data()
+    set(DATA_DIR_LINE  "\"data_folder\":\"${DATA_DIR}\"," )
 
     if(NOT _CONFIG_PATH)
         set(_CONFIG_PATH ${DATA_DIR})

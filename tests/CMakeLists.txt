@@ -1,5 +1,6 @@
 # Include Catch2 stuff
 
+enable_testing()
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/recipes/tests")
 
 include(catch2)

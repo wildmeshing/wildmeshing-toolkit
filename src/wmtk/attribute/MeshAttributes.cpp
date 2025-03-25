@@ -290,6 +290,72 @@ void MeshAttributes<T>::remove_attribute(const AttributeHandle& attribute)
 }
 
 template <typename T>
+bool MeshAttributes<T>::validate() const
+{
+    if (m_handles.size() != m_attributes.size()) {
+        logger().warn(
+            "Number of handles and attributes is not the same. Handles: {}, attributes: {}",
+            m_handles.size(),
+            m_attributes.size());
+        return false;
+    }
+    for (const auto& [name, handle] : m_handles) {
+        if (handle.index >= m_attributes.size()) {
+            logger().warn(
+                "Handle index for `{}` is out of bounds for attributes vector. Handle index: {}, "
+                "attributes "
+                "vector size: {}",
+                name,
+                handle.index,
+                m_attributes.size());
+            return false;
+        }
+        if (!m_attributes[handle.index]) {
+            logger().warn("Attribute `{}` does not exist but its handle does.", name);
+            return false;
+        }
+        const auto& attr = m_attributes[handle.index];
+        if (attr->name() != name) {
+            logger().warn(
+                "Attribute name is not the same as the name in the handles map. Attribute: {}, "
+                "handles map: {}",
+                attr->name(),
+                name);
+            return false;
+        }
+    }
+
+    return true;
+}
+
+template <typename T>
+bool MeshAttributes<T>::validate_handle(const AttributeHandle& handle) const
+{
+    for (const auto& [name, h] : m_handles) {
+        if (h.index == handle.index) {
+            if (!m_attributes[handle.index]) {
+                logger().warn("Attribute `{}` does not exist but its handle does.", name);
+                return false;
+            }
+            const auto& attr_name = m_attributes[handle.index]->name();
+            if (attr_name != name) {
+                logger().warn(
+                    "Attribute name is not the same as the name in the handles map. Attribute: {}, "
+                    "handles map: {}",
+                    attr_name,
+                    name);
+                return false;
+            }
+
+            return true;
+        }
+    }
+
+    logger().warn("Handle with index `{}` was not found in the handles map.", handle.index);
+    return false;
+}
+
+template <typename T>
 void MeshAttributes<T>::clear_dead_attributes()
 {
     size_t old_index = 0;
@@ -336,11 +402,11 @@ void MeshAttributes<T>::set_name(const AttributeHandle& handle, const std::strin
 
     auto& attr = m_attributes[handle.index];
     assert(bool(attr));
-    assert(attr->m_name == old_name);
+    assert(attr->name() == old_name);
 
     assert(m_handles.count(name) == 0); // name should not exist already
 
-    attr->m_name = name;
+    attr->name() = name;
     m_handles[name] = m_handles[old_name];
     m_handles.erase(old_name);
 }

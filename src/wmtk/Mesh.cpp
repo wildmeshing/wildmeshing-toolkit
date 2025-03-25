@@ -155,6 +155,11 @@ bool Mesh::is_valid(const simplex::Simplex& s) const
 #endif
 }
 
+bool Mesh::validate_attributes() const
+{
+    return m_attribute_manager.validate();
+}
+
 
 const attribute::FlagAccessor<Mesh> Mesh::get_flag_accessor(PrimitiveType type) const
 {

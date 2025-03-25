@@ -49,6 +49,7 @@ public:
     /**
      * @brief Initialize the attribute.
      *
+     * @param name The name of the attribute (used for debugging)
      * @param dimension The dimension of the attribute, e.g. 3 for a 3d vector.
      * @param default_value A default value that is applied to every entry, also to new ones that
      * are added later.
@@ -177,14 +178,18 @@ public:
     // computes the "reserved size" but using the passed in data
     int64_t reserved_size(const std::vector<T>& data) const;
 
+    const std::string& name() const;
+    std::string& name();
+
 private:
     std::vector<T> m_data;
     PerThreadAttributeScopeStacks<T> m_scope_stacks;
     int64_t m_dimension = -1;
     T m_default_value = T(0);
 
-public:
     std::string m_name;
+
+public:
 };
 
 template <typename T>
