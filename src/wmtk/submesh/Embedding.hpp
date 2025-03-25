@@ -29,6 +29,7 @@ class Embedding : public std::enable_shared_from_this<Embedding>, public MeshBas
 {
 public:
     Embedding(const std::shared_ptr<Mesh>& mesh);
+    Embedding(Embedding&) = delete;
 
     std::shared_ptr<SubMesh> add_submesh();
 
@@ -63,6 +64,12 @@ public:
 
     std::function<bool(const simplex::Simplex&)> substructure_predicate() const;
 
+    /**
+     * @brief Update the tag attribute handles.
+     *
+     * This function must be called after removing attributes or deregistering child meshes.
+     */
+    void update_tag_attribute_handles();
 
 private:
     std::shared_ptr<Mesh> m_mesh;

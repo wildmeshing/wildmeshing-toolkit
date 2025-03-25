@@ -21,6 +21,7 @@ std::shared_ptr<Embedding> submesh_from_multimesh(
     Embedding& emb = *emb_ptr;
 
     for (const auto& child_mesh_ptr : mesh->get_child_meshes()) {
+        logger().trace("Add submesh from multimesh");
         auto sub_ptr = emb.add_submesh();
 
         submesh_map[child_mesh_ptr] = sub_ptr;

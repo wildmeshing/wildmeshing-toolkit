@@ -10,7 +10,8 @@ class BVH;
 
 namespace wmtk::submesh {
 class Embedding;
-}
+class SubMesh;
+} // namespace wmtk::submesh
 
 namespace wmtk::operations::composite {
 class ProjectOperation : public AttributesUpdate
@@ -33,8 +34,10 @@ public:
 
     ProjectOperation(
         std::shared_ptr<Operation> main_op,
-        const submesh::Embedding& emb,
+        submesh::Embedding& emb,
         const attribute::MeshAttributeHandle& pos_handle);
+
+    ProjectOperation(submesh::Embedding& emb, const attribute::MeshAttributeHandle& pos_handle);
 
     std::vector<simplex::Simplex> execute(const simplex::Simplex& simplex) override;
     PrimitiveType primitive_type() const override { return PrimitiveType::Vertex; }
@@ -43,8 +46,12 @@ public:
 private:
     using BVHConstrainPair =
         std::pair<attribute::MeshAttributeHandle, std::shared_ptr<SimpleBVH::BVH>>;
+    using BVHSubMeshConstraintPair =
+        std::pair<std::shared_ptr<submesh::SubMesh>, std::shared_ptr<SimpleBVH::BVH>>;
 
     std::shared_ptr<wmtk::operations::Operation> m_main_op;
     std::vector<BVHConstrainPair> m_bvh;
+    std::vector<BVHSubMeshConstraintPair> m_submesh_bvh;
+    attribute::MeshAttributeHandle m_embedding_pos_handle;
 };
 } // namespace wmtk::operations::composite

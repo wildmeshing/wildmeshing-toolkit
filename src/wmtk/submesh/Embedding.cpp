@@ -237,5 +237,14 @@ std::function<bool(const simplex::Simplex&)> Embedding::substructure_predicate()
     return m_substructure_predicate;
 }
 
+void Embedding::update_tag_attribute_handles()
+{
+    Mesh& m = *m_mesh;
+    for (const PrimitiveType& pt : utils::primitive_below(m.top_simplex_type())) {
+        const auto& name = m_tag_attribute_name[pt];
+        m_tag_handle[pt] = m.get_attribute_handle_typed<int64_t>(name, pt);
+    }
+}
+
 
 } // namespace wmtk::submesh

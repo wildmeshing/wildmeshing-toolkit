@@ -47,8 +47,9 @@ attribute::MeshAttributeHandle register_and_transfer_positions(
 
 TEST_CASE("test_projection_operation", "[operations][.]")
 {
-    // logger().set_level(spdlog::level::off);
-    logger().set_level(spdlog::level::trace);
+    logger().set_level(spdlog::level::off);
+    // logger().set_level(spdlog::level::trace);
+    opt_logger().set_level(spdlog::level::off);
 
     std::shared_ptr<tests::DEBUG_TriMesh> mesh_ptr =
         std::make_shared<tests::DEBUG_TriMesh>(tests::edge_region_with_position_2D());
@@ -106,16 +107,16 @@ TEST_CASE("test_projection_operation", "[operations][.]")
     attribute::MeshAttributeHandle pos_handle =
         m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
+    // move vertices around
+    {
+        auto acc = m.create_accessor<double>(pos_handle);
+        const Tuple t4 = m.vertex_tuple_from_id(4);
+        acc.vector_attribute(t4)[0] = 0.75;
+        acc.vector_attribute(t4)[1] = 0.9;
+    }
+
     SECTION("multimesh")
     {
-        // move vertices around
-        {
-            auto acc = m.create_accessor<double>(pos_handle);
-            const Tuple t4 = m.vertex_tuple_from_id(4);
-            acc.vector_attribute(t4)[0] = 0.75;
-            acc.vector_attribute(t4)[1] = 0.9;
-        }
-
         auto write_all = [&]() {
             static int64_t write_counter = 0;
             write(m, fmt::format("test_proj_mm_parent_{}", write_counter));
@@ -163,15 +164,66 @@ TEST_CASE("test_projection_operation", "[operations][.]")
         write_all();
         (*smoothing)(v1);
         write_all();
-        (*proj_smoothing)(v1);
+        CHECK_NOTHROW((*proj_smoothing)(v1));
 
         write_all();
     }
+    SECTION("submesh")
+    {
+        std::map<std::shared_ptr<Mesh>, std::shared_ptr<submesh::SubMesh>> submesh_map;
+        auto emb_ptr = submesh::utils::submesh_from_multimesh(mesh_ptr, submesh_map);
+        submesh::Embedding& emb = *emb_ptr;
+        auto sub_input_ptr = submesh_map[child_input_ptr];
+        auto sub_bnd_ptr = submesh_map[child_bnd_ptr];
+        submesh::SubMesh& sub_input = *sub_input_ptr;
+        submesh::SubMesh& sub_bnd = *sub_bnd_ptr;
 
-    // CHECK(emb.has_child_mesh());
-    // CHECK(emb.get_child_meshes().size() == 2);
-    //{
-    //     using submesh::utils::write;
-    //     CHECK_NOTHROW(write("wildmeshing_submesh", "vertices", emb, true, true, true, false));
-    // }
+        auto write_all = [&]() {
+            static int64_t write_counter = 0;
+            submesh::utils::write(
+                fmt::format("test_proj_sub_parent_{}", write_counter),
+                "vertices",
+                emb,
+                false,
+                true,
+                true,
+                false);
+            submesh::utils::write(
+                fmt::format("test_proj_sub_input_{}", write_counter),
+                "vertices",
+                sub_input,
+                false,
+                true,
+                false,
+                false);
+            submesh::utils::write(
+                fmt::format("test_proj_sub_bnd_{}", write_counter),
+                "vertices",
+                sub_bnd,
+                false,
+                true,
+                false,
+                false);
+            ++write_counter;
+        };
+
+        // deregister all child meshes
+        for (const auto [child, sub] : submesh_map) {
+            m.deregister_child_mesh(child);
+        }
+        emb.update_tag_attribute_handles();
+
+        write_all();
+
+        auto smoothing = std::make_shared<AMIPSOptimizationSmoothing>(m, pos_handle);
+        auto proj_smoothing = std::make_shared<ProjectOperation>(emb, pos_handle);
+
+        const simplex::Simplex v1(PrimitiveType::Vertex, m.vertex_tuple_from_id(1));
+
+        (*smoothing)(v1);
+        write_all();
+        CHECK_NOTHROW((*proj_smoothing)(v1));
+
+        write_all();
+    }
 }
