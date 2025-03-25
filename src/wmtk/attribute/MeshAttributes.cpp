@@ -329,6 +329,33 @@ bool MeshAttributes<T>::validate() const
 }
 
 template <typename T>
+bool MeshAttributes<T>::validate_handle(const AttributeHandle& handle) const
+{
+    for (const auto& [name, h] : m_handles) {
+        if (h.index == handle.index) {
+            if (!m_attributes[handle.index]) {
+                logger().warn("Attribute `{}` does not exist but its handle does.", name);
+                return false;
+            }
+            const auto& attr_name = m_attributes[handle.index]->name();
+            if (attr_name != name) {
+                logger().warn(
+                    "Attribute name is not the same as the name in the handles map. Attribute: {}, "
+                    "handles map: {}",
+                    attr_name,
+                    name);
+                return false;
+            }
+
+            return true;
+        }
+    }
+
+    logger().warn("Handle with index `{}` was not found in the handles map.", handle.index);
+    return false;
+}
+
+template <typename T>
 void MeshAttributes<T>::clear_dead_attributes()
 {
     size_t old_index = 0;

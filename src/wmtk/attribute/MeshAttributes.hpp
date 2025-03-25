@@ -122,6 +122,8 @@ public:
      */
     bool validate() const;
 
+    bool validate_handle(const AttributeHandle& handle) const;
+
 protected:
     /// Clears and compactifies the attribute list. This invalidates all existing handles
     void clear_dead_attributes();
