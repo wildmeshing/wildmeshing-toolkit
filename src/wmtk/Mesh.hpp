@@ -445,6 +445,8 @@ public:
      */
     bool is_valid(const simplex::Simplex& s) const;
 
+    bool validate_attributes() const;
+
 
     //============================
     // MultiMesh interface

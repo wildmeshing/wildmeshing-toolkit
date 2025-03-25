@@ -117,6 +117,11 @@ public:
     //https://clang.llvm.org/extra/clang-tidy/checks/modernize/pass-by-value.html
     void set(const AttributeHandle& handle, std::vector<T> val);
 
+    /**
+     * @brief Validate that handles and attributes are in sync.
+     */
+    bool validate() const;
+
 protected:
     /// Clears and compactifies the attribute list. This invalidates all existing handles
     void clear_dead_attributes();
