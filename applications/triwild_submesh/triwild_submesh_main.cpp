@@ -123,9 +123,9 @@ int main(int argc, char* argv[])
         e.geometry_position_name = "vertices";
         e.thickness = j["envelope_size"];
 
-        if (e.envelope_name == "input") {
-            e.envelope_geometry_mesh = mesh; // set as input
-        }
+        // if (e.envelope_name == "input") {
+        //    e.envelope_geometry_mesh = mesh; // set as input
+        //}
 
         enves.push_back(e);
 
@@ -149,6 +149,7 @@ int main(int argc, char* argv[])
     wmo.max_passes = j["max_passes"];
     wmo.replace_double_coordinate = false;
     wmo.scheduler_update_frequency = 0;
+    wmo.intermediate_output = j["intermediate_output"];
     wmo.intermediate_output_path = "";
     wmo.intermediate_output_name = j["output"];
     wmo.envelopes = enves;

@@ -262,7 +262,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
             // use envelope thickness if available
             double r = 0;
             for (const EnvelopeOptions& e : options.envelopes) {
-                r = std::max(r, e.thickness);
+                r = std::max(r, e.thickness * bbdiag);
             }
             assert(r > 0);
             return r;
@@ -674,6 +674,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
 
         // collapse.add_invariant(invariant_separate_substructures);
         collapse.add_invariant(link_condition);
+        collapse.add_invariant(envelope_invariant);
 
 
         collapse.set_new_attribute_strategy(pt_attribute, CollapseBasicStrategy::CopyOther);
@@ -793,6 +794,14 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
         max_amips = compute_max_amips(mesh, amips_attribute);
     }
 
+    write(
+        mesh,
+        options.intermediate_output_path,
+        options.intermediate_output_name,
+        options.input_mesh_position,
+        1,
+        options.intermediate_output);
+
     int iii = 0;
     bool is_double = false;
     for (int64_t i = 0; i < options.max_passes; ++i) {
@@ -829,7 +838,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
             options.intermediate_output_path,
             options.intermediate_output_name,
             options.input_mesh_position,
-            i + 1,
+            i + 2,
             options.intermediate_output);
 
         assert(mesh.is_connectivity_valid());

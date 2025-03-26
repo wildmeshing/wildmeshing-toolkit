@@ -27,7 +27,8 @@ const std::filesystem::path data_dir = WMTK_DATA_DIR;
 TEST_CASE("test_wildmeshing_submesh", "[wildmeshing][.]")
 {
     // logger().set_level(spdlog::level::off);
-    logger().set_level(spdlog::level::trace);
+    logger().set_level(spdlog::level::debug);
+    opt_logger().set_level(spdlog::level::warn);
 
     std::shared_ptr<tests::DEBUG_TriMesh> mesh_ptr =
         std::make_shared<tests::DEBUG_TriMesh>(tests::edge_region_with_position_2D());
