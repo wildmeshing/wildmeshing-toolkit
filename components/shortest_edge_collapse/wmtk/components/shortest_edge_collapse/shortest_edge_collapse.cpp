@@ -230,11 +230,21 @@ void shortest_edge_collapse(Mesh& mesh_in, const ShortestEdgeCollapseOptions& op
             collapse->set_new_attribute_strategy(pos_handle, pos_collapse_strategy);
         }
     } else {
+        // set collapse towards boundary
         for (const auto& pos_handle : position_handles) {
-            collapse->set_new_attribute_strategy(
-                pos_handle,
-                wmtk::operations::CollapseBasicStrategy::CopyOther);
+            auto pos_collapse_strategy =
+                std::make_shared<wmtk::operations::CollapseNewAttributeStrategy<double>>(
+                    pos_handle);
+            pos_collapse_strategy->set_strategy(wmtk::operations::CollapseBasicStrategy::Default);
+            pos_collapse_strategy->set_simplex_predicate(
+                wmtk::operations::BasicSimplexPredicate::IsInterior);
+            collapse->set_new_attribute_strategy(pos_handle, pos_collapse_strategy);
         }
+        // for (const auto& pos_handle : position_handles) {
+        //     collapse->set_new_attribute_strategy(
+        //         pos_handle,
+        //         wmtk::operations::CollapseBasicStrategy::CopyOther);
+        // }
     }
 
 

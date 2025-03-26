@@ -1,5 +1,7 @@
 #include "Operation.hpp"
-
+#include <map>
+#include <unordered_map>
+#include <unordered_set>
 #ifdef WMTK_RECORD_OPERATIONS
 #include <wmtk/Record_Operations.hpp>
 #endif
@@ -14,6 +16,7 @@
 #include <wmtk/simplex/closed_star.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
+#include <wmtk/utils/orient.hpp>
 
 // it's ugly but for teh visitor we need these included
 #include <wmtk/EdgeMesh.hpp>
@@ -24,9 +27,16 @@ using json = nlohmann::json;
 
 // for Debugging output
 #include <igl/Timer.h>
+#include <igl/boundary_facets.h>
 #include <igl/boundary_loop.h>
 #include <igl/doublearea.h>
+#include <igl/harmonic.h>
+#include <igl/opengl/glfw/Viewer.h>
 #include <igl/readOBJ.h>
+#include <igl/remove_unreferenced.h>
+#include <igl/slice.h>
+#include <igl/slice_into.h>
+#include <igl/triangle/scaf.h>
 #include <igl/writeOBJ.h>
 
 namespace wmtk::operations {
@@ -79,6 +89,150 @@ void Operation::add_transfer_strategy(
     spdlog::debug("Adding a transfer");
     m_attr_transfer_strategies.emplace_back(other);
 }
+// helper function for tet edge collapse
+std::vector<int> embed_mesh(const Eigen::MatrixXi& T, const Eigen::MatrixXi& F_bd)
+{
+    // Convert T and F_bd to sets for easier operations
+    std::unordered_set<int> T_vertices;
+    std::unordered_set<int> F_bd_vertices;
+
+    // Collect all vertices from tetrahedra
+    for (int i = 0; i < T.rows(); ++i) {
+        for (int j = 0; j < T.cols(); ++j) {
+            T_vertices.insert(T(i, j));
+        }
+    }
+
+    // Collect all vertices from boundary faces
+    for (int i = 0; i < F_bd.rows(); ++i) {
+        for (int j = 0; j < F_bd.cols(); ++j) {
+            F_bd_vertices.insert(F_bd(i, j));
+        }
+    }
+
+    // Find vertices that are in T but not in F_bd
+    std::unordered_set<int> non_bd_vertices;
+    for (const auto& v : T_vertices) {
+        if (F_bd_vertices.find(v) == F_bd_vertices.end()) {
+            non_bd_vertices.insert(v);
+        }
+    }
+
+    // Initialize detailed statistics dictionary
+    std::map<std::string, int> tet_stats = {
+        {"bd_0", 0}, // 0 boundary vertices
+        {"bd_1", 0}, // 1 boundary vertex
+        {"bd_2", 0}, // 2 boundary vertices
+        {"bd_3", 0}, // 3 boundary vertices
+        {"bd_4", 0} // 4 boundary vertices
+    };
+
+    // Iterate through each tetrahedron
+    for (int i = 0; i < T.rows(); ++i) {
+        // Count boundary vertices
+        int bd_count = 0;
+        for (int j = 0; j < T.cols(); ++j) {
+            if (F_bd_vertices.find(T(i, j)) != F_bd_vertices.end()) {
+                bd_count++;
+            }
+        }
+        // Classify based on boundary vertex count
+        tet_stats["bd_" + std::to_string(bd_count)]++;
+    }
+
+    // Print detailed statistics
+    spdlog::info("Tetrahedron Statistics:");
+    spdlog::info("Number of tetrahedra with 0 boundary vertices: {}", tet_stats["bd_0"]);
+    spdlog::info("Number of tetrahedra with 1 boundary vertex: {}", tet_stats["bd_1"]);
+    spdlog::info("Number of tetrahedra with 2 boundary vertices: {}", tet_stats["bd_2"]);
+    spdlog::info("Number of tetrahedra with 3 boundary vertices: {}", tet_stats["bd_3"]);
+    spdlog::info("Number of tetrahedra with 4 boundary vertices: {}", tet_stats["bd_4"]);
+
+    // Create a dictionary to store the count of boundary neighbors for each non-boundary vertex
+    std::unordered_map<int, int> bd_neighbor_counts;
+    for (const auto& v : non_bd_vertices) {
+        bd_neighbor_counts[v] = 0;
+    }
+
+    // Create sets to store boundary neighbors for each non-boundary vertex
+    std::unordered_map<int, std::unordered_set<int>> bd_neighbor_sets;
+    for (const auto& v : non_bd_vertices) {
+        bd_neighbor_sets[v] = std::unordered_set<int>();
+    }
+
+    // For each tetrahedron
+    for (int i = 0; i < T.rows(); ++i) {
+        // For each vertex in the tetrahedron
+        for (int j = 0; j < T.cols(); ++j) {
+            int v = T(i, j);
+            // If this vertex is non-boundary
+            if (non_bd_vertices.find(v) != non_bd_vertices.end()) {
+                // Add boundary neighbors from this tetrahedron to the set
+                for (int k = 0; k < T.cols(); ++k) {
+                    int neighbor = T(i, k);
+                    if (F_bd_vertices.find(neighbor) != F_bd_vertices.end() && neighbor != v) {
+                        bd_neighbor_sets[v].insert(neighbor);
+                    }
+                }
+            }
+        }
+    }
+
+    // Calculate the number of unique boundary neighbors for each non-boundary vertex
+    for (const auto& v : non_bd_vertices) {
+        bd_neighbor_counts[v] = bd_neighbor_sets[v].size();
+    }
+
+    // Print boundary neighbor counts for each non-boundary vertex
+    spdlog::info("Boundary neighbor counts for non-boundary vertices:");
+    for (const auto& [vertex, count] : bd_neighbor_counts) {
+        spdlog::info("Vertex {} has {} boundary neighbors", vertex, count);
+    }
+
+    // Convert non-boundary vertices set to vector and return
+    std::vector<int> result(non_bd_vertices.begin(), non_bd_vertices.end());
+    return result;
+}
+
+Eigen::MatrixXi find_F_top(const std::unordered_set<int>& non_bd_vertices, const Eigen::MatrixXi& T)
+{
+    std::set<std::array<int, 3>> F_top_set;
+
+    // For each tetrahedron
+    for (int i = 0; i < T.rows(); ++i) {
+        // Get all possible triangular faces from the tetrahedron
+        std::array<std::array<int, 3>, 4> faces = {
+            std::array<int, 3>{T(i, 0), T(i, 1), T(i, 2)},
+            std::array<int, 3>{T(i, 0), T(i, 1), T(i, 3)},
+            std::array<int, 3>{T(i, 0), T(i, 2), T(i, 3)},
+            std::array<int, 3>{T(i, 1), T(i, 2), T(i, 3)}};
+
+        // Check each face
+        for (auto face : faces) {
+            // If all vertices of the face are interior vertices
+            if (non_bd_vertices.find(face[0]) != non_bd_vertices.end() &&
+                non_bd_vertices.find(face[1]) != non_bd_vertices.end() &&
+                non_bd_vertices.find(face[2]) != non_bd_vertices.end()) {
+                // Sort vertices to ensure consistent orientation
+                std::sort(face.begin(), face.end());
+                F_top_set.insert(face);
+            }
+        }
+    }
+
+    // Convert set to Eigen::MatrixXi
+    Eigen::MatrixXi F_top(F_top_set.size(), 3);
+    int row = 0;
+    for (const auto& face : F_top_set) {
+        F_top(row, 0) = face[0];
+        F_top(row, 1) = face[1];
+        F_top(row, 2) = face[2];
+        row++;
+    }
+
+    return F_top;
+}
+
 
 std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simplex)
 {
@@ -114,7 +268,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 #ifdef WMTK_RECORD_OPERATIONS
 
             if (m_record && operation_name != "MeshConsolidate") {
-                if (succ_operations_count % 10000 == 0) {
+                if (succ_operations_count % 100 == 0) {
                     std::cout << "operation id: " << succ_operations_count << "\n";
                 }
 
@@ -482,7 +636,6 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                         }
 
                     } else if (mesh().top_simplex_type() == PrimitiveType::Tetrahedron) {
-                        // TODO: BUG!!!! need to change this is_boundary to parent_scope
                         bool is_simplex_boundary = mesh().parent_scope(
                             [&](const simplex::Simplex& s) { return mesh().is_boundary(s); },
                             simplex);
@@ -494,6 +647,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                 static_cast<const TetMesh&>(mesh()),
                                 mods[0],
                                 is_simplex_boundary && operation_name == "EdgeCollapse");
+
                         auto [T_before, V_before, F_bd_before, id_map_before, v_id_map_before] =
                             mesh().parent_scope(
                                 [&](const simplex::Simplex& s) {
@@ -507,7 +661,204 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                         is_simplex_boundary && operation_name == "EdgeCollapse");
                                 },
                                 simplex);
+                        if (operation_name == "EdgeCollapse") {
+                            // check if there is a edge connected from interior to a boundary vertex
+                            auto [is_bd_v0, is_bd_v1] = mesh().parent_scope(
+                                [&](const simplex::Simplex& s) {
+                                    return std::make_tuple(
+                                        mesh().is_boundary(
+                                            simplex::Simplex::vertex(mesh(), s.tuple())),
+                                        mesh().is_boundary(simplex::Simplex::vertex(
+                                            mesh(),
+                                            mesh().switch_tuple(
+                                                s.tuple(),
+                                                PrimitiveType::Vertex))));
+                                },
+                                simplex);
+                            if (!is_simplex_boundary && (is_bd_v0 || is_bd_v1)) {
+                                // Get vertex position after operation
+                                Eigen::Vector3d after_vertex_position;
+                                const auto& pos_accessor = mesh().get_attribute_handle<double>(
+                                    "vertices",
+                                    PrimitiveType::Vertex);
+                                auto pos_accessor_vector =
+                                    mesh().create_const_accessor<double>(pos_accessor);
+                                after_vertex_position =
+                                    pos_accessor_vector.const_vector_attribute(mods[0].tuple());
+                                std::cout << "Vertex position after operation: "
+                                          << after_vertex_position.transpose() << std::endl;
 
+                                // Get boundary and non-boundary vertex positions in parent scope
+                                Eigen::Vector3d boundary_vertex_position;
+                                Eigen::Vector3d non_boundary_vertex_position;
+
+                                auto get_vertex_positions = [&](const simplex::Simplex& s) {
+                                    auto v0_tuple =
+                                        simplex::Simplex::vertex(mesh(), s.tuple()).tuple();
+                                    auto v1_tuple =
+                                        simplex::Simplex::vertex(
+                                            mesh(),
+                                            mesh().switch_tuple(s.tuple(), PrimitiveType::Vertex))
+                                            .tuple();
+
+                                    const auto& parent_pos_accessor =
+                                        mesh().get_attribute_handle<double>(
+                                            "vertices",
+                                            PrimitiveType::Vertex);
+                                    auto parent_pos_accessor_vector =
+                                        mesh().create_const_accessor<double>(parent_pos_accessor);
+
+                                    Eigen::Vector3d v0_position =
+                                        parent_pos_accessor_vector.const_vector_attribute(v0_tuple);
+                                    Eigen::Vector3d v1_position =
+                                        parent_pos_accessor_vector.const_vector_attribute(v1_tuple);
+
+                                    if (is_bd_v0 && !is_bd_v1) {
+                                        boundary_vertex_position = v0_position;
+                                        non_boundary_vertex_position = v1_position;
+                                    } else if (!is_bd_v0 && is_bd_v1) {
+                                        boundary_vertex_position = v1_position;
+                                        non_boundary_vertex_position = v0_position;
+                                    } else if (is_bd_v0 && is_bd_v1) {
+                                        // Case where both vertices are on boundary
+                                        boundary_vertex_position = v0_position;
+                                        non_boundary_vertex_position = v1_position;
+                                    }
+                                };
+
+                                mesh().parent_scope(get_vertex_positions, simplex);
+
+                                std::cout << "Boundary vertex position: "
+                                          << boundary_vertex_position.transpose() << std::endl;
+                                std::cout << "Non-boundary vertex position: "
+                                          << non_boundary_vertex_position.transpose() << std::endl;
+
+                                // Check if boundary vertex position matches position after
+                                // operation
+                                if ((boundary_vertex_position - after_vertex_position).norm() <
+                                    1e-10) {
+                                    std::cout << "Boundary vertex position matches position after "
+                                                 "operation, allowing operation to continue"
+                                              << std::endl;
+                                    // Positions match, allow operation to continue
+                                } else {
+                                    std::cout << "Boundary vertex position does not match position "
+                                                 "after operation, operation failed"
+                                              << std::endl;
+
+                                    // Check if non-boundary vertex position matches
+                                    if ((non_boundary_vertex_position - after_vertex_position)
+                                            .norm() < 1e-10) {
+                                        std::cout << "Non-boundary vertex position matches "
+                                                     "position after operation"
+                                                  << std::endl;
+                                    } else {
+                                        std::cout << "Non-boundary vertex position does not match "
+                                                     "position after operation"
+                                                  << std::endl;
+                                    }
+
+                                    std::cerr << "boundary vertex in EdgeCollapse\n";
+                                    // scope.mark_failed();
+                                    // return {};
+                                }
+                            }
+
+                            if (is_simplex_boundary) {
+                                std::vector<int> non_bd_vertices =
+                                    embed_mesh(T_before, F_bd_before);
+                                Eigen::MatrixXi F_top = find_F_top(
+                                    std::unordered_set<int>(
+                                        non_bd_vertices.begin(),
+                                        non_bd_vertices.end()),
+                                    T_before);
+
+                                // Use harmonic parameterization
+                                Eigen::MatrixXd uv;
+                                Eigen::VectorXi bnd;
+                                Eigen::MatrixXd bnd_uv;
+
+                                // First remove unreferenced vertices
+                                Eigen::MatrixXd V_clean;
+                                Eigen::MatrixXi F_clean;
+                                Eigen::VectorXi IM, J;
+                                igl::remove_unreferenced(
+                                    V_before,
+                                    F_bd_before,
+                                    V_clean,
+                                    F_clean,
+                                    IM,
+                                    J);
+
+                                // Get boundary loop
+                                igl::boundary_loop(F_clean, bnd);
+
+                                // Map boundary to circle while preserving edge proportions
+                                bnd_uv.resize(bnd.size(), 2);
+                                for (int i = 0; i < bnd.size(); i++) {
+                                    double angle = 2.0 * M_PI * i / bnd.size();
+                                    bnd_uv(i, 0) = cos(angle);
+                                    bnd_uv(i, 1) = sin(angle);
+                                }
+
+                                // Scale boundary to match area
+                                Eigen::MatrixXd M_before;
+                                igl::doublearea(V_clean, F_clean, M_before);
+                                bnd_uv *= sqrt(M_before.sum() / (2 * 3.14159265358979323846));
+
+                                // Function to check UV orientation
+                                auto check_uv_orientation = [](const Eigen::MatrixXd& uv,
+                                                               const Eigen::MatrixXi& F) {
+                                    for (int i = 0; i < F.rows(); i++) {
+                                        if (wmtk::utils::wmtk_orient2d(
+                                                uv.row(F(i, 0)),
+                                                uv.row(F(i, 1)),
+                                                uv.row(F(i, 2))) < 0) {
+                                            return false;
+                                        }
+                                    }
+                                    return true;
+                                };
+
+                                // Compute harmonic parameterization
+                                Eigen::MatrixXd clean_uv;
+                                igl::harmonic(V_clean, F_clean, bnd, bnd_uv, 1, clean_uv);
+
+                                // Map parameterization back to original mesh indices
+                                uv.resize(V_before.rows(), 2);
+                                for (int i = 0; i < IM.size(); i++) {
+                                    uv.row(IM(i)) = clean_uv.row(i);
+                                }
+
+                                // Check for flipped triangles
+                                if (!check_uv_orientation(clean_uv, F_clean)) {
+                                    std::cerr
+                                        << "Harmonic parameterization produced flipped triangles"
+                                        << std::endl;
+                                }
+
+                                // Calculate parameterization quality metrics
+                                Eigen::VectorXd areas;
+                                igl::doublearea(clean_uv, F_clean, areas);
+                                areas /= 2.0;
+                                // Output UV parameterization information
+                                double total_area = areas.sum();
+                                double min_area = areas.minCoeff();
+                                double max_area = areas.maxCoeff();
+
+                                std::cout << "Parameterization info:" << std::endl;
+                                std::cout << "  Total UV area: " << total_area << std::endl;
+                                std::cout << "  Min triangle area: " << min_area << std::endl;
+                                std::cout << "  Max triangle area: " << max_area << std::endl;
+
+// Optionally visualize the UV map
+#ifdef WMTK_DEBUG_UV
+                                igl::opengl::glfw::Viewer viewer;
+                                viewer.data().set_mesh(clean_uv, F_clean);
+                                viewer.launch();
+#endif
+                            }
+                        }
                         // STORE information to logfile
                         operation_log["T_after"]["rows"] = T_after.rows();
                         operation_log["T_after"]["values"] = matrix_to_json(T_after);

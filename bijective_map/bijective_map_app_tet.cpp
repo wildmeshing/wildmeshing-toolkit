@@ -189,6 +189,51 @@ void track_point_tet(
     }
 }
 
+void test_collapse(const std::filesystem::path& operation_logs_dir)
+{
+    namespace fs = std::filesystem;
+
+    std::cout << "Testing collapse" << std::endl;
+    // TODO: test on this file first
+    int test_file_id = 20;
+    fs::path filePath =
+        operation_logs_dir / ("operation_log_" + std::to_string(test_file_id) + ".json");
+    std::ifstream file(filePath);
+    if (!file.is_open()) {
+        std::cerr << "Failed to open file: " << filePath << std::endl;
+        return;
+    }
+    json operation_log;
+    file >> operation_log;
+
+
+    // parse the log file
+    // parse the log file using similar code as in track_operations_tet.cpp
+    Eigen::MatrixXd V_before, V_after;
+    Eigen::MatrixXi T_before, T_after;
+    std::vector<int64_t> id_map_before, id_map_after;
+    std::vector<int64_t> v_id_map_before, v_id_map_after;
+
+    parse_non_collapse_file_tet(
+        operation_log,
+        V_before,
+        T_before,
+        id_map_before,
+        v_id_map_before,
+        V_after,
+        T_after,
+        id_map_after,
+        v_id_map_after);
+
+    std::cout << "解析完成。网格信息:" << std::endl;
+    std::cout << "V_before: " << V_before.rows() << " x " << V_before.cols() << std::endl;
+    std::cout << "T_before: " << T_before.rows() << " x " << T_before.cols() << std::endl;
+    std::cout << "V_after: " << V_after.rows() << " x " << V_after.cols() << std::endl;
+    std::cout << "T_after: " << T_after.rows() << " x " << T_after.cols() << std::endl;
+    file.close();
+
+    // TODO: parse the log file
+}
 
 int main(int argc, char** argv)
 {
@@ -204,6 +249,11 @@ int main(int argc, char** argv)
     std::cout << "Application name: " << application_name << std::endl;
     auto init_mesh_ptr = wmtk::read_mesh(initial_mesh_file);
 
+
+    // DEBUG:
+    if (application_name == "testcollapse") {
+        test_collapse(operation_logs_dir);
+    }
     // write initial mesh to vtu
     // std::cout << "Writing initial mesh to vtu" << std::endl;
     // wmtk::io::ParaviewWriter
