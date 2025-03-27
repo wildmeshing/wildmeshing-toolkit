@@ -59,6 +59,10 @@ int main(int argc, char* argv[])
 
     fs::path input_file = resolve_paths(json_input_file, {j["root"], j["input"]});
 
+    if (!fs::exists(input_file)) {
+        log_and_throw_error("File {} does not exist.", input_file.string());
+    }
+
     auto mesh = wmtk::components::input::input(input_file, true);
     wmtk::logger().info(
         "mesh has {} vertices and {} edges",
@@ -85,7 +89,9 @@ int main(int argc, char* argv[])
     auto bg_mesh =
         wmtk::triwild::generate_bg_grid(x_min, y_min, x_max, y_max, j["target_edge_length"]);
 
-    wmtk::components::output::output(bg_mesh, "bg_mesh", "vertices");
+    if (j["intermediate_output"]) {
+        wmtk::components::output::output(bg_mesh, "bg_mesh", "vertices");
+    }
 
     wmtk::logger().info("generated bg mesh");
 
@@ -100,11 +106,13 @@ int main(int argc, char* argv[])
 
     std::string output_file = j["output"];
 
-    wmtk::components::output::output(*trimesh, output_file + "_after_insertion", "vertices");
-    wmtk::components::output::output(
-        *edgemesh,
-        output_file + "_after_insertion_edge_mesh",
-        "vertices");
+    if (j["intermediate_output"]) {
+        wmtk::components::output::output(*trimesh, output_file + "_after_insertion", "vertices");
+        wmtk::components::output::output(
+            *edgemesh,
+            output_file + "_after_insertion_edge_mesh",
+            "vertices");
+    }
 
     // clean up
     {
@@ -161,22 +169,10 @@ int main(int argc, char* argv[])
     wmo.use_embedding = true;
 
     auto meshes_after_tetwild = wildmeshing(wmo);
+    assert(meshes_after_tetwild.size() == 1);
     auto main_mesh = meshes_after_tetwild[0].first;
 
     wmtk::components::output::output(*main_mesh, output_file, "vertices");
-
-    std::shared_ptr<Mesh> input_mesh;
-    for (int64_t i = 1; i < meshes_after_tetwild.size(); ++i) {
-        // output child meshes
-        wmtk::components::output::output(
-            *(meshes_after_tetwild[i].first),
-            output_file + "_" + meshes_after_tetwild[i].second,
-            "vertices");
-
-        if (meshes_after_tetwild[i].second == "input") {
-            input_mesh = meshes_after_tetwild[i].first;
-        }
-    }
 
     const std::string report = j["report"];
     if (!report.empty()) {

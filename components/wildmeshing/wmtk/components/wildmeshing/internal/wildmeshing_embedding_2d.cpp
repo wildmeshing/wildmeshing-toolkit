@@ -1,7 +1,7 @@
 #include "wildmeshing2d.hpp"
 
+#include <wmtk/components/wildmeshing/utils/IntermediateWrite.hpp>
 #include "WildmeshingOptions.hpp"
-#include "wildmeshing_utils.hpp"
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/Scheduler.hpp>
@@ -76,8 +76,12 @@ using namespace operations::composite;
 using namespace function;
 using namespace invariants;
 
-double compute_max_amips(const Mesh& mesh, const attribute::MeshAttributeHandle& amips_handle)
+double compute_max_amips(
+    const attribute::MeshAttributeHandle& amips_handle,
+    double& last_max_amips,
+    const bool verbose = true)
 {
+    const Mesh& mesh = amips_handle.mesh();
     const auto amips_accessor = mesh.create_const_accessor<double>(amips_handle);
 
     // compute max energy
@@ -93,11 +97,18 @@ double compute_max_amips(const Mesh& mesh, const attribute::MeshAttributeHandle&
 
     avg_energy = avg_energy / mesh.get_all(mesh.top_simplex_type()).size();
 
-    logger().info(
-        "Max AMIPS Energy: {:>6.2f}, Min AMIPS Energy: {:>6.2f}, Avg AMIPS Energy: {:>6.2f}",
-        max_energy,
-        min_energy,
-        avg_energy);
+    if (verbose) {
+        logger().info(
+            "Max AMIPS Energy: {:>6.2f}, Min AMIPS Energy: {:>6.2f}, Avg AMIPS Energy: {:>6.2f}",
+            max_energy,
+            min_energy,
+            avg_energy);
+    }
+
+    if (max_energy > last_max_amips) {
+        logger().error("Max amips increased from {} to {}", last_max_amips, max_energy);
+    }
+    last_max_amips = max_energy;
 
     return max_energy;
 }
@@ -122,8 +133,12 @@ void print_stats(const wmtk::SchedulerStats& stats, const std::string& name = ""
     }
 }
 
-void print_unrounded_vertices(const Mesh& mesh, const attribute::MeshAttributeHandle& pt_handle)
+int64_t count_unrounded_vertices(
+    const attribute::MeshAttributeHandle& pt_handle,
+    int64_t& last_num_unrounded,
+    const bool verbose = true)
 {
+    const Mesh& mesh = pt_handle.mesh();
     const auto pt_accessor = mesh.create_const_accessor<Rational>(pt_handle);
 
     // verbose logger, can be removed
@@ -138,9 +153,19 @@ void print_unrounded_vertices(const Mesh& mesh, const attribute::MeshAttributeHa
         }
     }
 
-    if (unrounded > 0) {
+    if (unrounded > 0 && verbose) {
         logger().info("Mesh has {} unrounded vertices", unrounded);
     }
+
+    if (unrounded > last_num_unrounded) {
+        logger().error(
+            "Number of unrounded vertices increased from {} to {}",
+            last_num_unrounded,
+            unrounded);
+    }
+    last_num_unrounded = unrounded;
+
+    return unrounded;
 }
 
 void test_flipped_triangles(const Mesh& mesh, const attribute::MeshAttributeHandle& pt_handle)
@@ -242,8 +267,8 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
             compute_amips);
     amips_update->run_on_all();
 
-    double max_amips;
-    max_amips = compute_max_amips(mesh, amips_attribute);
+    double last_max_amips = std::numeric_limits<double>::max();
+    compute_max_amips(amips_attribute, last_max_amips);
 
     //////////////////////////////////
     // Storing target edge length
@@ -361,11 +386,6 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     using MeshConstrainPair = ProjectOperation::MeshConstrainPair;
 
     auto envelope_invariant = std::make_shared<InvariantCollection>(mesh);
-
-    std::vector<std::shared_ptr<Mesh>> envelopes;
-    std::vector<MeshConstrainPair> mesh_constraint_pairs; // TODO remove
-
-    std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> multimesh_meshes;
 
     for (const EnvelopeOptions& e : options.envelopes) {
         Mesh& constrained_mesh = *e.envelope_constrained_mesh;
@@ -570,7 +590,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
         ops.emplace_back(split_sequence);
         ops_name.emplace_back("SPLIT");
 
-        ops.emplace_back(rounding);
+        ops.emplace_back(rounding); // TODO split tries to round already
         ops_name.emplace_back("rounding");
     }
 
@@ -647,7 +667,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
         ops.emplace_back(collapse_then_round);
         ops_name.emplace_back("COLLAPSE");
 
-        ops.emplace_back(rounding);
+        ops.emplace_back(rounding); // TODO collapse rounds already, why a second rounding?
         ops_name.emplace_back("rounding");
     }
 
@@ -672,7 +692,6 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
         op.add_transfer_strategy(edge_length_update);
         op.add_transfer_strategy(tag_update);
 
-        // collapse.add_invariant(invariant_separate_substructures);
         collapse.add_invariant(link_condition);
         collapse.add_invariant(envelope_invariant);
 
@@ -742,6 +761,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     proj_smoothing->add_invariant(frozen_vertex_invariant);
     proj_smoothing->add_invariant(envelope_invariant);
     proj_smoothing->add_invariant(inversion_invariant);
+    proj_smoothing->add_invariant(function_invariant); // TODO confirm that this should be here
 
     proj_smoothing->add_transfer_strategy(amips_update);
     proj_smoothing->add_transfer_strategy(edge_length_update);
@@ -757,13 +777,14 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
         ops_name.emplace_back("rounding");
     }
 
-    write(
+    wildmeshing::utils::IntermediateWrite interm_writer(
         mesh,
         options.intermediate_output_path,
         options.intermediate_output_name,
         options.input_mesh_position,
-        0,
         options.intermediate_output);
+    interm_writer.disable_vertex_write();
+    interm_writer.write();
 
     //////////////////////////////////
     // Running all ops in order n times
@@ -780,37 +801,31 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     // debug code
     test_flipped_triangles(mesh, pt_attribute);
 
+    int64_t last_num_unrounded = std::numeric_limits<int64_t>::max();
     {
         logger().info("----------------------- Preprocess Collapse -----------------------");
-        // logger().info("Executing collapse ...");
 
         SchedulerStats pre_stats =
             scheduler.run_operation_on_all(*collapse_then_round, visited_edge_flag.as<char>());
         print_stats(pre_stats, "preprocessing collapse");
 
-        // verbose logger, can be removed
-        print_unrounded_vertices(mesh, pt_attribute);
-        test_flipped_triangles(mesh, pt_attribute);
-        max_amips = compute_max_amips(mesh, amips_attribute);
+        count_unrounded_vertices(pt_attribute, last_num_unrounded, false);
+        // test_flipped_triangles(mesh, pt_attribute);
+        compute_max_amips(amips_attribute, last_max_amips, false);
     }
 
-    write(
-        mesh,
-        options.intermediate_output_path,
-        options.intermediate_output_name,
-        options.input_mesh_position,
-        1,
-        options.intermediate_output);
+    interm_writer.write();
 
-    int iii = 0;
-    bool is_double = false;
+
     for (int64_t i = 0; i < options.max_passes; ++i) {
         logger().info("--------------------------- Pass {} ---------------------------", i);
 
         SchedulerStats pass_stats;
-        int jj = 0;
-        for (auto& op : ops) {
-            // logger().info("Executing {} ...", ops_name[jj]);
+        for (int64_t op_it = 0; op_it != ops.size(); ++op_it) {
+            auto& op = ops[op_it];
+            auto& op_name = ops_name[op_it];
+
+            logger().debug("Executing {} ...", op_name);
 
             SchedulerStats stats;
             if (op->primitive_type() == PrimitiveType::Edge) {
@@ -819,35 +834,26 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
                 stats = scheduler.run_operation_on_all(*op);
             }
             pass_stats += stats;
-            print_stats(stats, ops_name[jj]);
+            print_stats(stats, op_name);
 
-            // verbose logger, can be removed
-            print_unrounded_vertices(mesh, pt_attribute);
-            test_flipped_triangles(mesh, pt_attribute);
-            max_amips = compute_max_amips(mesh, amips_attribute);
-
-            ++jj;
+            count_unrounded_vertices(pt_attribute, last_num_unrounded, false);
+            // test_flipped_triangles(mesh, pt_attribute);
+            compute_max_amips(amips_attribute, last_max_amips, false);
         }
 
         print_stats(pass_stats);
 
         multimesh::consolidate(mesh);
 
-        write(
-            mesh,
-            options.intermediate_output_path,
-            options.intermediate_output_name,
-            options.input_mesh_position,
-            i + 2,
-            options.intermediate_output);
+        interm_writer.write();
 
         assert(mesh.is_connectivity_valid());
 
-        print_unrounded_vertices(mesh, pt_attribute);
-        max_amips = compute_max_amips(mesh, amips_attribute);
+        const int64_t num_unrounded = count_unrounded_vertices(pt_attribute, last_num_unrounded);
+        const double max_amips = compute_max_amips(amips_attribute, last_max_amips);
 
         // stop at good quality
-        if (max_amips <= target_max_amips && is_double) {
+        if (max_amips <= target_max_amips && num_unrounded == 0) {
             break;
         }
     }
@@ -860,16 +866,12 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
         scheduler.run_operation_on_all(*collapse_then_round, visited_edge_flag.as<char>());
     print_stats(post_stats, "preprocessing collapse");
 
-    max_amips = compute_max_amips(mesh, amips_attribute);
+    compute_max_amips(amips_attribute, last_max_amips);
 
     multimesh::consolidate(mesh);
 
     std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> all_meshes;
     all_meshes.push_back(std::make_pair(options.input_mesh, "main"));
-
-    for (const auto& p : multimesh_meshes) {
-        all_meshes.push_back(p);
-    }
 
     return all_meshes;
 }

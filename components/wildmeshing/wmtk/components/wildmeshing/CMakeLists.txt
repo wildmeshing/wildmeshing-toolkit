@@ -16,7 +16,10 @@ set(SRC_FILES
     internal/wildmeshing_utils.cpp
     internal/WildmeshingOptions.hpp
     internal/wildmeshing_embedding_2d.hpp
-    internal/wildmeshing_embedding_2d.cpp)
+    internal/wildmeshing_embedding_2d.cpp
+    utils/IntermediateWrite.hpp
+    utils/IntermediateWrite.cpp
+)
 
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
 

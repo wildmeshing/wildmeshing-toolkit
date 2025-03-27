@@ -286,15 +286,17 @@ void MeshAttributes<T>::remove_attributes(
 template <typename T>
 void MeshAttributes<T>::remove_attribute(const AttributeHandle& attribute)
 {
+    const std::string name = m_attributes[attribute.index]->name();
+    m_handles.erase(name);
     m_attributes[attribute.index].reset();
 }
 
 template <typename T>
 bool MeshAttributes<T>::validate() const
 {
-    if (m_handles.size() != m_attributes.size()) {
+    if (m_handles.size() > m_attributes.size()) {
         logger().warn(
-            "Number of handles and attributes is not the same. Handles: {}, attributes: {}",
+            "More handles than attributes. Handles: {}, attributes: {}",
             m_handles.size(),
             m_attributes.size());
         return false;

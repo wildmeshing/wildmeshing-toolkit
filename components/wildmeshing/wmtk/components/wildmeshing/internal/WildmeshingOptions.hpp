@@ -54,7 +54,7 @@ struct WildMeshingOptions
     /**
      * The maximum number of iterations of the optimization.
      */
-    double max_passes = 10;
+    int64_t max_passes = 10;
     /**
      * Debugging output.
      */
