@@ -16,10 +16,6 @@ class Accessor
 {
 public:
     friend class wmtk::Mesh;
-    friend class wmtk::TetMesh;
-    friend class wmtk::TriMesh;
-    friend class wmtk::EdgeMesh;
-    friend class wmtk::PointMesh;
     using Scalar = T;
 
     using AttributeType = AttributeType_;//CachingAttribute<T>;

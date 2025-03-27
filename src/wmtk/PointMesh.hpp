@@ -34,8 +34,7 @@ public:
     void initialize(int64_t count);
 
 
-    bool is_valid(const Tuple& tuple)
-        const final override;
+    bool is_valid(const Tuple& tuple) const final override;
 
     bool is_connectivity_valid() const override { return true; }
 
@@ -44,10 +43,10 @@ public:
 
     std::vector<Tuple> orient_vertices(const Tuple& tuple) const override;
 
-protected:
     using MeshCRTP<PointMesh>::id; // getting the (simplex) prototype
     int64_t id(const Tuple& tuple, PrimitiveType type) const;
 
+protected:
     /**
      * @brief internal function that returns the tuple of requested type, and has the global index
      * cid
@@ -61,7 +60,7 @@ protected:
 inline int64_t PointMesh::id(const Tuple& tuple, PrimitiveType type) const
 {
     switch (type) {
-    case PrimitiveType::Vertex: return tuple.m_global_cid;
+    case PrimitiveType::Vertex: return tuple.global_cid();
     case PrimitiveType::Edge:
     case PrimitiveType::Triangle:
     case PrimitiveType::Tetrahedron:

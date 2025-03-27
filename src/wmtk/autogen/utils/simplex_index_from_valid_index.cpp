@@ -1,4 +1,5 @@
 #include "simplex_index_from_valid_index.hpp"
+#include <cassert>
 #include <wmtk/autogen/edge_mesh/simplex_index_from_valid_index.hpp>
 #include <wmtk/autogen/tet_mesh/simplex_index_from_valid_index.hpp>
 #include <wmtk/autogen/tri_mesh/simplex_index_from_valid_index.hpp>

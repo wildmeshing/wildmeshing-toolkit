@@ -93,11 +93,11 @@ const T& Accessor<T, MeshType, AttributeType, Dim>::const_topological_scalar_att
     assert(mesh().top_simplex_type() == m_handle.primitive_type());
     switch (pt) {
     case PrimitiveType::Vertex:
-        return m_attribute.const_vector_single_value(t.m_global_cid, t.m_local_vid);
+        return m_attribute.const_vector_single_value(t.global_cid(), t.local_vid());
     case PrimitiveType::Edge:
-        return m_attribute.const_vector_single_value(t.m_global_cid, t.m_local_eid);
+        return m_attribute.const_vector_single_value(t.global_cid(), t.local_eid());
     case PrimitiveType::Triangle:
-        return m_attribute.const_vector_single_value(t.m_global_cid, t.m_local_fid);
+        return m_attribute.const_vector_single_value(t.global_cid(), t.local_fid());
     case PrimitiveType::Tetrahedron: [[fallthrough]];
     default: {
         const static T x(0);

@@ -7,7 +7,6 @@
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
-#include <wmtk/utils/TupleInspector.hpp>
 
 #include <wmtk/utils/Logger.hpp>
 
@@ -408,13 +407,6 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     const simplex::Simplex&,
     const tri_mesh::EdgeOperationData& child_tmoe) const
 {
-    // logger().trace(
-    //     "UpdateEdgeOperationMultiMeshMapFunctor [{}=>{}] parent tmoe {} and child tmoe {}",
-    //     fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
-    //     fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
-    //     wmtk::utils::TupleInspector::as_string(parent_tmoe.m_operating_tuple),
-    //     wmtk::utils::TupleInspector::as_string(child_tmoe.m_operating_tuple));
-
     const auto& parent_incident_datas = parent_tmoe.incident_face_datas();
     const auto& child_incident_datas = child_tmoe.incident_face_datas();
 
@@ -476,23 +468,6 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
                         parent_mesh.tuple_from_global_ids(f_parent, e_parent, v_parent);
                     const Tuple child_tuple =
                         child_mesh.tuple_from_global_ids(f_child, e_child, v_child);
-                    // logger().trace(
-                    //     "[{}=>{}] combining these setes of GIDS: Parent: {} {} {} {}; Child:
-                    //     {}
-                    //     {} "
-                    //     "{} {}",
-                    //   fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
-                    //   fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
-                    //   f_parent,
-                    //   e_parent,
-                    //   v_parent,
-
-                    //  wmtk::utils::TupleInspector::as_string(parent_tuple),
-                    //  f_child,
-                    //  e_child,
-                    //  v_child,
-                    //  wmtk::utils::TupleInspector::as_string(child_tuple));
-
 
                     assert(parent_mesh.is_valid(parent_tuple));
                     assert(child_mesh.is_valid(child_tuple));

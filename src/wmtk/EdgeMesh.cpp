@@ -32,7 +32,7 @@ bool EdgeMesh::is_boundary_vertex(const Tuple& tuple) const
 {
     assert(is_valid(tuple));
     const attribute::Accessor<int64_t> ee_accessor = create_const_accessor<int64_t>(m_ee_handle);
-    return ee_accessor.const_vector_attribute<2>(tuple)(tuple.m_local_vid) < 0;
+    return ee_accessor.const_vector_attribute<2>(tuple)(tuple.local_vid()) < 0;
 }
 
 Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
@@ -43,10 +43,10 @@ Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
     switch (type) {
     case PrimitiveType::Vertex:
         return Tuple(
-            1 - tuple.m_local_vid,
-            tuple.m_local_eid,
-            tuple.m_local_fid,
-            tuple.m_global_cid);
+            1 - tuple.local_vid(),
+            tuple.local_eid(),
+            tuple.local_fid(),
+            tuple.global_cid());
     case PrimitiveType::Edge: {
         const int64_t gvid = id(tuple, PrimitiveType::Vertex);
 
@@ -54,11 +54,11 @@ Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
             create_const_accessor<int64_t>(m_ee_handle);
         auto ee = ee_accessor.const_vector_attribute<2>(tuple);
 
-        int64_t gcid_new = ee(tuple.m_local_vid);
+        int64_t gcid_new = ee(tuple.local_vid());
 
         // This is for special case self-loop, just to make sure the local vid of the returned
         // tuple is the same as the input. (When doing double-switch this is needed)
-        if (gcid_new == tuple.m_global_cid) {
+        if (gcid_new == tuple.global_cid()) {
             return tuple;
         }
 
@@ -77,7 +77,7 @@ Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         assert(lvid_new != -1);
 
 
-        const Tuple res(lvid_new, tuple.m_local_eid, tuple.m_local_fid, gcid_new);
+        const Tuple res(lvid_new, tuple.local_eid(), tuple.local_fid(), gcid_new);
         assert(is_valid(res));
         return res;
     }
@@ -92,7 +92,7 @@ Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 bool EdgeMesh::is_ccw(const Tuple& tuple) const
 {
     assert(is_valid(tuple));
-    return tuple.m_local_vid == 0;
+    return tuple.local_vid() == 0;
 }
 
 void EdgeMesh::initialize(
@@ -217,16 +217,16 @@ bool EdgeMesh::is_valid(const Tuple& tuple) const
         return false;
     }
 
-    const bool is_connectivity_valid = tuple.m_local_vid >= 0 && tuple.m_global_cid >= 0;
+    const bool is_connectivity_valid = tuple.local_vid() >= 0 && tuple.global_cid() >= 0;
     if (!is_connectivity_valid) {
 #if !defined(NDEBUG)
         logger().debug(
-            "tuple.m_local_vid={} >= 0"
-            " tuple.m_global_cid={} >= 0",
-            tuple.m_local_vid,
-            tuple.m_global_cid);
-        assert(tuple.m_local_vid >= 0);
-        assert(tuple.m_global_cid >= 0);
+            "tuple.local_vid()={} >= 0"
+            " tuple.global_cid()={} >= 0",
+            tuple.local_vid(),
+            tuple.global_cid());
+        assert(tuple.local_vid() >= 0);
+        assert(tuple.global_cid() >= 0);
 #endif
         return false;
     }
@@ -292,7 +292,7 @@ std::vector<std::vector<TypedAttributeHandle<int64_t>>> EdgeMesh::connectivity_a
 
 std::vector<Tuple> EdgeMesh::orient_vertices(const Tuple& tuple) const
 {
-    int64_t cid = tuple.m_global_cid;
+    int64_t cid = tuple.global_cid();
     return {Tuple(0, -1, -1, cid), Tuple(1, -1, -1, cid)};
 }
 

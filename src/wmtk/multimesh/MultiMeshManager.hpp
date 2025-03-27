@@ -1,6 +1,7 @@
 #pragma once
 
 #include <tuple>
+#include <optional>
 #include <wmtk/Tuple.hpp>
 #include <wmtk/attribute/Accessor.hpp>
 // included to make a friend as this requires IDs

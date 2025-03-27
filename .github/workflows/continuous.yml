@@ -11,7 +11,7 @@ on:
 
 env:
   CTEST_OUTPUT_ON_FAILURE: ON
-  CTEST_PARALLEL_LEVEL: 2
+  CTEST_PARALLEL_LEVEL: 8
 
 jobs:
   ####################

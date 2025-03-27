@@ -51,18 +51,18 @@ public:
     std::vector<std::vector<TypedAttributeHandle<int64_t>>> connectivity_attributes()
         const override;
 
+
     Tuple switch_vertex(const Tuple& tuple) const;
     Tuple switch_edge(const Tuple& tuple) const;
 
     std::vector<Tuple> orient_vertices(const Tuple& tuple) const override;
-
-protected:
     int64_t id(const Tuple& tuple, PrimitiveType type) const;
     using MeshCRTP<EdgeMesh>::id; // getting the (simplex) prototype
 
     int64_t id_vertex(const Tuple& tuple) const { return id(tuple, PrimitiveType::Vertex); }
     int64_t id_edge(const Tuple& tuple) const { return id(tuple, PrimitiveType::Edge); }
 
+protected:
     /**
      * @brief internal function that returns the tuple of requested type, and has the global index
      * cid
@@ -102,10 +102,10 @@ inline int64_t EdgeMesh::id(const Tuple& tuple, PrimitiveType type) const
         const attribute::Accessor<int64_t, EdgeMesh> ev_accessor =
             create_const_accessor<int64_t>(m_ev_handle);
         auto ev = ev_accessor.const_vector_attribute<2>(tuple);
-        return ev(tuple.m_local_vid);
+        return ev(tuple.local_vid());
     }
     case PrimitiveType::Edge: {
-        return tuple.m_global_cid;
+        return tuple.global_cid();
     }
     case PrimitiveType::Triangle:
     case PrimitiveType::Tetrahedron:

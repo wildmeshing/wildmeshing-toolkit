@@ -4,7 +4,6 @@
 #include <wmtk/simplex/RawSimplex.hpp>
 #include <wmtk/simplex/internal/VisitedArray.hpp>
 #include <wmtk/utils/DynamicArray.hpp>
-#include <wmtk/utils/TupleInspector.hpp>
 
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
@@ -89,7 +88,7 @@ TEST_CASE("visited_array_bfs", "[DynamicArray][VisitedArray]")
     std::queue<Tuple> q;
     {
         Tuple t = v.tuple();
-        visited_cells.is_visited(TupleInspector::global_cid(t));
+        visited_cells.is_visited(t.global_cid());
         if (!m.is_boundary_edge(t)) {
             q.push(m.switch_tuple(t, PrimitiveType::Triangle));
         }
@@ -107,7 +106,7 @@ TEST_CASE("visited_array_bfs", "[DynamicArray][VisitedArray]")
         for (Tuple e : edges) {
             if (!m.is_boundary_edge(e)) {
                 e = m.switch_face(e);
-                if (!visited_cells.is_visited(TupleInspector::global_cid(e))) {
+                if (!visited_cells.is_visited(e.global_cid())) {
                     q.push(e);
                 }
             }
@@ -150,7 +149,7 @@ TEST_CASE("visited_array_bfs_lower_dimension", "[DynamicArray][VisitedArray]")
 
     std::queue<Tuple> q;
 
-    visited_cells.is_visited(TupleInspector::global_cid(v.tuple()));
+    visited_cells.is_visited(v.tuple().global_cid());
     q.push(v.tuple());
 
     while (!q.empty()) {
@@ -164,7 +163,7 @@ TEST_CASE("visited_array_bfs_lower_dimension", "[DynamicArray][VisitedArray]")
 
             if (!m.is_boundary_edge(e)) {
                 e = m.switch_face(e);
-                if (!visited_cells.is_visited(TupleInspector::global_cid(e))) {
+                if (!visited_cells.is_visited(e.global_cid())) {
                     q.push(e);
                 }
             }

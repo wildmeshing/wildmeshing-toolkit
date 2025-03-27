@@ -126,7 +126,7 @@ bool Mesh::is_valid(const Tuple& tuple) const
 
 bool Mesh::is_removed(const Tuple& tuple) const
 {
-    return is_removed(tuple.m_global_cid);
+    return is_removed(tuple.global_cid());
 }
 bool Mesh::is_removed(const Tuple& t, PrimitiveType pt) const
 {

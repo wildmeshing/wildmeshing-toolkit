@@ -5,7 +5,6 @@
 #include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 #include "../tools/DEBUG_TetMesh.hpp"
 #include "../tools/DEBUG_TriMesh.hpp"
-#include "../tools/DEBUG_Tuple.hpp"
 #include "../tools/TetMesh_examples.hpp"
 #include "../tools/TriMesh_examples.hpp"
 
@@ -115,4 +114,3 @@ TEST_CASE("test_absolute_ids", "[multimesh][ids]")
     CHECK(c2->get_all_child_meshes().size() == 0);
     CHECK(root->get_all_child_meshes().size() == 9);
 }
-

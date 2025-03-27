@@ -6,7 +6,6 @@
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include "../tools/DEBUG_TetMesh.hpp"
 #include "../tools/DEBUG_TriMesh.hpp"
-#include "../tools/DEBUG_Tuple.hpp"
 #include "../tools/TetMesh_examples.hpp"
 #include "../tools/TriMesh_examples.hpp"
 
@@ -117,7 +116,8 @@ TEST_CASE("test_extract_child_edge_mesh", "[multimesh][extract_childmesh]")
                 parent,
                 "is_child",
                 1,
-                PE, true);
+                PE,
+                true);
 
 
         const auto& p_mul_manager = parent.multi_mesh_manager();
@@ -280,12 +280,13 @@ TEST_CASE("test_extract_child_face_mesh_3d", "[multimesh][extract_childmesh]")
                 "is_child",
                 1,
                 PF);
-        std::shared_ptr<Mesh> free_child=
+        std::shared_ptr<Mesh> free_child =
             wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
                 parent,
                 "is_child",
                 1,
-                PF, true);
+                PF,
+                true);
 
         const auto& p_mul_manager = parent.multi_mesh_manager();
         REQUIRE(p_mul_manager.children().size() == 2);
@@ -340,7 +341,8 @@ TEST_CASE("test_extract_child_edge_mesh_3d", "[multimesh][extract_childmesh]")
                 parent,
                 "is_child",
                 2,
-                PE, true);
+                PE,
+                true);
 
         const auto& p_mul_manager = parent.multi_mesh_manager();
         REQUIRE(p_mul_manager.children().size() == 3);

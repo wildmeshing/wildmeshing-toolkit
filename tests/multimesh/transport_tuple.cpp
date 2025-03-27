@@ -3,7 +3,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/autogen/SimplexDart.hpp>
 #include <wmtk/multimesh/utils/transport_tuple.hpp>
-#include <wmtk/utils/TupleInspector.hpp>
 #include <wmtk/utils/primitive_range.hpp>
 #include "tools/all_valid_local_tuples.hpp"
 #include "wmtk/multimesh/utils/find_local_dart_action.hpp"
@@ -30,14 +29,6 @@ TEST_CASE("transport_tuple", "[tuple][multimesh]")
                         base_sd,
                         base_source,
                         base_target);
-                    /*
-                    spdlog::warn(
-                        "Base action: {}={}>{}",
-                        wmtk::utils::TupleInspector::as_string(base_source),
-                        base_action,
-                        wmtk::utils::TupleInspector::as_string(base_target));
-                        */
-
 
                     if (base_mesh_type >= mesh_type) {
                         bool same_face = true;
@@ -46,8 +37,7 @@ TEST_CASE("transport_tuple", "[tuple][multimesh]")
                                 continue;
                             }
                             // only' map between things where a map exists
-                            if (wmtk::utils::TupleInspector::local_id(pt, base_source) !=
-                                wmtk::utils::TupleInspector::local_id(pt, base_target)) {
+                            if (base_source.local_id(pt) != base_target.local_id(pt)) {
                                 same_face = false;
                                 break;
                             }
@@ -79,19 +69,6 @@ TEST_CASE("transport_tuple", "[tuple][multimesh]")
                                 sd,
                                 source,
                                 dart_res);
-                            /*
-                            spdlog::info(
-                                "Sequence action: {}={}>{}",
-                                wmtk::utils::TupleInspector::as_string(source),
-                                seq_action,
-                                wmtk::utils::TupleInspector::as_string(sequence_res));
-
-                            spdlog::info(
-                                "Dart action: {}={}>{}",
-                                wmtk::utils::TupleInspector::as_string(source),
-                                action,
-                                wmtk::utils::TupleInspector::as_string(dart_res));
-                            */
 
                             CHECK(seq_action == action);
                             CHECK(base_sd.convert(base_action, sd) == action);

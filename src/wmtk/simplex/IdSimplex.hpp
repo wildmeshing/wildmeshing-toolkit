@@ -27,8 +27,6 @@ public:
     bool operator==(const IdSimplex& o) const;
     bool operator!=(const IdSimplex& o) const;
 
-protected:
-    friend class Mesh;
     int64_t index() const { return m_index; }
 
 protected:

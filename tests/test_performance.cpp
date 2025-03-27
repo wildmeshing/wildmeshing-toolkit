@@ -13,7 +13,6 @@
 #include <wmtk/simplex/closed_star.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include <wmtk/utils/TupleInspector.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
 #include <polysolve/Utils.hpp>
@@ -296,8 +295,6 @@ TEST_CASE("collapse_performance", "[performance][.]")
 
 TEST_CASE("navigation_performance_tri", "[simplex][performance][.]")
 {
-    using TI = wmtk::utils::TupleInspector;
-
     //const std::filesystem::path meshfile = data_dir / "tetwild_fig8_mid.msh"; // 3D
     const std::filesystem::path meshfile = data_dir / "armadillo.msh"; // 2D
 
@@ -373,9 +370,7 @@ TEST_CASE("navigation_performance_tri", "[simplex][performance][.]")
     if (true) {
         TriMesh& mesh = static_cast<TriMesh&>(m);
 
-        auto lexid = [](const Tuple& t) -> int64_t {
-            return 3 * TI::local_vid(t) + TI::local_eid(t);
-        };
+        auto lexid = [](const Tuple& t) -> int64_t { return 3 * t.local_vid() + t.local_eid(); };
 
         const auto faces = mesh.get_all(PrimitiveType::Triangle);
 
@@ -389,24 +384,20 @@ TEST_CASE("navigation_performance_tri", "[simplex][performance][.]")
                 Tuple t = t_in;
                 do {
                     if (mesh.is_boundary_edge(t)) {
-                        is_boundary_edge[3 * TI::global_cid(t) + TI::local_eid(t)] = true;
+                        is_boundary_edge[3 * t.global_cid() + t.local_eid()] = true;
                     }
 
                     int64_t id = lexid(t);
                     Tuple t_opp = mesh.switch_face(t);
-                    ff[TI::global_cid(t) * 9 + id] = std::make_tuple(
-                        TI::local_vid(t_opp),
-                        TI::local_eid(t_opp),
-                        TI::global_cid(t_opp));
+                    ff[t.global_cid() * 9 + id] =
+                        std::make_tuple(t_opp.local_vid(), t_opp.local_eid(), t_opp.global_cid());
 
                     t = mesh.switch_edge(t);
 
                     id = lexid(t);
                     t_opp = mesh.switch_face(t);
-                    ff[TI::global_cid(t) * 9 + id] = std::make_tuple(
-                        TI::local_vid(t_opp),
-                        TI::local_eid(t_opp),
-                        TI::global_cid(t_opp));
+                    ff[t.global_cid() * 9 + id] =
+                        std::make_tuple(t_opp.local_vid(), t_opp.local_eid(), t_opp.global_cid());
 
                     t = mesh.switch_vertex(t);
                 } while (t != t_in);
@@ -415,13 +406,13 @@ TEST_CASE("navigation_performance_tri", "[simplex][performance][.]")
         {
             auto switch_face_and_edge = [&ff, &lexid](const Tuple& t) {
                 const int64_t id = lexid(t);
-                auto [v, e, c] = ff[TI::global_cid(t) * 9 + id];
+                auto [v, e, c] = ff[t.global_cid() * 9 + id];
                 if (v == (e + 1) % 3) {
                     e = (v + 1) % 3;
                 } else {
                     e = (e + 1) % 3;
                 }
-                return Tuple(v, e, TI::local_fid(t), c);
+                return Tuple(v, e, t.local_fid(), c);
             };
 
             POLYSOLVE_SCOPED_STOPWATCH("chache vertex neighbors", logger());
@@ -431,19 +422,19 @@ TEST_CASE("navigation_performance_tri", "[simplex][performance][.]")
                     do {
                         counter++;
 
-                        if (!is_boundary_edge[3 * TI::global_cid(t) + TI::local_eid(t)]) {
+                        if (!is_boundary_edge[3 * t.global_cid() + t.local_eid()]) {
                             t = switch_face_and_edge(t);
                         } else {
                             break;
                         }
                     } while (t != t_in);
 
-                    if (t == t_in && !is_boundary_edge[3 * TI::global_cid(t) + TI::local_eid(t)]) {
+                    if (t == t_in && !is_boundary_edge[3 * t.global_cid() + t.local_eid()]) {
                         continue;
                     }
 
                     t = autogen::tri_mesh::local_switch_tuple(t, PrimitiveType::Edge);
-                    if (is_boundary_edge[3 * TI::global_cid(t) + TI::local_eid(t)]) {
+                    if (is_boundary_edge[3 * t.global_cid() + t.local_eid()]) {
                         continue;
                     }
 
@@ -452,7 +443,7 @@ TEST_CASE("navigation_performance_tri", "[simplex][performance][.]")
                     do {
                         counter++;
 
-                        if (!is_boundary_edge[3 * TI::global_cid(t) + TI::local_eid(t)]) {
+                        if (!is_boundary_edge[3 * t.global_cid() + t.local_eid()]) {
                             t = switch_face_and_edge(t);
                         } else {
                             break;
@@ -532,8 +523,6 @@ TEST_CASE("navigation_performance_tri", "[simplex][performance][.]")
 
 TEST_CASE("navigation_performance_tet", "[simplex][performance][.]")
 {
-    using TI = utils::TupleInspector;
-
     const std::filesystem::path meshfile = data_dir / "tetwild_fig8_mid.msh"; // 3D
 
     logger().set_level(spdlog::level::trace);

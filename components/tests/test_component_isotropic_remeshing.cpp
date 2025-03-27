@@ -2,7 +2,6 @@
 #include <nlohmann/json.hpp>
 #include <tools/DEBUG_EdgeMesh.hpp>
 #include <tools/DEBUG_TriMesh.hpp>
-#include <tools/DEBUG_Tuple.hpp>
 #include <tools/EdgeMesh_examples.hpp>
 #include <tools/TriMesh_examples.hpp>
 #include <wmtk/Scheduler.hpp>
