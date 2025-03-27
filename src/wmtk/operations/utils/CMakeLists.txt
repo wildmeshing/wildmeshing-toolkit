@@ -21,6 +21,7 @@ set(SRC_FILES
     VertexTangentialLaplacianSmooth.hpp
     VertexTangentialLaplacianSmooth.cpp
 
-
-    )
+    TetMesh_Embedding.hpp
+    TetMesh_Embedding.cpp
+)
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

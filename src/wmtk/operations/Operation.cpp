@@ -23,6 +23,7 @@
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/operations/utils/TetMesh_Embedding.hpp>
 using json = nlohmann::json;
 
 // for Debugging output
@@ -38,7 +39,7 @@ using json = nlohmann::json;
 #include <igl/slice_into.h>
 #include <igl/triangle/scaf.h>
 #include <igl/writeOBJ.h>
-
+#define WMTK_DEBUG_VISUALIZE
 namespace wmtk::operations {
 
 
@@ -89,150 +90,6 @@ void Operation::add_transfer_strategy(
     spdlog::debug("Adding a transfer");
     m_attr_transfer_strategies.emplace_back(other);
 }
-// helper function for tet edge collapse
-std::vector<int> embed_mesh(const Eigen::MatrixXi& T, const Eigen::MatrixXi& F_bd)
-{
-    // Convert T and F_bd to sets for easier operations
-    std::unordered_set<int> T_vertices;
-    std::unordered_set<int> F_bd_vertices;
-
-    // Collect all vertices from tetrahedra
-    for (int i = 0; i < T.rows(); ++i) {
-        for (int j = 0; j < T.cols(); ++j) {
-            T_vertices.insert(T(i, j));
-        }
-    }
-
-    // Collect all vertices from boundary faces
-    for (int i = 0; i < F_bd.rows(); ++i) {
-        for (int j = 0; j < F_bd.cols(); ++j) {
-            F_bd_vertices.insert(F_bd(i, j));
-        }
-    }
-
-    // Find vertices that are in T but not in F_bd
-    std::unordered_set<int> non_bd_vertices;
-    for (const auto& v : T_vertices) {
-        if (F_bd_vertices.find(v) == F_bd_vertices.end()) {
-            non_bd_vertices.insert(v);
-        }
-    }
-
-    // Initialize detailed statistics dictionary
-    std::map<std::string, int> tet_stats = {
-        {"bd_0", 0}, // 0 boundary vertices
-        {"bd_1", 0}, // 1 boundary vertex
-        {"bd_2", 0}, // 2 boundary vertices
-        {"bd_3", 0}, // 3 boundary vertices
-        {"bd_4", 0} // 4 boundary vertices
-    };
-
-    // Iterate through each tetrahedron
-    for (int i = 0; i < T.rows(); ++i) {
-        // Count boundary vertices
-        int bd_count = 0;
-        for (int j = 0; j < T.cols(); ++j) {
-            if (F_bd_vertices.find(T(i, j)) != F_bd_vertices.end()) {
-                bd_count++;
-            }
-        }
-        // Classify based on boundary vertex count
-        tet_stats["bd_" + std::to_string(bd_count)]++;
-    }
-
-    // Print detailed statistics
-    spdlog::info("Tetrahedron Statistics:");
-    spdlog::info("Number of tetrahedra with 0 boundary vertices: {}", tet_stats["bd_0"]);
-    spdlog::info("Number of tetrahedra with 1 boundary vertex: {}", tet_stats["bd_1"]);
-    spdlog::info("Number of tetrahedra with 2 boundary vertices: {}", tet_stats["bd_2"]);
-    spdlog::info("Number of tetrahedra with 3 boundary vertices: {}", tet_stats["bd_3"]);
-    spdlog::info("Number of tetrahedra with 4 boundary vertices: {}", tet_stats["bd_4"]);
-
-    // Create a dictionary to store the count of boundary neighbors for each non-boundary vertex
-    std::unordered_map<int, int> bd_neighbor_counts;
-    for (const auto& v : non_bd_vertices) {
-        bd_neighbor_counts[v] = 0;
-    }
-
-    // Create sets to store boundary neighbors for each non-boundary vertex
-    std::unordered_map<int, std::unordered_set<int>> bd_neighbor_sets;
-    for (const auto& v : non_bd_vertices) {
-        bd_neighbor_sets[v] = std::unordered_set<int>();
-    }
-
-    // For each tetrahedron
-    for (int i = 0; i < T.rows(); ++i) {
-        // For each vertex in the tetrahedron
-        for (int j = 0; j < T.cols(); ++j) {
-            int v = T(i, j);
-            // If this vertex is non-boundary
-            if (non_bd_vertices.find(v) != non_bd_vertices.end()) {
-                // Add boundary neighbors from this tetrahedron to the set
-                for (int k = 0; k < T.cols(); ++k) {
-                    int neighbor = T(i, k);
-                    if (F_bd_vertices.find(neighbor) != F_bd_vertices.end() && neighbor != v) {
-                        bd_neighbor_sets[v].insert(neighbor);
-                    }
-                }
-            }
-        }
-    }
-
-    // Calculate the number of unique boundary neighbors for each non-boundary vertex
-    for (const auto& v : non_bd_vertices) {
-        bd_neighbor_counts[v] = bd_neighbor_sets[v].size();
-    }
-
-    // Print boundary neighbor counts for each non-boundary vertex
-    spdlog::info("Boundary neighbor counts for non-boundary vertices:");
-    for (const auto& [vertex, count] : bd_neighbor_counts) {
-        spdlog::info("Vertex {} has {} boundary neighbors", vertex, count);
-    }
-
-    // Convert non-boundary vertices set to vector and return
-    std::vector<int> result(non_bd_vertices.begin(), non_bd_vertices.end());
-    return result;
-}
-
-Eigen::MatrixXi find_F_top(const std::unordered_set<int>& non_bd_vertices, const Eigen::MatrixXi& T)
-{
-    std::set<std::array<int, 3>> F_top_set;
-
-    // For each tetrahedron
-    for (int i = 0; i < T.rows(); ++i) {
-        // Get all possible triangular faces from the tetrahedron
-        std::array<std::array<int, 3>, 4> faces = {
-            std::array<int, 3>{T(i, 0), T(i, 1), T(i, 2)},
-            std::array<int, 3>{T(i, 0), T(i, 1), T(i, 3)},
-            std::array<int, 3>{T(i, 0), T(i, 2), T(i, 3)},
-            std::array<int, 3>{T(i, 1), T(i, 2), T(i, 3)}};
-
-        // Check each face
-        for (auto face : faces) {
-            // If all vertices of the face are interior vertices
-            if (non_bd_vertices.find(face[0]) != non_bd_vertices.end() &&
-                non_bd_vertices.find(face[1]) != non_bd_vertices.end() &&
-                non_bd_vertices.find(face[2]) != non_bd_vertices.end()) {
-                // Sort vertices to ensure consistent orientation
-                std::sort(face.begin(), face.end());
-                F_top_set.insert(face);
-            }
-        }
-    }
-
-    // Convert set to Eigen::MatrixXi
-    Eigen::MatrixXi F_top(F_top_set.size(), 3);
-    int row = 0;
-    for (const auto& face : F_top_set) {
-        F_top(row, 0) = face[0];
-        F_top(row, 1) = face[1];
-        F_top(row, 2) = face[2];
-        row++;
-    }
-
-    return F_top;
-}
-
 
 std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simplex)
 {
@@ -636,6 +493,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                         }
 
                     } else if (mesh().top_simplex_type() == PrimitiveType::Tetrahedron) {
+                        // Prepare the mesh for the operation
                         bool is_simplex_boundary = mesh().parent_scope(
                             [&](const simplex::Simplex& s) { return mesh().is_boundary(s); },
                             simplex);
@@ -661,6 +519,8 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                         is_simplex_boundary && operation_name == "EdgeCollapse");
                                 },
                                 simplex);
+
+                        // EdgeCollapse operation
                         if (operation_name == "EdgeCollapse") {
                             // check if there is a edge connected from interior to a boundary vertex
                             auto [is_bd_v0, is_bd_v1] = mesh().parent_scope(
@@ -765,13 +625,32 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                             }
 
                             if (is_simplex_boundary) {
+                                // Starting mesh embedding process
+                                spdlog::info("Starting mesh embedding process...");
+                                spdlog::info("Processing tetrahedral mesh and boundary faces...");
+                                spdlog::info(
+                                    "T_before shape: {} rows x {} columns",
+                                    T_before.rows(),
+                                    T_before.cols());
+                                spdlog::info(
+                                    "F_bd_before shape: {} rows x {} columns",
+                                    F_bd_before.rows(),
+                                    F_bd_before.cols());
                                 std::vector<int> non_bd_vertices =
-                                    embed_mesh(T_before, F_bd_before);
-                                Eigen::MatrixXi F_top = find_F_top(
+                                    utils::embed_mesh(T_before, F_bd_before);
+                                Eigen::MatrixXi F_top = utils::find_F_top(
                                     std::unordered_set<int>(
                                         non_bd_vertices.begin(),
                                         non_bd_vertices.end()),
                                     T_before);
+
+                                // Log completion of embedding process
+                                spdlog::info(
+                                    "Tetrahedral mesh embedding process completed successfully");
+                                spdlog::info(
+                                    "Found {} non-boundary vertices",
+                                    non_bd_vertices.size());
+                                spdlog::info("Generated top faces: {} triangles", F_top.rows());
 
                                 // Use harmonic parameterization
                                 Eigen::MatrixXd uv;
@@ -790,6 +669,8 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                     IM,
                                     J);
 
+                                spdlog::info("Removed unreferenced vertices");
+
                                 // Get boundary loop
                                 igl::boundary_loop(F_clean, bnd);
 
@@ -801,10 +682,14 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                     bnd_uv(i, 1) = sin(angle);
                                 }
 
+                                spdlog::info("Mapped boundary to circle");
+
                                 // Scale boundary to match area
                                 Eigen::MatrixXd M_before;
                                 igl::doublearea(V_clean, F_clean, M_before);
                                 bnd_uv *= sqrt(M_before.sum() / (2 * 3.14159265358979323846));
+
+                                spdlog::info("Scaled boundary to match area");
 
                                 // Function to check UV orientation
                                 auto check_uv_orientation = [](const Eigen::MatrixXd& uv,
@@ -824,11 +709,59 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                 Eigen::MatrixXd clean_uv;
                                 igl::harmonic(V_clean, F_clean, bnd, bnd_uv, 1, clean_uv);
 
+                                spdlog::info("Computed harmonic parameterization");
+
+#ifdef WMTK_DEBUG_VISUALIZE
+                                igl::opengl::glfw::Viewer viewer;
+
+                                viewer.data().clear();
+                                viewer.data().set_mesh(V_clean, F_clean);
+                                viewer.data().set_face_based(true);
+                                viewer.data().show_lines = true;
+                                viewer.data().line_width = 1.0f;
+                                viewer.data().line_color << 0.0f, 0.0f, 0.0f, 1.0f;
+
+                                viewer.core().align_camera_center(V_clean, F_clean);
+
+                                viewer.callback_key_pressed = [&](igl::opengl::glfw::Viewer& viewer,
+                                                                  unsigned char key,
+                                                                  int modifier) -> bool {
+                                    if (key == '1') {
+                                        viewer.data().clear();
+                                        viewer.data().set_mesh(V_clean, F_clean);
+                                        viewer.data().set_face_based(true);
+                                        viewer.data().show_lines = true;
+                                        viewer.data().line_width = 1.0f;
+                                        viewer.data().line_color << 0.0f, 0.0f, 0.0f, 1.0f;
+                                        viewer.core().align_camera_center(V_clean, F_clean);
+                                        spdlog::info("Switched to 3D mesh view");
+                                        return true;
+                                    } else if (key == '2') {
+                                        viewer.data().clear();
+                                        viewer.data().set_mesh(clean_uv, F_clean);
+                                        viewer.data().set_face_based(true);
+                                        viewer.data().show_lines = true;
+                                        viewer.data().line_width = 1.0f;
+                                        viewer.data().line_color << 0.0f, 0.0f, 0.0f, 1.0f;
+                                        viewer.data().set_colors(Eigen::RowVector3d(0.8, 0.8, 0.8));
+                                        viewer.core().align_camera_center(clean_uv, F_clean);
+                                        spdlog::info("Switched to UV parameterization view");
+                                        return true;
+                                    }
+                                    return false;
+                                };
+
+                                spdlog::info("Launching viewer - Press 1 for 3D mesh, Press 2 for "
+                                             "UV parameterization");
+                                viewer.launch();
+#endif
                                 // Map parameterization back to original mesh indices
                                 uv.resize(V_before.rows(), 2);
                                 for (int i = 0; i < IM.size(); i++) {
                                     uv.row(IM(i)) = clean_uv.row(i);
                                 }
+                                spdlog::info(
+                                    "Mapped parameterization back to original mesh indices");
 
                                 // Check for flipped triangles
                                 if (!check_uv_orientation(clean_uv, F_clean)) {
