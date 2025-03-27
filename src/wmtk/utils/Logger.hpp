@@ -49,7 +49,7 @@ template <typename... Args>
 /**
  * @brief Calls log_and_throw_error if check is false.
  */
-[[noreturn]] void log_assert(const bool check, const std::string& msg);
+void log_assert(const bool check, const std::string& msg);
 
 /**
  * @brief Calls log_and_throw_error if check is false.

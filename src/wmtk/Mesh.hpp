@@ -135,7 +135,7 @@ public:
     PrimitiveType top_simplex_type() const;
     bool is_free() const;
 
-    MeshType mesh_type() const;
+    MeshType mesh_type() const override;
 
     // attribute directly hashes its "children" components so it overrides "child_hashes"
     std::map<std::string, const wmtk::utils::Hashable*> child_hashables() const override;

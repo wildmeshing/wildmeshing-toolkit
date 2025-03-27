@@ -44,12 +44,12 @@ std::shared_ptr<fastEnvelope::FastEnvelope> init_fast_envelope(
     const std::vector<Tuple>& facest = envelope_mesh.get_all(PF);
     for (const auto& f : facest) {
         if constexpr (std::is_same<T, Rational>()) {
-            Eigen::Vector3d p0 = accessor.const_vector_attribute(f).cast<double>();
-            Eigen::Vector3d p1 =
-                accessor.const_vector_attribute(envelope_mesh.switch_tuple(f, PV)).cast<double>();
+            Eigen::Vector3d p0 = accessor.const_vector_attribute(f).template cast<double>();
+            Eigen::Vector3d p1 = accessor.const_vector_attribute(envelope_mesh.switch_tuple(f, PV))
+                                     .template cast<double>();
             Eigen::Vector3d p2 =
                 accessor.const_vector_attribute(envelope_mesh.switch_tuples(f, {PE, PV}))
-                    .cast<double>();
+                    .template cast<double>();
 
             vertices.push_back(p0);
             vertices.push_back(p1);
@@ -93,9 +93,9 @@ std::shared_ptr<SimpleBVH::BVH> init_bvh(
 
     for (const Tuple& e : edgest) {
         if constexpr (std::is_same<T, Rational>()) {
-            const auto p0 = accessor.const_vector_attribute(e).cast<double>();
-            const auto p1 =
-                accessor.const_vector_attribute(envelope_mesh.switch_tuple(e, PV)).cast<double>();
+            const auto p0 = accessor.const_vector_attribute(e).template cast<double>();
+            const auto p1 = accessor.const_vector_attribute(envelope_mesh.switch_tuple(e, PV))
+                                .template cast<double>();
 
             vertices.row(2 * index) = p0;
             vertices.row(2 * index + 1) = p1;
@@ -137,11 +137,11 @@ std::shared_ptr<fastEnvelope::FastEnvelope> init_fast_envelope(
     const std::vector<Tuple>& facest = sub.get_all(PF);
     for (const auto& f : facest) {
         if constexpr (std::is_same<T, Rational>()) {
-            Eigen::Vector3d p0 = accessor.const_vector_attribute(f).cast<double>();
+            Eigen::Vector3d p0 = accessor.const_vector_attribute(f).template cast<double>();
             Eigen::Vector3d p1 =
-                accessor.const_vector_attribute(sub.switch_tuple(f, PV)).cast<double>();
-            Eigen::Vector3d p2 =
-                accessor.const_vector_attribute(sub.switch_tuples(f, {PE, PV})).cast<double>();
+                accessor.const_vector_attribute(sub.switch_tuple(f, PV)).template cast<double>();
+            Eigen::Vector3d p2 = accessor.const_vector_attribute(sub.switch_tuples(f, {PE, PV}))
+                                     .template cast<double>();
 
             vertices.push_back(p0);
             vertices.push_back(p1);
@@ -185,8 +185,9 @@ std::shared_ptr<SimpleBVH::BVH> init_bvh(
 
     for (const Tuple& e : edgest) {
         if constexpr (std::is_same<T, Rational>()) {
-            const auto p0 = accessor.const_vector_attribute(e).cast<double>();
-            const auto p1 = accessor.const_vector_attribute(sub.switch_tuple(e, PV)).cast<double>();
+            const auto p0 = accessor.const_vector_attribute(e).template cast<double>();
+            const auto p1 =
+                accessor.const_vector_attribute(sub.switch_tuple(e, PV)).template cast<double>();
 
             vertices.row(2 * index) = p0;
             vertices.row(2 * index + 1) = p1;
@@ -258,8 +259,8 @@ EnvelopeInvariant::EnvelopeInvariant(
     const submesh::SubMesh& sub)
     : Invariant(pt_attribute.mesh(), false, false, true)
     , m_coordinate_handle(pt_attribute)
-    , m_envelope_size(envelope_size)
     , m_submesh(&sub)
+    , m_envelope_size(envelope_size)
 {
     // log_assert(
     //     envelope_mesh_coordinate.holds<Rational>() || envelope_mesh_coordinate.holds<double>(),
@@ -408,9 +409,9 @@ bool EnvelopeInvariant::after_with_envelope_triangle(
                     triangle[2] = accessor.const_vector_attribute(faces[2]);
                 }
                 if constexpr (std::is_same_v<AttributeType, Rational>) {
-                    triangle[0] = accessor.const_vector_attribute(faces[0]).cast<double>();
-                    triangle[1] = accessor.const_vector_attribute(faces[1]).cast<double>();
-                    triangle[2] = accessor.const_vector_attribute(faces[2]).cast<double>();
+                    triangle[0] = accessor.const_vector_attribute(faces[0]).template cast<double>();
+                    triangle[1] = accessor.const_vector_attribute(faces[1]).template cast<double>();
+                    triangle[2] = accessor.const_vector_attribute(faces[2]).template cast<double>();
                 }
 
                 if (m_envelope->is_outside(triangle)) {
@@ -454,8 +455,8 @@ bool EnvelopeInvariant::after_with_envelope_edge(
                     p0 = accessor.const_vector_attribute(faces[0]);
                     p1 = accessor.const_vector_attribute(faces[1]);
                 } else if constexpr (std::is_same_v<AttributeType, Rational>) {
-                    p0 = accessor.const_vector_attribute(faces[0]).cast<double>();
-                    p1 = accessor.const_vector_attribute(faces[1]).cast<double>();
+                    p0 = accessor.const_vector_attribute(faces[0]).template cast<double>();
+                    p1 = accessor.const_vector_attribute(faces[1]).template cast<double>();
                 } else {
                     log_and_throw_error("Unknown attribute type");
                 }
@@ -491,7 +492,7 @@ bool EnvelopeInvariant::after_with_envelope_vertex(
                 if constexpr (std::is_same_v<AttributeType, double>) {
                     p = accessor.const_vector_attribute(tuple);
                 } else if constexpr (std::is_same_v<AttributeType, Rational>) {
-                    p = accessor.const_vector_attribute(tuple).cast<double>();
+                    p = accessor.const_vector_attribute(tuple).template cast<double>();
                 } else {
                     log_and_throw_error("Unknown attribute type");
                 }
@@ -552,9 +553,9 @@ bool EnvelopeInvariant::after_with_bvh_edge(
                     p0 = accessor.const_vector_attribute(tuple);
                     p1 = accessor.const_vector_attribute(mesh().switch_tuple(tuple, PV));
                 } else if constexpr (std::is_same_v<AttributeType, Rational>) {
-                    p0 = accessor.const_vector_attribute(tuple).cast<double>();
+                    p0 = accessor.const_vector_attribute(tuple).template cast<double>();
                     p1 = accessor.const_vector_attribute(mesh().switch_tuple(tuple, PV))
-                             .cast<double>();
+                             .template cast<double>();
                 } else {
                     log_and_throw_error("Unknown attribute type");
                 }
@@ -611,7 +612,7 @@ bool EnvelopeInvariant::after_with_bvh_vertex(
                 if constexpr (std::is_same_v<AttributeType, double>) {
                     p = accessor.const_vector_attribute(tuple);
                 } else if constexpr (std::is_same_v<AttributeType, Rational>) {
-                    p = accessor.const_vector_attribute(tuple).cast<double>();
+                    p = accessor.const_vector_attribute(tuple).template cast<double>();
                 } else {
                     log_and_throw_error("Unknown attribute type");
                 }

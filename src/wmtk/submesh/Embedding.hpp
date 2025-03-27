@@ -43,14 +43,14 @@ public:
     std::vector<Tuple> get_all(PrimitiveType type) const override;
     std::vector<simplex::IdSimplex> get_all_id_simplex(PrimitiveType type) const override;
 
-    int64_t top_cell_dimension() const;
+    int64_t top_cell_dimension() const override;
 
-    MeshType mesh_type() const;
+    MeshType mesh_type() const override;
 
-    Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const;
-    bool is_boundary(PrimitiveType, const Tuple& tuple) const;
-    int64_t id(const simplex::Simplex& s) const;
-    int64_t id(const Tuple& tuple, PrimitiveType pt) const;
+    Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
+    bool is_boundary(PrimitiveType, const Tuple& tuple) const override;
+    int64_t id(const simplex::Simplex& s) const override;
+    int64_t id(const Tuple& tuple, PrimitiveType pt) const override;
 
     std::vector<std::shared_ptr<SubMesh>> get_child_meshes() const;
 

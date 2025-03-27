@@ -56,7 +56,7 @@ public:
      */
     PrimitiveType top_simplex_type(const Tuple& tuple) const;
 
-    MeshType mesh_type() const;
+    MeshType mesh_type() const override;
 
     /**
      * @brief Get the maximum primitive type that has a tag in the entire mesh.

@@ -124,7 +124,7 @@ ProjectOperation::ProjectOperation(
                     return accessor.const_vector_attribute(_t);
                 }
                 if constexpr (std::is_same_v<AttributeType, Rational>) {
-                    return accessor.const_vector_attribute(_t).cast<double>();
+                    return accessor.const_vector_attribute(_t).template cast<double>();
                 }
                 log_and_throw_error("Position attribute must be double or rational");
             },
