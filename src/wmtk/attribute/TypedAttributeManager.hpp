@@ -1,15 +1,14 @@
 #pragma once
 
 #include <wmtk/utils/MerkleTreeInteriorNode.hpp>
-#include "CachingAttribute.hpp"
 #include "AttributeHandle.hpp"
+#include "CachingAttribute.hpp"
 
 
 #include <Eigen/Core>
 
 #include <map>
 #include <vector>
-
 
 
 namespace wmtk {
@@ -25,7 +24,6 @@ namespace attribute {
 template <typename T>
 class TypedAttributeManager : public wmtk::utils::MerkleTreeInteriorNode
 {
-
     typedef Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1>> MapResult;
     typedef Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>> ConstMapResult;
 
@@ -49,7 +47,10 @@ public:
         bool replace = false,
         T default_value = T(0));
 
+    // Number of (vector-)values available to be written to, which can be more than the number of simplcies the mesh has
     int64_t reserved_size() const;
+
+    // sets teh size of teh store to be the specified size
     void reserve(const int64_t size);
 
     // adds size more simplices to teh existing reservation
@@ -130,13 +131,14 @@ private:
 template <typename T>
 inline CachingAttribute<T>& TypedAttributeManager<T>::attribute(const AttributeHandle& handle)
 {
-    CachingAttribute<T>& attr = *m_attributes.at(handle.index);
+    CachingAttribute<T>& attr = *m_attributes.at(handle.index());
     return attr;
 }
 template <typename T>
-inline const CachingAttribute<T>& TypedAttributeManager<T>::attribute(const AttributeHandle& handle) const
+inline const CachingAttribute<T>& TypedAttributeManager<T>::attribute(
+    const AttributeHandle& handle) const
 {
-    return *m_attributes.at(handle.index);
+    return *m_attributes.at(handle.index());
 }
 
 template <typename T>

@@ -1,17 +1,22 @@
 #pragma once
 #include <wmtk/utils/Rational.hpp>
 #include "Accessor.hpp"
+#include "MeshAttributeHandle.hpp"
 
 namespace wmtk::attribute {
 
 template <typename T, typename MeshType, typename AttributeType, int Dim>
-inline Accessor<T, MeshType, AttributeType, Dim>::Accessor(MeshType& m, const TypedAttributeHandle<T>& handle)
+inline Accessor<T, MeshType, AttributeType, Dim>::Accessor(
+    MeshType& m,
+    const TypedAttributeHandle<T>& handle)
     : m_handle(handle)
     , m_mesh(m)
     , m_attribute(mesh().m_attribute_manager.get(m_handle).attribute(m_handle.m_base_handle))
 {}
 template <typename T, typename MeshType, typename AttributeType, int Dim>
-Accessor<T, MeshType, AttributeType, Dim>::Accessor(const MeshType& m, const TypedAttributeHandle<T>& handle)
+Accessor<T, MeshType, AttributeType, Dim>::Accessor(
+    const MeshType& m,
+    const TypedAttributeHandle<T>& handle)
     : Accessor(const_cast<MeshType&>(m), handle)
 {}
 template <typename T, typename MeshType, typename AttributeType, int Dim>
@@ -55,7 +60,8 @@ auto Accessor<T, MeshType, AttributeType, Dim>::const_vector_attribute(const Arg
 
 template <typename T, typename MeshType, typename AttributeType, int Dim>
 template <int D, typename ArgType>
-auto Accessor<T, MeshType, AttributeType, Dim>::vector_attribute(const ArgType& t) -> MapResult<std::max(D, Dim)>
+auto Accessor<T, MeshType, AttributeType, Dim>::vector_attribute(const ArgType& t)
+    -> MapResult<std::max(D, Dim)>
 {
     const int64_t idx = this->index(t);
     return m_attribute.template vector_attribute<std::max(D, Dim)>(idx);
@@ -71,14 +77,16 @@ auto Accessor<T, MeshType, AttributeType, Dim>::scalar_attribute(const ArgType& 
 
 template <typename T, typename MeshType, typename AttributeType, int Dim>
 template <typename ArgType>
-auto Accessor<T, MeshType, AttributeType, Dim>::const_scalar_attribute(const ArgType& t) const -> const Scalar&
+auto Accessor<T, MeshType, AttributeType, Dim>::const_scalar_attribute(const ArgType& t) const
+    -> const Scalar&
 {
     const int64_t idx = this->index(t);
     return m_attribute.const_scalar_attribute(idx);
 }
 // template <typename T, typename MeshType, typename AttributeType, int Dim>
 // template <typename ArgType>
-// auto Accessor<T, MeshType, AttributeType, Dim>::topological_scalar_attribute(const ArgType& t) -> Scalar&
+// auto Accessor<T, MeshType, AttributeType, Dim>::topological_scalar_attribute(const ArgType& t) ->
+// Scalar&
 //{
 //     const int64_t idx = this->index(t);
 //     return m_attribute.topological_scalar_attribute<Dim>(idx);
@@ -146,7 +154,8 @@ inline auto Accessor<T, MeshType, AttributeType, Dim>::attribute() const -> cons
     return m_attribute;
 }
 template <typename T, typename MeshType, typename AttributeType, int Dim>
-inline auto Accessor<T, MeshType, AttributeType, Dim>::typed_handle() const -> const TypedAttributeHandle<Scalar>&
+inline auto Accessor<T, MeshType, AttributeType, Dim>::typed_handle() const
+    -> const TypedAttributeHandle<Scalar>&
 {
     return m_handle;
 }

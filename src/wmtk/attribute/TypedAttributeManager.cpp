@@ -32,8 +32,12 @@ void TypedAttributeManager<T>::serialize(const int dim, MeshWriter& writer) cons
             }
         });
 
-    attribute_names.erase(std::remove_if(attribute_names.begin(),attribute_names.end(), [](const std::string& name) {
-                return name.empty(); }), attribute_names.end());
+    attribute_names.erase(
+        std::remove_if(
+            attribute_names.begin(),
+            attribute_names.end(),
+            [](const std::string& name) { return name.empty(); }),
+        attribute_names.end());
 
     HDF5Writer* hdf5_w = dynamic_cast<HDF5Writer*>(&writer);
     if (hdf5_w != nullptr) {
@@ -138,9 +142,9 @@ AttributeHandle TypedAttributeManager<T>::register_attribute(
 
     if (replace && m_handles.find(name) != m_handles.end()) {
         auto it = m_handles.find(name);
-        handle.index = it->second.index;
+        handle = it->second.index();
     } else {
-        handle.index = m_attributes.size();
+        handle = m_attributes.size();
         m_attributes.emplace_back(
             std::make_unique<CachingAttribute<T>>(name, dimension, default_value, reserved_size()));
     }
@@ -168,7 +172,7 @@ template <typename T>
 bool TypedAttributeManager<T>::has_attribute(const std::string& name) const
 {
     auto it = m_handles.find(name);
-    return it != m_handles.end() && bool(m_attributes[it->second.index]);
+    return it != m_handles.end() && bool(m_attributes[it->second.index()]);
 }
 
 template <typename T>
@@ -197,7 +201,7 @@ template <typename T>
 void TypedAttributeManager<T>::set(const AttributeHandle& handle, std::vector<T> val)
 {
     // TODO: should we validate the size of val compared to the internally held data?
-    auto& attr_ptr = m_attributes[handle.index];
+    auto& attr_ptr = m_attributes[handle.index()];
     assert(bool(attr_ptr));
     auto& attr = *attr_ptr;
     attr.set(std::move(val));
@@ -206,7 +210,7 @@ void TypedAttributeManager<T>::set(const AttributeHandle& handle, std::vector<T>
 template <typename T>
 size_t TypedAttributeManager<T>::attribute_size(const AttributeHandle& handle) const
 {
-    auto& attr_ptr = m_attributes[handle.index];
+    auto& attr_ptr = m_attributes[handle.index()];
     assert(bool(attr_ptr));
     return attr_ptr->reserved_size();
 }
@@ -229,7 +233,7 @@ auto TypedAttributeManager<T>::active_attributes() const -> std::vector<Attribut
     handles.reserve(m_attributes.size());
     for (size_t j = 0; j < m_attributes.size(); ++j) {
         if (bool(m_attributes[j])) {
-            handles.emplace_back(j);
+            handles.emplace_back(AttributeHandle(j));
         }
     }
 
@@ -238,7 +242,7 @@ auto TypedAttributeManager<T>::active_attributes() const -> std::vector<Attribut
 template <typename T>
 bool TypedAttributeManager<T>::is_active(const AttributeHandle& h) const
 {
-    const size_t index = h.index;
+    const size_t index = h.index();
     assert(index < m_attributes.size());
     return bool(m_attributes[index]);
 }
@@ -282,7 +286,7 @@ void TypedAttributeManager<T>::remove_attributes(
         attributes.begin(),
         attributes.end(),
         std::back_inserter(remove_indices),
-        [](const AttributeHandle& h) { return h.index; });
+        [](const AttributeHandle& h) { return h.index(); });
     std::sort(remove_indices.begin(), remove_indices.end());
     remove_indices.erase(
         std::unique(remove_indices.begin(), remove_indices.end()),
@@ -303,7 +307,7 @@ void TypedAttributeManager<T>::remove_attributes(
 template <typename T>
 void TypedAttributeManager<T>::remove_attribute(const AttributeHandle& attribute)
 {
-    m_attributes[attribute.index].reset();
+    m_attributes[attribute.index()].reset();
 }
 
 template <typename T>
@@ -322,10 +326,10 @@ void TypedAttributeManager<T>::clear_dead_attributes()
 
     // clean up m_handles
     for (auto it = m_handles.begin(); it != m_handles.end(); /* no increment */) {
-        if (int64_t new_ind = old_to_new_id[it->second.index]; new_ind == -1) {
+        if (int64_t new_ind = old_to_new_id[it->second.index()]; new_ind == -1) {
             it = m_handles.erase(it);
         } else {
-            it->second.index = new_ind;
+            it->second = new_ind;
             ++it;
         }
     }
@@ -351,7 +355,7 @@ void TypedAttributeManager<T>::set_name(const AttributeHandle& handle, const std
         return;
     }
 
-    auto& attr = m_attributes[handle.index];
+    auto& attr = m_attributes[handle.index()];
     assert(bool(attr));
     assert(attr->m_name == old_name);
 

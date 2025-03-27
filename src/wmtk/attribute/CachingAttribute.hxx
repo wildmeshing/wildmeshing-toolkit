@@ -85,11 +85,6 @@ auto CachingAttribute<T>::final_transaction_rbegin() const
     return std::reverse_iterator(final_transaction_end());
 }
 
-template <typename T>
-WMTK_CACHING_ATTRIBUTE_INLINE int64_t CachingAttribute<T>::size() const
-{
-    return m_transaction_starts.size();
-}
 
 template <typename T>
 WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::rollback_current_scope()
@@ -104,7 +99,7 @@ template <int D>
 WMTK_CACHING_ATTRIBUTE_INLINE auto CachingAttribute<T>::vector_attribute(int64_t index)
     -> MapResult<D>
 {
-    assert(writing_enabled());
+    assert(at_current_scope());
 
     auto data = BaseType::template vector_attribute<D>(index);
     assert(data.cols() == 1);
@@ -113,7 +108,7 @@ WMTK_CACHING_ATTRIBUTE_INLINE auto CachingAttribute<T>::vector_attribute(int64_t
     }
     // we are typically only going to write when caching is enabled so better to optimize for this
     if (has_transactions()) {
-        try_caching(index, data);
+        cache(index, data);
     }
     return data;
 }
@@ -140,10 +135,10 @@ WMTK_CACHING_ATTRIBUTE_INLINE auto CachingAttribute<T>::const_vector_attribute(i
 template <typename T>
 WMTK_CACHING_ATTRIBUTE_INLINE auto CachingAttribute<T>::scalar_attribute(int64_t index) -> T&
 {
-    assert(writing_enabled());
+    assert(at_current_scope());
     T& value = BaseType::scalar_attribute(index);
     if (has_transactions()) {
-        try_caching(index, value);
+        cache(index, value);
     }
     return value;
 }
@@ -191,9 +186,9 @@ WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::push_scope()
     emplace();
 }
 template <typename T>
-WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::pop_scope(bool apply_updates)
+WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::pop_scope(bool preserve_changes)
 {
-    pop(apply_updates);
+    pop(preserve_changes);
 }
 
 template <typename T>
@@ -235,7 +230,7 @@ WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::update_buffer_sizes_for_
 
 template <typename T>
 template <typename Derived>
-WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::try_caching(
+WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::cache(
     int64_t index,
     const Eigen::MatrixBase<Derived>& value)
 {
@@ -261,7 +256,7 @@ WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::try_caching(
 }
 
 template <typename T>
-WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::try_caching(int64_t index, const T& value)
+WMTK_CACHING_ATTRIBUTE_INLINE void CachingAttribute<T>::cache(int64_t index, const T& value)
 {
     update_buffer_sizes_for_add(1);
     // assert(m_buffer.size() == m_indices.size());
@@ -372,11 +367,6 @@ WMTK_CACHING_ATTRIBUTE_INLINE bool CachingAttribute<T>::at_current_scope() const
 {
     assert(m_current_transaction_index <= m_transaction_starts.size());
     return m_current_transaction_index == transaction_depth();
-}
-template <typename T>
-WMTK_CACHING_ATTRIBUTE_INLINE bool CachingAttribute<T>::writing_enabled() const
-{
-    return at_current_scope();
 }
 
 template <typename T>

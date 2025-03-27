@@ -49,6 +49,9 @@ public:
     Attribute(Attribute&& o);
     Attribute& operator=(Attribute&& o);
 
+    Attribute(const Attribute& o) = delete;
+    Attribute& operator=(const Attribute&& o) = delete;
+
     ~Attribute() override;
 
     /// Access the value of an attribute at a particular index. If the dimension of the attribute is known at compile time then the template parameter should be elided to improve performance.

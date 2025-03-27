@@ -5,6 +5,8 @@
 namespace wmtk {
 class Mesh;
 class Rational;
+template <typename T>
+class hash;
 namespace attribute {
 template <typename T>
 class TypedAttributeManager;

@@ -279,6 +279,10 @@ void SimplicialEmbedding::regularize_tags(bool generate_simplicial_embedding)
 
             break;
         }
+        case PrimitiveType::Vertex: { // edge split
+            log_and_throw_error("Cannot split point mesh");
+            break;
+        }
         default: log_and_throw_error("unknown primitive type"); break;
         }
 

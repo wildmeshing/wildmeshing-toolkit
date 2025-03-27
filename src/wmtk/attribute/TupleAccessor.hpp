@@ -6,6 +6,7 @@
 namespace wmtk::attribute {
 
 
+    // A wrapper around standard accessor treat the data as a vector of Tuple objects
 template <typename MeshType, int Dim = Eigen::Dynamic>
 class TupleAccessor
 {
