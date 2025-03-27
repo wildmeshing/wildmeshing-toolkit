@@ -39,7 +39,7 @@ using json = nlohmann::json;
 #include <igl/slice_into.h>
 #include <igl/triangle/scaf.h>
 #include <igl/writeOBJ.h>
-#define WMTK_DEBUG_VISUALIZE
+// #define WMTK_DEBUG_VISUALIZE
 namespace wmtk::operations {
 
 
@@ -756,9 +756,13 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                 viewer.launch();
 #endif
                                 // Map parameterization back to original mesh indices
+
                                 uv.resize(V_before.rows(), 2);
-                                for (int i = 0; i < IM.size(); i++) {
-                                    uv.row(IM(i)) = clean_uv.row(i);
+                                uv.setZero(); // Initialize to zero
+                                for (int i = 0; i < J.size(); i++) {
+                                    if (J(i) >= 0 && J(i) < V_before.rows()) {
+                                        uv.row(J(i)) = clean_uv.row(i);
+                                    }
                                 }
                                 spdlog::info(
                                     "Mapped parameterization back to original mesh indices");
@@ -784,12 +788,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                 std::cout << "  Min triangle area: " << min_area << std::endl;
                                 std::cout << "  Max triangle area: " << max_area << std::endl;
 
-// Optionally visualize the UV map
-#ifdef WMTK_DEBUG_UV
-                                igl::opengl::glfw::Viewer viewer;
-                                viewer.data().set_mesh(clean_uv, F_clean);
-                                viewer.launch();
-#endif
+                                // TODO: parametrize F_top
                             }
                         }
                         // STORE information to logfile
