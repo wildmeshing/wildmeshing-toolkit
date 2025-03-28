@@ -91,6 +91,54 @@ void Operation::add_transfer_strategy(
     m_attr_transfer_strategies.emplace_back(other);
 }
 
+
+void launch_debug_viewer(
+    const Eigen::MatrixXd& V_bottom,
+    const Eigen::MatrixXi& F_bottom,
+    const Eigen::MatrixXd& uv_bottom)
+{
+    igl::opengl::glfw::Viewer viewer;
+
+    viewer.data().clear();
+    viewer.data().set_mesh(V_bottom, F_bottom);
+    viewer.data().set_face_based(true);
+    viewer.data().show_lines = true;
+    viewer.data().line_width = 1.0f;
+    viewer.data().line_color << 0.0f, 0.0f, 0.0f, 1.0f;
+
+    viewer.core().align_camera_center(V_bottom, F_bottom);
+
+    viewer.callback_key_pressed =
+        [&](igl::opengl::glfw::Viewer& viewer, unsigned char key, int modifier) -> bool {
+        if (key == '1') {
+            viewer.data().clear();
+            viewer.data().set_mesh(V_bottom, F_bottom);
+            viewer.data().set_face_based(true);
+            viewer.data().show_lines = true;
+            viewer.data().line_width = 1.0f;
+            viewer.data().line_color << 0.0f, 0.0f, 0.0f, 1.0f;
+            viewer.core().align_camera_center(V_bottom, F_bottom);
+            spdlog::info("Switched to 3D mesh view");
+            return true;
+        } else if (key == '2') {
+            viewer.data().clear();
+            viewer.data().set_mesh(uv_bottom, F_bottom);
+            viewer.data().set_face_based(true);
+            viewer.data().show_lines = true;
+            viewer.data().line_width = 1.0f;
+            viewer.data().line_color << 0.0f, 0.0f, 0.0f, 1.0f;
+            viewer.data().set_colors(Eigen::RowVector3d(0.8, 0.8, 0.8));
+            viewer.core().align_camera_center(uv_bottom, F_bottom);
+            spdlog::info("Switched to UV parameterization view");
+            return true;
+        }
+        return false;
+    };
+
+    spdlog::info("Launching viewer - Press 1 for 3D mesh, Press 2 for "
+                 "UV parameterization");
+    viewer.launch();
+}
 std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simplex)
 {
     // Make it special for MeshConsolidate
@@ -339,8 +387,8 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                             operation_log["F_id_map_after"] = id_map_after;
                             operation_log["F_id_map_before"] = id_map_before;
 
-                            // TODO: add an after check here just to make sure this operation can be
-                            // localy parametrized without problem
+                            // TODO: add an after check here just to make sure this operation
+                            // can be localy parametrized without problem
                             Eigen::VectorXd dbarea_before, dbarea_after;
                             igl::doublearea(UV_joint, F_before, dbarea_before);
                             igl::doublearea(UV_joint, F_after, dbarea_after);
@@ -522,7 +570,8 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 
                         // EdgeCollapse operation
                         if (operation_name == "EdgeCollapse") {
-                            // check if there is a edge connected from interior to a boundary vertex
+                            // check if there is a edge connected from interior to a boundary
+                            // vertex
                             auto [is_bd_v0, is_bd_v1] = mesh().parent_scope(
                                 [&](const simplex::Simplex& s) {
                                     return std::make_tuple(
@@ -548,7 +597,8 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                 std::cout << "Vertex position after operation: "
                                           << after_vertex_position.transpose() << std::endl;
 
-                                // Get boundary and non-boundary vertex positions in parent scope
+                                // Get boundary and non-boundary vertex positions in parent
+                                // scope
                                 Eigen::Vector3d boundary_vertex_position;
                                 Eigen::Vector3d non_boundary_vertex_position;
 
@@ -645,49 +695,48 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                     T_before);
 
                                 // Log completion of embedding process
-                                spdlog::info(
-                                    "Tetrahedral mesh embedding process completed successfully");
+                                spdlog::info("Tetrahedral mesh embedding process completed "
+                                             "successfully");
                                 spdlog::info(
                                     "Found {} non-boundary vertices",
                                     non_bd_vertices.size());
                                 spdlog::info("Generated top faces: {} triangles", F_top.rows());
 
                                 // Use harmonic parameterization
-                                Eigen::MatrixXd uv;
-                                Eigen::VectorXi bnd;
-                                Eigen::MatrixXd bnd_uv;
+                                Eigen::VectorXi bottom_bnd;
+                                Eigen::MatrixXd bottom_bnd_uv;
 
                                 // First remove unreferenced vertices
-                                Eigen::MatrixXd V_clean;
-                                Eigen::MatrixXi F_clean;
-                                Eigen::VectorXi IM, J;
+                                Eigen::MatrixXd V_bottom;
+                                Eigen::MatrixXi F_bottom;
+                                Eigen::VectorXi IM_bottom, J_bottom;
                                 igl::remove_unreferenced(
                                     V_before,
                                     F_bd_before,
-                                    V_clean,
-                                    F_clean,
-                                    IM,
-                                    J);
+                                    V_bottom,
+                                    F_bottom,
+                                    IM_bottom,
+                                    J_bottom);
 
                                 spdlog::info("Removed unreferenced vertices");
 
                                 // Get boundary loop
-                                igl::boundary_loop(F_clean, bnd);
+                                igl::boundary_loop(F_bottom, bottom_bnd);
 
                                 // Map boundary to circle while preserving edge proportions
-                                bnd_uv.resize(bnd.size(), 2);
-                                for (int i = 0; i < bnd.size(); i++) {
-                                    double angle = 2.0 * M_PI * i / bnd.size();
-                                    bnd_uv(i, 0) = cos(angle);
-                                    bnd_uv(i, 1) = sin(angle);
+                                bottom_bnd_uv.resize(bottom_bnd.size(), 2);
+                                for (int i = 0; i < bottom_bnd.size(); i++) {
+                                    double angle = 2.0 * M_PI * i / bottom_bnd.size();
+                                    bottom_bnd_uv(i, 0) = cos(angle);
+                                    bottom_bnd_uv(i, 1) = sin(angle);
                                 }
 
                                 spdlog::info("Mapped boundary to circle");
 
                                 // Scale boundary to match area
                                 Eigen::MatrixXd M_before;
-                                igl::doublearea(V_clean, F_clean, M_before);
-                                bnd_uv *= sqrt(M_before.sum() / (2 * 3.14159265358979323846));
+                                igl::doublearea(V_bottom, F_bottom, M_before);
+                                // bottom_bnd_uv *= sqrt(M_before.sum() / (2 * M_PI));
 
                                 spdlog::info("Scaled boundary to match area");
 
@@ -706,91 +755,70 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                 };
 
                                 // Compute harmonic parameterization
-                                Eigen::MatrixXd clean_uv;
-                                igl::harmonic(V_clean, F_clean, bnd, bnd_uv, 1, clean_uv);
+                                Eigen::MatrixXd uv_bottom;
+                                igl::harmonic(
+                                    V_bottom,
+                                    F_bottom,
+                                    bottom_bnd,
+                                    bottom_bnd_uv,
+                                    1,
+                                    uv_bottom);
 
                                 spdlog::info("Computed harmonic parameterization");
 
-#ifdef WMTK_DEBUG_VISUALIZE
-                                igl::opengl::glfw::Viewer viewer;
-
-                                viewer.data().clear();
-                                viewer.data().set_mesh(V_clean, F_clean);
-                                viewer.data().set_face_based(true);
-                                viewer.data().show_lines = true;
-                                viewer.data().line_width = 1.0f;
-                                viewer.data().line_color << 0.0f, 0.0f, 0.0f, 1.0f;
-
-                                viewer.core().align_camera_center(V_clean, F_clean);
-
-                                viewer.callback_key_pressed = [&](igl::opengl::glfw::Viewer& viewer,
-                                                                  unsigned char key,
-                                                                  int modifier) -> bool {
-                                    if (key == '1') {
-                                        viewer.data().clear();
-                                        viewer.data().set_mesh(V_clean, F_clean);
-                                        viewer.data().set_face_based(true);
-                                        viewer.data().show_lines = true;
-                                        viewer.data().line_width = 1.0f;
-                                        viewer.data().line_color << 0.0f, 0.0f, 0.0f, 1.0f;
-                                        viewer.core().align_camera_center(V_clean, F_clean);
-                                        spdlog::info("Switched to 3D mesh view");
-                                        return true;
-                                    } else if (key == '2') {
-                                        viewer.data().clear();
-                                        viewer.data().set_mesh(clean_uv, F_clean);
-                                        viewer.data().set_face_based(true);
-                                        viewer.data().show_lines = true;
-                                        viewer.data().line_width = 1.0f;
-                                        viewer.data().line_color << 0.0f, 0.0f, 0.0f, 1.0f;
-                                        viewer.data().set_colors(Eigen::RowVector3d(0.8, 0.8, 0.8));
-                                        viewer.core().align_camera_center(clean_uv, F_clean);
-                                        spdlog::info("Switched to UV parameterization view");
-                                        return true;
-                                    }
-                                    return false;
-                                };
-
-                                spdlog::info("Launching viewer - Press 1 for 3D mesh, Press 2 for "
-                                             "UV parameterization");
-                                viewer.launch();
-#endif
-                                // Map parameterization back to original mesh indices
-
-                                uv.resize(V_before.rows(), 2);
-                                uv.setZero(); // Initialize to zero
-                                for (int i = 0; i < J.size(); i++) {
-                                    if (J(i) >= 0 && J(i) < V_before.rows()) {
-                                        uv.row(J(i)) = clean_uv.row(i);
-                                    }
-                                }
-                                spdlog::info(
-                                    "Mapped parameterization back to original mesh indices");
+                                launch_debug_viewer(V_bottom, F_bottom, uv_bottom);
 
                                 // Check for flipped triangles
-                                if (!check_uv_orientation(clean_uv, F_clean)) {
-                                    std::cerr
-                                        << "Harmonic parameterization produced flipped triangles"
-                                        << std::endl;
+                                if (!check_uv_orientation(uv_bottom, F_bottom)) {
+                                    std::cerr << "Harmonic parameterization produced flipped "
+                                                 "triangles"
+                                              << std::endl;
                                 }
 
-                                // Calculate parameterization quality metrics
-                                Eigen::VectorXd areas;
-                                igl::doublearea(clean_uv, F_clean, areas);
-                                areas /= 2.0;
-                                // Output UV parameterization information
-                                double total_area = areas.sum();
-                                double min_area = areas.minCoeff();
-                                double max_area = areas.maxCoeff();
 
-                                std::cout << "Parameterization info:" << std::endl;
-                                std::cout << "  Total UV area: " << total_area << std::endl;
-                                std::cout << "  Min triangle area: " << min_area << std::endl;
-                                std::cout << "  Max triangle area: " << max_area << std::endl;
+                                // Parametrize F_top
 
-                                // TODO: parametrize F_top
-                            }
-                        }
+                                Eigen::VectorXi IM_top;
+                                Eigen::MatrixXd uv_top;
+                                if (F_top.rows() > 0) {
+                                    // Parametrize the internal vertices using the boundary
+                                    // parameterization
+                                    uv_top = utils::parametrize_top(
+                                        F_top,
+                                        V_before,
+                                        F_bd_before,
+                                        uv_bottom,
+                                        IM_bottom,
+                                        T_before,
+                                        IM_top);
+
+                                    spdlog::info("Completed parameterization of internal vertices");
+                                } else {
+                                    spdlog::info("No Top faces Found");
+                                }
+
+                                Eigen::MatrixXd V_param = Eigen::MatrixXd::Zero(V_before.rows(), 3);
+                                for (int i = 0; i < IM_bottom.size(); i++) {
+                                    if (IM_bottom(i) != -1) {
+                                        // Get uv coordinates and add z=0
+                                        V_param.row(i) << uv_bottom(IM_bottom(i), 0),
+                                            uv_bottom(IM_bottom(i), 1), 0.0;
+                                    }
+                                }
+                                for (int i = 0; i < IM_top.size(); i++) {
+                                    if (IM_top(i) != -1) {
+                                        // Get uv coordinates and add z=1
+                                        V_param.row(i) << uv_top(IM_top(i), 0),
+                                            uv_top(IM_top(i), 1), 1.0;
+                                    }
+                                }
+                                spdlog::info("Created parameterized vertex coordinates");
+
+                                {
+                                    utils::visualize_tet_mesh(V_param, T_before);
+                                }
+                            } // end if (is_simplex_boundary)
+                        } // end if (operation_name == "EdgeCollapse")
                         // STORE information to logfile
                         operation_log["T_after"]["rows"] = T_after.rows();
                         operation_log["T_after"]["values"] = matrix_to_json(T_after);

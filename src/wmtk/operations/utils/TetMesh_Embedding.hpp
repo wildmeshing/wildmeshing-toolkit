@@ -7,21 +7,33 @@
 namespace wmtk::operations::utils {
 
 /**
- * @brief 分析四面体网格和边界面的关系，找出内部顶点
- * @param T 四面体网格的连接信息
- * @param F_bd 边界面的连接信息
- * @return 内部顶点的索引列表
+ * @brief Analyzes tetrahedral mesh and boundary faces to identify interior vertices
+ * @param T Connectivity information of the tetrahedral mesh
+ * @param F_bd Connectivity information of the boundary faces
+ * @return List of indices of interior vertices
  */
 std::vector<int> embed_mesh(const Eigen::MatrixXi& T, const Eigen::MatrixXi& F_bd);
 
 /**
- * @brief 找出由内部顶点构成的所有三角面
- * @param non_bd_vertices 内部顶点的集合
- * @param T 四面体网格的连接信息
- * @return 由内部顶点构成的三角面矩阵
+ * @brief Finds all triangular faces formed by interior vertices
+ * @param non_bd_vertices Set of interior vertices
+ * @param T Connectivity information of the tetrahedral mesh
+ * @return Matrix of triangular faces formed by interior vertices
  */
 Eigen::MatrixXi find_F_top(
     const std::unordered_set<int>& non_bd_vertices,
     const Eigen::MatrixXi& T);
+
+Eigen::MatrixXd parametrize_top(
+    const Eigen::MatrixXi& F_top,
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F_bd,
+    const Eigen::MatrixXd& uv_bd,
+    const Eigen::VectorXi& IM_uv_bd,
+    const Eigen::MatrixXi& T,
+    Eigen::VectorXi& IM_top);
+
+void visualize_tet_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& T);
+
 
 } // namespace wmtk::operations::utils
