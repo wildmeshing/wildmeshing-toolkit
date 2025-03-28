@@ -6,7 +6,6 @@ var classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor =
     [ "get_incident_tets_and_faces", "classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a0300c3eb5b2c02d01b447d69a3958727", null ],
     [ "request_simplex_indices", "classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a13bcc5417c27976961805c5bcb74ad67", null ],
     [ "split_edge", "classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#afdafef0c67dc0d9b6f2aef827d638eb6", null ],
-    [ "update_cell_hash", "classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a1a34d6ee6dd44ae3d6dea5da3bf2b86b", null ],
     [ "update_ear_connectivity", "classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a9117fb5dfe4679d52015ccb33f0736fe", null ],
     [ "et_accessor", "classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a2a0eee9bb2b7e7aa3df27c3f461843ef", null ],
     [ "flag_accessors", "classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a1cf894747405d59db86fd1306c6d6f0b", null ],

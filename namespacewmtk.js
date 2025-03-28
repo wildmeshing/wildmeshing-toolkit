@@ -32,7 +32,6 @@ var namespacewmtk =
     [ "MeshCRTP", "classwmtk_1_1_mesh_c_r_t_p.html", "classwmtk_1_1_mesh_c_r_t_p" ],
     [ "MeshWriter", "classwmtk_1_1_mesh_writer.html", "classwmtk_1_1_mesh_writer" ],
     [ "MultiMeshEdgeTopologyInvariant", "classwmtk_1_1_multi_mesh_edge_topology_invariant.html", "classwmtk_1_1_multi_mesh_edge_topology_invariant" ],
-    [ "MultiMeshManager", "classwmtk_1_1_multi_mesh_manager.html", null ],
     [ "MultiMeshMapValidInvariant", "classwmtk_1_1_multi_mesh_map_valid_invariant.html", "classwmtk_1_1_multi_mesh_map_valid_invariant" ],
     [ "PointMesh", "classwmtk_1_1_point_mesh.html", "classwmtk_1_1_point_mesh" ],
     [ "Primitive", "classwmtk_1_1_primitive.html", "classwmtk_1_1_primitive" ],
@@ -94,10 +93,6 @@ var namespacewmtk =
     [ "Vector5l", "namespacewmtk.html#ac21e37ae980bd4ee4a281a29da5ebb18", null ],
     [ "VectorX", "namespacewmtk.html#a9cd7285cb03e74d8aa2609646ea0308f", null ],
     [ "VectorXl", "namespacewmtk.html#a9ffbe91b53ca4eabba746d863aeb9f99", null ],
-    [ "AttributeAccessMode", "namespacewmtk.html#a7db930cfda25ca7e8997b341d70f9332", [
-      [ "Immediate", "namespacewmtk.html#a7db930cfda25ca7e8997b341d70f9332a43f6615bbb2c40a5306ff804094420b1", null ],
-      [ "Buffered", "namespacewmtk.html#a7db930cfda25ca7e8997b341d70f9332a97010abc74ca9d1176408d3ef61b8c24", null ]
-    ] ],
     [ "PrimitiveType", "namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345", [
       [ "Vertex", "namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6", null ],
       [ "Edge", "namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e", null ],
@@ -116,6 +111,7 @@ var namespacewmtk =
     [ "getCurrentRSS", "namespacewmtk.html#a4e15db151197e42a39676ee7059dfb52", null ],
     [ "getPeakRSS", "namespacewmtk.html#a2c2f69681944a1e58a9b93dcd76e95ed", null ],
     [ "has_user_overloaded_logger_level", "namespacewmtk.html#a1d15e628edf89f87be62412176114df6", null ],
+    [ "HDF5Writer::write_attribute_names< wmtk::Rational >", "namespacewmtk.html#a199214eca449060cd1270a608e501f6a", null ],
     [ "log_and_throw_error", "namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925", null ],
     [ "log_and_throw_error", "namespacewmtk.html#a14feab21b3c2f51fc2d7ecc55fa4a941", null ],
     [ "logger", "namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06", null ],

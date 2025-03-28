@@ -1,7 +1,7 @@
 var dir_134df78bde85a85bf7f3ebac7d721db1 =
 [
-    [ "amips.cpp", "utils_2amips_8cpp.html", "utils_2amips_8cpp" ],
-    [ "amips.hpp", "utils_2amips_8hpp.html", "utils_2amips_8hpp" ],
+    [ "amips.cpp", "utils_2_a_m_i_p_s_8cpp.html", "utils_2_a_m_i_p_s_8cpp" ],
+    [ "amips.hpp", "utils_2_a_m_i_p_s_8hpp.html", "utils_2_a_m_i_p_s_8hpp" ],
     [ "autodiff.cpp", "autodiff_8cpp.html", "autodiff_8cpp" ],
     [ "autodiff.h", "autodiff_8h.html", "autodiff_8h" ],
     [ "AutoDiffRAII.cpp", "_auto_diff_r_a_i_i_8cpp.html", null ],

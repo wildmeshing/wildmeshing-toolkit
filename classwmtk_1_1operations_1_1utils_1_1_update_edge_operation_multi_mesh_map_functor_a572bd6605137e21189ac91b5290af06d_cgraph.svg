@@ -87,7 +87,7 @@ var sectionId = 'dynsection-15';
 <!-- Node4 -->
 <g id="Node000004" class="node">
 <title>Node4</title>
-<g id="a_Node000004"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#a78328ddfd248ddb71c3a436cf79b6b84" target="_top" xlink:title="constructs an accessor that is aware of the derived mesh&#39;s type">
+<g id="a_Node000004"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#adb202c3442964ae69b40bf83fcddc4c6" target="_top" xlink:title="constructs an accessor that is aware of the derived mesh&#39;s type">
 <polygon fill="white" stroke="#666666" points="386,-606 248,-606 248,-576 386,-576 386,-606"/>
 <text text-anchor="start" x="256" y="-594" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MeshCRTP::create</text>
 <text text-anchor="middle" x="317" y="-583" font-family="Helvetica,sans-Serif" font-size="10.00">_accessor</text>
@@ -371,7 +371,7 @@ var sectionId = 'dynsection-15';
 <!-- Node9 -->
 <g id="Node000009" class="node">
 <title>Node9</title>
-<g id="a_Node000009"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#a2d587e12c47a6d839ab80e9198cf75b5" target="_top" xlink:title=" ">
+<g id="a_Node000009"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#ada8ce8b6841f45c66c784a39e8d88450" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="#666666" points="584,-510 442,-510 442,-480 584,-480 584,-510"/>
 <text text-anchor="start" x="450" y="-498" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
 <text text-anchor="middle" x="513" y="-487" font-family="Helvetica,sans-Serif" font-size="10.00">::index_access</text>
@@ -390,10 +390,10 @@ var sectionId = 'dynsection-15';
 <!-- Node10 -->
 <g id="Node000010" class="node">
 <title>Node10</title>
-<g id="a_Node000010"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#afd97a48ec5d1db975a030428df81f617" target="_top" xlink:title=" ">
+<g id="a_Node000010"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#aaeafc36889f90d4e4e9478f998d240d7" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="#666666" points="783.5,-510 641.5,-510 641.5,-480 783.5,-480 783.5,-510"/>
 <text text-anchor="start" x="649.5" y="-498" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
-<text text-anchor="middle" x="712.5" y="-487" font-family="Helvetica,sans-Serif" font-size="10.00">::caching_base_type</text>
+<text text-anchor="middle" x="712.5" y="-487" font-family="Helvetica,sans-Serif" font-size="10.00">::attribute</text>
 </a>
 </g>
 </g>
@@ -527,7 +527,7 @@ var sectionId = 'dynsection-15';
 <!-- Node24 -->
 <g id="Node000024" class="node">
 <title>Node24</title>
-<g id="a_Node000024"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#ad6fb9ed9ff56571fe257bf0f4b542368" target="_top" xlink:title=" ">
+<g id="a_Node000024"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#abecebb154568864219abda80a1beb803" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="#666666" points="783.5,-273 641.5,-273 641.5,-243 783.5,-243 783.5,-273"/>
 <text text-anchor="start" x="649.5" y="-261" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
 <text text-anchor="middle" x="712.5" y="-250" font-family="Helvetica,sans-Serif" font-size="10.00">::const_vector_attribute</text>
@@ -546,10 +546,10 @@ var sectionId = 'dynsection-15';
 <!-- Node25 -->
 <g id="Node000025" class="node">
 <title>Node25</title>
-<g id="a_Node000025"><a xlink:href="classwmtk_1_1attribute_1_1_accessor_base.html#abd60539d5779de287d2a0ec31b16c77a" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="#666666" points="783.5,-225 641.5,-225 641.5,-195 783.5,-195 783.5,-225"/>
-<text text-anchor="start" x="649.5" y="-213" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
-<text text-anchor="middle" x="712.5" y="-202" font-family="Helvetica,sans-Serif" font-size="10.00">Base::dimension</text>
+<g id="a_Node000025"><a xlink:href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a8d04c3529eb7adeead49e8faa7a119db" target="_top" xlink:title=" ">
+<polygon fill="white" stroke="#666666" points="796,-225 629,-225 629,-195 796,-195 796,-225"/>
+<text text-anchor="start" x="637" y="-213" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::TupleAccessor</text>
+<text text-anchor="middle" x="712.5" y="-202" font-family="Helvetica,sans-Serif" font-size="10.00">::dimension</text>
 </a>
 </g>
 </g>
@@ -565,9 +565,9 @@ var sectionId = 'dynsection-15';
 <!-- Node26 -->
 <g id="Node000026" class="node">
 <title>Node26</title>
-<g id="a_Node000026"><a xlink:href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a8d04c3529eb7adeead49e8faa7a119db" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="#666666" points="796,-177 629,-177 629,-147 796,-147 796,-177"/>
-<text text-anchor="start" x="637" y="-165" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::TupleAccessor</text>
+<g id="a_Node000026"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#ad1c53d7c161d4f046bedc27006a0256f" target="_top" xlink:title=" ">
+<polygon fill="white" stroke="#666666" points="783.5,-177 641.5,-177 641.5,-147 783.5,-147 783.5,-177"/>
+<text text-anchor="start" x="649.5" y="-165" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
 <text text-anchor="middle" x="712.5" y="-154" font-family="Helvetica,sans-Serif" font-size="10.00">::dimension</text>
 </a>
 </g>
@@ -576,8 +576,8 @@ var sectionId = 'dynsection-15';
 <g id="edge26_Node000023_Node000026" class="edge">
 <title>Node23&#45;&gt;Node26</title>
 <g id="a_edge26_Node000023_Node000026"><a xlink:title=" ">
-<path fill="none" stroke="#63b8ff" d="M589.23,-162.62C598.86,-162.57 608.8,-162.52 618.67,-162.47"/>
-<polygon fill="#63b8ff" stroke="#63b8ff" points="618.92,-165.97 628.9,-162.42 618.89,-158.97 618.92,-165.97"/>
+<path fill="none" stroke="#63b8ff" d="M589.23,-162.62C603,-162.55 617.42,-162.48 631.33,-162.41"/>
+<polygon fill="#63b8ff" stroke="#63b8ff" points="631.37,-165.91 641.35,-162.36 631.34,-158.91 631.37,-165.91"/>
 </a>
 </g>
 </g>

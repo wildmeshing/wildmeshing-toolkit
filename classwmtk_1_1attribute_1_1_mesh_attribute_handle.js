@@ -11,6 +11,8 @@ var classwmtk_1_1attribute_1_1_mesh_attribute_handle =
     [ "MeshAttributeHandle", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a5fe50d83a9037a913577e81b88cb2f7b", null ],
     [ "as", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a9c02e0fc8ac13ad9f16ce928e7a2c84c", null ],
     [ "as_from_held_type", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ad9819e403fe9a7a2880fe5423226d1d2", null ],
+    [ "create_accessor", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a98e62508ba45af26438eae9e4b431dbb", null ],
+    [ "create_const_accessor", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a7781e3b349cdf1e6f55e954724659903", null ],
     [ "dimension", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a3c2f0b99a4f3581ac8da264d10c493a1", null ],
     [ "handle", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#aae37f071e9eab3a1db1aecd118d32b76", null ],
     [ "handle", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a221f192a936e0118d1ae7cbeddb8ee7b", null ],

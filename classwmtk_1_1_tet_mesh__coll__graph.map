@@ -1,32 +1,31 @@
 <map id="wmtk::TetMesh" name="wmtk::TetMesh">
-<area shape="rect" id="Node000001" title=" " alt="" coords="2141,214,2263,239"/>
-<area shape="rect" id="Node000002" href="$classwmtk_1_1_mesh_c_r_t_p.html" title=" " alt="" coords="1873,333,2092,358"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="2018,324,2176,237,2178,242,2021,328"/>
-<area shape="rect" id="Node000003" href="$classwmtk_1_1_mesh.html" title=" " alt="" coords="1177,323,1280,349"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="1294,345,1330,351,1443,365,1532,372,1621,373,1736,368,1881,355,1881,361,1736,373,1622,378,1532,377,1443,370,1329,356,1293,351"/>
-<area shape="rect" id="Node000008" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html" title="Implementation details for how the Mesh class implements multiple meshes." alt="" coords="1521,236,1735,276"/>
-<area shape="poly" id="edge10_Node000008_Node000003" title=" " alt="" coords="1275,316,1329,300,1412,285,1521,268,1522,273,1413,290,1330,305,1277,321"/>
-<area shape="rect" id="Node000012" href="$classwmtk_1_1_mesh_c_r_t_p.html" title="A Curiously Recurring Template Pattern shim to enable generic specialization of functions." alt="" coords="1520,333,1736,358"/>
-<area shape="poly" id="edge17_Node000012_Node000003" title=" " alt="" coords="1294,339,1329,341,1520,344,1520,349,1329,347,1294,345"/>
-<area shape="rect" id="Node000004" title=" " alt="" coords="767,391,923,431"/>
-<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="937,400,1030,389,1127,369,1197,346,1198,351,1129,375,1030,394,938,406"/>
-<area shape="rect" id="Node000005" href="$classwmtk_1_1utils_1_1_merkle_tree_interior_node.html" title=" " alt="" coords="348,283,604,309"/>
-<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="574,308,732,325,858,332,982,335,1177,334,1177,340,982,340,857,337,732,331,574,313"/>
-<area shape="rect" id="Node000007" href="$classwmtk_1_1attribute_1_1_attribute_manager.html" title=" " alt="" coords="751,276,939,316"/>
-<area shape="poly" id="edge7_Node000007_Node000005" title=" " alt="" coords="618,293,751,293,751,299,618,299"/>
-<area shape="poly" id="edge9_Node000008_Node000005" title=" " alt="" coords="573,279,732,261,952,251,1171,247,1521,250,1521,256,1171,252,952,256,732,267,573,284"/>
-<area shape="rect" id="Node000006" href="$classwmtk_1_1utils_1_1_hashable.html" title=" " alt="" coords="17,283,181,309"/>
-<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="195,293,348,293,348,299,195,299"/>
-<area shape="poly" id="edge6_Node000003_Node000007" title=" " alt="" coords="953,305,1177,328,1177,333,953,310"/>
-<area shape="poly" id="edge8_Node000003_Node000008" title=" " alt="" coords="1582,285,1542,304,1497,320,1439,331,1381,338,1280,341,1280,335,1381,332,1439,326,1495,315,1540,299,1580,280"/>
-<area shape="rect" id="Node000009" href="$classwmtk_1_1attribute_1_1_typed_attribute_handle.html" title=" " alt="" coords="732,140,959,180"/>
-<area shape="poly" id="edge18_Node000001_Node000009" title=" " alt="" coords="953,135,1084,115,1156,108,1227,105,1984,105,2017,109,2049,118,2109,147,2157,182,2190,212,2187,216,2154,187,2106,152,2047,123,2016,114,1984,111,1227,111,1156,113,1085,120,954,140"/>
-<area shape="poly" id="edge15_Node000003_Node000009" title=" " alt="" coords="903,183,1201,321,1199,326,901,188"/>
-<area shape="poly" id="edge11_Node000008_Node000009" title=" " alt="" coords="973,162,1216,180,1357,196,1497,217,1563,233,1562,239,1495,223,1356,201,1216,185,972,168"/>
-<area shape="rect" id="Node000010" href="$classwmtk_1_1attribute_1_1_attribute_handle.html" title="Internal handle representation used by MeshAttributes." alt="" coords="5,141,193,181"/>
-<area shape="poly" id="edge12_Node000009_Node000010" title=" " alt="" coords="207,158,731,158,731,163,207,164"/>
-<area shape="rect" id="Node000011" href="$classwmtk_1_1attribute_1_1_typed_attribute_handle.html" title="Handle that represents attributes for some mesh." alt="" coords="363,191,589,231"/>
-<area shape="poly" id="edge14_Node000011_Node000010" title=" " alt="" coords="207,173,363,193,362,199,207,178"/>
-<area shape="poly" id="edge13_Node000009_Node000011" title=" " alt="" coords="602,191,731,173,732,178,603,196"/>
-<area shape="poly" id="edge16_Node000002_Node000012" title=" " alt="" coords="1750,343,1873,343,1873,348,1750,348"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="2112,153,2233,178"/>
+<area shape="rect" id="Node000002" href="$classwmtk_1_1_mesh_c_r_t_p.html" title=" " alt="" coords="1844,254,2063,279"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1993,246,2143,176,2145,180,1995,251"/>
+<area shape="rect" id="Node000003" href="$classwmtk_1_1_mesh.html" title=" " alt="" coords="1111,251,1214,277"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="1228,262,1844,264,1844,269,1228,267"/>
+<area shape="rect" id="Node000008" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html" title="Implementation details for how the Mesh class implements multiple meshes." alt="" coords="1492,140,1705,180"/>
+<area shape="poly" id="edge10_Node000008_Node000003" title=" " alt="" coords="1200,243,1247,222,1299,204,1382,187,1492,171,1492,176,1383,193,1301,209,1249,227,1202,248"/>
+<area shape="rect" id="Node000012" href="$classwmtk_1_1_mesh_c_r_t_p.html" title="A Curiously Recurring Template Pattern shim to enable generic specialization of functions." alt="" coords="1491,305,1707,330"/>
+<area shape="poly" id="edge16_Node000012_Node000003" title=" " alt="" coords="1228,272,1300,283,1491,304,1490,310,1300,288,1228,277"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="665,180,821,220"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="835,211,1111,254,1111,259,834,216"/>
+<area shape="rect" id="Node000005" href="$classwmtk_1_1utils_1_1_merkle_tree_interior_node.html" title=" " alt="" coords="219,251,475,277"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="451,276,630,293,743,297,856,293,995,282,1111,268,1112,274,995,287,856,299,743,303,629,299,450,281"/>
+<area shape="rect" id="Node000007" href="$classwmtk_1_1attribute_1_1_attribute_manager.html" title=" " alt="" coords="649,244,837,284"/>
+<area shape="poly" id="edge7_Node000007_Node000005" title=" " alt="" coords="489,261,648,261,648,267,489,267"/>
+<area shape="poly" id="edge9_Node000008_Node000005" title=" " alt="" coords="387,243,494,201,561,181,629,165,748,149,869,138,991,132,1110,131,1325,136,1492,147,1492,153,1325,142,1110,136,991,138,870,143,748,154,630,171,562,186,496,206,389,248"/>
+<area shape="rect" id="Node000006" href="$classwmtk_1_1utils_1_1_hashable.html" title=" " alt="" coords="5,251,169,277"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="183,261,218,261,218,267,183,267"/>
+<area shape="poly" id="edge6_Node000003_Node000007" title=" " alt="" coords="851,261,1111,261,1111,267,851,267"/>
+<area shape="poly" id="edge8_Node000003_Node000008" title=" " alt="" coords="1551,189,1511,208,1467,224,1419,234,1351,245,1215,261,1214,256,1350,240,1418,229,1466,219,1509,203,1549,184"/>
+<area shape="rect" id="Node000009" href="$classwmtk_1_1attribute_1_1_typed_attribute_handle.html" title=" " alt="" coords="1049,55,1276,95"/>
+<area shape="poly" id="edge17_Node000001_Node000009" title=" " alt="" coords="1290,73,1467,80,1652,96,1834,117,2112,154,2111,159,1833,122,1651,102,1466,85,1290,78"/>
+<area shape="poly" id="edge11_Node000008_Node000009" title=" " alt="" coords="1290,93,1467,125,1520,137,1519,143,1466,131,1289,99"/>
+<area shape="rect" id="Node000010" href="$classwmtk_1_1attribute_1_1_attribute_handle.html" title="Internal handle representation used by TypedAttributeManager." alt="" coords="253,16,441,56"/>
+<area shape="poly" id="edge12_Node000009_Node000010" title=" " alt="" coords="454,33,605,35,816,41,1026,56,1050,58,1049,64,1025,61,815,47,605,40,454,38"/>
+<area shape="rect" id="Node000011" href="$classwmtk_1_1attribute_1_1_typed_attribute_handle.html" title="Handle that represents attributes for some mesh." alt="" coords="629,65,856,105"/>
+<area shape="poly" id="edge14_Node000011_Node000010" title=" " alt="" coords="455,47,630,69,629,74,454,52"/>
+<area shape="poly" id="edge13_Node000009_Node000011" title=" " alt="" coords="870,79,1049,75,1049,80,870,85"/>
+<area shape="poly" id="edge15_Node000002_Node000012" title=" " alt="" coords="1720,309,1820,297,1908,277,1910,282,1820,303,1720,314"/>
 </map>

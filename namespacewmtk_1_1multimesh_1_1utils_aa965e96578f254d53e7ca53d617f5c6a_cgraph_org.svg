@@ -21,7 +21,7 @@
 <!-- Node2 -->
 <g id="Node000002" class="node">
 <title>Node2</title>
-<g id="a_Node000002"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#ad6fb9ed9ff56571fe257bf0f4b542368" target="_top" xlink:title=" ">
+<g id="a_Node000002"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#abecebb154568864219abda80a1beb803" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="#666666" points="342.5,-174 200.5,-174 200.5,-144 342.5,-144 342.5,-174"/>
 <text text-anchor="start" x="208.5" y="-162" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
 <text text-anchor="middle" x="271.5" y="-151" font-family="Helvetica,sans-Serif" font-size="10.00">::const_vector_attribute</text>
@@ -40,10 +40,10 @@
 <!-- Node3 -->
 <g id="Node000003" class="node">
 <title>Node3</title>
-<g id="a_Node000003"><a xlink:href="classwmtk_1_1attribute_1_1_accessor_base.html#abd60539d5779de287d2a0ec31b16c77a" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="#666666" points="342.5,-126 200.5,-126 200.5,-96 342.5,-96 342.5,-126"/>
-<text text-anchor="start" x="208.5" y="-114" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
-<text text-anchor="middle" x="271.5" y="-103" font-family="Helvetica,sans-Serif" font-size="10.00">Base::dimension</text>
+<g id="a_Node000003"><a xlink:href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a8d04c3529eb7adeead49e8faa7a119db" target="_top" xlink:title=" ">
+<polygon fill="white" stroke="#666666" points="355,-126 188,-126 188,-96 355,-96 355,-126"/>
+<text text-anchor="start" x="196" y="-114" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::TupleAccessor</text>
+<text text-anchor="middle" x="271.5" y="-103" font-family="Helvetica,sans-Serif" font-size="10.00">::dimension</text>
 </a>
 </g>
 </g>
@@ -51,17 +51,17 @@
 <g id="edge2_Node000001_Node000003" class="edge">
 <title>Node1&#45;&gt;Node3</title>
 <g id="a_edge2_Node000001_Node000003"><a xlink:title=" ">
-<path fill="none" stroke="#63b8ff" d="M152.09,-96.31C164.58,-97.86 177.58,-99.47 190.19,-101.04"/>
-<polygon fill="#63b8ff" stroke="#63b8ff" points="189.85,-104.52 200.21,-102.28 190.71,-97.58 189.85,-104.52"/>
+<path fill="none" stroke="#63b8ff" d="M152.09,-96.31C160.49,-97.36 169.12,-98.43 177.7,-99.49"/>
+<polygon fill="#63b8ff" stroke="#63b8ff" points="177.39,-102.98 187.75,-100.74 178.26,-96.03 177.39,-102.98"/>
 </a>
 </g>
 </g>
 <!-- Node4 -->
 <g id="Node000004" class="node">
 <title>Node4</title>
-<g id="a_Node000004"><a xlink:href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a8d04c3529eb7adeead49e8faa7a119db" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="#666666" points="355,-78 188,-78 188,-48 355,-48 355,-78"/>
-<text text-anchor="start" x="196" y="-66" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::TupleAccessor</text>
+<g id="a_Node000004"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#ad1c53d7c161d4f046bedc27006a0256f" target="_top" xlink:title=" ">
+<polygon fill="white" stroke="#666666" points="342.5,-78 200.5,-78 200.5,-48 342.5,-48 342.5,-78"/>
+<text text-anchor="start" x="208.5" y="-66" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
 <text text-anchor="middle" x="271.5" y="-55" font-family="Helvetica,sans-Serif" font-size="10.00">::dimension</text>
 </a>
 </g>
@@ -70,8 +70,8 @@
 <g id="edge3_Node000001_Node000004" class="edge">
 <title>Node1&#45;&gt;Node4</title>
 <g id="a_edge3_Node000001_Node000004"><a xlink:title=" ">
-<path fill="none" stroke="#63b8ff" d="M152.09,-77.69C160.49,-76.64 169.12,-75.57 177.7,-74.51"/>
-<polygon fill="#63b8ff" stroke="#63b8ff" points="178.26,-77.97 187.75,-73.26 177.39,-71.02 178.26,-77.97"/>
+<path fill="none" stroke="#63b8ff" d="M152.09,-77.69C164.58,-76.14 177.58,-74.53 190.19,-72.96"/>
+<polygon fill="#63b8ff" stroke="#63b8ff" points="190.71,-76.42 200.21,-71.72 189.85,-69.48 190.71,-76.42"/>
 </a>
 </g>
 </g>

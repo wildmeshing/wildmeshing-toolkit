@@ -1,0 +1,41 @@
+<map id="wmtk::Mesh::validate_handle" name="wmtk::Mesh::validate_handle">
+<area shape="rect" id="Node000001" title=" " alt="" coords="1431,305,1593,345"/>
+<area shape="rect" id="Node000002" href="$classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ad577111f5b1fd05f60fae4b7f0ddb1f6" title="Returns true if handle was initialized." alt="" coords="1160,305,1383,345"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1417,328,1383,328,1383,323,1417,323"/>
+<area shape="rect" id="Node000003" href="$classwmtk_1_1function_1_1_per_simplex_function.html#a79733e074d9fda13baa0354915b5c08e" title=" " alt="" coords="898,165,1101,205"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="1218,301,1038,208,1040,203,1221,297"/>
+<area shape="rect" id="Node000015" href="$classwmtk_1_1function_1_1_function.html#a0c62fa4a0fed84733c0c18b1806d1eca" title=" " alt="" coords="627,357,810,397"/>
+<area shape="poly" id="edge19_Node000002_Node000015" title=" " alt="" coords="1146,333,1021,341,887,353,811,364,810,359,886,348,1020,336,1146,328"/>
+<area shape="rect" id="Node000016" href="$namespacewmtk_1_1components_1_1multimesh_1_1utils_1_1detail.html#a78277f8fd7049c37f9b2c54eb81d116f" title=" " alt="" coords="887,363,1112,403"/>
+<area shape="poly" id="edge23_Node000002_Node000016" title=" " alt="" coords="1163,351,1095,365,1094,360,1162,346"/>
+<area shape="rect" id="Node000004" href="$classwmtk_1_1function_1_1_per_simplex_function.html#a102906d1b23aa53d451853ca779ca2c4" title=" " alt="" coords="604,197,833,237"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="885,201,834,207,833,202,884,196"/>
+<area shape="rect" id="Node000010" href="$classwmtk_1_1function_1_1_a_m_i_p_s.html#a36709a007132c33f85efe0b4abd16b93" title=" " alt="" coords="352,5,521,45"/>
+<area shape="poly" id="edge18_Node000003_Node000010" title=" " alt="" coords="956,160,901,128,838,100,755,75,671,57,521,35,522,30,672,51,757,70,840,95,903,123,958,155"/>
+<area shape="rect" id="Node000014" href="$classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a478ad8a8370ae38cdf1899cfd3707fde" title="This is a helper function that obtains the coordinates of the variables for the function f(x) where f..." alt="" coords="599,133,839,173"/>
+<area shape="poly" id="edge13_Node000003_Node000014" title=" " alt="" coords="884,175,838,170,839,164,884,170"/>
+<area shape="rect" id="Node000005" href="$classwmtk_1_1function_1_1_triangle_a_m_i_p_s.html#a9efeeacdc9da3b8000a13d44be7e62b7" title="This function defines a function f(x) where f is defined over a simplex domain and the variables for ..." alt="" coords="347,261,526,301"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="617,243,526,264,525,259,616,238"/>
+<area shape="rect" id="Node000006" href="$classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a2acd918687731413b8476532ed726308" title=" " alt="" coords="327,69,546,109"/>
+<area shape="poly" id="edge5_Node000004_Node000006" title=" " alt="" coords="607,193,597,187,581,171,572,155,564,139,549,123,528,112,530,107,552,119,569,135,577,152,585,168,600,183,610,189"/>
+<area shape="rect" id="Node000007" href="$classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a8f4a1942d320c2d613d1af447738f1ea" title="get_gradient collects the local neigh and call the gradient of m_function on all simplicies" alt="" coords="323,453,551,493"/>
+<area shape="poly" id="edge6_Node000004_Node000007" title=" " alt="" coords="687,249,644,293,601,347,587,374,581,397,572,420,552,443,534,455,531,451,549,439,568,418,576,396,582,372,596,344,640,290,683,245"/>
+<area shape="rect" id="Node000008" href="$classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a3155c5a79c212490864deb51ad023534" title=" " alt="" coords="329,133,544,173"/>
+<area shape="poly" id="edge7_Node000004_Node000008" title=" " alt="" coords="616,197,525,176,526,171,617,192"/>
+<area shape="rect" id="Node000009" href="$classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a45bfd84c9f092364f449605199731442" title="get_hessian evaluates the hessian of the function f(x) defined wrt the variable x." alt="" coords="323,325,551,365"/>
+<area shape="poly" id="edge8_Node000004_Node000009" title=" " alt="" coords="678,247,619,282,552,316,519,328,517,323,550,311,617,277,675,242"/>
+<area shape="poly" id="edge9_Node000004_Node000010" title=" " alt="" coords="602,192,597,187,583,171,576,155,572,122,568,90,561,74,549,59,520,42,523,37,552,55,566,72,573,88,577,121,581,153,588,168,601,183,606,188"/>
+<area shape="rect" id="Node000012" href="$classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a5dbdaadd8398ba89b96ae7e799d6c7e7" title="This function is defined over a simplex (normally a triangle or tetrahedron)." alt="" coords="335,197,538,237"/>
+<area shape="poly" id="edge11_Node000004_Node000012" title=" " alt="" coords="590,220,538,220,538,215,590,215"/>
+<area shape="rect" id="Node000013" href="$classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a0b81383595fa81fb270266bb6cee71da" title="collects the local neigh and call the same m_function on all simplicies" alt="" coords="323,389,551,429"/>
+<area shape="poly" id="edge12_Node000004_Node000013" title=" " alt="" coords="695,250,635,316,595,350,552,380,526,392,524,387,549,375,592,346,631,312,691,246"/>
+<area shape="rect" id="Node000011" href="$classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing.html#a2c409cd3da46f4360119e142ef3c3682" title="returns an empty vector in case of failure" alt="" coords="5,5,275,45"/>
+<area shape="poly" id="edge10_Node000010_Node000011" title=" " alt="" coords="338,28,275,28,275,23,338,23"/>
+<area shape="poly" id="edge15_Node000014_Node000006" title=" " alt="" coords="616,133,525,112,526,107,617,128"/>
+<area shape="poly" id="edge16_Node000014_Node000008" title=" " alt="" coords="585,156,544,156,544,151,585,151"/>
+<area shape="poly" id="edge17_Node000014_Node000012" title=" " alt="" coords="617,179,526,200,525,195,616,174"/>
+<area shape="poly" id="edge14_Node000014_Node000014" title=" " alt="" coords="767,122,750,115,719,112,691,114,675,119,669,125,672,132,667,134,664,124,672,114,690,109,719,107,751,109,769,117"/>
+<area shape="poly" id="edge20_Node000015_Node000007" title=" " alt="" coords="657,405,552,444,513,456,511,451,550,439,655,400"/>
+<area shape="poly" id="edge21_Node000015_Node000009" title=" " alt="" coords="613,368,551,361,551,356,614,363"/>
+<area shape="poly" id="edge22_Node000015_Node000013" title=" " alt="" coords="614,392,551,399,551,394,613,387"/>
+</map>

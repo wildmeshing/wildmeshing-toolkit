@@ -37,5 +37,6 @@ var searchData=
   ['typedattributehandle_3c_20char_20_3e_34',['TypedAttributeHandle&lt; char &gt;',['../classwmtk_1_1attribute_1_1_typed_attribute_handle.html',1,'wmtk::attribute']]],
   ['typedattributehandle_3c_20double_20_3e_35',['TypedAttributeHandle&lt; double &gt;',['../classwmtk_1_1attribute_1_1_typed_attribute_handle.html',1,'wmtk::attribute']]],
   ['typedattributehandle_3c_20int64_5ft_20_3e_36',['TypedAttributeHandle&lt; int64_t &gt;',['../classwmtk_1_1attribute_1_1_typed_attribute_handle.html',1,'wmtk::attribute']]],
-  ['typedattributehandle_3c_20wmtk_3a_3arational_20_3e_37',['TypedAttributeHandle&lt; wmtk::Rational &gt;',['../classwmtk_1_1attribute_1_1_typed_attribute_handle.html',1,'wmtk::attribute']]]
+  ['typedattributehandle_3c_20wmtk_3a_3arational_20_3e_37',['TypedAttributeHandle&lt; wmtk::Rational &gt;',['../classwmtk_1_1attribute_1_1_typed_attribute_handle.html',1,'wmtk::attribute']]],
+  ['typedattributemanager_38',['TypedAttributeManager',['../classwmtk_1_1attribute_1_1_typed_attribute_manager.html',1,'wmtk::attribute']]]
 ];

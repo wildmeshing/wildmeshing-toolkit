@@ -131,7 +131,7 @@ Key Concepts</h1>
 <li><em>Checkpointing.</em> The library supports checkpointing to implement convenient operation rollback at any point during an operation.</li>
 <li><em>Invariants.</em> Mesh invariants <code><a class="el" href="_invariant_8hpp.html">Invariant.hpp</a></code> (such as non-inversion) are automatically checked after each operation and the operation is rolled back if it does not satisfy the invariants.</li>
 <li><em>Topological Navigation.</em> The library directly supports topological navigation using a tuple, and standard topological operators (star, link, order, etc) in a dimension independent manner <code><a class="el" href="_simplex_collection_8hpp.html">SimplexCollection.hpp</a></code>. Efficient replacement for the most common operations is also supported to improve performance for common operations.</li>
-<li><em>Multi Mesh.</em> The library supports embedding of lower-dimensional manifold meshes <code>MultiMeshManager.hpp</code>, and provides a mechanism to update them as local operations are applied to either the background mesh or the embedded ones.</li>
+<li><em>Multi Mesh.</em> The library supports embedding of lower-dimensional manifold meshes <code><a class="el" href="_multi_mesh_manager_8hpp.html">MultiMeshManager.hpp</a></code>, and provides a mechanism to update them as local operations are applied to either the background mesh or the embedded ones.</li>
 <li><em>Optimization.</em> The library can automatically minimize, through a combination of smooth (vertex relocation) and discrete (split,collapse,swap) operations, a differentiable energy specified on any of its simplices <code><a class="el" href="_function_8hpp.html">Function.hpp</a></code>.</li>
 </ol>
 <h1><a class="anchor" id="autotoc_md2"></a>

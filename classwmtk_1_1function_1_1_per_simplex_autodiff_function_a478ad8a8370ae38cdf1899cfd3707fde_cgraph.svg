@@ -46,7 +46,7 @@
   </g>
 </defs>
 <script type="application/ecmascript">
-var viewWidth = 579;
+var viewWidth = 1093;
 var viewHeight = 134;
 var sectionId = 'dynsection-4';
 </script>
@@ -65,9 +65,9 @@ var sectionId = 'dynsection-4';
 </g>
 </g>
 <!-- Node1&#45;&gt;Node1 -->
-<g id="edge4_Node000001_Node000001" class="edge">
+<g id="edge7_Node000001_Node000001" class="edge">
 <title>Node1&#45;&gt;Node1</title>
-<g id="a_edge4_Node000001_Node000001"><a xlink:title=" ">
+<g id="a_edge7_Node000001_Node000001"><a xlink:title=" ">
 <path fill="none" stroke="#63b8ff" d="M54.49,-78.28C46.6,-87.41 58.44,-96 90,-96 108.74,-96 120.53,-92.97 125.36,-88.6"/>
 <polygon fill="#63b8ff" stroke="#63b8ff" points="128.86,-88.33 125.51,-78.28 121.86,-88.22 128.86,-88.33"/>
 </a>
@@ -92,39 +92,39 @@ var sectionId = 'dynsection-4';
 </a>
 </g>
 </g>
-<!-- Node4 -->
-<g id="Node000004" class="node">
-<title>Node4</title>
-<g id="a_Node000004"><a xlink:href="classwmtk_1_1_mesh.html#a357182137d99f1e4a7ff536eadfc0e56" target="_top" xlink:title=" ">
+<!-- Node7 -->
+<g id="Node000007" class="node">
+<title>Node7</title>
+<g id="a_Node000007"><a xlink:href="classwmtk_1_1_mesh.html#a4cd7e6ca59d8d58cc7057c13bd190d57" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="#666666" points="348.5,-78 235.5,-78 235.5,-48 348.5,-48 348.5,-78"/>
 <text text-anchor="start" x="243.5" y="-66" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::create</text>
 <text text-anchor="middle" x="292" y="-55" font-family="Helvetica,sans-Serif" font-size="10.00">_const_accessor</text>
 </a>
 </g>
 </g>
-<!-- Node1&#45;&gt;Node4 -->
-<g id="edge3_Node000001_Node000004" class="edge">
-<title>Node1&#45;&gt;Node4</title>
-<g id="a_edge3_Node000001_Node000004"><a xlink:title=" ">
+<!-- Node1&#45;&gt;Node7 -->
+<g id="edge6_Node000001_Node000007" class="edge">
+<title>Node1&#45;&gt;Node7</title>
+<g id="a_edge6_Node000001_Node000007"><a xlink:title=" ">
 <path fill="none" stroke="#63b8ff" d="M180.18,-63C195.27,-63 210.69,-63 225.04,-63"/>
 <polygon fill="#63b8ff" stroke="#63b8ff" points="225.29,-66.5 235.29,-63 225.29,-59.5 225.29,-66.5"/>
 </a>
 </g>
 </g>
-<!-- Node5 -->
-<g id="Node000005" class="node">
-<title>Node5</title>
-<g id="a_Node000005"><a xlink:href="classwmtk_1_1function_1_1_per_simplex_function.html#aee3c5642be133dfe8986e52003372178" target="_top" xlink:title=" ">
+<!-- Node8 -->
+<g id="Node000008" class="node">
+<title>Node8</title>
+<g id="a_Node000008"><a xlink:href="classwmtk_1_1function_1_1_per_simplex_function.html#aee3c5642be133dfe8986e52003372178" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="#666666" points="368,-30 216,-30 216,0 368,0 368,-30"/>
 <text text-anchor="start" x="224" y="-18" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::PerSimplex</text>
 <text text-anchor="middle" x="292" y="-7" font-family="Helvetica,sans-Serif" font-size="10.00">Function::mesh</text>
 </a>
 </g>
 </g>
-<!-- Node1&#45;&gt;Node5 -->
-<g id="edge5_Node000001_Node000005" class="edge">
-<title>Node1&#45;&gt;Node5</title>
-<g id="a_edge5_Node000001_Node000005"><a xlink:title=" ">
+<!-- Node1&#45;&gt;Node8 -->
+<g id="edge8_Node000001_Node000008" class="edge">
+<title>Node1&#45;&gt;Node8</title>
+<g id="a_edge8_Node000001_Node000008"><a xlink:title=" ">
 <path fill="none" stroke="#63b8ff" d="M153.73,-47.94C174.3,-43.01 197.33,-37.48 218.56,-32.39"/>
 <polygon fill="#63b8ff" stroke="#63b8ff" points="219.58,-35.74 228.49,-30 217.95,-28.93 219.58,-35.74"/>
 </a>
@@ -133,7 +133,7 @@ var sectionId = 'dynsection-4';
 <!-- Node3 -->
 <g id="Node000003" class="node">
 <title>Node3</title>
-<g id="a_Node000003"><a xlink:href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ad577111f5b1fd05f60fae4b7f0ddb1f6" target="_top" xlink:title=" ">
+<g id="a_Node000003"><a xlink:href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ad577111f5b1fd05f60fae4b7f0ddb1f6" target="_top" xlink:title="Returns true if handle was initialized.">
 <polygon fill="white" stroke="#666666" points="571,-126 404,-126 404,-96 571,-96 571,-126"/>
 <text text-anchor="start" x="412" y="-114" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::MeshAttribute</text>
 <text text-anchor="middle" x="487.5" y="-103" font-family="Helvetica,sans-Serif" font-size="10.00">Handle::is_valid</text>
@@ -146,6 +146,63 @@ var sectionId = 'dynsection-4';
 <g id="a_edge2_Node000002_Node000003"><a xlink:title=" ">
 <path fill="none" stroke="#63b8ff" d="M368.09,-111C376.49,-111 385.12,-111 393.7,-111"/>
 <polygon fill="#63b8ff" stroke="#63b8ff" points="393.75,-114.5 403.75,-111 393.75,-107.5 393.75,-114.5"/>
+</a>
+</g>
+</g>
+<!-- Node4 -->
+<g id="Node000004" class="node">
+<title>Node4</title>
+<g id="a_Node000004"><a xlink:href="classwmtk_1_1_mesh.html#a73ea62ce0428cf64f836f77482a87c40" target="_top" xlink:title=" ">
+<polygon fill="white" stroke="#666666" points="729,-126 607,-126 607,-96 729,-96 729,-126"/>
+<text text-anchor="start" x="615" y="-114" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::validate</text>
+<text text-anchor="middle" x="668" y="-103" font-family="Helvetica,sans-Serif" font-size="10.00">_handle</text>
+</a>
+</g>
+</g>
+<!-- Node3&#45;&gt;Node4 -->
+<g id="edge3_Node000003_Node000004" class="edge">
+<title>Node3&#45;&gt;Node4</title>
+<g id="a_edge3_Node000003_Node000004"><a xlink:title=" ">
+<path fill="none" stroke="#63b8ff" d="M571.22,-111C579.78,-111 588.42,-111 596.82,-111"/>
+<polygon fill="#63b8ff" stroke="#63b8ff" points="596.93,-114.5 606.93,-111 596.93,-107.5 596.93,-114.5"/>
+</a>
+</g>
+</g>
+<!-- Node5 -->
+<g id="Node000005" class="node">
+<title>Node5</title>
+<g id="a_Node000005"><a xlink:href="classwmtk_1_1attribute_1_1_attribute_manager.html#a3b1a087ab6c03a0f2e6a6a93b87f3147" target="_top" xlink:title=" ">
+<polygon fill="white" stroke="#666666" points="908,-126 765,-126 765,-96 908,-96 908,-126"/>
+<text text-anchor="start" x="773" y="-114" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Attribute</text>
+<text text-anchor="middle" x="836.5" y="-103" font-family="Helvetica,sans-Serif" font-size="10.00">Manager::validate_handle</text>
+</a>
+</g>
+</g>
+<!-- Node4&#45;&gt;Node5 -->
+<g id="edge4_Node000004_Node000005" class="edge">
+<title>Node4&#45;&gt;Node5</title>
+<g id="a_edge4_Node000004_Node000005"><a xlink:title=" ">
+<path fill="none" stroke="#63b8ff" d="M729.11,-111C737.48,-111 746.19,-111 754.86,-111"/>
+<polygon fill="#63b8ff" stroke="#63b8ff" points="754.99,-114.5 764.99,-111 754.99,-107.5 754.99,-114.5"/>
+</a>
+</g>
+</g>
+<!-- Node6 -->
+<g id="Node000006" class="node">
+<title>Node6</title>
+<g id="a_Node000006"><a xlink:href="classwmtk_1_1attribute_1_1_attribute_manager.html#a2169001c03d75b77488dba8494038fe5" target="_top" xlink:title=" ">
+<polygon fill="white" stroke="#666666" points="1085,-126 944,-126 944,-96 1085,-96 1085,-126"/>
+<text text-anchor="start" x="952" y="-114" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Attribute</text>
+<text text-anchor="middle" x="1014.5" y="-103" font-family="Helvetica,sans-Serif" font-size="10.00">Manager::get</text>
+</a>
+</g>
+</g>
+<!-- Node5&#45;&gt;Node6 -->
+<g id="edge5_Node000005_Node000006" class="edge">
+<title>Node5&#45;&gt;Node6</title>
+<g id="a_edge5_Node000005_Node000006"><a xlink:title=" ">
+<path fill="none" stroke="#63b8ff" d="M908.07,-111C916.43,-111 925.02,-111 933.5,-111"/>
+<polygon fill="#63b8ff" stroke="#63b8ff" points="933.77,-114.5 943.77,-111 933.77,-107.5 933.77,-114.5"/>
 </a>
 </g>
 </g>

@@ -17,35 +17,27 @@ var annotated_dup =
     [ "wmtk", "namespacewmtk.html", [
       [ "attribute", "namespacewmtk_1_1attribute.html", [
         [ "internal", "namespacewmtk_1_1attribute_1_1internal.html", [
-          [ "AttributeCacheData", "classwmtk_1_1attribute_1_1internal_1_1_attribute_cache_data.html", "classwmtk_1_1attribute_1_1internal_1_1_attribute_cache_data" ],
-          [ "AttributeFlatCache", "classwmtk_1_1attribute_1_1internal_1_1_attribute_flat_cache.html", "classwmtk_1_1attribute_1_1internal_1_1_attribute_flat_cache" ],
-          [ "AttributeTransactionStack", "classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html", "classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack" ],
           [ "CheckpointScope", "classwmtk_1_1attribute_1_1internal_1_1_checkpoint_scope.html", "classwmtk_1_1attribute_1_1internal_1_1_checkpoint_scope" ],
-          [ "CompoundAccessor", "classwmtk_1_1attribute_1_1internal_1_1_compound_accessor.html", "classwmtk_1_1attribute_1_1internal_1_1_compound_accessor" ],
           [ "is_typed_attribute_handle", "structwmtk_1_1attribute_1_1internal_1_1is__typed__attribute__handle.html", null ],
           [ "is_typed_attribute_handle< TypedAttributeHandle< T > >", "structwmtk_1_1attribute_1_1internal_1_1is__typed__attribute__handle_3_01_typed_attribute_handle_3_01_t_01_4_01_4.html", null ]
         ] ],
         [ "Accessor", "classwmtk_1_1attribute_1_1_accessor.html", "classwmtk_1_1attribute_1_1_accessor" ],
-        [ "AccessorBase", "classwmtk_1_1attribute_1_1_accessor_base.html", "classwmtk_1_1attribute_1_1_accessor_base" ],
-        [ "AccessorCache", "classwmtk_1_1attribute_1_1_accessor_cache.html", null ],
         [ "Attribute", "classwmtk_1_1attribute_1_1_attribute.html", "classwmtk_1_1attribute_1_1_attribute" ],
         [ "AttributeHandle", "classwmtk_1_1attribute_1_1_attribute_handle.html", "classwmtk_1_1attribute_1_1_attribute_handle" ],
         [ "AttributeManager", "classwmtk_1_1attribute_1_1_attribute_manager.html", "classwmtk_1_1attribute_1_1_attribute_manager" ],
-        [ "AttributeScope", "classwmtk_1_1attribute_1_1_attribute_scope.html", "classwmtk_1_1attribute_1_1_attribute_scope" ],
         [ "AttributeScopeHandle", "classwmtk_1_1attribute_1_1_attribute_scope_handle.html", "classwmtk_1_1attribute_1_1_attribute_scope_handle" ],
-        [ "CachingAccessor", "classwmtk_1_1attribute_1_1_caching_accessor.html", "classwmtk_1_1attribute_1_1_caching_accessor" ],
+        [ "CachingAttribute", "classwmtk_1_1attribute_1_1_caching_attribute.html", "classwmtk_1_1attribute_1_1_caching_attribute" ],
         [ "FlagAccessor", "classwmtk_1_1attribute_1_1_flag_accessor.html", "classwmtk_1_1attribute_1_1_flag_accessor" ],
         [ "IndexFlagAccessor", "classwmtk_1_1attribute_1_1_index_flag_accessor.html", "classwmtk_1_1attribute_1_1_index_flag_accessor" ],
         [ "MeshAttributeHandle", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html", "classwmtk_1_1attribute_1_1_mesh_attribute_handle" ],
-        [ "MeshAttributes", "classwmtk_1_1attribute_1_1_mesh_attributes.html", "classwmtk_1_1attribute_1_1_mesh_attributes" ],
-        [ "PerThreadAttributeScopeStacks", "classwmtk_1_1attribute_1_1_per_thread_attribute_scope_stacks.html", "classwmtk_1_1attribute_1_1_per_thread_attribute_scope_stacks" ],
         [ "TupleAccessor", "classwmtk_1_1attribute_1_1_tuple_accessor.html", "classwmtk_1_1attribute_1_1_tuple_accessor" ],
         [ "type_from_attribute_type_enum", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum.html", null ],
         [ "type_from_attribute_type_enum< AttributeType::Char >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_char_01_4.html", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_char_01_4" ],
         [ "type_from_attribute_type_enum< AttributeType::Double >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_double_01_4.html", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_double_01_4" ],
         [ "type_from_attribute_type_enum< AttributeType::Int64 >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_int64_01_4.html", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_int64_01_4" ],
         [ "type_from_attribute_type_enum< AttributeType::Rational >", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_rational_01_4.html", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_rational_01_4" ],
-        [ "TypedAttributeHandle", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html", "classwmtk_1_1attribute_1_1_typed_attribute_handle" ]
+        [ "TypedAttributeHandle", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html", "classwmtk_1_1attribute_1_1_typed_attribute_handle" ],
+        [ "TypedAttributeManager", "classwmtk_1_1attribute_1_1_typed_attribute_manager.html", "classwmtk_1_1attribute_1_1_typed_attribute_manager" ]
       ] ],
       [ "autogen", "namespacewmtk_1_1autogen.html", [
         [ "edge_mesh", "namespacewmtk_1_1autogen_1_1edge__mesh.html", [
@@ -402,7 +394,6 @@ var annotated_dup =
       [ "MeshCRTP", "classwmtk_1_1_mesh_c_r_t_p.html", "classwmtk_1_1_mesh_c_r_t_p" ],
       [ "MeshWriter", "classwmtk_1_1_mesh_writer.html", "classwmtk_1_1_mesh_writer" ],
       [ "MultiMeshEdgeTopologyInvariant", "classwmtk_1_1_multi_mesh_edge_topology_invariant.html", "classwmtk_1_1_multi_mesh_edge_topology_invariant" ],
-      [ "MultiMeshManager", "classwmtk_1_1_multi_mesh_manager.html", null ],
       [ "MultiMeshMapValidInvariant", "classwmtk_1_1_multi_mesh_map_valid_invariant.html", "classwmtk_1_1_multi_mesh_map_valid_invariant" ],
       [ "PointMesh", "classwmtk_1_1_point_mesh.html", "classwmtk_1_1_point_mesh" ],
       [ "Primitive", "classwmtk_1_1_primitive.html", "classwmtk_1_1_primitive" ],

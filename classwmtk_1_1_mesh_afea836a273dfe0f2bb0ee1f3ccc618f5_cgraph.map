@@ -1,21 +1,25 @@
 <map id="wmtk::Mesh::is_valid" name="wmtk::Mesh::is_valid">
-<area shape="rect" id="Node000001" title="Check if the cached id in a simplex is up&#45;to&#45;date." alt="" coords="5,123,165,148"/>
-<area shape="rect" id="Node000002" href="$classwmtk_1_1_mesh.html#a58243712dc3e0d258ad645e7b08870db" title="return the global id of the Tuple of the given dimension" alt="" coords="242,11,365,36"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="108,120,212,64,261,39,264,44,215,68,111,125"/>
+<area shape="rect" id="Node000001" title="Check if the cached id in a simplex is up&#45;to&#45;date." alt="" coords="5,128,165,153"/>
+<area shape="rect" id="Node000002" href="$classwmtk_1_1_mesh.html#a58243712dc3e0d258ad645e7b08870db" title="return the global id of the Tuple of the given dimension" alt="" coords="242,16,365,41"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="108,125,212,69,261,45,264,50,215,74,111,130"/>
 <area shape="rect" id="Node000004" href="$classwmtk_1_1_mesh.html#ade176d345902d97af8c5da04aa3a095b" title=" " alt="" coords="441,79,628,104"/>
-<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="145,120,213,109,324,98,428,92,428,97,324,103,214,114,146,125"/>
-<area shape="rect" id="Node000006" href="$classwmtk_1_1_mesh.html#a8cc8686f0688613806f43720b6db49e7" title="check validity of tuple including its hash" alt="" coords="223,123,383,148"/>
-<area shape="poly" id="edge6_Node000001_Node000006" title=" " alt="" coords="166,133,210,133,210,138,166,138"/>
-<area shape="rect" id="Node000008" href="$classwmtk_1_1simplex_1_1_simplex.html#ad2cc0340a0772b7d6f03ba7a781d1163" title=" " alt="" coords="213,173,393,213"/>
-<area shape="poly" id="edge9_Node000001_Node000008" title=" " alt="" coords="135,145,214,167,213,172,134,151"/>
-<area shape="rect" id="Node000009" href="$classwmtk_1_1simplex_1_1_simplex.html#aca78b1fb0a3c28c0036cf7919bfb0789" title=" " alt="" coords="213,237,393,277"/>
-<area shape="poly" id="edge10_Node000001_Node000009" title=" " alt="" coords="103,146,151,183,215,222,228,229,226,234,212,227,148,187,100,150"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="142,125,213,113,324,101,428,93,428,99,324,106,214,118,143,131"/>
+<area shape="rect" id="Node000006" href="$classwmtk_1_1_mesh.html#a8cc8686f0688613806f43720b6db49e7" title="check validity of tuple including its hash" alt="" coords="223,128,383,153"/>
+<area shape="poly" id="edge6_Node000001_Node000006" title=" " alt="" coords="166,138,210,138,210,143,166,143"/>
+<area shape="rect" id="Node000010" href="$classwmtk_1_1simplex_1_1_simplex.html#ad2cc0340a0772b7d6f03ba7a781d1163" title=" " alt="" coords="213,178,393,218"/>
+<area shape="poly" id="edge11_Node000001_Node000010" title=" " alt="" coords="135,151,214,172,213,177,134,156"/>
+<area shape="rect" id="Node000011" href="$classwmtk_1_1simplex_1_1_simplex.html#aca78b1fb0a3c28c0036cf7919bfb0789" title=" " alt="" coords="213,242,393,282"/>
+<area shape="poly" id="edge12_Node000001_Node000011" title=" " alt="" coords="103,151,151,188,215,228,228,234,226,239,212,232,148,192,100,155"/>
 <area shape="rect" id="Node000003" href="$classwmtk_1_1_mesh.html#a6f6c3b9a1d738d05ec8d84cabfa5e4b4" title="Internal utility to allow id to be virtual with a non&#45;virtual overload in derived &#45;Mesh classes." alt="" coords="449,5,620,31"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="365,19,435,18,436,23,365,25"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="365,23,435,20,436,25,365,29"/>
 <area shape="poly" id="edge5_Node000004_Node000004" title=" " alt="" coords="498,80,490,70,494,60,509,54,535,52,567,56,579,65,575,69,565,61,535,57,510,59,498,64,495,70,502,77"/>
 <area shape="rect" id="Node000005" href="$classwmtk_1_1_tuple.html#aef64a43ff5f5617dbc99d865356bbc25" title=" " alt="" coords="676,79,851,104"/>
 <area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="629,89,662,89,662,94,629,94"/>
-<area shape="poly" id="edge8_Node000006_Node000004" title=" " alt="" coords="370,120,453,104,454,109,371,125"/>
+<area shape="poly" id="edge8_Node000006_Node000004" title=" " alt="" coords="363,125,461,104,462,110,364,131"/>
 <area shape="rect" id="Node000007" href="$classwmtk_1_1_tuple.html#a0023f575be92cd5ceeeaaaa3762ea06d" title="Checks if a tuple is &quot;null&quot;. This merely implies the global index is &#45;1." alt="" coords="459,128,610,153"/>
-<area shape="poly" id="edge7_Node000006_Node000007" title=" " alt="" coords="383,135,445,136,445,141,383,140"/>
+<area shape="poly" id="edge7_Node000006_Node000007" title=" " alt="" coords="383,138,445,138,445,143,383,143"/>
+<area shape="rect" id="Node000008" href="$namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06" title="Retrieves the current logger." alt="" coords="481,177,589,203"/>
+<area shape="poly" id="edge9_Node000006_Node000008" title=" " alt="" coords="364,151,468,173,467,178,363,156"/>
+<area shape="rect" id="Node000009" href="$namespacewmtk.html#a3daa7951a5f8b78cf4600dc047fcc180" title="Setup a logger object to be used by WildmeshToolkit." alt="" coords="696,177,831,203"/>
+<area shape="poly" id="edge10_Node000008_Node000009" title=" " alt="" coords="589,187,683,187,683,193,589,193"/>
 </map>

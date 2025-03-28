@@ -160,6 +160,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a0b87c686187c037bfab16ecfa20d996e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a54da8819b21835c0a73c7b85bd95409a" id="r_a54da8819b21835c0a73c7b85bd95409a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_h_d_f5_writer.html#a54da8819b21835c0a73c7b85bd95409a">write</a> (const std::string &amp;name, const int64_t type, const int64_t stride, const std::vector&lt; <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &gt; &amp;val, const <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &amp;default_val) override</td></tr>
 <tr class="separator:a54da8819b21835c0a73c7b85bd95409a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac87402d7fd57b257b0bc9994e9e3b421" id="r_ac87402d7fd57b257b0bc9994e9e3b421"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
+<tr class="memitem:ac87402d7fd57b257b0bc9994e9e3b421"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_h_d_f5_writer.html#ac87402d7fd57b257b0bc9994e9e3b421">write_attribute_names</a> (int dim, const std::vector&lt; std::string &gt; &amp;names)</td></tr>
+<tr class="separator:ac87402d7fd57b257b0bc9994e9e3b421"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classwmtk_1_1_mesh_writer"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1_mesh_writer')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1_mesh_writer.html">wmtk::MeshWriter</a></td></tr>
 <tr class="memitem:abaad8ae9ef3e6981fda85b240f447f47 inherit pub_methods_classwmtk_1_1_mesh_writer" id="r_abaad8ae9ef3e6981fda85b240f447f47"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh_writer.html#abaad8ae9ef3e6981fda85b240f447f47">~MeshWriter</a> ()</td></tr>
 <tr class="separator:abaad8ae9ef3e6981fda85b240f447f47 inherit pub_methods_classwmtk_1_1_mesh_writer"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -205,9 +208,9 @@ Additional Inherited Members</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00052">52</a> of file <a class="el" href="_h_d_f5_writer_8cpp_source.html">HDF5Writer.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00063">63</a> of file <a class="el" href="_h_d_f5_writer_8cpp_source.html">HDF5Writer.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_h_d_f5_writer_8hpp_source.html#l00053">m_hdf5_file</a>.</p>
+<p class="reference">References <a class="el" href="_h_d_f5_writer_8hpp_source.html#l00055">m_hdf5_file</a>.</p>
 
 </div>
 </div>
@@ -235,15 +238,15 @@ Additional Inherited Members</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00161">161</a> of file <a class="el" href="_h_d_f5_writer_8cpp_source.html">HDF5Writer.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00171">171</a> of file <a class="el" href="_h_d_f5_writer_8cpp_source.html">HDF5Writer.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_h_d_f5_writer_8hpp_source.html#l00054">m_name</a>.</p>
+<p class="reference">References <a class="el" href="_h_d_f5_writer_8hpp_source.html#l00056">m_name</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00146">write_absolute_id()</a>, <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00118">write_capacities()</a>, <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00124">write_internal()</a>, and <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00141">write_top_simplex_type()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00156">write_absolute_id()</a>, <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00182">write_attribute_names()</a>, <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00129">write_capacities()</a>, <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00135">write_internal()</a>, and <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00151">write_top_simplex_type()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_h_d_f5_writer_a1eebb1ec68768e8fdfe78abe3a4c1688_icgraph.svg" width="100%" height="484"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_h_d_f5_writer_a1eebb1ec68768e8fdfe78abe3a4c1688_icgraph.svg" width="100%" height="532"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div></div>
 </div>
 
 </div>
@@ -332,9 +335,9 @@ Here is the caller graph for this function:</div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh_writer.html#a463022bba1535693e611a15aad8fc58d">wmtk::MeshWriter</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00077">77</a> of file <a class="el" href="_h_d_f5_writer_8cpp_source.html">HDF5Writer.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00088">88</a> of file <a class="el" href="_h_d_f5_writer_8cpp_source.html">HDF5Writer.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00124">write_internal()</a>.</p>
+<p class="reference">References <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00135">write_internal()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -397,9 +400,9 @@ Here is the call graph for this function:</div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh_writer.html#afacc80d180cbf10a93b900a1ebc45f2b">wmtk::MeshWriter</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00067">67</a> of file <a class="el" href="_h_d_f5_writer_8cpp_source.html">HDF5Writer.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00078">78</a> of file <a class="el" href="_h_d_f5_writer_8cpp_source.html">HDF5Writer.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00124">write_internal()</a>.</p>
+<p class="reference">References <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00135">write_internal()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -462,9 +465,9 @@ Here is the call graph for this function:</div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh_writer.html#a9c3ed51291fb2d83e715f9077a89cd69">wmtk::MeshWriter</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00057">57</a> of file <a class="el" href="_h_d_f5_writer_8cpp_source.html">HDF5Writer.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00068">68</a> of file <a class="el" href="_h_d_f5_writer_8cpp_source.html">HDF5Writer.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00124">write_internal()</a>.</p>
+<p class="reference">References <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00135">write_internal()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -527,9 +530,9 @@ Here is the call graph for this function:</div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh_writer.html#afe8de47c862ae33354ecdb21baa6fd8b">wmtk::MeshWriter</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00092">92</a> of file <a class="el" href="_h_d_f5_writer_8cpp_source.html">HDF5Writer.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00103">103</a> of file <a class="el" href="_h_d_f5_writer_8cpp_source.html">HDF5Writer.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_rational_8cpp_source.html#l00350">wmtk::Rational::to_binary()</a>, and <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00124">write_internal()</a>.</p>
+<p class="reference">References <a class="el" href="_rational_8cpp_source.html#l00350">wmtk::Rational::to_binary()</a>, and <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00135">write_internal()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -564,13 +567,52 @@ Here is the call graph for this function:</div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh_writer.html#ac54560ef6ed79d5dfdb1a2c9dcb8687c">wmtk::MeshWriter</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00146">146</a> of file <a class="el" href="_h_d_f5_writer_8cpp_source.html">HDF5Writer.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00156">156</a> of file <a class="el" href="_h_d_f5_writer_8cpp_source.html">HDF5Writer.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00161">dataset_path()</a>, <a class="el" href="_h_d_f5_writer_8hpp_source.html#l00053">m_hdf5_file</a>, <a class="el" href="_mesh_writer_8hpp_source.html#l00051">wmtk::MeshWriter::m_mm_level</a>, and <a class="el" href="_h_d_f5_writer_8hpp_source.html#l00054">m_name</a>.</p>
+<p class="reference">References <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00171">dataset_path()</a>, <a class="el" href="_h_d_f5_writer_8hpp_source.html#l00055">m_hdf5_file</a>, <a class="el" href="_mesh_writer_8hpp_source.html#l00051">wmtk::MeshWriter::m_mm_level</a>, and <a class="el" href="_h_d_f5_writer_8hpp_source.html#l00056">m_name</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_h_d_f5_writer_ad3d16008e6e5b9d27d0582873ee277f9_cgraph.svg" width="479" height="51"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+
+</div>
+</div>
+<a id="ac87402d7fd57b257b0bc9994e9e3b421" name="ac87402d7fd57b257b0bc9994e9e3b421"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac87402d7fd57b257b0bc9994e9e3b421">&#9670;&#160;</a></span>write_attribute_names()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">template void wmtk::HDF5Writer::write_attribute_names&lt; char &gt; </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>dim</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; std::string &gt; &amp;&#160;</td>
+          <td class="paramname"><em>names</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00182">182</a> of file <a class="el" href="_h_d_f5_writer_8cpp_source.html">HDF5Writer.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00171">dataset_path()</a>, and <a class="el" href="_h_d_f5_writer_8hpp_source.html#l00055">m_hdf5_file</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_h_d_f5_writer_ac87402d7fd57b257b0bc9994e9e3b421_cgraph.svg" width="479" height="51"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 
 </div>
@@ -601,9 +643,9 @@ Here is the call graph for this function:</div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh_writer.html#adaf132d57772f8692155189c4c5789b9">wmtk::MeshWriter</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00118">118</a> of file <a class="el" href="_h_d_f5_writer_8cpp_source.html">HDF5Writer.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00129">129</a> of file <a class="el" href="_h_d_f5_writer_8cpp_source.html">HDF5Writer.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00161">dataset_path()</a>, and <a class="el" href="_h_d_f5_writer_8hpp_source.html#l00053">m_hdf5_file</a>.</p>
+<p class="reference">References <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00171">dataset_path()</a>, and <a class="el" href="_h_d_f5_writer_8hpp_source.html#l00055">m_hdf5_file</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -666,11 +708,11 @@ template&lt;typename Data , typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00124">124</a> of file <a class="el" href="_h_d_f5_writer_8cpp_source.html">HDF5Writer.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00135">135</a> of file <a class="el" href="_h_d_f5_writer_8cpp_source.html">HDF5Writer.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00161">dataset_path()</a>, and <a class="el" href="_h_d_f5_writer_8hpp_source.html#l00053">m_hdf5_file</a>.</p>
+<p class="reference">References <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00171">dataset_path()</a>, and <a class="el" href="_h_d_f5_writer_8hpp_source.html#l00055">m_hdf5_file</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00077">write()</a>, <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00067">write()</a>, <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00057">write()</a>, and <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00092">write()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00088">write()</a>, <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00078">write()</a>, <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00068">write()</a>, and <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00103">write()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -710,9 +752,9 @@ Here is the caller graph for this function:</div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh_writer.html#a0e4fd87b00f2cb95a14c19e5a3670bde">wmtk::MeshWriter</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00141">141</a> of file <a class="el" href="_h_d_f5_writer_8cpp_source.html">HDF5Writer.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00151">151</a> of file <a class="el" href="_h_d_f5_writer_8cpp_source.html">HDF5Writer.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00161">dataset_path()</a>, and <a class="el" href="_h_d_f5_writer_8hpp_source.html#l00053">m_hdf5_file</a>.</p>
+<p class="reference">References <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00171">dataset_path()</a>, and <a class="el" href="_h_d_f5_writer_8hpp_source.html#l00055">m_hdf5_file</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -742,9 +784,9 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_h_d_f5_writer_8hpp_source.html#l00053">53</a> of file <a class="el" href="_h_d_f5_writer_8hpp_source.html">HDF5Writer.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_h_d_f5_writer_8hpp_source.html#l00055">55</a> of file <a class="el" href="_h_d_f5_writer_8hpp_source.html">HDF5Writer.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00052">HDF5Writer()</a>, <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00146">write_absolute_id()</a>, <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00118">write_capacities()</a>, <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00124">write_internal()</a>, and <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00141">write_top_simplex_type()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00063">HDF5Writer()</a>, <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00156">write_absolute_id()</a>, <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00182">write_attribute_names()</a>, <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00129">write_capacities()</a>, <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00135">write_internal()</a>, and <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00151">write_top_simplex_type()</a>.</p>
 
 </div>
 </div>
@@ -768,9 +810,9 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_h_d_f5_writer_8hpp_source.html#l00054">54</a> of file <a class="el" href="_h_d_f5_writer_8hpp_source.html">HDF5Writer.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_h_d_f5_writer_8hpp_source.html#l00056">56</a> of file <a class="el" href="_h_d_f5_writer_8hpp_source.html">HDF5Writer.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00161">dataset_path()</a>, and <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00146">write_absolute_id()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00171">dataset_path()</a>, and <a class="el" href="_h_d_f5_writer_8cpp_source.html#l00156">write_absolute_id()</a>.</p>
 
 </div>
 </div>

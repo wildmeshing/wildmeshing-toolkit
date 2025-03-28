@@ -131,23 +131,29 @@ $(document).ready(function(){initNavTree('link_8hpp_source.html',''); initResiza
 <div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span> </div>
 <div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="preprocessor">#include &quot;<a class="code" href="_simplex_collection_8hpp.html">SimplexCollection.hpp</a>&quot;</span></div>
 <div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span> </div>
-<div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespacewmtk_1_1simplex.html">wmtk::simplex</a> {</div>
-<div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span>SimplexCollection</div>
-<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><a class="code hl_function" href="namespacewmtk_1_1simplex.html#a3260444c136dbe145679b762c52f6a16">link</a>(<span class="keyword">const</span> Mesh&amp; mesh, <span class="keyword">const</span> simplex::Simplex&amp; simplex, <span class="keyword">const</span> <span class="keywordtype">bool</span> sort_and_clean = <span class="keyword">true</span>);</div>
-<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span> </div>
-<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span>SimplexCollection</div>
-<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><a class="code hl_function" href="namespacewmtk_1_1simplex.html#a3260444c136dbe145679b762c52f6a16">link</a>(<span class="keyword">const</span> TriMesh&amp; mesh, <span class="keyword">const</span> simplex::Simplex&amp; simplex, <span class="keyword">const</span> <span class="keywordtype">bool</span> sort_and_clean = <span class="keyword">true</span>);</div>
-<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span> </div>
-<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span>SimplexCollection</div>
-<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span><a class="code hl_function" href="namespacewmtk_1_1simplex.html#a3260444c136dbe145679b762c52f6a16">link</a>(<span class="keyword">const</span> TetMesh&amp; mesh, <span class="keyword">const</span> simplex::Simplex&amp; simplex, <span class="keyword">const</span> <span class="keywordtype">bool</span> sort_and_clean = <span class="keyword">true</span>);</div>
-<div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span> </div>
-<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span>SimplexCollection</div>
-<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span><a class="code hl_function" href="namespacewmtk_1_1simplex.html#a50d0026adbac4883ab00460ada1c1cfe">link_slow</a>(<span class="keyword">const</span> Mesh&amp; mesh, <span class="keyword">const</span> simplex::Simplex&amp; simplex, <span class="keyword">const</span> <span class="keywordtype">bool</span> sort_and_clean = <span class="keyword">true</span>);</div>
-<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span>} <span class="comment">// namespace wmtk::simplex</span></div>
+<div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespacewmtk.html">wmtk</a> {</div>
+<div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span>    <span class="keyword">class </span>Mesh;</div>
+<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span>    <span class="keyword">class </span>TriMesh;</div>
+<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span>    <span class="keyword">class </span>TetMesh;</div>
+<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span>}</div>
+<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespacewmtk_1_1simplex.html">wmtk::simplex</a> {</div>
+<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span>SimplexCollection</div>
+<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span><a class="code hl_function" href="namespacewmtk_1_1simplex.html#a3260444c136dbe145679b762c52f6a16">link</a>(<span class="keyword">const</span> Mesh&amp; mesh, <span class="keyword">const</span> simplex::Simplex&amp; simplex, <span class="keyword">const</span> <span class="keywordtype">bool</span> sort_and_clean = <span class="keyword">true</span>);</div>
+<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span> </div>
+<div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span>SimplexCollection</div>
+<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span><a class="code hl_function" href="namespacewmtk_1_1simplex.html#a3260444c136dbe145679b762c52f6a16">link</a>(<span class="keyword">const</span> TriMesh&amp; mesh, <span class="keyword">const</span> simplex::Simplex&amp; simplex, <span class="keyword">const</span> <span class="keywordtype">bool</span> sort_and_clean = <span class="keyword">true</span>);</div>
+<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span> </div>
+<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span>SimplexCollection</div>
+<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span><a class="code hl_function" href="namespacewmtk_1_1simplex.html#a3260444c136dbe145679b762c52f6a16">link</a>(<span class="keyword">const</span> TetMesh&amp; mesh, <span class="keyword">const</span> simplex::Simplex&amp; simplex, <span class="keyword">const</span> <span class="keywordtype">bool</span> sort_and_clean = <span class="keyword">true</span>);</div>
+<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span> </div>
+<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span>SimplexCollection</div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><a class="code hl_function" href="namespacewmtk_1_1simplex.html#a50d0026adbac4883ab00460ada1c1cfe">link_slow</a>(<span class="keyword">const</span> Mesh&amp; mesh, <span class="keyword">const</span> simplex::Simplex&amp; simplex, <span class="keyword">const</span> <span class="keywordtype">bool</span> sort_and_clean = <span class="keyword">true</span>);</div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span>} <span class="comment">// namespace wmtk::simplex</span></div>
 <div class="ttc" id="a_simplex_collection_8hpp_html"><div class="ttname"><a href="_simplex_collection_8hpp.html">SimplexCollection.hpp</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1simplex_html"><div class="ttname"><a href="namespacewmtk_1_1simplex.html">wmtk::simplex</a></div><div class="ttdef"><b>Definition</b> <a href="_cell_8hpp_source.html#l00007">Cell.hpp:7</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1simplex_html_a3260444c136dbe145679b762c52f6a16"><div class="ttname"><a href="namespacewmtk_1_1simplex.html#a3260444c136dbe145679b762c52f6a16">wmtk::simplex::link</a></div><div class="ttdeci">SimplexCollection link(const Mesh &amp;mesh, const simplex::Simplex &amp;simplex, const bool sort_and_clean)</div><div class="ttdef"><b>Definition</b> <a href="link_8cpp_source.html#l00084">link.cpp:84</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1simplex_html_a50d0026adbac4883ab00460ada1c1cfe"><div class="ttname"><a href="namespacewmtk_1_1simplex.html#a50d0026adbac4883ab00460ada1c1cfe">wmtk::simplex::link_slow</a></div><div class="ttdeci">SimplexCollection link_slow(const Mesh &amp;mesh, const simplex::Simplex &amp;simplex, const bool sort_and_clean)</div><div class="ttdef"><b>Definition</b> <a href="link_8cpp_source.html#l00185">link.cpp:185</a></div></div>
+<div class="ttc" id="anamespacewmtk_html"><div class="ttname"><a href="namespacewmtk.html">wmtk</a></div><div class="ttdef"><b>Definition</b> <a href="_accessor_8hpp_source.html#l00008">Accessor.hpp:8</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->

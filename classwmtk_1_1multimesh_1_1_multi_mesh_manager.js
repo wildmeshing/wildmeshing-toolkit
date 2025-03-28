@@ -63,7 +63,6 @@ var classwmtk_1_1multimesh_1_1_multi_mesh_manager =
     [ "multimesh::MultiMeshSimplexVisitorExecutor", "classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#ad9a13c0ea4d5c720e07247ab082f535c", null ],
     [ "multimesh::MultiMeshVisitor", "classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#af7fc43432accd107d1b9de25240a04bd", null ],
     [ "multimesh::MultiMeshVisitorExecutor", "classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#ab19a15fe846f3505d90346baf731ff11", null ],
-    [ "multimesh::same_simplex_dimension_surjection", "classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a9573286371df381502c1c915c5fc0b15", null ],
     [ "operations::utils::UpdateEdgeOperationMultiMeshMapFunctor", "classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#adb76cb4220d4955c139bd9a3a8852f12", null ],
     [ "utils::MapValidator", "classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#ac8ea5bcbd3c200a53a9c8037c38db7ad", null ],
     [ "wmtk::HDF5Reader", "classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a12e99b7bf306bdcc64ea3d541de8e03b", null ],

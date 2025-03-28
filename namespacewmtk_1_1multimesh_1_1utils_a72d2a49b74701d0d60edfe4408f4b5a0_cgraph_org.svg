@@ -60,7 +60,7 @@
 <!-- Node6 -->
 <g id="Node000006" class="node">
 <title>Node6</title>
-<g id="a_Node000006"><a xlink:href="classwmtk_1_1_mesh.html#a357182137d99f1e4a7ff536eadfc0e56" target="_top" xlink:title=" ">
+<g id="a_Node000006"><a xlink:href="classwmtk_1_1_mesh.html#a4cd7e6ca59d8d58cc7057c13bd190d57" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="#666666" points="502,-450 389,-450 389,-420 502,-420 502,-450"/>
 <text text-anchor="start" x="397" y="-438" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::create</text>
 <text text-anchor="middle" x="445.5" y="-427" font-family="Helvetica,sans-Serif" font-size="10.00">_const_accessor</text>
@@ -227,7 +227,7 @@
 <!-- Node11 -->
 <g id="Node000011" class="node">
 <title>Node11</title>
-<g id="a_Node000011"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#ad6fb9ed9ff56571fe257bf0f4b542368" target="_top" xlink:title=" ">
+<g id="a_Node000011"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#abecebb154568864219abda80a1beb803" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="#666666" points="732,-308 590,-308 590,-278 732,-278 732,-308"/>
 <text text-anchor="start" x="598" y="-296" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
 <text text-anchor="middle" x="661" y="-285" font-family="Helvetica,sans-Serif" font-size="10.00">::const_vector_attribute</text>
@@ -265,10 +265,10 @@
 <!-- Node13 -->
 <g id="Node000013" class="node">
 <title>Node13</title>
-<g id="a_Node000013"><a xlink:href="classwmtk_1_1attribute_1_1_accessor_base.html#abd60539d5779de287d2a0ec31b16c77a" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="#666666" points="732,-212 590,-212 590,-182 732,-182 732,-212"/>
-<text text-anchor="start" x="598" y="-200" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
-<text text-anchor="middle" x="661" y="-189" font-family="Helvetica,sans-Serif" font-size="10.00">Base::dimension</text>
+<g id="a_Node000013"><a xlink:href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a8d04c3529eb7adeead49e8faa7a119db" target="_top" xlink:title=" ">
+<polygon fill="white" stroke="#666666" points="744.5,-212 577.5,-212 577.5,-182 744.5,-182 744.5,-212"/>
+<text text-anchor="start" x="585.5" y="-200" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::TupleAccessor</text>
+<text text-anchor="middle" x="661" y="-189" font-family="Helvetica,sans-Serif" font-size="10.00">::dimension</text>
 </a>
 </g>
 </g>
@@ -284,9 +284,9 @@
 <!-- Node14 -->
 <g id="Node000014" class="node">
 <title>Node14</title>
-<g id="a_Node000014"><a xlink:href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a8d04c3529eb7adeead49e8faa7a119db" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="#666666" points="744.5,-164 577.5,-164 577.5,-134 744.5,-134 744.5,-164"/>
-<text text-anchor="start" x="585.5" y="-152" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::TupleAccessor</text>
+<g id="a_Node000014"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#ad1c53d7c161d4f046bedc27006a0256f" target="_top" xlink:title=" ">
+<polygon fill="white" stroke="#666666" points="732,-164 590,-164 590,-134 732,-134 732,-164"/>
+<text text-anchor="start" x="598" y="-152" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
 <text text-anchor="middle" x="661" y="-141" font-family="Helvetica,sans-Serif" font-size="10.00">::dimension</text>
 </a>
 </g>
@@ -295,8 +295,8 @@
 <g id="edge15_Node000010_Node000014" class="edge">
 <title>Node10&#45;&gt;Node14</title>
 <g id="a_edge15_Node000010_Node000014"><a xlink:title=" ">
-<path fill="none" stroke="#63b8ff" d="M465.29,-229.79C486.39,-213.45 522.25,-187.82 557,-173 562.01,-170.86 567.25,-168.9 572.59,-167.09"/>
-<polygon fill="#63b8ff" stroke="#63b8ff" points="573.81,-170.38 582.29,-164.02 571.7,-163.7 573.81,-170.38"/>
+<path fill="none" stroke="#63b8ff" d="M465.29,-229.79C486.39,-213.45 522.25,-187.82 557,-173 564.38,-169.85 572.25,-167.08 580.22,-164.64"/>
+<polygon fill="#63b8ff" stroke="#63b8ff" points="581.32,-167.97 589.96,-161.84 579.39,-161.24 581.32,-167.97"/>
 </a>
 </g>
 </g>

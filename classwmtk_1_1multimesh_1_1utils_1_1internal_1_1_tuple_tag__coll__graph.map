@@ -1,38 +1,32 @@
 <map id="wmtk::multimesh::utils::internal::TupleTag" name="wmtk::multimesh::utils::internal::TupleTag">
-<area shape="rect" id="Node000001" title="TupleTag is a util helper class for tagging edges in a triangle mesh." alt="" coords="2871,111,3044,151"/>
-<area shape="rect" id="Node000002" href="$classwmtk_1_1_mesh.html" title=" " alt="" coords="1177,150,1280,175"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1263,141,1328,108,1417,72,1519,43,1572,34,1625,31,2609,31,2696,39,2780,59,2855,84,2914,108,2912,113,2854,89,2779,64,2695,44,2609,36,1625,36,1573,39,1520,48,1418,77,1330,113,1265,146"/>
-<area shape="rect" id="Node000007" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html" title="Implementation details for how the Mesh class implements multiple meshes." alt="" coords="1520,141,1733,181"/>
-<area shape="poly" id="edge9_Node000007_Node000002" title=" " alt="" coords="1294,175,1330,180,1413,185,1496,180,1520,178,1520,183,1496,185,1413,190,1329,185,1293,180"/>
-<area shape="rect" id="Node000013" href="$classwmtk_1_1attribute_1_1_accessor_base.html" title=" " alt="" coords="1532,248,1721,288"/>
-<area shape="poly" id="edge18_Node000013_Node000002" title=" " alt="" coords="1267,179,1330,205,1434,233,1532,252,1531,257,1433,238,1328,211,1265,184"/>
-<area shape="rect" id="Node000003" title=" " alt="" coords="767,101,923,141"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="938,129,1177,155,1177,160,937,134"/>
-<area shape="rect" id="Node000004" href="$classwmtk_1_1utils_1_1_merkle_tree_interior_node.html" title=" " alt="" coords="348,223,604,249"/>
-<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="584,219,732,201,982,178,1177,164,1177,169,982,184,732,207,584,224"/>
-<area shape="rect" id="Node000006" href="$classwmtk_1_1attribute_1_1_attribute_manager.html" title=" " alt="" coords="751,216,939,256"/>
-<area shape="poly" id="edge6_Node000006_Node000004" title=" " alt="" coords="618,233,751,233,751,239,618,239"/>
-<area shape="poly" id="edge8_Node000007_Node000004" title=" " alt="" coords="571,248,732,265,849,271,948,272,1035,268,1116,260,1283,233,1495,191,1549,179,1551,184,1497,196,1284,238,1116,266,1035,273,948,277,849,276,732,271,571,253"/>
-<area shape="rect" id="Node000005" href="$classwmtk_1_1utils_1_1_hashable.html" title=" " alt="" coords="17,223,181,249"/>
-<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="195,233,348,233,348,239,195,239"/>
-<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="953,234,1039,227,1127,209,1170,193,1206,173,1209,178,1172,197,1129,215,1040,232,953,239"/>
-<area shape="poly" id="edge7_Node000002_Node000007" title=" " alt="" coords="1506,164,1280,165,1280,160,1506,159"/>
-<area shape="rect" id="Node000008" href="$classwmtk_1_1attribute_1_1_typed_attribute_handle.html" title=" " alt="" coords="732,37,959,77"/>
-<area shape="poly" id="edge14_Node000002_Node000008" title=" " alt="" coords="936,79,960,87,984,97,1023,108,1055,114,1129,128,1192,147,1190,152,1127,133,1054,119,1022,114,982,103,958,92,935,84"/>
-<area shape="poly" id="edge10_Node000007_Node000008" title=" " alt="" coords="973,66,1128,83,1337,112,1520,141,1519,146,1337,117,1128,88,972,71"/>
-<area shape="rect" id="Node000009" href="$classwmtk_1_1attribute_1_1_attribute_handle.html" title="Internal handle representation used by MeshAttributes." alt="" coords="5,43,193,83"/>
-<area shape="poly" id="edge11_Node000008_Node000009" title=" " alt="" coords="207,65,392,70,604,69,732,63,732,68,604,75,392,76,207,70"/>
-<area shape="rect" id="Node000010" href="$classwmtk_1_1attribute_1_1_typed_attribute_handle.html" title="Handle that represents attributes for some mesh." alt="" coords="363,5,589,45"/>
-<area shape="poly" id="edge13_Node000010_Node000009" title=" " alt="" coords="207,49,362,34,363,39,207,55"/>
-<area shape="poly" id="edge12_Node000008_Node000010" title=" " alt="" coords="603,34,732,45,731,50,602,39"/>
-<area shape="rect" id="Node000011" href="$classwmtk_1_1attribute_1_1_accessor.html" title=" " alt="" coords="2513,191,2703,231"/>
-<area shape="poly" id="edge15_Node000001_Node000011" title=" " alt="" coords="2709,185,2870,148,2871,153,2710,190"/>
-<area shape="rect" id="Node000012" href="$classwmtk_1_1attribute_1_1_caching_accessor.html" title="An accessor for cached attribute values." alt="" coords="1989,248,2172,288"/>
-<area shape="poly" id="edge16_Node000011_Node000012" title=" " alt="" coords="2186,258,2385,240,2513,223,2513,228,2386,245,2186,264"/>
-<area shape="poly" id="edge17_Node000012_Node000013" title=" " alt="" coords="1735,265,1989,265,1989,271,1735,271"/>
-<area shape="rect" id="Node000015" href="$classwmtk_1_1attribute_1_1_caching_accessor.html" title="An accessor for cached attribute values." alt="" coords="1783,191,1965,231"/>
-<area shape="poly" id="edge21_Node000015_Node000013" title=" " alt="" coords="1726,242,1787,228,1788,233,1727,247"/>
-<area shape="rect" id="Node000014" href="$classwmtk_1_1attribute_1_1_accessor.html" title="A CachingAccessor that uses tuples for accessing attributes instead of indices." alt="" coords="2196,191,2385,231"/>
-<area shape="poly" id="edge19_Node000011_Node000014" title=" " alt="" coords="2399,208,2513,208,2513,213,2399,213"/>
-<area shape="poly" id="edge20_Node000014_Node000015" title=" " alt="" coords="1979,208,2196,208,2196,213,1979,213"/>
+<area shape="rect" id="Node000001" title="TupleTag is a util helper class for tagging edges in a triangle mesh." alt="" coords="2189,20,2363,60"/>
+<area shape="rect" id="Node000002" href="$classwmtk_1_1_mesh.html" title=" " alt="" coords="1111,129,1214,154"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1197,120,1244,95,1299,72,1393,44,1490,29,1646,17,1767,18,1889,23,2045,27,2165,27,2189,28,2189,33,2165,32,2045,32,1889,29,1767,23,1646,23,1491,35,1394,49,1301,77,1247,100,1199,124"/>
+<area shape="rect" id="Node000007" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html" title="Implementation details for how the Mesh class implements multiple meshes." alt="" coords="1491,221,1704,261"/>
+<area shape="poly" id="edge9_Node000007_Node000002" title=" " alt="" coords="1228,154,1301,169,1384,184,1467,200,1535,219,1533,224,1466,205,1383,189,1299,175,1227,159"/>
+<area shape="rect" id="Node000011" href="$classwmtk_1_1attribute_1_1_accessor.html" title=" " alt="" coords="1832,91,2021,131"/>
+<area shape="poly" id="edge16_Node000011_Node000002" title=" " alt="" coords="1228,138,1439,132,1704,123,1832,115,1832,120,1704,128,1439,138,1228,143"/>
+<area shape="rect" id="Node000012" href="$classwmtk_1_1attribute_1_1_accessor.html" title="An Accessor that uses tuples for accessing attributes instead of indices." alt="" coords="1491,45,1704,99"/>
+<area shape="poly" id="edge18_Node000012_Node000002" title=" " alt="" coords="1227,128,1490,86,1491,92,1228,134"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="665,63,821,103"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="835,93,1111,132,1111,137,834,98"/>
+<area shape="rect" id="Node000004" href="$classwmtk_1_1utils_1_1_merkle_tree_interior_node.html" title=" " alt="" coords="219,191,475,217"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="488,197,664,189,856,176,994,161,1111,146,1112,151,995,167,856,181,664,194,489,202"/>
+<area shape="rect" id="Node000006" href="$classwmtk_1_1attribute_1_1_attribute_manager.html" title=" " alt="" coords="649,127,837,167"/>
+<area shape="poly" id="edge6_Node000006_Node000004" title=" " alt="" coords="448,187,648,158,649,163,449,192"/>
+<area shape="poly" id="edge8_Node000007_Node000004" title=" " alt="" coords="489,209,856,227,1300,241,1491,241,1491,246,1300,247,856,232,489,214"/>
+<area shape="rect" id="Node000005" href="$classwmtk_1_1utils_1_1_hashable.html" title=" " alt="" coords="5,191,169,217"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="183,201,218,201,218,207,183,207"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="851,143,1111,139,1111,145,851,148"/>
+<area shape="poly" id="edge7_Node000002_Node000007" title=" " alt="" coords="1477,246,1389,239,1299,220,1264,206,1231,189,1179,156,1182,152,1234,185,1266,202,1301,215,1390,233,1477,241"/>
+<area shape="rect" id="Node000008" href="$classwmtk_1_1attribute_1_1_typed_attribute_handle.html" title=" " alt="" coords="1049,315,1276,355"/>
+<area shape="poly" id="edge10_Node000007_Node000008" title=" " alt="" coords="1289,324,1377,312,1466,293,1513,278,1555,259,1557,264,1515,283,1467,299,1378,317,1290,329"/>
+<area shape="poly" id="edge15_Node000011_Node000008" title=" " alt="" coords="1290,343,1383,344,1489,338,1599,320,1652,305,1703,286,1766,251,1824,207,1871,164,1906,129,1909,133,1875,168,1827,211,1769,255,1705,290,1654,310,1600,325,1490,343,1383,350,1290,349"/>
+<area shape="rect" id="Node000009" href="$classwmtk_1_1attribute_1_1_attribute_handle.html" title="Internal handle representation used by TypedAttributeManager." alt="" coords="253,333,441,373"/>
+<area shape="poly" id="edge11_Node000008_Node000009" title=" " alt="" coords="454,348,1049,335,1049,340,455,354"/>
+<area shape="rect" id="Node000010" href="$classwmtk_1_1attribute_1_1_typed_attribute_handle.html" title="Handle that represents attributes for some mesh." alt="" coords="629,376,856,416"/>
+<area shape="poly" id="edge13_Node000010_Node000009" title=" " alt="" coords="455,362,630,381,629,386,454,368"/>
+<area shape="poly" id="edge12_Node000008_Node000010" title=" " alt="" coords="869,380,1025,359,1063,352,1064,357,1026,364,870,385"/>
+<area shape="poly" id="edge14_Node000001_Node000011" title=" " alt="" coords="2034,86,2188,55,2189,60,2035,92"/>
+<area shape="poly" id="edge17_Node000011_Node000012" title=" " alt="" coords="1718,83,1832,97,1831,102,1718,89"/>
 </map>
