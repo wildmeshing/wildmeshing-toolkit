@@ -97,7 +97,7 @@ TEST_CASE("test_absolute_ids", "[multimesh][ids]")
             const DEBUG_MultiMeshManager& nmm = debug_mm(*nptr);
 
             CHECK(
-                nmm.is_child(*nptr, *mptr) == wmtk::MultiMeshManager::is_child(
+                nmm.is_child(*nptr, *mptr) == wmtk::multimesh::MultiMeshManager::is_child(
                                                   nptr->absolute_multi_mesh_id(),
                                                   mptr->absolute_multi_mesh_id()));
         }

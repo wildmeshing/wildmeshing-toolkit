@@ -20,7 +20,6 @@ std::map<std::string, std::size_t> Mesh::child_hashes() const
     for (size_t j = 0; j < m_flag_handles.size(); ++j) {
         ret[fmt::format("flag_handle_{}", j)] = cattr_hasher(m_flag_handles[j]);
     }
-    ret["cell_hash_handle"] = attr_hasher(m_cell_hash_handle);
 
     return ret;
 }

@@ -40,6 +40,14 @@ if(WMTK_WITH_CCACHE AND CCACHE_PROGRAM)
     endforeach()
 endif()
 
+option(WMTK_USE_DEV_MODE "Changes to make compilation faster when developing" OFF)
+if(WMTK_USE_DEV_MODE)
+    set(WMTK_LIBRARY_TYPE SHARED)
+else()
+    set(WMTK_LIBRARY_TYPE STATIC)
+endif()
+
+
 # ###############################################################################
 project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit" LANGUAGES C CXX)
 
@@ -100,7 +108,7 @@ include(CLI11)
 include(CDT)
 
 # Core library
-add_library(wildmeshing_toolkit)
+add_library(wildmeshing_toolkit ${WMTK_LIBRARY_TYPE})
 add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
 target_link_libraries(wildmeshing_toolkit PUBLIC wmtk_coverage_config)
 set_property(TARGET wildmeshing_toolkit PROPERTY COMPILE_WARNING_AS_ERROR  ON)
@@ -118,12 +126,17 @@ target_compile_definitions(wildmeshing_toolkit PUBLIC _USE_MATH_DEFINES)
 target_compile_definitions(wildmeshing_toolkit PUBLIC NOMINMAX)
 
 # C++ standard
-option(WMTK_USE_CXX20 "Sets WMTK to use C++20, defaults to C++17")
+option(WMTK_USE_CXX20 "Sets WMTK to use C++20, defaults to C++17" OFF)
 if(WMTK_USE_CXX20)
 target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_20)
 target_compile_definitions(wildmeshing_toolkit PUBLIC -DWMTK_ENABLED_CPP20)
 else()
 target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
+endif()
+
+if(WMTK_USE_DEV_MODE)
+    target_compile_definitions(wildmeshing_toolkit PUBLIC -DWMTK_ENABLED_DEV_MODE)
+    set(BUILD_SHARED_LIBS ON) # we globally want to disable this option due to use of TBB
 endif()
 
 #target_compile_options(wildmeshing_toolkit PUBLIC  -fconcepts)

@@ -1,7 +1,15 @@
 #pragma once
+#include <string>
+#include <memory>
 
-#include <wmtk/Mesh.hpp>
 
+namespace wmtk {
+    class Mesh;
+    class PointMesh;
+    namespace attribute {
+        class MeshAttributeHandle;
+    }
+}
 namespace wmtk::components {
 
 std::shared_ptr<Mesh> delaunay(

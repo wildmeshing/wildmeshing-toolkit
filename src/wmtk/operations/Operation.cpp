@@ -59,7 +59,6 @@ void Operation::set_transfer_strategy(
 void Operation::add_transfer_strategy(
     const std::shared_ptr<const operations::AttributeTransferStrategyBase>& other)
 {
-    spdlog::debug("Adding a transfer");
     m_attr_transfer_strategies.emplace_back(other);
 }
 
@@ -72,14 +71,34 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
         return {};
     }
 
-    const auto simplex_resurrect = simplex;
+    assert(mesh().is_valid(simplex.tuple()));
 
     auto scope = mesh().create_scope();
     assert(simplex.primitive_type() == primitive_type());
 
     try {
-        auto unmods = unmodified_primitives(simplex_resurrect);
-        auto mods = execute(simplex_resurrect);
+#ifndef NDEBUG
+        assert(!simplex.tuple().is_null());
+        mesh().parent_scope([&]() { assert(mesh().is_valid(simplex.tuple())); });
+#endif
+        auto unmods = unmodified_primitives(simplex);
+#ifndef NDEBUG
+        for (const auto& s : unmods) {
+            assert(!s.tuple().is_null());
+        }
+        for (const auto& s : unmods) {
+            mesh().parent_scope([&]() { assert(mesh().is_valid(s.tuple())); });
+        }
+#endif
+        auto mods = execute(simplex);
+#ifndef NDEBUG
+        if (!mesh().is_free()) {
+            for (const auto& s : mods) {
+                assert(mesh().is_valid(s.tuple()));
+            }
+        }
+#endif
+
         if (!mods.empty()) { // success should be marked here
             apply_attribute_transfer(mods);
             if (after(unmods, mods)) {

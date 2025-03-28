@@ -1,8 +1,11 @@
 #pragma once
 
-#include <wmtk/Mesh.hpp>
+#include <memory>
 
 namespace wmtk {
+    class TriMesh;
+    class Mesh;
+    class EdgeMesh;
 namespace components {
 
 struct EdgeInsertionMeshes

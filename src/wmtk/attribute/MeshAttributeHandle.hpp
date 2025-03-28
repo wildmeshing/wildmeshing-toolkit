@@ -1,11 +1,9 @@
 #pragma once
-#if defined(MTAO_DEBUG_MESH_COMP)
-#include <spdlog/spdlog.h>
-#endif
 //
 #include <wmtk/utils/Rational.hpp>
 //
 #include "AttributeType.hpp"
+#include "CachingAttribute.hpp"
 #include "TypedAttributeHandle.hpp"
 
 #include <tuple>
@@ -16,6 +14,8 @@ class Mesh;
 } // namespace wmtk
 
 namespace wmtk::attribute {
+template <typename T, typename MeshType, typename AttributeType_, int Dim>
+class Accessor;
 
 /* @brief Handle that can construct an accessor on its own
  * NOTE: This naming is inconsistent with the existing
@@ -76,19 +76,6 @@ public:
 
     bool operator==(const MeshAttributeHandle& o) const
     {
-#if defined(MTAO_DEBUG_MESH_COMP)
-        std::visit(
-            [&](const auto& h, const auto& oh) {
-                spdlog::warn(
-                    "{} {} == {} {}",
-                    std::string(h),
-                    fmt::ptr(m_mesh),
-                    std::string(oh),
-                    fmt::ptr(m_mesh));
-            },
-            m_handle,
-            o.m_handle);
-#endif
         return m_handle == o.m_handle && m_mesh == o.m_mesh;
     }
 
@@ -140,13 +127,11 @@ public:
     //// wmtk::Accessor
     // MutableAccessor<T> create_accessor();
 
-    //// Creates const accessors
-    //// Implementations are in the ConstAccessor.hpp
-    //// for historical reasons note that the following two classes are the same:
-    //// wmtk::attribute::ConstAccessor
-    //// wmtk::ConstAccessor
-    // ConstAccessor<T> create_const_accessor() const;
-    // ConstAccessor<T> create_accessor() const;
+
+    template <typename T, int Dim = Eigen::Dynamic, typename MeshType = Mesh>
+    const Accessor<T, MeshType, CachingAttribute<T>, Dim> create_const_accessor() const;
+    template <typename T, int Dim = Eigen::Dynamic, typename MeshType = Mesh>
+    Accessor<T, MeshType, CachingAttribute<T>, Dim> create_accessor() const;
 
     // return the dimension of the attribute (i.e the number of values stored per simplex)
     int64_t dimension() const;
@@ -231,5 +216,17 @@ template <typename T>
 inline PrimitiveType MeshAttributeHandle::primitive_typeT() const
 {
     return std::get<T>(m_handle).primitive_type();
+}
+
+template <typename T, int Dim, typename MeshType>
+const Accessor<T, MeshType, CachingAttribute<T>, Dim> MeshAttributeHandle::create_const_accessor()
+    const
+{
+    return Accessor<T, MeshType, CachingAttribute<T>, Dim>(mesh(), as<T>());
+}
+template <typename T, int Dim, typename MeshType>
+Accessor<T, MeshType, CachingAttribute<T>, Dim> MeshAttributeHandle::create_accessor() const
+{
+    return Accessor<T, MeshType, CachingAttribute<T>, Dim>(mesh(), as<T>());
 }
 } // namespace wmtk::attribute
