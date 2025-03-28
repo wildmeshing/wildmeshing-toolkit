@@ -35,6 +35,7 @@ Tuple find_valid_tuple(
 } // namespace
 
 
+// TODO: verify why these names are necessary
 void MultiMeshManager::update_child_handles(Mesh& my_mesh)
 {
     MultiMeshManager& parent_manager = my_mesh.m_multi_mesh_manager;

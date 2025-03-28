@@ -76,6 +76,13 @@ int64_t Attribute<T>::reserved_size(const std::vector<T>& data) const
 }
 
 template <typename T>
+const std::string& Attribute<T>::name() const
+{
+    return m_name;
+}
+
+
+template <typename T>
 void Attribute<T>::set(std::vector<T> val)
 {
     assert(!val.empty());

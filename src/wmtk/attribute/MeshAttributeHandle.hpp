@@ -83,7 +83,9 @@ public:
     bool is_same_mesh(const Mesh&) const;
 
 
-    // returns if this handle was initialized
+    /**
+     * @brief Returns true if handle was initialized
+     */
     bool is_valid() const;
 
     PrimitiveType primitive_type() const;

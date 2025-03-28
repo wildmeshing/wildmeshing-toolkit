@@ -65,8 +65,7 @@ public:
      * @param invalidate_handles invalidates all handles. If true this garbage collects old handles
      */
     void remove_attributes(
-        const std::vector<AttributeHandle>& attributes,
-        bool invalidate_handles = true);
+        const std::vector<AttributeHandle>& attributes);
     /**
      * @brief Remove a single attribute
      *
@@ -113,9 +112,16 @@ public:
     //https://clang.llvm.org/extra/clang-tidy/checks/modernize/pass-by-value.html
     void set(const AttributeHandle& handle, std::vector<T> val);
 
+    /**
+     * @brief Validate that handles and attributes are in sync.
+     */
+    bool validate() const;
+
+    bool validate_handle(const AttributeHandle& handle) const;
+
 protected:
     /// Clears and compactifies the attribute list. This invalidates all existing handles
-    void clear_dead_attributes();
+    [[deprecated]] void clear_dead_attributes();
 
 
     size_t attribute_size(const AttributeHandle& handle) const;

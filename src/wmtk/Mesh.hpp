@@ -443,6 +443,10 @@ public:
      */
     bool is_valid(const simplex::Simplex& s) const;
 
+    bool validate_attributes() const;
+
+    template <typename T>
+    bool validate_handle(const TypedAttributeHandle<T>& handle) const;
 
     //============================
     // MultiMesh interface
@@ -995,6 +999,12 @@ inline Tuple Mesh::switch_tuples_unsafe(const Tuple& tuple, const ContainerType&
         r = switch_tuple(r, primitive);
     }
     return r;
+}
+
+template <typename T>
+inline bool Mesh::validate_handle(const TypedAttributeHandle<T>& handle) const
+{
+    return m_attribute_manager.validate_handle(handle);
 }
 
 inline int64_t Mesh::id(const Tuple& tuple, PrimitiveType type) const

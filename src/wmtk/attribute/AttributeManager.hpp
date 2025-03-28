@@ -122,8 +122,15 @@ public:
      */
     void clear_attributes(
         const std::vector<attribute::MeshAttributeHandle::HandleVariant>& custom_attributes);
-    void delete_attribute(
-        const attribute::MeshAttributeHandle::HandleVariant& to_delete);
+    void delete_attribute(const attribute::MeshAttributeHandle::HandleVariant& to_delete);
+
+    /**
+     * @brief Validate that handles and attributes are in sync.
+     */
+    bool validate() const;
+
+    template <typename T>
+    bool validate_handle(const TypedAttributeHandle<T>& handle) const;
 };
 
 template <typename T>
@@ -221,6 +228,12 @@ inline const T& AttributeManager::get_attribute_default_value(
 {
     assert(handle.is_valid());
     return get(handle).default_value(handle.m_base_handle);
+}
+
+template <typename T>
+inline bool AttributeManager::validate_handle(const TypedAttributeHandle<T>& handle) const
+{
+    return get(handle).validate_handle(handle.m_base_handle);
 }
 
 template <typename T>
