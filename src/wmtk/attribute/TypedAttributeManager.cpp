@@ -1,6 +1,7 @@
 #include "TypedAttributeManager.hpp"
 #include <wmtk/attribute/internal/hash.hpp>
 #include <wmtk/utils/Hashable.hpp>
+#include <wmtk/utils/Logger.hpp>
 
 #include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshWriter.hpp>
@@ -166,7 +167,11 @@ void TypedAttributeManager<T>::assert_capacity_valid(int64_t cap) const
 template <typename T>
 AttributeHandle TypedAttributeManager<T>::attribute_handle(const std::string& name) const
 {
-    return m_handles.at(name);
+    auto it = m_handles.find(name);
+    if (it == m_handles.end()) {
+        log_and_throw_error("Cannot find handle for attribute named {}", name);
+    }
+    return it->second;
 }
 template <typename T>
 bool TypedAttributeManager<T>::has_attribute(const std::string& name) const
@@ -274,8 +279,7 @@ void TypedAttributeManager<T>::guarantee_at_least(const int64_t size)
 }
 
 template <typename T>
-void TypedAttributeManager<T>::remove_attributes(
-    const std::vector<AttributeHandle>& attributes)
+void TypedAttributeManager<T>::remove_attributes(const std::vector<AttributeHandle>& attributes)
 {
     for (const AttributeHandle& i : attributes) {
         remove_attribute(i);
@@ -286,15 +290,23 @@ void TypedAttributeManager<T>::remove_attributes(
 template <typename T>
 void TypedAttributeManager<T>::remove_attribute(const AttributeHandle& attribute)
 {
+    auto& attr = m_attributes[attribute.index()];
+    if (!attr) {
+        logger().warn("Attribute was already deleted.");
+        return;
+    }
+
+    const std::string& name = attr->name();
+    m_handles.erase(name);
     m_attributes[attribute.index()].reset();
 }
 
 template <typename T>
 bool TypedAttributeManager<T>::validate() const
 {
-    if (m_handles.size() != m_attributes.size()) {
+    if (m_handles.size() > m_attributes.size()) {
         logger().warn(
-            "Number of handles and attributes is not the same. Handles: {}, attributes: {}",
+            "More handles than attributes. Handles: {}, attributes: {}",
             m_handles.size(),
             m_attributes.size());
         return false;
@@ -331,22 +343,23 @@ template <typename T>
 bool TypedAttributeManager<T>::validate_handle(const AttributeHandle& handle) const
 {
     for (const auto& [name, h] : m_handles) {
-        if (h.index() == handle.index()) {
-            if (!m_attributes[handle.index()]) {
-                return true;
-            }
-            const auto& attr_name = m_attributes[handle.index()]->name();
-            if (attr_name != name) {
-                logger().warn(
-                    "Attribute name is not the same as the name in the handles map. Attribute: {}, "
-                    "handles map: {}",
-                    attr_name,
-                    name);
-                return false;
-            }
-
+        if (h.index() != handle.index()) {
+            continue;
+        }
+        if (!m_attributes[handle.index()]) {
             return true;
         }
+        const auto& attr_name = m_attributes[handle.index()]->name();
+        if (attr_name != name) {
+            logger().warn(
+                "Attribute name is not the same as the name in the handles map. Attribute: {}, "
+                "handles map: {}",
+                attr_name,
+                name);
+            return false;
+        }
+
+        return true;
     }
 
     logger().warn("Handle with index `{}` was not found in the handles map.", handle.index());
@@ -404,7 +417,7 @@ void TypedAttributeManager<T>::set_name(const AttributeHandle& handle, const std
 
     assert(!has_attribute(name)); // name should not exist already
 
-    attr->set_name (name);
+    attr->set_name(name);
     m_handles[name] = m_handles[old_name];
     m_handles.erase(old_name);
 }

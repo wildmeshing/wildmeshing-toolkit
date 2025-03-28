@@ -411,6 +411,8 @@ TEST_CASE("custom_attributes_vector", "[attributes]")
 
 TEST_CASE("delete_attribute", "[attributes]")
 {
+    wmtk::logger().set_level(spdlog::level::err);
+
     DEBUG_TriMesh m = single_equilateral_triangle();
 
     auto a1 = m.register_attribute<double>("a1", wmtk::PrimitiveType::Vertex, 1);
@@ -421,10 +423,14 @@ TEST_CASE("delete_attribute", "[attributes]")
 
     m.delete_attribute(a1.handle());
     CHECK(m.validate_attributes());
+    m.delete_attribute(a1.handle()); // delete once more
+    CHECK(m.validate_attributes());
 }
 
 TEST_CASE("validate_handle", "[attributes]")
 {
+    wmtk::logger().set_level(spdlog::level::off);
+
     DEBUG_TriMesh m = single_equilateral_triangle();
 
     auto a1 = m.register_attribute<double>("a1", wmtk::PrimitiveType::Vertex, 1);
@@ -436,10 +442,19 @@ TEST_CASE("validate_handle", "[attributes]")
     m.clear_attributes({a1, a3});
     CHECK(m.validate_attributes());
 
-    CHECK(a1.is_valid()); // TODO: should fail. a1 is now pointing to the a2 attribute
-    CHECK(a2.is_valid());
+    CHECK(a1.is_valid());
+    CHECK_FALSE(a2.is_valid());
     CHECK(a3.is_valid());
 
     a1 = m.get_attribute_handle<double>("a1", wmtk::PrimitiveType::Vertex);
+    a3 = m.get_attribute_handle<double>("a3", wmtk::PrimitiveType::Vertex);
     CHECK(a1.is_valid());
+    CHECK(a3.is_valid());
+
+    m.clear_attributes();
+    CHECK(m.validate_attributes());
+    CHECK_FALSE(a1.is_valid());
+    CHECK_FALSE(a2.is_valid());
+    CHECK_FALSE(a3.is_valid());
+    CHECK_THROWS(m.get_attribute_handle<double>("a1", wmtk::PrimitiveType::Vertex));
 }
