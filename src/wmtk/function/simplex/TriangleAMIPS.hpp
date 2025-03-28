@@ -2,6 +2,10 @@
 
 #include <wmtk/function/PerSimplexAutodiffFunction.hpp>
 
+namespace wmtk {
+    class TriMesh;
+}
+
 namespace wmtk::function {
 /**
  * @brief This is the implementation of the AMIPS energy function of a triangle mesh that can be

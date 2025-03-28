@@ -35,6 +35,7 @@ Tuple find_valid_tuple(
 } // namespace
 
 
+// TODO: verify why these names are necessary
 void MultiMeshManager::update_child_handles(Mesh& my_mesh)
 {
     MultiMeshManager& parent_manager = my_mesh.m_multi_mesh_manager;
@@ -68,7 +69,7 @@ void MultiMeshManager::update_maps_from_edge_operation(
     if (children().empty()) {
         return;
     }
-    auto parent_flag_accessor = my_mesh.get_const_flag_accessor(primitive_type);
+    //auto parent_flag_accessor = my_mesh.get_const_flag_accessor(primitive_type);
     // auto& update_tuple = [&](const auto& flag_accessor, Tuple& t) -> bool {
     //     if(acc.index_access().
     // };
@@ -90,7 +91,7 @@ void MultiMeshManager::update_maps_from_edge_operation(
         auto maps = get_map_accessors(my_mesh, child_data);
         auto& [parent_to_child_accessor, child_to_parent_accessor] = maps;
 
-        auto child_flag_accessor = child_mesh.get_const_flag_accessor(primitive_type);
+        //auto child_flag_accessor = child_mesh.get_const_flag_accessor(primitive_type);
 
 
         for (const auto& gid : gids) {
@@ -167,7 +168,7 @@ void MultiMeshManager::update_map_tuple_hashes(
 
     const PrimitiveType parent_primitive_type = my_mesh.top_simplex_type();
 
-    auto parent_flag_accessor = my_mesh.get_const_flag_accessor(primitive_type);
+    //auto parent_flag_accessor = my_mesh.get_const_flag_accessor(primitive_type);
     // auto& update_tuple = [&](const auto& flag_accessor, Tuple& t) -> bool {
     //     if(acc.index_access().
     // };
@@ -188,7 +189,7 @@ void MultiMeshManager::update_map_tuple_hashes(
         auto maps = get_map_accessors(my_mesh, child_data);
         auto& [parent_to_child_accessor, child_to_parent_accessor] = maps;
 
-        auto child_flag_accessor = child_mesh.get_const_flag_accessor(primitive_type);
+        //auto child_flag_accessor = child_mesh.get_const_flag_accessor(primitive_type);
 
 
         for (const auto& [original_parent_gid, equivalent_parent_tuples] : simplices_to_update) {
@@ -302,7 +303,7 @@ std::optional<Tuple> MultiMeshManager::find_valid_tuple_from_alternatives(
     PrimitiveType primitive_type,
     const std::vector<Tuple>& tuple_alternatives) const
 {
-    auto parent_flag_accessor = my_mesh.get_const_flag_accessor(primitive_type);
+    //auto parent_flag_accessor = my_mesh.get_const_flag_accessor(primitive_type);
     // find a new sharer by finding a tuple that exists
     auto it = std::find_if(
         tuple_alternatives.begin(),
@@ -382,7 +383,7 @@ int64_t MultiMeshManager::child_global_cid(
     // 2 is the size of a tuple is 2 longs, global_cid currently gets written to position 3
     // 5 is the size of a tuple is 5 longs, global_cid currently gets written to position 3
     return Mesh::get_index_access(parent_to_child)
-        .vector_attribute(parent_gid)(
+        .const_vector_attribute(parent_gid)(
             wmtk::multimesh::utils::TUPLE_SIZE + wmtk::multimesh::utils::GLOBAL_ID_INDEX);
 }
 int64_t MultiMeshManager::parent_global_cid(
@@ -393,7 +394,7 @@ int64_t MultiMeshManager::parent_global_cid(
     // 2 is the size of a tuple is 2 longs, global_cid currently gets written to position 3
     // 5 is the size of a tuple is 5 longs, global_cid currently gets written to position 2
     return Mesh::get_index_access(child_to_parent)
-        .vector_attribute(child_gid)(
+        .const_vector_attribute(child_gid)(
             wmtk::multimesh::utils::TUPLE_SIZE + wmtk::multimesh::utils::GLOBAL_ID_INDEX);
 }
 
@@ -405,12 +406,12 @@ int64_t MultiMeshManager::parent_local_fid(
 #if defined WMTK_DISABLE_COMPRESSED_MULTIMESH_TUPLE
     // 5 is the size of a tuple is 5 longs, global_cid currently gets written to position 3
     return Mesh::get_index_access(child_to_parent)
-        .vector_attribute(child_gid)(wmtk::multimesh::utils::TUPLE_SIZE + 2);
+        .const_vector_attribute(child_gid)(wmtk::multimesh::utils::TUPLE_SIZE + 2);
 #else
     // pick hte index that isn't teh global id index
     const int64_t v =
         Mesh::get_index_access(child_to_parent)
-            .vector_attribute(child_gid)(
+            .const_vector_attribute(child_gid)(
                 wmtk::multimesh::utils::TUPLE_SIZE + (1 - wmtk::multimesh::utils::GLOBAL_ID_INDEX));
     auto vptr = reinterpret_cast<const int8_t*>(&v);
     return vptr[2];

@@ -329,7 +329,7 @@ Tuple TriMesh::face_tuple_from_id(int64_t id) const
 bool TriMesh::is_valid(const Tuple& tuple) const
 {
     if (!Mesh::is_valid(tuple)) {
-        logger().trace("Tuple was null and therefore not valid");
+        logger().trace("Base Mesh type reported invalidity");
         return false;
     }
     const bool is_connectivity_valid = tuple.local_vid() >= 0 && tuple.local_eid() >= 0 &&

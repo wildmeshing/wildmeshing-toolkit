@@ -2,16 +2,12 @@
 set(SRC_FILES
     Attribute.hpp
     Attribute.cpp
-    #AttributeCache.hxx
-    AttributeCache.hpp
-    AttributeScope.hpp
-    AttributeScope.hxx
-    MeshAttributes.cpp
-    MeshAttributes.hpp
+    Attribute.hxx
+
+    TypedAttributeManager.cpp
+    TypedAttributeManager.hpp
     AttributeManager.hpp
     AttributeManager.cpp
-    PerThreadAttributeScopeStacks.hpp
-    PerThreadAttributeScopeStacks.cpp
     AttributeScopeHandle.hpp
     AttributeScopeHandle.cpp
 
@@ -25,11 +21,16 @@ set(SRC_FILES
     MeshAttributeHandle.hpp
     MeshAttributeHandle.cpp
 
-    AccessorBase.hxx
-    AccessorBase.hpp
+    #AccessorBase.hxx
+    #AccessorBase.hpp
 
-    CachingAccessor.hxx
-    CachingAccessor.hpp
+    #CachingAccessor.hxx
+    #CachingAccessor.hpp
+    #CachingAccessor.cpp
+
+    CachingAttribute.hxx
+    CachingAttribute.hpp
+    CachingAttribute.cpp
     #
     Accessor.hxx
     Accessor.hpp

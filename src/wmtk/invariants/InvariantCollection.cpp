@@ -1,4 +1,5 @@
 #include "InvariantCollection.hpp"
+#include <spdlog/spdlog.h>
 #include <type_traits>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/simplex/Simplex.hpp>

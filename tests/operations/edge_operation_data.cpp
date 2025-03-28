@@ -92,12 +92,12 @@ TEST_CASE("split_facet_maps", "[operations][data]")
                     continue;
                 } else {
                     int64_t new_gid = scm_data.new_gid(mesh_type, j);
-                    spdlog::info(
-                        "{} ({} {}), {}",
-                        fmt::join(scm_data.new_facet_indices, ","),
-                        left_efficacy,
-                        right_efficacy,
-                        new_gid);
+                    // spdlog::info(
+                    //     "{} ({} {}), {}",
+                    //     fmt::join(scm_data.new_facet_indices, ","),
+                    //     left_efficacy,
+                    //     right_efficacy,
+                    //     new_gid);
                     if (left_efficacy > right_efficacy) {
                         CHECK(new_gid == scm_data.new_facet_indices[0]);
                     } else if (left_efficacy < right_efficacy) {
@@ -134,7 +134,7 @@ TEST_CASE("split_facet_maps_mesh", "[operations][data]")
         const wmtk::PrimitiveType boundary_type = mesh_type - 1;
         for (int8_t edge_orientation = 0; edge_orientation < sd.size(); ++edge_orientation) {
             auto mesh_ptr = wmtk::tests::tools::single_simplex_mesh(mesh_type);
-            spdlog::info("Mesh dimension: {}", mesh_ptr->top_cell_dimension());
+            // spdlog::info("Mesh dimension: {}", mesh_ptr->top_cell_dimension());
 
             wmtk::Tuple t = sd.tuple_from_dart(wmtk::autogen::Dart(0, edge_orientation));
             // data.add(*mesh_ptr, t);
@@ -159,17 +159,17 @@ TEST_CASE("split_facet_maps_mesh", "[operations][data]")
                 wmtk::autogen::Dart(scm_data.new_facet_indices[0], edge_orientation));
             wmtk::Tuple right_tuple = sd.tuple_from_dart(
                 wmtk::autogen::Dart(scm_data.new_facet_indices[1], edge_orientation));
-            spdlog::info("{} {}", left_tuple.as_string(), right_tuple.as_string());
+            // spdlog::info("{} {}", left_tuple.as_string(), right_tuple.as_string());
 
             const auto left_global_ids = wmtk::tests::tools::global_ids(*mesh_ptr, left_tuple);
             const auto right_global_ids = wmtk::tests::tools::global_ids(*mesh_ptr, right_tuple);
 
-            spdlog::info(
-                "{}:{} {}:{}",
-                left_tuple.as_string(),
-                fmt::join(left_global_ids, ","),
-                right_tuple.as_string(),
-                fmt::join(right_global_ids, ","));
+            // spdlog::info(
+            //     "{}:{} {}:{}",
+            //     left_tuple.as_string(),
+            //     fmt::join(left_global_ids, ","),
+            //     right_tuple.as_string(),
+            //     fmt::join(right_global_ids, ","));
 
             int8_t left_size = wmtk::tests::tools::global_index_max_subdart_size(
                 original_global_ids,
@@ -205,7 +205,7 @@ void collapse_facet_maps_impl(
 TEST_CASE("collapse_facet_maps_1d", "[operations][data][1D][.]")
 {
     {
-        spdlog::info("1d");
+        // spdlog::info("1d");
         wmtk::operations::internal::CollapseAlternateFacetData data;
 
 
@@ -280,7 +280,7 @@ TEST_CASE("collapse_facet_maps_1d", "[operations][data][1D][.]")
 TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D][.]")
 {
     {
-        spdlog::info("2d");
+        // spdlog::info("2d");
         {
             wmtk::operations::internal::CollapseAlternateFacetData data;
 
@@ -407,16 +407,16 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D][.]")
 
             {
                 // premable debug printouts to check what happened in add
-                fmt::print(
-                    "Should have a main {} => left opp {} == left alt {}\n",
-                    std::string(main_dart),
-                    std::string(left_ear_opp_dart),
-                    std::string(left_alt_opp_dart));
-                fmt::print(
-                    "Should have a main {} => right opp {} == right alt {}\n",
-                    std::string(main_dart),
-                    std::string(right_ear_opp_dart),
-                    std::string(right_alt_opp_dart));
+                // fmt::print(
+                //     "Should have a main {} => left opp {} == left alt {}\n",
+                //     std::string(main_dart),
+                //     std::string(left_ear_opp_dart),
+                //     std::string(left_alt_opp_dart));
+                // fmt::print(
+                //     "Should have a main {} => right opp {} == right alt {}\n",
+                //     std::string(main_dart),
+                //     std::string(right_ear_opp_dart),
+                //     std::string(right_alt_opp_dart));
 
                 const auto& data_vec = data.m_data;
                 REQUIRE(data_vec.size() == 1);
@@ -434,13 +434,13 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D][.]")
 
                 auto left_act = sd.act(main_dart, left_dart.local_orientation());
                 auto right_act = sd.act(main_dart, right_dart.local_orientation());
-                fmt::print(
-                    "{} => {} {} == {} {} (ignore the global ids)\n",
-                    std::string(main_dart),
-                    std::string(left_alt_opp_dart),
-                    std::string(right_alt_opp_dart),
-                    std::string(left_act),
-                    std::string(right_act));
+                // fmt::print(
+                //     "{} => {} {} == {} {} (ignore the global ids)\n",
+                //     std::string(main_dart),
+                //     std::string(left_alt_opp_dart),
+                //     std::string(right_alt_opp_dart),
+                //     std::string(left_act),
+                //     std::string(right_act));
                 CHECK(left_alt_opp_dart.local_orientation() == left_act.local_orientation());
                 CHECK(right_alt_opp_dart.local_orientation() == right_act.local_orientation());
             }
@@ -472,13 +472,13 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D][.]")
 
                 const auto& [a, b, pt] = pr;
                 const auto& [c, d] = ret;
-                spdlog::info(
-                    "Input {}: Expecteed two alts{} {} => Got two alts{} {}",
-                    t.as_string(),
-                    a.as_string(),
-                    b.as_string(),
-                    c.as_string(),
-                    d.as_string());
+                // spdlog::info(
+                //     "Input {}: Expecteed two alts{} {} => Got two alts{} {}",
+                //     t.as_string(),
+                //     a.as_string(),
+                //     b.as_string(),
+                //     c.as_string(),
+                //     d.as_string());
                 // notation is triangle; vertex, edge (matches global; local vid, local eid)
                 // 0; 1,2 (global: 0; 1,0)
                 // currently: 1;1,0 2;1,2 => 1;1,2 2;1,0

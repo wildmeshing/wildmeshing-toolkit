@@ -82,6 +82,8 @@ TEST_CASE("test_accessor_basic", "[accessor]")
     auto double_def1_handle =
         m.register_attribute_typed<double>("double1", wmtk::PrimitiveType::Vertex, 3, false, 1);
 
+    REQUIRE(m.validate_attributes());
+
     REQUIRE(m.get_attribute_dimension(char_handle) == 1);
     REQUIRE(m.get_attribute_dimension(int64_t_handle) == 1);
     REQUIRE(m.get_attribute_dimension(double_handle) == 3);
@@ -98,9 +100,9 @@ TEST_CASE("test_accessor_basic", "[accessor]")
     auto int64_t_def1_acc = m.create_accessor(int64_t_def1_handle);
     auto double_def1_acc = m.create_accessor(double_def1_handle);
 
-    auto char_bacc = m.create_base_accessor(char_handle);
-    auto int64_t_bacc = m.create_base_accessor(int64_t_handle);
-    auto double_bacc = m.create_base_accessor(double_handle);
+    auto& char_bacc = m.create_base_accessor(char_handle);
+    auto& int64_t_bacc = m.create_base_accessor(int64_t_handle);
+    auto& double_bacc = m.create_base_accessor(double_handle);
 
     auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
 
@@ -136,22 +138,22 @@ TEST_CASE("test_accessor_basic", "[accessor]")
     // use global set to force all values
     // NOTE that the ugly static casts are in this unit test because we want
     // accessing the low level accessor data to be ugly.
-    // Please keep set_attribute hidden from the public unless some ugly
+    // Please keep set hidden from the public unless some ugly
     // notation like these static asts exists
     {
         std::vector<char> d(size);
         std::iota(d.begin(), d.end(), char(0));
-        char_bacc.set_attribute(d);
+        char_bacc.set(d);
     }
     {
         std::vector<int64_t> d(size);
         std::iota(d.begin(), d.end(), int64_t(0));
-        int64_t_bacc.set_attribute(d);
+        int64_t_bacc.set(d);
     }
     {
         std::vector<double> d(3 * size);
         std::iota(d.begin(), d.end(), double(0));
-        double_bacc.set_attribute(d);
+        double_bacc.set(d);
     }
     for (const wmtk::Tuple& tup : vertices) {
         int64_t id = m.id(tup);
@@ -184,8 +186,8 @@ TEST_CASE("test_accessor_caching", "[accessor]")
         m.register_attribute_typed<int64_t>("int64_t", wmtk::PrimitiveType::Vertex, 1);
     auto double_handle =
         m.register_attribute_typed<double>("double", wmtk::PrimitiveType::Vertex, 3);
-    auto immediate_int64_t_acc = m.create_base_accessor(int64_t_handle);
-    auto immediate_double_acc = m.create_base_accessor(double_handle);
+    auto& immediate_int64_t_acc = m.create_base_accessor(int64_t_handle);
+    auto& immediate_double_acc = m.create_base_accessor(double_handle);
 
     std::vector<int64_t*> int64_t_ptrs;
     std::vector<double*> double_ptrs;
@@ -212,7 +214,7 @@ TEST_CASE("test_accessor_caching", "[accessor]")
         auto int64_t_acc = m.create_accessor(int64_t_handle);
         auto double_acc = m.create_accessor(double_handle);
         {
-            auto depth = int64_t_acc.stack_depth();
+            auto depth = int64_t_acc.attribute().transaction_depth();
             REQUIRE(depth == 1);
 
             // make sure base accessors are not affected
@@ -241,7 +243,7 @@ TEST_CASE("test_accessor_caching", "[accessor]")
 
         for (const wmtk::Tuple& tup : vertices) {
             auto check_id = [&](const auto& va, int id) {
-                using T = typename std::decay_t<decltype(va)>::T;
+                using T = typename std::decay_t<decltype(va)>::Scalar;
                 auto v = va.const_vector_attribute(id);
                 auto x = v.eval();
                 std::iota(x.begin(), x.end(), T(va.dimension() * id));
@@ -277,7 +279,7 @@ TEST_CASE("test_accessor_caching_scope_fails", "[accessor][caching]")
     auto int64_t_acc = m.create_accessor(int64_t_handle);
     auto double_acc = m.create_accessor(double_handle);
     {
-        wmtk::logger().info("Creating a scope");
+        // wmtk::logger().info("Creating a scope");
         // TODO: create scope
         auto scope = m.create_scope();
 
@@ -286,7 +288,7 @@ TEST_CASE("test_accessor_caching_scope_fails", "[accessor][caching]")
         check(m, int64_t_acc, false);
         check(m, double_acc, false);
 
-        spdlog::info("Walking out of scope");
+        // spdlog::info("Walking out of scope");
         scope.mark_failed();
     }
     check(m, int64_t_acc, true);
@@ -362,83 +364,6 @@ TEST_CASE("test_accessor_caching_scope_fails_success", "[accessor][caching]")
     check(m, double_acc, true);
 }
 
-TEST_CASE("accessor_parent_scope_access", "[accessor]")
-{
-    using namespace wmtk;
-
-    int64_t size = 3;
-    DEBUG_PointMesh m(size);
-    REQUIRE(size == m.capacity(wmtk::PrimitiveType::Vertex));
-    auto int64_t_handle =
-        m.register_attribute_typed<int64_t>("int64_t", wmtk::PrimitiveType::Vertex, 1, 0);
-    auto int64_t_acc = m.create_accessor(int64_t_handle);
-
-    {
-        auto scope = m.create_scope();
-
-        // change value
-        for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
-            int64_t_acc.scalar_attribute(t) = 1;
-        }
-
-        spdlog::info("Should be walking into a scope now");
-        m.parent_scope([&]() {
-            for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
-                CHECK(int64_t_acc.const_scalar_attribute(t) == 0);
-            }
-        });
-        spdlog::info("Should be exiting from a scope now");
-
-        // return a value from the parent scope
-        {
-            int64_t parent_value = m.parent_scope([&]() -> int64_t {
-                for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
-                    return int64_t_acc.const_scalar_attribute(t);
-                }
-                return -1;
-            });
-            CHECK(parent_value == 0);
-        }
-
-        // nested scopes
-        {
-            auto inner_scope = m.create_scope();
-
-            // change value
-            for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
-                int64_t_acc.scalar_attribute(t) = 2;
-            }
-            // check values
-            for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
-                CHECK(int64_t_acc.scalar_attribute(t) == 2);
-            }
-
-            m.parent_scope([&]() {
-                for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
-                    CHECK(int64_t_acc.const_scalar_attribute(t) == 1);
-                }
-                // parent of parent
-                m.parent_scope([&]() {
-                    for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
-                        CHECK(int64_t_acc.const_scalar_attribute(t) == 0);
-                    }
-                });
-            });
-
-            // check values
-            for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
-                CHECK(int64_t_acc.scalar_attribute(t) == 2);
-            }
-
-            inner_scope.mark_failed();
-        }
-
-        // check values
-        for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
-            CHECK(int64_t_acc.scalar_attribute(t) == 1);
-        }
-    }
-}
 
 TEST_CASE("attribute_clear", "[attributes]")
 {
@@ -482,4 +407,54 @@ TEST_CASE("custom_attributes_vector", "[attributes]")
         m.register_attribute_typed<double>("vertices", wmtk::PrimitiveType::Vertex, 3, true);
 
     CHECK(m.custom_attributes().size() == 1);
+}
+
+TEST_CASE("delete_attribute", "[attributes]")
+{
+    wmtk::logger().set_level(spdlog::level::err);
+
+    DEBUG_TriMesh m = single_equilateral_triangle();
+
+    auto a1 = m.register_attribute<double>("a1", wmtk::PrimitiveType::Vertex, 1);
+    auto a2 = m.register_attribute<double>("a2", wmtk::PrimitiveType::Vertex, 1);
+    auto a3 = m.register_attribute<double>("a3", wmtk::PrimitiveType::Vertex, 1);
+
+    CHECK(m.validate_attributes());
+
+    m.delete_attribute(a1.handle());
+    CHECK(m.validate_attributes());
+    m.delete_attribute(a1.handle()); // delete once more
+    CHECK(m.validate_attributes());
+}
+
+TEST_CASE("validate_handle", "[attributes]")
+{
+    wmtk::logger().set_level(spdlog::level::off);
+
+    DEBUG_TriMesh m = single_equilateral_triangle();
+
+    auto a1 = m.register_attribute<double>("a1", wmtk::PrimitiveType::Vertex, 1);
+    auto a2 = m.register_attribute<double>("a2", wmtk::PrimitiveType::Vertex, 1);
+    auto a3 = m.register_attribute<double>("a3", wmtk::PrimitiveType::Vertex, 1);
+
+    CHECK(m.validate_attributes());
+
+    m.clear_attributes({a1, a3});
+    CHECK(m.validate_attributes());
+
+    CHECK(a1.is_valid());
+    CHECK_FALSE(a2.is_valid());
+    CHECK(a3.is_valid());
+
+    a1 = m.get_attribute_handle<double>("a1", wmtk::PrimitiveType::Vertex);
+    a3 = m.get_attribute_handle<double>("a3", wmtk::PrimitiveType::Vertex);
+    CHECK(a1.is_valid());
+    CHECK(a3.is_valid());
+
+    m.clear_attributes();
+    CHECK(m.validate_attributes());
+    CHECK_FALSE(a1.is_valid());
+    CHECK_FALSE(a2.is_valid());
+    CHECK_FALSE(a3.is_valid());
+    CHECK_THROWS(m.get_attribute_handle<double>("a1", wmtk::PrimitiveType::Vertex));
 }

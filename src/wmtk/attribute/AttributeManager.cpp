@@ -1,6 +1,6 @@
 #include "AttributeManager.hpp"
+#include <fmt/format.h>
 
-#include <spdlog/spdlog.h>
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/utils/Rational.hpp>
 namespace wmtk::attribute {
@@ -275,7 +275,7 @@ std::vector<MeshAttributeHandle::HandleVariant> AttributeManager::get_all_attrib
     auto run = [&](auto type) {
         using T = std::decay_t<decltype(type)>;
 
-        const std::vector<MeshAttributes<T>>& mesh_attributes = get<T>();
+        const std::vector<TypedAttributeManager<T>>& mesh_attributes = get<T>();
         for (size_t pt_index = 0; pt_index < mesh_attributes.size(); ++pt_index) {
             const PrimitiveType pt = get_primitive_type_from_id(pt_index);
 
@@ -376,6 +376,31 @@ void AttributeManager::delete_attribute(
             }
         },
         to_delete);
+}
+
+bool AttributeManager::validate() const
+{
+    for (const auto& a : m_char_attributes) {
+        if (!a.validate()) {
+            return false;
+        }
+    }
+    for (const auto& a : m_long_attributes) {
+        if (!a.validate()) {
+            return false;
+        }
+    }
+    for (const auto& a : m_double_attributes) {
+        if (!a.validate()) {
+            return false;
+        }
+    }
+    for (const auto& a : m_rational_attributes) {
+        if (!a.validate()) {
+            return false;
+        }
+    }
+    return true;
 }
 
 } // namespace wmtk::attribute
