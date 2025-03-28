@@ -8,7 +8,7 @@ std::array<int64_t, 4> TestTools::global_ids(const Mesh& m, const Tuple& a)
 {
     std::array<int64_t, 4> ret = {{-1, -1, -1, -1}};
     for (PrimitiveType pt = PrimitiveType::Vertex; pt < m.top_simplex_type(); pt = pt + 1) {
-        spdlog::info("Assigning to {} value {}", int(pt), m.id(a, pt));
+        // spdlog::info("Assigning to {} value {}", int(pt), m.id(a, pt));
         ret[int(pt)] = m.id(a, pt);
     }
     ret[m.top_cell_dimension()] = a.global_cid();

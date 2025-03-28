@@ -164,7 +164,7 @@ TEST_CASE("collapse_edge_new_attr", "[operations][collapse][2D]")
     op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
 
     AttributeTransferConfiguration cfg;
-    spdlog::info("Adding transfers");
+    // spdlog::info("Adding transfers");
     // cfg.add(*el_strategy);
     // spdlog::info("Adding news");
     // cfg.add_collapse_new(edge_length_handle);

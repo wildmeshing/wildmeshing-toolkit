@@ -279,7 +279,7 @@ TEST_CASE("test_accessor_caching_scope_fails", "[accessor][caching]")
     auto int64_t_acc = m.create_accessor(int64_t_handle);
     auto double_acc = m.create_accessor(double_handle);
     {
-        wmtk::logger().info("Creating a scope");
+        // wmtk::logger().info("Creating a scope");
         // TODO: create scope
         auto scope = m.create_scope();
 
@@ -288,7 +288,7 @@ TEST_CASE("test_accessor_caching_scope_fails", "[accessor][caching]")
         check(m, int64_t_acc, false);
         check(m, double_acc, false);
 
-        spdlog::info("Walking out of scope");
+        // spdlog::info("Walking out of scope");
         scope.mark_failed();
     }
     check(m, int64_t_acc, true);

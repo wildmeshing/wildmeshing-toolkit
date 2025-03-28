@@ -1858,6 +1858,8 @@ TEST_CASE("simplex_link_2d", "[simplex_collection][2D]")
 
 TEST_CASE("simplex_link_tri_iterable", "[simplex_collection][iterable][2D]")
 {
+    logger().set_level(spdlog::level::err);
+
     tests::DEBUG_TriMesh m = tests::hex_plus_two();
 
     std::unique_ptr<Simplex> simplex;
@@ -1909,6 +1911,8 @@ TEST_CASE("simplex_link_tri_iterable", "[simplex_collection][iterable][2D]")
 
 TEST_CASE("simplex_link_tet_iterable", "[simplex_collection][iterable][3D]")
 {
+    logger().set_level(spdlog::level::err);
+
     auto mp = std::make_unique<TetMesh>(tests_3d::six_cycle_tets());
     Mesh& m = *mp;
 

@@ -147,14 +147,14 @@ TEST_CASE("attribute_transaction_stack", "[attributes]")
 
             auto t_begin = vector_ats.transaction_start_begin(0);
             auto t_end = vector_ats.final_transaction_end();
-            for (auto it = t_begin; it != t_end; ++it) {
-                spdlog::info("{}", *it);
-            }
+            // for (auto it = t_begin; it != t_end; ++it) {
+            //     spdlog::info("{}", *it);
+            // }
             auto t_rend = vector_ats.transaction_start_rend(0);
             auto t_rbegin = vector_ats.final_transaction_rbegin();
-            for (auto it = t_rbegin; it != t_rend; ++it) {
-                spdlog::info("{}", *it);
-            }
+            // for (auto it = t_rbegin; it != t_rend; ++it) {
+            //     spdlog::info("{}", *it);
+            // }
         }
         vector_ats.pop(false);
         std::cout << vector_ats.vector_attribute(0).transpose() << std::endl;
@@ -307,10 +307,9 @@ TEST_CASE("attribute_transaction_throw_fail", "[attributes]")
 
         auto handle = pm->register_attribute<int64_t>("attr", wmtk::PrimitiveType::Vertex, 1);
         wmtk::attribute::Accessor<int64_t> acc(*pm, handle.as<int64_t>());
-        return std::
-            tuple<std::shared_ptr<wmtk::PointMesh>, wmtk::attribute::Accessor<int64_t>>(
-                pm,
-                std::move(acc));
+        return std::tuple<std::shared_ptr<wmtk::PointMesh>, wmtk::attribute::Accessor<int64_t>>(
+            pm,
+            std::move(acc));
     };
 
 
@@ -375,13 +374,11 @@ TEST_CASE("parent_scope_access", "[accessor]")
             int64_t_acc.scalar_attribute(t) = 1;
         }
 
-        spdlog::info("Should be walking into a scope now");
         m.parent_scope([&]() {
             for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
                 CHECK(int64_t_acc.const_scalar_attribute(t) == 0);
             }
         });
-        spdlog::info("Should be exiting from a scope now");
 
         // return a value from the parent scope
         {
@@ -458,13 +455,13 @@ TEST_CASE("flag_accessor_parent_scope", "[accessor]")
         CHECK(m.is_removed(tuples[0]));
         CHECK(!m.is_removed(tuples[1]));
         CHECK(m.is_removed(tuples[2]));
-        spdlog::info("Should be walking into a scope now");
+        // spdlog::info("Should be walking into a scope now");
         m.parent_scope([&]() {
             CHECK(!m.is_removed(tuples[0]));
             CHECK(!m.is_removed(tuples[1]));
             CHECK(!m.is_removed(tuples[2]));
         });
-        spdlog::info("Should be exiting from a scope now");
+        // spdlog::info("Should be exiting from a scope now");
 
         // nested scopes
         {
