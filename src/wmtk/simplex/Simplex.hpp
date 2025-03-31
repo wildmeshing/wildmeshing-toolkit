@@ -32,7 +32,6 @@ class Simplex
     Tuple m_tuple;
 
 public:
-    // the mesh class can use this index value to cache/accelerate operations
     Simplex(const PrimitiveType& ptype, const Tuple& t)
         : m_primitive_type{ptype}
         , m_tuple{t}
