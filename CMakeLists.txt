@@ -10,6 +10,11 @@ endif()
 # Check required CMake version
 set(REQUIRED_CMAKE_VERSION "3.24.0")
 
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "4.0.0")
+    message(WARNING "CMake version is ${CMAKE_VERSION}, setting stuff for dependencies.")
+    SET(CMAKE_POLICY_VERSION_MINIMUM ${REQUIRED_CMAKE_VERSION})
+endif()
+
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     cmake_minimum_required(VERSION ${REQUIRED_CMAKE_VERSION})
 else()
