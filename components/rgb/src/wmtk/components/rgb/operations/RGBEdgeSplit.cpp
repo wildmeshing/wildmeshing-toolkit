@@ -6,8 +6,15 @@ RGBEdgeSplit::RGBEdgeSplit(
     const attribute::MeshAttributeHandle& t,
     const attribute::MeshAttributeHandle& e)
     : EdgeSplit(m)
+<<<<<<< HEAD
     , m_triangle_level_accessor(t.mesh().create_accessor(t.as<int64_t>())
     , m_edge_level_accessor(e.mesh().create_accessor(e.as<int64_t>())
+=======
+    , m_triangle_level_handle(triangle_rgb_state_handle)
+    , m_edge_level_handle(edge_rgb_state_handle)
+    , m_triangle_level_accessor(triangle_rgb_state_handle.create_accessor<int64_t>())
+    , m_edge_level_accessor(triangle_rgb_state_handle.create_accessor<int64_t>())
+>>>>>>> upstream/mtao/RGB
 {}
 std::vector<simplex::Simplex> RGBEdgeSplit::execute(const simplex::Simplex& simplex)
 {
@@ -67,9 +74,9 @@ void RGBEdgeSplit::split_edge_update(
     Tuple new_edge1 = mesh().switch_tuples(
         new_edge0,
         {PrimitiveType::Edge, PrimitiveType::Triangle, PrimitiveType::Edge});
-    m_edge_rgb_state_accessor.vector_attribute(new_edge0) =
+    m_edge_level_accessor.vector_attribute(new_edge0) =
         Eigen::Vector2<int64_t>(0, old_edge_color_level[1] + 1);
-    m_edge_rgb_state_accessor.vector_attribute(new_edge1) =
+    m_edge_level_accessor.vector_attribute(new_edge1) =
         Eigen::Vector2<int64_t>(0, old_edge_color_level[1] + 1);
 }
 void RGBEdgeSplit::rib_edge_new_attribute_based_on_old_face(
@@ -79,10 +86,10 @@ void RGBEdgeSplit::rib_edge_new_attribute_based_on_old_face(
     // if old_face color == 0 green → rib_edge (1 red, l)
     //                      1  red → rib_edge (0 green, l+1)
     if (old_face_color_level[0] == 0) {
-        m_edge_rgb_state_accessor.vector_attribute(rib_edge) =
+        m_edge_level_accessor.vector_attribute(rib_edge) =
             Eigen::Vector2<int64_t>(1, old_face_color_level[1]);
     } else if (old_face_color_level[0] == 1) {
-        m_edge_rgb_state_accessor.vector_attribute(rib_edge) =
+        m_edge_level_accessor.vector_attribute(rib_edge) =
             Eigen::Vector2<int64_t>(0, old_face_color_level[1] + 1);
     }
 }
@@ -100,9 +107,9 @@ void RGBEdgeSplit::face_update(
         mesh().switch_tuples(split_return, {PrimitiveType::Edge, PrimitiveType::Triangle});
 
     if (old_face_color_level[0] == 0) {
-        m_triangle_rgb_state_accessor.vector_attribute(new_face0) =
+        m_triangle_level_accessor.vector_attribute(new_face0) =
             Eigen::Vector2<int64_t>(1, old_face_color_level[1]);
-        m_triangle_rgb_state_accessor.vector_attribute(new_face1) =
+        m_triangle_level_accessor.vector_attribute(new_face1) =
             Eigen::Vector2<int64_t>(1, old_face_color_level[1]);
     } else if (old_face_color_level[0] == 1) {
         Tuple ear_edge0 =
@@ -123,12 +130,12 @@ void RGBEdgeSplit::red_face_update_based_on_ear_edge(
 {
     assert(old_face_color_level[0] == 1);
     Eigen::Vector2<int64_t> ear_edge_color_level =
-        m_edge_rgb_state_accessor.vector_attribute(ear_edge);
+        m_edge_level_accessor.const_vector_attribute(ear_edge);
     if (ear_edge_color_level[0] == 0) {
-        m_triangle_rgb_state_accessor.vector_attribute(new_face) =
+        m_triangle_level_accessor.vector_attribute(new_face) =
             Eigen::Vector2<int64_t>(0, old_face_color_level[1] + 1);
     } else if (ear_edge_color_level[0] == 1) {
-        m_triangle_rgb_state_accessor.vector_attribute(new_face) =
+        m_triangle_level_accessor.vector_attribute(new_face) =
             Eigen::Vector2<int64_t>(2, old_face_color_level[1]);
     }
 }

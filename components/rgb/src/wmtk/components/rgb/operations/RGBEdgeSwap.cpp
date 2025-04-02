@@ -11,11 +11,23 @@ RGBTriEdgeSwap::RGBTriEdgeSwap(
 
 TriMesh& RGBTriEdgeSwap::mesh()
 {
+<<<<<<< HEAD
     return static_cast<TriMesh&>(TriEdgeSwap::mesh());
 }
 const TriMesh& RGBTriEdgeSwap::mesh() const
 {
     return static_cast<const TriMesh&>(TriEdgeSwap::mesh());
+=======
+    auto ptr = dynamic_cast<TriMesh*>(&const_cast<Mesh&>(Operation::mesh()));
+    assert(ptr != nullptr);
+    return *ptr;
+}
+const TriMesh& RGBTriEdgeSwap::mesh() const
+{
+    auto ptr = dynamic_cast<const TriMesh*>(&Operation::mesh());
+    assert(ptr != nullptr);
+    return *ptr;
+>>>>>>> upstream/mtao/RGB
 }
 
 std::vector<simplex::Simplex> RGBTriEdgeSwap::execute(const simplex::Simplex& simplex)

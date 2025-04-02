@@ -136,13 +136,16 @@ public:
     //// for historical reasons note that the following two classes are the same:
     //// wmtk::attribute::MutableAccessor
     //// wmtk::Accessor
-    // MutableAccessor<T> create_accessor();
+    template <typename T, typename MeshType = Mesh, int Dim = Eigen::Dynamic>
+    Accessor<T, MeshType, Dim> create_accessor() const;
 
     //// Creates const accessors
     //// Implementations are in the ConstAccessor.hpp
     //// for historical reasons note that the following two classes are the same:
     //// wmtk::attribute::ConstAccessor
     //// wmtk::ConstAccessor
+    template <typename T, typename MeshType = Mesh, int Dim = Eigen::Dynamic>
+    const Accessor<T, MeshType, Dim> create_const_accessor() const;
     // ConstAccessor<T> create_const_accessor() const;
     // ConstAccessor<T> create_accessor() const;
 
@@ -229,5 +232,17 @@ template <typename T>
 inline PrimitiveType MeshAttributeHandle::primitive_typeT() const
 {
     return std::get<T>(m_handle).primitive_type();
+}
+
+template <typename T, typename MeshType, int Dim>
+Accessor<T, MeshType, Dim> MeshAttributeHandle::create_accessor() const
+{
+    return Accessor<T, MeshType, Dim>(static_cast<const MeshType&>(mesh()), as<T>());
+}
+
+template <typename T, typename MeshType, int Dim>
+const Accessor<T, MeshType, Dim> MeshAttributeHandle::create_const_accessor() const
+{
+    return Accessor<T, MeshType, Dim>(static_cast<const MeshType&>(mesh()), as<T>());
 }
 } // namespace wmtk::attribute
