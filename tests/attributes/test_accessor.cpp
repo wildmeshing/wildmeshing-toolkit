@@ -82,8 +82,6 @@ TEST_CASE("test_accessor_basic", "[accessor]")
     auto double_def1_handle =
         m.register_attribute_typed<double>("double1", wmtk::PrimitiveType::Vertex, 3, false, 1);
 
-    REQUIRE(m.validate_attributes());
-
     REQUIRE(m.get_attribute_dimension(char_handle) == 1);
     REQUIRE(m.get_attribute_dimension(int64_t_handle) == 1);
     REQUIRE(m.get_attribute_dimension(double_handle) == 3);
@@ -409,24 +407,6 @@ TEST_CASE("custom_attributes_vector", "[attributes]")
     CHECK(m.custom_attributes().size() == 1);
 }
 
-TEST_CASE("delete_attribute", "[attributes]")
-{
-    wmtk::logger().set_level(spdlog::level::err);
-
-    DEBUG_TriMesh m = single_equilateral_triangle();
-
-    auto a1 = m.register_attribute<double>("a1", wmtk::PrimitiveType::Vertex, 1);
-    auto a2 = m.register_attribute<double>("a2", wmtk::PrimitiveType::Vertex, 1);
-    auto a3 = m.register_attribute<double>("a3", wmtk::PrimitiveType::Vertex, 1);
-
-    CHECK(m.validate_attributes());
-
-    m.delete_attribute(a1.handle());
-    CHECK(m.validate_attributes());
-    m.delete_attribute(a1.handle()); // delete once more
-    CHECK(m.validate_attributes());
-}
-
 TEST_CASE("validate_handle", "[attributes]")
 {
     wmtk::logger().set_level(spdlog::level::off);
@@ -437,10 +417,7 @@ TEST_CASE("validate_handle", "[attributes]")
     auto a2 = m.register_attribute<double>("a2", wmtk::PrimitiveType::Vertex, 1);
     auto a3 = m.register_attribute<double>("a3", wmtk::PrimitiveType::Vertex, 1);
 
-    CHECK(m.validate_attributes());
-
     m.clear_attributes({a1, a3});
-    CHECK(m.validate_attributes());
 
     CHECK(a1.is_valid());
     CHECK_FALSE(a2.is_valid());
@@ -452,7 +429,6 @@ TEST_CASE("validate_handle", "[attributes]")
     CHECK(a3.is_valid());
 
     m.clear_attributes();
-    CHECK(m.validate_attributes());
     CHECK_FALSE(a1.is_valid());
     CHECK_FALSE(a2.is_valid());
     CHECK_FALSE(a3.is_valid());

@@ -4,8 +4,8 @@
 #include <wmtk/attribute/utils/variant_comparison.hpp>
 #include <wmtk/utils/Rational.hpp>
 #include "AttributeScopeHandle.hpp"
-#include "TypedAttributeManager.hpp"
 #include "TypedAttributeHandle.hpp"
+#include "TypedAttributeManager.hpp"
 #include "internal/CheckpointScope.hpp"
 
 namespace wmtk {
@@ -124,11 +124,6 @@ public:
         const std::vector<attribute::MeshAttributeHandle::HandleVariant>& custom_attributes);
     void delete_attribute(const attribute::MeshAttributeHandle::HandleVariant& to_delete);
 
-    /**
-     * @brief Validate that handles and attributes are in sync.
-     */
-    bool validate() const;
-
     template <typename T>
     bool validate_handle(const TypedAttributeHandle<T>& handle) const;
 };
@@ -186,7 +181,8 @@ inline TypedAttributeManager<T>& AttributeManager::get(const TypedAttributeHandl
     return get<T>(handle.m_primitive_type);
 }
 template <typename T>
-inline const TypedAttributeManager<T>& AttributeManager::get(const TypedAttributeHandle<T>& handle) const
+inline const TypedAttributeManager<T>& AttributeManager::get(
+    const TypedAttributeHandle<T>& handle) const
 {
     return get<T>(handle.m_primitive_type);
 }
