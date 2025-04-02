@@ -42,7 +42,7 @@ private:
         const Eigen::Vector2<int64_t>& old_face_color_level);
 
 private:
-    attribute::MeshAttributeHandle m_triangle_level_handle;
-    attribute::MeshAttributeHandle m_edge_level_handle;
+    attribute::Accessor<double,TriMesh,1> m_triangle_level_accessor;
+    attribute::Accessor<double,TriMesh,1> m_edge_level_accessor;
 };
 } // namespace wmtk::components::rgb::operations

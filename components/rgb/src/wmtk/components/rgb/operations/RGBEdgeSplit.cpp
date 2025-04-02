@@ -3,11 +3,11 @@ namespace wmtk::components::rgb::operations {
 
 RGBEdgeSplit::RGBEdgeSplit(
     TriMesh& m,
-    const attribute::MeshAttributeHandle& triangle_rgb_state_handle,
-    const attribute::MeshAttributeHandle& edge_rgb_state_handle)
+    const attribute::MeshAttributeHandle& t,
+    const attribute::MeshAttributeHandle& e)
     : EdgeSplit(m)
-    , m_triangle_level_handle(triangle_rgb_state_handle)
-    , m_edge_level_handle(edge_rgb_state_handle)
+    , m_triangle_level_accessor(t.mesh().create_accessor(t.as<int64_t>())
+    , m_edge_level_accessor(e.mesh().create_accessor(e.as<int64_t>())
 {}
 std::vector<simplex::Simplex> RGBEdgeSplit::execute(const simplex::Simplex& simplex)
 {

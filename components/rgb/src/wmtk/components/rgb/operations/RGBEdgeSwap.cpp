@@ -11,16 +11,13 @@ RGBTriEdgeSwap::RGBTriEdgeSwap(
 
 TriMesh& RGBTriEdgeSwap::mesh()
 {
-    auto ptr = dynamic_cast<TriMesh*>(&const_cast<Mesh&>(position_handle().mesh()));
-    assert(ptr != nullptr);
-    return *ptr;
+    return static_cast<TriMesh&>(TriEdgeSwap::mesh());
 }
 const TriMesh& RGBTriEdgeSwap::mesh() const
 {
-    auto ptr = dynamic_cast<const TriMesh*>(&position_handle().mesh());
-    assert(ptr != nullptr);
-    return *ptr;
+    return static_cast<const TriMesh&>(TriEdgeSwap::mesh());
 }
+
 std::vector<simplex::Simplex> RGBTriEdgeSwap::execute(const simplex::Simplex& simplex)
 {
     assert(!mesh().is_boundary(simplex));
