@@ -4,7 +4,9 @@
 #include <unordered_set>
 #include <vector>
 
-namespace wmtk::operations::utils {
+namespace wmtk {
+namespace operations {
+namespace utils {
 
 /**
  * @brief Analyzes tetrahedral mesh and boundary faces to identify interior vertices
@@ -35,5 +37,11 @@ Eigen::MatrixXd parametrize_top(
 
 void visualize_tet_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& T);
 
+void launch_debug_viewer(
+    const Eigen::MatrixXd& V_bottom,
+    const Eigen::MatrixXi& F_bottom,
+    const Eigen::MatrixXd& uv_bottom);
 
-} // namespace wmtk::operations::utils
+} // namespace utils
+} // namespace operations
+} // namespace wmtk

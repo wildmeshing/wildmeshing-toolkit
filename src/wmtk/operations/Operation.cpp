@@ -92,53 +92,6 @@ void Operation::add_transfer_strategy(
 }
 
 
-void launch_debug_viewer(
-    const Eigen::MatrixXd& V_bottom,
-    const Eigen::MatrixXi& F_bottom,
-    const Eigen::MatrixXd& uv_bottom)
-{
-    igl::opengl::glfw::Viewer viewer;
-
-    viewer.data().clear();
-    viewer.data().set_mesh(V_bottom, F_bottom);
-    viewer.data().set_face_based(true);
-    viewer.data().show_lines = true;
-    viewer.data().line_width = 1.0f;
-    viewer.data().line_color << 0.0f, 0.0f, 0.0f, 1.0f;
-
-    viewer.core().align_camera_center(V_bottom, F_bottom);
-
-    viewer.callback_key_pressed =
-        [&](igl::opengl::glfw::Viewer& viewer, unsigned char key, int modifier) -> bool {
-        if (key == '1') {
-            viewer.data().clear();
-            viewer.data().set_mesh(V_bottom, F_bottom);
-            viewer.data().set_face_based(true);
-            viewer.data().show_lines = true;
-            viewer.data().line_width = 1.0f;
-            viewer.data().line_color << 0.0f, 0.0f, 0.0f, 1.0f;
-            viewer.core().align_camera_center(V_bottom, F_bottom);
-            spdlog::info("Switched to 3D mesh view");
-            return true;
-        } else if (key == '2') {
-            viewer.data().clear();
-            viewer.data().set_mesh(uv_bottom, F_bottom);
-            viewer.data().set_face_based(true);
-            viewer.data().show_lines = true;
-            viewer.data().line_width = 1.0f;
-            viewer.data().line_color << 0.0f, 0.0f, 0.0f, 1.0f;
-            viewer.data().set_colors(Eigen::RowVector3d(0.8, 0.8, 0.8));
-            viewer.core().align_camera_center(uv_bottom, F_bottom);
-            spdlog::info("Switched to UV parameterization view");
-            return true;
-        }
-        return false;
-    };
-
-    spdlog::info("Launching viewer - Press 1 for 3D mesh, Press 2 for "
-                 "UV parameterization");
-    viewer.launch();
-}
 std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simplex)
 {
     // Make it special for MeshConsolidate
@@ -766,7 +719,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 
                                 spdlog::info("Computed harmonic parameterization");
 
-                                launch_debug_viewer(V_bottom, F_bottom, uv_bottom);
+                                utils::launch_debug_viewer(V_bottom, F_bottom, uv_bottom);
 
                                 // Check for flipped triangles
                                 if (!check_uv_orientation(uv_bottom, F_bottom)) {
