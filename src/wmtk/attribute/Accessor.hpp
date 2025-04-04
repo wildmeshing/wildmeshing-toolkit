@@ -5,8 +5,19 @@
 #include "CachingAttribute.hpp"
 #include "TypedAttributeHandle.hpp"
 
+namespace wmtk {
+class HDF5Reader;
+}
+namespace wmtk::tests {
+class DEBUG_PointMesh;
+}
+
 namespace wmtk::attribute {
 class MeshAttributeHandle;
+
+template <typename MeshType>
+class IndexFlagAccessor;
+
 /**
  * An Accessor that uses tuples for accessing attributes instead of indices.
  * The parameter T is the type of the attribute data, and always must match the underlying
@@ -28,6 +39,11 @@ class Accessor
 {
 public:
     friend class wmtk::Mesh;
+    friend class wmtk::tests::DEBUG_PointMesh;
+    template <typename MeshType>
+    friend class IndexFlagAccessor;
+    friend class HDF5Reader;
+
     using Scalar = T;
 
     using AttributeType = AttributeType_; // CachingAttribute<T>;
@@ -114,6 +130,8 @@ public:
     MeshType& mesh();
     const MeshType& mesh() const;
 
+    int64_t transaction_depth() const;
+
 protected:
     /**
      * @brief Retrieve the global ID of the given simplex.
@@ -139,17 +157,14 @@ protected:
      */
     int64_t index(const simplex::IdSimplex& t) const;
 
-public:
+    int64_t index(const int64_t t) const;
+
     // The underlying attribute object.
     AttributeType& attribute();
     // The underlying attribute object
     const AttributeType& attribute() const;
 
-    // Provides access to global ids directly
-    AttributeType& index_access() { return attribute(); }
-    // Provides access to global ids directly
-    const AttributeType& index_access() const { return attribute(); }
-
+public:
     MeshAttributeHandle handle() const;
     const TypedAttributeHandle<T>& typed_handle() const;
     PrimitiveType primitive_type() const;

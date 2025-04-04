@@ -213,7 +213,7 @@ TEST_CASE("test_accessor_caching", "[accessor]")
         auto int64_t_acc = m.create_accessor(int64_t_handle);
         auto double_acc = m.create_accessor(double_handle);
         {
-            auto depth = int64_t_acc.attribute().transaction_depth();
+            auto depth = int64_t_acc.transaction_depth();
             REQUIRE(depth == 1);
 
             // make sure base accessors are not affected
@@ -366,6 +366,8 @@ TEST_CASE("test_accessor_caching_scope_fails_success", "[accessor][caching]")
 
 TEST_CASE("attribute_clear", "[attributes]")
 {
+    wmtk::logger().set_level(spdlog::level::off);
+
     wmtk::TriMesh mold = single_equilateral_triangle(); // 0xa <- 0xa
     DEBUG_TriMesh& m = static_cast<DEBUG_TriMesh&>(mold);
 
@@ -417,6 +419,7 @@ TEST_CASE("validate_handle", "[attributes]")
     auto a1 = m.register_attribute<double>("a1", wmtk::PrimitiveType::Vertex, 1);
     auto a2 = m.register_attribute<double>("a2", wmtk::PrimitiveType::Vertex, 1);
     auto a3 = m.register_attribute<double>("a3", wmtk::PrimitiveType::Vertex, 1);
+    auto a4 = m.register_attribute<double>("a4", wmtk::PrimitiveType::Vertex, 2);
 
     m.clear_attributes({a1, a3});
 
@@ -428,6 +431,11 @@ TEST_CASE("validate_handle", "[attributes]")
     a3 = m.get_attribute_handle<double>("a3", wmtk::PrimitiveType::Vertex);
     CHECK(a1.is_valid());
     CHECK(a3.is_valid());
+
+    auto acc = m.create_accessor<double>(a1);
+    acc.scalar_attribute(0) = 1;
+    CHECK(acc.scalar_attribute(m.vertex_tuple_from_id(0)) == 1);
+    CHECK(acc.scalar_attribute(0) == 1);
 
     m.clear_attributes();
     CHECK_FALSE(a1.is_valid());

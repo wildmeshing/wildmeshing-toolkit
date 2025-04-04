@@ -21,7 +21,8 @@ TEST_CASE("hdf5_in_transit", "[io]")
     DEBUG_PointMesh mesh(size);
     REQUIRE(size == mesh.capacity(wmtk::PrimitiveType::Vertex));
 
-    auto double_handle = mesh.register_attribute<double>("double", wmtk::PrimitiveType::Vertex, 3).as<double>();
+    auto double_handle =
+        mesh.register_attribute<double>("double", wmtk::PrimitiveType::Vertex, 3).as<double>();
 
     HDF5Writer writer("hdf5_in_transit_begin.hdf5");
     mesh.serialize(writer);
@@ -39,7 +40,8 @@ TEST_CASE("hdf5_in_transit", "[io]")
                 mesh.serialize(writer);
             }
             auto m2ptr = read_mesh("hdf5_in_transit_mid.hdf5");
-            DEBUG_PointMesh& m2 = reinterpret_cast<DEBUG_PointMesh&>(*std::dynamic_pointer_cast<PointMesh>(m2ptr));
+            DEBUG_PointMesh& m2 =
+                reinterpret_cast<DEBUG_PointMesh&>(*std::dynamic_pointer_cast<PointMesh>(m2ptr));
 
 
             auto double_handle2 =
@@ -49,7 +51,8 @@ TEST_CASE("hdf5_in_transit", "[io]")
                 CHECK(double_acc2.vector_attribute(j) == double_acc.vector_attribute(j));
             }
             auto minitptr = read_mesh("hdf5_in_transit_begin.hdf5");
-            DEBUG_PointMesh& minit= reinterpret_cast<DEBUG_PointMesh&>(*std::dynamic_pointer_cast<PointMesh>(minitptr));
+            DEBUG_PointMesh& minit =
+                reinterpret_cast<DEBUG_PointMesh&>(*std::dynamic_pointer_cast<PointMesh>(minitptr));
             CHECK(!(minit == m2));
         }
     }

@@ -353,7 +353,7 @@ TEST_CASE("test_debug_disk_trimesh")
         // the 0,1,1 mesh
         auto mptr = std::static_pointer_cast<DEBUG_TriMesh>(disk(1));
         auto& m = *mptr;
-        auto& fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PrimitiveType::Vertex));
+        auto fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PrimitiveType::Vertex));
         auto fv = fv_accessor.vector_attribute(0);
         REQUIRE(fv(0) == 0);
         REQUIRE(fv(1) == 1);

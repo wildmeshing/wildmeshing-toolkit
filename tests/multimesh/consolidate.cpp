@@ -1,11 +1,11 @@
 #include <catch2/catch_test_macros.hpp>
-#include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/multimesh/consolidate.hpp>
+#include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 
@@ -64,7 +64,7 @@ TEST_CASE("consolidate_multimesh", "[mesh][consolidate_multimesh]")
         collapse(simplex::Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
 
-        auto& fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
+        auto fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
 
         // CHECK_THROWS(m.tuple_from_id(PrimitiveType::Vertex, 4));
 

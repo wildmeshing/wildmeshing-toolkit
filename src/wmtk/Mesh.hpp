@@ -810,12 +810,12 @@ protected:
     template <typename T, typename MeshType>
     static auto& get_index_access(attribute::Accessor<T, MeshType>& attr)
     {
-        return attr.index_access();
+        return attr.attribute();
     }
     template <typename T, typename MeshType>
     static auto& get_index_access(const attribute::Accessor<T, MeshType>& attr)
     {
-        return attr.index_access();
+        return attr.attribute();
     }
 
 

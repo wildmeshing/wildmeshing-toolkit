@@ -4,8 +4,8 @@
 namespace wmtk::attribute {
 
 
-    // A wrapper around standard accessor specify the semantics of individual bits in Flag attributes
-    // This Index variant daels with indices as inputs directly
+// A wrapper around standard accessor specify the semantics of individual bits in Flag attributes
+// This Index variant daels with indices as inputs directly
 template <typename MeshType = wmtk::Mesh>
 class IndexFlagAccessor
 {
@@ -26,18 +26,9 @@ public:
     {}
 
 
-    bool is_active(int64_t t) const
-    {
-        return _is_active(attribute().const_scalar_attribute(t));
-    }
-    void activate(int64_t t)
-    {
-        return _activate(attribute().scalar_attribute(t));
-    }
-    void deactivate(int64_t t)
-    {
-        return _deactivate(attribute().scalar_attribute(t));
-    }
+    bool is_active(int64_t t) const { return _is_active(attribute().const_scalar_attribute(t)); }
+    void activate(int64_t t) { return _activate(attribute().scalar_attribute(t)); }
+    void deactivate(int64_t t) { return _deactivate(attribute().scalar_attribute(t)); }
 
     constexpr static char inverse_mask(FlagBit bit) { return 0xFF ^ static_cast<char>(bit); }
 
@@ -56,8 +47,8 @@ protected:
     IndexFlagAccessor index_access() const { return IndexAccessor(*this); }
 };
 
-    // A wrawpper around standard accessor specify the semantics of individual bits in Flag attributes
-    // This Index variant daels with simplices/tuples as inputs
+// A wrawpper around standard accessor specify the semantics of individual bits in Flag attributes
+// This Index variant daels with simplices/tuples as inputs
 template <typename MeshType = wmtk::Mesh>
 class FlagAccessor : private IndexFlagAccessor<MeshType>
 {

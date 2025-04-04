@@ -51,20 +51,20 @@ public:
     Tuple tuple_from_tet_id(const int64_t tid);
 
     template <typename T>
-    attribute::Attribute<T>& create_base_accessor(const TypedAttributeHandle<T>& handle)
+    attribute::Accessor<T> create_base_accessor(const TypedAttributeHandle<T>& handle)
     {
-        return attribute::Accessor<T>(*this, handle).index_access();
+        return attribute::Accessor<T>(*this, handle);
     }
 
     template <typename T>
-    const attribute::Attribute<T>& create_const_base_accessor(
+    const attribute::Accessor<T> create_const_base_accessor(
         const TypedAttributeHandle<T>& handle) const
     {
         const attribute::Accessor<T> acc(const_cast<DEBUG_TetMesh&>(*this), handle);
-        return acc.attribute();
+        return acc;
     }
     template <typename T>
-    const attribute::Attribute<T>& create_base_accessor(const TypedAttributeHandle<T>& handle) const
+    const attribute::Accessor<T> create_base_accessor(const TypedAttributeHandle<T>& handle) const
     {
         return create_const_base_accessor(handle);
     }

@@ -200,7 +200,7 @@ TEST_CASE("attribute_transaction_stack", "[attributes]")
 }
 
 namespace {
-void run(wmtk::attribute::CachingAttribute<int64_t>& accessor)
+void run(wmtk::attribute::Accessor<int64_t>& accessor)
 {
     accessor.scalar_attribute(0) = 3;
 }
@@ -209,7 +209,7 @@ void run_nothrow_fails(wmtk::attribute::Accessor<int64_t>& accessor)
     wmtk::attribute::AttributeManager& attribute_manager =
         wmtk::tests::DEBUG_Mesh::attribute_manager(accessor.mesh());
     wmtk::attribute::AttributeScopeHandle h(attribute_manager);
-    run(accessor.attribute());
+    run(accessor);
 
     h.mark_failed();
 }
@@ -221,7 +221,7 @@ void run_with_throw_inside(wmtk::attribute::Accessor<int64_t>& accessor)
         wmtk::attribute::AttributeManager& attribute_manager =
             wmtk::tests::DEBUG_Mesh::attribute_manager(accessor.mesh());
         wmtk::attribute::AttributeScopeHandle h(attribute_manager);
-        run(accessor.attribute());
+        run(accessor);
         throw std::runtime_error("oh no!");
         h.mark_failed();
     }
@@ -233,7 +233,7 @@ void run_with_throw_outside(wmtk::attribute::Accessor<int64_t>& accessor)
         wmtk::attribute::AttributeManager& attribute_manager =
             wmtk::tests::DEBUG_Mesh::attribute_manager(accessor.mesh());
         wmtk::attribute::AttributeScopeHandle h(attribute_manager);
-        run(accessor.attribute());
+        run(accessor);
         h.mark_failed();
         throw std::runtime_error("oh no!");
     }
@@ -251,7 +251,7 @@ public:
     std::vector<wmtk::simplex::Simplex> execute(
         const wmtk::simplex::Simplex& simplex) final override
     {
-        run(accessor.attribute());
+        run(accessor);
         if (do_throw) {
             throw std::runtime_error("fff");
         }
@@ -331,7 +331,7 @@ TEST_CASE("attribute_transaction_throw_fail", "[attributes]")
     CHECK(pm_nothrow_fails->hash() == pm_op_fail_throw->hash());
 
 
-    run(acc_succ.attribute());
+    run(acc_succ);
     run_nothrow_fails(acc_nothrow_fails);
     CHECK_THROWS(run_with_throw_inside(acc_throw_inside));
     CHECK_THROWS(run_with_throw_outside(acc_throw_outside));

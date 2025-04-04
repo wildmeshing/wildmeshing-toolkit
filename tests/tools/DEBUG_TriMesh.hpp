@@ -50,19 +50,18 @@ public:
 
     Tuple tuple_from_face_id(const int64_t fid) const;
     template <typename T>
-    attribute::Attribute<T>& create_base_accessor(const TypedAttributeHandle<T>& handle)
+    attribute::Accessor<T> create_base_accessor(const TypedAttributeHandle<T>& handle)
     {
-        return attribute::Accessor<T>(*this, handle).index_access();
+        return attribute::Accessor<T>(*this, handle);
     }
 
     template <typename T>
-    attribute::Attribute<T>& create_const_base_accessor(
-        const TypedAttributeHandle<T>& handle) const
+    attribute::Accessor<T> create_const_base_accessor(const TypedAttributeHandle<T>& handle) const
     {
-        return attribute::Accessor<T>(*this, handle).index_access();
+        return attribute::Accessor<T>(*this, handle);
     }
     template <typename T>
-    attribute::Attribute<T>& create_base_accessor(const TypedAttributeHandle<T>& handle) const
+    attribute::Accessor<T> create_base_accessor(const TypedAttributeHandle<T>& handle) const
     {
         return create_const_base_accessor(handle);
     }
