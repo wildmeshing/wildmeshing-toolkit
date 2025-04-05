@@ -49,7 +49,7 @@ public:
     friend class wmtk::tests::DEBUG_TriMesh;
     friend class wmtk::tests_3d::DEBUG_TetMesh;
     friend class IndexFlagAccessor<MeshType>;
-    friend class HDF5Reader;
+    friend class wmtk::HDF5Reader;
 
     using Scalar = T;
 
