@@ -48,8 +48,7 @@ public:
     friend class wmtk::tests::DEBUG_EdgeMesh;
     friend class wmtk::tests::DEBUG_TriMesh;
     friend class wmtk::tests_3d::DEBUG_TetMesh;
-    template <typename MeshType>
-    friend class IndexFlagAccessor;
+    friend class IndexFlagAccessor<MeshType>;
     friend class HDF5Reader;
 
     using Scalar = T;
