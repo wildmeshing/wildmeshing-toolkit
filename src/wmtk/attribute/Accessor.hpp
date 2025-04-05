@@ -10,6 +10,11 @@ class HDF5Reader;
 }
 namespace wmtk::tests {
 class DEBUG_PointMesh;
+class DEBUG_EdgeMesh;
+class DEBUG_TriMesh;
+} // namespace wmtk::tests
+namespace wmtk::tests_3d {
+class DEBUG_TetMesh;
 }
 
 namespace wmtk::attribute {
@@ -40,6 +45,9 @@ class Accessor
 public:
     friend class wmtk::Mesh;
     friend class wmtk::tests::DEBUG_PointMesh;
+    friend class wmtk::tests::DEBUG_EdgeMesh;
+    friend class wmtk::tests::DEBUG_TriMesh;
+    friend class wmtk::tests_3d::DEBUG_TetMesh;
     template <typename MeshType>
     friend class IndexFlagAccessor;
     friend class HDF5Reader;

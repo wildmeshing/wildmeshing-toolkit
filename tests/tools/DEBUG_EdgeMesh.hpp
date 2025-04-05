@@ -30,20 +30,21 @@ public:
     }
 
     template <typename T>
-    attribute::Accessor<T> create_base_accessor(const TypedAttributeHandle<T>& handle)
+    attribute::Attribute<T>& create_base_accessor(const TypedAttributeHandle<T>& handle)
     {
-        return attribute::Accessor<T>(*this, handle);
+        return attribute::Accessor<T>(*this, handle).attribute();
     }
 
     template <typename T>
-    const attribute::Accessor<T> create_const_base_accessor(
+    const attribute::Attribute<T>& create_const_base_accessor(
         const TypedAttributeHandle<T>& handle) const
     {
         const attribute::Accessor<T> acc(const_cast<DEBUG_EdgeMesh&>(*this), handle);
-        return acc;
+        return acc.attribute();
     }
+
     template <typename T>
-    const attribute::Accessor<T> create_base_accessor(const TypedAttributeHandle<T>& handle) const
+    const attribute::Attribute<T>& create_base_accessor(const TypedAttributeHandle<T>& handle) const
     {
         return create_const_base_accessor(handle);
     }
