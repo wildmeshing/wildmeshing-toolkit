@@ -297,6 +297,7 @@ void MshReader::extract_element_attribute(
         assert(data.entries.size() == tuples.size());
 
         const int64_t attr_dim = data.header.int_tags[1];
+        assert(data.header.int_tags[2] == tuples.size());
 
         auto tag_handle = m.register_attribute<double>(attr_name, primitive_type, attr_dim);
         auto acc = m.create_accessor<double>(tag_handle);
@@ -317,8 +318,9 @@ void MshReader::extract_element_attribute(
     }
 }
 
-auto MshReader::generate(const std::optional<std::vector<std::vector<std::string>>>&
-                             extra_attributes_opt) -> std::shared_ptr<Mesh>
+auto MshReader::generate(
+    const std::optional<std::vector<std::vector<std::string>>>& extra_attributes_opt)
+    -> std::shared_ptr<Mesh>
 {
     std::shared_ptr<Mesh> res;
     switch (get_mesh_dimension()) {

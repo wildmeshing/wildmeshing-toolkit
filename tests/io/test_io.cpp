@@ -5,11 +5,12 @@
 #include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/io/MshReader.hpp>
+#include <wmtk/io/MshWriter.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
-#include <wmtk/utils/Rational.hpp>
-#include <wmtk/utils/mesh_utils.hpp>
-#include <wmtk/utils/merkle_tree_diff.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
+#include <wmtk/utils/Rational.hpp>
+#include <wmtk/utils/merkle_tree_diff.hpp>
+#include <wmtk/utils/mesh_utils.hpp>
 
 #include <wmtk/operations/EdgeSplit.hpp>
 
@@ -307,4 +308,31 @@ TEST_CASE("attribute_after_split", "[io][.]")
     // attribute_after_split_edges.hdf contains a 1 in the "test_attribute"
     ParaviewWriter writer("attribute_after_split", "vertices", m, true, true, true, false);
     CHECK_NOTHROW(m.serialize(writer));
+}
+
+TEST_CASE("msh_write", "[io]")
+{
+    std::shared_ptr<Mesh> m1_ptr;
+    REQUIRE_NOTHROW(m1_ptr = read_mesh(wmtk_data_dir / "sphere_delaunay.msh"));
+
+    io::Cache cache("wmtk_test", ".");
+    const std::filesystem::path test_file = cache.get_cache_path() / "msh_write.msh";
+
+    io::MshWriter writer(test_file);
+    REQUIRE_NOTHROW(writer.write(*m1_ptr, "vertices"));
+
+    std::shared_ptr<Mesh> m2_ptr;
+    REQUIRE_NOTHROW(m2_ptr = read_mesh(test_file));
+
+    Mesh& m1 = *m1_ptr;
+    Mesh& m2 = *m2_ptr;
+
+    const auto v1 = m1.get_all(PrimitiveType::Vertex);
+    const auto v2 = m2.get_all(PrimitiveType::Vertex);
+    const bool v_same = v1 == v2;
+    CHECK(v_same);
+    const auto c1 = m1.get_all(m1.top_simplex_type());
+    const auto c2 = m2.get_all(m2.top_simplex_type());
+    const bool c_same = c1 == c2;
+    CHECK(c_same);
 }
