@@ -38,7 +38,7 @@ void EdgeMesh::EdgeMeshOperationExecutor::delete_simplices()
 {
     for (size_t d = 0; d < simplex_ids_to_delete.size(); ++d) {
         for (const int64_t id : simplex_ids_to_delete[d]) {
-            flag_accessors[d].index_access().deactivate(id) ;
+            flag_accessors[d].index_access().deactivate(id);
         }
     }
 }
@@ -106,8 +106,8 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh()
     if (m_mesh.is_free()) {
     } else {
         // for 2 new edges
-        auto ee_new_0 = ee_accessor.index_access().vector_attribute(m_split_e[0]);
-        auto ee_new_1 = ee_accessor.index_access().vector_attribute(m_split_e[1]);
+        auto ee_new_0 = ee_accessor.vector_attribute(m_split_e[0]);
+        auto ee_new_1 = ee_accessor.vector_attribute(m_split_e[1]);
         ee_new_0[local_vid ^ 1] = m_split_e[1];
         ee_new_1[local_vid] = m_split_e[0];
         if (m_is_self_loop) {
@@ -119,10 +119,8 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh()
             // for neighbor edges
             for (int64_t i = 0; i < 2; i++) {
                 if (m_neighbor_eids[i] != -1) {
-                    auto ee_neighbor =
-                        ee_accessor.index_access().vector_attribute(m_neighbor_eids[i]);
-                    auto ev_neighbor =
-                        ev_accessor.index_access().vector_attribute(m_neighbor_eids[i]);
+                    auto ee_neighbor = ee_accessor.vector_attribute(m_neighbor_eids[i]);
+                    auto ev_neighbor = ev_accessor.vector_attribute(m_neighbor_eids[i]);
                     for (int64_t j = 0; j < 2; j++) {
                         if (ee_neighbor[j] == m_operating_edge_id &&
                             ev_neighbor[j] == m_spine_vids[i]) {
@@ -138,8 +136,8 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh()
     // update ev
     {
         // for new edges
-        auto ev_new_0 = ev_accessor.index_access().vector_attribute(m_split_e[0]);
-        auto ev_new_1 = ev_accessor.index_access().vector_attribute(m_split_e[1]);
+        auto ev_new_0 = ev_accessor.vector_attribute(m_split_e[0]);
+        auto ev_new_1 = ev_accessor.vector_attribute(m_split_e[1]);
         ev_new_0[local_vid] = m_spine_vids[0];
         if (m_mesh.is_free()) {
             ev_new_0[local_vid ^ 1] = m_free_split_v[0];
@@ -155,15 +153,15 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh()
     {
         // for new vertex
         if (m_mesh.is_free()) {
-            ve_accessor.index_access().scalar_attribute(m_free_split_v[0]) = m_split_e[0];
-            ve_accessor.index_access().scalar_attribute(m_free_split_v[1]) = m_split_e[1];
+            ve_accessor.scalar_attribute(m_free_split_v[0]) = m_split_e[0];
+            ve_accessor.scalar_attribute(m_free_split_v[1]) = m_split_e[1];
         } else {
-            ve_accessor.index_access().scalar_attribute(m_split_v) = m_split_e[0];
+            ve_accessor.scalar_attribute(m_split_v) = m_split_e[0];
         }
 
         // for spine vertices
-        ve_accessor.index_access().scalar_attribute(m_spine_vids[0]) = m_split_e[0];
-        ve_accessor.index_access().scalar_attribute(m_spine_vids[1]) = m_split_e[1];
+        ve_accessor.scalar_attribute(m_spine_vids[0]) = m_split_e[0];
+        ve_accessor.scalar_attribute(m_spine_vids[1]) = m_split_e[1];
     }
     delete_simplices();
 
@@ -214,7 +212,7 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
         // for neighbor edges
         for (int64_t i = 0; i < 2; i++) {
             if (m_neighbor_eids[i] != -1) {
-                auto ee_neighbor = ee_accessor.index_access().vector_attribute(m_neighbor_eids[i]);
+                auto ee_neighbor = ee_accessor.vector_attribute(m_neighbor_eids[i]);
                 for (int64_t j = 0; j < 2; j++) {
                     if (ee_neighbor[j] == m_operating_edge_id) {
                         ee_neighbor[j] = m_neighbor_eids[i ^ 1];
@@ -228,7 +226,7 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
     // update ev
     {
         if (m_neighbor_eids[0] != -1) {
-            auto ev_neighbor = ev_accessor.index_access().vector_attribute(m_neighbor_eids[0]);
+            auto ev_neighbor = ev_accessor.vector_attribute(m_neighbor_eids[0]);
             for (int64_t j = 0; j < 2; j++) {
                 if (ev_neighbor[j] == m_spine_vids[0]) {
                     ev_neighbor[j] = m_spine_vids[1];
@@ -240,7 +238,7 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
 
     // update ve
     {
-        ve_accessor.index_access().scalar_attribute(m_spine_vids[1]) =
+        ve_accessor.scalar_attribute(m_spine_vids[1]) =
             (m_neighbor_eids[1] != -1) ? m_neighbor_eids[1] : m_neighbor_eids[0];
     }
 

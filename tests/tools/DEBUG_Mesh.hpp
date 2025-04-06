@@ -33,25 +33,6 @@ public:
     DEBUG_MultiMeshManager& multi_mesh_manager() { return multi_mesh_manager(*this); }
     const DEBUG_MultiMeshManager& multi_mesh_manager() const { return multi_mesh_manager(*this); }
 
-    template <typename T>
-    attribute::Attribute<T>& create_base_accessor(const TypedAttributeHandle<T>& handle)
-    {
-        return attribute::Accessor<T>(*this, handle).index_access();
-    }
-
-    template <typename T>
-    const attribute::Attribute<T>& create_const_base_accessor(
-        const TypedAttributeHandle<T>& handle) const
-    {
-        const attribute::Accessor<T> acc(const_cast<DEBUG_Mesh&>(*this), handle);
-        return acc.attribute();
-    }
-    template <typename T>
-    attribute::Attribute<T>& create_base_accessor(const TypedAttributeHandle<T>& handle) const
-    {
-        return create_const_base_accessor(handle);
-    }
-
     void reserve_attributes(PrimitiveType type, int64_t size);
 
 

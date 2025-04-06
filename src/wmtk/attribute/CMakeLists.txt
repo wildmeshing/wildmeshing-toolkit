@@ -21,22 +21,17 @@ set(SRC_FILES
     MeshAttributeHandle.hpp
     MeshAttributeHandle.cpp
 
-    #AccessorBase.hxx
-    #AccessorBase.hpp
-
-    #CachingAccessor.hxx
-    #CachingAccessor.hpp
-    #CachingAccessor.cpp
 
     CachingAttribute.hxx
     CachingAttribute.hpp
     CachingAttribute.cpp
-    #
+
     Accessor.hxx
     Accessor.hpp
     
     AttributeType.hpp
 
+    FlagAccessor.hpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 add_subdirectory(internal)

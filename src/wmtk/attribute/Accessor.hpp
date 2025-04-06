@@ -5,15 +5,31 @@
 #include "CachingAttribute.hpp"
 #include "TypedAttributeHandle.hpp"
 
+namespace wmtk {
+class HDF5Reader;
+}
+namespace wmtk::tests {
+class DEBUG_PointMesh;
+class DEBUG_EdgeMesh;
+class DEBUG_TriMesh;
+} // namespace wmtk::tests
+namespace wmtk::tests_3d {
+class DEBUG_TetMesh;
+}
+
 namespace wmtk::attribute {
 class MeshAttributeHandle;
+
+template <typename MeshType>
+class IndexFlagAccessor;
+
 /**
  * An Accessor that uses tuples for accessing attributes instead of indices.
- * The parameter T is the type of the attribute data, and always must match the underlyign
+ * The parameter T is the type of the attribute data, and always must match the underlying
  * attribute's type MeshType can default to Mesh, but specializing it with the specific type of mesh
  * this attribute lies in avoids some virtual calls AttributeType_ specifies the type of teh
  * underlying attribute, which should almost always be CachingAttribute<T> to take advantage of our
- * transactional caching system, but for unit tests (or guaranteed raw access to the underlyg
+ * transactional caching system, but for unit tests (or guaranteed raw access to the underlying
  * buffers) this can be changed to Attribute<T> Dim specifies the dimension of the underlying
  * attribute - specifying this parameter when possible can have a notable performance improvement,
  * so specify it when possible. This performance change is the change between passing a single
@@ -28,6 +44,13 @@ class Accessor
 {
 public:
     friend class wmtk::Mesh;
+    friend class wmtk::tests::DEBUG_PointMesh;
+    friend class wmtk::tests::DEBUG_EdgeMesh;
+    friend class wmtk::tests::DEBUG_TriMesh;
+    friend class wmtk::tests_3d::DEBUG_TetMesh;
+    friend class IndexFlagAccessor<MeshType>;
+    friend class wmtk::HDF5Reader;
+
     using Scalar = T;
 
     using AttributeType = AttributeType_; // CachingAttribute<T>;
@@ -66,20 +89,47 @@ public:
 
 
     // Access to a vector-valued attribute
+    /**
+     * @brief Access function for a vector attribute.
+     *
+     * @param t Tuple, Simplex, or IdSimplex for which the attribute should be accessed.
+     * @return A reference (some Eigen::Map) to the attribute value.
+     */
     template <int D = Dim, typename ArgType = wmtk::Tuple>
     MapResult<std::max(D, Dim)> vector_attribute(const ArgType& t);
+    /**
+     * @brief Constant access function for a vector attribute.
+     *
+     * @param t Tuple, Simplex, or IdSimplex for which the attribute should be accessed.
+     * @return A const reference (some Eigen::Map) to the attribute value.
+     */
     template <int D = Dim, typename ArgType = wmtk::Tuple>
     ConstMapResult<std::max(D, Dim)> const_vector_attribute(const ArgType& t) const;
 
-    // Scalar access to an attribute (to ignore the Eigen::Map object when unecessary)
+    /**
+     * @brief Access function for a scalar attribute.
+     *
+     * The scalar attribute circumvents the Eigen::Map that is necessary for vector attributes.
+     *
+     * @param t Tuple, Simplex, or IdSimplex for which the attribute should be accessed.
+     * @return A reference to the attribute value.
+     */
     template <typename ArgType>
     Scalar& scalar_attribute(const ArgType& t);
+    /**
+     * @brief Constant access function for a scalar attribute.
+     *
+     * The scalar attribute circumvents the Eigen::Map that is necessary for vector attributes.
+     *
+     * @param t Tuple, Simplex, or IdSimplex for which the attribute should be accessed.
+     * @return A const reference to the attribute value.
+     */
     template <typename ArgType>
     const Scalar& const_scalar_attribute(const ArgType& t) const;
 
     // For topological attributes we want to select teh value (global_id) by its (local_id) index,
     // for whichever local index this attribute lies on For instance, to get the global index of a
-    // vertx from a FV matrix we want to access const_vector_attribute(global_id)(local_vid). This
+    // vertex from a FV matrix we want to access const_vector_attribute(global_id)(local_vid). This
     // function lets us use the primitive type to identify which local id we want.
     const T& const_topological_scalar_attribute(const Tuple& t, PrimitiveType pt) const;
 
@@ -87,26 +137,41 @@ public:
     MeshType& mesh();
     const MeshType& mesh() const;
 
+    int64_t transaction_depth() const;
+
 protected:
-    // For any simplex identifier we have we have a way to generaet a global id.
-    // Tuple's global id is inferred by the primtiive_type
+    /**
+     * @brief Retrieve the global ID of the given simplex.
+     *
+     * The simplex is defined by the given Tuple `t` and the PrimitiveType of the attribute.
+     *
+     * @param t Tuple used for accessing.
+     * @return Global simplex ID.
+     */
     int64_t index(const Tuple& t) const;
-    // Simplex's primitive type must match this attribute, should assert failreu if not
+    // Simplex's primitive type must match this attribute, should assert failure if not
+    /**
+     * @brief Retrieve the global ID of the given simplex.
+     *
+     * Simplex's primitive type must match this attribute, should assert failure if not.
+     *
+     * @param t Simplex for accessing.
+     * @return Global simplex ID.
+     */
     int64_t index(const simplex::Simplex& t) const;
-    // IdSimplex's primitive type must match this attribute, should assert failreu if not
+    /**
+     * @brief Same as with `Simplex`.
+     */
     int64_t index(const simplex::IdSimplex& t) const;
 
-public:
+    int64_t index(const int64_t t) const;
+
     // The underlying attribute object.
     AttributeType& attribute();
     // The underlying attribute object
     const AttributeType& attribute() const;
 
-    // Provides access to global ids directly
-    AttributeType& index_access() { return attribute(); }
-    // Provides access to global ids directly
-    const AttributeType& index_access() const { return attribute(); }
-
+public:
     MeshAttributeHandle handle() const;
     const TypedAttributeHandle<T>& typed_handle() const;
     PrimitiveType primitive_type() const;

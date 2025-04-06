@@ -378,29 +378,4 @@ void AttributeManager::delete_attribute(
         to_delete);
 }
 
-bool AttributeManager::validate() const
-{
-    for (const auto& a : m_char_attributes) {
-        if (!a.validate()) {
-            return false;
-        }
-    }
-    for (const auto& a : m_long_attributes) {
-        if (!a.validate()) {
-            return false;
-        }
-    }
-    for (const auto& a : m_double_attributes) {
-        if (!a.validate()) {
-            return false;
-        }
-    }
-    for (const auto& a : m_rational_attributes) {
-        if (!a.validate()) {
-            return false;
-        }
-    }
-    return true;
-}
-
 } // namespace wmtk::attribute

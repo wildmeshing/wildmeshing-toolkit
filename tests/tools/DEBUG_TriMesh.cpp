@@ -89,11 +89,7 @@ auto DEBUG_TriMesh::edge_tuple_from_vids(const int64_t v1, const int64_t v2) con
             }
         }
         if (local_vid1 != -1 && local_vid2 != -1) {
-            return Tuple(
-                local_vid1,
-                (3 - local_vid1 - local_vid2) % 3,
-                -1,
-                fid);
+            return Tuple(local_vid1, (3 - local_vid1 - local_vid2) % 3, -1, fid);
         }
     }
     return Tuple();
@@ -158,8 +154,7 @@ void DEBUG_TriMesh::reserve_attributes(PrimitiveType type, int64_t size)
 }
 
 
-auto DEBUG_TriMesh::get_tmoe(const Tuple& t)
-    -> TriMeshOperationExecutor
+auto DEBUG_TriMesh::get_tmoe(const Tuple& t) -> TriMeshOperationExecutor
 {
     return TriMeshOperationExecutor(*this, t);
 }

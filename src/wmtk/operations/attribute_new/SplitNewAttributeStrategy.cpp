@@ -270,8 +270,7 @@ void SplitNewAttributeStrategy<T>::update(
 
             auto pairs = m_topo_info->output_duplicated_free_simplices(return_data_variant, pt);
             for (const auto& [first, second] : pairs) {
-                acc.index_access().vector_attribute(second) =
-                    acc.index_access().const_vector_attribute(first);
+                acc.vector_attribute(second) = acc.const_vector_attribute(first);
             }
         }
     }

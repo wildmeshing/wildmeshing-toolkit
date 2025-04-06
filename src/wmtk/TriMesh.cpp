@@ -112,9 +112,9 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         int64_t gcid_new = ff(tuple.local_eid());
         int64_t lvid_new = -1, leid_new = -1;
 
-        auto fv = m_fv_accessor->index_access().const_vector_attribute<3>(gcid_new);
+        auto fv = m_fv_accessor->const_vector_attribute<3>(gcid_new);
 
-        auto fe = m_fe_accessor->index_access().const_vector_attribute<3>(gcid_new);
+        auto fe = m_fe_accessor->const_vector_attribute<3>(gcid_new);
 
         if (gfid == gcid_new) {
             // this supports 0,1,0 triangles not 0,0,0 triangles
@@ -204,21 +204,21 @@ void TriMesh::initialize(
 
     // iterate over the matrices and fill attributes
     for (int64_t i = 0; i < capacity(PrimitiveType::Triangle); ++i) {
-        fv_accessor.index_access().vector_attribute<3>(i) = FV.row(i).transpose();
-        fe_accessor.index_access().vector_attribute<3>(i) = FE.row(i).transpose();
-        ff_accessor.index_access().vector_attribute<3>(i) = FF.row(i).transpose();
+        fv_accessor.vector_attribute<3>(i) = FV.row(i).transpose();
+        fe_accessor.vector_attribute<3>(i) = FE.row(i).transpose();
+        ff_accessor.vector_attribute<3>(i) = FF.row(i).transpose();
 
         f_flag_accessor.index_access().activate(i);
     }
     // m_vf
     for (int64_t i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
-        auto& vf = vf_accessor.index_access().scalar_attribute(i);
+        auto& vf = vf_accessor.scalar_attribute(i);
         vf = VF(i);
         v_flag_accessor.index_access().activate(i);
     }
     // m_ef
     for (int64_t i = 0; i < capacity(PrimitiveType::Edge); ++i) {
-        auto& ef = ef_accessor.index_access().scalar_attribute(i);
+        auto& ef = ef_accessor.scalar_attribute(i);
         ef = EF(i);
         e_flag_accessor.index_access().activate(i);
     }
@@ -244,8 +244,8 @@ void TriMesh::initialize_free(int64_t count)
 
 Tuple TriMesh::tuple_from_global_ids(int64_t fid, int64_t eid, int64_t vid) const
 {
-    auto fv = m_fv_accessor->index_access().const_vector_attribute<3>(fid);
-    auto fe = m_fe_accessor->index_access().const_vector_attribute<3>(fid);
+    auto fv = m_fv_accessor->const_vector_attribute<3>(fid);
+    auto fe = m_fe_accessor->const_vector_attribute<3>(fid);
 
 
     int64_t lvid = -1;
@@ -288,8 +288,8 @@ Tuple TriMesh::tuple_from_id(const PrimitiveType type, const int64_t gid) const
 
 Tuple TriMesh::vertex_tuple_from_id(int64_t id) const
 {
-    auto f = m_vf_accessor->index_access().const_scalar_attribute(id);
-    auto fv = m_fv_accessor->index_access().const_vector_attribute<3>(f);
+    auto f = m_vf_accessor->const_scalar_attribute(id);
+    auto fv = m_fv_accessor->const_vector_attribute<3>(f);
     for (int64_t i = 0; i < 3; ++i) {
         if (fv(i) == id) {
             return autogen::tri_mesh::get_tuple_from_simplex_local_vertex_id(i, f);
@@ -302,8 +302,8 @@ Tuple TriMesh::vertex_tuple_from_id(int64_t id) const
 
 Tuple TriMesh::edge_tuple_from_id(int64_t id) const
 {
-    auto f = m_ef_accessor->index_access().const_scalar_attribute(id);
-    auto fe = m_fe_accessor->index_access().const_vector_attribute<3>(f);
+    auto f = m_ef_accessor->const_scalar_attribute(id);
+    auto fe = m_fe_accessor->const_vector_attribute<3>(f);
     for (int64_t i = 0; i < 3; ++i) {
         if (fe(i) == id) {
             return autogen::tri_mesh::get_tuple_from_simplex_local_edge_id(i, f);
@@ -375,8 +375,8 @@ bool TriMesh::is_connectivity_valid() const
         if (!f_flag_accessor.index_access().is_active(i)) {
             continue;
         }
-        auto fe = fe_accessor.index_access().const_vector_attribute<3>(i);
-        auto fv = fv_accessor.index_access().const_vector_attribute<3>(i);
+        auto fe = fe_accessor.const_vector_attribute<3>(i);
+        auto fv = fv_accessor.const_vector_attribute<3>(i);
 
         bool bad_face = false;
 
@@ -410,9 +410,9 @@ bool TriMesh::is_connectivity_valid() const
             continue;
         }
         int cnt = 0;
-        long ef_val = ef_accessor.index_access().const_scalar_attribute(i);
+        long ef_val = ef_accessor.const_scalar_attribute(i);
 
-        auto fe_val = fe_accessor.index_access().const_vector_attribute<3>(ef_val);
+        auto fe_val = fe_accessor.const_vector_attribute<3>(ef_val);
         for (int64_t j = 0; j < 3; ++j) {
             if (fe_val(j) == i) {
                 cnt++;
@@ -433,13 +433,13 @@ bool TriMesh::is_connectivity_valid() const
 
     // VF and FV
     for (int64_t i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
-        const int64_t vf = vf_accessor.index_access().const_scalar_attribute(i);
+        const int64_t vf = vf_accessor.const_scalar_attribute(i);
         if (!v_flag_accessor.index_access().is_active(i)) {
             continue;
         }
         int cnt = 0;
 
-        auto fv = fv_accessor.index_access().const_vector_attribute<3>(vf);
+        auto fv = fv_accessor.const_vector_attribute<3>(vf);
         for (int64_t j = 0; j < 3; ++j) {
             if (fv(j) == i) {
                 cnt++;
@@ -462,14 +462,14 @@ bool TriMesh::is_connectivity_valid() const
         if (!f_flag_accessor.index_access().is_active(i)) {
             continue;
         }
-        auto fe = fe_accessor.index_access().const_vector_attribute<3>(i);
-        auto ff = ff_accessor.index_access().const_vector_attribute<3>(i);
+        auto fe = fe_accessor.const_vector_attribute<3>(i);
+        auto ff = ff_accessor.const_vector_attribute<3>(i);
 
         for (int64_t j = 0; j < 3; ++j) {
             int neighbor_fid = ff(j);
             const bool is_boundary = neighbor_fid == -1;
             if (is_boundary) {
-                auto ef = ef_accessor.index_access().const_scalar_attribute(fe(j));
+                auto ef = ef_accessor.const_scalar_attribute(fe(j));
                 if (ef != i) {
                     wmtk::logger().error(
                         "Even though local edge {} of face {} is "
@@ -492,12 +492,10 @@ bool TriMesh::is_connectivity_valid() const
                     assert(false);
                     continue;
                 }
-                auto neighbor_ff =
-                    ff_accessor.index_access().const_vector_attribute<3>(neighbor_fid);
+                auto neighbor_ff = ff_accessor.const_vector_attribute<3>(neighbor_fid);
 
                 if ((neighbor_ff.array() == i).any()) {
-                    auto neighbor_fe =
-                        fe_accessor.index_access().const_vector_attribute<3>(neighbor_fid);
+                    auto neighbor_fe = fe_accessor.const_vector_attribute<3>(neighbor_fid);
 
                     int edge_shared_count = 0;
                     for (int local_neighbor_eid = 0; local_neighbor_eid < 3; ++local_neighbor_eid) {
