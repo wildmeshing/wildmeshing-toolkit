@@ -11,7 +11,10 @@ class MshWriter
 public:
     MshWriter(const std::filesystem::path& filename);
 
-    void write(const Mesh& mesh, const std::string& position_attribute_name);
+    void write(
+        const Mesh& mesh,
+        const std::string& position_attribute_name,
+        const std::vector<std::string>& cell_attribute_names = {});
 
 private:
     std::filesystem::path m_name;
