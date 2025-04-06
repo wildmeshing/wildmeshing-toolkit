@@ -8,6 +8,12 @@
 
 
 namespace wmtk::tests {
+void DEBUG_MultiMeshManager::run_checks(const Mesh& m)
+{
+    auto& mm = DEBUG_Mesh::multi_mesh_manager(m);
+    mm.check_map_valid(m);
+}
+
 void DEBUG_MultiMeshManager::check_child_mesh_valid(const Mesh& my_mesh, const Mesh& child_mesh)
     const
 {
