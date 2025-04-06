@@ -12,6 +12,8 @@ set(SRC_FILES
     MeshReader.cpp
     MshReader.hpp
     MshReader.cpp
+    MshWriter.hpp
+    MshWriter.cpp
     ParaviewWriter.hpp
     ParaviewWriter.cpp
 
