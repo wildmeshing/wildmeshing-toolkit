@@ -1,10 +1,5 @@
 #include "TopDimensionCofacesIterable.hpp"
 
-#include <wmtk/utils/Logger.hpp>
-#include <wmtk/utils/TupleInspector.hpp>
-
-#include <wmtk/simplex/cofaces_in_simplex_iterable.hpp>
-
 namespace wmtk::simplex {
 
 
@@ -91,7 +86,7 @@ void TopDimensionCofacesIterable::Iterator::init(int64_t depth)
         }
     } else if (depth == 3) {
         // d - 3 --> BFS
-        m_container.m_visited.is_visited(wmtk::utils::TupleInspector::global_cid(m_t));
+        m_container.m_visited.is_visited(m_t.global_cid());
 
         add_neighbors_to_queue();
     }
@@ -194,7 +189,7 @@ void TopDimensionCofacesIterable::Iterator::add_neighbors_to_queue()
     for (size_t i = 0; i < 3; ++i) {
         if (!mesh.is_boundary(PrimitiveType::Triangle, t)) {
             const Tuple neigh = mesh.switch_tuple(t, PrimitiveType::Tetrahedron);
-            const int64_t neigh_id = wmtk::utils::TupleInspector::global_cid(neigh);
+            const int64_t neigh_id = neigh.global_cid();
 
             if (!m_container.m_visited.is_visited(neigh_id)) {
                 m_container.m_q.emplace_back(neigh);

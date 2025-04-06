@@ -15,5 +15,4 @@ wmtk::output)
 
 wmtk_register_integration_test(EXEC_NAME triwild_app
     CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/triwild_test_config.json
-    GIT_REPOSITORY "https://github.com/wildmeshing/data.git"
-    GIT_TAG 82ea9d55c901bbc86d48de39383e9c85d8f67686)
+)

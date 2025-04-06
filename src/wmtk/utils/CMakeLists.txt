@@ -14,14 +14,12 @@ set(SRC_FILES
     Rational.cpp
     mesh_utils.hpp
     mesh_utils.cpp
-    TupleInspector.hpp
 
     filter_pointers_to_derived.hpp
 
     orient.hpp
     orient.cpp
 
-    TupleInspector.cpp
     triangle_areas.hpp
     triangle_areas.cpp
 

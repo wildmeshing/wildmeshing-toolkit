@@ -1,6 +1,5 @@
 #include "SimplexDart.hpp"
 #include <cassert>
-#include <wmtk/utils/TupleInspector.hpp>
 #include "edge_mesh/SimplexDart.hpp"
 #include "point_mesh/SimplexDart.hpp"
 #include "simplex_index_from_valid_index.hpp"
@@ -53,7 +52,7 @@ GET_OP(opposite, nullary_op_type)
 } // namespace
 
 #define FORWARD_OP(NAME, OP, RETTYPE, DEFAULT)                               \
-    auto SimplexDart::NAME() const -> RETTYPE                                \
+    auto SimplexDart::NAME() const->RETTYPE                                  \
     {                                                                        \
         switch (m_simplex_type) {                                            \
         case PrimitiveType::Edge: return edge_mesh::SimplexDart::OP();       \
@@ -121,10 +120,7 @@ wmtk::Tuple SimplexDart::tuple_from_valid_index(int64_t gid, int8_t index) const
 }
 wmtk::Tuple SimplexDart::update_tuple_from_valid_index(const Tuple& t, int8_t index) const
 {
-    return wmtk::autogen::tuple_from_valid_index(
-        m_simplex_type,
-        wmtk::utils::TupleInspector::global_cid(t),
-        index);
+    return wmtk::autogen::tuple_from_valid_index(m_simplex_type, t.global_cid(), index);
 }
 int8_t SimplexDart::valid_index_from_tuple(const wmtk::Tuple& t) const
 {
@@ -148,17 +144,15 @@ wmtk::Tuple SimplexDart::tuple_from_dart(const Dart& dart) const
 }
 Dart SimplexDart::dart_from_tuple(const wmtk::Tuple& t) const
 {
-    return Dart{
-        wmtk::utils::TupleInspector::global_cid(t),
-        wmtk::autogen::valid_index_from_tuple(m_simplex_type, t)};
+    return Dart{t.global_cid(), wmtk::autogen::valid_index_from_tuple(m_simplex_type, t)};
 }
 
 int8_t SimplexDart::simplex_index(const Dart& dart, PrimitiveType simplex_type) const
 {
     return simplex_index(dart.local_orientation(), simplex_type);
 }
-    int8_t SimplexDart::simplex_index(const int8_t valid_index, PrimitiveType simplex_type) const {
+int8_t SimplexDart::simplex_index(const int8_t valid_index, PrimitiveType simplex_type) const
+{
     return simplex_index_from_valid_index(m_simplex_type, valid_index, simplex_type);
-    }
+}
 } // namespace wmtk::autogen
-

@@ -3,6 +3,9 @@
 #include <wmtk/Mesh.hpp>
 
 #include <string>
+namespace wmtk {
+    class TriMesh;
+}
 
 namespace wmtk::mesh_utils {
 template <typename Mat>

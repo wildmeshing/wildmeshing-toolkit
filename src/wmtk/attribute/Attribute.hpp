@@ -4,22 +4,12 @@
 #include <vector>
 #include <wmtk/utils/MerkleTreeInteriorNode.hpp>
 #include "MapTypes.hpp"
-#include "PerThreadAttributeScopeStacks.hpp"
-#include "wmtk/attribute/internal/AttributeTransactionStack.hpp"
 
 namespace wmtk {
 class MeshWriter;
 
 namespace attribute {
-template <typename T, int Dim>
-class AccessorBase;
 
-template <typename T>
-class PerThreadAttributeScopeStacks;
-namespace internal {
-template <typename T>
-class AttributeTransactionStack;
-} // namespace internal
 
 /**
  * This class stores data of type T in a vector.
@@ -31,24 +21,24 @@ template <typename T>
 class Attribute : public wmtk::utils::Hashable
 {
 public:
+    using Scalar = T;
+    // typedefs
     template <int D = Eigen::Dynamic>
-    using MapResult = internal::MapResult<T, D>;
+    using MapResult = MapResult<T, D>;
     template <int D = Eigen::Dynamic>
-    using ConstMapResult = internal::ConstMapResult<T, D>;
+    using ConstMapResult = ConstMapResult<T, D>;
 
 
     // attribute directly hashes its "children" components so it overrides "child_hashes"
     std::map<std::string, size_t> child_hashes() const override;
 
 
-    template <typename U, int D>
-    friend class AccessorBase;
-    friend class internal::AttributeTransactionStack<T>;
-    void serialize(const std::string& name, const int dim, MeshWriter& writer) const;
+    void serialize(int dim, MeshWriter& writer) const;
 
     /**
      * @brief Initialize the attribute.
      *
+     * @param name The name of the attribute (used for debugging)
      * @param dimension The dimension of the attribute, e.g. 3 for a 3d vector.
      * @param default_value A default value that is applied to every entry, also to new ones that
      * are added later.
@@ -58,20 +48,30 @@ public:
     Attribute(const std::string& name, int64_t dimension, T default_value = T(0), int64_t size = 0);
 
     Attribute(Attribute&& o);
-    ~Attribute();
     Attribute& operator=(Attribute&& o);
 
-    template <int D = Eigen::Dynamic>
-    ConstMapResult<D> const_vector_attribute(const int64_t index) const;
-    template <int D = Eigen::Dynamic>
-    MapResult<D> vector_attribute(const int64_t index);
-    template <int D = Eigen::Dynamic>
-    MapResult<D> vector_attribute2(const int64_t index);
+    Attribute(const Attribute& o) = delete;
+    Attribute& operator=(const Attribute&& o) = delete;
 
-    T const_scalar_attribute(const int64_t index) const;
-    T& scalar_attribute(const int64_t index);
-    T const_scalar_attribute(const int64_t index, const int8_t offset) const;
-    T& scalar_attribute(const int64_t index, const int8_t offset);
+    ~Attribute() override;
+
+    /// Access the value of an attribute at a particular index. If the dimension of the attribute is known at compile time then the template parameter should be elided to improve performance.
+    template <int D = Eigen::Dynamic>
+    ConstMapResult<D> const_vector_attribute(int64_t index) const;
+    /// Access the value of an attribute at a particular index. If the dimension of the attribute is known at compile time then the template parameter should be elided to improve performance.
+    template <int D = Eigen::Dynamic>
+    MapResult<D> vector_attribute(int64_t index);
+
+    /// Access the value of a scalar attribute
+    const T& const_scalar_attribute(int64_t index) const;
+    /// Access the value of a scalar attribute. Assignment to the returned value will change the value
+    T& scalar_attribute(int64_t index);
+    /// Access a single entry in a vector attribute. TODO: this might not actually be more performant than
+    template <int D = Eigen::Dynamic>
+    const T& const_vector_single_value(int64_t index, int8_t vector_index) const;
+    /// Access to a single a single value of a scalr attribute
+    template <int D = Eigen::Dynamic>
+    T& vector_single_value(int64_t index, int8_t vector_index);
 
     /**
      * @brief Replace the internal data with `val`.
@@ -89,7 +89,7 @@ public:
      * @brief The number of values for each index.
      */
     int64_t dimension() const;
-    void reserve(const int64_t size);
+    void reserve(int64_t size);
 
     /**
      * @brief returns the default value of this attribute
@@ -98,12 +98,7 @@ public:
 
     bool operator==(const Attribute<T>& o) const;
 
-    void push_scope();
-    void pop_scope(bool apply_updates);
-    void rollback_current_scope();
 
-    const internal::AttributeTransactionStack<T>& get_local_scope_stack() const;
-    internal::AttributeTransactionStack<T>& get_local_scope_stack();
 
     /**
      * @brief Consolidate the vector, using the new2old map m provided and resizing the vector to
@@ -124,7 +119,7 @@ public:
      * serialization
      */
     template <int D = Eigen::Dynamic>
-    ConstMapResult<D> const_vector_attribute(const int64_t index, const std::vector<T>& data) const;
+    ConstMapResult<D> const_vector_attribute(int64_t index, const std::vector<T>& data) const;
 
     /**
      * @brief Accesses the attribute using the specified vector as the underlying data
@@ -132,15 +127,15 @@ public:
      * serialization. Start allows for assignment to buffers that dont' represent a 2d array
      */
     template <int D = Eigen::Dynamic>
-    ConstMapResult<D> const_vector_attribute_from_start(
-        const int64_t index,
+    ConstMapResult<D> const_vector_attribute_without_stride(
+        int64_t index,
         const std::vector<T>& data) const;
     /**
      * @brief Accesses the attribute using the specified vector as the underlying data
      * This is internally used by the single-arg vector_attribute and to help with serialization
      */
     template <int D = Eigen::Dynamic>
-    MapResult<D> vector_attribute(const int64_t index, std::vector<T>& data) const;
+    MapResult<D> vector_attribute(int64_t index, std::vector<T>& data) const;
 
     /**
      * @brief Accesses the attribute using the specified vector as the underlying data
@@ -148,221 +143,59 @@ public:
      * serialization. Start allows for assignment to buffers that dont' represent a 2d array
      */
     template <int D = Eigen::Dynamic>
-    MapResult<D> vector_attribute_from_start(const int64_t index, std::vector<T>& data) const;
+    MapResult<D> vector_attribute_without_stride(int64_t index, std::vector<T>& data) const;
     /**
      * @brief Accesses the attribute using the specified scalar as the underlying data
      * This is internally used by the single-arg const_scalar_attribute and to help with
      * serialization
      */
-    T const_scalar_attribute(const int64_t index, const std::vector<T>& data) const;
+    const T& const_scalar_attribute(int64_t index, const std::vector<T>& data) const;
     /**
      * @brief Accesses the attribute using the specified scalar as the underlying data
      * This is internally used by the single-arg scalar_attribute and to help with serialization
      */
-    T& scalar_attribute(const int64_t index, std::vector<T>& data) const;
+    T& scalar_attribute(int64_t index, std::vector<T>& data) const;
 
     /**
      * @brief Accesses the attribute using the specified scalar as the underlying data
-     * This is internally used by the single-arg const_scalar_attribute and to help with
+     * This is internally used by the single-arg const_vector_single_value and to help with
      * serialization
      */
-    T const_scalar_attribute(const int64_t index, const int8_t offset, const std::vector<T>& data)
-        const;
+    template <int D = Eigen::Dynamic>
+    const T& const_vector_single_value(
+        int64_t index,
+        int8_t vector_index,
+        const std::vector<T>& data) const;
     /**
      * @brief Accesses the attribute using the specified scalar as the underlying data
-     * This is internally used by the single-arg scalar_attribute and to help with serialization
+     * This is internally used by the single-arg vector_single_value and to help with
+     * serialization
      */
-    T& scalar_attribute(const int64_t index, const int8_t offset, std::vector<T>& data) const;
+    template <int D = Eigen::Dynamic>
+    T& vector_single_value(
+        int64_t index,
+        int8_t vector_index,
+        std::vector<T>& data) const;
 
     // computes the "reserved size" but using the passed in data
     int64_t reserved_size(const std::vector<T>& data) const;
 
-private:
+    const std::string& name() const;
+    void set_name(const std::string& name) { m_name = name; }
+
+protected:
     std::vector<T> m_data;
-    PerThreadAttributeScopeStacks<T> m_scope_stacks;
     int64_t m_dimension = -1;
     T m_default_value = T(0);
 
-public:
     std::string m_name;
+
+public:
 };
 
-template <typename T>
-template <int D>
-inline auto Attribute<T>::const_vector_attribute(const int64_t index) const -> ConstMapResult<D>
-{
-    return const_vector_attribute<D>(index, m_data);
-}
-
-template <typename T>
-template <int D>
-inline auto Attribute<T>::const_vector_attribute(const int64_t index, const std::vector<T>& data)
-    const -> ConstMapResult<D>
-{
-    assert(index < reserved_size(data));
-    assert(data.size() % m_dimension == 0);
-    const int64_t start = index * m_dimension;
-    return const_vector_attribute_from_start<D>(start, data);
-}
-template <typename T>
-template <int D>
-inline auto Attribute<T>::const_vector_attribute_from_start(
-    const int64_t start,
-    const std::vector<T>& data) const -> ConstMapResult<D>
-{
-    assert(m_dimension > 0);
-    if constexpr (D != Eigen::Dynamic) {
-        assert(D == m_dimension);
-    }
-    ConstMapResult<D> R(data.data() + start, m_dimension);
-
-    assert(R.size() == m_dimension);
-
-    return R;
-}
-
-
-template <typename T>
-template <int D>
-inline auto Attribute<T>::vector_attribute(const int64_t index) -> MapResult<D>
-{
-    // return MapResult<D>(m_data.data(), m_dimension);
-    return vector_attribute<D>(index, m_data);
-}
-
-template <typename T>
-template <int D>
-inline auto Attribute<T>::vector_attribute2(const int64_t index) -> MapResult<D>
-{
-    return MapResult<D>(m_data.data(), m_dimension);
-    // return vector_attribute<D>(index, m_data);
-}
-
-template <typename T>
-template <int D>
-inline auto Attribute<T>::vector_attribute(const int64_t index, std::vector<T>& data) const
-    -> MapResult<D>
-{
-    assert(index < reserved_size(data));
-    assert(data.size() % m_dimension == 0);
-    const int64_t start = index * m_dimension;
-    return vector_attribute_from_start<D>(start, data);
-}
-
-template <typename T>
-template <int D>
-inline auto Attribute<T>::vector_attribute_from_start(const int64_t start, std::vector<T>& data)
-    const -> MapResult<D>
-{
-    assert(m_dimension > 0);
-    if constexpr (D != Eigen::Dynamic) {
-        assert(D == m_dimension);
-    }
-    // assert(start < data.size());
-    // assert(start + m_dimension < data.size());
-    MapResult<D> R(data.data() + start, m_dimension);
-    assert(R.size() == m_dimension);
-    return R;
-}
-
-template <typename T>
-inline T Attribute<T>::const_scalar_attribute(const int64_t index) const
-{
-    return const_scalar_attribute(index, m_data);
-}
-template <typename T>
-inline T Attribute<T>::const_scalar_attribute(const int64_t index, const std::vector<T>& data) const
-{
-    assert(index < reserved_size(data));
-    assert(m_dimension == 1);
-    return data[index];
-}
-
-template <typename T>
-inline T& Attribute<T>::scalar_attribute(const int64_t index)
-{
-    return scalar_attribute(index, m_data);
-}
-template <typename T>
-inline T& Attribute<T>::scalar_attribute(const int64_t index, std::vector<T>& data) const
-{
-    assert(index < reserved_size(data));
-    assert(m_dimension == 1);
-    return data[index];
-}
-
-template <typename T>
-inline T Attribute<T>::const_scalar_attribute(const int64_t index, const int8_t offset) const
-{
-    return const_scalar_attribute(index, offset, m_data);
-}
-template <typename T>
-inline T Attribute<T>::const_scalar_attribute(
-    const int64_t index,
-    const int8_t offset,
-    const std::vector<T>& data) const
-{
-    const int64_t idx = index * m_dimension + offset;
-    assert(index < reserved_size(data));
-    return data[idx];
-}
-
-template <typename T>
-inline T& Attribute<T>::scalar_attribute(const int64_t index, const int8_t offset)
-{
-    return scalar_attribute(index, offset, m_data);
-}
-template <typename T>
-inline T&
-Attribute<T>::scalar_attribute(const int64_t index, const int8_t offset, std::vector<T>& data) const
-{
-    const int64_t idx = index * m_dimension + offset;
-    assert(index < reserved_size(data));
-    return data[idx];
-}
-
-
-template <typename T>
-inline int64_t Attribute<T>::dimension() const
-{
-    return m_dimension;
-}
-
-template <typename T>
-inline const T& Attribute<T>::default_value() const
-{
-    return m_default_value;
-}
-
-template <typename T>
-inline const internal::AttributeTransactionStack<T>& Attribute<T>::get_local_scope_stack() const
-{
-    return m_scope_stacks.local();
-}
-template <typename T>
-inline internal::AttributeTransactionStack<T>& Attribute<T>::get_local_scope_stack()
-{
-    return m_scope_stacks.local();
-}
-
-template <typename T>
-inline void Attribute<T>::push_scope()
-{
-    m_scope_stacks.local().emplace();
-}
-template <typename T>
-inline void Attribute<T>::pop_scope(bool apply_updates)
-{
-    m_scope_stacks.local().pop(*this, apply_updates);
-}
-
-template <typename T>
-inline void Attribute<T>::rollback_current_scope()
-{
-    m_scope_stacks.local().rollback_current_scope(*this);
-}
 
 } // namespace attribute
 } // namespace wmtk
-#include "AccessorBase.hpp"
-#include "AttributeCache.hpp"
+#if !defined(WMTK_ENABLED_DEV_MODE)
+#include "Attribute.hxx"
+#endif

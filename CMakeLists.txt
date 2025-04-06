@@ -40,6 +40,14 @@ if(WMTK_WITH_CCACHE AND CCACHE_PROGRAM)
     endforeach()
 endif()
 
+option(WMTK_USE_DEV_MODE "Changes to make compilation faster when developing" OFF)
+if(WMTK_USE_DEV_MODE)
+    set(WMTK_LIBRARY_TYPE SHARED)
+else()
+    set(WMTK_LIBRARY_TYPE STATIC)
+endif()
+
+
 # ###############################################################################
 project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit" LANGUAGES C CXX)
 
@@ -47,6 +55,9 @@ project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit" LANGUAGES C
 option(WMTK_ENABLE_APPLICATIONS "Enable applications (required for any applications to build)" ${WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT})
 option(WMTK_BUILD_DOCS "Build doxygen" OFF)
 option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option due to use of TBB
+
+
+
 
 option(WMTK_CODE_COVERAGE "Enable coverage reporting" OFF)
 
@@ -97,7 +108,7 @@ include(CLI11)
 include(CDT)
 
 # Core library
-add_library(wildmeshing_toolkit)
+add_library(wildmeshing_toolkit ${WMTK_LIBRARY_TYPE})
 add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
 target_link_libraries(wildmeshing_toolkit PUBLIC wmtk_coverage_config)
 set_property(TARGET wildmeshing_toolkit PROPERTY COMPILE_WARNING_AS_ERROR  ON)
@@ -115,12 +126,17 @@ target_compile_definitions(wildmeshing_toolkit PUBLIC _USE_MATH_DEFINES)
 target_compile_definitions(wildmeshing_toolkit PUBLIC NOMINMAX)
 
 # C++ standard
-option(WMTK_USE_CXX20 "Sets WMTK to use C++20, defaults to C++17")
+option(WMTK_USE_CXX20 "Sets WMTK to use C++20, defaults to C++17" OFF)
 if(WMTK_USE_CXX20)
 target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_20)
 target_compile_definitions(wildmeshing_toolkit PUBLIC -DWMTK_ENABLED_CPP20)
 else()
 target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
+endif()
+
+if(WMTK_USE_DEV_MODE)
+    target_compile_definitions(wildmeshing_toolkit PUBLIC -DWMTK_ENABLED_DEV_MODE)
+    set(BUILD_SHARED_LIBS ON) # we globally want to disable this option due to use of TBB
 endif()
 
 #target_compile_options(wildmeshing_toolkit PUBLIC  -fconcepts)
@@ -167,12 +183,11 @@ if(MSVC)
     target_compile_definitions(wildmeshing_toolkit PUBLIC _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS)
 endif()
 
-if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
-    # Unit tests
-    enable_testing()
-    # data for unit tests
-    set(WMTK_DATA_ROOT "${CPM_SOURCE_CACHE}/wmtk_data/" CACHE PATH "Where should the toolkit download and look for test data?")
-endif()
+
+# git repo used for wmtk data if it is required.
+# use wmtk_download_data to obtain the path to the data
+set(WMTK_DATA_REPOSITORY https://github.com/wildmeshing/data.git CACHE STRING "Git repo for testing data" )
+set(WMTK_DATA_TAG 6f171d11283d2977913a1b4e6129f9808357baf9 CACHE STRING "git tag for testing data" )
 
 
 add_subdirectory(components)
@@ -205,8 +220,11 @@ if(WMTK_BUILD_DOCS)
     endif(DOXYGEN_FOUND)
 endif()
 
+
+
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
+    enable_testing()
     add_subdirectory(tests)
 endif()
 if(WMTK_ENABLE_APPLICATIONS)

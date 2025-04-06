@@ -11,7 +11,7 @@ TypedAttributeHandle<T>::operator std::string() const
 {
     return fmt::format(
         "{}:{}",
-        m_base_handle.index,
+        m_base_handle.index(),
         wmtk::primitive_type_name(m_primitive_type)
 
     );

@@ -112,12 +112,21 @@ bool Mesh::is_boundary(const simplex::Simplex& s) const
 
 bool Mesh::is_valid(const Tuple& tuple) const
 {
-    return !tuple.is_null() && !is_removed(tuple);
+    const bool null = tuple.is_null();
+    if(null) {
+        logger().trace("Tuple was null and therefore invalid");
+        return false;
+    } else if(is_removed(tuple)) {
+        logger().trace("Tuple was removed and therefore invalid");
+        return false;
+    }
+    return true;
+
 }
 
 bool Mesh::is_removed(const Tuple& tuple) const
 {
-    return is_removed(tuple.m_global_cid);
+    return is_removed(tuple.global_cid());
 }
 bool Mesh::is_removed(const Tuple& t, PrimitiveType pt) const
 {
@@ -153,6 +162,11 @@ bool Mesh::is_valid(const simplex::Simplex& s) const
 #else
     return is_valid(s.tuple()) && !is_removed(s.tuple(), s.primitive_type());
 #endif
+}
+
+bool Mesh::validate_attributes() const
+{
+    return m_attribute_manager.validate();
 }
 
 

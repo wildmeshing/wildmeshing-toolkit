@@ -4,6 +4,10 @@
 #include <wmtk/Tuple.hpp>
 #include <wmtk/operations/EdgeOperationData.hpp>
 
+namespace wmtk {
+class TetMesh;
+}
+
 namespace wmtk::operations::tet_mesh {
 class EdgeOperationData : public wmtk::operations::EdgeOperationData
 {

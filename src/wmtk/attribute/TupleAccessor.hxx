@@ -7,7 +7,9 @@ namespace wmtk::attribute {
 
 
 template <typename MeshType, int Dim>
-TupleAccessor<MeshType, Dim>::TupleAccessor(MeshType& m, const TypedAttributeHandle<int64_t>& handle)
+TupleAccessor<MeshType, Dim>::TupleAccessor(
+    MeshType& m,
+    const TypedAttributeHandle<int64_t>& handle)
     : m_base_accessor(m, handle)
     , m_dimension(m_base_accessor.dimension() / (sizeof(Tuple) / sizeof(int64_t)))
 {}
@@ -19,7 +21,8 @@ TupleAccessor<MeshType, Dim>::TupleAccessor(
 {}
 template <typename MeshType, int Dim>
 template <int Dim2>
-TupleAccessor<MeshType, Dim>::TupleAccessor(const Accessor<int64_t, MeshType, Dim2>& accessor)
+TupleAccessor<MeshType, Dim>::TupleAccessor(
+    const Accessor<int64_t, MeshType, CachingAttribute<int64_t>, Dim2>& accessor)
     : TupleAccessor(accessor.mesh(), accessor.typed_handle())
 {
     static_assert(Dim == Eigen::Dynamic || Dim2 == Eigen::Dynamic || Dim == Dim2);

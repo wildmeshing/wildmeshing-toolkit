@@ -8,7 +8,7 @@
 namespace wmtk {
 
 namespace attribute {
-template <typename T, typename MeshType, int Dim>
+template <typename T, typename MeshType, typename AttributeType, int Dim>
 class Accessor;
 }
 
@@ -27,7 +27,7 @@ private:
     // using Mesh::create_const_accessor;
 
 public:
-    template <typename U, typename MeshType, int Dim>
+    template <typename U, typename MeshType, typename AttributeType, int Dim>
     friend class attribute::Accessor;
     template <int64_t cell_dimension, typename NodeFunctor>
     friend class multimesh::MultiMeshSimplexVisitor;
@@ -64,22 +64,22 @@ public:
 
     /// constructs an accessor that is aware of the derived mesh's type
     template <typename T, int Dim = Eigen::Dynamic>
-    inline attribute::Accessor<T, Derived, Dim> create_accessor(
+    inline attribute::Accessor<T, Derived, attribute::CachingAttribute<T>, Dim> create_accessor(
         const TypedAttributeHandle<T>& handle)
     {
-        return attribute::Accessor<T, Derived, Dim>(derived(), handle);
+        return attribute::Accessor<T, Derived, attribute::CachingAttribute<T>, Dim>(derived(), handle);
     }
     /// constructs a const accessor that is aware of the derived mesh's type
     template <typename T, int Dim = Eigen::Dynamic>
-    const attribute::Accessor<T, Derived, Dim> create_const_accessor(
+    const attribute::Accessor<T, Derived, attribute::CachingAttribute<T>, Dim> create_const_accessor(
         const attribute::TypedAttributeHandle<T>& handle) const
     {
-        return attribute::Accessor<T, Derived, Dim>(derived(), handle);
+        return attribute::Accessor<T, Derived, attribute::CachingAttribute<T>, Dim>(derived(), handle);
     }
 
     /// constructs a accessor that is aware of the derived mesh's type
     template <typename T, int Dim = Eigen::Dynamic>
-    inline attribute::Accessor<T, Derived, Dim> create_accessor(
+    inline attribute::Accessor<T, Derived, attribute::CachingAttribute<T>, Dim> create_accessor(
         const attribute::MeshAttributeHandle& handle)
     {
         assert(&handle.mesh() == this);
@@ -90,7 +90,7 @@ public:
 
     /// constructs a const accessor that is aware of the derived mesh's type
     template <typename T, int Dim = Eigen::Dynamic>
-    inline const attribute::Accessor<T, Derived, Dim> create_const_accessor(
+    inline const attribute::Accessor<T, Derived, attribute::CachingAttribute<T>, Dim> create_const_accessor(
         const attribute::MeshAttributeHandle& handle) const
     {
         assert(&handle.mesh() == this);
@@ -98,25 +98,26 @@ public:
         return create_const_accessor<T, Dim>(handle.as<T>());
     }
 
-protected:
+public:
     /// Returns the id of a simplex encoded in a tuple
     int64_t id(const Tuple& tuple, PrimitiveType type) const { return derived().id(tuple, type); }
+
+    /// variant of id that can cache internally held values
+    int64_t id(const simplex::Simplex& s) const final override
+    {
+        return id(s.tuple(), s.primitive_type());
+    }
+
+    // catch any other Mesh id methods that might emerge by default
+    using Mesh::id;
+
+protected:
     /// internal utility for overriding the mesh class's id function without having the final override block the derived class's override
     /// (we can't have Mesh::id be virtual, MeshCRTP<Derived>::id final override, and TriMesh::id. This indirection pushes the final override to this other function
     int64_t id_virtual(const Tuple& tuple, PrimitiveType type) const final override
     {
         return id(tuple, type);
     }
-
-    /// variant of id that can cache internally held values
-    int64_t id(const simplex::Simplex& s) const final override
-    {
-
-        return id(s.tuple(),s.primitive_type());
-    }
-
-    // catch any other Mesh id methods that might emerge by default
-    using Mesh::id;
 
 
 protected:

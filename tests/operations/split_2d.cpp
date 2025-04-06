@@ -270,11 +270,11 @@ TEST_CASE("glue_ear_to_face", "[operations][2D]")
     REQUIRE(m.id(m.switch_tuple(left_ear_edge, PV), PV) == 1);
     auto executor = m.get_tmoe(edge);
     executor.split_edge_precompute();
-    auto ff_accessor_before = m.create_base_accessor<int64_t>(m.f_handle(PF));
+    auto& ff_accessor_before = m.create_base_accessor<int64_t>(m.f_handle(PF));
     REQUIRE(ff_accessor_before.vector_attribute(1)(2) == 2);
     TMOE::EarData ear{1, m.id(edge, PE)};
     executor.update_ids_in_ear(ear, 3, 2);
-    auto ff_accessor_after = m.create_base_accessor<int64_t>(m.f_handle(PF));
+    auto& ff_accessor_after = m.create_base_accessor<int64_t>(m.f_handle(PF));
     REQUIRE(ff_accessor_after.vector_attribute(1)(2) == 3);
 }
 
@@ -307,7 +307,7 @@ TEST_CASE("connect_faces_across_spine", "[operations][split][2D]")
     const int64_t local_eid_top = 0;
     const int64_t local_eid_bottom = 1;
 
-    auto ff_accessor = m.create_base_accessor<int64_t>(m.f_handle(PF));
+    auto& ff_accessor = m.create_base_accessor<int64_t>(m.f_handle(PF));
 
     CHECK(ff_accessor.vector_attribute(f0_top)[local_eid_top] == f0_bottom);
     CHECK(ff_accessor.vector_attribute(f1_top)[local_eid_top] == f1_bottom);
@@ -335,8 +335,8 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         REQUIRE(incident_face_datas.size() == 1);
 
 
-        auto fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
-        auto ff_accessor = m.create_base_accessor<int64_t>(m.f_handle(PF));
+        auto& fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
+        auto& ff_accessor = m.create_base_accessor<int64_t>(m.f_handle(PF));
 
 
         std::cout << "FV: " << fv_accessor.const_vector_attribute(0).transpose() << std::endl;
@@ -377,7 +377,7 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         CHECK(ff1[1] == -1);
         CHECK(ff1[2] == f0);
 
-        auto fe_accessor = m.create_base_accessor<int64_t>(m.f_handle(PE));
+        auto& fe_accessor = m.create_base_accessor<int64_t>(m.f_handle(PE));
         const auto fe0 = fe_accessor.vector_attribute(f0);
         const auto fe1 = fe_accessor.vector_attribute(f1);
 
@@ -389,13 +389,13 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         CHECK(fe1[1] == ee1);
         CHECK(fe1[2] == 5);
 
-        auto vf_accessor = m.create_base_accessor<int64_t>(m.vf_handle());
+        auto& vf_accessor = m.create_base_accessor<int64_t>(m.vf_handle());
         CHECK(vf_accessor.scalar_attribute(executor.split_new_vid) == f0);
         CHECK(vf_accessor.scalar_attribute(0) == f0);
         CHECK(vf_accessor.scalar_attribute(1) == f0);
         CHECK(vf_accessor.scalar_attribute(2) == f1);
 
-        auto ef_accessor = m.create_base_accessor<int64_t>(m.ef_handle());
+        auto& ef_accessor = m.create_base_accessor<int64_t>(m.ef_handle());
         CHECK(ef_accessor.scalar_attribute(se0) == f0);
         CHECK(ef_accessor.scalar_attribute(se1) == f1);
         CHECK(ef_accessor.scalar_attribute(ee0) == f0);
@@ -424,13 +424,13 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         }
         REQUIRE(incident_face_datas.size() == 2);
 
-        auto fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
-        auto fe_accessor = m.create_base_accessor<int64_t>(m.f_handle(PE));
-        auto ff_accessor = m.create_base_accessor<int64_t>(m.f_handle(PF));
+        auto& fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
+        auto& fe_accessor = m.create_base_accessor<int64_t>(m.f_handle(PE));
+        auto& ff_accessor = m.create_base_accessor<int64_t>(m.f_handle(PF));
 
-        auto vf_accessor = m.create_base_accessor<int64_t>(m.vf_handle());
+        auto& vf_accessor = m.create_base_accessor<int64_t>(m.vf_handle());
 
-        auto ef_accessor = m.create_base_accessor<int64_t>(m.ef_handle());
+        auto& ef_accessor = m.create_base_accessor<int64_t>(m.ef_handle());
 
         const int64_t& se0 = executor.split_spine_eids[0];
         const int64_t& se1 = executor.split_spine_eids[1];

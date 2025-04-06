@@ -1,8 +1,12 @@
 #pragma once
 
 #include <vector>
+#include <wmtk/PrimitiveType.hpp>
 #include <wmtk/Tuple.hpp>
 
+namespace wmtk {
+class Mesh;
+}
 
 namespace wmtk::simplex {
 

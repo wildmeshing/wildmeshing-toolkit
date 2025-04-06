@@ -11,7 +11,6 @@
 #include <wmtk/simplex/utils/SimplexComparisons.hpp>
 #include "../tools/DEBUG_EdgeMesh.hpp"
 #include "../tools/DEBUG_TriMesh.hpp"
-#include "../tools/DEBUG_Tuple.hpp"
 #include "../tools/EdgeMesh_examples.hpp"
 #include "../tools/TriMesh_examples.hpp"
 
@@ -43,11 +42,8 @@ void print_tuple_map(const DEBUG_TriMesh& parent, const DEBUG_MultiMeshManager& 
             auto [parent_tuple, child_tuple] =
                 wmtk::multimesh::utils::vectors_to_tuples(parent_to_child_data);
             std::cout << "parent gid = " << parent_gid << std::endl;
-            std::cout << "parent_tuple = " << wmtk::utils::TupleInspector::as_string(parent_tuple)
-                      << std::endl;
-            std::cout << "child_tuple = " << wmtk::utils::TupleInspector::as_string(child_tuple)
-                      << std::endl
-                      << std::endl;
+            std::cout << "parent_tuple = " << parent_tuple.as_string() << std::endl;
+            std::cout << "child_tuple = " << child_tuple.as_string() << std::endl << std::endl;
         }
         std::cout << std::endl;
     }
@@ -1041,10 +1037,9 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
             const Simplex& cs0 = children[0];
             const Simplex& cs1 = children[1];
 
-            std::cout << std::string(DEBUG_Tuple(cs0.tuple())) << " "
-                      << std::string(DEBUG_Tuple(cs1.tuple())) << std::endl;
-            std::cout << std::string(DEBUG_Tuple(edge_f0_simplex.tuple())) << " "
-                      << std::string(DEBUG_Tuple(edge_simplex.tuple())) << std::endl;
+            std::cout << cs0.tuple().as_string() << " " << cs1.tuple().as_string() << std::endl;
+            std::cout << edge_f0_simplex.tuple().as_string() << " "
+                      << edge_simplex.tuple().as_string() << std::endl;
 
 #if defined(WMTK_ENABLE_HASH_UPDATE)
             REQUIRE(child2.is_valid_with_hash(cs0.tuple()));

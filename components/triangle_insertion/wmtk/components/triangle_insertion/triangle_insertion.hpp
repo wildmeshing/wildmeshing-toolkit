@@ -1,6 +1,18 @@
 #pragma once
 
-#include <wmtk/Mesh.hpp>
+#include <string>
+#include <tuple>
+#include <memory>
+#include <vector>
+
+namespace wmtk {
+    class Mesh;
+    class TriMesh;
+    class TetMesh;
+    namespace attribute {
+        class MeshAttributeHandle;
+    }
+}
 
 namespace wmtk::components::triangle_insertion {
 

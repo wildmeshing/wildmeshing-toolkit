@@ -5,12 +5,12 @@
 namespace wmtk {
 class Mesh;
 class Rational;
+template <typename T>
+class hash;
 namespace attribute {
 template <typename T>
-class MeshAttributes;
-template <typename T, int Dim>
-class AccessorBase;
-template <typename T, typename MeshType, int Dim>
+class TypedAttributeManager;
+template <typename T, typename MeshType, typename AttributeType, int Dim>
 class Accessor;
 
 class AttributeManager;
@@ -31,10 +31,8 @@ public:
 
 private:
     friend class wmtk::Mesh;
-    friend class MeshAttributes<T>;
-    template <typename U, int Dim>
-    friend class AccessorBase;
-    template <typename U, typename MeshType, int Dim>
+    friend class TypedAttributeManager<T>;
+    template <typename U, typename MeshType, typename AttributeType, int Dim>
     friend class Accessor;
     friend class AttributeManager;
     friend class wmtk::hash<TypedAttributeHandle<T>>;

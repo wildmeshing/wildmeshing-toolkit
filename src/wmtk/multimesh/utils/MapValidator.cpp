@@ -5,7 +5,6 @@
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/simplex/utils/SimplexComparisons.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include <wmtk/utils/TupleInspector.hpp>
 #include <wmtk/utils/primitive_range.hpp>
 namespace wmtk::multimesh::utils {
 
@@ -53,9 +52,9 @@ bool MapValidator::check_child_map_attributes_valid() const
                                 fmt::join(m_mesh.absolute_multi_mesh_id(), ","),
                                 fmt::join(child.absolute_multi_mesh_id(), ","),
                                 j,
-                                wmtk::utils::TupleInspector::as_string(pt),
-                                wmtk::utils::TupleInspector::as_string(source_mesh_base_tuple),
-                                wmtk::utils::TupleInspector::as_string(target_mesh_base_tuple)
+                                pt.as_string(),
+                                source_mesh_base_tuple.as_string(),
+                                target_mesh_base_tuple.as_string()
 
                             );
                         }
@@ -66,9 +65,9 @@ bool MapValidator::check_child_map_attributes_valid() const
                             fmt::join(m_mesh.absolute_multi_mesh_id(), ","),
                             fmt::join(child.absolute_multi_mesh_id(), ","),
                             j,
-                            wmtk::utils::TupleInspector::as_string(pt),
-                            wmtk::utils::TupleInspector::as_string(source_mesh_base_tuple),
-                            wmtk::utils::TupleInspector::as_string(target_mesh_base_tuple)
+                            pt.as_string(),
+                            source_mesh_base_tuple.as_string(),
+                            target_mesh_base_tuple.as_string()
 
                         );
                         ok = false;
@@ -103,9 +102,9 @@ bool MapValidator::check_parent_map_attribute_valid() const
                 fmt::join(m_mesh.absolute_multi_mesh_id(), ","),
                 fmt::join(parent.absolute_multi_mesh_id(), ","),
                 m_mesh.top_cell_dimension(),
-                wmtk::utils::TupleInspector::as_string(source_tuple),
-                wmtk::utils::TupleInspector::as_string(source_mesh_base_tuple),
-                wmtk::utils::TupleInspector::as_string(target_mesh_base_tuple)
+                source_tuple.as_string(),
+                source_mesh_base_tuple.as_string(),
+                target_mesh_base_tuple.as_string()
 
             );
             ok = false;
@@ -116,9 +115,9 @@ bool MapValidator::check_parent_map_attribute_valid() const
                 fmt::join(m_mesh.absolute_multi_mesh_id(), ","),
                 fmt::join(parent.absolute_multi_mesh_id(), ","),
                 m_mesh.top_cell_dimension(),
-                wmtk::utils::TupleInspector::as_string(source_tuple),
-                wmtk::utils::TupleInspector::as_string(source_mesh_base_tuple),
-                wmtk::utils::TupleInspector::as_string(target_mesh_base_tuple)
+                source_tuple.as_string(),
+                source_mesh_base_tuple.as_string(),
+                target_mesh_base_tuple.as_string()
 
             );
             ok = false;
@@ -169,11 +168,11 @@ bool MapValidator::check_child_switch_homomorphism(const Mesh& child) const
                             "map(switch({2},{4})) = {6} (dim {7} id {8} != {9})",
                             fmt::join(child.absolute_multi_mesh_id(), ","), // 0
                             fmt::join(m_mesh.absolute_multi_mesh_id(), ","), // 1
-                            wmtk::utils::TupleInspector::as_string(t), // 2
+                            t.as_string(), // 2
                             child.top_cell_dimension(), // 3
                             primitive_type_name(pt), // 4
-                            wmtk::utils::TupleInspector::as_string(map_switch), // 5
-                            wmtk::utils::TupleInspector::as_string(switch_map), // 6
+                            map_switch.as_string(), // 5
+                            switch_map.as_string(), // 6
                             primitive_type_name(my_pt), // 7
                             m_mesh.id(map_switch, my_pt), // 8
                             m_mesh.id(switch_map, my_pt) // 9

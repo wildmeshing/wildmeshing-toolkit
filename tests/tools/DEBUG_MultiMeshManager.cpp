@@ -2,7 +2,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
-#include <wmtk/utils/TupleInspector.hpp>
 #include "DEBUG_Mesh.hpp"
 
 #include <wmtk/utils/Logger.hpp>
@@ -52,7 +51,7 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
             "[{} -> {}] Checking child tuple {}",
             fmt::join(absolute_id(), ","),
             fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
-            wmtk::utils::TupleInspector::as_string(child_tuple));
+            child_tuple.as_string());
         // 1. test if all maps in child_mesh exisits
         auto [child_tuple_from_child, parent_tuple_from_child] =
             multimesh::utils::read_tuple_map_attribute_slow(
@@ -66,9 +65,9 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
                 "[{} -> {}] Checking asserts from child {} {} (input tuple was {})",
                 fmt::join(absolute_id(), ","),
                 fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
-                wmtk::utils::TupleInspector::as_string(parent_tuple_from_child),
-                wmtk::utils::TupleInspector::as_string(child_tuple_from_child),
-                wmtk::utils::TupleInspector::as_string(child_tuple));
+                parent_tuple_from_child.as_string(),
+                child_tuple_from_child.as_string(),
+                child_tuple.as_string());
 #if defined(WMTK_ENABLE_HASH_UPDATE)
             assert(child_mesh.is_valid_with_hash(child_tuple_from_child));
             CHECK(child_mesh.is_valid_with_hash(child_tuple_from_child));
@@ -91,8 +90,8 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
                 "[{} -> {}] Checking asserts from child {} {}",
                 fmt::join(absolute_id(), ","),
                 fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
-                wmtk::utils::TupleInspector::as_string(parent_tuple_from_parent),
-                wmtk::utils::TupleInspector::as_string(child_tuple_from_parent));
+                parent_tuple_from_parent.as_string(),
+                child_tuple_from_parent.as_string());
 
             CHECK(
                 (child_tuple_from_child == child_tuple_from_parent &&

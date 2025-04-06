@@ -20,7 +20,6 @@
 #include <wmtk/autogen/tri_mesh/is_ccw.hpp>
 #include <wmtk/autogen/tri_mesh/local_id_table_offset.hpp>
 #include <wmtk/autogen/tri_mesh/local_switch_tuple.hpp>
-#include "../tools/DEBUG_Tuple.hpp"
 #include "../tools/all_valid_local_tuples.hpp"
 
 using namespace wmtk;
@@ -272,17 +271,16 @@ TEST_CASE("tuple_autogen_is_ccw", "[tuple]")
 TEST_CASE("tuple_autogen_from_id_is_ccw", "[tuple]")
 {
     auto run_checks = [](int ic, const Tuple& t, const Tuple& t2, int i, PrimitiveType pt) {
-        wmtk::tests::DEBUG_Tuple dt(t);
         switch (ic) {
-        case 4: REQUIRE(dt.local_fid() >= 0); REQUIRE(dt.local_fid() < 4);
-        case 3: REQUIRE(dt.local_eid() >= 0); REQUIRE(dt.local_eid() < 6);
-        case 2: REQUIRE(dt.local_vid() >= 0); REQUIRE(dt.local_vid() < 4);
+        case 4: REQUIRE(t.local_fid() >= 0); REQUIRE(t.local_fid() < 4);
+        case 3: REQUIRE(t.local_eid() >= 0); REQUIRE(t.local_eid() < 6);
+        case 2: REQUIRE(t.local_vid() >= 0); REQUIRE(t.local_vid() < 4);
         default: break;
         }
         switch (pt) {
-        case PrimitiveType::Tetrahedron: CHECK(dt.local_fid() == i); break;
-        case PrimitiveType::Edge: CHECK(dt.local_eid() == i); break;
-        case PrimitiveType::Vertex: CHECK(dt.local_vid() == i); break;
+        case PrimitiveType::Tetrahedron: CHECK(t.local_fid() == i); break;
+        case PrimitiveType::Edge: CHECK(t.local_eid() == i); break;
+        case PrimitiveType::Vertex: CHECK(t.local_vid() == i); break;
         default: break;
         }
 

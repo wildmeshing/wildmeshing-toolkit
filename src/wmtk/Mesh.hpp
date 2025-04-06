@@ -14,7 +14,7 @@
 #include "attribute/Accessor.hpp"
 
 // is a member of the Mesh class
-#include "MultiMeshManager.hpp"
+#include "multimesh/MultiMeshManager.hpp"
 
 // basic data for the class
 #include <wmtk/simplex/Simplex.hpp>
@@ -22,9 +22,8 @@
 #include "Types.hpp"
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
-#include "attribute/MeshAttributeHandle.hpp"
-#include "attribute/MeshAttributes.hpp"
 #include "attribute/FlagAccessor.hpp"
+#include "attribute/MeshAttributeHandle.hpp"
 #include "multimesh/attribute/AttributeScopeHandle.hpp"
 
 #include "multimesh/attribute/UseParentScopeRAII.hpp"
@@ -32,6 +31,7 @@
 #include "simplex/IdSimplex.hpp"
 #include "simplex/NavigatableSimplex.hpp"
 #include "simplex/Simplex.hpp"
+#include "wmtk/attribute/CachingAttribute.hpp"
 
 
 // if we have concepts then switch_tuples uses forward_iterator concept
@@ -43,16 +43,11 @@
 namespace wmtk {
 namespace tests {
 class DEBUG_Mesh;
-namespace tools {
-
-class TestTools;
-
-}
 } // namespace tests
 // thread management tool that we will PImpl
 namespace attribute {
 class AttributeManager;
-template <typename T, typename MeshType, int Dim>
+template <typename T, typename MeshType, typename AttributeType, int Dim>
 class Accessor;
 
 } // namespace attribute
@@ -69,13 +64,6 @@ class UpdateEdgeOperationMultiMeshMapFunctor;
 }
 } // namespace operations
 
-namespace simplex {
-class RawSimplex;
-namespace utils {
-class SimplexComparisons;
-}
-} // namespace simplex
-
 namespace io {
 class ParaviewWriter;
 }
@@ -90,7 +78,7 @@ template <typename Visitor>
 class MultiMeshVisitorExecutor;
 
 namespace utils {
-    class MapValidator;
+class MapValidator;
 namespace internal {
 class TupleTag;
 }
@@ -106,11 +94,8 @@ class TupleTag;
 class Mesh : public std::enable_shared_from_this<Mesh>, public wmtk::utils::MerkleTreeInteriorNode
 {
 public:
-    friend class tests::tools::TestTools;
     friend class tests::DEBUG_Mesh;
-    template <typename T, int Dim>
-    friend class attribute::AccessorBase;
-    template <typename T, typename MeshType, int Dim>
+    template <typename T, typename MeshType, typename AttributeType, int Dim>
     friend class attribute::Accessor;
     friend class io::ParaviewWriter;
     friend class HDF5Reader;
@@ -129,11 +114,6 @@ public:
     friend class multimesh::attribute::AttributeScopeHandle;
     friend class multimesh::utils::internal::TupleTag;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
-    friend class simplex::RawSimplex;
-    friend class simplex::Simplex;
-    friend class simplex::IdSimplex;
-    friend class simplex::SimplexCollection;
-    friend class simplex::utils::SimplexComparisons;
     friend class operations::Operation;
     friend class operations::EdgeCollapse;
     friend class operations::EdgeSplit;
@@ -153,7 +133,7 @@ public:
     // That is, a TriMesh is a 2, a TetMesh is a 3
     Mesh(const int64_t& dimension);
     // maximum primitive type id for supported attribute primitive locations
-    Mesh(const int64_t& dimension, const int64_t& max_primitive_type_id, PrimitiveType hash_type);
+    Mesh(const int64_t& dimension, const int64_t& max_primitive_type_id);
     Mesh(Mesh&& other);
     Mesh(const Mesh& other) = delete;
     Mesh& operator=(const Mesh& other) = delete;
@@ -241,18 +221,18 @@ public:
 
 
     template <typename T, int D = Eigen::Dynamic>
-    attribute::Accessor<T, Mesh, D> create_accessor(const attribute::MeshAttributeHandle& handle);
+    attribute::Accessor<T, Mesh, attribute::CachingAttribute<T>, D> create_accessor(const attribute::MeshAttributeHandle& handle);
 
 
     template <typename T, int D = Eigen::Dynamic>
-    const attribute::Accessor<T, Mesh, D> create_const_accessor(
+    const attribute::Accessor<T, Mesh, attribute::CachingAttribute<T>, D> create_const_accessor(
         const attribute::MeshAttributeHandle& handle) const;
 
     template <typename T, int D = Eigen::Dynamic>
-    attribute::Accessor<T, Mesh, D> create_accessor(const TypedAttributeHandle<T>& handle);
+    attribute::Accessor<T, Mesh, attribute::CachingAttribute<T>, D> create_accessor(const TypedAttributeHandle<T>& handle);
 
     template <typename T, int D = Eigen::Dynamic>
-    const attribute::Accessor<T, Mesh, D> create_const_accessor(
+    const attribute::Accessor<T, Mesh, attribute::CachingAttribute<T>, D> create_const_accessor(
         const TypedAttributeHandle<T>& handle) const;
 
     template <typename T>
@@ -463,6 +443,10 @@ public:
      */
     bool is_valid(const simplex::Simplex& s) const;
 
+    bool validate_attributes() const;
+
+    template <typename T>
+    bool validate_handle(const TypedAttributeHandle<T>& handle) const;
 
     //============================
     // MultiMesh interface
@@ -795,7 +779,7 @@ protected:
     // creates a scope as int64_t as the AttributeScopeHandle exists
     [[nodiscard]] attribute::AttributeScopeHandle create_single_mesh_scope();
 
-protected:
+public:
     /**
      * @brief return the global id of the Tuple of the given dimension
      *
@@ -812,8 +796,11 @@ protected:
 
     int64_t id(const simplex::NavigatableSimplex& s) const { return s.index(); }
     int64_t id(const simplex::IdSimplex& s) const { return s.index(); }
+
     /// Forwarding version of id on simplices that does id caching
     virtual int64_t id(const simplex::Simplex& s) const = 0;
+
+protected:
     /// Internal utility to allow id to be virtual with a non-virtual overload in derived -Mesh classes.
     /// Mesh::id invokes Mesh::id_virtual which is final overriden by MeshCRTP<TriMesh>::id_virtual, which in turn invokes MeshCRTP<TriMesh>::id, and then TriMesh::id.
     /// This circuitous mechanism makes MeshCRTP<TriMesh>::id and TriMesh::id fully inlineable, so code that wants to take in any derived class can get optimized results with MeshCRTP, or for cases where classes want to utilize just TriMesh they can get inline/accelerated usage as well.
@@ -864,10 +851,6 @@ private:
      */
     std::vector<TypedAttributeHandle<char>> m_flag_handles;
 
-    // hashes for top level simplices (i.e cells) to identify whether tuples
-    // are invalid or not
-    TypedAttributeHandle<int64_t> m_cell_hash_handle;
-
 
     /**
      * Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index
@@ -884,20 +867,20 @@ private:
 
 template <typename T, int D>
 inline auto Mesh::create_accessor(const TypedAttributeHandle<T>& handle)
-    -> attribute::Accessor<T, Mesh, D>
+    -> attribute::Accessor<T, Mesh, attribute::CachingAttribute<T>, D>
 {
-    return attribute::Accessor<T, Mesh, D>(*this, handle);
+    return attribute::Accessor<T, Mesh, attribute::CachingAttribute<T>, D>(*this, handle);
 }
 template <typename T, int D>
 inline auto Mesh::create_const_accessor(const TypedAttributeHandle<T>& handle) const
-    -> const attribute::Accessor<T, Mesh, D>
+    -> const attribute::Accessor<T, Mesh, attribute::CachingAttribute<T>, D>
 {
-    return attribute::Accessor<T, Mesh, D>(*this, handle);
+    return attribute::Accessor<T, Mesh, attribute::CachingAttribute<T>, D>(*this, handle);
 }
 
 template <typename T, int D>
 inline auto Mesh::create_accessor(const attribute::MeshAttributeHandle& handle)
-    -> attribute::Accessor<T, Mesh, D>
+    -> attribute::Accessor<T, Mesh, attribute::CachingAttribute<T>, D>
 {
     assert(&handle.mesh() == this);
     assert(handle.holds<T>());
@@ -907,7 +890,7 @@ inline auto Mesh::create_accessor(const attribute::MeshAttributeHandle& handle)
 
 template <typename T, int D>
 inline auto Mesh::create_const_accessor(const attribute::MeshAttributeHandle& handle) const
-    -> const attribute::Accessor<T, Mesh, D>
+    -> const attribute::Accessor<T, Mesh, attribute::CachingAttribute<T>, D>
 {
     assert(&handle.mesh() == this);
     assert(handle.holds<T>());
@@ -1016,6 +999,12 @@ inline Tuple Mesh::switch_tuples_unsafe(const Tuple& tuple, const ContainerType&
         r = switch_tuple(r, primitive);
     }
     return r;
+}
+
+template <typename T>
+inline bool Mesh::validate_handle(const TypedAttributeHandle<T>& handle) const
+{
+    return m_attribute_manager.validate_handle(handle);
 }
 
 inline int64_t Mesh::id(const Tuple& tuple, PrimitiveType type) const

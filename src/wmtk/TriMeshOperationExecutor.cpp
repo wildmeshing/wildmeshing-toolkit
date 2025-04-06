@@ -89,7 +89,7 @@ auto TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t) -> Incid
         face_data.ears.begin(),
         [&](const Tuple& edge) {
             // accessing ear face id through FF to make it work also at boundaries
-            const int64_t ear_fid = ff_accessor.const_vector_attribute(edge)[edge.m_local_eid];
+            const int64_t ear_fid = ff_accessor.const_vector_attribute(edge)[edge.local_eid()];
 
             return EarData{
                 /*.fid = */ ear_fid,

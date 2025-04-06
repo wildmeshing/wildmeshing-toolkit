@@ -26,7 +26,7 @@ TEST_CASE("hdf5_in_transit", "[io]")
     HDF5Writer writer("hdf5_in_transit_begin.hdf5");
     mesh.serialize(writer);
 
-    auto double_acc = mesh.create_index_accessor(double_handle);
+    auto& double_acc = mesh.create_index_accessor(double_handle);
     {
         auto scope = mesh.create_scope();
 
@@ -44,7 +44,7 @@ TEST_CASE("hdf5_in_transit", "[io]")
 
             auto double_handle2 =
                 m2.get_attribute_handle<double>("double", wmtk::PrimitiveType::Vertex).as<double>();
-            auto double_acc2 = m2.create_index_accessor(double_handle2);
+            auto& double_acc2 = m2.create_index_accessor(double_handle2);
             for (int j = 0; j < 20; ++j) {
                 CHECK(double_acc2.vector_attribute(j) == double_acc.vector_attribute(j));
             }

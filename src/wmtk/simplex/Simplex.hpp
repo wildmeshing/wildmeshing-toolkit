@@ -12,7 +12,7 @@ class MultiMeshManager;
 template <typename Derived>
 class MeshCRTP;
 namespace attribute {
-template <typename T, typename MeshType, int Dim>
+template <typename T, typename MeshType, typename AttributeType, int Dim>
 class Accessor;
 }
 } // namespace wmtk
@@ -24,7 +24,7 @@ class Simplex
     friend class multimesh::MultiMeshManager;
     template <typename Derived>
     friend class wmtk::MeshCRTP;
-    template <typename T, typename MeshType, int Dim>
+    template <typename T, typename MeshType, typename AttributeType, int Dim>
     friend class attribute::Accessor;
 
     friend class NavigatableSimplex;

@@ -1,43 +1,20 @@
 #pragma once
 
 #include <array>
-#include "PrimitiveType.hpp"
+#include <cstdint>
+#include <iostream>
+#include <string>
+#include <tuple>
+#include <wmtk/PrimitiveType.hpp>
 
 namespace wmtk {
 
-class Mesh;
-class PointMesh;
-class TriMesh;
-class EdgeMesh;
-class TetMesh;
-
-namespace components::internal {
-class MultiMeshFromTag;
-}
-
-namespace attribute {
-template <typename T, typename MeshType, int Dim>
-class Accessor;
-}
-namespace utils {
-class TupleInspector;
-}
-namespace operations {
-class Operation;
-namespace internal {
-class SplitAlternateFacetData;
-class CollapseAlternateFacetData;
-} // namespace internal
-class EdgeOperationData;
-} // namespace operations
-namespace utils {
-// for identifying unique top level simplices between tuples
-class TupleCellLessThan;
-} // namespace utils
-namespace multimesh {
-class MultiMeshManager;
-}
-
+/**
+ * The `Tuple` is the basic navigation tool in our mesh data structure. It consists of the global
+ * cell ID, and of local IDs for any other `PrimitiveType`. We highest simplex dimension we can
+ * represent is 3, i.e., tetrahedra. The cell id always represents the top simplex type. So, for a
+ * `TriMesh`, the cell ID is the triangle ID, and the local face ID will remain empty (-1).
+ */
 class Tuple
 {
 private:
@@ -47,28 +24,11 @@ private:
     int8_t m_local_vid = -1;
     int8_t m_local_eid = -1;
     int8_t m_local_fid = -1;
+#ifdef _WIN32
     std::array<int8_t, 5> m_pad = {{0, 0, 0, 0, 0}}; // align Tuple with 2*int64_t
+#endif
 
 public:
-    friend class Mesh;
-    friend class PointMesh;
-    friend class EdgeMesh;
-    friend class TriMesh;
-    friend class TetMesh;
-    friend class multimesh::MultiMeshManager;
-    template <typename T, typename MeshType, int Dim>
-    friend class attribute::Accessor;
-    friend class operations::Operation;
-    friend class operations::internal::SplitAlternateFacetData;
-    friend class operations::internal::CollapseAlternateFacetData;
-    friend class operations::EdgeOperationData;
-    friend class utils::TupleCellLessThan;
-    friend class utils::TupleInspector;
-    friend class components::internal::MultiMeshFromTag;
-    // friend int64_t Mesh::id(const Tuple& tuple, const PrimitiveType& type) const;
-    // friend Mesh::is_ccw(const Tuple& tuple) const;
-    // friend Mesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const;
-
     Tuple(int8_t local_vid, int8_t local_eid, int8_t local_fid, int64_t global_cid);
 
     //         v2
@@ -92,28 +52,20 @@ public:
     /// Checks if a tuple is "null". This merely implies the global index is -1
     bool is_null() const;
 
-private:
+    int64_t global_cid() const;
     int8_t local_vid() const;
     int8_t local_eid() const;
     int8_t local_fid() const;
+
+    int8_t local_id(const PrimitiveType pt) const;
+
+    std::string as_string() const;
+    explicit operator std::string() const;
+
+    friend std::ostream& operator<<(std::ostream& os, const Tuple& t);
 };
-inline Tuple::Tuple(int8_t local_vid, int8_t local_eid, int8_t local_fid, int64_t global_cid)
-    : m_global_cid(global_cid)
-    , m_local_vid(local_vid)
-    , m_local_eid(local_eid)
-    , m_local_fid(local_fid)
-{}
-// #if !defined(WMTK_ENABLE_HASH_UPDATE)
-// inline Tuple::Tuple(
-//     int8_t local_vid,
-//     int8_t local_eid,
-//     int8_t local_fid,
-//     int64_t global_cid)
-//     : m_global_cid(global_cid)
-//     , m_local_vid(local_vid)
-//     , m_local_eid(local_eid)
-//     , m_local_fid(local_fid)
-//{}
-// #endif
+
+std::ostream& operator<<(std::ostream& os, const Tuple& t);
+
 } // namespace wmtk
 #include "Tuple.hxx"

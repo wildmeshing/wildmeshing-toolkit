@@ -7,35 +7,37 @@
 // used variant to remove the templating + introduce multimesh
 
 namespace wmtk {
-template <typename T>
-class hash;
-class Mesh;
 namespace attribute {
 template <typename T>
-class MeshAttributes;
+class TypedAttributeManager;
 template <typename T>
 class TypedAttributeHandle;
 class AttributeManager;
 
-/** @brief Internal handle representation used by MeshAttributes
+/** @brief Internal handle representation used by TypedAttributeManager
  *
  */
 class AttributeHandle
 {
 protected:
-public:
+private:
     template <typename T>
-    friend class MeshAttributes;
+    friend class TypedAttributeManager;
     template <typename T>
     friend class TypedAttributeHandle;
     friend class AttributeManager;
-    friend class wmtk::hash<AttributeHandle>;
-    friend class Mesh;
 
-    int64_t index = -1;
+    // Index of the attribute in the TypedAttributeHandle
+    int64_t m_index = -1;
     AttributeHandle(int64_t i) noexcept
-        : index(i)
+        : m_index(i)
     {}
+    AttributeHandle& operator=(int64_t i)
+    {
+        m_index = i;
+        return *this;
+    }
+
 
 public:
     AttributeHandle() = default;
@@ -45,10 +47,14 @@ public:
     AttributeHandle& operator=(AttributeHandle&&) = default;
 
 
-    bool operator==(const AttributeHandle& other) const noexcept { return index == other.index; }
-    bool operator<(const AttributeHandle& other) const noexcept { return index < other.index; }
+    bool operator==(const AttributeHandle& other) const noexcept
+    {
+        return m_index == other.m_index;
+    }
+    bool operator<(const AttributeHandle& other) const noexcept { return m_index < other.m_index; }
 
-    bool is_valid() const noexcept { return index != -1; }
+    int64_t index() const noexcept { return m_index; }
+    bool is_valid() const noexcept { return m_index != -1; }
 };
 
 } // namespace attribute

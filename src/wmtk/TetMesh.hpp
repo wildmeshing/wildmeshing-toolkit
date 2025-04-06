@@ -17,7 +17,7 @@ public:
     friend class operations::utils::MultiMeshEdgeSplitFunctor;
     friend class operations::utils::MultiMeshEdgeCollapseFunctor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
-    template <typename U, typename MeshType, int Dim>
+    template <typename U, typename MeshType, typename AT, int Dim>
     friend class attribute::Accessor;
     TetMesh();
     ~TetMesh() override;
@@ -61,8 +61,6 @@ public:
     std::vector<Tuple> orient_vertices(const Tuple& t) const override;
 
 
-protected:
-    void make_cached_accessors();
     int64_t id(const Tuple& tuple, PrimitiveType type) const;
     using MeshCRTP<TetMesh>::id; // getting the (simplex) prototype
 
@@ -72,6 +70,8 @@ protected:
     int64_t id_face(const Tuple& tuple) const { return id(tuple, PrimitiveType::Triangle); }
     int64_t id_tet(const Tuple& tuple) const { return id(tuple, PrimitiveType::Tetrahedron); }
 
+protected:
+    void make_cached_accessors();
     /**
      * @brief internal function that returns the tuple of requested type, and has the global index
      * cid
@@ -132,21 +132,21 @@ inline int64_t TetMesh::id(const Tuple& tuple, PrimitiveType type) const
     switch (type) {
     case PrimitiveType::Vertex: {
         auto tv = m_tv_accessor->const_vector_attribute<4>(tuple);
-        return tv(tuple.m_local_vid);
+        return tv(tuple.local_vid());
         break;
     }
     case PrimitiveType::Edge: {
         auto te = m_te_accessor->const_vector_attribute<6>(tuple);
-        return te(tuple.m_local_eid);
+        return te(tuple.local_eid());
         break;
     }
     case PrimitiveType::Triangle: {
         auto tf = m_tf_accessor->const_vector_attribute<4>(tuple);
-        return tf(tuple.m_local_fid);
+        return tf(tuple.local_fid());
         break;
     }
     case PrimitiveType::Tetrahedron: {
-        return tuple.m_global_cid;
+        return tuple.global_cid();
         break;
     }
     default: assert(false); // "Tuple id: Invalid primitive type"

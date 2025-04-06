@@ -3,7 +3,6 @@
 #include <cassert>
 #include <optional>
 #include <stdexcept>
-#include <wmtk/utils/TupleInspector.hpp>
 #include "local_switch_tuple.hpp"
 namespace wmtk::multimesh::utils {
 
@@ -12,10 +11,8 @@ namespace {
 
 bool hash_free_tuple_equality(const Tuple& a, const Tuple& b)
 {
-    return wmtk::utils::TupleInspector::local_vid(a) == wmtk::utils::TupleInspector::local_vid(b) &&
-           wmtk::utils::TupleInspector::local_eid(a) == wmtk::utils::TupleInspector::local_eid(b) &&
-           wmtk::utils::TupleInspector::local_fid(a) == wmtk::utils::TupleInspector::local_fid(b) &&
-           wmtk::utils::TupleInspector::global_cid(a) == wmtk::utils::TupleInspector::global_cid(b);
+    return a.local_vid() == b.local_vid() && a.local_eid() == b.local_eid() &&
+           a.local_fid() == b.local_fid() && a.global_cid() == b.global_cid();
 }
 
 std::optional<std::vector<PrimitiveType>> find_local_switch_sequence_on_edge(

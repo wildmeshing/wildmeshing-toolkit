@@ -1,52 +1,62 @@
 #pragma once
-#include "CachingAccessor.hpp"
-#include <wmtk/simplex/Simplex.hpp>
+#include <algorithm>
 #include <wmtk/simplex/IdSimplex.hpp>
+#include <wmtk/simplex/Simplex.hpp>
+#include "CachingAttribute.hpp"
+#include "TypedAttributeHandle.hpp"
 
-namespace wmtk {
-class Mesh;
-class TriMesh;
-class TetMesh;
-class TriMeshOperationExecutor;
-class EdgeMesh;
-namespace tests {
-class DEBUG_TriMesh;
-class DEBUG_EdgeMesh;
-} // namespace tests
-} // namespace wmtk
 namespace wmtk::attribute {
+class MeshAttributeHandle;
 /**
- * A CachingAccessor that uses tuples for accessing attributes instead of indices.
- * As global simplex ids should not be publicly available, this accessor uses the Mesh.id() function
- * to map from a tuple to the global simplex id.
+ * An Accessor that uses tuples for accessing attributes instead of indices.
+ * The parameter T is the type of the attribute data, and always must match the underlyign
+ * attribute's type MeshType can default to Mesh, but specializing it with the specific type of mesh
+ * this attribute lies in avoids some virtual calls AttributeType_ specifies the type of teh
+ * underlying attribute, which should almost always be CachingAttribute<T> to take advantage of our
+ * transactional caching system, but for unit tests (or guaranteed raw access to the underlyg
+ * buffers) this can be changed to Attribute<T> Dim specifies the dimension of the underlying
+ * attribute - specifying this parameter when possible can have a notable performance improvement,
+ * so specify it when possible. This performance change is the change between passing a single
+ * pointer for each attribute vs a pointer + int size for each value
  */
-template <typename T, typename MeshType = Mesh, int Dim = Eigen::Dynamic>
-class Accessor : protected CachingAccessor<T, Dim>
+template <
+    typename T,
+    typename MeshType = Mesh,
+    typename AttributeType_ = CachingAttribute<T>,
+    int Dim = Eigen::Dynamic>
+class Accessor
 {
 public:
     friend class wmtk::Mesh;
-    friend class wmtk::TetMesh;
-    friend class wmtk::TriMesh;
-    friend class wmtk::EdgeMesh;
-    friend class wmtk::PointMesh;
     using Scalar = T;
 
-    using BaseType = AccessorBase<T, Dim>;
-    using CachingBaseType = CachingAccessor<T, Dim>;
+    using AttributeType = AttributeType_; // CachingAttribute<T>;
 
-    // Eigen::Map<VectorX<T>>
+    // Even though the attribute dimension is specified above by the Dim parameter, we still allow
+    // users to specify the dimension of the attributes they extract - this lets Dim=Eigen::Dynamic
+    // accessors be passed around with internal logic specifying the appropriate dimension
+    // Eigen::Map<Vector<T,D>>
     template <int D = Dim>
-    using MapResult = internal::MapResult<T, D>;
-    // Eigen::Map<const VectorX<T>>
+    using MapResult = typename AttributeType::template MapResult<D>;
+    // Eigen::Map<const Vector<T,D>>
     template <int D = Dim>
-    using ConstMapResult = internal::ConstMapResult<T, D>;
+    using ConstMapResult = typename AttributeType::template ConstMapResult<D>;
 
 
     Accessor(MeshType& m, const TypedAttributeHandle<T>& handle);
     Accessor(const MeshType& m, const TypedAttributeHandle<T>& handle);
 
-    template <typename OMType, int D>
-    Accessor(const Accessor<T, OMType, D>& o);
+    template <typename OMType, typename OAT, int D>
+    Accessor(const Accessor<T, OMType, OAT, D>& o);
+
+    // dimension of the attribute (the return types are a dimensino-vector)
+    auto dimension() const -> int64_t;
+    // the number of (vector-)values that can be written to. Note this is can be larger than the
+    // size of the mesh
+    auto reserved_size() const -> int64_t;
+    // the default value assigned to new values of this attribute (for vector valued attributes
+    // every dimension holds is this)
+    auto default_value() const -> const Scalar&;
 
 
     // =============
@@ -54,46 +64,57 @@ public:
     // =============
     // NOTE: If any compilation warnings occur check that there is an overload for an index method
 
-    T const_topological_scalar_attribute(const Tuple& t, PrimitiveType pt) const;
+
+    // Access to a vector-valued attribute
+    template <int D = Dim, typename ArgType = wmtk::Tuple>
+    MapResult<std::max(D, Dim)> vector_attribute(const ArgType& t);
+    template <int D = Dim, typename ArgType = wmtk::Tuple>
+    ConstMapResult<std::max(D, Dim)> const_vector_attribute(const ArgType& t) const;
+
+    // Scalar access to an attribute (to ignore the Eigen::Map object when unecessary)
     template <typename ArgType>
-    T& topological_scalar_attribute(const ArgType& t);
+    Scalar& scalar_attribute(const ArgType& t);
     template <typename ArgType>
-    T const_scalar_attribute(const ArgType& t) const;
-    template <typename ArgType>
-    T& scalar_attribute(const ArgType& t);
+    const Scalar& const_scalar_attribute(const ArgType& t) const;
 
-    template < int D = Dim, typename ArgType = wmtk::Tuple>
-    ConstMapResult<D> const_vector_attribute(const ArgType& t) const;
-    template < int D = Dim, typename ArgType = wmtk::Tuple>
-    MapResult<D> vector_attribute(const ArgType& t);
+    // For topological attributes we want to select teh value (global_id) by its (local_id) index,
+    // for whichever local index this attribute lies on For instance, to get the global index of a
+    // vertx from a FV matrix we want to access const_vector_attribute(global_id)(local_vid). This
+    // function lets us use the primitive type to identify which local id we want.
+    const T& const_topological_scalar_attribute(const Tuple& t, PrimitiveType pt) const;
 
-    using BaseType::dimension; // const() -> int64_t
-    using BaseType::reserved_size; // const() -> int64_t
 
-    using BaseType::attribute; // access to Attribute object being used here
-    using BaseType::handle;
-    using BaseType::primitive_type;
-    using BaseType::typed_handle;
-    using CachingBaseType::has_stack;
-    using CachingBaseType::mesh;
-    using CachingBaseType::stack_depth;
-
-    MeshType& mesh() { return static_cast<MeshType&>(BaseType::mesh()); }
-    const MeshType& mesh() const { return static_cast<const MeshType&>(BaseType::mesh()); }
+    MeshType& mesh();
+    const MeshType& mesh() const;
 
 protected:
-
+    // For any simplex identifier we have we have a way to generaet a global id.
+    // Tuple's global id is inferred by the primtiive_type
     int64_t index(const Tuple& t) const;
+    // Simplex's primitive type must match this attribute, should assert failreu if not
     int64_t index(const simplex::Simplex& t) const;
+    // IdSimplex's primitive type must match this attribute, should assert failreu if not
     int64_t index(const simplex::IdSimplex& t) const;
 
-    using CachingBaseType::base_type;
-    CachingBaseType& caching_base_type() { return *this; }
-    const CachingBaseType& caching_base_type() const { return *this; }
-
 public:
-    CachingBaseType& index_access() { return caching_base_type(); }
-    const CachingBaseType& index_access() const { return caching_base_type(); }
+    // The underlying attribute object.
+    AttributeType& attribute();
+    // The underlying attribute object
+    const AttributeType& attribute() const;
+
+    // Provides access to global ids directly
+    AttributeType& index_access() { return attribute(); }
+    // Provides access to global ids directly
+    const AttributeType& index_access() const { return attribute(); }
+
+    MeshAttributeHandle handle() const;
+    const TypedAttributeHandle<T>& typed_handle() const;
+    PrimitiveType primitive_type() const;
+
+private:
+    TypedAttributeHandle<T> m_handle;
+    MeshType& m_mesh;
+    AttributeType& m_attribute;
 };
 } // namespace wmtk::attribute
 #include "Accessor.hxx"
