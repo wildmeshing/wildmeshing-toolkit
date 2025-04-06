@@ -20,11 +20,11 @@ class AbstractAttributeContainer
 {
 public:
     virtual ~AbstractAttributeContainer() = default;
-    virtual void move(size_t from, size_t to){};
-    virtual void resize(size_t){};
-    virtual void rollback(){};
-    virtual void begin_protect(){};
-    virtual void end_protect(){};
+    virtual void move(size_t from, size_t to) {};
+    virtual void resize(size_t) {};
+    virtual void rollback() {};
+    virtual void begin_protect() {};
+    virtual void end_protect() {};
 };
 
 
@@ -443,14 +443,13 @@ TEST_CASE("accessor_read_performance", "[attributes][.]")
         std::cout << "sum = " << sum << std::endl;
     }
     {
-        const auto& attr = pp_acc.attribute();
         POLYSOLVE_SCOPED_STOPWATCH(
             "Attribute Read (attr.const_vector_attribute(t)[j])",
             wmtk::logger());
         double sum = 0;
         for (size_t i = 0; i < n_repetitions; ++i) {
             for (size_t i = 0; i < 20; ++i) {
-                auto v = attr.const_vector_attribute(i);
+                auto v = pp_acc.const_vector_attribute(i);
                 for (int j = 0; j < 3; ++j) {
                     sum += v(j);
                 }
@@ -562,8 +561,7 @@ TEST_CASE("accessor_write_performance", "[attributes][.]")
     }
     {
         POLYSOLVE_SCOPED_STOPWATCH("Vec map write", wmtk::logger());
-        wmtk::attribute::Attribute<double>& attr = pp_acc.attribute();
-        const size_t dim = attr.dimension();
+        const size_t dim = pp_acc.dimension();
         for (size_t k = 0; k < n_repetitions; ++k) {
             for (size_t i = 0; i < 20; ++i) {
                 Eigen::Map<Eigen::VectorXd> d(data.data() + dim * rand_entries[k][i], dim);
@@ -576,9 +574,8 @@ TEST_CASE("accessor_write_performance", "[attributes][.]")
     {
         // std::vector<double> data(3 * 20);
         POLYSOLVE_SCOPED_STOPWATCH("Vec map write template size", wmtk::logger());
-        wmtk::attribute::Attribute<double>& attr = pp_acc.attribute();
         double sum = 0;
-        const size_t dim = attr.dimension();
+        const size_t dim = pp_acc.dimension();
         for (size_t k = 0; k < n_repetitions; ++k) {
             for (size_t i = 0; i < 20; ++i) {
                 Eigen::Map<Eigen::Vector3d> d(data.data() + 3 * rand_entries[k][i], 3);
@@ -592,11 +589,10 @@ TEST_CASE("accessor_write_performance", "[attributes][.]")
         POLYSOLVE_SCOPED_STOPWATCH(
             "Attribute Write (attr.const_vector_attribute(t)[j])",
             wmtk::logger());
-        wmtk::attribute::Attribute<double>& attr = pp_acc.attribute();
         double sum = 0;
         for (size_t k = 0; k < n_repetitions; ++k) {
             for (size_t i = 0; i < 20; ++i) {
-                auto v = attr.vector_attribute(rand_entries[k][i]);
+                auto v = pp_acc.vector_attribute(rand_entries[k][i]);
                 for (int j = 0; j < 3; ++j) {
                     v(j) += 1;
                 }

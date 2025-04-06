@@ -53,7 +53,7 @@ public:
     template <typename T>
     attribute::Attribute<T>& create_base_accessor(const TypedAttributeHandle<T>& handle)
     {
-        return attribute::Accessor<T>(*this, handle).index_access();
+        return attribute::Accessor<T>(*this, handle).attribute();
     }
 
     template <typename T>

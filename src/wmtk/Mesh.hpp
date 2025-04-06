@@ -221,7 +221,8 @@ public:
 
 
     template <typename T, int D = Eigen::Dynamic>
-    attribute::Accessor<T, Mesh, attribute::CachingAttribute<T>, D> create_accessor(const attribute::MeshAttributeHandle& handle);
+    attribute::Accessor<T, Mesh, attribute::CachingAttribute<T>, D> create_accessor(
+        const attribute::MeshAttributeHandle& handle);
 
 
     template <typename T, int D = Eigen::Dynamic>
@@ -229,7 +230,8 @@ public:
         const attribute::MeshAttributeHandle& handle) const;
 
     template <typename T, int D = Eigen::Dynamic>
-    attribute::Accessor<T, Mesh, attribute::CachingAttribute<T>, D> create_accessor(const TypedAttributeHandle<T>& handle);
+    attribute::Accessor<T, Mesh, attribute::CachingAttribute<T>, D> create_accessor(
+        const TypedAttributeHandle<T>& handle);
 
     template <typename T, int D = Eigen::Dynamic>
     const attribute::Accessor<T, Mesh, attribute::CachingAttribute<T>, D> create_const_accessor(
@@ -442,8 +444,6 @@ public:
      * @brief Check if the cached id in a simplex is up-to-date.
      */
     bool is_valid(const simplex::Simplex& s) const;
-
-    bool validate_attributes() const;
 
     template <typename T>
     bool validate_handle(const TypedAttributeHandle<T>& handle) const;
@@ -810,12 +810,12 @@ protected:
     template <typename T, typename MeshType>
     static auto& get_index_access(attribute::Accessor<T, MeshType>& attr)
     {
-        return attr.index_access();
+        return attr.attribute();
     }
     template <typename T, typename MeshType>
     static auto& get_index_access(const attribute::Accessor<T, MeshType>& attr)
     {
-        return attr.index_access();
+        return attr.attribute();
     }
 
 

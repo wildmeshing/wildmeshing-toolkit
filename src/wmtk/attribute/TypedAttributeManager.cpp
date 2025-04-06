@@ -58,10 +58,15 @@ std::map<std::string, std::size_t> TypedAttributeManager<T>::child_hashes() cons
     // default implementation pulls the child attributes (ie the attributes)
     std::map<std::string, std::size_t> ret = wmtk::utils::MerkleTreeInteriorNode::child_hashes();
 
-    // hash handle data
-    for (const auto& [name, handle] : m_handles) {
+    for (int64_t i = 0; i < m_attributes.size(); ++i) {
+        if (!m_attributes[i]) {
+            continue;
+        }
+        const std::string& name = m_attributes[i]->name();
+        AttributeHandle handle(i);
         ret["attr_handle_" + name] = std::hash<AttributeHandle>{}(handle);
     }
+
     return ret;
 }
 template <typename T>
@@ -70,10 +75,18 @@ std::map<std::string, const wmtk::utils::Hashable*> TypedAttributeManager<T>::ch
 
 {
     std::map<std::string, const wmtk::utils::Hashable*> ret;
-    for (const auto& [name, handle] : m_handles) {
+
+    for (int64_t i = 0; i < m_attributes.size(); ++i) {
+        if (!m_attributes[i]) {
+            continue;
+        }
+        const std::string& name = m_attributes[i]->name();
+        AttributeHandle handle(i);
         const auto& attr = attribute(handle);
+
         ret["attr_" + name] = &attr;
     }
+
     return ret;
 }
 
@@ -138,19 +151,20 @@ AttributeHandle TypedAttributeManager<T>::register_attribute(
             name);
     }
 
-    AttributeHandle handle;
-
-
-    if (replace && m_handles.find(name) != m_handles.end()) {
-        auto it = m_handles.find(name);
-        handle = it->second.index();
-    } else {
-        handle = m_attributes.size();
-        m_attributes.emplace_back(
-            std::make_unique<CachingAttribute<T>>(name, dimension, default_value, reserved_size()));
+    if (replace) {
+        for (int64_t i = 0; i < m_attributes.size(); ++i) {
+            if (!m_attributes[i]) {
+                continue;
+            }
+            if (m_attributes[i]->name() == name) {
+                return i;
+            }
+        }
     }
-    m_handles[name] = handle;
 
+    AttributeHandle handle(m_attributes.size());
+    m_attributes.emplace_back(
+        std::make_unique<CachingAttribute<T>>(name, dimension, default_value, reserved_size()));
 
     return handle;
 }
@@ -167,25 +181,35 @@ void TypedAttributeManager<T>::assert_capacity_valid(int64_t cap) const
 template <typename T>
 AttributeHandle TypedAttributeManager<T>::attribute_handle(const std::string& name) const
 {
-    auto it = m_handles.find(name);
-    if (it == m_handles.end()) {
-        log_and_throw_error("Cannot find handle for attribute named {}", name);
+    for (int64_t i = 0; i < m_attributes.size(); ++i) {
+        if (!m_attributes[i]) {
+            continue;
+        }
+        if (m_attributes[i]->name() == name) {
+            return i;
+        }
     }
-    return it->second;
+
+    log_and_throw_error("Cannot find handle for attribute named {}", name);
 }
 template <typename T>
 bool TypedAttributeManager<T>::has_attribute(const std::string& name) const
 {
-    auto it = m_handles.find(name);
-    return it != m_handles.end() && bool(m_attributes[it->second.index()]);
+    for (int64_t i = 0; i < m_attributes.size(); ++i) {
+        if (!m_attributes[i]) {
+            continue;
+        }
+        if (m_attributes[i]->name() == name) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 template <typename T>
 bool TypedAttributeManager<T>::operator==(const TypedAttributeManager<T>& other) const
 {
-    if (m_handles != other.m_handles) {
-        return false;
-    }
     if (m_attributes.size() != other.m_attributes.size()) {
         return false;
     }
@@ -296,74 +320,22 @@ void TypedAttributeManager<T>::remove_attribute(const AttributeHandle& attribute
         return;
     }
 
-    const std::string& name = attr->name();
-    m_handles.erase(name);
     m_attributes[attribute.index()].reset();
-}
-
-template <typename T>
-bool TypedAttributeManager<T>::validate() const
-{
-    if (m_handles.size() > m_attributes.size()) {
-        logger().warn(
-            "More handles than attributes. Handles: {}, attributes: {}",
-            m_handles.size(),
-            m_attributes.size());
-        return false;
-    }
-    for (const auto& [name, handle] : m_handles) {
-        if (handle.index() >= m_attributes.size()) {
-            logger().warn(
-                "Handle index for `{}` is out of bounds for attributes vector. Handle index: {}, "
-                "attributes "
-                "vector size: {}",
-                name,
-                handle.index(),
-                m_attributes.size());
-            return false;
-        }
-        if (!m_attributes[handle.index()]) {
-            continue;
-        }
-        const auto& attr = m_attributes[handle.index()];
-        if (attr->name() != name) {
-            logger().warn(
-                "Attribute name is not the same as the name in the handles map. Attribute: {}, "
-                "handles map: {}",
-                attr->name(),
-                name);
-            return false;
-        }
-    }
-
-    return true;
 }
 
 template <typename T>
 bool TypedAttributeManager<T>::validate_handle(const AttributeHandle& handle) const
 {
-    for (const auto& [name, h] : m_handles) {
-        if (h.index() != handle.index()) {
-            continue;
-        }
-        if (!m_attributes[handle.index()]) {
-            return true;
-        }
-        const auto& attr_name = m_attributes[handle.index()]->name();
-        if (attr_name != name) {
-            logger().warn(
-                "Attribute name is not the same as the name in the handles map. Attribute: {}, "
-                "handles map: {}",
-                attr_name,
-                name);
-            return false;
-        }
-
-        return true;
+    if (handle.index() >= m_attributes.size()) {
+        logger().warn("Handle index is larger than the attribute vector");
+        return false;
     }
 
-    logger().warn("Handle with index `{}` was not found in the handles map.", handle.index());
-    return false;
+    if (!m_attributes[handle.index()]) {
+        return false;
+    }
+
+    return true;
 }
 
 template <typename T>
@@ -379,24 +351,13 @@ void TypedAttributeManager<T>::clear_dead_attributes()
         }
     }
     m_attributes.resize(new_index);
-
-    // clean up m_handles
-    for (auto it = m_handles.begin(); it != m_handles.end(); /* no increment */) {
-        if (int64_t new_ind = old_to_new_id[it->second.index()]; new_ind == -1) {
-            it = m_handles.erase(it);
-        } else {
-            it->second = new_ind;
-            ++it;
-        }
-    }
 }
 template <typename T>
 std::string TypedAttributeManager<T>::get_name(const AttributeHandle& handle) const
 {
-    for (const auto& [key, value] : m_handles) {
-        if (value == handle) {
-            return key;
-        }
+    assert(handle.index() < m_attributes.size());
+    if (m_attributes[handle.index()]) {
+        return m_attributes[handle.index()]->name();
     }
     throw std::runtime_error("Could not find handle in TypedAttributeManager");
     return "UNKNOWN";
@@ -418,8 +379,6 @@ void TypedAttributeManager<T>::set_name(const AttributeHandle& handle, const std
     assert(!has_attribute(name)); // name should not exist already
 
     attr->set_name(name);
-    m_handles[name] = m_handles[old_name];
-    m_handles.erase(old_name);
 }
 
 template class TypedAttributeManager<char>;

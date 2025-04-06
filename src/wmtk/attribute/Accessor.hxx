@@ -49,6 +49,12 @@ int64_t Accessor<T, MeshType, AttributeType, Dim>::index(const simplex::IdSimple
     return this->mesh().id(t);
 }
 
+template <typename T, typename MeshType, typename AttributeType_, int Dim>
+inline int64_t Accessor<T, MeshType, AttributeType_, Dim>::index(const int64_t t) const
+{
+    return t;
+}
+
 template <typename T, typename MeshType, typename AttributeType, int Dim>
 template <int D, typename ArgType>
 auto Accessor<T, MeshType, AttributeType, Dim>::const_vector_attribute(const ArgType& t) const
@@ -123,6 +129,12 @@ template <typename T, typename MeshType, typename AttributeType, int Dim>
 inline const MeshType& Accessor<T, MeshType, AttributeType, Dim>::mesh() const
 {
     return m_mesh;
+}
+
+template <typename T, typename MeshType, typename AttributeType_, int Dim>
+inline int64_t Accessor<T, MeshType, AttributeType_, Dim>::transaction_depth() const
+{
+    return attribute().transaction_depth();
 }
 
 template <typename T, typename MeshType, typename AttributeType, int Dim>
