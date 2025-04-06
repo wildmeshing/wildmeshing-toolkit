@@ -5,11 +5,8 @@
 
 namespace wmtk::io {
 
-MshWriter::MshWriter(const std::filesystem::path& filename)
-    : m_name(filename)
-{}
-
 void MshWriter::write(
+    const std::filesystem::path& m_name,
     const Mesh& mesh,
     const std::string& position_attribute_name,
     const std::vector<std::string>& cell_attribute_names)
@@ -24,14 +21,16 @@ void MshWriter::write(
     const int64_t dim = (int64_t)mesh.top_simplex_type();
     const int64_t pos_dim = pos_handle.dimension();
 
-    auto& format = m_spec.mesh_format;
+    mshio::MshSpec spec;
+
+    auto& format = spec.mesh_format;
     format.version = "4.1"; // Only version "2.2" and "4.1" are supported.
     format.file_type = 1; // 0: ASCII, 1: binary.
     format.data_size = sizeof(size_t); // Size of data, defined as sizeof(size_t) = 8.
 
     // nodes
     {
-        auto& nodes = m_spec.nodes;
+        auto& nodes = spec.nodes;
         nodes.num_entity_blocks = 1; // Number of node blocks.
         nodes.num_nodes = vertices.size(); // Total number of nodes.
         nodes.min_node_tag = 1;
@@ -61,7 +60,7 @@ void MshWriter::write(
 
     // elements
     {
-        auto& elements = m_spec.elements;
+        auto& elements = spec.elements;
         elements.num_entity_blocks = 1; // Number of element blocks.
         elements.num_elements = cells.size(); // Total number of elmeents.
         elements.min_element_tag = 1;
@@ -108,8 +107,8 @@ void MshWriter::write(
             mesh.get_attribute_handle_typed<double>(attribute_name, mesh.top_simplex_type());
         const auto acc = mesh.create_const_accessor(attr);
 
-        m_spec.element_data.push_back({});
-        auto& data = m_spec.element_data.back();
+        spec.element_data.push_back({});
+        auto& data = spec.element_data.back();
 
         auto& header = data.header;
         header.string_tags.push_back(attribute_name); // [field_name, <interpolation_scheme>, ...]
@@ -135,7 +134,7 @@ void MshWriter::write(
         }
     }
 
-    mshio::save_msh(m_name.string(), m_spec);
+    mshio::save_msh(m_name.string(), spec);
 }
 
 } // namespace wmtk::io

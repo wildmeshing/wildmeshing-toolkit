@@ -9,17 +9,15 @@ namespace wmtk::io {
 class MshWriter
 {
 public:
-    MshWriter(const std::filesystem::path& filename);
+    MshWriter() = delete;
 
-    void write(
+    static void write(
+        const std::filesystem::path& m_name,
         const Mesh& mesh,
         const std::string& position_attribute_name,
         const std::vector<std::string>& cell_attribute_names = {});
 
 private:
-    std::filesystem::path m_name;
-
-    mshio::MshSpec m_spec;
 };
 
 } // namespace wmtk::io

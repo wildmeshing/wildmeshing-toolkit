@@ -332,8 +332,7 @@ TEST_CASE("msh_write", "[io]")
     io::Cache cache("wmtk_test", ".");
     const std::filesystem::path test_file = cache.get_cache_path() / "msh_write.msh";
 
-    io::MshWriter writer(test_file);
-    REQUIRE_NOTHROW(writer.write(m1, "vertices", {"a"}));
+    REQUIRE_NOTHROW(io::MshWriter::write(test_file, m1, "vertices", {"a"}));
 
     std::shared_ptr<Mesh> m2_ptr;
     REQUIRE_NOTHROW(m2_ptr = read_mesh(test_file, false, {"a"}));
