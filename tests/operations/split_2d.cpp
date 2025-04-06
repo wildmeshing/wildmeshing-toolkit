@@ -134,10 +134,10 @@ TEST_CASE("delete_simplices", "[operations][2D]")
     executor.delete_simplices();
     REQUIRE(executor.flag_accessors[1].index_access().is_active(edge_index) == false);
     REQUIRE(executor.flag_accessors[2].index_access().is_active(face_index) == false);
-    REQUIRE(executor.ff_accessor.index_access().const_vector_attribute(face_index)[0] == -1);
-    REQUIRE(executor.ff_accessor.index_access().const_vector_attribute(face_index)[1] == 2);
-    REQUIRE(executor.ff_accessor.index_access().const_vector_attribute(face_index)[2] == 1);
-    REQUIRE(executor.ef_accessor.index_access().const_scalar_attribute(edge_index) == 0);
+    REQUIRE(executor.ff_accessor.const_vector_attribute(face_index)[0] == -1);
+    REQUIRE(executor.ff_accessor.const_vector_attribute(face_index)[1] == 2);
+    REQUIRE(executor.ff_accessor.const_vector_attribute(face_index)[2] == 1);
+    REQUIRE(executor.ef_accessor.const_scalar_attribute(edge_index) == 0);
 }
 
 TEST_CASE("operation_state", "[operations][2D]")

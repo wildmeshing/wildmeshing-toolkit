@@ -47,7 +47,8 @@ public:
         bool replace = false,
         T default_value = T(0));
 
-    // Number of (vector-)values available to be written to, which can be more than the number of simplcies the mesh has
+    // Number of (vector-)values available to be written to, which can be more than the number of
+    // simplcies the mesh has
     int64_t reserved_size() const;
 
     // sets teh size of teh store to be the specified size
@@ -64,8 +65,7 @@ public:
      * @param attributes Vector of attributes that should be removed.
      * @param invalidate_handles invalidates all handles. If true this garbage collects old handles
      */
-    void remove_attributes(
-        const std::vector<AttributeHandle>& attributes);
+    void remove_attributes(const std::vector<AttributeHandle>& attributes);
     /**
      * @brief Remove a single attribute
      *
@@ -112,11 +112,6 @@ public:
     //https://clang.llvm.org/extra/clang-tidy/checks/modernize/pass-by-value.html
     void set(const AttributeHandle& handle, std::vector<T> val);
 
-    /**
-     * @brief Validate that handles and attributes are in sync.
-     */
-    bool validate() const;
-
     bool validate_handle(const AttributeHandle& handle) const;
 
 protected:
@@ -127,8 +122,6 @@ protected:
     size_t attribute_size(const AttributeHandle& handle) const;
 
 private:
-    std::map<std::string, AttributeHandle> m_handles;
-
     // The vector held in each Attribute in m_attributes has this size
     int64_t m_reserved_size = -1;
 

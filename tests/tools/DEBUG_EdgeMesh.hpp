@@ -32,7 +32,7 @@ public:
     template <typename T>
     attribute::Attribute<T>& create_base_accessor(const TypedAttributeHandle<T>& handle)
     {
-        return attribute::Accessor<T>(*this, handle).index_access();
+        return attribute::Accessor<T>(*this, handle).attribute();
     }
 
     template <typename T>
@@ -42,6 +42,7 @@ public:
         const attribute::Accessor<T> acc(const_cast<DEBUG_EdgeMesh&>(*this), handle);
         return acc.attribute();
     }
+
     template <typename T>
     const attribute::Attribute<T>& create_base_accessor(const TypedAttributeHandle<T>& handle) const
     {

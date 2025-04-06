@@ -8,7 +8,8 @@
 #include "../tools/TriMesh_examples.hpp"
 
 
-using namespace wmtk::tests;
+using namespace wmtk;
+using namespace tests;
 namespace {
 
 
@@ -81,8 +82,6 @@ TEST_CASE("test_accessor_basic", "[accessor]")
         m.register_attribute_typed<int64_t>("int64_t1", wmtk::PrimitiveType::Vertex, 1, false, 1);
     auto double_def1_handle =
         m.register_attribute_typed<double>("double1", wmtk::PrimitiveType::Vertex, 3, false, 1);
-
-    REQUIRE(m.validate_attributes());
 
     REQUIRE(m.get_attribute_dimension(char_handle) == 1);
     REQUIRE(m.get_attribute_dimension(int64_t_handle) == 1);
@@ -214,7 +213,7 @@ TEST_CASE("test_accessor_caching", "[accessor]")
         auto int64_t_acc = m.create_accessor(int64_t_handle);
         auto double_acc = m.create_accessor(double_handle);
         {
-            auto depth = int64_t_acc.attribute().transaction_depth();
+            auto depth = int64_t_acc.transaction_depth();
             REQUIRE(depth == 1);
 
             // make sure base accessors are not affected
@@ -367,6 +366,8 @@ TEST_CASE("test_accessor_caching_scope_fails_success", "[accessor][caching]")
 
 TEST_CASE("attribute_clear", "[attributes]")
 {
+    wmtk::logger().set_level(spdlog::level::off);
+
     wmtk::TriMesh mold = single_equilateral_triangle(); // 0xa <- 0xa
     DEBUG_TriMesh& m = static_cast<DEBUG_TriMesh&>(mold);
 
@@ -409,24 +410,6 @@ TEST_CASE("custom_attributes_vector", "[attributes]")
     CHECK(m.custom_attributes().size() == 1);
 }
 
-TEST_CASE("delete_attribute", "[attributes]")
-{
-    wmtk::logger().set_level(spdlog::level::err);
-
-    DEBUG_TriMesh m = single_equilateral_triangle();
-
-    auto a1 = m.register_attribute<double>("a1", wmtk::PrimitiveType::Vertex, 1);
-    auto a2 = m.register_attribute<double>("a2", wmtk::PrimitiveType::Vertex, 1);
-    auto a3 = m.register_attribute<double>("a3", wmtk::PrimitiveType::Vertex, 1);
-
-    CHECK(m.validate_attributes());
-
-    m.delete_attribute(a1.handle());
-    CHECK(m.validate_attributes());
-    m.delete_attribute(a1.handle()); // delete once more
-    CHECK(m.validate_attributes());
-}
-
 TEST_CASE("validate_handle", "[attributes]")
 {
     wmtk::logger().set_level(spdlog::level::off);
@@ -436,11 +419,9 @@ TEST_CASE("validate_handle", "[attributes]")
     auto a1 = m.register_attribute<double>("a1", wmtk::PrimitiveType::Vertex, 1);
     auto a2 = m.register_attribute<double>("a2", wmtk::PrimitiveType::Vertex, 1);
     auto a3 = m.register_attribute<double>("a3", wmtk::PrimitiveType::Vertex, 1);
-
-    CHECK(m.validate_attributes());
+    auto a4 = m.register_attribute<double>("a4", wmtk::PrimitiveType::Vertex, 2);
 
     m.clear_attributes({a1, a3});
-    CHECK(m.validate_attributes());
 
     CHECK(a1.is_valid());
     CHECK_FALSE(a2.is_valid());
@@ -451,10 +432,167 @@ TEST_CASE("validate_handle", "[attributes]")
     CHECK(a1.is_valid());
     CHECK(a3.is_valid());
 
+    auto acc = m.create_accessor<double>(a1);
+    acc.scalar_attribute(0) = 1;
+    CHECK(acc.scalar_attribute(m.vertex_tuple_from_id(0)) == 1);
+    CHECK(acc.scalar_attribute(0) == 1);
+
     m.clear_attributes();
-    CHECK(m.validate_attributes());
     CHECK_FALSE(a1.is_valid());
     CHECK_FALSE(a2.is_valid());
     CHECK_FALSE(a3.is_valid());
     CHECK_THROWS(m.get_attribute_handle<double>("a1", wmtk::PrimitiveType::Vertex));
+}
+
+namespace {
+// template magic for overload pattern
+template <class... Ts>
+struct overload : Ts...
+{
+    using Ts::operator()...;
+};
+template <class... Ts>
+overload(Ts...) -> overload<Ts...>;
+
+// same thing but without template magic
+struct PrintVisitor
+{
+    Mesh& m_m;
+
+    PrintVisitor(wmtk::Mesh& m)
+        : m_m(m)
+    {}
+
+    void operator()(attribute::TypedAttributeHandle<double>& typed_handle) const
+    {
+        logger().info("PrintVisitor: Attribute {} is double", m_m.get_attribute_name(typed_handle));
+    }
+
+    void operator()(attribute::TypedAttributeHandle<int64_t>& typed_handle) const
+    {
+        logger().info(
+            "PrintVisitor: Attribute {} is int64_t",
+            m_m.get_attribute_name(typed_handle));
+    }
+
+    void operator()(attribute::TypedAttributeHandle<char>& typed_handle) const
+    {
+        logger().info("PrintVisitor: Attribute {} is char", m_m.get_attribute_name(typed_handle));
+    }
+
+    void operator()(attribute::TypedAttributeHandle<Rational>& typed_handle) const
+    {
+        logger().info(
+            "PrintVisitor: Attribute {} is Rational",
+            m_m.get_attribute_name(typed_handle));
+    }
+};
+
+struct PrintVisitorT
+{
+    Mesh& m_m;
+
+    PrintVisitorT(wmtk::Mesh& m)
+        : m_m(m)
+    {}
+
+    template <typename HandleType>
+    void operator()(HandleType& typed_handle) const
+    {
+        using Type = typename HandleType::Type;
+
+        if constexpr (std::is_same_v<Type, double>) {
+            logger().info(
+                "PrintVisitorT: Attribute {} is double",
+                m_m.get_attribute_name(typed_handle));
+        }
+        if constexpr (std::is_same_v<Type, int64_t>) {
+            logger().info(
+                "PrintVisitorT: Attribute {} is int64_t",
+                m_m.get_attribute_name(typed_handle));
+        }
+        if constexpr (std::is_same_v<Type, char>) {
+            logger().info(
+                "PrintVisitorT: Attribute {} is char",
+                m_m.get_attribute_name(typed_handle));
+        }
+    }
+};
+
+} // namespace
+
+TEST_CASE("test_attribute_variant", "[attributes]")
+{
+    using namespace attribute;
+
+    logger().set_level(spdlog::level::off);
+
+    DEBUG_TriMesh m = single_equilateral_triangle();
+
+    MeshAttributeHandle a1 = m.register_attribute<double>("a1", PrimitiveType::Vertex, 1);
+    MeshAttributeHandle a2 = m.register_attribute<int64_t>("a2", PrimitiveType::Vertex, 1);
+    MeshAttributeHandle a3 = m.register_attribute<char>("a3", PrimitiveType::Vertex, 1);
+
+    std::vector<MeshAttributeHandle> attrs = {a1, a2, a3};
+
+    for (MeshAttributeHandle& a : attrs) {
+        std::visit(
+            [&m](auto&& typed_handle) {
+                // get type of the TypedAttributeHandle, e.g., TypedAttributeHandle<double>
+                using HandleType = std::decay_t<decltype(typed_handle)>;
+                // get attribute data type, e.g., double
+                using Type = typename HandleType::Type;
+
+                if constexpr (std::is_same_v<Type, double>) {
+                    logger().info("Attribute {} is double", m.get_attribute_name(typed_handle));
+                }
+                if constexpr (std::is_same_v<Type, int64_t>) {
+                    logger().info("Attribute {} is int64_t", m.get_attribute_name(typed_handle));
+                }
+                if constexpr (std::is_same_v<Type, char>) {
+                    logger().info("Attribute {} is char", m.get_attribute_name(typed_handle));
+                }
+            },
+            a.handle());
+    }
+
+    // Alternative version using the overload pattern. This requires the two template meta
+    // programming stuff above this test.
+    for (MeshAttributeHandle& a : attrs) {
+        std::visit(
+            overload{
+                [&m](attribute::TypedAttributeHandle<double>& typed_handle) {
+                    logger().info(
+                        "Overload of double attribute {}",
+                        m.get_attribute_name(typed_handle));
+                },
+                [&m](attribute::TypedAttributeHandle<int64_t>& typed_handle) {
+                    logger().info(
+                        "Overload of int64_t attribute {}",
+                        m.get_attribute_name(typed_handle));
+                },
+                [&m](attribute::TypedAttributeHandle<char>& typed_handle) {
+                    logger().info(
+                        "Overload of char attribute {}",
+                        m.get_attribute_name(typed_handle));
+                },
+                [&m](attribute::TypedAttributeHandle<Rational>& typed_handle) {
+                    logger().info(
+                        "Overload of Rational attribute {}",
+                        m.get_attribute_name(typed_handle));
+                }},
+            a.handle());
+    }
+
+    // Another version, probably the easiest to understand the behavior of std::visitor
+    PrintVisitor visitor(m);
+    for (MeshAttributeHandle& a : attrs) {
+        std::visit(visitor, a.handle());
+    }
+
+    // The same but using a templated operator
+    PrintVisitorT visitor_t(m);
+    for (MeshAttributeHandle& a : attrs) {
+        std::visit(visitor_t, a.handle());
+    }
 }

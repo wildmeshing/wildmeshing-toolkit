@@ -1,11 +1,11 @@
 #include <catch2/catch_test_macros.hpp>
-#include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/multimesh/consolidate.hpp>
+#include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 
