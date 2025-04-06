@@ -1,5 +1,7 @@
 var NAVTREEINDEX32 =
 {
+"k__ring_8hpp.html#aaf868371b90dc2c2a009e7a6832cd7f9":[10,0,2,0,7,28,0],
+"k__ring_8hpp_source.html":[10,0,2,0,7,28],
 "largest__shared__subdart__size_8cpp.html":[10,0,2,0,1,5,0],
 "largest__shared__subdart__size_8cpp.html#a7fc91981993581165b5ebd1443732a41":[10,0,2,0,1,5,0,0],
 "largest__shared__subdart__size_8cpp.html#aa0edc1945a3084de9b398a80da74f758":[10,0,2,0,1,5,0,1],
@@ -121,10 +123,11 @@ var NAVTREEINDEX32 =
 "marching_8cpp.html#a6f27411696c9ba6e294768451f31351f":[10,0,0,11,0,0,0,2,0],
 "marching_8cpp_source.html":[10,0,0,11,0,0,0,2],
 "md_components_2_r_e_a_d_m_e.html":[6],
-"md_components_2_r_e_a_d_m_e.html#autotoc_md29":[6,0],
+"md_components_2_r_e_a_d_m_e.html#autotoc_md32":[6,0],
 "md_components_2procedural_2wmtk_2components_2procedural_2_r_e_a_d_m_e.html":[5],
 "md_components_2tests_2integration__guide.html":[7],
 "md_src_2wmtk_2attribute_2_r_e_a_d_m_e.html":[1],
+"md_src_2wmtk_2attribute_2_r_e_a_d_m_e.html#autotoc_md22":[1,0],
 "md_src_2wmtk_2simplex_2_r_e_a_d_m_e.html":[3],
 "md_src_2wmtk_2simplex_2iterable_2_r_e_a_d_m_e.html":[2],
 "md_src_2wmtk_2utils_2metaprogramming_2_r_e_a_d_m_e.html":[4],
@@ -246,8 +249,5 @@ var NAVTREEINDEX32 =
 "named__multimesh_8cpp_source.html":[10,0,0,13,1,1],
 "namespace_simple_b_v_h.html":[8,0,8],
 "namespacecdt.html":[8,0,0],
-"namespacecdt__lib.html":[8,0,1],
-"namespacecdt__lib.html#a52084504838ae63f4bee25cc36eafe9b":[8,0,1,2],
-"namespacecdt__lib.html#a755b47a5d5cb774f469c375ffabd31d0":[8,0,1,1],
-"namespacecdt__lib.html#ab7368c314b3a84cba28a1a4c156c85dd":[8,0,1,0]
+"namespacecdt__lib.html":[8,0,1]
 };

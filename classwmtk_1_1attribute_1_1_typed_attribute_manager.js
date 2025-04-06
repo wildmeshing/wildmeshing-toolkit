@@ -38,9 +38,7 @@ var classwmtk_1_1attribute_1_1_typed_attribute_manager =
     [ "serialize", "classwmtk_1_1attribute_1_1_typed_attribute_manager.html#accc05d215b980273754a863bb483a4c8", null ],
     [ "set", "classwmtk_1_1attribute_1_1_typed_attribute_manager.html#a7948b717c222725be360d1235fb488f6", null ],
     [ "set_name", "classwmtk_1_1attribute_1_1_typed_attribute_manager.html#ab733688c90a4020b8ea6c90cd8e06ddc", null ],
-    [ "validate", "classwmtk_1_1attribute_1_1_typed_attribute_manager.html#a7bb0a17340227225c6ece15966284d30", null ],
     [ "validate_handle", "classwmtk_1_1attribute_1_1_typed_attribute_manager.html#a99e025601eeb1c708afa5da2e1fc95bf", null ],
     [ "m_attributes", "classwmtk_1_1attribute_1_1_typed_attribute_manager.html#aaa136e046cee07a90a4a93935be51060", null ],
-    [ "m_handles", "classwmtk_1_1attribute_1_1_typed_attribute_manager.html#a896b5fe11b3f09e5b8b263c07e546238", null ],
     [ "m_reserved_size", "classwmtk_1_1attribute_1_1_typed_attribute_manager.html#a4efd84e2f8b135c1939d6564cac4e4d9", null ]
 ];

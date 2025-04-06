@@ -127,7 +127,6 @@ var classwmtk_1_1_mesh =
     [ "tuple_from_id", "classwmtk_1_1_mesh.html#a60165ceb4c2db2731df90e4ac100637d", null ],
     [ "update_child_handles", "classwmtk_1_1_mesh.html#a4b8fe891dcc922a937e08025c922b532", null ],
     [ "update_vertex_operation_hashes", "classwmtk_1_1_mesh.html#a0b6f79f2dffa07d93a342306abd28b7e", null ],
-    [ "validate_attributes", "classwmtk_1_1_mesh.html#a47f978d3a33b474e2f21faa1d023f273", null ],
     [ "validate_handle", "classwmtk_1_1_mesh.html#a73ea62ce0428cf64f836f77482a87c40", null ],
     [ "attribute::Accessor", "classwmtk_1_1_mesh.html#a888fc01e845996e0b0587cd73325a581", null ],
     [ "attribute::AttributeManager", "classwmtk_1_1_mesh.html#adcb29934d46621cdb44e5f6f3ab2e84e", null ],

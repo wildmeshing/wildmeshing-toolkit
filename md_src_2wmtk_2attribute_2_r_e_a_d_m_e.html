@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: Attributes</title>
+<title>Wildmeshing Toolkit: Attribute Classes</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -119,21 +119,134 @@ $(document).ready(function(){initNavTree('md_src_2wmtk_2attribute_2_r_e_a_d_m_e.
 </div>
 
 <div><div class="header">
-  <div class="headertitle"><div class="title">Attributes</div></div>
+  <div class="headertitle"><div class="title">Attribute Classes</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p><a class="anchor" id="autotoc_md17"></a></p>
+<div class="textblock"><p><a class="anchor" id="autotoc_md17"></a> We describe the structure of attributes and their usage. All access to attributes is guarded by several layers, where each one fulfills a different purpose. From top to bottom the layers are:</p>
+<ol type="1">
+<li>The <code>Mesh</code> contains an <code>AttributeManager</code>.</li>
+<li>The <code>AttributeManager</code> contains type specific <code>TypedAttributeManager</code>.</li>
+<li>Every <code>TypedAttributeManager</code> stores a vector of <code>CachingAttribute</code>s and a map from their names to their handles.</li>
+<li>The <code>CachingAttributes</code> provide utility to revert changes on <code>Attribute</code>s.</li>
+<li>The <code>Attribute</code> class is a wrapper around the raw attribute data that provides read and write functionality.</li>
+<li>For referencing and accessing attributes, we use handles and accessors.</li>
+</ol>
+<p>In the following, we provide a summary of the most important concepts that were used in all attribute-related classes.</p>
 <h3><a class="anchor" id="autotoc_md18"></a>
-Accessors</h3>
-<p>Accessors are per-thread mechanisms for interacting with individual attributes. They are constructed by a <code>create_accessor</code> or <code>create_const_accessor</code> request from a mesh using a handle. A single instance of this class should NEVER persist outside of a single thread. Handles can survive between threads and in single-threaded functinos we construct an accessor from the handle to provide access to attributes.</p>
+Attributes</h3>
+<p>All properties of a mesh (including its topology) are stored in attributes. At its core, attributes are vectors:</p>
+<div class="fragment"><div class="line"> ++</div>
+<div class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><span class="keyword">class </span>Attribute {</div>
+<div class="line">    std::vector&lt;T&gt; m_data;</div>
+<div class="line">    int64_t m_dimension;</div>
+<div class="line">    std::string m_name;</div>
+<div class="line"> </div>
+<div class="line">    Eigen::Matrix&lt;T&gt;::MapType vector_attribute(int64_t index);</div>
+<div class="line">    T&amp; scalar_attribute(int64_t index);</div>
+<div class="line">};</div>
+</div><!-- fragment --><p>Attributes have a <code>dimension</code>. If the <code>dimension = 1</code> then the attribute is a scalar attribute, otherwise, it is a vector attribute. This distinction is necessary for accessing the attribute. While the former case returns just a scalar, the other one returns an <code>Eigen::Map</code> (similar to a <code>Eigen::Vector</code> but without creating a copy).</p>
+<p>Changes on Attributes can be reverted through the <code>CachingAttribute</code> that inherits from <code>Attribute</code>. The <code>CachingAttribute</code> holds scopes that can be pushed and popped:</p>
+<div class="fragment"><div class="line"> ++</div>
+<div class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><span class="keyword">class </span>CachingAttribute : <span class="keyword">public</span> Attribute&lt;T&gt;</div>
+<div class="line">{</div>
+<div class="line">    <span class="keywordtype">void</span> push_scope();</div>
+<div class="line">    <span class="keywordtype">void</span> pop_scope(<span class="keywordtype">bool</span> preserve_changes);</div>
+<div class="line">}</div>
+</div><!-- fragment --><p>The scopes work as a recording mechanism. When a new scope is pushed with <code>push_scope()</code> all changes to the attribute are tracked. When the scope is popped, the changes can either be accepted with <code>pop_scope(true)</code> or discarded with <code>pop_scope(false)</code>.</p>
 <h3><a class="anchor" id="autotoc_md19"></a>
+Managers</h3>
+<p>All attributes of the same type are stored in a <code>TypedAttributeManager</code>. The manager deals with the registration and removal of attributes. Note that while attributes can be removed, the vector of attributes is not resized. Otherwise, <code>AttributeHandle</code>s would point to the wrong data. If the vector should be resized, e.g., for serialization/writing to file, <code>clear_dead_attributes()</code> needs to be called.</p>
+<div class="fragment"><div class="line"> ++</div>
+<div class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><span class="keyword">class </span>TypedAttributeManager</div>
+<div class="line">{</div>
+<div class="line">    AttributeHandle register_attribute(<span class="comment">/*...*/</span>);</div>
+<div class="line">    <span class="keywordtype">void</span> remove_attribute(<span class="keyword">const</span> AttributeHandle&amp; attribute);</div>
+<div class="line"> </div>
+<div class="line">    std::vector&lt;std::unique_ptr&lt;CachingAttribute&lt;T&gt;&gt;&gt; m_attributes;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p>Note that the <code>TypedAttributeManager</code> is just a data storage object and does not know anything about meshes or primitive types, e.g., vertex or edge.</p>
+<p>The <code>AttributeManager</code> is a container for all <code>TypedAttributeManager</code>.</p>
+<div class="fragment"><div class="line"> ++</div>
+<div class="line"><span class="keyword">class </span>AttributeManager</div>
+<div class="line">{</div>
+<div class="line">    std::vector&lt;TypedAttributeManager&lt;char&gt;&gt; m_char_attributes;</div>
+<div class="line">    std::vector&lt;TypedAttributeManager&lt;int64_t&gt;&gt; m_long_attributes;</div>
+<div class="line">    std::vector&lt;TypedAttributeManager&lt;double&gt;&gt; m_double_attributes;</div>
+<div class="line">    std::vector&lt;TypedAttributeManager&lt;Rational&gt;&gt; m_rational_attributes;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p>The <code>Mesh</code> contains an <code>AttributeManager</code>.</p>
+<h3><a class="anchor" id="autotoc_md20"></a>
 Handles</h3>
-<p>Handles are thread-safe representations of attributes. There are a few types of handles:</p><ul>
-<li><code>SmartAttributeHandle&lt;T&gt;</code>: fully encodes an attribute, including which mesh it comes from. Can construct accessors from it directly.</li>
-<li><code>MeshAttributeHandle&lt;T&gt;</code>: encodes an attribute in some mesh, useful when the mesh in use is unambiguous.</li>
-<li><code>AttributeHandle</code>: an internal handle that does not understand primitive type or scalar type of an attribute. </li>
-</ul>
-</div></div><!-- contents -->
+<p>The <code>TypedAttributeManager</code> holds a map from names to <code>AttributeHandle</code>s. They are only for internal usage within the <code>TypedAttributeManager</code> to reference and access attributes.</p>
+<div class="fragment"><div class="line"> ++</div>
+<div class="line"><span class="keyword">class </span>AttributeHandle</div>
+<div class="line">{</div>
+<div class="line">    int64_t m_index = -1;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p>The <code>TypedAttributeHandle</code> is the most basic handle used outside the <code>namespace attribute</code>. It consists of an <code>AttributeHandle</code> and a <code>PrimitiveType</code>. Together with the attribute's <code>Type</code>, an attribute is uniquely defined for a single <code>Mesh</code>.</p>
+<div class="fragment"><div class="line"> ++</div>
+<div class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><span class="keyword">class </span>TypedAttributeHandle</div>
+<div class="line">{</div>
+<div class="line">    <span class="keyword">using </span>Type = T;</div>
+<div class="line">    AttributeHandle m_base_handle;</div>
+<div class="line">    PrimitiveType m_primitive_type;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p>The <code>TypedAttributeHandle</code> contains a template parameter. To avoid using templates all over the place, there exists the <code>std::variant</code> <code>HandleVariant</code> in the non-templated <code>MeshAttributeHandle</code>. It also contains a reference to its <code>Mesh</code>.</p>
+<div class="fragment"><div class="line"> ++</div>
+<div class="line"><span class="keyword">class </span>MeshAttributeHandle</div>
+<div class="line">{</div>
+<div class="line">    <span class="keyword">using </span>HandleVariant = std::variant&lt;TypedAttributeHandle&lt;char&gt;,TypedAttributeHandle&lt;int64_t&gt;,</div>
+<div class="line">        TypedAttributeHandle&lt;double&gt;,TypedAttributeHandle&lt;wmtk::Rational&gt;&gt;;</div>
+<div class="line">    HandleVariant&amp; handle() { <span class="keywordflow">return</span> m_handle; }</div>
+<div class="line"> </div>
+<div class="line">    Mesh* m_mesh = <span class="keyword">nullptr</span>;</div>
+<div class="line">    HandleVariant m_handle;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p>The reference to the <code>Mesh</code> makes the handle unique within a multimesh, where multiple meshes might have the "same" attribute, e.g., vertex positions. The <code>MeshAttributeHandle</code> is almost always the handle that should be used. The visitor pattern must be used if someone wants to access the <code>Type</code> of an attribute from the <code>MeshAttributeHandle</code>.</p>
+<div class="fragment"><div class="line"> ++</div>
+<div class="line">Mesh m;</div>
+<div class="line">MeshAttributeHandle attr;</div>
+<div class="line">std::visit(</div>
+<div class="line">    [&amp;m](<span class="keyword">auto</span>&amp;&amp; typed_handle) {</div>
+<div class="line">        <span class="comment">// get type of the TypedAttributeHandle, e.g., TypedAttributeHandle&lt;double&gt;</span></div>
+<div class="line">        <span class="keyword">using </span>HandleType = std::decay_t&lt;<span class="keyword">decltype</span>(typed_handle)&gt;;</div>
+<div class="line">        <span class="comment">// get attribute data type, e.g., double</span></div>
+<div class="line">        <span class="keyword">using </span>Type = <span class="keyword">typename</span> HandleType::Type;</div>
+<div class="line"> </div>
+<div class="line">        <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (std::is_same_v&lt;Type, double&gt;) {</div>
+<div class="line">            logger().info(<span class="stringliteral">&quot;Attribute {} is double&quot;</span>, m.get_attribute_name(typed_handle));</div>
+<div class="line">        }</div>
+<div class="line">    },</div>
+<div class="line">    attr.handle());</div>
+</div><!-- fragment --><p>More examples for the usage of <code>std::visit</code> are given in <em>test_accessor.cpp</em> in the test <code>"test_attribute_variant"</code>.</p>
+<h3><a class="anchor" id="autotoc_md21"></a>
+Accessors</h3>
+<p>Handles do not know about the mesh they belong to (except for the <code>MeshAttributeHandle</code>). To access an attribute, we need the mesh to get the global ID of a simplex.</p>
+<div class="fragment"><div class="line"> ++</div>
+<div class="line">simplex::IdSimplex s;</div>
+<div class="line">int64_t idx = mesh.id(s);</div>
+<div class="line">m_attribute.scalar_attribute(idx);</div>
+</div><!-- fragment --><p>Also, we want to avoid the indirection of handles. They only store indices, and do not reference the attribute themselves. The <code>Accessor</code> class therefore references the attribute directly.</p>
+<div class="fragment"><div class="line"> ++</div>
+<div class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><span class="keyword">class </span>Accessor</div>
+<div class="line">{</div>
+<div class="line">    TypedAttributeHandle&lt;T&gt; m_handle;</div>
+<div class="line">    Mesh&amp; m_mesh;</div>
+<div class="line">    CachingAttribute&lt;T&gt;&amp; m_attribute;</div>
+<div class="line">}</div>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md22"></a>
+What Handle / Accessor should I use?</h1>
+<p>The main advantage of the <code>MeshAttributeHandle</code> over all the other handles and the accessor is that it is type independent. If you are writing code where you do not know the data type stored in an attribute, you have to use the <code>MeshAttributeHandle</code> in combination with <code>std::visit</code>. However, most probably (at least in the first draft), you know exactly what attributes your mesh has and what types they are. In that case, we recommend creating accessors right away and passing those around.</p>
+<div class="fragment"><div class="line"> ++</div>
+<div class="line">Mesh m;</div>
+<div class="line">MeshAttributeHandle a1 = m.register_attribute&lt;<span class="keywordtype">double</span>&gt;(<span class="stringliteral">&quot;a1&quot;</span>, PrimitiveType::Vertex, 1);</div>
+<div class="line">Accessor&lt;double&gt; acc_a1 = m.create_accessor&lt;<span class="keywordtype">double</span>&gt;(a1);</div>
+</div><!-- fragment --> </div></div><!-- contents -->
 </div><!-- PageDoc -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->

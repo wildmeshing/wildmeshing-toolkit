@@ -1,7 +1,6 @@
 var classwmtk_1_1attribute_1_1_typed_attribute_handle =
 [
     [ "Type", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a0615d4ff21dd321382a239c9bccacc87", null ],
-    [ "value_type", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a021b40fd146ac24bf8fdaa343174667d", null ],
     [ "TypedAttributeHandle", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a16a63f4f6200ee08f8e126de3b3c05d1", null ],
     [ "TypedAttributeHandle", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a7f2d28f71b9b74e1562c31e26c7c415e", null ],
     [ "TypedAttributeHandle", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#aa107f6003041ef961f4c4f9189214149", null ],

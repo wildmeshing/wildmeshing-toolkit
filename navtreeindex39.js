@@ -1,5 +1,9 @@
 var NAVTREEINDEX39 =
 {
+"structwmtk_1_1components_1_1longest__edge__split_1_1_longest_edge_split_options.html#a13d31e6c1441f3c179ea83e46698f4e6":[9,0,2,2,4,0,2],
+"structwmtk_1_1components_1_1longest__edge__split_1_1_longest_edge_split_options.html#a13d31e6c1441f3c179ea83e46698f4e6":[8,0,10,2,4,0,2],
+"structwmtk_1_1components_1_1longest__edge__split_1_1_longest_edge_split_options.html#a37f78e71a0913cfa10a72c1d981c751c":[8,0,10,2,4,0,0],
+"structwmtk_1_1components_1_1longest__edge__split_1_1_longest_edge_split_options.html#a37f78e71a0913cfa10a72c1d981c751c":[9,0,2,2,4,0,0],
 "structwmtk_1_1components_1_1longest__edge__split_1_1_longest_edge_split_options.html#a7a63370d16f66d947110a8654532eeed":[8,0,10,2,4,0,3],
 "structwmtk_1_1components_1_1longest__edge__split_1_1_longest_edge_split_options.html#a7a63370d16f66d947110a8654532eeed":[9,0,2,2,4,0,3],
 "structwmtk_1_1components_1_1longest__edge__split_1_1_longest_edge_split_options.html#a9ec38202afadc2992ec62fbc071f13e7":[8,0,10,2,4,0,1],
@@ -245,9 +249,5 @@ var NAVTREEINDEX39 =
 "structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_incident_tet_data.html#ad76abee9123896beed5e4f1467592328":[9,0,2,7,4,1,4,8],
 "structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_incident_tet_data.html#ad76abee9123896beed5e4f1467592328":[8,0,10,9,4,1,4,8],
 "structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_incident_tet_data.html#af7a46440b292f32312442e24327a7071":[9,0,2,7,4,1,4,6],
-"structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_incident_tet_data.html#af7a46440b292f32312442e24327a7071":[8,0,10,9,4,1,4,6],
-"structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_ear_data.html":[9,0,2,7,5,1,0],
-"structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_ear_data.html":[8,0,10,9,5,1,0],
-"structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_ear_data.html#a41ea329267be3cceb17b104d5ec157ec":[8,0,10,9,5,1,0,1],
-"structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_ear_data.html#a41ea329267be3cceb17b104d5ec157ec":[9,0,2,7,5,1,0,1]
+"structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_incident_tet_data.html#af7a46440b292f32312442e24327a7071":[8,0,10,9,4,1,4,6]
 };

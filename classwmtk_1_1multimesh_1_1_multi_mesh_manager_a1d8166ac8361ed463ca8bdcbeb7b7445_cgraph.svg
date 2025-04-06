@@ -46,7 +46,7 @@
   </g>
 </defs>
 <script type="application/ecmascript">
-var viewWidth = 691;
+var viewWidth = 513;
 var viewHeight = 38;
 var sectionId = 'dynsection-10';
 </script>
@@ -86,10 +86,10 @@ var sectionId = 'dynsection-10';
 <!-- Node3 -->
 <g id="Node000003" class="node">
 <title>Node3</title>
-<g id="a_Node000003"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#ada8ce8b6841f45c66c784a39e8d88450" target="_top" xlink:title=" ">
+<g id="a_Node000003"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#aaeafc36889f90d4e4e9478f998d240d7" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="#666666" points="505,-30 363,-30 363,0 505,0 505,-30"/>
 <text text-anchor="start" x="371" y="-18" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
-<text text-anchor="middle" x="434" y="-7" font-family="Helvetica,sans-Serif" font-size="10.00">::index_access</text>
+<text text-anchor="middle" x="434" y="-7" font-family="Helvetica,sans-Serif" font-size="10.00">::attribute</text>
 </a>
 </g>
 </g>
@@ -99,25 +99,6 @@ var sectionId = 'dynsection-10';
 <g id="a_edge2_Node000002_Node000003"><a xlink:title=" ">
 <path fill="none" stroke="#63b8ff" d="M327.45,-15C335.67,-15 344.17,-15 352.61,-15"/>
 <polygon fill="#63b8ff" stroke="#63b8ff" points="352.84,-18.5 362.84,-15 352.84,-11.5 352.84,-18.5"/>
-</a>
-</g>
-</g>
-<!-- Node4 -->
-<g id="Node000004" class="node">
-<title>Node4</title>
-<g id="a_Node000004"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#aaeafc36889f90d4e4e9478f998d240d7" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="#666666" points="683,-30 541,-30 541,0 683,0 683,-30"/>
-<text text-anchor="start" x="549" y="-18" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
-<text text-anchor="middle" x="612" y="-7" font-family="Helvetica,sans-Serif" font-size="10.00">::attribute</text>
-</a>
-</g>
-</g>
-<!-- Node3&#45;&gt;Node4 -->
-<g id="edge3_Node000003_Node000004" class="edge">
-<title>Node3&#45;&gt;Node4</title>
-<g id="a_edge3_Node000003_Node000004"><a xlink:title=" ">
-<path fill="none" stroke="#63b8ff" d="M505.07,-15C513.54,-15 522.25,-15 530.85,-15"/>
-<polygon fill="#63b8ff" stroke="#63b8ff" points="530.89,-18.5 540.89,-15 530.89,-11.5 530.89,-18.5"/>
 </a>
 </g>
 </g>

@@ -14,7 +14,7 @@ var searchData=
   ['navigatablesimplex_2ecpp_11',['NavigatableSimplex.cpp',['../_navigatable_simplex_8cpp.html',1,'']]],
   ['navigatablesimplex_2ehpp_12',['NavigatableSimplex.hpp',['../_navigatable_simplex_8hpp.html',1,'']]],
   ['navigate_5fto_5flink_13',['navigate_to_link',['../classwmtk_1_1simplex_1_1_closed_star_iterable_1_1_iterator.html#a2486063c577fd8aa4607d128058ccefe',1,'wmtk::simplex::ClosedStarIterable::Iterator::navigate_to_link()'],['../classwmtk_1_1simplex_1_1_link_iterable_1_1_iterator.html#a42d2c64448d4a7fe835512c6d961f595',1,'wmtk::simplex::LinkIterable::Iterator::navigate_to_link()'],['../classwmtk_1_1simplex_1_1_link_single_dimension_iterable_1_1_iterator.html#af14b00db11f19df82f0f7ee0c23b6980',1,'wmtk::simplex::LinkSingleDimensionIterable::Iterator::navigate_to_link()']]],
-  ['navigation_14',['Navigation',['../md_src_2wmtk_2simplex_2_r_e_a_d_m_e.html#autotoc_md26',1,'']]],
+  ['navigation_14',['Navigation',['../md_src_2wmtk_2simplex_2_r_e_a_d_m_e.html#autotoc_md29',1,'']]],
   ['neighbors_5fsingle_5fdimension_15',['neighbors_single_dimension',['../namespacewmtk_1_1simplex.html#a9cd714440f235fdd4df798e86dc2d597',1,'wmtk::simplex']]],
   ['neighbors_5fsingle_5fdimension_2ecpp_16',['neighbors_single_dimension.cpp',['../neighbors__single__dimension_8cpp.html',1,'']]],
   ['neighbors_5fsingle_5fdimension_2ehpp_17',['neighbors_single_dimension.hpp',['../neighbors__single__dimension_8hpp.html',1,'']]],

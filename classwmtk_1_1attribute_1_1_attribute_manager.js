@@ -45,7 +45,6 @@ var classwmtk_1_1attribute_1_1_attribute_manager =
     [ "set_capacities", "classwmtk_1_1attribute_1_1_attribute_manager.html#a2dde70c10887ef5a2d5f00844e245b71", null ],
     [ "set_name", "classwmtk_1_1attribute_1_1_attribute_manager.html#adc55e1e34f555ca1639375ba6c013478", null ],
     [ "size", "classwmtk_1_1attribute_1_1_attribute_manager.html#a87216c73c02b436c7f965faa52553f56", null ],
-    [ "validate", "classwmtk_1_1attribute_1_1_attribute_manager.html#a2be604908b0cc35e54e94612f7951675", null ],
     [ "validate_handle", "classwmtk_1_1attribute_1_1_attribute_manager.html#a3b1a087ab6c03a0f2e6a6a93b87f3147", null ],
     [ "internal::CheckpointScope", "classwmtk_1_1attribute_1_1_attribute_manager.html#a0f7f55611b12d4f70b0b85afec011ab4", null ],
     [ "m_capacities", "classwmtk_1_1attribute_1_1_attribute_manager.html#a7a9367f5436b0077e0bacbf3a59c3b43", null ],

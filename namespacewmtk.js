@@ -17,6 +17,7 @@ var namespacewmtk =
     [ "operations", "namespacewmtk_1_1operations.html", "namespacewmtk_1_1operations" ],
     [ "simplex", "namespacewmtk_1_1simplex.html", "namespacewmtk_1_1simplex" ],
     [ "tests", "namespacewmtk_1_1tests.html", null ],
+    [ "tests_3d", "namespacewmtk_1_1tests__3d.html", null ],
     [ "utils", "namespacewmtk_1_1utils.html", "namespacewmtk_1_1utils" ],
     [ "Cell", "classwmtk_1_1_cell.html", "classwmtk_1_1_cell" ],
     [ "EdgeMesh", "classwmtk_1_1_edge_mesh.html", "classwmtk_1_1_edge_mesh" ],
