@@ -19,7 +19,7 @@ TEST_CASE(
 {
     tests::DEBUG_TriMesh m = wmtk::tests::hex_plus_two_with_position();
 
-    SimplicialEmbeddingOptions options;
+    simplicial_embedding::SimplicialEmbeddingOptions options;
     options.value = 1;
     options.tag_attributes[PrimitiveType::Vertex] =
         m.register_attribute<int64_t>("vertex_tag", wmtk::PrimitiveType::Vertex, 1);
@@ -55,7 +55,7 @@ TEST_CASE(
 
         if (false) {
             wmtk::io::ParaviewWriter writer(
-                data_dir / "simplicial_embedding_result_0d_case",
+                "simplicial_embedding_result_0d_case",
                 "vertices",
                 m,
                 true,
@@ -94,14 +94,26 @@ TEST_CASE(
             acc_edge_tag.scalar_attribute(m.edge_tuple_with_vs_and_t(7, 3, 5)) = options.value;
         }
 
+        if (true) {
+            ParaviewWriter writer(
+                "simplicial_embedding_result_1d_case_0",
+                "vertices",
+                m,
+                true,
+                true,
+                true,
+                false);
+            m.serialize(writer);
+        }
+
         simplicial_embedding::simplicial_embedding(m, options);
 
         CHECK(m.get_all(PrimitiveType::Triangle).size() == 17);
         CHECK(m.get_all(PrimitiveType::Vertex).size() == 15);
 
-        if (false) {
+        if (true) {
             ParaviewWriter writer(
-                data_dir / "simplicial_embedding_result_1d_case",
+                "simplicial_embedding_result_1d_case_1",
                 "vertices",
                 m,
                 true,
@@ -132,7 +144,7 @@ TEST_CASE(
     //
     DEBUG_TetMesh m = six_cycle_tets();
 
-    SimplicialEmbeddingOptions options;
+    simplicial_embedding::SimplicialEmbeddingOptions options;
     options.value = 1;
     options.tag_attributes[PrimitiveType::Vertex] =
         m.register_attribute<int64_t>("vertex_tag", wmtk::PrimitiveType::Vertex, 1);
