@@ -8,7 +8,7 @@
 
 #include "internal/SimplicialEmbedding.hpp"
 
-namespace wmtk::components {
+namespace wmtk::components::simplicial_embedding {
 
 void simplicial_embedding(Mesh& mesh, const SimplicialEmbeddingOptions& options)
 {

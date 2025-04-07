@@ -49,7 +49,7 @@ TEST_CASE(
             acc_vertex_tag.scalar_attribute(vertex_tuples[6]) = options.value;
         }
 
-        simplicial_embedding(m, options);
+        simplicial_embedding::simplicial_embedding(m, options);
 
         CHECK(m.get_all(PrimitiveType::Vertex).size() == 15);
 
@@ -94,7 +94,7 @@ TEST_CASE(
             acc_edge_tag.scalar_attribute(m.edge_tuple_with_vs_and_t(7, 3, 5)) = options.value;
         }
 
-        simplicial_embedding(m, options);
+        simplicial_embedding::simplicial_embedding(m, options);
 
         CHECK(m.get_all(PrimitiveType::Triangle).size() == 17);
         CHECK(m.get_all(PrimitiveType::Vertex).size() == 15);
@@ -153,7 +153,7 @@ TEST_CASE(
             acc_vertex_tag.scalar_attribute(vertex_tuples[2]) = options.value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[3]) = options.value;
         }
-        simplicial_embedding(m, options);
+        simplicial_embedding::simplicial_embedding(m, options);
 
         CHECK(false); // TODO add real checks
 
@@ -191,7 +191,7 @@ TEST_CASE(
             acc_edge_tag.scalar_attribute(m.edge_tuple_with_vs_and_t(3, 1, 0)) = options.value;
             acc_edge_tag.scalar_attribute(m.edge_tuple_with_vs_and_t(2, 5, 2)) = options.value;
         }
-        simplicial_embedding(m, options);
+        simplicial_embedding::simplicial_embedding(m, options);
 
         CHECK(false); // TODO add real checks
 

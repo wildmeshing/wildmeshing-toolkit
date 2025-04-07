@@ -37,6 +37,7 @@ add_application(shortest_edge_collapse ON)
 add_application(insertion ON)
 add_application(convert ON)
 add_application(longest_edge_split ON)
+add_application(simplicial_embedding ON)
 
 
 wmtk_generate_test_config("${WMTK_TEST_CONFIG}")

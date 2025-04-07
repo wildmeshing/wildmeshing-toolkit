@@ -14,7 +14,7 @@
 
 #include <deque>
 
-namespace wmtk::components::internal {
+namespace wmtk::components::simplicial_embedding::internal {
 
 namespace {
 
@@ -74,8 +74,9 @@ void SimplicialEmbedding::regularize_tags(bool generate_simplicial_embedding)
     for (size_t i = 0; i < tag_attributes.size(); ++i) {
         TagAttribute& a = tag_attributes[i];
         if (get_primitive_type_id(a.m_ptype) != m_mesh.top_cell_dimension() - i) {
-            log_and_throw_error("Tag array must be sorted in descending order starting with "
-                                "the top simplex type up to vertex.");
+            log_and_throw_error(
+                "Tag array must be sorted in descending order starting with "
+                "the top simplex type up to vertex.");
         }
     }
 
@@ -162,9 +163,10 @@ void SimplicialEmbedding::regularize_tags(bool generate_simplicial_embedding)
         switch (ta.m_ptype) {
         case PrimitiveType::Edge: { // edge split
             EdgeSplit op_split(m_mesh);
-            op_split.add_invariant(std::make_shared<TodoInvariant>(
-                m_mesh,
-                std::get<attribute::TypedAttributeHandle<int64_t>>(todo_handle.handle())));
+            op_split.add_invariant(
+                std::make_shared<TodoInvariant>(
+                    m_mesh,
+                    std::get<attribute::TypedAttributeHandle<int64_t>>(todo_handle.handle())));
 
             // todos
             for (const attribute::MeshAttributeHandle& h : todo_handles) {
@@ -198,9 +200,10 @@ void SimplicialEmbedding::regularize_tags(bool generate_simplicial_embedding)
         }
         case PrimitiveType::Triangle: { // face split
             composite::TriFaceSplit op_face_split(m_mesh);
-            op_face_split.add_invariant(std::make_shared<TodoInvariant>(
-                m_mesh,
-                std::get<attribute::TypedAttributeHandle<int64_t>>(todo_handle.handle())));
+            op_face_split.add_invariant(
+                std::make_shared<TodoInvariant>(
+                    m_mesh,
+                    std::get<attribute::TypedAttributeHandle<int64_t>>(todo_handle.handle())));
 
             // todos
             for (const attribute::MeshAttributeHandle& h : todo_handles) {
@@ -240,9 +243,10 @@ void SimplicialEmbedding::regularize_tags(bool generate_simplicial_embedding)
         }
         case PrimitiveType::Tetrahedron: { // tet split
             composite::TetCellSplit op_tet_split(m_mesh);
-            op_tet_split.add_invariant(std::make_shared<TodoInvariant>(
-                m_mesh,
-                std::get<attribute::TypedAttributeHandle<int64_t>>(todo_handle.handle())));
+            op_tet_split.add_invariant(
+                std::make_shared<TodoInvariant>(
+                    m_mesh,
+                    std::get<attribute::TypedAttributeHandle<int64_t>>(todo_handle.handle())));
 
             // todos
             for (const attribute::MeshAttributeHandle& h : todo_handles) {
@@ -312,4 +316,4 @@ void SimplicialEmbedding::regularize_tags(bool generate_simplicial_embedding)
 }
 
 
-} // namespace wmtk::components::internal
+} // namespace wmtk::components::simplicial_embedding::internal
