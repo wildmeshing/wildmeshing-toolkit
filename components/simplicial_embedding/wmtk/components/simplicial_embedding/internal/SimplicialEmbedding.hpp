@@ -2,7 +2,7 @@
 
 #include <wmtk/Mesh.hpp>
 
-namespace wmtk::components::internal {
+namespace wmtk::components::simplicial_embedding::internal {
 
 /*
  * This class is used to seperate mesh and make sure there are no direct connection
@@ -35,4 +35,4 @@ private:
     std::vector<attribute::MeshAttributeHandle> m_pass_through_attributes;
 };
 
-} // namespace wmtk::components::internal
+} // namespace wmtk::components::simplicial_embedding::internal

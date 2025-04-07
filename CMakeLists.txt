@@ -192,7 +192,7 @@ endif()
 # git repo used for wmtk data if it is required.
 # use wmtk_download_data to obtain the path to the data
 set(WMTK_DATA_REPOSITORY https://github.com/wildmeshing/data.git CACHE STRING "Git repo for testing data" )
-set(WMTK_DATA_TAG 6f171d11283d2977913a1b4e6129f9808357baf9 CACHE STRING "git tag for testing data" )
+set(WMTK_DATA_TAG 4d00f0c76599c4d9fa614d0abd6faab42fdb0a24 CACHE STRING "git tag for testing data" )
 
 
 add_subdirectory(components)

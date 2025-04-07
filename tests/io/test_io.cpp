@@ -5,11 +5,12 @@
 #include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/io/MshReader.hpp>
+#include <wmtk/io/MshWriter.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
-#include <wmtk/utils/Rational.hpp>
-#include <wmtk/utils/mesh_utils.hpp>
-#include <wmtk/utils/merkle_tree_diff.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
+#include <wmtk/utils/Rational.hpp>
+#include <wmtk/utils/merkle_tree_diff.hpp>
+#include <wmtk/utils/mesh_utils.hpp>
 
 #include <wmtk/operations/EdgeSplit.hpp>
 
@@ -97,8 +98,8 @@ TEST_CASE("paraview_2d", "[io]")
 TEST_CASE("paraview_2d_vtag", "[io]")
 {
     auto mesh = read_mesh(WMTK_DATA_DIR "/fan.msh");
-    mesh->register_attribute<int64_t>("tag", PrimitiveType::Triangle, 1);
-    mesh->register_attribute<int64_t>("tag1", PrimitiveType::Vertex, 1);
+    auto a1 = mesh->register_attribute<int64_t>("tag", PrimitiveType::Triangle, 1);
+    auto a2 = mesh->register_attribute<int64_t>("tag1", PrimitiveType::Vertex, 1);
 
     ParaviewWriter writer("paraview_2d_vtag", "vertices", *mesh, true, true, true, false);
     CHECK_NOTHROW(mesh->serialize(writer));
@@ -307,4 +308,57 @@ TEST_CASE("attribute_after_split", "[io][.]")
     // attribute_after_split_edges.hdf contains a 1 in the "test_attribute"
     ParaviewWriter writer("attribute_after_split", "vertices", m, true, true, true, false);
     CHECK_NOTHROW(m.serialize(writer));
+}
+
+TEST_CASE("msh_write", "[io]")
+{
+    std::shared_ptr<Mesh> m1_ptr;
+    REQUIRE_NOTHROW(m1_ptr = read_mesh(wmtk_data_dir / "sphere_delaunay.msh"));
+    Mesh& m1 = *m1_ptr;
+
+    auto a1 = m1.register_attribute<double>("a", m1.top_simplex_type(), 1);
+    {
+        auto pos_attr = m1.get_attribute_handle_typed<double>("vertices", PrimitiveType::Vertex);
+        auto pos_acc = m1.create_accessor(pos_attr);
+
+        auto a_acc = m1.create_accessor<double>(a1);
+
+        for (const Tuple& t : m1.get_all(m1.top_simplex_type())) {
+            auto p = pos_acc.const_vector_attribute(t);
+            a_acc.scalar_attribute(t) = p(0);
+        }
+    }
+
+    io::Cache cache("wmtk_test", ".");
+    const std::filesystem::path test_file = cache.get_cache_path() / "msh_write.msh";
+
+    REQUIRE_NOTHROW(io::MshWriter::write(test_file, m1, "vertices", {"a"}));
+
+    std::shared_ptr<Mesh> m2_ptr;
+    REQUIRE_NOTHROW(m2_ptr = read_mesh(test_file, false, {"a"}));
+    Mesh& m2 = *m2_ptr;
+
+    const auto v1 = m1.get_all(PrimitiveType::Vertex);
+    const auto v2 = m2.get_all(PrimitiveType::Vertex);
+    const bool v_same = v1 == v2;
+    CHECK(v_same);
+    const auto c1 = m1.get_all(m1.top_simplex_type());
+    const auto c2 = m2.get_all(m2.top_simplex_type());
+    const bool c_same = c1 == c2;
+    CHECK(c_same);
+
+    auto a2 = m2.get_attribute_handle<double>("a", m2.top_simplex_type());
+    REQUIRE(a1.dimension() == a2.dimension());
+    auto acc1 = m1.create_const_accessor<double>(a1);
+    auto acc2 = m2.create_const_accessor<double>(a2);
+    bool a_is_same = true;
+    for (const Tuple& t : c1) {
+        const auto x1 = acc1.const_vector_attribute(t);
+        const auto x2 = acc2.const_vector_attribute(t);
+        if (x1 != x2) {
+            a_is_same = false;
+            break;
+        }
+    }
+    CHECK(a_is_same);
 }

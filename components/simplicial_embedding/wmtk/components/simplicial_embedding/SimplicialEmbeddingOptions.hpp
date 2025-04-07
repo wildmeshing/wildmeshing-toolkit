@@ -2,7 +2,7 @@
 
 #include <wmtk/Mesh.hpp>
 
-namespace wmtk::components {
+namespace wmtk::components::simplicial_embedding {
 
 struct SimplicialEmbeddingOptions
 {
@@ -25,4 +25,4 @@ struct SimplicialEmbeddingOptions
     bool generate_simplicial_embedding = true;
 };
 
-} // namespace wmtk::components
+} // namespace wmtk::components::simplicial_embedding
