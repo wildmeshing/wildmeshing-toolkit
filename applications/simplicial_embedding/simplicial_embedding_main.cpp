@@ -58,10 +58,25 @@ int main(int argc, char* argv[])
 
     auto mesh_in = components::input::input(input_file, false, {tag_name});
     Mesh& mesh = *mesh_in;
-    wmtk::logger().info(
-        "Mesh has {} vertices and {} cells",
-        mesh.get_all(PrimitiveType::Vertex).size(),
-        mesh.get_all(mesh.top_simplex_type()).size());
+
+    nlohmann::json report_json;
+    // logging
+    {
+        report_json["input"] = j;
+        report_json["vertices_before"] = mesh.get_all(PrimitiveType::Vertex).size();
+        report_json["edges_before"] = mesh.get_all(PrimitiveType::Edge).size();
+        report_json["faces_before"] = mesh.get_all(PrimitiveType::Triangle).size();
+        if (mesh.top_simplex_type() == PrimitiveType::Tetrahedron) {
+            report_json["tets_before"] = mesh.get_all(PrimitiveType::Tetrahedron).size();
+        }
+
+        wmtk::logger().info(
+            "Mesh has {} vertices and {} cells",
+            report_json["vertices_before"].dump(),
+            mesh.top_simplex_type() == PrimitiveType::Tetrahedron
+                ? report_json["tets_before"].dump()
+                : report_json["faces_before"].dump());
+    }
 
     auto tag_handle_orig = mesh.get_attribute_handle<double>(tag_name, mesh.top_simplex_type());
     auto pos_handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
@@ -72,20 +87,12 @@ int main(int argc, char* argv[])
     tag_attribute_names[PrimitiveType::Triangle] = "tag_f";
     tag_attribute_names[PrimitiveType::Tetrahedron] = "tag_t";
 
-    // tag_attribute_names[mesh.top_simplex_type()] = tag_name;
-
     // perform simplicial embedding
     components::simplicial_embedding::SimplicialEmbeddingOptions options;
-    options.value = j["tag_value"];
     options.pass_through_attributes.emplace_back(pos_handle);
     options.pass_through_attributes.emplace_back(tag_handle_orig);
 
     const int64_t tag_default_value = j["tag_default_value"];
-    if (tag_default_value == options.value) {
-        logger().warn(
-            "Tag value and the tag default value should not be the same. Result might be broken.");
-    }
-
     for (const PrimitiveType pt :
          utils::primitive_range(PrimitiveType::Vertex, mesh.top_simplex_type())) {
         options.tag_attributes[pt] = mesh.register_attribute<int64_t>(
@@ -131,6 +138,13 @@ int main(int argc, char* argv[])
         }
 
         options.value = 1;
+    } else {
+        options.value = j["tag_value"];
+
+        if (tag_default_value == options.value) {
+            logger().warn("Tag value and the tag default value should not be the same. Result "
+                          "might be broken.");
+        }
     }
 
     // components::output::output(mesh, "test_emb_0", "vertices");
@@ -146,10 +160,6 @@ int main(int argc, char* argv[])
             tag_handle_orig);
     }
 
-    wmtk::logger().info(
-        "Mesh has {} vertices and {} cells",
-        mesh.get_all(PrimitiveType::Vertex).size(),
-        mesh.get_all(mesh.top_simplex_type()).size());
 
     fs::path output_file = j["output"];
     if (output_file.extension() == ".msh") {
@@ -158,22 +168,28 @@ int main(int argc, char* argv[])
         components::output::output(mesh, output_file, "vertices");
     }
 
-    const std::string report = j["report"];
-    if (!report.empty()) {
-        nlohmann::json out_json;
-        out_json["vertices"] = mesh.get_all(PrimitiveType::Vertex).size();
-        out_json["edges"] = mesh.get_all(PrimitiveType::Edge).size();
-        out_json["faces"] = mesh.get_all(PrimitiveType::Triangle).size();
+    // logging
+    {
+        report_json["vertices_after"] = mesh.get_all(PrimitiveType::Vertex).size();
+        report_json["edges_after"] = mesh.get_all(PrimitiveType::Edge).size();
+        report_json["faces_after"] = mesh.get_all(PrimitiveType::Triangle).size();
         if (mesh.top_simplex_type() == PrimitiveType::Tetrahedron) {
-            out_json["cells"] = mesh.get_all(PrimitiveType::Tetrahedron).size();
+            report_json["tets_after"] = mesh.get_all(PrimitiveType::Tetrahedron).size();
         }
 
-        out_json["input"] = j;
+        wmtk::logger().info(
+            "Mesh has {} vertices and {} cells",
+            report_json["vertices_after"].dump(),
+            mesh.top_simplex_type() == PrimitiveType::Tetrahedron
+                ? report_json["tets_after"].dump()
+                : report_json["faces_after"].dump());
 
-        std::ofstream ofs(report);
-        ofs << std::setw(4) << out_json;
+        const std::string report = j["report"];
+        if (!report.empty()) {
+            std::ofstream ofs(report);
+            ofs << std::setw(4) << report_json;
+        }
     }
-
 
     return 0;
 }
