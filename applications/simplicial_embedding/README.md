@@ -5,6 +5,7 @@ A substructure is simplicially embedded, if every simplex of the embedding conta
 ![simplicial embedding](img/regular_simplices.svg)
 
 To create a simplicial embedding, we use the following split operations:
+
 ![simplex split](img/simplex_split.svg)
 
 This application expects a .msh file with tags on tetrahedra that represent substructures. The tags must be integer numbers.
