@@ -25,8 +25,6 @@ int main(int argc, char* argv[])
 
     app.ignore_case();
 
-    logger().info("Hello");
-
     fs::path json_input_file;
     app.add_option("-j, --json", json_input_file, "json specification file")
         ->required(true)
@@ -81,10 +79,21 @@ int main(int argc, char* argv[])
     options.value = j["tag_value"];
     options.pass_through_attributes.emplace_back(pos_handle);
     options.pass_through_attributes.emplace_back(tag_handle_orig);
+
+    const int64_t tag_default_value = j["tag_default_value"];
+    if (tag_default_value == options.value) {
+        logger().warn(
+            "Tag value and the tag default value should not be the same. Result might be broken.");
+    }
+
     for (const PrimitiveType pt :
          utils::primitive_range(PrimitiveType::Vertex, mesh.top_simplex_type())) {
-        options.tag_attributes[pt] =
-            mesh.register_attribute<int64_t>(tag_attribute_names[pt], pt, 1, false, -1);
+        options.tag_attributes[pt] = mesh.register_attribute<int64_t>(
+            tag_attribute_names[pt],
+            pt,
+            1,
+            false,
+            tag_default_value);
     }
 
     // cast tag from double to int64_t
@@ -120,6 +129,8 @@ int main(int argc, char* argv[])
         for (const auto& c : mesh.get_all(mesh.top_simplex_type())) {
             c_acc.scalar_attribute(c) = -1;
         }
+
+        options.value = 1;
     }
 
     // components::output::output(mesh, "test_emb_0", "vertices");
