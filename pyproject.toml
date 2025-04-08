@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools", "wheel", "pybind11", "cmake"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pywmtk"
+version = "0.1"
+description="Wildmeshing Toolkit Python Bindings"
+readme = "README.md"
+authors = [
+  { name = "Daniel Zint", email = "daniel.zint@nyu.edu" },
+]
+requires-python = ">=3.6"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License"
+]

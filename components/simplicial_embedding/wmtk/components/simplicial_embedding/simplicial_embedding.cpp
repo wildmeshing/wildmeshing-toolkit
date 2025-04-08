@@ -32,4 +32,9 @@ void simplicial_embedding(Mesh& mesh, const SimplicialEmbeddingOptions& options)
     mesh.consolidate();
 }
 
-} // namespace wmtk::components
+void simplicial_embedding(const nlohmann::json& j)
+{
+    logger().info("Hello from simplicial embedding");
+}
+
+} // namespace wmtk::components::simplicial_embedding
