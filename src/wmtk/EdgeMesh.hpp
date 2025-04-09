@@ -56,7 +56,7 @@ public:
     Tuple switch_edge(const Tuple& tuple) const;
 
     std::vector<Tuple> orient_vertices(const Tuple& tuple) const override;
-    int64_t id(const Tuple& tuple, PrimitiveType type) const;
+    int64_t id(const Tuple& tuple, PrimitiveType type) const final override;
     using MeshCRTP<EdgeMesh>::id; // getting the (simplex) prototype
 
     int64_t id_vertex(const Tuple& tuple) const { return id(tuple, PrimitiveType::Vertex); }

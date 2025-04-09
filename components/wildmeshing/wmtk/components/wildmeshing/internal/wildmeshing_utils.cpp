@@ -4,7 +4,7 @@
 namespace wmtk::components::internal {
 
 void write(
-    const std::shared_ptr<Mesh>& mesh,
+    const Mesh& mesh,
     const std::string& out_dir,
     const std::string& name,
     const std::string& vname,
@@ -12,43 +12,54 @@ void write(
     const bool intermediate_output)
 {
     if (intermediate_output) {
-        if (mesh->top_simplex_type() == PrimitiveType::Triangle) {
+        if (mesh.top_simplex_type() == PrimitiveType::Triangle) {
             // write trimesh
             const std::filesystem::path data_dir = "";
             wmtk::io::ParaviewWriter writer(
                 data_dir / (name + "_" + std::to_string(index)),
                 vname,
-                *mesh,
+                mesh,
                 true,
                 true,
                 true,
                 false);
-            mesh->serialize(writer);
-        } else if (mesh->top_simplex_type() == PrimitiveType::Tetrahedron) {
+            mesh.serialize(writer);
+        } else if (mesh.top_simplex_type() == PrimitiveType::Tetrahedron) {
             // write tetmesh
             const std::filesystem::path data_dir = "";
             wmtk::io::ParaviewWriter writer(
                 data_dir / (name + "_" + std::to_string(index)),
                 vname,
-                *mesh,
+                mesh,
                 true,
                 true,
                 true,
                 true);
-            mesh->serialize(writer);
-        } else if (mesh->top_simplex_type() == PrimitiveType::Edge) {
+            mesh.serialize(writer);
+        } else if (mesh.top_simplex_type() == PrimitiveType::Edge) {
             // write edgemesh
             const std::filesystem::path data_dir = "";
             wmtk::io::ParaviewWriter writer(
                 data_dir / (name + "_" + std::to_string(index)),
                 vname,
-                *mesh,
+                mesh,
                 true,
                 true,
                 false,
                 false);
-            mesh->serialize(writer);
+            mesh.serialize(writer);
         }
     }
+}
+
+void write(
+    const std::shared_ptr<Mesh>& mesh,
+    const std::string& out_dir,
+    const std::string& name,
+    const std::string& vname,
+    const int64_t index,
+    const bool intermediate_output)
+{
+    write(*mesh, out_dir, name, vname, index, intermediate_output);
 }
 } // namespace wmtk::components::internal

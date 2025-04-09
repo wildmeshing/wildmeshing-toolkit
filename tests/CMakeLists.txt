@@ -103,6 +103,8 @@ add_subdirectory_with_source_group(multimesh)
 add_subdirectory_with_source_group(operations)
 add_subdirectory_with_source_group(attributes)
 add_subdirectory_with_source_group(autogen)
+add_subdirectory_with_source_group(submesh)
+add_subdirectory_with_source_group(invariants)
 
 
 

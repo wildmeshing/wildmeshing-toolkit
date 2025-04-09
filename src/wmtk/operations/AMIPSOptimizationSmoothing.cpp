@@ -5,6 +5,7 @@
 #include <wmtk/Types.hpp>
 #include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/simplex/cofaces_single_dimension.hpp>
+#include <wmtk/simplex/cofaces_single_dimension_iterable.hpp>
 #include <wmtk/simplex/faces_single_dimension.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/orient.hpp>
@@ -259,7 +260,7 @@ std::vector<simplex::Simplex> AMIPSOptimizationSmoothing::execute(const simplex:
     if (m_coordinate_handle.holds<Rational>()) {
         auto accessor = mesh().create_accessor(m_coordinate_handle.as<Rational>());
 
-        const auto neighs = wmtk::simplex::cofaces_single_dimension_simplices(
+        auto neighs = wmtk::simplex::cofaces_single_dimension_iterable(
             mesh(),
             simplex,
             mesh().top_simplex_type());
@@ -267,7 +268,8 @@ std::vector<simplex::Simplex> AMIPSOptimizationSmoothing::execute(const simplex:
         if (mesh().top_simplex_type() == PrimitiveType::Triangle) {
             std::vector<std::array<double, 6>> cells;
 
-            for (const simplex::Simplex& cell : neighs) {
+            for (const Tuple& cell_tuple : neighs) {
+                const simplex::Simplex cell(mesh().top_simplex_type(), cell_tuple);
                 cells.emplace_back(m_amips.get_raw_coordinates<3, 2>(cell, simplex));
             }
             WMTKAMIPSProblem<6> problem(cells);
@@ -287,7 +289,8 @@ std::vector<simplex::Simplex> AMIPSOptimizationSmoothing::execute(const simplex:
 
             std::vector<std::array<double, 12>> cells;
 
-            for (simplex::Simplex cell : neighs) {
+            for (const Tuple& cell_tuple : neighs) {
+                simplex::Simplex cell(mesh().top_simplex_type(), cell_tuple);
                 // auto vertices = mesh().orient_vertices(cell.tuple());
                 // int idx = -1;
                 // for (int i = 0; i < 4; ++i) {
@@ -399,7 +402,7 @@ std::vector<simplex::Simplex> AMIPSOptimizationSmoothing::execute(const simplex:
     } else {
         auto accessor = mesh().create_accessor(m_coordinate_handle.as<double>());
 
-        const auto neighs = wmtk::simplex::cofaces_single_dimension_simplices(
+        auto neighs = wmtk::simplex::cofaces_single_dimension_iterable(
             mesh(),
             simplex,
             mesh().top_simplex_type());
@@ -407,7 +410,8 @@ std::vector<simplex::Simplex> AMIPSOptimizationSmoothing::execute(const simplex:
         if (mesh().top_simplex_type() == PrimitiveType::Triangle) {
             std::vector<std::array<double, 6>> cells;
 
-            for (const simplex::Simplex& cell : neighs) {
+            for (const Tuple& cell_tuple : neighs) {
+                const simplex::Simplex cell(mesh().top_simplex_type(), cell_tuple);
                 cells.emplace_back(m_amips.get_raw_coordinates<3, 2>(cell, simplex));
             }
             WMTKAMIPSProblem<6> problem(cells);
@@ -427,7 +431,9 @@ std::vector<simplex::Simplex> AMIPSOptimizationSmoothing::execute(const simplex:
 
             std::vector<std::array<double, 12>> cells;
 
-            for (simplex::Simplex cell : neighs) {
+            for (const Tuple& cell_tuple : neighs) {
+                simplex::Simplex cell(mesh().top_simplex_type(), cell_tuple);
+
                 if (!mesh().is_ccw(cell.tuple())) {
                     // switch any local id but NOT the vertex
                     cell = simplex::Simplex(

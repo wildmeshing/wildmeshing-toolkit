@@ -4,6 +4,7 @@
 
 #include <Eigen/Core>
 #include <filesystem>
+#include <functional>
 
 namespace paraviewo {
 class ParaviewWriter;
@@ -11,6 +12,9 @@ class ParaviewWriter;
 
 namespace wmtk {
 class Mesh;
+namespace simplex {
+class IdSimplex;
+}
 
 namespace io {
 class ParaviewWriter : public MeshWriter
@@ -51,6 +55,20 @@ private:
     };
 
 public:
+    /**
+     * @brief Write in VTU format.
+     *
+     * The writer generates one file for each simplex dimension and attaches all the attributes for
+     * the corresponding simplex dimension. All higher dimensions also contain the simplex
+     * attributes.
+     *
+     * The writer stores ALL simplices, even those that are invalid. This helps with debugging, as
+     * the IDs in the VTU file correspond to those in the code. All invalid simplices will contain 0
+     * vertex IDs, so in case one vertex looks strange in Paraview, that might be because of that.
+     *
+     * The filter function can be used to treat simplices as invalid ones. A simplex is treated as
+     * invalid if the filter function returns false.
+     */
     ParaviewWriter(
         const std::filesystem::path& filename,
         const std::string& vertices_name,
@@ -58,7 +76,8 @@ public:
         bool write_points = true,
         bool write_edges = true,
         bool write_faces = true,
-        bool write_tetrahedra = true);
+        bool write_tetrahedra = true,
+        const std::function<bool(const simplex::IdSimplex&)>& filter = {});
 
     bool write(const int dim) override { return dim == 0 || m_enabled[dim]; }
 

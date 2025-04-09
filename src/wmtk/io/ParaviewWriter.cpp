@@ -2,6 +2,7 @@
 
 
 #include <wmtk/Mesh.hpp>
+#include <wmtk/simplex/faces_single_dimension.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
 
@@ -96,7 +97,8 @@ ParaviewWriter::ParaviewWriter(
     bool write_points,
     bool write_edges,
     bool write_faces,
-    bool write_tetrahedra)
+    bool write_tetrahedra,
+    const std::function<bool(const simplex::IdSimplex&)>& filter)
     : m_vertices_name(vertices_name)
 {
     m_enabled[0] = write_points;
@@ -106,41 +108,38 @@ ParaviewWriter::ParaviewWriter(
 
     std::array<Eigen::MatrixXi, 4> cells;
 
-    for (size_t i = 0; i < 4; ++i) {
-        const auto pt = PrimitiveType(i);
-        if (m_enabled[i]) {
-            // include deleted tuples so that attributes are aligned
-            const auto tuples = mesh.get_all(pt, true);
-            cells[i].resize(tuples.size(), i + 1);
+    for (size_t dim = 0; dim < 4; ++dim) {
+        const PrimitiveType pt = PrimitiveType(dim);
+        if (!m_enabled[dim]) {
+            continue;
+        }
+        // include deleted simplices so that attributes are aligned
 
-            for (size_t j = 0; j < tuples.size(); ++j) {
-                const auto& t = tuples[j];
-                if (t.is_null()) {
-                    for (size_t d = 0; d < cells[i].cols(); ++d) {
-                        cells[i](j, d) = 0;
-                    }
-                } else {
-                    int64_t vid = mesh.id(t, PrimitiveType::Vertex);
-                    cells[i](j, 0) = vid;
-                    if (i > 0) {
-                        auto t1 = mesh.switch_tuple(t, PrimitiveType::Vertex);
+        const auto simplices = mesh.get_all_id_simplex(pt, true);
 
-                        cells[i](j, 1) = mesh.id(t1, PrimitiveType::Vertex);
-                    }
-                    if (i > 1) {
-                        auto t1 = mesh.switch_tuple(t, PrimitiveType::Edge);
-                        auto t2 = mesh.switch_tuple(t1, PrimitiveType::Vertex);
+        cells[dim].resize(simplices.size(), dim + 1);
 
-                        cells[i](j, 2) = mesh.id(t2, PrimitiveType::Vertex);
-                    }
-                    if (i > 2) {
-                        auto t1 = mesh.switch_tuple(t, PrimitiveType::Triangle);
-                        auto t2 = mesh.switch_tuple(t1, PrimitiveType::Edge);
-                        auto t3 = mesh.switch_tuple(t2, PrimitiveType::Vertex);
+        for (int64_t s_id = 0; s_id < simplices.size(); ++s_id) {
+            const simplex::IdSimplex& s = simplices[s_id];
 
-                        cells[i](j, 3) = mesh.id(t3, PrimitiveType::Vertex);
-                    }
-                }
+            if (s.index() != s_id || (filter != nullptr && !filter(s))) {
+                // deleted simplex
+                cells[dim].row(s_id).setZero();
+                continue;
+            }
+
+            if (dim == 0) {
+                // vertex
+                cells[dim](s_id, 0) = s.index();
+                continue;
+            }
+
+            // edge, triangle, tetrahedron
+            const auto vertices =
+                simplex::faces_single_dimension(mesh, mesh.get_simplex(s), PrimitiveType::Vertex);
+            assert(vertices.size() == dim + 1);
+            for (int64_t i = 0; i < vertices.size(); ++i) {
+                cells[dim](s_id, i) = mesh.id(vertices.simplex_vector()[i]);
             }
         }
     }

@@ -4,11 +4,16 @@
 
 #include "attribute_new/SplitNewAttributeStrategy.hpp"
 
+namespace wmtk::submesh {
+class Embedding;
+}
+
 namespace wmtk::operations {
 class EdgeSplit : public Operation
 {
 public:
     EdgeSplit(Mesh& m);
+    EdgeSplit(submesh::Embedding& m);
 
     PrimitiveType primitive_type() const override { return PrimitiveType::Edge; }
 

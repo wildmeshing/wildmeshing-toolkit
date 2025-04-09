@@ -11,5 +11,6 @@ set(TEST_SOURCES
     test_attribute_transfer.cpp
     vertex_optimization.cpp
     edge_operation_data.cpp
+    test_projection_operation.cpp
 )
 target_sources(wmtk_tests PRIVATE ${TEST_SOURCES})

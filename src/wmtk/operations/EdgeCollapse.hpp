@@ -3,12 +3,17 @@
 #include "Operation.hpp"
 #include "attribute_new/CollapseNewAttributeStrategy.hpp"
 
+namespace wmtk::submesh {
+class Embedding;
+}
+
 namespace wmtk::operations {
 class EdgeCollapse : public Operation
 {
 public:
     // constructor for default factory pattern construction
     EdgeCollapse(Mesh& m);
+    EdgeCollapse(submesh::Embedding& m);
 
     PrimitiveType primitive_type() const override { return PrimitiveType::Edge; }
 

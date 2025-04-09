@@ -1,6 +1,6 @@
 #include "Mesh.hpp"
-#include <queue>
 #include <numeric>
+#include <queue>
 
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -34,6 +34,17 @@ void Mesh::update_child_handles()
 bool Mesh::is_from_same_multi_mesh_structure(const Mesh& other) const
 {
     return &get_multi_mesh_root() == &other.get_multi_mesh_root();
+}
+
+bool Mesh::has_embedding() const
+{
+    return m_embedding;
+}
+
+submesh::Embedding& Mesh::get_embedding() const
+{
+    assert(has_embedding());
+    return *m_embedding;
 }
 
 bool Mesh::can_map(const Mesh& other_mesh, const simplex::Simplex& my_simplex) const
@@ -244,15 +255,15 @@ std::vector<std::shared_ptr<const Mesh>> Mesh::get_all_meshes() const
     auto meshes2 = get_all_child_meshes();
     std::vector<std::shared_ptr<Mesh const>> meshes;
     meshes.emplace_back(shared_from_this());
-    for(const auto& m: meshes2) {
+    for (const auto& m : meshes2) {
         meshes.emplace_back(m);
     }
     return meshes;
-    //std::queue<std::shared_ptr<Mesh const>> queue;
+    // std::queue<std::shared_ptr<Mesh const>> queue;
     ////std::queue<Mesh const*> queue;
-    //meshes.emplace_back(this);
-    //while(!queue.empty()) {
-    //    const auto& cur = queue.front();
+    // meshes.emplace_back(this);
+    // while(!queue.empty()) {
+    //     const auto& cur = queue.front();
     //    //Mesh const* cur = queue.front();
     //    queue.pop();
     //    meshes.emplace_back(cur->shared_from_this());
@@ -260,6 +271,6 @@ std::vector<std::shared_ptr<const Mesh>> Mesh::get_all_meshes() const
     //        queue.emplace(m.get());
     //    }
     //}
-    //return meshes;
+    // return meshes;
 }
 } // namespace wmtk
