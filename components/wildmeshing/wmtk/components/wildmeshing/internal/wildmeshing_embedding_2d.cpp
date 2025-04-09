@@ -103,11 +103,12 @@ double compute_max_amips(
             max_energy,
             min_energy,
             avg_energy);
+
+        if (max_energy > last_max_amips) {
+            logger().info("Max amips increased from {} to {}", last_max_amips, max_energy);
+        }
     }
 
-    if (max_energy > last_max_amips) {
-        logger().error("Max amips increased from {} to {}", last_max_amips, max_energy);
-    }
     last_max_amips = max_energy;
 
     return max_energy;
@@ -610,7 +611,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
 
     auto setup_collapse = [&](std::shared_ptr<EdgeCollapse>& collapse) {
         // collapse->add_invariant(invariant_separate_substructures);
-        collapse->add_invariant(std::make_shared<MultiMeshMapValidInvariant>(mesh));
+        // collapse->add_invariant(std::make_shared<MultiMeshMapValidInvariant>(mesh));
         collapse->add_invariant(link_condition);
         collapse->add_invariant(inversion_invariant);
         collapse->add_invariant(function_invariant);
@@ -761,7 +762,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
     proj_smoothing->add_invariant(frozen_vertex_invariant);
     proj_smoothing->add_invariant(envelope_invariant);
     proj_smoothing->add_invariant(inversion_invariant);
-    proj_smoothing->add_invariant(function_invariant); // TODO confirm that this should be here
+    //proj_smoothing->add_invariant(function_invariant); // TODO confirm that this should be here
 
     proj_smoothing->add_transfer_strategy(amips_update);
     proj_smoothing->add_transfer_strategy(edge_length_update);
@@ -836,9 +837,9 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing_embedding
             pass_stats += stats;
             print_stats(stats, op_name);
 
-            count_unrounded_vertices(pt_attribute, last_num_unrounded, false);
+            // count_unrounded_vertices(pt_attribute, last_num_unrounded, false);
             // test_flipped_triangles(mesh, pt_attribute);
-            compute_max_amips(amips_attribute, last_max_amips, false);
+            // compute_max_amips(amips_attribute, last_max_amips, false);
         }
 
         print_stats(pass_stats);
