@@ -608,15 +608,15 @@ bool EnvelopeInvariant::after_with_bvh_vertex(
 
                 const auto accessor = mesh().create_const_accessor(tah);
 
-                SimpleBVH::VectorMax3d p;
+                SimpleBVH::VectorMax3d _p;
                 if constexpr (std::is_same_v<AttributeType, double>) {
-                    p = accessor.const_vector_attribute(tuple);
+                    _p = accessor.const_vector_attribute(tuple);
                 } else if constexpr (std::is_same_v<AttributeType, Rational>) {
-                    p = accessor.const_vector_attribute(tuple).template cast<double>();
+                    _p = accessor.const_vector_attribute(tuple).template cast<double>();
                 } else {
                     log_and_throw_error("Unknown attribute type");
                 }
-                return p;
+                return _p;
             },
             m_coordinate_handle.handle());
 
