@@ -190,7 +190,6 @@ void TetMesh::TetMeshOperationExecutor::delete_simplices()
     }
 }
 
-void TetMesh::TetMeshOperationExecutor::update_cell_hash() {}
 
 const std::array<std::vector<int64_t>, 4>
 TetMesh::TetMeshOperationExecutor::get_split_simplices_to_delete(
@@ -226,8 +225,8 @@ void TetMesh::TetMeshOperationExecutor::update_ear_connectivity(
 {
     if (ear_tid < 0) return;
 
-    auto ear_tt = tt_accessor.index_access().vector_attribute(ear_tid);
-    auto ear_tf = tf_accessor.index_access().vector_attribute(ear_tid);
+    auto ear_tt = tt_accessor.vector_attribute(ear_tid);
+    auto ear_tf = tf_accessor.vector_attribute(ear_tid);
     for (int i = 0; i < 4; ++i) {
         if (ear_tt(i) == old_tid) {
             ear_tt(i) = new_tid;
@@ -236,7 +235,7 @@ void TetMesh::TetMeshOperationExecutor::update_ear_connectivity(
         }
     }
 
-    ft_accessor.index_access().scalar_attribute(common_fid) = ear_tid;
+    ft_accessor.scalar_attribute(common_fid) = ear_tid;
 }
 
 void TetMesh::TetMeshOperationExecutor::split_edge()
@@ -557,10 +556,10 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
             // update ear tet 1 (tt, tf)
             update_ear_connectivity(t_ear_1, t1, t_old, f_ear_1);
 
-            auto tt = tt_accessor.index_access().vector_attribute(t1);
-            auto tf = tf_accessor.index_access().vector_attribute(t1);
-            auto te = te_accessor.index_access().vector_attribute(t1);
-            auto tv = tv_accessor.index_access().vector_attribute(t1);
+            auto tt = tt_accessor.vector_attribute(t1);
+            auto tf = tf_accessor.vector_attribute(t1);
+            auto te = te_accessor.vector_attribute(t1);
+            auto tv = tv_accessor.vector_attribute(t1);
 
             /*
                 copy t_old
@@ -576,10 +575,10 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
                 t(f_old_2) --> -1 or tetdata[idx+1].t1
             */
             // copy t_old
-            tt = tt_accessor.index_access().vector_attribute(t_old);
-            tf = tf_accessor.index_access().vector_attribute(t_old);
-            te = te_accessor.index_access().vector_attribute(t_old);
-            tv = tv_accessor.index_access().vector_attribute(t_old);
+            tt = tt_accessor.vector_attribute(t_old);
+            tf = tf_accessor.vector_attribute(t_old);
+            te = te_accessor.vector_attribute(t_old);
+            tv = tv_accessor.vector_attribute(t_old);
 
             // get ids for return tuple
             if (return_flag) {
@@ -652,10 +651,10 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
             // update ear tet 2 (tt, tf)
             update_ear_connectivity(t_ear_2, t2, t_old, f_ear_2);
 
-            auto tt = tt_accessor.index_access().vector_attribute(t2);
-            auto tf = tf_accessor.index_access().vector_attribute(t2);
-            auto te = te_accessor.index_access().vector_attribute(t2);
-            auto tv = tv_accessor.index_access().vector_attribute(t2);
+            auto tt = tt_accessor.vector_attribute(t2);
+            auto tf = tf_accessor.vector_attribute(t2);
+            auto te = te_accessor.vector_attribute(t2);
+            auto tv = tv_accessor.vector_attribute(t2);
 
             /*
                 copy t_old
@@ -671,10 +670,10 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
                 t(f_old_2) --> -1 or tetdata[idx+1].t2
             */
             // copy t_old
-            tt = tt_accessor.index_access().const_vector_attribute(t_old);
-            tf = tf_accessor.index_access().const_vector_attribute(t_old);
-            te = te_accessor.index_access().const_vector_attribute(t_old);
-            tv = tv_accessor.index_access().const_vector_attribute(t_old);
+            tt = tt_accessor.const_vector_attribute(t_old);
+            tf = tf_accessor.const_vector_attribute(t_old);
+            te = te_accessor.const_vector_attribute(t_old);
+            tv = tv_accessor.const_vector_attribute(t_old);
             for (size_t k = 0; k < 4; ++k) {
                 // vertices
                 if (tv(k) == v0) {
@@ -711,36 +710,35 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
         }
 
         // assign each face one tet
-        ft_accessor.index_access().scalar_attribute(f_ear_1) = t1;
-        ft_accessor.index_access().scalar_attribute(f_ear_2) = t2;
-        ft_accessor.index_access().scalar_attribute(f1) = t1;
-        ft_accessor.index_access().scalar_attribute(f2) = t2;
-        ft_accessor.index_access().scalar_attribute(f3) = t1;
-        ft_accessor.index_access().scalar_attribute(f4) = t2;
-        ft_accessor.index_access().scalar_attribute(f_rib) = t1;
+        ft_accessor.scalar_attribute(f_ear_1) = t1;
+        ft_accessor.scalar_attribute(f_ear_2) = t2;
+        ft_accessor.scalar_attribute(f1) = t1;
+        ft_accessor.scalar_attribute(f2) = t2;
+        ft_accessor.scalar_attribute(f3) = t1;
+        ft_accessor.scalar_attribute(f4) = t2;
+        ft_accessor.scalar_attribute(f_rib) = t1;
 
         // assign each edge one tet
-        et_accessor.index_access().scalar_attribute(e02) = t1;
-        et_accessor.index_access().scalar_attribute(e12) = t2;
-        et_accessor.index_access().scalar_attribute(e03) = t1;
-        et_accessor.index_access().scalar_attribute(e13) = t2;
-        et_accessor.index_access().scalar_attribute(e23) = t1;
-        et_accessor.index_access().scalar_attribute(e_spine_1) = t1;
-        et_accessor.index_access().scalar_attribute(e_spine_2) = t2;
-        et_accessor.index_access().scalar_attribute(e_rib_1) = t1;
-        et_accessor.index_access().scalar_attribute(e_rib_2) = t1;
+        et_accessor.scalar_attribute(e02) = t1;
+        et_accessor.scalar_attribute(e12) = t2;
+        et_accessor.scalar_attribute(e03) = t1;
+        et_accessor.scalar_attribute(e13) = t2;
+        et_accessor.scalar_attribute(e23) = t1;
+        et_accessor.scalar_attribute(e_spine_1) = t1;
+        et_accessor.scalar_attribute(e_spine_2) = t2;
+        et_accessor.scalar_attribute(e_rib_1) = t1;
+        et_accessor.scalar_attribute(e_rib_2) = t1;
 
         // assign each vertex one tet
-        vt_accessor.index_access().scalar_attribute(v0) = t1;
-        vt_accessor.index_access().scalar_attribute(v1) = t2;
-        vt_accessor.index_access().scalar_attribute(v2) = t1;
-        vt_accessor.index_access().scalar_attribute(v3) = t1;
-        vt_accessor.index_access().scalar_attribute(vid_new) = t1;
+        vt_accessor.scalar_attribute(v0) = t1;
+        vt_accessor.scalar_attribute(v1) = t2;
+        vt_accessor.scalar_attribute(v2) = t1;
+        vt_accessor.scalar_attribute(v3) = t1;
+        vt_accessor.scalar_attribute(vid_new) = t1;
     }
 
 
     // update hash and delete simplices
-    update_cell_hash();
     delete_simplices();
 
 
@@ -936,10 +934,10 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
             v0 --> v1 (update later)
         */
         if (t_ear_1 != -1) {
-            auto tt = tt_accessor.index_access().vector_attribute(t_ear_1);
-            auto tf = tf_accessor.index_access().vector_attribute(t_ear_1);
-            auto te = te_accessor.index_access().vector_attribute(t_ear_1);
-            auto tv = tv_accessor.index_access().vector_attribute(t_ear_1);
+            auto tt = tt_accessor.vector_attribute(t_ear_1);
+            auto tf = tf_accessor.vector_attribute(t_ear_1);
+            auto te = te_accessor.vector_attribute(t_ear_1);
+            auto tv = tv_accessor.vector_attribute(t_ear_1);
 
             // get local ids for the return tuple
             if (return_flag && return_tid == t_ear_1) {
@@ -987,10 +985,10 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
 
         // update t_ear_2
         if (t_ear_2 != -1) {
-            auto tt = tt_accessor.index_access().vector_attribute(t_ear_2);
-            auto tf = tf_accessor.index_access().vector_attribute(t_ear_2);
-            auto te = te_accessor.index_access().vector_attribute(t_ear_2);
-            auto tv = tv_accessor.index_access().vector_attribute(t_ear_2);
+            auto tt = tt_accessor.vector_attribute(t_ear_2);
+            auto tf = tf_accessor.vector_attribute(t_ear_2);
+            auto te = te_accessor.vector_attribute(t_ear_2);
+            auto tv = tv_accessor.vector_attribute(t_ear_2);
 
 
             // for return tuple
@@ -1025,19 +1023,19 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
 
         data.merged_face_tid = t_ear_valid;
         // assign tet for each face
-        ft_accessor.index_access().scalar_attribute(f_ear_2) = t_ear_valid;
+        ft_accessor.scalar_attribute(f_ear_2) = t_ear_valid;
 
         data.new_face_id = f_ear_2;
 
         // assign tet for each edge
-        et_accessor.index_access().scalar_attribute(e12) = t_ear_valid;
-        et_accessor.index_access().scalar_attribute(e13) = t_ear_valid;
-        et_accessor.index_access().scalar_attribute(e23) = t_ear_valid;
+        et_accessor.scalar_attribute(e12) = t_ear_valid;
+        et_accessor.scalar_attribute(e13) = t_ear_valid;
+        et_accessor.scalar_attribute(e23) = t_ear_valid;
 
         // assign tet for each vertex
-        vt_accessor.index_access().scalar_attribute(v1) = t_ear_valid;
-        vt_accessor.index_access().scalar_attribute(v2) = t_ear_valid;
-        vt_accessor.index_access().scalar_attribute(v3) = t_ear_valid;
+        vt_accessor.scalar_attribute(v1) = t_ear_valid;
+        vt_accessor.scalar_attribute(v2) = t_ear_valid;
+        vt_accessor.scalar_attribute(v3) = t_ear_valid;
     }
 
     // update v0 one ring tv
@@ -1048,8 +1046,8 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
     for (const simplex::IdSimplex& t : v0_star) {
         // for (const simplex::Simplex& t : v0_star.simplex_vector(PrimitiveType::Tetrahedron)) {
         const int64_t tid = m_mesh.id(t);
-        auto tv = tv_accessor.index_access().vector_attribute(tid);
-        auto te = te_accessor.index_access().vector_attribute(tid);
+        auto tv = tv_accessor.vector_attribute(tid);
+        auto te = te_accessor.vector_attribute(tid);
         for (int i = 0; i < 4; ++i) {
             if (tv(i) == v0) {
                 tv(i) = v1;
@@ -1064,7 +1062,6 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
     }
 
 
-    update_cell_hash();
     delete_simplices();
 
     // debug code

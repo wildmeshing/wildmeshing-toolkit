@@ -1,6 +1,5 @@
 #include "Attribute.hpp"
 #include <numeric>
-#include <wmtk/attribute/PerThreadAttributeScopeStacks.hpp>
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/utils/Rational.hpp>
 #include <wmtk/utils/vector_hash.hpp>
@@ -9,24 +8,20 @@ namespace wmtk::attribute {
 
 
 template <typename T>
-void Attribute<T>::serialize(const std::string& name, const int dim, MeshWriter& writer) const
+void Attribute<T>::serialize(int dim, MeshWriter& writer) const
 {
-    auto& stack = get_local_scope_stack();
-    writer.write(name, dim, dimension(), m_data, m_default_value);
+    writer.write(m_name, dim, dimension(), m_data, m_default_value);
 }
 
 
 template <typename T>
 Attribute<T>::Attribute(const std::string& name, int64_t dimension, T default_value, int64_t size)
-    : m_scope_stacks(PerThreadAttributeScopeStacks<T>{})
-    , m_dimension(dimension)
+    : m_dimension(dimension)
     , m_default_value(default_value)
     , m_name(name)
 {
     assert(m_dimension > 0);
-    if (size > 0) {
-        m_data = std::vector<T>(size * dimension, m_default_value);
-    }
+    reserve(size);
 }
 
 template <typename T>
@@ -63,9 +58,9 @@ bool Attribute<T>::operator==(const Attribute<T>& o) const
 
 
 template <typename T>
-void Attribute<T>::reserve(const int64_t size)
+void Attribute<T>::reserve(int64_t size)
 {
-    if (size > (m_data.size() / m_dimension)) {
+    if (size >= 0 && size > reserved_size()) {
         m_data.resize(m_dimension * size, m_default_value);
     }
 }
@@ -86,11 +81,6 @@ const std::string& Attribute<T>::name() const
     return m_name;
 }
 
-template <typename T>
-std::string& Attribute<T>::name()
-{
-    return m_name;
-}
 
 template <typename T>
 void Attribute<T>::set(std::vector<T> val)
@@ -140,10 +130,55 @@ void Attribute<T>::index_remap(const std::vector<T>& old2new, const std::vector<
 #if defined(__GNUG__) && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
-
-
 template class Attribute<char>;
 template class Attribute<int64_t>;
 template class Attribute<double>;
 template class Attribute<Rational>;
+}
+
+#if defined(WMTK_ENABLED_DEV_MODE)
+#include "Attribute.hxx"
+
+namespace wmtk::attribute {
+#define VECTOR_DEC(TYPE, D)                                                              \
+    template auto Attribute<TYPE>::const_vector_single_value<D>(                  \
+        int64_t index,                                                                   \
+        int8_t single_index) const -> const TYPE&;                                       \
+    template auto Attribute<TYPE>::vector_single_value<D>(                  \
+        int64_t index,                                                                   \
+        int8_t single_index) -> TYPE&;                                       \
+    template auto Attribute<TYPE>::const_vector_attribute<D>(int64_t index) const \
+        -> ConstMapResult<D>;                                                            \
+    template auto Attribute<TYPE>::vector_attribute<D>(int64_t index) -> MapResult<D>;\
+    template auto Attribute<TYPE>::const_vector_attribute<D>(int64_t index, const std::vector<TYPE>&) const \
+        -> ConstMapResult<D>;                                                            \
+    template auto Attribute<TYPE>::vector_attribute<D>(int64_t index, std::vector<TYPE>&) const -> MapResult<D>;
+
+#define SCALAR_DEC(TYPE)                                                              \
+    template auto Attribute<TYPE>::const_scalar_attribute(int64_t index) const \
+        -> const TYPE&;                                                            \
+    template auto Attribute<TYPE>::scalar_attribute(int64_t index) -> TYPE&;\
+    template auto Attribute<TYPE>::const_scalar_attribute(int64_t index, const std::vector<TYPE>& ) const \
+        -> const TYPE&;                                                            \
+    template auto Attribute<TYPE>::scalar_attribute(int64_t index, std::vector<TYPE>&) const-> TYPE&;
+
+
+#define DEC(TYPE)        \
+    SCALAR_DEC(TYPE) \
+    VECTOR_DEC(TYPE, -1) \
+    VECTOR_DEC(TYPE, 1)  \
+    VECTOR_DEC(TYPE, 2)  \
+    VECTOR_DEC(TYPE, 3)  \
+    VECTOR_DEC(TYPE, 4)  \
+    VECTOR_DEC(TYPE, 5)  \
+    VECTOR_DEC(TYPE, 6)
+
+
+DEC(double)
+DEC(int64_t)
+DEC(Rational)
+DEC(char)
 } // namespace wmtk::attribute
+#endif
+
+

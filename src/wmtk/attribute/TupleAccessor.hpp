@@ -6,6 +6,7 @@
 namespace wmtk::attribute {
 
 
+    // A wrapper around standard accessor treat the data as a vector of Tuple objects
 template <typename MeshType, int Dim = Eigen::Dynamic>
 class TupleAccessor
 {
@@ -13,14 +14,14 @@ public:
     TupleAccessor(MeshType& m, const TypedAttributeHandle<int64_t>& handle);
     TupleAccessor(const MeshType& m, const TypedAttributeHandle<int64_t>& handle);
     template <int Dim2>
-    TupleAccessor(const Accessor<int64_t, MeshType, Dim2>& accessor);
+    TupleAccessor(const Accessor<int64_t, MeshType, CachingAttribute<int64_t>, Dim2>& accessor);
 
     // Eigen::Map<VectorX<T>>
     template <int D = Dim>
-    using MapResult = internal::MapResult<Tuple, D>;
+    using MapResult = MapResult<Tuple, D>;
     // Eigen::Map<const VectorX<T>>
     template <int D = Dim>
-    using ConstMapResult = internal::ConstMapResult<Tuple, D>;
+    using ConstMapResult = ConstMapResult<Tuple, D>;
 
 
     const Tuple& const_scalar_attribute(const Tuple& t) const;

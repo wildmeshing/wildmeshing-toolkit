@@ -135,7 +135,7 @@ int trimesh_genus(const DEBUG_TriMesh& m)
 
 void run_debug_trimesh(const DEBUG_TriMesh& m, const MeshDebugInfo& info)
 {
-    fmt::print("Running run_debug_trimesh  on {}\n", info.name);
+    // fmt::print("Running run_debug_trimesh  on {}\n", info.name);
 
     // validate that the info is ok
     REQUIRE(info.boundary_curves >= 0);
@@ -159,14 +159,14 @@ void run_debug_trimesh(const DEBUG_TriMesh& m, const MeshDebugInfo& info)
     REQUIRE(size_t(v_count) == v_tups.size());
     REQUIRE(size_t(e_count) == e_tups.size());
     REQUIRE(size_t(f_count) == f_tups.size());
-    for (const auto& v_tup : v_tups) {
-        fmt::print("vertex {} is active\n", m.id(v_tup, PrimitiveType::Vertex));
-    }
+    // for (const auto& v_tup : v_tups) {
+    //     fmt::print("vertex {} is active\n", m.id(v_tup, PrimitiveType::Vertex));
+    // }
     for (const auto& e_tup : e_tups) {
         int64_t id = m.id(e_tup, PrimitiveType::Edge);
         int64_t a = m.id(e_tup, PrimitiveType::Vertex);
         int64_t b = m.id(m.switch_tuple(e_tup, PrimitiveType::Vertex), PrimitiveType::Vertex);
-        fmt::print("edge {} is active with vertices {} {}\n", id, a, b);
+        // fmt::print("edge {} is active with vertices {} {}\n", id, a, b);
     }
     for (const auto& f_tup : f_tups) {
         int64_t id = m.id(f_tup, PrimitiveType::Triangle);
@@ -175,7 +175,7 @@ void run_debug_trimesh(const DEBUG_TriMesh& m, const MeshDebugInfo& info)
         int64_t c = m.id(
             m.switch_tuple(m.switch_tuple(f_tup, PrimitiveType::Edge), PrimitiveType::Vertex),
             PrimitiveType::Vertex);
-        fmt::print("face {} is active with vertices {} {} {}\n", id, a, b, c);
+        // fmt::print("face {} is active with vertices {} {} {}\n", id, a, b, c);
     }
 }
 } // namespace
@@ -353,7 +353,7 @@ TEST_CASE("test_debug_disk_trimesh")
         // the 0,1,1 mesh
         auto mptr = std::static_pointer_cast<DEBUG_TriMesh>(disk(1));
         auto& m = *mptr;
-        auto fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PrimitiveType::Vertex));
+        auto& fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PrimitiveType::Vertex));
         auto fv = fv_accessor.vector_attribute(0);
         REQUIRE(fv(0) == 0);
         REQUIRE(fv(1) == 1);

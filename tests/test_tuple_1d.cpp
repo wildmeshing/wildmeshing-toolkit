@@ -75,16 +75,9 @@ TEST_CASE("1D_initialize", "[mesh_creation],[tuple_1d]")
         REQUIRE(m.is_connectivity_valid());
     }
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-    auto const_hash_accessor = m.get_const_cell_hash_accessor();
-    for (size_t i = 0; i < edges.size(); ++i) {
-        REQUIRE(m.is_valid_with_hash(edges[i], const_hash_accessor));
-    }
-#else
     for (size_t i = 0; i < edges.size(); ++i) {
         REQUIRE(m.is_valid(edges[i] ));
     }
-#endif
 }
 
 TEST_CASE("1D_single_line", "[tuple_generation], [tuple_1d]")
@@ -174,9 +167,6 @@ TEST_CASE("1D_self_loop", "[tuple_generation], [tuple_1d]")
 TEST_CASE("1D_random_switches", "[tuple_operation],[tuple_1d]")
 {
     DEBUG_EdgeMesh m = loop_lines();
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-    const attribute::Accessor<int64_t> hash_accessor = m.get_const_cell_hash_accessor();
-#endif
     SECTION("vertices")
     {
         const std::vector<Tuple> vertex_tuples = m.get_all(PrimitiveType::Vertex);
@@ -192,11 +182,7 @@ TEST_CASE("1D_random_switches", "[tuple_operation],[tuple_1d]")
                     break;
                 default: break;
                 }
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-                CHECK(m.is_valid_with_hash(t, hash_accessor));
-#else
                 CHECK(m.is_valid(t));
-#endif
             }
         }
     }
@@ -216,11 +202,7 @@ TEST_CASE("1D_random_switches", "[tuple_operation],[tuple_1d]")
                     break;
                 default: break;
                 }
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-                CHECK(m.is_valid_with_hash(t, hash_accessor));
-#else
                 CHECK(m.is_valid(t));
-#endif
             }
         }
     }

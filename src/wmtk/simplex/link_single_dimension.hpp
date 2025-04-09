@@ -1,6 +1,12 @@
 #pragma once
 
 #include "SimplexCollection.hpp"
+namespace wmtk {
+    class PointMesh;
+    class EdgeMesh;
+    class TriMesh;
+    class TetMesh;
+}
 
 namespace wmtk::simplex {
 SimplexCollection link_single_dimension(

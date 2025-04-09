@@ -17,7 +17,7 @@ public:
     friend class operations::utils::MultiMeshEdgeSplitFunctor;
     friend class operations::utils::MultiMeshEdgeCollapseFunctor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
-    template <typename U, typename MeshType, int Dim>
+    template <typename U, typename MeshType, typename AT, int Dim>
     friend class attribute::Accessor;
     TetMesh();
     ~TetMesh() override;

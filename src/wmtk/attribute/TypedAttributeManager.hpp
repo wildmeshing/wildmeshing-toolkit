@@ -1,8 +1,8 @@
 #pragma once
 
 #include <wmtk/utils/MerkleTreeInteriorNode.hpp>
-#include "Attribute.hpp"
 #include "AttributeHandle.hpp"
+#include "CachingAttribute.hpp"
 
 
 #include <Eigen/Core>
@@ -11,36 +11,29 @@
 #include <vector>
 
 
-// TODO: this is just a fancy vector for attributes, perhaps this can be recycled / simplified. The reserved quantiy should be held by a level above this abstraction (as multiple types should all have hte same reservation size)
-
 namespace wmtk {
 
 class MeshWriter;
 class Mesh;
 namespace attribute {
-template <typename T, int Dim>
-class AccessorBase;
 
 /**
  * Contains all attributes of type T for a single mesh.
  * It also stores a map so that attributes can be accessed through a name.
  */
 template <typename T>
-class MeshAttributes : public wmtk::utils::MerkleTreeInteriorNode
+class TypedAttributeManager : public wmtk::utils::MerkleTreeInteriorNode
 {
-    template <typename U, int D>
-    friend class AccessorBase;
-
     typedef Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1>> MapResult;
     typedef Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>> ConstMapResult;
 
 
 public:
-    MeshAttributes() = default;
-    MeshAttributes(const MeshAttributes& o) = delete;
-    MeshAttributes(MeshAttributes&& o) = default;
-    MeshAttributes& operator=(const MeshAttributes& o) = delete;
-    MeshAttributes& operator=(MeshAttributes&& o) = default;
+    TypedAttributeManager() = default;
+    TypedAttributeManager(const TypedAttributeManager& o) = delete;
+    TypedAttributeManager(TypedAttributeManager&& o) = default;
+    TypedAttributeManager& operator=(const TypedAttributeManager& o) = delete;
+    TypedAttributeManager& operator=(TypedAttributeManager&& o) = default;
 
     void serialize(const int dim, MeshWriter& writer) const;
 
@@ -54,7 +47,11 @@ public:
         bool replace = false,
         T default_value = T(0));
 
+    // Number of (vector-)values available to be written to, which can be more than the number of
+    // simplcies the mesh has
     int64_t reserved_size() const;
+
+    // sets teh size of teh store to be the specified size
     void reserve(const int64_t size);
 
     // adds size more simplices to teh existing reservation
@@ -68,9 +65,7 @@ public:
      * @param attributes Vector of attributes that should be removed.
      * @param invalidate_handles invalidates all handles. If true this garbage collects old handles
      */
-    void remove_attributes(
-        const std::vector<AttributeHandle>& attributes,
-        bool invalidate_handles = true);
+    void remove_attributes(const std::vector<AttributeHandle>& attributes);
     /**
      * @brief Remove a single attribute
      *
@@ -79,7 +74,7 @@ public:
     void remove_attribute(const AttributeHandle& attribute);
 
 
-    bool operator==(const MeshAttributes<T>& other) const;
+    bool operator==(const TypedAttributeManager<T>& other) const;
     void push_scope();
     void pop_scope(bool apply_updates = true);
     void rollback_current_scope();
@@ -106,8 +101,8 @@ public:
     std::vector<AttributeHandle> active_attributes() const;
     void assert_capacity_valid(int64_t cap) const;
 
-    Attribute<T>& attribute(const AttributeHandle& handle);
-    const Attribute<T>& attribute(const AttributeHandle& handle) const;
+    CachingAttribute<T>& attribute(const AttributeHandle& handle);
+    const CachingAttribute<T>& attribute(const AttributeHandle& handle) const;
 
     AttributeHandle attribute_handle(const std::string& name) const;
 
@@ -117,47 +112,41 @@ public:
     //https://clang.llvm.org/extra/clang-tidy/checks/modernize/pass-by-value.html
     void set(const AttributeHandle& handle, std::vector<T> val);
 
-    /**
-     * @brief Validate that handles and attributes are in sync.
-     */
-    bool validate() const;
-
     bool validate_handle(const AttributeHandle& handle) const;
 
 protected:
     /// Clears and compactifies the attribute list. This invalidates all existing handles
-    void clear_dead_attributes();
+    [[deprecated]] void clear_dead_attributes();
 
 
     size_t attribute_size(const AttributeHandle& handle) const;
 
 private:
-    std::map<std::string, AttributeHandle> m_handles;
-
     // The vector held in each Attribute in m_attributes has this size
     int64_t m_reserved_size = -1;
 
-    std::vector<std::unique_ptr<Attribute<T>>> m_attributes;
+    std::vector<std::unique_ptr<CachingAttribute<T>>> m_attributes;
 };
 template <typename T>
-inline Attribute<T>& MeshAttributes<T>::attribute(const AttributeHandle& handle)
+inline CachingAttribute<T>& TypedAttributeManager<T>::attribute(const AttributeHandle& handle)
 {
-    Attribute<T>& attr = *m_attributes.at(handle.index);
+    CachingAttribute<T>& attr = *m_attributes.at(handle.index());
     return attr;
 }
 template <typename T>
-inline const Attribute<T>& MeshAttributes<T>::attribute(const AttributeHandle& handle) const
+inline const CachingAttribute<T>& TypedAttributeManager<T>::attribute(
+    const AttributeHandle& handle) const
 {
-    return *m_attributes.at(handle.index);
+    return *m_attributes.at(handle.index());
 }
 
 template <typename T>
-inline int64_t MeshAttributes<T>::dimension(const AttributeHandle& handle) const
+inline int64_t TypedAttributeManager<T>::dimension(const AttributeHandle& handle) const
 {
     return attribute(handle).dimension();
 }
 template <typename T>
-inline const T& MeshAttributes<T>::default_value(const AttributeHandle& handle) const
+inline const T& TypedAttributeManager<T>::default_value(const AttributeHandle& handle) const
 {
     return attribute(handle).default_value();
 }

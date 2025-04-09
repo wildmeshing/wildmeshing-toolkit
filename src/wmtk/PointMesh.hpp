@@ -15,7 +15,7 @@ private:
 
 public:
     friend class MeshCRTP<PointMesh>;
-    template <typename U, typename MeshType, int Dim>
+    template <typename U, typename MeshType, typename AT, int Dim>
     friend class attribute::Accessor;
     PointMesh();
     ~PointMesh() override;

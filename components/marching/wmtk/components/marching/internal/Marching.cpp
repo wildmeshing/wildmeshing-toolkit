@@ -286,13 +286,8 @@ void Marching::process()
                     }
                 }
             }
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-            assert(m_mesh.is_valid_with_hash(v0));
-            assert(m_mesh.is_valid_with_hash(v1));
-#else
             assert(m_mesh.is_valid(v0));
             assert(m_mesh.is_valid(v1));
-#endif
             const auto p0 = pos_acc.const_vector_attribute(v0);
             const auto p1 = pos_acc.const_vector_attribute(v1);
             const double sf0 = sf_acc.const_scalar_attribute(v0);
