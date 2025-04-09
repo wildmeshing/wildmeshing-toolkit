@@ -138,7 +138,7 @@ TEST_CASE("submesh_init_from_tag", "[mesh][submesh]")
     CHECK(sub.get_all(PV).size() == 5);
 }
 
-TEST_CASE("submesh_top_dimension_cofaces", "[mesh][submesh]")
+TEST_CASE("submesh_top_dimension_cofaces", "[mesh][submesh][.]")
 {
     REQUIRE(false); // test not implemented
 
