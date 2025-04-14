@@ -7,6 +7,7 @@
 #include <wmtk/attribute/internal/hash.hpp>
 #include <wmtk/simplex/closed_star.hpp>
 #include <wmtk/simplex/cofaces_single_dimension.hpp>
+#include <wmtk/simplex/cofaces_single_dimension_iterable.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/simplex/utils/make_unique.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
@@ -604,32 +605,86 @@ std::vector<Tuple> MultiMeshManager::map_to_child_tuples(
         return {};
     }
     const auto map_handle = child_data.map_handle;
+    auto map_accessor = my_mesh.create_const_accessor(map_handle);
     // we will overwrite these tuples inline with the mapped ones while running down the map
     // functionalities
 
-    std::vector<Tuple> tuples = simplex::cofaces_single_dimension_tuples(
-        my_mesh,
-        my_simplex,
-        child_mesh.top_simplex_type());
+    std::vector<Tuple> tuples_original;
+    // original version
+    {
+        tuples_original = simplex::cofaces_single_dimension_tuples(
+            my_mesh,
+            my_simplex,
+            child_mesh.top_simplex_type());
 
-    /*
-        get all tuples of child mesh top simplex type that contain my_simplex
-    */
+        /*
+            get all tuples of child mesh top simplex type that contain my_simplex
+        */
 
-    auto map_accessor = my_mesh.create_const_accessor(map_handle);
-    for (Tuple& tuple : tuples) {
-        tuple = map_tuple_between_meshes(my_mesh, child_mesh, map_accessor, tuple);
+        for (Tuple& tuple : tuples_original) {
+            tuple = map_tuple_between_meshes(my_mesh, child_mesh, map_accessor, tuple);
+        }
+        tuples_original.erase(
+            std::remove_if(
+                tuples_original.begin(),
+                tuples_original.end(),
+                [](const Tuple& t) -> bool { return t.is_null(); }),
+            tuples_original.end());
+        tuples_original = wmtk::simplex::utils::make_unique_tuples(
+            child_mesh,
+            tuples_original,
+            my_simplex.primitive_type());
     }
-    tuples.erase(
-        std::remove_if(
-            tuples.begin(),
-            tuples.end(),
-            [](const Tuple& t) -> bool { return t.is_null(); }),
-        tuples.end());
-    tuples =
-        wmtk::simplex::utils::make_unique_tuples(child_mesh, tuples, my_simplex.primitive_type());
+    std::vector<Tuple> tuples_new_wout_sorting;
+    std::vector<Tuple> tuples_new_with_sorting;
+    {
+        simplex::SimplexCollection sc(my_mesh);
+        for (const Tuple& tuple : simplex::cofaces_single_dimension_iterable(
+                 my_mesh,
+                 my_simplex,
+                 child_mesh.top_simplex_type())) {
+            sc.add(child_mesh.top_simplex_type(), tuple);
+        }
 
-    return tuples;
+        // unsorted
+        {
+            std::vector<Tuple> child_tuples_wout;
+            child_tuples_wout.reserve(sc.size());
+            for (const simplex::Simplex& s : sc.simplex_vector()) {
+                const Tuple tuple =
+                    map_tuple_between_meshes(my_mesh, child_mesh, map_accessor, s.tuple());
+                if (!tuple.is_null()) {
+                    child_tuples_wout.emplace_back(tuple);
+                }
+            }
+            tuples_new_wout_sorting = wmtk::simplex::utils::make_unique_tuples(
+                child_mesh,
+                child_tuples_wout,
+                my_simplex.primitive_type());
+        }
+        sc.sort();
+
+        // sorted
+        {
+            std::vector<Tuple> child_tuples;
+            child_tuples.reserve(sc.size());
+            for (const simplex::Simplex& s : sc.simplex_vector()) {
+                const Tuple tuple =
+                    map_tuple_between_meshes(my_mesh, child_mesh, map_accessor, s.tuple());
+                if (!tuple.is_null()) {
+                    child_tuples.emplace_back(tuple);
+                }
+            }
+            tuples_new_with_sorting = wmtk::simplex::utils::make_unique_tuples(
+                child_mesh,
+                child_tuples,
+                my_simplex.primitive_type());
+        }
+    }
+
+    // return tuples_original;
+    return tuples_new_with_sorting;
+    // return tuples_new_wout_sorting;
 }
 
 std::vector<Tuple> MultiMeshManager::map_to_child_tuples(
