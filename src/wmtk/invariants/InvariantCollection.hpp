@@ -29,8 +29,17 @@ public:
 
     bool directly_modified_after(
         const std::vector<simplex::Simplex>& simplices_before,
-        const std::vector<simplex::Simplex>& simplices_after) const override;
+        const std::vector<simplex::Simplex>& simplices_after) const final override;
 
+    // optimization for evaluating connected subgraphs of invariants that share the same mesh
+    // In this case we can cache the cofaces computed once rather than re-evaluate them
+    bool directly_modified_after_cached(
+        const std::vector<simplex::Simplex>& simplices_before,
+        const std::vector<simplex::Simplex>& simplices_after,
+        std::vector<Tuple>& cofaces_before,
+        std::vector<Tuple>& cofaces_after) const;
+
+    bool is_collection() const final override;
     // pass by value so this can be internally moved
     void add(std::shared_ptr<Invariant> invariant);
 
@@ -44,6 +53,8 @@ public:
 
 private:
     std::vector<std::shared_ptr<Invariant>> m_invariants;
+    std::vector<std::shared_ptr<Invariant>> m_same_mesh_invariants;
+    bool m_use_same_mesh_caching = false;
 };
 
 } // namespace invariants

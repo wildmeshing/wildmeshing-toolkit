@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include <vector>
 #include <wmtk/PrimitiveType.hpp>
 namespace wmtk {
@@ -30,6 +31,7 @@ public:
 
     const Mesh& mesh() const;
 
+    // A compact pipeline for evaluating after without computing any cofaces
     // TODO change name
     virtual bool directly_modified_after(
         const std::vector<simplex::Simplex>& simplices_before,
@@ -41,12 +43,15 @@ public:
     bool use_old_state_in_after() const;
     bool use_new_state_in_after() const;
 
+    virtual bool is_collection() const;
+
 private:
     const Mesh& m_mesh;
     const bool m_use_before = true;
     const bool m_use_old_state_in_after = true;
     const bool m_use_new_state_in_after = true;
 
+protected:
     const std::vector<Tuple> get_top_dimension_cofaces(
         const std::vector<simplex::Simplex>& simplices) const;
 };

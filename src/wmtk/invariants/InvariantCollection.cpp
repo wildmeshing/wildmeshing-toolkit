@@ -3,12 +3,15 @@
 #include <type_traits>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/utils/Logger.hpp>
 
 namespace wmtk::invariants {
 
 InvariantCollection::InvariantCollection(const Mesh& m)
     : Invariant(m, true, true, true)
-{}
+{
+    m_use_same_mesh_caching = true;
+}
 InvariantCollection::~InvariantCollection() = default;
 InvariantCollection::InvariantCollection(const InvariantCollection&) = default;
 InvariantCollection::InvariantCollection(InvariantCollection&&) = default;
@@ -27,7 +30,10 @@ InvariantCollection& InvariantCollection::operator=(InvariantCollection&& o)
 
 void InvariantCollection::add(std::shared_ptr<Invariant> invariant)
 {
-    m_invariants.emplace_back(std::move(invariant));
+    const auto& invar = m_invariants.emplace_back(std::move(invariant));
+    if (m_use_same_mesh_caching && &mesh() == &invar->mesh()) {
+        m_same_mesh_invariants.emplace_back(invar);
+    }
 }
 bool InvariantCollection::before(const simplex::Simplex& t) const
 {
@@ -114,8 +120,58 @@ bool InvariantCollection::directly_modified_after(
                     mapped_simplices_after)) {
                 return false;
             }
-        } else {
+        } else if (!m_use_same_mesh_caching) {
             if (!invariant->directly_modified_after(simplices_before, simplices_after)) {
+                return false;
+            }
+        }
+    }
+    if (m_use_same_mesh_caching) {
+        std::vector<Tuple> tuples_before, tuples_after;
+        return directly_modified_after_cached(
+            simplices_before,
+            simplices_after,
+            tuples_before,
+            tuples_after);
+    }
+    return true;
+}
+bool InvariantCollection::is_collection() const
+{
+    return true;
+}
+
+bool InvariantCollection::directly_modified_after_cached(
+    const std::vector<simplex::Simplex>& simplices_before,
+    const std::vector<simplex::Simplex>& simplices_after,
+    std::vector<Tuple>& cofaces_before,
+    std::vector<Tuple>& cofaces_after) const
+{
+    for (const auto& invariant_ptr : m_same_mesh_invariants) {
+        const auto& invariant = *invariant_ptr;
+        assert(&mesh() == &invariant.mesh());
+        if (invariant.is_collection()) {
+            if (!static_cast<const InvariantCollection&>(invariant).directly_modified_after_cached(
+                    simplices_before,
+                    simplices_after,
+                    cofaces_before,
+                    cofaces_after)) {
+                return false;
+            }
+        } else if (invariant.use_after()) {
+            if (invariant.use_new_state_in_after()) {
+                if (cofaces_after.empty()) {
+                    cofaces_after = get_top_dimension_cofaces(simplices_after);
+                }
+            }
+            if (invariant.use_old_state_in_after()) {
+                if (cofaces_before.empty()) {
+                    cofaces_before = mesh().parent_scope(
+                        [&]() { return get_top_dimension_cofaces(simplices_before); });
+                }
+            }
+
+            if (!after(cofaces_before, cofaces_after)) {
                 return false;
             }
         }
@@ -164,5 +220,6 @@ InvariantCollection::get_map_mesh_to_invariants()
     }
     //
 }
+
 
 } // namespace wmtk::invariants

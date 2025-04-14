@@ -503,10 +503,14 @@ std::vector<Tuple> MultiMeshManager::map_tuples(
 
     int64_t depth = my_id.size();
 
-    auto [root_ref, tuple] = map_up_to_tuples(my_mesh, my_simplex, depth);
-    const simplex::Simplex simplex(root_ref, my_simplex.primitive_type(), tuple);
+    if (is_root()) {
+        return my_mesh.m_multi_mesh_manager.map_down_relative_tuples(my_mesh, my_simplex, other_id);
+    } else {
+        auto [root_ref, tuple] = map_up_to_tuples(my_mesh, my_simplex, depth);
+        const simplex::Simplex simplex(root_ref, my_simplex.primitive_type(), tuple);
 
-    return root_ref.m_multi_mesh_manager.map_down_relative_tuples(root_ref, simplex, other_id);
+        return root_ref.m_multi_mesh_manager.map_down_relative_tuples(root_ref, simplex, other_id);
+    }
 }
 
 std::vector<Tuple> MultiMeshManager::lub_map_tuples(
@@ -523,16 +527,23 @@ std::vector<Tuple> MultiMeshManager::lub_map_tuples(
 
     int64_t depth = my_id.size() - lub_id.size();
 
-    auto [local_root_ref, tuple] = map_up_to_tuples(my_mesh, my_simplex, depth);
-    assert(other_mesh.m_multi_mesh_manager.is_child(other_mesh, local_root_ref));
-
-    const simplex::Simplex simplex(local_root_ref, my_simplex.primitive_type(), tuple);
-
     auto other_relative_id = relative_id(lub_id, other_id);
-    return local_root_ref.m_multi_mesh_manager.map_down_relative_tuples(
-        local_root_ref,
-        simplex,
-        other_relative_id);
+    if (depth == 0) {
+        return my_mesh.m_multi_mesh_manager.map_down_relative_tuples(
+            my_mesh,
+            my_simplex,
+            other_relative_id);
+    } else {
+        auto [local_root_ref, tuple] = map_up_to_tuples(my_mesh, my_simplex, depth);
+        assert(other_mesh.m_multi_mesh_manager.is_child(other_mesh, local_root_ref));
+
+        const simplex::Simplex simplex(local_root_ref, my_simplex.primitive_type(), tuple);
+
+        return local_root_ref.m_multi_mesh_manager.map_down_relative_tuples(
+            local_root_ref,
+            simplex,
+            other_relative_id);
+    }
 }
 
 simplex::Simplex MultiMeshManager::map_to_root(

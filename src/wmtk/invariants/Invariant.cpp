@@ -2,6 +2,7 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/primitive_range.hpp>
 
 namespace wmtk::invariants {
@@ -57,7 +58,10 @@ bool Invariant::directly_modified_after(
 
     return true;
 }
-
+bool Invariant::is_collection() const
+{
+    return false;
+}
 bool Invariant::use_old_state_in_after() const
 {
     return m_use_old_state_in_after;
