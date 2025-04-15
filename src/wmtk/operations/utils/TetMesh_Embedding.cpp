@@ -254,7 +254,8 @@ Eigen::MatrixXd parametrize_top(
     const Eigen::MatrixXd& uv_bd,
     const Eigen::VectorXi& IM_uv_bd,
     const Eigen::MatrixXi& T,
-    Eigen::VectorXi& IM_top)
+    Eigen::VectorXi& IM_top,
+    bool debug_mode)
 {
     // First remove unreferenced vertices from F_top and V
     Eigen::MatrixXd NV;
@@ -378,7 +379,8 @@ Eigen::MatrixXd parametrize_top(
         igl::harmonic(V_clean_top, F_clean_top, bnd, bnd_uv, 1, uv);
     }
 
-    {
+
+    if (debug_mode) {
         // Visualize parameterization result
         spdlog::info("Starting visualization of parameterization result");
 

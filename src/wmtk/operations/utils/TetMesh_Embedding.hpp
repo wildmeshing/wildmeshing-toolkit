@@ -33,7 +33,8 @@ Eigen::MatrixXd parametrize_top(
     const Eigen::MatrixXd& uv_bd,
     const Eigen::VectorXi& IM_uv_bd,
     const Eigen::MatrixXi& T,
-    Eigen::VectorXi& IM_top);
+    Eigen::VectorXi& IM_top,
+    bool debug_mode = false);
 
 void visualize_tet_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& T);
 
