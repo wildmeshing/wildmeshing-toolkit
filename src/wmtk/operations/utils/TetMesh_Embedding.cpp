@@ -493,4 +493,53 @@ void launch_debug_viewer(
     viewer.launch();
 }
 
+Eigen::MatrixXi extract_surface_without_vertex(
+    const Eigen::MatrixXi& T,
+    const Eigen::MatrixXd& V,
+    int vertex_to_remove = 0)
+{
+    std::vector<Eigen::Vector3i> surface_triangles;
+
+    // Iterate through all tetrahedra to find the face not containing vertex_to_remove
+    // Assumption: All tets are connected to vertex_to_remove except one face
+    std::vector<Eigen::Vector3i> surface_triangles;
+
+    for (int i = 0; i < T.rows(); i++) {
+        Eigen::Vector4i tet = T.row(i);
+
+        // Find position of vertex_to_remove in tet
+        int pos = -1;
+        for (int j = 0; j < 4; j++) {
+            if (tet[j] == vertex_to_remove) {
+                pos = j;
+                break;
+            }
+        }
+
+        // If vertex not found in this tet, extract the face maintaining orientation
+        if (pos == -1) {
+            // Order vertices based on tet orientation:
+            // pos=0: (1,3,2), pos=1: (0,2,3), pos=2: (0,3,1), pos=3: (0,1,2)
+            Eigen::Vector3i oriented_face;
+            switch (pos) {
+            case 0: oriented_face = Eigen::Vector3i(tet[1], tet[3], tet[2]); break;
+            case 1: oriented_face = Eigen::Vector3i(tet[0], tet[2], tet[3]); break;
+            case 2: oriented_face = Eigen::Vector3i(tet[0], tet[3], tet[1]); break;
+            case 3: oriented_face = Eigen::Vector3i(tet[0], tet[1], tet[2]); break;
+            }
+            surface_triangles.push_back(oriented_face);
+            break; // We found the only face we need
+        }
+    }
+
+    // Convert vector to matrix
+    Eigen::MatrixXi F0(surface_triangles.size(), 3);
+    for (int i = 0; i < surface_triangles.size(); i++) {
+        F0.row(i) = surface_triangles[i];
+    }
+
+    return F0;
+}
+
+
 } // namespace wmtk::operations::utils

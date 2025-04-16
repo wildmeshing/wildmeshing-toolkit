@@ -94,6 +94,10 @@ void Operation::add_transfer_strategy(
 
 std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simplex)
 {
+    // for debugging
+    static int succ_embed_count = 0;
+
+
     // Make it special for MeshConsolidate
     if (operation_name == "MeshConsolidate") {
         return execute(simplex);
@@ -498,9 +502,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                         bool is_simplex_boundary = mesh().parent_scope(
                             [&](const simplex::Simplex& s) { return mesh().is_boundary(s); },
                             simplex);
-                        // TODO: what about swap operation?
-                        bool need_get_boundary_surface =
-                            is_simplex_boundary && operation_name == "EdgeCollapse";
+                        // TODO: what about swap operation
                         auto [T_after, V_after, F_bd_after, id_map_after, v_id_map_after] =
                             utils::get_local_tetmesh(
                                 static_cast<const TetMesh&>(mesh()),
@@ -537,6 +539,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                                 PrimitiveType::Vertex))));
                                 },
                                 simplex);
+                            // TODO: this part is only for debugging sanity check for now
                             if (!is_simplex_boundary && (is_bd_v0 || is_bd_v1)) {
                                 // Get vertex position after operation
                                 Eigen::Vector3d after_vertex_position;
@@ -628,150 +631,65 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                             }
 
                             if (is_simplex_boundary) {
-                                // Starting mesh embedding process
-                                spdlog::info("Starting mesh embedding process...");
-                                spdlog::info("Processing tetrahedral mesh and boundary faces...");
-                                spdlog::info(
-                                    "T_before shape: {} rows x {} columns",
-                                    T_before.rows(),
-                                    T_before.cols());
-                                spdlog::info(
-                                    "F_bd_before shape: {} rows x {} columns",
-                                    F_bd_before.rows(),
-                                    F_bd_before.cols());
-                                std::vector<int> non_bd_vertices =
-                                    utils::embed_mesh(T_before, F_bd_before);
-                                Eigen::MatrixXi F_top = utils::find_F_top(
-                                    std::unordered_set<int>(
-                                        non_bd_vertices.begin(),
-                                        non_bd_vertices.end()),
-                                    T_before);
+                                // visualize the mesh before embedding
+                                spdlog::info("Visualizing the mesh before embedding...");
+                                utils::visualize_tet_mesh(V_before, T_before);
+                                utils::visualize_tet_mesh(V_after, T_after);
 
-                                // Log completion of embedding process
-                                spdlog::info("Tetrahedral mesh embedding process completed "
-                                             "successfully");
-                                spdlog::info(
-                                    "Found {} non-boundary vertices",
-                                    non_bd_vertices.size());
-                                spdlog::info("Generated top faces: {} triangles", F_top.rows());
+                                // TODO: Figure out which vertex is collapse towards which vertex
+                                // For now, let's assume it's simplex -> simplex.switch_vertex()
+                                // re-obtain all the local mesh
+                                // step1: get all the tet connect to vertex(simplex) before collapse
+                                auto all_tets_before = mesh().parent_scope(
+                                    [&](const simplex::Simplex& s) {
+                                        return simplex::top_dimension_cofaces(
+                                                   mesh(),
+                                                   simplex::Simplex::vertex(mesh(), s.tuple()))
+                                            .simplex_vector(PrimitiveType::Tetrahedron);
+                                    },
+                                    simplex);
 
-                                // Use harmonic parameterization
-                                Eigen::VectorXi bottom_bnd;
-                                Eigen::MatrixXd bottom_bnd_uv;
-
-                                // First remove unreferenced vertices
-                                Eigen::MatrixXd V_bottom;
-                                Eigen::MatrixXi F_bottom;
-                                Eigen::VectorXi IM_bottom, J_bottom;
-                                igl::remove_unreferenced(
-                                    V_before,
-                                    F_bd_before,
-                                    V_bottom,
-                                    F_bottom,
-                                    IM_bottom,
-                                    J_bottom);
-
-                                spdlog::info("Removed unreferenced vertices");
-
-                                // Get boundary loop
-                                igl::boundary_loop(F_bottom, bottom_bnd);
-
-                                // Map boundary to circle while preserving edge proportions
-                                bottom_bnd_uv.resize(bottom_bnd.size(), 2);
-                                for (int i = 0; i < bottom_bnd.size(); i++) {
-                                    double angle = 2.0 * M_PI * i / bottom_bnd.size();
-                                    bottom_bnd_uv(i, 0) = cos(angle);
-                                    bottom_bnd_uv(i, 1) = sin(angle);
-                                }
-
-                                spdlog::info("Mapped boundary to circle");
-
-                                // Scale boundary to match area
-                                Eigen::MatrixXd M_before;
-                                igl::doublearea(V_bottom, F_bottom, M_before);
-                                // bottom_bnd_uv *= sqrt(M_before.sum() / (2 * M_PI));
-
-                                spdlog::info("Scaled boundary to match area");
-
-                                // Function to check UV orientation
-                                auto check_uv_orientation = [](const Eigen::MatrixXd& uv,
-                                                               const Eigen::MatrixXi& F) {
-                                    for (int i = 0; i < F.rows(); i++) {
-                                        if (wmtk::utils::wmtk_orient2d(
-                                                uv.row(F(i, 0)),
-                                                uv.row(F(i, 1)),
-                                                uv.row(F(i, 2))) < 0) {
-                                            return false;
-                                        }
-                                    }
-                                    return true;
-                                };
-
-                                // Compute harmonic parameterization
-                                Eigen::MatrixXd uv_bottom;
-                                igl::harmonic(
-                                    V_bottom,
-                                    F_bottom,
-                                    bottom_bnd,
-                                    bottom_bnd_uv,
-                                    1,
-                                    uv_bottom);
-
-                                spdlog::info("Computed harmonic parameterization");
-
-                                utils::launch_debug_viewer(V_bottom, F_bottom, uv_bottom);
-
-                                // Check for flipped triangles
-                                if (!check_uv_orientation(uv_bottom, F_bottom)) {
-                                    std::cerr << "Harmonic parameterization produced flipped "
-                                                 "triangles"
-                                              << std::endl;
-                                }
-
-
-                                // Parametrize F_top
-
-                                Eigen::VectorXi IM_top;
-                                Eigen::MatrixXd uv_top;
-                                if (F_top.rows() > 0) {
-                                    // Parametrize the internal vertices using the boundary
-                                    // parameterization
-                                    uv_top = utils::parametrize_top(
-                                        F_top,
-                                        V_before,
-                                        F_bd_before,
-                                        uv_bottom,
-                                        IM_bottom,
-                                        T_before,
-                                        IM_top);
-
-                                    spdlog::info("Completed parameterization of internal vertices");
-                                } else {
-                                    spdlog::info("No Top faces Found");
-                                }
-
-                                Eigen::MatrixXd V_param = Eigen::MatrixXd::Zero(V_before.rows(), 3);
-                                for (int i = 0; i < IM_bottom.size(); i++) {
-                                    if (IM_bottom(i) != -1) {
-                                        // Get uv coordinates and add z=0
-                                        V_param.row(i) << uv_bottom(IM_bottom(i), 0),
-                                            uv_bottom(IM_bottom(i), 1), 0.0;
+                                // step2: get all_tets_after, which is is all tets in
+                                // all_tets_before which is still valid
+                                std::vector<simplex::Simplex> all_tets_after;
+                                for (const auto& tet : all_tets_before) {
+                                    if (mesh().is_valid(tet)) {
+                                        all_tets_after.push_back(tet);
                                     }
                                 }
-                                for (int i = 0; i < IM_top.size(); i++) {
-                                    if (IM_top(i) != -1) {
-                                        // Get uv coordinates and add z=1
-                                        V_param.row(i) << uv_top(IM_top(i), 0),
-                                            uv_top(IM_top(i), 1), 1.0;
-                                    }
-                                }
-                                spdlog::info("Created parameterized vertex coordinates");
 
-                                {
-                                    utils::visualize_tet_mesh(V_param, T_before);
-                                }
+                                // DEBUG: print out size of all_tets_before and all_tets_after
+                                std::cout << "size of all_tets_before: " << all_tets_before.size()
+                                          << std::endl;
+                                std::cout << "size of all_tets_after: " << all_tets_after.size()
+                                          << std::endl;
+
+                                // step3: build TV_before and TV_after based on these tets
+                                auto [T_before, V_before, id_map_before, v_id_map_before] =
+                                    mesh().parent_scope(
+                                        [&](const simplex::Simplex& s) {
+                                            return utils::build_local_TV_matrix(
+                                                static_cast<const TetMesh&>(mesh()),
+                                                all_tets_before,
+                                                simplex::Simplex::vertex(mesh(), s.tuple()));
+                                        },
+                                        simplex);
+                                auto [T_after, V_after, id_map_after, v_id_map_after] =
+                                    utils::build_local_TV_matrix(
+                                        static_cast<const TetMesh&>(mesh()),
+                                        all_tets_after,
+                                        simplex::Simplex::vertex(mesh(), mods[0].tuple()));
+
+                                // DEBUG: visualize the mesh before and after embedding
+                                utils::visualize_tet_mesh(V_before, T_before);
+                                utils::visualize_tet_mesh(V_after, T_after);
+
+                                // Now we can do the embedding based on it
+
+
                             } // end if (is_simplex_boundary)
                         } // end if (operation_name == "EdgeCollapse")
+
                         // STORE information to logfile
                         operation_log["T_after"]["rows"] = T_after.rows();
                         operation_log["T_after"]["values"] = matrix_to_json(T_after);

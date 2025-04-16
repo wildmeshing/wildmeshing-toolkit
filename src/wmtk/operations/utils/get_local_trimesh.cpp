@@ -325,4 +325,71 @@ get_local_tetmesh_before_collapse(const wmtk::TetMesh& mesh, const wmtk::simplex
     return std::make_tuple(T, V, F_bd, t_local_to_global, v_local_to_global);
 }
 
+/*
+ * build TV matrix based on all_tets and v0
+ * all_tets: all tets in the mesh
+ * v0: the vertex that is set to be 0 in local index
+ * return: TV matrix, V matrix, t_local_to_global, v_local_to_global
+ */
+std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<int64_t>>
+build_local_TV_matrix(
+    const wmtk::TetMesh& mesh,
+    const std::vector<wmtk::simplex::Simplex>& all_tets,
+    const wmtk::simplex::Simplex& v0)
+{
+    auto pos_handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    auto pos = mesh.create_const_accessor<double>(pos_handle);
+
+    std::unordered_map<int64_t, int> global_to_local_map;
+
+    Eigen::MatrixXi T(all_tets.size(), 4);
+    std::vector<int64_t> t_local_to_global(all_tets.size());
+
+    int vertex_count = 1;
+    global_to_local_map[mesh.id(simplex::Simplex::vertex(mesh, v0.tuple()))] = 0;
+
+    int tet_count = 0;
+    for (const auto& t_tuple : all_tets) {
+        // get 4 vertices
+        Tuple cur_v = t_tuple.tuple();
+        if (mesh.is_ccw(cur_v)) {
+            cur_v = mesh.switch_edge(cur_v);
+        }
+
+        for (int i = 0; i < 4; i++) {
+            int64_t global_vid = mesh.id(wmtk::simplex::Simplex::vertex(mesh, cur_v));
+            if (global_to_local_map.count(global_vid) == 0) {
+                global_to_local_map[global_vid] = vertex_count;
+                vertex_count++;
+            }
+
+            T(tet_count, i) = global_to_local_map[global_vid];
+            if (i == 2) {
+                cur_v = mesh.switch_tuples(
+                    cur_v,
+                    {PrimitiveType::Triangle,
+                     PrimitiveType::Edge,
+                     PrimitiveType::Vertex}); // next vertex
+            } else {
+                cur_v = mesh.switch_tuples(
+                    cur_v,
+                    {PrimitiveType::Edge, PrimitiveType::Vertex}); // next vertex
+            }
+        }
+
+        t_local_to_global[tet_count] = mesh.id(t_tuple);
+        tet_count++;
+    }
+
+    Eigen::MatrixXd V(vertex_count, pos.dimension());
+    std::vector<int64_t> v_local_to_global(vertex_count);
+    for (const auto& pair : global_to_local_map) {
+        v_local_to_global[pair.second] = pair.first;
+        V.row(pair.second) =
+            pos.const_vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, pair.first));
+    }
+
+    return std::make_tuple(T, V, t_local_to_global, v_local_to_global);
+}
+
 } // namespace wmtk::operations::utils

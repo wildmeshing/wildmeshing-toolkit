@@ -43,6 +43,11 @@ void launch_debug_viewer(
     const Eigen::MatrixXi& F_bottom,
     const Eigen::MatrixXd& uv_bottom);
 
+Eigen::MatrixXi extract_surface_without_vertex(
+    const Eigen::MatrixXi& T,
+    const Eigen::MatrixXd& V,
+    int vertex_to_remove = 0);
+
 } // namespace utils
 } // namespace operations
 } // namespace wmtk
