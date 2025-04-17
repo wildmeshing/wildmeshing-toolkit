@@ -683,16 +683,6 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                 Eigen::MatrixXi F0 =
                                     utils::extract_surface_without_vertex(T_before, V_before, 0);
 
-                                // DEBUG: visualize triangle mesh F0, V_before
-                                {
-                                    std::cout << "F0: \n" << F0 << std::endl;
-                                    // Visualize the surface mesh F0 using libigl viewer
-                                    igl::opengl::glfw::Viewer viewer;
-                                    viewer.data().set_mesh(V_before, F0);
-                                    viewer.data().set_face_based(true);
-                                    viewer.core().align_camera_center(V_before, F0);
-                                    viewer.launch();
-                                }
 
                                 auto [uv, IM, V_clean, F_clean] =
                                     utils::harmonic_parameterization(V_before, F0);
@@ -705,6 +695,44 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 
                                 // DEBUG: visualize V_clean, F_clean, uv_hemisphere
                                 utils::launch_debug_viewer(V_lifted, F_clean, uv);
+
+                                // Create vertex positions with vertex 0 at origin and others at
+                                // V_lifted
+                                Eigen::MatrixXd V_param =
+                                    Eigen::MatrixXd::Zero(V_before.rows(), V_before.cols());
+                                for (int i = 0; i < IM.size(); i++) {
+                                    if (IM(i) != -1) {
+                                        V_param.row(i) = V_lifted.row(IM(i));
+                                    }
+                                }
+                                V_param.row(0) = Eigen::Vector3d::Zero(); // Vertex 0 at origin
+
+                                // TODO: fix Orientation
+                                // DEBUG: visualize V_param, T_before
+                                utils::visualize_tet_mesh(V_param, T_before);
+
+                                // TODO: check code
+                                // 根据v_id_map_before和v_id_map_after建立V_before和V_after的对应关系
+                                std::vector<int> v_map(V_after.rows());
+                                for (int i = 0; i < v_id_map_after.size(); i++) {
+                                    for (int j = 0; j < v_id_map_before.size(); j++) {
+                                        if (v_id_map_after[i] == v_id_map_before[j]) {
+                                            v_map[i] = j;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                // 根据映射关系构建新的V_param
+                                Eigen::MatrixXd V_param_after =
+                                    Eigen::MatrixXd::Zero(V_after.rows(), V_after.cols());
+                                for (int i = 0; i < v_map.size(); i++) {
+                                    V_param_after.row(i) = V_param.row(v_map[i]);
+                                }
+
+                                // 可视化V_param_after和T_after
+                                utils::visualize_tet_mesh(V_param_after, T_after);
+
                             } // end if (is_simplex_boundary)
                         } // end if (operation_name == "EdgeCollapse")
 

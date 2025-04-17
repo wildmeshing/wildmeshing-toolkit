@@ -591,7 +591,7 @@ Eigen::MatrixXd lift_to_hemisphere(const Eigen::MatrixXd& uv, const Eigen::Matri
             // Lift interior points to hemisphere
             double x = uv(i, 0);
             double y = uv(i, 1);
-            V_hemisphere(i, 2) = std::sqrt(R2 - x * x - y * y);
+            V_hemisphere(i, 2) = -std::sqrt(R2 - x * x - y * y);
         }
     }
 
