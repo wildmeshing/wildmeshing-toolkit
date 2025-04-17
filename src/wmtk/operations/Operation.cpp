@@ -631,11 +631,6 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                             }
 
                             if (is_simplex_boundary) {
-                                // visualize the mesh before embedding
-                                spdlog::info("Visualizing the mesh before embedding...");
-                                utils::visualize_tet_mesh(V_before, T_before);
-                                utils::visualize_tet_mesh(V_after, T_after);
-
                                 // TODO: Figure out which vertex is collapse towards which vertex
                                 // For now, let's assume it's simplex -> simplex.switch_vertex()
                                 // re-obtain all the local mesh
@@ -685,8 +680,31 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                 utils::visualize_tet_mesh(V_after, T_after);
 
                                 // Now we can do the embedding based on it
+                                Eigen::MatrixXi F0 =
+                                    utils::extract_surface_without_vertex(T_before, V_before, 0);
 
+                                // DEBUG: visualize triangle mesh F0, V_before
+                                {
+                                    std::cout << "F0: \n" << F0 << std::endl;
+                                    // Visualize the surface mesh F0 using libigl viewer
+                                    igl::opengl::glfw::Viewer viewer;
+                                    viewer.data().set_mesh(V_before, F0);
+                                    viewer.data().set_face_based(true);
+                                    viewer.core().align_camera_center(V_before, F0);
+                                    viewer.launch();
+                                }
 
+                                auto [uv, IM, V_clean, F_clean] =
+                                    utils::harmonic_parameterization(V_before, F0);
+
+                                // DEBUG: use debug_viewer to visualize V_clean, F_clean, uv
+                                utils::launch_debug_viewer(V_clean, F_clean, uv);
+
+                                // lift uv to hemisphere
+                                Eigen::MatrixXd V_lifted = utils::lift_to_hemisphere(uv, F_clean);
+
+                                // DEBUG: visualize V_clean, F_clean, uv_hemisphere
+                                utils::launch_debug_viewer(V_lifted, F_clean, uv);
                             } // end if (is_simplex_boundary)
                         } // end if (operation_name == "EdgeCollapse")
 

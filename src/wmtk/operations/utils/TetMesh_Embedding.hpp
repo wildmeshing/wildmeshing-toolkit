@@ -1,9 +1,9 @@
 #pragma once
 
 #include <Eigen/Core>
+#include <tuple>
 #include <unordered_set>
 #include <vector>
-
 namespace wmtk {
 namespace operations {
 namespace utils {
@@ -48,6 +48,11 @@ Eigen::MatrixXi extract_surface_without_vertex(
     const Eigen::MatrixXd& V,
     int vertex_to_remove = 0);
 
+
+std::tuple<Eigen::MatrixXd, Eigen::VectorXi, Eigen::MatrixXd, Eigen::MatrixXi>
+harmonic_parameterization(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F);
+
+Eigen::MatrixXd lift_to_hemisphere(const Eigen::MatrixXd& uv, const Eigen::MatrixXi& F);
 } // namespace utils
 } // namespace operations
 } // namespace wmtk

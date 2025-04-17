@@ -3,6 +3,7 @@
 #include <igl/boundary_loop.h>
 #include <igl/colormap.h>
 #include <igl/harmonic.h>
+#include <igl/map_vertices_to_circle.h>
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/remove_unreferenced.h>
 #include <spdlog/spdlog.h>
@@ -496,17 +497,17 @@ void launch_debug_viewer(
 Eigen::MatrixXi extract_surface_without_vertex(
     const Eigen::MatrixXi& T,
     const Eigen::MatrixXd& V,
-    int vertex_to_remove = 0)
+    int vertex_to_remove)
 {
-    std::vector<Eigen::Vector3i> surface_triangles;
-
+    std::cout << "T: \n" << T << std::endl;
     // Iterate through all tetrahedra to find the face not containing vertex_to_remove
     // Assumption: All tets are connected to vertex_to_remove except one face
     std::vector<Eigen::Vector3i> surface_triangles;
 
     for (int i = 0; i < T.rows(); i++) {
         Eigen::Vector4i tet = T.row(i);
-
+        std::cout << "i: " << i << std::endl;
+        std::cout << "tet: " << tet << std::endl;
         // Find position of vertex_to_remove in tet
         int pos = -1;
         for (int j = 0; j < 4; j++) {
@@ -516,8 +517,7 @@ Eigen::MatrixXi extract_surface_without_vertex(
             }
         }
 
-        // If vertex not found in this tet, extract the face maintaining orientation
-        if (pos == -1) {
+        if (pos != -1) {
             // Order vertices based on tet orientation:
             // pos=0: (1,3,2), pos=1: (0,2,3), pos=2: (0,3,1), pos=3: (0,1,2)
             Eigen::Vector3i oriented_face;
@@ -528,7 +528,6 @@ Eigen::MatrixXi extract_surface_without_vertex(
             case 3: oriented_face = Eigen::Vector3i(tet[0], tet[1], tet[2]); break;
             }
             surface_triangles.push_back(oriented_face);
-            break; // We found the only face we need
         }
     }
 
@@ -541,5 +540,62 @@ Eigen::MatrixXi extract_surface_without_vertex(
     return F0;
 }
 
+std::tuple<Eigen::MatrixXd, Eigen::VectorXi, Eigen::MatrixXd, Eigen::MatrixXi>
+harmonic_parameterization(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
+{
+    Eigen::MatrixXd NV;
+    Eigen::MatrixXi NF;
+    Eigen::VectorXi IM, J;
+    igl::remove_unreferenced(V, F, NV, NF, IM, J);
+
+    Eigen::MatrixXd V_clean = NV;
+    Eigen::MatrixXi F_clean = NF;
+
+    Eigen::VectorXi bnd;
+    igl::boundary_loop(F_clean, bnd);
+
+    Eigen::MatrixXd bnd_uv;
+    igl::map_vertices_to_circle(V_clean, bnd, bnd_uv);
+
+    Eigen::MatrixXd uv;
+    igl::harmonic(V_clean, F_clean, bnd, bnd_uv, 1, uv);
+
+    return {uv, IM, V_clean, F_clean};
+}
+
+Eigen::MatrixXd lift_to_hemisphere(const Eigen::MatrixXd& uv, const Eigen::MatrixXi& F)
+{
+    // Get mesh boundary
+    Eigen::VectorXi bnd;
+    igl::boundary_loop(F, bnd);
+
+    // Create a set of boundary vertex indices for quick lookup
+    std::unordered_set<int> bnd_vertices;
+    for (int i = 0; i < bnd.size(); i++) {
+        bnd_vertices.insert(bnd(i));
+    }
+
+    // Use squared distance from first boundary point to origin as R^2
+    double R2 = uv(bnd(0), 0) * uv(bnd(0), 0) + uv(bnd(0), 1) * uv(bnd(0), 1);
+
+    // Create lifted 3D coordinates
+    Eigen::MatrixXd V_hemisphere(uv.rows(), 3);
+    V_hemisphere.leftCols(2) = uv; // Copy x,y coordinates
+
+    // Compute z coordinates
+    for (int i = 0; i < uv.rows(); i++) {
+        if (bnd_vertices.find(i) != bnd_vertices.end()) {
+            // Set boundary points z coordinate to 0
+            V_hemisphere(i, 2) = 0;
+        } else {
+            // Lift interior points to hemisphere
+            double x = uv(i, 0);
+            double y = uv(i, 1);
+            V_hemisphere(i, 2) = std::sqrt(R2 - x * x - y * y);
+        }
+    }
+
+    return V_hemisphere;
+}
 
 } // namespace wmtk::operations::utils
