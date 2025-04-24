@@ -7,9 +7,6 @@ class AttributeManager;
  * This handle is a wrapper for the MeshManager scope funtions.
  * It's main task is to enable RAII for attribute scopes.
  *
- * It is NOT a handle for `AttributeScope`.
- *
- * Remark: We should rename this. Maybe just call it ScopeHandle?
  */
 class AttributeScopeHandle
 {

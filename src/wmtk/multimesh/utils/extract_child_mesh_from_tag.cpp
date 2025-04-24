@@ -3,13 +3,12 @@
 #include <numeric>
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Mesh.hpp>
-#include <wmtk/MultiMeshManager.hpp>
+#include <wmtk/multimesh/MultiMeshManager.hpp>
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/Primitive.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
-#include <wmtk/attribute/MeshAttributes.hpp>
 #include <wmtk/attribute/TypedAttributeHandle.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "internal/TupleTag.hpp"

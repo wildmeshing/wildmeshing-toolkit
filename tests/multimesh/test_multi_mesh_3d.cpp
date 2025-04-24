@@ -1223,7 +1223,7 @@ TEST_CASE("test_split_multi_mesh_3D_free", "[multimesh][1D][2D][3D]")
         }
     }
     auto check = [&]() {
-        spdlog::info("Starting check");
+        // spdlog::info("Starting check");
         REQUIRE(mesh_ptr->is_connectivity_valid());
         for (const auto& child_ptr : children) {
             REQUIRE(is_free(*child_ptr));

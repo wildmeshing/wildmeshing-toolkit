@@ -4,6 +4,12 @@
 #include <wmtk/Tuple.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
+namespace wmtk {
+    class PointMesh;
+    class EdgeMesh;
+    class TriMesh;
+    class TetMesh;
+}
 namespace wmtk::simplex {
 
 // Returns the cofaces of a provided simplex, but only providing the cofaces in the provided coface

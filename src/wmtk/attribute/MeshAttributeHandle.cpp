@@ -37,8 +37,17 @@ auto MeshAttributeHandle::held_type() const -> HeldType
 
 bool MeshAttributeHandle::is_valid() const
 {
-    return m_mesh != nullptr &&
-           std::visit([](const auto& h) -> bool { return h.is_valid(); }, m_handle);
+    if (!m_mesh) {
+        return false;
+    }
+    // forward to TypedAttributeHandle
+    if (!std::visit([](const auto& h) -> bool { return h.is_valid(); }, m_handle)) {
+        return false;
+    }
+
+    // verify that the handle exists in MeshAttributes
+
+    return std::visit([&](const auto& h) -> bool { return m_mesh->validate_handle(h); }, m_handle);
 }
 
 int64_t MeshAttributeHandle::dimension() const

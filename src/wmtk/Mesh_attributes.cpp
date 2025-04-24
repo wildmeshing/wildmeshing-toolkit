@@ -317,7 +317,6 @@ std::vector<attribute::MeshAttributeHandle::HandleVariant> Mesh::builtin_attribu
         std::copy(vec.begin(), vec.end(), std::back_inserter(data));
     }
 
-    data.emplace_back(m_cell_hash_handle);
     std::copy(m_flag_handles.begin(), m_flag_handles.end(), std::back_inserter(data));
 
     auto mm_handles = m_multi_mesh_manager.map_handles();

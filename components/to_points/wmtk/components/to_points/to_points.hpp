@@ -1,7 +1,16 @@
 #pragma once
 
 
-#include <wmtk/Mesh.hpp>
+#include <string>
+#include <memory>
+
+namespace wmtk {
+    class Mesh;
+    class PointMesh;
+    namespace attribute {
+        class MeshAttributeHandle;
+    }
+}
 
 namespace wmtk::components {
 

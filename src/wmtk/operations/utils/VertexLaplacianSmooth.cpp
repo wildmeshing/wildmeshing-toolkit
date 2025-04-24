@@ -11,8 +11,7 @@ VertexLaplacianSmooth::VertexLaplacianSmooth(const attribute::MeshAttributeHandl
 {
 #if !defined(NDEBUG) // pragma to make sure this heldtype isn't useful
     using HeldType = attribute::MeshAttributeHandle::HeldType;
-    assert(
-        handle.held_type() == HeldType::Double);
+    assert(handle.held_type() == HeldType::Double);
 #endif
 }
 
@@ -24,7 +23,7 @@ bool VertexLaplacianSmooth::operator()(Mesh& mesh, const simplex::Simplex& simpl
 
     std::visit(
         [&](const auto& handle) {
-            using T = typename std::decay_t<decltype(handle)>::value_type;
+            using T = typename std::decay_t<decltype(handle)>::Type;
             using HeldType = attribute::MeshAttributeHandle::HeldType;
             constexpr static HeldType ht =
                 attribute::MeshAttributeHandle::held_type_from_primitive<T>();

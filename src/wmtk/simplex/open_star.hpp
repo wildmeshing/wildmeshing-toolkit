@@ -2,6 +2,10 @@
 
 #include "SimplexCollection.hpp"
 
+namespace wmtk {
+    class TriMesh;
+    class TetMesh;
+}
 namespace wmtk::simplex {
 SimplexCollection
 open_star(const Mesh& mesh, const Simplex& simplex, const bool sort_and_clean = true);

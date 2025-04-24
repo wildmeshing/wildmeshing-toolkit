@@ -60,7 +60,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         collapse(Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
 
-        auto fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
+        auto& fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
 
         // CHECK_THROWS(m.tuple_from_id(PrimitiveType::Vertex, 4));
 
@@ -80,7 +80,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         collapse(Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
 
-        auto fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
+        auto& fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
 
         // CHECK_THROWS(m.tuple_from_id(PrimitiveType::Vertex, 4));
 
@@ -121,7 +121,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         op(Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
 
-        auto fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
+        auto& fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
 
         // CHECK_THROWS(m.tuple_from_id(PrimitiveType::Vertex, 0));
 
@@ -313,7 +313,7 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
         // should perform two iterations to split the two interior edges once
         for (int i = 0; i < 5; i++) {
             for (const Tuple& t : m.get_all(PE)) {
-                if(!m.is_valid(t)) {
+                if (!m.is_valid(t)) {
                     continue;
                 }
                 const auto res = op(Simplex::edge(m, t));
@@ -501,7 +501,9 @@ TEST_CASE("collapse_no_topology_trimesh", "[operations][collapse]")
         return m;
     }(initial_size);
     int64_t size = initial_size;
+    size_t count = 0;
     for (Tuple edge : m.get_all(PrimitiveType::Triangle)) {
+        // spdlog::info("Count: {}", count++);
         EdgeCollapse op(m);
         REQUIRE(!op(simplex::Simplex(m, PrimitiveType::Edge, edge)).empty());
         size--;
