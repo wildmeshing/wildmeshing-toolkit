@@ -1,0 +1,34 @@
+{
+  "input": {
+    "input": {
+      "file": "multimesh/camel.hdf5",
+      "name_spec": {
+        "position": "uv"
+      }
+    },
+    "output": {
+      "position": {
+        "file": "camel_pos",
+        "position_attribute": "vertices",
+        "type": ".vtu"
+      },
+      "position.uv": {
+        "file": "camel_uv",
+        "position_attribute": "vertices",
+        "type": ".vtu"
+      }
+    }
+  },
+  "stats": {
+    "position": {
+      "edges": 5607,
+      "faces": 3576,
+      "vertices": 2032
+    },
+    "position.uv": {
+      "edges": 5607,
+      "faces": 3576,
+      "vertices": 2032
+    }
+  }
+}
