@@ -2,6 +2,7 @@
 #include <wmtk/Mesh.hpp>
 #include "RGB1.hpp"
 #include "RGB2.hpp"
+#include <wmtk/components/multimesh/MeshCollection.hpp>
 
 
 namespace wmtk::components::rgb {

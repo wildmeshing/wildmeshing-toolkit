@@ -1,8 +1,11 @@
 
 #pragma once
 #include "RGBOptions.hpp"
-#include "wmtk/attribute/MeshAttributes.hpp"
 
+
+namespace wmtk::components::multimesh {
+    class MeshCollection;
+}
 
 namespace wmtk::components::rgb {
 
@@ -19,9 +22,11 @@ public:
 protected:
     RGBOptions options;
 
-    const attribute::MeshAttributeHandle& position_handle() const;
+    const attribute::MeshAttributeHandle& position_handle(
+    components::multimesh::MeshCollection& meshes
+            ) const;
 };
 
 
-void rgb(const RGBOptions& options);
+void rgb(components::multimesh::MeshCollection& mc, const RGBOptions& options);
 } // namespace wmtk::components::rgb

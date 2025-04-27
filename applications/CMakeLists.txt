@@ -36,6 +36,7 @@ add_application(cdt_opt ON)
 add_application(shortest_edge_collapse ON)
 add_application(insertion ON)
 add_application(convert ON)
+add_application(rgb ON)
 add_application(longest_edge_split ON)
 
 
