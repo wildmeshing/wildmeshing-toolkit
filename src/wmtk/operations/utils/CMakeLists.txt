@@ -10,7 +10,7 @@ set(SRC_FILES
     multi_mesh_edge_split.cpp
     multi_mesh_edge_split.hpp
 
-    get_local_trimesh.cpp
+    get_local_mesh.cpp
 
     local_joint_flatten.hpp
     local_joint_flatten.cpp
