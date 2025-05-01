@@ -4,6 +4,8 @@
 #include <tuple>
 #include <unordered_set>
 #include <vector>
+#include <wmtk/utils/orient.hpp>
+
 namespace wmtk {
 namespace operations {
 namespace utils {

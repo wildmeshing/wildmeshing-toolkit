@@ -502,14 +502,20 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                         bool is_simplex_boundary = mesh().parent_scope(
                             [&](const simplex::Simplex& s) { return mesh().is_boundary(s); },
                             simplex);
+
                         // TODO: what about swap operation
-                        auto [T_after, V_after, F_bd_after, id_map_after, v_id_map_after] =
+                        Eigen::MatrixXi T_after, T_before, F_bd_after, F_bd_before;
+                        Eigen::MatrixXd V_after, V_before;
+                        std::vector<int64_t> id_map_after, id_map_before, v_id_map_after,
+                            v_id_map_before;
+
+                        std::tie(T_after, V_after, F_bd_after, id_map_after, v_id_map_after) =
                             utils::get_local_tetmesh(
                                 static_cast<const TetMesh&>(mesh()),
                                 mods[0],
                                 is_simplex_boundary && operation_name == "EdgeCollapse");
 
-                        auto [T_before, V_before, F_bd_before, id_map_before, v_id_map_before] =
+                        std::tie(T_before, V_before, F_bd_before, id_map_before, v_id_map_before) =
                             mesh().parent_scope(
                                 [&](const simplex::Simplex& s) {
                                     if (operation_name == "EdgeCollapse")
@@ -539,96 +545,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                                 PrimitiveType::Vertex))));
                                 },
                                 simplex);
-                            // TODO: this part is only for debugging sanity check for now
-                            if (!is_simplex_boundary && (is_bd_v0 || is_bd_v1)) {
-                                // Get vertex position after operation
-                                Eigen::Vector3d after_vertex_position;
-                                const auto& pos_accessor = mesh().get_attribute_handle<double>(
-                                    "vertices",
-                                    PrimitiveType::Vertex);
-                                auto pos_accessor_vector =
-                                    mesh().create_const_accessor<double>(pos_accessor);
-                                after_vertex_position =
-                                    pos_accessor_vector.const_vector_attribute(mods[0].tuple());
-                                std::cout << "Vertex position after operation: "
-                                          << after_vertex_position.transpose() << std::endl;
 
-                                // Get boundary and non-boundary vertex positions in parent
-                                // scope
-                                Eigen::Vector3d boundary_vertex_position;
-                                Eigen::Vector3d non_boundary_vertex_position;
-
-                                auto get_vertex_positions = [&](const simplex::Simplex& s) {
-                                    auto v0_tuple =
-                                        simplex::Simplex::vertex(mesh(), s.tuple()).tuple();
-                                    auto v1_tuple =
-                                        simplex::Simplex::vertex(
-                                            mesh(),
-                                            mesh().switch_tuple(s.tuple(), PrimitiveType::Vertex))
-                                            .tuple();
-
-                                    const auto& parent_pos_accessor =
-                                        mesh().get_attribute_handle<double>(
-                                            "vertices",
-                                            PrimitiveType::Vertex);
-                                    auto parent_pos_accessor_vector =
-                                        mesh().create_const_accessor<double>(parent_pos_accessor);
-
-                                    Eigen::Vector3d v0_position =
-                                        parent_pos_accessor_vector.const_vector_attribute(v0_tuple);
-                                    Eigen::Vector3d v1_position =
-                                        parent_pos_accessor_vector.const_vector_attribute(v1_tuple);
-
-                                    if (is_bd_v0 && !is_bd_v1) {
-                                        boundary_vertex_position = v0_position;
-                                        non_boundary_vertex_position = v1_position;
-                                    } else if (!is_bd_v0 && is_bd_v1) {
-                                        boundary_vertex_position = v1_position;
-                                        non_boundary_vertex_position = v0_position;
-                                    } else if (is_bd_v0 && is_bd_v1) {
-                                        // Case where both vertices are on boundary
-                                        boundary_vertex_position = v0_position;
-                                        non_boundary_vertex_position = v1_position;
-                                    }
-                                };
-
-                                mesh().parent_scope(get_vertex_positions, simplex);
-
-                                std::cout << "Boundary vertex position: "
-                                          << boundary_vertex_position.transpose() << std::endl;
-                                std::cout << "Non-boundary vertex position: "
-                                          << non_boundary_vertex_position.transpose() << std::endl;
-
-                                // Check if boundary vertex position matches position after
-                                // operation
-                                if ((boundary_vertex_position - after_vertex_position).norm() <
-                                    1e-10) {
-                                    std::cout << "Boundary vertex position matches position after "
-                                                 "operation, allowing operation to continue"
-                                              << std::endl;
-                                    // Positions match, allow operation to continue
-                                } else {
-                                    std::cout << "Boundary vertex position does not match position "
-                                                 "after operation, operation failed"
-                                              << std::endl;
-
-                                    // Check if non-boundary vertex position matches
-                                    if ((non_boundary_vertex_position - after_vertex_position)
-                                            .norm() < 1e-10) {
-                                        std::cout << "Non-boundary vertex position matches "
-                                                     "position after operation"
-                                                  << std::endl;
-                                    } else {
-                                        std::cout << "Non-boundary vertex position does not match "
-                                                     "position after operation"
-                                                  << std::endl;
-                                    }
-
-                                    std::cerr << "boundary vertex in EdgeCollapse\n";
-                                    // scope.mark_failed();
-                                    // return {};
-                                }
-                            }
 
                             if (is_simplex_boundary) {
                                 // TODO: Figure out which vertex is collapse towards which vertex
@@ -660,7 +577,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                           << std::endl;
 
                                 // step3: build TV_before and TV_after based on these tets
-                                auto [T_before, V_before, id_map_before, v_id_map_before] =
+                                std::tie(T_before, V_before, id_map_before, v_id_map_before) =
                                     mesh().parent_scope(
                                         [&](const simplex::Simplex& s) {
                                             return utils::build_local_TV_matrix(
@@ -669,7 +586,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                                 simplex::Simplex::vertex(mesh(), s.tuple()));
                                         },
                                         simplex);
-                                auto [T_after, V_after, id_map_after, v_id_map_after] =
+                                std::tie(T_after, V_after, id_map_after, v_id_map_after) =
                                     utils::build_local_TV_matrix(
                                         static_cast<const TetMesh&>(mesh()),
                                         all_tets_after,
@@ -694,69 +611,58 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 
                                 std::cout << "T_after:" << std::endl;
                                 std::cout << T_after << std::endl;
-                                utils::embed_mesh_lift(T_before, V_before);
+                                auto V_before_param = utils::embed_mesh_lift(T_before, V_before);
+                                if (V_before_param.rows() == 0) {
+                                    // TODO: try to fix the embedding later
+                                    scope.mark_failed();
+                                    return {};
+                                }
+
+                                Eigen::MatrixXd V_after_param(V_after.rows(), V_after.cols());
+                                int element_in_before_not_after = -1;
+                                for (int i = 0; i < v_id_map_before.size(); i++) {
+                                    if (std::find(
+                                            v_id_map_after.begin(),
+                                            v_id_map_after.end(),
+                                            v_id_map_before[i]) == v_id_map_after.end()) {
+                                        element_in_before_not_after = i;
+                                        break;
+                                    }
+                                }
 
 
-                                /*
-                                                                // Now we can do the embedding based on it
-                                                                Eigen::MatrixXi F0 =
-                                                                    utils::extract_surface_without_vertex(T_before,
-                                   V_before, 0);
+                                // v0
+                                if (v_id_map_before[0] == v_id_map_after[0]) {
+                                    V_after_param.row(0) =
+                                        V_before_param.row(element_in_before_not_after);
+                                } else {
+                                    auto it = std::find(
+                                        v_id_map_before.begin(),
+                                        v_id_map_before.end(),
+                                        v_id_map_after[0]);
+                                    if (it != v_id_map_before.end()) {
+                                        int index = std::distance(v_id_map_before.begin(), it);
+                                        V_after_param.row(0) = V_before_param.row(index);
+                                    }
+                                }
+                                // other vertices
+                                for (int i = 1; i < v_id_map_after.size(); i++) {
+                                    auto it = std::find(
+                                        v_id_map_before.begin(),
+                                        v_id_map_before.end(),
+                                        v_id_map_after[i]);
+                                    if (it != v_id_map_before.end()) {
+                                        int index = std::distance(v_id_map_before.begin(), it);
+                                        V_after_param.row(i) = V_before_param.row(index);
+                                    }
+                                }
+
+                                // update the mesh to store in json
+                                V_before = V_before_param;
+                                V_after = V_after_param;
+                                // utils::visualize_tet_mesh(V_after_param, T_after);
 
 
-                                                                auto [uv, IM, V_clean, F_clean] =
-                                                                    utils::harmonic_parameterization(V_before,
-                                   F0);
-
-                                                                // DEBUG: use debug_viewer to visualize V_clean, F_clean, uv
-                                                                utils::launch_debug_viewer(V_clean,
-                                   F_clean, uv);
-
-                                                                // lift uv to hemisphere
-                                                                Eigen::MatrixXd V_lifted =
-                                   utils::lift_to_hemisphere(uv, F_clean);
-
-                                                                // DEBUG: visualize V_clean, F_clean, uv_hemisphere
-                                                                utils::launch_debug_viewer(V_lifted,
-                                   F_clean, uv);
-
-                                                                // Create vertex positions with vertex 0 at origin and others at
-                                                                // V_lifted
-                                                                Eigen::MatrixXd V_param =
-                                                                    Eigen::MatrixXd::Zero(V_before.rows(),
-                                   V_before.cols()); for (int i = 0; i < IM.size(); i++) { if (IM(i)
-                                   != -1) { V_param.row(i) = V_lifted.row(IM(i));
-                                                                    }
-                                                                }
-                                                                V_param.row(0) = Eigen::Vector3d::Zero(); // Vertex 0 at origin
-
-                                                                // TODO: fix Orientation
-                                                                // DEBUG: visualize V_param, T_before
-                                                                utils::visualize_tet_mesh(V_param,
-                                   T_before);
-
-                                                                // TODO: check code
-                                                                // 根据v_id_map_before和v_id_map_after建立V_before和V_after的对应关系
-                                                                std::vector<int>
-                                   v_map(V_after.rows()); for (int i = 0; i < v_id_map_after.size();
-                                   i++) { for (int j = 0; j < v_id_map_before.size(); j++) { if
-                                   (v_id_map_after[i] == v_id_map_before[j]) { v_map[i] = j; break;
-                                                                        }
-                                                                    }
-                                                                }
-
-                                                                // 根据映射关系构建新的V_param
-                                                                Eigen::MatrixXd V_param_after =
-                                                                    Eigen::MatrixXd::Zero(V_after.rows(),
-                                   V_after.cols()); for (int i = 0; i < v_map.size(); i++) {
-                                                                    V_param_after.row(i) =
-                                   V_param.row(v_map[i]);
-                                                                }
-
-                                                                // 可视化V_param_after和T_after
-                                                                utils::visualize_tet_mesh(V_param_after,
-                                   T_after);
-                                */
                             } // end if (is_simplex_boundary)
                         } // end if (operation_name == "EdgeCollapse")
 
@@ -765,8 +671,8 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                         operation_log["T_after"]["values"] = matrix_to_json(T_after);
                         operation_log["V_after"]["rows"] = V_after.rows();
                         operation_log["V_after"]["values"] = matrix_to_json(V_after);
-                        operation_log["F_bd_after"]["rows"] = F_bd_after.rows();
-                        operation_log["F_bd_after"]["values"] = matrix_to_json(F_bd_after);
+                        // operation_log["F_bd_after"]["rows"] = F_bd_after.rows();
+                        // operation_log["F_bd_after"]["values"] = matrix_to_json(F_bd_after);
                         operation_log["T_id_map_after"] = id_map_after;
                         operation_log["V_id_map_after"] = v_id_map_after;
 
@@ -774,8 +680,8 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                         operation_log["T_before"]["values"] = matrix_to_json(T_before);
                         operation_log["V_before"]["rows"] = V_before.rows();
                         operation_log["V_before"]["values"] = matrix_to_json(V_before);
-                        operation_log["F_bd_before"]["rows"] = F_bd_before.rows();
-                        operation_log["F_bd_before"]["values"] = matrix_to_json(F_bd_before);
+                        // operation_log["F_bd_before"]["rows"] = F_bd_before.rows();
+                        // operation_log["F_bd_before"]["values"] = matrix_to_json(F_bd_before);
                         operation_log["T_id_map_before"] = id_map_before;
                         operation_log["V_id_map_before"] = v_id_map_before;
                     }

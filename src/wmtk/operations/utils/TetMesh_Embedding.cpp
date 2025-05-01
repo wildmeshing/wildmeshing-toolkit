@@ -895,7 +895,27 @@ Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, const Eigen::MatrixXd&
     // get the uv coordinates
     auto [uv, stress] = tutte_embedding_case3(F_list_vec, f0);
 
+    auto check_uv_orientation = [](const Eigen::MatrixXd& uv, const Eigen::MatrixXi& F) {
+        for (int i = 0; i < F.rows(); i++) {
+            if (wmtk::utils::wmtk_orient2d(uv.row(F(i, 0)), uv.row(F(i, 1)), uv.row(F(i, 2))) > 0) {
+                // std::cerr << "UV orientation check failed for F_clean[" << i << "]" << std::endl;
+                return false;
+            }
+        }
+        return true;
+    };
 
+    static int failure_count = 0;
+    static int total_count = 0;
+    total_count++;
+    bool is_tutte_embedding_failed = false;
+    if (!check_uv_orientation(-uv, F_clean.bottomRows(F_clean.rows() - 1))) {
+        std::cerr << "UV orientation check failed for F_clean[1:end]." << std::endl;
+        failure_count++;
+        std::cerr << "Failure count: " << failure_count << std::endl;
+        is_tutte_embedding_failed = true;
+        // throw std::runtime_error("Invalid UV orientation detected.");
+    }
     {
         std::cout << "F_list = [";
         for (const auto& face : F_list_vec) {
@@ -952,7 +972,15 @@ Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, const Eigen::MatrixXd&
         }
         std::cout << std::endl << "]" << std::endl;
     }
-    utils::visualize_tet_mesh(V_param, T);
-    return V_param;
+    // utils::visualize_tet_mesh(V_param, T);
+
+    std::cout << "Total failure count: " << failure_count << std::endl;
+    std::cout << "Total count: " << total_count << std::endl;
+    if (is_tutte_embedding_failed) {
+        // TODO: try to fix the embedding later
+        return Eigen::MatrixXd();
+    } else {
+        return V_param;
+    }
 }
 } // namespace wmtk::operations::utils
