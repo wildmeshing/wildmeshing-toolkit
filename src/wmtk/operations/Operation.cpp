@@ -591,6 +591,12 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                         static_cast<const TetMesh&>(mesh()),
                                         all_tets_after,
                                         simplex::Simplex::vertex(mesh(), mods[0].tuple()));
+
+                                if (T_after.rows() == 0) {
+                                    std::cout << "T_after is empty" << std::endl;
+                                    scope.mark_failed();
+                                    return {};
+                                }
                                 std::cout << "v_id_map_before:" << std::endl;
                                 for (int id = 0; id < v_id_map_before.size(); id++) {
                                     std::cout << "id: " << id << " : " << v_id_map_before[id]
@@ -710,7 +716,7 @@ bool Operation::before(const simplex::Simplex& simplex) const
 #if defined(WMTK_ENABLE_HASH_UPDATE)
     const attribute::Accessor<int64_t> accessor = hash_accessor();
 
-    if (!mesh().is_valid(simplex.tuple())) { // TODO: chang to is_removed and resurrect later
+    if (!mesh().is_valid(simplex.tuple())) {
         return false;
     }
 #else

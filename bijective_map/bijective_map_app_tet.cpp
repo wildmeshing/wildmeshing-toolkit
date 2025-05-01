@@ -104,11 +104,6 @@ void track_point_one_operation_tet(
         parse_consolidate_file_tet(operation_log, tet_ids_maps, vertex_ids_maps);
 
         handle_consolidate_tet(tet_ids_maps, vertex_ids_maps, query_points, do_forward);
-
-    } else if (operation_name == "EdgeCollapse") {
-        // TODO: handle edge collapse
-        std::cout << "This Operations is EdgeCollapse" << std::endl;
-        std::cout << "Not implemented yet" << std::endl;
     } else {
         std::cout << "This Operations is " << operation_name << std::endl;
         Eigen::MatrixXi T_after, T_before;
@@ -189,51 +184,6 @@ void track_point_tet(
     }
 }
 
-void test_collapse(const std::filesystem::path& operation_logs_dir)
-{
-    namespace fs = std::filesystem;
-
-    std::cout << "Testing collapse" << std::endl;
-    // TODO: test on this file first
-    int test_file_id = 20;
-    fs::path filePath =
-        operation_logs_dir / ("operation_log_" + std::to_string(test_file_id) + ".json");
-    std::ifstream file(filePath);
-    if (!file.is_open()) {
-        std::cerr << "Failed to open file: " << filePath << std::endl;
-        return;
-    }
-    json operation_log;
-    file >> operation_log;
-
-
-    // parse the log file
-    // parse the log file using similar code as in track_operations_tet.cpp
-    Eigen::MatrixXd V_before, V_after;
-    Eigen::MatrixXi T_before, T_after;
-    std::vector<int64_t> id_map_before, id_map_after;
-    std::vector<int64_t> v_id_map_before, v_id_map_after;
-
-    parse_non_collapse_file_tet(
-        operation_log,
-        V_before,
-        T_before,
-        id_map_before,
-        v_id_map_before,
-        V_after,
-        T_after,
-        id_map_after,
-        v_id_map_after);
-
-    std::cout << "解析完成。网格信息:" << std::endl;
-    std::cout << "V_before: " << V_before.rows() << " x " << V_before.cols() << std::endl;
-    std::cout << "T_before: " << T_before.rows() << " x " << T_before.cols() << std::endl;
-    std::cout << "V_after: " << V_after.rows() << " x " << V_after.cols() << std::endl;
-    std::cout << "T_after: " << T_after.rows() << " x " << T_after.cols() << std::endl;
-    file.close();
-
-    // TODO: parse the log file
-}
 
 int main(int argc, char** argv)
 {
@@ -250,10 +200,6 @@ int main(int argc, char** argv)
     auto init_mesh_ptr = wmtk::read_mesh(initial_mesh_file);
 
 
-    // DEBUG:
-    if (application_name == "testcollapse") {
-        test_collapse(operation_logs_dir);
-    }
     // write initial mesh to vtu
     // std::cout << "Writing initial mesh to vtu" << std::endl;
     // wmtk::io::ParaviewWriter
@@ -261,29 +207,77 @@ int main(int argc, char** argv)
     // init_mesh_ptr->serialize(writer);
 
     // TODO:
-    // 2. figure out how to read the outputmesh in vtu format
-    auto T_out = readTetrahedrons("T_matrix_out.csv");
-    auto V_out = readVertices("V_matrix_out.csv");
+    // 2. figure out how to read the outputmesh in vtu format out is after remesh
+    auto T_out = readTetrahedrons("../build/T_matrix_out.csv");
+    auto V_out = readVertices("../build/V_matrix_out.csv");
     // TODO: for now, first we convert it with TV matrix
-    auto T_in = readTetrahedrons("T_matrix_in.csv");
-    auto V_in = readVertices("V_matrix_in.csv");
+    auto T_in = readTetrahedrons("../build/T_matrix_in.csv");
+    auto V_in = readVertices("../build/V_matrix_in.csv");
 
     // get points in T,V out
     // sample points, id every 100 points
     std::vector<query_point_tet> query_points;
-    for (int i = 0; i < T_out.rows() / 100; i++) {
-        query_point_tet qp;
-        qp.t_id = i * 100;
-        qp.bc = Eigen::Vector4d(0.25, 0.25, 0.25, 0.25);
-        qp.tv_ids = T_out.row(i * 100);
-        query_points.push_back(qp);
+    // for (int i = 0; i < T_out.rows() / 100; i++) {
+    //     query_point_tet qp;
+    //     qp.t_id = i * 100;
+    //     qp.bc = Eigen::Vector4d(0.25, 0.25, 0.25, 0.25);
+    //     qp.tv_ids = T_out.row(i * 100);
+    //     query_points.push_back(qp);
+    // }
+
+    // Sample some points on boundary tetrahedrons
+    std::vector<query_point_tet> boundary_query_points;
+    std::unordered_map<std::string, int> face_count;
+
+    // Count the occurrence of each face
+    for (int i = 0; i < T_out.rows(); i++) {
+        auto tet = T_out.row(i);
+        for (int j = 0; j < 4; j++) {
+            Eigen::Vector3i face;
+            face << tet[j], tet[(j + 1) % 4], tet[(j + 2) % 4];
+            std::sort(face.data(), face.data() + 3);
+            std::string face_key = std::to_string(face[0]) + "_" + std::to_string(face[1]) + "_" +
+                                   std::to_string(face[2]);
+            face_count[face_key]++;
+        }
     }
+
+    // Find boundary tetrahedrons and sample
+    for (int i = 0; i < T_out.rows(); i++) {
+        if (i % 3 != 0) continue;
+        auto tet = T_out.row(i);
+        int boundary_face_count = 0;
+        for (int j = 0; j < 4; j++) {
+            Eigen::Vector3i face;
+            face << tet[j], tet[(j + 1) % 4], tet[(j + 2) % 4];
+            std::sort(face.data(), face.data() + 3);
+            std::string face_key = std::to_string(face[0]) + "_" + std::to_string(face[1]) + "_" +
+                                   std::to_string(face[2]);
+            if (face_count[face_key] == 1) {
+                boundary_face_count++;
+            }
+        }
+        if (boundary_face_count > 0) {
+            query_point_tet qp;
+            qp.t_id = i;
+            qp.bc = Eigen::Vector4d::Random().cwiseAbs(); // Randomize barycentric coordinates
+            qp.bc /= qp.bc.sum(); // Normalize to ensure they sum to 1
+            qp.tv_ids = T_out.row(i);
+            boundary_query_points.push_back(qp);
+        }
+    }
+
+    // Add sampled points from boundary tetrahedrons to the total query points
+    query_points.insert(
+        query_points.end(),
+        boundary_query_points.begin(),
+        boundary_query_points.end());
+
 
     // compute postion and save to file
     std::cout << "Writing points to file after remesh" << std::endl;
     write_points_to_file(query_points, V_out, "points_after_remesh.csv");
 
-    // TODO: do back tracking
     if (application_name == "back") {
         std::cout << "Back tracking" << std::endl;
         track_point_tet(operation_logs_dir, query_points, false, false);
