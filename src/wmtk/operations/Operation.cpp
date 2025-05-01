@@ -674,65 +674,89 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                         static_cast<const TetMesh&>(mesh()),
                                         all_tets_after,
                                         simplex::Simplex::vertex(mesh(), mods[0].tuple()));
+                                std::cout << "v_id_map_before:" << std::endl;
+                                for (int id = 0; id < v_id_map_before.size(); id++) {
+                                    std::cout << "id: " << id << " : " << v_id_map_before[id]
+                                              << std::endl;
+                                }
+
+                                std::cout << "v_id_map_after:" << std::endl;
+                                for (int id = 0; id < v_id_map_after.size(); id++) {
+                                    std::cout << "id: " << id << " : " << v_id_map_after[id]
+                                              << std::endl;
+                                }
 
                                 // DEBUG: visualize the mesh before and after embedding
                                 utils::visualize_tet_mesh(V_before, T_before);
                                 utils::visualize_tet_mesh(V_after, T_after);
+                                std::cout << "T_before:" << std::endl;
+                                std::cout << T_before << std::endl;
 
-                                // Now we can do the embedding based on it
-                                Eigen::MatrixXi F0 =
-                                    utils::extract_surface_without_vertex(T_before, V_before, 0);
+                                std::cout << "T_after:" << std::endl;
+                                std::cout << T_after << std::endl;
+                                utils::embed_mesh_lift(T_before, V_before);
 
 
-                                auto [uv, IM, V_clean, F_clean] =
-                                    utils::harmonic_parameterization(V_before, F0);
+                                /*
+                                                                // Now we can do the embedding based on it
+                                                                Eigen::MatrixXi F0 =
+                                                                    utils::extract_surface_without_vertex(T_before,
+                                   V_before, 0);
 
-                                // DEBUG: use debug_viewer to visualize V_clean, F_clean, uv
-                                utils::launch_debug_viewer(V_clean, F_clean, uv);
 
-                                // lift uv to hemisphere
-                                Eigen::MatrixXd V_lifted = utils::lift_to_hemisphere(uv, F_clean);
+                                                                auto [uv, IM, V_clean, F_clean] =
+                                                                    utils::harmonic_parameterization(V_before,
+                                   F0);
 
-                                // DEBUG: visualize V_clean, F_clean, uv_hemisphere
-                                utils::launch_debug_viewer(V_lifted, F_clean, uv);
+                                                                // DEBUG: use debug_viewer to visualize V_clean, F_clean, uv
+                                                                utils::launch_debug_viewer(V_clean,
+                                   F_clean, uv);
 
-                                // Create vertex positions with vertex 0 at origin and others at
-                                // V_lifted
-                                Eigen::MatrixXd V_param =
-                                    Eigen::MatrixXd::Zero(V_before.rows(), V_before.cols());
-                                for (int i = 0; i < IM.size(); i++) {
-                                    if (IM(i) != -1) {
-                                        V_param.row(i) = V_lifted.row(IM(i));
-                                    }
-                                }
-                                V_param.row(0) = Eigen::Vector3d::Zero(); // Vertex 0 at origin
+                                                                // lift uv to hemisphere
+                                                                Eigen::MatrixXd V_lifted =
+                                   utils::lift_to_hemisphere(uv, F_clean);
 
-                                // TODO: fix Orientation
-                                // DEBUG: visualize V_param, T_before
-                                utils::visualize_tet_mesh(V_param, T_before);
+                                                                // DEBUG: visualize V_clean, F_clean, uv_hemisphere
+                                                                utils::launch_debug_viewer(V_lifted,
+                                   F_clean, uv);
 
-                                // TODO: check code
-                                // 根据v_id_map_before和v_id_map_after建立V_before和V_after的对应关系
-                                std::vector<int> v_map(V_after.rows());
-                                for (int i = 0; i < v_id_map_after.size(); i++) {
-                                    for (int j = 0; j < v_id_map_before.size(); j++) {
-                                        if (v_id_map_after[i] == v_id_map_before[j]) {
-                                            v_map[i] = j;
-                                            break;
-                                        }
-                                    }
-                                }
+                                                                // Create vertex positions with vertex 0 at origin and others at
+                                                                // V_lifted
+                                                                Eigen::MatrixXd V_param =
+                                                                    Eigen::MatrixXd::Zero(V_before.rows(),
+                                   V_before.cols()); for (int i = 0; i < IM.size(); i++) { if (IM(i)
+                                   != -1) { V_param.row(i) = V_lifted.row(IM(i));
+                                                                    }
+                                                                }
+                                                                V_param.row(0) = Eigen::Vector3d::Zero(); // Vertex 0 at origin
 
-                                // 根据映射关系构建新的V_param
-                                Eigen::MatrixXd V_param_after =
-                                    Eigen::MatrixXd::Zero(V_after.rows(), V_after.cols());
-                                for (int i = 0; i < v_map.size(); i++) {
-                                    V_param_after.row(i) = V_param.row(v_map[i]);
-                                }
+                                                                // TODO: fix Orientation
+                                                                // DEBUG: visualize V_param, T_before
+                                                                utils::visualize_tet_mesh(V_param,
+                                   T_before);
 
-                                // 可视化V_param_after和T_after
-                                utils::visualize_tet_mesh(V_param_after, T_after);
+                                                                // TODO: check code
+                                                                // 根据v_id_map_before和v_id_map_after建立V_before和V_after的对应关系
+                                                                std::vector<int>
+                                   v_map(V_after.rows()); for (int i = 0; i < v_id_map_after.size();
+                                   i++) { for (int j = 0; j < v_id_map_before.size(); j++) { if
+                                   (v_id_map_after[i] == v_id_map_before[j]) { v_map[i] = j; break;
+                                                                        }
+                                                                    }
+                                                                }
 
+                                                                // 根据映射关系构建新的V_param
+                                                                Eigen::MatrixXd V_param_after =
+                                                                    Eigen::MatrixXd::Zero(V_after.rows(),
+                                   V_after.cols()); for (int i = 0; i < v_map.size(); i++) {
+                                                                    V_param_after.row(i) =
+                                   V_param.row(v_map[i]);
+                                                                }
+
+                                                                // 可视化V_param_after和T_after
+                                                                utils::visualize_tet_mesh(V_param_after,
+                                   T_after);
+                                */
                             } // end if (is_simplex_boundary)
                         } // end if (operation_name == "EdgeCollapse")
 

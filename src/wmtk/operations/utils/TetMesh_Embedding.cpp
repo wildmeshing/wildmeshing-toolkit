@@ -12,6 +12,7 @@
 #include <map>
 #include <set>
 
+
 namespace wmtk::operations::utils {
 
 std::vector<int> embed_mesh(const Eigen::MatrixXi& T, const Eigen::MatrixXi& F_bd)
@@ -496,7 +497,7 @@ void launch_debug_viewer(
 
 Eigen::MatrixXi extract_surface_without_vertex(
     const Eigen::MatrixXi& T,
-    const Eigen::MatrixXd& V,
+    // const Eigen::MatrixXd& V,
     int vertex_to_remove)
 {
     std::cout << "T: \n" << T << std::endl;
@@ -598,4 +599,345 @@ Eigen::MatrixXd lift_to_hemisphere(const Eigen::MatrixXd& uv, const Eigen::Matri
     return V_hemisphere;
 }
 
+std::tuple<Eigen::MatrixXd, std::map<std::pair<int, int>, double>> tutte_embedding_case3(
+    const std::vector<std::vector<int>>& F,
+    const std::vector<int>& f0)
+{
+    // 1. Collect all vertices and index them 0..n-1
+    std::set<int> verts_set;
+    for (const auto& face : F) {
+        verts_set.insert(face.begin(), face.end());
+    }
+    verts_set.insert(f0.begin(), f0.end());
+    std::vector<int> verts(verts_set.begin(), verts_set.end());
+    std::unordered_map<int, int> vid2idx;
+    std::unordered_map<int, int> idx2vid;
+    for (int i = 0; i < verts.size(); ++i) {
+        vid2idx[verts[i]] = i;
+        idx2vid[i] = verts[i];
+    }
+    int n = verts.size();
+
+    // 2. Boundary indices
+    std::vector<int> B;
+    for (int v : f0) {
+        B.push_back(vid2idx[v]);
+    }
+    std::set<int> Bset(B.begin(), B.end());
+
+    // 3. Count interior edges from F
+    std::map<std::pair<int, int>, int> edge_count;
+    for (const auto& face : F) {
+        int m = face.size();
+        for (int k = 0; k < m; ++k) {
+            int a = vid2idx[face[k]];
+            int b = vid2idx[face[(k + 1) % m]];
+            auto e = std::make_pair(std::min(a, b), std::max(a, b));
+            edge_count[e]++;
+        }
+    }
+
+    // 4. Build Laplacian L with ω=1 on interior edges using dense matrix
+    Eigen::MatrixXd L = Eigen::MatrixXd::Zero(n, n);
+    for (const auto& [e, c] : edge_count) {
+        int i = e.first;
+        int j = e.second;
+        double w = 1.0;
+        L(i, i) += w;
+        L(j, j) += w;
+        L(i, j) -= w;
+        L(j, i) -= w;
+    }
+
+    // 5. Partition into boundary (B) and interior (I)
+    std::vector<int> I;
+    for (int i = 0; i < n; ++i) {
+        if (Bset.find(i) == Bset.end()) {
+            I.push_back(i);
+        }
+    }
+    Eigen::MatrixXd LIB(I.size(), B.size());
+    Eigen::MatrixXd LII(I.size(), I.size());
+    for (int i = 0; i < I.size(); ++i) {
+        for (int j = 0; j < B.size(); ++j) {
+            LIB(i, j) = L(I[i], B[j]);
+        }
+        for (int j = 0; j < I.size(); ++j) {
+            LII(i, j) = L(I[i], I[j]);
+        }
+    }
+
+    // 6. Fix outer triangle positions
+    Eigen::MatrixXd pB(3, 2);
+    pB << 0.0, 0.0, 1.0, 0.0, 0.0, 1.0;
+    Eigen::VectorXd xB = pB.col(0);
+    Eigen::VectorXd yB = pB.col(1);
+
+    // 7. Solve for interior coordinates
+    Eigen::VectorXd xI = LII.ldlt().solve(-LIB * xB);
+    Eigen::VectorXd yI = LII.ldlt().solve(-LIB * yB);
+
+    // 8. Assemble uv mapping
+    Eigen::MatrixXd uv(n, 2);
+    for (int idx = 0; idx < B.size(); ++idx) {
+        uv.row(B[idx]) = pB.row(idx);
+    }
+    for (int idx = 0; idx < I.size(); ++idx) {
+        uv(I[idx], 0) = xI(idx);
+        uv(I[idx], 1) = yI(idx);
+    }
+
+    // 9. Compute substitution matrix S = LIB^T * (LII^{-1} * LIB)
+    Eigen::MatrixXd X = LII.colPivHouseholderQr().solve(LIB);
+    Eigen::MatrixXd S = LIB.transpose() * X;
+
+    // 10. Assemble stress dict
+    std::map<std::pair<int, int>, double> stress;
+    // interior edges
+    for (const auto& [e, c] : edge_count) {
+        int a = e.first;
+        int b = e.second;
+        stress[{idx2vid[a], idx2vid[b]}] = 1.0;
+        stress[{idx2vid[b], idx2vid[a]}] = 1.0;
+    }
+    // boundary edges (loop of f0)
+    for (int p = 0; p < 3; ++p) {
+        int q = (p + 1) % 3;
+        int i = B[p];
+        int j = B[q];
+        int va = idx2vid[i];
+        int vb = idx2vid[j];
+        double wb = -S(p, q);
+        stress[{va, vb}] = wb;
+        stress[{vb, va}] = wb;
+    }
+
+    return {uv, stress};
+}
+
+Eigen::MatrixXd compute_lifting(
+    const std::vector<std::vector<int>>& F,
+    const std::vector<int>& f0,
+    const Eigen::MatrixXd& uv,
+    const std::map<std::pair<int, int>, double>& stresses)
+{
+    // 1. Build combined face list:
+    std::vector<std::vector<int>> F_all = F;
+
+    F_all.push_back(f0);
+    std::swap(F_all.back()[0], F_all.back()[1]); // Swap the first two elements of the boundary loop
+                                                 // to make it face outward
+    int num_faces = F_all.size();
+
+    // 2. Build edge->faces adjacency
+    std::map<std::pair<int, int>, std::vector<int>> edge2faces;
+    for (int fid = 0; fid < num_faces; ++fid) {
+        const auto& face = F_all[fid];
+        int m = face.size();
+        for (int i = 0; i < m; ++i) {
+            int a = face[i];
+            int b = face[(i + 1) % m];
+            auto edge = std::minmax(a, b);
+            edge2faces[edge].push_back(fid);
+        }
+    }
+
+    // 3. Build face adjacency list
+    std::vector<std::vector<int>> adj_faces(num_faces);
+    for (const auto& [edge, fids] : edge2faces) {
+        if (fids.size() == 2) {
+            int f1 = fids[0];
+            int f2 = fids[1];
+            adj_faces[f1].push_back(f2);
+            adj_faces[f2].push_back(f1);
+        }
+    }
+
+    // 4. Initialize plane params a (2-vector) and d (scalar)
+    std::vector<Eigen::Vector2d> a(num_faces);
+    std::vector<double> d(num_faces);
+    int f_base = num_faces - 2; // last of F_all
+    a[f_base] = Eigen::Vector2d(0.0, 0.0);
+    d[f_base] = 0.0;
+
+    // 5. BFS over faces starting from base
+    std::queue<int> queue;
+    std::set<int> visited;
+    queue.push(f_base);
+    visited.insert(f_base);
+    while (!queue.empty()) {
+        int fr = queue.front();
+        queue.pop();
+        const Eigen::Vector2d& ar = a[fr];
+        double dr = d[fr];
+        std::cout << "fr: " << fr << ",\n ar: \n" << ar << ", dr: " << dr << std::endl;
+        // for each neighbor face
+        for (int fl : adj_faces[fr]) {
+            if (visited.count(fl)) continue;
+            std::cout << "fl: " << fl << std::endl;
+            // find common edge
+            std::set<int> shared;
+            for (int v : F_all[fr]) {
+                if (std::find(F_all[fl].begin(), F_all[fl].end(), v) != F_all[fl].end()) {
+                    shared.insert(v);
+                }
+            }
+            // find edge vertices i,j in common
+            int i = -1, j = -1;
+            for (int u : shared) {
+                for (int v : shared) {
+                    if (u < v && edge2faces.count(std::minmax(u, v))) {
+                        i = u;
+                        j = v;
+                        break;
+                    }
+                }
+                if (i != -1) break;
+            }
+            // determine orientation: want fl left of directed (i->j)
+            Eigen::Vector2d pi = uv.row(i);
+            Eigen::Vector2d pj = uv.row(j);
+            // find third vertex k of fl
+            int k = -1;
+            for (int v : F_all[fl]) {
+                if (v != i && v != j) {
+                    k = v;
+                    break;
+                }
+            }
+            std::cout << "i: " << i << ", j: " << j << ", k: " << k << std::endl;
+            Eigen::Vector2d pk = uv.row(k);
+            // cross of (pj-pi) x (pk-pi)
+            double cross = (pj - pi).x() * (pk - pi).y() - (pj - pi).y() * (pk - pi).x();
+
+            std::cout << "cross: " << cross << std::endl;
+            if (cross < 0) {
+                // swap to make fl on left
+                std::swap(i, j);
+                std::swap(pi, pj);
+            }
+            // stress on this edge
+            // double wij = stresses.at(std::minmax(i, j));
+            double wij = stresses.at(std::make_pair(i, j));
+            // compute (pi - pj)_perp
+            Eigen::Vector2d v = pi - pj;
+            Eigen::Vector2d v_perp(-v.y(), v.x());
+            // compute a[fl] and d[fl]
+            a[fl] = wij * v_perp + ar;
+            Eigen::Vector2d pj_perp(-pj.y(), pj.x());
+            d[fl] = wij * pi.dot(pj_perp) + dr;
+            visited.insert(fl);
+            queue.push(fl);
+        }
+    }
+
+    // 6. Compute z for each vertex
+    // build vertex->incident-face map
+    std::map<int, std::vector<int>> vert2faces;
+    for (int fid = 0; fid < num_faces; ++fid) {
+        for (int v : F_all[fid]) {
+            vert2faces[v].push_back(fid);
+        }
+    }
+    Eigen::MatrixXd xyz(uv.rows(), 3);
+    for (int v = 0; v < uv.rows(); ++v) {
+        double x = uv(v, 0);
+        double y = uv(v, 1);
+        // pick first incident face
+        int fid = vert2faces[v][0];
+        double z = a[fid].dot(Eigen::Vector2d(x, y)) + d[fid];
+        xyz(v, 0) = x;
+        xyz(v, 1) = y;
+        xyz(v, 2) = z;
+    }
+
+    return xyz;
+}
+
+Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, const Eigen::MatrixXd& V, int v0)
+{
+    // TODO: implement this function
+
+    // get the surface without vertex v0
+    Eigen::MatrixXi F0 = extract_surface_without_vertex(T, v0);
+    std::cout << "F0: \n" << F0 << std::endl;
+
+    // clean up unreferenced vertices(v0)
+    Eigen::MatrixXd V_clean;
+    Eigen::MatrixXi F_clean;
+    Eigen::VectorXi IM, J;
+    igl::remove_unreferenced(V, F0, V_clean, F_clean, IM, J);
+
+    std::vector<std::vector<int>> F_list_vec;
+    for (int i = 0; i < F_clean.rows(); ++i) {
+        F_list_vec.push_back({F_clean(i, 0), F_clean(i, 1), F_clean(i, 2)});
+    }
+    Eigen::VectorXi bnd_loop;
+    igl::boundary_loop(F_clean, bnd_loop);
+    F_list_vec.push_back(std::vector<int>(bnd_loop.data(), bnd_loop.data() + bnd_loop.size()));
+    std::vector<int> f0 = F_list_vec.front();
+    F_list_vec.erase(F_list_vec.begin());
+
+    // get the uv coordinates
+    auto [uv, stress] = tutte_embedding_case3(F_list_vec, f0);
+
+
+    {
+        std::cout << "F_list = [";
+        for (const auto& face : F_list_vec) {
+            std::cout << "[";
+            for (size_t i = 0; i < face.size(); ++i) {
+                std::cout << face[i];
+                if (i < face.size() - 1) std::cout << ", ";
+            }
+            std::cout << "]";
+            if (&face != &F_list_vec.back()) std::cout << ", ";
+        }
+        std::cout << "]" << std::endl;
+
+        std::cout << "uv_array = [";
+        for (int i = 0; i < uv.rows(); ++i) {
+            std::cout << "[";
+            for (int j = 0; j < uv.cols(); ++j) {
+                std::cout << uv(i, j);
+                if (j < uv.cols() - 1) std::cout << ", ";
+            }
+            std::cout << "]";
+            if (i < uv.rows() - 1) std::cout << ", ";
+        }
+        std::cout << "]" << std::endl;
+
+        std::cout << "stress = {";
+        for (auto it = stress.begin(); it != stress.end(); ++it) {
+            std::cout << "(" << it->first.first << ", " << it->first.second << "): " << it->second;
+            if (std::next(it) != stress.end()) std::cout << ", ";
+        }
+        std::cout << "}" << std::endl;
+    }
+
+    auto xyz = compute_lifting(F_list_vec, f0, uv, stress);
+    std::cout << "IM: " << IM << std::endl;
+    Eigen::MatrixXd V_param = Eigen::MatrixXd::Zero(V.rows(), V.cols());
+    for (int i = 0; i < IM.size(); ++i) {
+        if (IM[i] != -1) {
+            V_param.row(i) = xyz.row(IM[i]);
+        }
+    }
+    V_param.row(v0) = Eigen::RowVector3d::Zero();
+    {
+        std::cout << "V_param = [" << std::endl;
+        for (int i = 0; i < V_param.rows(); ++i) {
+            std::cout << "  [";
+            for (int j = 0; j < V_param.cols(); ++j) {
+                std::cout << V_param(i, j);
+                if (j < V_param.cols() - 1) std::cout << ", ";
+            }
+            std::cout << "]";
+            if (i < V_param.rows() - 1) std::cout << "," << std::endl;
+        }
+        std::cout << std::endl << "]" << std::endl;
+    }
+    utils::visualize_tet_mesh(V_param, T);
+    return V_param;
+}
 } // namespace wmtk::operations::utils

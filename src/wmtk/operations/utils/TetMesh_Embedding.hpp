@@ -14,6 +14,7 @@ namespace utils {
  * @param F_bd Connectivity information of the boundary faces
  * @return List of indices of interior vertices
  */
+// TODO: delete this function
 std::vector<int> embed_mesh(const Eigen::MatrixXi& T, const Eigen::MatrixXi& F_bd);
 
 /**
@@ -22,10 +23,12 @@ std::vector<int> embed_mesh(const Eigen::MatrixXi& T, const Eigen::MatrixXi& F_b
  * @param T Connectivity information of the tetrahedral mesh
  * @return Matrix of triangular faces formed by interior vertices
  */
+// TODO: delete this function
 Eigen::MatrixXi find_F_top(
     const std::unordered_set<int>& non_bd_vertices,
     const Eigen::MatrixXi& T);
 
+// TODO: delete this function
 Eigen::MatrixXd parametrize_top(
     const Eigen::MatrixXi& F_top,
     const Eigen::MatrixXd& V,
@@ -43,16 +46,21 @@ void launch_debug_viewer(
     const Eigen::MatrixXi& F_bottom,
     const Eigen::MatrixXd& uv_bottom);
 
+// need to keep this function
 Eigen::MatrixXi extract_surface_without_vertex(
     const Eigen::MatrixXi& T,
-    const Eigen::MatrixXd& V,
+    // const Eigen::MatrixXd& V,
     int vertex_to_remove = 0);
 
-
+// TODO: delete this function
 std::tuple<Eigen::MatrixXd, Eigen::VectorXi, Eigen::MatrixXd, Eigen::MatrixXi>
 harmonic_parameterization(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F);
 
+// TODO: delete this function
 Eigen::MatrixXd lift_to_hemisphere(const Eigen::MatrixXd& uv, const Eigen::MatrixXi& F);
+
+Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, const Eigen::MatrixXd& V, int v0 = 0);
+
 } // namespace utils
 } // namespace operations
 } // namespace wmtk
