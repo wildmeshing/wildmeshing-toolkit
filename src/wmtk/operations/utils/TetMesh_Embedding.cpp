@@ -752,7 +752,9 @@ Eigen::MatrixXd compute_lifting(
             adj_faces[f2].push_back(f1);
         }
     }
-
+    for (auto& neighbors : adj_faces) {
+        std::sort(neighbors.begin(), neighbors.end());
+    }
     // 4. Initialize plane params a (2-vector) and d (scalar)
     std::vector<Eigen::Vector2d> a(num_faces);
     std::vector<double> d(num_faces);
@@ -770,7 +772,7 @@ Eigen::MatrixXd compute_lifting(
         queue.pop();
         const Eigen::Vector2d& ar = a[fr];
         double dr = d[fr];
-        std::cout << "fr: " << fr << ",\n ar: \n" << ar << ", dr: " << dr << std::endl;
+        std::cout << "fr: " << fr << ", ar: " << ar.transpose() << ", dr: " << dr << std::endl;
         // for each neighbor face
         for (int fl : adj_faces[fr]) {
             if (visited.count(fl)) continue;
@@ -812,10 +814,12 @@ Eigen::MatrixXd compute_lifting(
 
             std::cout << "cross: " << cross << std::endl;
             if (cross < 0) {
+                continue;
                 // swap to make fl on left
-                std::swap(i, j);
-                std::swap(pi, pj);
+                // std::swap(i, j);
+                // std::swap(pi, pj);
             }
+
             // stress on this edge
             // double wij = stresses.at(std::minmax(i, j));
             double wij = stresses.at(std::make_pair(i, j));
@@ -839,6 +843,13 @@ Eigen::MatrixXd compute_lifting(
             vert2faces[v].push_back(fid);
         }
     }
+    // Calculate the center of f_base in uv
+    Eigen::Vector2d center(0, 0);
+    for (int v : F_all[f_base]) {
+        center += uv.row(v);
+    }
+    center /= F_all[f_base].size();
+
     Eigen::MatrixXd xyz(uv.rows(), 3);
     for (int v = 0; v < uv.rows(); ++v) {
         double x = uv(v, 0);
@@ -846,11 +857,14 @@ Eigen::MatrixXd compute_lifting(
         // pick first incident face
         int fid = vert2faces[v][0];
         double z = a[fid].dot(Eigen::Vector2d(x, y)) + d[fid];
-        xyz(v, 0) = x;
-        xyz(v, 1) = y;
+        xyz(v, 0) = x - center(0);
+        xyz(v, 1) = y - center(1);
         xyz(v, 2) = z;
     }
 
+    for (int v : F_all[f_base]) {
+        xyz(v, 2) = 0; // Force the z-coordinate of f_base's vertices to be 0
+    }
     return xyz;
 }
 
@@ -916,6 +930,7 @@ Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, const Eigen::MatrixXd&
     }
 
     auto xyz = compute_lifting(F_list_vec, f0, uv, stress);
+
     std::cout << "IM: " << IM << std::endl;
     Eigen::MatrixXd V_param = Eigen::MatrixXd::Zero(V.rows(), V.cols());
     for (int i = 0; i < IM.size(); ++i) {

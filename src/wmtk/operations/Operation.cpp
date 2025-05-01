@@ -687,8 +687,8 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                 }
 
                                 // DEBUG: visualize the mesh before and after embedding
-                                utils::visualize_tet_mesh(V_before, T_before);
-                                utils::visualize_tet_mesh(V_after, T_after);
+                                // utils::visualize_tet_mesh(V_before, T_before);
+                                // utils::visualize_tet_mesh(V_after, T_after);
                                 std::cout << "T_before:" << std::endl;
                                 std::cout << T_before << std::endl;
 
