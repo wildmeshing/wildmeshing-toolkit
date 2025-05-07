@@ -13,7 +13,6 @@ nlohmann::json c1_meshing_split_spec = R"(
           "uv_mesh", 
           "tet_surface_map", 
           "parametrization_edges", 
-          "adjacent_cone_edges", 
           "output"
         ],
         "optional": [
@@ -39,10 +38,6 @@ nlohmann::json c1_meshing_split_spec = R"(
 },
 {
     "pointer": "/parametrization_edges",
-    "type": "string"
-},
-{
-    "pointer": "/adjacent_cone_edges",
     "type": "string"
 },
 {
