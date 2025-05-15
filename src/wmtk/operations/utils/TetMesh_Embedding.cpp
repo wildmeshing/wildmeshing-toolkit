@@ -876,11 +876,14 @@ Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, const Eigen::MatrixXd&
     Eigen::MatrixXi F0 = extract_surface_without_vertex(T, v0);
     std::cout << "F0: \n" << F0 << std::endl;
 
+    // TODO: make F0 to be 3-connected
+
     // clean up unreferenced vertices(v0)
     Eigen::MatrixXd V_clean;
     Eigen::MatrixXi F_clean;
     Eigen::VectorXi IM, J;
     igl::remove_unreferenced(V, F0, V_clean, F_clean, IM, J);
+
 
     std::vector<std::vector<int>> F_list_vec;
     for (int i = 0; i < F_clean.rows(); ++i) {
@@ -972,7 +975,9 @@ Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, const Eigen::MatrixXd&
         }
         std::cout << std::endl << "]" << std::endl;
     }
-    // utils::visualize_tet_mesh(V_param, T);
+    if (is_tutte_embedding_failed) {
+        utils::visualize_tet_mesh(V_param, T);
+    }
 
     std::cout << "Total failure count: " << failure_count << std::endl;
     std::cout << "Total count: " << total_count << std::endl;

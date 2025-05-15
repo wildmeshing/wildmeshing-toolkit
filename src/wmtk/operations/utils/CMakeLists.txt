@@ -23,5 +23,8 @@ set(SRC_FILES
 
     TetMesh_Embedding.hpp
     TetMesh_Embedding.cpp
+
+    to_three_connected.hpp
+    to_three_connected.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
