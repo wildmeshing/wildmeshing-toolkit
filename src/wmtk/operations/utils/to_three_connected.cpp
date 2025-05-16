@@ -166,7 +166,7 @@ std::pair<Eigen::MatrixXi, Eigen::MatrixXd> split_edge(
     return {result, V};
 }
 
-void make_3_connected(const Eigen::MatrixXi& F, Eigen::MatrixXd& V)
+int make_3_connected(Eigen::MatrixXi& F, Eigen::MatrixXd& V)
 {
     Eigen::MatrixXi faces = F;
     int next_vid = faces.maxCoeff() + 1;
@@ -195,6 +195,9 @@ void make_3_connected(const Eigen::MatrixXi& F, Eigen::MatrixXd& V)
         next_vid++;
         iteration++;
     }
+
+    F = faces;
+    return iteration;
 }
 
 } // namespace utils

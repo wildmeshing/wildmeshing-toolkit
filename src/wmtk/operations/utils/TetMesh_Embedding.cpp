@@ -11,7 +11,7 @@
 #include <array>
 #include <map>
 #include <set>
-
+#include "to_three_connected.hpp"
 
 namespace wmtk::operations::utils {
 
@@ -724,9 +724,10 @@ Eigen::MatrixXd compute_lifting(
     // 1. Build combined face list:
     std::vector<std::vector<int>> F_all = F;
 
-    F_all.push_back(f0);
-    std::swap(F_all.back()[0], F_all.back()[1]); // Swap the first two elements of the boundary loop
-                                                 // to make it face outward
+    // std::reverse(F_all.back().begin(), F_all.back().end()); // Reverse the boundary loop
+    // F_all.push_back(f0);
+
+    // to make it face outward
     int num_faces = F_all.size();
 
     // 2. Build edge->faces adjacency
@@ -758,7 +759,7 @@ Eigen::MatrixXd compute_lifting(
     // 4. Initialize plane params a (2-vector) and d (scalar)
     std::vector<Eigen::Vector2d> a(num_faces);
     std::vector<double> d(num_faces);
-    int f_base = num_faces - 2; // last of F_all
+    int f_base = num_faces - 1; // last of F_all
     a[f_base] = Eigen::Vector2d(0.0, 0.0);
     d[f_base] = 0.0;
 
@@ -814,10 +815,10 @@ Eigen::MatrixXd compute_lifting(
 
             std::cout << "cross: " << cross << std::endl;
             if (cross < 0) {
-                continue;
+                // continue;
                 // swap to make fl on left
-                // std::swap(i, j);
-                // std::swap(pi, pj);
+                std::swap(i, j);
+                std::swap(pi, pj);
             }
 
             // stress on this edge
@@ -868,21 +869,22 @@ Eigen::MatrixXd compute_lifting(
     return xyz;
 }
 
-Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, const Eigen::MatrixXd& V, int v0)
+Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, Eigen::MatrixXd& V, int v0)
 {
     // TODO: implement this function
 
     // get the surface without vertex v0
-    Eigen::MatrixXi F0 = extract_surface_without_vertex(T, v0);
-    std::cout << "F0: \n" << F0 << std::endl;
+    Eigen::MatrixXi F_top = extract_surface_without_vertex(T, v0);
+    std::cout << "F_top: \n" << F_top << std::endl;
 
-    // TODO: make F0 to be 3-connected
+    // TODO: make F_top to be 3-connected
+    int edge_split_count = utils::make_3_connected(F_top, V);
 
     // clean up unreferenced vertices(v0)
     Eigen::MatrixXd V_clean;
     Eigen::MatrixXi F_clean;
     Eigen::VectorXi IM, J;
-    igl::remove_unreferenced(V, F0, V_clean, F_clean, IM, J);
+    igl::remove_unreferenced(V, F_top, V_clean, F_clean, IM, J);
 
 
     std::vector<std::vector<int>> F_list_vec;
@@ -892,15 +894,17 @@ Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, const Eigen::MatrixXd&
     Eigen::VectorXi bnd_loop;
     igl::boundary_loop(F_clean, bnd_loop);
     F_list_vec.push_back(std::vector<int>(bnd_loop.data(), bnd_loop.data() + bnd_loop.size()));
+    std::reverse(F_list_vec.back().begin(), F_list_vec.back().end());
     std::vector<int> f0 = F_list_vec.front();
+    std::reverse(f0.begin(), f0.end());
     F_list_vec.erase(F_list_vec.begin());
-
     // get the uv coordinates
     auto [uv, stress] = tutte_embedding_case3(F_list_vec, f0);
 
     auto check_uv_orientation = [](const Eigen::MatrixXd& uv, const Eigen::MatrixXi& F) {
         for (int i = 0; i < F.rows(); i++) {
-            if (wmtk::utils::wmtk_orient2d(uv.row(F(i, 0)), uv.row(F(i, 1)), uv.row(F(i, 2))) > 0) {
+            if (wmtk::utils::wmtk_orient2d(uv.row(F(i, 0)), uv.row(F(i, 1)), uv.row(F(i, 2))) <=
+                0) {
                 // std::cerr << "UV orientation check failed for F_clean[" << i << "]" << std::endl;
                 return false;
             }
@@ -912,7 +916,7 @@ Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, const Eigen::MatrixXd&
     static int total_count = 0;
     total_count++;
     bool is_tutte_embedding_failed = false;
-    if (!check_uv_orientation(-uv, F_clean.bottomRows(F_clean.rows() - 1))) {
+    if (!check_uv_orientation(uv, F_clean.bottomRows(F_clean.rows() - 1))) {
         std::cerr << "UV orientation check failed for F_clean[1:end]." << std::endl;
         failure_count++;
         std::cerr << "Failure count: " << failure_count << std::endl;
@@ -929,6 +933,12 @@ Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, const Eigen::MatrixXd&
             }
             std::cout << "]";
             if (&face != &F_list_vec.back()) std::cout << ", ";
+        }
+        std::cout << "]" << std::endl;
+        std::cout << "f0 = [";
+        for (size_t i = 0; i < f0.size(); ++i) {
+            std::cout << f0[i];
+            if (i < f0.size() - 1) std::cout << ", ";
         }
         std::cout << "]" << std::endl;
 
@@ -951,7 +961,7 @@ Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, const Eigen::MatrixXd&
         }
         std::cout << "}" << std::endl;
     }
-
+    std::reverse(f0.begin(), f0.end());
     auto xyz = compute_lifting(F_list_vec, f0, uv, stress);
 
     std::cout << "IM: " << IM << std::endl;
@@ -975,8 +985,96 @@ Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, const Eigen::MatrixXd&
         }
         std::cout << std::endl << "]" << std::endl;
     }
-    if (is_tutte_embedding_failed) {
-        utils::visualize_tet_mesh(V_param, T);
+
+    if (is_tutte_embedding_failed || edge_split_count > 0) {
+        // Create a new tetrahedron mesh
+        Eigen::MatrixXi T_new(F_top.rows(), 4);
+
+        // For each tetrahedron, replace it with (0, F_top[i])
+        for (int i = 0; i < T_new.rows(); ++i) {
+            T_new.row(i) << 0, F_top(i, 0), F_top(i, 1), F_top(i, 2);
+        }
+
+        // Check if the embedding is valid by ensuring that for any triangle abc shared by two
+        // tetrahedra abcd and abce, the vertices d and e are on opposite sides of the triangle abc
+        std::cout << "Checking embedding validity..." << std::endl;
+
+        // Build a map from triangle to adjacent tetrahedra
+        std::map<std::tuple<int, int, int>, std::vector<std::pair<int, int>>> triangle_to_tets;
+
+        for (int i = 0; i < T_new.rows(); ++i) {
+            // For each tetrahedron, extract its four triangular faces
+            for (int j = 0; j < 4; ++j) {
+                // Skip the jth vertex to form a triangle
+                std::vector<int> tri_verts;
+                for (int k = 0; k < 4; ++k) {
+                    if (k != j) {
+                        tri_verts.push_back(T_new(i, k));
+                    }
+                }
+
+                // Sort vertices to create a unique key for the triangle
+                std::sort(tri_verts.begin(), tri_verts.end());
+                auto tri_key = std::make_tuple(tri_verts[0], tri_verts[1], tri_verts[2]);
+
+                // Store the tetrahedron index and the opposite vertex index
+                triangle_to_tets[tri_key].push_back({i, T_new(i, j)});
+            }
+        }
+
+        int invalid_triangles = 0;
+        int total_shared_triangles = 0;
+
+        // Check each shared triangle
+        for (const auto& [tri_key, tet_list] : triangle_to_tets) {
+            if (tet_list.size() == 2) { // Triangle is shared by exactly two tetrahedra
+                total_shared_triangles++;
+
+                auto [a, b, c] = tri_key;
+                int tet1_idx = tet_list[0].first;
+                int d = tet_list[0].second;
+                int tet2_idx = tet_list[1].first;
+                int e = tet_list[1].second;
+
+                // Get the coordinates from V_param
+                Eigen::Vector3d pa = V_param.row(a);
+                Eigen::Vector3d pb = V_param.row(b);
+                Eigen::Vector3d pc = V_param.row(c);
+                Eigen::Vector3d pd = V_param.row(d);
+                Eigen::Vector3d pe = V_param.row(e);
+
+                // Compute normal of triangle abc
+                Eigen::Vector3d normal = (pb - pa).cross(pc - pa);
+                normal.normalize();
+
+                // Check if d and e are on opposite sides of the triangle
+                double sign_d = normal.dot(pd - pa);
+                double sign_e = normal.dot(pe - pa);
+
+                if (sign_d * sign_e >= 0) { // Same side or on the plane
+                    invalid_triangles++;
+                    std::cout << "Invalid triangle " << a << "-" << b << "-" << c << ": vertices "
+                              << d << " and " << e << " are on the same side (signs: " << sign_d
+                              << ", " << sign_e << ")" << std::endl;
+                }
+            }
+        }
+
+        std::cout << "Embedding validity check: " << invalid_triangles
+                  << " invalid triangles out of " << total_shared_triangles << " shared triangles"
+                  << std::endl;
+
+        if (invalid_triangles > 0) {
+            std::cout << "⚠️ Warning: The embedding has invalid triangles!" << std::endl;
+        } else {
+            std::cout << "✅ Embedding is valid: all shared triangles have opposite vertices on "
+                         "different sides."
+                      << std::endl;
+        }
+
+        // Use the new mesh for visualization
+        // T = T_new;
+        utils::visualize_tet_mesh(V_param, T_new);
     }
 
     std::cout << "Total failure count: " << failure_count << std::endl;

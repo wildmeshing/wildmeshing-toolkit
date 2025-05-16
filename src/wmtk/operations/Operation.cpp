@@ -506,6 +506,10 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                         // TODO: what about swap operation
                         Eigen::MatrixXi T_after, T_before, F_bd_after, F_bd_before;
                         Eigen::MatrixXd V_after, V_before;
+
+                        Eigen::MatrixXi T_before_all, T_after_all;
+                        Eigen::MatrixXd V_before_all, V_after_all;
+
                         std::vector<int64_t> id_map_after, id_map_before, v_id_map_after,
                             v_id_map_before;
 
@@ -528,7 +532,11 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                         is_simplex_boundary && operation_name == "EdgeCollapse");
                                 },
                                 simplex);
-
+                        // TODO: for debug, delete this
+                        T_before_all = T_before;
+                        T_after_all = T_after;
+                        V_before_all = V_before;
+                        V_after_all = V_after;
                         // EdgeCollapse operation
                         if (operation_name == "EdgeCollapse") {
                             // check if there is a edge connected from interior to a boundary
@@ -619,66 +627,68 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                 std::cout << T_after << std::endl;
                                 auto V_before_param = utils::embed_mesh_lift(T_before, V_before);
                                 if (V_before_param.rows() == 0) {
+                                    operation_log["success"] = false;
+
+                                    // utils::visualize_tet_mesh(V_before, T_before);
                                     // TODO: try to fix the embedding later
-                                    scope.mark_failed();
-                                    return {};
-                                }
-
-                                Eigen::MatrixXd V_after_param(V_after.rows(), V_after.cols());
-                                int element_in_before_not_after = -1;
-                                for (int i = 0; i < v_id_map_before.size(); i++) {
-                                    if (std::find(
-                                            v_id_map_after.begin(),
-                                            v_id_map_after.end(),
-                                            v_id_map_before[i]) == v_id_map_after.end()) {
-                                        element_in_before_not_after = i;
-                                        break;
-                                    }
-                                }
-
-
-                                // v0
-                                if (v_id_map_before[0] == v_id_map_after[0]) {
-                                    V_after_param.row(0) =
-                                        V_before_param.row(element_in_before_not_after);
+                                    // scope.mark_failed();
+                                    // return {};
                                 } else {
-                                    auto it = std::find(
-                                        v_id_map_before.begin(),
-                                        v_id_map_before.end(),
-                                        v_id_map_after[0]);
-                                    if (it != v_id_map_before.end()) {
-                                        int index = std::distance(v_id_map_before.begin(), it);
-                                        V_after_param.row(0) = V_before_param.row(index);
+                                    Eigen::MatrixXd V_after_param(V_after.rows(), V_after.cols());
+                                    int element_in_before_not_after = -1;
+                                    for (int i = 0; i < v_id_map_before.size(); i++) {
+                                        if (std::find(
+                                                v_id_map_after.begin(),
+                                                v_id_map_after.end(),
+                                                v_id_map_before[i]) == v_id_map_after.end()) {
+                                            element_in_before_not_after = i;
+                                            break;
+                                        }
                                     }
-                                }
-                                // other vertices
-                                for (int i = 1; i < v_id_map_after.size(); i++) {
-                                    auto it = std::find(
-                                        v_id_map_before.begin(),
-                                        v_id_map_before.end(),
-                                        v_id_map_after[i]);
-                                    if (it != v_id_map_before.end()) {
-                                        int index = std::distance(v_id_map_before.begin(), it);
-                                        V_after_param.row(i) = V_before_param.row(index);
+
+
+                                    // v0
+                                    if (v_id_map_before[0] == v_id_map_after[0]) {
+                                        V_after_param.row(0) =
+                                            V_before_param.row(element_in_before_not_after);
+                                    } else {
+                                        auto it = std::find(
+                                            v_id_map_before.begin(),
+                                            v_id_map_before.end(),
+                                            v_id_map_after[0]);
+                                        if (it != v_id_map_before.end()) {
+                                            int index = std::distance(v_id_map_before.begin(), it);
+                                            V_after_param.row(0) = V_before_param.row(index);
+                                        }
                                     }
-                                }
+                                    // other vertices
+                                    for (int i = 1; i < v_id_map_after.size(); i++) {
+                                        auto it = std::find(
+                                            v_id_map_before.begin(),
+                                            v_id_map_before.end(),
+                                            v_id_map_after[i]);
+                                        if (it != v_id_map_before.end()) {
+                                            int index = std::distance(v_id_map_before.begin(), it);
+                                            V_after_param.row(i) = V_before_param.row(index);
+                                        }
+                                    }
 
-                                // update the mesh to store in json
-                                V_before = V_before_param;
-                                V_after = V_after_param;
-                                // utils::visualize_tet_mesh(V_after_param, T_after);
-
+                                    // update the mesh to store in json
+                                    V_before = V_before_param;
+                                    V_after = V_after_param;
+                                    // utils::visualize_tet_mesh(V_after_param, T_after);
+                                } // end if (embedding is successful)
 
                             } // end if (is_simplex_boundary)
                         } // end if (operation_name == "EdgeCollapse")
-
+                        // operation_log["success"] = true;
                         // STORE information to logfile
                         operation_log["T_after"]["rows"] = T_after.rows();
                         operation_log["T_after"]["values"] = matrix_to_json(T_after);
                         operation_log["V_after"]["rows"] = V_after.rows();
                         operation_log["V_after"]["values"] = matrix_to_json(V_after);
-                        // operation_log["F_bd_after"]["rows"] = F_bd_after.rows();
-                        // operation_log["F_bd_after"]["values"] = matrix_to_json(F_bd_after);
+                        operation_log["F_bd_after"]["rows"] = F_bd_after.rows();
+                        operation_log["F_bd_after"]["values"] = matrix_to_json(F_bd_after);
                         operation_log["T_id_map_after"] = id_map_after;
                         operation_log["V_id_map_after"] = v_id_map_after;
 
@@ -686,10 +696,17 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                         operation_log["T_before"]["values"] = matrix_to_json(T_before);
                         operation_log["V_before"]["rows"] = V_before.rows();
                         operation_log["V_before"]["values"] = matrix_to_json(V_before);
-                        // operation_log["F_bd_before"]["rows"] = F_bd_before.rows();
-                        // operation_log["F_bd_before"]["values"] = matrix_to_json(F_bd_before);
+                        operation_log["F_bd_before"]["rows"] = F_bd_before.rows();
+                        operation_log["F_bd_before"]["values"] = matrix_to_json(F_bd_before);
                         operation_log["T_id_map_before"] = id_map_before;
                         operation_log["V_id_map_before"] = v_id_map_before;
+
+                        operation_log["T_before_all"]["rows"] = T_before_all.rows();
+                        operation_log["T_before_all"]["values"] = matrix_to_json(T_before_all);
+                        operation_log["V_before_all"]["rows"] = V_before_all.rows();
+                        operation_log["V_before_all"]["values"] = matrix_to_json(V_before_all);
+                        operation_log["T_after_all"]["rows"] = T_after_all.rows();
+                        operation_log["T_after_all"]["values"] = matrix_to_json(T_after_all);
                     }
 
                     // TODO: get a larger json file to do this:
