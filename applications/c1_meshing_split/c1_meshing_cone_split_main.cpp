@@ -68,8 +68,14 @@ int main(int argc, char* argv[])
     fs::path uv_file = resolve_paths(json_input_file, {j["root"], j["uv_mesh"]});
     fs::path map_file = resolve_paths(json_input_file, {j["root"], j["tet_surface_map"]});
     fs::path cone_edge_file = resolve_paths(json_input_file, {j["root"], j["cone_edges"]});
-    // fs::path cone_vertices_file = resolve_paths(json_input_file, {j["root"],
-    // j["cone_vertices"]});
+    fs::path cone_vertices_file = resolve_paths(json_input_file, {j["root"], j["cone_vertices"]});
+
+    std::ifstream cone_vs(cone_vertices_file);
+    std::vector<int64_t> cone_vids;
+    int64_t cone_vid;
+    while (cone_vs >> cone_vid) {
+        cone_vids.push_back(cone_vid);
+    }
 
     auto tetmesh = wmtk::components::input::input(tet_file);
     auto surface_mesh = wmtk::components::input::input(surface_file);
@@ -131,20 +137,6 @@ int main(int argc, char* argv[])
             }
             tuple = tetmesh->switch_tuple(tuple, PE);
             try_cnt++;
-
-            // std::cout << i << ": "
-            //           << surface_pos_accessor
-            //                  .const_vector_attribute(surface_mesh->switch_tuple(surfaces[i], PV))
-            //                  .transpose()
-            //           << " / "
-            //           << tet_pos_accessor.const_vector_attribute(tetmesh->switch_tuple(tuple,
-            //           PV))
-            //                  .transpose()
-            //           << " / "
-            //           << tet_pos_accessor
-            //                  .const_vector_attribute(tetmesh->switch_tuples(tuple, {PF, PE, PV}))
-            //                  .transpose()
-            //           << std::endl;
         }
         tet2surface_map_tuples.push_back({{surfaces[i], tuple}});
 
@@ -187,12 +179,29 @@ int main(int argc, char* argv[])
         cnt++;
     }
 
+    // initialize cone tag attribute
+    auto cone_handle = surface_mesh->register_attribute<int64_t>("cone", PrimitiveType::Vertex, 1);
+    auto cone_accessor = surface_mesh->create_accessor<int64_t>(cone_handle);
+
+    const auto& sf_vs = surface_mesh->get_all(PrimitiveType::Vertex);
+    for (const auto& v : sf_vs) {
+        cone_accessor.scalar_attribute(v) = 0;
+    }
+
+    for (int64_t i = 0; i < cone_vids.size(); ++i) {
+        cone_accessor.scalar_attribute(sf_vs[cone_vids[i]]) = 1;
+    }
+
     wmtk::operations::EdgeSplit split_op(*surface_mesh);
     split_op.set_new_attribute_strategy(tet_pos_handle);
     split_op.set_new_attribute_strategy(surface_pos_handle);
     split_op.set_new_attribute_strategy(uv_pos_handle);
     split_op.set_new_attribute_strategy(
         vid_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
+    split_op.set_new_attribute_strategy(
+        cone_handle,
         wmtk::operations::SplitBasicStrategy::None,
         wmtk::operations::SplitRibBasicStrategy::None);
 
@@ -211,7 +220,7 @@ int main(int argc, char* argv[])
         const int64_t v0 = cone_edges[i][0];
         const int64_t v1 = cone_edges[i][1];
         wmtk::logger().info("Splitting the edge {} {}", v0, v1);
-        for (auto e : surface_mesh->get_all(PrimitiveType::Edge)) {
+        for (const auto& e : surface_mesh->get_all(PrimitiveType::Edge)) {
             int64_t ev0 = vid_accessor.const_scalar_attribute(e);
             int64_t ev1 = vid_accessor.const_scalar_attribute(
                 surface_mesh->switch_tuple(e, PrimitiveType::Vertex));
@@ -221,7 +230,7 @@ int main(int argc, char* argv[])
                 auto new_v_tuple =
                     split_op(wmtk::simplex::Simplex::edge(*surface_mesh, e)).front().tuple();
                 vid_accessor.scalar_attribute(new_v_tuple) = v_cnt;
-
+                cone_accessor.scalar_attribute(new_v_tuple) = 0;
                 v_cnt++;
 
                 // update v1v0 if exists in the rest
@@ -238,6 +247,45 @@ int main(int argc, char* argv[])
             }
         }
     }
+
+    // second pass split
+    // collect the edges that are adjacent to cone
+    std::vector<std::array<int64_t, 2>> cone_edges_2nd_pass;
+    for (const auto& e : surface_mesh->get_all(PrimitiveType::Edge)) {
+        int64_t ev0 = vid_accessor.const_scalar_attribute(e);
+        int64_t ev1 = vid_accessor.const_scalar_attribute(
+            surface_mesh->switch_tuple(e, PrimitiveType::Vertex));
+        if (cone_accessor.const_scalar_attribute(e) == 1) {
+            cone_edges_2nd_pass.push_back({{ev0, ev1}});
+        } else if (
+            cone_accessor.const_scalar_attribute(
+                surface_mesh->switch_tuple(e, PrimitiveType::Vertex)) == 1) {
+            cone_edges_2nd_pass.push_back({{ev1, ev0}});
+        }
+    }
+
+    for (int64_t i = 0; i < cone_edges_2nd_pass.size(); ++i) {
+        const int64_t v0 = cone_edges_2nd_pass[i][0];
+        const int64_t v1 = cone_edges_2nd_pass[i][1];
+        wmtk::logger().info("Splitting the edge {} {}", v0, v1);
+        for (const auto& e : surface_mesh->get_all(PrimitiveType::Edge)) {
+            int64_t ev0 = vid_accessor.const_scalar_attribute(e);
+            int64_t ev1 = vid_accessor.const_scalar_attribute(
+                surface_mesh->switch_tuple(e, PrimitiveType::Vertex));
+            // std::cout << ev0 << ", " << ev1 << std::endl;
+
+            if ((ev0 == v0 && ev1 == v1) || (ev0 == v1 && ev1 == v0)) {
+                auto new_v_tuple =
+                    split_op(wmtk::simplex::Simplex::edge(*surface_mesh, e)).front().tuple();
+                vid_accessor.scalar_attribute(new_v_tuple) = v_cnt;
+                cone_accessor.scalar_attribute(new_v_tuple) = 0;
+                v_cnt++;
+
+                break;
+            }
+        }
+    }
+
 
     // consolidate the mesh
     wmtk::multimesh::consolidate(*tetmesh);

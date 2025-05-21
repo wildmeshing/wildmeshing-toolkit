@@ -253,7 +253,7 @@ int main(int argc, char* argv[])
         const int64_t v1 = para_edges_with_v[i][1];
         const int64_t v_split_id = para_edges_with_v[i][2];
         wmtk::logger().info("Splitting the edge {} {}", v0, v1);
-        for (auto e : surface_mesh->get_all(PrimitiveType::Edge)) {
+        for (const auto& e : surface_mesh->get_all(PrimitiveType::Edge)) {
             int64_t ev0 = vid_accessor.const_scalar_attribute(e);
             int64_t ev1 = vid_accessor.const_scalar_attribute(
                 surface_mesh->switch_tuple(e, PrimitiveType::Vertex));
