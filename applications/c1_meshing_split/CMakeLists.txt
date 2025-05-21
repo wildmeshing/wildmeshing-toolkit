@@ -1,11 +1,22 @@
-wmtk_add_application(c1_meshing_split_app
+wmtk_add_application(c1_meshing_para_split_app
     c1_meshing_split_main.cpp
     c1_meshing_split_spec.hpp
     )
 
+wmtk_add_application(c1_meshing_cone_split_app
+    c1_meshing_cone_split_main.cpp
+    c1_meshing_cone_split_spec.hpp
+    )
 
 
-target_link_libraries(c1_meshing_split_app PRIVATE
+
+target_link_libraries(c1_meshing_para_split_app PRIVATE
+wmtk::input
+wmtk::winding_number
+wmtk::output
+igl::core)
+
+target_link_libraries(c1_meshing_cone_split_app PRIVATE
 wmtk::input
 wmtk::winding_number
 wmtk::output
