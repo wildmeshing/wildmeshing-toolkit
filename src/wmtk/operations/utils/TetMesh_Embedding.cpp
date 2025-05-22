@@ -11,8 +11,8 @@
 #include <array>
 #include <map>
 #include <set>
+#include "local_tet_joint_opt.hpp"
 #include "to_three_connected.hpp"
-
 namespace wmtk::operations::utils {
 
 std::vector<int> embed_mesh(const Eigen::MatrixXi& T, const Eigen::MatrixXi& F_bd)
@@ -1092,6 +1092,22 @@ Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, Eigen::MatrixXd& V, in
     if (is_tutte_embedding_failed || is_lift_failed) {
         utils::visualize_tet_mesh(V_param, T_3_connected);
     }
+
+    // TODO: optmize the lifting
+    // TODO: add constraints on the bottom plane
+    // Get bottom plane vertices (boundary loop of F_top + v0)
+    std::vector<int> bottom_plane_vids;
+    {
+        Eigen::VectorXi boundary_loop;
+        igl::boundary_loop(F_top, boundary_loop);
+        // Add v0 to the bottom plane vertices
+        bottom_plane_vids.push_back(v0);
+        // Add boundary loop vertices to bottom_plane_vids
+        for (int i = 0; i < boundary_loop.size(); ++i) {
+            bottom_plane_vids.push_back(boundary_loop(i));
+        }
+    }
+    utils::local_tet_joint_opt(V, T_3_connected, T_3_connected, V_param, bottom_plane_vids);
 
     std::cout << "Total failure count: " << failure_count << std::endl;
     std::cout << "Total count: " << total_count << std::endl;

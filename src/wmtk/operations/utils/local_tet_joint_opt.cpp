@@ -78,7 +78,37 @@ double compute_energy_and_gradient_fast(
         grad.row(i3) += dE_dXp.col(2).transpose();
         grad.row(i0) -= (dE_dXp.col(0) + dE_dXp.col(1) + dE_dXp.col(2)).transpose();
     }
-    return total_E;
+    return total_E / m;
+}
+
+void local_tet_joint_opt(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& T_before,
+    const Eigen::MatrixXi& T_after,
+    Eigen::MatrixXd& V_param,
+    const std::vector<int>& constraint_vids)
+{
+    // Precompute reference data for all tetrahedra
+    std::vector<TetPrecomp> P;
+    precompute_reference(V, T_before, P);
+    Eigen::MatrixXd grad;
+    double energy =
+        compute_energy_and_gradient_fast(V_param, T_before, P, grad, SymmetricDirichletEnergy());
+    std::cout << "energy: " << energy << std::endl;
+    std::cout << "grad: \n" << grad << std::endl;
+    // Set z-axis gradient to zero for all constraint vertices
+    for (const int vid : constraint_vids) {
+        if (vid >= 0 && vid < grad.rows()) {
+            // Zero out the z-component (third column) of the gradient
+            grad(vid, 2) = 0.0;
+        } else {
+            std::cout << "vid: " << vid << " is out of range" << std::endl;
+        }
+    }
+
+    std::cout << "After zeroing z-gradient for constraint vertices:" << std::endl;
+    std::cout << "grad: \n" << grad << std::endl;
+    // Compute energy and gradient for the entire mesh
 }
 
 // Explicit template instantiations

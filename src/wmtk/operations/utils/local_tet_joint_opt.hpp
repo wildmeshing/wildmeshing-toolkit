@@ -43,6 +43,13 @@ double compute_energy_and_gradient_fast(
     Eigen::MatrixXd& grad,
     const EnergyFunctor& energy_functor = EnergyFunctor());
 
+void local_tet_joint_opt(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& T_before,
+    const Eigen::MatrixXi& T_after,
+    Eigen::MatrixXd& V_param,
+    const std::vector<int>& constraint_vids);
+
 } // namespace utils
 } // namespace operations
 } // namespace wmtk
