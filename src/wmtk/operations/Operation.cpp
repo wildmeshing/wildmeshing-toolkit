@@ -625,7 +625,10 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 
                                 std::cout << "T_after:" << std::endl;
                                 std::cout << T_after << std::endl;
+
+                                // embed the mesh!!!
                                 auto V_before_param = utils::embed_mesh_lift(T_before, V_before);
+
                                 if (V_before_param.rows() == 0) {
                                     operation_log["success"] = false;
 

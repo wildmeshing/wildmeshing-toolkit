@@ -419,10 +419,10 @@ void visualize_tet_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& T)
     for (int i = 0; i < T.rows(); ++i) {
         // Four faces of the tetrahedron
         std::array<std::array<int, 3>, 4> tet_faces = {
-            {{T(i, 0), T(i, 1), T(i, 3)},
-             {T(i, 0), T(i, 2), T(i, 1)},
+            {{T(i, 1), T(i, 0), T(i, 2)},
+             {T(i, 1), T(i, 2), T(i, 3)},
              {T(i, 0), T(i, 3), T(i, 2)},
-             {T(i, 1), T(i, 2), T(i, 3)}}};
+             {T(i, 1), T(i, 3), T(i, 0)}}};
 
         // Add all faces (simplified approach, ideally should detect which are on the surface)
         for (const auto& face : tet_faces) {
@@ -523,10 +523,10 @@ Eigen::MatrixXi extract_surface_without_vertex(
             // pos=0: (1,3,2), pos=1: (0,2,3), pos=2: (0,3,1), pos=3: (0,1,2)
             Eigen::Vector3i oriented_face;
             switch (pos) {
-            case 0: oriented_face = Eigen::Vector3i(tet[1], tet[3], tet[2]); break;
-            case 1: oriented_face = Eigen::Vector3i(tet[0], tet[2], tet[3]); break;
-            case 2: oriented_face = Eigen::Vector3i(tet[0], tet[3], tet[1]); break;
-            case 3: oriented_face = Eigen::Vector3i(tet[0], tet[1], tet[2]); break;
+            case 0: oriented_face = Eigen::Vector3i(tet[1], tet[2], tet[3]); break;
+            case 1: oriented_face = Eigen::Vector3i(tet[3], tet[2], tet[0]); break;
+            case 2: oriented_face = Eigen::Vector3i(tet[0], tet[1], tet[3]); break;
+            case 3: oriented_face = Eigen::Vector3i(tet[1], tet[0], tet[2]); break;
             }
             surface_triangles.push_back(oriented_face);
         }
@@ -869,16 +869,120 @@ Eigen::MatrixXd compute_lifting(
     return xyz;
 }
 
+bool check_embedding_validity(
+    const Eigen::MatrixXi& T,
+    const Eigen::MatrixXd& V,
+    bool verbose = true)
+{
+    // Check if the embedding is valid by ensuring that for any triangle abc shared by two
+    // tetrahedra abcd and abce, the vertices d and e are on opposite sides of the triangle
+    // abc
+    if (verbose) {
+        std::cout << "Checking embedding validity..." << std::endl;
+    }
+
+    // Build a map from triangle to adjacent tetrahedra
+    std::map<std::tuple<int, int, int>, std::vector<std::pair<int, int>>> triangle_to_tets;
+
+    for (int i = 0; i < T.rows(); ++i) {
+        // For each tetrahedron, extract its four triangular faces
+        for (int j = 0; j < 4; ++j) {
+            // Skip the jth vertex to form a triangle
+            std::vector<int> tri_verts;
+            for (int k = 0; k < 4; ++k) {
+                if (k != j) {
+                    tri_verts.push_back(T(i, k));
+                }
+            }
+
+            // Sort vertices to create a unique key for the triangle
+            std::sort(tri_verts.begin(), tri_verts.end());
+            auto tri_key = std::make_tuple(tri_verts[0], tri_verts[1], tri_verts[2]);
+
+            // Store the tetrahedron index and the opposite vertex index
+            triangle_to_tets[tri_key].push_back({i, T(i, j)});
+        }
+    }
+
+    int invalid_triangles = 0;
+    int total_shared_triangles = 0;
+
+    // Check each shared triangle
+    for (const auto& [tri_key, tet_list] : triangle_to_tets) {
+        if (tet_list.size() == 2) { // Triangle is shared by exactly two tetrahedra
+            total_shared_triangles++;
+
+            auto [a, b, c] = tri_key;
+            int tet1_idx = tet_list[0].first;
+            int d = tet_list[0].second;
+            int tet2_idx = tet_list[1].first;
+            int e = tet_list[1].second;
+
+            // Get the coordinates from V
+            Eigen::Vector3d pa = V.row(a);
+            Eigen::Vector3d pb = V.row(b);
+            Eigen::Vector3d pc = V.row(c);
+            Eigen::Vector3d pd = V.row(d);
+            Eigen::Vector3d pe = V.row(e);
+
+            // Compute normal of triangle abc
+            Eigen::Vector3d normal = (pb - pa).cross(pc - pa);
+            normal.normalize();
+
+            // Check if d and e are on opposite sides of the triangle
+            double sign_d = normal.dot(pd - pa);
+            double sign_e = normal.dot(pe - pa);
+
+            if (sign_d * sign_e >= 0) { // Same side or on the plane
+                invalid_triangles++;
+                if (verbose) {
+                    std::cout << "Invalid triangle " << a << "-" << b << "-" << c << ": vertices "
+                              << d << " and " << e << " are on the same side (signs: " << sign_d
+                              << ", " << sign_e << ")" << std::endl;
+                }
+            }
+        }
+    }
+
+    if (verbose) {
+        std::cout << "Embedding validity check: " << invalid_triangles
+                  << " invalid triangles out of " << total_shared_triangles << " shared triangles"
+                  << std::endl;
+
+        if (invalid_triangles > 0) {
+            std::cout << "⚠️ Warning: The embedding has invalid triangles!" << std::endl;
+        } else {
+            std::cout << "✅ Embedding is valid: all shared triangles have opposite vertices on "
+                         "different sides."
+                      << std::endl;
+        }
+    }
+
+    return invalid_triangles == 0;
+}
+
+
 Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, Eigen::MatrixXd& V, int v0)
 {
-    // TODO: implement this function
-
     // get the surface without vertex v0
     Eigen::MatrixXi F_top = extract_surface_without_vertex(T, v0);
     std::cout << "F_top: \n" << F_top << std::endl;
 
-    // TODO: make F_top to be 3-connected
+    // make F_top to be 3-connected
     int edge_split_count = utils::make_3_connected(F_top, V);
+    Eigen::MatrixXi T_3_connected;
+    if (edge_split_count > 0) {
+        // utils::visualize_tet_mesh(V, T);
+        T_3_connected = Eigen::MatrixXi::Zero(F_top.rows(), 4);
+        // For each tetrahedron, connect it to vertex 0 (v0)
+        for (int i = 0; i < T_3_connected.rows(); ++i) {
+            T_3_connected.row(i) << v0, F_top(i, 0), F_top(i, 1), F_top(i, 2);
+        }
+        // Visualize the 3-connected tetrahedral mesh
+        // utils::visualize_tet_mesh(V, T_3_connected);
+    } else {
+        T_3_connected = T;
+    }
 
     // clean up unreferenced vertices(v0)
     Eigen::MatrixXd V_clean;
@@ -964,7 +1068,6 @@ Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, Eigen::MatrixXd& V, in
     std::reverse(f0.begin(), f0.end());
     auto xyz = compute_lifting(F_list_vec, f0, uv, stress);
 
-    std::cout << "IM: " << IM << std::endl;
     Eigen::MatrixXd V_param = Eigen::MatrixXd::Zero(V.rows(), V.cols());
     for (int i = 0; i < IM.size(); ++i) {
         if (IM[i] != -1) {
@@ -985,101 +1088,14 @@ Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, Eigen::MatrixXd& V, in
         }
         std::cout << std::endl << "]" << std::endl;
     }
-
-    if (is_tutte_embedding_failed || edge_split_count > 0) {
-        // Create a new tetrahedron mesh
-        Eigen::MatrixXi T_new(F_top.rows(), 4);
-
-        // For each tetrahedron, replace it with (0, F_top[i])
-        for (int i = 0; i < T_new.rows(); ++i) {
-            T_new.row(i) << 0, F_top(i, 0), F_top(i, 1), F_top(i, 2);
-        }
-
-        // Check if the embedding is valid by ensuring that for any triangle abc shared by two
-        // tetrahedra abcd and abce, the vertices d and e are on opposite sides of the triangle abc
-        std::cout << "Checking embedding validity..." << std::endl;
-
-        // Build a map from triangle to adjacent tetrahedra
-        std::map<std::tuple<int, int, int>, std::vector<std::pair<int, int>>> triangle_to_tets;
-
-        for (int i = 0; i < T_new.rows(); ++i) {
-            // For each tetrahedron, extract its four triangular faces
-            for (int j = 0; j < 4; ++j) {
-                // Skip the jth vertex to form a triangle
-                std::vector<int> tri_verts;
-                for (int k = 0; k < 4; ++k) {
-                    if (k != j) {
-                        tri_verts.push_back(T_new(i, k));
-                    }
-                }
-
-                // Sort vertices to create a unique key for the triangle
-                std::sort(tri_verts.begin(), tri_verts.end());
-                auto tri_key = std::make_tuple(tri_verts[0], tri_verts[1], tri_verts[2]);
-
-                // Store the tetrahedron index and the opposite vertex index
-                triangle_to_tets[tri_key].push_back({i, T_new(i, j)});
-            }
-        }
-
-        int invalid_triangles = 0;
-        int total_shared_triangles = 0;
-
-        // Check each shared triangle
-        for (const auto& [tri_key, tet_list] : triangle_to_tets) {
-            if (tet_list.size() == 2) { // Triangle is shared by exactly two tetrahedra
-                total_shared_triangles++;
-
-                auto [a, b, c] = tri_key;
-                int tet1_idx = tet_list[0].first;
-                int d = tet_list[0].second;
-                int tet2_idx = tet_list[1].first;
-                int e = tet_list[1].second;
-
-                // Get the coordinates from V_param
-                Eigen::Vector3d pa = V_param.row(a);
-                Eigen::Vector3d pb = V_param.row(b);
-                Eigen::Vector3d pc = V_param.row(c);
-                Eigen::Vector3d pd = V_param.row(d);
-                Eigen::Vector3d pe = V_param.row(e);
-
-                // Compute normal of triangle abc
-                Eigen::Vector3d normal = (pb - pa).cross(pc - pa);
-                normal.normalize();
-
-                // Check if d and e are on opposite sides of the triangle
-                double sign_d = normal.dot(pd - pa);
-                double sign_e = normal.dot(pe - pa);
-
-                if (sign_d * sign_e >= 0) { // Same side or on the plane
-                    invalid_triangles++;
-                    std::cout << "Invalid triangle " << a << "-" << b << "-" << c << ": vertices "
-                              << d << " and " << e << " are on the same side (signs: " << sign_d
-                              << ", " << sign_e << ")" << std::endl;
-                }
-            }
-        }
-
-        std::cout << "Embedding validity check: " << invalid_triangles
-                  << " invalid triangles out of " << total_shared_triangles << " shared triangles"
-                  << std::endl;
-
-        if (invalid_triangles > 0) {
-            std::cout << "⚠️ Warning: The embedding has invalid triangles!" << std::endl;
-        } else {
-            std::cout << "✅ Embedding is valid: all shared triangles have opposite vertices on "
-                         "different sides."
-                      << std::endl;
-        }
-
-        // Use the new mesh for visualization
-        // T = T_new;
-        utils::visualize_tet_mesh(V_param, T_new);
+    bool is_lift_failed = !check_embedding_validity(T_3_connected, V_param);
+    if (is_tutte_embedding_failed || is_lift_failed) {
+        utils::visualize_tet_mesh(V_param, T_3_connected);
     }
 
     std::cout << "Total failure count: " << failure_count << std::endl;
     std::cout << "Total count: " << total_count << std::endl;
-    if (is_tutte_embedding_failed) {
+    if (is_tutte_embedding_failed || is_lift_failed) {
         // TODO: try to fix the embedding later
         return Eigen::MatrixXd();
     } else {

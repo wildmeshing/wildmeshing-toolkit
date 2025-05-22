@@ -26,5 +26,8 @@ set(SRC_FILES
 
     to_three_connected.hpp
     to_three_connected.cpp
+
+    local_tet_joint_opt.hpp
+    local_tet_joint_opt.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
