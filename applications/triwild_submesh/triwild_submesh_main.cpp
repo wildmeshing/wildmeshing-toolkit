@@ -18,6 +18,7 @@
 #include <wmtk/components/procedural/make_mesh.hpp>
 #include <wmtk/components/wildmeshing/wildmeshing.hpp>
 #include <wmtk/components/winding_number/winding_number.hpp>
+#include <wmtk/utils/Stopwatch.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
 #include "triwild_grid.hpp"
@@ -57,6 +58,10 @@ int main(int argc, char* argv[])
         }
     }
 
+    nlohmann::json out_json;
+
+    wmtk::utils::StopWatch sw_total("Triwild Total");
+
     fs::path input_file = resolve_paths(json_input_file, {j["root"], j["input"]});
 
     if (!fs::exists(input_file)) {
@@ -86,8 +91,13 @@ int main(int argc, char* argv[])
         y_max = std::max(y_max, mesh_pt_accessor.const_vector_attribute(v)[1]);
     }
 
+    wmtk::utils::StopWatch sw_bg_mesh("Background Mesh");
+
     auto bg_mesh =
         wmtk::triwild::generate_bg_grid(x_min, y_min, x_max, y_max, j["target_edge_length"]);
+
+    sw_bg_mesh.stop();
+    out_json["runtime_seconds"]["background_mesh"] = sw_bg_mesh.getElapsedTime();
 
     if (j["intermediate_output"]) {
         wmtk::components::output::output(bg_mesh, "bg_mesh", "vertices");
@@ -95,8 +105,13 @@ int main(int argc, char* argv[])
 
     wmtk::logger().info("generated bg mesh");
 
+    wmtk::utils::StopWatch sw_edge_insertion("Edge Insertion");
+
     wmtk::components::EdgeInsertionMeshes eim =
         wmtk::components::edge_insertion(static_cast<EdgeMesh&>(*mesh), bg_mesh);
+
+    sw_edge_insertion.stop();
+    out_json["runtime_seconds"]["edge_insertion"] = sw_edge_insertion.getElapsedTime();
 
     wmtk::logger().info("finised edge insertion");
 
@@ -168,15 +183,24 @@ int main(int argc, char* argv[])
     wmo.skip_smooth = j["skip_smooth"];
     wmo.use_embedding = true;
 
+
+    wmtk::utils::StopWatch sw_wildmeshing("Wildmeshing");
+
     auto meshes_after_tetwild = wildmeshing(wmo);
+
+    sw_wildmeshing.stop();
+    out_json["runtime_seconds"]["wildmeshing"] = sw_wildmeshing.getElapsedTime();
+
     assert(meshes_after_tetwild.size() == 1);
     auto main_mesh = meshes_after_tetwild[0].first;
 
     wmtk::components::output::output(*main_mesh, output_file, "vertices");
 
+    sw_total.stop();
+    out_json["runtime_seconds"]["total"] = sw_total.getElapsedTime();
+
     const std::string report = j["report"];
     if (!report.empty()) {
-        nlohmann::json out_json;
         out_json["vertices"] = main_mesh->get_all(PrimitiveType::Vertex).size();
         out_json["edges"] = main_mesh->get_all(PrimitiveType::Edge).size();
         out_json["cells"] = main_mesh->get_all(PrimitiveType::Triangle).size();
