@@ -176,6 +176,8 @@ TriMesh nine_triangles_with_a_hole();
 TriMesh ten_triangles_with_position(int dimension);
 
 TriMesh edge_region_with_position();
+
+TriMesh edge_region_with_position_2D();
 //      0---1
 //     / \ / \ .
 //    2---3---4

@@ -72,6 +72,11 @@ set(SRC_FILES
 
     DynamicArray.hpp
     DynamicArray.hxx
+
+    bbox_from_mesh.hpp
+    bbox_from_mesh.cpp
+    bvh_from_mesh.hpp
+    bvh_from_mesh.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

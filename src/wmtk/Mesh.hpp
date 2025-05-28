@@ -18,6 +18,7 @@
 
 // basic data for the class
 #include <wmtk/simplex/Simplex.hpp>
+#include "MeshBase.hpp"
 #include "Tuple.hpp"
 #include "Types.hpp"
 #include "attribute/AttributeManager.hpp"
@@ -85,13 +86,19 @@ class TupleTag;
 } // namespace utils
 } // namespace multimesh
 
+namespace submesh {
+class Embedding;
+}
+
 
 // NOTE: the implementation of this class is split into several files to improve clang-format
 // performance
 // * Mesh.cpp
 // * Mesh_attributes.cpp
 // * Mesh_construction.cpp
-class Mesh : public std::enable_shared_from_this<Mesh>, public wmtk::utils::MerkleTreeInteriorNode
+class Mesh : public std::enable_shared_from_this<Mesh>,
+             public MeshBase,
+             public wmtk::utils::MerkleTreeInteriorNode
 {
 public:
     friend class tests::DEBUG_Mesh;
@@ -113,6 +120,7 @@ public:
     friend class multimesh::MultiMeshVisitorExecutor;
     friend class multimesh::attribute::AttributeScopeHandle;
     friend class multimesh::utils::internal::TupleTag;
+    friend class submesh::Embedding;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     friend class operations::Operation;
     friend class operations::EdgeCollapse;
@@ -121,9 +129,11 @@ public:
     friend class operations::internal::CollapseAlternateFacetData;
 
 
-    int64_t top_cell_dimension() const;
+    int64_t top_cell_dimension() const override;
     PrimitiveType top_simplex_type() const;
     bool is_free() const;
+
+    MeshType mesh_type() const override;
 
     // attribute directly hashes its "children" components so it overrides "child_hashes"
     std::map<std::string, const wmtk::utils::Hashable*> child_hashables() const override;
@@ -147,9 +157,9 @@ public:
      * @param type the type of tuple, can be vertex/edge/triangle/tetrahedron
      * @return vector of Tuples referring to each type
      */
-    std::vector<Tuple> get_all(PrimitiveType type) const;
+    std::vector<Tuple> get_all(PrimitiveType type) const override;
 
-    std::vector<simplex::IdSimplex> get_all_id_simplex(PrimitiveType type) const;
+    std::vector<simplex::IdSimplex> get_all_id_simplex(PrimitiveType type) const override;
     /**
      * @brief Retrieve the IdSimplex that is represented by the tuple and primitive type.
      */
@@ -340,7 +350,7 @@ protected:
 public:
     /**
      * @brief switch the orientation of the Tuple of the given dimension
-     * @note this is not doen in place. Return a new Tuple of the switched state
+     * @note this is not done in place. Return a new Tuple of the switched state
      *
      * @param m
      * @param type  d-0 -> switch vertex
@@ -348,7 +358,7 @@ public:
                     d-2 -> switch face
                     d-3 -> switch tetrahedron
     */
-    virtual Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const = 0;
+    virtual Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override = 0;
 
     // NOTE: adding per-simplex utility functions here is _wrong_ and will be removed
 
@@ -411,7 +421,7 @@ public:
      * @return true if this simplex lies on the boundary of the mesh
      * @return false otherwise
      */
-    virtual bool is_boundary(PrimitiveType, const Tuple& tuple) const = 0;
+    virtual bool is_boundary(PrimitiveType, const Tuple& tuple) const override = 0;
 
 
     bool is_hash_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const;
@@ -775,6 +785,10 @@ public:
      **/
     bool is_from_same_multi_mesh_structure(const Mesh& other) const;
 
+    bool has_embedding() const;
+
+    submesh::Embedding& get_embedding() const;
+
 protected:
     // creates a scope as int64_t as the AttributeScopeHandle exists
     [[nodiscard]] attribute::AttributeScopeHandle create_single_mesh_scope();
@@ -792,13 +806,13 @@ public:
                     d-3 -> tetrahedron
         * @return int64_t id of the entity
     */
-    int64_t id(const Tuple& tuple, PrimitiveType type) const;
+    int64_t id(const Tuple& tuple, PrimitiveType type) const override;
 
     int64_t id(const simplex::NavigatableSimplex& s) const { return s.index(); }
     int64_t id(const simplex::IdSimplex& s) const { return s.index(); }
 
     /// Forwarding version of id on simplices that does id caching
-    virtual int64_t id(const simplex::Simplex& s) const = 0;
+    virtual int64_t id(const simplex::Simplex& s) const override = 0;
 
 protected:
     /// Internal utility to allow id to be virtual with a non-virtual overload in derived -Mesh classes.
@@ -827,6 +841,8 @@ protected: // THese are protected so unit tests can access - do not use manually
     attribute::AttributeManager m_attribute_manager;
 
     multimesh::MultiMeshManager m_multi_mesh_manager;
+
+    submesh::Embedding* m_embedding = nullptr; // a pointer to the embedding (if there is any)
 
     int64_t m_top_cell_dimension = -1;
 
@@ -971,6 +987,11 @@ inline Tuple Mesh::switch_tuples(const Tuple& tuple, const ContainerType& sequen
 inline bool Mesh::is_free() const
 {
     return m_is_free;
+}
+
+inline MeshType Mesh::mesh_type() const
+{
+    return MeshType::Mesh;
 }
 
 inline int64_t Mesh::top_cell_dimension() const

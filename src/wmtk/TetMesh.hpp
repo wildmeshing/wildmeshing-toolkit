@@ -61,7 +61,7 @@ public:
     std::vector<Tuple> orient_vertices(const Tuple& t) const override;
 
 
-    int64_t id(const Tuple& tuple, PrimitiveType type) const;
+    int64_t id(const Tuple& tuple, PrimitiveType type) const override;
     using MeshCRTP<TetMesh>::id; // getting the (simplex) prototype
 
 
