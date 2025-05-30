@@ -31,7 +31,6 @@
 #include <wmtk/operations/utils/VertexLaplacianSmooth.hpp>
 #include <wmtk/operations/utils/VertexTangentialLaplacianSmooth.hpp>
 #include <wmtk/simplex/link.hpp>
-#include <wmtk/utils/merkle_tree_diff.hpp>
 
 using namespace wmtk::components::utils;
 
@@ -291,10 +290,11 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
     SECTION("6.4")
     {
         min_split_length_squared = 6.4;
-        op.add_invariant(std::make_shared<MinEdgeLengthInvariant>(
-            mesh,
-            pos_attribute.as<double>(),
-            min_split_length_squared));
+        op.add_invariant(
+            std::make_shared<MinEdgeLengthInvariant>(
+                mesh,
+                pos_attribute.as<double>(),
+                min_split_length_squared));
 
         Scheduler scheduler;
 
@@ -322,10 +322,11 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
     SECTION("3.5")
     {
         min_split_length_squared = 3.5;
-        op.add_invariant(std::make_shared<MinEdgeLengthInvariant>(
-            mesh,
-            pos_attribute.as<double>(),
-            min_split_length_squared));
+        op.add_invariant(
+            std::make_shared<MinEdgeLengthInvariant>(
+                mesh,
+                pos_attribute.as<double>(),
+                min_split_length_squared));
 
         Scheduler scheduler;
 
@@ -715,15 +716,16 @@ TEST_CASE("remeshing_tetrahedron", "[components][isotropic_remeshing][2D]")
     }
 
 
-    CHECK_NOTHROW(wmtk::components::internal::isotropic_remeshing(
-        pos_handle,
-        pass_through_attributes,
-        0.1,
-        true,
-        false,
-        false,
-        false,
-        10));
+    CHECK_NOTHROW(
+        wmtk::components::internal::isotropic_remeshing(
+            pos_handle,
+            pass_through_attributes,
+            0.1,
+            true,
+            false,
+            false,
+            false,
+            10));
 
     {
         ParaviewWriter writer(

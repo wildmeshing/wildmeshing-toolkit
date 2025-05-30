@@ -5,7 +5,6 @@
 #include <spdlog/spdlog.h>
 #include <type_traits>
 #include <wmtk/operations/Operation.hpp>
-#include <wmtk/utils/merkle_tree.hpp>
 #include "../tools/DEBUG_Mesh.hpp"
 //#include <spdlog/fmt/printf.h>
 
@@ -321,16 +320,6 @@ TEST_CASE("attribute_transaction_throw_fail", "[attributes]")
     auto [pm_op_fail, acc_op_fail] = make_mesh();
     auto [pm_op_fail_throw, acc_op_fail_throw] = make_mesh();
 
-    const size_t init_hash = pm_succ->hash();
-    // make sure initial meshes are all the same
-    CHECK(pm_succ->hash() == pm_nothrow_fails->hash());
-    CHECK(pm_succ->hash() == pm_op_succ->hash());
-    CHECK(pm_succ->hash() == pm_throw_inside->hash());
-    CHECK(pm_nothrow_fails->hash() == pm_throw_outside->hash());
-    CHECK(pm_nothrow_fails->hash() == pm_op_fail->hash());
-    CHECK(pm_nothrow_fails->hash() == pm_op_fail_throw->hash());
-
-
     run(acc_succ);
     run_nothrow_fails(acc_nothrow_fails);
     CHECK_THROWS(run_with_throw_inside(acc_throw_inside));
@@ -338,21 +327,6 @@ TEST_CASE("attribute_transaction_throw_fail", "[attributes]")
     run_op_succ(acc_op_succ);
     run_op_fail(acc_op_fail);
     CHECK_THROWS(run_op_fail_throw(acc_op_fail_throw));
-    std::cout << wmtk::utils::merkle_tree(*pm_succ) << std::endl;
-    std::cout << wmtk::utils::merkle_tree(*pm_nothrow_fails) << std::endl;
-
-    wmtk::logger().debug(
-        "Successul hash / fail hash: {} {} (init hash was {})",
-        pm_succ->hash(),
-        pm_nothrow_fails->hash(),
-        init_hash);
-    CHECK(pm_nothrow_fails->hash() == init_hash);
-    CHECK(pm_succ->hash() != pm_nothrow_fails->hash());
-    CHECK(pm_succ->hash() == pm_op_succ->hash());
-    CHECK(pm_succ->hash() == pm_throw_inside->hash());
-    CHECK(pm_nothrow_fails->hash() == pm_throw_outside->hash());
-    CHECK(pm_nothrow_fails->hash() == pm_op_fail->hash());
-    CHECK(pm_nothrow_fails->hash() == pm_op_fail_throw->hash());
 }
 
 TEST_CASE("parent_scope_access", "[accessor]")
