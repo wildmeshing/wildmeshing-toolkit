@@ -1,11 +1,9 @@
 #pragma once
 
-#include <tuple>
 #include <optional>
+#include <tuple>
 #include <wmtk/Tuple.hpp>
 #include <wmtk/attribute/Accessor.hpp>
-// included to make a friend as this requires IDs
-#include <wmtk/utils/MerkleTreeInteriorNode.hpp>
 
 // debug function that reads into this structure
 #include "utils/check_map_valid.hpp"
@@ -21,8 +19,7 @@ namespace utils {
 class UpdateEdgeOperationMultiMeshMapFunctor;
 }
 } // namespace operations
-namespace attribute {
-}
+namespace attribute {}
 namespace multimesh {
 template <int64_t cell_dimension, typename NodeFunctor>
 class MultiMeshSimplexVisitor;
@@ -49,10 +46,9 @@ namespace wmtk::multimesh {
 /**
  * @brief Implementation details for how the Mesh class implements multiple meshes
  */
-class MultiMeshManager : public wmtk::utils::MerkleTreeInteriorNode
+class MultiMeshManager
 {
 public:
-
     // let the visitor object access the internal details
     template <int64_t cell_dimension, typename NodeFunctor>
     friend class multimesh::MultiMeshSimplexVisitor;
@@ -77,11 +73,6 @@ public:
     MultiMeshManager(MultiMeshManager&& o);
     MultiMeshManager& operator=(const MultiMeshManager& o);
     MultiMeshManager& operator=(MultiMeshManager&& o);
-
-    // attribute directly hashes its "children" components so it overrides "child_hashes"
-    std::map<std::string, const wmtk::utils::Hashable*> child_hashables() const override;
-    std::map<std::string, std::size_t> child_hashes() const override;
-
 
     void detach_children();
 

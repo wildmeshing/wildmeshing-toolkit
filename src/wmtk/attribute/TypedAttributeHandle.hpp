@@ -5,8 +5,6 @@
 namespace wmtk {
 class Mesh;
 class Rational;
-template <typename T>
-class hash;
 namespace attribute {
 template <typename T>
 class TypedAttributeManager;
@@ -35,7 +33,6 @@ private:
     template <typename U, typename MeshType, typename AttributeType, int Dim>
     friend class Accessor;
     friend class AttributeManager;
-    friend class wmtk::hash<TypedAttributeHandle<T>>;
     wmtk::attribute::AttributeHandle m_base_handle;
     wmtk::PrimitiveType m_primitive_type = wmtk::PrimitiveType::Vertex;
 

@@ -96,9 +96,7 @@ class Embedding;
 // * Mesh.cpp
 // * Mesh_attributes.cpp
 // * Mesh_construction.cpp
-class Mesh : public std::enable_shared_from_this<Mesh>,
-             public MeshBase,
-             public wmtk::utils::MerkleTreeInteriorNode
+class Mesh : public std::enable_shared_from_this<Mesh>, public MeshBase
 {
 public:
     friend class tests::DEBUG_Mesh;
@@ -134,10 +132,6 @@ public:
     bool is_free() const;
 
     MeshType mesh_type() const override;
-
-    // attribute directly hashes its "children" components so it overrides "child_hashes"
-    std::map<std::string, const wmtk::utils::Hashable*> child_hashables() const override;
-    std::map<std::string, std::size_t> child_hashes() const override;
 
     // dimension is the dimension of the top level simplex in this mesh
     // That is, a TriMesh is a 2, a TetMesh is a 3

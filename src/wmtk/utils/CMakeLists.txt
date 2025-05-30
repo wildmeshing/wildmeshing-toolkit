@@ -23,11 +23,6 @@ set(SRC_FILES
     triangle_areas.hpp
     triangle_areas.cpp
 
-    vector_hash.hpp
-    vector_hash.cpp
-    #Optimization.hpp
-    #Optimization.cpp
-
     metaprogramming/as_mesh_variant.hpp
     metaprogramming/as_mesh_variant.cpp
     metaprogramming/MeshVariantTraits.cpp
@@ -43,21 +38,6 @@ set(SRC_FILES
     primitive_range.cpp
 
     random_seed.hpp
-
-    make_free_sv_mesh.hpp
-    make_free_sv_mesh.cpp
-
-
-    MerkleTreeInteriorNode.hpp
-    MerkleTreeInteriorNode.cpp
-    Hashable.hpp
-    Hashable.cpp
-
-    merkle_tree.hpp
-    merkle_tree.cpp
-
-    merkle_tree_diff.hpp
-    merkle_tree_diff.cpp
 
     VolumeRemesherTriangleInsertion.hpp
     VolumeRemesherTriangleInsertion.cpp

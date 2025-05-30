@@ -66,7 +66,6 @@ public:
 
 
     friend class wmtk::Mesh;
-    friend class wmtk::hash<MeshAttributeHandle>;
     MeshAttributeHandle() = default;
     MeshAttributeHandle(Mesh& m, const HandleVariant& h);
     MeshAttributeHandle(const MeshAttributeHandle& o) = default;

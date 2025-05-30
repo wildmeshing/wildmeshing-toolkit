@@ -1,6 +1,4 @@
 #include "TypedAttributeManager.hpp"
-#include <wmtk/attribute/internal/hash.hpp>
-#include <wmtk/utils/Hashable.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <wmtk/io/HDF5Writer.hpp>
@@ -50,44 +48,6 @@ void TypedAttributeManager<T>::serialize(const int dim, MeshWriter& writer) cons
             attr_ptr->serialize(dim, writer);
         }
     }
-}
-
-template <typename T>
-std::map<std::string, std::size_t> TypedAttributeManager<T>::child_hashes() const
-{
-    // default implementation pulls the child attributes (ie the attributes)
-    std::map<std::string, std::size_t> ret = wmtk::utils::MerkleTreeInteriorNode::child_hashes();
-
-    for (int64_t i = 0; i < m_attributes.size(); ++i) {
-        if (!m_attributes[i]) {
-            continue;
-        }
-        const std::string& name = m_attributes[i]->name();
-        AttributeHandle handle(i);
-        ret["attr_handle_" + name] = std::hash<AttributeHandle>{}(handle);
-    }
-
-    return ret;
-}
-template <typename T>
-std::map<std::string, const wmtk::utils::Hashable*> TypedAttributeManager<T>::child_hashables()
-    const
-
-{
-    std::map<std::string, const wmtk::utils::Hashable*> ret;
-
-    for (int64_t i = 0; i < m_attributes.size(); ++i) {
-        if (!m_attributes[i]) {
-            continue;
-        }
-        const std::string& name = m_attributes[i]->name();
-        AttributeHandle handle(i);
-        const auto& attr = attribute(handle);
-
-        ret["attr_" + name] = &attr;
-    }
-
-    return ret;
 }
 
 template <typename T>

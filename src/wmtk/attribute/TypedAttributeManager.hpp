@@ -1,6 +1,5 @@
 #pragma once
 
-#include <wmtk/utils/MerkleTreeInteriorNode.hpp>
 #include "AttributeHandle.hpp"
 #include "CachingAttribute.hpp"
 
@@ -22,7 +21,7 @@ namespace attribute {
  * It also stores a map so that attributes can be accessed through a name.
  */
 template <typename T>
-class TypedAttributeManager : public wmtk::utils::MerkleTreeInteriorNode
+class TypedAttributeManager
 {
     typedef Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1>> MapResult;
     typedef Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>> ConstMapResult;
@@ -36,10 +35,6 @@ public:
     TypedAttributeManager& operator=(TypedAttributeManager&& o) = default;
 
     void serialize(const int dim, MeshWriter& writer) const;
-
-    // attribute directly hashes its "child_hashables" components so it overrides "child_hashes"
-    std::map<std::string, const wmtk::utils::Hashable*> child_hashables() const override;
-    std::map<std::string, std::size_t> child_hashes() const override;
 
     [[nodiscard]] AttributeHandle register_attribute(
         const std::string& name,

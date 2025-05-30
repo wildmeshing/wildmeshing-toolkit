@@ -2,7 +2,6 @@
 #include <numeric>
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/utils/Rational.hpp>
-#include <wmtk/utils/vector_hash.hpp>
 
 namespace wmtk::attribute {
 
@@ -26,22 +25,6 @@ Attribute<T>::Attribute(const std::string& name, int64_t dimension, T default_va
 
 template <typename T>
 Attribute<T>::Attribute(Attribute&& o) = default;
-
-template <typename T>
-std::map<std::string, size_t> Attribute<T>::child_hashes() const
-{
-    std::map<std::string, size_t> hashes;
-    hashes["dimension"] = m_dimension;
-    if constexpr (std::is_same_v<T, Rational>) {
-        constexpr static std::hash<std::string> h;
-        hashes["default_value"] = h(m_default_value.serialize());
-    } else {
-        hashes["default_value"] = m_default_value;
-    }
-    hashes["data"] = wmtk::utils::vector_hash(m_data);
-    return hashes;
-}
-
 
 template <typename T>
 Attribute<T>::~Attribute() = default;
@@ -134,37 +117,38 @@ template class Attribute<char>;
 template class Attribute<int64_t>;
 template class Attribute<double>;
 template class Attribute<Rational>;
-}
+} // namespace wmtk::attribute
 
 #if defined(WMTK_ENABLED_DEV_MODE)
 #include "Attribute.hxx"
 
 namespace wmtk::attribute {
-#define VECTOR_DEC(TYPE, D)                                                              \
-    template auto Attribute<TYPE>::const_vector_single_value<D>(                  \
-        int64_t index,                                                                   \
-        int8_t single_index) const -> const TYPE&;                                       \
-    template auto Attribute<TYPE>::vector_single_value<D>(                  \
-        int64_t index,                                                                   \
-        int8_t single_index) -> TYPE&;                                       \
-    template auto Attribute<TYPE>::const_vector_attribute<D>(int64_t index) const \
-        -> ConstMapResult<D>;                                                            \
-    template auto Attribute<TYPE>::vector_attribute<D>(int64_t index) -> MapResult<D>;\
-    template auto Attribute<TYPE>::const_vector_attribute<D>(int64_t index, const std::vector<TYPE>&) const \
-        -> ConstMapResult<D>;                                                            \
-    template auto Attribute<TYPE>::vector_attribute<D>(int64_t index, std::vector<TYPE>&) const -> MapResult<D>;
+#define VECTOR_DEC(TYPE, D)                                                                     \
+    template auto Attribute<TYPE>::const_vector_single_value<D>(                                \
+        int64_t index,                                                                          \
+        int8_t single_index) const -> const TYPE&;                                              \
+    template auto Attribute<TYPE>::vector_single_value<D>(int64_t index, int8_t single_index)   \
+        -> TYPE&;                                                                               \
+    template auto Attribute<TYPE>::const_vector_attribute<D>(int64_t index) const               \
+        -> ConstMapResult<D>;                                                                   \
+    template auto Attribute<TYPE>::vector_attribute<D>(int64_t index) -> MapResult<D>;          \
+    template auto Attribute<TYPE>::const_vector_attribute<D>(                                   \
+        int64_t index,                                                                          \
+        const std::vector<TYPE>&) const -> ConstMapResult<D>;                                   \
+    template auto Attribute<TYPE>::vector_attribute<D>(int64_t index, std::vector<TYPE>&) const \
+        -> MapResult<D>;
 
-#define SCALAR_DEC(TYPE)                                                              \
-    template auto Attribute<TYPE>::const_scalar_attribute(int64_t index) const \
-        -> const TYPE&;                                                            \
-    template auto Attribute<TYPE>::scalar_attribute(int64_t index) -> TYPE&;\
-    template auto Attribute<TYPE>::const_scalar_attribute(int64_t index, const std::vector<TYPE>& ) const \
-        -> const TYPE&;                                                            \
-    template auto Attribute<TYPE>::scalar_attribute(int64_t index, std::vector<TYPE>&) const-> TYPE&;
+#define SCALAR_DEC(TYPE)                                                                           \
+    template auto Attribute<TYPE>::const_scalar_attribute(int64_t index) const -> const TYPE&;     \
+    template auto Attribute<TYPE>::scalar_attribute(int64_t index) -> TYPE&;                       \
+    template auto Attribute<TYPE>::const_scalar_attribute(int64_t index, const std::vector<TYPE>&) \
+        const -> const TYPE&;                                                                      \
+    template auto Attribute<TYPE>::scalar_attribute(int64_t index, std::vector<TYPE>&) const       \
+        -> TYPE&;
 
 
 #define DEC(TYPE)        \
-    SCALAR_DEC(TYPE) \
+    SCALAR_DEC(TYPE)     \
     VECTOR_DEC(TYPE, -1) \
     VECTOR_DEC(TYPE, 1)  \
     VECTOR_DEC(TYPE, 2)  \
@@ -180,5 +164,3 @@ DEC(Rational)
 DEC(char)
 } // namespace wmtk::attribute
 #endif
-
-

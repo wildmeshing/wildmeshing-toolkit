@@ -2,7 +2,6 @@
 
 #include <Eigen/Core>
 #include <vector>
-#include <wmtk/utils/MerkleTreeInteriorNode.hpp>
 #include "MapTypes.hpp"
 
 namespace wmtk {
@@ -18,7 +17,7 @@ namespace attribute {
  * [x0,y0,z0,x1,y1,z1,...]
  */
 template <typename T>
-class Attribute : public wmtk::utils::Hashable
+class Attribute
 {
 public:
     using Scalar = T;
@@ -27,10 +26,6 @@ public:
     using MapResult = MapResult<T, D>;
     template <int D = Eigen::Dynamic>
     using ConstMapResult = ConstMapResult<T, D>;
-
-
-    // attribute directly hashes its "children" components so it overrides "child_hashes"
-    std::map<std::string, size_t> child_hashes() const override;
 
 
     void serialize(int dim, MeshWriter& writer) const;
@@ -53,7 +48,7 @@ public:
     Attribute(const Attribute& o) = delete;
     Attribute& operator=(const Attribute&& o) = delete;
 
-    ~Attribute() override;
+    ~Attribute();
 
     /// Access the value of an attribute at a particular index. If the dimension of the attribute is known at compile time then the template parameter should be elided to improve performance.
     template <int D = Eigen::Dynamic>
@@ -97,7 +92,6 @@ public:
     const T& default_value() const;
 
     bool operator==(const Attribute<T>& o) const;
-
 
 
     /**
@@ -162,20 +156,15 @@ public:
      * serialization
      */
     template <int D = Eigen::Dynamic>
-    const T& const_vector_single_value(
-        int64_t index,
-        int8_t vector_index,
-        const std::vector<T>& data) const;
+    const T&
+    const_vector_single_value(int64_t index, int8_t vector_index, const std::vector<T>& data) const;
     /**
      * @brief Accesses the attribute using the specified scalar as the underlying data
      * This is internally used by the single-arg vector_single_value and to help with
      * serialization
      */
     template <int D = Eigen::Dynamic>
-    T& vector_single_value(
-        int64_t index,
-        int8_t vector_index,
-        std::vector<T>& data) const;
+    T& vector_single_value(int64_t index, int8_t vector_index, std::vector<T>& data) const;
 
     // computes the "reserved size" but using the passed in data
     int64_t reserved_size(const std::vector<T>& data) const;

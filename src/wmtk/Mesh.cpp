@@ -3,7 +3,6 @@
 
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include <wmtk/utils/vector_hash.hpp>
 
 #include "EdgeMesh.hpp"
 #include "PointMesh.hpp"

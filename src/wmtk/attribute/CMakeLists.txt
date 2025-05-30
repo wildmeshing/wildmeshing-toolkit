@@ -34,5 +34,4 @@ set(SRC_FILES
     FlagAccessor.hpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
-add_subdirectory(internal)
 add_subdirectory(utils)
