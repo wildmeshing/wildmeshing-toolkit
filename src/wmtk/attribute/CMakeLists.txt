@@ -14,6 +14,8 @@ set(SRC_FILES
 
     internal/CheckpointScope.hpp
     internal/CheckpointScope.cpp
+    internal/UseParentScopeRAII.hpp
+    internal/UseParentScopeRAII.cpp
 
     AttributeHandle.hpp
     TypedAttributeHandle.hpp
