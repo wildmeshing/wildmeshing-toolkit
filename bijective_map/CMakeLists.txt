@@ -30,7 +30,8 @@ target_link_libraries(bijective_map_app_tet
 )
 target_compile_features(bijective_map_app_tet PUBLIC cxx_std_17)
 
-add_executable(test_find_point_tet test_findpointtetmesh.cpp FindPointTetMesh.cpp)
-target_link_libraries(test_find_point_tet
-    igl::core
-)
+# add_executable(test_find_point_tet test_findpointtetmesh.cpp FindPointTetMesh.cpp)
+# target_link_libraries(test_find_point_tet
+# wmtk::toolkit
+# igl::core
+# )

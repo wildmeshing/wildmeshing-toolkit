@@ -507,9 +507,6 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                         Eigen::MatrixXi T_after, T_before, F_bd_after, F_bd_before;
                         Eigen::MatrixXd V_after, V_before;
 
-                        Eigen::MatrixXi T_before_all, T_after_all;
-                        Eigen::MatrixXd V_before_all, V_after_all;
-
                         std::vector<int64_t> id_map_after, id_map_before, v_id_map_after,
                             v_id_map_before;
 
@@ -532,11 +529,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                         is_simplex_boundary && operation_name == "EdgeCollapse");
                                 },
                                 simplex);
-                        // TODO: for debug, delete this
-                        T_before_all = T_before;
-                        T_after_all = T_after;
-                        V_before_all = V_before;
-                        V_after_all = V_after;
+
                         // EdgeCollapse operation
                         if (operation_name == "EdgeCollapse") {
                             // check if there is a edge connected from interior to a boundary
@@ -630,12 +623,8 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                 auto V_before_param = utils::embed_mesh_lift(T_before, V_before);
 
                                 if (V_before_param.rows() == 0) {
-                                    operation_log["success"] = false;
-
-                                    // utils::visualize_tet_mesh(V_before, T_before);
-                                    // TODO: try to fix the embedding later
-                                    // scope.mark_failed();
-                                    // return {};
+                                    scope.mark_failed();
+                                    return {};
                                 } else {
                                     Eigen::MatrixXd V_after_param(V_after.rows(), V_after.cols());
                                     int element_in_before_not_after = -1;
@@ -704,12 +693,12 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                         operation_log["T_id_map_before"] = id_map_before;
                         operation_log["V_id_map_before"] = v_id_map_before;
 
-                        operation_log["T_before_all"]["rows"] = T_before_all.rows();
-                        operation_log["T_before_all"]["values"] = matrix_to_json(T_before_all);
-                        operation_log["V_before_all"]["rows"] = V_before_all.rows();
-                        operation_log["V_before_all"]["values"] = matrix_to_json(V_before_all);
-                        operation_log["T_after_all"]["rows"] = T_after_all.rows();
-                        operation_log["T_after_all"]["values"] = matrix_to_json(T_after_all);
+                        // operation_log["T_before_all"]["rows"] = T_before_all.rows();
+                        // operation_log["T_before_all"]["values"] = matrix_to_json(T_before_all);
+                        // operation_log["V_before_all"]["rows"] = V_before_all.rows();
+                        // operation_log["V_before_all"]["values"] = matrix_to_json(V_before_all);
+                        // operation_log["T_after_all"]["rows"] = T_after_all.rows();
+                        // operation_log["T_after_all"]["values"] = matrix_to_json(T_after_all);
                     }
 
                     // TODO: get a larger json file to do this:

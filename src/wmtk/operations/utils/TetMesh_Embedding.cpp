@@ -1111,6 +1111,11 @@ Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, Eigen::MatrixXd& V, in
 
     std::cout << "Total failure count: " << failure_count << std::endl;
     std::cout << "Total count: " << total_count << std::endl;
+    if (edge_split_count > 0) {
+        // TODO: delete this
+        return Eigen::MatrixXd();
+    }
+
     if (is_tutte_embedding_failed || is_lift_failed) {
         // TODO: try to fix the embedding later
         return Eigen::MatrixXd();

@@ -20,12 +20,40 @@ int Rational::get_sign() const
 }
 
 Rational::Rational(bool rounded)
-    : Rational(0.0, rounded)
-{}
+    : m_is_rounded(rounded)
+{
+    if (m_is_rounded) {
+        d_value = 0.0;
+    } else {
+        mpq_init(value);
+        mpq_set_d(value, 0.0);
+        d_value = std::numeric_limits<double>::lowest();
+    }
+}
 
 Rational::Rational(int v, bool rounded)
-    : Rational((double)v, rounded)
-{}
+    : m_is_rounded(rounded)
+{
+    if (m_is_rounded) {
+        d_value = (double)v;
+    } else {
+        mpq_init(value);
+        mpq_set_d(value, (double)v);
+        d_value = std::numeric_limits<double>::lowest();
+    }
+}
+
+Rational::Rational(long v, bool rounded)
+    : m_is_rounded(rounded)
+{
+    if (m_is_rounded) {
+        d_value = (double)v;
+    } else {
+        mpq_init(value);
+        mpq_set_d(value, (double)v);
+        d_value = std::numeric_limits<double>::lowest();
+    }
+}
 
 Rational::Rational(double d, bool rounded)
     : m_is_rounded(rounded)
@@ -35,9 +63,7 @@ Rational::Rational(double d, bool rounded)
     } else {
         mpq_init(value);
         mpq_set_d(value, d);
-
         d_value = std::numeric_limits<double>::lowest();
-        // canonicalize();
     }
 }
 
@@ -368,57 +394,14 @@ std::string Rational::serialize() const
     return numerator() + "/" + denominator() + "/" + (m_is_rounded ? "1" : "0");
 }
 
-Rational::Rational(const Eigen::VectorX<char>& data)
+Rational::Rational(const Eigen::Matrix<char, Eigen::Dynamic, 1>& data, bool rounded)
+    : m_is_rounded(rounded)
 {
-    std::stringstream numss;
-    std::stringstream denomss;
-    int counter = 0;
-    for (int64_t i = 0; i < data.size(); ++i) {
-        if (data[i] == '/') {
-            ++counter;
-            continue;
-        }
-
-        if (counter == 0)
-            numss << data[i];
-        else if (counter == 1)
-            denomss << data[i];
-        else {
-            assert(data[i] == '0' || data[i] == '1');
-            m_is_rounded = data[i] == '1';
-            break;
-        }
-    }
-
-    const auto num = numss.str();
-    const auto denom = denomss.str();
-
-    // const auto num = tokens[0];
-    // const auto denom = tokens[1];
-
-    // std::regex regex{R"([/]+)"}; // split on /
-    // std::sregex_token_iterator it{data.begin(), data.end(), regex, -1};
-    // std::vector<std::string> tokens{it, {}};
-    // assert(tokens.size() >= 3);
-
-    // const auto num = tokens[0];
-    // const auto denom = tokens[1];
-    // assert(tokens[2][0] == '0' || tokens[2][0] == '1');
-    // m_is_rounded = tokens[2][0] == '1';
-
     if (m_is_rounded) {
-        mpq_t tmp_r;
-        mpq_init(tmp_r);
-        std::string tmp = num + "/" + denom;
-        mpq_set_str(tmp_r, tmp.c_str(), 10);
-
-        d_value = mpq_get_d(tmp_r);
-        mpq_clear(tmp_r);
-
+        d_value = 0.0;
     } else {
         mpq_init(value);
-        std::string tmp = num + "/" + denom;
-        mpq_set_str(value, tmp.c_str(), 10);
+        mpq_set_d(value, 0.0);
         d_value = std::numeric_limits<double>::lowest();
     }
 }
@@ -465,6 +448,140 @@ std::string Rational::denominator() const
     mpq_clear(tmp);
 
     return v;
+}
+
+// Compound assignment operators
+Rational& Rational::operator+=(const Rational& x)
+{
+    if (m_is_rounded && x.m_is_rounded) {
+        d_value += x.d_value;
+        return *this;
+    }
+
+    if (m_is_rounded) {
+        mpq_t tmp;
+        mpq_init(tmp);
+        mpq_set_d(tmp, d_value);
+        mpq_add(tmp, tmp, x.value);
+        d_value = mpq_get_d(tmp);
+        mpq_clear(tmp);
+        return *this;
+    }
+
+    if (x.m_is_rounded) {
+        mpq_t tmp;
+        mpq_init(tmp);
+        mpq_set_d(tmp, x.d_value);
+        mpq_add(value, value, tmp);
+        mpq_clear(tmp);
+        return *this;
+    }
+
+    mpq_add(value, value, x.value);
+    return *this;
+}
+
+Rational& Rational::operator-=(const Rational& x)
+{
+    if (m_is_rounded && x.m_is_rounded) {
+        d_value -= x.d_value;
+        return *this;
+    }
+
+    if (m_is_rounded) {
+        mpq_t tmp;
+        mpq_init(tmp);
+        mpq_set_d(tmp, d_value);
+        mpq_sub(tmp, tmp, x.value);
+        d_value = mpq_get_d(tmp);
+        mpq_clear(tmp);
+        return *this;
+    }
+
+    if (x.m_is_rounded) {
+        mpq_t tmp;
+        mpq_init(tmp);
+        mpq_set_d(tmp, x.d_value);
+        mpq_sub(value, value, tmp);
+        mpq_clear(tmp);
+        return *this;
+    }
+
+    mpq_sub(value, value, x.value);
+    return *this;
+}
+
+Rational& Rational::operator*=(const Rational& x)
+{
+    if (m_is_rounded && x.m_is_rounded) {
+        d_value *= x.d_value;
+        return *this;
+    }
+
+    if (m_is_rounded) {
+        mpq_t tmp;
+        mpq_init(tmp);
+        mpq_set_d(tmp, d_value);
+        mpq_mul(tmp, tmp, x.value);
+        d_value = mpq_get_d(tmp);
+        mpq_clear(tmp);
+        return *this;
+    }
+
+    if (x.m_is_rounded) {
+        mpq_t tmp;
+        mpq_init(tmp);
+        mpq_set_d(tmp, x.d_value);
+        mpq_mul(value, value, tmp);
+        mpq_clear(tmp);
+        return *this;
+    }
+
+    mpq_mul(value, value, x.value);
+    return *this;
+}
+
+Rational& Rational::operator/=(const Rational& x)
+{
+    if (m_is_rounded && x.m_is_rounded) {
+        d_value /= x.d_value;
+        return *this;
+    }
+
+    if (m_is_rounded) {
+        mpq_t tmp;
+        mpq_init(tmp);
+        mpq_set_d(tmp, d_value);
+        mpq_div(tmp, tmp, x.value);
+        d_value = mpq_get_d(tmp);
+        mpq_clear(tmp);
+        return *this;
+    }
+
+    if (x.m_is_rounded) {
+        mpq_t tmp;
+        mpq_init(tmp);
+        mpq_set_d(tmp, x.d_value);
+        mpq_div(value, value, tmp);
+        mpq_clear(tmp);
+        return *this;
+    }
+
+    mpq_div(value, value, x.value);
+    return *this;
+}
+
+// Square root function
+Rational sqrt(const Rational& x)
+{
+    if (x.m_is_rounded) {
+        return Rational(std::sqrt(x.d_value), true);
+    }
+
+    // For exact arithmetic, we need to compute the square root
+    // This is an approximation since exact square root of rationals may not be rational
+    double approx = std::sqrt(x.to_double());
+    return Rational(approx, true);
 }
 
 } // namespace wmtk

@@ -36,7 +36,7 @@ void handle_consolidate_tet(
     std::vector<query_point_tet>& query_points,
     bool forward = false);
 
-void handle_consolidat_tet(
+void handle_consolidate_tet_curve(
     const std::vector<int64_t>& tet_ids_maps,
     const std::vector<int64_t>& vertex_ids_maps,
     query_curve_tet& curve,
@@ -84,6 +84,17 @@ void handle_local_mapping_tet(
     const std::vector<int64_t>& id_map_after,
     const std::vector<int64_t>& v_id_map_after,
     std::vector<query_point_tet>& query_points);
+
+void handle_local_mapping_tet_curve(
+    const Eigen::MatrixXd& V_before,
+    const Eigen::MatrixXi& T_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixXd& V_after,
+    const Eigen::MatrixXi& T_after,
+    const std::vector<int64_t>& id_map_after,
+    const std::vector<int64_t>& v_id_map_after,
+    query_curve_tet& curve);
 
 void parse_consolidate_file_tet(
     const json& operation_log,

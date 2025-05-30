@@ -1,11 +1,10 @@
 #pragma once
 
-#include <Eigen/Core>
-
 #include <gmp.h>
+#include <gmpxx.h>
+#include <Eigen/Dense>
 #include <iostream>
 #include <string>
-
 
 namespace wmtk {
 
@@ -14,15 +13,25 @@ class Rational
 public:
     Rational(bool rounded = false);
     Rational(int v, bool rounded = false);
+    Rational(long v, bool rounded = false);
     Rational(double d, bool rounded = false);
+    Rational(const Eigen::Matrix<char, Eigen::Dynamic, 1>& data, bool rounded = false);
     Rational(const mpq_t& v_);
     Rational(const Rational& other);
     Rational(const Rational& other, bool rounded);
-    Rational(const Eigen::VectorX<char>& data);
     Rational(const std::string& data, bool rounded = false);
 
     Rational& operator=(const Rational& x);
     Rational& operator=(const double x);
+
+    // Compound assignment operators required by Eigen
+    Rational& operator+=(const Rational& x);
+    Rational& operator-=(const Rational& x);
+    Rational& operator*=(const Rational& x);
+    Rational& operator/=(const Rational& x);
+
+    // Square root function required by Eigen
+    friend Rational sqrt(const Rational& x);
 
     template <typename T>
     void init(const T& v)
@@ -85,7 +94,6 @@ public:
 
     inline bool is_rounded() const { return m_is_rounded; }
 
-
 private:
     mpq_t value;
     double d_value;
@@ -96,6 +104,5 @@ private:
     std::string numerator() const;
     std::string denominator() const;
 };
-
 
 } // namespace wmtk
