@@ -240,11 +240,11 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
     {
         EdgeSplit op(m);
 
-        op.set_new_attribute_strategy(
-            edge_tag_handle,
-            SplitBasicStrategy::Copy,
-            SplitRibBasicStrategy::None);
-        op.set_new_attribute_strategy(pos_handle);
+        // op.set_new_attribute_strategy(
+        //     edge_tag_handle,
+        //     SplitBasicStrategy::Copy,
+        //     SplitRibBasicStrategy::None);
+        // op.set_new_attribute_strategy(pos_handle);
 
         const Tuple t = m.edge_tuple_with_vs_and_t(0, 1, 0);
         {
@@ -275,17 +275,17 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
         m.register_attribute<int64_t>(std::string("todo_tag"), PE, 1);
 
     EdgeSplit op(m);
-    op.set_new_attribute_strategy(pos_handle);
-    op.set_new_attribute_strategy(vertex_tag_handle);
-    op.set_new_attribute_strategy(
-        edge_tag_handle,
-        SplitBasicStrategy::Copy,
-        SplitRibBasicStrategy::None);
+    // op.set_new_attribute_strategy(pos_handle);
+    // op.set_new_attribute_strategy(vertex_tag_handle);
+    // op.set_new_attribute_strategy(
+    //     edge_tag_handle,
+    //     SplitBasicStrategy::Copy,
+    //     SplitRibBasicStrategy::None);
 
-    op.set_new_attribute_strategy(
-        todo_handle,
-        SplitBasicStrategy::None,
-        SplitRibBasicStrategy::None);
+    // op.set_new_attribute_strategy(
+    //     todo_handle,
+    //     SplitBasicStrategy::None,
+    //     SplitRibBasicStrategy::None);
 
 
     op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle.as<int64_t>()));

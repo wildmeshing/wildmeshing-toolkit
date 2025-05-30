@@ -9,7 +9,6 @@
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
-#include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/simplex/closed_star.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -236,9 +235,9 @@ TEST_CASE("split_with_attributes", "[performance][.]")
     // split
     auto op_split = std::make_shared<EdgeSplit>(m);
 
-    for (const auto& attr : pass_through_attributes) {
-        op_split->set_new_attribute_strategy(attr);
-    }
+    // for (const auto& attr : pass_through_attributes) {
+    //     op_split->set_new_attribute_strategy(attr);
+    // }
 
 
     {
@@ -277,7 +276,7 @@ TEST_CASE("collapse_performance", "[performance][.]")
     // collapse
     auto op_collapse = std::make_shared<EdgeCollapse>(m);
     op_collapse->add_invariant(invariant_link_condition);
-    op_collapse->set_new_attribute_strategy(pos_handle);
+    // op_collapse->set_new_attribute_strategy(pos_handle);
 
     {
         logger().set_level(spdlog::level::off);

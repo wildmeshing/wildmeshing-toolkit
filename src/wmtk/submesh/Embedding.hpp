@@ -8,9 +8,9 @@
 #include <wmtk/MeshBase.hpp>
 #include <wmtk/PrimitiveType.hpp>
 #include <wmtk/attribute/TypedAttributeHandle.hpp>
-#include <wmtk/operations/attribute_new/CollapseNewAttributeStrategy.hpp>
-#include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
-#include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
+//#include <wmtk/operations/attribute_new/CollapseNewAttributeStrategy.hpp>
+//#include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
+//#include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 
 namespace wmtk::operations {
 class EdgeSplit;
@@ -79,12 +79,13 @@ private:
 
     std::vector<std::shared_ptr<SubMesh>> m_submeshes;
 
-    std::map<PrimitiveType, std::shared_ptr<operations::SplitNewAttributeStrategy<int64_t>>>
-        m_split_new;
-    std::map<PrimitiveType, std::shared_ptr<operations::CollapseNewAttributeStrategy<int64_t>>>
-        m_collapse_new;
-
-    std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<int64_t, int64_t>> m_transfer;
+    // std::map<PrimitiveType, std::shared_ptr<operations::SplitNewAttributeStrategy<int64_t>>>
+    //     m_split_new;
+    // std::map<PrimitiveType, std::shared_ptr<operations::CollapseNewAttributeStrategy<int64_t>>>
+    //     m_collapse_new;
+    //
+    // std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<int64_t, int64_t>>
+    // m_transfer;
 
     std::function<bool(const simplex::Simplex&)> m_substructure_predicate;
 };

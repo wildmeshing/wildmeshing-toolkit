@@ -8,9 +8,7 @@ set(TEST_SOURCES
     swap_2d.cpp
     split_1d.cpp
     collapse_1d.cpp
-    test_attribute_transfer.cpp
     vertex_optimization.cpp
-    edge_operation_data.cpp
     test_projection_operation.cpp
 )
 target_sources(wmtk_tests PRIVATE ${TEST_SOURCES})

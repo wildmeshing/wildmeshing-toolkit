@@ -1,8 +1,5 @@
 #pragma once
 
-#include "attribute_new/NewAttributeStrategy.hpp"
-#include "attribute_update/AttributeTransferStrategyBase.hpp"
-
 #include <wmtk/Tuple.hpp>
 #include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
@@ -13,19 +10,9 @@ class Mesh;
 
 namespace operations {
 
-
-// namespace utils {
-// class MultiMeshEdgeSplitFunctor;
-// class MultiMeshEdgeCollapseFunctor;
-
-// } // namespace utils
-
 class Operation
 {
 public:
-    // friend class utils::MultiMeshEdgeSplitFunctor;
-    // friend class utils::MultiMeshEdgeCollapseFunctor;
-
     Operation(Mesh& mesh);
     virtual ~Operation();
 
@@ -52,19 +39,6 @@ public:
         m_priority = func;
     }
 
-    std::shared_ptr<const operations::AttributeTransferStrategyBase> get_transfer_strategy(
-        const attribute::MeshAttributeHandle& attribute);
-
-
-    void add_transfer_strategy(
-        const std::shared_ptr<const operations::AttributeTransferStrategyBase>& other);
-
-    void set_transfer_strategy(
-        const attribute::MeshAttributeHandle& attribute,
-        const std::shared_ptr<const operations::AttributeTransferStrategyBase>& other);
-
-    void clear_attribute_transfer_strategies();
-
     virtual void reserve_enough_simplices();
 
 protected:
@@ -86,10 +60,6 @@ protected:
         const std::vector<simplex::Simplex>& unmods,
         const std::vector<simplex::Simplex>& mods) const;
 
-
-    void apply_attribute_transfer(const std::vector<simplex::Simplex>& direct_mods);
-
-
 private:
     Mesh& m_mesh;
     bool m_use_random_priority = false;
@@ -99,9 +69,6 @@ protected:
     std::function<double(const simplex::Simplex&)> m_priority = nullptr;
 
     invariants::InvariantCollection m_invariants;
-
-    std::vector<std::shared_ptr<const operations::AttributeTransferStrategyBase>>
-        m_attr_transfer_strategies;
 };
 
 } // namespace operations

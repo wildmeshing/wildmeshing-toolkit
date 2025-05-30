@@ -6,7 +6,6 @@
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/io/MshReader.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
-#include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/utils/Rational.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
@@ -114,39 +113,6 @@ TEST_CASE("hdf5_3d", "[io]")
     CHECK_NOTHROW(mesh.serialize(writer));
 }
 
-TEST_CASE("hdf5_multimesh", "[io]")
-{
-    DEBUG_TriMesh parent = two_neighbors();
-    std::shared_ptr<DEBUG_TriMesh> child0_ptr = std::make_shared<DEBUG_TriMesh>(single_triangle());
-    std::shared_ptr<DEBUG_TriMesh> child1_ptr = std::make_shared<DEBUG_TriMesh>(one_ear());
-    std::shared_ptr<DEBUG_TriMesh> child2_ptr =
-        std::make_shared<DEBUG_TriMesh>(two_neighbors_cut_on_edge01());
-    std::shared_ptr<DEBUG_TriMesh> child00_ptr = std::make_shared<DEBUG_TriMesh>(single_triangle());
-
-    auto& child0 = *child0_ptr;
-    auto& child1 = *child1_ptr;
-    auto& child2 = *child2_ptr;
-    auto& child00 = *child00_ptr;
-
-    auto child0_map = multimesh::same_simplex_dimension_surjection(parent, child0, {0});
-    auto child1_map = multimesh::same_simplex_dimension_surjection(parent, child1, {0, 1});
-    auto child2_map = multimesh::same_simplex_dimension_surjection(parent, child2, {0, 1, 2});
-    auto child00_map = multimesh::same_simplex_dimension_surjection(child0, child00, {0});
-
-    parent.register_child_mesh(child0_ptr, child0_map);
-    parent.register_child_mesh(child1_ptr, child1_map);
-    parent.register_child_mesh(child2_ptr, child2_map);
-
-    child0.register_child_mesh(child00_ptr, child00_map);
-
-    HDF5Writer writer("hdf5_multimesh.hdf5");
-    parent.serialize(writer);
-
-    auto mesh = read_mesh("hdf5_multimesh.hdf5");
-
-    CHECK(*mesh == parent);
-}
-
 TEST_CASE("paraview_3d", "[io]")
 {
     Eigen::Matrix<int64_t, 2, 4> T;
@@ -222,11 +188,11 @@ TEST_CASE("msh_3d_convert_tetwild_to_wmtk", "[io][.]")
         mesh->clear_attributes({tag_handle, pos_handle});
     }
 
-    io::Cache cache("wmtk_cache", ".");
-    cache.write_mesh(*mesh, mesh_name);
-    cache.export_cache(mesh_name + "_converted_from_tetwild");
+    // io::Cache cache("wmtk_cache", ".");
+    // cache.write_mesh(*mesh, mesh_name);
+    // cache.export_cache(mesh_name + "_converted_from_tetwild");
 
-    if (true) {
+    if (false) {
         ParaviewWriter writer(mesh_name, "vertices", *mesh, true, true, true, true);
         mesh->serialize(writer);
     }
@@ -273,13 +239,13 @@ TEST_CASE("attribute_after_split", "[io][.]")
 
             operations::EdgeSplit op(m);
 
-            {
-                // set the strategies
-                op.set_new_attribute_strategy(
-                    wmtk::attribute::MeshAttributeHandle(m, attribute_handle),
-                    wmtk::operations::SplitBasicStrategy::Copy,
-                    wmtk::operations::SplitRibBasicStrategy::CopyTuple);
-            }
+            //{
+            //    // set the strategies
+            //    op.set_new_attribute_strategy(
+            //        wmtk::attribute::MeshAttributeHandle(m, attribute_handle),
+            //        wmtk::operations::SplitBasicStrategy::Copy,
+            //        wmtk::operations::SplitRibBasicStrategy::CopyTuple);
+            //}
 
             auto tmp = op(Simplex::edge(m, edge));
             REQUIRE(!tmp.empty());

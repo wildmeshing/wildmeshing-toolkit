@@ -57,7 +57,8 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         CHECK(m.id(ret, PV) == 4);
         CHECK(m.id(m.switch_vertex(ret), PV) == 0);
 
-        auto& fv_accessor = m.create_const_base_accessor<int64_t>(m.f_handle(PrimitiveType::Vertex));
+        auto& fv_accessor =
+            m.create_const_base_accessor<int64_t>(m.f_handle(PrimitiveType::Vertex));
         auto f5_fv = fv_accessor.vector_attribute(5);
         CHECK(f5_fv[0] == 1);
         CHECK(f5_fv[1] == 4);
@@ -84,7 +85,8 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         CHECK(m.id(ret, PV) == 0);
         CHECK(m.id(m.switch_vertex(ret), PV) == 4);
 
-        auto& fv_accessor = m.create_const_base_accessor<int64_t>(m.f_handle(PrimitiveType::Vertex));
+        auto& fv_accessor =
+            m.create_const_base_accessor<int64_t>(m.f_handle(PrimitiveType::Vertex));
         auto f5_fv = fv_accessor.vector_attribute(5);
         auto f6_fv = fv_accessor.vector_attribute(6);
         CHECK(f5_fv[0] == 0);
@@ -198,30 +200,30 @@ TEST_CASE("split_face", "[operations][split][2D]")
 
         composite::TriFaceSplit op(m);
 
-        {
-            auto new_split =
-                std::make_shared<wmtk::operations::SplitNewAttributeStrategy<double>>(pos_handle);
-            new_split->set_strategy(operations::SplitBasicStrategy::Default);
-            new_split->set_rib_strategy(operations::SplitRibBasicStrategy::Default);
-            op.split().set_new_attribute_strategy(pos_handle, new_split);
-        }
+        // {
+        //     auto new_split =
+        //         std::make_shared<wmtk::operations::SplitNewAttributeStrategy<double>>(pos_handle);
+        //     new_split->set_strategy(operations::SplitBasicStrategy::Default);
+        //     new_split->set_rib_strategy(operations::SplitRibBasicStrategy::Default);
+        //     op.split().set_new_attribute_strategy(pos_handle, new_split);
+        // }
 
-        {
-            // or if you want to swap out the existing behavior with a new behavior
-            auto new_split =
-                std::make_shared<wmtk::operations::SplitNewAttributeStrategy<double>>(pos_handle);
-            new_split->set_strategy(operations::SplitBasicStrategy::Default);
-            new_split->set_rib_strategy(operations::SplitRibBasicStrategy::Default);
-            op.split().set_new_attribute_strategy(v2_handle, new_split);
-        }
+        // {
+        //     // or if you want to swap out the existing behavior with a new behavior
+        //     auto new_split =
+        //         std::make_shared<wmtk::operations::SplitNewAttributeStrategy<double>>(pos_handle);
+        //     new_split->set_strategy(operations::SplitBasicStrategy::Default);
+        //     new_split->set_rib_strategy(operations::SplitRibBasicStrategy::Default);
+        //     op.split().set_new_attribute_strategy(v2_handle, new_split);
+        // }
 
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
-        op.split().set_new_attribute_strategy(
-            attri_handle,
-            wmtk::operations::SplitBasicStrategy::Copy);
-        op.collapse().set_new_attribute_strategy(attri_handle);
-        op.collapse().set_new_attribute_strategy(pos_handle);
-        op.collapse().set_new_attribute_strategy(v2_handle);
+        // op.split().set_new_attribute_strategy(
+        //     attri_handle,
+        //     wmtk::operations::SplitBasicStrategy::Copy);
+        // op.collapse().set_new_attribute_strategy(attri_handle);
+        // op.collapse().set_new_attribute_strategy(pos_handle);
+        // op.collapse().set_new_attribute_strategy(v2_handle);
 
 
         const Tuple f0 = m.face_tuple_from_vids(3, 4, 0);
@@ -268,10 +270,10 @@ TEST_CASE("split_face", "[operations][split][2D]")
 
         composite::TriFaceSplit op(m);
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
-        op.split().set_new_attribute_strategy(pos_handle);
-        op.collapse().set_new_attribute_strategy(
-            pos_handle,
-            operations::CollapseBasicStrategy::CopyOther);
+        // op.split().set_new_attribute_strategy(pos_handle);
+        // op.collapse().set_new_attribute_strategy(
+        //     pos_handle,
+        //     operations::CollapseBasicStrategy::CopyOther);
 
         auto res = op(Simplex::face(m, f));
         bool is_success = !res.empty();
@@ -311,11 +313,11 @@ TEST_CASE("split_face", "[operations][split][2D]")
         composite::TriFaceSplit op(m);
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle.as<int64_t>()));
-        op.split().set_new_attribute_strategy(
-            todo_handle,
-            SplitBasicStrategy::None,
-            SplitRibBasicStrategy::None);
-        op.collapse().set_new_attribute_strategy(todo_handle, CollapseBasicStrategy::None);
+        // op.split().set_new_attribute_strategy(
+        //     todo_handle,
+        //     SplitBasicStrategy::None,
+        //     SplitRibBasicStrategy::None);
+        // op.collapse().set_new_attribute_strategy(todo_handle, CollapseBasicStrategy::None);
 
         CHECK(!op(Simplex::face(m, f)).empty());
 
@@ -354,25 +356,25 @@ TEST_CASE("split_face", "[operations][split][2D]")
         composite::TriFaceSplit op(m);
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
 
-        op.split().set_new_attribute_strategy(
-            todo_handle,
-            SplitBasicStrategy::None,
-            SplitRibBasicStrategy::None);
-        op.collapse().set_new_attribute_strategy(todo_handle, CollapseBasicStrategy::None);
+        // op.split().set_new_attribute_strategy(
+        //     todo_handle,
+        //     SplitBasicStrategy::None,
+        //     SplitRibBasicStrategy::None);
+        // op.collapse().set_new_attribute_strategy(todo_handle, CollapseBasicStrategy::None);
 
-        op.split().set_new_attribute_strategy(
-            edge_tag_handle,
-            SplitBasicStrategy::Copy,
-            SplitRibBasicStrategy::None);
-        op.collapse().set_new_attribute_strategy(edge_tag_handle, CollapseBasicStrategy::None);
+        // op.split().set_new_attribute_strategy(
+        //     edge_tag_handle,
+        //     SplitBasicStrategy::Copy,
+        //     SplitRibBasicStrategy::None);
+        // op.collapse().set_new_attribute_strategy(edge_tag_handle, CollapseBasicStrategy::None);
 
-        op.split().set_new_attribute_strategy(
-            vertex_tag_handle,
-            SplitBasicStrategy::None,
-            SplitRibBasicStrategy::None);
-        op.collapse().set_new_attribute_strategy(
-            vertex_tag_handle,
-            wmtk::operations::CollapseBasicStrategy::None);
+        // op.split().set_new_attribute_strategy(
+        //     vertex_tag_handle,
+        //     SplitBasicStrategy::None,
+        //     SplitRibBasicStrategy::None);
+        // op.collapse().set_new_attribute_strategy(
+        //     vertex_tag_handle,
+        //     wmtk::operations::CollapseBasicStrategy::None);
 
 
         op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle.as<int64_t>()));
@@ -421,10 +423,10 @@ TEST_CASE("split_face", "[operations][split][2D]")
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle.as<int64_t>()));
 
-        op.split().set_new_attribute_strategy(
-            todo_handle,
-            SplitBasicStrategy::None,
-            SplitRibBasicStrategy::None);
+        // op.split().set_new_attribute_strategy(
+        //     todo_handle,
+        //     SplitBasicStrategy::None,
+        //     SplitRibBasicStrategy::None);
 
         CHECK(op(Simplex::face(m, f)).empty());
     }

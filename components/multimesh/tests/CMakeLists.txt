@@ -6,4 +6,6 @@ add_component_test(wmtk::${COMPONENT_NAME}
     utils.cpp
 )
 
-target_link_libraries(${WMTK_COMPONENT_TEST_TARGET} PRIVATE wmtk::input)
+if(WMTK_ENABLE_COMPONENT_TESTS)
+    target_link_libraries(${WMTK_COMPONENT_TEST_TARGET} PRIVATE wmtk::input)
+endif()

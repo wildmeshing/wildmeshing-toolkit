@@ -1,8 +1,8 @@
 #include <numeric>
 #include "Mesh.hpp"
 
-#include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/tuple_map_attribute_io.hpp>
 
 #include "Primitive.hpp"
 
@@ -173,7 +173,6 @@ void Mesh::clear_attributes(
     auto a = this->custom_attributes();
     auto b = keep_attributes;
     m_attribute_manager.clear_attributes(variant_diff(a, b));
-    update_child_handles();
 }
 void Mesh::clear_attributes(const std::vector<attribute::MeshAttributeHandle>& keep_attributes)
 {
@@ -196,14 +195,15 @@ void Mesh::delete_attribute(const attribute::MeshAttributeHandle::HandleVariant&
 {
     m_attribute_manager.delete_attribute(to_delete);
 }
-multimesh::attribute::AttributeScopeHandle Mesh::create_scope()
+attribute::AttributeScopeHandle Mesh::create_scope()
 {
-    return multimesh::attribute::AttributeScopeHandle(*this);
+    return m_attribute_manager.create_scope(*this);
 }
 
 attribute::AttributeScopeHandle Mesh::create_single_mesh_scope()
 {
-    return m_attribute_manager.create_scope(*this);
+    // TODOfix: remove this and replace by create_scope();
+    return create_scope();
 }
 
 std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>> Mesh::consolidate()
@@ -266,14 +266,14 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
     }
 
     {
-        constexpr static int64_t TUPLE_SIZE = multimesh::utils::TUPLE_SIZE; // in terms of int64_t
-        constexpr static int64_t GLOBAL_ID_INDEX = multimesh::utils::GLOBAL_ID_INDEX;
+        constexpr static int64_t TUPLE_SIZE = utils::TUPLE_SIZE; // in terms of int64_t
+        constexpr static int64_t GLOBAL_ID_INDEX = utils::GLOBAL_ID_INDEX;
         const static std::vector<Eigen::Index> image_map_offsets{
             Eigen::Index(TUPLE_SIZE + GLOBAL_ID_INDEX)};
         const static std::vector<Eigen::Index> domain_map_offsets{Eigen::Index(GLOBAL_ID_INDEX)};
         size_t dim = get_primitive_type_id(top_simplex_type());
         const auto& top_map = old2new[dim];
-        if (auto parent_ptr = m_multi_mesh_manager.m_parent; parent_ptr != nullptr) {
+        /*if (auto parent_ptr = m_multi_mesh_manager.m_parent; parent_ptr != nullptr) {
             {
                 int64_t child_id = m_multi_mesh_manager.m_child_id;
                 const auto& child_data = parent_ptr->m_multi_mesh_manager.m_children[child_id];
@@ -289,9 +289,9 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
                 auto& attr = acc.attribute();
                 attr.index_remap(top_map, domain_map_offsets);
             }
-        }
+        }*/
 
-        for (const auto& child_data : m_multi_mesh_manager.m_children) {
+        /*for (const auto& child_data : m_multi_mesh_manager.m_children) {
             {
                 const auto handle = child_data.map_handle;
                 auto acc = create_accessor(handle);
@@ -304,7 +304,7 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
                 auto& attr = acc.attribute();
                 attr.index_remap(top_map, image_map_offsets);
             }
-        }
+        }*/
     }
 
     // Return both maps for custom attribute remapping
@@ -319,8 +319,8 @@ std::vector<attribute::MeshAttributeHandle::HandleVariant> Mesh::builtin_attribu
 
     std::copy(m_flag_handles.begin(), m_flag_handles.end(), std::back_inserter(data));
 
-    auto mm_handles = m_multi_mesh_manager.map_handles();
-    std::copy(mm_handles.begin(), mm_handles.end(), std::back_inserter(data));
+    // auto mm_handles = m_multi_mesh_manager.map_handles();
+    // std::copy(mm_handles.begin(), mm_handles.end(), std::back_inserter(data));
     return data;
 }
 

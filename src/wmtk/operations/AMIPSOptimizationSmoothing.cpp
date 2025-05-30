@@ -377,17 +377,8 @@ std::vector<simplex::Simplex> AMIPSOptimizationSmoothing::execute(const simplex:
 
             // Hack for surface only
 
-            auto child_meshes = mesh().get_child_meshes();
-
 
             double alpha = 1.00;
-            // for (auto child_mesh : child_meshes) {
-            //     if (!mesh().map_to_child(*child_mesh, simplex).empty()) {
-            //         alpha = 0.01;
-            //         break;
-            //     }
-            // }
-
 
             for (int64_t d = 0; d < m_coordinate_handle.dimension(); ++d) {
                 // accessor.vector_attribute(simplex.tuple())[d] = Rational(x[d], true);
@@ -495,17 +486,7 @@ std::vector<simplex::Simplex> AMIPSOptimizationSmoothing::execute(const simplex:
 
             // Hack for surface only
 
-            auto child_meshes = mesh().get_child_meshes();
-
-
             double alpha = 1.00;
-            // for (auto child_mesh : child_meshes) {
-            //     if (!mesh().map_to_child(*child_mesh, simplex).empty()) {
-            //         alpha = 0.01;
-            //         break;
-            //     }
-            // }
-
 
             for (int64_t d = 0; d < m_coordinate_handle.dimension(); ++d) {
                 // accessor.vector_attribute(simplex.tuple())[d] = Rational(x[d], true);

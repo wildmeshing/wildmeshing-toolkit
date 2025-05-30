@@ -3,7 +3,6 @@
 #include <set>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/TetMesh.hpp>
-#include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
 #include <wmtk/utils/mesh_utils.hpp>

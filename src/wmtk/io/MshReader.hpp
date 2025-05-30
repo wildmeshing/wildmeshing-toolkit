@@ -3,6 +3,7 @@
 #include <Eigen/Core>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/utils/mesh_type_from_primitive_type.hpp>

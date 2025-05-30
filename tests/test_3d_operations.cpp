@@ -25,13 +25,12 @@ using namespace wmtk::tests_3d;
 
 using TM = TetMesh;
 using MapResult = typename Eigen::Matrix<int64_t, Eigen::Dynamic, 1>::MapType;
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
 using TMOE = decltype(std::declval<DEBUG_TetMesh>().get_tmoe(
     wmtk::Tuple(),
     std::declval<attribute::Accessor<int64_t>&>()));
 #else
-using TMOE = decltype(std::declval<DEBUG_TetMesh>().get_tmoe(
-    wmtk::Tuple()));
+using TMOE = decltype(std::declval<DEBUG_TetMesh>().get_tmoe(wmtk::Tuple()));
 #endif
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
@@ -678,14 +677,14 @@ TEST_CASE("tet_split_with_tags", "[operations][split][3d]")
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
 
         auto pos_handle = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-        op.collapse().set_new_attribute_strategy(todo_tag_handle);
-        op.collapse().set_new_attribute_strategy(edge_tag_handle);
-        op.collapse().set_new_attribute_strategy(vertex_tag_handle);
-        op.collapse().set_new_attribute_strategy(pos_handle);
-        op.split().set_new_attribute_strategy(todo_tag_handle);
-        op.split().set_new_attribute_strategy(edge_tag_handle);
-        op.split().set_new_attribute_strategy(vertex_tag_handle);
-        op.split().set_new_attribute_strategy(pos_handle);
+        // op.collapse().set_new_attribute_strategy(todo_tag_handle);
+        // op.collapse().set_new_attribute_strategy(edge_tag_handle);
+        // op.collapse().set_new_attribute_strategy(vertex_tag_handle);
+        // op.collapse().set_new_attribute_strategy(pos_handle);
+        // op.split().set_new_attribute_strategy(todo_tag_handle);
+        // op.split().set_new_attribute_strategy(edge_tag_handle);
+        // op.split().set_new_attribute_strategy(vertex_tag_handle);
+        // op.split().set_new_attribute_strategy(pos_handle);
 
         auto res = op(Simplex::tetrahedron(m, m.edge_tuple_with_vs_and_t(1, 2, 0)));
 
@@ -752,14 +751,14 @@ TEST_CASE("tet_split_with_tags", "[operations][split][3d]")
 
         // used the default strategy, so the tag is not updated.
         auto pos_handle = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-        op.collapse().set_new_attribute_strategy(todo_tag_handle);
-        op.collapse().set_new_attribute_strategy(edge_tag_handle);
-        op.collapse().set_new_attribute_strategy(vertex_tag_handle);
-        op.collapse().set_new_attribute_strategy(pos_handle);
-        op.split().set_new_attribute_strategy(todo_tag_handle);
-        op.split().set_new_attribute_strategy(edge_tag_handle);
-        op.split().set_new_attribute_strategy(vertex_tag_handle);
-        op.split().set_new_attribute_strategy(pos_handle);
+        // op.collapse().set_new_attribute_strategy(todo_tag_handle);
+        // op.collapse().set_new_attribute_strategy(edge_tag_handle);
+        // op.collapse().set_new_attribute_strategy(vertex_tag_handle);
+        // op.collapse().set_new_attribute_strategy(pos_handle);
+        // op.split().set_new_attribute_strategy(todo_tag_handle);
+        // op.split().set_new_attribute_strategy(edge_tag_handle);
+        // op.split().set_new_attribute_strategy(vertex_tag_handle);
+        // op.split().set_new_attribute_strategy(pos_handle);
 
         CHECK(op(Simplex::tetrahedron(m, m.edge_tuple_with_vs_and_t(7, 2, 5))).empty());
 

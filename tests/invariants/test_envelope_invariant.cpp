@@ -4,7 +4,6 @@
 #include <wmtk/submesh/Embedding.hpp>
 #include <wmtk/submesh/SubMesh.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include <wmtk/utils/cast_attribute.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include "tools/DEBUG_EdgeMesh.hpp"
 #include "tools/DEBUG_PointMesh.hpp"
@@ -24,9 +23,10 @@ constexpr PrimitiveType PF = PrimitiveType::Triangle;
 
 void positions_as_rational(Mesh& mesh)
 {
-    auto pt_double_attribute = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-    wmtk::utils::cast_attribute<wmtk::Rational>(pt_double_attribute, mesh, "vertices");
-    mesh.delete_attribute(pt_double_attribute);
+    throw std::runtime_error("deleted cast function");
+    // auto pt_double_attribute = mesh.get_attribute_handle<double>("vertices",
+    // PrimitiveType::Vertex); wmtk::utils::cast_attribute<wmtk::Rational>(pt_double_attribute,
+    // mesh, "vertices"); mesh.delete_attribute(pt_double_attribute);
 }
 
 std::shared_ptr<DEBUG_EdgeMesh> construct_edge_45(DEBUG_TriMesh& m)

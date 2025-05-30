@@ -188,8 +188,9 @@ std::vector<simplex::Simplex> ProjectOperation::execute(const simplex::Simplex& 
 
 
     for (auto& [pos_attribute, bvh] : m_bvh) {
-        const std::vector<Tuple> mapped_tuples_after =
-            mesh().map_tuples(pos_attribute.mesh(), primitive_type(), {main_tup});
+        // const std::vector<Tuple> mapped_tuples_after =
+        //     mesh().map_tuples(pos_attribute.mesh(), primitive_type(), {main_tup});
+        const std::vector<Tuple> mapped_tuples_after = {main_tup};
 
         if (mapped_tuples_after.empty()) continue;
 

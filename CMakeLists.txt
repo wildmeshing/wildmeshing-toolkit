@@ -58,6 +58,7 @@ project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit" LANGUAGES C
 
 # ###############################################################################
 option(WMTK_ENABLE_APPLICATIONS "Enable applications (required for any applications to build)" ${WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT})
+option(WMTK_ENABLE_COMPONENT_TESTS "Enable component tests" ${WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT})
 option(WMTK_BUILD_DOCS "Build doxygen" OFF)
 option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option due to use of TBB
 

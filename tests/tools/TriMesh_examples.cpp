@@ -1,6 +1,5 @@
 #include "TriMesh_examples.hpp"
 #include <random>
-#include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include <wmtk/utils/triangle_areas.hpp>
@@ -485,13 +484,4 @@ std::shared_ptr<TriMesh> individual_triangles(int number)
     return mptr;
 }
 
-std::shared_ptr<TriMesh> disk_to_individual_multimesh(int number)
-{
-    auto d = disk(number);
-    auto i = individual_triangles(number);
-    auto map = multimesh::same_simplex_dimension_bijection(*d, *i);
-
-    d->register_child_mesh(i, map);
-    return d;
-}
 } // namespace wmtk::tests

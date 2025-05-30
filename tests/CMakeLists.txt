@@ -11,8 +11,6 @@ tools/all_valid_local_tuples.hpp
 tools/all_valid_local_tuples.cpp
 tools/is_free.hpp
 tools/is_free.cpp
-tools/add_free_child_mesh.hpp
-tools/add_free_child_mesh.cpp
 tools/DEBUG_PointMesh.hpp
 tools/DEBUG_EdgeMesh.hpp
 tools/DEBUG_EdgeMesh.cpp
@@ -38,8 +36,6 @@ tools/TestTools.cpp
 
 tools/DEBUG_Mesh.hpp
 tools/DEBUG_Mesh.cpp
-tools/DEBUG_MultiMeshManager.hpp
-tools/DEBUG_MultiMeshManager.cpp
 
 )
 add_library(wmtk_test_tools ${TEST_TOOLS})
@@ -74,7 +70,6 @@ set(TEST_SOURCES
     test_variant_metaprogramming.cpp
     test_tuple_metaprogramming.cpp
     test_autodiff.cpp
-    test_local_switch_search.cpp
     test_primitive.cpp
     test_performance.cpp
 )
@@ -99,7 +94,6 @@ add_subdirectory_with_source_group(function)
 add_subdirectory_with_source_group(simplex)
 add_subdirectory_with_source_group(io)
 add_subdirectory_with_source_group(utils)
-add_subdirectory_with_source_group(multimesh)
 add_subdirectory_with_source_group(operations)
 add_subdirectory_with_source_group(attributes)
 add_subdirectory_with_source_group(autogen)

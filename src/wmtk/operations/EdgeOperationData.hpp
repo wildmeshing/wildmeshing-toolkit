@@ -43,10 +43,11 @@ public:
 
     // std::unique_ptr<internal::SplitAlternateFacetData> m_split_data;
     // std::unique_ptr<internal::CollapseAlternateFacetData> m_collapse_data;
-    std::variant<
-        std::unique_ptr<internal::SplitAlternateFacetData>,
-        std::unique_ptr<internal::CollapseAlternateFacetData>>
-        m_op_data;
+
+    // std::variant<
+    //     std::unique_ptr<internal::SplitAlternateFacetData>,
+    //     std::unique_ptr<internal::CollapseAlternateFacetData>>
+    //     m_op_data;
 
 
     void set_split();

@@ -29,8 +29,6 @@ private:
 public:
     template <typename U, typename MeshType, typename AttributeType, int Dim>
     friend class attribute::Accessor;
-    template <int64_t cell_dimension, typename NodeFunctor>
-    friend class multimesh::MultiMeshSimplexVisitor;
     using Mesh::Mesh;
     /// CRTP utility to extract the derived type of this
     Derived& derived() { return static_cast<Derived&>(*this); }
@@ -67,14 +65,18 @@ public:
     inline attribute::Accessor<T, Derived, attribute::CachingAttribute<T>, Dim> create_accessor(
         const TypedAttributeHandle<T>& handle)
     {
-        return attribute::Accessor<T, Derived, attribute::CachingAttribute<T>, Dim>(derived(), handle);
+        return attribute::Accessor<T, Derived, attribute::CachingAttribute<T>, Dim>(
+            derived(),
+            handle);
     }
     /// constructs a const accessor that is aware of the derived mesh's type
     template <typename T, int Dim = Eigen::Dynamic>
-    const attribute::Accessor<T, Derived, attribute::CachingAttribute<T>, Dim> create_const_accessor(
-        const attribute::TypedAttributeHandle<T>& handle) const
+    const attribute::Accessor<T, Derived, attribute::CachingAttribute<T>, Dim>
+    create_const_accessor(const attribute::TypedAttributeHandle<T>& handle) const
     {
-        return attribute::Accessor<T, Derived, attribute::CachingAttribute<T>, Dim>(derived(), handle);
+        return attribute::Accessor<T, Derived, attribute::CachingAttribute<T>, Dim>(
+            derived(),
+            handle);
     }
 
     /// constructs a accessor that is aware of the derived mesh's type
@@ -90,8 +92,8 @@ public:
 
     /// constructs a const accessor that is aware of the derived mesh's type
     template <typename T, int Dim = Eigen::Dynamic>
-    inline const attribute::Accessor<T, Derived, attribute::CachingAttribute<T>, Dim> create_const_accessor(
-        const attribute::MeshAttributeHandle& handle) const
+    inline const attribute::Accessor<T, Derived, attribute::CachingAttribute<T>, Dim>
+    create_const_accessor(const attribute::MeshAttributeHandle& handle) const
     {
         assert(&handle.mesh() == this);
         assert(handle.holds<T>());

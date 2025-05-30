@@ -15,9 +15,6 @@ set(SRC_FILES
     ParaviewWriter.hpp
     ParaviewWriter.cpp
 
-    CachedMultiMesh.hpp
-    CachedMultiMesh.cpp
-
     read_mesh.hpp
     read_mesh.cpp
 )

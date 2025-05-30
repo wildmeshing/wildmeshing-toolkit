@@ -41,22 +41,6 @@ using namespace wmtk::simplex;
 
 const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
-void print_tuple_map_iso(const DEBUG_TriMesh& parent, const DEBUG_MultiMeshManager& p_mul_manager)
-{
-    int64_t child_id = 0;
-    for (auto& child_data : p_mul_manager.children()) {
-        PrimitiveType map_ptype = child_data.mesh->top_simplex_type();
-        auto parent_to_child_accessor =
-            parent.create_const_accessor<int64_t>(child_data.map_handle);
-        for (int64_t parent_gid = 0; parent_gid < parent.capacity(map_ptype); ++parent_gid) {
-            auto parent_to_child_data = parent_to_child_accessor.const_vector_attribute(
-                parent.tuple_from_id(map_ptype, parent_gid));
-            auto [parent_tuple, child_tuple] =
-                wmtk::multimesh::utils::vectors_to_tuples(parent_to_child_data);
-        }
-    }
-}
-
 TEST_CASE("smoothing_mesh", "[components][isotropic_remeshing][2D]")
 {
     using namespace operations;
@@ -847,7 +831,6 @@ TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D][
             PrimitiveType::Edge);
 
     REQUIRE(mesh.get_child_meshes().size() == 1);
-    mesh.multi_mesh_manager().check_map_valid(mesh);
     const auto& child_mesh = *child_ptr;
     CHECK(child_mesh.get_all(PrimitiveType::Edge).size() == 8);
     CHECK(child_mesh.get_all(PrimitiveType::Vertex).size() == 8);
@@ -864,8 +847,6 @@ TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D][
         5);
 
     REQUIRE(mesh.is_connectivity_valid());
-    mesh.multi_mesh_manager().check_map_valid(mesh);
-
 
     size_t n_boundary_edges = 0;
     for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
@@ -922,8 +903,6 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
             1,
             PrimitiveType::Edge);
 
-    REQUIRE(mesh.get_child_meshes().size() == 1);
-    // mesh.multi_mesh_manager().check_map_valid(mesh);
     // const auto& child_mesh = *child_ptr;
 
 
@@ -940,7 +919,6 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
             false,
             1);
         REQUIRE(mesh.is_connectivity_valid());
-        mesh.multi_mesh_manager().check_map_valid(mesh);
     }
 
 

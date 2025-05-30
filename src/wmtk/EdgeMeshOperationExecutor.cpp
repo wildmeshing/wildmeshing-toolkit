@@ -1,6 +1,5 @@
 
 #include "EdgeMeshOperationExecutor.hpp"
-#include <wmtk/operations/internal/SplitAlternateFacetData.hpp>
 
 namespace wmtk {
 // constructor
@@ -82,8 +81,9 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh()
 
     // create new edges (facets)
     // m_split_e[i] is connect to m_neighbor_eids[i] and m_spine_vids[i]
-    const auto& data = split_facet_data().add_facet(m_mesh, m_operating_tuple);
-    m_split_e = data.new_facet_indices;
+
+    // const auto& data = split_facet_data().add_facet(m_mesh, m_operating_tuple);
+    // m_split_e = data.new_facet_indices;
 
     if (m_mesh.is_free()) {
         const std::vector<int64_t> new_vids =

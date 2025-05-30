@@ -1,7 +1,6 @@
 #pragma once
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/TriMeshOperationExecutor.hpp>
-#include "DEBUG_MultiMeshManager.hpp"
 
 namespace wmtk::tests {
 class DEBUG_TriMesh : public TriMesh //, public virtual DEBUG_Mesh
@@ -27,14 +26,6 @@ public:
 
     // uses spdlog to print out a variety of information about the mesh
     void print_state() const;
-    DEBUG_MultiMeshManager& multi_mesh_manager()
-    {
-        return reinterpret_cast<DEBUG_MultiMeshManager&>(m_multi_mesh_manager);
-    }
-    const DEBUG_MultiMeshManager& multi_mesh_manager() const
-    {
-        return reinterpret_cast<const DEBUG_MultiMeshManager&>(m_multi_mesh_manager);
-    }
 
     using TriMesh::m_attribute_manager;
 

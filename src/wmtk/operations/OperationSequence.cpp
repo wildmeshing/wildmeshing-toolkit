@@ -25,9 +25,7 @@ std::vector<simplex::Simplex> OperationSequence::operator()(const simplex::Simpl
     const auto simplex_resurrect = simplex;
 
     auto mods = execute_operations(simplex_resurrect);
-    if (!mods.empty()) { // success should be marked here
-        apply_attribute_transfer(mods);
-    }
+
     // TODO after?
     return mods;
 }

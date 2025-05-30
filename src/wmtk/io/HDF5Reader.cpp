@@ -30,7 +30,7 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
 
-#include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
+#include <wmtk/utils/tuple_map_attribute_io.hpp>
 
 #include <h5pp/h5pp.h>
 
@@ -85,81 +85,12 @@ HDF5Reader::HDF5Reader() {}
 
 std::shared_ptr<Mesh> HDF5Reader::read(const std::filesystem::path& filename)
 {
-    constexpr static int64_t TWO_TUPLE_SIZE = wmtk::multimesh::utils::TWO_TUPLE_SIZE;
-    constexpr static int64_t DEFAULT_TUPLES_VALUES = wmtk::multimesh::utils::DEFAULT_TUPLES_VALUES;
+    constexpr static int64_t TWO_TUPLE_SIZE = wmtk::utils::TWO_TUPLE_SIZE;
+    constexpr static int64_t DEFAULT_TUPLES_VALUES = wmtk::utils::DEFAULT_TUPLES_VALUES;
 
     h5pp::File hdf5_file(filename, h5pp::FileAccess::READONLY);
 
-    auto root = read_mesh(hdf5_file, "WMTK");
-
-    if (hdf5_file.linkExists("WMTK/multimesh")) {
-        std::map<std::vector<int64_t>, std::shared_ptr<Mesh>> meshes;
-        meshes[{}] = root;
-
-        const auto dsets = hdf5_file.findGroups("mesh_", "WMTK/multimesh", -1, 1);
-        for (auto& s : dsets) {
-            const std::string dataset = "WMTK/multimesh/" + s;
-
-            auto absolute_id =
-                hdf5_file.readAttribute<std::vector<int64_t>>(dataset, "absolute_id");
-            meshes[absolute_id] = read_mesh(hdf5_file, dataset);
-        }
-
-
-        for (auto& p : meshes) {
-            if (p.first.empty()) continue;
-
-            const std::vector<int64_t>& child_id = p.first;
-            const auto child_index = child_id.back();
-
-            std::vector<int64_t> parent_id = child_id;
-            parent_id.pop_back();
-
-            auto parent_mesh = meshes.at(parent_id);
-            auto child_mesh = p.second;
-
-            const PrimitiveType child_primitive_type = child_mesh->top_simplex_type();
-
-
-            assert(parent_mesh->m_multi_mesh_manager.m_children.size() == child_index);
-
-            auto child_to_parent_handle =
-                child_mesh
-                    ->get_attribute_handle<int64_t>(
-                        multimesh::MultiMeshManager::child_to_parent_map_attribute_name(),
-                        child_primitive_type)
-                    .as<int64_t>();
-
-            auto parent_to_child_handle =
-                parent_mesh
-                    ->get_attribute_handle<int64_t>(
-                        multimesh::MultiMeshManager::parent_to_child_map_attribute_name(
-                            child_index),
-                        child_primitive_type)
-                    .as<int64_t>();
-
-            child_mesh->m_multi_mesh_manager.m_parent = parent_mesh.get();
-            child_mesh->m_multi_mesh_manager.m_child_id = child_index;
-            child_mesh->m_multi_mesh_manager.map_to_parent_handle = child_to_parent_handle;
-
-            parent_mesh->m_multi_mesh_manager.m_children.emplace_back();
-            parent_mesh->m_multi_mesh_manager.m_children.back().mesh = child_mesh;
-            parent_mesh->m_multi_mesh_manager.m_children.back().map_handle = parent_to_child_handle;
-            parent_mesh->m_multi_mesh_manager
-                .m_has_child_mesh_in_dimension[child_mesh->top_cell_dimension()] = true;
-            parent_mesh->assert_capacity_valid();
-            child_mesh->assert_capacity_valid();
-        }
-
-#if !defined(NDEBUG)
-        for (auto& p : meshes) {
-            assert(p.first == p.second->m_multi_mesh_manager.absolute_id());
-        }
-#endif
-    }
-
-
-    return root;
+    return read_mesh(hdf5_file, "WMTK");
 }
 
 std::shared_ptr<Mesh> HDF5Reader::read_mesh(h5pp::File& hdf5_file, const std::string& root_dataset)

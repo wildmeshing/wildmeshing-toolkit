@@ -14,7 +14,6 @@
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/invariants/TetMeshSubstructureTopologyPreservingInvariant.hpp>
 #include <wmtk/invariants/TriMeshSubstructureTopologyPreservingInvariant.hpp>
-#include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 #include <wmtk/utils/orient.hpp>
 
 using namespace wmtk;
@@ -67,46 +66,46 @@ TEST_CASE("MinIncidentValenceInvariant", "[invariants][2D]")
 
 TEST_CASE("MultiMeshEdgeTopologyInvariant", "[invariants][2D]")
 {
-    DEBUG_TriMesh mesh = single_triangle();
-    auto tag_handle = mesh.register_attribute<int64_t>("is_boundary", wmtk::PrimitiveType::Edge, 1);
-    auto tag_accessor = mesh.create_accessor<int64_t>(tag_handle);
-    Tuple e0 = mesh.edge_tuple_with_vs_and_t(1, 2, 0);
-    Tuple e1 = mesh.edge_tuple_with_vs_and_t(0, 2, 0);
-    Tuple e2 = mesh.edge_tuple_with_vs_and_t(0, 1, 0);
-
-    tag_accessor.scalar_attribute(e0) = 1;
-    tag_accessor.scalar_attribute(e1) = 1;
-    tag_accessor.scalar_attribute(e2) = 0;
-
-    std::shared_ptr<Mesh> child_ptr =
-        wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
-            mesh,
-            "is_boundary",
-            1,
-            PrimitiveType::Edge);
-
-    const EdgeMesh& child = dynamic_cast<const EdgeMesh&>(*child_ptr);
-
-    std::cout << "child mesh #v: " << child.capacity(PrimitiveType::Vertex) << std::endl;
-
-    const MultiMeshEdgeTopologyInvariant inv(mesh, child);
-
-    auto e2_v1_map = mesh.map_to_child_tuples(child, Simplex(mesh, PrimitiveType::Vertex, e2));
-    auto e2_v2_map = mesh.map_to_child_tuples(
-        child,
-        Simplex(mesh, PrimitiveType::Vertex, mesh.switch_vertex(e2)));
-
-    std::cout << e2_v1_map.size() << std::endl;
-    std::cout << e2_v2_map.size() << std::endl;
-
-
-    CHECK_FALSE(inv.before(Simplex::edge(mesh, e2)));
-    CHECK(inv.before(Simplex::edge(mesh, e0)));
-    CHECK(inv.before(Simplex::edge(mesh, e1)));
-
-    std::cout << inv.before(Simplex::edge(mesh, e2)) << std::endl;
-    std::cout << inv.before(Simplex::edge(mesh, e0)) << std::endl;
-    std::cout << inv.before(Simplex::edge(mesh, e1)) << std::endl;
+    throw std::runtime_error("pointless invariant without multimesh");
+    // DEBUG_TriMesh mesh = single_triangle();
+    // auto tag_handle = mesh.register_attribute<int64_t>("is_boundary", wmtk::PrimitiveType::Edge,
+    // 1); auto tag_accessor = mesh.create_accessor<int64_t>(tag_handle); Tuple e0 =
+    // mesh.edge_tuple_with_vs_and_t(1, 2, 0); Tuple e1 = mesh.edge_tuple_with_vs_and_t(0, 2, 0);
+    // Tuple e2 = mesh.edge_tuple_with_vs_and_t(0, 1, 0);
+    //
+    // tag_accessor.scalar_attribute(e0) = 1;
+    // tag_accessor.scalar_attribute(e1) = 1;
+    // tag_accessor.scalar_attribute(e2) = 0;
+    //
+    // std::shared_ptr<Mesh> child_ptr =
+    //     wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+    //         mesh,
+    //         "is_boundary",
+    //         1,
+    //         PrimitiveType::Edge);
+    //
+    // const EdgeMesh& child = dynamic_cast<const EdgeMesh&>(*child_ptr);
+    //
+    // std::cout << "child mesh #v: " << child.capacity(PrimitiveType::Vertex) << std::endl;
+    //
+    // const MultiMeshEdgeTopologyInvariant inv(mesh, child);
+    //
+    // auto e2_v1_map = mesh.map_to_child_tuples(child, Simplex(mesh, PrimitiveType::Vertex, e2));
+    // auto e2_v2_map = mesh.map_to_child_tuples(
+    //     child,
+    //     Simplex(mesh, PrimitiveType::Vertex, mesh.switch_vertex(e2)));
+    //
+    // std::cout << e2_v1_map.size() << std::endl;
+    // std::cout << e2_v2_map.size() << std::endl;
+    //
+    //
+    // CHECK_FALSE(inv.before(Simplex::edge(mesh, e2)));
+    // CHECK(inv.before(Simplex::edge(mesh, e0)));
+    // CHECK(inv.before(Simplex::edge(mesh, e1)));
+    //
+    // std::cout << inv.before(Simplex::edge(mesh, e2)) << std::endl;
+    // std::cout << inv.before(Simplex::edge(mesh, e0)) << std::endl;
+    // std::cout << inv.before(Simplex::edge(mesh, e1)) << std::endl;
 }
 
 TEST_CASE("SubstructureTopologyPreservingInvariant_tri", "[invariants]")

@@ -2,18 +2,8 @@ set(SRC_FILES
     AMIPSOptimizationSmoothing.hpp
     AMIPSOptimizationSmoothing.cpp
 
-    AMIPSOptimizationSmoothingPeriodic.hpp
-    AMIPSOptimizationSmoothingPeriodic.cpp
-
     AttributesUpdate.hpp
     AttributesUpdate.cpp
-
-    AttributeTransferEdge.hpp
-    AttributeTransferEdge.cpp
-
-    AttributeTransferConfiguration.hpp
-    AttributeTransferConfiguration.cpp
-
     Operation.hpp
     Operation.cpp
 
@@ -52,8 +42,8 @@ set(SRC_FILES
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
-add_subdirectory(attribute_new)
-add_subdirectory(attribute_update)
+# add_subdirectory(attribute_new)
+# add_subdirectory(attribute_update)
 #
 add_subdirectory(edge_mesh)
 add_subdirectory(tri_mesh)
@@ -63,5 +53,3 @@ add_subdirectory(tet_mesh)
 add_subdirectory(composite)
 #
 add_subdirectory(utils)
-#
-add_subdirectory(internal)

@@ -9,7 +9,7 @@
 
 #include <wmtk/utils/Logger.hpp>
 
-namespace wmtk::multimesh::utils {
+namespace wmtk::utils {
 
 
 namespace {
@@ -162,4 +162,4 @@ std::tuple<Tuple, Tuple> read_tuple_map_attribute_slow(
     auto acc = source_mesh.create_const_accessor(map_handle);
     return read_tuple_map_attribute(acc, source_tuple);
 }
-} // namespace wmtk::multimesh::utils
+} // namespace wmtk::utils

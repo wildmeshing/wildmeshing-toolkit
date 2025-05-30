@@ -57,6 +57,9 @@ set(SRC_FILES
     bbox_from_mesh.cpp
     bvh_from_mesh.hpp
     bvh_from_mesh.cpp
+
+    tuple_map_attribute_io.hpp
+    tuple_map_attribute_io.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

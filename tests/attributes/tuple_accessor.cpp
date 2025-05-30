@@ -3,8 +3,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/attribute/Attribute.hpp>
 #include <wmtk/attribute/TupleAccessor.hpp>
-#include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/tuple_map_attribute_io.hpp>
 #include "../tools/DEBUG_PointMesh.hpp"
 
 
@@ -25,7 +25,7 @@ TEST_CASE("tuple_to_int64_t_storage", "[accessor]")
         wmtk::Tuple(0, 20, 30, 40),
         wmtk::Tuple(-20, 0, -3, 16)};
     for (const auto& t : basic_data) {
-        wmtk::Vector<int64_t, 2> idat = wmtk::multimesh::utils::tuple_to_vector(t);
+        wmtk::Vector<int64_t, 2> idat = wmtk::utils::tuple_to_vector(t);
         const int64_t* iptr = reinterpret_cast<const int64_t*>(&t);
         std::cout << idat.transpose() << " === " << iptr[0] << " " << iptr[1] << std::endl;
         CHECK(idat(0) == iptr[0]);

@@ -2,7 +2,7 @@
 #include <wmtk/attribute/Accessor.hpp>
 
 // #define WMTK_DISABLE_COMPRESSED_MULTIMESH_TUPLE
-namespace wmtk::multimesh::utils {
+namespace wmtk::utils {
 #if defined WMTK_DISABLE_COMPRESSED_MULTIMESH_TUPLE
 constexpr static int64_t TUPLE_SIZE = 4; // in terms of int64_t
 constexpr static int64_t GLOBAL_ID_INDEX = 3;
@@ -56,4 +56,4 @@ std::tuple<Tuple, Tuple> read_tuple_map_attribute_slow(
     const Mesh& source_mesh,
     TypedAttributeHandle<int64_t> map_handle,
     const Tuple& source_tuple);
-} // namespace wmtk::multimesh::utils
+} // namespace wmtk::utils

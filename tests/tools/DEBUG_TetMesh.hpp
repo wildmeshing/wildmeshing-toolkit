@@ -1,7 +1,6 @@
 #pragma once
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TetMeshOperationExecutor.hpp>
-#include "DEBUG_MultiMeshManager.hpp"
 namespace wmtk::tests_3d {
 class DEBUG_TetMesh : public TetMesh
 {
@@ -16,11 +15,6 @@ public:
 
     // uses spdlog to print out a variety of information about the mesh
     void print_state() const;
-
-    wmtk::tests::DEBUG_MultiMeshManager& multi_mesh_manager()
-    {
-        return reinterpret_cast<wmtk::tests::DEBUG_MultiMeshManager&>(m_multi_mesh_manager);
-    }
 
     using TetMesh::m_attribute_manager;
 
