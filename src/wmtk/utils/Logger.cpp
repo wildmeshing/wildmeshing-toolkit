@@ -6,9 +6,10 @@
 #include <sstream>
 
 namespace wmtk {
-bool has_user_overloaded_logger_level() {
+bool has_user_overloaded_logger_level()
+{
     const char* val = std::getenv("WMTK_LOGGER_LEVEL");
-    if(val == nullptr) {
+    if (val == nullptr) {
         return false;
     }
     std::string env_val = val;
@@ -102,6 +103,13 @@ void log_and_throw_error(const std::string& msg)
 {
     logger().error(msg);
     throw std::runtime_error(msg);
+}
+
+void log_assert(const bool check, const std::string& msg)
+{
+    if (!check) {
+        log_and_throw_error(msg);
+    }
 }
 
 } // namespace wmtk

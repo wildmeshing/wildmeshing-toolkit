@@ -40,6 +40,19 @@ std::vector<Tuple> IdSimplexCollection::simplex_vector_tuples(PrimitiveType ptyp
     return tuples;
 }
 
+std::vector<Tuple> IdSimplexCollection::simplex_vector_tuples() const
+{
+    std::vector<Tuple> tuples;
+    tuples.reserve(m_simplices.size());
+
+    // add simplices to the vector
+    for (const IdSimplex& s : m_simplices) {
+        tuples.emplace_back(m_mesh.get_tuple_from_id_simplex(s));
+    }
+
+    return tuples;
+}
+
 void IdSimplexCollection::add(const IdSimplex& simplex)
 {
     m_simplices.push_back(simplex);

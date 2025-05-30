@@ -5,6 +5,7 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/operations/tet_mesh/EdgeOperationData.hpp>
+#include <wmtk/submesh/Embedding.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
@@ -51,6 +52,12 @@ EdgeSplit::EdgeSplit(Mesh& m)
 
     multimesh::MultiMeshVisitor custom_attribute_collector(collect_attrs);
     custom_attribute_collector.execute_from_root(m);
+}
+
+EdgeSplit::EdgeSplit(submesh::Embedding& m)
+    : EdgeSplit(m.mesh())
+{
+    m.set_split_strategies(*this);
 }
 
 std::vector<simplex::Simplex> EdgeSplit::execute(const simplex::Simplex& simplex)

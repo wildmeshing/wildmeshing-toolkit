@@ -100,7 +100,10 @@ public:
 
 public:
     /// Returns the id of a simplex encoded in a tuple
-    int64_t id(const Tuple& tuple, PrimitiveType type) const { return derived().id(tuple, type); }
+    int64_t id(const Tuple& tuple, PrimitiveType type) const override
+    {
+        return derived().id(tuple, type);
+    }
 
     /// variant of id that can cache internally held values
     int64_t id(const simplex::Simplex& s) const final override

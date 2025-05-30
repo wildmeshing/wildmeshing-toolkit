@@ -1,6 +1,6 @@
 #include "TupleTag.hpp"
+#include <wmtk/PrimitiveType.hpp>
 #include <wmtk/attribute/Accessor.hpp>
-#include <wmtk/Primitive.hpp>
 namespace wmtk::multimesh::utils::internal {
 TupleTag::TupleTag(Mesh& mesh, const std::set<int64_t>& critical_points)
     : m_mesh(mesh)
