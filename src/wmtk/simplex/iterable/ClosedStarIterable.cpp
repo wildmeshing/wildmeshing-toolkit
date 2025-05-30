@@ -1,6 +1,5 @@
 #include "ClosedStarIterable.hpp"
 
-#include <wmtk/autogen/SimplexDart.hpp>
 #include <wmtk/autogen/local_switch_tuple.hpp>
 #include <wmtk/simplex/cofaces_in_simplex_iterable.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>

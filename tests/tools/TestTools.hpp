@@ -14,7 +14,6 @@ namespace wmtk::tests::tools {
 class TestTools
 {
 public:
-    static int8_t global_index_max_subdart_size(const Mesh& m, const Tuple& a, const Tuple& b);
     static std::array<int64_t, 4> global_ids(const Mesh& m, const Tuple& a);
 
     static int64_t global_id(const Mesh& m, const Tuple& a, const PrimitiveType& pt);

@@ -37,7 +37,6 @@
 #include "tools/EdgeMesh_examples.hpp"
 #include "tools/TetMesh_examples.hpp"
 #include "tools/TriMesh_examples.hpp"
-#include "tools/all_valid_local_tuples.hpp"
 
 using namespace wmtk;
 using namespace simplex;
@@ -313,10 +312,11 @@ TEST_CASE("simplex_faces_iterable", "[simplex_collection][iterable][2D]")
     REQUIRE(itrb_collection.simplex_vector().size() == coll.simplex_vector().size());
 
     for (size_t i = 0; i < coll.simplex_vector().size(); ++i) {
-        CHECK(simplex::utils::SimplexComparisons::equal(
-            m,
-            itrb_collection.simplex_vector()[i],
-            coll.simplex_vector()[i]));
+        CHECK(
+            simplex::utils::SimplexComparisons::equal(
+                m,
+                itrb_collection.simplex_vector()[i],
+                coll.simplex_vector()[i]));
     }
 }
 
@@ -1475,10 +1475,11 @@ TEST_CASE("simplex_closed_star", "[simplex_collection][2D]")
 
         for (size_t i = 3; i < 6; ++i) {
             const Simplex& e = simplices[i];
-            CHECK(simplex::utils::SimplexComparisons::equal(
-                m,
-                Simplex::face(m, t),
-                Simplex::face(m, e.tuple())));
+            CHECK(
+                simplex::utils::SimplexComparisons::equal(
+                    m,
+                    Simplex::face(m, t),
+                    Simplex::face(m, e.tuple())));
         }
 
         CHECK(m.id(simplices[6]) == 2);
@@ -1902,10 +1903,11 @@ TEST_CASE("simplex_link_tri_iterable", "[simplex_collection][iterable][2D]")
     REQUIRE(itrb_collection.size() == coll.size());
 
     for (size_t i = 0; i < coll.simplex_vector().size(); ++i) {
-        CHECK(simplex::utils::SimplexComparisons::equal(
-            m,
-            itrb_collection.simplex_vector()[i],
-            coll.simplex_vector()[i]));
+        CHECK(
+            simplex::utils::SimplexComparisons::equal(
+                m,
+                itrb_collection.simplex_vector()[i],
+                coll.simplex_vector()[i]));
     }
 }
 
@@ -1929,10 +1931,11 @@ TEST_CASE("simplex_link_tet_iterable", "[simplex_collection][iterable][3D]")
         REQUIRE(comp.size() == itrb_collection.size());
 
         for (size_t i = 0; i < itrb_collection.simplex_vector().size(); ++i) {
-            CHECK(simplex::utils::SimplexComparisons::equal(
-                m,
-                itrb_collection.simplex_vector()[i],
-                comp.simplex_vector()[i]));
+            CHECK(
+                simplex::utils::SimplexComparisons::equal(
+                    m,
+                    itrb_collection.simplex_vector()[i],
+                    comp.simplex_vector()[i]));
         }
     };
 
@@ -2307,10 +2310,11 @@ TEST_CASE("simplex_cofaces_single_dimension_tri_iterable", "[simplex_collection]
             REQUIRE(single_dim_comp.size() == itrb_collection.size());
 
             for (size_t i = 0; i < itrb_collection.simplex_vector().size(); ++i) {
-                CHECK(simplex::utils::SimplexComparisons::equal(
-                    m,
-                    itrb_collection.simplex_vector()[i],
-                    single_dim_comp.simplex_vector()[i]));
+                CHECK(
+                    simplex::utils::SimplexComparisons::equal(
+                        m,
+                        itrb_collection.simplex_vector()[i],
+                        single_dim_comp.simplex_vector()[i]));
             }
         }
     };
@@ -2350,10 +2354,11 @@ TEST_CASE("simplex_cofaces_single_dimension_tet_iterable", "[simplex_collection]
             REQUIRE(single_dim_comp.size() == itrb_collection.size());
 
             for (size_t i = 0; i < itrb_collection.simplex_vector().size(); ++i) {
-                CHECK(simplex::utils::SimplexComparisons::equal(
-                    m,
-                    itrb_collection.simplex_vector()[i],
-                    single_dim_comp.simplex_vector()[i]));
+                CHECK(
+                    simplex::utils::SimplexComparisons::equal(
+                        m,
+                        itrb_collection.simplex_vector()[i],
+                        single_dim_comp.simplex_vector()[i]));
             }
         }
     };
@@ -2525,10 +2530,11 @@ TEST_CASE("simplex_compare_faces_with_faces_single_dimension", "[simplex_collect
 
                 REQUIRE(faces_single_dim.size() == bndry_single_dim.size());
                 for (size_t i = 0; i < faces_single_dim.size(); ++i) {
-                    CHECK(simplex::utils::SimplexComparisons::equal(
-                        m,
-                        bndry_single_dim[i],
-                        faces_single_dim[i]));
+                    CHECK(
+                        simplex::utils::SimplexComparisons::equal(
+                            m,
+                            bndry_single_dim[i],
+                            faces_single_dim[i]));
                 }
             }
         }
@@ -2617,10 +2623,11 @@ TEST_CASE("simplex_link_single_dimension_tri_iterable", "[simplex_collection][it
             REQUIRE(single_dim_comp.size() == itrb_collection.size());
 
             for (size_t i = 0; i < itrb_collection.simplex_vector().size(); ++i) {
-                CHECK(simplex::utils::SimplexComparisons::equal(
-                    m,
-                    itrb_collection.simplex_vector()[i],
-                    single_dim_comp.simplex_vector()[i]));
+                CHECK(
+                    simplex::utils::SimplexComparisons::equal(
+                        m,
+                        itrb_collection.simplex_vector()[i],
+                        single_dim_comp.simplex_vector()[i]));
             }
         }
     };
@@ -2656,10 +2663,11 @@ TEST_CASE("simplex_link_single_dimension_tet_iterable", "[simplex_collection][it
             REQUIRE(single_dim_comp.size() == itrb_collection.size());
 
             for (size_t i = 0; i < itrb_collection.simplex_vector().size(); ++i) {
-                CHECK(simplex::utils::SimplexComparisons::equal(
-                    m,
-                    itrb_collection.simplex_vector()[i],
-                    single_dim_comp.simplex_vector()[i]));
+                CHECK(
+                    simplex::utils::SimplexComparisons::equal(
+                        m,
+                        itrb_collection.simplex_vector()[i],
+                        single_dim_comp.simplex_vector()[i]));
             }
         }
     };

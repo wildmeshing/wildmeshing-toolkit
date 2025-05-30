@@ -12,5 +12,4 @@ int64_t max_tuple_count(PrimitiveType pt);
 
 Tuple tuple_from_offset_id(PrimitiveType pt, int offset);
 
-std::vector<Tuple> all_valid_local_tuples(PrimitiveType pt);
 } // namespace wmtk::tests

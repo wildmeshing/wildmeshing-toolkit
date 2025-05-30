@@ -25,5 +25,4 @@ extern const int8_t subgroup_indices_2_2[24];
 
 extern const int8_t* remap_table[3][3];
 
-// extern const int8_t **subdart_preserving_actions [ 3 ];
 } // namespace wmtk::autogen::subgroup

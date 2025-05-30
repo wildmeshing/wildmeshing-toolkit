@@ -6,15 +6,6 @@ set(SRC_FILES
     local_switch_tuple.hpp
     local_switch_tuple.cpp
 
-    local_dart_action.hpp
-    local_dart_action.cpp
-
-    SimplexDart.hpp
-    SimplexDart.cpp
-
-    Dart.hpp
-    Dart.cpp
-
     tuple_from_valid_index.hpp
     tuple_from_valid_index.cpp
 
@@ -28,9 +19,6 @@ set(SRC_FILES
     subgroup/subgroup_transformations.hpp
     subgroup/convert.hxx
     subgroup/convert.hpp
-
-    point_mesh/SimplexDart.hpp
-    point_mesh/SimplexDart.cpp
 )
 
 foreach(MESH_TYPE edge_mesh tri_mesh tet_mesh)
@@ -42,7 +30,6 @@ foreach(MESH_TYPE edge_mesh tri_mesh tet_mesh)
             valid_index_from_tuple.hxx
             tuple_from_valid_index.hpp
             tuple_from_valid_index.hxx
-            SimplexDart.hpp
             local_switch_tuple.hpp
             local_switch_tuple.hxx
             is_ccw.hpp
@@ -52,9 +39,6 @@ foreach(MESH_TYPE edge_mesh tri_mesh tet_mesh)
 
             simplex_index_from_valid_index.hpp
             simplex_index_from_valid_index.hxx
-
-            subdart_maximal_action_to_face.hpp
-            subdart_maximal_action_to_face.cpp
 
             get_tuple_from_simplex_local_id.hpp
             )

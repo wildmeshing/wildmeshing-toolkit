@@ -37,10 +37,4 @@ const int8_t auto_valid_switch_inverse_table[6] = {0, 1, 5, 3, 4, 2};
 
 const int8_t auto_valid_tuple_switch_indices[4] = {3, 0, 1, 4};
 
-const int8_t subdart_preserving_action_1[6][3] =
-    {{4, 1, 0}, {4, 0, 1}, {1, 4, 0}, {0, 4, 1}, {1, 0, 4}, {0, 1, 4}};
-
-const int8_t max_subdart_preservation_dimension_1[6][3] =
-    {{0, 2, 1}, {0, 1, 2}, {2, 0, 1}, {1, 0, 2}, {2, 1, 0}, {1, 2, 0}};
-
 } // namespace wmtk::autogen::tri_mesh

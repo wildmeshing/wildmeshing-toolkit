@@ -27,8 +27,6 @@ tools/DEBUG_TetMesh.hpp
 tools/DEBUG_TetMesh.cpp
 tools/single_simplex_mesh.hpp
 tools/single_simplex_mesh.cpp
-tools/global_index_max_subdart_size.hpp
-tools/global_index_max_subdart_size.cpp
 tools/global_ids.hpp
 tools/global_ids.cpp
 tools/TestTools.hpp

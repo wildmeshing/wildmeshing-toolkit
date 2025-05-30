@@ -1,12 +1,8 @@
 #include "valid_index_to_simplex_index.hpp"
-#include <wmtk/autogen/SimplexDart.hpp>
 #include <wmtk/autogen/edge_mesh/simplex_index_from_valid_index.hpp>
 #include <wmtk/autogen/tet_mesh/simplex_index_from_valid_index.hpp>
 #include <wmtk/autogen/tri_mesh/simplex_index_from_valid_index.hpp>
 
-namespace wmtk::autogen {
-class SimplexDart;
-}
 namespace wmtk::autogen::utils {
 int8_t valid_index_to_simplex_index(
     PrimitiveType mesh_type,
