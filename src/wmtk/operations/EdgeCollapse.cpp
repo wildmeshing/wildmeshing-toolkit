@@ -3,6 +3,10 @@
 
 #include <cassert>
 
+#include <wmtk/EdgeMeshOperationExecutor.hpp>
+#include <wmtk/TetMeshOperationExecutor.hpp>
+#include <wmtk/TriMeshOperationExecutor.hpp>
+
 // #include "utils/multi_mesh_edge_collapse.hpp"
 
 #include <wmtk/submesh/Embedding.hpp>
@@ -45,11 +49,33 @@ EdgeCollapse::EdgeCollapse(submesh::Embedding& m)
 
 std::vector<simplex::Simplex> EdgeCollapse::execute(const simplex::Simplex& simplex)
 {
-    throw std::runtime_error("removing multimesh, needs refactoring");
-    // return utils::multi_mesh_edge_collapse_with_modified_simplices(
-    //     mesh(),
-    //     simplex,
-    //     m_new_attr_strategies);
+    switch (mesh().top_simplex_type()) {
+    case PrimitiveType::Vertex: assert(false); break;
+    case PrimitiveType::Edge: {
+        wmtk::EdgeMesh::EdgeMeshOperationExecutor exec(
+            static_cast<EdgeMesh&>(mesh()),
+            simplex.tuple());
+        exec.collapse_edge();
+        return {simplex::Simplex(PrimitiveType::Vertex, exec.m_output_tuple)};
+    }
+    case PrimitiveType::Triangle: {
+        wmtk::TriMesh::TriMeshOperationExecutor exec(
+            static_cast<TriMesh&>(mesh()),
+            simplex.tuple());
+        exec.collapse_edge();
+        return {simplex::Simplex(PrimitiveType::Vertex, exec.m_output_tuple)};
+    }
+    case PrimitiveType::Tetrahedron: {
+        wmtk::TetMesh::TetMeshOperationExecutor exec(
+            static_cast<TetMesh&>(mesh()),
+            simplex.tuple());
+        exec.collapse_edge();
+        return {simplex::Simplex(PrimitiveType::Vertex, exec.m_output_tuple)};
+    }
+    default: break;
+    }
+
+    return {};
 }
 
 std::vector<simplex::Simplex> EdgeCollapse::unmodified_primitives(

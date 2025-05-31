@@ -5,12 +5,18 @@
 #include "MeshCRTP.hpp"
 
 namespace wmtk {
+
+namespace operations {
+class EdgeCollapse;
+}
+
 class TetMesh : public MeshCRTP<TetMesh>
 {
 public:
     friend class MeshCRTP<TetMesh>;
     template <typename U, typename MeshType, typename AT, int Dim>
     friend class attribute::Accessor;
+    friend class operations::EdgeCollapse;
     TetMesh();
     ~TetMesh() override;
     TetMesh(const TetMesh& o) = delete;

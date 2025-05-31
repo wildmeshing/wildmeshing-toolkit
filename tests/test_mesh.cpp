@@ -69,7 +69,6 @@ TEST_CASE("consolidate", "[mesh][consolidate]")
         REQUIRE(m.is_connectivity_valid());
     }
 
-
     SECTION("2D")
     {
         DEBUG_TriMesh m = hex_plus_two();

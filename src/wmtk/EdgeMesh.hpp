@@ -7,12 +7,18 @@
 
 namespace wmtk {
 
+namespace operations {
+class EdgeCollapse;
+}
+
+
 class EdgeMesh : public MeshCRTP<EdgeMesh>
 {
 public:
     friend class MeshCRTP<EdgeMesh>;
     template <typename U, typename MeshType, typename AT, int Dim>
     friend class attribute::Accessor;
+    friend class operations::EdgeCollapse;
     EdgeMesh();
     ~EdgeMesh() override;
     EdgeMesh(const EdgeMesh& o) = delete;
