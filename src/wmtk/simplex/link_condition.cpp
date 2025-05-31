@@ -1,5 +1,4 @@
 #include "link_condition.hpp"
-#include <wmtk/utils/metaprogramming/as_mesh_variant.hpp>
 #include "IdSimplexCollection.hpp"
 #include "cofaces_single_dimension.hpp"
 #include "cofaces_single_dimension_iterable.hpp"
@@ -228,18 +227,15 @@ bool link_condition(const TetMesh& mesh, const Tuple& edge)
 
 bool link_condition(const Mesh& mesh, const Tuple& edge)
 {
-    return std::visit(
-        [&edge](auto&& m) noexcept {
-            using MType = std::decay_t<decltype(m.get())>;
-            if constexpr (std::is_same_v<MType, Mesh>) {
-                throw std::runtime_error("Link condition called on an unknown type of mesh - could "
-                                         "only cast it to Mesh");
-            } else if constexpr (std::is_same_v<MType, PointMesh>) {
-                return true;
-            } else {
-                return link_condition(m.get(), edge);
-            }
-        },
-        wmtk::utils::metaprogramming::as_const_mesh_variant(mesh));
+    switch (mesh.top_simplex_type()) {
+    case PrimitiveType::Vertex:
+        throw std::runtime_error("Link condition does not exist for PointMesh.");
+    case PrimitiveType::Edge:
+        throw std::runtime_error("Link condition does not exist for EdgeMesh.");
+        break;
+    case PrimitiveType::Triangle: return link_condition(static_cast<const TriMesh&>(mesh), edge);
+    case PrimitiveType::Tetrahedron: return link_condition(static_cast<const TetMesh&>(mesh), edge);
+    default: throw std::runtime_error("Unknown mesh type in link condition.");
+    }
 }
 } // namespace wmtk::simplex

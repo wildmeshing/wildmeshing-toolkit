@@ -299,6 +299,8 @@ TEST_CASE("topology_of_two_independent_tets", "[topology][3D]")
 
 TEST_CASE("topology_of_tet_bunny", "[topology][3D]")
 {
+    logger().set_level(spdlog::level::warn);
+
     auto tmp = read_mesh(WMTK_DATA_DIR "/bunny_3d.msh");
     Eigen::Matrix<int64_t, -1, -1> T;
     const auto& mesh = static_cast<wmtk::tests_3d::DEBUG_TetMesh&>(*tmp);

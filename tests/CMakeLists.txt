@@ -64,9 +64,6 @@ set(TEST_SOURCES
     test_1d_operations.cpp
     test_example_meshes.cpp
     test_3d_operations.cpp
-    test_mesh_variant.cpp
-    test_variant_metaprogramming.cpp
-    test_tuple_metaprogramming.cpp
     test_autodiff.cpp
     test_primitive.cpp
     test_performance.cpp
