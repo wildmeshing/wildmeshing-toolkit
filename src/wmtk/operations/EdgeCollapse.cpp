@@ -52,23 +52,17 @@ std::vector<simplex::Simplex> EdgeCollapse::execute(const simplex::Simplex& simp
     switch (mesh().top_simplex_type()) {
     case PrimitiveType::Vertex: assert(false); break;
     case PrimitiveType::Edge: {
-        wmtk::EdgeMesh::EdgeMeshOperationExecutor exec(
-            static_cast<EdgeMesh&>(mesh()),
-            simplex.tuple());
+        EdgeMesh::EdgeMeshOperationExecutor exec(static_cast<EdgeMesh&>(mesh()), simplex.tuple());
         exec.collapse_edge();
         return {simplex::Simplex(PrimitiveType::Vertex, exec.m_output_tuple)};
     }
     case PrimitiveType::Triangle: {
-        wmtk::TriMesh::TriMeshOperationExecutor exec(
-            static_cast<TriMesh&>(mesh()),
-            simplex.tuple());
+        TriMesh::TriMeshOperationExecutor exec(static_cast<TriMesh&>(mesh()), simplex.tuple());
         exec.collapse_edge();
         return {simplex::Simplex(PrimitiveType::Vertex, exec.m_output_tuple)};
     }
     case PrimitiveType::Tetrahedron: {
-        wmtk::TetMesh::TetMeshOperationExecutor exec(
-            static_cast<TetMesh&>(mesh()),
-            simplex.tuple());
+        TetMesh::TetMeshOperationExecutor exec(static_cast<TetMesh&>(mesh()), simplex.tuple());
         exec.collapse_edge();
         return {simplex::Simplex(PrimitiveType::Vertex, exec.m_output_tuple)};
     }

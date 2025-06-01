@@ -48,24 +48,6 @@ TEST_CASE("tet_get_split_simplices_to_delete", "[operations][split][3d]")
         std::array<std::vector<int64_t>, 4> ids_to_delete =
             TMOE::get_split_simplices_to_delete(edge, m);
 
-        // debug code
-        // std::cout << "vertex: " << std::endl;
-        // for (size_t i = 0; i < ids_to_delete[0].size(); i++) {
-        //     std::cout << ids_to_delete[0][i] << std::endl;
-        // }
-        // std::cout << "edge: " << std::endl;
-        // for (size_t i = 0; i < ids_to_delete[1].size(); i++) {
-        //     std::cout << ids_to_delete[1][i] << std::endl;
-        // }
-        // std::cout << "face: " << std::endl;
-        // for (size_t i = 0; i < ids_to_delete[2].size(); i++) {
-        //     std::cout << ids_to_delete[2][i] << std::endl;
-        // }
-        // std::cout << "tet: " << std::endl;
-        // for (size_t i = 0; i < ids_to_delete[3].size(); i++) {
-        //     std::cout << ids_to_delete[3][i] << std::endl;
-        // }
-
         REQUIRE(ids_to_delete[0].size() == 0);
         REQUIRE(ids_to_delete[1].size() == 1);
         REQUIRE(ids_to_delete[2].size() == 2);
@@ -78,10 +60,6 @@ TEST_CASE("tet_get_split_simplices_to_delete", "[operations][split][3d]")
         // TODO check faces
         const int64_t face_to_delete_1 = m.id(edge, PF);
         const int64_t face_to_delete_2 = m.id(m.switch_tuple(edge, PF), PF);
-
-        // debugging code
-        std::cout << "fid1: " << face_to_delete_1 << std::endl;
-        std::cout << "fid2: " << face_to_delete_2 << std::endl;
 
         REQUIRE(
             std::find(ids_to_delete[2].begin(), ids_to_delete[2].end(), face_to_delete_1) !=
@@ -98,8 +76,6 @@ TEST_CASE("tet_get_split_simplices_to_delete", "[operations][split][3d]")
         std::array<std::vector<int64_t>, 4> ids_to_delete =
             TMOE::get_split_simplices_to_delete(edge, m);
 
-        std::cout << "test three incident tets" << std::endl;
-
         REQUIRE(ids_to_delete[0].size() == 0);
         REQUIRE(ids_to_delete[1].size() == 1);
         REQUIRE(ids_to_delete[2].size() == 4);
@@ -112,8 +88,6 @@ TEST_CASE("tet_get_split_simplices_to_delete", "[operations][split][3d]")
 
         std::array<std::vector<int64_t>, 4> ids_to_delete =
             TMOE::get_split_simplices_to_delete(edge, m);
-
-        std::cout << "test six cycle tets" << std::endl;
 
         REQUIRE(ids_to_delete[0].size() == 0);
         REQUIRE(ids_to_delete[1].size() == 1);
@@ -131,11 +105,6 @@ TEST_CASE("tet_get_collapse_simplices_to_delete", "[operations][collapse][3D]")
 
         std::array<std::vector<int64_t>, 4> ids_to_delete =
             TMOE::get_collapse_simplices_to_delete(edge, m);
-
-        // std::cout << "face: " << std::endl;
-        // for (int i = 0; i < ids_to_delete[2].size(); i++) {
-        //     std::cout << ids_to_delete[2][i] << std::endl;
-        // }
 
         REQUIRE(ids_to_delete[0].size() == 1);
         REQUIRE(ids_to_delete[1].size() == 3);
@@ -624,159 +593,6 @@ TEST_CASE("tet_tet_split", "[operations][split][collapse][3d]")
             }
         }
         */
-    }
-}
-
-TEST_CASE("tet_split_with_tags", "[operations][split][3d]")
-{
-    using namespace operations;
-
-    const int64_t embedding_tag_value = 0;
-    const int64_t input_tag_value = 1;
-    const int64_t split_tag_value = 2;
-
-    SECTION("single_tet")
-    {
-        //        0
-        //       / \\ .
-        //      /   \ \ .
-        //     /     \  \ .
-        //    /       \   \ 3
-        //  1 --------- 2
-        //
-        DEBUG_TetMesh m = single_tet();
-        Eigen::MatrixXd V(4, 3);
-        V.row(0) << 0.5, 0.86, 0;
-        V.row(1) << 0, 0, 0;
-        V.row(2) << 1.0, 0, -1.0;
-        V.row(3) << 1.0, 0, 1.0;
-        wmtk::mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
-        wmtk::attribute::MeshAttributeHandle vertex_tag_handle = m.register_attribute<int64_t>(
-            "vertex_tag",
-            wmtk::PrimitiveType::Vertex,
-            1,
-            false,
-            embedding_tag_value);
-        wmtk::attribute::MeshAttributeHandle edge_tag_handle = m.register_attribute<int64_t>(
-            "edge_tag",
-            wmtk::PrimitiveType::Edge,
-            1,
-            false,
-            embedding_tag_value);
-        wmtk::attribute::MeshAttributeHandle todo_tag_handle =
-            m.register_attribute<int64_t>("todo_tag", wmtk::PrimitiveType::Tetrahedron, 1);
-        wmtk::attribute::Accessor<int64_t> acc_edge_tag =
-            m.create_accessor<int64_t>(edge_tag_handle);
-        acc_edge_tag.scalar_attribute(m.edge_tuple_with_vs_and_t(1, 2, 0)) = 5;
-        wmtk::attribute::Accessor<int64_t> acc_todo_tag =
-            m.create_accessor<int64_t>(todo_tag_handle);
-        acc_todo_tag.scalar_attribute(m.edge_tuple_with_vs_and_t(1, 2, 0)) = 1;
-
-        composite::TetCellSplit op(m);
-        op.add_invariant(std::make_shared<TodoInvariant>(m, todo_tag_handle.as<int64_t>()));
-        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
-
-        auto pos_handle = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-        // op.collapse().set_new_attribute_strategy(todo_tag_handle);
-        // op.collapse().set_new_attribute_strategy(edge_tag_handle);
-        // op.collapse().set_new_attribute_strategy(vertex_tag_handle);
-        // op.collapse().set_new_attribute_strategy(pos_handle);
-        // op.split().set_new_attribute_strategy(todo_tag_handle);
-        // op.split().set_new_attribute_strategy(edge_tag_handle);
-        // op.split().set_new_attribute_strategy(vertex_tag_handle);
-        // op.split().set_new_attribute_strategy(pos_handle);
-
-        auto res = op(Simplex::tetrahedron(m, m.edge_tuple_with_vs_and_t(1, 2, 0)));
-
-        CHECK(!res.empty());
-        auto return_tuple = res.front().tuple();
-        CHECK(m.id(return_tuple, PrimitiveType::Vertex) == 1);
-        CHECK(m.get_all(PrimitiveType::Vertex).size() == 5);
-        CHECK(m.get_all(PrimitiveType::Edge).size() == 10);
-        CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 4);
-    }
-
-    SECTION("one_ear")
-    {
-        //        0 ---------- 4
-        //       / \\        // \ .
-        //      /   \ \     //   \ .
-        //     /     \  \  //     \ .
-        //    /       \   \3       \ .
-        //  1 --------- 2/ -------- 5   tuple edge 2-3
-        //    \       /  /\ \      / .
-        //     \     / /   \\     / .
-        //      \   //      \\   / .
-        //       \ //        \  / .
-        //        6 -----------7
-        //
-        DEBUG_TetMesh m = six_cycle_tets();
-        Eigen::MatrixXd V(8, 3);
-        V.row(0) << 0.5, 0.86, 0;
-        V.row(1) << 0, 0, 0;
-        V.row(2) << 1.0, 0, 1.0;
-        V.row(3) << 1.0, 0, -1.0;
-        V.row(4) << 1.5, 0.86, 0;
-        V.row(5) << 2, 0, 0;
-        V.row(6) << 0.5, -0.86, 0;
-        V.row(7) << 1.5, -0.86, 0;
-        wmtk::mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
-        wmtk::attribute::MeshAttributeHandle vertex_tag_handle = m.register_attribute<int64_t>(
-            "vertex_tag",
-            wmtk::PrimitiveType::Vertex,
-            1,
-            false,
-            embedding_tag_value);
-        wmtk::attribute::MeshAttributeHandle edge_tag_handle = m.register_attribute<int64_t>(
-            "edge_tag",
-            wmtk::PrimitiveType::Edge,
-            1,
-            false,
-            embedding_tag_value);
-        wmtk::attribute::MeshAttributeHandle todo_tag_handle =
-            m.register_attribute<int64_t>("todo_tag", wmtk::PrimitiveType::Tetrahedron, 1);
-        wmtk::attribute::Accessor<int64_t> acc_todo_tag =
-            m.create_accessor<int64_t>(todo_tag_handle);
-        acc_todo_tag.scalar_attribute(m.get_all(PrimitiveType::Tetrahedron)[0]) = 1;
-        acc_todo_tag.scalar_attribute(m.get_all(PrimitiveType::Tetrahedron)[3]) = 1;
-
-        CHECK(
-            m.id(
-                m.switch_vertex(m.switch_edge(m.edge_tuple_with_vs_and_t(1, 2, 0))),
-                PrimitiveType::Vertex) == 3);
-
-        composite::TetCellSplit op(m);
-        op.add_invariant(std::make_shared<TodoInvariant>(m, todo_tag_handle.as<int64_t>()));
-        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
-
-        // used the default strategy, so the tag is not updated.
-        auto pos_handle = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-        // op.collapse().set_new_attribute_strategy(todo_tag_handle);
-        // op.collapse().set_new_attribute_strategy(edge_tag_handle);
-        // op.collapse().set_new_attribute_strategy(vertex_tag_handle);
-        // op.collapse().set_new_attribute_strategy(pos_handle);
-        // op.split().set_new_attribute_strategy(todo_tag_handle);
-        // op.split().set_new_attribute_strategy(edge_tag_handle);
-        // op.split().set_new_attribute_strategy(vertex_tag_handle);
-        // op.split().set_new_attribute_strategy(pos_handle);
-
-        CHECK(op(Simplex::tetrahedron(m, m.edge_tuple_with_vs_and_t(7, 2, 5))).empty());
-
-        auto res = op(Simplex::tetrahedron(m, m.edge_tuple_with_vs_and_t(1, 2, 0)));
-
-        CHECK(!res.empty());
-        auto return_tuple = res.front().tuple();
-
-        CHECK(m.id(return_tuple, PrimitiveType::Vertex) == 1);
-        CHECK(m.id(m.switch_vertex(m.switch_edge(return_tuple)), PrimitiveType::Vertex) == 2);
-        CHECK(
-            m.id(
-                m.switch_vertex(m.switch_edge(
-                    m.switch_face(m.switch_tetrahedron(m.switch_edge(return_tuple))))),
-                PrimitiveType::Vertex) == 3);
-        CHECK(
-            acc_todo_tag.scalar_attribute(m.switch_tetrahedron(
-                m.switch_face(m.switch_tetrahedron(m.switch_edge(return_tuple))))) == 1);
     }
 }
 

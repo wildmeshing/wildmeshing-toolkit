@@ -8,7 +8,9 @@
 #include <wmtk/submesh/Embedding.hpp>
 #include <wmtk/utils/Logger.hpp>
 
-#include <wmtk/utils/Logger.hpp>
+#include <wmtk/EdgeMeshOperationExecutor.hpp>
+#include <wmtk/TetMeshOperationExecutor.hpp>
+#include <wmtk/TriMeshOperationExecutor.hpp>
 
 namespace wmtk::operations {
 
@@ -48,11 +50,27 @@ EdgeSplit::EdgeSplit(submesh::Embedding& m)
 
 std::vector<simplex::Simplex> EdgeSplit::execute(const simplex::Simplex& simplex)
 {
-    throw std::runtime_error("removing multimesh, needs refactoring");
-    // return utils::multi_mesh_edge_split_with_modified_simplices(
-    //     mesh(),
-    //     simplex,
-    //     m_new_attr_strategies);
+    switch (mesh().top_simplex_type()) {
+    case PrimitiveType::Vertex: assert(false); break;
+    case PrimitiveType::Edge: {
+        EdgeMesh::EdgeMeshOperationExecutor exec(static_cast<EdgeMesh&>(mesh()), simplex.tuple());
+        exec.split_edge();
+        return {simplex::Simplex(PrimitiveType::Vertex, exec.m_output_tuple)};
+    }
+    case PrimitiveType::Triangle: {
+        TriMesh::TriMeshOperationExecutor exec(static_cast<TriMesh&>(mesh()), simplex.tuple());
+        exec.split_edge();
+        return {simplex::Simplex(PrimitiveType::Vertex, exec.m_output_tuple)};
+    }
+    case PrimitiveType::Tetrahedron: {
+        TetMesh::TetMeshOperationExecutor exec(static_cast<TetMesh&>(mesh()), simplex.tuple());
+        exec.split_edge();
+        return {simplex::Simplex(PrimitiveType::Vertex, exec.m_output_tuple)};
+    }
+    default: break;
+    }
+
+    return {};
 }
 std::vector<simplex::Simplex> EdgeSplit::unmodified_primitives(
     const simplex::Simplex& simplex) const

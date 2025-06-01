@@ -8,7 +8,8 @@ namespace wmtk {
 
 namespace operations {
 class EdgeCollapse;
-}
+class EdgeSplit;
+} // namespace operations
 
 class TetMesh : public MeshCRTP<TetMesh>
 {
@@ -17,6 +18,7 @@ public:
     template <typename U, typename MeshType, typename AT, int Dim>
     friend class attribute::Accessor;
     friend class operations::EdgeCollapse;
+    friend class operations::EdgeSplit;
     TetMesh();
     ~TetMesh() override;
     TetMesh(const TetMesh& o) = delete;

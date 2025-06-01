@@ -11,7 +11,8 @@ namespace wmtk {
 
 namespace operations {
 class EdgeCollapse;
-}
+class EdgeSplit;
+} // namespace operations
 
 class TriMesh : public MeshCRTP<TriMesh>
 {
@@ -20,6 +21,7 @@ public:
     template <typename U, typename MeshType, typename AT, int Dim>
     friend class attribute::Accessor;
     friend class operations::EdgeCollapse;
+    friend class operations::EdgeSplit;
     using MeshCRTP<TriMesh>::create_accessor;
     using MeshCRTP<TriMesh>::create_const_accessor;
     TriMesh();

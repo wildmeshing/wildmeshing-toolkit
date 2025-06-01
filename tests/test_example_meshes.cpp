@@ -180,7 +180,7 @@ void run_debug_trimesh(const DEBUG_TriMesh& m, const MeshDebugInfo& info)
 }
 } // namespace
 
-TEST_CASE("test_debug_trimeshes_single_triangle")
+TEST_CASE("test_debug_trimeshes_single_triangle", "[example_meshes]")
 {
     DEBUG_TriMesh m;
     m = single_triangle();
@@ -195,7 +195,7 @@ TEST_CASE("test_debug_trimeshes_single_triangle")
     run_debug_trimesh(m, info);
 }
 
-TEST_CASE("test_debug_trimeshes_quad")
+TEST_CASE("test_debug_trimeshes_quad", "[example_meshes]")
 {
     DEBUG_TriMesh m;
     m = quad();
@@ -207,7 +207,7 @@ TEST_CASE("test_debug_trimeshes_quad")
     info.simplex_counts = std::array<int64_t, 3>{{4, 5, 2}};
     run_debug_trimesh(m, info);
 }
-TEST_CASE("test_debug_trimeshes_two_neighbors")
+TEST_CASE("test_debug_trimeshes_two_neighbors", "[example_meshes]")
 {
     DEBUG_TriMesh m;
     m = two_neighbors();
@@ -239,7 +239,7 @@ TEST_CASE("test_debug_trimeshes_two_neighbors")
     CHECK(ff_acc.const_vector_attribute(tups[1]) == Vector3l(0, -1, -1));
     CHECK(ff_acc.const_vector_attribute(tups[2]) == Vector3l(-1, -1, 0));
 }
-TEST_CASE("test_debug_trimeshes_three_neighbors")
+TEST_CASE("test_debug_trimeshes_three_neighbors", "[example_meshes]")
 {
     DEBUG_TriMesh m;
     m = three_neighbors();
@@ -251,7 +251,7 @@ TEST_CASE("test_debug_trimeshes_three_neighbors")
     info.simplex_counts = std::array<int64_t, 3>{{6, 9, 4}};
     run_debug_trimesh(m, info);
 }
-TEST_CASE("test_debug_trimeshes_three_individuals")
+TEST_CASE("test_debug_trimeshes_three_individuals", "[example_meshes]")
 {
     DEBUG_TriMesh m;
     m = three_individuals();
@@ -263,7 +263,7 @@ TEST_CASE("test_debug_trimeshes_three_individuals")
     info.simplex_counts = std::array<int64_t, 3>{{6, 9, 3}};
     run_debug_trimesh(m, info);
 }
-TEST_CASE("test_debug_trimeshes_tetrahedron")
+TEST_CASE("test_debug_trimeshes_tetrahedron", "[example_meshes]")
 {
     DEBUG_TriMesh m;
     m = tetrahedron();
@@ -275,7 +275,7 @@ TEST_CASE("test_debug_trimeshes_tetrahedron")
     info.simplex_counts = std::array<int64_t, 3>{{4, 6, 4}};
     run_debug_trimesh(m, info);
 }
-TEST_CASE("test_debug_trimeshes_hex_plus_two")
+TEST_CASE("test_debug_trimeshes_hex_plus_two", "[example_meshes]")
 {
     DEBUG_TriMesh m;
     m = hex_plus_two();
@@ -288,7 +288,7 @@ TEST_CASE("test_debug_trimeshes_hex_plus_two")
     run_debug_trimesh(m, info);
 }
 
-TEST_CASE("test_debug_trimeshes_edge_region")
+TEST_CASE("test_debug_trimeshes_edge_region", "[example_meshes]")
 {
     DEBUG_TriMesh m;
     m = edge_region();
@@ -302,7 +302,7 @@ TEST_CASE("test_debug_trimeshes_edge_region")
     run_debug_trimesh(m, info);
 }
 
-TEST_CASE("test_debug_trimeshes_two_components")
+TEST_CASE("test_debug_trimeshes_two_components", "[example_meshes]")
 {
     DEBUG_TriMesh m;
     m = three_triangles_with_two_components();
@@ -310,7 +310,7 @@ TEST_CASE("test_debug_trimeshes_two_components")
     REQUIRE(trimesh_simply_connected_components(m) == 2);
 }
 
-TEST_CASE("test_debug_trimeshes_hole")
+TEST_CASE("test_debug_trimeshes_hole", "[example_meshes]")
 {
     DEBUG_TriMesh m;
     m = nine_triangles_with_a_hole();
@@ -324,7 +324,7 @@ TEST_CASE("test_debug_trimeshes_hole")
     run_debug_trimesh(m, info);
 }
 
-TEST_CASE("test_debug_disk_trimesh")
+TEST_CASE("test_debug_disk_trimesh", "[example_meshes]")
 {
     // TODO: N=1 should be possible, but have to fix teh trimesh impl
     for (int N = 2; N < 10; ++N) {
@@ -396,7 +396,7 @@ TEST_CASE("test_debug_disk_trimesh")
         CHECK(m.switch_face(v2e1) == v1e2);
     }
 }
-TEST_CASE("test_debug_individual_trimesh")
+TEST_CASE("test_debug_individual_trimesh", "[example_meshes]")
 {
     for (int N = 1; N < 10; ++N) {
         auto mptr = std::static_pointer_cast<DEBUG_TriMesh>(individual_triangles(N));

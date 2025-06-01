@@ -230,9 +230,7 @@ bool link_condition(const Mesh& mesh, const Tuple& edge)
     switch (mesh.top_simplex_type()) {
     case PrimitiveType::Vertex:
         throw std::runtime_error("Link condition does not exist for PointMesh.");
-    case PrimitiveType::Edge:
-        throw std::runtime_error("Link condition does not exist for EdgeMesh.");
-        break;
+    case PrimitiveType::Edge: return link_condition(static_cast<const EdgeMesh&>(mesh), edge);
     case PrimitiveType::Triangle: return link_condition(static_cast<const TriMesh&>(mesh), edge);
     case PrimitiveType::Tetrahedron: return link_condition(static_cast<const TetMesh&>(mesh), edge);
     default: throw std::runtime_error("Unknown mesh type in link condition.");
