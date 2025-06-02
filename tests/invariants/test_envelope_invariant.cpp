@@ -23,10 +23,23 @@ constexpr PrimitiveType PF = PrimitiveType::Triangle;
 
 void positions_as_rational(Mesh& mesh)
 {
-    throw std::runtime_error("deleted cast function");
-    // auto pt_double_attribute = mesh.get_attribute_handle<double>("vertices",
-    // PrimitiveType::Vertex); wmtk::utils::cast_attribute<wmtk::Rational>(pt_double_attribute,
-    // mesh, "vertices"); mesh.delete_attribute(pt_double_attribute);
+    auto pt_d = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    auto pt_r = mesh.register_attribute<Rational>(
+        "vertices",
+        PrimitiveType::Vertex,
+        pt_d.dimension(),
+        false);
+
+    auto acc_d = mesh.create_const_accessor<double>(pt_d);
+    auto acc_r = mesh.create_accessor<Rational>(pt_r);
+
+    for (const auto& v : mesh.get_all_id_simplex(PrimitiveType::Vertex)) {
+        const auto vd = acc_d.const_vector_attribute(v);
+        auto vr = acc_r.vector_attribute(v);
+        vr = vd.unaryExpr([&vd](const auto& x) { return Rational(x, true); });
+    }
+
+    mesh.delete_attribute(pt_d);
 }
 
 std::shared_ptr<DEBUG_EdgeMesh> construct_edge_45(DEBUG_TriMesh& m)

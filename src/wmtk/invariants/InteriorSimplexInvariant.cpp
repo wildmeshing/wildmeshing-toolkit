@@ -10,7 +10,7 @@ InteriorSimplexInvariant::InteriorSimplexInvariant(const Mesh& m, PrimitiveType 
 
 bool InteriorSimplexInvariant::before(const simplex::Simplex& t) const
 {
-    return !mesh().is_boundary(t);
+    return !mesh().is_boundary(m_primitive_type, t.tuple());
 }
 
 } // namespace wmtk::invariants

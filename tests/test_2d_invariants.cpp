@@ -64,7 +64,7 @@ TEST_CASE("MinIncidentValenceInvariant", "[invariants][2D]")
     }
 }
 
-TEST_CASE("MultiMeshEdgeTopologyInvariant", "[invariants][2D]")
+TEST_CASE("MultiMeshEdgeTopologyInvariant", "[invariants][2D][.]")
 {
     throw std::runtime_error("pointless invariant without multimesh");
     // DEBUG_TriMesh mesh = single_triangle();

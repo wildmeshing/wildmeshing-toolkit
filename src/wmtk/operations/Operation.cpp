@@ -74,37 +74,14 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 
 bool Operation::before(const simplex::Simplex& simplex) const
 {
-    // const attribute::Accessor<int64_t> accessor = hash_accessor();
-
-    // if (!mesh().is_valid(
-    //         simplex.tuple(),
-    //         accessor)) { // TODO: chang to is_removed and resurrect later
-    //     return false;
-    // }
-
     if (mesh().is_removed(simplex.tuple()) || !mesh().is_valid(simplex)) {
         return false;
     }
 
-    const auto simplex_resurrect = simplex;
-
-    // map simplex to the invariant mesh
-    const Mesh& invariant_mesh = m_invariants.mesh();
-
-    if (&invariant_mesh == &mesh()) {
-        if (!m_invariants.before(simplex_resurrect)) {
-            return false;
-        }
-    } else {
-        // TODO check if this is correct
-        const std::vector<simplex::Simplex> invariant_simplices = {simplex_resurrect};
-
-        for (const simplex::Simplex& s : invariant_simplices) {
-            if (!m_invariants.before(s)) {
-                return false;
-            }
-        }
+    if (!m_invariants.before(simplex)) {
+        return false;
     }
+
 
     return true;
 }
