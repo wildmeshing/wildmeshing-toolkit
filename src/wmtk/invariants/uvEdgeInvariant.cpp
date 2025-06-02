@@ -5,7 +5,7 @@
 namespace wmtk::invariants {
 uvEdgeInvariant::uvEdgeInvariant(const Mesh& position_mesh, const Mesh& uv_mesh)
     : Invariant(position_mesh)
-    , m_uv_mesh(uv_mesh)
+// , m_uv_mesh(uv_mesh)
 {}
 
 bool uvEdgeInvariant::before(const simplex::Simplex& s) const

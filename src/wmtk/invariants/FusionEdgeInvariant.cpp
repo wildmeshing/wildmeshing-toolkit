@@ -5,7 +5,7 @@
 namespace wmtk::invariants {
 FusionEdgeInvariant::FusionEdgeInvariant(const Mesh& position_mesh, const Mesh& periodic_mesh)
     : Invariant(position_mesh)
-    , m_periodic_mesh(periodic_mesh)
+// , m_periodic_mesh(periodic_mesh)
 {}
 
 bool FusionEdgeInvariant::before(const simplex::Simplex& s) const

@@ -13,7 +13,7 @@ MultiMeshEdgeTopologyInvariant::MultiMeshEdgeTopologyInvariant(
     const Mesh& parent,
     const EdgeMesh& child)
     : Invariant(parent, true, false, false)
-    , m_child_mesh(child)
+// , m_child_mesh(child)
 {}
 
 bool MultiMeshEdgeTopologyInvariant::before(const simplex::Simplex& t) const

@@ -10,7 +10,7 @@ SeparateSubstructuresInvariant::SeparateSubstructuresInvariant(
     const Mesh& m,
     bool check_condition_2)
     : Invariant(m, true, false, false)
-    , m_check_condition_2(check_condition_2)
+// , m_check_condition_2(check_condition_2)
 {}
 
 bool SeparateSubstructuresInvariant::before(const simplex::Simplex& s) const

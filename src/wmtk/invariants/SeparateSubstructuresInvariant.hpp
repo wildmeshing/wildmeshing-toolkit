@@ -30,7 +30,7 @@ public:
     bool before(const simplex::Simplex& s) const override;
 
 private:
-    const bool m_check_condition_2 = true;
+    // const bool m_check_condition_2 = true;
 };
 
 } // namespace wmtk::invariants

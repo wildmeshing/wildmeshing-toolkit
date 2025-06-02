@@ -13,7 +13,7 @@ public:
     bool before(const simplex::Simplex& s) const override;
 
 private:
-    const Mesh& m_periodic_mesh;
+    // const Mesh& m_periodic_mesh;
 };
 } // namespace invariants
 } // namespace wmtk

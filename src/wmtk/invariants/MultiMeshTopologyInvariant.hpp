@@ -18,6 +18,6 @@ public:
     bool before(const simplex::Simplex& t) const override;
 
 private:
-    const Mesh& m_child_mesh;
+    // const Mesh& m_child_mesh;
 };
 } // namespace wmtk
