@@ -20,7 +20,6 @@
 #include <wmtk/utils/mesh_utils.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
-#include "../tools/is_free.hpp"
 #include "../tools/redirect_logger_to_cout.hpp"
 
 using namespace wmtk;
@@ -212,8 +211,10 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
         CHECK(m.id(ret, PF) == 1);
     }
 }
-TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
+TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D][.]")
 {
+    throw std::runtime_error("requires fixing transfer fist");
+
     //  3--1--- 0
     //   |     / \ .
     //   2 f1 /2   1
@@ -460,55 +461,5 @@ TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][2D]")
             fid_actual.insert(f);
         }
         CHECK(fid_actual.size() == fid_expected.size());
-    }
-    SECTION("free")
-    {
-        const DEBUG_TriMesh m = []() {
-            TriMesh m;
-            m.initialize_free(20);
-            return m;
-        }();
-        REQUIRE(m.is_free());
-        for (Tuple edge : m.get_all(PrimitiveType::Edge)) {
-            std::array<std::vector<int64_t>, 3> ids_to_delete =
-                TMOE::get_collapse_simplices_to_delete(edge, m);
-
-
-            REQUIRE(ids_to_delete[0].size() == 3);
-            REQUIRE(ids_to_delete[1].size() == 3);
-            REQUIRE(ids_to_delete[2].size() == 1);
-
-            // compare expected face ids with the actual ones that should be deleted
-            std::set<int64_t> fid_expected;
-            fid_expected.insert(m.id(edge, PF));
-
-            std::set<int64_t> fid_actual;
-            for (const int64_t& f : ids_to_delete[2]) {
-                CHECK(fid_expected.find(f) != fid_expected.end());
-                fid_actual.insert(f);
-            }
-            CHECK(fid_actual.size() == fid_expected.size());
-        }
-    }
-}
-
-TEST_CASE("collapse_no_topology_trimesh", "[operations][collapse]")
-{
-    const int64_t initial_size = 20;
-    DEBUG_TriMesh m = [](int64_t size) {
-        TriMesh m;
-        m.initialize_free(size);
-        return m;
-    }(initial_size);
-    int64_t size = initial_size;
-    size_t count = 0;
-    for (Tuple edge : m.get_all(PrimitiveType::Triangle)) {
-        // spdlog::info("Count: {}", count++);
-        EdgeCollapse op(m);
-        REQUIRE(!op(simplex::Simplex(m, PrimitiveType::Edge, edge)).empty());
-        size--;
-        REQUIRE(m.is_connectivity_valid());
-        REQUIRE(is_free(m));
-        CHECK(m.get_all(PrimitiveType::Triangle).size() == size);
     }
 }

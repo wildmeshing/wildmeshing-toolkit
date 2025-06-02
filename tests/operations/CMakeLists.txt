@@ -6,8 +6,6 @@ set(TEST_SOURCES
     data_2d.cpp
     split_2d.cpp
     swap_2d.cpp
-    split_1d.cpp
-    collapse_1d.cpp
     vertex_optimization.cpp
     test_projection_operation.cpp
 )

@@ -3,8 +3,8 @@
 #include <filesystem>
 #include <numeric>
 #include <set>
-#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/TriMeshOperationExecutor.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
@@ -29,8 +29,7 @@ using namespace operations;
 
 using TM = TriMesh;
 using MapResult = typename Eigen::Matrix<int64_t, Eigen::Dynamic, 1>::MapType;
-using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
-    wmtk::Tuple()));
+using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(wmtk::Tuple()));
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;

@@ -45,7 +45,6 @@ public:
         Eigen::Ref<const VectorXl> ET,
         Eigen::Ref<const VectorXl> FT);
     void initialize(Eigen::Ref<const RowVectors4l> T, bool is_free = false);
-    void initialize_free(int64_t count);
 
     bool is_connectivity_valid() const final override;
 

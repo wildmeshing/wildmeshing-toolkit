@@ -19,7 +19,6 @@
 #include <wmtk/utils/mesh_utils.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
-#include "../tools/is_free.hpp"
 #include "../tools/redirect_logger_to_cout.hpp"
 
 using namespace wmtk;
@@ -80,33 +79,6 @@ TEST_CASE("get_split_simplices_to_delete", "[operations][split][2D]")
             fid_actual.insert(f);
         }
         CHECK(fid_actual.size() == fid_expected.size());
-    }
-    SECTION("free")
-    {
-        const DEBUG_TriMesh m = []() {
-            TriMesh m;
-            m.initialize_free(20);
-            return m;
-        }();
-        for (Tuple edge : m.get_all(PrimitiveType::Edge)) {
-            std::array<std::vector<int64_t>, 3> ids_to_delete =
-                TMOE::get_split_simplices_to_delete(edge, m);
-
-            REQUIRE(ids_to_delete[0].size() == 0);
-            REQUIRE(ids_to_delete[1].size() == 1);
-            REQUIRE(ids_to_delete[2].size() == 1);
-
-            // compare expected face ids with the actual ones that should be deleted
-            std::set<int64_t> fid_expected;
-            fid_expected.insert(m.id(edge, PF));
-
-            std::set<int64_t> fid_actual;
-            for (const int64_t& f : ids_to_delete[2]) {
-                CHECK(fid_expected.find(f) != fid_expected.end());
-                fid_actual.insert(f);
-            }
-            CHECK(fid_actual.size() == fid_expected.size());
-        }
     }
 }
 
@@ -225,32 +197,6 @@ TEST_CASE("operation_state", "[operations][2D]")
         REQUIRE(ear1.eid > -1);
         REQUIRE(ear2.fid == -1);
         REQUIRE(ear2.eid > -1);
-    }
-    SECTION("free")
-    {
-        DEBUG_TriMesh m = []() {
-            TriMesh m;
-            m.initialize_free(20);
-            return m;
-        }();
-        for (Tuple edge : m.get_all(PrimitiveType::Edge)) {
-            REQUIRE(m.is_connectivity_valid());
-            auto executor = m.get_tmoe(edge);
-            attribute::AttributeScopeHandle s = m.create_scope();
-            executor.split_edge_precompute();
-
-            REQUIRE(executor.flag_accessors.size() == 3);
-            REQUIRE(executor.incident_face_datas().size() == 1);
-
-            TMOE::EarData ear1 = executor.incident_face_datas()[0].ears[0];
-            TMOE::EarData ear2 = executor.incident_face_datas()[0].ears[1];
-            REQUIRE(ear1.fid == -1);
-            REQUIRE(ear1.eid > -1);
-            REQUIRE(ear2.fid == -1);
-            REQUIRE(ear2.eid > -1);
-            // executor enables faces that we don't want enabled so lets deactivate them
-            s.mark_failed();
-        }
     }
 }
 
@@ -782,24 +728,4 @@ TEST_CASE("split_modified_primitives", "[operations][split]")
     CHECK(ret.size() == 1);
     CHECK(ret[0].primitive_type() == PrimitiveType::Vertex);
     CHECK(m.id(ret[0]) == 10);
-}
-
-
-TEST_CASE("split_no_topology_trimesh", "[operations][split]")
-{
-    const int64_t initial_size = 20;
-    DEBUG_TriMesh m = [](int64_t size) {
-        TriMesh m;
-        m.initialize_free(size);
-        return m;
-    }(initial_size);
-    int64_t size = initial_size;
-    for (Tuple edge : m.get_all(PrimitiveType::Triangle)) {
-        EdgeSplit op(m);
-        REQUIRE(!op(simplex::Simplex(m, PrimitiveType::Edge, edge)).empty());
-        size++;
-        REQUIRE(m.is_connectivity_valid());
-        REQUIRE(is_free(m));
-        CHECK(m.get_all(PrimitiveType::Triangle).size() == size);
-    }
 }

@@ -37,7 +37,6 @@ public:
 
 
     void initialize(Eigen::Ref<const RowVectors2l> E, bool is_free = false);
-    void initialize_free(int64_t count);
 
     void initialize(
         Eigen::Ref<const RowVectors2l> EV,

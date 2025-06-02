@@ -138,12 +138,6 @@ void EdgeMesh::initialize(Eigen::Ref<const RowVectors2l> E, bool is_free)
     }
     initialize(E, EE, VE);
 }
-void EdgeMesh::initialize_free(int64_t count)
-{
-    RowVectors2l S(count, 2);
-    std::iota(S.data(), S.data() + S.size(), int64_t(0));
-    initialize(S, true);
-}
 
 Tuple EdgeMesh::tuple_from_id(const PrimitiveType type, const int64_t gid) const
 {
@@ -251,8 +245,8 @@ bool EdgeMesh::is_connectivity_valid() const
         }
         int cnt = 0;
         for (int64_t j = 0; j < 2; ++j) {
-            if (ev_accessor.const_vector_attribute<2>(
-                    ve_accessor.const_scalar_attribute(i))(j) == i) {
+            if (ev_accessor.const_vector_attribute<2>(ve_accessor.const_scalar_attribute(i))(j) ==
+                i) {
                 cnt++;
             }
         }

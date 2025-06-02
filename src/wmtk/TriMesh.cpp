@@ -233,14 +233,6 @@ void TriMesh::initialize(Eigen::Ref<const RowVectors3l> F, bool is_free)
     }
     initialize(F, FE, FF, VF, EF);
 }
-void TriMesh::initialize_free(int64_t count)
-{
-    // 0 1 2
-    // 3 4 5
-    RowVectors3l S(count, 3);
-    std::iota(S.data(), S.data() + S.size(), int64_t(0));
-    initialize(S, true);
-}
 
 Tuple TriMesh::tuple_from_global_ids(int64_t fid, int64_t eid, int64_t vid) const
 {

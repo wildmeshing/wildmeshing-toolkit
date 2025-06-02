@@ -145,12 +145,6 @@ void TetMesh::initialize(Eigen::Ref<const RowVectors4l> T, bool is_free)
     }
     initialize(T, TE, TF, TT, VT, ET, FT);
 }
-void TetMesh::initialize_free(int64_t count)
-{
-    RowVectors4l S(count, 4);
-    std::iota(S.data(), S.data() + S.size(), int64_t(0));
-    initialize(S, true);
-}
 
 Tuple TetMesh::vertex_tuple_from_id(int64_t id) const
 {
