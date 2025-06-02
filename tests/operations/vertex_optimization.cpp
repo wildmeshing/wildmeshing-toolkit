@@ -54,8 +54,10 @@ protected:
     const attribute::Accessor<double> m_target_attribute_accessor;
 };
 } // namespace wmtk::function
-TEST_CASE("vertex_optimization_Newton_Method")
+TEST_CASE("vertex_optimization_Newton_Method", "[operations][optimization]")
 {
+    opt_logger().set_level(spdlog::level::warn);
+
     DEBUG_TriMesh mesh = single_2d_nonequilateral_triangle_with_positions();
     auto handler = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
@@ -97,8 +99,9 @@ TEST_CASE("vertex_optimization_Newton_Method")
     CHECK((uv1 - uv2).norm() - (uv0 - uv2).norm() < 1e-6);
 }
 
-TEST_CASE("vertex_optimization_tet_amips")
+TEST_CASE("vertex_optimization_tet_amips", "[operations][optimization]")
 {
+    opt_logger().set_level(spdlog::level::warn);
     TetMesh mesh = three_incident_tets_with_positions();
     auto handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     function::AMIPS amips(mesh, handle);
@@ -128,8 +131,9 @@ TEST_CASE("vertex_optimization_tet_amips")
 }
 
 
-TEST_CASE("vertex_optimization_Gradient_Descent")
+TEST_CASE("vertex_optimization_Gradient_Descent", "[operations][optimization]")
 {
+    opt_logger().set_level(spdlog::level::warn);
     DEBUG_TriMesh mesh = single_2d_nonequilateral_triangle_with_positions();
     auto handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 

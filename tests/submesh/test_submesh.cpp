@@ -22,7 +22,7 @@ constexpr PrimitiveType PE = PrimitiveType::Edge;
 constexpr PrimitiveType PF = PrimitiveType::Triangle;
 constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
 
-TEST_CASE("submesh_init", "[mesh][submesh]")
+TEST_CASE("submesh_init", "[mesh][submesh][.]")
 {
     // logger().set_level(spdlog::level::off);
     logger().set_level(spdlog::level::trace);
@@ -107,7 +107,7 @@ TEST_CASE("submesh_init", "[mesh][submesh]")
     }
 }
 
-TEST_CASE("submesh_init_from_tag", "[mesh][submesh]")
+TEST_CASE("submesh_init_from_tag", "[mesh][submesh][.]")
 {
     // logger().set_level(spdlog::level::off);
 
@@ -158,7 +158,7 @@ TEST_CASE("submesh_top_dimension_cofaces", "[mesh][submesh][.]")
     sub.add_simplex(edge45, PE);
 }
 
-TEST_CASE("submesh_init_multi", "[mesh][submesh]")
+TEST_CASE("submesh_init_multi", "[mesh][submesh][.]")
 {
     // logger().set_level(spdlog::level::off);
     logger().set_level(spdlog::level::trace);
@@ -195,7 +195,7 @@ TEST_CASE("submesh_init_multi", "[mesh][submesh]")
     }
 }
 
-TEST_CASE("submesh_split", "[mesh][submesh]")
+TEST_CASE("submesh_split", "[mesh][submesh][.]")
 {
     // logger().set_level(spdlog::level::off);
     // logger().set_level(spdlog::level::trace);
@@ -245,7 +245,7 @@ TEST_CASE("submesh_split", "[mesh][submesh]")
     }
 }
 
-TEST_CASE("submesh_collapse", "[mesh][submesh]")
+TEST_CASE("submesh_collapse", "[mesh][submesh][.]")
 {
     // logger().set_level(spdlog::level::off);
     // logger().set_level(spdlog::level::trace);
@@ -289,7 +289,7 @@ TEST_CASE("submesh_collapse", "[mesh][submesh]")
     }
 }
 
-TEST_CASE("submesh_collapse_towards_submesh", "[mesh][submesh]")
+TEST_CASE("submesh_collapse_towards_submesh", "[mesh][submesh][.]")
 {
     // logger().set_level(spdlog::level::off);
     // logger().set_level(spdlog::level::trace);
@@ -343,7 +343,7 @@ TEST_CASE("submesh_collapse_towards_submesh", "[mesh][submesh]")
     }
 }
 
-TEST_CASE("submesh_type_casts", "[mesh][submesh]")
+TEST_CASE("submesh_type_casts", "[mesh][submesh][.]")
 {
     logger().set_level(spdlog::level::off);
     // logger().set_level(spdlog::level::trace);

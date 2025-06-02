@@ -418,7 +418,6 @@ bool TriMesh::is_connectivity_valid() const
                 ef_val,
                 fmt::join(fe_val, ","));
 
-            // std::cout << "EF and FE not compatible" << std::endl;
             return false;
         }
     }

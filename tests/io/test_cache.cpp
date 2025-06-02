@@ -145,7 +145,7 @@ TEST_CASE("cache_export_import", "[cache][io]")
     fs::remove_all(export_location);
 }
 
-TEST_CASE("cache_equals", "[cache][io]")
+TEST_CASE("cache_equals", "[cache][io][.]")
 {
     throw std::runtime_error("Write test without using cache read and write functionality");
 

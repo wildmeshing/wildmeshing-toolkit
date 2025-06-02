@@ -42,8 +42,6 @@ Eigen::MatrixXd bbox_from_mesh(const attribute::MeshAttributeHandle& position_ha
         },
         position_handle.handle());
 
-    // std::cout << "BBOX:\n" << bbox << std::endl;
-
     return bbox;
 }
 

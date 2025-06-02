@@ -96,9 +96,6 @@ public:
     SchedulerStats run_operation_on_all(
         operations::Operation& op,
         const TypedAttributeHandle<char>& flag_handle);
-    SchedulerStats run_operation_on_all_coloring(
-        operations::Operation& op,
-        const TypedAttributeHandle<int64_t>& color_handle);
 
     const SchedulerStats& stats() const { return m_stats; }
 

@@ -284,11 +284,6 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         auto& fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
         auto& ff_accessor = m.create_base_accessor<int64_t>(m.f_handle(PF));
 
-
-        std::cout << "FV: " << fv_accessor.const_vector_attribute(0).transpose() << std::endl;
-        std::cout << "FF: " << ff_accessor.const_vector_attribute(0).transpose() << std::endl;
-
-
         for (size_t i = 0; i < incident_face_datas.size(); ++i) {
             auto& face_data = incident_face_datas[i];
             executor.replace_incident_face(face_data);

@@ -23,12 +23,6 @@ TEST_CASE("topology_of_single_triangle", "[topology][2D]")
     F << 0, 1, 2;
     auto [FE, FF, VF, EF] = trimesh_topology_initialization(F);
 
-    // std::cout << "F:\n" << F << std::endl;
-    // std::cout << "FE:\n" << FE << std::endl;
-    // std::cout << "FF:\n" << FF << std::endl;
-    // std::cout << "VF:\n" << VF << std::endl;
-    // std::cout << "EF:\n" << EF << std::endl;
-
     // 1. Test relationship between EF and FE
     for (int i = 0; i < EF.size(); ++i) {
         CHECK((FE.row(EF(i)).array() == i).any());
@@ -68,12 +62,6 @@ TEST_CASE("topology_of_two_triangles", "[topology][2D]")
     F << 0, 1, 2, 1, 3, 2;
 
     auto [FE, FF, VF, EF] = trimesh_topology_initialization(F);
-
-    // std::cout << "F:\n" << F << std::endl;
-    // std::cout << "FE:\n" << FE << std::endl;
-    // std::cout << "FF:\n" << FF << std::endl;
-    // std::cout << "VF:\n" << VF << std::endl;
-    // std::cout << "EF:\n" << EF << std::endl;
 
     // 1. Test relationship between EF and FE
     for (int i = 0; i < EF.size(); ++i) {
@@ -144,12 +132,6 @@ TEST_CASE("topology_of_complex_meshes", "[topology][2D]")
         }
 
         auto [FE, FF, VF, EF] = trimesh_topology_initialization(F);
-
-        // std::cout << "F:\n" << F << std::endl;
-        // std::cout << "FE:\n" << FE << std::endl;
-        // std::cout << "FF:\n" << FF << std::endl;
-        // std::cout << "VF:\n" << VF << std::endl;
-        // std::cout << "EF:\n" << EF << std::endl;
 
         // 1. Test relationship between EF and FE
         for (int i = 0; i < EF.size(); ++i) {

@@ -29,26 +29,22 @@ TEST_CASE("test_eigenmatrixwriter", "[eigenmatrixwriter][.]")
         MatrixX<double> V;
         writer.get_double_matrix("vertices", PrimitiveType::Vertex, V);
 
-        // std::cout << V << std::endl;
         CHECK(V.rows() == 9);
         CHECK(V.cols() == 3);
 
         MatrixX<int64_t> FV;
         writer.get_int64_t_matrix("m_fv", PrimitiveType::Triangle, FV);
 
-        // std::cout << FV << std::endl;
         CHECK(FV.rows() == 8);
         CHECK(FV.cols() == 3);
 
         MatrixX<double> Vs;
         writer.get_position_matrix(Vs);
-        // std::cout << Vs << std::endl;
         CHECK(Vs.rows() == 9);
         CHECK(Vs.cols() == 3);
 
         MatrixX<int64_t> FVs;
         writer.get_FV_matrix(FVs);
-        // std::cout << FVs << std::endl;
         CHECK(FVs.rows() == 8);
         CHECK(FVs.cols() == 3);
     }
@@ -61,26 +57,22 @@ TEST_CASE("test_eigenmatrixwriter", "[eigenmatrixwriter][.]")
         MatrixX<double> V;
         writer.get_double_matrix("vertices", PrimitiveType::Vertex, V);
 
-        // std::cout << V << std::endl;
         CHECK(V.rows() == 6);
         CHECK(V.cols() == 3);
 
         MatrixX<int64_t> TV;
         writer.get_int64_t_matrix("m_tv", PrimitiveType::Tetrahedron, TV);
 
-        // std::cout << TV << std::endl;
         CHECK(TV.rows() == 3);
         CHECK(TV.cols() == 4);
 
         MatrixX<double> Vs;
         writer.get_position_matrix(Vs);
-        // std::cout << Vs << std::endl;
         CHECK(Vs.rows() == 6);
         CHECK(Vs.cols() == 3);
 
         MatrixX<int64_t> TVs;
         writer.get_TV_matrix(TVs);
-        // std::cout << TVs << std::endl;
         CHECK(TVs.rows() == 3);
         CHECK(TVs.cols() == 4);
     }

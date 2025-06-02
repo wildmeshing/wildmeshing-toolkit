@@ -47,7 +47,6 @@ TEST_CASE("tet_inversion_invariant", "[invariants][3D]")
     Tuple t = v0;
 
 
-    std::cout << orient3d(p0.data(), p1.data(), p2.data(), p3.data()) << std::endl;
     CHECK(orient3d(p0.data(), p1.data(), p2.data(), p3.data()) > 0);
     CHECK(wmtk::utils::wmtk_orient3d(p0, p1, p2, p3) > 0);
 
@@ -62,11 +61,6 @@ TEST_CASE("tet_inversion_invariant", "[invariants][3D]")
 
     position_accessor.vector_attribute(v3) = Eigen::Vector3d(0, 0, -1);
     p3 = position_accessor.vector_attribute(v3);
-
-    // std::cout << orient3d(p0.data(), p1.data(), p2.data(), p3.data()) << std::endl;
-    // CHECK(orient3d(p0.data(), p1.data(), p2.data(), p3.data()) < 0);
-    // CHECK(wmtk::utils::wmtk_orient3d(p0, p1, p2, p3) < 0);
-
 
     for (const auto& t : m.get_all(PrimitiveType::Triangle)) {
         CHECK_FALSE(inv.after({}, {t}));

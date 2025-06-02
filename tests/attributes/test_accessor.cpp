@@ -305,7 +305,7 @@ TEST_CASE("test_accessor_caching_scope_success_fails", "[accessor]")
     auto int64_t_acc = m.create_accessor(int64_t_handle);
     auto double_acc = m.create_accessor(double_handle);
     {
-        wmtk::logger().info("Creating a scope");
+        wmtk::logger().trace("Creating a scope");
         // TODO: create scope
 
         auto scope = m.create_scope();
@@ -342,7 +342,7 @@ TEST_CASE("test_accessor_caching_scope_fails_success", "[accessor][caching]")
     check(m, int64_t_acc, true);
     check(m, double_acc, true);
     {
-        wmtk::logger().info("Creating a scope");
+        wmtk::logger().trace("Creating a scope");
         // TODO: create scope
         auto scope = m.create_scope();
 

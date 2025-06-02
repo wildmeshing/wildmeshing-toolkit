@@ -31,7 +31,7 @@ constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
 constexpr PrimitiveType PF = PrimitiveType::Triangle;
 
-TEST_CASE("hdf5_2d", "[io]")
+TEST_CASE("hdf5_2d_write", "[io]")
 {
     RowVectors3l tris;
     tris.resize(1, 3);
@@ -129,11 +129,14 @@ TEST_CASE("paraview_3d", "[io]")
 
 TEST_CASE("msh_3d", "[io]")
 {
+    logger().set_level(spdlog::level::warn);
     CHECK_NOTHROW(read_mesh(wmtk_data_dir / "sphere_delaunay.msh"));
 }
 
-TEST_CASE("msh_3d_with_tet_attribute", "[io]")
+TEST_CASE("msh_3d_with_tet_attribute", "[io][.]")
 {
+    // rather slow and therefore [.]
+    logger().set_level(spdlog::level::warn);
     constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
 
     MshReader reader;

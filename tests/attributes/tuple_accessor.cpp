@@ -27,7 +27,6 @@ TEST_CASE("tuple_to_int64_t_storage", "[accessor]")
     for (const auto& t : basic_data) {
         wmtk::Vector<int64_t, 2> idat = wmtk::utils::tuple_to_vector(t);
         const int64_t* iptr = reinterpret_cast<const int64_t*>(&t);
-        std::cout << idat.transpose() << " === " << iptr[0] << " " << iptr[1] << std::endl;
         CHECK(idat(0) == iptr[0]);
         CHECK(idat(1) == iptr[1]);
     }

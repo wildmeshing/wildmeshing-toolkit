@@ -95,7 +95,6 @@ double AMIPSOptimizationSmoothing::WMTKAMIPSProblem<S>::value(const TVector& x)
         }
     }
 
-    // std::cout << res << std::endl;
     return res;
 }
 
@@ -142,7 +141,6 @@ void AMIPSOptimizationSmoothing::WMTKAMIPSProblem<S>::hessian(
     const TVector& x,
     Eigen::MatrixXd& hessian)
 {
-    // std::cout << "error here !!! Hessian used" << std::endl;
     constexpr int64_t size = S == 6 ? 2 : 3;
     hessian.resize(size, size);
     hessian.setZero();
@@ -207,17 +205,9 @@ bool AMIPSOptimizationSmoothing::WMTKAMIPSProblem<S>::is_step_valid(
             p2 << c[6], c[7], c[8];
             p3 << c[9], c[10], c[11];
 
-            // Eigen::Matrix<double, size, 1> x0m = x0;
-            // assert(wmtk::utils::wmtk_orient3d(x0m, p1, p2, p3) > 0);
-            // if (wmtk::utils::wmtk_orient3d(p0, p1, p2, p3) <= 0) {
-            //     // std::cout << wmtk::utils::wmtk_orient3d(x0m, p1, p2, p3) << std::endl;
-            //     return false;
-            // }
-
             Eigen::Matrix<double, size, 1> x0m = x0;
             assert(wmtk::utils::wmtk_orient3d(p3, x0m, p1, p2) > 0);
             if (wmtk::utils::wmtk_orient3d(p3, p0, p1, p2) <= 0) {
-                // std::cout << wmtk::utils::wmtk_orient3d(p3, x0m, p1, p2) << std::endl;
                 return false;
             }
         }
@@ -291,28 +281,6 @@ std::vector<simplex::Simplex> AMIPSOptimizationSmoothing::execute(const simplex:
 
             for (const Tuple& cell_tuple : neighs) {
                 simplex::Simplex cell(mesh().top_simplex_type(), cell_tuple);
-                // auto vertices = mesh().orient_vertices(cell.tuple());
-                // int idx = -1;
-                // for (int i = 0; i < 4; ++i) {
-                //     if (simplex::Simplex::vertex(mesh(), vertices[i]) == simplex) {
-                //         idx = i;
-                //         break;
-                //     }
-                // }
-                // if (idx == -1) {
-                //     std::cout << "idx not found" << std::endl;
-                // }
-
-                // std::rotate(vertices.begin(), vertices.begin() + idx, vertices.end());
-
-
-                // assert(vertices.size() == 4);
-                // if (!simplex::utils::SimplexComparisons::equal(
-                //         mesh(),
-                //         simplex::Simplex::vertex(mesh(), vertices[0]),
-                //         simplex)) {
-                //     std::cout << "error here" << std::endl;
-                // }
 
                 if (!mesh().is_ccw(cell.tuple())) {
                     // switch any local id but NOT the vertex
@@ -349,10 +317,6 @@ std::vector<simplex::Simplex> AMIPSOptimizationSmoothing::execute(const simplex:
 
                     if (!p[0].is_rounded() || !p[1].is_rounded() || !p[2].is_rounded()) return {};
                 }
-                // if (wmtk::utils::wmtk_orient3d(ps[3], ps[0], ps[1], ps[2]) <= 0) {
-                //     std::cout << "this is wrong" << std::endl;
-                // }
-
                 cells.emplace_back(single_cell);
 
                 // cells.emplace_back(m_amips.get_raw_coordinates<4, 3>(cell, simplex));
@@ -458,9 +422,6 @@ std::vector<simplex::Simplex> AMIPSOptimizationSmoothing::execute(const simplex:
                     single_cell[3 * i + 1] = p[1];
                     single_cell[3 * i + 2] = p[2];
                 }
-                // if (wmtk::utils::wmtk_orient3d(ps[3], ps[0], ps[1], ps[2]) <= 0) {
-                //     std::cout << "this is wrong" << std::endl;
-                // }
 
                 cells.emplace_back(single_cell);
 

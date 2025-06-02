@@ -12,7 +12,7 @@ using namespace wmtk;
 using namespace wmtk::function;
 using namespace wmtk::tests;
 using namespace wmtk::simplex;
-TEST_CASE("energy_valence")
+TEST_CASE("energy_valence", "[function]")
 {
     //    0---1---2
     //   /0\1/2\3/4\ .
@@ -39,7 +39,7 @@ TEST_CASE("energy_valence")
     REQUIRE(valence_energy.get_value(Simplex(tri_mesh, PrimitiveType::Edge, e4)) == 2);
 }
 
-TEST_CASE("amips2d_values")
+TEST_CASE("amips2d_values", "[function]")
 {
     SECTION("equilateral_triangle")
     {

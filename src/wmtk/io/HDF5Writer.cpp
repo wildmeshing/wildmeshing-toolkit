@@ -63,6 +63,7 @@ std::string get_type<std::string>()
 HDF5Writer::HDF5Writer(const std::filesystem::path& filename)
 {
     m_hdf5_file = std::make_shared<h5pp::File>(filename, h5pp::FileAccess::REPLACE);
+    m_hdf5_file->createGroup(dataset_path());
 }
 
 void HDF5Writer::write(
@@ -170,11 +171,7 @@ void HDF5Writer::write_absolute_id(const std::vector<int64_t>& id)
 
 std::string HDF5Writer::dataset_path() const
 {
-    std::string res = "WMTK";
-
-    if (!m_name.empty()) res += "/multimesh/" + m_name;
-
-    return res;
+    return "WMTK";
 }
 
 

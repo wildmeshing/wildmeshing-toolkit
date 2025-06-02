@@ -126,10 +126,6 @@ TEST_CASE("attribute_transaction_stack", "[attributes]")
         vector_ats.pop(true);
         CHECK(vector_ats.indices_end() == 0);
         CHECK(vector_ats.transaction_starts().empty());
-        std::cout << vector_ats.vector_attribute(0).transpose() << std::endl;
-        std::cout << vector_ats.vector_attribute(1).transpose() << std::endl;
-        std::cout << vector_ats.vector_attribute(2).transpose() << std::endl;
-        std::cout << vector_ats.vector_attribute(3).transpose() << std::endl;
         CHECK((vector_ats.vector_attribute(0).array() == 2).all());
         CHECK((vector_ats.vector_attribute(1).array() == -1).all());
     }
@@ -146,20 +142,10 @@ TEST_CASE("attribute_transaction_stack", "[attributes]")
 
             auto t_begin = vector_ats.transaction_start_begin(0);
             auto t_end = vector_ats.final_transaction_end();
-            // for (auto it = t_begin; it != t_end; ++it) {
-            //     spdlog::info("{}", *it);
-            // }
             auto t_rend = vector_ats.transaction_start_rend(0);
             auto t_rbegin = vector_ats.final_transaction_rbegin();
-            // for (auto it = t_rbegin; it != t_rend; ++it) {
-            //     spdlog::info("{}", *it);
-            // }
         }
         vector_ats.pop(false);
-        std::cout << vector_ats.vector_attribute(0).transpose() << std::endl;
-        std::cout << vector_ats.vector_attribute(1).transpose() << std::endl;
-        std::cout << vector_ats.vector_attribute(2).transpose() << std::endl;
-        std::cout << vector_ats.vector_attribute(3).transpose() << std::endl;
 
         CHECK(vector_ats.indices_end() == 0);
         CHECK(vector_ats.transaction_starts().empty());
