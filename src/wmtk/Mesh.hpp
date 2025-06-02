@@ -554,7 +554,7 @@ inline attribute::TypedAttributeHandle<T> Mesh::get_attribute_handle_typed(
     const PrimitiveType ptype) const
 {
     wmtk::attribute::TypedAttributeHandle<T> h;
-    h.m_base_handle = m_attribute_manager.get<T>(ptype).attribute_handle(name);
+    h.m_index = m_attribute_manager.get<T>(ptype).attribute_handle(name);
     h.m_primitive_type = ptype;
     return h;
 }

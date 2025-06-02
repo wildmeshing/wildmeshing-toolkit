@@ -11,7 +11,7 @@ inline Accessor<T, MeshType, AttributeType, Dim>::Accessor(
     const TypedAttributeHandle<T>& handle)
     : m_handle(handle)
     , m_mesh(m)
-    , m_attribute(mesh().m_attribute_manager.get(m_handle).attribute(m_handle.m_base_handle))
+    , m_attribute(mesh().m_attribute_manager.get(m_handle).attribute(m_handle.m_index))
 {}
 template <typename T, typename MeshType, typename AttributeType, int Dim>
 Accessor<T, MeshType, AttributeType, Dim>::Accessor(

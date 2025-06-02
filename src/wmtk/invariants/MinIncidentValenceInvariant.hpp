@@ -1,6 +1,5 @@
 #pragma once
 
-#include <wmtk/attribute/AttributeHandle.hpp>
 #include "Invariant.hpp"
 
 namespace wmtk::invariants {

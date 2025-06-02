@@ -119,13 +119,6 @@ public:
 
     HandleVariant& handle() { return m_handle; }
     const HandleVariant& handle() const { return m_handle; }
-    //// creates mutable accessors
-    //// Implementations are in the MutableAccessor.hpp
-    //// for historical reasons note that the following two classes are the same:
-    //// wmtk::attribute::MutableAccessor
-    //// wmtk::Accessor
-    // MutableAccessor<T> create_accessor();
-
 
     template <typename T, int Dim = Eigen::Dynamic, typename MeshType = Mesh>
     const Accessor<T, MeshType, CachingAttribute<T>, Dim> create_const_accessor() const;

@@ -10,10 +10,9 @@ template <typename T>
 class Attribute;
 
 
-
 // An attribute that that can track old state (transactions)
 // A stack of transactions can be created/destroyed by push_scope/pop_scope
-// 
+//
 template <typename T>
 class CachingAttribute : public Attribute<T>
 {
@@ -32,17 +31,19 @@ public:
     CachingAttribute(CachingAttribute&&) = default;
     CachingAttribute& operator=(CachingAttribute&&) = default;
 
-    // adds a scope for a new transaction
+    /**
+     * @brief Push a new scope.
+     *
+     * While any scope is active, all changes are recorded and can be reverted by popping the scope
+     * without preserving the changes.
+     */
     void push_scope();
-    // pops the current transaction
-    // @param preserve_changes: if true the current state of the attribute is preserved, otherwise the last transaction level is popped
+    /**
+     * @brief Pops the current scope.
+     *
+     * @param preserve_changes If true, the current state of the attribute is preserved.
+     */
     void pop_scope(bool preserve_changes);
-
-
-
-
-
-
 
 
     /// checks that we are viewing the active state of the attribute
@@ -80,9 +81,6 @@ public:
     void rollback_current_scope();
 
 
-
-
-
 private:
     // raw access to a (strided) value in an attribute
     const T* get_value(int64_t index) const;
@@ -93,18 +91,23 @@ private:
     void cache(int64_t index, const T& value);
     void apply_last_scope();
 
-public:// FUNCTIONS HERE ARE PUBLIC FOR UNIT TESTING. DO NOT USE!
-    // purely used for debug printing out the ENTIRE attribute state
-#if defined(WMTK_ENABLED_DEV_MODE)
-    void print_state(std::string_view prefix) const;
-#endif
-    // resets the entire transaction stack. should only really be called in unit tests
+public: // FUNCTIONS HERE ARE PUBLIC FOR UNIT TESTING. DO NOT USE!
+    /**
+     * @brief Resets the entire transaction stack.
+     *
+     * Should only really be called in unit tests!
+     */
     void reset();
-    // clears the current active transaction, should only really be called in unit tests
+
+    /**
+     * @brief Clears the current active transaction.
+     *
+     * Should only really be called in unit tests!
+     */
     void clear();
 
     void apply_cache();
-    // applyes to some other buffer that was passed in
+    // applys to some other buffer that was passed in
     void apply_cache(std::vector<T>& other) const;
 
     const std::vector<T>& buffer() const { return m_buffer; }
@@ -128,6 +131,7 @@ public:// FUNCTIONS HERE ARE PUBLIC FOR UNIT TESTING. DO NOT USE!
     std::vector<std::pair<size_t, size_t>>::const_reverse_iterator final_transaction_rbegin() const;
 
     void update_buffer_sizes_for_add(size_t data_size);
+
 protected:
     std::vector<T> m_buffer = std::vector<T>(64);
     std::vector<std::pair<size_t, size_t>> m_indices = std::vector<std::pair<size_t, size_t>>(32);
@@ -143,7 +147,4 @@ protected:
 
 } // namespace wmtk::attribute
 
-
-#if !defined(WMTK_ENABLED_DEV_MODE)
 #include "CachingAttribute.hxx"
-#endif

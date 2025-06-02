@@ -1,7 +1,6 @@
 
 #pragma once
 #include <wmtk/PrimitiveType.hpp>
-#include "AttributeHandle.hpp"
 namespace wmtk {
 class Mesh;
 class Rational;
@@ -33,15 +32,18 @@ private:
     template <typename U, typename MeshType, typename AttributeType, int Dim>
     friend class Accessor;
     friend class AttributeManager;
-    wmtk::attribute::AttributeHandle m_base_handle;
+
+    int64_t m_index = -1;
     wmtk::PrimitiveType m_primitive_type = wmtk::PrimitiveType::Vertex;
 
-    TypedAttributeHandle(AttributeHandle ah, PrimitiveType pt)
-        : m_base_handle(ah)
-        , m_primitive_type(pt)
-    {}
+    /**
+     * @brief Constructor that takes an index.
+     *
+     * Set to private to ensure that handles are not created manually.
+     */
     TypedAttributeHandle(int64_t index, PrimitiveType pt)
-        : TypedAttributeHandle(AttributeHandle(index), pt)
+        : m_index(index)
+        , m_primitive_type(pt)
     {}
 
     TypedAttributeHandle(const MeshAttributeHandle&);
@@ -53,19 +55,38 @@ public:
     TypedAttributeHandle& operator=(const TypedAttributeHandle&) = default;
     TypedAttributeHandle& operator=(TypedAttributeHandle&&) = default;
 
+    /**
+     * @brief Check if two handles reference the same attribute.
+     */
     template <typename U>
-    bool operator==(const TypedAttributeHandle<U>& o) const
-    {
-        return std::is_same_v<T, U> && m_base_handle == o.m_base_handle &&
-               m_primitive_type == o.m_primitive_type;
-    }
+    bool operator==(const TypedAttributeHandle<U>& o) const;
+
     bool operator<(const TypedAttributeHandle<T>& o) const;
-    bool is_valid() const { return m_base_handle.is_valid(); }
+
+    /**
+     * @brief Check if handle holds a reasonable index.
+     *
+     * This check does not guarantee that the referenced attribute also exists!
+     */
+    bool is_valid() const { return m_index != -1; }
+
     PrimitiveType primitive_type() const { return m_primitive_type; }
-    const AttributeHandle& base_handle() const { return m_base_handle; }
+
+    const int64_t& base_handle() const { return m_index; }
+
     operator std::string() const;
 };
+
+template <typename T>
+template <typename U>
+inline bool TypedAttributeHandle<T>::operator==(const TypedAttributeHandle<U>& o) const
+{
+    return std::is_same_v<T, U> && m_index == o.m_index && m_primitive_type == o.m_primitive_type;
+}
+
 } // namespace attribute
+
 template <typename T>
 using TypedAttributeHandle = attribute::TypedAttributeHandle<T>;
+
 } // namespace wmtk

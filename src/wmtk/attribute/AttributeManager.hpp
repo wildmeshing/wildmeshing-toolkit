@@ -191,7 +191,7 @@ inline TypedAttributeHandle<T> AttributeManager::register_attribute(
     T default_value)
 {
     TypedAttributeHandle<T> r;
-    r.m_base_handle = get<T>(ptype).register_attribute(name, size, replace, default_value),
+    r.m_index = get<T>(ptype).register_attribute(name, size, replace, default_value),
     r.m_primitive_type = ptype;
 
     return r;
@@ -211,7 +211,7 @@ inline int64_t AttributeManager::get_attribute_dimension(
     const TypedAttributeHandle<T>& handle) const
 {
     assert(handle.is_valid());
-    return get(handle).dimension(handle.m_base_handle);
+    return get(handle).dimension(handle.m_index);
 }
 
 template <typename T>
@@ -219,19 +219,19 @@ inline const T& AttributeManager::get_attribute_default_value(
     const TypedAttributeHandle<T>& handle) const
 {
     assert(handle.is_valid());
-    return get(handle).default_value(handle.m_base_handle);
+    return get(handle).default_value(handle.m_index);
 }
 
 template <typename T>
 inline bool AttributeManager::validate_handle(const TypedAttributeHandle<T>& handle) const
 {
-    return get(handle).validate_handle(handle.m_base_handle);
+    return get(handle).validate_handle(handle.m_index);
 }
 
 template <typename T>
 inline std::string AttributeManager::get_name(const TypedAttributeHandle<T>& handle) const
 {
-    return get(handle).get_name(handle.m_base_handle);
+    return get(handle).get_name(handle.m_index);
 }
 
 template <typename T>
@@ -239,7 +239,7 @@ inline void AttributeManager::set_name(
     const TypedAttributeHandle<T>& handle,
     const std::string& name)
 {
-    return get(handle).set_name(handle.m_base_handle, name);
+    return get(handle).set_name(handle.m_index, name);
 }
 
 } // namespace attribute

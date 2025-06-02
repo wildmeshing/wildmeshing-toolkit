@@ -17,7 +17,6 @@ set(SRC_FILES
     internal/UseParentScopeRAII.hpp
     internal/UseParentScopeRAII.cpp
 
-    AttributeHandle.hpp
     TypedAttributeHandle.hpp
     TypedAttributeHandle.cpp
     MeshAttributeHandle.hpp
@@ -26,7 +25,6 @@ set(SRC_FILES
 
     CachingAttribute.hxx
     CachingAttribute.hpp
-    CachingAttribute.cpp
 
     Accessor.hxx
     Accessor.hpp

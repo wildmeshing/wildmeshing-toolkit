@@ -244,7 +244,7 @@ std::vector<MeshAttributeHandle::HandleVariant> AttributeManager::get_all_attrib
         for (size_t pt_index = 0; pt_index < mesh_attributes.size(); ++pt_index) {
             const PrimitiveType pt = get_primitive_type_from_id(pt_index);
 
-            auto handle_converter = [pt](const AttributeHandle& h) -> TypedAttributeHandle<T> {
+            auto handle_converter = [pt](const int64_t& h) -> TypedAttributeHandle<T> {
                 return {h, pt};
                 return TypedAttributeHandle<T>{h, pt};
             };
@@ -266,7 +266,7 @@ std::vector<MeshAttributeHandle::HandleVariant> AttributeManager::get_all_attrib
 
 namespace {
 template <typename T>
-class ClearAttrDataT : public std::array<std::vector<AttributeHandle>, 5>
+class ClearAttrDataT : public std::array<std::vector<int64_t>, 5>
 {
 };
 

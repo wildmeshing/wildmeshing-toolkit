@@ -1,6 +1,5 @@
 #pragma once
 
-#include "AttributeHandle.hpp"
 #include "CachingAttribute.hpp"
 
 
@@ -36,7 +35,7 @@ public:
 
     void serialize(const int dim, MeshWriter& writer) const;
 
-    [[nodiscard]] AttributeHandle register_attribute(
+    [[nodiscard]] int64_t register_attribute(
         const std::string& name,
         int64_t dimension,
         bool replace = false,
@@ -60,13 +59,13 @@ public:
      * @param attributes Vector of attributes that should be removed.
      * @param invalidate_handles invalidates all handles. If true this garbage collects old handles
      */
-    void remove_attributes(const std::vector<AttributeHandle>& attributes);
+    void remove_attributes(const std::vector<int64_t>& attributes);
     /**
      * @brief Remove a single attribute
      *
      * @param attribute the attribute being deleted
      */
-    void remove_attribute(const AttributeHandle& attribute);
+    void remove_attribute(const int64_t& attribute);
 
 
     bool operator==(const TypedAttributeManager<T>& other) const;
@@ -78,11 +77,11 @@ public:
     void change_to_child_scope() const;
 
 
-    int64_t dimension(const AttributeHandle& handle) const;
-    const T& default_value(const AttributeHandle& handle) const;
-    std::string get_name(const AttributeHandle& handle) const;
+    int64_t dimension(const int64_t& handle) const;
+    const T& default_value(const int64_t& handle) const;
+    std::string get_name(const int64_t& handle) const;
 
-    void set_name(const AttributeHandle& handle, const std::string& name);
+    void set_name(const int64_t& handle, const std::string& name);
 
     bool has_attribute(const std::string& name) const;
 
@@ -93,28 +92,28 @@ public:
     size_t attribute_count() const;
 
     // Returns a vector of handles to the set of active attributes
-    std::vector<AttributeHandle> active_attributes() const;
+    std::vector<int64_t> active_attributes() const;
     void assert_capacity_valid(int64_t cap) const;
 
-    CachingAttribute<T>& attribute(const AttributeHandle& handle);
-    const CachingAttribute<T>& attribute(const AttributeHandle& handle) const;
+    CachingAttribute<T>& attribute(const int64_t& handle);
+    const CachingAttribute<T>& attribute(const int64_t& handle) const;
 
-    AttributeHandle attribute_handle(const std::string& name) const;
+    int64_t attribute_handle(const std::string& name) const;
 
-    bool is_active(const AttributeHandle& handle) const;
+    bool is_active(const int64_t& handle) const;
 
     // pass by value due to
     //https://clang.llvm.org/extra/clang-tidy/checks/modernize/pass-by-value.html
-    void set(const AttributeHandle& handle, std::vector<T> val);
+    void set(const int64_t& handle, std::vector<T> val);
 
-    bool validate_handle(const AttributeHandle& handle) const;
+    bool validate_handle(const int64_t& handle) const;
 
 protected:
     /// Clears and compactifies the attribute list. This invalidates all existing handles
     [[deprecated]] void clear_dead_attributes();
 
 
-    size_t attribute_size(const AttributeHandle& handle) const;
+    size_t attribute_size(const int64_t& handle) const;
 
 private:
     // The vector held in each Attribute in m_attributes has this size
@@ -123,25 +122,24 @@ private:
     std::vector<std::unique_ptr<CachingAttribute<T>>> m_attributes;
 };
 template <typename T>
-inline CachingAttribute<T>& TypedAttributeManager<T>::attribute(const AttributeHandle& handle)
+inline CachingAttribute<T>& TypedAttributeManager<T>::attribute(const int64_t& handle)
 {
-    CachingAttribute<T>& attr = *m_attributes.at(handle.index());
+    CachingAttribute<T>& attr = *m_attributes.at(handle);
     return attr;
 }
 template <typename T>
-inline const CachingAttribute<T>& TypedAttributeManager<T>::attribute(
-    const AttributeHandle& handle) const
+inline const CachingAttribute<T>& TypedAttributeManager<T>::attribute(const int64_t& handle) const
 {
-    return *m_attributes.at(handle.index());
+    return *m_attributes.at(handle);
 }
 
 template <typename T>
-inline int64_t TypedAttributeManager<T>::dimension(const AttributeHandle& handle) const
+inline int64_t TypedAttributeManager<T>::dimension(const int64_t& handle) const
 {
     return attribute(handle).dimension();
 }
 template <typename T>
-inline const T& TypedAttributeManager<T>::default_value(const AttributeHandle& handle) const
+inline const T& TypedAttributeManager<T>::default_value(const int64_t& handle) const
 {
     return attribute(handle).default_value();
 }

@@ -75,23 +75,14 @@ The `Mesh` contains an `AttributeManager`.
 
 #### Handles
 
-The `TypedAttributeManager` holds a map from names to `AttributeHandle`s. They are only for internal usage within the `TypedAttributeManager` to reference and access attributes.
-
-```C++
-class AttributeHandle
-{
-    int64_t m_index = -1;
-}
-```
-
-The `TypedAttributeHandle` is the most basic handle used outside the `namespace attribute`. It consists of an `AttributeHandle` and a `PrimitiveType`. Together with the attribute's `Type`, an attribute is uniquely defined for a single `Mesh`.
+The `TypedAttributeHandle` is the most basic handle. It consists of an `int64_t` and a `PrimitiveType`. Together with the attribute's `Type`, an attribute is uniquely defined for a single `Mesh`.
 
 ```C++
 template <typename T>
 class TypedAttributeHandle
 {
     using Type = T;
-    AttributeHandle m_base_handle;
+    int64_t m_base_handle;
     PrimitiveType m_primitive_type;
 }
 ```

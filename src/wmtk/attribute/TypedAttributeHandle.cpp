@@ -11,7 +11,7 @@ TypedAttributeHandle<T>::operator std::string() const
 {
     return fmt::format(
         "{}:{}",
-        m_base_handle.index(),
+        m_index,
         wmtk::primitive_type_name(m_primitive_type)
 
     );
@@ -20,9 +20,9 @@ TypedAttributeHandle<T>::operator std::string() const
 template <typename T>
 bool TypedAttributeHandle<T>::operator<(const TypedAttributeHandle<T>& o) const
 {
-    return std::tie(m_base_handle, m_primitive_type) <
-           std::tie(o.m_base_handle, o.m_primitive_type);
+    return std::tie(m_index, m_primitive_type) < std::tie(o.m_index, o.m_primitive_type);
 }
+
 template <typename T>
 TypedAttributeHandle<T>::TypedAttributeHandle(const MeshAttributeHandle& h)
     : TypedAttributeHandle(h.as<T>())

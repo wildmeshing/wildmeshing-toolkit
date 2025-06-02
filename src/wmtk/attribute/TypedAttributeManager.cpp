@@ -98,7 +98,7 @@ void TypedAttributeManager<T>::change_to_child_scope() const
 }
 
 template <typename T>
-AttributeHandle TypedAttributeManager<T>::register_attribute(
+int64_t TypedAttributeManager<T>::register_attribute(
     const std::string& name,
     int64_t dimension,
     bool replace,
@@ -122,7 +122,7 @@ AttributeHandle TypedAttributeManager<T>::register_attribute(
         }
     }
 
-    AttributeHandle handle(m_attributes.size());
+    const int64_t handle = m_attributes.size();
     m_attributes.emplace_back(
         std::make_unique<CachingAttribute<T>>(name, dimension, default_value, reserved_size()));
 
@@ -139,7 +139,7 @@ void TypedAttributeManager<T>::assert_capacity_valid(int64_t cap) const
     }
 }
 template <typename T>
-AttributeHandle TypedAttributeManager<T>::attribute_handle(const std::string& name) const
+int64_t TypedAttributeManager<T>::attribute_handle(const std::string& name) const
 {
     for (int64_t i = 0; i < m_attributes.size(); ++i) {
         if (!m_attributes[i]) {
@@ -187,19 +187,19 @@ bool TypedAttributeManager<T>::operator==(const TypedAttributeManager<T>& other)
 
 
 template <typename T>
-void TypedAttributeManager<T>::set(const AttributeHandle& handle, std::vector<T> val)
+void TypedAttributeManager<T>::set(const int64_t& index, std::vector<T> val)
 {
     // TODO: should we validate the size of val compared to the internally held data?
-    auto& attr_ptr = m_attributes[handle.index()];
+    auto& attr_ptr = m_attributes[index];
     assert(bool(attr_ptr));
     auto& attr = *attr_ptr;
     attr.set(std::move(val));
 }
 
 template <typename T>
-size_t TypedAttributeManager<T>::attribute_size(const AttributeHandle& handle) const
+size_t TypedAttributeManager<T>::attribute_size(const int64_t& index) const
 {
-    auto& attr_ptr = m_attributes[handle.index()];
+    auto& attr_ptr = m_attributes[index];
     assert(bool(attr_ptr));
     return attr_ptr->reserved_size();
 }
@@ -216,22 +216,21 @@ size_t TypedAttributeManager<T>::attribute_count() const
     return active_attributes().size();
 }
 template <typename T>
-auto TypedAttributeManager<T>::active_attributes() const -> std::vector<AttributeHandle>
+auto TypedAttributeManager<T>::active_attributes() const -> std::vector<int64_t>
 {
-    std::vector<AttributeHandle> handles;
+    std::vector<int64_t> handles;
     handles.reserve(m_attributes.size());
     for (size_t j = 0; j < m_attributes.size(); ++j) {
         if (bool(m_attributes[j])) {
-            handles.emplace_back(AttributeHandle(j));
+            handles.emplace_back(j);
         }
     }
 
     return handles;
 }
 template <typename T>
-bool TypedAttributeManager<T>::is_active(const AttributeHandle& h) const
+bool TypedAttributeManager<T>::is_active(const int64_t& index) const
 {
-    const size_t index = h.index();
     assert(index < m_attributes.size());
     return bool(m_attributes[index]);
 }
@@ -263,35 +262,35 @@ void TypedAttributeManager<T>::guarantee_at_least(const int64_t size)
 }
 
 template <typename T>
-void TypedAttributeManager<T>::remove_attributes(const std::vector<AttributeHandle>& attributes)
+void TypedAttributeManager<T>::remove_attributes(const std::vector<int64_t>& attributes)
 {
-    for (const AttributeHandle& i : attributes) {
+    for (const int64_t& i : attributes) {
         remove_attribute(i);
     }
 }
 
 
 template <typename T>
-void TypedAttributeManager<T>::remove_attribute(const AttributeHandle& attribute)
+void TypedAttributeManager<T>::remove_attribute(const int64_t& index)
 {
-    auto& attr = m_attributes[attribute.index()];
+    auto& attr = m_attributes[index];
     if (!attr) {
         logger().warn("Attribute was already deleted.");
         return;
     }
 
-    m_attributes[attribute.index()].reset();
+    m_attributes[index].reset();
 }
 
 template <typename T>
-bool TypedAttributeManager<T>::validate_handle(const AttributeHandle& handle) const
+bool TypedAttributeManager<T>::validate_handle(const int64_t& index) const
 {
-    if (handle.index() >= m_attributes.size()) {
+    if (index >= m_attributes.size()) {
         logger().warn("Handle index is larger than the attribute vector");
         return false;
     }
 
-    if (!m_attributes[handle.index()]) {
+    if (!m_attributes[index]) {
         return false;
     }
 
@@ -313,26 +312,26 @@ void TypedAttributeManager<T>::clear_dead_attributes()
     m_attributes.resize(new_index);
 }
 template <typename T>
-std::string TypedAttributeManager<T>::get_name(const AttributeHandle& handle) const
+std::string TypedAttributeManager<T>::get_name(const int64_t& index) const
 {
-    assert(handle.index() < m_attributes.size());
-    if (m_attributes[handle.index()]) {
-        return m_attributes[handle.index()]->name();
+    assert(index < m_attributes.size());
+    if (m_attributes[index]) {
+        return m_attributes[index]->name();
     }
     throw std::runtime_error("Could not find handle in TypedAttributeManager");
     return "UNKNOWN";
 }
 
 template <typename T>
-void TypedAttributeManager<T>::set_name(const AttributeHandle& handle, const std::string& name)
+void TypedAttributeManager<T>::set_name(const int64_t& index, const std::string& name)
 {
-    const std::string old_name = get_name(handle);
+    const std::string old_name = get_name(index);
 
     if (old_name == name) {
         return;
     }
 
-    auto& attr = m_attributes[handle.index()];
+    auto& attr = m_attributes[index];
     assert(bool(attr));
     assert(attr->name() == old_name);
 
