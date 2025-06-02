@@ -7,7 +7,7 @@
 #include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
-#include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
+#include <wmtk/invariants/LinkConditionInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
 #include <wmtk/io/Cache.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
@@ -96,7 +96,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         const Tuple edge = m.edge_tuple_with_vs_and_t(0, 4, 0);
 
         EdgeCollapse op(m);
-        op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.add_invariant(std::make_shared<LinkConditionInvariant>(m));
 
         const bool success = !op(Simplex::edge(m, edge)).empty();
         CHECK(success);
@@ -106,7 +106,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         const Tuple edge = m.edge_tuple_with_vs_and_t(0, 4, 0);
 
         EdgeCollapse op(m);
-        op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.add_invariant(std::make_shared<LinkConditionInvariant>(m));
 
         op.add_invariant(std::make_shared<InteriorVertexInvariant>(m));
         const bool fail = op(Simplex::edge(m, edge)).empty();
@@ -116,7 +116,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     {
         const Tuple edge = m.edge_tuple_with_vs_and_t(0, 1, 1);
         EdgeCollapse op(m);
-        op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.add_invariant(std::make_shared<LinkConditionInvariant>(m));
         op(Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
 
@@ -133,7 +133,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         const Tuple edge = m.edge_tuple_with_vs_and_t(0, 1, 1);
 
         EdgeCollapse op(m);
-        op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.add_invariant(std::make_shared<LinkConditionInvariant>(m));
 
         const bool success = !op(Simplex::edge(m, edge)).empty();
         CHECK(success);
@@ -143,7 +143,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         const Tuple edge = m.edge_tuple_with_vs_and_t(0, 1, 1);
 
         EdgeCollapse op(m);
-        op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.add_invariant(std::make_shared<LinkConditionInvariant>(m));
 
         op.add_invariant(std::make_shared<InteriorEdgeInvariant>(m));
         const bool fail = op(Simplex::edge(m, edge)).empty();
@@ -160,7 +160,7 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
 
         const Tuple edge = m.edge_tuple_with_vs_and_t(4, 5, 2);
         EdgeCollapse op(m);
-        op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.add_invariant(std::make_shared<LinkConditionInvariant>(m));
         auto res = op(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
@@ -183,7 +183,7 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
 
         const Tuple edge = m.edge_tuple_with_vs_and_t(3, 4, 0);
         EdgeCollapse op(m);
-        op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.add_invariant(std::make_shared<LinkConditionInvariant>(m));
         auto res = op(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
@@ -200,7 +200,7 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
 
         const Tuple edge = m.edge_tuple_with_vs_and_t(4, 3, 0);
         EdgeCollapse op(m);
-        op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.add_invariant(std::make_shared<LinkConditionInvariant>(m));
         auto res = op(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();

@@ -23,19 +23,19 @@ private:
     const int64_t m_val;
 };
 
-class TodoLargerInvariant : public Invariant
+class LargerInvariant : public Invariant
 {
     /**
      * Invariant for todo-list in scheduler. Recording which simplices still need to be operated.
      * If the todo_tag tagged as 1 then return true, otherwise return false
      */
 public:
-    TodoLargerInvariant(
+    LargerInvariant(
         const Mesh& m,
         const TypedAttributeHandle<double>& todo_handle,
         const double val);
 
-    TodoLargerInvariant(
+    LargerInvariant(
         const Mesh& m,
         const TypedAttributeHandle<double>& todo_handle,
         const TypedAttributeHandle<double>& comparison_handle,
@@ -49,19 +49,19 @@ private:
     const double m_val;
 };
 
-class TodoSmallerInvariant : public Invariant
+class SmallerInvariant : public Invariant
 {
     /**
      * Invariant for todo-list in scheduler. Recording which simplices still need to be operated.
      * If the todo_tag tagged as 1 then return true, otherwise return false
      */
 public:
-    TodoSmallerInvariant(
+    SmallerInvariant(
         const Mesh& m,
         const TypedAttributeHandle<double>& todo_handle,
         const double val);
 
-    TodoSmallerInvariant(
+    SmallerInvariant(
         const Mesh& m,
         const TypedAttributeHandle<double>& todo_handle,
         const TypedAttributeHandle<double>& comparison_handle,

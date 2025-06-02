@@ -1,4 +1,4 @@
-#include "MultiMeshLinkConditionInvariant.hpp"
+#include "LinkConditionInvariant.hpp"
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/simplex/Simplex.hpp>
@@ -6,10 +6,10 @@
 
 namespace wmtk::invariants {
 
-MultiMeshLinkConditionInvariant::MultiMeshLinkConditionInvariant(const Mesh& m)
+LinkConditionInvariant::LinkConditionInvariant(const Mesh& m)
     : Invariant(m, true, false, false)
 {}
-bool MultiMeshLinkConditionInvariant::before(const simplex::Simplex& t) const
+bool LinkConditionInvariant::before(const simplex::Simplex& t) const
 {
     assert(t.primitive_type() == PrimitiveType::Edge);
 

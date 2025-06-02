@@ -6,7 +6,7 @@
 #include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
-#include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
+#include <wmtk/invariants/LinkConditionInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
 #include <wmtk/io/Cache.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
@@ -43,7 +43,7 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         DEBUG_TriMesh m = interior_edge();
         TriEdgeSwap op(m);
         op.add_invariant(std::make_shared<InteriorEdgeInvariant>(m));
-        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.collapse().add_invariant(std::make_shared<LinkConditionInvariant>(m));
 
 
         REQUIRE(m.is_connectivity_valid());
@@ -73,7 +73,7 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         DEBUG_TriMesh m = interior_edge();
         TriEdgeSwap op(m);
         op.add_invariant(std::make_shared<InteriorEdgeInvariant>(m));
-        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.collapse().add_invariant(std::make_shared<LinkConditionInvariant>(m));
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_with_vs_and_t(1, 2, 2);
@@ -101,7 +101,7 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         DEBUG_TriMesh m = single_triangle();
         TriEdgeSwap op(m);
         op.add_invariant(std::make_shared<InteriorEdgeInvariant>(m));
-        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.collapse().add_invariant(std::make_shared<LinkConditionInvariant>(m));
 
         REQUIRE(m.is_connectivity_valid());
         const Tuple edge = m.edge_tuple_with_vs_and_t(1, 2, 0);
@@ -113,7 +113,7 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         DEBUG_TriMesh m = tetrahedron();
         TriEdgeSwap op(m);
         op.add_invariant(std::make_shared<InteriorEdgeInvariant>(m));
-        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.collapse().add_invariant(std::make_shared<LinkConditionInvariant>(m));
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_with_vs_and_t(2, 1, 1);
@@ -138,7 +138,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         DEBUG_TriMesh m = single_triangle();
         const Tuple f = m.edge_tuple_with_vs_and_t(1, 2, 0);
         composite::TriFaceSplit op(m);
-        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.collapse().add_invariant(std::make_shared<LinkConditionInvariant>(m));
         auto result = op(Simplex::face(m, f));
         bool is_success = !result.empty();
         CHECK(is_success);
@@ -165,7 +165,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         DEBUG_TriMesh m = quad();
         Tuple f = m.edge_tuple_with_vs_and_t(1, 0, 1);
         composite::TriFaceSplit op(m);
-        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.collapse().add_invariant(std::make_shared<LinkConditionInvariant>(m));
         const auto res = op(Simplex::face(m, f));
         const bool is_success = !res.empty();
         CHECK(is_success);
@@ -219,7 +219,7 @@ TEST_CASE("split_face_with_attribute", "[operations][split][2D][.]")
     //     op.split().set_new_attribute_strategy(v2_handle, new_split);
     // }
 
-    op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+    op.collapse().add_invariant(std::make_shared<LinkConditionInvariant>(m));
     // op.split().set_new_attribute_strategy(
     //     attri_handle,
     //     wmtk::operations::SplitBasicStrategy::Copy);
@@ -273,7 +273,7 @@ TEST_CASE("split_single_triangle_at_mid_point", "[operations][split][2D][.]")
         m.get_attribute_handle<double>("vertices", PV);
 
     composite::TriFaceSplit op(m);
-    op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+    op.collapse().add_invariant(std::make_shared<LinkConditionInvariant>(m));
     // op.split().set_new_attribute_strategy(pos_handle);
     // op.collapse().set_new_attribute_strategy(
     //     pos_handle,
@@ -316,7 +316,7 @@ TEST_CASE("split_single_triangle_at_mid_point_with_tag_embedding_on", "[operatio
     acc_todo.scalar_attribute(f) = 1;
 
     composite::TriFaceSplit op(m);
-    op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+    op.collapse().add_invariant(std::make_shared<LinkConditionInvariant>(m));
     op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle.as<int64_t>()));
     // op.split().set_new_attribute_strategy(
     //     todo_handle,
@@ -359,7 +359,7 @@ TEST_CASE("split_single_triangle_at_mid_point_with_tag_embedding_off", "[operati
     acc_vertex_tag.scalar_attribute(m.edge_tuple_with_vs_and_t(2, 0, 0)) = 3;
 
     composite::TriFaceSplit op(m);
-    op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+    op.collapse().add_invariant(std::make_shared<LinkConditionInvariant>(m));
 
     // op.split().set_new_attribute_strategy(
     //     todo_handle,
@@ -425,7 +425,7 @@ TEST_CASE("should fail with todo tag 0", "[operations][split][2D][.]")
 
 
     composite::TriFaceSplit op(m);
-    op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+    op.collapse().add_invariant(std::make_shared<LinkConditionInvariant>(m));
     op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle.as<int64_t>()));
 
     // op.split().set_new_attribute_strategy(

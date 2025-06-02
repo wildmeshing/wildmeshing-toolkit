@@ -19,7 +19,7 @@ bool TodoInvariant::before(const simplex::Simplex& t) const
     return split_todo_accessor.const_scalar_attribute(t) == m_val;
 }
 
-TodoLargerInvariant::TodoLargerInvariant(
+LargerInvariant::LargerInvariant(
     const Mesh& m,
     const TypedAttributeHandle<double>& todo_handle,
     const double val)
@@ -28,7 +28,7 @@ TodoLargerInvariant::TodoLargerInvariant(
     , m_val(val)
 {}
 
-TodoLargerInvariant::TodoLargerInvariant(
+LargerInvariant::LargerInvariant(
     const Mesh& m,
     const TypedAttributeHandle<double>& todo_handle,
     const TypedAttributeHandle<double>& comparison_handle,
@@ -39,7 +39,7 @@ TodoLargerInvariant::TodoLargerInvariant(
     , m_val(val)
 {}
 
-bool TodoLargerInvariant::before(const simplex::Simplex& t) const
+bool LargerInvariant::before(const simplex::Simplex& t) const
 {
     assert(t.primitive_type() == m_todo_handle.primitive_type());
     const attribute::Accessor<double> split_todo_accessor =
@@ -55,7 +55,7 @@ bool TodoLargerInvariant::before(const simplex::Simplex& t) const
     }
 }
 
-TodoSmallerInvariant::TodoSmallerInvariant(
+SmallerInvariant::SmallerInvariant(
     const Mesh& m,
     const TypedAttributeHandle<double>& todo_handle,
     const double val)
@@ -64,7 +64,7 @@ TodoSmallerInvariant::TodoSmallerInvariant(
     , m_val(val)
 {}
 
-TodoSmallerInvariant::TodoSmallerInvariant(
+SmallerInvariant::SmallerInvariant(
     const Mesh& m,
     const TypedAttributeHandle<double>& todo_handle,
     const TypedAttributeHandle<double>& comparison_handle,
@@ -75,7 +75,7 @@ TodoSmallerInvariant::TodoSmallerInvariant(
     , m_val(val)
 {}
 
-bool TodoSmallerInvariant::before(const simplex::Simplex& t) const
+bool SmallerInvariant::before(const simplex::Simplex& t) const
 {
     assert(t.primitive_type() == m_todo_handle.primitive_type());
     const attribute::Accessor<double> split_todo_accessor =

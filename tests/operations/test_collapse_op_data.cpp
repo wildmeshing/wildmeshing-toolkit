@@ -2,7 +2,7 @@
 
 #include <numeric>
 #include <wmtk/attribute/Accessor.hpp>
-#include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
+#include <wmtk/invariants/LinkConditionInvariant.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -82,8 +82,7 @@ TEST_CASE("get per face data")
         Tuple edge = m.edge_tuple_with_vs_and_t(0, 2, 0);
         REQUIRE(m.id(edge, PrimitiveType::Vertex) == 0);
         REQUIRE(m.id(edge, PrimitiveType::Face) == 0);
-        REQUIRE(
-            m.id(m.switch_tuple(edge, PrimitiveType::Vertex), PrimitiveType::Vertex) == 2);
+        REQUIRE(m.id(m.switch_tuple(edge, PrimitiveType::Vertex), PrimitiveType::Vertex) == 2);
         auto state = m.get_tmoe();
 
         TMOE::PerFaceData face_data = state.get_per_face_data(edge);

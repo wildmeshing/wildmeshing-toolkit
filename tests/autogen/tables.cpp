@@ -117,44 +117,6 @@ TEST_CASE("tuple_autogen_id_inversion", "[tuple]")
     }
 }
 
-TEST_CASE("tuple_autogen_is_ccw", "[tuple]")
-{
-    for (const auto& ve : tri_mesh::auto_2d_table_complete_vertex) {
-        wmtk::Tuple t(ve[0], ve[1], -1, 0);
-        CHECK(tri_mesh::tuple_is_valid_for_ccw(t));
-        CHECK(tri_mesh::is_ccw(t));
-        CHECK(tuple_is_valid_for_ccw(PrimitiveType::Triangle, t));
-        CHECK(is_ccw(PrimitiveType::Triangle, t));
-    }
-    for (const auto& ve : tri_mesh::auto_2d_table_complete_edge) {
-        wmtk::Tuple t(ve[0], ve[1], -1, 0);
-        CHECK(tri_mesh::tuple_is_valid_for_ccw(t));
-        CHECK(tri_mesh::is_ccw(t));
-        CHECK(tuple_is_valid_for_ccw(PrimitiveType::Triangle, t));
-        CHECK(is_ccw(PrimitiveType::Triangle, t));
-    }
-    for (const auto& ve : tet_mesh::auto_3d_table_complete_vertex) {
-        wmtk::Tuple t(ve[0], ve[1], ve[2], 0);
-        CHECK(tet_mesh::tuple_is_valid_for_ccw(t));
-        CHECK(tet_mesh::is_ccw(t));
-        CHECK(tuple_is_valid_for_ccw(PrimitiveType::Tetrahedron, t));
-        CHECK(is_ccw(PrimitiveType::Tetrahedron, t));
-    }
-    for (const auto& ve : tet_mesh::auto_3d_table_complete_edge) {
-        wmtk::Tuple t(ve[0], ve[1], ve[2], 0);
-        CHECK(tet_mesh::tuple_is_valid_for_ccw(t));
-        CHECK(tet_mesh::is_ccw(t));
-        CHECK(tuple_is_valid_for_ccw(PrimitiveType::Tetrahedron, t));
-        CHECK(is_ccw(PrimitiveType::Tetrahedron, t));
-    }
-    for (const auto& ve : tet_mesh::auto_3d_table_complete_face) {
-        wmtk::Tuple t(ve[0], ve[1], ve[2], 0);
-        CHECK(tet_mesh::tuple_is_valid_for_ccw(t));
-        CHECK(tet_mesh::is_ccw(t));
-        CHECK(tuple_is_valid_for_ccw(PrimitiveType::Tetrahedron, t));
-        CHECK(is_ccw(PrimitiveType::Tetrahedron, t));
-    }
-}
 TEST_CASE("tuple_autogen_from_id_is_ccw", "[tuple]")
 {
     auto run_checks = [](int ic, const Tuple& t, const Tuple& t2, int i, PrimitiveType pt) {

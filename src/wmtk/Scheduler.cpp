@@ -185,7 +185,6 @@ SchedulerStats Scheduler::run_operation_on_all(
                 for (const auto& s : simplices) {
                     log(internal_stats, total_simplices);
                     auto mods = op(s);
-                    // assert(wmtk::multimesh::utils::check_child_maps_valid(op.mesh()));
                     if (mods.empty()) {
                         res.fail();
                     } else {
@@ -196,7 +195,6 @@ SchedulerStats Scheduler::run_operation_on_all(
                 for (const auto& o : order) {
                     log(internal_stats, total_simplices);
                     auto mods = op(simplices[o.first]);
-                    // assert(wmtk::multimesh::utils::check_child_maps_valid(op.mesh()));
                     if (mods.empty()) {
                         internal_stats.fail();
                     } else {

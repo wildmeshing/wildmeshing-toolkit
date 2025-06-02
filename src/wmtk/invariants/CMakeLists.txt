@@ -15,8 +15,8 @@ set(SRC_FILES
     InteriorVertexInvariant.cpp
     InteriorEdgeInvariant.hpp
     InteriorEdgeInvariant.cpp
-    MultiMeshLinkConditionInvariant.hpp
-    MultiMeshLinkConditionInvariant.cpp
+    LinkConditionInvariant.hpp
+    LinkConditionInvariant.cpp
     MultiMeshMapValidInvariant.hpp
     MultiMeshMapValidInvariant.cpp
 

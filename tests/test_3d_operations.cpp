@@ -5,7 +5,7 @@
 #include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
-#include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
+#include <wmtk/invariants/LinkConditionInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
@@ -425,7 +425,7 @@ TEST_CASE("tet_edge_collapse", "[operations][collapse][3d]")
         //
         DEBUG_TetMesh m = two_ears();
         EdgeCollapse op(m);
-        op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.add_invariant(std::make_shared<LinkConditionInvariant>(m));
 
         CHECK(
             m.id(
@@ -455,7 +455,7 @@ TEST_CASE("tet_edge_collapse", "[operations][collapse][3d]")
         //
         DEBUG_TetMesh m = two_ears();
         EdgeCollapse op(m);
-        op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.add_invariant(std::make_shared<LinkConditionInvariant>(m));
 
         CHECK(
             m.id(
@@ -606,7 +606,7 @@ TEST_CASE("tetmesh_edge_swap", "[operations][swap][split][collapse][3d]")
         DEBUG_TetMesh m = three_cycle_tets();
         TetEdgeSwap op(m, 0);
         op.add_invariant(std::make_shared<InteriorEdgeInvariant>(m));
-        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.collapse().add_invariant(std::make_shared<LinkConditionInvariant>(m));
 
         REQUIRE(m.is_connectivity_valid());
 
@@ -621,7 +621,7 @@ TEST_CASE("tetmesh_edge_swap", "[operations][swap][split][collapse][3d]")
         DEBUG_TetMesh m = three_cycle_tets();
         TetEdgeSwap op(m, 1);
         op.add_invariant(std::make_shared<InteriorEdgeInvariant>(m));
-        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.collapse().add_invariant(std::make_shared<LinkConditionInvariant>(m));
 
         REQUIRE(m.is_connectivity_valid());
 
@@ -636,7 +636,7 @@ TEST_CASE("tetmesh_edge_swap", "[operations][swap][split][collapse][3d]")
         DEBUG_TetMesh m = three_cycle_tets();
         TetEdgeSwap op(m, 2);
         op.add_invariant(std::make_shared<InteriorEdgeInvariant>(m));
-        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.collapse().add_invariant(std::make_shared<LinkConditionInvariant>(m));
 
         REQUIRE(m.is_connectivity_valid());
 
@@ -651,7 +651,7 @@ TEST_CASE("tetmesh_edge_swap", "[operations][swap][split][collapse][3d]")
         DEBUG_TetMesh m = four_cycle_tets();
         TetEdgeSwap op(m, 0);
         op.add_invariant(std::make_shared<InteriorEdgeInvariant>(m));
-        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.collapse().add_invariant(std::make_shared<LinkConditionInvariant>(m));
 
         REQUIRE(m.is_connectivity_valid());
 
@@ -666,7 +666,7 @@ TEST_CASE("tetmesh_edge_swap", "[operations][swap][split][collapse][3d]")
         DEBUG_TetMesh m = four_cycle_tets();
         TetEdgeSwap op(m, 1);
         op.add_invariant(std::make_shared<InteriorEdgeInvariant>(m));
-        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.collapse().add_invariant(std::make_shared<LinkConditionInvariant>(m));
 
         REQUIRE(m.is_connectivity_valid());
 
@@ -687,7 +687,7 @@ TEST_CASE("tetmesh_face_swap", "[operations][swap][split][collapse][3d]")
     {
         DEBUG_TetMesh m = one_ear();
         TetFaceSwap op(m);
-        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.collapse().add_invariant(std::make_shared<LinkConditionInvariant>(m));
 
         REQUIRE(m.is_connectivity_valid());
 
@@ -703,7 +703,7 @@ TEST_CASE("tetmesh_face_swap", "[operations][swap][split][collapse][3d]")
     {
         DEBUG_TetMesh m = six_cycle_tets();
         TetFaceSwap op(m);
-        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.collapse().add_invariant(std::make_shared<LinkConditionInvariant>(m));
 
         REQUIRE(m.is_connectivity_valid());
 
