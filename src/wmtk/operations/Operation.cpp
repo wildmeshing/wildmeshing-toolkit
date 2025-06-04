@@ -619,8 +619,21 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                 std::cout << "T_after:" << std::endl;
                                 std::cout << T_after << std::endl;
 
+                                // TODO: find v1, so v0-v1 is the edge to collapse in before
+                                int v1 = std::find(
+                                             v_id_map_before.begin(),
+                                             v_id_map_before.end(),
+                                             v_id_map_after[0]) -
+                                         v_id_map_before.begin();
+                                if (v1 == 0 || v1 == v_id_map_before.size()) {
+                                    throw std::runtime_error(
+                                        "can't find v1, which is the edge to collapse in before");
+                                }
+                                std::cout << "edge to collapse in before: " << 0 << " " << v1
+                                          << std::endl;
                                 // embed the mesh!!!
-                                auto V_before_param = utils::embed_mesh_lift(T_before, V_before);
+                                auto V_before_param =
+                                    utils::embed_mesh_lift(T_before, V_before, 0, v1);
 
                                 if (V_before_param.rows() == 0) {
                                     scope.mark_failed();

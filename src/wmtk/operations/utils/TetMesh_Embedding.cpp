@@ -773,11 +773,11 @@ Eigen::MatrixXd compute_lifting(
         queue.pop();
         const Eigen::Vector2d& ar = a[fr];
         double dr = d[fr];
-        std::cout << "fr: " << fr << ", ar: " << ar.transpose() << ", dr: " << dr << std::endl;
+        // std::cout << "fr: " << fr << ", ar: " << ar.transpose() << ", dr: " << dr << std::endl;
         // for each neighbor face
         for (int fl : adj_faces[fr]) {
             if (visited.count(fl)) continue;
-            std::cout << "fl: " << fl << std::endl;
+            // std::cout << "fl: " << fl << std::endl;
             // find common edge
             std::set<int> shared;
             for (int v : F_all[fr]) {
@@ -808,12 +808,12 @@ Eigen::MatrixXd compute_lifting(
                     break;
                 }
             }
-            std::cout << "i: " << i << ", j: " << j << ", k: " << k << std::endl;
+            // std::cout << "i: " << i << ", j: " << j << ", k: " << k << std::endl;
             Eigen::Vector2d pk = uv.row(k);
             // cross of (pj-pi) x (pk-pi)
             double cross = (pj - pi).x() * (pk - pi).y() - (pj - pi).y() * (pk - pi).x();
 
-            std::cout << "cross: " << cross << std::endl;
+            // std::cout << "cross: " << cross << std::endl;
             if (cross < 0) {
                 // continue;
                 // swap to make fl on left
@@ -962,7 +962,7 @@ bool check_embedding_validity(
 }
 
 
-Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, Eigen::MatrixXd& V, int v0)
+Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, Eigen::MatrixXd& V, int v0, int v1)
 {
     // get the surface without vertex v0
     Eigen::MatrixXi F_top = extract_surface_without_vertex(T, v0);
@@ -983,6 +983,38 @@ Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, Eigen::MatrixXd& V, in
     } else {
         T_3_connected = T;
     }
+
+    // get the topology of the tet after the edge_collapse of (v0, v1)
+    Eigen::MatrixXi T_3_connected_collapsed;
+    {
+        std::vector<Eigen::Vector4i> valid_tets;
+        valid_tets.reserve(T_3_connected.rows());
+
+        for (int i = 0; i < T_3_connected.rows(); ++i) {
+            Eigen::Vector4i tet = T_3_connected.row(i);
+            bool has_v0 = false;
+            bool has_v1 = false;
+
+            for (int j = 0; j < 4; ++j) {
+                if (tet[j] == v0) {
+                    has_v0 = true;
+                    tet[j] = v1;
+                } else if (tet[j] == v1) {
+                    has_v1 = true;
+                }
+            }
+
+            if (!(has_v0 && has_v1)) {
+                valid_tets.push_back(tet);
+            }
+        }
+
+        T_3_connected_collapsed.resize(valid_tets.size(), 4);
+        for (size_t i = 0; i < valid_tets.size(); ++i) {
+            T_3_connected_collapsed.row(i) = valid_tets[i];
+        }
+    }
+
 
     // clean up unreferenced vertices(v0)
     Eigen::MatrixXd V_clean;
@@ -1088,13 +1120,15 @@ Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, Eigen::MatrixXd& V, in
         }
         std::cout << std::endl << "]" << std::endl;
     }
-    bool is_lift_failed = !check_embedding_validity(T_3_connected, V_param);
+
+
+    bool is_lift_failed =
+        !(check_embedding_validity(T_3_connected, V_param) &&
+          check_embedding_validity(T_3_connected_collapsed, V_param));
     if (is_tutte_embedding_failed || is_lift_failed) {
         utils::visualize_tet_mesh(V_param, T_3_connected);
     }
 
-    // TODO: optmize the lifting
-    // TODO: add constraints on the bottom plane
     // Get bottom plane vertices (boundary loop of F_top + v0)
     std::vector<int> bottom_plane_vids;
     {
@@ -1107,7 +1141,12 @@ Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, Eigen::MatrixXd& V, in
             bottom_plane_vids.push_back(boundary_loop(i));
         }
     }
-    utils::local_tet_joint_opt(V, T_3_connected, T_3_connected, V_param, bottom_plane_vids);
+    utils::local_tet_joint_opt(
+        V,
+        T_3_connected,
+        T_3_connected_collapsed,
+        V_param,
+        bottom_plane_vids);
 
     std::cout << "Total failure count: " << failure_count << std::endl;
     std::cout << "Total count: " << total_count << std::endl;

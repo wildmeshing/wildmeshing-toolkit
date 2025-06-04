@@ -61,7 +61,8 @@ harmonic_parameterization(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F);
 // TODO: delete this function
 Eigen::MatrixXd lift_to_hemisphere(const Eigen::MatrixXd& uv, const Eigen::MatrixXi& F);
 
-Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, Eigen::MatrixXd& V, int v0 = 0);
+Eigen::MatrixXd
+embed_mesh_lift(const Eigen::MatrixXi& T, Eigen::MatrixXd& V, int v0 = 0, int v1 = 1);
 
 } // namespace utils
 } // namespace operations

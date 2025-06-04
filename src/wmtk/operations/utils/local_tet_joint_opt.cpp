@@ -1,12 +1,263 @@
 #include "local_tet_joint_opt.hpp"
 #include <igl/opengl/glfw/Viewer.h>
+#include <igl/opengl/glfw/imgui/ImGuiHelpers.h>
+#include <igl/opengl/glfw/imgui/ImGuiMenu.h>
+#include <igl/opengl/glfw/imgui/ImGuiPlugin.h>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <wmtk/utils/orient.hpp>
-
 namespace wmtk {
 namespace operations {
 namespace utils {
+void debug_visualization(
+    const Eigen::MatrixXi& T_before,
+    const Eigen::MatrixXi& T_after,
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXd& V_param,
+    const Eigen::MatrixXd& V_current,
+    double current_energy)
+{
+    // Print debug information
+    std::cout << "\n=== Debug Information ===" << std::endl;
+    std::cout << "\nT_before (" << T_before.rows() << "x" << T_before.cols() << "):" << std::endl;
+    std::cout << T_before << std::endl;
+    std::cout << "\nT_after (" << T_after.rows() << "x" << T_after.cols() << "):" << std::endl;
+    std::cout << T_after << std::endl;
+    // Set high precision for floating point output
+    std::cout << std::fixed << std::setprecision(15);
+    std::cout << "\nV (" << V.rows() << "x" << V.cols() << "):" << std::endl;
+    std::cout << V << std::endl;
+    std::cout << "\nV_param (" << V_param.rows() << "x" << V_param.cols() << "):" << std::endl;
+    std::cout << V_param << std::endl;
+    std::cout << "\nV_current (" << V_current.rows() << "x" << V_current.cols()
+              << "):" << std::endl;
+    std::cout << V_current << std::endl;
+    // Reset to default precision
+    std::cout << std::defaultfloat;
+    std::cout << "\n=========================" << std::endl;
+    // Create viewer
+    igl::opengl::glfw::Viewer viewer;
+    // Attach a menu plugin
+    igl::opengl::glfw::imgui::ImGuiPlugin plugin;
+    viewer.plugins.push_back(&plugin);
+    igl::opengl::glfw::imgui::ImGuiMenu menu;
+    plugin.widgets.push_back(&menu);
+    // Store meshes for visualization
+    Eigen::MatrixXd meshes[3] = {V, V_param, V_current};
+    std::vector<std::string> mesh_names = {
+        "Original (V)",
+        "Parameterized (V_param)",
+        "Optimized (V_current)"};
+    static int current_mesh = 0;
+    static int tet_topology = 0; // 0: before, 1: after
+    static int selected_tet = 0;
+    static bool show_single_tet = false;
+    // Extract surface triangles from the tetrahedral mesh
+    Eigen::MatrixXi F_surface_before, F_surface_after;
+    // Extract all tetrahedral faces for visualization
+    F_surface_before.resize(T_before.rows() * 4, 3);
+    F_surface_after.resize(T_after.rows() * 4, 3);
+    for (int i = 0; i < T_before.rows(); ++i) {
+        F_surface_before.row(i * 4 + 0) << T_before(i, 1), T_before(i, 0), T_before(i, 2);
+        F_surface_before.row(i * 4 + 1) << T_before(i, 1), T_before(i, 2), T_before(i, 3);
+        F_surface_before.row(i * 4 + 2) << T_before(i, 0), T_before(i, 3), T_before(i, 2);
+        F_surface_before.row(i * 4 + 3) << T_before(i, 1), T_before(i, 3), T_before(i, 0);
+    }
+    for (int i = 0; i < T_after.rows(); ++i) {
+        F_surface_after.row(i * 4 + 0) << T_after(i, 1), T_after(i, 0), T_after(i, 2);
+        F_surface_after.row(i * 4 + 1) << T_after(i, 1), T_after(i, 2), T_after(i, 3);
+        F_surface_after.row(i * 4 + 2) << T_after(i, 0), T_after(i, 3), T_after(i, 2);
+        F_surface_after.row(i * 4 + 3) << T_after(i, 1), T_after(i, 3), T_after(i, 0);
+    }
+    // Helper function to compute tet volume
+    auto compute_tet_volume = [](const Eigen::MatrixXd& vertices, const Eigen::Vector4i& tet) {
+        Eigen::Vector3d v0 = vertices.row(tet[0]);
+        Eigen::Vector3d v1 = vertices.row(tet[1]);
+        Eigen::Vector3d v2 = vertices.row(tet[2]);
+        Eigen::Vector3d v3 = vertices.row(tet[3]);
+        Eigen::Matrix3d M;
+        M.col(0) = v1 - v0;
+        M.col(1) = v2 - v0;
+        M.col(2) = v3 - v0;
+        return std::abs(M.determinant()) / 6.0;
+    };
+    auto update_mesh_display = [&]() {
+        viewer.data().clear();
+        if (show_single_tet) {
+            // Display single tet faces
+            Eigen::MatrixXi F_single_tet(4, 3);
+            if (tet_topology == 0) { // before
+                if (selected_tet < T_before.rows()) {
+                    F_single_tet.row(0) << T_before(selected_tet, 1), T_before(selected_tet, 0),
+                        T_before(selected_tet, 2);
+                    F_single_tet.row(1) << T_before(selected_tet, 1), T_before(selected_tet, 2),
+                        T_before(selected_tet, 3);
+                    F_single_tet.row(2) << T_before(selected_tet, 0), T_before(selected_tet, 3),
+                        T_before(selected_tet, 2);
+                    F_single_tet.row(3) << T_before(selected_tet, 1), T_before(selected_tet, 3),
+                        T_before(selected_tet, 0);
+                }
+                viewer.data().set_mesh(meshes[current_mesh], F_single_tet);
+                viewer.core().align_camera_center(meshes[current_mesh], F_surface_before);
+            } else { // after
+                if (selected_tet < T_after.rows()) {
+                    F_single_tet.row(0) << T_after(selected_tet, 1), T_after(selected_tet, 0),
+                        T_after(selected_tet, 2);
+                    F_single_tet.row(1) << T_after(selected_tet, 1), T_after(selected_tet, 2),
+                        T_after(selected_tet, 3);
+                    F_single_tet.row(2) << T_after(selected_tet, 0), T_after(selected_tet, 3),
+                        T_after(selected_tet, 2);
+                    F_single_tet.row(3) << T_after(selected_tet, 1), T_after(selected_tet, 3),
+                        T_after(selected_tet, 0);
+                }
+                viewer.data().set_mesh(meshes[current_mesh], F_single_tet);
+                viewer.core().align_camera_center(meshes[current_mesh], F_surface_after);
+            }
+        } else {
+            // Display full mesh
+            if (tet_topology == 0) {
+                viewer.data().set_mesh(meshes[current_mesh], F_surface_before);
+                viewer.core().align_camera_center(meshes[current_mesh], F_surface_before);
+            } else {
+                viewer.data().set_mesh(meshes[current_mesh], F_surface_after);
+                viewer.core().align_camera_center(meshes[current_mesh], F_surface_after);
+            }
+        }
+        viewer.data().set_face_based(true);
+    };
+    // Customize the menu
+    menu.callback_draw_viewer_menu = [&]() {
+        // Draw parent menu content
+        menu.draw_viewer_menu();
+        // Add mesh selection group
+        if (ImGui::CollapsingHeader("Mesh Selection", ImGuiTreeNodeFlags_DefaultOpen)) {
+            // Mesh selection combo
+            if (ImGui::Combo(
+                    "Vertex Data",
+                    &current_mesh,
+                    "Original (V)\0Parameterized (V_param)\0Optimized (V_current)\0\0")) {
+                update_mesh_display();
+            }
+            // Display current energy information
+            ImGui::Text("Current Energy: %.6f", current_energy);
+            ImGui::Text("Mesh Vertices: %d", static_cast<int>(meshes[current_mesh].rows()));
+            // Buttons for quick mesh switching
+            if (ImGui::Button("Original Mesh", ImVec2(-1, 0))) {
+                current_mesh = 0;
+                update_mesh_display();
+            }
+            if (ImGui::Button("Parameterized Mesh", ImVec2(-1, 0))) {
+                current_mesh = 1;
+                update_mesh_display();
+            }
+            if (ImGui::Button("Optimized Mesh", ImVec2(-1, 0))) {
+                current_mesh = 2;
+                update_mesh_display();
+            }
+        }
+        // Add topology selection group
+        if (ImGui::CollapsingHeader("Topology Selection", ImGuiTreeNodeFlags_DefaultOpen)) {
+            // Topology selection combo
+            if (ImGui::Combo("Tet Topology", &tet_topology, "Before\0After\0\0")) {
+                // Reset selected_tet when changing topology to ensure valid index
+                selected_tet = 0;
+                update_mesh_display();
+            }
+            if (tet_topology == 0) {
+                ImGui::Text("Tetrahedra (Before): %d", static_cast<int>(T_before.rows()));
+            } else {
+                ImGui::Text("Tetrahedra (After): %d", static_cast<int>(T_after.rows()));
+            }
+            // Buttons for quick topology switching
+            if (ImGui::Button("Before Topology", ImVec2(-1, 0))) {
+                tet_topology = 0;
+                selected_tet = 0;
+                update_mesh_display();
+            }
+            if (ImGui::Button("After Topology", ImVec2(-1, 0))) {
+                tet_topology = 1;
+                selected_tet = 0;
+                update_mesh_display();
+            }
+        }
+        // Add single tet visualization
+        if (ImGui::CollapsingHeader("Single Tet Visualization", ImGuiTreeNodeFlags_DefaultOpen)) {
+            if (ImGui::Checkbox("Show Single Tet", &show_single_tet)) {
+                update_mesh_display();
+            }
+            if (show_single_tet) {
+                int max_tets = (tet_topology == 0) ? T_before.rows() : T_after.rows();
+                // Ensure selected_tet is within valid range
+                if (selected_tet >= max_tets) {
+                    selected_tet = max_tets - 1;
+                }
+                if (ImGui::SliderInt("Tet Index", &selected_tet, 0, max_tets - 1)) {
+                    update_mesh_display();
+                }
+                // Input field for direct tet number entry
+                int display_tet_number = selected_tet + 1; // Display 1-based indexing
+                if (ImGui::InputInt("Tet Number (1-based)", &display_tet_number)) {
+                    // Convert back to 0-based and clamp to valid range
+                    selected_tet = std::max(0, std::min(display_tet_number - 1, max_tets - 1));
+                    update_mesh_display();
+                }
+                ImGui::Text("Selected Tet %d (Faces 0-3)", selected_tet);
+                if (tet_topology == 0 && selected_tet < T_before.rows()) {
+                    ImGui::Text(
+                        "Vertices: %d, %d, %d, %d",
+                        T_before(selected_tet, 0),
+                        T_before(selected_tet, 1),
+                        T_before(selected_tet, 2),
+                        T_before(selected_tet, 3));
+                    double volume =
+                        compute_tet_volume(meshes[current_mesh], T_before.row(selected_tet));
+                    ImGui::Text("Volume: %.6e", volume);
+                } else if (tet_topology == 1 && selected_tet < T_after.rows()) {
+                    ImGui::Text(
+                        "Vertices: %d, %d, %d, %d",
+                        T_after(selected_tet, 0),
+                        T_after(selected_tet, 1),
+                        T_after(selected_tet, 2),
+                        T_after(selected_tet, 3));
+                    double volume =
+                        compute_tet_volume(meshes[current_mesh], T_after.row(selected_tet));
+                    ImGui::Text("Volume: %.6e", volume);
+                }
+                // Navigation buttons
+                if (ImGui::Button("Previous Tet", ImVec2(-1, 0))) {
+                    if (selected_tet > 0) {
+                        selected_tet--;
+                        update_mesh_display();
+                    }
+                }
+                if (ImGui::Button("Next Tet", ImVec2(-1, 0))) {
+                    if (selected_tet < max_tets - 1) {
+                        selected_tet++;
+                        update_mesh_display();
+                    }
+                }
+            }
+        }
+        // Add rendering options
+        if (ImGui::CollapsingHeader("Rendering Options", ImGuiTreeNodeFlags_DefaultOpen)) {
+            static bool show_wireframe = true;
+            if (ImGui::Checkbox("Show Wireframe", &show_wireframe)) {
+                viewer.data().show_lines = show_wireframe;
+            }
+            // static bool face_based = true;
+            // if (ImGui::Checkbox("Face Based", &face_based)) {
+            //     viewer.data().set_face_based(face_based);
+            // }
+        }
+    };
+    // Set initial mesh and rendering properties
+    update_mesh_display();
+    viewer.data().set_face_based(true);
+    viewer.data().show_lines = true;
+    viewer.launch();
+}
+
 
 // Implementation of SymmetricDirichletEnergy operator
 inline double SymmetricDirichletEnergy::operator()(const Eigen::Matrix3d& F, Eigen::Matrix3d* dE_dF)
@@ -103,6 +354,12 @@ void local_tet_joint_opt(
 
     // Precompute reference data for the joint tetrahedra
     precompute_reference(V, T_joint, P);
+    // Print volumes for all tetrahedra
+    std::cout << "Tetrahedra volumes:" << std::endl;
+    for (size_t i = 0; i < P.size(); ++i) {
+        std::cout << "Tet " << i << ": volume = " << P[i].volume << std::endl;
+    }
+
     Eigen::MatrixXd grad;
     double energy =
         compute_energy_and_gradient_fast(V_param, T_joint, P, grad, SymmetricDirichletEnergy());
@@ -182,7 +439,12 @@ void local_tet_joint_opt(
                 P,
                 new_grad,
                 SymmetricDirichletEnergy());
-
+            // Skip if energy is NaN
+            if (std::isnan(new_energy)) {
+                std::cout << "Energy is NaN, reducing step size" << std::endl;
+                step_size *= step_reduction_factor;
+                continue;
+            }
             // Check if energy decreased
             if (new_energy < current_energy) {
                 // Accept the step
@@ -225,67 +487,9 @@ void local_tet_joint_opt(
         }
     }
 
-    if (debug_mode) {
-        // Create viewer
-        igl::opengl::glfw::Viewer viewer;
-
-        // Store meshes for visualization
-        Eigen::MatrixXd meshes[3] = {V, V_param, V_current};
-        int current_mesh = 0;
-
-        // Extract surface triangles from the tetrahedral mesh
-        Eigen::MatrixXi F_surface;
-        std::vector<std::array<int, 3>> surface_triangles;
-
-        // Use a simple method to extract the surface: process each face of every tetrahedron
-        for (int i = 0; i < T_before.rows(); ++i) {
-            // Four faces of the tetrahedron
-            std::array<std::array<int, 3>, 4> tet_faces = {
-                {{T_before(i, 1), T_before(i, 0), T_before(i, 2)},
-                 {T_before(i, 1), T_before(i, 2), T_before(i, 3)},
-                 {T_before(i, 0), T_before(i, 3), T_before(i, 2)},
-                 {T_before(i, 1), T_before(i, 3), T_before(i, 0)}}};
-
-            // Add all faces
-            for (const auto& face : tet_faces) {
-                surface_triangles.push_back(face);
-            }
-        }
-
-        // Convert surface triangles to Eigen matrix
-        F_surface.resize(surface_triangles.size(), 3);
-        for (size_t i = 0; i < surface_triangles.size(); ++i) {
-            F_surface.row(i) << surface_triangles[i][0], surface_triangles[i][1],
-                surface_triangles[i][2];
-        }
-
-        // Set initial mesh and rendering properties
-        viewer.data().set_mesh(meshes[current_mesh], F_surface);
-        viewer.data().set_face_based(true);
-        viewer.data().show_lines = true;
-
-        // Add keyboard callback to switch between meshes
-        viewer.callback_key_down = [&](igl::opengl::glfw::Viewer& viewer, unsigned char key, int) {
-            if (key == '0') {
-                current_mesh = 0; // V
-                viewer.data().set_mesh(meshes[current_mesh], F_surface);
-                viewer.core().align_camera_center(meshes[current_mesh], F_surface);
-                return true;
-            } else if (key == '1') {
-                current_mesh = 1; // V_param
-                viewer.data().set_mesh(meshes[current_mesh], F_surface);
-                viewer.core().align_camera_center(meshes[current_mesh], F_surface);
-                return true;
-            } else if (key == '2') {
-                current_mesh = 2; // V_current
-                viewer.data().set_mesh(meshes[current_mesh], F_surface);
-                viewer.core().align_camera_center(meshes[current_mesh], F_surface);
-                return true;
-            }
-            return false;
-        };
-
-        viewer.launch();
+    if (true) {
+        // visualization for debugging
+        debug_visualization(T_before, T_after, V, V_param, V_current, current_energy);
     }
     // Update the output parameters
     V_param = V_current;

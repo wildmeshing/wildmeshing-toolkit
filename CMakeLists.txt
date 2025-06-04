@@ -160,6 +160,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     igl::core
     igl_restricted::triangle
     igl::glfw
+    igl::imgui
     TBB::tbb
 )
 
