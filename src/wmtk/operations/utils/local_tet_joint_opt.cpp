@@ -435,7 +435,7 @@ void local_tet_joint_opt(
             Eigen::MatrixXd new_grad;
             double new_energy = compute_energy_and_gradient_fast(
                 V_next,
-                T_after,
+                T_joint,
                 P,
                 new_grad,
                 SymmetricDirichletEnergy());
