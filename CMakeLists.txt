@@ -55,7 +55,7 @@ include(wmtk_copy_dll)
 include(tracy)
 include(nlohmann_json)
 include(hdf5)
-include(high_five)
+# include(high_five)
 
 # Sort projects inside the solution
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -102,8 +102,6 @@ endif()
 
 igl_include(predicates)
 
-igl_include(predicates)
-
 if(NOT TARGET spdlog)
     include(spdlog)
 endif()
@@ -116,7 +114,6 @@ include(gmp)
 include(probabilistic_quadrics)
 
 include(lagrange)
-lagrange_include_modules(bvh)
 
 include(nlohmann_json)
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
@@ -133,21 +130,8 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     nlohmann_json::nlohmann_json
     HighFive::HighFive
     hdf5::hdf5
-    lagrange::bvh
     probabilistic_quadrics::probabilistic_quadrics
 )
-include(finite-diff)
-target_link_libraries(wildmeshing_toolkit PUBLIC finitediff::finitediff)
-include(stb)
-include(tinyexr)
-target_link_libraries(wildmeshing_toolkit PUBLIC
-    miniz # MTAO: I had a build issue with windows not finding miniz at linktime - adding here to make sure it's there?
-    tinyexr
-    stb::image)
-include(lean-vtk)
-target_link_libraries(wildmeshing_toolkit PUBLIC LeanVTK)
-include(nanospline)
-target_link_libraries(wildmeshing_toolkit PUBLIC nanospline::nanospline)
 include(ipc-toolkit)
 target_compile_definitions(tight_inclusion PUBLIC TIGHT_INCLUSION_LIMIT_QUEUE_SIZE TI_LIMIT_QUEUE_SIZE)
 target_link_libraries(wildmeshing_toolkit PUBLIC ipc::toolkit)
