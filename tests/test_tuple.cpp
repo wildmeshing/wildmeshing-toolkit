@@ -1,6 +1,6 @@
 #include <wmtk/TetMesh.h>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 using namespace wmtk;
 
@@ -115,7 +115,7 @@ TEST_CASE("tuple_iterator", "[test_tuple]")
 
             EdgeIterator(const TetMesh& m, value_type ptr)
                 : m_tuple(ptr)
-                , mesh(m){};
+                , mesh(m) {};
 
             EdgeIterator operator++()
             {

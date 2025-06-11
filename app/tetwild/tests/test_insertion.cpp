@@ -4,7 +4,7 @@
 #include <igl/write_triangle_mesh.h>
 #include <wmtk/TetMesh.h>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include "Parameters.h"
 #include "sec/envelope/SampleEnvelope.hpp"
 #include "spdlog/common.h"
@@ -44,7 +44,7 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
     wmtk::ExactEnvelope envelope;
     wmtk::logger().info("input_surface.params.eps {}", params.eps);
     envelope.init(vertices, env_faces, params.eps);
-    
+
     wmtk::remove_duplicates(vertices, faces, params.diag_l);
     std::vector<size_t> partition_id(vertices.size(), 0);
     //
@@ -83,10 +83,10 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation][.]")
     Parameters params;
     params.lr = 1 / 30.0;
     params.init(vertices, faces);
-    
+
     wmtk::ExactEnvelope envelope;
     envelope.init(vertices, env_faces, params.eps);
-    
+
     wmtk::remove_duplicates(vertices, faces, params.diag_l);
     Eigen::MatrixXd new_F(faces.size(), 3);
     for (int i = 0; i < faces.size(); i++) {

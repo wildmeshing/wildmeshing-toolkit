@@ -4,11 +4,11 @@
 
 #include <igl/read_triangle_mesh.h>
 #include <igl/write_triangle_mesh.h>
-#include <catch2/catch.hpp>
-#include <wmtk/utils/io.hpp>
-#include "spdlog/common.h"
-#include <wmtk/utils/partition_utils.hpp>
 #include <wmtk/utils/Partitioning.h>
+#include <catch2/catch_test_macros.hpp>
+#include <wmtk/utils/io.hpp>
+#include <wmtk/utils/partition_utils.hpp>
+#include "spdlog/common.h"
 
 #include "wmtk/utils/InsertTriangleUtils.hpp"
 

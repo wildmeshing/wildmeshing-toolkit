@@ -1,10 +1,10 @@
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include "sec/envelope/SampleEnvelope.hpp"
 
 #include <TetWild.h>
 
-#include <wmtk/TetMesh.h>
 #include <common.h>
+#include <wmtk/TetMesh.h>
 
 using namespace wmtk;
 using namespace tetwild;

@@ -1,7 +1,8 @@
 #include <TetWild.h>
 #include <common.h>
 #include <wmtk/TetMesh.h>
-#include <catch2/catch.hpp>
+#include <catch2/catch_approx.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include "spdlog/spdlog.h"
 
 #include <spdlog/fmt/ostr.h>
@@ -35,7 +36,7 @@ TEST_CASE("smooth_in_single_tet", "[tetwild_operation]")
     tetwild.smooth_all_vertices();
     tetwild.smooth_all_vertices();
     auto quality = tetwild.m_tet_attribute.m_attributes.front().m_quality;
-    REQUIRE(quality == Approx(27.0));
+    REQUIRE(quality == Catch::Approx(27.0));
 }
 
 TEST_CASE("smooth_double_tet", "[tetwild_operation]")
@@ -67,7 +68,7 @@ TEST_CASE("smooth_double_tet", "[tetwild_operation]")
     tetwild.smooth_all_vertices();
     tetwild.smooth_all_vertices();
     auto quality = tetwild.m_tet_attribute.m_attributes.front().m_quality;
-    REQUIRE(quality == Approx(27.0));
-    auto quality2 = tetwild.m_tet_attribute.m_attributes[tetwild.tet_capacity()-1].m_quality;
-    REQUIRE(quality2 == Approx(27.0));
+    REQUIRE(quality == Catch::Approx(27.0));
+    auto quality2 = tetwild.m_tet_attribute.m_attributes[tetwild.tet_capacity() - 1].m_quality;
+    REQUIRE(quality2 == Catch::Approx(27.0));
 }

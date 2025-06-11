@@ -15,10 +15,10 @@ namespace wmtk {
 template <class T>
 inline std::vector<T> set_intersection(const std::vector<T>& v1, const std::vector<T>& v2)
 {
-    if(v1.size()>1) {
+    if (v1.size() > 1) {
         assert(std::is_sorted(v1.begin(), v1.end()));
     }
-    if(v2.size()>1) {
+    if (v2.size() > 1) {
         assert(std::is_sorted(v2.begin(), v2.end()));
     }
 
@@ -31,18 +31,18 @@ inline std::vector<T> set_intersection(const std::vector<T>& v1, const std::vect
 template <class T>
 inline void vector_unique(std::vector<T>& v)
 {
-    if(v.size()>1) {
-    std::sort(v.begin(), v.end());
-    v.erase(std::unique(v.begin(), v.end()), v.end());
+    if (v.size() > 1) {
+        std::sort(v.begin(), v.end());
+        v.erase(std::unique(v.begin(), v.end()), v.end());
     }
 }
 
 template <class T, typename Comp, typename Equal>
 inline void vector_unique(std::vector<T>& v, Comp comp, Equal equal)
 {
-    if(v.size()>1) {
-    std::sort(v.begin(), v.end(), comp);
-    v.erase(std::unique(v.begin(), v.end(), equal), v.end());
+    if (v.size() > 1) {
+        std::sort(v.begin(), v.end(), comp);
+        v.erase(std::unique(v.begin(), v.end(), equal), v.end());
     }
 }
 
@@ -56,8 +56,8 @@ inline void vector_print(std::vector<T>& v)
 template <class T>
 inline void vector_sort(std::vector<T>& v)
 {
-    if(v.size()>1) {
-    std::sort(v.begin(), v.end());
+    if (v.size() > 1) {
+        std::sort(v.begin(), v.end());
     }
 }
 

@@ -21,7 +21,7 @@ HIGHFIVE_REGISTER_TYPE(TestComplexStruct, TestComplexStruct::datatype)
 WMTK_HDF5_REGISTER_ATTRIBUTE_TYPE(TestComplexStruct)
 
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <iostream>
 
 using namespace wmtk;
@@ -102,7 +102,7 @@ TEST_CASE("double_recorder", "[attribute_recording]")
     for (size_t j = 0; j < attribute_collection.size(); ++j) {
         if (j % 2 == 0) {
             REQUIRE(3 * j == attribute_collection.at(j));
-        } else {          
+        } else {
             REQUIRE(2 * j == attribute_collection.at(j));
         }
     }

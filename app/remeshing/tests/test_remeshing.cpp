@@ -4,7 +4,7 @@
 #include <igl/remove_duplicate_vertices.h>
 #include <remeshing/UniformRemeshing.h>
 #include <remeshing/UniformRemeshingOperations.h>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <wmtk/utils/ManifoldUtils.hpp>
 
 
@@ -301,7 +301,7 @@ TEST_CASE("swap orient", "[test_remeshing]")
     auto edges = m.get_edges();
     for (auto e : edges) {
         if (!m.is_boundary_edge(e)) {
-            swap_op(m,e);
+            swap_op(m, e);
             break;
         }
     }

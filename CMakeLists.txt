@@ -48,6 +48,8 @@ option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to di
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
 
+include(wmtk_cpm_cache)
+include(CPM)
 include(sanitizers)
 include(wmtk_colors)
 include(wmtk_warnings)
@@ -55,7 +57,7 @@ include(wmtk_copy_dll)
 include(tracy)
 include(nlohmann_json)
 include(hdf5)
-# include(high_five)
+include(high_five)
 
 # Sort projects inside the solution
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -132,9 +134,6 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     hdf5::hdf5
     probabilistic_quadrics::probabilistic_quadrics
 )
-include(ipc-toolkit)
-target_compile_definitions(tight_inclusion PUBLIC TIGHT_INCLUSION_LIMIT_QUEUE_SIZE TI_LIMIT_QUEUE_SIZE)
-target_link_libraries(wildmeshing_toolkit PUBLIC ipc::toolkit)
 include(paraviewo)
 target_link_libraries(wildmeshing_toolkit PUBLIC paraviewo::paraviewo)
 

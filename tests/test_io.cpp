@@ -8,7 +8,7 @@
 #include <wmtk/utils/io.hpp>
 
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <sstream>
 
@@ -74,9 +74,8 @@ TEST_CASE("io", "[io][mshio]")
 
         std::vector<Point3D> out_vertices;
         out_vertices.resize(msh.get_num_tet_vertices());
-        msh.extract_tet_vertices([&](size_t i, double x, double y, double z) {
-            out_vertices[i] = {{x, y, z}};
-        });
+        msh.extract_tet_vertices(
+            [&](size_t i, double x, double y, double z) { out_vertices[i] = {{x, y, z}}; });
         REQUIRE(out_vertices == vertices);
 
         std::vector<std::array<size_t, 4>> out_tets;

@@ -210,11 +210,11 @@ struct ExecutePass
         }
         if constexpr (std::is_base_of<wmtk::TriMesh, AppMesh>::value) {
             // keeping this trimesh behavior even though it really should be deprecated
-            //add_operation<wmtk::TriMeshEdgeCollapseOperation>();
-            //add_operation<wmtk::TriMeshSwapEdgeOperation>();
-            //add_operation<wmtk::TriMeshSplitEdgeOperation>();
-            //add_operation<wmtk::TriMeshSmoothVertexOperation>();
-            //add_operation<wmtk::TriMeshConsolidateOperation>();
+            // add_operation<wmtk::TriMeshEdgeCollapseOperation>();
+            // add_operation<wmtk::TriMeshSwapEdgeOperation>();
+            // add_operation<wmtk::TriMeshSplitEdgeOperation>();
+            // add_operation<wmtk::TriMeshSmoothVertexOperation>();
+            // add_operation<wmtk::TriMeshConsolidateOperation>();
         }
     }
 

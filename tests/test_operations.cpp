@@ -1,5 +1,5 @@
 #include <wmtk/TetMesh.h>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include "wmtk/utils/Logger.hpp"
 
 using namespace wmtk;

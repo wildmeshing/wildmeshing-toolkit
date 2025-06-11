@@ -11,7 +11,7 @@
 #include <igl/read_triangle_mesh.h>
 
 #include <Eigen/Core>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 
 using namespace app::sec;
@@ -108,7 +108,7 @@ TEST_CASE("shortest_edge_collapse", "[test_sec]")
         }
     }
 
-    REQUIRE_FALSE(TriMeshEdgeCollapseOperation::check_link_condition(m,shortest_edge));
+    REQUIRE_FALSE(TriMeshEdgeCollapseOperation::check_link_condition(m, shortest_edge));
     m.collapse_shortest(-1);
 
     REQUIRE_FALSE(shortest_edge.is_valid(m));

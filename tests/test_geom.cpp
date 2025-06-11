@@ -1,6 +1,7 @@
 #include <wmtk/utils/GeoUtils.h>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_approx.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 using namespace wmtk;
 using namespace Eigen;
@@ -22,9 +23,9 @@ TEST_CASE("test_segment_triangle_intersection", "[test_geom]")
     bool inter = open_segment_triangle_intersection_3d(seg, tri, p);
     REQUIRE(inter);
 
-    REQUIRE(p[0] == Approx(0));
-    REQUIRE(p[1] == Approx(0));
-    REQUIRE(p[2] == Approx(1));
+    REQUIRE(p[0] == Catch::Approx(0));
+    REQUIRE(p[1] == Catch::Approx(0));
+    REQUIRE(p[2] == Catch::Approx(1));
 }
 
 TEST_CASE("is_point_inside_triangle", "[test_geom]")
@@ -111,9 +112,9 @@ TEST_CASE("open_segment_open_segment_intersection_2d", "[test_geom]")
                 REQUIRE(res == val);
                 if (val) {
                     if (d == 0)
-                        REQUIRE(t == Approx(expected_t[curr_seg]));
+                        REQUIRE(t == Catch::Approx(expected_t[curr_seg]));
                     else
-                        REQUIRE(t == Approx(1 - expected_t[curr_seg]));
+                        REQUIRE(t == Catch::Approx(1 - expected_t[curr_seg]));
                 } else
                     REQUIRE(t == -1);
             }

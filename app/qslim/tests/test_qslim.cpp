@@ -1,7 +1,7 @@
 #include <igl/read_triangle_mesh.h>
 #include <qslim/QSLIM.h>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 using namespace wmtk;
 using namespace app::qslim;

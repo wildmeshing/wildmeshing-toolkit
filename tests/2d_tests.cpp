@@ -10,7 +10,7 @@
 #include <wmtk/operations/TriMeshEdgeSplitOperation.h>
 #include <wmtk/operations/TriMeshEdgeSwapOperation.h>
 #include <wmtk/operations/TriMeshVertexSmoothOperation.h>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <highfive/H5File.hpp>
 #include <iostream>
 #include <wmtk/operations/TriMeshOperationShim.hpp>
@@ -42,10 +42,9 @@ TEST_CASE("load mesh and create TriMesh", "[test_mesh_creation]")
     TriMeshTuple t = m.tuple_from_tri(0);
     REQUIRE(t.is_valid(m));
     auto oriented_vertices = m.oriented_tri_vertices(t);
-    for(const auto& v: oriented_vertices) {
+    for (const auto& v : oriented_vertices) {
         CHECK(v.is_ccw(m));
     }
-
 }
 
 TEST_CASE("test generate tuples with 1 triangle", "[test_tuple_generation]")
@@ -544,4 +543,3 @@ TEST_CASE("split_operation", "[test_2d_operation]")
         for (auto e : edges) REQUIRE_FALSE(e.is_valid(m));
     }
 }
-

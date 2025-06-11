@@ -1,7 +1,7 @@
 # Include Catch2 stuff
 include(catch2)
 FetchContent_GetProperties(catch2)
-list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/contrib)
+list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(Catch)
 
 # Sources
@@ -16,7 +16,7 @@ include(wmtk_data)
 target_link_libraries(wmtk_tests PUBLIC
     wmtk::toolkit
     wmtk::data
-    Catch2::Catch2
+    Catch2::Catch2WithMain
 )
 wmtk_copy_dll(wmtk_tests)
 

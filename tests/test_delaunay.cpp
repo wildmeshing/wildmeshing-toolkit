@@ -1,11 +1,11 @@
 #include <wmtk/utils/Delaunay.hpp>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <limits>
 
 namespace {
-    // TODO: this should use a predicate instead
+// TODO: this should use a predicate instead
 inline double compute_tet_volume(
     const wmtk::Point3D& p,
     const wmtk::Point3D& q,
@@ -21,19 +21,17 @@ inline double compute_tet_volume(
         q[1] * r[0] * s[2] - q[1] * r[2] * s[0] - q[2] * r[0] * s[1] + q[2] * r[1] * s[0]);
 }
 // TODO: this should use a predicate instead
-inline double compute_tri_area(
-    const wmtk::Point2D& a,
-    const wmtk::Point2D& b,
-    const wmtk::Point2D& c)
+inline double
+compute_tri_area(const wmtk::Point2D& a, const wmtk::Point2D& b, const wmtk::Point2D& c)
 {
-    auto a0=a[0];
-    auto a1=a[1];
-    auto b0=b[0];
-    auto b1=b[1];
-    auto c0=c[0];
-    auto c1=c[1];
+    auto a0 = a[0];
+    auto a1 = a[1];
+    auto b0 = b[0];
+    auto b1 = b[1];
+    auto c0 = c[0];
+    auto c1 = c[1];
 
-    return (-(a1*b0) + a0*b1 + a1*c0 - b1*c0 - a0*c1 + b0*c1)/2.0;
+    return (-(a1 * b0) + a0 * b1 + a1 * c0 - b1 * c0 - a0 * c1 + b0 * c1) / 2.0;
 }
 
 } // namespace
@@ -203,11 +201,7 @@ TEST_CASE("Delaunay2D", "[delaunay][2d]")
             REQUIRE(tri[2] < num_vertices);
 
             // tri must be positive oriented and non-degenerate.
-            REQUIRE(
-                compute_tri_area( 
-                    vertices[tri[0]],
-                    vertices[tri[1]],
-                    vertices[tri[2]]) > EPS);
+            REQUIRE(compute_tri_area(vertices[tri[0]], vertices[tri[1]], vertices[tri[2]]) > EPS);
         }
     };
 
@@ -239,8 +233,7 @@ TEST_CASE("Delaunay2D", "[delaunay][2d]")
     }
     SECTION("Duplicate pts")
     {
-        std::vector<Point2D>
-            points{{{0, 0}}, {{1, 0}}, {{0, 1}}, {{1, 1}}, {{0, 1}}, {{0, 1}}};
+        std::vector<Point2D> points{{{0, 0}}, {{1, 0}}, {{0, 1}}, {{1, 1}}, {{0, 1}}, {{0, 1}}};
 
         auto [vertices, triangles] = delaunay2D(points);
         REQUIRE(vertices.size() == 6); // duplicate pts are kept in the output.
@@ -249,13 +242,7 @@ TEST_CASE("Delaunay2D", "[delaunay][2d]")
     }
     SECTION("Square with centroid")
     {
-        std::vector<Point2D> points{
-            {{0, 0}},
-            {{1, 0}},
-            {{1, 1}},
-            {{0, 1}},
-            {{0.5, 0.5}}
-        };
+        std::vector<Point2D> points{{{0, 0}}, {{1, 0}}, {{1, 1}}, {{0, 1}}, {{0.5, 0.5}}};
 
         auto [vertices, triangles] = delaunay2D(points);
         REQUIRE(vertices.size() == 5);
