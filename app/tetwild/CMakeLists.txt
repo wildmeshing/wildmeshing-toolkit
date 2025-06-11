@@ -12,12 +12,11 @@ if(NOT WMTK_APP_SEC)
 message(FATAL_ERROR "Remeshing requires shorted edge collapse app; try WMTK_APP_SEC=ON")
 endif()
 
-add_library(wmtk_tetwild
+add_library(wmtk_tetwild STATIC
 	TetWild.cpp
 	TetWild.h
 
 	common.h
-	common.cpp
 	Parameters.h
 
 	EdgeSplitting.cpp

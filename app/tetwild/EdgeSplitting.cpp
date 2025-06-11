@@ -121,9 +121,9 @@ bool tetwild::TetWild::split_edge_after(const Tuple& loc)
     if (!m_vertex_attribute[v_id].m_is_rounded) {
         m_vertex_attribute[v_id].m_pos =
             (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
-        m_vertex_attribute[v_id].m_posf = to_double(m_vertex_attribute[v_id].m_pos);
+        m_vertex_attribute[v_id].m_posf = m_vertex_attribute[v_id].m_pos.cast<double>();
     } else
-        m_vertex_attribute[v_id].m_pos = to_rational(m_vertex_attribute[v_id].m_posf);
+        m_vertex_attribute[v_id].m_pos = m_vertex_attribute[v_id].m_posf.cast<wmtk::Rational>();
 
     /// update quality
     for (auto& loc : locs) {

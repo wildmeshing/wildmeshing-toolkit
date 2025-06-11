@@ -71,6 +71,7 @@ int main(int argc, char** argv)
         tris,
         modified_nonmanifold_v);
 
+
     double diag = (box_minmax.first - box_minmax.second).norm();
     const double envelope_size = params.epsr * diag;
     app::sec::ShortestEdgeCollapse surf_mesh(verts, NUM_THREADS, false);
@@ -83,6 +84,9 @@ int main(int argc, char** argv)
         surf_mesh.collapse_shortest(0);
         surf_mesh.consolidate_mesh();
     }
+
+    surf_mesh.write_triangle_mesh(output_path + "_simplified.obj");
+    // return 0;
 
     //// get the simplified input
     std::vector<Eigen::Vector3d> vsimp(surf_mesh.vert_capacity());
@@ -123,7 +127,7 @@ int main(int argc, char** argv)
     } else {
         ptr_env = &(exact_envelope);
     }
-    tetwild::TetWild mesh(params, *ptr_env, NUM_THREADS);
+    tetwild::TetWild mesh(params, *ptr_env, surf_mesh.m_envelope, NUM_THREADS);
 
     /////////////////////////////////////////////////////
 
@@ -136,7 +140,18 @@ int main(int argc, char** argv)
         std::max(NUM_THREADS, 1),
         partition_id);
     /////////triangle insertion with the simplified mesh
+
+    igl::Timer insertion_timer;
+    insertion_timer.start();
     mesh.init_from_input_surface(vsimp, fsimp, partition_id);
+    wmtk::logger().info("triangle insertion time: {}s", insertion_timer.getElapsedTime());
+
+    mesh.output_faces("test_ti_output_surface.obj", [](auto& f) { return f.m_is_surface_fs; });
+
+    mesh.output_faces("test_ti_output_bbox.obj", [](auto& f) { return f.m_is_bbox_fs != -1; });
+
+    mesh.output_mesh(output_path + "_after_insertion.msh");
+
 
     /////////mesh improvement
     mesh.mesh_improvement(max_its);
