@@ -17,6 +17,7 @@ add_library(wmtk_tetwild
 	TetWild.h
 
 	common.h
+	common.cpp
 	Parameters.h
 
 	EdgeSplitting.cpp

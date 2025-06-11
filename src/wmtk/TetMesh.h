@@ -1,6 +1,5 @@
 #pragma once
 
-#include <wmtk/TetMeshTuple.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <type_traits>
 #include <wmtk/AttributeCollection.hpp>
@@ -23,9 +22,176 @@
 namespace wmtk {
 class TetMesh
 {
+private:
+    /**
+     * @brief local edges within a tet
+     *
+     */
+    static constexpr std::array<std::array<int, 2>, 6> m_local_edges = {
+        {{{0, 1}}, {{1, 2}}, {{0, 2}}, {{0, 3}}, {{1, 3}}, {{2, 3}}}};
+
+    static constexpr std::array<int, 4> m_map_vertex2edge = {{0, 0, 1, 3}};
+    static constexpr std::array<int, 4> m_map_vertex2oppo_face = {{3, 1, 2, 0}};
+    static constexpr std::array<int, 6> m_map_edge2face = {{0, 0, 0, 1, 2, 1}};
+    static constexpr std::array<std::array<int, 3>, 4> m_local_faces = {
+        {{{0, 1, 2}}, {{0, 2, 3}}, {{0, 1, 3}}, {{1, 2, 3}}}}; // sorted local vids
+    static constexpr std::array<std::array<int, 3>, 4> m_local_edges_in_a_face = {
+        {{{0, 1, 2}}, {{2, 5, 3}}, {{3, 4, 0}}, {{5, 1, 4}}}};
+
 public:
-    using Tuple = TetMeshTuple;
-    friend class TetMeshTuple;
+    // Cell Tuple Navigator
+    /**
+     * @brief a Tuple refers to a global vid and a global tet id, and a local edge id and local face
+     * id
+     *
+     */
+    class Tuple
+    {
+        size_t m_global_vid = std::numeric_limits<size_t>::max();
+        size_t m_local_eid = std::numeric_limits<size_t>::max();
+        size_t m_local_fid = std::numeric_limits<size_t>::max();
+        size_t m_global_tid = std::numeric_limits<size_t>::max();
+
+        int m_hash = 0;
+
+    private:
+        /**
+         * Construct a new Tuple object with global vertex/tetra index and local edge/face index
+         *
+         * @param vid vertex id (global)
+         * @param eid edge id (local)
+         * @param fid face id (local)
+         * @param tid tetra id (global)
+         * @param ts hash associated with tid
+         */
+        Tuple(const TetMesh& m, size_t vid, size_t local_eid, size_t local_fid, size_t tid);
+
+    public:
+        Tuple() {}
+
+        friend TetMesh;
+
+        /**
+         * Check if the current tuple is already invalid (removed during editing).
+         *
+         * @param m TetMesh where the tuple belongs.
+         * @return if not removed and the tuple is up to date with respect to the connectivity. And
+         * the tet id can't be -1
+         */
+        bool is_valid(const TetMesh& m) const;
+        /**
+         * Check if the current tuple the refers to an edge is on the boundary
+         *
+         * @param m TetMesh where the tuple belongs.
+         * @return if the edge is at the mesh boundary
+         */
+        bool is_boundary_edge(const TetMesh& m) const;
+        /**
+         * Check if the current tuple the refers to a face is on the boundary
+         *
+         * @param m TetMesh where the tuple belongs.
+         * @return if the edge is at the mesh boundary
+         */
+        bool is_boundary_face(const TetMesh& m) const;
+
+        /**
+         * @brief prints the tuple
+         *
+         */
+        void print_info() const;
+
+        /**
+         * @brief prints additional information
+         *
+         * @param m mesh
+         */
+        void print_info(const TetMesh& m) const;
+
+        /**
+         * returns global vertex id.
+         * @param m TetMesh where the tuple belongs.
+         * @return size_t
+         */
+        size_t vid(const TetMesh& m) const;
+
+        /**
+         * returns a global unique edge id
+         *
+         * @param m TetMesh where the tuple belongs.
+         * @return size_t
+         * @note The global id may not be consecutive. The edges are undirected and different tetra
+         * share the same edge.
+         */
+        size_t eid(const TetMesh& m) const;
+
+        /**
+         * returns a global unique face id
+         *
+         * @param m TetMesh where the tuple belongs.
+         * @return size_t
+         * @note The global id may not be consecutive. The face are undirected.
+         */
+        size_t fid(const TetMesh& m) const;
+
+        /**
+         * returns global tetra id.
+
+         * @param m TetMesh where the tuple belongs.
+         * @return size_t
+         */
+        size_t tid(const TetMesh& m) const;
+
+        /**
+         * Switch operation.
+         *
+         * @param m the mesh the Tuple is in
+         * @return another Tuple that share the same tetra, face, edge, but different vertex.
+         */
+        Tuple switch_vertex(const TetMesh& m) const;
+        /**
+         * Switch operation.
+         *
+         * @param m the mesh the Tuple is in
+         * @return another Tuple that share the same tetra, face, vertex, but different edge.
+         */
+        Tuple switch_edge(const TetMesh& m) const;
+        /**
+         * Switch operation.
+         *
+         * @param m the mesh the Tuple is in
+         * @return another Tuple that share the same tetra, edge, vertex, but different edge.
+         */
+        Tuple switch_face(const TetMesh& m) const;
+
+        /**
+         * Switch operation for the adjacent tetra.
+         *
+         * @param m Mesh
+         * @return Tuple for the face-adjacent tetra, sharing same face, edge, and vertex.
+         * @return nullopt if the Tuple is the switch goes off the boundary.
+         */
+        std::optional<Tuple> switch_tetrahedron(const TetMesh& m) const;
+
+
+        ////testing code
+        /**
+         * @brief check Tuple validity and connectivity validity
+         */
+        void check_validity(const TetMesh& m) const;
+        friend bool operator==(const Tuple& a, const Tuple& t)
+        {
+            return (
+                std::tie(a.m_global_vid, a.m_local_eid, a.m_local_fid, a.m_global_tid, a.m_hash) ==
+                std::tie(t.m_global_vid, t.m_local_eid, t.m_local_fid, t.m_global_tid, t.m_hash));
+        }
+        friend bool operator<(const Tuple& a, const Tuple& t)
+        {
+            return (
+                std::tie(a.m_global_vid, a.m_local_eid, a.m_local_fid, a.m_global_tid, a.m_hash) <
+                std::tie(t.m_global_vid, t.m_local_eid, t.m_local_fid, t.m_global_tid, t.m_hash));
+        }
+    };
+
     /**
      * (internal use) Maintains a list of tetra connected to the given vertex, and a flag to
      * mark removal.
@@ -90,9 +256,39 @@ public:
             return -1;
         }
 
-        int find_local_edge(size_t v1_id, size_t v2_id) const;
+        int find_local_edge(size_t v1_id, size_t v2_id) const
+        {
+            std::array<int, 2> e;
+            for (int j = 0; j < 4; j++) {
+                if (v1_id == m_indices[j])
+                    e[0] = j;
+                else if (v2_id == m_indices[j])
+                    e[1] = j;
+            }
+            if (e[0] > e[1]) std::swap(e[0], e[1]);
+            int i =
+                std::find(m_local_edges.begin(), m_local_edges.end(), e) - m_local_edges.begin();
+            if (i >= m_local_edges.size()) return -1;
+            return i;
+        }
 
-        int find_local_face(size_t v1_id, size_t v2_id, size_t v3_id) const;
+        int find_local_face(size_t v1_id, size_t v2_id, size_t v3_id) const
+        {
+            std::array<int, 3> f;
+            for (int j = 0; j < 4; j++) {
+                if (v1_id == m_indices[j])
+                    f[0] = j;
+                else if (v2_id == m_indices[j])
+                    f[1] = j;
+                else if (v3_id == m_indices[j])
+                    f[2] = j;
+            }
+            std::sort(f.begin(), f.end());
+            int i =
+                std::find(m_local_faces.begin(), m_local_faces.end(), f) - m_local_faces.begin();
+            if (i >= m_local_edges.size()) return -1;
+            return i;
+        }
 
         friend bool operator==(const TetrahedronConnectivity& l, const TetrahedronConnectivity& r)
         {
@@ -125,7 +321,7 @@ public:
     size_t vertex_size() const
     {
         int cnt = 0;
-        for (size_t i = 0; i < vert_capacity(); i++) {
+        for (auto i = 0; i < vert_capacity(); i++) {
             if (!m_vertex_connectivity[i].m_is_removed) cnt++;
         }
         return cnt;
@@ -137,7 +333,7 @@ public:
     size_t tet_size() const
     {
         int cnt = 0;
-        for (size_t i = 0; i < tet_capacity(); i++) {
+        for (auto i = 0; i < tet_capacity(); i++) {
             if (!m_tet_connectivity[i].m_is_removed) cnt++;
         }
         return cnt;
@@ -219,13 +415,6 @@ public:
         std::vector<size_t>& new_center_vids,
         std::vector<std::array<size_t, 4>>& center_split_tets);
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-parameter"
-#elif (defined(__GNUC__) || defined(__GNUG__)) && !(defined(__clang__) || defined(__INTEL_COMPILER))
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#endif
     /**
      * @brief Insert a point into a tetmesh inside a tet.
      * In general position, this split a tet into 4.
@@ -236,8 +425,8 @@ public:
      * @return false
      */
     bool insert_point(const Tuple& t, std::vector<Tuple>& new_tets);
-    virtual bool insert_point_before([[maybe_unused]] const Tuple& t) { return true; };
-    virtual bool insert_point_after([[maybe_unused]] std::vector<Tuple>& new_tets) { return true; };
+    virtual bool insert_point_before(const Tuple& t) { return true; };
+    virtual bool insert_point_after(std::vector<Tuple>& new_tets) { return true; };
     /**
      * @brief cleans up the deleted vertices or tetrahedra, fixes the corresponding indices, and
      * reset the version number. WARNING: it invalidates all tuples!
@@ -297,9 +486,8 @@ public:
     using vector = tbb::concurrent_vector<T>;
 
 public:
-    AbstractAttributeCollection *p_vertex_attrs = nullptr, *p_edge_attrs = nullptr,
-                                *p_face_attrs = nullptr, *p_tet_attrs = nullptr;
-    // AbstractAttributeCollection vertex_attrs, edge_attrs, face_attrs, tet_attrs;
+    AbstractAttributeContainer *p_vertex_attrs, *p_edge_attrs, *p_face_attrs, *p_tet_attrs;
+    AbstractAttributeContainer vertex_attrs, edge_attrs, face_attrs, tet_attrs;
 
 
 private:
@@ -339,15 +527,9 @@ private:
         std::vector<std::array<size_t, 4>>& center_split_tets);
 
 protected:
-    virtual bool invariants([[maybe_unused]] const std::vector<Tuple>&) { return true; }
-    virtual bool triangle_insertion_before([[maybe_unused]] const std::vector<Tuple>& faces)
-    {
-        return true;
-    }
-    virtual bool triangle_insertion_after([[maybe_unused]] const std::vector<std::vector<Tuple>>&)
-    {
-        return true;
-    }
+    virtual bool invariants(const std::vector<Tuple>&) { return true; }
+    virtual bool triangle_insertion_before(const std::vector<Tuple>& faces) { return true; }
+    virtual bool triangle_insertion_after(const std::vector<std::vector<Tuple>>&) { return true; }
 
     //// Split the edge in the tuple
     // Checks if the split should be performed or not (user controlled)
@@ -357,10 +539,7 @@ protected:
      * @param the edge Tuple to be split
      * @return true if the preparation succeed
      */
-    virtual bool split_edge_before([[maybe_unused]] const Tuple& t)
-    {
-        return true;
-    } // check edge condition
+    virtual bool split_edge_before(const Tuple& t) { return true; } // check edge condition
     // This function computes the attributes for the added simplices
     // if it returns false then the operation is undone
     /**
@@ -369,10 +548,7 @@ protected:
      * @param the edge Tuple to be split
      * @return true if the modification succeed
      */
-    virtual bool split_edge_after([[maybe_unused]] const Tuple& t)
-    {
-        return true;
-    } // check tet condition
+    virtual bool split_edge_after(const Tuple& t) { return true; } // check tet condition
 
     //// Collapse the edge in the tuple
     // Checks if the collapse should be performed or not (user controlled)
@@ -383,7 +559,7 @@ protected:
      * @param t edge Tuple to be collapsed
      * @return true is the preparation succeed
      */
-    virtual bool collapse_edge_before([[maybe_unused]] const Tuple& t) { return true; }
+    virtual bool collapse_edge_before(const Tuple& t) { return true; }
     // If it returns false then the operation is undone (the tuple indexes a vertex and tet that
     // survived)
     /**
@@ -392,7 +568,7 @@ protected:
      * @param t edge Tuple that's collapsed
      * @return true if the modification succeed
      */
-    virtual bool collapse_edge_after([[maybe_unused]] const Tuple& t) { return true; }
+    virtual bool collapse_edge_after(const Tuple& t) { return true; }
     /**
      * @brief User specified preparations and desideratas for an 4-4 edge swap before changing the
      * connectivity
@@ -400,14 +576,14 @@ protected:
      * @param t edge Tuple to be swaped
      * @return true if the preparation succeed
      */
-    virtual bool swap_edge_44_before([[maybe_unused]] const Tuple& t) { return true; }
+    virtual bool swap_edge_44_before(const Tuple& t) { return true; }
     /**
      * @brief User specified modifications and desideratas for after a 4-4 edge swap
      *
      * @param t edge Tuple that's swaped
      * @return true if the modification succeed
      */
-    virtual bool swap_edge_44_after([[maybe_unused]] const Tuple& t) { return true; }
+    virtual bool swap_edge_44_after(const Tuple& t) { return true; }
     /**
      * @brief User specified preparations and desideratas for an 3-2 edge swap before changing the
      * conenctivity
@@ -415,14 +591,14 @@ protected:
      * @param t edge Tuple to be swaped
      * @return true if the preparation succeed
      */
-    virtual bool swap_edge_before([[maybe_unused]] const Tuple& t) { return true; }
+    virtual bool swap_edge_before(const Tuple& t) { return true; }
     /**
      * @brief User specified modifications and desideratas for after a 3-2 edge swap
      *
      * @param t edge Tuple that's swaped
      * @return true if the modification succeed
      */
-    virtual bool swap_edge_after([[maybe_unused]] const Tuple& t) { return true; }
+    virtual bool swap_edge_after(const Tuple& t) { return true; }
     /**
      * @brief User specified preparations and desideratas for an 2-3 face swap befroe changing the
      * geometry
@@ -430,36 +606,31 @@ protected:
      * @param t edge Tuple to be swaped
      * @return true if the preparation succeed
      */
-    virtual bool swap_face_before([[maybe_unused]] const Tuple& t) { return true; }
+    virtual bool swap_face_before(const Tuple& t) { return true; }
     /**
      * @brief User specified modifications and desideratas for after a 2-3 face swap
      *
      * @param t edge Tuple that's swaped
      * @return true if the modification succeed
      */
-    virtual bool swap_face_after([[maybe_unused]] const Tuple& t) { return true; }
+    virtual bool swap_face_after(const Tuple& t) { return true; }
     /**
      * @brief  User specified preparations and desideratas for smoothing a vertex
      *
      * @param t Tuple refering to a vertex Tuple
      * @return true if the preparation succeed
      */
-    virtual bool smooth_before([[maybe_unused]] const Tuple& t) { return true; }
+    virtual bool smooth_before(const Tuple& t) { return true; }
     /**
      * @brief  User specified modifications and desideratas for after smoothing a vertex
      *
      * @param t Tuple refering to a vertex
      * @return true if the preparation succeed
      */
-    virtual bool smooth_after([[maybe_unused]] const Tuple& t) { return true; }
+    virtual bool smooth_after(const Tuple& t) { return true; }
 
     // virtual void resize_vertex_mutex(size_t v) {}
 
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#elif (defined(__GNUC__) || defined(__GNUG__)) && !(defined(__clang__) || defined(__INTEL_COMPILER))
-#pragma GCC diagnostic pop
-#endif
 public:
     /**
      * @brief get a Tuple from global tetra index and __local__ edge index (from 0-5).
@@ -691,50 +862,26 @@ private:
     }
     void start_protect_attributes()
     {
-        if (p_vertex_attrs != nullptr) {
-            p_vertex_attrs->begin_protect();
-        }
-        if (p_edge_attrs != nullptr) {
-            p_edge_attrs->begin_protect();
-        }
-        if (p_face_attrs != nullptr) {
-            p_face_attrs->begin_protect();
-        }
-        if (p_tet_attrs != nullptr) {
-            p_tet_attrs->begin_protect();
-        }
+        p_vertex_attrs->begin_protect();
+        p_edge_attrs->begin_protect();
+        p_face_attrs->begin_protect();
+        p_tet_attrs->begin_protect();
     }
 
     void release_protect_attributes()
     {
-        if (p_vertex_attrs != nullptr) {
-            p_vertex_attrs->end_protect();
-        }
-        if (p_edge_attrs != nullptr) {
-            p_edge_attrs->end_protect();
-        }
-        if (p_face_attrs != nullptr) {
-            p_face_attrs->end_protect();
-        }
-        if (p_tet_attrs != nullptr) {
-            p_tet_attrs->end_protect();
-        }
+        p_vertex_attrs->end_protect();
+        p_edge_attrs->end_protect();
+        p_face_attrs->end_protect();
+        p_tet_attrs->end_protect();
     }
 
     void rollback_protected_attributes()
     {
-        if (p_vertex_attrs != nullptr) {
-            p_vertex_attrs->rollback();
-        }
-        if (p_edge_attrs != nullptr) {
-            p_edge_attrs->rollback();
-        }
-        if (p_face_attrs != nullptr) {
-            p_face_attrs->rollback();
-        }
-        if (p_tet_attrs != nullptr) {
-            p_tet_attrs->rollback();
-        }
+        p_vertex_attrs->rollback();
+        p_edge_attrs->rollback();
+        p_face_attrs->rollback();
+        p_tet_attrs->rollback();
     }
 
 public:

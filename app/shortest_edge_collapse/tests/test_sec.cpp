@@ -1,6 +1,4 @@
 #include <sec/ShortestEdgeCollapse.h>
-#include <wmtk/TriMeshOperation.h>
-#include <wmtk/operations/TriMeshEdgeCollapseOperation.h>
 
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/ManifoldUtils.hpp>
@@ -108,7 +106,7 @@ TEST_CASE("shortest_edge_collapse", "[test_sec]")
         }
     }
 
-    REQUIRE_FALSE(TriMeshEdgeCollapseOperation::check_link_condition(m, shortest_edge));
+    REQUIRE_FALSE(m.check_link_condition(shortest_edge));
     m.collapse_shortest(-1);
 
     REQUIRE_FALSE(shortest_edge.is_valid(m));

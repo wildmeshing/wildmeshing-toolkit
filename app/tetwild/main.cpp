@@ -123,7 +123,7 @@ int main(int argc, char** argv)
     } else {
         ptr_env = &(exact_envelope);
     }
-    tetwild::TetWild mesh(params, *ptr_env, surf_mesh.m_envelope, NUM_THREADS);
+    tetwild::TetWild mesh(params, *ptr_env, NUM_THREADS);
 
     /////////////////////////////////////////////////////
 

@@ -6,28 +6,6 @@
 #include "wmtk/TriMesh.h"
 
 namespace wmtk {
-
-void unique_vertex_tuples(const TriMesh& m, std::vector<TriMesh::Tuple>& vertices)
-{
-    std::sort(
-        vertices.begin(),
-        vertices.end(),
-        [&](const TriMesh::Tuple& a, const TriMesh::Tuple& b) -> bool {
-            return a.vid(m) < b.vid(m);
-        });
-    vertices.erase(std::unique(vertices.begin(), vertices.end()), vertices.end());
-}
-void unique_face_tuples(const TriMesh& m, std::vector<TriMesh::Tuple>& tris)
-{
-    std::sort(
-        tris.begin(),
-        tris.end(),
-        [&](const TriMesh::Tuple& a, const TriMesh::Tuple& b) -> bool {
-            return a.fid(m) < b.fid(m);
-        });
-    tris.erase(std::unique(tris.begin(), tris.end()), tris.end());
-}
-
 void unique_edge_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& edges)
 {
     auto edge_ids = std::vector<size_t>();

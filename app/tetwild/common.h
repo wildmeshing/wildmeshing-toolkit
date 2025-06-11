@@ -21,5 +21,7 @@ typedef Eigen::Matrix<wmtk::Rational, 2, 1> Vector2r;
 typedef double Scalar;
 typedef Eigen::Matrix<Scalar, 3, 3> Matrix3;
 
+Vector3r to_rational(const Vector3d& p0);
+Vector3d to_double(const Vector3r& p0);
 
 } // namespace tetwild

@@ -4,6 +4,9 @@ endif()
 
 message(STATUS "Third-party: creating target 'igl::core'")
 
+option(LIBIGL_WITH_OPENGL            "Use OpenGL"                   ON)
+option(LIBIGL_WITH_OPENGL_GLFW       "Use GLFW"                     ON)
+
 include(FetchContent)
 CPMAddPackage(
     libigl

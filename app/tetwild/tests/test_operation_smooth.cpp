@@ -16,8 +16,7 @@ TEST_CASE("smooth_in_single_tet", "[tetwild_operation]")
     params.init(Vector3d(0, 0, 0), Vector3d(1, 1, 1));
 
     wmtk::Envelope envelope;
-    sample_envelope::SampleEnvelope sample_env;
-    TetWild tetwild(params, envelope, sample_env);
+    TetWild tetwild(params, envelope);
     std::vector<VertexAttributes> vertices(4);
     vertices[0].m_posf = Vector3d(0.1, 0, 0);
     vertices[1].m_posf = Vector3d(1, 0, 0);
@@ -25,7 +24,7 @@ TEST_CASE("smooth_in_single_tet", "[tetwild_operation]")
     vertices[3].m_posf = Vector3d(0, 0, 1);
     for (auto& v : vertices) {
         v.m_is_rounded = true;
-        v.m_pos = v.m_posf.cast<wmtk::Rational>();
+        v.m_pos = tetwild::to_rational(v.m_posf);
     }
     std::vector<std::array<size_t, 4>> tets = {{{0, 1, 2, 3}}};
     std::vector<TetAttributes> tet_attrs(1);
@@ -45,10 +44,9 @@ TEST_CASE("smooth_double_tet", "[tetwild_operation]")
 
     Parameters params;
     params.init(Vector3d(0, 0, 0), Vector3d(1, 1, 1));
-    wmtk::Envelope envelope;
-    sample_envelope::SampleEnvelope sample_env;
-    TetWild tetwild(params, envelope, sample_env);
 
+    wmtk::Envelope envelope;
+    TetWild tetwild(params, envelope);
     std::vector<VertexAttributes> vertices(5);
     vertices[0].m_posf = Vector3d(0.1, 0, 0);
     vertices[1].m_posf = Vector3d(1, 0, 0);

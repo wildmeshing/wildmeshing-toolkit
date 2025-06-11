@@ -29,7 +29,7 @@
 tetwild::VertexAttributes::VertexAttributes(const Vector3r& p)
 {
     m_pos = p;
-    m_posf = p.cast<double>();
+    m_posf = to_double(p);
 }
 
 void tetwild::TetWild::mesh_improvement(int max_its)
@@ -153,8 +153,8 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
     // outputs scale_multipliers
     tbb::concurrent_vector<Scalar> scale_multipliers(vert_capacity(), recover_scalar);
 
-    tbb::concurrent_vector<Vector3d> pts;
-    tbb::concurrent_queue<size_t> v_queue;
+    std::vector<Vector3d> pts;
+    std::queue<size_t> v_queue;
     TetMesh::for_each_tetra([&](auto& t) {
         auto tid = t.tid(*this);
         if (std::cbrt(m_tet_attribute[tid].m_quality) < filter_energy) return;
@@ -180,11 +180,10 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
     nnsearch->set_points(pts.size(), pts[0].data());
 
     std::vector<size_t> cache_one_ring;
-    size_t vid;
-    while (v_queue.try_pop(vid)) {
+    while (!v_queue.empty()) {
         sum++;
-        // size_t vid = v_queue.front();
-        // v_queue.pop();
+        size_t vid = v_queue.front();
+        v_queue.pop();
         if (visited[vid]) continue;
         visited[vid] = true;
         adjcnt++;
@@ -571,9 +570,8 @@ std::vector<std::array<size_t, 3>> tetwild::TetWild::get_faces_by_condition(
         if (cond(m_face_attribute[fid])) {
             auto tid = fid / 4, lid = fid % 4;
             auto verts = get_face_vertices(f);
-            res.emplace_back(
-                std::array<size_t, 3>{
-                    {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
+            res.emplace_back(std::array<size_t, 3>{
+                {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
         }
     }
     return res;
@@ -691,7 +689,7 @@ bool tetwild::TetWild::check_attributes()
                 return false;
             }
         } else {
-            Vector3d p = m_vertex_attribute[i].m_pos.cast<double>();
+            Vector3d p = to_double(m_vertex_attribute[i].m_pos);
             if (p != m_vertex_attribute[i].m_posf) {
                 wmtk::logger().critical("rounding error {} unrounded", i);
                 return false;

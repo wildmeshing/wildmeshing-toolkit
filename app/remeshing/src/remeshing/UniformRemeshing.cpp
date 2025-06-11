@@ -35,7 +35,7 @@ UniformRemeshing::UniformRemeshing(
 
     p_vertex_attrs = &vertex_attrs;
 
-    vertex_attrs.grow_to_at_least(_m_vertex_positions.size());
+    vertex_attrs.resize(_m_vertex_positions.size());
 
     for (auto i = 0; i < _m_vertex_positions.size(); i++)
         vertex_attrs[i] = {_m_vertex_positions[i], 0};
@@ -84,10 +84,10 @@ void UniformRemeshing::cache_edge_positions(const Tuple& t)
     position_cache.local().partition_id = vertex_attrs[t.vid(*this)].partition_id;
 }
 
-bool UniformRemeshing::invariants(const wmtk::TriMeshOperation& op) 
+bool UniformRemeshing::invariants(const std::vector<Tuple>& new_tris)
 {
     if (m_has_envelope) {
-        for (auto& t : op.modified_triangles(*this)) {
+        for (auto& t : new_tris) {
             std::array<Eigen::Vector3d, 3> tris;
             auto vs = oriented_tri_vertices(t);
             for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid(*this)].pos;
@@ -215,7 +215,7 @@ std::vector<TriMesh::Tuple> UniformRemeshing::new_edges_after(
 
 bool UniformRemeshing::swap_edge_before(const Tuple& t)
 {
-    // if (!TriMesh::swap_edge_before(t)) return false;
+    if (!TriMesh::swap_edge_before(t)) return false;
     if (vertex_attrs[t.vid(*this)].freeze && vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
         return false;
     return true;
@@ -266,7 +266,7 @@ std::vector<TriMesh::Tuple> UniformRemeshing::new_sub_edges_after_split(
 
 bool UniformRemeshing::collapse_edge_before(const Tuple& t)
 {
-    // if (!TriMesh::collapse_edge_before(t)) return false;
+    if (!TriMesh::collapse_edge_before(t)) return false;
     if (vertex_attrs[t.vid(*this)].freeze || vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
         return false;
     cache_edge_positions(t);
@@ -286,7 +286,7 @@ bool UniformRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
 
 bool UniformRemeshing::split_edge_before(const Tuple& t)
 {
-    // if (!TriMesh::split_edge_before(t)) return false;
+    if (!TriMesh::split_edge_before(t)) return false;
     cache_edge_positions(t);
     return true;
 }
@@ -430,7 +430,7 @@ bool UniformRemeshing::collapse_remeshing(double L)
         timer.getElapsedTimeInMilliSec());
 
     wmtk::logger().info("size for edges to be collapse is {}", collect_all_ops.size());
-    auto setup_and_execute = [&](auto& executor) {
+    auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = renew;
         executor.priority = [&](auto& m, auto _, auto& e) {
             return m.compute_edge_cost_collapse(e, L);
@@ -443,15 +443,13 @@ bool UniformRemeshing::collapse_remeshing(double L)
             return true;
         };
         executor(*this, collect_all_ops);
-        executor(*this, {{"consolidate", {}}});
     };
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>(*this);
-
+        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
         executor.lock_vertices = edge_locker;
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>(*this);
+        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     }
 
@@ -503,16 +501,14 @@ bool UniformRemeshing::split_remeshing(double L)
             for (auto& item : edges2) collect_all_ops.emplace_back(item);
             edges2.clear();
         } while (count_success.load(std::memory_order_acquire) > 0);
-
-        executor(*this, {{"consolidate", {}}});
     };
 
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>(*this);
+        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
         executor.lock_vertices = edge_locker;
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>(*this);
+        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     }
 
@@ -524,20 +520,19 @@ bool UniformRemeshing::smooth_all_vertices()
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("vertex_smooth", loc);
 
-    auto setup_and_execute = [&](auto& executor) {
+    auto setup_and_execute = [&](auto executor) {
         executor.num_threads = NUM_THREADS;
 
         executor(*this, collect_all_ops);
-        executor(*this, {{"consolidate", {}}});
     };
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>(*this);
+        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
             return m.try_set_vertex_mutex_one_ring(e, task_id);
         };
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>(*this);
+        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     }
 
@@ -558,7 +553,7 @@ bool UniformRemeshing::swap_remeshing()
     wmtk::logger().info("***** swap get edges time *****: {} ms", timer.getElapsedTimeInMilliSec());
 
 
-    auto setup_and_execute = [&](auto& executor) {
+    auto setup_and_execute = [&](auto executor) {
         executor.renew_neighbor_tuples = renew;
         executor.num_threads = NUM_THREADS;
         executor.priority = [](auto& m, auto op, const Tuple& e) {
@@ -571,14 +566,13 @@ bool UniformRemeshing::swap_remeshing()
             return (val_energy > 1e-5) && ((val_energy - val) * (val_energy - val) < 1e-8);
         };
         executor(*this, collect_all_ops);
-        executor(*this, {{"consolidate", {}}});
     };
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>(*this);
+        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
         executor.lock_vertices = edge_locker;
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>(*this);
+        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     }
 
@@ -714,4 +708,3 @@ bool UniformRemeshing::write_triangle_mesh(std::string path)
 
     return manifold;
 }
-

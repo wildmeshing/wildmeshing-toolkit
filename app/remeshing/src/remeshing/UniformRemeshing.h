@@ -2,7 +2,7 @@
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <sec/envelope/SampleEnvelope.hpp>
-#include <wmtk/AttributeCollection.hpp>
+#include "wmtk/AttributeCollection.hpp"
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -34,7 +34,6 @@ struct VertexAttributes
 class UniformRemeshing : public wmtk::TriMesh
 {
 public:
-    std::map<std::string, std::shared_ptr<wmtk::TriMeshOperation>> get_operations() const override;
     sample_envelope::SampleEnvelope m_envelope;
     bool m_has_envelope = false;
 
@@ -66,7 +65,7 @@ public:
 
     void cache_edge_positions(const Tuple& t);
 
-    bool invariants(const wmtk::TriMeshOperation&) override;
+    bool invariants(const std::vector<Tuple>& new_tris) override;
 
     // TODO: this should not be here
     void partition_mesh();
@@ -81,11 +80,11 @@ public:
 
     Eigen::Vector3d tangential_smooth(const Tuple& t);
 
-    bool collapse_edge_before(const Tuple& t) ;
-    bool collapse_edge_after(const Tuple& t) ;
+    bool collapse_edge_before(const Tuple& t) override;
+    bool collapse_edge_after(const Tuple& t) override;
 
-    bool swap_edge_before(const Tuple& t) ;
-    bool swap_edge_after(const Tuple& t) ;
+    bool swap_edge_before(const Tuple& t) override;
+    bool swap_edge_after(const Tuple& t) override;
 
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& tris) const;
     std::vector<TriMesh::Tuple> new_edges_after_swap(const TriMesh::Tuple& t) const;
@@ -96,11 +95,11 @@ public:
         const std::vector<TriMesh::Tuple>& tris) const;
 
 
-    bool split_edge_before(const Tuple& t) ;
-    bool split_edge_after(const Tuple& t) ;
+    bool split_edge_before(const Tuple& t) override;
+    bool split_edge_after(const Tuple& t) override;
 
-    bool smooth_before(const Tuple& t) ;
-    bool smooth_after(const Tuple& t) ;
+    bool smooth_before(const Tuple& t) override;
+    bool smooth_after(const Tuple& t) override;
 
     double compute_edge_cost_collapse(const TriMesh::Tuple& t, double L) const;
     double compute_edge_cost_split(const TriMesh::Tuple& t, double L) const;

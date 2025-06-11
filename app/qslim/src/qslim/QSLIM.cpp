@@ -6,50 +6,10 @@
 #include <Eigen/Geometry>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
-#include <wmtk/operations/TriMeshOperationShim.hpp>
-#include <wmtk/operations/TriMeshEdgeCollapseOperation.h>
 
 using namespace wmtk;
 using namespace app::qslim;
 
-
-namespace {
-class QSLIMEdgeCollapseOperation : public wmtk::TriMeshOperationShim<
-                                                  QSLIM,
-                                                  QSLIMEdgeCollapseOperation,
-                                                  wmtk::TriMeshEdgeCollapseOperation>
-{
-public:
-    bool execute(QSLIM& m, const Tuple& t)
-    {
-        return wmtk::TriMeshEdgeCollapseOperation::execute(m, t);
-    }
-    bool before(QSLIM& m, const Tuple& t)
-    {
-        if (wmtk::TriMeshEdgeCollapseOperation::before(m, t)) {
-            return  m.collapse_edge_before(t);
-        }
-        return false;
-    }
-    bool after(QSLIM& m)
-    {
-        if (wmtk::TriMeshEdgeCollapseOperation::after(m)) {
-            return m.collapse_edge_after(get_return_tuple_opt().value());
-        }
-        return false;
-    }
-};
-
-
-} // namespace
-
-std::map<std::string, std::shared_ptr<wmtk::TriMeshOperation>> QSLIM::get_operations() const
-{
-    std::map<std::string, std::shared_ptr<wmtk::TriMeshOperation>> r;
-    auto add_operation = [&](auto&& op) { r[op->name()] = op; };
-    add_operation(std::make_shared<QSLIMEdgeCollapseOperation>());
-    return r;
-}
 
 QSLIM::QSLIM(std::vector<Eigen::Vector3d> _m_vertex_positions, int num_threads)
 {
@@ -58,7 +18,7 @@ QSLIM::QSLIM(std::vector<Eigen::Vector3d> _m_vertex_positions, int num_threads)
     p_edge_attrs = &edge_attrs;
     NUM_THREADS = (num_threads);
 
-    vertex_attrs.grow_to_at_least(_m_vertex_positions.size());
+    vertex_attrs.resize(_m_vertex_positions.size());
 
     for (auto i = 0; i < _m_vertex_positions.size(); i++) {
         vertex_attrs[i] = {_m_vertex_positions[i], 0, false, {}};
@@ -99,8 +59,8 @@ void QSLIM::create_mesh(
         m_envelope.init(V, F, eps);
         m_has_envelope = true;
     }
-    face_attrs.grow_to_at_least(tri_capacity());
-    edge_attrs.grow_to_at_least(tri_capacity() * 3);
+    face_attrs.resize(tri_capacity());
+    edge_attrs.resize(tri_capacity() * 3);
 
     Eigen::MatrixXd N = Eigen::MatrixXd::Zero(F.size(), 3);
     wmtk::logger().info("----normal-------");
@@ -305,10 +265,10 @@ double QSLIM::compute_cost_for_e(const TriMesh::Tuple& v_tuple)
     return cost;
 }
 
-bool QSLIM::invariants(const wmtk::TriMeshOperation& op)
+bool QSLIM::invariants(const std::vector<Tuple>& new_tris)
 {
     if (m_has_envelope) {
-        for (auto& t : op.modified_triangles(*this)) {
+        for (auto& t : new_tris) {
             std::array<Eigen::Vector3d, 3> tris;
             auto vs = oriented_tri_vertices(t);
             for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid(*this)].pos;
@@ -340,7 +300,7 @@ bool QSLIM::write_triangle_mesh(std::string path)
 
 bool QSLIM::collapse_edge_before(const Tuple& t)
 {
-    // if (!TriMesh::collapse_edge_before(t)) return false;
+    if (!TriMesh::collapse_edge_before(t)) return false;
     if (vertex_attrs[t.vid(*this)].freeze || vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
         return false;
     cache.local().v1p = vertex_attrs[t.vid(*this)].pos;
@@ -400,7 +360,7 @@ bool QSLIM::collapse_qslim(int target_vert_number)
     auto measure_priority = [this](auto& m, auto op, const Tuple& new_e) {
         return -compute_cost_for_e(new_e);
     };
-    auto setup_and_execute = [&](auto& executor) {
+    auto setup_and_execute = [&](auto executor) {
         executor.num_threads = NUM_THREADS;
         executor.renew_neighbor_tuples = renew;
         executor.priority = measure_priority;
@@ -423,13 +383,13 @@ bool QSLIM::collapse_qslim(int target_vert_number)
     };
 
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<QSLIM, ExecutionPolicy::kPartition>(*this);
+        auto executor = wmtk::ExecutePass<QSLIM, ExecutionPolicy::kPartition>();
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<QSLIM, ExecutionPolicy::kSeq>(*this);
+        auto executor = wmtk::ExecutePass<QSLIM, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     }
     return true;

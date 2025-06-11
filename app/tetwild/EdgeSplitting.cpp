@@ -1,9 +1,9 @@
 #include "TetWild.h"
 
+#include <igl/Timer.h>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include <igl/Timer.h>
 
 void tetwild::TetWild::split_all_edges()
 {
@@ -17,10 +17,10 @@ void tetwild::TetWild::split_all_edges()
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = wmtk::renewal_simple;
 
-        executor.priority = [&](auto &m, auto op, auto &t) { return m.get_length2(t); };
+        executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
         executor.num_threads = NUM_THREADS;
-        executor.is_weight_up_to_date = [&](const auto &m, const auto &ele) {
-            auto[weight, op, tup] = ele;
+        executor.is_weight_up_to_date = [&](const auto& m, const auto& ele) {
+            auto [weight, op, tup] = ele;
             auto length = m.get_length2(tup);
             if (length != weight) return false;
             //
@@ -29,8 +29,7 @@ void tetwild::TetWild::split_all_edges()
             double sizing_ratio = (m_vertex_attribute[v1_id].m_sizing_scalar +
                                    m_vertex_attribute[v2_id].m_sizing_scalar) /
                                   2;
-            if (length < m_params.splitting_l2 * sizing_ratio * sizing_ratio)
-                return false;
+            if (length < m_params.splitting_l2 * sizing_ratio * sizing_ratio) return false;
             return true;
         };
         executor(*this, collect_all_ops);
@@ -101,7 +100,7 @@ bool tetwild::TetWild::split_edge_after(const Tuple& loc)
     if (!TetMesh::split_edge_after(
             loc)) // note: call from super class, cannot be done with pure virtual classes
         return false;
-        
+
     std::vector<Tuple> locs = get_one_ring_tets_for_vertex(loc);
     size_t v_id = loc.vid(*this);
 
@@ -122,9 +121,9 @@ bool tetwild::TetWild::split_edge_after(const Tuple& loc)
     if (!m_vertex_attribute[v_id].m_is_rounded) {
         m_vertex_attribute[v_id].m_pos =
             (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
-        m_vertex_attribute[v_id].m_posf = m_vertex_attribute[v_id].m_pos.cast<double>();
+        m_vertex_attribute[v_id].m_posf = to_double(m_vertex_attribute[v_id].m_pos);
     } else
-        m_vertex_attribute[v_id].m_pos = m_vertex_attribute[v_id].m_posf.cast<wmtk::Rational>();
+        m_vertex_attribute[v_id].m_pos = to_rational(m_vertex_attribute[v_id].m_posf);
 
     /// update quality
     for (auto& loc : locs) {

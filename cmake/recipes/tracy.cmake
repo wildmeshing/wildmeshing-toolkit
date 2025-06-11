@@ -54,3 +54,5 @@ if(TRACED_ENABLE)
     # add_compile_options(${TRACY_GLOBAL_FLAGS})
     target_compile_options(TracyClient PUBLIC ${TRACY_GLOBAL_FLAGS})
 endif()
+
+set_target_properties(TracyClient PROPERTIES FOLDER third_party)

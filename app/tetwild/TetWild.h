@@ -46,7 +46,7 @@ public:
 
     size_t partition_id = 0;
 
-    VertexAttributes(){};
+    VertexAttributes() {};
     VertexAttributes(const Vector3r& p);
 };
 
@@ -94,12 +94,10 @@ public:
 
     Parameters& m_params;
     wmtk::Envelope& m_envelope;
-    sample_envelope::SampleEnvelope& triangles_tree;
 
-    TetWild(Parameters& _m_params, wmtk::Envelope& _m_envelope, sample_envelope::SampleEnvelope& _triangles_tree, int _num_threads = 1)
+    TetWild(Parameters& _m_params, wmtk::Envelope& _m_envelope, int _num_threads = 1)
         : m_params(_m_params)
         , m_envelope(_m_envelope)
-        , triangles_tree(_triangles_tree)
     {
         NUM_THREADS = _num_threads;
         p_vertex_attrs = &m_vertex_attribute;
@@ -122,9 +120,9 @@ public:
         const std::vector<TetAttributes>& _tet_attribute)
     {
         auto n_tet = _tet_attribute.size();
-        m_vertex_attribute.grow_to_at_least(_vertex_attribute.size());
-        m_face_attribute.grow_to_at_least(4 * n_tet);
-        m_tet_attribute.grow_to_at_least(n_tet);
+        m_vertex_attribute.resize(_vertex_attribute.size());
+        m_face_attribute.resize(4 * n_tet);
+        m_tet_attribute.resize(n_tet);
 
         for (auto i = 0; i < _vertex_attribute.size(); i++)
             m_vertex_attribute[i] = _vertex_attribute[i];

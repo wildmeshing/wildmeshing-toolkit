@@ -9,6 +9,7 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 
+
 #include <limits>
 #include <optional>
 bool tetwild::TetWild::smooth_before(const Tuple& t)
@@ -17,7 +18,7 @@ bool tetwild::TetWild::smooth_before(const Tuple& t)
     if (m_vertex_attribute[t.vid(*this)].m_is_rounded) return true;
     // try to round.
     // Note: no need to roll back.
-    return  round(t);
+    return round(t);
 }
 
 
@@ -96,11 +97,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
                 }
             }
         }
-        auto project = Eigen::Vector3d();
-        if (triangles_tree.initialized())
-            triangles_tree.nearest_point(m_vertex_attribute[vid].m_posf, project);
-        else 
-            project = wmtk::try_project(m_vertex_attribute[vid].m_posf, neighbor_assemble);
+        auto project = wmtk::try_project(m_vertex_attribute[vid].m_posf, neighbor_assemble);
         m_vertex_attribute[vid].m_posf = project;
         for (auto& n : neighbor_assemble) {
             for (auto kk = 0; kk < 3; kk++) n[kk] = m_vertex_attribute[vid].m_posf[kk];
@@ -126,7 +123,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
     if (max_after_quality > max_quality) return false;
 
 
-    m_vertex_attribute[vid].m_pos = m_vertex_attribute[vid].m_posf.cast<wmtk::Rational>();
+    m_vertex_attribute[vid].m_pos = tetwild::to_rational(m_vertex_attribute[vid].m_posf);
 
 
     return true;

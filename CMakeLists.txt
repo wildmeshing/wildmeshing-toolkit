@@ -58,6 +58,18 @@ include(tracy)
 include(nlohmann_json)
 include(hdf5)
 include(high_five)
+include(geogram)
+include(onetbb)
+include(mshio)
+include(metis)
+include(gmp)
+include(probabilistic_quadrics)
+include(lagrange)
+include(nlohmann_json)
+include(libigl)
+igl_include(predicates)
+include(spdlog)
+include(paraviewo)
 
 # Sort projects inside the solution
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -69,16 +81,16 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # WildMeshingToolkit library
 # ###############################################################################
 
-# Core library
-file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
-    "src/*.cpp"
-    "src/*.h"
-    "src/*.hpp"
-)
-message(DEBUG "SRC_FILES: ${SRC_FILES}")
-
-add_library(wildmeshing_toolkit "${SRC_FILES}")
+add_library(wildmeshing_toolkit STATIC)
 add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
+
+# set_property(TARGET wildmeshing_toolkit PROPERTY COMPILE_WARNING_AS_ERROR  ON)
+
+add_subdirectory(src/wmtk)
+
+# Group source files for IDEs
+file(GLOB_RECURSE WMTK_FILES_FOR_SOURCE_GROUP "src/wmtk/*.cpp" "src/wmtk/*.h" "src/wmtk/*.hpp")
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src/wmtk" PREFIX "wmtk" FILES ${WMTK_FILES_FOR_SOURCE_GROUP})
 
 # Include headers
 target_include_directories(wildmeshing_toolkit PUBLIC src)
@@ -92,32 +104,7 @@ target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
 
 #target_compile_options(wildmeshing_toolkit PUBLIC  -fconcepts)
 
-# Set IDE folders
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" PREFIX "Source Files" FILES ${SRC_FILES})
 
-# Dependencies
-if(NOT TARGET igl::core)
-    option(LIBIGL_WITH_OPENGL            "Use OpenGL"                   ON)
-    option(LIBIGL_WITH_OPENGL_GLFW       "Use GLFW"                     ON)
-    include(libigl)
-endif()
-
-igl_include(predicates)
-
-if(NOT TARGET spdlog)
-    include(spdlog)
-endif()
-
-include(geogram)
-include(onetbb)
-include(mshio)
-include(metis)
-include(gmp)
-include(probabilistic_quadrics)
-
-include(lagrange)
-
-include(nlohmann_json)
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
 target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
@@ -133,9 +120,8 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     HighFive::HighFive
     hdf5::hdf5
     probabilistic_quadrics::probabilistic_quadrics
+    paraviewo::paraviewo
 )
-include(paraviewo)
-target_link_libraries(wildmeshing_toolkit PUBLIC paraviewo::paraviewo)
 
 # ###############################################################################
 # Subdirectories

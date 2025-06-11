@@ -1,9 +1,6 @@
 #pragma once
 
-#define USE_OPERATION_LOGGER
-#include <wmtk/TriMeshTuple.h>
 #include <wmtk/utils/VectorUtils.h>
-#include <wmtk/utils/validate_trimesh_topology.h>
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -25,57 +22,209 @@
 
 namespace wmtk {
 
-class OperationLogger;
-class OperationRecorder;
-class TriMeshOperationLogger;
-class TriMeshOperationRecorder;
-class OperationRecorder;
-class TriMeshOperation;
-class TriMeshTupleData;
-class AttributeCollectionRecorder;
-class SingleTupleTriMeshOperation;
-
-
 class TriMesh
 {
 public:
-    using Tuple = TriMeshTuple;
-    friend class TriMeshTuple;
+    // Cell Tuple Navigator
+    class Tuple
+    {
+    private:
+        size_t m_vid = -1;
+        size_t m_eid = -1;
+        size_t m_fid = -1;
+        size_t m_hash = -1;
+
+        void update_hash(const TriMesh& m);
+
+    public:
+        void print_info();
+
+        //         v2        /
+        //       /    \      /
+        //  e1  /      \  e0 /
+        //     v0 - - - v1   /
+        //         e2        /
+        /**
+         * Construct a new Tuple object with global vertex/triangle index and local edge index
+         *
+         * @param vid vertex id
+         * @param eid edge id (local)
+         * @param fid face id
+         * @note edge ordering
+         */
+        Tuple() {}
+        Tuple(size_t vid, size_t eid, size_t fid, const TriMesh& m)
+            : m_vid(vid)
+            , m_eid(eid)
+            , m_fid(fid)
+        {
+            update_hash(m);
+        }
+
+
+        /**
+         * returns global vertex id.
+         * @param m TriMesh where the tuple belongs.
+         * @return size_t
+         */
+        inline size_t vid(const TriMesh&) const { return m_vid; }
+
+        /**
+         * returns a global unique face id
+         *
+         * @param m TriMesh where the tuple belongs.
+         * @return size_t
+         */
+        inline size_t fid(const TriMesh&) const { return m_fid; }
+
+
+        /**
+         * returns a global unique edge id
+         *
+         * @param m TriMesh where the tuple belongs.
+         * @return size_t
+         * @note The global id may not be consecutive. The edges are undirected and different tetra
+         * share the same edge.
+         */
+        size_t eid(const TriMesh& m) const;
+
+        /**
+         * returns the local eid of the tuple
+         *
+         * @param m TriMesh where the tuple belongs.
+         * @return size_t
+         * @note use mostly for constructing consistent tuples in operations
+         */
+        size_t local_eid(const TriMesh& m) const { return m_eid; };
+        /**
+         * Switch operation.
+         *
+         * @param m Mesh
+         * @return another Tuple that share the same face, edge, but different vertex.
+         */
+        Tuple switch_vertex(const TriMesh& m) const;
+        /**
+         *
+         * @param m
+         * @return another Tuple that share the same face, vertex, but different edge.
+         */
+        Tuple switch_edge(const TriMesh& m) const;
+        /**
+         * Switch operation for the adjacent triangle
+         *
+         * @param m Mesh
+         * @return Tuple for the edge-adjacent triangle, sharing same edge, and vertex.
+         * @note nullopt if the Tuple of the switch goes off the boundary.
+         */
+        std::optional<Tuple> switch_face(const TriMesh& m) const;
+
+        /**
+         * @brief check if a Tuple is valid
+         *
+         * @param m the Mesh
+         * @return false if 1. the fid of the Tuple is -1, 2. either the vertex or the face
+         * refered to by the Tuple is removed, 3. the hash of the Tuple is not the same as
+         * the hash of the triangle it refers to in the mesh
+         *
+         */
+        bool is_valid(const TriMesh& m) const;
+
+        /**
+         * Positively oriented 3 vertices (represented by Tuples) in a tri.
+         * @return std::array<Tuple, 3> each tuple owns a different vertex.
+         */
+        std::array<Tuple, 3> oriented_tri_vertices(const TriMesh& m) const;
+        friend bool operator<(const Tuple& a, const Tuple& t)
+        {
+            return (
+                std::tie(a.m_vid, a.m_eid, a.m_fid, a.m_hash) <
+                std::tie(t.m_vid, t.m_eid, t.m_fid, t.m_hash));
+        }
+    };
+
     /**
      * (internal use) Maintains a list of triangles connected to the given vertex, and a flag to
      * mark removal.
      *
      */
-    class VertexConnectivity;
+    class VertexConnectivity
+    {
+    public:
+        /**
+         * @brief incident triangles of a given vertex
+         *
+         */
+        std::vector<size_t> m_conn_tris;
+        /**
+         * @brief is the vertex removed
+         *
+         */
+        bool m_is_removed = false;
+
+        inline size_t& operator[](const size_t index)
+        {
+            assert(index < m_conn_tris.size());
+            return m_conn_tris[index];
+        }
+
+        inline size_t operator[](const size_t index) const
+        {
+            assert(index < m_conn_tris.size());
+            return m_conn_tris[index];
+        }
+    };
 
     /**
      * (internal use) Maintains a list of vertices of the given triangle
      *
      */
-    class TriangleConnectivity;
+    class TriangleConnectivity
+    {
+    public:
+        /**
+         * @brief incident vertices of a given triangle
+         *
+         */
+        std::array<size_t, 3> m_indices;
+        /**
+         * @brief is the triangle removed
+         *
+         */
+        bool m_is_removed = false;
+        /**
+         * @brief the hash is changed every time there is an operation that influences the
+         * triangle
+         *
+         */
+        size_t hash = 0;
 
-    friend class TriMeshOperation;
-    friend class TriMeshOperationLogger;
-    friend class TriMeshOperationRecorder;
-    friend class OperationReplayer;
-    friend class AttributeCollectionRecorder;
-    friend std::array<std::vector<size_t>, 2> utils::validate_trimesh_topology(const TriMesh& m);
+        inline size_t& operator[](size_t index)
+        {
+            assert(index < 3);
+            return m_indices[index];
+        }
 
-    TriMesh();
-    virtual ~TriMesh();
+        inline size_t operator[](size_t index) const
+        {
+            assert(index < 3);
+            return m_indices[index];
+        }
+        /**
+         * @param vid global
+         * @return local vid of the vertex given the triangle
+         * \n -1 if the vertex is not incident to the triangle
+         */
+        inline int find(int v_id) const
+        {
+            for (int j = 0; j < 3; j++) {
+                if (v_id == m_indices[j]) return j;
+            }
+            return -1;
+        }
+    };
 
-
-    // Loads the operations for a particular application.
-    // mtao's note: i really don't like Mesh having so much per-application logic, we should be
-    // loading operation data in the executor instead of the data storage mechanism, but that is a
-    // refactor for future me
-    virtual std::map<std::string, std::shared_ptr<TriMeshOperation>> get_operations() const;
-
-    /**
-     * Copy connectivity from another mesh
-     * @param o the other mesh who's connectivity is being copied
-     */
-    void copy_connectivity(const TriMesh& o);
+    TriMesh() {}
+    virtual ~TriMesh() {}
 
     /**
      * Generate the connectivity of the mesh
@@ -121,28 +270,17 @@ public:
      */
     Tuple init_from_edge(size_t vid1, size_t vid2, size_t fid) const;
 
-    // same as init_from_edge but if the edge doesn't exist it returns returns nohting
-    std::optional<Tuple> init_from_edge_opt(size_t vid1, size_t vid2, size_t fid) const;
-
-    // generates a tuple from
-    std::optional<Tuple> init_from_edge_opt(size_t vid1, size_t vid2) const;
-
-    // TODO: this is potentially very misleading. not to be allowed
     template <typename T>
     using vector = tbb::concurrent_vector<T>;
 
 public:
-    AbstractAttributeCollection* p_vertex_attrs = nullptr;
-    AbstractAttributeCollection* p_edge_attrs = nullptr;
-    AbstractAttributeCollection* p_face_attrs = nullptr;
+    AbstractAttributeContainer* p_vertex_attrs = nullptr;
+    AbstractAttributeContainer* p_edge_attrs = nullptr;
+    AbstractAttributeContainer* p_face_attrs = nullptr;
 
-
-protected:
-    wmtk::AttributeCollection<VertexConnectivity> m_vertex_connectivity;
-    wmtk::AttributeCollection<TriangleConnectivity> m_tri_connectivity;
-
-
-protected:
+private:
+    vector<VertexConnectivity> m_vertex_connectivity;
+    vector<TriangleConnectivity> m_tri_connectivity;
     std::atomic_long current_vert_size;
     std::atomic_long current_tri_size;
     tbb::spin_mutex vertex_connectivity_lock;
@@ -150,11 +288,6 @@ protected:
     bool vertex_connectivity_synchronizing_flag = false;
     bool tri_connectivity_synchronizing_flag = false;
     int MAX_THREADS = 128;
-
-#if defined(USE_OPERATION_LOGGER)
-    tbb::enumerable_thread_specific<std::weak_ptr<TriMeshOperationRecorder>> p_operation_recorder{
-        {}};
-#endif
     /**
      * @brief Get the next avaiblie global index for the triangle
      *
@@ -168,15 +301,74 @@ protected:
      */
     size_t get_next_empty_slot_v();
 
-public:
+protected:
     /**
      * @brief User specified invariants that can't be violated
      * @param std::vector<Tuple> a vector of Tuples that are concerned in a given operation
      * @return true if the invairnats are not violated
      */
-    // MTAO: TODO: figure out if invariants is a property of the mesh or a property o
-    virtual bool invariants(const TriMeshOperation& op);
+    virtual bool invariants(const std::vector<Tuple>&) { return true; }
+    /**
+     * @brief User specified preparations and desideratas for an edge split
+     * @param the edge Tuple to be split
+     * @return true if the preparation succeed
+     */
+    virtual bool split_edge_before(const Tuple& t) { return true; }
+    /**
+     * @brief User specified modifications and desideratas after an edge split
+     * @param the edge Tuple to be split
+     * @return true if the modifications succeed
+     */
+    virtual bool split_edge_after(const Tuple& t) { return true; }
 
+    /**
+     * @brief User specified preparations and desideratas for an edge collapse
+     * including the link check as collapse prerequisite
+     *
+     * @param the edge Tuple to be split
+     * @return true if the preparation succeed
+     */
+    virtual bool collapse_edge_before(const Tuple& t)
+    {
+        if (check_link_condition(t)) return true;
+        return false;
+    }
+    /**
+     * @brief User specified modifications and desideratas after an edge collapse
+     * @param the edge Tuple to be collapsed
+     * @return true if the modifications succeed
+     */
+    virtual bool collapse_edge_after(const Tuple& t) { return true; }
+    /**
+     * @brief User specified modifications and desideras after an edge swap
+     * @param the edge Tuple to be swaped
+     * @return true if the modifications succeed
+     */
+    virtual bool swap_edge_after(const Tuple& t) { return true; }
+    /**
+     * @brief User specified preparations and desideratas for an edge swap
+     * including 1.can't swap on boundary edge. 2. when swap edge between v1, v2,
+     * there can't exist edges between the two opposite vertices v3, v4
+     *
+     * @param the edge Tuple to be swaped
+     * @return true if the preparation succeed
+     */
+    virtual bool swap_edge_before(const Tuple& t);
+    /**
+     * @brief User specified preparations and desideratas for an edge smooth
+     *
+     * @param the edge Tuple to be smoothed
+     * @return true if the preparation succeed
+     */
+    virtual bool smooth_before(const Tuple& t) { return true; }
+    /**
+     * @brief User specified modifications and desideras after an edge smooth
+     * @param the edge Tuple to be smoothed
+     * @return true if the modifications succeed
+     */
+    virtual bool smooth_after(const Tuple& t) { return true; }
+
+public:
     /**
      * @brief get the current largest global fid
      *
@@ -210,6 +402,12 @@ public:
     std::optional<Tuple> switch_face(const Tuple& t) const { return t.switch_face(*this); }
 
     /**
+     * @brief prerequisite for collapse
+     * @param t Tuple referes to the edge to be collapsed
+     * @returns true is the link check is passed
+     */
+    bool check_link_condition(const Tuple& t) const;
+    /**
      * @brief verify the connectivity validity of the mesh
      * @note a valid mesh can have triangles that are is_removed == true
      */
@@ -235,8 +433,54 @@ public:
      *
      * @param t Tuple refering to an edge
      */
-    bool is_boundary_vertex(const TriMesh::Tuple& t) const;
+    bool is_boundary_vertex(const TriMesh::Tuple& t) const
+    {
+        auto ve = get_one_ring_edges_for_vertex(t);
+        for (auto e : ve)
+            if (is_boundary_edge(e)) return true;
+        return false;
+    }
 
+    /**
+     * Split an edge
+     *
+     * @param t Input Tuple for the edge to split.
+     * @param[out] new_edges a vector of Tuples refering to the triangles incident to the new vertex
+     * introduced
+     * @return if split succeed
+     */
+    bool split_edge(const Tuple& t, std::vector<Tuple>& new_t);
+
+    /**
+     * Collapse an edge
+     *
+     * @param t Input Tuple for the edge to be collapsed.
+     * @param[out] new_edges a vector of Tuples refering to the triangles incident to the new vertex
+     * introduced
+     * @note collapse edge a,b and generate a new vertex c
+     * @return if collapse succeed
+     */
+    bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_t);
+
+    /**
+     * Swap an edge
+     *
+     * @param t Input Tuple for the edge to be swaped.
+     * @param[out] new_edges a vector of Tuples refering to the triangles incident to the new edge
+     * introduced
+     * @note swap edge a,b to edge c,d
+     * @return if swap succeed
+     */
+    bool swap_edge(const Tuple& t, std::vector<Tuple>& new_t);
+
+    /**
+     * Smooth a vertex
+     *
+     * @param t Input Tuple for the vertex
+     * @note no geometry changed here
+     * @return if smooth succeed
+     */
+    bool smooth_vertex(const Tuple& t);
 
     /**
      * @brief Count the number of the one ring tris for a vertex
@@ -244,7 +488,10 @@ public:
      * @param t tuple pointing to a vertex
      * @return one-ring tris number
      */
-    size_t get_valence_for_vertex(const Tuple& t) const;
+    size_t get_valence_for_vertex(const Tuple& t) const
+    {
+        return m_vertex_connectivity[t.vid(*this)].m_conn_tris.size();
+    }
 
     /**
      * @brief Get the one ring tris for a vertex
@@ -259,19 +506,13 @@ public:
      * @param t tuple pointing to a vertex
      * @return a vector of vids that can have duplicates
      */
-    std::vector<size_t> get_one_ring_vids_for_vertex_with_duplicates(const size_t& t) const;
-    /**
-     * @brief Get the vids of the incident one ring tris for a vertex
-     *
-     * @param t tuple pointing to a vertex
-     * @return a vector of vids that have no duplicates
-     */
-    std::vector<size_t> get_one_ring_vids_for_vertex(const size_t& t) const;
+    std::vector<size_t> get_one_ring_vids_for_vertex_duplicate(const size_t& t) const;
+
     /**
      * @brief Get the one ring edges for a vertex, edges are the incident edges
      *
-     * @param t
-     * @return tuple pointing to the vertex referred to by t from one_ring vertices
+     * @param t tuple pointing to a vertex
+     * @return one-ring
      */
     std::vector<Tuple> get_one_ring_edges_for_vertex(const Tuple& t) const;
 
@@ -298,106 +539,113 @@ public:
      * of the triangle
      * @return a face Tuple
      */
-    Tuple tuple_from_tri(size_t fid) const;
+    Tuple tuple_from_tri(size_t fid) const
+    {
+        if (fid >= m_tri_connectivity.size() || m_tri_connectivity[fid].m_is_removed)
+            return Tuple();
+        auto vid = m_tri_connectivity[fid][0];
+        return Tuple(vid, 1, fid, *this);
+    }
     /**
      * Generate avertex Tuple using local vid and global fid
      * @param vid globale vid for the triangle
      * @note tuple refers to vid
      */
-    Tuple tuple_from_vertex(size_t vid) const;
+    Tuple tuple_from_vertex(size_t vid) const
+    {
+        auto fid = m_vertex_connectivity[vid][0];
+        auto eid = m_tri_connectivity[fid].find(vid);
+        return Tuple(vid, (eid + 1) % 3, fid, *this);
+    }
     /**
      * Generate a edge Tuple using global fid and local eid
      * @param fid globale fid for the triangle
      * @param local_eid local eid
      * @return tuple refers to the edge
      */
-    Tuple tuple_from_edge(size_t fid, size_t local_eid) const;
-
-    /**
-     * Generate a edge Tuple using two vids
-     * @param a global vid
-     * @param another global vid
-     * @return tuple refers to the edge
-     */
-    std::optional<Tuple> tuple_from_edge_vids_opt(size_t vid1, size_t vid2) const;
-
-    /**
-     * Generate the tuples for the tuples at the boundary of a triangle
-     * @param triangle for which we are computing the boundary of
-     * @return array of tuples storing the three edges
-     */
-    std::array<Tuple, 3> triangle_boundary_edge_tuples(const Tuple& triangle) const;
-
-    // returns edge tuples that all represent teh same edge, but attached to different triangles
-    std::vector<Tuple> tris_bounded_by_edge(const Tuple& edge) const;
+    Tuple tuple_from_edge(size_t fid, size_t local_eid) const
+    {
+        auto vid = m_tri_connectivity[fid][(local_eid + 1) % 3];
+        return Tuple(vid, local_eid, fid, *this);
+    }
 
 private:
-    std::vector<size_t> tri_fids_bounded_by_edge(const Tuple& edge) const;
-    std::vector<size_t> tri_fids_bounded_by_edge_vids(size_t v0, size_t v1) const;
-
-    // private:
-protected:
-    /**
-     * Generate the vertex connectivity of the mesh using the existing triangle structure
-     * @param n_vertices Input number of vertices
-     */
-    void build_vertex_connectivity(size_t n_vertices);
     /**
      * @brief Start the phase where the attributes that will be modified can be recorded
      *
      */
-    using ProtectedAttributeRAII = std::array<AttributeCollectionProtectRAII, 3>;
-    void start_protected_attributes();
-    ProtectedAttributeRAII start_protected_attributes_raii();
-    /**
-     * @brief Start caching the connectivity that will be modified
-     */
-    using ProtectedConnectivityRAII = std::array<AttributeCollectionProtectRAII, 2>;
-    void start_protected_connectivity();
-    ProtectedConnectivityRAII start_protected_connectivity_raii();
-
+    void start_protect_attributes()
+    {
+        if (p_vertex_attrs) p_vertex_attrs->begin_protect();
+        if (p_edge_attrs) p_edge_attrs->begin_protect();
+        if (p_face_attrs) p_face_attrs->begin_protect();
+    }
     /**
      * @brief End the modification phase
      *
      */
-    std::array<std::optional<size_t>, 3> release_protected_attributes();
-
-    /**
-     * @brief End Caching connectivity
-     *
-     */
-    std::optional<size_t> release_protected_connectivity();
-
+    void release_protect_attributes()
+    {
+        if (p_vertex_attrs) p_vertex_attrs->end_protect();
+        if (p_edge_attrs) p_edge_attrs->end_protect();
+        if (p_face_attrs) p_face_attrs->end_protect();
+    }
     /**
      * @brief rollback the attributes that are modified if any condition failed
      *
      */
-    void rollback_protected_attributes();
-
-    /**
-     * @brief rollback the connectivity that are modified if any condition failed
-     */
-    void rollback_protected_connectivity();
-
-    /**
-     * @brief rollback both connectivity and attributes
-     */
-    void rollback_protected();
+    void rollback_protected_attributes()
+    {
+        if (p_vertex_attrs) p_vertex_attrs->rollback();
+        if (p_edge_attrs) p_edge_attrs->rollback();
+        if (p_face_attrs) p_face_attrs->rollback();
+    }
 
     // Moved code from concurrent TriMesh
 
+public:
+    class VertexMutex
+    {
+        tbb::spin_mutex mutex;
+        int owner = std::numeric_limits<int>::max();
+
+    public:
+        bool trylock() { return mutex.try_lock(); }
+
+        void unlock()
+        {
+            reset_owner();
+            mutex.unlock();
+        }
+
+        int get_owner() { return owner; }
+
+        void set_owner(int n) { owner = n; }
+
+        void reset_owner() { owner = std::numeric_limits<int>::max(); }
+    };
+
 private:
-    class VertexMutex;
     tbb::concurrent_vector<VertexMutex> m_vertex_mutex;
 
-    bool try_set_vertex_mutex(const Tuple& v, int threadid);
-    bool try_set_vertex_mutex(size_t vid, int threadid);
+    bool try_set_vertex_mutex(const Tuple& v, int threadid)
+    {
+        bool got = m_vertex_mutex[v.vid(*this)].trylock();
+        if (got) m_vertex_mutex[v.vid(*this)].set_owner(threadid);
+        return got;
+    }
+    bool try_set_vertex_mutex(size_t vid, int threadid)
+    {
+        bool got = m_vertex_mutex[vid].trylock();
+        if (got) m_vertex_mutex[vid].set_owner(threadid);
+        return got;
+    }
 
-    void unlock_vertex_mutex(const Tuple& v);
-    void unlock_vertex_mutex(size_t vid);
+    void unlock_vertex_mutex(const Tuple& v) { m_vertex_mutex[v.vid(*this)].unlock(); }
+    void unlock_vertex_mutex(size_t vid) { m_vertex_mutex[vid].unlock(); }
 
 protected:
-    void resize_mutex(size_t v);
+    void resize_mutex(size_t v) { m_vertex_mutex.grow_to_at_least(v); }
 
 public:
     tbb::enumerable_thread_specific<std::vector<size_t>> mutex_release_stack;
@@ -447,96 +695,4 @@ public:
     int NUM_THREADS = 0;
 };
 
-class TriMesh::VertexConnectivity
-{
-public:
-    /**
-     * @brief incident triangles of a given vertex
-     *
-     */
-    // TODO: this needs to be private
-    std::vector<size_t> m_conn_tris;
-    /**
-     * @brief is the vertex removed
-     *
-     */
-    bool m_is_removed = true;
-
-    // inline size_t& operator[](const size_t index)
-    //{
-    //     assert(index < m_conn_tris.size());
-    //     return m_conn_tris[index];
-    // }
-
-    inline size_t operator[](const size_t index) const
-    {
-        assert(index < m_conn_tris.size());
-        return m_conn_tris[index];
-    }
-
-    void insert(const size_t value) { set_insert(m_conn_tris, value); }
-    // replace the value stored at an index by another value
-    void replace(const size_t index, const size_t value)
-    {
-        assert(index < m_conn_tris.size());
-        auto it = m_conn_tris.begin() + index;
-        m_conn_tris.erase(it);
-        set_insert(m_conn_tris, value);
-    }
-    // replace a value with another value
-    void replace_value(const size_t index, const size_t value)
-    {
-        vector_erase(m_conn_tris, index);
-        insert(value);
-    }
-};
-
-/**
- * (internal use) Maintains a list of vertices of the given triangle
- *
- */
-class TriMesh::TriangleConnectivity
-{
-public:
-    /**
-     * @brief incident vertices of a given triangle
-     *
-     */
-    std::array<size_t, 3> m_indices;
-    /**
-     * @brief is the triangle removed
-     *
-     */
-    bool m_is_removed = true;
-    /**
-     * @brief the hash is changed every time there is an operation that influences the
-     * triangle
-     *
-     */
-    size_t hash = 0;
-
-    inline size_t& operator[](size_t index)
-    {
-        assert(index < 3);
-        return m_indices[index];
-    }
-
-    inline size_t operator[](size_t index) const
-    {
-        assert(index < 3);
-        return m_indices[index];
-    }
-    /**
-     * @param vid global
-     * @return local vid of the vertex given the triangle
-     * \n -1 if the vertex is not incident to the triangle
-     */
-    inline int find(int v_id) const
-    {
-        for (int j = 0; j < 3; j++) {
-            if (v_id == m_indices[j]) return j;
-        }
-        return -1;
-    }
-};
 } // namespace wmtk

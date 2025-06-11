@@ -41,7 +41,7 @@ public:
         p_vertex_attrs = &vertex_attrs;
         p_tet_attrs = &tet_attrs;
 
-        vertex_attrs.grow_to_at_least(_vertex_attribute.size());
+        vertex_attrs.resize(_vertex_attribute.size());
 
         NUM_THREADS = num_threads;
         init(_vertex_attribute.size(), tets);

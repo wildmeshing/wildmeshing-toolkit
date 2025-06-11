@@ -3,7 +3,6 @@
 #include <igl/read_triangle_mesh.h>
 #include <igl/remove_duplicate_vertices.h>
 #include <remeshing/UniformRemeshing.h>
-#include <remeshing/UniformRemeshingOperations.h>
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/utils/ManifoldUtils.hpp>
 
@@ -82,16 +81,16 @@ TEST_CASE("test_swap", "[test_remeshing]")
     int e_invariant = m.get_edges().size();
     REQUIRE(m.check_mesh_connectivity_validity());
     auto edges = m.get_edges();
+    std::vector<TriMesh::Tuple> new_e;
     int cnt = 0;
-    UniformRemeshingEdgeSwapOperation swap_op;
     for (auto edge : edges) {
         if (cnt > 200) break;
         if (!edge.is_valid(m)) continue;
         if (!(edge.switch_face(m)).has_value()) {
-            REQUIRE_FALSE(swap_op(m, edge));
+            REQUIRE_FALSE(m.swap_edge(edge, new_e));
             continue;
         }
-        REQUIRE(swap_op(m, edge));
+        REQUIRE(m.swap_edge(edge, new_e));
         cnt++;
     }
     REQUIRE(m.check_mesh_connectivity_validity());
@@ -261,60 +260,5 @@ TEST_CASE("operation orient", "[test_remeshing]")
         REQUIRE(!is_inverted(tri));
     }
 
-    m.write_triangle_mesh("orient.obj");
-}
-
-TEST_CASE("swap orient", "[test_remeshing]")
-{
-    const std::string root(WMTK_DATA_DIR);
-    const std::string path = root + "/fan.obj";
-    Eigen::MatrixXd V;
-    Eigen::MatrixXi F;
-    bool ok = igl::read_triangle_mesh(path, V, F);
-
-    REQUIRE(ok);
-
-    std::vector<Eigen::Vector3d> v(V.rows());
-    std::vector<std::array<size_t, 3>> tri(F.rows());
-    for (int i = 0; i < V.rows(); i++) {
-        v[i] = V.row(i);
-    }
-    for (int i = 0; i < F.rows(); i++) {
-        for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
-    }
-    UniformRemeshing m(v);
-    std::vector<size_t> modified_v;
-    m.create_mesh(V.rows(), tri, modified_v, 1);
-    auto fs = m.get_faces();
-    for (auto f : fs) {
-        std::array<double, 6> tri = {
-            m.vertex_attrs[f.vid(m)].pos(0),
-            m.vertex_attrs[f.vid(m)].pos(1),
-            m.vertex_attrs[f.switch_vertex(m).vid(m)].pos(0),
-            m.vertex_attrs[f.switch_vertex(m).vid(m)].pos(1),
-            m.vertex_attrs[(f.switch_edge(m)).switch_vertex(m).vid(m)].pos(0),
-            m.vertex_attrs[(f.switch_edge(m)).switch_vertex(m).vid(m)].pos(1)};
-        REQUIRE(!is_inverted(tri));
-    }
-
-    UniformRemeshingEdgeSwapOperation swap_op;
-    auto edges = m.get_edges();
-    for (auto e : edges) {
-        if (!m.is_boundary_edge(e)) {
-            swap_op(m, e);
-            break;
-        }
-    }
-    fs = m.get_faces();
-    for (auto f : fs) {
-        std::array<double, 6> tri = {
-            m.vertex_attrs[f.vid(m)].pos(0),
-            m.vertex_attrs[f.vid(m)].pos(1),
-            m.vertex_attrs[f.switch_vertex(m).vid(m)].pos(0),
-            m.vertex_attrs[f.switch_vertex(m).vid(m)].pos(1),
-            m.vertex_attrs[(f.switch_edge(m)).switch_vertex(m).vid(m)].pos(0),
-            m.vertex_attrs[(f.switch_edge(m)).switch_vertex(m).vid(m)].pos(1)};
-        REQUIRE(!is_inverted(tri));
-    }
     m.write_triangle_mesh("old_orient.obj");
 }

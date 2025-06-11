@@ -54,7 +54,6 @@ struct EdgeAttributes
 class QSLIM : public wmtk::TriMesh
 {
 public:
-    std::map<std::string, std::shared_ptr<wmtk::TriMeshOperation>> get_operations() const override;
     fastEnvelope::FastEnvelope m_envelope;
     bool m_has_envelope = false;
     wmtk::AttributeCollection<VertexAttributes> vertex_attrs;
@@ -86,13 +85,13 @@ public:
 
     // TODO: This should not be exposed to the application, but hidden in wmtk
     void partition_mesh_morton();
-    
+
 public:
-    bool collapse_edge_before(const Tuple& t) ;
-    bool collapse_edge_after(const Tuple& t) ;
+    bool collapse_edge_before(const Tuple& t) override;
+    bool collapse_edge_after(const Tuple& t) override;
     bool collapse_qslim(int target_vertex_count);
     bool write_triangle_mesh(std::string path);
-    bool invariants(const wmtk::TriMeshOperation& op) override;
+    bool invariants(const std::vector<Tuple>& new_tris) override;
     double compute_cost_for_e(const TriMesh::Tuple& v_tuple);
     Quadrics compute_quadric_for_face(const TriMesh::Tuple& f_tuple);
     void update_quadrics(const TriMesh::Tuple& v_tuple);
