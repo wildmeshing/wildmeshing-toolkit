@@ -112,7 +112,7 @@ void debug_visualization(
                         T_after(selected_tet, 0);
                 }
                 viewer.data().set_mesh(meshes[current_mesh], F_single_tet);
-                viewer.core().align_camera_center(meshes[current_mesh], F_surface_after);
+                viewer.core().align_camera_center(meshes[current_mesh], F_surface_before);
             }
         } else {
             // Display full mesh
@@ -121,7 +121,7 @@ void debug_visualization(
                 viewer.core().align_camera_center(meshes[current_mesh], F_surface_before);
             } else {
                 viewer.data().set_mesh(meshes[current_mesh], F_surface_after);
-                viewer.core().align_camera_center(meshes[current_mesh], F_surface_after);
+                viewer.core().align_camera_center(meshes[current_mesh], F_surface_before);
             }
         }
         viewer.data().set_face_based(true);
