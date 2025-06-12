@@ -1,7 +1,7 @@
 #include <igl/edges.h>
 #include <igl/oriented_facets.h>
 #include <wmtk/TriMesh.h>
-#include <paraviewo/HDF5VTUWriter.hpp>
+//#include <paraviewo/HDF5VTUWriter.hpp>
 #include <paraviewo/ParaviewWriter.hpp>
 #include <paraviewo/VTUWriter.hpp>
 #include <wmtk/utils/Delaunay.hpp>
@@ -74,8 +74,9 @@ TEST_CASE("io", "[io][mshio]")
 
         std::vector<Point3D> out_vertices;
         out_vertices.resize(msh.get_num_tet_vertices());
-        msh.extract_tet_vertices(
-            [&](size_t i, double x, double y, double z) { out_vertices[i] = {{x, y, z}}; });
+        msh.extract_tet_vertices([&](size_t i, double x, double y, double z) {
+            out_vertices[i] = {{x, y, z}};
+        });
         REQUIRE(out_vertices == vertices);
 
         std::vector<std::array<size_t, 4>> out_tets;
@@ -122,11 +123,12 @@ TEST_CASE("paraviewo-tri", "[io][paraviewo]")
     faces.resize(2, 3);
     faces << 0, 1, 2, 1, 3, 2;
 
-    paraviewo::HDF5VTUWriter writer;
+    // paraviewo::HDF5VTUWriter writer;
+    paraviewo::VTUWriter writer;
 
     SECTION("No attributes")
     {
-        writer.write_mesh("triMesh_NoAttributes.hdf", vertices, faces);
+        writer.write_mesh("triMesh_NoAttributes.vtu", vertices, faces);
     }
 
     SECTION("Add basic attributes")
@@ -147,7 +149,7 @@ TEST_CASE("paraviewo-tri", "[io][paraviewo]")
 
         writer.add_field("vertex_idx", vertex_idx);
         writer.add_cell_field("face_idx", face_idx);
-        writer.write_mesh("triMesh_BasicAttributes.hdf", vertices, faces);
+        writer.write_mesh("triMesh_BasicAttributes.vtu", vertices, faces);
     }
 
     // everything that is not a vertex or cell must be stored in its own file
@@ -165,7 +167,7 @@ TEST_CASE("paraviewo-tri", "[io][paraviewo]")
 
         // consider edges as cells
         writer.add_cell_field("edge_idx", edge_idx);
-        writer.write_mesh("triMesh_EdgeAttributes.hdf", vertices, edges);
+        writer.write_mesh("triMesh_EdgeAttributes.vtu", vertices, edges);
     }
 }
 
@@ -179,11 +181,11 @@ TEST_CASE("paraviewo-tet", "[io][paraviewo]")
     tets.resize(2, 4);
     tets << 0, 2, 1, 3, 0, 1, 2, 4;
 
-    paraviewo::HDF5VTUWriter writer;
+    paraviewo::VTUWriter writer;
 
     SECTION("No attributes")
     {
-        writer.write_mesh("tetMesh_NoAttributes.hdf", vertices, tets);
+        writer.write_mesh("tetMesh_NoAttributes.vtu", vertices, tets);
     }
 
     SECTION("Add basic attributes")
@@ -204,7 +206,7 @@ TEST_CASE("paraviewo-tet", "[io][paraviewo]")
 
         writer.add_field("vertex_idx", vertex_idx);
         writer.add_cell_field("cell_idx", cell_idx);
-        writer.write_mesh("tetMesh_BasicAttributes.hdf", vertices, tets);
+        writer.write_mesh("tetMesh_BasicAttributes.vtu", vertices, tets);
     }
 
     // everything that is not a vertex or cell must be stored in its own file
@@ -222,7 +224,7 @@ TEST_CASE("paraviewo-tet", "[io][paraviewo]")
 
         // consider edges as cells
         writer.add_cell_field("edge_idx", edge_idx);
-        writer.write_mesh("tetMesh_EdgeAttributes.hdf", vertices, edges);
+        writer.write_mesh("tetMesh_EdgeAttributes.vtu", vertices, edges);
     }
 
     SECTION("Face attributes")
@@ -240,6 +242,6 @@ TEST_CASE("paraviewo-tet", "[io][paraviewo]")
 
         // consider faces as cells
         writer.add_cell_field("face_idx", face_idx);
-        writer.write_mesh("tetMesh_FaceAttributes.hdf", vertices, faces);
+        writer.write_mesh("tetMesh_FaceAttributes.vtu", vertices, faces);
     }
 }
