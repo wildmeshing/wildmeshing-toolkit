@@ -16,7 +16,7 @@ using namespace wmtk::invariants;
 
 TEST_CASE("tet_inversion_invariant", "[invariants][3D]")
 {
-    exactinit();
+    igl_predicates::exactinit();
     DEBUG_TetMesh m = single_tet();
     auto position_handle = m.register_attribute<double>("vertices", PrimitiveType::Vertex, 3);
     auto position_accessor = m.create_accessor<double>(position_handle);
@@ -47,8 +47,8 @@ TEST_CASE("tet_inversion_invariant", "[invariants][3D]")
     Tuple t = v0;
 
 
-    std::cout << orient3d(p0.data(), p1.data(), p2.data(), p3.data()) << std::endl;
-    CHECK(orient3d(p0.data(), p1.data(), p2.data(), p3.data()) > 0);
+    std::cout << igl_predicates::orient3d(p0.data(), p1.data(), p2.data(), p3.data()) << std::endl;
+    CHECK(igl_predicates::orient3d(p0.data(), p1.data(), p2.data(), p3.data()) > 0);
     CHECK(wmtk::utils::wmtk_orient3d(p0, p1, p2, p3) > 0);
 
     for (const auto& t : m.get_all(PrimitiveType::Triangle)) {
@@ -80,7 +80,7 @@ TEST_CASE("tet_inversion_invariant", "[invariants][3D]")
 
 TEST_CASE("tet_rational_inversion_invariant", "[invariants][3D]")
 {
-    exactinit();
+    igl_predicates::exactinit();
     DEBUG_TetMesh m = single_tet();
     auto position_handle = m.register_attribute<Rational>("vertices", PrimitiveType::Vertex, 3);
     auto position_accessor = m.create_accessor<Rational>(position_handle);

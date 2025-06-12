@@ -5,10 +5,10 @@ endif()
 message(STATUS "Third-party: creating target 'predicates::predicates'")
 
 include(CPM)
-    CPMAddPackage(
+CPMAddPackage(
     NAME predicates
-    GITHUB_REPOSITORY libigl/libigl-predicates
-    GIT_TAG        488242fa2b1f98a9c5bd1441297fb4a99a6a9ae4
+    GITHUB_REPOSITORY wildmeshing/libigl-predicates
+    GIT_TAG 83b924928a12d9b578968508b303f90c738d6deb
 )
 
 FetchContent_MakeAvailable(predicates)

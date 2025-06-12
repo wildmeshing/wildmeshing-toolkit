@@ -1,8 +1,8 @@
 #include "MshReader.hpp"
 #include <wmtk/utils/mesh_type_from_primitive_type.hpp>
 
+#include <predicates.h>
 #include <set>
-
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/TetMesh.hpp>
@@ -13,7 +13,6 @@
 #include <wmtk/utils/orient.hpp>
 
 #include "mshio/MshSpec.h"
-#include "predicates.h"
 
 namespace wmtk::io {
 MshReader::MshReader() = default;
@@ -317,9 +316,8 @@ void MshReader::extract_element_attribute(
     }
 }
 
-auto MshReader::generate(
-    const std::optional<std::vector<std::vector<std::string>>>& extra_attributes_opt)
-    -> std::shared_ptr<Mesh>
+auto MshReader::generate(const std::optional<std::vector<std::vector<std::string>>>&
+                             extra_attributes_opt) -> std::shared_ptr<Mesh>
 {
     std::shared_ptr<Mesh> res;
     switch (get_mesh_dimension()) {
@@ -373,7 +371,7 @@ template <>
 void MshReader::validate<3>()
 {
     assert(V.cols() == 3);
-    exactinit();
+    igl_predicates::exactinit();
     {
         // check inversion
 
