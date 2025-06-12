@@ -52,7 +52,7 @@ target_include_directories(bijective_map_app_tet PUBLIC
 # find_package(cinolib REQUIRED)
 target_link_libraries(bijective_map_app_tet
 
-    # wmtk::toolkit
+    wmtk::toolkit
     wmtk::data
 
     # wmtk::components
