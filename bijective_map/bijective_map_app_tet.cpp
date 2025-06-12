@@ -4,15 +4,17 @@
 #include <sstream>
 #include <unordered_set>
 // wmtk
-#include <wmtk/TetMesh.hpp>
-#include <wmtk/TriMesh.hpp>
-#include <wmtk/io/MeshReader.hpp>
-#include <wmtk/io/ParaviewWriter.hpp>
-#include <wmtk/utils/orient.hpp>
+// #include <wmtk/TetMesh.hpp>
+// #include <wmtk/TriMesh.hpp>
+// #include <wmtk/io/MeshReader.hpp>
+// #include <wmtk/io/ParaviewWriter.hpp>
+// #include <wmtk/utils/orient.hpp>
 
 #include <igl/tet_tet_adjacency.h>
+#include "InteractiveAndRobustMeshBooleans/code/booleans.h"
 #include "track_operations_tet.hpp"
-using namespace wmtk;
+
+// using namespace wmtk;
 using path = std::filesystem::path;
 
 // igl, nothing for now
@@ -294,7 +296,7 @@ int main(int argc, char** argv)
     CLI11_PARSE(app, argc, argv);
 
     std::cout << "Application name: " << application_name << std::endl;
-    auto init_mesh_ptr = wmtk::read_mesh(initial_mesh_file);
+    // auto init_mesh_ptr = wmtk::read_mesh(initial_mesh_file);
 
     // write initial mesh to vtu
     // std::cout << "Writing initial mesh to vtu" << std::endl;
@@ -489,6 +491,145 @@ int main(int argc, char** argv)
         track_curve_tet(operation_logs_dir, curve, false, false);
         // 2. back track the curve
         // 3. write the curve to a file, it should be a edge mesh in vtu format
+    } else if (application_name == "back_surface") {
+        // TODO: create a input surface mesh
+        std::cout << "Back tracking surface" << std::endl;
+        // Create input surface mesh similar to main_arrangement.cpp
+        std::vector<double> in_coords;
+        std::vector<uint> in_tris;
+        std::vector<uint> in_labels;
+
+        // Convert V_out to in_coords (flatten the matrix)
+        for (int i = 0; i < V_out.rows(); i++) {
+            for (int j = 0; j < V_out.cols(); j++) {
+                in_coords.push_back(V_out(i, j));
+            }
+        }
+
+        // Convert T_out to surface triangles, removing duplicates
+        std::set<std::vector<int>> unique_triangles;
+        for (int i = 0; i < T_out.rows(); i++) {
+            auto tet = T_out.row(i);
+            if (tet.size() >= 4) {
+                // Extract the four faces of the tetrahedron
+                std::vector<std::vector<int>> faces = {
+                    {tet[0], tet[1], tet[2]},
+                    {tet[0], tet[1], tet[3]},
+                    {tet[0], tet[2], tet[3]},
+                    {tet[1], tet[2], tet[3]}};
+
+                for (auto& tri : faces) {
+                    std::sort(tri.begin(), tri.end());
+                    unique_triangles.insert(tri);
+                }
+            }
+        }
+
+        // Convert unique triangles to in_tris
+        for (const auto& triangle : unique_triangles) {
+            for (const auto& vertex_id : triangle) {
+                in_tris.push_back(static_cast<uint>(vertex_id));
+            }
+        }
+        // set lables for tet triangles
+        in_labels.resize(unique_triangles.size(), 0);
+
+        // Randomly sample three points from T_out to create a label 1 triangle
+        std::random_device rd;
+        std::mt19937 gen(rd());
+
+        if (T_out.rows() > 0) {
+            std::uniform_int_distribution<> tet_dis(0, T_out.rows() - 1);
+            std::uniform_real_distribution<> bary_dis(0.0, 1.0);
+
+            std::vector<std::vector<double>> sampled_points;
+
+            // Sample three points
+            for (int sample = 0; sample < 3; sample++) {
+                // Randomly select a tetrahedron
+                int tet_id = tet_dis(gen);
+                auto tet = T_out.row(tet_id);
+
+                if (tet.size() >= 4) {
+                    // Generate random barycentric coordinates
+                    double r1 = bary_dis(gen);
+                    double r2 = bary_dis(gen);
+                    double r3 = bary_dis(gen);
+                    double r4 = bary_dis(gen);
+
+                    // Normalize to ensure they sum to 1
+                    double sum = r1 + r2 + r3 + r4;
+                    r1 /= sum;
+                    r2 /= sum;
+                    r3 /= sum;
+                    r4 /= sum;
+
+                    // Get vertices of the tetrahedron
+                    auto v0 = V_out.row(tet[0]);
+                    auto v1 = V_out.row(tet[1]);
+                    auto v2 = V_out.row(tet[2]);
+                    auto v3 = V_out.row(tet[3]);
+
+                    // Interpolate position using barycentric coordinates
+                    std::vector<double> point(3, 0.0);
+                    for (int i = 0; i < 3; i++) {
+                        point[i] = r1 * v0[i] + r2 * v1[i] + r3 * v2[i] + r4 * v3[i];
+                    }
+
+                    sampled_points.push_back(point);
+                }
+            }
+
+            // Add sampled points to coordinates and create triangle
+            if (sampled_points.size() == 3) {
+                uint start_vertex_id = V_out.rows();
+
+                // Add sampled points to in_coords
+                for (const auto& point : sampled_points) {
+                    for (const auto& coord : point) {
+                        in_coords.push_back(coord);
+                    }
+                }
+
+                // Add triangle with label 1
+                in_tris.insert(
+                    in_tris.end(),
+                    {start_vertex_id, start_vertex_id + 1, start_vertex_id + 2});
+                in_labels.push_back(1);
+            }
+        }
+
+        std::cout << "Created surface mesh with " << in_coords.size() / 3 << " vertices and "
+                  << in_tris.size() / 3 << " triangles" << std::endl;
+        std::cout << "Added " << (in_labels.size() > unique_triangles.size() ? 1 : 0)
+                  << " label 1 triangle" << std::endl;
+
+        // init the necessary data structures
+        point_arena arena;
+        std::vector<genericPoint*> arr_verts;
+        std::vector<uint> arr_in_tris, arr_out_tris;
+        std::vector<std::bitset<NBIT>> arr_in_labels;
+        std::vector<DuplTriInfo> dupl_triangles;
+        Labels labels;
+        cinolib::Octree octree;
+
+        // arrangement, last parameter is false to avoid parallelization
+        customArrangementPipeline(
+            in_coords,
+            in_tris,
+            in_labels,
+            arr_in_tris,
+            arr_in_labels,
+            arena,
+            arr_verts,
+            arr_out_tris,
+            labels,
+            octree,
+            dupl_triangles,
+            false);
+
+        // create FastTrimesh
+        // FastTrimesh tm(arr_verts, arr_out_tris, true);
     }
 
     return 0;

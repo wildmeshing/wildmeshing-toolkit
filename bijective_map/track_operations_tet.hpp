@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Eigen/Dense>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -8,7 +9,7 @@
 #include <igl/parallel_for.h>
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
-#include <wmtk/utils/Rational.hpp>
+// #include <wmtk/utils/Rational.hpp>
 
 struct query_point_tet
 {

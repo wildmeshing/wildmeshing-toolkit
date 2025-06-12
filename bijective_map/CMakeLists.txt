@@ -1,7 +1,17 @@
 # bijective_map_app/CMakeLists.txt
 
 cmake_minimum_required(VERSION 3.24.0)
+
+set(ENABLE_SSE2 True)
+set(ENABLE_AVX2 True)
+
+# specify the C++ standard
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
 project(BijectiveMapApp)
+
+add_subdirectory(InteractiveAndRobustMeshBooleans)
 
 igl_include(glfw)
 igl_include(opengl)
@@ -20,14 +30,28 @@ target_link_libraries(bijective_map_app
 target_compile_features(bijective_map_app PUBLIC cxx_std_17)
 
 add_executable(bijective_map_app_tet bijective_map_app_tet.cpp track_operations_tet.hpp track_operations_tet.cpp FindPointTetMesh.cpp)
+target_include_directories(bijective_map_app_tet PUBLIC
+    ./InteractiveAndRobustMeshBooleans
+    InteractiveAndRobustMeshBooleans/code/
+    InteractiveAndRobustMeshBooleans/arrangements/code/
+    InteractiveAndRobustMeshBooleans/arrangements/external/Indirect_Predicates/include/
+)
+include(eigen)
+
+# find_package(cinolib REQUIRED)
 target_link_libraries(bijective_map_app_tet
-    wmtk::toolkit
+
+    # wmtk::toolkit
     wmtk::data
 
     # wmtk::components
     CLI11::CLI11
     igl::core igl::opengl igl::glfw igl::stb
+    nlohmann_json::nlohmann_json
+    cinolib
+    TBB::tbb
 )
+target_include_directories(bijective_map_app_tet PUBLIC ${PROJECT_SOURCE_DIR}/InteractiveAndRobustMeshBooleans/arrangements/external/abseil-cpp/)
 target_compile_features(bijective_map_app_tet PUBLIC cxx_std_17)
 
 # add_executable(test_find_point_tet test_findpointtetmesh.cpp FindPointTetMesh.cpp)
