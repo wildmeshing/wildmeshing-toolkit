@@ -38,7 +38,7 @@ void exactinit()
         }
 
     private:
-        MySingleton() { ::exactinit(); }
+        MySingleton() { igl_predicates::exactinit(); }
     };
     MySingleton::instance();
 }
@@ -164,7 +164,7 @@ int wmtk_orient3d(
     Eigen::Vector3d p3nc = p3;
 
     exactinit();
-    const auto res = orient3d(p0nc.data(), p1nc.data(), p2nc.data(), p3nc.data());
+    const auto res = igl_predicates::orient3d(p0nc.data(), p1nc.data(), p2nc.data(), p3nc.data());
 
     if (res > 0)
         return 1;
@@ -181,7 +181,7 @@ int wmtk_orient2d(double p0x, double p0y, double p1x, double p1y, double p2x, do
     double p0[2]{p0x, p0y};
     double p1[2]{p1x, p1y};
     double p2[2]{p2x, p2y};
-    const auto res = orient2d(p0, p1, p2);
+    const auto res = igl_predicates::orient2d(p0, p1, p2);
 
     if (res > 0)
         return 1;
@@ -254,7 +254,7 @@ int wmtk_orient2d(
     Eigen::Vector2d p2nc = p2;
 
     exactinit();
-    const auto res = orient2d(p0nc.data(), p1nc.data(), p2nc.data());
+    const auto res = igl_predicates::orient2d(p0nc.data(), p1nc.data(), p2nc.data());
 
     if (res > 0)
         return 1;
