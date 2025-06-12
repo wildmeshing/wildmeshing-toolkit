@@ -2,16 +2,28 @@
 
 cmake_minimum_required(VERSION 3.24.0)
 
-set(ENABLE_SSE2 True)
-set(ENABLE_AVX2 True)
+# Enable FetchContent
+include(FetchContent)
+
+# Configure FetchContent for InteractiveAndRobustMeshBooleans
+FetchContent_Declare(
+    InteractiveAndRobustMeshBooleans
+    GIT_REPOSITORY https://github.com/zlyfunction/InteractiveAndRobustMeshBooleans.git
+    GIT_TAG for_wmtk
+)
+
+# Configure options for InteractiveAndRobustMeshBooleans
+set(ENABLE_SSE2 True CACHE BOOL "Enable SSE2 optimizations")
+set(ENABLE_AVX2 True CACHE BOOL "Enable AVX2 optimizations")
+
+# Make the content available
+FetchContent_MakeAvailable(InteractiveAndRobustMeshBooleans)
 
 # specify the C++ standard
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 project(BijectiveMapApp)
-
-add_subdirectory(InteractiveAndRobustMeshBooleans)
 
 igl_include(glfw)
 igl_include(opengl)
@@ -36,7 +48,6 @@ target_include_directories(bijective_map_app_tet PUBLIC
     InteractiveAndRobustMeshBooleans/arrangements/code/
     InteractiveAndRobustMeshBooleans/arrangements/external/Indirect_Predicates/include/
 )
-include(eigen)
 
 # find_package(cinolib REQUIRED)
 target_link_libraries(bijective_map_app_tet
