@@ -2,6 +2,7 @@
 #include <wmtk/utils/mesh_type_from_primitive_type.hpp>
 
 #include <set>
+#include <predicates.h>
 
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/PointMesh.hpp>
@@ -13,7 +14,6 @@
 #include <wmtk/utils/orient.hpp>
 
 #include "mshio/MshSpec.h"
-#include "predicates.h"
 
 namespace wmtk::io {
 MshReader::MshReader() = default;
@@ -372,7 +372,7 @@ template <>
 void MshReader::validate<3>()
 {
     assert(V.cols() == 3);
-    exactinit();
+    igl_predicates::exactinit();
     {
         // check inversion
 

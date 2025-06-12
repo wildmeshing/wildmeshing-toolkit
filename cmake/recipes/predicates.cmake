@@ -8,7 +8,7 @@ include(CPM)
     CPMAddPackage(
     NAME predicates
     GITHUB_REPOSITORY wildmeshing/libigl-predicates
-    GIT_TAG        f1fcce5d20d5a8e887cb694dc6aeaafab9ca1e29
+    GIT_TAG 83b924928a12d9b578968508b303f90c738d6deb 
 )
 
 FetchContent_MakeAvailable(predicates)
