@@ -7,6 +7,7 @@ option(WMTK_APP_UNIFORM_REMESH "uniform remesh for surfaces" ON)
 option(WMTK_APP_SEC "surface shortest edge collapse" ON)
 option(WMTK_APP_QSLIM "surface qslim simplification" ON)
 option(WMTK_APP_INTERIOR_TET_OPT "interior tet opt application" ON)
+option(WMTK_APP_INCREMENTAL_TETWILD "incremental tetwild" ON)
 
 option(WMTK_APP_UNIT_TESTS "unit tests for applications" ON)
 
@@ -32,5 +33,9 @@ endif()
 
 if(WMTK_APP_QSLIM)
     add_subdirectory(qslim)
+endif()
+
+if(WMTK_APP_INCREMENTAL_TETWILD)
+    add_subdirectory(incremental_tetwild)   
 endif()
 

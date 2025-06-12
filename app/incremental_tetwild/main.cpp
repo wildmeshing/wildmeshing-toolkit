@@ -62,6 +62,11 @@ int main(int argc, char** argv)
         "--sample-envelope",
         use_sample_envelope,
         "use_sample_envelope for both simp and optim");
+    app.add_flag(
+        "--preserve-global-topology",
+        params.preserve_global_topology,
+        "preserve the global topology");
+    app.add_flag("--preserve-geometry", params.preserve_geometry, "preserve geometry");
 
     CLI11_PARSE(app, argc, argv);
 
@@ -103,6 +108,12 @@ int main(int argc, char** argv)
     surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, envelope_size / 2);
     assert(surf_mesh.check_mesh_connectivity_validity());
 
+    if (params.preserve_global_topology) {
+        skip_simplify = true;
+    }
+    if (params.preserve_geometry) {
+        skip_simplify = true;
+    }
     if (skip_simplify == false) {
         wmtk::logger().info("input {} simplification", input_path);
         surf_mesh.collapse_shortest(0);
@@ -194,6 +205,16 @@ int main(int argc, char** argv)
 
     // generate new mesh
     tetwild::TetWild mesh_new(params, *ptr_env, surf_mesh.m_envelope, NUM_THREADS);
+
+    if (params.preserve_geometry) {
+        std::cout << "compute coplanar triangle collections start" << std::endl;
+        mesh_new.detect_coplanar_triangle_collections(vsimp, fsimp);
+        std::cout << "#collections: "
+                  << mesh_new.triangle_collections_from_input_surface.collections.size()
+                  << std::endl;
+        std::cout << "compute coplanar triangle collections end" << std::endl;
+    }
+
 
     mesh_new.init_from_Volumeremesher(
         v_rational,

@@ -1,4 +1,4 @@
-#include "IncrementalTetWild.h"
+#include "TetWild.h"
 
 #include <igl/Timer.h>
 #include <wmtk/TetMesh.h>
@@ -143,7 +143,6 @@ void tetwild::TetWild::swap_all_faces()
 bool tetwild::TetWild::swap_edge_before(const Tuple& t)
 {
     if (!TetMesh::swap_edge_before(t)) return false;
-    // if (m_params.preserve_global_topology) return false;
 
     if (is_edge_on_surface(t) || is_edge_on_bbox(t)) return false;
     auto incident_tets = get_incident_tets_for_edge(t);
@@ -192,7 +191,6 @@ bool tetwild::TetWild::swap_edge_after(const Tuple& t)
 bool tetwild::TetWild::swap_face_before(const Tuple& t)
 {
     if (!TetMesh::swap_face_before(t)) return false;
-    // if (m_params.preserve_global_topology) return false;
 
     auto fid = t.fid(*this);
     if (m_face_attribute[fid].m_is_surface_fs || m_face_attribute[fid].m_is_bbox_fs >= 0) {
@@ -273,7 +271,6 @@ void tetwild::TetWild::swap_all_edges_44()
 bool tetwild::TetWild::swap_edge_44_before(const Tuple& t)
 {
     if (!TetMesh::swap_edge_44_before(t)) return false;
-    // if (m_params.preserve_global_topology) return false;
 
     if (is_edge_on_surface(t) || is_edge_on_bbox(t)) return false;
     auto incident_tets = get_incident_tets_for_edge(t);

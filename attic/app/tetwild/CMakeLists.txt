@@ -1,15 +1,22 @@
-# incremental tetwild
+
+################################################################################
+# FloatTetwild
+################################################################################
 
 include(gmp)
-include(fenvelope)
-include(volumemesher)
 
-add_library(wmtk_tetwild
-	IncrementalTetWild.cpp
-	IncrementalTetWild.h
+if(NOT WMTK_APP_UNIFORM_REMESH)
+message(FATAL_ERROR "Remeshing requires uniform remeshing; try WMTK_APP_UNIFORM_REMESH=ON")
+endif()
+if(NOT WMTK_APP_SEC)
+message(FATAL_ERROR "Remeshing requires shorted edge collapse app; try WMTK_APP_SEC=ON")
+endif()
+
+add_library(wmtk_tetwild STATIC
+	TetWild.cpp
+	TetWild.h
 
 	common.h
-	common.cpp
 	Parameters.h
 
 	EdgeSplitting.cpp
@@ -18,8 +25,6 @@ add_library(wmtk_tetwild
 	Smooth.cpp
 
 	TriangleInsertion.cpp
-	VolumemesherInsertion.cpp
-
 )
 add_library(wmtk::tetwild ALIAS wmtk_tetwild)
 
@@ -33,18 +38,15 @@ target_link_libraries(wmtk_tetwild PUBLIC
 	wmtk::remeshing_lib
 	igl::predicates
 	gmp::gmp
-	VolumeRemesher::VolumeRemesher
 )
 
 add_executable(tetwild main.cpp)
 target_compile_options(tetwild PRIVATE "-rdynamic")
-target_link_libraries(tetwild PUBLIC wmtk::tetwild
-	CLI11::CLI11
-)
+target_link_libraries(tetwild PUBLIC wmtk::tetwild)
 wmtk_copy_dll(tetwild)
+
+
 
 if(WMTK_APP_UNIT_TESTS)
     add_subdirectory(tests)
 endif()
-
-

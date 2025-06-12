@@ -90,6 +90,38 @@ void wmtk::TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t,
     p_edge_attrs->resize(6 * tets.size());
 }
 
+void wmtk::TetMesh::init_with_isolated_vertices(
+    size_t n_vertices,
+    const std::vector<std::array<size_t, 4>>& tets)
+{
+    m_vertex_connectivity.resize(n_vertices);
+    m_tet_connectivity.resize(tets.size());
+    current_vert_size = n_vertices;
+    current_tet_size = tets.size();
+    for (size_t i = 0; i < tets.size(); i++) {
+        m_tet_connectivity[i].m_indices = tets[i];
+        for (int j = 0; j < 4; j++) {
+            assert(tets[i][j] < vert_capacity());
+            m_vertex_connectivity[tets[i][j]].m_conn_tets.push_back(i);
+        }
+    }
+
+    for (size_t i = 0; i < vert_capacity(); i++) {
+        if (m_vertex_connectivity[i].m_conn_tets.empty()) {
+            m_vertex_connectivity[i].m_is_removed = true;
+        }
+    }
+
+    // concurrent
+    m_vertex_mutex.grow_to_at_least(n_vertices);
+
+    // resize attributes
+    p_vertex_attrs->resize(n_vertices);
+    p_tet_attrs->resize(tets.size());
+    p_face_attrs->resize(4 * tets.size());
+    p_edge_attrs->resize(6 * tets.size());
+}
+
 
 std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_edges() const
 {
@@ -1008,54 +1040,87 @@ bool wmtk::TetMesh::try_set_vertex_mutex_one_ring(const Tuple& v, int threadid)
 
 void wmtk::TetMesh::for_each_edge(const std::function<void(const TetMesh::Tuple&)>& func)
 {
-    tbb::task_arena arena(NUM_THREADS);
-    arena.execute([&] {
-        tbb::parallel_for(
-            tbb::blocked_range<int>(0, tet_capacity()),
-            [&](tbb::blocked_range<int> r) {
-                for (int i = r.begin(); i < r.end(); i++) {
-                    if (!tuple_from_tet(i).is_valid(*this)) continue;
-                    for (int j = 0; j < 6; j++) {
-                        auto tup = tuple_from_edge(i, j);
-                        if (tup.eid(*this) == 6 * i + j) {
-                            func(tup);
+    if (NUM_THREADS == 0) {
+        for (int i = 0; i < tet_capacity(); i++) {
+            if (!tuple_from_tet(i).is_valid(*this)) continue;
+            for (int j = 0; j < 6; j++) {
+                auto tup = tuple_from_edge(i, j);
+                if (tup.eid(*this) == 6 * i + j) {
+                    func(tup);
+                }
+            }
+        }
+    } else {
+        tbb::task_arena arena(NUM_THREADS);
+        arena.execute([&] {
+            tbb::parallel_for(
+                tbb::blocked_range<int>(0, tet_capacity()),
+                [&](tbb::blocked_range<int> r) {
+                    for (int i = r.begin(); i < r.end(); i++) {
+                        if (!tuple_from_tet(i).is_valid(*this)) continue;
+                        for (int j = 0; j < 6; j++) {
+                            auto tup = tuple_from_edge(i, j);
+                            if (tup.eid(*this) == 6 * i + j) {
+                                func(tup);
+                            }
                         }
                     }
-                }
-            });
-    });
+                });
+        });
+    }
 }
 
 
 void wmtk::TetMesh::for_each_tetra(const std::function<void(const TetMesh::Tuple&)>& func)
 {
-    tbb::task_arena arena(NUM_THREADS);
-    arena.execute([&] {
-        tbb::parallel_for(
-            tbb::blocked_range<int>(0, tet_capacity()),
-            [&](tbb::blocked_range<int> r) {
-                for (int i = r.begin(); i < r.end(); i++) {
-                    auto tup = tuple_from_tet(i);
-                    if (!tup.is_valid(*this)) continue;
-                    func(tup);
-                }
-            });
-    });
+    if (NUM_THREADS == 0) {
+        std::cout << "in serial for each tet" << std::endl;
+        for (int i = 0; i < tet_capacity(); i++) {
+            auto tup = tuple_from_tet(i);
+            if (!tup.is_valid(*this)) continue;
+            func(tup);
+        }
+    } else {
+        std::cout << "in parallel for each tet" << std::endl;
+
+        tbb::task_arena arena(NUM_THREADS);
+        arena.execute([&] {
+            tbb::parallel_for(
+                tbb::blocked_range<int>(0, tet_capacity()),
+                [&](tbb::blocked_range<int> r) {
+                    for (int i = r.begin(); i < r.end(); i++) {
+                        auto tup = tuple_from_tet(i);
+                        if (!tup.is_valid(*this)) continue;
+                        func(tup);
+                    }
+                });
+        });
+    }
 }
 
 
 void wmtk::TetMesh::for_each_vertex(const std::function<void(const TetMesh::Tuple&)>& func)
 {
-    tbb::task_arena arena(NUM_THREADS);
-    arena.execute([&] {
-        tbb::parallel_for(
-            tbb::blocked_range<int>(0, vert_capacity()),
-            [&](tbb::blocked_range<int> r) {
-                for (int i = r.begin(); i < r.end(); i++) {
-                    auto tup = tuple_from_vertex(i);
-                    if (!tup.is_valid(*this)) continue;
-                    func(tup);
-                }
-            });
-    });
+    if (NUM_THREADS == 0) {
+        std::cout << "in serial for each vertex" << std::endl;
+        for (int i = 0; i < vert_capacity(); i++) {
+            auto tup = tuple_from_vertex(i);
+            if (!tup.is_valid(*this)) continue;
+            func(tup);
+        }
+    } else {
+        std::cout << "in parallel for each vertex" << std::endl;
+        tbb::task_arena arena(NUM_THREADS);
+        arena.execute([&] {
+            tbb::parallel_for(
+                tbb::blocked_range<int>(0, vert_capacity()),
+                [&](tbb::blocked_range<int> r) {
+                    for (int i = r.begin(); i < r.end(); i++) {
+                        auto tup = tuple_from_vertex(i);
+                        if (!tup.is_valid(*this)) continue;
+                        func(tup);
+                    }
+                });
+        });
+    }
 }

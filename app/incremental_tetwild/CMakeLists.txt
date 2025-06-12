@@ -4,7 +4,7 @@ include(gmp)
 include(fenvelope)
 include(volumemesher)
 
-add_library(wmtk_tetwild
+add_library(wmtk_incremental_tetwild
 	IncrementalTetWild.cpp
 	IncrementalTetWild.h
 
@@ -21,11 +21,11 @@ add_library(wmtk_tetwild
 	VolumemesherInsertion.cpp
 
 )
-add_library(wmtk::tetwild ALIAS wmtk_tetwild)
+add_library(wmtk::incremental_tetwild ALIAS wmtk_incremental_tetwild)
 
-target_include_directories(wmtk_tetwild PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/)
+target_include_directories(wmtk_incremental_tetwild PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/)
 
-target_link_libraries(wmtk_tetwild PUBLIC
+target_link_libraries(wmtk_incremental_tetwild PUBLIC
 	Tracy::TracyClient
 	wmtk::toolkit
 	wmtk::data
@@ -36,12 +36,12 @@ target_link_libraries(wmtk_tetwild PUBLIC
 	VolumeRemesher::VolumeRemesher
 )
 
-add_executable(tetwild main.cpp)
-target_compile_options(tetwild PRIVATE "-rdynamic")
-target_link_libraries(tetwild PUBLIC wmtk::tetwild
+add_executable(incremental_tetwild_bin main.cpp)
+target_compile_options(incremental_tetwild_bin PRIVATE "-rdynamic")
+target_link_libraries(incremental_tetwild_bin PUBLIC wmtk::incremental_tetwild
 	CLI11::CLI11
 )
-wmtk_copy_dll(tetwild)
+wmtk_copy_dll(incremental_tetwild_bin)
 
 if(WMTK_APP_UNIT_TESTS)
     add_subdirectory(tests)

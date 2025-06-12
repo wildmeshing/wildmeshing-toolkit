@@ -348,6 +348,9 @@ public:
      * not exceed `n_vertices`
      */
     void init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& tets);
+    void init_with_isolated_vertices(
+        size_t n_vertices,
+        const std::vector<std::array<size_t, 4>>& tets);
 
     /**
      * Split an edge
@@ -798,7 +801,7 @@ public:
      * @brief Get the 3 vertices of a face represented by Tuple
      *
      * @param t
-     * @return std::array<Tuple, 3> an array of 3 Tuple poitns to the 3 vertices of a face
+     * @return std::array<Tuple, 3> an array of 3 Tuple points to the 3 vertices of a face
      */
     std::array<Tuple, 3> get_face_vertices(const Tuple& t) const;
     /**

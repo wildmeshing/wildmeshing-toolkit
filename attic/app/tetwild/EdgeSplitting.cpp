@@ -1,4 +1,4 @@
-#include "IncrementalTetWild.h"
+#include "TetWild.h"
 
 #include <igl/Timer.h>
 #include <wmtk/ExecutionScheduler.hpp>
@@ -65,10 +65,6 @@ bool tetwild::TetWild::split_edge_before(const Tuple& loc0)
 
     split_cache.local().is_edge_on_surface = is_edge_on_surface(loc0);
 
-    // todo: can be optimized
-    split_cache.local().is_edge_open_boundary =
-        split_cache.local().is_edge_on_surface && is_open_boundary_edge(loc0);
-
     /// save face track info
     auto comp = [](const std::pair<FaceAttributes, std::array<size_t, 3>>& v1,
                    const std::pair<FaceAttributes, std::array<size_t, 3>>& v2) {
@@ -125,9 +121,9 @@ bool tetwild::TetWild::split_edge_after(const Tuple& loc)
     if (!m_vertex_attribute[v_id].m_is_rounded) {
         m_vertex_attribute[v_id].m_pos =
             (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
-        m_vertex_attribute[v_id].m_posf = to_double(m_vertex_attribute[v_id].m_pos);
+        m_vertex_attribute[v_id].m_posf = m_vertex_attribute[v_id].m_pos.cast<double>();
     } else
-        m_vertex_attribute[v_id].m_pos = to_rational(m_vertex_attribute[v_id].m_posf);
+        m_vertex_attribute[v_id].m_pos = m_vertex_attribute[v_id].m_posf.cast<wmtk::Rational>();
 
     /// update quality
     for (auto& loc : locs) {
@@ -141,9 +137,6 @@ bool tetwild::TetWild::split_edge_after(const Tuple& loc)
         m_vertex_attribute[v2_id].on_bbox_faces);
     // surface
     m_vertex_attribute[v_id].m_is_on_surface = split_cache.local().is_edge_on_surface;
-
-    // open boundary
-    m_vertex_attribute[v_id].m_is_on_open_boundary = split_cache.local().is_edge_open_boundary;
 
     /// update face attribute
     // add new and erase old
@@ -175,21 +168,6 @@ bool tetwild::TetWild::split_edge_after(const Tuple& loc)
     m_vertex_attribute[v_id].m_sizing_scalar =
         (m_vertex_attribute[v1_id].m_sizing_scalar + m_vertex_attribute[v2_id].m_sizing_scalar) / 2;
 
-    // if (m_vertex_attribute[v_id].m_is_on_surface) {
-    //     if (!check_vertex_param_type()) {
-    //         std::cout << v1_id << " " << v2_id << std::endl;
-    //         for (auto vp : m_vertex_attribute[v1_id].face_nearly_param_type_with_ineffective)
-    //             std::cout << vp << " ";
-    //         std::cout << std::endl;
-    //         for (auto vp : m_vertex_attribute[v2_id].face_nearly_param_type_with_ineffective)
-    //             std::cout << vp << " ";
-    //         std::cout << std::endl;
-    //         output_faces("bug_surface_miss_param_after_split.obj", [](auto& f) {
-    //             return f.m_is_surface_fs;
-    //         });
-    //         // exit(0);
-    //     }
-    // }
 
     return true;
 }

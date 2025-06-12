@@ -1,5 +1,5 @@
 #include <wmtk/utils/Rational.hpp>
-#include "IncrementalTetWild.h"
+#include "TetWild.h"
 
 #include <wmtk/utils/Delaunay.hpp>
 #include "common.h"
@@ -31,12 +31,9 @@ void tetwild::TetWild::init_from_delaunay_box_mesh(const std::vector<Eigen::Vect
     double delta = m_params.diag_l / 15.0;
     Vector3d box_min(m_params.min[0] - delta, m_params.min[1] - delta, m_params.min[2] - delta);
     Vector3d box_max(m_params.max[0] + delta, m_params.max[1] + delta, m_params.max[2] + delta);
-    // int Nx = std::max(2, int((box_max[0] - box_min[0]) / delta));
-    // int Ny = std::max(2, int((box_max[1] - box_min[1]) / delta));
-    // int Nz = std::max(2, int((box_max[2] - box_min[2]) / delta));
-    int Nx = 3;
-    int Ny = 3;
-    int Nz = 3;
+    int Nx = std::max(2, int((box_max[0] - box_min[0]) / delta));
+    int Ny = std::max(2, int((box_max[1] - box_min[1]) / delta));
+    int Nz = std::max(2, int((box_max[2] - box_min[2]) / delta));
     for (double i = 0; i <= Nx; i++) {
         for (double j = 0; j <= Ny; j++) {
             for (double k = 0; k <= Nz; k++) {

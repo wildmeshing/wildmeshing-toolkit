@@ -6,6 +6,39 @@
 namespace wmtk {
 
 /**
+ * Newton method for *linear* 1d parameterization.
+ *
+ * @param uv coordinates for the first vertex in the stack
+ * @param stack with flattened 4x3 vertices positions, with the mover vertex always on the front.
+ * This is the same convention with AMIPS_energy
+ * @return Descend direction as computed from Newton method, (or gradient descent if Newton fails).
+ */
+double newton_method_from_stack(
+    const double t,
+    std::vector<std::array<double, 12>>& assembles,
+    std::function<Eigen::Vector3d(const double t)> param,
+    std::function<double(const std::array<double, 12>&)> compute_energy,
+    std::function<double(const std::array<double, 12>&)> compute_jacobian,
+    std::function<double(const std::array<double, 12>&)> compute_hessian);
+
+
+/**
+ * Newton method for *linear* 2d parameterization.
+ *
+ * @param uv coordinates for the first vertex in the stack
+ * @param stack with flattened 4x3 vertices positions, with the mover vertex always on the front.
+ * This is the same convention with AMIPS_energy
+ * @return Descend direction as computed from Newton method, (or gradient descent if Newton fails).
+ */
+Eigen::Vector2d newton_method_from_stack(
+    const Eigen::Vector2d& uv,
+    std::vector<std::array<double, 12>>& assembles,
+    std::function<Eigen::Vector3d(const Eigen::Vector2d& uv)> param,
+    std::function<double(const std::array<double, 12>&)> compute_energy,
+    std::function<void(const std::array<double, 12>&, Eigen::Vector2d&)> compute_jacobian,
+    std::function<void(const std::array<double, 12>&, Eigen::Matrix2d&)> compute_hessian);
+
+/**
  * Newton method or gradient descent.
  *
  * @param stack with flattened 4x3 vertices positions, with the mover vertex always on the front.

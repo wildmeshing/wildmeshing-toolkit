@@ -16,6 +16,14 @@ bool tetwild::TetWild::smooth_before(const Tuple& t)
 {
     if (!m_vertex_attribute[t.vid(*this)].on_bbox_faces.empty()) return false;
 
+    // for geometry preservation
+    if (m_params.preserve_geometry) {
+        if (m_vertex_attribute[t.vid(*this)].m_is_on_surface)
+            if (m_vertex_attribute[t.vid(*this)].is_freezed ||
+                m_vertex_attribute[t.vid(*this)].in_edge_param.size() > 1)
+                return false;
+    }
+
     if (m_vertex_attribute[t.vid(*this)].m_is_rounded) return true;
     // try to round.
     // Note: no need to roll back.
@@ -63,12 +71,107 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
     auto old_pos = m_vertex_attribute[vid].m_posf;
     auto old_asssembles = assembles;
 
-    m_vertex_attribute[vid].m_posf = wmtk::newton_method_from_stack(
-        assembles,
-        wmtk::AMIPS_energy,
-        wmtk::AMIPS_jacobian,
-        wmtk::AMIPS_hessian);
+    // bool preserve_geo =
+    //     m_params.preserve_geometry && (m_vertex_attribute[vid].face_nearly_param_type.size() >
+    //     0);
+    bool preserve_geo = m_params.preserve_geometry;
 
+    if (true) {
+        if (preserve_geo && m_vertex_attribute[vid].in_edge_param.size() > 0) {
+            // use edge param
+            Vector3d o, d;
+            size_t edge_param_id = m_vertex_attribute[vid].in_edge_param[0];
+            const auto& edge_param = edge_params[edge_param_id];
+            d = edge_param.direction;
+            o = edge_param.origin;
+            double t = (old_pos - o).dot(d);
+            // param function
+            auto param = [&o, &d](double t) { return o + t * d; };
+            // jacobian with chainrule
+            auto jac = [&d](const std::array<double, 12>& T) {
+                Vector3d jac_param;
+                jac_param = d;
+
+                Vector3d jac_amips;
+                wmtk::AMIPS_jacobian(T, jac_amips);
+
+                double result = jac_amips.dot(jac_param);
+                return result;
+            };
+            // hessian with chainrule
+            auto hessian = [&d](const std::array<double, 12>& T) {
+                Vector3d jac_param;
+                jac_param = d;
+
+                Eigen::Matrix3d hessian_amips;
+                wmtk::AMIPS_hessian(T, hessian_amips);
+
+                double result = jac_param.transpose() * hessian_amips * jac_param;
+                return result;
+            };
+            // newton method 1d
+            double new_t = wmtk::newton_method_from_stack(
+                t,
+                assembles,
+                param,
+                wmtk::AMIPS_energy,
+                jac,
+                hessian);
+
+            m_vertex_attribute[vid].m_posf = param(t);
+        } else if (preserve_geo && m_vertex_attribute[vid].face_nearly_param_type.size() > 0) {
+            // use face param
+
+            Vector3d o, x, y;
+            size_t collection_id = m_vertex_attribute[vid].face_nearly_param_type[0];
+            const auto& collection =
+                triangle_collections_from_input_surface.nearly_coplanar_collections[collection_id];
+            o = collection.a_pos_f;
+            x = collection.param_u_f;
+            y = collection.param_v_f;
+            Vector2d uv((old_pos - o).dot(x), (old_pos - o).dot(y));
+            // param function
+            auto param = [&o, &x, &y](const Vector2d& uv) { return o + uv[0] * x + uv[1] * y; };
+            // jacobian with chainrule
+            auto jac = [&x, &y](const std::array<double, 12>& T, Eigen::Vector2d& result) {
+                Eigen::Matrix<double, 3, 2> jac_param;
+                jac_param.col(0) = x;
+                jac_param.col(1) = y;
+
+                Vector3d jac_amips;
+                wmtk::AMIPS_jacobian(T, jac_amips);
+
+                result = jac_amips.transpose() * jac_param;
+            };
+            // hessian with chainrule
+            auto hessian = [&x, &y](const std::array<double, 12>& T, Eigen::Matrix2d& result) {
+                Eigen::Matrix<double, 3, 2> jac_param;
+                jac_param.col(0) = x;
+                jac_param.col(1) = y;
+
+                Eigen::Matrix3d hessian_amips;
+                wmtk::AMIPS_hessian(T, hessian_amips);
+
+                result = jac_param.transpose() * hessian_amips * jac_param;
+            };
+            // newton method 2d
+            Vector2d new_uv = wmtk::newton_method_from_stack(
+                uv,
+                assembles,
+                param,
+                wmtk::AMIPS_energy,
+                jac,
+                hessian);
+
+            m_vertex_attribute[vid].m_posf = param(new_uv);
+        }
+    } else {
+        m_vertex_attribute[vid].m_posf = wmtk::newton_method_from_stack(
+            assembles,
+            wmtk::AMIPS_energy,
+            wmtk::AMIPS_jacobian,
+            wmtk::AMIPS_hessian);
+    }
     wmtk::logger().trace(
         "old pos {} -> new pos {}",
         old_pos.transpose(),
@@ -111,17 +214,21 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
             }
         }
 
-        {
+        // auto project = wmtk::try_project(m_vertex_attribute[vid].m_posf, neighbor_assemble);
+        if (!preserve_geo) {
+            // if not preserve geo then project, else no project
             auto project = Eigen::Vector3d();
+
 
             if (boundaries_tree.initialized()) {
                 // project to envelope
                 // std::cout << "in smoothing open boundary" << std::endl;
                 boundaries_tree.nearest_point(m_vertex_attribute[vid].m_posf, project);
-            } else {
+
+            } else
                 // project to neighborhood
                 project = wmtk::try_project(m_vertex_attribute[vid].m_posf, neighbor_assemble);
-            }
+
 
             m_vertex_attribute[vid].m_posf = project;
         }
@@ -169,7 +276,7 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
             }
         }
         // auto project = wmtk::try_project(m_vertex_attribute[vid].m_posf, neighbor_assemble);
-        {
+        if (!preserve_geo) {
             auto project = Eigen::Vector3d();
 
             if (triangles_tree.initialized())
