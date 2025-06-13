@@ -5,6 +5,6 @@
 
 namespace wmtk::components::tetwild {
 
-void tetwild(const nlohmann::json& json_params);
+void tetwild(nlohmann::json json_params);
 
 } // namespace wmtk::components::tetwild

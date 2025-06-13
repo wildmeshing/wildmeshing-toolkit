@@ -7,6 +7,7 @@
 #include "common.h"
 #include "sec/envelope/SampleEnvelope.hpp"
 
+#include <jse/jse.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
 #include <wmtk/utils/Reader.hpp>
@@ -27,10 +28,22 @@
 #include <igl/write_triangle_mesh.h>
 #include <spdlog/common.h>
 
+#include "tetwild_spec.hpp"
+
 namespace wmtk::components::tetwild {
 
-void tetwild(const nlohmann::json& json_params)
+void tetwild(nlohmann::json json_params)
 {
+    // verify input and inject defaults
+    {
+        jse::JSE spec_engine;
+        bool r = spec_engine.verify_json(json_params, tetwild_spec);
+        if (!r) {
+            log_and_throw_error(spec_engine.log2str());
+        }
+        json_params = spec_engine.inject_defaults(json_params, tetwild_spec);
+    }
+
     ZoneScopedN("tetwildmain");
 
     GEO::Process::enable_multithreading(false);
@@ -41,12 +54,12 @@ void tetwild(const nlohmann::json& json_params)
     std::string output_path = json_params["output"];
     bool skip_simplify = json_params["skip_simplify"];
     bool use_sample_envelope = json_params["use_sample_envelope"];
-    int NUM_THREADS = json_params["NUM_THREADS"];
-    int max_its = json_params["max_its"];
+    int NUM_THREADS = json_params["num_threads"];
+    int max_its = json_params["max_iterations"];
     bool filter_with_input = json_params["filter_with_input"];
 
-    params.epsr = json_params["epsr"];
-    params.lr = json_params["rlen"];
+    params.epsr = json_params["eps_rel"];
+    params.lr = json_params["length_rel"];
     params.stop_energy = json_params["stop_energy"];
 
     std::vector<Eigen::Vector3d> verts;

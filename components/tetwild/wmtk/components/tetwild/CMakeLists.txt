@@ -29,6 +29,7 @@ set(SRC_FILES
 
 	tetwild.hpp
 	tetwild.cpp
+	tetwild_spec.hpp
     )
 
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

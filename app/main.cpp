@@ -24,7 +24,7 @@ int main(int argc, char** argv)
     CLI11_PARSE(app, argc, argv);
 
 
-    std::map<std::string, std::function<void(const nlohmann::json&)>> components_map;
+    std::map<std::string, std::function<void(nlohmann::json)>> components_map;
     // include auto-generated map
 #include "components_map.hpp"
 
