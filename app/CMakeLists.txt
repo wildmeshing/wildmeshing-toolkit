@@ -1,7 +1,8 @@
 
 include(wmtk_data)
+include(jse)
 
-option(WMTK_APP_TETWILD "tetwild application" ON)
+option(WMTK_APP_TETWILD "tetwild application" OFF) # naming conflict with tetwild component!
 option(WMTK_APP_HARMTET "Harmonic Triangulation app" ON)
 option(WMTK_APP_UNIFORM_REMESH "uniform remesh for surfaces" ON)
 option(WMTK_APP_SEC "surface shortest edge collapse" ON)
@@ -39,3 +40,16 @@ if(WMTK_APP_INCREMENTAL_TETWILD)
     add_subdirectory(incremental_tetwild)   
 endif()
 
+# ###############################################################################
+# WMTK Application
+# ###############################################################################
+
+add_executable(wmtk_app main.cpp)
+target_link_libraries(wmtk_app PRIVATE 
+    nlohmann_json::nlohmann_json
+    CLI11::CLI11
+)
+
+target_link_libraries(wmtk_app PRIVATE 
+    wmtk::tetwild
+)

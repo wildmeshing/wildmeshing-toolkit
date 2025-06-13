@@ -42,34 +42,13 @@ public:
     bool m_is_outside = false; // never used?
 
     Scalar m_sizing_scalar = 1;
-    // Scalar m_scalar = 1; // never used?
-    // bool m_is_freezed = false;// never used?
 
     size_t partition_id = 0;
 
     // for open boundary
     bool m_is_on_open_boundary = false;
 
-    // for geometry preservation
-    // exact
-    std::vector<size_t> face_param_type;
-    std::vector<size_t> face_param_type_with_ineffective;
-    std::vector<std::pair<wmtk::Rational, wmtk::Rational>> uv_coords;
-    std::vector<std::pair<double, double>> uv_coords_f;
-    // nearly
-    std::vector<size_t> face_nearly_param_type;
-    std::vector<size_t> face_nearly_param_type_with_ineffective;
-    // std::vector<std::pair<wmtk::Rational, wmtk::Rational>> uv_nearly;
-    std::vector<std::pair<double, double>> uv_nearly_f;
-
-    bool is_freezed = false;
-    bool is_on_collection_boundary = false;
-    // this is only for initialization
-    std::vector<size_t> connected_collection_boundary_vertices;
-
-    std::vector<size_t> in_edge_param;
-
-    VertexAttributes() {};
+    VertexAttributes(){};
     VertexAttributes(const Vector3r& p);
 };
 
