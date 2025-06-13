@@ -1,11 +1,13 @@
-#include "IncrementalTetWild.h"
+#include "TetWildMesh.h"
 
 #include <igl/Timer.h>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
 
-void tetwild::TetWild::split_all_edges()
+namespace wmtk::components::tetwild {
+
+void TetWildMesh::split_all_edges()
 {
     igl::Timer timer;
     double time;
@@ -36,7 +38,7 @@ void tetwild::TetWild::split_all_edges()
     };
     if (NUM_THREADS > 0) {
         timer.start();
-        auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kPartition>();
         executor.lock_vertices = [&](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
@@ -45,14 +47,14 @@ void tetwild::TetWild::split_all_edges()
         wmtk::logger().info("edge split operation time parallel: {}s", time);
     } else {
         timer.start();
-        auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge split operation time serial: {}s", time);
     }
 }
 
-bool tetwild::TetWild::split_edge_before(const Tuple& loc0)
+bool TetWildMesh::split_edge_before(const Tuple& loc0)
 {
     split_cache.local().changed_faces.clear();
 
@@ -99,7 +101,7 @@ bool tetwild::TetWild::split_edge_before(const Tuple& loc0)
     return true;
 }
 
-bool tetwild::TetWild::split_edge_after(const Tuple& loc)
+bool TetWildMesh::split_edge_after(const Tuple& loc)
 { // input: locs pointing to a list of tets and v_id
     if (!TetMesh::split_edge_after(
             loc)) // note: call from super class, cannot be done with pure virtual classes
@@ -193,3 +195,5 @@ bool tetwild::TetWild::split_edge_after(const Tuple& loc)
 
     return true;
 }
+
+} // namespace wmtk::components::tetwild

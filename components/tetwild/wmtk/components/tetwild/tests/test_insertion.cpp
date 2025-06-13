@@ -2,8 +2,8 @@
 
 #include <igl/write_triangle_mesh.h>
 #include <wmtk/TetMesh.h>
-#include <wmtk/components/tetwild/IncrementalTetWild.h>
 #include <wmtk/components/tetwild/Parameters.h>
+#include <wmtk/components/tetwild/TetWildMesh.h>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -15,7 +15,7 @@
 #include <wmtk/utils/Partitioning.h>
 
 using namespace wmtk;
-using namespace tetwild;
+using namespace components::tetwild;
 
 TEST_CASE("triangle-insertion", "[tetwild_operation][.]")
 {

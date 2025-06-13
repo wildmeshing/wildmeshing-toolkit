@@ -27,7 +27,7 @@
 #include <igl/remove_unreferenced.h>
 #include <memory>
 
-namespace tetwild {
+namespace wmtk::components::tetwild {
 
 // TODO: missing comments on what these attributes are
 class VertexAttributes
@@ -101,7 +101,7 @@ public:
     int part_id = -1;
 };
 
-class TetWild : public wmtk::TetMesh
+class TetWildMesh : public wmtk::TetMesh
 {
 public:
     double time_env = 0.0;
@@ -117,7 +117,7 @@ public:
     wmtk::ExactEnvelope m_open_boundary_envelope; // todo: add sample envelope option
     sample_envelope::SampleEnvelope boundaries_tree;
 
-    TetWild(
+    TetWildMesh(
         Parameters& _m_params,
         wmtk::Envelope& _m_envelope,
         sample_envelope::SampleEnvelope& _triangles_tree,
@@ -133,7 +133,7 @@ public:
         m_collapse_check_link_condition = false;
     }
 
-    ~TetWild() {}
+    ~TetWildMesh() {}
     using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
     using FaceAttCol = wmtk::AttributeCollection<FaceAttributes>;
     using TetAttCol = wmtk::AttributeCollection<TetAttributes>;
@@ -599,4 +599,4 @@ public:
 };
 
 
-} // namespace tetwild
+} // namespace wmtk::components::tetwild

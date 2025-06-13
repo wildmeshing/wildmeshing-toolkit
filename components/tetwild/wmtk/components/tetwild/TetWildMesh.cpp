@@ -1,5 +1,5 @@
 
-#include "IncrementalTetWild.h"
+#include "TetWildMesh.h"
 
 #include "common.h"
 #include "wmtk/utils/Rational.hpp"
@@ -31,13 +31,16 @@
 #include <geogram/points/kd_tree.h>
 #include <limits>
 
-tetwild::VertexAttributes::VertexAttributes(const Vector3r& p)
+namespace wmtk::components::tetwild {
+
+
+VertexAttributes::VertexAttributes(const Vector3r& p)
 {
     m_pos = p;
     m_posf = to_double(p);
 }
 
-void tetwild::TetWild::mesh_improvement(int max_its)
+void TetWildMesh::mesh_improvement(int max_its)
 {
     ////preprocessing
     // TODO: refactor to eliminate repeated partition.
@@ -121,7 +124,7 @@ void tetwild::TetWild::mesh_improvement(int max_its)
     local_operations({{0, 1, 0, 0}});
 }
 
-std::tuple<double, double> tetwild::TetWild::local_operations(
+std::tuple<double, double> TetWildMesh::local_operations(
     const std::array<int, 4>& ops,
     bool collapse_limit_length)
 {
@@ -195,7 +198,7 @@ std::tuple<double, double> tetwild::TetWild::local_operations(
     return energy;
 }
 
-bool tetwild::TetWild::adjust_sizing_field(double max_energy)
+bool TetWildMesh::adjust_sizing_field(double max_energy)
 {
     wmtk::logger().info("#vertices {}, #tets {}", vert_capacity(), tet_capacity());
 
@@ -338,7 +341,7 @@ bool tetwild::TetWild::adjust_sizing_field(double max_energy)
     return is_hit_min_edge_length.load();
 }
 
-bool tetwild::TetWild::adjust_sizing_field_serial(double max_energy)
+bool TetWildMesh::adjust_sizing_field_serial(double max_energy)
 {
     wmtk::logger().info("#vertices {}, #tets {}", vert_capacity(), tet_capacity());
 
@@ -531,7 +534,7 @@ void bfs_orient(const Eigen::MatrixXi& F, Eigen::MatrixXi& FF, Eigen::VectorXi& 
     }
 }
 
-void tetwild::TetWild::filter_outside(
+void TetWildMesh::filter_outside(
     const std::vector<Vector3d>& vertices,
     const std::vector<std::array<size_t, 3>>& faces,
     bool remove_ouside)
@@ -606,9 +609,7 @@ void tetwild::TetWild::filter_outside(
 }
 
 /////////////////////////////////////////////////////////////////////
-void tetwild::TetWild::output_faces(
-    std::string file,
-    std::function<bool(const FaceAttributes&)> cond)
+void TetWildMesh::output_faces(std::string file, std::function<bool(const FaceAttributes&)> cond)
 {
     auto outface = get_faces_by_condition(cond);
     Eigen::MatrixXd matV = Eigen::MatrixXd::Zero(vert_capacity(), 3);
@@ -625,7 +626,7 @@ void tetwild::TetWild::output_faces(
 }
 
 
-void tetwild::TetWild::output_mesh(std::string file)
+void TetWildMesh::output_mesh(std::string file)
 {
     consolidate_mesh();
 
@@ -660,7 +661,7 @@ void tetwild::TetWild::output_mesh(std::string file)
 }
 
 
-double tetwild::TetWild::get_length2(const wmtk::TetMesh::Tuple& l) const
+double TetWildMesh::get_length2(const wmtk::TetMesh::Tuple& l) const
 {
     auto& m = *this;
     auto& v1 = l;
@@ -671,7 +672,7 @@ double tetwild::TetWild::get_length2(const wmtk::TetMesh::Tuple& l) const
     return length;
 }
 
-std::tuple<double, double> tetwild::TetWild::get_max_avg_energy()
+std::tuple<double, double> TetWildMesh::get_max_avg_energy()
 {
     double max_energy = -1.;
     double avg_energy = 0.;
@@ -708,7 +709,7 @@ std::tuple<double, double> tetwild::TetWild::get_max_avg_energy()
 }
 
 
-bool tetwild::TetWild::is_inverted(const Tuple& loc) const
+bool TetWildMesh::is_inverted(const Tuple& loc) const
 {
     // Return a positive value if the point pd lies below the
     // plane passing through pa, pb, and pc; "below" is defined so
@@ -755,7 +756,7 @@ bool tetwild::TetWild::is_inverted(const Tuple& loc) const
     }
 }
 
-bool tetwild::TetWild::round(const Tuple& v)
+bool TetWildMesh::round(const Tuple& v)
 {
     size_t i = v.vid(*this);
     if (m_vertex_attribute[i].m_is_rounded) return true;
@@ -776,7 +777,7 @@ bool tetwild::TetWild::round(const Tuple& v)
     return true;
 }
 
-double tetwild::TetWild::get_quality(const Tuple& loc) const
+double TetWildMesh::get_quality(const Tuple& loc) const
 {
     std::array<Vector3d, 4> ps;
     auto its = oriented_tet_vids(loc);
@@ -806,12 +807,12 @@ double tetwild::TetWild::get_quality(const Tuple& loc) const
 }
 
 
-bool tetwild::TetWild::invariants(const std::vector<Tuple>& tets)
+bool TetWildMesh::invariants(const std::vector<Tuple>& tets)
 {
     return true;
 }
 
-std::vector<std::array<size_t, 3>> tetwild::TetWild::get_faces_by_condition(
+std::vector<std::array<size_t, 3>> TetWildMesh::get_faces_by_condition(
     std::function<bool(const FaceAttributes&)> cond)
 {
     auto res = std::vector<std::array<size_t, 3>>();
@@ -820,14 +821,15 @@ std::vector<std::array<size_t, 3>> tetwild::TetWild::get_faces_by_condition(
         if (cond(m_face_attribute[fid])) {
             auto tid = fid / 4, lid = fid % 4;
             auto verts = get_face_vertices(f);
-            res.emplace_back(std::array<size_t, 3>{
-                {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
+            res.emplace_back(
+                std::array<size_t, 3>{
+                    {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
         }
     }
     return res;
 }
 
-bool tetwild::TetWild::is_edge_on_surface(const Tuple& loc)
+bool TetWildMesh::is_edge_on_surface(const Tuple& loc)
 {
     size_t v1_id = loc.vid(*this);
     auto loc1 = loc.switch_vertex(*this);
@@ -855,7 +857,7 @@ bool tetwild::TetWild::is_edge_on_surface(const Tuple& loc)
 }
 
 
-bool tetwild::TetWild::is_edge_on_bbox(const Tuple& loc)
+bool TetWildMesh::is_edge_on_bbox(const Tuple& loc)
 {
     size_t v1_id = loc.vid(*this);
     auto loc1 = loc.switch_vertex(*this);
@@ -883,7 +885,7 @@ bool tetwild::TetWild::is_edge_on_bbox(const Tuple& loc)
     return false;
 }
 
-bool tetwild::TetWild::check_attributes()
+bool TetWildMesh::check_attributes()
 {
     for (auto& f : get_faces()) {
         auto fid = f.fid(*this);
@@ -963,7 +965,7 @@ bool tetwild::TetWild::check_attributes()
     return true;
 }
 
-long long tetwild::TetWild::checksum_vidx()
+long long TetWildMesh::checksum_vidx()
 {
     long long checksum = 0;
     auto vs = get_vertices();
@@ -973,7 +975,7 @@ long long tetwild::TetWild::checksum_vidx()
     return checksum;
 }
 
-long long tetwild::TetWild::checksum_tidx()
+long long TetWildMesh::checksum_tidx()
 {
     long long checksum = 0;
     auto ts = get_tets();
@@ -1008,7 +1010,7 @@ void union_uf(int u, int v, std::vector<int>& parent)
     }
 }
 
-int tetwild::TetWild::count_vertex_links(const Tuple& v)
+int TetWildMesh::count_vertex_links(const Tuple& v)
 {
     // get one ring faces on surface
     auto one_ring_tets = get_one_ring_tets_for_vertex(v);
@@ -1142,7 +1144,7 @@ int tetwild::TetWild::count_vertex_links(const Tuple& v)
     return cnt_links;
 }
 
-// int tetwild::TetWild::count_edge_links(const Tuple& e)
+// int count_edge_links(const Tuple& e)
 // {
 //     auto one_ring_tets = get_incident_tets_for_edge(e);
 //     std::vector<Tuple> surface_fs;
@@ -1235,7 +1237,7 @@ int tetwild::TetWild::count_vertex_links(const Tuple& v)
 //     return 0;
 // }
 
-int tetwild::TetWild::count_edge_links(const Tuple& e)
+int TetWildMesh::count_edge_links(const Tuple& e)
 {
     size_t vid1 = e.vid(*this);
     size_t vid2 = e.switch_vertex(*this).vid(*this);
@@ -1270,7 +1272,7 @@ int tetwild::TetWild::count_edge_links(const Tuple& e)
 }
 
 
-bool tetwild::TetWild::is_triangle_coplanar_collection(
+bool TetWildMesh::is_triangle_coplanar_collection(
     const Vector3r& v1,
     const Vector3r& v2,
     const Vector3r& v3,
@@ -1292,7 +1294,7 @@ bool tetwild::TetWild::is_triangle_coplanar_collection(
     // return true;
 }
 
-bool tetwild::TetWild::is_triangle_nearly_coplanar_collection(
+bool TetWildMesh::is_triangle_nearly_coplanar_collection(
     const Vector3r& v1,
     const Vector3r& v2,
     const Vector3r& v3,
@@ -1311,7 +1313,7 @@ bool tetwild::TetWild::is_triangle_nearly_coplanar_collection(
     return false;
 }
 
-std::vector<std::vector<size_t>> tetwild::TetWild::transfer_vf_to_face_face_connectivity(
+std::vector<std::vector<size_t>> TetWildMesh::transfer_vf_to_face_face_connectivity(
     size_t num_v,
     std::vector<std::array<size_t, 3>> faces)
 {
@@ -1362,7 +1364,7 @@ std::vector<std::vector<size_t>> tetwild::TetWild::transfer_vf_to_face_face_conn
     return face_connectivity;
 }
 
-void tetwild::TetWild::detect_coplanar_triangle_collections(
+void TetWildMesh::detect_coplanar_triangle_collections(
     const std::vector<Vector3d>& vertices,
     const std::vector<std::array<size_t, 3>>& faces)
 {
@@ -1386,7 +1388,7 @@ void tetwild::TetWild::detect_coplanar_triangle_collections(
     // }
 
     // bfs to get the collection
-    std::vector<tetwild::TetWild::coplanar_triangle_collection> collections;
+    std::vector<TetWildMesh::coplanar_triangle_collection> collections;
     std::vector<bool> visited_face(faces.size(), false); // visited if is already in a collection
 
     for (size_t i = 0; i < faces.size(); i++) {
@@ -1450,7 +1452,7 @@ void tetwild::TetWild::detect_coplanar_triangle_collections(
     triangle_collections_from_input_surface.collections = collections;
 
     // detect nearly coplanar collections
-    std::vector<tetwild::TetWild::coplanar_triangle_collection> collections_nearly;
+    std::vector<TetWildMesh::coplanar_triangle_collection> collections_nearly;
     std::vector<bool> visited_face_nearly(
         faces.size(),
         false); // visited if is already in a collection
@@ -1563,7 +1565,7 @@ void tetwild::TetWild::detect_coplanar_triangle_collections(
     // }
 }
 
-bool tetwild::TetWild::is_point_in_triangle(
+bool TetWildMesh::is_point_in_triangle(
     const Vector3r& p,
     const Vector3r& a,
     const Vector3r& b,
@@ -1577,7 +1579,7 @@ bool tetwild::TetWild::is_point_in_triangle(
     return true;
 }
 
-bool tetwild::TetWild::is_point_in_collection(const Vector3r& p, size_t collection_id)
+bool TetWildMesh::is_point_in_collection(const Vector3r& p, size_t collection_id)
 {
     for (int i = 0;
          i < triangle_collections_from_input_surface.collections[collection_id].face_ids.size();
@@ -1602,7 +1604,7 @@ bool tetwild::TetWild::is_point_in_collection(const Vector3r& p, size_t collecti
     return false;
 }
 
-int tetwild::TetWild::find_collection_for_tracked_surface(const Tuple& t)
+int TetWildMesh::find_collection_for_tracked_surface(const Tuple& t)
 {
     size_t fid = t.fid(*this);
     size_t vid1 = t.vid(*this);
@@ -1693,14 +1695,14 @@ int tetwild::TetWild::find_collection_for_tracked_surface(const Tuple& t)
     return in_collection;
 }
 
-bool tetwild::TetWild::check_vertex_param_type()
+bool TetWildMesh::check_vertex_param_type()
 {
     // std::ofstream file("missing_param_v.obj");
     bool flag = true;
     return flag;
 }
 
-int tetwild::TetWild::flood_fill()
+int TetWildMesh::flood_fill()
 {
     int current_id = 0;
     auto tets = get_tets();
@@ -1807,7 +1809,7 @@ int tetwild::TetWild::flood_fill()
     return current_id;
 }
 
-void tetwild::TetWild::save_paraview(const std::string& path, const bool use_hdf5)
+void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
 {
     consolidate_mesh();
     // flood fill
@@ -1849,7 +1851,7 @@ void tetwild::TetWild::save_paraview(const std::string& path, const bool use_hdf
     writer->write_mesh(out_path, V, T);
 }
 
-void tetwild::TetWild::init_sizing_field()
+void TetWildMesh::init_sizing_field()
 {
     const double min_refine_scalar = m_params.l_min / m_params.l;
 
@@ -1963,3 +1965,5 @@ void tetwild::TetWild::init_sizing_field()
         }
     }
 }
+
+} // namespace wmtk::components::tetwild

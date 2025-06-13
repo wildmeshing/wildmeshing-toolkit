@@ -12,8 +12,8 @@ if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
 endif()
 
 set(SRC_FILES
-    IncrementalTetWild.cpp
-	IncrementalTetWild.h
+    TetWildMesh.cpp
+	TetWildMesh.h
 
 	common.h
 	common.cpp
@@ -27,11 +27,9 @@ set(SRC_FILES
 	TriangleInsertion.cpp
 	VolumemesherInsertion.cpp
 
-	component_tetwild.hpp
-	component_tetwild.cpp
+	tetwild.hpp
+	tetwild.cpp
     )
-
-
 
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
 
@@ -51,20 +49,7 @@ target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC
 ## TESTS
 ######################
 
-# if(WMTK_COMPONENT_UNIT_TESTS)
-# endif()
-
-# add_component_test(${COMPONENT_NAME})
-
-# set(SRC_FILES
-#     tests/test_geometry_preservation.cpp
-# 	tests/test_link_count.cpp
-# 	tests/test_topology_preservation.cpp
-#     )
-
-# target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
-
-if(WMTK_COMPONENT_UNIT_TESTS)
+if(${WMTK_COMPONENT_TESTS})
     add_subdirectory(tests)
 endif()
 

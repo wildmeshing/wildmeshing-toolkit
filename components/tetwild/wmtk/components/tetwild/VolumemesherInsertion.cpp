@@ -1,9 +1,11 @@
 #include <igl/predicates/ear_clipping.h>
 #include <fstream>
 #include <set>
-#include "IncrementalTetWild.h"
+#include "TetWildMesh.h"
 
-void tetwild::TetWild::output_embedded_polygon_mesh(
+namespace wmtk::components::tetwild {
+
+void TetWildMesh::output_embedded_polygon_mesh(
     std::string output_dir,
     const std::vector<Vector3r>& v_rational,
     const std::vector<std::vector<size_t>>& polygon_faces,
@@ -47,7 +49,7 @@ void tetwild::TetWild::output_embedded_polygon_mesh(
     output.close();
 }
 
-void tetwild::TetWild::output_embedded_polygon_surface_mesh(
+void TetWildMesh::output_embedded_polygon_surface_mesh(
     std::string output_dir,
     const std::vector<Vector3r>& v_rational,
     const std::vector<std::vector<size_t>>& polygon_faces,
@@ -79,7 +81,7 @@ void tetwild::TetWild::output_embedded_polygon_surface_mesh(
 }
 
 
-void tetwild::TetWild::output_tetrahedralized_embedded_mesh(
+void TetWildMesh::output_tetrahedralized_embedded_mesh(
     std::string output_dir,
     const std::vector<Vector3r>& v_rational,
     const std::vector<std::array<size_t, 3>>& facets,
@@ -128,7 +130,7 @@ void tetwild::TetWild::output_tetrahedralized_embedded_mesh(
     output.close();
 }
 
-void tetwild::TetWild::output_init_tetmesh(std::string output_dir)
+void TetWildMesh::output_init_tetmesh(std::string output_dir)
 {
     consolidate_mesh();
     std::ofstream output(output_dir);
@@ -176,7 +178,7 @@ void tetwild::TetWild::output_init_tetmesh(std::string output_dir)
 }
 
 
-bool tetwild::TetWild::check_polygon_face_validity(std::vector<tetwild::Vector3r> points)
+bool TetWildMesh::check_polygon_face_validity(std::vector<Vector3r> points)
 {
     if (points.size() == 3) return true;
     if (points.size() < 3) return false;
@@ -195,7 +197,7 @@ bool tetwild::TetWild::check_polygon_face_validity(std::vector<tetwild::Vector3r
     return true;
 }
 
-std::vector<std::array<size_t, 3>> tetwild::TetWild::triangulate_polygon_face(
+std::vector<std::array<size_t, 3>> TetWildMesh::triangulate_polygon_face(
     std::vector<Vector3r> points)
 {
     // triangulate weak convex polygons
@@ -258,7 +260,7 @@ std::vector<std::array<size_t, 3>> tetwild::TetWild::triangulate_polygon_face(
 
 // embed input surface on generated back ground mesh
 
-void tetwild::TetWild::insertion_by_volumeremesher(
+void TetWildMesh::insertion_by_volumeremesher(
     const std::vector<Vector3d>& vertices,
     const std::vector<std::array<size_t, 3>>& faces,
     std::vector<Vector3r>& v_rational,
@@ -418,7 +420,7 @@ void tetwild::TetWild::insertion_by_volumeremesher(
     // check polygon face validity
     // only for debug use
     // for (int i = 0; i < polygon_faces.size(); i++) {
-    //     std::vector<tetwild::Vector3r> polyface_coordinates;
+    //     std::vector<Vector3r> polyface_coordinates;
     //     for (int j = 0; j < polygon_faces[i].size(); j++) {
     //         polyface_coordinates.push_back(v_rational[polygon_faces[i][j]]);
     //     }
@@ -728,7 +730,7 @@ void tetwild::TetWild::insertion_by_volumeremesher(
     std::cout << "v on surface: " << on_surface_v_cnt << std::endl;
 }
 
-bool tetwild::TetWild::check_nondegenerate_tets()
+bool TetWildMesh::check_nondegenerate_tets()
 {
     auto tets = get_tets();
     // std::cout << tets.size();
@@ -753,7 +755,7 @@ bool tetwild::TetWild::check_nondegenerate_tets()
     return true;
 }
 
-void tetwild::TetWild::init_from_Volumeremesher(
+void TetWildMesh::init_from_Volumeremesher(
     const std::vector<Vector3r>& v_rational,
     const std::vector<std::array<size_t, 3>>& facets,
     const std::vector<bool>& is_v_on_input,
@@ -944,7 +946,7 @@ void tetwild::TetWild::init_from_Volumeremesher(
     for_each_tetra([&m](auto& t) { m.m_tet_attribute[t.tid(m)].m_quality = m.get_quality(t); });
 }
 
-// void tetwild::TetWild::init_from_file(std::string input_dir)
+// void init_from_file(std::string input_dir)
 // {
 //     std::ifstream input(input_dir);
 //     size_t v_num, f_num, t_num;
@@ -1068,7 +1070,7 @@ void tetwild::TetWild::init_from_Volumeremesher(
 //     input.close();
 // }
 
-void tetwild::TetWild::find_open_boundary()
+void TetWildMesh::find_open_boundary()
 {
     auto fs = get_faces();
     std::cout << "fs size: " << fs.size() << std::endl;
@@ -1117,7 +1119,7 @@ void tetwild::TetWild::find_open_boundary()
     boundaries_tree.init(v_posf, open_boundaries, m_params.epsr * m_params.diag_l / 2.0);
 }
 
-bool tetwild::TetWild::is_open_boundary_edge(const Tuple& e)
+bool TetWildMesh::is_open_boundary_edge(const Tuple& e)
 {
     size_t v1 = e.vid(*this);
     size_t v2 = e.switch_vertex(*this).vid(*this);
@@ -1131,7 +1133,7 @@ bool tetwild::TetWild::is_open_boundary_edge(const Tuple& e)
           m_vertex_attribute[v1].m_posf}});
 }
 
-int tetwild::TetWild::orient3D(
+int TetWildMesh::orient3D(
     vol_rem::bigrational px,
     vol_rem::bigrational py,
     vol_rem::bigrational pz,
@@ -1185,7 +1187,7 @@ int tetwild::TetWild::orient3D(
 //  ... at least a facet in 'facets_on_input' is not coplanar with any facet in 'triangle_indexes'
 // }
 //
-bool tetwild::TetWild::checkTrackedFaces(
+bool TetWildMesh::checkTrackedFaces(
     std::vector<vol_rem::bigrational>& vol_coords,
     const std::vector<double>& surf_coords,
     std::vector<uint32_t>& facets,
@@ -1241,7 +1243,7 @@ bool tetwild::TetWild::checkTrackedFaces(
     return true;
 }
 
-int tetwild::TetWild::orient3D_wmtk_rational(
+int TetWildMesh::orient3D_wmtk_rational(
     wmtk::Rational px,
     wmtk::Rational py,
     wmtk::Rational pz,
@@ -1300,7 +1302,7 @@ int tetwild::TetWild::orient3D_wmtk_rational(
 //  ... at least a facet in 'facets_on_input' is not coplanar with any facet in 'triangle_indexes'
 // }
 //
-bool tetwild::TetWild::checkTrackedFaces_wmtk_rational(
+bool TetWildMesh::checkTrackedFaces_wmtk_rational(
     std::vector<wmtk::Rational>& vol_coords,
     const std::vector<double>& surf_coords,
     std::vector<uint32_t>& facets,
@@ -1355,3 +1357,5 @@ bool tetwild::TetWild::checkTrackedFaces_wmtk_rational(
     }
     return true;
 }
+
+} // namespace wmtk::components::tetwild

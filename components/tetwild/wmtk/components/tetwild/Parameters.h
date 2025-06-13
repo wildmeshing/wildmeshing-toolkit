@@ -1,7 +1,7 @@
 #pragma once
 #include "common.h"
 
-namespace tetwild {
+namespace wmtk::components::tetwild {
 struct Parameters
 {
     double epsr = 2e-3; // relative error bound (wrt diagonal)
@@ -62,4 +62,4 @@ struct Parameters
         init(min_, max_);
     }
 };
-} // namespace tetwild
+} // namespace wmtk::components::tetwild

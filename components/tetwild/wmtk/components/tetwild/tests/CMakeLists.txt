@@ -1,3 +1,7 @@
+if(NOT ${WMTK_ENABLE_COMPONENT_TEST_${COMPONENT_NAME}})
+    return()
+endif()
+
 add_component_test(${COMPONENT_NAME})
 
 set(SRC_FILES

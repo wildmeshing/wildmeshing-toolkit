@@ -1,9 +1,9 @@
-#include "component_tetwild.hpp"
+#include "tetwild.hpp"
 
 // #include <remeshing/UniformRemeshing.h>
 #include <sec/ShortestEdgeCollapse.h>
-#include "IncrementalTetWild.h"
 #include "Parameters.h"
+#include "TetWildMesh.h"
 #include "common.h"
 #include "sec/envelope/SampleEnvelope.hpp"
 
@@ -27,7 +27,7 @@
 #include <igl/write_triangle_mesh.h>
 #include <spdlog/common.h>
 
-namespace wmtk::components {
+namespace wmtk::components::tetwild {
 
 void tetwild(const nlohmann::json& json_params)
 {
@@ -133,7 +133,7 @@ void tetwild(const nlohmann::json& json_params)
     } else {
         ptr_env = &(exact_envelope);
     }
-    tetwild::TetWild mesh(params, *ptr_env, surf_mesh.m_envelope, NUM_THREADS);
+    tetwild::TetWildMesh mesh(params, *ptr_env, surf_mesh.m_envelope, NUM_THREADS);
 
     /////////////////////////////////////////////////////
 
@@ -176,7 +176,7 @@ void tetwild(const nlohmann::json& json_params)
     std::cout << "here" << std::endl;
 
     // generate new mesh
-    tetwild::TetWild mesh_new(params, *ptr_env, surf_mesh.m_envelope, NUM_THREADS);
+    tetwild::TetWildMesh mesh_new(params, *ptr_env, surf_mesh.m_envelope, NUM_THREADS);
 
     mesh_new.init_from_Volumeremesher(
         v_rational,
@@ -400,4 +400,4 @@ void tetwild(const nlohmann::json& json_params)
     }
 }
 
-} // namespace wmtk::components
+} // namespace wmtk::components::tetwild

@@ -15,13 +15,13 @@
 function(add_component_test COMPONENT_NAME)
     set(COMPONENT_TEST_NAME wmtk_test_${COMPONENT_NAME})
 
-    option(WMTK_ENABLE_COMPONENT_TEST_${COMPONENT_NAME} "Enable wmtk component test ${COMPONENT_NAME}" ON)
+    option(WMTK_ENABLE_COMPONENT_TEST_${COMPONENT_NAME} "Enable wmtk component test for ${COMPONENT_NAME}" ON)
     
     IF(NOT ${WMTK_ENABLE_COMPONENT_TEST_${COMPONENT_NAME}})
         return()
     ENDIF()
 
-    message(STATUS "Add component test ${COMPONENT_NAME}.")
+    message(STATUS "Add component test ${COMPONENT_TEST_NAME}.")
 
     add_executable(${COMPONENT_TEST_NAME})
     target_link_libraries(${COMPONENT_TEST_NAME} PRIVATE

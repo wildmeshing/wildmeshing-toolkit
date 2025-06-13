@@ -5,7 +5,7 @@
 #include <wmtk/utils/Logger.hpp>
 
 // components
-#include <wmtk/components/tetwild/component_tetwild.hpp>
+#include "components_include.hpp"
 
 using namespace wmtk;
 
@@ -25,7 +25,8 @@ int main(int argc, char** argv)
 
 
     std::map<std::string, std::function<void(const nlohmann::json&)>> components_map;
-    components_map["tetwild"] = wmtk::components::tetwild;
+    // include auto-generated map
+#include "components_map.hpp"
 
     // read JSON input file
     nlohmann::json j;

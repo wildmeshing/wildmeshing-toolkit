@@ -1,5 +1,5 @@
 
-#include "IncrementalTetWild.h"
+#include "TetWildMesh.h"
 #include "wmtk/ExecutionScheduler.hpp"
 
 #include <Eigen/src/Core/util/Constants.h>
@@ -12,7 +12,10 @@
 
 #include <limits>
 #include <optional>
-bool tetwild::TetWild::smooth_before(const Tuple& t)
+
+namespace wmtk::components::tetwild {
+
+bool TetWildMesh::smooth_before(const Tuple& t)
 {
     if (!m_vertex_attribute[t.vid(*this)].on_bbox_faces.empty()) return false;
 
@@ -23,7 +26,7 @@ bool tetwild::TetWild::smooth_before(const Tuple& t)
 }
 
 
-bool tetwild::TetWild::smooth_after(const Tuple& t)
+bool TetWildMesh::smooth_after(const Tuple& t)
 {
     // Newton iterations are encapsulated here.
     wmtk::logger().trace("Newton iteration for vertex smoothing.");
@@ -205,13 +208,13 @@ bool tetwild::TetWild::smooth_after(const Tuple& t)
     if (max_after_quality > max_quality) return false;
 
 
-    m_vertex_attribute[vid].m_pos = tetwild::to_rational(m_vertex_attribute[vid].m_posf);
+    m_vertex_attribute[vid].m_pos = to_rational(m_vertex_attribute[vid].m_posf);
 
 
     return true;
 }
 
-void tetwild::TetWild::smooth_all_vertices()
+void TetWildMesh::smooth_all_vertices()
 {
     igl::Timer timer;
     double time;
@@ -225,7 +228,7 @@ void tetwild::TetWild::smooth_all_vertices()
     wmtk::logger().debug("Num verts {}", collect_all_ops.size());
     if (NUM_THREADS > 0) {
         timer.start();
-        auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kPartition>();
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_vertex_mutex_one_ring(e, task_id);
         };
@@ -235,9 +238,11 @@ void tetwild::TetWild::smooth_all_vertices()
         wmtk::logger().info("vertex smoothing operation time parallel: {}s", time);
     } else {
         timer.start();
-        auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kSeq>();
         executor(*this, collect_all_ops);
         time = timer.getElapsedTime();
         wmtk::logger().info("vertex smoothing operation time serial: {}s", time);
     }
 }
+
+} // namespace wmtk::components::tetwild

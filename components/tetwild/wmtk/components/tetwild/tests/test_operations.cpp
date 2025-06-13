@@ -1,5 +1,5 @@
 #include <wmtk/TetMesh.h>
-#include <wmtk/components/tetwild/IncrementalTetWild.h>
+#include <wmtk/components/tetwild/TetWildMesh.h>
 #include <wmtk/components/tetwild/common.h>
 
 #include <igl/read_triangle_mesh.h>
@@ -13,7 +13,7 @@
 #include "wmtk/utils/InsertTriangleUtils.hpp"
 
 using namespace wmtk;
-using namespace tetwild;
+using namespace components::tetwild;
 
 TEST_CASE("mesh_improvement", "[tetwild_operation][.slow][.]")
 {

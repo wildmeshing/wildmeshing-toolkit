@@ -1,5 +1,5 @@
 #include <wmtk/utils/Rational.hpp>
-#include "IncrementalTetWild.h"
+#include "TetWildMesh.h"
 
 #include <wmtk/utils/Delaunay.hpp>
 #include "common.h"
@@ -19,8 +19,9 @@
 #include <random>
 #include <unordered_set>
 
+namespace wmtk::components::tetwild {
 
-void tetwild::TetWild::init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>& vertices)
+void TetWildMesh::init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>& vertices)
 {
     ///points for delaunay
     std::vector<wmtk::Point3D> points(vertices.size());
@@ -81,7 +82,7 @@ void tetwild::TetWild::init_from_delaunay_box_mesh(const std::vector<Eigen::Vect
 }
 
 
-bool tetwild::TetWild::triangle_insertion_before(const std::vector<Tuple>& faces)
+bool TetWildMesh::triangle_insertion_before(const std::vector<Tuple>& faces)
 {
     auto& cache = triangle_insertion_local_cache.local();
     cache.old_face_vids.clear(); // note: reset local vars
@@ -98,7 +99,7 @@ bool tetwild::TetWild::triangle_insertion_before(const std::vector<Tuple>& faces
     return true;
 }
 
-bool tetwild::TetWild::triangle_insertion_after(const std::vector<std::vector<Tuple>>& new_faces)
+bool TetWildMesh::triangle_insertion_after(const std::vector<std::vector<Tuple>>& new_faces)
 {
     /// remove old_face_vids from tet_face_tags, and map tags to new faces
     // assert(new_faces.size() == triangle_insertion_local_cache.local().old_face_vids.size() + 1);
@@ -135,7 +136,7 @@ bool tetwild::TetWild::triangle_insertion_after(const std::vector<std::vector<Tu
 
 auto internal_insert_single_triangle(
     wmtk::TetMesh& m,
-    tetwild::TetWild::VertAttCol& m_vertex_attribute,
+    TetWildMesh::VertAttCol& m_vertex_attribute,
     const std::vector<Eigen::Vector3d>& vertices,
     const std::array<size_t, 3>& face,
     std::vector<std::array<size_t, 3>>& marked_tet_faces,
@@ -143,7 +144,7 @@ auto internal_insert_single_triangle(
     const std::function<bool(const std::vector<wmtk::TetMesh::Tuple>&)>& try_acquire_edge,
     const std::function<bool(const std::vector<wmtk::TetMesh::Tuple>&)>& try_acquire_tetra)
 {
-    auto vertex_pos_r = [&m_vertex_attribute](size_t i) -> tetwild::Vector3r {
+    auto vertex_pos_r = [&m_vertex_attribute](size_t i) -> Vector3r {
         return m_vertex_attribute[i].m_pos;
     };
 
@@ -182,7 +183,7 @@ auto internal_insert_single_triangle(
     for (auto i = 0; i < new_center_vids.size(); i++) {
         auto vid = new_center_vids[i];
         auto& vs = center_split_tets[i];
-        m_vertex_attribute[vid] = tetwild::VertexAttributes(
+        m_vertex_attribute[vid] = VertexAttributes(
             (m_vertex_attribute[vs[0]].m_pos + m_vertex_attribute[vs[1]].m_pos +
              m_vertex_attribute[vs[2]].m_pos + m_vertex_attribute[vs[3]].m_pos) /
             4);
@@ -190,13 +191,13 @@ auto internal_insert_single_triangle(
     assert(new_edge_vids.size() == intersected_pos.size());
 
     for (auto i = 0; i < intersected_pos.size(); i++) {
-        m_vertex_attribute[new_edge_vids[i]] = tetwild::VertexAttributes(intersected_pos[i]);
+        m_vertex_attribute[new_edge_vids[i]] = VertexAttributes(intersected_pos[i]);
     }
 
     return true;
 }
 
-void tetwild::TetWild::init_from_input_surface(
+void TetWildMesh::init_from_input_surface(
     const std::vector<Vector3d>& vertices,
     const std::vector<std::array<size_t, 3>>& faces,
     const std::vector<size_t>& partition_id)
@@ -356,7 +357,7 @@ void tetwild::TetWild::init_from_input_surface(
     wmtk::logger().info("setup attributes #t {} #v {}", tet_capacity(), vert_capacity());
 } // note: skip preserve open boundaries
 
-void tetwild::TetWild::finalize_triangle_insertion(const std::vector<std::array<size_t, 3>>& faces)
+void TetWildMesh::finalize_triangle_insertion(const std::vector<std::array<size_t, 3>>& faces)
 {
     tbb::task_arena arena(std::max(NUM_THREADS, 1));
 
@@ -449,3 +450,5 @@ void tetwild::TetWild::finalize_triangle_insertion(const std::vector<std::array<
         for_each_tetra([&m](auto& t) { m.m_tet_attribute[t.tid(m)].m_quality = m.get_quality(t); });
     });
 }
+
+} // namespace wmtk::components::tetwild

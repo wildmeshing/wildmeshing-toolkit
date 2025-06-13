@@ -145,10 +145,10 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     enable_testing()
     add_subdirectory(tests)
 
-    add_subdirectory(components)
-
-    # Demo apps
+    # wmtk_app
     add_subdirectory(app)
+    # components (automatically added to the app)
+    add_subdirectory(components)
 endif()
 
 if(WMTK_BUILD_DOCS)

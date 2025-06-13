@@ -1,4 +1,4 @@
-#include "IncrementalTetWild.h"
+#include "TetWildMesh.h"
 
 #include <igl/Timer.h>
 #include <wmtk/TetMesh.h>
@@ -10,11 +10,13 @@
 
 #include <cassert>
 
+namespace wmtk::components::tetwild {
+
 bool face_attribute_tracker(
     const wmtk::TetMesh& m,
     const std::vector<wmtk::TetMesh::Tuple>& incident_tets,
-    const tetwild::TetWild::FaceAttCol& m_face_attribute,
-    std::map<std::array<size_t, 3>, tetwild::FaceAttributes>& changed_faces)
+    const TetWildMesh::FaceAttCol& m_face_attribute,
+    std::map<std::array<size_t, 3>, FaceAttributes>& changed_faces)
 {
     changed_faces.clear();
     auto middle_face = std::set<int>();
@@ -45,8 +47,8 @@ bool face_attribute_tracker(
 void tracker_assign_after(
     const wmtk::TetMesh& m,
     const std::vector<wmtk::TetMesh::Tuple>& incident_tets,
-    const std::map<std::array<size_t, 3>, tetwild::FaceAttributes>& changed_faces,
-    tetwild::TetWild::FaceAttCol& m_face_attribute)
+    const std::map<std::array<size_t, 3>, FaceAttributes>& changed_faces,
+    TetWildMesh::FaceAttCol& m_face_attribute)
 {
     auto middle_face = std::vector<size_t>();
     auto new_faces = std::set<std::array<size_t, 3>>();
@@ -73,7 +75,7 @@ void tracker_assign_after(
     }
 }
 
-void tetwild::TetWild::swap_all_edges()
+void TetWildMesh::swap_all_edges()
 {
     igl::Timer timer;
     double time;
@@ -90,7 +92,7 @@ void tetwild::TetWild::swap_all_edges()
     };
     if (NUM_THREADS > 0) {
         timer.start();
-        auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kPartition>();
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
@@ -99,14 +101,14 @@ void tetwild::TetWild::swap_all_edges()
         wmtk::logger().info("edge swap operation time parallel: {}s", time);
     } else {
         timer.start();
-        auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge swap operation time serial: {}s", time);
     }
 }
 
-void tetwild::TetWild::swap_all_faces()
+void TetWildMesh::swap_all_faces()
 {
     igl::Timer timer;
     double time;
@@ -123,7 +125,7 @@ void tetwild::TetWild::swap_all_faces()
     };
     if (NUM_THREADS > 0) {
         timer.start();
-        auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kPartition>();
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_face_mutex_two_ring(e, task_id);
         };
@@ -132,7 +134,7 @@ void tetwild::TetWild::swap_all_faces()
         wmtk::logger().info("face swap operation time parallel: {}s", time);
     } else {
         timer.start();
-        auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("face swap operation time serial: {}s", time);
@@ -140,7 +142,7 @@ void tetwild::TetWild::swap_all_faces()
 }
 
 
-bool tetwild::TetWild::swap_edge_before(const Tuple& t)
+bool TetWildMesh::swap_edge_before(const Tuple& t)
 {
     if (!TetMesh::swap_edge_before(t)) return false;
     // if (m_params.preserve_global_topology) return false;
@@ -163,7 +165,7 @@ bool tetwild::TetWild::swap_edge_before(const Tuple& t)
     return true;
 }
 
-bool tetwild::TetWild::swap_edge_after(const Tuple& t)
+bool TetWildMesh::swap_edge_after(const Tuple& t)
 {
     if (!TetMesh::swap_edge_after(t)) return false;
 
@@ -189,7 +191,7 @@ bool tetwild::TetWild::swap_edge_after(const Tuple& t)
     return true;
 }
 
-bool tetwild::TetWild::swap_face_before(const Tuple& t)
+bool TetWildMesh::swap_face_before(const Tuple& t)
 {
     if (!TetMesh::swap_face_before(t)) return false;
     // if (m_params.preserve_global_topology) return false;
@@ -211,7 +213,7 @@ bool tetwild::TetWild::swap_face_before(const Tuple& t)
     return true;
 }
 
-bool tetwild::TetWild::swap_face_after(const Tuple& t)
+bool TetWildMesh::swap_face_after(const Tuple& t)
 {
     if (!TetMesh::swap_face_after(t)) return false;
 
@@ -237,7 +239,7 @@ bool tetwild::TetWild::swap_face_after(const Tuple& t)
 }
 
 
-void tetwild::TetWild::swap_all_edges_44()
+void TetWildMesh::swap_all_edges_44()
 {
     igl::Timer timer;
     double time;
@@ -254,7 +256,7 @@ void tetwild::TetWild::swap_all_edges_44()
     };
     if (NUM_THREADS > 0) {
         timer.start();
-        auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kPartition>();
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
@@ -263,14 +265,14 @@ void tetwild::TetWild::swap_all_edges_44()
         wmtk::logger().info("edge swap 44 operation time parallel: {}s", time);
     } else {
         timer.start();
-        auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge swap 44 operation time serial: {}s", time);
     }
 }
 
-bool tetwild::TetWild::swap_edge_44_before(const Tuple& t)
+bool TetWildMesh::swap_edge_44_before(const Tuple& t)
 {
     if (!TetMesh::swap_edge_44_before(t)) return false;
     // if (m_params.preserve_global_topology) return false;
@@ -293,7 +295,7 @@ bool tetwild::TetWild::swap_edge_44_before(const Tuple& t)
     return true;
 }
 
-bool tetwild::TetWild::swap_edge_44_after(const Tuple& t)
+bool TetWildMesh::swap_edge_44_after(const Tuple& t)
 {
     if (!TetMesh::swap_edge_44_after(t)) return false;
 
@@ -316,3 +318,5 @@ bool tetwild::TetWild::swap_edge_44_after(const Tuple& t)
     cnt_swap++;
     return true;
 }
+
+} // namespace wmtk::components::tetwild

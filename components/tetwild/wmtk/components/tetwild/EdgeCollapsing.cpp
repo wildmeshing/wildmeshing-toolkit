@@ -1,4 +1,4 @@
-#include "IncrementalTetWild.h"
+#include "TetWildMesh.h"
 #include "oneapi/tbb/concurrent_vector.h"
 #include "wmtk/TetMesh.h"
 
@@ -9,8 +9,9 @@
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
 
+namespace wmtk::components::tetwild {
 
-void tetwild::TetWild::collapse_all_edges(bool is_limit_length)
+void TetWildMesh::collapse_all_edges(bool is_limit_length)
 {
     igl::Timer timer;
     double time;
@@ -70,7 +71,7 @@ void tetwild::TetWild::collapse_all_edges(bool is_limit_length)
     };
     if (NUM_THREADS > 0) {
         timer.start();
-        auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kPartition>();
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
@@ -79,14 +80,14 @@ void tetwild::TetWild::collapse_all_edges(bool is_limit_length)
         wmtk::logger().info("edge collapse operation time parallel: {}s", time);
     } else {
         timer.start();
-        auto executor = wmtk::ExecutePass<TetWild, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge collapse operation time serial: {}s", time);
     }
 }
 
-bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edge
+bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
 {
     auto& VA = m_vertex_attribute;
     auto& cache = collapse_cache.local();
@@ -260,7 +261,7 @@ bool tetwild::TetWild::collapse_edge_before(const Tuple& loc) // input is an edg
     return true;
 }
 
-bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
+bool TetWildMesh::collapse_edge_after(const Tuple& loc)
 {
     auto& VA = m_vertex_attribute;
     auto& cache = collapse_cache.local();
@@ -1010,3 +1011,5 @@ bool tetwild::TetWild::collapse_edge_after(const Tuple& loc)
 
     return true;
 }
+
+} // namespace wmtk::components::tetwild

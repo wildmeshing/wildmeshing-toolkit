@@ -10,7 +10,7 @@
 #include <Eigen/Core>
 #include <wmtk/utils/Rational.hpp>
 
-namespace tetwild {
+namespace wmtk::components::tetwild {
 
 typedef Eigen::Vector3d Vector3d;
 typedef Eigen::Matrix<wmtk::Rational, 3, 1> Vector3r;
@@ -24,4 +24,4 @@ typedef Eigen::Matrix<Scalar, 3, 3> Matrix3;
 Vector3r to_rational(const Vector3d& p0);
 Vector3d to_double(const Vector3r& p0);
 
-} // namespace tetwild
+} // namespace wmtk::components::tetwild

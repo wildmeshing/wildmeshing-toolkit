@@ -3,8 +3,8 @@
 #include <nlohmann/json.hpp>
 
 
-namespace wmtk::components {
+namespace wmtk::components::tetwild {
 
 void tetwild(const nlohmann::json& json_params);
 
-} // namespace wmtk::components
+} // namespace wmtk::components::tetwild

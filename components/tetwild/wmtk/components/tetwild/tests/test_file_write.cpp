@@ -1,13 +1,13 @@
 #include <catch2/catch_test_macros.hpp>
 #include "sec/envelope/SampleEnvelope.hpp"
 
-#include <wmtk/components/tetwild/IncrementalTetWild.h>
+#include <wmtk/components/tetwild/TetWildMesh.h>
 
 #include <wmtk/TetMesh.h>
 #include <wmtk/components/tetwild/common.h>
 
 using namespace wmtk;
-using namespace tetwild;
+using namespace components::tetwild;
 
 TEST_CASE("tetwild_file_write", "[tetwild_operation][.]")
 {
