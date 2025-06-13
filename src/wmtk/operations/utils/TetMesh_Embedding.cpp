@@ -11,6 +11,7 @@
 #include <array>
 #include <map>
 #include <set>
+#include <queue>
 #include "local_tet_joint_opt.hpp"
 #include "to_three_connected.hpp"
 namespace wmtk::operations::utils {
@@ -126,11 +127,12 @@ Eigen::MatrixXi find_F_top(const std::unordered_set<int>& non_bd_vertices, const
     // For each tetrahedron
     for (int i = 0; i < T.rows(); ++i) {
         // Get all possible triangular faces from the tetrahedron
-        std::array<std::array<int, 3>, 4> faces = {
-            std::array<int, 3>{T(i, 0), T(i, 1), T(i, 2)},
-            std::array<int, 3>{T(i, 0), T(i, 1), T(i, 3)},
-            std::array<int, 3>{T(i, 0), T(i, 2), T(i, 3)},
-            std::array<int, 3>{T(i, 1), T(i, 2), T(i, 3)}};
+        std::array<std::array<int, 3>, 4> faces = {{
+            {{T(i, 0), T(i, 1), T(i, 2)}},
+            {{T(i, 0), T(i, 1), T(i, 3)}},
+            {{T(i, 0), T(i, 2), T(i, 3)}},
+            {{T(i, 1), T(i, 2), T(i, 3)}}
+        }};
 
         // Check each face
         for (auto face : faces) {
@@ -418,11 +420,12 @@ void visualize_tet_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& T)
     // Use a simple method to extract the surface: process each face of every tetrahedron
     for (int i = 0; i < T.rows(); ++i) {
         // Four faces of the tetrahedron
-        std::array<std::array<int, 3>, 4> tet_faces = {
-            {{T(i, 1), T(i, 0), T(i, 2)},
-             {T(i, 1), T(i, 2), T(i, 3)},
-             {T(i, 0), T(i, 3), T(i, 2)},
-             {T(i, 1), T(i, 3), T(i, 0)}}};
+        std::array<std::array<int, 3>, 4> tet_faces = {{
+            {{T(i, 1), T(i, 0), T(i, 2)}},
+            {{T(i, 1), T(i, 2), T(i, 3)}},
+            {{T(i, 0), T(i, 3), T(i, 2)}},
+            {{T(i, 1), T(i, 3), T(i, 0)}}
+        }};
 
         // Add all faces (simplified approach, ideally should detect which are on the surface)
         for (const auto& face : tet_faces) {
@@ -764,13 +767,13 @@ Eigen::MatrixXd compute_lifting(
     d[f_base] = 0.0;
 
     // 5. BFS over faces starting from base
-    std::queue<int> queue;
+    std::queue<int> face_queue;
     std::set<int> visited;
-    queue.push(f_base);
+    face_queue.push(f_base);
     visited.insert(f_base);
-    while (!queue.empty()) {
-        int fr = queue.front();
-        queue.pop();
+    while (!face_queue.empty()) {
+        int fr = face_queue.front();
+        face_queue.pop();
         const Eigen::Vector2d& ar = a[fr];
         double dr = d[fr];
         // std::cout << "fr: " << fr << ", ar: " << ar.transpose() << ", dr: " << dr << std::endl;
@@ -832,7 +835,7 @@ Eigen::MatrixXd compute_lifting(
             Eigen::Vector2d pj_perp(-pj.y(), pj.x());
             d[fl] = wij * pi.dot(pj_perp) + dr;
             visited.insert(fl);
-            queue.push(fl);
+            face_queue.push(fl);
         }
     }
 
