@@ -1,16 +1,11 @@
-include(catch2)
-FetchContent_GetProperties(catch2)
-list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
-include(Catch)
+add_component_test(${COMPONENT_NAME})
 
-file(GLOB TEST_SOURCES CONFIGURE_DEPENDS "*.h" "*.cpp")
-add_executable(tetwild_tests ${TEST_SOURCES})
-target_link_libraries(tetwild_tests PUBLIC
-    wmtk::incremental_tetwild
-    Catch2::Catch2WithMain
-)
-wmtk_copy_dll(tetwild_tests)
+set(SRC_FILES
+    test_file_write.cpp
+    test_insertion.cpp
+    test_operation_smooth.cpp
+    test_operations.cpp
+    test_runner.cpp
+    )
 
-set_target_properties(tetwild_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests")
-
-catch_discover_tests(tetwild_tests)
+target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

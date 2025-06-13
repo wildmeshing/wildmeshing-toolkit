@@ -2,7 +2,6 @@
 include(wmtk_data)
 include(jse)
 
-option(WMTK_APP_TETWILD "tetwild application" OFF) # naming conflict with tetwild component!
 option(WMTK_APP_HARMTET "Harmonic Triangulation app" ON)
 option(WMTK_APP_UNIFORM_REMESH "uniform remesh for surfaces" ON)
 option(WMTK_APP_SEC "surface shortest edge collapse" ON)
@@ -14,10 +13,6 @@ option(WMTK_APP_UNIT_TESTS "unit tests for applications" ON)
 
 if(WMTK_APP_INTERIOR_TET_OPT)
 add_subdirectory(interior_tet_opt)
-endif()
-
-if(WMTK_APP_TETWILD)
-    add_subdirectory(tetwild)
 endif()
 
 if(WMTK_APP_HARMTET)
