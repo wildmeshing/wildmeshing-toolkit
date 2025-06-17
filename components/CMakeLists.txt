@@ -17,5 +17,5 @@ file(WRITE "${CMAKE_SOURCE_DIR}/app/components_map.hpp" ${WMTK_AUTOGEN_COMMENT})
 
 # list of all components
 add_subdirectory("tetwild/wmtk/components/tetwild")
-
+add_subdirectory("simplicial_embedding/wmtk/components/simplicial_embedding")
 

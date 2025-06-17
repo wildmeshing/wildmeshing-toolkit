@@ -798,6 +798,22 @@ void TriMesh::create_mesh(size_t n_vertices, const std::vector<std::array<size_t
     if (p_face_attrs) p_face_attrs->resize(tri_capacity());
 }
 
+void wmtk::TriMesh::create_mesh(const Eigen::Matrix<int64_t, Eigen::Dynamic, 3>& F)
+{
+    size_t n_vertices = F.maxCoeff();
+
+    std::vector<std::array<size_t, 3>> tris;
+    tris.resize(F.rows());
+
+    for (int i = 0; F.rows(); ++i) {
+        for (int j = 0; j < 3; ++j) {
+            tris[i][j] = F(i, j);
+        }
+    }
+
+    TriMesh::create_mesh(n_vertices, tris);
+}
+
 std::vector<TriMesh::Tuple> TriMesh::get_vertices() const
 {
     const size_t n_vertices = vert_capacity();

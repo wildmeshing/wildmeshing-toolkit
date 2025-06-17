@@ -234,6 +234,13 @@ public:
     void create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris);
 
     /**
+     * @brief Generate the connectivity of the mesh from an IGL-style F matrix.
+     *
+     * @param #F by 3 list of vertex indices.
+     */
+    void create_mesh(const Eigen::Matrix<int64_t, Eigen::Dynamic, 3>& F);
+
+    /**
      * Generate a vector of Tuples from global vertex index and __local__ edge index
      * @note Each vertex generate Tuple that has the smallest fid to be among
      * incident triangles'.
