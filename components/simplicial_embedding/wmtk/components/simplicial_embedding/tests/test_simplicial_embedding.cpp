@@ -20,5 +20,8 @@ TEST_CASE("write", "")
     // m.write_mesh("simplicial_embedding_out.vtu");
 
     io::VTUWriter writer(m);
+    writer.add_vertex_attribute("position2", [&m](int i) -> VectorXd {
+        return m.vertex_attrs[i].pos;
+    });
     writer.write_triangles("simplicial_embedding_out.vtu");
 }

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <filesystem>
+#include <functional>
+#include <map>
 #include <paraviewo/VTUWriter.hpp>
 #include <wmtk/Types.hpp>
 
@@ -71,12 +73,40 @@ public:
         for (int i = 0; i < VA.size(); ++i) {
             writer.add_field(VA_names[i], VA[i]);
         }
+
+        for (const auto& [name, attr] : m_vertex_attributes) {
+            writer.add_field(name, attr);
+        }
+
         bool r = writer.write_mesh(filename.string(), V, F);
         return r;
     }
 
+    void add_vertex_attribute(const std::string& name, const std::function<VectorXd(const int)>& f)
+    {
+        const std::vector<Tuple> vertex_tuples = m_mesh.get_vertices();
+
+        if (vertex_tuples.empty()) {
+            logger().warn("Cannot print mesh without vertices.");
+            return;
+        }
+
+        MatrixXd attr;
+        attr.resize(vertex_tuples.size(), f(0).size());
+
+        // init V
+        for (const Tuple& v : vertex_tuples) {
+            const auto vid = v.vid(m_mesh);
+            attr.row(vid) = f(vid);
+        }
+
+        m_vertex_attributes[name] = attr;
+    }
+
 private:
     MeshT& m_mesh;
+
+    std::map<std::string, MatrixXd> m_vertex_attributes;
 };
 
 template <typename MeshT>
