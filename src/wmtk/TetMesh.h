@@ -1085,7 +1085,7 @@ public:
      *
      */
     void for_each_tetra(const std::function<void(const TetMesh::Tuple&)>&);
-    int NUM_THREADS = 1;
+    int NUM_THREADS = 0;
 };
 
 

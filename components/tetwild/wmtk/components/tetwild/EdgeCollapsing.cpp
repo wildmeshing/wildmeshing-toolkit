@@ -375,7 +375,7 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
 
 
     // global topology check
-    if (m_params.preserve_global_topology) {
+    if (m_params.preserve_topology) {
         std::map<std::pair<size_t, size_t>, int> after_edge_link;
         std::map<size_t, int> after_vertex_link;
 

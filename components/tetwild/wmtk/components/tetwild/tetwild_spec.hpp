@@ -17,7 +17,8 @@ nlohmann::json tetwild_spec = R"(
       "filter_with_input",
       "eps_rel",
       "length_rel",
-      "stop_energy"
+      "stop_energy",
+      "preserve_topology"
     ]
   },
   {
@@ -52,7 +53,7 @@ nlohmann::json tetwild_spec = R"(
   {
     "pointer": "/num_threads",
     "type": "int",
-    "default": 1,
+    "default": 0,
     "doc": "Number of threads used by the application"
   },
   {
@@ -84,6 +85,12 @@ nlohmann::json tetwild_spec = R"(
     "type": "float",
     "default": 10,
     "doc": "Target energy. If all tets have an energy below this, tetwild will stop."
+  },
+  {
+    "pointer": "/preserve_topology",
+    "type": "bool",
+    "default": false,
+    "doc": "Preserve the topology of the input surface."
   }
 ]
 )"_json;

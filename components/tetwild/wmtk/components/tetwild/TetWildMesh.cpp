@@ -600,8 +600,9 @@ void TetWildMesh::filter_outside(
     std::vector<size_t> rm_tids;
     for (int i = 0; i < W.rows(); i++) {
         if (W(i) <= 0.5) {
-            m_tet_attribute[tets[i].tid(*this)].m_is_outside = true;
-            if (remove_ouside) rm_tids.push_back(tets[i].tid(*this));
+            if (remove_ouside) {
+                rm_tids.push_back(tets[i].tid(*this));
+            }
         }
     }
 
@@ -821,9 +822,8 @@ std::vector<std::array<size_t, 3>> TetWildMesh::get_faces_by_condition(
         if (cond(m_face_attribute[fid])) {
             auto tid = fid / 4, lid = fid % 4;
             auto verts = get_face_vertices(f);
-            res.emplace_back(
-                std::array<size_t, 3>{
-                    {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
+            res.emplace_back(std::array<size_t, 3>{
+                {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
         }
     }
     return res;
@@ -1827,8 +1827,9 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
         parts(index, 0) = m_tet_attribute[tid].part_id;
 
         const auto& vs = oriented_tet_vertices(t);
-        for (int j = 0; j < 4; j++) T(index, j) = vs[j].vid(*this);
-
+        for (int j = 0; j < 4; j++) {
+            T(index, j) = vs[j].vid(*this);
+        }
         ++index;
     }
 

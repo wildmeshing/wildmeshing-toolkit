@@ -39,7 +39,6 @@ public:
 
     bool m_is_on_surface = false;
     std::vector<int> on_bbox_faces; // same as is_bbox_fs?
-    bool m_is_outside = false; // never used?
 
     Scalar m_sizing_scalar = 1;
 
@@ -68,25 +67,16 @@ public:
     bool m_is_surface_fs = false; // 0; 1
     int m_is_bbox_fs = -1; //-1; 0~5
 
-    // for geometry preservation
-    // need to update in merge?
-    int from_input_collection_id = -1; // default -1 should only >-1 when is on surface
-    int from_input_nearly_collection_id = -1;
-
-    int m_surface_tags = -1; // never used?
-
     void reset()
     {
         m_is_surface_fs = false;
         m_is_bbox_fs = -1;
-        m_surface_tags = -1;
     }
 
     void merge(const FaceAttributes& attr)
     {
         m_is_surface_fs = m_is_surface_fs || attr.m_is_surface_fs;
         if (attr.m_is_bbox_fs >= 0) m_is_bbox_fs = attr.m_is_bbox_fs;
-        m_surface_tags = std::max(m_surface_tags, attr.m_surface_tags);
     }
 };
 
@@ -95,9 +85,6 @@ class TetAttributes
 {
 public:
     Scalar m_quality;
-    // Scalar m_scalar; // never used?
-    bool m_is_outside; // never used?
-
     int part_id = -1;
 };
 
