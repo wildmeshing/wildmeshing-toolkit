@@ -60,10 +60,10 @@ int wmtk::TetMesh::get_next_empty_slot_v()
 
 wmtk::TetMesh::TetMesh()
 {
-    p_vertex_attrs = &vertex_attrs;
-    p_edge_attrs = &edge_attrs;
-    p_face_attrs = &face_attrs;
-    p_tet_attrs = &tet_attrs;
+    // p_vertex_attrs = &vertex_attrs;
+    // p_edge_attrs = &edge_attrs;
+    // p_face_attrs = &face_attrs;
+    // p_tet_attrs = &tet_attrs;
 }
 
 void wmtk::TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& tets)

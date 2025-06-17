@@ -2,12 +2,14 @@
 
 #include <wmtk/TriMesh.h>
 #include <Eigen/Dense>
+#include <filesystem>
+#include <wmtk/Types.hpp>
 
 namespace wmtk::components::simplicial_embedding {
 
 struct VertexAttributes
 {
-    Eigen::Vector2d pos;
+    Vector2d pos;
     size_t partition_id = 0;
 };
 
@@ -23,6 +25,17 @@ public:
     void set_positions(const std::vector<Eigen::Vector2d>& vertex_positions);
     void set_positions(const Eigen::MatrixXd& V);
     void set_num_threads(const int64_t num_threads);
+
+    Eigen::MatrixXi get_F() const;
+    Eigen::MatrixXd get_V() const;
+
+    VectorXd position(size_t vid) const { return vertex_attrs[vid].pos; }
+    std::vector<VectorXd> serialize_vertex_attributes(size_t vid) const
+    {
+        const auto& attrs = vertex_attrs[vid];
+        return {attrs.pos};
+    }
+    std::vector<std::string> serialize_vertex_attributes_names() const { return {"position"}; }
 
     struct PositionInfoCache
     {
@@ -50,7 +63,8 @@ public:
     double compute_edge_cost_split(const TriMesh::Tuple& t, double L) const;
     bool split_remeshing(double L);
     bool uniform_remeshing(double L, int interations);
-    bool write_triangle_mesh(std::string path);
+
+    bool write_mesh(const std::filesystem::path& filename);
 };
 
 } // namespace wmtk::components::simplicial_embedding

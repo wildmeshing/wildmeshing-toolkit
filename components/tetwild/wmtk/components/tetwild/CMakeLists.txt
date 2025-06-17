@@ -41,7 +41,6 @@ target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC
 	wmtk::sec_lib
 	wmtk::remeshing_lib
 	igl::predicates
-	gmp::gmp
 	VolumeRemesher::VolumeRemesher
 	jse::jse
 )

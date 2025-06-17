@@ -1,5 +1,6 @@
 #include "SimplicialEmbeddingTriMesh.hpp"
 
+#include <paraviewo/VTUWriter.hpp>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
@@ -36,7 +37,7 @@ void SimplicialEmbeddingTriMesh::set_positions(const Eigen::MatrixXd& V)
     std::vector<Eigen::Vector2d> vertex_positions;
     vertex_positions.resize(V.rows());
 
-    for (int i = 0; V.rows(); ++i) {
+    for (int i = 0; i < V.rows(); ++i) {
         for (int j = 0; j < 2; ++j) {
             vertex_positions[i][j] = V(i, j);
         }
@@ -48,6 +49,35 @@ void SimplicialEmbeddingTriMesh::set_positions(const Eigen::MatrixXd& V)
 void SimplicialEmbeddingTriMesh::set_num_threads(const int64_t num_threads)
 {
     NUM_THREADS = num_threads;
+}
+
+Eigen::MatrixXi SimplicialEmbeddingTriMesh::get_F() const
+{
+    const std::vector<Tuple> face_tuples = get_faces();
+    Eigen::MatrixXi F(face_tuples.size(), 3);
+
+    for (int i = 0; i < face_tuples.size(); ++i) {
+        const auto vs = oriented_tri_vids(face_tuples[i]);
+        for (int j = 0; j < 3; j++) {
+            F(i, j) = vs[j];
+        }
+    }
+
+    return F;
+}
+
+Eigen::MatrixXd SimplicialEmbeddingTriMesh::get_V() const
+{
+    const std::vector<Tuple> vertex_tuples = get_vertices();
+    Eigen::MatrixXd V;
+    V.resize(vertex_tuples.size(), 2);
+
+    for (const Tuple& v : vertex_tuples) {
+        const auto vid = v.vid(*this);
+        V.row(vid) = vertex_attrs[vid].pos;
+    }
+
+    return V;
 }
 
 void SimplicialEmbeddingTriMesh::cache_edge_positions(const Tuple& t)
@@ -205,30 +235,15 @@ bool SimplicialEmbeddingTriMesh::uniform_remeshing(double L, int iterations)
     wmtk::logger().info("+++++++++finished+++++++++");
     return true;
 }
-bool SimplicialEmbeddingTriMesh::write_triangle_mesh(std::string path)
+bool SimplicialEmbeddingTriMesh::write_mesh(const std::filesystem::path& filename)
 {
-    log_and_throw_error("write not implemented");
+    const auto V = get_V();
+    const auto F = get_F();
 
-    // write the collapsed mesh into a obj and assert the mesh is manifold
-    Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vert_capacity(), 3);
-    for (auto& t : get_vertices()) {
-        auto i = t.vid(*this);
-        V.row(i) = vertex_attrs[i].pos;
-    }
-
-    Eigen::MatrixXi F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);
-    for (auto& t : get_faces()) {
-        auto i = t.fid(*this);
-        auto vs = oriented_tri_vertices(t);
-        for (int j = 0; j < 3; j++) {
-            F(i, j) = vs[j].vid(*this);
-        }
-    }
-    // igl::write_triangle_mesh(path, V, F);
-    bool manifold = check_edge_manifold();
-    assert(manifold);
-
-    return manifold;
+    paraviewo::VTUWriter writer;
+    // writer.add_field("")
+    bool r = writer.write_mesh(filename.string(), V, F);
+    return r;
 }
 
 } // namespace wmtk::components::simplicial_embedding

@@ -1,14 +1,14 @@
 #pragma once
 
-#include <Eigen/Dense>
 #include <cstdint>
+#include <wmtk/Types.hpp>
 
 namespace wmtk::utils::examples::tri {
 
 struct TriMeshVF
 {
-    Eigen::MatrixXd V;
-    Eigen::Matrix<int64_t, Eigen::Dynamic, 3> F;
+    MatrixXd V;
+    MatrixXi F;
 };
 
 /**

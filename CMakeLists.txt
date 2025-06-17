@@ -110,6 +110,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
     igl::core
     igl::predicates
+    gmp::gmp
     geogram
     TBB::tbb
     mshio::mshio

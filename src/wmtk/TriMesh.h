@@ -2,6 +2,7 @@
 
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
+#include <wmtk/Types.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 // clang-format off
@@ -238,7 +239,7 @@ public:
      *
      * @param #F by 3 list of vertex indices.
      */
-    void create_mesh(const Eigen::Matrix<int64_t, Eigen::Dynamic, 3>& F);
+    void create_mesh(const MatrixXi& F);
 
     /**
      * Generate a vector of Tuples from global vertex index and __local__ edge index
