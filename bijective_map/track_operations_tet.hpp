@@ -22,13 +22,26 @@ struct query_segment_tet
 {
     int64_t t_id; // tet id
     Eigen::Vector4d bcs[2]; // barycentric coordinates
-    Eigen::Vector4i tv_ids; // face vertex ids
+    Eigen::Vector4i tv_ids; // tet vertex ids
 };
 
 struct query_curve_tet
 {
     std::vector<query_segment_tet> segments;
     std::vector<int> next_segment_ids;
+};
+
+struct query_triangle_tet
+{
+    int64_t t_id; // tet id
+    Eigen::Vector4d bcs[3]; // barycentric coordinates
+    Eigen::Vector4i tv_ids; // tet vertex ids
+};
+
+struct query_surface_tet
+{
+    std::vector<query_triangle_tet> triangles;
+    // TODO: embed the connectivity of the triangles here
 };
 
 void handle_consolidate_tet(
