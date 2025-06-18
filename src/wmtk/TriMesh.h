@@ -12,7 +12,6 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
-#include <Eigen/Core>
 #include <algorithm>
 #include <array>
 #include <cassert>
@@ -254,20 +253,20 @@ public:
     std::vector<Tuple> get_vertices() const;
 
     /**
-     * Generate a vector of Tuples from global face index
-     * @note Local vid is the first of the m_idices
-     * Local eid assigned counter clockwise as in the ilustrated example
-     * @return vector of Tuples refering to each face
-     */
-    std::vector<Tuple> get_faces() const;
-
-    /**
      * Generate a vector of Tuples for each edge
      * @note ensures the fid assigned is the smallest between faces adjacent to the
      * edge
      * @return vector of Tuples refering to unique edges
      */
     std::vector<Tuple> get_edges() const;
+
+    /**
+     * Generate a vector of Tuples from global face index
+     * @note Local vid is the first of the m_idices
+     * Local eid assigned counter clockwise as in the ilustrated example
+     * @return vector of Tuples refering to each face
+     */
+    std::vector<Tuple> get_faces() const;
 
     /**
      * Generate a tuple using local vid and global fid

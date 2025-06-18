@@ -1,19 +1,62 @@
-#include <wmtk/TetMesh.h>
-
 #include <catch2/catch_test_macros.hpp>
 
-using namespace wmtk;
+#include <wmtk/TetMesh.h>
+#include <wmtk/utils/examples/TetMesh_examples.hpp>
 
-TEST_CASE("test_get_edges", "[test_tuple]")
+using namespace wmtk;
+using namespace wmtk::utils::examples::tet;
+
+TEST_CASE("tet_get_simplex_functions", "[test_tuple][TetMesh]")
 {
+    TetMeshVT VT;
+    int64_t n_verts = -1;
+    int64_t n_edges = -1;
+    int64_t n_tris = -1;
+    int64_t n_tets = -1;
+    SECTION("single_tet")
+    {
+        VT = single_tet();
+        n_verts = 4;
+        n_edges = 6;
+        n_tris = 4;
+        n_tets = 1;
+    }
+    SECTION("two_tets")
+    {
+        VT = two_tets();
+        n_verts = 5;
+        n_edges = 9;
+        n_tris = 7;
+        n_tets = 2;
+    }
+    SECTION("two_tets")
+    {
+        VT = two_tets();
+        n_verts = 5;
+        n_edges = 9;
+        n_tris = 7;
+        n_tets = 2;
+    }
+    SECTION("six_cycle_tets")
+    {
+        VT = six_cycle_tets();
+        n_verts = 8;
+        n_edges = 19;
+        n_tris = 18;
+        n_tets = 6;
+    }
+
     TetMesh mesh;
-    mesh.init(4, {{{0, 1, 2, 3}}});
+    mesh.init(VT.T);
     const auto edges = mesh.get_edges();
 
-    REQUIRE(edges.size() == 6);
+    CHECK(mesh.get_vertices().size() == n_verts);
+    CHECK(mesh.get_edges().size() == n_edges);
+    CHECK(mesh.get_faces().size() == n_tris);
+    CHECK(mesh.get_tets().size() == n_tets);
 }
 
-TEST_CASE("switch_vertex", "[test_tuple]")
+TEST_CASE("switch_vertex", "[test_tuple][TetMesh]")
 {
     TetMesh mesh;
     mesh.init(4, {{{0, 1, 2, 3}}});
@@ -30,7 +73,7 @@ TEST_CASE("switch_vertex", "[test_tuple]")
     REQUIRE(tuple.vid(mesh) == t2.vid(mesh));
 }
 
-TEST_CASE("switch_edge", "[test_tuple]")
+TEST_CASE("switch_edge", "[test_tuple][TetMesh]")
 {
     TetMesh mesh;
     mesh.init(4, {{{0, 1, 2, 3}}});
@@ -46,7 +89,7 @@ TEST_CASE("switch_edge", "[test_tuple]")
     REQUIRE(eid1 == eid2);
 }
 
-TEST_CASE("switch_face", "[test_tuple]")
+TEST_CASE("switch_face", "[test_tuple][TetMesh]")
 {
     TetMesh mesh;
     mesh.init(4, {{{0, 1, 2, 3}}});
@@ -61,7 +104,7 @@ TEST_CASE("switch_face", "[test_tuple]")
     REQUIRE(fid1 == fid2);
 }
 
-TEST_CASE("switch_tet", "[test_tuple]")
+TEST_CASE("switch_tet", "[test_tuple][TetMesh]")
 {
     TetMesh mesh;
     mesh.init(5, {{{0, 1, 2, 3}}, {{0, 1, 2, 4}}});
@@ -77,7 +120,7 @@ TEST_CASE("switch_tet", "[test_tuple]")
 }
 
 
-TEST_CASE("switch_face_tet", "[test_tuple]")
+TEST_CASE("switch_face_tet", "[test_tuple][TetMesh]")
 {
     TetMesh m;
     m.init(5, {{{0, 1, 2, 3}}, {{0, 1, 4, 2}}, {{0, 1, 3, 4}}});
@@ -90,7 +133,7 @@ TEST_CASE("switch_face_tet", "[test_tuple]")
     REQUIRE(edge0 == edge1);
 }
 
-TEST_CASE("count_edge_on_boundary", "[test_tuple]")
+TEST_CASE("count_edge_on_boundary", "[test_tuple][TetMesh]")
 {
     TetMesh mesh;
     mesh.init(5, {{{0, 1, 2, 3}}, {{0, 1, 4, 2}}, {{0, 1, 3, 4}}});
@@ -103,7 +146,7 @@ TEST_CASE("count_edge_on_boundary", "[test_tuple]")
     REQUIRE(cnt == 9);
 }
 
-TEST_CASE("tuple_iterator", "[test_tuple]")
+TEST_CASE("tuple_iterator", "[test_tuple][TetMesh]")
 {
     class IterableMesh : public TetMesh
     {
@@ -115,7 +158,7 @@ TEST_CASE("tuple_iterator", "[test_tuple]")
 
             EdgeIterator(const TetMesh& m, value_type ptr)
                 : m_tuple(ptr)
-                , mesh(m) {};
+                , mesh(m){};
 
             EdgeIterator operator++()
             {

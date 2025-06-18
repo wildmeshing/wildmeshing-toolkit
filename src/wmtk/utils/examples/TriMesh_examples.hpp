@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 #include <wmtk/Types.hpp>
 
 namespace wmtk::utils::examples::tri {

@@ -3,6 +3,7 @@
 #include <wmtk/utils/VectorUtils.h>
 #include <type_traits>
 #include <wmtk/AttributeCollection.hpp>
+#include <wmtk/Types.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <tbb/concurrent_vector.h>
@@ -353,6 +354,13 @@ public:
         const std::vector<std::array<size_t, 4>>& tets);
 
     /**
+     * @brief Generate the connectivity of the mesh from an IGL-style T matrix.
+     *
+     * @param #T by 4 list of vertex indices.
+     */
+    void init(const MatrixXi& T);
+
+    /**
      * Split an edge
      *
      * @param t Input Tuple for the edge to split.
@@ -489,7 +497,10 @@ public:
     using vector = tbb::concurrent_vector<T>;
 
 public:
-    AbstractAttributeContainer *p_vertex_attrs, *p_edge_attrs, *p_face_attrs, *p_tet_attrs;
+    AbstractAttributeContainer* p_vertex_attrs = nullptr;
+    AbstractAttributeContainer* p_edge_attrs = nullptr;
+    AbstractAttributeContainer* p_face_attrs = nullptr;
+    AbstractAttributeContainer* p_tet_attrs = nullptr;
     // AbstractAttributeContainer vertex_attrs, edge_attrs, face_attrs, tet_attrs;
 
 
