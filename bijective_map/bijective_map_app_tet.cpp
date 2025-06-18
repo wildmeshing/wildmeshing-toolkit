@@ -10,10 +10,10 @@
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/orient.hpp>
 
+#include <igl/opengl/glfw/Viewer.h>
 #include <igl/tet_tet_adjacency.h>
 #include "InteractiveAndRobustMeshBooleans/code/booleans.h"
 #include "track_operations_tet.hpp"
-
 // using namespace wmtk;
 using path = std::filesystem::path;
 
@@ -283,6 +283,45 @@ void track_curve_tet(
     }
 }
 
+void generateAndSaveMesh(
+    FastTrimesh& tm,
+    const Labels& labels,
+    int label_id,
+    const std::string& output_filename)
+{
+    tm.resetTrianglesInfo();
+    uint num_tris = 0;
+    std::cout << "labels.surface.front().size(): " << labels.surface.front().size() << std::endl;
+    if (label_id == -1) {
+        // All triangles
+        for (uint t_id = 0; t_id < tm.numTris(); t_id++) {
+            tm.setTriInfo(t_id, 1);
+            num_tris++;
+        }
+    } else {
+        // Specific label
+        for (uint t_id = 0; t_id < tm.numTris(); t_id++) {
+            if (labels.surface[t_id][label_id]) {
+                tm.setTriInfo(t_id, 1);
+                num_tris++;
+            }
+        }
+    }
+
+    // Prepare output data
+    std::vector<double> out_coords;
+    std::vector<uint> out_tris;
+    std::vector<std::bitset<NBIT>> out_labels;
+
+    // Get the final result
+    // computeFinalExplicitResult(tm, labels, num_tris, out_coords, out_tris,
+    //                            out_labels, true);
+    getFinalMeshInOder(tm, labels, num_tris, out_coords, out_tris, out_labels);
+
+
+    // Write to OBJ file
+    cinolib::write_OBJ(output_filename.c_str(), out_coords, out_tris, {});
+}
 
 int main(int argc, char** argv)
 {
@@ -508,10 +547,9 @@ int main(int argc, char** argv)
             }
         }
 
-        // Convert T_out to surface triangles, removing duplicates
-        std::set<std::vector<int>> unique_triangles;
-        for (int i = 0; i < T_out.rows(); i++) {
-            auto tet = T_out.row(i);
+        // Convert T_out to in_tris, adding all four triangles for each tetrahedron
+        for (int t_id = 0; t_id < T_out.rows(); t_id++) {
+            auto tet = T_out.row(t_id);
             if (tet.size() >= 4) {
                 // Extract the four faces of the tetrahedron
                 std::vector<std::vector<int>> faces = {
@@ -520,21 +558,16 @@ int main(int argc, char** argv)
                     {tet[0], tet[2], tet[3]},
                     {tet[1], tet[2], tet[3]}};
 
-                for (auto& tri : faces) {
-                    std::sort(tri.begin(), tri.end());
-                    unique_triangles.insert(tri);
+                for (const auto& tri : faces) {
+                    for (const auto& vertex_id : tri) {
+                        in_tris.push_back(static_cast<uint>(vertex_id));
+                    }
+                    // Set label based on tetrahedron ID
+                    in_labels.push_back(static_cast<uint>(t_id));
                 }
             }
         }
 
-        // Convert unique triangles to in_tris
-        for (const auto& triangle : unique_triangles) {
-            for (const auto& vertex_id : triangle) {
-                in_tris.push_back(static_cast<uint>(vertex_id));
-            }
-        }
-        // set lables for tet triangles
-        in_labels.resize(unique_triangles.size(), 0);
 
         // Randomly sample three points from T_out to create a label 1 triangle
         std::random_device rd;
@@ -593,18 +626,14 @@ int main(int argc, char** argv)
                     }
                 }
 
-                // Add triangle with label 1
+                // Add triangle with label
                 in_tris.insert(
                     in_tris.end(),
                     {start_vertex_id, start_vertex_id + 1, start_vertex_id + 2});
-                in_labels.push_back(1);
+                in_labels.push_back(T_out.rows());
             }
         }
 
-        std::cout << "Created surface mesh with " << in_coords.size() / 3 << " vertices and "
-                  << in_tris.size() / 3 << " triangles" << std::endl;
-        std::cout << "Added " << (in_labels.size() > unique_triangles.size() ? 1 : 0)
-                  << " label 1 triangle" << std::endl;
 
         // init the necessary data structures
         point_arena arena;
@@ -631,7 +660,14 @@ int main(int argc, char** argv)
             false);
 
         // create FastTrimesh
-        // FastTrimesh tm(arr_verts, arr_out_tris, true);
+        FastTrimesh tm(arr_verts, arr_out_tris, true);
+
+        for (int i = 0; i < 10; i++) {
+            std::string filename = "out_triangles_label_" + std::to_string(i) + ".obj";
+            generateAndSaveMesh(tm, labels, i, filename);
+        }
+
+        generateAndSaveMesh(tm, labels, T_out.rows(), "output_triangle.obj");
     }
 
     return 0;
