@@ -4,11 +4,11 @@
 #include <sstream>
 #include <unordered_set>
 // wmtk
-// #include <wmtk/TetMesh.hpp>
-// #include <wmtk/TriMesh.hpp>
-// #include <wmtk/io/MeshReader.hpp>
-// #include <wmtk/io/ParaviewWriter.hpp>
-// #include <wmtk/utils/orient.hpp>
+#include <wmtk/TetMesh.hpp>
+#include <wmtk/TriMesh.hpp>
+#include <wmtk/io/MeshReader.hpp>
+#include <wmtk/io/ParaviewWriter.hpp>
+#include <wmtk/utils/orient.hpp>
 
 #include <igl/tet_tet_adjacency.h>
 #include "InteractiveAndRobustMeshBooleans/code/booleans.h"
@@ -296,19 +296,21 @@ int main(int argc, char** argv)
     CLI11_PARSE(app, argc, argv);
 
     std::cout << "Application name: " << application_name << std::endl;
-    // auto init_mesh_ptr = wmtk::read_mesh(initial_mesh_file);
+    auto init_mesh_ptr = wmtk::read_mesh(initial_mesh_file);
 
     // write initial mesh to vtu
-    // std::cout << "Writing initial mesh to vtu" << std::endl;
-    // wmtk::io::ParaviewWriter
-    //     writer("initial_mesh", "vertices", *init_mesh_ptr, true, true, true, true);
-    // init_mesh_ptr->serialize(writer);
+    std::cout << "Writing initial mesh to vtu" << std::endl;
+    wmtk::io::ParaviewWriter
+        writer("initial_mesh", "vertices", *init_mesh_ptr, true, true, true, true);
+    init_mesh_ptr->serialize(writer);
+
+
 
     // TODO:
     // 2. figure out how to read the outputmesh in vtu format out is after remesh
     auto T_out = readTetrahedrons("../build/T_matrix_out.csv");
     auto V_out = readVertices("../build/V_matrix_out.csv");
-    // TODO: for now, first we convert it with TV matrix
+    // // TODO: for now, first we convert it with TV matrix
     auto T_in = readTetrahedrons("../build/T_matrix_in.csv");
     auto V_in = readVertices("../build/V_matrix_in.csv");
 
