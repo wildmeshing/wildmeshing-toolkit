@@ -51,35 +51,6 @@ void SimplicialEmbeddingTriMesh::set_num_threads(const int64_t num_threads)
     NUM_THREADS = num_threads;
 }
 
-Eigen::MatrixXi SimplicialEmbeddingTriMesh::get_F() const
-{
-    const std::vector<Tuple> face_tuples = get_faces();
-    Eigen::MatrixXi F(face_tuples.size(), 3);
-
-    for (int i = 0; i < face_tuples.size(); ++i) {
-        const auto vs = oriented_tri_vids(face_tuples[i]);
-        for (int j = 0; j < 3; j++) {
-            F(i, j) = vs[j];
-        }
-    }
-
-    return F;
-}
-
-Eigen::MatrixXd SimplicialEmbeddingTriMesh::get_V() const
-{
-    const std::vector<Tuple> vertex_tuples = get_vertices();
-    Eigen::MatrixXd V;
-    V.resize(vertex_tuples.size(), 2);
-
-    for (const Tuple& v : vertex_tuples) {
-        const auto vid = v.vid(*this);
-        V.row(vid) = vertex_attrs[vid].pos;
-    }
-
-    return V;
-}
-
 void SimplicialEmbeddingTriMesh::cache_edge_positions(const Tuple& t)
 {
     position_cache.local().v1p = vertex_attrs[t.vid(*this)].pos;
@@ -234,16 +205,6 @@ bool SimplicialEmbeddingTriMesh::uniform_remeshing(double L, int iterations)
     wmtk::logger().info("finished {} remeshing iterations", iterations);
     wmtk::logger().info("+++++++++finished+++++++++");
     return true;
-}
-bool SimplicialEmbeddingTriMesh::write_mesh(const std::filesystem::path& filename)
-{
-    const auto V = get_V();
-    const auto F = get_F();
-
-    paraviewo::VTUWriter writer;
-    // writer.add_field("")
-    bool r = writer.write_mesh(filename.string(), V, F);
-    return r;
 }
 
 } // namespace wmtk::components::simplicial_embedding

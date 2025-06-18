@@ -539,6 +539,7 @@ public:
      * @return global vids of incident vertices
      */
     std::array<size_t, 3> oriented_tri_vids(const Tuple& t) const;
+    std::array<size_t, 3> oriented_tri_vids(const int i) const;
 
     /**
      * Generate a face Tuple using global fid

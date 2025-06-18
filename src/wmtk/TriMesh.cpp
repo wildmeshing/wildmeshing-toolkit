@@ -763,8 +763,13 @@ std::array<wmtk::TriMesh::Tuple, 3> TriMesh::oriented_tri_vertices(
 
 std::array<size_t, 3> TriMesh::oriented_tri_vids(const Tuple& t) const
 {
-    std::array<size_t, 3> incident_verts;
     size_t fid = t.fid(*this);
+    return oriented_tri_vids(fid);
+}
+
+std::array<size_t, 3> TriMesh::oriented_tri_vids(const int fid) const
+{
+    std::array<size_t, 3> incident_verts;
     auto indices = m_tri_connectivity[fid].m_indices;
 
     incident_verts[0] = indices[0];

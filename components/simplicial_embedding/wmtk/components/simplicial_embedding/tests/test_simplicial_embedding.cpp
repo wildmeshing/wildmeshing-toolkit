@@ -17,11 +17,10 @@ TEST_CASE("write", "")
     m.create_mesh(VF.F);
     m.set_positions(VF.V);
 
-    // m.write_mesh("simplicial_embedding_out.vtu");
-
     io::VTUWriter writer(m);
-    writer.add_vertex_attribute("position2", [&m](int i) -> VectorXd {
-        return m.vertex_attrs[i].pos;
-    });
+    writer.add_vertex_positions([&m](int i) { return m.vertex_attrs[i].pos; });
+    writer.add_vertex_attribute("position", [&m](int i) { return m.vertex_attrs[i].pos; });
+    writer.add_vertex_attribute("vid", [&m](int i) { return VectorXd::Constant(1, i); });
+    writer.add_triangle_attribute("fid", [&m](int i) { return VectorXd::Constant(1, i); });
     writer.write_triangles("simplicial_embedding_out.vtu");
 }

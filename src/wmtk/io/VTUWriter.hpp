@@ -16,102 +16,127 @@ class VTUWriter
 public:
     VTUWriter(MeshT& mesh);
 
-    bool write_triangles(const std::filesystem::path& filename)
-    {
-        Eigen::MatrixXi F;
-        {
-            const std::vector<Tuple> face_tuples = m_mesh.get_faces();
+    void add_vertex_positions(const std::function<VectorXd(const int)>& f);
 
-            if (face_tuples.empty()) {
-                return false; // cannot print mesh without faces
-            }
+    void add_vertex_attribute(const std::string& name, const std::function<VectorXd(const int)>& f);
 
-            F.resize(face_tuples.size(), 3);
-            for (int i = 0; i < face_tuples.size(); ++i) {
-                const auto vs = m_mesh.oriented_tri_vids(face_tuples[i]);
-                for (int j = 0; j < 3; j++) {
-                    F(i, j) = vs[j];
-                }
-            }
-        }
-        Eigen::MatrixXd V;
-        std::vector<MatrixXd> VA; // vertex attributes
-        std::vector<std::string> VA_names;
-        {
-            const std::vector<Tuple> vertex_tuples = m_mesh.get_vertices();
+    void add_triangle_attribute(
+        const std::string& name,
+        const std::function<VectorXd(const int)>& f);
 
-            if (vertex_tuples.empty()) {
-                return false; // cannot print mesh without vertices
-            }
-
-            // init VA
-            VA_names = m_mesh.serialize_vertex_attributes_names();
-            {
-                VA.resize(VA_names.size());
-                const std::vector<VectorXd> v0_attrs = m_mesh.serialize_vertex_attributes(0);
-                assert(VA_names.size() == v0_attrs.size());
-                for (int i = 0; i < v0_attrs.size(); ++i) {
-                    VA[i].resize(vertex_tuples.size(), v0_attrs[i].size());
-                }
-            }
-
-            // init V
-            V.resize(vertex_tuples.size(), m_mesh.position(0).size());
-
-            for (const Tuple& v : vertex_tuples) {
-                const auto vid = v.vid(m_mesh);
-                V.row(vid) = m_mesh.position(vid);
-
-                const std::vector<VectorXd> attrs = m_mesh.serialize_vertex_attributes(vid);
-                for (int i = 0; i < attrs.size(); ++i) {
-                    VA[i].row(vid) = attrs[i];
-                }
-            }
-        }
-
-        paraviewo::VTUWriter writer;
-        for (int i = 0; i < VA.size(); ++i) {
-            writer.add_field(VA_names[i], VA[i]);
-        }
-
-        for (const auto& [name, attr] : m_vertex_attributes) {
-            writer.add_field(name, attr);
-        }
-
-        bool r = writer.write_mesh(filename.string(), V, F);
-        return r;
-    }
-
-    void add_vertex_attribute(const std::string& name, const std::function<VectorXd(const int)>& f)
-    {
-        const std::vector<Tuple> vertex_tuples = m_mesh.get_vertices();
-
-        if (vertex_tuples.empty()) {
-            logger().warn("Cannot print mesh without vertices.");
-            return;
-        }
-
-        MatrixXd attr;
-        attr.resize(vertex_tuples.size(), f(0).size());
-
-        // init V
-        for (const Tuple& v : vertex_tuples) {
-            const auto vid = v.vid(m_mesh);
-            attr.row(vid) = f(vid);
-        }
-
-        m_vertex_attributes[name] = attr;
-    }
+    bool write_triangles(const std::filesystem::path& filename);
 
 private:
     MeshT& m_mesh;
 
-    std::map<std::string, MatrixXd> m_vertex_attributes;
+    MatrixXd m_V; // vertex positions
+    MatrixXi m_E; // edge - vids
+    MatrixXi m_F; // face - vids
+    MatrixXi m_T; //  tet - vids
+
+    std::map<std::string, MatrixXd> m_V_attributes;
+    std::map<std::string, MatrixXd> m_F_attributes;
 };
 
 template <typename MeshT>
 inline VTUWriter<MeshT>::VTUWriter(MeshT& mesh)
     : m_mesh(mesh)
-{}
+{
+    const std::vector<Tuple> face_tuples = m_mesh.get_faces();
+
+    if (face_tuples.empty()) {
+        log_and_throw_error("Cannot print mesh without faces.");
+    }
+
+    m_F.resize(face_tuples.size(), 3);
+    for (int i = 0; i < face_tuples.size(); ++i) {
+        const auto vs = m_mesh.oriented_tri_vids(face_tuples[i]);
+        for (int j = 0; j < 3; j++) {
+            m_F(i, j) = vs[j];
+        }
+    }
+}
+
+template <typename MeshT>
+inline bool VTUWriter<MeshT>::write_triangles(const std::filesystem::path& filename)
+{
+    assert(m_F.size() > 0);
+
+    if (m_V.size() == 0) {
+        log_and_throw_error("Must set vertex positions before writing");
+    }
+
+    paraviewo::VTUWriter writer;
+    for (const auto& [name, attr] : m_V_attributes) {
+        writer.add_field(name, attr);
+    }
+    for (const auto& [name, attr] : m_F_attributes) {
+        writer.add_cell_field(name, attr);
+    }
+
+    bool r = writer.write_mesh(filename.string(), m_V, m_F);
+    return r;
+}
+
+template <typename MeshT>
+inline void VTUWriter<MeshT>::add_vertex_positions(const std::function<VectorXd(const int)>& f)
+{
+    int max_id = m_mesh.vert_capacity();
+
+    if (max_id < 0) {
+        log_and_throw_error("Cannot print mesh without vertices.");
+    }
+
+    // init V
+    m_V.resize(max_id, f(0).size());
+
+    for (int i = 0; i < max_id; ++i) {
+        m_V.row(i) = f(i);
+    }
+}
+
+template <typename MeshT>
+inline void VTUWriter<MeshT>::add_vertex_attribute(
+    const std::string& name,
+    const std::function<VectorXd(const int)>& f)
+{
+    int max_id = m_mesh.vert_capacity();
+
+    if (max_id < 0) {
+        logger().warn("Cannot add attribute {}.", name);
+        return;
+    }
+
+    MatrixXd attr;
+    attr.resize(max_id, f(0).size());
+
+    for (int i = 0; i < max_id; ++i) {
+        attr.row(i) = f(i);
+    }
+
+    m_V_attributes[name] = attr;
+}
+
+template <typename MeshT>
+inline void VTUWriter<MeshT>::add_triangle_attribute(
+    const std::string& name,
+    const std::function<VectorXd(const int)>& f)
+{
+    int max_id = m_mesh.tri_capacity();
+
+    if (max_id < 0) {
+        logger().warn("Cannot add attribute {}.", name);
+        return;
+    }
+
+    MatrixXd attr;
+    attr.resize(max_id, f(0).size());
+
+    for (int i = 0; i < max_id; ++i) {
+        attr.row(i) = f(i);
+    }
+
+    m_F_attributes[name] = attr;
+}
 
 } // namespace wmtk::io
