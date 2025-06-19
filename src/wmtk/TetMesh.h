@@ -876,26 +876,50 @@ private:
     }
     void start_protect_attributes()
     {
-        p_vertex_attrs->begin_protect();
-        p_edge_attrs->begin_protect();
-        p_face_attrs->begin_protect();
-        p_tet_attrs->begin_protect();
+        if (p_vertex_attrs) {
+            p_vertex_attrs->begin_protect();
+        }
+        if (p_edge_attrs) {
+            p_edge_attrs->begin_protect();
+        }
+        if (p_face_attrs) {
+            p_face_attrs->begin_protect();
+        }
+        if (p_tet_attrs) {
+            p_tet_attrs->begin_protect();
+        }
     }
 
     void release_protect_attributes()
     {
-        p_vertex_attrs->end_protect();
-        p_edge_attrs->end_protect();
-        p_face_attrs->end_protect();
-        p_tet_attrs->end_protect();
+        if (p_vertex_attrs) {
+            p_vertex_attrs->end_protect();
+        }
+        if (p_edge_attrs) {
+            p_edge_attrs->end_protect();
+        }
+        if (p_face_attrs) {
+            p_face_attrs->end_protect();
+        }
+        if (p_tet_attrs) {
+            p_tet_attrs->end_protect();
+        }
     }
 
     void rollback_protected_attributes()
     {
-        p_vertex_attrs->rollback();
-        p_edge_attrs->rollback();
-        p_face_attrs->rollback();
-        p_tet_attrs->rollback();
+        if (p_vertex_attrs) {
+            p_vertex_attrs->rollback();
+        }
+        if (p_edge_attrs) {
+            p_edge_attrs->rollback();
+        }
+        if (p_face_attrs) {
+            p_face_attrs->rollback();
+        }
+        if (p_tet_attrs) {
+            p_tet_attrs->rollback();
+        }
     }
 
 public:

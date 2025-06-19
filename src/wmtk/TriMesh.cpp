@@ -779,7 +779,7 @@ std::array<size_t, 3> TriMesh::oriented_tri_vids(const int fid) const
     return incident_verts;
 }
 
-void TriMesh::create_mesh(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris)
+void TriMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris)
 {
     m_vertex_connectivity.resize(n_vertices);
     m_tri_connectivity.resize(tris.size());
@@ -803,7 +803,7 @@ void TriMesh::create_mesh(size_t n_vertices, const std::vector<std::array<size_t
     if (p_face_attrs) p_face_attrs->resize(tri_capacity());
 }
 
-void wmtk::TriMesh::create_mesh(const MatrixXi& F)
+void wmtk::TriMesh::init(const MatrixXi& F)
 {
     size_t n_vertices = F.maxCoeff() + 1;
 
@@ -816,7 +816,7 @@ void wmtk::TriMesh::create_mesh(const MatrixXi& F)
         }
     }
 
-    TriMesh::create_mesh(n_vertices, tris);
+    TriMesh::init(n_vertices, tris);
 }
 
 std::vector<TriMesh::Tuple> TriMesh::get_vertices() const

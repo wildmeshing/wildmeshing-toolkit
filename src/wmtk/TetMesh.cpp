@@ -698,10 +698,18 @@ void wmtk::TetMesh::consolidate_mesh()
     m_vertex_connectivity.resize(v_cnt);
     m_tet_connectivity.resize(t_cnt);
 
-    p_vertex_attrs->resize(v_cnt);
-    p_edge_attrs->resize(6 * t_cnt);
-    p_face_attrs->resize(4 * t_cnt);
-    p_tet_attrs->resize(t_cnt);
+    if (p_vertex_attrs) {
+        p_vertex_attrs->resize(v_cnt);
+    }
+    if (p_edge_attrs) {
+        p_edge_attrs->resize(6 * t_cnt);
+    }
+    if (p_face_attrs) {
+        p_face_attrs->resize(4 * t_cnt);
+    }
+    if (p_tet_attrs) {
+        p_tet_attrs->resize(t_cnt);
+    }
 
     assert(check_mesh_connectivity_validity());
 }

@@ -42,7 +42,7 @@ void QSLIM::create_mesh(
     double eps)
 {
     wmtk::logger().info("----start create mesh-------");
-    wmtk::TriMesh::create_mesh(n_vertices, tris);
+    wmtk::TriMesh::init(n_vertices, tris);
     std::vector<Eigen::Vector3d> V(n_vertices);
     Eigen::MatrixXd Vm(n_vertices, 3);
     std::vector<Eigen::Vector3i> F(tris.size());

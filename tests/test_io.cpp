@@ -2,8 +2,6 @@
 #include <igl/oriented_facets.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/TriMesh.h>
-#include <paraviewo/ParaviewWriter.hpp>
-#include <paraviewo/VTUWriter.hpp>
 #include <wmtk/io/TetVTUWriter.hpp>
 #include <wmtk/io/TriVTUWriter.hpp>
 #include <wmtk/utils/Delaunay.hpp>
@@ -125,7 +123,7 @@ TEST_CASE("paraviewo-tri", "[io][paraviewo]")
     tri::TriMeshVF VF = tri::edge_region();
 
     TriMesh m;
-    m.create_mesh(VF.F);
+    m.init(VF.F);
 
     io::TriVTUWriter writer(m);
     writer.add_vertex_positions([&m, &VF](int i) { return VF.V.row(i); });

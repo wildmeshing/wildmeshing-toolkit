@@ -14,7 +14,7 @@ TEST_CASE("write", "")
     TriMeshVF VF = wmtk::utils::examples::tri::edge_region();
 
     SimplicialEmbeddingTriMesh m;
-    m.create_mesh(VF.F);
+    m.init(VF.F);
     m.set_positions(VF.V);
 
     io::TriVTUWriter writer(m);

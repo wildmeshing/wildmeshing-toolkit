@@ -48,7 +48,7 @@ void UniformRemeshing::create_mesh(
     bool m_freeze,
     double eps)
 {
-    wmtk::TriMesh::create_mesh(n_vertices, tris);
+    wmtk::TriMesh::init(n_vertices, tris);
     std::vector<Eigen::Vector3d> V(n_vertices);
     std::vector<Eigen::Vector3i> F(tris.size());
     for (auto i = 0; i < V.size(); i++) {

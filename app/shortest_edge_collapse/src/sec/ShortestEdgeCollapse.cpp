@@ -39,7 +39,7 @@ void ShortestEdgeCollapse::create_mesh_nofreeze(
     size_t n_vertices,
     const std::vector<std::array<size_t, 3>>& tris)
 {
-    wmtk::TriMesh::create_mesh(n_vertices, tris);
+    wmtk::TriMesh::init(n_vertices, tris);
 }
 
 void ShortestEdgeCollapse::create_mesh(
@@ -48,7 +48,7 @@ void ShortestEdgeCollapse::create_mesh(
     const std::vector<size_t>& frozen_verts,
     double eps)
 {
-    wmtk::TriMesh::create_mesh(n_vertices, tris);
+    wmtk::TriMesh::init(n_vertices, tris);
 
     if (eps > 0) {
         std::vector<Eigen::Vector3d> V(n_vertices);

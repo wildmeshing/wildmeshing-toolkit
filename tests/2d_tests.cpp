@@ -11,7 +11,7 @@ TEST_CASE("load mesh and create TriMesh", "[test_mesh_creation]")
 {
     TriMesh m;
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}};
-    m.create_mesh(3, tris);
+    m.init(3, tris);
     REQUIRE(m.tri_capacity() == tris.size());
     REQUIRE(m.vert_capacity() == 3);
 }
@@ -20,7 +20,7 @@ TEST_CASE("test generate tuples with 1 triangle", "[test_tuple_generation]")
 {
     TriMesh m;
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}};
-    m.create_mesh(3, tris);
+    m.init(3, tris);
 
     SECTION("test generation from vertics")
     {
@@ -61,7 +61,7 @@ TEST_CASE("test generate tuples with 2 triangle", "[test_tuple_generation]")
     // 	    v0    /
     TriMesh m;
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{2, 1, 3}}};
-    m.create_mesh(4, tris);
+    m.init(4, tris);
 
     SECTION("test generation from vertics")
     {
@@ -106,7 +106,7 @@ TEST_CASE("random 10 switches on 2 traingles", "[tuple_operation]")
 {
     TriMesh m;
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 2, 3}}};
-    m.create_mesh(4, tris);
+    m.init(4, tris);
 
     SECTION("test all tuples generated using vertices")
     {
@@ -198,7 +198,7 @@ TEST_CASE("double switches is identity", "[tuple_operation]")
 {
     TriMesh m;
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 2, 3}}};
-    m.create_mesh(4, tris);
+    m.init(4, tris);
 
     SECTION("test all tuples generated using vertices")
     {
@@ -251,7 +251,7 @@ TEST_CASE("vertex_edge switches equals indentity", "[tuple_operation]")
 {
     TriMesh m;
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 2, 3}}};
-    m.create_mesh(4, tris);
+    m.init(4, tris);
 
     SECTION("test all tuples generated using vertices")
     {
@@ -309,14 +309,14 @@ TEST_CASE("test_link_check", "[test_pre_check]")
     {
         std::vector<std::array<size_t, 3>> tris =
             {{{1, 2, 3}}, {{0, 1, 4}}, {{0, 2, 5}}, {{0, 1, 6}}, {{0, 2, 6}}, {{1, 2, 6}}};
-        m.create_mesh(7, tris);
+        m.init(7, tris);
         TriMesh::Tuple edge(1, 2, 0, m);
         REQUIRE_FALSE(m.check_link_condition(edge));
     }
     SECTION("one_triangle")
     {
         std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}};
-        m.create_mesh(3, tris);
+        m.init(3, tris);
 
         TriMesh::Tuple edge(0, 2, 0, m);
         assert(edge.is_valid(m));
@@ -329,7 +329,7 @@ TEST_CASE("test_link_check", "[test_pre_check]")
             {{1, 3, 2}},
             {{0, 2, 3}},
             {{3, 0, 1}}};
-        m.create_mesh(4, tris);
+        m.init(4, tris);
 
         TriMesh::Tuple edge(1, 0, 0, m);
         assert(edge.is_valid(m));
@@ -342,7 +342,7 @@ TEST_CASE("test_link_check", "[test_pre_check]")
             {{1, 2, 5}},
             {{2, 3, 5}},
             {{5, 3, 4}}};
-        m.create_mesh(6, tris);
+        m.init(6, tris);
 
         TriMesh::Tuple fail_edge(5, 0, 1, m);
         REQUIRE_FALSE(m.check_link_condition(fail_edge));
@@ -355,7 +355,7 @@ TEST_CASE("test unique edge", "[test_2d_operation]")
 {
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}, {{4, 1, 0}}, {{0, 2, 5}}};
     auto m = TriMesh();
-    m.create_mesh(6, tris);
+    m.init(6, tris);
     REQUIRE(m.check_edge_manifold());
 }
 
@@ -370,7 +370,7 @@ TEST_CASE("edge_collapse", "[test_2d_operation]")
             bool collapse_edge_after(const TriMesh::Tuple& loc) override { return false; };
         };
         auto m = NoCollapseMesh();
-        m.create_mesh(6, tris);
+        m.init(6, tris);
         const auto tuple = NoCollapseMesh::Tuple(1, 0, 0, m);
         REQUIRE(tuple.is_valid(m));
         std::vector<TriMesh::Tuple> dummy;
@@ -386,7 +386,7 @@ TEST_CASE("edge_collapse", "[test_2d_operation]")
         };
         auto m = Collapse();
 
-        m.create_mesh(6, tris);
+        m.init(6, tris);
         const auto tuple = Collapse::Tuple(1, 0, 0, m);
 
         REQUIRE(tuple.is_valid(m));
@@ -412,11 +412,11 @@ TEST_CASE("swap_operation", "[test_2d_operation]")
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
     TriMesh m;
-    m.create_mesh(V.rows(), tri);
+    m.init(V.rows(), tri);
 
     SECTION("swap")
     {
-        TriMesh::Tuple swap_e = TriMesh::Tuple(1, 0, 0, m);
+        TriMesh::Tuple swap_e = TriMesh::Tuple(0, 0, 0, m);
         REQUIRE(swap_e.is_valid(m));
         std::vector<TriMesh::Tuple> new_e;
         REQUIRE(m.swap_edge(swap_e, new_e));
@@ -426,11 +426,11 @@ TEST_CASE("swap_operation", "[test_2d_operation]")
         REQUIRE(m.tri_capacity() == 8);
 
         std::vector<size_t> m_indices;
-        for (auto edge : m.get_one_ring_edges_for_vertex(new_e.front())) {
+        for (const auto& edge : m.get_one_ring_edges_for_vertex(new_e.front())) {
             m_indices.push_back(edge.vid(m));
         }
         vector_unique(m_indices);
-        std::vector<size_t> tru_indices = {1, 3, 4, 5};
+        std::vector<size_t> tru_indices = {0, 2, 3, 4, 5};
         REQUIRE(std::equal(m_indices.begin(), m_indices.end(), tru_indices.begin()));
     }
     SECTION("swap_on_boundary_edge")
@@ -444,7 +444,7 @@ TEST_CASE("swap_operation", "[test_2d_operation]")
     {
         TriMesh m2;
         std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 0, 3}}, {{1, 3, 2}}};
-        m2.create_mesh(4, tris);
+        m2.init(4, tris);
         TriMesh::Tuple edge(0, 2, 0, m);
         assert(edge.is_valid(m));
         std::vector<TriMesh::Tuple> dummy;
@@ -458,7 +458,7 @@ TEST_CASE("split_operation", "[test_2d_operation]")
     SECTION("1_tri_split")
     {
         std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}};
-        m.create_mesh(3, tris);
+        m.init(3, tris);
         auto edges = m.get_edges();
         TriMesh::Tuple edge(0, 1, 0, m);
         std::vector<TriMesh::Tuple> dummy;
@@ -469,7 +469,7 @@ TEST_CASE("split_operation", "[test_2d_operation]")
     SECTION("2_tris_split")
     {
         std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}};
-        m.create_mesh(4, tris);
+        m.init(4, tris);
         auto edges = m.get_edges();
         TriMesh::Tuple edge(1, 0, 0, m);
         std::vector<TriMesh::Tuple> dummy;
