@@ -2,6 +2,7 @@
 
 #include <paraviewo/VTUWriter.hpp>
 #include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/io/TriVTUWriter.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 
@@ -19,9 +20,11 @@ struct
 SimplicialEmbeddingTriMesh::SimplicialEmbeddingTriMesh()
 {
     p_vertex_attrs = &vertex_attrs;
+    p_edge_attrs = &edge_attrs;
+    p_face_attrs = &face_attrs;
 }
 
-void SimplicialEmbeddingTriMesh::set_positions(const std::vector<Eigen::Vector2d>& vertex_positions)
+void SimplicialEmbeddingTriMesh::set_positions(const std::vector<Vector2d>& vertex_positions)
 {
     assert(vertex_positions.size() == vert_capacity());
     vertex_attrs.resize(vertex_positions.size());
@@ -31,10 +34,10 @@ void SimplicialEmbeddingTriMesh::set_positions(const std::vector<Eigen::Vector2d
     }
 }
 
-void SimplicialEmbeddingTriMesh::set_positions(const Eigen::MatrixXd& V)
+void SimplicialEmbeddingTriMesh::set_positions(const MatrixXd& V)
 {
     assert(V.cols() == 2);
-    std::vector<Eigen::Vector2d> vertex_positions;
+    std::vector<Vector2d> vertex_positions;
     vertex_positions.resize(V.rows());
 
     for (int i = 0; i < V.rows(); ++i) {
@@ -51,10 +54,63 @@ void SimplicialEmbeddingTriMesh::set_num_threads(const int64_t num_threads)
     NUM_THREADS = num_threads;
 }
 
-void SimplicialEmbeddingTriMesh::cache_edge_positions(const Tuple& t)
+void SimplicialEmbeddingTriMesh::set_vertex_tag(const Tuple& v_tuple, const int64_t tag)
 {
-    position_cache.local().v1p = vertex_attrs[t.vid(*this)].pos;
-    position_cache.local().v2p = vertex_attrs[t.switch_vertex(*this).vid(*this)].pos;
+    assert(v_tuple.is_valid(*this));
+    vertex_attrs[v_tuple.vid(*this)].tag = tag;
+}
+
+void SimplicialEmbeddingTriMesh::set_edge_tag(const Tuple& e_tuple, const int64_t tag)
+{
+    assert(e_tuple.is_valid(*this));
+    edge_attrs[e_tuple.eid(*this)].tag = tag;
+
+    const size_t v0 = e_tuple.vid(*this);
+    const size_t v1 = e_tuple.switch_vertex(*this).vid(*this);
+    vertex_attrs[v0].tag = tag;
+    vertex_attrs[v1].tag = tag;
+}
+
+void SimplicialEmbeddingTriMesh::set_face_tag(const Tuple& f_tuple, const int64_t tag)
+{
+    assert(f_tuple.is_valid(*this));
+    face_attrs[f_tuple.fid(*this)].tag = tag;
+
+    const auto vs = oriented_tri_vertices(f_tuple);
+    for (const Tuple& t : vs) {
+        vertex_attrs[t.vid(*this)].tag = tag;
+        edge_attrs[t.eid(*this)].tag = tag;
+    }
+}
+
+void SimplicialEmbeddingTriMesh::cache_edge(const Tuple& t)
+{
+    const size_t v0 = t.vid(*this);
+    const size_t v1 = t.switch_vertex(*this).vid(*this);
+    const auto& va0 = vertex_attrs[v0];
+    const auto& va1 = vertex_attrs[v1];
+
+    const size_t e = t.eid(*this);
+    const auto& ea = edge_attrs[e];
+
+    EdgeSplitCache& cache = position_cache.local();
+    cache.v0.pos = va0.pos;
+    cache.v1.pos = va1.pos;
+    cache.e.tag = ea.tag;
+
+    const size_t f0 = t.fid(*this);
+    const auto& fa0 = face_attrs[f0];
+    cache.f0.tag = fa0.tag;
+
+    const std::optional<Tuple> t_opp = t.switch_face(*this);
+    if (t_opp) {
+        const size_t f1 = t_opp.value().fid(*this);
+        const auto& fa1 = face_attrs[f1];
+        cache.f1 = FaceAttributes();
+        cache.f1.value().tag = fa1.tag;
+    } else {
+        cache.f1.reset();
+    }
 }
 
 bool SimplicialEmbeddingTriMesh::invariants(const std::vector<Tuple>& new_tris)
@@ -112,17 +168,55 @@ std::vector<TriMesh::Tuple> SimplicialEmbeddingTriMesh::new_sub_edges_after_spli
 
 bool SimplicialEmbeddingTriMesh::split_edge_before(const Tuple& t)
 {
-    if (!TriMesh::split_edge_before(t)) return false;
-    cache_edge_positions(t);
+    if (!TriMesh::split_edge_before(t)) {
+        return false;
+    }
+    cache_edge(t);
     return true;
 }
 
-
 bool SimplicialEmbeddingTriMesh::split_edge_after(const TriMesh::Tuple& t)
 {
-    const Eigen::Vector2d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
-    auto vid = t.switch_vertex(*this).vid(*this);
-    vertex_attrs[vid].pos = p;
+    const EdgeSplitCache& cache = position_cache.local();
+
+    const Tuple& e_spine_left = t;
+    const Tuple e_rib_0 = t.switch_vertex(*this).switch_edge(*this);
+    const Tuple& f_rib_0_left = t;
+    const Tuple f_rib_0_right = e_rib_0.switch_face(*this).value();
+    const Tuple e_spine_right = f_rib_0_right.switch_edge(*this);
+
+    const size_t vid_spine = t.switch_vertex(*this).vid(*this);
+
+    // set position
+    {
+        const Vector2d p = 0.5 * (cache.v0.pos + cache.v1.pos);
+        vertex_attrs[vid_spine].pos = p;
+    }
+    // update tags spine
+    {
+        const auto& e_tag = cache.e.tag;
+        vertex_attrs[vid_spine].tag = e_tag;
+        edge_attrs[e_spine_left.eid(*this)].tag = e_tag;
+        edge_attrs[e_spine_right.eid(*this)].tag = e_tag;
+    }
+    // update tags rib 0
+    {
+        const auto& f0_tag = cache.f0.tag;
+        edge_attrs[e_rib_0.eid(*this)].tag = f0_tag;
+        face_attrs[f_rib_0_left.fid(*this)].tag = f0_tag;
+        face_attrs[f_rib_0_right.fid(*this)].tag = f0_tag;
+    }
+    // update tags rib 1
+    if (cache.f1) {
+        const Tuple f_rib_1_left = e_spine_left.switch_face(*this).value();
+        const Tuple e_rib_1 = f_rib_1_left.switch_vertex(*this).switch_edge(*this);
+        const Tuple f_rib_1_right = e_spine_right.switch_face(*this).value();
+
+        const auto& f1_tag = cache.f1.value().tag;
+        edge_attrs[e_rib_1.eid(*this)].tag = f1_tag;
+        face_attrs[f_rib_1_left.fid(*this)].tag = f1_tag;
+        face_attrs[f_rib_1_right.fid(*this)].tag = f1_tag;
+    }
     return true;
 }
 
@@ -205,6 +299,26 @@ bool SimplicialEmbeddingTriMesh::uniform_remeshing(double L, int iterations)
     wmtk::logger().info("finished {} remeshing iterations", iterations);
     wmtk::logger().info("+++++++++finished+++++++++");
     return true;
+}
+
+void SimplicialEmbeddingTriMesh::write(const std::filesystem::path& filename) const
+{
+    const SimplicialEmbeddingTriMesh& m = *this;
+
+    io::TriVTUWriter writer(m);
+    writer.add_vertex_positions([&m](int i) { return m.vertex_attrs[i].pos; });
+
+    writer.add_vertex_attribute("vid", [&m](int i) { return i; });
+    writer.add_vertex_attribute("v_tag", [&m](int i) { return m.vertex_attrs[i].tag; });
+
+    writer.add_edge_attribute("eid", [&m](int i) { return i; });
+    writer.add_edge_attribute("e_tag", [&m](int i) { return m.edge_attrs[i].tag; });
+
+    writer.add_triangle_attribute("fid", [&m](int i) { return i; });
+    writer.add_triangle_attribute("f_tag", [&m](int i) { return m.face_attrs[i].tag; });
+
+    writer.write_triangles(filename.string() + "_f.vtu");
+    writer.write_edges(filename.string() + "_e.vtu");
 }
 
 } // namespace wmtk::components::simplicial_embedding

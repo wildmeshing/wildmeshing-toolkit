@@ -26,7 +26,7 @@ public:
      * writer.add_edge_attribute("eid", [&m](int i) { return VectorXd::Constant(1, i); });
      * ```
      */
-    TetVTUWriter(TetMesh& mesh);
+    TetVTUWriter(const TetMesh& mesh);
 
     /**
      * @brief Add vertex positions.
@@ -96,7 +96,7 @@ public:
     bool write_edges(const std::filesystem::path& filename);
 
 private:
-    TetMesh& m_mesh;
+    const TetMesh& m_mesh;
 
     MatrixXd m_V; // vertex positions
     MatrixXi m_E; // edge - vids

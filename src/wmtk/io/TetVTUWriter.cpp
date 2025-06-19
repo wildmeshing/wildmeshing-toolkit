@@ -4,7 +4,7 @@
 
 namespace wmtk::io {
 
-TetVTUWriter::TetVTUWriter(TetMesh& mesh)
+TetVTUWriter::TetVTUWriter(const TetMesh& mesh)
     : m_mesh(mesh)
 {
     const std::vector<Tuple> tet_tuples = m_mesh.get_tets();

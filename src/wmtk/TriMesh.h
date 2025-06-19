@@ -275,7 +275,9 @@ public:
      * @note tuple refers to vid1
      * @return vector of Tuples
      */
-    Tuple init_from_edge(size_t vid1, size_t vid2, size_t fid) const;
+    Tuple tuple_from_edge(size_t vid1, size_t vid2, size_t fid) const;
+
+    Tuple tuple_from_vids(size_t vid0, size_t vid1, size_t vid2) const;
 
     template <typename T>
     using vector = tbb::concurrent_vector<T>;

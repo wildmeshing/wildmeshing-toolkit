@@ -26,8 +26,9 @@ void TriMesh::Tuple::print_info()
 
 size_t TriMesh::Tuple::eid(const TriMesh& m) const
 {
-    if (switch_face(m).has_value()) {
-        size_t fid2 = switch_face(m)->fid(m);
+    const std::optional<Tuple> t_opp = switch_face(m);
+    if (t_opp.has_value()) {
+        size_t fid2 = t_opp.value().fid(m);
         size_t min_fid = std::min(m_fid, fid2);
         if (min_fid == fid2) {
             int i = m.m_tri_connectivity[fid2].find(m_vid);
@@ -588,7 +589,7 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     m_vertex_connectivity[vid4].m_conn_tris.push_back(test_fid2.value());
     vector_unique(m_vertex_connectivity[vid4].m_conn_tris);
     // change the tuple to the new edge tuple
-    auto new_t = init_from_edge(vid4, vid3, test_fid2.value());
+    auto new_t = tuple_from_edge(vid4, vid3, test_fid2.value());
 
     assert(new_t.switch_vertex(*this).vid(*this) != vid1);
     assert(new_t.switch_vertex(*this).vid(*this) != vid2);
@@ -883,13 +884,53 @@ std::vector<TriMesh::Tuple> TriMesh::get_edges() const
     return all_edges_tuples;
 }
 
-TriMesh::Tuple TriMesh::init_from_edge(size_t vid1, size_t vid2, size_t fid) const
+TriMesh::Tuple TriMesh::tuple_from_edge(size_t vid1, size_t vid2, size_t fid) const
 {
     auto a = m_tri_connectivity[fid].find(vid1);
     auto b = m_tri_connectivity[fid].find(vid2);
     assert(a != -1 && b != -1);
     // 0,1 - >2, 1,2-> 0, 0,2->1
     return Tuple(vid1, 3 - (a + b), fid, *this);
+}
+
+TriMesh::Tuple wmtk::TriMesh::tuple_from_vids(size_t vid0, size_t vid1, size_t vid2) const
+{
+    const auto& vf0 = m_vertex_connectivity[vid0];
+    const auto& vf1 = m_vertex_connectivity[vid1];
+    const auto& vf2 = m_vertex_connectivity[vid2];
+
+    const std::vector<size_t> tris01 = set_intersection(vf0.m_conn_tris, vf1.m_conn_tris);
+    const std::vector<size_t> tris012 = set_intersection(tris01, vf2.m_conn_tris);
+
+    if (tris012.size() != 1) {
+        log_and_throw_error("Cannot find face with vids ({},{},{})", vid0, vid1, vid2);
+    }
+
+    const size_t fid = tris012[0];
+
+    const auto& tc = m_tri_connectivity[fid].m_indices;
+    size_t local_vid = -1;
+    for (int i = 0; i < 3; ++i) {
+        if (tc[i] == vid0) {
+            local_vid = i;
+            break;
+        }
+    }
+    assert(local_vid != -1);
+
+    const size_t local_vid_next = (local_vid + 1) % 3;
+    const size_t local_vid_prev = (local_vid + 2) % 3;
+    if (tc[local_vid_next] == vid1) {
+        return Tuple(vid0, local_vid_prev, fid, *this);
+    } else {
+        assert(tc[local_vid_prev] == vid1);
+        return Tuple(vid0, local_vid_next, fid, *this);
+    }
+
+    Tuple t;
+
+
+    return Tuple();
 }
 
 

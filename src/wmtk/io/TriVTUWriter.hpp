@@ -26,7 +26,7 @@ public:
      * writer.add_edge_attribute("eid", [&m](int i) { return VectorXd::Constant(1, i); });
      * ```
      */
-    TriVTUWriter(TriMesh& mesh);
+    TriVTUWriter(const TriMesh& mesh);
 
     /**
      * @brief Add vertex positions.
@@ -51,12 +51,14 @@ public:
      * that vertex.
      */
     void add_vertex_attribute(const std::string& name, const std::function<VectorXd(const int)>& f);
+    void add_vertex_attribute(const std::string& name, const std::function<double(const int)>& f);
     /**
      * @brief Add edge attribute.
      *
      * See `add_vertex_attribute` for details.
      */
     void add_edge_attribute(const std::string& name, const std::function<VectorXd(const int)>& f);
+    void add_edge_attribute(const std::string& name, const std::function<double(const int)>& f);
 
     /**
      * @brief Add triangle attribute.
@@ -66,6 +68,7 @@ public:
     void add_triangle_attribute(
         const std::string& name,
         const std::function<VectorXd(const int)>& f);
+    void add_triangle_attribute(const std::string& name, const std::function<double(const int)>& f);
 
     /**
      * @brief Write the triangle mesh with triangle and vertex attributes.
@@ -82,7 +85,7 @@ public:
     bool write_edges(const std::filesystem::path& filename);
 
 private:
-    TriMesh& m_mesh;
+    const TriMesh& m_mesh;
 
     MatrixXd m_V; // vertex positions
     MatrixXi m_E; // edge - vids
