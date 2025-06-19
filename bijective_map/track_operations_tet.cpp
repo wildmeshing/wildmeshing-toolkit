@@ -164,7 +164,7 @@ void handle_local_mapping_tet(
     }
 }
 
-Eigen::Vector3d barycentric_to_world(
+Eigen::Vector3d barycentric_to_world_tet(
     const Eigen::Vector4d& bc,
     const Eigen::Matrix<double, 4, 3>& v)
 {
@@ -173,7 +173,9 @@ Eigen::Vector3d barycentric_to_world(
     return bc[0] * v.row(0) + bc[1] * v.row(1) + bc[2] * v.row(2) + bc[3] * v.row(3);
 }
 
-Eigen::Vector4d world_to_barycentric(const Eigen::Vector3d& p, const Eigen::Matrix<double, 4, 3>& v)
+Eigen::Vector4d world_to_barycentric_tet(
+    const Eigen::Vector3d& p,
+    const Eigen::Matrix<double, 4, 3>& v)
 {
     Eigen::MatrixXd p_mat = p.transpose();
     Eigen::MatrixXd v0_mat = v.row(0);
@@ -249,7 +251,7 @@ void handle_one_segment_tet(
 
     std::cout << "Getting p1_world" << std::endl;
     auto p1_tet_vertices = tet_vertices(p1_local_tid);
-    const Eigen::Vector3d p1_world = barycentric_to_world(p1.bc, p1_tet_vertices);
+    const Eigen::Vector3d p1_world = barycentric_to_world_tet(p1.bc, p1_tet_vertices);
 
     if (is_same_tet(p0, p1)) {
         seg.t_id = p0.t_id;
@@ -278,7 +280,7 @@ void handle_one_segment_tet(
                 curve.next_segment_ids.push_back(old_next_seg);
                 break;
             } else {
-                b1 = world_to_barycentric(p1_world, v_cur);
+                b1 = world_to_barycentric_tet(p1_world, v_cur);
             }
 
             std::cout << "b0: " << b0.transpose() << std::endl;
@@ -396,4 +398,71 @@ void parse_non_collapse_file_tet(
     V_after = json_to_matrix<Eigen::MatrixXd>(operation_log["V_after"]);
     id_map_after = operation_log["T_id_map_after"].get<std::vector<int64_t>>();
     v_id_map_after = operation_log["V_id_map_after"].get<std::vector<int64_t>>();
+}
+
+void write_query_surface_tet_to_file(const query_surface_tet& surface, const std::string& filename)
+{
+    json j;
+    j["num_triangles"] = surface.triangles.size();
+
+    for (size_t i = 0; i < surface.triangles.size(); ++i) {
+        const auto& tri = surface.triangles[i];
+        json tri_json;
+        tri_json["t_id"] = tri.t_id;
+
+        // Store barycentric coordinates
+        for (int j = 0; j < 3; ++j) {
+            tri_json["bcs"][j] = {tri.bcs[j][0], tri.bcs[j][1], tri.bcs[j][2], tri.bcs[j][3]};
+        }
+
+        // Store tetrahedron vertex ids
+        tri_json["tv_ids"] = {tri.tv_ids[0], tri.tv_ids[1], tri.tv_ids[2], tri.tv_ids[3]};
+
+        j["triangles"].push_back(tri_json);
+    }
+
+    std::ofstream file(filename);
+    if (file.is_open()) {
+        file << j.dump(2);
+        file.close();
+    } else {
+        std::cerr << "Failed to open file for writing: " << filename << std::endl;
+    }
+}
+
+query_surface_tet read_query_surface_tet_from_file(const std::string& filename)
+{
+    query_surface_tet surface;
+
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "Failed to open file for reading: " << filename << std::endl;
+        return surface;
+    }
+
+    json j;
+    file >> j;
+    file.close();
+
+    size_t num_triangles = j["num_triangles"];
+    surface.triangles.resize(num_triangles);
+
+    for (size_t i = 0; i < num_triangles; ++i) {
+        const auto& tri_json = j["triangles"][i];
+        auto& tri = surface.triangles[i];
+
+        tri.t_id = tri_json["t_id"];
+
+        // Read barycentric coordinates
+        for (int j = 0; j < 3; ++j) {
+            const auto& bc_array = tri_json["bcs"][j];
+            tri.bcs[j] = Eigen::Vector4d(bc_array[0], bc_array[1], bc_array[2], bc_array[3]);
+        }
+
+        // Read tetrahedron vertex ids
+        const auto& tv_array = tri_json["tv_ids"];
+        tri.tv_ids = Eigen::Vector4i(tv_array[0], tv_array[1], tv_array[2], tv_array[3]);
+    }
+
+    return surface;
 }

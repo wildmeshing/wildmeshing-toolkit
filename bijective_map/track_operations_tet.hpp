@@ -43,6 +43,17 @@ struct query_surface_tet
     std::vector<query_triangle_tet> triangles;
     // TODO: embed the connectivity of the triangles here
 };
+Eigen::Vector3d barycentric_to_world_tet(
+    const Eigen::Vector4d& bc,
+    const Eigen::Matrix<double, 4, 3>& v);
+Eigen::Vector4d world_to_barycentric_tet(
+    const Eigen::Vector3d& p,
+    const Eigen::Matrix<double, 4, 3>& v);
+
+void write_query_surface_tet_to_file(const query_surface_tet& surface, const std::string& filename);
+
+query_surface_tet read_query_surface_tet_from_file(const std::string& filename);
+
 
 void handle_consolidate_tet(
     const std::vector<int64_t>& tet_ids_maps,
