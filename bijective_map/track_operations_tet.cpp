@@ -2,6 +2,7 @@
 #include <igl/barycentric_coordinates.h>
 #include <igl/tet_tet_adjacency.h>
 #include "FindPointTetMesh.hpp"
+#include "InteractiveAndRobustMeshBooleans/code/booleans.h"
 // helper function to convert json to matrix
 template <typename Matrix>
 Matrix json_to_matrix(const json& js)
@@ -71,7 +72,7 @@ void handle_consolidate_tet_curve(
     query_curve_tet& curve,
     bool forward)
 {
-    std::cout << "Handling Consolidate forward for curve" << std::endl;
+    std::cout << "Handling Consolidatefor curve" << std::endl;
     if (!forward) {
         // backward
         // TODO: maybe use igl::parallel_for
@@ -98,6 +99,45 @@ void handle_consolidate_tet_curve(
                         std::find(vertex_ids_maps.begin(), vertex_ids_maps.end(), qs.tv_ids[j]);
                     if (it_v != vertex_ids_maps.end()) {
                         qs.tv_ids[j] = std::distance(vertex_ids_maps.begin(), it_v);
+                    } else {
+                        std::cout << "Error: vertex not found" << std::endl;
+                    }
+                }
+            }
+        }
+    }
+}
+
+void handle_consolidate_tet_surface(
+    const std::vector<int64_t>& tet_ids_maps,
+    const std::vector<int64_t>& vertex_ids_maps,
+    query_surface_tet& surface,
+    bool forward)
+{
+    std::cout << "Handling Consolidate for surface" << std::endl;
+    if (!forward) {
+        // backward
+        for (auto& qt : surface.triangles) {
+            if (qt.t_id >= 0) {
+                qt.t_id = tet_ids_maps[qt.t_id];
+            }
+            for (int j = 0; j < 4; j++) {
+                qt.tv_ids[j] = vertex_ids_maps[qt.tv_ids[j]];
+            }
+        }
+    } else {
+        // forward
+        for (auto& qt : surface.triangles) {
+            if (qt.t_id >= 0) {
+                auto it = std::find(tet_ids_maps.begin(), tet_ids_maps.end(), qt.t_id);
+                if (it != tet_ids_maps.end()) {
+                    qt.t_id = std::distance(tet_ids_maps.begin(), it);
+                }
+                for (int j = 0; j < 4; j++) {
+                    auto it_v =
+                        std::find(vertex_ids_maps.begin(), vertex_ids_maps.end(), qt.tv_ids[j]);
+                    if (it_v != vertex_ids_maps.end()) {
+                        qt.tv_ids[j] = std::distance(vertex_ids_maps.begin(), it_v);
                     } else {
                         std::cout << "Error: vertex not found" << std::endl;
                     }
@@ -319,6 +359,8 @@ void handle_one_segment_tet(
         // If p1 is inside current tet → finish
     } // end of else
 }
+
+
 void handle_local_mapping_tet_curve(
     const Eigen::MatrixXd& V_before,
     const Eigen::MatrixXi& T_before,
@@ -366,6 +408,344 @@ void handle_local_mapping_tet_curve(
             TT,
             TTi,
             eps);
+    }
+}
+
+void handle_local_mapping_tet_surface(
+    const Eigen::MatrixXd& V_before,
+    const Eigen::MatrixXi& T_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixXd& V_after,
+    const Eigen::MatrixXi& T_after,
+    const std::vector<int64_t>& id_map_after,
+    const std::vector<int64_t>& v_id_map_after,
+    query_surface_tet& surface)
+{
+    // TODO: what can we do with this eps?
+    double eps = 1e-10;
+
+
+    std::cout << "Handling Local Mapping for surface" << std::endl;
+
+    // prepare for the arrangement
+    std::vector<double> T_before_coords;
+    std::vector<uint> T_before_tris;
+    std::vector<uint> T_before_labels;
+    for (int i = 0; i < V_before.rows(); i++) {
+        for (int j = 0; j < V_before.cols(); j++) {
+            T_before_coords.push_back(V_before(i, j));
+        }
+    }
+    for (int t_id = 0; t_id < T_before.rows(); t_id++) {
+        auto tet = T_before.row(t_id);
+
+        // Extract the four faces of the tetrahedron
+        std::vector<std::vector<int>> faces = {
+            {tet[0], tet[1], tet[2]},
+            {tet[0], tet[1], tet[3]},
+            {tet[0], tet[2], tet[3]},
+            {tet[1], tet[2], tet[3]}};
+
+        for (const auto& tri : faces) {
+            for (const auto& vertex_id : tri) {
+                T_before_tris.push_back(static_cast<uint>(vertex_id));
+            }
+            // Set label based on tetrahedron ID
+            T_before_labels.push_back(static_cast<uint>(t_id));
+        }
+    }
+
+    int current_surface_triangle_size = surface.triangles.size();
+    for (int id = 0; id < current_surface_triangle_size; id++) {
+        auto& qt = surface.triangles[id];
+        if (qt.t_id >= 0) {
+            auto it = std::find(id_map_after.begin(), id_map_after.end(), qt.t_id);
+            if (it == id_map_after.end()) continue; // not found in local patch
+        }
+        query_point_tet qp0 = {qt.t_id, qt.bcs[0], qt.tv_ids};
+        query_point_tet qp1 = {qt.t_id, qt.bcs[1], qt.tv_ids};
+        query_point_tet qp2 = {qt.t_id, qt.bcs[2], qt.tv_ids};
+        std::vector<query_point_tet> qps = {qp0, qp1, qp2};
+
+        // std::cout << "Before local mapping:" << std::endl;
+        // for (int i = 0; i < qps.size(); i++) {
+        //     std::cout << "Point " << i << ": t_id=" << qps[i].t_id
+        //               << ", bc=" << qps[i].bc.transpose() << std::endl;
+        // }
+
+        handle_local_mapping_tet(
+            V_before,
+            T_before,
+            id_map_before,
+            v_id_map_before,
+            V_after,
+            T_after,
+            id_map_after,
+            v_id_map_after,
+            qps);
+
+        // std::cout << "After local mapping:" << std::endl;
+        // for (int i = 0; i < qps.size(); i++) {
+        //     std::cout << "Point " << i << ": t_id=" << qps[i].t_id
+        //               << ", bc=" << qps[i].bc.transpose() << std::endl;
+        // }
+
+        std::cout << "Handling one triangle, get intersections." << std::endl;
+
+        // TODO: handle one triangle
+        // Check if all 3 points in qps have the same t_id
+        if (qps[0].t_id == qps[1].t_id && qps[1].t_id == qps[2].t_id) {
+            std::cout << "All points are in one tetrahedron " << qps[0].t_id << std::endl;
+            // update the query triangle
+            qt.t_id = qps[0].t_id;
+            qt.bcs[0] = qps[0].bc;
+            qt.bcs[1] = qps[1].bc;
+            qt.bcs[2] = qps[2].bc;
+            qt.tv_ids = qps[0].tv_ids;
+        } else {
+            std::cout << "Not in one tetrahedron" << std::endl;
+            std::cout << "Computing arrangement" << std::endl;
+            // Get local t_ids for each point
+            std::vector<int> local_t_ids;
+            for (const auto& qp : qps) {
+                auto it = std::find(id_map_before.begin(), id_map_before.end(), qp.t_id);
+                if (it != id_map_before.end()) {
+                    int local_id = std::distance(id_map_before.begin(), it);
+                    local_t_ids.push_back(local_id);
+                } else {
+                    std::cout << "Error: t_id " << qp.t_id << " not found in id_map_before"
+                              << std::endl;
+                    exit(1);
+                }
+            }
+
+            std::vector<double> in_coords = T_before_coords;
+            std::vector<uint> in_tris = T_before_tris;
+            std::vector<uint> in_labels = T_before_labels;
+
+            // Compute real positions for each query point
+            for (int i = 0; i < qps.size(); i++) {
+                // Get tetrahedron vertices
+                Eigen::Vector4i tet = T_before.row(local_t_ids[i]);
+                Eigen::Vector4d bc = qps[i].bc;
+
+                // Compute position using barycentric coordinates
+                Eigen::Vector3d pos = Eigen::Vector3d::Zero();
+                for (int j = 0; j < 4; j++) {
+                    pos += bc[j] * V_before.row(tet[j]).transpose();
+                }
+
+                // Add position to in_coords
+                in_coords.push_back(pos[0]);
+                in_coords.push_back(pos[1]);
+                in_coords.push_back(pos[2]);
+            }
+
+            // Add triangle to in_tris using base index at end of original vertices
+            uint base_idx = V_before.rows();
+            in_tris.push_back(base_idx);
+            in_tris.push_back(base_idx + 1);
+            in_tris.push_back(base_idx + 2);
+
+            // Add label for the triangle
+            in_labels.push_back(T_before.rows());
+
+
+            // init the necessary data structures
+            point_arena arena;
+            std::vector<genericPoint*> arr_verts;
+            std::vector<uint> arr_in_tris, arr_out_tris;
+            std::vector<std::bitset<NBIT>> arr_in_labels;
+            std::vector<DuplTriInfo> dupl_triangles;
+            Labels labels;
+            cinolib::Octree octree;
+
+            // arrangement, last parameter is false to avoid parallelization
+            customArrangementPipeline(
+                in_coords,
+                in_tris,
+                in_labels,
+                arr_in_tris,
+                arr_in_labels,
+                arena,
+                arr_verts,
+                arr_out_tris,
+                labels,
+                octree,
+                dupl_triangles,
+                false);
+
+            // create FastTrimesh
+            FastTrimesh tm(arr_verts, arr_out_tris, true);
+            // Prepare output data
+            std::vector<double> out_coords;
+            std::vector<uint> out_tris;
+            std::vector<std::bitset<NBIT>> out_labels;
+            {
+                tm.resetTrianglesInfo();
+                uint num_tris = 0;
+
+                // All triangles
+                for (uint t_id = 0; t_id < tm.numTris(); t_id++) {
+                    tm.setTriInfo(t_id, 1);
+                    num_tris++;
+                }
+
+                getFinalMeshInOder(tm, labels, num_tris, out_coords, out_tris, out_labels);
+            }
+
+            // get barycentric coordinates of the output triangles
+            std::vector<int> out_tri_ids;
+            std::vector<std::set<int>> vertex_to_labels(tm.numVerts());
+
+            for (int i = 0; i < 3; i++) {
+                std::cout << "i = " << i << std::endl;
+
+                vertex_to_labels[V_before.rows() + i].insert(local_t_ids[i]);
+
+                // TODO: fix case that points land on the edge/face of the tet
+                std::set<int> needs_to_contain;
+                for (int j = 0; j < 4; j++) {
+                    if (abs(qps[i].bc(j)) >= eps) {
+                        needs_to_contain.insert(T_before(local_t_ids[i], j));
+                    }
+                }
+                std::cout << "needs_to_contain: ";
+                for (int v : needs_to_contain) {
+                    std::cout << v << " ";
+                }
+                std::cout << std::endl;
+                if (needs_to_contain.size() < 4) {
+                    for (int t_id = 0; t_id < T_before.rows(); t_id++) {
+                        // Check if tetrahedron t_id contains all required vertices
+                        bool contains_all = true;
+                        for (int required_vertex : needs_to_contain) {
+                            bool found = false;
+                            for (int j = 0; j < 4; j++) {
+                                if (T_before(t_id, j) == required_vertex) {
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if (!found) {
+                                contains_all = false;
+                                break;
+                            }
+                        }
+                        if (contains_all) {
+                            std::cout << "t_id = " << t_id << " contains all" << std::endl;
+                            vertex_to_labels[V_before.rows() + i].insert(t_id);
+                        }
+                    }
+                }
+            }
+
+            std::cout << "V_before.rows() = " << V_before.rows() << std::endl;
+            std::cout << "T_before.rows() = " << T_before.rows() << std::endl;
+
+            for (uint t_id = 0; t_id < tm.numTris(); t_id++) {
+                uint v0 = tm.tri(t_id)[0];
+                uint v1 = tm.tri(t_id)[1];
+                uint v2 = tm.tri(t_id)[2];
+                uint v3 = tm.tri(t_id)[3];
+
+                for (uint label_id = 0; label_id < labels.num; label_id++) {
+                    if (labels.surface[t_id][label_id]) {
+                        vertex_to_labels[v0].insert(label_id);
+                        vertex_to_labels[v1].insert(label_id);
+                        vertex_to_labels[v2].insert(label_id);
+                    }
+                }
+
+                if (labels.surface[t_id][labels.num - 1]) {
+                    out_tri_ids.push_back(t_id);
+                }
+            }
+
+            for (int i = 0; i < out_tri_ids.size(); i++) {
+                int triangle_id = out_tri_ids[i];
+                std::cout << "checking triangle id: " << triangle_id << std::endl;
+                uint v0_idx = tm.tri(triangle_id)[0];
+                uint v1_idx = tm.tri(triangle_id)[1];
+                uint v2_idx = tm.tri(triangle_id)[2];
+
+                {
+                    std::cout << "vertex_to_labels for triangle vertices:" << std::endl;
+                    std::cout << "v0 (" << v0_idx << "): ";
+                    for (auto label : vertex_to_labels[v0_idx]) {
+                        std::cout << label << " ";
+                    }
+                    std::cout << std::endl;
+                    std::cout << "v1 (" << v1_idx << "): ";
+                    for (auto label : vertex_to_labels[v1_idx]) {
+                        std::cout << label << " ";
+                    }
+                    std::cout << std::endl;
+                    std::cout << "v2 (" << v2_idx << "): ";
+                    for (auto label : vertex_to_labels[v2_idx]) {
+                        std::cout << label << " ";
+                    }
+                    std::cout << std::endl;
+                }
+
+                int containing_tet_id = -1;
+                for (int tet_id = 0; tet_id < T_before.rows(); tet_id++) {
+                    if (vertex_to_labels[v0_idx].count(tet_id) &&
+                        vertex_to_labels[v1_idx].count(tet_id) &&
+                        vertex_to_labels[v2_idx].count(tet_id)) {
+                        std::cout << "triangle " << triangle_id << " is in tet " << tet_id
+                                  << std::endl;
+                        containing_tet_id = tet_id;
+                        break;
+                    }
+                }
+                if (containing_tet_id == -1) {
+                    std::cout << "Error: triangle " << triangle_id << " is not in any tet"
+                              << std::endl;
+
+                    exit(1);
+                }
+
+                query_triangle_tet q_tri;
+                q_tri.t_id = id_map_before[containing_tet_id];
+                Eigen::Matrix<double, 4, 3> tet_Vs;
+                tet_Vs.row(0) = V_before.row(T_before(containing_tet_id, 0));
+                tet_Vs.row(1) = V_before.row(T_before(containing_tet_id, 1));
+                tet_Vs.row(2) = V_before.row(T_before(containing_tet_id, 2));
+                tet_Vs.row(3) = V_before.row(T_before(containing_tet_id, 3));
+                for (int j = 0; j < 4; j++) {
+                    q_tri.tv_ids[j] = v_id_map_before[T_before(containing_tet_id, j)];
+                }
+                auto v0_world = Eigen::Vector3d(
+                    out_coords[v0_idx * 3],
+                    out_coords[v0_idx * 3 + 1],
+                    out_coords[v0_idx * 3 + 2]);
+                auto v1_world = Eigen::Vector3d(
+                    out_coords[v1_idx * 3],
+                    out_coords[v1_idx * 3 + 1],
+                    out_coords[v1_idx * 3 + 2]);
+                auto v2_world = Eigen::Vector3d(
+                    out_coords[v2_idx * 3],
+                    out_coords[v2_idx * 3 + 1],
+                    out_coords[v2_idx * 3 + 2]);
+                q_tri.bcs[0] = world_to_barycentric_tet(v0_world, tet_Vs);
+                q_tri.bcs[1] = world_to_barycentric_tet(v1_world, tet_Vs);
+                q_tri.bcs[2] = world_to_barycentric_tet(v2_world, tet_Vs);
+                for (int j = 0; j < 3; j++) {
+                    for (int k = 0; k < 4; k++) {
+                        if (std::abs(q_tri.bcs[j](k)) < 1e-15) {
+                            q_tri.bcs[j](k) = 0.0;
+                        }
+                    }
+                }
+                if (i == 0) {
+                    qt = q_tri;
+                } else {
+                    surface.triangles.push_back(q_tri);
+                }
+            }
+        }
     }
 }
 

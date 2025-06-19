@@ -208,6 +208,101 @@ void track_curve_one_operation_tet(
         }
     }
 }
+void track_surface_one_operation_tet(
+    const json& operation_log,
+    query_surface_tet& query_surface,
+    bool do_forward = false,
+    bool use_rational = false)
+{
+    std::string operation_name = operation_log["operation_name"];
+    if (operation_name == "MeshConsolidate") {
+        std::cout << "This Operations is Consolidate" << std::endl;
+        std::vector<int64_t> tet_ids_maps;
+        std::vector<int64_t> vertex_ids_maps;
+        parse_consolidate_file_tet(operation_log, tet_ids_maps, vertex_ids_maps);
+
+        handle_consolidate_tet_surface(tet_ids_maps, vertex_ids_maps, query_surface, do_forward);
+    } else {
+        std::cout << "This Operations is " << operation_name << std::endl;
+        Eigen::MatrixXi T_after, T_before;
+        Eigen::MatrixXd V_after, V_before;
+        std::vector<int64_t> id_map_after, id_map_before;
+        std::vector<int64_t> v_id_map_after, v_id_map_before;
+        parse_non_collapse_file_tet(
+            operation_log,
+            V_before,
+            T_before,
+            id_map_before,
+            v_id_map_before,
+            V_after,
+            T_after,
+            id_map_after,
+            v_id_map_after);
+
+        if (do_forward) {
+            handle_local_mapping_tet_surface(
+                V_after,
+                T_after,
+                id_map_after,
+                v_id_map_after,
+                V_before,
+                T_before,
+                id_map_before,
+                v_id_map_before,
+                query_surface);
+        } else {
+            handle_local_mapping_tet_surface(
+                V_before,
+                T_before,
+                id_map_before,
+                v_id_map_before,
+                V_after,
+                T_after,
+                id_map_after,
+                v_id_map_after,
+                query_surface);
+        }
+    }
+}
+
+void track_surface_tet(
+    path dirPath,
+    query_surface_tet& query_surface,
+    bool do_forward = false,
+    bool use_rational = false)
+{
+    namespace fs = std::filesystem;
+    int maxIndex = -1;
+
+    for (const auto& entry : fs::directory_iterator(dirPath)) {
+        if (entry.path().filename().string().find("operation_log_") != std::string::npos) {
+            ++maxIndex;
+        }
+    }
+
+    for (int i = maxIndex; i >= 0; --i) {
+        int file_id = i;
+        if (do_forward) {
+            file_id = maxIndex - i;
+        }
+
+        fs::path filePath = dirPath / ("operation_log_" + std::to_string(file_id) + ".json");
+        std::ifstream file(filePath);
+        if (!file.is_open()) {
+            std::cerr << "Failed to open file: " << filePath << std::endl;
+            continue;
+        }
+        json operation_log;
+        file >> operation_log;
+
+        std::cout << "Trace Operations number: " << file_id << std::endl;
+        track_surface_one_operation_tet(operation_log, query_surface, do_forward, use_rational);
+
+        file.close();
+    }
+}
+
+
 void track_point_tet(
     path dirPath,
     std::vector<query_point_tet>& query_points,
@@ -514,7 +609,6 @@ query_surface_tet sample_query_surface(const Eigen::MatrixXi& T_out, const Eigen
             std::cout << "ERRRO! triangle " << triangle_id << " is not in any tet" << std::endl;
             exit(1);
         }
-        // TODO: get the barycentric coordinates of the triangle in the tet
         query_triangle_tet q_tri;
         q_tri.t_id = containing_tet_id;
         q_tri.tv_ids = T_out.row(containing_tet_id);
@@ -860,19 +954,21 @@ int main(int argc, char** argv)
 
         auto [surface_V, surface_F] = query_surface_to_world_positions(query_surface, V_after);
         write_triangle_mesh_to_vtu(surface_V, surface_F, "query_surface_tet_after.vtu");
-        // track_surface_tet(operation_logs_dir, query_surface, false, false);
 
 
-        // TODO:
-        // track_surface_tet(operation_logs_dir, query_surface, false, false);
+        std::cout << "before tracking, surface size: " << query_surface.triangles.size()
+                  << std::endl;
+        track_surface_tet(operation_logs_dir, query_surface, false, false);
+        std::cout << "after tracking, surface size: " << query_surface.triangles.size()
+                  << std::endl;
 
-        // write_query_surface_tet_to_file(query_surface, "query_surface_tet_output.json");
-        // auto [surface_V_before, surface_F_before] =
-        //     query_surface_to_world_positions(query_surface, V_in);
-        // write_triangle_mesh_to_vtu(
-        //     surface_V_before,
-        //     surface_F_before,
-        //     "query_surface_tet_before.vtu");
+        write_query_surface_tet_to_file(query_surface, "query_surface_tet_before.json");
+        auto [surface_V_before, surface_F_before] =
+            query_surface_to_world_positions(query_surface, V_before);
+        write_triangle_mesh_to_vtu(
+            surface_V_before,
+            surface_F_before,
+            "query_surface_tet_before.vtu");
     }
 
     return 0;

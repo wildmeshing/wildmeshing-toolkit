@@ -67,6 +67,12 @@ void handle_consolidate_tet_curve(
     query_curve_tet& curve,
     bool forward = false);
 
+void handle_consolidate_tet_surface(
+    const std::vector<int64_t>& tet_ids_maps,
+    const std::vector<int64_t>& vertex_ids_maps,
+    query_surface_tet& surface,
+    bool forward = false);
+
 // // Rational version of handle_collapse_edge_tet
 // void handle_collapse_edge_tet_r(
 //     const Eigen::MatrixXd& UV_joint,
@@ -120,6 +126,17 @@ void handle_local_mapping_tet_curve(
     const std::vector<int64_t>& id_map_after,
     const std::vector<int64_t>& v_id_map_after,
     query_curve_tet& curve);
+
+void handle_local_mapping_tet_surface(
+    const Eigen::MatrixXd& V_before,
+    const Eigen::MatrixXi& T_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixXd& V_after,
+    const Eigen::MatrixXi& T_after,
+    const std::vector<int64_t>& id_map_after,
+    const std::vector<int64_t>& v_id_map_after,
+    query_surface_tet& surface);
 
 void parse_consolidate_file_tet(
     const json& operation_log,
