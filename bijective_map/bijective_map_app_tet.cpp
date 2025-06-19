@@ -650,12 +650,16 @@ int main(int argc, char** argv)
     // init_mesh_ptr->serialize(writer);
     // TODO:
     // 2. figure out how to read the outputmesh in vtu format out is after remesh
-    auto T_out = readTetrahedrons("../build/T_matrix_out.csv");
-    auto V_out = readVertices("../build/V_matrix_out.csv");
+    auto T_after = readTetrahedrons("../build/T_matrix_out.csv");
+    auto V_after = readVertices("../build/V_matrix_out.csv");
     // // TODO: for now, first we convert it with TV matrix
-    auto T_in = readTetrahedrons("../build/T_matrix_in.csv");
-    auto V_in = readVertices("../build/V_matrix_in.csv");
+    auto T_before = readTetrahedrons("../build/T_matrix_in.csv");
+    auto V_before = readVertices("../build/V_matrix_in.csv");
 
+    std::cout << "T_after.rows(): " << T_after.rows() << std::endl;
+    std::cout << "V_after.rows(): " << V_after.rows() << std::endl;
+    std::cout << "T_before.rows(): " << T_before.rows() << std::endl;
+    std::cout << "V_before.rows(): " << V_before.rows() << std::endl;
 
     if (application_name == "back") {
         std::cout << "Back tracking" << std::endl;
@@ -675,8 +679,8 @@ int main(int argc, char** argv)
         std::unordered_map<std::string, int> face_count;
 
         // Count the occurrence of each face
-        for (int i = 0; i < T_out.rows(); i++) {
-            auto tet = T_out.row(i);
+        for (int i = 0; i < T_after.rows(); i++) {
+            auto tet = T_after.row(i);
             for (int j = 0; j < 4; j++) {
                 Eigen::Vector3i face;
                 face << tet[j], tet[(j + 1) % 4], tet[(j + 2) % 4];
@@ -688,9 +692,9 @@ int main(int argc, char** argv)
         }
 
         // Find boundary tetrahedrons and sample
-        for (int i = 0; i < T_out.rows(); i++) {
+        for (int i = 0; i < T_after.rows(); i++) {
             if (i % 3 != 0) continue;
-            auto tet = T_out.row(i);
+            auto tet = T_after.row(i);
             int boundary_face_count = 0;
             for (int j = 0; j < 4; j++) {
                 Eigen::Vector3i face;
@@ -707,7 +711,7 @@ int main(int argc, char** argv)
                 qp.t_id = i;
                 qp.bc = Eigen::Vector4d::Random().cwiseAbs(); // Randomize barycentric coordinates
                 qp.bc /= qp.bc.sum(); // Normalize to ensure they sum to 1
-                qp.tv_ids = T_out.row(i);
+                qp.tv_ids = T_after.row(i);
                 boundary_query_points.push_back(qp);
             }
         }
@@ -721,16 +725,16 @@ int main(int argc, char** argv)
 
         // compute postion and save to file
         std::cout << "Writing points to file after remesh" << std::endl;
-        write_points_to_file(query_points, V_out, "points_after_remesh.csv");
+        write_points_to_file(query_points, V_after, "points_after_remesh.csv");
         track_point_tet(operation_logs_dir, query_points, false, false);
 
         std::cout << "Writing points to file after back tracking" << std::endl;
-        write_points_to_file(query_points, V_in, "points_after_back_tracking.csv");
+        write_points_to_file(query_points, V_before, "points_after_back_tracking.csv");
     } else if (application_name == "back_curve") {
         // TODO: orgnize the application code to a separate function
         // 1. sample a curve in the tet mesh (output mesh)
         Eigen::MatrixXi TT, TTi;
-        igl::tet_tet_adjacency(T_out, TT, TTi);
+        igl::tet_tet_adjacency(T_after, TT, TTi);
         query_curve_tet curve;
         int curve_length = 10;
         {
@@ -755,7 +759,7 @@ int main(int argc, char** argv)
             // Set random seed for reproducibility
             srand(42);
             // sample the start point
-            int start_tet_id = rand() % T_out.rows();
+            int start_tet_id = rand() % T_after.rows();
             std::unordered_set<int> visited_tets;
 
             int current_tet_id = start_tet_id;
@@ -777,7 +781,7 @@ int main(int argc, char** argv)
                 seg.t_id = current_tet_id;
                 seg.bcs[0] = mid_point_on_face(first_face);
                 seg.bcs[1] = mid_point_on_face(second_face);
-                seg.tv_ids = T_out.row(current_tet_id);
+                seg.tv_ids = T_after.row(current_tet_id);
                 curve.segments.push_back(seg);
 
                 std::cout << "TTi.row(current_tet_id): " << TTi.row(current_tet_id) << std::endl;
@@ -831,7 +835,11 @@ int main(int argc, char** argv)
             std::cout << "Written curve points to curve_start_points.csv and curve_end_points.csv"
                       << std::endl;
         };
-        write_curve_points_to_file(V_out, curve, "curve_start_points.csv", "curve_end_points.csv");
+        write_curve_points_to_file(
+            V_after,
+            curve,
+            "curve_start_points.csv",
+            "curve_end_points.csv");
         track_curve_tet(operation_logs_dir, curve, false, false);
         // 2. back track the curve
         // 3. write the curve to a file, it should be a edge mesh in vtu format
@@ -839,20 +847,32 @@ int main(int argc, char** argv)
         // TODO: create a input surface mesh
         std::cout << "Back tracking surface" << std::endl;
 
-        std::string query_surface_filename = "query_surface_tet_input.json";
+        std::string query_surface_filename = "query_surface_tet_after.json";
         query_surface_tet query_surface;
         if (!std::filesystem::exists(query_surface_filename)) {
             std::cout << "query_surface not found, sampling and writing to file..." << std::endl;
-            query_surface = sample_query_surface(T_out, V_out);
+            query_surface = sample_query_surface(T_after, V_after);
             write_query_surface_tet_to_file(query_surface, query_surface_filename);
         } else {
             std::cout << "query_surface found, reading from file..." << std::endl;
             query_surface = read_query_surface_tet_from_file(query_surface_filename);
         }
 
-        auto [surface_V, surface_F] = query_surface_to_world_positions(query_surface, V_out);
-        write_triangle_mesh_to_vtu(surface_V, surface_F, "query_surface_tet_input.vtu");
+        auto [surface_V, surface_F] = query_surface_to_world_positions(query_surface, V_after);
+        write_triangle_mesh_to_vtu(surface_V, surface_F, "query_surface_tet_after.vtu");
         // track_surface_tet(operation_logs_dir, query_surface, false, false);
+
+
+        // TODO:
+        // track_surface_tet(operation_logs_dir, query_surface, false, false);
+
+        // write_query_surface_tet_to_file(query_surface, "query_surface_tet_output.json");
+        // auto [surface_V_before, surface_F_before] =
+        //     query_surface_to_world_positions(query_surface, V_in);
+        // write_triangle_mesh_to_vtu(
+        //     surface_V_before,
+        //     surface_F_before,
+        //     "query_surface_tet_before.vtu");
     }
 
     return 0;
