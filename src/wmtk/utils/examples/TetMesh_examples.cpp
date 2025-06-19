@@ -103,17 +103,16 @@ TetMeshVT six_cycle_tets()
     T.row(5) << 7, 2, 3, 5;
 
     V.resize(8, 3);
+    V.row(0) = Eigen::Vector3d(-1, 1, 0);
+    V.row(1) = Eigen::Vector3d(-1, 0, 0);
+    V.row(6) = Eigen::Vector3d(-1, -1, 0);
+
     V.row(2) = Eigen::Vector3d(0, 0, -1);
     V.row(3) = Eigen::Vector3d(0, 0, 1);
 
-    V.row(1) = Eigen::Vector3d(-1, 0, 0);
-    V.row(5) = Eigen::Vector3d(1, 0, 0);
-
-    V.row(0) = Eigen::Vector3d(1, -1, 0);
-    V.row(7) = Eigen::Vector3d(-1, 1, 0);
-
     V.row(4) = Eigen::Vector3d(1, 1, 0);
-    V.row(6) = Eigen::Vector3d(-1, -1, 0);
+    V.row(5) = Eigen::Vector3d(1, 0, 0);
+    V.row(7) = Eigen::Vector3d(1, -1, 0);
 
     return m;
 }

@@ -1,16 +1,23 @@
 #include <igl/edges.h>
 #include <igl/oriented_facets.h>
+#include <wmtk/TetMesh.h>
 #include <wmtk/TriMesh.h>
-//#include <paraviewo/HDF5VTUWriter.hpp>
 #include <paraviewo/ParaviewWriter.hpp>
 #include <paraviewo/VTUWriter.hpp>
+#include <wmtk/io/TetVTUWriter.hpp>
+#include <wmtk/io/TriVTUWriter.hpp>
 #include <wmtk/utils/Delaunay.hpp>
+#include <wmtk/utils/examples/TetMesh_examples.hpp>
+#include <wmtk/utils/examples/TriMesh_examples.hpp>
 #include <wmtk/utils/io.hpp>
 
 
 #include <catch2/catch_test_macros.hpp>
 
 #include <sstream>
+
+using namespace wmtk;
+using namespace wmtk::utils::examples;
 
 TEST_CASE("io", "[io][mshio]")
 {
@@ -115,133 +122,39 @@ TEST_CASE("io-hang", "[io][mshio]")
 
 TEST_CASE("paraviewo-tri", "[io][paraviewo]")
 {
-    Eigen::MatrixXd vertices;
-    vertices.resize(4, 2); // can be also 3D
-    vertices << 0, 0, 1, 0, 0, 1, 1, 1;
+    tri::TriMeshVF VF = tri::edge_region();
 
-    Eigen::MatrixXi faces;
-    faces.resize(2, 3);
-    faces << 0, 1, 2, 1, 3, 2;
+    TriMesh m;
+    m.create_mesh(VF.F);
 
-    // paraviewo::HDF5VTUWriter writer;
-    paraviewo::VTUWriter writer;
-
-    SECTION("No attributes")
-    {
-        writer.write_mesh("triMesh_NoAttributes.vtu", vertices, faces);
-    }
-
-    SECTION("Add basic attributes")
-    {
-        // create some pseudo vertex attribute
-        Eigen::MatrixXd vertex_idx;
-        vertex_idx.resize(vertices.rows(), 1);
-        for (unsigned i = 0; i < vertices.rows(); ++i) {
-            vertex_idx(i, 0) = i;
-        }
-
-        // create some pseudo cell (in 2D that is a face) attribute
-        Eigen::MatrixXd face_idx;
-        face_idx.resize(faces.rows(), 1);
-        for (unsigned i = 0; i < faces.rows(); ++i) {
-            face_idx(i, 0) = i;
-        }
-
-        writer.add_field("vertex_idx", vertex_idx);
-        writer.add_cell_field("face_idx", face_idx);
-        writer.write_mesh("triMesh_BasicAttributes.vtu", vertices, faces);
-    }
-
-    // everything that is not a vertex or cell must be stored in its own file
-    SECTION("Edge attributes")
-    {
-        Eigen::MatrixXi edges;
-        igl::edges(faces, edges);
-
-        // create some pseudo edge attribute
-        Eigen::MatrixXd edge_idx;
-        edge_idx.resize(edges.rows(), 1);
-        for (unsigned i = 0; i < edges.rows(); ++i) {
-            edge_idx(i, 0) = i;
-        }
-
-        // consider edges as cells
-        writer.add_cell_field("edge_idx", edge_idx);
-        writer.write_mesh("triMesh_EdgeAttributes.vtu", vertices, edges);
-    }
+    io::TriVTUWriter writer(m);
+    writer.add_vertex_positions([&m, &VF](int i) { return VF.V.row(i); });
+    writer.add_vertex_attribute("position", [&m, &VF](int i) { return VF.V.row(i); });
+    writer.add_vertex_attribute("vid", [&m](int i) { return VectorXd::Constant(1, i); });
+    writer.add_triangle_attribute("fid", [&m](int i) { return VectorXd::Constant(1, i); });
+    writer.add_edge_attribute("eid", [&m](int i) { return VectorXd::Constant(1, i); });
+    writer.write_triangles("tri_paraviewo_f.vtu");
+    writer.write_edges("tri_paraviewo_e.vtu");
 }
 
 TEST_CASE("paraviewo-tet", "[io][paraviewo]")
 {
-    Eigen::MatrixXd vertices;
-    vertices.resize(5, 3);
-    vertices << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 1;
+    tet::TetMeshVT VT = tet::six_cycle_tets();
 
-    Eigen::MatrixXi tets;
-    tets.resize(2, 4);
-    tets << 0, 2, 1, 3, 0, 1, 2, 4;
+    TetMesh m;
+    m.init(VT.T);
 
-    paraviewo::VTUWriter writer;
+    io::TetVTUWriter writer(m);
+    writer.add_vertex_positions([&m, &VT](int i) { return VT.V.row(i); });
 
-    SECTION("No attributes")
-    {
-        writer.write_mesh("tetMesh_NoAttributes.vtu", vertices, tets);
-    }
+    writer.add_vertex_attribute("position", [&m, &VT](int i) { return VT.V.row(i); });
+    writer.add_vertex_attribute("vid", [&m](int i) { return VectorXd::Constant(1, i); });
 
-    SECTION("Add basic attributes")
-    {
-        // create some pseudo vertex attribute
-        Eigen::MatrixXd vertex_idx;
-        vertex_idx.resize(vertices.rows(), 1);
-        for (unsigned i = 0; i < vertices.rows(); ++i) {
-            vertex_idx(i, 0) = i;
-        }
+    writer.add_tet_attribute("tid", [&m](int i) { return VectorXd::Constant(1, i); });
+    writer.add_triangle_attribute("fid", [&m](int i) { return VectorXd::Constant(1, i); });
+    writer.add_edge_attribute("eid", [&m](int i) { return VectorXd::Constant(1, i); });
 
-        // create some pseudo cell (in 3D that is a tet) attribute
-        Eigen::MatrixXd cell_idx;
-        cell_idx.resize(tets.rows(), 1);
-        for (unsigned i = 0; i < tets.rows(); ++i) {
-            cell_idx(i, 0) = i;
-        }
-
-        writer.add_field("vertex_idx", vertex_idx);
-        writer.add_cell_field("cell_idx", cell_idx);
-        writer.write_mesh("tetMesh_BasicAttributes.vtu", vertices, tets);
-    }
-
-    // everything that is not a vertex or cell must be stored in its own file
-    SECTION("Edge attributes")
-    {
-        Eigen::MatrixXi edges;
-        igl::edges(tets, edges);
-
-        // create some pseudo edge attribute
-        Eigen::MatrixXd edge_idx;
-        edge_idx.resize(edges.rows(), 1);
-        for (unsigned i = 0; i < edges.rows(); ++i) {
-            edge_idx(i, 0) = i;
-        }
-
-        // consider edges as cells
-        writer.add_cell_field("edge_idx", edge_idx);
-        writer.write_mesh("tetMesh_EdgeAttributes.vtu", vertices, edges);
-    }
-
-    SECTION("Face attributes")
-    {
-        Eigen::MatrixXi faces;
-        igl::oriented_facets(tets, faces);
-
-
-        // create some pseudo edge attribute
-        Eigen::MatrixXd face_idx;
-        face_idx.resize(faces.rows(), 1);
-        for (unsigned i = 0; i < faces.rows(); ++i) {
-            face_idx(i, 0) = i;
-        }
-
-        // consider faces as cells
-        writer.add_cell_field("face_idx", face_idx);
-        writer.write_mesh("tetMesh_FaceAttributes.vtu", vertices, faces);
-    }
+    writer.write_tets("tet_paraviewo_t.vtu");
+    writer.write_triangles("tet_paraviewo_f.vtu");
+    writer.write_edges("tet_paraviewo_e.vtu");
 }

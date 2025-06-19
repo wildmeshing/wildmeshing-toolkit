@@ -26,6 +26,7 @@ using Vector3r = Vector<Rational, 3>;
 
 using Vector2i = Vector<int, 2>;
 using Vector3i = Vector<int, 3>;
+using Vector4i = Vector<int, 4>;
 using VectorXi = Vector<int, Eigen::Dynamic>;
 
 } // namespace wmtk
