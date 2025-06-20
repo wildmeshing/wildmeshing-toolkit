@@ -933,6 +933,22 @@ TriMesh::Tuple wmtk::TriMesh::tuple_from_vids(size_t vid0, size_t vid1, size_t v
     return Tuple();
 }
 
+simplex::RawSimplex<1> wmtk::TriMesh::simplex_from_vertex(const Tuple& t) const
+{
+    return simplex::RawSimplex<1>(t.vid(*this));
+}
+
+simplex::RawSimplex<2> wmtk::TriMesh::simplex_from_edge(const Tuple& t) const
+{
+    return simplex::RawSimplex<2>(t.vid(*this), t.switch_vertex(*this).vid(*this));
+}
+
+simplex::RawSimplex<3> wmtk::TriMesh::simplex_from_face(const Tuple& t) const
+{
+    const auto vs = oriented_tri_vids(t.fid(*this));
+    return simplex::RawSimplex<3>(vs[0], vs[1], vs[2]);
+}
+
 
 size_t TriMesh::get_next_empty_slot_t()
 {

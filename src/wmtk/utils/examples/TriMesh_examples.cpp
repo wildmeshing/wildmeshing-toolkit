@@ -33,11 +33,11 @@ TriMeshVF two_triangles(int8_t dimension)
     auto& F = m.F;
     auto& V = m.V;
 
-    V.resize(2, 3);
-    V.row(0) << 0, 1, 2;
-    V.row(1) << 0, 2, 3;
+    F.resize(2, 3);
+    F.row(0) << 0, 1, 2;
+    F.row(1) << 0, 2, 3;
 
-    V.resize(3, dimension);
+    V.resize(4, dimension);
     V.setZero();
     V.row(0) << 0, 0;
     V.row(1) << 1, 0;
