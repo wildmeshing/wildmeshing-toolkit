@@ -4,6 +4,7 @@
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/simplex/RawSimplex.hpp>
+#include <wmtk/simplex/RawSimplexCollection.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 // clang-format off
@@ -283,6 +284,11 @@ public:
     simplex::Vertex simplex_from_vertex(const Tuple& t) const;
     simplex::Edge simplex_from_edge(const Tuple& t) const;
     simplex::Face simplex_from_face(const Tuple& t) const;
+
+    Tuple tuple_from_simplex(const simplex::Face& s) const;
+    // Tuple tuple_from_simplex(const simplex::Edge& s) const;
+
+    simplex::RawSimplexCollection simplex_incident_triangles(const simplex::Vertex& v) const;
 
     template <typename T>
     using vector = tbb::concurrent_vector<T>;

@@ -4,22 +4,22 @@
 #include <cassert>
 
 namespace wmtk::simplex {
-const std::vector<Vertex> RawSimplexCollection::vertices() const
+const std::vector<Vertex>& RawSimplexCollection::vertices() const
 {
     return m_v;
 }
 
-const std::vector<Edge> RawSimplexCollection::edges() const
+const std::vector<Edge>& RawSimplexCollection::edges() const
 {
     return m_e;
 }
 
-const std::vector<Face> RawSimplexCollection::faces() const
+const std::vector<Face>& RawSimplexCollection::faces() const
 {
     return m_f;
 }
 
-const std::vector<Tet> RawSimplexCollection::tets() const
+const std::vector<Tet>& RawSimplexCollection::tets() const
 {
     return m_t;
 }

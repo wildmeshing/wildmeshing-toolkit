@@ -949,6 +949,26 @@ simplex::Face wmtk::TriMesh::simplex_from_face(const Tuple& t) const
     return simplex::Face(vs[0], vs[1], vs[2]);
 }
 
+TriMesh::Tuple wmtk::TriMesh::tuple_from_simplex(const simplex::Face& s) const
+{
+    const auto& v = s.vertices();
+    return tuple_from_vids(v[0], v[1], v[2]);
+}
+
+simplex::RawSimplexCollection wmtk::TriMesh::simplex_incident_triangles(
+    const simplex::Vertex& v) const
+{
+    const auto fids = m_vertex_connectivity[v.vertices()[0]].m_conn_tris;
+    simplex::RawSimplexCollection sc;
+
+    for (const size_t fid : fids) {
+        const auto vids = oriented_tri_vids(fid);
+        sc.add(simplex::Face(vids[0], vids[1], vids[2]));
+    }
+    sc.sort_and_clean();
+    return sc;
+}
+
 
 size_t TriMesh::get_next_empty_slot_t()
 {

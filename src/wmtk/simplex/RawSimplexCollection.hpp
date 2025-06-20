@@ -22,10 +22,10 @@ public:
     /**
      * @brief Return vector of all vertices.
      */
-    const std::vector<Vertex> vertices() const;
-    const std::vector<Edge> edges() const;
-    const std::vector<Face> faces() const;
-    const std::vector<Tet> tets() const;
+    const std::vector<Vertex>& vertices() const;
+    const std::vector<Edge>& edges() const;
+    const std::vector<Face>& faces() const;
+    const std::vector<Tet>& tets() const;
 
     /**
      * @brief Add simplex to the collection.
