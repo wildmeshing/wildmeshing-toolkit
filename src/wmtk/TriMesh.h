@@ -280,9 +280,9 @@ public:
 
     Tuple tuple_from_vids(size_t vid0, size_t vid1, size_t vid2) const;
 
-    simplex::RawSimplex<1> simplex_from_vertex(const Tuple& t) const;
-    simplex::RawSimplex<2> simplex_from_edge(const Tuple& t) const;
-    simplex::RawSimplex<3> simplex_from_face(const Tuple& t) const;
+    simplex::Vertex simplex_from_vertex(const Tuple& t) const;
+    simplex::Edge simplex_from_edge(const Tuple& t) const;
+    simplex::Face simplex_from_face(const Tuple& t) const;
 
     template <typename T>
     using vector = tbb::concurrent_vector<T>;

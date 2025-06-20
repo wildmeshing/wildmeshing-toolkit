@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include "RawSimplex.hpp"
 
 namespace wmtk::simplex {
@@ -19,47 +20,22 @@ public:
     // const std::vector<RawSimplex>& simplex_vector() const { return m_simplices; }
 
     /**
-     * @brief Return vector of all simplices of the requested dimension.
+     * @brief Return vector of all vertices.
      */
-    template <int DIM>
-    const std::vector<RawSimplex<DIM + 1>>& simplex_vector() const
-    {
-        if constexpr (DIM == 0) {
-            return m_v;
-        } else if constexpr (DIM == 1) {
-            return m_e;
-        } else if constexpr (DIM == 2) {
-            return m_f;
-        } else {
-            static_assert(DIM == 3);
-            return m_t;
-        }
-    }
-
-    const std::vector<RawSimplex<1>> vertices() const;
-    const std::vector<RawSimplex<2>> edges() const;
-    const std::vector<RawSimplex<3>> faces() const;
-    const std::vector<RawSimplex<4>> tets() const;
+    const std::vector<Vertex> vertices() const;
+    const std::vector<Edge> edges() const;
+    const std::vector<Face> faces() const;
+    const std::vector<Tet> tets() const;
 
     /**
      * @brief Add simplex to the collection.
      *
      * There is no sorting or any check if the vertex already exists
      */
-    template <int N>
-    void add(const RawSimplex<N>& simplex)
-    {
-        if constexpr (N == 1) {
-            m_v.emplace_back(simplex);
-        } else if constexpr (N == 2) {
-            m_e.emplace_back(simplex);
-        } else if constexpr (N == 3) {
-            m_f.emplace_back(simplex);
-        } else {
-            static_assert(N == 4);
-            m_t.emplace_back(simplex);
-        }
-    }
+    void add(const Vertex& s) { m_v.emplace_back(s); }
+    void add(const Edge& s) { m_e.emplace_back(s); }
+    void add(const Face& s) { m_f.emplace_back(s); }
+    void add(const Tet& s) { m_t.emplace_back(s); }
 
     void add(const RawSimplexCollection& simplex_collection);
 
@@ -73,15 +49,25 @@ public:
      *
      * Collection musst be sorted! Peform `sort_and_clean` before calling this function.
      */
-    template <int N>
-    bool contains(const RawSimplex<N>& simplex) const
+    bool contains(const Vertex& simplex) const
     {
-        static_assert(N > 0);
-        static_assert(N < 5);
-
-        const auto& vec = simplex_vector<N - 1>();
-        assert(std::is_sorted(vec.begin(), vec.end()));
-        return std::binary_search(vec.begin(), vec.end(), simplex);
+        assert(std::is_sorted(m_v.begin(), m_v.end()));
+        return std::binary_search(m_v.begin(), m_v.end(), simplex);
+    }
+    bool contains(const Edge& simplex) const
+    {
+        assert(std::is_sorted(m_e.begin(), m_e.end()));
+        return std::binary_search(m_e.begin(), m_e.end(), simplex);
+    }
+    bool contains(const Face& simplex) const
+    {
+        assert(std::is_sorted(m_f.begin(), m_f.end()));
+        return std::binary_search(m_f.begin(), m_f.end(), simplex);
+    }
+    bool contains(const Tet& simplex) const
+    {
+        assert(std::is_sorted(m_t.begin(), m_t.end()));
+        return std::binary_search(m_t.begin(), m_t.end(), simplex);
     }
 
     /**
@@ -117,20 +103,13 @@ public:
     template <int N>
     static RawSimplexCollection faces_from_simplex(const RawSimplex<N>& simplex);
 
-    // auto begin() { return m_simplices.begin(); }
-    // auto end() { return m_simplices.end(); }
-    // auto begin() const { return m_simplices.begin(); }
-    // auto end() const { return m_simplices.end(); }
-    // auto cbegin() const { return m_simplices.cbegin(); }
-    // auto cend() const { return m_simplices.cend(); }
-
     size_t size() const;
 
 private:
-    std::vector<RawSimplex<1>> m_v;
-    std::vector<RawSimplex<2>> m_e;
-    std::vector<RawSimplex<3>> m_f;
-    std::vector<RawSimplex<4>> m_t;
+    std::vector<Vertex> m_v;
+    std::vector<Edge> m_e;
+    std::vector<Face> m_f;
+    std::vector<Tet> m_t;
 };
 
 template <int N>
@@ -143,32 +122,32 @@ inline RawSimplexCollection RawSimplexCollection::faces_from_simplex(const RawSi
     if constexpr (N == 1) {
         // do nothing
     } else if constexpr (N == 2) {
-        sc.m_v.emplace_back(RawSimplex<1>(v[0]));
-        sc.m_v.emplace_back(RawSimplex<1>(v[1]));
+        sc.m_v.emplace_back(Vertex(v[0]));
+        sc.m_v.emplace_back(Vertex(v[1]));
     } else if constexpr (N == 3) {
-        sc.m_v.emplace_back(RawSimplex<1>(v[0]));
-        sc.m_v.emplace_back(RawSimplex<1>(v[1]));
-        sc.m_v.emplace_back(RawSimplex<1>(v[2]));
-        sc.m_e.emplace_back(RawSimplex<2>(v[0], v[1]));
-        sc.m_e.emplace_back(RawSimplex<2>(v[0], v[2]));
-        sc.m_e.emplace_back(RawSimplex<2>(v[1], v[2]));
+        sc.m_v.emplace_back(Vertex(v[0]));
+        sc.m_v.emplace_back(Vertex(v[1]));
+        sc.m_v.emplace_back(Vertex(v[2]));
+        sc.m_e.emplace_back(Edge(v[0], v[1]));
+        sc.m_e.emplace_back(Edge(v[0], v[2]));
+        sc.m_e.emplace_back(Edge(v[1], v[2]));
     } else {
         static_assert(N == 4);
 
-        sc.m_v.emplace_back(RawSimplex<1>(v[0]));
-        sc.m_v.emplace_back(RawSimplex<1>(v[1]));
-        sc.m_v.emplace_back(RawSimplex<1>(v[2]));
-        sc.m_v.emplace_back(RawSimplex<1>(v[3]));
-        sc.m_e.emplace_back(RawSimplex<2>(v[0], v[1]));
-        sc.m_e.emplace_back(RawSimplex<2>(v[0], v[2]));
-        sc.m_e.emplace_back(RawSimplex<2>(v[0], v[3]));
-        sc.m_e.emplace_back(RawSimplex<2>(v[1], v[2]));
-        sc.m_e.emplace_back(RawSimplex<2>(v[1], v[3]));
-        sc.m_e.emplace_back(RawSimplex<2>(v[2], v[3]));
-        sc.m_f.emplace_back(RawSimplex<3>(v[0], v[1], v[2]));
-        sc.m_f.emplace_back(RawSimplex<3>(v[0], v[1], v[3]));
-        sc.m_f.emplace_back(RawSimplex<3>(v[0], v[2], v[3]));
-        sc.m_f.emplace_back(RawSimplex<3>(v[1], v[2], v[3]));
+        sc.m_v.emplace_back(Vertex(v[0]));
+        sc.m_v.emplace_back(Vertex(v[1]));
+        sc.m_v.emplace_back(Vertex(v[2]));
+        sc.m_v.emplace_back(Vertex(v[3]));
+        sc.m_e.emplace_back(Edge(v[0], v[1]));
+        sc.m_e.emplace_back(Edge(v[0], v[2]));
+        sc.m_e.emplace_back(Edge(v[0], v[3]));
+        sc.m_e.emplace_back(Edge(v[1], v[2]));
+        sc.m_e.emplace_back(Edge(v[1], v[3]));
+        sc.m_e.emplace_back(Edge(v[2], v[3]));
+        sc.m_f.emplace_back(Face(v[0], v[1], v[2]));
+        sc.m_f.emplace_back(Face(v[0], v[1], v[3]));
+        sc.m_f.emplace_back(Face(v[0], v[2], v[3]));
+        sc.m_f.emplace_back(Face(v[1], v[2], v[3]));
     }
 
     return sc;

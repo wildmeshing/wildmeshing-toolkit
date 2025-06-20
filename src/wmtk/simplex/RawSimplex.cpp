@@ -4,115 +4,133 @@
 
 #include "RawSimplexCollection.hpp"
 
+namespace {
+template <int N>
+std::array<size_t, N - 1> array_without(const std::array<size_t, N>& a, const int64_t excluded)
+{
+    static_assert(N > 1);
+
+    std::array<size_t, N - 1> new_a;
+
+    size_t counter = 0;
+    for (size_t i = 0; i < N; ++i) {
+        if (a[i] != excluded) {
+            new_a[counter++] = a[i];
+        }
+    }
+    assert(counter == N - 1);
+
+    return new_a;
+}
+
+template <int N, int M>
+std::array<size_t, N - M> array_without(
+    const std::array<size_t, N>& a,
+    const std::array<size_t, M>& excluded)
+{
+    const auto& s_v = a;
+    const auto& f_v = excluded;
+
+    assert(f_v.size() <= s_v.size());
+
+    std::array<size_t, N - M> o_v;
+
+    std::set_difference(s_v.begin(), s_v.end(), f_v.begin(), f_v.end(), o_v.begin());
+
+    assert(o_v.size() == s_v.size() - f_v.size());
+
+    return o_v;
+}
+
+} // namespace
+
 namespace wmtk::simplex {
 
+Vertex::Vertex(size_t v0)
+{
+    m_vertices[0] = v0;
+}
 
-// template <int N, int M>
-// bool RawSimplex<N>::operator==(const RawSimplex<M>& o) const
-//{
-//    // static_assert(N == M);
-//    if constexpr (N != M) {
-//        return false;
-//    }
-//
-//    return std::equal(
-//        m_vertices.begin(),
-//        m_vertices.end(),
-//        o.m_vertices.begin(),
-//        o.m_vertices.end());
-//}
+Edge::Edge(size_t v0, size_t v1)
+{
+    if (v0 < v1) {
+        m_vertices[0] = v0;
+        m_vertices[1] = v1;
+    } else {
+        m_vertices[0] = v1;
+        m_vertices[1] = v0;
+    }
+}
 
-// template <int N, int M>
-// bool RawSimplex<N>::operator<(const RawSimplex<M>& o) const
-//{
-//     if constexpr (N != M) {
-//         return N < M;
-//     }
-//
-//     return std::lexicographical_compare(
-//         m_vertices.begin(),
-//         m_vertices.end(),
-//         o.m_vertices.begin(),
-//         o.m_vertices.end());
-// }
+Vertex Edge::opposite_vertex(const int64_t excluded_id)
+{
+    auto a = array_without(m_vertices, excluded_id);
+    return Vertex(a[0]);
+}
 
-// template <int N>
-// template <int N, int M>
-// RawSimplex<N - M> RawSimplex<N>::opposite_face(const RawSimplex<M>& face)
-//{
-//     const auto& s_v = m_vertices;
-//     const auto& f_v = face.m_vertices;
-//
-//     assert(f_v.size() <= s_v.size());
-//
-//     std::vector<int64_t> o_v;
-//     o_v.reserve(s_v.size() - f_v.size());
-//
-//     std::set_difference(
-//         s_v.begin(),
-//         s_v.end(),
-//         f_v.begin(),
-//         f_v.end(),
-//         std::inserter(o_v, o_v.begin()));
-//
-//     assert(o_v.size() == s_v.size() - f_v.size());
-//
-//     return RawSimplex(std::move(o_v));
-// }
+Vertex Edge::opposite_vertex(const Vertex& v)
+{
+    auto a = array_without(m_vertices, v.vertices()[0]);
+    return Vertex(a[0]);
+}
 
-// RawSimplexCollection RawSimplex<N>::faces()
-//{
-//     const auto& v = m_vertices;
-//
-//     std::vector<RawSimplex> faces;
-//
-//     switch (dimension()) {
-//    case 0: { // simplex is a vertex
-//        break;
-//    }
-//    case 1: { // simplex is an edge
-//        faces.reserve(2);
-//        faces.emplace_back(RawSimplex({v[0]}));
-//        faces.emplace_back(RawSimplex({v[1]}));
-//        break;
-//    }
-//    case 2: { // simplex is a triangle
-//        faces.reserve(6);
-//        faces.emplace_back(RawSimplex({v[0]}));
-//        faces.emplace_back(RawSimplex({v[1]}));
-//        faces.emplace_back(RawSimplex({v[2]}));
-//        faces.emplace_back(RawSimplex({v[0], v[1]}));
-//        faces.emplace_back(RawSimplex({v[0], v[2]}));
-//        faces.emplace_back(RawSimplex({v[1], v[2]}));
-//        break;
-//    }
-//    case 3: { // simplex is a tetrahedron
-//        faces.reserve(14);
-//        faces.emplace_back(RawSimplex({v[0]}));
-//        faces.emplace_back(RawSimplex({v[1]}));
-//        faces.emplace_back(RawSimplex({v[2]}));
-//        faces.emplace_back(RawSimplex({v[3]}));
-//        faces.emplace_back(RawSimplex({v[0], v[1]}));
-//        faces.emplace_back(RawSimplex({v[0], v[2]}));
-//        faces.emplace_back(RawSimplex({v[0], v[3]}));
-//        faces.emplace_back(RawSimplex({v[1], v[2]}));
-//        faces.emplace_back(RawSimplex({v[1], v[3]}));
-//        faces.emplace_back(RawSimplex({v[2], v[3]}));
-//        faces.emplace_back(RawSimplex({v[0], v[1], v[2]}));
-//        faces.emplace_back(RawSimplex({v[0], v[1], v[3]}));
-//        faces.emplace_back(RawSimplex({v[0], v[2], v[3]}));
-//        faces.emplace_back(RawSimplex({v[1], v[2], v[3]}));
-//        break;
-//    }
-//    default: assert(false); // "Unexpected dimension in RawSimplex."
-//    }
-//
-//    return RawSimplexCollection(std::move(faces));
-//}
+Face::Face(size_t v0, size_t v1, size_t v2)
+{
+    m_vertices[0] = v0;
+    m_vertices[1] = v1;
+    m_vertices[2] = v2;
+    std::sort(m_vertices.begin(), m_vertices.end());
+}
 
-// template class RawSimplex<1>;
-// template class RawSimplex<2>;
-// template class RawSimplex<3>;
-// template class RawSimplex<4>;
+Edge Face::opposite_edge(const int64_t excluded_id)
+{
+    auto a = array_without(m_vertices, excluded_id);
+    return Edge(a[0], a[1]);
+}
+
+Edge Face::opposite_edge(const Vertex& v)
+{
+    auto a = array_without(m_vertices, v.vertices());
+    return Edge(a[0], a[1]);
+}
+
+Vertex Face::opposite_vertex(const Edge& v)
+{
+    auto a = array_without(m_vertices, v.vertices()[0]);
+    return Vertex(a[0]);
+}
+
+Tet::Tet(size_t v0, size_t v1, size_t v2, size_t v3)
+{
+    m_vertices[0] = v0;
+    m_vertices[1] = v1;
+    m_vertices[2] = v2;
+    m_vertices[3] = v3;
+    std::sort(m_vertices.begin(), m_vertices.end());
+}
+
+Face Tet::opposite_face(const int64_t excluded_id)
+{
+    auto a = array_without(m_vertices, excluded_id);
+    return Face(a[0], a[1], a[2]);
+}
+
+Face Tet::opposite_face(const Vertex& v)
+{
+    auto a = array_without(m_vertices, v.vertices());
+    return Face(a[0], a[1], a[2]);
+}
+
+Edge Tet::opposite_edge(const Edge& v)
+{
+    auto a = array_without(m_vertices, v.vertices());
+    return Edge(a[0], a[1]);
+}
+
+Vertex Tet::opposite_vertex(const Face& v)
+{
+    auto a = array_without(m_vertices, v.vertices()[0]);
+    return Vertex(a[0]);
+}
 
 } // namespace wmtk::simplex

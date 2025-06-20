@@ -4,22 +4,22 @@
 #include <cassert>
 
 namespace wmtk::simplex {
-const std::vector<RawSimplex<1>> RawSimplexCollection::vertices() const
+const std::vector<Vertex> RawSimplexCollection::vertices() const
 {
     return m_v;
 }
 
-const std::vector<RawSimplex<2>> RawSimplexCollection::edges() const
+const std::vector<Edge> RawSimplexCollection::edges() const
 {
     return m_e;
 }
 
-const std::vector<RawSimplex<3>> RawSimplexCollection::faces() const
+const std::vector<Face> RawSimplexCollection::faces() const
 {
     return m_f;
 }
 
-const std::vector<RawSimplex<4>> RawSimplexCollection::tets() const
+const std::vector<Tet> RawSimplexCollection::tets() const
 {
     return m_t;
 }
@@ -39,7 +39,6 @@ void RawSimplexCollection::sort_and_clean()
         const auto last = std::unique(vec.begin(), vec.end());
         vec.erase(last, vec.end());
     };
-
     f(m_v);
     f(m_e);
     f(m_f);
