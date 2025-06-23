@@ -85,31 +85,39 @@ void SimplicialEmbeddingTriMesh::set_face_tag(const Tuple& f_tuple, const int64_
 
 void SimplicialEmbeddingTriMesh::cache_edge(const Tuple& t)
 {
-    const size_t v0 = t.vid(*this);
-    const size_t v1 = t.switch_vertex(*this).vid(*this);
-    const auto& va0 = vertex_attrs[v0];
-    const auto& va1 = vertex_attrs[v1];
+    using namespace simplex;
 
-    const size_t e = t.eid(*this);
-    const auto& ea = edge_attrs[e];
+    const Tuple v1_tuple = t.switch_vertex(*this);
+
+    const size_t v0id = t.vid(*this);
+    const size_t v1id = v1_tuple.vid(*this);
+    const auto& va0 = vertex_attrs[v0id];
+    const auto& va1 = vertex_attrs[v1id];
+
+    const size_t eid = t.eid(*this);
+    const auto& ea = edge_attrs[eid];
 
     EdgeSplitCache& cache = position_cache.local();
     cache.v0.pos = va0.pos;
     cache.v1.pos = va1.pos;
     cache.e.tag = ea.tag;
 
-    const size_t f0 = t.fid(*this);
-    const auto& fa0 = face_attrs[f0];
-    cache.f0.tag = fa0.tag;
+    const Edge e(v0id, v1id);
+    const auto ef = simplex_incident_triangles(e);
 
-    const std::optional<Tuple> t_opp = t.switch_face(*this);
-    if (t_opp) {
-        const size_t f1 = t_opp.value().fid(*this);
-        const auto& fa1 = face_attrs[f1];
-        cache.f1 = FaceAttributes();
-        cache.f1.value().tag = fa1.tag;
-    } else {
-        cache.f1.reset();
+    cache.face_infos.clear();
+    for (const Face& f : ef.faces()) {
+        PerFaceCache c;
+        const Vertex v = f.opposite_vertex(e); // link vertex
+        c.v = vertex_attrs[v.id()];
+        const Tuple f_tuple = tuple_from_simplex(f);
+        c.f = face_attrs[f_tuple.fid(*this)];
+
+        const Tuple v0e = tuple_from_vids(v0id, v.id(), v1id);
+        const Tuple v1e = tuple_from_vids(v1id, v.id(), v0id);
+        c.v0e = edge_attrs[v0e.eid(*this)];
+        c.v1e = edge_attrs[v1e.eid(*this)];
+        cache.face_infos[v.id()] = c;
     }
 }
 
@@ -177,46 +185,54 @@ bool SimplicialEmbeddingTriMesh::split_edge_before(const Tuple& t)
 
 bool SimplicialEmbeddingTriMesh::split_edge_after(const TriMesh::Tuple& t)
 {
+    using namespace simplex;
+
     const EdgeSplitCache& cache = position_cache.local();
 
-    const Tuple& e_spine_left = t;
-    const Tuple e_rib_0 = t.switch_vertex(*this).switch_edge(*this);
-    const Tuple& f_rib_0_left = t;
-    const Tuple f_rib_0_right = e_rib_0.switch_face(*this).value();
-    const Tuple e_spine_right = f_rib_0_right.switch_edge(*this);
+    const Tuple& v0 = t;
+    const Tuple& ee0 = t; // v0 - v_new
+    const Tuple v_new = t.switch_vertex(*this);
+    const Tuple ee1 =
+        v_new.switch_edge(*this).switch_face(*this).value().switch_edge(*this).switch_vertex(
+            *this); // v1 - v_new
+    const Tuple& v1 = ee1;
 
-    const size_t vid_spine = t.switch_vertex(*this).vid(*this);
+    const size_t vid_new = v_new.vid(*this);
 
     // set position
     {
         const Vector2d p = 0.5 * (cache.v0.pos + cache.v1.pos);
-        vertex_attrs[vid_spine].pos = p;
+        vertex_attrs[vid_new].pos = p;
     }
+
     // update tags spine
     {
         const auto& e_tag = cache.e.tag;
-        vertex_attrs[vid_spine].tag = e_tag;
-        edge_attrs[e_spine_left.eid(*this)].tag = e_tag;
-        edge_attrs[e_spine_right.eid(*this)].tag = e_tag;
+        vertex_attrs[vid_new].tag = e_tag;
+        edge_attrs[ee0.eid(*this)].tag = e_tag;
+        edge_attrs[ee1.eid(*this)].tag = e_tag;
     }
-    // update tags rib 0
-    {
-        const auto& f0_tag = cache.f0.tag;
-        edge_attrs[e_rib_0.eid(*this)].tag = f0_tag;
-        face_attrs[f_rib_0_left.fid(*this)].tag = f0_tag;
-        face_attrs[f_rib_0_right.fid(*this)].tag = f0_tag;
-    }
-    // update tags rib 1
-    if (cache.f1) {
-        const Tuple f_rib_1_left = e_spine_left.switch_face(*this).value();
-        const Tuple e_rib_1 = f_rib_1_left.switch_vertex(*this).switch_edge(*this);
-        const Tuple f_rib_1_right = e_spine_right.switch_face(*this).value();
 
-        const auto& f1_tag = cache.f1.value().tag;
-        edge_attrs[e_rib_1.eid(*this)].tag = f1_tag;
-        face_attrs[f_rib_1_left.fid(*this)].tag = f1_tag;
-        face_attrs[f_rib_1_right.fid(*this)].tag = f1_tag;
+    // update tags on splitted faces
+    const size_t v0id = v0.vid(*this);
+    const size_t v1id = v1.vid(*this);
+    for (const auto& [vid, c] : cache.face_infos) {
+        // link vertex
+        vertex_attrs[vid] = c.v;
+        // faces / edges
+        const Tuple t0 = tuple_from_vids(v0id, vid, vid_new);
+        face_attrs[t0.fid(*this)] = c.f;
+        edge_attrs[t0.eid(*this)] = c.v0e;
+
+        const Tuple t1 = tuple_from_vids(v1id, vid, vid_new);
+        face_attrs[t1.fid(*this)] = c.f;
+        edge_attrs[t1.eid(*this)] = c.v1e;
+
+        // new edge
+        const Tuple te = tuple_from_vids(vid_new, vid, v0id);
+        edge_attrs[te.eid(*this)].tag = c.f.tag;
     }
+
     return true;
 }
 

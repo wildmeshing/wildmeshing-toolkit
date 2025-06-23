@@ -27,6 +27,11 @@ public:
     const std::vector<Face>& faces() const;
     const std::vector<Tet>& tets() const;
 
+    void reserve_vertices(size_t new_capacity) { m_v.reserve(new_capacity); }
+    void reserve_edges(size_t new_capacity) { m_e.reserve(new_capacity); }
+    void reserve_faces(size_t new_capacity) { m_f.reserve(new_capacity); }
+    void reserve_tets(size_t new_capacity) { m_t.reserve(new_capacity); }
+
     /**
      * @brief Add simplex to the collection.
      *

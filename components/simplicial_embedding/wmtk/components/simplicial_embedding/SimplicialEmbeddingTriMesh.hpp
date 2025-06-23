@@ -45,12 +45,19 @@ public:
     void set_edge_tag(const Tuple& e_tuple, const int64_t tag);
     void set_face_tag(const Tuple& f_tuple, const int64_t tag);
 
+    struct PerFaceCache
+    {
+        VertexAttributes v; // vertex opposite to edge (probably not necessary)
+        FaceAttributes f; // face defined by v + e
+        EdgeAttributes v0e; // edge v0 + v
+        EdgeAttributes v1e; // edge v1 + v
+    };
     struct EdgeSplitCache
     {
-        VertexAttributes v0, v1;
-        EdgeAttributes e;
-        FaceAttributes f0;
-        std::optional<FaceAttributes> f1;
+        VertexAttributes v0, v1; // incident vertices
+        EdgeAttributes e; // splitted edge
+
+        std::map<size_t, PerFaceCache> face_infos; // map from link vertex id to per-face cache
     };
     tbb::enumerable_thread_specific<EdgeSplitCache> position_cache;
 

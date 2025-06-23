@@ -62,13 +62,13 @@ Edge::Edge(size_t v0, size_t v1)
     }
 }
 
-Vertex Edge::opposite_vertex(const int64_t excluded_id)
+Vertex Edge::opposite_vertex(const int64_t excluded_id) const
 {
     auto a = array_without(m_vertices, excluded_id);
     return Vertex(a[0]);
 }
 
-Vertex Edge::opposite_vertex(const Vertex& v)
+Vertex Edge::opposite_vertex(const Vertex& v) const
 {
     auto a = array_without(m_vertices, v.vertices()[0]);
     return Vertex(a[0]);
@@ -82,21 +82,21 @@ Face::Face(size_t v0, size_t v1, size_t v2)
     std::sort(m_vertices.begin(), m_vertices.end());
 }
 
-Edge Face::opposite_edge(const int64_t excluded_id)
+Edge Face::opposite_edge(const int64_t excluded_id) const
 {
     auto a = array_without(m_vertices, excluded_id);
     return Edge(a[0], a[1]);
 }
 
-Edge Face::opposite_edge(const Vertex& v)
+Edge Face::opposite_edge(const Vertex& v) const
 {
-    auto a = array_without(m_vertices, v.vertices());
+    auto a = array_without(m_vertices, v.vertices()[0]);
     return Edge(a[0], a[1]);
 }
 
-Vertex Face::opposite_vertex(const Edge& v)
+Vertex Face::opposite_vertex(const Edge& v) const
 {
-    auto a = array_without(m_vertices, v.vertices()[0]);
+    auto a = array_without(m_vertices, v.vertices());
     return Vertex(a[0]);
 }
 
@@ -109,25 +109,25 @@ Tet::Tet(size_t v0, size_t v1, size_t v2, size_t v3)
     std::sort(m_vertices.begin(), m_vertices.end());
 }
 
-Face Tet::opposite_face(const int64_t excluded_id)
+Face Tet::opposite_face(const int64_t excluded_id) const
 {
     auto a = array_without(m_vertices, excluded_id);
     return Face(a[0], a[1], a[2]);
 }
 
-Face Tet::opposite_face(const Vertex& v)
+Face Tet::opposite_face(const Vertex& v) const
 {
     auto a = array_without(m_vertices, v.vertices());
     return Face(a[0], a[1], a[2]);
 }
 
-Edge Tet::opposite_edge(const Edge& v)
+Edge Tet::opposite_edge(const Edge& v) const
 {
     auto a = array_without(m_vertices, v.vertices());
     return Edge(a[0], a[1]);
 }
 
-Vertex Tet::opposite_vertex(const Face& v)
+Vertex Tet::opposite_vertex(const Face& v) const
 {
     auto a = array_without(m_vertices, v.vertices()[0]);
     return Vertex(a[0]);

@@ -289,6 +289,10 @@ public:
     // Tuple tuple_from_simplex(const simplex::Edge& s) const;
 
     simplex::RawSimplexCollection simplex_incident_triangles(const simplex::Vertex& v) const;
+    simplex::RawSimplexCollection simplex_incident_triangles(const simplex::Edge& e) const;
+    simplex::RawSimplexCollection simplex_link_vertices(const simplex::Vertex& v) const;
+    simplex::RawSimplexCollection simplex_link_vertices(const simplex::Edge& e) const;
+    simplex::RawSimplexCollection simplex_link_edges(const simplex::Vertex& v) const;
 
     template <typename T>
     using vector = tbb::concurrent_vector<T>;

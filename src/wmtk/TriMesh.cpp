@@ -969,6 +969,60 @@ simplex::RawSimplexCollection wmtk::TriMesh::simplex_incident_triangles(
     return sc;
 }
 
+simplex::RawSimplexCollection wmtk::TriMesh::simplex_incident_triangles(
+    const simplex::Edge& e) const
+{
+    const simplex::Vertex v0(e.vertices()[0]);
+    const simplex::Vertex v1(e.vertices()[1]);
+
+    const auto sc0 = simplex_incident_triangles(v0);
+    const auto sc1 = simplex_incident_triangles(v1);
+
+    return simplex::RawSimplexCollection::get_intersection(sc0, sc1);
+}
+
+simplex::RawSimplexCollection wmtk::TriMesh::simplex_link_vertices(const simplex::Vertex& v) const
+{
+    const auto tris = simplex_incident_triangles(v);
+    simplex::RawSimplexCollection sc;
+    sc.reserve_vertices(tris.faces().size() * 2);
+    for (const simplex::Face& f : tris.faces()) {
+        for (const size_t vid : f.vertices()) {
+            if (vid != v.vertices()[0]) {
+                sc.add(simplex::Vertex(vid));
+            }
+        }
+    }
+    sc.sort_and_clean();
+
+    return sc;
+}
+
+simplex::RawSimplexCollection wmtk::TriMesh::simplex_link_vertices(const simplex::Edge& e) const
+{
+    const auto tris = simplex_incident_triangles(e);
+    simplex::RawSimplexCollection sc;
+    sc.reserve_vertices(tris.faces().size());
+    for (const simplex::Face& f : tris.faces()) {
+        sc.add(f.opposite_vertex(e));
+    }
+    sc.sort_and_clean();
+
+    return sc;
+}
+
+simplex::RawSimplexCollection wmtk::TriMesh::simplex_link_edges(const simplex::Vertex& v) const
+{
+    const auto tris = simplex_incident_triangles(v);
+    simplex::RawSimplexCollection sc;
+    sc.reserve_edges(tris.faces().size());
+    for (const simplex::Face& f : tris.faces()) {
+        sc.add(f.opposite_edge(v));
+    }
+    sc.sort_and_clean();
+
+    return sc;
+}
 
 size_t TriMesh::get_next_empty_slot_t()
 {
