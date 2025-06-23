@@ -52,7 +52,7 @@ struct ExecutePass
         return 0.;
     };
     /**
-     * @brief check on wheather new operations should be added to the prioirity queue
+     * @brief check on wheather new operations should be added to the priority queue
      *
      */
     std::function<bool(double)> should_renew = [](auto) { return true; };
@@ -97,8 +97,7 @@ struct ExecutePass
             return true;
         };
     /**
-     * @brief
-     *used to collect operations that are not finished and used for later re-execution
+     * @brief used to collect operations that are not finished and used for later re-execution
      */
     std::function<void(const AppMesh&, Op, const Tuple& t)> on_fail = [](auto&, auto, auto&) {};
 
@@ -239,19 +238,24 @@ public:
      */
     bool operator()(AppMesh& m, const std::vector<std::pair<Op, Tuple>>& operation_tuples)
     {
+        using Elem = std::tuple<double, Op, Tuple, size_t>; // priority, operation, tuple, #retries
+        using Queue = tbb::concurrent_priority_queue<Elem>;
+
         auto cnt_update = std::atomic<int>(0);
         auto cnt_success = std::atomic<int>(0);
         auto cnt_fail = std::atomic<int>(0);
         auto stop = std::atomic<bool>(false);
-        using Elem = std::tuple<double, Op, Tuple, size_t>;
-        auto queues = std::vector<tbb::concurrent_priority_queue<Elem>>(num_threads);
-        auto final_queue = tbb::concurrent_priority_queue<Elem>();
 
-        auto run_single_queue = [&](auto& Q, int task_id) {
-            auto ele_in_queue = Elem();
+        std::vector<Queue> queues(num_threads);
+        Queue final_queue;
+
+        auto run_single_queue = [&](Queue& Q, int task_id) {
+            Elem ele_in_queue;
             while ([&]() { return Q.try_pop(ele_in_queue); }()) {
                 auto& [weight, op, tup, retry] = ele_in_queue;
-                if (!tup.is_valid(m)) continue;
+                if (!tup.is_valid(m)) {
+                    continue;
+                }
 
                 std::vector<Elem> renewed_elements;
                 {
@@ -272,10 +276,7 @@ public:
                     if (tup.is_valid(m)) {
                         if (!is_weight_up_to_date(
                                 m,
-                                std::tuple<double, Op, Tuple>(
-                                    std::get<0>(ele_in_queue),
-                                    std::get<1>(ele_in_queue),
-                                    std::get<2>(ele_in_queue)))) {
+                                std::tuple<double, Op, Tuple>(weight, op, tup))) {
                             operation_cleanup(m);
                             continue;
                         } // this can encode, in qslim, recompute(energy) == weight.
@@ -289,9 +290,11 @@ public:
                             on_fail(m, op, tup);
                             cnt_fail++;
                         }
-                        for (auto& [o, e] : renewed_tuples) {
+                        for (const auto& [o, e] : renewed_tuples) {
                             auto val = priority(m, o, e);
-                            if (should_renew(val)) renewed_elements.emplace_back(val, o, e, 0);
+                            if (should_renew(val)) {
+                                renewed_elements.emplace_back(val, o, e, 0);
+                            }
                         }
                     }
                     operation_cleanup(m); // Maybe use RAII

@@ -77,7 +77,7 @@ public:
     bool split_edge_after(const Tuple& t) override;
 
     double compute_edge_cost_split(const TriMesh::Tuple& t, double L) const;
-    bool split_remeshing(double L);
+    bool edge_split_simplicial_embedding();
     bool uniform_remeshing(double L, int interations);
 
     void write(const std::filesystem::path& filename) const;
