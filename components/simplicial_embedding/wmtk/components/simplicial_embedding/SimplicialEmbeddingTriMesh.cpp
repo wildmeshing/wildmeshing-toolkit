@@ -97,7 +97,7 @@ void SimplicialEmbeddingTriMesh::cache_edge(const Tuple& t)
     const size_t eid = t.eid(*this);
     const auto& ea = edge_attrs[eid];
 
-    EdgeSplitCache& cache = position_cache.local();
+    EdgeSplitCache& cache = edge_split_cache.local();
     cache.v0.pos = va0.pos;
     cache.v1.pos = va1.pos;
     cache.e.tag = ea.tag;
@@ -107,7 +107,7 @@ void SimplicialEmbeddingTriMesh::cache_edge(const Tuple& t)
 
     cache.face_infos.clear();
     for (const Face& f : ef.faces()) {
-        PerFaceCache c;
+        EdgeSplitPerFaceCache c;
         const Vertex v = f.opposite_vertex(e); // link vertex
         c.v = vertex_attrs[v.id()];
         const Tuple f_tuple = tuple_from_simplex(f);
@@ -185,7 +185,7 @@ bool SimplicialEmbeddingTriMesh::split_edge_after(const TriMesh::Tuple& t)
 {
     using namespace simplex;
 
-    const EdgeSplitCache& cache = position_cache.local();
+    const EdgeSplitCache& cache = edge_split_cache.local();
 
     const Tuple& v0 = t;
     const Tuple& ee0 = t; // v0 - v_new
@@ -231,6 +231,83 @@ bool SimplicialEmbeddingTriMesh::split_edge_after(const TriMesh::Tuple& t)
         edge_attrs[te.eid(*this)].tag = c.f.tag;
     }
 
+    return true;
+}
+
+bool SimplicialEmbeddingTriMesh::split_face_before(const Tuple& t)
+{
+    FaceSplitCache& cache = face_split_cache.local();
+
+    const Tuple& t0 = t;
+    const Tuple t1 = t0.switch_vertex(*this).switch_edge(*this);
+    const Tuple t2 = t1.switch_vertex(*this).switch_edge(*this);
+
+    cache.v0 = vertex_attrs[t0.vid(*this)];
+    cache.v1 = vertex_attrs[t1.vid(*this)];
+    cache.v2 = vertex_attrs[t2.vid(*this)];
+
+    cache.e0 = edge_attrs[t0.eid(*this)];
+    cache.e1 = edge_attrs[t1.eid(*this)];
+    cache.e2 = edge_attrs[t2.eid(*this)];
+
+    cache.f = face_attrs[t.fid(*this)];
+
+    return true;
+}
+
+bool SimplicialEmbeddingTriMesh::split_face_after(const Tuple& t)
+{
+    const FaceSplitCache& cache = face_split_cache.local();
+
+    // const Tuple t0 = t.switch_vertex(*this).switch_edge(*this);
+    const Tuple& t0 = t;
+    const Tuple t1 =
+        t0.switch_vertex(*this).switch_edge(*this).switch_face(*this).value().switch_edge(*this);
+    const Tuple t2 =
+        t1.switch_vertex(*this).switch_edge(*this).switch_face(*this).value().switch_edge(*this);
+
+    vertex_attrs[t0.vid(*this)] = cache.v0;
+    vertex_attrs[t1.vid(*this)] = cache.v1;
+    vertex_attrs[t2.vid(*this)] = cache.v2;
+
+    edge_attrs[t0.eid(*this)] = cache.e0;
+    edge_attrs[t1.eid(*this)] = cache.e1;
+    edge_attrs[t2.eid(*this)] = cache.e2;
+
+    face_attrs[t0.fid(*this)] = cache.f;
+    face_attrs[t1.fid(*this)] = cache.f;
+    face_attrs[t2.fid(*this)] = cache.f;
+
+    // new vertex
+    const size_t new_vid = t.switch_edge(*this).switch_vertex(*this).vid(*this);
+    vertex_attrs[new_vid].tag = cache.f.tag;
+    vertex_attrs[new_vid].pos = (cache.v0.pos + cache.v1.pos + cache.v2.pos) / 3.;
+
+    // new edges
+    edge_attrs[t0.switch_edge(*this).eid(*this)].tag = cache.f.tag;
+    edge_attrs[t1.switch_edge(*this).eid(*this)].tag = cache.f.tag;
+    edge_attrs[t2.switch_edge(*this).eid(*this)].tag = cache.f.tag;
+
+    return true;
+}
+
+bool SimplicialEmbeddingTriMesh::face_needs_split(const Tuple& t)
+{
+    const auto [t0, t1, t2] = oriented_tri_vertices(t);
+
+    if (face_attrs[t.fid(*this)].tag == 1) {
+        return false;
+    }
+    if (vertex_attrs[t0.vid(*this)].tag == DEFAULT_TAG ||
+        vertex_attrs[t1.vid(*this)].tag == DEFAULT_TAG ||
+        vertex_attrs[t2.vid(*this)].tag == DEFAULT_TAG) {
+        return false;
+    }
+    if (edge_attrs[t0.eid(*this)].tag == DEFAULT_TAG ||
+        edge_attrs[t1.eid(*this)].tag == DEFAULT_TAG ||
+        edge_attrs[t2.eid(*this)].tag == DEFAULT_TAG) {
+        return false;
+    }
     return true;
 }
 
@@ -294,6 +371,80 @@ bool SimplicialEmbeddingTriMesh::edge_split_simplicial_embedding()
             const Vector2d& p1 = m.vertex_attrs[e.switch_vertex(m).vid(m)].pos;
             return (p1 - p0).norm();
         };
+
+        // Execute!!
+        do {
+            count_success.store(0, std::memory_order_release);
+            executor(*this, all_ops);
+            all_ops.clear();
+            for (const auto& item : edges2) {
+                all_ops.emplace_back(item);
+            }
+            edges2.clear();
+        } while (count_success.load(std::memory_order_acquire) > 0);
+    };
+
+    if (NUM_THREADS > 0) {
+        auto executor =
+            wmtk::ExecutePass<SimplicialEmbeddingTriMesh, ExecutionPolicy::kPartition>();
+        executor.lock_vertices = edge_locker;
+        setup_and_execute(executor);
+    } else {
+        auto executor = wmtk::ExecutePass<SimplicialEmbeddingTriMesh, ExecutionPolicy::kSeq>();
+        setup_and_execute(executor);
+    }
+
+    return true;
+}
+
+bool SimplicialEmbeddingTriMesh::face_split_simplicial_embedding()
+{
+    auto all_ops = std::vector<std::pair<std::string, Tuple>>();
+    std::atomic_int count_success = 0;
+    auto tuples = tbb::concurrent_vector<Tuple>();
+
+    for (const Tuple& t : get_faces()) {
+        if (face_needs_split(t)) {
+            tuples.emplace_back(t);
+        }
+    }
+
+    all_ops.reserve(tuples.size());
+    for (const Tuple& t : tuples) {
+        all_ops.emplace_back("face_split", t);
+    }
+
+    wmtk::logger().info("size for faces to be split is {}", all_ops.size());
+
+    tbb::concurrent_vector<std::pair<std::string, TriMesh::Tuple>> edges2;
+
+    auto setup_and_execute = [&](auto& executor) {
+        executor.num_threads = NUM_THREADS;
+        executor.renew_neighbor_tuples =
+            [&](auto& m, auto op, auto& tris) -> std::vector<std::pair<Op, Tuple>> {
+            count_success++;
+
+            std::vector<std::pair<Op, Tuple>> new_ops;
+            // new_ops.reserve(tris.size());
+            // for (const Tuple& t : tris) {
+            //     const Tuple te = t.switch_vertex(*this).switch_edge(*this);
+            //
+            //     const size_t v0 = te.vid(*this);
+            //     const size_t v1 = te.switch_vertex(*this).vid(*this);
+            //     const size_t e = te.eid(*this);
+            //     if (vertex_attrs[v0].tag == 1 && vertex_attrs[v1].tag == 1 &&
+            //         edge_attrs[e].tag == 0) {
+            //         new_ops.emplace_back(op, te);
+            //     }
+            // }
+
+            return new_ops;
+        };
+        // executor.priority = [](auto& m, auto _, auto& e) {
+        //     const Vector2d& p0 = m.vertex_attrs[e.vid(m)].pos;
+        //     const Vector2d& p1 = m.vertex_attrs[e.switch_vertex(m).vid(m)].pos;
+        //     return (p1 - p0).norm();
+        // };
 
         // Execute!!
         do {

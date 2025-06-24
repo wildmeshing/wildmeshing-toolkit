@@ -45,7 +45,7 @@ public:
     void set_edge_tag(const Tuple& e_tuple, const int64_t tag);
     void set_face_tag(const Tuple& f_tuple, const int64_t tag);
 
-    struct PerFaceCache
+    struct EdgeSplitPerFaceCache
     {
         VertexAttributes v; // vertex opposite to edge (probably not necessary)
         FaceAttributes f; // face defined by v + e
@@ -57,9 +57,18 @@ public:
         VertexAttributes v0, v1; // incident vertices
         EdgeAttributes e; // splitted edge
 
-        std::map<size_t, PerFaceCache> face_infos; // map from link vertex id to per-face cache
+        std::map<size_t, EdgeSplitPerFaceCache>
+            face_infos; // map from link vertex id to per-face cache
     };
-    tbb::enumerable_thread_specific<EdgeSplitCache> position_cache;
+    tbb::enumerable_thread_specific<EdgeSplitCache> edge_split_cache;
+
+    struct FaceSplitCache
+    {
+        VertexAttributes v0, v1, v2;
+        EdgeAttributes e0, e1, e2;
+        FaceAttributes f;
+    };
+    tbb::enumerable_thread_specific<FaceSplitCache> face_split_cache;
 
     void cache_edge(const Tuple& t);
 
@@ -76,8 +85,14 @@ public:
     bool split_edge_before(const Tuple& t) override;
     bool split_edge_after(const Tuple& t) override;
 
+    bool split_face_before(const Tuple& t) override;
+    bool split_face_after(const Tuple& t) override;
+
+    bool face_needs_split(const Tuple& t);
+
     double compute_edge_cost_split(const TriMesh::Tuple& t, double L) const;
     bool edge_split_simplicial_embedding();
+    bool face_split_simplicial_embedding();
     bool uniform_remeshing(double L, int interations);
 
     void write(const std::filesystem::path& filename) const;

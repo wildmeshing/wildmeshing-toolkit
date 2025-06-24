@@ -149,6 +149,59 @@ TEST_CASE("tri_two_triangles_tags", "[simplicial_embedding][TriMesh]")
     }
 }
 
+TEST_CASE("tri_face_split_tags", "[simplicial_embedding][TriMesh]")
+{
+    using Tuple = TriMesh::Tuple;
+
+    SimplicialEmbeddingTriMesh m;
+    {
+        TriMeshVF VF = edge_region();
+        m.init(VF.F);
+        m.set_positions(VF.V);
+
+        const Tuple f0 = m.tuple_from_edge(3, 4, 0);
+        m.set_face_tag(f0, 1);
+
+        const Tuple f4 = m.tuple_from_edge(5, 6, 4);
+        m.set_edge_tag(f4, 1);
+
+        const Tuple f7 = m.tuple_from_edge(8, 4, 7);
+        m.set_vertex_tag(f7, 1);
+
+        m.set_edge_tag(m.tuple_from_vids(3, 7, 4), 1);
+        m.set_edge_tag(m.tuple_from_vids(4, 7, 3), 1);
+    }
+    // m.write("tri_simplicial_emedding_0");
+    std::vector<Tuple> new_tris;
+    for (int i = 0; i < 10; ++i) {
+        m.split_face(m.tuple_from_tri(i), new_tris);
+    }
+    REQUIRE(m.get_vertices().size() == 20);
+    std::vector<int64_t> v_expected_tags(30, 0);
+    v_expected_tags[0] = 1;
+    v_expected_tags[3] = 1;
+    v_expected_tags[4] = 1;
+    v_expected_tags[5] = 1;
+    v_expected_tags[6] = 1;
+    v_expected_tags[7] = 1;
+    v_expected_tags[8] = 1;
+    v_expected_tags[10] = 1;
+    for (int i = 0; i < 20; ++i) {
+        CHECK(m.vertex_attrs[i].tag == v_expected_tags[i]);
+    }
+
+    REQUIRE(m.get_faces().size() == 30);
+    std::vector<int64_t> f_expected_tags(30, 0);
+    f_expected_tags[0] = 1;
+    f_expected_tags[10] = 1;
+    f_expected_tags[11] = 1;
+    for (int i = 0; i < 30; ++i) {
+        CHECK(m.face_attrs[i].tag == f_expected_tags[i]);
+    }
+
+    // m.write("tri_simplicial_emedding_1");
+}
+
 TEST_CASE("tri_simplicial_embedding", "[simplicial_embedding][TriMesh][.]")
 {
     using Tuple = TriMesh::Tuple;
@@ -169,8 +222,15 @@ TEST_CASE("tri_simplicial_embedding", "[simplicial_embedding][TriMesh][.]")
         m.set_vertex_tag(f7, 1);
 
         m.set_edge_tag(m.tuple_from_vids(3, 7, 4), 1);
+        m.set_edge_tag(m.tuple_from_vids(4, 7, 3), 1);
     }
+    // for (const Tuple& t : m.get_edges()) {
+    //     m.set_edge_tag(t, 1);
+    // }
+
     m.write("tri_simplicial_emedding_0");
     m.edge_split_simplicial_embedding();
     m.write("tri_simplicial_emedding_1");
+    m.face_split_simplicial_embedding();
+    m.write("tri_simplicial_emedding_2");
 }

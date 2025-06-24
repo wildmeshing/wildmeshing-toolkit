@@ -630,6 +630,9 @@ bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
         return false;
     }
 
+    // get local eid for return tuple construction
+    const size_t local_eid = t.local_eid(*this);
+
     /**
      *
      *
@@ -702,10 +705,11 @@ bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
     m_tri_connectivity[new_fid2].m_indices[k] = new_vid;
 
     // make the new tuple
-    Tuple return_tuple(new_vid, (k + 2) % 3, new_fid2, *this);
+    Tuple new_vertex_tuple(new_vid, (k + 2) % 3, new_fid2, *this);
+    Tuple return_tuple(vid[0], local_eid, new_fid2, *this);
     assert(return_tuple.is_valid(*this));
 
-    new_tris = get_one_ring_tris_for_vertex(return_tuple);
+    new_tris = get_one_ring_tris_for_vertex(new_vertex_tuple);
     start_protect_attributes();
 
     // roll back if not successful
