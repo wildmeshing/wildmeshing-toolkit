@@ -392,6 +392,19 @@ protected:
      */
     virtual bool smooth_after(const Tuple& t) { return true; }
 
+    /**
+     * @brief User specified preparations and desideratas for a face split
+     * @param the face Tuple to be split
+     * @return true if the preparation succeed
+     */
+    virtual bool split_face_before(const Tuple& t) { return true; }
+    /**
+     * @brief User specified modifications and desideratas after a face split
+     * @param the face Tuple to be split
+     * @return true if the modifications succeed
+     */
+    virtual bool split_face_after(const Tuple& t) { return true; }
+
 public:
     /**
      * @brief get the current largest global fid
@@ -505,6 +518,16 @@ public:
      * @return if smooth succeed
      */
     bool smooth_vertex(const Tuple& t);
+
+    /**
+     * @brief Split a face in 3 faces.
+     *
+     * @param t Input tuple for the face to split.
+     * @param[out] new_t A vector of Tuples refering to the triangles incident to the new vertex.
+     * introduced
+     * @return true, if split succeed
+     */
+    bool split_face(const Tuple& t, std::vector<Tuple>& new_t);
 
     /**
      * @brief Count the number of the one ring tris for a vertex

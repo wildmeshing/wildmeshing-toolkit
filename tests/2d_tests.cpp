@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <catch2/catch_test_macros.hpp>
 #include <iostream>
+#include <wmtk/utils/examples/TriMesh_examples.hpp>
 
 using namespace wmtk;
 
@@ -476,5 +477,68 @@ TEST_CASE("split_operation", "[test_2d_operation]")
         assert(edge.is_valid(m));
         REQUIRE(m.split_edge(edge, dummy));
         for (auto e : edges) REQUIRE_FALSE(e.is_valid(m));
+    }
+}
+
+TEST_CASE("tri_face_split", "[test_2d_operation]")
+{
+    using namespace wmtk::utils::examples::tri;
+    using Tuple = TriMesh::Tuple;
+
+    TriMesh m;
+
+    SECTION("single_triangle_ccw")
+    {
+        TriMeshVF VF = single_triangle();
+        m.init(VF.F);
+
+        const Tuple t = m.tuple_from_vids(0, 1, 2);
+
+        std::vector<Tuple> new_tris;
+        REQUIRE(m.split_face(t, new_tris));
+        CHECK(new_tris.size() == 3);
+        CHECK(m.get_vertices().size() == 4);
+        CHECK(m.get_edges().size() == 6);
+        REQUIRE(m.get_faces().size() == 3);
+        CHECK(m.oriented_tri_vids(0) == std::array<size_t, 3>{3, 1, 2});
+        CHECK(m.oriented_tri_vids(1) == std::array<size_t, 3>{0, 3, 2});
+        CHECK(m.oriented_tri_vids(2) == std::array<size_t, 3>{0, 1, 3});
+    }
+    SECTION("single_triangle_not_ccw")
+    {
+        TriMeshVF VF = single_triangle();
+        m.init(VF.F);
+
+        const Tuple t = m.tuple_from_vids(0, 2, 1);
+
+        std::vector<Tuple> new_tris;
+        REQUIRE(m.split_face(t, new_tris));
+        CHECK(new_tris.size() == 3);
+        CHECK(m.get_vertices().size() == 4);
+        CHECK(m.get_edges().size() == 6);
+        REQUIRE(m.get_faces().size() == 3);
+        CHECK(m.oriented_tri_vids(0) == std::array<size_t, 3>{3, 1, 2});
+        CHECK(m.oriented_tri_vids(2) == std::array<size_t, 3>{0, 3, 2});
+        CHECK(m.oriented_tri_vids(1) == std::array<size_t, 3>{0, 1, 3});
+    }
+    SECTION("two_triangles")
+    {
+        TriMeshVF VF = two_triangles();
+        m.init(VF.F);
+
+        const Tuple t = m.tuple_from_vids(0, 2, 1);
+
+        std::vector<Tuple> new_tris;
+        REQUIRE(m.split_face(t, new_tris));
+        CHECK(new_tris.size() == 3);
+        CHECK(m.get_vertices().size() == 5);
+        CHECK(m.get_edges().size() == 8);
+        REQUIRE(m.get_faces().size() == 4);
+
+        CHECK(m.oriented_tri_vids(1) == std::array<size_t, 3>{0, 2, 3}); // unchanged
+
+        CHECK(m.oriented_tri_vids(0) == std::array<size_t, 3>{4, 1, 2});
+        CHECK(m.oriented_tri_vids(2) == std::array<size_t, 3>{0, 1, 4});
+        CHECK(m.oriented_tri_vids(3) == std::array<size_t, 3>{0, 4, 2});
     }
 }

@@ -621,6 +621,114 @@ bool TriMesh::smooth_vertex(const Tuple& loc0)
     return true;
 }
 
+bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
+{
+    if (!split_face_after(t)) {
+        return false;
+    }
+    if (!t.is_valid(*this)) {
+        return false;
+    }
+
+    /**
+     *
+     *
+     *         v2
+     *         /|\
+     *        / | \
+     *       /  |  \
+     *      /f1 ^ f0\
+     *     /  /   \  \
+     *    //   f2    \\
+     *  v0 ----------- v1
+     *
+     */
+
+    const size_t fid = t.fid(*this);
+
+    // const auto vid = oriented_tri_vids(t.fid(*this));
+    std::array<size_t, 3> vid;
+    vid[0] = t.vid(*this);
+    vid[1] = t.switch_vertex(*this).vid(*this);
+    vid[2] = t.switch_edge(*this).switch_vertex(*this).vid(*this);
+
+    // record the vids that will be modified for roll backs on failure
+    std::array<std::pair<size_t, VertexConnectivity>, 3> old_vertices;
+    old_vertices[0] = {vid[0], m_vertex_connectivity[vid[0]]};
+    old_vertices[1] = {vid[1], m_vertex_connectivity[vid[1]]};
+    old_vertices[2] = {vid[2], m_vertex_connectivity[vid[2]]};
+    std::pair<size_t, TriangleConnectivity> old_tri;
+    old_tri = std::make_pair(fid, m_tri_connectivity[fid]);
+
+    const auto conn_tris = [this, &vid](size_t i) -> std::vector<size_t>& {
+        return m_vertex_connectivity[vid[i]].m_conn_tris;
+    };
+
+    // update vertex connectivity
+    const size_t new_vid = get_next_empty_slot_v();
+    const size_t new_fid1 = get_next_empty_slot_t();
+    const size_t new_fid2 = get_next_empty_slot_t();
+
+    vector_erase(conn_tris(0), fid);
+    conn_tris(0).emplace_back(new_fid1);
+    conn_tris(0).emplace_back(new_fid2);
+    std::sort(conn_tris(0).begin(), conn_tris(0).end());
+    conn_tris(1).emplace_back(new_fid2);
+    std::sort(conn_tris(1).begin(), conn_tris(1).end());
+    conn_tris(2).emplace_back(new_fid1);
+    std::sort(conn_tris(2).begin(), conn_tris(2).end());
+
+    m_vertex_connectivity[new_vid].m_conn_tris.reserve(3);
+    m_vertex_connectivity[new_vid].m_conn_tris.emplace_back(fid);
+    m_vertex_connectivity[new_vid].m_conn_tris.emplace_back(new_fid1);
+    m_vertex_connectivity[new_vid].m_conn_tris.emplace_back(new_fid2);
+    std::sort(
+        m_vertex_connectivity[new_vid].m_conn_tris.begin(),
+        m_vertex_connectivity[new_vid].m_conn_tris.end());
+
+    // now the triangles
+    // need to update the hash of fid
+    const size_t i = m_tri_connectivity[fid].find(vid[0]);
+    const size_t j = m_tri_connectivity[fid].find(vid[1]);
+    const size_t k = m_tri_connectivity[fid].find(vid[2]);
+    m_tri_connectivity[fid].m_indices[i] = new_vid;
+    m_tri_connectivity[fid].hash++;
+    // new_fid1/2 m_indices in same order
+    m_tri_connectivity[new_fid1].m_indices[i] = vid[0];
+    m_tri_connectivity[new_fid1].m_indices[j] = new_vid;
+    m_tri_connectivity[new_fid1].m_indices[k] = vid[2];
+    m_tri_connectivity[new_fid2].m_indices[i] = vid[0];
+    m_tri_connectivity[new_fid2].m_indices[j] = vid[1];
+    m_tri_connectivity[new_fid2].m_indices[k] = new_vid;
+
+    // make the new tuple
+    Tuple return_tuple(new_vid, (k + 2) % 3, new_fid2, *this);
+    assert(return_tuple.is_valid(*this));
+
+    new_tris = get_one_ring_tris_for_vertex(return_tuple);
+    start_protect_attributes();
+
+    // roll back if not successful
+    if (!split_edge_after(return_tuple) || !invariants(new_tris)) {
+        // rollback topo
+        // restore old v, t
+        for (const auto& old_v : old_vertices) {
+            m_vertex_connectivity[old_v.first] = old_v.second;
+        }
+        m_tri_connectivity[old_tri.first] = old_tri.second;
+
+        // erase new_vid new_fids
+        m_vertex_connectivity[new_vid].m_conn_tris.clear();
+        m_vertex_connectivity[new_vid].m_is_removed = true;
+        m_tri_connectivity[new_fid1].m_is_removed = true;
+        m_tri_connectivity[new_fid2].m_is_removed = true;
+        rollback_protected_attributes();
+        return false;
+    }
+    release_protect_attributes();
+    return true;
+}
+
 void TriMesh::consolidate_mesh()
 {
     auto v_cnt = 0;
