@@ -700,7 +700,7 @@ public:
 
     int release_vertex_mutex_in_stack();
     /**
-     * @brief try lock the two-ring neighboring traingles' incident vertices
+     * @brief try lock the two-ring neighboring triangles' incident vertices
      *
      * @param v Tuple refers to the vertex
      * @param threadid
@@ -724,6 +724,14 @@ public:
      * @return true if all succeed
      */
     bool try_set_vertex_mutex_one_ring(const Tuple& v, int threadid);
+    /**
+     * @brief try lock the one-ring neighboring triangles' incident vertices.
+     *
+     * @param f Tuple refers to the face
+     * @param threadid
+     * @return true if all locked successfully
+     */
+    bool try_set_face_mutex_one_ring(const Tuple& f, int threadid);
 
     /**
      * @brief perform the given function for each face

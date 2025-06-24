@@ -17,6 +17,15 @@ struct
     }
 } edge_locker;
 
+struct
+{
+    bool operator()(SimplicialEmbeddingTriMesh& m, const TriMesh::Tuple& f, int task_id)
+    {
+        // TODO: this should not be here
+        return m.try_set_face_mutex_one_ring(f, task_id);
+    }
+} face_locker;
+
 SimplicialEmbeddingTriMesh::SimplicialEmbeddingTriMesh()
 {
     p_vertex_attrs = &vertex_attrs;
@@ -83,7 +92,12 @@ void SimplicialEmbeddingTriMesh::set_face_tag(const Tuple& f_tuple, const int64_
     }
 }
 
-void SimplicialEmbeddingTriMesh::cache_edge(const Tuple& t)
+bool SimplicialEmbeddingTriMesh::invariants(const std::vector<Tuple>& new_tris)
+{
+    return true;
+}
+
+bool SimplicialEmbeddingTriMesh::split_edge_before(const Tuple& t)
 {
     using namespace simplex;
 
@@ -119,65 +133,7 @@ void SimplicialEmbeddingTriMesh::cache_edge(const Tuple& t)
         c.v1e = edge_attrs[v1e.eid(*this)];
         cache.face_infos[v.id()] = c;
     }
-}
 
-bool SimplicialEmbeddingTriMesh::invariants(const std::vector<Tuple>& new_tris)
-{
-    return true;
-}
-
-std::vector<TriMesh::Tuple> SimplicialEmbeddingTriMesh::new_edges_after(
-    const std::vector<TriMesh::Tuple>& tris) const
-{
-    std::vector<TriMesh::Tuple> new_edges;
-
-    for (auto t : tris) {
-        for (auto j = 0; j < 3; j++) {
-            new_edges.push_back(tuple_from_edge(t.fid(*this), j));
-        }
-    }
-    wmtk::unique_edge_tuples(*this, new_edges);
-    return new_edges;
-}
-
-std::vector<TriMesh::Tuple> SimplicialEmbeddingTriMesh::replace_edges_after_split(
-    const std::vector<TriMesh::Tuple>& tris,
-    const size_t vid_threshold) const
-{
-    // For edge split, we do not immediately push back split sub-edges
-    // only push back those edges which are already present, but invalidated by hash mechanism.
-    std::vector<TriMesh::Tuple> new_edges;
-    new_edges.reserve(tris.size());
-    for (const Tuple& t : tris) {
-        const Tuple tmptup = t.switch_vertex(*this).switch_edge(*this);
-        new_edges.push_back(tmptup);
-    }
-    return new_edges;
-}
-
-std::vector<TriMesh::Tuple> SimplicialEmbeddingTriMesh::new_sub_edges_after_split(
-    const std::vector<TriMesh::Tuple>& tris) const
-{
-    // only push back the renewed original edges
-    std::vector<TriMesh::Tuple> new_edges2;
-    new_edges2.reserve(tris.size() * 3);
-    for (auto t : tris) {
-        new_edges2.push_back(t);
-        new_edges2.push_back(t.switch_edge(*this));
-        new_edges2.push_back((t.switch_vertex(*this)).switch_edge(*this));
-    }
-
-    wmtk::unique_edge_tuples(*this, new_edges2);
-    return new_edges2;
-}
-
-
-bool SimplicialEmbeddingTriMesh::split_edge_before(const Tuple& t)
-{
-    if (!TriMesh::split_edge_before(t)) {
-        return false;
-    }
-    cache_edge(t);
     return true;
 }
 
@@ -291,7 +247,18 @@ bool SimplicialEmbeddingTriMesh::split_face_after(const Tuple& t)
     return true;
 }
 
-bool SimplicialEmbeddingTriMesh::face_needs_split(const Tuple& t)
+bool SimplicialEmbeddingTriMesh::edge_needs_split(const Tuple& t) const
+{
+    const size_t v0 = t.vid(*this);
+    const size_t v1 = t.switch_vertex(*this).vid(*this);
+    const size_t e = t.eid(*this);
+    if (vertex_attrs[v0].tag == 1 && vertex_attrs[v1].tag == 1 && edge_attrs[e].tag == 0) {
+        return true;
+    }
+    return false;
+}
+
+bool SimplicialEmbeddingTriMesh::face_needs_split(const Tuple& t) const
 {
     const auto [t0, t1, t2] = oriented_tri_vertices(t);
 
@@ -311,56 +278,34 @@ bool SimplicialEmbeddingTriMesh::face_needs_split(const Tuple& t)
     return true;
 }
 
-double SimplicialEmbeddingTriMesh::compute_edge_cost_split(const TriMesh::Tuple& t, double L) const
-{
-    double l =
-        (vertex_attrs[t.vid(*this)].pos - vertex_attrs[t.switch_vertex(*this).vid(*this)].pos)
-            .norm();
-    if (l > (4. / 3.) * L) return (l - (4. / 3.) * L);
-    return -1;
-}
-
 bool SimplicialEmbeddingTriMesh::edge_split_simplicial_embedding()
 {
     auto all_ops = std::vector<std::pair<std::string, Tuple>>();
-    std::atomic_int count_success = 0;
-    auto tuples = tbb::concurrent_vector<Tuple>();
+    {
+        auto tuples = tbb::concurrent_vector<Tuple>();
+        for (const Tuple& t : get_edges()) {
+            if (edge_needs_split(t)) {
+                tuples.emplace_back(t);
+            }
+        }
 
-    for (const Tuple& t : get_edges()) {
-        const size_t v0 = t.vid(*this);
-        const size_t v1 = t.switch_vertex(*this).vid(*this);
-        const size_t e = t.eid(*this);
-        if (vertex_attrs[v0].tag == 1 && vertex_attrs[v1].tag == 1 && edge_attrs[e].tag == 0) {
-            tuples.emplace_back(t);
+        all_ops.reserve(tuples.size());
+        for (const Tuple& t : tuples) {
+            all_ops.emplace_back("edge_split", t);
         }
     }
 
-    all_ops.reserve(tuples.size());
-    for (const Tuple& t : tuples) {
-        all_ops.emplace_back("edge_split", t);
-    }
-
-    wmtk::logger().info("size for edges to be split is {}", all_ops.size());
-
-    tbb::concurrent_vector<std::pair<std::string, TriMesh::Tuple>> edges2;
+    wmtk::logger().info("Edge split OPs: {}", all_ops.size());
 
     auto setup_and_execute = [&](auto& executor) {
         executor.num_threads = NUM_THREADS;
         executor.renew_neighbor_tuples =
             [&](auto& m, auto op, auto& tris) -> std::vector<std::pair<Op, Tuple>> {
-            count_success++;
-
             std::vector<std::pair<Op, Tuple>> new_ops;
             new_ops.reserve(tris.size());
             for (const Tuple& t : tris) {
-                const Tuple te = t.switch_vertex(*this).switch_edge(*this);
-
-                const size_t v0 = te.vid(*this);
-                const size_t v1 = te.switch_vertex(*this).vid(*this);
-                const size_t e = te.eid(*this);
-                if (vertex_attrs[v0].tag == 1 && vertex_attrs[v1].tag == 1 &&
-                    edge_attrs[e].tag == 0) {
-                    new_ops.emplace_back(op, te);
+                if (edge_needs_split(t)) {
+                    new_ops.emplace_back(op, t);
                 }
             }
 
@@ -373,15 +318,7 @@ bool SimplicialEmbeddingTriMesh::edge_split_simplicial_embedding()
         };
 
         // Execute!!
-        do {
-            count_success.store(0, std::memory_order_release);
-            executor(*this, all_ops);
-            all_ops.clear();
-            for (const auto& item : edges2) {
-                all_ops.emplace_back(item);
-            }
-            edges2.clear();
-        } while (count_success.load(std::memory_order_acquire) > 0);
+        executor(*this, all_ops);
     };
 
     if (NUM_THREADS > 0) {
@@ -400,68 +337,32 @@ bool SimplicialEmbeddingTriMesh::edge_split_simplicial_embedding()
 bool SimplicialEmbeddingTriMesh::face_split_simplicial_embedding()
 {
     auto all_ops = std::vector<std::pair<std::string, Tuple>>();
-    std::atomic_int count_success = 0;
-    auto tuples = tbb::concurrent_vector<Tuple>();
+    {
+        auto tuples = tbb::concurrent_vector<Tuple>();
+        for (const Tuple& t : get_faces()) {
+            if (face_needs_split(t)) {
+                tuples.emplace_back(t);
+            }
+        }
 
-    for (const Tuple& t : get_faces()) {
-        if (face_needs_split(t)) {
-            tuples.emplace_back(t);
+        all_ops.reserve(tuples.size());
+        for (const Tuple& t : tuples) {
+            all_ops.emplace_back("face_split", t);
         }
     }
 
-    all_ops.reserve(tuples.size());
-    for (const Tuple& t : tuples) {
-        all_ops.emplace_back("face_split", t);
-    }
-
-    wmtk::logger().info("size for faces to be split is {}", all_ops.size());
-
-    tbb::concurrent_vector<std::pair<std::string, TriMesh::Tuple>> edges2;
+    wmtk::logger().info("Face split OPs: {}", all_ops.size());
 
     auto setup_and_execute = [&](auto& executor) {
         executor.num_threads = NUM_THREADS;
-        executor.renew_neighbor_tuples =
-            [&](auto& m, auto op, auto& tris) -> std::vector<std::pair<Op, Tuple>> {
-            count_success++;
-
-            std::vector<std::pair<Op, Tuple>> new_ops;
-            // new_ops.reserve(tris.size());
-            // for (const Tuple& t : tris) {
-            //     const Tuple te = t.switch_vertex(*this).switch_edge(*this);
-            //
-            //     const size_t v0 = te.vid(*this);
-            //     const size_t v1 = te.switch_vertex(*this).vid(*this);
-            //     const size_t e = te.eid(*this);
-            //     if (vertex_attrs[v0].tag == 1 && vertex_attrs[v1].tag == 1 &&
-            //         edge_attrs[e].tag == 0) {
-            //         new_ops.emplace_back(op, te);
-            //     }
-            // }
-
-            return new_ops;
-        };
-        // executor.priority = [](auto& m, auto _, auto& e) {
-        //     const Vector2d& p0 = m.vertex_attrs[e.vid(m)].pos;
-        //     const Vector2d& p1 = m.vertex_attrs[e.switch_vertex(m).vid(m)].pos;
-        //     return (p1 - p0).norm();
-        // };
-
         // Execute!!
-        do {
-            count_success.store(0, std::memory_order_release);
-            executor(*this, all_ops);
-            all_ops.clear();
-            for (const auto& item : edges2) {
-                all_ops.emplace_back(item);
-            }
-            edges2.clear();
-        } while (count_success.load(std::memory_order_acquire) > 0);
+        executor(*this, all_ops);
     };
 
     if (NUM_THREADS > 0) {
         auto executor =
             wmtk::ExecutePass<SimplicialEmbeddingTriMesh, ExecutionPolicy::kPartition>();
-        executor.lock_vertices = edge_locker;
+        executor.lock_vertices = face_locker;
         setup_and_execute(executor);
     } else {
         auto executor = wmtk::ExecutePass<SimplicialEmbeddingTriMesh, ExecutionPolicy::kSeq>();
@@ -471,20 +372,10 @@ bool SimplicialEmbeddingTriMesh::face_split_simplicial_embedding()
     return true;
 }
 
-bool SimplicialEmbeddingTriMesh::uniform_remeshing(double L, int iterations)
+void SimplicialEmbeddingTriMesh::simplicial_embedding()
 {
-    int cnt = 0;
-    wmtk::logger().info("target len is: {}", L);
-
-    while (cnt < iterations) {
-        cnt++;
-        wmtk::logger().info("??? Pass ??? {}", cnt);
-        // split
-        edge_split_simplicial_embedding();
-    }
-    wmtk::logger().info("finished {} remeshing iterations", iterations);
-    wmtk::logger().info("+++++++++finished+++++++++");
-    return true;
+    edge_split_simplicial_embedding();
+    face_split_simplicial_embedding();
 }
 
 void SimplicialEmbeddingTriMesh::write(const std::filesystem::path& filename) const

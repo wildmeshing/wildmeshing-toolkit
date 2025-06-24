@@ -836,7 +836,7 @@ std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_edges_for_vertex(
     std::vector<size_t> one_ring_vertices;
     size_t vid = t.vid(*this);
     auto one_ring_tris = get_one_ring_tris_for_vertex(t);
-    for (auto tri : one_ring_tris) {
+    for (Tuple tri : one_ring_tris) {
         // find the vertex
         while (tri.vid(*this) != vid) {
             tri = tri.switch_vertex(*this).switch_edge(*this);
@@ -1292,12 +1292,16 @@ int TriMesh::release_vertex_mutex_in_stack()
 
 bool TriMesh::try_set_vertex_mutex_two_ring(const Tuple& v, int threadid)
 {
-    for (auto v_one_ring : get_one_ring_edges_for_vertex(v)) {
-        if (m_vertex_mutex[v_one_ring.vid(*this)].get_owner() == threadid) continue;
+    for (const Tuple& v_one_ring : get_one_ring_edges_for_vertex(v)) {
+        if (m_vertex_mutex[v_one_ring.vid(*this)].get_owner() == threadid) {
+            continue;
+        }
         if (try_set_vertex_mutex(v_one_ring, threadid)) {
             mutex_release_stack.local().push_back(v_one_ring.vid(*this));
-            for (auto v_two_ring : get_one_ring_edges_for_vertex(v_one_ring)) {
-                if (m_vertex_mutex[v_two_ring.vid(*this)].get_owner() == threadid) continue;
+            for (const Tuple& v_two_ring : get_one_ring_edges_for_vertex(v_one_ring)) {
+                if (m_vertex_mutex[v_two_ring.vid(*this)].get_owner() == threadid) {
+                    continue;
+                }
                 if (try_set_vertex_mutex(v_two_ring, threadid)) {
                     mutex_release_stack.local().push_back(v_two_ring.vid(*this));
                 } else {
@@ -1391,6 +1395,36 @@ bool wmtk::TriMesh::try_set_vertex_mutex_one_ring(const Tuple& v, int threadid)
             return false;
         }
     }
+    return true;
+}
+
+bool TriMesh::try_set_face_mutex_one_ring(const Tuple& f, int threadid)
+{
+    const auto verts = oriented_tri_vertices(f);
+    for (const Tuple& v : verts) {
+        if (m_vertex_mutex[v.vid(*this)].get_owner() != threadid) {
+            release_vertex_mutex_in_stack();
+            return false;
+        }
+        if (try_set_vertex_mutex(v, threadid)) {
+            mutex_release_stack.local().push_back(v.vid(*this));
+        } else {
+            release_vertex_mutex_in_stack();
+            return false;
+        }
+        if (!v.is_valid(*this)) {
+            release_vertex_mutex_in_stack();
+            return false;
+        }
+    }
+
+    for (const Tuple& v : verts) {
+        if (!try_set_vertex_mutex_one_ring(v, threadid)) {
+            release_vertex_mutex_in_stack();
+            return false;
+        }
+    }
+
     return true;
 }
 

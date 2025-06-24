@@ -70,17 +70,7 @@ public:
     };
     tbb::enumerable_thread_specific<FaceSplitCache> face_split_cache;
 
-    void cache_edge(const Tuple& t);
-
     bool invariants(const std::vector<Tuple>& new_tris) override;
-
-    std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& tris) const;
-    std::vector<TriMesh::Tuple> replace_edges_after_split(
-        const std::vector<TriMesh::Tuple>& tris,
-        const size_t vid_threshold) const;
-    std::vector<TriMesh::Tuple> new_sub_edges_after_split(
-        const std::vector<TriMesh::Tuple>& tris) const;
-
 
     bool split_edge_before(const Tuple& t) override;
     bool split_edge_after(const Tuple& t) override;
@@ -88,12 +78,13 @@ public:
     bool split_face_before(const Tuple& t) override;
     bool split_face_after(const Tuple& t) override;
 
-    bool face_needs_split(const Tuple& t);
+    bool edge_needs_split(const Tuple& t) const;
+    bool face_needs_split(const Tuple& t) const;
 
-    double compute_edge_cost_split(const TriMesh::Tuple& t, double L) const;
     bool edge_split_simplicial_embedding();
     bool face_split_simplicial_embedding();
-    bool uniform_remeshing(double L, int interations);
+
+    void simplicial_embedding();
 
     void write(const std::filesystem::path& filename) const;
 };
