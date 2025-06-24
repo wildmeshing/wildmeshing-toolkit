@@ -623,7 +623,7 @@ bool TriMesh::smooth_vertex(const Tuple& loc0)
 
 bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
 {
-    if (!split_face_after(t)) {
+    if (!split_face_before(t)) {
         return false;
     }
     if (!t.is_valid(*this)) {
@@ -709,7 +709,7 @@ bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
     start_protect_attributes();
 
     // roll back if not successful
-    if (!split_edge_after(return_tuple) || !invariants(new_tris)) {
+    if (!split_face_after(return_tuple) || !invariants(new_tris)) {
         // rollback topo
         // restore old v, t
         for (const auto& old_v : old_vertices) {

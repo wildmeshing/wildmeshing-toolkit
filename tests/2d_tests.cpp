@@ -485,10 +485,10 @@ TEST_CASE("tri_face_split", "[test_2d_operation]")
     using namespace wmtk::utils::examples::tri;
     using Tuple = TriMesh::Tuple;
 
-    TriMesh m;
 
     SECTION("single_triangle_ccw")
     {
+        TriMesh m;
         TriMeshVF VF = single_triangle();
         m.init(VF.F);
 
@@ -506,6 +506,7 @@ TEST_CASE("tri_face_split", "[test_2d_operation]")
     }
     SECTION("single_triangle_not_ccw")
     {
+        TriMesh m;
         TriMeshVF VF = single_triangle();
         m.init(VF.F);
 
@@ -523,6 +524,7 @@ TEST_CASE("tri_face_split", "[test_2d_operation]")
     }
     SECTION("two_triangles")
     {
+        TriMesh m;
         TriMeshVF VF = two_triangles();
         m.init(VF.F);
 
@@ -540,5 +542,69 @@ TEST_CASE("tri_face_split", "[test_2d_operation]")
         CHECK(m.oriented_tri_vids(0) == std::array<size_t, 3>{4, 1, 2});
         CHECK(m.oriented_tri_vids(2) == std::array<size_t, 3>{0, 1, 4});
         CHECK(m.oriented_tri_vids(3) == std::array<size_t, 3>{0, 4, 2});
+    }
+    SECTION("rollback")
+    {
+        struct VertexAttributes
+        {
+            int64_t tag = 0;
+        };
+        struct EdgeAttributes
+        {
+            int64_t tag = 0;
+        };
+        struct FaceAttributes
+        {
+            int64_t tag = 0;
+        };
+
+        class FSM : public TriMesh
+        {
+        public:
+            using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
+            using EdgeAttCol = wmtk::AttributeCollection<EdgeAttributes>;
+            using FaceAttCol = wmtk::AttributeCollection<FaceAttributes>;
+            VertAttCol vertex_attrs;
+            EdgeAttCol edge_attrs;
+            FaceAttCol face_attrs;
+
+            FSM()
+            {
+                p_vertex_attrs = &vertex_attrs;
+                p_edge_attrs = &edge_attrs;
+                p_face_attrs = &face_attrs;
+            }
+
+            bool split_face_after(const Tuple& t)
+            {
+                vertex_attrs[t.vid(*this)].tag = 1;
+                edge_attrs[t.eid(*this)].tag = 1;
+                face_attrs[t.fid(*this)].tag = 1;
+                return false;
+            }
+        };
+
+        FSM m;
+        TriMeshVF VF = single_triangle();
+        m.init(VF.F);
+
+        const Tuple t = m.tuple_from_vids(0, 1, 2);
+
+        std::vector<Tuple> new_tris;
+        REQUIRE_FALSE(m.split_face(t, new_tris));
+        CHECK(new_tris.size() == 3);
+        const auto verts = m.get_vertices();
+        const auto edges = m.get_edges();
+        const auto faces = m.get_faces();
+
+        CHECK(verts.size() == 3);
+        CHECK(edges.size() == 3);
+        REQUIRE(faces.size() == 1);
+        CHECK(m.oriented_tri_vids(0) == std::array<size_t, 3>{0, 1, 2});
+        for (int i = 0; i < 3; ++i) {
+            CHECK(m.vertex_attrs[i].tag == 0);
+            CHECK(m.edge_attrs[i].tag == 0);
+        }
+        CHECK(m.face_attrs[0].tag == 0);
     }
 }
