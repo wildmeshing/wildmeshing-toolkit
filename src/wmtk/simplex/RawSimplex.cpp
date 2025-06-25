@@ -6,7 +6,7 @@
 
 namespace {
 template <int N>
-std::array<size_t, N - 1> array_without(const std::array<size_t, N>& a, const int64_t excluded)
+std::array<size_t, N - 1> array_without(const std::array<size_t, N>& a, const size_t excluded)
 {
     static_assert(N > 1);
 
@@ -62,15 +62,15 @@ Edge::Edge(size_t v0, size_t v1)
     }
 }
 
-Vertex Edge::opposite_vertex(const int64_t excluded_id) const
+Vertex Edge::opposite_vertex(const size_t excluded_id) const
 {
-    auto a = array_without(m_vertices, excluded_id);
+    auto a = array_without<2>(m_vertices, excluded_id);
     return Vertex(a[0]);
 }
 
 Vertex Edge::opposite_vertex(const Vertex& v) const
 {
-    auto a = array_without(m_vertices, v.vertices()[0]);
+    auto a = array_without<2>(m_vertices, v.vertices()[0]);
     return Vertex(a[0]);
 }
 
@@ -84,19 +84,19 @@ Face::Face(size_t v0, size_t v1, size_t v2)
 
 Edge Face::opposite_edge(const int64_t excluded_id) const
 {
-    auto a = array_without(m_vertices, excluded_id);
+    auto a = array_without<3>(m_vertices, excluded_id);
     return Edge(a[0], a[1]);
 }
 
 Edge Face::opposite_edge(const Vertex& v) const
 {
-    auto a = array_without(m_vertices, v.vertices()[0]);
+    auto a = array_without<3>(m_vertices, v.vertices()[0]);
     return Edge(a[0], a[1]);
 }
 
 Vertex Face::opposite_vertex(const Edge& v) const
 {
-    auto a = array_without(m_vertices, v.vertices());
+    auto a = array_without<3, 2>(m_vertices, v.vertices());
     return Vertex(a[0]);
 }
 
@@ -111,25 +111,25 @@ Tet::Tet(size_t v0, size_t v1, size_t v2, size_t v3)
 
 Face Tet::opposite_face(const int64_t excluded_id) const
 {
-    auto a = array_without(m_vertices, excluded_id);
+    auto a = array_without<4>(m_vertices, excluded_id);
     return Face(a[0], a[1], a[2]);
 }
 
 Face Tet::opposite_face(const Vertex& v) const
 {
-    auto a = array_without(m_vertices, v.vertices());
+    auto a = array_without<4>(m_vertices, v.vertices()[0]);
     return Face(a[0], a[1], a[2]);
 }
 
 Edge Tet::opposite_edge(const Edge& v) const
 {
-    auto a = array_without(m_vertices, v.vertices());
+    auto a = array_without<4, 2>(m_vertices, v.vertices());
     return Edge(a[0], a[1]);
 }
 
 Vertex Tet::opposite_vertex(const Face& v) const
 {
-    auto a = array_without(m_vertices, v.vertices()[0]);
+    auto a = array_without<4, 3>(m_vertices, v.vertices());
     return Vertex(a[0]);
 }
 

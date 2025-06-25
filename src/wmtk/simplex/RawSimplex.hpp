@@ -49,7 +49,7 @@ public:
     Edge(size_t v0, size_t v1);
     Edge(const Edge&) = default;
 
-    Vertex opposite_vertex(const int64_t excluded_id) const;
+    Vertex opposite_vertex(const size_t excluded_id) const;
     Vertex opposite_vertex(const Vertex& v) const;
 };
 
