@@ -8,7 +8,7 @@ endif()
 set(FAST_ENVELOPE_WITH_UNIT_TESTS OFF)
 set(FAST_ENVELOPE_ENABLE_TBB OFF)
 
-include(CLI11)
+include(cli11)
 
 # HACK because there is a linker error on Windows otherwise
 if(WIN32)
