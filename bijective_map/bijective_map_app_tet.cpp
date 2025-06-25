@@ -648,6 +648,86 @@ query_surface_tet sample_query_surface_large_triangle(
     return query_surface;
 }
 
+
+query_surface_tet sample_query_surface_sub_surface(
+    const Eigen::MatrixXi& T_out,
+    const Eigen::MatrixXd& V_out)
+{
+    query_surface_tet query_surface;
+
+    // Sample a connected surface by starting from one tetrahedron and growing
+    // We'll use a simple flood-fill approach to ensure connectivity
+
+    if (T_out.rows() == 0) return query_surface;
+
+    std::unordered_set<int> visited_tets;
+    std::queue<int> tet_queue;
+
+    // Start with the first tetrahedron
+    tet_queue.push(0);
+    visited_tets.insert(0);
+
+    int max_tets_to_sample = std::min(20, (int)T_out.rows());
+    int sampled_count = 0;
+
+    while (!tet_queue.empty() && sampled_count < max_tets_to_sample) {
+        int current_tet = tet_queue.front();
+        tet_queue.pop();
+
+        // Add faces of current tetrahedron to the surface
+        std::vector<std::vector<int>> face_vertices = {
+            {0, 1, 2}, // face 0
+            {0, 1, 3}, // face 1
+            {0, 2, 3}, // face 2
+            {1, 2, 3} // face 3
+        };
+
+        for (int face_id = 0; face_id < 4; face_id++) {
+            query_triangle_tet q_tri;
+            q_tri.t_id = current_tet;
+            q_tri.tv_ids = T_out.row(current_tet);
+
+            // For each vertex of the triangle, set barycentric coordinates
+            // such that one component is 1 and the other three are 0
+            for (int j = 0; j < 3; j++) {
+                q_tri.bcs[j] = Eigen::Vector4d::Zero();
+                int vertex_idx = face_vertices[face_id][j];
+                q_tri.bcs[j](vertex_idx) = 1.0;
+            }
+
+            query_surface.triangles.push_back(q_tri);
+        }
+
+        sampled_count++;
+
+        // Find adjacent tetrahedra and add them to the queue
+        // For simplicity, we'll add some neighboring tets (this is a simplified adjacency check)
+        for (int i = 0; i < T_out.rows(); i++) {
+            if (visited_tets.find(i) == visited_tets.end()) {
+                // Check if this tet shares any vertices with current tet
+                bool shares_vertex = false;
+                for (int j = 0; j < 4; j++) {
+                    for (int k = 0; k < 4; k++) {
+                        if (T_out(current_tet, j) == T_out(i, k)) {
+                            shares_vertex = true;
+                            break;
+                        }
+                    }
+                    if (shares_vertex) break;
+                }
+
+                if (shares_vertex && visited_tets.size() < max_tets_to_sample) {
+                    tet_queue.push(i);
+                    visited_tets.insert(i);
+                }
+            }
+        }
+    }
+
+    return query_surface;
+}
+
+
 std::pair<Eigen::MatrixXd, Eigen::MatrixXi> query_surface_to_world_positions(
     const query_surface_tet& query_surface,
     const Eigen::MatrixXd& V)
