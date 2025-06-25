@@ -14,6 +14,7 @@
 #include <igl/tet_tet_adjacency.h>
 #include "InteractiveAndRobustMeshBooleans/code/booleans.h"
 #include "track_operations_tet.hpp"
+#include "vtu_utils.hpp"
 // using namespace wmtk;
 using path = std::filesystem::path;
 
@@ -419,7 +420,9 @@ void generateAndSaveMesh(
     cinolib::write_OBJ(output_filename.c_str(), out_coords, out_tris, {});
 }
 
-query_surface_tet sample_query_surface(const Eigen::MatrixXi& T_out, const Eigen::MatrixXd& V_out)
+query_surface_tet sample_query_surface_large_triangle(
+    const Eigen::MatrixXi& T_out,
+    const Eigen::MatrixXd& V_out)
 {
     // Create input surface mesh similar to main_arrangement.cpp
     std::vector<double> in_coords;
@@ -677,52 +680,6 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXi> query_surface_to_world_positions(
     return {V_out, F_out};
 }
 
-
-void write_triangle_mesh_to_vtu(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    const std::string& filename)
-{
-    std::ofstream outfile(filename);
-    outfile << "<?xml version=\"1.0\"?>\n";
-    outfile << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">\n";
-    outfile << "  <UnstructuredGrid>\n";
-    outfile << "    <Piece NumberOfPoints=\"" << V.rows() << "\" NumberOfCells=\"" << F.rows()
-            << "\">\n";
-
-    // Write points
-    outfile << "      <Points>\n";
-    outfile << "        <DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">\n";
-    for (int i = 0; i < V.rows(); i++) {
-        outfile << "          " << V(i, 0) << " " << V(i, 1) << " " << V(i, 2) << "\n";
-    }
-    outfile << "        </DataArray>\n";
-    outfile << "      </Points>\n";
-
-    // Write cells
-    outfile << "      <Cells>\n";
-    outfile << "        <DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n";
-    for (int i = 0; i < F.rows(); i++) {
-        outfile << "          " << F(i, 0) << " " << F(i, 1) << " " << F(i, 2) << "\n";
-    }
-    outfile << "        </DataArray>\n";
-    outfile << "        <DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n";
-    for (int i = 0; i < F.rows(); i++) {
-        outfile << "          " << (i + 1) * 3 << "\n";
-    }
-    outfile << "        </DataArray>\n";
-    outfile << "        <DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">\n";
-    for (int i = 0; i < F.rows(); i++) {
-        outfile << "          5\n"; // VTK_TRIANGLE = 5
-    }
-    outfile << "        </DataArray>\n";
-    outfile << "      </Cells>\n";
-    outfile << "    </Piece>\n";
-    outfile << "  </UnstructuredGrid>\n";
-    outfile << "</VTKFile>\n";
-    outfile.close();
-}
-
 int main(int argc, char** argv)
 {
     CLI::App app{"bijective_map_app_tet"};
@@ -945,7 +902,7 @@ int main(int argc, char** argv)
         query_surface_tet query_surface;
         if (!std::filesystem::exists(query_surface_filename)) {
             std::cout << "query_surface not found, sampling and writing to file..." << std::endl;
-            query_surface = sample_query_surface(T_after, V_after);
+            query_surface = sample_query_surface_large_triangle(T_after, V_after);
             write_query_surface_tet_to_file(query_surface, query_surface_filename);
         } else {
             std::cout << "query_surface found, reading from file..." << std::endl;
@@ -953,7 +910,7 @@ int main(int argc, char** argv)
         }
 
         auto [surface_V, surface_F] = query_surface_to_world_positions(query_surface, V_after);
-        write_triangle_mesh_to_vtu(surface_V, surface_F, "query_surface_tet_after.vtu");
+        vtu_utils::write_triangle_mesh_to_vtu(surface_V, surface_F, "query_surface_tet_after.vtu");
 
 
         std::cout << "before tracking, surface size: " << query_surface.triangles.size()
@@ -965,10 +922,161 @@ int main(int argc, char** argv)
         write_query_surface_tet_to_file(query_surface, "query_surface_tet_before.json");
         auto [surface_V_before, surface_F_before] =
             query_surface_to_world_positions(query_surface, V_before);
-        write_triangle_mesh_to_vtu(
+        vtu_utils::write_triangle_mesh_to_vtu(
             surface_V_before,
             surface_F_before,
             "query_surface_tet_before.vtu");
+
+
+        // TODO: check if the surface is a correct surface
+        bool check_manifold = false;
+        if (check_manifold) {
+            // Merge duplicate vertices and create triangle mesh
+            std::cout << "Merging duplicate vertices..." << std::endl;
+
+            std::vector<Eigen::Vector3d> unique_vertices;
+            std::vector<Eigen::Vector3i> unique_faces;
+
+            const double tolerance = 1e-6; // Tolerance for considering vertices as identical
+
+            // Process each triangle
+            for (int i = 0; i < surface_F_before.rows(); i++) {
+                Eigen::Vector3i new_face;
+
+                for (int j = 0; j < 3; j++) {
+                    const Eigen::Vector3d& vertex = surface_V_before.row(surface_F_before(i, j));
+
+                    // Find if this vertex is close to any existing vertex
+                    int existing_idx = -1;
+                    for (size_t k = 0; k < unique_vertices.size(); k++) {
+                        if ((vertex - unique_vertices[k]).norm() < tolerance) {
+                            existing_idx = k;
+                            break;
+                        }
+                    }
+
+                    if (existing_idx == -1) {
+                        // New vertex
+                        int new_idx = unique_vertices.size();
+                        unique_vertices.push_back(vertex);
+                        new_face(j) = new_idx;
+                    } else {
+                        // Existing vertex
+                        new_face(j) = existing_idx;
+                    }
+                }
+
+                // Only add face if it's not degenerate (all vertices are different)
+                if (new_face(0) != new_face(1) && new_face(1) != new_face(2) &&
+                    new_face(2) != new_face(0)) {
+                    unique_faces.push_back(new_face);
+                }
+            }
+
+            // Convert to Eigen matrices
+            Eigen::MatrixXd V_triangle(unique_vertices.size(), 3);
+            Eigen::MatrixXi F_triangle(unique_faces.size(), 3);
+
+            for (size_t i = 0; i < unique_vertices.size(); i++) {
+                V_triangle.row(i) = unique_vertices[i];
+            }
+
+            for (size_t i = 0; i < unique_faces.size(); i++) {
+                F_triangle.row(i) = unique_faces[i];
+            }
+
+            std::cout << "Original mesh: " << surface_V_before.rows() << " vertices, "
+                      << surface_F_before.rows() << " faces" << std::endl;
+            std::cout << "Merged mesh: " << V_triangle.rows() << " vertices, " << F_triangle.rows()
+                      << " faces" << std::endl;
+
+            // Check if the mesh is manifold
+            std::cout << "Checking manifold property..." << std::endl;
+
+            // Count edge occurrences and track which faces contain each edge
+            std::map<std::pair<int, int>, std::vector<int>> edge_to_faces;
+            std::map<std::pair<int, int>, int> edge_count;
+
+            for (int i = 0; i < F_triangle.rows(); i++) {
+                for (int j = 0; j < 3; j++) {
+                    int v1 = F_triangle(i, j);
+                    int v2 = F_triangle(i, (j + 1) % 3);
+
+                    // Ensure consistent edge orientation
+                    if (v1 > v2) std::swap(v1, v2);
+
+                    edge_count[{v1, v2}]++;
+                    edge_to_faces[{v1, v2}].push_back(i);
+                }
+            }
+
+            // Check manifold property and collect non-manifold vertices
+            bool is_manifold = true;
+            int boundary_edges = 0;
+            int non_manifold_edges = 0;
+            std::set<int> non_manifold_vertices;
+
+            for (const auto& edge : edge_count) {
+                if (edge.second == 1) {
+                    boundary_edges++;
+                } else if (edge.second > 2) {
+                    std::cout << "    Non-manifold edge: (" << edge.first.first << ", "
+                              << edge.first.second << ") appears " << edge.second << " times"
+                              << std::endl;
+                    std::cout << "    Edge vertices positions: ("
+                              << V_triangle.row(edge.first.first) << ", "
+                              << V_triangle.row(edge.first.second) << ")" << std::endl;
+
+                    // Print faces containing this non-manifold edge and their areas
+                    std::cout << "    Faces containing this edge:" << std::endl;
+                    for (int face_id : edge_to_faces[edge.first]) {
+                        Eigen::Vector3i face = F_triangle.row(face_id);
+                        Eigen::Vector3d v0 = V_triangle.row(face(0));
+                        Eigen::Vector3d v1 = V_triangle.row(face(1));
+                        Eigen::Vector3d v2 = V_triangle.row(face(2));
+
+                        // Calculate triangle area using cross product
+                        Eigen::Vector3d edge1 = v1 - v0;
+                        Eigen::Vector3d edge2 = v2 - v0;
+                        double area = 0.5 * edge1.cross(edge2).norm();
+
+                        std::cout << "      Face " << face_id << ": vertices (" << face(0) << ", "
+                                  << face(1) << ", " << face(2) << "), area = " << area
+                                  << std::endl;
+                    }
+
+                    non_manifold_edges++;
+                    is_manifold = false;
+                    // Add both vertices of non-manifold edges to the set
+                    non_manifold_vertices.insert(edge.first.first);
+                    non_manifold_vertices.insert(edge.first.second);
+                }
+            }
+
+            std::cout << "Manifold check results:" << std::endl;
+            std::cout << "  Boundary edges: " << boundary_edges << std::endl;
+            std::cout << "  Non-manifold edges: " << non_manifold_edges << std::endl;
+            std::cout << "  Is manifold: " << (is_manifold ? "Yes" : "No") << std::endl;
+
+            // Print non-manifold vertices as point mesh
+            if (!non_manifold_vertices.empty()) {
+                std::cout << "  Non-manifold vertices: " << non_manifold_vertices.size()
+                          << std::endl;
+
+                // Create point mesh for non-manifold vertices
+                Eigen::MatrixXd V_non_manifold(non_manifold_vertices.size(), 3);
+                int idx = 0;
+                for (int vertex_id : non_manifold_vertices) {
+                    V_non_manifold.row(idx) = V_triangle.row(vertex_id);
+                    idx++;
+                }
+
+                // Write non-manifold vertices to file
+                vtu_utils::write_point_mesh_to_vtu(V_non_manifold, "non_manifold_vertices.vtu");
+                std::cout << "  Non-manifold vertices written to non_manifold_vertices.vtu"
+                          << std::endl;
+            }
+        }
     }
 
     return 0;

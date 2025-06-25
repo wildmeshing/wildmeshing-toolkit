@@ -41,7 +41,7 @@ target_link_libraries(bijective_map_app
 )
 target_compile_features(bijective_map_app PUBLIC cxx_std_17)
 
-add_executable(bijective_map_app_tet bijective_map_app_tet.cpp track_operations_tet.hpp track_operations_tet.cpp FindPointTetMesh.cpp)
+add_executable(bijective_map_app_tet bijective_map_app_tet.cpp track_operations_tet.hpp track_operations_tet.cpp FindPointTetMesh.cpp vtu_utils.cpp)
 target_include_directories(bijective_map_app_tet PUBLIC
     ./InteractiveAndRobustMeshBooleans
     InteractiveAndRobustMeshBooleans/code/
