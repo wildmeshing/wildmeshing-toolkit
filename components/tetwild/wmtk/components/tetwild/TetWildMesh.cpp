@@ -81,11 +81,11 @@ void TetWildMesh::mesh_improvement(int max_its)
         if (max_energy < m_params.stop_energy) break;
         consolidate_mesh();
 
-        output_faces(
-            m_params.output_path + "after_iter" + std::to_string(it) + ".obj",
-            [](auto& f) { return f.m_is_surface_fs; });
+        // output_faces(
+        //     m_params.output_path + "after_iter" + std::to_string(it) + ".obj",
+        //     [](auto& f) { return f.m_is_surface_fs; });
 
-        output_mesh(m_params.output_path + "after_iter" + std::to_string(it) + ".msh");
+        // output_mesh(m_params.output_path + "after_iter" + std::to_string(it) + ".msh");
 
         wmtk::logger().info("v {} t {}", vert_capacity(), tet_capacity());
 
@@ -595,6 +595,16 @@ void TetWildMesh::filter_outside(
         wmtk::logger().critical("Still Inverting..., Empty Output");
         return;
     }
+
+    // store winding number in mesh
+    {
+        const auto tets = get_tets();
+        for (int i = 0; i < tets.size(); ++i) {
+            const size_t tid = tets[i].tid(*this);
+            m_tet_attribute[tid].m_winding_number = W(i);
+        }
+    }
+
     wmtk::logger().info("Removing...");
 
     std::vector<size_t> rm_tids;
@@ -657,6 +667,9 @@ void TetWildMesh::output_mesh(std::string file)
     msh.add_tet_attribute<1>("t energy", [&](size_t i) {
         return std::cbrt(m_tet_attribute[i].m_quality);
     });
+    msh.add_tet_attribute<1>("winding_number", [&](size_t i) {
+        return std::cbrt(m_tet_attribute[i].m_winding_number);
+    });
 
     msh.save(file, true);
 }
@@ -684,7 +697,7 @@ std::tuple<double, double> TetWildMesh::get_max_avg_energy()
     //     avg_energy += std::cbrt(q);
     //     cnt++;
     // });
-    std::ofstream large_tet("large_energy_tet.obj");
+    // std::ofstream large_tet("large_energy_tet.obj");
 
     for (int i = 0; i < tet_capacity(); i++) {
         auto tup = tuple_from_tet(i);
@@ -693,13 +706,13 @@ std::tuple<double, double> TetWildMesh::get_max_avg_energy()
 
         auto q = m_tet_attribute[tup.tid(*this)].m_quality;
         max_energy = std::max(max_energy, q);
-        if (q > 1e6) {
-            for (auto v : vs) {
-                large_tet << "v " << m_vertex_attribute[v.vid(*this)].m_posf[0] << " "
-                          << m_vertex_attribute[v.vid(*this)].m_posf[1] << " "
-                          << m_vertex_attribute[v.vid(*this)].m_posf[2] << std::endl;
-            }
-        }
+        // if (q > 1e6) {
+        //     for (auto v : vs) {
+        //         large_tet << "v " << m_vertex_attribute[v.vid(*this)].m_posf[0] << " "
+        //                   << m_vertex_attribute[v.vid(*this)].m_posf[1] << " "
+        //                   << m_vertex_attribute[v.vid(*this)].m_posf[2] << std::endl;
+        //     }
+        // }
         avg_energy += std::cbrt(q);
         cnt++;
     }
@@ -1818,13 +1831,17 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
     const auto& vs = get_vertices();
     const auto& tets = get_tets();
 
-    Eigen::MatrixXd parts(tets.size(), 1), V(vs.size(), 3);
+    Eigen::MatrixXd V(vs.size(), 3);
     Eigen::MatrixXi T(tets.size(), 4);
+
+    Eigen::MatrixXd parts(tets.size(), 1);
+    Eigen::MatrixXd wn(tets.size(), 1);
 
     int index = 0;
     for (auto t : tets) {
         size_t tid = t.tid(*this);
         parts(index, 0) = m_tet_attribute[tid].part_id;
+        wn(index, 0) = m_tet_attribute[tid].m_winding_number;
 
         const auto& vs = oriented_tet_vertices(t);
         for (int j = 0; j < 4; j++) {
@@ -1849,6 +1866,7 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
     const auto out_path = path + (use_hdf5 ? ".hdf" : ".vtu");
 
     writer->add_cell_field("part", parts);
+    writer->add_cell_field("winding_number", wn);
     writer->write_mesh(out_path, V, T);
 }
 

@@ -274,8 +274,8 @@ void TetWildMesh::insertion_by_volumeremesher(
 
     // generate background mesh
     init_from_delaunay_box_mesh(vertices);
-    output_mesh("background_tetmesh.msh");
-    std::cout << "background_tetmesh written!" << std::endl;
+    // output_mesh("background_tetmesh.msh");
+    // std::cout << "background_tetmesh written!" << std::endl;
 
     // prepare tet vertices and tet index info
 
@@ -445,11 +445,11 @@ void TetWildMesh::insertion_by_volumeremesher(
     //     polygon_faces_on_input_surface);
 
     // output surface polygon
-    output_embedded_polygon_surface_mesh(
-        "surface_polygon_mesh_after_insertion.obj",
-        v_rational,
-        polygon_faces,
-        polygon_faces_on_input_surface);
+    // output_embedded_polygon_surface_mesh(
+    //     "surface_polygon_mesh_after_insertion.obj",
+    //     v_rational,
+    //     polygon_faces,
+    //     polygon_faces_on_input_surface);
 
     // test mqz output
 

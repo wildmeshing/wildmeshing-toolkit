@@ -29,6 +29,12 @@ nlohmann::json tetwild_spec = R"(
   },
   {
     "pointer": "/input",
+    "type": "list",
+    "doc": "List of triangular input meshes.",
+    "min": 1
+  },
+  {
+    "pointer": "/input/*",
     "type": "string",
     "doc": "Triangular input mesh."
   },

@@ -85,6 +85,7 @@ class TetAttributes
 {
 public:
     Scalar m_quality;
+    Scalar m_winding_number = 0;
     int part_id = -1;
 };
 

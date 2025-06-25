@@ -50,7 +50,7 @@ void tetwild(nlohmann::json json_params)
 
     tetwild::Parameters params;
 
-    std::string input_path = json_params["input"];
+    std::vector<std::string> input_paths = json_params["input"];
     std::string output_path = json_params["output"];
     bool skip_simplify = json_params["skip_simplify"];
     bool use_sample_envelope = json_params["use_sample_envelope"];
@@ -71,7 +71,7 @@ void tetwild(nlohmann::json json_params)
     double remove_duplicate_esp = 2e-3;
     std::vector<size_t> modified_nonmanifold_v;
     wmtk::stl_to_manifold_wmtk_input(
-        input_path,
+        input_paths,
         remove_duplicate_esp,
         box_minmax,
         verts,
@@ -102,7 +102,7 @@ void tetwild(nlohmann::json json_params)
     assert(surf_mesh.check_mesh_connectivity_validity());
 
     if (skip_simplify == false) {
-        wmtk::logger().info("input {} simplification", input_path);
+        wmtk::logger().info("input {} simplification", input_paths);
         surf_mesh.collapse_shortest(0);
         surf_mesh.consolidate_mesh();
     }
@@ -201,25 +201,25 @@ void tetwild(nlohmann::json json_params)
     double insertion_time = insertion_timer.getElapsedTime();
 
 
-    mesh_new.output_faces(output_path + "after_insertion_surface.obj", [](auto& f) {
-        return f.m_is_surface_fs;
-    });
+    // mesh_new.output_faces(output_path + "after_insertion_surface.obj", [](auto& f) {
+    //     return f.m_is_surface_fs;
+    // });
 
 
     wmtk::logger().info("volume remesher insertion time: {}s", insertion_time);
 
-    mesh_new.output_tetrahedralized_embedded_mesh(
-        "tetrahedralized_embedded_mesh.txt",
-        v_rational,
-        facets,
-        tets,
-        tet_face_on_input_surface);
+    // mesh_new.output_tetrahedralized_embedded_mesh(
+    //     "tetrahedralized_embedded_mesh.txt",
+    //     v_rational,
+    //     facets,
+    //     tets,
+    //     tet_face_on_input_surface);
 
-    mesh_new.output_init_tetmesh("tetmesh_before_opt.txt");
+    // mesh_new.output_init_tetmesh("tetmesh_before_opt.txt");
 
     mesh_new.consolidate_mesh();
 
-    mesh_new.output_mesh(output_path + "after_insertion.msh");
+    // mesh_new.output_mesh(output_path + "after_insertion.msh");
 
     // mesh_new.output_faces("test_embed_output_bbox.obj", [](auto& f) {
     //     return f.m_is_bbox_fs != -1;
@@ -242,13 +242,10 @@ void tetwild(nlohmann::json json_params)
     // /////////mesh improvement
     mesh_new.mesh_improvement(max_its);
 
-    mesh_new.save_paraview(output_path, false);
-
-
-    mesh_new.output_mesh(output_path + "after_optimization.msh");
-    mesh_new.output_faces(output_path + "after_optimization_surface.obj", [](auto& f) {
-        return f.m_is_surface_fs;
-    });
+    // mesh_new.output_mesh(output_path + "after_optimization.msh");
+    // mesh_new.output_faces(output_path + "after_optimization_surface.obj", [](auto& f) {
+    //     return f.m_is_surface_fs;
+    // });
 
     // ////winding number
     if (filter_with_input)
@@ -261,6 +258,8 @@ void tetwild(nlohmann::json json_params)
     if (mesh_new.tet_size() == 0) {
         log_and_throw_error("Empty Output after Filter!");
     }
+
+    mesh_new.save_paraview(output_path, false);
 
     /////////output
     auto [max_energy, avg_energy] = mesh_new.get_max_avg_energy();

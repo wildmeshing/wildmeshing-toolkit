@@ -215,16 +215,15 @@ bool SimplicialEmbeddingTriMesh::split_face_after(const Tuple& t)
 {
     const FaceSplitCache& cache = face_split_cache.local();
 
-    // const Tuple t0 = t.switch_vertex(*this).switch_edge(*this);
     const Tuple& t0 = t;
     const Tuple t1 =
         t0.switch_vertex(*this).switch_edge(*this).switch_face(*this).value().switch_edge(*this);
     const Tuple t2 =
         t1.switch_vertex(*this).switch_edge(*this).switch_face(*this).value().switch_edge(*this);
 
-    vertex_attrs[t0.vid(*this)] = cache.v0;
-    vertex_attrs[t1.vid(*this)] = cache.v1;
-    vertex_attrs[t2.vid(*this)] = cache.v2;
+    // vertex_attrs[t0.vid(*this)] = cache.v0;
+    // vertex_attrs[t1.vid(*this)] = cache.v1;
+    // vertex_attrs[t2.vid(*this)] = cache.v2;
 
     edge_attrs[t0.eid(*this)] = cache.e0;
     edge_attrs[t1.eid(*this)] = cache.e1;
