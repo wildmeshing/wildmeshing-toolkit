@@ -411,6 +411,71 @@ void handle_local_mapping_tet_curve(
     }
 }
 
+
+/**
+ * @brief Helper function to get all possible representations of a vertex
+ * @param local_t_id The local tetrahedron ID
+ * @param local_bc The barycentric coordinates within the tetrahedron
+ * @param T_local The local tetrahedron connectivity matrix
+ * @return std::pair<std::vector<int>, std::vector<Eigen::Vector4d>> All possible tetrahedron IDs
+ * and their corresponding barycentric coordinates
+ */
+
+std::pair<std::vector<int>, std::vector<Eigen::Vector4d>> get_all_possible_representations(
+    const int local_t_id,
+    const Eigen::Vector4d& local_bc,
+    const Eigen::MatrixXi& T_local,
+    const double eps = 1e-10)
+{
+    std::vector<int> all_possible_t_ids;
+    std::vector<Eigen::Vector4d> all_possible_bcs;
+
+    // add the original representation
+    all_possible_t_ids.push_back(local_t_id);
+    all_possible_bcs.push_back(local_bc);
+
+    std::vector<int> non_zeros;
+    for (int i = 0; i < 4; i++) {
+        if (abs(local_bc(i)) >= eps) {
+            non_zeros.push_back(i);
+        }
+    }
+
+    if (non_zeros.size() < 4) {
+        for (int t_id = 0; t_id < T_local.rows(); t_id++) {
+            if (t_id == local_t_id) continue;
+
+            bool contains_all = true;
+            Eigen::Vector4d bc_tmp = Eigen::Vector4d::Zero();
+            for (int i = 0; i < non_zeros.size(); i++) {
+                int v_idx = T_local(local_t_id, non_zeros[i]);
+                bool found = false;
+
+                for (int j = 0; j < 4; j++) {
+                    if (T_local(t_id, j) == v_idx) {
+                        found = true;
+                        bc_tmp(j) = local_bc(non_zeros[i]);
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    contains_all = false;
+                    break;
+                }
+            }
+
+            if (contains_all) {
+                all_possible_t_ids.push_back(t_id);
+                all_possible_bcs.push_back(bc_tmp);
+            }
+        }
+    }
+
+    return {all_possible_t_ids, all_possible_bcs};
+}
+
+
 void handle_local_mapping_tet_surface(
     const Eigen::MatrixXd& V_before,
     const Eigen::MatrixXi& T_before,
@@ -493,32 +558,96 @@ void handle_local_mapping_tet_surface(
 
         std::cout << "Handling one triangle, get intersections." << std::endl;
 
-        // TODO: handle one triangle
-        // Check if all 3 points in qps have the same t_id
-        if (qps[0].t_id == qps[1].t_id && qps[1].t_id == qps[2].t_id) {
-            std::cout << "All points are in one tetrahedron " << qps[0].t_id << std::endl;
-            // update the query triangle
-            qt.t_id = qps[0].t_id;
-            qt.bcs[0] = qps[0].bc;
-            qt.bcs[1] = qps[1].bc;
-            qt.bcs[2] = qps[2].bc;
-            qt.tv_ids = qps[0].tv_ids;
-        } else {
-            std::cout << "Not in one tetrahedron" << std::endl;
-            std::cout << "Computing arrangement" << std::endl;
-            // Get local t_ids for each point
-            std::vector<int> local_t_ids;
-            for (const auto& qp : qps) {
-                auto it = std::find(id_map_before.begin(), id_map_before.end(), qp.t_id);
-                if (it != id_map_before.end()) {
-                    int local_id = std::distance(id_map_before.begin(), it);
-                    local_t_ids.push_back(local_id);
-                } else {
-                    std::cout << "Error: t_id " << qp.t_id << " not found in id_map_before"
-                              << std::endl;
-                    exit(1);
+        // Get local t_ids for each point
+        std::vector<int> local_t_ids;
+        for (const auto& qp : qps) {
+            auto it = std::find(id_map_before.begin(), id_map_before.end(), qp.t_id);
+            if (it != id_map_before.end()) {
+                int local_id = std::distance(id_map_before.begin(), it);
+                local_t_ids.push_back(local_id);
+            } else {
+                std::cout << "Error: t_id " << qp.t_id << " not found in id_map_before"
+                          << std::endl;
+                exit(1);
+            }
+        }
+        std::vector<std::vector<int>> all_possible_t_ids_per_point;
+        std::vector<std::vector<Eigen::Vector4d>> all_possible_bcs_per_point;
+
+        for (int i = 0; i < qps.size(); i++) {
+            auto [t_ids, bcs] =
+                get_all_possible_representations(local_t_ids[i], qps[i].bc, T_before, 1e-10);
+            all_possible_t_ids_per_point.push_back(t_ids);
+            all_possible_bcs_per_point.push_back(bcs);
+        }
+
+        // Check if there is a common t_id across all possible representations
+        bool found_common_tet = false;
+        int common_t_id = -1;
+
+        // Get the first point's possible t_ids as the starting set
+        std::set<int> common_t_ids(
+            all_possible_t_ids_per_point[0].begin(),
+            all_possible_t_ids_per_point[0].end());
+
+        // Intersect with each subsequent point's possible t_ids
+        for (int i = 1; i < all_possible_t_ids_per_point.size(); i++) {
+            std::set<int> current_t_ids(
+                all_possible_t_ids_per_point[i].begin(),
+                all_possible_t_ids_per_point[i].end());
+
+            std::set<int> intersection;
+            std::set_intersection(
+                common_t_ids.begin(),
+                common_t_ids.end(),
+                current_t_ids.begin(),
+                current_t_ids.end(),
+                std::inserter(intersection, intersection.begin()));
+
+            common_t_ids = intersection;
+
+            if (common_t_ids.empty()) {
+                break;
+            }
+        }
+
+        if (!common_t_ids.empty()) {
+            found_common_tet = true;
+            common_t_id = *common_t_ids.begin(); // Take the first common t_id
+            std::cout << "Found common tetrahedron: " << common_t_id << std::endl;
+
+            // Set the tetrahedron ID and vertex IDs
+            qt.t_id = id_map_before[common_t_id];
+            for (int i = 0; i < 4; i++) {
+                qt.tv_ids[i] = v_id_map_before[T_before(common_t_id, i)];
+            }
+
+            // Get corresponding barycentric coordinates for each point in the common tetrahedron
+            for (int i = 0; i < all_possible_t_ids_per_point.size(); i++) {
+                for (int j = 0; j < all_possible_t_ids_per_point[i].size(); j++) {
+                    if (all_possible_t_ids_per_point[i][j] == common_t_id) {
+                        qt.bcs[i] = all_possible_bcs_per_point[i][j];
+                        break;
+                    }
                 }
             }
+        } else {
+            std::cout << "No common tetrahedron found across all representations" << std::endl;
+            // }
+            // // TODO: handle one triangle
+            // // Check if all 3 points in qps have the same t_id
+            // if (qps[0].t_id == qps[1].t_id && qps[1].t_id == qps[2].t_id) {
+            //     std::cout << "All points are in one tetrahedron " << qps[0].t_id << std::endl;
+            //     // update the query triangle
+            //     qt.t_id = qps[0].t_id;
+            //     qt.bcs[0] = qps[0].bc;
+            //     qt.bcs[1] = qps[1].bc;
+            //     qt.bcs[2] = qps[2].bc;
+            //     qt.tv_ids = qps[0].tv_ids;
+            // } else {
+            std::cout << "Not in one tetrahedron" << std::endl;
+            std::cout << "Computing arrangement" << std::endl;
+
 
             std::vector<double> in_coords = T_before_coords;
             std::vector<uint> in_tris = T_before_tris;
@@ -602,42 +731,12 @@ void handle_local_mapping_tet_surface(
             for (int i = 0; i < 3; i++) {
                 std::cout << "i = " << i << std::endl;
 
+                // Add the primary tetrahedron for this point
                 vertex_to_labels[V_before.rows() + i].insert(local_t_ids[i]);
 
-                // TODO: fix case that points land on the edge/face of the tet
-                std::set<int> needs_to_contain;
-                for (int j = 0; j < 4; j++) {
-                    if (abs(qps[i].bc(j)) >= eps) {
-                        needs_to_contain.insert(T_before(local_t_ids[i], j));
-                    }
-                }
-                std::cout << "needs_to_contain: ";
-                for (int v : needs_to_contain) {
-                    std::cout << v << " ";
-                }
-                std::cout << std::endl;
-                if (needs_to_contain.size() < 4) {
-                    for (int t_id = 0; t_id < T_before.rows(); t_id++) {
-                        // Check if tetrahedron t_id contains all required vertices
-                        bool contains_all = true;
-                        for (int required_vertex : needs_to_contain) {
-                            bool found = false;
-                            for (int j = 0; j < 4; j++) {
-                                if (T_before(t_id, j) == required_vertex) {
-                                    found = true;
-                                    break;
-                                }
-                            }
-                            if (!found) {
-                                contains_all = false;
-                                break;
-                            }
-                        }
-                        if (contains_all) {
-                            std::cout << "t_id = " << t_id << " contains all" << std::endl;
-                            vertex_to_labels[V_before.rows() + i].insert(t_id);
-                        }
-                    }
+                // Add all possible representations computed earlier
+                for (int t_id : all_possible_t_ids_per_point[i]) {
+                    vertex_to_labels[V_before.rows() + i].insert(t_id);
                 }
             }
 
