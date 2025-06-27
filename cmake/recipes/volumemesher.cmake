@@ -1,12 +1,13 @@
-# VolumeMesher (From Marco Attene)
-
-if(TARGET VolumeRemesher::VolumeRemesher)
+if(TARGET mesh_generator_lib)
     return()
 endif()
 
 message(STATUS "Third-party: creating target 'VolumeMesher'")
 
-include(CPM)
-CPMAddPackage("gh:JcDai/VolumeRemesher#8927a1e057c643f1193ed50117bb3fb311b81b09")
-
-set_target_properties(mesh_generator_lib PROPERTIES FOLDER third-party)
+include(FetchContent)
+FetchContent_Declare(
+    volumemesher
+    GIT_REPOSITORY https://github.com/JcDai/VolumeRemesher.git
+    GIT_TAG 87ac225118ad8c969beb530f837491e356266e52
+)
+FetchContent_MakeAvailable(volumemesher)
