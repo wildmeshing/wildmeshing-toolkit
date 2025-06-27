@@ -24,7 +24,7 @@ message(STATUS "Third-party: creating target 'FastEnvelope::FastEnvelope'")
 
 
 include(CPM)
-CPMAddPackage("gh:wangbolun300/fast-envelope#38b2cfbbf0f78ced8b4c5981168e8ded809ac654")
+CPMAddPackage("gh:daniel-zint/fast-envelope#a631e3555ff7bd495a66d61a311f5aafe00a2f08")
 
 set_target_properties(FastEnvelope PROPERTIES FOLDER third_party)
 add_library(FastEnvelope::FastEnvelope ALIAS FastEnvelope)
