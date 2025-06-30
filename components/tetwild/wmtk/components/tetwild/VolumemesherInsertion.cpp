@@ -330,6 +330,11 @@ void TetWildMesh::insertion_by_volumeremesher(
     std::vector<uint32_t> embedded_cells;
     std::vector<uint32_t> embedded_facets_on_input;
 
+    std::vector<std::array<uint32_t, 4>> out_tets;
+    std::vector<uint32_t> final_tets_parent;
+    std::vector<bool> cells_with_faces_on_input;
+    std::vector<std::vector<uint32_t>> final_tets_parent_faces;
+
     // volumeremesher embed
     vol_rem::embed_tri_in_poly_mesh(
         tri_ver_coord,
@@ -339,7 +344,11 @@ void TetWildMesh::insertion_by_volumeremesher(
         embedded_vertices,
         embedded_facets,
         embedded_cells,
+        out_tets,
+        final_tets_parent,
         embedded_facets_on_input,
+        cells_with_faces_on_input,
+        final_tets_parent_faces,
         true);
 
     // marco's test
