@@ -441,6 +441,12 @@ std::pair<std::vector<int>, std::vector<Eigen::Vector4d>> get_all_possible_repre
         }
     }
 
+    std::cout << "T_local(local_t_id, non_zeros): ";
+    for (int i = 0; i < non_zeros.size(); i++) {
+        std::cout << T_local(local_t_id, non_zeros[i]) << " ";
+    }
+    std::cout << std::endl;
+
     if (non_zeros.size() < 4) {
         for (int t_id = 0; t_id < T_local.rows(); t_id++) {
             if (t_id == local_t_id) continue;
@@ -550,11 +556,26 @@ void handle_local_mapping_tet_surface(
             v_id_map_after,
             qps);
 
-        // std::cout << "After local mapping:" << std::endl;
-        // for (int i = 0; i < qps.size(); i++) {
-        //     std::cout << "Point " << i << ": t_id=" << qps[i].t_id
-        //               << ", bc=" << qps[i].bc.transpose() << std::endl;
-        // }
+        // Clip barycentric coordinates by epsilon to avoid numerical issues
+        for (auto& qp : qps) {
+            for (int i = 0; i < 4; i++) {
+                if (qp.bc[i] < 1e-10) {
+                    qp.bc[i] = 0.0;
+                } else if (qp.bc[i] > 1.0 - 1e-10) {
+                    qp.bc[i] = 1.0;
+                }
+            }
+            // Renormalize to ensure sum equals 1
+            double sum = qp.bc.sum();
+            if (sum > 0) {
+                qp.bc /= sum;
+            }
+        }
+        std::cout << "After local mapping:" << std::endl;
+        for (int i = 0; i < qps.size(); i++) {
+            std::cout << "Point " << i << ": t_id=" << qps[i].t_id
+                      << ", bc=" << qps[i].bc.transpose() << std::endl;
+        }
 
         std::cout << "Handling one triangle, get intersections." << std::endl;
 
@@ -632,10 +653,10 @@ void handle_local_mapping_tet_surface(
                 }
             }
         } else {
-            std::cout << "No common tetrahedron found across all representations" << std::endl;
+            // std::cout << "No common tetrahedron found across all representations" << std::endl;
             // }
             // // TODO: handle one triangle
-            // // Check if all 3 points in qps have the same t_id
+            // Check if all 3 points in qps have the same t_id
             // if (qps[0].t_id == qps[1].t_id && qps[1].t_id == qps[2].t_id) {
             //     std::cout << "All points are in one tetrahedron " << qps[0].t_id << std::endl;
             //     // update the query triangle
@@ -644,7 +665,9 @@ void handle_local_mapping_tet_surface(
             //     qt.bcs[1] = qps[1].bc;
             //     qt.bcs[2] = qps[2].bc;
             //     qt.tv_ids = qps[0].tv_ids;
-            // } else {
+            // }
+            // else
+            // {
             std::cout << "Not in one tetrahedron" << std::endl;
             std::cout << "Computing arrangement" << std::endl;
 
@@ -664,6 +687,8 @@ void handle_local_mapping_tet_surface(
                 for (int j = 0; j < 4; j++) {
                     pos += bc[j] * V_before.row(tet[j]).transpose();
                 }
+                std::cout << "Position " << i << ": (" << pos[0] << ", " << pos[1] << ", " << pos[2]
+                          << ")" << std::endl;
 
                 // Add position to in_coords
                 in_coords.push_back(pos[0]);
@@ -689,9 +714,10 @@ void handle_local_mapping_tet_surface(
             std::vector<DuplTriInfo> dupl_triangles;
             Labels labels;
             cinolib::Octree octree;
+            std::vector<uint> vertex_id_map; // map from original vertices to arranged vertices
 
             // arrangement, last parameter is false to avoid parallelization
-            customArrangementPipeline(
+            vertex_id_map = customArrangementPipeline(
                 in_coords,
                 in_tris,
                 in_labels,
@@ -732,11 +758,11 @@ void handle_local_mapping_tet_surface(
                 std::cout << "i = " << i << std::endl;
 
                 // Add the primary tetrahedron for this point
-                vertex_to_labels[V_before.rows() + i].insert(local_t_ids[i]);
+                vertex_to_labels[vertex_id_map[V_before.rows() + i]].insert(local_t_ids[i]);
 
                 // Add all possible representations computed earlier
                 for (int t_id : all_possible_t_ids_per_point[i]) {
-                    vertex_to_labels[V_before.rows() + i].insert(t_id);
+                    vertex_to_labels[vertex_id_map[V_before.rows() + i]].insert(t_id);
                 }
             }
 
@@ -759,6 +785,31 @@ void handle_local_mapping_tet_surface(
 
                 if (labels.surface[t_id][labels.num - 1]) {
                     out_tri_ids.push_back(t_id);
+                }
+            }
+
+            {
+                std::cout << "\n=== All Vertices and IDs ===" << std::endl;
+                for (uint v_id = 0; v_id < tm.numVerts(); v_id++) {
+                    if (!vertex_to_labels[v_id].empty()) {
+                        std::cout << "Vertex " << v_id << ": ";
+                        for (auto label : vertex_to_labels[v_id]) {
+                            std::cout << label << " ";
+                        }
+                        std::cout << "pos: (" << out_coords[3 * v_id] << ", "
+                                  << out_coords[3 * v_id + 1] << ", " << out_coords[3 * v_id + 2]
+                                  << ")";
+                        std::cout << std::endl;
+                    }
+                }
+
+                for (int i = 0; i < out_tri_ids.size(); i++) {
+                    int triangle_id = out_tri_ids[i];
+                    uint v0 = tm.tri(triangle_id)[0];
+                    uint v1 = tm.tri(triangle_id)[1];
+                    uint v2 = tm.tri(triangle_id)[2];
+                    std::cout << "Triangle " << triangle_id << ": vertices [" << v0 << ", " << v1
+                              << ", " << v2 << "]" << std::endl;
                 }
             }
 
@@ -802,6 +853,36 @@ void handle_local_mapping_tet_surface(
                 if (containing_tet_id == -1) {
                     std::cout << "Error: triangle " << triangle_id << " is not in any tet"
                               << std::endl;
+
+                    std::ofstream obj_file("debug_triangles.obj");
+                    obj_file << "# Debug triangles that couldn't be found in any tet" << std::endl;
+
+                    for (int i = 0; i < out_tri_ids.size(); i++) {
+                        int triangle_id = out_tri_ids[i];
+                        uint v0_idx = tm.tri(triangle_id)[0];
+                        uint v1_idx = tm.tri(triangle_id)[1];
+                        uint v2_idx = tm.tri(triangle_id)[2];
+
+                        // Write vertex positions
+                        obj_file << "v " << out_coords[v0_idx * 3] << " "
+                                 << out_coords[v0_idx * 3 + 1] << " " << out_coords[v0_idx * 3 + 2]
+                                 << std::endl;
+                        obj_file << "v " << out_coords[v1_idx * 3] << " "
+                                 << out_coords[v1_idx * 3 + 1] << " " << out_coords[v1_idx * 3 + 2]
+                                 << std::endl;
+                        obj_file << "v " << out_coords[v2_idx * 3] << " "
+                                 << out_coords[v2_idx * 3 + 1] << " " << out_coords[v2_idx * 3 + 2]
+                                 << std::endl;
+                    }
+
+                    // Write face indices (1-indexed in OBJ format)
+                    for (int i = 0; i < out_tri_ids.size(); i++) {
+                        obj_file << "f " << (i * 3 + 1) << " " << (i * 3 + 2) << " " << (i * 3 + 3)
+                                 << std::endl;
+                    }
+
+                    obj_file.close();
+                    std::cout << "Debug triangles written to debug_triangles.obj" << std::endl;
 
                     exit(1);
                 }

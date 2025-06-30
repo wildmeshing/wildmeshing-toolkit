@@ -654,16 +654,12 @@ query_surface_tet sample_query_surface_sub_surface(
     const Eigen::MatrixXd& V_out)
 {
     query_surface_tet query_surface;
-
-    // Sample a connected surface by starting from one tetrahedron and growing
-    // We'll use a simple flood-fill approach to ensure connectivity
-
     if (T_out.rows() == 0) return query_surface;
 
     std::unordered_set<int> visited_tets;
     std::queue<int> tet_queue;
+    std::unordered_set<std::string> added_triangles;
 
-    // Start with the first tetrahedron
     tet_queue.push(0);
     visited_tets.insert(0);
 
@@ -674,49 +670,56 @@ query_surface_tet sample_query_surface_sub_surface(
         int current_tet = tet_queue.front();
         tet_queue.pop();
 
-        // Add faces of current tetrahedron to the surface
-        std::vector<std::vector<int>> face_vertices = {
-            {0, 1, 2}, // face 0
-            {0, 1, 3}, // face 1
-            {0, 2, 3}, // face 2
-            {1, 2, 3} // face 3
-        };
+        std::vector<std::vector<int>> face_vertices = {{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
 
         for (int face_id = 0; face_id < 4; face_id++) {
-            query_triangle_tet q_tri;
-            q_tri.t_id = current_tet;
-            q_tri.tv_ids = T_out.row(current_tet);
+            std::vector<int> face_vs = face_vertices[face_id];
+            std::sort(face_vs.begin(), face_vs.end());
+            std::string triangle_key = std::to_string(T_out(current_tet, face_vs[0])) + "_" +
+                                       std::to_string(T_out(current_tet, face_vs[1])) + "_" +
+                                       std::to_string(T_out(current_tet, face_vs[2]));
 
-            // For each vertex of the triangle, set barycentric coordinates
-            // such that one component is 1 and the other three are 0
-            for (int j = 0; j < 3; j++) {
-                q_tri.bcs[j] = Eigen::Vector4d::Zero();
-                int vertex_idx = face_vertices[face_id][j];
-                q_tri.bcs[j](vertex_idx) = 1.0;
+            if (added_triangles.find(triangle_key) == added_triangles.end()) {
+                query_triangle_tet q_tri;
+                q_tri.t_id = current_tet;
+                q_tri.tv_ids = T_out.row(current_tet);
+
+                for (int j = 0; j < 3; j++) {
+                    q_tri.bcs[j] = Eigen::Vector4d::Zero();
+                    int vertex_idx = face_vertices[face_id][j];
+                    q_tri.bcs[j](vertex_idx) = 1.0;
+                }
+
+                query_surface.triangles.push_back(q_tri);
+                added_triangles.insert(triangle_key);
             }
-
-            query_surface.triangles.push_back(q_tri);
         }
 
         sampled_count++;
 
-        // Find adjacent tetrahedra and add them to the queue
-        // For simplicity, we'll add some neighboring tets (this is a simplified adjacency check)
         for (int i = 0; i < T_out.rows(); i++) {
             if (visited_tets.find(i) == visited_tets.end()) {
-                // Check if this tet shares any vertices with current tet
-                bool shares_vertex = false;
+                bool shares_edge = false;
                 for (int j = 0; j < 4; j++) {
-                    for (int k = 0; k < 4; k++) {
-                        if (T_out(current_tet, j) == T_out(i, k)) {
-                            shares_vertex = true;
-                            break;
+                    for (int k = j + 1; k < 4; k++) {
+                        int edge_v1 = T_out(current_tet, j);
+                        int edge_v2 = T_out(current_tet, k);
+                        for (int m = 0; m < 4; m++) {
+                            for (int n = m + 1; n < 4; n++) {
+                                if ((T_out(i, m) == edge_v1 && T_out(i, n) == edge_v2) ||
+                                    (T_out(i, m) == edge_v2 && T_out(i, n) == edge_v1)) {
+                                    shares_edge = true;
+                                    break;
+                                }
+                            }
+                            if (shares_edge) break;
                         }
+                        if (shares_edge) break;
                     }
-                    if (shares_vertex) break;
+                    if (shares_edge) break;
                 }
 
-                if (shares_vertex && visited_tets.size() < max_tets_to_sample) {
+                if (shares_edge && visited_tets.size() < max_tets_to_sample) {
                     tet_queue.push(i);
                     visited_tets.insert(i);
                 }
@@ -769,6 +772,9 @@ int main(int argc, char** argv)
     app.add_option("-a, --app", application_name, "Application name");
     app.add_option("-i, --input", initial_mesh_file, "Initial mesh file")->required(true);
     app.add_option("-l, --logs", operation_logs_dir, "Operation logs directory")->required(true);
+
+    std::filesystem::path surface_file = "query_surface.json";
+    app.add_option("-s, --surface", surface_file, "Surface file");
     CLI11_PARSE(app, argc, argv);
 
     std::cout << "Application name: " << application_name << std::endl;
@@ -978,11 +984,12 @@ int main(int argc, char** argv)
         // TODO: create a input surface mesh
         std::cout << "Back tracking surface" << std::endl;
 
-        std::string query_surface_filename = "query_surface_tet_after.json";
+        std::string query_surface_filename = surface_file.string();
         query_surface_tet query_surface;
         if (!std::filesystem::exists(query_surface_filename)) {
             std::cout << "query_surface not found, sampling and writing to file..." << std::endl;
-            query_surface = sample_query_surface_large_triangle(T_after, V_after);
+            // query_surface = sample_query_surface_large_triangle(T_after, V_after);
+            query_surface = sample_query_surface_sub_surface(T_after, V_after);
             write_query_surface_tet_to_file(query_surface, query_surface_filename);
         } else {
             std::cout << "query_surface found, reading from file..." << std::endl;
@@ -1007,7 +1014,49 @@ int main(int argc, char** argv)
             surface_F_before,
             "query_surface_tet_before.vtu");
 
+        { // Calculate triangle area statistics
+            std::cout << "\n=== Triangle Area Statistics ===" << std::endl;
 
+            double total_area = 0.0;
+            double min_area = std::numeric_limits<double>::max();
+            double max_area = 0.0;
+            std::vector<double> areas;
+
+            for (int i = 0; i < surface_F_before.rows(); i++) {
+                Eigen::Vector3d v0 = surface_V_before.row(surface_F_before(i, 0));
+                Eigen::Vector3d v1 = surface_V_before.row(surface_F_before(i, 1));
+                Eigen::Vector3d v2 = surface_V_before.row(surface_F_before(i, 2));
+
+                Eigen::Vector3d edge1 = v1 - v0;
+                Eigen::Vector3d edge2 = v2 - v0;
+                Eigen::Vector3d cross_product = edge1.cross(edge2);
+                double area = 0.5 * cross_product.norm();
+
+                areas.push_back(area);
+                total_area += area;
+                min_area = std::min(min_area, area);
+                max_area = std::max(max_area, area);
+            }
+
+            double mean_area = total_area / areas.size();
+
+            // Calculate standard deviation
+            double variance = 0.0;
+            for (double area : areas) {
+                variance += (area - mean_area) * (area - mean_area);
+            }
+            variance /= areas.size();
+            double std_dev = std::sqrt(variance);
+
+            std::cout << "Number of triangles: " << surface_F_before.rows() << std::endl;
+            std::cout << "Total surface area: " << total_area << std::endl;
+            std::cout << "Mean triangle area: " << mean_area << std::endl;
+            std::cout << "Min triangle area: " << min_area << std::endl;
+            std::cout << "Max triangle area: " << max_area << std::endl;
+            std::cout << "Standard deviation: " << std_dev << std::endl;
+            std::cout << "Area ratio (max/min): " << (max_area / min_area) << std::endl;
+            std::cout << "================================\n" << std::endl;
+        }
         // TODO: check if the surface is a correct surface
         bool check_manifold = false;
         if (check_manifold) {
