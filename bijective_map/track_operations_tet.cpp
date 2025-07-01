@@ -19,7 +19,7 @@ Matrix json_to_matrix(const json& js)
     return mat;
 }
 
-// point version
+// handle consolidate point version
 void handle_consolidate_tet(
     const std::vector<int64_t>& tet_ids_maps,
     const std::vector<int64_t>& vertex_ids_maps,
@@ -65,7 +65,7 @@ void handle_consolidate_tet(
     }
 }
 
-// curve version
+// handle consolidate curve version
 void handle_consolidate_tet_curve(
     const std::vector<int64_t>& tet_ids_maps,
     const std::vector<int64_t>& vertex_ids_maps,
@@ -108,6 +108,7 @@ void handle_consolidate_tet_curve(
     }
 }
 
+// handle consolidate surface version
 void handle_consolidate_tet_surface(
     const std::vector<int64_t>& tet_ids_maps,
     const std::vector<int64_t>& vertex_ids_maps,
