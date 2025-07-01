@@ -11,8 +11,9 @@
 #include <limits>
 #include <type_traits>
 
-using namespace wmtk;
-bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
+namespace wmtk {
+
+bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
 {
     if (!collapse_edge_before(loc0)) return false;
 
@@ -86,7 +87,7 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
             std::vector<std::array<size_t, 3>>>();
         auto check_inter = [](const auto& l0, const auto& l1, const auto& l01, auto& l_i) {
             // link(v0) intersect link(v1) == link(edge 01)
-            wmtk::logger().trace(">> Checking l0 {} l1 {}, l01 {}", l0, l1, l01);
+            logger().trace(">> Checking l0 {} l1 {}, l01 {}", l0, l1, l01);
             std::set_intersection(
                 l0.begin(),
                 l0.end(),
@@ -113,7 +114,7 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
     auto v2_id = loc1.vid(*this);
     logger().trace("{} {}", v1_id, v2_id);
     if (m_collapse_check_link_condition && !link_condition(v1_id, v2_id)) {
-        wmtk::logger().trace("violate link condition");
+        logger().trace("violate link condition");
         return false;
     }
 
@@ -248,3 +249,5 @@ bool wmtk::TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edg
 
     return true;
 }
+
+} // namespace wmtk

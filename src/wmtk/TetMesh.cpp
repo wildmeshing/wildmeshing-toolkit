@@ -439,7 +439,6 @@ wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_vertex(size_t vid) const
     assert(vid < vert_capacity());
     if (m_vertex_connectivity[vid].m_is_removed) return Tuple();
 
-    if (m_vertex_connectivity[vid].m_is_removed) return Tuple();
     int tid = m_vertex_connectivity[vid].m_conn_tets[0];
     int j = m_tet_connectivity[tid].find(vid);
     int eid = m_map_vertex2edge[j];
@@ -459,6 +458,40 @@ wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_tet(size_t tid) const
     return Tuple(*this, vid, eid, fid, tid);
 }
 
+wmtk::TetMesh::Tuple
+wmtk::TetMesh::tuple_from_vids(size_t vid0, size_t vid1, size_t vid2, size_t vid3) const
+{
+    const auto& vf0 = m_vertex_connectivity[vid0];
+    const auto& vf1 = m_vertex_connectivity[vid1];
+    const auto& vf2 = m_vertex_connectivity[vid2];
+    const auto& vf3 = m_vertex_connectivity[vid3];
+
+    const std::vector<size_t> tets01 = set_intersection(vf0.m_conn_tets, vf1.m_conn_tets);
+    const std::vector<size_t> tets012 = set_intersection(tets01, vf2.m_conn_tets);
+    const std::vector<size_t> tets0123 = set_intersection(tets012, vf3.m_conn_tets);
+
+    if (tets0123.size() != 1) {
+        log_and_throw_error("Cannot find tet with vids ({},{},{},{})", vid0, vid1, vid2, vid3);
+    }
+
+    const size_t tid = tets0123[0];
+
+    const auto& tc = m_tet_connectivity[tid].m_indices;
+    size_t local_vid = -1;
+    for (int i = 0; i < 4; ++i) {
+        if (tc[i] == vid0) {
+            local_vid = i;
+            break;
+        }
+    }
+    assert(local_vid != -1);
+
+    const size_t eid = m_tet_connectivity[tid].find_local_edge(vid0, vid1);
+    const size_t fid = m_tet_connectivity[tid].find_local_face(vid0, vid1, vid2);
+
+    return Tuple(*this, vid0, eid, fid, tid);
+}
+
 
 std::array<wmtk::TetMesh::Tuple, 4> wmtk::TetMesh::oriented_tet_vertices(const Tuple& t) const
 {
@@ -474,11 +507,12 @@ std::array<wmtk::TetMesh::Tuple, 4> wmtk::TetMesh::oriented_tet_vertices(const T
 
 std::array<size_t, 4> wmtk::TetMesh::oriented_tet_vids(const Tuple& t) const
 {
-    std::array<size_t, 4> vs;
-    for (int j = 0; j < 4; j++) {
-        vs[j] = m_tet_connectivity[t.m_global_tid][j];
-    }
-    return vs;
+    return oriented_tet_vids(t.m_global_tid);
+}
+
+std::array<size_t, 4> wmtk::TetMesh::oriented_tet_vids(const size_t tid) const
+{
+    return m_tet_connectivity[tid].m_indices;
 }
 
 std::array<wmtk::TetMesh::Tuple, 3> wmtk::TetMesh::get_face_vertices(const Tuple& t) const

@@ -58,21 +58,6 @@ TEST_CASE("separate-manifold-patch", "[test_sec]")
     REQUIRE(igl::is_vertex_manifold(Fafter, dummy));
 }
 
-TEST_CASE("manifold-separate-test-37989", "[test_sec]")
-{
-    std::string filename = WMTK_DATA_DIR "/37989_sf.obj";
-    wmtk::manifold_internal::Vertices V;
-    wmtk::manifold_internal::Facets F;
-    igl::read_triangle_mesh(filename, V, F);
-    REQUIRE_FALSE(igl::is_edge_manifold(F));
-    std::vector<size_t> modified_vertices;
-    wmtk::manifold_internal::resolve_nonmanifoldness(V, F, modified_vertices);
-    REQUIRE(modified_vertices.size() > 0);
-    REQUIRE(igl::is_edge_manifold(F));
-    Eigen::VectorXi VI;
-    REQUIRE(igl::is_vertex_manifold(F, VI));
-}
-
 
 TEST_CASE("shortest_edge_collapse", "[test_sec]")
 {

@@ -1,6 +1,7 @@
 #include <wmtk/TetMesh.h>
 #include <catch2/catch_test_macros.hpp>
-#include "wmtk/utils/Logger.hpp"
+#include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/examples/TetMesh_examples.hpp>
 
 using namespace wmtk;
 
@@ -224,4 +225,92 @@ TEST_CASE("divide-tet-customized")
     auto op = DivideTet(mesh);
     mesh.customized_operation(op, tuple, new_tups);
     CHECK(mesh.tet_size() == 5);
+}
+
+TEST_CASE("tet_face_split", "[TetMesh][tuple_operation]")
+{
+    using namespace wmtk::utils::examples::tet;
+    using Tuple = TetMesh::Tuple;
+
+    SECTION("single_tet_ccw")
+    {
+        TetMeshVT VT = single_tet();
+        TetMesh m;
+        m.init(VT.T);
+
+        const Tuple t = m.tuple_from_vids(0, 1, 2, 3);
+
+        std::vector<Tuple> new_tets;
+        REQUIRE(m.split_face(t, new_tets));
+        CHECK(new_tets.size() == 3);
+        CHECK(m.get_vertices().size() == 5);
+        CHECK(m.get_edges().size() == 10);
+        CHECK(m.get_faces().size() == 9);
+        REQUIRE(m.get_tets().size() == 3);
+        CHECK(m.oriented_tet_vids(0) == std::array<size_t, 4>{4, 1, 2, 3});
+        CHECK(m.oriented_tet_vids(1) == std::array<size_t, 4>{0, 4, 2, 3});
+        CHECK(m.oriented_tet_vids(2) == std::array<size_t, 4>{0, 1, 4, 3});
+    }
+    SECTION("single_tet_not_ccw")
+    {
+        TetMeshVT VT = single_tet();
+        TetMesh m;
+        m.init(VT.T);
+
+        const Tuple t = m.tuple_from_vids(0, 2, 1, 3);
+
+        std::vector<Tuple> new_tets;
+        REQUIRE(m.split_face(t, new_tets));
+        CHECK(new_tets.size() == 3);
+        CHECK(m.get_vertices().size() == 5);
+        CHECK(m.get_edges().size() == 10);
+        CHECK(m.get_faces().size() == 9);
+        REQUIRE(m.get_tets().size() == 3);
+        CHECK(m.oriented_tet_vids(0) == std::array<size_t, 4>{4, 1, 2, 3});
+        CHECK(m.oriented_tet_vids(2) == std::array<size_t, 4>{0, 4, 2, 3});
+        CHECK(m.oriented_tet_vids(1) == std::array<size_t, 4>{0, 1, 4, 3});
+    }
+    SECTION("two_tets_boundary")
+    {
+        TetMeshVT VT = two_tets();
+        TetMesh m;
+        m.init(VT.T);
+
+        const Tuple t = m.tuple_from_vids(0, 1, 2, 3);
+
+        std::vector<Tuple> new_tets;
+        REQUIRE(m.split_face(t, new_tets));
+        CHECK(new_tets.size() == 3);
+        CHECK(m.get_vertices().size() == 6);
+        CHECK(m.get_edges().size() == 13);
+        CHECK(m.get_faces().size() == 12);
+        REQUIRE(m.get_tets().size() == 4);
+        CHECK(m.oriented_tet_vids(0) == std::array<size_t, 4>{5, 1, 2, 3});
+        CHECK(m.oriented_tet_vids(2) == std::array<size_t, 4>{0, 5, 2, 3});
+        CHECK(m.oriented_tet_vids(3) == std::array<size_t, 4>{0, 1, 5, 3});
+    }
+    SECTION("two_tets_interior")
+    {
+        TetMeshVT VT = two_tets();
+        TetMesh m;
+        m.init(VT.T);
+
+        const Tuple t = m.tuple_from_vids(0, 2, 3, 1);
+
+        std::vector<Tuple> new_tets;
+        REQUIRE(m.split_face(t, new_tets));
+        CHECK(new_tets.size() == 6);
+        CHECK(m.get_vertices().size() == 6);
+        CHECK(m.get_edges().size() == 14);
+        CHECK(m.get_faces().size() == 15);
+        REQUIRE(m.get_tets().size() == 6);
+        // 0, 1, 2, 3
+        CHECK(m.oriented_tet_vids(0) == std::array<size_t, 4>{5, 1, 2, 3});
+        CHECK(m.oriented_tet_vids(2) == std::array<size_t, 4>{0, 1, 5, 3});
+        CHECK(m.oriented_tet_vids(3) == std::array<size_t, 4>{0, 1, 2, 5});
+        // 0, 2, 3, 4
+        CHECK(m.oriented_tet_vids(1) == std::array<size_t, 4>{5, 2, 3, 4});
+        CHECK(m.oriented_tet_vids(4) == std::array<size_t, 4>{0, 5, 3, 4});
+        CHECK(m.oriented_tet_vids(5) == std::array<size_t, 4>{0, 2, 5, 4});
+    }
 }

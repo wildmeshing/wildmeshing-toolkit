@@ -643,6 +643,23 @@ protected:
      */
     virtual bool smooth_after(const Tuple& t) { return true; }
 
+    /**
+     * @brief User specified preparations and desideratas for a face split before changing the
+     * connectivity.
+     * @param t The face tuple to be split.
+     * @return true if the preparation succeed.
+     */
+    virtual bool split_face_before(const Tuple& t) { return true; }
+
+    /**
+     * @brief Compute the attributes for the added simplices.
+     *
+     * User specified modifications and desideratas for after an edge split
+     * @param t The edge tuple to be split.
+     * @return true if the modification succeed
+     */
+    virtual bool split_face_after(const Tuple& t) { return true; }
+
     // virtual void resize_vertex_mutex(size_t v) {}
 
 public:
@@ -688,6 +705,12 @@ public:
      * @param tid Global tetra index
      */
     Tuple tuple_from_tet(size_t tid) const;
+
+    /**
+     * @brief Get a Tuple from global vertex IDs.
+     *
+     */
+    Tuple tuple_from_vids(size_t vid0, size_t vid1, size_t vid2, size_t vid3) const;
 
 
     /**
@@ -808,6 +831,7 @@ public:
      * @return std::array<size_t, 4> of the vertex ids.
      */
     std::array<size_t, 4> oriented_tet_vids(const Tuple& t) const;
+    std::array<size_t, 4> oriented_tet_vids(const size_t tid) const;
     /**
      * @brief Get the 3 vertices of a face represented by Tuple
      *

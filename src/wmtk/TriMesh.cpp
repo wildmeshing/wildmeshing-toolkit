@@ -649,7 +649,6 @@ bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
 
     const size_t fid = t.fid(*this);
 
-    // const auto vid = oriented_tri_vids(t.fid(*this));
     std::array<size_t, 3> vid;
     vid[0] = t.vid(*this);
     vid[1] = t.switch_vertex(*this).vid(*this);
