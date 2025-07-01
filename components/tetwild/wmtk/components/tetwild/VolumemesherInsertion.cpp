@@ -948,7 +948,7 @@ void TetWildMesh::init_from_Volumeremesher(
         if (round(v)) cnt_round++;
     }
 
-    wmtk::logger().info("cnt_round {}/{}", cnt_round, cnt_valid);
+    wmtk::logger().info("cnt_round {}/{}", (int)cnt_round, (int)cnt_valid);
 
     // init qualities
     auto& m = *this;

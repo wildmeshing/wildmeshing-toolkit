@@ -348,7 +348,7 @@ public:
             run_single_queue(final_queue, 0);
         }
 
-        logger().info("cnt_success {} cnt_fail {}", cnt_success, cnt_fail);
+        logger().info("cnt_success {} cnt_fail {}", (int)cnt_success, (int)cnt_fail);
         return true;
     }
 };

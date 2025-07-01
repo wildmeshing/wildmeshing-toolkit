@@ -443,7 +443,7 @@ void TetWildMesh::finalize_triangle_insertion(const std::vector<std::array<size_
         }
 
 
-        wmtk::logger().info("cnt_round {}/{}", cnt_round, vert_capacity());
+        wmtk::logger().info("cnt_round {}/{}", (int)cnt_round, vert_capacity());
 
         //// init qualities
         auto& m = *this;

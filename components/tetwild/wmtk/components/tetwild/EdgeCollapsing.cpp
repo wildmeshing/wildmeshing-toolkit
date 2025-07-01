@@ -62,7 +62,7 @@ void TetWildMesh::collapse_all_edges(bool is_limit_length)
             executor(*this, collect_all_ops);
             wmtk::logger().info(
                 "Collapsed {}, retrying failed {}",
-                count_success,
+                (int)count_success,
                 collect_failure_ops.size());
             collect_all_ops.clear();
             for (auto& item : collect_failure_ops) collect_all_ops.emplace_back(item);
