@@ -23,3 +23,12 @@ std::pair<int, Eigen::Matrix<wmtk::Rational, 4, 1>> findTetContainingPointRation
     const Eigen::Matrix<wmtk::Rational, Eigen::Dynamic, 3>& V,
     const Eigen::MatrixXi& T,
     const Eigen::Matrix<wmtk::Rational, 3, 1>& p);
+
+// Numerically stable version using wmtk::orient3d for point-in-tetrahedron testing
+// V: Vertex matrix (n x 3)
+// T: Tetrahedron index matrix (m x 4)
+// p: Query point (3D)
+std::pair<int, Eigen::Vector4d> findTetContainingPointOrient3d(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& T,
+    const Eigen::Vector3d& p);

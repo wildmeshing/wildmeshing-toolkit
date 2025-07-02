@@ -120,6 +120,20 @@ struct query_curve_tet {
 - `track_point_one_operation_tet()` - Track point through single mesh operation
 - Status: 🔄 **Incomplete - needs robust tracking algorithms**
 
+#### Point Location Utilities
+**FindPointTetMesh** (`FindPointTetMesh.hpp/cpp`):
+- `findTetContainingPoint()` - Traditional barycentric coordinate-based point location
+- `findTetContainingPointRational()` - High-precision rational version
+- `findTetContainingPointOrient3d()` - **NEW**: Numerically stable version using `wmtk::utils::wmtk_orient3d`
+- Status: ✅ **Enhanced with robust geometric predicates**
+
+**Key Improvements in Orient3D Version**:
+- Uses exact geometric predicates via `wmtk::utils::wmtk_orient3d` for robust point-in-tetrahedron testing
+- Eliminates numerical precision issues in traditional barycentric coordinate methods
+- Tests point containment by checking orientation consistency across all four tetrahedral faces
+- Provides error reporting when points are not contained in any tetrahedron
+- Maintains compatibility with existing barycentric coordinate computation for return values
+
 #### Mesh Boolean Integration
 - Uses InteractiveAndRobustMeshBooleans library (external dependency)
 - Provides robust boolean operations for complex geometry
@@ -145,6 +159,7 @@ struct query_curve_tet {
    - Complete `track_point_one_operation_tet()` implementation
    - Handle edge cases in barycentric coordinate updates
    - Add validation for tracking accuracy
+   - ✅ **COMPLETED**: Enhanced point location with `findTetContainingPointOrient3d()` using robust geometric predicates
 
 3. **Curve and Surface Tracking**
    - Implement robust curve tracking through mesh operations
@@ -175,6 +190,17 @@ struct query_curve_tet {
 
 ### Usage Patterns
 ```cpp
+// Point location examples
+Eigen::MatrixXd V; // Vertex matrix (n x 3)
+Eigen::MatrixXi T; // Tetrahedron matrix (m x 4)
+Eigen::Vector3d query_point; // Point to locate
+
+// Traditional method (may have numerical issues)
+auto [tet_id, bary_coords] = findTetContainingPoint(V, T, query_point);
+
+// Robust method using orient3d (recommended)
+auto [tet_id_robust, bary_coords_robust] = findTetContainingPointOrient3d(V, T, query_point);
+
 // Point tracking example (to be completed)
 std::vector<query_point_tet> query_points;
 // Initialize points...

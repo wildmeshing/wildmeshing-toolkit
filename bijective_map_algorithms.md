@@ -68,10 +68,19 @@ Eigen::Vector3d barycentric_to_world_tet(
 ```
 
 #### World to Barycentric Coordinates
-Uses the `findTetContainingPoint()` function to:
-1. Locate the tetrahedral element containing the world point
-2. Compute barycentric coordinates within that element
+Two methods are available for point location:
+
+**Traditional Method** (`findTetContainingPoint()`):
+1. Locate the tetrahedral element containing the world point using barycentric coordinate computation
+2. Compute barycentric coordinates within that element via matrix inversion
 3. Return (-1, invalid) if point is outside the mesh
+
+**Robust Method** (`findTetContainingPointOrient3d()`) - **RECOMMENDED**:
+1. Uses `wmtk::utils::wmtk_orient3d` exact geometric predicates for numerical stability
+2. Tests point containment by checking orientation consistency across all four tetrahedral faces
+3. Eliminates floating-point precision issues in traditional barycentric methods
+4. Provides error reporting when points are not contained in any tetrahedron
+5. Maintains compatibility with existing barycentric coordinate computation for return values
 
 ### 2. Operation Tracking Pipeline
 
@@ -160,9 +169,10 @@ void handle_local_mapping_tet(
 
 2. **Target Mesh Localization:**
    ```cpp
-   auto [new_tet_id, new_bc] = findTetContainingPoint(V_before, T_before, world_pos);
+   // Use robust point location method for numerical stability
+   auto [new_tet_id, new_bc] = findTetContainingPointOrient3d(V_before, T_before, world_pos);
    if (new_tet_id == -1) {
-       // Point outside mesh - handle error
+       // Point outside mesh - error message already printed by findTetContainingPointOrient3d
        mark_as_invalid(qp);
        continue;
    }
@@ -355,6 +365,8 @@ for each edge in edge_counts:
 - **Coordinate normalization:** Ensure barycentric coordinates sum to 1.0
 - **Precision management:** Use consistent tolerance values across all computations
 - **Overflow prevention:** Validate array indices before access
+- **Exact geometric predicates:** Use `findTetContainingPointOrient3d()` with `wmtk::utils::wmtk_orient3d` for robust point-in-tetrahedron testing
+- **Orientation-based testing:** Replace floating-point tolerance checks with exact orientation tests
 
 ## Performance Optimizations
 
@@ -393,22 +405,3 @@ igl::parallel_for(query_points.size(), [&](int id) {
 - Texture coordinate maintenance through remeshing
 - Boundary condition transfer between mesh hierarchies
 
-## Implementation Status and Future Work
-
-### Current Implementation
-- ✅ **Point tracking:** Fully implemented with consolidation and local mapping
-- ✅ **Curve tracking:** Basic implementation with face-based sampling
-- ✅ **Surface tracking:** Two sampling strategies implemented
-- ✅ **File I/O:** VTU export for visualization, JSON serialization
-
-### Required Improvements
-- 🔄 **Robustness:** Better handling of degenerate cases and boundary conditions
-- 🔄 **Performance:** Parallelization of curve and surface tracking
-- 🔄 **Validation:** Comprehensive testing with complex operation sequences
-- 🔄 **Documentation:** API documentation and usage examples
-
-### Future Extensions
-- 📋 **Higher-order elements:** Support for quadratic tetrahedra
-- 📋 **Adaptive sampling:** Dynamic refinement based on local geometry
-- 📋 **Error metrics:** Quantitative assessment of tracking accuracy
-- 📋 **GPU acceleration:** CUDA implementation for large-scale problems

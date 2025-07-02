@@ -184,7 +184,8 @@ void handle_local_mapping_tet(
         }
 
         // compute bc of the p in (V, T)_before
-        auto result = findTetContainingPoint(V_before, T_before, p);
+        // TODO: use orient3d here
+        auto result = findTetContainingPointOrient3d(V_before, T_before, p);
         auto [t_id_before, bc_before] = result;
         if (t_id_before == -1) {
             std::cout << "Error: Point not in T_before" << std::endl;
