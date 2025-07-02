@@ -409,7 +409,27 @@ public:
      * @return if smooth succeed
      */
     bool smooth_vertex(const Tuple& t);
+
+    /**
+     * @brief Split a tet in 4 tets.
+     *
+     * @param t Input tuple for the tet to split.
+     * @param[out] new_t A vector of Tuples refering to the tets incident to the new vertex.
+     * introduced
+     * @return true, if split succeed
+     */
     bool split_tet(const Tuple& t, std::vector<Tuple>& new_tets);
+
+    /**
+     * @brief Split a face in 3 faces.
+     *
+     * The TetMesh is assumed to be face manifold, i.e., a face has at most two incident tets.
+     *
+     * @param t Input tuple for the face to split.
+     * @param[out] new_t A vector of Tuples refering to the tets incident to the new vertex.
+     * introduced
+     * @return true, if split succeed
+     */
     bool split_face(const Tuple& t, std::vector<Tuple>& new_tets);
 
     /**
@@ -654,11 +674,28 @@ protected:
     /**
      * @brief Compute the attributes for the added simplices.
      *
-     * User specified modifications and desideratas for after an edge split
-     * @param t The edge tuple to be split.
+     * User specified modifications and desideratas for after a face split
+     * @param t The face tuple to be split.
      * @return true if the modification succeed
      */
     virtual bool split_face_after(const Tuple& t) { return true; }
+
+    /**
+     * @brief User specified preparations and desideratas for a tet split before changing the
+     * connectivity.
+     * @param t The tet tuple to be split.
+     * @return true if the preparation succeed.
+     */
+    virtual bool split_tet_before(const Tuple& t) { return true; }
+
+    /**
+     * @brief Compute the attributes for the added simplices.
+     *
+     * User specified modifications and desideratas for after a tet split
+     * @param t The tet tuple to be split.
+     * @return true if the modification succeed
+     */
+    virtual bool split_tet_after(const Tuple& t) { return true; }
 
     // virtual void resize_vertex_mutex(size_t v) {}
 
@@ -764,6 +801,7 @@ public:
      * @return std::vector<size_t> a vector of vids
      */
     std::vector<size_t> get_one_ring_tids_for_vertex(const Tuple& t) const;
+    std::vector<size_t> get_one_ring_tids_for_vertex(const size_t vid) const;
 
     /**
      * @brief Get the one ring vertices for a vertex

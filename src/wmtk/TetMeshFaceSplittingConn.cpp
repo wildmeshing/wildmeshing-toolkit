@@ -143,9 +143,6 @@ bool TetMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tets)
     }
 
     // make the new tuple
-    // Tuple new_vertex_tuple(new_vid, (k + 2) % 3, new_fid2, *this);
-    // Tuple return_tuple(vid[0], local_eid, new_fid2, *this);
-    // assert(return_tuple.is_valid(*this));
     const size_t tid_for_return = new_tid2;
     const size_t eid_for_return =
         m_tet_connectivity[tid_for_return].find_local_edge(vid[0], new_vid);
