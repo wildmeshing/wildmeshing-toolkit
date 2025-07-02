@@ -165,6 +165,21 @@ struct ExecutePass
                          return std::vector<Tuple>{};
                      else
                          return {};
+                 }},
+                {"face_split",
+                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
+                     std::vector<Tuple> ret;
+                     if (m.split_face(t, ret))
+                         return ret;
+                     else
+                         return {};
+                 }},
+                {"tet_split", [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
+                     std::vector<Tuple> ret;
+                     if (m.split_tet(t, ret))
+                         return ret;
+                     else
+                         return {};
                  }}};
         }
         if constexpr (std::is_base_of<wmtk::TriMesh, AppMesh>::value) {

@@ -8,11 +8,13 @@ bool TetMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tets)
     if (!split_face_before(t)) {
         return false;
     }
-    if (!t.is_valid(*this)) {
+    const SmartTuple tt(*this, t);
+
+    if (!tt.is_valid()) {
         return false;
     }
 
-    const std::optional<Tuple> t_opp = t.switch_tetrahedron(*this);
+    const std::optional<SmartTuple> t_opp = tt.switch_tetrahedron();
 
     /**
      *
@@ -27,22 +29,21 @@ bool TetMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tets)
      *  v0 ----------- v1
      *
      */
-    const size_t tid = t.tid(*this);
-    const size_t vid_link = t.switch_face(*this).switch_edge(*this).switch_vertex(*this).vid(*this);
+    const size_t tid = tt.tid();
+    const size_t vid_link = tt.switch_face().switch_edge().switch_vertex().vid();
 
 
     std::optional<size_t> tid_opp;
     std::optional<size_t> vid_link_opp;
     if (t_opp) {
-        tid_opp = t_opp.value().tid(*this);
-        vid_link_opp =
-            t_opp.value().switch_face(*this).switch_edge(*this).switch_vertex(*this).vid(*this);
+        tid_opp = t_opp.value().tid();
+        vid_link_opp = t_opp.value().switch_face().switch_edge().switch_vertex().vid();
     }
 
     std::array<size_t, 3> vid;
-    vid[0] = t.vid(*this);
-    vid[1] = t.switch_vertex(*this).vid(*this);
-    vid[2] = t.switch_edge(*this).switch_vertex(*this).vid(*this);
+    vid[0] = tt.vid();
+    vid[1] = tt.switch_vertex().vid();
+    vid[2] = tt.switch_edge().switch_vertex().vid();
 
     // record the vids that will be modified for roll backs on failure
     std::array<std::pair<size_t, VertexConnectivity>, 3> old_vertices;

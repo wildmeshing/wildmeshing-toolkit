@@ -194,6 +194,45 @@ public:
     };
 
     /**
+     * A Tuple that holds a reference to the mesh.
+     * This is a utility to simplify switching sequences.
+     */
+    class SmartTuple
+    {
+        const Tuple m_tuple;
+        const TetMesh& m_mesh;
+
+    public:
+        SmartTuple(const TetMesh& mesh, const Tuple& t)
+            : m_mesh(mesh)
+            , m_tuple(t)
+        {}
+
+        const Tuple& tuple() { return m_tuple; }
+        const TetMesh& mesh() { return m_mesh; }
+
+        bool is_valid() const { return m_tuple.is_valid(m_mesh); }
+        bool is_boundary_edge() const { return m_tuple.is_boundary_edge(m_mesh); }
+        bool is_boundary_face() const { return m_tuple.is_boundary_face(m_mesh); }
+        size_t vid() const { return m_tuple.vid(m_mesh); }
+        size_t eid() const { return m_tuple.eid(m_mesh); }
+        size_t fid() const { return m_tuple.fid(m_mesh); }
+        size_t tid() const { return m_tuple.tid(m_mesh); }
+        SmartTuple switch_vertex() const { return {m_mesh, m_tuple.switch_vertex(m_mesh)}; }
+        SmartTuple switch_edge() const { return {m_mesh, m_tuple.switch_edge(m_mesh)}; }
+        SmartTuple switch_face() const { return {m_mesh, m_tuple.switch_face(m_mesh)}; }
+        std::optional<SmartTuple> switch_tetrahedron() const
+        {
+            const std::optional<Tuple> t = m_tuple.switch_tetrahedron(m_mesh);
+            if (t) {
+                return std::optional<SmartTuple>({m_mesh, t.value()});
+            }
+            return {};
+        }
+        void check_validity() const { return m_tuple.check_validity(m_mesh); }
+    };
+
+    /**
      * (internal use) Maintains a list of tetra connected to the given vertex, and a flag to
      * mark removal.
      *

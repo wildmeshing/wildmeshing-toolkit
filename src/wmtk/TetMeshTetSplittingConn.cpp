@@ -8,7 +8,8 @@ bool TetMesh::split_tet(const Tuple& t, std::vector<Tuple>& new_tets)
     if (!split_tet_before(t)) {
         return false;
     }
-    if (!t.is_valid(*this)) {
+    const SmartTuple tt(*this, t);
+    if (!tt.is_valid()) {
         return false;
     }
 
@@ -34,13 +35,13 @@ bool TetMesh::split_tet(const Tuple& t, std::vector<Tuple>& new_tets)
      * t2: (0,1,X,3)
      * t3: (0,1,2,X)
      */
-    const size_t tid = t.tid(*this);
+    const size_t tid = tt.tid();
 
     std::array<size_t, 4> vid;
-    vid[0] = t.vid(*this);
-    vid[1] = t.switch_vertex(*this).vid(*this);
-    vid[2] = t.switch_edge(*this).switch_vertex(*this).vid(*this);
-    vid[3] = t.switch_face(*this).switch_edge(*this).switch_vertex(*this).vid(*this);
+    vid[0] = tt.vid();
+    vid[1] = tt.switch_vertex().vid();
+    vid[2] = tt.switch_edge().switch_vertex().vid();
+    vid[3] = tt.switch_face().switch_edge().switch_vertex().vid();
 
     // record the vids that will be modified for roll backs on failure
     std::array<std::pair<size_t, VertexConnectivity>, 4> old_vertices;
