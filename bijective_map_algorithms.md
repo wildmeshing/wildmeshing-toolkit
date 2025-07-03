@@ -265,28 +265,6 @@ for each triangle in surface.triangles:
 #### 2. **Manifold Validation**
 Each edge must appear in at most 2 triangles to maintain manifold property.
 
-## Algorithm Robustness and Error Handling
-
-### 1. **Geometric Degeneracies**
-- **Point outside mesh:** Mark as invalid (-1 tet_id) and continue processing
-- **Degenerate tetrahedra:** Skip processing for elements with near-zero volume
-
-### 2. **Topological Consistency**
-- **ID mapping validation:** Ensure all referenced vertices/tetrahedra exist in target mesh
-- **Connectivity preservation:** Maintain curve and surface adjacency relationships
-- **Boundary handling:** Special treatment for entities near mesh boundaries
-
-### 3. **Numerical Stability**
-- **Exact predicates:** Use `wmtk::utils::wmtk_orient3d` with rational arithmetic
-- **Determinant computation:** Rational Cramer's rule for barycentric coordinates
-- **Overflow prevention:** Validate array indices before access
-
-## Performance Optimizations
-
-### Performance Optimizations
-- **Parallel processing:** Independent tracking of multiple entities
-- **Caching:** Reuse geometric computations
-- **In-place updates:** Modify query objects directly
 
 ## Applications
 - Material point tracking through adaptive remeshing
