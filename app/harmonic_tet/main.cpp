@@ -100,10 +100,10 @@ auto process_points = [&args = args]() {
         auto SV = V;
         Eigen::VectorXi SVI, SVJ;
         igl::remove_duplicate_vertices(SV, 1e-3, V, SVI, SVJ);
-        
+
         std::vector<std::array<double, 3>> points(V.rows());
         for (auto i = 0; i < V.rows(); i++) points[i] = {{V(i, 0), V(i, 1), V(i, 2)}};
-        auto [tet_V, tetT] = wmtk::delaunay3D(points);
+        auto [tet_V, tetT] = wmtk::delaunay::delaunay3D(points);
 
         vec_attrs.resize(tet_V.size());
         for (auto i = 0; i < tet_V.size(); i++) {

@@ -46,7 +46,7 @@ public:
     // for open boundary
     bool m_is_on_open_boundary = false;
 
-    VertexAttributes() {};
+    VertexAttributes(){};
     VertexAttributes(const Vector3r& p);
 };
 
@@ -93,7 +93,7 @@ class ImageSimulationMesh : public wmtk::TetMesh
 public:
     double time_env = 0.0;
     igl::Timer isout_timer;
-    const double MAX_ENERGY = 1e50;
+    const double MAX_ENERGY = std::numeric_limits<double>::max();
 
     Parameters& m_params;
     wmtk::Envelope& m_envelope;
@@ -108,7 +108,7 @@ public:
         Parameters& _m_params,
         wmtk::Envelope& _m_envelope,
         SampleEnvelope& _triangles_tree,
-        int _num_threads = 1)
+        int _num_threads = 0)
         : m_params(_m_params)
         , m_envelope(_m_envelope)
         , triangles_tree(_triangles_tree)
@@ -399,8 +399,6 @@ private:
     };
     tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
 
-
-    // for incremental image_simulation
 public:
     void insertion_by_volumeremesher(
         const std::vector<Vector3d>& vertices,

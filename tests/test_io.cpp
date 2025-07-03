@@ -23,8 +23,8 @@ TEST_CASE("io", "[io][mshio]")
 
     SECTION("Simple")
     {
-        std::vector<Point3D> points{{{0, 0, 0}}, {{1, 0, 0}}, {{0, 1, 0}}, {{0, 0, 1}}};
-        auto r = delaunay3D(points);
+        std::vector<delaunay::Point3D> points{{{0, 0, 0}}, {{1, 0, 0}}, {{0, 1, 0}}, {{0, 0, 1}}};
+        auto r = delaunay::delaunay3D(points);
         const auto& vertices = std::get<0>(r);
         const auto& tets = std::get<1>(r);
 
@@ -77,7 +77,7 @@ TEST_CASE("io", "[io][mshio]")
         REQUIRE(msh2.get_face_attribute_names().size() == 1);
         REQUIRE(msh2.get_tet_attribute_names().size() == 1);
 
-        std::vector<Point3D> out_vertices;
+        std::vector<delaunay::Point3D> out_vertices;
         out_vertices.resize(msh.get_num_tet_vertices());
         msh.extract_tet_vertices([&](size_t i, double x, double y, double z) {
             out_vertices[i] = {{x, y, z}};

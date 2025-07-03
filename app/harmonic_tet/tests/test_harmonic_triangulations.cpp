@@ -80,11 +80,11 @@ TEST_CASE("harmonic-tet-swaps", "[harmtri][.slow]")
         igl::read_triangle_mesh(filename, V, F);
         igl::upsample(V, F);
         wmtk::logger().info("Prepare to Delaunay: V {} F {}", V.rows(), F.rows());
-        std::vector<wmtk::Point3D> points(V.rows());
+        std::vector<wmtk::delaunay::Point3D> points(V.rows());
         for (auto i = 0; i < V.rows(); i++) {
             for (auto j = 0; j < 3; j++) points[i][j] = V(i, j);
         }
-        auto [tet_V, tetT] = wmtk::delaunay3D(points);
+        auto [tet_V, tetT] = wmtk::delaunay::delaunay3D(points);
         vec_attrs.resize(tet_V.size());
         for (auto i = 0; i < tet_V.size(); i++) {
             for (auto j = 0; j < 3; j++) vec_attrs[i][j] = tet_V[i][j];
@@ -119,11 +119,11 @@ TEST_CASE("parallel_harmonic-tet-swaps", "[parallel_harmtri][.slow]")
         Eigen::MatrixXd V;
         Eigen::MatrixXi F;
         igl::read_triangle_mesh(WMTK_DATA_DIR "/Octocat.obj", V, F);
-        std::vector<wmtk::Point3D> points(V.rows());
+        std::vector<wmtk::delaunay::Point3D> points(V.rows());
         for (auto i = 0; i < V.rows(); i++) {
             for (auto j = 0; j < 3; j++) points[i][j] = V(i, j);
         }
-        auto [tet_V, tetT] = wmtk::delaunay3D(points);
+        auto [tet_V, tetT] = wmtk::delaunay::delaunay3D(points);
         vec_attrs.resize(tet_V.size());
         for (auto i = 0; i < tet_V.size(); i++) {
             for (auto j = 0; j < 3; j++) vec_attrs[i][j] = tet_V[i][j];
@@ -159,7 +159,7 @@ TEST_CASE("gaussian-harmonic", "[.slow]")
     auto vec_attrs = std::vector<Eigen::Vector3d>();
     auto tets = std::vector<std::array<size_t, 4>>();
     {
-        std::vector<wmtk::Point3D> points(100000);
+        std::vector<wmtk::delaunay::Point3D> points(100000);
         for (auto i = 0; i < points.size(); i++) {
             for (auto j = 0; j < 3; j++) points[i][j] = dist(gen);
         }
@@ -170,7 +170,7 @@ TEST_CASE("gaussian-harmonic", "[.slow]")
                 points.size(),
                 3),
             Eigen::MatrixXi::Zero(1, 3));
-        auto [tet_V, tetT] = wmtk::delaunay3D(points);
+        auto [tet_V, tetT] = wmtk::delaunay::delaunay3D(points);
         vec_attrs.resize(tet_V.size());
         for (auto i = 0; i < tet_V.size(); i++) {
             for (auto j = 0; j < 3; j++) vec_attrs[i][j] = tet_V[i][j];

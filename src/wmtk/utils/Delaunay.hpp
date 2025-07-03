@@ -1,10 +1,10 @@
 #pragma once
 
-#include <cstddef>
 #include <array>
+#include <cstddef>
 #include <vector>
 
-namespace wmtk {
+namespace wmtk::delaunay {
 using Point3D = std::array<double, 3>;
 using Tetrahedron = std::array<size_t, 4>;
 using Point2D = std::array<double, 2>;
@@ -39,4 +39,4 @@ auto delaunay3D(const std::vector<Point3D>& points)
 auto delaunay2D(const std::vector<Point2D>& points)
     -> std::pair<std::vector<Point2D>, std::vector<Triangle>>;
 
-} // namespace wmtk
+} // namespace wmtk::delaunay

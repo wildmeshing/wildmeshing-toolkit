@@ -351,45 +351,6 @@ void ImageSimulationMesh::insertion_by_volumeremesher(
         final_tets_parent_faces,
         true);
 
-    // marco's test
-    // if (!checkTrackedFaces(
-    //         embedded_vertices,
-    //         tri_ver_coord,
-    //         embedded_facets,
-    //         embedded_facets_on_input,
-    //         tri_index)) {
-    //     std::cout
-    //         << "WARNING: at least a facet in 'facets_on_input' is not coplanar with any facet in
-    //         "
-    //            "triangle_indexes with BIGRATIONAL"
-    //         << std::endl;
-    // }
-
-    // test use
-    // std::vector<wmtk::Rational> v_rational_for_test(embedded_vertices.size());
-    // for (int i = 0; i < embedded_vertices.size(); i++) {
-    //     v_rational_for_test[i].init(embedded_vertices[i].get_mpq_t());
-    // }
-
-    // if (!checkTrackedFaces_wmtk_rational(
-    //         v_rational_for_test,
-    //         tri_ver_coord,
-    //         embedded_facets,
-    //         embedded_facets_on_input,
-    //         tri_index)) {
-    //     std::cout
-    //         << "WARNING: at least a facet in 'facets_on_input' is not coplanar with any facet in
-    //         "
-    //            "triangle_indexes with WMTK::RATIONAL"
-    //         << std::endl;
-    // }
-
-    // v_rational.reserve(embedded_vertices.size()/3);
-    // std::cout << "embed vertices size: " << embedded_vertices.size() << std::endl;
-    // std::cout << "embed facets size: " << embedded_facets.size() << std::endl;
-    // std::cout << "embed cells size: " << embedded_cells.size() << std::endl;
-    // std::cout << "embed facet on input size: " << embedded_facets_on_input.size() << std::endl;
-
     // std::cout << "polygon face on input size: " << embedded_facets_on_input.size() << std::endl;
 
     for (int i = 0; i < embedded_vertices.size() / 3; i++) {
@@ -426,18 +387,6 @@ void ImageSimulationMesh::insertion_by_volumeremesher(
 
     std::cout << "polygon cells num: " << polygon_cells.size() << std::endl;
 
-    // check polygon face validity
-    // only for debug use
-    // for (int i = 0; i < polygon_faces.size(); i++) {
-    //     std::vector<Vector3r> polyface_coordinates;
-    //     for (int j = 0; j < polygon_faces[i].size(); j++) {
-    //         polyface_coordinates.push_back(v_rational[polygon_faces[i][j]]);
-    //     }
-    //     if (!check_polygon_face_validity(polyface_coordinates)) {
-    //         std::cout << "polygon face invalid!!: " << i << std::endl;
-    //     }
-    // }
-
     std::vector<bool> polygon_faces_on_input_surface(polygon_faces.size(), false);
     // for (int i = 0; i < polygon_faces.size(); i++) {
     //     polygon_faces_on_input_surface[i] = false;
@@ -445,35 +394,6 @@ void ImageSimulationMesh::insertion_by_volumeremesher(
     for (int i = 0; i < embedded_facets_on_input.size(); i++) {
         polygon_faces_on_input_surface[embedded_facets_on_input[i]] = true;
     }
-
-    // output_embedded_polygon_mesh(
-    //     "embedded_polygon_mesh.txt",
-    //     v_rational,
-    //     polygon_faces,
-    //     polygon_cells,
-    //     polygon_faces_on_input_surface);
-
-    // output surface polygon
-    // output_embedded_polygon_surface_mesh(
-    //     "surface_polygon_mesh_after_insertion.obj",
-    //     v_rational,
-    //     polygon_faces,
-    //     polygon_faces_on_input_surface);
-
-    // test mqz output
-
-    // std::cout << "------mpz output------" << std::endl;
-    // std::cout << "------1------" << std::endl;
-    // std::cout << v_rational[15][0].to_double() << std::endl;
-    // std::cout << "------2------" << std::endl;
-    // std::cout << v_rational[15][0].get_str() << std::endl;
-    // std::cout << "------3------" << std::endl;
-    // std::cout << v_rational[15][0].get_num_str() << std::endl;
-    // std::cout << v_rational[15][0].get_den_str() << std::endl;
-    // // exit(0);
-    // // std::cout << v_rational[15][0].get_num_str() << std::endl;
-    // // std::cout << v_rational[15][0].get_den_str() << std::endl;
-    // std::cout << "------mpz output end------" << std::endl;
 
     std::vector<std::array<size_t, 3>> triangulated_faces;
     std::vector<bool> triangulated_faces_on_input;
@@ -508,29 +428,17 @@ void ImageSimulationMesh::insertion_by_volumeremesher(
             map_poly_to_tri_face[i].push_back(idx);
         } else {
             poly_cnt++;
-            // std::cout<<std::endl<<"polyface: ";
-            // for (int j=0; j<polygon_face.size(); j++){
-            // std::cout<<polygon_face[j]<<" ";
-            // }
-            // std::cout<<std::endl<<"coords: "<<std::endl;
             for (int j = 0; j < polygon_faces[i].size(); j++) {
                 poly_coordinates.push_back(v_rational[polygon_face[j]]);
-                // std::cout<<v_rational[polygon_face[j]][0]<<"
-                // "<<v_rational[polygon_face[j]][1]<<"
-                // "<<v_rational[polygon_face[j]][2]<<std::endl;
             }
-            // std::cout<<std::endl;
 
             clipped_indices = triangulate_polygon_face(poly_coordinates);
-            // std::cout<<"clipped indices size: "<<clipped_indices.size()<<std::endl;
             for (int j = 0; j < clipped_indices.size(); j++) {
                 // need to map oldface index to new face indices
                 std::array<size_t, 3> triangle_face = {
                     polygon_face[clipped_indices[j][0]],
                     polygon_face[clipped_indices[j][1]],
                     polygon_face[clipped_indices[j][2]]};
-                // std::cout<<triangle_face[0]<<" "<<triangle_face[1]<<"
-                // "<<triangle_face[2]<<std::endl;
                 int idx = triangulated_faces.size();
                 triangulated_faces.push_back(triangle_face);
 
@@ -546,45 +454,8 @@ void ImageSimulationMesh::insertion_by_volumeremesher(
     }
 
     std::cout << "poly_cnt:" << poly_cnt << std::endl;
-
-    // std::cout << triangulated_faces.size() << std::endl;
-    // int sum = 0;
-    // for (int i = 0; i < map_poly_to_tri_face.size(); i++) {
-    //     sum += map_poly_to_tri_face[i].size();
-    // }
-    // std::cout << sum << std::endl;
-
-    // std::cout << "triangulated faces on input vector size: " <<
-    // triangulated_faces_on_input.size()
-    //           << std::endl;
-    // int on_sur_cnt = 0;
-    // for (int i = 0; i < triangulated_faces_on_input.size(); i++) {
-    //     if (triangulated_faces_on_input[i]) on_sur_cnt++;
-    // }
-    // std::cout << "triangulated faces on input: " << on_sur_cnt << std::endl;
-
     std::cout << "finish triangulation" << std::endl;
-
     std::cout << "vertice before tetra num: " << v_rational.size() << std::endl;
-
-    // invert the orientation of all the triangles
-    // maybe commented
-    // debug code?
-    // int cnt_inverted_tri = 0;
-    // for (size_t i = 0; i < triangulated_faces.size(); i++) {
-    //     triangulated_faces[i] = {
-    //         {triangulated_faces[i][0], triangulated_faces[i][2], triangulated_faces[i][1]}};
-    // }
-
-    // wmtk::logger().info(
-    //     "inverted tri num: {}, total num: {}",
-    //     cnt_inverted_tri,
-    //     triangulated_faces.size());
-
-    // tetrahedralize cells
-
-    // track face on surface per tet
-    // std::vector<bool> tet_face_on_input_surface;
 
     int was_tet_cnt = 0;
     for (int i = 0; i < polygon_cells.size(); i++) {

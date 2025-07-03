@@ -8,7 +8,7 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
 #include <wmtk/Types.hpp>
-#include <wmtk/envelope/SampleEnvelope.hpp>
+#include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/utils/InsertTriangleUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/ManifoldUtils.hpp>
@@ -106,23 +106,19 @@ void image_simulation(nlohmann::json json_params)
     params.init(box_minmax.first, box_minmax.second);
     wmtk::remove_duplicates(vsimp, fsimp, 1e-10 * params.diag_l);
 
+    // initiate the image_simulation mesh using the original envelope
+    wmtk::Envelope* ptr_env;
     wmtk::ExactEnvelope exact_envelope;
-    {
+    if (use_sample_envelope) {
+        ptr_env = &(surf_mesh.m_envelope);
+    } else {
         std::vector<Eigen::Vector3i> tempF(fsimp.size());
         for (auto i = 0; i < tempF.size(); i++) {
             tempF[i] << fsimp[i][0], fsimp[i][1], fsimp[i][2];
         }
         exact_envelope.init(vsimp, tempF, envelope_size / 2);
-    }
-
-    // initiate the image_simulation mesh using the original envelope
-    wmtk::Envelope* ptr_env;
-    if (use_sample_envelope) {
-        ptr_env = &(surf_mesh.m_envelope);
-    } else {
         ptr_env = &(exact_envelope);
     }
-    image_simulation::ImageSimulationMesh mesh(params, *ptr_env, surf_mesh.m_envelope, NUM_THREADS);
 
     /////////////////////////////////////////////////////
 
@@ -149,14 +145,17 @@ void image_simulation(nlohmann::json json_params)
     igl::Timer insertion_timer;
     insertion_timer.start();
 
-    mesh.insertion_by_volumeremesher(
-        vsimp,
-        fsimp,
-        v_rational,
-        facets,
-        is_v_on_input,
-        tets,
-        tet_face_on_input_surface);
+    {
+        ImageSimulationMesh mesh(params, *ptr_env, surf_mesh.m_envelope, NUM_THREADS);
+        mesh.insertion_by_volumeremesher(
+            vsimp,
+            fsimp,
+            v_rational,
+            facets,
+            is_v_on_input,
+            tets,
+            tet_face_on_input_surface);
+    }
 
     // generate new mesh
     image_simulation::ImageSimulationMesh mesh_new(

@@ -23,7 +23,7 @@ namespace wmtk::components::image_simulation {
 void ImageSimulationMesh::init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>& vertices)
 {
     ///points for delaunay
-    std::vector<wmtk::Point3D> points(vertices.size());
+    std::vector<wmtk::delaunay::Point3D> points(vertices.size());
     for (int i = 0; i < vertices.size(); i++) {
         for (int j = 0; j < 3; j++) points[i][j] = vertices[i][j];
     }
@@ -62,7 +62,7 @@ void ImageSimulationMesh::init_from_delaunay_box_mesh(const std::vector<Eigen::V
     m_params.box_max = box_max;
 
     ///delaunay
-    auto [unused_points, tets] = wmtk::delaunay3D(points);
+    auto [unused_points, tets] = wmtk::delaunay::delaunay3D(points);
     wmtk::logger().info(
         "after delauney tets.size() {}  points.size() {}",
         tets.size(),

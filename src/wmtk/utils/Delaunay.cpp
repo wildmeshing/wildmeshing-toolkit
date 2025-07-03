@@ -10,7 +10,7 @@
 #include <cassert>
 #include <mutex>
 
-namespace wmtk {
+namespace wmtk::delaunay {
 
 auto delaunay3D(const std::vector<Point3D>& points)
     -> std::pair<std::vector<Point3D>, std::vector<Tetrahedron>>
@@ -86,4 +86,4 @@ auto delaunay2D(const std::vector<Point2D>& points)
     return {vertices, triangles};
 }
 
-} // namespace wmtk
+} // namespace wmtk::delaunay

@@ -7,10 +7,10 @@
 namespace {
 // TODO: this should use a predicate instead
 inline double compute_tet_volume(
-    const wmtk::Point3D& p,
-    const wmtk::Point3D& q,
-    const wmtk::Point3D& r,
-    const wmtk::Point3D& s)
+    const wmtk::delaunay::Point3D& p,
+    const wmtk::delaunay::Point3D& q,
+    const wmtk::delaunay::Point3D& r,
+    const wmtk::delaunay::Point3D& s)
 {
     return -(
         p[0] * q[1] * r[2] - p[0] * q[1] * s[2] - p[0] * q[2] * r[1] + p[0] * q[2] * s[1] +
@@ -21,8 +21,10 @@ inline double compute_tet_volume(
         q[1] * r[0] * s[2] - q[1] * r[2] * s[0] - q[2] * r[0] * s[1] + q[2] * r[1] * s[0]);
 }
 // TODO: this should use a predicate instead
-inline double
-compute_tri_area(const wmtk::Point2D& a, const wmtk::Point2D& b, const wmtk::Point2D& c)
+inline double compute_tri_area(
+    const wmtk::delaunay::Point2D& a,
+    const wmtk::delaunay::Point2D& b,
+    const wmtk::delaunay::Point2D& c)
 {
     auto a0 = a[0];
     auto a1 = a[1];
@@ -65,53 +67,57 @@ TEST_CASE("Delaunay3D", "[delaunay][3d]")
 
     SECTION("Simple")
     {
-        std::vector<Point3D> points{{{0, 0, 0}}, {{1, 0, 0}}, {{0, 1, 0}}, {{0, 0, 1}}};
+        std::vector<delaunay::Point3D> points{{{0, 0, 0}}, {{1, 0, 0}}, {{0, 1, 0}}, {{0, 0, 1}}};
 
-        auto [vertices, tets] = delaunay3D(points);
+        auto [vertices, tets] = delaunay::delaunay3D(points);
         REQUIRE(vertices.size() == 4);
         REQUIRE(tets.size() == 1);
         validate(vertices, tets);
     }
     SECTION("Insufficient points should not fail")
     {
-        std::vector<Point3D> points{{{1, 0, 0}}, {{0, 1, 0}}, {{0, 0, 1}}};
+        std::vector<delaunay::Point3D> points{{{1, 0, 0}}, {{0, 1, 0}}, {{0, 0, 1}}};
 
-        auto [vertices, tets] = delaunay3D(points);
+        auto [vertices, tets] = delaunay::delaunay3D(points);
         REQUIRE(tets.size() == 0);
         validate(vertices, tets);
     }
     SECTION("Coplanar pts")
     {
-        std::vector<Point3D> points{{{0, 0, 0}}, {{1, 0, 0}}, {{0, 1, 0}}, {{0.5, 0.5, 0}}};
+        std::vector<delaunay::Point3D> points{
+            {{0, 0, 0}},
+            {{1, 0, 0}},
+            {{0, 1, 0}},
+            {{0.5, 0.5, 0}}};
 
-        auto [vertices, tets] = delaunay3D(points);
+        auto [vertices, tets] = delaunay::delaunay3D(points);
         REQUIRE(vertices.size() == 4);
         REQUIRE(tets.size() == 0);
         validate(vertices, tets);
     }
     SECTION("Duplicate pts")
     {
-        std::vector<Point3D>
+        std::vector<delaunay::Point3D>
             points{{{0, 0, 0}}, {{1, 0, 0}}, {{0, 1, 0}}, {{0, 0, 1}}, {{0, 1, 0}}, {{0, 1, 0}}};
 
-        auto [vertices, tets] = delaunay3D(points);
+        auto [vertices, tets] = delaunay::delaunay3D(points);
         REQUIRE(vertices.size() == 6); // duplicate pts are kept in the output.
         REQUIRE(tets.size() == 1);
         validate(vertices, tets);
     }
     SECTION("Triangle prism")
     {
-        std::vector<Point3D>
+        std::vector<delaunay::Point3D>
             points{{{0, 0, 0}}, {{1, 0, 0}}, {{0, 1, 0}}, {{0, 0, 1}}, {{1, 0, 1}}, {{0, 1, 1}}};
 
-        auto [vertices, tets] = delaunay3D(points);
+        auto [vertices, tets] = delaunay::delaunay3D(points);
         REQUIRE(vertices.size() == 6);
         REQUIRE(tets.size() == 3);
         validate(vertices, tets);
     }
     SECTION("Cube with centroid")
     {
-        std::vector<Point3D> points{
+        std::vector<delaunay::Point3D> points{
             {{0, 0, 0}},
             {{1, 0, 0}},
             {{1, 1, 0}},
@@ -122,14 +128,14 @@ TEST_CASE("Delaunay3D", "[delaunay][3d]")
             {{0, 1, 1}},
             {{0.5, 0.5, 0.5}}};
 
-        auto [vertices, tets] = delaunay3D(points);
+        auto [vertices, tets] = delaunay::delaunay3D(points);
         REQUIRE(vertices.size() == 9);
         REQUIRE(tets.size() == 12);
         validate(vertices, tets);
     }
     SECTION("Cube with face center")
     {
-        std::vector<Point3D> points{
+        std::vector<delaunay::Point3D> points{
             {{0, 0, 0}},
             {{1, 0, 0}},
             {{1, 1, 0}},
@@ -140,14 +146,14 @@ TEST_CASE("Delaunay3D", "[delaunay][3d]")
             {{0, 1, 1}},
             {{0.5, 0.5, 0}}};
 
-        auto [vertices, tets] = delaunay3D(points);
+        auto [vertices, tets] = delaunay::delaunay3D(points);
         REQUIRE(vertices.size() == 9);
         REQUIRE(tets.size() == 10);
         validate(vertices, tets);
     }
     SECTION("Cube with point near face")
     {
-        std::vector<Point3D> points{
+        std::vector<delaunay::Point3D> points{
             {{0, 0, 0}},
             {{1, 0, 0}},
             {{1, 1, 0}},
@@ -158,7 +164,7 @@ TEST_CASE("Delaunay3D", "[delaunay][3d]")
             {{0, 1, 1}},
             {{0.5, 0.5, 1e-12}}};
 
-        auto [vertices, tets] = delaunay3D(points);
+        auto [vertices, tets] = delaunay::delaunay3D(points);
         REQUIRE(vertices.size() == 9);
         REQUIRE(tets.size() == 12);
         validate(vertices, tets);
@@ -166,7 +172,7 @@ TEST_CASE("Delaunay3D", "[delaunay][3d]")
     SECTION("Regular grid")
     {
         constexpr size_t N = 10;
-        std::vector<Point3D> points;
+        std::vector<delaunay::Point3D> points;
         points.reserve(N * N * N);
         for (size_t i = 0; i < N; i++) {
             for (size_t j = 0; j < N; j++) {
@@ -178,7 +184,7 @@ TEST_CASE("Delaunay3D", "[delaunay][3d]")
                 }
             }
         }
-        auto [vertices, tets] = delaunay3D(points);
+        auto [vertices, tets] = delaunay::delaunay3D(points);
         REQUIRE(vertices.size() == N * N * N);
         REQUIRE(tets.size() == (N - 1) * (N - 1) * (N - 1) * 6);
         validate(vertices, tets);
@@ -207,44 +213,45 @@ TEST_CASE("Delaunay2D", "[delaunay][2d]")
 
     SECTION("Simple")
     {
-        std::vector<Point2D> points{{{0, 0}}, {{1, 0}}, {{0, 1}}, {{1, 1}}};
+        std::vector<delaunay::Point2D> points{{{0, 0}}, {{1, 0}}, {{0, 1}}, {{1, 1}}};
 
-        auto [vertices, triangles] = delaunay2D(points);
+        auto [vertices, triangles] = delaunay::delaunay2D(points);
         REQUIRE(vertices.size() == 4);
         REQUIRE(triangles.size() == 2);
         validate(vertices, triangles);
     }
     SECTION("Insufficient points should not fail")
     {
-        std::vector<Point2D> points{{{1, 0}}, {{0, 1}}};
+        std::vector<delaunay::Point2D> points{{{1, 0}}, {{0, 1}}};
 
-        auto [vertices, triangles] = delaunay2D(points);
+        auto [vertices, triangles] = delaunay::delaunay2D(points);
         REQUIRE(triangles.size() == 0);
         validate(vertices, triangles);
     }
     SECTION("Coplanar pts")
     {
-        std::vector<Point2D> points{{{0, 0}}, {{1, 0}}, {{2, 0}}, {{3, 0}}};
+        std::vector<delaunay::Point2D> points{{{0, 0}}, {{1, 0}}, {{2, 0}}, {{3, 0}}};
 
-        auto [vertices, triangles] = delaunay2D(points);
+        auto [vertices, triangles] = delaunay::delaunay2D(points);
         REQUIRE(vertices.size() == 4);
         REQUIRE(triangles.size() == 0);
         validate(vertices, triangles);
     }
     SECTION("Duplicate pts")
     {
-        std::vector<Point2D> points{{{0, 0}}, {{1, 0}}, {{0, 1}}, {{1, 1}}, {{0, 1}}, {{0, 1}}};
+        std::vector<delaunay::Point2D>
+            points{{{0, 0}}, {{1, 0}}, {{0, 1}}, {{1, 1}}, {{0, 1}}, {{0, 1}}};
 
-        auto [vertices, triangles] = delaunay2D(points);
+        auto [vertices, triangles] = delaunay::delaunay2D(points);
         REQUIRE(vertices.size() == 6); // duplicate pts are kept in the output.
         REQUIRE(triangles.size() == 2);
         validate(vertices, triangles);
     }
     SECTION("Square with centroid")
     {
-        std::vector<Point2D> points{{{0, 0}}, {{1, 0}}, {{1, 1}}, {{0, 1}}, {{0.5, 0.5}}};
+        std::vector<delaunay::Point2D> points{{{0, 0}}, {{1, 0}}, {{1, 1}}, {{0, 1}}, {{0.5, 0.5}}};
 
-        auto [vertices, triangles] = delaunay2D(points);
+        auto [vertices, triangles] = delaunay::delaunay2D(points);
         REQUIRE(vertices.size() == 5);
         REQUIRE(triangles.size() == 4);
         validate(vertices, triangles);
@@ -252,7 +259,7 @@ TEST_CASE("Delaunay2D", "[delaunay][2d]")
     SECTION("Regular grid")
     {
         constexpr size_t N = 10;
-        std::vector<Point2D> points;
+        std::vector<delaunay::Point2D> points;
         points.reserve(N * N);
         for (size_t i = 0; i < N; i++) {
             for (size_t j = 0; j < N; j++) {
@@ -261,7 +268,7 @@ TEST_CASE("Delaunay2D", "[delaunay][2d]")
                 points.push_back({{x, y}});
             }
         }
-        auto [vertices, triangles] = delaunay2D(points);
+        auto [vertices, triangles] = delaunay::delaunay2D(points);
         REQUIRE(vertices.size() == N * N);
         REQUIRE(triangles.size() == (N - 1) * (N - 1) * 2);
         validate(vertices, triangles);
