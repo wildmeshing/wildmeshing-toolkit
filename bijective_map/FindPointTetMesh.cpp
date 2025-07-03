@@ -144,8 +144,22 @@ std::pair<int, Eigen::Matrix<wmtk::Rational, 4, 1>> findTetContainingPointRation
         Eigen::Matrix<wmtk::Rational, 4, 1> rhs;
         rhs << p(0), p(1), p(2), wmtk::Rational(1);
 
-        // Solve for barycentric coordinates
-        Eigen::Matrix<wmtk::Rational, 4, 1> barycentric = M.colPivHouseholderQr().solve(rhs);
+        // Solve for barycentric coordinates using direct matrix inversion
+        // Since QR decomposition doesn't work with rational types, we use direct solve
+        Eigen::Matrix<wmtk::Rational, 4, 1> barycentric;
+        
+        // Compute determinant and use Cramer's rule for exact solution
+        wmtk::Rational det = M.determinant();
+        if (det == wmtk::Rational(0)) {
+            continue; // Degenerate tetrahedron, skip
+        }
+        
+        // Use Cramer's rule to solve M * barycentric = rhs
+        for (int j = 0; j < 4; ++j) {
+            Eigen::Matrix<wmtk::Rational, 4, 4> M_j = M;
+            M_j.col(j) = rhs;
+            barycentric(j) = M_j.determinant() / det;
+        }
 
         // Check if the barycentric coordinates are within the valid range [0, 1]
         bool all_non_negative = true;
@@ -173,3 +187,46 @@ std::pair<int, Eigen::Matrix<wmtk::Rational, 4, 1>> findTetContainingPointRation
     // Return the default result (-1, Zero) if the point is not found in any tetrahedron
     return result;
 }
+
+// Helper functions for rational conversions
+Eigen::Matrix<wmtk::Rational, Eigen::Dynamic, 3> toRationalMatrix(const Eigen::MatrixXd& V)
+{
+    Eigen::Matrix<wmtk::Rational, Eigen::Dynamic, 3> V_rational(V.rows(), 3);
+    for (int i = 0; i < V.rows(); ++i) {
+        for (int j = 0; j < 3; ++j) {
+            V_rational(i, j) = wmtk::Rational(V(i, j));
+        }
+    }
+    return V_rational;
+}
+
+Eigen::Matrix<wmtk::Rational, 3, 1> toRationalVector(const Eigen::Vector3d& p)
+{
+    Eigen::Matrix<wmtk::Rational, 3, 1> p_rational;
+    for (int i = 0; i < 3; ++i) {
+        p_rational(i) = wmtk::Rational(p(i));
+    }
+    return p_rational;
+}
+
+Eigen::Vector4d toDoubleBarycentric(const Eigen::Matrix<wmtk::Rational, 4, 1>& rational_bc)
+{
+    Eigen::Vector4d bc_double;
+    for (int i = 0; i < 4; ++i) {
+        bc_double(i) = rational_bc(i).to_double(); // Convert rational to double
+    }
+    return bc_double;
+}
+
+// Rational barycentric to world conversion
+Eigen::Matrix<wmtk::Rational, 3, 1> barycentricToWorldRational(
+    const Eigen::Matrix<wmtk::Rational, 4, 1>& bc,
+    const Eigen::Matrix<wmtk::Rational, 4, 3>& v)
+{
+    Eigen::Matrix<wmtk::Rational, 3, 1> result = Eigen::Matrix<wmtk::Rational, 3, 1>::Zero();
+    for (int i = 0; i < 4; ++i) {
+        result += bc(i) * v.row(i).transpose();
+    }
+    return result;
+}
+

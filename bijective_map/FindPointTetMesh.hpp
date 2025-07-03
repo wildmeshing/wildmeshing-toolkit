@@ -32,3 +32,13 @@ std::pair<int, Eigen::Vector4d> findTetContainingPointOrient3d(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& T,
     const Eigen::Vector3d& p);
+
+// Helper functions for rational conversions
+Eigen::Matrix<wmtk::Rational, Eigen::Dynamic, 3> toRationalMatrix(const Eigen::MatrixXd& V);
+Eigen::Matrix<wmtk::Rational, 3, 1> toRationalVector(const Eigen::Vector3d& p);
+Eigen::Vector4d toDoubleBarycentric(const Eigen::Matrix<wmtk::Rational, 4, 1>& rational_bc);
+
+// Rational barycentric to world conversion
+Eigen::Matrix<wmtk::Rational, 3, 1> barycentricToWorldRational(
+    const Eigen::Matrix<wmtk::Rational, 4, 1>& bc,
+    const Eigen::Matrix<wmtk::Rational, 4, 3>& v);

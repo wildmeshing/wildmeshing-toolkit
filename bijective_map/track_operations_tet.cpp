@@ -184,9 +184,162 @@ void handle_local_mapping_tet(
         }
 
         // compute bc of the p in (V, T)_before
-        // TODO: use orient3d here
+        // First try orient3d version
         auto result = findTetContainingPointOrient3d(V_before, T_before, p);
         auto [t_id_before, bc_before] = result;
+
+        if (t_id_before == -1) {
+            // Orient3d failed, try rational version
+            std::cout << "Orient3d failed, trying rational version for point (" << p.transpose()
+                      << ")" << std::endl;
+
+            // Recompute position using rational arithmetic
+            Eigen::Matrix<wmtk::Rational, 3, 1> p_rational =
+                Eigen::Matrix<wmtk::Rational, 3, 1>::Zero();
+            Eigen::Matrix<wmtk::Rational, 4, 3> tet_vertices_rational;
+            Eigen::Matrix<wmtk::Rational, 4, 1> bc_rational;
+
+            // Convert barycentric coordinates to rational
+            for (int i = 0; i < 4; ++i) {
+                bc_rational(i) = wmtk::Rational(qp.bc(i));
+            }
+
+            // Get tetrahedron vertices and convert to rational
+            for (int i = 0; i < 4; i++) {
+                int v_id = qp.tv_ids[i];
+                auto it_v = std::find(v_id_map_after.begin(), v_id_map_after.end(), v_id);
+                if (it_v == v_id_map_after.end()) {
+                    std::cout << "Error: vertex not found in rational computation" << std::endl;
+                    continue;
+                }
+
+                int local_index_in_v_after = std::distance(v_id_map_after.begin(), it_v);
+                // Convert vertex coordinates to rational
+                for (int j = 0; j < 3; ++j) {
+                    tet_vertices_rational(i, j) =
+                        wmtk::Rational(V_after(local_index_in_v_after, j));
+                }
+            }
+
+            // Compute position using rational arithmetic
+            p_rational = barycentricToWorldRational(bc_rational, tet_vertices_rational);
+
+            // Convert matrices to rational for findTetContainingPointRational
+            auto V_before_rational = toRationalMatrix(V_before);
+
+            // Call rational version
+            auto rational_result =
+                findTetContainingPointRational(V_before_rational, T_before, p_rational);
+
+            if (rational_result.first != -1) {
+                t_id_before = rational_result.first;
+                bc_before = toDoubleBarycentric(rational_result.second);
+                std::cout << "Rational version succeeded: found tetrahedron " << t_id_before
+                          << " with barycentric coordinates " << bc_before.transpose() << std::endl;
+            } else {
+                std::cout << "Error: Both orient3d and rational versions failed for point"
+                          << std::endl;
+                std::cout
+                    << "Finding closest valid tetrahedron and clipping barycentric coordinates..."
+                    << std::endl;
+
+                // Find the tetrahedron with the "most valid" barycentric coordinates
+                // (least negative or least exceeding 1)
+                int best_tet_id = -1;
+                Eigen::Matrix<wmtk::Rational, 4, 1> best_bc_rational;
+                double best_score = -1e10; // Higher score is better
+
+                auto V_before_rational = toRationalMatrix(V_before);
+
+                for (int tet_idx = 0; tet_idx < T_before.rows(); ++tet_idx) {
+                    // Extract vertices for this tetrahedron
+                    Eigen::Matrix<wmtk::Rational, 3, 1> v0 =
+                        V_before_rational.row(T_before(tet_idx, 0));
+                    Eigen::Matrix<wmtk::Rational, 3, 1> v1 =
+                        V_before_rational.row(T_before(tet_idx, 1));
+                    Eigen::Matrix<wmtk::Rational, 3, 1> v2 =
+                        V_before_rational.row(T_before(tet_idx, 2));
+                    Eigen::Matrix<wmtk::Rational, 3, 1> v3 =
+                        V_before_rational.row(T_before(tet_idx, 3));
+
+                    // Construct matrix for barycentric coordinate calculation
+                    Eigen::Matrix<wmtk::Rational, 4, 4> M;
+                    M << v0(0), v1(0), v2(0), v3(0), v0(1), v1(1), v2(1), v3(1), v0(2), v1(2),
+                        v2(2), v3(2), wmtk::Rational(1), wmtk::Rational(1), wmtk::Rational(1),
+                        wmtk::Rational(1);
+
+                    Eigen::Matrix<wmtk::Rational, 4, 1> rhs;
+                    rhs << p_rational(0), p_rational(1), p_rational(2), wmtk::Rational(1);
+
+                    // Solve using Cramer's rule
+                    Eigen::Matrix<wmtk::Rational, 4, 1> bc_tet;
+                    wmtk::Rational det = M.determinant();
+                    if (det == wmtk::Rational(0)) {
+                        continue; // Skip degenerate tetrahedron
+                    }
+
+                    for (int j = 0; j < 4; ++j) {
+                        Eigen::Matrix<wmtk::Rational, 4, 4> M_j = M;
+                        M_j.col(j) = rhs;
+                        bc_tet(j) = M_j.determinant() / det;
+                    }
+
+                    // Compute score based on how "valid" the barycentric coordinates are
+                    // Score is minimum of all coordinates (higher is better)
+                    // But also penalize coordinates > 1
+                    double score = 1e10;
+                    for (int j = 0; j < 4; ++j) {
+                        double bc_val = bc_tet(j).to_double();
+                        if (bc_val > 1.0) {
+                            score = std::min(score, 1.0 - (bc_val - 1.0)); // Penalize overshooting
+                        } else {
+                            score = std::min(score, bc_val); // Reward positive values
+                        }
+                    }
+
+                    if (score > best_score) {
+                        best_score = score;
+                        best_tet_id = tet_idx;
+                        best_bc_rational = bc_tet;
+                    }
+                }
+
+                if (best_tet_id != -1) {
+                    // Clip barycentric coordinates to valid range [0, 1]
+                    for (int j = 0; j < 4; ++j) {
+                        wmtk::Rational bc_val = best_bc_rational(j);
+                        if (bc_val < wmtk::Rational(0)) {
+                            best_bc_rational(j) = wmtk::Rational(0);
+                        } else if (bc_val > wmtk::Rational(1)) {
+                            best_bc_rational(j) = wmtk::Rational(1);
+                        }
+                    }
+
+                    // Renormalize to ensure sum equals 1
+                    wmtk::Rational sum = wmtk::Rational(0);
+                    for (int j = 0; j < 4; ++j) {
+                        sum += best_bc_rational(j);
+                    }
+                    if (sum > wmtk::Rational(0)) {
+                        for (int j = 0; j < 4; ++j) {
+                            best_bc_rational(j) = best_bc_rational(j) / sum;
+                        }
+                    }
+
+                    t_id_before = best_tet_id;
+                    bc_before = toDoubleBarycentric(best_bc_rational);
+
+                    std::cout << "Found closest tetrahedron " << best_tet_id
+                              << " with clipped barycentric coordinates " << bc_before.transpose()
+                              << " (score: " << best_score << ")" << std::endl;
+                } else {
+                    std::cout << "Error: Could not find any valid tetrahedron approximation"
+                              << std::endl;
+                    continue;
+                }
+            }
+        }
+
         if (t_id_before == -1) {
             std::cout << "Error: Point not in T_before" << std::endl;
             continue;
@@ -787,6 +940,11 @@ void handle_local_mapping_tet_surface(
 
                 if (labels.surface[t_id][labels.num - 1]) {
                     out_tri_ids.push_back(t_id);
+                }
+                for (uint label_id = 0; label_id <= labels.num; label_id++) {
+                    if (labels.surface[t_id][label_id]) {
+                        std::cout << "triangle " << t_id << " is in tet " << label_id << std::endl;
+                    }
                 }
             }
 
