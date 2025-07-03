@@ -67,20 +67,18 @@ Eigen::Vector3d barycentric_to_world_tet(
 }
 ```
 
-#### World to Barycentric Coordinates
-Two methods are available for point location:
+#### Point Location using Orient3D + Rational Arithmetic
 
-**Traditional Method** (`findTetContainingPoint()`):
-1. Locate the tetrahedral element containing the world point using barycentric coordinate computation
-2. Compute barycentric coordinates within that element via matrix inversion
-3. Return (-1, invalid) if point is outside the mesh
+**Robust Point-in-Tetrahedron Test**:
+For point $\mathbf{p}$ and tetrahedron $T = \{\mathbf{v}_0, \mathbf{v}_1, \mathbf{v}_2, \mathbf{v}_3\}$:
 
-**Robust Method** (`findTetContainingPointOrient3d()`) - **RECOMMENDED**:
-1. Uses `wmtk::utils::wmtk_orient3d` exact geometric predicates for numerical stability
-2. Tests point containment by checking orientation consistency across all four tetrahedral faces
-3. Eliminates floating-point precision issues in traditional barycentric methods
-4. Provides error reporting when points are not contained in any tetrahedron
-5. Maintains compatibility with existing barycentric coordinate computation for return values
+$$\text{orient3d}(\mathbf{v}_i, \mathbf{v}_j, \mathbf{v}_k, \mathbf{p}) \geq 0 \quad \forall \text{ faces } (i,j,k)$$
+
+Using exact rational arithmetic ensures numerical stability. The algorithm:
+1. Compute orientation for each of the 4 tetrahedral faces
+2. Point is inside if all orientations have consistent sign
+3. Rational arithmetic eliminates floating-point errors
+4. Compute barycentric coordinates using Cramer's rule with rational determinants
 
 ### 2. Operation Tracking Pipeline
 
@@ -213,30 +211,10 @@ struct query_curve_tet {
 };
 ```
 
-### Curve Sampling Strategy
+### Curve Tracking Algorithm
 
-#### Tetrahedral Face Sampling
-```cpp
-auto mid_point_on_face = [](int face_id) -> Eigen::Vector4d {
-    switch(face_id) {
-        case 0: return {1/3, 1/3, 1/3, 0};   // Face [v0,v1,v2]
-        case 1: return {1/3, 1/3, 0, 1/3};   // Face [v0,v1,v3]
-        case 2: return {0, 1/3, 1/3, 1/3};   // Face [v1,v2,v3]
-        case 3: return {1/3, 0, 1/3, 1/3};   // Face [v0,v2,v3]
-    }
-};
-```
-
-#### Curve Generation Algorithm
-```cpp
-1. Select random starting tetrahedron
-2. Choose random face for segment start
-3. Choose different face for segment end
-4. Create segment with midpoints of selected faces
-5. Move to adjacent tetrahedron through second face
-6. Repeat until desired curve length or boundary reached
-7. Update connectivity information in next_segment_ids
-```
+#### Segment Transformation
+For each segment with endpoints in barycentric coordinates, track through mesh operations by reconstructing world coordinates and relocating in target mesh.
 
 ### Curve Tracking Process
 
@@ -258,65 +236,14 @@ struct query_surface_tet {
 };
 ```
 
-### Surface Sampling Strategies
+### Surface Tracking with Arrangement Labels
 
-#### 1. **Sub-surface Sampling** (Conservative)
-```cpp
-query_surface_tet sample_query_surface_sub_surface(
-    const Eigen::MatrixXd& V, const Eigen::MatrixXi& T)
-```
+#### Boolean Arrangement Method
+Surfaces are tracked using mesh arrangement where each triangle carries a label indicating its source tetrahedron. During tracking:
 
-**Algorithm:**
-1. Start with tetrahedron 0
-2. Add all 4 faces as triangles using vertex barycentric coordinates
-3. Use breadth-first traversal to find adjacent tetrahedra
-4. Limit sampling to prevent excessive surface complexity
-5. Use adjacency test: check for shared edges between tetrahedra
-
-**Triangle Creation:**
-```cpp
-for each face_id in [0,1,2,3]:
-    triangle.bcs[0] = unit_vector(face_vertices[face_id][0])  // (1,0,0,0) etc.
-    triangle.bcs[1] = unit_vector(face_vertices[face_id][1])
-    triangle.bcs[2] = unit_vector(face_vertices[face_id][2])
-```
-
-#### 2. **Large Triangle Sampling** (using Boolean Operations)
-```cpp
-query_surface_tet sample_query_surface_large_triangle(
-    const Eigen::MatrixXd& V, const Eigen::MatrixXi& T)
-```
-
-**Algorithm:**
-1. **Surface Extraction:** Convert tetrahedra to boundary triangulation
-2. **Random Triangle Generation:** Sample 3 random points within tetrahedra
-3. **Boolean Arrangement:** Use InteractiveAndRobustMeshBooleans library
-4. **Intersection Computation:** Find arrangement of input surface with random triangle
-5. **Result Extraction:** Extract intersected triangles and compute barycentric embeddings
-
-**Detailed Steps:**
-```cpp
-// Convert tetrahedral mesh to surface triangulation
-for each tetrahedron t in T:
-    for each face f in [0,1,2,3]:
-        add_triangle(tet_vertices[f], label=t.id)
-
-// Sample random triangle
-for i in [0,1,2]:
-    random_tet = select_random_tetrahedron()
-    random_bc = generate_random_barycentric_coordinates()
-    sampled_points[i] = interpolate(random_tet, random_bc)
-
-// Perform boolean arrangement
-FastTrimesh tm = create_arrangement(surface_triangles, sampled_triangle)
-extract_result_triangles(tm, labels, output_triangles)
-
-// Convert back to barycentric representation
-for each output_triangle ot:
-    containing_tet = find_containing_tetrahedron(ot.vertices)
-    for each vertex v in ot:
-        barycentric_coords[v] = world_to_barycentric(v, containing_tet)
-```
+1. **Label Preservation**: Each triangle maintains its original tetrahedron ID through the arrangement process
+2. **Intersection Handling**: When surfaces intersect, new triangles inherit labels from their geometric location
+3. **Barycentric Reconstruction**: Use arrangement labels to determine containing tetrahedra for barycentric coordinate computation
 
 ### Surface Tracking Process
 
@@ -336,23 +263,11 @@ for each triangle in surface.triangles:
 ```
 
 #### 2. **Manifold Validation**
-```cpp
-// Post-tracking validation
-std::map<edge, int> edge_counts;
-for each triangle in tracked_surface:
-    for each edge in triangle:
-        edge_counts[edge]++
-
-// Check manifold property
-for each edge in edge_counts:
-    if edge_counts[edge] > 2:
-        report_non_manifold_edge(edge)
-```
+Each edge must appear in at most 2 triangles to maintain manifold property.
 
 ## Algorithm Robustness and Error Handling
 
 ### 1. **Geometric Degeneracies**
-- **Near-zero barycentric coordinates:** Clamp to exactly 0.0 if |bc| < 1e-15
 - **Point outside mesh:** Mark as invalid (-1 tet_id) and continue processing
 - **Degenerate tetrahedra:** Skip processing for elements with near-zero volume
 
@@ -362,46 +277,19 @@ for each edge in edge_counts:
 - **Boundary handling:** Special treatment for entities near mesh boundaries
 
 ### 3. **Numerical Stability**
-- **Coordinate normalization:** Ensure barycentric coordinates sum to 1.0
-- **Precision management:** Use consistent tolerance values across all computations
+- **Exact predicates:** Use `wmtk::utils::wmtk_orient3d` with rational arithmetic
+- **Determinant computation:** Rational Cramer's rule for barycentric coordinates
 - **Overflow prevention:** Validate array indices before access
-- **Exact geometric predicates:** Use `findTetContainingPointOrient3d()` with `wmtk::utils::wmtk_orient3d` for robust point-in-tetrahedron testing
-- **Orientation-based testing:** Replace floating-point tolerance checks with exact orientation tests
 
 ## Performance Optimizations
 
-### 1. **Parallel Processing**
-```cpp
-// Point tracking parallelization
-igl::parallel_for(query_points.size(), [&](int id) {
-    track_single_point(query_points[id], operation_data);
-});
-```
+### Performance Optimizations
+- **Parallel processing:** Independent tracking of multiple entities
+- **Caching:** Reuse geometric computations
+- **In-place updates:** Modify query objects directly
 
-### 2. **Spatial Data Structures**
-- **Octree acceleration:** For point location in large meshes
-- **BVH optimization:** Hierarchical bounding volumes for intersection tests
-- **Caching strategies:** Reuse geometric computations where possible
-
-### 3. **Memory Management**
-- **In-place updates:** Modify query objects directly to reduce memory allocation
-- **Batch processing:** Group operations to improve cache locality
-- **Sparse representations:** Use efficient data structures for large but sparse operations
-
-## Applications and Use Cases
-
-### 1. **Mesh Evolution Tracking**
-- Track material points through adaptive remeshing
-- Preserve feature curves during topology optimization
-- Maintain surface boundaries in deformation processes
-
-### 2. **Multi-physics Simulations**
-- Track embedded sensors through mesh adaptation
-- Preserve contact surfaces in collision detection
-- Maintain material interfaces in multi-material problems
-
-### 3. **Geometric Processing**
-- Feature preservation in mesh simplification
-- Texture coordinate maintenance through remeshing
-- Boundary condition transfer between mesh hierarchies
+## Applications
+- Material point tracking through adaptive remeshing
+- Feature preservation in mesh operations
+- Multi-material interface maintenance
 
