@@ -26,7 +26,7 @@
 #include <igl/remove_unreferenced.h>
 #include <memory>
 
-namespace wmtk::components::tetwild {
+namespace wmtk::components::image_simulation {
 
 // TODO: missing comments on what these attributes are
 class VertexAttributes
@@ -46,7 +46,7 @@ public:
     // for open boundary
     bool m_is_on_open_boundary = false;
 
-    VertexAttributes(){};
+    VertexAttributes() {};
     VertexAttributes(const Vector3r& p);
 };
 
@@ -88,7 +88,7 @@ public:
     int part_id = -1;
 };
 
-class TetWildMesh : public wmtk::TetMesh
+class ImageSimulationMesh : public wmtk::TetMesh
 {
 public:
     double time_env = 0.0;
@@ -104,7 +104,7 @@ public:
     wmtk::ExactEnvelope m_open_boundary_envelope; // todo: add sample envelope option
     sample_envelope::SampleEnvelope boundaries_tree;
 
-    TetWildMesh(
+    ImageSimulationMesh(
         Parameters& _m_params,
         wmtk::Envelope& _m_envelope,
         sample_envelope::SampleEnvelope& _triangles_tree,
@@ -120,7 +120,7 @@ public:
         m_collapse_check_link_condition = false;
     }
 
-    ~TetWildMesh() {}
+    ~ImageSimulationMesh() {}
     using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
     using FaceAttCol = wmtk::AttributeCollection<FaceAttributes>;
     using TetAttCol = wmtk::AttributeCollection<TetAttributes>;
@@ -400,7 +400,7 @@ private:
     tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
 
 
-    // for incremental tetwild
+    // for incremental image_simulation
 public:
     void insertion_by_volumeremesher(
         const std::vector<Vector3d>& vertices,
@@ -586,4 +586,4 @@ public:
 };
 
 
-} // namespace wmtk::components::tetwild
+} // namespace wmtk::components::image_simulation

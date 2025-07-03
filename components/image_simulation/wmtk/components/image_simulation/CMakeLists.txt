@@ -1,10 +1,10 @@
-# incremental tetwild
+# incremental image_simulation
 
 include(gmp)
 include(fenvelope)
 include(volumemesher)
 
-set(COMPONENT_NAME tetwild)
+set(COMPONENT_NAME image_simulation)
 add_component(${COMPONENT_NAME})
 
 if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
@@ -12,8 +12,8 @@ if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
 endif()
 
 set(SRC_FILES
-    TetWildMesh.cpp
-	TetWildMesh.h
+    ImageSimulationMesh.cpp
+	ImageSimulationMesh.h
 
 	Parameters.h
 
@@ -25,9 +25,9 @@ set(SRC_FILES
 	TriangleInsertion.cpp
 	VolumemesherInsertion.cpp
 
-	tetwild.hpp
-	tetwild.cpp
-	tetwild_spec.hpp
+	image_simulation.hpp
+	image_simulation.cpp
+	image_simulation_spec.hpp
     )
 
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
@@ -37,7 +37,6 @@ target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC
 	wmtk::toolkit
 	wmtk::data
 	wmtk::sec_lib
-	wmtk::remeshing_lib
 	igl::predicates
 	VolumeRemesher::VolumeRemesher
 	jse::jse

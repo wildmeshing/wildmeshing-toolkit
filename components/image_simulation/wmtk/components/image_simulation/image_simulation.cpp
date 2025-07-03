@@ -1,56 +1,49 @@
-#include "tetwild.hpp"
+#include "image_simulation.hpp"
 
-// #include <remeshing/UniformRemeshing.h>
-#include <sec/ShortestEdgeCollapse.h>
-#include "Parameters.h"
-#include "TetWildMesh.h"
-#include "sec/envelope/SampleEnvelope.hpp"
+
+#include <memory>
+#include <vector>
 
 #include <jse/jse.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
-#include <wmtk/utils/Reader.hpp>
-
-#include <memory>
-#include <vector>
+#include <wmtk/Types.hpp>
+#include <wmtk/utils/InsertTriangleUtils.hpp>
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/ManifoldUtils.hpp>
+#include <wmtk/utils/Reader.hpp>
 #include <wmtk/utils/partition_utils.hpp>
-#include "wmtk/utils/InsertTriangleUtils.hpp"
-#include "wmtk/utils/Logger.hpp"
 
-#include <geogram/basic/process.h>
-#include <geogram/mesh/mesh_io.h>
-#include <igl/Timer.h>
-#include <igl/boundary_facets.h>
-#include <igl/predicates/predicates.h>
-#include <igl/read_triangle_mesh.h>
-#include <igl/write_triangle_mesh.h>
-#include <spdlog/common.h>
+#include <sec/ShortestEdgeCollapse.h>
+#include <sec/envelope/SampleEnvelope.hpp>
 
-#include "tetwild_spec.hpp"
+#include "ImageSimulationMesh.h"
+#include "Parameters.h"
 
-namespace wmtk::components::tetwild {
+#include "image_simulation_spec.hpp"
 
-void tetwild(nlohmann::json json_params)
+namespace wmtk::components::image_simulation {
+
+void image_simulation(nlohmann::json json_params)
 {
+    using Tuple = TetMesh::Tuple;
+
     // verify input and inject defaults
     {
         jse::JSE spec_engine;
-        bool r = spec_engine.verify_json(json_params, tetwild_spec);
+        bool r = spec_engine.verify_json(json_params, image_simulation_spec);
         if (!r) {
             log_and_throw_error(spec_engine.log2str());
         }
-        json_params = spec_engine.inject_defaults(json_params, tetwild_spec);
+        json_params = spec_engine.inject_defaults(json_params, image_simulation_spec);
     }
-
-    ZoneScopedN("tetwildmain");
 
     GEO::Process::enable_multithreading(false);
 
-    tetwild::Parameters params;
+    image_simulation::Parameters params;
 
     std::vector<std::string> input_paths = json_params["input"];
-    std::string output_path = json_params["output"];
+    params.output_path = json_params["output"];
     bool skip_simplify = json_params["skip_simplify"];
     bool use_sample_envelope = json_params["use_sample_envelope"];
     int NUM_THREADS = json_params["num_threads"];
@@ -77,36 +70,17 @@ void tetwild(nlohmann::json json_params)
         tris,
         modified_nonmanifold_v);
 
-    // rotate by an arbitrary angle
-    // double theta = M_PI * 0.2;
-    // Eigen::Matrix3d rotation_m;
-    // rotation_m << 1, 0, 0, 0, cos(theta), -sin(theta), 0, sin(theta), cos(theta);
-
-    // box_minmax.first = Eigen::Vector3d(10000, 10000, 10000);
-    // box_minmax.second = Eigen::Vector3d(-10000, -10000, -10000);
-    // for (size_t i = 0; i < verts.size(); i++) {
-    //     verts[i] = rotation_m * verts[i];
-    //     if (verts[i][0] < box_minmax.first[0]) box_minmax.first[0] = verts[i][0];
-    //     if (verts[i][1] < box_minmax.first[1]) box_minmax.first[1] = verts[i][1];
-    //     if (verts[i][2] < box_minmax.first[0]) box_minmax.first[2] = verts[i][2];
-    //     if (verts[i][0] > box_minmax.second[0]) box_minmax.second[0] = verts[i][0];
-    //     if (verts[i][1] > box_minmax.second[1]) box_minmax.second[1] = verts[i][1];
-    //     if (verts[i][2] > box_minmax.second[2]) box_minmax.second[2] = verts[i][2];
-    // }
-
     double diag = (box_minmax.first - box_minmax.second).norm();
     const double envelope_size = params.epsr * diag;
     app::sec::ShortestEdgeCollapse surf_mesh(verts, NUM_THREADS, false);
     surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, envelope_size / 2);
     assert(surf_mesh.check_mesh_connectivity_validity());
 
-    if (skip_simplify == false) {
+    if (!skip_simplify) {
         wmtk::logger().info("input {} simplification", input_paths);
         surf_mesh.collapse_shortest(0);
         surf_mesh.consolidate_mesh();
     }
-
-    params.output_path = output_path;
 
     //// get the simplified input
     std::vector<Eigen::Vector3d> vsimp(surf_mesh.vert_capacity());
@@ -129,25 +103,26 @@ void tetwild(nlohmann::json json_params)
     // // Prepare Envelope and parameter for TetWild
     // /////////
 
-
     params.init(box_minmax.first, box_minmax.second);
     wmtk::remove_duplicates(vsimp, fsimp, 1e-10 * params.diag_l);
 
     wmtk::ExactEnvelope exact_envelope;
     {
         std::vector<Eigen::Vector3i> tempF(fsimp.size());
-        for (auto i = 0; i < tempF.size(); i++) tempF[i] << fsimp[i][0], fsimp[i][1], fsimp[i][2];
+        for (auto i = 0; i < tempF.size(); i++) {
+            tempF[i] << fsimp[i][0], fsimp[i][1], fsimp[i][2];
+        }
         exact_envelope.init(vsimp, tempF, envelope_size / 2);
     }
 
-    // initiate the tetwild mesh using the original envelop
+    // initiate the image_simulation mesh using the original envelop
     wmtk::Envelope* ptr_env;
     if (use_sample_envelope) {
         ptr_env = &(surf_mesh.m_envelope);
     } else {
         ptr_env = &(exact_envelope);
     }
-    tetwild::TetWildMesh mesh(params, *ptr_env, surf_mesh.m_envelope, NUM_THREADS);
+    image_simulation::ImageSimulationMesh mesh(params, *ptr_env, surf_mesh.m_envelope, NUM_THREADS);
 
     /////////////////////////////////////////////////////
 
@@ -162,10 +137,6 @@ void tetwild(nlohmann::json json_params)
 
 
     // triangle insertion with volumeremesher on the simplified mesh
-    // std::vector<vol_rem::bigrational> embedded_vertices;
-    // std::vector<uint32_t> embedded_facets;
-    // std::vector<uint32_t> embedded_cells;
-    // std::vector<uint32_t> embedded_facets_on_input;
     std::vector<Vector3r> v_rational;
     std::vector<std::array<size_t, 3>> facets;
     std::vector<bool> is_v_on_input;
@@ -188,7 +159,11 @@ void tetwild(nlohmann::json json_params)
         tet_face_on_input_surface);
 
     // generate new mesh
-    tetwild::TetWildMesh mesh_new(params, *ptr_env, surf_mesh.m_envelope, NUM_THREADS);
+    image_simulation::ImageSimulationMesh mesh_new(
+        params,
+        *ptr_env,
+        surf_mesh.m_envelope,
+        NUM_THREADS);
 
     mesh_new.init_from_Volumeremesher(
         v_rational,
@@ -199,30 +174,9 @@ void tetwild(nlohmann::json json_params)
 
     double insertion_time = insertion_timer.getElapsedTime();
 
-
-    // mesh_new.output_faces(output_path + "after_insertion_surface.obj", [](auto& f) {
-    //     return f.m_is_surface_fs;
-    // });
-
-
     wmtk::logger().info("volume remesher insertion time: {}s", insertion_time);
 
-    // mesh_new.output_tetrahedralized_embedded_mesh(
-    //     "tetrahedralized_embedded_mesh.txt",
-    //     v_rational,
-    //     facets,
-    //     tets,
-    //     tet_face_on_input_surface);
-
-    // mesh_new.output_init_tetmesh("tetmesh_before_opt.txt");
-
     mesh_new.consolidate_mesh();
-
-    // mesh_new.output_mesh(output_path + "after_insertion.msh");
-
-    // mesh_new.output_faces("test_embed_output_bbox.obj", [](auto& f) {
-    //     return f.m_is_bbox_fs != -1;
-    // });
 
     size_t nonmani_ver_cnt = 0;
     size_t surface_v_cnt = 0;
@@ -241,11 +195,6 @@ void tetwild(nlohmann::json json_params)
     // /////////mesh improvement
     mesh_new.mesh_improvement(max_its);
 
-    // mesh_new.output_mesh(output_path + "after_optimization.msh");
-    // mesh_new.output_faces(output_path + "after_optimization_surface.obj", [](auto& f) {
-    //     return f.m_is_surface_fs;
-    // });
-
     // ////winding number
     if (filter_with_input)
         mesh_new.filter_outside(verts, tris, true);
@@ -258,11 +207,11 @@ void tetwild(nlohmann::json json_params)
         log_and_throw_error("Empty Output after Filter!");
     }
 
-    mesh_new.save_paraview(output_path, false);
+    mesh_new.save_paraview(params.output_path, false);
 
     /////////output
     auto [max_energy, avg_energy] = mesh_new.get_max_avg_energy();
-    std::ofstream fout(output_path + ".log");
+    std::ofstream fout(params.output_path + ".log");
     fout << "#t: " << mesh_new.tet_size() << std::endl;
     fout << "#v: " << mesh_new.vertex_size() << std::endl;
     fout << "max_energy: " << max_energy << std::endl;
@@ -274,46 +223,49 @@ void tetwild(nlohmann::json json_params)
     fout.close();
 
     wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
-    mesh_new.output_mesh(output_path + "_final.msh");
+    mesh_new.output_mesh(params.output_path + "_final.msh");
 
     {
-        auto outface = std::vector<std::array<size_t, 3>>();
-        for (auto f : mesh_new.get_faces()) {
-            auto res = mesh_new.switch_tetrahedron(f);
-            if (!res.has_value()) {
-                auto verts = mesh_new.get_face_vertices(f);
-                std::array<size_t, 3> vids = {
-                    {verts[0].vid(mesh_new), verts[1].vid(mesh_new), verts[2].vid(mesh_new)}};
-                auto vs = mesh_new.oriented_tet_vertices(f);
-                for (int j = 0; j < 4; j++) {
-                    if (std::find(vids.begin(), vids.end(), vs[j].vid(mesh_new)) == vids.end()) {
-                        auto res = igl::predicates::orient3d(
-                            mesh_new.m_vertex_attribute[vids[0]].m_posf,
-                            mesh_new.m_vertex_attribute[vids[1]].m_posf,
-                            mesh_new.m_vertex_attribute[vids[2]].m_posf,
-                            mesh_new.m_vertex_attribute[vs[j].vid(mesh_new)].m_posf);
-                        if (res == igl::predicates::Orientation::NEGATIVE)
-                            std::swap(vids[1], vids[2]);
-                        break;
-                    }
-                }
-                outface.emplace_back(vids);
+        auto posf = [&mesh_new](const size_t i) { return mesh_new.m_vertex_attribute[i].m_posf; };
+
+        std::vector<std::array<size_t, 3>> outface;
+        for (const Tuple& f : mesh_new.get_faces()) {
+            if (f.switch_tetrahedron(mesh_new)) {
+                continue;
             }
+            const auto verts = mesh_new.get_face_vertices(f);
+            std::array<size_t, 3> vids = {
+                {verts[0].vid(mesh_new), verts[1].vid(mesh_new), verts[2].vid(mesh_new)}};
+            const auto vs = mesh_new.oriented_tet_vertices(f);
+            for (int j = 0; j < 4; j++) {
+                if (std::find(vids.begin(), vids.end(), vs[j].vid(mesh_new)) == vids.end()) {
+                    auto res = igl::predicates::orient3d(
+                        posf(vids[0]),
+                        posf(vids[1]),
+                        posf(vids[2]),
+                        posf(vs[j].vid(mesh_new)));
+                    if (res == igl::predicates::Orientation::NEGATIVE) {
+                        std::swap(vids[1], vids[2]);
+                    }
+                    break;
+                }
+            }
+            outface.emplace_back(vids);
         }
         Eigen::MatrixXd matV = Eigen::MatrixXd::Zero(mesh_new.vert_capacity(), 3);
-        for (auto v : mesh_new.get_vertices()) {
+        for (const Tuple& v : mesh_new.get_vertices()) {
             auto vid = v.vid(mesh_new);
-            matV.row(vid) = mesh_new.m_vertex_attribute[vid].m_posf;
+            matV.row(vid) = posf(vid);
         }
         Eigen::MatrixXi matF(outface.size(), 3);
-        for (auto i = 0; i < outface.size(); i++) {
+        for (size_t i = 0; i < outface.size(); i++) {
             matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
         }
-        igl::write_triangle_mesh(output_path + "_surface.obj", matV, matF);
+        igl::write_triangle_mesh(params.output_path + "_surface.obj", matV, matF);
 
         wmtk::logger().info("Output face size {}", outface.size());
         wmtk::logger().info("======= finish =========");
     }
 }
 
-} // namespace wmtk::components::tetwild
+} // namespace wmtk::components::image_simulation

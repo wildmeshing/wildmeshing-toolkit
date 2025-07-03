@@ -1,6 +1,7 @@
 #pragma once
+#include <wmtk/Types.hpp>
 
-namespace wmtk::components::tetwild {
+namespace wmtk::components::image_simulation {
 struct Parameters
 {
     double epsr = 2e-3; // relative error bound (wrt diagonal)
@@ -61,4 +62,4 @@ struct Parameters
         init(min_, max_);
     }
 };
-} // namespace wmtk::components::tetwild
+} // namespace wmtk::components::image_simulation

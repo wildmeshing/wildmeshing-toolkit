@@ -29,4 +29,16 @@ using Vector3i = Vector<int, 3>;
 using Vector4i = Vector<int, 4>;
 using VectorXi = Vector<int, Eigen::Dynamic>;
 
+inline Vector3r to_rational(const Vector3d& p0)
+{
+    Vector3r p(p0[0], p0[1], p0[2]);
+    return p;
+}
+
+inline Vector3d to_double(const Vector3r& p0)
+{
+    Vector3d p(p0[0].to_double(), p0[1].to_double(), p0[2].to_double());
+    return p;
+}
+
 } // namespace wmtk

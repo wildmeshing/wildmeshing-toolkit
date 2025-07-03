@@ -1,5 +1,5 @@
 #include <wmtk/utils/Rational.hpp>
-#include "TetWildMesh.h"
+#include "ImageSimulationMesh.h"
 
 #include <wmtk/utils/Delaunay.hpp>
 #include "wmtk/TetMesh.h"
@@ -18,9 +18,9 @@
 #include <random>
 #include <unordered_set>
 
-namespace wmtk::components::tetwild {
+namespace wmtk::components::image_simulation {
 
-void TetWildMesh::init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>& vertices)
+void ImageSimulationMesh::init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>& vertices)
 {
     ///points for delaunay
     std::vector<wmtk::Point3D> points(vertices.size());
@@ -81,7 +81,7 @@ void TetWildMesh::init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>
 }
 
 
-bool TetWildMesh::triangle_insertion_before(const std::vector<Tuple>& faces)
+bool ImageSimulationMesh::triangle_insertion_before(const std::vector<Tuple>& faces)
 {
     auto& cache = triangle_insertion_local_cache.local();
     cache.old_face_vids.clear(); // note: reset local vars
@@ -98,7 +98,7 @@ bool TetWildMesh::triangle_insertion_before(const std::vector<Tuple>& faces)
     return true;
 }
 
-bool TetWildMesh::triangle_insertion_after(const std::vector<std::vector<Tuple>>& new_faces)
+bool ImageSimulationMesh::triangle_insertion_after(const std::vector<std::vector<Tuple>>& new_faces)
 {
     /// remove old_face_vids from tet_face_tags, and map tags to new faces
     // assert(new_faces.size() == triangle_insertion_local_cache.local().old_face_vids.size() + 1);
@@ -135,7 +135,7 @@ bool TetWildMesh::triangle_insertion_after(const std::vector<std::vector<Tuple>>
 
 auto internal_insert_single_triangle(
     wmtk::TetMesh& m,
-    TetWildMesh::VertAttCol& m_vertex_attribute,
+    ImageSimulationMesh::VertAttCol& m_vertex_attribute,
     const std::vector<Eigen::Vector3d>& vertices,
     const std::array<size_t, 3>& face,
     std::vector<std::array<size_t, 3>>& marked_tet_faces,
@@ -196,7 +196,7 @@ auto internal_insert_single_triangle(
     return true;
 }
 
-void TetWildMesh::init_from_input_surface(
+void ImageSimulationMesh::init_from_input_surface(
     const std::vector<Vector3d>& vertices,
     const std::vector<std::array<size_t, 3>>& faces,
     const std::vector<size_t>& partition_id)
@@ -356,7 +356,8 @@ void TetWildMesh::init_from_input_surface(
     wmtk::logger().info("setup attributes #t {} #v {}", tet_capacity(), vert_capacity());
 } // note: skip preserve open boundaries
 
-void TetWildMesh::finalize_triangle_insertion(const std::vector<std::array<size_t, 3>>& faces)
+void ImageSimulationMesh::finalize_triangle_insertion(
+    const std::vector<std::array<size_t, 3>>& faces)
 {
     tbb::task_arena arena(std::max(NUM_THREADS, 1));
 
@@ -450,4 +451,4 @@ void TetWildMesh::finalize_triangle_insertion(const std::vector<std::array<size_
     });
 }
 
-} // namespace wmtk::components::tetwild
+} // namespace wmtk::components::image_simulation

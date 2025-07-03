@@ -1,5 +1,5 @@
 
-#include "TetWildMesh.h"
+#include "ImageSimulationMesh.h"
 
 #include "wmtk/utils/Rational.hpp"
 
@@ -30,7 +30,7 @@
 #include <geogram/points/kd_tree.h>
 #include <limits>
 
-namespace wmtk::components::tetwild {
+namespace wmtk::components::image_simulation {
 
 
 VertexAttributes::VertexAttributes(const Vector3r& p)
@@ -39,7 +39,7 @@ VertexAttributes::VertexAttributes(const Vector3r& p)
     m_posf = to_double(p);
 }
 
-void TetWildMesh::mesh_improvement(int max_its)
+void ImageSimulationMesh::mesh_improvement(int max_its)
 {
     ////preprocessing
     // TODO: refactor to eliminate repeated partition.
@@ -123,7 +123,7 @@ void TetWildMesh::mesh_improvement(int max_its)
     local_operations({{0, 1, 0, 0}});
 }
 
-std::tuple<double, double> TetWildMesh::local_operations(
+std::tuple<double, double> ImageSimulationMesh::local_operations(
     const std::array<int, 4>& ops,
     bool collapse_limit_length)
 {
@@ -197,7 +197,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
     return energy;
 }
 
-bool TetWildMesh::adjust_sizing_field(double max_energy)
+bool ImageSimulationMesh::adjust_sizing_field(double max_energy)
 {
     wmtk::logger().info("#vertices {}, #tets {}", vert_capacity(), tet_capacity());
 
@@ -340,7 +340,7 @@ bool TetWildMesh::adjust_sizing_field(double max_energy)
     return is_hit_min_edge_length.load();
 }
 
-bool TetWildMesh::adjust_sizing_field_serial(double max_energy)
+bool ImageSimulationMesh::adjust_sizing_field_serial(double max_energy)
 {
     wmtk::logger().info("#vertices {}, #tets {}", vert_capacity(), tet_capacity());
 
@@ -533,7 +533,7 @@ void bfs_orient(const Eigen::MatrixXi& F, Eigen::MatrixXi& FF, Eigen::VectorXi& 
     }
 }
 
-void TetWildMesh::filter_outside(
+void ImageSimulationMesh::filter_outside(
     const std::vector<Vector3d>& vertices,
     const std::vector<std::array<size_t, 3>>& faces,
     bool remove_ouside)
@@ -619,7 +619,9 @@ void TetWildMesh::filter_outside(
 }
 
 /////////////////////////////////////////////////////////////////////
-void TetWildMesh::output_faces(std::string file, std::function<bool(const FaceAttributes&)> cond)
+void ImageSimulationMesh::output_faces(
+    std::string file,
+    std::function<bool(const FaceAttributes&)> cond)
 {
     auto outface = get_faces_by_condition(cond);
     Eigen::MatrixXd matV = Eigen::MatrixXd::Zero(vert_capacity(), 3);
@@ -636,7 +638,7 @@ void TetWildMesh::output_faces(std::string file, std::function<bool(const FaceAt
 }
 
 
-void TetWildMesh::output_mesh(std::string file)
+void ImageSimulationMesh::output_mesh(std::string file)
 {
     consolidate_mesh();
 
@@ -674,7 +676,7 @@ void TetWildMesh::output_mesh(std::string file)
 }
 
 
-double TetWildMesh::get_length2(const wmtk::TetMesh::Tuple& l) const
+double ImageSimulationMesh::get_length2(const wmtk::TetMesh::Tuple& l) const
 {
     auto& m = *this;
     auto& v1 = l;
@@ -685,7 +687,7 @@ double TetWildMesh::get_length2(const wmtk::TetMesh::Tuple& l) const
     return length;
 }
 
-std::tuple<double, double> TetWildMesh::get_max_avg_energy()
+std::tuple<double, double> ImageSimulationMesh::get_max_avg_energy()
 {
     double max_energy = -1.;
     double avg_energy = 0.;
@@ -722,7 +724,7 @@ std::tuple<double, double> TetWildMesh::get_max_avg_energy()
 }
 
 
-bool TetWildMesh::is_inverted(const Tuple& loc) const
+bool ImageSimulationMesh::is_inverted(const Tuple& loc) const
 {
     // Return a positive value if the point pd lies below the
     // plane passing through pa, pb, and pc; "below" is defined so
@@ -769,7 +771,7 @@ bool TetWildMesh::is_inverted(const Tuple& loc) const
     }
 }
 
-bool TetWildMesh::round(const Tuple& v)
+bool ImageSimulationMesh::round(const Tuple& v)
 {
     size_t i = v.vid(*this);
     if (m_vertex_attribute[i].m_is_rounded) return true;
@@ -790,7 +792,7 @@ bool TetWildMesh::round(const Tuple& v)
     return true;
 }
 
-double TetWildMesh::get_quality(const Tuple& loc) const
+double ImageSimulationMesh::get_quality(const Tuple& loc) const
 {
     std::array<Vector3d, 4> ps;
     auto its = oriented_tet_vids(loc);
@@ -820,12 +822,12 @@ double TetWildMesh::get_quality(const Tuple& loc) const
 }
 
 
-bool TetWildMesh::invariants(const std::vector<Tuple>& tets)
+bool ImageSimulationMesh::invariants(const std::vector<Tuple>& tets)
 {
     return true;
 }
 
-std::vector<std::array<size_t, 3>> TetWildMesh::get_faces_by_condition(
+std::vector<std::array<size_t, 3>> ImageSimulationMesh::get_faces_by_condition(
     std::function<bool(const FaceAttributes&)> cond)
 {
     auto res = std::vector<std::array<size_t, 3>>();
@@ -842,7 +844,7 @@ std::vector<std::array<size_t, 3>> TetWildMesh::get_faces_by_condition(
     return res;
 }
 
-bool TetWildMesh::is_edge_on_surface(const Tuple& loc)
+bool ImageSimulationMesh::is_edge_on_surface(const Tuple& loc)
 {
     size_t v1_id = loc.vid(*this);
     auto loc1 = loc.switch_vertex(*this);
@@ -870,7 +872,7 @@ bool TetWildMesh::is_edge_on_surface(const Tuple& loc)
 }
 
 
-bool TetWildMesh::is_edge_on_bbox(const Tuple& loc)
+bool ImageSimulationMesh::is_edge_on_bbox(const Tuple& loc)
 {
     size_t v1_id = loc.vid(*this);
     auto loc1 = loc.switch_vertex(*this);
@@ -898,7 +900,7 @@ bool TetWildMesh::is_edge_on_bbox(const Tuple& loc)
     return false;
 }
 
-bool TetWildMesh::check_attributes()
+bool ImageSimulationMesh::check_attributes()
 {
     for (auto& f : get_faces()) {
         auto fid = f.fid(*this);
@@ -978,7 +980,7 @@ bool TetWildMesh::check_attributes()
     return true;
 }
 
-long long TetWildMesh::checksum_vidx()
+long long ImageSimulationMesh::checksum_vidx()
 {
     long long checksum = 0;
     auto vs = get_vertices();
@@ -988,7 +990,7 @@ long long TetWildMesh::checksum_vidx()
     return checksum;
 }
 
-long long TetWildMesh::checksum_tidx()
+long long ImageSimulationMesh::checksum_tidx()
 {
     long long checksum = 0;
     auto ts = get_tets();
@@ -1023,7 +1025,7 @@ void union_uf(int u, int v, std::vector<int>& parent)
     }
 }
 
-int TetWildMesh::count_vertex_links(const Tuple& v)
+int ImageSimulationMesh::count_vertex_links(const Tuple& v)
 {
     // get one ring faces on surface
     auto one_ring_tets = get_one_ring_tets_for_vertex(v);
@@ -1250,7 +1252,7 @@ int TetWildMesh::count_vertex_links(const Tuple& v)
 //     return 0;
 // }
 
-int TetWildMesh::count_edge_links(const Tuple& e)
+int ImageSimulationMesh::count_edge_links(const Tuple& e)
 {
     size_t vid1 = e.vid(*this);
     size_t vid2 = e.switch_vertex(*this).vid(*this);
@@ -1285,7 +1287,7 @@ int TetWildMesh::count_edge_links(const Tuple& e)
 }
 
 
-bool TetWildMesh::is_triangle_coplanar_collection(
+bool ImageSimulationMesh::is_triangle_coplanar_collection(
     const Vector3r& v1,
     const Vector3r& v2,
     const Vector3r& v3,
@@ -1307,7 +1309,7 @@ bool TetWildMesh::is_triangle_coplanar_collection(
     // return true;
 }
 
-bool TetWildMesh::is_triangle_nearly_coplanar_collection(
+bool ImageSimulationMesh::is_triangle_nearly_coplanar_collection(
     const Vector3r& v1,
     const Vector3r& v2,
     const Vector3r& v3,
@@ -1326,7 +1328,7 @@ bool TetWildMesh::is_triangle_nearly_coplanar_collection(
     return false;
 }
 
-std::vector<std::vector<size_t>> TetWildMesh::transfer_vf_to_face_face_connectivity(
+std::vector<std::vector<size_t>> ImageSimulationMesh::transfer_vf_to_face_face_connectivity(
     size_t num_v,
     std::vector<std::array<size_t, 3>> faces)
 {
@@ -1377,7 +1379,7 @@ std::vector<std::vector<size_t>> TetWildMesh::transfer_vf_to_face_face_connectiv
     return face_connectivity;
 }
 
-void TetWildMesh::detect_coplanar_triangle_collections(
+void ImageSimulationMesh::detect_coplanar_triangle_collections(
     const std::vector<Vector3d>& vertices,
     const std::vector<std::array<size_t, 3>>& faces)
 {
@@ -1401,7 +1403,7 @@ void TetWildMesh::detect_coplanar_triangle_collections(
     // }
 
     // bfs to get the collection
-    std::vector<TetWildMesh::coplanar_triangle_collection> collections;
+    std::vector<ImageSimulationMesh::coplanar_triangle_collection> collections;
     std::vector<bool> visited_face(faces.size(), false); // visited if is already in a collection
 
     for (size_t i = 0; i < faces.size(); i++) {
@@ -1452,7 +1454,7 @@ void TetWildMesh::detect_coplanar_triangle_collections(
         collections.push_back(collection);
     }
     // return collections;
-    // pass to tetwild;
+    // pass to image_simulation;
 
     // test code
     for (int i = 0; i < visited_face.size(); i++) {
@@ -1465,7 +1467,7 @@ void TetWildMesh::detect_coplanar_triangle_collections(
     triangle_collections_from_input_surface.collections = collections;
 
     // detect nearly coplanar collections
-    std::vector<TetWildMesh::coplanar_triangle_collection> collections_nearly;
+    std::vector<ImageSimulationMesh::coplanar_triangle_collection> collections_nearly;
     std::vector<bool> visited_face_nearly(
         faces.size(),
         false); // visited if is already in a collection
@@ -1527,7 +1529,7 @@ void TetWildMesh::detect_coplanar_triangle_collections(
         collections_nearly.push_back(collection);
     }
     // return collections;
-    // pass to tetwild;
+    // pass to image_simulation;
 
     // test code
     for (int i = 0; i < visited_face_nearly.size(); i++) {
@@ -1578,7 +1580,7 @@ void TetWildMesh::detect_coplanar_triangle_collections(
     // }
 }
 
-bool TetWildMesh::is_point_in_triangle(
+bool ImageSimulationMesh::is_point_in_triangle(
     const Vector3r& p,
     const Vector3r& a,
     const Vector3r& b,
@@ -1592,7 +1594,7 @@ bool TetWildMesh::is_point_in_triangle(
     return true;
 }
 
-bool TetWildMesh::is_point_in_collection(const Vector3r& p, size_t collection_id)
+bool ImageSimulationMesh::is_point_in_collection(const Vector3r& p, size_t collection_id)
 {
     for (int i = 0;
          i < triangle_collections_from_input_surface.collections[collection_id].face_ids.size();
@@ -1617,7 +1619,7 @@ bool TetWildMesh::is_point_in_collection(const Vector3r& p, size_t collection_id
     return false;
 }
 
-int TetWildMesh::find_collection_for_tracked_surface(const Tuple& t)
+int ImageSimulationMesh::find_collection_for_tracked_surface(const Tuple& t)
 {
     size_t fid = t.fid(*this);
     size_t vid1 = t.vid(*this);
@@ -1708,14 +1710,14 @@ int TetWildMesh::find_collection_for_tracked_surface(const Tuple& t)
     return in_collection;
 }
 
-bool TetWildMesh::check_vertex_param_type()
+bool ImageSimulationMesh::check_vertex_param_type()
 {
     // std::ofstream file("missing_param_v.obj");
     bool flag = true;
     return flag;
 }
 
-int TetWildMesh::flood_fill()
+int ImageSimulationMesh::flood_fill()
 {
     int current_id = 0;
     auto tets = get_tets();
@@ -1822,7 +1824,7 @@ int TetWildMesh::flood_fill()
     return current_id;
 }
 
-void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
+void ImageSimulationMesh::save_paraview(const std::string& path, const bool use_hdf5)
 {
     consolidate_mesh();
     // flood fill
@@ -1870,7 +1872,7 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
     writer->write_mesh(out_path, V, T);
 }
 
-void TetWildMesh::init_sizing_field()
+void ImageSimulationMesh::init_sizing_field()
 {
     const double min_refine_scalar = m_params.l_min / m_params.l;
 
@@ -1985,4 +1987,4 @@ void TetWildMesh::init_sizing_field()
     }
 }
 
-} // namespace wmtk::components::tetwild
+} // namespace wmtk::components::image_simulation
