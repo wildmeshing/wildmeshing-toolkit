@@ -1,5 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
-#include "sec/envelope/SampleEnvelope.hpp"
+#include <wmtk/envelope/Envelope.hpp>
 
 #include <wmtk/components/tetwild/TetWildMesh.h>
 

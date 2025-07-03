@@ -7,7 +7,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "sec/envelope/SampleEnvelope.hpp"
+#include <wmtk/envelope/Envelope.hpp>
 #include "spdlog/common.h"
 #include "wmtk/utils/InsertTriangleUtils.hpp"
 

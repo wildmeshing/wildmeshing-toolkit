@@ -5,7 +5,7 @@
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include "fastenvelope/FastEnvelope.h"
+#include <fastenvelope/FastEnvelope.h>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
@@ -49,8 +49,8 @@ public:
         return fastEnvelope::FastEnvelope::is_outside(pts);
     }
 };
-} // namespace wmtk
-namespace sample_envelope {
+
+
 class SampleEnvelope : public wmtk::Envelope
 {
 public:
@@ -66,7 +66,7 @@ public:
     bool is_outside(const std::array<Eigen::Vector3d, 3>& tris) const;
     bool is_outside(const Eigen::Vector3d& pts) const;
     double nearest_point(const Eigen::Vector3d& pts, Eigen::Vector3d& result) const;
-    bool initialized() {return geo_tree_ptr_ != nullptr;};
+    bool initialized() { return geo_tree_ptr_ != nullptr; };
 
 private:
     std::shared_ptr<GEO::MeshFacetsAABBWithEps> geo_tree_ptr_ = nullptr;
@@ -77,4 +77,4 @@ private:
 private:
     fastEnvelope::FastEnvelope exact_envelope;
 };
-} // namespace sample_envelope
+} // namespace wmtk

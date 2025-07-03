@@ -4,8 +4,8 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Morton.h>
 #include <wmtk/utils/PartitionMesh.h>
+#include <wmtk/envelope/Envelope.hpp>
 #include "Parameters.h"
-#include "sec/envelope/SampleEnvelope.hpp"
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -98,16 +98,16 @@ public:
     Parameters& m_params;
     wmtk::Envelope& m_envelope;
     // for surface projection
-    sample_envelope::SampleEnvelope& triangles_tree;
+    SampleEnvelope& triangles_tree;
 
     // for open boundary
     wmtk::ExactEnvelope m_open_boundary_envelope; // todo: add sample envelope option
-    sample_envelope::SampleEnvelope boundaries_tree;
+    SampleEnvelope boundaries_tree;
 
     ImageSimulationMesh(
         Parameters& _m_params,
         wmtk::Envelope& _m_envelope,
-        sample_envelope::SampleEnvelope& _triangles_tree,
+        SampleEnvelope& _triangles_tree,
         int _num_threads = 1)
         : m_params(_m_params)
         , m_envelope(_m_envelope)

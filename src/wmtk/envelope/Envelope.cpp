@@ -1,4 +1,4 @@
-#include "SampleEnvelope.hpp"
+#include "Envelope.hpp"
 #include "mesh_AABB.h"
 
 #include <geogram/basic/attributes.h>
@@ -7,6 +7,8 @@
 #include <geogram/mesh/mesh_geometry.h>
 #include <wmtk/utils/Logger.hpp>
 
+namespace {
+
 void to_geogram_mesh(
     const std::vector<Eigen::Vector3d>& V,
     const std::vector<Eigen::Vector3i>& F,
@@ -14,7 +16,7 @@ void to_geogram_mesh(
 {
     static std::once_flag once_flag;
     std::call_once(once_flag, []() { GEO::initialize(); });
-    
+
     M.clear();
     // Setup vertices
     M.vertices.create_vertices((int)V.size());
@@ -38,7 +40,9 @@ void to_geogram_mesh(
     for (int i = 0; i < F.size(); i++) indices[i] = i;
 }
 
-namespace sample_envelope {
+} // namespace
+
+namespace wmtk {
 
 // From TetWild
 void sampleTriangle(
@@ -243,4 +247,4 @@ double SampleEnvelope::nearest_point(const Eigen::Vector3d& pts, Eigen::Vector3d
 }
 
 
-} // namespace sample_envelope
+} // namespace wmtk

@@ -20,7 +20,8 @@
 #include <atomic>
 #include <memory>
 #include <queue>
-#include "envelope/SampleEnvelope.hpp"
+
+#include <wmtk/envelope/Envelope.hpp>
 
 namespace app::sec {
 
@@ -34,7 +35,7 @@ struct VertexAttributes
 class ShortestEdgeCollapse : public wmtk::TriMesh
 {
 public:
-    sample_envelope::SampleEnvelope m_envelope;
+    wmtk::SampleEnvelope m_envelope;
     bool m_has_envelope = false;
     wmtk::AttributeCollection<VertexAttributes> vertex_attrs;
 

@@ -4,7 +4,6 @@
 #include <sec/ShortestEdgeCollapse.h>
 #include "Parameters.h"
 #include "TetWildMesh.h"
-#include "sec/envelope/SampleEnvelope.hpp"
 
 #include <jse/jse.h>
 #include <wmtk/TetMesh.h>
@@ -13,6 +12,7 @@
 
 #include <memory>
 #include <vector>
+#include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/utils/ManifoldUtils.hpp>
 #include <wmtk/utils/partition_utils.hpp>
 #include "wmtk/utils/InsertTriangleUtils.hpp"

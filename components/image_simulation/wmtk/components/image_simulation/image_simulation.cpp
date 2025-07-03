@@ -8,6 +8,7 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
 #include <wmtk/Types.hpp>
+#include <wmtk/envelope/SampleEnvelope.hpp>
 #include <wmtk/utils/InsertTriangleUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/ManifoldUtils.hpp>
@@ -15,7 +16,6 @@
 #include <wmtk/utils/partition_utils.hpp>
 
 #include <sec/ShortestEdgeCollapse.h>
-#include <sec/envelope/SampleEnvelope.hpp>
 
 #include "ImageSimulationMesh.h"
 #include "Parameters.h"
@@ -115,7 +115,7 @@ void image_simulation(nlohmann::json json_params)
         exact_envelope.init(vsimp, tempF, envelope_size / 2);
     }
 
-    // initiate the image_simulation mesh using the original envelop
+    // initiate the image_simulation mesh using the original envelope
     wmtk::Envelope* ptr_env;
     if (use_sample_envelope) {
         ptr_env = &(surf_mesh.m_envelope);

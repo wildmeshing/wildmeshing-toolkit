@@ -1,7 +1,7 @@
 #pragma once
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/utils/VectorUtils.h>
-#include <sec/envelope/SampleEnvelope.hpp>
+#include <wmtk/envelope/Envelope.hpp>
 #include "wmtk/AttributeCollection.hpp"
 
 // clang-format off
@@ -34,7 +34,7 @@ struct VertexAttributes
 class UniformRemeshing : public wmtk::TriMesh
 {
 public:
-    sample_envelope::SampleEnvelope m_envelope;
+    wmtk::SampleEnvelope m_envelope;
     bool m_has_envelope = false;
 
     using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;

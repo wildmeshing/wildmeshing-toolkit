@@ -5,7 +5,6 @@ file(GLOB_RECURSE LIB_SOURCES CONFIGURE_DEPENDS
     "src/*.hpp"
 )
 
-include(fenvelope)
 add_library(wmtk_sec_lib "${LIB_SOURCES}")
 add_library(wmtk::sec_lib ALIAS wmtk_sec_lib)
 
@@ -18,8 +17,6 @@ target_link_libraries(wmtk_sec_lib PUBLIC
 	wmtk::toolkit
 	wmtk::data
 	igl::predicates
-	FastEnvelope
-	geogram
 )
 
 add_subdirectory(app)

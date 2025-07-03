@@ -2,12 +2,12 @@
 
 #include <igl/write_triangle_mesh.h>
 #include <wmtk/TetMesh.h>
-#include <wmtk/components/tetwild/Parameters.h>
-#include <wmtk/components/tetwild/TetWildMesh.h>
+#include <wmtk/components/image_simulation/ImageSimulationMesh.h>
+#include <wmtk/components/image_simulation/Parameters.h>
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "sec/envelope/SampleEnvelope.hpp"
+#include <wmtk/envelope/Envelope.hpp>
 #include "spdlog/common.h"
 #include "wmtk/utils/InsertTriangleUtils.hpp"
 
@@ -15,7 +15,7 @@
 #include <wmtk/utils/Partitioning.h>
 
 using namespace wmtk;
-using namespace components::tetwild;
+using namespace components::image_simulation;
 
 TEST_CASE("triangle-insertion", "[tetwild_operation][.]")
 {

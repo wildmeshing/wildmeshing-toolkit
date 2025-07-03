@@ -11,7 +11,6 @@
 #include "wmtk/utils/InsertTriangleUtils.hpp"
 
 using namespace wmtk;
-using namespace components::tetwild;
 
 TEST_CASE("mesh_improvement", "[tetwild_operation][.slow][.]")
 {
