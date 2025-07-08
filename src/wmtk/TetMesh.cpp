@@ -492,6 +492,13 @@ TetMesh::Tuple TetMesh::tuple_from_vids(size_t vid0, size_t vid1, size_t vid2, s
     return Tuple(*this, vid0, eid, fid, tid);
 }
 
+simplex::Tet TetMesh::simplex_from_tet(const Tuple& t) const
+{
+    const auto v = oriented_tet_vids(t.tid(*this));
+    const simplex::Tet tet(v[0], v[1], v[2], v[3]);
+    return tet;
+}
+
 
 std::array<TetMesh::Tuple, 4> TetMesh::oriented_tet_vertices(const Tuple& t) const
 {
@@ -635,10 +642,16 @@ std::vector<TetMesh::Tuple> TetMesh::get_incident_tets_for_edge(const Tuple& t) 
 {
     int v1_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][0]];
     int v2_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][1]];
+    return get_incident_tets_for_edge(v1_id, v2_id);
+}
 
+std::vector<TetMesh::Tuple> TetMesh::get_incident_tets_for_edge(
+    const size_t vid0,
+    const size_t vid1) const
+{
     auto tids = set_intersection(
-        m_vertex_connectivity[v1_id].m_conn_tets,
-        m_vertex_connectivity[v2_id].m_conn_tets);
+        m_vertex_connectivity[vid0].m_conn_tets,
+        m_vertex_connectivity[vid1].m_conn_tets);
     std::vector<Tuple> tets;
     for (int t_id : tids) {
         tets.push_back(tuple_from_tet(t_id));

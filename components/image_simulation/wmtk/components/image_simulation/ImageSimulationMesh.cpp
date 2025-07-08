@@ -45,21 +45,9 @@ void ImageSimulationMesh::mesh_improvement(int max_its)
     //
     ZoneScopedN("meshimprovementmain");
 
-    // rounding
-    // std::atomic_int cnt_round(0);
-    // std::atomic_int cnt_valid(0);
-
-    // auto vertices = get_vertices();
-    // for (auto v : vertices) {
-    //     // debug code
-    //     if (v.is_valid(*this)) cnt_valid++;
-
-    //     if (round(v)) cnt_round++;
-    // }
-
-    // wmtk::logger().info("cnt_round {}/{}", cnt_round, cnt_valid);
-
     compute_vertex_partition_morton();
+
+    write_vtu(fmt::format("debug_{}.vtu", m_debug_print_counter++));
 
     wmtk::logger().info("========it pre========");
     local_operations({{0, 1, 0, 0}}, false);
@@ -130,67 +118,36 @@ std::tuple<double, double> ImageSimulationMesh::local_operations(
 
     std::tuple<double, double> energy;
 
-    for (int i = 0; i < ops.size(); i++) {
-        timer.start();
-        if (i == 0) {
-            for (int n = 0; n < ops[i]; n++) {
-                wmtk::logger().info("==splitting {}==", n);
-                split_all_edges();
-                wmtk::logger().info(
-                    "#vertices {}, #tets {} after split",
-                    vert_capacity(),
-                    tet_capacity());
-                // auto faces = get_faces();
-                // for (auto f : faces) {
-                //     auto x = f.fid(*this);
-                // }
-                // if (!check_vertex_param_type()) {
-                //     std::cout << "missing param!!!!!!!!" << std::endl;
-                //     output_faces("bug_surface_miss_param_after_split.obj", [](auto& f) {
-                //         return f.m_is_surface_fs;
-                //     });
-                //     // exit(0);
-                // }
-            }
-        } else if (i == 1) {
-            for (int n = 0; n < ops[i]; n++) {
-                wmtk::logger().info("==collapsing {}==", n);
-                collapse_all_edges();
-                wmtk::logger().info(
-                    "#vertices {}, #tets {} after collapse",
-                    vert_capacity(),
-                    tet_capacity());
-                // auto faces = get_faces();
-                // for (auto f : faces) {
-                //     auto x = f.fid(*this);
-                // }
-                // if (!check_vertex_param_type()) {
-                //     std::cout << "missing param!!!!!!!!" << std::endl;
-                //     output_faces("buf_surface_miss_param_after_collpase.obj", [](auto& f) {
-                //         return f.m_is_surface_fs;
-                //     });
-                //     // exit(0);
-                // }
-            }
-        } else if (i == 2) {
-            for (int n = 0; n < ops[i]; n++) {
-                wmtk::logger().info("==swapping {}==", n);
-                swap_all_edges_44();
-                swap_all_edges();
-                swap_all_faces();
-            }
-        } else if (i == 3) {
-            for (int n = 0; n < ops[i]; n++) {
-                wmtk::logger().info("==smoothing {}==", n);
-                smooth_all_vertices();
-            }
-        }
-        // output_faces(fmt::format("out-op{}.obj", i), [](auto& f) { return f.m_is_surface_fs; });
+    timer.start();
+    for (int n = 0; n < ops[0]; n++) {
+        logger().info("==splitting {}==", n);
+        split_all_edges();
+        logger().info("#vertices {}, #tets {} after split", vert_capacity(), tet_capacity());
+        write_vtu(fmt::format("debug_{}.vtu", m_debug_print_counter++));
     }
+    for (int n = 0; n < ops[1]; n++) {
+        logger().info("==collapsing {}==", n);
+        collapse_all_edges();
+        logger().info("#vertices {}, #tets {} after collapse", vert_capacity(), tet_capacity());
+        write_vtu(fmt::format("debug_{}.vtu", m_debug_print_counter++));
+    }
+    for (int n = 0; n < ops[2]; n++) {
+        logger().info("==swapping {}==", n);
+        swap_all_edges_44();
+        swap_all_edges();
+        swap_all_faces();
+        write_vtu(fmt::format("debug_{}.vtu", m_debug_print_counter++));
+    }
+    for (int n = 0; n < ops[3]; n++) {
+        logger().info("==smoothing {}==", n);
+        smooth_all_vertices();
+        write_vtu(fmt::format("debug_{}.vtu", m_debug_print_counter++));
+    }
+
     energy = get_max_avg_energy();
-    wmtk::logger().info("max energy = {}", std::get<0>(energy));
-    wmtk::logger().info("avg energy = {}", std::get<1>(energy));
-    wmtk::logger().info("time = {}", timer.getElapsedTime());
+    logger().info("max energy = {}", std::get<0>(energy));
+    logger().info("avg energy = {}", std::get<1>(energy));
+    logger().info("time = {}", timer.getElapsedTime());
 
 
     return energy;
@@ -1075,8 +1032,6 @@ int ImageSimulationMesh::flood_fill()
         size_t tid = t.tid(*this);
         if (visited.find(tid) != visited.end()) continue;
 
-        // std::cout << "for loop current id: " << current_id << std::endl;
-
         visited[tid] = true;
 
         m_tet_attribute[tid].part_id = current_id;
@@ -1089,35 +1044,29 @@ int ImageSimulationMesh::flood_fill()
         std::queue<Tuple> bfs_queue;
 
         if (!m_face_attribute[f1.fid(*this)].m_is_surface_fs) {
-            // std::cout << "in 1" << std::endl;
             auto oppo_t = f1.switch_tetrahedron(*this);
             if (oppo_t.has_value()) {
                 if (visited.find((*oppo_t).tid(*this)) == visited.end()) bfs_queue.push(*oppo_t);
             }
         }
         if (!m_face_attribute[f2.fid(*this)].m_is_surface_fs) {
-            // std::cout << "in 2" << std::endl;
             auto oppo_t = f2.switch_tetrahedron(*this);
             if (oppo_t.has_value()) {
                 if (visited.find((*oppo_t).tid(*this)) == visited.end()) bfs_queue.push(*oppo_t);
             }
         }
         if (!m_face_attribute[f3.fid(*this)].m_is_surface_fs) {
-            // std::cout << "in 3" << std::endl;
             auto oppo_t = f3.switch_tetrahedron(*this);
             if (oppo_t.has_value()) {
                 if (visited.find((*oppo_t).tid(*this)) == visited.end()) bfs_queue.push(*oppo_t);
             }
         }
         if (!m_face_attribute[f4.fid(*this)].m_is_surface_fs) {
-            // std::cout << "in 4" << std::endl;
             auto oppo_t = f4.switch_tetrahedron(*this);
             if (oppo_t.has_value()) {
                 if (visited.find((*oppo_t).tid(*this)) == visited.end()) bfs_queue.push(*oppo_t);
             }
         }
-
-        // std::cout << "while loop current id: ";
 
         while (!bfs_queue.empty()) {
             auto tmp = bfs_queue.front();
@@ -1126,7 +1075,6 @@ int ImageSimulationMesh::flood_fill()
             if (visited.find(tmp_id) != visited.end()) continue;
 
             visited[tmp_id] = true;
-            // std::cout << tmp_id << " ";
 
             m_tet_attribute[tmp_id].part_id = current_id;
 
@@ -1165,8 +1113,6 @@ int ImageSimulationMesh::flood_fill()
             }
         }
 
-        std::cout << std::endl;
-
         current_id++;
     }
     return current_id;
@@ -1174,6 +1120,8 @@ int ImageSimulationMesh::flood_fill()
 
 void ImageSimulationMesh::write_vtu(const std::string& path)
 {
+    consolidate_mesh();
+    logger().info("Write {}", path);
     const auto& vs = get_vertices();
     const auto& tets = get_tets();
 
@@ -1181,12 +1129,14 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
     Eigen::MatrixXi T(tets.size(), 4);
 
     Eigen::MatrixXd parts(tets.size(), 1);
+    Eigen::MatrixXd tags(tets.size(), 1);
     Eigen::MatrixXd amips(tets.size(), 1);
 
     int index = 0;
     for (const Tuple& t : tets) {
         size_t tid = t.tid(*this);
         parts(index, 0) = m_tet_attribute[tid].part_id;
+        tags(index, 0) = m_tet_attribute[tid].tag;
         amips(index, 0) = std::cbrt(m_tet_attribute[tid].m_quality);
 
         const auto& vs = oriented_tet_vertices(t);
@@ -1205,6 +1155,7 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
     writer = std::make_shared<paraviewo::VTUWriter>();
 
     writer->add_cell_field("part", parts);
+    writer->add_cell_field("tag", tags);
     writer->add_cell_field("quality", amips);
     writer->write_mesh(path, V, T);
 }

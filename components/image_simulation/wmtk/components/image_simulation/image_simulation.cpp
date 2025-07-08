@@ -182,13 +182,15 @@ void image_simulation(nlohmann::json json_params)
     wmtk::logger().info("volume remesher insertion time: {}s", insertion_time);
 
     mesh.consolidate_mesh();
+    {
+        int num_parts = mesh.flood_fill();
+        logger().info("flood fill parts {}", num_parts);
+    }
 
     // add tags
-    {
-        /*
-         * TODO: Add tags to tets by looking them up on the image
-         */
-    }
+    tag_tets_from_image(input_paths[0], mesh);
+
+    mesh.write_vtu(params.output_path + "_0.vtu");
 
     // smooth
     {
@@ -215,7 +217,7 @@ void image_simulation(nlohmann::json json_params)
     }
 
     // /////////mesh improvement
-    mesh.mesh_improvement(max_its);
+    mesh.mesh_improvement(max_its); // <-- tetwild
 
     mesh.consolidate_mesh();
     double time = timer.getElapsedTime();
@@ -223,7 +225,7 @@ void image_simulation(nlohmann::json json_params)
 
     {
         int num_parts = mesh.flood_fill();
-        std::cout << "flood fill parts: " << num_parts << std::endl;
+        logger().info("flood fill parts {}", num_parts);
     }
 
     /////////output
@@ -241,7 +243,7 @@ void image_simulation(nlohmann::json json_params)
 
     wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
     mesh.write_msh(params.output_path + "_final.msh");
-    mesh.write_vtu(params.output_path + "_final.vtu");
+    mesh.write_vtu(params.output_path + "_1.vtu");
     mesh.write_surface(params.output_path + "_surface.obj");
 
     wmtk::logger().info("======= finish =========");

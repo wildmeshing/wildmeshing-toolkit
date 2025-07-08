@@ -144,30 +144,42 @@ void ImageSimulationMesh::swap_all_faces()
 
 bool ImageSimulationMesh::swap_edge_before(const Tuple& t)
 {
-    if (!TetMesh::swap_edge_before(t)) return false;
+    if (!TetMesh::swap_edge_before(t)) {
+        return false;
+    }
     // if (m_params.preserve_global_topology) return false;
 
-    if (is_edge_on_surface(t) || is_edge_on_bbox(t)) return false;
+    if (is_edge_on_surface(t) || is_edge_on_bbox(t)) {
+        return false;
+    }
+
+    auto& cache = swap_cache.local();
+
     auto incident_tets = get_incident_tets_for_edge(t);
+    cache.tet_tag = m_tet_attribute[incident_tets[0].tid(*this)].tag;
     auto max_energy = -1.0;
     for (auto& l : incident_tets) {
         max_energy = std::max(m_tet_attribute[l.tid(*this)].m_quality, max_energy);
+        if (m_tet_attribute[l.tid(*this)].tag != cache.tet_tag) {
+            log_and_throw_error("not all tets have the same tag"); // for debugging
+        }
     }
-    swap_cache.local().max_energy = max_energy;
+    cache.max_energy = max_energy;
 
-    if (!face_attribute_tracker(
-            *this,
-            incident_tets,
-            m_face_attribute,
-            swap_cache.local().changed_faces))
+    if (!face_attribute_tracker(*this, incident_tets, m_face_attribute, cache.changed_faces)) {
         return false;
+    }
 
     return true;
 }
 
 bool ImageSimulationMesh::swap_edge_after(const Tuple& t)
 {
-    if (!TetMesh::swap_edge_after(t)) return false;
+    if (!TetMesh::swap_edge_after(t)) {
+        return false;
+    }
+
+    auto& cache = swap_cache.local();
 
     // after swap, t points to a face with 2 neighboring tets.
     auto oppo_tet = t.switch_tetrahedron(*this);
@@ -176,16 +188,20 @@ bool ImageSimulationMesh::swap_edge_after(const Tuple& t)
     auto twotets = std::vector<Tuple>{{t, *oppo_tet}};
     auto max_energy = -1.0;
     for (auto& l : twotets) {
-        if (is_inverted(l)) return false;
+        if (is_inverted(l)) {
+            return false;
+        }
         auto q = get_quality(l);
         m_tet_attribute[l.tid(*this)].m_quality = q;
         max_energy = std::max(q, max_energy);
+
+        m_tet_attribute[l.tid(*this)].tag = cache.tet_tag;
     }
-    if (max_energy >= swap_cache.local().max_energy) {
+    if (max_energy >= cache.max_energy) {
         return false;
     }
 
-    tracker_assign_after(*this, twotets, swap_cache.local().changed_faces, m_face_attribute);
+    tracker_assign_after(*this, twotets, cache.changed_faces, m_face_attribute);
     cnt_swap++;
 
     return true;
@@ -193,8 +209,12 @@ bool ImageSimulationMesh::swap_edge_after(const Tuple& t)
 
 bool ImageSimulationMesh::swap_face_before(const Tuple& t)
 {
-    if (!TetMesh::swap_face_before(t)) return false;
+    if (!TetMesh::swap_face_before(t)) {
+        return false;
+    }
     // if (m_params.preserve_global_topology) return false;
+
+    auto& cache = swap_cache.local();
 
     auto fid = t.fid(*this);
     if (m_face_attribute[fid].m_is_surface_fs || m_face_attribute[fid].m_is_bbox_fs >= 0) {
@@ -202,22 +222,31 @@ bool ImageSimulationMesh::swap_face_before(const Tuple& t)
     }
     auto oppo_tet = t.switch_tetrahedron(*this);
     assert(oppo_tet.has_value() && "Should not swap boundary.");
-    swap_cache.local().max_energy = std::max(
+    cache.max_energy = std::max(
         m_tet_attribute[t.tid(*this)].m_quality,
         m_tet_attribute[oppo_tet->tid(*this)].m_quality);
 
+    cache.tet_tag = m_tet_attribute[t.tid(*this)].tag;
+    if (m_tet_attribute[oppo_tet.value().tid(*this)].tag != cache.tet_tag) {
+        log_and_throw_error("not all tets have the same tag"); // for debugging
+    }
+
     auto twotets = std::vector<Tuple>{{t, *oppo_tet}};
 
-    if (!face_attribute_tracker(*this, twotets, m_face_attribute, swap_cache.local().changed_faces))
+    if (!face_attribute_tracker(*this, twotets, m_face_attribute, cache.changed_faces))
         return false;
     return true;
 }
 
 bool ImageSimulationMesh::swap_face_after(const Tuple& t)
 {
-    if (!TetMesh::swap_face_after(t)) return false;
+    if (!TetMesh::swap_face_after(t)) {
+        return false;
+    }
 
     auto incident_tets = get_incident_tets_for_edge(t);
+
+    auto& cache = swap_cache.local();
 
     auto max_energy = -1.0;
     for (auto& l : incident_tets) {
@@ -225,6 +254,7 @@ bool ImageSimulationMesh::swap_face_after(const Tuple& t)
         auto q = get_quality(l);
         m_tet_attribute[l.tid(*this)].m_quality = q;
         max_energy = std::max(q, max_energy);
+        m_tet_attribute[l.tid(*this)].tag = cache.tet_tag;
     }
     wmtk::logger().trace("quality {} from {}", max_energy, swap_cache.local().max_energy);
 
@@ -274,22 +304,29 @@ void ImageSimulationMesh::swap_all_edges_44()
 
 bool ImageSimulationMesh::swap_edge_44_before(const Tuple& t)
 {
-    if (!TetMesh::swap_edge_44_before(t)) return false;
+    if (!TetMesh::swap_edge_44_before(t)) {
+        return false;
+    }
     // if (m_params.preserve_global_topology) return false;
 
-    if (is_edge_on_surface(t) || is_edge_on_bbox(t)) return false;
+    if (is_edge_on_surface(t) || is_edge_on_bbox(t)) {
+        return false;
+    }
+
+    auto& cache = swap_cache.local();
+
     auto incident_tets = get_incident_tets_for_edge(t);
+    cache.tet_tag = m_tet_attribute[incident_tets[0].tid(*this)].tag;
     auto max_energy = -1.0;
     for (auto& l : incident_tets) {
         max_energy = std::max(m_tet_attribute[l.tid(*this)].m_quality, max_energy);
+        if (m_tet_attribute[l.tid(*this)].tag != cache.tet_tag) {
+            log_and_throw_error("not all tets have the same tag"); // for debugging
+        }
     }
-    swap_cache.local().max_energy = max_energy;
+    cache.max_energy = max_energy;
 
-    if (!face_attribute_tracker(
-            *this,
-            incident_tets,
-            m_face_attribute,
-            swap_cache.local().changed_faces))
+    if (!face_attribute_tracker(*this, incident_tets, m_face_attribute, cache.changed_faces))
         return false;
 
     return true;
@@ -301,12 +338,16 @@ bool ImageSimulationMesh::swap_edge_44_after(const Tuple& t)
 
     auto incident_tets = get_incident_tets_for_edge(t);
 
+    auto& cache = swap_cache.local();
+
     auto max_energy = -1.0;
     for (auto& l : incident_tets) {
         if (is_inverted(l)) return false;
         auto q = get_quality(l);
         m_tet_attribute[l.tid(*this)].m_quality = q;
         max_energy = std::max(q, max_energy);
+
+        m_tet_attribute[l.tid(*this)].tag = cache.tet_tag;
     }
 
     if (max_energy >= swap_cache.local().max_energy) {

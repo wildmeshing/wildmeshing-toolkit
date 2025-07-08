@@ -5,6 +5,7 @@
 #include <wmtk/utils/Morton.h>
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/envelope/Envelope.hpp>
+#include <wmtk/simplex/RawSimplex.hpp>
 #include "Parameters.h"
 
 // clang-format off
@@ -94,12 +95,15 @@ class TetAttributes
 public:
     double m_quality;
     double m_winding_number = 0;
+    int64_t tag = 0;
     int part_id = -1;
 };
 
 class ImageSimulationMesh : public wmtk::TetMesh
 {
 public:
+    int m_debug_print_counter = 0;
+
     double time_env = 0.0;
     igl::Timer isout_timer;
     const double MAX_ENERGY = std::numeric_limits<double>::max();
@@ -376,6 +380,12 @@ private:
         std::vector<size_t> v2_param_type;
 
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
+
+        /**
+         * All tets incident to the splitted edge, identified by the link edge (the edge opposite to
+         * the splitted one).
+         */
+        std::map<simplex::Edge, TetAttributes> tets;
     };
     tbb::enumerable_thread_specific<SplitInfoCache> split_cache;
 
@@ -412,6 +422,7 @@ private:
     {
         double max_energy;
         std::map<std::array<size_t, 3>, FaceAttributes> changed_faces;
+        int64_t tet_tag;
     };
     tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
 

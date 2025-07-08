@@ -30,7 +30,7 @@ bool ImageSimulationMesh::smooth_after(const Tuple& t)
 {
     // Newton iterations are encapsulated here.
     wmtk::logger().trace("Newton iteration for vertex smoothing.");
-    auto vid = t.vid(*this);
+    const size_t vid = t.vid(*this);
 
     auto locs = get_one_ring_tets_for_vertex(t);
     auto max_quality = 0.;
@@ -193,19 +193,25 @@ bool ImageSimulationMesh::smooth_after(const Tuple& t)
                 for (auto kk = 0; kk < 3; kk++) tris[k][kk] = n[k * 3 + kk];
             }
             bool is_out = m_envelope.is_outside(tris);
-            if (is_out) return false;
+            if (is_out) {
+                return false;
+            }
         }
     }
 
     // quality
     auto max_after_quality = 0.;
     for (auto& loc : locs) {
-        if (is_inverted(loc)) return false;
+        if (is_inverted(loc)) {
+            return false;
+        }
         auto t_id = loc.tid(*this);
         m_tet_attribute[t_id].m_quality = get_quality(loc);
         max_after_quality = std::max(max_after_quality, m_tet_attribute[t_id].m_quality);
     }
-    if (max_after_quality > max_quality) return false;
+    if (max_after_quality > max_quality) {
+        return false;
+    }
 
 
     m_vertex_attribute[vid].m_pos = to_rational(m_vertex_attribute[vid].m_posf);

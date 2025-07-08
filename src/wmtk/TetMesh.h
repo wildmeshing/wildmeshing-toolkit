@@ -4,6 +4,7 @@
 #include <type_traits>
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/Types.hpp>
+#include <wmtk/simplex/RawSimplex.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <tbb/concurrent_vector.h>
@@ -199,7 +200,7 @@ public:
      */
     class SmartTuple
     {
-        const Tuple m_tuple;
+        Tuple m_tuple;
         const TetMesh& m_mesh;
 
     public:
@@ -210,6 +211,12 @@ public:
 
         const Tuple& tuple() { return m_tuple; }
         const TetMesh& mesh() { return m_mesh; }
+
+        SmartTuple& operator=(const SmartTuple& t)
+        {
+            m_tuple = t.m_tuple;
+            return *this;
+        }
 
         bool is_valid() const { return m_tuple.is_valid(m_mesh); }
         bool is_boundary_edge() const { return m_tuple.is_boundary_edge(m_mesh); }
@@ -788,6 +795,7 @@ public:
      */
     Tuple tuple_from_vids(size_t vid0, size_t vid1, size_t vid2, size_t vid3) const;
 
+    simplex::Tet simplex_from_tet(const Tuple& t) const;
 
     /**
      * @brief wrapper function from Tuple::switch_vertex
@@ -882,6 +890,7 @@ public:
      * @return incident tets
      */
     std::vector<Tuple> get_incident_tets_for_edge(const Tuple& t) const;
+    std::vector<Tuple> get_incident_tets_for_edge(const size_t vid0, const size_t vid1) const;
 
     /**
      * @brief Get the one ring tets for edge

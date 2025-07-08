@@ -56,20 +56,18 @@ void ImageSimulationMesh::split_all_edges()
 
 bool ImageSimulationMesh::split_edge_before(const Tuple& loc0)
 {
-    split_cache.local().changed_faces.clear();
+    auto& cache = split_cache.local();
 
-    split_cache.local().v1_id = loc0.vid(*this);
+    cache.changed_faces.clear();
+
+    cache.v1_id = loc0.vid(*this);
     auto loc1 = loc0.switch_vertex(*this);
-    split_cache.local().v2_id = loc1.vid(*this);
-    //
-    size_t v1_id = split_cache.local().v1_id;
-    size_t v2_id = split_cache.local().v2_id;
+    cache.v2_id = loc1.vid(*this);
 
-    split_cache.local().is_edge_on_surface = is_edge_on_surface(loc0);
+    cache.is_edge_on_surface = is_edge_on_surface(loc0);
 
     // todo: can be optimized
-    split_cache.local().is_edge_open_boundary =
-        split_cache.local().is_edge_on_surface && is_open_boundary_edge(loc0);
+    cache.is_edge_open_boundary = cache.is_edge_on_surface && is_open_boundary_edge(loc0);
 
     /// save face track info
     auto comp = [](const std::pair<FaceAttributes, std::array<size_t, 3>>& v1,
@@ -92,11 +90,18 @@ bool ImageSimulationMesh::split_edge_before(const Tuple& loc0)
             }}; // todo: speedup
             std::sort(f_vids.begin(), f_vids.end());
             auto [_, global_fid] = tuple_from_face(f_vids);
-            split_cache.local().changed_faces.push_back(
-                std::make_pair(m_face_attribute[global_fid], f_vids));
+            cache.changed_faces.push_back(std::make_pair(m_face_attribute[global_fid], f_vids));
         }
     }
-    wmtk::vector_unique(split_cache.local().changed_faces, comp, is_equal);
+    wmtk::vector_unique(cache.changed_faces, comp, is_equal);
+
+    // store tet attributes
+    const simplex::Edge edge(cache.v1_id, cache.v2_id);
+    for (const Tuple& t : tets) {
+        const simplex::Tet tet = simplex_from_tet(t);
+        const simplex::Edge opp = tet.opposite_edge(edge);
+        cache.tets[opp] = m_tet_attribute[t.tid(*this)];
+    }
 
     return true;
 }
@@ -107,11 +112,13 @@ bool ImageSimulationMesh::split_edge_after(const Tuple& loc)
             loc)) // note: call from super class, cannot be done with pure virtual classes
         return false;
 
-    std::vector<Tuple> locs = get_one_ring_tets_for_vertex(loc);
-    size_t v_id = loc.vid(*this);
+    const std::vector<Tuple> locs = get_one_ring_tets_for_vertex(loc);
+    const size_t v_id = loc.vid(*this);
 
-    size_t v1_id = split_cache.local().v1_id;
-    size_t v2_id = split_cache.local().v2_id;
+    auto& cache = split_cache.local();
+
+    const size_t v1_id = cache.v1_id;
+    const size_t v2_id = cache.v2_id;
 
     /// check inversion & rounding
     m_vertex_attribute[v_id].m_posf =
@@ -128,11 +135,33 @@ bool ImageSimulationMesh::split_edge_after(const Tuple& loc)
         m_vertex_attribute[v_id].m_pos =
             (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
         m_vertex_attribute[v_id].m_posf = to_double(m_vertex_attribute[v_id].m_pos);
-    } else
+    } else {
         m_vertex_attribute[v_id].m_pos = to_rational(m_vertex_attribute[v_id].m_posf);
+    }
+
+    // update tet attributes
+    {
+        // v1 - v_new
+        const auto tets1 = get_incident_tets_for_edge(v1_id, v_id);
+        const simplex::Edge edge1(v1_id, v_id);
+        for (const Tuple& t : tets1) {
+            const simplex::Tet tet = simplex_from_tet(t);
+            const simplex::Edge opp = tet.opposite_edge(edge1);
+            m_tet_attribute[t.tid(*this)] = cache.tets[opp];
+        }
+        // v2 - v_new
+        const auto tets2 = get_incident_tets_for_edge(v2_id, v_id);
+        const simplex::Edge edge2(v2_id, v_id);
+        for (const Tuple& t : tets2) {
+            const simplex::Tet tet = simplex_from_tet(t);
+            const simplex::Edge opp = tet.opposite_edge(edge2);
+            m_tet_attribute[t.tid(*this)] = cache.tets[opp];
+        }
+        assert(tets1.size() + tets2.size() == locs.size());
+    }
 
     /// update quality
-    for (auto& loc : locs) {
+    for (const Tuple& loc : locs) {
         m_tet_attribute[loc.tid(*this)].m_quality = get_quality(loc);
     }
 
@@ -142,14 +171,14 @@ bool ImageSimulationMesh::split_edge_after(const Tuple& loc)
         m_vertex_attribute[v1_id].on_bbox_faces,
         m_vertex_attribute[v2_id].on_bbox_faces);
     // surface
-    m_vertex_attribute[v_id].m_is_on_surface = split_cache.local().is_edge_on_surface;
+    m_vertex_attribute[v_id].m_is_on_surface = cache.is_edge_on_surface;
 
     // open boundary
-    m_vertex_attribute[v_id].m_is_on_open_boundary = split_cache.local().is_edge_open_boundary;
+    m_vertex_attribute[v_id].m_is_on_open_boundary = cache.is_edge_open_boundary;
 
     /// update face attribute
     // add new and erase old
-    for (auto& info : split_cache.local().changed_faces) {
+    for (auto& info : cache.changed_faces) {
         auto& f_attr = info.first;
         auto& old_vids = info.second;
         std::vector<int> j_vn;

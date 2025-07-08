@@ -15,7 +15,9 @@ namespace wmtk {
 
 bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
 {
-    if (!collapse_edge_before(loc0)) return false;
+    if (!collapse_edge_before(loc0)) {
+        return false;
+    }
 
     auto link_condition = [&VC = this->m_vertex_connectivity,
                            &TC = this->m_tet_connectivity,
@@ -36,18 +38,24 @@ bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
             auto collect = [&](auto& tet) {
                 for (auto j = 0; j < 4; j++) {
                     auto vj = tet[j];
-                    if (intersects(std::array<size_t, 1>{{vj}}, verts)) continue;
+                    if (intersects(std::array<size_t, 1>{{vj}}, verts)) {
+                        continue;
+                    }
                     conn_verts.insert(vj);
                 }
                 for (auto e : utils::tet_element_topology::local_edges) {
                     auto e0 = tet[e[0]], e1 = tet[e[1]];
                     auto edge = std::array<size_t, 2>{{std::min(e0, e1), std::max(e0, e1)}};
-                    if (intersects(edge, verts)) continue;
+                    if (intersects(edge, verts)) {
+                        continue;
+                    }
                     conn_edges.emplace(edge);
                 }
                 for (auto f : utils::tet_element_topology::local_faces) {
                     auto face = std::array<size_t, 3>{{tet[f[0]], tet[f[1]], tet[f[2]]}};
-                    if (intersects(face, verts)) continue;
+                    if (intersects(face, verts)) {
+                        continue;
+                    }
                     std::sort(face.begin(), face.end());
                     conn_faces.emplace(face);
                 }
@@ -55,7 +63,7 @@ bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
             for (auto& t : tets) {
                 collect(conn[t]);
             }
-            const auto dummy = std::numeric_limits<size_t>::max();
+            constexpr size_t dummy = std::numeric_limits<size_t>::max();
             logger().trace("in face {}", faces);
             for (auto& f : faces) {
                 auto tet = std::array<size_t, 4>{{f[0], f[1], f[2], dummy}};
@@ -79,7 +87,9 @@ bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
         // link of edge
         auto common_tets = set_intersection(closure0, closure1);
         auto lk_01 = link(std::array<size_t, 2>{{v0, v1}}, common_tets, bnd01);
-        if (!std::get<2>(lk_01).empty()) return false;
+        if (!std::get<2>(lk_01).empty()) {
+            return false;
+        }
 
         auto lk_i = std::tuple<
             std::vector<size_t>,
@@ -109,9 +119,9 @@ bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     };
 
     /// backup of everything
-    auto v1_id = loc0.vid(*this);
+    const size_t v1_id = loc0.vid(*this);
     auto loc1 = switch_vertex(loc0);
-    auto v2_id = loc1.vid(*this);
+    const size_t v2_id = loc1.vid(*this);
     logger().trace("{} {}", v1_id, v2_id);
     if (m_collapse_check_link_condition && !link_condition(v1_id, v2_id)) {
         logger().trace("violate link condition");
@@ -122,29 +132,27 @@ bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     // refer to illustrations
     // return B, BC, BCA, BCAD
     bool boundary_flag = false;
-    auto v_B = loc0.switch_vertex(*this).vid(*this);
+    SmartTuple tt(*this, loc0);
+    const size_t v_B = tt.switch_vertex().vid(); // should be the same as v2_id
 
-    auto v_C_tuple = loc0.switch_edge(*this).switch_face(*this).switch_tetrahedron(*this);
+    std::optional<SmartTuple> v_C_tuple = tt.switch_edge().switch_face().switch_tetrahedron();
     if (!v_C_tuple.has_value()) {
-        // boundry case
-        //  find another tet vertex
+        // boundry case - find another tet vertex
         boundary_flag = true;
-        v_C_tuple =
-            loc0.switch_vertex(*this).switch_edge(*this).switch_face(*this).switch_tetrahedron(
-                *this);
+        v_C_tuple = tt.switch_vertex().switch_edge().switch_face().switch_tetrahedron();
     }
-    auto v_C = (*v_C_tuple).switch_face(*this).switch_edge(*this).switch_vertex(*this).vid(*this);
-    auto v_A = loc0.switch_edge(*this).switch_vertex(*this).vid(*this);
-    auto v_D = loc0.switch_face(*this).switch_edge(*this).switch_vertex(*this).vid(*this);
+    const size_t v_C = v_C_tuple.value().switch_face().switch_edge().switch_vertex().vid();
+    const size_t v_A = tt.switch_edge().switch_vertex().vid();
+    const size_t v_D = tt.switch_face().switch_edge().switch_vertex().vid();
 
 
     // should be a copy, for the purpose of rollback
-    auto n1_t_ids =
+    const auto n1_t_ids =
         m_vertex_connectivity[v1_id].m_conn_tets; // note: conn_tets for v1 without removed tets
     const auto& n2_t_ids = m_vertex_connectivity[v2_id].m_conn_tets;
 
     std::set<std::array<size_t, 4>> verify_conns; // simplified manifold topology check.
-    for (auto _t : n2_t_ids) {
+    for (const size_t _t : n2_t_ids) {
         auto tet = m_tet_connectivity[_t].m_indices;
         std::sort(tet.begin(), tet.end());
         verify_conns.emplace(tet);
@@ -154,18 +162,21 @@ bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     new_tet_conn.reserve(n1_t_ids.size());
     std::vector<TetrahedronConnectivity> old_tets;
     std::vector<size_t> preserved_tids;
-    for (auto t_id : n1_t_ids) {
+    // find all tets in n1 that do not contain v2
+    for (const size_t t_id : n1_t_ids) {
         old_tets.push_back(m_tet_connectivity[t_id]);
-        int l1 = -1, l2 = -1;
+        int l1 = -1, l2 = -1; // local vertex IDs of v1 and v2
         for (int j = 0; j < 4; j++) {
-            if (m_tet_connectivity[t_id][j] == v1_id)
+            if (m_tet_connectivity[t_id][j] == v1_id) {
                 l1 = j;
-            else if (m_tet_connectivity[t_id][j] == v2_id) {
+            } else if (m_tet_connectivity[t_id][j] == v2_id) {
                 l2 = j;
                 break;
             }
         }
-        if (l2 != -1) continue;
+        if (l2 != -1) {
+            continue;
+        }
         assert(l1 != -1);
         new_tet_conn.push_back(m_tet_connectivity[t_id].m_indices);
         new_tet_conn.back()[l1] = v2_id;
@@ -211,10 +222,6 @@ bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     assert(fid_for_return != -1);
     assert(v2_id == v_B);
     new_loc = Tuple(*this, v_B, eid_for_return, fid_for_return, tid_for_return);
-
-
-    // Tuple new_loc = tuple_from_vertex(v2_id);
-
 
     auto check_topology = [&]() {
         for (size_t t_id : new_tet_id)
