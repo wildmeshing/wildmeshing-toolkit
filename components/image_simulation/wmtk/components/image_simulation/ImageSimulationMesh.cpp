@@ -23,7 +23,6 @@
 #include <wmtk/utils/GeoUtils.h>
 // clang-format on
 
-//#include <paraviewo/HDF5VTUWriter.hpp>
 #include <paraviewo/VTUWriter.hpp>
 
 
@@ -533,91 +532,6 @@ void bfs_orient(const Eigen::MatrixXi& F, Eigen::MatrixXi& FF, Eigen::VectorXi& 
     }
 }
 
-void ImageSimulationMesh::filter_outside(
-    const std::vector<Vector3d>& vertices,
-    const std::vector<std::array<size_t, 3>>& faces,
-    bool remove_ouside)
-{
-    Eigen::MatrixXd V;
-    Eigen::MatrixXi F;
-    if (!vertices.empty()) {
-        V.resize(vertices.size(), 3);
-        F.resize(faces.size(), 3);
-
-        for (int i = 0; i < V.rows(); i++) {
-            V.row(i) = vertices[i];
-        }
-        for (int i = 0; i < F.rows(); i++) {
-            for (auto j = 0; j < 3; j++) F(i, j) = faces[i][j];
-        }
-    } else { // use track to filter
-        auto outface = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
-        V = Eigen::MatrixXd::Zero(vert_capacity(), 3);
-        for (auto v : get_vertices()) {
-            auto vid = v.vid(*this);
-            V.row(vid) = m_vertex_attribute[vid].m_posf;
-        }
-        F.resize(outface.size(), 3);
-        for (auto i = 0; i < outface.size(); i++) {
-            F.row(i) << outface[i][0], outface[i][1], outface[i][2];
-        }
-        wmtk::logger().info("Output face size {}", outface.size());
-        auto F0 = F;
-        Eigen::VectorXi C;
-        bfs_orient(F0, F, C);
-        wmtk::logger().info("BFS orient {}", F.rows());
-    }
-
-    const auto& tets = get_tets();
-    Eigen::MatrixXd C = Eigen::MatrixXd::Zero(tets.size(), 3);
-    for (size_t i = 0; i < tets.size(); i++) {
-        auto vs = oriented_tet_vertices(tets[i]);
-        for (auto& v : vs) C.row(i) += m_vertex_attribute[v.vid(*this)].m_posf;
-        C.row(i) /= 4;
-    }
-
-    Eigen::VectorXd W;
-    igl::winding_number(V, F, C, W);
-
-    if (W.maxCoeff() <= 0.5) {
-        // all removed, let's invert.
-        wmtk::logger().info("Correcting");
-        for (auto i = 0; i < F.rows(); i++) {
-            auto temp = F(i, 0);
-            F(i, 0) = F(i, 1);
-            F(i, 1) = temp;
-        }
-        igl::winding_number(V, F, C, W);
-    }
-
-    if (W.maxCoeff() <= 0.5) {
-        wmtk::logger().critical("Still Inverting..., Empty Output");
-        return;
-    }
-
-    // store winding number in mesh
-    {
-        const auto tets = get_tets();
-        for (int i = 0; i < tets.size(); ++i) {
-            const size_t tid = tets[i].tid(*this);
-            m_tet_attribute[tid].m_winding_number = W(i);
-        }
-    }
-
-    wmtk::logger().info("Removing...");
-
-    std::vector<size_t> rm_tids;
-    for (int i = 0; i < W.rows(); i++) {
-        if (W(i) <= 0.5) {
-            if (remove_ouside) {
-                rm_tids.push_back(tets[i].tid(*this));
-            }
-        }
-    }
-
-    if (remove_ouside) remove_tets_by_ids(rm_tids);
-}
-
 /////////////////////////////////////////////////////////////////////
 void ImageSimulationMesh::output_faces(
     std::string file,
@@ -638,7 +552,16 @@ void ImageSimulationMesh::output_faces(
 }
 
 
-void ImageSimulationMesh::output_mesh(std::string file)
+double ImageSimulationMesh::get_length2(const Tuple& l) const
+{
+    SmartTuple v1(*this, l);
+    SmartTuple v2 = v1.switch_vertex();
+    double length =
+        (m_vertex_attribute[v1.vid()].m_posf - m_vertex_attribute[v2.vid()].m_posf).squaredNorm();
+    return length;
+}
+
+void ImageSimulationMesh::write_msh(std::string file)
 {
     consolidate_mesh();
 
@@ -668,23 +591,8 @@ void ImageSimulationMesh::output_mesh(std::string file)
     msh.add_tet_attribute<1>("t energy", [&](size_t i) {
         return std::cbrt(m_tet_attribute[i].m_quality);
     });
-    msh.add_tet_attribute<1>("winding_number", [&](size_t i) {
-        return std::cbrt(m_tet_attribute[i].m_winding_number);
-    });
 
     msh.save(file, true);
-}
-
-
-double ImageSimulationMesh::get_length2(const wmtk::TetMesh::Tuple& l) const
-{
-    auto& m = *this;
-    auto& v1 = l;
-    auto v2 = l.switch_vertex(m);
-    double length =
-        (m.m_vertex_attribute[v1.vid(m)].m_posf - m.m_vertex_attribute[v2.vid(m)].m_posf)
-            .squaredNorm();
-    return length;
 }
 
 std::tuple<double, double> ImageSimulationMesh::get_max_avg_energy()
@@ -692,13 +600,6 @@ std::tuple<double, double> ImageSimulationMesh::get_max_avg_energy()
     double max_energy = -1.;
     double avg_energy = 0.;
     auto cnt = 0;
-    // TetMesh::for_each_tetra([&](auto& t) {
-    //     auto q = m_tet_attribute[t.tid(*this)].m_quality;
-    //     max_energy = std::max(max_energy, q);
-    //     avg_energy += std::cbrt(q);
-    //     cnt++;
-    // });
-    // std::ofstream large_tet("large_energy_tet.obj");
 
     for (int i = 0; i < tet_capacity(); i++) {
         auto tup = tuple_from_tet(i);
@@ -981,26 +882,6 @@ bool ImageSimulationMesh::check_attributes()
     return true;
 }
 
-long long ImageSimulationMesh::checksum_vidx()
-{
-    long long checksum = 0;
-    auto vs = get_vertices();
-    for (int i = 0; i < vs.size(); i++) {
-        if (vs[i].is_valid(*this)) checksum += i;
-    }
-    return checksum;
-}
-
-long long ImageSimulationMesh::checksum_tidx()
-{
-    long long checksum = 0;
-    auto ts = get_tets();
-    for (int i = 0; i < ts.size(); i++) {
-        if (ts[i].is_valid(*this)) checksum += i;
-    }
-    return checksum;
-}
-
 // util functions for union find
 int find_uf(int v, std::vector<int>& parent)
 {
@@ -1184,429 +1065,6 @@ int ImageSimulationMesh::count_edge_links(const Tuple& e)
     return incident_surface_faces.size();
 }
 
-
-bool ImageSimulationMesh::is_triangle_coplanar_collection(
-    const Vector3r& v1,
-    const Vector3r& v2,
-    const Vector3r& v3,
-    const coplanar_triangle_collection& collection)
-{
-    int o1 = orient3d_t(collection.a_pos, collection.b_pos, collection.c_pos, v1);
-    int o2 = orient3d_t(collection.a_pos, collection.b_pos, collection.c_pos, v2);
-    int o3 = orient3d_t(collection.a_pos, collection.b_pos, collection.c_pos, v3);
-
-    return o1 == 0 && o2 == 0 && o3 == 0;
-    // return true;
-}
-
-bool ImageSimulationMesh::is_triangle_nearly_coplanar_collection(
-    const Vector3r& v1,
-    const Vector3r& v2,
-    const Vector3r& v3,
-    const coplanar_triangle_collection& collection,
-    double theta = 2)
-{
-    // // check normal (exact)
-    // theta is in degree
-    Vector3d tri_normal = to_double((v1 - v2).cross(v1 - v3));
-    Vector3d collection_normal = to_double(collection.normal);
-    if (tri_normal.cross(collection_normal).norm() /
-            (tri_normal.norm() * collection_normal.norm()) <
-        std::sin(theta / 180 * M_PI))
-        return true;
-
-    return false;
-}
-
-std::vector<std::vector<size_t>> ImageSimulationMesh::transfer_vf_to_face_face_connectivity(
-    size_t num_v,
-    std::vector<std::array<size_t, 3>> faces)
-{
-    struct v_conn
-    {
-        std::vector<size_t> conn_faces;
-    };
-
-    std::vector<v_conn> vertex_connectivity(num_v);
-
-    for (int i = 0; i < faces.size(); i++) {
-        for (int j = 0; j < 3; j++) {
-            vertex_connectivity[faces[i][j]].conn_faces.push_back(i);
-        }
-    }
-
-    std::vector<std::vector<size_t>> face_connectivity(faces.size());
-    for (int i = 0; i < faces.size(); i++) {
-        size_t v1 = faces[i][0];
-        size_t v2 = faces[i][1];
-        size_t v3 = faces[i][2];
-
-        auto edge_conn_1 = wmtk::set_intersection(
-            vertex_connectivity[v1].conn_faces,
-            vertex_connectivity[v2].conn_faces);
-
-        auto edge_conn_2 = wmtk::set_intersection(
-            vertex_connectivity[v1].conn_faces,
-            vertex_connectivity[v3].conn_faces);
-
-        auto edge_conn_3 = wmtk::set_intersection(
-            vertex_connectivity[v2].conn_faces,
-            vertex_connectivity[v3].conn_faces);
-
-        for (int k = 0; k < edge_conn_1.size(); k++) {
-            if (edge_conn_1[k] != i) face_connectivity[i].push_back(edge_conn_1[k]);
-        }
-
-        for (int k = 0; k < edge_conn_2.size(); k++) {
-            if (edge_conn_2[k] != i) face_connectivity[i].push_back(edge_conn_2[k]);
-        }
-
-        for (int k = 0; k < edge_conn_3.size(); k++) {
-            if (edge_conn_3[k] != i) face_connectivity[i].push_back(edge_conn_3[k]);
-        }
-    }
-
-    return face_connectivity;
-}
-
-void ImageSimulationMesh::detect_coplanar_triangle_collections(
-    const std::vector<Vector3d>& vertices,
-    const std::vector<std::array<size_t, 3>>& faces)
-{
-    // transfer to rational coords
-    std::vector<Vector3r> vertices_rational(vertices.size());
-    for (size_t i = 0; i < vertices.size(); i++) {
-        vertices_rational[i] = to_rational(vertices[i]);
-    }
-
-    // get face-face connectivity graph
-    std::vector<std::vector<size_t>> face_adj_list =
-        transfer_vf_to_face_face_connectivity(vertices.size(), faces);
-
-    // debug code
-    // for (int i = 0; i < face_adj_list.size(); i++) {
-    //     std::cout << i << ": ";
-    //     for (int j = 0; j < face_adj_list[i].size(); j++) {
-    //         std::cout << face_adj_list[i][j] << " ";
-    //     }
-    //     std::cout << std::endl;
-    // }
-
-    // bfs to get the collection
-    std::vector<ImageSimulationMesh::coplanar_triangle_collection> collections;
-    std::vector<bool> visited_face(faces.size(), false); // visited if is already in a collection
-
-    for (size_t i = 0; i < faces.size(); i++) {
-        if (visited_face[i]) continue;
-        visited_face[i] = true;
-
-        // init a new collection with face[i]
-        coplanar_triangle_collection collection;
-        collection.face_ids.push_back(i);
-        collection.a_pos = vertices_rational[faces[i][0]];
-        collection.b_pos = vertices_rational[faces[i][1]];
-        collection.c_pos = vertices_rational[faces[i][2]];
-        collection.normal =
-            (collection.a_pos - collection.b_pos).cross(collection.a_pos - collection.c_pos);
-        collection.param_u = collection.b_pos - collection.a_pos;
-        collection.param_v = collection.normal.cross(collection.param_v);
-
-        // bfs
-        std::queue<size_t> bfs_queue;
-        for (int j = 0; j < face_adj_list[i].size(); j++) {
-            if (!visited_face[face_adj_list[i][j]]) bfs_queue.push(face_adj_list[i][j]);
-        }
-        while (!bfs_queue.empty()) {
-            size_t fid = bfs_queue.front();
-            bfs_queue.pop();
-            // std::cout << "faces.size(): " << faces.size() << std::endl;
-            // std::cout << "fid: " << fid << std::endl;
-            if (visited_face[fid]) continue;
-
-            // check if nearly coplanar
-            if (is_triangle_coplanar_collection(
-                    vertices_rational[faces[fid][0]],
-                    vertices_rational[faces[fid][1]],
-                    vertices_rational[faces[fid][2]],
-                    collection)) {
-                visited_face[fid] = true;
-                collection.face_ids.push_back(fid);
-                for (int j = 0; j < face_adj_list[fid].size(); j++) {
-                    if (!visited_face[face_adj_list[fid][j]]) bfs_queue.push(face_adj_list[fid][j]);
-                }
-            }
-        }
-        if (collection.face_ids.size() == 1) {
-            collection.effective = false;
-        } else {
-            collection.effective = true;
-        }
-        collections.push_back(collection);
-    }
-    // return collections;
-    // pass to image_simulation;
-
-    // test code
-    for (int i = 0; i < visited_face.size(); i++) {
-        if (!visited_face[i])
-            std::cout << "INPUT TRIANGLE NOT INSERT INTO ANY COLLECTION!!!" << std::endl;
-    }
-
-    triangle_collections_from_input_surface.input_vertices_rational = vertices_rational;
-    triangle_collections_from_input_surface.input_faces = faces;
-    triangle_collections_from_input_surface.collections = collections;
-
-    // detect nearly coplanar collections
-    std::vector<ImageSimulationMesh::coplanar_triangle_collection> collections_nearly;
-    std::vector<bool> visited_face_nearly(
-        faces.size(),
-        false); // visited if is already in a collection
-
-    for (size_t i = 0; i < faces.size(); i++) {
-        if (visited_face_nearly[i]) continue;
-        visited_face_nearly[i] = true;
-
-        // init a new collection with face[i]
-        coplanar_triangle_collection collection;
-
-        collection.face_ids.push_back(i);
-        collection.a_pos = vertices_rational[faces[i][0]];
-        collection.b_pos = vertices_rational[faces[i][1]];
-        collection.c_pos = vertices_rational[faces[i][2]];
-        collection.normal =
-            (collection.a_pos - collection.b_pos).cross(collection.a_pos - collection.c_pos);
-        collection.param_u = collection.b_pos - collection.a_pos;
-        collection.param_v = collection.normal.cross(collection.param_v);
-
-        collection.normal_f = to_double(collection.normal).normalized();
-        collection.a_pos_f = to_double(collection.a_pos);
-        collection.param_u_f = to_double(collection.param_u).normalized();
-        collection.param_v_f = to_double(collection.param_v).normalized();
-
-
-        // bfs
-        std::queue<size_t> bfs_queue;
-        for (int j = 0; j < face_adj_list[i].size(); j++) {
-            if (!visited_face_nearly[face_adj_list[i][j]]) bfs_queue.push(face_adj_list[i][j]);
-        }
-        while (!bfs_queue.empty()) {
-            size_t fid = bfs_queue.front();
-            bfs_queue.pop();
-            // std::cout << "faces.size(): " << faces.size() << std::endl;
-            // std::cout << "fid: " << fid << std::endl;
-            if (visited_face_nearly[fid]) continue;
-
-            // check if nearly coplanar
-            if (is_triangle_nearly_coplanar_collection(
-                    vertices_rational[faces[fid][0]],
-                    vertices_rational[faces[fid][1]],
-                    vertices_rational[faces[fid][2]],
-                    collection,
-                    2)) {
-                visited_face_nearly[fid] = true;
-                collection.face_ids.push_back(fid);
-                for (int j = 0; j < face_adj_list[fid].size(); j++) {
-                    if (!visited_face_nearly[face_adj_list[fid][j]])
-                        bfs_queue.push(face_adj_list[fid][j]);
-                }
-            }
-        }
-        if (collection.face_ids.size() == 1) {
-            collection.effective = false;
-        } else {
-            collection.effective = true;
-        }
-        collections_nearly.push_back(collection);
-    }
-    // return collections;
-    // pass to image_simulation;
-
-    // test code
-    for (int i = 0; i < visited_face_nearly.size(); i++) {
-        if (!visited_face_nearly[i])
-            std::cout << "INPUT TRIANGLE NOT INSERT INTO ANY NEAR COPLANAR COLLECTION!!!"
-                      << std::endl;
-    }
-
-    triangle_collections_from_input_surface.nearly_coplanar_collections = collections_nearly;
-
-    std::vector<size_t> exact_to_nearly_map(collections.size());
-    // get correspondence exact to nealy;
-    for (int i = 0; i < collections.size(); i++) {
-        size_t member_fid = collections[i].face_ids[0];
-        for (int j = 0; j < collections_nearly.size(); j++) {
-            if (std::find(
-                    collections_nearly[j].face_ids.begin(),
-                    collections_nearly[j].face_ids.end(),
-                    member_fid) != collections_nearly[j].face_ids.end()) {
-                exact_to_nearly_map[i] = j;
-                break;
-            }
-        }
-    }
-
-    triangle_collections_from_input_surface.exact_to_nearly_map = exact_to_nearly_map;
-
-    // debug code
-    for (int i = 0; i < collections.size(); i++) {
-        std::cout << "collection " << i << ": ";
-        for (int j = 0; j < collections[i].face_ids.size(); j++) {
-            std::cout << collections[i].face_ids[j] << " ";
-        }
-        std::cout << std::endl;
-    }
-
-    for (int i = 0; i < collections_nearly.size(); i++) {
-        std::cout << "nearly collection " << i << ": ";
-        for (int j = 0; j < collections_nearly[i].face_ids.size(); j++) {
-            std::cout << collections_nearly[i].face_ids[j] << " ";
-        }
-        std::cout << std::endl;
-    }
-
-    // for (int i = 0; i < exact_to_nearly_map.size(); i++) {
-    //     std::cout << "exact to nearly map " << i << " --> " << exact_to_nearly_map[i] <<
-    //     std::endl;
-    // }
-}
-
-bool ImageSimulationMesh::is_point_in_triangle(
-    const Vector3r& p,
-    const Vector3r& a,
-    const Vector3r& b,
-    const Vector3r& c)
-{
-    Vector3r AB_AC = (b - a).cross(c - a);
-    Vector3r AB_AP = (b - a).cross(p - a);
-    Vector3r BC_BP = (c - b).cross(p - b);
-    Vector3r CA_CP = (a - c).cross(p - c);
-    if (AB_AC.dot(AB_AP) < 0 || AB_AC.dot(BC_BP) < 0 || AB_AC.dot(CA_CP) < 0) return false;
-    return true;
-}
-
-bool ImageSimulationMesh::is_point_in_collection(const Vector3r& p, size_t collection_id)
-{
-    for (int i = 0;
-         i < triangle_collections_from_input_surface.collections[collection_id].face_ids.size();
-         i++) {
-        size_t tri_vid1 =
-            triangle_collections_from_input_surface.input_faces
-                [triangle_collections_from_input_surface.collections[collection_id].face_ids[i]][0];
-        size_t tri_vid2 =
-            triangle_collections_from_input_surface.input_faces
-                [triangle_collections_from_input_surface.collections[collection_id].face_ids[i]][1];
-        size_t tri_vid3 =
-            triangle_collections_from_input_surface.input_faces
-                [triangle_collections_from_input_surface.collections[collection_id].face_ids[i]][2];
-        Vector3r tri_v1_pos =
-            triangle_collections_from_input_surface.input_vertices_rational[tri_vid1];
-        Vector3r tri_v2_pos =
-            triangle_collections_from_input_surface.input_vertices_rational[tri_vid2];
-        Vector3r tri_v3_pos =
-            triangle_collections_from_input_surface.input_vertices_rational[tri_vid3];
-        if (is_point_in_triangle(p, tri_v1_pos, tri_v2_pos, tri_v3_pos)) return true;
-    }
-    return false;
-}
-
-int ImageSimulationMesh::find_collection_for_tracked_surface(const Tuple& t)
-{
-    size_t fid = t.fid(*this);
-    size_t vid1 = t.vid(*this);
-    size_t vid2 = t.switch_vertex(*this).vid(*this);
-    size_t vid3 = t.switch_edge(*this).switch_vertex(*this).vid(*this);
-    int in_collection = -1;
-
-    bool flag = false;
-
-    Vector3r v1_pos = m_vertex_attribute[vid1].m_pos;
-    Vector3r v2_pos = m_vertex_attribute[vid2].m_pos;
-    Vector3r v3_pos = m_vertex_attribute[vid3].m_pos;
-
-    for (size_t i = 0; i < triangle_collections_from_input_surface.collections.size(); i++) {
-        // check coplanarity
-        if (!is_triangle_coplanar_collection(
-                v1_pos,
-                v2_pos,
-                v3_pos,
-                triangle_collections_from_input_surface.collections[i]))
-            continue;
-
-        // debug code
-        // in_collection = i;
-        // break;
-
-        // check containment by point in any triangle in the collection
-        if (is_point_in_collection(v1_pos, i) && is_point_in_collection(v2_pos, i) &&
-            is_point_in_collection(v3_pos, i)) {
-            in_collection = i;
-            break;
-        }
-    }
-
-    // debug code
-    // if (in_collection == -1) {
-    //     int o1 = orient3d_t(
-    //         triangle_collections_from_input_surface.collections[1].a_pos,
-    //         triangle_collections_from_input_surface.collections[1].b_pos,
-    //         triangle_collections_from_input_surface.collections[1].c_pos,
-    //         v1_pos);
-
-    //     int o2 = orient3d_t(
-    //         triangle_collections_from_input_surface.collections[1].a_pos,
-    //         triangle_collections_from_input_surface.collections[1].b_pos,
-    //         triangle_collections_from_input_surface.collections[1].c_pos,
-    //         v2_pos);
-
-    //     int o3 = orient3d_t(
-    //         triangle_collections_from_input_surface.collections[1].a_pos,
-    //         triangle_collections_from_input_surface.collections[1].b_pos,
-    //         triangle_collections_from_input_surface.collections[1].c_pos,
-    //         v3_pos);
-
-    //     std::cout.precision(15);
-    //     std::cout << "o1: " << o1 << std::endl;
-    //     std::cout << "o2: " << o2 << std::endl;
-    //     std::cout << "o3: " << o3 << std::endl;
-
-    //     std::cout << "a_pos: " << triangle_collections_from_input_surface.collections[1].a_pos[0]
-    //               << " " << triangle_collections_from_input_surface.collections[1].a_pos[1] << "
-    //               "
-    //               << triangle_collections_from_input_surface.collections[1].a_pos[2] <<
-    //               std::endl;
-    //     std::cout << "b_pos: " << triangle_collections_from_input_surface.collections[1].b_pos[0]
-    //               << " " << triangle_collections_from_input_surface.collections[1].b_pos[1] << "
-    //               "
-    //               << triangle_collections_from_input_surface.collections[1].b_pos[2] <<
-    //               std::endl;
-    //     std::cout << "c_pos: " << triangle_collections_from_input_surface.collections[1].c_pos[0]
-    //               << " " << triangle_collections_from_input_surface.collections[1].c_pos[1] << "
-    //               "
-    //               << triangle_collections_from_input_surface.collections[1].c_pos[2] <<
-    //               std::endl;
-    //     std::cout << "v1_pos: " << v1_pos[0] << " " << v1_pos[1] << " " << v1_pos[2] <<
-    //     std::endl; std::cout << "v2_pos: " << v2_pos[0] << " " << v2_pos[1] << " " << v2_pos[2]
-    //     << std::endl; std::cout << "v3_pos: " << v3_pos[0] << " " << v3_pos[1] << " " <<
-    //     v3_pos[2] << std::endl;
-
-    //     std::ofstream outfile("unmatched_triangle.obj");
-    //     outfile << "v " << v1_pos[0] << " " << v1_pos[1] << " " << v1_pos[2] << std::endl;
-    //     outfile << "v " << v2_pos[0] << " " << v2_pos[1] << " " << v2_pos[2] << std::endl;
-    //     outfile << "v " << v3_pos[0] << " " << v3_pos[1] << " " << v3_pos[2] << std::endl;
-    //     outfile << "f 1 2 3";
-    //     exit(0);
-    // }
-
-    return in_collection;
-}
-
-bool ImageSimulationMesh::check_vertex_param_type()
-{
-    // std::ofstream file("missing_param_v.obj");
-    bool flag = true;
-    return flag;
-}
-
 int ImageSimulationMesh::flood_fill()
 {
     int current_id = 0;
@@ -1714,12 +1172,8 @@ int ImageSimulationMesh::flood_fill()
     return current_id;
 }
 
-void ImageSimulationMesh::save_paraview(const std::string& path, const bool use_hdf5)
+void ImageSimulationMesh::write_vtu(const std::string& path)
 {
-    consolidate_mesh();
-    // flood fill
-    int num_parts = flood_fill();
-    std::cout << "flood fill parts: " << num_parts << std::endl;
     const auto& vs = get_vertices();
     const auto& tets = get_tets();
 
@@ -1727,13 +1181,13 @@ void ImageSimulationMesh::save_paraview(const std::string& path, const bool use_
     Eigen::MatrixXi T(tets.size(), 4);
 
     Eigen::MatrixXd parts(tets.size(), 1);
-    Eigen::MatrixXd wn(tets.size(), 1);
+    Eigen::MatrixXd amips(tets.size(), 1);
 
     int index = 0;
-    for (auto t : tets) {
+    for (const Tuple& t : tets) {
         size_t tid = t.tid(*this);
         parts(index, 0) = m_tet_attribute[tid].part_id;
-        wn(index, 0) = m_tet_attribute[tid].m_winding_number;
+        amips(index, 0) = std::cbrt(m_tet_attribute[tid].m_quality);
 
         const auto& vs = oriented_tet_vertices(t);
         for (int j = 0; j < 4; j++) {
@@ -1742,24 +1196,43 @@ void ImageSimulationMesh::save_paraview(const std::string& path, const bool use_
         ++index;
     }
 
-    for (auto v : vs) {
-        const auto vid = v.vid(*this);
+    for (const Tuple& v : vs) {
+        const size_t vid = v.vid(*this);
         V.row(vid) = m_vertex_attribute[vid].m_posf;
     }
 
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
-    if (use_hdf5) {
-        throw std::runtime_error("Cannot write HDF5");
-        // writer = std::make_shared<paraviewo::HDF5VTUWriter>();
-    } else {
-        writer = std::make_shared<paraviewo::VTUWriter>();
-    }
-
-    const auto out_path = path + (use_hdf5 ? ".hdf" : ".vtu");
+    writer = std::make_shared<paraviewo::VTUWriter>();
 
     writer->add_cell_field("part", parts);
-    writer->add_cell_field("winding_number", wn);
-    writer->write_mesh(out_path, V, T);
+    writer->add_cell_field("quality", amips);
+    writer->write_mesh(path, V, T);
+}
+
+void ImageSimulationMesh::write_surface(const std::string& path) const
+{
+    std::vector<std::array<size_t, 3>> outface;
+    for (const Tuple& f : get_faces()) {
+        if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) {
+            continue;
+        }
+        const auto verts = get_face_vertices(f);
+        std::array<size_t, 3> vids = {
+            {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}};
+        outface.emplace_back(vids);
+    }
+    Eigen::MatrixXd matV = Eigen::MatrixXd::Zero(vert_capacity(), 3);
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        matV.row(vid) = m_vertex_attribute[vid].m_posf;
+    }
+    Eigen::MatrixXi matF(outface.size(), 3);
+    for (size_t i = 0; i < outface.size(); i++) {
+        matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
+    }
+    igl::write_triangle_mesh(path, matV, matF);
+
+    wmtk::logger().info("Output face size {}", outface.size());
 }
 
 void ImageSimulationMesh::init_sizing_field()

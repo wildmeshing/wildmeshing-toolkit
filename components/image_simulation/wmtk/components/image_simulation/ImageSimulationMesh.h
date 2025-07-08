@@ -149,15 +149,16 @@ public:
         m_face_attribute.resize(4 * n_tet);
         m_tet_attribute.resize(n_tet);
 
-        // new for edge
-        // m_edge_attribute.resize(6 * n_tet);
-
-        for (auto i = 0; i < _vertex_attribute.size(); i++)
+        for (auto i = 0; i < _vertex_attribute.size(); i++) {
             m_vertex_attribute[i] = _vertex_attribute[i];
+        }
         m_tet_attribute.m_attributes = tbb::concurrent_vector<TetAttributes>(_tet_attribute.size());
-        for (auto i = 0; i < _tet_attribute.size(); i++) m_tet_attribute[i] = _tet_attribute[i];
-        for (auto i = 0; i < _tet_attribute.size(); i++)
+        for (auto i = 0; i < _tet_attribute.size(); i++) {
+            m_tet_attribute[i] = _tet_attribute[i];
+        }
+        for (auto i = 0; i < _tet_attribute.size(); i++) {
             m_tet_attribute[i].m_quality = get_quality(tuple_from_tet(i));
+        }
     }
 
     // TODO This should not be here but inside wmtk
@@ -272,9 +273,12 @@ public:
         return m_vertex_attribute[loc.vid(*this)].partition_id;
     }
 
+
+    double get_length2(const Tuple& l) const;
+
     ////// Attributes related
 
-    void output_mesh(std::string file);
+    void write_msh(std::string file);
     void output_faces(std::string file, std::function<bool(const FaceAttributes&)> cond);
 
     void init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>& vertices);
@@ -335,10 +339,6 @@ public:
         const std::array<int, 4>& ops,
         bool collapse_limit_length = true);
     std::tuple<double, double> get_max_avg_energy();
-    void filter_outside(
-        const std::vector<Vector3d>& vertices = {},
-        const std::vector<std::array<size_t, 3>>& faces = {},
-        bool remove_ouside = true);
 
     bool check_attributes();
 
@@ -347,7 +347,6 @@ public:
 
     bool invariants(const std::vector<Tuple>& t) override; // this is now automatically checked
 
-    double get_length2(const Tuple& loc) const;
     // debug use
     std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;
 
@@ -443,36 +442,7 @@ public:
         const std::vector<std::array<size_t, 4>>& tets,
         const std::vector<bool>& tet_face_on_input_surface);
 
-    void init_from_file(std::string input_dir);
-
     std::vector<std::array<size_t, 3>> triangulate_polygon_face(std::vector<Vector3r> points);
-    bool check_polygon_face_validity(std::vector<Vector3r> points);
-
-    bool check_nondegenerate_tets();
-    void output_embedded_polygon_mesh(
-        std::string output_dir,
-        const std::vector<Vector3r>& v_rational,
-        const std::vector<std::vector<size_t>>& polygon_faces,
-        const std::vector<std::vector<size_t>>& polygon_cells,
-        const std::vector<bool>& polygon_faces_on_input_surface);
-
-    void output_embedded_polygon_surface_mesh(
-        std::string output_dir,
-        const std::vector<Vector3r>& v_rational,
-        const std::vector<std::vector<size_t>>& polygon_faces,
-        const std::vector<bool>& polygon_faces_on_input_surface);
-
-    void output_tetrahedralized_embedded_mesh(
-        std::string output_dir,
-        const std::vector<Vector3r>& v_rational,
-        const std::vector<std::array<size_t, 3>>& facets,
-        const std::vector<std::array<size_t, 4>>& tets,
-        const std::vector<bool>& tet_face_on_input_surface);
-
-    void output_init_tetmesh(std::string output_dir);
-
-    long long checksum_vidx();
-    long long checksum_tidx();
 
     bool adjust_sizing_field_serial(double max_energy);
 
@@ -501,118 +471,12 @@ public:
     int count_vertex_links(const Tuple& v);
     int count_edge_links(const Tuple& e);
 
-    // for geometry preservation
-    struct coplanar_triangle_collection
-    {
-        bool effective = false;
-        std::vector<size_t> face_ids;
-        std::vector<size_t> tracked_face_ids;
-        // std::map<std::pair<size_t, size_t>, bool> presented_edges;
-        Vector3r normal;
-        Vector3r a_pos; // a is the origin of the uv plane
-        Vector3r b_pos;
-        Vector3r c_pos;
-        Vector3r param_u; // b-a // can be vector3d then can be normalized
-        Vector3r param_v; // u.cross(b-a)
-        // for nearly
-        Vector3d normal_f = Vector3d(0, 0, 0);
-        Vector3d a_pos_f = Vector3d(0, 0, 0);
-        Vector3d param_u_f = Vector3d(0, 0, 0);
-        Vector3d param_v_f = Vector3d(0, 0, 0);
-    };
-
-    bool is_triangle_coplanar_collection(
-        const Vector3r& v1,
-        const Vector3r& v2,
-        const Vector3r& v3,
-        const coplanar_triangle_collection& collection);
-
-    bool is_triangle_nearly_coplanar_collection(
-        const Vector3r& v1,
-        const Vector3r& v2,
-        const Vector3r& v3,
-        const coplanar_triangle_collection& collection,
-        double theta);
-
-    std::vector<std::vector<size_t>> transfer_vf_to_face_face_connectivity(
-        size_t num_v,
-        std::vector<std::array<size_t, 3>> faces);
-
-
-    struct triangle_collections
-    {
-        std::vector<coplanar_triangle_collection> collections;
-        std::vector<coplanar_triangle_collection> nearly_coplanar_collections;
-        std::vector<size_t> exact_to_nearly_map;
-        std::vector<Vector3r> input_vertices_rational;
-        std::vector<std::array<size_t, 3>> input_faces;
-        // can add parameterizations here
-    };
-    triangle_collections triangle_collections_from_input_surface;
-
-    void detect_coplanar_triangle_collections(
-        const std::vector<Vector3d>& vertices,
-        const std::vector<std::array<size_t, 3>>& faces);
-
-    int find_collection_for_tracked_surface(const Tuple& t);
-
-    bool is_point_in_triangle(
-        const Vector3r& p,
-        const Vector3r& a,
-        const Vector3r& b,
-        const Vector3r& c);
-    bool is_point_in_collection(const Vector3r& p, size_t collection_id);
-
-
-    // debug functions
-    int orient3D(
-        vol_rem::bigrational px,
-        vol_rem::bigrational py,
-        vol_rem::bigrational pz,
-        vol_rem::bigrational qx,
-        vol_rem::bigrational qy,
-        vol_rem::bigrational qz,
-        vol_rem::bigrational rx,
-        vol_rem::bigrational ry,
-        vol_rem::bigrational rz,
-        vol_rem::bigrational sx,
-        vol_rem::bigrational sy,
-        vol_rem::bigrational sz);
-
-    bool checkTrackedFaces(
-        std::vector<vol_rem::bigrational>& vol_coords,
-        const std::vector<double>& surf_coords,
-        std::vector<uint32_t>& facets,
-        std::vector<uint32_t>& facets_on_input,
-        const std::vector<uint32_t>& surf_tris);
-
-    int orient3D_wmtk_rational(
-        wmtk::Rational px,
-        wmtk::Rational py,
-        wmtk::Rational pz,
-        wmtk::Rational qx,
-        wmtk::Rational qy,
-        wmtk::Rational qz,
-        wmtk::Rational rx,
-        wmtk::Rational ry,
-        wmtk::Rational rz,
-        wmtk::Rational sx,
-        wmtk::Rational sy,
-        wmtk::Rational sz);
-
-    bool checkTrackedFaces_wmtk_rational(
-        std::vector<wmtk::Rational>& vol_coords,
-        const std::vector<double>& surf_coords,
-        std::vector<uint32_t>& facets,
-        std::vector<uint32_t>& facets_on_input,
-        const std::vector<uint32_t>& surf_tris);
-
-    bool check_vertex_param_type();
-
     // for boolean operations
     int flood_fill();
 
-    void save_paraview(const std::string& path, const bool use_hdf5);
+    void write_vtu(const std::string& path);
+
+    void write_surface(const std::string& path) const;
 
     // initialize sizing field (for topology preservation)
     void init_sizing_field();
