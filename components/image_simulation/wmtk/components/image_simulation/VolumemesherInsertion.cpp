@@ -637,11 +637,12 @@ bool ImageSimulationMesh::check_nondegenerate_tets()
 
 void ImageSimulationMesh::init_from_Volumeremesher(
     const std::vector<Vector3r>& v_rational,
-    const std::vector<std::array<size_t, 3>>& facets,
     const std::vector<bool>& is_v_on_input,
     const std::vector<std::array<size_t, 4>>& tets,
     const std::vector<bool>& tet_face_on_input_surface)
 {
+    assert(tet_face_on_input_surface.size() == 4 * tets.size());
+
     init_with_isolated_vertices(v_rational.size(), tets);
     assert(check_mesh_connectivity_validity());
 
@@ -651,24 +652,26 @@ void ImageSimulationMesh::init_from_Volumeremesher(
 
     for (int i = 0; i < vert_capacity(); i++) {
         m_vertex_attribute[i].m_pos = v_rational[i];
-        // wmtk::logger().info("rational: {}", m_vertex_attribute[i].m_pos);
         m_vertex_attribute[i].m_posf = to_double(v_rational[i]);
-        // wmtk::logger().info("double: {}", m_vertex_attribute[i].m_posf);
     }
 
     // check here
     for (size_t i = 0; i < tet_face_on_input_surface.size(); i++) {
-        if (tet_face_on_input_surface[i]) m_face_attribute[i].m_is_surface_fs = 1;
+        if (tet_face_on_input_surface[i]) {
+            m_face_attribute[i].m_is_surface_fs = 1;
+        }
     }
 
-    auto faces = get_faces();
+    const auto faces = get_faces();
     std::cout << "faces size: " << faces.size() << std::endl;
-    for (auto f : faces) {
-        auto fid = f.fid(*this);
-        auto v1 = f.vid(*this);
-        auto v2 = f.switch_vertex(*this).vid(*this);
-        auto v3 = f.switch_edge(*this).switch_vertex(*this).vid(*this);
-        if (m_face_attribute[f.fid(*this)].m_is_surface_fs == 1) {
+    for (const Tuple& f : faces) {
+        SmartTuple ff(*this, f);
+        const size_t fid = ff.fid();
+        const size_t v1 = ff.vid();
+        const size_t v2 = ff.switch_vertex().vid();
+        const size_t v3 = ff.switch_edge().switch_vertex().vid();
+        if (m_face_attribute[fid].m_is_surface_fs == 1) {
+            assert(is_v_on_input[v1] && is_v_on_input[v2] && is_v_on_input[v3]);
             m_vertex_attribute[v1].m_is_on_surface = true;
             m_vertex_attribute[v2].m_is_on_surface = true;
             m_vertex_attribute[v3].m_is_on_surface = true;
@@ -676,10 +679,8 @@ void ImageSimulationMesh::init_from_Volumeremesher(
     }
 
     // track bounding box
-
     for (size_t i = 0; i < faces.size(); i++) {
-        auto fid_test = faces[i].fid(*this);
-        auto vs = get_face_vertices(faces[i]);
+        const auto vs = get_face_vertices(faces[i]);
         std::array<size_t, 3> vids = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
         int on_bbox = -1;
         for (int k = 0; k < 3; k++) {
@@ -696,12 +697,15 @@ void ImageSimulationMesh::init_from_Volumeremesher(
                 break;
             }
         }
-        // auto fid = faces[i].fid(*this);
-        if (on_bbox < 0) continue;
-        auto fid = faces[i].fid(*this);
+        if (on_bbox < 0) {
+            continue;
+        }
+        assert(!faces[i].switch_tetrahedron(*this)); // face must be on boundary
+
+        const size_t fid = faces[i].fid(*this);
         m_face_attribute[fid].m_is_bbox_fs = on_bbox;
 
-        for (size_t vid : vids) {
+        for (const size_t vid : vids) {
             m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
         }
     }
@@ -709,252 +713,37 @@ void ImageSimulationMesh::init_from_Volumeremesher(
     for_each_vertex(
         [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
 
-
-    // test code
-    for (auto f : get_faces()) {
-        auto fid = f.fid(*this);
-    }
-
-    std::cout << "pass test fid" << std::endl;
-
     // track open boundaries
     find_open_boundary();
 
     int open_boundary_cnt = 0;
-    for (auto e : get_edges()) {
-        if (is_open_boundary_edge(e)) open_boundary_cnt++;
+    for (const Tuple& e : get_edges()) {
+        if (is_open_boundary_edge(e)) {
+            open_boundary_cnt++;
+        }
     }
     wmtk::logger().info("#open boundary edges: {}", open_boundary_cnt);
 
-
-    // enable on for tests
-    // debug codes
-    // if (!check_nondegenerate_tets()) {
-    //     std::cout << "find tet with <=0 volume!" << std::endl;
-    // }
-
-    // if (!check_mesh_connectivity_validity()) {
-    //     std::cout << "invalid mesh connectivity!" << std::endl;
-    // }
-
-    std::cout << "#edge_params: " << edge_params.size() << std::endl;
-
-
-    // check 174 1444
-    // std::cout << "v 174:" << std::endl;
-    // std::cout << "coord: " << m_vertex_attribute[174].m_posf[0] << " "
-    //           << m_vertex_attribute[174].m_posf[1] << " " << m_vertex_attribute[174].m_posf[2]
-    //           << std::endl;
-    // std::cout << "coord rational: " << m_vertex_attribute[174].m_pos[0].to_double() << " "
-    //           << m_vertex_attribute[174].m_pos[1].to_double() << " "
-    //           << m_vertex_attribute[174].m_pos[2].to_double() << std::endl;
-    // std::cout << "is freezed: " << m_vertex_attribute[174].is_freezed << std::endl;
-    // std::cout << "effective face params: ";
-    // for (int i = 0; i < m_vertex_attribute[174].face_nearly_param_type.size(); i++) {
-    //     std::cout << m_vertex_attribute[174].face_nearly_param_type[i] << " ";
-    // }
-    // std::cout << std::endl;
-    // std::cout << "all face params: ";
-    // for (int i = 0; i < m_vertex_attribute[174].face_nearly_param_type_with_ineffective.size();
-    //      i++) {
-    //     std::cout << m_vertex_attribute[174].face_nearly_param_type_with_ineffective[i] << " ";
-    // }
-    // std::cout << std::endl;
-    // std::cout << "edge params: ";
-    // for (int i = 0; i < m_vertex_attribute[174].in_edge_param.size(); i++) {
-    //     std::cout << m_vertex_attribute[174].in_edge_param[i] << " ";
-    // }
-    // std::cout << std::endl;
-
-
-    // std::cout << "v 1444:" << std::endl;
-    // std::cout << "coord: " << m_vertex_attribute[1444].m_posf[0] << " "
-    //           << m_vertex_attribute[1444].m_posf[1] << " " << m_vertex_attribute[1444].m_posf[2]
-    //           << std::endl;
-    // std::cout << "coord rational: " << m_vertex_attribute[1444].m_pos[0].to_double() << " "
-    //           << m_vertex_attribute[1444].m_pos[1].to_double() << " "
-    //           << m_vertex_attribute[1444].m_pos[2].to_double() << std::endl;
-
-    // std::cout << "is freezed: " << m_vertex_attribute[1444].is_freezed << std::endl;
-    // std::cout << "effective face params: ";
-    // for (int i = 0; i < m_vertex_attribute[1444].face_nearly_param_type.size(); i++) {
-    //     std::cout << m_vertex_attribute[1444].face_nearly_param_type[i] << " ";
-    // }
-    // std::cout << std::endl;
-    // std::cout << "all face params: ";
-    // for (int i = 0; i < m_vertex_attribute[1444].face_nearly_param_type_with_ineffective.size();
-    //      i++) {
-    //     std::cout << m_vertex_attribute[1444].face_nearly_param_type_with_ineffective[i] << " ";
-    // }
-    // std::cout << std::endl;
-    // std::cout << "edge params: ";
-    // for (int i = 0; i < m_vertex_attribute[1444].in_edge_param.size(); i++) {
-    //     std::cout << m_vertex_attribute[1444].in_edge_param[i] << " ";
-    // }
-    // std::cout << std::endl;
-
-
     // // rounding
-    // std::atomic_int cnt_round(0);
-    // std::atomic_int cnt_valid(0);
+    size_t cnt_round = 0;
 
-    // auto vertices = get_vertices();
-    // for (auto v : vertices) {
-    //     // debug code
-    //     if (v.is_valid(*this)) cnt_valid++;
-
-    //     if (round(v)) cnt_round++;
-    // }
-
-    // wmtk::logger().info("cnt_round {}/{}", cnt_round, cnt_valid);
-    // // rounding
-    std::atomic_int cnt_round(0);
-    std::atomic_int cnt_valid(0);
-
-    auto vertices = get_vertices();
-    for (auto v : vertices) {
-        // debug code
-        if (v.is_valid(*this)) cnt_valid++;
-
-        if (round(v)) cnt_round++;
+    const auto vertices = get_vertices();
+    for (const Tuple& v : vertices) {
+        if (round(v)) {
+            cnt_round++;
+        }
     }
 
-    wmtk::logger().info("cnt_round {}/{}", (int)cnt_round, (int)cnt_valid);
+    wmtk::logger().info("cnt_round {}/{}", cnt_round, vertices.size());
 
     // init qualities
-    auto& m = *this;
-    for_each_tetra([&m](auto& t) { m.m_tet_attribute[t.tid(m)].m_quality = m.get_quality(t); });
+    for_each_tetra(
+        [this](const Tuple& t) { m_tet_attribute[t.tid(*this)].m_quality = get_quality(t); });
 }
-
-// void init_from_file(std::string input_dir)
-// {
-//     std::ifstream input(input_dir);
-//     size_t v_num, f_num, t_num;
-//     input >> v_num >> f_num >> t_num;
-
-//     std::vector<Vector3r> v_rational;
-//     std::vector<std::array<size_t, 4>> tets;
-//     std::vector<bool> is_v_on_surface;
-//     std::vector<bool> is_f_on_surface;
-//     std::vector<int> is_f_on_bbox;
-
-//     v_rational.reserve(v_num);
-//     tets.reserve(t_num);
-//     is_v_on_surface.reserve(v_num);
-//     is_f_on_surface.reserve(f_num);
-//     is_f_on_bbox.reserve(f_num);
-
-//     for (size_t i = 0; i < v_num; i++) {
-//         char type;
-//         double x, y, z;
-//         bool on_surface;
-//         input >> type >> x >> y >> z >> on_surface;
-//         Vector3d p(x, y, z);
-//         v_rational.push_back(to_rational(p));
-//         is_v_on_surface.push_back(on_surface);
-//     }
-
-//     for (size_t i = 0; i < f_num; i++) {
-//         char type;
-//         size_t v1, v2, v3;
-//         bool on_surface;
-//         int on_bbox;
-//         input >> type >> v1 >> v2 >> v3 >> on_surface >> on_bbox;
-//         is_f_on_surface.push_back(on_surface);
-//         is_f_on_bbox.push_back(on_bbox);
-//     }
-
-//     for (size_t i = 0; i < t_num; i++) {
-//         char type;
-//         size_t v1, v2, v3, v4;
-//         input >> type >> v1 >> v2 >> v3 >> v4;
-//         if (v1 >= v_num || v2 >= v_num || v3 >= v_num || v4 >= v_num) {
-//             std::cout << "wrong vertex id!!!" << std::endl;
-//             // exit(0);
-//         }
-//         std::array<size_t, 4> tet = {{v1, v2, v3, v4}};
-//         tets.push_back(tet);
-//     }
-
-//     init(v_num, tets);
-//     m_vertex_attribute.m_attributes.resize(v_num);
-//     m_tet_attribute.m_attributes.resize(tets.size());
-//     m_face_attribute.m_attributes.resize(tets.size() * 4);
-
-//     for (int i = 0; i < vert_capacity(); i++) {
-//         m_vertex_attribute[i].m_pos = v_rational[i];
-//         m_vertex_attribute[i].m_posf = to_double(v_rational[i]);
-//     }
-
-//     auto faces = get_faces();
-//     if (faces.size() != f_num) {
-//         std::cout << "wrong face size!!" << std::endl;
-//         // exit(0);
-//     }
-
-//     for (size_t i = 0; i < faces.size(); i++) {
-//         size_t f_id = faces[i].fid(*this);
-//         m_face_attribute[f_id].m_is_surface_fs = is_f_on_surface[i];
-//         // m_face_attribute[f_id].m_is_on_bbox = is_f_on_bbox[f_id];
-//     }
-
-//     // track bbox
-//     for (size_t i = 0; i < faces.size(); i++) {
-//         auto vs = get_face_vertices(faces[i]);
-//         std::array<size_t, 3> vids = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
-//         int on_bbox = -1;
-//         for (int k = 0; k < 3; k++) {
-//             if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_min[k] &&
-//                 m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_min[k] &&
-//                 m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_min[k]) {
-//                 on_bbox = k * 2;
-//                 break;
-//             }
-//             if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_max[k] &&
-//                 m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_max[k] &&
-//                 m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_max[k]) {
-//                 on_bbox = k * 2 + 1;
-//                 break;
-//             }
-//         }
-//         if (on_bbox < 0) continue;
-//         auto fid = faces[i].fid(*this);
-//         m_face_attribute[fid].m_is_bbox_fs = on_bbox;
-
-//         for (size_t vid : vids) {
-//             m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
-//         }
-//     }
-
-//     for_each_vertex(
-//         [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
-
-
-//     // set v surface and rounding
-//     auto vertices = get_vertices();
-
-//     std::atomic_int cnt_round(0);
-//     for (auto v : vertices) {
-//         size_t v_id = v.vid(*this);
-//         m_vertex_attribute[v_id].m_is_on_surface = is_v_on_surface[v_id];
-//         if (round(v)) cnt_round++;
-//     }
-
-//     wmtk::logger().info("cnt_round {}/{}", cnt_round, vert_capacity());
-
-//     // init tet quality
-//     auto& m = *this;
-//     for_each_tetra([&m](auto& t) { m.m_tet_attribute[t.tid(m)].m_quality = m.get_quality(t); });
-
-
-//     input.close();
-// }
 
 void ImageSimulationMesh::find_open_boundary()
 {
-    auto fs = get_faces();
-    std::cout << "fs size: " << fs.size() << std::endl;
-    auto es = get_edges();
+    const auto faces = get_faces();
     std::vector<int> edge_on_open_boundary(6 * tet_capacity(), 0);
 
     // for open boundary envelope
@@ -965,34 +754,38 @@ void ImageSimulationMesh::find_open_boundary()
         v_posf[i] = m_vertex_attribute[i].m_posf;
     }
 
-    for (auto f : fs) {
-        auto fid = f.fid(*this);
-        // std::cout << fid << ": ";
-        if (!m_face_attribute[fid].m_is_surface_fs) continue;
-        size_t eid1 = f.eid(*this);
-        size_t eid2 = f.switch_edge(*this).eid(*this);
-        size_t eid3 = f.switch_vertex(*this).switch_edge(*this).eid(*this);
-
-        // std::cout << eid1 << " " << eid2 << " " << eid3 << std::endl;
+    for (const Tuple& f : faces) {
+        const SmartTuple ff(*this, f);
+        const size_t fid = ff.fid();
+        if (!m_face_attribute[fid].m_is_surface_fs) {
+            continue;
+        }
+        size_t eid1 = ff.eid();
+        size_t eid2 = ff.switch_edge().eid();
+        size_t eid3 = ff.switch_vertex().switch_edge().eid();
 
         edge_on_open_boundary[eid1]++;
         edge_on_open_boundary[eid2]++;
         edge_on_open_boundary[eid3]++;
     }
 
-    for (auto e : es) {
-        // std::cout << edge_on_open_boundary[e.eid(*this)] << " ";
-        if (edge_on_open_boundary[e.eid(*this)] != 1) continue;
+    const auto edges = get_edges();
+    for (const Tuple& e : edges) {
+        if (edge_on_open_boundary[e.eid(*this)] != 1) {
+            continue;
+        }
         size_t v1 = e.vid(*this);
         size_t v2 = e.switch_vertex(*this).vid(*this);
         m_vertex_attribute[v1].m_is_on_open_boundary = true;
         m_vertex_attribute[v2].m_is_on_open_boundary = true;
-        open_boundaries.push_back(Eigen::Vector3i(v1, v2, v1));
+        open_boundaries.emplace_back(v1, v2, v1); // degenerate triangle to mimic the edge
     }
 
     wmtk::logger().info("open boundary num: {}", open_boundaries.size());
 
-    if (open_boundaries.size() == 0) return;
+    if (open_boundaries.size() == 0) {
+        return;
+    }
 
     // init open boundary envelope
     m_open_boundary_envelope.init(v_posf, open_boundaries, m_params.epsr * m_params.diag_l / 2.0);
@@ -1006,6 +799,12 @@ bool ImageSimulationMesh::is_open_boundary_edge(const Tuple& e)
     if (!m_vertex_attribute[v1].m_is_on_open_boundary ||
         !m_vertex_attribute[v2].m_is_on_open_boundary)
         return false;
+
+    /*
+     * This code is not reliable. If the envelope is chosen too large, elements could be reported as
+     * boundary even though they aren't. Especially, when there are sliver triangles that are barely
+     * not inverted.
+     */
 
     return !m_open_boundary_envelope.is_outside(
         {{m_vertex_attribute[v1].m_posf,

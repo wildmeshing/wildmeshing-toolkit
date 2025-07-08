@@ -773,22 +773,24 @@ bool ImageSimulationMesh::is_inverted(const Tuple& loc) const
 
 bool ImageSimulationMesh::round(const Tuple& v)
 {
-    size_t i = v.vid(*this);
-    if (m_vertex_attribute[i].m_is_rounded) return true;
+    const size_t vid = v.vid(*this);
+    auto& va = m_vertex_attribute[vid];
+    if (va.m_is_rounded) {
+        return true;
+    }
 
-    auto old_pos = m_vertex_attribute[i].m_pos;
-    m_vertex_attribute[i].m_pos << m_vertex_attribute[i].m_posf[0], m_vertex_attribute[i].m_posf[1],
-        m_vertex_attribute[i].m_posf[2];
-    auto conn_tets = get_one_ring_tets_for_vertex(v);
-    m_vertex_attribute[i].m_is_rounded = true;
-    for (auto& tet : conn_tets) {
+    const Vector3r old_pos = va.m_pos;
+    va.m_pos = to_rational(va.m_posf);
+
+    const auto tets = get_one_ring_tets_for_vertex(v);
+    for (const Tuple& tet : tets) {
         if (is_inverted(tet)) {
-            m_vertex_attribute[i].m_is_rounded = false;
-            m_vertex_attribute[i].m_pos = old_pos;
+            va.m_pos = old_pos;
             return false;
         }
     }
 
+    va.m_is_rounded = true;
     return true;
 }
 
@@ -836,9 +838,8 @@ std::vector<std::array<size_t, 3>> ImageSimulationMesh::get_faces_by_condition(
         if (cond(m_face_attribute[fid])) {
             auto tid = fid / 4, lid = fid % 4;
             auto verts = get_face_vertices(f);
-            res.emplace_back(
-                std::array<size_t, 3>{
-                    {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
+            res.emplace_back(std::array<size_t, 3>{
+                {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
         }
     }
     return res;
@@ -1028,41 +1029,43 @@ void union_uf(int u, int v, std::vector<int>& parent)
 int ImageSimulationMesh::count_vertex_links(const Tuple& v)
 {
     // get one ring faces on surface
-    auto one_ring_tets = get_one_ring_tets_for_vertex(v);
+    const auto one_ring_tets = get_one_ring_tets_for_vertex(v);
     std::vector<Tuple> surface_fs;
-    for (auto t : one_ring_tets) {
+
+    const auto v_on_surf = [this](const Tuple& t) {
+        return m_vertex_attribute[t.vid(*this)].m_is_on_surface;
+    };
+
+    for (const Tuple& t : one_ring_tets) {
         Tuple f1 = t;
         Tuple f2 = t.switch_face(*this);
         Tuple f3 = t.switch_edge(*this).switch_face(*this);
         Tuple f4 = t.switch_vertex(*this).switch_edge(*this).switch_face(*this);
-        // if (m_face_attribute[f1.fid(*this)].m_is_surface_fs) surface_fs.push_back(f1);
-        // if (m_face_attribute[f2.fid(*this)].m_is_surface_fs) surface_fs.push_back(f2);
-        // if (m_face_attribute[f3.fid(*this)].m_is_surface_fs) surface_fs.push_back(f3);
-        // if (m_face_attribute[f4.fid(*this)].m_is_surface_fs) surface_fs.push_back(f4);
-        auto f1vs = get_face_vertices(f1);
-        auto f2vs = get_face_vertices(f2);
-        auto f3vs = get_face_vertices(f3);
-        auto f4vs = get_face_vertices(f4);
-        if (m_vertex_attribute[f1vs[0].vid(*this)].m_is_on_surface &&
-            m_vertex_attribute[f1vs[1].vid(*this)].m_is_on_surface &&
-            m_vertex_attribute[f1vs[2].vid(*this)].m_is_on_surface) {
-            if (m_face_attribute[f1.fid(*this)].m_is_surface_fs) surface_fs.push_back(f1);
+
+        const auto f1vs = get_face_vertices(f1);
+        const auto f2vs = get_face_vertices(f2);
+        const auto f3vs = get_face_vertices(f3);
+        const auto f4vs = get_face_vertices(f4);
+        if (v_on_surf(f1vs[0]) && v_on_surf(f1vs[1]) && v_on_surf(f1vs[2])) {
+            if (m_face_attribute[f1.fid(*this)].m_is_surface_fs) {
+                surface_fs.push_back(f1);
+            }
         }
 
-        if (m_vertex_attribute[f2vs[0].vid(*this)].m_is_on_surface &&
-            m_vertex_attribute[f2vs[1].vid(*this)].m_is_on_surface &&
-            m_vertex_attribute[f2vs[2].vid(*this)].m_is_on_surface) {
-            if (m_face_attribute[f2.fid(*this)].m_is_surface_fs) surface_fs.push_back(f2);
+        if (v_on_surf(f2vs[0]) && v_on_surf(f2vs[1]) && v_on_surf(f2vs[2])) {
+            if (m_face_attribute[f2.fid(*this)].m_is_surface_fs) {
+                surface_fs.push_back(f2);
+            }
         }
-        if (m_vertex_attribute[f3vs[0].vid(*this)].m_is_on_surface &&
-            m_vertex_attribute[f3vs[1].vid(*this)].m_is_on_surface &&
-            m_vertex_attribute[f3vs[2].vid(*this)].m_is_on_surface) {
-            if (m_face_attribute[f3.fid(*this)].m_is_surface_fs) surface_fs.push_back(f3);
+        if (v_on_surf(f3vs[0]) && v_on_surf(f3vs[1]) && v_on_surf(f3vs[2])) {
+            if (m_face_attribute[f3.fid(*this)].m_is_surface_fs) {
+                surface_fs.push_back(f3);
+            }
         }
-        if (m_vertex_attribute[f4vs[0].vid(*this)].m_is_on_surface &&
-            m_vertex_attribute[f4vs[1].vid(*this)].m_is_on_surface &&
-            m_vertex_attribute[f4vs[2].vid(*this)].m_is_on_surface) {
-            if (m_face_attribute[f4.fid(*this)].m_is_surface_fs) surface_fs.push_back(f4);
+        if (v_on_surf(f4vs[0]) && v_on_surf(f4vs[1]) && v_on_surf(f4vs[2])) {
+            if (m_face_attribute[f4.fid(*this)].m_is_surface_fs) {
+                surface_fs.push_back(f4);
+            }
         }
     }
 
@@ -1072,18 +1075,25 @@ int ImageSimulationMesh::count_vertex_links(const Tuple& v)
     std::vector<size_t> one_ring_surface_vertices;
     std::vector<std::pair<size_t, size_t>> one_ring_surface_edges;
 
-    for (auto f : surface_fs) {
+    for (const Tuple& f : surface_fs) {
         auto vs = get_face_vertices(f);
-        if (vs[0].vid(*this) != vid && vs[1].vid(*this) != vid && vs[2].vid(*this) != vid) continue;
-        for (auto v_tuple : vs) {
-            if (v_tuple.vid(*this) != vid) one_ring_surface_vertices.push_back(v_tuple.vid(*this));
+        if (vs[0].vid(*this) != vid && vs[1].vid(*this) != vid && vs[2].vid(*this) != vid) {
+            continue;
         }
-        if (vs[0].vid(*this) != vid && vs[1].vid(*this) != vid)
-            one_ring_surface_edges.push_back(std::make_pair(vs[0].vid(*this), vs[1].vid(*this)));
-        if (vs[0].vid(*this) != vid && vs[2].vid(*this) != vid)
-            one_ring_surface_edges.push_back(std::make_pair(vs[0].vid(*this), vs[2].vid(*this)));
-        if (vs[1].vid(*this) != vid && vs[2].vid(*this) != vid)
-            one_ring_surface_edges.push_back(std::make_pair(vs[1].vid(*this), vs[2].vid(*this)));
+        for (const Tuple& v_tuple : vs) {
+            if (v_tuple.vid(*this) != vid) {
+                one_ring_surface_vertices.emplace_back(v_tuple.vid(*this));
+            }
+        }
+        if (vs[0].vid(*this) != vid && vs[1].vid(*this) != vid) {
+            one_ring_surface_edges.emplace_back(vs[0].vid(*this), vs[1].vid(*this));
+        }
+        if (vs[0].vid(*this) != vid && vs[2].vid(*this) != vid) {
+            one_ring_surface_edges.emplace_back(vs[0].vid(*this), vs[2].vid(*this));
+        }
+        if (vs[1].vid(*this) != vid && vs[2].vid(*this) != vid) {
+            one_ring_surface_edges.emplace_back(vs[1].vid(*this), vs[2].vid(*this));
+        }
     }
 
     wmtk::vector_unique(one_ring_surface_vertices);
@@ -1137,120 +1147,8 @@ int ImageSimulationMesh::count_vertex_links(const Tuple& v)
     for (int i = 0; i < m; i++) delete[] adj_mat[i];
     delete[] adj_mat;
 
-    // test code
-    // if (cnt_links > 1) {
-    //     std::cout << "----------------------------" << std::endl;
-    //     std::cout << "vid: " << vid << std::endl;
-    //     std::cout << "one ring vs: ";
-    //     for (int i = 0; i < one_ring_surface_vertices.size(); i++) {
-    //         std::cout << one_ring_surface_vertices[i] << ": "
-    //                   << m_vertex_attribute[one_ring_surface_vertices[i]].m_is_on_surface << " ";
-    //     }
-    //     std::cout << std::endl;
-    //     std::cout << "one ring edges: ";
-    //     for (int i = 0; i < one_ring_surface_edges.size(); i++) {
-    //         std::cout << one_ring_surface_edges[i].first << "-" <<
-    //         one_ring_surface_edges[i].second
-    //                   << " ";
-    //     }
-    //     std::cout << std::endl;
-    // }
-
     return cnt_links;
 }
-
-// int count_edge_links(const Tuple& e)
-// {
-//     auto one_ring_tets = get_incident_tets_for_edge(e);
-//     std::vector<Tuple> surface_fs;
-//     for (auto t : one_ring_tets) {
-//         Tuple f1 = t;
-//         Tuple f2 = t.switch_face(*this);
-//         Tuple f3 = t.switch_edge(*this).switch_face(*this);
-//         Tuple f4 = t.switch_vertex(*this).switch_edge(*this).switch_face(*this);
-//         if (m_face_attribute[f1.fid(*this)].m_is_surface_fs) surface_fs.push_back(f1);
-//         if (m_face_attribute[f2.fid(*this)].m_is_surface_fs) surface_fs.push_back(f2);
-//         if (m_face_attribute[f3.fid(*this)].m_is_surface_fs) surface_fs.push_back(f3);
-//         if (m_face_attribute[f4.fid(*this)].m_is_surface_fs) surface_fs.push_back(f4);
-//     }
-
-//     size_t vid1 = e.vid(*this);
-//     size_t vid2 = e.switch_vertex(*this).vid(*this);
-//     std::vector<size_t> one_ring_surface_vertices;
-//     std::vector<std::pair<size_t, size_t>> one_ring_surface_edges;
-
-//     for (auto f : surface_fs) {
-//         auto vs = get_face_vertices(f);
-//         for (auto v_tuple : vs) {
-//             if (v_tuple.vid(*this) != vid1 && v_tuple.vid(*this) != vid2)
-//                 one_ring_surface_vertices.push_back(v_tuple.vid(*this));
-//         }
-//         if (vs[0].vid(*this) != vid1 && vs[1].vid(*this) != vid1 && vs[0].vid(*this) != vid2 &&
-//             vs[1].vid(*this) != vid2)
-//             one_ring_surface_edges.push_back(std::make_pair(vs[0].vid(*this), vs[1].vid(*this)));
-//         if (vs[0].vid(*this) != vid1 && vs[2].vid(*this) != vid1 && vs[0].vid(*this) != vid2 &&
-//             vs[2].vid(*this) != vid2)
-//             one_ring_surface_edges.push_back(std::make_pair(vs[0].vid(*this), vs[2].vid(*this)));
-//         if (vs[1].vid(*this) != vid1 && vs[2].vid(*this) != vid1 && vs[1].vid(*this) != vid2 &&
-//             vs[2].vid(*this) != vid2)
-//             one_ring_surface_edges.push_back(std::make_pair(vs[1].vid(*this), vs[2].vid(*this)));
-//     }
-
-//     wmtk::vector_unique(one_ring_surface_vertices);
-//     std::map<size_t, int> v_idx_map;
-//     for (int i = 0; i < one_ring_surface_vertices.size(); i++) {
-//         v_idx_map[one_ring_surface_vertices[i]] = i;
-//     }
-
-//     int m = one_ring_surface_vertices.size();
-//     bool** adj_mat = new bool*[m];
-//     for (int i = 0; i < m; i++) {
-//         adj_mat[i] = new bool[m];
-//     }
-
-//     for (int i = 0; i < m; i++) {
-//         for (int j = 0; j < m; j++) {
-//             adj_mat[i][j] = false;
-//         }
-//     }
-
-//     for (auto e : one_ring_surface_edges) {
-//         adj_mat[v_idx_map[e.first]][v_idx_map[e.second]] = true;
-//         adj_mat[v_idx_map[e.second]][v_idx_map[e.first]] = true;
-//     }
-
-//     // count links
-//     int cnt_links = 0;
-
-//     // union find
-//     std::vector<int> parent(m);
-//     for (int i = 0; i < m; i++) {
-//         parent[i] = i;
-//     }
-
-//     for (int i = 0; i < m; i++) {
-//         for (int j = i + 1; j < m; j++) {
-//             if (adj_mat[i][j]) {
-//                 union_uf(i, j, parent);
-//             }
-//         }
-//     }
-
-//     for (int i = 0; i < m; i++) {
-//         if (parent[i] == i) {
-//             cnt_links++;
-//         }
-//     }
-
-//     // delete adjacency matrix
-//     for (int i = 0; i < m; i++) delete[] adj_mat[i];
-//     delete[] adj_mat;
-
-
-//     return cnt_links;
-
-//     return 0;
-// }
 
 int ImageSimulationMesh::count_edge_links(const Tuple& e)
 {
@@ -1293,14 +1191,6 @@ bool ImageSimulationMesh::is_triangle_coplanar_collection(
     const Vector3r& v3,
     const coplanar_triangle_collection& collection)
 {
-    // // check normal (exact)
-    // Vector3r triangle_normal = (v2 - v1).cross(v3 - v1);
-    // if (triangle_normal.cross(collection.normal) != Vector3r(0, 0, 0)) return false;
-
-    // // check coplanar
-    // Vector3r vec = v1 - collection.a_pos;
-    // if (vec.dot(collection.normal) != 0) return false; // dot?
-
     int o1 = orient3d_t(collection.a_pos, collection.b_pos, collection.c_pos, v1);
     int o2 = orient3d_t(collection.a_pos, collection.b_pos, collection.c_pos, v2);
     int o3 = orient3d_t(collection.a_pos, collection.b_pos, collection.c_pos, v3);

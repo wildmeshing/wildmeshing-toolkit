@@ -15,6 +15,9 @@ set(SRC_FILES
     ImageSimulationMesh.cpp
 	ImageSimulationMesh.h
 
+	extract_soup.hpp
+	extract_soup.cpp
+
 	Parameters.h
 
 	EdgeSplitting.cpp
