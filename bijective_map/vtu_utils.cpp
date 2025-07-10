@@ -89,5 +89,50 @@ void write_point_mesh_to_vtu(const Eigen::MatrixXd& V, const std::string& filena
     outfile << "</VTKFile>\n";
     outfile.close();
 }
+void write_tet_mesh_to_vtu(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& T,
+    const std::string& filename)
+{
+    std::ofstream outfile(filename);
+    outfile << "<?xml version=\"1.0\"?>\n";
+    outfile << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">\n";
+    outfile << "  <UnstructuredGrid>\n";
+    outfile << "    <Piece NumberOfPoints=\"" << V.rows() << "\" NumberOfCells=\"" << T.rows()
+            << "\">\n";
+
+    // Write points
+    outfile << "      <Points>\n";
+    outfile << "        <DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">\n";
+    for (int i = 0; i < V.rows(); i++) {
+        outfile << "          " << V(i, 0) << " " << V(i, 1) << " " << V(i, 2) << "\n";
+    }
+    outfile << "        </DataArray>\n";
+    outfile << "      </Points>\n";
+
+    // Write cells (tetrahedra)
+    outfile << "      <Cells>\n";
+    outfile << "        <DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n";
+    for (int i = 0; i < T.rows(); i++) {
+        outfile << "          " << T(i, 0) << " " << T(i, 1) << " " << T(i, 2) << " " << T(i, 3)
+                << "\n";
+    }
+    outfile << "        </DataArray>\n";
+    outfile << "        <DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n";
+    for (int i = 0; i < T.rows(); i++) {
+        outfile << "          " << ((i + 1) * 4) << "\n";
+    }
+    outfile << "        </DataArray>\n";
+    outfile << "        <DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">\n";
+    for (int i = 0; i < T.rows(); i++) {
+        outfile << "          10\n"; // VTK_TETRA = 10
+    }
+    outfile << "        </DataArray>\n";
+    outfile << "      </Cells>\n";
+    outfile << "    </Piece>\n";
+    outfile << "  </UnstructuredGrid>\n";
+    outfile << "</VTKFile>\n";
+    outfile.close();
+}
 
 } // namespace vtu_utils

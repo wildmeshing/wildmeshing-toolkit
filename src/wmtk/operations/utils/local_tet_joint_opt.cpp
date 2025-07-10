@@ -336,7 +336,7 @@ double compute_energy_and_gradient_fast(
     return total_E / total_volume;
 }
 
-void local_tet_joint_opt(
+double local_tet_joint_opt(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& T_before,
     const Eigen::MatrixXi& T_after,
@@ -487,13 +487,14 @@ void local_tet_joint_opt(
         }
     }
 
-    if (true) {
+    if (false) {
         // visualization for debugging
         debug_visualization(T_before, T_after, V, V_param, V_current, current_energy);
     }
     // Update the output parameters
     V_param = V_current;
     std::cout << "Final energy: " << current_energy << std::endl;
+    return current_energy;
     // Compute energy and gradient for the entire mesh
 }
 

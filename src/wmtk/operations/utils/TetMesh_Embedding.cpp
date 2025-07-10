@@ -10,8 +10,8 @@
 #include <algorithm>
 #include <array>
 #include <map>
-#include <set>
 #include <queue>
+#include <set>
 #include "local_tet_joint_opt.hpp"
 #include "to_three_connected.hpp"
 namespace wmtk::operations::utils {
@@ -127,12 +127,11 @@ Eigen::MatrixXi find_F_top(const std::unordered_set<int>& non_bd_vertices, const
     // For each tetrahedron
     for (int i = 0; i < T.rows(); ++i) {
         // Get all possible triangular faces from the tetrahedron
-        std::array<std::array<int, 3>, 4> faces = {{
-            {{T(i, 0), T(i, 1), T(i, 2)}},
-            {{T(i, 0), T(i, 1), T(i, 3)}},
-            {{T(i, 0), T(i, 2), T(i, 3)}},
-            {{T(i, 1), T(i, 2), T(i, 3)}}
-        }};
+        std::array<std::array<int, 3>, 4> faces = {
+            {{{T(i, 0), T(i, 1), T(i, 2)}},
+             {{T(i, 0), T(i, 1), T(i, 3)}},
+             {{T(i, 0), T(i, 2), T(i, 3)}},
+             {{T(i, 1), T(i, 2), T(i, 3)}}}};
 
         // Check each face
         for (auto face : faces) {
@@ -420,12 +419,11 @@ void visualize_tet_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& T)
     // Use a simple method to extract the surface: process each face of every tetrahedron
     for (int i = 0; i < T.rows(); ++i) {
         // Four faces of the tetrahedron
-        std::array<std::array<int, 3>, 4> tet_faces = {{
-            {{T(i, 1), T(i, 0), T(i, 2)}},
-            {{T(i, 1), T(i, 2), T(i, 3)}},
-            {{T(i, 0), T(i, 3), T(i, 2)}},
-            {{T(i, 1), T(i, 3), T(i, 0)}}
-        }};
+        std::array<std::array<int, 3>, 4> tet_faces = {
+            {{{T(i, 1), T(i, 0), T(i, 2)}},
+             {{T(i, 1), T(i, 2), T(i, 3)}},
+             {{T(i, 0), T(i, 3), T(i, 2)}},
+             {{T(i, 1), T(i, 3), T(i, 0)}}}};
 
         // Add all faces (simplified approach, ideally should detect which are on the surface)
         for (const auto& face : tet_faces) {
@@ -1144,12 +1142,17 @@ Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, Eigen::MatrixXd& V, in
             bottom_plane_vids.push_back(boundary_loop(i));
         }
     }
-    utils::local_tet_joint_opt(
+    double energy = utils::local_tet_joint_opt(
         V,
         T_3_connected,
         T_3_connected_collapsed,
         V_param,
         bottom_plane_vids);
+
+    if (energy > 1e5) {
+        std::cout << "Local tet joint optimization failed with energy: " << energy << std::endl;
+        return Eigen::MatrixXd();
+    }
 
     std::cout << "Total failure count: " << failure_count << std::endl;
     std::cout << "Total count: " << total_count << std::endl;
@@ -1157,6 +1160,7 @@ Eigen::MatrixXd embed_mesh_lift(const Eigen::MatrixXi& T, Eigen::MatrixXd& V, in
         // TODO: delete this
         return Eigen::MatrixXd();
     }
+
 
     if (is_tutte_embedding_failed || is_lift_failed) {
         // TODO: try to fix the embedding later

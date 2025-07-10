@@ -152,7 +152,8 @@ void parse_non_collapse_file_tet(
     Eigen::MatrixXd& V_after,
     Eigen::MatrixXi& T_after,
     std::vector<int64_t>& id_map_after,
-    std::vector<int64_t>& v_id_map_after);
+    std::vector<int64_t>& v_id_map_after,
+    int operation_id = -1);
 
 // void parse_edge_collapse_file_tet(
 //     const json& operation_log,

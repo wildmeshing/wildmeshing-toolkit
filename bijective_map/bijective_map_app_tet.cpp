@@ -96,7 +96,8 @@ void track_point_one_operation_tet(
     const json& operation_log,
     std::vector<query_point_tet>& query_points,
     bool do_forward = false,
-    bool use_rational = false)
+    bool use_rational = false,
+    int operation_id = -1)
 {
     std::string operation_name;
     operation_name = operation_log["operation_name"];
@@ -123,7 +124,8 @@ void track_point_one_operation_tet(
             V_after,
             T_after,
             id_map_after,
-            v_id_map_after);
+            v_id_map_after,
+            operation_id);
 
         if (do_forward) {
             handle_local_mapping_tet(
@@ -155,7 +157,8 @@ void track_curve_one_operation_tet(
     const json& operation_log,
     query_curve_tet& curve,
     bool do_forward = false,
-    bool use_rational = false)
+    bool use_rational = false,
+    int operation_id = -1)
 {
     std::string operation_name;
     operation_name = operation_log["operation_name"];
@@ -182,7 +185,8 @@ void track_curve_one_operation_tet(
             V_after,
             T_after,
             id_map_after,
-            v_id_map_after);
+            v_id_map_after,
+            operation_id);
 
         if (do_forward) {
             handle_local_mapping_tet_curve(
@@ -213,7 +217,8 @@ void track_surface_one_operation_tet(
     const json& operation_log,
     query_surface_tet& query_surface,
     bool do_forward = false,
-    bool use_rational = false)
+    bool use_rational = false,
+    int operation_id = -1)
 {
     std::string operation_name = operation_log["operation_name"];
     if (operation_name == "MeshConsolidate") {
@@ -238,7 +243,8 @@ void track_surface_one_operation_tet(
             V_after,
             T_after,
             id_map_after,
-            v_id_map_after);
+            v_id_map_after,
+            operation_id);
 
         if (do_forward) {
             handle_local_mapping_tet_surface(
@@ -297,7 +303,7 @@ void track_surface_tet(
         file >> operation_log;
 
         std::cout << "Trace Operations number: " << file_id << std::endl;
-        track_surface_one_operation_tet(operation_log, query_surface, do_forward, use_rational);
+        track_surface_one_operation_tet(operation_log, query_surface, do_forward, use_rational, file_id);
 
         file.close();
     }
@@ -335,7 +341,7 @@ void track_point_tet(
         file >> operation_log;
 
         std::cout << "Trace Operations number: " << file_id << std::endl;
-        track_point_one_operation_tet(operation_log, query_points, do_forward, use_rational);
+        track_point_one_operation_tet(operation_log, query_points, do_forward, use_rational, file_id);
 
         file.close();
     }
@@ -373,7 +379,7 @@ void track_curve_tet(
         file >> operation_log;
 
         std::cout << "Trace Operations number: " << file_id << std::endl;
-        track_curve_one_operation_tet(operation_log, curve, do_forward, use_rational);
+        track_curve_one_operation_tet(operation_log, curve, do_forward, use_rational, file_id);
 
         file.close();
     }
