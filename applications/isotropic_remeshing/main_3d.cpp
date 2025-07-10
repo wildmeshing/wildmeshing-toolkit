@@ -17,6 +17,9 @@
 #include <wmtk/components/utils/resolve_path.hpp>
 
 #include "spec.hpp"
+#ifdef WMTK_RECORD_OPERATIONS
+#include <wmtk/Record_Operations.hpp>
+#endif
 
 using namespace wmtk::components;
 using namespace wmtk;
@@ -38,6 +41,9 @@ int main(int argc, char* argv[])
         wmtk::applications::isotropic_remeshing::spec,
         json_input_file);
 
+#ifdef WMTK_RECORD_OPERATIONS
+    OperationLogPath = generatePathNameWithCurrentTime();
+#endif
     const auto input_opts = j["input"].get<wmtk::components::input::InputOptions>();
 
     auto named_mesh = wmtk::components::input::input(input_opts);

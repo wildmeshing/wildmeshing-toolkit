@@ -1,0 +1,21 @@
+{
+    "input": {
+        "file": "../data/circle.msh",
+        "name_spec": {},
+        "ignore_z": false
+    },
+    "output": "test",
+    "attributes": {
+        "position": "vertices",
+        "inversion_position": "vertices",
+        "other_positions": []
+    },
+    "iterations": 3,
+    "length_rel": 0.03,
+    "length_abs": -1,
+    "lock_boundary": true,
+    "use_for_periodic": false,
+    "dont_disable_split": false,
+    "fix_uv_seam": false,
+    "pass_through": []
+}
