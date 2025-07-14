@@ -6,8 +6,54 @@
 #include <string>
 #include <algorithm>
 #include <cctype>
+#include <cstring>
+#include <cstdint>
 
 namespace vtu_utils {
+
+// Base64 decoding helper function
+std::vector<uint8_t> base64_decode(const std::string& encoded) {
+    const std::string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    std::vector<uint8_t> decoded;
+    
+    int val = 0, valb = -8;
+    for (unsigned char c : encoded) {
+        if (chars.find(c) == std::string::npos) continue;
+        val = (val << 6) + chars.find(c);
+        valb += 6;
+        if (valb >= 0) {
+            decoded.push_back(char((val >> valb) & 0xFF));
+            valb -= 8;
+        }
+    }
+    return decoded;
+}
+
+// Extract data from binary VTU format
+template<typename T>
+std::vector<T> extract_binary_data(const std::string& base64_data) {
+    std::vector<uint8_t> binary_data = base64_decode(base64_data);
+    
+    if (binary_data.size() < sizeof(uint64_t)) {
+        std::cerr << "Binary data too small for header" << std::endl;
+        return std::vector<T>();
+    }
+    
+    // VTU binary format: first 8 bytes are the size (uint64_t), then the data
+    uint64_t data_size;
+    std::memcpy(&data_size, binary_data.data(), sizeof(uint64_t));
+    
+    size_t expected_elements = data_size / sizeof(T);
+    std::vector<T> result(expected_elements);
+    
+    if (binary_data.size() < sizeof(uint64_t) + data_size) {
+        std::cerr << "Binary data size mismatch" << std::endl;
+        return std::vector<T>();
+    }
+    
+    std::memcpy(result.data(), binary_data.data() + sizeof(uint64_t), data_size);
+    return result;
+}
 
 void write_triangle_mesh_to_vtu(
     const Eigen::MatrixXd& V,
@@ -152,64 +198,111 @@ bool read_triangle_mesh_from_vtu(
         return false;
     }
 
+    std::string content;
     std::string line;
+    while (std::getline(infile, line)) {
+        content += line + "\n";
+    }
+    infile.close();
+
     std::vector<Eigen::Vector3d> vertices;
     std::vector<Eigen::Vector3i> faces;
     
-    bool in_points = false;
-    bool in_connectivity = false;
-    bool in_types = false;
+    // Parse points (vertices)
+    size_t points_start = content.find("<DataArray type=\"Float64\" NumberOfComponents=\"3\"");
+    if (points_start == std::string::npos) {
+        std::cerr << "Could not find points data array" << std::endl;
+        return false;
+    }
     
-    while (std::getline(infile, line)) {
-        // Remove leading/trailing whitespace
-        line.erase(0, line.find_first_not_of(" \t\r\n"));
-        line.erase(line.find_last_not_of(" \t\r\n") + 1);
-        
-        if (line.find("<DataArray type=\"Float64\" NumberOfComponents=\"3\"") != std::string::npos) {
-            in_points = true;
-            continue;
+    size_t points_format_start = content.find("format=\"", points_start);
+    if (points_format_start == std::string::npos) {
+        std::cerr << "Could not find format specification for points" << std::endl;
+        return false;
+    }
+    points_format_start += 8; // Skip 'format="'
+    
+    bool points_binary = (content.substr(points_format_start, 6) == "binary");
+    
+    size_t points_data_start = content.find(">", points_start) + 1;
+    size_t points_data_end = content.find("</DataArray>", points_data_start);
+    
+    if (points_data_start == std::string::npos || points_data_end == std::string::npos) {
+        std::cerr << "Could not find points data" << std::endl;
+        return false;
+    }
+    
+    std::string points_data = content.substr(points_data_start, points_data_end - points_data_start);
+    
+    if (points_binary) {
+        // Handle binary format
+        std::vector<double> point_values = extract_binary_data<double>(points_data);
+        for (size_t i = 0; i + 2 < point_values.size(); i += 3) {
+            vertices.push_back(Eigen::Vector3d(point_values[i], point_values[i+1], point_values[i+2]));
         }
-        
-        if (line.find("<DataArray type=\"Int32\" Name=\"connectivity\"") != std::string::npos) {
-            in_connectivity = true;
-            continue;
-        }
-        
-        if (line.find("<DataArray type=\"UInt8\" Name=\"types\"") != std::string::npos) {
-            in_types = true;
-            continue;
-        }
-        
-        if (line.find("</DataArray>") != std::string::npos) {
-            in_points = false;
-            in_connectivity = false;
-            in_types = false;
-            continue;
-        }
-        
-        if (in_points) {
-            std::istringstream iss(line);
-            double x, y, z;
-            if (iss >> x >> y >> z) {
-                vertices.push_back(Eigen::Vector3d(x, y, z));
-            }
-        }
-        
-        if (in_connectivity) {
-            std::istringstream iss(line);
-            std::vector<int> indices;
-            int idx;
-            while (iss >> idx) {
-                indices.push_back(idx);
-            }
-            // Group indices into triangles (sets of 3)
-            for (size_t i = 0; i + 2 < indices.size(); i += 3) {
-                faces.push_back(Eigen::Vector3i(indices[i], indices[i+1], indices[i+2]));
-            }
+    } else {
+        // Handle ASCII format
+        std::istringstream points_stream(points_data);
+        double x, y, z;
+        while (points_stream >> x >> y >> z) {
+            vertices.push_back(Eigen::Vector3d(x, y, z));
         }
     }
     
-    infile.close();
+    // Parse connectivity (faces) - try both Int32 and Int64
+    size_t conn_start = content.find("<DataArray type=\"Int32\" Name=\"connectivity\"");
+    bool is_int64 = false;
+    if (conn_start == std::string::npos) {
+        conn_start = content.find("<DataArray type=\"Int64\" Name=\"connectivity\"");
+        is_int64 = true;
+    }
+    if (conn_start == std::string::npos) {
+        std::cerr << "Could not find connectivity data array (tried Int32 and Int64)" << std::endl;
+        return false;
+    }
+    
+    size_t conn_format_start = content.find("format=\"", conn_start);
+    if (conn_format_start == std::string::npos) {
+        std::cerr << "Could not find format specification for connectivity" << std::endl;
+        return false;
+    }
+    conn_format_start += 8; // Skip 'format="'
+    
+    bool conn_binary = (content.substr(conn_format_start, 6) == "binary");
+    
+    size_t conn_data_start = content.find(">", conn_start) + 1;
+    size_t conn_data_end = content.find("</DataArray>", conn_data_start);
+    
+    if (conn_data_start == std::string::npos || conn_data_end == std::string::npos) {
+        std::cerr << "Could not find connectivity data" << std::endl;
+        return false;
+    }
+    
+    std::string conn_data = content.substr(conn_data_start, conn_data_end - conn_data_start);
+    
+    std::vector<int> connectivity;
+    if (conn_binary) {
+        // Handle binary format
+        if (is_int64) {
+            std::vector<int64_t> conn_values = extract_binary_data<int64_t>(conn_data);
+            connectivity.assign(conn_values.begin(), conn_values.end());
+        } else {
+            std::vector<int32_t> conn_values = extract_binary_data<int32_t>(conn_data);
+            connectivity.assign(conn_values.begin(), conn_values.end());
+        }
+    } else {
+        // Handle ASCII format
+        std::istringstream conn_stream(conn_data);
+        int idx;
+        while (conn_stream >> idx) {
+            connectivity.push_back(idx);
+        }
+    }
+    
+    // Group connectivity into triangles (sets of 3)
+    for (size_t i = 0; i + 2 < connectivity.size(); i += 3) {
+        faces.push_back(Eigen::Vector3i(connectivity[i], connectivity[i+1], connectivity[i+2]));
+    }
     
     // Convert to Eigen matrices
     V.resize(vertices.size(), 3);

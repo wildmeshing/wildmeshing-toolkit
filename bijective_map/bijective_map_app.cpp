@@ -62,12 +62,24 @@ int main(int argc, char** argv)
 
     Eigen::MatrixXd V_out, Vt_out, Vn_out;
     Eigen::MatrixXi F_out, Ft_out, Fn_out;
-    std::cout << "\nloading output obj file..." << std::endl;
-    igl::readOBJ(output_mesh_file.string(), V_out, Vt_out, Vn_out, F_out, Ft_out, Fn_out);
+
+    if (output_mesh_file.extension() == ".vtu") {
+        std::cout << "\nloading output vtu file..." << std::endl;
+        vtu_utils::read_triangle_mesh_from_vtu(output_mesh_file.string(), V_out, F_out);
+    } else {
+        std::cout << "\nloading output obj file..." << std::endl;
+        igl::readOBJ(output_mesh_file.string(), V_out, Vt_out, Vn_out, F_out, Ft_out, Fn_out);
+    }
     std::cout << "F_out size" << F_out.rows() << ", " << F_out.cols() << std::endl;
     std::cout << "V_out size" << V_out.rows() << ", " << V_in.cols() << std::endl;
 
     if (application_name == "texture") {
+        if (output_mesh_file.extension() == ".vtu") {
+            std::cout << "\noutput mesh is a vtu file, not supported for texture transfer"
+                      << std::endl;
+            return EXIT_FAILURE;
+        }
+
         Eigen::MatrixXd V_in_obj, Vt_in_obj, Vn_in_obj;
         Eigen::MatrixXi F_in_obj, Ft_in_obj, Fn_in_obj;
 
