@@ -18,6 +18,7 @@ using namespace wmtk;
 // applications
 #include "track_line_app.hpp"
 #include "track_point_app.hpp"
+#include "vtu_utils.hpp"
 
 
 int main(int argc, char** argv)
@@ -41,7 +42,6 @@ int main(int argc, char** argv)
     int width_out = 200;
     app.add_option("--height_out", height_out, "Height of the output image");
     app.add_option("--width_out", width_out, "Width of the output image");
-
 
     CLI11_PARSE(app, argc, argv);
 

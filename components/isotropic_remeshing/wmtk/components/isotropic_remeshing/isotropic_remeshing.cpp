@@ -173,7 +173,7 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
         op_split->set_new_attribute_strategy(attr);
     }
     assert(op_split->attribute_new_all_configured());
-    // ops.push_back(op_split);
+    ops.push_back(op_split);
 
 
     //////////////////////////////////////////

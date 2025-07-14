@@ -1,5 +1,11 @@
 #include "vtu_utils.hpp"
 #include <fstream>
+#include <iostream>
+#include <sstream>
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <cctype>
 
 namespace vtu_utils {
 
@@ -133,6 +139,90 @@ void write_tet_mesh_to_vtu(
     outfile << "  </UnstructuredGrid>\n";
     outfile << "</VTKFile>\n";
     outfile.close();
+}
+
+bool read_triangle_mesh_from_vtu(
+    const std::string& filename,
+    Eigen::MatrixXd& V,
+    Eigen::MatrixXi& F)
+{
+    std::ifstream infile(filename);
+    if (!infile.is_open()) {
+        std::cerr << "Error: Cannot open VTU file " << filename << std::endl;
+        return false;
+    }
+
+    std::string line;
+    std::vector<Eigen::Vector3d> vertices;
+    std::vector<Eigen::Vector3i> faces;
+    
+    bool in_points = false;
+    bool in_connectivity = false;
+    bool in_types = false;
+    
+    while (std::getline(infile, line)) {
+        // Remove leading/trailing whitespace
+        line.erase(0, line.find_first_not_of(" \t\r\n"));
+        line.erase(line.find_last_not_of(" \t\r\n") + 1);
+        
+        if (line.find("<DataArray type=\"Float64\" NumberOfComponents=\"3\"") != std::string::npos) {
+            in_points = true;
+            continue;
+        }
+        
+        if (line.find("<DataArray type=\"Int32\" Name=\"connectivity\"") != std::string::npos) {
+            in_connectivity = true;
+            continue;
+        }
+        
+        if (line.find("<DataArray type=\"UInt8\" Name=\"types\"") != std::string::npos) {
+            in_types = true;
+            continue;
+        }
+        
+        if (line.find("</DataArray>") != std::string::npos) {
+            in_points = false;
+            in_connectivity = false;
+            in_types = false;
+            continue;
+        }
+        
+        if (in_points) {
+            std::istringstream iss(line);
+            double x, y, z;
+            if (iss >> x >> y >> z) {
+                vertices.push_back(Eigen::Vector3d(x, y, z));
+            }
+        }
+        
+        if (in_connectivity) {
+            std::istringstream iss(line);
+            std::vector<int> indices;
+            int idx;
+            while (iss >> idx) {
+                indices.push_back(idx);
+            }
+            // Group indices into triangles (sets of 3)
+            for (size_t i = 0; i + 2 < indices.size(); i += 3) {
+                faces.push_back(Eigen::Vector3i(indices[i], indices[i+1], indices[i+2]));
+            }
+        }
+    }
+    
+    infile.close();
+    
+    // Convert to Eigen matrices
+    V.resize(vertices.size(), 3);
+    for (size_t i = 0; i < vertices.size(); ++i) {
+        V.row(i) = vertices[i].transpose();
+    }
+    
+    F.resize(faces.size(), 3);
+    for (size_t i = 0; i < faces.size(); ++i) {
+        F.row(i) = faces[i].transpose();
+    }
+    
+    return true;
 }
 
 } // namespace vtu_utils

@@ -34,5 +34,17 @@ void write_tet_mesh_to_vtu(
     const Eigen::MatrixXi& T,
     const std::string& filename);
 
+/**
+ * @brief Read triangle mesh from VTU file
+ * @param filename VTU filename
+ * @param V Output vertex coordinates matrix (n x 3)
+ * @param F Output face indices matrix (m x 3)
+ * @return true if read successful, false otherwise
+ */
+bool read_triangle_mesh_from_vtu(
+    const std::string& filename,
+    Eigen::MatrixXd& V,
+    Eigen::MatrixXi& F);
+
 
 } // namespace vtu_utils
