@@ -1,6 +1,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 
 #include "track_operations.hpp"
 // Function to save a vector<query_curve> to a file
@@ -200,31 +201,21 @@ void handle_collapse_edge(
                 }
             }
             if (offset_in_f_after == -1) {
-                // print the whole v_id_map_joint
-                std::cout << "something is wrong!" << std::endl;
-
-                std::cout << "the F_after:\n" << F_after << std::endl;
-
-                std::cout << "v_id_map_joint: ";
-                for (int i = 0; i < v_id_map_joint.size(); i++) {
-                    std::cout << v_id_map_joint[i] << ", ";
-                }
-
-                std::cout << "local_index_in_f_after: " << local_index_in_f_after << std::endl;
+                std::stringstream error_msg;
+                error_msg << "FATAL ERROR in handle_collapse_edge: Failed to find vertex ID mapping.\n";
+                error_msg << "Query point vertex ID " << qp.fv_ids[0] << " not found in F_after triangle.\n";
+                error_msg << "F_after triangle vertices: ";
                 for (int i = 0; i < 3; i++) {
-                    std::cout << F_after(local_index_in_f_after, i) << ", ";
+                    error_msg << v_id_map_joint[F_after(local_index_in_f_after, i)];
+                    if (i < 2) error_msg << ", ";
                 }
+                error_msg << "\nQuery point vertex IDs: ";
                 for (int i = 0; i < 3; i++) {
-                    std::cout << v_id_map_joint[F_after(local_index_in_f_after, i)] << ", ";
+                    error_msg << qp.fv_ids[i];
+                    if (i < 2) error_msg << ", ";
                 }
-                std::cout << std::endl;
-                for (int i = 0; i < 3; i++) {
-                    std::cout << qp.fv_ids[i] << ", ";
-                }
-                std::cout << std::endl;
-                throw std::runtime_error("something is wrong with offset_in_f_after!");
-                continue;
-                // return;
+                error_msg << "\nThis indicates a serious numerical or topological error.";
+                throw std::runtime_error(error_msg.str());
             }
 
             // compute the location of the qp
@@ -265,9 +256,11 @@ void handle_collapse_edge(
             }
 
             if (!bc_updated) {
-                std::cout << "bc not updated\n" << std::endl;
-                continue;
-                // return;
+                std::stringstream error_msg;
+                error_msg << "FATAL ERROR in handle_collapse_edge: Failed to update barycentric coordinates.\n";
+                error_msg << "Query point could not be located in any triangle after mesh operation.\n";
+                error_msg << "This indicates a serious numerical or topological error.";
+                throw std::runtime_error(error_msg.str());
             }
             // else {
             //     std::cout << "bc updated\n" << std::endl;
@@ -332,12 +325,12 @@ void handle_collapse_edge_r(
                 }
             }
             if (offset_in_f_after == -1) {
-                std::cout << "qp.fv_id: " << qp.fv_ids[0] << ", " << qp.fv_ids[1] << ", "
-                          << qp.fv_ids[2] << std::endl;
-                std::cout << "local_index_in_f_after: " << local_index_in_f_after << std::endl;
-                std::cout << "something is wrong!" << std::endl;
-                continue;
-                // return;
+                std::stringstream error_msg;
+                error_msg << "FATAL ERROR in handle_collapse_edge_r: Failed to find vertex ID mapping.\n";
+                error_msg << "Query point vertex IDs: " << qp.fv_ids[0] << ", " << qp.fv_ids[1] << ", " << qp.fv_ids[2] << "\n";
+                error_msg << "Local index in F_after: " << local_index_in_f_after << "\n";
+                error_msg << "This indicates a serious numerical or topological error in rational computation.";
+                throw std::runtime_error(error_msg.str());
             }
 
             // compute the location of the qp
@@ -378,10 +371,11 @@ void handle_collapse_edge_r(
             }
 
             if (!bc_updated) {
-                std::cout << "bc not updated in rational\n" << std::endl;
-                throw std::runtime_error("bc not updated in rational");
-                continue;
-                // return;
+                std::stringstream error_msg;
+                error_msg << "FATAL ERROR in rational computation: Failed to update barycentric coordinates.\n";
+                error_msg << "Query point could not be located in any triangle after mesh operation.\n";
+                error_msg << "This indicates a serious numerical or topological error in exact arithmetic.";
+                throw std::runtime_error(error_msg.str());
             }
 
             // update qp
@@ -726,7 +720,7 @@ void handle_collapse_edge_curve(
 }
 
 
-void handle_split_edge(
+void handle_non_collapse_operation(
     const Eigen::MatrixXd& V_before,
     const Eigen::MatrixXi& F_before,
     const std::vector<int64_t>& id_map_before,
@@ -735,9 +729,11 @@ void handle_split_edge(
     const Eigen::MatrixXi& F_after,
     const std::vector<int64_t>& id_map_after,
     const std::vector<int64_t>& v_id_map_after,
-    std::vector<query_point>& query_points)
+    std::vector<query_point>& query_points,
+    const std::string& operation_name = "non-collapse operation",
+    double eps_3d = 1e-3)
 {
-    std::cout << "Handling EdgeSplit" << std::endl;
+    std::cout << "Handling " << operation_name << std::endl;
     // igl::parallel_for(query_points.size(), [&](int id) {
     for (int id = 0; id < query_points.size(); id++) {
         query_point& qp = query_points[id];
@@ -760,110 +756,12 @@ void handle_split_edge(
                 }
             }
             if (offset_in_f_after == -1) {
-                std::cout << "something is wrong!" << std::endl;
-                continue;
-                // return;
-            }
-
-            // compute the location of the qp
-            int V_cols = V_after.cols();
-            Eigen::VectorXd p = Eigen::VectorXd::Zero(V_cols);
-            for (int i = 0; i < 3; i++) {
-                p += V_after.row(F_after(local_index_in_f_after, (i + offset_in_f_after) % 3)) *
-                     qp.bc(i);
-            }
-
-
-            // compute bc of the p in (V, F)_before
-            int local_index_in_f_before = -1;
-            double bc_min_coef = 1;
-            bool bc_updated = false;
-            for (int i = 0; i < F_before.rows(); i++) {
-                Eigen::Vector3d bc;
-                if (V_cols == 2) {
-                    bc = ComputeBarycentricCoordinates2D(
-                        p,
-                        V_before.row(F_before(i, 0)),
-                        V_before.row(F_before(i, 1)),
-                        V_before.row(F_before(i, 2)));
-                } else // V_cols == 3
-                {
-                    bc = ComputeBarycentricCoordinates3D(
-                        p,
-                        V_before.row(F_before(i, 0)),
-                        V_before.row(F_before(i, 1)),
-                        V_before.row(F_before(i, 2)));
-                }
-                if (-bc.minCoeff() < bc_min_coef) {
-                    bc_min_coef = -bc.minCoeff();
-                    local_index_in_f_before = i;
-                    qp.bc = bc;
-                    bc_updated = true;
-                }
-            }
-
-            if (!bc_updated) {
-                std::cout << "bc not updated\n" << std::endl;
-                continue;
-                // return;
-            }
-
-            // update qp
-            qp.f_id = id_map_before[local_index_in_f_before];
-            for (int i = 0; i < 3; i++) {
-                qp.fv_ids[i] = v_id_map_before[F_before(local_index_in_f_before, i)];
-            }
-            qp.bc[0] = std::max(0.0, std::min(1.0, qp.bc[0]));
-            qp.bc[1] = std::max(0.0, std::min(1.0, qp.bc[1]));
-            qp.bc[2] = std::max(0.0, std::min(1.0, qp.bc[2]));
-            qp.bc /= qp.bc.sum();
-
-            // std::cout << "qp-> " << qp.f_id << std::endl;
-            // std::cout << "qp.bc: (" << qp.bc(0) << ", " << qp.bc(1) << ", " << qp.bc(2) << ")"
-            //           << std::endl
-            //           << std::endl;
-        }
-    }
-    // });
-}
-
-void handle_swap_edge(
-    const Eigen::MatrixXd& V_before,
-    const Eigen::MatrixXi& F_before,
-    const std::vector<int64_t>& id_map_before,
-    const std::vector<int64_t>& v_id_map_before,
-    const Eigen::MatrixXd& V_after,
-    const Eigen::MatrixXi& F_after,
-    const std::vector<int64_t>& id_map_after,
-    const std::vector<int64_t>& v_id_map_after,
-    std::vector<query_point>& query_points)
-{
-    // std::cout << "Handling EdgeSwap" << std::endl;
-    // igl::parallel_for(query_points.size(), [&](int id) {
-    for (int id = 0; id < query_points.size(); id++) {
-        query_point& qp = query_points[id];
-        if (qp.f_id < 0) continue;
-        // find if qp is in the id_map_after
-        auto it = std::find(id_map_after.begin(), id_map_after.end(), qp.f_id);
-        if (it != id_map_after.end()) {
-            // std::cout << "find qp: " << qp.f_id << std::endl;
-            // std::cout << "qp.bc: (" << qp.bc(0) << ", " << qp.bc(1) << ", " << qp.bc(2) << ")"
-            //           << std::endl;
-
-            // find the index of qp in id_map_after
-            int local_index_in_f_after = std::distance(id_map_after.begin(), it);
-            // offset of the qp.fv_ids
-            int offset_in_f_after = -1;
-            for (int i = 0; i < 3; i++) {
-                if (v_id_map_after[F_after(local_index_in_f_after, i)] == qp.fv_ids[0]) {
-                    offset_in_f_after = i;
-                    break;
-                }
-            }
-            if (offset_in_f_after == -1) {
-                std::cout << "something is wrong!" << std::endl;
-                continue;
-                // return;
+                std::stringstream error_msg;
+                error_msg << "FATAL ERROR in " << operation_name << ": Failed to find vertex ID mapping.\n";
+                error_msg << "Query point face ID: " << qp.f_id << "\n";
+                error_msg << "Expected vertex ID: " << qp.fv_ids[0] << "\n";
+                error_msg << "This indicates a serious numerical or topological error.";
+                throw std::runtime_error(error_msg.str());
             }
 
             // compute the location of the qp
@@ -894,7 +792,7 @@ void handle_swap_edge(
                         V_before.row(F_before(i, 0)),
                         V_before.row(F_before(i, 1)),
                         V_before.row(F_before(i, 2)),
-                        100000);
+                        eps_3d);
                 }
                 if (-bc.minCoeff() < bc_min_coef) {
                     bc_min_coef = -bc.minCoeff();
@@ -905,9 +803,11 @@ void handle_swap_edge(
             }
 
             if (!bc_updated) {
-                std::cout << "bc not updated\n" << std::endl;
-                continue;
-                // return;
+                std::stringstream error_msg;
+                error_msg << "FATAL ERROR in " << operation_name << ": Failed to update barycentric coordinates.\n";
+                error_msg << "Query point could not be located in any triangle after mesh operation.\n";
+                error_msg << "This indicates a serious numerical or topological error.";
+                throw std::runtime_error(error_msg.str());
             }
 
             // update qp
@@ -915,7 +815,6 @@ void handle_swap_edge(
             for (int i = 0; i < 3; i++) {
                 qp.fv_ids[i] = v_id_map_before[F_before(local_index_in_f_before, i)];
             }
-            // avoid numerical issue
             qp.bc[0] = std::max(0.0, std::min(1.0, qp.bc[0]));
             qp.bc[1] = std::max(0.0, std::min(1.0, qp.bc[1]));
             qp.bc[2] = std::max(0.0, std::min(1.0, qp.bc[2]));
@@ -930,6 +829,41 @@ void handle_swap_edge(
     // });
 }
 
+// Convenience wrapper functions for backward compatibility
+void handle_split_edge(
+    const Eigen::MatrixXd& V_before,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixXd& V_after,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& id_map_after,
+    const std::vector<int64_t>& v_id_map_after,
+    std::vector<query_point>& query_points)
+{
+    handle_non_collapse_operation(
+        V_before, F_before, id_map_before, v_id_map_before,
+        V_after, F_after, id_map_after, v_id_map_after,
+        query_points, "EdgeSplit", 1e-3);
+}
+
+void handle_swap_edge(
+    const Eigen::MatrixXd& V_before,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixXd& V_after,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& id_map_after,
+    const std::vector<int64_t>& v_id_map_after,
+    std::vector<query_point>& query_points)
+{
+    handle_non_collapse_operation(
+        V_before, F_before, id_map_before, v_id_map_before,
+        V_after, F_after, id_map_after, v_id_map_after,
+        query_points, "EdgeSwap", 100000);
+}
+
 void handle_swap_edge_curve(
     const Eigen::MatrixXd& V_before,
     const Eigen::MatrixXi& F_before,
@@ -941,7 +875,6 @@ void handle_swap_edge_curve(
     const std::vector<int64_t>& v_id_map_after,
     query_curve& curve)
 {
-    double eps = 1e-8;
     std::cout << "Handling swap/smooth curve" << std::endl;
     int curve_length = curve.segments.size();
     Eigen::MatrixXi TT, TTi;
