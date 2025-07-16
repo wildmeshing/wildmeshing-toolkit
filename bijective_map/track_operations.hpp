@@ -184,8 +184,8 @@ void handle_collapse_edge_curve(
     query_curve& curve,
     bool use_rational = false);
 
-// split/swap/smooth actuallly have the same interface
-void handle_split_edge(
+// Unified function for split/swap/smooth operations - they all have the same interface
+void handle_non_collapse_operation(
     const Eigen::MatrixXd& V_before,
     const Eigen::MatrixXi& F_before,
     const std::vector<int64_t>& id_map_before,
@@ -194,18 +194,9 @@ void handle_split_edge(
     const Eigen::MatrixXi& F_after,
     const std::vector<int64_t>& id_map_after,
     const std::vector<int64_t>& v_id_map_after,
-    std::vector<query_point>& query_points);
-
-void handle_swap_edge(
-    const Eigen::MatrixXd& V_before,
-    const Eigen::MatrixXi& F_before,
-    const std::vector<int64_t>& id_map_before,
-    const std::vector<int64_t>& v_id_map_before,
-    const Eigen::MatrixXd& V_after,
-    const Eigen::MatrixXi& F_after,
-    const std::vector<int64_t>& id_map_after,
-    const std::vector<int64_t>& v_id_map_after,
-    std::vector<query_point>& query_points);
+    std::vector<query_point>& query_points,
+    const std::string& operation_name = "non-collapse operation",
+    double eps_3d = 1e-3);
 
 void handle_swap_edge_curve(
     const Eigen::MatrixXd& V_before,

@@ -202,8 +202,10 @@ void handle_collapse_edge(
             }
             if (offset_in_f_after == -1) {
                 std::stringstream error_msg;
-                error_msg << "FATAL ERROR in handle_collapse_edge: Failed to find vertex ID mapping.\n";
-                error_msg << "Query point vertex ID " << qp.fv_ids[0] << " not found in F_after triangle.\n";
+                error_msg
+                    << "FATAL ERROR in handle_collapse_edge: Failed to find vertex ID mapping.\n";
+                error_msg << "Query point vertex ID " << qp.fv_ids[0]
+                          << " not found in F_after triangle.\n";
                 error_msg << "F_after triangle vertices: ";
                 for (int i = 0; i < 3; i++) {
                     error_msg << v_id_map_joint[F_after(local_index_in_f_after, i)];
@@ -257,8 +259,10 @@ void handle_collapse_edge(
 
             if (!bc_updated) {
                 std::stringstream error_msg;
-                error_msg << "FATAL ERROR in handle_collapse_edge: Failed to update barycentric coordinates.\n";
-                error_msg << "Query point could not be located in any triangle after mesh operation.\n";
+                error_msg << "FATAL ERROR in handle_collapse_edge: Failed to update barycentric "
+                             "coordinates.\n";
+                error_msg
+                    << "Query point could not be located in any triangle after mesh operation.\n";
                 error_msg << "This indicates a serious numerical or topological error.";
                 throw std::runtime_error(error_msg.str());
             }
@@ -326,10 +330,13 @@ void handle_collapse_edge_r(
             }
             if (offset_in_f_after == -1) {
                 std::stringstream error_msg;
-                error_msg << "FATAL ERROR in handle_collapse_edge_r: Failed to find vertex ID mapping.\n";
-                error_msg << "Query point vertex IDs: " << qp.fv_ids[0] << ", " << qp.fv_ids[1] << ", " << qp.fv_ids[2] << "\n";
+                error_msg
+                    << "FATAL ERROR in handle_collapse_edge_r: Failed to find vertex ID mapping.\n";
+                error_msg << "Query point vertex IDs: " << qp.fv_ids[0] << ", " << qp.fv_ids[1]
+                          << ", " << qp.fv_ids[2] << "\n";
                 error_msg << "Local index in F_after: " << local_index_in_f_after << "\n";
-                error_msg << "This indicates a serious numerical or topological error in rational computation.";
+                error_msg << "This indicates a serious numerical or topological error in rational "
+                             "computation.";
                 throw std::runtime_error(error_msg.str());
             }
 
@@ -372,9 +379,12 @@ void handle_collapse_edge_r(
 
             if (!bc_updated) {
                 std::stringstream error_msg;
-                error_msg << "FATAL ERROR in rational computation: Failed to update barycentric coordinates.\n";
-                error_msg << "Query point could not be located in any triangle after mesh operation.\n";
-                error_msg << "This indicates a serious numerical or topological error in exact arithmetic.";
+                error_msg << "FATAL ERROR in rational computation: Failed to update barycentric "
+                             "coordinates.\n";
+                error_msg
+                    << "Query point could not be located in any triangle after mesh operation.\n";
+                error_msg << "This indicates a serious numerical or topological error in exact "
+                             "arithmetic.";
                 throw std::runtime_error(error_msg.str());
             }
 
@@ -730,8 +740,8 @@ void handle_non_collapse_operation(
     const std::vector<int64_t>& id_map_after,
     const std::vector<int64_t>& v_id_map_after,
     std::vector<query_point>& query_points,
-    const std::string& operation_name = "non-collapse operation",
-    double eps_3d = 1e-3)
+    const std::string& operation_name,
+    double eps_3d)
 {
     std::cout << "Handling " << operation_name << std::endl;
     // igl::parallel_for(query_points.size(), [&](int id) {
@@ -757,7 +767,8 @@ void handle_non_collapse_operation(
             }
             if (offset_in_f_after == -1) {
                 std::stringstream error_msg;
-                error_msg << "FATAL ERROR in " << operation_name << ": Failed to find vertex ID mapping.\n";
+                error_msg << "FATAL ERROR in " << operation_name
+                          << ": Failed to find vertex ID mapping.\n";
                 error_msg << "Query point face ID: " << qp.f_id << "\n";
                 error_msg << "Expected vertex ID: " << qp.fv_ids[0] << "\n";
                 error_msg << "This indicates a serious numerical or topological error.";
@@ -804,8 +815,10 @@ void handle_non_collapse_operation(
 
             if (!bc_updated) {
                 std::stringstream error_msg;
-                error_msg << "FATAL ERROR in " << operation_name << ": Failed to update barycentric coordinates.\n";
-                error_msg << "Query point could not be located in any triangle after mesh operation.\n";
+                error_msg << "FATAL ERROR in " << operation_name
+                          << ": Failed to update barycentric coordinates.\n";
+                error_msg
+                    << "Query point could not be located in any triangle after mesh operation.\n";
                 error_msg << "This indicates a serious numerical or topological error.";
                 throw std::runtime_error(error_msg.str());
             }
@@ -829,40 +842,6 @@ void handle_non_collapse_operation(
     // });
 }
 
-// Convenience wrapper functions for backward compatibility
-void handle_split_edge(
-    const Eigen::MatrixXd& V_before,
-    const Eigen::MatrixXi& F_before,
-    const std::vector<int64_t>& id_map_before,
-    const std::vector<int64_t>& v_id_map_before,
-    const Eigen::MatrixXd& V_after,
-    const Eigen::MatrixXi& F_after,
-    const std::vector<int64_t>& id_map_after,
-    const std::vector<int64_t>& v_id_map_after,
-    std::vector<query_point>& query_points)
-{
-    handle_non_collapse_operation(
-        V_before, F_before, id_map_before, v_id_map_before,
-        V_after, F_after, id_map_after, v_id_map_after,
-        query_points, "EdgeSplit", 1e-3);
-}
-
-void handle_swap_edge(
-    const Eigen::MatrixXd& V_before,
-    const Eigen::MatrixXi& F_before,
-    const std::vector<int64_t>& id_map_before,
-    const std::vector<int64_t>& v_id_map_before,
-    const Eigen::MatrixXd& V_after,
-    const Eigen::MatrixXi& F_after,
-    const std::vector<int64_t>& id_map_after,
-    const std::vector<int64_t>& v_id_map_after,
-    std::vector<query_point>& query_points)
-{
-    handle_non_collapse_operation(
-        V_before, F_before, id_map_before, v_id_map_before,
-        V_after, F_after, id_map_after, v_id_map_after,
-        query_points, "EdgeSwap", 100000);
-}
 
 void handle_swap_edge_curve(
     const Eigen::MatrixXd& V_before,
@@ -885,7 +864,7 @@ void handle_swap_edge_curve(
         query_point qp1 = {qs.f_id, qs.bcs[1], qs.fv_ids};
         std::vector<query_point> query_points = {qp0, qp1};
 
-        handle_swap_edge(
+        handle_non_collapse_operation(
             V_before,
             F_before,
             id_map_before,
@@ -894,7 +873,9 @@ void handle_swap_edge_curve(
             F_after,
             id_map_after,
             v_id_map_after,
-            query_points);
+            query_points,
+            "EdgeSwap",
+            100000);
 
         handle_one_segment(
             curve,

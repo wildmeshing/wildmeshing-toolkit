@@ -50,7 +50,7 @@ void track_point_one_operation(
         }
 
         if (do_forward) {
-            handle_swap_edge(
+            handle_non_collapse_operation(
                 V_after,
                 F_after,
                 id_map_after,
@@ -59,9 +59,11 @@ void track_point_one_operation(
                 F_before,
                 id_map_before,
                 v_id_map_before,
-                query_points);
+                query_points,
+                operation_name,
+                100000);
         } else {
-            handle_swap_edge(
+            handle_non_collapse_operation(
                 V_before,
                 F_before,
                 id_map_before,
@@ -70,7 +72,9 @@ void track_point_one_operation(
                 F_after,
                 id_map_after,
                 v_id_map_after,
-                query_points);
+                query_points,
+                operation_name,
+                100000);
         }
     } else if (operation_name == "EdgeSplit") {
         std::cout << "This Operations is EdgeSplit" << std::endl;
@@ -92,7 +96,7 @@ void track_point_one_operation(
             v_id_map_after);
 
         if (do_forward) {
-            handle_split_edge(
+            handle_non_collapse_operation(
                 V_after,
                 F_after,
                 id_map_after,
@@ -101,9 +105,11 @@ void track_point_one_operation(
                 F_before,
                 id_map_before,
                 v_id_map_before,
-                query_points);
+                query_points,
+                "EdgeSplit",
+                1e-3);
         } else {
-            handle_split_edge(
+            handle_non_collapse_operation(
                 V_before,
                 F_before,
                 id_map_before,
@@ -112,7 +118,9 @@ void track_point_one_operation(
                 F_after,
                 id_map_after,
                 v_id_map_after,
-                query_points);
+                query_points,
+                "EdgeSplit",
+                1e-3);
         }
 
     } else if (operation_name == "EdgeCollapse") {
