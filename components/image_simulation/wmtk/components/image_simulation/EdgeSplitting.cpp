@@ -31,7 +31,9 @@ void ImageSimulationMesh::split_all_edges()
             double sizing_ratio = (m_vertex_attribute[v1_id].m_sizing_scalar +
                                    m_vertex_attribute[v2_id].m_sizing_scalar) /
                                   2;
-            if (length < m_params.splitting_l2 * sizing_ratio * sizing_ratio) return false;
+            if (length < m_params.splitting_l2 * sizing_ratio * sizing_ratio) {
+                return false;
+            }
             return true;
         };
         executor(*this, collect_all_ops);

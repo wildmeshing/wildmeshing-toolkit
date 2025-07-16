@@ -18,55 +18,23 @@
 #include <random>
 #include <unordered_set>
 
+#include "EmbedSurface.hpp"
+
 namespace wmtk::components::image_simulation {
 
 void ImageSimulationMesh::init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>& vertices)
 {
-    ///points for delaunay
-    std::vector<wmtk::delaunay::Point3D> points(vertices.size());
-    for (int i = 0; i < vertices.size(); i++) {
-        for (int j = 0; j < 3; j++) points[i][j] = vertices[i][j];
-    }
-    ///box
-    double delta = m_params.diag_l / 15.0;
-    Vector3d box_min(m_params.min[0] - delta, m_params.min[1] - delta, m_params.min[2] - delta);
-    Vector3d box_max(m_params.max[0] + delta, m_params.max[1] + delta, m_params.max[2] + delta);
-    // int Nx = std::max(2, int((box_max[0] - box_min[0]) / delta));
-    // int Ny = std::max(2, int((box_max[1] - box_min[1]) / delta));
-    // int Nz = std::max(2, int((box_max[2] - box_min[2]) / delta));
-    int Nx = 3;
-    int Ny = 3;
-    int Nz = 3;
-    for (double i = 0; i <= Nx; i++) {
-        for (double j = 0; j <= Ny; j++) {
-            for (double k = 0; k <= Nz; k++) {
-                Vector3d p(
-                    box_min[0] * (1 - i / Nx) + box_max[0] * i / Nx,
-                    box_min[1] * (1 - j / Ny) + box_max[1] * j / Ny,
-                    box_min[2] * (1 - k / Nz) + box_max[2] * k / Nz);
+    std::vector<wmtk::delaunay::Point3D> points;
+    std::vector<wmtk::delaunay::Tetrahedron> tets;
+    Vector3d box_min;
+    Vector3d box_max;
 
-                if (i == 0) p[0] = box_min[0];
-                if (i == Nx) p[0] = box_max[0];
-                if (j == 0) p[1] = box_min[1];
-                if (j == Ny) p[1] = box_max[1];
-                if (k == 0) p[2] = box_min[2];
-                if (k == Nz) // note: have to do, otherwise the value would be slightly different
-                    p[2] = box_max[2];
+    const V_MAP V_map(vertices[0].data(), vertices.size(), 3);
 
-                if (!m_envelope.is_outside(p)) continue;
-                points.push_back({{p[0], p[1], p[2]}});
-            }
-        }
-    }
+    delaunay_box_mesh(m_envelope, V_map, points, tets, box_min, box_max);
+
     m_params.box_min = box_min;
     m_params.box_max = box_max;
-
-    ///delaunay
-    auto [unused_points, tets] = wmtk::delaunay::delaunay3D(points);
-    wmtk::logger().info(
-        "after delauney tets.size() {}  points.size() {}",
-        tets.size(),
-        points.size());
 
     // conn
     init(points.size(), tets);
@@ -79,7 +47,6 @@ void ImageSimulationMesh::init_from_delaunay_box_mesh(const std::vector<Eigen::V
         m_vertex_attribute[i].m_posf = Vector3d(points[i][0], points[i][1], points[i][2]);
     }
 }
-
 
 bool ImageSimulationMesh::triangle_insertion_before(const std::vector<Tuple>& faces)
 {

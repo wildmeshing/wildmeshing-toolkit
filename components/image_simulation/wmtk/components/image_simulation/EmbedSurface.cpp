@@ -1,13 +1,17 @@
-#include <igl/predicates/ear_clipping.h>
-#include <fstream>
-#include <set>
-#include "ImageSimulationMesh.h"
+#include "EmbedSurface.hpp"
 
-namespace wmtk::components::image_simulation {
+#include <VolumeRemesher/embed.h>
+#include <VolumeRemesher/numerics.h>
+#include <wmtk/utils/VectorUtils.h>
+#include <wmtk/utils/Logger.hpp>
 
-std::vector<std::array<size_t, 3>> ImageSimulationMesh::triangulate_polygon_face(
-    std::vector<Vector3r> points)
+#include "extract_soup.hpp"
+
+namespace {
+std::vector<std::array<size_t, 3>> triangulate_polygon_face(std::vector<wmtk::Vector3r> points)
 {
+    using namespace wmtk;
+
     // triangulate weak convex polygons
     std::vector<std::array<size_t, 3>> triangulated_faces;
 
@@ -46,7 +50,9 @@ std::vector<std::array<size_t, 3>> ImageSimulationMesh::triangulate_polygon_face
             }
         }
 
-        if (no_colinear) break;
+        if (no_colinear) {
+            break;
+        }
     }
 
     // cleanup convex polygon
@@ -61,65 +67,133 @@ std::vector<std::array<size_t, 3>> ImageSimulationMesh::triangulate_polygon_face
 
     return triangulated_faces;
 }
+} // namespace
 
-// we have the vertices and triangles
-// to generate what we need for volumemesher
-// coords, ncoords, tri_idx, ntri_idx
+namespace wmtk::components::image_simulation {
 
-// embed input surface on generated back ground mesh
-
-void ImageSimulationMesh::insertion_by_volumeremesher(
-    const std::vector<Vector3d>& vertices,
-    const std::vector<std::array<size_t, 3>>& faces,
-    std::vector<Vector3r>& v_rational,
-    std::vector<std::array<size_t, 3>>& facets_after,
-    std::vector<bool>& is_v_on_input,
-    std::vector<std::array<size_t, 4>>& tets_after,
-    std::vector<bool>& tet_face_on_input_surface)
+void delaunay_box_mesh(
+    const wmtk::Envelope& envelope,
+    const MatrixXd& vertices,
+    std::vector<wmtk::delaunay::Point3D>& points,
+    std::vector<wmtk::delaunay::Tetrahedron>& tets,
+    Vector3d& box_min,
+    Vector3d& box_max)
 {
-    std::cout << "vertices size: " << vertices.size() << std::endl;
-    std::cout << "faces size: " << faces.size() << std::endl;
+    assert(vertices.cols() == 3);
 
-    // generate background mesh
-    init_from_delaunay_box_mesh(vertices);
+    const Vector3d vertices_max = vertices.colwise().maxCoeff();
+    const Vector3d vertices_min = vertices.colwise().minCoeff();
+    const double diag = (vertices_max - vertices_min).norm();
 
-    // prepare tet vertices and tet index info
+    ///points for delaunay
+    points.resize(vertices.rows());
+    for (int i = 0; i < vertices.rows(); i++) {
+        for (int j = 0; j < 3; j++) {
+            points[i][j] = vertices(i, j);
+        }
+    }
+    ///box
+    const double delta = diag / 15.0;
+    box_min = vertices_min - Vector3d::Ones() * delta;
+    box_max = vertices_max + Vector3d::Ones() * delta;
+    const int Nx = 3;
+    const int Ny = 3;
+    const int Nz = 3;
+    for (double i = 0; i <= Nx; i++) {
+        for (double j = 0; j <= Ny; j++) {
+            for (double k = 0; k <= Nz; k++) {
+                Vector3d p(
+                    box_min[0] * (1 - i / Nx) + box_max[0] * i / Nx,
+                    box_min[1] * (1 - j / Ny) + box_max[1] * j / Ny,
+                    box_min[2] * (1 - k / Nz) + box_max[2] * k / Nz);
 
-    auto tet_vers = get_vertices();
-    auto tets = get_tets();
-    std::vector<double> tet_ver_coord(3 * tet_vers.size());
-    std::vector<uint32_t> tet_index(4 * tets.size());
-    std::cout << "tetver size: " << tet_vers.size() << std::endl;
-    std::cout << "tet size: " << tets.size() << std::endl;
+                if (i == 0) p[0] = box_min[0];
+                if (i == Nx) p[0] = box_max[0];
+                if (j == 0) p[1] = box_min[1];
+                if (j == Ny) p[1] = box_max[1];
+                if (k == 0) p[2] = box_min[2];
+                if (k == Nz) // note: have to do, otherwise the value would be slightly different
+                    p[2] = box_max[2];
 
-    for (int i = 0; i < tet_vers.size(); ++i) {
-        tet_ver_coord[3 * i] = m_vertex_attribute[i].m_posf[0];
-        tet_ver_coord[3 * i + 1] = m_vertex_attribute[i].m_posf[1];
-        tet_ver_coord[3 * i + 2] = m_vertex_attribute[i].m_posf[2];
+                // ignore points too close to the input
+                if (!envelope.is_outside(p)) {
+                    continue;
+                }
+                points.push_back({{p[0], p[1], p[2]}});
+            }
+        }
     }
 
-    for (int i = 0; i < tets.size(); ++i) {
-        auto tet_vids = oriented_tet_vids(tets[i]);
-        tet_index[4 * i] = tet_vids[0];
-        tet_index[4 * i + 1] = tet_vids[1];
-        tet_index[4 * i + 2] = tet_vids[2];
-        tet_index[4 * i + 3] = tet_vids[3];
+    ///delaunay
+    std::vector<wmtk::delaunay::Point3D> unused_points;
+    std::tie(unused_points, tets) = wmtk::delaunay::delaunay3D(points);
+    wmtk::logger().info(
+        "after delauney tets.size() = {} | points.size() = {}",
+        tets.size(),
+        points.size());
+}
+
+void embed_surface(
+    const MatrixXd& V_surface,
+    const MatrixXi& F_surface,
+    const MatrixXd& V_vol,
+    const MatrixXi& T_vol,
+    MatrixXr& V_emb,
+    MatrixXi& T_emb)
+{
+    MatrixXi F_on_surface;
+    embed_surface(V_surface, F_surface, V_vol, T_vol, V_emb, T_emb, F_on_surface);
+}
+
+void embed_surface(
+    const MatrixXd& V_surface,
+    const MatrixXi& F_surface,
+    const MatrixXd& V_vol,
+    const MatrixXi& T_vol,
+    MatrixXr& V_emb,
+    MatrixXi& T_emb,
+    MatrixXi& F_on_surface)
+{
+    // old output
+    std::vector<std::array<size_t, 3>> facets_after;
+    std::vector<bool> is_v_on_input;
+    std::vector<std::array<size_t, 4>> tets_after;
+    std::vector<bool> tet_face_on_input_surface;
+    std::vector<Vector3r> v_rational;
+
+    ////
+    std::vector<double> tet_ver_coord(V_vol.size());
+    std::vector<uint32_t> tet_index(T_vol.size());
+    std::cout << "tetver size: " << V_vol.rows() << std::endl;
+    std::cout << "tet size: " << T_vol.rows() << std::endl;
+
+    for (int i = 0; i < V_vol.rows(); ++i) {
+        tet_ver_coord[3 * i + 0] = V_vol(i, 0);
+        tet_ver_coord[3 * i + 1] = V_vol(i, 1);
+        tet_ver_coord[3 * i + 2] = V_vol(i, 2);
+    }
+
+    for (int i = 0; i < T_vol.rows(); ++i) {
+        tet_index[4 * i + 0] = T_vol(i, 0);
+        tet_index[4 * i + 1] = T_vol(i, 1);
+        tet_index[4 * i + 2] = T_vol(i, 2);
+        tet_index[4 * i + 3] = T_vol(i, 3);
     }
 
     // prepare input surfaces info
-    std::vector<double> tri_ver_coord(3 * vertices.size());
-    std::vector<uint32_t> tri_index(3 * faces.size());
+    std::vector<double> tri_ver_coord(V_surface.size());
+    std::vector<uint32_t> tri_index(F_surface.size());
 
-    for (int i = 0; i < vertices.size(); ++i) {
-        tri_ver_coord[3 * i] = vertices[i][0];
-        tri_ver_coord[3 * i + 1] = vertices[i][1];
-        tri_ver_coord[3 * i + 2] = vertices[i][2];
+    for (int i = 0; i < V_surface.rows(); ++i) {
+        tri_ver_coord[3 * i + 0] = V_surface(i, 0);
+        tri_ver_coord[3 * i + 1] = V_surface(i, 1);
+        tri_ver_coord[3 * i + 2] = V_surface(i, 2);
     }
 
-    for (int i = 0; i < faces.size(); ++i) {
-        tri_index[3 * i] = faces[i][0];
-        tri_index[3 * i + 1] = faces[i][1];
-        tri_index[3 * i + 2] = faces[i][2];
+    for (int i = 0; i < F_surface.rows(); ++i) {
+        tri_index[3 * i + 0] = F_surface(i, 0);
+        tri_index[3 * i + 1] = F_surface(i, 1);
+        tri_index[3 * i + 2] = F_surface(i, 2);
     }
 
     std::cout << tri_ver_coord.size() << std::endl;
@@ -153,12 +227,12 @@ void ImageSimulationMesh::insertion_by_volumeremesher(
         final_tets_parent_faces,
         true);
 
-    //v_rational.resize(embedded_vertices.size() / 3);
+    assert(embedded_vertices.size() % 3 == 0);
+    v_rational.resize(embedded_vertices.size() / 3);
     for (int i = 0; i < embedded_vertices.size() / 3; i++) {
-        v_rational.push_back(Vector3r());
-        v_rational.back()[0].init(embedded_vertices[3 * i].get_mpq_t());
-        v_rational.back()[1].init(embedded_vertices[3 * i + 1].get_mpq_t());
-        v_rational.back()[2].init(embedded_vertices[3 * i + 2].get_mpq_t());
+        v_rational[i][0].init(embedded_vertices[3 * i + 0].get_mpq_t());
+        v_rational[i][1].init(embedded_vertices[3 * i + 1].get_mpq_t());
+        v_rational[i][2].init(embedded_vertices[3 * i + 2].get_mpq_t());
     }
 
     std::vector<std::vector<size_t>> polygon_faces;
@@ -203,7 +277,9 @@ void ImageSimulationMesh::insertion_by_volumeremesher(
     // triangulate polygon faces
     for (int i = 0; i < polygon_faces.size(); i++) {
         // already clipped in other polygon
-        if (map_poly_to_tri_face[i].size() != 0) continue;
+        if (map_poly_to_tri_face[i].size() != 0) {
+            continue;
+        }
 
         // new polygon face to clip
         std::vector<std::array<size_t, 3>> clipped_indices;
@@ -284,7 +360,7 @@ void ImageSimulationMesh::insertion_by_volumeremesher(
             size_t v1 = polygon_faces[polygon_cell[0]][1];
             size_t v2 = polygon_faces[polygon_cell[0]][2];
             size_t v3;
-            for (auto v : polygon_faces[polygon_cell[1]]) {
+            for (const size_t v : polygon_faces[polygon_cell[1]]) {
                 if (v != v0 && v != v1 && v != v2) {
                     v3 = v;
                     break;
@@ -310,8 +386,8 @@ void ImageSimulationMesh::insertion_by_volumeremesher(
             std::set<size_t> local_f4 = {tetra[1], tetra[2], tetra[3]};
 
             // track surface     need to be fixed
-            bool tet_face_on_input[4];
-            for (auto f : polygon_cell) {
+            std::array<bool, 4> tet_face_on_input;
+            for (const size_t f : polygon_cell) {
                 std::set<size_t> f_vs = {
                     polygon_faces[f][0],
                     polygon_faces[f][1],
@@ -351,8 +427,8 @@ void ImageSimulationMesh::insertion_by_volumeremesher(
         size_t centroid_idx = v_rational.size();
         v_rational.push_back(centroid);
 
-        for (auto f : polygon_cell) {
-            for (auto t : map_poly_to_tri_face[f]) {
+        for (const size_t f : polygon_cell) {
+            for (const size_t t : map_poly_to_tri_face[f]) {
                 std::array<size_t, 4> tetra = {
                     triangulated_faces[t][0],
                     triangulated_faces[t][1],
@@ -388,208 +464,83 @@ void ImageSimulationMesh::insertion_by_volumeremesher(
     facets_after = triangulated_faces;
     tets_after = tets_final;
 
-    // track vertices on input
-    is_v_on_input.reserve(v_rational.size());
-    for (int i = 0; i < v_rational.size(); i++) {
-        is_v_on_input.push_back(false);
-    }
-    for (int i = 0; i < triangulated_faces.size(); i++) {
-        if (triangulated_faces_on_input[i]) {
-            is_v_on_input[triangulated_faces[i][0]] = true;
-            is_v_on_input[triangulated_faces[i][1]] = true;
-            is_v_on_input[triangulated_faces[i][2]] = true;
-        }
+    T_emb.resize(tets_final.size(), 4);
+    for (int i = 0; i < tets_final.size(); ++i) {
+        const auto& t = tets_final[i];
+        T_emb.row(i) = Vector4i(t[0], t[1], t[2], t[3]);
     }
 
-    size_t on_surface_v_cnt = 0;
-    for (size_t i = 0; i < is_v_on_input.size(); i++) {
-        if (is_v_on_input[i]) on_surface_v_cnt++;
+    V_emb.resize(v_rational.size(), 3);
+    for (int i = 0; i < v_rational.size(); ++i) {
+        V_emb.row(i) = v_rational[i];
     }
 
-    std::cout << "v on surface vector size: " << is_v_on_input.size();
-    std::cout << "v on surface: " << on_surface_v_cnt << std::endl;
-}
-
-void ImageSimulationMesh::init_from_Volumeremesher(
-    const std::vector<Vector3r>& v_rational,
-    const std::vector<bool>& is_v_on_input,
-    const std::vector<std::array<size_t, 4>>& tets,
-    const std::vector<bool>& tet_face_on_input_surface)
-{
-    assert(tet_face_on_input_surface.size() == 4 * tets.size());
-
-    init_with_isolated_vertices(v_rational.size(), tets);
-    assert(check_mesh_connectivity_validity());
-
-    m_vertex_attribute.m_attributes.resize(v_rational.size());
-    m_tet_attribute.m_attributes.resize(tets.size());
-    m_face_attribute.m_attributes.resize(tets.size() * 4);
-
-    for (int i = 0; i < vert_capacity(); i++) {
-        m_vertex_attribute[i].m_pos = v_rational[i];
-        m_vertex_attribute[i].m_posf = to_double(v_rational[i]);
-    }
-
-    // check here
-    for (size_t i = 0; i < tet_face_on_input_surface.size(); i++) {
-        if (tet_face_on_input_surface[i]) {
-            m_face_attribute[i].m_is_surface_fs = 1;
-        }
-    }
-
-    const auto faces = get_faces();
-    std::cout << "faces size: " << faces.size() << std::endl;
-    for (const Tuple& f : faces) {
-        SmartTuple ff(*this, f);
-        const size_t fid = ff.fid();
-        const size_t v1 = ff.vid();
-        const size_t v2 = ff.switch_vertex().vid();
-        const size_t v3 = ff.switch_edge().switch_vertex().vid();
-        if (m_face_attribute[fid].m_is_surface_fs == 1) {
-            assert(is_v_on_input[v1] && is_v_on_input[v2] && is_v_on_input[v3]);
-            m_vertex_attribute[v1].m_is_on_surface = true;
-            m_vertex_attribute[v2].m_is_on_surface = true;
-            m_vertex_attribute[v3].m_is_on_surface = true;
-        }
-    }
-
-    // track bounding box
-    for (size_t i = 0; i < faces.size(); i++) {
-        const auto vs = get_face_vertices(faces[i]);
-        std::array<size_t, 3> vids = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
-        int on_bbox = -1;
-        for (int k = 0; k < 3; k++) {
-            if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_min[k] &&
-                m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_min[k] &&
-                m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_min[k]) {
-                on_bbox = k * 2;
-                break;
-            }
-            if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_max[k] &&
-                m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_max[k] &&
-                m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_max[k]) {
-                on_bbox = k * 2 + 1;
-                break;
-            }
-        }
-        if (on_bbox < 0) {
+    std::set<size_t> v_on_input;
+    for (int i = 0; i < triangulated_faces.size(); ++i) {
+        if (!triangulated_faces_on_input[i]) {
             continue;
         }
-        assert(!faces[i].switch_tetrahedron(*this)); // face must be on boundary
+        const auto& f = triangulated_faces[i];
+        v_on_input.insert(f[0]);
+        v_on_input.insert(f[1]);
+        v_on_input.insert(f[2]);
+    }
 
-        const size_t fid = faces[i].fid(*this);
-        m_face_attribute[fid].m_is_bbox_fs = on_bbox;
-
-        for (const size_t vid : vids) {
-            m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
+    size_t n_face_on_input = 0;
+    for (const bool b : triangulated_faces_on_input) {
+        if (b) {
+            ++n_face_on_input;
         }
     }
 
-    for_each_vertex(
-        [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
-
-    // track open boundaries
-    find_open_boundary();
-
-    int open_boundary_cnt = 0;
-    for (const Tuple& e : get_edges()) {
-        if (is_open_boundary_edge(e)) {
-            open_boundary_cnt++;
-        }
-    }
-    wmtk::logger().info("#open boundary edges: {}", open_boundary_cnt);
-
-    // // rounding
-    size_t cnt_round = 0;
-
-    const auto vertices = get_vertices();
-    for (const Tuple& v : vertices) {
-        if (round(v)) {
-            cnt_round++;
-        }
-    }
-
-    if (cnt_round != vertices.size()) {
-        log_and_throw_error(
-            "Could not round all vertices in tet mesh. Rounded {}/{}",
-            cnt_round,
-            vertices.size());
-    }
-
-    // init qualities
-    for_each_tetra(
-        [this](const Tuple& t) { m_tet_attribute[t.tid(*this)].m_quality = get_quality(t); });
-}
-
-void ImageSimulationMesh::find_open_boundary()
-{
-    const auto faces = get_faces();
-    std::vector<int> edge_on_open_boundary(6 * tet_capacity(), 0);
-
-    // for open boundary envelope
-    std::vector<Eigen::Vector3d> v_posf(vert_capacity());
-    std::vector<Eigen::Vector3i> open_boundaries;
-
-    for (size_t i = 0; i < vert_capacity(); i++) {
-        v_posf[i] = m_vertex_attribute[i].m_posf;
-    }
-
-    for (const Tuple& f : faces) {
-        const SmartTuple ff(*this, f);
-        const size_t fid = ff.fid();
-        if (!m_face_attribute[fid].m_is_surface_fs) {
+    F_on_surface.resize(n_face_on_input, 3);
+    n_face_on_input = 0;
+    for (int i = 0; i < triangulated_faces.size(); ++i) {
+        if (!triangulated_faces_on_input[i]) {
             continue;
         }
-        size_t eid1 = ff.eid();
-        size_t eid2 = ff.switch_edge().eid();
-        size_t eid3 = ff.switch_vertex().switch_edge().eid();
-
-        edge_on_open_boundary[eid1]++;
-        edge_on_open_boundary[eid2]++;
-        edge_on_open_boundary[eid3]++;
+        const auto& f = triangulated_faces[i];
+        F_on_surface.row(n_face_on_input++) = Vector3i(f[0], f[1], f[2]);
     }
 
-    const auto edges = get_edges();
-    for (const Tuple& e : edges) {
-        if (edge_on_open_boundary[e.eid(*this)] != 1) {
-            continue;
-        }
-        size_t v1 = e.vid(*this);
-        size_t v2 = e.switch_vertex(*this).vid(*this);
-        m_vertex_attribute[v1].m_is_on_open_boundary = true;
-        m_vertex_attribute[v2].m_is_on_open_boundary = true;
-        open_boundaries.emplace_back(v1, v2, v1); // degenerate triangle to mimic the edge
-    }
 
-    wmtk::logger().info("open boundary num: {}", open_boundaries.size());
-
-    if (open_boundaries.size() == 0) {
-        return;
-    }
-
-    // init open boundary envelope
-    m_open_boundary_envelope.init(v_posf, open_boundaries, m_params.epsr * m_params.diag_l / 2.0);
-    boundaries_tree.init(v_posf, open_boundaries, m_params.epsr * m_params.diag_l / 2.0);
+    std::cout << "v on surface vector size: " << v_rational.size();
+    std::cout << "v on surface: " << v_on_input.size() << std::endl;
 }
 
-bool ImageSimulationMesh::is_open_boundary_edge(const Tuple& e)
+void tag_tets_from_image(
+    const std::string& filename,
+    const MatrixXd& V,
+    const MatrixXi& T,
+    VectorXi& T_tags)
+
 {
-    size_t v1 = e.vid(*this);
-    size_t v2 = e.switch_vertex(*this).vid(*this);
-    if (!m_vertex_attribute[v1].m_is_on_open_boundary ||
-        !m_vertex_attribute[v2].m_is_on_open_boundary)
-        return false;
+    logger().info("Tag tets");
+    T_tags.resize(T.rows(), 1);
+    T_tags.setZero();
 
-    /*
-     * This code is not reliable. If the envelope is chosen too large, elements could be reported as
-     * boundary even though they aren't. Especially, when there are sliver triangles that are barely
-     * not inverted.
-     */
+    std::vector<std::vector<std::vector<size_t>>> volumetric_data;
+    read_array_data_ascii(volumetric_data, filename);
 
-    return !m_open_boundary_envelope.is_outside(
-        {{m_vertex_attribute[v1].m_posf,
-          m_vertex_attribute[v2].m_posf,
-          m_vertex_attribute[v1].m_posf}});
+    for (size_t i = 0; i < T.rows(); ++i) {
+        const Vector3d v0 = V.row(T(i, 0));
+        const Vector3d v1 = V.row(T(i, 1));
+        const Vector3d v2 = V.row(T(i, 2));
+        const Vector3d v3 = V.row(T(i, 3));
+
+        const Vector3d center = (v0 + v1 + v2 + v3) * 0.25;
+        const int idx_0 = std::floor(center.x());
+        const int idx_1 = std::floor(center.y());
+        const int idx_2 = std::floor(center.z());
+        // mesh.m_tet_attribute[t.tid(mesh)].tag = idx_0;
+        if (idx_0 >= 0 && idx_0 < volumetric_data.size() && idx_1 >= 0 &&
+            idx_1 < volumetric_data[0].size() && idx_2 >= 0 &&
+            idx_2 < volumetric_data[0][0].size()) {
+            // for tag
+            int64_t intValue = volumetric_data[idx_0][idx_1][idx_2];
+            T_tags[i] = intValue;
+        }
+    }
 }
 
 } // namespace wmtk::components::image_simulation

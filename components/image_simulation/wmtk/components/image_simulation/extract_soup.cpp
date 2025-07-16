@@ -2,6 +2,7 @@
 
 #include <igl/writeOFF.h>
 #include <sec/ShortestEdgeCollapse.h>
+#include <wmtk/utils/InsertTriangleUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Reader.hpp>
 
@@ -37,6 +38,11 @@ void read_array_data(
     }
 }
 
+} // namespace
+
+
+namespace wmtk::components::image_simulation {
+
 void read_array_data_ascii(
     std::vector<std::vector<std::vector<size_t>>>& data,
     const std::string& filename)
@@ -63,11 +69,6 @@ void read_array_data_ascii(
         }
     }
 }
-
-} // namespace
-
-
-namespace wmtk::components::image_simulation {
 
 void extract_triangle_soup_from_image(std::string filename, Eigen::MatrixXi& F, Eigen::MatrixXd& V)
 {
@@ -284,6 +285,119 @@ void tag_tets_from_image(const std::string& filename, ImageSimulationMesh& mesh)
             // acc_tag.scalar_attribute(t) = intValue;
         }
     }
+}
+
+void image_to_tagged_tets(const std::string& filename, MatrixXd& V, MatrixXi& T, VectorXi T_tags)
+{
+    //// extract surface from image
+    //{
+    //    // read raw image data + create triangle soup
+    //    Eigen::MatrixXi F;
+    //    Eigen::MatrixXd V;
+    //    extract_triangle_soup_from_image(filename, F, V);
+    //    igl::writeOFF("triangle_soup_fine.off", V, F);
+    //}
+    //
+    // std::vector<Eigen::Vector3d> verts;
+    // std::vector<std::array<size_t, 3>> tris;
+    // std::vector<size_t> modified_nonmanifold_v;
+    // std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax;
+    //
+    //// read triangle soup
+    //{
+    //    const double remove_duplicate_eps = 0.01;
+    //    wmtk::stl_to_manifold_wmtk_input(
+    //        "triangle_soup_fine.off",
+    //        remove_duplicate_eps,
+    //        box_minmax,
+    //        verts,
+    //        tris,
+    //        modified_nonmanifold_v);
+    //}
+    //
+    // std::vector<Eigen::Vector3d> v_simplified;
+    // std::vector<std::array<size_t, 3>> f_simplified;
+    //
+    //// simplification
+    // app::sec::ShortestEdgeCollapse surf_mesh(verts, 0, false);
+    //{
+    //    // must be a small envelope to ensure correct tet tags later on
+    //    surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, 0.1);
+    //    assert(surf_mesh.check_mesh_connectivity_validity());
+    //
+    //    wmtk::logger().info("input {} simplification", filename);
+    //    surf_mesh.collapse_shortest(0);
+    //    surf_mesh.consolidate_mesh();
+    //    surf_mesh.write_triangle_mesh("triangle_soup_coarse.off");
+    //
+    //    //// get the simplified input
+    //    v_simplified.resize(surf_mesh.vert_capacity());
+    //    f_simplified.resize(surf_mesh.tri_capacity());
+    //    for (const auto& t : surf_mesh.get_vertices()) {
+    //        const size_t i = t.vid(surf_mesh);
+    //        v_simplified[i] = surf_mesh.vertex_attrs[i].pos;
+    //    }
+    //
+    //    for (const auto& t : surf_mesh.get_faces()) {
+    //        const auto i = t.fid(surf_mesh);
+    //        const auto vs = surf_mesh.oriented_tri_vids(t);
+    //        for (int j = 0; j < 3; j++) {
+    //            f_simplified[i][j] = vs[j];
+    //        }
+    //    }
+    //}
+    //
+    // wmtk::remove_duplicates(v_simplified, f_simplified, 0.01);
+    //
+    ///////////////////////////////////////////////////////
+    //
+    // igl::Timer timer;
+    // timer.start();
+    //
+    //// triangle insertion with volumeremesher on the simplified mesh
+    // std::vector<Vector3r> v_rational;
+    // std::vector<std::array<size_t, 3>> facets;
+    // std::vector<bool> is_v_on_input;
+    // std::vector<std::array<size_t, 4>> tets;
+    // std::vector<bool> tet_face_on_input_surface;
+    //
+    // std::cout << "vsimp size: " << v_simplified.size() << std::endl;
+    // std::cout << "fsimp size: " << f_simplified.size() << std::endl;
+    //
+    // igl::Timer insertion_timer;
+    // insertion_timer.start();
+    //
+    //{
+    //     ImageSimulationMesh mesh_for_insertion(params, *ptr_env, surf_mesh.m_envelope,
+    //     NUM_THREADS); mesh_for_insertion.insertion_by_volumeremesher(
+    //         v_simplified,
+    //         f_simplified,
+    //         v_rational,
+    //         facets,
+    //         is_v_on_input,
+    //         tets,
+    //         tet_face_on_input_surface);
+    // }
+    //
+    //// generate new mesh
+    // image_simulation::ImageSimulationMesh mesh(params, *ptr_env, surf_mesh.m_envelope,
+    // NUM_THREADS);
+    //
+    // mesh.init_from_Volumeremesher(v_rational, is_v_on_input, tets, tet_face_on_input_surface);
+    //
+    // const double insertion_time = insertion_timer.getElapsedTime();
+    // wmtk::logger().info("volume remesher insertion time: {}s", insertion_time);
+    //
+    // mesh.consolidate_mesh();
+    //{
+    //     int num_parts = mesh.flood_fill();
+    //     logger().info("flood fill parts {}", num_parts);
+    // }
+    //
+    //// add tags
+    // tag_tets_from_image(input_paths[0], mesh);
+    //
+    // mesh.write_vtu(params.output_path + "_0.vtu");
 }
 
 } // namespace wmtk::components::image_simulation

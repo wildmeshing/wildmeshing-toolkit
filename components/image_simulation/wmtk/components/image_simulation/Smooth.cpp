@@ -17,9 +17,13 @@ namespace wmtk::components::image_simulation {
 
 bool ImageSimulationMesh::smooth_before(const Tuple& t)
 {
-    if (!m_vertex_attribute[t.vid(*this)].on_bbox_faces.empty()) return false;
+    if (!m_vertex_attribute[t.vid(*this)].on_bbox_faces.empty()) {
+        return false;
+    }
 
-    if (m_vertex_attribute[t.vid(*this)].m_is_rounded) return true;
+    if (m_vertex_attribute[t.vid(*this)].m_is_rounded) {
+        return true;
+    }
     // try to round.
     // Note: no need to roll back.
     return round(t);
@@ -146,51 +150,67 @@ bool ImageSimulationMesh::smooth_after(const Tuple& t)
             if (is_out) return false;
         }
     } else if (m_vertex_attribute[vid].m_is_on_surface) {
-        std::vector<std::array<double, 9>> neighbor_assemble;
+        std::vector<std::array<double, 9>> neighbor_assemble; // incident surface triangles
         std::set<size_t> unique_fid;
-        for (auto& t : locs) {
-            for (auto j = 0; j < 4; j++) {
-                auto f_t = tuple_from_face(t.tid(*this), j);
-                auto fid = f_t.fid(*this);
-                auto [it, suc] = unique_fid.emplace(fid);
-                if (!suc) continue;
-                if (m_face_attribute[fid].m_is_surface_fs) {
-                    auto vs = get_face_vertices(f_t);
-                    auto vs_id = std::array<size_t, 3>();
-                    for (auto k = 0; k < 3; k++) vs_id[k] = vs[k].vid(*this);
-                    for (auto k : {1, 2})
-                        if (vs_id[k] == vid) {
-                            std::swap(vs_id[k], vs_id[0]);
-                        };
-                    if (vs_id[0] != vid) continue; // does not contain point of interest
-                    std::array<double, 9> coords;
-                    for (auto k = 0; k < 3; k++)
-                        for (auto kk = 0; kk < 3; kk++)
-                            coords[k * 3 + kk] = m_vertex_attribute[vs_id[k]].m_posf[kk];
-                    neighbor_assemble.emplace_back(coords);
+        for (const Tuple& t : locs) {
+            for (int j = 0; j < 4; j++) {
+                const Tuple f_t = tuple_from_face(t.tid(*this), j);
+                const size_t fid = f_t.fid(*this);
+                if (!m_face_attribute[fid].m_is_surface_fs) {
+                    continue;
                 }
+                const auto [it, suc] = unique_fid.emplace(fid);
+                if (!suc) {
+                    continue;
+                }
+                const auto vs = get_face_vertices(f_t);
+                auto vs_id = std::array<size_t, 3>();
+                for (int k = 0; k < 3; k++) {
+                    vs_id[k] = vs[k].vid(*this);
+                }
+                for (int k : {1, 2}) {
+                    if (vs_id[k] == vid) {
+                        std::swap(vs_id[k], vs_id[0]);
+                    }
+                }
+                if (vs_id[0] != vid) {
+                    continue; // does not contain point of interest
+                }
+                std::array<double, 9> coords;
+                for (int k = 0; k < 3; k++) {
+                    for (int kk = 0; kk < 3; kk++) {
+                        coords[k * 3 + kk] = m_vertex_attribute[vs_id[k]].m_posf[kk];
+                    }
+                }
+                neighbor_assemble.emplace_back(coords);
             }
         }
         // auto project = wmtk::try_project(m_vertex_attribute[vid].m_posf, neighbor_assemble);
         {
-            auto project = Eigen::Vector3d();
+            Vector3d project;
 
-            if (triangles_tree.initialized())
+            if (triangles_tree.initialized()) {
                 triangles_tree.nearest_point(m_vertex_attribute[vid].m_posf, project);
-            else
+            } else {
+                // Does that even make sense? The vertex is part of these triangles so this
+                // projection doesn't do anything.
                 project = wmtk::try_project(m_vertex_attribute[vid].m_posf, neighbor_assemble);
-
+            }
 
             m_vertex_attribute[vid].m_posf = project;
         }
 
         for (auto& n : neighbor_assemble) {
-            for (auto kk = 0; kk < 3; kk++) n[kk] = m_vertex_attribute[vid].m_posf[kk];
+            for (auto kk = 0; kk < 3; kk++) {
+                n[kk] = m_vertex_attribute[vid].m_posf[kk];
+            }
         }
         for (auto& n : neighbor_assemble) {
             auto tris = std::array<Eigen::Vector3d, 3>();
             for (auto k = 0; k < 3; k++) {
-                for (auto kk = 0; kk < 3; kk++) tris[k][kk] = n[k * 3 + kk];
+                for (auto kk = 0; kk < 3; kk++) {
+                    tris[k][kk] = n[k * 3 + kk];
+                }
             }
             bool is_out = m_envelope.is_outside(tris);
             if (is_out) {
@@ -249,6 +269,180 @@ void ImageSimulationMesh::smooth_all_vertices()
         time = timer.getElapsedTime();
         wmtk::logger().info("vertex smoothing operation time serial: {}s", time);
     }
+}
+
+void ImageSimulationMesh::smooth_input(const int n_iterations)
+{
+    const auto vertices = get_vertices();
+
+    for (int i = 0; i < n_iterations; ++i) {
+        for (const Tuple& t : vertices) {
+            const size_t vid = t.vid(*this);
+            if (!m_vertex_attribute[vid].on_bbox_faces.empty()) {
+                continue;
+            }
+            if (!m_vertex_attribute[vid].m_is_rounded) {
+                continue;
+            }
+
+            const auto locs = get_one_ring_tets_for_vertex(t);
+
+            if (m_vertex_attribute[vid].m_is_on_surface) {
+                // on surface --> try laplacian smoothing
+
+                std::vector<std::array<Vector3d, 3>>
+                    neighbor_assemble; // incident surface triangles
+                std::set<size_t> unique_fid;
+                for (const Tuple& t : locs) {
+                    for (int j = 0; j < 4; j++) {
+                        const Tuple f_t = tuple_from_face(t.tid(*this), j);
+                        const size_t fid = f_t.fid(*this);
+                        if (!m_face_attribute[fid].m_is_surface_fs) {
+                            continue;
+                        }
+                        const auto [it, suc] = unique_fid.emplace(fid);
+                        if (!suc) {
+                            continue;
+                        }
+                        const auto vs = get_face_vertices(f_t);
+                        auto vs_id = std::array<size_t, 3>();
+                        for (int k = 0; k < 3; k++) {
+                            vs_id[k] = vs[k].vid(*this);
+                        }
+                        for (int k : {1, 2}) {
+                            if (vs_id[k] == vid) {
+                                std::swap(vs_id[k], vs_id[0]);
+                            }
+                        }
+                        if (vs_id[0] != vid) {
+                            continue; // does not contain point of interest
+                        }
+                        std::array<Vector3d, 3> coords;
+                        for (int k = 0; k < 3; k++) {
+                            coords[k] = m_vertex_attribute[vs_id[k]].m_posf;
+                        }
+                        neighbor_assemble.emplace_back(coords);
+                    }
+                }
+
+                // TODO smooth
+                Vector3d p_lap = Vector3d::Zero();
+                for (const auto& n : neighbor_assemble) {
+                    p_lap += n[1] + n[2];
+                }
+                p_lap /= (neighbor_assemble.size() * 2);
+
+                const Vector3d p_old = m_vertex_attribute[vid].m_posf;
+
+                bool success = true;
+                const int n_bisections = 10;
+                for (int j = 0; j < n_bisections; ++j) {
+                    // try to find a valid position
+                    double u = 1.0 / (1 << j);
+                    Vector3d p = u * p_lap + (1.0 - u) * p_old;
+
+                    // update position of vid in neighbor_assamble
+                    for (auto& n : neighbor_assemble) {
+                        n[0] = p;
+                    }
+                    success = true;
+                    for (const auto& n : neighbor_assemble) {
+                        if (m_envelope.is_outside(n)) {
+                            success = false;
+                            break;
+                        }
+                    }
+
+                    if (!success) {
+                        continue;
+                    }
+
+                    // check for tet validity
+                    m_vertex_attribute[vid].m_posf = p;
+                    for (const Tuple& loc : locs) {
+                        if (is_inverted(loc)) {
+                            success = false;
+                            break;
+                        }
+                    }
+
+                    if (success) {
+                        m_vertex_attribute[vid].m_pos = to_rational(p);
+                        break;
+                    } else {
+                        m_vertex_attribute[vid].m_posf = p_old;
+                    }
+                }
+
+                for (const Tuple& loc : locs) {
+                    if (is_inverted(loc)) {
+                        log_and_throw_error("Input surface laplacian smooth caused inversion");
+                    }
+                }
+
+            } else {
+                // interior --> amips optimization
+
+                auto max_quality = 0.;
+                for (const Tuple& tet : locs) {
+                    max_quality = std::max(max_quality, m_tet_attribute[tet.tid(*this)].m_quality);
+                }
+
+                assert(locs.size() > 0);
+                std::vector<std::array<double, 12>> assembles(locs.size());
+                auto loc_id = 0;
+
+                for (auto& loc : locs) {
+                    auto& T = assembles[loc_id];
+                    auto t_id = loc.tid(*this);
+
+                    assert(!is_inverted(loc));
+                    auto local_tuples = oriented_tet_vertices(loc);
+                    std::array<size_t, 4> local_verts;
+                    for (auto i = 0; i < 4; i++) {
+                        local_verts[i] = local_tuples[i].vid(*this);
+                    }
+
+                    local_verts = wmtk::orient_preserve_tet_reorder(local_verts, vid);
+
+                    for (auto i = 0; i < 4; i++) {
+                        for (auto j = 0; j < 3; j++) {
+                            T[i * 3 + j] = m_vertex_attribute[local_verts[i]].m_posf[j];
+                        }
+                    }
+                    loc_id++;
+                }
+
+                auto old_pos = m_vertex_attribute[vid].m_posf;
+                auto old_asssembles = assembles;
+
+                m_vertex_attribute[vid].m_posf = wmtk::newton_method_from_stack(
+                    assembles,
+                    wmtk::AMIPS_energy,
+                    wmtk::AMIPS_jacobian,
+                    wmtk::AMIPS_hessian);
+
+                // quality
+                double max_after_quality = 0.;
+                for (const Tuple& loc : locs) {
+                    if (is_inverted(loc)) {
+                        log_and_throw_error("Input smoothing caused inversion");
+                    }
+                    const size_t t_id = loc.tid(*this);
+                    m_tet_attribute[t_id].m_quality = get_quality(loc);
+                    max_after_quality =
+                        std::max(max_after_quality, m_tet_attribute[t_id].m_quality);
+                }
+                // if (max_after_quality > max_quality) {
+                //     log_and_throw_error("Input smoothing reduced tet quality");
+                // }
+
+                m_vertex_attribute[vid].m_pos = to_rational(m_vertex_attribute[vid].m_posf);
+            }
+        }
+        //
+    }
+    //
 }
 
 } // namespace wmtk::components::image_simulation

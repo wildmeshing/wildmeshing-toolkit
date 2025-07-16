@@ -123,25 +123,25 @@ std::tuple<double, double> ImageSimulationMesh::local_operations(
         logger().info("==splitting {}==", n);
         split_all_edges();
         logger().info("#vertices {}, #tets {} after split", vert_capacity(), tet_capacity());
-        write_vtu(fmt::format("debug_{}.vtu", m_debug_print_counter++));
+        // write_vtu(fmt::format("debug_{}.vtu", m_debug_print_counter++));
     }
     for (int n = 0; n < ops[1]; n++) {
         logger().info("==collapsing {}==", n);
         collapse_all_edges();
         logger().info("#vertices {}, #tets {} after collapse", vert_capacity(), tet_capacity());
-        write_vtu(fmt::format("debug_{}.vtu", m_debug_print_counter++));
+        // write_vtu(fmt::format("debug_{}.vtu", m_debug_print_counter++));
     }
     for (int n = 0; n < ops[2]; n++) {
         logger().info("==swapping {}==", n);
         swap_all_edges_44();
         swap_all_edges();
         swap_all_faces();
-        write_vtu(fmt::format("debug_{}.vtu", m_debug_print_counter++));
+        // write_vtu(fmt::format("debug_{}.vtu", m_debug_print_counter++));
     }
     for (int n = 0; n < ops[3]; n++) {
         logger().info("==smoothing {}==", n);
         smooth_all_vertices();
-        write_vtu(fmt::format("debug_{}.vtu", m_debug_print_counter++));
+        // write_vtu(fmt::format("debug_{}.vtu", m_debug_print_counter++));
     }
 
     energy = get_max_avg_energy();
@@ -881,25 +881,24 @@ int ImageSimulationMesh::count_vertex_links(const Tuple& v)
         Tuple f4 = t.switch_vertex(*this).switch_edge(*this).switch_face(*this);
 
         const auto f1vs = get_face_vertices(f1);
-        const auto f2vs = get_face_vertices(f2);
-        const auto f3vs = get_face_vertices(f3);
-        const auto f4vs = get_face_vertices(f4);
         if (v_on_surf(f1vs[0]) && v_on_surf(f1vs[1]) && v_on_surf(f1vs[2])) {
             if (m_face_attribute[f1.fid(*this)].m_is_surface_fs) {
                 surface_fs.push_back(f1);
             }
         }
-
+        const auto f2vs = get_face_vertices(f2);
         if (v_on_surf(f2vs[0]) && v_on_surf(f2vs[1]) && v_on_surf(f2vs[2])) {
             if (m_face_attribute[f2.fid(*this)].m_is_surface_fs) {
                 surface_fs.push_back(f2);
             }
         }
+        const auto f3vs = get_face_vertices(f3);
         if (v_on_surf(f3vs[0]) && v_on_surf(f3vs[1]) && v_on_surf(f3vs[2])) {
             if (m_face_attribute[f3.fid(*this)].m_is_surface_fs) {
                 surface_fs.push_back(f3);
             }
         }
+        const auto f4vs = get_face_vertices(f4);
         if (v_on_surf(f4vs[0]) && v_on_surf(f4vs[1]) && v_on_surf(f4vs[2])) {
             if (m_face_attribute[f4.fid(*this)].m_is_surface_fs) {
                 surface_fs.push_back(f4);
@@ -907,30 +906,34 @@ int ImageSimulationMesh::count_vertex_links(const Tuple& v)
         }
     }
 
+    // surface_fs now holds all faces in the one ring that are on the surface
+
     // construct the graph by V and E
     // eliminate those edges that contains v
-    size_t vid = v.vid(*this); // current vid
+    const size_t vid = v.vid(*this); // current vid
     std::vector<size_t> one_ring_surface_vertices;
     std::vector<std::pair<size_t, size_t>> one_ring_surface_edges;
 
     for (const Tuple& f : surface_fs) {
-        auto vs = get_face_vertices(f);
-        if (vs[0].vid(*this) != vid && vs[1].vid(*this) != vid && vs[2].vid(*this) != vid) {
+        const auto vs = get_face_vertices(f);
+        const std::array<size_t, 3> vids = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
+        if (vids[0] != vid && vids[1] != vid && vids[2] != vid) {
+            // ignore faces that are not incident to vid
             continue;
         }
-        for (const Tuple& v_tuple : vs) {
-            if (v_tuple.vid(*this) != vid) {
-                one_ring_surface_vertices.emplace_back(v_tuple.vid(*this));
+        for (const size_t vv : vids) {
+            if (vv != vid) {
+                one_ring_surface_vertices.emplace_back(vv);
             }
         }
-        if (vs[0].vid(*this) != vid && vs[1].vid(*this) != vid) {
-            one_ring_surface_edges.emplace_back(vs[0].vid(*this), vs[1].vid(*this));
+        if (vids[0] != vid && vids[1] != vid) {
+            one_ring_surface_edges.emplace_back(vids[0], vids[1]);
         }
-        if (vs[0].vid(*this) != vid && vs[2].vid(*this) != vid) {
-            one_ring_surface_edges.emplace_back(vs[0].vid(*this), vs[2].vid(*this));
+        if (vids[0] != vid && vids[2] != vid) {
+            one_ring_surface_edges.emplace_back(vids[0], vids[2]);
         }
-        if (vs[1].vid(*this) != vid && vs[2].vid(*this) != vid) {
-            one_ring_surface_edges.emplace_back(vs[1].vid(*this), vs[2].vid(*this));
+        if (vids[1] != vid && vids[2] != vid) {
+            one_ring_surface_edges.emplace_back(vids[1], vids[2]);
         }
     }
 
@@ -953,7 +956,7 @@ int ImageSimulationMesh::count_vertex_links(const Tuple& v)
         }
     }
 
-    for (auto e : one_ring_surface_edges) {
+    for (const auto& e : one_ring_surface_edges) {
         adj_mat[v_idx_map[e.first]][v_idx_map[e.second]] = true;
         adj_mat[v_idx_map[e.second]][v_idx_map[e.first]] = true;
     }
@@ -990,29 +993,32 @@ int ImageSimulationMesh::count_vertex_links(const Tuple& v)
 
 int ImageSimulationMesh::count_edge_links(const Tuple& e)
 {
-    size_t vid1 = e.vid(*this);
-    size_t vid2 = e.switch_vertex(*this).vid(*this);
-    auto tets = get_incident_tets_for_edge(e);
+    const size_t vid1 = e.vid(*this);
+    const size_t vid2 = e.switch_vertex(*this).vid(*this);
+    const auto tets = get_incident_tets_for_edge(e);
     std::vector<size_t> incident_surface_faces;
-    for (auto t : tets) {
-        std::vector<Tuple> f(4);
+    for (const Tuple& t : tets) {
+        std::array<Tuple, 4> f;
         f[0] = t;
         f[1] = t.switch_face(*this);
         f[2] = t.switch_edge(*this).switch_face(*this);
         f[3] = t.switch_vertex(*this).switch_edge(*this).switch_face(*this);
 
         for (int i = 0; i < 4; i++) {
-            auto fvs = get_face_vertices(f[i]);
-            if (!(m_vertex_attribute[fvs[0].vid(*this)].m_is_on_surface &&
-                  m_vertex_attribute[fvs[1].vid(*this)].m_is_on_surface &&
-                  m_vertex_attribute[fvs[2].vid(*this)].m_is_on_surface))
-                continue;
-            if (!m_face_attribute[f[i].fid(*this)].m_is_surface_fs) continue;
-            auto vs = get_face_vertices(f[i]);
+            const auto vs = get_face_vertices(f[i]);
             std::array<size_t, 3> vids = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
+            if (!(m_vertex_attribute[vids[0]].m_is_on_surface &&
+                  m_vertex_attribute[vids[1]].m_is_on_surface &&
+                  m_vertex_attribute[vids[2]].m_is_on_surface)) {
+                continue;
+            }
+            const size_t fid = f[i].fid(*this);
+            if (!m_face_attribute[fid].m_is_surface_fs) {
+                continue;
+            }
             if (std::find(vids.begin(), vids.end(), vid1) != vids.end() &&
                 std::find(vids.begin(), vids.end(), vid2) != vids.end()) {
-                incident_surface_faces.push_back(f[i].fid(*this));
+                incident_surface_faces.push_back(fid);
             }
         }
     }

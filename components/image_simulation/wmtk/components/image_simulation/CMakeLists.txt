@@ -17,6 +17,9 @@ set(SRC_FILES
 
 	extract_soup.hpp
 	extract_soup.cpp
+	
+	EmbedSurface.hpp
+	EmbedSurface.cpp
 
 	Parameters.h
 

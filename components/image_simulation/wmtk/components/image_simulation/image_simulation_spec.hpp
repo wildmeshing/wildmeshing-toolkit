@@ -17,8 +17,7 @@ nlohmann::json image_simulation_spec = R"(
       "filter_with_input",
       "eps_rel",
       "length_rel",
-      "stop_energy",
-      "preserve_topology"
+      "stop_energy"
     ]
   },
   {
@@ -91,12 +90,6 @@ nlohmann::json image_simulation_spec = R"(
     "type": "float",
     "default": 10,
     "doc": "Target energy. If all tets have an energy below this, tetwild will stop."
-  },
-  {
-    "pointer": "/preserve_topology",
-    "type": "bool",
-    "default": false,
-    "doc": "Preserve the topology of the input surface."
   }
 ]
 )"_json;

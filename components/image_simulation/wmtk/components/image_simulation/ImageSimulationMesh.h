@@ -306,6 +306,11 @@ public:
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
 
+    /**
+     * A short-cut to perform laplacian smoothing on the input surface
+     */
+    void smooth_input(const int n_iterations);
+
     void collapse_all_edges(bool is_limit_length = true);
     bool collapse_edge_before(const Tuple& t) override;
     bool collapse_edge_after(const Tuple& t) override;
@@ -492,6 +497,5 @@ public:
     // initialize sizing field (for topology preservation)
     void init_sizing_field();
 };
-
 
 } // namespace wmtk::components::image_simulation
