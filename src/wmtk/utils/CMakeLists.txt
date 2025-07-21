@@ -14,6 +14,8 @@ set(SRC_FILES
     Rational.cpp
     mesh_utils.hpp
     mesh_utils.cpp
+    mesh_intersection_utils.hpp
+    mesh_intersection_utils.cpp
     TupleInspector.hpp
 
     filter_pointers_to_derived.hpp

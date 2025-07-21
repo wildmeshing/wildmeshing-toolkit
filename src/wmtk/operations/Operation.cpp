@@ -11,6 +11,7 @@
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
 #include <wmtk/simplex/IdSimplexCollection.hpp>
 #include <wmtk/simplex/closed_star_iterable.hpp>
+#include <wmtk/utils/mesh_intersection_utils.hpp>
 
 #include <wmtk/operations/utils/local_joint_flatten.hpp>
 #include <wmtk/simplex/closed_star.hpp>
@@ -163,71 +164,6 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                     // handle triangle mesh
                     ////////////////////////////
                     if (mesh().top_simplex_type() == PrimitiveType::Triangle) {
-                        auto has_self_intersection = [&](const Eigen::MatrixXi& F,
-                                                         const Eigen::MatrixXd& uv) -> bool {
-                            // Extract the boundary loop
-                            Eigen::VectorXi loop;
-                            igl::boundary_loop(F, loop);
-
-                            int n = loop.size();
-
-                            // Helper function to check if two segments intersect
-                            auto doIntersect = [](const Eigen::RowVector2d& p1,
-                                                  const Eigen::RowVector2d& q1,
-                                                  const Eigen::RowVector2d& p2,
-                                                  const Eigen::RowVector2d& q2) -> bool {
-                                auto onSegment = [](const Eigen::RowVector2d& p,
-                                                    const Eigen::RowVector2d& q,
-                                                    const Eigen::RowVector2d& r) -> bool {
-                                    return q[0] <= std::max(p[0], r[0]) &&
-                                           q[0] >= std::min(p[0], r[0]) &&
-                                           q[1] <= std::max(p[1], r[1]) &&
-                                           q[1] >= std::min(p[1], r[1]);
-                                };
-
-                                auto orientation = [](const Eigen::RowVector2d& p,
-                                                      const Eigen::RowVector2d& q,
-                                                      const Eigen::RowVector2d& r) -> int {
-                                    double val = (q[1] - p[1]) * (r[0] - q[0]) -
-                                                 (q[0] - p[0]) * (r[1] - q[1]);
-                                    if (val == 0) return 0; // collinear
-                                    return (val > 0) ? 1 : 2; // clock or counterclock wise
-                                };
-
-                                int o1 = orientation(p1, q1, p2);
-                                int o2 = orientation(p1, q1, q2);
-                                int o3 = orientation(p2, q2, p1);
-                                int o4 = orientation(p2, q2, q1);
-
-                                // General case
-                                if (o1 != o2 && o3 != o4) return true;
-
-                                // Special Cases
-                                if (o1 == 0 && onSegment(p1, p2, q1)) return true;
-                                if (o2 == 0 && onSegment(p1, q2, q1)) return true;
-                                if (o3 == 0 && onSegment(p2, p1, q2)) return true;
-                                if (o4 == 0 && onSegment(p2, q1, q2)) return true;
-
-                                return false; // No intersection
-                            };
-
-                            for (int i = 0; i < n; ++i) {
-                                Eigen::RowVector2d p1 = uv.row(loop[i]);
-                                Eigen::RowVector2d q1 = uv.row(loop[(i + 1) % n]);
-                                for (int j = i + 2; j < n; ++j) {
-                                    if (j != (i + 1) % n &&
-                                        i != (j + 1) % n) { // Skip adjacent edges
-                                        Eigen::RowVector2d p2 = uv.row(loop[j]);
-                                        Eigen::RowVector2d q2 = uv.row(loop[(j + 1) % n]);
-                                        if (doIntersect(p1, q1, p2, q2)) {
-                                            return true;
-                                        }
-                                    }
-                                }
-                            }
-
-                            return false;
-                        };
                         // get local mesh before and after the operation
                         auto [F_after, V_after, id_map_after, v_id_map_after] =
                             utils::get_local_trimesh(static_cast<const TriMesh&>(mesh()), mods[0]);
@@ -365,7 +301,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                 return {};
                             }
 
-                            if (has_self_intersection(F_before, UV_joint)) {
+                            if (wmtk::utils::hasSelfIntersection2D(UV_joint, F_before)) {
                                 // std::cout << "operation number: " << succ_operations_count <<
                                 // "\n"; std::cerr << "self intersection in collapse F_before
                                 // detected\n";
@@ -466,7 +402,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                         viewer.launch();
                                     };
 
-                                    visualize_meshes(V_before, F_before, V_after, F_after);
+                                    // visualize_meshes(V_before, F_before, V_after, F_after);
                                     if (is_boundary_edge) {
                                         // Boundary edge split: simple projection to best-fit plane
                                         // Compute centroid for translation
@@ -524,7 +460,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 
                                         V_before = V_before_2d;
                                         V_after = V_after_2d;
-                                        visualize_meshes(V_before, F_before, V_after, F_after);
+                                        // visualize_meshes(V_before, F_before, V_after, F_after);
                                     } else {
                                         // Interior edge split: flatten the "folded book"
 
@@ -711,11 +647,11 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                                 std::cout << "F_after:" << std::endl;
                                                 std::cout << F_after << std::endl;
 
-                                                visualize_meshes(
-                                                    V_before,
-                                                    F_before,
-                                                    V_after,
-                                                    F_after);
+                                                // visualize_meshes(
+                                                //     V_before,
+                                                //     F_before,
+                                                //     V_after,
+                                                //     F_after);
                                             }
                                         }
                                     }
@@ -761,7 +697,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                 }
 
 
-                                if (has_self_intersection(F_before, V_before)) {
+                                if (wmtk::utils::hasSelfIntersection2D(V_before, F_before)) {
                                     throw std::runtime_error(
                                         "swap/smooth self intersection in F_before detected");
                                     scope.mark_failed();
