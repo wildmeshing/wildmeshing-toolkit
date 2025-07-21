@@ -19,7 +19,9 @@ void track_line_one_operation(const json& operation_log, query_curve& curve, boo
         } else {
             handle_consolidate(face_ids_maps, vertex_ids_maps, curve);
         }
-    } else if (operation_name == "TriEdgeSwap" || operation_name == "AttributesUpdate") {
+    } else if (
+        operation_name == "TriEdgeSwap" || operation_name == "AttributesUpdate" ||
+        operation_name == "EdgeSplit") {
         std::cout << "This Operations is" << operation_name << std::endl;
         Eigen::MatrixXi F_after, F_before;
         Eigen::MatrixXd V_after, V_before;
@@ -66,25 +68,6 @@ void track_line_one_operation(const json& operation_log, query_curve& curve, boo
                 v_id_map_after,
                 curve);
         }
-    } else if (operation_name == "EdgeSplit") {
-        std::cout << "This Operations is EdgeSplit" << std::endl;
-        Eigen::MatrixXi F_after, F_before;
-        Eigen::MatrixXd V_after, V_before;
-        std::vector<int64_t> id_map_after, id_map_before;
-        std::vector<int64_t> v_id_map_after, v_id_map_before;
-        bool is_skipped;
-        parse_non_collapse_file(
-            operation_log,
-            is_skipped,
-            V_before,
-            F_before,
-            id_map_before,
-            v_id_map_before,
-            V_after,
-            F_after,
-            id_map_after,
-            v_id_map_after);
-        // TODO:
     } else if (operation_name == "EdgeCollapse") {
         std::cout << "This Operations is EdgeCollapse" << std::endl;
         Eigen::MatrixXi F_after, F_before;
@@ -163,12 +146,19 @@ void track_line(path dirPath, query_curve& curve, bool do_forward)
     }
 }
 
-void track_lines(path dirPath, std::vector<query_curve>& curves, bool do_forward)
+void track_lines(path dirPath, std::vector<query_curve>& curves, bool do_forward, bool do_parallel)
 {
     // use igl parallel_for
-    igl::parallel_for(curves.size(), [&](int i) { track_line(dirPath, curves[i], do_forward); });
+    if (do_parallel) {
+        igl::parallel_for(curves.size(), [&](int i) {
+            track_line(dirPath, curves[i], do_forward);
+        });
+    } else {
+        for (int i = 0; i < curves.size(); i++) {
+            track_line(dirPath, curves[i], do_forward);
+        }
+    }
 }
-
 
 #include <igl/triangle_triangle_adjacency.h>
 query_curve generate_curve(
@@ -371,7 +361,7 @@ void forward_track_iso_lines_app(
     save_query_curves(curves, "curves.in");
 
 
-    track_lines(operation_logs_dir, curves);
+    track_lines(operation_logs_dir, curves, true, true);
 
 
     save_query_curves(curves, "curves.out");

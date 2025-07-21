@@ -663,12 +663,14 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                                         // Calculate 2D position using edge lengths
                                                         // and law of cosines Distance to shared
                                                         // edge vertices
-                                                        double d1 = (new_vertex_3d -
-                                                                     V_before.row(shared_v1).transpose())
-                                                                        .norm();
-                                                        double d2 = (new_vertex_3d -
-                                                                     V_before.row(shared_v2).transpose())
-                                                                        .norm();
+                                                        double d1 =
+                                                            (new_vertex_3d -
+                                                             V_before.row(shared_v1).transpose())
+                                                                .norm();
+                                                        double d2 =
+                                                            (new_vertex_3d -
+                                                             V_before.row(shared_v2).transpose())
+                                                                .norm();
                                                         double edge_len = (V_before.row(shared_v2) -
                                                                            V_before.row(shared_v1))
                                                                               .norm();

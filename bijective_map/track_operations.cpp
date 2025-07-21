@@ -77,7 +77,7 @@ std::vector<query_curve> load_query_curves(const std::string& filename)
     return curves;
 }
 
-// TODO: Rational Version of this code
+// TODO: DELETE THIS FUNCTION
 Eigen::Vector3d ComputeBarycentricCoordinates3D(
     const Eigen::Vector3d& p,
     const Eigen::Vector3d& a,
@@ -144,17 +144,22 @@ Eigen::Vector3<wmtk::Rational> ComputeBarycentricCoordinates2D_r(
     wmtk::Rational d20 = v2.dot(v0);
     wmtk::Rational d21 = v2.dot(v1);
     wmtk::Rational denom = d00 * d11 - d01 * d01;
+
+    // Check for degenerate triangle (collinear points)
+    if (denom == wmtk::Rational(0)) {
+        throw std::runtime_error("Degenerate triangle: points are collinear");
+    }
+
     wmtk::Rational v = (d11 * d20 - d01 * d21) / denom;
     wmtk::Rational w = (d00 * d21 - d01 * d20) / denom;
-    wmtk::Rational u = wmtk::Rational(1.0) - v - w;
+    wmtk::Rational u = wmtk::Rational(1) - v - w;
 
+    wmtk::Rational sum = u + v + w;
+    if (sum == wmtk::Rational(0)) {
+        throw std::runtime_error("Invalid barycentric coordinates: sum is zero");
+    }
 
-    // TODO: check why we need this trick
-    if (abs(u) < 1e-12) u = wmtk::Rational(0);
-    if (abs(v) < 1e-12) v = wmtk::Rational(0);
-    if (abs(w) < 1e-12) w = wmtk::Rational(0);
-
-    return Eigen::Vector3<wmtk::Rational>(u, v, w) / (u + v + w);
+    return Eigen::Vector3<wmtk::Rational>(u, v, w) / sum;
 }
 
 
@@ -220,6 +225,7 @@ void handle_collapse_edge(
                 error_msg << "\nThis indicates a serious numerical or topological error.";
                 throw std::runtime_error(error_msg.str());
             }
+
 
             // compute the location of the qp
             Eigen::Vector2d p(0, 0);
@@ -341,12 +347,18 @@ void handle_collapse_edge_r(
                 throw std::runtime_error(error_msg.str());
             }
 
+            // First convert barycentric coordinates to rational and normalize
+            Eigen::Vector3<wmtk::Rational> bc_rational(
+                wmtk::Rational(qp.bc(0)),
+                wmtk::Rational(qp.bc(1)),
+                wmtk::Rational(qp.bc(2)));
+            bc_rational /= bc_rational.sum();
             // compute the location of the qp
             Eigen::Vector2<wmtk::Rational> p(0, 0);
             for (int i = 0; i < 3; i++) {
                 p = p + UV_joint_r.row(F_after(local_index_in_f_after, (i + offset_in_f_after) % 3))
                                 .transpose() *
-                            wmtk::Rational(qp.bc(i));
+                            bc_rational(i);
             }
 
 
@@ -365,20 +377,27 @@ void handle_collapse_edge_r(
                     UV_joint_r.row(F_before(i, 1)),
                     UV_joint_r.row(F_before(i, 2)));
 
-                // std::cout << "bc candidate:" << bc_rational(0).to_double() << ", "
-                //           << bc_rational(1).to_double() << ", " << bc_rational(2).to_double()
-                //           << std::endl;
+                std::cout << std::setprecision(16) << "bc candidate:" << bc_rational(0).to_double()
+                          << ", " << bc_rational(1).to_double() << ", "
+                          << bc_rational(2).to_double() << std::endl;
 
                 if (bc_rational.minCoeff() >= 0 && bc_rational.maxCoeff() <= 1) {
+                    std::cout << "good!" << std::endl;
                     local_index_in_f_before = i;
                     qp.bc(0) = bc_rational(0).to_double();
                     qp.bc(1) = bc_rational(1).to_double();
                     qp.bc(2) = bc_rational(2).to_double();
                     bc_updated = true;
+                } else {
+                    std::cout << "bad!" << std::endl;
                 }
             }
 
             if (!bc_updated) {
+                // INSERT_YOUR_CODE
+                std::cout << "Input barycentric coordinates (bc): ";
+                std::cout << std::setprecision(16) << qp.bc(0) << ", " << qp.bc(1) << ", "
+                          << qp.bc(2) << std::endl;
                 std::stringstream error_msg;
                 error_msg << "FATAL ERROR in rational computation: Failed to update barycentric "
                              "coordinates.\n";

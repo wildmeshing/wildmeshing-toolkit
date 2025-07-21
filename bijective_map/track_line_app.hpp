@@ -19,7 +19,11 @@ using json = nlohmann::json;
 void track_line(path dirPath, query_curve& curve, bool do_forward = false);
 
 // extension of the above function for multiple curves
-void track_lines(path dirPath, std::vector<query_curve>& curves, bool do_forward = false);
+void track_lines(
+    path dirPath,
+    std::vector<query_curve>& curves,
+    bool do_forward = false,
+    bool do_parallel = true);
 
 
 // demo application on back tracking one curve
