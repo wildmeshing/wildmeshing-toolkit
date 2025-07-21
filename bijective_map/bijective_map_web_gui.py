@@ -138,6 +138,14 @@ class BijectiveMapHandler(BaseHTTPRequestHandler):
             if params.get('height_out'):
                 cmd.extend(['--height_out', str(params['height_out'])])
             
+            # Parameters for iso_lines mode
+            if params.get('app_mode') == 'iso_lines':
+                if params.get('N'):
+                    cmd.extend(['--N', str(params['N'])])
+                # Handle parallel flag (checkbox returns 'on' when checked, None when unchecked)
+                if params.get('do_parallel') != 'on':  # If not checked, add --no_parallel
+                    cmd.append('--no_parallel')
+            
             # Execute command
             print(f"Executing: {' '.join(cmd)}")
             result = subprocess.run(cmd, capture_output=True, text=True, cwd=Path.cwd())
@@ -562,6 +570,21 @@ class BijectiveMapHandler(BaseHTTPRequestHandler):
                         <button type="button" class="browse-btn" onclick="openFilePicker('input_obj_file_iso', false, 'data')">Browse</button>
                     </div>
                 </div>
+                
+                <div style="display: flex; gap: 20px;">
+                    <div class="form-group">
+                        <label for="N">Number of Isolines (N)</label>
+                        <input type="number" id="N" name="N" value="5" min="1" max="100">
+                        <small style="color: #666; font-size: 12px;">Number of isolines to generate (default: 5)</small>
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="do_parallel" name="do_parallel" checked>
+                            <label for="do_parallel">Enable Parallel Processing</label>
+                        </div>
+                        <small style="color: #666; font-size: 12px;">Use parallel processing for faster curve tracking (default: enabled)</small>
+                    </div>
+                </div>
             </div>
             
             <!-- Command Preview -->
@@ -644,6 +667,10 @@ class BijectiveMapHandler(BaseHTTPRequestHandler):
             input.addEventListener('input', updateCommandPreview);
         });
         
+        // Add specific event listeners for iso_lines options
+        document.getElementById('N').addEventListener('input', updateCommandPreview);
+        document.getElementById('do_parallel').addEventListener('change', updateCommandPreview);
+        
         function updateCommandPreview() {
             const formData = new FormData(document.getElementById('bijectiveForm'));
             const params = Object.fromEntries(formData);
@@ -661,6 +688,13 @@ class BijectiveMapHandler(BaseHTTPRequestHandler):
                     if (params.input_texture_file) cmd += ` --input_texture "${params.input_texture_file}"`;
                     if (params.width_out) cmd += ` --width_out ${params.width_out}`;
                     if (params.height_out) cmd += ` --height_out ${params.height_out}`;
+                } else if (selectedMode === 'iso_lines') {
+                    if (params.N) cmd += ` --N ${params.N}`;
+                    // Check if parallel processing is disabled
+                    const doParallelCheckbox = document.getElementById('do_parallel');
+                    if (doParallelCheckbox && !doParallelCheckbox.checked) {
+                        cmd += ` --no_parallel`;
+                    }
                 }
             }
             
@@ -844,6 +878,11 @@ class BijectiveMapHandler(BaseHTTPRequestHandler):
             const results = document.getElementById('results');
             const resultContent = document.getElementById('resultContent');
             
+            // Clear previous results
+            results.style.display = 'none';
+            resultContent.innerHTML = '';
+            results.className = 'result-section'; // Reset classes
+            
             // Disable button and show loading
             runBtn.disabled = true;
             runBtn.textContent = '⏳ Running...';
@@ -852,9 +891,19 @@ class BijectiveMapHandler(BaseHTTPRequestHandler):
             const formData = new FormData(document.getElementById('bijectiveForm'));
             const params = Object.fromEntries(formData);
             
-            // Handle iso_lines mode input_obj_file
-            if (selectedMode === 'iso_lines' && document.getElementById('input_obj_file_iso').value) {
-                params.input_obj_file = document.getElementById('input_obj_file_iso').value;
+            // Handle iso_lines mode specific parameters
+            if (selectedMode === 'iso_lines') {
+                if (document.getElementById('input_obj_file_iso').value) {
+                    params.input_obj_file = document.getElementById('input_obj_file_iso').value;
+                }
+                if (document.getElementById('N').value) {
+                    params.N = document.getElementById('N').value;
+                }
+                // For checkbox, we need to check if it's checked
+                const doParallelCheckbox = document.getElementById('do_parallel');
+                if (doParallelCheckbox.checked) {
+                    params.do_parallel = 'on';
+                }
             }
             
             try {
@@ -912,6 +961,11 @@ class BijectiveMapHandler(BaseHTTPRequestHandler):
             document.getElementById('textureOptions').style.display = 'none';
             document.getElementById('isoLinesOptions').style.display = 'none';
             document.getElementById('results').style.display = 'none';
+            
+            // Reset iso_lines specific fields to defaults
+            document.getElementById('N').value = '5';
+            document.getElementById('do_parallel').checked = true;
+            
             updateCommandPreview();
         }
         

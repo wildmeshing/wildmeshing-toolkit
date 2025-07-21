@@ -198,7 +198,7 @@ void handle_non_collapse_operation(
     const std::string& operation_name = "non-collapse operation",
     double eps_3d = 1e-3);
 
-void handle_swap_edge_curve(
+void handle_non_collapse_operation_curve(
     const Eigen::MatrixXd& V_before,
     const Eigen::MatrixXi& F_before,
     const std::vector<int64_t>& id_map_before,
@@ -207,7 +207,8 @@ void handle_swap_edge_curve(
     const Eigen::MatrixXi& F_after,
     const std::vector<int64_t>& id_map_after,
     const std::vector<int64_t>& v_id_map_after,
-    query_curve& curve);
+    query_curve& curve,
+    const std::string& operation_name);
 /***
  * Parse the operation log file
  */

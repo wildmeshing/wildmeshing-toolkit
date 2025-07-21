@@ -46,7 +46,7 @@ void track_line_one_operation(const json& operation_log, query_curve& curve, boo
         }
 
         if (do_forward) {
-            handle_swap_edge_curve(
+            handle_non_collapse_operation_curve(
                 V_after,
                 F_after,
                 id_map_after,
@@ -55,9 +55,10 @@ void track_line_one_operation(const json& operation_log, query_curve& curve, boo
                 F_before,
                 id_map_before,
                 v_id_map_before,
-                curve);
+                curve,
+                operation_name);
         } else {
-            handle_swap_edge_curve(
+            handle_non_collapse_operation_curve(
                 V_before,
                 F_before,
                 id_map_before,
@@ -66,7 +67,8 @@ void track_line_one_operation(const json& operation_log, query_curve& curve, boo
                 F_after,
                 id_map_after,
                 v_id_map_after,
-                curve);
+                curve,
+                operation_name);
         }
     } else if (operation_name == "EdgeCollapse") {
         std::cout << "This Operations is EdgeCollapse" << std::endl;
@@ -150,10 +152,12 @@ void track_lines(path dirPath, std::vector<query_curve>& curves, bool do_forward
 {
     // use igl parallel_for
     if (do_parallel) {
+        std::cout << "parallel mode" << std::endl;
         igl::parallel_for(curves.size(), [&](int i) {
             track_line(dirPath, curves[i], do_forward);
         });
     } else {
+        std::cout << "sequential mode" << std::endl;
         for (int i = 0; i < curves.size(); i++) {
             track_line(dirPath, curves[i], do_forward);
         }
@@ -293,13 +297,25 @@ void forward_track_iso_lines_app(
     const Eigen::MatrixXd& V_out,
     const Eigen::MatrixXi& F_out,
     const path& operation_logs_dir,
-    int N)
+    int N,
+    bool do_parallel)
 {
+    auto to_three_cols = [](const Eigen::MatrixXd& V) {
+        if (V.cols() == 2) {
+            Eigen::MatrixXd V_temp(V.rows(), 3);
+            V_temp << V, Eigen::VectorXd::Zero(V.rows());
+            return V_temp;
+        } else {
+            return V;
+        }
+    };
+    Eigen::MatrixXd V_in_3d = to_three_cols(V_in);
+    Eigen::MatrixXd V_out_3d = to_three_cols(V_out);
+
+
     // get all curves
     std::vector<query_curve> curves;
     {
-        int N = 5;
-
         auto curve_from_intersections = [&](const std::vector<Intersection>& input_intersections) {
             query_curve curve;
             for (int i = 0; i < input_intersections.size(); i += 2) {
@@ -346,7 +362,7 @@ void forward_track_iso_lines_app(
                 for (int i = 0; i < 2; i++) {
                     Eigen::Vector3d p(0, 0, 0);
                     for (int j = 0; j < 3; j++) {
-                        p += V_in.row(seg.fv_ids[j]) * seg.bcs[i](j);
+                        p += V_in_3d.row(seg.fv_ids[j]) * seg.bcs[i](j);
                     }
                     pts.row(i) = p;
                 }
@@ -361,7 +377,7 @@ void forward_track_iso_lines_app(
     save_query_curves(curves, "curves.in");
 
 
-    track_lines(operation_logs_dir, curves, true, true);
+    track_lines(operation_logs_dir, curves, true, do_parallel);
 
 
     save_query_curves(curves, "curves.out");
@@ -376,7 +392,7 @@ void forward_track_iso_lines_app(
                 for (int i = 0; i < 2; i++) {
                     Eigen::Vector3d p(0, 0, 0);
                     for (int j = 0; j < 3; j++) {
-                        p += V_out.row(seg.fv_ids[j]) * seg.bcs[i](j);
+                        p += V_out_3d.row(seg.fv_ids[j]) * seg.bcs[i](j);
                     }
                     pts.row(i) = p;
                 }

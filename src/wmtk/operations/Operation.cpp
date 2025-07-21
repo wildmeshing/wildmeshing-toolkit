@@ -143,6 +143,34 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                 json operation_log;
 
                 if (operation_log_file.is_open()) {
+                    // Visualize V_before, F_before and V_after, F_after using
+                    // libigl, switch with keys 0 and 1
+                    auto visualize_meshes = [](const Eigen::MatrixXd& V_before,
+                                               const Eigen::MatrixXi& F_before,
+                                               const Eigen::MatrixXd& V_after,
+                                               const Eigen::MatrixXi& F_after) {
+                        igl::opengl::glfw::Viewer viewer;
+                        viewer.data().set_mesh(V_before, F_before);
+
+                        viewer.callback_key_down = [&V_before, &F_before, &V_after, &F_after](
+                                                       igl::opengl::glfw::Viewer& v,
+                                                       unsigned int key,
+                                                       int mod) {
+                            if (key == '0') {
+                                v.data().clear();
+                                v.data().set_mesh(V_before, F_before);
+                                return true;
+                            }
+                            if (key == '1') {
+                                v.data().clear();
+                                v.data().set_mesh(V_after, F_after);
+                                return true;
+                            }
+                            return false;
+                        };
+
+                        viewer.launch();
+                    };
                     igl::Timer timer;
                     // save operation_name
                     operation_log["operation_name"] = operation_name;
@@ -180,6 +208,35 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                         s);
                                 },
                                 simplex);
+                        if (V_before.cols() == 3) {
+                            if (wmtk::utils::hasSelfIntersection3D(V_before, F_before)) {
+                                visualize_meshes(V_before, F_before, V_after, F_after);
+                                throw std::runtime_error("self intersection in F_before detected");
+                                scope.mark_failed();
+                                return {};
+                            }
+                            if (wmtk::utils::hasSelfIntersection3D(V_after, F_after)) {
+                                std::cout
+                                    << "self intersection in F_after detected\n this operation "
+                                       "should be rejected\n";
+                                scope.mark_failed();
+                                return {};
+                            }
+                        } else {
+                            if (wmtk::utils::hasSelfIntersection2D(V_before, F_before)) {
+                                visualize_meshes(V_before, F_before, V_after, F_after);
+                                throw std::runtime_error("self intersection in F_before detected");
+                                scope.mark_failed();
+                                return {};
+                            }
+                            if (wmtk::utils::hasSelfIntersection2D(V_after, F_after)) {
+                                std::cout
+                                    << "self intersection in F_after detected\n this operation "
+                                       "should be rejected\n";
+                                scope.mark_failed();
+                                return {};
+                            }
+                        }
 
                         auto to_three_cols = [](const Eigen::MatrixXd& V) {
                             if (V.cols() == 2) {
@@ -372,35 +429,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                             return mesh().is_boundary(s);
                                         },
                                         simplex);
-                                    // Visualize V_before, F_before and V_after, F_after using
-                                    // libigl, switch with keys 0 and 1
-                                    auto visualize_meshes = [](const Eigen::MatrixXd& V_before,
-                                                               const Eigen::MatrixXi& F_before,
-                                                               const Eigen::MatrixXd& V_after,
-                                                               const Eigen::MatrixXi& F_after) {
-                                        igl::opengl::glfw::Viewer viewer;
-                                        viewer.data().set_mesh(V_before, F_before);
 
-                                        viewer.callback_key_down =
-                                            [&V_before, &F_before, &V_after, &F_after](
-                                                igl::opengl::glfw::Viewer& v,
-                                                unsigned int key,
-                                                int mod) {
-                                                if (key == '0') {
-                                                    v.data().clear();
-                                                    v.data().set_mesh(V_before, F_before);
-                                                    return true;
-                                                }
-                                                if (key == '1') {
-                                                    v.data().clear();
-                                                    v.data().set_mesh(V_after, F_after);
-                                                    return true;
-                                                }
-                                                return false;
-                                            };
-
-                                        viewer.launch();
-                                    };
 
                                     // visualize_meshes(V_before, F_before, V_after, F_after);
                                     if (is_boundary_edge) {
@@ -684,22 +713,21 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 
                                 if (dbarea_before.minCoeff() < 0) {
                                     throw std::runtime_error(
-                                        "swap/smooth negative area in F_before detected");
+                                        operation_name + " negative area in F_before detected");
                                     scope.mark_failed();
                                     return {};
                                 }
 
                                 if (dbarea_after.minCoeff() < 0) {
                                     throw std::runtime_error(
-                                        "swap/smooth negative area in F_after detected");
+                                        operation_name + " negative area in F_after detected");
                                     scope.mark_failed();
                                     return {};
                                 }
 
-
                                 if (wmtk::utils::hasSelfIntersection2D(V_before, F_before)) {
                                     throw std::runtime_error(
-                                        "swap/smooth self intersection in F_before detected");
+                                        operation_name + " self intersection in F_before detected");
                                     scope.mark_failed();
                                     return {};
                                 }

@@ -43,6 +43,15 @@ int main(int argc, char** argv)
     app.add_option("--height_out", height_out, "Height of the output image");
     app.add_option("--width_out", width_out, "Width of the output image");
 
+    // options for iso_lines application
+    int N = 5;
+    bool no_parallel = false;
+    app.add_option("--N", N, "Number of isolines to generate (default: 5)");
+    app.add_flag(
+        "--no_parallel",
+        no_parallel,
+        "Disable parallel processing for curve tracking (default: enabled)");
+
     CLI11_PARSE(app, argc, argv);
 
     if (!std::filesystem::exists(initial_mesh_file)) {
@@ -136,6 +145,12 @@ int main(int argc, char** argv)
             F_in_obj,
             Ft_in_obj,
             Fn_in_obj);
+        bool do_parallel = !no_parallel; // Convert no_parallel to do_parallel
+        if (do_parallel) {
+            std::cout << "parallel mode" << std::endl;
+        } else {
+            std::cout << "sequential mode" << std::endl;
+        }
         forward_track_iso_lines_app(
             V_in,
             F_in,
@@ -144,7 +159,8 @@ int main(int argc, char** argv)
             V_out,
             F_out,
             operation_logs_dir,
-            5);
+            N,
+            do_parallel);
     } else if (application_name == "check_iso_lines") {
         // check_iso_lines_step_by_step(V_in, F_in, V_out, F_out, operation_logs_dir);
         std::vector<query_curve> curves_in = load_query_curves("curves.in");

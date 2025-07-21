@@ -417,6 +417,7 @@ void handle_collapse_edge_r(
     }
 }
 
+// TODO: this function is not used
 bool intersectSegmentEdge(
     const Eigen::Vector2d& a,
     const Eigen::Vector2d& b,
@@ -867,7 +868,7 @@ void handle_non_collapse_operation(
 }
 
 
-void handle_swap_edge_curve(
+void handle_non_collapse_operation_curve(
     const Eigen::MatrixXd& V_before,
     const Eigen::MatrixXi& F_before,
     const std::vector<int64_t>& id_map_before,
@@ -876,9 +877,9 @@ void handle_swap_edge_curve(
     const Eigen::MatrixXi& F_after,
     const std::vector<int64_t>& id_map_after,
     const std::vector<int64_t>& v_id_map_after,
-    query_curve& curve)
+    query_curve& curve,
+    const std::string& operation_name)
 {
-    std::cout << "Handling swap/smooth curve" << std::endl;
     int curve_length = curve.segments.size();
     Eigen::MatrixXi TT, TTi;
 
@@ -898,7 +899,7 @@ void handle_swap_edge_curve(
             id_map_after,
             v_id_map_after,
             query_points,
-            "EdgeSwap",
+            operation_name,
             100000);
 
         handle_one_segment(
