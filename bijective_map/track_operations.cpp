@@ -85,6 +85,7 @@ Eigen::Vector3d ComputeBarycentricCoordinates3D(
     const Eigen::Vector3d& c,
     double eps = 1e-3)
 {
+    throw std::runtime_error("ComputeBarycentricCoordinates3D should not be called.");
     Eigen::Vector3d v0 = b - a, v1 = c - a, v2 = p - a;
     Eigen::Vector3d n = v0.cross(v1);
     n.normalized();
@@ -798,6 +799,10 @@ void handle_non_collapse_operation(
                         V_before.row(F_before(i, 2)));
                 } else // V_cols == 3
                 {
+                    if (operation_name != "EdgeSplit") {
+                        throw std::runtime_error("FATAL ERROR: This operation is not EdgeSplit. "
+                                                 "But we are using 3D barycentric coordinates.");
+                    }
                     bc = ComputeBarycentricCoordinates3D(
                         p,
                         V_before.row(F_before(i, 0)),

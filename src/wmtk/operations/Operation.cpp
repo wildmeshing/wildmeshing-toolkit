@@ -424,6 +424,301 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                     V_after.row(i) = V_before.row(local_map(i));
                                 }
                             }
+
+                            if (operation_name == "EdgeSplit") {
+                                // Check if mesh coordinates are 2D
+                                if (V_before.cols() == 2) {
+                                    // For 2D coordinates, do nothing - already in 2D
+                                } else if (V_before.cols() == 3) {
+                                    // For 3D coordinates, check if it's boundary or interior edge
+                                    bool is_boundary_edge = mesh().parent_scope(
+                                        [&](const simplex::Simplex& s) {
+                                            return mesh().is_boundary(s);
+                                        },
+                                        simplex);
+                                    // Visualize V_before, F_before and V_after, F_after using
+                                    // libigl, switch with keys 0 and 1
+                                    auto visualize_meshes = [](const Eigen::MatrixXd& V_before,
+                                                               const Eigen::MatrixXi& F_before,
+                                                               const Eigen::MatrixXd& V_after,
+                                                               const Eigen::MatrixXi& F_after) {
+                                        igl::opengl::glfw::Viewer viewer;
+                                        viewer.data().set_mesh(V_before, F_before);
+
+                                        viewer.callback_key_down =
+                                            [&V_before, &F_before, &V_after, &F_after](
+                                                igl::opengl::glfw::Viewer& v,
+                                                unsigned int key,
+                                                int mod) {
+                                                if (key == '0') {
+                                                    v.data().clear();
+                                                    v.data().set_mesh(V_before, F_before);
+                                                    return true;
+                                                }
+                                                if (key == '1') {
+                                                    v.data().clear();
+                                                    v.data().set_mesh(V_after, F_after);
+                                                    return true;
+                                                }
+                                                return false;
+                                            };
+
+                                        viewer.launch();
+                                    };
+
+                                    visualize_meshes(V_before, F_before, V_after, F_after);
+                                    if (is_boundary_edge) {
+                                        // Boundary edge split: simple projection to best-fit plane
+                                        // Compute centroid for translation
+                                        Eigen::Vector3d centroid = V_before.colwise().mean();
+
+                                        // Compute covariance matrix for PCA
+                                        Eigen::MatrixXd V_centered =
+                                            V_before.rowwise() - centroid.transpose();
+                                        Eigen::Matrix3d cov = V_centered.transpose() * V_centered;
+
+                                        // Find the two principal components (largest eigenvalues)
+                                        Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> solver(cov);
+                                        Eigen::Matrix3d eigenvectors = solver.eigenvectors();
+
+                                        // Use the two largest eigenvectors as the 2D basis
+                                        Eigen::Vector3d u =
+                                            eigenvectors.col(2).normalized(); // largest
+                                        Eigen::Vector3d v =
+                                            eigenvectors.col(1).normalized(); // second largest
+
+                                        // Project to 2D
+                                        Eigen::MatrixXd V_before_2d(V_before.rows(), 2);
+                                        Eigen::MatrixXd V_after_2d(V_after.rows(), 2);
+
+                                        for (int i = 0; i < V_before.rows(); ++i) {
+                                            Eigen::Vector3d p =
+                                                V_before.row(i) - centroid.transpose();
+                                            V_before_2d.row(i) =
+                                                Eigen::Vector2d(p.dot(u), p.dot(v));
+                                        }
+
+                                        // Map vertices from after to before using v_id_map
+                                        for (int i = 0; i < V_after.rows(); ++i) {
+                                            int64_t global_vid_after = v_id_map_after[i];
+
+                                            // Find if this vertex exists in before mesh
+                                            auto it = std::find(
+                                                v_id_map_before.begin(),
+                                                v_id_map_before.end(),
+                                                global_vid_after);
+
+                                            if (it != v_id_map_before.end()) {
+                                                // Existing vertex: copy 2D position from before
+                                                int before_index =
+                                                    std::distance(v_id_map_before.begin(), it);
+                                                V_after_2d.row(i) = V_before_2d.row(before_index);
+                                            } else {
+                                                // New vertex: project using same basis vectors
+                                                Eigen::Vector3d p =
+                                                    V_after.row(i) - centroid.transpose();
+                                                V_after_2d.row(i) =
+                                                    Eigen::Vector2d(p.dot(u), p.dot(v));
+                                            }
+                                        }
+
+                                        V_before = V_before_2d;
+                                        V_after = V_after_2d;
+                                        visualize_meshes(V_before, F_before, V_after, F_after);
+                                    } else {
+                                        // Interior edge split: flatten the "folded book"
+
+                                        if (F_before.rows() == 2) {
+                                            // Find shared edge between the two triangles
+                                            int shared_v1 = -1, shared_v2 = -1;
+                                            for (int i = 0; i < 3; ++i) {
+                                                for (int j = 0; j < 3; ++j) {
+                                                    if (F_before(0, i) == F_before(1, j)) {
+                                                        if (shared_v1 == -1) {
+                                                            shared_v1 = F_before(0, i);
+                                                        } else {
+                                                            shared_v2 = F_before(0, i);
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+                                                if (shared_v2 != -1) break;
+                                            }
+
+                                            if (shared_v1 != -1 && shared_v2 != -1) {
+                                                // Create 2D flattened layout
+                                                Eigen::MatrixXd V_before_2d(V_before.rows(), 2);
+                                                Eigen::MatrixXd V_after_2d(V_after.rows(), 2);
+
+                                                // Place shared edge horizontally
+                                                Eigen::Vector3d edge_vec = V_before.row(shared_v2) -
+                                                                           V_before.row(shared_v1);
+                                                double edge_len = edge_vec.norm();
+
+                                                V_before_2d.row(shared_v1) = Eigen::Vector2d(0, 0);
+                                                V_before_2d.row(shared_v2) =
+                                                    Eigen::Vector2d(edge_len, 0);
+
+                                                // Place the third vertex of first triangle
+                                                int third_v = -1;
+                                                for (int i = 0; i < 3; ++i) {
+                                                    if (F_before(0, i) != shared_v1 &&
+                                                        F_before(0, i) != shared_v2) {
+                                                        third_v = F_before(0, i);
+                                                        break;
+                                                    }
+                                                }
+
+                                                if (third_v != -1) {
+                                                    // Compute position using edge lengths
+                                                    double d1 = (V_before.row(third_v) -
+                                                                 V_before.row(shared_v1))
+                                                                    .norm();
+                                                    double d2 = (V_before.row(third_v) -
+                                                                 V_before.row(shared_v2))
+                                                                    .norm();
+
+                                                    // Use law of cosines to find 2D position
+                                                    double cos_angle =
+                                                        (d1 * d1 + edge_len * edge_len - d2 * d2) /
+                                                        (2 * d1 * edge_len);
+                                                    cos_angle = std::max(
+                                                        -1.0,
+                                                        std::min(
+                                                            1.0,
+                                                            cos_angle)); // clamp for numerical
+                                                                         // stability
+                                                    double sin_angle =
+                                                        std::sqrt(1 - cos_angle * cos_angle);
+
+                                                    V_before_2d.row(third_v) = Eigen::Vector2d(
+                                                        d1 * cos_angle,
+                                                        d1 * sin_angle);
+                                                }
+
+                                                // Place the fourth vertex of second triangle
+                                                // (unfold)
+                                                int fourth_v = -1;
+                                                for (int i = 0; i < 3; ++i) {
+                                                    if (F_before(1, i) != shared_v1 &&
+                                                        F_before(1, i) != shared_v2) {
+                                                        fourth_v = F_before(1, i);
+                                                        break;
+                                                    }
+                                                }
+
+                                                if (fourth_v != -1) {
+                                                    // Compute position using edge lengths (unfold
+                                                    // to other side)
+                                                    double d1 = (V_before.row(fourth_v) -
+                                                                 V_before.row(shared_v1))
+                                                                    .norm();
+                                                    double d2 = (V_before.row(fourth_v) -
+                                                                 V_before.row(shared_v2))
+                                                                    .norm();
+
+                                                    double cos_angle =
+                                                        (d1 * d1 + edge_len * edge_len - d2 * d2) /
+                                                        (2 * d1 * edge_len);
+                                                    cos_angle = std::max(
+                                                        -1.0,
+                                                        std::min(
+                                                            1.0,
+                                                            cos_angle)); // clamp for numerical
+                                                                         // stability
+                                                    double sin_angle =
+                                                        std::sqrt(1 - cos_angle * cos_angle);
+
+                                                    // Place on opposite side of shared edge
+                                                    V_before_2d.row(fourth_v) = Eigen::Vector2d(
+                                                        d1 * cos_angle,
+                                                        -d1 * sin_angle);
+                                                }
+
+                                                // Map vertices from after to before using v_id_map
+                                                for (int i = 0; i < V_after.rows(); ++i) {
+                                                    int64_t global_vid_after = v_id_map_after[i];
+
+                                                    // Find if this vertex exists in before mesh
+                                                    auto it = std::find(
+                                                        v_id_map_before.begin(),
+                                                        v_id_map_before.end(),
+                                                        global_vid_after);
+
+                                                    if (it != v_id_map_before.end()) {
+                                                        // Existing vertex: copy 2D position from
+                                                        // before
+                                                        int before_index = std::distance(
+                                                            v_id_map_before.begin(),
+                                                            it);
+                                                        V_after_2d.row(i) =
+                                                            V_before_2d.row(before_index);
+                                                    } else {
+                                                        // New vertex: use geometric projection like
+                                                        // boundary case Project the 3D position to
+                                                        // 2D using the shared edge as baseline
+                                                        Eigen::Vector3d new_vertex_3d =
+                                                            V_after.row(i);
+
+                                                        // Calculate 2D position using edge lengths
+                                                        // and law of cosines Distance to shared
+                                                        // edge vertices
+                                                        double d1 = (new_vertex_3d -
+                                                                     V_before.row(shared_v1).transpose())
+                                                                        .norm();
+                                                        double d2 = (new_vertex_3d -
+                                                                     V_before.row(shared_v2).transpose())
+                                                                        .norm();
+                                                        double edge_len = (V_before.row(shared_v2) -
+                                                                           V_before.row(shared_v1))
+                                                                              .norm();
+
+                                                        // Use law of cosines to find angle
+                                                        double cos_angle =
+                                                            (d1 * d1 + edge_len * edge_len -
+                                                             d2 * d2) /
+                                                            (2 * d1 * edge_len);
+                                                        cos_angle = std::max(
+                                                            -1.0,
+                                                            std::min(
+                                                                1.0,
+                                                                cos_angle)); // clamp for numerical
+                                                                             // stability
+                                                        double sin_angle =
+                                                            std::sqrt(1 - cos_angle * cos_angle);
+
+                                                        // Place using the shared edge as baseline
+                                                        // (use positive y like third_v)
+                                                        V_after_2d.row(i) = Eigen::Vector2d(
+                                                            d1 * cos_angle,
+                                                            d1 * sin_angle);
+                                                    }
+                                                }
+
+                                                V_before = V_before_2d;
+                                                V_after = V_after_2d;
+                                                // INSERT_YOUR_CODE
+                                                std::cout << "V_before:" << std::endl;
+                                                std::cout << V_before << std::endl;
+                                                std::cout << "V_after:" << std::endl;
+                                                std::cout << V_after << std::endl;
+
+
+                                                std::cout << "F_before:" << std::endl;
+                                                std::cout << F_before << std::endl;
+                                                std::cout << "F_after:" << std::endl;
+                                                std::cout << F_after << std::endl;
+
+                                                visualize_meshes(
+                                                    V_before,
+                                                    F_before,
+                                                    V_after,
+                                                    F_after);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                             if (!skip) {
                                 // log the mesh before and after the operation
                                 operation_log["is_skipped"] = false;
