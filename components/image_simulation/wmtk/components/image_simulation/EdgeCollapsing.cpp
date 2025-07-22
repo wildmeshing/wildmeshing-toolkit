@@ -122,7 +122,7 @@ bool ImageSimulationMesh::collapse_edge_before(const Tuple& loc) // input is an 
 
     // surface
     if (cache.edge_length > 0 && VA[v1_id].m_is_on_surface) {
-        if (!VA[v2_id].m_is_on_surface && m_envelope.is_outside(VA[v2_id].m_posf)) {
+        if (!VA[v2_id].m_is_on_surface && m_envelope->is_outside(VA[v2_id].m_posf)) {
             return false;
         }
     }
@@ -254,7 +254,7 @@ bool ImageSimulationMesh::collapse_edge_after(const Tuple& loc)
     if (cache.edge_length > 0) {
         for (auto& vids : cache.surface_faces) {
             // surface envelope
-            bool is_out = m_envelope.is_outside(
+            bool is_out = m_envelope->is_outside(
                 {{VA[vids[0]].m_posf, VA[vids[1]].m_posf, VA[vids[2]].m_posf}});
             if (is_out) {
                 return false;

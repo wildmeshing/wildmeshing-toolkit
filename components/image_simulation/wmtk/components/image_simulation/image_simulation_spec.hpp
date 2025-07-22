@@ -16,7 +16,8 @@ nlohmann::json image_simulation_spec = R"(
       "max_iterations",
       "eps_rel",
       "length_rel",
-      "stop_energy"
+      "stop_energy",
+      "write_vtu"
     ]
   },
   {
@@ -83,6 +84,12 @@ nlohmann::json image_simulation_spec = R"(
     "type": "float",
     "default": 10,
     "doc": "Target energy. If all tets have an energy below this, tetwild will stop."
+  },
+  {
+    "pointer": "/write_vtu",
+    "type": "bool",
+    "default": false,
+    "doc": "Write not just MSH but also VTU output."
   }
 ]
 )"_json;

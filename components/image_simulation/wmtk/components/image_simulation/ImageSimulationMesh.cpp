@@ -772,7 +772,7 @@ bool ImageSimulationMesh::check_attributes()
                 wmtk::logger().critical("surface track wrong");
                 return false;
             }
-            bool is_out = m_envelope.is_outside(
+            bool is_out = m_envelope->is_outside(
                 {{m_vertex_attribute[vs[0].vid(*this)].m_posf,
                   m_vertex_attribute[vs[1].vid(*this)].m_posf,
                   m_vertex_attribute[vs[2].vid(*this)].m_posf}});
@@ -799,7 +799,7 @@ bool ImageSimulationMesh::check_attributes()
     for (const auto& v : vs) {
         size_t i = v.vid(*this);
         if (m_vertex_attribute[i].m_is_on_surface) {
-            bool is_out = m_envelope.is_outside(m_vertex_attribute[i].m_posf);
+            bool is_out = m_envelope->is_outside(m_vertex_attribute[i].m_posf);
             if (is_out) {
                 wmtk::logger().critical("is_out v");
                 return false;

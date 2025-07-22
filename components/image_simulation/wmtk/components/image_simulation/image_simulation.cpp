@@ -58,61 +58,105 @@ void image_simulation(nlohmann::json json_params)
     params.lr = json_params["length_rel"];
     params.stop_energy = json_params["stop_energy"];
 
-    // convert image into tet mesh
-    EmbedSurface image_mesh(input_paths[0]);
-    {
-        if (!skip_simplify) {
-            image_mesh.simplify_surface();
-        }
-        image_mesh.remove_duplicates();
-        image_mesh.embed_surface();
+    const bool write_vtu = json_params["write_vtu"];
 
-        image_mesh.write_emb_msh("debug_input_embedding.msh");
-        image_mesh.write_emb_vtu("debug_input_embedding.vtu");
-        image_mesh.write_surf_off("debug_surf.off");
-        image_mesh.write_emb_surf_off("debug_emb_surf.off");
+    // if input is not MSH perform conversion to MSH and ignore everything else
+    {
+        const std::filesystem::path input_filename = input_paths[0];
+
+        if (input_filename.extension() != ".msh") {
+            // convert image to MSH
+            std::filesystem::path output_filename = params.output_path;
+            if (output_filename.has_extension() && output_filename.extension() != ".msh") {
+                logger().warn(
+                    "Changing output extension from {} to .msh",
+                    output_filename.extension().string());
+            }
+
+            output_filename.replace_extension(".msh");
+            std::filesystem::path vtu_filename = output_filename;
+            vtu_filename.replace_extension(".vtu");
+
+            logger().info(
+                "Converting image {} into mesh {}",
+                input_paths[0],
+                output_filename.string());
+
+            // convert image into tet mesh
+            EmbedSurface image_mesh(input_paths[0]);
+            {
+                if (!skip_simplify) {
+                    image_mesh.simplify_surface();
+                }
+                image_mesh.remove_duplicates();
+                image_mesh.embed_surface();
+
+                image_mesh.write_emb_msh(output_filename.string());
+                if (write_vtu) {
+                    image_mesh.write_emb_vtu(vtu_filename.string());
+                    image_mesh.write_surf_off("debug_surf.off");
+                    image_mesh.write_emb_surf_off("debug_emb_surf.off");
+                }
+            }
+
+            wmtk::logger().info("======= finish conversion =========");
+            return;
+        }
+    }
+
+    // read MSH
+    MatrixXd V_input;
+    MatrixXi T_input;
+    VectorXi T_input_tag;
+    {
+        MshData msh;
+        msh.load(input_paths[0]);
+
+        std::vector<Eigen::Vector3d> verts;
+        std::vector<std::array<size_t, 4>> tets;
+        std::vector<int> tets_tag;
+
+        verts.resize(msh.get_num_tet_vertices());
+        tets.resize(msh.get_num_tets());
+        msh.extract_tet_vertices(
+            [&verts](size_t i, double x, double y, double z) { verts[i] << x, y, z; });
+        msh.extract_tets([&tets](size_t i, size_t v0, size_t v1, size_t v2, size_t v3) {
+            tets[i] = {{v0, v1, v2, v3}};
+        });
+
+        tets_tag.resize(msh.get_num_tets());
+        msh.extract_tet_attribute("tag", [&tets_tag](size_t i, std::vector<double> val) {
+            assert(val.size() == 1);
+            tets_tag[i] = val[0];
+        });
+
+        assert(tets.size() == tets_tag.size());
+
+        V_input = V_MAP(verts[0].data(), verts.size(), 3);
+        T_input.resize(tets.size(), 4);
+        T_input_tag.resize(tets_tag.size(), 1);
+        for (size_t i = 0; i < tets.size(); ++i) {
+            T_input(i, 0) = tets[i][0];
+            T_input(i, 1) = tets[i][1];
+            T_input(i, 2) = tets[i][2];
+            T_input(i, 3) = tets[i][3];
+            T_input_tag[i] = tets_tag[i];
+        }
     }
 
     // /////////
     // // Prepare Envelope and parameter for TetWild
     // /////////
 
-    const auto box_minmax = image_mesh.bbox_minmax();
-    params.init(box_minmax.first, box_minmax.second);
-
-    std::shared_ptr<Envelope> ptr_env;
-    std::shared_ptr<SampleEnvelope> ptr_sample_env;
-    {
-        const auto v_simplified = image_mesh.V_surf_to_vector();
-        const auto f_simplified = image_mesh.F_surf_to_vector();
-
-        std::vector<Eigen::Vector3i> tempF(f_simplified.size());
-        for (size_t i = 0; i < tempF.size(); ++i) {
-            tempF[i] << f_simplified[i][0], f_simplified[i][1], f_simplified[i][2];
-        }
-
-        ptr_sample_env = std::make_shared<SampleEnvelope>();
-        ptr_sample_env->init(v_simplified, tempF, 0.5); // TODO eps as input parameter
-
-        if (use_sample_envelope) {
-            ptr_env = ptr_sample_env;
-        } else {
-            ptr_env = std::make_shared<ExactEnvelope>();
-            ptr_env->init(v_simplified, tempF, 0.5); // TODO eps as input parameter
-        }
-    }
+    params.init(V_input.colwise().minCoeff(), V_input.colwise().maxCoeff());
 
     /////////////////////////////////////////////////////
 
     igl::Timer timer;
     timer.start();
 
-    image_simulation::ImageSimulationMesh mesh(params, *ptr_env, *ptr_sample_env, NUM_THREADS);
-    mesh.init_from_image(
-        image_mesh.V_emb(),
-        image_mesh.T_emb(),
-        image_mesh.F_on_surface(),
-        image_mesh.T_tags());
+    image_simulation::ImageSimulationMesh mesh(params, 0.5, NUM_THREADS);
+    mesh.init_from_image(V_input, T_input, T_input_tag);
 
     // const double insertion_time = insertion_timer.getElapsedTime();
     // wmtk::logger().info("volume remesher insertion time: {}s", insertion_time);

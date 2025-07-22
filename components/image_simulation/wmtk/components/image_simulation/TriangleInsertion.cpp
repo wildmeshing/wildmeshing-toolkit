@@ -31,7 +31,7 @@ void ImageSimulationMesh::init_from_delaunay_box_mesh(const std::vector<Eigen::V
 
     const V_MAP V_map(vertices[0].data(), vertices.size(), 3);
 
-    delaunay_box_mesh(m_envelope, V_map, points, tets, box_min, box_max);
+    delaunay_box_mesh(*m_envelope, V_map, points, tets, box_min, box_max);
 
     m_params.box_min = box_min;
     m_params.box_max = box_max;

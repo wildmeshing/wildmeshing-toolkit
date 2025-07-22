@@ -530,7 +530,7 @@ private:
                 throw std::runtime_error("Attribute " + attr_name + " is of the wrong DIM.");
             }
 
-            for (const auto& entry : data.entries) {
+            for (const mshio::DataEntry& entry : data.entries) {
                 const size_t tag = entry.tag - tag_offset;
                 assert(tag < element_block->num_elements_in_block);
                 set_attr(tag, entry.data);

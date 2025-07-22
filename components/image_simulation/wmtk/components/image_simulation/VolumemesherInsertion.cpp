@@ -524,12 +524,10 @@ void ImageSimulationMesh::init_from_Volumeremesher(
 void ImageSimulationMesh::init_from_image(
     const MatrixXd& V,
     const MatrixXi& T,
-    const MatrixXi& F,
     const VectorXi& T_tags)
 {
     assert(V.cols() == 3);
     assert(T.cols() == 4);
-    assert(F.cols() == 3);
     assert(T_tags.size() == T.rows());
 
     init(T);
@@ -545,27 +543,50 @@ void ImageSimulationMesh::init_from_image(
         m_vertex_attribute[i].m_posf = V.row(i);
     }
 
-    // check here
-    for (size_t i = 0; i < F.rows(); ++i) {
-        const auto [_, fid] = tuple_from_face(
-            std::array<size_t, 3>{(size_t)F(i, 0), (size_t)F(i, 1), (size_t)F(i, 2)});
-        m_face_attribute[fid].m_is_surface_fs = 1;
+    // add tags
+    for (size_t i = 0; i < T_tags.size(); ++i) {
+        m_tet_attribute[i].tag = T_tags[i];
     }
 
     const auto faces = get_faces();
     std::cout << "faces size: " << faces.size() << std::endl;
+
+    std::vector<Eigen::Vector3i> tempF;
     for (const Tuple& f : faces) {
         SmartTuple ff(*this, f);
-        const size_t fid = ff.fid();
-        if (m_face_attribute[fid].m_is_surface_fs == 1) {
-            const size_t v1 = ff.vid();
-            const size_t v2 = ff.switch_vertex().vid();
-            const size_t v3 = ff.switch_edge().switch_vertex().vid();
-            m_vertex_attribute[v1].m_is_on_surface = true;
-            m_vertex_attribute[v2].m_is_on_surface = true;
-            m_vertex_attribute[v3].m_is_on_surface = true;
+
+        const auto t_opp = ff.switch_tetrahedron();
+        if (!t_opp) {
+            continue;
         }
+        const int64_t tag0 = m_tet_attribute[ff.tid()].tag;
+        const int64_t tag1 = m_tet_attribute[t_opp.value().tid()].tag;
+
+        if (tag0 == tag1) {
+            continue;
+        }
+
+        m_face_attribute[ff.fid()].m_is_surface_fs = 1;
+
+        const size_t v1 = ff.vid();
+        const size_t v2 = ff.switch_vertex().vid();
+        const size_t v3 = ff.switch_edge().switch_vertex().vid();
+        m_vertex_attribute[v1].m_is_on_surface = true;
+        m_vertex_attribute[v2].m_is_on_surface = true;
+        m_vertex_attribute[v3].m_is_on_surface = true;
+
+        tempF.emplace_back(v1, v2, v3);
     }
+
+    // build envelopes
+    std::vector<Eigen::Vector3d> tempV(V.rows());
+    for (size_t i = 0; i < V.rows(); ++i) {
+        tempV[i] = V.row(i);
+    }
+    m_envelope = std::make_shared<ExactEnvelope>();
+    m_envelope->init(tempV, tempF, m_envelope_eps);
+    triangles_tree = std::make_shared<SampleEnvelope>();
+    triangles_tree->init(tempV, tempF, m_envelope_eps);
 
     // track bounding box
     for (size_t i = 0; i < faces.size(); i++) {
@@ -633,11 +654,6 @@ void ImageSimulationMesh::init_from_image(
     // init qualities
     for_each_tetra(
         [this](const Tuple& t) { m_tet_attribute[t.tid(*this)].m_quality = get_quality(t); });
-
-    // add tags
-    for (size_t i = 0; i < T_tags.size(); ++i) {
-        m_tet_attribute[i].tag = T_tags[i];
-    }
 }
 
 

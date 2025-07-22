@@ -753,7 +753,7 @@ void EmbedSurface::write_emb_msh(const std::string& filename) const
 
     msh.add_tet_attribute<1>("tag", [this](size_t i) { return m_T_tags[i]; });
 
-    msh.save("debug_input_embedding.msh", true);
+    msh.save(filename, true);
 }
 
 void EmbedSurface::write_emb_vtu(const std::string& filename) const

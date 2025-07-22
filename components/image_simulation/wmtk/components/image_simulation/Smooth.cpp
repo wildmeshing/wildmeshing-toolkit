@@ -189,8 +189,8 @@ bool ImageSimulationMesh::smooth_after(const Tuple& t)
         {
             Vector3d project;
 
-            if (triangles_tree.initialized()) {
-                triangles_tree.nearest_point(m_vertex_attribute[vid].m_posf, project);
+            if (triangles_tree->initialized()) {
+                triangles_tree->nearest_point(m_vertex_attribute[vid].m_posf, project);
             } else {
                 // Does that even make sense? The vertex is part of these triangles so this
                 // projection doesn't do anything.
@@ -212,7 +212,7 @@ bool ImageSimulationMesh::smooth_after(const Tuple& t)
                     tris[k][kk] = n[k * 3 + kk];
                 }
             }
-            bool is_out = m_envelope.is_outside(tris);
+            bool is_out = m_envelope->is_outside(tris);
             if (is_out) {
                 return false;
             }
@@ -347,7 +347,7 @@ void ImageSimulationMesh::smooth_input(const int n_iterations)
                     }
                     success = true;
                     for (const auto& n : neighbor_assemble) {
-                        if (m_envelope.is_outside(n)) {
+                        if (m_envelope->is_outside(n)) {
                             success = false;
                             break;
                         }

@@ -109,22 +109,18 @@ public:
     const double MAX_ENERGY = std::numeric_limits<double>::max();
 
     Parameters& m_params;
-    wmtk::Envelope& m_envelope;
+    std::shared_ptr<Envelope> m_envelope;
     // for surface projection
-    SampleEnvelope& triangles_tree;
+    std::shared_ptr<SampleEnvelope> triangles_tree;
+    double m_envelope_eps = -1;
 
     // for open boundary
     wmtk::ExactEnvelope m_open_boundary_envelope; // todo: add sample envelope option
     SampleEnvelope boundaries_tree;
 
-    ImageSimulationMesh(
-        Parameters& _m_params,
-        wmtk::Envelope& _m_envelope,
-        SampleEnvelope& _triangles_tree,
-        int _num_threads = 0)
+    ImageSimulationMesh(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
         : m_params(_m_params)
-        , m_envelope(_m_envelope)
-        , triangles_tree(_triangles_tree)
+        , m_envelope_eps(envelope_eps)
     {
         NUM_THREADS = _num_threads;
         p_vertex_attrs = &m_vertex_attribute;
@@ -466,11 +462,7 @@ public:
      * @param F #Fx3 vertex IDs of all embedded faces
      * @param T_tags #Tx1 image data represented by the individual tets
      */
-    void init_from_image(
-        const MatrixXd& V,
-        const MatrixXi& T,
-        const MatrixXi& F,
-        const VectorXi& T_tags);
+    void init_from_image(const MatrixXd& V, const MatrixXi& T, const VectorXi& T_tags);
 
     std::vector<std::array<size_t, 3>> triangulate_polygon_face(std::vector<Vector3r> points);
 
