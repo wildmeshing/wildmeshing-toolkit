@@ -151,7 +151,7 @@ void handle_collapse_edge(
             query_points);
         return;
     }
-    // std::cout << "Handling EdgeCollapse" << std::endl;
+    std::cout << "Handling EdgeCollapse" << std::endl;
     for (int id = 0; id < query_points.size(); id++) {
         query_point& qp = query_points[id];
         if (qp.f_id < 0) continue;
@@ -271,7 +271,7 @@ void handle_collapse_edge_r(
     const std::vector<int64_t>& id_map_after,
     std::vector<query_point>& query_points)
 {
-    // std::cout << "Handling EdgeCollapse Rational" << std::endl;
+    std::cout << "Handling EdgeCollapse Rational" << std::endl;
     // first convert the UV_joint to Rational
     Eigen::MatrixX<wmtk::Rational> UV_joint_r(UV_joint.rows(), UV_joint.cols());
     for (int i = 0; i < UV_joint.rows(); i++) {
@@ -344,19 +344,17 @@ void handle_collapse_edge_r(
                     UV_joint_r.row(F_before(i, 1)),
                     UV_joint_r.row(F_before(i, 2)));
 
-                std::cout << std::setprecision(16) << "bc candidate:" << bc_rational(0).to_double()
-                          << ", " << bc_rational(1).to_double() << ", "
-                          << bc_rational(2).to_double() << std::endl;
+                // std::cout << std::setprecision(16) << "bc candidate:" <<
+                // bc_rational(0).to_double()
+                //           << ", " << bc_rational(1).to_double() << ", "
+                //           << bc_rational(2).to_double() << std::endl;
 
                 if (bc_rational.minCoeff() >= 0 && bc_rational.maxCoeff() <= 1) {
-                    std::cout << "good!" << std::endl;
                     local_index_in_f_before = i;
                     qp.bc(0) = bc_rational(0).to_double();
                     qp.bc(1) = bc_rational(1).to_double();
                     qp.bc(2) = bc_rational(2).to_double();
                     bc_updated = true;
-                } else {
-                    std::cout << "bad!" << std::endl;
                 }
             }
 
@@ -632,7 +630,7 @@ void handle_non_collapse_operation_r(
     }
 }
 
-
+// checked
 bool intersectSegmentEdge_r(
     const Eigen::Vector2<wmtk::Rational>& a,
     const Eigen::Vector2<wmtk::Rational>& b,
@@ -654,9 +652,7 @@ bool intersectSegmentEdge_r(
     wmtk::Rational u = -(ab.x() * ac.y() - ab.y() * ac.x()) / denominator;
     if (debug_mode) std::cout << "t: " << t << ", u: " << u << std::endl;
 
-    // TODO: check why this is needed
-    double eps = 1e-10;
-    if (t >= 0 && t <= wmtk::Rational(1 + eps) && u >= 0 && u <= 1) {
+    if (t >= 0 && t <= wmtk::Rational(1) && u >= 0 && u <= wmtk::Rational(1)) {
         // Calculate barycentric coordinates for intersection
         wmtk::Rational alpha = 1 - u;
         wmtk::Rational beta = u;
@@ -668,6 +664,7 @@ bool intersectSegmentEdge_r(
     return false;
 }
 
+// TODO: refactor this function
 void handle_one_segment(
     query_curve& curve,
     int id,
@@ -712,11 +709,16 @@ void handle_one_segment(
             throw std::runtime_error("query_points[0] not found");
         }
         int current_fid = std::distance(id_map_before.begin(), it);
+
         Eigen::Vector2<wmtk::Rational> p0(0, 0);
+        Eigen::Vector3<wmtk::Rational> bc_p0_r;
+        bc_p0_r << wmtk::Rational(query_points[0].bc(0)), wmtk::Rational(query_points[0].bc(1)),
+            wmtk::Rational(query_points[0].bc(2));
+        bc_p0_r /= bc_p0_r.sum();
         for (int i = 0; i < 3; i++) {
-            p0 = p0 + UV_joint_r.row(F_before(current_fid, i)).transpose() *
-                          wmtk::Rational(query_points[0].bc(i));
+            p0 = p0 + UV_joint_r.row(F_before(current_fid, i)).transpose() * bc_p0_r(i);
         }
+
         it = std::find(id_map_before.begin(), id_map_before.end(), query_points[1].f_id);
         if (it == id_map_before.end()) {
             std::cout << "query_points[1] not found" << std::endl;
@@ -724,9 +726,12 @@ void handle_one_segment(
         }
         int target_fid = std::distance(id_map_before.begin(), it);
         Eigen::Vector2<wmtk::Rational> p1(0, 0);
+        Eigen::Vector3<wmtk::Rational> bc_p1_r;
+        bc_p1_r << wmtk::Rational(query_points[1].bc(0)), wmtk::Rational(query_points[1].bc(1)),
+            wmtk::Rational(query_points[1].bc(2));
+        bc_p1_r /= bc_p1_r.sum();
         for (int i = 0; i < 3; i++) {
-            p1 = p1 + UV_joint_r.row(F_before(target_fid, i)).transpose() *
-                          wmtk::Rational(query_points[1].bc(i));
+            p1 = p1 + UV_joint_r.row(F_before(target_fid, i)).transpose() * bc_p1_r(i);
         }
 
         int current_edge_id = -1;
@@ -768,6 +773,14 @@ void handle_one_segment(
             if (next_edge_id0 == -1) {
                 // case that the first point is not on a edge, then it is a bug
                 if (current_edge_id == -1) {
+                    std::cout << "bc_p0_r: ";
+                    std::cout << std::setprecision(16) << bc_p0_r(0) << ", " << bc_p0_r(1) << ", "
+                              << bc_p0_r(2) << std::endl;
+                    std::cout << "bc_p1_r: ";
+                    std::cout << std::setprecision(16) << bc_p1_r(0) << ", " << bc_p1_r(1) << ", "
+                              << bc_p1_r(2) << std::endl;
+
+
                     std::cout << "no first intersection found" << std::endl;
                     throw std::runtime_error("no first intersection found");
                 }
