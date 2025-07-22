@@ -688,8 +688,6 @@ void handle_one_segment(
         if (TT.rows() == 0) {
             igl::triangle_triangle_adjacency(F_before, TT, TTi);
         }
-        // TODO: maybe not need eps any more
-        double eps = 1e-8;
 
         // convert the UV_Joint to Rational
         Eigen::MatrixX<wmtk::Rational> UV_joint_r(UV_joint.rows(), UV_joint.cols());

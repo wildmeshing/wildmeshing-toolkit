@@ -3,6 +3,190 @@
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/parallel_for.h>
 #include <wmtk/utils/orient.hpp>
+#include "vtu_utils.hpp"
+
+bool validate_and_convert_curves_to_edge_mesh(
+    const std::vector<query_curve>& curves,
+    const Eigen::MatrixXd& V,
+    Eigen::MatrixXd& edge_V,
+    Eigen::MatrixXi& edge_E,
+    double tolerance = 1e-8)
+{
+    if (curves.empty()) {
+        std::cerr << "No curves provided" << std::endl;
+        return false;
+    }
+
+    std::vector<Eigen::Vector3d> vertices;
+    std::vector<Eigen::Vector2i> edges;
+
+    for (size_t curve_id = 0; curve_id < curves.size(); ++curve_id) {
+        const query_curve& curve = curves[curve_id];
+
+        if (curve.segments.empty()) {
+            std::cout << "Warning: Curve " << curve_id << " has no segments" << std::endl;
+            continue;
+        }
+
+        std::cout << "Processing curve " << curve_id << " with " << curve.segments.size()
+                  << " segments" << std::endl;
+
+        // Track which segments we've visited
+        std::vector<bool> visited(curve.segments.size(), false);
+        std::vector<int> curve_vertex_indices;
+
+        // Start from segment 0
+        int current_seg_id = 0;
+        int segments_processed = 0;
+
+        while (current_seg_id != -1 && current_seg_id < (int)curve.segments.size()) {
+            if (visited[current_seg_id]) {
+                std::cout << "Warning: Segment " << current_seg_id
+                          << " already visited - breaking to avoid loop" << std::endl;
+                break;
+            }
+
+            visited[current_seg_id] = true;
+            segments_processed++;
+
+            const query_segment& seg = curve.segments[current_seg_id];
+
+            // Compute world coordinates for segment endpoints using barycentric coordinates
+            Eigen::Vector3d p0 = seg.bcs[0](0) * V.row(seg.fv_ids[0]) +
+                                 seg.bcs[0](1) * V.row(seg.fv_ids[1]) +
+                                 seg.bcs[0](2) * V.row(seg.fv_ids[2]);
+
+            Eigen::Vector3d p1 = seg.bcs[1](0) * V.row(seg.fv_ids[0]) +
+                                 seg.bcs[1](1) * V.row(seg.fv_ids[1]) +
+                                 seg.bcs[1](2) * V.row(seg.fv_ids[2]);
+
+            // Add vertices and check connectivity
+            int start_vertex_idx, end_vertex_idx;
+
+            if (segments_processed == 1) {
+                // First segment: add both vertices
+                start_vertex_idx = vertices.size();
+                vertices.push_back(p0);
+                curve_vertex_indices.push_back(start_vertex_idx);
+
+                end_vertex_idx = vertices.size();
+                vertices.push_back(p1);
+                curve_vertex_indices.push_back(end_vertex_idx);
+            } else {
+                // Check if p0 matches the end of previous segment
+                Eigen::Vector3d prev_end = vertices[curve_vertex_indices.back()];
+                double dist = (p0 - prev_end).norm();
+
+                if (dist > tolerance) {
+                    std::cout << "Warning: Curve " << curve_id << ", segment " << current_seg_id
+                              << " start point does not connect to previous segment end."
+                              << std::endl;
+                    std::cout << "Distance: " << dist << " (tolerance: " << tolerance << ")"
+                              << std::endl;
+                    std::cout << "Previous end: " << prev_end.transpose() << std::endl;
+                    std::cout << "Current start: " << p0.transpose() << std::endl;
+
+                    // Add the new start point anyway
+                    start_vertex_idx = vertices.size();
+                    vertices.push_back(p0);
+                    curve_vertex_indices.push_back(start_vertex_idx);
+                } else {
+                    // Use previous end point (connected)
+                    start_vertex_idx = curve_vertex_indices.back();
+                }
+
+                // Add end vertex
+                end_vertex_idx = vertices.size();
+                vertices.push_back(p1);
+                curve_vertex_indices.push_back(end_vertex_idx);
+            }
+
+            // Add edge
+            edges.push_back(Eigen::Vector2i(start_vertex_idx, end_vertex_idx));
+
+            std::cout << "  Segment " << current_seg_id << ": vertices [" << start_vertex_idx
+                      << ", " << end_vertex_idx << "] at (" << p0.transpose() << ") -> ("
+                      << p1.transpose() << ")" << std::endl;
+
+            // Get next segment ID
+            if (current_seg_id < (int)curve.next_segment_ids.size()) {
+                current_seg_id = curve.next_segment_ids[current_seg_id];
+                std::cout << "  Next segment ID: " << current_seg_id << std::endl;
+            } else {
+                std::cout << "  No next_segment_ids entry for segment " << current_seg_id
+                          << std::endl;
+                break;
+            }
+        }
+
+        // Check if we processed all segments
+        if (segments_processed == (int)curve.segments.size()) {
+            std::cout << "  Successfully processed all " << segments_processed << " segments"
+                      << std::endl;
+        } else {
+            std::cout << "  Warning: Only processed " << segments_processed << " out of "
+                      << curve.segments.size() << " segments" << std::endl;
+
+            // Check which segments were not visited
+            for (size_t i = 0; i < visited.size(); ++i) {
+                if (!visited[i]) {
+                    std::cout << "    Segment " << i << " was not visited" << std::endl;
+                }
+            }
+        }
+
+        // Check if curve is closed (last segment connects to first)
+        if (curve_vertex_indices.size() >= 4) { // At least 2 segments
+            int first_vertex = curve_vertex_indices[0];
+            int last_vertex = curve_vertex_indices.back();
+            double closure_dist = (vertices[first_vertex] - vertices[last_vertex]).norm();
+
+            if (closure_dist <= tolerance) {
+                std::cout << "  Curve " << curve_id << " is closed (distance: " << closure_dist
+                          << ")" << std::endl;
+            } else {
+                std::cout << "  Curve " << curve_id
+                          << " is open (end-to-start distance: " << closure_dist << ")"
+                          << std::endl;
+            }
+        }
+
+        std::cout << "  Total vertices for curve " << curve_id << ": "
+                  << curve_vertex_indices.size() << std::endl;
+    }
+
+    // Convert to Eigen matrices
+    edge_V.resize(vertices.size(), 3);
+    for (size_t i = 0; i < vertices.size(); ++i) {
+        edge_V.row(i) = vertices[i].transpose();
+    }
+
+    edge_E.resize(edges.size(), 2);
+    for (size_t i = 0; i < edges.size(); ++i) {
+        edge_E.row(i) = edges[i].transpose();
+    }
+
+    std::cout << "Total edge mesh: " << edge_V.rows() << " vertices, " << edge_E.rows() << " edges"
+              << std::endl;
+    return true;
+}
+
+void write_curves_to_vtu(
+    const std::vector<query_curve>& curves,
+    const Eigen::MatrixXd& V,
+    const std::string& filename,
+    double tolerance = 1e-8)
+{
+    Eigen::MatrixXd edge_V;
+    Eigen::MatrixXi edge_E;
+
+    if (validate_and_convert_curves_to_edge_mesh(curves, V, edge_V, edge_E, tolerance)) {
+        vtu_utils::write_edge_mesh_to_vtu(edge_V, edge_E, filename);
+        std::cout << "Successfully wrote curves to " << filename << std::endl;
+    } else {
+        std::cerr << "Failed to convert curves to edge mesh" << std::endl;
+    }
+}
 
 void track_line_one_operation(const json& operation_log, query_curve& curve, bool do_forward)
 {
@@ -375,12 +559,22 @@ void forward_track_iso_lines_app(
     }
 
     save_query_curves(curves, "curves.in");
-
+    // write curves to vtu
+    {
+        std::cout << "\n=== Writing initial curves to VTU ===" << std::endl;
+        write_curves_to_vtu(curves, V_in, "curves_in.vtu");
+    }
 
     track_lines(operation_logs_dir, curves, true, do_parallel);
 
 
     save_query_curves(curves, "curves.out");
+
+    // write final curves to vtu
+    {
+        std::cout << "\n=== Writing final curves to VTU ===" << std::endl;
+        write_curves_to_vtu(curves, V_out, "curves_out.vtu");
+    }
 
     {
         igl::opengl::glfw::Viewer viewer;

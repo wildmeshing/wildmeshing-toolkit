@@ -35,6 +35,17 @@ void write_tet_mesh_to_vtu(
     const std::string& filename);
 
 /**
+ * @brief Write an edge mesh to VTU format
+ * @param V Vertex coordinates matrix (n x 2 or n x 3)
+ * @param E Edge indices matrix (m x 2)
+ * @param filename Output filename
+ */
+void write_edge_mesh_to_vtu(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& E,
+    const std::string& filename);
+
+/**
  * @brief Read triangle mesh from VTU file
  * @param filename VTU filename
  * @param V Output vertex coordinates matrix (n x 3)

@@ -187,6 +187,57 @@ void write_tet_mesh_to_vtu(
     outfile.close();
 }
 
+void write_edge_mesh_to_vtu(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& E,
+    const std::string& filename)
+{
+    std::ofstream outfile(filename);
+    outfile << "<?xml version=\"1.0\"?>\n";
+    outfile << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">\n";
+    outfile << "  <UnstructuredGrid>\n";
+    outfile << "    <Piece NumberOfPoints=\"" << V.rows() << "\" NumberOfCells=\"" << E.rows()
+            << "\">\n";
+
+    // Write points
+    outfile << "      <Points>\n";
+    outfile << "        <DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">\n";
+    for (int i = 0; i < V.rows(); i++) {
+        if (V.cols() == 2) {
+            // 2D case: add z=0
+            outfile << "          " << V(i, 0) << " " << V(i, 1) << " " << 0.0 << "\n";
+        } else {
+            // 3D case
+            outfile << "          " << V(i, 0) << " " << V(i, 1) << " " << V(i, 2) << "\n";
+        }
+    }
+    outfile << "        </DataArray>\n";
+    outfile << "      </Points>\n";
+
+    // Write cells (edges)
+    outfile << "      <Cells>\n";
+    outfile << "        <DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n";
+    for (int i = 0; i < E.rows(); i++) {
+        outfile << "          " << E(i, 0) << " " << E(i, 1) << "\n";
+    }
+    outfile << "        </DataArray>\n";
+    outfile << "        <DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n";
+    for (int i = 0; i < E.rows(); i++) {
+        outfile << "          " << (i + 1) * 2 << "\n";
+    }
+    outfile << "        </DataArray>\n";
+    outfile << "        <DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">\n";
+    for (int i = 0; i < E.rows(); i++) {
+        outfile << "          3\n"; // VTK_LINE = 3
+    }
+    outfile << "        </DataArray>\n";
+    outfile << "      </Cells>\n";
+    outfile << "    </Piece>\n";
+    outfile << "  </UnstructuredGrid>\n";
+    outfile << "</VTKFile>\n";
+    outfile.close();
+}
+
 bool read_triangle_mesh_from_vtu(
     const std::string& filename,
     Eigen::MatrixXd& V,
