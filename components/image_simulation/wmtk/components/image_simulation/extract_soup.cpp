@@ -77,6 +77,14 @@ void extract_triangle_soup_from_image(std::string filename, Eigen::MatrixXi& F, 
     std::vector<std::vector<std::vector<size_t>>> data;
     read_array_data_ascii(data, filename);
 
+    extract_triangle_soup_from_image(data, F, V);
+}
+
+void extract_triangle_soup_from_image(
+    const std::vector<std::vector<std::vector<size_t>>>& data,
+    Eigen::MatrixXi& F,
+    Eigen::MatrixXd& V)
+{
     size_t tri_num = 0;
     for (size_t i = 0; i < data.size() - 1; i++) {
         for (size_t j = 0; j < data[0].size() - 1; j++) {

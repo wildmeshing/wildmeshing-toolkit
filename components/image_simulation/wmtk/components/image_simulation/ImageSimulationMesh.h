@@ -458,6 +458,20 @@ public:
         const std::vector<std::array<size_t, 4>>& tets,
         const std::vector<bool>& tet_face_on_input_surface);
 
+    /**
+     * @brief Init from meshes image.
+     *
+     * @param V #Vx3 vertices of the tet mesh
+     * @param T #Tx4 vertex IDs for all tets
+     * @param F #Fx3 vertex IDs of all embedded faces
+     * @param T_tags #Tx1 image data represented by the individual tets
+     */
+    void init_from_image(
+        const MatrixXd& V,
+        const MatrixXi& T,
+        const MatrixXi& F,
+        const VectorXi& T_tags);
+
     std::vector<std::array<size_t, 3>> triangulate_polygon_face(std::vector<Vector3r> points);
 
     bool adjust_sizing_field_serial(double max_energy);

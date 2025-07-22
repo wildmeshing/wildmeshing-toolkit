@@ -521,6 +521,126 @@ void ImageSimulationMesh::init_from_Volumeremesher(
         [this](const Tuple& t) { m_tet_attribute[t.tid(*this)].m_quality = get_quality(t); });
 }
 
+void ImageSimulationMesh::init_from_image(
+    const MatrixXd& V,
+    const MatrixXi& T,
+    const MatrixXi& F,
+    const VectorXi& T_tags)
+{
+    assert(V.cols() == 3);
+    assert(T.cols() == 4);
+    assert(F.cols() == 3);
+    assert(T_tags.size() == T.rows());
+
+    init(T);
+
+    assert(check_mesh_connectivity_validity());
+
+    m_vertex_attribute.m_attributes.resize(V.rows());
+    m_tet_attribute.m_attributes.resize(T.rows());
+    m_face_attribute.m_attributes.resize(T.rows() * 4);
+
+    for (int i = 0; i < vert_capacity(); i++) {
+        m_vertex_attribute[i].m_pos = to_rational(V.row(i));
+        m_vertex_attribute[i].m_posf = V.row(i);
+    }
+
+    // check here
+    for (size_t i = 0; i < F.rows(); ++i) {
+        const auto [_, fid] = tuple_from_face(
+            std::array<size_t, 3>{(size_t)F(i, 0), (size_t)F(i, 1), (size_t)F(i, 2)});
+        m_face_attribute[fid].m_is_surface_fs = 1;
+    }
+
+    const auto faces = get_faces();
+    std::cout << "faces size: " << faces.size() << std::endl;
+    for (const Tuple& f : faces) {
+        SmartTuple ff(*this, f);
+        const size_t fid = ff.fid();
+        if (m_face_attribute[fid].m_is_surface_fs == 1) {
+            const size_t v1 = ff.vid();
+            const size_t v2 = ff.switch_vertex().vid();
+            const size_t v3 = ff.switch_edge().switch_vertex().vid();
+            m_vertex_attribute[v1].m_is_on_surface = true;
+            m_vertex_attribute[v2].m_is_on_surface = true;
+            m_vertex_attribute[v3].m_is_on_surface = true;
+        }
+    }
+
+    // track bounding box
+    for (size_t i = 0; i < faces.size(); i++) {
+        const auto vs = get_face_vertices(faces[i]);
+        std::array<size_t, 3> vids = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
+        int on_bbox = -1;
+        for (int k = 0; k < 3; k++) {
+            if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_min[k] &&
+                m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_min[k] &&
+                m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_min[k]) {
+                on_bbox = k * 2;
+                break;
+            }
+            if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_max[k] &&
+                m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_max[k] &&
+                m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_max[k]) {
+                on_bbox = k * 2 + 1;
+                break;
+            }
+        }
+        if (on_bbox < 0) {
+            continue;
+        }
+        assert(!faces[i].switch_tetrahedron(*this)); // face must be on boundary
+
+        const size_t fid = faces[i].fid(*this);
+        m_face_attribute[fid].m_is_bbox_fs = on_bbox;
+
+        for (const size_t vid : vids) {
+            m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
+        }
+    }
+
+    for_each_vertex(
+        [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
+
+    // track open boundaries
+    find_open_boundary();
+
+    int open_boundary_cnt = 0;
+    for (const Tuple& e : get_edges()) {
+        if (is_open_boundary_edge(e)) {
+            open_boundary_cnt++;
+        }
+    }
+    wmtk::logger().info("#open boundary edges: {}", open_boundary_cnt);
+
+    // // rounding
+    size_t cnt_round = 0;
+
+    const auto vertices = get_vertices();
+    for (const Tuple& v : vertices) {
+        if (round(v)) {
+            cnt_round++;
+        }
+    }
+
+    if (cnt_round != vertices.size()) {
+        log_and_throw_error(
+            "Could not round all vertices in tet mesh. Rounded {}/{}",
+            cnt_round,
+            vertices.size());
+    }
+
+    // init qualities
+    for_each_tetra(
+        [this](const Tuple& t) { m_tet_attribute[t.tid(*this)].m_quality = get_quality(t); });
+
+    // add tags
+    for (size_t i = 0; i < T_tags.size(); ++i) {
+        m_tet_attribute[i].tag = T_tags[i];
+    }
+}
+
+
 void ImageSimulationMesh::find_open_boundary()
 {
     const auto faces = get_faces();

@@ -1,12 +1,7 @@
-#include <geogram/mesh/mesh_io.h>
-#include <igl/is_edge_manifold.h>
-#include <igl/is_vertex_manifold.h>
-#include <igl/remove_duplicate_vertices.h>
-#include <igl/remove_unreferenced.h>
-#include <igl/resolve_duplicated_faces.h>
+#pragma once
+
 #include <Eigen/Core>
-#include <wmtk/utils/ManifoldUtils.hpp>
-#include "Logger.hpp"
+
 namespace wmtk {
 void stl_to_eigen(std::string input_surface, Eigen::MatrixXd& VI, Eigen::MatrixXi& FI);
 void eigen_to_wmtk_input(

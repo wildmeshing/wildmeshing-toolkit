@@ -65,6 +65,79 @@ void embed_surface(
     MatrixXi& T_emb,
     MatrixXi& F_on_surface);
 
-void tag_tets_from_image(const std::string& filename, const MatrixXd& V, const MatrixXi& T, VectorXi& T_tags);
+void tag_tets_from_image(
+    const std::string& filename,
+    const MatrixXd& V,
+    const MatrixXi& T,
+    VectorXi& T_tags);
+
+void tag_tets_from_image(
+    const std::vector<std::vector<std::vector<size_t>>>& data,
+    const MatrixXd& V,
+    const MatrixXi& T,
+    VectorXi& T_tags);
+
+/**
+ * A class for reading an image and converting it into a tet mesh.
+ */
+class EmbedSurface
+{
+public:
+    EmbedSurface(const std::string& img_filename);
+
+    void simplify_surface();
+
+    void embed_surface();
+
+    const MatrixXd& V_emb() const { return m_V_emb; }
+    const MatrixXi& T_emb() const { return m_T_emb; }
+    const VectorXi& T_tags() const { return m_T_tags; }
+    const MatrixXi& F_on_surface() const { return m_F_on_surface; }
+
+    /**
+     * @brief Write surface as read from image.
+     *
+     * The surface is all the contours in the image, i.e., the surface in between voxels with
+     * different value.
+     */
+    void write_surf_off(const std::string& filename) const;
+    /**
+     * @brief Write embedded surface.
+     *
+     * This writes all the vertices that exist in the volume and all triangles that are representing
+     * the embedded surface.
+     */
+    void write_emb_surf_off(const std::string& filename) const;
+
+    void write_emb_msh(const std::string& filename) const;
+    void write_emb_vtu(const std::string& filename) const;
+
+    std::pair<Vector3d, Vector3d> bbox_minmax() const;
+
+    std::vector<Eigen::Vector3d> V_surf_to_vector() const;
+    std::vector<std::array<size_t, 3>> F_surf_to_vector() const;
+
+private:
+    void V_surf_from_vector(const std::vector<Eigen::Vector3d>& verts);
+    void F_surf_from_vector(const std::vector<std::array<size_t, 3>>& tris);
+
+private:
+    std::string m_img_filename;
+    std::vector<std::vector<std::vector<size_t>>> m_img_data;
+
+    // the surface separating all tags
+    MatrixXd m_V_surface;
+    MatrixXi m_F_surface;
+
+    std::vector<size_t> modified_nonmanifold_v;
+
+    // the embedding
+    MatrixXd m_V_emb;
+    MatrixXi m_T_emb;
+    // triangles of the embedding representing the surface
+    MatrixXi m_F_on_surface;
+    // tags on the tets
+    VectorXi m_T_tags;
+};
 
 } // namespace wmtk::components::image_simulation

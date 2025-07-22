@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 
+#include <geogram/mesh/mesh_io.h>
 #include <jse/jse.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
@@ -58,160 +59,47 @@ void image_simulation(nlohmann::json json_params)
     params.lr = json_params["length_rel"];
     params.stop_energy = json_params["stop_energy"];
 
-    // extract surface from image
+    // convert image into tet mesh
+    EmbedSurface image_mesh(input_paths[0]);
     {
-        // read raw image data + create triangle soup
-        Eigen::MatrixXi F;
-        Eigen::MatrixXd V;
-        extract_triangle_soup_from_image(input_paths[0], F, V);
-        igl::writeOFF("triangle_soup_fine.off", V, F);
-    }
+        image_mesh.simplify_surface();
+        image_mesh.embed_surface();
 
-    std::vector<Eigen::Vector3d> verts;
-    std::vector<std::array<size_t, 3>> tris;
-    std::vector<size_t> modified_nonmanifold_v;
-    std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax;
-
-    // read triangle soup
-    {
-        const double remove_duplicate_eps = 0.01;
-        wmtk::stl_to_manifold_wmtk_input(
-            "triangle_soup_fine.off",
-            remove_duplicate_eps,
-            box_minmax,
-            verts,
-            tris,
-            modified_nonmanifold_v);
-    }
-
-    std::vector<Eigen::Vector3d> v_simplified;
-    std::vector<std::array<size_t, 3>> f_simplified;
-
-    // simplification
-    app::sec::ShortestEdgeCollapse surf_mesh(verts, NUM_THREADS, false);
-    {
-        // must be a small envelope to ensure correct tet tags later on
-        surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, 0.1);
-        assert(surf_mesh.check_mesh_connectivity_validity());
-
-        wmtk::logger().info("input {} simplification", input_paths);
-        surf_mesh.collapse_shortest(0);
-        surf_mesh.consolidate_mesh();
-        surf_mesh.write_triangle_mesh("triangle_soup_coarse.off");
-
-        //// get the simplified input
-        v_simplified.resize(surf_mesh.vert_capacity());
-        f_simplified.resize(surf_mesh.tri_capacity());
-        for (const auto& t : surf_mesh.get_vertices()) {
-            const size_t i = t.vid(surf_mesh);
-            v_simplified[i] = surf_mesh.vertex_attrs[i].pos;
-        }
-
-        for (const auto& t : surf_mesh.get_faces()) {
-            const auto i = t.fid(surf_mesh);
-            const auto vs = surf_mesh.oriented_tri_vids(t);
-            for (int j = 0; j < 3; j++) {
-                f_simplified[i][j] = vs[j];
-            }
-        }
-    }
-
-    wmtk::remove_duplicates(v_simplified, f_simplified, 0.01);
-
-    // embedding
-    {
-        const V_MAP V_surface(v_simplified[0].data(), v_simplified.size(), 3);
-        MatrixXi F_surface;
-        F_surface.resize(f_simplified.size(), 3);
-        for (int i = 0; i < f_simplified.size(); ++i) {
-            const auto& f = f_simplified[i];
-            F_surface.row(i) = Vector3i(f[0], f[1], f[2]);
-        }
-        std::shared_ptr<Envelope> ptr_env;
-        {
-            std::vector<Eigen::Vector3i> tempF(f_simplified.size());
-            for (size_t i = 0; i < tempF.size(); ++i) {
-                tempF[i] << f_simplified[i][0], f_simplified[i][1], f_simplified[i][2];
-            }
-            ptr_env = std::make_shared<ExactEnvelope>();
-            ptr_env->init(v_simplified, tempF, 0.5);
-        }
-
-        std::vector<wmtk::delaunay::Point3D> points;
-        std::vector<wmtk::delaunay::Tetrahedron> tets;
-        Vector3d box_min;
-        Vector3d box_max;
-        delaunay_box_mesh(*ptr_env, V_surface, points, tets, box_min, box_max);
-
-        MatrixXd V_vol;
-        V_vol.resize(points.size(), 3);
-        for (int i = 0; i < points.size(); ++i) {
-            const auto& v = points[i];
-            V_vol.row(i) = Vector3d(v[0], v[1], v[2]);
-        }
-
-        MatrixXi T_vol;
-        T_vol.resize(tets.size(), 4);
-        for (int i = 0; i < tets.size(); ++i) {
-            const auto& t = tets[i];
-            T_vol.row(i) = Vector4i(t[0], t[1], t[2], t[3]);
-        }
-
-        MatrixXr V_emb_r;
-        MatrixXi T_emb;
-        MatrixXi F_on_surface;
-        embed_surface(V_surface, F_surface, V_vol, T_vol, V_emb_r, T_emb, F_on_surface);
-
-        MatrixXd V_emb;
-        if (!VF_rational_to_double(V_emb_r, T_emb, V_emb)) {
-            log_and_throw_error("Tets are inverted after converting to double precision.");
-        }
-
-        // add tags
-        VectorXi T_tags;
-        tag_tets_from_image(input_paths[0], V_emb, T_emb, T_tags);
-
-        // write MSH
-        {
-            wmtk::MshData msh;
-            msh.add_tet_vertices(V_emb.rows(), [&](size_t k) -> Vector3d { return V_emb.row(k); });
-
-            msh.add_tets(T_emb.rows(), [&](size_t k) {
-                std::array<size_t, 4> data{T_emb(k, 0), T_emb(k, 1), T_emb(k, 2), T_emb(k, 3)};
-                return data;
-            });
-
-            msh.add_tet_attribute<1>("tag", [&T_tags](size_t i) { return T_tags[i]; });
-
-            msh.save("debug_input_embedding.msh", true);
-        }
-
-        // write VTU
-        {
-            paraviewo::VTUWriter writer;
-            writer.add_cell_field("tag", T_tags.cast<double>());
-            writer.write_mesh("debug_input_embedding.vtu", V_emb, T_emb);
-        }
+        image_mesh.write_emb_msh("debug_input_embedding.msh");
+        image_mesh.write_emb_vtu("debug_input_embedding.vtu");
+        image_mesh.write_surf_off("debug_surf.off");
+        image_mesh.write_emb_surf_off("debug_emb_surf.off");
     }
 
     // /////////
     // // Prepare Envelope and parameter for TetWild
     // /////////
 
+    const auto box_minmax = image_mesh.bbox_minmax();
     params.init(box_minmax.first, box_minmax.second);
+    params.box_min = box_minmax.first;
+    params.box_max = box_minmax.second;
 
     std::shared_ptr<Envelope> ptr_env;
+    std::shared_ptr<SampleEnvelope> ptr_sample_env;
     {
+        const auto v_simplified = image_mesh.V_surf_to_vector();
+        const auto f_simplified = image_mesh.F_surf_to_vector();
+
         std::vector<Eigen::Vector3i> tempF(f_simplified.size());
         for (size_t i = 0; i < tempF.size(); ++i) {
             tempF[i] << f_simplified[i][0], f_simplified[i][1], f_simplified[i][2];
         }
+
+        ptr_sample_env = std::make_shared<SampleEnvelope>();
+        ptr_sample_env->init(v_simplified, tempF, 0.5); // TODO eps as input parameter
+
         if (use_sample_envelope) {
-            ptr_env = std::make_shared<SampleEnvelope>();
+            ptr_env = ptr_sample_env;
         } else {
             ptr_env = std::make_shared<ExactEnvelope>();
+            ptr_env->init(v_simplified, tempF, 0.5); // TODO eps as input parameter
         }
-        ptr_env->init(v_simplified, tempF, 0.5);
     }
 
     /////////////////////////////////////////////////////
@@ -219,47 +107,21 @@ void image_simulation(nlohmann::json json_params)
     igl::Timer timer;
     timer.start();
 
-    // triangle insertion with volumeremesher on the simplified mesh
-    std::vector<Vector3r> v_rational;
-    std::vector<std::array<size_t, 3>> facets;
-    std::vector<bool> is_v_on_input;
-    std::vector<std::array<size_t, 4>> tets;
-    std::vector<bool> tet_face_on_input_surface;
+    image_simulation::ImageSimulationMesh mesh(params, *ptr_env, *ptr_sample_env, NUM_THREADS);
+    mesh.init_from_image(
+        image_mesh.V_emb(),
+        image_mesh.T_emb(),
+        image_mesh.F_on_surface(),
+        image_mesh.T_tags());
 
-    std::cout << "vsimp size: " << v_simplified.size() << std::endl;
-    std::cout << "fsimp size: " << f_simplified.size() << std::endl;
-
-    igl::Timer insertion_timer;
-    insertion_timer.start();
-
-    {
-        ImageSimulationMesh mesh_for_insertion(params, *ptr_env, surf_mesh.m_envelope, NUM_THREADS);
-        mesh_for_insertion.insertion_by_volumeremesher(
-            v_simplified,
-            f_simplified,
-            v_rational,
-            facets,
-            is_v_on_input,
-            tets,
-            tet_face_on_input_surface);
-    }
-
-    // generate new mesh
-    image_simulation::ImageSimulationMesh mesh(params, *ptr_env, surf_mesh.m_envelope, NUM_THREADS);
-
-    mesh.init_from_Volumeremesher(v_rational, is_v_on_input, tets, tet_face_on_input_surface);
-
-    const double insertion_time = insertion_timer.getElapsedTime();
-    wmtk::logger().info("volume remesher insertion time: {}s", insertion_time);
+    // const double insertion_time = insertion_timer.getElapsedTime();
+    // wmtk::logger().info("volume remesher insertion time: {}s", insertion_time);
 
     mesh.consolidate_mesh();
     {
         int num_parts = mesh.flood_fill();
         logger().info("flood fill parts {}", num_parts);
     }
-
-    // add tags
-    tag_tets_from_image(input_paths[0], mesh);
 
     mesh.write_vtu(params.output_path + "_0.vtu");
 
@@ -309,7 +171,7 @@ void image_simulation(nlohmann::json json_params)
     fout << "eps: " << params.eps << std::endl;
     fout << "threads: " << NUM_THREADS << std::endl;
     fout << "time: " << time << std::endl;
-    fout << "insertion and preprocessing" << insertion_time << std::endl;
+    // fout << "insertion and preprocessing" << insertion_time << std::endl;
     fout.close();
 
     wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);

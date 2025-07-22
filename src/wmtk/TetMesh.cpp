@@ -161,7 +161,7 @@ void TetMesh::init(const MatrixXi& T)
         }
     }
 
-    TetMesh::init(n_vertices, tets);
+    TetMesh::init_with_isolated_vertices(n_vertices, tets);
 }
 
 
