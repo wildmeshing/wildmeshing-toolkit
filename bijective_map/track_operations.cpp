@@ -77,39 +77,6 @@ std::vector<query_curve> load_query_curves(const std::string& filename)
     return curves;
 }
 
-// TODO: DELETE THIS FUNCTION
-Eigen::Vector3d ComputeBarycentricCoordinates3D(
-    const Eigen::Vector3d& p,
-    const Eigen::Vector3d& a,
-    const Eigen::Vector3d& b,
-    const Eigen::Vector3d& c,
-    double eps = 1e-3)
-{
-    throw std::runtime_error("ComputeBarycentricCoordinates3D should not be called.");
-    Eigen::Vector3d v0 = b - a, v1 = c - a, v2 = p - a;
-    Eigen::Vector3d n = v0.cross(v1);
-    n.normalized();
-    if (std::abs(n.dot(p - a)) > eps) {
-        // std::cout << "not on the plane, " << std::abs(n.dot(p - a)) << std::endl;
-        // not on this face
-        return Eigen::Vector3d(-1, -1, -1);
-    }
-    double d00 = v0.dot(v0);
-    double d01 = v0.dot(v1);
-    double d11 = v1.dot(v1);
-    double d20 = v2.dot(v0);
-    double d21 = v2.dot(v1);
-    double denom = d00 * d11 - d01 * d01;
-    double v = (d11 * d20 - d01 * d21) / denom;
-    double w = (d00 * d21 - d01 * d20) / denom;
-    double u = 1.0 - v - w;
-
-    // TODO : check why we need this trick
-    if (abs(u) < 1e-12) u = 0;
-    if (abs(v) < 1e-12) v = 0;
-    if (abs(w) < 1e-12) w = 0;
-    return Eigen::Vector3d(u, v, w) / (u + v + w);
-}
 
 Eigen::Vector3d ComputeBarycentricCoordinates2D(
     const Eigen::Vector2d& p,
@@ -417,40 +384,254 @@ void handle_collapse_edge_r(
     }
 }
 
-// TODO: this function is not used
-bool intersectSegmentEdge(
-    const Eigen::Vector2d& a,
-    const Eigen::Vector2d& b,
-    const Eigen::Vector2d& c,
-    const Eigen::Vector2d& d,
-    Eigen::Vector2d& barycentric,
-    double eps = 1e-8,
-    bool debug_mode = false)
+void handle_non_collapse_operation(
+    const Eigen::MatrixXd& V_before,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixXd& V_after,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& id_map_after,
+    const std::vector<int64_t>& v_id_map_after,
+    std::vector<query_point>& query_points,
+    const std::string& operation_name,
+    bool use_rational)
 {
-    Eigen::Vector2d ab = b - a;
-    Eigen::Vector2d cd = d - c;
-    Eigen::Vector2d ac = c - a;
-
-    double denominator = (ab.x() * cd.y() - ab.y() * cd.x());
-    if (std::abs(denominator / ab.norm() / cd.norm()) < 1e-8) return false; // parallel
-
-    double t = (ac.x() * cd.y() - ac.y() * cd.x()) / denominator;
-    double u = -(ab.x() * ac.y() - ab.y() * ac.x()) / denominator;
-    double alpha = 1 - u;
-    double beta = u;
-    barycentric = Eigen::Vector2d(alpha, beta);
-    if (debug_mode) std::cout << "t: " << t << ", u: " << u << std::endl;
-    if (t >= 0 && t <= 1 + eps && u >= 0 && u <= 1 + eps) {
-        if (debug_mode) std::cout << "intersection found" << std::endl;
-        alpha = std::max(0.0, std::min(1.0, alpha));
-        beta = std::max(0.0, std::min(1.0, beta));
-        barycentric = Eigen::Vector2d(alpha, beta) / (alpha + beta);
-        return true;
+    if (use_rational) {
+        handle_non_collapse_operation_r(
+            V_before,
+            F_before,
+            id_map_before,
+            v_id_map_before,
+            V_after,
+            F_after,
+            id_map_after,
+            v_id_map_after,
+            query_points,
+            operation_name);
+        return;
     }
-    if (debug_mode) std::cout << "no intersection" << std::endl;
-    // std::cout << "t: " << t << ", u: " << u << std::endl;
-    return false;
+    std::cout << "Handling " << operation_name << std::endl;
+    // igl::parallel_for(query_points.size(), [&](int id) {
+    for (int id = 0; id < query_points.size(); id++) {
+        query_point& qp = query_points[id];
+        if (qp.f_id < 0) continue;
+        // find if qp is in the id_map_after
+        auto it = std::find(id_map_after.begin(), id_map_after.end(), qp.f_id);
+        if (it != id_map_after.end()) {
+            // std::cout << "find qp: " << qp.f_id << std::endl;
+            // std::cout << "qp.bc: (" << qp.bc(0) << ", " << qp.bc(1) << ", " << qp.bc(2) << ")"
+            //           << std::endl;
+
+            // find the index of qp in id_map_after
+            int local_index_in_f_after = std::distance(id_map_after.begin(), it);
+            // offset of the qp.fv_ids
+            int offset_in_f_after = -1;
+            for (int i = 0; i < 3; i++) {
+                if (v_id_map_after[F_after(local_index_in_f_after, i)] == qp.fv_ids[0]) {
+                    offset_in_f_after = i;
+                    break;
+                }
+            }
+            if (offset_in_f_after == -1) {
+                std::stringstream error_msg;
+                error_msg << "FATAL ERROR in " << operation_name
+                          << ": Failed to find vertex ID mapping.\n";
+                error_msg << "Query point face ID: " << qp.f_id << "\n";
+                error_msg << "Expected vertex ID: " << qp.fv_ids[0] << "\n";
+                error_msg << "This indicates a serious numerical or topological error.";
+                throw std::runtime_error(error_msg.str());
+            }
+
+            // compute the location of the qp
+            int V_cols = V_after.cols();
+            Eigen::VectorXd p = Eigen::VectorXd::Zero(V_cols);
+            for (int i = 0; i < 3; i++) {
+                p += V_after.row(F_after(local_index_in_f_after, (i + offset_in_f_after) % 3)) *
+                     qp.bc(i);
+            }
+
+
+            // compute bc of the p in (V, F)_before
+            int local_index_in_f_before = -1;
+            double bc_min_coef = 1;
+            bool bc_updated = false;
+            for (int i = 0; i < F_before.rows(); i++) {
+                Eigen::Vector3d bc;
+                if (V_cols == 2) {
+                    bc = ComputeBarycentricCoordinates2D(
+                        p,
+                        V_before.row(F_before(i, 0)),
+                        V_before.row(F_before(i, 1)),
+                        V_before.row(F_before(i, 2)));
+                } else // V_cols == 3
+                {
+                    throw std::runtime_error("FATAL ERROR: V_cols == 3 after local flattening");
+                }
+                if (-bc.minCoeff() < bc_min_coef) {
+                    bc_min_coef = -bc.minCoeff();
+                    local_index_in_f_before = i;
+                    qp.bc = bc;
+                    bc_updated = true;
+                }
+            }
+
+            if (!bc_updated) {
+                std::stringstream error_msg;
+                error_msg << "FATAL ERROR in " << operation_name
+                          << ": Failed to update barycentric coordinates.\n";
+                error_msg
+                    << "Query point could not be located in any triangle after mesh operation.\n";
+                error_msg << "This indicates a serious numerical or topological error.";
+                throw std::runtime_error(error_msg.str());
+            }
+
+            // update qp
+            qp.f_id = id_map_before[local_index_in_f_before];
+            for (int i = 0; i < 3; i++) {
+                qp.fv_ids[i] = v_id_map_before[F_before(local_index_in_f_before, i)];
+            }
+            qp.bc[0] = std::max(0.0, std::min(1.0, qp.bc[0]));
+            qp.bc[1] = std::max(0.0, std::min(1.0, qp.bc[1]));
+            qp.bc[2] = std::max(0.0, std::min(1.0, qp.bc[2]));
+            qp.bc /= qp.bc.sum();
+
+            // std::cout << "qp-> " << qp.f_id << std::endl;
+            // std::cout << "qp.bc: (" << qp.bc(0) << ", " << qp.bc(1) << ", " << qp.bc(2) << ")"
+            //           << std::endl
+            //           << std::endl;
+        }
+    }
+    // });
 }
+
+
+// Rational version of handle_non_collapse_operation
+void handle_non_collapse_operation_r(
+    const Eigen::MatrixXd& V_before,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixXd& V_after,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& id_map_after,
+    const std::vector<int64_t>& v_id_map_after,
+    std::vector<query_point>& query_points,
+    const std::string& operation_name)
+{
+    std::cout << "Handling " << operation_name << " Rational" << std::endl;
+
+    // Convert V_before and V_after to rational
+    Eigen::MatrixX<wmtk::Rational> V_before_r(V_before.rows(), V_before.cols());
+    Eigen::MatrixX<wmtk::Rational> V_after_r(V_after.rows(), V_after.cols());
+
+    for (int i = 0; i < V_before.rows(); i++) {
+        for (int j = 0; j < V_before.cols(); j++) {
+            V_before_r(i, j) = wmtk::Rational(V_before(i, j));
+        }
+    }
+
+    for (int i = 0; i < V_after.rows(); i++) {
+        for (int j = 0; j < V_after.cols(); j++) {
+            V_after_r(i, j) = wmtk::Rational(V_after(i, j));
+        }
+    }
+
+    for (int id = 0; id < query_points.size(); id++) {
+        query_point& qp = query_points[id];
+        if (qp.f_id < 0) continue;
+
+        // find if qp is in the id_map_after
+        auto it = std::find(id_map_after.begin(), id_map_after.end(), qp.f_id);
+        if (it != id_map_after.end()) {
+            // find the index of qp in id_map_after
+            int local_index_in_f_after = std::distance(id_map_after.begin(), it);
+            // offset of the qp.fv_ids
+            int offset_in_f_after = -1;
+            for (int i = 0; i < 3; i++) {
+                if (v_id_map_after[F_after(local_index_in_f_after, i)] == qp.fv_ids[0]) {
+                    offset_in_f_after = i;
+                    break;
+                }
+            }
+            if (offset_in_f_after == -1) {
+                std::stringstream error_msg;
+                error_msg << "FATAL ERROR in rational " << operation_name
+                          << ": Failed to find vertex ID mapping.\n";
+                error_msg << "Query point face ID: " << qp.f_id << "\n";
+                error_msg << "Expected vertex ID: " << qp.fv_ids[0] << "\n";
+                error_msg << "This indicates a serious numerical or topological error in rational "
+                             "computation.";
+                throw std::runtime_error(error_msg.str());
+            }
+
+            // Convert barycentric coordinates to rational and normalize
+            Eigen::Vector3<wmtk::Rational> bc_rational(
+                wmtk::Rational(qp.bc(0)),
+                wmtk::Rational(qp.bc(1)),
+                wmtk::Rational(qp.bc(2)));
+            bc_rational /= bc_rational.sum();
+
+            // compute the location of the qp using rational arithmetic
+            int V_cols = V_after.cols();
+            Eigen::VectorX<wmtk::Rational> p = Eigen::VectorX<wmtk::Rational>::Zero(V_cols);
+            for (int i = 0; i < 3; i++) {
+                p = p + V_after_r.row(F_after(local_index_in_f_after, (i + offset_in_f_after) % 3))
+                                .transpose() *
+                            bc_rational(i);
+            }
+
+            // compute bc of the p in (V, F)_before using rational arithmetic
+            int local_index_in_f_before = -1;
+            bool bc_updated = false;
+            for (int i = 0; i < F_before.rows(); i++) {
+                Eigen::Vector3<wmtk::Rational> bc_rational_result;
+                if (V_cols == 2) {
+                    bc_rational_result = ComputeBarycentricCoordinates2D_r(
+                        p.head<2>(),
+                        V_before_r.row(F_before(i, 0)).head<2>(),
+                        V_before_r.row(F_before(i, 1)).head<2>(),
+                        V_before_r.row(F_before(i, 2)).head<2>());
+                } else {
+                    throw std::runtime_error(
+                        "FATAL ERROR: V_cols == 3 after local flattening in rational computation");
+                }
+
+                // Check if point is inside triangle (all barycentric coordinates >= 0)
+                if (bc_rational_result.minCoeff() >= 0 && bc_rational_result.maxCoeff() <= 1) {
+                    local_index_in_f_before = i;
+                    qp.bc(0) = bc_rational_result(0).to_double();
+                    qp.bc(1) = bc_rational_result(1).to_double();
+                    qp.bc(2) = bc_rational_result(2).to_double();
+                    bc_updated = true;
+                    break;
+                }
+            }
+
+            if (!bc_updated) {
+                std::stringstream error_msg;
+                error_msg << "FATAL ERROR in rational " << operation_name
+                          << ": Failed to update barycentric coordinates.\n";
+                error_msg
+                    << "Query point could not be located in any triangle after mesh operation.\n";
+                error_msg << "This indicates a serious numerical or topological error in exact "
+                             "arithmetic.";
+                throw std::runtime_error(error_msg.str());
+            }
+
+            // update qp
+            qp.f_id = id_map_before[local_index_in_f_before];
+            for (int i = 0; i < 3; i++) {
+                qp.fv_ids[i] = v_id_map_before[F_before(local_index_in_f_before, i)];
+            }
+
+            // Normalize barycentric coordinates (they should already be normalized from rational
+            // computation)
+            qp.bc /= qp.bc.sum();
+        }
+    }
+}
+
 
 bool intersectSegmentEdge_r(
     const Eigen::Vector2<wmtk::Rational>& a,
@@ -751,123 +932,6 @@ void handle_collapse_edge_curve(
 }
 
 
-void handle_non_collapse_operation(
-    const Eigen::MatrixXd& V_before,
-    const Eigen::MatrixXi& F_before,
-    const std::vector<int64_t>& id_map_before,
-    const std::vector<int64_t>& v_id_map_before,
-    const Eigen::MatrixXd& V_after,
-    const Eigen::MatrixXi& F_after,
-    const std::vector<int64_t>& id_map_after,
-    const std::vector<int64_t>& v_id_map_after,
-    std::vector<query_point>& query_points,
-    const std::string& operation_name,
-    double eps_3d)
-{
-    std::cout << "Handling " << operation_name << std::endl;
-    // igl::parallel_for(query_points.size(), [&](int id) {
-    for (int id = 0; id < query_points.size(); id++) {
-        query_point& qp = query_points[id];
-        if (qp.f_id < 0) continue;
-        // find if qp is in the id_map_after
-        auto it = std::find(id_map_after.begin(), id_map_after.end(), qp.f_id);
-        if (it != id_map_after.end()) {
-            // std::cout << "find qp: " << qp.f_id << std::endl;
-            // std::cout << "qp.bc: (" << qp.bc(0) << ", " << qp.bc(1) << ", " << qp.bc(2) << ")"
-            //           << std::endl;
-
-            // find the index of qp in id_map_after
-            int local_index_in_f_after = std::distance(id_map_after.begin(), it);
-            // offset of the qp.fv_ids
-            int offset_in_f_after = -1;
-            for (int i = 0; i < 3; i++) {
-                if (v_id_map_after[F_after(local_index_in_f_after, i)] == qp.fv_ids[0]) {
-                    offset_in_f_after = i;
-                    break;
-                }
-            }
-            if (offset_in_f_after == -1) {
-                std::stringstream error_msg;
-                error_msg << "FATAL ERROR in " << operation_name
-                          << ": Failed to find vertex ID mapping.\n";
-                error_msg << "Query point face ID: " << qp.f_id << "\n";
-                error_msg << "Expected vertex ID: " << qp.fv_ids[0] << "\n";
-                error_msg << "This indicates a serious numerical or topological error.";
-                throw std::runtime_error(error_msg.str());
-            }
-
-            // compute the location of the qp
-            int V_cols = V_after.cols();
-            Eigen::VectorXd p = Eigen::VectorXd::Zero(V_cols);
-            for (int i = 0; i < 3; i++) {
-                p += V_after.row(F_after(local_index_in_f_after, (i + offset_in_f_after) % 3)) *
-                     qp.bc(i);
-            }
-
-
-            // compute bc of the p in (V, F)_before
-            int local_index_in_f_before = -1;
-            double bc_min_coef = 1;
-            bool bc_updated = false;
-            for (int i = 0; i < F_before.rows(); i++) {
-                Eigen::Vector3d bc;
-                if (V_cols == 2) {
-                    bc = ComputeBarycentricCoordinates2D(
-                        p,
-                        V_before.row(F_before(i, 0)),
-                        V_before.row(F_before(i, 1)),
-                        V_before.row(F_before(i, 2)));
-                } else // V_cols == 3
-                {
-                    if (operation_name != "EdgeSplit") {
-                        throw std::runtime_error("FATAL ERROR: This operation is not EdgeSplit. "
-                                                 "But we are using 3D barycentric coordinates.");
-                    }
-                    bc = ComputeBarycentricCoordinates3D(
-                        p,
-                        V_before.row(F_before(i, 0)),
-                        V_before.row(F_before(i, 1)),
-                        V_before.row(F_before(i, 2)),
-                        eps_3d);
-                }
-                if (-bc.minCoeff() < bc_min_coef) {
-                    bc_min_coef = -bc.minCoeff();
-                    local_index_in_f_before = i;
-                    qp.bc = bc;
-                    bc_updated = true;
-                }
-            }
-
-            if (!bc_updated) {
-                std::stringstream error_msg;
-                error_msg << "FATAL ERROR in " << operation_name
-                          << ": Failed to update barycentric coordinates.\n";
-                error_msg
-                    << "Query point could not be located in any triangle after mesh operation.\n";
-                error_msg << "This indicates a serious numerical or topological error.";
-                throw std::runtime_error(error_msg.str());
-            }
-
-            // update qp
-            qp.f_id = id_map_before[local_index_in_f_before];
-            for (int i = 0; i < 3; i++) {
-                qp.fv_ids[i] = v_id_map_before[F_before(local_index_in_f_before, i)];
-            }
-            qp.bc[0] = std::max(0.0, std::min(1.0, qp.bc[0]));
-            qp.bc[1] = std::max(0.0, std::min(1.0, qp.bc[1]));
-            qp.bc[2] = std::max(0.0, std::min(1.0, qp.bc[2]));
-            qp.bc /= qp.bc.sum();
-
-            // std::cout << "qp-> " << qp.f_id << std::endl;
-            // std::cout << "qp.bc: (" << qp.bc(0) << ", " << qp.bc(1) << ", " << qp.bc(2) << ")"
-            //           << std::endl
-            //           << std::endl;
-        }
-    }
-    // });
-}
-
-
 void handle_non_collapse_operation_curve(
     const Eigen::MatrixXd& V_before,
     const Eigen::MatrixXi& F_before,
@@ -900,7 +964,7 @@ void handle_non_collapse_operation_curve(
             v_id_map_after,
             query_points,
             operation_name,
-            100000);
+            true);
 
         handle_one_segment(
             curve,
@@ -914,6 +978,7 @@ void handle_non_collapse_operation_curve(
             TTi);
     }
 }
+
 
 void parse_consolidate_file(
     const json& operation_log,

@@ -61,7 +61,7 @@ void track_point_one_operation(
                 v_id_map_before,
                 query_points,
                 operation_name,
-                100000);
+                use_rational);
         } else {
             handle_non_collapse_operation(
                 V_before,
@@ -74,7 +74,7 @@ void track_point_one_operation(
                 v_id_map_after,
                 query_points,
                 operation_name,
-                100000);
+                use_rational);
         }
     } else if (operation_name == "EdgeSplit") {
         std::cout << "This Operations is EdgeSplit" << std::endl;
@@ -107,7 +107,7 @@ void track_point_one_operation(
                 v_id_map_before,
                 query_points,
                 "EdgeSplit",
-                1e-3);
+                use_rational);
         } else {
             handle_non_collapse_operation(
                 V_before,
@@ -120,7 +120,7 @@ void track_point_one_operation(
                 v_id_map_after,
                 query_points,
                 "EdgeSplit",
-                1e-3);
+                use_rational);
         }
 
     } else if (operation_name == "EdgeCollapse") {

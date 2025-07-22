@@ -196,7 +196,20 @@ void handle_non_collapse_operation(
     const std::vector<int64_t>& v_id_map_after,
     std::vector<query_point>& query_points,
     const std::string& operation_name = "non-collapse operation",
-    double eps_3d = 1e-3);
+    bool use_rational = false);
+
+// Rational version of handle_non_collapse_operation
+void handle_non_collapse_operation_r(
+    const Eigen::MatrixXd& V_before,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixXd& V_after,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& id_map_after,
+    const std::vector<int64_t>& v_id_map_after,
+    std::vector<query_point>& query_points,
+    const std::string& operation_name);
 
 void handle_non_collapse_operation_curve(
     const Eigen::MatrixXd& V_before,
