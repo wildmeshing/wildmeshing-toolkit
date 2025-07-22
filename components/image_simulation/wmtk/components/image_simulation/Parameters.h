@@ -4,18 +4,18 @@
 namespace wmtk::components::image_simulation {
 struct Parameters
 {
+    // parameters set by user
     double epsr = 2e-3; // relative error bound (wrt diagonal)
     double eps = -1.; // absolute error bound
     double lr = 5e-2; // target edge length (relative)
-    double l = -1.;
+    double l = -1.; // target edge length (absolute)
     double l_min = -1;
-    double diag_l = -1.;
-    Vector3d min = Vector3d::Zero();
-    Vector3d max = Vector3d::Ones();
-    Vector3d box_min = Vector3d::Zero();
-    Vector3d box_max = Vector3d::Ones();
     std::string output_path;
 
+    // parameters set in `init` function based on mesh bbox
+    double diag_l = -1.;
+    Vector3d box_min = Vector3d::Zero();
+    Vector3d box_max = Vector3d::Ones();
     double splitting_l2 = -1.; // the lower bound length (squared) for edge split
     double collapsing_l2 =
         std::numeric_limits<double>::max(); // the upper bound length (squared) for edge collapse
@@ -24,9 +24,9 @@ struct Parameters
 
     void init(const Vector3d& min_, const Vector3d& max_)
     {
-        min = min_;
-        max = max_;
-        diag_l = (max - min).norm();
+        box_min = min_;
+        box_max = max_;
+        diag_l = (box_max - box_min).norm();
         if (l > 0)
             lr = l / diag_l;
         else

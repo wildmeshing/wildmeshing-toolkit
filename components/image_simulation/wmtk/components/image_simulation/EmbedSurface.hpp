@@ -87,6 +87,8 @@ public:
 
     void simplify_surface();
 
+    void remove_duplicates();
+
     void embed_surface();
 
     const MatrixXd& V_emb() const { return m_V_emb; }

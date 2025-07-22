@@ -45,15 +45,14 @@ void image_simulation(nlohmann::json json_params)
 
     GEO::Process::enable_multithreading(false);
 
-    image_simulation::Parameters params;
-
     std::vector<std::string> input_paths = json_params["input"];
+
+    Parameters params;
     params.output_path = json_params["output"];
     bool skip_simplify = json_params["skip_simplify"];
     bool use_sample_envelope = json_params["use_sample_envelope"];
     int NUM_THREADS = json_params["num_threads"];
     int max_its = json_params["max_iterations"];
-    bool filter_with_input = json_params["filter_with_input"];
 
     params.epsr = json_params["eps_rel"];
     params.lr = json_params["length_rel"];
@@ -62,7 +61,10 @@ void image_simulation(nlohmann::json json_params)
     // convert image into tet mesh
     EmbedSurface image_mesh(input_paths[0]);
     {
-        image_mesh.simplify_surface();
+        if (!skip_simplify) {
+            image_mesh.simplify_surface();
+        }
+        image_mesh.remove_duplicates();
         image_mesh.embed_surface();
 
         image_mesh.write_emb_msh("debug_input_embedding.msh");
@@ -77,8 +79,6 @@ void image_simulation(nlohmann::json json_params)
 
     const auto box_minmax = image_mesh.bbox_minmax();
     params.init(box_minmax.first, box_minmax.second);
-    params.box_min = box_minmax.first;
-    params.box_max = box_minmax.second;
 
     std::shared_ptr<Envelope> ptr_env;
     std::shared_ptr<SampleEnvelope> ptr_sample_env;

@@ -14,7 +14,6 @@ nlohmann::json image_simulation_spec = R"(
       "use_sample_envelope",
       "num_threads",
       "max_iterations",
-      "filter_with_input",
       "eps_rel",
       "length_rel",
       "stop_energy"
@@ -66,12 +65,6 @@ nlohmann::json image_simulation_spec = R"(
     "type": "int",
     "default": 10,
     "doc": "Maximum iterations before stopping."
-  },
-  {
-    "pointer": "/filter_with_input",
-    "type": "bool",
-    "default": false,
-    "doc": "???"
   },
   {
     "pointer": "/eps_rel",

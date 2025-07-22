@@ -664,10 +664,19 @@ void EmbedSurface::simplify_surface()
         }
     }
 
-    wmtk::remove_duplicates(v_simplified, f_simplified, 0.01);
-
     V_surf_from_vector(v_simplified);
     F_surf_from_vector(f_simplified);
+}
+
+void EmbedSurface::remove_duplicates()
+{
+    auto v = V_surf_to_vector();
+    auto f = F_surf_to_vector();
+
+    wmtk::remove_duplicates(v, f, 0.01);
+
+    V_surf_from_vector(v);
+    F_surf_from_vector(f);
 }
 
 void EmbedSurface::embed_surface()
