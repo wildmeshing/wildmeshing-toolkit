@@ -251,3 +251,6 @@ void parse_edge_collapse_file(
     std::vector<int64_t>& v_id_map_joint,
     std::vector<int64_t>& id_map_before,
     std::vector<int64_t>& id_map_after);
+
+
+// Note: handle_one_segment and other curve-related functions have been moved to track_operations_curve.hpp

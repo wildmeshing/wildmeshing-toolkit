@@ -1,0 +1,928 @@
+#include "track_operations_curve.hpp"
+
+// Helper function to get all possible triangle IDs for a point
+std::vector<int> get_possible_triangle_ids(
+    const query_point& qp,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixXi& TT,
+    const Eigen::MatrixXi& TTi)
+{
+    std::vector<int> possible_triangle_ids;
+
+    // Find the local face index
+    auto it = std::find(id_map_before.begin(), id_map_before.end(), qp.f_id);
+    if (it == id_map_before.end()) {
+        return possible_triangle_ids; // Return empty if not found
+    }
+    int local_face_id = std::distance(id_map_before.begin(), it);
+
+    // Always include the current triangle (return local ID)
+    possible_triangle_ids.push_back(local_face_id);
+
+    // Count how many coordinates are zero
+    int zero_count = 0;
+    int zero_indices[3];
+    int zero_idx = 0;
+    for (int i = 0; i < 3; i++) {
+        if (qp.bc(i) == 0.0) {
+            zero_count++;
+            zero_indices[zero_idx++] = i;
+        }
+    }
+
+    if (zero_count == 2) {
+        // Point is on vertex (two coordinates are 0)
+        int vertex_idx = -1;
+        for (int i = 0; i < 3; i++) {
+            if (qp.bc(i) != 0.0) {
+                vertex_idx = i;
+                break;
+            }
+        }
+        // Find all triangles containing this vertex (return local IDs)
+        int global_vertex = qp.fv_ids[vertex_idx];
+        for (int face_id = 0; face_id < F_before.rows(); face_id++) {
+            if (face_id == local_face_id) continue; // Already added
+            for (int local_v = 0; local_v < 3; local_v++) {
+                if (v_id_map_before[F_before(face_id, local_v)] == global_vertex) {
+                    possible_triangle_ids.push_back(face_id);
+                    break;
+                }
+            }
+        }
+    } else if (zero_count == 1) {
+        // Point is on edge (one coordinate is 0) - return local ID
+        int edge_idx = (zero_indices[0] + 1) % 3;
+        int adj_face = TT(local_face_id, edge_idx);
+        if (adj_face != -1) {
+            possible_triangle_ids.push_back(adj_face);
+        }
+    }
+    // zero_count == 0 means interior point, only current triangle
+
+    return possible_triangle_ids;
+}
+
+// Helper function to transform barycentric coordinates from one triangle representation to another
+std::pair<Eigen::Vector3d, Eigen::Vector3i> transform_bc_to_triangle(
+    const query_point& qp,
+    int target_triangle_id,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before)
+{
+    Eigen::Vector3d new_bc(0, 0, 0);
+    Eigen::Vector3i new_fv_ids;
+
+    // Get the vertex IDs of the target triangle
+    for (int i = 0; i < 3; i++) {
+        new_fv_ids[i] = v_id_map_before[F_before(target_triangle_id, i)];
+    }
+
+    // Find mapping from original vertices to new triangle vertices
+    for (int i = 0; i < 3; i++) {
+        if (qp.bc(i) != 0.0) { // Only process non-zero barycentric coordinates
+            int global_vertex = qp.fv_ids[i];
+            // Find where this vertex appears in the target triangle
+            for (int j = 0; j < 3; j++) {
+                if (new_fv_ids[j] == global_vertex) {
+                    new_bc(j) = qp.bc(i);
+                    break;
+                }
+            }
+        }
+    }
+
+    return std::make_pair(new_bc, new_fv_ids);
+}
+
+// Helper function to check if two points are in the same triangle and transform coordinates if
+// needed
+SameTriangleResult check_and_transform_to_common_triangle(
+    const query_point& qp1,
+    const query_point& qp2,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixXi& TT,
+    const Eigen::MatrixXi& TTi)
+{
+    SameTriangleResult result;
+    result.in_same_triangle = false;
+
+    auto triangles1 =
+        get_possible_triangle_ids(qp1, F_before, id_map_before, v_id_map_before, TT, TTi);
+    auto triangles2 =
+        get_possible_triangle_ids(qp2, F_before, id_map_before, v_id_map_before, TT, TTi);
+
+    // Find common triangle
+    for (int t1 : triangles1) {
+        for (int t2 : triangles2) {
+            if (t1 == t2) {
+                result.in_same_triangle = true;
+                result.common_triangle_id = t1;
+
+                // Transform both points to this common triangle representation
+                auto transform1 =
+                    transform_bc_to_triangle(qp1, t1, F_before, id_map_before, v_id_map_before);
+                auto transform2 =
+                    transform_bc_to_triangle(qp2, t1, F_before, id_map_before, v_id_map_before);
+
+                result.transformed_qp1.f_id = id_map_before[t1];
+                result.transformed_qp1.bc = transform1.first;
+                result.transformed_qp1.fv_ids = transform1.second;
+
+                result.transformed_qp2.f_id = id_map_before[t1];
+                result.transformed_qp2.bc = transform2.first;
+                result.transformed_qp2.fv_ids = transform2.second;
+
+                return result;
+            }
+        }
+    }
+
+    return result;
+}
+
+// Helper function to get candidate edges with their corresponding triangle indication
+std::vector<EdgeTrianglePair> get_candidate_edges_with_triangles(
+    const query_point& qp,
+    const std::vector<int>& possible_triangles,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixXi& TT,
+    const Eigen::MatrixXi& TTi)
+{
+    std::vector<EdgeTrianglePair> candidate_edges;
+
+    // Count how many coordinates are zero to determine point location
+    int zero_count = 0;
+    int zero_idx = -1;
+    for (int i = 0; i < 3; i++) {
+        if (qp.bc(i) == 0.0) {
+            zero_count++;
+            zero_idx = i;
+        }
+    }
+
+    if (zero_count == 0) {
+        // Interior point: all three edges of current triangle indicate current triangle
+        int current_triangle = possible_triangles[0];
+        for (int i = 0; i < 3; i++) {
+            int v0 = F_before(current_triangle, i); // Use local vertex ID
+            int v1 = F_before(current_triangle, (i + 1) % 3); // Use local vertex ID
+            candidate_edges.push_back({{v0, v1}, current_triangle});
+        }
+    } else if (zero_count == 1) {
+        // Point on edge: each candidate edge indicates a different triangle
+        // Current triangle edges (except the edge we're on)
+        // If zero_idx = i, point is on edge ((i+1)%3, (i+2)%3), so exclude that edge
+        int current_triangle = possible_triangles[0];
+        int edge_on = (zero_idx + 1) % 3; // The edge we're on starts from vertex (zero_idx+1)%3
+        for (int i = 0; i < 3; i++) {
+            if (i != edge_on) { // Exclude the edge we're currently on
+                int v0 = F_before(current_triangle, i); // Use local vertex ID
+                int v1 = F_before(current_triangle, (i + 1) % 3); // Use local vertex ID
+                candidate_edges.push_back({{v0, v1}, current_triangle});
+            }
+        }
+
+        // Adjacent triangle edges (if exists)
+        if (possible_triangles.size() > 1) {
+            int adj_triangle = possible_triangles[1];
+            int adj_edge = TTi(current_triangle, zero_idx);
+            for (int i = 0; i < 3; i++) {
+                if (i != adj_edge) {
+                    int v0 = F_before(adj_triangle, i); // Use local vertex ID
+                    int v1 = F_before(adj_triangle, (i + 1) % 3); // Use local vertex ID
+                    candidate_edges.push_back({{v0, v1}, adj_triangle});
+                }
+            }
+        }
+    } else if (zero_count == 2) {
+        // Point on vertex: each edge from different triangles indicates that triangle
+        for (int triangle_id : possible_triangles) {
+            // Find the local vertex index in this triangle
+            int local_vertex_idx = -1;
+            int vertex_idx = -1;
+            for (int i = 0; i < 3; i++) {
+                if (qp.bc(i) != 0.0) {
+                    vertex_idx = i;
+                    break;
+                }
+            }
+            int global_vertex = qp.fv_ids[vertex_idx];
+
+            for (int local_v = 0; local_v < 3; local_v++) {
+                if (v_id_map_before[F_before(triangle_id, local_v)] == global_vertex) {
+                    local_vertex_idx = local_v;
+                    break;
+                }
+            }
+
+            if (local_vertex_idx != -1) {
+                // Add the edge opposite to this vertex (use local vertex IDs)
+                int v0 = F_before(triangle_id, (local_vertex_idx + 1) % 3); // Use local vertex ID
+                int v1 = F_before(triangle_id, (local_vertex_idx + 2) % 3); // Use local vertex ID
+                candidate_edges.push_back({{v0, v1}, triangle_id});
+            }
+        }
+    }
+
+    return candidate_edges;
+}
+
+// Helper function to compute barycentric coordinates in triangle from edge barycentric coordinates
+Eigen::Vector3<wmtk::Rational> edge_bc_to_triangle_bc(
+    const Eigen::Vector2<wmtk::Rational>& edge_bc,
+    const std::pair<int, int>& edge_vertices,
+    int triangle_id,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& v_id_map_before)
+{
+    Eigen::Vector3<wmtk::Rational> triangle_bc(0, 0, 0);
+
+    // Find which vertices of the triangle correspond to the edge vertices (now using local IDs)
+    int edge_v0_local = -1, edge_v1_local = -1;
+    for (int i = 0; i < 3; i++) {
+        if (F_before(triangle_id, i) == edge_vertices.first) {
+            edge_v0_local = i;
+        } else if (F_before(triangle_id, i) == edge_vertices.second) {
+            edge_v1_local = i;
+        }
+    }
+
+    if (edge_v0_local != -1 && edge_v1_local != -1) {
+        // Set the barycentric coordinates: edge_bc(0) goes to first vertex, edge_bc(1) goes to
+        // second vertex
+        triangle_bc(edge_v0_local) = edge_bc(0);
+        triangle_bc(edge_v1_local) = edge_bc(1);
+        // Third coordinate is 0 (point is on the edge)
+    }
+
+    return triangle_bc;
+}
+
+// Segment intersection function using rational arithmetic
+bool intersectSegmentEdge_r(
+    const Eigen::Vector2<wmtk::Rational>& a,
+    const Eigen::Vector2<wmtk::Rational>& b,
+    const Eigen::Vector2<wmtk::Rational>& c,
+    const Eigen::Vector2<wmtk::Rational>& d,
+    Eigen::Vector2<wmtk::Rational>& barycentric,
+    bool debug_mode)
+{
+    Eigen::Vector2<wmtk::Rational> ab = b - a;
+    Eigen::Vector2<wmtk::Rational> cd = d - c;
+    Eigen::Vector2<wmtk::Rational> ac = c - a;
+
+    wmtk::Rational denominator = (ab.x() * cd.y() - ab.y() * cd.x());
+    if (denominator == wmtk::Rational(0)) {
+        if (debug_mode) std::cout << "parallel" << std::endl;
+        return false; // parallel
+    }
+    wmtk::Rational t = (ac.x() * cd.y() - ac.y() * cd.x()) / denominator;
+    wmtk::Rational u = -(ab.x() * ac.y() - ab.y() * ac.x()) / denominator;
+    if (debug_mode) std::cout << "t: " << t << ", u: " << u << std::endl;
+
+    if (t >= 0 && t <= wmtk::Rational(1) && u >= 0 && u <= wmtk::Rational(1)) {
+        // Calculate barycentric coordinates for intersection
+        wmtk::Rational alpha = 1 - u;
+        wmtk::Rational beta = u;
+        barycentric = Eigen::Vector2<wmtk::Rational>(alpha, beta);
+        if (debug_mode) std::cout << "intersection found" << std::endl;
+        return true;
+    }
+    if (debug_mode) std::cout << "no intersection" << std::endl;
+    return false;
+}
+
+// Main segment handling function
+void handle_one_segment(
+    query_curve& curve,
+    int id,
+    std::vector<query_point>& query_points,
+    const Eigen::MatrixXd& UV_joint,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    Eigen::MatrixXi& TT,
+    Eigen::MatrixXi& TTi)
+{
+    query_segment& qs = curve.segments[id];
+    // Check if two endpoints are in the same triangle considering all possible locations
+    if (TT.rows() == 0) {
+        igl::triangle_triangle_adjacency(F_before, TT, TTi);
+    }
+
+    auto same_triangle_result = check_and_transform_to_common_triangle(
+        query_points[0],
+        query_points[1],
+        F_before,
+        id_map_before,
+        v_id_map_joint,
+        TT,
+        TTi);
+
+    if (same_triangle_result.in_same_triangle) {
+        // Two endpoints are on the same face --> no need to compute intersections
+        qs.f_id = same_triangle_result.transformed_qp1.f_id;
+        qs.bcs[0] = same_triangle_result.transformed_qp1.bc;
+        qs.bcs[1] = same_triangle_result.transformed_qp2.bc;
+        qs.fv_ids = same_triangle_result.transformed_qp1.fv_ids;
+        return;
+    }
+
+    // Convert the UV_Joint to Rational for exact computation
+    Eigen::MatrixX<wmtk::Rational> UV_joint_r(UV_joint.rows(), UV_joint.cols());
+    for (int i = 0; i < UV_joint.rows(); i++) {
+        for (int j = 0; j < UV_joint.cols(); j++) {
+            UV_joint_r(i, j) = wmtk::Rational(UV_joint(i, j));
+        }
+    }
+
+    // Get starting point and target point
+    auto it_start = std::find(id_map_before.begin(), id_map_before.end(), query_points[0].f_id);
+    auto it_end = std::find(id_map_before.begin(), id_map_before.end(), query_points[1].f_id);
+
+    if (it_start == id_map_before.end() || it_end == id_map_before.end()) {
+        std::cerr << "Error: Cannot find start or end face in id_map_before" << std::endl;
+        throw std::runtime_error("Error: Cannot find start or end face in id_map_before");
+        return;
+    }
+
+    int start_face_local = std::distance(id_map_before.begin(), it_start);
+    int end_face_local = std::distance(id_map_before.begin(), it_end);
+
+    // Compute start point a and end point b in UV space using rational arithmetic
+    Eigen::Vector2<wmtk::Rational> a(0, 0), b(0, 0);
+    Eigen::Vector3<wmtk::Rational> bc_start_r, bc_end_r;
+
+    // Convert barycentric coordinates to rational and normalize
+    bc_start_r << wmtk::Rational(query_points[0].bc(0)), wmtk::Rational(query_points[0].bc(1)),
+        wmtk::Rational(query_points[0].bc(2));
+    bc_start_r /= bc_start_r.sum();
+
+    bc_end_r << wmtk::Rational(query_points[1].bc(0)), wmtk::Rational(query_points[1].bc(1)),
+        wmtk::Rational(query_points[1].bc(2));
+    bc_end_r /= bc_end_r.sum();
+
+    // Compute world coordinates
+    for (int i = 0; i < 3; i++) {
+        a += UV_joint_r.row(F_before(start_face_local, i)).transpose() * bc_start_r(i);
+        b += UV_joint_r.row(F_before(end_face_local, i)).transpose() * bc_end_r(i);
+    }
+
+    // std::cout << "Ray tracing from (" << a(0).to_double() << ", " << a(1).to_double() << ") to ("
+    //           << b(0).to_double() << ", " << b(1).to_double() << ")" << std::endl;
+
+    // Cache for the last new segment
+    int old_next_seg = curve.next_segment_ids[id];
+
+    // Initialize current position and face
+    Eigen::Vector2<wmtk::Rational> current_pos = a;
+    int current_face = start_face_local;
+    Eigen::Vector3<wmtk::Rational> current_bc = bc_start_r;
+
+    // Set up first segment
+    qs.f_id = query_points[0].f_id;
+    qs.bcs[0] = query_points[0].bc;
+    qs.fv_ids = query_points[0].fv_ids;
+
+    std::vector<query_segment> new_segments;
+
+    // Ray tracing loop
+    int iteration = 0;
+    while (current_face != end_face_local) {
+        iteration++;
+        // std::cout << "\n=== Iteration " << iteration << " ===" << std::endl;
+        // std::cout << "Current: triangle_id=" << current_face << ", bc=("
+        //           << current_bc(0).to_double() << ", " << current_bc(1).to_double() << ", "
+        //           << current_bc(2).to_double() << ")" << std::endl;
+        // std::cout << "Target: triangle_id=" << end_face_local << "bc=(" <<
+        // bc_end_r(0).to_double()
+        //           << ", " << bc_end_r(1).to_double() << ", " << bc_end_r(2).to_double() << ")"
+        //           << std::endl;
+
+        // Create query_point for current position
+        query_point current_qp;
+        current_qp.f_id = id_map_before[current_face];
+        current_qp.bc = Eigen::Vector3d(
+            current_bc(0).to_double(),
+            current_bc(1).to_double(),
+            current_bc(2).to_double());
+        current_qp.fv_ids << v_id_map_joint[F_before(current_face, 0)],
+            v_id_map_joint[F_before(current_face, 1)], v_id_map_joint[F_before(current_face, 2)];
+
+        // Debug: Get possible triangles for both points
+        // auto current_possible_triangles =
+        //     get_possible_triangle_ids(current_qp, F_before, id_map_before, v_id_map_joint, TT,
+        //     TTi);
+        // auto target_possible_triangles = get_possible_triangle_ids(
+        //     query_points[1],
+        //     F_before,
+        //     id_map_before,
+        //     v_id_map_joint,
+        //     TT,
+        //     TTi);
+
+        // std::cout << "Current point possible triangles (local IDs): ";
+        // for (int tid : current_possible_triangles) {
+        //     std::cout << tid << " (global: " << id_map_before[tid] << ") ";
+        // }
+        // std::cout << std::endl;
+
+        // std::cout << "Target point possible triangles (local IDs): ";
+        // for (int tid : target_possible_triangles) {
+        //     std::cout << tid << " (global: " << id_map_before[tid] << ") ";
+        // }
+        // std::cout << std::endl;
+
+        auto same_triangle_result = check_and_transform_to_common_triangle(
+            current_qp,
+            query_points[1],
+            F_before,
+            id_map_before,
+            v_id_map_joint,
+            TT,
+            TTi);
+
+        // std::cout << "Same triangle check result: "
+        //           << (same_triangle_result.in_same_triangle ? "YES" : "NO");
+        // if (same_triangle_result.in_same_triangle) {
+        //     std::cout << ", common triangle (local ID): " <<
+        //     same_triangle_result.common_triangle_id
+        //               << " (global: " << id_map_before[same_triangle_result.common_triangle_id]
+        //               << ")";
+        // }
+        // std::cout << std::endl;
+
+        if (same_triangle_result.in_same_triangle) {
+            // Current point and target point are in the same triangle, finish directly
+            query_segment final_seg;
+            final_seg.f_id = same_triangle_result.transformed_qp1.f_id;
+            final_seg.bcs[0] = same_triangle_result.transformed_qp1.bc;
+            final_seg.bcs[1] = same_triangle_result.transformed_qp2.bc;
+            final_seg.fv_ids = same_triangle_result.transformed_qp1.fv_ids;
+            new_segments.push_back(final_seg);
+            break; // Exit the while loop
+        }
+
+        // Get all possible triangles for current point
+        auto possible_triangles =
+            get_possible_triangle_ids(current_qp, F_before, id_map_before, v_id_map_joint, TT, TTi);
+
+        // Get candidate edges with their corresponding triangles
+        auto candidate_edges = get_candidate_edges_with_triangles(
+            current_qp,
+            possible_triangles,
+            F_before,
+            v_id_map_joint,
+            TT,
+            TTi);
+
+        // std::cout << "Point in " << possible_triangles.size() << " possible triangles, "
+        //           << candidate_edges.size() << " candidate edges" << std::endl;
+
+        // Find next intersection using rational arithmetic
+        bool found_intersection = false;
+        Eigen::Vector2<wmtk::Rational> next_intersection;
+        Eigen::Vector2<wmtk::Rational> next_bc_edge;
+        int next_face = -1;
+        int selected_edge_idx = -1;
+        // std::cout << "Testing intersections:" << std::endl;
+        for (int i = 0; i < candidate_edges.size(); i++) {
+            const auto& edge_tri_pair = candidate_edges[i];
+            const auto& edge = edge_tri_pair.edge;
+            int edge_triangle = edge_tri_pair.triangle_id;
+
+            // Now edge.first and edge.second are local vertex IDs, can use UV_joint directly
+            Eigen::Vector2<wmtk::Rational> edge_start = UV_joint_r.row(edge.first).transpose();
+            Eigen::Vector2<wmtk::Rational> edge_end = UV_joint_r.row(edge.second).transpose();
+
+            Eigen::Vector2<wmtk::Rational> edge_bc;
+            bool has_intersection =
+                intersectSegmentEdge_r(current_pos, b, edge_start, edge_end, edge_bc, false);
+
+            // std::cout << "  Edge " << i << " (" << edge.first << ", " << edge.second
+            //           << ") -> triangle " << edge_triangle << ": ";
+            if (has_intersection) {
+                // std::cout << "INTERSECTION! edge_bc=(" << edge_bc(0).to_double() << ", "
+                //           << edge_bc(1).to_double() << ")" << std::endl;
+
+                selected_edge_idx = i;
+                next_intersection = edge_bc(0) * edge_start + edge_bc(1) * edge_end;
+                next_bc_edge = edge_bc;
+                next_face = edge_triangle; // Use the triangle indicated by this edge
+
+                found_intersection = true;
+                // std::cout << "    -> Using this intersection, next_triangle_id=" << next_face
+                //           << std::endl;
+                break;
+            } else {
+                // std::cout << "no intersection" << std::endl;
+            }
+        }
+
+        if (!found_intersection) {
+            std::cerr << "Error: No intersection found in ray tracing" << std::endl;
+            throw std::runtime_error("Error: No intersection found in ray tracing");
+            break;
+        }
+
+        // Create new segment for the intersection
+        query_segment new_seg;
+        new_seg.f_id = id_map_before[next_face]; // Use the indicated triangle
+        new_seg.bcs[0] = Eigen::Vector3d(
+            current_bc(0).to_double(),
+            current_bc(1).to_double(),
+            current_bc(2).to_double());
+
+        // Compute barycentric coordinates for intersection point in the indicated triangle
+        // using edge barycentric coordinates (now with local vertex IDs)
+
+        Eigen::Vector3<wmtk::Rational> intersection_bc = edge_bc_to_triangle_bc(
+            next_bc_edge,
+            candidate_edges[selected_edge_idx].edge,
+            next_face,
+            F_before,
+            v_id_map_joint);
+
+        new_seg.bcs[1] = Eigen::Vector3d(
+            intersection_bc(0).to_double(),
+            intersection_bc(1).to_double(),
+            intersection_bc(2).to_double());
+
+
+        new_seg.fv_ids << v_id_map_joint[F_before(next_face, 0)],
+            v_id_map_joint[F_before(next_face, 1)], v_id_map_joint[F_before(next_face, 2)];
+
+        new_segments.push_back(new_seg);
+
+        // std::cout << "Created segment: triangle_id=" << new_seg.f_id << ", start_bc=("
+        //           << new_seg.bcs[0](0) << ", " << new_seg.bcs[0](1) << ", " << new_seg.bcs[0](2)
+        //           << ")" << ", end_bc=(" << new_seg.bcs[1](0) << ", " << new_seg.bcs[1](1) << ","
+        //           << new_seg.bcs[1](2) << ")" << std::endl;
+
+        // Move to next face and update position
+        current_pos = next_intersection;
+        current_face = next_face;
+        // Update current_bc to match the new segment's end coordinates
+        current_bc << wmtk::Rational(new_seg.bcs[1](0)), wmtk::Rational(new_seg.bcs[1](1)),
+            wmtk::Rational(new_seg.bcs[1](2));
+    }
+
+    // Add final segment to target (only if we didn't exit early from the while loop)
+    if (!new_segments.empty() && current_face == end_face_local) {
+        query_segment final_seg;
+        final_seg.f_id = query_points[1].f_id;
+        final_seg.bcs[0] = new_segments.back().bcs[1]; // Start from last intersection
+        final_seg.bcs[1] = query_points[1].bc; // End at target point
+        final_seg.fv_ids = query_points[1].fv_ids;
+        new_segments.push_back(final_seg);
+    }
+
+    // Update curve with new segments
+    if (!new_segments.empty()) {
+        qs.bcs[1] = new_segments[0].bcs[1]; // First segment ends at first intersection
+        curve.next_segment_ids[id] = curve.segments.size(); // Point to first new segment
+
+        // Add all new segments
+        for (size_t i = 0; i < new_segments.size(); i++) {
+            curve.segments.push_back(new_segments[i]);
+            if (i < new_segments.size() - 1) {
+                curve.next_segment_ids.push_back(
+                    curve.segments.size()); // Point to next new segment
+            } else {
+                curve.next_segment_ids.push_back(
+                    old_next_seg); // Last segment points to original next
+            }
+        }
+    } else {
+        // No intersections needed, direct connection
+        qs.bcs[1] = query_points[1].bc;
+    }
+
+    // std::cout << "Ray tracing completed, added " << new_segments.size() << " new segments"
+    //           << std::endl;
+}
+
+// Old version for comparison
+void handle_one_segment_old(
+    query_curve& curve,
+    int id,
+    std::vector<query_point>& query_points,
+    const Eigen::MatrixXd& UV_joint,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    Eigen::MatrixXi& TT,
+    Eigen::MatrixXi& TTi)
+{
+    query_segment& qs = curve.segments[id];
+
+    if (query_points[0].f_id == query_points[1].f_id) {
+        // two endpoints are on the same face --> no need to compute intersections
+        qs.f_id = query_points[0].f_id;
+        qs.bcs[0] = query_points[0].bc;
+        qs.bcs[1] = query_points[1].bc;
+        qs.fv_ids = query_points[0].fv_ids;
+    } else {
+        if (TT.rows() == 0) {
+            igl::triangle_triangle_adjacency(F_before, TT, TTi);
+        }
+
+        // convert the UV_Joint to Rational
+        Eigen::MatrixX<wmtk::Rational> UV_joint_r(UV_joint.rows(), UV_joint.cols());
+        for (int i = 0; i < UV_joint.rows(); i++) {
+            for (int j = 0; j < UV_joint.cols(); j++) {
+                UV_joint_r(i, j) = wmtk::Rational(UV_joint(i, j));
+            }
+        }
+
+        // cache for the last new segment
+        int old_next_seg = curve.next_segment_ids[id];
+
+        // compute the two end points
+        auto it = std::find(id_map_before.begin(), id_map_before.end(), query_points[0].f_id);
+        if (it == id_map_before.end()) {
+            std::cout << "query_points[0] not found" << std::endl;
+            throw std::runtime_error("query_points[0] not found");
+        }
+        int current_fid = std::distance(id_map_before.begin(), it);
+
+        Eigen::Vector2<wmtk::Rational> p0(0, 0);
+        Eigen::Vector3<wmtk::Rational> bc_p0_r;
+        bc_p0_r << wmtk::Rational(query_points[0].bc(0)), wmtk::Rational(query_points[0].bc(1)),
+            wmtk::Rational(query_points[0].bc(2));
+        bc_p0_r /= bc_p0_r.sum();
+        for (int i = 0; i < 3; i++) {
+            p0 = p0 + UV_joint_r.row(F_before(current_fid, i)).transpose() * bc_p0_r(i);
+        }
+
+        it = std::find(id_map_before.begin(), id_map_before.end(), query_points[1].f_id);
+        if (it == id_map_before.end()) {
+            std::cout << "query_points[1] not found" << std::endl;
+            throw std::runtime_error("query_points[1] not found");
+        }
+        int target_fid = std::distance(id_map_before.begin(), it);
+        Eigen::Vector2<wmtk::Rational> p1(0, 0);
+        Eigen::Vector3<wmtk::Rational> bc_p1_r;
+        bc_p1_r << wmtk::Rational(query_points[1].bc(0)), wmtk::Rational(query_points[1].bc(1)),
+            wmtk::Rational(query_points[1].bc(2));
+        bc_p1_r /= bc_p1_r.sum();
+        for (int i = 0; i < 3; i++) {
+            p1 = p1 + UV_joint_r.row(F_before(target_fid, i)).transpose() * bc_p1_r(i);
+        }
+
+        int current_edge_id = -1;
+        // case that the first point is on the edge
+        for (int eid = 0; eid < 3; eid++) {
+            if (query_points[0].bc(eid) == 0) {
+                current_edge_id = (eid + 1) % 3;
+            }
+        }
+
+        Eigen::Vector2<wmtk::Rational> last_edge_bc;
+        {
+            int next_edge_id0 = -1;
+            // find the first intersection
+            for (int edge_id = 0; edge_id < 3; edge_id++) {
+                if (edge_id == current_edge_id) continue; // we need to find the other intersection
+
+                Eigen::VectorX<wmtk::Rational> a = UV_joint_r.row(F_before(current_fid, edge_id));
+                Eigen::VectorX<wmtk::Rational> b =
+                    UV_joint_r.row(F_before(current_fid, (edge_id + 1) % 3));
+
+                Eigen::Vector2<wmtk::Rational> edge_bc;
+                if (intersectSegmentEdge_r(p0, p1, a, b, edge_bc)) {
+                    next_edge_id0 = edge_id;
+                    qs.f_id = query_points[0].f_id;
+                    qs.bcs[0] = query_points[0].bc;
+                    qs.bcs[1] << 0, 0, 0;
+                    qs.bcs[1](edge_id) = edge_bc(0).to_double();
+                    qs.bcs[1]((edge_id + 1) % 3) = edge_bc(1).to_double();
+                    qs.fv_ids = query_points[0].fv_ids;
+                    last_edge_bc = edge_bc;
+                    curve.next_segment_ids[id] =
+                        curve.segments.size(); // next segment will add to the end
+
+                    break;
+                }
+            }
+
+            if (next_edge_id0 == -1) {
+                // case that the first point is not on a edge, then it is a bug
+                if (current_edge_id == -1) {
+                    std::cout << "bc_p0_r: ";
+                    std::cout << std::setprecision(16) << bc_p0_r(0) << ", " << bc_p0_r(1) << ", "
+                              << bc_p0_r(2) << std::endl;
+                    std::cout << "bc_p1_r: ";
+                    std::cout << std::setprecision(16) << bc_p1_r(0) << ", " << bc_p1_r(1) << ", "
+                              << bc_p1_r(2) << std::endl;
+
+                    std::cout << "no first intersection found" << std::endl;
+                    throw std::runtime_error("no first intersection found");
+                }
+                // solve this by changing the first point
+                int e0 = current_edge_id;
+                int f1 = TT(current_fid, e0);
+                int e1 = TTi(current_fid, e0);
+
+                query_points[0].f_id = id_map_before[f1];
+                query_points[0].fv_ids << v_id_map_joint[F_before(f1, 0)],
+                    v_id_map_joint[F_before(f1, 1)], v_id_map_joint[F_before(f1, 2)];
+                auto current_bc = query_points[0].bc;
+                query_points[0].bc(e1) = current_bc((e0 + 1) % 3);
+                query_points[0].bc((e1 + 1) % 3) = current_bc(e0);
+                query_points[0].bc((e1 + 2) % 3) = 0;
+
+                std::cout << "try change start p0's fid and solve" << std::endl;
+                handle_one_segment_old(
+                    curve,
+                    id,
+                    query_points,
+                    UV_joint,
+                    F_before,
+                    v_id_map_joint,
+                    id_map_before,
+                    TT,
+                    TTi);
+                return;
+
+                std::cout << "no intersection found place 1" << std::endl;
+                throw std::runtime_error("no intersection found");
+            }
+
+            current_edge_id = TTi(current_fid, next_edge_id0);
+            current_fid = TT(current_fid, next_edge_id0);
+        }
+
+        // find the rest intersections
+        while (current_fid != target_fid) {
+            int next_edge_id = -1;
+            for (int edge_id = 0; edge_id < 3; edge_id++) {
+                if (edge_id == current_edge_id) continue;
+                Eigen::VectorX<wmtk::Rational> a = UV_joint_r.row(F_before(current_fid, edge_id));
+                Eigen::VectorX<wmtk::Rational> b =
+                    UV_joint_r.row(F_before(current_fid, (edge_id + 1) % 3));
+                Eigen::Vector2<wmtk::Rational> edge_bc;
+                query_segment qs_new;
+
+                if (intersectSegmentEdge_r(p0, p1, a, b, edge_bc)) {
+                    next_edge_id = edge_id;
+                    qs_new.f_id = id_map_before[current_fid];
+                    qs_new.bcs[0] = Eigen::Vector3d(0, 0, 0);
+                    qs_new.bcs[1] = Eigen::Vector3d(0, 0, 0);
+
+                    qs_new.bcs[0](current_edge_id) = last_edge_bc(1).to_double();
+                    qs_new.bcs[0]((current_edge_id + 1) % 3) = last_edge_bc(0).to_double();
+                    qs_new.bcs[1](next_edge_id) = edge_bc(0).to_double();
+                    qs_new.bcs[1]((next_edge_id + 1) % 3) = edge_bc(1).to_double();
+
+                    qs_new.fv_ids << v_id_map_joint[F_before(current_fid, 0)],
+                        v_id_map_joint[F_before(current_fid, 1)],
+                        v_id_map_joint[F_before(current_fid, 2)];
+
+                    // push the new segment
+                    curve.segments.push_back(qs_new);
+                    curve.next_segment_ids.push_back(curve.next_segment_ids.size() + 1);
+
+                    // record the last edge
+                    last_edge_bc = edge_bc;
+                    break;
+                }
+            }
+
+            if (next_edge_id == -1) {
+                std::cout << "no intersection found place 2" << std::endl;
+                throw std::runtime_error("no intersection found");
+                continue;
+            }
+
+            current_edge_id = TTi(current_fid, next_edge_id);
+            current_fid = TT(current_fid, next_edge_id);
+        }
+
+        // add last segment
+        {
+            query_segment qs_new;
+            qs_new.f_id = query_points[1].f_id;
+            qs_new.bcs[0] = Eigen::Vector3d(0, 0, 0);
+            qs_new.bcs[1] = query_points[1].bc;
+            qs_new.bcs[0](current_edge_id) = last_edge_bc(1).to_double();
+            qs_new.bcs[0]((current_edge_id + 1) % 3) = last_edge_bc(0).to_double();
+            qs_new.fv_ids = query_points[1].fv_ids;
+
+            // push the new segment
+            curve.segments.push_back(qs_new);
+            curve.next_segment_ids.push_back(old_next_seg);
+        }
+    }
+}
+
+// Curve handling functions for different operations
+void handle_collapse_edge_curve(
+    const Eigen::MatrixXd& UV_joint,
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& id_map_after,
+    query_curve& curve,
+    bool use_rational)
+{
+    std::cout << "Handling EdgeCollapse curve" << std::endl;
+    int curve_length = curve.segments.size();
+    Eigen::MatrixXi TT, TTi;
+
+    for (int id = 0; id < curve_length; id++) {
+        ////////////////////////////////////
+        // map the two end points of one segment
+        ////////////////////////////////////
+        query_segment& qs = curve.segments[id];
+        query_point qp0 = {qs.f_id, qs.bcs[0], qs.fv_ids};
+        query_point qp1 = {qs.f_id, qs.bcs[1], qs.fv_ids};
+        std::vector<query_point> query_points = {qp0, qp1};
+
+        auto it = std::find(id_map_after.begin(), id_map_after.end(), qs.f_id);
+        if (it == id_map_after.end()) {
+            continue;
+        }
+
+        handle_collapse_edge_r(
+            UV_joint,
+            F_before,
+            F_after,
+            v_id_map_joint,
+            id_map_before,
+            id_map_after,
+            query_points);
+
+        handle_one_segment(
+            curve,
+            id,
+            query_points,
+            UV_joint,
+            F_before,
+            v_id_map_joint,
+            id_map_before,
+            TT,
+            TTi);
+    }
+}
+
+void handle_non_collapse_operation_curve(
+    const Eigen::MatrixXd& V_before,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixXd& V_after,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& id_map_after,
+    const std::vector<int64_t>& v_id_map_after,
+    query_curve& curve,
+    const std::string& operation_name)
+{
+    std::cout << "Handling " << operation_name << " curve" << std::endl;
+    int curve_length = curve.segments.size();
+    Eigen::MatrixXi TT, TTi;
+
+    for (int id = 0; id < curve_length; id++) {
+        query_segment& qs = curve.segments[id];
+        query_point qp0 = {qs.f_id, qs.bcs[0], qs.fv_ids};
+        query_point qp1 = {qs.f_id, qs.bcs[1], qs.fv_ids};
+        std::vector<query_point> query_points = {qp0, qp1};
+
+        auto it = std::find(id_map_after.begin(), id_map_after.end(), qs.f_id);
+        if (it == id_map_after.end()) {
+            continue;
+        }
+
+        handle_non_collapse_operation_r(
+            V_before,
+            F_before,
+            id_map_before,
+            v_id_map_before,
+            V_after,
+            F_after,
+            id_map_after,
+            v_id_map_after,
+            query_points,
+            operation_name);
+
+
+        handle_one_segment(
+            curve,
+            id,
+            query_points,
+            V_before,
+            F_before,
+            v_id_map_before,
+            id_map_before,
+            TT,
+            TTi);
+    }
+}

@@ -104,14 +104,14 @@ bool validate_and_convert_curves_to_edge_mesh(
             // Add edge
             edges.push_back(Eigen::Vector2i(start_vertex_idx, end_vertex_idx));
 
-            std::cout << "  Segment " << current_seg_id << ": vertices [" << start_vertex_idx
-                      << ", " << end_vertex_idx << "] at (" << p0.transpose() << ") -> ("
-                      << p1.transpose() << ")" << std::endl;
+            // std::cout << "  Segment " << current_seg_id << ": vertices [" << start_vertex_idx
+            //           << ", " << end_vertex_idx << "] at (" << p0.transpose() << ") -> ("
+            //           << p1.transpose() << ")" << std::endl;
 
             // Get next segment ID
             if (current_seg_id < (int)curve.next_segment_ids.size()) {
                 current_seg_id = curve.next_segment_ids[current_seg_id];
-                std::cout << "  Next segment ID: " << current_seg_id << std::endl;
+                // std::cout << "  Next segment ID: " << current_seg_id << std::endl;
             } else {
                 std::cout << "  No next_segment_ids entry for segment " << current_seg_id
                           << std::endl;
@@ -536,7 +536,7 @@ void forward_track_iso_lines_app(
 
     auto curves_origin = curves;
 
-    {
+    if (false) {
         igl::opengl::glfw::Viewer viewer;
         viewer.data().set_mesh(V_in, F_in);
         viewer.data().point_size /= 3;
