@@ -22,6 +22,7 @@ struct query_point
 struct query_segment
 {
     int64_t f_id; // face id
+    int64_t origin_f_id; // original face id when the segment was first created as input
     Eigen::Vector3d bcs[2]; // barycentric coordinates
     Eigen::Vector3i fv_ids; // face vertex ids
 };
@@ -255,4 +256,5 @@ void parse_edge_collapse_file(
     std::vector<int64_t>& id_map_after);
 
 
-// Note: handle_one_segment and other curve-related functions have been moved to track_operations_curve.hpp
+// Note: handle_one_segment and other curve-related functions have been moved to
+// track_operations_curve.hpp

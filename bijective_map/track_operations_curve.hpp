@@ -31,8 +31,10 @@ std::pair<Eigen::Vector3d, Eigen::Vector3i> transform_bc_to_triangle(
     const std::vector<int64_t>& id_map_before,
     const std::vector<int64_t>& v_id_map_before);
 
-// Helper function to check if two points are in the same triangle and transform coordinates if needed
-struct SameTriangleResult {
+// Helper function to check if two points are in the same triangle and transform coordinates if
+// needed
+struct SameTriangleResult
+{
     bool in_same_triangle;
     int common_triangle_id;
     query_point transformed_qp1;
@@ -49,7 +51,8 @@ SameTriangleResult check_and_transform_to_common_triangle(
     const Eigen::MatrixXi& TTi);
 
 // Helper function to get candidate edges with their corresponding triangle indication
-struct EdgeTrianglePair {
+struct EdgeTrianglePair
+{
     std::pair<int, int> edge; // vertex pair (local vertex IDs)
     int triangle_id; // which triangle this edge indicates (local triangle ID)
 };
@@ -128,3 +131,6 @@ void handle_non_collapse_operation_curve(
     query_curve& curve,
     const std::string& operation_name,
     bool verbose);
+
+
+// void clean_up_curve(query_curve& curve);
