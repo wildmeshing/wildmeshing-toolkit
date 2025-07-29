@@ -182,7 +182,8 @@ void handle_collapse_edge_curve(
     const std::vector<int64_t>& id_map_before,
     const std::vector<int64_t>& id_map_after,
     query_curve& curve,
-    bool use_rational = false);
+    bool use_rational = false,
+    bool verbose = false);
 
 // Unified function for split/swap/smooth operations - they all have the same interface
 void handle_non_collapse_operation(
@@ -221,7 +222,8 @@ void handle_non_collapse_operation_curve(
     const std::vector<int64_t>& id_map_after,
     const std::vector<int64_t>& v_id_map_after,
     query_curve& curve,
-    const std::string& operation_name);
+    const std::string& operation_name,
+    bool verbose = false);
 /***
  * Parse the operation log file
  */

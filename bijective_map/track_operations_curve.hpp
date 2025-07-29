@@ -89,7 +89,8 @@ void handle_one_segment(
     const std::vector<int64_t>& v_id_map_joint,
     const std::vector<int64_t>& id_map_before,
     Eigen::MatrixXi& TT,
-    Eigen::MatrixXi& TTi);
+    Eigen::MatrixXi& TTi,
+    bool verbose);
 
 // Old version for comparison
 void handle_one_segment_old(
@@ -112,7 +113,8 @@ void handle_collapse_edge_curve(
     const std::vector<int64_t>& id_map_before,
     const std::vector<int64_t>& id_map_after,
     query_curve& curve,
-    bool use_rational);
+    bool use_rational,
+    bool verbose);
 
 void handle_non_collapse_operation_curve(
     const Eigen::MatrixXd& V_before,
@@ -124,4 +126,5 @@ void handle_non_collapse_operation_curve(
     const std::vector<int64_t>& id_map_after,
     const std::vector<int64_t>& v_id_map_after,
     query_curve& curve,
-    const std::string& operation_name);
+    const std::string& operation_name,
+    bool verbose);

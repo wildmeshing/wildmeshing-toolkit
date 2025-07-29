@@ -1,4 +1,5 @@
 #include "track_operations_curve.hpp"
+#include <igl/opengl/glfw/Viewer.h>
 
 // Helper function to get all possible triangle IDs for a point
 std::vector<int> get_possible_triangle_ids(
@@ -192,7 +193,7 @@ std::vector<EdgeTrianglePair> get_candidate_edges_with_triangles(
         // Adjacent triangle edges (if exists)
         if (possible_triangles.size() > 1) {
             int adj_triangle = possible_triangles[1];
-            int adj_edge = TTi(current_triangle, zero_idx);
+            int adj_edge = TTi(current_triangle, edge_on);
             for (int i = 0; i < 3; i++) {
                 if (i != adj_edge) {
                     int v0 = F_before(adj_triangle, i); // Use local vertex ID
@@ -309,8 +310,19 @@ void handle_one_segment(
     const std::vector<int64_t>& v_id_map_joint,
     const std::vector<int64_t>& id_map_before,
     Eigen::MatrixXi& TT,
-    Eigen::MatrixXi& TTi)
+    Eigen::MatrixXi& TTi,
+    bool verbose)
 {
+    // for debug
+    if (verbose) {
+        std::cout << "F_before:" << std::endl;
+        for (int i = 0; i < F_before.rows(); ++i) {
+            std::cout << "[" << i << ", " << id_map_before[i] << "]: " << F_before.row(i) << std::endl;
+        }
+        std::cout << std::endl;
+    }
+
+
     query_segment& qs = curve.segments[id];
     // Check if two endpoints are in the same triangle considering all possible locations
     if (TT.rows() == 0) {
@@ -375,8 +387,10 @@ void handle_one_segment(
         b += UV_joint_r.row(F_before(end_face_local, i)).transpose() * bc_end_r(i);
     }
 
-    // std::cout << "Ray tracing from (" << a(0).to_double() << ", " << a(1).to_double() << ") to ("
-    //           << b(0).to_double() << ", " << b(1).to_double() << ")" << std::endl;
+    if (verbose) {
+        std::cout << "Ray tracing from (" << a(0).to_double() << ", " << a(1).to_double() << ") to ("
+                  << b(0).to_double() << ", " << b(1).to_double() << ")" << std::endl;
+    }
 
     // Cache for the last new segment
     int old_next_seg = curve.next_segment_ids[id];
@@ -397,14 +411,15 @@ void handle_one_segment(
     int iteration = 0;
     while (current_face != end_face_local) {
         iteration++;
-        // std::cout << "\n=== Iteration " << iteration << " ===" << std::endl;
-        // std::cout << "Current: triangle_id=" << current_face << ", bc=("
-        //           << current_bc(0).to_double() << ", " << current_bc(1).to_double() << ", "
-        //           << current_bc(2).to_double() << ")" << std::endl;
-        // std::cout << "Target: triangle_id=" << end_face_local << "bc=(" <<
-        // bc_end_r(0).to_double()
-        //           << ", " << bc_end_r(1).to_double() << ", " << bc_end_r(2).to_double() << ")"
-        //           << std::endl;
+        if (verbose) {
+            std::cout << "\n=== Iteration " << iteration << " ===" << std::endl;
+            std::cout << "Current: triangle_id=" << current_face << ", bc=("
+                      << current_bc(0).to_double() << ", " << current_bc(1).to_double() << ", "
+                      << current_bc(2).to_double() << ")" << std::endl;
+            std::cout << "Target: triangle_id=" << end_face_local << "bc=(" << bc_end_r(0).to_double()
+                      << ", " << bc_end_r(1).to_double() << ", " << bc_end_r(2).to_double() << ")"
+                      << std::endl;
+        }
 
         // Create query_point for current position
         query_point current_qp;
@@ -417,28 +432,29 @@ void handle_one_segment(
             v_id_map_joint[F_before(current_face, 1)], v_id_map_joint[F_before(current_face, 2)];
 
         // Debug: Get possible triangles for both points
-        // auto current_possible_triangles =
-        //     get_possible_triangle_ids(current_qp, F_before, id_map_before, v_id_map_joint, TT,
-        //     TTi);
-        // auto target_possible_triangles = get_possible_triangle_ids(
-        //     query_points[1],
-        //     F_before,
-        //     id_map_before,
-        //     v_id_map_joint,
-        //     TT,
-        //     TTi);
+        auto current_possible_triangles =
+            get_possible_triangle_ids(current_qp, F_before, id_map_before, v_id_map_joint, TT, TTi);
+        auto target_possible_triangles = get_possible_triangle_ids(
+            query_points[1],
+            F_before,
+            id_map_before,
+            v_id_map_joint,
+            TT,
+            TTi);
 
-        // std::cout << "Current point possible triangles (local IDs): ";
-        // for (int tid : current_possible_triangles) {
-        //     std::cout << tid << " (global: " << id_map_before[tid] << ") ";
-        // }
-        // std::cout << std::endl;
+        if (verbose) {
+            std::cout << "Current point possible triangles (local IDs): ";
+            for (int tid : current_possible_triangles) {
+                std::cout << tid << " (global: " << id_map_before[tid] << ") ";
+            }
+            std::cout << std::endl;
 
-        // std::cout << "Target point possible triangles (local IDs): ";
-        // for (int tid : target_possible_triangles) {
-        //     std::cout << tid << " (global: " << id_map_before[tid] << ") ";
-        // }
-        // std::cout << std::endl;
+            std::cout << "Target point possible triangles (local IDs): ";
+            for (int tid : target_possible_triangles) {
+                std::cout << tid << " (global: " << id_map_before[tid] << ") ";
+            }
+            std::cout << std::endl;
+        }
 
         auto same_triangle_result = check_and_transform_to_common_triangle(
             current_qp,
@@ -449,15 +465,16 @@ void handle_one_segment(
             TT,
             TTi);
 
-        // std::cout << "Same triangle check result: "
-        //           << (same_triangle_result.in_same_triangle ? "YES" : "NO");
-        // if (same_triangle_result.in_same_triangle) {
-        //     std::cout << ", common triangle (local ID): " <<
-        //     same_triangle_result.common_triangle_id
-        //               << " (global: " << id_map_before[same_triangle_result.common_triangle_id]
-        //               << ")";
-        // }
-        // std::cout << std::endl;
+        if (verbose) {
+            std::cout << "Same triangle check result: "
+                      << (same_triangle_result.in_same_triangle ? "YES" : "NO");
+            if (same_triangle_result.in_same_triangle) {
+                std::cout << ", common triangle (local ID): " << same_triangle_result.common_triangle_id
+                          << " (global: " << id_map_before[same_triangle_result.common_triangle_id]
+                          << ")";
+            }
+            std::cout << std::endl;
+        }
 
         if (same_triangle_result.in_same_triangle) {
             // Current point and target point are in the same triangle, finish directly
@@ -470,21 +487,14 @@ void handle_one_segment(
             break; // Exit the while loop
         }
 
-        // Get all possible triangles for current point
-        auto possible_triangles =
-            get_possible_triangle_ids(current_qp, F_before, id_map_before, v_id_map_joint, TT, TTi);
-
         // Get candidate edges with their corresponding triangles
         auto candidate_edges = get_candidate_edges_with_triangles(
             current_qp,
-            possible_triangles,
+            current_possible_triangles,
             F_before,
             v_id_map_joint,
             TT,
             TTi);
-
-        // std::cout << "Point in " << possible_triangles.size() << " possible triangles, "
-        //           << candidate_edges.size() << " candidate edges" << std::endl;
 
         // Find next intersection using rational arithmetic
         bool found_intersection = false;
@@ -506,11 +516,15 @@ void handle_one_segment(
             bool has_intersection =
                 intersectSegmentEdge_r(current_pos, b, edge_start, edge_end, edge_bc, false);
 
-            // std::cout << "  Edge " << i << " (" << edge.first << ", " << edge.second
-            //           << ") -> triangle " << edge_triangle << ": ";
+            if (verbose) {
+                std::cout << "  Edge " << i << " (" << edge.first << ", " << edge.second
+                          << ") -> triangle " << edge_triangle << ": ";
+            }
             if (has_intersection) {
-                // std::cout << "INTERSECTION! edge_bc=(" << edge_bc(0).to_double() << ", "
-                //           << edge_bc(1).to_double() << ")" << std::endl;
+                if (verbose) {
+                    std::cout << "INTERSECTION! edge_bc=(" << edge_bc(0).to_double() << ", "
+                              << edge_bc(1).to_double() << ")" << std::endl;
+                }
 
                 selected_edge_idx = i;
                 next_intersection = edge_bc(0) * edge_start + edge_bc(1) * edge_end;
@@ -518,8 +532,10 @@ void handle_one_segment(
                 next_face = edge_triangle; // Use the triangle indicated by this edge
 
                 found_intersection = true;
-                // std::cout << "    -> Using this intersection, next_triangle_id=" << next_face
-                //           << std::endl;
+                if (verbose) {
+                    std::cout << "    -> Using this intersection, next_triangle_id=" << next_face
+                              << std::endl;
+                }
                 break;
             } else {
                 // std::cout << "no intersection" << std::endl;
@@ -535,10 +551,13 @@ void handle_one_segment(
         // Create new segment for the intersection
         query_segment new_seg;
         new_seg.f_id = id_map_before[next_face]; // Use the indicated triangle
-        new_seg.bcs[0] = Eigen::Vector3d(
-            current_bc(0).to_double(),
-            current_bc(1).to_double(),
-            current_bc(2).to_double());
+        new_seg.bcs[0] =
+            transform_bc_to_triangle(current_qp, next_face, F_before, id_map_before, v_id_map_joint)
+                .first;
+        // new_seg.bcs[0] = Eigen::Vector3d(
+        //     current_bc(0).to_double(),
+        //     current_bc(1).to_double(),
+        //     current_bc(2).to_double());
 
         // Compute barycentric coordinates for intersection point in the indicated triangle
         // using edge barycentric coordinates (now with local vertex IDs)
@@ -561,10 +580,12 @@ void handle_one_segment(
 
         new_segments.push_back(new_seg);
 
-        // std::cout << "Created segment: triangle_id=" << new_seg.f_id << ", start_bc=("
-        //           << new_seg.bcs[0](0) << ", " << new_seg.bcs[0](1) << ", " << new_seg.bcs[0](2)
-        //           << ")" << ", end_bc=(" << new_seg.bcs[1](0) << ", " << new_seg.bcs[1](1) << ","
-        //           << new_seg.bcs[1](2) << ")" << std::endl;
+        if (verbose) {
+            std::cout << "Created segment: triangle_id=" << new_seg.f_id << ", start_bc=("
+                      << new_seg.bcs[0](0) << ", " << new_seg.bcs[0](1) << ", " << new_seg.bcs[0](2)
+                      << ")" << ", end_bc=(" << new_seg.bcs[1](0) << ", " << new_seg.bcs[1](1) << ","
+                      << new_seg.bcs[1](2) << ")" << std::endl;
+        }
 
         // Move to next face and update position
         current_pos = next_intersection;
@@ -576,12 +597,13 @@ void handle_one_segment(
 
     // Add final segment to target (only if we didn't exit early from the while loop)
     if (!new_segments.empty() && current_face == end_face_local) {
-        query_segment final_seg;
-        final_seg.f_id = query_points[1].f_id;
-        final_seg.bcs[0] = new_segments.back().bcs[1]; // Start from last intersection
-        final_seg.bcs[1] = query_points[1].bc; // End at target point
-        final_seg.fv_ids = query_points[1].fv_ids;
-        new_segments.push_back(final_seg);
+        throw std::runtime_error("Error: No intersection found in ray tracing");
+        // query_segment final_seg;
+        // final_seg.f_id = query_points[1].f_id;
+        // final_seg.bcs[0] = new_segments.back().bcs[1]; // Start from last intersection
+        // final_seg.bcs[1] = query_points[1].bc; // End at target point
+        // final_seg.fv_ids = query_points[1].fv_ids;
+        // new_segments.push_back(final_seg);
     }
 
     // Update curve with new segments
@@ -590,7 +612,7 @@ void handle_one_segment(
         curve.next_segment_ids[id] = curve.segments.size(); // Point to first new segment
 
         // Add all new segments
-        for (size_t i = 0; i < new_segments.size(); i++) {
+        for (size_t i = 1; i < new_segments.size(); i++) {
             curve.segments.push_back(new_segments[i]);
             if (i < new_segments.size() - 1) {
                 curve.next_segment_ids.push_back(
@@ -601,10 +623,43 @@ void handle_one_segment(
             }
         }
     } else {
+        throw std::runtime_error("Error: No intersections found in ray tracing, why?");
         // No intersections needed, direct connection
-        qs.bcs[1] = query_points[1].bc;
+        // qs.bcs[1] = query_points[1].bc;
     }
 
+    if (verbose) {
+        std::cout << "New segments created in ray tracing:" << std::endl;
+        for (size_t i = 0; i < new_segments.size(); ++i) {
+            const auto& seg = new_segments[i];
+            std::cout << "  Segment " << i << ": f_id=" << seg.f_id << ", start_bc=("
+                      << seg.bcs[0](0) << ", " << seg.bcs[0](1) << ", " << seg.bcs[0](2) << ")"
+                      << ", end_bc=(" << seg.bcs[1](0) << ", " << seg.bcs[1](1) << ", "
+                      << seg.bcs[1](2) << ")" << ", fv_ids=(" << seg.fv_ids(0) << ", "
+                      << seg.fv_ids(1) << ", " << seg.fv_ids(2) << ")" << std::endl;
+        }
+    }
+    if (verbose && false) {
+        igl::opengl::glfw::Viewer viewer;
+        viewer.data().set_mesh(UV_joint, F_before);
+        for (const auto& seg : new_segments) {
+            Eigen::MatrixXd pts(2, 3);
+            for (int i = 0; i < 2; i++) {
+                Eigen::Vector3d p(0, 0, 0);
+                for (int j = 0; j < 3; j++) {
+                    int local_vid =
+                        std::find(v_id_map_joint.begin(), v_id_map_joint.end(), seg.fv_ids(j)) -
+                        v_id_map_joint.begin();
+                    p += UV_joint.row(local_vid).transpose() * seg.bcs[i](j);
+                }
+                pts.row(i) = p;
+            }
+            viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
+            viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
+            viewer.data().add_edges(pts.row(0), pts.row(1), Eigen::RowVector3d(1, 0, 0));
+        }
+        viewer.launch();
+    }
     // std::cout << "Ray tracing completed, added " << new_segments.size() << " new segments"
     //           << std::endl;
 }
@@ -832,9 +887,12 @@ void handle_collapse_edge_curve(
     const std::vector<int64_t>& id_map_before,
     const std::vector<int64_t>& id_map_after,
     query_curve& curve,
-    bool use_rational)
+    bool use_rational,
+    bool verbose)
 {
-    std::cout << "Handling EdgeCollapse curve" << std::endl;
+    if (verbose) {
+        std::cout << "Handling EdgeCollapse curve" << std::endl;
+    }
     int curve_length = curve.segments.size();
     Eigen::MatrixXi TT, TTi;
 
@@ -870,7 +928,8 @@ void handle_collapse_edge_curve(
             v_id_map_joint,
             id_map_before,
             TT,
-            TTi);
+            TTi,
+            verbose);
     }
 }
 
@@ -884,9 +943,12 @@ void handle_non_collapse_operation_curve(
     const std::vector<int64_t>& id_map_after,
     const std::vector<int64_t>& v_id_map_after,
     query_curve& curve,
-    const std::string& operation_name)
+    const std::string& operation_name,
+    bool verbose)
 {
-    std::cout << "Handling " << operation_name << " curve" << std::endl;
+    if (verbose) {
+        std::cout << "Handling " << operation_name << " curve" << std::endl;
+    }
     int curve_length = curve.segments.size();
     Eigen::MatrixXi TT, TTi;
 
@@ -923,6 +985,7 @@ void handle_non_collapse_operation_curve(
             v_id_map_before,
             id_map_before,
             TT,
-            TTi);
+            TTi,
+            verbose);
     }
 }
