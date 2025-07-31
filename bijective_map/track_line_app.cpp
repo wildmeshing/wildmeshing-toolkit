@@ -309,7 +309,8 @@ void track_line(path dirPath, query_curve& curve, bool do_forward)
             ++maxIndex;
         }
     }
-
+    int curve_old_size = curve.segments.size();
+    int clean_up_threshold = 2;
     for (int i = maxIndex; i >= 0; --i) {
         int file_id = i;
         if (do_forward) {
@@ -328,8 +329,14 @@ void track_line(path dirPath, query_curve& curve, bool do_forward)
 
         track_line_one_operation(operation_log, curve, do_forward);
 
+        if (curve.segments.size() > clean_up_threshold * curve_old_size) {
+            clean_up_curve(curve);
+            curve_old_size = curve.segments.size();
+        }
         file.close();
     }
+
+    clean_up_curve(curve);
 }
 
 void track_lines(path dirPath, std::vector<query_curve>& curves, bool do_forward, bool do_parallel)
@@ -509,7 +516,8 @@ void forward_track_iso_lines_app(
                     std::cout << "something wrong with input_intersections" << std::endl;
                 }
                 seg.f_id = input_intersections[i].fid;
-                seg.origin_f_id = input_intersections[i].fid; // Set origin_f_id to the same as f_id for initial input
+                seg.origin_f_id = input_intersections[i]
+                                      .fid; // Set origin_f_id to the same as f_id for initial input
                 seg.bcs[0] = input_intersections[i].barycentric;
                 seg.bcs[1] = input_intersections[i + 1].barycentric;
                 seg.fv_ids = F_in.row(input_intersections[i].fid);

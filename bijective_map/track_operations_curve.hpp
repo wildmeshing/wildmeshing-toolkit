@@ -133,4 +133,4 @@ void handle_non_collapse_operation_curve(
     bool verbose);
 
 
-// void clean_up_curve(query_curve& curve);
+void clean_up_curve(query_curve& curve);

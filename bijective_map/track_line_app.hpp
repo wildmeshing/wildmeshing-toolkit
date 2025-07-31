@@ -1,6 +1,7 @@
 #pragma once
 #include <filesystem>
 #include "track_operations.hpp"
+#include "track_operations_curve.hpp"
 using path = std::filesystem::path;
 
 #include <nlohmann/json.hpp>

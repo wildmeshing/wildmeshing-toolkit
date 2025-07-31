@@ -317,7 +317,8 @@ void handle_one_segment(
     if (verbose) {
         std::cout << "F_before:" << std::endl;
         for (int i = 0; i < F_before.rows(); ++i) {
-            std::cout << "[" << i << ", " << id_map_before[i] << "]: " << F_before.row(i) << std::endl;
+            std::cout << "[" << i << ", " << id_map_before[i] << "]: " << F_before.row(i)
+                      << std::endl;
         }
         std::cout << std::endl;
     }
@@ -388,8 +389,8 @@ void handle_one_segment(
     }
 
     if (verbose) {
-        std::cout << "Ray tracing from (" << a(0).to_double() << ", " << a(1).to_double() << ") to ("
-                  << b(0).to_double() << ", " << b(1).to_double() << ")" << std::endl;
+        std::cout << "Ray tracing from (" << a(0).to_double() << ", " << a(1).to_double()
+                  << ") to (" << b(0).to_double() << ", " << b(1).to_double() << ")" << std::endl;
     }
 
     // Cache for the last new segment
@@ -416,9 +417,9 @@ void handle_one_segment(
             std::cout << "Current: triangle_id=" << current_face << ", bc=("
                       << current_bc(0).to_double() << ", " << current_bc(1).to_double() << ", "
                       << current_bc(2).to_double() << ")" << std::endl;
-            std::cout << "Target: triangle_id=" << end_face_local << "bc=(" << bc_end_r(0).to_double()
-                      << ", " << bc_end_r(1).to_double() << ", " << bc_end_r(2).to_double() << ")"
-                      << std::endl;
+            std::cout << "Target: triangle_id=" << end_face_local << "bc=("
+                      << bc_end_r(0).to_double() << ", " << bc_end_r(1).to_double() << ", "
+                      << bc_end_r(2).to_double() << ")" << std::endl;
         }
 
         // Create query_point for current position
@@ -469,7 +470,8 @@ void handle_one_segment(
             std::cout << "Same triangle check result: "
                       << (same_triangle_result.in_same_triangle ? "YES" : "NO");
             if (same_triangle_result.in_same_triangle) {
-                std::cout << ", common triangle (local ID): " << same_triangle_result.common_triangle_id
+                std::cout << ", common triangle (local ID): "
+                          << same_triangle_result.common_triangle_id
                           << " (global: " << id_map_before[same_triangle_result.common_triangle_id]
                           << ")";
             }
@@ -552,7 +554,8 @@ void handle_one_segment(
         // Create new segment for the intersection
         query_segment new_seg;
         new_seg.f_id = id_map_before[next_face]; // Use the indicated triangle
-        new_seg.origin_f_id = qs.origin_f_id; // Preserve the original face ID from the parent segment
+        new_seg.origin_f_id =
+            qs.origin_f_id; // Preserve the original face ID from the parent segment
         new_seg.bcs[0] =
             transform_bc_to_triangle(current_qp, next_face, F_before, id_map_before, v_id_map_joint)
                 .first;
@@ -585,8 +588,8 @@ void handle_one_segment(
         if (verbose) {
             std::cout << "Created segment: triangle_id=" << new_seg.f_id << ", start_bc=("
                       << new_seg.bcs[0](0) << ", " << new_seg.bcs[0](1) << ", " << new_seg.bcs[0](2)
-                      << ")" << ", end_bc=(" << new_seg.bcs[1](0) << ", " << new_seg.bcs[1](1) << ","
-                      << new_seg.bcs[1](2) << ")" << std::endl;
+                      << ")" << ", end_bc=(" << new_seg.bcs[1](0) << ", " << new_seg.bcs[1](1)
+                      << "," << new_seg.bcs[1](2) << ")" << std::endl;
         }
 
         // Move to next face and update position
@@ -989,5 +992,113 @@ void handle_non_collapse_operation_curve(
             TT,
             TTi,
             verbose);
+    }
+}
+
+void clean_up_curve(query_curve& curve)
+{
+    if (curve.segments.empty()) {
+        return;
+    }
+
+    std::vector<query_segment> new_segments;
+    std::vector<int> new_next_segment_ids;
+    std::vector<int> old_to_new_mapping(curve.segments.size(), -1);
+
+    // Process segments in chain order starting from 0
+    int current_id = 0;
+    while (current_id != -1 && current_id < curve.segments.size()) {
+        if (old_to_new_mapping[current_id] != -1) {
+            // This segment was already processed, skip
+            current_id = curve.next_segment_ids[current_id];
+            continue;
+        }
+
+        query_segment& current_segment = curve.segments[current_id];
+
+        // Find consecutive segments that can be merged
+        std::vector<int> segments_to_merge = {current_id};
+        int next_id = curve.next_segment_ids[current_id];
+
+        while (next_id != -1 && next_id < curve.segments.size()) {
+            query_segment& next_segment = curve.segments[next_id];
+
+            // Check if they can be merged (same origin_f_id and f_id)
+            if (current_segment.origin_f_id == next_segment.origin_f_id &&
+                current_segment.f_id == next_segment.f_id) {
+                segments_to_merge.push_back(next_id);
+                next_id = curve.next_segment_ids[next_id];
+            } else {
+                break;
+            }
+        }
+
+        // Create merged segment
+        query_segment merged_segment;
+        merged_segment.f_id = current_segment.f_id;
+        merged_segment.origin_f_id = current_segment.origin_f_id;
+        merged_segment.bcs[0] = current_segment.bcs[0]; // First segment's bc0
+        merged_segment.bcs[1] =
+            curve.segments[segments_to_merge.back()].bcs[1]; // Last segment's bc1
+        merged_segment.fv_ids = current_segment.fv_ids;
+
+        // Add to new segments
+        int new_segment_id = new_segments.size();
+        new_segments.push_back(merged_segment);
+
+        // Map all merged segments to the new segment
+        for (int old_id : segments_to_merge) {
+            old_to_new_mapping[old_id] = new_segment_id;
+        }
+
+        // Set next segment ID for the merged segment (this will be updated later)
+        int final_next = curve.next_segment_ids[segments_to_merge.back()];
+        new_next_segment_ids.push_back(final_next);
+
+        // Move to the next unprocessed segment
+        current_id = final_next;
+    }
+
+    // Update next_segment_ids to point to new indices
+    for (int i = 0; i < new_next_segment_ids.size(); i++) {
+        if (new_next_segment_ids[i] != -1) {
+            int old_next = new_next_segment_ids[i];
+            if (old_next < old_to_new_mapping.size() && old_to_new_mapping[old_next] != -1) {
+                new_next_segment_ids[i] = old_to_new_mapping[old_next];
+            } else {
+                // If the old_next was not mapped, it means it was merged into another segment
+                // We need to find which segment it was merged into
+                std::cout << "Warning: old_next " << old_next << " was not mapped, setting to -1"
+                          << std::endl;
+                new_next_segment_ids[i] = -1;
+            }
+        }
+    }
+    std::cout << "clean up curve, segments size: " << curve.segments.size() << " -> "
+              << new_segments.size() << std::endl;
+    // Replace the curve's segments and next_segment_ids
+    curve.segments = std::move(new_segments);
+    curve.next_segment_ids = std::move(new_next_segment_ids);
+
+    // for debug
+    {
+        int cur_seg = 0;
+        std::vector<bool> is_visited(curve.segments.size(), false);
+        int cnt = 0;
+        while (cur_seg != -1 && !is_visited[cur_seg]) {
+            // std::cout << "visited: " << cur_seg << std::endl;
+            is_visited[cur_seg] = true;
+            cnt++;
+            cur_seg = curve.next_segment_ids[cur_seg];
+        }
+
+        if (cnt != curve.segments.size()) {
+            std::cout << "curve.next_segment_ids: ";
+            for (size_t i = 0; i < curve.next_segment_ids.size(); ++i) {
+                std::cout << curve.next_segment_ids[i] << " ";
+            }
+            std::cout << std::endl;
+            throw std::runtime_error("Error: clean up curve failed, why?");
+        }
     }
 }
