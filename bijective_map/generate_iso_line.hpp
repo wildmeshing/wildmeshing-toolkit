@@ -17,6 +17,7 @@ struct Intersection
 std::vector<Intersection>
 computeIsoLineIntersectionsX(const MatrixXd& uv, const MatrixXi& F, double x0)
 {
+    double turb_eps = 1e-6;
     std::vector<Intersection> intersections;
 
     for (int i = 0; i < F.rows(); ++i) {
@@ -36,7 +37,9 @@ computeIsoLineIntersectionsX(const MatrixXd& uv, const MatrixXi& F, double x0)
                 barycentric[j] = 1 - t;
                 barycentric[(j + 1) % 3] = t;
                 barycentric[(j + 2) % 3] = 0;
-
+                if (t == 0 || t == 1) {
+                    return computeIsoLineIntersectionsX(uv, F, x0 + turb_eps);
+                }
                 Vector2d intersectionPoint(x0, y);
 
                 intersections.push_back({i, barycentric, intersectionPoint});
@@ -60,6 +63,7 @@ computeIsoLineIntersectionsX(const MatrixXd& uv, const MatrixXi& F, double x0)
                 std::swap(intersections[i + 1], intersections[i + 2]);
             } else {
                 std::cerr << "Error: intersections are not ordered correctly!" << std::endl;
+                throw std::runtime_error("Error: intersections are not ordered correctly!");
             }
         }
     }
@@ -70,6 +74,7 @@ computeIsoLineIntersectionsX(const MatrixXd& uv, const MatrixXi& F, double x0)
 std::vector<Intersection>
 computeIsoLineIntersectionsY(const Eigen::MatrixXd& uv, const Eigen::MatrixXi& F, double y0)
 {
+    double turb_eps = 1e-6;
     std::vector<Intersection> intersections;
 
     for (int i = 0; i < F.rows(); ++i) {
@@ -89,6 +94,9 @@ computeIsoLineIntersectionsY(const Eigen::MatrixXd& uv, const Eigen::MatrixXi& F
                 barycentric[j] = 1 - t;
                 barycentric[(j + 1) % 3] = t;
                 barycentric[(j + 2) % 3] = 0;
+                if (t == 0 || t == 1) {
+                    return computeIsoLineIntersectionsY(uv, F, y0 + turb_eps);
+                }
 
                 Eigen::Vector2d intersectionPoint(x, y0);
 
@@ -113,6 +121,7 @@ computeIsoLineIntersectionsY(const Eigen::MatrixXd& uv, const Eigen::MatrixXi& F
                 std::swap(intersections[i + 1], intersections[i + 2]);
             } else {
                 std::cerr << "Error: intersections are not ordered correctly!" << std::endl;
+                throw std::runtime_error("Error: intersections are not ordered correctly!");
             }
         }
     }

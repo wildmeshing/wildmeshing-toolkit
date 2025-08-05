@@ -482,7 +482,7 @@ void handle_one_segment(
             // Current point and target point are in the same triangle, finish directly
             query_segment final_seg;
             final_seg.f_id = same_triangle_result.transformed_qp1.f_id;
-            final_seg.origin_f_id = qs.origin_f_id; // Preserve the original face ID
+            final_seg.origin_segment_id = qs.origin_segment_id; // Preserve the original face ID
             final_seg.bcs[0] = same_triangle_result.transformed_qp1.bc;
             final_seg.bcs[1] = same_triangle_result.transformed_qp2.bc;
             final_seg.fv_ids = same_triangle_result.transformed_qp1.fv_ids;
@@ -554,8 +554,8 @@ void handle_one_segment(
         // Create new segment for the intersection
         query_segment new_seg;
         new_seg.f_id = id_map_before[next_face]; // Use the indicated triangle
-        new_seg.origin_f_id =
-            qs.origin_f_id; // Preserve the original face ID from the parent segment
+        new_seg.origin_segment_id =
+            qs.origin_segment_id; // Preserve the original segment ID from the parent segment
         new_seg.bcs[0] =
             transform_bc_to_triangle(current_qp, next_face, F_before, id_map_before, v_id_map_joint)
                 .first;
@@ -1034,8 +1034,8 @@ void clean_up_curve(query_curve& curve)
         while (next_id != -1 && next_id < curve.segments.size()) {
             query_segment& next_segment = curve.segments[next_id];
 
-            // Check if they can be merged (same origin_f_id and f_id)
-            if (current_segment.origin_f_id == next_segment.origin_f_id &&
+            // Check if they can be merged (same origin_segment_id and f_id)
+            if (current_segment.origin_segment_id == next_segment.origin_segment_id &&
                 current_segment.f_id == next_segment.f_id) {
                 segments_to_merge.push_back(next_id);
                 next_id = curve.next_segment_ids[next_id];
@@ -1047,7 +1047,7 @@ void clean_up_curve(query_curve& curve)
         // Create merged segment
         query_segment merged_segment;
         merged_segment.f_id = current_segment.f_id;
-        merged_segment.origin_f_id = current_segment.origin_f_id;
+        merged_segment.origin_segment_id = current_segment.origin_segment_id;
         merged_segment.bcs[0] = current_segment.bcs[0]; // First segment's bc0
         merged_segment.bcs[1] =
             curve.segments[segments_to_merge.back()].bcs[1]; // Last segment's bc1

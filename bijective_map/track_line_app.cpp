@@ -396,7 +396,7 @@ query_curve generate_curve(
 
         query_segment seg;
         seg.f_id = current_face_id;
-        seg.origin_f_id = current_face_id; // Set origin_f_id to the same as f_id for initial input
+        seg.origin_segment_id = curve.segments.size(); // Set origin_segment_id
         seg.bcs[0] = bary_coord_ref.row(current_edge_id);
         seg.bcs[1] = bary_coord_ref.row(next_edge_id);
         seg.fv_ids = F.row(current_face_id);
@@ -516,8 +516,7 @@ void forward_track_iso_lines_app(
                     std::cout << "something wrong with input_intersections" << std::endl;
                 }
                 seg.f_id = input_intersections[i].fid;
-                seg.origin_f_id = input_intersections[i]
-                                      .fid; // Set origin_f_id to the same as f_id for initial input
+                seg.origin_segment_id = curve.segments.size(); // Set origin_segment_id
                 seg.bcs[0] = input_intersections[i].barycentric;
                 seg.bcs[1] = input_intersections[i + 1].barycentric;
                 seg.fv_ids = F_in.row(input_intersections[i].fid);
