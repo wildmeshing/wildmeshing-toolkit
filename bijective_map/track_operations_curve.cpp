@@ -1182,3 +1182,40 @@ bool is_curve_valid(const query_curve& curve)
     }
     return is_valid;
 }
+
+// function that computes all the intersections between two curves
+int compute_intersections_between_two_curves(
+    const query_curve& curve1,
+    const query_curve& curve2,
+    bool verbose)
+{
+    int intersections = 0;
+    for (auto seg1 : curve1.segments) {
+        for (auto seg2 : curve2.segments) {
+            if (seg1.f_id != seg2.f_id) {
+                continue;
+            }
+
+            Eigen::Vector2<wmtk::Rational> s1_a, s1_b, s2_a, s2_b;
+            s1_a << wmtk::Rational(seg1.bcs[0](0)), wmtk::Rational(seg1.bcs[0](1));
+            s1_b << wmtk::Rational(seg1.bcs[1](0)), wmtk::Rational(seg1.bcs[1](1));
+            s2_a << wmtk::Rational(seg2.bcs[0](0)), wmtk::Rational(seg2.bcs[0](1));
+            s2_b << wmtk::Rational(seg2.bcs[1](0)), wmtk::Rational(seg2.bcs[1](1));
+
+            Eigen::Vector2<wmtk::Rational> bc_tmp;
+            if (intersectSegmentEdge_r(s1_a, s1_b, s2_a, s2_b, bc_tmp, false)) {
+                intersections++;
+                if (verbose) {
+                    // std::cout << "Intersection found in face " << seg1.f_id << std::endl;
+                    std::cout << "seg1: f_id=" << seg1.f_id
+                              << ", bcs[0]=" << seg1.bcs[0].transpose()
+                              << ", bcs[1]=" << seg1.bcs[1].transpose() << std::endl;
+                    std::cout << "seg2: f_id=" << seg2.f_id
+                              << ", bcs[0]=" << seg2.bcs[0].transpose()
+                              << ", bcs[1]=" << seg2.bcs[1].transpose() << std::endl;
+                }
+            }
+        }
+    }
+    return intersections;
+}

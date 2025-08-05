@@ -138,3 +138,7 @@ void clean_up_curve(query_curve& curve);
 bool is_curve_valid(const query_curve& curve);
 
 // TODO: function that computes all the intersections between two curves
+int compute_intersections_between_two_curves(
+    const query_curve& curve1,
+    const query_curve& curve2,
+    bool verbose = false);
