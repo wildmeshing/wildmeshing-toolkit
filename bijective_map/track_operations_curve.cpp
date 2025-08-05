@@ -613,7 +613,8 @@ void handle_one_segment(
 
     // Update curve with new segments
     if (!new_segments.empty()) {
-        qs.bcs[1] = new_segments[0].bcs[1]; // First segment ends at first intersection
+        // qs.bcs[1] = new_segments[0].bcs[1]; // First segment ends at first intersection
+        qs = new_segments[0];
         curve.next_segment_ids[id] = curve.segments.size(); // Point to first new segment
 
         // Add all new segments
@@ -936,6 +937,11 @@ void handle_collapse_edge_curve(
             TTi,
             verbose);
     }
+
+    if (!is_curve_valid(curve)) {
+        std::cout << "Error: curve is not valid after EdgeCollapse" << std::endl;
+        throw std::runtime_error("Error: curve is not valid after EdgeCollapse");
+    }
 }
 
 void handle_non_collapse_operation_curve(
@@ -992,6 +998,11 @@ void handle_non_collapse_operation_curve(
             TT,
             TTi,
             verbose);
+    }
+
+    if (!is_curve_valid(curve)) {
+        std::cout << "Error: curve is not valid after " << operation_name << std::endl;
+        throw std::runtime_error("Error: curve is not valid after " + operation_name);
     }
 }
 
@@ -1101,4 +1112,73 @@ void clean_up_curve(query_curve& curve)
             throw std::runtime_error("Error: clean up curve failed, why?");
         }
     }
+}
+
+bool is_curve_valid(const query_curve& curve)
+{
+    if (curve.segments.empty()) {
+        std::cout << "Warning:curve is empty" << std::endl;
+        return true;
+    }
+
+    int cur_seg_id = 0;
+    bool is_valid = true;
+    while (cur_seg_id != -1 && cur_seg_id < curve.segments.size()) {
+        int next_seg_id = curve.next_segment_ids[cur_seg_id];
+        // std::cout << "cur_seg: " << cur_seg_id << " next_seg: " << next_seg_id << std::endl;
+        if (next_seg_id == -1) {
+            break;
+        }
+        const auto& cur_seg = curve.segments[cur_seg_id];
+        const auto& next_seg = curve.segments[next_seg_id];
+
+        // std::cout << "cur_seg.f_id: " << cur_seg.f_id << " next_seg.f_id: " << next_seg.f_id
+        //           << std::endl;
+        if (cur_seg.f_id == next_seg.f_id) {
+            Eigen::Vector3d bc_diff = next_seg.bcs[0] - cur_seg.bcs[1];
+            if (bc_diff.norm() > 1e-8) {
+                std::cout << "Error: bc_diff is too large" << std::endl;
+                std::cout << "cur_seg.bcs[1]: " << cur_seg.bcs[1].transpose() << std::endl;
+                std::cout << "next_seg.bcs[0]: " << next_seg.bcs[0].transpose() << std::endl;
+                std::cout << "bc_diff: " << bc_diff.transpose() << std::endl;
+                is_valid = false;
+                return is_valid;
+            }
+        } else {
+            for (int i = 0; i < 3; i++) {
+                if (cur_seg.bcs[1](i) != 0) {
+                    int vid = cur_seg.fv_ids[i];
+
+                    // find vid in next_seg.fv_ids
+                    auto it = std::find(next_seg.fv_ids.begin(), next_seg.fv_ids.end(), vid);
+                    if (it == next_seg.fv_ids.end()) {
+                        std::cout << "Error: vid not found in next_seg.fv_ids" << std::endl;
+                        std::cout << "cur_seg.fv_ids: " << cur_seg.fv_ids.transpose() << std::endl;
+                        std::cout << "cur_seg.bcs[0]: " << cur_seg.bcs[1].transpose() << std::endl;
+                        std::cout << "next_seg.fv_ids: " << next_seg.fv_ids.transpose()
+                                  << std::endl;
+                        std::cout << "next_seg.bcs[0]: " << next_seg.bcs[0].transpose()
+                                  << std::endl;
+                        is_valid = false;
+                    } else {
+                        int next_seg_vid_id = std::distance(next_seg.fv_ids.begin(), it);
+                        if (abs(next_seg.bcs[0](next_seg_vid_id) - cur_seg.bcs[1](i)) > 1e-8) {
+                            std::cout << "Error: bc_diff is too large" << std::endl;
+                            std::cout << "cur_seg.fv_ids: " << cur_seg.fv_ids.transpose()
+                                      << std::endl;
+                            std::cout << "cur_seg.bcs[0]: " << cur_seg.bcs[1].transpose()
+                                      << std::endl;
+                            std::cout << "next_seg.fv_ids: " << next_seg.fv_ids.transpose()
+                                      << std::endl;
+                            std::cout << "next_seg.bcs[0]: " << next_seg.bcs[0].transpose()
+                                      << std::endl;
+                            is_valid = false;
+                        }
+                    }
+                }
+            }
+        }
+        cur_seg_id = next_seg_id;
+    }
+    return is_valid;
 }

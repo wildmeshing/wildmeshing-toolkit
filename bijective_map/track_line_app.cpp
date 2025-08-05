@@ -533,12 +533,20 @@ void forward_track_iso_lines_app(
             return curve;
         };
 
+        // Compute the min and max for x and y in uv_in
+        double min_x = uv_in.col(0).minCoeff();
+        double max_x = uv_in.col(0).maxCoeff();
+        double min_y = uv_in.col(1).minCoeff();
+        double max_y = uv_in.col(1).maxCoeff();
+        double scale_x = max_x - min_x;
+        double scale_y = max_y - min_y;
         for (int k = 0; k < N - 1; k++) {
-            double value = 1.0 / N * (k + 1);
-            auto intersectionsX = computeIsoLineIntersectionsX(uv_in, Fuv_in, value);
+            double value_x = min_x + scale_x / N * (k + 1);
+            double value_y = min_y + scale_y / N * (k + 1);
+            auto intersectionsX = computeIsoLineIntersectionsX(uv_in, Fuv_in, value_x);
             auto curveX = curve_from_intersections(intersectionsX);
             curves.push_back(curveX);
-            auto intersectionsY = computeIsoLineIntersectionsY(uv_in, Fuv_in, value);
+            auto intersectionsY = computeIsoLineIntersectionsY(uv_in, Fuv_in, value_y);
             auto curveY = curve_from_intersections(intersectionsY);
             curves.push_back(curveY);
         }

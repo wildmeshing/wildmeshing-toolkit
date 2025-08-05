@@ -134,3 +134,7 @@ void handle_non_collapse_operation_curve(
 
 
 void clean_up_curve(query_curve& curve);
+
+bool is_curve_valid(const query_curve& curve);
+
+// TODO: function that computes all the intersections between two curves

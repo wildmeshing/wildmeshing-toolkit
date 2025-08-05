@@ -54,7 +54,7 @@ computeIsoLineIntersectionsX(const MatrixXd& uv, const MatrixXi& F, double x0)
         std::cerr << "Error: odd number of intersections!" << std::endl;
     }
 
-    for (int i = 0; i < intersections.size() - 2; i += 2) {
+    for (int i = 0; i < int(intersections.size()) - 2; i += 2) {
         if (intersections[i + 1].fid != intersections[i].fid) {
             if (intersections[i + 2].fid == intersections[i].fid) {
                 std::swap(intersections[i + 1], intersections[i + 2]);
@@ -107,7 +107,7 @@ computeIsoLineIntersectionsY(const Eigen::MatrixXd& uv, const Eigen::MatrixXi& F
         std::cerr << "Error: odd number of intersections!" << std::endl;
     }
 
-    for (int i = 0; i < intersections.size() - 2; i += 2) {
+    for (int i = 0; i < int(intersections.size()) - 2; i += 2) {
         if (intersections[i + 1].fid != intersections[i].fid) {
             if (intersections[i + 2].fid == intersections[i].fid) {
                 std::swap(intersections[i + 1], intersections[i + 2]);
