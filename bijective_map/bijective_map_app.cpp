@@ -82,6 +82,11 @@ int main(int argc, char** argv)
     std::cout << "F_out size" << F_out.rows() << ", " << F_out.cols() << std::endl;
     std::cout << "V_out size" << V_out.rows() << ", " << V_in.cols() << std::endl;
 
+
+    std::string model_name = "model_name";
+    model_name = initial_mesh_file.stem().string();
+    std::cout << "model_name: " << model_name << std::endl;
+
     if (application_name == "texture") {
         if (output_mesh_file.extension() == ".vtu") {
             std::cout << "\noutput mesh is a vtu file, not supported for texture transfer"
@@ -160,11 +165,12 @@ int main(int argc, char** argv)
             F_out,
             operation_logs_dir,
             N,
-            do_parallel);
+            do_parallel,
+            model_name);
     } else if (application_name == "check_iso_lines") {
         // check_iso_lines_step_by_step(V_in, F_in, V_out, F_out, operation_logs_dir);
-        std::vector<query_curve> curves_in = load_query_curves("curves.in");
-        std::vector<query_curve> curves_out = load_query_curves("curves.out");
+        std::vector<query_curve> curves_in = load_query_curves(model_name + "_curves.in");
+        std::vector<query_curve> curves_out = load_query_curves(model_name + "_curves.out");
         check_iso_lines(V_in, F_in, V_out, F_out, curves_in, curves_out);
     }
     return 0;

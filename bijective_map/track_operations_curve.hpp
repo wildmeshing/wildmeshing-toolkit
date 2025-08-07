@@ -82,12 +82,25 @@ bool intersectSegmentEdge_r(
     Eigen::Vector2<wmtk::Rational>& barycentric,
     bool debug_mode = false);
 
-// Main segment handling function
+// Main segment handling function (double version - for backward compatibility)
 void handle_one_segment(
     query_curve& curve,
     int id,
     std::vector<query_point>& query_points,
     const Eigen::MatrixXd& UV_joint,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    Eigen::MatrixXi& TT,
+    Eigen::MatrixXi& TTi,
+    bool verbose);
+
+// Optimized version that takes pre-converted rational UV coordinates
+void handle_one_segment_rational(
+    query_curve& curve,
+    int id,
+    std::vector<query_point>& query_points,
+    const Eigen::MatrixX<wmtk::Rational>& UV_joint_r,
     const Eigen::MatrixXi& F_before,
     const std::vector<int64_t>& v_id_map_joint,
     const std::vector<int64_t>& id_map_before,
@@ -141,4 +154,7 @@ bool is_curve_valid(const query_curve& curve);
 int compute_intersections_between_two_curves(
     const query_curve& curve1,
     const query_curve& curve2,
-    bool verbose = false);
+    bool verbose = true);
+
+
+int compute_curve_self_intersections(const query_curve& curve, bool verbose = true);

@@ -325,18 +325,33 @@ void track_line(path dirPath, query_curve& curve, bool do_forward)
         json operation_log;
         file >> operation_log;
 
+        int curve_size_before = curve.segments.size();
         std::cout << "Trace Operations number: " << file_id << std::endl;
-
+        igl::Timer timer;
+        timer.start();
         track_line_one_operation(operation_log, curve, do_forward);
+        timer.stop();
+        int curve_size_after = curve.segments.size();
+        std::cout << "curve size: " << curve_size_after << std::endl;
+        std::cout << "track_line_one_operation took " << timer.getElapsedTime() << " seconds."
+                  << std::endl;
 
         if (curve.segments.size() > clean_up_threshold * curve_old_size) {
             clean_up_curve(curve);
             curve_old_size = curve.segments.size();
+            {
+                int self_intersections = compute_curve_self_intersections(curve, true);
+                if (self_intersections != 0) {
+                    std::cout << "Error: self intersections are not correct" << std::endl;
+                    throw std::runtime_error("Error: self intersections are not correct");
+                }
+            }
         }
+
         file.close();
     }
 
-    clean_up_curve(curve);
+    // clean_up_curve(curve);
 }
 
 void track_lines(path dirPath, std::vector<query_curve>& curves, bool do_forward, bool do_parallel)
@@ -490,7 +505,8 @@ void forward_track_iso_lines_app(
     const Eigen::MatrixXi& F_out,
     const path& operation_logs_dir,
     int N,
-    bool do_parallel)
+    bool do_parallel,
+    const std::string& model_name)
 {
     auto to_three_cols = [](const Eigen::MatrixXd& V) {
         if (V.cols() == 2) {
@@ -575,23 +591,37 @@ void forward_track_iso_lines_app(
         viewer.launch();
     }
 
-    save_query_curves(curves, "curves.in");
+    save_query_curves(curves, model_name + "_curves.in");
     // write curves to vtu
     {
         std::cout << "\n=== Writing initial curves to VTU ===" << std::endl;
-        write_curves_to_vtu(curves, V_in, "curves_in.vtu");
+        write_curves_to_vtu(curves, V_in, model_name + "_curves_in.vtu");
+    }
+
+    // TODO: get inference
+    std::vector<std::vector<int>> intersection_reference;
+    intersection_reference.resize(curves.size());
+    for (int i = 0; i < curves.size(); i++) {
+        intersection_reference[i].resize(curves.size());
+        intersection_reference[i][i] = compute_curve_self_intersections(curves[i]);
+        for (int j = i + 1; j < curves.size(); j++) {
+            intersection_reference[i][j] =
+                compute_intersections_between_two_curves(curves[i], curves[j]);
+        }
     }
 
     track_lines(operation_logs_dir, curves, true, do_parallel);
 
 
-    save_query_curves(curves, "curves.out");
+    save_query_curves(curves, model_name + "_curves.out");
 
     // write final curves to vtu
     {
         std::cout << "\n=== Writing final curves to VTU ===" << std::endl;
-        write_curves_to_vtu(curves, V_out, "curves_out.vtu");
+        write_curves_to_vtu(curves, V_out, model_name + "_curves_out.vtu");
     }
+
+    check_curves_topology(curves, intersection_reference);
 
     {
         igl::opengl::glfw::Viewer viewer;
@@ -615,6 +645,33 @@ void forward_track_iso_lines_app(
         viewer.launch();
     }
 }
+
+
+void check_curves_topology(
+    const std::vector<query_curve>& curves,
+    const std::vector<std::vector<int>>& intersection_reference)
+{
+    for (int i = 0; i < curves.size(); i++) {
+        int self_intersections = compute_curve_self_intersections(curves[i]);
+        std::cout << "curve " << i << " has " << self_intersections << " self intersections"
+                  << std::endl;
+        if (self_intersections != intersection_reference[i][i]) {
+            std::cout << "Error: self intersections are not correct" << std::endl;
+            std::cout << "expected: " << intersection_reference[i][i] << std::endl;
+        }
+        for (int j = i + 1; j < curves.size(); j++) {
+            int intersections = compute_intersections_between_two_curves(curves[i], curves[j]);
+            std::cout << "curve " << i << " and curve " << j << " intersect " << intersections
+                      << " times" << std::endl;
+            if (intersections != intersection_reference[i][j]) {
+                std::cout << "Error: intersections between curve " << i << " and curve " << j
+                          << " are not correct" << std::endl;
+                std::cout << "expected: " << intersection_reference[i][j] << std::endl;
+            }
+        }
+    }
+}
+
 
 void check_iso_lines(
     const Eigen::MatrixXd& V_in,

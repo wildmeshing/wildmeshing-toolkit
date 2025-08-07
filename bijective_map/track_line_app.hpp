@@ -45,7 +45,8 @@ void forward_track_iso_lines_app(
     const Eigen::MatrixXi& F_out,
     const path& operation_logs_dir,
     int N = 5,
-    bool do_parallel = true);
+    bool do_parallel = true,
+    const std::string& model_name = "");
 
 // check the result of iso-lines
 void check_iso_lines(
@@ -57,6 +58,13 @@ void check_iso_lines(
     const std::vector<query_curve>& curves_out,
     bool render_before = true,
     bool render_after = true);
+
+
+// TODO: implement this function
+void check_curves_topology(
+    const std::vector<query_curve>& curves,
+    const std::vector<std::vector<int>>& intersection_reference);
+
 
 // only for debug, check iso-lines step by step
 #ifdef DEBUG_CURVES

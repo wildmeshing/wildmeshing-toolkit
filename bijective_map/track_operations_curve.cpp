@@ -1,5 +1,6 @@
 #include "track_operations_curve.hpp"
 #include <igl/opengl/glfw/Viewer.h>
+#include <igl/Timer.h>
 
 // Helper function to get all possible triangle IDs for a point
 std::vector<int> get_possible_triangle_ids(
@@ -300,12 +301,12 @@ bool intersectSegmentEdge_r(
     return false;
 }
 
-// Main segment handling function
-void handle_one_segment(
+// Main segment handling function (rational version - optimized)
+void handle_one_segment_rational(
     query_curve& curve,
     int id,
     std::vector<query_point>& query_points,
-    const Eigen::MatrixXd& UV_joint,
+    const Eigen::MatrixX<wmtk::Rational>& UV_joint_r,
     const Eigen::MatrixXi& F_before,
     const std::vector<int64_t>& v_id_map_joint,
     const std::vector<int64_t>& id_map_before,
@@ -313,6 +314,7 @@ void handle_one_segment(
     Eigen::MatrixXi& TTi,
     bool verbose)
 {
+
     // for debug
     if (verbose) {
         std::cout << "F_before:" << std::endl;
@@ -346,14 +348,6 @@ void handle_one_segment(
         qs.bcs[1] = same_triangle_result.transformed_qp2.bc;
         qs.fv_ids = same_triangle_result.transformed_qp1.fv_ids;
         return;
-    }
-
-    // Convert the UV_Joint to Rational for exact computation
-    Eigen::MatrixX<wmtk::Rational> UV_joint_r(UV_joint.rows(), UV_joint.cols());
-    for (int i = 0; i < UV_joint.rows(); i++) {
-        for (int j = 0; j < UV_joint.cols(); j++) {
-            UV_joint_r(i, j) = wmtk::Rational(UV_joint(i, j));
-        }
     }
 
     // Get starting point and target point
@@ -410,6 +404,7 @@ void handle_one_segment(
 
     // Ray tracing loop
     int iteration = 0;
+    double time_intersection_tests_total = 0;
     while (current_face != end_face_local) {
         iteration++;
         if (verbose) {
@@ -499,25 +494,38 @@ void handle_one_segment(
             TT,
             TTi);
 
-        // Find next intersection using rational arithmetic
+        // Find next intersection using rational arithmetic with detailed profiling
         bool found_intersection = false;
         Eigen::Vector2<wmtk::Rational> next_intersection;
         Eigen::Vector2<wmtk::Rational> next_bc_edge;
         int next_face = -1;
         int selected_edge_idx = -1;
-        // std::cout << "Testing intersections:" << std::endl;
+        
+        int num_candidate_edges = candidate_edges.size();
+        double time_edge_vertex_lookup = 0;
+        double time_intersection_computation = 0;
+        igl::Timer intersection_timer;
+        if (verbose) intersection_timer.start();
+        
         for (int i = 0; i < candidate_edges.size(); i++) {
             const auto& edge_tri_pair = candidate_edges[i];
             const auto& edge = edge_tri_pair.edge;
             int edge_triangle = edge_tri_pair.triangle_id;
 
-            // Now edge.first and edge.second are local vertex IDs, can use UV_joint directly
+            // Time vertex lookup (only if verbose)
+            igl::Timer lookup_timer;
+            if (verbose) lookup_timer.start();
             Eigen::Vector2<wmtk::Rational> edge_start = UV_joint_r.row(edge.first).transpose();
             Eigen::Vector2<wmtk::Rational> edge_end = UV_joint_r.row(edge.second).transpose();
+            if (verbose) time_edge_vertex_lookup += lookup_timer.getElapsedTime();
 
+            // Time intersection computation (only if verbose)
+            igl::Timer compute_timer;
+            if (verbose) compute_timer.start();
             Eigen::Vector2<wmtk::Rational> edge_bc;
             bool has_intersection =
                 intersectSegmentEdge_r(current_pos, b, edge_start, edge_end, edge_bc, false);
+            if (verbose) time_intersection_computation += compute_timer.getElapsedTime();
 
             if (verbose) {
                 std::cout << "  Edge " << i << " (" << edge.first << ", " << edge.second
@@ -543,6 +551,12 @@ void handle_one_segment(
             } else {
                 // std::cout << "no intersection" << std::endl;
             }
+        }
+
+        double total_intersection_time = 0;
+        if (verbose) {
+            total_intersection_time = intersection_timer.getElapsedTime();
+            time_intersection_tests_total += total_intersection_time;
         }
 
         if (!found_intersection) {
@@ -598,6 +612,14 @@ void handle_one_segment(
         // Update current_bc to match the new segment's end coordinates
         current_bc << wmtk::Rational(new_seg.bcs[1](0)), wmtk::Rational(new_seg.bcs[1](1)),
             wmtk::Rational(new_seg.bcs[1](2));
+            
+        // Print detailed intersection profiling for this iteration (only if verbose)
+        if (verbose) {
+            std::cout << "Iteration " << iteration << " - Intersection Tests: " << total_intersection_time * 1000 << " ms "
+                      << "[" << num_candidate_edges << " edges] "
+                      << "(Vertex lookup: " << time_edge_vertex_lookup * 1000 << " ms, "
+                      << "Intersection computation: " << time_intersection_computation * 1000 << " ms)" << std::endl;
+        }
     }
 
     // Add final segment to target (only if we didn't exit early from the while loop)
@@ -647,7 +669,14 @@ void handle_one_segment(
     }
     if (verbose && false) {
         igl::opengl::glfw::Viewer viewer;
-        viewer.data().set_mesh(UV_joint, F_before);
+        // Convert rational UV back to double for visualization
+        Eigen::MatrixXd UV_joint_double(UV_joint_r.rows(), UV_joint_r.cols());
+        for (int i = 0; i < UV_joint_r.rows(); i++) {
+            for (int j = 0; j < UV_joint_r.cols(); j++) {
+                UV_joint_double(i, j) = UV_joint_r(i, j).to_double();
+            }
+        }
+        viewer.data().set_mesh(UV_joint_double, F_before);
         for (const auto& seg : new_segments) {
             Eigen::MatrixXd pts(2, 3);
             for (int i = 0; i < 2; i++) {
@@ -656,7 +685,7 @@ void handle_one_segment(
                     int local_vid =
                         std::find(v_id_map_joint.begin(), v_id_map_joint.end(), seg.fv_ids(j)) -
                         v_id_map_joint.begin();
-                    p += UV_joint.row(local_vid).transpose() * seg.bcs[i](j);
+                    p += UV_joint_double.row(local_vid).transpose() * seg.bcs[i](j);
                 }
                 pts.row(i) = p;
             }
@@ -666,8 +695,38 @@ void handle_one_segment(
         }
         viewer.launch();
     }
-    // std::cout << "Ray tracing completed, added " << new_segments.size() << " new segments"
-    //           << std::endl;
+    // Print intersection tests summary (only if verbose)
+    if (verbose && iteration > 0) {
+        std::cout << "\n=== Intersection Tests Summary ===" << std::endl;
+        std::cout << "  Total intersection time: " << time_intersection_tests_total * 1000 << " ms" << std::endl;
+        std::cout << "  Number of iterations: " << iteration << std::endl;
+        std::cout << "  Average per iteration: " << (time_intersection_tests_total/iteration) * 1000 << " ms" << std::endl;
+    }
+}
+
+// Double version that converts to rational and calls optimized version
+void handle_one_segment(
+    query_curve& curve,
+    int id,
+    std::vector<query_point>& query_points,
+    const Eigen::MatrixXd& UV_joint,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    Eigen::MatrixXi& TT,
+    Eigen::MatrixXi& TTi,
+    bool verbose)
+{
+    // Convert to rational once
+    Eigen::MatrixX<wmtk::Rational> UV_joint_r(UV_joint.rows(), UV_joint.cols());
+    for (int i = 0; i < UV_joint.rows(); i++) {
+        for (int j = 0; j < UV_joint.cols(); j++) {
+            UV_joint_r(i, j) = wmtk::Rational(UV_joint(i, j));
+        }
+    }
+    
+    // Call the optimized rational version
+    handle_one_segment_rational(curve, id, query_points, UV_joint_r, F_before, v_id_map_joint, id_map_before, TT, TTi, verbose);
 }
 
 // Old version for comparison
@@ -902,6 +961,14 @@ void handle_collapse_edge_curve(
     int curve_length = curve.segments.size();
     Eigen::MatrixXi TT, TTi;
 
+    // Convert UV_joint to rational once for all segments (optimization)
+    Eigen::MatrixX<wmtk::Rational> UV_joint_r(UV_joint.rows(), UV_joint.cols());
+    for (int i = 0; i < UV_joint.rows(); i++) {
+        for (int j = 0; j < UV_joint.cols(); j++) {
+            UV_joint_r(i, j) = wmtk::Rational(UV_joint(i, j));
+        }
+    }
+
     for (int id = 0; id < curve_length; id++) {
         ////////////////////////////////////
         // map the two end points of one segment
@@ -925,11 +992,11 @@ void handle_collapse_edge_curve(
             id_map_after,
             query_points);
 
-        handle_one_segment(
+        handle_one_segment_rational(
             curve,
             id,
             query_points,
-            UV_joint,
+            UV_joint_r,
             F_before,
             v_id_map_joint,
             id_map_before,
@@ -963,6 +1030,14 @@ void handle_non_collapse_operation_curve(
     int curve_length = curve.segments.size();
     Eigen::MatrixXi TT, TTi;
 
+    // Convert V_before to rational once for all segments (optimization)
+    Eigen::MatrixX<wmtk::Rational> V_before_r(V_before.rows(), V_before.cols());
+    for (int i = 0; i < V_before.rows(); i++) {
+        for (int j = 0; j < V_before.cols(); j++) {
+            V_before_r(i, j) = wmtk::Rational(V_before(i, j));
+        }
+    }
+
     for (int id = 0; id < curve_length; id++) {
         query_segment& qs = curve.segments[id];
         query_point qp0 = {qs.f_id, qs.bcs[0], qs.fv_ids};
@@ -987,11 +1062,11 @@ void handle_non_collapse_operation_curve(
             operation_name);
 
 
-        handle_one_segment(
+        handle_one_segment_rational(
             curve,
             id,
             query_points,
-            V_before,
+            V_before_r,
             F_before,
             v_id_map_before,
             id_map_before,
@@ -1027,6 +1102,16 @@ void clean_up_curve(query_curve& curve)
 
         query_segment& current_segment = curve.segments[current_id];
 
+        // Convert to rational arithmetic for exact collinearity check (only first 2 components)
+        Eigen::Vector2<wmtk::Rational> start_bc_r(
+            wmtk::Rational(current_segment.bcs[0](0)),
+            wmtk::Rational(current_segment.bcs[0](1)));
+        
+        Eigen::Vector2<wmtk::Rational> current_slope_r = 
+            Eigen::Vector2<wmtk::Rational>(
+                wmtk::Rational(current_segment.bcs[1](0)),
+                wmtk::Rational(current_segment.bcs[1](1))) - start_bc_r;
+
         // Find consecutive segments that can be merged
         std::vector<int> segments_to_merge = {current_id};
         int next_id = curve.next_segment_ids[current_id];
@@ -1035,15 +1120,49 @@ void clean_up_curve(query_curve& curve)
             query_segment& next_segment = curve.segments[next_id];
 
             // Check if they can be merged (same origin_segment_id and f_id)
-            if (current_segment.origin_segment_id == next_segment.origin_segment_id &&
-                current_segment.f_id == next_segment.f_id) {
-                segments_to_merge.push_back(next_id);
-                next_id = curve.next_segment_ids[next_id];
-            } else {
-                break;
+            if (current_segment.origin_segment_id != next_segment.origin_segment_id ||
+                current_segment.f_id != next_segment.f_id) {
+                break; // Different segments or faces, cannot merge
             }
+
+            // Convert next segment to rational arithmetic (only first 2 components)
+            Eigen::Vector2<wmtk::Rational> next_slope_r = 
+                Eigen::Vector2<wmtk::Rational>(
+                    wmtk::Rational(next_segment.bcs[1](0)),
+                    wmtk::Rational(next_segment.bcs[1](1))) - start_bc_r;
+
+            // Check collinearity using cross product in 2D (exact test)
+            // Two 2D vectors are collinear if their cross product is zero
+            wmtk::Rational cross_product_2d = current_slope_r(0) * next_slope_r(1) - current_slope_r(1) * next_slope_r(0);
+            bool is_collinear = (cross_product_2d == wmtk::Rational(0));
+
+            if (!is_collinear) {
+                break; // not collinear, stop merging
+            }
+
+            segments_to_merge.push_back(next_id);
+            next_id = curve.next_segment_ids[next_id];
         }
 
+        // for debug
+        {
+            if (segments_to_merge.size() > 1) {
+                std::cout << "Merging segments: ";
+                for (int idx : segments_to_merge) {
+                    const auto& seg = curve.segments[idx];
+                    std::cout << "\n  seg id: " << idx << ", f_id: " << seg.f_id
+                              << ", origin_segment_id: " << seg.origin_segment_id << ", bcs[0]: ["
+                              << seg.bcs[0].transpose() << "]" << ", bcs[1]: ["
+                              << seg.bcs[1].transpose() << "]" << ", fv_ids: [";
+                    for (int k = 0; k < seg.fv_ids.size(); ++k) {
+                        std::cout << seg.fv_ids[k];
+                        if (k + 1 < seg.fv_ids.size()) std::cout << ", ";
+                    }
+                    std::cout << "]";
+                }
+                std::cout << std::endl;
+            }
+        }
         // Create merged segment
         query_segment merged_segment;
         merged_segment.f_id = current_segment.f_id;
@@ -1154,7 +1273,7 @@ bool is_curve_valid(const query_curve& curve)
                     if (it == next_seg.fv_ids.end()) {
                         std::cout << "Error: vid not found in next_seg.fv_ids" << std::endl;
                         std::cout << "cur_seg.fv_ids: " << cur_seg.fv_ids.transpose() << std::endl;
-                        std::cout << "cur_seg.bcs[0]: " << cur_seg.bcs[1].transpose() << std::endl;
+                        std::cout << "cur_seg.bcs[1]: " << cur_seg.bcs[1].transpose() << std::endl;
                         std::cout << "next_seg.fv_ids: " << next_seg.fv_ids.transpose()
                                   << std::endl;
                         std::cout << "next_seg.bcs[0]: " << next_seg.bcs[0].transpose()
@@ -1166,7 +1285,7 @@ bool is_curve_valid(const query_curve& curve)
                             std::cout << "Error: bc_diff is too large" << std::endl;
                             std::cout << "cur_seg.fv_ids: " << cur_seg.fv_ids.transpose()
                                       << std::endl;
-                            std::cout << "cur_seg.bcs[0]: " << cur_seg.bcs[1].transpose()
+                            std::cout << "cur_seg.bcs[1]: " << cur_seg.bcs[1].transpose()
                                       << std::endl;
                             std::cout << "next_seg.fv_ids: " << next_seg.fv_ids.transpose()
                                       << std::endl;
@@ -1213,9 +1332,55 @@ int compute_intersections_between_two_curves(
                     std::cout << "seg2: f_id=" << seg2.f_id
                               << ", bcs[0]=" << seg2.bcs[0].transpose()
                               << ", bcs[1]=" << seg2.bcs[1].transpose() << std::endl;
+                    std::cout << "intersection position at t = " << bc_tmp(0).to_double()
+                              << std::endl;
                 }
             }
         }
     }
+    return intersections;
+}
+
+
+int compute_curve_self_intersections(const query_curve& curve, bool verbose)
+{
+    int intersections = 0;
+
+    for (int i = 0; i < curve.segments.size(); i++) {
+        for (int j = i + 1; j < curve.segments.size(); j++) {
+            if (curve.next_segment_ids[i] == j || curve.next_segment_ids[j] == i) {
+                continue;
+            }
+
+            const auto& seg1 = curve.segments[i];
+            const auto& seg2 = curve.segments[j];
+            if (seg1.f_id != seg2.f_id) {
+                continue;
+            }
+
+            Eigen::Vector2<wmtk::Rational> s1_a, s1_b, s2_a, s2_b;
+            s1_a << wmtk::Rational(seg1.bcs[0](0)), wmtk::Rational(seg1.bcs[0](1));
+            s1_b << wmtk::Rational(seg1.bcs[1](0)), wmtk::Rational(seg1.bcs[1](1));
+            s2_a << wmtk::Rational(seg2.bcs[0](0)), wmtk::Rational(seg2.bcs[0](1));
+            s2_b << wmtk::Rational(seg2.bcs[1](0)), wmtk::Rational(seg2.bcs[1](1));
+
+            Eigen::Vector2<wmtk::Rational> bc_tmp;
+            if (intersectSegmentEdge_r(s1_a, s1_b, s2_a, s2_b, bc_tmp, false)) {
+                intersections++;
+                if (verbose) {
+                    // std::cout << "Intersection found in face " << seg1.f_id << std::endl;
+                    std::cout << "seg1: f_id=" << seg1.f_id
+                              << ", bcs[0]=" << seg1.bcs[0].transpose()
+                              << ", bcs[1]=" << seg1.bcs[1].transpose() << std::endl;
+                    std::cout << "seg2: f_id=" << seg2.f_id
+                              << ", bcs[0]=" << seg2.bcs[0].transpose()
+                              << ", bcs[1]=" << seg2.bcs[1].transpose() << std::endl;
+                    std::cout << "intersection position at t = " << bc_tmp(0).to_double()
+                              << std::endl;
+                }
+            }
+        }
+    }
+
     return intersections;
 }
