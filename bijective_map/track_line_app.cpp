@@ -3,6 +3,7 @@
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/parallel_for.h>
 #include <wmtk/utils/orient.hpp>
+#include "generate_plane_curves.hpp"
 #include "vtu_utils.hpp"
 
 bool validate_and_convert_curves_to_edge_mesh(
@@ -39,10 +40,31 @@ bool validate_and_convert_curves_to_edge_mesh(
         int current_seg_id = 0;
         int segments_processed = 0;
 
+        {
+            // Find the id that is not existed in the next_segment_ids
+            std::vector<bool> next_segment_ids_exist(curve.segments.size(), false);
+            int cnt = 0;
+            for (int i = 0; i < curve.next_segment_ids.size(); i++) {
+                if (curve.next_segment_ids[i] != -1) {
+                    next_segment_ids_exist[curve.next_segment_ids[i]] = true;
+                    cnt++;
+                }
+            }
+
+            if (cnt != curve.next_segment_ids.size()) {
+                for (int i = 0; i < curve.next_segment_ids.size(); i++) {
+                    if (!next_segment_ids_exist[i]) {
+                        current_seg_id = i;
+                        break;
+                    }
+                }
+            }
+        }
+
+        std::cout << "start seg id: " << current_seg_id << std::endl;
+
         while (current_seg_id != -1 && current_seg_id < (int)curve.segments.size()) {
             if (visited[current_seg_id]) {
-                std::cout << "Warning: Segment " << current_seg_id
-                          << " already visited - breaking to avoid loop" << std::endl;
                 break;
             }
 
@@ -351,7 +373,7 @@ void track_line(path dirPath, query_curve& curve, bool do_forward)
         file.close();
     }
 
-    // clean_up_curve(curve);
+    clean_up_curve(curve);
 }
 
 void track_lines(path dirPath, std::vector<query_curve>& curves, bool do_forward, bool do_parallel)
@@ -619,6 +641,115 @@ void forward_track_iso_lines_app(
     {
         std::cout << "\n=== Writing final curves to VTU ===" << std::endl;
         write_curves_to_vtu(curves, V_out, model_name + "_curves_out.vtu");
+    }
+
+    check_curves_topology(curves, intersection_reference);
+
+    {
+        igl::opengl::glfw::Viewer viewer;
+        viewer.data().set_mesh(V_out, F_out);
+        viewer.data().point_size /= 3;
+        for (const auto& curve : curves) {
+            for (const auto& seg : curve.segments) {
+                Eigen::MatrixXd pts(2, 3);
+                for (int i = 0; i < 2; i++) {
+                    Eigen::Vector3d p(0, 0, 0);
+                    for (int j = 0; j < 3; j++) {
+                        p += V_out_3d.row(seg.fv_ids[j]) * seg.bcs[i](j);
+                    }
+                    pts.row(i) = p;
+                }
+                viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
+                viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
+                viewer.data().add_edges(pts.row(0), pts.row(1), Eigen::RowVector3d(1, 0, 0));
+            }
+        }
+        viewer.launch();
+    }
+}
+
+
+void forward_track_plane_curves_app(
+    const Eigen::MatrixXd& V_in,
+    const Eigen::MatrixXi& F_in,
+    const Eigen::MatrixXd& V_out,
+    const Eigen::MatrixXi& F_out,
+    const path& operation_logs_dir,
+    int N,
+    bool do_parallel,
+    const std::string& model_name)
+{
+    if (V_in.cols() == 2) {
+        throw std::runtime_error("V_in is 2D, not supported");
+    }
+
+    auto to_three_cols = [](const Eigen::MatrixXd& V) {
+        if (V.cols() == 2) {
+            Eigen::MatrixXd V_temp(V.rows(), 3);
+            V_temp << V, Eigen::VectorXd::Zero(V.rows());
+            return V_temp;
+        } else {
+            return V;
+        }
+    };
+    Eigen::MatrixXd V_in_3d = to_three_cols(V_in);
+    Eigen::MatrixXd V_out_3d = to_three_cols(V_out);
+
+    // Get all curves using the plane curve generation
+    std::vector<query_curve> curves = generatePlaneCurves(V_in, F_in, N);
+    auto curves_origin = curves;
+
+    if (false) {
+        igl::opengl::glfw::Viewer viewer;
+        viewer.data().set_mesh(V_in, F_in);
+        viewer.data().point_size /= 3;
+        for (const auto curve_origin : curves_origin) {
+            for (const auto& seg : curve_origin.segments) {
+                Eigen::MatrixXd pts(2, 3);
+                for (int i = 0; i < 2; i++) {
+                    Eigen::Vector3d p(0, 0, 0);
+                    for (int j = 0; j < 3; j++) {
+                        p += V_in_3d.row(seg.fv_ids[j]) * seg.bcs[i](j);
+                    }
+                    pts.row(i) = p;
+                }
+                viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
+                viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
+                viewer.data().add_edges(pts.row(0), pts.row(1), Eigen::RowVector3d(1, 0, 0));
+            }
+        }
+        viewer.launch();
+    }
+
+    save_query_curves(curves, model_name + "_plane_curves.in");
+    // write curves to vtu
+    {
+        std::cout << "\n=== Writing initial plane curves to VTU ===" << std::endl;
+        write_curves_to_vtu(curves, V_in, model_name + "_plane_curves_in.vtu");
+    }
+
+    // TODO: get inference
+    std::vector<std::vector<int>> intersection_reference;
+    intersection_reference.resize(curves.size());
+    for (int i = 0; i < curves.size(); i++) {
+        intersection_reference[i].resize(curves.size());
+        intersection_reference[i][i] = compute_curve_self_intersections(curves[i]);
+        for (int j = i + 1; j < curves.size(); j++) {
+            intersection_reference[i][j] =
+                compute_intersections_between_two_curves(curves[i], curves[j]);
+        }
+    }
+
+    return;
+
+    track_lines(operation_logs_dir, curves, true, do_parallel);
+
+    save_query_curves(curves, model_name + "_plane_curves.out");
+
+    // write final curves to vtu
+    {
+        std::cout << "\n=== Writing final plane curves to VTU ===" << std::endl;
+        write_curves_to_vtu(curves, V_out, model_name + "_plane_curves_out.vtu");
     }
 
     check_curves_topology(curves, intersection_reference);

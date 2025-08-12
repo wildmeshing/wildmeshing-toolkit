@@ -48,6 +48,17 @@ void forward_track_iso_lines_app(
     bool do_parallel = true,
     const std::string& model_name = "");
 
+// demo application on forward tracking 3D curves from plane intersections
+void forward_track_plane_curves_app(
+    const Eigen::MatrixXd& V_in,
+    const Eigen::MatrixXi& F_in,
+    const Eigen::MatrixXd& V_out,
+    const Eigen::MatrixXi& F_out,
+    const path& operation_logs_dir,
+    int N = 5,
+    bool do_parallel = true,
+    const std::string& model_name = "");
+
 // check the result of iso-lines
 void check_iso_lines(
     const Eigen::MatrixXd& V_in,

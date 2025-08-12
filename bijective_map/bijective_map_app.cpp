@@ -172,6 +172,16 @@ int main(int argc, char** argv)
         std::vector<query_curve> curves_in = load_query_curves(model_name + "_curves.in");
         std::vector<query_curve> curves_out = load_query_curves(model_name + "_curves.out");
         check_iso_lines(V_in, F_in, V_out, F_out, curves_in, curves_out);
+    } else if (application_name == "plane_curves") {
+        forward_track_plane_curves_app(
+            V_in,
+            F_in,
+            V_out,
+            F_out,
+            operation_logs_dir,
+            N,
+            !no_parallel,
+            model_name);
     }
     return 0;
 }

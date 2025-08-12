@@ -108,9 +108,13 @@ class BijectiveMapHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(result).encode())
     
     def run_bijective_map_app(self, params):
-        """Execute the bijective_map_app with given parameters"""
+        """Execute the bijective_map_app or plane curves app with given parameters"""
         try:
-            # Build command
+            # For plane_curves mode, use a different executable
+            if params.get('app_mode') == 'plane_curves':
+                return self.run_plane_curves_app(params)
+            
+            # Build command for regular bijective_map_app
             cmd = ['./build/bijective_map/bijective_map_app']
             
             # Required parameters
@@ -160,6 +164,114 @@ class BijectiveMapHandler(BaseHTTPRequestHandler):
             
         except Exception as e:
             return {'success': False, 'error': str(e)}
+    
+    def run_plane_curves_app(self, params):
+        """Execute a simple plane curves generation app"""
+        try:
+            # For now, create a simple test program that calls our plane curves function
+            # In the future, this could be a separate executable
+            
+            import tempfile
+            import textwrap
+            
+            # Required parameters
+            if not params.get('input_file'):
+                return {'success': False, 'error': 'Input mesh file is required for plane curves'}
+            if not params.get('output_file'):
+                return {'success': False, 'error': 'Output file is required'}
+            
+            # Get N parameter (default 5)
+            N = int(params.get('N_plane', 5))
+            
+            # Create a temporary C++ program that uses our plane curves function
+            cpp_code = textwrap.dedent(f'''
+            #include <iostream>
+            #include <igl/readOBJ.h>
+            #include <igl/writeOBJ.h>
+            #include "generate_plane_curves.hpp"
+            #include "track_operations.hpp"
+            
+            int main() {{
+                std::cout << "=== Plane Curves Generator ===" << std::endl;
+                std::cout << "Input file: {params['input_file']}" << std::endl;
+                std::cout << "Output file: {params['output_file']}" << std::endl;
+                std::cout << "N (planes per axis): {N}" << std::endl;
+                
+                // Load mesh
+                Eigen::MatrixXd V;
+                Eigen::MatrixXi F;
+                
+                if (!igl::readOBJ("{params['input_file']}", V, F)) {{
+                    std::cerr << "Error: Could not read mesh file" << std::endl;
+                    return 1;
+                }}
+                
+                std::cout << "Loaded mesh: " << V.rows() << " vertices, " << F.rows() << " faces" << std::endl;
+                
+                // Generate plane curves
+                auto curves = generatePlaneCurves(V, F, {N});
+                
+                std::cout << "Generated " << curves.size() << " curves total" << std::endl;
+                
+                // Save curves
+                save_query_curves(curves, "{params['output_file']}");
+                std::cout << "Saved curves to: {params['output_file']}" << std::endl;
+                
+                return 0;
+            }}
+            ''')
+            
+            # Write temporary C++ file
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.cpp', delete=False) as f:
+                f.write(cpp_code)
+                temp_cpp_file = f.name
+            
+            # Compile and run
+            temp_executable = temp_cpp_file.replace('.cpp', '')
+            
+            # Compilation command
+            compile_cmd = [
+                'g++', '-std=c++17', '-O2',
+                '-I./src', '-I./build/_deps', '-I./bijective_map',
+                '-I/usr/local/include/eigen3',
+                temp_cpp_file,
+                './bijective_map/generate_plane_curves.cpp',
+                './bijective_map/track_operations.cpp',
+                '-o', temp_executable
+            ]
+            
+            print(f"Compiling: {{' '.join(compile_cmd)}}")
+            compile_result = subprocess.run(compile_cmd, capture_output=True, text=True, cwd=Path.cwd())
+            
+            if compile_result.returncode != 0:
+                return {{
+                    'success': False,
+                    'error': f'Compilation failed: {{compile_result.stderr}}',
+                    'stdout': compile_result.stdout,
+                    'stderr': compile_result.stderr
+                }}
+            
+            # Run the executable
+            print(f"Running: {{temp_executable}}")
+            run_result = subprocess.run([temp_executable], capture_output=True, text=True, cwd=Path.cwd())
+            
+            # Clean up
+            try:
+                Path(temp_cpp_file).unlink()
+                Path(temp_executable).unlink()
+            except:
+                pass
+            
+            return {{
+                'success': run_result.returncode == 0,
+                'returncode': run_result.returncode,
+                'stdout': run_result.stdout,
+                'stderr': run_result.stderr,
+                'command': f'Generated and ran plane curves program'
+            }}
+            
+        except Exception as e:
+            return {{'success': False, 'error': str(e)}}
     
     def get_main_page(self):
         return """
@@ -519,6 +631,10 @@ class BijectiveMapHandler(BaseHTTPRequestHandler):
                         <strong>check_iso_lines</strong><br>
                         <small>Check iso lines</small>
                     </div>
+                    <div class="mode-option" data-mode="plane_curves">
+                        <strong>plane_curves</strong><br>
+                        <small>Generate plane curves</small>
+                    </div>
                 </div>
                 <input type="hidden" id="app_mode" name="app_mode" value="back">
             </div>
@@ -587,6 +703,19 @@ class BijectiveMapHandler(BaseHTTPRequestHandler):
                 </div>
             </div>
             
+            <div class="optional-section" id="planeCurvesOptions" style="display: none;">
+                <h3>Plane Curves Options</h3>
+                <p><em>Generate curves from mesh-plane intersections</em></p>
+                
+                <div style="display: flex; gap: 20px;">
+                    <div class="form-group">
+                        <label for="N_plane">Number of Planes per Axis (N)</label>
+                        <input type="number" id="N_plane" name="N_plane" value="5" min="1" max="50">
+                        <small style="color: #666; font-size: 12px;">Number of planes per axis (x, y, z) for curve generation (default: 5)</small>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Command Preview -->
             <div class="form-group">
                 <label>Command Preview</label>
@@ -599,6 +728,15 @@ class BijectiveMapHandler(BaseHTTPRequestHandler):
             <button type="submit" id="runBtn">▶️ Run Bijective Map App</button>
             <button type="button" onclick="clearForm()">🗑️ Clear Form</button>
         </form>
+        
+        <!-- Live Terminal Output -->
+        <div class="result-section" id="liveOutput" style="display: none;">
+            <h3>🖥️ Live Terminal Output</h3>
+            <div class="log-output" id="liveTerminal" style="height: 200px; overflow-y: auto;">
+                <div style="color: #888; text-align: center; padding: 20px;">Terminal output will appear here...</div>
+            </div>
+            <button type="button" onclick="clearLiveOutput()">🗑️ Clear Output</button>
+        </div>
         
         <!-- Results -->
         <div class="result-section" id="results">
@@ -651,6 +789,8 @@ class BijectiveMapHandler(BaseHTTPRequestHandler):
                     selectedMode === 'texture' ? 'block' : 'none';
                 document.getElementById('isoLinesOptions').style.display = 
                     selectedMode === 'iso_lines' ? 'block' : 'none';
+                document.getElementById('planeCurvesOptions').style.display = 
+                    selectedMode === 'plane_curves' ? 'block' : 'none';
                 
                 updateCommandPreview();
             });
@@ -670,6 +810,9 @@ class BijectiveMapHandler(BaseHTTPRequestHandler):
         // Add specific event listeners for iso_lines options
         document.getElementById('N').addEventListener('input', updateCommandPreview);
         document.getElementById('do_parallel').addEventListener('change', updateCommandPreview);
+        
+        // Add event listener for plane_curves options
+        document.getElementById('N_plane').addEventListener('input', updateCommandPreview);
         
         function updateCommandPreview() {
             const formData = new FormData(document.getElementById('bijectiveForm'));
@@ -696,6 +839,11 @@ class BijectiveMapHandler(BaseHTTPRequestHandler):
                         cmd += ` --no_parallel`;
                     }
                 }
+            } else if (selectedMode === 'plane_curves') {
+                cmd = 'plane_curves_generator';
+                if (params.input_file) cmd += ` -i "${params.input_file}"`;
+                if (params.output_file) cmd += ` -o "${params.output_file}"`;
+                if (params.N_plane) cmd += ` -n ${params.N_plane}`;
             }
             
             document.getElementById('commandPreview').textContent = cmd;
@@ -904,6 +1052,10 @@ class BijectiveMapHandler(BaseHTTPRequestHandler):
                 if (doParallelCheckbox.checked) {
                     params.do_parallel = 'on';
                 }
+            } else if (selectedMode === 'plane_curves') {
+                if (document.getElementById('N_plane').value) {
+                    params.N_plane = document.getElementById('N_plane').value;
+                }
             }
             
             try {
@@ -960,13 +1112,23 @@ class BijectiveMapHandler(BaseHTTPRequestHandler):
             document.getElementById('app_mode').value = 'back';
             document.getElementById('textureOptions').style.display = 'none';
             document.getElementById('isoLinesOptions').style.display = 'none';
+            document.getElementById('planeCurvesOptions').style.display = 'none';
             document.getElementById('results').style.display = 'none';
+            document.getElementById('liveOutput').style.display = 'none';
             
             // Reset iso_lines specific fields to defaults
             document.getElementById('N').value = '5';
             document.getElementById('do_parallel').checked = true;
             
+            // Reset plane_curves specific fields to defaults
+            document.getElementById('N_plane').value = '5';
+            
             updateCommandPreview();
+        }
+        
+        function clearLiveOutput() {
+            const liveTerminal = document.getElementById('liveTerminal');
+            liveTerminal.innerHTML = '<div style="color: #888; text-align: center; padding: 20px;">Terminal output cleared...</div>';
         }
         
         // Search functionality
