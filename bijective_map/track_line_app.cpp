@@ -212,7 +212,7 @@ void write_curves_to_vtu(
 
 void track_line_one_operation(const json& operation_log, query_curve& curve, bool do_forward)
 {
-    bool verbose = true;
+    bool verbose = false;
     std::string operation_name;
     operation_name = operation_log["operation_name"];
 
@@ -762,7 +762,8 @@ void forward_track_plane_curves_app(
 
     check_curves_topology(curves, intersection_reference);
     std::cout << "finished check curves topology" << std::endl;
-    {
+
+    if (false) {
         igl::opengl::glfw::Viewer viewer;
         viewer.data().set_mesh(V_out, F_out);
         viewer.data().point_size /= 3;
@@ -806,6 +807,9 @@ void check_curves_topology(
                 std::cout << "Error: intersections between curve " << i << " and curve " << j
                           << " are not correct" << std::endl;
                 std::cout << "expected: " << intersection_reference[i][j] << std::endl;
+            } else {
+                std::cout << "intersections between curve " << i << " and curve " << j
+                          << " are correct" << std::endl;
             }
         }
     }

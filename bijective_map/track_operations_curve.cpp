@@ -1105,12 +1105,14 @@ void clean_up_curve(query_curve& curve)
     std::vector<int> new_next_segment_ids;
     std::vector<int> old_to_new_mapping(curve.segments.size(), -1);
 
+
     // Process segments in chain order starting from 0
-    int current_id = 0;
-    while (current_id != -1 && current_id < curve.segments.size()) {
+    // int current_id = 0;
+    // while (current_id != -1 && current_id < curve.segments.size()) {
+    for (int current_id = 0; current_id < curve.segments.size(); current_id++) {
         if (old_to_new_mapping[current_id] != -1) {
             // This segment was already processed, skip
-            current_id = curve.next_segment_ids[current_id];
+            // current_id = curve.next_segment_ids[current_id];
             continue;
         }
 
@@ -1132,6 +1134,9 @@ void clean_up_curve(query_curve& curve)
         int next_id = curve.next_segment_ids[current_id];
 
         while (next_id != -1 && next_id < curve.segments.size()) {
+            if (next_id == current_id) {
+                break; // loop detected
+            }
             query_segment& next_segment = curve.segments[next_id];
 
             // Check if they can be merged (same origin_segment_id and f_id)
@@ -1203,7 +1208,7 @@ void clean_up_curve(query_curve& curve)
         new_next_segment_ids.push_back(final_next);
 
         // Move to the next unprocessed segment
-        current_id = final_next;
+        // current_id = final_next;
     }
 
     // Update next_segment_ids to point to new indices
@@ -1226,28 +1231,6 @@ void clean_up_curve(query_curve& curve)
     // Replace the curve's segments and next_segment_ids
     curve.segments = std::move(new_segments);
     curve.next_segment_ids = std::move(new_next_segment_ids);
-
-    // for debug
-    {
-        int cur_seg = 0;
-        std::vector<bool> is_visited(curve.segments.size(), false);
-        int cnt = 0;
-        while (cur_seg != -1 && !is_visited[cur_seg]) {
-            // std::cout << "visited: " << cur_seg << std::endl;
-            is_visited[cur_seg] = true;
-            cnt++;
-            cur_seg = curve.next_segment_ids[cur_seg];
-        }
-
-        if (cnt != curve.segments.size()) {
-            std::cout << "curve.next_segment_ids: ";
-            for (size_t i = 0; i < curve.next_segment_ids.size(); ++i) {
-                std::cout << curve.next_segment_ids[i] << " ";
-            }
-            std::cout << std::endl;
-            throw std::runtime_error("Error: clean up curve failed, why?");
-        }
-    }
 }
 
 bool is_curve_valid(const query_curve& curve)
@@ -1258,13 +1241,14 @@ bool is_curve_valid(const query_curve& curve)
         return true;
     }
 
-    int cur_seg_id = 0;
+    // int cur_seg_id = 0;
     bool is_valid = true;
-    while (cur_seg_id != -1 && cur_seg_id < curve.segments.size()) {
+    // while (cur_seg_id != -1 && cur_seg_id < curve.segments.size()) {
+    for (int cur_seg_id = 0; cur_seg_id < curve.segments.size(); cur_seg_id++) {
         int next_seg_id = curve.next_segment_ids[cur_seg_id];
         // std::cout << "cur_seg: " << cur_seg_id << " next_seg: " << next_seg_id << std::endl;
-        if (next_seg_id == -1 || next_seg_id == 0) {
-            break;
+        if (next_seg_id == -1) {
+            continue;
         }
         const auto& cur_seg = curve.segments[cur_seg_id];
         const auto& next_seg = curve.segments[next_seg_id];
@@ -1315,7 +1299,7 @@ bool is_curve_valid(const query_curve& curve)
                 }
             }
         }
-        cur_seg_id = next_seg_id;
+        // cur_seg_id = next_seg_id;
     }
     return is_valid;
 }
