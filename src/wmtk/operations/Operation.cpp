@@ -405,6 +405,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 
                                     // visualize_meshes(V_before, F_before, V_after, F_after);
                                     if (is_boundary_edge) {
+                                        std::cout << "Boundary edge split" << std::endl;
                                         // Boundary edge split: simple projection to best-fit plane
                                         // Compute centroid for translation
                                         Eigen::Vector3d centroid = V_before.colwise().mean();
@@ -435,6 +436,29 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                                 Eigen::Vector2d(p.dot(u), p.dot(v));
                                         }
 
+                                        // Check orientation of first triangle and flip if needed
+                                        if (F_before.rows() > 0) {
+                                            // Compute signed area of first triangle
+                                            Eigen::Vector2d p0 = V_before_2d.row(F_before(0, 0));
+                                            Eigen::Vector2d p1 = V_before_2d.row(F_before(0, 1));
+                                            Eigen::Vector2d p2 = V_before_2d.row(F_before(0, 2));
+                                            
+                                            double signed_area = 0.5 * ((p1 - p0).x() * (p2 - p0).y() - 
+                                                                       (p2 - p0).x() * (p1 - p0).y());
+                                            
+                                            // If orientation is negative, flip the v basis vector
+                                            if (signed_area < 0) {
+                                                v = -v;
+                                                // Recompute V_before_2d with flipped v
+                                                for (int i = 0; i < V_before.rows(); ++i) {
+                                                    Eigen::Vector3d p =
+                                                        V_before.row(i) - centroid.transpose();
+                                                    V_before_2d.row(i) =
+                                                        Eigen::Vector2d(p.dot(u), p.dot(v));
+                                                }
+                                            }
+                                        }
+
                                         // Map vertices from after to before using v_id_map
                                         for (int i = 0; i < V_after.rows(); ++i) {
                                             int64_t global_vid_after = v_id_map_after[i];
@@ -463,10 +487,12 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                         V_after = V_after_2d;
                                         // visualize_meshes(V_before, F_before, V_after, F_after);
                                     } else {
-                                        // Interior edge split: flatten the "book pages" around the shared edge
+                                        // Interior edge split: flatten the "book pages" around the
+                                        // shared edge
 
                                         if (F_before.rows() == 2) {
-                                            // Find the shared edge vertices (the "spine" of the book)
+                                            // Find the shared edge vertices (the "spine" of the
+                                            // book)
                                             std::vector<int> shared_vertices;
                                             for (int i = 0; i < 3; ++i) {
                                                 for (int j = 0; j < 3; ++j) {
@@ -476,133 +502,249 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                                     }
                                                 }
                                             }
-                                            
+
                                             if (shared_vertices.size() != 2) {
-                                                throw std::runtime_error("Expected exactly 2 shared vertices for interior edge split");
+                                                throw std::runtime_error(
+                                                    "Expected exactly 2 shared vertices for "
+                                                    "interior edge split");
                                             }
-                                            
+
                                             int spine_v1 = shared_vertices[0];
                                             int spine_v2 = shared_vertices[1];
-                                            
-                                            // Find the "page" vertices (one from each triangle, not on the spine)
+
+                                            // Find the "page" vertices (one from each triangle, not
+                                            // on the spine)
                                             int page_v1 = -1, page_v2 = -1;
                                             for (int i = 0; i < 3; ++i) {
-                                                if (F_before(0, i) != spine_v1 && F_before(0, i) != spine_v2) {
+                                                if (F_before(0, i) != spine_v1 &&
+                                                    F_before(0, i) != spine_v2) {
                                                     page_v1 = F_before(0, i);
                                                     break;
                                                 }
                                             }
                                             for (int i = 0; i < 3; ++i) {
-                                                if (F_before(1, i) != spine_v1 && F_before(1, i) != spine_v2) {
+                                                if (F_before(1, i) != spine_v1 &&
+                                                    F_before(1, i) != spine_v2) {
                                                     page_v2 = F_before(1, i);
                                                     break;
                                                 }
                                             }
-                                            
+
                                             if (page_v1 == -1 || page_v2 == -1) {
-                                                throw std::runtime_error("Could not find page vertices for book flattening");
+                                                throw std::runtime_error(
+                                                    "Could not find page vertices for book "
+                                                    "flattening");
                                             }
-                                            
+
                                             // Create the flattened 2D layout
                                             Eigen::MatrixXd V_before_2d(V_before.rows(), 2);
                                             Eigen::MatrixXd V_after_2d(V_after.rows(), 2);
-                                            
-                                            // Place spine edge vertically: spine_v1 at (0,0), spine_v2 at (0, edge_length)
-                                            double spine_length = (V_before.row(spine_v2) - V_before.row(spine_v1)).norm();
+
+                                            // Place spine edge vertically: spine_v1 at (0,0),
+                                            // spine_v2 at (0, edge_length)
+                                            double spine_length =
+                                                (V_before.row(spine_v2) - V_before.row(spine_v1))
+                                                    .norm();
                                             V_before_2d.row(spine_v1) = Eigen::Vector2d(0, 0);
-                                            V_before_2d.row(spine_v2) = Eigen::Vector2d(0, spine_length);
-                                            
-                                            // Helper lambda to place a vertex and ensure positive triangle orientation
-                                            auto place_vertex_2d_with_orientation = [&](int vertex_idx, int ref_v1, int ref_v2, 
-                                                                                          double ref_x1, double ref_y1, double ref_x2, double ref_y2,
-                                                                                          bool ensure_positive_area, const Eigen::MatrixXi& face_containing_vertex, int face_idx) -> Eigen::Vector2d {
-                                                double d1 = (V_before.row(vertex_idx) - V_before.row(ref_v1)).norm();
-                                                double d2 = (V_before.row(vertex_idx) - V_before.row(ref_v2)).norm();
-                                                double baseline_len = std::sqrt((ref_x2 - ref_x1) * (ref_x2 - ref_x1) + (ref_y2 - ref_y1) * (ref_y2 - ref_y1));
-                                                
+                                            V_before_2d.row(spine_v2) =
+                                                Eigen::Vector2d(0, spine_length);
+
+                                            // Helper lambda to place a vertex and ensure positive
+                                            // triangle orientation
+                                            auto place_vertex_2d_with_orientation =
+                                                [&](int vertex_idx,
+                                                    int ref_v1,
+                                                    int ref_v2,
+                                                    double ref_x1,
+                                                    double ref_y1,
+                                                    double ref_x2,
+                                                    double ref_y2,
+                                                    bool ensure_positive_area,
+                                                    const Eigen::MatrixXi& face_containing_vertex,
+                                                    int face_idx) -> Eigen::Vector2d {
+                                                double d1 = (V_before.row(vertex_idx) -
+                                                             V_before.row(ref_v1))
+                                                                .norm();
+                                                double d2 = (V_before.row(vertex_idx) -
+                                                             V_before.row(ref_v2))
+                                                                .norm();
+                                                double baseline_len = std::sqrt(
+                                                    (ref_x2 - ref_x1) * (ref_x2 - ref_x1) +
+                                                    (ref_y2 - ref_y1) * (ref_y2 - ref_y1));
+
                                                 // Use law of cosines to find angle at ref_v1
-                                                double cos_angle = (d1 * d1 + baseline_len * baseline_len - d2 * d2) / (2 * d1 * baseline_len);
+                                                double cos_angle =
+                                                    (d1 * d1 + baseline_len * baseline_len -
+                                                     d2 * d2) /
+                                                    (2 * d1 * baseline_len);
                                                 cos_angle = std::clamp(cos_angle, -1.0, 1.0);
-                                                double sin_angle = std::sqrt(1 - cos_angle * cos_angle);
-                                                
-                                                // Direction vector along the baseline (from ref_v1 to ref_v2)
-                                                Eigen::Vector2d baseline_dir = Eigen::Vector2d(ref_x2 - ref_x1, ref_y2 - ref_y1).normalized();
-                                                Eigen::Vector2d perp_dir = Eigen::Vector2d(-baseline_dir.y(), baseline_dir.x()); // perpendicular direction
-                                                
+                                                double sin_angle =
+                                                    std::sqrt(1 - cos_angle * cos_angle);
+
+                                                // Direction vector along the baseline (from ref_v1
+                                                // to ref_v2)
+                                                Eigen::Vector2d baseline_dir = Eigen::Vector2d(
+                                                                                   ref_x2 - ref_x1,
+                                                                                   ref_y2 - ref_y1)
+                                                                                   .normalized();
+                                                Eigen::Vector2d perp_dir = Eigen::Vector2d(
+                                                    -baseline_dir.y(),
+                                                    baseline_dir.x()); // perpendicular direction
+
                                                 // Position along baseline
-                                                Eigen::Vector2d pos_along = Eigen::Vector2d(ref_x1, ref_y1) + d1 * cos_angle * baseline_dir;
-                                                
+                                                Eigen::Vector2d pos_along =
+                                                    Eigen::Vector2d(ref_x1, ref_y1) +
+                                                    d1 * cos_angle * baseline_dir;
+
                                                 // Try both sides of the baseline
-                                                Eigen::Vector2d pos_positive = pos_along + d1 * sin_angle * perp_dir;
-                                                Eigen::Vector2d pos_negative = pos_along - d1 * sin_angle * perp_dir;
-                                                
+                                                Eigen::Vector2d pos_positive =
+                                                    pos_along + d1 * sin_angle * perp_dir;
+                                                Eigen::Vector2d pos_negative =
+                                                    pos_along - d1 * sin_angle * perp_dir;
+
                                                 if (!ensure_positive_area) {
                                                     return pos_positive; // Default to positive side
                                                 }
-                                                
-                                                // Check which position gives positive signed area for the triangle
-                                                auto compute_signed_area = [](const Eigen::Vector2d& p0, const Eigen::Vector2d& p1, const Eigen::Vector2d& p2) -> double {
-                                                    return (p1.x() - p0.x()) * (p2.y() - p0.y()) - (p2.x() - p0.x()) * (p1.y() - p0.y());
+
+                                                // Check which position gives positive signed area
+                                                // for the triangle
+                                                auto compute_signed_area =
+                                                    [](const Eigen::Vector2d& p0,
+                                                       const Eigen::Vector2d& p1,
+                                                       const Eigen::Vector2d& p2) -> double {
+                                                    return (p1.x() - p0.x()) * (p2.y() - p0.y()) -
+                                                           (p2.x() - p0.x()) * (p1.y() - p0.y());
                                                 };
-                                                
+
                                                 // Get the triangle vertices in 2D space
                                                 Eigen::Vector2d v0_2d, v1_2d, v2_2d;
                                                 int v0 = face_containing_vertex(face_idx, 0);
                                                 int v1 = face_containing_vertex(face_idx, 1);
                                                 int v2 = face_containing_vertex(face_idx, 2);
-                                                
-                                                // Assign 2D coordinates based on which vertex we're placing
+
+                                                // Assign 2D coordinates based on which vertex we're
+                                                // placing
                                                 if (v0 == vertex_idx) {
-                                                    v1_2d = (v1 == ref_v1) ? Eigen::Vector2d(ref_x1, ref_y1) : Eigen::Vector2d(ref_x2, ref_y2);
-                                                    v2_2d = (v2 == ref_v1) ? Eigen::Vector2d(ref_x1, ref_y1) : Eigen::Vector2d(ref_x2, ref_y2);
-                                                    
-                                                    double area_pos = compute_signed_area(pos_positive, v1_2d, v2_2d);
-                                                    double area_neg = compute_signed_area(pos_negative, v1_2d, v2_2d);
-                                                    return (area_pos > area_neg) ? pos_positive : pos_negative;
+                                                    v1_2d = (v1 == ref_v1)
+                                                                ? Eigen::Vector2d(ref_x1, ref_y1)
+                                                                : Eigen::Vector2d(ref_x2, ref_y2);
+                                                    v2_2d = (v2 == ref_v1)
+                                                                ? Eigen::Vector2d(ref_x1, ref_y1)
+                                                                : Eigen::Vector2d(ref_x2, ref_y2);
+
+                                                    double area_pos = compute_signed_area(
+                                                        pos_positive,
+                                                        v1_2d,
+                                                        v2_2d);
+                                                    double area_neg = compute_signed_area(
+                                                        pos_negative,
+                                                        v1_2d,
+                                                        v2_2d);
+                                                    return (area_pos > 0) ? pos_positive
+                                                                       : pos_negative;
                                                 } else if (v1 == vertex_idx) {
-                                                    v0_2d = (v0 == ref_v1) ? Eigen::Vector2d(ref_x1, ref_y1) : Eigen::Vector2d(ref_x2, ref_y2);
-                                                    v2_2d = (v2 == ref_v1) ? Eigen::Vector2d(ref_x1, ref_y1) : Eigen::Vector2d(ref_x2, ref_y2);
-                                                    
-                                                    double area_pos = compute_signed_area(v0_2d, pos_positive, v2_2d);
-                                                    double area_neg = compute_signed_area(v0_2d, pos_negative, v2_2d);
-                                                    return (area_pos > area_neg) ? pos_positive : pos_negative;
+                                                    v0_2d = (v0 == ref_v1)
+                                                                ? Eigen::Vector2d(ref_x1, ref_y1)
+                                                                : Eigen::Vector2d(ref_x2, ref_y2);
+                                                    v2_2d = (v2 == ref_v1)
+                                                                ? Eigen::Vector2d(ref_x1, ref_y1)
+                                                                : Eigen::Vector2d(ref_x2, ref_y2);
+
+                                                    double area_pos = compute_signed_area(
+                                                        v0_2d,
+                                                        pos_positive,
+                                                        v2_2d);
+                                                    double area_neg = compute_signed_area(
+                                                        v0_2d,
+                                                        pos_negative,
+                                                        v2_2d);
+                                                    return (area_pos > 0) ? pos_positive
+                                                                       : pos_negative;
                                                 } else { // v2 == vertex_idx
-                                                    v0_2d = (v0 == ref_v1) ? Eigen::Vector2d(ref_x1, ref_y1) : Eigen::Vector2d(ref_x2, ref_y2);
-                                                    v1_2d = (v1 == ref_v1) ? Eigen::Vector2d(ref_x1, ref_y1) : Eigen::Vector2d(ref_x2, ref_y2);
-                                                    
-                                                    double area_pos = compute_signed_area(v0_2d, v1_2d, pos_positive);
-                                                    double area_neg = compute_signed_area(v0_2d, v1_2d, pos_negative);
-                                                    return (area_pos > area_neg) ? pos_positive : pos_negative;
+                                                    v0_2d = (v0 == ref_v1)
+                                                                ? Eigen::Vector2d(ref_x1, ref_y1)
+                                                                : Eigen::Vector2d(ref_x2, ref_y2);
+                                                    v1_2d = (v1 == ref_v1)
+                                                                ? Eigen::Vector2d(ref_x1, ref_y1)
+                                                                : Eigen::Vector2d(ref_x2, ref_y2);
+
+                                                    double area_pos = compute_signed_area(
+                                                        v0_2d,
+                                                        v1_2d,
+                                                        pos_positive);
+                                                    double area_neg = compute_signed_area(
+                                                        v0_2d,
+                                                        v1_2d,
+                                                        pos_negative);
+                                                    return (area_pos > 0) ? pos_positive
+                                                                       : pos_negative;
                                                 }
                                             };
-                                            
-                                            // Place the first page vertex ensuring positive area for its triangle
-                                            V_before_2d.row(page_v1) = place_vertex_2d_with_orientation(page_v1, spine_v1, spine_v2, 0, 0, 0, spine_length, true, F_before, 0);
-                                            
-                                            // Place the second page vertex ensuring positive area for its triangle
-                                            V_before_2d.row(page_v2) = place_vertex_2d_with_orientation(page_v2, spine_v1, spine_v2, 0, 0, 0, spine_length, true, F_before, 1);
-                                            
+
+                                            // Place the first page vertex ensuring positive area
+                                            // for its triangle
+                                            V_before_2d.row(page_v1) =
+                                                place_vertex_2d_with_orientation(
+                                                    page_v1,
+                                                    spine_v1,
+                                                    spine_v2,
+                                                    0,
+                                                    0,
+                                                    0,
+                                                    spine_length,
+                                                    true,
+                                                    F_before,
+                                                    0);
+
+                                            // Place the second page vertex ensuring positive area
+                                            // for its triangle
+                                            V_before_2d.row(page_v2) =
+                                                place_vertex_2d_with_orientation(
+                                                    page_v2,
+                                                    spine_v1,
+                                                    spine_v2,
+                                                    0,
+                                                    0,
+                                                    0,
+                                                    spine_length,
+                                                    true,
+                                                    F_before,
+                                                    1);
+
                                             // Map the after mesh vertices to 2D
                                             for (int i = 0; i < V_after.rows(); ++i) {
                                                 int64_t global_vid_after = v_id_map_after[i];
-                                                auto it = std::find(v_id_map_before.begin(), v_id_map_before.end(), global_vid_after);
-                                                
+                                                auto it = std::find(
+                                                    v_id_map_before.begin(),
+                                                    v_id_map_before.end(),
+                                                    global_vid_after);
+
                                                 if (it != v_id_map_before.end()) {
                                                     // Existing vertex: copy its 2D position
-                                                    int before_index = std::distance(v_id_map_before.begin(), it);
-                                                    V_after_2d.row(i) = V_before_2d.row(before_index);
+                                                    int before_index =
+                                                        std::distance(v_id_map_before.begin(), it);
+                                                    V_after_2d.row(i) =
+                                                        V_before_2d.row(before_index);
                                                 } else {
-                                                    // New vertex (split point): place it using the same geometric relationships
-                                                    // Since it's a split on the spine edge, it should lie on the spine
-                                                    double d1 = (V_after.row(i) - V_before.row(spine_v1)).norm();
-                                                    double d2 = (V_after.row(i) - V_before.row(spine_v2)).norm();
-                                                    // The new vertex should be positioned proportionally along the spine
+                                                    // New vertex (split point): place it using the
+                                                    // same geometric relationships Since it's a
+                                                    // split on the spine edge, it should lie on the
+                                                    // spine
+                                                    double d1 =
+                                                        (V_after.row(i) - V_before.row(spine_v1))
+                                                            .norm();
+                                                    double d2 =
+                                                        (V_after.row(i) - V_before.row(spine_v2))
+                                                            .norm();
+                                                    // The new vertex should be positioned
+                                                    // proportionally along the spine
                                                     double total_spine = d1 + d2;
                                                     double ratio = d1 / total_spine;
-                                                    V_after_2d.row(i) = Eigen::Vector2d(0, ratio * spine_length);
+                                                    V_after_2d.row(i) =
+                                                        Eigen::Vector2d(0, ratio * spine_length);
                                                 }
                                             }
-                                            
+
                                             V_before = V_before_2d;
                                             V_after = V_after_2d;
                                         }
