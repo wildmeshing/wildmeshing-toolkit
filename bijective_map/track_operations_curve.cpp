@@ -1,6 +1,6 @@
 #include "track_operations_curve.hpp"
-#include <igl/opengl/glfw/Viewer.h>
 #include <igl/Timer.h>
+#include <igl/opengl/glfw/Viewer.h>
 
 // Helper function to get all possible triangle IDs for a point
 std::vector<int> get_possible_triangle_ids(
@@ -314,7 +314,6 @@ void handle_one_segment_rational(
     Eigen::MatrixXi& TTi,
     bool verbose)
 {
-
     // for debug
     if (verbose) {
         std::cout << "F_before:" << std::endl;
@@ -500,13 +499,13 @@ void handle_one_segment_rational(
         Eigen::Vector2<wmtk::Rational> next_bc_edge;
         int next_face = -1;
         int selected_edge_idx = -1;
-        
+
         int num_candidate_edges = candidate_edges.size();
         double time_edge_vertex_lookup = 0;
         double time_intersection_computation = 0;
         igl::Timer intersection_timer;
         if (verbose) intersection_timer.start();
-        
+
         for (int i = 0; i < candidate_edges.size(); i++) {
             const auto& edge_tri_pair = candidate_edges[i];
             const auto& edge = edge_tri_pair.edge;
@@ -612,13 +611,15 @@ void handle_one_segment_rational(
         // Update current_bc to match the new segment's end coordinates
         current_bc << wmtk::Rational(new_seg.bcs[1](0)), wmtk::Rational(new_seg.bcs[1](1)),
             wmtk::Rational(new_seg.bcs[1](2));
-            
+
         // Print detailed intersection profiling for this iteration (only if verbose)
         if (verbose) {
-            std::cout << "Iteration " << iteration << " - Intersection Tests: " << total_intersection_time * 1000 << " ms "
+            std::cout << "Iteration " << iteration
+                      << " - Intersection Tests: " << total_intersection_time * 1000 << " ms "
                       << "[" << num_candidate_edges << " edges] "
                       << "(Vertex lookup: " << time_edge_vertex_lookup * 1000 << " ms, "
-                      << "Intersection computation: " << time_intersection_computation * 1000 << " ms)" << std::endl;
+                      << "Intersection computation: " << time_intersection_computation * 1000
+                      << " ms)" << std::endl;
         }
     }
 
@@ -698,9 +699,11 @@ void handle_one_segment_rational(
     // Print intersection tests summary (only if verbose)
     if (verbose && iteration > 0) {
         std::cout << "\n=== Intersection Tests Summary ===" << std::endl;
-        std::cout << "  Total intersection time: " << time_intersection_tests_total * 1000 << " ms" << std::endl;
+        std::cout << "  Total intersection time: " << time_intersection_tests_total * 1000 << " ms"
+                  << std::endl;
         std::cout << "  Number of iterations: " << iteration << std::endl;
-        std::cout << "  Average per iteration: " << (time_intersection_tests_total/iteration) * 1000 << " ms" << std::endl;
+        std::cout << "  Average per iteration: "
+                  << (time_intersection_tests_total / iteration) * 1000 << " ms" << std::endl;
     }
 }
 
@@ -724,9 +727,19 @@ void handle_one_segment(
             UV_joint_r(i, j) = wmtk::Rational(UV_joint(i, j));
         }
     }
-    
+
     // Call the optimized rational version
-    handle_one_segment_rational(curve, id, query_points, UV_joint_r, F_before, v_id_map_joint, id_map_before, TT, TTi, verbose);
+    handle_one_segment_rational(
+        curve,
+        id,
+        query_points,
+        UV_joint_r,
+        F_before,
+        v_id_map_joint,
+        id_map_before,
+        TT,
+        TTi,
+        verbose);
 }
 
 // Old version for comparison
@@ -1083,6 +1096,7 @@ void handle_non_collapse_operation_curve(
 
 void clean_up_curve(query_curve& curve)
 {
+    // TODO: make this function work for loops
     if (curve.segments.empty()) {
         return;
     }
@@ -1106,11 +1120,12 @@ void clean_up_curve(query_curve& curve)
         Eigen::Vector2<wmtk::Rational> start_bc_r(
             wmtk::Rational(current_segment.bcs[0](0)),
             wmtk::Rational(current_segment.bcs[0](1)));
-        
-        Eigen::Vector2<wmtk::Rational> current_slope_r = 
+
+        Eigen::Vector2<wmtk::Rational> current_slope_r =
             Eigen::Vector2<wmtk::Rational>(
                 wmtk::Rational(current_segment.bcs[1](0)),
-                wmtk::Rational(current_segment.bcs[1](1))) - start_bc_r;
+                wmtk::Rational(current_segment.bcs[1](1))) -
+            start_bc_r;
 
         // Find consecutive segments that can be merged
         std::vector<int> segments_to_merge = {current_id};
@@ -1126,14 +1141,16 @@ void clean_up_curve(query_curve& curve)
             }
 
             // Convert next segment to rational arithmetic (only first 2 components)
-            Eigen::Vector2<wmtk::Rational> next_slope_r = 
+            Eigen::Vector2<wmtk::Rational> next_slope_r =
                 Eigen::Vector2<wmtk::Rational>(
                     wmtk::Rational(next_segment.bcs[1](0)),
-                    wmtk::Rational(next_segment.bcs[1](1))) - start_bc_r;
+                    wmtk::Rational(next_segment.bcs[1](1))) -
+                start_bc_r;
 
             // Check collinearity using cross product in 2D (exact test)
             // Two 2D vectors are collinear if their cross product is zero
-            wmtk::Rational cross_product_2d = current_slope_r(0) * next_slope_r(1) - current_slope_r(1) * next_slope_r(0);
+            wmtk::Rational cross_product_2d =
+                current_slope_r(0) * next_slope_r(1) - current_slope_r(1) * next_slope_r(0);
             bool is_collinear = (cross_product_2d == wmtk::Rational(0));
 
             if (!is_collinear) {
@@ -1235,6 +1252,7 @@ void clean_up_curve(query_curve& curve)
 
 bool is_curve_valid(const query_curve& curve)
 {
+    // TODO: make this function work for loops
     if (curve.segments.empty()) {
         std::cout << "Warning:curve is empty" << std::endl;
         return true;
@@ -1245,7 +1263,7 @@ bool is_curve_valid(const query_curve& curve)
     while (cur_seg_id != -1 && cur_seg_id < curve.segments.size()) {
         int next_seg_id = curve.next_segment_ids[cur_seg_id];
         // std::cout << "cur_seg: " << cur_seg_id << " next_seg: " << next_seg_id << std::endl;
-        if (next_seg_id == -1) {
+        if (next_seg_id == -1 || next_seg_id == 0) {
             break;
         }
         const auto& cur_seg = curve.segments[cur_seg_id];

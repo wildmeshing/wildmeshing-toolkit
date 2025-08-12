@@ -212,6 +212,7 @@ void write_curves_to_vtu(
 
 void track_line_one_operation(const json& operation_log, query_curve& curve, bool do_forward)
 {
+    bool verbose = true;
     std::string operation_name;
     operation_name = operation_log["operation_name"];
 
@@ -262,7 +263,8 @@ void track_line_one_operation(const json& operation_log, query_curve& curve, boo
                 id_map_before,
                 v_id_map_before,
                 curve,
-                operation_name);
+                operation_name,
+                verbose);
         } else {
             handle_non_collapse_operation_curve(
                 V_before,
@@ -274,7 +276,8 @@ void track_line_one_operation(const json& operation_log, query_curve& curve, boo
                 id_map_after,
                 v_id_map_after,
                 curve,
-                operation_name);
+                operation_name,
+                verbose);
         }
     } else if (operation_name == "EdgeCollapse") {
         std::cout << "This Operations is EdgeCollapse" << std::endl;
@@ -299,7 +302,8 @@ void track_line_one_operation(const json& operation_log, query_curve& curve, boo
                 v_id_map_joint,
                 id_map_after,
                 id_map_before,
-                curve);
+                curve,
+                verbose);
         } else {
             handle_collapse_edge_curve(
                 UV_joint,
@@ -308,7 +312,8 @@ void track_line_one_operation(const json& operation_log, query_curve& curve, boo
                 v_id_map_joint,
                 id_map_before,
                 id_map_after,
-                curve);
+                curve,
+                verbose);
         }
     } else {
         // std::cout << "This Operations is not implemented" << std::endl;
@@ -374,6 +379,7 @@ void track_line(path dirPath, query_curve& curve, bool do_forward)
     }
 
     clean_up_curve(curve);
+    std::cout << "finished" << std::endl;
 }
 
 void track_lines(path dirPath, std::vector<query_curve>& curves, bool do_forward, bool do_parallel)
@@ -740,20 +746,22 @@ void forward_track_plane_curves_app(
         }
     }
 
-    return;
-
     track_lines(operation_logs_dir, curves, true, do_parallel);
 
+    std::cout << "finished track lines" << std::endl;
+
     save_query_curves(curves, model_name + "_plane_curves.out");
+    std::cout << "finished save query curves" << std::endl;
 
     // write final curves to vtu
     {
         std::cout << "\n=== Writing final plane curves to VTU ===" << std::endl;
         write_curves_to_vtu(curves, V_out, model_name + "_plane_curves_out.vtu");
     }
+    std::cout << "finished write curves to vtu" << std::endl;
 
     check_curves_topology(curves, intersection_reference);
-
+    std::cout << "finished check curves topology" << std::endl;
     {
         igl::opengl::glfw::Viewer viewer;
         viewer.data().set_mesh(V_out, F_out);
