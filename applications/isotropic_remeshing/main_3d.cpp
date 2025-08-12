@@ -42,7 +42,17 @@ int main(int argc, char* argv[])
         json_input_file);
 
 #ifdef WMTK_RECORD_OPERATIONS
-    OperationLogPath = generatePathNameWithCurrentTime();
+    // OperationLogPath = generatePathNameWithCurrentTime();
+    // Extract model name from input file path
+    std::string model_name = "default";
+    if (j["input"]["file"].is_string()) {
+        fs::path input_path = j["input"]["file"].get<std::string>();
+        if (input_path.has_filename()) {
+            model_name = input_path.stem().string();
+        }
+    }
+    std::cout << "Model name: " << model_name << std::endl;
+    OperationLogPath = generatePathNameWithModelName(model_name);
 #endif
     const auto input_opts = j["input"].get<wmtk::components::input::InputOptions>();
 

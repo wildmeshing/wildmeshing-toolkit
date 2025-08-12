@@ -31,4 +31,28 @@ std::string generatePathNameWithCurrentTime()
 
     return ss.str();
 }
+
+std::string generatePathNameWithModelName(const std::string& model_name)
+{
+    std::stringstream ss;
+    ss << "operation_log_" << model_name;
+
+    if (!std::filesystem::exists(ss.str())) {
+        std::cout << "Path does not exist, creating: " << ss.str() << std::endl;
+
+        try {
+            if (std::filesystem::create_directories(ss.str())) {
+                std::cout << "Path created successfully." << std::endl;
+            } else {
+                std::cout << "Failed to create path." << std::endl;
+            }
+        } catch (const std::filesystem::filesystem_error& e) {
+            std::cerr << "Error: " << e.what() << std::endl;
+        }
+    } else {
+        std::cout << "Path already exists." << std::endl;
+    }
+
+    return ss.str();
+}
 #endif

@@ -12,4 +12,5 @@ extern std::string OperationLogPath;
 extern std::string OperationLogPrefix;
 
 std::string generatePathNameWithCurrentTime();
+std::string generatePathNameWithModelName(const std::string& model_name);
 #endif
