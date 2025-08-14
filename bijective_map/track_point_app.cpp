@@ -1,7 +1,9 @@
 #include "track_point_app.hpp"
 #include <igl/Timer.h>
 #include <igl/in_element.h>
+#ifdef USE_IGL_VIEWER
 #include <igl/opengl/glfw/Viewer.h>
+#endif
 #include <igl/parallel_for.h>
 #include <igl/stb/read_image.h>
 #include <igl/stb/write_image.h>
@@ -246,6 +248,7 @@ void back_track_point_app(
     }
 
     // viewer
+#ifdef USE_IGL_VIEWER
     igl::opengl::glfw::Viewer viewer;
     Eigen::Vector4f backColor;
     backColor << 208 / 255., 237 / 255., 227 / 255., 1.;
@@ -278,6 +281,7 @@ void back_track_point_app(
         return true;
     };
     viewer.launch();
+#endif
 }
 
 void forward_track_point_app(
@@ -322,7 +326,7 @@ void forward_track_point_app(
         pts_on_surface_after.row(ii) = p;
     }
     // viewer
-
+#ifdef USE_IGL_VIEWER
     igl::opengl::glfw::Viewer viewer;
     Eigen::Vector4f backColor;
     backColor << 208 / 255., 237 / 255., 227 / 255., 1.;
@@ -355,6 +359,7 @@ void forward_track_point_app(
         return true;
     };
     viewer.launch();
+#endif
 }
 
 void render_index_app(
@@ -417,13 +422,14 @@ void render_index_app(
         addShading(R, G, B, V_out, F_out, fids, bcs, std::get<0>(cam), false);
         igl::stb::write_image(name + "_shading.png", R, G, B, A);
     };
-
+#ifdef USE_IGL_VIEWER
     igl::opengl::glfw::Viewer viewer;
     viewer.data().set_mesh(V_out, F_out);
     viewer.launch();
     camera_info camera =
         std::make_tuple(viewer.core().view, viewer.core().proj, viewer.core().viewport);
     writePNG("iso_out", W, H, camera);
+#endif
 }
 
 void transfer_texture_app(

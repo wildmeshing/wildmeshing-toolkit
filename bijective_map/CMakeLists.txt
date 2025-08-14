@@ -25,10 +25,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 project(BijectiveMapApp)
 
-igl_include(glfw)
-igl_include(opengl)
-igl_include(stb)
-igl_include(imgui)
+if(USE_IGL_VIEWER)
+    igl_include(glfw)
+    igl_include(opengl)
+    igl_include(stb)
+    igl_include(imgui)
+endif()
+
 add_executable(bijective_map_app bijective_map_app.cpp track_operations.hpp track_operations.cpp track_operations_curve.hpp track_operations_curve.cpp render_utils.hpp generate_iso_line.hpp track_point_app.cpp track_line_app.cpp vtu_utils.cpp generate_plane_curves.hpp generate_plane_curves.cpp)
 
 target_link_libraries(bijective_map_app
@@ -37,8 +40,14 @@ target_link_libraries(bijective_map_app
 
     # wmtk::components
     CLI11::CLI11
-    igl::core igl::opengl igl::glfw igl::stb
+    igl::core
 )
+
+if(USE_IGL_VIEWER)
+    target_link_libraries(bijective_map_app
+        igl::opengl igl::glfw igl::stb igl::imgui
+    )
+endif()
 target_compile_features(bijective_map_app PUBLIC cxx_std_17)
 
 add_executable(bijective_map_app_tet bijective_map_app_tet.cpp track_operations_tet.hpp track_operations_tet.cpp FindPointTetMesh.cpp vtu_utils.cpp)
@@ -51,17 +60,22 @@ target_include_directories(bijective_map_app_tet PUBLIC
 
 # find_package(cinolib REQUIRED)
 target_link_libraries(bijective_map_app_tet
-
     wmtk::toolkit
     wmtk::data
 
     # wmtk::components
     CLI11::CLI11
-    igl::core igl::opengl igl::glfw igl::stb
+    igl::core
     nlohmann_json::nlohmann_json
     cinolib
     TBB::tbb
 )
+
+if(USE_IGL_VIEWER)
+    target_link_libraries(bijective_map_app_tet
+        igl::opengl igl::glfw igl::stb igl::imgui
+    )
+endif()
 target_include_directories(bijective_map_app_tet PUBLIC ${PROJECT_SOURCE_DIR}/InteractiveAndRobustMeshBooleans/arrangements/external/abseil-cpp/)
 target_compile_features(bijective_map_app_tet PUBLIC cxx_std_17)
 

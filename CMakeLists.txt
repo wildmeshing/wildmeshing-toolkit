@@ -51,6 +51,7 @@ option(WMTK_BUILD_DOCS "Build doxygen" OFF)
 option(BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option due to use of TBB
 
 option(WMTK_CODE_COVERAGE "Enable coverage reporting" OFF)
+option(USE_IGL_VIEWER "Enable IGL viewer with GLFW and ImGui" ON)
 
 add_library(wmtk_coverage_config INTERFACE)
 
@@ -101,7 +102,11 @@ include(CDT)
 
 include(libigl)
 igl_include(restricted triangle)
-igl_include(glfw)
+
+if(USE_IGL_VIEWER)
+    igl_include(glfw)
+    igl_include(imgui)
+endif()
 
 # Core library
 add_library(wildmeshing_toolkit)
@@ -159,10 +164,16 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     VolumeRemesher::VolumeRemesher
     igl::core
     igl_restricted::triangle
-    igl::glfw
-    igl::imgui
     TBB::tbb
 )
+
+if(USE_IGL_VIEWER)
+    target_link_libraries(wildmeshing_toolkit PUBLIC
+        igl::glfw
+        igl::imgui
+    )
+    target_compile_definitions(wildmeshing_toolkit PUBLIC USE_IGL_VIEWER)
+endif()
 
 if(MSVC)
     target_compile_options(wildmeshing_toolkit PUBLIC /MP)

@@ -1,8 +1,11 @@
 #include "track_line_app.hpp"
 #include <igl/Timer.h>
+#ifdef USE_IGL_VIEWER
 #include <igl/opengl/glfw/Viewer.h>
+#endif
 #include <igl/parallel_for.h>
 #include <wmtk/utils/orient.hpp>
+#include "generate_iso_line.hpp"
 #include "generate_plane_curves.hpp"
 #include "vtu_utils.hpp"
 
@@ -477,6 +480,7 @@ void back_track_one_curve_app(
     track_line(operation_logs_dir, curve);
 
     // render before
+#ifdef USE_IGL_VIEWER
     {
         igl::opengl::glfw::Viewer viewer;
         viewer.data().set_mesh(V_out, F_out);
@@ -521,9 +525,9 @@ void back_track_one_curve_app(
 
         viewer.launch();
     }
+#endif
 }
 
-#include "generate_iso_line.hpp"
 void forward_track_iso_lines_app(
     const Eigen::MatrixXd& V_in,
     const Eigen::MatrixXi& F_in,
@@ -598,6 +602,7 @@ void forward_track_iso_lines_app(
     auto curves_origin = curves;
 
     if (false) {
+#ifdef USE_IGL_VIEWER
         igl::opengl::glfw::Viewer viewer;
         viewer.data().set_mesh(V_in, F_in);
         viewer.data().point_size /= 3;
@@ -617,6 +622,7 @@ void forward_track_iso_lines_app(
             }
         }
         viewer.launch();
+#endif
     }
 
     save_query_curves(curves, model_name + "_curves.in");
@@ -651,6 +657,7 @@ void forward_track_iso_lines_app(
 
     check_curves_topology(curves, intersection_reference);
 
+#ifdef USE_IGL_VIEWER
     {
         igl::opengl::glfw::Viewer viewer;
         viewer.data().set_mesh(V_out, F_out);
@@ -672,6 +679,7 @@ void forward_track_iso_lines_app(
         }
         viewer.launch();
     }
+#endif
 }
 
 
@@ -706,6 +714,7 @@ void forward_track_plane_curves_app(
     auto curves_origin = curves;
 
     if (false) {
+#ifdef USE_IGL_VIEWER
         igl::opengl::glfw::Viewer viewer;
         viewer.data().set_mesh(V_in, F_in);
         viewer.data().point_size /= 3;
@@ -725,6 +734,7 @@ void forward_track_plane_curves_app(
             }
         }
         viewer.launch();
+#endif
     }
 
     save_query_curves(curves, model_name + "_plane_curves.in");
@@ -764,6 +774,7 @@ void forward_track_plane_curves_app(
     std::cout << "finished check curves topology" << std::endl;
 
     if (false) {
+#ifdef USE_IGL_VIEWER
         igl::opengl::glfw::Viewer viewer;
         viewer.data().set_mesh(V_out, F_out);
         viewer.data().point_size /= 3;
@@ -783,6 +794,7 @@ void forward_track_plane_curves_app(
             }
         }
         viewer.launch();
+#endif
     }
 }
 
@@ -836,6 +848,7 @@ void check_iso_lines(
     }
 
     if (render_before) {
+#ifdef USE_IGL_VIEWER
         igl::opengl::glfw::Viewer viewer;
         viewer.data().set_mesh(V_in, F_in);
         viewer.data().point_size /= 3;
@@ -855,8 +868,10 @@ void check_iso_lines(
             }
         }
         viewer.launch();
+#endif
     }
     if (render_after) {
+#ifdef USE_IGL_VIEWER
         igl::opengl::glfw::Viewer viewer;
         viewer.data().set_mesh(V_out, F_out);
         viewer.data().point_size /= 3;
@@ -877,6 +892,7 @@ void check_iso_lines(
             }
         }
         viewer.launch();
+#endif
     }
 
 

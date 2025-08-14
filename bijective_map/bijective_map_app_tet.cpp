@@ -10,7 +10,6 @@
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/orient.hpp>
 
-#include <igl/opengl/glfw/Viewer.h>
 #include <igl/tet_tet_adjacency.h>
 #include "InteractiveAndRobustMeshBooleans/code/booleans.h"
 #include "track_operations_tet.hpp"
@@ -303,7 +302,12 @@ void track_surface_tet(
         file >> operation_log;
 
         std::cout << "Trace Operations number: " << file_id << std::endl;
-        track_surface_one_operation_tet(operation_log, query_surface, do_forward, use_rational, file_id);
+        track_surface_one_operation_tet(
+            operation_log,
+            query_surface,
+            do_forward,
+            use_rational,
+            file_id);
 
         file.close();
     }
@@ -341,7 +345,12 @@ void track_point_tet(
         file >> operation_log;
 
         std::cout << "Trace Operations number: " << file_id << std::endl;
-        track_point_one_operation_tet(operation_log, query_points, do_forward, use_rational, file_id);
+        track_point_one_operation_tet(
+            operation_log,
+            query_points,
+            do_forward,
+            use_rational,
+            file_id);
 
         file.close();
     }

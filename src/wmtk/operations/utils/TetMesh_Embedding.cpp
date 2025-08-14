@@ -4,7 +4,9 @@
 #include <igl/colormap.h>
 #include <igl/harmonic.h>
 #include <igl/map_vertices_to_circle.h>
+#ifdef USE_IGL_VIEWER
 #include <igl/opengl/glfw/Viewer.h>
+#endif
 #include <igl/remove_unreferenced.h>
 #include <spdlog/spdlog.h>
 #include <algorithm>
@@ -393,12 +395,13 @@ Eigen::MatrixXd parametrize_top(
         V_uv.col(2).setZero();
 
         // Use igl::opengl::glfw::Viewer to directly visualize the parameterization result
+#ifdef USE_IGL_VIEWER
         igl::opengl::glfw::Viewer viewer;
         viewer.data().set_mesh(V_uv, F_clean_top);
         viewer.data().set_face_based(true);
         viewer.data().show_lines = true;
         viewer.launch();
-
+#endif
         spdlog::info("Visualization of parameterization result completed");
         spdlog::info("end harmonic");
     }
@@ -410,6 +413,7 @@ void visualize_tet_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& T)
     spdlog::info("Starting tetrahedral mesh visualization");
 
     // Create viewer
+#ifdef USE_IGL_VIEWER
     igl::opengl::glfw::Viewer viewer;
     // Directly visualize the surface of the tetrahedral mesh
     // Extract surface triangles from the tetrahedral mesh
@@ -445,6 +449,7 @@ void visualize_tet_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& T)
 
 
     viewer.launch();
+#endif
     spdlog::info("Tetrahedral mesh visualization completed");
 }
 
@@ -453,6 +458,7 @@ void launch_debug_viewer(
     const Eigen::MatrixXi& F_bottom,
     const Eigen::MatrixXd& uv_bottom)
 {
+#ifdef USE_IGL_VIEWER
     igl::opengl::glfw::Viewer viewer;
 
     viewer.data().clear();
@@ -494,6 +500,7 @@ void launch_debug_viewer(
     spdlog::info("Launching viewer - Press 1 for 3D mesh, Press 2 for "
                  "UV parameterization");
     viewer.launch();
+#endif
 }
 
 Eigen::MatrixXi extract_surface_without_vertex(

@@ -10,7 +10,9 @@
 #include <igl/triangle/scaf.h>
 
 // TODO: DEBUG
+#ifdef USE_IGL_VIEWER
 #include <igl/opengl/glfw/Viewer.h>
+#endif
 
 const int scaf_iterations = 20;
 
@@ -170,6 +172,7 @@ void flatten(
 
 
     if (debug_mode) {
+#ifdef USE_IGL_VIEWER
         int show_option = 1;
         auto key_down_debug = [&](igl::opengl::glfw::Viewer& viewer,
                                   unsigned char key,
@@ -259,6 +262,7 @@ void flatten(
         viewer.data().set_colors(Eigen::RowVector3d(230, 220, 170) / 255.0);
         viewer.callback_key_down = key_down_debug;
         viewer.launch();
+#endif
     } else {
         igl::triangle::scaf_solve(scaf_data, n_iterations);
     }

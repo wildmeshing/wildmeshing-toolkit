@@ -33,7 +33,9 @@ using json = nlohmann::json;
 #include <igl/boundary_loop.h>
 #include <igl/doublearea.h>
 #include <igl/harmonic.h>
+#ifdef USE_IGL_VIEWER
 #include <igl/opengl/glfw/Viewer.h>
+#endif
 #include <igl/readOBJ.h>
 #include <igl/remove_unreferenced.h>
 #include <igl/slice.h>
@@ -149,6 +151,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                                const Eigen::MatrixXi& F_before,
                                                const Eigen::MatrixXd& V_after,
                                                const Eigen::MatrixXi& F_after) {
+#ifdef USE_IGL_VIEWER
                         igl::opengl::glfw::Viewer viewer;
                         viewer.data().set_mesh(V_before, F_before);
 
@@ -170,6 +173,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                         };
 
                         viewer.launch();
+#endif
                     };
                     igl::Timer timer;
                     // save operation_name
@@ -442,10 +446,11 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                             Eigen::Vector2d p0 = V_before_2d.row(F_before(0, 0));
                                             Eigen::Vector2d p1 = V_before_2d.row(F_before(0, 1));
                                             Eigen::Vector2d p2 = V_before_2d.row(F_before(0, 2));
-                                            
-                                            double signed_area = 0.5 * ((p1 - p0).x() * (p2 - p0).y() - 
-                                                                       (p2 - p0).x() * (p1 - p0).y());
-                                            
+
+                                            double signed_area =
+                                                0.5 * ((p1 - p0).x() * (p2 - p0).y() -
+                                                       (p2 - p0).x() * (p1 - p0).y());
+
                                             // If orientation is negative, flip the v basis vector
                                             if (signed_area < 0) {
                                                 v = -v;
@@ -641,7 +646,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                                         v1_2d,
                                                         v2_2d);
                                                     return (area_pos > 0) ? pos_positive
-                                                                       : pos_negative;
+                                                                          : pos_negative;
                                                 } else if (v1 == vertex_idx) {
                                                     v0_2d = (v0 == ref_v1)
                                                                 ? Eigen::Vector2d(ref_x1, ref_y1)
@@ -659,7 +664,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                                         pos_negative,
                                                         v2_2d);
                                                     return (area_pos > 0) ? pos_positive
-                                                                       : pos_negative;
+                                                                          : pos_negative;
                                                 } else { // v2 == vertex_idx
                                                     v0_2d = (v0 == ref_v1)
                                                                 ? Eigen::Vector2d(ref_x1, ref_y1)
@@ -677,7 +682,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                                         v1_2d,
                                                         pos_negative);
                                                     return (area_pos > 0) ? pos_positive
-                                                                       : pos_negative;
+                                                                          : pos_negative;
                                                 }
                                             };
 

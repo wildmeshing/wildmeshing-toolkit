@@ -1,8 +1,11 @@
 #include "local_tet_joint_opt.hpp"
+
+#ifdef USE_IGL_VIEWER
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/opengl/glfw/imgui/ImGuiHelpers.h>
 #include <igl/opengl/glfw/imgui/ImGuiMenu.h>
 #include <igl/opengl/glfw/imgui/ImGuiPlugin.h>
+#endif
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -37,6 +40,7 @@ void debug_visualization(
     std::cout << std::defaultfloat;
     std::cout << "\n=========================" << std::endl;
     // Create viewer
+#ifdef USE_IGL_VIEWER
     igl::opengl::glfw::Viewer viewer;
     // Attach a menu plugin
     igl::opengl::glfw::imgui::ImGuiPlugin plugin;
@@ -256,6 +260,7 @@ void debug_visualization(
     viewer.data().set_face_based(true);
     viewer.data().show_lines = true;
     viewer.launch();
+#endif
 }
 
 
