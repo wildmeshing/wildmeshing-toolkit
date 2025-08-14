@@ -13,7 +13,9 @@ using namespace wmtk;
 // igl
 #include <igl/boundary_loop.h>
 #include <igl/readOBJ.h>
+#ifdef USE_IGL_VIEWER
 #include <igl/stb/read_image.h>
+#endif
 
 // applications
 #include "track_line_app.hpp"
@@ -112,8 +114,9 @@ int main(int argc, char** argv)
 
         Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> R, G, B, A;
         std::cout << "\nloading texture file..." << std::endl;
+#ifdef USE_IGL_VIEWER
         igl::stb::read_image(input_texture_file.string(), R, G, B, A);
-
+#endif
         transfer_texture_app(
             R,
             G,

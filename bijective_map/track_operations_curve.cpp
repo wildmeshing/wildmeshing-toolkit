@@ -1,6 +1,8 @@
 #include "track_operations_curve.hpp"
 #include <igl/Timer.h>
+#ifdef USE_IGL_VIEWER
 #include <igl/opengl/glfw/Viewer.h>
+#endif
 
 // Helper function to get all possible triangle IDs for a point
 std::vector<int> get_possible_triangle_ids(
@@ -669,6 +671,7 @@ void handle_one_segment_rational(
         }
     }
     if (verbose && false) {
+#ifdef USE_IGL_VIEWER
         igl::opengl::glfw::Viewer viewer;
         // Convert rational UV back to double for visualization
         Eigen::MatrixXd UV_joint_double(UV_joint_r.rows(), UV_joint_r.cols());
@@ -695,6 +698,7 @@ void handle_one_segment_rational(
             viewer.data().add_edges(pts.row(0), pts.row(1), Eigen::RowVector3d(1, 0, 0));
         }
         viewer.launch();
+#endif
     }
     // Print intersection tests summary (only if verbose)
     if (verbose && iteration > 0) {

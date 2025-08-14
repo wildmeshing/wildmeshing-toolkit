@@ -3,10 +3,10 @@
 #include <igl/in_element.h>
 #ifdef USE_IGL_VIEWER
 #include <igl/opengl/glfw/Viewer.h>
-#endif
-#include <igl/parallel_for.h>
 #include <igl/stb/read_image.h>
 #include <igl/stb/write_image.h>
+#endif
+#include <igl/parallel_for.h>
 #include "render_utils.hpp"
 
 void track_point_one_operation(
@@ -418,9 +418,11 @@ void render_index_app(
                 A(id % W, H - 1 - id / W) = 0;
             }
         });
+#ifdef USE_IGL_VIEWER
         igl::stb::write_image(name + ".png", R, G, B, A);
         addShading(R, G, B, V_out, F_out, fids, bcs, std::get<0>(cam), false);
         igl::stb::write_image(name + "_shading.png", R, G, B, A);
+#endif
     };
 #ifdef USE_IGL_VIEWER
     igl::opengl::glfw::Viewer viewer;
@@ -575,10 +577,12 @@ void transfer_texture_app(
         }
     });
     // write the output image
+#ifdef USE_IGL_VIEWER
     igl::stb::write_image(
         "output_texture.png",
         R_out.transpose(),
         G_out.transpose(),
         B_out.transpose(),
         A_out.transpose());
+#endif
 }
