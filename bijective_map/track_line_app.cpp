@@ -362,9 +362,9 @@ void track_line(path dirPath, query_curve& curve, bool do_forward)
         track_line_one_operation(operation_log, curve, do_forward);
         timer.stop();
         int curve_size_after = curve.segments.size();
-        std::cout << "curve size: " << curve_size_after << std::endl;
-        std::cout << "track_line_one_operation took " << timer.getElapsedTime() << " seconds."
-                  << std::endl;
+        // std::cout << "curve size: " << curve_size_after << std::endl;
+        // std::cout << "track_line_one_operation took " << timer.getElapsedTime() << " seconds."
+        //           << std::endl;
 
         if (curve.segments.size() > clean_up_threshold * curve_old_size) {
             clean_up_curve(curve);
