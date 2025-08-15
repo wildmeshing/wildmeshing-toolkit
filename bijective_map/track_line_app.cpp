@@ -770,7 +770,12 @@ void forward_track_plane_curves_app(
     }
     std::cout << "finished write curves to vtu" << std::endl;
 
-    check_curves_topology(curves, intersection_reference);
+    bool is_correct = check_curves_topology(curves, intersection_reference);
+    if (!is_correct) {
+        std::cout << "Error: curves topology is not correct" << std::endl;
+    } else {
+        std::cout << "curves topology is correct" << std::endl;
+    }
     std::cout << "finished check curves topology" << std::endl;
 
     if (false) {
@@ -799,10 +804,11 @@ void forward_track_plane_curves_app(
 }
 
 
-void check_curves_topology(
+bool check_curves_topology(
     const std::vector<query_curve>& curves,
     const std::vector<std::vector<int>>& intersection_reference)
 {
+    bool is_correct = true;
     for (int i = 0; i < curves.size(); i++) {
         int self_intersections = compute_curve_self_intersections(curves[i]);
         std::cout << "curve " << i << " has " << self_intersections << " self intersections"
@@ -810,6 +816,7 @@ void check_curves_topology(
         if (self_intersections != intersection_reference[i][i]) {
             std::cout << "Error: self intersections are not correct" << std::endl;
             std::cout << "expected: " << intersection_reference[i][i] << std::endl;
+            is_correct = false;
         }
         for (int j = i + 1; j < curves.size(); j++) {
             int intersections = compute_intersections_between_two_curves(curves[i], curves[j]);
@@ -819,12 +826,14 @@ void check_curves_topology(
                 std::cout << "Error: intersections between curve " << i << " and curve " << j
                           << " are not correct" << std::endl;
                 std::cout << "expected: " << intersection_reference[i][j] << std::endl;
+                is_correct = false;
             } else {
                 std::cout << "intersections between curve " << i << " and curve " << j
                           << " are correct" << std::endl;
             }
         }
     }
+    return is_correct;
 }
 
 

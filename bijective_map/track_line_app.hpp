@@ -71,8 +71,7 @@ void check_iso_lines(
     bool render_after = true);
 
 
-// TODO: implement this function
-void check_curves_topology(
+bool check_curves_topology(
     const std::vector<query_curve>& curves,
     const std::vector<std::vector<int>>& intersection_reference);
 
