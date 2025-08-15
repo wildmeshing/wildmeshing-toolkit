@@ -631,7 +631,8 @@ void handle_non_collapse_operation_r(
     }
 }
 
-// Note: intersectSegmentEdge_r and other curve-related functions moved to track_operations_curve.cpp
+// Note: intersectSegmentEdge_r and other curve-related functions moved to
+// track_operations_curve.cpp
 
 template <typename Matrix>
 Matrix json_to_matrix(const json& js)

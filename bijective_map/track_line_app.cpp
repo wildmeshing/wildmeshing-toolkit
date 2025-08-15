@@ -220,7 +220,7 @@ void track_line_one_operation(const json& operation_log, query_curve& curve, boo
     operation_name = operation_log["operation_name"];
 
     if (operation_name == "MeshConsolidate") {
-        std::cout << "This Operations is Consolidate" << std::endl;
+        // std::cout << "This Operations is Consolidate" << std::endl;
         std::vector<int64_t> face_ids_maps;
         std::vector<int64_t> vertex_ids_maps;
         parse_consolidate_file(operation_log, face_ids_maps, vertex_ids_maps);
@@ -232,7 +232,7 @@ void track_line_one_operation(const json& operation_log, query_curve& curve, boo
     } else if (
         operation_name == "TriEdgeSwap" || operation_name == "AttributesUpdate" ||
         operation_name == "EdgeSplit") {
-        std::cout << "This Operations is" << operation_name << std::endl;
+        // std::cout << "This Operations is" << operation_name << std::endl;
         Eigen::MatrixXi F_after, F_before;
         Eigen::MatrixXd V_after, V_before;
         std::vector<int64_t> id_map_after, id_map_before;
@@ -283,7 +283,7 @@ void track_line_one_operation(const json& operation_log, query_curve& curve, boo
                 verbose);
         }
     } else if (operation_name == "EdgeCollapse") {
-        std::cout << "This Operations is EdgeCollapse" << std::endl;
+        // std::cout << "This Operations is EdgeCollapse" << std::endl;
         Eigen::MatrixXi F_after, F_before;
         Eigen::MatrixXd UV_joint;
         std::vector<int64_t> v_id_map_joint;

@@ -154,7 +154,7 @@ bool is_curve_valid(const query_curve& curve);
 int compute_intersections_between_two_curves(
     const query_curve& curve1,
     const query_curve& curve2,
-    bool verbose = true);
+    bool verbose = false);
 
 
 int compute_curve_self_intersections(const query_curve& curve, bool verbose = true);
