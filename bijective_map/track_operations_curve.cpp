@@ -5,9 +5,10 @@
 #include <igl/opengl/glfw/Viewer.h>
 #endif
 
-// Helper function to get all possible triangle IDs for a point
-std::vector<int> get_possible_triangle_ids(
-    const query_point& qp,
+// Helper function to get all possible triangle IDs for a point - templated version
+template <typename CoordType>
+std::vector<int> get_possible_triangle_ids_t(
+    const query_point_t<CoordType>& qp,
     const Eigen::MatrixXi& F_before,
     const std::vector<int64_t>& id_map_before,
     const std::vector<int64_t>& v_id_map_before,
@@ -31,7 +32,13 @@ std::vector<int> get_possible_triangle_ids(
     int zero_indices[3];
     int zero_idx = 0;
     for (int i = 0; i < 3; i++) {
-        if (qp.bc(i) == 0.0) {
+        bool is_zero;
+        if constexpr (std::is_same_v<CoordType, double>) {
+            is_zero = (qp.bc(i) == 0.0);
+        } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
+            is_zero = (qp.bc(i) == wmtk::Rational(0));
+        }
+        if (is_zero) {
             zero_count++;
             zero_indices[zero_idx++] = i;
         }
@@ -41,7 +48,13 @@ std::vector<int> get_possible_triangle_ids(
         // Point is on vertex (two coordinates are 0)
         int vertex_idx = -1;
         for (int i = 0; i < 3; i++) {
-            if (qp.bc(i) != 0.0) {
+            bool is_nonzero;
+            if constexpr (std::is_same_v<CoordType, double>) {
+                is_nonzero = (qp.bc(i) != 0.0);
+            } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
+                is_nonzero = (qp.bc(i) != wmtk::Rational(0));
+            }
+            if (is_nonzero) {
                 vertex_idx = i;
                 break;
             }
@@ -70,15 +83,21 @@ std::vector<int> get_possible_triangle_ids(
     return possible_triangle_ids;
 }
 
-// Helper function to transform barycentric coordinates from one triangle representation to another
-std::pair<Eigen::Vector3d, Eigen::Vector3i> transform_bc_to_triangle(
-    const query_point& qp,
+// Helper function to transform barycentric coordinates from one triangle representation to another - templated version
+template<typename CoordType>
+std::pair<Eigen::Vector3<CoordType>, Eigen::Vector3i> transform_bc_to_triangle_t(
+    const query_point_t<CoordType>& qp,
     int target_triangle_id,
     const Eigen::MatrixXi& F_before,
     const std::vector<int64_t>& id_map_before,
     const std::vector<int64_t>& v_id_map_before)
 {
-    Eigen::Vector3d new_bc(0, 0, 0);
+    Eigen::Vector3<CoordType> new_bc;
+    if constexpr (std::is_same_v<CoordType, double>) {
+        new_bc = Eigen::Vector3<CoordType>(0.0, 0.0, 0.0);
+    } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
+        new_bc = Eigen::Vector3<CoordType>(wmtk::Rational(0), wmtk::Rational(0), wmtk::Rational(0));
+    }
     Eigen::Vector3i new_fv_ids;
 
     // Get the vertex IDs of the target triangle
@@ -88,7 +107,13 @@ std::pair<Eigen::Vector3d, Eigen::Vector3i> transform_bc_to_triangle(
 
     // Find mapping from original vertices to new triangle vertices
     for (int i = 0; i < 3; i++) {
-        if (qp.bc(i) != 0.0) { // Only process non-zero barycentric coordinates
+        bool is_nonzero;
+        if constexpr (std::is_same_v<CoordType, double>) {
+            is_nonzero = (qp.bc(i) != 0.0);
+        } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
+            is_nonzero = (qp.bc(i) != wmtk::Rational(0));
+        }
+        if (is_nonzero) {
             int global_vertex = qp.fv_ids[i];
             // Find where this vertex appears in the target triangle
             for (int j = 0; j < 3; j++) {
@@ -103,24 +128,35 @@ std::pair<Eigen::Vector3d, Eigen::Vector3i> transform_bc_to_triangle(
     return std::make_pair(new_bc, new_fv_ids);
 }
 
-// Helper function to check if two points are in the same triangle and transform coordinates if
-// needed
-SameTriangleResult check_and_transform_to_common_triangle(
-    const query_point& qp1,
-    const query_point& qp2,
+// Helper function to transform barycentric coordinates from one triangle representation to another
+std::pair<Eigen::Vector3d, Eigen::Vector3i> transform_bc_to_triangle(
+    const query_point& qp,
+    int target_triangle_id,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before)
+{
+    return transform_bc_to_triangle_t(qp, target_triangle_id, F_before, id_map_before, v_id_map_before);
+}
+
+// Helper function to check if two points are in the same triangle and transform coordinates if needed - templated version
+template<typename CoordType>
+SameTriangleResult_t<CoordType> check_and_transform_to_common_triangle_t(
+    const query_point_t<CoordType>& qp1,
+    const query_point_t<CoordType>& qp2,
     const Eigen::MatrixXi& F_before,
     const std::vector<int64_t>& id_map_before,
     const std::vector<int64_t>& v_id_map_before,
     const Eigen::MatrixXi& TT,
     const Eigen::MatrixXi& TTi)
 {
-    SameTriangleResult result;
+    SameTriangleResult_t<CoordType> result;
     result.in_same_triangle = false;
 
     auto triangles1 =
-        get_possible_triangle_ids(qp1, F_before, id_map_before, v_id_map_before, TT, TTi);
+        get_possible_triangle_ids_t(qp1, F_before, id_map_before, v_id_map_before, TT, TTi);
     auto triangles2 =
-        get_possible_triangle_ids(qp2, F_before, id_map_before, v_id_map_before, TT, TTi);
+        get_possible_triangle_ids_t(qp2, F_before, id_map_before, v_id_map_before, TT, TTi);
 
     // Find common triangle
     for (int t1 : triangles1) {
@@ -131,9 +167,9 @@ SameTriangleResult check_and_transform_to_common_triangle(
 
                 // Transform both points to this common triangle representation
                 auto transform1 =
-                    transform_bc_to_triangle(qp1, t1, F_before, id_map_before, v_id_map_before);
+                    transform_bc_to_triangle_t(qp1, t1, F_before, id_map_before, v_id_map_before);
                 auto transform2 =
-                    transform_bc_to_triangle(qp2, t1, F_before, id_map_before, v_id_map_before);
+                    transform_bc_to_triangle_t(qp2, t1, F_before, id_map_before, v_id_map_before);
 
                 result.transformed_qp1.f_id = id_map_before[t1];
                 result.transformed_qp1.bc = transform1.first;
@@ -151,9 +187,32 @@ SameTriangleResult check_and_transform_to_common_triangle(
     return result;
 }
 
-// Helper function to get candidate edges with their corresponding triangle indication
-std::vector<EdgeTrianglePair> get_candidate_edges_with_triangles(
-    const query_point& qp,
+// Helper function to check if two points are in the same triangle and transform coordinates if
+// needed
+SameTriangleResult check_and_transform_to_common_triangle(
+    const query_point& qp1,
+    const query_point& qp2,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixXi& TT,
+    const Eigen::MatrixXi& TTi)
+{
+    auto result_t = check_and_transform_to_common_triangle_t(qp1, qp2, F_before, id_map_before, v_id_map_before, TT, TTi);
+    
+    SameTriangleResult result;
+    result.in_same_triangle = result_t.in_same_triangle;
+    result.common_triangle_id = result_t.common_triangle_id;
+    result.transformed_qp1 = result_t.transformed_qp1;
+    result.transformed_qp2 = result_t.transformed_qp2;
+    
+    return result;
+}
+
+// Helper function to get candidate edges with their corresponding triangle indication - templated version
+template<typename CoordType>
+std::vector<EdgeTrianglePair> get_candidate_edges_with_triangles_t(
+    const query_point_t<CoordType>& qp,
     const std::vector<int>& possible_triangles,
     const Eigen::MatrixXi& F_before,
     const std::vector<int64_t>& v_id_map_before,
@@ -166,7 +225,13 @@ std::vector<EdgeTrianglePair> get_candidate_edges_with_triangles(
     int zero_count = 0;
     int zero_idx = -1;
     for (int i = 0; i < 3; i++) {
-        if (qp.bc(i) == 0.0) {
+        bool is_zero;
+        if constexpr (std::is_same_v<CoordType, double>) {
+            is_zero = (qp.bc(i) == 0.0);
+        } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
+            is_zero = (qp.bc(i) == wmtk::Rational(0));
+        }
+        if (is_zero) {
             zero_count++;
             zero_idx = i;
         }
@@ -213,7 +278,13 @@ std::vector<EdgeTrianglePair> get_candidate_edges_with_triangles(
             int local_vertex_idx = -1;
             int vertex_idx = -1;
             for (int i = 0; i < 3; i++) {
-                if (qp.bc(i) != 0.0) {
+                bool is_nonzero;
+                if constexpr (std::is_same_v<CoordType, double>) {
+                    is_nonzero = (qp.bc(i) != 0.0);
+                } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
+                    is_nonzero = (qp.bc(i) != wmtk::Rational(0));
+                }
+                if (is_nonzero) {
                     vertex_idx = i;
                     break;
                 }
@@ -237,6 +308,18 @@ std::vector<EdgeTrianglePair> get_candidate_edges_with_triangles(
     }
 
     return candidate_edges;
+}
+
+// Helper function to get candidate edges with their corresponding triangle indication
+std::vector<EdgeTrianglePair> get_candidate_edges_with_triangles(
+    const query_point& qp,
+    const std::vector<int>& possible_triangles,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixXi& TT,
+    const Eigen::MatrixXi& TTi)
+{
+    return get_candidate_edges_with_triangles_t(qp, possible_triangles, F_before, v_id_map_before, TT, TTi);
 }
 
 // Helper function to compute barycentric coordinates in triangle from edge barycentric coordinates
@@ -718,220 +801,6 @@ void handle_one_segment(
         verbose);
 }
 
-// Old version for comparison
-void handle_one_segment_old(
-    query_curve& curve,
-    int id,
-    std::vector<query_point>& query_points,
-    const Eigen::MatrixXd& UV_joint,
-    const Eigen::MatrixXi& F_before,
-    const std::vector<int64_t>& v_id_map_joint,
-    const std::vector<int64_t>& id_map_before,
-    Eigen::MatrixXi& TT,
-    Eigen::MatrixXi& TTi)
-{
-    query_segment& qs = curve.segments[id];
-
-    if (query_points[0].f_id == query_points[1].f_id) {
-        // two endpoints are on the same face --> no need to compute intersections
-        qs.f_id = query_points[0].f_id;
-        qs.bcs[0] = query_points[0].bc;
-        qs.bcs[1] = query_points[1].bc;
-        qs.fv_ids = query_points[0].fv_ids;
-    } else {
-        if (TT.rows() == 0) {
-            igl::triangle_triangle_adjacency(F_before, TT, TTi);
-        }
-
-        // convert the UV_Joint to Rational
-        Eigen::MatrixX<wmtk::Rational> UV_joint_r(UV_joint.rows(), UV_joint.cols());
-        for (int i = 0; i < UV_joint.rows(); i++) {
-            for (int j = 0; j < UV_joint.cols(); j++) {
-                UV_joint_r(i, j) = wmtk::Rational(UV_joint(i, j));
-            }
-        }
-
-        // cache for the last new segment
-        int old_next_seg = curve.next_segment_ids[id];
-
-        // compute the two end points
-        auto it = std::find(id_map_before.begin(), id_map_before.end(), query_points[0].f_id);
-        if (it == id_map_before.end()) {
-            std::cout << "query_points[0] not found" << std::endl;
-            throw std::runtime_error("query_points[0] not found");
-        }
-        int current_fid = std::distance(id_map_before.begin(), it);
-
-        Eigen::Vector2<wmtk::Rational> p0(0, 0);
-        Eigen::Vector3<wmtk::Rational> bc_p0_r;
-        bc_p0_r << wmtk::Rational(query_points[0].bc(0)), wmtk::Rational(query_points[0].bc(1)),
-            wmtk::Rational(query_points[0].bc(2));
-        bc_p0_r /= bc_p0_r.sum();
-        for (int i = 0; i < 3; i++) {
-            p0 = p0 + UV_joint_r.row(F_before(current_fid, i)).transpose() * bc_p0_r(i);
-        }
-
-        it = std::find(id_map_before.begin(), id_map_before.end(), query_points[1].f_id);
-        if (it == id_map_before.end()) {
-            std::cout << "query_points[1] not found" << std::endl;
-            throw std::runtime_error("query_points[1] not found");
-        }
-        int target_fid = std::distance(id_map_before.begin(), it);
-        Eigen::Vector2<wmtk::Rational> p1(0, 0);
-        Eigen::Vector3<wmtk::Rational> bc_p1_r;
-        bc_p1_r << wmtk::Rational(query_points[1].bc(0)), wmtk::Rational(query_points[1].bc(1)),
-            wmtk::Rational(query_points[1].bc(2));
-        bc_p1_r /= bc_p1_r.sum();
-        for (int i = 0; i < 3; i++) {
-            p1 = p1 + UV_joint_r.row(F_before(target_fid, i)).transpose() * bc_p1_r(i);
-        }
-
-        int current_edge_id = -1;
-        // case that the first point is on the edge
-        for (int eid = 0; eid < 3; eid++) {
-            if (query_points[0].bc(eid) == 0) {
-                current_edge_id = (eid + 1) % 3;
-            }
-        }
-
-        Eigen::Vector2<wmtk::Rational> last_edge_bc;
-        {
-            int next_edge_id0 = -1;
-            // find the first intersection
-            for (int edge_id = 0; edge_id < 3; edge_id++) {
-                if (edge_id == current_edge_id) continue; // we need to find the other intersection
-
-                Eigen::VectorX<wmtk::Rational> a = UV_joint_r.row(F_before(current_fid, edge_id));
-                Eigen::VectorX<wmtk::Rational> b =
-                    UV_joint_r.row(F_before(current_fid, (edge_id + 1) % 3));
-
-                Eigen::Vector2<wmtk::Rational> edge_bc;
-                if (intersectSegmentEdge_r(p0, p1, a, b, edge_bc)) {
-                    next_edge_id0 = edge_id;
-                    qs.f_id = query_points[0].f_id;
-                    qs.bcs[0] = query_points[0].bc;
-                    qs.bcs[1] << 0, 0, 0;
-                    qs.bcs[1](edge_id) = edge_bc(0).to_double();
-                    qs.bcs[1]((edge_id + 1) % 3) = edge_bc(1).to_double();
-                    qs.fv_ids = query_points[0].fv_ids;
-                    last_edge_bc = edge_bc;
-                    curve.next_segment_ids[id] =
-                        curve.segments.size(); // next segment will add to the end
-
-                    break;
-                }
-            }
-
-            if (next_edge_id0 == -1) {
-                // case that the first point is not on a edge, then it is a bug
-                if (current_edge_id == -1) {
-                    std::cout << "bc_p0_r: ";
-                    std::cout << std::setprecision(16) << bc_p0_r(0) << ", " << bc_p0_r(1) << ", "
-                              << bc_p0_r(2) << std::endl;
-                    std::cout << "bc_p1_r: ";
-                    std::cout << std::setprecision(16) << bc_p1_r(0) << ", " << bc_p1_r(1) << ", "
-                              << bc_p1_r(2) << std::endl;
-
-                    std::cout << "no first intersection found" << std::endl;
-                    throw std::runtime_error("no first intersection found");
-                }
-                // solve this by changing the first point
-                int e0 = current_edge_id;
-                int f1 = TT(current_fid, e0);
-                int e1 = TTi(current_fid, e0);
-
-                query_points[0].f_id = id_map_before[f1];
-                query_points[0].fv_ids << v_id_map_joint[F_before(f1, 0)],
-                    v_id_map_joint[F_before(f1, 1)], v_id_map_joint[F_before(f1, 2)];
-                auto current_bc = query_points[0].bc;
-                query_points[0].bc(e1) = current_bc((e0 + 1) % 3);
-                query_points[0].bc((e1 + 1) % 3) = current_bc(e0);
-                query_points[0].bc((e1 + 2) % 3) = 0;
-
-                std::cout << "try change start p0's fid and solve" << std::endl;
-                handle_one_segment_old(
-                    curve,
-                    id,
-                    query_points,
-                    UV_joint,
-                    F_before,
-                    v_id_map_joint,
-                    id_map_before,
-                    TT,
-                    TTi);
-                return;
-
-                std::cout << "no intersection found place 1" << std::endl;
-                throw std::runtime_error("no intersection found");
-            }
-
-            current_edge_id = TTi(current_fid, next_edge_id0);
-            current_fid = TT(current_fid, next_edge_id0);
-        }
-
-        // find the rest intersections
-        while (current_fid != target_fid) {
-            int next_edge_id = -1;
-            for (int edge_id = 0; edge_id < 3; edge_id++) {
-                if (edge_id == current_edge_id) continue;
-                Eigen::VectorX<wmtk::Rational> a = UV_joint_r.row(F_before(current_fid, edge_id));
-                Eigen::VectorX<wmtk::Rational> b =
-                    UV_joint_r.row(F_before(current_fid, (edge_id + 1) % 3));
-                Eigen::Vector2<wmtk::Rational> edge_bc;
-                query_segment qs_new;
-
-                if (intersectSegmentEdge_r(p0, p1, a, b, edge_bc)) {
-                    next_edge_id = edge_id;
-                    qs_new.f_id = id_map_before[current_fid];
-                    qs_new.bcs[0] = Eigen::Vector3d(0, 0, 0);
-                    qs_new.bcs[1] = Eigen::Vector3d(0, 0, 0);
-
-                    qs_new.bcs[0](current_edge_id) = last_edge_bc(1).to_double();
-                    qs_new.bcs[0]((current_edge_id + 1) % 3) = last_edge_bc(0).to_double();
-                    qs_new.bcs[1](next_edge_id) = edge_bc(0).to_double();
-                    qs_new.bcs[1]((next_edge_id + 1) % 3) = edge_bc(1).to_double();
-
-                    qs_new.fv_ids << v_id_map_joint[F_before(current_fid, 0)],
-                        v_id_map_joint[F_before(current_fid, 1)],
-                        v_id_map_joint[F_before(current_fid, 2)];
-
-                    // push the new segment
-                    curve.segments.push_back(qs_new);
-                    curve.next_segment_ids.push_back(curve.next_segment_ids.size() + 1);
-
-                    // record the last edge
-                    last_edge_bc = edge_bc;
-                    break;
-                }
-            }
-
-            if (next_edge_id == -1) {
-                std::cout << "no intersection found place 2" << std::endl;
-                throw std::runtime_error("no intersection found");
-                continue;
-            }
-
-            current_edge_id = TTi(current_fid, next_edge_id);
-            current_fid = TT(current_fid, next_edge_id);
-        }
-
-        // add last segment
-        {
-            query_segment qs_new;
-            qs_new.f_id = query_points[1].f_id;
-            qs_new.bcs[0] = Eigen::Vector3d(0, 0, 0);
-            qs_new.bcs[1] = query_points[1].bc;
-            qs_new.bcs[0](current_edge_id) = last_edge_bc(1).to_double();
-            qs_new.bcs[0]((current_edge_id + 1) % 3) = last_edge_bc(0).to_double();
-            qs_new.fv_ids = query_points[1].fv_ids;
-
-            // push the new segment
-            curve.segments.push_back(qs_new);
-            curve.next_segment_ids.push_back(old_next_seg);
-        }
-    }
-}
-
 // Curve handling functions for different operations
 void handle_collapse_edge_curve(
     const Eigen::MatrixXd& UV_joint,
@@ -1159,14 +1028,16 @@ void handle_non_collapse_operation_curve(
     }
 }
 
-void clean_up_curve(query_curve& curve)
+// Template version of clean_up_curve
+template<typename CoordType>
+void clean_up_curve_t(query_curve_t<CoordType>& curve)
 {
     // TODO: make this function work for loops
     if (curve.segments.empty()) {
         return;
     }
 
-    std::vector<query_segment> new_segments;
+    std::vector<query_segment_t<CoordType>> new_segments;
     std::vector<int> new_next_segment_ids;
     std::vector<int> old_to_new_mapping(curve.segments.size(), -1);
 
@@ -1181,7 +1052,7 @@ void clean_up_curve(query_curve& curve)
             continue;
         }
 
-        query_segment& current_segment = curve.segments[current_id];
+        query_segment_t<CoordType>& current_segment = curve.segments[current_id];
 
         // Convert to rational arithmetic for exact collinearity check (only first 2 components)
         Eigen::Vector2<wmtk::Rational> start_bc_r(
@@ -1202,7 +1073,7 @@ void clean_up_curve(query_curve& curve)
             if (next_id == current_id) {
                 break; // loop detected
             }
-            query_segment& next_segment = curve.segments[next_id];
+            query_segment_t<CoordType>& next_segment = curve.segments[next_id];
 
             // Check if they can be merged (same origin_segment_id and f_id)
             if (current_segment.origin_segment_id != next_segment.origin_segment_id ||
@@ -1259,7 +1130,7 @@ void clean_up_curve(query_curve& curve)
             }
         }
         // Create merged segment
-        query_segment merged_segment;
+        query_segment_t<CoordType> merged_segment;
         merged_segment.f_id = current_segment.f_id;
         merged_segment.origin_segment_id = current_segment.origin_segment_id;
         merged_segment.bcs[0] = current_segment.bcs[0]; // First segment's bc0
@@ -1306,7 +1177,14 @@ void clean_up_curve(query_curve& curve)
     curve.next_segment_ids = std::move(new_next_segment_ids);
 }
 
-bool is_curve_valid(const query_curve& curve)
+void clean_up_curve(query_curve& curve)
+{
+    return clean_up_curve_t(curve);
+}
+
+// Template version of is_curve_valid
+template<typename CoordType>
+bool is_curve_valid_t(const query_curve_t<CoordType>& curve)
 {
     // TODO: make this function work for loops
     if (curve.segments.empty()) {
@@ -1329,8 +1207,19 @@ bool is_curve_valid(const query_curve& curve)
         // std::cout << "cur_seg.f_id: " << cur_seg.f_id << " next_seg.f_id: " << next_seg.f_id
         //           << std::endl;
         if (cur_seg.f_id == next_seg.f_id) {
-            Eigen::Vector3d bc_diff = next_seg.bcs[0] - cur_seg.bcs[1];
-            if (bc_diff.norm() > 1e-8) {
+            auto bc_diff = next_seg.bcs[0] - cur_seg.bcs[1];
+            bool is_invalid = false;
+            
+            if constexpr (std::is_same_v<CoordType, double>) {
+                is_invalid = (bc_diff.norm() > 1e-8);
+            } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
+                // For rational, check if all components are exactly zero
+                is_invalid = (bc_diff(0) != wmtk::Rational(0) || 
+                             bc_diff(1) != wmtk::Rational(0) || 
+                             bc_diff(2) != wmtk::Rational(0));
+            }
+            
+            if (is_invalid) {
                 std::cout << "Error: bc_diff is too large" << std::endl;
                 std::cout << "cur_seg.bcs[1]: " << cur_seg.bcs[1].transpose() << std::endl;
                 std::cout << "next_seg.bcs[0]: " << next_seg.bcs[0].transpose() << std::endl;
@@ -1340,7 +1229,14 @@ bool is_curve_valid(const query_curve& curve)
             }
         } else {
             for (int i = 0; i < 3; i++) {
-                if (cur_seg.bcs[1](i) != 0) {
+                bool is_nonzero;
+                if constexpr (std::is_same_v<CoordType, double>) {
+                    is_nonzero = (cur_seg.bcs[1](i) != 0.0);
+                } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
+                    is_nonzero = (cur_seg.bcs[1](i) != wmtk::Rational(0));
+                }
+                
+                if (is_nonzero) {
                     int vid = cur_seg.fv_ids[i];
 
                     // find vid in next_seg.fv_ids
@@ -1356,7 +1252,17 @@ bool is_curve_valid(const query_curve& curve)
                         is_valid = false;
                     } else {
                         int next_seg_vid_id = std::distance(next_seg.fv_ids.begin(), it);
-                        if (abs(next_seg.bcs[0](next_seg_vid_id) - cur_seg.bcs[1](i)) > 1e-8) {
+                        auto diff = next_seg.bcs[0](next_seg_vid_id) - cur_seg.bcs[1](i);
+                        bool is_diff_too_large = false;
+                        
+                        if constexpr (std::is_same_v<CoordType, double>) {
+                            is_diff_too_large = (abs(diff) > 1e-8);
+                        } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
+                            // For rational, check if exactly zero
+                            is_diff_too_large = (diff != wmtk::Rational(0));
+                        }
+                        
+                        if (is_diff_too_large) {
                             std::cout << "Error: bc_diff is too large" << std::endl;
                             std::cout << "cur_seg.fv_ids: " << cur_seg.fv_ids.transpose()
                                       << std::endl;
@@ -1375,6 +1281,11 @@ bool is_curve_valid(const query_curve& curve)
         // cur_seg_id = next_seg_id;
     }
     return is_valid;
+}
+
+bool is_curve_valid(const query_curve& curve)
+{
+    return is_curve_valid_t(curve);
 }
 
 // function that computes all the intersections between two curves

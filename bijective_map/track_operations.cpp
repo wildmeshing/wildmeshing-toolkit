@@ -824,3 +824,378 @@ void parse_edge_collapse_file(
     id_map_before = operation_log["F_id_map_before"].get<std::vector<int64_t>>();
     id_map_after = operation_log["F_id_map_after"].get<std::vector<int64_t>>();
 }
+
+// Template implementations
+
+// Template version of handle_non_collapse_operation
+template <typename CoordType>
+void handle_non_collapse_operation_t(
+    const Eigen::MatrixXd& V_before,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixXd& V_after,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& id_map_after,
+    const std::vector<int64_t>& v_id_map_after,
+    std::vector<query_point_t<CoordType>>& query_points,
+    const std::string& operation_name,
+    bool use_rational,
+    const std::vector<BarycentricPrecompute2D>* barycentric_cache)
+{
+    if constexpr (std::is_same_v<CoordType, double>) {
+        // For double query points, use use_rational to decide between regular and rational
+        // processing
+        if (use_rational) {
+            handle_non_collapse_operation_r(
+                V_before,
+                F_before,
+                id_map_before,
+                v_id_map_before,
+                V_after,
+                F_after,
+                id_map_after,
+                v_id_map_after,
+                query_points,
+                operation_name,
+                barycentric_cache);
+        } else {
+            handle_non_collapse_operation(
+                V_before,
+                F_before,
+                id_map_before,
+                v_id_map_before,
+                V_after,
+                F_after,
+                id_map_after,
+                v_id_map_after,
+                query_points,
+                operation_name,
+                false);
+        }
+    } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
+        // For rational query points, always use rational processing (ignore use_rational parameter)
+
+        // Convert V_before and V_after to rational
+        Eigen::MatrixX<wmtk::Rational> V_before_r(V_before.rows(), V_before.cols());
+        Eigen::MatrixX<wmtk::Rational> V_after_r(V_after.rows(), V_after.cols());
+
+        for (int i = 0; i < V_before.rows(); i++) {
+            for (int j = 0; j < V_before.cols(); j++) {
+                V_before_r(i, j) = wmtk::Rational(V_before(i, j));
+            }
+        }
+
+        for (int i = 0; i < V_after.rows(); i++) {
+            for (int j = 0; j < V_after.cols(); j++) {
+                V_after_r(i, j) = wmtk::Rational(V_after(i, j));
+            }
+        }
+
+        // Precompute barycentric cache for F_before (2D) if not provided
+        std::vector<BarycentricPrecompute2D> local_cache;
+        const std::vector<BarycentricPrecompute2D>* bc_cache_ptr = barycentric_cache;
+        if (bc_cache_ptr == nullptr) {
+            local_cache = build_barycentric_cache_2d(V_before_r, F_before);
+            bc_cache_ptr = &local_cache;
+        }
+
+        for (int id = 0; id < query_points.size(); id++) {
+            query_point_t<CoordType>& qp = query_points[id];
+            if (qp.f_id < 0) continue;
+
+            // find if qp is in the id_map_after
+            auto it = std::find(id_map_after.begin(), id_map_after.end(), qp.f_id);
+            if (it != id_map_after.end()) {
+                // find the index of qp in id_map_after
+                int local_index_in_f_after = std::distance(id_map_after.begin(), it);
+                // offset of the qp.fv_ids
+                int offset_in_f_after = -1;
+                for (int i = 0; i < 3; i++) {
+                    if (v_id_map_after[F_after(local_index_in_f_after, i)] == qp.fv_ids[0]) {
+                        offset_in_f_after = i;
+                        break;
+                    }
+                }
+                if (offset_in_f_after == -1) {
+                    std::stringstream error_msg;
+                    error_msg << "FATAL ERROR in rational template " << operation_name
+                              << ": Failed to find vertex ID mapping.\n";
+                    error_msg << "Query point face ID: " << qp.f_id << "\n";
+                    error_msg << "Expected vertex ID: " << qp.fv_ids[0] << "\n";
+                    error_msg
+                        << "This indicates a serious numerical or topological error in rational "
+                           "template computation.";
+                    throw std::runtime_error(error_msg.str());
+                }
+
+                // Normalize barycentric coordinates
+                wmtk::Rational bc_sum = qp.bc.sum();
+                if (bc_sum != wmtk::Rational(0)) {
+                    qp.bc /= bc_sum;
+                }
+
+                // compute the location of the qp using rational arithmetic
+                int V_cols = V_after.cols();
+                Eigen::VectorX<wmtk::Rational> p = Eigen::VectorX<wmtk::Rational>::Zero(V_cols);
+                for (int i = 0; i < 3; i++) {
+                    p = p +
+                        V_after_r.row(F_after(local_index_in_f_after, (i + offset_in_f_after) % 3))
+                                .transpose() *
+                            qp.bc(i);
+                }
+
+                // compute bc of the p in (V, F)_before using rational arithmetic
+                int local_index_in_f_before = -1;
+                bool bc_updated = false;
+                for (int i = 0; i < F_before.rows(); i++) {
+                    Eigen::Matrix<wmtk::Rational, 3, 1> bc_rational_result;
+                    if (V_cols == 2) {
+                        bc_rational_result =
+                            barycentric_from_cache((*bc_cache_ptr)[i], p.head<2>());
+                    } else {
+                        throw std::runtime_error("FATAL ERROR: V_cols == 3 after local flattening "
+                                                 "in rational template computation");
+                    }
+
+                    // Check if point is inside triangle (all barycentric coordinates >= 0)
+                    if (bc_rational_result.minCoeff() >= 0 && bc_rational_result.maxCoeff() <= 1) {
+                        local_index_in_f_before = i;
+                        qp.bc = bc_rational_result;
+                        bc_updated = true;
+                        break;
+                    }
+                }
+
+                if (!bc_updated) {
+                    std::stringstream error_msg;
+                    error_msg << "FATAL ERROR in rational template " << operation_name
+                              << ": Failed to update barycentric coordinates.\n";
+                    error_msg << "Query point could not be located in any triangle after mesh "
+                                 "operation.\n";
+                    error_msg << "This indicates a serious numerical or topological error in exact "
+                                 "template arithmetic.";
+                    throw std::runtime_error(error_msg.str());
+                }
+
+                // update qp
+                qp.f_id = id_map_before[local_index_in_f_before];
+                for (int i = 0; i < 3; i++) {
+                    qp.fv_ids[i] = v_id_map_before[F_before(local_index_in_f_before, i)];
+                }
+
+                // Normalize barycentric coordinates (they should already be normalized from
+                // rational computation)
+                wmtk::Rational bc_sum_final = qp.bc.sum();
+                if (bc_sum_final != wmtk::Rational(0)) {
+                    qp.bc /= bc_sum_final;
+                }
+            }
+        }
+    } else {
+        static_assert(
+            std::is_same_v<CoordType, double> || std::is_same_v<CoordType, wmtk::Rational>,
+            "CoordType must be either double or wmtk::Rational");
+    }
+}
+
+// Template version of handle_collapse_edge
+template <typename CoordType>
+void handle_collapse_edge_t(
+    const Eigen::MatrixXd& UV_joint,
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& id_map_after,
+    std::vector<query_point_t<CoordType>>& query_points,
+    bool use_rational,
+    const std::vector<BarycentricPrecompute2D>* barycentric_cache)
+{
+    if constexpr (std::is_same_v<CoordType, double>) {
+        // For double query points, use use_rational to decide between regular and rational
+        // processing
+        if (use_rational) {
+            handle_collapse_edge_r(
+                UV_joint,
+                F_before,
+                F_after,
+                v_id_map_joint,
+                id_map_before,
+                id_map_after,
+                query_points,
+                barycentric_cache);
+        } else {
+            handle_collapse_edge(
+                UV_joint,
+                F_before,
+                F_after,
+                v_id_map_joint,
+                id_map_before,
+                id_map_after,
+                query_points,
+                false);
+        }
+    } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
+        // For rational query points, always use rational processing (ignore use_rational parameter)
+
+        // Convert UV_joint to rational
+        Eigen::MatrixX<wmtk::Rational> UV_joint_r(UV_joint.rows(), UV_joint.cols());
+        for (int i = 0; i < UV_joint.rows(); i++) {
+            for (int j = 0; j < UV_joint.cols(); j++) {
+                UV_joint_r(i, j) = wmtk::Rational(UV_joint(i, j));
+            }
+        }
+
+        // Precompute barycentric cache for F_before (2D) if not provided
+        std::vector<BarycentricPrecompute2D> local_cache;
+        const std::vector<BarycentricPrecompute2D>* bc_cache_ptr = barycentric_cache;
+        if (bc_cache_ptr == nullptr) {
+            local_cache = build_barycentric_cache_2d(UV_joint_r, F_before);
+            bc_cache_ptr = &local_cache;
+        }
+
+        for (int id = 0; id < query_points.size(); id++) {
+            query_point_t<CoordType>& qp = query_points[id];
+            if (qp.f_id < 0) continue;
+
+            // find if qp is in the id_map_after
+            auto it = std::find(id_map_after.begin(), id_map_after.end(), qp.f_id);
+            if (it != id_map_after.end()) {
+                // find the index of qp in id_map_after
+                int local_index_in_f_after = std::distance(id_map_after.begin(), it);
+
+                // offset of the qp.fv_ids
+                int offset_in_f_after = -1;
+                for (int i = 0; i < 3; i++) {
+                    if (v_id_map_joint[F_after(local_index_in_f_after, i)] == qp.fv_ids[0]) {
+                        offset_in_f_after = i;
+                        break;
+                    }
+                }
+                if (offset_in_f_after == -1) {
+                    std::stringstream error_msg;
+                    error_msg << "FATAL ERROR in rational template edge collapse"
+                              << ": Failed to find vertex ID mapping.\n";
+                    error_msg << "Query point face ID: " << qp.f_id << "\n";
+                    error_msg << "Expected vertex ID: " << qp.fv_ids[0] << "\n";
+                    error_msg
+                        << "This indicates a serious numerical or topological error in rational "
+                           "template edge collapse computation.";
+                    throw std::runtime_error(error_msg.str());
+                }
+
+                // Normalize barycentric coordinates
+                wmtk::Rational bc_sum = qp.bc.sum();
+                if (bc_sum != wmtk::Rational(0)) {
+                    qp.bc /= bc_sum;
+                }
+
+                // compute the location of the qp using rational arithmetic
+                Eigen::Vector2<wmtk::Rational> p = Eigen::Vector2<wmtk::Rational>::Zero();
+                for (int i = 0; i < 3; i++) {
+                    p = p +
+                        UV_joint_r.row(F_after(local_index_in_f_after, (i + offset_in_f_after) % 3))
+                                .head<2>()
+                                .transpose() *
+                            qp.bc(i);
+                }
+
+                // compute bc of the p in F_before using rational arithmetic
+                int local_index_in_f_before = -1;
+                bool bc_updated = false;
+
+                for (int i = 0; i < F_before.rows(); i++) {
+                    Eigen::Matrix<wmtk::Rational, 3, 1> bc_rational_result =
+                        barycentric_from_cache((*bc_cache_ptr)[i], p);
+
+                    // Check if point is inside triangle (all barycentric coordinates >= 0)
+                    if (bc_rational_result.minCoeff() >= 0 && bc_rational_result.maxCoeff() <= 1) {
+                        local_index_in_f_before = i;
+                        qp.bc = bc_rational_result;
+                        bc_updated = true;
+                        break;
+                    }
+                }
+
+                if (!bc_updated) {
+                    std::stringstream error_msg;
+                    error_msg << "FATAL ERROR in rational template edge collapse"
+                              << ": Failed to update barycentric coordinates.\n";
+                    error_msg << "Query point could not be located in any triangle after edge "
+                                 "collapse.\n";
+                    error_msg << "This indicates a serious numerical or topological error in exact "
+                                 "template edge collapse arithmetic.";
+                    throw std::runtime_error(error_msg.str());
+                }
+
+                // update qp
+                qp.f_id = id_map_before[local_index_in_f_before];
+                for (int i = 0; i < 3; i++) {
+                    qp.fv_ids[i] = v_id_map_joint[F_before(local_index_in_f_before, i)];
+                }
+
+                // Normalize barycentric coordinates
+                wmtk::Rational bc_sum_final = qp.bc.sum();
+                if (bc_sum_final != wmtk::Rational(0)) {
+                    qp.bc /= bc_sum_final;
+                }
+            }
+        }
+    } else {
+        static_assert(
+            std::is_same_v<CoordType, double> || std::is_same_v<CoordType, wmtk::Rational>,
+            "CoordType must be either double or wmtk::Rational");
+    }
+}
+
+// Explicit template instantiations
+template void handle_non_collapse_operation_t<double>(
+    const Eigen::MatrixXd& V_before,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixXd& V_after,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& id_map_after,
+    const std::vector<int64_t>& v_id_map_after,
+    std::vector<query_point_t<double>>& query_points,
+    const std::string& operation_name,
+    bool use_rational,
+    const std::vector<BarycentricPrecompute2D>* barycentric_cache);
+
+template void handle_non_collapse_operation_t<wmtk::Rational>(
+    const Eigen::MatrixXd& V_before,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixXd& V_after,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& id_map_after,
+    const std::vector<int64_t>& v_id_map_after,
+    std::vector<query_point_t<wmtk::Rational>>& query_points,
+    const std::string& operation_name,
+    bool use_rational,
+    const std::vector<BarycentricPrecompute2D>* barycentric_cache);
+
+template void handle_collapse_edge_t<double>(
+    const Eigen::MatrixXd& UV_joint,
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& id_map_after,
+    std::vector<query_point_t<double>>& query_points,
+    bool use_rational,
+    const std::vector<BarycentricPrecompute2D>* barycentric_cache);
+
+template void handle_collapse_edge_t<wmtk::Rational>(
+    const Eigen::MatrixXd& UV_joint,
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& id_map_after,
+    std::vector<query_point_t<wmtk::Rational>>& query_points,
+    bool use_rational,
+    const std::vector<BarycentricPrecompute2D>* barycentric_cache);

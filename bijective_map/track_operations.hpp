@@ -12,26 +12,109 @@ using json = nlohmann::json;
 
 #include <wmtk/utils/Rational.hpp>
 
-struct query_point
+template<typename CoordType = double>
+struct query_point_t
 {
     int64_t f_id; // face id
-    Eigen::Vector3d bc; // barycentric coordinates
+    Eigen::Vector3<CoordType> bc; // barycentric coordinates
     Eigen::Vector3i fv_ids; // face vertex ids
 };
 
-struct query_segment
+// Type aliases for convenience
+using query_point = query_point_t<double>;
+using query_point_r = query_point_t<wmtk::Rational>;
+
+template<typename CoordType = double>
+struct query_segment_t
 {
     int64_t f_id; // face id
     int64_t origin_segment_id; // original segment id when the segment was first created as input
-    Eigen::Vector3d bcs[2]; // barycentric coordinates
+    Eigen::Vector3<CoordType> bcs[2]; // barycentric coordinates
     Eigen::Vector3i fv_ids; // face vertex ids
 };
 
-struct query_curve
+// Type aliases for convenience
+using query_segment = query_segment_t<double>;
+using query_segment_r = query_segment_t<wmtk::Rational>;
+
+template<typename CoordType = double>
+struct query_curve_t
 {
-    std::vector<query_segment> segments;
+    std::vector<query_segment_t<CoordType>> segments;
     std::vector<int> next_segment_ids;
 };
+
+// Type aliases for convenience
+using query_curve = query_curve_t<double>;
+using query_curve_r = query_curve_t<wmtk::Rational>;
+
+// Helper functions for type conversion between double and wmtk::Rational
+template<typename FromType, typename ToType>
+query_point_t<ToType> convert_query_point(const query_point_t<FromType>& from)
+{
+    query_point_t<ToType> to;
+    to.f_id = from.f_id;
+    to.fv_ids = from.fv_ids;
+    for (int i = 0; i < 3; ++i) {
+        if constexpr (std::is_same_v<FromType, wmtk::Rational> && std::is_same_v<ToType, double>) {
+            to.bc[i] = from.bc[i].to_double();
+        } else if constexpr (std::is_same_v<FromType, double> && std::is_same_v<ToType, wmtk::Rational>) {
+            to.bc[i] = wmtk::Rational(from.bc[i]);
+        } else {
+            to.bc[i] = ToType(from.bc[i]);
+        }
+    }
+    return to;
+}
+
+template<typename FromType, typename ToType>
+query_segment_t<ToType> convert_query_segment(const query_segment_t<FromType>& from)
+{
+    query_segment_t<ToType> to;
+    to.f_id = from.f_id;
+    to.origin_segment_id = from.origin_segment_id;
+    to.fv_ids = from.fv_ids;
+    for (int j = 0; j < 2; ++j) {
+        for (int i = 0; i < 3; ++i) {
+            if constexpr (std::is_same_v<FromType, wmtk::Rational> && std::is_same_v<ToType, double>) {
+                to.bcs[j][i] = from.bcs[j][i].to_double();
+            } else if constexpr (std::is_same_v<FromType, double> && std::is_same_v<ToType, wmtk::Rational>) {
+                to.bcs[j][i] = wmtk::Rational(from.bcs[j][i]);
+            } else {
+                to.bcs[j][i] = ToType(from.bcs[j][i]);
+            }
+        }
+    }
+    return to;
+}
+
+template<typename FromType, typename ToType>
+query_curve_t<ToType> convert_query_curve(const query_curve_t<FromType>& from)
+{
+    query_curve_t<ToType> to;
+    to.segments.reserve(from.segments.size());
+    for (const auto& seg : from.segments) {
+        to.segments.push_back(convert_query_segment<FromType, ToType>(seg));
+    }
+    to.next_segment_ids = from.next_segment_ids;
+    return to;
+}
+
+// Helper function for printing with to_double conversion
+template<typename CoordType>
+std::ostream& operator<<(std::ostream& os, const query_point_t<CoordType>& qp)
+{
+    if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
+        os << "query_point(f_id=" << qp.f_id << ", bc=(" 
+           << qp.bc[0].to_double() << "," << qp.bc[1].to_double() << "," << qp.bc[2].to_double() 
+           << "), fv_ids=(" << qp.fv_ids[0] << "," << qp.fv_ids[1] << "," << qp.fv_ids[2] << "))";
+    } else {
+        os << "query_point(f_id=" << qp.f_id << ", bc=(" 
+           << qp.bc[0] << "," << qp.bc[1] << "," << qp.bc[2] 
+           << "), fv_ids=(" << qp.fv_ids[0] << "," << qp.fv_ids[1] << "," << qp.fv_ids[2] << "))";
+    }
+    return os;
+}
 
 // Precompute cache for fast 2D barycentric evaluation per triangle
 struct BarycentricPrecompute2D
@@ -45,32 +128,17 @@ std::vector<BarycentricPrecompute2D> build_barycentric_cache_2d_from_double(
     const Eigen::MatrixXd& V2,
     const Eigen::MatrixXi& F);
 
-// IO
+// IO - templated versions
+template<typename CoordType>
+void save_query_curves_t(const std::vector<query_curve_t<CoordType>>& curves, const std::string& filename);
+
+template<typename CoordType>
+std::vector<query_curve_t<CoordType>> load_query_curves_t(const std::string& filename);
+
+// IO - backward compatibility functions  
 void save_query_curves(const std::vector<query_curve>& curves, const std::string& filename);
 std::vector<query_curve> load_query_curves(const std::string& filename);
 
-/*
-// Rational version of the above
-struct query_point_r
-{
-    int64_t f_id; // face id
-    Eigen::Vector3<wmtk::Rational> bc; // barycentric coordinates
-    Eigen::Vector3i fv_ids; // face vertex ids
-};
-
-struct query_segment_r
-{
-    int64_t f_id; // face id
-    Eigen::Vector3<wmtk::Rational> bcs[2]; // barycentric coordinates
-    Eigen::Vector3i fv_ids; // face vertex ids
-};
-
-struct query_curve_r
-{
-    std::vector<query_segment_r> segments;
-    std::vector<int> next_segment_ids;
-};
-*/
 
 template <typename qp_type>
 void handle_consolidate(
@@ -176,7 +244,7 @@ void handle_collapse_edge(
     std::vector<query_point>& query_points,
     bool use_rational = false);
 
-// Rational version of handle_collapse_edge
+// Rational version of handle_collapse_edge (uses rational internally but input/output are double)
 void handle_collapse_edge_r(
     const Eigen::MatrixXd& UV_joint,
     const Eigen::MatrixXi& F_before,
@@ -187,17 +255,19 @@ void handle_collapse_edge_r(
     std::vector<query_point>& query_points,
     const std::vector<BarycentricPrecompute2D>* barycentric_cache = nullptr);
 
-// curve version of the handle_collapse_edge
-void handle_collapse_edge_curve(
+// Templated version for native support of different coordinate types
+template<typename CoordType>
+void handle_collapse_edge_t(
     const Eigen::MatrixXd& UV_joint,
     const Eigen::MatrixXi& F_before,
     const Eigen::MatrixXi& F_after,
     const std::vector<int64_t>& v_id_map_joint,
     const std::vector<int64_t>& id_map_before,
     const std::vector<int64_t>& id_map_after,
-    query_curve& curve,
+    std::vector<query_point_t<CoordType>>& query_points,
     bool use_rational = false,
-    bool verbose = false);
+    const std::vector<BarycentricPrecompute2D>* barycentric_cache = nullptr);
+
 
 // Unified function for split/swap/smooth operations - they all have the same interface
 void handle_non_collapse_operation(
@@ -213,7 +283,7 @@ void handle_non_collapse_operation(
     const std::string& operation_name = "non-collapse operation",
     bool use_rational = false);
 
-// Rational version of handle_non_collapse_operation
+// Rational version of handle_non_collapse_operation (uses rational internally but input/output are double)
 void handle_non_collapse_operation_r(
     const Eigen::MatrixXd& V_before,
     const Eigen::MatrixXi& F_before,
@@ -227,7 +297,9 @@ void handle_non_collapse_operation_r(
     const std::string& operation_name,
     const std::vector<BarycentricPrecompute2D>* barycentric_cache = nullptr);
 
-void handle_non_collapse_operation_curve(
+// Templated version for native support of different coordinate types
+template<typename CoordType>
+void handle_non_collapse_operation_t(
     const Eigen::MatrixXd& V_before,
     const Eigen::MatrixXi& F_before,
     const std::vector<int64_t>& id_map_before,
@@ -236,9 +308,11 @@ void handle_non_collapse_operation_curve(
     const Eigen::MatrixXi& F_after,
     const std::vector<int64_t>& id_map_after,
     const std::vector<int64_t>& v_id_map_after,
-    query_curve& curve,
-    const std::string& operation_name,
-    bool verbose = false);
+    std::vector<query_point_t<CoordType>>& query_points,
+    const std::string& operation_name = "non-collapse operation",
+    bool use_rational = false,
+    const std::vector<BarycentricPrecompute2D>* barycentric_cache = nullptr);
+
 /***
  * Parse the operation log file
  */
