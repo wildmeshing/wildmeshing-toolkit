@@ -83,8 +83,9 @@ std::vector<int> get_possible_triangle_ids_t(
     return possible_triangle_ids;
 }
 
-// Helper function to transform barycentric coordinates from one triangle representation to another - templated version
-template<typename CoordType>
+// Helper function to transform barycentric coordinates from one triangle representation to another
+// - templated version
+template <typename CoordType>
 std::pair<Eigen::Vector3<CoordType>, Eigen::Vector3i> transform_bc_to_triangle_t(
     const query_point_t<CoordType>& qp,
     int target_triangle_id,
@@ -127,7 +128,6 @@ std::pair<Eigen::Vector3<CoordType>, Eigen::Vector3i> transform_bc_to_triangle_t
 
     return std::make_pair(new_bc, new_fv_ids);
 }
-
 // Helper function to transform barycentric coordinates from one triangle representation to another
 std::pair<Eigen::Vector3d, Eigen::Vector3i> transform_bc_to_triangle(
     const query_point& qp,
@@ -136,11 +136,17 @@ std::pair<Eigen::Vector3d, Eigen::Vector3i> transform_bc_to_triangle(
     const std::vector<int64_t>& id_map_before,
     const std::vector<int64_t>& v_id_map_before)
 {
-    return transform_bc_to_triangle_t(qp, target_triangle_id, F_before, id_map_before, v_id_map_before);
+    return transform_bc_to_triangle_t(
+        qp,
+        target_triangle_id,
+        F_before,
+        id_map_before,
+        v_id_map_before);
 }
 
-// Helper function to check if two points are in the same triangle and transform coordinates if needed - templated version
-template<typename CoordType>
+// Helper function to check if two points are in the same triangle and transform coordinates if
+// needed - templated version
+template <typename CoordType>
 SameTriangleResult_t<CoordType> check_and_transform_to_common_triangle_t(
     const query_point_t<CoordType>& qp1,
     const query_point_t<CoordType>& qp2,
@@ -186,7 +192,6 @@ SameTriangleResult_t<CoordType> check_and_transform_to_common_triangle_t(
 
     return result;
 }
-
 // Helper function to check if two points are in the same triangle and transform coordinates if
 // needed
 SameTriangleResult check_and_transform_to_common_triangle(
@@ -198,19 +203,27 @@ SameTriangleResult check_and_transform_to_common_triangle(
     const Eigen::MatrixXi& TT,
     const Eigen::MatrixXi& TTi)
 {
-    auto result_t = check_and_transform_to_common_triangle_t(qp1, qp2, F_before, id_map_before, v_id_map_before, TT, TTi);
-    
+    auto result_t = check_and_transform_to_common_triangle_t(
+        qp1,
+        qp2,
+        F_before,
+        id_map_before,
+        v_id_map_before,
+        TT,
+        TTi);
+
     SameTriangleResult result;
     result.in_same_triangle = result_t.in_same_triangle;
     result.common_triangle_id = result_t.common_triangle_id;
     result.transformed_qp1 = result_t.transformed_qp1;
     result.transformed_qp2 = result_t.transformed_qp2;
-    
+
     return result;
 }
 
-// Helper function to get candidate edges with their corresponding triangle indication - templated version
-template<typename CoordType>
+// Helper function to get candidate edges with their corresponding triangle indication - templated
+// version
+template <typename CoordType>
 std::vector<EdgeTrianglePair> get_candidate_edges_with_triangles_t(
     const query_point_t<CoordType>& qp,
     const std::vector<int>& possible_triangles,
@@ -309,7 +322,6 @@ std::vector<EdgeTrianglePair> get_candidate_edges_with_triangles_t(
 
     return candidate_edges;
 }
-
 // Helper function to get candidate edges with their corresponding triangle indication
 std::vector<EdgeTrianglePair> get_candidate_edges_with_triangles(
     const query_point& qp,
@@ -319,7 +331,13 @@ std::vector<EdgeTrianglePair> get_candidate_edges_with_triangles(
     const Eigen::MatrixXi& TT,
     const Eigen::MatrixXi& TTi)
 {
-    return get_candidate_edges_with_triangles_t(qp, possible_triangles, F_before, v_id_map_before, TT, TTi);
+    return get_candidate_edges_with_triangles_t(
+        qp,
+        possible_triangles,
+        F_before,
+        v_id_map_before,
+        TT,
+        TTi);
 }
 
 // Helper function to compute barycentric coordinates in triangle from edge barycentric coordinates
@@ -387,6 +405,7 @@ bool intersectSegmentEdge_r(
     return false;
 }
 
+// TODO: template this function
 // Main segment handling function (rational version - optimized)
 void handle_one_segment_rational(
     query_curve& curve,
@@ -766,6 +785,7 @@ void handle_one_segment_rational(
     }
 }
 
+// TODO: template this function
 // Double version that converts to rational and calls optimized version
 void handle_one_segment(
     query_curve& curve,
@@ -802,6 +822,7 @@ void handle_one_segment(
 }
 
 // Curve handling functions for different operations
+// TODO: template this function
 void handle_collapse_edge_curve(
     const Eigen::MatrixXd& UV_joint,
     const Eigen::MatrixXi& F_before,
@@ -935,7 +956,7 @@ void handle_collapse_edge_curve(
     std::cout << "handle_collapse_edge_curve trace segment time per segment: "
               << time_trace_segment_total / cnter << " ms" << std::endl;
 }
-
+// TODO: template this function
 void handle_non_collapse_operation_curve(
     const Eigen::MatrixXd& V_before,
     const Eigen::MatrixXi& F_before,
@@ -1029,7 +1050,7 @@ void handle_non_collapse_operation_curve(
 }
 
 // Template version of clean_up_curve
-template<typename CoordType>
+template <typename CoordType>
 void clean_up_curve_t(query_curve_t<CoordType>& curve)
 {
     // TODO: make this function work for loops
@@ -1176,14 +1197,13 @@ void clean_up_curve_t(query_curve_t<CoordType>& curve)
     curve.segments = std::move(new_segments);
     curve.next_segment_ids = std::move(new_next_segment_ids);
 }
-
 void clean_up_curve(query_curve& curve)
 {
     return clean_up_curve_t(curve);
 }
 
 // Template version of is_curve_valid
-template<typename CoordType>
+template <typename CoordType>
 bool is_curve_valid_t(const query_curve_t<CoordType>& curve)
 {
     // TODO: make this function work for loops
@@ -1209,16 +1229,16 @@ bool is_curve_valid_t(const query_curve_t<CoordType>& curve)
         if (cur_seg.f_id == next_seg.f_id) {
             auto bc_diff = next_seg.bcs[0] - cur_seg.bcs[1];
             bool is_invalid = false;
-            
+
             if constexpr (std::is_same_v<CoordType, double>) {
                 is_invalid = (bc_diff.norm() > 1e-8);
             } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
                 // For rational, check if all components are exactly zero
-                is_invalid = (bc_diff(0) != wmtk::Rational(0) || 
-                             bc_diff(1) != wmtk::Rational(0) || 
-                             bc_diff(2) != wmtk::Rational(0));
+                is_invalid =
+                    (bc_diff(0) != wmtk::Rational(0) || bc_diff(1) != wmtk::Rational(0) ||
+                     bc_diff(2) != wmtk::Rational(0));
             }
-            
+
             if (is_invalid) {
                 std::cout << "Error: bc_diff is too large" << std::endl;
                 std::cout << "cur_seg.bcs[1]: " << cur_seg.bcs[1].transpose() << std::endl;
@@ -1235,7 +1255,7 @@ bool is_curve_valid_t(const query_curve_t<CoordType>& curve)
                 } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
                     is_nonzero = (cur_seg.bcs[1](i) != wmtk::Rational(0));
                 }
-                
+
                 if (is_nonzero) {
                     int vid = cur_seg.fv_ids[i];
 
@@ -1254,14 +1274,14 @@ bool is_curve_valid_t(const query_curve_t<CoordType>& curve)
                         int next_seg_vid_id = std::distance(next_seg.fv_ids.begin(), it);
                         auto diff = next_seg.bcs[0](next_seg_vid_id) - cur_seg.bcs[1](i);
                         bool is_diff_too_large = false;
-                        
+
                         if constexpr (std::is_same_v<CoordType, double>) {
                             is_diff_too_large = (abs(diff) > 1e-8);
                         } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
                             // For rational, check if exactly zero
                             is_diff_too_large = (diff != wmtk::Rational(0));
                         }
-                        
+
                         if (is_diff_too_large) {
                             std::cout << "Error: bc_diff is too large" << std::endl;
                             std::cout << "cur_seg.fv_ids: " << cur_seg.fv_ids.transpose()
@@ -1282,16 +1302,17 @@ bool is_curve_valid_t(const query_curve_t<CoordType>& curve)
     }
     return is_valid;
 }
-
 bool is_curve_valid(const query_curve& curve)
 {
     return is_curve_valid_t(curve);
 }
 
+
 // function that computes all the intersections between two curves
-int compute_intersections_between_two_curves(
-    const query_curve& curve1,
-    const query_curve& curve2,
+template <typename CoordType>
+int compute_intersections_between_two_curves_t(
+    const query_curve_t<CoordType>& curve1,
+    const query_curve_t<CoordType>& curve2,
     bool verbose)
 {
     int intersections = 0;
@@ -1309,27 +1330,69 @@ int compute_intersections_between_two_curves(
 
             Eigen::Vector2<wmtk::Rational> bc_tmp;
             if (intersectSegmentEdge_r(s1_a, s1_b, s2_a, s2_b, bc_tmp, false)) {
-                intersectSegmentEdge_r(s1_a, s1_b, s2_a, s2_b, bc_tmp, true);
+                intersectSegmentEdge_r(
+                    s1_a,
+                    s1_b,
+                    s2_a,
+                    s2_b,
+                    bc_tmp,
+                    true); // TODO: this line is only for debug
                 intersections++;
                 if (verbose) {
-                    // std::cout << "Intersection found in face " << seg1.f_id << std::endl;
-                    std::cout << "seg1: f_id=" << seg1.f_id
-                              << ", bcs[0]=" << seg1.bcs[0].transpose()
-                              << ", bcs[1]=" << seg1.bcs[1].transpose() << std::endl;
-                    std::cout << "seg2: f_id=" << seg2.f_id
-                              << ", bcs[0]=" << seg2.bcs[0].transpose()
-                              << ", bcs[1]=" << seg2.bcs[1].transpose() << std::endl;
-                    std::cout << "intersection position at t = " << bc_tmp(0).to_double()
-                              << std::endl;
+                    if constexpr (std::is_same_v<CoordType, double>) {
+                        // std::cout << "Intersection found in face " << seg1.f_id << std::endl;
+                        std::cout << "seg1: f_id=" << seg1.f_id
+                                  << ", bcs[0]=" << seg1.bcs[0].transpose()
+                                  << ", bcs[1]=" << seg1.bcs[1].transpose() << std::endl;
+                        std::cout << "seg2: f_id=" << seg2.f_id
+                                  << ", bcs[0]=" << seg2.bcs[0].transpose()
+                                  << ", bcs[1]=" << seg2.bcs[1].transpose() << std::endl;
+                        std::cout << "intersection position at t = " << bc_tmp(0).to_double()
+                                  << std::endl;
+                    } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
+                        std::cout << "Intersection found in face " << seg1.f_id << std::endl;
+                        std::cout << "seg1: f_id=" << seg1.f_id << ", bcs[0]=[";
+                        for (int k = 0; k < seg1.bcs[0].size(); k++) {
+                            std::cout << seg1.bcs[0](k).to_double();
+                            if (k < seg1.bcs[0].size() - 1) std::cout << ", ";
+                        }
+                        std::cout << "], bcs[1]=[";
+                        for (int k = 0; k < seg1.bcs[0].size(); k++) {
+                            std::cout << seg1.bcs[0](k).to_double();
+                            if (k < seg1.bcs[0].size() - 1) std::cout << ", ";
+                        }
+                        std::cout << "]" << std::endl;
+                        std::cout << "seg2: f_id=" << seg2.f_id << ", bcs[0]=[";
+                        for (int k = 0; k < seg2.bcs[0].size(); k++) {
+                            std::cout << seg2.bcs[0](k).to_double();
+                            if (k < seg2.bcs[0].size() - 1) std::cout << ", ";
+                        }
+                        std::cout << "], bcs[1]=[";
+                        for (int k = 0; k < seg2.bcs[0].size(); k++) {
+                            std::cout << seg2.bcs[0](k).to_double();
+                            if (k < seg2.bcs[0].size() - 1) std::cout << ", ";
+                        }
+                        std::cout << "]" << std::endl;
+                        std::cout << "intersection position at t = " << bc_tmp(0).to_double()
+                                  << std::endl;
+                    }
                 }
             }
         }
     }
     return intersections;
 }
+int compute_intersections_between_two_curves(
+    const query_curve& curve1,
+    const query_curve& curve2,
+    bool verbose)
+{
+    return compute_intersections_between_two_curves_t(curve1, curve2, verbose);
+}
 
-
-int compute_curve_self_intersections(const query_curve& curve, bool verbose)
+// Template version of compute_curve_self_intersections
+template <typename CoordType>
+int compute_curve_self_intersections_t(const query_curve_t<CoordType>& curve, bool verbose)
 {
     int intersections = 0;
 
@@ -1356,43 +1419,149 @@ int compute_curve_self_intersections(const query_curve& curve, bool verbose)
                 intersectSegmentEdge_r(s1_a, s1_b, s2_a, s2_b, bc_tmp, true);
                 intersections++;
                 if (verbose) {
-                    std::cout << "i=" << i << ", j=" << j << std::endl;
-                    // std::cout << "Intersection found in face " << seg1.f_id << std::endl;
-                    std::cout << "seg1: f_id=" << seg1.f_id
-                              << ", bcs[0]=" << seg1.bcs[0].transpose()
-                              << ", bcs[1]=" << seg1.bcs[1].transpose() << std::endl;
-                    std::cout << "seg1: origin_segment_id=" << seg1.origin_segment_id << std::endl;
-                    std::cout << "seg1: next_segment_id=" << curve.next_segment_ids[i] << std::endl;
+                    if constexpr (std::is_same_v<CoordType, double>) {
+                        std::cout << "i=" << i << ", j=" << j << std::endl;
+                        std::cout << "seg1: f_id=" << seg1.f_id
+                                  << ", bcs[0]=" << seg1.bcs[0].transpose()
+                                  << ", bcs[1]=" << seg1.bcs[1].transpose() << std::endl;
+                        std::cout << "seg1: origin_segment_id=" << seg1.origin_segment_id
+                                  << std::endl;
+                        std::cout << "seg1: next_segment_id=" << curve.next_segment_ids[i]
+                                  << std::endl;
 
-                    if (curve.next_segment_ids[i] != -1) {
-                        const auto& next_seg1 = curve.segments[curve.next_segment_ids[i]];
-                        std::cout << "seg1 next: f_id=" << next_seg1.f_id
-                                  << ", bcs[0]=" << next_seg1.bcs[0].transpose()
-                                  << ", bcs[1]=" << next_seg1.bcs[1].transpose() << std::endl;
-                        std::cout << "seg1 next: origin_segment_id=" << next_seg1.origin_segment_id
+                        if (curve.next_segment_ids[i] != -1) {
+                            const auto& next_seg1 = curve.segments[curve.next_segment_ids[i]];
+                            std::cout << "seg1 next: f_id=" << next_seg1.f_id << ", bcs[0]=[";
+                            for (int k = 0; k < next_seg1.bcs[0].size(); k++) {
+                                std::cout << next_seg1.bcs[0](k);
+                                if (k < next_seg1.bcs[0].size() - 1) std::cout << ", ";
+                            }
+                            std::cout << "], bcs[1]=[";
+                            for (int k = 0; k < next_seg1.bcs[1].size(); k++) {
+                                std::cout << next_seg1.bcs[1](k);
+                                if (k < next_seg1.bcs[1].size() - 1) std::cout << ", ";
+                            }
+                            std::cout << "]" << std::endl;
+                            std::cout
+                                << "seg1 next: origin_segment_id=" << next_seg1.origin_segment_id
+                                << std::endl;
+                        }
+                        std::cout << "seg2: f_id=" << seg2.f_id << ", bcs[0]=[";
+                        for (int k = 0; k < seg2.bcs[0].size(); k++) {
+                            std::cout << seg2.bcs[0](k);
+                            if (k < seg2.bcs[0].size() - 1) std::cout << ", ";
+                        }
+                        std::cout << "], bcs[1]=[";
+                        for (int k = 0; k < seg2.bcs[1].size(); k++) {
+                            std::cout << seg2.bcs[1](k);
+                            if (k < seg2.bcs[1].size() - 1) std::cout << ", ";
+                        }
+                        std::cout << "]" << std::endl;
+                        std::cout << "seg2: origin_segment_id=" << seg2.origin_segment_id
+                                  << std::endl;
+                        std::cout << "seg2: next_segment_id=" << curve.next_segment_ids[j]
+                                  << std::endl;
+
+                        if (curve.next_segment_ids[j] != -1) {
+                            const auto& next_seg2 = curve.segments[curve.next_segment_ids[j]];
+                            std::cout << "seg2 next: f_id=" << next_seg2.f_id << ", bcs[0]=[";
+                            for (int k = 0; k < next_seg2.bcs[0].size(); k++) {
+                                std::cout << next_seg2.bcs[0](k);
+                                if (k < next_seg2.bcs[0].size() - 1) std::cout << ", ";
+                            }
+                            std::cout << "], bcs[1]=[";
+                            for (int k = 0; k < next_seg2.bcs[1].size(); k++) {
+                                std::cout << next_seg2.bcs[1](k);
+                                if (k < next_seg2.bcs[1].size() - 1) std::cout << ", ";
+                            }
+                            std::cout << "]" << std::endl;
+                            std::cout
+                                << "seg2 next: origin_segment_id=" << next_seg2.origin_segment_id
+                                << std::endl;
+                        }
+
+                        std::cout << "intersection position at t = " << bc_tmp(0).to_double()
+                                  << std::endl;
+                    } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
+                        std::cout << "i=" << i << ", j=" << j << std::endl;
+                        std::cout << "seg1: f_id=" << seg1.f_id << ", bcs[0]=[";
+                        for (int k = 0; k < seg1.bcs[0].size(); k++) {
+                            std::cout << seg1.bcs[0](k).to_double();
+                            if (k < seg1.bcs[0].size() - 1) std::cout << ", ";
+                        }
+                        std::cout << "], bcs[1]=[";
+                        for (int k = 0; k < seg1.bcs[1].size(); k++) {
+                            std::cout << seg1.bcs[1](k).to_double();
+                            if (k < seg1.bcs[1].size() - 1) std::cout << ", ";
+                        }
+                        std::cout << "]" << std::endl;
+                        std::cout << "seg1: origin_segment_id=" << seg1.origin_segment_id
+                                  << std::endl;
+                        std::cout << "seg1: next_segment_id=" << curve.next_segment_ids[i]
+                                  << std::endl;
+
+                        if (curve.next_segment_ids[i] != -1) {
+                            const auto& next_seg1 = curve.segments[curve.next_segment_ids[i]];
+                            std::cout << "seg1 next: f_id=" << next_seg1.f_id << ", bcs[0]=[";
+                            for (int k = 0; k < next_seg1.bcs[0].size(); k++) {
+                                std::cout << next_seg1.bcs[0](k).to_double();
+                                if (k < next_seg1.bcs[0].size() - 1) std::cout << ", ";
+                            }
+                            std::cout << "], bcs[1]=[";
+                            for (int k = 0; k < next_seg1.bcs[1].size(); k++) {
+                                std::cout << next_seg1.bcs[1](k).to_double();
+                                if (k < next_seg1.bcs[1].size() - 1) std::cout << ", ";
+                            }
+                            std::cout << "]" << std::endl;
+                            std::cout
+                                << "seg1 next: origin_segment_id=" << next_seg1.origin_segment_id
+                                << std::endl;
+                        }
+                        std::cout << "seg2: f_id=" << seg2.f_id << ", bcs[0]=[";
+                        for (int k = 0; k < seg2.bcs[0].size(); k++) {
+                            std::cout << seg2.bcs[0](k).to_double();
+                            if (k < seg2.bcs[0].size() - 1) std::cout << ", ";
+                        }
+                        std::cout << "], bcs[1]=[";
+                        for (int k = 0; k < seg2.bcs[1].size(); k++) {
+                            std::cout << seg2.bcs[1](k).to_double();
+                            if (k < seg2.bcs[1].size() - 1) std::cout << ", ";
+                        }
+                        std::cout << "]" << std::endl;
+                        std::cout << "seg2: origin_segment_id=" << seg2.origin_segment_id
+                                  << std::endl;
+                        std::cout << "seg2: next_segment_id=" << curve.next_segment_ids[j]
+                                  << std::endl;
+
+                        if (curve.next_segment_ids[j] != -1) {
+                            const auto& next_seg2 = curve.segments[curve.next_segment_ids[j]];
+                            std::cout << "seg2 next: f_id=" << next_seg2.f_id << ", bcs[0]=[";
+                            for (int k = 0; k < next_seg2.bcs[0].size(); k++) {
+                                std::cout << next_seg2.bcs[0](k).to_double();
+                                if (k < next_seg2.bcs[0].size() - 1) std::cout << ", ";
+                            }
+                            std::cout << "], bcs[1]=[";
+                            for (int k = 0; k < next_seg2.bcs[1].size(); k++) {
+                                std::cout << next_seg2.bcs[1](k).to_double();
+                                if (k < next_seg2.bcs[1].size() - 1) std::cout << ", ";
+                            }
+                            std::cout << "]" << std::endl;
+                            std::cout
+                                << "seg2 next: origin_segment_id=" << next_seg2.origin_segment_id
+                                << std::endl;
+                        }
+
+                        std::cout << "intersection position at t = " << bc_tmp(0).to_double()
                                   << std::endl;
                     }
-                    std::cout << "seg2: f_id=" << seg2.f_id
-                              << ", bcs[0]=" << seg2.bcs[0].transpose()
-                              << ", bcs[1]=" << seg2.bcs[1].transpose() << std::endl;
-                    std::cout << "seg2: origin_segment_id=" << seg2.origin_segment_id << std::endl;
-                    std::cout << "seg2: next_segment_id=" << curve.next_segment_ids[j] << std::endl;
-
-                    if (curve.next_segment_ids[j] != -1) {
-                        const auto& next_seg2 = curve.segments[curve.next_segment_ids[j]];
-                        std::cout << "seg2 next: f_id=" << next_seg2.f_id
-                                  << ", bcs[0]=" << next_seg2.bcs[0].transpose()
-                                  << ", bcs[1]=" << next_seg2.bcs[1].transpose() << std::endl;
-                        std::cout << "seg2 next: origin_segment_id=" << next_seg2.origin_segment_id
-                                  << std::endl;
-                    }
-
-                    std::cout << "intersection position at t = " << bc_tmp(0).to_double()
-                              << std::endl;
                 }
             }
         }
     }
 
     return intersections;
+}
+int compute_curve_self_intersections(const query_curve& curve, bool verbose)
+{
+    return compute_curve_self_intersections_t(curve, verbose);
 }

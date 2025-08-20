@@ -14,8 +14,9 @@ using json = nlohmann::json;
 
 #include "track_operations.hpp" // For basic data structures
 
-// Helper function to get all possible triangle IDs for a point (returns local triangle IDs) - templated
-template<typename CoordType>
+// Helper function to get all possible triangle IDs for a point (returns local triangle IDs) -
+// templated
+template <typename CoordType>
 std::vector<int> get_possible_triangle_ids_t(
     const query_point_t<CoordType>& qp,
     const Eigen::MatrixXi& F_before,
@@ -36,8 +37,9 @@ inline std::vector<int> get_possible_triangle_ids(
     return get_possible_triangle_ids_t(qp, F_before, id_map_before, v_id_map_before, TT, TTi);
 }
 
-// Helper function to transform barycentric coordinates from one triangle representation to another - templated
-template<typename CoordType>
+// Helper function to transform barycentric coordinates from one triangle representation to another
+// - templated
+template <typename CoordType>
 std::pair<Eigen::Vector3<CoordType>, Eigen::Vector3i> transform_bc_to_triangle_t(
     const query_point_t<CoordType>& qp,
     int target_triangle_id,
@@ -53,8 +55,9 @@ std::pair<Eigen::Vector3d, Eigen::Vector3i> transform_bc_to_triangle(
     const std::vector<int64_t>& id_map_before,
     const std::vector<int64_t>& v_id_map_before);
 
-// Helper function to check if two points are in the same triangle and transform coordinates if needed - templated
-template<typename CoordType>
+// Helper function to check if two points are in the same triangle and transform coordinates if
+// needed - templated
+template <typename CoordType>
 struct SameTriangleResult_t
 {
     bool in_same_triangle;
@@ -63,7 +66,7 @@ struct SameTriangleResult_t
     query_point_t<CoordType> transformed_qp2;
 };
 
-template<typename CoordType>
+template <typename CoordType>
 SameTriangleResult_t<CoordType> check_and_transform_to_common_triangle_t(
     const query_point_t<CoordType>& qp1,
     const query_point_t<CoordType>& qp2,
@@ -98,7 +101,7 @@ struct EdgeTrianglePair
     int triangle_id; // which triangle this edge indicates (local triangle ID)
 };
 
-template<typename CoordType>
+template <typename CoordType>
 std::vector<EdgeTrianglePair> get_candidate_edges_with_triangles_t(
     const query_point_t<CoordType>& qp,
     const std::vector<int>& possible_triangles,
@@ -134,7 +137,7 @@ bool intersectSegmentEdge_r(
     bool debug_mode = false);
 
 // Main segment handling function - templated
-template<typename CoordType>
+template <typename CoordType>
 void handle_one_segment_t(
     query_curve_t<CoordType>& curve,
     int id,
@@ -173,20 +176,8 @@ void handle_one_segment_rational(
     Eigen::MatrixXi& TTi,
     bool verbose);
 
-// Old version for comparison
-void handle_one_segment_old(
-    query_curve& curve,
-    int id,
-    std::vector<query_point>& query_points,
-    const Eigen::MatrixXd& UV_joint,
-    const Eigen::MatrixXi& F_before,
-    const std::vector<int64_t>& v_id_map_joint,
-    const std::vector<int64_t>& id_map_before,
-    Eigen::MatrixXi& TT,
-    Eigen::MatrixXi& TTi);
-
 // Curve handling functions for different operations - templated versions
-template<typename CoordType>
+template <typename CoordType>
 void handle_collapse_edge_curve_t(
     const Eigen::MatrixXd& UV_joint,
     const Eigen::MatrixXi& F_before,
@@ -198,7 +189,7 @@ void handle_collapse_edge_curve_t(
     bool use_rational,
     bool verbose);
 
-template<typename CoordType>
+template <typename CoordType>
 void handle_non_collapse_operation_curve_t(
     const Eigen::MatrixXd& V_before,
     const Eigen::MatrixXi& F_before,
@@ -238,31 +229,25 @@ void handle_non_collapse_operation_curve(
     bool verbose);
 
 
-// Templated curve utility functions
-template<typename CoordType>
+// Backward compatibility versions
+template <typename CoordType>
 void clean_up_curve_t(query_curve_t<CoordType>& curve);
+void clean_up_curve(query_curve& curve);
 
-template<typename CoordType>
+template <typename CoordType>
 bool is_curve_valid_t(const query_curve_t<CoordType>& curve);
+bool is_curve_valid(const query_curve& curve);
 
-template<typename CoordType>
+template <typename CoordType>
 int compute_intersections_between_two_curves_t(
     const query_curve_t<CoordType>& curve1,
     const query_curve_t<CoordType>& curve2,
     bool verbose = false);
-
-template<typename CoordType>
-int compute_curve_self_intersections_t(const query_curve_t<CoordType>& curve, bool verbose = true);
-
-// Backward compatibility versions  
-void clean_up_curve(query_curve& curve);
-
-bool is_curve_valid(const query_curve& curve);
-
-// TODO: function that computes all the intersections between two curves
 int compute_intersections_between_two_curves(
     const query_curve& curve1,
     const query_curve& curve2,
     bool verbose = false);
 
+template <typename CoordType>
+int compute_curve_self_intersections_t(const query_curve_t<CoordType>& curve, bool verbose = true);
 int compute_curve_self_intersections(const query_curve& curve, bool verbose = true);
