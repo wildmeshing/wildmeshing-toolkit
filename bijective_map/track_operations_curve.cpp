@@ -289,11 +289,11 @@ bool intersectSegmentEdge_r(
     }
     wmtk::Rational t = (ac.x() * cd.y() - ac.y() * cd.x()) / denominator;
     wmtk::Rational u = -(ab.x() * ac.y() - ab.y() * ac.x()) / denominator;
-    if (debug_mode) std::cout << "t: " << t << ", u: " << u << std::endl;
+    if (debug_mode) std::cout << "t: " << t.to_double() << ", u: " << u.to_double() << std::endl;
 
     if (t >= 0 && t <= wmtk::Rational(1) && u >= 0 && u <= wmtk::Rational(1)) {
         // Calculate barycentric coordinates for intersection
-        wmtk::Rational alpha = 1 - u;
+        wmtk::Rational alpha = wmtk::Rational(1) - u;
         wmtk::Rational beta = u;
         barycentric = Eigen::Vector2<wmtk::Rational>(alpha, beta);
         if (debug_mode) std::cout << "intersection found" << std::endl;
@@ -316,23 +316,23 @@ void handle_one_segment_rational(
     Eigen::MatrixXi& TTi,
     bool verbose)
 {
-    // for debug
-    if (verbose) {
-        std::cout << "F_before:" << std::endl;
-        for (int i = 0; i < F_before.rows(); ++i) {
-            std::cout << "[" << i << ", " << id_map_before[i] << "]: " << F_before.row(i)
-                      << std::endl;
-        }
-        std::cout << std::endl;
-    }
+    // Profiling: total time of handling one segment
+    igl::Timer seg_total_timer;
+    seg_total_timer.start();
 
 
     query_segment& qs = curve.segments[id];
     // Check if two endpoints are in the same triangle considering all possible locations
+    // Profiling: adjacency build time (only when needed)
+    igl::Timer tt_build_timer;
     if (TT.rows() == 0) {
+        tt_build_timer.start();
         igl::triangle_triangle_adjacency(F_before, TT, TTi);
     }
 
+    // Profiling: initial same-triangle check
+    igl::Timer same_tri_timer_initial;
+    same_tri_timer_initial.start();
     auto same_triangle_result = check_and_transform_to_common_triangle(
         query_points[0],
         query_points[1],
@@ -348,6 +348,14 @@ void handle_one_segment_rational(
         qs.bcs[0] = same_triangle_result.transformed_qp1.bc;
         qs.bcs[1] = same_triangle_result.transformed_qp2.bc;
         qs.fv_ids = same_triangle_result.transformed_qp1.fv_ids;
+        if (false && verbose) {
+            double t_total_ms = seg_total_timer.getElapsedTime() * 1000.0;
+            double t_tt_ms = tt_build_timer.getElapsedTime() * 1000.0;
+            double t_same_tri_ms = same_tri_timer_initial.getElapsedTime() * 1000.0;
+            std::cout << "[handle_one_segment_rational] early-exit timings: total=" << t_total_ms
+                      << " ms, TT/TTi=" << t_tt_ms << " ms, same-triangle-check=" << t_same_tri_ms
+                      << " ms" << std::endl;
+        }
         return;
     }
 
@@ -383,10 +391,7 @@ void handle_one_segment_rational(
         b += UV_joint_r.row(F_before(end_face_local, i)).transpose() * bc_end_r(i);
     }
 
-    if (verbose) {
-        std::cout << "Ray tracing from (" << a(0).to_double() << ", " << a(1).to_double()
-                  << ") to (" << b(0).to_double() << ", " << b(1).to_double() << ")" << std::endl;
-    }
+    // quiet
 
     // Cache for the last new segment
     int old_next_seg = curve.next_segment_ids[id];
@@ -405,18 +410,12 @@ void handle_one_segment_rational(
 
     // Ray tracing loop
     int iteration = 0;
-    double time_intersection_tests_total = 0;
+    double time_intersection_tests_total = 0; // detailed per-iteration intersection tests (verbose)
+    double time_candidate_edges_total = 0; // always-on: time to build candidate edges
+    double time_same_tri_checks_total = 0; // always-on: per-iteration same-triangle checks
     while (current_face != end_face_local) {
         iteration++;
-        if (verbose) {
-            std::cout << "\n=== Iteration " << iteration << " ===" << std::endl;
-            std::cout << "Current: triangle_id=" << current_face << ", bc=("
-                      << current_bc(0).to_double() << ", " << current_bc(1).to_double() << ", "
-                      << current_bc(2).to_double() << ")" << std::endl;
-            std::cout << "Target: triangle_id=" << end_face_local << "bc=("
-                      << bc_end_r(0).to_double() << ", " << bc_end_r(1).to_double() << ", "
-                      << bc_end_r(2).to_double() << ")" << std::endl;
-        }
+        // quiet
 
         // Create query_point for current position
         query_point current_qp;
@@ -439,20 +438,10 @@ void handle_one_segment_rational(
             TT,
             TTi);
 
-        if (verbose) {
-            std::cout << "Current point possible triangles (local IDs): ";
-            for (int tid : current_possible_triangles) {
-                std::cout << tid << " (global: " << id_map_before[tid] << ") ";
-            }
-            std::cout << std::endl;
+        // quiet
 
-            std::cout << "Target point possible triangles (local IDs): ";
-            for (int tid : target_possible_triangles) {
-                std::cout << tid << " (global: " << id_map_before[tid] << ") ";
-            }
-            std::cout << std::endl;
-        }
-
+        igl::Timer same_tri_timer_iter;
+        same_tri_timer_iter.start();
         auto same_triangle_result = check_and_transform_to_common_triangle(
             current_qp,
             query_points[1],
@@ -461,18 +450,9 @@ void handle_one_segment_rational(
             v_id_map_joint,
             TT,
             TTi);
+        time_same_tri_checks_total += same_tri_timer_iter.getElapsedTime();
 
-        if (verbose) {
-            std::cout << "Same triangle check result: "
-                      << (same_triangle_result.in_same_triangle ? "YES" : "NO");
-            if (same_triangle_result.in_same_triangle) {
-                std::cout << ", common triangle (local ID): "
-                          << same_triangle_result.common_triangle_id
-                          << " (global: " << id_map_before[same_triangle_result.common_triangle_id]
-                          << ")";
-            }
-            std::cout << std::endl;
-        }
+        // quiet
 
         if (same_triangle_result.in_same_triangle) {
             // Current point and target point are in the same triangle, finish directly
@@ -487,6 +467,8 @@ void handle_one_segment_rational(
         }
 
         // Get candidate edges with their corresponding triangles
+        igl::Timer cand_edges_timer;
+        cand_edges_timer.start();
         auto candidate_edges = get_candidate_edges_with_triangles(
             current_qp,
             current_possible_triangles,
@@ -494,6 +476,7 @@ void handle_one_segment_rational(
             v_id_map_joint,
             TT,
             TTi);
+        time_candidate_edges_total += cand_edges_timer.getElapsedTime();
 
         // Find next intersection using rational arithmetic with detailed profiling
         bool found_intersection = false;
@@ -506,7 +489,7 @@ void handle_one_segment_rational(
         double time_edge_vertex_lookup = 0;
         double time_intersection_computation = 0;
         igl::Timer intersection_timer;
-        if (verbose) intersection_timer.start();
+        intersection_timer.start();
 
         for (int i = 0; i < candidate_edges.size(); i++) {
             const auto& edge_tri_pair = candidate_edges[i];
@@ -528,15 +511,9 @@ void handle_one_segment_rational(
                 intersectSegmentEdge_r(current_pos, b, edge_start, edge_end, edge_bc, false);
             if (verbose) time_intersection_computation += compute_timer.getElapsedTime();
 
-            if (verbose) {
-                std::cout << "  Edge " << i << " (" << edge.first << ", " << edge.second
-                          << ") -> triangle " << edge_triangle << ": ";
-            }
+            // quiet
             if (has_intersection) {
-                if (verbose) {
-                    std::cout << "INTERSECTION! edge_bc=(" << edge_bc(0).to_double() << ", "
-                              << edge_bc(1).to_double() << ")" << std::endl;
-                }
+                // quiet
 
                 selected_edge_idx = i;
                 next_intersection = edge_bc(0) * edge_start + edge_bc(1) * edge_end;
@@ -544,21 +521,15 @@ void handle_one_segment_rational(
                 next_face = edge_triangle; // Use the triangle indicated by this edge
 
                 found_intersection = true;
-                if (verbose) {
-                    std::cout << "    -> Using this intersection, next_triangle_id=" << next_face
-                              << std::endl;
-                }
+                // quiet
                 break;
             } else {
                 // std::cout << "no intersection" << std::endl;
             }
         }
 
-        double total_intersection_time = 0;
-        if (verbose) {
-            total_intersection_time = intersection_timer.getElapsedTime();
-            time_intersection_tests_total += total_intersection_time;
-        }
+        double total_intersection_time = intersection_timer.getElapsedTime();
+        time_intersection_tests_total += total_intersection_time;
 
         if (!found_intersection) {
             std::cerr << "Error: No intersection found in ray tracing" << std::endl;
@@ -600,12 +571,7 @@ void handle_one_segment_rational(
 
         new_segments.push_back(new_seg);
 
-        if (verbose) {
-            std::cout << "Created segment: triangle_id=" << new_seg.f_id << ", start_bc=("
-                      << new_seg.bcs[0](0) << ", " << new_seg.bcs[0](1) << ", " << new_seg.bcs[0](2)
-                      << ")" << ", end_bc=(" << new_seg.bcs[1](0) << ", " << new_seg.bcs[1](1)
-                      << "," << new_seg.bcs[1](2) << ")" << std::endl;
-        }
+        // quiet
 
         // Move to next face and update position
         current_pos = next_intersection;
@@ -615,14 +581,7 @@ void handle_one_segment_rational(
             wmtk::Rational(new_seg.bcs[1](2));
 
         // Print detailed intersection profiling for this iteration (only if verbose)
-        if (verbose) {
-            std::cout << "Iteration " << iteration
-                      << " - Intersection Tests: " << total_intersection_time * 1000 << " ms "
-                      << "[" << num_candidate_edges << " edges] "
-                      << "(Vertex lookup: " << time_edge_vertex_lookup * 1000 << " ms, "
-                      << "Intersection computation: " << time_intersection_computation * 1000
-                      << " ms)" << std::endl;
-        }
+        // quiet
     }
 
     // Add final segment to target (only if we didn't exit early from the while loop)
@@ -700,14 +659,26 @@ void handle_one_segment_rational(
         viewer.launch();
 #endif
     }
-    // Print intersection tests summary (only if verbose)
-    if (verbose && iteration > 0) {
-        std::cout << "\n=== Intersection Tests Summary ===" << std::endl;
-        std::cout << "  Total intersection time: " << time_intersection_tests_total * 1000 << " ms"
+    // Print profiling summary (only if verbose)
+    if (false) {
+        double t_total_ms = seg_total_timer.getElapsedTime() * 1000.0;
+        double t_tt_ms = tt_build_timer.getElapsedTime() * 1000.0;
+        double t_same_tri_init_ms = same_tri_timer_initial.getElapsedTime() * 1000.0;
+        std::cout << "\n=== handle_one_segment_rational Timing ===" << std::endl;
+        std::cout << "  Total: " << t_total_ms << " ms" << std::endl;
+        std::cout << "  TT/TTi build: " << t_tt_ms << " ms" << std::endl;
+        std::cout << "  Initial same-triangle check: " << t_same_tri_init_ms << " ms" << std::endl;
+        std::cout << "  Ray-trace iterations: " << iteration << std::endl;
+        std::cout << "    Candidate-edges total: " << time_candidate_edges_total * 1000.0 << " ms"
                   << std::endl;
-        std::cout << "  Number of iterations: " << iteration << std::endl;
-        std::cout << "  Average per iteration: "
-                  << (time_intersection_tests_total / iteration) * 1000 << " ms" << std::endl;
+        std::cout << "    Same-triangle checks total: " << time_same_tri_checks_total * 1000.0
+                  << " ms" << std::endl;
+        std::cout << "    Intersection tests total: " << time_intersection_tests_total * 1000.0
+                  << " ms" << std::endl;
+        if (iteration > 0) {
+            std::cout << "    Intersection tests avg/iter: "
+                      << (time_intersection_tests_total / iteration) * 1000.0 << " ms" << std::endl;
+        }
     }
 }
 
@@ -972,20 +943,44 @@ void handle_collapse_edge_curve(
     bool use_rational,
     bool verbose)
 {
-    if (verbose) {
-        std::cout << "Handling EdgeCollapse curve" << std::endl;
+    // Profiling accumulators
+    igl::Timer total_timer;
+    total_timer.start();
+    igl::Timer area_timer;
+    igl::Timer convert_timer;
+    double time_area_total = 0.0;
+    double time_convert_rational = 0.0;
+    double time_map_points_total = 0.0;
+    double time_trace_segment_total = 0.0;
+
+
+    Eigen::VectorXd dblarea_before, dblarea_after;
+    area_timer.start();
+    igl::doublearea(UV_joint, F_before, dblarea_before);
+    if (dblarea_before.minCoeff() <= 0) {
+        std::cout << "Error: dblarea_before is negative" << std::endl;
+        throw std::runtime_error("Error: dblarea_before is negative");
     }
+    igl::doublearea(UV_joint, F_after, dblarea_after);
+    time_area_total += area_timer.getElapsedTime();
+    if (dblarea_after.minCoeff() <= 0) {
+        std::cout << "Error: dblarea_after is negative" << std::endl;
+        throw std::runtime_error("Error: dblarea_after is negative");
+    }
+
     int curve_length = curve.segments.size();
     Eigen::MatrixXi TT, TTi;
 
     // Convert UV_joint to rational once for all segments (optimization)
     Eigen::MatrixX<wmtk::Rational> UV_joint_r(UV_joint.rows(), UV_joint.cols());
+    convert_timer.start();
     for (int i = 0; i < UV_joint.rows(); i++) {
         for (int j = 0; j < UV_joint.cols(); j++) {
             UV_joint_r(i, j) = wmtk::Rational(UV_joint(i, j));
         }
     }
-
+    time_convert_rational += convert_timer.getElapsedTime();
+    int cnter = 0;
     for (int id = 0; id < curve_length; id++) {
         ////////////////////////////////////
         // map the two end points of one segment
@@ -995,11 +990,22 @@ void handle_collapse_edge_curve(
         query_point qp1 = {qs.f_id, qs.bcs[1], qs.fv_ids};
         std::vector<query_point> query_points = {qp0, qp1};
 
+        std::vector<query_point> query_points_copy = query_points;
+
+
         auto it = std::find(id_map_after.begin(), id_map_after.end(), qs.f_id);
         if (it == id_map_after.end()) {
             continue;
         }
 
+        cnter++;
+
+        // Map points timing
+        igl::Timer map_timer;
+        map_timer.start();
+        // Build cache once per operation at curve level if desired
+        std::vector<BarycentricPrecompute2D> bc_cache_collapse =
+            build_barycentric_cache_2d_from_double(UV_joint, F_before);
         handle_collapse_edge_r(
             UV_joint,
             F_before,
@@ -1007,8 +1013,28 @@ void handle_collapse_edge_curve(
             v_id_map_joint,
             id_map_before,
             id_map_after,
-            query_points);
-
+            query_points,
+            &bc_cache_collapse);
+        time_map_points_total += map_timer.getElapsedTime() * 1000;
+        if ((query_points[0].bc - query_points[1].bc).norm() == 0) {
+            std::cout << "Query points for segment " << id << ":" << std::endl;
+            for (size_t i = 0; i < query_points.size(); i++) {
+                std::cout << "  Point " << i << ": f_id=" << query_points[i].f_id << ", bc=("
+                          << query_points[i].bc[0] << ", " << query_points[i].bc[1] << ", "
+                          << query_points[i].bc[2] << ")" << std::endl;
+            }
+            // Print query_points_copy for debugging
+            std::cout << "Query points before collapse mapping for segment " << id << ":"
+                      << std::endl;
+            for (size_t i = 0; i < query_points_copy.size(); i++) {
+                std::cout << "  Point " << i << ": f_id=" << query_points_copy[i].f_id << ", bc=("
+                          << query_points_copy[i].bc[0] << ", " << query_points_copy[i].bc[1]
+                          << ", " << query_points_copy[i].bc[2] << ")" << std::endl;
+            }
+        }
+        // Per-segment tracing timing
+        igl::Timer trace_timer;
+        trace_timer.start();
         handle_one_segment_rational(
             curve,
             id,
@@ -1020,12 +1046,24 @@ void handle_collapse_edge_curve(
             TT,
             TTi,
             verbose);
+        time_trace_segment_total += trace_timer.getElapsedTime() * 1000;
     }
 
     if (!is_curve_valid(curve)) {
         std::cout << "Error: curve is not valid after EdgeCollapse" << std::endl;
         throw std::runtime_error("Error: curve is not valid after EdgeCollapse");
     }
+
+    // Suppress high-level summary to reduce noise
+    std::cout << "count: " << cnter << std::endl;
+    std::cout << "handle_collapse_edge_curve map points time: " << time_map_points_total << " ms"
+              << std::endl;
+    std::cout << "handle_collapse_edge_curve map points time per segment: "
+              << time_map_points_total / cnter << " ms" << std::endl;
+    std::cout << "handle_collapse_edge_curve trace segment time: " << time_trace_segment_total
+              << " ms" << std::endl;
+    std::cout << "handle_collapse_edge_curve trace segment time per segment: "
+              << time_trace_segment_total / cnter << " ms" << std::endl;
 }
 
 void handle_non_collapse_operation_curve(
@@ -1044,6 +1082,18 @@ void handle_non_collapse_operation_curve(
     if (verbose) {
         std::cout << "Handling " << operation_name << " curve" << std::endl;
     }
+    Eigen::VectorXd dblarea_before, dblarea_after;
+    igl::doublearea(V_before, F_before, dblarea_before);
+    if (dblarea_before.minCoeff() <= 0) {
+        std::cout << "Error: dblarea_before is negative" << std::endl;
+        throw std::runtime_error("Error: dblarea_before is negative");
+    }
+    igl::doublearea(V_after, F_after, dblarea_after);
+    if (dblarea_after.minCoeff() <= 0) {
+        std::cout << "Error: dblarea_after is negative" << std::endl;
+        throw std::runtime_error("Error: dblarea_after is negative");
+    }
+
     int curve_length = curve.segments.size();
     Eigen::MatrixXi TT, TTi;
 
@@ -1066,6 +1116,9 @@ void handle_non_collapse_operation_curve(
             continue;
         }
 
+        std::vector<BarycentricPrecompute2D> bc_cache_non =
+            build_barycentric_cache_2d_from_double(V_before, F_before);
+
         handle_non_collapse_operation_r(
             V_before,
             F_before,
@@ -1076,9 +1129,16 @@ void handle_non_collapse_operation_curve(
             id_map_after,
             v_id_map_after,
             query_points,
-            operation_name);
-
-
+            operation_name,
+            &bc_cache_non);
+        if (verbose) {
+            std::cout << "Mapped query points for segment " << id << ":" << std::endl;
+            for (int i = 0; i < query_points.size(); i++) {
+                std::cout << "  Point " << i << ":" << std::endl;
+                std::cout << "    f_id: " << query_points[i].f_id << std::endl;
+                std::cout << "    bcs: [" << query_points[i].bc.transpose() << "]" << std::endl;
+            }
+        }
         handle_one_segment_rational(
             curve,
             id,
@@ -1161,6 +1221,14 @@ void clean_up_curve(query_curve& curve)
             wmtk::Rational cross_product_2d =
                 current_slope_r(0) * next_slope_r(1) - current_slope_r(1) * next_slope_r(0);
             bool is_collinear = (cross_product_2d == wmtk::Rational(0));
+
+
+            // TODO: handle zero slope case
+            {
+                if (current_slope_r.norm() == 0) {
+                    current_slope_r = next_slope_r;
+                }
+            }
 
             if (!is_collinear) {
                 break; // not collinear, stop merging
@@ -1329,6 +1397,7 @@ int compute_intersections_between_two_curves(
 
             Eigen::Vector2<wmtk::Rational> bc_tmp;
             if (intersectSegmentEdge_r(s1_a, s1_b, s2_a, s2_b, bc_tmp, false)) {
+                intersectSegmentEdge_r(s1_a, s1_b, s2_a, s2_b, bc_tmp, true);
                 intersections++;
                 if (verbose) {
                     // std::cout << "Intersection found in face " << seg1.f_id << std::endl;
@@ -1372,15 +1441,40 @@ int compute_curve_self_intersections(const query_curve& curve, bool verbose)
 
             Eigen::Vector2<wmtk::Rational> bc_tmp;
             if (intersectSegmentEdge_r(s1_a, s1_b, s2_a, s2_b, bc_tmp, false)) {
+                intersectSegmentEdge_r(s1_a, s1_b, s2_a, s2_b, bc_tmp, true);
                 intersections++;
                 if (verbose) {
+                    std::cout << "i=" << i << ", j=" << j << std::endl;
                     // std::cout << "Intersection found in face " << seg1.f_id << std::endl;
                     std::cout << "seg1: f_id=" << seg1.f_id
                               << ", bcs[0]=" << seg1.bcs[0].transpose()
                               << ", bcs[1]=" << seg1.bcs[1].transpose() << std::endl;
+                    std::cout << "seg1: origin_segment_id=" << seg1.origin_segment_id << std::endl;
+                    std::cout << "seg1: next_segment_id=" << curve.next_segment_ids[i] << std::endl;
+
+                    if (curve.next_segment_ids[i] != -1) {
+                        const auto& next_seg1 = curve.segments[curve.next_segment_ids[i]];
+                        std::cout << "seg1 next: f_id=" << next_seg1.f_id
+                                  << ", bcs[0]=" << next_seg1.bcs[0].transpose()
+                                  << ", bcs[1]=" << next_seg1.bcs[1].transpose() << std::endl;
+                        std::cout << "seg1 next: origin_segment_id=" << next_seg1.origin_segment_id
+                                  << std::endl;
+                    }
                     std::cout << "seg2: f_id=" << seg2.f_id
                               << ", bcs[0]=" << seg2.bcs[0].transpose()
                               << ", bcs[1]=" << seg2.bcs[1].transpose() << std::endl;
+                    std::cout << "seg2: origin_segment_id=" << seg2.origin_segment_id << std::endl;
+                    std::cout << "seg2: next_segment_id=" << curve.next_segment_ids[j] << std::endl;
+
+                    if (curve.next_segment_ids[j] != -1) {
+                        const auto& next_seg2 = curve.segments[curve.next_segment_ids[j]];
+                        std::cout << "seg2 next: f_id=" << next_seg2.f_id
+                                  << ", bcs[0]=" << next_seg2.bcs[0].transpose()
+                                  << ", bcs[1]=" << next_seg2.bcs[1].transpose() << std::endl;
+                        std::cout << "seg2 next: origin_segment_id=" << next_seg2.origin_segment_id
+                                  << std::endl;
+                    }
+
                     std::cout << "intersection position at t = " << bc_tmp(0).to_double()
                               << std::endl;
                 }

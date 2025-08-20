@@ -33,6 +33,18 @@ struct query_curve
     std::vector<int> next_segment_ids;
 };
 
+// Precompute cache for fast 2D barycentric evaluation per triangle
+struct BarycentricPrecompute2D
+{
+    Eigen::Matrix<wmtk::Rational, 2, 2> Minv;
+    Eigen::Matrix<wmtk::Rational, 2, 1> a;
+};
+
+// Build cache from double UV/vertex array (internally converts to Rational)
+std::vector<BarycentricPrecompute2D> build_barycentric_cache_2d_from_double(
+    const Eigen::MatrixXd& V2,
+    const Eigen::MatrixXi& F);
+
 // IO
 void save_query_curves(const std::vector<query_curve>& curves, const std::string& filename);
 std::vector<query_curve> load_query_curves(const std::string& filename);
@@ -172,7 +184,8 @@ void handle_collapse_edge_r(
     const std::vector<int64_t>& v_id_map_joint,
     const std::vector<int64_t>& id_map_before,
     const std::vector<int64_t>& id_map_after,
-    std::vector<query_point>& query_points);
+    std::vector<query_point>& query_points,
+    const std::vector<BarycentricPrecompute2D>* barycentric_cache = nullptr);
 
 // curve version of the handle_collapse_edge
 void handle_collapse_edge_curve(
@@ -211,7 +224,8 @@ void handle_non_collapse_operation_r(
     const std::vector<int64_t>& id_map_after,
     const std::vector<int64_t>& v_id_map_after,
     std::vector<query_point>& query_points,
-    const std::string& operation_name);
+    const std::string& operation_name,
+    const std::vector<BarycentricPrecompute2D>* barycentric_cache = nullptr);
 
 void handle_non_collapse_operation_curve(
     const Eigen::MatrixXd& V_before,

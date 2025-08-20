@@ -215,19 +215,34 @@ void write_curves_to_vtu(
 
 void track_line_one_operation(const json& operation_log, query_curve& curve, bool do_forward)
 {
-    bool verbose = false;
+    bool verbose = true;
     std::string operation_name;
     operation_name = operation_log["operation_name"];
+    igl::Timer op_total_timer;
+    op_total_timer.start();
+    double t_parse_ms = 0.0;
+    double t_handle_ms = 0.0;
 
     if (operation_name == "MeshConsolidate") {
         // std::cout << "This Operations is Consolidate" << std::endl;
         std::vector<int64_t> face_ids_maps;
         std::vector<int64_t> vertex_ids_maps;
-        parse_consolidate_file(operation_log, face_ids_maps, vertex_ids_maps);
+        {
+            igl::Timer parse_timer;
+            parse_timer.start();
+            parse_consolidate_file(operation_log, face_ids_maps, vertex_ids_maps);
+            t_parse_ms += parse_timer.getElapsedTime() * 1000.0;
+        }
         if (do_forward) {
+            igl::Timer handle_timer;
+            handle_timer.start();
             handle_consolidate_forward(face_ids_maps, vertex_ids_maps, curve);
+            t_handle_ms += handle_timer.getElapsedTime() * 1000.0;
         } else {
+            igl::Timer handle_timer;
+            handle_timer.start();
             handle_consolidate(face_ids_maps, vertex_ids_maps, curve);
+            t_handle_ms += handle_timer.getElapsedTime() * 1000.0;
         }
     } else if (
         operation_name == "TriEdgeSwap" || operation_name == "AttributesUpdate" ||
@@ -239,23 +254,30 @@ void track_line_one_operation(const json& operation_log, query_curve& curve, boo
         std::vector<int64_t> v_id_map_after, v_id_map_before;
         bool is_skipped;
 
-        parse_non_collapse_file(
-            operation_log,
-            is_skipped,
-            V_before,
-            F_before,
-            id_map_before,
-            v_id_map_before,
-            V_after,
-            F_after,
-            id_map_after,
-            v_id_map_after);
+        {
+            igl::Timer parse_timer;
+            parse_timer.start();
+            parse_non_collapse_file(
+                operation_log,
+                is_skipped,
+                V_before,
+                F_before,
+                id_map_before,
+                v_id_map_before,
+                V_after,
+                F_after,
+                id_map_after,
+                v_id_map_after);
+            t_parse_ms += parse_timer.getElapsedTime() * 1000.0;
+        }
 
         if (is_skipped) {
             return;
         }
 
         if (do_forward) {
+            igl::Timer handle_timer;
+            handle_timer.start();
             handle_non_collapse_operation_curve(
                 V_after,
                 F_after,
@@ -268,7 +290,10 @@ void track_line_one_operation(const json& operation_log, query_curve& curve, boo
                 curve,
                 operation_name,
                 verbose);
+            t_handle_ms += handle_timer.getElapsedTime() * 1000.0;
         } else {
+            igl::Timer handle_timer;
+            handle_timer.start();
             handle_non_collapse_operation_curve(
                 V_before,
                 F_before,
@@ -281,23 +306,30 @@ void track_line_one_operation(const json& operation_log, query_curve& curve, boo
                 curve,
                 operation_name,
                 verbose);
+            t_handle_ms += handle_timer.getElapsedTime() * 1000.0;
         }
     } else if (operation_name == "EdgeCollapse") {
-        // std::cout << "This Operations is EdgeCollapse" << std::endl;
         Eigen::MatrixXi F_after, F_before;
         Eigen::MatrixXd UV_joint;
         std::vector<int64_t> v_id_map_joint;
         std::vector<int64_t> id_map_after, id_map_before;
-        parse_edge_collapse_file(
-            operation_log,
-            UV_joint,
-            F_before,
-            F_after,
-            v_id_map_joint,
-            id_map_before,
-            id_map_after);
+        {
+            igl::Timer parse_timer;
+            parse_timer.start();
+            parse_edge_collapse_file(
+                operation_log,
+                UV_joint,
+                F_before,
+                F_after,
+                v_id_map_joint,
+                id_map_before,
+                id_map_after);
+            t_parse_ms += parse_timer.getElapsedTime() * 1000.0;
+        }
 
         if (do_forward) {
+            igl::Timer handle_timer;
+            handle_timer.start();
             handle_collapse_edge_curve(
                 UV_joint,
                 F_after,
@@ -306,8 +338,12 @@ void track_line_one_operation(const json& operation_log, query_curve& curve, boo
                 id_map_after,
                 id_map_before,
                 curve,
+                true,
                 verbose);
+            t_handle_ms += handle_timer.getElapsedTime() * 1000.0;
         } else {
+            igl::Timer handle_timer;
+            handle_timer.start();
             handle_collapse_edge_curve(
                 UV_joint,
                 F_before,
@@ -316,7 +352,9 @@ void track_line_one_operation(const json& operation_log, query_curve& curve, boo
                 id_map_before,
                 id_map_after,
                 curve,
+                true,
                 verbose);
+            t_handle_ms += handle_timer.getElapsedTime() * 1000.0;
         }
     } else {
         // std::cout << "This Operations is not implemented" << std::endl;
@@ -327,6 +365,10 @@ void track_line_one_operation(const json& operation_log, query_curve& curve, boo
     std::vector<query_curve> curves{curve};
     save_query_curves(curves, curve_file);
 #endif
+    // Only print overall time per operation for this curve
+    double t_total_ms = op_total_timer.getElapsedTime() * 1000.0;
+    std::cout << "operation total time (" << operation_name << ", curve): " << t_total_ms << " ms"
+              << std::endl;
 }
 
 void track_line(path dirPath, query_curve& curve, bool do_forward)
@@ -346,6 +388,8 @@ void track_line(path dirPath, query_curve& curve, bool do_forward)
         if (do_forward) {
             file_id = maxIndex - i;
         }
+
+        //
         fs::path filePath = dirPath / ("operation_log_" + std::to_string(file_id) + ".json");
         std::ifstream file(filePath);
         if (!file.is_open()) {
@@ -356,15 +400,11 @@ void track_line(path dirPath, query_curve& curve, bool do_forward)
         file >> operation_log;
 
         int curve_size_before = curve.segments.size();
-        std::cout << "Trace Operations number: " << file_id << std::endl;
+        // quiet per-operation tracing at track_line level
         igl::Timer timer;
         timer.start();
         track_line_one_operation(operation_log, curve, do_forward);
         timer.stop();
-        int curve_size_after = curve.segments.size();
-        // std::cout << "curve size: " << curve_size_after << std::endl;
-        // std::cout << "track_line_one_operation took " << timer.getElapsedTime() << " seconds."
-        //           << std::endl;
 
         if (curve.segments.size() > clean_up_threshold * curve_old_size) {
             clean_up_curve(curve);
@@ -744,15 +784,14 @@ void forward_track_plane_curves_app(
         write_curves_to_vtu(curves, V_in, model_name + "_plane_curves_in.vtu");
     }
 
-    // TODO: get inference
     std::vector<std::vector<int>> intersection_reference;
     intersection_reference.resize(curves.size());
     for (int i = 0; i < curves.size(); i++) {
         intersection_reference[i].resize(curves.size());
-        intersection_reference[i][i] = compute_curve_self_intersections(curves[i]);
+        intersection_reference[i][i] = compute_curve_self_intersections(curves[i], true);
         for (int j = i + 1; j < curves.size(); j++) {
             intersection_reference[i][j] =
-                compute_intersections_between_two_curves(curves[i], curves[j]);
+                compute_intersections_between_two_curves(curves[i], curves[j], true);
         }
     }
 
@@ -810,7 +849,7 @@ bool check_curves_topology(
 {
     bool is_correct = true;
     for (int i = 0; i < curves.size(); i++) {
-        int self_intersections = compute_curve_self_intersections(curves[i]);
+        int self_intersections = compute_curve_self_intersections(curves[i], true);
         std::cout << "curve " << i << " has " << self_intersections << " self intersections"
                   << std::endl;
         if (self_intersections != intersection_reference[i][i]) {
@@ -819,7 +858,8 @@ bool check_curves_topology(
             is_correct = false;
         }
         for (int j = i + 1; j < curves.size(); j++) {
-            int intersections = compute_intersections_between_two_curves(curves[i], curves[j]);
+            int intersections =
+                compute_intersections_between_two_curves(curves[i], curves[j], true);
             std::cout << "curve " << i << " and curve " << j << " intersect " << intersections
                       << " times" << std::endl;
             if (intersections != intersection_reference[i][j]) {

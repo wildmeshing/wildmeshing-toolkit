@@ -1,3 +1,4 @@
+#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -130,6 +131,63 @@ Eigen::Vector3<wmtk::Rational> ComputeBarycentricCoordinates2D_r(
     return Eigen::Vector3<wmtk::Rational>(u, v, w) / sum;
 }
 
+
+// Precomputed barycentric helper (2D)
+// defined in header
+
+static std::vector<BarycentricPrecompute2D> build_barycentric_cache_2d(
+    const Eigen::MatrixX<wmtk::Rational>& V2,
+    const Eigen::MatrixXi& F)
+{
+    std::vector<BarycentricPrecompute2D> cache;
+    cache.resize(F.rows());
+    for (int i = 0; i < F.rows(); ++i) {
+        Eigen::Matrix<wmtk::Rational, 2, 1> A = V2.row(F(i, 0)).head<2>().transpose();
+        Eigen::Matrix<wmtk::Rational, 2, 1> B = V2.row(F(i, 1)).head<2>().transpose();
+        Eigen::Matrix<wmtk::Rational, 2, 1> C = V2.row(F(i, 2)).head<2>().transpose();
+
+        Eigen::Matrix<wmtk::Rational, 2, 2> M;
+        M.col(0) = B - A;
+        M.col(1) = C - A;
+
+        wmtk::Rational det = M(0, 0) * M(1, 1) - M(0, 1) * M(1, 0);
+        if (det == wmtk::Rational(0)) {
+            throw std::runtime_error("Degenerate triangle in barycentric precompute (det==0)");
+        }
+        Eigen::Matrix<wmtk::Rational, 2, 2> Minv;
+        Minv(0, 0) = M(1, 1) / det;
+        Minv(0, 1) = -M(0, 1) / det;
+        Minv(1, 0) = -M(1, 0) / det;
+        Minv(1, 1) = M(0, 0) / det;
+
+        cache[i].Minv = Minv;
+        cache[i].a = A;
+    }
+    return cache;
+}
+
+static inline Eigen::Matrix<wmtk::Rational, 3, 1> barycentric_from_cache(
+    const BarycentricPrecompute2D& bc,
+    const Eigen::Matrix<wmtk::Rational, 2, 1>& p)
+{
+    Eigen::Matrix<wmtk::Rational, 2, 1> v2 = p - bc.a;
+    Eigen::Matrix<wmtk::Rational, 2, 1> x = bc.Minv * v2; // [v; w]
+    wmtk::Rational v = x(0);
+    wmtk::Rational w = x(1);
+    wmtk::Rational u = wmtk::Rational(1) - v - w;
+    return Eigen::Matrix<wmtk::Rational, 3, 1>(u, v, w);
+}
+
+std::vector<BarycentricPrecompute2D> build_barycentric_cache_2d_from_double(
+    const Eigen::MatrixXd& V2,
+    const Eigen::MatrixXi& F)
+{
+    Eigen::MatrixX<wmtk::Rational> V2_r(V2.rows(), V2.cols());
+    for (int i = 0; i < V2.rows(); ++i) {
+        for (int j = 0; j < V2.cols(); ++j) V2_r(i, j) = wmtk::Rational(V2(i, j));
+    }
+    return build_barycentric_cache_2d(V2_r, F);
+}
 
 void handle_collapse_edge(
     const Eigen::MatrixXd& UV_joint,
@@ -270,26 +328,62 @@ void handle_collapse_edge_r(
     const std::vector<int64_t>& v_id_map_joint,
     const std::vector<int64_t>& id_map_before,
     const std::vector<int64_t>& id_map_after,
-    std::vector<query_point>& query_points)
+    std::vector<query_point>& query_points,
+    const std::vector<BarycentricPrecompute2D>* barycentric_cache)
 {
-    // std::cout << "Handling EdgeCollapse Rational" << std::endl;
+    struct SimpleTimer
+    {
+        std::chrono::high_resolution_clock::time_point t;
+        void start() { t = std::chrono::high_resolution_clock::now(); }
+        void stop() {}
+        double getElapsedTime() const
+        {
+            return std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - t)
+                .count();
+        }
+    };
+    SimpleTimer total_timer;
+    total_timer.start();
     // first convert the UV_joint to Rational
     Eigen::MatrixX<wmtk::Rational> UV_joint_r(UV_joint.rows(), UV_joint.cols());
+    SimpleTimer convert_timer;
+    convert_timer.start();
     for (int i = 0; i < UV_joint.rows(); i++) {
         for (int j = 0; j < UV_joint.cols(); j++) {
             UV_joint_r(i, j) = wmtk::Rational(UV_joint(i, j));
         }
     }
+    double t_convert_ms = convert_timer.getElapsedTime() * 1000.0;
 
+    // Precompute barycentric cache for F_before using UV_joint_r (2D) if not provided
+    std::vector<BarycentricPrecompute2D> local_cache;
+    const std::vector<BarycentricPrecompute2D>* bc_cache_ptr = barycentric_cache;
+    if (bc_cache_ptr == nullptr) {
+        std::cout << "???Building barycentric cache for F_before" << std::endl;
+        local_cache = build_barycentric_cache_2d(UV_joint_r, F_before);
+        bc_cache_ptr = &local_cache;
+    }
+
+    // Profiling accumulators
+    double t_find_in_after_ms = 0.0;
+    double t_find_offset_ms = 0.0;
+    double t_compute_point_ms = 0.0;
+    double t_bc_search_ms = 0.0;
+    double t_bc_call_ms_total = 0.0;
+    long long bc_call_count = 0;
+    int num_processed_points = 0;
 
     for (int id = 0; id < query_points.size(); id++) {
         query_point& qp = query_points[id];
         if (qp.f_id < 0) continue;
 
-
         // find if qp is in the id_map_after
+        SimpleTimer t_find_after;
+        t_find_after.start();
         auto it = std::find(id_map_after.begin(), id_map_after.end(), qp.f_id);
+        t_find_in_after_ms += t_find_after.getElapsedTime() * 1000.0;
         if (it != id_map_after.end()) {
+            num_processed_points++;
             // std::cout << "find qp: " << qp.f_id << std::endl;
             // std::cout << "qp.bc: (" << qp.bc(0) << ", " << qp.bc(1) << ", " << qp.bc(2) << ")"
             //           << std::endl;
@@ -297,11 +391,16 @@ void handle_collapse_edge_r(
             int local_index_in_f_after = std::distance(id_map_after.begin(), it);
             // offset of the qp.fv_ids
             int offset_in_f_after = -1;
-            for (int i = 0; i < 3; i++) {
-                if (v_id_map_joint[F_after(local_index_in_f_after, i)] == qp.fv_ids[0]) {
-                    offset_in_f_after = i;
-                    break;
+            {
+                SimpleTimer t_offset;
+                t_offset.start();
+                for (int i = 0; i < 3; i++) {
+                    if (v_id_map_joint[F_after(local_index_in_f_after, i)] == qp.fv_ids[0]) {
+                        offset_in_f_after = i;
+                        break;
+                    }
                 }
+                t_find_offset_ms += t_offset.getElapsedTime() * 1000.0;
             }
             if (offset_in_f_after == -1) {
                 std::stringstream error_msg;
@@ -323,10 +422,16 @@ void handle_collapse_edge_r(
             bc_rational /= bc_rational.sum();
             // compute the location of the qp
             Eigen::Vector2<wmtk::Rational> p(0, 0);
-            for (int i = 0; i < 3; i++) {
-                p = p + UV_joint_r.row(F_after(local_index_in_f_after, (i + offset_in_f_after) % 3))
+            {
+                SimpleTimer t_compute_p;
+                t_compute_p.start();
+                for (int i = 0; i < 3; i++) {
+                    p = p +
+                        UV_joint_r.row(F_after(local_index_in_f_after, (i + offset_in_f_after) % 3))
                                 .transpose() *
                             bc_rational(i);
+                }
+                t_compute_point_ms += t_compute_p.getElapsedTime() * 1000.0;
             }
 
 
@@ -336,27 +441,29 @@ void handle_collapse_edge_r(
             // if computation is exact we don't need this anymore
             // double bc_min_coef = 1;
             bool bc_updated = false;
-            for (int i = 0; i < F_before.rows(); i++) {
-                Eigen::Vector3<wmtk::Rational> bc_rational;
+            {
+                SimpleTimer t_bc_search;
+                t_bc_search.start();
+                for (int i = 0; i < F_before.rows(); i++) {
+                    Eigen::Matrix<wmtk::Rational, 3, 1> bc_rational;
 
-                bc_rational = ComputeBarycentricCoordinates2D_r(
-                    p,
-                    UV_joint_r.row(F_before(i, 0)),
-                    UV_joint_r.row(F_before(i, 1)),
-                    UV_joint_r.row(F_before(i, 2)));
+                    SimpleTimer t_bc_call;
+                    t_bc_call.start();
+                    bc_rational = barycentric_from_cache((*bc_cache_ptr)[i], p);
+                    t_bc_call_ms_total += t_bc_call.getElapsedTime() * 1000.0;
+                    bc_call_count++;
 
-                // std::cout << std::setprecision(16) << "bc candidate:" <<
-                // bc_rational(0).to_double()
-                //           << ", " << bc_rational(1).to_double() << ", "
-                //           << bc_rational(2).to_double() << std::endl;
 
-                if (bc_rational.minCoeff() >= 0 && bc_rational.maxCoeff() <= 1) {
-                    local_index_in_f_before = i;
-                    qp.bc(0) = bc_rational(0).to_double();
-                    qp.bc(1) = bc_rational(1).to_double();
-                    qp.bc(2) = bc_rational(2).to_double();
-                    bc_updated = true;
+                    if (bc_rational.minCoeff() >= 0 && bc_rational.maxCoeff() <= 1) {
+                        local_index_in_f_before = i;
+                        qp.bc(0) = bc_rational(0).to_double();
+                        qp.bc(1) = bc_rational(1).to_double();
+                        qp.bc(2) = bc_rational(2).to_double();
+                        bc_updated = true;
+                        break;
+                    }
                 }
+                t_bc_search_ms += t_bc_search.getElapsedTime() * 1000.0;
             }
 
             if (!bc_updated) {
@@ -381,6 +488,14 @@ void handle_collapse_edge_r(
             }
         }
     }
+
+    // Suppress detailed timing output to reduce noise
+    // std::cout << "F_before.rows(): " << F_before.rows() << std::endl;
+    // std::cout << "handle_collapse_edge_r barycentric call time: " << t_bc_call_ms_total << " ms"
+    //           << std::endl;
+    // std::cout << "handle_collapse_edge_r barycentric calls: " << bc_call_count << std::endl;
+    // std::cout << "handle_collapse_edge_r barycentric search time: " << t_bc_search_ms << " ms"
+    //           << std::endl;
 }
 
 void handle_non_collapse_operation(
@@ -516,7 +631,8 @@ void handle_non_collapse_operation_r(
     const std::vector<int64_t>& id_map_after,
     const std::vector<int64_t>& v_id_map_after,
     std::vector<query_point>& query_points,
-    const std::string& operation_name)
+    const std::string& operation_name,
+    const std::vector<BarycentricPrecompute2D>* barycentric_cache)
 {
     // std::cout << "Handling " << operation_name << " Rational" << std::endl;
 
@@ -534,6 +650,14 @@ void handle_non_collapse_operation_r(
         for (int j = 0; j < V_after.cols(); j++) {
             V_after_r(i, j) = wmtk::Rational(V_after(i, j));
         }
+    }
+
+    // Precompute barycentric cache for F_before (2D) if not provided
+    std::vector<BarycentricPrecompute2D> local_cache;
+    const std::vector<BarycentricPrecompute2D>* bc_cache_ptr = barycentric_cache;
+    if (bc_cache_ptr == nullptr) {
+        local_cache = build_barycentric_cache_2d(V_before_r, F_before);
+        bc_cache_ptr = &local_cache;
     }
 
     for (int id = 0; id < query_points.size(); id++) {
@@ -584,13 +708,9 @@ void handle_non_collapse_operation_r(
             int local_index_in_f_before = -1;
             bool bc_updated = false;
             for (int i = 0; i < F_before.rows(); i++) {
-                Eigen::Vector3<wmtk::Rational> bc_rational_result;
+                Eigen::Matrix<wmtk::Rational, 3, 1> bc_rational_result;
                 if (V_cols == 2) {
-                    bc_rational_result = ComputeBarycentricCoordinates2D_r(
-                        p.head<2>(),
-                        V_before_r.row(F_before(i, 0)).head<2>(),
-                        V_before_r.row(F_before(i, 1)).head<2>(),
-                        V_before_r.row(F_before(i, 2)).head<2>());
+                    bc_rational_result = barycentric_from_cache((*bc_cache_ptr)[i], p.head<2>());
                 } else {
                     throw std::runtime_error(
                         "FATAL ERROR: V_cols == 3 after local flattening in rational computation");
