@@ -405,12 +405,12 @@ bool intersectSegmentEdge_r(
     return false;
 }
 
-// TODO: template this function
-// Main segment handling function (rational version - optimized)
-void handle_one_segment_rational(
-    query_curve& curve,
+// Main segment handling function - templated version
+template <typename CoordType>
+void handle_one_segment_t(
+    query_curve_t<CoordType>& curve,
     int id,
-    std::vector<query_point>& query_points,
+    std::vector<query_point_t<CoordType>>& query_points,
     const Eigen::MatrixX<wmtk::Rational>& UV_joint_r,
     const Eigen::MatrixXi& F_before,
     const std::vector<int64_t>& v_id_map_joint,
@@ -424,7 +424,7 @@ void handle_one_segment_rational(
     seg_total_timer.start();
 
 
-    query_segment& qs = curve.segments[id];
+    query_segment_t<CoordType>& qs = curve.segments[id];
     // Check if two endpoints are in the same triangle considering all possible locations
     // Profiling: adjacency build time (only when needed)
     igl::Timer tt_build_timer;
@@ -436,7 +436,7 @@ void handle_one_segment_rational(
     // Profiling: initial same-triangle check
     igl::Timer same_tri_timer_initial;
     same_tri_timer_initial.start();
-    auto same_triangle_result = check_and_transform_to_common_triangle(
+    auto same_triangle_result = check_and_transform_to_common_triangle_t(
         query_points[0],
         query_points[1],
         F_before,
@@ -480,12 +480,16 @@ void handle_one_segment_rational(
     Eigen::Vector3<wmtk::Rational> bc_start_r, bc_end_r;
 
     // Convert barycentric coordinates to rational and normalize
-    bc_start_r << wmtk::Rational(query_points[0].bc(0)), wmtk::Rational(query_points[0].bc(1)),
-        wmtk::Rational(query_points[0].bc(2));
+    if constexpr (std::is_same_v<CoordType, double>) {
+        bc_start_r << wmtk::Rational(query_points[0].bc(0)), wmtk::Rational(query_points[0].bc(1)),
+            wmtk::Rational(query_points[0].bc(2));
+        bc_end_r << wmtk::Rational(query_points[1].bc(0)), wmtk::Rational(query_points[1].bc(1)),
+            wmtk::Rational(query_points[1].bc(2));
+    } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
+        bc_start_r << query_points[0].bc(0), query_points[0].bc(1), query_points[0].bc(2);
+        bc_end_r << query_points[1].bc(0), query_points[1].bc(1), query_points[1].bc(2);
+    }
     bc_start_r /= bc_start_r.sum();
-
-    bc_end_r << wmtk::Rational(query_points[1].bc(0)), wmtk::Rational(query_points[1].bc(1)),
-        wmtk::Rational(query_points[1].bc(2));
     bc_end_r /= bc_end_r.sum();
 
     // Compute world coordinates
@@ -509,7 +513,7 @@ void handle_one_segment_rational(
     qs.bcs[0] = query_points[0].bc;
     qs.fv_ids = query_points[0].fv_ids;
 
-    std::vector<query_segment> new_segments;
+    std::vector<query_segment_t<CoordType>> new_segments;
 
     // Ray tracing loop
     int iteration = 0;
@@ -521,19 +525,28 @@ void handle_one_segment_rational(
         // quiet
 
         // Create query_point for current position
-        query_point current_qp;
+        query_point_t<CoordType> current_qp;
         current_qp.f_id = id_map_before[current_face];
-        current_qp.bc = Eigen::Vector3d(
-            current_bc(0).to_double(),
-            current_bc(1).to_double(),
-            current_bc(2).to_double());
+        if constexpr (std::is_same_v<CoordType, double>) {
+            current_qp.bc = Eigen::Vector3d(
+                current_bc(0).to_double(),
+                current_bc(1).to_double(),
+                current_bc(2).to_double());
+        } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
+            current_qp.bc = current_bc;
+        }
         current_qp.fv_ids << v_id_map_joint[F_before(current_face, 0)],
             v_id_map_joint[F_before(current_face, 1)], v_id_map_joint[F_before(current_face, 2)];
 
         // Debug: Get possible triangles for both points
-        auto current_possible_triangles =
-            get_possible_triangle_ids(current_qp, F_before, id_map_before, v_id_map_joint, TT, TTi);
-        auto target_possible_triangles = get_possible_triangle_ids(
+        auto current_possible_triangles = get_possible_triangle_ids_t(
+            current_qp,
+            F_before,
+            id_map_before,
+            v_id_map_joint,
+            TT,
+            TTi);
+        auto target_possible_triangles = get_possible_triangle_ids_t(
             query_points[1],
             F_before,
             id_map_before,
@@ -545,7 +558,7 @@ void handle_one_segment_rational(
 
         igl::Timer same_tri_timer_iter;
         same_tri_timer_iter.start();
-        auto same_triangle_result = check_and_transform_to_common_triangle(
+        auto same_triangle_result = check_and_transform_to_common_triangle_t(
             current_qp,
             query_points[1],
             F_before,
@@ -559,7 +572,7 @@ void handle_one_segment_rational(
 
         if (same_triangle_result.in_same_triangle) {
             // Current point and target point are in the same triangle, finish directly
-            query_segment final_seg;
+            query_segment_t<CoordType> final_seg;
             final_seg.f_id = same_triangle_result.transformed_qp1.f_id;
             final_seg.origin_segment_id = qs.origin_segment_id; // Preserve the original face ID
             final_seg.bcs[0] = same_triangle_result.transformed_qp1.bc;
@@ -572,7 +585,7 @@ void handle_one_segment_rational(
         // Get candidate edges with their corresponding triangles
         igl::Timer cand_edges_timer;
         cand_edges_timer.start();
-        auto candidate_edges = get_candidate_edges_with_triangles(
+        auto candidate_edges = get_candidate_edges_with_triangles_t(
             current_qp,
             current_possible_triangles,
             F_before,
@@ -641,13 +654,17 @@ void handle_one_segment_rational(
         }
 
         // Create new segment for the intersection
-        query_segment new_seg;
+        query_segment_t<CoordType> new_seg;
         new_seg.f_id = id_map_before[next_face]; // Use the indicated triangle
         new_seg.origin_segment_id =
             qs.origin_segment_id; // Preserve the original segment ID from the parent segment
-        new_seg.bcs[0] =
-            transform_bc_to_triangle(current_qp, next_face, F_before, id_map_before, v_id_map_joint)
-                .first;
+        new_seg.bcs[0] = transform_bc_to_triangle_t(
+                             current_qp,
+                             next_face,
+                             F_before,
+                             id_map_before,
+                             v_id_map_joint)
+                             .first;
         // new_seg.bcs[0] = Eigen::Vector3d(
         //     current_bc(0).to_double(),
         //     current_bc(1).to_double(),
@@ -663,10 +680,14 @@ void handle_one_segment_rational(
             F_before,
             v_id_map_joint);
 
-        new_seg.bcs[1] = Eigen::Vector3d(
-            intersection_bc(0).to_double(),
-            intersection_bc(1).to_double(),
-            intersection_bc(2).to_double());
+        if constexpr (std::is_same_v<CoordType, double>) {
+            new_seg.bcs[1] = Eigen::Vector3d(
+                intersection_bc(0).to_double(),
+                intersection_bc(1).to_double(),
+                intersection_bc(2).to_double());
+        } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
+            new_seg.bcs[1] = intersection_bc;
+        }
 
 
         new_seg.fv_ids << v_id_map_joint[F_before(next_face, 0)],
@@ -680,8 +701,12 @@ void handle_one_segment_rational(
         current_pos = next_intersection;
         current_face = next_face;
         // Update current_bc to match the new segment's end coordinates
-        current_bc << wmtk::Rational(new_seg.bcs[1](0)), wmtk::Rational(new_seg.bcs[1](1)),
-            wmtk::Rational(new_seg.bcs[1](2));
+        if constexpr (std::is_same_v<CoordType, double>) {
+            current_bc << wmtk::Rational(new_seg.bcs[1](0)), wmtk::Rational(new_seg.bcs[1](1)),
+                wmtk::Rational(new_seg.bcs[1](2));
+        } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
+            current_bc = new_seg.bcs[1];
+        }
 
         // Print detailed intersection profiling for this iteration (only if verbose)
         // quiet
@@ -785,52 +810,17 @@ void handle_one_segment_rational(
     }
 }
 
-// TODO: template this function
-// Double version that converts to rational and calls optimized version
-void handle_one_segment(
-    query_curve& curve,
-    int id,
-    std::vector<query_point>& query_points,
-    const Eigen::MatrixXd& UV_joint,
-    const Eigen::MatrixXi& F_before,
-    const std::vector<int64_t>& v_id_map_joint,
-    const std::vector<int64_t>& id_map_before,
-    Eigen::MatrixXi& TT,
-    Eigen::MatrixXi& TTi,
-    bool verbose)
-{
-    // Convert to rational once
-    Eigen::MatrixX<wmtk::Rational> UV_joint_r(UV_joint.rows(), UV_joint.cols());
-    for (int i = 0; i < UV_joint.rows(); i++) {
-        for (int j = 0; j < UV_joint.cols(); j++) {
-            UV_joint_r(i, j) = wmtk::Rational(UV_joint(i, j));
-        }
-    }
 
-    // Call the optimized rational version
-    handle_one_segment_rational(
-        curve,
-        id,
-        query_points,
-        UV_joint_r,
-        F_before,
-        v_id_map_joint,
-        id_map_before,
-        TT,
-        TTi,
-        verbose);
-}
-
-// Curve handling functions for different operations
-// TODO: template this function
-void handle_collapse_edge_curve(
+// Curve handling functions for different operations - template version
+template <typename CoordType>
+void handle_collapse_edge_curve_t(
     const Eigen::MatrixXd& UV_joint,
     const Eigen::MatrixXi& F_before,
     const Eigen::MatrixXi& F_after,
     const std::vector<int64_t>& v_id_map_joint,
     const std::vector<int64_t>& id_map_before,
     const std::vector<int64_t>& id_map_after,
-    query_curve& curve,
+    query_curve_t<CoordType>& curve,
     bool use_rational,
     bool verbose)
 {
@@ -876,12 +866,12 @@ void handle_collapse_edge_curve(
         ////////////////////////////////////
         // map the two end points of one segment
         ////////////////////////////////////
-        query_segment& qs = curve.segments[id];
-        query_point qp0 = {qs.f_id, qs.bcs[0], qs.fv_ids};
-        query_point qp1 = {qs.f_id, qs.bcs[1], qs.fv_ids};
-        std::vector<query_point> query_points = {qp0, qp1};
+        query_segment_t<CoordType>& qs = curve.segments[id];
+        query_point_t<CoordType> qp0 = {qs.f_id, qs.bcs[0], qs.fv_ids};
+        query_point_t<CoordType> qp1 = {qs.f_id, qs.bcs[1], qs.fv_ids};
+        std::vector<query_point_t<CoordType>> query_points = {qp0, qp1};
 
-        std::vector<query_point> query_points_copy = query_points;
+        std::vector<query_point_t<CoordType>> query_points_copy = query_points;
 
 
         auto it = std::find(id_map_after.begin(), id_map_after.end(), qs.f_id);
@@ -897,7 +887,8 @@ void handle_collapse_edge_curve(
         // Build cache once per operation at curve level if desired
         std::vector<BarycentricPrecompute2D> bc_cache_collapse =
             build_barycentric_cache_2d_from_double(UV_joint, F_before);
-        handle_collapse_edge_r(
+
+        handle_collapse_edge_t(
             UV_joint,
             F_before,
             F_after,
@@ -905,28 +896,56 @@ void handle_collapse_edge_curve(
             id_map_before,
             id_map_after,
             query_points,
+            use_rational,
             &bc_cache_collapse);
+
         time_map_points_total += map_timer.getElapsedTime() * 1000;
-        if ((query_points[0].bc - query_points[1].bc).norm() == 0) {
-            std::cout << "Query points for segment " << id << ":" << std::endl;
-            for (size_t i = 0; i < query_points.size(); i++) {
-                std::cout << "  Point " << i << ": f_id=" << query_points[i].f_id << ", bc=("
-                          << query_points[i].bc[0] << ", " << query_points[i].bc[1] << ", "
-                          << query_points[i].bc[2] << ")" << std::endl;
+        if constexpr (std::is_same_v<CoordType, double>) {
+            if ((query_points[0].bc - query_points[1].bc).norm() == 0) {
+                std::cout << "Query points for segment " << id << ":" << std::endl;
+                for (size_t i = 0; i < query_points.size(); i++) {
+                    std::cout << "  Point " << i << ": f_id=" << query_points[i].f_id << ", bc=("
+                              << query_points[i].bc[0] << ", " << query_points[i].bc[1] << ", "
+                              << query_points[i].bc[2] << ")" << std::endl;
+                }
+                // Print query_points_copy for debugging
+                std::cout << "Query points before collapse mapping for segment " << id << ":"
+                          << std::endl;
+                for (size_t i = 0; i < query_points_copy.size(); i++) {
+                    std::cout << "  Point " << i << ": f_id=" << query_points_copy[i].f_id
+                              << ", bc=(" << query_points_copy[i].bc[0] << ", "
+                              << query_points_copy[i].bc[1] << ", " << query_points_copy[i].bc[2]
+                              << ")" << std::endl;
+                }
             }
-            // Print query_points_copy for debugging
-            std::cout << "Query points before collapse mapping for segment " << id << ":"
-                      << std::endl;
-            for (size_t i = 0; i < query_points_copy.size(); i++) {
-                std::cout << "  Point " << i << ": f_id=" << query_points_copy[i].f_id << ", bc=("
-                          << query_points_copy[i].bc[0] << ", " << query_points_copy[i].bc[1]
-                          << ", " << query_points_copy[i].bc[2] << ")" << std::endl;
+        } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
+            Eigen::Vector3d bc_diff = Eigen::Vector3d(
+                (query_points[0].bc - query_points[1].bc)(0).to_double(),
+                (query_points[0].bc - query_points[1].bc)(1).to_double(),
+                (query_points[0].bc - query_points[1].bc)(2).to_double());
+            if (bc_diff.norm() == 0) {
+                std::cout << "Query points for segment " << id << ":" << std::endl;
+                for (size_t i = 0; i < query_points.size(); i++) {
+                    std::cout << "  Point " << i << ": f_id=" << query_points[i].f_id << ", bc=("
+                              << query_points[i].bc[0].to_double() << ", "
+                              << query_points[i].bc[1].to_double() << ", "
+                              << query_points[i].bc[2].to_double() << ")" << std::endl;
+                }
+                // Print query_points_copy for debugging
+                std::cout << "Query points before collapse mapping for segment " << id << ":"
+                          << std::endl;
+                for (size_t i = 0; i < query_points_copy.size(); i++) {
+                    std::cout << "  Point " << i << ": f_id=" << query_points_copy[i].f_id
+                              << ", bc=(" << query_points_copy[i].bc[0].to_double() << ", "
+                              << query_points_copy[i].bc[1].to_double() << ", "
+                              << query_points_copy[i].bc[2].to_double() << ")" << std::endl;
+                }
             }
         }
         // Per-segment tracing timing
         igl::Timer trace_timer;
         trace_timer.start();
-        handle_one_segment_rational(
+        handle_one_segment_t(
             curve,
             id,
             query_points,
@@ -940,7 +959,7 @@ void handle_collapse_edge_curve(
         time_trace_segment_total += trace_timer.getElapsedTime() * 1000;
     }
 
-    if (!is_curve_valid(curve)) {
+    if (!is_curve_valid_t(curve)) {
         std::cout << "Error: curve is not valid after EdgeCollapse" << std::endl;
         throw std::runtime_error("Error: curve is not valid after EdgeCollapse");
     }
@@ -956,8 +975,34 @@ void handle_collapse_edge_curve(
     std::cout << "handle_collapse_edge_curve trace segment time per segment: "
               << time_trace_segment_total / cnter << " ms" << std::endl;
 }
-// TODO: template this function
-void handle_non_collapse_operation_curve(
+
+// Backward compatibility version
+void handle_collapse_edge_curve(
+    const Eigen::MatrixXd& UV_joint,
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& id_map_after,
+    query_curve& curve,
+    bool use_rational,
+    bool verbose)
+{
+    return handle_collapse_edge_curve_t(
+        UV_joint,
+        F_before,
+        F_after,
+        v_id_map_joint,
+        id_map_before,
+        id_map_after,
+        curve,
+        use_rational,
+        verbose);
+}
+
+// Template version of handle_non_collapse_operation_curve
+template <typename CoordType>
+void handle_non_collapse_operation_curve_t(
     const Eigen::MatrixXd& V_before,
     const Eigen::MatrixXi& F_before,
     const std::vector<int64_t>& id_map_before,
@@ -966,7 +1011,7 @@ void handle_non_collapse_operation_curve(
     const Eigen::MatrixXi& F_after,
     const std::vector<int64_t>& id_map_after,
     const std::vector<int64_t>& v_id_map_after,
-    query_curve& curve,
+    query_curve_t<CoordType>& curve,
     const std::string& operation_name,
     bool verbose)
 {
@@ -997,10 +1042,10 @@ void handle_non_collapse_operation_curve(
     }
 
     for (int id = 0; id < curve_length; id++) {
-        query_segment& qs = curve.segments[id];
-        query_point qp0 = {qs.f_id, qs.bcs[0], qs.fv_ids};
-        query_point qp1 = {qs.f_id, qs.bcs[1], qs.fv_ids};
-        std::vector<query_point> query_points = {qp0, qp1};
+        query_segment_t<CoordType>& qs = curve.segments[id];
+        query_point_t<CoordType> qp0 = {qs.f_id, qs.bcs[0], qs.fv_ids};
+        query_point_t<CoordType> qp1 = {qs.f_id, qs.bcs[1], qs.fv_ids};
+        std::vector<query_point_t<CoordType>> query_points = {qp0, qp1};
 
         auto it = std::find(id_map_after.begin(), id_map_after.end(), qs.f_id);
         if (it == id_map_after.end()) {
@@ -1010,7 +1055,7 @@ void handle_non_collapse_operation_curve(
         std::vector<BarycentricPrecompute2D> bc_cache_non =
             build_barycentric_cache_2d_from_double(V_before, F_before);
 
-        handle_non_collapse_operation_r(
+        handle_non_collapse_operation_t(
             V_before,
             F_before,
             id_map_before,
@@ -1021,16 +1066,23 @@ void handle_non_collapse_operation_curve(
             v_id_map_after,
             query_points,
             operation_name,
+            true,
             &bc_cache_non);
         if (verbose) {
             std::cout << "Mapped query points for segment " << id << ":" << std::endl;
             for (int i = 0; i < query_points.size(); i++) {
                 std::cout << "  Point " << i << ":" << std::endl;
                 std::cout << "    f_id: " << query_points[i].f_id << std::endl;
-                std::cout << "    bcs: [" << query_points[i].bc.transpose() << "]" << std::endl;
+                if constexpr (std::is_same_v<CoordType, double>) {
+                    std::cout << "    bcs: [" << query_points[i].bc.transpose() << "]" << std::endl;
+                } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
+                    std::cout << "    bcs: [" << query_points[i].bc(0).to_double() << ", "
+                              << query_points[i].bc(1).to_double() << ", "
+                              << query_points[i].bc(2).to_double() << "]" << std::endl;
+                }
             }
         }
-        handle_one_segment_rational(
+        handle_one_segment_t(
             curve,
             id,
             query_points,
@@ -1043,10 +1095,38 @@ void handle_non_collapse_operation_curve(
             verbose);
     }
 
-    if (!is_curve_valid(curve)) {
+    if (!is_curve_valid_t(curve)) {
         std::cout << "Error: curve is not valid after " << operation_name << std::endl;
         throw std::runtime_error("Error: curve is not valid after " + operation_name);
     }
+}
+
+// Backward compatibility version
+void handle_non_collapse_operation_curve(
+    const Eigen::MatrixXd& V_before,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixXd& V_after,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& id_map_after,
+    const std::vector<int64_t>& v_id_map_after,
+    query_curve& curve,
+    const std::string& operation_name,
+    bool verbose)
+{
+    return handle_non_collapse_operation_curve_t(
+        V_before,
+        F_before,
+        id_map_before,
+        v_id_map_before,
+        V_after,
+        F_after,
+        id_map_after,
+        v_id_map_after,
+        curve,
+        operation_name,
+        verbose);
 }
 
 // Template version of clean_up_curve

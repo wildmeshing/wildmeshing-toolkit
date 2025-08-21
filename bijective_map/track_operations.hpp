@@ -12,7 +12,7 @@ using json = nlohmann::json;
 
 #include <wmtk/utils/Rational.hpp>
 
-template<typename CoordType = double>
+template <typename CoordType = double>
 struct query_point_t
 {
     int64_t f_id; // face id
@@ -24,7 +24,7 @@ struct query_point_t
 using query_point = query_point_t<double>;
 using query_point_r = query_point_t<wmtk::Rational>;
 
-template<typename CoordType = double>
+template <typename CoordType = double>
 struct query_segment_t
 {
     int64_t f_id; // face id
@@ -37,7 +37,7 @@ struct query_segment_t
 using query_segment = query_segment_t<double>;
 using query_segment_r = query_segment_t<wmtk::Rational>;
 
-template<typename CoordType = double>
+template <typename CoordType = double>
 struct query_curve_t
 {
     std::vector<query_segment_t<CoordType>> segments;
@@ -49,7 +49,7 @@ using query_curve = query_curve_t<double>;
 using query_curve_r = query_curve_t<wmtk::Rational>;
 
 // Helper functions for type conversion between double and wmtk::Rational
-template<typename FromType, typename ToType>
+template <typename FromType, typename ToType>
 query_point_t<ToType> convert_query_point(const query_point_t<FromType>& from)
 {
     query_point_t<ToType> to;
@@ -58,16 +58,18 @@ query_point_t<ToType> convert_query_point(const query_point_t<FromType>& from)
     for (int i = 0; i < 3; ++i) {
         if constexpr (std::is_same_v<FromType, wmtk::Rational> && std::is_same_v<ToType, double>) {
             to.bc[i] = from.bc[i].to_double();
-        } else if constexpr (std::is_same_v<FromType, double> && std::is_same_v<ToType, wmtk::Rational>) {
+        } else if constexpr (
+            std::is_same_v<FromType, double> && std::is_same_v<ToType, wmtk::Rational>) {
             to.bc[i] = wmtk::Rational(from.bc[i]);
         } else {
             to.bc[i] = ToType(from.bc[i]);
         }
     }
+    to.bc /= to.bc.sum();
     return to;
 }
 
-template<typename FromType, typename ToType>
+template <typename FromType, typename ToType>
 query_segment_t<ToType> convert_query_segment(const query_segment_t<FromType>& from)
 {
     query_segment_t<ToType> to;
@@ -76,19 +78,23 @@ query_segment_t<ToType> convert_query_segment(const query_segment_t<FromType>& f
     to.fv_ids = from.fv_ids;
     for (int j = 0; j < 2; ++j) {
         for (int i = 0; i < 3; ++i) {
-            if constexpr (std::is_same_v<FromType, wmtk::Rational> && std::is_same_v<ToType, double>) {
+            if constexpr (
+                std::is_same_v<FromType, wmtk::Rational> && std::is_same_v<ToType, double>) {
                 to.bcs[j][i] = from.bcs[j][i].to_double();
-            } else if constexpr (std::is_same_v<FromType, double> && std::is_same_v<ToType, wmtk::Rational>) {
+            } else if constexpr (
+                std::is_same_v<FromType, double> && std::is_same_v<ToType, wmtk::Rational>) {
                 to.bcs[j][i] = wmtk::Rational(from.bcs[j][i]);
             } else {
                 to.bcs[j][i] = ToType(from.bcs[j][i]);
             }
         }
     }
+    to.bcs[0] /= to.bcs[0].sum();
+    to.bcs[1] /= to.bcs[1].sum();
     return to;
 }
 
-template<typename FromType, typename ToType>
+template <typename FromType, typename ToType>
 query_curve_t<ToType> convert_query_curve(const query_curve_t<FromType>& from)
 {
     query_curve_t<ToType> to;
@@ -101,17 +107,17 @@ query_curve_t<ToType> convert_query_curve(const query_curve_t<FromType>& from)
 }
 
 // Helper function for printing with to_double conversion
-template<typename CoordType>
+template <typename CoordType>
 std::ostream& operator<<(std::ostream& os, const query_point_t<CoordType>& qp)
 {
     if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
-        os << "query_point(f_id=" << qp.f_id << ", bc=(" 
-           << qp.bc[0].to_double() << "," << qp.bc[1].to_double() << "," << qp.bc[2].to_double() 
-           << "), fv_ids=(" << qp.fv_ids[0] << "," << qp.fv_ids[1] << "," << qp.fv_ids[2] << "))";
+        os << "query_point(f_id=" << qp.f_id << ", bc=(" << qp.bc[0].to_double() << ","
+           << qp.bc[1].to_double() << "," << qp.bc[2].to_double() << "), fv_ids=(" << qp.fv_ids[0]
+           << "," << qp.fv_ids[1] << "," << qp.fv_ids[2] << "))";
     } else {
-        os << "query_point(f_id=" << qp.f_id << ", bc=(" 
-           << qp.bc[0] << "," << qp.bc[1] << "," << qp.bc[2] 
-           << "), fv_ids=(" << qp.fv_ids[0] << "," << qp.fv_ids[1] << "," << qp.fv_ids[2] << "))";
+        os << "query_point(f_id=" << qp.f_id << ", bc=(" << qp.bc[0] << "," << qp.bc[1] << ","
+           << qp.bc[2] << "), fv_ids=(" << qp.fv_ids[0] << "," << qp.fv_ids[1] << ","
+           << qp.fv_ids[2] << "))";
     }
     return os;
 }
@@ -129,13 +135,15 @@ std::vector<BarycentricPrecompute2D> build_barycentric_cache_2d_from_double(
     const Eigen::MatrixXi& F);
 
 // IO - templated versions
-template<typename CoordType>
-void save_query_curves_t(const std::vector<query_curve_t<CoordType>>& curves, const std::string& filename);
+template <typename CoordType>
+void save_query_curves_t(
+    const std::vector<query_curve_t<CoordType>>& curves,
+    const std::string& filename);
 
-template<typename CoordType>
+template <typename CoordType>
 std::vector<query_curve_t<CoordType>> load_query_curves_t(const std::string& filename);
 
-// IO - backward compatibility functions  
+// IO - backward compatibility functions
 void save_query_curves(const std::vector<query_curve>& curves, const std::string& filename);
 std::vector<query_curve> load_query_curves(const std::string& filename);
 
@@ -256,7 +264,7 @@ void handle_collapse_edge_r(
     const std::vector<BarycentricPrecompute2D>* barycentric_cache = nullptr);
 
 // Templated version for native support of different coordinate types
-template<typename CoordType>
+template <typename CoordType>
 void handle_collapse_edge_t(
     const Eigen::MatrixXd& UV_joint,
     const Eigen::MatrixXi& F_before,
@@ -298,7 +306,7 @@ void handle_non_collapse_operation_r(
     const std::vector<BarycentricPrecompute2D>* barycentric_cache = nullptr);
 
 // Templated version for native support of different coordinate types
-template<typename CoordType>
+template <typename CoordType>
 void handle_non_collapse_operation_t(
     const Eigen::MatrixXd& V_before,
     const Eigen::MatrixXi& F_before,

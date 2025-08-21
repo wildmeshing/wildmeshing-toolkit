@@ -142,7 +142,7 @@ void handle_one_segment_t(
     query_curve_t<CoordType>& curve,
     int id,
     std::vector<query_point_t<CoordType>>& query_points,
-    const Eigen::MatrixXd& UV_joint,
+    const Eigen::MatrixX<wmtk::Rational>& UV_joint_r,
     const Eigen::MatrixXi& F_before,
     const std::vector<int64_t>& v_id_map_joint,
     const std::vector<int64_t>& id_map_before,

@@ -1013,8 +1013,6 @@ void handle_collapse_edge_t(
     const std::vector<BarycentricPrecompute2D>* barycentric_cache)
 {
     if constexpr (std::is_same_v<CoordType, double>) {
-        // For double query points, use use_rational to decide between regular and rational
-        // processing
         if (use_rational) {
             handle_collapse_edge_r(
                 UV_joint,
