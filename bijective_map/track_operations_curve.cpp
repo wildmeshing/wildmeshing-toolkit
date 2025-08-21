@@ -5,6 +5,14 @@
 #include <igl/opengl/glfw/Viewer.h>
 #endif
 
+// Define log10 for wmtk::Rational to avoid Eigen NumTraits issues
+namespace std {
+inline double log10(const wmtk::Rational& r)
+{
+    return std::log10(r.to_double());
+}
+} // namespace std
+
 // Helper function to get all possible triangle IDs for a point - templated version
 template <typename CoordType>
 std::vector<int> get_possible_triangle_ids_t(
@@ -776,7 +784,11 @@ void handle_one_segment_t(
                     int local_vid =
                         std::find(v_id_map_joint.begin(), v_id_map_joint.end(), seg.fv_ids(j)) -
                         v_id_map_joint.begin();
-                    p += UV_joint_double.row(local_vid).transpose() * seg.bcs[i](j);
+                    if constexpr (std::is_same_v<CoordType, double>) {
+                        p += UV_joint_double.row(local_vid).transpose() * seg.bcs[i](j);
+                    } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
+                        p += UV_joint_double.row(local_vid).transpose() * seg.bcs[i](j).to_double();
+                    }
                 }
                 pts.row(i) = p;
             }
@@ -965,15 +977,15 @@ void handle_collapse_edge_curve_t(
     }
 
     // Suppress high-level summary to reduce noise
-    std::cout << "count: " << cnter << std::endl;
-    std::cout << "handle_collapse_edge_curve map points time: " << time_map_points_total << " ms"
-              << std::endl;
-    std::cout << "handle_collapse_edge_curve map points time per segment: "
-              << time_map_points_total / cnter << " ms" << std::endl;
-    std::cout << "handle_collapse_edge_curve trace segment time: " << time_trace_segment_total
-              << " ms" << std::endl;
-    std::cout << "handle_collapse_edge_curve trace segment time per segment: "
-              << time_trace_segment_total / cnter << " ms" << std::endl;
+    // std::cout << "count: " << cnter << std::endl;
+    // std::cout << "handle_collapse_edge_curve map points time: " << time_map_points_total << " ms"
+    //           << std::endl;
+    // std::cout << "handle_collapse_edge_curve map points time per segment: "
+    //           << time_map_points_total / cnter << " ms" << std::endl;
+    // std::cout << "handle_collapse_edge_curve trace segment time: " << time_trace_segment_total
+    //           << " ms" << std::endl;
+    // std::cout << "handle_collapse_edge_curve trace segment time per segment: "
+    //           << time_trace_segment_total / cnter << " ms" << std::endl;
 }
 
 // Backward compatibility version
@@ -1212,24 +1224,25 @@ void clean_up_curve_t(query_curve_t<CoordType>& curve)
         }
 
         // for debug
-        {
-            if (segments_to_merge.size() > 1) {
-                std::cout << "Merging segments: ";
-                for (int idx : segments_to_merge) {
-                    const auto& seg = curve.segments[idx];
-                    std::cout << "\n  seg id: " << idx << ", f_id: " << seg.f_id
-                              << ", origin_segment_id: " << seg.origin_segment_id << ", bcs[0]: ["
-                              << seg.bcs[0].transpose() << "]" << ", bcs[1]: ["
-                              << seg.bcs[1].transpose() << "]" << ", fv_ids: [";
-                    for (int k = 0; k < seg.fv_ids.size(); ++k) {
-                        std::cout << seg.fv_ids[k];
-                        if (k + 1 < seg.fv_ids.size()) std::cout << ", ";
-                    }
-                    std::cout << "]";
-                }
-                std::cout << std::endl;
-            }
-        }
+        // {
+        //     if (segments_to_merge.size() > 1) {
+        //         std::cout << "Merging segments: ";
+        //         for (int idx : segments_to_merge) {
+        //             const auto& seg = curve.segments[idx];
+        //             std::cout << "\n  seg id: " << idx << ", f_id: " << seg.f_id
+        //                       << ", origin_segment_id: " << seg.origin_segment_id << ", bcs[0]:
+        //                       ["
+        //                       << seg.bcs[0].transpose() << "]" << ", bcs[1]: ["
+        //                       << seg.bcs[1].transpose() << "]" << ", fv_ids: [";
+        //             for (int k = 0; k < seg.fv_ids.size(); ++k) {
+        //                 std::cout << seg.fv_ids[k];
+        //                 if (k + 1 < seg.fv_ids.size()) std::cout << ", ";
+        //             }
+        //             std::cout << "]";
+        //         }
+        //         std::cout << std::endl;
+        //     }
+        // }
         // Create merged segment
         query_segment_t<CoordType> merged_segment;
         merged_segment.f_id = current_segment.f_id;
@@ -1321,9 +1334,9 @@ bool is_curve_valid_t(const query_curve_t<CoordType>& curve)
 
             if (is_invalid) {
                 std::cout << "Error: bc_diff is too large" << std::endl;
-                std::cout << "cur_seg.bcs[1]: " << cur_seg.bcs[1].transpose() << std::endl;
-                std::cout << "next_seg.bcs[0]: " << next_seg.bcs[0].transpose() << std::endl;
-                std::cout << "bc_diff: " << bc_diff.transpose() << std::endl;
+                // std::cout << "cur_seg.bcs[1]: " << cur_seg.bcs[1].transpose() << std::endl;
+                // std::cout << "next_seg.bcs[0]: " << next_seg.bcs[0].transpose() << std::endl;
+                // std::cout << "bc_diff: " << bc_diff.transpose() << std::endl;
                 is_valid = false;
                 return is_valid;
             }
@@ -1343,12 +1356,13 @@ bool is_curve_valid_t(const query_curve_t<CoordType>& curve)
                     auto it = std::find(next_seg.fv_ids.begin(), next_seg.fv_ids.end(), vid);
                     if (it == next_seg.fv_ids.end()) {
                         std::cout << "Error: vid not found in next_seg.fv_ids" << std::endl;
-                        std::cout << "cur_seg.fv_ids: " << cur_seg.fv_ids.transpose() << std::endl;
-                        std::cout << "cur_seg.bcs[1]: " << cur_seg.bcs[1].transpose() << std::endl;
-                        std::cout << "next_seg.fv_ids: " << next_seg.fv_ids.transpose()
-                                  << std::endl;
-                        std::cout << "next_seg.bcs[0]: " << next_seg.bcs[0].transpose()
-                                  << std::endl;
+                        // std::cout << "cur_seg.fv_ids: " << cur_seg.fv_ids.transpose() <<
+                        // std::endl; std::cout << "cur_seg.bcs[1]: " << cur_seg.bcs[1].transpose()
+                        // << std::endl; std::cout << "next_seg.fv_ids: " <<
+                        // next_seg.fv_ids.transpose()
+                        //           << std::endl;
+                        // std::cout << "next_seg.bcs[0]: " << next_seg.bcs[0].transpose()
+                        //           << std::endl;
                         is_valid = false;
                     } else {
                         int next_seg_vid_id = std::distance(next_seg.fv_ids.begin(), it);
@@ -1364,14 +1378,14 @@ bool is_curve_valid_t(const query_curve_t<CoordType>& curve)
 
                         if (is_diff_too_large) {
                             std::cout << "Error: bc_diff is too large" << std::endl;
-                            std::cout << "cur_seg.fv_ids: " << cur_seg.fv_ids.transpose()
-                                      << std::endl;
-                            std::cout << "cur_seg.bcs[1]: " << cur_seg.bcs[1].transpose()
-                                      << std::endl;
-                            std::cout << "next_seg.fv_ids: " << next_seg.fv_ids.transpose()
-                                      << std::endl;
-                            std::cout << "next_seg.bcs[0]: " << next_seg.bcs[0].transpose()
-                                      << std::endl;
+                            // std::cout << "cur_seg.fv_ids: " << cur_seg.fv_ids.transpose()
+                            //           << std::endl;
+                            // std::cout << "cur_seg.bcs[1]: " << cur_seg.bcs[1].transpose()
+                            //           << std::endl;
+                            // std::cout << "next_seg.fv_ids: " << next_seg.fv_ids.transpose()
+                            //           << std::endl;
+                            // std::cout << "next_seg.bcs[0]: " << next_seg.bcs[0].transpose()
+                            //           << std::endl;
                             is_valid = false;
                         }
                     }
@@ -1645,3 +1659,72 @@ int compute_curve_self_intersections(const query_curve& curve, bool verbose)
 {
     return compute_curve_self_intersections_t(curve, verbose);
 }
+
+// Explicit template instantiation for compilation
+template bool is_curve_valid_t<double>(const query_curve_t<double>& curve);
+template bool is_curve_valid_t<wmtk::Rational>(const query_curve_t<wmtk::Rational>& curve);
+
+template void clean_up_curve_t<double>(query_curve_t<double>& curve);
+template void clean_up_curve_t<wmtk::Rational>(query_curve_t<wmtk::Rational>& curve);
+
+template int compute_intersections_between_two_curves_t<double>(
+    const query_curve_t<double>& curve1,
+    const query_curve_t<double>& curve2,
+    bool verbose);
+template int compute_intersections_between_two_curves_t<wmtk::Rational>(
+    const query_curve_t<wmtk::Rational>& curve1,
+    const query_curve_t<wmtk::Rational>& curve2,
+    bool verbose);
+
+template int compute_curve_self_intersections_t<double>(
+    const query_curve_t<double>& curve,
+    bool verbose);
+template int compute_curve_self_intersections_t<wmtk::Rational>(
+    const query_curve_t<wmtk::Rational>& curve,
+    bool verbose);
+
+template void handle_collapse_edge_curve_t<double>(
+    const Eigen::MatrixXd& UV_joint,
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& id_map_after,
+    query_curve_t<double>& curve,
+    bool use_rational,
+    bool verbose);
+template void handle_collapse_edge_curve_t<wmtk::Rational>(
+    const Eigen::MatrixXd& UV_joint,
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& id_map_after,
+    query_curve_t<wmtk::Rational>& curve,
+    bool use_rational,
+    bool verbose);
+
+template void handle_non_collapse_operation_curve_t<double>(
+    const Eigen::MatrixXd& V_before,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixXd& V_after,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& id_map_after,
+    const std::vector<int64_t>& v_id_map_after,
+    query_curve_t<double>& curve,
+    const std::string& operation_name,
+    bool verbose);
+template void handle_non_collapse_operation_curve_t<wmtk::Rational>(
+    const Eigen::MatrixXd& V_before,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixXd& V_after,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& id_map_after,
+    const std::vector<int64_t>& v_id_map_after,
+    query_curve_t<wmtk::Rational>& curve,
+    const std::string& operation_name,
+    bool verbose);

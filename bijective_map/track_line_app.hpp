@@ -19,6 +19,20 @@ using json = nlohmann::json;
  */
 void track_line(path dirPath, query_curve& curve, bool do_forward = false);
 
+// Template versions for different coordinate types
+template <typename CoordType>
+void track_line_one_operation(const json& operation_log, query_curve_t<CoordType>& curve, bool do_forward);
+
+template <typename CoordType>  
+void track_line(path dirPath, query_curve_t<CoordType>& curve, bool do_forward = false);
+
+template <typename CoordType>
+void track_lines(
+    path dirPath,
+    std::vector<query_curve_t<CoordType>>& curves,
+    bool do_forward = false,
+    bool do_parallel = true);
+
 // extension of the above function for multiple curves
 void track_lines(
     path dirPath,
@@ -70,6 +84,11 @@ void check_iso_lines(
     bool render_before = true,
     bool render_after = true);
 
+
+template <typename CoordType>
+bool check_curves_topology(
+    const std::vector<query_curve_t<CoordType>>& curves,
+    const std::vector<std::vector<int>>& intersection_reference);
 
 bool check_curves_topology(
     const std::vector<query_curve>& curves,

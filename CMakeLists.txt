@@ -51,7 +51,7 @@ option(WMTK_BUILD_DOCS "Build doxygen" OFF)
 option(BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option due to use of TBB
 
 option(WMTK_CODE_COVERAGE "Enable coverage reporting" OFF)
-option(USE_IGL_VIEWER "Enable IGL viewer with GLFW and ImGui" ON)
+option(USE_IGL_VIEWER "Enable IGL viewer with GLFW and ImGui" OFF)
 
 add_library(wmtk_coverage_config INTERFACE)
 

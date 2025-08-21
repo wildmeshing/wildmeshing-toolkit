@@ -213,9 +213,13 @@ void write_curves_to_vtu(
     }
 }
 
-void track_line_one_operation(const json& operation_log, query_curve& curve, bool do_forward)
+template <typename CoordType>
+void track_line_one_operation(
+    const json& operation_log,
+    query_curve_t<CoordType>& curve,
+    bool do_forward)
 {
-    bool verbose = true;
+    bool verbose = false;
     std::string operation_name;
     operation_name = operation_log["operation_name"];
     igl::Timer op_total_timer;
@@ -278,7 +282,7 @@ void track_line_one_operation(const json& operation_log, query_curve& curve, boo
         if (do_forward) {
             igl::Timer handle_timer;
             handle_timer.start();
-            handle_non_collapse_operation_curve(
+            handle_non_collapse_operation_curve_t(
                 V_after,
                 F_after,
                 id_map_after,
@@ -294,7 +298,7 @@ void track_line_one_operation(const json& operation_log, query_curve& curve, boo
         } else {
             igl::Timer handle_timer;
             handle_timer.start();
-            handle_non_collapse_operation_curve(
+            handle_non_collapse_operation_curve_t(
                 V_before,
                 F_before,
                 id_map_before,
@@ -330,7 +334,7 @@ void track_line_one_operation(const json& operation_log, query_curve& curve, boo
         if (do_forward) {
             igl::Timer handle_timer;
             handle_timer.start();
-            handle_collapse_edge_curve(
+            handle_collapse_edge_curve_t(
                 UV_joint,
                 F_after,
                 F_before,
@@ -344,7 +348,7 @@ void track_line_one_operation(const json& operation_log, query_curve& curve, boo
         } else {
             igl::Timer handle_timer;
             handle_timer.start();
-            handle_collapse_edge_curve(
+            handle_collapse_edge_curve_t(
                 UV_joint,
                 F_before,
                 F_after,
@@ -366,12 +370,14 @@ void track_line_one_operation(const json& operation_log, query_curve& curve, boo
     save_query_curves(curves, curve_file);
 #endif
     // Only print overall time per operation for this curve
-    double t_total_ms = op_total_timer.getElapsedTime() * 1000.0;
-    std::cout << "operation total time (" << operation_name << ", curve): " << t_total_ms << " ms"
-              << std::endl;
+    // double t_total_ms = op_total_timer.getElapsedTime() * 1000.0;
+    // std::cout << "operation total time (" << operation_name << ", curve): " << t_total_ms << "
+    // ms"
+    //           << std::endl;
 }
 
-void track_line(path dirPath, query_curve& curve, bool do_forward)
+template <typename CoordType>
+void track_line(path dirPath, query_curve_t<CoordType>& curve, bool do_forward)
 {
     namespace fs = std::filesystem;
     int maxIndex = -1;
@@ -403,14 +409,14 @@ void track_line(path dirPath, query_curve& curve, bool do_forward)
         // quiet per-operation tracing at track_line level
         igl::Timer timer;
         timer.start();
-        track_line_one_operation(operation_log, curve, do_forward);
+        track_line_one_operation<CoordType>(operation_log, curve, do_forward);
         timer.stop();
 
         if (curve.segments.size() > clean_up_threshold * curve_old_size) {
-            clean_up_curve(curve);
+            clean_up_curve_t(curve);
             curve_old_size = curve.segments.size();
             {
-                int self_intersections = compute_curve_self_intersections(curve, true);
+                int self_intersections = compute_curve_self_intersections_t(curve, true);
                 if (self_intersections != 0) {
                     std::cout << "Error: self intersections are not correct" << std::endl;
                     throw std::runtime_error("Error: self intersections are not correct");
@@ -421,22 +427,27 @@ void track_line(path dirPath, query_curve& curve, bool do_forward)
         file.close();
     }
 
-    clean_up_curve(curve);
+    clean_up_curve_t(curve);
     std::cout << "finished" << std::endl;
 }
 
-void track_lines(path dirPath, std::vector<query_curve>& curves, bool do_forward, bool do_parallel)
+template <typename CoordType>
+void track_lines(
+    path dirPath,
+    std::vector<query_curve_t<CoordType>>& curves,
+    bool do_forward,
+    bool do_parallel)
 {
     // use igl parallel_for
     if (do_parallel) {
         std::cout << "parallel mode" << std::endl;
         igl::parallel_for(curves.size(), [&](int i) {
-            track_line(dirPath, curves[i], do_forward);
+            track_line<CoordType>(dirPath, curves[i], do_forward);
         });
     } else {
         std::cout << "sequential mode" << std::endl;
         for (int i = 0; i < curves.size(); i++) {
-            track_line(dirPath, curves[i], do_forward);
+            track_line<CoordType>(dirPath, curves[i], do_forward);
         }
     }
 }
@@ -750,8 +761,15 @@ void forward_track_plane_curves_app(
     Eigen::MatrixXd V_out_3d = to_three_cols(V_out);
 
     // Get all curves using the plane curve generation
-    std::vector<query_curve> curves = generatePlaneCurves(V_in, F_in, N);
-    auto curves_origin = curves;
+    std::vector<query_curve> curves_double = generatePlaneCurves(V_in, F_in, N);
+    auto curves_origin = curves_double;
+
+    // Convert curves to rational for exact arithmetic
+    std::vector<query_curve_t<wmtk::Rational>> curves;
+    curves.reserve(curves_double.size());
+    for (const auto& curve_double : curves_double) {
+        curves.push_back(convert_query_curve<double, wmtk::Rational>(curve_double));
+    }
 
     if (false) {
 #ifdef USE_IGL_VIEWER
@@ -777,39 +795,47 @@ void forward_track_plane_curves_app(
 #endif
     }
 
-    save_query_curves(curves, model_name + "_plane_curves.in");
+    // Save original double curves for backward compatibility
+    save_query_curves(curves_double, model_name + "_plane_curves.in");
     // write curves to vtu
     {
         std::cout << "\n=== Writing initial plane curves to VTU ===" << std::endl;
-        write_curves_to_vtu(curves, V_in, model_name + "_plane_curves_in.vtu");
+        write_curves_to_vtu(curves_double, V_in, model_name + "_plane_curves_in.vtu");
     }
 
     std::vector<std::vector<int>> intersection_reference;
     intersection_reference.resize(curves.size());
     for (int i = 0; i < curves.size(); i++) {
         intersection_reference[i].resize(curves.size());
-        intersection_reference[i][i] = compute_curve_self_intersections(curves[i], true);
+        intersection_reference[i][i] = compute_curve_self_intersections_t(curves[i], true);
         for (int j = i + 1; j < curves.size(); j++) {
             intersection_reference[i][j] =
-                compute_intersections_between_two_curves(curves[i], curves[j], true);
+                compute_intersections_between_two_curves_t(curves[i], curves[j], true);
         }
     }
 
-    track_lines(operation_logs_dir, curves, true, do_parallel);
+    track_lines<wmtk::Rational>(operation_logs_dir, curves, true, do_parallel);
 
     std::cout << "finished track lines" << std::endl;
 
-    save_query_curves(curves, model_name + "_plane_curves.out");
+    // Convert back to double for saving
+    std::vector<query_curve> curves_result_double;
+    curves_result_double.reserve(curves.size());
+    for (const auto& curve_rational : curves) {
+        curves_result_double.push_back(convert_query_curve<wmtk::Rational, double>(curve_rational));
+    }
+    save_query_curves(curves_result_double, model_name + "_plane_curves.out");
     std::cout << "finished save query curves" << std::endl;
 
     // write final curves to vtu
     {
         std::cout << "\n=== Writing final plane curves to VTU ===" << std::endl;
-        write_curves_to_vtu(curves, V_out, model_name + "_plane_curves_out.vtu");
+        write_curves_to_vtu(curves_result_double, V_out, model_name + "_plane_curves_out.vtu");
     }
     std::cout << "finished write curves to vtu" << std::endl;
 
-    bool is_correct = check_curves_topology(curves, intersection_reference);
+    // Use rational curves for topology checking for better precision
+    bool is_correct = check_curves_topology<wmtk::Rational>(curves, intersection_reference);
     if (!is_correct) {
         std::cout << "Error: curves topology is not correct" << std::endl;
     } else {
@@ -822,7 +848,7 @@ void forward_track_plane_curves_app(
         igl::opengl::glfw::Viewer viewer;
         viewer.data().set_mesh(V_out, F_out);
         viewer.data().point_size /= 3;
-        for (const auto& curve : curves) {
+        for (const auto& curve : curves_result_double) {
             for (const auto& seg : curve.segments) {
                 Eigen::MatrixXd pts(2, 3);
                 for (int i = 0; i < 2; i++) {
@@ -843,13 +869,14 @@ void forward_track_plane_curves_app(
 }
 
 
+template <typename CoordType>
 bool check_curves_topology(
-    const std::vector<query_curve>& curves,
+    const std::vector<query_curve_t<CoordType>>& curves,
     const std::vector<std::vector<int>>& intersection_reference)
 {
     bool is_correct = true;
     for (int i = 0; i < curves.size(); i++) {
-        int self_intersections = compute_curve_self_intersections(curves[i], true);
+        int self_intersections = compute_curve_self_intersections_t(curves[i], true);
         std::cout << "curve " << i << " has " << self_intersections << " self intersections"
                   << std::endl;
         if (self_intersections != intersection_reference[i][i]) {
@@ -859,7 +886,7 @@ bool check_curves_topology(
         }
         for (int j = i + 1; j < curves.size(); j++) {
             int intersections =
-                compute_intersections_between_two_curves(curves[i], curves[j], true);
+                compute_intersections_between_two_curves_t(curves[i], curves[j], true);
             std::cout << "curve " << i << " and curve " << j << " intersect " << intersections
                       << " times" << std::endl;
             if (intersections != intersection_reference[i][j]) {
@@ -874,6 +901,61 @@ bool check_curves_topology(
         }
     }
     return is_correct;
+}
+
+// Backward compatibility version
+bool check_curves_topology(
+    const std::vector<query_curve>& curves,
+    const std::vector<std::vector<int>>& intersection_reference)
+{
+    return check_curves_topology<double>(curves, intersection_reference);
+}
+
+// Explicit template instantiation for compilation
+template void track_line_one_operation<double>(
+    const json& operation_log,
+    query_curve_t<double>& curve,
+    bool do_forward);
+template void track_line_one_operation<wmtk::Rational>(
+    const json& operation_log,
+    query_curve_t<wmtk::Rational>& curve,
+    bool do_forward);
+
+template void track_line<double>(path dirPath, query_curve_t<double>& curve, bool do_forward);
+template void
+track_line<wmtk::Rational>(path dirPath, query_curve_t<wmtk::Rational>& curve, bool do_forward);
+
+template void track_lines<double>(
+    path dirPath,
+    std::vector<query_curve_t<double>>& curves,
+    bool do_forward,
+    bool do_parallel);
+template void track_lines<wmtk::Rational>(
+    path dirPath,
+    std::vector<query_curve_t<wmtk::Rational>>& curves,
+    bool do_forward,
+    bool do_parallel);
+
+template bool check_curves_topology<double>(
+    const std::vector<query_curve_t<double>>& curves,
+    const std::vector<std::vector<int>>& intersection_reference);
+template bool check_curves_topology<wmtk::Rational>(
+    const std::vector<query_curve_t<wmtk::Rational>>& curves,
+    const std::vector<std::vector<int>>& intersection_reference);
+
+// Additional backward compatibility versions for query_curve_t<double>
+void track_line(path dirPath, query_curve_t<double>& curve, bool do_forward)
+{
+    return track_line<double>(dirPath, curve, do_forward);
+}
+
+void track_lines(
+    path dirPath,
+    std::vector<query_curve_t<double>>& curves,
+    bool do_forward,
+    bool do_parallel)
+{
+    return track_lines<double>(dirPath, curves, do_forward, do_parallel);
 }
 
 
