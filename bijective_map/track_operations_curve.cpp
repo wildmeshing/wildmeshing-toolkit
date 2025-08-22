@@ -1,6 +1,7 @@
 #include "track_operations_curve.hpp"
 #include <igl/Timer.h>
 #include <igl/doublearea.h>
+#include <set>
 #ifdef USE_IGL_VIEWER
 #include <igl/opengl/glfw/Viewer.h>
 #endif
