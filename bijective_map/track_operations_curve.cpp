@@ -385,7 +385,8 @@ bool intersectSegmentEdge_r(
     const Eigen::Vector2<wmtk::Rational>& b,
     const Eigen::Vector2<wmtk::Rational>& c,
     const Eigen::Vector2<wmtk::Rational>& d,
-    Eigen::Vector2<wmtk::Rational>& barycentric,
+    Eigen::Vector2<wmtk::Rational>& barycentric_cd,
+    Eigen::Vector2<wmtk::Rational>& barycentric_ab,
     bool debug_mode)
 {
     Eigen::Vector2<wmtk::Rational> ab = b - a;
@@ -393,23 +394,55 @@ bool intersectSegmentEdge_r(
     Eigen::Vector2<wmtk::Rational> ac = c - a;
 
     wmtk::Rational denominator = (ab.x() * cd.y() - ab.y() * cd.x());
+
     if (denominator == wmtk::Rational(0)) {
-        if (debug_mode) std::cout << "parallel" << std::endl;
+        if (debug_mode) std::cout << "Lines are parallel" << std::endl;
         return false; // parallel
     }
+
     wmtk::Rational t = (ac.x() * cd.y() - ac.y() * cd.x()) / denominator;
     wmtk::Rational u = -(ab.x() * ac.y() - ab.y() * ac.x()) / denominator;
-    if (debug_mode) std::cout << "t: " << t.to_double() << ", u: " << u.to_double() << std::endl;
+
+    if (debug_mode) {
+        std::cout << std::fixed << std::setprecision(15);
+        std::cout << "t=" << t.to_double() << ", u=" << u.to_double() << std::endl;
+
+        // Calculate and verify intersection points
+        Eigen::Vector2<wmtk::Rational> pt_from_t = a + t * ab;
+        Eigen::Vector2<wmtk::Rational> pt_from_u = c + u * cd;
+
+        std::cout << "Point from t: (" << pt_from_t.x().to_double() << ", "
+                  << pt_from_t.y().to_double() << ")" << std::endl;
+        std::cout << "Point from u: (" << pt_from_u.x().to_double() << ", "
+                  << pt_from_u.y().to_double() << ")" << std::endl;
+
+        Eigen::Vector2<wmtk::Rational> diff = pt_from_t - pt_from_u;
+        double diff_mag = std::sqrt(
+            diff.x().to_double() * diff.x().to_double() +
+            diff.y().to_double() * diff.y().to_double());
+        std::cout << "Difference: " << diff_mag << std::endl;
+    }
 
     if (t >= 0 && t <= wmtk::Rational(1) && u >= 0 && u <= wmtk::Rational(1)) {
-        // Calculate barycentric coordinates for intersection
-        wmtk::Rational alpha = wmtk::Rational(1) - u;
-        wmtk::Rational beta = u;
-        barycentric = Eigen::Vector2<wmtk::Rational>(alpha, beta);
-        if (debug_mode) std::cout << "intersection found" << std::endl;
+        // Calculate barycentric coordinates for intersection on edge CD
+        wmtk::Rational alpha_cd = wmtk::Rational(1) - u; // weight for point c
+        wmtk::Rational beta_cd = u; // weight for point d
+        barycentric_cd = Eigen::Vector2<wmtk::Rational>(alpha_cd, beta_cd);
+
+        // Calculate barycentric coordinates for intersection on edge AB
+        wmtk::Rational alpha_ab = wmtk::Rational(1) - t; // weight for point a
+        wmtk::Rational beta_ab = t; // weight for point b
+        barycentric_ab = Eigen::Vector2<wmtk::Rational>(alpha_ab, beta_ab);
+
+        if (debug_mode) {
+            std::cout << "INTERSECTION: CD(alpha=" << alpha_cd.to_double()
+                      << ", beta=" << beta_cd.to_double() << "), AB(alpha=" << alpha_ab.to_double()
+                      << ", beta=" << beta_ab.to_double() << ")" << std::endl;
+        }
         return true;
     }
-    if (debug_mode) std::cout << "no intersection" << std::endl;
+
+    if (debug_mode) std::cout << "No intersection - params out of range" << std::endl;
     return false;
 }
 
@@ -630,9 +663,15 @@ void handle_one_segment_t(
             // Time intersection computation (only if verbose)
             igl::Timer compute_timer;
             if (verbose) compute_timer.start();
-            Eigen::Vector2<wmtk::Rational> edge_bc;
-            bool has_intersection =
-                intersectSegmentEdge_r(current_pos, b, edge_start, edge_end, edge_bc, false);
+            Eigen::Vector2<wmtk::Rational> edge_bc, placeholder_ab;
+            bool has_intersection = intersectSegmentEdge_r(
+                current_pos,
+                b,
+                edge_start,
+                edge_end,
+                edge_bc,
+                placeholder_ab,
+                false);
             if (verbose) time_intersection_computation += compute_timer.getElapsedTime();
 
             // quiet
@@ -1410,8 +1449,18 @@ int compute_intersections_between_two_curves_t(
     bool verbose)
 {
     int intersections = 0;
-    for (auto seg1 : curve1.segments) {
-        for (auto seg2 : curve2.segments) {
+
+    std::set<std::pair<int, int>> skip_seg_pairs;
+
+    for (int seg1_id = 0; seg1_id < curve1.segments.size(); seg1_id++) {
+        for (int seg2_id = 0; seg2_id < curve2.segments.size(); seg2_id++) {
+            auto seg1 = curve1.segments[seg1_id];
+            auto seg2 = curve2.segments[seg2_id];
+
+            if (skip_seg_pairs.find(std::make_pair(seg1_id, seg2_id)) != skip_seg_pairs.end()) {
+                continue;
+            }
+
             if (seg1.f_id != seg2.f_id) {
                 continue;
             }
@@ -1422,15 +1471,46 @@ int compute_intersections_between_two_curves_t(
             s2_a << wmtk::Rational(seg2.bcs[0](0)), wmtk::Rational(seg2.bcs[0](1));
             s2_b << wmtk::Rational(seg2.bcs[1](0)), wmtk::Rational(seg2.bcs[1](1));
 
-            Eigen::Vector2<wmtk::Rational> bc_tmp;
-            if (intersectSegmentEdge_r(s1_a, s1_b, s2_a, s2_b, bc_tmp, false)) {
-                intersectSegmentEdge_r(
-                    s1_a,
-                    s1_b,
-                    s2_a,
-                    s2_b,
-                    bc_tmp,
-                    true); // TODO: this line is only for debug
+            Eigen::Vector2<wmtk::Rational> bc_on_seg2;
+            Eigen::Vector2<wmtk::Rational> bc_on_seg1;
+            if (intersectSegmentEdge_r(s1_a, s1_b, s2_a, s2_b, bc_on_seg2, bc_on_seg1, false)) {
+                // handle intersection on endpoints
+                if (bc_on_seg2(0) == wmtk::Rational(0) || bc_on_seg2(0) == wmtk::Rational(1) ||
+                    bc_on_seg1(0) == wmtk::Rational(0) || bc_on_seg1(0) == wmtk::Rational(1)) {
+                    int seg1_nei = -1;
+                    int seg2_nei = -1;
+                    if (bc_on_seg2(0) == wmtk::Rational(1)) {
+                        seg2_nei = std::find(
+                                       curve2.next_segment_ids.begin(),
+                                       curve2.next_segment_ids.end(),
+                                       seg2_id) -
+                                   curve2.next_segment_ids.begin();
+                    } else if (bc_on_seg2(0) == wmtk::Rational(0)) {
+                        seg2_nei = curve2.next_segment_ids[seg2_id];
+                    }
+
+
+                    if (bc_on_seg1(0) == wmtk::Rational(1)) {
+                        seg1_nei = std::find(
+                                       curve1.next_segment_ids.begin(),
+                                       curve1.next_segment_ids.end(),
+                                       seg1_id) -
+                                   curve1.next_segment_ids.begin();
+                    } else if (bc_on_seg1(0) == wmtk::Rational(0)) {
+                        seg1_nei = curve1.next_segment_ids[seg1_id];
+                    }
+                    if (seg2_nei != -1) {
+                        skip_seg_pairs.insert(std::make_pair(seg1_id, seg2_nei));
+                        std::cout << "add pair: " << seg1_id << ", " << seg2_nei << std::endl;
+                    }
+                    if (seg1_nei != -1) {
+                        skip_seg_pairs.insert(std::make_pair(seg1_nei, seg2_id));
+                        skip_seg_pairs.insert(std::make_pair(seg1_nei, seg2_nei));
+                        std::cout << "add pair: " << seg1_nei << ", " << seg2_nei << std::endl;
+                        std::cout << "add pair: " << seg1_nei << ", " << seg2_id << std::endl;
+                    }
+                }
+
                 intersections++;
                 if (verbose) {
                     if constexpr (std::is_same_v<CoordType, double>) {
@@ -1441,19 +1521,20 @@ int compute_intersections_between_two_curves_t(
                         std::cout << "seg2: f_id=" << seg2.f_id
                                   << ", bcs[0]=" << seg2.bcs[0].transpose()
                                   << ", bcs[1]=" << seg2.bcs[1].transpose() << std::endl;
-                        std::cout << "intersection position at t = " << bc_tmp(0).to_double()
+                        std::cout << "intersection position at t = " << bc_on_seg2(0).to_double()
                                   << std::endl;
                     } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
-                        std::cout << "Intersection found in face " << seg1.f_id << std::endl;
+                        std::cout << "seg1_id: " << seg1_id << ", seg2_id: " << seg2_id
+                                  << std::endl;
                         std::cout << "seg1: f_id=" << seg1.f_id << ", bcs[0]=[";
                         for (int k = 0; k < seg1.bcs[0].size(); k++) {
                             std::cout << seg1.bcs[0](k).to_double();
                             if (k < seg1.bcs[0].size() - 1) std::cout << ", ";
                         }
                         std::cout << "], bcs[1]=[";
-                        for (int k = 0; k < seg1.bcs[0].size(); k++) {
-                            std::cout << seg1.bcs[0](k).to_double();
-                            if (k < seg1.bcs[0].size() - 1) std::cout << ", ";
+                        for (int k = 0; k < seg1.bcs[1].size(); k++) {
+                            std::cout << seg1.bcs[1](k).to_double();
+                            if (k < seg1.bcs[1].size() - 1) std::cout << ", ";
                         }
                         std::cout << "]" << std::endl;
                         std::cout << "seg2: f_id=" << seg2.f_id << ", bcs[0]=[";
@@ -1462,13 +1543,14 @@ int compute_intersections_between_two_curves_t(
                             if (k < seg2.bcs[0].size() - 1) std::cout << ", ";
                         }
                         std::cout << "], bcs[1]=[";
-                        for (int k = 0; k < seg2.bcs[0].size(); k++) {
-                            std::cout << seg2.bcs[0](k).to_double();
-                            if (k < seg2.bcs[0].size() - 1) std::cout << ", ";
+                        for (int k = 0; k < seg2.bcs[1].size(); k++) {
+                            std::cout << seg2.bcs[1](k).to_double();
+                            if (k < seg2.bcs[1].size() - 1) std::cout << ", ";
                         }
                         std::cout << "]" << std::endl;
-                        std::cout << "intersection position at t = " << bc_tmp(0).to_double()
+                        std::cout << "intersection position at t = " << bc_on_seg2(0).to_double()
                                   << std::endl;
+                        std::cout << std::endl;
                     }
                 }
             }
@@ -1508,9 +1590,9 @@ int compute_curve_self_intersections_t(const query_curve_t<CoordType>& curve, bo
             s2_a << wmtk::Rational(seg2.bcs[0](0)), wmtk::Rational(seg2.bcs[0](1));
             s2_b << wmtk::Rational(seg2.bcs[1](0)), wmtk::Rational(seg2.bcs[1](1));
 
-            Eigen::Vector2<wmtk::Rational> bc_tmp;
-            if (intersectSegmentEdge_r(s1_a, s1_b, s2_a, s2_b, bc_tmp, false)) {
-                intersectSegmentEdge_r(s1_a, s1_b, s2_a, s2_b, bc_tmp, true);
+            Eigen::Vector2<wmtk::Rational> bc_tmp, bc_tmp_seg1;
+            if (intersectSegmentEdge_r(s1_a, s1_b, s2_a, s2_b, bc_tmp, bc_tmp_seg1, false)) {
+                // intersectSegmentEdge_r(s1_a, s1_b, s2_a, s2_b, bc_tmp, bc_tmp_seg1, true);
                 intersections++;
                 if (verbose) {
                     if constexpr (std::is_same_v<CoordType, double>) {

@@ -689,9 +689,14 @@ void forward_track_iso_lines_app(
     for (int i = 0; i < curves.size(); i++) {
         intersection_reference[i].resize(curves.size());
         intersection_reference[i][i] = compute_curve_self_intersections(curves[i]);
+        std::cout << "curve " << i << " has " << intersection_reference[i][i]
+                  << " self intersections" << std::endl;
         for (int j = i + 1; j < curves.size(); j++) {
             intersection_reference[i][j] =
                 compute_intersections_between_two_curves(curves[i], curves[j]);
+            std::cout << "curve " << i << " and curve " << j << " intersect "
+                      << intersection_reference[i][j] << " times" << std::endl;
+            std::cout << "--------------------------------" << std::endl;
         }
     }
 
@@ -808,9 +813,14 @@ void forward_track_plane_curves_app(
     for (int i = 0; i < curves.size(); i++) {
         intersection_reference[i].resize(curves.size());
         intersection_reference[i][i] = compute_curve_self_intersections_t(curves[i], true);
+        std::cout << "curve " << i << " has " << intersection_reference[i][i]
+                  << " self intersections" << std::endl;
         for (int j = i + 1; j < curves.size(); j++) {
             intersection_reference[i][j] =
                 compute_intersections_between_two_curves_t(curves[i], curves[j], true);
+            std::cout << "curve " << i << " and curve " << j << " intersect "
+                      << intersection_reference[i][j] << " times" << std::endl;
+            std::cout << "--------------------------------" << std::endl;
         }
     }
 
@@ -898,6 +908,7 @@ bool check_curves_topology(
                 std::cout << "intersections between curve " << i << " and curve " << j
                           << " are correct" << std::endl;
             }
+            std::cout << "--------------------------------" << std::endl;
         }
     }
     return is_correct;

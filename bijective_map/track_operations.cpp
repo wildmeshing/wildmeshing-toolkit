@@ -1108,6 +1108,7 @@ void handle_collapse_edge_t(
                         barycentric_from_cache((*bc_cache_ptr)[i], p);
 
                     // Check if point is inside triangle (all barycentric coordinates >= 0)
+                    // TODO: this could take time
                     if (bc_rational_result.minCoeff() >= 0 && bc_rational_result.maxCoeff() <= 1) {
                         local_index_in_f_before = i;
                         qp.bc = bc_rational_result;

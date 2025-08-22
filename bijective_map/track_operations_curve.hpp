@@ -133,7 +133,8 @@ bool intersectSegmentEdge_r(
     const Eigen::Vector2<wmtk::Rational>& b,
     const Eigen::Vector2<wmtk::Rational>& c,
     const Eigen::Vector2<wmtk::Rational>& d,
-    Eigen::Vector2<wmtk::Rational>& barycentric,
+    Eigen::Vector2<wmtk::Rational>& barycentric_cd,
+    Eigen::Vector2<wmtk::Rational>& barycentric_ab,
     bool debug_mode = false);
 
 // Main segment handling function - templated
