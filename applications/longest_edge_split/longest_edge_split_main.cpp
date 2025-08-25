@@ -64,6 +64,7 @@ int main(int argc, char* argv[])
     }
 #ifdef WMTK_RECORD_OPERATIONS
     OperationLogPath = generatePathNameWithCurrentTime();
+    initializeBatchLogging();
 #endif
     const fs::path input_file = resolve_paths(json_input_file, {j["input_path"], j["input"]});
 
@@ -149,6 +150,9 @@ int main(int argc, char* argv[])
         ofs << std::setw(4) << out_json;
     }
 
+#ifdef WMTK_RECORD_OPERATIONS
+    finalizeBatchLogging();
+#endif
 
     return 0;
 }

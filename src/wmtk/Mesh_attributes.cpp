@@ -318,22 +318,16 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
     // Write the new_2_old id map to file
     // std::cout << "Record Consolidate\n";
     // std::cout << "succ operations count: " << succ_operations_count << "\n";
-    std::string filename =
-        OperationLogPath + OperationLogPrefix + std::to_string(succ_operations_count) + ".json";
-    std::ofstream operation_log_file(filename);
+    // Use batch logging system for MeshConsolidate operations
     nlohmann::json operation_log;
-    if (operation_log_file.is_open()) {
-        operation_log["operation_name"] = "MeshConsolidate";
+    operation_log["operation_name"] = "MeshConsolidate";
 
-        for (int64_t d = 0; d < tcp; d++) {
-            operation_log["new2old"].push_back(new2old[d]);
-        }
-        operation_log_file << operation_log.dump(4);
-        operation_log_file.close();
-        succ_operations_count++;
-    } else {
-        std::cerr << "unable to open file " << filename << " for writing\n";
+    for (int64_t d = 0; d < tcp; d++) {
+        operation_log["new2old"].push_back(new2old[d]);
     }
+    
+    addOperationToBatch(operation_log);
+    succ_operations_count++;
 #endif
     // Return both maps for custom attribute remapping
     return {new2old, old2new};

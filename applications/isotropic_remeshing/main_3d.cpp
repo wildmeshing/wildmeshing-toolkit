@@ -53,6 +53,7 @@ int main(int argc, char* argv[])
     }
     std::cout << "Model name: " << model_name << std::endl;
     OperationLogPath = generatePathNameWithModelName(model_name);
+    initializeBatchLogging();
 #endif
     const auto input_opts = j["input"].get<wmtk::components::input::InputOptions>();
 
@@ -88,4 +89,8 @@ int main(int argc, char* argv[])
     const std::string output_path = j["output"];
     // wmtk::components::output::output_hdf5(*mesh_ptr, j["output"]);
     wmtk::components::output::output(*mesh_ptr, j["output"], options.position_attribute);
+
+#ifdef WMTK_RECORD_OPERATIONS
+    finalizeBatchLogging();
+#endif
 }

@@ -32,7 +32,7 @@ if(USE_IGL_VIEWER)
     igl_include(imgui)
 endif()
 
-add_executable(bijective_map_app bijective_map_app.cpp track_operations.hpp track_operations.cpp track_operations_curve.hpp track_operations_curve.cpp render_utils.hpp generate_iso_line.hpp track_point_app.cpp track_line_app.cpp vtu_utils.cpp generate_plane_curves.hpp generate_plane_curves.cpp)
+add_executable(bijective_map_app bijective_map_app.cpp track_operations.hpp track_operations.cpp track_operations_curve.hpp track_operations_curve.cpp render_utils.hpp generate_iso_line.hpp track_point_app.cpp track_line_app.cpp vtu_utils.cpp generate_plane_curves.hpp generate_plane_curves.cpp batch_operation_log_reader.hpp batch_operation_log_reader.cpp)
 
 target_link_libraries(bijective_map_app
     wmtk::toolkit
@@ -50,7 +50,7 @@ if(USE_IGL_VIEWER)
 endif()
 target_compile_features(bijective_map_app PUBLIC cxx_std_17)
 
-add_executable(bijective_map_app_tet bijective_map_app_tet.cpp track_operations_tet.hpp track_operations_tet.cpp FindPointTetMesh.cpp vtu_utils.cpp)
+add_executable(bijective_map_app_tet bijective_map_app_tet.cpp track_operations_tet.hpp track_operations_tet.cpp FindPointTetMesh.cpp vtu_utils.cpp batch_operation_log_reader.hpp batch_operation_log_reader.cpp)
 target_include_directories(bijective_map_app_tet PUBLIC
     ./InteractiveAndRobustMeshBooleans
     InteractiveAndRobustMeshBooleans/code/

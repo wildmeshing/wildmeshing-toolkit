@@ -8,6 +8,7 @@
 #endif
 #include <igl/parallel_for.h>
 #include "render_utils.hpp"
+#include "batch_operation_log_reader.hpp"
 
 void track_point_one_operation(
     const json& operation_log,
@@ -171,35 +172,32 @@ void track_point(
     bool do_forward,
     bool use_rational)
 {
-    // get all the operation logs
-    namespace fs = std::filesystem;
-    int maxIndex = -1;
-    for (const auto& entry : fs::directory_iterator(dirPath)) {
-        if (entry.path().filename().string().find("operation_log_") != std::string::npos) {
-            ++maxIndex;
-        }
+    BatchOperationLogReader reader(dirPath);
+    size_t total_ops = reader.get_total_operations();
+    
+    if (total_ops == 0) {
+        std::cerr << "No operation logs found in " << dirPath << std::endl;
+        return;
     }
+    
+    std::cout << "Found " << total_ops << " operations in " 
+              << (reader.is_batch_format() ? "batch" : "legacy") << " format" << std::endl;
 
-    for (int i = maxIndex; i >= 0; --i) {
-        int file_id = i;
-        if (do_forward) {
-            file_id = maxIndex - i;
+    for (size_t i = 0; i < total_ops; ++i) {
+        size_t operation_index = i;
+        if (!do_forward) {
+            operation_index = total_ops - 1 - i;
         }
 
-        fs::path filePath = dirPath / ("operation_log_" + std::to_string(file_id) + ".json");
-        std::ifstream file(filePath);
-        if (!file.is_open()) {
-            std::cerr << "Failed to open file: " << filePath << std::endl;
+        json operation_log = reader.get_operation(operation_index);
+        if (operation_log.empty()) {
+            std::cerr << "Failed to read operation " << operation_index << std::endl;
             continue;
         }
-        json operation_log;
-        file >> operation_log;
 
-        std::cout << "Trace Operations number: " << file_id << std::endl;
+        std::cout << "Trace Operations number: " << operation_index << std::endl;
 
         track_point_one_operation(operation_log, query_points, do_forward, use_rational);
-
-        file.close();
     }
 }
 

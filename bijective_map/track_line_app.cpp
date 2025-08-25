@@ -8,6 +8,7 @@
 #include "generate_iso_line.hpp"
 #include "generate_plane_curves.hpp"
 #include "vtu_utils.hpp"
+#include "batch_operation_log_reader.hpp"
 
 bool validate_and_convert_curves_to_edge_mesh(
     const std::vector<query_curve>& curves,
@@ -423,31 +424,31 @@ void track_line_one_operation(
 template <typename CoordType>
 void track_line(path dirPath, query_curve_t<CoordType>& curve, bool do_forward)
 {
-    namespace fs = std::filesystem;
-    int maxIndex = -1;
-
-    for (const auto& entry : fs::directory_iterator(dirPath)) {
-        if (entry.path().filename().string().find("operation_log_") != std::string::npos) {
-            ++maxIndex;
-        }
+    BatchOperationLogReader reader(dirPath);
+    size_t total_ops = reader.get_total_operations();
+    
+    if (total_ops == 0) {
+        std::cerr << "No operation logs found in " << dirPath << std::endl;
+        return;
     }
+    
+    std::cout << "Found " << total_ops << " operations in " 
+              << (reader.is_batch_format() ? "batch" : "legacy") << " format" << std::endl;
+
     int curve_old_size = curve.segments.size();
     int clean_up_threshold = 2;
-    for (int i = maxIndex; i >= 0; --i) {
-        int file_id = i;
-        if (do_forward) {
-            file_id = maxIndex - i;
+    
+    for (size_t i = 0; i < total_ops; ++i) {
+        size_t operation_index = i;
+        if (!do_forward) {
+            operation_index = total_ops - 1 - i;
         }
 
-        //
-        fs::path filePath = dirPath / ("operation_log_" + std::to_string(file_id) + ".json");
-        std::ifstream file(filePath);
-        if (!file.is_open()) {
-            std::cerr << "Failed to open file: " << filePath << std::endl;
+        json operation_log = reader.get_operation(operation_index);
+        if (operation_log.empty()) {
+            std::cerr << "Failed to read operation " << operation_index << std::endl;
             continue;
         }
-        json operation_log;
-        file >> operation_log;
 
         int curve_size_before = curve.segments.size();
         // quiet per-operation tracing at track_line level
@@ -467,8 +468,6 @@ void track_line(path dirPath, query_curve_t<CoordType>& curve, bool do_forward)
                 }
             }
         }
-
-        file.close();
     }
 
     clean_up_curve_t(curve);

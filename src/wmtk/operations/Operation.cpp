@@ -137,14 +137,9 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                     std::cout << "operation id: " << succ_operations_count << "\n";
                 }
 
-                // create a local atlas file
+                // create operation log entry
                 // std::cout << "operation " << operation_name << " is successful\n";
-                std::string filename = OperationLogPath + OperationLogPrefix +
-                                       std::to_string(succ_operations_count) + ".json";
-                std::ofstream operation_log_file(filename);
                 json operation_log;
-
-                if (operation_log_file.is_open()) {
                     // Visualize V_before, F_before and V_after, F_after using
                     // libigl, switch with keys 0 and 1
                     auto visualize_meshes = [](const Eigen::MatrixXd& V_before,
@@ -1051,13 +1046,8 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                         // operation_log["T_after_all"]["values"] = matrix_to_json(T_after_all);
                     }
 
-                    // TODO: get a larger json file to do this:
-                    // op_logs_js["op_log"].push_back(operation_log);
-                    operation_log_file << operation_log.dump(4);
-                    operation_log_file.close();
-                } else {
-                    std::cerr << "unable to open file " << filename << " for writing\n";
-                }
+                // Use batch logging system instead of individual files
+                addOperationToBatch(operation_log);
                 succ_operations_count++;
 
             } // end if (m_record)
