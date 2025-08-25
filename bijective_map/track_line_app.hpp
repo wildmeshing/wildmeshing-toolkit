@@ -71,7 +71,8 @@ void forward_track_plane_curves_app(
     const path& operation_logs_dir,
     int N = 5,
     bool do_parallel = true,
-    const std::string& model_name = "");
+    const std::string& model_name = "",
+    bool separate_curve_vtu = false);
 
 // check the result of iso-lines
 void check_iso_lines(

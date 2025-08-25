@@ -48,11 +48,16 @@ int main(int argc, char** argv)
     // options for iso_lines application
     int N = 5;
     bool no_parallel = false;
+    bool separate_curve_vtu = false;
     app.add_option("--N", N, "Number of isolines to generate (default: 5)");
     app.add_flag(
         "--no_parallel",
         no_parallel,
         "Disable parallel processing for curve tracking (default: enabled)");
+    app.add_flag(
+        "--separate_curve_vtu",
+        separate_curve_vtu,
+        "Generate separate VTU files for each curve (default: combined)");
 
     CLI11_PARSE(app, argc, argv);
 
@@ -184,7 +189,8 @@ int main(int argc, char** argv)
             operation_logs_dir,
             N,
             !no_parallel,
-            model_name);
+            model_name,
+            separate_curve_vtu);
     }
     return 0;
 }

@@ -200,16 +200,60 @@ void write_curves_to_vtu(
     const std::vector<query_curve>& curves,
     const Eigen::MatrixXd& V,
     const std::string& filename,
+    bool separate_curves = false,
     double tolerance = 1e-8)
 {
-    Eigen::MatrixXd edge_V;
-    Eigen::MatrixXi edge_E;
+    if (separate_curves) {
+        // Extract base name and extension
+        size_t dot_pos = filename.find_last_of('.');
+        std::string base_name =
+            (dot_pos != std::string::npos) ? filename.substr(0, dot_pos) : filename;
+        std::string extension = (dot_pos != std::string::npos) ? filename.substr(dot_pos) : ".vtu";
 
-    if (validate_and_convert_curves_to_edge_mesh(curves, V, edge_V, edge_E, tolerance)) {
-        vtu_utils::write_edge_mesh_to_vtu(edge_V, edge_E, filename);
-        std::cout << "Successfully wrote curves to " << filename << std::endl;
+        for (size_t i = 0; i < curves.size(); ++i) {
+            const query_curve& curve = curves[i];
+            std::cout << "\n=== Curve " << i << " Details ===" << std::endl;
+            std::cout << "Number of segments: " << curve.segments.size() << std::endl;
+            
+            for (size_t j = 0; j < curve.segments.size(); ++j) {
+                const query_segment& seg = curve.segments[j];
+                std::cout << "Segment " << j << ":" << std::endl;
+                std::cout << "  Face ID: " << seg.f_id << std::endl;
+                std::cout << "  Face vertex IDs: [" << seg.fv_ids[0] << ", " << seg.fv_ids[1] << ", " << seg.fv_ids[2] << "]" << std::endl;
+                std::cout << "  Endpoint 0 BC: [" << seg.bcs[0](0) << ", " << seg.bcs[0](1) << ", " << seg.bcs[0](2) << "]" << std::endl;
+                std::cout << "  Endpoint 1 BC: [" << seg.bcs[1](0) << ", " << seg.bcs[1](1) << ", " << seg.bcs[1](2) << "]" << std::endl;
+            }
+            
+            std::vector<query_curve> single_curve = {curves[i]};
+            std::string individual_filename = base_name + "_curve_" + std::to_string(i) + extension;
+
+            Eigen::MatrixXd edge_V;
+            Eigen::MatrixXi edge_E;
+
+            if (validate_and_convert_curves_to_edge_mesh(
+                    single_curve,
+                    V,
+                    edge_V,
+                    edge_E,
+                    tolerance)) {
+                vtu_utils::write_edge_mesh_to_vtu(edge_V, edge_E, individual_filename);
+                std::cout << "Successfully wrote curve " << i << " to " << individual_filename
+                          << std::endl;
+            } else {
+                std::cerr << "Failed to convert curve " << i << " to edge mesh" << std::endl;
+            }
+        }
     } else {
-        std::cerr << "Failed to convert curves to edge mesh" << std::endl;
+        // Original combined output
+        Eigen::MatrixXd edge_V;
+        Eigen::MatrixXi edge_E;
+
+        if (validate_and_convert_curves_to_edge_mesh(curves, V, edge_V, edge_E, tolerance)) {
+            vtu_utils::write_edge_mesh_to_vtu(edge_V, edge_E, filename);
+            std::cout << "Successfully wrote curves to " << filename << std::endl;
+        } else {
+            std::cerr << "Failed to convert curves to edge mesh" << std::endl;
+        }
     }
 }
 
@@ -747,7 +791,8 @@ void forward_track_plane_curves_app(
     const path& operation_logs_dir,
     int N,
     bool do_parallel,
-    const std::string& model_name)
+    const std::string& model_name,
+    bool separate_curve_vtu)
 {
     if (V_in.cols() == 2) {
         throw std::runtime_error("V_in is 2D, not supported");
@@ -801,11 +846,16 @@ void forward_track_plane_curves_app(
     }
 
     // Save original double curves for backward compatibility
-    save_query_curves(curves_double, model_name + "_plane_curves.in");
+    // save_query_curves(curves_double, model_name +s "_plane_curves.in");
+
     // write curves to vtu
     {
         std::cout << "\n=== Writing initial plane curves to VTU ===" << std::endl;
-        write_curves_to_vtu(curves_double, V_in, model_name + "_plane_curves_in.vtu");
+        write_curves_to_vtu(
+            curves_double,
+            V_in,
+            model_name + "_plane_curves_in.vtu",
+            separate_curve_vtu);
     }
 
     std::vector<std::vector<int>> intersection_reference;
@@ -834,13 +884,17 @@ void forward_track_plane_curves_app(
     for (const auto& curve_rational : curves) {
         curves_result_double.push_back(convert_query_curve<wmtk::Rational, double>(curve_rational));
     }
-    save_query_curves(curves_result_double, model_name + "_plane_curves.out");
-    std::cout << "finished save query curves" << std::endl;
+    // save_query_curves(curves_result_double, model_name + "_plane_curves.out");
+    // std::cout << "finished save query curves" << std::endl;
 
     // write final curves to vtu
     {
         std::cout << "\n=== Writing final plane curves to VTU ===" << std::endl;
-        write_curves_to_vtu(curves_result_double, V_out, model_name + "_plane_curves_out.vtu");
+        write_curves_to_vtu(
+            curves_result_double,
+            V_out,
+            model_name + "_plane_curves_out.vtu",
+            separate_curve_vtu);
     }
     std::cout << "finished write curves to vtu" << std::endl;
 
