@@ -1,5 +1,6 @@
 #include "generate_plane_curves.hpp"
 #include <algorithm>
+#include <iomanip>
 #include <iostream>
 #include <map>
 #include <queue>
@@ -88,6 +89,13 @@ std::vector<PlaneIntersection> computePlaneIntersections(
             (coord0 >= axis_value && coord1 <= axis_value)) {
             double t = (axis_value - coord0) / (coord1 - coord0);
 
+            if (t == 0 || t == 1) {
+                std::cout << "ERROR: t is 0 or 1" << std::endl;
+                std::cout << std::fixed << std::setprecision(16) << "coord0=" << coord0
+                          << ", coord1=" << coord1 << ", axis_value=" << axis_value << ", t=" << t
+                          << std::endl;
+                return computePlaneIntersections(V, F, edges, axis_value + turb_eps, axis_index);
+            }
             int left_intersection_id = -1;
             int right_intersection_id = -1;
 
@@ -269,7 +277,7 @@ std::vector<query_curve> buildQueryCurvesFromIntersections(
         if (segment_used[start_seg]) continue;
 
         std::cout << "\n=== Starting new curve from segment " << start_seg << " ===" << std::endl;
-        
+
         query_curve curve;
 
         // Build curve by following connected segments in order
@@ -283,11 +291,11 @@ std::vector<query_curve> buildQueryCurvesFromIntersections(
         while (!seg_queue.empty()) {
             candidate_segment current_seg = seg_queue.front();
             seg_queue.pop();
-            
-            std::cout << "  Processing segment " << current_seg.seg_id 
-                      << " (flip=" << current_seg.need_flip 
+
+            std::cout << "  Processing segment " << current_seg.seg_id
+                      << " (flip=" << current_seg.need_flip
                       << ", next_local_id=" << current_seg.next_seg_local_id << ")" << std::endl;
-            
+
             if (segment_used[current_seg.seg_id]) {
                 std::cout << "    SKIP: segment already used" << std::endl;
                 continue;
@@ -297,7 +305,7 @@ std::vector<query_curve> buildQueryCurvesFromIntersections(
 
             SegmentInfo& current_seg_info = all_segments[current_seg.seg_id];
 
-            std::cout << "    Before flip: intersection_idx0=" << current_seg_info.intersection_idx0 
+            std::cout << "    Before flip: intersection_idx0=" << current_seg_info.intersection_idx0
                       << ", intersection_idx1=" << current_seg_info.intersection_idx1 << std::endl;
 
             if (current_seg.need_flip) {
@@ -306,45 +314,52 @@ std::vector<query_curve> buildQueryCurvesFromIntersections(
                 std::cout << "    FLIPPED segment" << std::endl;
             }
 
-            std::cout << "    After flip: intersection_idx0=" << current_seg_info.intersection_idx0 
+            std::cout << "    After flip: intersection_idx0=" << current_seg_info.intersection_idx0
                       << ", intersection_idx1=" << current_seg_info.intersection_idx1 << std::endl;
 
             curve.segments.push_back(current_seg_info.segment);
             curve.next_segment_ids.push_back(current_seg.next_seg_local_id);
-            
-            std::cout << "    Added to curve: segments.size()=" << curve.segments.size() 
+
+            std::cout << "    Added to curve: segments.size()=" << curve.segments.size()
                       << ", next_segment_ids.size()=" << curve.next_segment_ids.size() << std::endl;
 
             int intersection_next =
                 intersections[current_seg_info.intersection_idx1].connected_intersection_id;
 
-            std::cout << "    Looking for next connection: intersection_next=" << intersection_next << std::endl;
+            std::cout << "    Looking for next connection: intersection_next=" << intersection_next
+                      << std::endl;
 
             if (intersection_next != -1) {
                 auto seg_it = intersection_to_segment.find(intersection_next);
                 if (seg_it != intersection_to_segment.end()) {
                     int candidate_seg = seg_it->second;
                     std::cout << "    Found candidate next segment: " << candidate_seg << std::endl;
-                    
+
                     // set current next
                     if (segment_used[candidate_seg]) {
-                        std::cout << "    LOOP detected: candidate segment already used, setting next_id to 0" << std::endl;
+                        std::cout << "    LOOP detected: candidate segment already used, setting "
+                                     "next_id to 0"
+                                  << std::endl;
                         curve.next_segment_ids.back() = 0; // first segment, because it is a loop
                     } else {
                         curve.next_segment_ids.back() = curve.next_segment_ids.size();
-                        std::cout << "    Set current next_segment_id to " << curve.next_segment_ids.back() << std::endl;
-                        
+                        std::cout << "    Set current next_segment_id to "
+                                  << curve.next_segment_ids.back() << std::endl;
+
                         // check direction and push next segment
                         if (all_segments[candidate_seg].intersection_idx0 == intersection_next) {
-                            std::cout << "    Direction check: candidate starts at intersection " << intersection_next << " -> no flip needed" << std::endl;
+                            std::cout << "    Direction check: candidate starts at intersection "
+                                      << intersection_next << " -> no flip needed" << std::endl;
                             seg_queue.push({candidate_seg, false, -1});
                         } else {
-                            std::cout << "    Direction check: candidate ends at intersection " << intersection_next << " -> flip needed" << std::endl;
+                            std::cout << "    Direction check: candidate ends at intersection "
+                                      << intersection_next << " -> flip needed" << std::endl;
                             seg_queue.push({candidate_seg, true, -1});
                         }
                     }
                 } else {
-                    std::cout << "    No segment found for intersection " << intersection_next << std::endl;
+                    std::cout << "    No segment found for intersection " << intersection_next
+                              << std::endl;
                 }
             } else {
                 std::cout << "    No next intersection (end of chain)" << std::endl;
@@ -357,36 +372,39 @@ std::vector<query_curve> buildQueryCurvesFromIntersections(
             int first_prev_intersection =
                 intersections[all_segments[start_seg].intersection_idx0].connected_intersection_id;
             std::cout << "  Initial prev intersection: " << first_prev_intersection << std::endl;
-            
+
             auto first_prev_seg_it = intersection_to_segment.find(first_prev_intersection);
             if (first_prev_seg_it != intersection_to_segment.end()) {
                 int first_prev_seg = first_prev_seg_it->second;
                 std::cout << "  Found initial prev segment: " << first_prev_seg << std::endl;
-                
+
                 if (!segment_used[first_prev_seg]) {
                     std::cout << "  Initial prev segment not used, adding to queue" << std::endl;
                     if (all_segments[first_prev_seg].intersection_idx1 == first_prev_intersection) {
-                        std::cout << "    Direction check: prev segment ends at intersection " << first_prev_intersection << " -> no flip needed" << std::endl;
+                        std::cout << "    Direction check: prev segment ends at intersection "
+                                  << first_prev_intersection << " -> no flip needed" << std::endl;
                         seg_queue.push({first_prev_seg, false, 0});
                     } else {
-                        std::cout << "    Direction check: prev segment starts at intersection " << first_prev_intersection << " -> flip needed" << std::endl;
+                        std::cout << "    Direction check: prev segment starts at intersection "
+                                  << first_prev_intersection << " -> flip needed" << std::endl;
                         seg_queue.push({first_prev_seg, true, 0});
                     }
                 } else {
                     std::cout << "  Initial prev segment already used" << std::endl;
                 }
             } else {
-                std::cout << "  No segment found for initial prev intersection " << first_prev_intersection << std::endl;
+                std::cout << "  No segment found for initial prev intersection "
+                          << first_prev_intersection << std::endl;
             }
         }
         while (!seg_queue.empty()) {
             candidate_segment current_seg = seg_queue.front();
             seg_queue.pop();
-            
-            std::cout << "  Processing prev segment " << current_seg.seg_id 
-                      << " (flip=" << current_seg.need_flip 
+
+            std::cout << "  Processing prev segment " << current_seg.seg_id
+                      << " (flip=" << current_seg.need_flip
                       << ", next_local_id=" << current_seg.next_seg_local_id << ")" << std::endl;
-            
+
             if (segment_used[current_seg.seg_id]) {
                 std::cout << "    SKIP: prev segment already used" << std::endl;
                 continue;
@@ -395,7 +413,7 @@ std::vector<query_curve> buildQueryCurvesFromIntersections(
             segment_used[current_seg.seg_id] = true;
             SegmentInfo& current_seg_info = all_segments[current_seg.seg_id];
 
-            std::cout << "    Before flip: intersection_idx0=" << current_seg_info.intersection_idx0 
+            std::cout << "    Before flip: intersection_idx0=" << current_seg_info.intersection_idx0
                       << ", intersection_idx1=" << current_seg_info.intersection_idx1 << std::endl;
 
             if (current_seg.need_flip) {
@@ -404,39 +422,44 @@ std::vector<query_curve> buildQueryCurvesFromIntersections(
                 std::cout << "    FLIPPED prev segment" << std::endl;
             }
 
-            std::cout << "    After flip: intersection_idx0=" << current_seg_info.intersection_idx0 
+            std::cout << "    After flip: intersection_idx0=" << current_seg_info.intersection_idx0
                       << ", intersection_idx1=" << current_seg_info.intersection_idx1 << std::endl;
 
             curve.segments.push_back(current_seg_info.segment);
             curve.next_segment_ids.push_back(current_seg.next_seg_local_id);
-            
-            std::cout << "    Added prev to curve: segments.size()=" << curve.segments.size() 
+
+            std::cout << "    Added prev to curve: segments.size()=" << curve.segments.size()
                       << ", next_segment_ids.size()=" << curve.next_segment_ids.size() << std::endl;
 
             int intersection_prev =
                 intersections[current_seg_info.intersection_idx0].connected_intersection_id;
 
-            std::cout << "    Looking for prev connection: intersection_prev=" << intersection_prev << std::endl;
+            std::cout << "    Looking for prev connection: intersection_prev=" << intersection_prev
+                      << std::endl;
 
             if (intersection_prev != -1) {
                 auto seg_it = intersection_to_segment.find(intersection_prev);
                 if (seg_it != intersection_to_segment.end()) {
                     int candidate_seg = seg_it->second;
                     std::cout << "    Found candidate prev segment: " << candidate_seg << std::endl;
-                    
+
                     if (!segment_used[candidate_seg]) {
                         if (all_segments[candidate_seg].intersection_idx1 == intersection_prev) {
-                            std::cout << "    Direction check: prev candidate ends at intersection " << intersection_prev << " -> no flip needed" << std::endl;
+                            std::cout << "    Direction check: prev candidate ends at intersection "
+                                      << intersection_prev << " -> no flip needed" << std::endl;
                             seg_queue.push({candidate_seg, false, int(curve.segments.size()) - 1});
                         } else {
-                            std::cout << "    Direction check: prev candidate starts at intersection " << intersection_prev << " -> flip needed" << std::endl;
+                            std::cout
+                                << "    Direction check: prev candidate starts at intersection "
+                                << intersection_prev << " -> flip needed" << std::endl;
                             seg_queue.push({candidate_seg, true, int(curve.segments.size()) - 1});
                         }
                     } else {
                         std::cout << "    Candidate prev segment already used" << std::endl;
                     }
                 } else {
-                    std::cout << "    No segment found for prev intersection " << intersection_prev << std::endl;
+                    std::cout << "    No segment found for prev intersection " << intersection_prev
+                              << std::endl;
                 }
             } else {
                 std::cout << "    No prev intersection (end of chain)" << std::endl;
@@ -449,7 +472,7 @@ std::vector<query_curve> buildQueryCurvesFromIntersections(
             if (i < curve.next_segment_ids.size() - 1) std::cout << ", ";
         }
         std::cout << "]" << std::endl;
-        
+
         query_curves.push_back(curve);
     }
 
