@@ -2,22 +2,12 @@
 
 cmake_minimum_required(VERSION 3.24.0)
 
-# Enable FetchContent
-include(FetchContent)
-
-# Configure FetchContent for InteractiveAndRobustMeshBooleans
-FetchContent_Declare(
-    InteractiveAndRobustMeshBooleans
-    GIT_REPOSITORY https://github.com/zlyfunction/InteractiveAndRobustMeshBooleans.git
-    GIT_TAG for_wmtk
-)
-
 # Configure options for InteractiveAndRobustMeshBooleans
-set(ENABLE_SSE2 True CACHE BOOL "Enable SSE2 optimizations")
+set(ENABLE_SSE2 True CACHE BOOL "Enable SSE2 optimizations")  
 set(ENABLE_AVX2 True CACHE BOOL "Enable AVX2 optimizations")
 
-# Make the content available
-FetchContent_MakeAvailable(InteractiveAndRobustMeshBooleans)
+# Add the existing InteractiveAndRobustMeshBooleans subdirectory
+add_subdirectory(InteractiveAndRobustMeshBooleans)
 
 # specify the C++ standard
 set(CMAKE_CXX_STANDARD 20)
