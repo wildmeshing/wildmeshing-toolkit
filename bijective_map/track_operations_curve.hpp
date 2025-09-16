@@ -110,15 +110,6 @@ std::vector<EdgeTrianglePair> get_candidate_edges_with_triangles_t(
     const Eigen::MatrixXi& TT,
     const Eigen::MatrixXi& TTi);
 
-// Backward compatibility version
-std::vector<EdgeTrianglePair> get_candidate_edges_with_triangles(
-    const query_point& qp,
-    const std::vector<int>& possible_triangles,
-    const Eigen::MatrixXi& F_before,
-    const std::vector<int64_t>& v_id_map_before,
-    const Eigen::MatrixXi& TT,
-    const Eigen::MatrixXi& TTi);
-
 // Helper function to compute barycentric coordinates in triangle from edge barycentric coordinates
 Eigen::Vector3<wmtk::Rational> edge_bc_to_triangle_bc(
     const Eigen::Vector2<wmtk::Rational>& edge_bc,
@@ -204,17 +195,6 @@ void handle_non_collapse_operation_curve_t(
     const std::string& operation_name,
     bool verbose);
 
-// Backward compatibility versions
-void handle_collapse_edge_curve(
-    const Eigen::MatrixXd& UV_joint,
-    const Eigen::MatrixXi& F_before,
-    const Eigen::MatrixXi& F_after,
-    const std::vector<int64_t>& v_id_map_joint,
-    const std::vector<int64_t>& id_map_before,
-    const std::vector<int64_t>& id_map_after,
-    query_curve& curve,
-    bool use_rational,
-    bool verbose);
 
 void handle_non_collapse_operation_curve(
     const Eigen::MatrixXd& V_before,
@@ -233,11 +213,9 @@ void handle_non_collapse_operation_curve(
 // Backward compatibility versions
 template <typename CoordType>
 void clean_up_curve_t(query_curve_t<CoordType>& curve);
-void clean_up_curve(query_curve& curve);
 
 template <typename CoordType>
 bool is_curve_valid_t(const query_curve_t<CoordType>& curve);
-bool is_curve_valid(const query_curve& curve);
 
 template <typename CoordType>
 int compute_intersections_between_two_curves_t(

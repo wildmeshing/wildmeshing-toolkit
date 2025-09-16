@@ -5,10 +5,10 @@
 #endif
 #include <igl/parallel_for.h>
 #include <wmtk/utils/orient.hpp>
+#include "batch_operation_log_reader.hpp"
 #include "generate_iso_line.hpp"
 #include "generate_plane_curves.hpp"
 #include "vtu_utils.hpp"
-#include "batch_operation_log_reader.hpp"
 
 bool validate_and_convert_curves_to_edge_mesh(
     const std::vector<query_curve>& curves,
@@ -215,16 +215,19 @@ void write_curves_to_vtu(
             const query_curve& curve = curves[i];
             std::cout << "\n=== Curve " << i << " Details ===" << std::endl;
             std::cout << "Number of segments: " << curve.segments.size() << std::endl;
-            
+
             for (size_t j = 0; j < curve.segments.size(); ++j) {
                 const query_segment& seg = curve.segments[j];
                 std::cout << "Segment " << j << ":" << std::endl;
                 std::cout << "  Face ID: " << seg.f_id << std::endl;
-                std::cout << "  Face vertex IDs: [" << seg.fv_ids[0] << ", " << seg.fv_ids[1] << ", " << seg.fv_ids[2] << "]" << std::endl;
-                std::cout << "  Endpoint 0 BC: [" << seg.bcs[0](0) << ", " << seg.bcs[0](1) << ", " << seg.bcs[0](2) << "]" << std::endl;
-                std::cout << "  Endpoint 1 BC: [" << seg.bcs[1](0) << ", " << seg.bcs[1](1) << ", " << seg.bcs[1](2) << "]" << std::endl;
+                std::cout << "  Face vertex IDs: [" << seg.fv_ids[0] << ", " << seg.fv_ids[1]
+                          << ", " << seg.fv_ids[2] << "]" << std::endl;
+                std::cout << "  Endpoint 0 BC: [" << seg.bcs[0](0) << ", " << seg.bcs[0](1) << ", "
+                          << seg.bcs[0](2) << "]" << std::endl;
+                std::cout << "  Endpoint 1 BC: [" << seg.bcs[1](0) << ", " << seg.bcs[1](1) << ", "
+                          << seg.bcs[1](2) << "]" << std::endl;
             }
-            
+
             std::vector<query_curve> single_curve = {curves[i]};
             std::string individual_filename = base_name + "_curve_" + std::to_string(i) + extension;
 
@@ -264,7 +267,7 @@ void track_line_one_operation(
     query_curve_t<CoordType>& curve,
     bool do_forward)
 {
-    bool verbose = false;
+    bool verbose = true;
     std::string operation_name;
     operation_name = operation_log["operation_name"];
     igl::Timer op_total_timer;
@@ -426,23 +429,25 @@ void track_line(path dirPath, query_curve_t<CoordType>& curve, bool do_forward)
 {
     BatchOperationLogReader reader(dirPath);
     size_t total_ops = reader.get_total_operations();
-    
+
     if (total_ops == 0) {
         std::cerr << "No operation logs found in " << dirPath << std::endl;
         return;
     }
-    
-    std::cout << "Found " << total_ops << " operations in " 
+
+    std::cout << "Found " << total_ops << " operations in "
               << (reader.is_batch_format() ? "batch" : "legacy") << " format" << std::endl;
 
     int curve_old_size = curve.segments.size();
     int clean_up_threshold = 2;
-    
+
     for (size_t i = 0; i < total_ops; ++i) {
         size_t operation_index = i;
         if (!do_forward) {
             operation_index = total_ops - 1 - i;
         }
+
+        std::cout << "operation_index: " << operation_index << std::endl;
 
         json operation_log = reader.get_operation(operation_index);
         if (operation_log.empty()) {
@@ -452,22 +457,22 @@ void track_line(path dirPath, query_curve_t<CoordType>& curve, bool do_forward)
 
         int curve_size_before = curve.segments.size();
         // quiet per-operation tracing at track_line level
-        igl::Timer timer;
-        timer.start();
+        // igl::Timer timer;
+        // timer.start();
         track_line_one_operation<CoordType>(operation_log, curve, do_forward);
-        timer.stop();
+        // timer.stop();
 
-        if (curve.segments.size() > clean_up_threshold * curve_old_size) {
-            clean_up_curve_t(curve);
-            curve_old_size = curve.segments.size();
-            {
-                int self_intersections = compute_curve_self_intersections_t(curve, true);
-                if (self_intersections != 0) {
-                    std::cout << "Error: self intersections are not correct" << std::endl;
-                    throw std::runtime_error("Error: self intersections are not correct");
-                }
-            }
-        }
+        // if (curve.segments.size() > clean_up_threshold * curve_old_size) {
+        //     clean_up_curve_t(curve);
+        //     curve_old_size = curve.segments.size();
+        //     {
+        //         int self_intersections = compute_curve_self_intersections_t(curve, true);
+        //         if (self_intersections != 0) {
+        //             std::cout << "Error: self intersections are not correct" << std::endl;
+        //             throw std::runtime_error("Error: self intersections are not correct");
+        //         }
+        //     }
+        // }
     }
 
     clean_up_curve_t(curve);
@@ -481,7 +486,7 @@ void track_lines(
     bool do_forward,
     bool do_parallel)
 {
-    // use igl parallel_for
+    // // use igl parallel_for
     if (do_parallel) {
         std::cout << "parallel mode" << std::endl;
         igl::parallel_for(curves.size(), [&](int i) {
@@ -489,10 +494,28 @@ void track_lines(
         });
     } else {
         std::cout << "sequential mode" << std::endl;
+        // TODO: DEBUG USE
+        int start_index = 7;
         for (int i = 0; i < curves.size(); i++) {
-            track_line<CoordType>(dirPath, curves[i], do_forward);
+            std::cout << "tracking curve " << (i + start_index) % curves.size() << std::endl;
+            track_line<CoordType>(dirPath, curves[(i + start_index) % curves.size()], do_forward);
         }
     }
+
+
+    // // TODO: a new version that track all curves at a time
+    // {
+    //     BatchOperationLogReader reader(dirPath);
+    //     size_t total_ops = reader.get_total_operations();
+
+    //     if (total_ops == 0) {
+    //         std::cerr << "No operation logs found in " << dirPath << std::endl;
+    //         return;
+    //     }
+
+    //     std::cout << "Found " << total_ops << " operations in "
+    //               << (reader.is_batch_format() ? "batch" : "legacy") << " format" << std::endl;
+    // }
 }
 
 #include <igl/triangle_triangle_adjacency.h>
@@ -797,64 +820,36 @@ void forward_track_plane_curves_app(
         throw std::runtime_error("V_in is 2D, not supported");
     }
 
-    auto to_three_cols = [](const Eigen::MatrixXd& V) {
-        if (V.cols() == 2) {
-            Eigen::MatrixXd V_temp(V.rows(), 3);
-            V_temp << V, Eigen::VectorXd::Zero(V.rows());
-            return V_temp;
-        } else {
-            return V;
+    // Check if plane curves file already exists
+    std::string plane_curves_filename = model_name + "_plane_curves.in";
+    std::vector<query_curve> curves_double;
+
+    if (std::filesystem::exists(plane_curves_filename)) {
+        std::cout << "Loading existing plane curves from: " << plane_curves_filename << std::endl;
+        curves_double = load_query_curves(plane_curves_filename);
+    } else {
+        std::cout << "Generating new plane curves..." << std::endl;
+        // Get all curves using the plane curve generation
+        curves_double = generatePlaneCurves(V_in, F_in, N);
+        // Save original double curves for backward compatibility
+        save_query_curves(curves_double, plane_curves_filename);
+
+        // write curves to vtu
+        {
+            std::cout << "\n=== Writing initial plane curves to VTU ===" << std::endl;
+            write_curves_to_vtu(
+                curves_double,
+                V_in,
+                model_name + "_plane_curves_in.vtu",
+                separate_curve_vtu);
         }
-    };
-    Eigen::MatrixXd V_in_3d = to_three_cols(V_in);
-    Eigen::MatrixXd V_out_3d = to_three_cols(V_out);
+    }
 
-    // Get all curves using the plane curve generation
-    std::vector<query_curve> curves_double = generatePlaneCurves(V_in, F_in, N);
-    auto curves_origin = curves_double;
-
-    // Convert curves to rational for exact arithmetic
     std::vector<query_curve_t<wmtk::Rational>> curves;
+    // Convert curves to rational for exact arithmetic
     curves.reserve(curves_double.size());
     for (const auto& curve_double : curves_double) {
         curves.push_back(convert_query_curve<double, wmtk::Rational>(curve_double));
-    }
-
-    if (false) {
-#ifdef USE_IGL_VIEWER
-        igl::opengl::glfw::Viewer viewer;
-        viewer.data().set_mesh(V_in, F_in);
-        viewer.data().point_size /= 3;
-        for (const auto curve_origin : curves_origin) {
-            for (const auto& seg : curve_origin.segments) {
-                Eigen::MatrixXd pts(2, 3);
-                for (int i = 0; i < 2; i++) {
-                    Eigen::Vector3d p(0, 0, 0);
-                    for (int j = 0; j < 3; j++) {
-                        p += V_in_3d.row(seg.fv_ids[j]) * seg.bcs[i](j);
-                    }
-                    pts.row(i) = p;
-                }
-                viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
-                viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
-                viewer.data().add_edges(pts.row(0), pts.row(1), Eigen::RowVector3d(1, 0, 0));
-            }
-        }
-        viewer.launch();
-#endif
-    }
-
-    // Save original double curves for backward compatibility
-    // save_query_curves(curves_double, model_name +s "_plane_curves.in");
-
-    // write curves to vtu
-    {
-        std::cout << "\n=== Writing initial plane curves to VTU ===" << std::endl;
-        write_curves_to_vtu(
-            curves_double,
-            V_in,
-            model_name + "_plane_curves_in.vtu",
-            separate_curve_vtu);
     }
 
     std::vector<std::vector<int>> intersection_reference;
@@ -905,30 +900,6 @@ void forward_track_plane_curves_app(
         std::cout << "curves topology is correct" << std::endl;
     }
     std::cout << "finished check curves topology" << std::endl;
-
-    if (false) {
-#ifdef USE_IGL_VIEWER
-        igl::opengl::glfw::Viewer viewer;
-        viewer.data().set_mesh(V_out, F_out);
-        viewer.data().point_size /= 3;
-        for (const auto& curve : curves_result_double) {
-            for (const auto& seg : curve.segments) {
-                Eigen::MatrixXd pts(2, 3);
-                for (int i = 0; i < 2; i++) {
-                    Eigen::Vector3d p(0, 0, 0);
-                    for (int j = 0; j < 3; j++) {
-                        p += V_out_3d.row(seg.fv_ids[j]) * seg.bcs[i](j);
-                    }
-                    pts.row(i) = p;
-                }
-                viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
-                viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
-                viewer.data().add_edges(pts.row(0), pts.row(1), Eigen::RowVector3d(1, 0, 0));
-            }
-        }
-        viewer.launch();
-#endif
-    }
 }
 
 

@@ -65,7 +65,10 @@ query_point_t<ToType> convert_query_point(const query_point_t<FromType>& from)
             to.bc[i] = ToType(from.bc[i]);
         }
     }
-    to.bc /= to.bc.sum();
+    // to.bc /= to.bc.sum();
+    if (std::is_same_v<ToType, wmtk::Rational>) {
+        to.bc /= to.bc.sum();
+    }
     return to;
 }
 
@@ -122,6 +125,18 @@ std::ostream& operator<<(std::ostream& os, const query_point_t<CoordType>& qp)
     return os;
 }
 
+Eigen::Vector3d ComputeBarycentricCoordinates2D(
+    const Eigen::Vector2d& p,
+    const Eigen::Vector2d& a,
+    const Eigen::Vector2d& b,
+    const Eigen::Vector2d& c);
+
+// Rational version of ComputeBarycentricCoordinates2D
+Eigen::Vector3<wmtk::Rational> ComputeBarycentricCoordinates2D_r(
+    const Eigen::Vector2<wmtk::Rational>& p,
+    const Eigen::Vector2<wmtk::Rational>& a,
+    const Eigen::Vector2<wmtk::Rational>& b,
+    const Eigen::Vector2<wmtk::Rational>& c);
 // Precompute cache for fast 2D barycentric evaluation per triangle
 struct BarycentricPrecompute2D
 {
@@ -129,7 +144,16 @@ struct BarycentricPrecompute2D
     Eigen::Matrix<wmtk::Rational, 2, 1> a;
 };
 
+// Get barycentric coordinates from cache
+Eigen::Matrix<wmtk::Rational, 3, 1> barycentric_from_cache(
+    const BarycentricPrecompute2D& bc,
+    const Eigen::Matrix<wmtk::Rational, 2, 1>& p);
+
 // Build cache from double UV/vertex array (internally converts to Rational)
+std::vector<BarycentricPrecompute2D> build_barycentric_cache_2d(
+    const Eigen::MatrixX<wmtk::Rational>& V2,
+    const Eigen::MatrixXi& F);
+
 std::vector<BarycentricPrecompute2D> build_barycentric_cache_2d_from_double(
     const Eigen::MatrixXd& V2,
     const Eigen::MatrixXi& F);
@@ -263,6 +287,15 @@ void handle_collapse_edge_r(
     std::vector<query_point>& query_points,
     const std::vector<BarycentricPrecompute2D>* barycentric_cache = nullptr);
 
+void handle_collapse_edge_use_exact_predicate(
+    const Eigen::MatrixXd& UV_joint,
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& id_map_after,
+    std::vector<query_point>& query_points);
+
 // Templated version for native support of different coordinate types
 template <typename CoordType>
 void handle_collapse_edge_t(
@@ -275,7 +308,6 @@ void handle_collapse_edge_t(
     std::vector<query_point_t<CoordType>>& query_points,
     bool use_rational = false,
     const std::vector<BarycentricPrecompute2D>* barycentric_cache = nullptr);
-
 
 // Unified function for split/swap/smooth operations - they all have the same interface
 void handle_non_collapse_operation(
