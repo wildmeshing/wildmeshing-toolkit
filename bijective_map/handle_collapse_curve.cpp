@@ -1,6 +1,7 @@
 
 #include <igl/Timer.h>
 #include <igl/doublearea.h>
+#include <igl/parallel_for.h>
 #include <set>
 #include "track_operations_curve.hpp"
 #ifdef USE_IGL_VIEWER
@@ -427,6 +428,91 @@ void handle_collapse_edge_curve_t_correct(
     }
 }
 
+template <typename CoordType>
+void handle_collapse_edge_curves_t(
+    const Eigen::MatrixXd& UV_joint,
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& id_map_after,
+    std::vector<query_curve_t<CoordType>>& curves,
+    bool use_rational,
+    bool verbose)
+{
+    if constexpr (std::is_same_v<CoordType, double>) {
+        igl::parallel_for(curves.size(), [&](int i) {
+            handle_collapse_edge_curve_t(
+                UV_joint,
+                F_before,
+                F_after,
+                v_id_map_joint,
+                id_map_before,
+                id_map_after,
+                curves[i],
+                use_rational,
+                verbose);
+        });
+    } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
+        handle_collapse_edge_curves_fast_rational(
+            UV_joint,
+            F_before,
+            F_after,
+            v_id_map_joint,
+            id_map_before,
+            id_map_after,
+            curves,
+            verbose);
+    }
+}
+
+void handle_collapse_edge_curves_fast_rational(
+    const Eigen::MatrixXd& UV_joint,
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& id_map_after,
+    std::vector<query_curve_t<wmtk::Rational>>& curves,
+    bool verbose)
+{
+    // TODO: Implement optimized rational version
+    // For now, just call the regular version for each curve
+    for (auto& curve : curves) {
+        handle_collapse_edge_curve_t(
+            UV_joint,
+            F_before,
+            F_after,
+            v_id_map_joint,
+            id_map_before,
+            id_map_after,
+            curve,
+            true, // use_rational
+            verbose);
+    }
+}
+
+
+template void handle_collapse_edge_curves_t<double>(
+    const Eigen::MatrixXd& UV_joint,
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& id_map_after,
+    std::vector<query_curve_t<double>>& curves,
+    bool use_rational,
+    bool verbose);
+template void handle_collapse_edge_curves_t<wmtk::Rational>(
+    const Eigen::MatrixXd& UV_joint,
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& id_map_after,
+    std::vector<query_curve_t<wmtk::Rational>>& curves,
+    bool use_rational,
+    bool verbose);
 
 template void handle_collapse_edge_curve_t<double>(
     const Eigen::MatrixXd& UV_joint,

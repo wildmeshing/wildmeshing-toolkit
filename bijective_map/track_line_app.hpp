@@ -21,9 +21,18 @@ void track_line(path dirPath, query_curve& curve, bool do_forward = false);
 
 // Template versions for different coordinate types
 template <typename CoordType>
-void track_line_one_operation(const json& operation_log, query_curve_t<CoordType>& curve, bool do_forward);
+void track_line_one_operation(
+    const json& operation_log,
+    query_curve_t<CoordType>& curve,
+    bool do_forward);
 
-template <typename CoordType>  
+template <typename CoordType>
+void track_lines_one_operation(
+    const json& operation_log,
+    std::vector<query_curve_t<CoordType>>& curves,
+    bool do_forward);
+
+template <typename CoordType>
 void track_line(path dirPath, query_curve_t<CoordType>& curve, bool do_forward = false);
 
 template <typename CoordType>

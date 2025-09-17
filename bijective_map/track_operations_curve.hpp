@@ -170,6 +170,19 @@ void handle_one_segment_rational(
 
 // Curve handling functions for different operations - templated versions
 template <typename CoordType>
+void handle_collapse_edge_curves_t(
+    const Eigen::MatrixXd& UV_joint,
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& id_map_after,
+    std::vector<query_curve_t<CoordType>>& curves,
+    bool use_rational,
+    bool verbose);
+
+// Curve handling functions for different operations - templated versions
+template <typename CoordType>
 void handle_collapse_edge_curve_t(
     const Eigen::MatrixXd& UV_joint,
     const Eigen::MatrixXi& F_before,
@@ -179,6 +192,31 @@ void handle_collapse_edge_curve_t(
     const std::vector<int64_t>& id_map_after,
     query_curve_t<CoordType>& curve,
     bool use_rational,
+    bool verbose);
+
+void handle_collapse_edge_curves_fast_rational(
+    const Eigen::MatrixXd& UV_joint,
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& id_map_after,
+    std::vector<query_curve_t<wmtk::Rational>>& curves,
+    bool verbose);
+
+
+template <typename CoordType>
+void handle_non_collapse_operation_curves_t(
+    const Eigen::MatrixXd& V_before,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixXd& V_after,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& id_map_after,
+    const std::vector<int64_t>& v_id_map_after,
+    std::vector<query_curve_t<CoordType>>& curves,
+    const std::string& operation_name,
     bool verbose);
 
 template <typename CoordType>
@@ -192,20 +230,6 @@ void handle_non_collapse_operation_curve_t(
     const std::vector<int64_t>& id_map_after,
     const std::vector<int64_t>& v_id_map_after,
     query_curve_t<CoordType>& curve,
-    const std::string& operation_name,
-    bool verbose);
-
-
-void handle_non_collapse_operation_curve(
-    const Eigen::MatrixXd& V_before,
-    const Eigen::MatrixXi& F_before,
-    const std::vector<int64_t>& id_map_before,
-    const std::vector<int64_t>& v_id_map_before,
-    const Eigen::MatrixXd& V_after,
-    const Eigen::MatrixXi& F_after,
-    const std::vector<int64_t>& id_map_after,
-    const std::vector<int64_t>& v_id_map_after,
-    query_curve& curve,
     const std::string& operation_name,
     bool verbose);
 

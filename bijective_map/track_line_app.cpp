@@ -424,6 +424,151 @@ void track_line_one_operation(
     //           << std::endl;
 }
 
+
+template <typename CoordType>
+void track_lines_one_operation(
+    const json& operation_log,
+    std::vector<query_curve_t<CoordType>>& curves,
+    bool do_forward)
+{
+    // TODO: this should not be hard coded here
+    bool verbose = true;
+    std::string operation_name;
+    operation_name = operation_log["operation_name"];
+    igl::Timer op_total_timer;
+    op_total_timer.start();
+    double t_handle_ms = 0.0;
+
+    if (operation_name == "MeshConsolidate") {
+        std::vector<int64_t> face_ids_maps;
+        std::vector<int64_t> vertex_ids_maps;
+
+        parse_consolidate_file(operation_log, face_ids_maps, vertex_ids_maps);
+
+        if (do_forward) {
+            igl::Timer handle_timer;
+            handle_timer.start();
+            for (auto& curve : curves) {
+                handle_consolidate_forward(face_ids_maps, vertex_ids_maps, curve);
+            }
+            t_handle_ms += handle_timer.getElapsedTime() * 1000.0;
+        } else {
+            igl::Timer handle_timer;
+            handle_timer.start();
+            for (auto& curve : curves) {
+                handle_consolidate(face_ids_maps, vertex_ids_maps, curve);
+            }
+            t_handle_ms += handle_timer.getElapsedTime() * 1000.0;
+        }
+    } else if (
+        operation_name == "TriEdgeSwap" || operation_name == "AttributesUpdate" ||
+        operation_name == "EdgeSplit") {
+        Eigen::MatrixXi F_after, F_before;
+        Eigen::MatrixXd V_after, V_before;
+        std::vector<int64_t> id_map_after, id_map_before;
+        std::vector<int64_t> v_id_map_after, v_id_map_before;
+        bool is_skipped;
+        {
+            parse_non_collapse_file(
+                operation_log,
+                is_skipped,
+                V_before,
+                F_before,
+                id_map_before,
+                v_id_map_before,
+                V_after,
+                F_after,
+                id_map_after,
+                v_id_map_after);
+        }
+        if (is_skipped) {
+            return;
+        }
+
+        if (do_forward) {
+            igl::Timer handle_timer;
+            handle_timer.start();
+            handle_non_collapse_operation_curves_t(
+                V_after,
+                F_after,
+                id_map_after,
+                v_id_map_after,
+                V_before,
+                F_before,
+                id_map_before,
+                v_id_map_before,
+                curves,
+                operation_name,
+                verbose);
+            t_handle_ms += handle_timer.getElapsedTime() * 1000.0;
+        } else {
+            igl::Timer handle_timer;
+            handle_timer.start();
+            handle_non_collapse_operation_curves_t(
+                V_before,
+                F_before,
+                id_map_before,
+                v_id_map_before,
+                V_after,
+                F_after,
+                id_map_after,
+                v_id_map_after,
+                curves,
+                operation_name,
+                verbose);
+            t_handle_ms += handle_timer.getElapsedTime() * 1000.0;
+        }
+    } else if (operation_name == "EdgeCollapse") {
+        Eigen::MatrixXi F_after, F_before;
+        Eigen::MatrixXd UV_joint;
+
+        std::vector<int64_t> v_id_map_joint;
+        std::vector<int64_t> id_map_after, id_map_before;
+
+        {
+            parse_edge_collapse_file(
+                operation_log,
+                UV_joint,
+                F_before,
+                F_after,
+                v_id_map_joint,
+                id_map_before,
+                id_map_after);
+        }
+
+        igl::Timer handle_timer;
+        handle_timer.start();
+        if (do_forward) {
+            handle_collapse_edge_curves_t(
+                UV_joint,
+                F_after,
+                F_before,
+                v_id_map_joint,
+                id_map_after,
+                id_map_before,
+                curves,
+                true,
+                verbose);
+        } else {
+            handle_collapse_edge_curves_t(
+                UV_joint,
+                F_before,
+                F_after,
+                v_id_map_joint,
+                id_map_before,
+                id_map_after,
+                curves,
+                true,
+                verbose);
+        }
+        t_handle_ms += handle_timer.getElapsedTime() * 1000.0;
+    }
+
+    if (verbose) {
+        std::cout << "all handle time: " << t_handle_ms << " ms" << std::endl;
+    }
+}
+
 template <typename CoordType>
 void track_line(path dirPath, query_curve_t<CoordType>& curve, bool do_forward)
 {
@@ -487,35 +632,53 @@ void track_lines(
     bool do_parallel)
 {
     // // use igl parallel_for
-    if (do_parallel) {
-        std::cout << "parallel mode" << std::endl;
-        igl::parallel_for(curves.size(), [&](int i) {
-            track_line<CoordType>(dirPath, curves[i], do_forward);
-        });
-    } else {
-        std::cout << "sequential mode" << std::endl;
-        // TODO: DEBUG USE
-        int start_index = 7;
-        for (int i = 0; i < curves.size(); i++) {
-            std::cout << "tracking curve " << (i + start_index) % curves.size() << std::endl;
-            track_line<CoordType>(dirPath, curves[(i + start_index) % curves.size()], do_forward);
+    // if (do_parallel) {
+    //     std::cout << "parallel mode" << std::endl;
+    //     igl::parallel_for(curves.size(), [&](int i) {
+    //         track_line<CoordType>(dirPath, curves[i], do_forward);
+    //     });
+    // } else {
+    //     std::cout << "sequential mode" << std::endl;
+    //     // TODO: DEBUG USE
+    //     int start_index = 7;
+    //     for (int i = 0; i < curves.size(); i++) {
+    //         std::cout << "tracking curve " << (i + start_index) % curves.size() << std::endl;
+    //         track_line<CoordType>(dirPath, curves[(i + start_index) % curves.size()],
+    //         do_forward);
+    //     }
+    // }
+
+
+    // TODO: a new version that track all curves at a time
+    {
+        BatchOperationLogReader reader(dirPath);
+        size_t total_ops = reader.get_total_operations();
+
+        if (total_ops == 0) {
+            std::cerr << "No operation logs found in " << dirPath << std::endl;
+            return;
+        }
+
+        std::cout << "Found " << total_ops << " operations in "
+                  << (reader.is_batch_format() ? "batch" : "legacy") << " format" << std::endl;
+
+        for (size_t i = 0; i < total_ops; ++i) {
+            size_t operation_index = i;
+            if (!do_forward) {
+                operation_index = total_ops - 1 - i;
+            }
+
+            std::cout << "NewOrder operation_index: " << operation_index << std::endl;
+            json operation_log = reader.get_operation(operation_index);
+            if (operation_log.empty()) {
+                std::cerr << "Failed to read operation " << operation_index << std::endl;
+                continue;
+            }
+            track_lines_one_operation<CoordType>(operation_log, curves, do_forward);
         }
     }
 
-
-    // // TODO: a new version that track all curves at a time
-    // {
-    //     BatchOperationLogReader reader(dirPath);
-    //     size_t total_ops = reader.get_total_operations();
-
-    //     if (total_ops == 0) {
-    //         std::cerr << "No operation logs found in " << dirPath << std::endl;
-    //         return;
-    //     }
-
-    //     std::cout << "Found " << total_ops << " operations in "
-    //               << (reader.is_batch_format() ? "batch" : "legacy") << " format" << std::endl;
-    // }
+    std::cout << "All tracking finished" << std::endl;
 }
 
 #include <igl/triangle_triangle_adjacency.h>
