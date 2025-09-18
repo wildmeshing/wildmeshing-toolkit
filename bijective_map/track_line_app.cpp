@@ -1147,15 +1147,6 @@ void track_line(path dirPath, query_curve_t<double>& curve, bool do_forward)
     return track_line<double>(dirPath, curve, do_forward);
 }
 
-void track_lines(
-    path dirPath,
-    std::vector<query_curve_t<double>>& curves,
-    bool do_forward,
-    bool do_parallel)
-{
-    return track_lines<double>(dirPath, curves, do_forward, do_parallel);
-}
-
 
 void check_iso_lines(
     const Eigen::MatrixXd& V_in,

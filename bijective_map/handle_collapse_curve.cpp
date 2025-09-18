@@ -52,7 +52,7 @@ void handle_collapse_edge_curve_t(
     //     build_barycentric_cache_2d(UV_joint_r, F_before);
     // double time_cache = cache_timer.getElapsedTime() * 1000;
 
-    // TODO: For here we are going to do something different
+    // For here we are going to do something different
     std::vector<query_point_t<CoordType>> all_query_points;
     std::vector<int> all_query_seg_ids;
     std::vector<int> places_in_all_query_points;
@@ -466,6 +466,372 @@ void handle_collapse_edge_curves_t(
     }
 }
 
+////////////////////////////////////////////////////////////
+// Rational fast version of handle_collapse_edge_curve and handle_collapse_edge_curves
+////////////////////////////////////////////////////////////
+
+//
+void get_all_query_points_for_one_curve_rational(
+    const std::vector<int64_t>& id_map_after,
+    const query_curve_t<wmtk::Rational>& curve,
+    std::vector<query_point_r>& all_query_points,
+    std::vector<int>& all_query_seg_ids,
+    std::vector<int>& bc0_places)
+{
+    int cur_id = 0;
+    const int start_id = 0;
+    bool pre_segment_included = false;
+
+    int cnt = 0;
+    while (cur_id != -1 && cur_id < curve.segments.size()) {
+        cnt++;
+        query_segment_r qs = curve.segments[cur_id];
+
+        auto it = std::find(id_map_after.begin(), id_map_after.end(), qs.f_id);
+        if (it == id_map_after.end()) { // if current segment is not in the local patch
+            cur_id = curve.next_segment_ids[cur_id];
+            pre_segment_included = false;
+            if (cur_id == start_id) {
+                break;
+            }
+            continue;
+        }
+
+        // current segment is in the local patch
+        all_query_seg_ids.push_back(cur_id);
+        bc0_places.push_back(all_query_points.size() - 1);
+        if (!pre_segment_included) {
+            // in this case, we need add bc0 of the current segment
+            bc0_places.back()++;
+            all_query_points.push_back(query_point_r{qs.f_id, qs.bcs[0], qs.fv_ids});
+        }
+        all_query_points.push_back(query_point_r{qs.f_id, qs.bcs[1], qs.fv_ids});
+        pre_segment_included = true;
+        cur_id = curve.next_segment_ids[cur_id];
+
+        if (cur_id == start_id) { // meet the loop
+            break;
+        }
+
+        if (cnt > curve.segments.size()) {
+            throw std::runtime_error(
+                "Error: get_all_query_points_for_one_curve_rational: meet the partial loop");
+        }
+    } // end while
+}
+
+void map_all_query_points_rational(
+    const Eigen::MatrixX<wmtk::Rational>& UV_joint_r,
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& id_map_after,
+    std::vector<query_point_r>& all_query_points,
+    const std::vector<int>& all_query_seg_ids,
+    const std::vector<int>& bc0_places,
+    const query_curve_t<wmtk::Rational>& curve,
+    const std::vector<BarycentricPrecompute2D>& bc_cache_collapse)
+{
+    // query points that are not on the boundary of the local patch
+    std::vector<query_point_r> non_bd_qps;
+    std::vector<int> non_bd_qps_ids;
+    std::vector<int> bd_qps_ids;
+
+    // Special handling for the qps that are on the boundary of the local patch
+    {
+        // check first point and last point
+        if (curve.next_segment_ids[all_query_seg_ids.back()] != all_query_seg_ids.front()) {
+            // this means the first point and the last point are not connected
+            // check 0s explicitly
+            const auto& first_qp = all_query_points.front();
+            if (first_qp.bc(0) == 0 || first_qp.bc(1) == 0 || first_qp.bc(2) == 0) {
+                bd_qps_ids.push_back(0);
+            } else {
+                non_bd_qps.push_back(first_qp);
+                non_bd_qps_ids.push_back(0);
+            }
+            const auto& last_qp = all_query_points.back();
+            if (last_qp.bc(0) == 0 || last_qp.bc(1) == 0 || last_qp.bc(2) == 0) {
+                bd_qps_ids.push_back(all_query_points.size() - 1);
+            } else {
+                non_bd_qps.push_back(last_qp);
+                non_bd_qps_ids.push_back(all_query_points.size() - 1);
+            }
+        } else {
+            non_bd_qps.push_back(all_query_points[0]);
+            non_bd_qps_ids.push_back(0);
+            non_bd_qps.push_back(all_query_points.back());
+            non_bd_qps_ids.push_back(all_query_points.size() - 1);
+        }
+
+        // get every other qps that are on the boundary of the local patch
+        for (int i = 1; i < all_query_seg_ids.size(); i++) {
+            if (bc0_places[i] != bc0_places[i - 1] + 1) {
+                // it indicates a break point in the curve by the local patch's boundary
+                bd_qps_ids.push_back(bc0_places[i]); // current bc0 place
+                bd_qps_ids.push_back(bc0_places[i] - 1); // previous bc1 place
+            } else {
+                non_bd_qps.push_back(all_query_points[bc0_places[i]]); // current bc0 place(also is
+                                                                       // previous bc1 place)
+                non_bd_qps_ids.push_back(bc0_places[i]);
+            }
+        }
+
+        // DEBUG:
+        {
+            std::cout << "bd_qps_ids: ";
+            for (int id : bd_qps_ids) {
+                std::cout << id << " ";
+            }
+            std::cout << std::endl;
+
+            std::cout << "non_bd_qps_ids: ";
+            for (int id : non_bd_qps_ids) {
+                std::cout << id << " ";
+            }
+            std::cout << std::endl;
+
+            if (bd_qps_ids.size() + non_bd_qps_ids.size() != all_query_points.size()) {
+                throw std::runtime_error("Error: map_all_query_points_rational: the number of "
+                                         "boundary and non-boundary query points is not correct");
+            }
+        }
+
+        // map all the boundary qps
+        {
+            // TODO: 2 cases: point case and edge case
+            for (int id : bd_qps_ids) {
+                auto& qp = all_query_points[id];
+
+                // case1: check for point case
+                {
+                    bool bc_updated = false;
+                    for (int j = 0; j < 3; j++) {
+                        if (qp.bc(j) == 1) {
+                            // this means the qp in landed on a boundary vertex
+                            int v0 = qp.fv_ids(j);
+                            // look for v0 in v_id_map_joint(F_before)
+
+                            for (int f_id = 0; f_id < F_before.rows(); f_id++) {
+                                for (int k = 0; k < 3; k++) {
+                                    if (v_id_map_joint[F_before(f_id, k)] == v0) {
+                                        qp.bc(k) = 1;
+                                        qp.bc((k + 1) % 3) = 0;
+                                        qp.bc((k + 2) % 3) = 0;
+                                        qp.f_id = id_map_before[f_id];
+                                        qp.fv_ids << v_id_map_joint[F_before(f_id, 0)],
+                                            v_id_map_joint[F_before(f_id, 1)],
+                                            v_id_map_joint[F_before(f_id, 2)];
+                                        bc_updated = true;
+                                        break;
+                                    }
+                                } // end for k
+                                if (bc_updated) {
+                                    break;
+                                }
+                            } // end for f_id
+
+                            if (!bc_updated) {
+                                std::cout << "qp: " << qp << std::endl;
+                                throw std::runtime_error("Error: map_all_query_points_rational: "
+                                                         "boundary point can't map");
+                            }
+                        }
+                    } // end for j
+
+                    if (bc_updated) {
+                        continue; // next boudnary qp
+                    }
+                }
+                // case2: check for edge case
+                {
+                    int v0 = -1, v1 = -1;
+                    int v0_index = -1;
+
+                    for (int j = 0; j < 3; j++) {
+                        if (qp.bc(j) == 0) {
+                            v0 = qp.fv_ids((j + 1) % 3);
+                            v1 = qp.fv_ids((j + 2) % 3);
+                            v0_index = (j + 1) % 3;
+                            break;
+                        }
+                    }
+
+                    if (v0 == -1) {
+                        throw std::runtime_error(
+                            "Error: map_all_query_points_rational: not a boundary point");
+                    }
+
+                    // first handle edge cases
+                    bool bc_updated = false;
+
+                    for (int f_id = 0; f_id < F_before.rows(); f_id++) {
+                        for (int j = 0; j < 3; j++) {
+                            if (v_id_map_joint[F_before(f_id, j)] == v0 &&
+                                v_id_map_joint[F_before(f_id, (j + 1) % 3)] == v1) {
+                                auto qp_bc_copy = qp.bc;
+                                qp.bc(j) = qp_bc_copy(v0_index);
+                                qp.bc((j + 1) % 3) = qp_bc_copy((v0_index + 1) % 3);
+                                qp.bc((j + 2) % 3) = 0;
+                                qp.f_id = id_map_before[f_id];
+                                qp.fv_ids << v_id_map_joint[F_before(f_id, 0)],
+                                    v_id_map_joint[F_before(f_id, 1)],
+                                    v_id_map_joint[F_before(f_id, 2)];
+                                bc_updated = true;
+                                break;
+                            }
+                        }
+                        if (bc_updated) {
+                            break;
+                        }
+                    }
+
+                    if (!bc_updated) {
+                        std::cout << "qp: " << qp << std::endl;
+                        throw std::runtime_error("Error: map_all_query_points_rational: "
+                                                 "not a boundary edgepoint");
+                    }
+                }
+            }
+        }
+
+        // map all the non boundary qps
+        {
+            // use a version that already convert UV_joint
+            igl::Timer map_timer;
+            map_timer.start();
+            handle_collapse_edge_rational(
+                UV_joint_r,
+                F_before,
+                F_after,
+                v_id_map_joint,
+                id_map_before,
+                id_map_after,
+                non_bd_qps,
+                &bc_cache_collapse);
+
+            double time_map_points_total = map_timer.getElapsedTime() * 1000;
+            std::cout << "handle_collapse_edge_rational time: " << time_map_points_total << " ms"
+                      << std::endl;
+            for (int i = 0; i < non_bd_qps.size(); i++) {
+                all_query_points[non_bd_qps_ids[i]] = non_bd_qps[i];
+            }
+        }
+
+
+        std::cout << "all_query_points after mapping: " << std::endl;
+        for (int i = 0; i < all_query_points.size(); i++) {
+            std::cout << "  [" << i << "]: " << all_query_points[i] << std::endl;
+        }
+    }
+}
+// This function is called by handle_collapse_edge_curves_fast_rational, only handle one
+// curve in rational
+void handle_collapse_edge_curve_rational(
+    const Eigen::MatrixX<wmtk::Rational>& UV_joint_r,
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& id_map_after,
+    query_curve_t<wmtk::Rational>& curve,
+    const std::vector<BarycentricPrecompute2D>& bc_cache_collapse, // Cache for faster bc compute
+    bool verbose)
+{
+    // TODO: add timer here
+
+    // get all query points that need to be mapped
+    std::vector<query_point_r> all_query_points;
+    std::vector<int> all_query_seg_ids;
+    std::vector<int> bc0_places;
+
+    // STEP1: get all query points that need to be mapped
+    {
+        get_all_query_points_for_one_curve_rational(
+            id_map_after,
+            curve,
+            all_query_points,
+            all_query_seg_ids,
+            bc0_places);
+    }
+
+    // Print debug information about query points
+    if (verbose) {
+        std::cout << "Debug: all_query_points (" << all_query_points.size()
+                  << " points):" << std::endl;
+        for (size_t i = 0; i < all_query_points.size(); i++) {
+            std::cout << "  [" << i << "]: " << all_query_points[i] << std::endl;
+        }
+        std::cout << "Debug: all_query_seg_ids size=" << all_query_seg_ids.size() << std::endl;
+        if (all_query_seg_ids.size() > 0) {
+            for (size_t i = 0; i < all_query_seg_ids.size(); i++) {
+                std::cout << all_query_seg_ids[i] << " ";
+            }
+            std::cout << std::endl;
+        }
+        std::cout << std::endl;
+        std::cout << "Debug: bc0_places size=" << bc0_places.size() << std::endl;
+        if (bc0_places.size() > 0) {
+            for (size_t i = 0; i < bc0_places.size(); i++) {
+                std::cout << bc0_places[i] << " ";
+            }
+            std::cout << std::endl;
+        }
+    }
+    if (all_query_points.size() == 0) {
+        if (verbose) {
+            std::cout << "No query points to map" << std::endl;
+        }
+        return;
+    }
+
+    // STEP2: map all query points
+    {
+        map_all_query_points_rational(
+            UV_joint_r,
+            F_before,
+            F_after,
+            v_id_map_joint,
+            id_map_before,
+            id_map_after,
+            all_query_points,
+            all_query_seg_ids,
+            bc0_places,
+            curve,
+            bc_cache_collapse);
+    }
+
+    // STEP3: get intersections with mesh (handle one segment)
+    {
+        for (int i = 0; i < all_query_seg_ids.size(); i++) {
+            int seg_id = all_query_seg_ids[i];
+            std::vector<query_point_r> query_point_for_one_segment;
+
+            query_point_for_one_segment.push_back(all_query_points[bc0_places[i]]);
+            query_point_for_one_segment.push_back(all_query_points[bc0_places[i] + 1]);
+
+            igl::Timer trace_timer;
+            trace_timer.start();
+
+            Eigen::MatrixXi TT, TTi;
+
+            handle_one_segment_t(
+                curve,
+                seg_id,
+                query_point_for_one_segment,
+                UV_joint_r,
+                F_before,
+                v_id_map_joint,
+                id_map_before,
+                TT,
+                TTi,
+                verbose);
+        }
+    }
+}
+
+
 void handle_collapse_edge_curves_fast_rational(
     const Eigen::MatrixXd& UV_joint,
     const Eigen::MatrixXi& F_before,
@@ -476,20 +842,74 @@ void handle_collapse_edge_curves_fast_rational(
     std::vector<query_curve_t<wmtk::Rational>>& curves,
     bool verbose)
 {
-    // TODO: Implement optimized rational version
+    std::cout << "handle collapse edge curves fast rational" << std::endl;
+
+    if (verbose) {
+        std::cout << "F_before:" << std::endl;
+        for (int i = 0; i < F_before.rows(); i++) {
+            std::cout << "  [" << id_map_before[i] << "]: ";
+            for (int j = 0; j < 3; j++) {
+                std::cout << v_id_map_joint[F_before(i, j)] << " ";
+            }
+            std::cout << std::endl;
+        }
+
+        std::cout << "F_after:" << std::endl;
+        for (int i = 0; i < F_after.rows(); i++) {
+            std::cout << "  [" << id_map_after[i] << "]: ";
+            for (int j = 0; j < 3; j++) {
+                std::cout << v_id_map_joint[F_after(i, j)] << " ";
+            }
+            std::cout << std::endl;
+        }
+        std::cout << std::endl;
+    }
+
+
+    double convert_UV_to_rational_time = 0.0;
+    // convert things to rational
+    Eigen::MatrixX<wmtk::Rational> UV_joint_r(UV_joint.rows(), UV_joint.cols());
+    {
+        igl::Timer convert_timer;
+        convert_timer.start();
+        for (int i = 0; i < UV_joint.rows(); i++) {
+            for (int j = 0; j < UV_joint.cols(); j++) {
+                UV_joint_r(i, j) = wmtk::Rational(UV_joint(i, j));
+            }
+        }
+        convert_UV_to_rational_time = convert_timer.getElapsedTime();
+    }
+
+    // build cache for bc compute
+    double build_bc_cache_time = 0.0;
+    std::vector<BarycentricPrecompute2D> bc_cache_collapse =
+        build_barycentric_cache_2d(UV_joint_r, F_before);
+
+
+    // Implement optimized rational version
     // For now, just call the regular version for each curve
-    for (auto& curve : curves) {
-        handle_collapse_edge_curve_t(
-            UV_joint,
+    for (int i = 0; i < curves.size(); i++) {
+        if (verbose) {
+            std::cout << "handle curve " << i << std::endl;
+        }
+        auto& curve = curves[i];
+        handle_collapse_edge_curve_rational(
+            UV_joint_r,
             F_before,
             F_after,
             v_id_map_joint,
             id_map_before,
             id_map_after,
             curve,
-            true, // use_rational
+            bc_cache_collapse,
             verbose);
+        if (verbose) {
+            std::cout << "handle curve " << i << " done" << std::endl << std::endl;
+        }
     }
+
+    // TODO: get all new seg and convert them to double
+    {}
 }
 
 

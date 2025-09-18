@@ -735,6 +735,191 @@ void handle_collapse_edge_t(
     }
 }
 
+
+void handle_collapse_edge_rational(
+    const Eigen::MatrixX<wmtk::Rational>& UV_joint_r,
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& id_map_after,
+    std::vector<query_point_t<wmtk::Rational>>& query_points,
+    const std::vector<BarycentricPrecompute2D>* barycentric_cache)
+{
+    bool profile_verbose = false;
+    // For rational query points, always use rational processing (ignore use_rational parameter)
+
+    auto time_rational_start = std::chrono::high_resolution_clock::now();
+
+    // Precompute barycentric cache for F_before (2D) if not provided
+    auto time_cache_start = std::chrono::high_resolution_clock::now();
+    std::vector<BarycentricPrecompute2D> local_cache;
+    const std::vector<BarycentricPrecompute2D>* bc_cache_ptr = barycentric_cache;
+    if (bc_cache_ptr == nullptr) {
+        local_cache = build_barycentric_cache_2d(UV_joint_r, F_before);
+        bc_cache_ptr = &local_cache;
+    }
+    auto time_cache_end = std::chrono::high_resolution_clock::now();
+    auto cache_time = std::chrono::duration<double, std::milli>(time_cache_end - time_cache_start);
+    if (profile_verbose) {
+        std::cout << "[PROFILE] Barycentric cache build time: " << cache_time.count() << " ms"
+                  << std::endl;
+    }
+    auto time_loop_start = std::chrono::high_resolution_clock::now();
+    double total_mapping_time = 0.0;
+    double total_position_computation_time = 0.0;
+    double total_barycentric_search_time = 0.0;
+    double total_normalization_time = 0.0;
+    int processed_points = 0;
+
+    for (int id = 0; id < query_points.size(); id++) {
+        query_point_t<wmtk::Rational>& qp = query_points[id];
+        if (qp.f_id < 0) continue;
+
+        auto time_point_start = std::chrono::high_resolution_clock::now();
+
+        // find if qp is in the id_map_after
+        auto time_mapping_start = std::chrono::high_resolution_clock::now();
+        auto it = std::find(id_map_after.begin(), id_map_after.end(), qp.f_id);
+        if (it != id_map_after.end()) {
+            // find the index of qp in id_map_after
+            int local_index_in_f_after = std::distance(id_map_after.begin(), it);
+            auto time_mapping_end = std::chrono::high_resolution_clock::now();
+            total_mapping_time +=
+                std::chrono::duration<double, std::milli>(time_mapping_end - time_mapping_start)
+                    .count();
+
+            // offset of the qp.fv_ids
+            int offset_in_f_after = -1;
+            for (int i = 0; i < 3; i++) {
+                if (v_id_map_joint[F_after(local_index_in_f_after, i)] == qp.fv_ids[0]) {
+                    offset_in_f_after = i;
+                    break;
+                }
+            }
+            if (offset_in_f_after == -1) {
+                std::stringstream error_msg;
+                error_msg << "FATAL ERROR in rational template edge collapse"
+                          << ": Failed to find vertex ID mapping.\n";
+                error_msg << "Query point face ID: " << qp.f_id << "\n";
+                error_msg << "Expected vertex ID: " << qp.fv_ids[0] << "\n";
+                error_msg << "This indicates a serious numerical or topological error in "
+                             "rational "
+                             "template edge collapse computation.";
+                throw std::runtime_error(error_msg.str());
+            }
+
+            // Normalize barycentric coordinates
+            auto time_norm1_start = std::chrono::high_resolution_clock::now();
+            wmtk::Rational bc_sum = qp.bc.sum();
+            if (bc_sum != wmtk::Rational(0)) {
+                qp.bc /= bc_sum;
+            }
+            auto time_norm1_end = std::chrono::high_resolution_clock::now();
+            total_normalization_time +=
+                std::chrono::duration<double, std::milli>(time_norm1_end - time_norm1_start)
+                    .count();
+
+            // compute the location of the qp using rational arithmetic
+            auto time_pos_start = std::chrono::high_resolution_clock::now();
+            Eigen::Vector2<wmtk::Rational> p = Eigen::Vector2<wmtk::Rational>::Zero();
+            for (int i = 0; i < 3; i++) {
+                p = p + UV_joint_r.row(F_after(local_index_in_f_after, (i + offset_in_f_after) % 3))
+                                .head<2>()
+                                .transpose() *
+                            qp.bc(i);
+            }
+            auto time_pos_end = std::chrono::high_resolution_clock::now();
+            total_position_computation_time +=
+                std::chrono::duration<double, std::milli>(time_pos_end - time_pos_start).count();
+
+            // compute bc of the p in F_before using rational arithmetic
+            auto time_bary_search_start = std::chrono::high_resolution_clock::now();
+            int local_index_in_f_before = -1;
+            bool bc_updated = false;
+
+            for (int i = 0; i < F_before.rows(); i++) {
+                Eigen::Matrix<wmtk::Rational, 3, 1> bc_rational_result =
+                    barycentric_from_cache((*bc_cache_ptr)[i], p);
+
+                // Check if point is inside triangle (all barycentric coordinates >= 0)
+                // TODO: this could take time
+                if (bc_rational_result.minCoeff() >= 0 && bc_rational_result.maxCoeff() <= 1) {
+                    local_index_in_f_before = i;
+                    qp.bc = bc_rational_result;
+                    bc_updated = true;
+                    break;
+                }
+            }
+            auto time_bary_search_end = std::chrono::high_resolution_clock::now();
+            total_barycentric_search_time += std::chrono::duration<double, std::milli>(
+                                                 time_bary_search_end - time_bary_search_start)
+                                                 .count();
+
+            if (!bc_updated) {
+                std::stringstream error_msg;
+                error_msg << "FATAL ERROR in rational template edge collapse"
+                          << ": Failed to update barycentric coordinates.\n";
+                error_msg << "Query point could not be located in any triangle after edge "
+                             "collapse.\n";
+                error_msg << "This indicates a serious numerical or topological error in exact "
+                             "template edge collapse arithmetic.";
+                throw std::runtime_error(error_msg.str());
+            }
+
+            // update qp
+            qp.f_id = id_map_before[local_index_in_f_before];
+            for (int i = 0; i < 3; i++) {
+                qp.fv_ids[i] = v_id_map_joint[F_before(local_index_in_f_before, i)];
+            }
+
+            // Normalize barycentric coordinates
+            auto time_norm2_start = std::chrono::high_resolution_clock::now();
+            wmtk::Rational bc_sum_final = qp.bc.sum();
+            if (bc_sum_final != wmtk::Rational(0)) {
+                qp.bc /= bc_sum_final;
+            }
+            auto time_norm2_end = std::chrono::high_resolution_clock::now();
+            total_normalization_time +=
+                std::chrono::duration<double, std::milli>(time_norm2_end - time_norm2_start)
+                    .count();
+
+            processed_points++;
+        }
+    }
+
+    auto time_loop_end = std::chrono::high_resolution_clock::now();
+    auto total_loop_time =
+        std::chrono::duration<double, std::milli>(time_loop_end - time_loop_start);
+    auto total_rational_time =
+        std::chrono::duration<double, std::milli>(time_loop_end - time_rational_start);
+
+    // Print detailed profiling results
+    if (profile_verbose) {
+        std::cout << "\n[PROFILE] Rational branch detailed timing breakdown:" << std::endl;
+        std::cout << "[PROFILE] - Total rational processing time: " << total_rational_time.count()
+                  << " ms" << std::endl;
+        std::cout << "[PROFILE] - Main loop time: " << total_loop_time.count() << " ms"
+                  << std::endl;
+        std::cout << "[PROFILE] - Processed points: " << processed_points << std::endl;
+        if (processed_points > 0) {
+            std::cout << "[PROFILE] - Average time per point: "
+                      << (total_loop_time.count() / processed_points) << " ms" << std::endl;
+            std::cout << "[PROFILE] - ID mapping time: " << total_mapping_time << " ms ("
+                      << (total_mapping_time / total_loop_time.count() * 100) << "%)" << std::endl;
+            std::cout << "[PROFILE] - Position computation time: "
+                      << total_position_computation_time << " ms ("
+                      << (total_position_computation_time / total_loop_time.count() * 100) << "%)"
+                      << std::endl;
+            std::cout << "[PROFILE] - Barycentric search time: " << total_barycentric_search_time
+                      << " ms (" << (total_barycentric_search_time / total_loop_time.count() * 100)
+                      << "%)" << std::endl;
+            std::cout << "[PROFILE] - Normalization time: " << total_normalization_time << " ms ("
+                      << (total_normalization_time / total_loop_time.count() * 100) << "%)"
+                      << std::endl;
+        }
+    }
+}
 // Explicit template instantiations
 template void handle_collapse_edge_t<double>(
     const Eigen::MatrixXd& UV_joint,

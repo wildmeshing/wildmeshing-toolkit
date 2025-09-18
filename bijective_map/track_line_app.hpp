@@ -42,13 +42,6 @@ void track_lines(
     bool do_forward = false,
     bool do_parallel = true);
 
-// extension of the above function for multiple curves
-void track_lines(
-    path dirPath,
-    std::vector<query_curve>& curves,
-    bool do_forward = false,
-    bool do_parallel = true);
-
 
 // demo application on back tracking one curve
 void back_track_one_curve_app(

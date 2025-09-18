@@ -42,6 +42,14 @@ struct query_curve_t
 {
     std::vector<query_segment_t<CoordType>> segments;
     std::vector<int> next_segment_ids;
+    int prev_segment_id(int seg_id)
+    {
+        auto it = std::find(next_segment_ids.begin(), next_segment_ids.end(), seg_id);
+        if (it == next_segment_ids.end()) {
+            return -1;
+        }
+        return std::distance(next_segment_ids.begin(), it);
+    }
 };
 
 // Type aliases for convenience
@@ -309,6 +317,16 @@ void handle_collapse_edge_t(
     bool use_rational = false,
     const std::vector<BarycentricPrecompute2D>* barycentric_cache = nullptr);
 
+// All rational version of handle_collapse_edge_t
+void handle_collapse_edge_rational(
+    const Eigen::MatrixX<wmtk::Rational>& UV_joint_r,
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& id_map_after,
+    std::vector<query_point_t<wmtk::Rational>>& query_points,
+    const std::vector<BarycentricPrecompute2D>* barycentric_cache);
 // Unified function for split/swap/smooth operations - they all have the same interface
 void handle_non_collapse_operation(
     const Eigen::MatrixXd& V_before,
