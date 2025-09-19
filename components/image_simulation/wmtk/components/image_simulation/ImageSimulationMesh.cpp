@@ -549,6 +549,8 @@ void ImageSimulationMesh::write_msh(std::string file)
         return std::cbrt(m_tet_attribute[i].m_quality);
     });
 
+    msh.add_tet_attribute<1>("tag", [&](size_t i) { return m_tet_attribute[i].tag; });
+
     msh.save(file, true);
 }
 

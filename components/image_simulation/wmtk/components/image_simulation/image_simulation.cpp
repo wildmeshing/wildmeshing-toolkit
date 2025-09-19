@@ -90,6 +90,7 @@ void image_simulation(nlohmann::json json_params)
                 }
                 image_mesh.remove_duplicates();
                 image_mesh.embed_surface();
+                image_mesh.consolidate();
 
                 image_mesh.write_emb_msh(output_filename.string());
                 if (write_vtu) {
@@ -144,22 +145,13 @@ void image_simulation(nlohmann::json json_params)
         }
     }
 
-    // /////////
-    // // Prepare Envelope and parameter for TetWild
-    // /////////
-
     params.init(V_input.colwise().minCoeff(), V_input.colwise().maxCoeff());
-
-    /////////////////////////////////////////////////////
 
     igl::Timer timer;
     timer.start();
 
     image_simulation::ImageSimulationMesh mesh(params, 0.5, NUM_THREADS);
     mesh.init_from_image(V_input, T_input, T_input_tag);
-
-    // const double insertion_time = insertion_timer.getElapsedTime();
-    // wmtk::logger().info("volume remesher insertion time: {}s", insertion_time);
 
     mesh.consolidate_mesh();
     {
@@ -215,7 +207,6 @@ void image_simulation(nlohmann::json json_params)
     fout << "eps: " << params.eps << std::endl;
     fout << "threads: " << NUM_THREADS << std::endl;
     fout << "time: " << time << std::endl;
-    // fout << "insertion and preprocessing" << insertion_time << std::endl;
     fout.close();
 
     wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);

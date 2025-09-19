@@ -91,6 +91,11 @@ public:
 
     void embed_surface();
 
+    /**
+     * @brief Remove unreferenced vertices.
+     */
+    void consolidate();
+
     const MatrixXd& V_emb() const { return m_V_emb; }
     const MatrixXi& T_emb() const { return m_T_emb; }
     const VectorXi& T_tags() const { return m_T_tags; }

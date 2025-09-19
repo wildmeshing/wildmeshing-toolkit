@@ -520,7 +520,7 @@ void embed_surface(
     }
 
 
-    std::cout << "v on surface vector size: " << v_rational.size();
+    std::cout << "v on surface vector size: " << v_rational.size() << std::endl;
     std::cout << "v on surface: " << v_on_input.size() << std::endl;
 }
 
@@ -729,6 +729,49 @@ void EmbedSurface::embed_surface()
 
     // add tags
     tag_tets_from_image(m_img_data, m_V_emb, m_T_emb, m_T_tags);
+}
+
+void EmbedSurface::consolidate()
+{
+    std::map<size_t, size_t> old2new;
+    std::map<size_t, size_t> new2old;
+    size_t new_vid_counter = 0;
+    for (size_t i = 0; i < m_T_emb.rows(); ++i) {
+        for (size_t j = 0; j < 4; ++j) {
+            const auto vid = m_T_emb(i, j);
+            if (old2new.count(vid) == 0) {
+                old2new[vid] = new_vid_counter;
+                new2old[new_vid_counter] = vid;
+                ++new_vid_counter;
+            }
+        }
+    }
+
+    MatrixXd V;
+    V.resize(new_vid_counter, 3);
+    for (size_t i = 0; i < new_vid_counter; ++i) {
+        V.row(i) = m_V_emb.row(new2old[i]);
+    }
+
+    MatrixXi T;
+    T.resizeLike(m_T_emb);
+    for (size_t i = 0; i < m_T_emb.rows(); ++i) {
+        for (size_t j = 0; j < 4; ++j) {
+            T(i, j) = old2new[m_T_emb(i, j)];
+        }
+    }
+
+    MatrixXi F_surf;
+    F_surf.resizeLike(m_F_on_surface);
+    for (size_t i = 0; i < m_F_on_surface.rows(); ++i) {
+        for (size_t j = 0; j < 3; ++j) {
+            F_surf(i, j) = old2new[m_F_on_surface(i, j)];
+        }
+    }
+
+    m_V_emb = V;
+    m_T_emb = T;
+    m_F_on_surface = F_surf;
 }
 
 void EmbedSurface::write_surf_off(const std::string& filename) const
