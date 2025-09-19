@@ -55,10 +55,13 @@ void image_simulation(nlohmann::json json_params)
     int max_its = json_params["max_iterations"];
 
     params.epsr = json_params["eps_rel"];
+    params.eps = json_params["eps"];
     params.lr = json_params["length_rel"];
     params.stop_energy = json_params["stop_energy"];
 
     const bool write_vtu = json_params["write_vtu"];
+
+    std::filesystem::path output_filename = params.output_path;
 
     // if input is not MSH perform conversion to MSH and ignore everything else
     {
@@ -66,7 +69,6 @@ void image_simulation(nlohmann::json json_params)
 
         if (input_filename.extension() != ".msh") {
             // convert image to MSH
-            std::filesystem::path output_filename = params.output_path;
             if (output_filename.has_extension() && output_filename.extension() != ".msh") {
                 logger().warn(
                     "Changing output extension from {} to .msh",
@@ -104,6 +106,9 @@ void image_simulation(nlohmann::json json_params)
             return;
         }
     }
+
+    output_filename.replace_extension("");
+
 
     // read MSH
     MatrixXd V_input;
@@ -150,7 +155,7 @@ void image_simulation(nlohmann::json json_params)
     igl::Timer timer;
     timer.start();
 
-    image_simulation::ImageSimulationMesh mesh(params, 0.5, NUM_THREADS);
+    image_simulation::ImageSimulationMesh mesh(params, params.eps, NUM_THREADS);
     mesh.init_from_image(V_input, T_input, T_input_tag);
 
     mesh.consolidate_mesh();
@@ -159,7 +164,7 @@ void image_simulation(nlohmann::json json_params)
         logger().info("flood fill parts {}", num_parts);
     }
 
-    mesh.write_vtu(params.output_path + "_0.vtu");
+    mesh.write_vtu(output_filename.string() + "_0.vtu");
 
     //// smooth
     //{
@@ -199,7 +204,7 @@ void image_simulation(nlohmann::json json_params)
 
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
-    std::ofstream fout(params.output_path + ".log");
+    std::ofstream fout(output_filename.string() + ".log");
     fout << "#t: " << mesh.tet_size() << std::endl;
     fout << "#v: " << mesh.vertex_size() << std::endl;
     fout << "max_energy: " << max_energy << std::endl;
@@ -210,9 +215,9 @@ void image_simulation(nlohmann::json json_params)
     fout.close();
 
     wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
-    mesh.write_msh(params.output_path + "_final.msh");
-    mesh.write_vtu(params.output_path + "_1.vtu");
-    mesh.write_surface(params.output_path + "_surface.obj");
+    mesh.write_msh(output_filename.string() + ".msh");
+    mesh.write_vtu(output_filename.string() + "_1.vtu");
+    mesh.write_surface(output_filename.string() + "_surface.obj");
 
     wmtk::logger().info("======= finish =========");
 }

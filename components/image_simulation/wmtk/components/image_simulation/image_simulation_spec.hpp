@@ -15,6 +15,7 @@ nlohmann::json image_simulation_spec = R"(
       "num_threads",
       "max_iterations",
       "eps_rel",
+      "eps",
       "length_rel",
       "stop_energy",
       "write_vtu"
@@ -72,6 +73,12 @@ nlohmann::json image_simulation_spec = R"(
     "type": "float",
     "default": 2e-3,
     "doc": "Envelope thickness relative to the bounding box"
+  },
+  {
+    "pointer": "/eps",
+    "type": "float",
+    "default": -1,
+    "doc": "Absolute envelope thickness. If this value is negative, the relative envelope thickness is used to compute the absolute one."
   },
   {
     "pointer": "/length_rel",
