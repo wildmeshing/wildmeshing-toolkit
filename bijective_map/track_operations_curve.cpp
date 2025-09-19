@@ -683,3 +683,225 @@ template int compute_curve_self_intersections_t<double>(
 template int compute_curve_self_intersections_t<wmtk::Rational>(
     const query_curve_t<wmtk::Rational>& curve,
     bool verbose);
+
+
+////////////////////////////////////////////////////////////
+// Utils functions for all rational curves version
+////////////////////////////////////////////////////////////
+void get_all_query_points_for_one_curve_rational(
+    const std::vector<int64_t>& id_map_after,
+    const query_curve_t<wmtk::Rational>& curve,
+    std::vector<query_point_r>& all_query_points,
+    std::vector<int>& all_query_seg_ids,
+    std::vector<int>& bc0_places)
+{
+    int cur_id = 0;
+    const int start_id = 0;
+    bool pre_segment_included = false;
+
+    int cnt = 0;
+    while (cur_id != -1 && cur_id < curve.segments.size()) {
+        cnt++;
+        query_segment_r qs = curve.segments[cur_id];
+
+        auto it = std::find(id_map_after.begin(), id_map_after.end(), qs.f_id);
+        if (it == id_map_after.end()) { // if current segment is not in the local patch
+            cur_id = curve.next_segment_ids[cur_id];
+            pre_segment_included = false;
+            if (cur_id == start_id) {
+                break;
+            }
+            continue;
+        }
+
+        // current segment is in the local patch
+        all_query_seg_ids.push_back(cur_id);
+        bc0_places.push_back(all_query_points.size() - 1);
+        if (!pre_segment_included) {
+            // in this case, we need add bc0 of the current segment
+            bc0_places.back()++;
+            all_query_points.push_back(query_point_r{qs.f_id, qs.bcs[0], qs.fv_ids});
+        }
+        all_query_points.push_back(query_point_r{qs.f_id, qs.bcs[1], qs.fv_ids});
+        pre_segment_included = true;
+        cur_id = curve.next_segment_ids[cur_id];
+
+        if (cur_id == start_id) { // meet the loop
+            break;
+        }
+
+        if (cnt > curve.segments.size()) {
+            throw std::runtime_error(
+                "Error: get_all_query_points_for_one_curve_rational: meet the partial loop");
+        }
+    } // end while
+}
+
+void classify_boundary_and_interior_query_points(
+    const std::vector<query_point_r>& all_query_points,
+    const std::vector<int>& all_query_seg_ids,
+    const std::vector<int>& bc0_places,
+    const query_curve_t<wmtk::Rational>& curve,
+    std::vector<query_point_r>& non_bd_qps,
+    std::vector<int>& non_bd_qps_ids,
+    std::vector<int>& bd_qps_ids)
+{
+    // check first point and last point
+    if (curve.next_segment_ids[all_query_seg_ids.back()] != all_query_seg_ids.front()) {
+        // this means the first point and the last point are not connected
+        // check 0s explicitly
+        const auto& first_qp = all_query_points.front();
+        if (first_qp.bc(0) == 0 || first_qp.bc(1) == 0 || first_qp.bc(2) == 0) {
+            bd_qps_ids.push_back(0);
+        } else {
+            non_bd_qps.push_back(first_qp);
+            non_bd_qps_ids.push_back(0);
+        }
+        const auto& last_qp = all_query_points.back();
+        if (last_qp.bc(0) == 0 || last_qp.bc(1) == 0 || last_qp.bc(2) == 0) {
+            bd_qps_ids.push_back(all_query_points.size() - 1);
+        } else {
+            non_bd_qps.push_back(last_qp);
+            non_bd_qps_ids.push_back(all_query_points.size() - 1);
+        }
+    } else {
+        non_bd_qps.push_back(all_query_points[0]);
+        non_bd_qps_ids.push_back(0);
+        non_bd_qps.push_back(all_query_points.back());
+        non_bd_qps_ids.push_back(all_query_points.size() - 1);
+    }
+
+    // get every other qps that are on the boundary of the local patch
+    for (int i = 1; i < all_query_seg_ids.size(); i++) {
+        if (bc0_places[i] != bc0_places[i - 1] + 1) {
+            // it indicates a break point in the curve by the local patch's boundary
+            bd_qps_ids.push_back(bc0_places[i]); // current bc0 place
+            bd_qps_ids.push_back(bc0_places[i] - 1); // previous bc1 place
+        } else {
+            non_bd_qps.push_back(all_query_points[bc0_places[i]]); // current bc0 place(also is
+                                                                   // previous bc1 place)
+            non_bd_qps_ids.push_back(bc0_places[i]);
+        }
+    }
+
+    // DEBUG:
+    {
+        std::cout << "bd_qps_ids: ";
+        for (int id : bd_qps_ids) {
+            std::cout << id << " ";
+        }
+        std::cout << std::endl;
+
+        std::cout << "non_bd_qps_ids: ";
+        for (int id : non_bd_qps_ids) {
+            std::cout << id << " ";
+        }
+        std::cout << std::endl;
+
+        if (bd_qps_ids.size() + non_bd_qps_ids.size() != all_query_points.size()) {
+            throw std::runtime_error("Error: map_all_query_points_rational: the number of "
+                                     "boundary and non-boundary query points is not correct");
+        }
+    }
+}
+
+void map_local_boundary_qps(
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const std::vector<int64_t>& id_map_before,
+    std::vector<query_point_r>& all_query_points,
+    const std::vector<int>& bd_qps_ids)
+{
+    // 2 cases: point case and edge case
+    for (int id : bd_qps_ids) {
+        auto& qp = all_query_points[id];
+
+        // case1: check for point case
+        {
+            bool bc_updated = false;
+            for (int j = 0; j < 3; j++) {
+                if (qp.bc(j) == 1) {
+                    // this means the qp in landed on a boundary vertex
+                    int v0 = qp.fv_ids(j);
+                    // look for v0 in v_id_map_before(F_before)
+
+                    for (int f_id = 0; f_id < F_before.rows(); f_id++) {
+                        for (int k = 0; k < 3; k++) {
+                            if (v_id_map_before[F_before(f_id, k)] == v0) {
+                                qp.bc(k) = 1;
+                                qp.bc((k + 1) % 3) = 0;
+                                qp.bc((k + 2) % 3) = 0;
+                                qp.f_id = id_map_before[f_id];
+                                qp.fv_ids << v_id_map_before[F_before(f_id, 0)],
+                                    v_id_map_before[F_before(f_id, 1)],
+                                    v_id_map_before[F_before(f_id, 2)];
+                                bc_updated = true;
+                                break;
+                            }
+                        } // end for k
+                        if (bc_updated) {
+                            break;
+                        }
+                    } // end for f_id
+
+                    if (!bc_updated) {
+                        std::cout << "qp: " << qp << std::endl;
+                        throw std::runtime_error("Error: map_local_boundary_qps: "
+                                                 "boundary point can't map");
+                    }
+                }
+            } // end for j
+
+            if (bc_updated) {
+                continue; // next boundary qp
+            }
+        }
+        // case2: check for edge case
+        {
+            int v0 = -1, v1 = -1;
+            int v0_index = -1;
+
+            for (int j = 0; j < 3; j++) {
+                if (qp.bc(j) == 0) {
+                    v0 = qp.fv_ids((j + 1) % 3);
+                    v1 = qp.fv_ids((j + 2) % 3);
+                    v0_index = (j + 1) % 3;
+                    break;
+                }
+            }
+
+            if (v0 == -1) {
+                throw std::runtime_error("Error: map_local_boundary_qps: not a boundary point");
+            }
+
+            // first handle edge cases
+            bool bc_updated = false;
+
+            for (int f_id = 0; f_id < F_before.rows(); f_id++) {
+                for (int j = 0; j < 3; j++) {
+                    if (v_id_map_before[F_before(f_id, j)] == v0 &&
+                        v_id_map_before[F_before(f_id, (j + 1) % 3)] == v1) {
+                        auto qp_bc_copy = qp.bc;
+                        qp.bc(j) = qp_bc_copy(v0_index);
+                        qp.bc((j + 1) % 3) = qp_bc_copy((v0_index + 1) % 3);
+                        qp.bc((j + 2) % 3) = 0;
+                        qp.f_id = id_map_before[f_id];
+                        qp.fv_ids << v_id_map_before[F_before(f_id, 0)],
+                            v_id_map_before[F_before(f_id, 1)], v_id_map_before[F_before(f_id, 2)];
+                        bc_updated = true;
+                        break;
+                    }
+                }
+                if (bc_updated) {
+                    break;
+                }
+            }
+
+            if (!bc_updated) {
+                std::cout << "qp: " << qp << std::endl;
+                throw std::runtime_error("Error: map_local_boundary_qps: "
+                                         "not a boundary edgepoint");
+            }
+        }
+    }
+}

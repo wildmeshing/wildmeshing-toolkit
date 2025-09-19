@@ -170,20 +170,221 @@ void handle_non_collapse_operation_curves_t(
     const std::string& operation_name,
     bool verbose)
 {
-    for (auto& curve : curves) {
-        handle_non_collapse_operation_curve_t(
-            V_before,
+    if constexpr (std::is_same_v<CoordType, double>) {
+        for (auto& curve : curves) {
+            handle_non_collapse_operation_curve_t(
+                V_before,
+                F_before,
+                id_map_before,
+                v_id_map_before,
+                V_after,
+                F_after,
+                id_map_after,
+                v_id_map_after,
+                curve,
+                operation_name,
+                verbose);
+        }
+    } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
+        for (auto& curve : curves) {
+            handle_non_collapse_operation_curve_t(
+                V_before,
+                F_before,
+                id_map_before,
+                v_id_map_before,
+                V_after,
+                F_after,
+                id_map_after,
+                v_id_map_after,
+                curve,
+                operation_name,
+                verbose);
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////
+// Rational fast version of handle_non_collapse_operation_curves_t
+////////////////////////////////////////////////////////////
+
+
+void handle_non_collapse_operation_curve_rational(
+    const Eigen::MatrixX<wmtk::Rational>& V_before_r,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixX<wmtk::Rational>& V_after_r,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& id_map_after,
+    const std::vector<int64_t>& v_id_map_after,
+    query_curve_t<wmtk::Rational>& curve,
+    const std::vector<BarycentricPrecompute2D>& bc_cache_non, // Cache for faster bc compute
+    bool verbose)
+{
+    // TODO: add timer here
+    double time_trace_segment_total = 0.0;
+    // get all query points that need to be mapped
+    std::vector<query_point_r> all_query_points;
+    std::vector<int> all_query_seg_ids;
+    std::vector<int> bc0_places;
+
+    // STEP1: get all query points that need to be mapped
+    {
+        get_all_query_points_for_one_curve_rational(
+            id_map_after,
+            curve,
+            all_query_points,
+            all_query_seg_ids,
+            bc0_places);
+    }
+
+    // Print debug information about query points
+    if (verbose) {
+        std::cout << "Debug: all_query_points (" << all_query_points.size()
+                  << " points):" << std::endl;
+        for (size_t i = 0; i < all_query_points.size(); i++) {
+            std::cout << "  [" << i << "]: " << all_query_points[i] << std::endl;
+        }
+        std::cout << "Debug: all_query_seg_ids size=" << all_query_seg_ids.size() << std::endl;
+        if (all_query_seg_ids.size() > 0) {
+            for (size_t i = 0; i < all_query_seg_ids.size(); i++) {
+                std::cout << all_query_seg_ids[i] << " ";
+            }
+            std::cout << std::endl;
+        }
+        std::cout << std::endl;
+        std::cout << "Debug: bc0_places size=" << bc0_places.size() << std::endl;
+        if (bc0_places.size() > 0) {
+            for (size_t i = 0; i < bc0_places.size(); i++) {
+                std::cout << bc0_places[i] << " ";
+            }
+            std::cout << std::endl;
+        }
+    }
+    if (all_query_points.size() == 0) {
+        if (verbose) {
+            std::cout << "No query points to map" << std::endl;
+        }
+        return;
+    }
+
+
+    // STEP2: map all query points
+    {
+        // TODO: implement this function
+        // map_all_query_points_rational_non_collapse(
+        //     V_before_r,
+        //     F_before,
+        //     id_map_before,
+        //     v_id_map_before,
+        //     V_after_r,
+        //     F_after,
+        //     id_map_after,
+        //     v_id_map_after,
+        //     all_query_points,
+        //     all_query_seg_ids,
+        //     bc0_places,
+        //     curve,
+        //     bc_cache_non);
+    }
+
+    // STEP3: get intersections with mesh (handle one segment)
+    {
+        for (int i = 0; i < all_query_seg_ids.size(); i++) {
+            int seg_id = all_query_seg_ids[i];
+            std::vector<query_point_r> query_point_for_one_segment;
+            query_point_for_one_segment.push_back(all_query_points[bc0_places[i]]);
+            query_point_for_one_segment.push_back(all_query_points[bc0_places[i] + 1]);
+
+            igl::Timer trace_timer;
+            trace_timer.start();
+
+            Eigen::MatrixXi TT, TTi;
+
+            handle_one_segment_t(
+                curve,
+                seg_id,
+                query_point_for_one_segment,
+                V_before_r,
+                F_before,
+                v_id_map_before,
+                id_map_before,
+                TT,
+                TTi,
+                verbose);
+
+            time_trace_segment_total += trace_timer.getElapsedTime() * 1000;
+        }
+    }
+}
+
+
+void handle_non_collapse_operation_curves_fast_rational(
+    const Eigen::MatrixXd& V_before,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixXd& V_after,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& id_map_after,
+    const std::vector<int64_t>& v_id_map_after,
+    std::vector<query_curve_t<wmtk::Rational>>& curves,
+    const std::string& operation_name,
+    bool verbose)
+{
+    std::cout << "handle " << operation_name << " curves fast rational" << std::endl;
+
+    double convert_V_to_rational_time = 0.0;
+    // convert V_before and V_after to rational
+    Eigen::MatrixX<wmtk::Rational> V_before_r(V_before.rows(), V_before.cols());
+    Eigen::MatrixX<wmtk::Rational> V_after_r(V_after.rows(), V_after.cols());
+    {
+        igl::Timer convert_timer;
+        convert_timer.start();
+        for (int i = 0; i < V_before.rows(); i++) {
+            for (int j = 0; j < V_before.cols(); j++) {
+                V_before_r(i, j) = wmtk::Rational(V_before(i, j));
+            }
+        }
+        for (int i = 0; i < V_after.rows(); i++) {
+            for (int j = 0; j < V_after.cols(); j++) {
+                V_after_r(i, j) = wmtk::Rational(V_after(i, j));
+            }
+        }
+        convert_V_to_rational_time = convert_timer.getElapsedTime();
+    }
+
+    // build cache for bc compute
+    double build_bc_cache_time = 0.0;
+    std::vector<BarycentricPrecompute2D> bc_cache_non =
+        build_barycentric_cache_2d(V_before_r, F_before);
+
+
+    // TODO: optimized version of handle_non_collapse_operation curve in rational
+    for (int i = 0; i < curves.size(); i++) {
+        if (verbose) {
+            std::cout << "handle curve " << i << std::endl;
+        }
+        auto& curve = curves[i];
+
+
+        // TODO: implement some version that take cache in
+        handle_non_collapse_operation_curve_rational(
+            V_before_r,
             F_before,
             id_map_before,
             v_id_map_before,
-            V_after,
+            V_after_r,
             F_after,
             id_map_after,
             v_id_map_after,
             curve,
-            operation_name,
+            bc_cache_non,
             verbose);
     }
+
+    // TODO: get all new seg and convert them to double
+    {}
 }
 
 template void handle_non_collapse_operation_curve_t<double>(

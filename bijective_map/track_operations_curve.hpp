@@ -254,3 +254,29 @@ int compute_intersections_between_two_curves(
 template <typename CoordType>
 int compute_curve_self_intersections_t(const query_curve_t<CoordType>& curve, bool verbose = true);
 int compute_curve_self_intersections(const query_curve& curve, bool verbose = true);
+
+////////////////////////////////////////////////////////////
+// Utils functions for all rational curves version
+////////////////////////////////////////////////////////////
+void get_all_query_points_for_one_curve_rational(
+    const std::vector<int64_t>& id_map_after,
+    const query_curve_t<wmtk::Rational>& curve,
+    std::vector<query_point_r>& all_query_points,
+    std::vector<int>& all_query_seg_ids,
+    std::vector<int>& bc0_places);
+
+void classify_boundary_and_interior_query_points(
+    const std::vector<query_point_r>& all_query_points,
+    const std::vector<int>& all_query_seg_ids,
+    const std::vector<int>& bc0_places,
+    const query_curve_t<wmtk::Rational>& curve,
+    std::vector<query_point_r>& non_bd_qps,
+    std::vector<int>& non_bd_qps_ids,
+    std::vector<int>& bd_qps_ids);
+
+void map_local_boundary_qps(
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const std::vector<int64_t>& id_map_before,
+    std::vector<query_point_r>& all_query_points,
+    const std::vector<int>& bd_qps_ids);
