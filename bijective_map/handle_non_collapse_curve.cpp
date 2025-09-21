@@ -422,7 +422,7 @@ void handle_non_collapse_operation_curves_fast_rational(
         build_barycentric_cache_2d(V_before_r, F_before);
 
 
-    // TODO: optimized version of handle_non_collapse_operation curve in rational
+    // optimized version of handle_non_collapse_operation curve in rational
     for (int i = 0; i < curves.size(); i++) {
         if (verbose) {
             std::cout << "handle curve " << i << std::endl;
@@ -430,7 +430,7 @@ void handle_non_collapse_operation_curves_fast_rational(
         auto& curve = curves[i];
 
 
-        // TODO: implement some version that take cache in
+        // implement some version that take cache in
         handle_non_collapse_operation_curve_rational(
             V_before_r,
             F_before,
