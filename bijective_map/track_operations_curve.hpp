@@ -233,6 +233,18 @@ void handle_non_collapse_operation_curve_t(
     const std::string& operation_name,
     bool verbose);
 
+void handle_non_collapse_operation_curves_fast_rational(
+    const Eigen::MatrixXd& V_before,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixXd& V_after,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& id_map_after,
+    const std::vector<int64_t>& v_id_map_after,
+    std::vector<query_curve_t<wmtk::Rational>>& curves,
+    const std::string& operation_name,
+    bool verbose);
 
 // Backward compatibility versions
 template <typename CoordType>

@@ -371,6 +371,19 @@ void handle_non_collapse_operation_t(
     bool use_rational = false,
     const std::vector<BarycentricPrecompute2D>* barycentric_cache = nullptr);
 
+
+void handle_non_collapse_operation_rational(
+    const Eigen::MatrixX<wmtk::Rational>& V_before_r,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixX<wmtk::Rational>& V_after_r,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& id_map_after,
+    const std::vector<int64_t>& v_id_map_after,
+    std::vector<query_point_t<wmtk::Rational>>& query_points,
+    const std::vector<BarycentricPrecompute2D>* barycentric_cache = nullptr);
+
 /***
  * Parse the operation log file
  */

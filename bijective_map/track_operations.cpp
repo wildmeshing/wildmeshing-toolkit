@@ -197,3 +197,75 @@ std::vector<BarycentricPrecompute2D> build_barycentric_cache_2d_from_double(
     }
     return build_barycentric_cache_2d(V2_r, F);
 }
+
+
+template <typename Matrix>
+Matrix json_to_matrix(const json& js)
+{
+    int rows = js["rows"];
+    int cols = js["values"][0].size();
+
+    Matrix mat(rows, cols);
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            mat(i, j) = js["values"][i][j];
+        }
+    }
+
+    return mat;
+}
+
+void parse_consolidate_file(
+    const json& operation_log,
+    std::vector<int64_t>& face_ids_maps,
+    std::vector<int64_t>& vertex_ids_maps)
+{
+    face_ids_maps = operation_log["new2old"][2].get<std::vector<int64_t>>();
+    vertex_ids_maps = operation_log["new2old"][0].get<std::vector<int64_t>>();
+}
+
+void parse_non_collapse_file(
+    const json& operation_log,
+    bool& is_skipped,
+    Eigen::MatrixXd& V_before,
+    Eigen::MatrixXi& F_before,
+    std::vector<int64_t>& id_map_before,
+    std::vector<int64_t>& v_id_map_before,
+    Eigen::MatrixXd& V_after,
+    Eigen::MatrixXi& F_after,
+    std::vector<int64_t>& id_map_after,
+    std::vector<int64_t>& v_id_map_after)
+{
+    is_skipped = operation_log["is_skipped"].get<bool>();
+    if (is_skipped) {
+        return;
+    }
+
+    F_before = json_to_matrix<Eigen::MatrixXi>(operation_log["F_before"]);
+    V_before = json_to_matrix<Eigen::MatrixXd>(operation_log["V_before"]);
+    id_map_before = operation_log["F_id_map_before"].get<std::vector<int64_t>>();
+    v_id_map_before = operation_log["V_id_map_before"].get<std::vector<int64_t>>();
+
+    F_after = json_to_matrix<Eigen::MatrixXi>(operation_log["F_after"]);
+    V_after = json_to_matrix<Eigen::MatrixXd>(operation_log["V_after"]);
+    id_map_after = operation_log["F_id_map_after"].get<std::vector<int64_t>>();
+    v_id_map_after = operation_log["V_id_map_after"].get<std::vector<int64_t>>();
+}
+
+void parse_edge_collapse_file(
+    const json& operation_log,
+    Eigen::MatrixXd& UV_joint,
+    Eigen::MatrixXi& F_before,
+    Eigen::MatrixXi& F_after,
+    std::vector<int64_t>& v_id_map_joint,
+    std::vector<int64_t>& id_map_before,
+    std::vector<int64_t>& id_map_after)
+{
+    UV_joint = json_to_matrix<Eigen::MatrixXd>(operation_log["UV_joint"]);
+    F_before = json_to_matrix<Eigen::MatrixXi>(operation_log["F_before"]);
+    F_after = json_to_matrix<Eigen::MatrixXi>(operation_log["F_after"]);
+
+    v_id_map_joint = operation_log["v_id_map_joint"].get<std::vector<int64_t>>();
+    id_map_before = operation_log["F_id_map_before"].get<std::vector<int64_t>>();
+    id_map_after = operation_log["F_id_map_after"].get<std::vector<int64_t>>();
+}

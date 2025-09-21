@@ -186,27 +186,90 @@ void handle_non_collapse_operation_curves_t(
                 verbose);
         }
     } else if constexpr (std::is_same_v<CoordType, wmtk::Rational>) {
-        for (auto& curve : curves) {
-            handle_non_collapse_operation_curve_t(
-                V_before,
-                F_before,
-                id_map_before,
-                v_id_map_before,
-                V_after,
-                F_after,
-                id_map_after,
-                v_id_map_after,
-                curve,
-                operation_name,
-                verbose);
-        }
+        handle_non_collapse_operation_curves_fast_rational(
+            V_before,
+            F_before,
+            id_map_before,
+            v_id_map_before,
+            V_after,
+            F_after,
+            id_map_after,
+            v_id_map_after,
+            curves,
+            operation_name,
+            verbose);
     }
 }
 
 ////////////////////////////////////////////////////////////
 // Rational fast version of handle_non_collapse_operation_curves_t
 ////////////////////////////////////////////////////////////
+void map_all_query_points_rational_non_collapse(
+    const Eigen::MatrixX<wmtk::Rational>& V_before_r,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixX<wmtk::Rational>& V_after_r,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& id_map_after,
+    const std::vector<int64_t>& v_id_map_after,
+    std::vector<query_point_r>& all_query_points,
+    const std::vector<int>& all_query_seg_ids,
+    const std::vector<int>& bc0_places,
+    const query_curve_t<wmtk::Rational>& curve,
+    const std::vector<BarycentricPrecompute2D>& bc_cache_non)
+{
+    // query points that are not on the boundary of the local patch
+    std::vector<query_point_r> non_bd_qps;
+    std::vector<int> non_bd_qps_ids;
+    std::vector<int> bd_qps_ids;
 
+    // Special handling for the qps that are on the boundary of the local patch
+    {
+        classify_boundary_and_interior_query_points(
+            all_query_points,
+            all_query_seg_ids,
+            bc0_places,
+            curve,
+            non_bd_qps,
+            non_bd_qps_ids,
+            bd_qps_ids);
+    }
+
+    // map all the boundary qps
+    {
+        map_local_boundary_qps(
+            F_before,
+            v_id_map_before,
+            id_map_before,
+            all_query_points,
+            bd_qps_ids);
+    }
+
+    // map all the non boundary qps
+    {
+        handle_non_collapse_operation_rational(
+            V_before_r,
+            F_before,
+            id_map_before,
+            v_id_map_before,
+            V_after_r,
+            F_after,
+            id_map_after,
+            v_id_map_after,
+            non_bd_qps,
+            &bc_cache_non);
+
+        for (int i = 0; i < non_bd_qps.size(); i++) {
+            all_query_points[non_bd_qps_ids[i]] = non_bd_qps[i];
+        }
+    }
+
+    std::cout << "all_query_points after mapping: " << std::endl;
+    for (int i = 0; i < all_query_points.size(); i++) {
+        std::cout << "  [" << i << "]: " << all_query_points[i] << std::endl;
+    }
+}
 
 void handle_non_collapse_operation_curve_rational(
     const Eigen::MatrixX<wmtk::Rational>& V_before_r,
@@ -271,21 +334,20 @@ void handle_non_collapse_operation_curve_rational(
 
     // STEP2: map all query points
     {
-        // TODO: implement this function
-        // map_all_query_points_rational_non_collapse(
-        //     V_before_r,
-        //     F_before,
-        //     id_map_before,
-        //     v_id_map_before,
-        //     V_after_r,
-        //     F_after,
-        //     id_map_after,
-        //     v_id_map_after,
-        //     all_query_points,
-        //     all_query_seg_ids,
-        //     bc0_places,
-        //     curve,
-        //     bc_cache_non);
+        map_all_query_points_rational_non_collapse(
+            V_before_r,
+            F_before,
+            id_map_before,
+            v_id_map_before,
+            V_after_r,
+            F_after,
+            id_map_after,
+            v_id_map_after,
+            all_query_points,
+            all_query_seg_ids,
+            bc0_places,
+            curve,
+            bc_cache_non);
     }
 
     // STEP3: get intersections with mesh (handle one segment)
