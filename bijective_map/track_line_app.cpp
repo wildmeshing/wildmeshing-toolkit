@@ -662,6 +662,8 @@ void track_lines(
         std::cout << "Found " << total_ops << " operations in "
                   << (reader.is_batch_format() ? "batch" : "legacy") << " format" << std::endl;
 
+        igl::Timer total_timer;
+        total_timer.start();
         for (size_t i = 0; i < total_ops; ++i) {
             size_t operation_index = i;
             if (!do_forward) {
@@ -676,6 +678,8 @@ void track_lines(
             }
             track_lines_one_operation<CoordType>(operation_log, curves, do_forward);
         }
+        total_timer.stop();
+        std::cout << "total time: " << total_timer.getElapsedTime() << " seconds" << std::endl;
     }
 
     std::cout << "All tracking finished" << std::endl;

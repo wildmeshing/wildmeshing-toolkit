@@ -217,13 +217,13 @@ void map_all_query_points_rational_non_collapse(
     const std::vector<int>& all_query_seg_ids,
     const std::vector<int>& bc0_places,
     const query_curve_t<wmtk::Rational>& curve,
-    const std::vector<BarycentricPrecompute2D>& bc_cache_non)
+    const std::vector<BarycentricPrecompute2D>& bc_cache_non,
+    std::vector<std::vector<int>>& all_curve_parts)
 {
     // query points that are not on the boundary of the local patch
     std::vector<query_point_r> non_bd_qps;
     std::vector<int> non_bd_qps_ids;
     std::vector<int> bd_qps_ids;
-
     // Special handling for the qps that are on the boundary of the local patch
     {
         classify_boundary_and_interior_query_points(
@@ -233,7 +233,8 @@ void map_all_query_points_rational_non_collapse(
             curve,
             non_bd_qps,
             non_bd_qps_ids,
-            bd_qps_ids);
+            bd_qps_ids,
+            all_curve_parts);
     }
 
     // map all the boundary qps
@@ -282,6 +283,7 @@ void handle_non_collapse_operation_curve_rational(
     const std::vector<int64_t>& v_id_map_after,
     query_curve_t<wmtk::Rational>& curve,
     const std::vector<BarycentricPrecompute2D>& bc_cache_non, // Cache for faster bc compute
+    std::vector<std::vector<int>>& all_curve_parts_after_mapping,
     bool verbose)
 {
     // TODO: add timer here
@@ -331,7 +333,7 @@ void handle_non_collapse_operation_curve_rational(
         return;
     }
 
-
+    std::vector<std::vector<int>> all_curve_parts;
     // STEP2: map all query points
     {
         map_all_query_points_rational_non_collapse(
@@ -347,10 +349,12 @@ void handle_non_collapse_operation_curve_rational(
             all_query_seg_ids,
             bc0_places,
             curve,
-            bc_cache_non);
+            bc_cache_non,
+            all_curve_parts);
     }
 
     // STEP3: get intersections with mesh (handle one segment)
+    const int num_segments_before_mapping = curve.segments.size();
     {
         for (int i = 0; i < all_query_seg_ids.size(); i++) {
             int seg_id = all_query_seg_ids[i];
@@ -377,9 +381,28 @@ void handle_non_collapse_operation_curve_rational(
 
             time_trace_segment_total += trace_timer.getElapsedTime() * 1000;
         }
+        if (verbose) {
+            std::cout << "Total time for tracing segments: " << time_trace_segment_total << " ms"
+                      << std::endl;
+        }
+    }
+    // STEP4: update the new segments and then return
+    {
+        all_curve_parts_after_mapping.clear();
+        all_curve_parts_after_mapping.resize(all_curve_parts.size());
+        for (int i = 0; i < all_curve_parts.size(); i++) {
+            for (int j = 0; j < all_curve_parts[i].size(); j++) {
+                int cur_seg_id = all_curve_parts[i][j];
+                all_curve_parts_after_mapping[i].push_back(cur_seg_id);
+                while (curve.next_segment_ids[cur_seg_id] >=
+                       num_segments_before_mapping) { // indicate new segment is created
+                    cur_seg_id = curve.next_segment_ids[cur_seg_id];
+                    all_curve_parts_after_mapping[i].push_back(cur_seg_id);
+                }
+            }
+        }
     }
 }
-
 
 void handle_non_collapse_operation_curves_fast_rational(
     const Eigen::MatrixXd& V_before,
@@ -423,6 +446,7 @@ void handle_non_collapse_operation_curves_fast_rational(
 
 
     // optimized version of handle_non_collapse_operation curve in rational
+    std::vector<std::vector<std::vector<int>>> all_curve_parts_after_mapping(curves.size());
     for (int i = 0; i < curves.size(); i++) {
         if (verbose) {
             std::cout << "handle curve " << i << std::endl;
@@ -442,7 +466,12 @@ void handle_non_collapse_operation_curves_fast_rational(
             v_id_map_after,
             curve,
             bc_cache_non,
+            all_curve_parts_after_mapping[i],
             verbose);
+
+        if (verbose) {
+            std::cout << "handle curve " << i << " done" << std::endl << std::endl;
+        }
     }
 
     // TODO: get all new seg and convert them to double

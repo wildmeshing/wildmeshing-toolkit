@@ -284,7 +284,8 @@ void classify_boundary_and_interior_query_points(
     const query_curve_t<wmtk::Rational>& curve,
     std::vector<query_point_r>& non_bd_qps,
     std::vector<int>& non_bd_qps_ids,
-    std::vector<int>& bd_qps_ids);
+    std::vector<int>& bd_qps_ids,
+    std::vector<std::vector<int>>& all_curve_parts);
 
 void map_local_boundary_qps(
     const Eigen::MatrixXi& F_before,

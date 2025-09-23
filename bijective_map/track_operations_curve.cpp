@@ -427,7 +427,8 @@ void classify_boundary_and_interior_query_points(
     const query_curve_t<wmtk::Rational>& curve,
     std::vector<query_point_r>& non_bd_qps,
     std::vector<int>& non_bd_qps_ids,
-    std::vector<int>& bd_qps_ids)
+    std::vector<int>& bd_qps_ids,
+    std::vector<std::vector<int>>& all_curve_parts)
 {
     // check first point and last point
     if (curve.next_segment_ids[all_query_seg_ids.back()] != all_query_seg_ids.front()) {
@@ -467,6 +468,48 @@ void classify_boundary_and_interior_query_points(
         }
     }
 
+    // Generate all_curve_parts: segments of curve between boundary points
+    all_curve_parts.clear();
+
+    // Check if it's a closed loop
+    bool is_closed_loop =
+        (curve.next_segment_ids[all_query_seg_ids.back()] == all_query_seg_ids.front());
+
+    // case 1 whole loop is in this local patch
+    if (bd_qps_ids.empty()) {
+        // No boundary points - the entire curve is one part
+        all_curve_parts.push_back(all_query_seg_ids);
+    } else {
+        std::vector<int> current_part;
+        for (int i = 0; i < all_query_seg_ids.size(); i++) {
+            current_part.push_back(all_query_seg_ids[i]);
+            if (i < all_query_seg_ids.size() - 1 && bc0_places[i] != bc0_places[i + 1] - 1) {
+                all_curve_parts.push_back(current_part);
+                current_part.clear();
+            }
+        }
+        if (current_part.size() > 0) {
+            all_curve_parts.push_back(current_part);
+        }
+
+        if (is_closed_loop) {
+            // For closed loops, we need to merge the last and first parts
+            // if they are both connected to the boundary
+            if (all_curve_parts.size() > 1) {
+                // Merge last part into first part
+                std::vector<int> merged_part = all_curve_parts.back();
+                merged_part.insert(
+                    merged_part.end(),
+                    all_curve_parts.front().begin(),
+                    all_curve_parts.front().end());
+
+                // Replace first part with merged part and remove last part
+                all_curve_parts[0] = merged_part;
+                all_curve_parts.pop_back();
+            }
+        }
+    }
+
     // DEBUG:
     {
         std::cout << "bd_qps_ids: ";
@@ -480,6 +523,15 @@ void classify_boundary_and_interior_query_points(
             std::cout << id << " ";
         }
         std::cout << std::endl;
+
+        std::cout << "all_curve_parts (" << all_curve_parts.size() << " parts):" << std::endl;
+        for (int i = 0; i < all_curve_parts.size(); i++) {
+            std::cout << "  part " << i << ": ";
+            for (int seg_id : all_curve_parts[i]) {
+                std::cout << seg_id << " ";
+            }
+            std::cout << std::endl;
+        }
 
         if (bd_qps_ids.size() + non_bd_qps_ids.size() != all_query_points.size()) {
             throw std::runtime_error("Error: map_all_query_points_rational: the number of "

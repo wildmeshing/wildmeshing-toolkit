@@ -1,6 +1,7 @@
 #include <set>
 #include "track_operations_curve.hpp"
 
+
 // function that computes all the intersections between two curves
 template <typename CoordType>
 int compute_intersections_between_two_curves_t(
@@ -300,6 +301,74 @@ int compute_curve_self_intersections_t(const query_curve_t<CoordType>& curve, bo
 int compute_curve_self_intersections(const query_curve& curve, bool verbose)
 {
     return compute_curve_self_intersections_t(curve, verbose);
+}
+
+
+bool seg_seg_intersect_rational(
+    const query_segment_t<wmtk::Rational>& seg1,
+    const query_segment_t<wmtk::Rational>& seg2)
+{
+    // Early exit if segments are in different faces
+    if (seg1.f_id != seg2.f_id) {
+        return false;
+    }
+
+    // Extract coordinates as const references to avoid copying
+    const wmtk::Rational& s1_a_x = seg1.bcs[0](0);
+    const wmtk::Rational& s1_a_y = seg1.bcs[0](1);
+    const wmtk::Rational& s1_b_x = seg1.bcs[1](0);
+    const wmtk::Rational& s1_b_y = seg1.bcs[1](1);
+
+    const wmtk::Rational& s2_a_x = seg2.bcs[0](0);
+    const wmtk::Rational& s2_a_y = seg2.bcs[0](1);
+    const wmtk::Rational& s2_b_x = seg2.bcs[1](0);
+    const wmtk::Rational& s2_b_y = seg2.bcs[1](1);
+
+    // Fast bounding box check using single comparison for min/max pairs
+    const wmtk::Rational& s1_min_x = (s1_a_x < s1_b_x) ? s1_a_x : s1_b_x;
+    const wmtk::Rational& s1_max_x = (s1_a_x < s1_b_x) ? s1_b_x : s1_a_x;
+    const wmtk::Rational& s1_min_y = (s1_a_y < s1_b_y) ? s1_a_y : s1_b_y;
+    const wmtk::Rational& s1_max_y = (s1_a_y < s1_b_y) ? s1_b_y : s1_a_y;
+
+    const wmtk::Rational& s2_min_x = (s2_a_x < s2_b_x) ? s2_a_x : s2_b_x;
+    const wmtk::Rational& s2_max_x = (s2_a_x < s2_b_x) ? s2_b_x : s2_a_x;
+    const wmtk::Rational& s2_min_y = (s2_a_y < s2_b_y) ? s2_a_y : s2_b_y;
+    const wmtk::Rational& s2_max_y = (s2_a_y < s2_b_y) ? s2_b_y : s2_a_y;
+
+    // Check if bounding boxes intersect
+    if (s1_max_x < s2_min_x || s2_max_x < s1_min_x || s1_max_y < s2_min_y || s2_max_y < s1_min_y) {
+        return false; // No intersection possible
+    }
+
+    //////////////////////////////////////////////////////////////
+    // This part is for possible intersection
+    //////////////////////////////////////////////////////////////
+
+    // Direction vectors (only computed if bounding box check passes)
+    const wmtk::Rational s1_dx = s1_b_x - s1_a_x;
+    const wmtk::Rational s1_dy = s1_b_y - s1_a_y;
+    const wmtk::Rational s2_dx = s2_b_x - s2_a_x;
+    const wmtk::Rational s2_dy = s2_b_y - s2_a_y;
+
+    // Cross product to check for parallelism
+    const wmtk::Rational cross = s1_dx * s2_dy - s1_dy * s2_dx;
+    if (cross == wmtk::Rational(0)) {
+        return false; // Parallel segments
+    }
+
+    // Vector from s1_a to s2_a
+    const wmtk::Rational dx_diff = s2_a_x - s1_a_x;
+    const wmtk::Rational dy_diff = s2_a_y - s1_a_y;
+
+    // Compute intersection parameters (expensive division only done when necessary)
+    const wmtk::Rational t = (dx_diff * s2_dy - dy_diff * s2_dx) / cross;
+    const wmtk::Rational u = (dx_diff * s1_dy - dy_diff * s1_dx) / cross;
+
+    // Check if intersection lies within both segments [0,1]
+    const wmtk::Rational zero(0);
+    const wmtk::Rational one(1);
+
+    return (t >= zero && t <= one && u >= zero && u <= one);
 }
 
 
