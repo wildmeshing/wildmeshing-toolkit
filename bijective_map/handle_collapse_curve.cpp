@@ -712,6 +712,7 @@ void handle_collapse_edge_curves_fast_rational(
 
 
     std::vector<std::vector<std::vector<int>>> all_curve_parts_after_mapping(curves.size());
+    std::cout << "F_before size = " << F_before.rows() << std::endl;
     // Implement optimized rational version
     for (int i = 0; i < curves.size(); i++) {
         if (verbose) {
