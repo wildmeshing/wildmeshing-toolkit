@@ -511,7 +511,8 @@ void classify_boundary_and_interior_query_points(
     }
 
     // DEBUG:
-    {
+    bool debug_output = false;
+    if (debug_output) {
         std::cout << "bd_qps_ids: ";
         for (int id : bd_qps_ids) {
             std::cout << id << " ";

@@ -530,16 +530,18 @@ void map_all_query_points_rational_collapse(
         double time_map_points_total = map_timer.getElapsedTime() * 1000;
         std::cout << "handle_collapse_edge_rational time: " << time_map_points_total << " ms"
                   << std::endl;
+        std::cout << "handle_collapse_edge_rational time per point: "
+                  << time_map_points_total / non_bd_qps.size() << " ms" << std::endl;
         for (int i = 0; i < non_bd_qps.size(); i++) {
             all_query_points[non_bd_qps_ids[i]] = non_bd_qps[i];
         }
     }
 
 
-    std::cout << "all_query_points after mapping: " << std::endl;
-    for (int i = 0; i < all_query_points.size(); i++) {
-        std::cout << "  [" << i << "]: " << all_query_points[i] << std::endl;
-    }
+    // std::cout << "all_query_points after mapping: " << std::endl;
+    // for (int i = 0; i < all_query_points.size(); i++) {
+    //     std::cout << "  [" << i << "]: " << all_query_points[i] << std::endl;
+    // }
 }
 
 // This function is called by handle_collapse_edge_curves_fast_rational, only handle one
@@ -685,6 +687,7 @@ void handle_collapse_edge_curves_fast_rational(
     std::vector<query_curve_t<wmtk::Rational>>& curves,
     bool verbose)
 {
+    verbose = false;
     std::cout << "handle collapse edge curves fast rational" << std::endl;
 
 

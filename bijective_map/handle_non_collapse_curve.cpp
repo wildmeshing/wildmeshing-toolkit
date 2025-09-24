@@ -266,10 +266,10 @@ void map_all_query_points_rational_non_collapse(
         }
     }
 
-    std::cout << "all_query_points after mapping: " << std::endl;
-    for (int i = 0; i < all_query_points.size(); i++) {
-        std::cout << "  [" << i << "]: " << all_query_points[i] << std::endl;
-    }
+    // std::cout << "all_query_points after mapping: " << std::endl;
+    // for (int i = 0; i < all_query_points.size(); i++) {
+    //     std::cout << "  [" << i << "]: " << all_query_points[i] << std::endl;
+    // }
 }
 
 void handle_non_collapse_operation_curve_rational(
@@ -417,6 +417,7 @@ void handle_non_collapse_operation_curves_fast_rational(
     const std::string& operation_name,
     bool verbose)
 {
+    verbose = false;
     std::cout << "handle " << operation_name << " curves fast rational" << std::endl;
 
     double convert_V_to_rational_time = 0.0;
