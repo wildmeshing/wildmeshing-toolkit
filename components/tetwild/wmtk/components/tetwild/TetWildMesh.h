@@ -461,39 +461,6 @@ public:
     int count_vertex_links(const Tuple& v);
     int count_edge_links(const Tuple& e);
 
-    // for geometry preservation
-    struct coplanar_triangle_collection
-    {
-        bool effective = false;
-        std::vector<size_t> face_ids;
-        std::vector<size_t> tracked_face_ids;
-        // std::map<std::pair<size_t, size_t>, bool> presented_edges;
-        Vector3r normal;
-        Vector3r a_pos; // a is the origin of the uv plane
-        Vector3r b_pos;
-        Vector3r c_pos;
-        Vector3r param_u; // b-a // can be vector3d then can be normalized
-        Vector3r param_v; // u.cross(b-a)
-        // for nearly
-        Vector3d normal_f = Vector3d(0, 0, 0);
-        Vector3d a_pos_f = Vector3d(0, 0, 0);
-        Vector3d param_u_f = Vector3d(0, 0, 0);
-        Vector3d param_v_f = Vector3d(0, 0, 0);
-    };
-
-    bool is_triangle_coplanar_collection(
-        const Vector3r& v1,
-        const Vector3r& v2,
-        const Vector3r& v3,
-        const coplanar_triangle_collection& collection);
-
-    bool is_triangle_nearly_coplanar_collection(
-        const Vector3r& v1,
-        const Vector3r& v2,
-        const Vector3r& v3,
-        const coplanar_triangle_collection& collection,
-        double theta);
-
     std::vector<std::vector<size_t>> transfer_vf_to_face_face_connectivity(
         size_t num_v,
         std::vector<std::array<size_t, 3>> faces);
@@ -501,8 +468,6 @@ public:
 
     struct triangle_collections
     {
-        std::vector<coplanar_triangle_collection> collections;
-        std::vector<coplanar_triangle_collection> nearly_coplanar_collections;
         std::vector<size_t> exact_to_nearly_map;
         std::vector<Vector3r> input_vertices_rational;
         std::vector<std::array<size_t, 3>> input_faces;
@@ -516,20 +481,6 @@ public:
         Vector3d origin;
     };
     std::vector<edge_parametrization> edge_params;
-
-    void detect_coplanar_triangle_collections(
-        const std::vector<Vector3d>& vertices,
-        const std::vector<std::array<size_t, 3>>& faces);
-
-    int find_collection_for_tracked_surface(const Tuple& t);
-
-    bool is_point_in_triangle(
-        const Vector3r& p,
-        const Vector3r& a,
-        const Vector3r& b,
-        const Vector3r& c);
-    bool is_point_in_collection(const Vector3r& p, size_t collection_id);
-
 
     // debug functions
     int orient3D(
