@@ -179,6 +179,12 @@ std::vector<query_curve_t<CoordType>> load_query_curves_t(const std::string& fil
 void save_query_curves(const std::vector<query_curve>& curves, const std::string& filename);
 std::vector<query_curve> load_query_curves(const std::string& filename);
 
+// IO - intersection reference functions
+void save_intersection_reference(
+    const std::vector<std::vector<int>>& intersection_reference,
+    const std::string& filename);
+std::vector<std::vector<int>> load_intersection_reference(const std::string& filename);
+
 
 template <typename qp_type>
 void handle_consolidate(

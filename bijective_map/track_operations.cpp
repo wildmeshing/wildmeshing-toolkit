@@ -79,6 +79,50 @@ std::vector<query_curve> load_query_curves(const std::string& filename)
     return curves;
 }
 
+// Function to save intersection_reference to a file
+void save_intersection_reference(
+    const std::vector<std::vector<int>>& intersection_reference,
+    const std::string& filename)
+{
+    std::ofstream ofs(filename, std::ios::binary);
+
+    // Write number of curves
+    size_t num_curves = intersection_reference.size();
+    ofs.write(reinterpret_cast<const char*>(&num_curves), sizeof(num_curves));
+
+    // Save each row of intersection_reference
+    for (const auto& row : intersection_reference) {
+        size_t row_size = row.size();
+        ofs.write(reinterpret_cast<const char*>(&row_size), sizeof(row_size));
+        ofs.write(reinterpret_cast<const char*>(row.data()), row_size * sizeof(int));
+    }
+
+    ofs.close();
+}
+
+// Function to load intersection_reference from a file
+std::vector<std::vector<int>> load_intersection_reference(const std::string& filename)
+{
+    std::ifstream ifs(filename, std::ios::binary);
+    std::vector<std::vector<int>> intersection_reference;
+
+    // Read number of curves
+    size_t num_curves;
+    ifs.read(reinterpret_cast<char*>(&num_curves), sizeof(num_curves));
+    intersection_reference.resize(num_curves);
+
+    // Load each row
+    for (auto& row : intersection_reference) {
+        size_t row_size;
+        ifs.read(reinterpret_cast<char*>(&row_size), sizeof(row_size));
+        row.resize(row_size);
+        ifs.read(reinterpret_cast<char*>(row.data()), row_size * sizeof(int));
+    }
+
+    ifs.close();
+    return intersection_reference;
+}
+
 
 Eigen::Vector3d ComputeBarycentricCoordinates2D(
     const Eigen::Vector2d& p,

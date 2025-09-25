@@ -833,7 +833,7 @@ void handle_one_segment_t(
 #endif
     }
     // Print profiling summary (only if verbose)
-    if (false) {
+    if (true) {
         double t_total_ms = seg_total_timer.getElapsedTime() * 1000.0;
         double t_tt_ms = tt_build_timer.getElapsedTime() * 1000.0;
         double t_same_tri_init_ms = same_tri_timer_initial.getElapsedTime() * 1000.0;

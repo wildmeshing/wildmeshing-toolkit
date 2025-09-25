@@ -366,7 +366,6 @@ void handle_non_collapse_operation_curve_rational(
             trace_timer.start();
 
             Eigen::MatrixXi TT, TTi;
-
             handle_one_segment_t(
                 curve,
                 seg_id,
@@ -384,6 +383,8 @@ void handle_non_collapse_operation_curve_rational(
         if (verbose) {
             std::cout << "Total time for tracing segments: " << time_trace_segment_total << " ms"
                       << std::endl;
+            std::cout << "Tracing time per segment:"
+                      << time_trace_segment_total / all_query_seg_ids.size() << " ms" << std::endl;
         }
     }
     // STEP4: update the new segments and then return
