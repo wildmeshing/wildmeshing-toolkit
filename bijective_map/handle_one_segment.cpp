@@ -444,6 +444,9 @@ void handle_one_segment_t(
     Eigen::MatrixXi& TTi,
     bool verbose)
 {
+    // Time profiling control parameter
+    bool enable_time_profiling = true;
+
     // Profiling: total time of handling one segment
     igl::Timer seg_total_timer;
     seg_total_timer.start();
@@ -453,9 +456,12 @@ void handle_one_segment_t(
     // Check if two endpoints are in the same triangle considering all possible locations
     // Profiling: adjacency build time (only when needed)
     igl::Timer tt_build_timer;
+    bool tt_was_built = false;
     if (TT.rows() == 0) {
         tt_build_timer.start();
         igl::triangle_triangle_adjacency(F_before, TT, TTi);
+        tt_build_timer.stop();
+        tt_was_built = true;
     }
 
     // Profiling: initial same-triangle check
@@ -469,6 +475,7 @@ void handle_one_segment_t(
         v_id_map_joint,
         TT,
         TTi);
+    same_tri_timer_initial.stop();
 
     if (same_triangle_result.in_same_triangle) {
         // Two endpoints are on the same face --> no need to compute intersections
@@ -480,13 +487,14 @@ void handle_one_segment_t(
             std::cout << "Early exit: Two endpoints are on the same face" << std::endl;
         }
 
-        if (false && verbose) {
+        if (enable_time_profiling) {
+            seg_total_timer.stop();
             double t_total_ms = seg_total_timer.getElapsedTime() * 1000.0;
-            double t_tt_ms = tt_build_timer.getElapsedTime() * 1000.0;
+            double t_tt_ms = tt_was_built ? tt_build_timer.getElapsedTime() * 1000.0 : 0.0;
             double t_same_tri_ms = same_tri_timer_initial.getElapsedTime() * 1000.0;
-            std::cout << "[handle_one_segment_rational] early-exit timings: total=" << t_total_ms
-                      << " ms, TT/TTi=" << t_tt_ms << " ms, same-triangle-check=" << t_same_tri_ms
-                      << " ms" << std::endl;
+            std::cout << "[handle_one_segment] early-exit timings: total=" << t_total_ms
+                      << " ms, TT/TTi=" << (tt_was_built ? std::to_string(t_tt_ms) : "0.0 (cached)")
+                      << " ms, same-triangle-check=" << t_same_tri_ms << " ms" << std::endl;
         }
         return;
     }
@@ -555,6 +563,8 @@ void handle_one_segment_t(
     double time_intersection_tests_total = 0; // detailed per-iteration intersection tests (verbose)
     double time_candidate_edges_total = 0; // always-on: time to build candidate edges
     double time_same_tri_checks_total = 0; // always-on: per-iteration same-triangle checks
+    double time_edge_vertex_lookup = 0; // verbose: edge vertex lookup total
+    double time_intersection_computation = 0; // verbose: intersection computation total
     while (current_face != end_face_local) {
         iteration++;
         // quiet
@@ -601,6 +611,7 @@ void handle_one_segment_t(
             v_id_map_joint,
             TT,
             TTi);
+        same_tri_timer_iter.stop();
         time_same_tri_checks_total += same_tri_timer_iter.getElapsedTime();
 
         // quiet
@@ -627,6 +638,7 @@ void handle_one_segment_t(
             v_id_map_joint,
             TT,
             TTi);
+        cand_edges_timer.stop();
         time_candidate_edges_total += cand_edges_timer.getElapsedTime();
 
         // Find next intersection using rational arithmetic with detailed profiling
@@ -637,8 +649,6 @@ void handle_one_segment_t(
         int selected_edge_idx = -1;
 
         int num_candidate_edges = candidate_edges.size();
-        double time_edge_vertex_lookup = 0;
-        double time_intersection_computation = 0;
         igl::Timer intersection_timer;
         intersection_timer.start();
 
@@ -652,7 +662,10 @@ void handle_one_segment_t(
             if (verbose) lookup_timer.start();
             Eigen::Vector2<wmtk::Rational> edge_start = UV_joint_r.row(edge.first).transpose();
             Eigen::Vector2<wmtk::Rational> edge_end = UV_joint_r.row(edge.second).transpose();
-            if (verbose) time_edge_vertex_lookup += lookup_timer.getElapsedTime();
+            if (verbose) {
+                lookup_timer.stop();
+                time_edge_vertex_lookup += lookup_timer.getElapsedTime();
+            }
 
             // Time intersection computation (only if verbose)
             igl::Timer compute_timer;
@@ -666,7 +679,10 @@ void handle_one_segment_t(
                 edge_bc,
                 placeholder_ab,
                 false);
-            if (verbose) time_intersection_computation += compute_timer.getElapsedTime();
+            if (verbose) {
+                compute_timer.stop();
+                time_intersection_computation += compute_timer.getElapsedTime();
+            }
 
             // quiet
             if (has_intersection) {
@@ -685,6 +701,7 @@ void handle_one_segment_t(
             }
         }
 
+        intersection_timer.stop();
         double total_intersection_time = intersection_timer.getElapsedTime();
         time_intersection_tests_total += total_intersection_time;
 
@@ -832,14 +849,16 @@ void handle_one_segment_t(
         viewer.launch();
 #endif
     }
-    // Print profiling summary (only if verbose)
-    if (true) {
+    // Stop total timer and print profiling summary
+    seg_total_timer.stop();
+    if (enable_time_profiling) {
         double t_total_ms = seg_total_timer.getElapsedTime() * 1000.0;
-        double t_tt_ms = tt_build_timer.getElapsedTime() * 1000.0;
+        double t_tt_ms = tt_was_built ? tt_build_timer.getElapsedTime() * 1000.0 : 0.0;
         double t_same_tri_init_ms = same_tri_timer_initial.getElapsedTime() * 1000.0;
-        std::cout << "\n=== handle_one_segment_rational Timing ===" << std::endl;
+        std::cout << "\n=== handle_one_segment Timing ===" << std::endl;
         std::cout << "  Total: " << t_total_ms << " ms" << std::endl;
-        std::cout << "  TT/TTi build: " << t_tt_ms << " ms" << std::endl;
+        std::cout << "  TT/TTi build: " << (tt_was_built ? std::to_string(t_tt_ms) : "0.0 (cached)")
+                  << " ms" << std::endl;
         std::cout << "  Initial same-triangle check: " << t_same_tri_init_ms << " ms" << std::endl;
         std::cout << "  Ray-trace iterations: " << iteration << std::endl;
         std::cout << "    Candidate-edges total: " << time_candidate_edges_total * 1000.0 << " ms"
@@ -851,6 +870,12 @@ void handle_one_segment_t(
         if (iteration > 0) {
             std::cout << "    Intersection tests avg/iter: "
                       << (time_intersection_tests_total / iteration) * 1000.0 << " ms" << std::endl;
+        }
+        if (verbose && iteration > 0) {
+            std::cout << "    Edge vertex lookup total: " << time_edge_vertex_lookup * 1000.0
+                      << " ms" << std::endl;
+            std::cout << "    Intersection computation total: "
+                      << time_intersection_computation * 1000.0 << " ms" << std::endl;
         }
     }
 }
