@@ -445,7 +445,7 @@ void handle_one_segment_t(
     bool verbose)
 {
     // Time profiling control parameter
-    bool enable_time_profiling = true;
+    bool enable_time_profiling = false;
 
     // Profiling: total time of handling one segment
     igl::Timer seg_total_timer;

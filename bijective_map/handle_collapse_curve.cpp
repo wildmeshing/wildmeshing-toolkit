@@ -625,6 +625,8 @@ void handle_collapse_edge_curve_rational(
 
     // STEP3: get intersections with mesh (handle one segment)
     const int num_segments_before_mapping = curve.segments.size();
+    Eigen::MatrixXi TT, TTi;
+    igl::triangle_triangle_adjacency(F_before, TT, TTi);
     {
         for (int i = 0; i < all_query_seg_ids.size(); i++) {
             int seg_id = all_query_seg_ids[i];
@@ -636,7 +638,6 @@ void handle_collapse_edge_curve_rational(
             igl::Timer trace_timer;
             trace_timer.start();
 
-            Eigen::MatrixXi TT, TTi;
             handle_one_segment_t(
                 curve,
                 seg_id,
