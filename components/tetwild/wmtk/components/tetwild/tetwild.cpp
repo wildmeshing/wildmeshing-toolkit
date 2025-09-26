@@ -23,6 +23,7 @@
 #include <igl/Timer.h>
 #include <igl/boundary_facets.h>
 #include <igl/predicates/predicates.h>
+#include <igl/random_points_on_mesh.h>
 #include <igl/read_triangle_mesh.h>
 #include <igl/write_triangle_mesh.h>
 #include <spdlog/common.h>
@@ -271,26 +272,12 @@ void tetwild(nlohmann::json json_params)
 
     /////////output
     auto [max_energy, avg_energy] = mesh_new.get_max_avg_energy();
-    const std::string report_file = json_params["report"];
-    if (!report_file.empty()) {
-        std::ofstream fout(report_file);
-        nlohmann::json report;
-        report["#t"] = mesh_new.tet_size();
-        report["#v"] = mesh_new.vertex_size();
-        report["max_energy"] = max_energy;
-        report["avg_energy"] = avg_energy;
-        report["eps"] = params.eps;
-        report["threads"] = NUM_THREADS;
-        report["time"] = time;
-        report["insertion_and_preprocessing"] = insertion_time;
-        fout << std::setw(4) << report;
-        fout.close();
-    }
-
-
     wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
+
     mesh_new.output_mesh(output_path + "_final.msh");
 
+    Eigen::MatrixXd matV; // all vertices
+    Eigen::MatrixXi matF; // surface faces
     {
         auto outface = std::vector<std::array<size_t, 3>>();
         for (auto f : mesh_new.get_faces()) {
@@ -315,20 +302,83 @@ void tetwild(nlohmann::json json_params)
                 outface.emplace_back(vids);
             }
         }
-        Eigen::MatrixXd matV = Eigen::MatrixXd::Zero(mesh_new.vert_capacity(), 3);
-        for (auto v : mesh_new.get_vertices()) {
+        matV = Eigen::MatrixXd::Zero(mesh_new.vert_capacity(), 3);
+        for (const auto& v : mesh_new.get_vertices()) {
             auto vid = v.vid(mesh_new);
             matV.row(vid) = mesh_new.m_vertex_attribute[vid].m_posf;
         }
-        Eigen::MatrixXi matF(outface.size(), 3);
+        matF.resize(outface.size(), 3);
         for (auto i = 0; i < outface.size(); i++) {
             matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
         }
         igl::write_triangle_mesh(output_path + "_surface.obj", matV, matF);
 
         wmtk::logger().info("Output face size {}", outface.size());
-        wmtk::logger().info("======= finish =========");
     }
+
+    // Hausdorff
+    double hausdorff_distance = 0;
+    {
+        Eigen::MatrixXd V(verts.size(), 3);
+        for (int i = 0; i < verts.size(); ++i) {
+            V.row(i) = verts[i];
+        }
+        Eigen::MatrixXi F(tris.size(), 3);
+        for (int i = 0; i < tris.size(); ++i) {
+            F.row(i) = Eigen::Vector3i(tris[i][0], tris[i][1], tris[i][2]);
+        }
+
+        // create envelope for output
+        SampleEnvelope env;
+        std::vector<Eigen::Vector3d> v_out;
+        std::vector<Eigen::Vector3i> f_out;
+        for (int i = 0; i < matV.rows(); ++i) {
+            v_out.push_back(matV.row(i));
+        }
+        for (int i = 0; i < matF.rows(); ++i) {
+            f_out.push_back(matF.row(i));
+        }
+        env.init(v_out, f_out, params.eps);
+
+        const int n_samples = 10000;
+        Eigen::MatrixXd B;
+        Eigen::MatrixXi FI;
+        Eigen::MatrixXd X;
+
+        igl::random_points_on_mesh(n_samples, V, F, B, FI, X);
+
+        for (int i = 0; i < X.rows(); ++i) {
+            Eigen::Vector3d p = X.row(i);
+            Eigen::Vector3d r;
+            double d = env.nearest_point(p, r);
+            hausdorff_distance = std::max(hausdorff_distance, d);
+        }
+        hausdorff_distance = std::sqrt(hausdorff_distance);
+        logger().info("Hausdorff distance = {} | Envelope = {}", hausdorff_distance, params.eps);
+        if (hausdorff_distance > params.eps) {
+            logger().warn("Hausdorff distance is larger than the envelope!");
+        }
+    }
+
+
+    const std::string report_file = json_params["report"];
+    if (!report_file.empty()) {
+        std::ofstream fout(report_file);
+        nlohmann::json report;
+        report["#t"] = mesh_new.tet_size();
+        report["#v"] = mesh_new.vertex_size();
+        report["max_energy"] = max_energy;
+        report["avg_energy"] = avg_energy;
+        report["eps"] = params.eps;
+        report["threads"] = NUM_THREADS;
+        report["time"] = time;
+        report["hausdorff"] = hausdorff_distance;
+        report["insertion_and_preprocessing"] = insertion_time;
+        fout << std::setw(4) << report;
+        fout.close();
+    }
+
+    wmtk::logger().info("======= finish =========");
 }
 
 } // namespace wmtk::components::tetwild
