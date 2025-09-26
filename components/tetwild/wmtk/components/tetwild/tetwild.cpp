@@ -104,6 +104,7 @@ void tetwild(nlohmann::json json_params)
         wmtk::logger().info("input {} simplification", input_paths);
         surf_mesh.collapse_shortest(0);
         surf_mesh.consolidate_mesh();
+        surf_mesh.write_triangle_mesh(output_path + "_simplified_input.obj");
     }
 
     params.output_path = output_path;

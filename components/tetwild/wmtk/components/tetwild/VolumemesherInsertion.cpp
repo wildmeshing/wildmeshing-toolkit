@@ -177,6 +177,12 @@ void TetWildMesh::output_init_tetmesh(std::string output_dir)
     output.close();
 }
 
+void TetWildMesh::output_tracked_surface(std::string output_file)
+{
+    logger().info("Write {}", output_file);
+    output_faces(output_file, [](auto& f) { return f.m_is_surface_fs; });
+}
+
 
 bool TetWildMesh::check_polygon_face_validity(std::vector<Vector3r> points)
 {
@@ -866,7 +872,7 @@ void TetWildMesh::init_from_Volumeremesher(
     //     std::cout << "invalid mesh connectivity!" << std::endl;
     // }
 
-    std::cout << "#edge_params: " << edge_params.size() << std::endl;
+    // std::cout << "#edge_params: " << edge_params.size() << std::endl;
 
 
     // check 174 1444

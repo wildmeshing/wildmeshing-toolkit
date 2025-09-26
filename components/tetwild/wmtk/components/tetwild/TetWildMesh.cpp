@@ -623,7 +623,7 @@ void TetWildMesh::output_faces(std::string file, std::function<bool(const FaceAt
 {
     auto outface = get_faces_by_condition(cond);
     Eigen::MatrixXd matV = Eigen::MatrixXd::Zero(vert_capacity(), 3);
-    for (auto v : get_vertices()) {
+    for (const auto& v : get_vertices()) {
         auto vid = v.vid(*this);
         matV.row(vid) = m_vertex_attribute[vid].m_posf;
     }
@@ -1281,57 +1281,6 @@ int TetWildMesh::count_edge_links(const Tuple& e)
     wmtk::vector_unique(incident_surface_faces);
 
     return incident_surface_faces.size();
-}
-
-std::vector<std::vector<size_t>> TetWildMesh::transfer_vf_to_face_face_connectivity(
-    size_t num_v,
-    std::vector<std::array<size_t, 3>> faces)
-{
-    struct v_conn
-    {
-        std::vector<size_t> conn_faces;
-    };
-
-    std::vector<v_conn> vertex_connectivity(num_v);
-
-    for (int i = 0; i < faces.size(); i++) {
-        for (int j = 0; j < 3; j++) {
-            vertex_connectivity[faces[i][j]].conn_faces.push_back(i);
-        }
-    }
-
-    std::vector<std::vector<size_t>> face_connectivity(faces.size());
-    for (int i = 0; i < faces.size(); i++) {
-        size_t v1 = faces[i][0];
-        size_t v2 = faces[i][1];
-        size_t v3 = faces[i][2];
-
-        auto edge_conn_1 = wmtk::set_intersection(
-            vertex_connectivity[v1].conn_faces,
-            vertex_connectivity[v2].conn_faces);
-
-        auto edge_conn_2 = wmtk::set_intersection(
-            vertex_connectivity[v1].conn_faces,
-            vertex_connectivity[v3].conn_faces);
-
-        auto edge_conn_3 = wmtk::set_intersection(
-            vertex_connectivity[v2].conn_faces,
-            vertex_connectivity[v3].conn_faces);
-
-        for (int k = 0; k < edge_conn_1.size(); k++) {
-            if (edge_conn_1[k] != i) face_connectivity[i].push_back(edge_conn_1[k]);
-        }
-
-        for (int k = 0; k < edge_conn_2.size(); k++) {
-            if (edge_conn_2[k] != i) face_connectivity[i].push_back(edge_conn_2[k]);
-        }
-
-        for (int k = 0; k < edge_conn_3.size(); k++) {
-            if (edge_conn_3[k] != i) face_connectivity[i].push_back(edge_conn_3[k]);
-        }
-    }
-
-    return face_connectivity;
 }
 
 bool TetWildMesh::check_vertex_param_type()

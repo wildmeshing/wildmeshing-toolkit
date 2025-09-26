@@ -446,6 +446,8 @@ public:
 
     void output_init_tetmesh(std::string output_dir);
 
+    void output_tracked_surface(std::string output_file);
+
     long long checksum_vidx();
     wmtk::Rational checksum_vpos();
     long long checksum_tidx();
@@ -460,27 +462,6 @@ public:
     // for topology preservation
     int count_vertex_links(const Tuple& v);
     int count_edge_links(const Tuple& e);
-
-    std::vector<std::vector<size_t>> transfer_vf_to_face_face_connectivity(
-        size_t num_v,
-        std::vector<std::array<size_t, 3>> faces);
-
-
-    struct triangle_collections
-    {
-        std::vector<size_t> exact_to_nearly_map;
-        std::vector<Vector3r> input_vertices_rational;
-        std::vector<std::array<size_t, 3>> input_faces;
-        // can add parameterizations here
-    };
-    triangle_collections triangle_collections_from_input_surface;
-
-    struct edge_parametrization
-    {
-        Vector3d direction;
-        Vector3d origin;
-    };
-    std::vector<edge_parametrization> edge_params;
 
     // debug functions
     int orient3D(
