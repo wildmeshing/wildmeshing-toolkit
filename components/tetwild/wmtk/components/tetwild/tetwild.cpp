@@ -63,6 +63,14 @@ void tetwild(nlohmann::json json_params)
 
     params.preserve_topology = json_params["preserve_topology"];
 
+    // logger settings
+    {
+        std::string log_file_name = json_params["log_file"];
+        if (!log_file_name.empty()) {
+            wmtk::set_file_logger(log_file_name);
+        }
+    }
+
     std::vector<Eigen::Vector3d> verts;
     std::vector<std::array<size_t, 3>> tris;
     std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax;
@@ -263,16 +271,22 @@ void tetwild(nlohmann::json json_params)
 
     /////////output
     auto [max_energy, avg_energy] = mesh_new.get_max_avg_energy();
-    std::ofstream fout(output_path + ".log");
-    fout << "#t: " << mesh_new.tet_size() << std::endl;
-    fout << "#v: " << mesh_new.vertex_size() << std::endl;
-    fout << "max_energy: " << max_energy << std::endl;
-    fout << "avg_energy: " << avg_energy << std::endl;
-    fout << "eps: " << params.eps << std::endl;
-    fout << "threads: " << NUM_THREADS << std::endl;
-    fout << "time: " << time << std::endl;
-    fout << "insertion and preprocessing" << insertion_time << std::endl;
-    fout.close();
+    const std::string report_file = json_params["report"];
+    if (!report_file.empty()) {
+        std::ofstream fout(report_file);
+        nlohmann::json report;
+        report["#t"] = mesh_new.tet_size();
+        report["#v"] = mesh_new.vertex_size();
+        report["max_energy"] = max_energy;
+        report["avg_energy"] = avg_energy;
+        report["eps"] = params.eps;
+        report["threads"] = NUM_THREADS;
+        report["time"] = time;
+        report["insertion_and_preprocessing"] = insertion_time;
+        fout << std::setw(4) << report;
+        fout.close();
+    }
+
 
     wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
     mesh_new.output_mesh(output_path + "_final.msh");

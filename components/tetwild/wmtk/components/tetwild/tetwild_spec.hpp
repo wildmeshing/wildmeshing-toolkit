@@ -2,8 +2,7 @@
 #include <nlohmann/json.hpp>
 namespace {
 
-nlohmann::json tetwild_spec = R"(
-[
+nlohmann::json tetwild_spec = R"([
   {
     "pointer": "/",
     "type": "object",
@@ -18,7 +17,9 @@ nlohmann::json tetwild_spec = R"(
       "eps_rel",
       "length_rel",
       "stop_energy",
-      "preserve_topology"
+      "preserve_topology",
+      "log_file",
+      "report"
     ]
   },
   {
@@ -72,7 +73,7 @@ nlohmann::json tetwild_spec = R"(
     "pointer": "/filter_with_input",
     "type": "bool",
     "default": false,
-    "doc": "???"
+    "doc": "Use the input mesh to apply the winding number. This behavior is in most cases undesired, as the boundary of the filtered mesh (outside removed) might not lie within the described envelope."
   },
   {
     "pointer": "/eps_rel",
@@ -97,6 +98,18 @@ nlohmann::json tetwild_spec = R"(
     "type": "bool",
     "default": false,
     "doc": "Preserve the topology of the input surface."
+  },
+  {
+    "pointer": "/log_file",
+    "type": "string",
+    "default": "",
+    "doc": "Logs are not just printed on the terminal but also saved in this file."
+  },
+  {
+    "pointer": "/report",
+    "type": "string",
+    "default": "",
+    "doc": "A JSON file that stores information about the result and the method execution, e.g., runtime."
   }
 ]
 )"_json;

@@ -1,5 +1,6 @@
 #include <wmtk/utils/Logger.hpp>
 
+#include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
@@ -91,6 +92,18 @@ spdlog::logger& opt_logger()
 void set_logger(std::shared_ptr<spdlog::logger> x)
 {
     get_shared_logger() = std::move(x);
+}
+
+void set_file_logger(const std::string& log_file)
+{
+    auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(log_file, true);
+
+    std::shared_ptr<spdlog::logger> x = std::make_shared<spdlog::logger>(
+        std::string("wmtk"),
+        spdlog::sinks_init_list{console_sink, file_sink});
+
+    set_logger(x);
 }
 
 // Use a custom logger

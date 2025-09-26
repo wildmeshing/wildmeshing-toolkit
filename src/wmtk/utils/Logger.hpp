@@ -34,6 +34,13 @@ spdlog::logger& opt_logger();
 void set_logger(std::shared_ptr<spdlog::logger> logger);
 
 ///
+/// Add a file logger to the current logger.
+///
+/// @param[in]  log_file  All output will be written to that file additionally to the already existing output.
+///
+void set_file_logger(const std::string& log_file);
+
+///
 /// Setup a logger object to be used by WildmeshToolkit optimization. Calling this function with other WildmeshToolkit function
 /// is not thread-safe.
 ///
