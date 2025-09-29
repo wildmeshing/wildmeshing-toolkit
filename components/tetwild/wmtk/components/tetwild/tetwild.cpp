@@ -22,15 +22,67 @@
 #include <geogram/mesh/mesh_io.h>
 #include <igl/Timer.h>
 #include <igl/boundary_facets.h>
+#include <igl/euler_characteristic.h>
+#include <igl/facet_components.h>
 #include <igl/predicates/predicates.h>
 #include <igl/random_points_on_mesh.h>
 #include <igl/read_triangle_mesh.h>
+#include <igl/remove_unreferenced.h>
 #include <igl/write_triangle_mesh.h>
 #include <spdlog/common.h>
 
 #include "tetwild_spec.hpp"
 
 namespace wmtk::components::tetwild {
+
+/**
+ * @brief Compute the euler characteristic for each connected component and return them in a sorted
+ * vector.
+ */
+std::vector<int> compute_euler_characteristics(const MatrixXi& F)
+{
+    // get components
+    VectorXi C;
+    const int n_components = igl::facet_components(F, C);
+
+    std::vector<int> n_faces(n_components, 0); // number of faces per component
+    for (int i = 0; i < C.rows(); ++i) {
+        n_faces[C[i]] += 1;
+    }
+
+    std::vector<MatrixXi> FF(n_components); // vector of components
+    for (int i = 0; i < n_components; ++i) {
+        FF[i].resize(n_faces[i], 3);
+    }
+
+    std::vector<int> face_counter(n_components, 0);
+    for (int i = 0; i < C.rows(); ++i) {
+        const int& cid = C[i];
+        FF[cid].row(face_counter[cid]) = F.row(i);
+        ++face_counter[cid];
+    }
+    // FF contains now individual components but with offsetted IDs
+    for (int i = 0; i < n_components; ++i) {
+        // Clean up vertex IDs for each component
+        const MatrixXi& F_copy = FF[i];
+        int n_vertices = F_copy.maxCoeff() + 1;
+        const MatrixXd V = MatrixXd::Zero(n_vertices, 3);
+        VectorXi I, J;
+        MatrixXd NV;
+        MatrixXi NF;
+        igl::remove_unreferenced(V, F_copy, NV, NF, I, J);
+        FF[i] = NF;
+    }
+
+    std::vector<int> euler_characteristics(n_components);
+    for (int i = 0; i < n_components; ++i) {
+        euler_characteristics[i] = igl::euler_characteristic(FF[i]);
+    }
+
+    std::sort(euler_characteristics.begin(), euler_characteristics.end());
+
+    return euler_characteristics;
+}
 
 void tetwild(nlohmann::json json_params)
 {
@@ -56,7 +108,7 @@ void tetwild(nlohmann::json json_params)
     bool use_sample_envelope = json_params["use_sample_envelope"];
     int NUM_THREADS = json_params["num_threads"];
     int max_its = json_params["max_iterations"];
-    bool filter_with_input = json_params["filter_with_input"];
+    std::string filter_option = json_params["filter"];
 
     params.epsr = json_params["eps_rel"];
     params.lr = json_params["length_rel"];
@@ -102,6 +154,16 @@ void tetwild(nlohmann::json json_params)
     //     if (verts[i][1] > box_minmax.second[1]) box_minmax.second[1] = verts[i][1];
     //     if (verts[i][2] > box_minmax.second[2]) box_minmax.second[2] = verts[i][2];
     // }
+
+    {
+        Eigen::MatrixXi F(tris.size(), 3);
+        for (int i = 0; i < tris.size(); ++i) {
+            F.row(i) = Eigen::Vector3i(tris[i][0], tris[i][1], tris[i][2]);
+        }
+
+        const auto ecs = compute_euler_characteristics(F);
+        logger().info("Input euler characteristic: {}", ecs);
+    }
 
     double diag = (box_minmax.first - box_minmax.second).norm();
     const double envelope_size = params.epsr * diag;
@@ -256,12 +318,28 @@ void tetwild(nlohmann::json json_params)
     //     return f.m_is_surface_fs;
     // });
 
+    // apply input winding number
+    mesh_new.compute_winding_number(verts, tris);
+    // apply tracked surface winding number
+    mesh_new.compute_winding_number();
+    // apply flood fill
+    {
+        int num_parts = mesh_new.flood_fill();
+        logger().info("flood fill parts {}", num_parts);
+    }
+
     // ////winding number
-    if (filter_with_input)
-        mesh_new.filter_outside(verts, tris, true);
-    else
-        mesh_new.filter_outside({}, {}, true);
+    if (filter_option == "input") {
+        mesh_new.filter_with_input_surface_winding_number();
+    } else if (filter_option == "tracked") {
+        mesh_new.filter_with_tracked_surface_winding_number();
+    } else if (filter_option == "flood") {
+        mesh_new.filter_with_flood_fill();
+    } else if (filter_option != "none") {
+        logger().error("Unknown filter option '{}'. No filtering performed.", filter_option);
+    }
     mesh_new.consolidate_mesh();
+
     double time = timer.getElapsedTime();
     wmtk::logger().info("total time {}s", time);
     if (mesh_new.tet_size() == 0) {
@@ -280,27 +358,35 @@ void tetwild(nlohmann::json json_params)
     Eigen::MatrixXi matF; // surface faces
     {
         auto outface = std::vector<std::array<size_t, 3>>();
-        for (auto f : mesh_new.get_faces()) {
-            auto res = mesh_new.switch_tetrahedron(f);
-            if (!res.has_value()) {
-                auto verts = mesh_new.get_face_vertices(f);
-                std::array<size_t, 3> vids = {
-                    {verts[0].vid(mesh_new), verts[1].vid(mesh_new), verts[2].vid(mesh_new)}};
-                auto vs = mesh_new.oriented_tet_vertices(f);
-                for (int j = 0; j < 4; j++) {
-                    if (std::find(vids.begin(), vids.end(), vs[j].vid(mesh_new)) == vids.end()) {
-                        auto res = igl::predicates::orient3d(
-                            mesh_new.m_vertex_attribute[vids[0]].m_posf,
-                            mesh_new.m_vertex_attribute[vids[1]].m_posf,
-                            mesh_new.m_vertex_attribute[vids[2]].m_posf,
-                            mesh_new.m_vertex_attribute[vs[j].vid(mesh_new)].m_posf);
-                        if (res == igl::predicates::Orientation::NEGATIVE)
-                            std::swap(vids[1], vids[2]);
-                        break;
-                    }
+        for (const auto& f : mesh_new.get_faces()) {
+            if (filter_option == "none") {
+                // output tracked surface
+                const size_t fid = f.fid(mesh_new);
+                if (!mesh_new.m_face_attribute[fid].m_is_surface_fs) {
+                    continue;
                 }
-                outface.emplace_back(vids);
+            } else {
+                auto res = mesh_new.switch_tetrahedron(f);
+                if (res) {
+                    continue;
+                }
             }
+            auto verts = mesh_new.get_face_vertices(f);
+            std::array<size_t, 3> vids = {
+                {verts[0].vid(mesh_new), verts[1].vid(mesh_new), verts[2].vid(mesh_new)}};
+            auto vs = mesh_new.oriented_tet_vertices(f);
+            for (int j = 0; j < 4; j++) {
+                if (std::find(vids.begin(), vids.end(), vs[j].vid(mesh_new)) == vids.end()) {
+                    auto res = igl::predicates::orient3d(
+                        mesh_new.m_vertex_attribute[vids[0]].m_posf,
+                        mesh_new.m_vertex_attribute[vids[1]].m_posf,
+                        mesh_new.m_vertex_attribute[vids[2]].m_posf,
+                        mesh_new.m_vertex_attribute[vs[j].vid(mesh_new)].m_posf);
+                    if (res == igl::predicates::Orientation::NEGATIVE) std::swap(vids[1], vids[2]);
+                    break;
+                }
+            }
+            outface.emplace_back(vids);
         }
         matV = Eigen::MatrixXd::Zero(mesh_new.vert_capacity(), 3);
         for (const auto& v : mesh_new.get_vertices()) {
@@ -316,8 +402,10 @@ void tetwild(nlohmann::json json_params)
         wmtk::logger().info("Output face size {}", outface.size());
     }
 
-    // Hausdorff
+    // Hausdorff + Euler Characteristic
     double hausdorff_distance = 0;
+    std::vector<int> ecs_input;
+    std::vector<int> ecs_output;
     {
         Eigen::MatrixXd V(verts.size(), 3);
         for (int i = 0; i < verts.size(); ++i) {
@@ -358,6 +446,11 @@ void tetwild(nlohmann::json json_params)
         if (hausdorff_distance > params.eps) {
             logger().warn("Hausdorff distance is larger than the envelope!");
         }
+
+        ecs_input = compute_euler_characteristics(F);
+        logger().info("Input euler characteristic: {}", ecs_input);
+        ecs_output = compute_euler_characteristics(matF);
+        logger().info("Output euler characteristic: {}", ecs_output);
     }
 
 
@@ -373,6 +466,8 @@ void tetwild(nlohmann::json json_params)
         report["threads"] = NUM_THREADS;
         report["time"] = time;
         report["hausdorff"] = hausdorff_distance;
+        report["input_euler_characteristic"] = ecs_input;
+        report["output_euler_characteristic"] = ecs_output;
         report["insertion_and_preprocessing"] = insertion_time;
         fout << std::setw(4) << report;
         fout.close();

@@ -533,10 +533,9 @@ void bfs_orient(const Eigen::MatrixXi& F, Eigen::MatrixXi& FF, Eigen::VectorXi& 
     }
 }
 
-void TetWildMesh::filter_outside(
+void TetWildMesh::compute_winding_number(
     const std::vector<Vector3d>& vertices,
-    const std::vector<std::array<size_t, 3>>& faces,
-    bool remove_ouside)
+    const std::vector<std::array<size_t, 3>>& faces)
 {
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
@@ -561,11 +560,11 @@ void TetWildMesh::filter_outside(
         for (auto i = 0; i < outface.size(); i++) {
             F.row(i) << outface[i][0], outface[i][1], outface[i][2];
         }
-        wmtk::logger().info("Output face size {}", outface.size());
+        // wmtk::logger().info("Output face size {}", outface.size());
         auto F0 = F;
         Eigen::VectorXi C;
         bfs_orient(F0, F, C);
-        wmtk::logger().info("BFS orient {}", F.rows());
+        // wmtk::logger().info("BFS orient {}", F.rows());
     }
 
     const auto& tets = get_tets();
@@ -581,7 +580,7 @@ void TetWildMesh::filter_outside(
 
     if (W.maxCoeff() <= 0.5) {
         // all removed, let's invert.
-        wmtk::logger().info("Correcting");
+        wmtk::logger().info("Correcting winding number");
         for (auto i = 0; i < F.rows(); i++) {
             auto temp = F(i, 0);
             F(i, 0) = F(i, 1);
@@ -596,26 +595,94 @@ void TetWildMesh::filter_outside(
     }
 
     // store winding number in mesh
-    {
-        const auto tets = get_tets();
+    if (vertices.empty()) {
+        // from tracked surface
         for (int i = 0; i < tets.size(); ++i) {
             const size_t tid = tets[i].tid(*this);
-            m_tet_attribute[tid].m_winding_number = W(i);
+            m_tet_attribute[tid].m_winding_number_tracked = W(i);
+        }
+    } else {
+        // from input surface
+        for (int i = 0; i < tets.size(); ++i) {
+            const size_t tid = tets[i].tid(*this);
+            m_tet_attribute[tid].m_winding_number_input = W(i);
+        }
+    }
+}
+
+void TetWildMesh::filter_with_input_surface_winding_number()
+{
+    std::vector<size_t> rm_tids;
+    for (const Tuple& t : get_tets()) {
+        const size_t tid = t.tid(*this);
+        if (m_tet_attribute[tid].m_winding_number_input <= 0.5) {
+            rm_tids.emplace_back(tid);
         }
     }
 
-    wmtk::logger().info("Removing...");
+    remove_tets_by_ids(rm_tids);
+}
+
+void TetWildMesh::filter_with_tracked_surface_winding_number()
+{
+    std::vector<size_t> rm_tids;
+    for (const Tuple& t : get_tets()) {
+        const size_t tid = t.tid(*this);
+        if (m_tet_attribute[tid].m_winding_number_tracked <= 0.5) {
+            rm_tids.emplace_back(tid);
+        }
+    }
+
+    remove_tets_by_ids(rm_tids);
+}
+
+void TetWildMesh::filter_with_flood_fill()
+{
+    std::map<int, size_t> id_counter;
+
+    // find ID that appears the most on the boundary
+    for (const Tuple& t : get_faces()) {
+        if (t.switch_tetrahedron(*this)) {
+            // face is interior
+            continue;
+        }
+        // face is boundary
+        const int id = m_tet_attribute[t.tid(*this)].part_id;
+
+        if (id_counter.count(id) == 0) {
+            id_counter[id] = 1;
+        } else {
+            id_counter[id]++;
+        }
+    }
+
+    if (id_counter.size() != 1) {
+        logger().warn(
+            "There were {} flood fill IDs found at the boundary. Using the one with most "
+            "occurances.",
+            id_counter.size());
+    }
+
+    int best_id = id_counter.begin()->first;
+    size_t best_count = id_counter.begin()->second;
+    for (const auto& [id, count] : id_counter) {
+        if (count > best_count) {
+            best_id = id;
+            best_count = count;
+        }
+    }
+
+    logger().info("Filter with flood fill ID {}", best_id);
 
     std::vector<size_t> rm_tids;
-    for (int i = 0; i < W.rows(); i++) {
-        if (W(i) <= 0.5) {
-            if (remove_ouside) {
-                rm_tids.push_back(tets[i].tid(*this));
-            }
+    for (const Tuple& t : get_tets()) {
+        const size_t tid = t.tid(*this);
+        if (m_tet_attribute[tid].part_id == best_id) {
+            rm_tids.emplace_back(tid);
         }
     }
 
-    if (remove_ouside) remove_tets_by_ids(rm_tids);
+    remove_tets_by_ids(rm_tids);
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -666,8 +733,14 @@ void TetWildMesh::output_mesh(std::string file)
     msh.add_tet_attribute<1>("t energy", [&](size_t i) {
         return std::cbrt(m_tet_attribute[i].m_quality);
     });
-    msh.add_tet_attribute<1>("winding_number", [&](size_t i) {
-        return std::cbrt(m_tet_attribute[i].m_winding_number);
+    msh.add_tet_attribute<1>("winding_number_input", [&](size_t i) {
+        return std::cbrt(m_tet_attribute[i].m_winding_number_input);
+    });
+    msh.add_tet_attribute<1>("winding_number_tracked", [&](size_t i) {
+        return std::cbrt(m_tet_attribute[i].m_winding_number_tracked);
+    });
+    msh.add_tet_attribute<1>("part", [&](size_t i) {
+        return std::cbrt(m_tet_attribute[i].part_id);
     });
 
     msh.save(file, true);
@@ -1401,8 +1474,8 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
 {
     consolidate_mesh();
     // flood fill
-    int num_parts = flood_fill();
-    std::cout << "flood fill parts: " << num_parts << std::endl;
+    // int num_parts = flood_fill();
+    // std::cout << "flood fill parts: " << num_parts << std::endl;
     const auto& vs = get_vertices();
     const auto& tets = get_tets();
 
@@ -1410,13 +1483,15 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
     Eigen::MatrixXi T(tets.size(), 4);
 
     Eigen::MatrixXd parts(tets.size(), 1);
-    Eigen::MatrixXd wn(tets.size(), 1);
+    Eigen::MatrixXd wn_input(tets.size(), 1);
+    Eigen::MatrixXd wn_tracked(tets.size(), 1);
 
     int index = 0;
-    for (auto t : tets) {
+    for (const Tuple& t : tets) {
         size_t tid = t.tid(*this);
         parts(index, 0) = m_tet_attribute[tid].part_id;
-        wn(index, 0) = m_tet_attribute[tid].m_winding_number;
+        wn_input(index, 0) = m_tet_attribute[tid].m_winding_number_input;
+        wn_tracked(index, 0) = m_tet_attribute[tid].m_winding_number_tracked;
 
         const auto& vs = oriented_tet_vertices(t);
         for (int j = 0; j < 4; j++) {
@@ -1441,7 +1516,8 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
     const auto out_path = path + (use_hdf5 ? ".hdf" : ".vtu");
 
     writer->add_cell_field("part", parts);
-    writer->add_cell_field("winding_number", wn);
+    writer->add_cell_field("winding_number_input", wn_input);
+    writer->add_cell_field("winding_number_tracked", wn_tracked);
     writer->write_mesh(out_path, V, T);
 }
 

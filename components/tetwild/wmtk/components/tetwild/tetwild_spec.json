@@ -9,7 +9,7 @@
       "use_sample_envelope",
       "num_threads",
       "max_iterations",
-      "filter_with_input",
+      "filter",
       "eps_rel",
       "length_rel",
       "stop_energy",
@@ -66,10 +66,11 @@
     "doc": "Maximum iterations before stopping."
   },
   {
-    "pointer": "/filter_with_input",
-    "type": "bool",
-    "default": false,
-    "doc": "Use the input mesh to apply the winding number. This behavior is in most cases undesired, as the boundary of the filtered mesh (outside removed) might not lie within the described envelope."
+    "pointer": "/filter",
+    "type": "string",
+    "options": ["flood", "input", "tracked", "none"],
+    "default": "tracked",
+    "doc": "Remove the outside region based on different criteria. 'flood': flood fill. 'input': winding number w.r.t. the input. 'tracked': winding number w.r.t. the tracked surface. 'none': Do not filter. Flood fill only works if the input is closed. Otherwise, it results in an empty mesh. Filtering w.r.t. the input might cause wrinkles along the surface as some tets might be falsely tagged. Filtering w.r.t. the tracked surface can lead to missing pieces if the input consists of multiple components."
   },
   {
     "pointer": "/eps_rel",

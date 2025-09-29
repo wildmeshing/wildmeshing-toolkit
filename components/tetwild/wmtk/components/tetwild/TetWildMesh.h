@@ -84,8 +84,9 @@ class TetAttributes
 {
 public:
     double m_quality;
-    double m_winding_number = 0;
-    int part_id = -1;
+    double m_winding_number_input = 0; // winding number w.r.t. the input
+    double m_winding_number_tracked = 0; // winding number w.r.t. the tracked surface
+    int part_id = -1; // flood fill ID
 };
 
 class TetWildMesh : public wmtk::TetMesh
@@ -318,10 +319,20 @@ public:
         const std::array<int, 4>& ops,
         bool collapse_limit_length = true);
     std::tuple<double, double> get_max_avg_energy();
-    void filter_outside(
+
+    /**
+     * @brief Compute the winding number.
+     *
+     * If `vertices` and `faces` are empty, compute the winding number for the tracked surface.
+     * Otherwise, compute the winding number for the input surface given by `vertices` and `faces`.
+     */
+    void compute_winding_number(
         const std::vector<Vector3d>& vertices = {},
-        const std::vector<std::array<size_t, 3>>& faces = {},
-        bool remove_ouside = true);
+        const std::vector<std::array<size_t, 3>>& faces = {});
+
+    void filter_with_input_surface_winding_number();
+    void filter_with_tracked_surface_winding_number();
+    void filter_with_flood_fill();
 
     bool check_attributes();
 
