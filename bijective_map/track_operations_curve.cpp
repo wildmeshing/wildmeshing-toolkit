@@ -641,3 +641,28 @@ void map_local_boundary_qps(
         }
     }
 }
+
+
+// Rounding segments to double
+void rounding_segments_to_double(
+    const std::vector<std::vector<std::vector<int>>>& all_curve_parts_after_mapping,
+    std::vector<query_curve_t<wmtk::Rational>>& curves)
+{
+    for (int curve_id = 0; curve_id < all_curve_parts_after_mapping[curve_id].size(); curve_id++) {
+        for (int part_id = 0; part_id < all_curve_parts_after_mapping[curve_id].size(); part_id++) {
+            const auto& curve_part = all_curve_parts_after_mapping[curve_id][part_id];
+            for (int i = 0; i < curve_part.size() - 1; i++) {
+                int seg_id = curve_part[i];
+                int next_seg_id = curve_part[i + 1];
+                for (int j = 0; j < 3; j++) {
+                    curves[curve_id].segments[seg_id].bcs[1](j) =
+                        wmtk::Rational(curves[curve_id].segments[seg_id].bcs[1](j).to_double());
+                    curves[curve_id].segments[next_seg_id].bcs[0](j) = wmtk::Rational(
+                        curves[curve_id].segments[next_seg_id].bcs[0](j).to_double());
+                }
+
+                // TODO: Check if the segment intersects with other segments
+            }
+        }
+    }
+}

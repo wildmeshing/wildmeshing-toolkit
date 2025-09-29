@@ -267,6 +267,9 @@ template <typename CoordType>
 int compute_curve_self_intersections_t(const query_curve_t<CoordType>& curve, bool verbose = true);
 int compute_curve_self_intersections(const query_curve& curve, bool verbose = true);
 
+bool seg_seg_intersect_rational(
+    const query_segment_t<wmtk::Rational>& seg1,
+    const query_segment_t<wmtk::Rational>& seg2);
 ////////////////////////////////////////////////////////////
 // Utils functions for all rational curves version
 ////////////////////////////////////////////////////////////

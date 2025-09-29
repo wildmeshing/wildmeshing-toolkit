@@ -735,6 +735,8 @@ void handle_collapse_edge_curves_fast_rational(
         }
     }
 
+    // TODO: get all intersections
+    {}
     // TODO: get all new seg and convert them to double
     {
         // handle everything to double
