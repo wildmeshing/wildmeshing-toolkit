@@ -1369,7 +1369,7 @@ int TetWildMesh::flood_fill()
     auto tets = get_tets();
     std::map<size_t, bool> visited;
 
-    for (auto t : tets) {
+    for (const Tuple& t : tets) {
         size_t tid = t.tid(*this);
         if (visited.find(tid) != visited.end()) continue;
 
@@ -1463,7 +1463,7 @@ int TetWildMesh::flood_fill()
             }
         }
 
-        std::cout << std::endl;
+        // std::cout << std::endl;
 
         current_id++;
     }
@@ -1485,6 +1485,7 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
     Eigen::MatrixXd parts(tets.size(), 1);
     Eigen::MatrixXd wn_input(tets.size(), 1);
     Eigen::MatrixXd wn_tracked(tets.size(), 1);
+    Eigen::MatrixXd t_energy(tets.size(), 1);
 
     int index = 0;
     for (const Tuple& t : tets) {
@@ -1492,6 +1493,7 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
         parts(index, 0) = m_tet_attribute[tid].part_id;
         wn_input(index, 0) = m_tet_attribute[tid].m_winding_number_input;
         wn_tracked(index, 0) = m_tet_attribute[tid].m_winding_number_tracked;
+        t_energy(index, 0) = std::cbrt(m_tet_attribute[tid].m_quality);
 
         const auto& vs = oriented_tet_vertices(t);
         for (int j = 0; j < 4; j++) {
@@ -1518,6 +1520,7 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
     writer->add_cell_field("part", parts);
     writer->add_cell_field("winding_number_input", wn_input);
     writer->add_cell_field("winding_number_tracked", wn_tracked);
+    writer->add_cell_field("t_energy", t_energy);
     writer->write_mesh(out_path, V, T);
 }
 

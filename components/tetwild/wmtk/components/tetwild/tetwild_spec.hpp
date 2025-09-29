@@ -18,6 +18,7 @@ nlohmann::json tetwild_spec = R"([
       "length_rel",
       "stop_energy",
       "preserve_topology",
+      "throw_on_fail",
       "log_file",
       "report"
     ]
@@ -99,6 +100,12 @@ nlohmann::json tetwild_spec = R"([
     "type": "bool",
     "default": false,
     "doc": "Preserve the topology of the input surface."
+  },
+  {
+    "pointer": "/throw_on_fail",
+    "type": "bool",
+    "default": false,
+    "doc": "Throw exception if the output does not fulfil the desired criteria. No output will be generated."
   },
   {
     "pointer": "/log_file",

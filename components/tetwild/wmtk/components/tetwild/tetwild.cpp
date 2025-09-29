@@ -346,14 +346,6 @@ void tetwild(nlohmann::json json_params)
         log_and_throw_error("Empty Output after Filter!");
     }
 
-    mesh_new.save_paraview(output_path, false);
-
-    /////////output
-    auto [max_energy, avg_energy] = mesh_new.get_max_avg_energy();
-    wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
-
-    mesh_new.output_mesh(output_path + "_final.msh");
-
     Eigen::MatrixXd matV; // all vertices
     Eigen::MatrixXi matF; // surface faces
     {
@@ -397,7 +389,6 @@ void tetwild(nlohmann::json json_params)
         for (auto i = 0; i < outface.size(); i++) {
             matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
         }
-        igl::write_triangle_mesh(output_path + "_surface.obj", matV, matF);
 
         wmtk::logger().info("Output face size {}", outface.size());
     }
@@ -451,8 +442,14 @@ void tetwild(nlohmann::json json_params)
         logger().info("Input euler characteristic: {}", ecs_input);
         ecs_output = compute_euler_characteristics(matF);
         logger().info("Output euler characteristic: {}", ecs_output);
+        if (ecs_input != ecs_output) {
+            logger().warn("Output topology is not the same as the input topology!");
+        }
     }
 
+    /////////output
+    auto [max_energy, avg_energy] = mesh_new.get_max_avg_energy();
+    wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
 
     const std::string report_file = json_params["report"];
     if (!report_file.empty()) {
@@ -472,6 +469,26 @@ void tetwild(nlohmann::json json_params)
         fout << std::setw(4) << report;
         fout.close();
     }
+
+    // check metrics
+    if (json_params["throw_on_fail"]) {
+        if (max_energy > params.stop_energy) {
+            log_and_throw_error("Max energy is too large.");
+        }
+        if (hausdorff_distance > params.eps) {
+            log_and_throw_error("Hausdorff distance is larger than the envelope!");
+        }
+        if (params.preserve_topology && ecs_input != ecs_output) {
+            log_and_throw_error("Input topology was not preserved.");
+        }
+    }
+
+
+    mesh_new.save_paraview(output_path, false);
+
+    mesh_new.output_mesh(output_path + "_final.msh");
+
+    igl::write_triangle_mesh(output_path + "_surface.obj", matV, matF);
 
     wmtk::logger().info("======= finish =========");
 }
