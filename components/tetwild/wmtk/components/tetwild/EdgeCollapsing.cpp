@@ -301,7 +301,7 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
             return false;
         }
         double q = get_quality(tet);
-        if (!VA[v1_id].m_is_rounded && q > cache.max_energy) {
+        if (VA[v1_id].m_is_rounded && q > cache.max_energy) {
             // if (debug_flag)
             //     std::cout << "energy reject " << q << " " << cache.max_energy << std::endl;
 
