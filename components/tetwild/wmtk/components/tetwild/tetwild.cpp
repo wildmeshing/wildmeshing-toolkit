@@ -318,6 +318,19 @@ void tetwild(nlohmann::json json_params)
     //     return f.m_is_surface_fs;
     // });
 
+    bool all_rounded = true;
+    for (const auto& v : mesh_new.get_vertices()) {
+        if (!mesh_new.m_vertex_attribute[v.vid(mesh_new)].m_is_rounded) {
+            all_rounded = false;
+            break;
+        }
+    }
+    if (all_rounded) {
+        wmtk::logger().info("All vertices are rounded");
+    } else {
+        wmtk::logger().error("Not all vertices rounded!");
+    }
+
     // apply input winding number
     mesh_new.compute_winding_number(verts, tris);
     // apply tracked surface winding number
@@ -463,6 +476,7 @@ void tetwild(nlohmann::json json_params)
         report["threads"] = NUM_THREADS;
         report["time"] = time;
         report["hausdorff"] = hausdorff_distance;
+        report["all_rounded"] = all_rounded;
         report["input_euler_characteristic"] = ecs_input;
         report["output_euler_characteristic"] = ecs_output;
         report["insertion_and_preprocessing"] = insertion_time;
@@ -472,6 +486,9 @@ void tetwild(nlohmann::json json_params)
 
     // check metrics
     if (json_params["throw_on_fail"]) {
+        if (!all_rounded) {
+            log_and_throw_error("Not all vertices rounded!");
+        }
         if (max_energy > params.stop_energy) {
             log_and_throw_error("Max energy is too large.");
         }
