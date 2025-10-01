@@ -17,12 +17,14 @@ namespace wmtk::components::tetwild {
 
 bool TetWildMesh::smooth_before(const Tuple& t)
 {
+    const bool r = round(t);
+
     if (!m_vertex_attribute[t.vid(*this)].on_bbox_faces.empty()) return false;
 
     if (m_vertex_attribute[t.vid(*this)].m_is_rounded) return true;
     // try to round.
     // Note: no need to roll back.
-    return round(t);
+    return r;
 }
 
 
