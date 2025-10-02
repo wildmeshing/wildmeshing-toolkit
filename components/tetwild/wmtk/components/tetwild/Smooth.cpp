@@ -218,6 +218,10 @@ bool TetWildMesh::smooth_after(const Tuple& t)
 
 void TetWildMesh::smooth_all_vertices()
 {
+    // the order is randomized in every iteration but deterministic when executed sequentially
+    static int rnd_seed = 0;
+    srand(rnd_seed++);
+
     igl::Timer timer;
     double time;
     timer.start();
@@ -241,6 +245,7 @@ void TetWildMesh::smooth_all_vertices()
     } else {
         timer.start();
         auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kSeq>();
+        executor.priority = [&](auto& m, auto op, auto& t) -> double { return rand(); };
         executor(*this, collect_all_ops);
         time = timer.getElapsedTime();
         wmtk::logger().info("vertex smoothing operation time serial: {}s", time);
