@@ -735,27 +735,24 @@ void handle_collapse_edge_curves_fast_rational(
         }
     }
 
-    // TODO: get all intersections
-    {}
     // TODO: get all new seg and convert them to double
     {
-        // handle everything to double
-        for (int curve_id = 0; curve_id < all_curve_parts_after_mapping.size(); curve_id++) {
-            for (int part_id = 0; part_id < all_curve_parts_after_mapping[curve_id].size();
-                 part_id++) {
-                const auto& curve_part = all_curve_parts_after_mapping[curve_id][part_id];
-                for (int i = 0; i < curve_part.size() - 1; i++) {
-                    int seg_id = curve_part[i];
-                    int next_seg_id = curve_part[i + 1];
-                    for (int j = 0; j < 3; j++) {
-                        curves[curve_id].segments[seg_id].bcs[1](j) =
-                            wmtk::Rational(curves[curve_id].segments[seg_id].bcs[1](j).to_double());
-                        curves[curve_id].segments[next_seg_id].bcs[0](j) = wmtk::Rational(
-                            curves[curve_id].segments[next_seg_id].bcs[0](j).to_double());
-                    }
-                }
-            }
-        }
+        igl::Timer timer;
+        timer.start();
+        rounding_segments_to_double(all_curve_parts_after_mapping, curves);
+        double elapsed = timer.getElapsedTime() * 1000;
+        std::cout << "rounding_segments_to_double time: " << elapsed << " ms" << std::endl;
+    }
+
+
+    // TODO: try to remove segs
+    // TODO: need to seg a threshold for this
+    {
+        igl::Timer timer;
+        timer.start();
+        merge_segments(all_curve_parts_after_mapping, curves);
+        double elapsed = timer.getElapsedTime() * 1000;
+        std::cout << "merge_segments time: " << elapsed << " ms" << std::endl;
     }
 }
 

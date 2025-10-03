@@ -371,6 +371,80 @@ bool seg_seg_intersect_rational(
     return (t >= zero && t <= one && u >= zero && u <= one);
 }
 
+// Get segment intersection with parameter location
+SegmentIntersectionInfo seg_seg_intersect_with_params_rational(
+    const query_segment_t<wmtk::Rational>& seg1,
+    const query_segment_t<wmtk::Rational>& seg2)
+{
+    SegmentIntersectionInfo result;
+    result.intersects = false;
+    result.t = wmtk::Rational(0);
+    result.u = wmtk::Rational(0);
+
+    // Early exit if segments are in different faces
+    if (seg1.f_id != seg2.f_id) {
+        return result;
+    }
+
+    // Extract coordinates
+    const wmtk::Rational& s1_a_x = seg1.bcs[0](0);
+    const wmtk::Rational& s1_a_y = seg1.bcs[0](1);
+    const wmtk::Rational& s1_b_x = seg1.bcs[1](0);
+    const wmtk::Rational& s1_b_y = seg1.bcs[1](1);
+
+    const wmtk::Rational& s2_a_x = seg2.bcs[0](0);
+    const wmtk::Rational& s2_a_y = seg2.bcs[0](1);
+    const wmtk::Rational& s2_b_x = seg2.bcs[1](0);
+    const wmtk::Rational& s2_b_y = seg2.bcs[1](1);
+
+    // Fast bounding box check
+    const wmtk::Rational& s1_min_x = (s1_a_x < s1_b_x) ? s1_a_x : s1_b_x;
+    const wmtk::Rational& s1_max_x = (s1_a_x < s1_b_x) ? s1_b_x : s1_a_x;
+    const wmtk::Rational& s1_min_y = (s1_a_y < s1_b_y) ? s1_a_y : s1_b_y;
+    const wmtk::Rational& s1_max_y = (s1_a_y < s1_b_y) ? s1_b_y : s1_a_y;
+
+    const wmtk::Rational& s2_min_x = (s2_a_x < s2_b_x) ? s2_a_x : s2_b_x;
+    const wmtk::Rational& s2_max_x = (s2_a_x < s2_b_x) ? s2_b_x : s2_a_x;
+    const wmtk::Rational& s2_min_y = (s2_a_y < s2_b_y) ? s2_a_y : s2_b_y;
+    const wmtk::Rational& s2_max_y = (s2_a_y < s2_b_y) ? s2_b_y : s2_a_y;
+
+    if (s1_max_x < s2_min_x || s2_max_x < s1_min_x || s1_max_y < s2_min_y || s2_max_y < s1_min_y) {
+        return result; // No intersection
+    }
+
+    // Direction vectors
+    const wmtk::Rational s1_dx = s1_b_x - s1_a_x;
+    const wmtk::Rational s1_dy = s1_b_y - s1_a_y;
+    const wmtk::Rational s2_dx = s2_b_x - s2_a_x;
+    const wmtk::Rational s2_dy = s2_b_y - s2_a_y;
+
+    // Cross product to check for parallelism
+    const wmtk::Rational cross = s1_dx * s2_dy - s1_dy * s2_dx;
+    if (cross == wmtk::Rational(0)) {
+        return result; // Parallel segments
+    }
+
+    // Vector from s1_a to s2_a
+    const wmtk::Rational dx_diff = s2_a_x - s1_a_x;
+    const wmtk::Rational dy_diff = s2_a_y - s1_a_y;
+
+    // Compute intersection parameters
+    const wmtk::Rational t = (dx_diff * s2_dy - dy_diff * s2_dx) / cross;
+    const wmtk::Rational u = (dx_diff * s1_dy - dy_diff * s1_dx) / cross;
+
+    // Check if intersection lies within both segments [0,1]
+    const wmtk::Rational zero(0);
+    const wmtk::Rational one(1);
+
+    if (t >= zero && t <= one && u >= zero && u <= one) {
+        result.intersects = true;
+        result.t = t;
+        result.u = u;
+    }
+
+    return result;
+}
+
 
 template int compute_intersections_between_two_curves_t<double>(
     const query_curve_t<double>& curve1,

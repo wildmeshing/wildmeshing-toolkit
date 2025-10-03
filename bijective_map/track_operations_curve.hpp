@@ -270,6 +270,18 @@ int compute_curve_self_intersections(const query_curve& curve, bool verbose = tr
 bool seg_seg_intersect_rational(
     const query_segment_t<wmtk::Rational>& seg1,
     const query_segment_t<wmtk::Rational>& seg2);
+
+// Structure to hold segment intersection information with parameter location
+struct SegmentIntersectionInfo {
+    bool intersects;
+    wmtk::Rational t; // Parameter on seg1 where intersection occurs [0,1]
+    wmtk::Rational u; // Parameter on seg2 where intersection occurs [0,1]
+};
+
+// Get segment intersection with parameter location
+SegmentIntersectionInfo seg_seg_intersect_with_params_rational(
+    const query_segment_t<wmtk::Rational>& seg1,
+    const query_segment_t<wmtk::Rational>& seg2);
 ////////////////////////////////////////////////////////////
 // Utils functions for all rational curves version
 ////////////////////////////////////////////////////////////
@@ -296,3 +308,22 @@ void map_local_boundary_qps(
     const std::vector<int64_t>& id_map_before,
     std::vector<query_point_r>& all_query_points,
     const std::vector<int>& bd_qps_ids);
+
+
+////////////////////////////////////////////////////////////
+// Utils functions for acceleration
+////////////////////////////////////////////////////////////
+
+// Group segments by triangle f_id
+// Returns a map from f_id to list of (curve_id, seg_id) pairs
+std::map<int64_t, std::vector<std::pair<int, int>>> group_segments_by_triangle(
+    const std::vector<std::vector<std::vector<int>>>& all_curve_parts_after_mapping,
+    const std::vector<query_curve_t<wmtk::Rational>>& curves);
+
+void rounding_segments_to_double(
+    const std::vector<std::vector<std::vector<int>>>& all_curve_parts_after_mapping,
+    std::vector<query_curve_t<wmtk::Rational>>& curves);
+
+void merge_segments(
+    const std::vector<std::vector<std::vector<int>>>& all_curve_parts_after_mapping,
+    std::vector<query_curve_t<wmtk::Rational>>& curves);
