@@ -739,7 +739,7 @@ void handle_collapse_edge_curves_fast_rational(
     {
         igl::Timer timer;
         timer.start();
-        rounding_segments_to_double(all_curve_parts_after_mapping, curves);
+        rounding_segments_to_double(all_curve_parts_after_mapping, curves, false);
         double elapsed = timer.getElapsedTime() * 1000;
         std::cout << "rounding_segments_to_double time: " << elapsed << " ms" << std::endl;
     }

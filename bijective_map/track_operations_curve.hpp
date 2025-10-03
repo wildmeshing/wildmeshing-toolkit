@@ -272,7 +272,8 @@ bool seg_seg_intersect_rational(
     const query_segment_t<wmtk::Rational>& seg2);
 
 // Structure to hold segment intersection information with parameter location
-struct SegmentIntersectionInfo {
+struct SegmentIntersectionInfo
+{
     bool intersects;
     wmtk::Rational t; // Parameter on seg1 where intersection occurs [0,1]
     wmtk::Rational u; // Parameter on seg2 where intersection occurs [0,1]
@@ -322,7 +323,8 @@ std::map<int64_t, std::vector<std::pair<int, int>>> group_segments_by_triangle(
 
 void rounding_segments_to_double(
     const std::vector<std::vector<std::vector<int>>>& all_curve_parts_after_mapping,
-    std::vector<query_curve_t<wmtk::Rational>>& curves);
+    std::vector<query_curve_t<wmtk::Rational>>& curves,
+    bool do_check_intersection = true);
 
 void merge_segments(
     const std::vector<std::vector<std::vector<int>>>& all_curve_parts_after_mapping,

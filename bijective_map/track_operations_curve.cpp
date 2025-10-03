@@ -676,7 +676,8 @@ std::map<int64_t, std::vector<std::pair<int, int>>> group_segments_by_triangle(
 // Rounding segments to double
 void rounding_segments_to_double(
     const std::vector<std::vector<std::vector<int>>>& all_curve_parts_after_mapping,
-    std::vector<query_curve_t<wmtk::Rational>>& curves)
+    std::vector<query_curve_t<wmtk::Rational>>& curves,
+    bool do_check_intersection)
 {
     // Control verbose output
     const bool verbose = false;
@@ -740,97 +741,121 @@ void rounding_segments_to_double(
         return result;
     };
 
-    for (int curve_id = 0; curve_id < all_curve_parts_after_mapping.size(); curve_id++) {
-        for (int part_id = 0; part_id < all_curve_parts_after_mapping[curve_id].size(); part_id++) {
-            const auto& curve_part = all_curve_parts_after_mapping[curve_id][part_id];
-            for (int i = 0; i < curve_part.size() - 1; i++) {
-                int seg_id = curve_part[i];
-                int next_seg_id = curve_part[i + 1];
+    if (do_check_intersection) {
+        for (int curve_id = 0; curve_id < all_curve_parts_after_mapping.size(); curve_id++) {
+            for (int part_id = 0; part_id < all_curve_parts_after_mapping[curve_id].size();
+                 part_id++) {
+                const auto& curve_part = all_curve_parts_after_mapping[curve_id][part_id];
+                for (int i = 0; i < curve_part.size() - 1; i++) {
+                    int seg_id = curve_part[i];
+                    int next_seg_id = curve_part[i + 1];
 
-                // Get combined intersections BEFORE rounding
-                auto inter_before = get_combined_intersections(curve_id, seg_id, next_seg_id);
+                    // Get combined intersections BEFORE rounding
+                    auto inter_before = get_combined_intersections(curve_id, seg_id, next_seg_id);
 
-                if (verbose) {
-                    std::cout << "[DEBUG] Curve " << curve_id << " Part " << part_id
-                              << " Seg pair [" << seg_id << "," << next_seg_id << "]" << std::endl;
-                    std::cout << "  BEFORE rounding - intersections found: " << inter_before.size()
-                              << std::endl;
-                    if (!inter_before.empty()) {
-                        std::cout << "  BEFORE intersection curve_ids: [";
-                        for (int k = 0; k < inter_before.size(); k++) {
-                            std::cout << inter_before[k];
-                            if (k + 1 < inter_before.size()) std::cout << ", ";
-                        }
-                        std::cout << "]" << std::endl;
-                    }
-                }
-
-                // Backup original coordinates
-                auto backup_seg_bc1 = curves[curve_id].segments[seg_id].bcs[1];
-                auto backup_next_bc0 = curves[curve_id].segments[next_seg_id].bcs[0];
-
-                if (verbose) {
-                    std::cout << "  Original seg[" << seg_id << "].bcs[1]: ["
-                              << backup_seg_bc1(0).to_double() << ", "
-                              << backup_seg_bc1(1).to_double() << ", "
-                              << backup_seg_bc1(2).to_double() << "]" << std::endl;
-                    std::cout << "  Original seg[" << next_seg_id << "].bcs[0]: ["
-                              << backup_next_bc0(0).to_double() << ", "
-                              << backup_next_bc0(1).to_double() << ", "
-                              << backup_next_bc0(2).to_double() << "]" << std::endl;
-                }
-
-                // Apply rounding
-                for (int j = 0; j < 3; j++) {
-                    curves[curve_id].segments[seg_id].bcs[1](j) =
-                        wmtk::Rational(curves[curve_id].segments[seg_id].bcs[1](j).to_double());
-                    curves[curve_id].segments[next_seg_id].bcs[0](j) = wmtk::Rational(
-                        curves[curve_id].segments[next_seg_id].bcs[0](j).to_double());
-                }
-
-                if (verbose) {
-                    std::cout << "  Rounded seg[" << seg_id << "].bcs[1]: ["
-                              << curves[curve_id].segments[seg_id].bcs[1](0).to_double() << ", "
-                              << curves[curve_id].segments[seg_id].bcs[1](1).to_double() << ", "
-                              << curves[curve_id].segments[seg_id].bcs[1](2).to_double() << "]"
-                              << std::endl;
-                    std::cout << "  Rounded seg[" << next_seg_id << "].bcs[0]: ["
-                              << curves[curve_id].segments[next_seg_id].bcs[0](0).to_double()
-                              << ", "
-                              << curves[curve_id].segments[next_seg_id].bcs[0](1).to_double()
-                              << ", "
-                              << curves[curve_id].segments[next_seg_id].bcs[0](2).to_double() << "]"
-                              << std::endl;
-                }
-
-                // Get combined intersections AFTER rounding
-                auto inter_after = get_combined_intersections(curve_id, seg_id, next_seg_id);
-
-                if (verbose) {
-                    std::cout << "  AFTER rounding - intersections found: " << inter_after.size()
-                              << std::endl;
-                    if (!inter_after.empty()) {
-                        std::cout << "  AFTER intersection curve_ids: [";
-                        for (int k = 0; k < inter_after.size(); k++) {
-                            std::cout << inter_after[k];
-                            if (k + 1 < inter_after.size()) std::cout << ", ";
-                        }
-                        std::cout << "]" << std::endl;
-                    }
-                }
-
-                // Rollback if intersection order changed
-                if (inter_before != inter_after) {
                     if (verbose) {
-                        std::cout << "  *** ROLLBACK: Intersection order changed! ***" << std::endl;
+                        std::cout << "[DEBUG] Curve " << curve_id << " Part " << part_id
+                                  << " Seg pair [" << seg_id << "," << next_seg_id << "]"
+                                  << std::endl;
+                        std::cout << "  BEFORE rounding - intersections found: "
+                                  << inter_before.size() << std::endl;
+                        if (!inter_before.empty()) {
+                            std::cout << "  BEFORE intersection curve_ids: [";
+                            for (int k = 0; k < inter_before.size(); k++) {
+                                std::cout << inter_before[k];
+                                if (k + 1 < inter_before.size()) std::cout << ", ";
+                            }
+                            std::cout << "]" << std::endl;
+                        }
                     }
-                    curves[curve_id].segments[seg_id].bcs[1] = backup_seg_bc1;
-                    curves[curve_id].segments[next_seg_id].bcs[0] = backup_next_bc0;
-                } else if (verbose && (!inter_before.empty() || !inter_after.empty())) {
-                    std::cout << "  OK: Intersection order preserved" << std::endl;
+
+                    // Backup original coordinates
+                    auto backup_seg_bc1 = curves[curve_id].segments[seg_id].bcs[1];
+                    auto backup_next_bc0 = curves[curve_id].segments[next_seg_id].bcs[0];
+
+                    if (verbose) {
+                        std::cout << "  Original seg[" << seg_id << "].bcs[1]: ["
+                                  << backup_seg_bc1(0).to_double() << ", "
+                                  << backup_seg_bc1(1).to_double() << ", "
+                                  << backup_seg_bc1(2).to_double() << "]" << std::endl;
+                        std::cout << "  Original seg[" << next_seg_id << "].bcs[0]: ["
+                                  << backup_next_bc0(0).to_double() << ", "
+                                  << backup_next_bc0(1).to_double() << ", "
+                                  << backup_next_bc0(2).to_double() << "]" << std::endl;
+                    }
+
+                    // Apply rounding
+                    for (int j = 0; j < 3; j++) {
+                        curves[curve_id].segments[seg_id].bcs[1](j) =
+                            wmtk::Rational(curves[curve_id].segments[seg_id].bcs[1](j).to_double());
+                        curves[curve_id].segments[next_seg_id].bcs[0](j) = wmtk::Rational(
+                            curves[curve_id].segments[next_seg_id].bcs[0](j).to_double());
+                    }
+
+                    if (verbose) {
+                        std::cout << "  Rounded seg[" << seg_id << "].bcs[1]: ["
+                                  << curves[curve_id].segments[seg_id].bcs[1](0).to_double() << ", "
+                                  << curves[curve_id].segments[seg_id].bcs[1](1).to_double() << ", "
+                                  << curves[curve_id].segments[seg_id].bcs[1](2).to_double() << "]"
+                                  << std::endl;
+                        std::cout << "  Rounded seg[" << next_seg_id << "].bcs[0]: ["
+                                  << curves[curve_id].segments[next_seg_id].bcs[0](0).to_double()
+                                  << ", "
+                                  << curves[curve_id].segments[next_seg_id].bcs[0](1).to_double()
+                                  << ", "
+                                  << curves[curve_id].segments[next_seg_id].bcs[0](2).to_double()
+                                  << "]" << std::endl;
+                    }
+
+                    // Get combined intersections AFTER rounding
+                    auto inter_after = get_combined_intersections(curve_id, seg_id, next_seg_id);
+
+                    if (verbose) {
+                        std::cout << "  AFTER rounding - intersections found: "
+                                  << inter_after.size() << std::endl;
+                        if (!inter_after.empty()) {
+                            std::cout << "  AFTER intersection curve_ids: [";
+                            for (int k = 0; k < inter_after.size(); k++) {
+                                std::cout << inter_after[k];
+                                if (k + 1 < inter_after.size()) std::cout << ", ";
+                            }
+                            std::cout << "]" << std::endl;
+                        }
+                    }
+
+                    // Rollback if intersection order changed
+                    if (inter_before != inter_after) {
+                        if (verbose) {
+                            std::cout << "  *** ROLLBACK: Intersection order changed! ***"
+                                      << std::endl;
+                        }
+                        curves[curve_id].segments[seg_id].bcs[1] = backup_seg_bc1;
+                        curves[curve_id].segments[next_seg_id].bcs[0] = backup_next_bc0;
+                    } else if (verbose && (!inter_before.empty() || !inter_after.empty())) {
+                        std::cout << "  OK: Intersection order preserved" << std::endl;
+                    }
+                    if (verbose) {
+                        std::cout << std::endl;
+                    }
                 }
-                if (verbose) {
-                    std::cout << std::endl;
+            }
+        }
+    } else {
+        for (int curve_id = 0; curve_id < all_curve_parts_after_mapping.size(); curve_id++) {
+            for (int part_id = 0; part_id < all_curve_parts_after_mapping[curve_id].size();
+                 part_id++) {
+                const auto& curve_part = all_curve_parts_after_mapping[curve_id][part_id];
+                for (int i = 0; i < curve_part.size() - 1; i++) {
+                    int seg_id = curve_part[i];
+                    int next_seg_id = curve_part[i + 1];
+
+                    // Apply rounding
+                    for (int j = 0; j < 3; j++) {
+                        curves[curve_id].segments[seg_id].bcs[1](j) =
+                            wmtk::Rational(curves[curve_id].segments[seg_id].bcs[1](j).to_double());
+                        curves[curve_id].segments[next_seg_id].bcs[0](j) = wmtk::Rational(
+                            curves[curve_id].segments[next_seg_id].bcs[0](j).to_double());
+                    }
                 }
             }
         }
