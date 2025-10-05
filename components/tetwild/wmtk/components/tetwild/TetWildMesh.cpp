@@ -131,6 +131,21 @@ std::tuple<double, double> TetWildMesh::local_operations(
 
     std::tuple<double, double> energy;
 
+    static int debug_print_counter = 0;
+
+    auto check_outside = [this]() {
+        const auto faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
+        for (const auto& verts : faces) {
+            const auto p0 = m_vertex_attribute[verts[0]].m_posf;
+            const auto p1 = m_vertex_attribute[verts[1]].m_posf;
+            const auto p2 = m_vertex_attribute[verts[2]].m_posf;
+            if (m_envelope.is_outside({{p0, p1, p2}})) {
+                logger().error("Face {} is outside!", verts);
+                // log_and_throw_error("Face {} is outside!", verts);
+            }
+        }
+    };
+
     for (int i = 0; i < ops.size(); i++) {
         timer.start();
         if (i == 0) {
@@ -153,10 +168,14 @@ std::tuple<double, double> TetWildMesh::local_operations(
                 //     // exit(0);
                 // }
             }
+            // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
+            auto [max_energy, avg_energy] = get_max_avg_energy();
+            wmtk::logger().info("split max energy = {} avg = {}", max_energy, avg_energy);
+            check_outside();
         } else if (i == 1) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==collapsing {}==", n);
-                collapse_all_edges();
+                collapse_all_edges(collapse_limit_length);
                 wmtk::logger().info(
                     "#vertices {}, #tets {} after collapse",
                     vert_capacity(),
@@ -173,6 +192,10 @@ std::tuple<double, double> TetWildMesh::local_operations(
                 //     // exit(0);
                 // }
             }
+            // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
+            auto [max_energy, avg_energy] = get_max_avg_energy();
+            wmtk::logger().info("collapse max energy = {} avg = {}", max_energy, avg_energy);
+            check_outside();
         } else if (i == 2) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==swapping {}==", n);
@@ -180,14 +203,23 @@ std::tuple<double, double> TetWildMesh::local_operations(
                 swap_all_edges();
                 swap_all_faces();
             }
+            // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
+            auto [max_energy, avg_energy] = get_max_avg_energy();
+            wmtk::logger().info("swap max energy = {} avg = {}", max_energy, avg_energy);
+            check_outside();
         } else if (i == 3) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==smoothing {}==", n);
                 smooth_all_vertices();
             }
+            // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
+            auto [max_energy, avg_energy] = get_max_avg_energy();
+            wmtk::logger().info("smooth max energy = {} avg = {}", max_energy, avg_energy);
+            check_outside();
         }
         // output_faces(fmt::format("out-op{}.obj", i), [](auto& f) { return f.m_is_surface_fs; });
     }
+    // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
     energy = get_max_avg_energy();
     wmtk::logger().info("max energy = {}", std::get<0>(energy));
     wmtk::logger().info("avg energy = {}", std::get<1>(energy));
@@ -252,7 +284,7 @@ bool TetWildMesh::adjust_sizing_field(double max_energy)
     nnsearch->set_points(pts.size(), pts[0].data());
 
     std::vector<size_t> cache_one_ring;
-    size_t vid;
+    // size_t vid;
 
     while (!v_queue_serial.empty()) {
         // std::cout << vid << " ";
@@ -399,7 +431,7 @@ bool TetWildMesh::adjust_sizing_field_serial(double max_energy)
     nnsearch->set_points(pts.size(), pts[0].data());
 
     std::vector<size_t> cache_one_ring;
-    size_t vid;
+    // size_t vid;
 
     while (!v_queue.empty()) {
         // std::cout << vid << " ";
@@ -774,7 +806,7 @@ std::tuple<double, double> TetWildMesh::get_max_avg_energy()
     for (int i = 0; i < tet_capacity(); i++) {
         auto tup = tuple_from_tet(i);
         if (!tup.is_valid(*this)) continue;
-        auto vs = oriented_tet_vertices(tup);
+        // auto vs = oriented_tet_vertices(tup);
 
         auto q = m_tet_attribute[tup.tid(*this)].m_quality;
         max_energy = std::max(max_energy, q);
@@ -794,6 +826,29 @@ std::tuple<double, double> TetWildMesh::get_max_avg_energy()
     return std::make_tuple(std::cbrt(max_energy), avg_energy);
 }
 
+
+bool TetWildMesh::is_inverted_f(const Tuple& loc) const
+{
+    auto vs = oriented_tet_vertices(loc);
+
+    igl::predicates::exactinit();
+    auto res = igl::predicates::orient3d(
+        m_vertex_attribute[vs[0].vid(*this)].m_posf,
+        m_vertex_attribute[vs[1].vid(*this)].m_posf,
+        m_vertex_attribute[vs[2].vid(*this)].m_posf,
+        m_vertex_attribute[vs[3].vid(*this)].m_posf);
+    int result;
+    if (res == igl::predicates::Orientation::POSITIVE)
+        result = 1;
+    else if (res == igl::predicates::Orientation::NEGATIVE)
+        result = -1;
+    else
+        result = 0;
+
+    if (result < 0) // neg result == pos tet (tet origin from geogram delaunay)
+        return false;
+    return true;
+}
 
 bool TetWildMesh::is_inverted(const Tuple& loc) const
 {
@@ -907,7 +962,8 @@ std::vector<std::array<size_t, 3>> TetWildMesh::get_faces_by_condition(
         if (cond(m_face_attribute[fid])) {
             auto tid = fid / 4, lid = fid % 4;
             auto verts = get_face_vertices(f);
-            res.emplace_back(std::array<size_t, 3>{
+            res.emplace_back(
+                std::array<size_t, 3>{
                 {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
         }
     }
@@ -1472,20 +1528,32 @@ int TetWildMesh::flood_fill()
 
 void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
 {
-    consolidate_mesh();
+    // consolidate_mesh();
+
     // flood fill
     // int num_parts = flood_fill();
     // std::cout << "flood fill parts: " << num_parts << std::endl;
     const auto& vs = get_vertices();
     const auto& tets = get_tets();
 
-    Eigen::MatrixXd V(vs.size(), 3);
-    Eigen::MatrixXi T(tets.size(), 4);
+    Eigen::MatrixXd V(vert_capacity(), 3);
+    Eigen::MatrixXi T(tet_capacity(), 4);
 
-    Eigen::MatrixXd parts(tets.size(), 1);
-    Eigen::MatrixXd wn_input(tets.size(), 1);
-    Eigen::MatrixXd wn_tracked(tets.size(), 1);
-    Eigen::MatrixXd t_energy(tets.size(), 1);
+    V.setZero();
+    T.setZero();
+
+    Eigen::MatrixXd parts(tet_capacity(), 1);
+    parts.setZero();
+    Eigen::MatrixXd wn_input(tet_capacity(), 1);
+    wn_input.setZero();
+    Eigen::MatrixXd wn_tracked(tet_capacity(), 1);
+    wn_tracked.setZero();
+    Eigen::MatrixXd t_energy(tet_capacity(), 1);
+    t_energy.setZero();
+    Eigen::VectorXd v_sizing_field(vert_capacity());
+    v_sizing_field.setZero();
+    Eigen::VectorXd v_is_rounded(vert_capacity());
+    v_is_rounded.setZero();
 
     int index = 0;
     for (const Tuple& t : tets) {
@@ -1495,7 +1563,7 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
         wn_tracked(index, 0) = m_tet_attribute[tid].m_winding_number_tracked;
         t_energy(index, 0) = std::cbrt(m_tet_attribute[tid].m_quality);
 
-        const auto& vs = oriented_tet_vertices(t);
+        const auto vs = oriented_tet_vertices(t);
         for (int j = 0; j < 4; j++) {
             T(index, j) = vs[j].vid(*this);
         }
@@ -1505,6 +1573,8 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
     for (auto v : vs) {
         const auto vid = v.vid(*this);
         V.row(vid) = m_vertex_attribute[vid].m_posf;
+        v_sizing_field[vid] = m_vertex_attribute[vid].m_sizing_scalar;
+        v_is_rounded[vid] = m_vertex_attribute[vid].m_is_rounded ? 1 : 0;
     }
 
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
@@ -1521,6 +1591,10 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
     writer->add_cell_field("winding_number_input", wn_input);
     writer->add_cell_field("winding_number_tracked", wn_tracked);
     writer->add_cell_field("t_energy", t_energy);
+    writer->add_field("sizing_field", v_sizing_field);
+    writer->add_field("is_rounded", v_is_rounded);
+
+    logger().info("Write {}", out_path);
     writer->write_mesh(out_path, V, T);
 }
 

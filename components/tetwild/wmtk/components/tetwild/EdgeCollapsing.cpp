@@ -18,7 +18,8 @@ void TetWildMesh::collapse_all_edges(bool is_limit_length)
     timer.start();
 
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    for (auto& loc : get_edges()) {
+    for (const Tuple& loc : get_edges()) {
+        // collect all edges. Filtering too long edges happens in `is_weight_up_to_date`
         collect_all_ops.emplace_back("edge_collapse", loc);
         collect_all_ops.emplace_back("edge_collapse", loc.switch_vertex(*this));
     }

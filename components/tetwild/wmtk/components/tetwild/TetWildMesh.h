@@ -306,6 +306,10 @@ public:
     bool swap_face_before(const Tuple& t) override;
     bool swap_face_after(const Tuple& t) override;
 
+    /**
+     * @brief Inversion check using only floating point numbers.
+     */
+    bool is_inverted_f(const Tuple& loc) const;
     bool is_inverted(const Tuple& loc) const;
     double get_quality(const Tuple& loc) const;
     bool round(const Tuple& loc);
