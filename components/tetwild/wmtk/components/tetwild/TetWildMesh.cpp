@@ -144,6 +144,13 @@ std::tuple<double, double> TetWildMesh::local_operations(
                 // log_and_throw_error("Face {} is outside!", verts);
             }
         }
+
+        // check for inverted tets
+        for (const Tuple& t : get_tets()) {
+            if (is_inverted(t)) {
+                logger().error("Tet {} is inverted!", t.tid(*this));
+            }
+        }
     };
 
     for (int i = 0; i < ops.size(); i++) {
@@ -962,8 +969,7 @@ std::vector<std::array<size_t, 3>> TetWildMesh::get_faces_by_condition(
         if (cond(m_face_attribute[fid])) {
             auto tid = fid / 4, lid = fid % 4;
             auto verts = get_face_vertices(f);
-            res.emplace_back(
-                std::array<size_t, 3>{
+            res.emplace_back(std::array<size_t, 3>{
                 {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
         }
     }
