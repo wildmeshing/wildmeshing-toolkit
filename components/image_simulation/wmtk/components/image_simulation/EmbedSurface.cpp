@@ -790,7 +790,11 @@ void EmbedSurface::write_emb_msh(const std::string& filename) const
     msh.add_tet_vertices(m_V_emb.rows(), [this](size_t k) -> Vector3d { return m_V_emb.row(k); });
 
     msh.add_tets(m_T_emb.rows(), [this](size_t k) {
-        std::array<size_t, 4> data{m_T_emb(k, 0), m_T_emb(k, 1), m_T_emb(k, 2), m_T_emb(k, 3)};
+        std::array<size_t, 4> data{
+            (size_t)m_T_emb(k, 0),
+            (size_t)m_T_emb(k, 1),
+            (size_t)m_T_emb(k, 2),
+            (size_t)m_T_emb(k, 3)};
         return data;
     });
 
