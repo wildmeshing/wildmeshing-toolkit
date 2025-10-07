@@ -266,6 +266,486 @@ std::vector<std::array<size_t, 3>> TetWildMesh::triangulate_polygon_face(
 
 // embed input surface on generated back ground mesh
 
+void TetWildMesh::insertion_by_volumeremesher_old(
+    const std::vector<Vector3d>& vertices,
+    const std::vector<std::array<size_t, 3>>& faces,
+    std::vector<Vector3r>& v_rational,
+    std::vector<std::array<size_t, 3>>& facets_after,
+    std::vector<bool>& is_v_on_input,
+    std::vector<std::array<size_t, 4>>& tets_after,
+    std::vector<bool>& tet_face_on_input_surface)
+{
+    std::cout << "vertices size: " << vertices.size() << std::endl;
+    std::cout << "faces size: " << faces.size() << std::endl;
+
+    // generate background mesh
+    init_from_delaunay_box_mesh(vertices);
+    // output_mesh("background_tetmesh.msh");
+    // std::cout << "background_tetmesh written!" << std::endl;
+
+    // prepare tet vertices and tet index info
+
+    auto tet_vers = get_vertices();
+    auto tets = get_tets();
+    std::vector<double> tet_ver_coord(3 * tet_vers.size());
+    std::vector<uint32_t> tet_index(4 * tets.size());
+    std::cout << "tetver size: " << tet_vers.size() << std::endl;
+    std::cout << "tet size: " << tets.size() << std::endl;
+    // tet_ver_coord.reserve(3 * tet_vers.size());
+    // tet_index.reserve(4 * tets.size());
+
+    for (int i = 0; i < tet_vers.size(); ++i) {
+        tet_ver_coord[3 * i] = m_vertex_attribute[i].m_posf[0];
+        tet_ver_coord[3 * i + 1] = m_vertex_attribute[i].m_posf[1];
+        tet_ver_coord[3 * i + 2] = m_vertex_attribute[i].m_posf[2];
+    }
+
+    for (int i = 0; i < tets.size(); ++i) {
+        auto tet_vids = oriented_tet_vids(tets[i]);
+        tet_index[4 * i] = tet_vids[0];
+        tet_index[4 * i + 1] = tet_vids[1];
+        tet_index[4 * i + 2] = tet_vids[2];
+        tet_index[4 * i + 3] = tet_vids[3];
+    }
+
+    // prepare input surfaces info
+    std::vector<double> tri_ver_coord(3 * vertices.size());
+    std::vector<uint32_t> tri_index(3 * faces.size());
+    // tri_ver_coord.reserve(3 * vertices.size());
+    // tri_index.reserve(3 * faces.size());
+
+    for (int i = 0; i < vertices.size(); ++i) {
+        tri_ver_coord[3 * i] = vertices[i][0];
+        tri_ver_coord[3 * i + 1] = vertices[i][1];
+        tri_ver_coord[3 * i + 2] = vertices[i][2];
+    }
+
+    for (int i = 0; i < faces.size(); ++i) {
+        tri_index[3 * i] = faces[i][0];
+        tri_index[3 * i + 1] = faces[i][1];
+        tri_index[3 * i + 2] = faces[i][2];
+    }
+
+    std::cout << tri_ver_coord.size() << std::endl;
+    std::cout << tri_index.size() << std::endl;
+    std::cout << tet_ver_coord.size() << std::endl;
+    std::cout << tet_index.size() << std::endl;
+
+    std::vector<vol_rem::bigrational> embedded_vertices;
+    std::vector<uint32_t> embedded_facets;
+    std::vector<uint32_t> embedded_cells;
+    std::vector<uint32_t> embedded_facets_on_input;
+
+    std::vector<std::array<uint32_t, 4>> out_tets;
+    std::vector<uint32_t> final_tets_parent;
+    std::vector<bool> cells_with_faces_on_input;
+    std::vector<std::vector<uint32_t>> final_tets_parent_faces;
+
+    // volumeremesher embed
+    vol_rem::embed_tri_in_poly_mesh(
+        tri_ver_coord,
+        tri_index,
+        tet_ver_coord,
+        tet_index,
+        embedded_vertices,
+        embedded_facets,
+        embedded_cells,
+        out_tets,
+        final_tets_parent,
+        embedded_facets_on_input,
+        cells_with_faces_on_input,
+        final_tets_parent_faces,
+        true);
+
+    // marco's test
+    // if (!checkTrackedFaces(
+    //         embedded_vertices,
+    //         tri_ver_coord,
+    //         embedded_facets,
+    //         embedded_facets_on_input,
+    //         tri_index)) {
+    //     std::cout
+    //         << "WARNING: at least a facet in 'facets_on_input' is not coplanar with any facet in
+    //         "
+    //            "triangle_indexes with BIGRATIONAL"
+    //         << std::endl;
+    // }
+
+    // test use
+    // std::vector<wmtk::Rational> v_rational_for_test(embedded_vertices.size());
+    // for (int i = 0; i < embedded_vertices.size(); i++) {
+    //     v_rational_for_test[i].init(embedded_vertices[i].get_mpq_t());
+    // }
+
+    // if (!checkTrackedFaces_wmtk_rational(
+    //         v_rational_for_test,
+    //         tri_ver_coord,
+    //         embedded_facets,
+    //         embedded_facets_on_input,
+    //         tri_index)) {
+    //     std::cout
+    //         << "WARNING: at least a facet in 'facets_on_input' is not coplanar with any facet in
+    //         "
+    //            "triangle_indexes with WMTK::RATIONAL"
+    //         << std::endl;
+    // }
+
+    // v_rational.reserve(embedded_vertices.size()/3);
+    // std::cout << "embed vertices size: " << embedded_vertices.size() << std::endl;
+    // std::cout << "embed facets size: " << embedded_facets.size() << std::endl;
+    // std::cout << "embed cells size: " << embedded_cells.size() << std::endl;
+    // std::cout << "embed facet on input size: " << embedded_facets_on_input.size() << std::endl;
+
+    // std::cout << "polygon face on input size: " << embedded_facets_on_input.size() << std::endl;
+
+    for (int i = 0; i < embedded_vertices.size() / 3; i++) {
+        v_rational.push_back(Vector3r());
+        v_rational.back()[0].init(embedded_vertices[3 * i].get_mpq_t());
+        v_rational.back()[1].init(embedded_vertices[3 * i + 1].get_mpq_t());
+        v_rational.back()[2].init(embedded_vertices[3 * i + 2].get_mpq_t());
+    }
+
+    std::vector<std::vector<size_t>> polygon_faces;
+    int polycnt = 0;
+    for (int i = 0; i < embedded_facets.size(); i++) {
+        int polysize = embedded_facets[i];
+        std::vector<size_t> polygon;
+        for (int j = i + 1; j <= i + polysize; j++) {
+            polygon.push_back(embedded_facets[j]);
+        }
+        polycnt++;
+        polygon_faces.push_back(polygon);
+        i += polysize;
+    }
+
+    std::vector<std::vector<size_t>> polygon_cells;
+    std::vector<std::array<size_t, 4>> tets_final;
+    for (int i = 0; i < embedded_cells.size(); i++) {
+        std::vector<size_t> polygon_cell;
+        int cellsize = embedded_cells[i];
+        for (int j = i + 1; j <= i + cellsize; j++) {
+            polygon_cell.push_back(embedded_cells[j]);
+        }
+        polygon_cells.push_back(polygon_cell);
+        i += cellsize;
+    }
+
+    std::cout << "polygon cells num: " << polygon_cells.size() << std::endl;
+
+    // check polygon face validity
+    // only for debug use
+    // for (int i = 0; i < polygon_faces.size(); i++) {
+    //     std::vector<Vector3r> polyface_coordinates;
+    //     for (int j = 0; j < polygon_faces[i].size(); j++) {
+    //         polyface_coordinates.push_back(v_rational[polygon_faces[i][j]]);
+    //     }
+    //     if (!check_polygon_face_validity(polyface_coordinates)) {
+    //         std::cout << "polygon face invalid!!: " << i << std::endl;
+    //     }
+    // }
+
+    std::vector<bool> polygon_faces_on_input_surface(polygon_faces.size(), false);
+    // for (int i = 0; i < polygon_faces.size(); i++) {
+    //     polygon_faces_on_input_surface[i] = false;
+    // }
+    for (int i = 0; i < embedded_facets_on_input.size(); i++) {
+        polygon_faces_on_input_surface[embedded_facets_on_input[i]] = true;
+    }
+
+    // output_embedded_polygon_mesh(
+    //     "embedded_polygon_mesh.txt",
+    //     v_rational,
+    //     polygon_faces,
+    //     polygon_cells,
+    //     polygon_faces_on_input_surface);
+
+    // output surface polygon
+    // output_embedded_polygon_surface_mesh(
+    //     "surface_polygon_mesh_after_insertion.obj",
+    //     v_rational,
+    //     polygon_faces,
+    //     polygon_faces_on_input_surface);
+
+    // test mqz output
+
+    // std::cout << "------mpz output------" << std::endl;
+    // std::cout << "------1------" << std::endl;
+    // std::cout << v_rational[15][0].to_double() << std::endl;
+    // std::cout << "------2------" << std::endl;
+    // std::cout << v_rational[15][0].get_str() << std::endl;
+    // std::cout << "------3------" << std::endl;
+    // std::cout << v_rational[15][0].get_num_str() << std::endl;
+    // std::cout << v_rational[15][0].get_den_str() << std::endl;
+    // // exit(0);
+    // // std::cout << v_rational[15][0].get_num_str() << std::endl;
+    // // std::cout << v_rational[15][0].get_den_str() << std::endl;
+    // std::cout << "------mpz output end------" << std::endl;
+
+    std::vector<std::array<size_t, 3>> triangulated_faces;
+    std::vector<bool> triangulated_faces_on_input;
+    std::vector<std::vector<size_t>> map_poly_to_tri_face(polygon_faces.size());
+
+    int poly_cnt = 0;
+
+    // triangulate polygon faces
+    for (int i = 0; i < polygon_faces.size(); i++) {
+        // already clipped in other polygon
+        if (map_poly_to_tri_face[i].size() != 0) continue;
+
+        // new polygon face to clip
+        std::vector<std::array<size_t, 3>> clipped_indices;
+        std::vector<Vector3r> poly_coordinates;
+        std::vector<size_t> polygon_face = polygon_faces[i];
+        assert(polygon_face.size() >= 3);
+
+        if (polygon_face.size() == 3) {
+            // already a triangle
+            std::array<size_t, 3> triangle_face = {
+                polygon_face[0],
+                polygon_face[1],
+                polygon_face[2]};
+            int idx = triangulated_faces.size();
+            triangulated_faces.push_back(triangle_face);
+            if (polygon_faces_on_input_surface[i]) {
+                triangulated_faces_on_input.push_back(true);
+            } else {
+                triangulated_faces_on_input.push_back(false);
+            }
+            map_poly_to_tri_face[i].push_back(idx);
+        } else {
+            poly_cnt++;
+            // std::cout<<std::endl<<"polyface: ";
+            // for (int j=0; j<polygon_face.size(); j++){
+            // std::cout<<polygon_face[j]<<" ";
+            // }
+            // std::cout<<std::endl<<"coords: "<<std::endl;
+            for (int j = 0; j < polygon_faces[i].size(); j++) {
+                poly_coordinates.push_back(v_rational[polygon_face[j]]);
+                // std::cout<<v_rational[polygon_face[j]][0]<<"
+                // "<<v_rational[polygon_face[j]][1]<<"
+                // "<<v_rational[polygon_face[j]][2]<<std::endl;
+            }
+            // std::cout<<std::endl;
+
+            clipped_indices = triangulate_polygon_face(poly_coordinates);
+            // std::cout<<"clipped indices size: "<<clipped_indices.size()<<std::endl;
+            for (int j = 0; j < clipped_indices.size(); j++) {
+                // need to map oldface index to new face indices
+                std::array<size_t, 3> triangle_face = {
+                    polygon_face[clipped_indices[j][0]],
+                    polygon_face[clipped_indices[j][1]],
+                    polygon_face[clipped_indices[j][2]]};
+                // std::cout<<triangle_face[0]<<" "<<triangle_face[1]<<"
+                // "<<triangle_face[2]<<std::endl;
+                int idx = triangulated_faces.size();
+                triangulated_faces.push_back(triangle_face);
+
+                // track input faces
+                if (polygon_faces_on_input_surface[i]) {
+                    triangulated_faces_on_input.push_back(true);
+                } else {
+                    triangulated_faces_on_input.push_back(false);
+                }
+                map_poly_to_tri_face[i].push_back(idx);
+            }
+        }
+    }
+
+    std::cout << "poly_cnt:" << poly_cnt << std::endl;
+
+    // std::cout << triangulated_faces.size() << std::endl;
+    // int sum = 0;
+    // for (int i = 0; i < map_poly_to_tri_face.size(); i++) {
+    //     sum += map_poly_to_tri_face[i].size();
+    // }
+    // std::cout << sum << std::endl;
+
+    // std::cout << "triangulated faces on input vector size: " <<
+    // triangulated_faces_on_input.size()
+    //           << std::endl;
+    // int on_sur_cnt = 0;
+    // for (int i = 0; i < triangulated_faces_on_input.size(); i++) {
+    //     if (triangulated_faces_on_input[i]) on_sur_cnt++;
+    // }
+    // std::cout << "triangulated faces on input: " << on_sur_cnt << std::endl;
+
+    std::cout << "finish triangulation" << std::endl;
+
+    std::cout << "vertice before tetra num: " << v_rational.size() << std::endl;
+
+    // invert the orientation of all the triangles
+    // maybe commented
+    // debug code?
+    // int cnt_inverted_tri = 0;
+    // for (size_t i = 0; i < triangulated_faces.size(); i++) {
+    //     triangulated_faces[i] = {
+    //         {triangulated_faces[i][0], triangulated_faces[i][2], triangulated_faces[i][1]}};
+    // }
+
+    // wmtk::logger().info(
+    //     "inverted tri num: {}, total num: {}",
+    //     cnt_inverted_tri,
+    //     triangulated_faces.size());
+
+    // tetrahedralize cells
+
+    // track face on surface per tet
+    // std::vector<bool> tet_face_on_input_surface;
+
+    int was_tet_cnt = 0;
+    for (int i = 0; i < polygon_cells.size(); i++) {
+        auto polygon_cell = polygon_cells[i];
+
+        // get polygon vertices
+        std::vector<size_t> polygon_vertices;
+        for (auto f : polygon_cell) {
+            for (auto v : polygon_faces[f]) {
+                polygon_vertices.push_back(v);
+            }
+        }
+        wmtk::vector_unique(polygon_vertices);
+
+        // compute number of triangle faces
+        int num_faces = 0;
+        for (auto f : polygon_cell) {
+            num_faces += map_poly_to_tri_face[f].size();
+        }
+
+        // polygon already a tet
+        if (num_faces == 4) {
+            was_tet_cnt++;
+            assert(polygon_vertices.size() == 4);
+            // get the correct orientation here
+            size_t v0 = polygon_faces[polygon_cell[0]][0];
+            size_t v1 = polygon_faces[polygon_cell[0]][1];
+            size_t v2 = polygon_faces[polygon_cell[0]][2];
+            size_t v3;
+            for (auto v : polygon_faces[polygon_cell[1]]) {
+                if (v != v0 && v != v1 && v != v2) {
+                    v3 = v;
+                    break;
+                }
+            }
+
+            std::array<size_t, 4> tetra = {v0, v1, v2, v3};
+
+            // if inverted then fix the orientation
+            Vector3r v0v1 = v_rational[v1] - v_rational[v0];
+            Vector3r v0v2 = v_rational[v2] - v_rational[v0];
+            Vector3r v0v3 = v_rational[v3] - v_rational[v0];
+            if ((v0v1.cross(v0v2)).dot(v0v3) < 0) {
+                tetra = {v1, v0, v2, v3};
+            }
+
+            // push the tet to final queue;
+            tets_final.push_back(tetra);
+
+            std::set<size_t> local_f1 = {tetra[0], tetra[1], tetra[2]};
+            std::set<size_t> local_f2 = {tetra[0], tetra[2], tetra[3]};
+            std::set<size_t> local_f3 = {tetra[0], tetra[1], tetra[3]};
+            std::set<size_t> local_f4 = {tetra[1], tetra[2], tetra[3]};
+
+            // track surface     need to be fixed
+            bool tet_face_on_input[4];
+            for (auto f : polygon_cell) {
+                std::set<size_t> f_vs = {
+                    polygon_faces[f][0],
+                    polygon_faces[f][1],
+                    polygon_faces[f][2]};
+
+                int local_f_idx;
+
+                // decide which face it is
+
+                if (f_vs == local_f1) {
+                    local_f_idx = 0;
+                } else if (f_vs == local_f2) {
+                    local_f_idx = 1;
+                } else if (f_vs == local_f3) {
+                    local_f_idx = 2;
+                } else {
+                    local_f_idx = 3;
+                }
+
+                tet_face_on_input[local_f_idx] = polygon_faces_on_input_surface[f];
+            }
+
+            for (int k = 0; k < 4; k++) {
+                tet_face_on_input_surface.push_back(tet_face_on_input[k]);
+            }
+            continue;
+        }
+
+        // compute centroid
+        Vector3r centroid(0, 0, 0);
+        for (auto v : polygon_vertices) {
+            centroid = centroid + v_rational[v];
+        }
+        centroid = centroid / polygon_vertices.size();
+
+        // trahedralize
+        size_t centroid_idx = v_rational.size();
+        v_rational.push_back(centroid);
+
+        for (auto f : polygon_cell) {
+            for (auto t : map_poly_to_tri_face[f]) {
+                std::array<size_t, 4> tetra = {
+                    triangulated_faces[t][0],
+                    triangulated_faces[t][1],
+                    triangulated_faces[t][2],
+                    centroid_idx};
+                // std::sort(tetra.begin(), tetra.end());
+                // check inverted tet and fix
+                Vector3r v0v1 = v_rational[tetra[1]] - v_rational[tetra[0]];
+                Vector3r v0v2 = v_rational[tetra[2]] - v_rational[tetra[0]];
+                Vector3r v0v3 = v_rational[tetra[3]] - v_rational[tetra[0]];
+                if ((v0v1.cross(v0v2)).dot(v0v3) < 0) {
+                    tetra = {
+                        triangulated_faces[t][1],
+                        triangulated_faces[t][0],
+                        triangulated_faces[t][2],
+                        centroid_idx};
+                }
+
+                tets_final.push_back(tetra);
+                tet_face_on_input_surface.push_back(triangulated_faces_on_input[t]);
+                tet_face_on_input_surface.push_back(false);
+                tet_face_on_input_surface.push_back(false);
+                tet_face_on_input_surface.push_back(false);
+            }
+        }
+    }
+
+    std::cout << "polygon was tet num: " << was_tet_cnt << std::endl;
+    std::cout << "vertices final num: " << v_rational.size() << std::endl;
+    std::cout << "tets final num: " << tets_final.size() << std::endl;
+
+    std::cout << "track face size: " << tet_face_on_input_surface.size() << std::endl;
+
+    facets_after = triangulated_faces;
+    tets_after = tets_final;
+
+    // track vertices on input
+    is_v_on_input.reserve(v_rational.size());
+    for (int i = 0; i < v_rational.size(); i++) is_v_on_input.push_back(false);
+    for (int i = 0; i < triangulated_faces.size(); i++) {
+        if (triangulated_faces_on_input[i]) {
+            is_v_on_input[triangulated_faces[i][0]] = true;
+            is_v_on_input[triangulated_faces[i][1]] = true;
+            is_v_on_input[triangulated_faces[i][2]] = true;
+        }
+    }
+
+    size_t on_surface_v_cnt = 0;
+    for (size_t i = 0; i < is_v_on_input.size(); i++) {
+        if (is_v_on_input[i]) on_surface_v_cnt++;
+    }
+
+    std::cout << "v on surface vector size: " << is_v_on_input.size();
+    std::cout << "v on surface: " << on_surface_v_cnt << std::endl;
+}
+
+
 void TetWildMesh::insertion_by_volumeremesher(
     const std::vector<Vector3d>& vertices,
     const std::vector<std::array<size_t, 3>>& faces,
