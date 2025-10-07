@@ -306,6 +306,10 @@ public:
     bool swap_face_before(const Tuple& t) override;
     bool swap_face_after(const Tuple& t) override;
 
+    /**
+     * @brief Inversion check using only floating point numbers.
+     */
+    bool is_inverted_f(const Tuple& loc) const;
     bool is_inverted(const Tuple& loc) const;
     double get_quality(const Tuple& loc) const;
     bool round(const Tuple& loc);
@@ -413,6 +417,16 @@ private:
 
     // for incremental tetwild
 public:
+    // deprecated
+    void insertion_by_volumeremesher_old(
+        const std::vector<Vector3d>& vertices,
+        const std::vector<std::array<size_t, 3>>& faces,
+        std::vector<Vector3r>& v_rational,
+        std::vector<std::array<size_t, 3>>& facets_after,
+        std::vector<bool>& is_v_on_input,
+        std::vector<std::array<size_t, 4>>& tets_after,
+        std::vector<bool>& tet_face_on_input_surface);
+
     void insertion_by_volumeremesher(
         const std::vector<Vector3d>& vertices,
         const std::vector<std::array<size_t, 3>>& faces,
