@@ -1,7 +1,7 @@
-#include "track_operations_curve.hpp"
+#include <iomanip>
 #include <map>
 #include <set>
-#include <iomanip>
+#include "track_operations_curve.hpp"
 
 ////////////////////////////////////////////////////////////
 // CurveIntersectionPoint operator implementations
@@ -14,13 +14,28 @@ bool CurveIntersectionPoint::operator<(const CurveIntersectionPoint& other) cons
 
     if (rate != other_rate)
         return rate < other_rate;
-    else
+    else if (other_curve_id != other.other_curve_id)
         return other_curve_id < other.other_curve_id;
+    else {
+        // left > right > point
+        auto type_order = [](IntersectionType t) {
+            switch (t) {
+            case IntersectionType::SEGMENT_LEFT: return 2;
+            case IntersectionType::SEGMENT_RIGHT: return 1;
+            case IntersectionType::POINT: return 0;
+            }
+            return -1;
+        };
+        return type_order(type) < type_order(other.type);
+    }
 }
 
 bool CurveIntersectionPoint::operator==(const CurveIntersectionPoint& other) const
 {
-    return seg_order_id == other.seg_order_id && t == t;
+    double rate = double(seg_order_id) + t;
+    double other_rate = double(other.seg_order_id) + other.t;
+
+    return rate == other_rate;
 }
 
 std::ostream& operator<<(std::ostream& os, const CurveIntersectionPoint& pt)
@@ -29,20 +44,70 @@ std::ostream& operator<<(std::ostream& os, const CurveIntersectionPoint& pt)
     os << "curve_id=" << pt.other_curve_id;
     os << ", type=";
     switch (pt.type) {
-        case IntersectionType::POINT:
-            os << "POINT";
-            break;
-        case IntersectionType::SEGMENT_LEFT:
-            os << "SEGMENT_LEFT";
-            break;
-        case IntersectionType::SEGMENT_RIGHT:
-            os << "SEGMENT_RIGHT";
-            break;
+    case IntersectionType::POINT: os << "POINT"; break;
+    case IntersectionType::SEGMENT_LEFT: os << "SEGMENT_LEFT"; break;
+    case IntersectionType::SEGMENT_RIGHT: os << "SEGMENT_RIGHT"; break;
     }
     os << ", seg_order=" << pt.seg_order_id;
     os << ", t=" << std::fixed << std::setprecision(6) << pt.t;
     os << "}";
     return os;
+}
+
+void clean_up_intersections_array(std::vector<CurveIntersectionPoint>& intersections)
+{
+    // first sort all the intersections
+    std::sort(intersections.begin(), intersections.end());
+    std::vector<int> indices_to_keep;
+
+    int cur_index = 0;
+
+    while (cur_index < intersections.size()) {
+        const auto& cur_intersection = intersections[cur_index];
+
+
+        if (cur_intersection.type == IntersectionType::POINT) {
+            // case 1: point intersection
+            // check next intersection, if it is not a intersection with the same rate and
+            // other_curve_id, then we keep the point
+            int next_index = cur_index + 1;
+            if (!(next_index < intersections.size() &&
+                  intersections[next_index].other_curve_id == cur_intersection.other_curve_id &&
+                  intersections[next_index] == cur_intersection)) {
+                {
+                    indices_to_keep.push_back(cur_index);
+                }
+                // the next intersection is a point with the same rate and other_curve_id,
+                // then we skip the point
+            }
+
+        } else if (cur_intersection.type == IntersectionType::SEGMENT_LEFT) {
+            // case 2: segment left, we always keep the left point
+            indices_to_keep.push_back(cur_index);
+        } else if (cur_intersection.type == IntersectionType::SEGMENT_RIGHT) {
+            // case 3: segment right
+            // check next intersection, if it is not a segment_left with the other_curve_id and the
+            // same rate, then we keep the right point
+            int next_index = cur_index + 1;
+            if (!(next_index < intersections.size() &&
+                  intersections[next_index].type == IntersectionType::SEGMENT_LEFT &&
+                  intersections[next_index].other_curve_id == cur_intersection.other_curve_id &&
+                  intersections[next_index] == cur_intersection)) {
+                indices_to_keep.push_back(cur_index);
+            } else {
+                cur_index = cur_index + 1;
+            }
+        }
+        cur_index = cur_index + 1;
+    }
+
+    // keep only the intersections at indices_to_keep
+    std::vector<CurveIntersectionPoint> cleaned;
+    cleaned.reserve(indices_to_keep.size());
+    for (int idx : indices_to_keep) {
+        cleaned.push_back(intersections[idx]);
+    }
+    intersections = std::move(cleaned);
 }
 
 ////////////////////////////////////////////////////////////
@@ -524,8 +589,8 @@ std::vector<CurveIntersectionPoint> compute_intersections_between_two_curve_new_
         std::cout << "\nTotal intersections found: " << intersections.size() << std::endl;
     }
 
-    std::sort(intersections.begin(), intersections.end());
-    // TODO: merge redundant points and segments
+    clean_up_intersections_array(intersections);
+
     if (verbose) {
         std::cout << "Sorted intersections:\n";
         for (const auto& intersection : intersections) {
@@ -536,3 +601,17 @@ std::vector<CurveIntersectionPoint> compute_intersections_between_two_curve_new_
 
     return intersections;
 }
+
+// Explicit template instantiation for commonly used types
+template std::vector<CurveIntersectionPoint> compute_intersections_between_two_curve_new_t<double>(
+    const query_curve_t<double>& curve1,
+    const query_curve_t<double>& curve2,
+    int curve2_id,
+    bool verbose);
+
+template std::vector<CurveIntersectionPoint>
+compute_intersections_between_two_curve_new_t<wmtk::Rational>(
+    const query_curve_t<wmtk::Rational>& curve1,
+    const query_curve_t<wmtk::Rational>& curve2,
+    int curve2_id,
+    bool verbose);

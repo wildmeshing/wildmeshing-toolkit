@@ -696,7 +696,9 @@ void handle_collapse_edge_curves_fast_rational(
     std::vector<query_curve_t<wmtk::Rational>>& curves,
     bool verbose)
 {
-    verbose = false;
+    verbose = true;
+    bool do_rounding = false;
+    bool do_merge = false;
     std::cout << "handle collapse edge curves fast rational" << std::endl;
 
 
@@ -744,21 +746,25 @@ void handle_collapse_edge_curves_fast_rational(
         }
     }
 
+
     // DEBUG: check curve 8 and curve 14(only for 36086)
     // {
-    //     std::cout << "check curve 8 and curve 14 after merge before rounding" << std::endl;
-    //     int n_intersections =
-    //         compute_intersections_between_two_curves_t(curves[8], curves[14], true);
+    //     std::cout << "check curve 8 and curve 14 before merge and rounding" << std::endl;
+    //     auto intersections_infos =
+    //         compute_intersections_between_two_curve_new_t(curves[8], curves[14], 14, true);
+    //     int n_intersections = intersections_infos.size();
     //     if (n_intersections != 2) {
     //         std::cout << "Error: curve 8 and curve 14 should intersect 2 times, but got "
     //                   << n_intersections << " times" << std::endl;
     //         std::cout << "--------------------------------" << std::endl;
+
+
     //         exit(1);
     //     }
     // }
 
     // TODO: get all new seg and convert them to double
-    {
+    if (do_rounding) {
         igl::Timer timer;
         timer.start();
         rounding_segments_to_double(all_curve_parts_after_mapping, curves, false);
@@ -769,13 +775,29 @@ void handle_collapse_edge_curves_fast_rational(
 
     // TODO: try to remove segs
     // TODO: need to seg a threshold for this
-    {
+    if (do_merge) {
         igl::Timer timer;
         timer.start();
         merge_segments(all_curve_parts_after_mapping, curves);
         double elapsed = timer.getElapsedTime() * 1000;
         std::cout << "merge_segments time: " << elapsed << " ms" << std::endl;
     }
+
+    // DEBUG: check curve 8 and curve 14(only for 36086)
+    // {
+    //     std::cout << "check curve 8 and curve 14 after merge and rounding" << std::endl;
+    //     auto intersections_infos =
+    //         compute_intersections_between_two_curve_new_t(curves[8], curves[14], 14, true);
+    //     int n_intersections = intersections_infos.size();
+    //     if (n_intersections != 2) {
+    //         std::cout << "Error: curve 8 and curve 14 should intersect 2 times, but got "
+    //                   << n_intersections << " times" << std::endl;
+    //         std::cout << "--------------------------------" << std::endl;
+
+
+    //         exit(1);
+    //     }
+    // }
 }
 
 template void handle_collapse_edge_curves_t<double>(

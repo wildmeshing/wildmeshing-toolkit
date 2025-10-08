@@ -943,6 +943,7 @@ void forward_track_iso_lines_app(
             for (int j = i + 1; j < curves.size(); j++) {
                 intersection_reference[i][j] =
                     compute_intersections_between_two_curves(curves[i], curves[j]);
+
                 std::cout << "curve " << i << " and curve " << j << " intersect "
                           << intersection_reference[i][j] << " times" << std::endl;
                 std::cout << "--------------------------------" << std::endl;
@@ -951,6 +952,7 @@ void forward_track_iso_lines_app(
         // Save intersection_reference for future use
         save_intersection_reference(intersection_reference, intersection_reference_filename);
     }
+
 
     track_lines(operation_logs_dir, curves, true, do_parallel);
 
@@ -1055,17 +1057,26 @@ void forward_track_plane_curves_app(
             std::cout << "curve " << i << " has " << intersection_reference[i][i]
                       << " self intersections" << std::endl;
             for (int j = i + 1; j < curves.size(); j++) {
-                intersection_reference[i][j] =
-                    compute_intersections_between_two_curves_t(curves[i], curves[j], true);
+                auto intersections_infos =
+                    compute_intersections_between_two_curve_new_t(curves[i], curves[j], j, false);
+                intersection_reference[i][j] = intersections_infos.size();
                 std::cout << "curve " << i << " and curve " << j << " intersect "
                           << intersection_reference[i][j] << " times" << std::endl;
                 std::cout << "--------------------------------" << std::endl;
+
+
+                for (const auto& info : intersections_infos) {
+                    std::cout << "Intersection: other_curve_id=" << info.other_curve_id
+                              << ", type=" << static_cast<int>(info.type)
+                              << ", seg_order_id=" << info.seg_order_id << ", t=" << info.t
+                              << std::endl;
+                }
+                std::cout << std::endl;
             }
         }
         // Save intersection_reference for future use
         save_intersection_reference(intersection_reference, intersection_reference_filename);
     }
-
     track_lines<wmtk::Rational>(operation_logs_dir, curves, true, do_parallel);
 
     std::cout << "finished track lines" << std::endl;
@@ -1117,8 +1128,14 @@ bool check_curves_topology(
             is_correct = false;
         }
         for (int j = i + 1; j < curves.size(); j++) {
-            int intersections =
-                compute_intersections_between_two_curves_t(curves[i], curves[j], true);
+            auto intersections_infos =
+                compute_intersections_between_two_curve_new_t(curves[i], curves[j], j, false);
+
+            for (const auto& intersection : intersections_infos) {
+                std::cout << intersection << std::endl;
+            }
+
+            int intersections = intersections_infos.size();
             std::cout << "curve " << i << " and curve " << j << " intersect " << intersections
                       << " times" << std::endl;
             if (intersections != intersection_reference[i][j]) {
