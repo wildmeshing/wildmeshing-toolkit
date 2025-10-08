@@ -203,13 +203,13 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
 
     if (VA[v1_id].m_is_on_surface) {
         std::vector<std::array<size_t, 3>> fs;
-        for (auto& t : n1_locs) {
-            auto vs = oriented_tet_vids(t);
+        for (const Tuple& t : n1_locs) {
+            const auto vs = oriented_tet_vids(t);
 
             int j_v1 = -1;
             auto skip = [&]() {
-                for (auto j = 0; j < 4; j++) {
-                    auto vid = vs[j];
+                for (int j = 0; j < 4; j++) {
+                    const size_t vid = vs[j];
                     if (vid == v2_id) {
                         return true; // v1-v2 definitely not on surface.
                     }
@@ -298,10 +298,10 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
 
         if (is_inverted(tet)) {
             // if (debug_flag) std::cout << "tet inverted reject" << std::endl;
-
             return false;
         }
         double q = get_quality(tet);
+        // only check quality if v1 is rounded
         if (VA[v1_id].m_is_rounded && q > cache.max_energy) {
             // if (debug_flag)
             //     std::cout << "energy reject " << q << " " << cache.max_energy << std::endl;
