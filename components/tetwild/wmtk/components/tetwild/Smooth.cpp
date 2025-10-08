@@ -71,42 +71,6 @@ bool TetWildMesh::smooth_after(const Tuple& t)
         loc_id++;
     }
 
-    // auto check_outside = [&]() {
-    //     bool is_inside = true;
-    //     std::set<size_t> unique_fid;
-    //     for (const Tuple& t : locs) {
-    //         for (int j = 0; j < 4; j++) {
-    //             auto f_t = tuple_from_face(t.tid(*this), j);
-    //             auto fid = f_t.fid(*this);
-    //             auto [it, suc] = unique_fid.emplace(fid);
-    //             if (!suc) continue;
-    //             if (m_face_attribute[fid].m_is_surface_fs) {
-    //                 auto vs = get_face_vertices(f_t);
-    //                 if (vs[0].vid(*this) != vid && vs[1].vid(*this) != vid &&
-    //                     vs[2].vid(*this) != vid) {
-    //                     continue; // face not incident to current vertex
-    //                 }
-    //                 const auto p0 = m_vertex_attribute[vs[0].vid(*this)].m_posf;
-    //                 const auto p1 = m_vertex_attribute[vs[1].vid(*this)].m_posf;
-    //                 const auto p2 = m_vertex_attribute[vs[2].vid(*this)].m_posf;
-    //                 if (!m_envelope.is_outside({{p0, p1, p2}})) {
-    //                     continue;
-    //                 }
-    //                 logger().error(
-    //                     "Verted {}, on surface = {}, on open boundary = {}",
-    //                     vid,
-    //                     m_vertex_attribute[vid].m_is_on_surface,
-    //                     m_vertex_attribute[vid].m_is_on_open_boundary);
-    //                 std::cout << "p0 = " << p0.transpose() << std::endl;
-    //                 std::cout << "p1 = " << p1.transpose() << std::endl;
-    //                 std::cout << "p2 = " << p2.transpose() << std::endl;
-    //                 is_inside = false;
-    //             }
-    //         }
-    //     }
-    //     return is_inside;
-    // };
-
     auto old_pos = m_vertex_attribute[vid].m_posf;
     auto old_asssembles = assembles;
 
@@ -255,18 +219,22 @@ bool TetWildMesh::smooth_after(const Tuple& t)
         }
     }
 
+    // rational position must be updated  before the inversion check!
+    m_vertex_attribute[vid].m_pos = to_rational(m_vertex_attribute[vid].m_posf);
+
     // quality
     auto max_after_quality = 0.;
     for (const Tuple& loc : locs) {
-        if (is_inverted(loc)) return false;
+        if (is_inverted(loc)) {
+            return false;
+        }
         auto t_id = loc.tid(*this);
         m_tet_attribute[t_id].m_quality = get_quality(loc);
         max_after_quality = std::max(max_after_quality, m_tet_attribute[t_id].m_quality);
     }
-    if (max_after_quality > max_quality) return false;
-
-
-    m_vertex_attribute[vid].m_pos = to_rational(m_vertex_attribute[vid].m_posf);
+    if (max_after_quality > max_quality) {
+        return false;
+    }
 
     // if (!check_outside()) {
     //     logger().warn("Second outside check failed");

@@ -343,7 +343,7 @@ void TetWildMesh::insertion_by_volumeremesher_old(
     std::vector<std::vector<uint32_t>> final_tets_parent_faces;
 
     {
-        logger().warn("Check denerate before embedding");
+        logger().info("Check degenerate before embedding");
         for (int i = 0; i < tri_index.size(); i += 3) {
             int id0 = tri_index[i + 0];
             int id1 = tri_index[i + 1];
@@ -394,7 +394,7 @@ void TetWildMesh::insertion_by_volumeremesher_old(
                     v3.transpose());
             }
         }
-        logger().warn("Check done");
+        logger().info("done");
     }
 
     // volumeremesher embed
