@@ -329,3 +329,53 @@ void rounding_segments_to_double(
 void merge_segments(
     const std::vector<std::vector<std::vector<int>>>& all_curve_parts_after_mapping,
     std::vector<query_curve_t<wmtk::Rational>>& curves);
+
+
+////////////////////////////////////////////////////////////
+// New curve intersection detection (without TT, TTi dependency)
+////////////////////////////////////////////////////////////
+
+// Intersection type for curve intersection points
+enum class IntersectionType { POINT, SEGMENT_LEFT, SEGMENT_RIGHT };
+
+// Represents an intersection point on curve1 with another curve
+struct CurveIntersectionPoint
+{
+    int other_curve_id; // which curve it intersects with
+    IntersectionType type;
+    int seg_order_id;
+    double t;
+
+    // For sorting/comparing
+    bool operator<(const CurveIntersectionPoint& other) const;
+    bool operator==(const CurveIntersectionPoint& other) const;
+
+    // Print overload
+    friend std::ostream& operator<<(std::ostream& os, const CurveIntersectionPoint& pt);
+};
+
+// Enhanced intersection type for segment-segment relation
+enum class SegmentRelationType {
+    NO_INTERSECTION,     // No intersection
+    POINT_INTERSECTION,  // Single point intersection
+    SEGMENT_OVERLAP      // Collinear with overlap
+};
+
+// Result structure for segment intersection
+struct SegmentIntersectionResult
+{
+    SegmentRelationType type;
+    wmtk::Rational t_start;  // For point: intersection t; For overlap: start t
+    wmtk::Rational t_end;    // For overlap: end t; For point: unused
+    wmtk::Rational u_start;  // For point: intersection u; For overlap: unused
+    wmtk::Rational u_end;    // For overlap: unused; For point: unused
+};
+
+// Main function to compute intersections between two curves
+// This version does not depend on TT, TTi (triangle-triangle adjacency)
+template <typename CoordType>
+std::vector<CurveIntersectionPoint> compute_intersections_between_two_curve_new_t(
+    const query_curve_t<CoordType>& curve1,
+    const query_curve_t<CoordType>& curve2,
+    int curve2_id,
+    bool verbose = false);

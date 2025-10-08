@@ -22,7 +22,7 @@ if(USE_IGL_VIEWER)
     igl_include(imgui)
 endif()
 
-add_executable(bijective_map_app bijective_map_app.cpp track_operations.hpp track_operations.cpp track_operations_curve.hpp track_operations_curve.cpp handle_one_segment.cpp handle_collapse_curve.cpp handle_non_collapse_curve.cpp render_utils.hpp generate_iso_line.hpp track_point_app.cpp track_line_app.cpp vtu_utils.cpp generate_plane_curves.hpp generate_plane_curves.cpp batch_operation_log_reader.hpp batch_operation_log_reader.cpp handle_non_collapse.cpp handle_collapse.cpp get_curve_intersections.cpp)
+add_executable(bijective_map_app bijective_map_app.cpp track_operations.hpp track_operations.cpp track_operations_curve.hpp track_operations_curve.cpp handle_one_segment.cpp handle_collapse_curve.cpp handle_non_collapse_curve.cpp render_utils.hpp generate_iso_line.hpp track_point_app.cpp track_line_app.cpp vtu_utils.cpp generate_plane_curves.hpp generate_plane_curves.cpp batch_operation_log_reader.hpp batch_operation_log_reader.cpp handle_non_collapse.cpp handle_collapse.cpp get_curve_intersections.cpp get_curve_intersections_new.cpp)
 
 target_link_libraries(bijective_map_app
     wmtk::toolkit

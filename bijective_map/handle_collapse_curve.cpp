@@ -623,6 +623,15 @@ void handle_collapse_edge_curve_rational(
             all_curve_parts);
     }
 
+    if (verbose) {
+        // Print all query_points again
+        std::cout << "Debug: all_query_points after mapping (" << all_query_points.size()
+                  << " points):" << std::endl;
+        for (size_t i = 0; i < all_query_points.size(); i++) {
+            std::cout << "  [" << i << "]: " << all_query_points[i] << std::endl;
+        }
+    }
+
     // STEP3: get intersections with mesh (handle one segment)
     const int num_segments_before_mapping = curve.segments.size();
     Eigen::MatrixXi TT, TTi;
@@ -734,6 +743,19 @@ void handle_collapse_edge_curves_fast_rational(
             std::cout << "handle curve " << i << " done" << std::endl << std::endl;
         }
     }
+
+    // DEBUG: check curve 8 and curve 14(only for 36086)
+    // {
+    //     std::cout << "check curve 8 and curve 14 after merge before rounding" << std::endl;
+    //     int n_intersections =
+    //         compute_intersections_between_two_curves_t(curves[8], curves[14], true);
+    //     if (n_intersections != 2) {
+    //         std::cout << "Error: curve 8 and curve 14 should intersect 2 times, but got "
+    //                   << n_intersections << " times" << std::endl;
+    //         std::cout << "--------------------------------" << std::endl;
+    //         exit(1);
+    //     }
+    // }
 
     // TODO: get all new seg and convert them to double
     {
