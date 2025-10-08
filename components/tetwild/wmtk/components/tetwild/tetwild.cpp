@@ -250,7 +250,7 @@ void tetwild(nlohmann::json json_params)
     igl::Timer insertion_timer;
     insertion_timer.start();
 
-    mesh.insertion_by_volumeremesher(
+    mesh.insertion_by_volumeremesher_old(
         vsimp,
         fsimp,
         v_rational,

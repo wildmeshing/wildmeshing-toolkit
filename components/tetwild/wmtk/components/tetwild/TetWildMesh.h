@@ -417,7 +417,9 @@ private:
 
     // for incremental tetwild
 public:
-    // deprecated
+    /**
+     * Will be removed as soon as the bug in the faster version is fixed.
+     */
     void insertion_by_volumeremesher_old(
         const std::vector<Vector3d>& vertices,
         const std::vector<std::array<size_t, 3>>& faces,
@@ -427,6 +429,10 @@ public:
         std::vector<std::array<size_t, 4>>& tets_after,
         std::vector<bool>& tet_face_on_input_surface);
 
+    /**
+     * This version of insertion should be faster BUT IS BROKEN!!!
+     * DO NOT USE!!!!!
+     */
     void insertion_by_volumeremesher(
         const std::vector<Vector3d>& vertices,
         const std::vector<std::array<size_t, 3>>& faces,

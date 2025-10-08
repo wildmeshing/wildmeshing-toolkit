@@ -1,6 +1,7 @@
 #include <igl/predicates/ear_clipping.h>
 #include <fstream>
 #include <set>
+#include <wmtk/utils/predicates.hpp>
 #include "TetWildMesh.h"
 
 namespace wmtk::components::tetwild {
@@ -341,6 +342,61 @@ void TetWildMesh::insertion_by_volumeremesher_old(
     std::vector<bool> cells_with_faces_on_input;
     std::vector<std::vector<uint32_t>> final_tets_parent_faces;
 
+    {
+        logger().warn("Check denerate before embedding");
+        for (int i = 0; i < tri_index.size(); i += 3) {
+            int id0 = tri_index[i + 0];
+            int id1 = tri_index[i + 1];
+            int id2 = tri_index[i + 2];
+            Eigen::Vector3d v0;
+            Eigen::Vector3d v1;
+            Eigen::Vector3d v2;
+            v0 << tri_ver_coord[3 * id0 + 0], tri_ver_coord[3 * id0 + 1],
+                tri_ver_coord[3 * id0 + 2];
+            v1 << tri_ver_coord[3 * id1 + 0], tri_ver_coord[3 * id1 + 1],
+                tri_ver_coord[3 * id1 + 2];
+            v2 << tri_ver_coord[3 * id2 + 0], tri_ver_coord[3 * id2 + 1],
+                tri_ver_coord[3 * id2 + 2];
+
+            if (utils::predicates::is_degenerate(v0, v1, v2)) {
+                logger().error(
+                    "Face ({}, {}, {}) is collinear!",
+                    v0.transpose(),
+                    v1.transpose(),
+                    v2.transpose());
+            }
+        }
+
+        for (int i = 0; i < tet_index.size(); i += 4) {
+            int id0 = tet_index[i + 0];
+            int id1 = tet_index[i + 1];
+            int id2 = tet_index[i + 2];
+            int id3 = tet_index[i + 3];
+            Eigen::Vector3d v0;
+            Eigen::Vector3d v1;
+            Eigen::Vector3d v2;
+            Eigen::Vector3d v3;
+            v0 << tet_ver_coord[3 * id0 + 0], tet_ver_coord[3 * id0 + 1],
+                tet_ver_coord[3 * id0 + 2];
+            v1 << tet_ver_coord[3 * id1 + 0], tet_ver_coord[3 * id1 + 1],
+                tet_ver_coord[3 * id1 + 2];
+            v2 << tet_ver_coord[3 * id2 + 0], tet_ver_coord[3 * id2 + 1],
+                tet_ver_coord[3 * id2 + 2];
+            v3 << tet_ver_coord[3 * id3 + 0], tet_ver_coord[3 * id3 + 1],
+                tet_ver_coord[3 * id3 + 2];
+
+            if (utils::predicates::is_degenerate(v0, v1, v2, v3)) {
+                logger().error(
+                    "Tet ({}, {}, {}) is coplanar!",
+                    v0.transpose(),
+                    v1.transpose(),
+                    v2.transpose(),
+                    v3.transpose());
+            }
+        }
+        logger().warn("Check done");
+    }
+
     // volumeremesher embed
     vol_rem::embed_tri_in_poly_mesh(
         tri_ver_coord,
@@ -416,6 +472,26 @@ void TetWildMesh::insertion_by_volumeremesher_old(
         polycnt++;
         polygon_faces.push_back(polygon);
         i += polysize;
+    }
+
+    // test polygon faces - only the triangles
+    for (int i = 0; i < polygon_faces.size(); ++i) {
+        if (polygon_faces[i].size() != 3) {
+            continue;
+        }
+
+        const Vector3r v0 = v_rational[polygon_faces[i][0]];
+        const Vector3r v1 = v_rational[polygon_faces[i][1]];
+        const Vector3r v2 = v_rational[polygon_faces[i][2]];
+        const Vector3r v01 = (v1 - v0);
+        const Vector3r v02 = (v2 - v0);
+        const Vector3r r = v01.cross(v02);
+        if (r[0] == 0 && r[1] == 0 && r[2] == 0) {
+            logger().error("Collinear triangle in polygon faces. ID = {}", i);
+            logger().error("v0 = {}", to_double(v0));
+            logger().error("v1 = {}", to_double(v1));
+            logger().error("v2 = {}", to_double(v2));
+        }
     }
 
     std::vector<std::vector<size_t>> polygon_cells;
@@ -741,6 +817,19 @@ void TetWildMesh::insertion_by_volumeremesher_old(
         if (is_v_on_input[i]) on_surface_v_cnt++;
     }
 
+    for (const auto& t : tets_after) {
+        const Vector3r p0 = v_rational[t[0]];
+        const Vector3r p1 = v_rational[t[1]];
+        const Vector3r p2 = v_rational[t[2]];
+        const Vector3r p3 = v_rational[t[3]];
+        Vector3r n = (p1 - p0).cross(p2 - p0);
+        Vector3r d = p3 - p0;
+        auto res = n.dot(d);
+        if (res <= 0) {
+            logger().error("Inverted tet {}", t);
+        }
+    }
+
     std::cout << "v on surface vector size: " << is_v_on_input.size();
     std::cout << "v on surface: " << on_surface_v_cnt << std::endl;
 }
@@ -755,6 +844,8 @@ void TetWildMesh::insertion_by_volumeremesher(
     std::vector<std::array<size_t, 4>>& tets_after,
     std::vector<bool>& tet_face_on_input_surface)
 {
+    log_and_throw_error("This insertion is broken! Use insertion_by_volumeremesher_old instead!");
+
     std::cout << "vertices size: " << vertices.size() << std::endl;
     std::cout << "faces size: " << faces.size() << std::endl;
 
@@ -762,6 +853,12 @@ void TetWildMesh::insertion_by_volumeremesher(
     init_from_delaunay_box_mesh(vertices);
     // output_mesh("background_tetmesh.msh");
     // std::cout << "background_tetmesh written!" << std::endl;
+
+    for (const Tuple& t : get_tets()) {
+        if (is_inverted(t)) {
+            logger().error("Tet {} is inverted after init from delaunay!", t.tid(*this));
+        }
+    }
 
     // prepare tet vertices and tet index info
 
@@ -794,6 +891,14 @@ void TetWildMesh::insertion_by_volumeremesher(
         tri_vrt_coord[3 * i] = vertices[i][0];
         tri_vrt_coord[3 * i + 1] = vertices[i][1];
         tri_vrt_coord[3 * i + 2] = vertices[i][2];
+
+        Eigen::Vector3d t1(6.808340025785895, 22.618768054579625, 0);
+        t1[0] = 0;
+        Eigen::Vector3d t2 = vertices[i];
+        t2[0] = 0;
+        if ((t2 - t1).norm() < 1e-4) {
+            logger().warn("Found {}", vertices[i].transpose());
+        }
     }
 
     for (int i = 0; i < faces.size(); ++i) {
@@ -816,6 +921,33 @@ void TetWildMesh::insertion_by_volumeremesher(
     std::vector<uint32_t> final_tets_parent;
     std::vector<bool> cells_with_faces_on_input;
     std::vector<std::vector<uint32_t>> final_tets_parent_faces;
+
+    {
+        logger().warn("Check collinearity before embedding");
+        for (int i = 0; i < triangle_indices.size(); i += 3) {
+            int id0 = triangle_indices[i + 0];
+            int id1 = triangle_indices[i + 1];
+            int id2 = triangle_indices[i + 2];
+            Eigen::Vector3d v0;
+            Eigen::Vector3d v1;
+            Eigen::Vector3d v2;
+            v0 << tri_vrt_coord[3 * id0 + 0], tri_vrt_coord[3 * id0 + 1],
+                tri_vrt_coord[3 * id0 + 2];
+            v1 << tri_vrt_coord[3 * id1 + 0], tri_vrt_coord[3 * id1 + 1],
+                tri_vrt_coord[3 * id1 + 2];
+            v2 << tri_vrt_coord[3 * id2 + 0], tri_vrt_coord[3 * id2 + 1],
+                tri_vrt_coord[3 * id2 + 2];
+
+            if (utils::predicates::is_degenerate(v0, v1, v2)) {
+                logger().error(
+                    "Face ({}, {}, {}) is collinear!",
+                    v0.transpose(),
+                    v1.transpose(),
+                    v2.transpose());
+            }
+        }
+        logger().warn("Check done");
+    }
 
     // volumeremesher embed
     vol_rem::embed_tri_in_poly_mesh(
@@ -853,10 +985,10 @@ void TetWildMesh::insertion_by_volumeremesher(
             if (res == 0) {
                 logger().error("Tet has 0 volume.");
             }
-            // logger().error("v0 = {}", to_double(v_rational[vids[0]]).transpose());
-            // logger().error("v1 = {}", to_double(v_rational[vids[1]]).transpose());
-            // logger().error("v2 = {}", to_double(v_rational[vids[2]]).transpose());
-            // logger().error("v3 = {}", to_double(v_rational[vids[3]]).transpose());
+            logger().error("v0 = {}", to_double(v_rational[vids[0]]).transpose());
+            logger().error("v1 = {}", to_double(v_rational[vids[1]]).transpose());
+            logger().error("v2 = {}", to_double(v_rational[vids[2]]).transpose());
+            logger().error("v3 = {}", to_double(v_rational[vids[3]]).transpose());
         }
     }
 

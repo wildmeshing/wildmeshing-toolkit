@@ -8,6 +8,7 @@
 #include <igl/resolve_duplicated_faces.h>
 #include <igl/writeOFF.h>
 #include <wmtk/utils/ManifoldUtils.hpp>
+#include <wmtk/utils/predicates.hpp>
 
 #include "Logger.hpp"
 
@@ -189,6 +190,23 @@ void stl_to_manifold_wmtk_input(
         auto tri1 = tris;
         wmtk::separate_to_manifold(v1, tri1, verts, tris, modified_nonmanifold_v);
     }
+
+
+    logger().info("Check faces for collinearity...");
+    for (size_t i = 0; i < F.rows(); ++i) {
+        Eigen::Vector3d v0 = V.row(F(i, 0));
+        Eigen::Vector3d v1 = V.row(F(i, 1));
+        Eigen::Vector3d v2 = V.row(F(i, 2));
+
+        if (utils::predicates::is_degenerate(v0, v1, v2)) {
+            logger().warn(
+                "Face ({}, {}, {}) is collinear!",
+                v0.transpose(),
+                v1.transpose(),
+                v2.transpose());
+        }
+    }
+    logger().info("done");
 }
 
 } // namespace wmtk

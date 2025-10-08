@@ -133,7 +133,8 @@ std::tuple<double, double> TetWildMesh::local_operations(
 
     static int debug_print_counter = 0;
 
-    auto check_outside = [this]() {
+    auto sanity_checks = [this]() {
+        logger().info("Perform sanity checks...");
         const auto faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
         for (const auto& verts : faces) {
             const auto p0 = m_vertex_attribute[verts[0]].m_posf;
@@ -141,16 +142,26 @@ std::tuple<double, double> TetWildMesh::local_operations(
             const auto p2 = m_vertex_attribute[verts[2]].m_posf;
             if (m_envelope.is_outside({{p0, p1, p2}})) {
                 logger().error("Face {} is outside!", verts);
-                // log_and_throw_error("Face {} is outside!", verts);
             }
         }
 
         // check for inverted tets
         for (const Tuple& t : get_tets()) {
-            if (is_inverted(t)) {
-                logger().error("Tet {} is inverted!", t.tid(*this));
+            if (!is_inverted(t)) {
+                continue;
             }
+            const auto vs = oriented_tet_vids(t);
+            logger().error("Tet {} is inverted! Vertices = {}", t.tid(*this), vs);
+            // for (const size_t v : vs) {
+            //     logger().error(
+            //         "v{}, rounded = {}, on surface = {}, on open boundary = {}",
+            //         v,
+            //         m_vertex_attribute[v].m_is_rounded,
+            //         m_vertex_attribute[v].m_is_on_surface,
+            //         m_vertex_attribute[v].m_is_on_open_boundary);
+            // }
         }
+        logger().info("Sanity checks done.");
     };
 
     for (int i = 0; i < ops.size(); i++) {
@@ -178,7 +189,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
             // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
             auto [max_energy, avg_energy] = get_max_avg_energy();
             wmtk::logger().info("split max energy = {} avg = {}", max_energy, avg_energy);
-            check_outside();
+            sanity_checks();
         } else if (i == 1) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==collapsing {}==", n);
@@ -202,7 +213,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
             // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
             auto [max_energy, avg_energy] = get_max_avg_energy();
             wmtk::logger().info("collapse max energy = {} avg = {}", max_energy, avg_energy);
-            check_outside();
+            sanity_checks();
         } else if (i == 2) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==swapping {}==", n);
@@ -213,7 +224,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
             // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
             auto [max_energy, avg_energy] = get_max_avg_energy();
             wmtk::logger().info("swap max energy = {} avg = {}", max_energy, avg_energy);
-            check_outside();
+            sanity_checks();
         } else if (i == 3) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==smoothing {}==", n);
@@ -222,7 +233,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
             // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
             auto [max_energy, avg_energy] = get_max_avg_energy();
             wmtk::logger().info("smooth max energy = {} avg = {}", max_energy, avg_energy);
-            check_outside();
+            sanity_checks();
         }
         // output_faces(fmt::format("out-op{}.obj", i), [](auto& f) { return f.m_is_surface_fs; });
     }
