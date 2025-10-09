@@ -2,8 +2,8 @@
 
 #include <fstream>
 #include <iostream>
+#include <set>
 #include <sstream>
-
 // igl
 #include <igl/parallel_for.h>
 #include <nlohmann/json.hpp>
@@ -356,19 +356,19 @@ struct CurveIntersectionPoint
 
 // Enhanced intersection type for segment-segment relation
 enum class SegmentRelationType {
-    NO_INTERSECTION,     // No intersection
-    POINT_INTERSECTION,  // Single point intersection
-    SEGMENT_OVERLAP      // Collinear with overlap
+    NO_INTERSECTION, // No intersection
+    POINT_INTERSECTION, // Single point intersection
+    SEGMENT_OVERLAP // Collinear with overlap
 };
 
 // Result structure for segment intersection
 struct SegmentIntersectionResult
 {
     SegmentRelationType type;
-    wmtk::Rational t_start;  // For point: intersection t; For overlap: start t
-    wmtk::Rational t_end;    // For overlap: end t; For point: unused
-    wmtk::Rational u_start;  // For point: intersection u; For overlap: unused
-    wmtk::Rational u_end;    // For overlap: unused; For point: unused
+    wmtk::Rational t_start; // For point: intersection t; For overlap: start t
+    wmtk::Rational t_end; // For overlap: end t; For point: unused
+    wmtk::Rational u_start; // For point: intersection u; For overlap: unused
+    wmtk::Rational u_end; // For overlap: unused; For point: unused
 };
 
 // Main function to compute intersections between two curves
@@ -379,3 +379,14 @@ std::vector<CurveIntersectionPoint> compute_intersections_between_two_curve_new_
     const query_curve_t<CoordType>& curve2,
     int curve2_id,
     bool verbose = false);
+
+////////////////////////////////////////////
+// function used for check in merging segments
+////////////////////////////////////////////
+std::vector<CurveIntersectionPoint> get_intersections_seq(
+    int cid,
+    const std::vector<int>& segment_ids,
+    const std::vector<query_segment_r>& segments_to_check,
+    const std::vector<std::vector<std::vector<int>>>& all_curve_parts_after_mapping,
+    const std::vector<std::set<int>>& removed_segments,
+    const std::vector<query_curve_t<wmtk::Rational>>& curves);

@@ -602,6 +602,155 @@ std::vector<CurveIntersectionPoint> compute_intersections_between_two_curve_new_
     return intersections;
 }
 
+
+////////////////////////////////////////////
+// function used for check in merging segments
+////////////////////////////////////////////
+
+void build_multiple_curve_spatial_cache(
+    const std::vector<std::vector<std::vector<int>>>& all_curve_parts_after_mapping,
+    const std::vector<query_curve_t<wmtk::Rational>>& curves,
+    std::map<int64_t, std::vector<std::pair<int, int>>>& face_to_segments,
+    std::map<std::pair<int64_t, int64_t>, std::vector<std::pair<int, int>>>& edge_to_segments)
+{
+    face_to_segments.clear();
+    edge_to_segments.clear();
+
+    for (int curve_id = 0; curve_id < all_curve_parts_after_mapping.size(); curve_id++) {
+        for (int part_id = 0; part_id < all_curve_parts_after_mapping[curve_id].size(); part_id++) {
+            for (int seg_id : all_curve_parts_after_mapping[curve_id][part_id]) {
+                const auto& seg = curves[curve_id].segments[seg_id];
+                face_to_segments[seg.f_id].push_back({curve_id, seg_id});
+                auto edges_0 = get_edges_containing_point(seg.bcs[0], seg.fv_ids);
+                for (const auto& edge : edges_0) {
+                    edge_to_segments[edge].push_back({curve_id, seg_id});
+                }
+                auto edges_1 = get_edges_containing_point(seg.bcs[1], seg.fv_ids);
+                for (const auto& edge : edges_1) {
+                    edge_to_segments[edge].push_back({curve_id, seg_id});
+                }
+            }
+        }
+    }
+}
+
+std::pair<bool, std::vector<std::pair<int, int>>> get_multiple_curve_candidate_segments(
+    const query_segment_r& seg,
+    const std::map<int64_t, std::vector<std::pair<int, int>>>& face_to_segments,
+    const std::map<std::pair<int64_t, int64_t>, std::vector<std::pair<int, int>>>& edge_to_segments)
+{
+    std::set<std::pair<int, int>> candidates;
+
+    std::pair<int64_t, int64_t> edge_vertices;
+    bool is_on_edge = is_segment_on_mesh_edge(seg, edge_vertices);
+    if (is_on_edge) {
+        auto it = edge_to_segments.find(edge_vertices);
+        if (it != edge_to_segments.end()) {
+            for (const auto& [curve_id, seg_id] : it->second) {
+                candidates.insert({curve_id, seg_id});
+            }
+        }
+    } else {
+        auto it = face_to_segments.find(seg.f_id);
+        if (it != face_to_segments.end()) {
+            for (const auto& [curve_id, seg_id] : it->second) {
+                candidates.insert({curve_id, seg_id});
+            }
+        }
+    }
+
+    return {is_on_edge, std::vector<std::pair<int, int>>(candidates.begin(), candidates.end())};
+}
+
+std::vector<CurveIntersectionPoint> get_intersections_seq(
+    int cid,
+    const std::vector<int>& segment_ids,
+    const std::vector<query_segment_r>& segments_to_check,
+    const std::vector<std::vector<std::vector<int>>>& all_curve_parts_after_mapping,
+    const std::vector<std::set<int>>& removed_segments,
+    const std::vector<query_curve_t<wmtk::Rational>>& curves)
+{
+    std::vector<CurveIntersectionPoint> all_intersections;
+
+    std::map<int64_t, std::vector<std::pair<int, int>>> face_to_segments;
+    std::map<std::pair<int64_t, int64_t>, std::vector<std::pair<int, int>>> edge_to_segments;
+    build_multiple_curve_spatial_cache(
+        all_curve_parts_after_mapping,
+        curves,
+        face_to_segments,
+        edge_to_segments);
+
+    // Iterate through each segment in segments_to_check
+    for (int seg_order = 0; seg_order < segments_to_check.size(); seg_order++) {
+        const auto& seg = segments_to_check[seg_order];
+        auto [is_on_edge, candidate_segments] =
+            get_multiple_curve_candidate_segments(seg, face_to_segments, edge_to_segments);
+
+
+        for (const auto& [other_cid, other_sid] : candidate_segments) {
+            // Skip if this segment has been removed
+            if (removed_segments[other_cid].count(other_sid) > 0) continue;
+            bool is_our_segment = false;
+            for (int sid : segment_ids) {
+                if (other_cid == cid && other_sid == sid) {
+                    is_our_segment = true;
+                    break;
+                }
+            }
+            if (is_our_segment) continue;
+            // skip if other_sid is adjacent to any of our segments
+            if (other_cid == cid) {
+                bool is_adjacent = false;
+                for (int sid : segment_ids) {
+                    if (curves[cid].next_segment_ids[sid] == other_sid) {
+                        is_adjacent = true;
+                        break;
+                    }
+                    if (curves[cid].next_segment_ids[other_sid] == sid) {
+                        is_adjacent = true;
+                        break;
+                    }
+                }
+                if (is_adjacent) continue;
+            }
+
+            const auto& other_seg = curves[other_cid].segments[other_sid];
+
+            // Use existing intersection function
+            auto intersection_result = check_segment_intersection_and_overlap(seg, other_seg);
+
+            if (intersection_result.type == SegmentRelationType::SEGMENT_OVERLAP) {
+                // Segment overlap - add left and right endpoints
+                CurveIntersectionPoint left_pt;
+                left_pt.other_curve_id = other_cid;
+                left_pt.t = intersection_result.t_start.to_double();
+                left_pt.seg_order_id = seg_order;
+                left_pt.type = IntersectionType::SEGMENT_LEFT;
+                all_intersections.push_back(left_pt);
+
+                CurveIntersectionPoint right_pt;
+                right_pt.other_curve_id = other_cid;
+                right_pt.t = intersection_result.t_end.to_double();
+                right_pt.seg_order_id = seg_order;
+                right_pt.type = IntersectionType::SEGMENT_RIGHT;
+                all_intersections.push_back(right_pt);
+            } else if (intersection_result.type == SegmentRelationType::POINT_INTERSECTION) {
+                // Point intersection
+                CurveIntersectionPoint pt;
+                pt.other_curve_id = other_cid;
+                pt.t = intersection_result.t_start.to_double();
+                pt.seg_order_id = seg_order;
+                pt.type = IntersectionType::POINT;
+                all_intersections.push_back(pt);
+            }
+        }
+    }
+
+    // Sort by from_seg first, then by parameter t, then by type
+    clean_up_intersections_array(all_intersections);
+    return all_intersections;
+}
+
 // Explicit template instantiation for commonly used types
 template std::vector<CurveIntersectionPoint> compute_intersections_between_two_curve_new_t<double>(
     const query_curve_t<double>& curve1,

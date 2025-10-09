@@ -696,9 +696,9 @@ void handle_collapse_edge_curves_fast_rational(
     std::vector<query_curve_t<wmtk::Rational>>& curves,
     bool verbose)
 {
-    verbose = true;
-    bool do_rounding = false;
-    bool do_merge = false;
+    verbose = false;
+    bool do_rounding = true;
+    bool do_merge = true;
     std::cout << "handle collapse edge curves fast rational" << std::endl;
 
 
@@ -787,7 +787,7 @@ void handle_collapse_edge_curves_fast_rational(
     // {
     //     std::cout << "check curve 8 and curve 14 after merge and rounding" << std::endl;
     //     auto intersections_infos =
-    //         compute_intersections_between_two_curve_new_t(curves[8], curves[14], 14, true);
+    //         compute_intersections_between_two_curve_new_t(curves[8], curves[14], 14, false);
     //     int n_intersections = intersections_infos.size();
     //     if (n_intersections != 2) {
     //         std::cout << "Error: curve 8 and curve 14 should intersect 2 times, but got "
