@@ -2,6 +2,7 @@
 #include "track_operations_curve.hpp"
 #include <igl/Timer.h>
 #include <igl/doublearea.h>
+#include <cstddef>
 #include <set>
 #ifdef USE_IGL_VIEWER
 #include <igl/opengl/glfw/Viewer.h>
@@ -635,6 +636,15 @@ void map_local_boundary_qps(
 
             if (!bc_updated) {
                 std::cout << "qp: " << qp << std::endl;
+                std::cout << "v_id_map_before[F_before]:" << std::endl;
+                for (int row = 0; row < F_before.rows(); ++row) {
+                    for (int col = 0; col < F_before.cols(); ++col) {
+                        int fid_entry = F_before(row, col);
+                        int vid = v_id_map_before[fid_entry];
+                        std::cout << vid << " ";
+                    }
+                    std::cout << std::endl;
+                }
                 throw std::runtime_error("Error: map_local_boundary_qps: "
                                          "not a boundary edgepoint");
             }
@@ -870,6 +880,8 @@ void merge_segments(
     // Control verbose output
     const bool verbose = false;
     std::vector<std::set<int>> removed_segments(curves.size());
+    std::size_t merge_attempt_count = 0;
+    std::size_t merge_step5_fail_count = 0;
 
     // Iterate through all curves
     for (int curve_id = 0; curve_id < curves.size(); curve_id++) {
@@ -918,8 +930,8 @@ void merge_segments(
 
                     if (verbose) {
                         std::cout << "[DEBUG] Merge attempt - Curve " << curve_id << " Part "
-                                  << part_id << " Seg pair [" << seg_id << "," << next_seg_id
-                                  << "]" << std::endl;
+                                  << part_id << " Seg pair [" << seg_id << "," << next_seg_id << "]"
+                                  << std::endl;
                         std::cout << "  BEFORE merge - intersections:" << std::endl;
                         for (const auto& intersection : inter_before) {
                             std::cout << "    " << intersection << std::endl;
@@ -953,7 +965,9 @@ void merge_segments(
                     }
 
                     // Step 5: Check if intersection sequences are the same
+                    merge_attempt_count++;
                     if (inter_before.size() != inter_after.size()) {
+                        merge_step5_fail_count++;
                         if (verbose) {
                             std::cout << std::endl;
                         }
@@ -969,6 +983,7 @@ void merge_segments(
                     }
 
                     if (!same) {
+                        merge_step5_fail_count++;
                         if (verbose) {
                             std::cout << "  Cannot merge: Intersection sequences differ"
                                       << std::endl;
@@ -994,8 +1009,7 @@ void merge_segments(
 
                     // Redirect any segments that were pointing to next_seg_id
                     for (int j = 0; j < curves[curve_id].next_segment_ids.size(); j++) {
-                        if (j != seg_id &&
-                            curves[curve_id].next_segment_ids[j] == next_seg_id) {
+                        if (j != seg_id && curves[curve_id].next_segment_ids[j] == next_seg_id) {
                             curves[curve_id].next_segment_ids[j] = seg_id;
                         }
                     }
@@ -1059,4 +1073,13 @@ void merge_segments(
     if (verbose) {
         std::cout << "=== Cleanup pass complete ===" << std::endl;
     }
+
+    std::cout << "[merge_segments] attempts reaching step5: " << merge_attempt_count
+              << ", rejected due to mismatch: " << merge_step5_fail_count;
+    if (merge_attempt_count > 0) {
+        double failure_ratio =
+            static_cast<double>(merge_step5_fail_count) / static_cast<double>(merge_attempt_count);
+        std::cout << " (ratio " << failure_ratio << ")";
+    }
+    std::cout << std::endl;
 }
