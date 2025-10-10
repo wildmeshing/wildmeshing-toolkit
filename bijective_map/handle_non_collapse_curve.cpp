@@ -477,7 +477,7 @@ void handle_non_collapse_operation_curves_fast_rational(
         }
     }
 
-    // TODO: get all new seg and convert them to double
+
     {}
 }
 

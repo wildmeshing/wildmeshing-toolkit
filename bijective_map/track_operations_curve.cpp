@@ -876,106 +876,130 @@ void merge_segments(
         for (int part_id = 0; part_id < all_curve_parts_after_mapping[curve_id].size(); part_id++) {
             const auto& curve_part = all_curve_parts_after_mapping[curve_id][part_id];
 
-            for (int i = 0; i < curve_part.size() - 1; i++) {
+            for (int i = 0; i < curve_part.size(); i++) {
                 int seg_id = curve_part[i];
-                int next_seg_id = curve_part[i + 1];
-
-                // Skip if either segment has already been removed
-                if (removed_segments[curve_id].count(seg_id) > 0 ||
-                    removed_segments[curve_id].count(next_seg_id) > 0) {
+                if (removed_segments[curve_id].count(seg_id) > 0) {
                     continue;
                 }
 
-                auto& seg = curves[curve_id].segments[seg_id];
-                auto& next_seg = curves[curve_id].segments[next_seg_id];
-
-                // Step 1: Check if they belong to different faces
-                if (seg.f_id != next_seg.f_id) {
-                    continue;
-                }
-
-                // Step 2: Get combined intersections for the two separate segments
-                std::vector<int> segment_ids = {seg_id, next_seg_id};
-                std::vector<query_segment_r> original_segments = {seg, next_seg};
-                auto inter_before = get_intersections_seq(
-                    curve_id,
-                    segment_ids,
-                    original_segments,
-                    all_curve_parts_after_mapping,
-                    removed_segments,
-                    curves);
-
-                if (verbose) {
-                    std::cout << "[DEBUG] Merge attempt - Curve " << curve_id << " Part " << part_id
-                              << " Seg pair [" << seg_id << "," << next_seg_id << "]" << std::endl;
-                    std::cout << "  BEFORE merge - intersections:" << std::endl;
-                    for (const auto& intersection : inter_before) {
-                        std::cout << "    " << intersection << std::endl;
+                while (true) {
+                    int next_idx = i + 1;
+                    while (next_idx < curve_part.size() &&
+                           removed_segments[curve_id].count(curve_part[next_idx]) > 0) {
+                        next_idx++;
                     }
-                }
-
-                // Step 3: Create merged segment
-                query_segment_r merged_seg;
-                merged_seg.f_id = seg.f_id;
-                merged_seg.origin_segment_id = seg.origin_segment_id;
-                merged_seg.bcs[0] = seg.bcs[0]; // seg's bc[0]
-                merged_seg.bcs[1] = next_seg.bcs[1]; // next_seg's bc[1]
-                merged_seg.fv_ids = seg.fv_ids;
-
-                // Step 4: Get intersection sequence for the merged segment
-                // (computing intersections without seg and next_seg)
-                std::vector<query_segment_r> merged_segment_vec = {merged_seg};
-                auto inter_after = get_intersections_seq(
-                    curve_id,
-                    segment_ids,
-                    merged_segment_vec,
-                    all_curve_parts_after_mapping,
-                    removed_segments,
-                    curves);
-
-                if (verbose) {
-                    std::cout << "  AFTER merge - intersections:" << std::endl;
-                    for (const auto& intersection : inter_after) {
-                        std::cout << "    " << intersection << std::endl;
+                    if (next_idx >= curve_part.size()) {
+                        break;
                     }
-                }
 
-                // Step 5: Check if intersection sequences are the same
-                if (inter_before.size() == inter_after.size()) {
+                    int next_seg_id = curve_part[next_idx];
+                    if (removed_segments[curve_id].count(next_seg_id) > 0) {
+                        break;
+                    }
+
+                    auto& seg = curves[curve_id].segments[seg_id];
+                    auto& next_seg = curves[curve_id].segments[next_seg_id];
+
+                    // Step 1: Check if they belong to different faces
+                    if (seg.f_id != next_seg.f_id) {
+                        break;
+                    }
+
+                    // Step 2: Get combined intersections for the two separate segments
+                    std::vector<int> segment_ids = {seg_id, next_seg_id};
+                    std::vector<query_segment_r> original_segments = {seg, next_seg};
+                    auto inter_before = get_intersections_seq(
+                        curve_id,
+                        segment_ids,
+                        original_segments,
+                        all_curve_parts_after_mapping,
+                        removed_segments,
+                        curves);
+
+                    if (verbose) {
+                        std::cout << "[DEBUG] Merge attempt - Curve " << curve_id << " Part "
+                                  << part_id << " Seg pair [" << seg_id << "," << next_seg_id
+                                  << "]" << std::endl;
+                        std::cout << "  BEFORE merge - intersections:" << std::endl;
+                        for (const auto& intersection : inter_before) {
+                            std::cout << "    " << intersection << std::endl;
+                        }
+                    }
+
+                    // Step 3: Create merged segment
+                    query_segment_r merged_seg;
+                    merged_seg.f_id = seg.f_id;
+                    merged_seg.origin_segment_id = seg.origin_segment_id;
+                    merged_seg.bcs[0] = seg.bcs[0]; // seg's bc[0]
+                    merged_seg.bcs[1] = next_seg.bcs[1]; // next_seg's bc[1]
+                    merged_seg.fv_ids = seg.fv_ids;
+
+                    // Step 4: Get intersection sequence for the merged segment
+                    // (computing intersections without seg and next_seg)
+                    std::vector<query_segment_r> merged_segment_vec = {merged_seg};
+                    auto inter_after = get_intersections_seq(
+                        curve_id,
+                        segment_ids,
+                        merged_segment_vec,
+                        all_curve_parts_after_mapping,
+                        removed_segments,
+                        curves);
+
+                    if (verbose) {
+                        std::cout << "  AFTER merge - intersections:" << std::endl;
+                        for (const auto& intersection : inter_after) {
+                            std::cout << "    " << intersection << std::endl;
+                        }
+                    }
+
+                    // Step 5: Check if intersection sequences are the same
+                    if (inter_before.size() != inter_after.size()) {
+                        if (verbose) {
+                            std::cout << std::endl;
+                        }
+                        break;
+                    }
+
                     bool same = true;
-                    for (size_t i = 0; i < inter_before.size(); ++i) {
-                        if (inter_before[i].other_curve_id != inter_after[i].other_curve_id) {
+                    for (size_t k = 0; k < inter_before.size(); ++k) {
+                        if (inter_before[k].other_curve_id != inter_after[k].other_curve_id) {
                             same = false;
                             break;
                         }
                     }
-                    if (same) {
+
+                    if (!same) {
                         if (verbose) {
-                            std::cout << "  *** MERGE SUCCESS: Intersection sequences match ***"
+                            std::cout << "  Cannot merge: Intersection sequences differ"
                                       << std::endl;
+                            std::cout << std::endl;
                         }
-
-                        // Update the segment at seg_id with merged segment
-                        curves[curve_id].segments[seg_id] = merged_seg;
-
-                        // Update next_segment_id: seg now points to what next_seg was pointing to
-                        curves[curve_id].next_segment_ids[seg_id] =
-                            curves[curve_id].next_segment_ids[next_seg_id];
-
-                        // Mark next_seg for removal
-                        removed_segments[curve_id].insert(next_seg_id);
-
-                        // Update any segments that were pointing to next_seg_id to now point to
-                        // seg_id
-                        for (int j = 0; j < curves[curve_id].next_segment_ids.size(); j++) {
-                            if (j != seg_id &&
-                                curves[curve_id].next_segment_ids[j] == next_seg_id) {
-                                curves[curve_id].next_segment_ids[j] = seg_id;
-                            }
-                        }
-                    } else if (verbose) {
-                        std::cout << "  Cannot merge: Intersection sequences differ" << std::endl;
+                        break;
                     }
+
+                    if (verbose) {
+                        std::cout << "  *** MERGE SUCCESS: Intersection sequences match ***"
+                                  << std::endl;
+                    }
+
+                    // Update the segment at seg_id with merged segment
+                    curves[curve_id].segments[seg_id] = merged_seg;
+
+                    // Update next_segment_id: seg now points to what next_seg was pointing to
+                    curves[curve_id].next_segment_ids[seg_id] =
+                        curves[curve_id].next_segment_ids[next_seg_id];
+
+                    // Mark next_seg for removal
+                    removed_segments[curve_id].insert(next_seg_id);
+
+                    // Redirect any segments that were pointing to next_seg_id
+                    for (int j = 0; j < curves[curve_id].next_segment_ids.size(); j++) {
+                        if (j != seg_id &&
+                            curves[curve_id].next_segment_ids[j] == next_seg_id) {
+                            curves[curve_id].next_segment_ids[j] = seg_id;
+                        }
+                    }
+
                     if (verbose) {
                         std::cout << std::endl;
                     }

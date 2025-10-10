@@ -575,6 +575,7 @@ void handle_collapse_edge_curve_rational(
             bc0_places);
     }
 
+
     // Print debug information about query points
     if (verbose) {
         std::cout << "Debug: all_query_points (" << all_query_points.size()
@@ -603,6 +604,8 @@ void handle_collapse_edge_curve_rational(
             std::cout << "No query points to map" << std::endl;
         }
         return;
+    } else {
+        std::cout << "curve size in local patch:" << all_query_seg_ids.size() << std::endl;
     }
 
     std::vector<std::vector<int>> all_curve_parts;
@@ -696,6 +699,16 @@ void handle_collapse_edge_curves_fast_rational(
     std::vector<query_curve_t<wmtk::Rational>>& curves,
     bool verbose)
 {
+    int total_segments_before_mapping = 0;
+    int total_segments_after_mapping = 0;
+    int total_segments_after_merging = 0;
+
+    // DEBUG: print curve sizes
+    {
+        for (int i = 0; i < curves.size(); ++i) {
+            total_segments_before_mapping += int(curves[i].segments.size());
+        }
+    }
     verbose = false;
     bool do_rounding = true;
     bool do_merge = true;
@@ -746,22 +759,12 @@ void handle_collapse_edge_curves_fast_rational(
         }
     }
 
-
-    // DEBUG: check curve 8 and curve 14(only for 36086)
-    // {
-    //     std::cout << "check curve 8 and curve 14 before merge and rounding" << std::endl;
-    //     auto intersections_infos =
-    //         compute_intersections_between_two_curve_new_t(curves[8], curves[14], 14, true);
-    //     int n_intersections = intersections_infos.size();
-    //     if (n_intersections != 2) {
-    //         std::cout << "Error: curve 8 and curve 14 should intersect 2 times, but got "
-    //                   << n_intersections << " times" << std::endl;
-    //         std::cout << "--------------------------------" << std::endl;
-
-
-    //         exit(1);
-    //     }
-    // }
+    // DEBUG: print curve sizes
+    {
+        for (int i = 0; i < curves.size(); ++i) {
+            total_segments_after_mapping += int(curves[i].segments.size());
+        }
+    }
 
     // TODO: get all new seg and convert them to double
     if (do_rounding) {
@@ -783,21 +786,25 @@ void handle_collapse_edge_curves_fast_rational(
         std::cout << "merge_segments time: " << elapsed << " ms" << std::endl;
     }
 
-    // DEBUG: check curve 8 and curve 14(only for 36086)
-    // {
-    //     std::cout << "check curve 8 and curve 14 after merge and rounding" << std::endl;
-    //     auto intersections_infos =
-    //         compute_intersections_between_two_curve_new_t(curves[8], curves[14], 14, false);
-    //     int n_intersections = intersections_infos.size();
-    //     if (n_intersections != 2) {
-    //         std::cout << "Error: curve 8 and curve 14 should intersect 2 times, but got "
-    //                   << n_intersections << " times" << std::endl;
-    //         std::cout << "--------------------------------" << std::endl;
-
-
-    //         exit(1);
-    //     }
-    // }
+    // DEBUG: print curve sizes
+    {
+        for (int i = 0; i < curves.size(); ++i) {
+            total_segments_after_merging += int(curves[i].segments.size());
+        }
+        std::cout << "Total number of segments in all curves before mapping: "
+                  << total_segments_before_mapping << std::endl;
+        std::cout << "Total number of segments in all curves after mapping: "
+                  << total_segments_after_mapping << std::endl;
+        std::cout << "Total number of segments in all curves after merging: "
+                  << total_segments_after_merging << std::endl;
+        std::cout << "mapping added segments: "
+                  << total_segments_after_mapping - total_segments_before_mapping << std::endl;
+        std::cout << "merging remove segments: "
+                  << -total_segments_after_merging + total_segments_after_mapping << std::endl;
+        std::cout << "total segments change: "
+                  << total_segments_after_merging - total_segments_before_mapping << std::endl;
+        std::cout << std::endl;
+    }
 }
 
 template void handle_collapse_edge_curves_t<double>(
