@@ -22,7 +22,7 @@ auto delaunay3D(const std::vector<Point3D>& points)
     assert(engine);
 
     // Some settings
-    engine->set_reorder(false);
+    engine->set_reorder(true); // making this true fixed a bug for whatever reason
     engine->set_stores_cicl(false); // Incident tetrahedral list.
     engine->set_stores_neighbors(false); // Vertex neighbors.
     engine->set_refine(false);
@@ -59,7 +59,7 @@ auto delaunay2D(const std::vector<Point2D>& points)
     assert(engine);
 
     // Some settings
-    engine->set_reorder(false);
+    engine->set_reorder(true);
     engine->set_stores_cicl(false); // Incident tetrahedral list.
     engine->set_stores_neighbors(false); // Vertex neighbors.
     engine->set_refine(false);

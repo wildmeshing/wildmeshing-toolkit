@@ -1,6 +1,7 @@
 #include <wmtk/utils/Rational.hpp>
 #include "TetWildMesh.h"
 
+#include <bitset>
 #include <wmtk/utils/Delaunay.hpp>
 #include "wmtk/TetMesh.h"
 #include "wmtk/TetMeshCutTable.hpp"
@@ -24,40 +25,70 @@ void TetWildMesh::init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>
 {
     ///points for delaunay
     std::vector<wmtk::delaunay::Point3D> points(vertices.size());
+    // add points from surface
     for (int i = 0; i < vertices.size(); i++) {
         for (int j = 0; j < 3; j++) points[i][j] = vertices[i][j];
     }
-    ///box
+
+    // bbox
     double delta = m_params.diag_l / 15.0;
     Vector3d box_min(m_params.min[0] - delta, m_params.min[1] - delta, m_params.min[2] - delta);
     Vector3d box_max(m_params.max[0] + delta, m_params.max[1] + delta, m_params.max[2] + delta);
-    // int Nx = std::max(2, int((box_max[0] - box_min[0]) / delta));
-    // int Ny = std::max(2, int((box_max[1] - box_min[1]) / delta));
-    // int Nz = std::max(2, int((box_max[2] - box_min[2]) / delta));
-    int Nx = 3;
-    int Ny = 3;
-    int Nz = 3;
-    for (double i = 0; i <= Nx; i++) {
-        for (double j = 0; j <= Ny; j++) {
-            for (double k = 0; k <= Nz; k++) {
-                Vector3d p(
-                    box_min[0] * (1 - i / Nx) + box_max[0] * i / Nx,
-                    box_min[1] * (1 - j / Ny) + box_max[1] * j / Ny,
-                    box_min[2] * (1 - k / Nz) + box_max[2] * k / Nz);
 
-                if (i == 0) p[0] = box_min[0];
-                if (i == Nx) p[0] = box_max[0];
-                if (j == 0) p[1] = box_min[1];
-                if (j == Ny) p[1] = box_max[1];
-                if (k == 0) p[2] = box_min[2];
-                if (k == Nz) // note: have to do, otherwise the value would be slightly different
-                    p[2] = box_max[2];
+    // add corners of domain
+    for (int i = 0; i < 8; i++) {
+        Vector3d p;
+        std::bitset<sizeof(int) * 8> a(i);
+        for (int j = 0; j < 3; j++) {
+            if (a.test(j)) {
+                p[j] = box_max[j];
+            } else {
+                p[j] = box_min[j];
+            }
+        }
+        points.push_back({{p[0], p[1], p[2]}});
+    }
 
-                if (!m_envelope.is_outside(p)) continue;
-                points.push_back({{p[0], p[1], p[2]}});
+    const double voxel_resolution = m_params.diag_l / 20.0;
+    std::array<int, 3> N; // number of grid points per dimension
+    std::array<double, 3> h; // distance between grid points per dimension
+    for (int i = 0; i < 3; i++) {
+        const double D = box_max[i] - box_min[i];
+        N[i] = (D / voxel_resolution) + 1;
+        h[i] = D / N[i];
+    }
+
+    std::array<std::vector<double>, 3> ds;
+    for (int i = 0; i < 3; i++) {
+        ds[i].push_back(box_min[i]);
+        for (int j = 0; j < N[i] - 1; j++) {
+            ds[i].push_back(box_min[i] + h[i] * (j + 1));
+        }
+        ds[i].push_back(box_max[i]);
+    }
+
+    const double min_dis = voxel_resolution * voxel_resolution / 4;
+    //    double min_dis = state.target_edge_len * state.target_edge_len;//epsilon*2
+    for (int i = 0; i < ds[0].size(); i++) {
+        for (int j = 0; j < ds[1].size(); j++) {
+            for (int k = 0; k < ds[2].size(); k++) {
+                if ((i == 0 || i == ds[0].size() - 1) && (j == 0 || j == ds[1].size() - 1) &&
+                    (k == 0 || k == ds[2].size() - 1)) {
+                    continue;
+                }
+                const Vector3d p(ds[0][i], ds[1][j], ds[2][k]);
+
+                Eigen::Vector3d n;
+                const double sqd = triangles_tree.nearest_point(p, n);
+
+                if (sqd < min_dis) {
+                    continue;
+                }
+                points.push_back({{ds[0][i], ds[1][j], ds[2][k]}});
             }
         }
     }
+
     m_params.box_min = box_min;
     m_params.box_max = box_max;
 
