@@ -327,6 +327,26 @@ void TetWildMesh::insertion_by_volumeremesher_old(
         tri_index[3 * i + 2] = faces[i][2];
     }
 
+    // {
+    //     logger().warn("Write input.off");
+    //     std::ofstream off("input.off");
+    //     off << "OFF\n";
+    //     off << vertices.size() << " " << faces.size() << " 0\n";
+    //     for(const auto& v : vertices){
+    //         off << v[0] << " " << v[1] << " " << v[2] << std::endl;
+    //     }
+    //     for(const auto& f : faces){
+    //         logger().info("{}", f);
+    //         off << f.size() << " ";
+    //         for(size_t vid : f){
+    //             logger().info("{}", vid);
+    //             off << vid << " ";
+    //         }
+    //         off << std::endl;
+    //     }
+    //     off.close();
+    // }
+
     std::cout << tri_ver_coord.size() << std::endl;
     std::cout << tri_index.size() << std::endl;
     std::cout << tet_ver_coord.size() << std::endl;
@@ -359,7 +379,7 @@ void TetWildMesh::insertion_by_volumeremesher_old(
                 tri_ver_coord[3 * id2 + 2];
 
             if (utils::predicates::is_degenerate(v0, v1, v2)) {
-                logger().error(
+                logger().warn(
                     "Face ({}, {}, {}) is collinear!",
                     v0.transpose(),
                     v1.transpose(),
@@ -386,7 +406,7 @@ void TetWildMesh::insertion_by_volumeremesher_old(
                 tet_ver_coord[3 * id3 + 2];
 
             if (utils::predicates::is_degenerate(v0, v1, v2, v3)) {
-                logger().error(
+                logger().warn(
                     "Tet ({}, {}, {}) is coplanar!",
                     v0.transpose(),
                     v1.transpose(),
@@ -829,6 +849,73 @@ void TetWildMesh::insertion_by_volumeremesher_old(
             logger().error("Inverted tet {}", t);
         }
     }
+
+
+    // {
+    //     // write triangulated faces to file
+    //     MatrixXd V;
+    //     V.resize(v_rational.size(), 3);
+    //     for(size_t i = 0; i < v_rational.size(); ++i){
+    //         V.row(i) = to_double(v_rational[i]);
+    //     }
+
+    //     size_t f_count = 0;
+    //     for(size_t i = 0; i < triangulated_faces_on_input.size(); ++i){
+    //         if(triangulated_faces_on_input[i]){
+    //             f_count++;
+    //         }
+    //     }
+
+    //     MatrixXi F;
+    //     F.resize(f_count, 3);
+    //     f_count = 0;
+    //     for(size_t i = 0; i < facets_after.size(); ++i){
+    //         if(!triangulated_faces_on_input[i]){
+    //             continue;
+    //         }
+    //         F(f_count,0) = facets_after[i][0];
+    //         F(f_count,1) = facets_after[i][1];
+    //         F(f_count,2) = facets_after[i][2];
+    //         f_count++;
+    //     }
+
+    //     logger().warn("Write traced.off");
+    //     igl::writeOFF("traced.off", V, F);
+    // }
+    // {
+    //     // polygon_faces_on_input_surface
+    //     // polygon_faces
+
+    //     MatrixXd V;
+    //     V.resize(v_rational.size(), 3);
+    //     for(size_t i = 0; i < v_rational.size(); ++i){
+    //         V.row(i) = to_double(v_rational[i]);
+    //     }
+
+    //     std::vector<std::vector<size_t>> faces;
+    //     for(size_t i = 0; i < polygon_faces.size(); ++i){
+    //         if(!polygon_faces_on_input_surface[i]){
+    //             continue;
+    //         }
+    //         faces.push_back(polygon_faces[i]);
+    //     }
+
+    //     logger().warn("Write polygons.off");
+    //     std::ofstream off("polygons.off");
+    //     off << "OFF\n";
+    //     off << V.rows() << " " << faces.size() << " 0\n";
+    //     for(size_t i = 0; i < V.rows(); ++i){
+    //         off << V(i,0) << " " << V(i,1) << " " << V(i,2) << std::endl;
+    //     }
+    //     for(const auto& f : faces){
+    //         off << f.size() << " ";
+    //         for(size_t vid : f){
+    //             off << vid << " ";
+    //         }
+    //         off << std::endl;
+    //     }
+    //     off.close();
+    // }
 
     std::cout << "v on surface vector size: " << is_v_on_input.size();
     std::cout << "v on surface: " << on_surface_v_cnt << std::endl;
@@ -1775,6 +1862,20 @@ bool TetWildMesh::is_open_boundary_edge(const Tuple& e)
 {
     size_t v1 = e.vid(*this);
     size_t v2 = e.switch_vertex(*this).vid(*this);
+    if (!m_vertex_attribute[v1].m_is_on_open_boundary ||
+        !m_vertex_attribute[v2].m_is_on_open_boundary)
+        return false;
+
+    return !m_open_boundary_envelope.is_outside(
+        {{m_vertex_attribute[v1].m_posf,
+          m_vertex_attribute[v2].m_posf,
+          m_vertex_attribute[v1].m_posf}});
+}
+
+bool TetWildMesh::is_open_boundary_edge(const std::array<size_t, 2>& e)
+{
+    size_t v1 = e[0];
+    size_t v2 = e[1];
     if (!m_vertex_attribute[v1].m_is_on_open_boundary ||
         !m_vertex_attribute[v2].m_is_on_open_boundary)
         return false;

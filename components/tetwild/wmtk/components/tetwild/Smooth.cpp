@@ -74,20 +74,8 @@ bool TetWildMesh::smooth_after(const Tuple& t)
     auto old_pos = m_vertex_attribute[vid].m_posf;
     auto old_asssembles = assembles;
 
-    m_vertex_attribute[vid].m_posf = wmtk::newton_method_from_stack(
-        assembles,
-        wmtk::AMIPS_energy,
-        wmtk::AMIPS_jacobian,
-        wmtk::AMIPS_hessian);
-
-    wmtk::logger().trace(
-        "old pos {} -> new pos {}",
-        old_pos.transpose(),
-        m_vertex_attribute[vid].m_posf.transpose());
-
-
     std::vector<std::array<double, 9>> boundary_assemble;
-    std::vector<std::array<double, 9>> surface_assemble;
+    // boundary must be collected before smoothing!!!
     if (m_vertex_attribute[vid].m_is_on_open_boundary) {
         // debug code
         // std::cout << "in smoothing open boundary" << std::endl;
@@ -96,18 +84,22 @@ bool TetWildMesh::smooth_after(const Tuple& t)
         for (const Tuple& t : locs) {
             for (int j = 0; j < 6; j++) {
                 auto e_t = tuple_from_edge(t.tid(*this), j);
+                size_t v1_id = e_t.vid(*this);
+                size_t v2_id = e_t.switch_vertex(*this).vid(*this);
+                if (v1_id != vid && v2_id != vid) {
+                    // edge does not contain point of interest
+                    continue;
+                }
+
+
                 auto eid = e_t.eid(*this);
                 auto [it, suc] = unique_eid.emplace(eid);
                 if (!suc) continue;
+
                 if (is_open_boundary_edge(e_t)) {
-                    size_t v1_id = e_t.vid(*this);
-                    size_t v2_id = e_t.switch_vertex(*this).vid(*this);
                     if (v2_id == vid) {
-                        size_t tmp = v1_id;
-                        v1_id = v2_id;
-                        v2_id = tmp;
+                        std::swap(v1_id, v2_id);
                     }
-                    if (v1_id != vid) continue; // does not contain point of interest
                     std::array<double, 9> coords = {
                         {m_vertex_attribute[v1_id].m_posf[0],
                          m_vertex_attribute[v1_id].m_posf[1],
@@ -122,32 +114,37 @@ bool TetWildMesh::smooth_after(const Tuple& t)
                 }
             }
         }
-
-        {
-            auto project = Eigen::Vector3d();
-
-            if (boundaries_tree.initialized()) {
-                // project to envelope
-                // std::cout << "in smoothing open boundary" << std::endl;
-                boundaries_tree.nearest_point(m_vertex_attribute[vid].m_posf, project);
-            } else {
-                // project to neighborhood
-                project = wmtk::try_project(m_vertex_attribute[vid].m_posf, boundary_assemble);
-            }
-
-            m_vertex_attribute[vid].m_posf = project;
-            // m_vertex_attribute[vid].m_posf = 0.5 * (m_vertex_attribute[vid].m_posf + project); // Project only half way
-        }
-
-        for (auto& n : boundary_assemble) {
-            n[0] = m_vertex_attribute[vid].m_posf[0];
-            n[1] = m_vertex_attribute[vid].m_posf[1];
-            n[2] = m_vertex_attribute[vid].m_posf[2];
-            n[6] = m_vertex_attribute[vid].m_posf[0];
-            n[7] = m_vertex_attribute[vid].m_posf[1];
-            n[8] = m_vertex_attribute[vid].m_posf[2];
-        }
     }
+
+    m_vertex_attribute[vid].m_posf = wmtk::newton_method_from_stack(
+        assembles,
+        wmtk::AMIPS_energy,
+        wmtk::AMIPS_jacobian,
+        wmtk::AMIPS_hessian);
+
+    wmtk::logger().trace(
+        "old pos {} -> new pos {}",
+        old_pos.transpose(),
+        m_vertex_attribute[vid].m_posf.transpose());
+
+    // project to open boundary
+    if (m_vertex_attribute[vid].m_is_on_open_boundary) {
+        auto project = Eigen::Vector3d();
+
+        if (boundaries_tree.initialized()) {
+            // project to envelope
+            // std::cout << "in smoothing open boundary" << std::endl;
+            boundaries_tree.nearest_point(m_vertex_attribute[vid].m_posf, project);
+        } else {
+            // project to neighborhood
+            project = wmtk::try_project(m_vertex_attribute[vid].m_posf, boundary_assemble);
+        }
+
+        m_vertex_attribute[vid].m_posf = project;
+        // m_vertex_attribute[vid].m_posf = 0.5 * (m_vertex_attribute[vid].m_posf + project); // Project only half way
+    }
+
+    std::vector<std::array<double, 9>> surface_assemble;
     if (m_vertex_attribute[vid].m_is_on_surface) {
         std::set<size_t> unique_fid;
         for (auto& t : locs) {
@@ -191,6 +188,16 @@ bool TetWildMesh::smooth_after(const Tuple& t)
                 n[kk] = m_vertex_attribute[vid].m_posf[kk];
             }
         }
+    }
+
+    // update position in boundary_assemble
+    for (auto& n : boundary_assemble) {
+        n[0] = m_vertex_attribute[vid].m_posf[0];
+        n[1] = m_vertex_attribute[vid].m_posf[1];
+        n[2] = m_vertex_attribute[vid].m_posf[2];
+        n[6] = m_vertex_attribute[vid].m_posf[0];
+        n[7] = m_vertex_attribute[vid].m_posf[1];
+        n[8] = m_vertex_attribute[vid].m_posf[2];
     }
 
     // check boundary containment

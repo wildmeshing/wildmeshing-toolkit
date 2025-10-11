@@ -30,6 +30,10 @@
 #include <geogram/points/kd_tree.h>
 #include <limits>
 
+namespace {
+static int debug_print_counter = 0;
+}
+
 namespace wmtk::components::tetwild {
 
 
@@ -61,6 +65,8 @@ void TetWildMesh::mesh_improvement(int max_its)
     // wmtk::logger().info("cnt_round {}/{}", cnt_round, cnt_valid);
 
     compute_vertex_partition_morton();
+
+    // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
 
     wmtk::logger().info("========it pre========");
     local_operations({{0, 1, 0, 0}}, false);
@@ -131,8 +137,6 @@ std::tuple<double, double> TetWildMesh::local_operations(
 
     std::tuple<double, double> energy;
 
-    static int debug_print_counter = 0;
-
     auto sanity_checks = [this]() {
         logger().info("Perform sanity checks...");
         const auto faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
@@ -161,8 +165,58 @@ std::tuple<double, double> TetWildMesh::local_operations(
             //         m_vertex_attribute[v].m_is_on_open_boundary);
             // }
         }
+
+        // check boundary envelope
+        // note that edges can end up outside during collapse and that is desired behavior to
+        // collapse thin ribbons
+        {
+            const auto fs = get_faces();
+            const auto es = get_edges();
+            std::vector<int> edge_on_open_boundary(6 * tet_capacity(), 0);
+
+            for (const Tuple& f : fs) {
+                auto fid = f.fid(*this);
+                if (!m_face_attribute[fid].m_is_surface_fs) {
+                    continue;
+                }
+                size_t eid1 = f.eid(*this);
+                size_t eid2 = f.switch_edge(*this).eid(*this);
+                size_t eid3 = f.switch_vertex(*this).switch_edge(*this).eid(*this);
+
+                edge_on_open_boundary[eid1]++;
+                edge_on_open_boundary[eid2]++;
+                edge_on_open_boundary[eid3]++;
+            }
+
+            for (const Tuple& e : es) {
+                if (edge_on_open_boundary[e.eid(*this)] != 1) {
+                    continue;
+                }
+                if (!is_open_boundary_edge(e)) {
+                    size_t v1 = e.vid(*this);
+                    size_t v2 = e.switch_vertex(*this).vid(*this);
+                    if (!m_vertex_attribute[v1].m_is_on_open_boundary ||
+                        !m_vertex_attribute[v2].m_is_on_open_boundary) {
+                        continue;
+                    }
+                    logger().warn("Boundary edge ({},{}) is outside the envelope.", v1, v2);
+                    // logger().error(
+                    //     "v{}, on surface = {}, on open boundary = {}",
+                    //     v1,
+                    //     m_vertex_attribute[v1].m_is_on_surface,
+                    //     m_vertex_attribute[v1].m_is_on_open_boundary);
+                    // logger().error(
+                    //     "v{}, on surface = {}, on open boundary = {}",
+                    //     v2,
+                    //     m_vertex_attribute[v2].m_is_on_surface,
+                    //     m_vertex_attribute[v2].m_is_on_open_boundary);
+                }
+            }
+        }
         logger().info("Sanity checks done.");
     };
+
+    sanity_checks();
 
     for (int i = 0; i < ops.size(); i++) {
         timer.start();
@@ -980,8 +1034,9 @@ std::vector<std::array<size_t, 3>> TetWildMesh::get_faces_by_condition(
         if (cond(m_face_attribute[fid])) {
             auto tid = fid / 4, lid = fid % 4;
             auto verts = get_face_vertices(f);
-            res.emplace_back(std::array<size_t, 3>{
-                {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
+            res.emplace_back(
+                std::array<size_t, 3>{
+                    {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
         }
     }
     return res;
@@ -1550,14 +1605,17 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
     // flood fill
     // int num_parts = flood_fill();
     // std::cout << "flood fill parts: " << num_parts << std::endl;
-    const auto& vs = get_vertices();
-    const auto& tets = get_tets();
+    const auto vs = get_vertices();
+    const auto tets = get_tets();
+    const auto faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
 
     Eigen::MatrixXd V(vert_capacity(), 3);
     Eigen::MatrixXi T(tet_capacity(), 4);
+    Eigen::MatrixXi F(faces.size(), 3);
 
     V.setZero();
     T.setZero();
+    F.setZero();
 
     Eigen::MatrixXd parts(tet_capacity(), 1);
     parts.setZero();
@@ -1571,6 +1629,10 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
     v_sizing_field.setZero();
     Eigen::VectorXd v_is_rounded(vert_capacity());
     v_is_rounded.setZero();
+    Eigen::VectorXd v_is_on_surface(vert_capacity());
+    v_is_on_surface.setZero();
+    Eigen::VectorXd v_is_on_open_boundary(vert_capacity());
+    v_is_on_open_boundary.setZero();
 
     int index = 0;
     for (const Tuple& t : tets) {
@@ -1587,11 +1649,19 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
         ++index;
     }
 
+    for (size_t i = 0; i < faces.size(); ++i) {
+        for (size_t j = 0; j < 3; ++j) {
+            F(i, j) = faces[i][j];
+        }
+    }
+
     for (auto v : vs) {
         const auto vid = v.vid(*this);
         V.row(vid) = m_vertex_attribute[vid].m_posf;
         v_sizing_field[vid] = m_vertex_attribute[vid].m_sizing_scalar;
         v_is_rounded[vid] = m_vertex_attribute[vid].m_is_rounded ? 1 : 0;
+        v_is_on_surface[vid] = m_vertex_attribute[vid].m_is_on_surface ? 1 : 0;
+        v_is_on_open_boundary[vid] = m_vertex_attribute[vid].m_is_on_open_boundary ? 1 : 0;
     }
 
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
@@ -1610,9 +1680,26 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
     writer->add_cell_field("t_energy", t_energy);
     writer->add_field("sizing_field", v_sizing_field);
     writer->add_field("is_rounded", v_is_rounded);
+    writer->add_field("on_surface", v_is_on_surface);
+    writer->add_field("on_open_boundary", v_is_on_open_boundary);
+
 
     logger().info("Write {}", out_path);
     writer->write_mesh(out_path, V, T);
+
+    // surface
+    {
+        const auto surf_out_path = path + "_surf.vtu";
+        std::shared_ptr<paraviewo::ParaviewWriter> surf_writer;
+        surf_writer = std::make_shared<paraviewo::VTUWriter>();
+        surf_writer->add_field("sizing_field", v_sizing_field);
+        surf_writer->add_field("is_rounded", v_is_rounded);
+        surf_writer->add_field("on_surface", v_is_on_surface);
+        surf_writer->add_field("on_open_boundary", v_is_on_open_boundary);
+
+        logger().info("Write {}", surf_out_path);
+        surf_writer->write_mesh(surf_out_path, V, F);
+    }
 }
 
 void TetWildMesh::init_sizing_field()
