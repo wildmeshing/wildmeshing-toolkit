@@ -1,9 +1,18 @@
 
+
 #include <igl/Timer.h>
 #include <igl/doublearea.h>
 #include <igl/parallel_for.h>
-#include <set>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <system_error>
+#include <vector>
+
+#include "collapse_debug_utils.hpp"
 #include "track_operations_curve.hpp"
+#include "vtu_utils.hpp"
 #ifdef USE_IGL_VIEWER
 #include <igl/opengl/glfw/Viewer.h>
 #endif
@@ -714,6 +723,25 @@ void handle_collapse_edge_curves_fast_rational(
     bool do_merge = true;
     std::cout << "handle collapse edge curves fast rational" << std::endl;
 
+#ifdef WMTK_ENABLE_COLLAPSE_PATCH_DUMP
+    const auto face_lookup_before =
+        wmtk::bijective_map::collapse_debug::build_face_lookup(id_map_before);
+    const auto face_lookup_after =
+        wmtk::bijective_map::collapse_debug::build_face_lookup(id_map_after);
+    const int patch_dump_threshold =
+        wmtk::bijective_map::collapse_debug::get_patch_dump_threshold();
+    const int total_segments_in_patch_before =
+        wmtk::bijective_map::collapse_debug::count_segments_in_patch(curves, face_lookup_after);
+    wmtk::bijective_map::collapse_debug::EdgeMeshDebugData edge_mesh_before =
+        wmtk::bijective_map::collapse_debug::build_edge_mesh_debug_data(
+            curves,
+            face_lookup_after,
+            UV_joint,
+            F_after,
+            v_id_map_joint,
+            false);
+#endif
+
 
     double convert_UV_to_rational_time = 0.0;
     // convert things to rational
@@ -805,6 +833,72 @@ void handle_collapse_edge_curves_fast_rational(
                   << total_segments_after_merging - total_segments_before_mapping << std::endl;
         std::cout << std::endl;
     }
+
+#ifdef WMTK_ENABLE_COLLAPSE_PATCH_DUMP
+    const int segment_delta = total_segments_after_merging - total_segments_before_mapping;
+    if (segment_delta > patch_dump_threshold) {
+        const int total_segments_in_patch_after =
+            wmtk::bijective_map::collapse_debug::count_segments_in_patch(
+                curves,
+                face_lookup_before);
+        wmtk::bijective_map::collapse_debug::EdgeMeshDebugData edge_mesh_after =
+            wmtk::bijective_map::collapse_debug::build_edge_mesh_debug_data(
+                curves,
+                face_lookup_before,
+                UV_joint,
+                F_before,
+                v_id_map_joint,
+                true);
+
+        static int dump_counter = 0;
+        const int dump_id = dump_counter++;
+        namespace fs = std::filesystem;
+        const fs::path base_dir("collapse_edge_debug");
+        const fs::path patch_dir = base_dir / ("patch_" + std::to_string(dump_id));
+        std::error_code ec;
+        fs::create_directories(patch_dir, ec);
+        if (ec) {
+            std::cerr << "Failed to create directory " << patch_dir << ": " << ec.message()
+                      << std::endl;
+        }
+
+        const fs::path mesh_before_path = patch_dir / "patch_before.vtu";
+        const fs::path mesh_after_path = patch_dir / "patch_after.vtu";
+        const fs::path edges_before_path = patch_dir / "curves_before.vtu";
+        const fs::path edges_after_path = patch_dir / "curves_after.vtu";
+        const fs::path info_path = patch_dir / "info.txt";
+
+        vtu_utils::write_triangle_mesh_to_vtu(UV_joint, F_after, mesh_before_path.string());
+        vtu_utils::write_triangle_mesh_to_vtu(UV_joint, F_before, mesh_after_path.string());
+
+        vtu_utils::write_edge_mesh_to_vtu(
+            edge_mesh_before.V,
+            edge_mesh_before.E,
+            edges_before_path.string(),
+            edge_mesh_before.empty() ? nullptr : &edge_mesh_before.curve_ids,
+            "curve_id");
+
+        vtu_utils::write_edge_mesh_to_vtu(
+            edge_mesh_after.V,
+            edge_mesh_after.E,
+            edges_after_path.string(),
+            edge_mesh_after.empty() ? nullptr : &edge_mesh_after.curve_ids,
+            "curve_id");
+
+        std::ofstream info(info_path);
+        if (info.is_open()) {
+            info << "threshold=" << patch_dump_threshold << "\n";
+            info << "segment_delta=" << segment_delta << "\n";
+            info << "segments_before_patch=" << total_segments_in_patch_before << "\n";
+            info << "segments_after_patch=" << total_segments_in_patch_after << "\n";
+            info << "faces_before=" << F_before.rows() << "\n";
+            info << "faces_after=" << F_after.rows() << "\n";
+        }
+
+        std::cout << "[collapse_debug] wrote patch data to " << patch_dir << " (delta "
+                  << segment_delta << ", threshold " << patch_dump_threshold << ")" << std::endl;
+    }
+#endif
 }
 
 template void handle_collapse_edge_curves_t<double>(

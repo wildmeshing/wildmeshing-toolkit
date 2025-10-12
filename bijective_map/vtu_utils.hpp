@@ -7,7 +7,7 @@ namespace vtu_utils {
 
 /**
  * @brief Write a triangle mesh to VTU format
- * @param V Vertex coordinates matrix (n x 3)
+ * @param V Vertex coordinates matrix (n x 2 or n x 3)
  * @param F Face indices matrix (m x 3)
  * @param filename Output filename
  */
@@ -39,11 +39,15 @@ void write_tet_mesh_to_vtu(
  * @param V Vertex coordinates matrix (n x 2 or n x 3)
  * @param E Edge indices matrix (m x 2)
  * @param filename Output filename
+ * @param cell_scalar Optional per-edge scalar attribute
+ * @param cell_scalar_name Attribute name if scalar provided
  */
 void write_edge_mesh_to_vtu(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& E,
-    const std::string& filename);
+    const std::string& filename,
+    const Eigen::VectorXi* cell_scalar = nullptr,
+    const std::string& cell_scalar_name = "cell_scalar");
 
 /**
  * @brief Read triangle mesh from VTU file

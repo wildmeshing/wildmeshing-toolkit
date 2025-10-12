@@ -13,6 +13,8 @@ add_subdirectory(InteractiveAndRobustMeshBooleans)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+option(WMTK_ENABLE_COLLAPSE_PATCH_DUMP "Enable dumping collapse patches for debugging" OFF)
+
 project(BijectiveMapApp)
 
 if(USE_IGL_VIEWER)
@@ -22,7 +24,11 @@ if(USE_IGL_VIEWER)
     igl_include(imgui)
 endif()
 
-add_executable(bijective_map_app bijective_map_app.cpp track_operations.hpp track_operations.cpp track_operations_curve.hpp track_operations_curve.cpp handle_one_segment.cpp handle_collapse_curve.cpp handle_non_collapse_curve.cpp render_utils.hpp generate_iso_line.hpp track_point_app.cpp track_line_app.cpp vtu_utils.cpp generate_plane_curves.hpp generate_plane_curves.cpp batch_operation_log_reader.hpp batch_operation_log_reader.cpp handle_non_collapse.cpp handle_collapse.cpp get_curve_intersections.cpp get_curve_intersections_new.cpp)
+add_executable(bijective_map_app bijective_map_app.cpp track_operations.hpp track_operations.cpp track_operations_curve.hpp track_operations_curve.cpp handle_one_segment.cpp handle_collapse_curve.cpp collapse_debug_utils.cpp handle_non_collapse_curve.cpp render_utils.hpp generate_iso_line.hpp track_point_app.cpp track_line_app.cpp vtu_utils.cpp generate_plane_curves.hpp generate_plane_curves.cpp batch_operation_log_reader.hpp batch_operation_log_reader.cpp handle_non_collapse.cpp handle_collapse.cpp get_curve_intersections.cpp get_curve_intersections_new.cpp)
+
+if(WMTK_ENABLE_COLLAPSE_PATCH_DUMP)
+    target_compile_definitions(bijective_map_app PRIVATE WMTK_ENABLE_COLLAPSE_PATCH_DUMP)
+endif()
 
 target_link_libraries(bijective_map_app
     wmtk::toolkit

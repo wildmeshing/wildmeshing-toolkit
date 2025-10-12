@@ -60,18 +60,31 @@ void write_triangle_mesh_to_vtu(
     const Eigen::MatrixXi& F,
     const std::string& filename)
 {
+    Eigen::MatrixXd V3;
+    if (V.cols() == 3) {
+        V3 = V;
+    } else if (V.cols() == 2) {
+        V3.resize(V.rows(), 3);
+        V3.leftCols(2) = V;
+        V3.col(2).setZero();
+    } else {
+        std::cerr << "write_triangle_mesh_to_vtu expects V with 2 or 3 columns, got " << V.cols()
+                  << std::endl;
+        return;
+    }
+
     std::ofstream outfile(filename);
     outfile << "<?xml version=\"1.0\"?>\n";
     outfile << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">\n";
     outfile << "  <UnstructuredGrid>\n";
-    outfile << "    <Piece NumberOfPoints=\"" << V.rows() << "\" NumberOfCells=\"" << F.rows()
+    outfile << "    <Piece NumberOfPoints=\"" << V3.rows() << "\" NumberOfCells=\"" << F.rows()
             << "\">\n";
 
     // Write points
     outfile << "      <Points>\n";
     outfile << "        <DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">\n";
-    for (int i = 0; i < V.rows(); i++) {
-        outfile << "          " << V(i, 0) << " " << V(i, 1) << " " << V(i, 2) << "\n";
+    for (int i = 0; i < V3.rows(); i++) {
+        outfile << "          " << V3(i, 0) << " " << V3(i, 1) << " " << V3(i, 2) << "\n";
     }
     outfile << "        </DataArray>\n";
     outfile << "      </Points>\n";
@@ -102,18 +115,31 @@ void write_triangle_mesh_to_vtu(
 
 void write_point_mesh_to_vtu(const Eigen::MatrixXd& V, const std::string& filename)
 {
+    Eigen::MatrixXd V3;
+    if (V.cols() == 3) {
+        V3 = V;
+    } else if (V.cols() == 2) {
+        V3.resize(V.rows(), 3);
+        V3.leftCols(2) = V;
+        V3.col(2).setZero();
+    } else {
+        std::cerr << "write_point_mesh_to_vtu expects V with 2 or 3 columns, got " << V.cols()
+                  << std::endl;
+        return;
+    }
+
     std::ofstream outfile(filename);
     outfile << "<?xml version=\"1.0\"?>\n";
     outfile << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">\n";
     outfile << "  <UnstructuredGrid>\n";
-    outfile << "    <Piece NumberOfPoints=\"" << V.rows() << "\" NumberOfCells=\"" << V.rows()
+    outfile << "    <Piece NumberOfPoints=\"" << V3.rows() << "\" NumberOfCells=\"" << V3.rows()
             << "\">\n";
 
     // Write points
     outfile << "      <Points>\n";
     outfile << "        <DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">\n";
-    for (int i = 0; i < V.rows(); i++) {
-        outfile << "          " << V(i, 0) << " " << V(i, 1) << " " << V(i, 2) << "\n";
+    for (int i = 0; i < V3.rows(); i++) {
+        outfile << "          " << V3(i, 0) << " " << V3(i, 1) << " " << V3(i, 2) << "\n";
     }
     outfile << "        </DataArray>\n";
     outfile << "      </Points>\n";
@@ -190,7 +216,9 @@ void write_tet_mesh_to_vtu(
 void write_edge_mesh_to_vtu(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& E,
-    const std::string& filename)
+    const std::string& filename,
+    const Eigen::VectorXi* cell_scalar,
+    const std::string& cell_scalar_name)
 {
     std::ofstream outfile(filename);
     outfile << "<?xml version=\"1.0\"?>\n";
@@ -198,6 +226,22 @@ void write_edge_mesh_to_vtu(
     outfile << "  <UnstructuredGrid>\n";
     outfile << "    <Piece NumberOfPoints=\"" << V.rows() << "\" NumberOfCells=\"" << E.rows()
             << "\">\n";
+
+    if (cell_scalar != nullptr) {
+        if (cell_scalar->rows() != E.rows()) {
+            std::cerr << "write_edge_mesh_to_vtu: cell scalar size (" << cell_scalar->rows()
+                      << ") does not match number of edges (" << E.rows() << ")" << std::endl;
+        } else {
+            outfile << "      <CellData Scalars=\"" << cell_scalar_name << "\">\n";
+            outfile << "        <DataArray type=\"Int32\" Name=\"" << cell_scalar_name
+                    << "\" format=\"ascii\">\n";
+            for (int i = 0; i < cell_scalar->rows(); i++) {
+                outfile << "          " << (*cell_scalar)(i) << "\n";
+            }
+            outfile << "        </DataArray>\n";
+            outfile << "      </CellData>\n";
+        }
+    }
 
     // Write points
     outfile << "      <Points>\n";
