@@ -9,6 +9,10 @@ set(SRC_FILES
     IsotropicRemeshingOptions.hpp
 	isotropic_remeshing.hpp
     isotropic_remeshing.cpp
+    RegulatedIsotropicRemeshingOptions.cpp
+    RegulatedIsotropicRemeshingOptions.hpp
+    isotropic_remeshing_regulated.hpp
+    isotropic_remeshing_regulated.cpp
     )
 
 

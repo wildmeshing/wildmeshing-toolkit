@@ -22,6 +22,11 @@ wmtk_add_application(isotropic_remeshing_uv_app
     ${SHARED_STUFF}
     )
 
+wmtk_add_application(isotropic_remeshing_regulated_app
+    main_regulated.cpp
+    ${SHARED_STUFF}
+    )
+
 
 # isotropic_remeshing requires the input component and the procedural component
 target_link_libraries(isotropic_remeshing_3d_app PRIVATE
@@ -37,6 +42,14 @@ wmtk::input
 wmtk::isotropic_remeshing
 wmtk::output
 wmtk::multimesh
+wmtk::application_utils
+)
+
+target_link_libraries(isotropic_remeshing_regulated_app PRIVATE
+wmtk::input
+wmtk::isotropic_remeshing
+wmtk::multimesh
+wmtk::output
 wmtk::application_utils
 )
 
