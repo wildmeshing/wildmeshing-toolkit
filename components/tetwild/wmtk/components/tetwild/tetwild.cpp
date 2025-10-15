@@ -121,6 +121,7 @@ void tetwild(nlohmann::json json_params)
         std::string log_file_name = json_params["log_file"];
         if (!log_file_name.empty()) {
             wmtk::set_file_logger(log_file_name);
+            logger().flush_on(spdlog::level::info);
         }
     }
 
