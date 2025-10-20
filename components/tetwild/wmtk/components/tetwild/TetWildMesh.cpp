@@ -116,13 +116,14 @@ void TetWildMesh::mesh_improvement(int max_its)
                 wmtk::logger().info(">>>>adjust_sizing_field finished...");
                 m = 0;
             }
-        } else
+        } else {
             m = 0;
+            pre_max_energy = max_energy;
+            pre_avg_energy = avg_energy;
+        }
         if (is_hit_min_edge_length) {
             // todo: maybe to do sth
         }
-        pre_max_energy = max_energy;
-        pre_avg_energy = avg_energy;
     }
 
     wmtk::logger().info("========it post========");
@@ -291,7 +292,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
         }
         // output_faces(fmt::format("out-op{}.obj", i), [](auto& f) { return f.m_is_surface_fs; });
     }
-    // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
+    save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
     energy = get_max_avg_energy();
     wmtk::logger().info("max energy = {}", std::get<0>(energy));
     wmtk::logger().info("avg energy = {}", std::get<1>(energy));
