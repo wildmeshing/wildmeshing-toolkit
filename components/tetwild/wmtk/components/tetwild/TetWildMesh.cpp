@@ -292,7 +292,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
         }
         // output_faces(fmt::format("out-op{}.obj", i), [](auto& f) { return f.m_is_surface_fs; });
     }
-    save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
+    // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
     energy = get_max_avg_energy();
     wmtk::logger().info("max energy = {}", std::get<0>(energy));
     wmtk::logger().info("avg energy = {}", std::get<1>(energy));
