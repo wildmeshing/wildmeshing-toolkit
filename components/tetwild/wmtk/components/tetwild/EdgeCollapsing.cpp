@@ -166,11 +166,11 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
 
     std::map<size_t, double> qs;
     cache.max_energy = 0;
-    for (auto& l : n1_locs) {
+    for (const Tuple& l : n1_locs) {
         qs[l.tid(*this)] = m_tet_attribute[l.tid(*this)].m_quality; // get_quality(l);
         cache.max_energy = std::max(cache.max_energy, qs[l.tid(*this)]);
     }
-    for (auto& l : n12_locs) {
+    for (const Tuple& l : n12_locs) {
         qs.erase(l.tid(*this));
     }
 

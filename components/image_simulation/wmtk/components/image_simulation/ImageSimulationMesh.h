@@ -47,7 +47,7 @@ public:
     // for open boundary
     bool m_is_on_open_boundary = false;
 
-    VertexAttributes(){};
+    VertexAttributes() {};
     VertexAttributes(const Vector3r& p);
 };
 
@@ -323,6 +323,10 @@ public:
     bool swap_face_before(const Tuple& t) override;
     bool swap_face_after(const Tuple& t) override;
 
+    /**
+     * @brief Inversion check using only floating point numbers.
+     */
+    bool is_inverted_f(const Tuple& loc) const;
     bool is_inverted(const Tuple& loc) const;
     double get_quality(const Tuple& loc) const;
 
@@ -399,7 +403,10 @@ private:
         bool is_limit_length;
 
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
+        // all faces incident to the delete vertex (v1) that are on the tracked surface
         std::vector<std::array<size_t, 3>> surface_faces;
+        // all edges incident to the deleted vertex(v1) that are on the open boundary
+        std::vector<std::array<size_t, 2>> boundary_edges;
         std::vector<size_t> changed_tids;
 
         std::vector<std::array<size_t, 2>> failed_edges;
@@ -488,6 +495,7 @@ public:
      * could cause a false positive result.
      */
     bool is_open_boundary_edge(const Tuple& e);
+    bool is_open_boundary_edge(const std::array<size_t, 2>& e);
 
     // for topology preservation
     int count_vertex_links(const Tuple& v);

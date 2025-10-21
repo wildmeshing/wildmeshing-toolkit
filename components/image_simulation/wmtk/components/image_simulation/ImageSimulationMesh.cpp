@@ -29,6 +29,10 @@
 #include <geogram/points/kd_tree.h>
 #include <limits>
 
+namespace {
+static int debug_print_counter = 0;
+}
+
 namespace wmtk::components::image_simulation {
 
 
@@ -97,13 +101,14 @@ void ImageSimulationMesh::mesh_improvement(int max_its)
                 wmtk::logger().info(">>>>adjust_sizing_field finished...");
                 m = 0;
             }
-        } else
+        } else {
             m = 0;
+            pre_max_energy = max_energy;
+            pre_avg_energy = avg_energy;
+        }
         if (is_hit_min_edge_length) {
             // todo: maybe to do sth
         }
-        pre_max_energy = max_energy;
-        pre_avg_energy = avg_energy;
     }
 
     wmtk::logger().info("========it post========");
@@ -118,36 +123,165 @@ std::tuple<double, double> ImageSimulationMesh::local_operations(
 
     std::tuple<double, double> energy;
 
-    timer.start();
-    for (int n = 0; n < ops[0]; n++) {
-        logger().info("==splitting {}==", n);
-        split_all_edges();
-        logger().info("#vertices {}, #tets {} after split", vert_capacity(), tet_capacity());
-        // write_vtu(fmt::format("debug_{}.vtu", m_debug_print_counter++));
-    }
-    for (int n = 0; n < ops[1]; n++) {
-        logger().info("==collapsing {}==", n);
-        collapse_all_edges();
-        logger().info("#vertices {}, #tets {} after collapse", vert_capacity(), tet_capacity());
-        // write_vtu(fmt::format("debug_{}.vtu", m_debug_print_counter++));
-    }
-    for (int n = 0; n < ops[2]; n++) {
-        logger().info("==swapping {}==", n);
-        swap_all_edges_44();
-        swap_all_edges();
-        swap_all_faces();
-        // write_vtu(fmt::format("debug_{}.vtu", m_debug_print_counter++));
-    }
-    for (int n = 0; n < ops[3]; n++) {
-        logger().info("==smoothing {}==", n);
-        smooth_all_vertices();
-        // write_vtu(fmt::format("debug_{}.vtu", m_debug_print_counter++));
-    }
+    auto sanity_checks = [this]() {
+        logger().info("Perform sanity checks...");
+        const auto faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
+        for (const auto& verts : faces) {
+            const auto p0 = m_vertex_attribute[verts[0]].m_posf;
+            const auto p1 = m_vertex_attribute[verts[1]].m_posf;
+            const auto p2 = m_vertex_attribute[verts[2]].m_posf;
+            if (m_envelope->is_outside({{p0, p1, p2}})) {
+                logger().error("Face {} is outside!", verts);
+            }
+        }
 
+        // check for inverted tets
+        for (const Tuple& t : get_tets()) {
+            if (!is_inverted(t)) {
+                continue;
+            }
+            const auto vs = oriented_tet_vids(t);
+            logger().error("Tet {} is inverted! Vertices = {}", t.tid(*this), vs);
+            // for (const size_t v : vs) {
+            //     logger().error(
+            //         "v{}, rounded = {}, on surface = {}, on open boundary = {}",
+            //         v,
+            //         m_vertex_attribute[v].m_is_rounded,
+            //         m_vertex_attribute[v].m_is_on_surface,
+            //         m_vertex_attribute[v].m_is_on_open_boundary);
+            // }
+        }
+
+        // check boundary envelope
+        // note that edges can end up outside during collapse and that is desired behavior to
+        // collapse thin ribbons
+        {
+            const auto fs = get_faces();
+            const auto es = get_edges();
+            std::vector<int> edge_on_open_boundary(6 * tet_capacity(), 0);
+
+            for (const Tuple& f : fs) {
+                auto fid = f.fid(*this);
+                if (!m_face_attribute[fid].m_is_surface_fs) {
+                    continue;
+                }
+                size_t eid1 = f.eid(*this);
+                size_t eid2 = f.switch_edge(*this).eid(*this);
+                size_t eid3 = f.switch_vertex(*this).switch_edge(*this).eid(*this);
+
+                edge_on_open_boundary[eid1]++;
+                edge_on_open_boundary[eid2]++;
+                edge_on_open_boundary[eid3]++;
+            }
+
+            for (const Tuple& e : es) {
+                if (edge_on_open_boundary[e.eid(*this)] != 1) {
+                    continue;
+                }
+                if (!is_open_boundary_edge(e)) {
+                    size_t v1 = e.vid(*this);
+                    size_t v2 = e.switch_vertex(*this).vid(*this);
+                    if (!m_vertex_attribute[v1].m_is_on_open_boundary ||
+                        !m_vertex_attribute[v2].m_is_on_open_boundary) {
+                        continue;
+                    }
+                    logger().warn("Boundary edge ({},{}) is outside the envelope.", v1, v2);
+                    // logger().error(
+                    //     "v{}, on surface = {}, on open boundary = {}",
+                    //     v1,
+                    //     m_vertex_attribute[v1].m_is_on_surface,
+                    //     m_vertex_attribute[v1].m_is_on_open_boundary);
+                    // logger().error(
+                    //     "v{}, on surface = {}, on open boundary = {}",
+                    //     v2,
+                    //     m_vertex_attribute[v2].m_is_on_surface,
+                    //     m_vertex_attribute[v2].m_is_on_open_boundary);
+                }
+            }
+        }
+        logger().info("Sanity checks done.");
+    };
+
+    sanity_checks();
+
+    for (int i = 0; i < ops.size(); i++) {
+        timer.start();
+        if (i == 0) {
+            for (int n = 0; n < ops[i]; n++) {
+                wmtk::logger().info("==splitting {}==", n);
+                split_all_edges();
+                wmtk::logger().info(
+                    "#vertices {}, #tets {} after split",
+                    vert_capacity(),
+                    tet_capacity());
+                // auto faces = get_faces();
+                // for (auto f : faces) {
+                //     auto x = f.fid(*this);
+                // }
+                // if (!check_vertex_param_type()) {
+                //     std::cout << "missing param!!!!!!!!" << std::endl;
+                //     output_faces("bug_surface_miss_param_after_split.obj", [](auto& f) {
+                //         return f.m_is_surface_fs;
+                //     });
+                //     // exit(0);
+                // }
+            }
+            // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
+            auto [max_energy, avg_energy] = get_max_avg_energy();
+            wmtk::logger().info("split max energy = {} avg = {}", max_energy, avg_energy);
+            sanity_checks();
+        } else if (i == 1) {
+            for (int n = 0; n < ops[i]; n++) {
+                wmtk::logger().info("==collapsing {}==", n);
+                collapse_all_edges(collapse_limit_length);
+                wmtk::logger().info(
+                    "#vertices {}, #tets {} after collapse",
+                    vert_capacity(),
+                    tet_capacity());
+                // auto faces = get_faces();
+                // for (auto f : faces) {
+                //     auto x = f.fid(*this);
+                // }
+                // if (!check_vertex_param_type()) {
+                //     std::cout << "missing param!!!!!!!!" << std::endl;
+                //     output_faces("buf_surface_miss_param_after_collpase.obj", [](auto& f) {
+                //         return f.m_is_surface_fs;
+                //     });
+                //     // exit(0);
+                // }
+            }
+            // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
+            auto [max_energy, avg_energy] = get_max_avg_energy();
+            wmtk::logger().info("collapse max energy = {} avg = {}", max_energy, avg_energy);
+            sanity_checks();
+        } else if (i == 2) {
+            for (int n = 0; n < ops[i]; n++) {
+                wmtk::logger().info("==swapping {}==", n);
+                swap_all_edges_44();
+                swap_all_edges();
+                swap_all_faces();
+            }
+            // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
+            auto [max_energy, avg_energy] = get_max_avg_energy();
+            wmtk::logger().info("swap max energy = {} avg = {}", max_energy, avg_energy);
+            sanity_checks();
+        } else if (i == 3) {
+            for (int n = 0; n < ops[i]; n++) {
+                wmtk::logger().info("==smoothing {}==", n);
+                smooth_all_vertices();
+            }
+            // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
+            auto [max_energy, avg_energy] = get_max_avg_energy();
+            wmtk::logger().info("smooth max energy = {} avg = {}", max_energy, avg_energy);
+            sanity_checks();
+        }
+        // output_faces(fmt::format("out-op{}.obj", i), [](auto& f) { return f.m_is_surface_fs; });
+    }
+    // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
     energy = get_max_avg_energy();
-    logger().info("max energy = {}", std::get<0>(energy));
-    logger().info("avg energy = {}", std::get<1>(energy));
-    logger().info("time = {}", timer.getElapsedTime());
+    wmtk::logger().info("max energy = {}", std::get<0>(energy));
+    wmtk::logger().info("avg energy = {}", std::get<1>(energy));
+    wmtk::logger().info("time = {}", timer.getElapsedTime());
 
 
     return energy;
@@ -208,7 +342,7 @@ bool ImageSimulationMesh::adjust_sizing_field(double max_energy)
     nnsearch->set_points(pts.size(), pts[0].data());
 
     std::vector<size_t> cache_one_ring;
-    size_t vid;
+    // size_t vid;
 
     while (!v_queue_serial.empty()) {
         // std::cout << vid << " ";
@@ -355,7 +489,7 @@ bool ImageSimulationMesh::adjust_sizing_field_serial(double max_energy)
     nnsearch->set_points(pts.size(), pts[0].data());
 
     std::vector<size_t> cache_one_ring;
-    size_t vid;
+    // size_t vid;
 
     while (!v_queue.empty()) {
         // std::cout << vid << " ";
@@ -496,7 +630,7 @@ void ImageSimulationMesh::output_faces(
 {
     auto outface = get_faces_by_condition(cond);
     Eigen::MatrixXd matV = Eigen::MatrixXd::Zero(vert_capacity(), 3);
-    for (auto v : get_vertices()) {
+    for (const auto& v : get_vertices()) {
         auto vid = v.vid(*this);
         matV.row(vid) = m_vertex_attribute[vid].m_posf;
     }
@@ -563,7 +697,7 @@ std::tuple<double, double> ImageSimulationMesh::get_max_avg_energy()
     for (int i = 0; i < tet_capacity(); i++) {
         auto tup = tuple_from_tet(i);
         if (!tup.is_valid(*this)) continue;
-        auto vs = oriented_tet_vertices(tup);
+        // auto vs = oriented_tet_vertices(tup);
 
         auto q = m_tet_attribute[tup.tid(*this)].m_quality;
         max_energy = std::max(max_energy, q);
@@ -583,6 +717,28 @@ std::tuple<double, double> ImageSimulationMesh::get_max_avg_energy()
     return std::make_tuple(std::cbrt(max_energy), avg_energy);
 }
 
+bool ImageSimulationMesh::is_inverted_f(const Tuple& loc) const
+{
+    auto vs = oriented_tet_vertices(loc);
+
+    igl::predicates::exactinit();
+    auto res = igl::predicates::orient3d(
+        m_vertex_attribute[vs[0].vid(*this)].m_posf,
+        m_vertex_attribute[vs[1].vid(*this)].m_posf,
+        m_vertex_attribute[vs[2].vid(*this)].m_posf,
+        m_vertex_attribute[vs[3].vid(*this)].m_posf);
+    int result;
+    if (res == igl::predicates::Orientation::POSITIVE)
+        result = 1;
+    else if (res == igl::predicates::Orientation::NEGATIVE)
+        result = -1;
+    else
+        result = 0;
+
+    if (result < 0) // neg result == pos tet (tet origin from geogram delaunay)
+        return false;
+    return true;
+}
 
 bool ImageSimulationMesh::is_inverted(const Tuple& loc) const
 {
@@ -1036,7 +1192,7 @@ int ImageSimulationMesh::flood_fill()
     auto tets = get_tets();
     std::map<size_t, bool> visited;
 
-    for (auto t : tets) {
+    for (const Tuple& t : tets) {
         size_t tid = t.tid(*this);
         if (visited.find(tid) != visited.end()) continue;
 

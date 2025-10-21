@@ -1,6 +1,7 @@
 #include <igl/predicates/ear_clipping.h>
 #include <fstream>
 #include <set>
+#include <wmtk/utils/predicates.hpp>
 #include "ImageSimulationMesh.h"
 
 namespace wmtk::components::image_simulation {
@@ -137,6 +138,61 @@ void ImageSimulationMesh::insertion_by_volumeremesher(
     std::vector<bool> cells_with_faces_on_input;
     std::vector<std::vector<uint32_t>> final_tets_parent_faces;
 
+    {
+        logger().info("Check degenerate before embedding");
+        for (int i = 0; i < tri_index.size(); i += 3) {
+            int id0 = tri_index[i + 0];
+            int id1 = tri_index[i + 1];
+            int id2 = tri_index[i + 2];
+            Eigen::Vector3d v0;
+            Eigen::Vector3d v1;
+            Eigen::Vector3d v2;
+            v0 << tri_ver_coord[3 * id0 + 0], tri_ver_coord[3 * id0 + 1],
+                tri_ver_coord[3 * id0 + 2];
+            v1 << tri_ver_coord[3 * id1 + 0], tri_ver_coord[3 * id1 + 1],
+                tri_ver_coord[3 * id1 + 2];
+            v2 << tri_ver_coord[3 * id2 + 0], tri_ver_coord[3 * id2 + 1],
+                tri_ver_coord[3 * id2 + 2];
+
+            if (utils::predicates::is_degenerate(v0, v1, v2)) {
+                logger().warn(
+                    "Face ({}, {}, {}) is collinear!",
+                    v0.transpose(),
+                    v1.transpose(),
+                    v2.transpose());
+            }
+        }
+
+        for (int i = 0; i < tet_index.size(); i += 4) {
+            int id0 = tet_index[i + 0];
+            int id1 = tet_index[i + 1];
+            int id2 = tet_index[i + 2];
+            int id3 = tet_index[i + 3];
+            Eigen::Vector3d v0;
+            Eigen::Vector3d v1;
+            Eigen::Vector3d v2;
+            Eigen::Vector3d v3;
+            v0 << tet_ver_coord[3 * id0 + 0], tet_ver_coord[3 * id0 + 1],
+                tet_ver_coord[3 * id0 + 2];
+            v1 << tet_ver_coord[3 * id1 + 0], tet_ver_coord[3 * id1 + 1],
+                tet_ver_coord[3 * id1 + 2];
+            v2 << tet_ver_coord[3 * id2 + 0], tet_ver_coord[3 * id2 + 1],
+                tet_ver_coord[3 * id2 + 2];
+            v3 << tet_ver_coord[3 * id3 + 0], tet_ver_coord[3 * id3 + 1],
+                tet_ver_coord[3 * id3 + 2];
+
+            if (utils::predicates::is_degenerate(v0, v1, v2, v3)) {
+                logger().warn(
+                    "Tet ({}, {}, {}) is coplanar!",
+                    v0.transpose(),
+                    v1.transpose(),
+                    v2.transpose(),
+                    v3.transpose());
+            }
+        }
+        logger().info("done");
+    }
+
     // volumeremesher embed
     vol_rem::embed_tri_in_poly_mesh(
         tri_ver_coord,
@@ -172,6 +228,26 @@ void ImageSimulationMesh::insertion_by_volumeremesher(
         polycnt++;
         polygon_faces.push_back(polygon);
         i += polysize;
+    }
+
+    // test polygon faces - only the triangles
+    for (int i = 0; i < polygon_faces.size(); ++i) {
+        if (polygon_faces[i].size() != 3) {
+            continue;
+        }
+
+        const Vector3r v0 = v_rational[polygon_faces[i][0]];
+        const Vector3r v1 = v_rational[polygon_faces[i][1]];
+        const Vector3r v2 = v_rational[polygon_faces[i][2]];
+        const Vector3r v01 = (v1 - v0);
+        const Vector3r v02 = (v2 - v0);
+        const Vector3r r = v01.cross(v02);
+        if (r[0] == 0 && r[1] == 0 && r[2] == 0) {
+            logger().error("Collinear triangle in polygon faces. ID = {}", i);
+            logger().error("v0 = {}", to_double(v0));
+            logger().error("v1 = {}", to_double(v1));
+            logger().error("v2 = {}", to_double(v2));
+        }
     }
 
     std::vector<std::vector<size_t>> polygon_cells;
@@ -406,6 +482,18 @@ void ImageSimulationMesh::insertion_by_volumeremesher(
         if (is_v_on_input[i]) on_surface_v_cnt++;
     }
 
+    for (const auto& t : tets_after) {
+        const Vector3r p0 = v_rational[t[0]];
+        const Vector3r p1 = v_rational[t[1]];
+        const Vector3r p2 = v_rational[t[2]];
+        const Vector3r p3 = v_rational[t[3]];
+        Vector3r n = (p1 - p0).cross(p2 - p0);
+        Vector3r d = p3 - p0;
+        auto res = n.dot(d);
+        if (res <= 0) {
+            logger().error("Inverted tet {}", t);
+        }
+    }
     std::cout << "v on surface vector size: " << is_v_on_input.size();
     std::cout << "v on surface: " << on_surface_v_cnt << std::endl;
 }
@@ -721,6 +809,20 @@ bool ImageSimulationMesh::is_open_boundary_edge(const Tuple& e)
      * boundary even though they aren't. Especially, when there are sliver triangles that are barely
      * not inverted.
      */
+
+    return !m_open_boundary_envelope.is_outside(
+        {{m_vertex_attribute[v1].m_posf,
+          m_vertex_attribute[v2].m_posf,
+          m_vertex_attribute[v1].m_posf}});
+}
+
+bool ImageSimulationMesh::is_open_boundary_edge(const std::array<size_t, 2>& e)
+{
+    size_t v1 = e[0];
+    size_t v2 = e[1];
+    if (!m_vertex_attribute[v1].m_is_on_open_boundary ||
+        !m_vertex_attribute[v2].m_is_on_open_boundary)
+        return false;
 
     return !m_open_boundary_envelope.is_outside(
         {{m_vertex_attribute[v1].m_posf,
