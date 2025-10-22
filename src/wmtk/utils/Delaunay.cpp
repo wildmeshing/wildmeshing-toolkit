@@ -46,6 +46,12 @@ auto delaunay3D(const std::vector<Point3D>& points)
         for (auto j = 0; j < 4; j++) tets[i][j] = engine->cell_vertex(i, j);
     }
 
+    // sort tets
+    for (auto& tet : tets) {
+        std::sort(tet.begin(), tet.end());
+    }
+    std::sort(tets.begin(), tets.end());
+
     return {vertices, tets};
 }
 
@@ -82,6 +88,12 @@ auto delaunay2D(const std::vector<Point2D>& points)
     for (size_t i = 0; i < num_triangles; i++) {
         for (auto j = 0; j < 3; j++) triangles[i][j] = engine->cell_vertex(i, j);
     }
+
+    // sort tets
+    for (auto& tri : triangles) {
+        std::sort(tri.begin(), tri.end());
+    }
+    std::sort(triangles.begin(), triangles.end());
 
     return {vertices, triangles};
 }
