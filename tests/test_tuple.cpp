@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <igl/Timer.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/examples/TetMesh_examples.hpp>
 
@@ -158,7 +159,7 @@ TEST_CASE("tuple_iterator", "[test_tuple][TetMesh]")
 
             EdgeIterator(const TetMesh& m, value_type ptr)
                 : m_tuple(ptr)
-                , mesh(m){};
+                , mesh(m) {};
 
             EdgeIterator operator++()
             {
@@ -206,4 +207,67 @@ TEST_CASE("tuple_iterator", "[test_tuple][TetMesh]")
         cnt++;
     }
     REQUIRE(cnt == 10);
+}
+
+TEST_CASE("switch_tet_performance", "[test_tuple][TetMesh][performance][.]")
+{
+    using Tuple = TetMesh::Tuple;
+
+    // compare the two different implementations
+    TetMeshVT VT = six_cycle_tets();
+
+    TetMesh mesh;
+    mesh.init(VT.T);
+
+    const auto faces = mesh.get_faces();
+
+    const size_t reps = 1e6;
+
+    logger().info("Ensure equalness");
+    for (const Tuple& t : faces) {
+        const auto t_opp1 = t.switch_tetrahedron(mesh);
+        const auto t_opp2 = t.switch_tetrahedron_fast(mesh);
+
+        REQUIRE(t_opp1.has_value() == t_opp2.has_value());
+
+        if (t_opp1) {
+            const Tuple t1 = t_opp1.value();
+            const Tuple t2 = t_opp2.value();
+            CHECK(t1 == t2);
+        }
+    }
+
+    logger().info("Test start");
+    igl::Timer timer;
+    timer.start();
+    size_t checksum_old = 0;
+    for (size_t n = 0; n < reps; n++) {
+        for (const Tuple& t : faces) {
+            const auto t_opp = t.switch_tetrahedron(mesh);
+            if (t_opp) {
+                checksum_old += t_opp.value().tid(mesh);
+            }
+        }
+    }
+    timer.stop();
+    const double time_old = timer.getElapsedTimeInMilliSec();
+    logger().info("Test end {}", checksum_old);
+    logger().info("time {}ms", time_old);
+
+    logger().info("Test start");
+    timer.start();
+    size_t checksum_new = 0;
+    for (size_t n = 0; n < reps; n++) {
+        for (const Tuple& t : faces) {
+            const auto t_opp = t.switch_tetrahedron_fast(mesh);
+            if (t_opp) {
+                checksum_new += t_opp.value().tid(mesh);
+            }
+        }
+    }
+    timer.stop();
+    const double time_new = timer.getElapsedTimeInMilliSec();
+    logger().info("Test end {}", checksum_new);
+    logger().info("time {}ms", time_new);
+    logger().info("improvement: {}", time_old / time_new);
 }

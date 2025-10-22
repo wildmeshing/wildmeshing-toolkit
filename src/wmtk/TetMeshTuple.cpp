@@ -217,6 +217,62 @@ TetMesh::Tuple TetMesh::Tuple::switch_face(const TetMesh& m) const
 
 std::optional<TetMesh::Tuple> TetMesh::Tuple::switch_tetrahedron(const TetMesh& m) const
 {
+    size_t v0_id = m.m_tet_connectivity[m_global_tid][m_local_faces[m_local_fid][0]];
+    size_t v1_id = m.m_tet_connectivity[m_global_tid][m_local_faces[m_local_fid][1]];
+    size_t v2_id = m.m_tet_connectivity[m_global_tid][m_local_faces[m_local_fid][2]];
+
+    // make v0 the one with the fewest incident tets
+    if (m.m_vertex_connectivity[v1_id].m_conn_tets.size() <
+        m.m_vertex_connectivity[v0_id].m_conn_tets.size()) {
+        std::swap(v0_id, v1_id);
+    }
+    if (m.m_vertex_connectivity[v2_id].m_conn_tets.size() <
+        m.m_vertex_connectivity[v0_id].m_conn_tets.size()) {
+        std::swap(v0_id, v2_id);
+    }
+
+    for (const size_t tid : m.m_vertex_connectivity[v0_id].m_conn_tets) {
+        if (tid == m_global_tid) {
+            continue;
+        }
+        bool v1_found = false;
+        bool v2_found = false;
+        for (const size_t vid : m.m_tet_connectivity[tid].m_indices) {
+            if (vid == v1_id) {
+                v1_found = true;
+                if (v2_found) {
+                    break;
+                }
+            }
+            if (vid == v2_id) {
+                v2_found = true;
+                if (v1_found) {
+                    break;
+                }
+            }
+        }
+        if (v1_found && v2_found) {
+            // this is the opposite tet
+            Tuple loc = *this;
+            loc.m_global_tid = tid;
+
+            loc.m_local_eid = m.m_tet_connectivity[loc.m_global_tid].find_local_edge(
+                m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][0]],
+                m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][1]]);
+            loc.m_local_fid =
+                m.m_tet_connectivity[loc.m_global_tid].find_local_face(v0_id, v1_id, v2_id);
+            loc.m_hash = m.m_tet_connectivity[loc.m_global_tid].hash;
+
+            return loc;
+        }
+    }
+
+    // no opposite tet was found
+    return {};
+}
+
+std::optional<TetMesh::Tuple> TetMesh::Tuple::switch_tetrahedron_slow(const TetMesh& m) const
+{
     // eid and fid are local, so they will be changed after switch tets
     size_t v1_id = m.m_tet_connectivity[m_global_tid][m_local_faces[m_local_fid][0]];
     size_t v2_id = m.m_tet_connectivity[m_global_tid][m_local_faces[m_local_fid][1]];

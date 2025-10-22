@@ -379,18 +379,50 @@ TetMesh::Tuple TetMesh::tuple_from_face(size_t tid, int local_fid) const
 
 std::tuple<TetMesh::Tuple, size_t> TetMesh::tuple_from_face(const std::array<size_t, 3>& vids) const
 {
-    auto tmp = set_intersection(
-        m_vertex_connectivity[vids[0]].m_conn_tets,
-        m_vertex_connectivity[vids[1]].m_conn_tets);
-    auto n12_t_ids = set_intersection(tmp, m_vertex_connectivity[vids[2]].m_conn_tets);
-    if (n12_t_ids.size() == 0 || n12_t_ids.size() > 2) {
+    size_t v0_id = vids[0];
+    size_t v1_id = vids[1];
+    size_t v2_id = vids[2];
+
+    // make v0 the one with the fewest incident tets
+    if (m_vertex_connectivity[v1_id].m_conn_tets.size() <
+        m_vertex_connectivity[v0_id].m_conn_tets.size()) {
+        std::swap(v0_id, v1_id);
+    }
+    if (m_vertex_connectivity[v2_id].m_conn_tets.size() <
+        m_vertex_connectivity[v0_id].m_conn_tets.size()) {
+        std::swap(v0_id, v2_id);
+    }
+
+    size_t global_tid = std::numeric_limits<size_t>::max();
+    for (const size_t tid : m_vertex_connectivity[v0_id].m_conn_tets) {
+        bool v1_found = false;
+        bool v2_found = false;
+        for (const size_t vid : m_tet_connectivity[tid].m_indices) {
+            if (vid == v1_id) {
+                v1_found = true;
+                if (v2_found) {
+                    break;
+                }
+            }
+            if (vid == v2_id) {
+                v2_found = true;
+                if (v1_found) {
+                    break;
+                }
+            }
+        }
+        if (v1_found && v2_found) {
+            global_tid = std::min(global_tid, tid);
+        }
+    }
+
+    if (global_tid == std::numeric_limits<size_t>::max()) {
         return {Tuple(), -1};
     }
 
     // tid
     Tuple face;
-    face.m_global_tid = n12_t_ids[0];
-    if (n12_t_ids.size() > 1 && n12_t_ids[1] < n12_t_ids[0]) face.m_global_tid = n12_t_ids[1];
+    face.m_global_tid = global_tid;
     // fid
     std::array<int, 3> f;
     for (int j = 0; j < 3; j++) {
@@ -412,6 +444,41 @@ std::tuple<TetMesh::Tuple, size_t> TetMesh::tuple_from_face(const std::array<siz
     assert(face.fid(*this) == global_fid);
 
     return std::make_tuple(face, global_fid);
+
+    // auto tmp = set_intersection(
+    //     m_vertex_connectivity[vids[0]].m_conn_tets,
+    //     m_vertex_connectivity[vids[1]].m_conn_tets);
+    // auto n12_t_ids = set_intersection(tmp, m_vertex_connectivity[vids[2]].m_conn_tets);
+    // if (n12_t_ids.size() == 0 || n12_t_ids.size() > 2) {
+    //     return {Tuple(), -1};
+    // }
+
+    //// tid
+    // Tuple face;
+    // face.m_global_tid = n12_t_ids[0];
+    // if (n12_t_ids.size() > 1 && n12_t_ids[1] < n12_t_ids[0]) face.m_global_tid = n12_t_ids[1];
+    //// fid
+    // std::array<int, 3> f;
+    // for (int j = 0; j < 3; j++) {
+    //     f[j] = m_tet_connectivity[face.m_global_tid].find(vids[j]);
+    // }
+    // std::sort(f.begin(), f.end());
+    // face.m_local_fid =
+    //     std::find(m_local_faces.begin(), m_local_faces.end(), f) - m_local_faces.begin();
+    //// eid
+    // face.m_local_eid = m_local_edges_in_a_face[face.m_local_fid][0];
+    //// vid
+    // face.m_global_vid =
+    // m_tet_connectivity[face.m_global_tid][m_local_edges[face.m_local_eid][0]];
+
+    // size_t global_fid = face.m_global_tid * 4 + face.m_local_fid;
+
+    // face.m_hash = m_tet_connectivity[face.m_global_tid].hash;
+
+    // assert(face.is_valid(*this));
+    // assert(face.fid(*this) == global_fid);
+
+    // return std::make_tuple(face, global_fid);
 }
 
 TetMesh::Tuple TetMesh::tuple_from_edge(const std::array<size_t, 2>& vids) const
