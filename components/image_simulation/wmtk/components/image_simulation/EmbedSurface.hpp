@@ -67,12 +67,14 @@ void embed_surface(
 
 void tag_tets_from_image(
     const std::string& filename,
+    const std::vector<double>& dimensions,
     const MatrixXd& V,
     const MatrixXi& T,
     VectorXi& T_tags);
 
 void tag_tets_from_image(
     const std::vector<std::vector<std::vector<size_t>>>& data,
+    const std::vector<double>& dimensions,
     const MatrixXd& V,
     const MatrixXi& T,
     VectorXi& T_tags);
@@ -83,11 +85,19 @@ void tag_tets_from_image(
 class EmbedSurface
 {
 public:
-    EmbedSurface(const std::string& img_filename);
+    EmbedSurface(const std::string& img_filename, const std::vector<double>& dimensions);
 
-    void simplify_surface();
+    /**
+     * @brief Simplify the input surface while staying within the eps envelope.
+     *
+     * @param eps The absolute envelope thickness.
+     */
+    void simplify_surface(const double eps);
 
-    void remove_duplicates();
+    /**
+     * @brief Merge vertices that are closer than eps.
+     */
+    void remove_duplicates(const double eps);
 
     void embed_surface();
 
@@ -97,6 +107,7 @@ public:
     void consolidate();
 
     const MatrixXd& V_emb() const { return m_V_emb; }
+    const MatrixXd& V_surface() const { return m_V_surface; }
     const MatrixXi& T_emb() const { return m_T_emb; }
     const VectorXi& T_tags() const { return m_T_tags; }
     const MatrixXi& F_on_surface() const { return m_F_on_surface; }
@@ -131,6 +142,8 @@ private:
 private:
     std::string m_img_filename;
     std::vector<std::vector<std::vector<size_t>>> m_img_data;
+    std::vector<double> m_dimensions; // dimensions of a single voxel
+    double m_min_dimension; // the smallest dimension value
 
     // the surface separating all tags
     MatrixXd m_V_surface;

@@ -225,8 +225,8 @@ TEST_CASE("switch_tet_performance", "[test_tuple][TetMesh][performance][.]")
 
     logger().info("Ensure equalness");
     for (const Tuple& t : faces) {
-        const auto t_opp1 = t.switch_tetrahedron(mesh);
-        const auto t_opp2 = t.switch_tetrahedron_fast(mesh);
+        const auto t_opp1 = t.switch_tetrahedron_slow(mesh);
+        const auto t_opp2 = t.switch_tetrahedron(mesh);
 
         REQUIRE(t_opp1.has_value() == t_opp2.has_value());
 
@@ -243,7 +243,7 @@ TEST_CASE("switch_tet_performance", "[test_tuple][TetMesh][performance][.]")
     size_t checksum_old = 0;
     for (size_t n = 0; n < reps; n++) {
         for (const Tuple& t : faces) {
-            const auto t_opp = t.switch_tetrahedron(mesh);
+            const auto t_opp = t.switch_tetrahedron_slow(mesh);
             if (t_opp) {
                 checksum_old += t_opp.value().tid(mesh);
             }
@@ -259,7 +259,7 @@ TEST_CASE("switch_tet_performance", "[test_tuple][TetMesh][performance][.]")
     size_t checksum_new = 0;
     for (size_t n = 0; n < reps; n++) {
         for (const Tuple& t : faces) {
-            const auto t_opp = t.switch_tetrahedron_fast(mesh);
+            const auto t_opp = t.switch_tetrahedron(mesh);
             if (t_opp) {
                 checksum_new += t_opp.value().tid(mesh);
             }

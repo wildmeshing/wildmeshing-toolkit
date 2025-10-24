@@ -10,6 +10,7 @@ nlohmann::json image_simulation_spec = R"(
     "required": ["application", "input"],
     "optional": [
       "output",
+      "image_dimensions",
       "skip_simplify",
       "use_sample_envelope",
       "num_threads",
@@ -43,6 +44,18 @@ nlohmann::json image_simulation_spec = R"(
     "type": "string",
     "default": "out",
     "doc": "Output file name (without extension)."
+  },
+  {
+    "pointer": "/image_dimensions",
+    "type": "list",
+    "doc": "The dimensions of a single voxel in the image. This is only used when reading a voxel image and ignored if the input is a .msh file.",
+    "min": 3,
+    "max": 3,
+    "default": [1, 1, 1]
+  },
+  {
+    "pointer": "/image_dimensions/*",
+    "type": "float"
   },
   {
     "pointer": "/skip_simplify",

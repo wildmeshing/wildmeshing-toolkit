@@ -526,6 +526,7 @@ void embed_surface(
 
 void tag_tets_from_image(
     const std::string& filename,
+    const std::vector<double>& dimensions,
     const MatrixXd& V,
     const MatrixXi& T,
     VectorXi& T_tags)
@@ -538,11 +539,12 @@ void tag_tets_from_image(
     std::vector<std::vector<std::vector<size_t>>> volumetric_data;
     read_array_data_ascii(volumetric_data, filename);
 
-    tag_tets_from_image(volumetric_data, V, T, T_tags);
+    tag_tets_from_image(volumetric_data, dimensions, V, T, T_tags);
 }
 
 void tag_tets_from_image(
     const std::vector<std::vector<std::vector<size_t>>>& data,
+    const std::vector<double>& dimensions,
     const MatrixXd& V,
     const MatrixXi& T,
     VectorXi& T_tags)
@@ -556,7 +558,11 @@ void tag_tets_from_image(
         const Vector3d v2 = V.row(T(i, 2));
         const Vector3d v3 = V.row(T(i, 3));
 
-        const Vector3d center = (v0 + v1 + v2 + v3) * 0.25;
+        Vector3d center = (v0 + v1 + v2 + v3) * 0.25;
+        // map from geometric position to index space, i.e., undo dimension multiplication
+        center[0] /= dimensions[0];
+        center[1] /= dimensions[1];
+        center[2] /= dimensions[2];
         const int idx_0 = std::floor(center.x());
         const int idx_1 = std::floor(center.y());
         const int idx_2 = std::floor(center.z());
@@ -570,8 +576,10 @@ void tag_tets_from_image(
     }
 }
 
-EmbedSurface::EmbedSurface(const std::string& img_filename)
+EmbedSurface::EmbedSurface(const std::string& img_filename, const std::vector<double>& dimensions)
     : m_img_filename(img_filename)
+    , m_dimensions(dimensions)
+    , m_min_dimension(std::min(dimensions[0], std::min(dimensions[1], dimensions[2])))
 {
     if (!std::filesystem::exists(img_filename)) {
         log_and_throw_error("Image {} does not exist", img_filename);
@@ -626,11 +634,18 @@ EmbedSurface::EmbedSurface(const std::string& img_filename)
         wmtk::separate_to_manifold(v1, tri1, verts, tris, modified_nonmanifold_v);
     }
 
+    // apply dimensions
+    for (Eigen::Vector3d& v : verts) {
+        v[0] *= m_dimensions[0];
+        v[1] *= m_dimensions[1];
+        v[2] *= m_dimensions[2];
+    }
+
     V_surf_from_vector(verts);
     F_surf_from_vector(tris);
 }
 
-void EmbedSurface::simplify_surface()
+void EmbedSurface::simplify_surface(const double eps)
 {
     // convert to STL vectors
     std::vector<Eigen::Vector3d> verts = V_surf_to_vector();
@@ -639,7 +654,7 @@ void EmbedSurface::simplify_surface()
     app::sec::ShortestEdgeCollapse surf_mesh(verts, 0, false);
 
     // must be a small envelope to ensure correct tet tags later on
-    surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, 0.1);
+    surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, eps);
     assert(surf_mesh.check_mesh_connectivity_validity());
 
     surf_mesh.collapse_shortest(0);
@@ -668,12 +683,12 @@ void EmbedSurface::simplify_surface()
     F_surf_from_vector(f_simplified);
 }
 
-void EmbedSurface::remove_duplicates()
+void EmbedSurface::remove_duplicates(const double eps)
 {
     auto v = V_surf_to_vector();
     auto f = F_surf_to_vector();
 
-    wmtk::remove_duplicates(v, f, 0.01);
+    wmtk::remove_duplicates(v, f, eps);
 
     V_surf_from_vector(v);
     F_surf_from_vector(f);
@@ -725,10 +740,11 @@ void EmbedSurface::embed_surface()
 
     if (!VF_rational_to_double(V_emb_r, m_T_emb, m_V_emb)) {
         log_and_throw_error("Tets are inverted after converting to double precision.");
+        // logger().error("Tets are inverted after converting to double precision.");
     }
 
     // add tags
-    tag_tets_from_image(m_img_data, m_V_emb, m_T_emb, m_T_tags);
+    tag_tets_from_image(m_img_data, m_dimensions, m_V_emb, m_T_emb, m_T_tags);
 }
 
 void EmbedSurface::consolidate()

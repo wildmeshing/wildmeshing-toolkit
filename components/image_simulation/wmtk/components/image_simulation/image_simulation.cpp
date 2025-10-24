@@ -66,6 +66,7 @@ void image_simulation(nlohmann::json json_params)
     // if input is not MSH perform conversion to MSH and ignore everything else
     {
         const std::filesystem::path input_filename = input_paths[0];
+        const std::vector<double> image_dimensions = json_params["image_dimensions"];
 
         if (input_filename.extension() != ".msh") {
             // convert image to MSH
@@ -85,21 +86,26 @@ void image_simulation(nlohmann::json json_params)
                 output_filename.string());
 
             // convert image into tet mesh
-            EmbedSurface image_mesh(input_paths[0]);
-            {
-                if (!skip_simplify) {
-                    image_mesh.simplify_surface();
-                }
-                image_mesh.remove_duplicates();
-                image_mesh.embed_surface();
-                image_mesh.consolidate();
+            EmbedSurface image_mesh(input_paths[0], image_dimensions);
 
-                image_mesh.write_emb_msh(output_filename.string());
-                if (write_vtu) {
-                    image_mesh.write_emb_vtu(vtu_filename.string());
-                    image_mesh.write_surf_off("debug_surf.off");
-                    image_mesh.write_emb_surf_off("debug_emb_surf.off");
-                }
+            // init params
+            {
+                const auto& V_input = image_mesh.V_surface();
+                params.init(V_input.colwise().minCoeff(), V_input.colwise().maxCoeff());
+            }
+
+            if (!skip_simplify) {
+                image_mesh.simplify_surface(params.eps);
+            }
+            image_mesh.remove_duplicates(params.eps);
+            image_mesh.embed_surface();
+            image_mesh.consolidate();
+
+            image_mesh.write_emb_msh(output_filename.string());
+            if (write_vtu) {
+                image_mesh.write_emb_vtu(vtu_filename.string());
+                image_mesh.write_surf_off("debug_surf.off");
+                image_mesh.write_emb_surf_off("debug_emb_surf.off");
             }
 
             wmtk::logger().info("======= finish conversion =========");
