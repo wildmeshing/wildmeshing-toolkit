@@ -11,6 +11,7 @@
 // clang-format on
 
 #include <wmtk/utils/VectorUtils.h>
+#include <bitset>
 #include <filesystem>
 #include <paraviewo/VTUWriter.hpp>
 #include <wmtk/utils/InsertTriangleUtils.hpp>
@@ -88,7 +89,7 @@ std::vector<std::array<size_t, 3>> triangulate_polygon_face(std::vector<wmtk::Ve
 namespace wmtk::components::image_simulation {
 
 void delaunay_box_mesh(
-    const wmtk::Envelope& envelope,
+    const wmtk::SampleEnvelope& envelope,
     const MatrixXd& vertices,
     std::vector<wmtk::delaunay::Point3D>& points,
     std::vector<wmtk::delaunay::Tetrahedron>& tets,
@@ -108,34 +109,61 @@ void delaunay_box_mesh(
             points[i][j] = vertices(i, j);
         }
     }
-    ///box
-    const double delta = diag / 15.0;
-    box_min = vertices_min - Vector3d::Ones() * delta;
-    box_max = vertices_max + Vector3d::Ones() * delta;
-    const int Nx = 3;
-    const int Ny = 3;
-    const int Nz = 3;
-    for (double i = 0; i <= Nx; i++) {
-        for (double j = 0; j <= Ny; j++) {
-            for (double k = 0; k <= Nz; k++) {
-                Vector3d p(
-                    box_min[0] * (1 - i / Nx) + box_max[0] * i / Nx,
-                    box_min[1] * (1 - j / Ny) + box_max[1] * j / Ny,
-                    box_min[2] * (1 - k / Nz) + box_max[2] * k / Nz);
+    // bbox
+    double delta = diag / 15.0;
+    box_min = Vector3d(vertices_min[0] - delta, vertices_min[1] - delta, vertices_min[2] - delta);
+    box_max = Vector3d(vertices_max[0] + delta, vertices_max[1] + delta, vertices_max[2] + delta);
 
-                if (i == 0) p[0] = box_min[0];
-                if (i == Nx) p[0] = box_max[0];
-                if (j == 0) p[1] = box_min[1];
-                if (j == Ny) p[1] = box_max[1];
-                if (k == 0) p[2] = box_min[2];
-                if (k == Nz) // note: have to do, otherwise the value would be slightly different
-                    p[2] = box_max[2];
+    // add corners of domain
+    for (int i = 0; i < 8; i++) {
+        Vector3d p;
+        std::bitset<sizeof(int) * 8> a(i);
+        for (int j = 0; j < 3; j++) {
+            if (a.test(j)) {
+                p[j] = box_max[j];
+            } else {
+                p[j] = box_min[j];
+            }
+        }
+        points.push_back({{p[0], p[1], p[2]}});
+    }
 
-                // ignore points too close to the input
-                if (!envelope.is_outside(p)) {
+    const double voxel_resolution = diag / 20.0;
+    std::array<int, 3> N; // number of grid points per dimension
+    std::array<double, 3> h; // distance between grid points per dimension
+    for (int i = 0; i < 3; i++) {
+        const double D = box_max[i] - box_min[i];
+        N[i] = (D / voxel_resolution) + 1;
+        h[i] = D / N[i];
+    }
+
+    std::array<std::vector<double>, 3> ds;
+    for (int i = 0; i < 3; i++) {
+        ds[i].push_back(box_min[i]);
+        for (int j = 0; j < N[i] - 1; j++) {
+            ds[i].push_back(box_min[i] + h[i] * (j + 1));
+        }
+        ds[i].push_back(box_max[i]);
+    }
+
+    const double min_dis = voxel_resolution * voxel_resolution / 4;
+    //    double min_dis = state.target_edge_len * state.target_edge_len;//epsilon*2
+    for (int i = 0; i < ds[0].size(); i++) {
+        for (int j = 0; j < ds[1].size(); j++) {
+            for (int k = 0; k < ds[2].size(); k++) {
+                if ((i == 0 || i == ds[0].size() - 1) && (j == 0 || j == ds[1].size() - 1) &&
+                    (k == 0 || k == ds[2].size() - 1)) {
                     continue;
                 }
-                points.push_back({{p[0], p[1], p[2]}});
+                const Vector3d p(ds[0][i], ds[1][j], ds[2][k]);
+
+                Eigen::Vector3d n;
+                const double sqd = envelope.nearest_point(p, n);
+
+                if (sqd < min_dis) {
+                    continue;
+                }
+                points.push_back({{ds[0][i], ds[1][j], ds[2][k]}});
             }
         }
     }
@@ -696,7 +724,7 @@ void EmbedSurface::remove_duplicates(const double eps)
 
 void EmbedSurface::embed_surface()
 {
-    std::shared_ptr<Envelope> ptr_env;
+    std::shared_ptr<SampleEnvelope> ptr_env;
     {
         const auto v_simplified = V_surf_to_vector();
 
@@ -704,7 +732,7 @@ void EmbedSurface::embed_surface()
         for (size_t i = 0; i < tempF.size(); ++i) {
             tempF[i] = m_F_surface.row(i);
         }
-        ptr_env = std::make_shared<ExactEnvelope>();
+        ptr_env = std::make_shared<SampleEnvelope>();
         ptr_env->init(v_simplified, tempF, 0.5);
     }
 
