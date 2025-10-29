@@ -1,0 +1,197 @@
+#include "TetMesh.h"
+#include "TriMesh.h"
+
+////////////////////////////////
+////////// version 1 ///////////
+////////////////////////////////
+
+class MainMeshVertexAttribute
+{
+    int64_t vid_in_tet;
+
+    Vector3d pos;
+
+    Vector3d gradient;
+    /*
+    other attributes
+    */
+}
+
+class MainMeshFaceAttribute
+{
+    std::array<Vector3d, 3> midpoint_gradient;
+}
+
+class TetMeshVertexAttribute
+{
+    int64_t vid_in_tri = -1;
+
+    Vector3d pos;
+    /*
+    other attributes
+    */
+}
+
+class UvMeshVertexAttribute
+{
+    Vector2d pos;
+    /*
+    other attributes
+    */
+}
+
+class MultimeshTetMesh : TetMesh
+{
+    TetMeshVertexAttribute v_attr;
+
+    bool collapse_after() { return !is_inverted(); }
+}
+
+class MultimeshUvMesh : TriMesh
+{
+    UvMeshVertexAttribute v_attr;
+
+    bool collapse_after() { return !is_inverted(); }
+}
+
+class MultimeshMainMesh : TriMesh
+{
+    MainMeshVertexAttribute vertex_attributes;
+
+    MultimeshTetMesh* tetmesh_ptr;
+    MultimeshUvMesh* uvmesh_ptr;
+
+    MultimeshMainMesh(t_ptr, uv_ptr, sv_to_tv_map)
+    {
+        /* initialize mapping for main mesh and tet mesh*/
+    }
+
+    Tuple map_to_tet_edge_tuple(Tuple& e)
+    {
+        /* map main mesh edge to tetmesh edge */
+        /* by first map one vertex to tet and find the edge in its one ring*/
+        /* can also store a adjacency matrix with edge tuples, but need to update carefully*/
+    }
+
+    std::vector<Tuple> map_to_uv_edge_tuple(Tuple& e)
+    {
+        /* map main mesh edge to uvmesh edge*/
+        /* by find local edge tuple with the same fids in one ring of v*/
+    }
+
+    Tuple map_to_tet_vertex_tuple(Tuple& v) { /*read map*/ }
+
+    std::vector<Tuple> map_to_uv_vertex_tuple(Tuple& v)
+    {
+        /* find local vertex tuple with the same fids in one ring of v*/
+    }
+
+
+    void collapse_edge_before(Tuple& e)
+    {
+        /*?*/
+        cache interpolated and uv for the collapsed vertex;
+        ct_interpolate();
+    }
+
+    void collapse_edge_after(Tuple& v)
+    {
+        if (!(tetmesh_ptr->collapse_after(map_to_uv_vertex_tuple(v)) &&
+              uvmesh_ptr->collapse_after(map_to_uv_vertex_tuple(v)))) {
+            return false;
+        }
+
+        // compute new vertex position
+        // check if deviation of a interpolated vertex larger than threshold
+        {
+            find the parametric triangle that contains the cached uv;
+            compute the bary coord;
+            interpolate the new position;
+            ct_interpolate();
+        }
+
+        // // update midpoint gradient
+        // {
+        //     update_midpoint_gradient() //? do we need this?
+        // }
+
+        return deviation < threshold;
+    }
+
+    bool collapse_edge_multimesh(Tuple& e)
+    {
+        Tuple tet_edge_tuple = map_to_tet_edge_tuple(e);
+        Tuple uv_edge_tuple = map_to_uv_edge_tuple(e);
+
+        if (!collapse_edge_before(e)) {
+            return false;
+        }
+
+        this->collapse_edge(e);
+        tetmesh_ptr->collapse_edge(tet_edge_tuple);
+        uvmesh_ptr->collapse_edge(uv_edge_tuple);
+
+        /*caching the after collapse info*/
+
+
+        if (!collapse_edge_after(v)) {
+            /* roll back*/
+        }
+    }
+
+    void consolidate(std::map<int64_t, int64_t> sv_to_tv_map)
+    {
+        /*
+        update the map when consolidate
+        */
+    }
+
+    Vector3d ct_interpolate(barycenter uv, paratri t)
+    {
+        // compute ct interpolant with bary coord and a triangle
+        return ct_interpolated_position;
+    }
+
+    void serialize();
+
+}
+
+
+////////////////////////////////
+////////// version 2 ///////////
+////////////////////////////////
+
+
+class SurfaceToOtherMultimesh : TriMesh
+{
+private:
+    TetMesh* tet_mesh_ptr;
+    TriMesh* uv_mesh_ptr;
+
+    std::map<int64_t, int64_t> main_v_to_tet_v_map; // where to update?
+
+public:
+    SurfaceToOtherMultimesh(tet_ptr, uv_ptr, sv_to_tv_map)
+    {
+        /* initialize the multimesh, assign vertex mapping from surface to tet*/
+    }
+
+    Tuple map_edge_to_tet_edge(const Tuple& t);
+    Tuple map_vertex_to_tet_vertex(const Tuple& t);
+    std::vector<Tuple> map_edge_to_uv_edge(const Tuple& t);
+    std::vector<Tuple> map_vertex_to_uv_vertex(const Tuple& t);
+
+    bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_t) override
+    {
+        Tuple tet_edge = map_edge_to_tet_edge(t);
+        std::vector<Tuple> uv_edges = map_edge_to_uv_edge(t);
+
+        TriMesh::collapse_edge(t);
+        tet_mesh_ptr->collapse_edge(tet_edge);
+        for (auto e : uv_edges) {
+            uv_mesh_ptr->collapse_edge(e);
+        }
+
+        update main_v_to_tet_v_map;
+    }
+};
