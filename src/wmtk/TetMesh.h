@@ -424,9 +424,21 @@ public:
     virtual bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_tets);
 
     /**
-     * Collapse edge connectivity change part
+     * Collapse edge connectivity change part. Constains a link condition check and the connecticity
+     * update
      *
-     * @return if collapse pass link condition check
+     * @param loc0 Input Tuple for the edge to collapse
+     * @param[out] new_tets a vector of Tuples for all the newly introduced tetra.
+     * @param[out] v1_id vertex id of the input tuple
+     * @param[out] new_loc result vertex tuple
+     * @param[out] rollback_vert_conn vertex connectivity got changed and will be involed in
+     * rollback
+     * @param[out] n1_t_ids_copy origninal (before collape) one ring tet ids connected to the input
+     * vertex
+     * @param[out] new_tet_id new tet ids added to v2
+     * @param[out] old_tets tets tv connectivities in n1_t_ids_copy
+     *
+     * @return if true collapse pass link condition check
      */
     bool collapse_edge_conn(
         const Tuple& loc0,
@@ -441,12 +453,22 @@ public:
     /**
      * Check topology after collapse connectivity change
      *
-     * @return if the topology is valid
+     * @param new_tet_id new tet ids added to v2
+     *
+     * @return if true the topology is valid
      */
     bool collapse_edge_check_topology(const std::vector<size_t>& new_tet_id);
 
     /**
      *  rollback function for collapse edges
+     *
+     * @param[out] v1_id vertex id of the input tuple
+     * @param[out] rollback_vert_conn vertex connectivity got changed and will be involed in
+     * rollback
+     * @param[out] n1_t_ids origninal (before collape) one ring tet ids connected to the input
+     * vertex
+     * @param[out] new_tet_id new tet ids added to v2
+     * @param[out] old_tets tets tv connectivities in n1_t_ids
      *
      */
     void collapse_edge_rollback(
