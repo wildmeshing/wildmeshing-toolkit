@@ -722,7 +722,7 @@ void EmbedSurface::remove_duplicates(const double eps)
     F_surf_from_vector(f);
 }
 
-void EmbedSurface::embed_surface()
+bool EmbedSurface::embed_surface()
 {
     std::shared_ptr<SampleEnvelope> ptr_env;
     {
@@ -756,23 +756,26 @@ void EmbedSurface::embed_surface()
         T_vol.row(i) = Vector4i(t[0], t[1], t[2], t[3]);
     }
 
-    MatrixXr V_emb_r;
     wmtk::components::image_simulation::embed_surface(
         m_V_surface,
         m_F_surface,
         V_vol,
         T_vol,
-        V_emb_r,
+        m_V_emb_r,
         m_T_emb,
         m_F_on_surface);
 
-    if (!VF_rational_to_double(V_emb_r, m_T_emb, m_V_emb)) {
-        log_and_throw_error("Tets are inverted after converting to double precision.");
-        // logger().error("Tets are inverted after converting to double precision.");
+    const bool all_rounded = VF_rational_to_double(m_V_emb_r, m_T_emb, m_V_emb);
+
+    if (!all_rounded) {
+        // log_and_throw_error("Tets are inverted after converting to double precision.");
+        logger().info("Not all vertices can be rounded to double precision.");
     }
 
     // add tags
     tag_tets_from_image(m_img_data, m_dimensions, m_V_emb, m_T_emb, m_T_tags);
+
+    return all_rounded;
 }
 
 void EmbedSurface::consolidate()
@@ -792,9 +795,12 @@ void EmbedSurface::consolidate()
     }
 
     MatrixXd V;
+    MatrixXr Vr;
     V.resize(new_vid_counter, 3);
+    Vr.resize(new_vid_counter, 3);
     for (size_t i = 0; i < new_vid_counter; ++i) {
         V.row(i) = m_V_emb.row(new2old[i]);
+        Vr.row(i) = m_V_emb_r.row(new2old[i]);
     }
 
     MatrixXi T;
@@ -814,6 +820,7 @@ void EmbedSurface::consolidate()
     }
 
     m_V_emb = V;
+    m_V_emb_r = Vr;
     m_T_emb = T;
     m_F_on_surface = F_surf;
 }

@@ -5,7 +5,8 @@
     "required": ["application", "input"],
     "optional": [
       "output",
-      "image_dimensions",
+      "image_spacing",
+      "image_origin",
       "skip_simplify",
       "use_sample_envelope",
       "num_threads",
@@ -14,7 +15,8 @@
       "eps",
       "length_rel",
       "stop_energy",
-      "write_vtu"
+      "write_vtu",
+      "log_file"
     ]
   },
   {
@@ -41,7 +43,7 @@
     "doc": "Output file name (without extension)."
   },
   {
-    "pointer": "/image_dimensions",
+    "pointer": "/image_spacing",
     "type": "list",
     "doc": "The dimensions of a single voxel in the image. This is only used when reading a voxel image and ignored if the input is a .msh file.",
     "min": 3,
@@ -49,7 +51,19 @@
     "default": [1, 1, 1]
   },
   {
-    "pointer": "/image_dimensions/*",
+    "pointer": "/image_spacing/*",
+    "type": "float"
+  },
+  {
+    "pointer": "/image_origin",
+    "type": "list",
+    "doc": "The origin of the image. This is only used when reading a voxel image and ignored if the input is a .msh file.",
+    "min": 3,
+    "max": 3,
+    "default": [0, 0, 0]
+  },
+  {
+    "pointer": "/image_origin/*",
     "type": "float"
   },
   {
@@ -73,7 +87,7 @@
   {
     "pointer": "/max_iterations",
     "type": "int",
-    "default": 10,
+    "default": 80,
     "doc": "Maximum iterations before stopping."
   },
   {
@@ -105,5 +119,11 @@
     "type": "bool",
     "default": false,
     "doc": "Write not just MSH but also VTU output."
+  },
+  {
+    "pointer": "/log_file",
+    "type": "string",
+    "default": "",
+    "doc": "Logs are not just printed on the terminal but also saved in this file."
   }
 ]

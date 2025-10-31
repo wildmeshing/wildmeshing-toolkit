@@ -111,7 +111,6 @@ inline bool VF_rational_to_double(const MatrixXr& V_in, const MatrixXi& F, Matri
     }
 
     // check for inversion
-    bool is_inverted = false;
     if (F.cols() == 3) {
         // 2D
         for (size_t i = 0; i < F.rows(); ++i) {

@@ -99,7 +99,7 @@ public:
      */
     void remove_duplicates(const double eps);
 
-    void embed_surface();
+    bool embed_surface();
 
     /**
      * @brief Remove unreferenced vertices.
@@ -107,6 +107,7 @@ public:
     void consolidate();
 
     const MatrixXd& V_emb() const { return m_V_emb; }
+    const MatrixXr& V_emb_r() const { return m_V_emb_r; }
     const MatrixXd& V_surface() const { return m_V_surface; }
     const MatrixXi& T_emb() const { return m_T_emb; }
     const VectorXi& T_tags() const { return m_T_tags; }
@@ -153,6 +154,7 @@ private:
 
     // the embedding
     MatrixXd m_V_emb;
+    MatrixXr m_V_emb_r;
     MatrixXi m_T_emb;
     // triangles of the embedding representing the surface
     MatrixXi m_F_on_surface;

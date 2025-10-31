@@ -10,7 +10,7 @@ nlohmann::json image_simulation_spec = R"(
     "required": ["application", "input"],
     "optional": [
       "output",
-      "image_dimensions",
+      "image_spacing",
       "skip_simplify",
       "use_sample_envelope",
       "num_threads",
@@ -19,7 +19,8 @@ nlohmann::json image_simulation_spec = R"(
       "eps",
       "length_rel",
       "stop_energy",
-      "write_vtu"
+      "write_vtu",
+      "log_file"
     ]
   },
   {
@@ -46,7 +47,7 @@ nlohmann::json image_simulation_spec = R"(
     "doc": "Output file name (without extension)."
   },
   {
-    "pointer": "/image_dimensions",
+    "pointer": "/image_spacing",
     "type": "list",
     "doc": "The dimensions of a single voxel in the image. This is only used when reading a voxel image and ignored if the input is a .msh file.",
     "min": 3,
@@ -54,7 +55,7 @@ nlohmann::json image_simulation_spec = R"(
     "default": [1, 1, 1]
   },
   {
-    "pointer": "/image_dimensions/*",
+    "pointer": "/image_spacing/*",
     "type": "float"
   },
   {
@@ -78,7 +79,7 @@ nlohmann::json image_simulation_spec = R"(
   {
     "pointer": "/max_iterations",
     "type": "int",
-    "default": 10,
+    "default": 80,
     "doc": "Maximum iterations before stopping."
   },
   {
@@ -110,6 +111,12 @@ nlohmann::json image_simulation_spec = R"(
     "type": "bool",
     "default": false,
     "doc": "Write not just MSH but also VTU output."
+  },
+  {
+    "pointer": "/log_file",
+    "type": "string",
+    "default": "",
+    "doc": "Logs are not just printed on the terminal but also saved in this file."
   }
 ]
 )"_json;

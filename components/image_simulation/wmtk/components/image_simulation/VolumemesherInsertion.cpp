@@ -610,6 +610,57 @@ void ImageSimulationMesh::init_from_Volumeremesher(
 }
 
 void ImageSimulationMesh::init_from_image(
+    const MatrixXr& V,
+    const MatrixXi& T,
+    const VectorXi& T_tags)
+{
+    assert(V.cols() == 3);
+    assert(T.cols() == 4);
+    assert(T_tags.size() == T.rows());
+
+    init(T);
+
+    assert(check_mesh_connectivity_validity());
+
+    m_vertex_attribute.m_attributes.resize(V.rows());
+    m_tet_attribute.m_attributes.resize(T.rows());
+    m_face_attribute.m_attributes.resize(T.rows() * 4);
+
+    for (int i = 0; i < vert_capacity(); i++) {
+        m_vertex_attribute[i].m_pos = V.row(i);
+        m_vertex_attribute[i].m_posf = to_double(V.row(i));
+    }
+
+    // sanity check
+    for (const Tuple& t : get_tets()) {
+        if (is_inverted(t)) {
+            log_and_throw_error("Inverted tet in the input!");
+        }
+    }
+
+    // add tags
+    for (size_t i = 0; i < T_tags.size(); ++i) {
+        m_tet_attribute[i].tag = T_tags[i];
+    }
+
+    init_surfaces_and_boundaries();
+
+    // rounding
+    size_t cnt_round = 0;
+    const auto vertices = get_vertices();
+    for (const Tuple& v : vertices) {
+        if (round(v)) {
+            cnt_round++;
+        }
+    }
+    logger().info("Rounded vertices {} / {}", cnt_round, vertices.size());
+
+    // init qualities
+    for_each_tetra(
+        [this](const Tuple& t) { m_tet_attribute[t.tid(*this)].m_quality = get_quality(t); });
+}
+
+void ImageSimulationMesh::init_from_image(
     const MatrixXd& V,
     const MatrixXi& T,
     const VectorXi& T_tags)
@@ -629,6 +680,14 @@ void ImageSimulationMesh::init_from_image(
     for (int i = 0; i < vert_capacity(); i++) {
         m_vertex_attribute[i].m_pos = to_rational(V.row(i));
         m_vertex_attribute[i].m_posf = V.row(i);
+        m_vertex_attribute[i].m_is_rounded = true;
+    }
+
+    // sanity check
+    for (const Tuple& t : get_tets()) {
+        if (is_inverted_f(t)) {
+            log_and_throw_error("Inverted tet in the input!");
+        }
     }
 
     // add tags
@@ -636,6 +695,15 @@ void ImageSimulationMesh::init_from_image(
         m_tet_attribute[i].tag = T_tags[i];
     }
 
+    init_surfaces_and_boundaries();
+
+    // init qualities
+    for_each_tetra(
+        [this](const Tuple& t) { m_tet_attribute[t.tid(*this)].m_quality = get_quality(t); });
+}
+
+void ImageSimulationMesh::init_surfaces_and_boundaries()
+{
     const auto faces = get_faces();
     std::cout << "faces size: " << faces.size() << std::endl;
 
@@ -667,9 +735,9 @@ void ImageSimulationMesh::init_from_image(
     }
 
     // build envelopes
-    std::vector<Eigen::Vector3d> tempV(V.rows());
-    for (size_t i = 0; i < V.rows(); ++i) {
-        tempV[i] = V.row(i);
+    std::vector<Eigen::Vector3d> tempV(vert_capacity());
+    for (int i = 0; i < vert_capacity(); i++) {
+        tempV[i] = m_vertex_attribute[i].m_posf;
     }
     m_envelope = std::make_shared<ExactEnvelope>();
     m_envelope->init(tempV, tempF, m_envelope_eps);
@@ -721,27 +789,6 @@ void ImageSimulationMesh::init_from_image(
         }
     }
     wmtk::logger().info("#open boundary edges: {}", open_boundary_cnt);
-
-    // // rounding
-    size_t cnt_round = 0;
-
-    const auto vertices = get_vertices();
-    for (const Tuple& v : vertices) {
-        if (round(v)) {
-            cnt_round++;
-        }
-    }
-
-    if (cnt_round != vertices.size()) {
-        log_and_throw_error(
-            "Could not round all vertices in tet mesh. Rounded {}/{}",
-            cnt_round,
-            vertices.size());
-    }
-
-    // init qualities
-    for_each_tetra(
-        [this](const Tuple& t) { m_tet_attribute[t.tid(*this)].m_quality = get_quality(t); });
 }
 
 
