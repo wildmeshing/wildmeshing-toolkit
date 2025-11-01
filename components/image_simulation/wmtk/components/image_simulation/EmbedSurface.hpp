@@ -67,14 +67,14 @@ void embed_surface(
 
 void tag_tets_from_image(
     const std::string& filename,
-    const std::vector<double>& dimensions,
+    const Matrix4d& ras2ijk,
     const MatrixXd& V,
     const MatrixXi& T,
     VectorXi& T_tags);
 
 void tag_tets_from_image(
     const std::vector<std::vector<std::vector<size_t>>>& data,
-    const std::vector<double>& dimensions,
+    const Matrix4d& ras2ijk,
     const MatrixXd& V,
     const MatrixXi& T,
     VectorXi& T_tags);
@@ -85,7 +85,7 @@ void tag_tets_from_image(
 class EmbedSurface
 {
 public:
-    EmbedSurface(const std::string& img_filename, const std::vector<double>& dimensions);
+    EmbedSurface(const std::string& img_filename, const Matrix4d& ijk2ras);
 
     /**
      * @brief Simplify the input surface while staying within the eps envelope.
@@ -143,8 +143,8 @@ private:
 private:
     std::string m_img_filename;
     std::vector<std::vector<std::vector<size_t>>> m_img_data;
-    std::vector<double> m_dimensions; // dimensions of a single voxel
-    double m_min_dimension; // the smallest dimension value
+    Matrix4d m_ijk2ras; // transformation matrix from image to RAS coordinates
+    Matrix4d m_ras2ijk;
 
     // the surface separating all tags
     MatrixXd m_V_surface;

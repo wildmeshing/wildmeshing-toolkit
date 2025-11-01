@@ -10,7 +10,7 @@ nlohmann::json image_simulation_spec = R"(
     "required": ["application", "input"],
     "optional": [
       "output",
-      "image_spacing",
+      "ijk_to_ras",
       "skip_simplify",
       "use_sample_envelope",
       "num_threads",
@@ -47,15 +47,26 @@ nlohmann::json image_simulation_spec = R"(
     "doc": "Output file name (without extension)."
   },
   {
-    "pointer": "/image_spacing",
+    "pointer": "/ijk_to_ras",
     "type": "list",
-    "doc": "The dimensions of a single voxel in the image. This is only used when reading a voxel image and ignored if the input is a .msh file.",
-    "min": 3,
-    "max": 3,
-    "default": [1, 1, 1]
+    "doc": "Transformation matrix (4x4 homogeneous coordinates) from image coordinates to the RAS coordinate system.",
+    "min": 4,
+    "max": 4,
+    "default": [
+      [1, 0, 0, 0],
+      [0, 1, 0, 0],
+      [0, 0, 1, 0],
+      [0, 0, 0, 1]
+    ]
   },
   {
-    "pointer": "/image_spacing/*",
+    "pointer": "/ijk_to_ras/*",
+    "type": "list",
+    "min": 4,
+    "max": 4
+  },
+  {
+    "pointer": "/ijk_to_ras/*/*",
     "type": "float"
   },
   {

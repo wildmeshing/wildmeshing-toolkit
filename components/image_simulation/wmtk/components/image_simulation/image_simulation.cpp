@@ -94,7 +94,16 @@ void image_simulation(nlohmann::json json_params)
     if (std::filesystem::path(input_paths[0]).extension() != ".msh") {
         // convert image to tet mesh
 
-        const std::vector<double> image_spacing = json_params["image_spacing"];
+        const std::array<std::array<double, 4>, 4> ijk_to_ras = json_params["ijk_to_ras"];
+        Matrix4d ijk2ras;
+        for (size_t i = 0; i < 4; ++i) {
+            for (size_t j = 0; j < 4; ++j) {
+                ijk2ras(i, j) = ijk_to_ras[i][j];
+            }
+        }
+        logger().info("IJK to RAS:");
+        std::cout << ijk2ras << std::endl;
+        std::vector<double> image_spacing = {1, 1, 1};
 
         logger().info(
             "Converting image {} into mesh {}",
@@ -102,9 +111,13 @@ void image_simulation(nlohmann::json json_params)
             output_filename.string() + ".msh");
 
         // convert image into tet mesh
-        EmbedSurface image_mesh(input_paths[0], image_spacing);
+        EmbedSurface image_mesh(input_paths[0], ijk2ras);
 
-        const double eps = *(std::min_element(image_spacing.begin(), image_spacing.end())) * 0.1;
+        double eps = from_homogenuous(ijk2ras * Vector4d::Ones()).cwiseAbs().minCoeff() * 0.1;
+        if (eps <= 0) {
+            logger().warn("EPS = {}, ijk_to_ras matix might be broken! Changing eps to 1e-4", eps);
+            eps = 1e-4;
+        }
         if (!skip_simplify) {
             logger().info("Simplify...");
             image_mesh.simplify_surface(eps);

@@ -13,6 +13,7 @@ using MatrixX = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
 using MatrixXd = MatrixX<double>;
 using MatrixXi = MatrixX<int>;
 using MatrixXr = MatrixX<Rational>;
+using Matrix4d = Eigen::Matrix4d;
 
 template <typename T, int R>
 using Vector = Eigen::Matrix<T, R, 1>;
@@ -21,6 +22,7 @@ using VectorX = Vector<T, Eigen::Dynamic>;
 
 using Vector2d = Vector<double, 2>;
 using Vector3d = Vector<double, 3>;
+using Vector4d = Vector<double, 4>;
 using VectorXd = Vector<double, Eigen::Dynamic>;
 
 using Vector2r = Vector<Rational, 2>;
@@ -41,6 +43,16 @@ inline Vector3d to_double(const Vector3r& p0)
 {
     Vector3d p(p0[0].to_double(), p0[1].to_double(), p0[2].to_double());
     return p;
+}
+
+inline Vector4d to_homogenuous(const Vector3d& x)
+{
+    return Vector4d(x[0], x[1], x[2], 1);
+}
+
+inline Vector3d from_homogenuous(const Vector4d& x)
+{
+    return Vector3d(x[0] / x[3], x[1] / x[3], x[2] / x[3]);
 }
 
 using V_MAP = Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>;

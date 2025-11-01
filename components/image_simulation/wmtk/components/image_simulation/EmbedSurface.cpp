@@ -554,7 +554,7 @@ void embed_surface(
 
 void tag_tets_from_image(
     const std::string& filename,
-    const std::vector<double>& dimensions,
+    const Matrix4d& ras2ijk,
     const MatrixXd& V,
     const MatrixXi& T,
     VectorXi& T_tags)
@@ -567,12 +567,12 @@ void tag_tets_from_image(
     std::vector<std::vector<std::vector<size_t>>> volumetric_data;
     read_array_data_ascii(volumetric_data, filename);
 
-    tag_tets_from_image(volumetric_data, dimensions, V, T, T_tags);
+    tag_tets_from_image(volumetric_data, ras2ijk, V, T, T_tags);
 }
 
 void tag_tets_from_image(
     const std::vector<std::vector<std::vector<size_t>>>& data,
-    const std::vector<double>& dimensions,
+    const Matrix4d& ras2ijk,
     const MatrixXd& V,
     const MatrixXi& T,
     VectorXi& T_tags)
@@ -588,9 +588,14 @@ void tag_tets_from_image(
 
         Vector3d center = (v0 + v1 + v2 + v3) * 0.25;
         // map from geometric position to index space, i.e., undo dimension multiplication
-        center[0] /= dimensions[0];
-        center[1] /= dimensions[1];
-        center[2] /= dimensions[2];
+        //center[0] /= dimensions[0];
+        //center[1] /= dimensions[1];
+        //center[2] /= dimensions[2];
+        {
+            Vector4d ch = to_homogenuous(center);
+            ch = ras2ijk * ch;
+            center = from_homogenuous(ch);
+        }
         const int idx_0 = std::floor(center.x());
         const int idx_1 = std::floor(center.y());
         const int idx_2 = std::floor(center.z());
@@ -604,10 +609,10 @@ void tag_tets_from_image(
     }
 }
 
-EmbedSurface::EmbedSurface(const std::string& img_filename, const std::vector<double>& dimensions)
+EmbedSurface::EmbedSurface(const std::string& img_filename, const Matrix4d& ijk2ras)
     : m_img_filename(img_filename)
-    , m_dimensions(dimensions)
-    , m_min_dimension(std::min(dimensions[0], std::min(dimensions[1], dimensions[2])))
+    , m_ijk2ras(ijk2ras)
+    , m_ras2ijk(ijk2ras.inverse())
 {
     if (!std::filesystem::exists(img_filename)) {
         log_and_throw_error("Image {} does not exist", img_filename);
@@ -663,10 +668,10 @@ EmbedSurface::EmbedSurface(const std::string& img_filename, const std::vector<do
     }
 
     // apply dimensions
-    for (Eigen::Vector3d& v : verts) {
-        v[0] *= m_dimensions[0];
-        v[1] *= m_dimensions[1];
-        v[2] *= m_dimensions[2];
+    for (Vector3d& v : verts) {
+        Vector4d vh = to_homogenuous(v);
+        vh = m_ijk2ras * vh;
+        v = from_homogenuous(vh);
     }
 
     V_surf_from_vector(verts);
@@ -773,7 +778,7 @@ bool EmbedSurface::embed_surface()
     }
 
     // add tags
-    tag_tets_from_image(m_img_data, m_dimensions, m_V_emb, m_T_emb, m_T_tags);
+    tag_tets_from_image(m_img_data, m_ras2ijk, m_V_emb, m_T_emb, m_T_tags);
 
     return all_rounded;
 }
