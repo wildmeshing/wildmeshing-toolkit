@@ -1,0 +1,71 @@
+#pragma once
+#include <nlohmann/json.hpp>
+namespace {
+
+nlohmann::json qslim_spec = R"(
+[
+  {
+    "pointer": "/",
+    "type": "object",
+    "required": ["input"],
+    "optional": [
+      "output",
+      "num_threads",
+      "eps_rel",
+      "target_rel",
+      "target_abs",
+      "log_file",
+      "report"
+    ]
+  },
+  {
+    "pointer": "/input",
+    "type": "string",
+    "doc": "Triangular input mesh."
+  },
+  {
+    "pointer": "/output",
+    "type": "string",
+    "default": "out.obj",
+    "doc": "Output file name."
+  },
+  {
+    "pointer": "/num_threads",
+    "type": "int",
+    "default": 0,
+    "doc": "Number of threads used by the application"
+  },
+  {
+    "pointer": "/eps_rel",
+    "type": "float",
+    "default": -1,
+    "doc": "Envelope thickness relative to the bounding box"
+  },
+  {
+    "pointer": "/target_rel",
+    "type": "float",
+    "default": 0.1,
+    "doc": "Target number of vertices relative to the number of input vertices."
+  },
+  {
+    "pointer": "/target_abs",
+    "type": "float",
+    "default": -1,
+    "doc": "Absolute target number of vertices."
+  },
+  {
+    "pointer": "/log_file",
+    "type": "string",
+    "default": "",
+    "doc": "Logs are not just printed on the terminal but also saved in this file."
+  },
+  {
+    "pointer": "/report",
+    "type": "string",
+    "default": "",
+    "doc": "A JSON file that stores information about the result and the method execution, e.g., runtime."
+  }
+]
+)"_json;
+
+}
