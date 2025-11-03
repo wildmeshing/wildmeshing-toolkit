@@ -571,7 +571,7 @@ void tag_tets_from_image(
 }
 
 void tag_tets_from_image(
-    const std::vector<std::vector<std::vector<size_t>>>& data,
+    const ImageData& data,
     const Matrix4d& ras2ijk,
     const MatrixXd& V,
     const MatrixXi& T,
@@ -609,18 +609,52 @@ void tag_tets_from_image(
     }
 }
 
-EmbedSurface::EmbedSurface(const std::string& img_filename, const Matrix4d& ijk2ras)
-    : m_img_filename(img_filename)
+void tag_tets_from_images(
+    const std::vector<ImageData>& data,
+    const Matrix4d& ras2ijk,
+    const MatrixXd& V,
+    const MatrixXi& T,
+    MatrixXi& T_tags)
+{
+    T_tags.resize(T.rows(), data.size());
+    T_tags.setZero();
+
+    for (size_t i = 0; i < data.size(); ++i) {
+        VectorXi t;
+        tag_tets_from_image(data[i], ras2ijk, V, T, t);
+        T_tags.col(i) = t;
+    }
+}
+
+EmbedSurface::EmbedSurface(const std::vector<std::string>& img_filenames, const Matrix4d& ijk2ras)
+    : m_img_filenames(img_filenames)
     , m_ijk2ras(ijk2ras)
     , m_ras2ijk(ijk2ras.inverse())
 {
-    if (!std::filesystem::exists(img_filename)) {
-        log_and_throw_error("Image {} does not exist", img_filename);
+    m_img_datas.resize(m_img_filenames.size());
+    for (size_t i = 0; i < m_img_filenames.size(); ++i) {
+        if (!std::filesystem::exists(m_img_filenames[i])) {
+            log_and_throw_error("Image {} does not exist", m_img_filenames[i]);
+        }
+        read_array_data_ascii(m_img_datas[i], m_img_filenames[i]);
+        MatrixXd V_single;
+        MatrixXi F_single;
+        extract_triangle_soup_from_image(m_img_datas[i], F_single, V_single);
+
+        assert(V_single.cols() == 3);
+        assert(F_single.cols() == 3);
+
+        const size_t nV_old = m_V_surface.rows();
+        const size_t nF_old = m_F_surface.rows();
+
+        m_V_surface.conservativeResize(m_V_surface.rows() + V_single.rows(), 3);
+        m_V_surface.block(nV_old, 0, V_single.rows(), 3) = V_single;
+
+        F_single.array() += nV_old;
+        m_F_surface.conservativeResize(m_F_surface.rows() + F_single.rows(), 3);
+        m_F_surface.block(nF_old, 0, F_single.rows(), 3) = F_single;
     }
 
-    read_array_data_ascii(m_img_data, m_img_filename);
-
-    extract_triangle_soup_from_image(m_img_data, m_F_surface, m_V_surface);
 
     // process triangle soup
 
@@ -641,7 +675,14 @@ EmbedSurface::EmbedSurface(const std::string& img_filename, const Matrix4d& ijk2
     // using the same error tolerance as in tetwild
     Eigen::VectorXi SVI, SVJ, SVK;
     Eigen::MatrixXd temp_V = V; // for STL file
-    igl::remove_duplicate_vertices(temp_V, 0.01, V, SVI, SVJ);
+
+    double eps = from_homogenuous(ijk2ras * Vector4d::Ones()).cwiseAbs().minCoeff() * 0.01;
+    if (eps <= 0) {
+        logger().warn("EPS = {}, ijk_to_ras matix might be broken! Changing eps to 1e-4", eps);
+        eps = 1e-4;
+    }
+
+    igl::remove_duplicate_vertices(temp_V, eps, V, SVI, SVJ);
     for (int i = 0; i < F.rows(); i++) {
         for (int j : {0, 1, 2}) {
             F(i, j) = SVJ[F(i, j)];
@@ -778,7 +819,7 @@ bool EmbedSurface::embed_surface()
     }
 
     // add tags
-    tag_tets_from_image(m_img_data, m_ras2ijk, m_V_emb, m_T_emb, m_T_tags);
+    tag_tets_from_images(m_img_datas, m_ras2ijk, m_V_emb, m_T_emb, m_T_tags);
 
     return all_rounded;
 }
@@ -854,7 +895,7 @@ void EmbedSurface::write_emb_msh(const std::string& filename) const
         return data;
     });
 
-    msh.add_tet_attribute<1>("tag", [this](size_t i) { return m_T_tags[i]; });
+    msh.add_tet_attribute<1>("tag", [this](size_t i) { return m_T_tags(i, 0); });
 
     msh.save(filename, true);
 }
@@ -862,7 +903,7 @@ void EmbedSurface::write_emb_msh(const std::string& filename) const
 void EmbedSurface::write_emb_vtu(const std::string& filename) const
 {
     paraviewo::VTUWriter writer;
-    writer.add_cell_field("tag", m_T_tags.cast<double>());
+    // writer.add_cell_field("tag", m_T_tags.cast<double>());
     writer.write_mesh(filename, m_V_emb, m_T_emb);
 }
 

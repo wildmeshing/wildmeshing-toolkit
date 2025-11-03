@@ -469,8 +469,8 @@ public:
      * @param F #Fx3 vertex IDs of all embedded faces
      * @param T_tags #Tx1 image data represented by the individual tets
      */
-    void init_from_image(const MatrixXr& V, const MatrixXi& T, const VectorXi& T_tags);
-    void init_from_image(const MatrixXd& V, const MatrixXi& T, const VectorXi& T_tags);
+    void init_from_image(const MatrixXr& V, const MatrixXi& T, const MatrixXi& T_tags);
+    void init_from_image(const MatrixXd& V, const MatrixXi& T, const MatrixXi& T_tags);
 
     void init_surfaces_and_boundaries();
 

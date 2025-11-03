@@ -612,7 +612,7 @@ void ImageSimulationMesh::init_from_Volumeremesher(
 void ImageSimulationMesh::init_from_image(
     const MatrixXr& V,
     const MatrixXi& T,
-    const VectorXi& T_tags)
+    const MatrixXi& T_tags)
 {
     assert(V.cols() == 3);
     assert(T.cols() == 4);
@@ -639,8 +639,8 @@ void ImageSimulationMesh::init_from_image(
     }
 
     // add tags
-    for (size_t i = 0; i < T_tags.size(); ++i) {
-        m_tet_attribute[i].tag = T_tags[i];
+    for (size_t i = 0; i < T_tags.rows(); ++i) {
+        m_tet_attribute[i].tag = T_tags(i, 0);
     }
 
     init_surfaces_and_boundaries();
@@ -663,7 +663,7 @@ void ImageSimulationMesh::init_from_image(
 void ImageSimulationMesh::init_from_image(
     const MatrixXd& V,
     const MatrixXi& T,
-    const VectorXi& T_tags)
+    const MatrixXi& T_tags)
 {
     assert(V.cols() == 3);
     assert(T.cols() == 4);
@@ -691,8 +691,8 @@ void ImageSimulationMesh::init_from_image(
     }
 
     // add tags
-    for (size_t i = 0; i < T_tags.size(); ++i) {
-        m_tet_attribute[i].tag = T_tags[i];
+    for (size_t i = 0; i < T_tags.rows(); ++i) {
+        m_tet_attribute[i].tag = T_tags(i, 0);
     }
 
     init_surfaces_and_boundaries();

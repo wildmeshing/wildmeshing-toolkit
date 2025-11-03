@@ -89,10 +89,10 @@ void image_simulation(nlohmann::json json_params)
     MatrixXd V_input;
     MatrixXr V_input_r;
     MatrixXi T_input;
-    VectorXi T_input_tag;
+    MatrixXi T_input_tag;
 
     if (std::filesystem::path(input_paths[0]).extension() != ".msh") {
-        // convert image to tet mesh
+        // convert images to tet mesh
 
         const std::array<std::array<double, 4>, 4> ijk_to_ras = json_params["ijk_to_ras"];
         Matrix4d ijk2ras;
@@ -103,21 +103,21 @@ void image_simulation(nlohmann::json json_params)
         }
         logger().info("IJK to RAS:");
         std::cout << ijk2ras << std::endl;
-        std::vector<double> image_spacing = {1, 1, 1};
 
         logger().info(
-            "Converting image {} into mesh {}",
-            input_paths[0],
+            "Converting images {} into mesh {}",
+            input_paths,
             output_filename.string() + ".msh");
-
-        // convert image into tet mesh
-        EmbedSurface image_mesh(input_paths[0], ijk2ras);
 
         double eps = from_homogenuous(ijk2ras * Vector4d::Ones()).cwiseAbs().minCoeff() * 0.1;
         if (eps <= 0) {
             logger().warn("EPS = {}, ijk_to_ras matix might be broken! Changing eps to 1e-4", eps);
             eps = 1e-4;
         }
+
+        // convert image into tet mesh
+        EmbedSurface image_mesh(input_paths, ijk2ras);
+
         if (!skip_simplify) {
             logger().info("Simplify...");
             image_mesh.simplify_surface(eps);
@@ -175,7 +175,7 @@ void image_simulation(nlohmann::json json_params)
             T_input(i, 1) = tets[i][1];
             T_input(i, 2) = tets[i][2];
             T_input(i, 3) = tets[i][3];
-            T_input_tag[i] = tets_tag[i];
+            T_input_tag(i, 0) = tets_tag[i];
         }
     }
 

@@ -6,6 +6,8 @@
 
 namespace wmtk::components::image_simulation {
 
+using ImageData = std::vector<std::vector<std::vector<size_t>>>;
+
 /**
  * @brief Generate the tet mesh that contains all input vertices.
  *
@@ -73,11 +75,18 @@ void tag_tets_from_image(
     VectorXi& T_tags);
 
 void tag_tets_from_image(
-    const std::vector<std::vector<std::vector<size_t>>>& data,
+    const ImageData& data,
     const Matrix4d& ras2ijk,
     const MatrixXd& V,
     const MatrixXi& T,
     VectorXi& T_tags);
+
+void tag_tets_from_images(
+    const std::vector<ImageData>& data,
+    const Matrix4d& ras2ijk,
+    const MatrixXd& V,
+    const MatrixXi& T,
+    MatrixXi& T_tags);
 
 /**
  * A class for reading an image and converting it into a tet mesh.
@@ -85,7 +94,7 @@ void tag_tets_from_image(
 class EmbedSurface
 {
 public:
-    EmbedSurface(const std::string& img_filename, const Matrix4d& ijk2ras);
+    EmbedSurface(const std::vector<std::string>& img_filenames, const Matrix4d& ijk2ras);
 
     /**
      * @brief Simplify the input surface while staying within the eps envelope.
@@ -110,7 +119,7 @@ public:
     const MatrixXr& V_emb_r() const { return m_V_emb_r; }
     const MatrixXd& V_surface() const { return m_V_surface; }
     const MatrixXi& T_emb() const { return m_T_emb; }
-    const VectorXi& T_tags() const { return m_T_tags; }
+    const MatrixXi& T_tags() const { return m_T_tags; }
     const MatrixXi& F_on_surface() const { return m_F_on_surface; }
 
     /**
@@ -141,8 +150,8 @@ private:
     void F_surf_from_vector(const std::vector<std::array<size_t, 3>>& tris);
 
 private:
-    std::string m_img_filename;
-    std::vector<std::vector<std::vector<size_t>>> m_img_data;
+    std::vector<std::string> m_img_filenames;
+    std::vector<ImageData> m_img_datas;
     Matrix4d m_ijk2ras; // transformation matrix from image to RAS coordinates
     Matrix4d m_ras2ijk;
 
@@ -159,7 +168,7 @@ private:
     // triangles of the embedding representing the surface
     MatrixXi m_F_on_surface;
     // tags on the tets
-    VectorXi m_T_tags;
+    MatrixXi m_T_tags;
 };
 
 } // namespace wmtk::components::image_simulation
