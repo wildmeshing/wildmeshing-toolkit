@@ -283,14 +283,12 @@ void tag_tets_from_image(const std::string& filename, ImageSimulationMesh& mesh)
         const int idx_0 = std::floor(center.x());
         const int idx_1 = std::floor(center.y());
         const int idx_2 = std::floor(center.z());
-        // mesh.m_tet_attribute[t.tid(mesh)].tag = idx_0;
         if (idx_0 >= 0 && idx_0 < volumetric_data.size() && idx_1 >= 0 &&
             idx_1 < volumetric_data[0].size() && idx_2 >= 0 &&
             idx_2 < volumetric_data[0][0].size()) {
             // for tag
             int64_t intValue = volumetric_data[idx_0][idx_1][idx_2];
-            mesh.m_tet_attribute[t.tid(mesh)].tag = intValue;
-            // acc_tag.scalar_attribute(t) = intValue;
+            mesh.m_tet_attribute[t.tid(mesh)].tags.push_back(intValue);
         }
     }
 }

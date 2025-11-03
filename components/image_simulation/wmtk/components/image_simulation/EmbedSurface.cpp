@@ -895,7 +895,11 @@ void EmbedSurface::write_emb_msh(const std::string& filename) const
         return data;
     });
 
-    msh.add_tet_attribute<1>("tag", [this](size_t i) { return m_T_tags(i, 0); });
+    for (size_t i = 0; i < m_T_tags.cols(); ++i) {
+        msh.add_tet_attribute<1>(fmt::format("tag_{}", i), [this, i](size_t j) {
+            return m_T_tags(j, i);
+        });
+    }
 
     msh.save(filename, true);
 }
@@ -903,7 +907,9 @@ void EmbedSurface::write_emb_msh(const std::string& filename) const
 void EmbedSurface::write_emb_vtu(const std::string& filename) const
 {
     paraviewo::VTUWriter writer;
-    // writer.add_cell_field("tag", m_T_tags.cast<double>());
+    for (size_t i = 0; i < m_T_tags.cols(); ++i) {
+        writer.add_cell_field(fmt::format("tag_{}", i), m_T_tags.col(i).cast<double>());
+    }
     writer.write_mesh(filename, m_V_emb, m_T_emb);
 }
 

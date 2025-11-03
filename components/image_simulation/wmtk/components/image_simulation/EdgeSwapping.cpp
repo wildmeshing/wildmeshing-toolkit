@@ -156,11 +156,11 @@ bool ImageSimulationMesh::swap_edge_before(const Tuple& t)
     auto& cache = swap_cache.local();
 
     auto incident_tets = get_incident_tets_for_edge(t);
-    cache.tet_tag = m_tet_attribute[incident_tets[0].tid(*this)].tag;
+    cache.tet_tags = m_tet_attribute[incident_tets[0].tid(*this)].tags;
     auto max_energy = -1.0;
     for (auto& l : incident_tets) {
         max_energy = std::max(m_tet_attribute[l.tid(*this)].m_quality, max_energy);
-        if (m_tet_attribute[l.tid(*this)].tag != cache.tet_tag) {
+        if (m_tet_attribute[l.tid(*this)].tags != cache.tet_tags) {
             log_and_throw_error("not all tets have the same tag"); // for debugging
         }
     }
@@ -195,7 +195,7 @@ bool ImageSimulationMesh::swap_edge_after(const Tuple& t)
         m_tet_attribute[l.tid(*this)].m_quality = q;
         max_energy = std::max(q, max_energy);
 
-        m_tet_attribute[l.tid(*this)].tag = cache.tet_tag;
+        m_tet_attribute[l.tid(*this)].tags = cache.tet_tags;
     }
     if (max_energy >= cache.max_energy) {
         return false;
@@ -226,8 +226,8 @@ bool ImageSimulationMesh::swap_face_before(const Tuple& t)
         m_tet_attribute[t.tid(*this)].m_quality,
         m_tet_attribute[oppo_tet->tid(*this)].m_quality);
 
-    cache.tet_tag = m_tet_attribute[t.tid(*this)].tag;
-    if (m_tet_attribute[oppo_tet.value().tid(*this)].tag != cache.tet_tag) {
+    cache.tet_tags = m_tet_attribute[t.tid(*this)].tags;
+    if (m_tet_attribute[oppo_tet.value().tid(*this)].tags != cache.tet_tags) {
         log_and_throw_error("not all tets have the same tag"); // for debugging
     }
 
@@ -254,7 +254,7 @@ bool ImageSimulationMesh::swap_face_after(const Tuple& t)
         auto q = get_quality(l);
         m_tet_attribute[l.tid(*this)].m_quality = q;
         max_energy = std::max(q, max_energy);
-        m_tet_attribute[l.tid(*this)].tag = cache.tet_tag;
+        m_tet_attribute[l.tid(*this)].tags = cache.tet_tags;
     }
     wmtk::logger().trace("quality {} from {}", max_energy, swap_cache.local().max_energy);
 
@@ -316,11 +316,11 @@ bool ImageSimulationMesh::swap_edge_44_before(const Tuple& t)
     auto& cache = swap_cache.local();
 
     auto incident_tets = get_incident_tets_for_edge(t);
-    cache.tet_tag = m_tet_attribute[incident_tets[0].tid(*this)].tag;
+    cache.tet_tags = m_tet_attribute[incident_tets[0].tid(*this)].tags;
     auto max_energy = -1.0;
     for (auto& l : incident_tets) {
         max_energy = std::max(m_tet_attribute[l.tid(*this)].m_quality, max_energy);
-        if (m_tet_attribute[l.tid(*this)].tag != cache.tet_tag) {
+        if (m_tet_attribute[l.tid(*this)].tags != cache.tet_tags) {
             log_and_throw_error("not all tets have the same tag"); // for debugging
         }
     }
@@ -347,7 +347,7 @@ bool ImageSimulationMesh::swap_edge_44_after(const Tuple& t)
         m_tet_attribute[l.tid(*this)].m_quality = q;
         max_energy = std::max(q, max_energy);
 
-        m_tet_attribute[l.tid(*this)].tag = cache.tet_tag;
+        m_tet_attribute[l.tid(*this)].tags = cache.tet_tags;
     }
 
     if (max_energy >= swap_cache.local().max_energy) {

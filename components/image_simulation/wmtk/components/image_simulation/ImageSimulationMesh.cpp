@@ -683,7 +683,12 @@ void ImageSimulationMesh::write_msh(std::string file)
         return std::cbrt(m_tet_attribute[i].m_quality);
     });
 
-    msh.add_tet_attribute<1>("tag", [&](size_t i) { return m_tet_attribute[i].tag; });
+    for (size_t j = 0; j < m_tags_count; ++j) {
+        msh.add_tet_attribute<1>(fmt::format("tag_{}", j), [&](size_t i) {
+            return m_tet_attribute[i].tags[j];
+        });
+    }
+
 
     msh.save(file, true);
 }
@@ -1293,14 +1298,16 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
     Eigen::MatrixXi T(tets.size(), 4);
 
     Eigen::MatrixXd parts(tets.size(), 1);
-    Eigen::MatrixXd tags(tets.size(), 1);
+    std::vector<MatrixXd> tags(m_tags_count, MatrixXd(tets.size(), 1));
     Eigen::MatrixXd amips(tets.size(), 1);
 
     int index = 0;
     for (const Tuple& t : tets) {
         size_t tid = t.tid(*this);
         parts(index, 0) = m_tet_attribute[tid].part_id;
-        tags(index, 0) = m_tet_attribute[tid].tag;
+        for (size_t j = 0; j < m_tags_count; ++j) {
+            tags[j](index, 0) = m_tet_attribute[tid].tags[j];
+        }
         amips(index, 0) = std::cbrt(m_tet_attribute[tid].m_quality);
 
         const auto& vs = oriented_tet_vertices(t);
@@ -1319,7 +1326,9 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
     writer = std::make_shared<paraviewo::VTUWriter>();
 
     writer->add_cell_field("part", parts);
-    writer->add_cell_field("tag", tags);
+    for (size_t j = 0; j < m_tags_count; ++j) {
+        writer->add_cell_field(fmt::format("tag_{}", j), tags[j]);
+    }
     writer->add_cell_field("quality", amips);
     writer->write_mesh(path, V, T);
 }

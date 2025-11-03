@@ -149,7 +149,7 @@ void image_simulation(nlohmann::json json_params)
 
         std::vector<Eigen::Vector3d> verts;
         std::vector<std::array<size_t, 4>> tets;
-        std::vector<int> tets_tag;
+        std::vector<std::vector<int>> tets_tags;
 
         verts.resize(msh.get_num_tet_vertices());
         tets.resize(msh.get_num_tets());
@@ -159,23 +159,40 @@ void image_simulation(nlohmann::json json_params)
             tets[i] = {{v0, v1, v2, v3}};
         });
 
-        tets_tag.resize(msh.get_num_tets());
-        msh.extract_tet_attribute("tag", [&tets_tag](size_t i, std::vector<double> val) {
-            assert(val.size() == 1);
-            tets_tag[i] = val[0];
-        });
-
-        assert(tets.size() == tets_tag.size());
+        int tets_tags_count = 0;
+        for (const std::string& attr_name : msh.get_tet_attribute_names()) {
+            if (attr_name.substr(0, 4) == "tag_") {
+                ++tets_tags_count;
+            }
+        }
+        tets_tags.resize(tets_tags_count);
+        for (size_t i = 0; i < tets_tags_count; ++i) {
+            tets_tags[i].resize(msh.get_num_tets());
+        }
+        for (const std::string& attr_name : msh.get_tet_attribute_names()) {
+            if (attr_name.substr(0, 4) != "tag_") {
+                continue;
+            }
+            const int tag_id = std::stoi(attr_name.substr(4));
+            msh.extract_tet_attribute(
+                attr_name,
+                [&tets_tags, &tag_id](size_t i, std::vector<double> val) {
+                    assert(val.size() == 1);
+                    tets_tags[tag_id][i] = val[0];
+                });
+        }
 
         V_input = V_MAP(verts[0].data(), verts.size(), 3);
         T_input.resize(tets.size(), 4);
-        T_input_tag.resize(tets_tag.size(), 1);
+        T_input_tag.resize(tets.size(), tets_tags.size());
         for (size_t i = 0; i < tets.size(); ++i) {
             T_input(i, 0) = tets[i][0];
             T_input(i, 1) = tets[i][1];
             T_input(i, 2) = tets[i][2];
             T_input(i, 3) = tets[i][3];
-            T_input_tag(i, 0) = tets_tag[i];
+            for (size_t j = 0; j < tets_tags_count; ++j) {
+                T_input_tag(i, j) = tets_tags[j][i];
+            }
         }
     }
 

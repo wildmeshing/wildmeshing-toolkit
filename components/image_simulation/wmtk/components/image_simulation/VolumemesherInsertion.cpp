@@ -616,11 +616,13 @@ void ImageSimulationMesh::init_from_image(
 {
     assert(V.cols() == 3);
     assert(T.cols() == 4);
-    assert(T_tags.size() == T.rows());
+    assert(T_tags.rows() == T.rows());
 
     init(T);
 
     assert(check_mesh_connectivity_validity());
+
+    m_tags_count = T_tags.cols();
 
     m_vertex_attribute.m_attributes.resize(V.rows());
     m_tet_attribute.m_attributes.resize(T.rows());
@@ -640,7 +642,10 @@ void ImageSimulationMesh::init_from_image(
 
     // add tags
     for (size_t i = 0; i < T_tags.rows(); ++i) {
-        m_tet_attribute[i].tag = T_tags(i, 0);
+        m_tet_attribute[i].tags.resize(m_tags_count);
+        for (size_t j = 0; j < m_tags_count; ++j) {
+            m_tet_attribute[i].tags[j] = T_tags(i, j);
+        }
     }
 
     init_surfaces_and_boundaries();
@@ -667,11 +672,13 @@ void ImageSimulationMesh::init_from_image(
 {
     assert(V.cols() == 3);
     assert(T.cols() == 4);
-    assert(T_tags.size() == T.rows());
+    assert(T_tags.rows() == T.rows());
 
     init(T);
 
     assert(check_mesh_connectivity_validity());
+
+    m_tags_count = T_tags.cols();
 
     m_vertex_attribute.m_attributes.resize(V.rows());
     m_tet_attribute.m_attributes.resize(T.rows());
@@ -692,7 +699,10 @@ void ImageSimulationMesh::init_from_image(
 
     // add tags
     for (size_t i = 0; i < T_tags.rows(); ++i) {
-        m_tet_attribute[i].tag = T_tags(i, 0);
+        m_tet_attribute[i].tags.resize(m_tags_count);
+        for (size_t j = 0; j < m_tags_count; ++j) {
+            m_tet_attribute[i].tags[j] = T_tags(i, j);
+        }
     }
 
     init_surfaces_and_boundaries();
@@ -715,10 +725,20 @@ void ImageSimulationMesh::init_surfaces_and_boundaries()
         if (!t_opp) {
             continue;
         }
-        const int64_t tag0 = m_tet_attribute[ff.tid()].tag;
-        const int64_t tag1 = m_tet_attribute[t_opp.value().tid()].tag;
 
-        if (tag0 == tag1) {
+        bool has_two_tags = false;
+
+        for (size_t j = 0; j < m_tags_count; ++j) {
+            const int64_t tag0 = m_tet_attribute[ff.tid()].tags[j];
+            const int64_t tag1 = m_tet_attribute[t_opp.value().tid()].tags[j];
+
+            if (tag0 != tag1) {
+                has_two_tags = true;
+                break;
+            }
+        }
+
+        if (!has_two_tags) {
             continue;
         }
 

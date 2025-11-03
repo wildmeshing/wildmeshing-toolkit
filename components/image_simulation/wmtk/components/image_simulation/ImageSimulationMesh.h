@@ -95,7 +95,7 @@ class TetAttributes
 public:
     double m_quality;
     double m_winding_number = 0;
-    int64_t tag = 0;
+    std::vector<int64_t> tags;
     int part_id = -1;
 };
 
@@ -103,6 +103,7 @@ class ImageSimulationMesh : public wmtk::TetMesh
 {
 public:
     int m_debug_print_counter = 0;
+    size_t m_tags_count = 0;
 
     double time_env = 0.0;
     igl::Timer isout_timer;
@@ -430,7 +431,7 @@ private:
     {
         double max_energy;
         std::map<std::array<size_t, 3>, FaceAttributes> changed_faces;
-        int64_t tet_tag;
+        std::vector<int64_t> tet_tags;
     };
     tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
 
