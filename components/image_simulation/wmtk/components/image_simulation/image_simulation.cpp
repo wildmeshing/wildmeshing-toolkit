@@ -17,6 +17,7 @@
 #include <wmtk/utils/Reader.hpp>
 #include <wmtk/utils/io.hpp>
 #include <wmtk/utils/partition_utils.hpp>
+#include <wmtk/utils/resolve_path.hpp>
 
 #include <sec/ShortestEdgeCollapse.h>
 
@@ -27,10 +28,19 @@
 
 #include "image_simulation_spec.hpp"
 
+// Enables passing Eigen matrices to fmt/spdlog.
+template <typename T>
+struct fmt::formatter<T, std::enable_if_t<std::is_base_of_v<Eigen::DenseBase<T>, T>, char>>
+    : ostream_formatter
+{
+};
+
+
 namespace wmtk::components::image_simulation {
 
 void image_simulation(nlohmann::json json_params)
 {
+    using wmtk::utils::resolve_path;
     using Tuple = TetMesh::Tuple;
 
     // verify input and inject defaults
@@ -43,9 +53,11 @@ void image_simulation(nlohmann::json json_params)
         json_params = spec_engine.inject_defaults(json_params, image_simulation_spec);
     }
 
+    const std::filesystem::path root = json_params["json_input_file"];
+
     // logger settings
     {
-        std::string log_file_name = json_params["log_file"];
+        std::string log_file_name = resolve_path(root, json_params["log_file"]).string();
         if (!log_file_name.empty()) {
             wmtk::set_file_logger(log_file_name);
             logger().flush_on(spdlog::level::info);
@@ -54,10 +66,14 @@ void image_simulation(nlohmann::json json_params)
 
     GEO::Process::enable_multithreading(false);
 
+
     std::vector<std::string> input_paths = json_params["input"];
+    for (std::string& p : input_paths) {
+        p = resolve_path(root, p).string();
+    }
 
     Parameters params;
-    params.output_path = json_params["output"];
+    params.output_path = resolve_path(root, json_params["output"]).string();
     bool skip_simplify = json_params["skip_simplify"];
     bool use_sample_envelope = json_params["use_sample_envelope"];
     int NUM_THREADS = json_params["num_threads"];
@@ -101,8 +117,8 @@ void image_simulation(nlohmann::json json_params)
                 ijk2ras(i, j) = ijk_to_ras[i][j];
             }
         }
-        logger().info("IJK to RAS:");
-        std::cout << ijk2ras << std::endl;
+        logger().info("IJK to RAS:\n{}", ijk2ras);
+        // std::cout << ijk2ras << std::endl;
 
         logger().info(
             "Converting images {} into mesh {}",
