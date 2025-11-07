@@ -554,7 +554,7 @@ void embed_surface(
 
 void tag_tets_from_image(
     const std::string& filename,
-    const Matrix4d& ras2ijk,
+    const Matrix4d& xyz2ijk,
     const MatrixXd& V,
     const MatrixXi& T,
     VectorXi& T_tags)
@@ -567,12 +567,12 @@ void tag_tets_from_image(
     std::vector<std::vector<std::vector<size_t>>> volumetric_data;
     read_array_data_ascii(volumetric_data, filename);
 
-    tag_tets_from_image(volumetric_data, ras2ijk, V, T, T_tags);
+    tag_tets_from_image(volumetric_data, xyz2ijk, V, T, T_tags);
 }
 
 void tag_tets_from_image(
     const ImageData& data,
-    const Matrix4d& ras2ijk,
+    const Matrix4d& xyz2ijk,
     const MatrixXd& V,
     const MatrixXi& T,
     VectorXi& T_tags)
@@ -593,7 +593,7 @@ void tag_tets_from_image(
         //center[2] /= dimensions[2];
         {
             Vector4d ch = to_homogenuous(center);
-            ch = ras2ijk * ch;
+            ch = xyz2ijk * ch;
             center = from_homogenuous(ch);
         }
         const int idx_0 = std::floor(center.x());
@@ -611,7 +611,7 @@ void tag_tets_from_image(
 
 void tag_tets_from_images(
     const std::vector<ImageData>& data,
-    const Matrix4d& ras2ijk,
+    const Matrix4d& xyz2ijk,
     const MatrixXd& V,
     const MatrixXi& T,
     MatrixXi& T_tags)
@@ -621,15 +621,15 @@ void tag_tets_from_images(
 
     for (size_t i = 0; i < data.size(); ++i) {
         VectorXi t;
-        tag_tets_from_image(data[i], ras2ijk, V, T, t);
+        tag_tets_from_image(data[i], xyz2ijk, V, T, t);
         T_tags.col(i) = t;
     }
 }
 
-EmbedSurface::EmbedSurface(const std::vector<std::string>& img_filenames, const Matrix4d& ijk2ras)
+EmbedSurface::EmbedSurface(const std::vector<std::string>& img_filenames, const Matrix4d& ijk2xyz)
     : m_img_filenames(img_filenames)
-    , m_ijk2ras(ijk2ras)
-    , m_ras2ijk(ijk2ras.inverse())
+    , m_ijk2xyz(ijk2xyz)
+    , m_xyz2ijk(ijk2xyz.inverse())
 {
     m_img_datas.resize(m_img_filenames.size());
     for (size_t i = 0; i < m_img_filenames.size(); ++i) {
@@ -676,7 +676,12 @@ EmbedSurface::EmbedSurface(const std::vector<std::string>& img_filenames, const 
     Eigen::VectorXi SVI, SVJ, SVK;
     Eigen::MatrixXd temp_V = V; // for STL file
 
-    double eps = from_homogenuous(ijk2ras * Vector4d::Ones()).cwiseAbs().minCoeff() * 0.01;
+    const Vector4d single_voxel_max = ijk2xyz * Vector4d::Ones();
+    const Vector4d single_voxel_min = ijk2xyz * Vector4d(0, 0, 0, 1);
+    double eps = (from_homogenuous(single_voxel_max) - from_homogenuous(single_voxel_min))
+                     .cwiseAbs()
+                     .minCoeff() *
+                 0.01;
     if (eps <= 0) {
         logger().warn("EPS = {}, ijk_to_ras matix might be broken! Changing eps to 1e-4", eps);
         eps = 1e-4;
@@ -711,7 +716,7 @@ EmbedSurface::EmbedSurface(const std::vector<std::string>& img_filenames, const 
     // apply dimensions
     for (Vector3d& v : verts) {
         Vector4d vh = to_homogenuous(v);
-        vh = m_ijk2ras * vh;
+        vh = m_ijk2xyz * vh;
         v = from_homogenuous(vh);
     }
 
@@ -819,7 +824,7 @@ bool EmbedSurface::embed_surface()
     }
 
     // add tags
-    tag_tets_from_images(m_img_datas, m_ras2ijk, m_V_emb, m_T_emb, m_T_tags);
+    tag_tets_from_images(m_img_datas, m_xyz2ijk, m_V_emb, m_T_emb, m_T_tags);
 
     return all_rounded;
 }

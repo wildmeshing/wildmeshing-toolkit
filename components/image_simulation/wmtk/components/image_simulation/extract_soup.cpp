@@ -59,9 +59,9 @@ void read_array_data_ascii(
 
     data.resize(dim1, std::vector<std::vector<size_t>>(dim2, std::vector<size_t>(dim3)));
 
-    for (int i = 0; i < dim1; ++i) {
+    for (int k = 0; k < dim3; ++k) {
         for (int j = 0; j < dim2; ++j) {
-            for (int k = 0; k < dim3; ++k) {
+            for (int i = 0; i < dim1; ++i) {
                 size_t value;
                 file >> value;
                 data[i][j][k] = value;

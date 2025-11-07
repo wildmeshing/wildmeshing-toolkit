@@ -69,21 +69,21 @@ void embed_surface(
 
 void tag_tets_from_image(
     const std::string& filename,
-    const Matrix4d& ras2ijk,
+    const Matrix4d& xyz2ijk,
     const MatrixXd& V,
     const MatrixXi& T,
     VectorXi& T_tags);
 
 void tag_tets_from_image(
     const ImageData& data,
-    const Matrix4d& ras2ijk,
+    const Matrix4d& xyz2ijk,
     const MatrixXd& V,
     const MatrixXi& T,
     VectorXi& T_tags);
 
 void tag_tets_from_images(
     const std::vector<ImageData>& data,
-    const Matrix4d& ras2ijk,
+    const Matrix4d& xyz2ijk,
     const MatrixXd& V,
     const MatrixXi& T,
     MatrixXi& T_tags);
@@ -94,7 +94,7 @@ void tag_tets_from_images(
 class EmbedSurface
 {
 public:
-    EmbedSurface(const std::vector<std::string>& img_filenames, const Matrix4d& ijk2ras);
+    EmbedSurface(const std::vector<std::string>& img_filenames, const Matrix4d& ijk2xyz);
 
     /**
      * @brief Simplify the input surface while staying within the eps envelope.
@@ -152,8 +152,8 @@ private:
 private:
     std::vector<std::string> m_img_filenames;
     std::vector<ImageData> m_img_datas;
-    Matrix4d m_ijk2ras; // transformation matrix from image to RAS coordinates
-    Matrix4d m_ras2ijk;
+    Matrix4d m_ijk2xyz; // transformation matrix from image to xyz coordinates
+    Matrix4d m_xyz2ijk;
 
     // the surface separating all tags
     MatrixXd m_V_surface;

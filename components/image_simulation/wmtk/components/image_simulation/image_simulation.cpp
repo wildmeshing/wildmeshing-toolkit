@@ -118,21 +118,36 @@ void image_simulation(nlohmann::json json_params)
             }
         }
         logger().info("IJK to RAS:\n{}", ijk2ras);
-        // std::cout << ijk2ras << std::endl;
+        /**
+         * R = -x
+         * A = z
+         * S = y
+         */
+        Matrix4d ras2xyz;
+        ras2xyz << -1, 0, 0, 0, //
+            0, 0, 1, 0, //
+            0, 1, 0, 0, //
+            0, 0, 0, 1;
+        Matrix4d ijk2xyz = ras2xyz * ijk2ras;
 
         logger().info(
             "Converting images {} into mesh {}",
             input_paths,
             output_filename.string() + ".msh");
 
-        double eps = from_homogenuous(ijk2ras * Vector4d::Ones()).cwiseAbs().minCoeff() * 0.1;
+        const Vector4d single_voxel_max = ijk2xyz * Vector4d::Ones();
+        const Vector4d single_voxel_min = ijk2xyz * Vector4d(0, 0, 0, 1);
+        double eps = (from_homogenuous(single_voxel_max) - from_homogenuous(single_voxel_min))
+                         .cwiseAbs()
+                         .minCoeff() *
+                     0.1;
         if (eps <= 0) {
             logger().warn("EPS = {}, ijk_to_ras matix might be broken! Changing eps to 1e-4", eps);
             eps = 1e-4;
         }
 
         // convert image into tet mesh
-        EmbedSurface image_mesh(input_paths, ijk2ras);
+        EmbedSurface image_mesh(input_paths, ijk2xyz);
 
         if (!skip_simplify) {
             logger().info("Simplify...");
