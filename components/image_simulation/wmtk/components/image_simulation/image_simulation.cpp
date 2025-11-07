@@ -155,12 +155,16 @@ void image_simulation(nlohmann::json json_params)
             logger().info("done");
         }
         image_mesh.remove_duplicates(eps);
+
+        if (write_vtu) {
+            image_mesh.write_surf_off(output_filename.string() + "_input.off");
+        }
+
         const bool all_rounded = image_mesh.embed_surface();
         image_mesh.consolidate();
 
         if (write_vtu) {
             image_mesh.write_emb_vtu(get_unique_vtu_name());
-            image_mesh.write_surf_off(output_filename.string() + "_input.off");
             image_mesh.write_emb_surf_off(output_filename.string() + "_input_emb.off");
         }
 

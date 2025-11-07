@@ -710,15 +710,18 @@ EmbedSurface::EmbedSurface(const std::vector<std::string>& img_filenames, const 
     if (!igl::is_edge_manifold(F) || !igl::is_vertex_manifold(F, dummy)) {
         auto v1 = verts;
         auto tri1 = tris;
+        logger().info("Separate to manifold");
         wmtk::separate_to_manifold(v1, tri1, verts, tris, modified_nonmanifold_v);
     }
 
     // apply dimensions
+    logger().info("Convert from image to world coordinates (ijk to xyz)");
     for (Vector3d& v : verts) {
         Vector4d vh = to_homogenuous(v);
         vh = m_ijk2xyz * vh;
         v = from_homogenuous(vh);
     }
+    logger().info("Finished conversion.");
 
     V_surf_from_vector(verts);
     F_surf_from_vector(tris);

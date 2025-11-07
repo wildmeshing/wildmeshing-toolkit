@@ -25,11 +25,11 @@ void read_array_data(
     file.read(reinterpret_cast<char*>(&dim2), sizeof(int));
     file.read(reinterpret_cast<char*>(&dim3), sizeof(int));
 
-    data.resize(dim1, std::vector<std::vector<size_t>>(dim2, std::vector<size_t>(dim3)));
+    data.resize(dim3, std::vector<std::vector<size_t>>(dim2, std::vector<size_t>(dim1)));
 
-    for (int i = 0; i < dim1; ++i) {
+    for (int k = 0; k < dim1; ++k) {
         for (int j = 0; j < dim2; ++j) {
-            for (int k = 0; k < dim3; ++k) {
+            for (int i = 0; i < dim3; ++i) {
                 size_t value;
                 file.read(reinterpret_cast<char*>(&value), sizeof(size_t));
                 data[i][j][k] = value;
@@ -57,11 +57,11 @@ void read_array_data_ascii(
     file >> dim2;
     file >> dim3;
 
-    data.resize(dim1, std::vector<std::vector<size_t>>(dim2, std::vector<size_t>(dim3)));
+    data.resize(dim3, std::vector<std::vector<size_t>>(dim2, std::vector<size_t>(dim1)));
 
-    for (int k = 0; k < dim3; ++k) {
+    for (int k = 0; k < dim1; ++k) {
         for (int j = 0; j < dim2; ++j) {
-            for (int i = 0; i < dim1; ++i) {
+            for (int i = 0; i < dim3; ++i) {
                 size_t value;
                 file >> value;
                 data[i][j][k] = value;
