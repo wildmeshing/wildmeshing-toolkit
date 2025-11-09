@@ -268,11 +268,15 @@ double QSLIM::compute_cost_for_e(const TriMesh::Tuple& v_tuple)
 bool QSLIM::invariants(const std::vector<Tuple>& new_tris)
 {
     if (m_has_envelope) {
-        for (auto& t : new_tris) {
+        for (const Tuple& t : new_tris) {
             std::array<Eigen::Vector3d, 3> tris;
             auto vs = oriented_tri_vertices(t);
-            for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid(*this)].pos;
-            if (m_envelope.is_outside(tris)) return false;
+            for (auto j = 0; j < 3; j++) {
+                tris[j] = vertex_attrs[vs[j].vid(*this)].pos;
+            }
+            if (m_envelope.is_outside(tris)) {
+                return false;
+            }
         }
     }
     return true;
