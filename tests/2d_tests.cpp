@@ -303,6 +303,33 @@ TEST_CASE("vertex_edge switches equals indentity", "[tuple_operation]")
     }
 }
 
+TEST_CASE("tri_switch_faces", "[tuple_operation]")
+{
+    TriMesh m;
+    using Tuple = TriMesh::Tuple;
+
+    SECTION("manifold")
+    {
+        std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}};
+        m.init(4, tris);
+    }
+    SECTION("non-manifold")
+    {
+        std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}, {{4, 2, 1}}};
+        m.init(5, tris);
+    }
+
+    Tuple t(1, 0, 0, m);
+    auto sw = t.switch_faces(m);
+    REQUIRE(!sw.empty());
+    for (const Tuple& t_opp : sw) {
+        CHECK_FALSE(t_opp.fid(m) == t.fid(m));
+        CHECK(t_opp.vid(m) == t.vid(m));
+        CHECK(t_opp.switch_vertex(m).vid(m) == t.switch_vertex(m).vid(m));
+        CHECK(t_opp.eid(m) == t.eid(m));
+    }
+}
+
 TEST_CASE("test_link_check", "[test_pre_check]")
 {
     TriMesh m;
@@ -473,6 +500,18 @@ TEST_CASE("split_operation", "[test_2d_operation]")
         m.init(4, tris);
         auto edges = m.get_edges();
         TriMesh::Tuple edge(1, 0, 0, m);
+        std::vector<TriMesh::Tuple> dummy;
+        assert(edge.is_valid(m));
+        REQUIRE(m.split_edge(edge, dummy));
+        for (auto e : edges) REQUIRE_FALSE(e.is_valid(m));
+    }
+    SECTION("non-manifold-split")
+    {
+        std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{0, 3, 1}}, {{0, 1, 4}}};
+        m.init(5, tris);
+        auto edges = m.get_edges();
+        TriMesh::Tuple edge(0, 2, 0, m);
+        logger().info("({},{})", edge.vid(m), edge.switch_vertex(m).vid(m));
         std::vector<TriMesh::Tuple> dummy;
         assert(edge.is_valid(m));
         REQUIRE(m.split_edge(edge, dummy));

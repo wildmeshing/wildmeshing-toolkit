@@ -112,13 +112,17 @@ public:
          */
         Tuple switch_edge(const TriMesh& m) const;
         /**
-         * Switch operation for the adjacent triangle
+         * Switch operation for the adjacent triangle.
+         *
+         * This operation only works for manifold meshes!!!
          *
          * @param m Mesh
          * @return Tuple for the edge-adjacent triangle, sharing same edge, and vertex.
          * @note nullopt if the Tuple of the switch goes off the boundary.
          */
         std::optional<Tuple> switch_face(const TriMesh& m) const;
+
+        std::vector<Tuple> switch_faces(const TriMesh& m) const;
 
         /**
          * @brief check if a Tuple is valid
