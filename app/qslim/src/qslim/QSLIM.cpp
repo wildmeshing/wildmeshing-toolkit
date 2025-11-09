@@ -328,13 +328,17 @@ std::vector<TriMesh::Tuple> QSLIM::new_edges_after(const std::vector<TriMesh::Tu
 {
     std::vector<TriMesh::Tuple> new_edges;
     std::vector<TriMesh::Tuple> one_ring_verts;
-    for (auto t : tris) {
-        auto incident_verts = oriented_tri_vertices(t);
-        for (auto j = 0; j < 3; j++) one_ring_verts.push_back(incident_verts[j]);
+    for (const Tuple& t : tris) {
+        const auto incident_verts = oriented_tri_vertices(t);
+        for (auto j = 0; j < 3; j++) {
+            one_ring_verts.push_back(incident_verts[j]);
+        }
     }
-    for (auto v : one_ring_verts) {
-        auto incident_edges = get_one_ring_edges_for_vertex(v);
-        for (auto e : incident_edges) new_edges.push_back(e);
+    for (const Tuple& v : one_ring_verts) {
+        const auto incident_edges = get_one_ring_edges_for_vertex(v);
+        for (const Tuple& e : incident_edges) {
+            new_edges.push_back(e);
+        }
     }
     wmtk::unique_edge_tuples(*this, new_edges);
     return new_edges;

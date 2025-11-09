@@ -148,6 +148,42 @@ public:
         }
     };
 
+    class SmartTuple
+    {
+        Tuple m_tuple;
+        const TriMesh& m_mesh;
+
+    public:
+        SmartTuple(const TriMesh& mesh, const Tuple& t)
+            : m_mesh(mesh)
+            , m_tuple(t)
+        {}
+
+        const Tuple& tuple() const { return m_tuple; }
+        const TriMesh& mesh() const { return m_mesh; }
+
+        SmartTuple& operator=(const SmartTuple& t)
+        {
+            m_tuple = t.m_tuple;
+            return *this;
+        }
+
+        bool is_valid() const { return m_tuple.is_valid(m_mesh); }
+        size_t vid() const { return m_tuple.vid(m_mesh); }
+        size_t eid() const { return m_tuple.eid(m_mesh); }
+        size_t fid() const { return m_tuple.fid(m_mesh); }
+        SmartTuple switch_vertex() const { return {m_mesh, m_tuple.switch_vertex(m_mesh)}; }
+        SmartTuple switch_edge() const { return {m_mesh, m_tuple.switch_edge(m_mesh)}; }
+        std::optional<SmartTuple> switch_face() const
+        {
+            const std::optional<Tuple> t = m_tuple.switch_face(m_mesh);
+            if (t) {
+                return std::optional<SmartTuple>({m_mesh, t.value()});
+            }
+            return {};
+        }
+    };
+
     /**
      * (internal use) Maintains a list of triangles connected to the given vertex, and a flag to
      * mark removal.
@@ -560,7 +596,10 @@ public:
     std::vector<size_t> get_one_ring_vids_for_vertex_duplicate(const size_t& t) const;
 
     /**
-     * @brief Get the one ring edges for a vertex, edges are the incident edges
+     * @brief Get all edges that are incident to the vertex of Tuple `t`.
+     *
+     * The return tuples contain the edge and the adjacent vertex:
+     *      return_tuple.switch_vertex().vid == t.vid()
      *
      * @param t tuple pointing to a vertex
      * @return one-ring
