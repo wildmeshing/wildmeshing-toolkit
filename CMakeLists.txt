@@ -65,12 +65,14 @@ include(metis)
 include(gmp)
 include(probabilistic_quadrics)
 include(lagrange)
-include(nlohmann_json)
 include(libigl)
 igl_include(predicates)
 include(spdlog)
 include(paraviewo)
 include(fenvelope)
+include(nanoflann)
+
+include(simple_bvh)
 
 # Sort projects inside the solution
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -119,11 +121,13 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     lagrange::core
     Tracy::TracyClient
     nlohmann_json::nlohmann_json
+    nanoflann::nanoflann
     HighFive::HighFive
     hdf5::hdf5
     probabilistic_quadrics::probabilistic_quadrics
     paraviewo::paraviewo
     FastEnvelope::FastEnvelope
+    simple_bvh::simple_bvh
 )
 
 if(MSVC)
