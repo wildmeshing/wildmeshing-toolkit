@@ -10,8 +10,8 @@ message(STATUS "Third-party: creating target 'geogram::delauanay_psm'")
 include(FetchContent)
 FetchContent_Declare(
     delauanay_psm
-    GIT_REPOSITORY https://github.com/BrunoLevy/geogram.psm.Delaunay
-    GIT_TAG c89bd5453589b3e39b6219ba7a0bb80dd42ee280
+    GIT_REPOSITORY https://github.com/wildmeshing/Delaunay_psm
+    GIT_TAG 80242c22dc09ee215bc7037e561af0c4779e6cc7
 )
 FetchContent_MakeAvailable(delauanay_psm)
 
