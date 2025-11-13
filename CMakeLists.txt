@@ -58,7 +58,7 @@ include(tracy)
 include(nlohmann_json)
 include(hdf5)
 include(high_five)
-include(geogram)
+include(delaunay_psm)
 include(onetbb)
 include(mshio)
 include(metis)
@@ -114,7 +114,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     igl::core
     igl::predicates
     gmp::gmp
-    geogram
+    geogram::delaunay_psm
     TBB::tbb
     mshio::mshio
     metis::metis

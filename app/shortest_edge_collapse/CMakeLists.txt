@@ -9,7 +9,6 @@ add_library(wmtk_sec_lib "${LIB_SOURCES}")
 add_library(wmtk::sec_lib ALIAS wmtk_sec_lib)
 
 # Include headers
-include(geogram)
 target_include_directories(wmtk_sec_lib PUBLIC src)
 
 # Direct dependencies

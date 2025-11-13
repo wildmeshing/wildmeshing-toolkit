@@ -1,5 +1,4 @@
 #include "Envelope.hpp"
-#include "mesh_AABB.h"
 
 #include <wmtk/Types.hpp>
 #include <wmtk/utils/Logger.hpp>
