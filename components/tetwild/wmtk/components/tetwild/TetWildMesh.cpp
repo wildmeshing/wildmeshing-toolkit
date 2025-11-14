@@ -889,8 +889,9 @@ std::vector<std::array<size_t, 3>> TetWildMesh::get_faces_by_condition(
         if (cond(m_face_attribute[fid])) {
             auto tid = fid / 4, lid = fid % 4;
             auto verts = get_face_vertices(f);
-            res.emplace_back(std::array<size_t, 3>{
-                {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
+            res.emplace_back(
+                std::array<size_t, 3>{
+                    {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
         }
     }
     return res;

@@ -383,42 +383,87 @@ std::tuple<TetMesh::Tuple, size_t> TetMesh::tuple_from_face(const std::array<siz
     size_t v1_id = vids[1];
     size_t v2_id = vids[2];
 
-    // make v0 the one with the fewest incident tets
-    if (m_vertex_connectivity[v1_id].m_conn_tets.size() <
-        m_vertex_connectivity[v0_id].m_conn_tets.size()) {
-        std::swap(v0_id, v1_id);
-    }
-    if (m_vertex_connectivity[v2_id].m_conn_tets.size() <
-        m_vertex_connectivity[v0_id].m_conn_tets.size()) {
-        std::swap(v0_id, v2_id);
-    }
-
     size_t global_tid = std::numeric_limits<size_t>::max();
-    for (const size_t tid : m_vertex_connectivity[v0_id].m_conn_tets) {
-        bool v1_found = false;
-        bool v2_found = false;
-        for (const size_t vid : m_tet_connectivity[tid].m_indices) {
-            if (vid == v1_id) {
-                v1_found = true;
-                if (v2_found) {
-                    break;
-                }
-            }
-            if (vid == v2_id) {
-                v2_found = true;
-                if (v1_found) {
-                    break;
-                }
-            }
+
+    // find lowest common tet id
+    {
+        const auto& t0 = m_vertex_connectivity[v0_id].m_conn_tets;
+        const auto& t1 = m_vertex_connectivity[v1_id].m_conn_tets;
+        const auto& t2 = m_vertex_connectivity[v2_id].m_conn_tets;
+        size_t i0 = 0;
+        size_t i1 = 0;
+        size_t i2 = 0;
+
+        if (t0.empty() || t1.empty() || t2.empty()) {
+            return {Tuple(), -1};
         }
-        if (v1_found && v2_found) {
-            global_tid = std::min(global_tid, tid);
+
+        while (true) {
+            if (t0[i0] < t1[i1] || t0[i0] < t2[i2]) {
+                i0++;
+                if (i0 == t0.size()) {
+                    return {Tuple(), -1};
+                }
+            }
+            if (t1[i1] < t2[i2] || t1[i1] < t0[i0]) {
+                i1++;
+                if (i1 == t1.size()) {
+                    return {Tuple(), -1};
+                }
+            }
+            if (t2[i2] < t0[i0] || t2[i2] < t1[i1]) {
+                i2++;
+                if (i2 == t2.size()) {
+                    return {Tuple(), -1};
+                }
+            }
+            if (t0[i0] == t1[i1] && t0[i0] == t2[i2]) {
+                global_tid = t0[i0];
+                break;
+            }
         }
     }
 
-    if (global_tid == std::numeric_limits<size_t>::max()) {
-        return {Tuple(), -1};
-    }
+    //// alternative implementation but slower
+    //{
+    //    // make v0 the one with the fewest incident tets
+    //    if (m_vertex_connectivity[v1_id].m_conn_tets.size() <
+    //        m_vertex_connectivity[v0_id].m_conn_tets.size()) {
+    //        std::swap(v0_id, v1_id);
+    //    }
+    //    if (m_vertex_connectivity[v2_id].m_conn_tets.size() <
+    //        m_vertex_connectivity[v0_id].m_conn_tets.size()) {
+    //        std::swap(v0_id, v2_id);
+    //    }
+    //
+    //    for (const size_t tid : m_vertex_connectivity[v0_id].m_conn_tets) {
+    //        bool v1_found = false;
+    //        bool v2_found = false;
+    //        for (const size_t vid : m_tet_connectivity[tid].m_indices) {
+    //            if (vid == v1_id) {
+    //                v1_found = true;
+    //                if (v2_found) {
+    //                    break;
+    //                }
+    //            }
+    //            if (vid == v2_id) {
+    //                v2_found = true;
+    //                if (v1_found) {
+    //                    break;
+    //                }
+    //            }
+    //        }
+    //        if (v1_found && v2_found) {
+    //            // global_tid = std::min(global_tid, tid);
+    //            global_tid = tid;
+    //            break;
+    //        }
+    //    }
+    //
+    //    if (global_tid == std::numeric_limits<size_t>::max()) {
+    //        return {Tuple(), -1};
+    //    }
+    //}
 
     // tid
     Tuple face;

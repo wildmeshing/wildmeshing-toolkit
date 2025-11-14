@@ -120,6 +120,20 @@ TEST_CASE("switch_tet", "[test_tuple][TetMesh]")
     REQUIRE(tid1 == tid2);
 }
 
+TEST_CASE("tuple_from_face_vids", "[test_tuple][TetMesh]")
+{
+    TetMesh m;
+    m.init(5, {{{0, 1, 2, 3}}, {{0, 1, 2, 4}}});
+    {
+        const auto [t, fid] = m.tuple_from_face({{1, 0, 2}});
+        CHECK(t.tid(m) == 0);
+    }
+    {
+        const auto [t, fid] = m.tuple_from_face({{2, 4, 1}});
+        CHECK(t.tid(m) == 1);
+    }
+}
+
 
 TEST_CASE("switch_face_tet", "[test_tuple][TetMesh]")
 {
