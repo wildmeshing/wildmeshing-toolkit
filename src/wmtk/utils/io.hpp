@@ -1,14 +1,23 @@
 #pragma once
 
+#include <functional>
 #include <iostream>
 #include <string>
 
 #include <mshio/mshio.h>
+#include <wmtk/Types.hpp>
 
 #include "Logger.hpp"
 
 namespace wmtk {
 
+/**
+ * Write meshes to a .msh file. The right order of calling functions is important!
+ *
+ * 1. Add vertices. Creates a new entity.
+ * 2. Add faces/tets. Adds faces/tets with the same entity tag as the last added vertex block. If the vertex block was empty, the vertex IDs in the elements will be considered global (no offset is applied to the IDs).
+ * 3. Add attributes and physical groups.
+ */
 class MshData
 {
 public:
@@ -18,6 +27,9 @@ public:
         add_vertices<1>(num_vertices, get_vertex_cb);
     }
 
+    /**
+     * @brief Add vertex block. Must be called before adding anything else.
+     */
     template <typename Fn>
     void add_face_vertices(size_t num_vertices, const Fn& get_vertex_cb)
     {
@@ -30,12 +42,43 @@ public:
         add_vertices<3>(num_vertices, get_vertex_cb);
     }
 
+    void add_empty_vertices(int dim)
+    {
+        if (dim < 1 || dim > 3) {
+            log_and_throw_error("Only 1,2,3D elements are supported!");
+        }
+
+        if (m_spec.nodes.entity_blocks.empty()) {
+            log_and_throw_error("First vertex block cannot be empty.");
+        }
+
+        mshio::NodeBlock block;
+        block.num_nodes_in_block = 0;
+        block.entity_dim = dim;
+        block.entity_tag = m_spec.nodes.num_entity_blocks + 1;
+
+        m_spec.nodes.num_entity_blocks += 1;
+        m_spec.nodes.entity_blocks.push_back(std::move(block));
+    }
+
+    void add_edge_vertices() { add_empty_vertices(1); }
+    void add_face_vertices() { add_empty_vertices(2); }
+    void add_tet_vertices() { add_empty_vertices(3); }
+
     template <typename Fn>
     void add_edges(size_t num_edges, const Fn& get_edge_cb)
     {
         add_simplex_elements<1>(num_edges, get_edge_cb);
     }
 
+    /**
+     * @brief Add face block. Must be called after vertices were added.
+     *
+     * The face block will get the same entity tag as the previously added vertex block.
+     *
+     * @param num_faces Number of faces.
+     * @param get_face_cb Callback function for getting a face by ID.
+     */
     template <typename Fn>
     void add_faces(size_t num_faces, const Fn& get_face_cb)
     {
@@ -82,6 +125,67 @@ public:
     void add_tet_attribute(const std::string& name, const Fn& get_attribute_cb)
     {
         add_element_attribute<NUM_FIELDS, 3>(name, get_attribute_cb);
+    }
+
+    /**
+     * @brief Adds the pysical group and the corresponding entity entry.
+     */
+    void add_physical_group(const std::string& name)
+    {
+        auto& entities = m_spec.entities;
+
+        const auto& vertex_block = m_spec.nodes.entity_blocks.back();
+        const int tag = vertex_block.entity_tag;
+        const int dim = vertex_block.entity_dim;
+
+        double min_x = std::numeric_limits<double>::max();
+        double min_y = std::numeric_limits<double>::max();
+        double min_z = std::numeric_limits<double>::max();
+        double max_x = std::numeric_limits<double>::lowest();
+        double max_y = std::numeric_limits<double>::lowest();
+        double max_z = std::numeric_limits<double>::lowest();
+        for (size_t i = 0; i < vertex_block.num_nodes_in_block; ++i) {
+            min_x = std::min(vertex_block.data[3 * i + 0], min_x);
+            min_y = std::min(vertex_block.data[3 * i + 1], min_y);
+            min_z = std::min(vertex_block.data[3 * i + 2], min_z);
+            max_x = std::max(vertex_block.data[3 * i + 0], max_x);
+            max_y = std::max(vertex_block.data[3 * i + 1], max_y);
+            max_z = std::max(vertex_block.data[3 * i + 2], max_z);
+        }
+
+        mshio::PhysicalGroup ph;
+        ph.dim = dim;
+        ph.tag = tag;
+        ph.name = name;
+        m_spec.physical_groups.emplace_back(ph);
+
+        switch (dim) {
+        case 0: {
+            mshio::PointEntity e{tag, min_x, min_y, min_z};
+            e.physical_group_tags.push_back(tag);
+            entities.points.push_back(e);
+            break;
+        }
+        case 1: {
+            mshio::CurveEntity e{tag, min_x, min_y, min_z, max_x, max_y, max_z};
+            e.physical_group_tags.push_back(tag);
+            entities.curves.push_back(e);
+            break;
+        }
+        case 2: {
+            mshio::SurfaceEntity e{tag, min_x, min_y, min_z, max_x, max_y, max_z};
+            e.physical_group_tags.push_back(tag);
+            entities.surfaces.push_back(e);
+            break;
+        }
+        case 3: {
+            mshio::VolumeEntity e{tag, min_x, min_y, min_z, max_x, max_y, max_z};
+            e.physical_group_tags.push_back(tag);
+            entities.volumes.push_back(e);
+            break;
+        }
+        default: log_and_throw_error("Entity of dim {} cannot be written to .msh.");
+        }
     }
 
     inline size_t get_num_edge_vertices() const { return get_num_vertices<1>(); }
@@ -221,7 +325,9 @@ private:
     void add_vertices(size_t num_vertices, const Fn& get_vertex_cb)
     {
         static_assert(DIM >= 1 && DIM <= 3, "Only 1,2,3D elements are supported!");
-        if (num_vertices == 0) return;
+        if (num_vertices == 0) {
+            logger().trace("Adding empty vertex block.");
+        }
         mshio::NodeBlock block;
         block.num_nodes_in_block = num_vertices;
         block.tags.reserve(num_vertices);
@@ -254,13 +360,13 @@ private:
         if (num_elements == 0) return;
 
         if (m_spec.nodes.num_nodes == 0) {
-            throw std::runtime_error("Please add a vertex block before adding elements.");
+            log_and_throw_error("Please add a vertex block before adding elements.");
         }
         const auto& vertex_block = m_spec.nodes.entity_blocks.back();
-        assert(!vertex_block.tags.empty());
+        // assert(!vertex_block.tags.empty());
         if (vertex_block.entity_dim != DIM) {
-            throw std::runtime_error("It seems the last added vertex block has different dimension "
-                                     "than the elements you want to add.");
+            log_and_throw_error("It seems the last added vertex block has different dimension "
+                                "than the elements you want to add.");
         }
 
         mshio::ElementBlock block;
@@ -275,7 +381,13 @@ private:
         }
         block.num_elements_in_block = num_elements;
 
-        const size_t vertex_offset = vertex_block.tags.front() - 1;
+        const size_t vertex_offset =
+            vertex_block.num_nodes_in_block == 0 ? 0 : vertex_block.tags.front() - 1;
+        if (vertex_offset == 0) {
+            logger().trace(
+                "Do not offset vertex IDs for this element block as vertex block was empty");
+        }
+
         const size_t tag_offset = m_spec.elements.max_element_tag;
         block.data.reserve(num_elements * (DIM + 2));
         for (size_t i = 0; i < num_elements; i++) {
@@ -538,7 +650,8 @@ private:
         }
     }
 
-private:
+
+public:
     mshio::MshSpec m_spec;
 };
 

@@ -894,20 +894,25 @@ void EmbedSurface::write_emb_msh(const std::string& filename) const
     wmtk::MshData msh;
     msh.add_tet_vertices(m_V_emb.rows(), [this](size_t k) -> Vector3d { return m_V_emb.row(k); });
 
-    msh.add_tets(m_T_emb.rows(), [this](size_t k) {
-        std::array<size_t, 4> data{
-            (size_t)m_T_emb(k, 0),
-            (size_t)m_T_emb(k, 1),
-            (size_t)m_T_emb(k, 2),
-            (size_t)m_T_emb(k, 3)};
-        return data;
-    });
+    const size_t n_tet_vertices = m_V_emb.rows();
+
+    msh.add_tets(m_T_emb.rows(), [this](size_t k) { return m_T_emb.row(k); });
 
     for (size_t i = 0; i < m_T_tags.cols(); ++i) {
         msh.add_tet_attribute<1>(fmt::format("tag_{}", i), [this, i](size_t j) {
             return m_T_tags(j, i);
         });
     }
+
+    msh.add_physical_group("ImageVolume");
+
+    msh.add_face_vertices();
+    msh.add_faces(m_F_on_surface.rows(), [this](size_t k) { return m_F_on_surface.row(k); });
+    msh.add_physical_group("EmbeddedSurface");
+
+    msh.add_face_vertices(m_V_surface.rows(), [this](size_t k) { return m_V_surface.row(k); });
+    msh.add_faces(m_F_surface.rows(), [this](size_t k) { return m_F_surface.row(k); });
+    msh.add_physical_group("EnvelopeSurface");
 
     msh.save(filename, true);
 }

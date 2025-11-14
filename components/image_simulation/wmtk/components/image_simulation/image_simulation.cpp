@@ -4,7 +4,6 @@
 #include <memory>
 #include <vector>
 
-#include <geogram/mesh/mesh_io.h>
 #include <jse/jse.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
@@ -63,9 +62,6 @@ void image_simulation(nlohmann::json json_params)
             logger().flush_on(spdlog::level::info);
         }
     }
-
-    GEO::Process::enable_multithreading(false);
-
 
     std::vector<std::string> input_paths = json_params["input"];
     for (std::string& p : input_paths) {
