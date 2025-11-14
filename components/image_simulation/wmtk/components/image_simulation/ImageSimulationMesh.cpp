@@ -126,9 +126,9 @@ std::tuple<double, double> ImageSimulationMesh::local_operations(
         logger().info("Perform sanity checks...");
         const auto faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
         for (const auto& verts : faces) {
-            const auto p0 = m_vertex_attribute[verts[0]].m_posf;
-            const auto p1 = m_vertex_attribute[verts[1]].m_posf;
-            const auto p2 = m_vertex_attribute[verts[2]].m_posf;
+            const auto& p0 = m_vertex_attribute[verts[0]].m_posf;
+            const auto& p1 = m_vertex_attribute[verts[1]].m_posf;
+            const auto& p2 = m_vertex_attribute[verts[2]].m_posf;
             if (m_envelope->is_outside({{p0, p1, p2}})) {
                 logger().error("Face {} is outside!", verts);
             }
@@ -149,54 +149,6 @@ std::tuple<double, double> ImageSimulationMesh::local_operations(
             //         m_vertex_attribute[v].m_is_on_surface,
             //         m_vertex_attribute[v].m_is_on_open_boundary);
             // }
-        }
-
-        // check boundary envelope
-        // note that edges can end up outside during collapse and that is desired behavior to
-        // collapse thin ribbons
-        {
-            const auto fs = get_faces();
-            const auto es = get_edges();
-            std::vector<int> edge_on_open_boundary(6 * tet_capacity(), 0);
-
-            for (const Tuple& f : fs) {
-                auto fid = f.fid(*this);
-                if (!m_face_attribute[fid].m_is_surface_fs) {
-                    continue;
-                }
-                size_t eid1 = f.eid(*this);
-                size_t eid2 = f.switch_edge(*this).eid(*this);
-                size_t eid3 = f.switch_vertex(*this).switch_edge(*this).eid(*this);
-
-                edge_on_open_boundary[eid1]++;
-                edge_on_open_boundary[eid2]++;
-                edge_on_open_boundary[eid3]++;
-            }
-
-            for (const Tuple& e : es) {
-                if (edge_on_open_boundary[e.eid(*this)] != 1) {
-                    continue;
-                }
-                if (!is_open_boundary_edge(e)) {
-                    size_t v1 = e.vid(*this);
-                    size_t v2 = e.switch_vertex(*this).vid(*this);
-                    if (!m_vertex_attribute[v1].m_is_on_open_boundary ||
-                        !m_vertex_attribute[v2].m_is_on_open_boundary) {
-                        continue;
-                    }
-                    logger().warn("Boundary edge ({},{}) is outside the envelope.", v1, v2);
-                    // logger().error(
-                    //     "v{}, on surface = {}, on open boundary = {}",
-                    //     v1,
-                    //     m_vertex_attribute[v1].m_is_on_surface,
-                    //     m_vertex_attribute[v1].m_is_on_open_boundary);
-                    // logger().error(
-                    //     "v{}, on surface = {}, on open boundary = {}",
-                    //     v2,
-                    //     m_vertex_attribute[v2].m_is_on_surface,
-                    //     m_vertex_attribute[v2].m_is_on_open_boundary);
-                }
-            }
         }
         logger().info("Sanity checks done.");
     };
@@ -276,7 +228,7 @@ std::tuple<double, double> ImageSimulationMesh::local_operations(
         }
         // output_faces(fmt::format("out-op{}.obj", i), [](auto& f) { return f.m_is_surface_fs; });
     }
-    write_vtu(fmt::format("debug_{}", debug_print_counter++));
+    write_vtu(fmt::format("debug_{}.vtu", debug_print_counter++));
     energy = get_max_avg_energy();
     wmtk::logger().info("max energy = {}", std::get<0>(energy));
     wmtk::logger().info("avg energy = {}", std::get<1>(energy));
@@ -496,6 +448,28 @@ void ImageSimulationMesh::output_faces(
     igl::write_triangle_mesh(file, matV, matF);
 }
 
+
+void ImageSimulationMesh::init_envelope(const MatrixXd& V, const MatrixXi& F)
+{
+    if (m_envelope) {
+        log_and_throw_error("Envelope was already initialized once.");
+    }
+    assert(m_V_envelope.empty() && m_F_envelope.empty());
+
+    m_V_envelope.resize(V.rows());
+    for (size_t i = 0; i < m_V_envelope.size(); ++i) {
+        m_V_envelope[i] = V.row(i);
+    }
+    m_F_envelope.resize(F.rows());
+    for (size_t i = 0; i < m_F_envelope.size(); ++i) {
+        m_F_envelope[i] = F.row(i);
+    }
+
+    m_envelope = std::make_shared<ExactEnvelope>();
+    m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
+    triangles_tree = std::make_shared<SampleEnvelope>();
+    triangles_tree->init(m_V_envelope, m_F_envelope, m_envelope_eps);
+}
 
 double ImageSimulationMesh::get_length2(const Tuple& l) const
 {

@@ -110,6 +110,8 @@ public:
     const double MAX_ENERGY = std::numeric_limits<double>::max();
 
     Parameters& m_params;
+    std::vector<Vector3d> m_V_envelope;
+    std::vector<Vector3i> m_F_envelope;
     std::shared_ptr<Envelope> m_envelope;
     // for surface projection
     std::shared_ptr<SampleEnvelope> triangles_tree;
@@ -274,6 +276,7 @@ public:
         return m_vertex_attribute[loc.vid(*this)].partition_id;
     }
 
+    void init_envelope(const MatrixXd& V, const MatrixXi& F);
 
     double get_length2(const Tuple& l) const;
 
