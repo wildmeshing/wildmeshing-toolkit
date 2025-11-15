@@ -1,5 +1,6 @@
 #include <interior_tet_opt/Mesh.hpp>
 
+#include <wmtk/envelope/KNN.hpp>
 #include <wmtk/utils/Delaunay.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
@@ -23,7 +24,6 @@
 #include <igl/readMESH.h>
 #include <igl/read_triangle_mesh.h>
 
-#include <geogram/points/kd_tree.h>
 
 struct
 {
@@ -77,8 +77,7 @@ bool adjust_sizing_field(
 
     std::vector<bool> visited(mesh.vert_capacity(), false);
 
-    GEO::NearestNeighborSearch_var nnsearch = GEO::NearestNeighborSearch::create(3, "BNN");
-    nnsearch->set_points(pts.size(), pts[0].data());
+    wmtk::KNN knn(pts);
 
     std::vector<size_t> cache_one_ring;
     while (!v_queue.empty()) {
@@ -90,10 +89,10 @@ bool adjust_sizing_field(
         adjcnt++;
 
         auto& pos_v = mesh.m_vertex_attribute[vid].pos;
-        auto sq_dist = 0.;
-        GEO::index_t _1;
-        nnsearch->get_nearest_neighbors(1, pos_v.data(), &_1, &sq_dist);
-        auto dist = std::sqrt(std::max(sq_dist, 0.)); // compute dist(pts, pos_v);
+        double sq_dist = 0.;
+        uint32_t idx;
+        knn.nearest_neighbor(pos_v, idx, sq_dist);
+        const double dist = std::sqrt(sq_dist);
 
         if (dist > R) { // outside R-ball, unmark.
             continue;

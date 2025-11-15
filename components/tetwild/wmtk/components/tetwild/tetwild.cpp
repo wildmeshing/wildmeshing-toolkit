@@ -18,8 +18,6 @@
 #include "wmtk/utils/InsertTriangleUtils.hpp"
 #include "wmtk/utils/Logger.hpp"
 
-#include <geogram/basic/process.h>
-#include <geogram/mesh/mesh_io.h>
 #include <igl/Timer.h>
 #include <igl/boundary_facets.h>
 #include <igl/euler_characteristic.h>
@@ -97,8 +95,6 @@ void tetwild(nlohmann::json json_params)
     }
 
     ZoneScopedN("tetwildmain");
-
-    GEO::Process::enable_multithreading(false);
 
     tetwild::Parameters params;
 

@@ -717,6 +717,7 @@ void ImageSimulationMesh::init_surfaces_and_boundaries()
     const auto faces = get_faces();
     std::cout << "faces size: " << faces.size() << std::endl;
 
+    // tag surface faces and vertices
     std::vector<Eigen::Vector3i> tempF;
     for (const Tuple& f : faces) {
         SmartTuple ff(*this, f);
@@ -754,15 +755,36 @@ void ImageSimulationMesh::init_surfaces_and_boundaries()
         tempF.emplace_back(v1, v2, v3);
     }
 
-    // build envelopes
-    std::vector<Eigen::Vector3d> tempV(vert_capacity());
-    for (int i = 0; i < vert_capacity(); i++) {
-        tempV[i] = m_vertex_attribute[i].m_posf;
+    if (!m_envelope) {
+        logger().info("Init envelope from tet tags");
+        // build envelopes
+        std::vector<Eigen::Vector3d> tempV(vert_capacity());
+        for (int i = 0; i < vert_capacity(); i++) {
+            tempV[i] = m_vertex_attribute[i].m_posf;
+        }
+
+        m_V_envelope = tempV;
+        m_F_envelope = tempF;
+        m_envelope = std::make_shared<ExactEnvelope>();
+        m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
+        triangles_tree = std::make_shared<SampleEnvelope>();
+        triangles_tree->init(m_V_envelope, m_F_envelope, m_envelope_eps);
     }
-    m_envelope = std::make_shared<ExactEnvelope>();
-    m_envelope->init(tempV, tempF, m_envelope_eps);
-    triangles_tree = std::make_shared<SampleEnvelope>();
-    triangles_tree->init(tempV, tempF, m_envelope_eps);
+
+    // All surface faces must be inside the envelope
+    {
+        logger().info("Envelope sanity check");
+        const auto surf_faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
+        for (const auto& verts : surf_faces) {
+            const auto& p0 = m_vertex_attribute[verts[0]].m_posf;
+            const auto& p1 = m_vertex_attribute[verts[1]].m_posf;
+            const auto& p2 = m_vertex_attribute[verts[2]].m_posf;
+            if (m_envelope->is_outside({{p0, p1, p2}})) {
+                log_and_throw_error("Face {} is outside!", verts);
+            }
+        }
+        logger().info("Envelope sanity check done");
+    }
 
     // track bounding box
     for (size_t i = 0; i < faces.size(); i++) {

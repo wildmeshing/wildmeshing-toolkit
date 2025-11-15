@@ -2,7 +2,7 @@
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <geogram/delaunay/delaunay.h>
+#include <Delaunay_psm.h>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 

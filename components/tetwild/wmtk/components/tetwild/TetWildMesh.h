@@ -317,7 +317,6 @@ public:
     bool is_edge_on_surface(const Tuple& loc);
     bool is_edge_on_bbox(const Tuple& loc);
     //
-    bool adjust_sizing_field(double max_energy);
     void mesh_improvement(int max_its = 80);
     std::tuple<double, double> local_operations(
         const std::array<int, 4>& ops,

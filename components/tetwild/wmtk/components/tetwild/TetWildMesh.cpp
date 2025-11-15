@@ -4,6 +4,7 @@
 #include "wmtk/utils/Rational.hpp"
 
 #include <wmtk/utils/AMIPS.h>
+#include <wmtk/envelope/KNN.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/io.hpp>
@@ -26,8 +27,6 @@
 //#include <paraviewo/HDF5VTUWriter.hpp>
 #include <paraviewo/VTUWriter.hpp>
 
-
-#include <geogram/points/kd_tree.h>
 #include <limits>
 
 namespace {
@@ -66,7 +65,7 @@ void TetWildMesh::mesh_improvement(int max_its)
 
     compute_vertex_partition_morton();
 
-    // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
+    save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
 
     wmtk::logger().info("========it pre========");
     local_operations({{0, 1, 0, 0}}, false);
@@ -302,149 +301,6 @@ std::tuple<double, double> TetWildMesh::local_operations(
     return energy;
 }
 
-bool TetWildMesh::adjust_sizing_field(double max_energy)
-{
-    wmtk::logger().info("#vertices {}, #tets {}", vert_capacity(), tet_capacity());
-
-    const double stop_filter_energy = m_params.stop_energy * 0.8;
-    double filter_energy = std::max(max_energy / 100, stop_filter_energy);
-    filter_energy = std::min(filter_energy, 100.);
-
-    const auto recover_scalar = 1.5;
-    const auto refine_scalar = 0.5;
-    const auto min_refine_scalar = m_params.l_min / m_params.l;
-
-    // outputs scale_multipliers
-    tbb::concurrent_vector<double> scale_multipliers(vert_capacity(), recover_scalar);
-
-    tbb::concurrent_vector<Vector3d> pts;
-    tbb::concurrent_queue<size_t> v_queue;
-    TetMesh::for_each_tetra([&](auto& t) {
-        auto tid = t.tid(*this);
-        if (std::cbrt(m_tet_attribute[tid].m_quality) < filter_energy) return;
-        auto vs = oriented_tet_vids(t);
-        Vector3d c(0, 0, 0);
-        for (int j = 0; j < 4; j++) {
-            c += (m_vertex_attribute[vs[j]].m_posf);
-            v_queue.emplace(vs[j]);
-            std::cout << vs[j] << " ";
-        }
-        pts.emplace_back(c / 4);
-    });
-
-    std::cout << std::endl;
-
-    wmtk::logger().info("filter energy {} Low Quality Tets {}", filter_energy, pts.size());
-
-    // debug code
-    std::queue<size_t> v_queue_serial;
-    for (tbb::concurrent_queue<size_t>::const_iterator i(v_queue.unsafe_begin());
-         i != v_queue.unsafe_end();
-         ++i) {
-        // std::cout << *i << " ";
-        v_queue_serial.push(*i);
-    }
-    std::cout << std::endl;
-
-    const double R = m_params.l * 1.8;
-
-    int sum = 0;
-    int adjcnt = 0;
-
-    std::vector<bool> visited(vert_capacity(), false);
-
-    GEO::NearestNeighborSearch_var nnsearch = GEO::NearestNeighborSearch::create(3, "BNN");
-    nnsearch->set_points(pts.size(), pts[0].data());
-
-    std::vector<size_t> cache_one_ring;
-    // size_t vid;
-
-    while (!v_queue_serial.empty()) {
-        // std::cout << vid << " ";
-        sum++;
-        size_t vid = v_queue_serial.front();
-        std::cout << vid << " ";
-        v_queue_serial.pop();
-        if (visited[vid]) continue;
-        visited[vid] = true;
-        adjcnt++;
-
-        auto& pos_v = m_vertex_attribute[vid].m_posf;
-        auto sq_dist = 0.;
-        GEO::index_t _1;
-        nnsearch->get_nearest_neighbors(1, pos_v.data(), &_1, &sq_dist);
-        auto dist = std::sqrt(std::max(sq_dist, 0.)); // compute dist(pts, pos_v);
-        // std::cout << dist << " ";
-
-        if (dist > R) { // outside R-ball, unmark.
-            continue;
-        }
-
-        scale_multipliers[vid] = std::min(
-            scale_multipliers[vid],
-            dist / R * (1 - refine_scalar) + refine_scalar); // linear interpolate
-
-        auto vids = get_one_ring_vids_for_vertex_adj(vid, cache_one_ring);
-        for (size_t n_vid : vids) {
-            if (visited[n_vid]) continue;
-            v_queue_serial.push(n_vid);
-        }
-    }
-
-    std::cout << std::endl;
-
-    std::cout << sum << " " << adjcnt << std::endl;
-    // while (v_queue.try_pop(vid)) {
-    //     // std::cout << vid << " ";
-    //     sum++;
-    //     // size_t vid = v_queue.front();
-    //     // v_queue.pop();
-    //     if (visited[vid]) continue;
-    //     visited[vid] = true;
-    //     adjcnt++;
-
-    //     auto& pos_v = m_vertex_attribute[vid].m_posf;
-    //     auto sq_dist = 0.;
-    //     GEO::index_t _1;
-    //     nnsearch->get_nearest_neighbors(1, pos_v.data(), &_1, &sq_dist);
-    //     auto dist = std::sqrt(std::max(sq_dist, 0.)); // compute dist(pts, pos_v);
-
-    //     if (dist > R) { // outside R-ball, unmark.
-    //         continue;
-    //     }
-
-    //     scale_multipliers[vid] = std::min(
-    //         scale_multipliers[vid],
-    //         dist / R * (1 - refine_scalar) + refine_scalar); // linear interpolate
-
-    //     auto vids = get_one_ring_vids_for_vertex_adj(vid, cache_one_ring);
-    //     for (size_t n_vid : vids) {
-    //         if (visited[n_vid]) continue;
-    //         v_queue.emplace(n_vid);
-    //     }
-    // }
-
-    std::atomic_bool is_hit_min_edge_length = false;
-    for_each_vertex([&](auto& v) {
-        auto vid = v.vid(*this);
-        std::cout << vid << " ";
-        auto& v_attr = m_vertex_attribute[vid];
-
-        auto new_scale = v_attr.m_sizing_scalar * scale_multipliers[vid];
-        if (new_scale > 1)
-            v_attr.m_sizing_scalar = 1;
-        else if (new_scale < min_refine_scalar) {
-            is_hit_min_edge_length = true;
-            v_attr.m_sizing_scalar = min_refine_scalar;
-        } else
-            v_attr.m_sizing_scalar = new_scale;
-    });
-    std::cout << std::endl;
-
-
-    return is_hit_min_edge_length.load();
-}
-
 bool TetWildMesh::adjust_sizing_field_serial(double max_energy)
 {
     wmtk::logger().info("#vertices {}, #tets {}", vert_capacity(), tet_capacity());
@@ -500,8 +356,7 @@ bool TetWildMesh::adjust_sizing_field_serial(double max_energy)
 
     std::vector<bool> visited(vert_capacity(), false);
 
-    GEO::NearestNeighborSearch_var nnsearch = GEO::NearestNeighborSearch::create(3, "BNN");
-    nnsearch->set_points(pts.size(), pts[0].data());
+    KNN knn(pts);
 
     std::vector<size_t> cache_one_ring;
     // size_t vid;
@@ -517,11 +372,10 @@ bool TetWildMesh::adjust_sizing_field_serial(double max_energy)
         adjcnt++;
 
         auto& pos_v = m_vertex_attribute[vid].m_posf;
-        auto sq_dist = 0.;
-        GEO::index_t _1;
-        nnsearch->get_nearest_neighbors(1, pos_v.data(), &_1, &sq_dist);
-        auto dist = std::sqrt(std::max(sq_dist, 0.)); // compute dist(pts, pos_v);
-        // std::cout << dist << " ";
+        double sq_dist = 0.;
+        uint32_t idx;
+        knn.nearest_neighbor(pos_v, idx, sq_dist);
+        const double dist = std::sqrt(sq_dist);
 
         if (dist > R) { // outside R-ball, unmark.
             continue;

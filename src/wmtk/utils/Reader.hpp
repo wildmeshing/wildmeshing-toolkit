@@ -3,7 +3,6 @@
 #include <Eigen/Core>
 
 namespace wmtk {
-void stl_to_eigen(std::string input_surface, Eigen::MatrixXd& VI, Eigen::MatrixXi& FI);
 void eigen_to_wmtk_input(
     std::vector<Eigen::Vector3d>& verts,
     std::vector<std::array<size_t, 3>>& tris,
