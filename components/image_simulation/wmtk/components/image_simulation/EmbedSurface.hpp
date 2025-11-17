@@ -121,6 +121,7 @@ public:
     const MatrixXi& T_emb() const { return m_T_emb; }
     const MatrixXi& T_tags() const { return m_T_tags; }
     const MatrixXi& F_on_surface() const { return m_F_on_surface; }
+    const MatrixXi& F_surface() const { return m_F_surface; }
 
     /**
      * @brief Write surface as read from image.

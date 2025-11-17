@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <iostream>
+#include <optional>
 #include <string>
 
 #include <mshio/mshio.h>
@@ -188,34 +189,34 @@ public:
         }
     }
 
-    inline size_t get_num_edge_vertices() const { return get_num_vertices<1>(); }
+    inline size_t get_num_edge_vertices() const { return get_num_vertices(1); }
 
-    inline size_t get_num_face_vertices() const { return get_num_vertices<2>(); }
+    inline size_t get_num_face_vertices() const { return get_num_vertices(2); }
 
-    inline size_t get_num_tet_vertices() const { return get_num_vertices<3>(); }
+    inline size_t get_num_tet_vertices() const { return get_num_vertices(3); }
 
-    inline size_t get_num_edges() const { return get_num_simplex_elements<1>(); }
+    inline size_t get_num_edges() const { return get_num_simplex_elements(1); }
 
-    inline size_t get_num_faces() const { return get_num_simplex_elements<2>(); }
+    inline size_t get_num_faces() const { return get_num_simplex_elements(2); }
 
-    inline size_t get_num_tets() const { return get_num_simplex_elements<3>(); }
+    inline size_t get_num_tets() const { return get_num_simplex_elements(3); }
 
     template <typename Fn>
     void extract_tet_vertices(Fn&& set_vertex_cb) const
     {
-        return extract_vertices<3>(std::forward<Fn>(set_vertex_cb));
+        return extract_vertices(3, std::forward<Fn>(set_vertex_cb));
     }
 
     template <typename Fn>
     void extract_face_vertices(Fn&& set_vertex_cb) const
     {
-        return extract_vertices<2>(std::forward<Fn>(set_vertex_cb));
+        return extract_vertices(2, std::forward<Fn>(set_vertex_cb));
     }
 
     template <typename Fn>
     void extract_edge_vertices(Fn&& set_vertex_cb) const
     {
-        extract_vertices<1>(std::forward<Fn>(set_vertex_cb));
+        extract_vertices(1, std::forward<Fn>(set_vertex_cb));
     }
 
     template <typename Fn>
@@ -300,6 +301,55 @@ public:
     void extract_tet_attribute(const std::string& attr_name, Fn&& set_attr)
     {
         extract_element_attribute<3>(attr_name, std::forward<Fn>(set_attr));
+    }
+
+    /**
+     * @brief Returns the (first) physical group with the given name, if it exists.
+     */
+    std::optional<mshio::PhysicalGroup> get_physical_group_by_name(const std::string& name)
+    {
+        for (const mshio::PhysicalGroup& ph : m_spec.physical_groups) {
+            if (ph.name == name) {
+                return ph;
+            }
+        }
+        return {};
+    }
+
+    void get_VF(const int& dim, const int& tag, MatrixXd& V, MatrixXi& F)
+    {
+        assert(dim > 0 && tag > 0);
+
+        const size_t n_V = get_num_vertices(dim, tag);
+        const size_t n_F = get_num_simplex_elements(dim, tag);
+
+        if (n_V > 0) {
+            V.resize(n_V, 3);
+            extract_vertices(dim, tag, [&V](size_t i, double x, double y, double z) {
+                V.row(i) = Vector3d(x, y, z);
+            });
+        }
+        if (n_F > 0) {
+            F.resize(n_F, dim + 1);
+            switch (dim) {
+            case 1:
+                extract_simplex_elements<1>(
+                    [&F](size_t i, size_t v0, size_t v1) { F.row(i) = Vector2i(v0, v1); });
+                break;
+            case 2:
+                extract_simplex_elements<2>([&F](size_t i, size_t v0, size_t v1, size_t v2) {
+                    F.row(i) = Vector3i(v0, v1, v2);
+                });
+                break;
+            case 3:
+                extract_simplex_elements<3>(
+                    [&F](size_t i, size_t v0, size_t v1, size_t v2, size_t v3) {
+                        F.row(i) = Vector4i(v0, v1, v2, v3);
+                    });
+                break;
+            default: log_and_throw_error("Cannot extract elements for dimension {}", dim);
+            }
+        }
     }
 
     void save(const std::string& filename, bool binary = true)
@@ -486,32 +536,49 @@ private:
         m_spec.element_data.push_back(std::move(data));
     }
 
-    template <int DIM>
-    const mshio::NodeBlock* get_vertex_block() const
+    const mshio::NodeBlock* get_vertex_block(const int dim) const
     {
         for (const auto& block : m_spec.nodes.entity_blocks) {
-            if (block.entity_dim == DIM) {
+            if (block.entity_dim == dim) {
                 return &block;
             }
         }
         return nullptr;
     }
 
-    template <int DIM>
-    const mshio::ElementBlock* get_simplex_element_block() const
+    const mshio::NodeBlock* get_vertex_block(const int dim, const int tag) const
+    {
+        for (const auto& block : m_spec.nodes.entity_blocks) {
+            if (block.entity_dim == dim && block.entity_tag == tag) {
+                return &block;
+            }
+        }
+        return nullptr;
+    }
+
+    const mshio::ElementBlock* get_simplex_element_block(const int dim) const
     {
         for (const auto& block : m_spec.elements.entity_blocks) {
-            if (block.entity_dim == DIM) {
+            if (block.entity_dim == dim) {
                 return &block;
             }
         }
         return nullptr;
     }
 
-    template <int DIM>
-    size_t get_num_vertices() const
+    const mshio::ElementBlock* get_simplex_element_block(const int dim, const int tag) const
     {
-        const auto* block = get_vertex_block<DIM>();
+        for (const auto& block : m_spec.elements.entity_blocks) {
+            if (block.entity_dim == dim && block.entity_tag == tag) {
+                return &block;
+            }
+        }
+        return nullptr;
+    }
+
+    size_t get_num_vertices(const int dim) const
+    {
+        const auto* block = get_vertex_block(dim);
         if (block != nullptr) {
             return block->num_nodes_in_block;
         } else {
@@ -519,10 +586,19 @@ private:
         }
     }
 
-    template <int DIM>
-    size_t get_num_simplex_elements() const
+    size_t get_num_vertices(const int dim, const int tag) const
     {
-        const auto* block = get_simplex_element_block<DIM>();
+        const auto* block = get_vertex_block(dim, tag);
+        if (block != nullptr) {
+            return block->num_nodes_in_block;
+        } else {
+            return 0;
+        }
+    }
+
+    size_t get_num_simplex_elements(const int dim) const
+    {
+        const auto* block = get_simplex_element_block(dim);
         if (block != nullptr) {
             return block->num_elements_in_block;
         } else {
@@ -530,10 +606,36 @@ private:
         }
     }
 
-    template <int DIM, typename Fn>
-    void extract_vertices(Fn&& set_vertex_cb) const
+    size_t get_num_simplex_elements(const int dim, const int tag) const
     {
-        const auto* block = get_vertex_block<DIM>();
+        const auto* block = get_simplex_element_block(dim, tag);
+        if (block != nullptr) {
+            return block->num_elements_in_block;
+        } else {
+            return 0;
+        }
+    }
+
+    template <typename Fn>
+    void extract_vertices(const int dim, Fn&& set_vertex_cb) const
+    {
+        const auto* block = get_vertex_block(dim);
+        if (block == nullptr) return;
+
+        const size_t num_vertices = block->num_nodes_in_block;
+        if (num_vertices == 0) return;
+
+        const size_t tag_offset = block->tags.front();
+        for (size_t i = 0; i < num_vertices; i++) {
+            size_t tag = block->tags[i] - tag_offset;
+            set_vertex_cb(tag, block->data[i * 3], block->data[i * 3 + 1], block->data[i * 3 + 2]);
+        }
+    }
+
+    template <typename Fn>
+    void extract_vertices(const int dim, const int tag, Fn&& set_vertex_cb) const
+    {
+        const auto* block = get_vertex_block(dim, tag);
         if (block == nullptr) return;
 
         const size_t num_vertices = block->num_nodes_in_block;
@@ -549,8 +651,8 @@ private:
     template <int DIM, typename Fn>
     void extract_simplex_elements(Fn&& set_element_cb) const
     {
-        const auto* vertex_block = get_vertex_block<DIM>();
-        const auto* element_block = get_simplex_element_block<DIM>();
+        const auto* vertex_block = get_vertex_block(DIM);
+        const auto* element_block = get_simplex_element_block(DIM);
         if (element_block == nullptr) return;
         assert(vertex_block != nullptr);
 
@@ -615,12 +717,12 @@ private:
     template <int DIM, typename Fn>
     void extract_vertex_attribute(const std::string& attr_name, Fn&& set_attr)
     {
-        const auto* vertex_block = get_vertex_block<DIM>();
+        const auto* vertex_block = get_vertex_block(DIM);
         const size_t tag_offset = vertex_block->tags.front();
         for (const auto& data : m_spec.node_data) {
             if (data.header.string_tags.front() != attr_name) continue;
             if (data.header.int_tags.size() >= 5 && data.header.int_tags[4] != DIM) {
-                throw std::runtime_error("Attribute " + attr_name + " is of the wrong DIM.");
+                log_and_throw_error("Attribute " + attr_name + " is of the wrong DIM.");
             }
 
             for (const auto& entry : data.entries) {
@@ -634,7 +736,7 @@ private:
     template <int DIM, typename Fn>
     void extract_element_attribute(const std::string& attr_name, Fn&& set_attr)
     {
-        const auto* element_block = get_simplex_element_block<DIM>();
+        const auto* element_block = get_simplex_element_block(DIM);
         const size_t tag_offset = element_block->data.front();
         for (const auto& data : m_spec.element_data) {
             if (data.header.string_tags.front() != attr_name) continue;

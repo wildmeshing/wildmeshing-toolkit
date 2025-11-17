@@ -24,6 +24,7 @@
 #include "ImageSimulationMesh.h"
 #include "Parameters.h"
 #include "extract_soup.hpp"
+#include "read_image_msh.hpp"
 
 #include "image_simulation_spec.hpp"
 
@@ -56,8 +57,9 @@ void image_simulation(nlohmann::json json_params)
 
     // logger settings
     {
-        std::string log_file_name = resolve_path(root, json_params["log_file"]).string();
+        std::string log_file_name = json_params["log_file"];
         if (!log_file_name.empty()) {
+            log_file_name = resolve_path(root, log_file_name).string();
             wmtk::set_file_logger(log_file_name);
             logger().flush_on(spdlog::level::info);
         }
@@ -102,6 +104,9 @@ void image_simulation(nlohmann::json json_params)
     MatrixXr V_input_r;
     MatrixXi T_input;
     MatrixXi T_input_tag;
+
+    MatrixXd V_envelope;
+    MatrixXi F_envelope;
 
     if (std::filesystem::path(input_paths[0]).extension() != ".msh") {
         // convert images to tet mesh
@@ -156,6 +161,9 @@ void image_simulation(nlohmann::json json_params)
             image_mesh.write_surf_off(output_filename.string() + "_input.off");
         }
 
+        V_envelope = image_mesh.V_surface();
+        F_envelope = image_mesh.F_surface();
+
         const bool all_rounded = image_mesh.embed_surface();
         image_mesh.consolidate();
 
@@ -175,56 +183,7 @@ void image_simulation(nlohmann::json json_params)
         // return;
     } else {
         // input is a tet mesh
-        MshData msh;
-        msh.load(input_paths[0]);
-
-        std::vector<Eigen::Vector3d> verts;
-        std::vector<std::array<size_t, 4>> tets;
-        std::vector<std::vector<int>> tets_tags;
-
-        verts.resize(msh.get_num_tet_vertices());
-        tets.resize(msh.get_num_tets());
-        msh.extract_tet_vertices(
-            [&verts](size_t i, double x, double y, double z) { verts[i] << x, y, z; });
-        msh.extract_tets([&tets](size_t i, size_t v0, size_t v1, size_t v2, size_t v3) {
-            tets[i] = {{v0, v1, v2, v3}};
-        });
-
-        int tets_tags_count = 0;
-        for (const std::string& attr_name : msh.get_tet_attribute_names()) {
-            if (attr_name.substr(0, 4) == "tag_") {
-                ++tets_tags_count;
-            }
-        }
-        tets_tags.resize(tets_tags_count);
-        for (size_t i = 0; i < tets_tags_count; ++i) {
-            tets_tags[i].resize(msh.get_num_tets());
-        }
-        for (const std::string& attr_name : msh.get_tet_attribute_names()) {
-            if (attr_name.substr(0, 4) != "tag_") {
-                continue;
-            }
-            const int tag_id = std::stoi(attr_name.substr(4));
-            msh.extract_tet_attribute(
-                attr_name,
-                [&tets_tags, &tag_id](size_t i, std::vector<double> val) {
-                    assert(val.size() == 1);
-                    tets_tags[tag_id][i] = val[0];
-                });
-        }
-
-        V_input = V_MAP(verts[0].data(), verts.size(), 3);
-        T_input.resize(tets.size(), 4);
-        T_input_tag.resize(tets.size(), tets_tags.size());
-        for (size_t i = 0; i < tets.size(); ++i) {
-            T_input(i, 0) = tets[i][0];
-            T_input(i, 1) = tets[i][1];
-            T_input(i, 2) = tets[i][2];
-            T_input(i, 3) = tets[i][3];
-            for (size_t j = 0; j < tets_tags_count; ++j) {
-                T_input_tag(i, j) = tets_tags[j][i];
-            }
-        }
+        read_image_msh(input_paths[0], V_input, T_input, T_input_tag, V_envelope, F_envelope);
     }
 
     params.init(V_input.colwise().minCoeff(), V_input.colwise().maxCoeff());
@@ -233,6 +192,10 @@ void image_simulation(nlohmann::json json_params)
     timer.start();
 
     image_simulation::ImageSimulationMesh mesh(params, params.eps, NUM_THREADS);
+    // first init envelope
+    if (V_envelope.size() != 0) {
+        mesh.init_envelope(V_envelope, F_envelope);
+    }
     if (V_input_r.size() == 0) {
         logger().info("Use float input for TetWild");
         mesh.init_from_image(V_input, T_input, T_input_tag);

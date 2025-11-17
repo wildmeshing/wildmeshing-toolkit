@@ -79,9 +79,8 @@ TEST_CASE("io", "[io][mshio]")
 
         std::vector<delaunay::Point3D> out_vertices;
         out_vertices.resize(msh.get_num_tet_vertices());
-        msh.extract_tet_vertices([&](size_t i, double x, double y, double z) {
-            out_vertices[i] = {{x, y, z}};
-        });
+        msh.extract_tet_vertices(
+            [&](size_t i, double x, double y, double z) { out_vertices[i] = {{x, y, z}}; });
         REQUIRE(out_vertices == vertices);
 
         std::vector<std::array<size_t, 4>> out_tets;
@@ -155,4 +154,22 @@ TEST_CASE("paraviewo-tet", "[io][paraviewo]")
     writer.write_tets("tet_paraviewo_t.vtu");
     writer.write_triangles("tet_paraviewo_f.vtu");
     writer.write_edges("tet_paraviewo_e.vtu");
+}
+
+TEST_CASE("io-pysical-groups", "[io][mshio][.]")
+{
+    tri::TriMeshVF VF = tri::edge_region(3);
+    const auto& V = VF.V;
+    const auto& F = VF.F;
+
+    wmtk::MshData msh;
+    msh.add_face_vertices(V.rows(), [&](size_t k) -> Vector3d { return V.row(k); });
+
+    const size_t n_tet_vertices = V.rows();
+
+    msh.add_faces(F.rows(), [&](size_t k) { return F.row(k); });
+
+    msh.add_physical_group("testgroup"); // does not work with binary for now
+
+    msh.save("test-io-pysical-groups.msh", true);
 }

@@ -117,7 +117,7 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
     m_vertex_attribute[v_id].m_posf =
         (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2;
     m_vertex_attribute[v_id].m_is_rounded = true;
-    
+
     // this has to be done before the inversion check
     m_vertex_attribute[v_id].m_pos = to_rational(m_vertex_attribute[v_id].m_posf);
 

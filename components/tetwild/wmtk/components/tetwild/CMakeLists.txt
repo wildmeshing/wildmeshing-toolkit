@@ -1,7 +1,5 @@
 # incremental tetwild
 
-include(gmp)
-include(fenvelope)
 include(volumemesher)
 
 set(COMPONENT_NAME tetwild)

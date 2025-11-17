@@ -69,16 +69,29 @@ TriMeshVF edge_region(int8_t dimension)
 
     V.resize(10, dimension);
     V.setZero();
-    V.row(0) << 0.5, 1;
-    V.row(1) << 1.5, 1;
-    V.row(2) << 2.5, 1;
-    V.row(3) << 0, 0;
-    V.row(4) << 1, 0;
-    V.row(5) << 2, 0;
-    V.row(6) << 3, 0;
-    V.row(7) << 0.5, -1;
-    V.row(8) << 1.5, -1;
-    V.row(9) << 2.5, -1;
+    if (dimension == 2) {
+        V.row(0) << 0.5, 1;
+        V.row(1) << 1.5, 1;
+        V.row(2) << 2.5, 1;
+        V.row(3) << 0, 0;
+        V.row(4) << 1, 0;
+        V.row(5) << 2, 0;
+        V.row(6) << 3, 0;
+        V.row(7) << 0.5, -1;
+        V.row(8) << 1.5, -1;
+        V.row(9) << 2.5, -1;
+    } else {
+        V.row(0) << 0.5, 1, 0;
+        V.row(1) << 1.5, 1, 0;
+        V.row(2) << 2.5, 1, 0;
+        V.row(3) << 0, 0, 0;
+        V.row(4) << 1, 0, 0;
+        V.row(5) << 2, 0, 0;
+        V.row(6) << 3, 0, 0;
+        V.row(7) << 0.5, -1, 0;
+        V.row(8) << 1.5, -1, 0;
+        V.row(9) << 2.5, -1, 0;
+    }
 
     return m;
 }

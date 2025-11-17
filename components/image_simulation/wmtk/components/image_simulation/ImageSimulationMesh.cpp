@@ -455,6 +455,10 @@ void ImageSimulationMesh::init_envelope(const MatrixXd& V, const MatrixXi& F)
         log_and_throw_error("Envelope was already initialized once.");
     }
     assert(m_V_envelope.empty() && m_F_envelope.empty());
+    assert(V.size() != 0 && F.size() != 0);
+    assert(V.cols() == 3); // vertices must be in 3D
+    assert(F.cols() == 3); // envelope must be triangles
+
 
     m_V_envelope.resize(V.rows());
     for (size_t i = 0; i < m_V_envelope.size(); ++i) {
@@ -516,6 +520,12 @@ void ImageSimulationMesh::write_msh(std::string file)
             return m_tet_attribute[i].tags[j];
         });
     }
+
+    msh.add_physical_group("ImageVolume");
+
+    msh.add_face_vertices(m_V_envelope.size(), [this](size_t k) { return m_V_envelope[k]; });
+    msh.add_faces(m_F_envelope.size(), [this](size_t k) { return m_F_envelope[k]; });
+    msh.add_physical_group("EnvelopeSurface");
 
     msh.save(file, true);
 }

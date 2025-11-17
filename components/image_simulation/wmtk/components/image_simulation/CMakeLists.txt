@@ -1,7 +1,5 @@
 # incremental image_simulation
 
-include(gmp)
-include(fenvelope)
 include(volumemesher)
 
 set(COMPONENT_NAME image_simulation)
@@ -34,6 +32,9 @@ set(SRC_FILES
 	image_simulation.hpp
 	image_simulation.cpp
 	image_simulation_spec.hpp
+
+	read_image_msh.hpp
+	read_image_msh.cpp
     )
 
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

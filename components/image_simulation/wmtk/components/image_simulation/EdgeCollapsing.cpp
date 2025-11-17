@@ -28,18 +28,22 @@ void ImageSimulationMesh::collapse_all_edges(bool is_limit_length)
     time = timer.getElapsedTime();
     wmtk::logger().info("edge collapse prepare time: {}s", time);
     auto setup_and_execute = [&](auto& executor) {
-        executor.renew_neighbor_tuples = [&](const auto& m, auto op, const auto& newts) {
-            count_success++;
-            std::vector<std::pair<std::string, wmtk::TetMesh::Tuple>> op_tups;
-            for (auto t : newts) {
-                op_tups.emplace_back(op, t);
-                op_tups.emplace_back(op, t.switch_vertex(m));
-            }
-            return op_tups;
+        executor.renew_neighbor_tuples =
+            [&count_success](const ImageSimulationMesh& m, Op op, const std::vector<Tuple>& newts) {
+                count_success++;
+                std::vector<std::pair<std::string, Tuple>> op_tups;
+                for (const auto& t : newts) {
+                    op_tups.emplace_back(op, t);
+                    op_tups.emplace_back(op, t.switch_vertex(m));
+                }
+                return op_tups;
+            };
+        executor.priority = [](const ImageSimulationMesh& m, Op op, const Tuple& t) {
+            return -m.get_length2(t);
         };
-        executor.priority = [&](auto& m, auto op, auto& t) { return -m.get_length2(t); };
         executor.num_threads = NUM_THREADS;
-        executor.is_weight_up_to_date = [&](const auto& m, const auto& ele) {
+        executor.is_weight_up_to_date = [&](const ImageSimulationMesh& m,
+                                            const std::tuple<double, Op, Tuple>& ele) {
             auto& VA = m_vertex_attribute;
             auto& [weight, op, tup] = ele;
             auto length = m.get_length2(tup);
@@ -53,9 +57,10 @@ void ImageSimulationMesh::collapse_all_edges(bool is_limit_length)
             return true;
         };
 
-        executor.on_fail = [&](auto& m, auto op, auto& t) {
-            collect_failure_ops.emplace_back(op, t);
-        };
+        executor.on_fail =
+            [&collect_failure_ops](const ImageSimulationMesh& m, Op op, const Tuple& t) {
+                collect_failure_ops.emplace_back(op, t);
+            };
         // Execute!!
         do {
             count_success.store(0, std::memory_order_release);
@@ -72,8 +77,8 @@ void ImageSimulationMesh::collapse_all_edges(bool is_limit_length)
     };
     if (NUM_THREADS > 0) {
         timer.start();
-        auto executor = wmtk::ExecutePass<ImageSimulationMesh, wmtk::ExecutionPolicy::kPartition>();
-        executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
+        auto executor = ExecutePass<ImageSimulationMesh, wmtk::ExecutionPolicy::kPartition>();
+        executor.lock_vertices = [](ImageSimulationMesh& m, const Tuple& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
         setup_and_execute(executor);
@@ -81,7 +86,7 @@ void ImageSimulationMesh::collapse_all_edges(bool is_limit_length)
         wmtk::logger().info("edge collapse operation time parallel: {}s", time);
     } else {
         timer.start();
-        auto executor = wmtk::ExecutePass<ImageSimulationMesh, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = ExecutePass<ImageSimulationMesh, wmtk::ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge collapse operation time serial: {}s", time);
@@ -150,7 +155,6 @@ bool ImageSimulationMesh::collapse_edge_before(const Tuple& loc) // input is an 
     for (const Tuple& l : n12_locs) {
         qs.erase(l.tid(*this));
     }
-
 
     for (auto& q : qs) {
         cache.changed_tids.push_back(q.first);
