@@ -9,9 +9,6 @@ if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
 endif()
 
 set(SRC_FILES
-    c1_simplification.hpp
-    c1_simplification.cpp 
-
     c1_multimesh.hpp
     c1_multimesh.cpp 
     c1_utils.hpp
@@ -20,6 +17,10 @@ set(SRC_FILES
     clough_tocher/clough_tocher_autogen_matrix_coeffs.hpp
     clough_tocher/clough_tocher_matrices.hpp
     clough_tocher/clough_tocher_matrices.cpp
+
+    c1_simplification.hpp
+    c1_simplification.cpp 
+    c1_simplification_spec.json
     )
 
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

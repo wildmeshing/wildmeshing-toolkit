@@ -20,7 +20,8 @@ bool point_in_tri(
     double s3 = orient2d_sign(p, c, a);
 
     // if same sign then true
-    return (s1 >= 0 && s2 >= 0 && s3 >= 0) || (s1 <= 0 && s2 <= 0 && s3 <= 0);
+    double eps = 1e-10;
+    return (s1 >= -eps && s2 >= -eps && s3 >= -eps) || (s1 <= eps && s2 <= eps && s3 <= eps);
 }
 
 Eigen::Vector2d barycentric_coord_in_tri(
@@ -101,6 +102,37 @@ Eigen::Matrix<double, 10, 1> monomial_basis_eval(const double& u, const double& 
     return monomial_basis_values;
 }
 
+Eigen::Matrix<double, 10, 2> monomial_basis_grad(const double& u, const double& v)
+{
+    Eigen::Matrix<double, 10, 2> monomial_basis_grads;
+    // u
+    monomial_basis_grads(0, 0) = -3 * (-u - v + 1.0) * (-u - v + 1.0);
+    monomial_basis_grads(1, 0) = v * (2 * u + 2 * v - 2.0);
+    monomial_basis_grads(2, 0) = -v * v;
+    monomial_basis_grads(3, 0) = 0;
+    monomial_basis_grads(4, 0) = u * (2 * u + 2 * v - 2.0) + (-u - v + 1.0) * (-u - v + 1.0);
+    monomial_basis_grads(5, 0) = -u * v + v * (-u - v + 1.0);
+    monomial_basis_grads(6, 0) = v * v;
+    monomial_basis_grads(7, 0) = -u * u + 2 * u * (-u - v + 1.0);
+    monomial_basis_grads(8, 0) = 2 * u * v;
+    monomial_basis_grads(9, 0) = 3 * u * u;
+
+    // v
+    monomial_basis_grads(0, 1) = -3 * (-u - v + 1.0) * (-u - v + 1.0);
+    monomial_basis_grads(1, 1) = v * (2 * u + 2 * v - 2.0) + (-u - v + 1.0) * (-u - v + 1.0);
+    monomial_basis_grads(2, 1) = -v * v + 2 * v * (-u - v + 1.0);
+    monomial_basis_grads(3, 1) = 3 * v * v;
+    monomial_basis_grads(4, 1) = u * (2 * u + 2 * v - 2.0);
+    monomial_basis_grads(5, 1) = -u * v + u * (-u - v + 1.0);
+    monomial_basis_grads(6, 1) = 2 * u * v;
+    monomial_basis_grads(7, 1) = -u * u;
+    monomial_basis_grads(8, 1) = u * u;
+    monomial_basis_grads(9, 1) = 0;
+
+    return monomial_basis_grads;
+}
+
+
 Eigen::Vector3d CT_eval(const double& u, const double& v, const Eigen::Matrix<double, 12, 3>& dofs)
 {
     const double w = 1.0 - u - v;
@@ -114,6 +146,22 @@ Eigen::Vector3d CT_eval(const double& u, const double& v, const Eigen::Matrix<do
     val = m_CT_coeffs_subtri.transpose() * bb_vector;
 
     return val;
+}
+
+Eigen::Matrix<double, 3, 2>
+CT_grad(const double& u, const double& v, const Eigen::Matrix<double, 12, 3>& dofs)
+{
+    const double w = 1.0 - u - v;
+    int idx = triangle_ind(u, v, w);
+
+    Eigen::Matrix<double, 10, 2> bb_vector = monomial_basis_grad(u, v);
+    Eigen::Matrix<double, 3, 2> grad;
+
+    Eigen::Matrix<double, 10, 3> m_CT_coeffs_subtri = m_CT_matrices[idx] * dofs;
+
+    grad = m_CT_coeffs_subtri.transpose() * bb_vector;
+
+    return grad;
 }
 
 } // namespace wmtk::components::c1_simplification

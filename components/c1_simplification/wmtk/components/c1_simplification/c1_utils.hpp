@@ -25,8 +25,11 @@ Eigen::Vector2d barycentric_coord_in_tri(
 
 int triangle_ind(const double& u, const double& v, const double& w);
 Eigen::Matrix<double, 10, 1> monomial_basis_eval(const double& u, const double& v, const double& w);
+Eigen::Matrix<double, 10, 2> monomial_basis_grad(const double& u, const double& v);
 
 Eigen::Vector3d CT_eval(const double& u, const double& v, const Eigen::Matrix<double, 12, 3>& dofs);
+Eigen::Matrix<double, 3, 2>
+CT_grad(const double& u, const double& v, const Eigen::Matrix<double, 12, 3>& dofs);
 
 
 } // namespace wmtk::components::c1_simplification

@@ -24,6 +24,8 @@ struct SurfaceMeshVertexAttribute
     // gradient at vertex
     Vector3d grad;
 
+    bool is_cone = false;
+
     SurfaceMeshVertexAttribute() {}
     SurfaceMeshVertexAttribute(const Vector3d& p, const Vector3d& g, const int64_t& tvid)
         : pos(p)
@@ -46,6 +48,7 @@ struct SurfaceMeshFaceAttribute
 {
     // midpoint gradients for local edges
     std::array<Vector3d, 3> midgrad;
+    Eigen::Matrix<double, 12, 3> dofs;
 
     SurfaceMeshFaceAttribute() {}
     SurfaceMeshFaceAttribute(const std::array<Vector3d, 3>& g)
@@ -73,6 +76,8 @@ struct TetMeshVertexAttribute
 struct UVMeshVertexAttribute
 {
     Vector2d pos;
+
+    bool is_cone = false;
 
     UVMeshVertexAttribute() {}
     UVMeshVertexAttribute(const Vector2d& p)
@@ -136,9 +141,13 @@ public:
     bool collapse_edge_before(const Tuple& t) override;
     bool collapse_edge_after(const Tuple& t) override;
 
+    void output_uv_mesh(const std::string& file, bool consolidate = false);
+
+
     struct UVCollpaseInfoCache
     {
         Vector2d old_uv_pos;
+        Vector2d v2_pos;
     };
 
     UVCollpaseInfoCache uv_cache;
@@ -169,20 +178,27 @@ public:
         const MatrixXd& V,
         const MatrixXi& F,
         const std::map<int64_t, int64_t>& s2t_vid_map,
-        const std::vector<Vector3d>& vgrads,
-        const std::vector<std::array<Vector3d, 3>>& egrads);
+        const std::vector<Eigen::Matrix<double, 12, 3>>& dofs);
+    // const std::vector<Vector3d>& vgrads,
+    // const std::vector<std::array<Vector3d, 3>>& egrads);
 
     // mapping functions
     TetMesh::Tuple map_to_tet_edge_tuple(const Tuple& e);
     TetMesh::Tuple map_to_tet_vertex_tuple(const Tuple& v);
     std::vector<Tuple> map_to_uv_edge_tuples(const Tuple& e);
     std::vector<Tuple> map_to_uv_vertex_tuples(const Tuple& v);
+    Tuple map_to_equivalent_uv_tuple(const Tuple& v); // return uv tuple with exact same fid, leid
+                                                      // and same vertex (vid may be different)
 
     bool collapse_edge_before(const Tuple& t) override;
     bool collapse_edge_after(const Tuple& t) override;
     bool multimesh_collapse_edge(const Tuple& t);
 
     Eigen::Matrix<double, 12, 3> assemble_dofs(const size_t& fid);
+
+    void output_surface_mesh(const std::string& file);
+
+    void clear_info_cache();
 
 public:
     double deviation_threshold;
@@ -194,15 +210,96 @@ public:
     Seattrs e_attrs;
     Sfattrs f_attrs;
 
+    struct TrackedVertexInfo
+    {
+        size_t vid;
+        size_t ref_uv_vid; // vid for the collapse-from vertex (v1) in the face containing
+                           // the tracked vertex
+
+        Vector3d surface_pos;
+        Vector2d uv_pos; // uv position for the tracked vertex
+        Vector2d ref_uv_pos; // uv position for the collapse-from vertex (v1) in the face containing
+                             // the tracked vertex
+
+        Vector2d translation; // ref_pos to origin_pos
+        double rotation;
+    };
+
+    struct LayoutPartInfo // info for vert chart parts
+    {
+        size_t ref_uv_vid;
+
+        double rotation;
+        Vector2d translation;
+
+        Vector2d new_pos;
+
+
+        LayoutPartInfo() {}
+
+        LayoutPartInfo(
+            const size_t& vid,
+            const Vector2d& new_p,
+            const Vector2d& trans,
+            const double rot)
+            : ref_uv_vid(vid)
+            , new_pos(new_p)
+            , translation(trans)
+            , rotation(rot)
+        {}
+    };
+
     struct SurfaceCollpaseInfoCache
     {
         Vector3d old_pos;
+        Vector3d v2_pos;
+
+        Vector2d v1_uv_pos;
+        Vector2d v2_uv_pos;
+
+        size_t ref_uv_v1_id;
+        size_t ref_uv_v2_id;
+
+        size_t deleted_fid_1;
+        size_t deleted_fid_2 = -1;
+
+        size_t deleted_vid_1;
+        size_t deleted_vid_2 = -1;
+
+        std::map<size_t, LayoutPartInfo> layout_parts_map;
+        std::vector<TrackedVertexInfo> tracked_vertex_info_cache;
     };
 
     SurfaceCollpaseInfoCache s_cache;
 
     std::shared_ptr<MMTetMesh> tetmesh_ptr;
     std::shared_ptr<MMUVMesh> uvmesh_ptr;
+
+    // for uv tracking
+    struct tracked_vertex
+    {
+        Vector2d uv_pos;
+        Vector3d surface_pos;
+
+        size_t vid;
+        size_t in_tri_id = -1;
+
+        tracked_vertex() {}
+
+        tracked_vertex(const Vector2d& p, const Vector3d& sp, const size_t& id, const size_t& fid)
+            : uv_pos(p)
+            , surface_pos(sp)
+            , vid(id)
+            , in_tri_id(fid)
+        {}
+    };
+
+    std::vector<tracked_vertex> tracked_vertices;
+
+    std::map<size_t, std::vector<size_t>> tracked_fid_to_vids_map;
+    std::map<size_t, size_t> tracked_vid_to_fid_map;
+
+    void output_tracked_vertices(const std::string& filename);
 };
 
 
