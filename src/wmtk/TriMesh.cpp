@@ -696,8 +696,12 @@ void TriMesh::collapse_edge_rollback(
         size_t vid = rollback.first;
         m_vertex_connectivity[vid] = rollback.second;
     }
-    m_vertex_connectivity[new_vid].m_conn_tris.clear();
-    m_vertex_connectivity[new_vid].m_is_removed = true;
+
+    // CHANGE: no new vertex
+    // m_vertex_connectivity[new_vid].m_conn_tris.clear();
+    // m_vertex_connectivity[new_vid].m_is_removed = true;
+
+
     for (auto vid_fid : same_edge_vid_fid) {
         size_t vid = vid_fid.first;
         size_t fid = vid_fid.second;
@@ -769,8 +773,10 @@ void TriMesh::collapse_edge_conn(
 
     // now mark the vertices as removed so the assertion for tuple validity in switch operations
     // won't fail
+
+    // CHANGE: preserve v2 now, do not generate new vertex for collapse
     m_vertex_connectivity[vid1].m_is_removed = true;
-    m_vertex_connectivity[vid2].m_is_removed = true;
+    // m_vertex_connectivity[vid2].m_is_removed = true;
     for (size_t fid : n12_intersect_fids) {
         m_tri_connectivity[fid].m_is_removed = true;
     }
@@ -794,35 +800,60 @@ void TriMesh::collapse_edge_conn(
     }
     // modify the triangles
     // the m_conn_tris needs to be sorted
-    new_vid = get_next_empty_slot_v();
+
+    // CHANGE: new_vid now is v2
+    // new_vid = get_next_empty_slot_v();
+    new_vid = vid2;
+
     for (size_t fid : n1_fids) {
         if (m_tri_connectivity[fid].m_is_removed)
             continue;
         else {
             int j = m_tri_connectivity[fid].find(vid1);
-            m_tri_connectivity[fid].m_indices[j] = new_vid;
+
+            // CHANGE: new_vid now is v2
+            // m_tri_connectivity[fid].m_indices[j] = new_vid;
+            m_tri_connectivity[fid].m_indices[j] = vid2;
         }
     }
-    for (size_t fid : n2_fids) {
-        if (m_tri_connectivity[fid].m_is_removed)
-            continue;
-        else {
-            int j = m_tri_connectivity[fid].find(vid2);
-            m_tri_connectivity[fid].m_indices[j] = new_vid;
-        }
-    }
+    // CHANGE: no need to update
+    // for (size_t fid : n2_fids) {
+    //     if (m_tri_connectivity[fid].m_is_removed)
+    //         continue;
+    //     else {
+    //         int j = m_tri_connectivity[fid].find(vid2);
+    //         m_tri_connectivity[fid].m_indices[j] = new_vid;
+    //     }
+    // }
 
     // now work on vids
     // add in the new vertex
 
+    // CHANGE: change vf connectivity f v2 instead of adding new
+
+    // add preseved v1 faces to v2
+    // clear v2 conn first
+    m_vertex_connectivity[vid2].m_conn_tris.clear();
     for (size_t fid : n12_union_fids) {
-        if (m_tri_connectivity[fid].m_is_removed)
+        if (m_tri_connectivity[fid].m_is_removed) {
             continue;
-        else
-            m_vertex_connectivity[new_vid].m_conn_tris.push_back(fid);
+        } else {
+            m_vertex_connectivity[vid2].m_conn_tris.push_back(fid);
+        }
     }
-    // This is sorting too, and it is important to sort
-    vector_unique(m_vertex_connectivity[new_vid].m_conn_tris);
+
+    // this is sorting
+    // TODO: change to sort, no need to unique
+    vector_unique(m_vertex_connectivity[vid2].m_conn_tris);
+
+    // for (size_t fid : n12_union_fids) {
+    //     if (m_tri_connectivity[fid].m_is_removed)
+    //         continue;
+    //     else
+    //         m_vertex_connectivity[new_vid].m_conn_tris.push_back(fid);
+    // }
+    // // This is sorting too, and it is important to sort
+    // vector_unique(m_vertex_connectivity[new_vid].m_conn_tris);
 
     // remove the erased fids from the vertices' (the one of the triangles that is not the end
     // points of the edge) connectivity list
@@ -844,6 +875,9 @@ void TriMesh::collapse_edge_conn(
     // call back check will be done on this vector of tuples
 
     assert(m_vertex_connectivity[new_vid].m_conn_tris.size() != 0);
+
+    // CHANGE: new_vid to vid2,
+
 
     const size_t gfid = m_vertex_connectivity[new_vid].m_conn_tris[0];
     int j = m_tri_connectivity[gfid].find(new_vid);
