@@ -4,7 +4,6 @@
 #include <memory>
 #include <vector>
 
-#include <geogram/mesh/mesh_io.h>
 #include <jse/jse.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
@@ -17,6 +16,7 @@
 #include <wmtk/utils/Reader.hpp>
 #include <wmtk/utils/io.hpp>
 #include <wmtk/utils/partition_utils.hpp>
+#include <wmtk/utils/resolve_path.hpp>
 
 #include <sec/ShortestEdgeCollapse.h>
 
@@ -24,13 +24,23 @@
 #include "ImageSimulationMesh.h"
 #include "Parameters.h"
 #include "extract_soup.hpp"
+#include "read_image_msh.hpp"
 
 #include "image_simulation_spec.hpp"
+
+// Enables passing Eigen matrices to fmt/spdlog.
+template <typename T>
+struct fmt::formatter<T, std::enable_if_t<std::is_base_of_v<Eigen::DenseBase<T>, T>, char>>
+    : ostream_formatter
+{
+};
+
 
 namespace wmtk::components::image_simulation {
 
 void image_simulation(nlohmann::json json_params)
 {
+    using wmtk::utils::resolve_path;
     using Tuple = TetMesh::Tuple;
 
     // verify input and inject defaults
@@ -43,12 +53,25 @@ void image_simulation(nlohmann::json json_params)
         json_params = spec_engine.inject_defaults(json_params, image_simulation_spec);
     }
 
-    GEO::Process::enable_multithreading(false);
+    const std::filesystem::path root = json_params["json_input_file"];
+
+    // logger settings
+    {
+        std::string log_file_name = json_params["log_file"];
+        if (!log_file_name.empty()) {
+            log_file_name = resolve_path(root, log_file_name).string();
+            wmtk::set_file_logger(log_file_name);
+            logger().flush_on(spdlog::level::info);
+        }
+    }
 
     std::vector<std::string> input_paths = json_params["input"];
+    for (std::string& p : input_paths) {
+        p = resolve_path(root, p).string();
+    }
 
     Parameters params;
-    params.output_path = json_params["output"];
+    params.output_path = resolve_path(root, json_params["output"]).string();
     bool skip_simplify = json_params["skip_simplify"];
     bool use_sample_envelope = json_params["use_sample_envelope"];
     int NUM_THREADS = json_params["num_threads"];
@@ -63,91 +86,104 @@ void image_simulation(nlohmann::json json_params)
 
     std::filesystem::path output_filename = params.output_path;
 
-    // if input is not MSH perform conversion to MSH and ignore everything else
-    {
-        const std::filesystem::path input_filename = input_paths[0];
-
-        if (input_filename.extension() != ".msh") {
-            // convert image to MSH
-            if (output_filename.has_extension() && output_filename.extension() != ".msh") {
-                logger().warn(
-                    "Changing output extension from {} to .msh",
-                    output_filename.extension().string());
-            }
-
-            output_filename.replace_extension(".msh");
-            std::filesystem::path vtu_filename = output_filename;
-            vtu_filename.replace_extension(".vtu");
-
-            logger().info(
-                "Converting image {} into mesh {}",
-                input_paths[0],
-                output_filename.string());
-
-            // convert image into tet mesh
-            EmbedSurface image_mesh(input_paths[0]);
-            {
-                if (!skip_simplify) {
-                    image_mesh.simplify_surface();
-                }
-                image_mesh.remove_duplicates();
-                image_mesh.embed_surface();
-                image_mesh.consolidate();
-
-                image_mesh.write_emb_msh(output_filename.string());
-                if (write_vtu) {
-                    image_mesh.write_emb_vtu(vtu_filename.string());
-                    image_mesh.write_surf_off("debug_surf.off");
-                    image_mesh.write_emb_surf_off("debug_emb_surf.off");
-                }
-            }
-
-            wmtk::logger().info("======= finish conversion =========");
-            return;
-        }
+    if (output_filename.has_extension() && output_filename.extension() != ".msh") {
+        output_filename.replace_extension(".msh");
+        logger().warn(
+            "Extension of provided output filename is ignored. Output will be {}",
+            output_filename.string());
     }
+    output_filename.replace_extension(""); // extension is added back later
 
-    output_filename.replace_extension("");
+    auto get_unique_vtu_name = [&output_filename]() -> std::string {
+        static size_t vtu_counter = 0;
+        return fmt::format("{}_{}.vtu", output_filename.string(), vtu_counter++);
+    };
 
-
-    // read MSH
+    // read image / MSH
     MatrixXd V_input;
+    MatrixXr V_input_r;
     MatrixXi T_input;
-    VectorXi T_input_tag;
-    {
-        MshData msh;
-        msh.load(input_paths[0]);
+    MatrixXi T_input_tag;
 
-        std::vector<Eigen::Vector3d> verts;
-        std::vector<std::array<size_t, 4>> tets;
-        std::vector<int> tets_tag;
+    MatrixXd V_envelope;
+    MatrixXi F_envelope;
 
-        verts.resize(msh.get_num_tet_vertices());
-        tets.resize(msh.get_num_tets());
-        msh.extract_tet_vertices(
-            [&verts](size_t i, double x, double y, double z) { verts[i] << x, y, z; });
-        msh.extract_tets([&tets](size_t i, size_t v0, size_t v1, size_t v2, size_t v3) {
-            tets[i] = {{v0, v1, v2, v3}};
-        });
+    if (std::filesystem::path(input_paths[0]).extension() != ".msh") {
+        // convert images to tet mesh
 
-        tets_tag.resize(msh.get_num_tets());
-        msh.extract_tet_attribute("tag", [&tets_tag](size_t i, std::vector<double> val) {
-            assert(val.size() == 1);
-            tets_tag[i] = val[0];
-        });
-
-        assert(tets.size() == tets_tag.size());
-
-        V_input = V_MAP(verts[0].data(), verts.size(), 3);
-        T_input.resize(tets.size(), 4);
-        T_input_tag.resize(tets_tag.size(), 1);
-        for (size_t i = 0; i < tets.size(); ++i) {
-            T_input(i, 0) = tets[i][0];
-            T_input(i, 1) = tets[i][1];
-            T_input(i, 2) = tets[i][2];
-            T_input(i, 3) = tets[i][3];
-            T_input_tag[i] = tets_tag[i];
+        const std::array<std::array<double, 4>, 4> ijk_to_ras = json_params["ijk_to_ras"];
+        Matrix4d ijk2ras;
+        for (size_t i = 0; i < 4; ++i) {
+            for (size_t j = 0; j < 4; ++j) {
+                ijk2ras(i, j) = ijk_to_ras[i][j];
+            }
         }
+        logger().info("IJK to RAS:\n{}", ijk2ras);
+        /**
+         * R = -x
+         * A = z
+         * S = y
+         */
+        Matrix4d ras2xyz;
+        ras2xyz << -1, 0, 0, 0, //
+            0, 0, 1, 0, //
+            0, 1, 0, 0, //
+            0, 0, 0, 1;
+        Matrix4d ijk2xyz = ras2xyz * ijk2ras;
+
+        logger().info(
+            "Converting images {} into mesh {}",
+            input_paths,
+            output_filename.string() + ".msh");
+
+        const Vector4d single_voxel_max = ijk2xyz * Vector4d::Ones();
+        const Vector4d single_voxel_min = ijk2xyz * Vector4d(0, 0, 0, 1);
+        double eps = (from_homogenuous(single_voxel_max) - from_homogenuous(single_voxel_min))
+                         .cwiseAbs()
+                         .minCoeff() *
+                     0.1;
+        if (eps <= 0) {
+            logger().warn("EPS = {}, ijk_to_ras matix might be broken! Changing eps to 1e-4", eps);
+            eps = 1e-4;
+        }
+
+        // convert image into tet mesh
+        EmbedSurface image_mesh(input_paths, ijk2xyz);
+
+        if (!skip_simplify) {
+            logger().info("Simplify...");
+            image_mesh.simplify_surface(eps);
+            logger().info("done");
+        }
+        image_mesh.remove_duplicates(eps);
+
+        if (write_vtu) {
+            image_mesh.write_surf_off(output_filename.string() + "_input.off");
+        }
+
+        V_envelope = image_mesh.V_surface();
+        F_envelope = image_mesh.F_surface();
+
+        const bool all_rounded = image_mesh.embed_surface();
+        image_mesh.consolidate();
+
+        if (write_vtu) {
+            image_mesh.write_emb_vtu(get_unique_vtu_name());
+            image_mesh.write_emb_surf_off(output_filename.string() + "_input_emb.off");
+        }
+
+        V_input = image_mesh.V_emb();
+        if (!all_rounded) {
+            V_input_r = image_mesh.V_emb_r();
+        }
+        T_input = image_mesh.T_emb();
+        T_input_tag = image_mesh.T_tags();
+
+        wmtk::logger().info("======= finish image-tet conversion =========");
+        // return;
+    } else {
+        // input is a tet mesh
+        read_image_msh(input_paths[0], V_input, T_input, T_input_tag, V_envelope, F_envelope);
     }
 
     params.init(V_input.colwise().minCoeff(), V_input.colwise().maxCoeff());
@@ -156,7 +192,17 @@ void image_simulation(nlohmann::json json_params)
     timer.start();
 
     image_simulation::ImageSimulationMesh mesh(params, params.eps, NUM_THREADS);
-    mesh.init_from_image(V_input, T_input, T_input_tag);
+    // first init envelope
+    if (V_envelope.size() != 0) {
+        mesh.init_envelope(V_envelope, F_envelope);
+    }
+    if (V_input_r.size() == 0) {
+        logger().info("Use float input for TetWild");
+        mesh.init_from_image(V_input, T_input, T_input_tag);
+    } else {
+        logger().warn("Use RATIONAL input for TetWild");
+        mesh.init_from_image(V_input_r, T_input, T_input_tag);
+    }
 
     mesh.consolidate_mesh();
     {
@@ -164,7 +210,7 @@ void image_simulation(nlohmann::json json_params)
         logger().info("flood fill parts {}", num_parts);
     }
 
-    mesh.write_vtu(output_filename.string() + "_0.vtu");
+    if (write_vtu) mesh.write_vtu(get_unique_vtu_name());
 
     //// smooth
     //{
@@ -216,8 +262,8 @@ void image_simulation(nlohmann::json json_params)
 
     wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
     mesh.write_msh(output_filename.string() + ".msh");
-    mesh.write_vtu(output_filename.string() + "_1.vtu");
-    mesh.write_surface(output_filename.string() + "_surface.obj");
+    if (write_vtu) mesh.write_vtu(get_unique_vtu_name());
+    if (write_vtu) mesh.write_surface(output_filename.string() + "_surface.obj");
 
     wmtk::logger().info("======= finish =========");
 }

@@ -17,16 +17,14 @@ namespace wmtk::components::image_simulation {
 
 bool ImageSimulationMesh::smooth_before(const Tuple& t)
 {
-    if (!m_vertex_attribute[t.vid(*this)].on_bbox_faces.empty()) {
-        return false;
-    }
+    const bool r = round(t);
 
-    if (m_vertex_attribute[t.vid(*this)].m_is_rounded) {
-        return true;
-    }
+    if (!m_vertex_attribute[t.vid(*this)].on_bbox_faces.empty()) return false;
+
+    if (m_vertex_attribute[t.vid(*this)].m_is_rounded) return true;
     // try to round.
     // Note: no need to roll back.
-    return round(t);
+    return r;
 }
 
 
@@ -46,11 +44,17 @@ bool ImageSimulationMesh::smooth_after(const Tuple& t)
     std::vector<std::array<double, 12>> assembles(locs.size());
     auto loc_id = 0;
 
-    for (auto& loc : locs) {
+    for (const Tuple& loc : locs) {
         auto& T = assembles[loc_id];
         auto t_id = loc.tid(*this);
 
-        assert(!is_inverted(loc));
+        // assert(!is_inverted(loc));
+        if (is_inverted_f(loc)) {
+            // Neighbors that are not rounded could cause a tet to be inverted in floats
+            // std::cout << "Inverted tet " << m_vertex_attribute[vid].m_posf.transpose() <<
+            // std::endl;
+            return false;
+        }
         auto local_tuples = oriented_tet_vertices(loc);
         std::array<size_t, 4> local_verts;
         for (auto i = 0; i < 4; i++) {
@@ -70,6 +74,48 @@ bool ImageSimulationMesh::smooth_after(const Tuple& t)
     auto old_pos = m_vertex_attribute[vid].m_posf;
     auto old_asssembles = assembles;
 
+    std::vector<std::array<double, 9>> boundary_assemble;
+    // boundary must be collected before smoothing!!!
+    if (m_vertex_attribute[vid].m_is_on_open_boundary) {
+        // debug code
+        // std::cout << "in smoothing open boundary" << std::endl;
+
+        std::set<size_t> unique_eid;
+        for (const Tuple& t : locs) {
+            for (int j = 0; j < 6; j++) {
+                auto e_t = tuple_from_edge(t.tid(*this), j);
+                size_t v1_id = e_t.vid(*this);
+                size_t v2_id = e_t.switch_vertex(*this).vid(*this);
+                if (v1_id != vid && v2_id != vid) {
+                    // edge does not contain point of interest
+                    continue;
+                }
+
+
+                auto eid = e_t.eid(*this);
+                auto [it, suc] = unique_eid.emplace(eid);
+                if (!suc) continue;
+
+                if (is_open_boundary_edge(e_t)) {
+                    if (v2_id == vid) {
+                        std::swap(v1_id, v2_id);
+                    }
+                    std::array<double, 9> coords = {
+                        {m_vertex_attribute[v1_id].m_posf[0],
+                         m_vertex_attribute[v1_id].m_posf[1],
+                         m_vertex_attribute[v1_id].m_posf[2],
+                         m_vertex_attribute[v2_id].m_posf[0],
+                         m_vertex_attribute[v2_id].m_posf[1],
+                         m_vertex_attribute[v2_id].m_posf[2],
+                         m_vertex_attribute[v1_id].m_posf[0],
+                         m_vertex_attribute[v1_id].m_posf[1],
+                         m_vertex_attribute[v1_id].m_posf[2]}}; // {v1, v2, v1}
+                    boundary_assemble.emplace_back(coords);
+                }
+            }
+        }
+    }
+
     m_vertex_attribute[vid].m_posf = wmtk::newton_method_from_stack(
         assembles,
         wmtk::AMIPS_energy,
@@ -81,147 +127,111 @@ bool ImageSimulationMesh::smooth_after(const Tuple& t)
         old_pos.transpose(),
         m_vertex_attribute[vid].m_posf.transpose());
 
-
+    // project to open boundary
     if (m_vertex_attribute[vid].m_is_on_open_boundary) {
-        // debug code
-        // std::cout << "in smoothing open boundary" << std::endl;
+        auto project = Eigen::Vector3d();
 
-        std::vector<std::array<double, 9>> neighbor_assemble;
-        std::set<size_t> unique_eid;
+        if (boundaries_tree.initialized()) {
+            // project to envelope
+            // std::cout << "in smoothing open boundary" << std::endl;
+            boundaries_tree.nearest_point(m_vertex_attribute[vid].m_posf, project);
+        } else {
+            // project to neighborhood
+            project = wmtk::try_project(m_vertex_attribute[vid].m_posf, boundary_assemble);
+        }
+
+        m_vertex_attribute[vid].m_posf = project;
+        // m_vertex_attribute[vid].m_posf = 0.5 * (m_vertex_attribute[vid].m_posf + project); // Project only half way
+    }
+
+    std::vector<std::array<double, 9>> surface_assemble;
+    if (m_vertex_attribute[vid].m_is_on_surface) {
+        std::set<size_t> unique_fid;
         for (auto& t : locs) {
-            for (auto j = 0; j < 6; j++) {
-                auto e_t = tuple_from_edge(t.tid(*this), j);
-                auto eid = e_t.eid(*this);
-                auto [it, suc] = unique_eid.emplace(eid);
+            for (auto j = 0; j < 4; j++) {
+                auto f_t = tuple_from_face(t.tid(*this), j);
+                auto fid = f_t.fid(*this);
+                auto [it, suc] = unique_fid.emplace(fid);
                 if (!suc) continue;
-                if (is_open_boundary_edge(e_t)) {
-                    size_t v1_id = e_t.vid(*this);
-                    size_t v2_id = e_t.switch_vertex(*this).vid(*this);
-                    if (v2_id == vid) {
-                        size_t tmp = v1_id;
-                        v1_id = v2_id;
-                        v2_id = tmp;
-                    }
-                    if (v1_id != vid) continue; // does not contain point of interest
-                    std::array<double, 9> coords = {
-                        {m_vertex_attribute[v1_id].m_posf[0],
-                         m_vertex_attribute[v1_id].m_posf[1],
-                         m_vertex_attribute[v1_id].m_posf[2],
-                         m_vertex_attribute[v2_id].m_posf[0],
-                         m_vertex_attribute[v2_id].m_posf[1],
-                         m_vertex_attribute[v2_id].m_posf[2],
-                         m_vertex_attribute[v1_id].m_posf[0],
-                         m_vertex_attribute[v1_id].m_posf[1],
-                         m_vertex_attribute[v1_id].m_posf[2]}}; // {v1, v2, v1}
-                    neighbor_assemble.emplace_back(coords);
+                if (m_face_attribute[fid].m_is_surface_fs) {
+                    auto vs = get_face_vertices(f_t);
+                    auto vs_id = std::array<size_t, 3>();
+                    for (auto k = 0; k < 3; k++) vs_id[k] = vs[k].vid(*this);
+                    for (auto k : {1, 2})
+                        if (vs_id[k] == vid) {
+                            std::swap(vs_id[k], vs_id[0]);
+                        };
+                    if (vs_id[0] != vid) continue; // does not contain point of interest
+                    std::array<double, 9> coords;
+                    for (auto k = 0; k < 3; k++)
+                        for (auto kk = 0; kk < 3; kk++)
+                            coords[k * 3 + kk] = m_vertex_attribute[vs_id[k]].m_posf[kk];
+                    surface_assemble.emplace_back(coords);
                 }
             }
         }
-
+        // auto project = wmtk::try_project(m_vertex_attribute[vid].m_posf, surface_assemble);
         {
             auto project = Eigen::Vector3d();
 
-            if (boundaries_tree.initialized()) {
-                // project to envelope
-                // std::cout << "in smoothing open boundary" << std::endl;
-                boundaries_tree.nearest_point(m_vertex_attribute[vid].m_posf, project);
-            } else {
-                // project to neighborhood
-                project = wmtk::try_project(m_vertex_attribute[vid].m_posf, neighbor_assemble);
-            }
-
-            m_vertex_attribute[vid].m_posf = project;
-        }
-
-        for (auto& n : neighbor_assemble) {
-            n[0] = m_vertex_attribute[vid].m_posf[0];
-            n[1] = m_vertex_attribute[vid].m_posf[1];
-            n[2] = m_vertex_attribute[vid].m_posf[2];
-            n[6] = m_vertex_attribute[vid].m_posf[0];
-            n[7] = m_vertex_attribute[vid].m_posf[1];
-            n[8] = m_vertex_attribute[vid].m_posf[2];
-        }
-        for (auto& n : neighbor_assemble) {
-            auto boundaries = std::array<Eigen::Vector3d, 3>();
-            for (auto k = 0; k < 3; k++) {
-                for (auto kk = 0; kk < 3; kk++) boundaries[k][kk] = n[k * 3 + kk];
-            }
-            bool is_out = m_open_boundary_envelope.is_outside(boundaries);
-            if (is_out) return false;
-        }
-    } else if (m_vertex_attribute[vid].m_is_on_surface) {
-        std::vector<std::array<double, 9>> neighbor_assemble; // incident surface triangles
-        std::set<size_t> unique_fid;
-        for (const Tuple& t : locs) {
-            for (int j = 0; j < 4; j++) {
-                const Tuple f_t = tuple_from_face(t.tid(*this), j);
-                const size_t fid = f_t.fid(*this);
-                if (!m_face_attribute[fid].m_is_surface_fs) {
-                    continue;
-                }
-                const auto [it, suc] = unique_fid.emplace(fid);
-                if (!suc) {
-                    continue;
-                }
-                const auto vs = get_face_vertices(f_t);
-                auto vs_id = std::array<size_t, 3>();
-                for (int k = 0; k < 3; k++) {
-                    vs_id[k] = vs[k].vid(*this);
-                }
-                for (int k : {1, 2}) {
-                    if (vs_id[k] == vid) {
-                        std::swap(vs_id[k], vs_id[0]);
-                    }
-                }
-                if (vs_id[0] != vid) {
-                    continue; // does not contain point of interest
-                }
-                std::array<double, 9> coords;
-                for (int k = 0; k < 3; k++) {
-                    for (int kk = 0; kk < 3; kk++) {
-                        coords[k * 3 + kk] = m_vertex_attribute[vs_id[k]].m_posf[kk];
-                    }
-                }
-                neighbor_assemble.emplace_back(coords);
-            }
-        }
-        // auto project = wmtk::try_project(m_vertex_attribute[vid].m_posf, neighbor_assemble);
-        {
-            Vector3d project;
-
-            if (triangles_tree->initialized()) {
+            if (triangles_tree->initialized())
                 triangles_tree->nearest_point(m_vertex_attribute[vid].m_posf, project);
-            } else {
-                // Does that even make sense? The vertex is part of these triangles so this
-                // projection doesn't do anything.
-                project = wmtk::try_project(m_vertex_attribute[vid].m_posf, neighbor_assemble);
-            }
+            else
+                project = wmtk::try_project(m_vertex_attribute[vid].m_posf, surface_assemble);
+
 
             m_vertex_attribute[vid].m_posf = project;
         }
 
-        for (auto& n : neighbor_assemble) {
+        for (auto& n : surface_assemble) {
             for (auto kk = 0; kk < 3; kk++) {
                 n[kk] = m_vertex_attribute[vid].m_posf[kk];
             }
         }
-        for (auto& n : neighbor_assemble) {
-            auto tris = std::array<Eigen::Vector3d, 3>();
-            for (auto k = 0; k < 3; k++) {
-                for (auto kk = 0; kk < 3; kk++) {
-                    tris[k][kk] = n[k * 3 + kk];
-                }
+    }
+
+    // update position in boundary_assemble
+    for (auto& n : boundary_assemble) {
+        n[0] = m_vertex_attribute[vid].m_posf[0];
+        n[1] = m_vertex_attribute[vid].m_posf[1];
+        n[2] = m_vertex_attribute[vid].m_posf[2];
+        n[6] = m_vertex_attribute[vid].m_posf[0];
+        n[7] = m_vertex_attribute[vid].m_posf[1];
+        n[8] = m_vertex_attribute[vid].m_posf[2];
+    }
+
+    // check boundary containment
+    for (const auto& n : boundary_assemble) {
+        std::array<Eigen::Vector3d, 3> tri;
+        for (int k = 0; k < 3; k++) {
+            for (int kk = 0; kk < 3; kk++) {
+                tri[k][kk] = n[k * 3 + kk];
             }
-            bool is_out = m_envelope->is_outside(tris);
-            if (is_out) {
-                return false;
-            }
+        }
+        if (m_open_boundary_envelope.is_outside(tri)) {
+            return false;
         }
     }
 
+    // check surface containment
+    for (const auto& n : surface_assemble) {
+        std::array<Eigen::Vector3d, 3> tri;
+        for (int k = 0; k < 3; k++) {
+            for (int kk = 0; kk < 3; kk++) {
+                tri[k][kk] = n[k * 3 + kk];
+            }
+        }
+        if (m_envelope->is_outside(tri)) {
+            return false;
+        }
+    }
+
+    // rational position must be updated  before the inversion check!
+    m_vertex_attribute[vid].m_pos = to_rational(m_vertex_attribute[vid].m_posf);
+
     // quality
     auto max_after_quality = 0.;
-    for (auto& loc : locs) {
+    for (const Tuple& loc : locs) {
         if (is_inverted(loc)) {
             return false;
         }
@@ -233,15 +243,24 @@ bool ImageSimulationMesh::smooth_after(const Tuple& t)
         return false;
     }
 
-
-    m_vertex_attribute[vid].m_pos = to_rational(m_vertex_attribute[vid].m_posf);
-
+    // if (!check_outside()) {
+    //     logger().warn("Second outside check failed");
+    //     logger().warn("#surf = {}", surface_assemble.size());
+    //     for (const auto& n : surface_assemble) {
+    //         logger().warn("{}", n);
+    //     }
+    //     return false;
+    // }
 
     return true;
 }
 
 void ImageSimulationMesh::smooth_all_vertices()
 {
+    // the order is randomized in every iteration but deterministic when executed sequentially
+    static int rnd_seed = 0;
+    srand(rnd_seed++);
+
     igl::Timer timer;
     double time;
     timer.start();
@@ -265,6 +284,7 @@ void ImageSimulationMesh::smooth_all_vertices()
     } else {
         timer.start();
         auto executor = wmtk::ExecutePass<ImageSimulationMesh, wmtk::ExecutionPolicy::kSeq>();
+        executor.priority = [&](auto& m, auto op, auto& t) -> double { return rand(); };
         executor(*this, collect_all_ops);
         time = timer.getElapsedTime();
         wmtk::logger().info("vertex smoothing operation time serial: {}s", time);

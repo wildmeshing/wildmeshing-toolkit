@@ -25,11 +25,11 @@ void read_array_data(
     file.read(reinterpret_cast<char*>(&dim2), sizeof(int));
     file.read(reinterpret_cast<char*>(&dim3), sizeof(int));
 
-    data.resize(dim1, std::vector<std::vector<size_t>>(dim2, std::vector<size_t>(dim3)));
+    data.resize(dim3, std::vector<std::vector<size_t>>(dim2, std::vector<size_t>(dim1)));
 
-    for (int i = 0; i < dim1; ++i) {
+    for (int k = 0; k < dim1; ++k) {
         for (int j = 0; j < dim2; ++j) {
-            for (int k = 0; k < dim3; ++k) {
+            for (int i = 0; i < dim3; ++i) {
                 size_t value;
                 file.read(reinterpret_cast<char*>(&value), sizeof(size_t));
                 data[i][j][k] = value;
@@ -57,11 +57,11 @@ void read_array_data_ascii(
     file >> dim2;
     file >> dim3;
 
-    data.resize(dim1, std::vector<std::vector<size_t>>(dim2, std::vector<size_t>(dim3)));
+    data.resize(dim3, std::vector<std::vector<size_t>>(dim2, std::vector<size_t>(dim1)));
 
-    for (int i = 0; i < dim1; ++i) {
+    for (int k = 0; k < dim1; ++k) {
         for (int j = 0; j < dim2; ++j) {
-            for (int k = 0; k < dim3; ++k) {
+            for (int i = 0; i < dim3; ++i) {
                 size_t value;
                 file >> value;
                 data[i][j][k] = value;
@@ -283,14 +283,12 @@ void tag_tets_from_image(const std::string& filename, ImageSimulationMesh& mesh)
         const int idx_0 = std::floor(center.x());
         const int idx_1 = std::floor(center.y());
         const int idx_2 = std::floor(center.z());
-        // mesh.m_tet_attribute[t.tid(mesh)].tag = idx_0;
         if (idx_0 >= 0 && idx_0 < volumetric_data.size() && idx_1 >= 0 &&
             idx_1 < volumetric_data[0].size() && idx_2 >= 0 &&
             idx_2 < volumetric_data[0][0].size()) {
             // for tag
             int64_t intValue = volumetric_data[idx_0][idx_1][idx_2];
-            mesh.m_tet_attribute[t.tid(mesh)].tag = intValue;
-            // acc_tag.scalar_attribute(t) = intValue;
+            mesh.m_tet_attribute[t.tid(mesh)].tags.push_back(intValue);
         }
     }
 }

@@ -104,6 +104,17 @@ public:
     double compute_edge_cost_collapse(const TriMesh::Tuple& t, double L) const;
     double compute_edge_cost_split(const TriMesh::Tuple& t, double L) const;
     double compute_vertex_valence(const TriMesh::Tuple& t) const;
+    /**
+     * @brief Report statistics.
+     *
+     * Returns a vector with:
+     * average_length
+     * max length
+     * min length
+     * average valence
+     * max valence
+     * min valence
+     */
     std::vector<double> average_len_valen();
     bool split_remeshing(double L);
     bool collapse_remeshing(double L);

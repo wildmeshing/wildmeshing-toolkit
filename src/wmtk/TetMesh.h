@@ -173,6 +173,7 @@ public:
          * @return nullopt if the Tuple is the switch goes off the boundary.
          */
         std::optional<Tuple> switch_tetrahedron(const TetMesh& m) const;
+        std::optional<Tuple> switch_tetrahedron_slow(const TetMesh& m) const;
 
 
         ////testing code

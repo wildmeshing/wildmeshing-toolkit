@@ -11,6 +11,7 @@
 // clang-format on
 
 #include <wmtk/utils/VectorUtils.h>
+#include <bitset>
 #include <filesystem>
 #include <paraviewo/VTUWriter.hpp>
 #include <wmtk/utils/InsertTriangleUtils.hpp>
@@ -88,7 +89,7 @@ std::vector<std::array<size_t, 3>> triangulate_polygon_face(std::vector<wmtk::Ve
 namespace wmtk::components::image_simulation {
 
 void delaunay_box_mesh(
-    const wmtk::Envelope& envelope,
+    const wmtk::SampleEnvelope& envelope,
     const MatrixXd& vertices,
     std::vector<wmtk::delaunay::Point3D>& points,
     std::vector<wmtk::delaunay::Tetrahedron>& tets,
@@ -108,34 +109,61 @@ void delaunay_box_mesh(
             points[i][j] = vertices(i, j);
         }
     }
-    ///box
-    const double delta = diag / 15.0;
-    box_min = vertices_min - Vector3d::Ones() * delta;
-    box_max = vertices_max + Vector3d::Ones() * delta;
-    const int Nx = 3;
-    const int Ny = 3;
-    const int Nz = 3;
-    for (double i = 0; i <= Nx; i++) {
-        for (double j = 0; j <= Ny; j++) {
-            for (double k = 0; k <= Nz; k++) {
-                Vector3d p(
-                    box_min[0] * (1 - i / Nx) + box_max[0] * i / Nx,
-                    box_min[1] * (1 - j / Ny) + box_max[1] * j / Ny,
-                    box_min[2] * (1 - k / Nz) + box_max[2] * k / Nz);
+    // bbox
+    double delta = diag / 15.0;
+    box_min = Vector3d(vertices_min[0] - delta, vertices_min[1] - delta, vertices_min[2] - delta);
+    box_max = Vector3d(vertices_max[0] + delta, vertices_max[1] + delta, vertices_max[2] + delta);
 
-                if (i == 0) p[0] = box_min[0];
-                if (i == Nx) p[0] = box_max[0];
-                if (j == 0) p[1] = box_min[1];
-                if (j == Ny) p[1] = box_max[1];
-                if (k == 0) p[2] = box_min[2];
-                if (k == Nz) // note: have to do, otherwise the value would be slightly different
-                    p[2] = box_max[2];
+    // add corners of domain
+    for (int i = 0; i < 8; i++) {
+        Vector3d p;
+        std::bitset<sizeof(int) * 8> a(i);
+        for (int j = 0; j < 3; j++) {
+            if (a.test(j)) {
+                p[j] = box_max[j];
+            } else {
+                p[j] = box_min[j];
+            }
+        }
+        points.push_back({{p[0], p[1], p[2]}});
+    }
 
-                // ignore points too close to the input
-                if (!envelope.is_outside(p)) {
+    const double voxel_resolution = diag / 20.0;
+    std::array<int, 3> N; // number of grid points per dimension
+    std::array<double, 3> h; // distance between grid points per dimension
+    for (int i = 0; i < 3; i++) {
+        const double D = box_max[i] - box_min[i];
+        N[i] = (D / voxel_resolution) + 1;
+        h[i] = D / N[i];
+    }
+
+    std::array<std::vector<double>, 3> ds;
+    for (int i = 0; i < 3; i++) {
+        ds[i].push_back(box_min[i]);
+        for (int j = 0; j < N[i] - 1; j++) {
+            ds[i].push_back(box_min[i] + h[i] * (j + 1));
+        }
+        ds[i].push_back(box_max[i]);
+    }
+
+    const double min_dis = voxel_resolution * voxel_resolution / 4;
+    //    double min_dis = state.target_edge_len * state.target_edge_len;//epsilon*2
+    for (int i = 0; i < ds[0].size(); i++) {
+        for (int j = 0; j < ds[1].size(); j++) {
+            for (int k = 0; k < ds[2].size(); k++) {
+                if ((i == 0 || i == ds[0].size() - 1) && (j == 0 || j == ds[1].size() - 1) &&
+                    (k == 0 || k == ds[2].size() - 1)) {
                     continue;
                 }
-                points.push_back({{p[0], p[1], p[2]}});
+                const Vector3d p(ds[0][i], ds[1][j], ds[2][k]);
+
+                Eigen::Vector3d n;
+                const double sqd = envelope.nearest_point(p, n);
+
+                if (sqd < min_dis) {
+                    continue;
+                }
+                points.push_back({{ds[0][i], ds[1][j], ds[2][k]}});
             }
         }
     }
@@ -526,6 +554,7 @@ void embed_surface(
 
 void tag_tets_from_image(
     const std::string& filename,
+    const Matrix4d& xyz2ijk,
     const MatrixXd& V,
     const MatrixXi& T,
     VectorXi& T_tags)
@@ -538,11 +567,12 @@ void tag_tets_from_image(
     std::vector<std::vector<std::vector<size_t>>> volumetric_data;
     read_array_data_ascii(volumetric_data, filename);
 
-    tag_tets_from_image(volumetric_data, V, T, T_tags);
+    tag_tets_from_image(volumetric_data, xyz2ijk, V, T, T_tags);
 }
 
 void tag_tets_from_image(
-    const std::vector<std::vector<std::vector<size_t>>>& data,
+    const ImageData& data,
+    const Matrix4d& xyz2ijk,
     const MatrixXd& V,
     const MatrixXi& T,
     VectorXi& T_tags)
@@ -556,7 +586,16 @@ void tag_tets_from_image(
         const Vector3d v2 = V.row(T(i, 2));
         const Vector3d v3 = V.row(T(i, 3));
 
-        const Vector3d center = (v0 + v1 + v2 + v3) * 0.25;
+        Vector3d center = (v0 + v1 + v2 + v3) * 0.25;
+        // map from geometric position to index space, i.e., undo dimension multiplication
+        //center[0] /= dimensions[0];
+        //center[1] /= dimensions[1];
+        //center[2] /= dimensions[2];
+        {
+            Vector4d ch = to_homogenuous(center);
+            ch = xyz2ijk * ch;
+            center = from_homogenuous(ch);
+        }
         const int idx_0 = std::floor(center.x());
         const int idx_1 = std::floor(center.y());
         const int idx_2 = std::floor(center.z());
@@ -570,16 +609,52 @@ void tag_tets_from_image(
     }
 }
 
-EmbedSurface::EmbedSurface(const std::string& img_filename)
-    : m_img_filename(img_filename)
+void tag_tets_from_images(
+    const std::vector<ImageData>& data,
+    const Matrix4d& xyz2ijk,
+    const MatrixXd& V,
+    const MatrixXi& T,
+    MatrixXi& T_tags)
 {
-    if (!std::filesystem::exists(img_filename)) {
-        log_and_throw_error("Image {} does not exist", img_filename);
+    T_tags.resize(T.rows(), data.size());
+    T_tags.setZero();
+
+    for (size_t i = 0; i < data.size(); ++i) {
+        VectorXi t;
+        tag_tets_from_image(data[i], xyz2ijk, V, T, t);
+        T_tags.col(i) = t;
+    }
+}
+
+EmbedSurface::EmbedSurface(const std::vector<std::string>& img_filenames, const Matrix4d& ijk2xyz)
+    : m_img_filenames(img_filenames)
+    , m_ijk2xyz(ijk2xyz)
+    , m_xyz2ijk(ijk2xyz.inverse())
+{
+    m_img_datas.resize(m_img_filenames.size());
+    for (size_t i = 0; i < m_img_filenames.size(); ++i) {
+        if (!std::filesystem::exists(m_img_filenames[i])) {
+            log_and_throw_error("Image {} does not exist", m_img_filenames[i]);
+        }
+        read_array_data_ascii(m_img_datas[i], m_img_filenames[i]);
+        MatrixXd V_single;
+        MatrixXi F_single;
+        extract_triangle_soup_from_image(m_img_datas[i], F_single, V_single);
+
+        assert(V_single.cols() == 3);
+        assert(F_single.cols() == 3);
+
+        const size_t nV_old = m_V_surface.rows();
+        const size_t nF_old = m_F_surface.rows();
+
+        m_V_surface.conservativeResize(m_V_surface.rows() + V_single.rows(), 3);
+        m_V_surface.block(nV_old, 0, V_single.rows(), 3) = V_single;
+
+        F_single.array() += nV_old;
+        m_F_surface.conservativeResize(m_F_surface.rows() + F_single.rows(), 3);
+        m_F_surface.block(nF_old, 0, F_single.rows(), 3) = F_single;
     }
 
-    read_array_data_ascii(m_img_data, m_img_filename);
-
-    extract_triangle_soup_from_image(m_img_data, m_F_surface, m_V_surface);
 
     // process triangle soup
 
@@ -600,7 +675,19 @@ EmbedSurface::EmbedSurface(const std::string& img_filename)
     // using the same error tolerance as in tetwild
     Eigen::VectorXi SVI, SVJ, SVK;
     Eigen::MatrixXd temp_V = V; // for STL file
-    igl::remove_duplicate_vertices(temp_V, 0.01, V, SVI, SVJ);
+
+    const Vector4d single_voxel_max = ijk2xyz * Vector4d::Ones();
+    const Vector4d single_voxel_min = ijk2xyz * Vector4d(0, 0, 0, 1);
+    double eps = (from_homogenuous(single_voxel_max) - from_homogenuous(single_voxel_min))
+                     .cwiseAbs()
+                     .minCoeff() *
+                 0.01;
+    if (eps <= 0) {
+        logger().warn("EPS = {}, ijk_to_ras matix might be broken! Changing eps to 1e-4", eps);
+        eps = 1e-4;
+    }
+
+    igl::remove_duplicate_vertices(temp_V, eps, V, SVI, SVJ);
     for (int i = 0; i < F.rows(); i++) {
         for (int j : {0, 1, 2}) {
             F(i, j) = SVJ[F(i, j)];
@@ -623,14 +710,24 @@ EmbedSurface::EmbedSurface(const std::string& img_filename)
     if (!igl::is_edge_manifold(F) || !igl::is_vertex_manifold(F, dummy)) {
         auto v1 = verts;
         auto tri1 = tris;
+        logger().info("Separate to manifold");
         wmtk::separate_to_manifold(v1, tri1, verts, tris, modified_nonmanifold_v);
     }
+
+    // apply dimensions
+    logger().info("Convert from image to world coordinates (ijk to xyz)");
+    for (Vector3d& v : verts) {
+        Vector4d vh = to_homogenuous(v);
+        vh = m_ijk2xyz * vh;
+        v = from_homogenuous(vh);
+    }
+    logger().info("Finished conversion.");
 
     V_surf_from_vector(verts);
     F_surf_from_vector(tris);
 }
 
-void EmbedSurface::simplify_surface()
+void EmbedSurface::simplify_surface(const double eps)
 {
     // convert to STL vectors
     std::vector<Eigen::Vector3d> verts = V_surf_to_vector();
@@ -639,7 +736,7 @@ void EmbedSurface::simplify_surface()
     app::sec::ShortestEdgeCollapse surf_mesh(verts, 0, false);
 
     // must be a small envelope to ensure correct tet tags later on
-    surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, 0.1);
+    surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, eps);
     assert(surf_mesh.check_mesh_connectivity_validity());
 
     surf_mesh.collapse_shortest(0);
@@ -668,20 +765,20 @@ void EmbedSurface::simplify_surface()
     F_surf_from_vector(f_simplified);
 }
 
-void EmbedSurface::remove_duplicates()
+void EmbedSurface::remove_duplicates(const double eps)
 {
     auto v = V_surf_to_vector();
     auto f = F_surf_to_vector();
 
-    wmtk::remove_duplicates(v, f, 0.01);
+    wmtk::remove_duplicates(v, f, eps);
 
     V_surf_from_vector(v);
     F_surf_from_vector(f);
 }
 
-void EmbedSurface::embed_surface()
+bool EmbedSurface::embed_surface()
 {
-    std::shared_ptr<Envelope> ptr_env;
+    std::shared_ptr<SampleEnvelope> ptr_env;
     {
         const auto v_simplified = V_surf_to_vector();
 
@@ -689,7 +786,7 @@ void EmbedSurface::embed_surface()
         for (size_t i = 0; i < tempF.size(); ++i) {
             tempF[i] = m_F_surface.row(i);
         }
-        ptr_env = std::make_shared<ExactEnvelope>();
+        ptr_env = std::make_shared<SampleEnvelope>();
         ptr_env->init(v_simplified, tempF, 0.5);
     }
 
@@ -713,22 +810,26 @@ void EmbedSurface::embed_surface()
         T_vol.row(i) = Vector4i(t[0], t[1], t[2], t[3]);
     }
 
-    MatrixXr V_emb_r;
     wmtk::components::image_simulation::embed_surface(
         m_V_surface,
         m_F_surface,
         V_vol,
         T_vol,
-        V_emb_r,
+        m_V_emb_r,
         m_T_emb,
         m_F_on_surface);
 
-    if (!VF_rational_to_double(V_emb_r, m_T_emb, m_V_emb)) {
-        log_and_throw_error("Tets are inverted after converting to double precision.");
+    const bool all_rounded = VF_rational_to_double(m_V_emb_r, m_T_emb, m_V_emb);
+
+    if (!all_rounded) {
+        // log_and_throw_error("Tets are inverted after converting to double precision.");
+        logger().info("Not all vertices can be rounded to double precision.");
     }
 
     // add tags
-    tag_tets_from_image(m_img_data, m_V_emb, m_T_emb, m_T_tags);
+    tag_tets_from_images(m_img_datas, m_xyz2ijk, m_V_emb, m_T_emb, m_T_tags);
+
+    return all_rounded;
 }
 
 void EmbedSurface::consolidate()
@@ -748,9 +849,12 @@ void EmbedSurface::consolidate()
     }
 
     MatrixXd V;
+    MatrixXr Vr;
     V.resize(new_vid_counter, 3);
+    Vr.resize(new_vid_counter, 3);
     for (size_t i = 0; i < new_vid_counter; ++i) {
         V.row(i) = m_V_emb.row(new2old[i]);
+        Vr.row(i) = m_V_emb_r.row(new2old[i]);
     }
 
     MatrixXi T;
@@ -770,6 +874,7 @@ void EmbedSurface::consolidate()
     }
 
     m_V_emb = V;
+    m_V_emb_r = Vr;
     m_T_emb = T;
     m_F_on_surface = F_surf;
 }
@@ -789,16 +894,25 @@ void EmbedSurface::write_emb_msh(const std::string& filename) const
     wmtk::MshData msh;
     msh.add_tet_vertices(m_V_emb.rows(), [this](size_t k) -> Vector3d { return m_V_emb.row(k); });
 
-    msh.add_tets(m_T_emb.rows(), [this](size_t k) {
-        std::array<size_t, 4> data{
-            (size_t)m_T_emb(k, 0),
-            (size_t)m_T_emb(k, 1),
-            (size_t)m_T_emb(k, 2),
-            (size_t)m_T_emb(k, 3)};
-        return data;
-    });
+    const size_t n_tet_vertices = m_V_emb.rows();
 
-    msh.add_tet_attribute<1>("tag", [this](size_t i) { return m_T_tags[i]; });
+    msh.add_tets(m_T_emb.rows(), [this](size_t k) { return m_T_emb.row(k); });
+
+    for (size_t i = 0; i < m_T_tags.cols(); ++i) {
+        msh.add_tet_attribute<1>(fmt::format("tag_{}", i), [this, i](size_t j) {
+            return m_T_tags(j, i);
+        });
+    }
+
+    msh.add_physical_group("ImageVolume");
+
+    msh.add_face_vertices();
+    msh.add_faces(m_F_on_surface.rows(), [this](size_t k) { return m_F_on_surface.row(k); });
+    msh.add_physical_group("EmbeddedSurface");
+
+    msh.add_face_vertices(m_V_surface.rows(), [this](size_t k) { return m_V_surface.row(k); });
+    msh.add_faces(m_F_surface.rows(), [this](size_t k) { return m_F_surface.row(k); });
+    msh.add_physical_group("EnvelopeSurface");
 
     msh.save(filename, true);
 }
@@ -806,7 +920,9 @@ void EmbedSurface::write_emb_msh(const std::string& filename) const
 void EmbedSurface::write_emb_vtu(const std::string& filename) const
 {
     paraviewo::VTUWriter writer;
-    writer.add_cell_field("tag", m_T_tags.cast<double>());
+    for (size_t i = 0; i < m_T_tags.cols(); ++i) {
+        writer.add_cell_field(fmt::format("tag_{}", i), m_T_tags.col(i).cast<double>());
+    }
     writer.write_mesh(filename, m_V_emb, m_T_emb);
 }
 

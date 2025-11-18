@@ -317,7 +317,6 @@ public:
     bool is_edge_on_surface(const Tuple& loc);
     bool is_edge_on_bbox(const Tuple& loc);
     //
-    bool adjust_sizing_field(double max_energy);
     void mesh_improvement(int max_its = 80);
     std::tuple<double, double> local_operations(
         const std::array<int, 4>& ops,
@@ -387,7 +386,10 @@ private:
         bool is_limit_length;
 
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
+        // all faces incident to the delete vertex (v1) that are on the tracked surface
         std::vector<std::array<size_t, 3>> surface_faces;
+        // all edges incident to the deleted vertex(v1) that are on the open boundary
+        std::vector<std::array<size_t, 2>> boundary_edges;
         std::vector<size_t> changed_tids;
 
         std::vector<std::array<size_t, 2>> failed_edges;
@@ -417,7 +419,9 @@ private:
 
     // for incremental tetwild
 public:
-    // deprecated
+    /**
+     * Will be removed as soon as the bug in the faster version is fixed.
+     */
     void insertion_by_volumeremesher_old(
         const std::vector<Vector3d>& vertices,
         const std::vector<std::array<size_t, 3>>& faces,
@@ -427,6 +431,10 @@ public:
         std::vector<std::array<size_t, 4>>& tets_after,
         std::vector<bool>& tet_face_on_input_surface);
 
+    /**
+     * This version of insertion should be faster BUT IS BROKEN!!!
+     * DO NOT USE!!!!!
+     */
     void insertion_by_volumeremesher(
         const std::vector<Vector3d>& vertices,
         const std::vector<std::array<size_t, 3>>& faces,
@@ -483,6 +491,7 @@ public:
     // for open boundary
     void find_open_boundary();
     bool is_open_boundary_edge(const Tuple& e);
+    bool is_open_boundary_edge(const std::array<size_t, 2>& e);
 
     // for topology preservation
     int count_vertex_links(const Tuple& v);

@@ -18,8 +18,6 @@
 #include "wmtk/utils/InsertTriangleUtils.hpp"
 #include "wmtk/utils/Logger.hpp"
 
-#include <geogram/basic/process.h>
-#include <geogram/mesh/mesh_io.h>
 #include <igl/Timer.h>
 #include <igl/boundary_facets.h>
 #include <igl/euler_characteristic.h>
@@ -98,8 +96,6 @@ void tetwild(nlohmann::json json_params)
 
     ZoneScopedN("tetwildmain");
 
-    GEO::Process::enable_multithreading(false);
-
     tetwild::Parameters params;
 
     std::vector<std::string> input_paths = json_params["input"];
@@ -121,6 +117,7 @@ void tetwild(nlohmann::json json_params)
         std::string log_file_name = json_params["log_file"];
         if (!log_file_name.empty()) {
             wmtk::set_file_logger(log_file_name);
+            logger().flush_on(spdlog::level::info);
         }
     }
 
@@ -250,7 +247,7 @@ void tetwild(nlohmann::json json_params)
     igl::Timer insertion_timer;
     insertion_timer.start();
 
-    mesh.insertion_by_volumeremesher(
+    mesh.insertion_by_volumeremesher_old(
         vsimp,
         fsimp,
         v_rational,

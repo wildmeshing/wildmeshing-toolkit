@@ -47,7 +47,7 @@ public:
     // for open boundary
     bool m_is_on_open_boundary = false;
 
-    VertexAttributes(){};
+    VertexAttributes() {};
     VertexAttributes(const Vector3r& p);
 };
 
@@ -95,7 +95,7 @@ class TetAttributes
 public:
     double m_quality;
     double m_winding_number = 0;
-    int64_t tag = 0;
+    std::vector<int64_t> tags;
     int part_id = -1;
 };
 
@@ -103,12 +103,15 @@ class ImageSimulationMesh : public wmtk::TetMesh
 {
 public:
     int m_debug_print_counter = 0;
+    size_t m_tags_count = 0;
 
     double time_env = 0.0;
     igl::Timer isout_timer;
     const double MAX_ENERGY = std::numeric_limits<double>::max();
 
     Parameters& m_params;
+    std::vector<Vector3d> m_V_envelope;
+    std::vector<Vector3i> m_F_envelope;
     std::shared_ptr<Envelope> m_envelope;
     // for surface projection
     std::shared_ptr<SampleEnvelope> triangles_tree;
@@ -273,6 +276,7 @@ public:
         return m_vertex_attribute[loc.vid(*this)].partition_id;
     }
 
+    void init_envelope(const MatrixXd& V, const MatrixXi& F);
 
     double get_length2(const Tuple& l) const;
 
@@ -323,6 +327,10 @@ public:
     bool swap_face_before(const Tuple& t) override;
     bool swap_face_after(const Tuple& t) override;
 
+    /**
+     * @brief Inversion check using only floating point numbers.
+     */
+    bool is_inverted_f(const Tuple& loc) const;
     bool is_inverted(const Tuple& loc) const;
     double get_quality(const Tuple& loc) const;
 
@@ -338,7 +346,6 @@ public:
     bool is_edge_on_surface(const Tuple& loc);
     bool is_edge_on_bbox(const Tuple& loc);
     //
-    bool adjust_sizing_field(double max_energy);
     void mesh_improvement(int max_its = 80);
     std::tuple<double, double> local_operations(
         const std::array<int, 4>& ops,
@@ -399,7 +406,10 @@ private:
         bool is_limit_length;
 
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
+        // all faces incident to the delete vertex (v1) that are on the tracked surface
         std::vector<std::array<size_t, 3>> surface_faces;
+        // all edges incident to the deleted vertex(v1) that are on the open boundary
+        std::vector<std::array<size_t, 2>> boundary_edges;
         std::vector<size_t> changed_tids;
 
         std::vector<std::array<size_t, 2>> failed_edges;
@@ -423,7 +433,7 @@ private:
     {
         double max_energy;
         std::map<std::array<size_t, 3>, FaceAttributes> changed_faces;
-        int64_t tet_tag;
+        std::vector<int64_t> tet_tags;
     };
     tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
 
@@ -462,7 +472,10 @@ public:
      * @param F #Fx3 vertex IDs of all embedded faces
      * @param T_tags #Tx1 image data represented by the individual tets
      */
-    void init_from_image(const MatrixXd& V, const MatrixXi& T, const VectorXi& T_tags);
+    void init_from_image(const MatrixXr& V, const MatrixXi& T, const MatrixXi& T_tags);
+    void init_from_image(const MatrixXd& V, const MatrixXi& T, const MatrixXi& T_tags);
+
+    void init_surfaces_and_boundaries();
 
     std::vector<std::array<size_t, 3>> triangulate_polygon_face(std::vector<Vector3r> points);
 
@@ -488,6 +501,7 @@ public:
      * could cause a false positive result.
      */
     bool is_open_boundary_edge(const Tuple& e);
+    bool is_open_boundary_edge(const std::array<size_t, 2>& e);
 
     // for topology preservation
     int count_vertex_links(const Tuple& v);

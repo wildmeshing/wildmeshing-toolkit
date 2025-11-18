@@ -6,6 +6,8 @@
 
 namespace wmtk::components::image_simulation {
 
+using ImageData = std::vector<std::vector<std::vector<size_t>>>;
+
 /**
  * @brief Generate the tet mesh that contains all input vertices.
  *
@@ -67,15 +69,24 @@ void embed_surface(
 
 void tag_tets_from_image(
     const std::string& filename,
+    const Matrix4d& xyz2ijk,
     const MatrixXd& V,
     const MatrixXi& T,
     VectorXi& T_tags);
 
 void tag_tets_from_image(
-    const std::vector<std::vector<std::vector<size_t>>>& data,
+    const ImageData& data,
+    const Matrix4d& xyz2ijk,
     const MatrixXd& V,
     const MatrixXi& T,
     VectorXi& T_tags);
+
+void tag_tets_from_images(
+    const std::vector<ImageData>& data,
+    const Matrix4d& xyz2ijk,
+    const MatrixXd& V,
+    const MatrixXi& T,
+    MatrixXi& T_tags);
 
 /**
  * A class for reading an image and converting it into a tet mesh.
@@ -83,13 +94,21 @@ void tag_tets_from_image(
 class EmbedSurface
 {
 public:
-    EmbedSurface(const std::string& img_filename);
+    EmbedSurface(const std::vector<std::string>& img_filenames, const Matrix4d& ijk2xyz);
 
-    void simplify_surface();
+    /**
+     * @brief Simplify the input surface while staying within the eps envelope.
+     *
+     * @param eps The absolute envelope thickness.
+     */
+    void simplify_surface(const double eps);
 
-    void remove_duplicates();
+    /**
+     * @brief Merge vertices that are closer than eps.
+     */
+    void remove_duplicates(const double eps);
 
-    void embed_surface();
+    bool embed_surface();
 
     /**
      * @brief Remove unreferenced vertices.
@@ -97,9 +116,12 @@ public:
     void consolidate();
 
     const MatrixXd& V_emb() const { return m_V_emb; }
+    const MatrixXr& V_emb_r() const { return m_V_emb_r; }
+    const MatrixXd& V_surface() const { return m_V_surface; }
     const MatrixXi& T_emb() const { return m_T_emb; }
-    const VectorXi& T_tags() const { return m_T_tags; }
+    const MatrixXi& T_tags() const { return m_T_tags; }
     const MatrixXi& F_on_surface() const { return m_F_on_surface; }
+    const MatrixXi& F_surface() const { return m_F_surface; }
 
     /**
      * @brief Write surface as read from image.
@@ -129,8 +151,10 @@ private:
     void F_surf_from_vector(const std::vector<std::array<size_t, 3>>& tris);
 
 private:
-    std::string m_img_filename;
-    std::vector<std::vector<std::vector<size_t>>> m_img_data;
+    std::vector<std::string> m_img_filenames;
+    std::vector<ImageData> m_img_datas;
+    Matrix4d m_ijk2xyz; // transformation matrix from image to xyz coordinates
+    Matrix4d m_xyz2ijk;
 
     // the surface separating all tags
     MatrixXd m_V_surface;
@@ -140,11 +164,12 @@ private:
 
     // the embedding
     MatrixXd m_V_emb;
+    MatrixXr m_V_emb_r;
     MatrixXi m_T_emb;
     // triangles of the embedding representing the surface
     MatrixXi m_F_on_surface;
     // tags on the tets
-    VectorXi m_T_tags;
+    MatrixXi m_T_tags;
 };
 
 } // namespace wmtk::components::image_simulation

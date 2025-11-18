@@ -12,7 +12,7 @@
 #include <tbb/parallel_for.h>
 #include <tbb/parallel_sort.h>
 #include <tbb/task_arena.h>
-#include <fastenvelope/FastEnvelope.h>
+#include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
@@ -54,7 +54,8 @@ struct EdgeAttributes
 class QSLIM : public wmtk::TriMesh
 {
 public:
-    fastEnvelope::FastEnvelope m_envelope;
+    // wmtk::ExactEnvelope m_envelope;
+    wmtk::SampleEnvelope m_envelope;
     bool m_has_envelope = false;
     wmtk::AttributeCollection<VertexAttributes> vertex_attrs;
     wmtk::AttributeCollection<FaceAttributes> face_attrs;

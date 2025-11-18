@@ -96,6 +96,7 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
     cache.changed_faces.clear();
     cache.changed_tids.clear();
     cache.surface_faces.clear();
+    cache.boundary_edges.clear();
 
     size_t v1_id = loc.vid(*this);
     auto loc1 = switch_vertex(loc);
@@ -165,11 +166,11 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
 
     std::map<size_t, double> qs;
     cache.max_energy = 0;
-    for (auto& l : n1_locs) {
+    for (const Tuple& l : n1_locs) {
         qs[l.tid(*this)] = m_tet_attribute[l.tid(*this)].m_quality; // get_quality(l);
         cache.max_energy = std::max(cache.max_energy, qs[l.tid(*this)]);
     }
-    for (auto& l : n12_locs) {
+    for (const Tuple& l : n12_locs) {
         qs.erase(l.tid(*this));
     }
 
@@ -202,14 +203,16 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
     }
 
     if (VA[v1_id].m_is_on_surface) {
+        // this code must check if a face is tagged as boundary
+        // only checking the vertices is not enough
         std::vector<std::array<size_t, 3>> fs;
-        for (auto& t : n1_locs) {
-            auto vs = oriented_tet_vids(t);
+        for (const Tuple& t : n1_locs) {
+            const auto vs = oriented_tet_vids(t);
 
             int j_v1 = -1;
             auto skip = [&]() {
-                for (auto j = 0; j < 4; j++) {
-                    auto vid = vs[j];
+                for (int j = 0; j < 4; j++) {
+                    const size_t vid = vs[j];
                     if (vid == v2_id) {
                         return true; // v1-v2 definitely not on surface.
                     }
@@ -224,6 +227,11 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
                 auto vb = vs[(j_v1 + 1 + (k + 1) % 3) % 4];
                 if ((VA[va].m_is_on_surface && VA[vb].m_is_on_surface)) {
                     std::array<size_t, 3> f = {{v1_id, va, vb}};
+                    const auto [f_tuple, fid] = tuple_from_face(f);
+                    if (!m_face_attribute[fid].m_is_surface_fs) {
+                        // check if this face is actually on the surface
+                        continue;
+                    }
                     std::sort(f.begin(), f.end());
                     fs.push_back(f);
                 }
@@ -238,6 +246,50 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
                 cache.surface_faces.push_back(f);
             }
         }
+
+        std::vector<std::array<size_t, 2>> bs;
+        for (const Tuple& t : n1_locs) {
+            const auto vs = oriented_tet_vids(t);
+
+            int j_v1 = -1;
+            for (int j = 0; j < 4; j++) {
+                const size_t vid = vs[j];
+                if (vid == v1_id) {
+                    j_v1 = j;
+                }
+            }
+
+            for (int k = 0; k < 3; k++) {
+                auto va = vs[(j_v1 + 1 + k) % 4];
+                auto vb = vs[(j_v1 + 1 + (k + 1) % 3) % 4];
+                if ((VA[va].m_is_on_surface && VA[vb].m_is_on_surface)) {
+                    std::array<size_t, 3> f = {{v1_id, va, vb}};
+                    const auto [f_tuple, fid] = tuple_from_face(f);
+                    if (!m_face_attribute[fid].m_is_surface_fs) {
+                        // check if this face is actually on the surface
+                        continue;
+                    }
+                    if (va != v2_id) {
+                        std::array<size_t, 2> ba = {{v1_id, va}};
+                        if (is_open_boundary_edge(ba)) {
+                            ba[0] = v2_id; // replace v1 with v2 for check in `after` function
+                            std::sort(ba.begin(), ba.end());
+                            bs.push_back(ba);
+                        }
+                    }
+                    if (vb != v2_id) {
+                        std::array<size_t, 2> bb = {{v1_id, vb}};
+                        if (is_open_boundary_edge(bb)) {
+                            bb[0] = v2_id; // replace v1 with v2 for check in `after` function
+                            std::sort(bb.begin(), bb.end());
+                            bs.push_back(bb);
+                        }
+                    }
+                }
+            }
+        }
+        wmtk::vector_unique(bs);
+        cache.boundary_edges = bs;
     }
 
     // for (size_t tid : cache.changed_tids) { // fortest
@@ -298,10 +350,10 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
 
         if (is_inverted(tet)) {
             // if (debug_flag) std::cout << "tet inverted reject" << std::endl;
-
             return false;
         }
         double q = get_quality(tet);
+        // only check quality if v1 is rounded
         if (VA[v1_id].m_is_rounded && q > cache.max_energy) {
             // if (debug_flag)
             //     std::cout << "energy reject " << q << " " << cache.max_energy << std::endl;
@@ -313,9 +365,13 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
 
     // wmtk::logger().info("changed qualities: {}", qs);
 
+
+    // open boundary - must be set before checking for open boundary
+    VA[v2_id].m_is_on_open_boundary =
+        VA[v1_id].m_is_on_open_boundary || VA[v2_id].m_is_on_open_boundary;
+
     // surface
     // and open boundary
-
     if (cache.edge_length > 0) {
         for (auto& vids : cache.surface_faces) {
             // surface envelope
@@ -327,22 +383,29 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
                 return false;
             }
 
-            // open boundary envelope
-            // by checking each edge on cached surface
-            if (VA[vids[0]].m_is_on_open_boundary && VA[vids[1]].m_is_on_open_boundary) {
-                if (m_open_boundary_envelope.is_outside(
-                        {{VA[vids[0]].m_posf, VA[vids[1]].m_posf, VA[vids[0]].m_posf}}))
-                    return false;
-            }
-            if (VA[vids[1]].m_is_on_open_boundary && VA[vids[2]].m_is_on_open_boundary) {
-                if (m_open_boundary_envelope.is_outside(
-                        {{VA[vids[1]].m_posf, VA[vids[2]].m_posf, VA[vids[1]].m_posf}}))
-                    return false;
-            }
-            if (VA[vids[2]].m_is_on_open_boundary && VA[vids[0]].m_is_on_open_boundary) {
-                if (m_open_boundary_envelope.is_outside(
-                        {{VA[vids[2]].m_posf, VA[vids[0]].m_posf, VA[vids[2]].m_posf}}))
-                    return false;
+            // // open boundary envelope
+            // // by checking each edge on cached surface
+            // if (VA[vids[0]].m_is_on_open_boundary && VA[vids[1]].m_is_on_open_boundary) {
+            //     if (m_open_boundary_envelope.is_outside(
+            //             {{VA[vids[0]].m_posf, VA[vids[1]].m_posf, VA[vids[0]].m_posf}}))
+            //         return false;
+            // }
+            // if (VA[vids[1]].m_is_on_open_boundary && VA[vids[2]].m_is_on_open_boundary) {
+            //     if (m_open_boundary_envelope.is_outside(
+            //             {{VA[vids[1]].m_posf, VA[vids[2]].m_posf, VA[vids[1]].m_posf}}))
+            //         return false;
+            // }
+            // if (VA[vids[2]].m_is_on_open_boundary && VA[vids[0]].m_is_on_open_boundary) {
+            //     if (m_open_boundary_envelope.is_outside(
+            //             {{VA[vids[2]].m_posf, VA[vids[0]].m_posf, VA[vids[2]].m_posf}}))
+            //         return false;
+            // }
+        }
+        for (const auto& vids : cache.boundary_edges) {
+            if (!is_open_boundary_edge(vids)) {
+                // edge was an open boundary before (that is why it got cached) but is not anymore
+                // after collapse
+                return false;
             }
         }
     }
@@ -355,9 +418,6 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
     // vertex attr
     round(loc);
     VA[v2_id].m_is_on_surface = VA[v1_id].m_is_on_surface || VA[v2_id].m_is_on_surface;
-    // open boundary
-    VA[v2_id].m_is_on_open_boundary =
-        VA[v1_id].m_is_on_open_boundary || VA[v2_id].m_is_on_open_boundary;
 
     // no need to update on_bbox_faces
     // face attr

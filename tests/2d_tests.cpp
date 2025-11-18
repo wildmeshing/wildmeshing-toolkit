@@ -303,6 +303,49 @@ TEST_CASE("vertex_edge switches equals indentity", "[tuple_operation]")
     }
 }
 
+TEST_CASE("tri_switch_faces", "[tuple_operation]")
+{
+    TriMesh m;
+    using Tuple = TriMesh::Tuple;
+
+    SECTION("manifold")
+    {
+        std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}};
+        m.init(4, tris);
+    }
+    SECTION("non-manifold")
+    {
+        std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}, {{4, 2, 1}}};
+        m.init(5, tris);
+    }
+
+    Tuple t(1, 0, 0, m);
+    auto sw = t.switch_faces(m);
+    REQUIRE(!sw.empty());
+    for (const Tuple& t_opp : sw) {
+        CHECK_FALSE(t_opp.fid(m) == t.fid(m));
+        CHECK(t_opp.vid(m) == t.vid(m));
+        CHECK(t_opp.switch_vertex(m).vid(m) == t.switch_vertex(m).vid(m));
+        CHECK(t_opp.eid(m) == t.eid(m));
+    }
+}
+
+TEST_CASE("get_one_ring_edges_for_vertex", "[TriMesh]")
+{
+    TriMesh m;
+    using Tuple = TriMesh::Tuple;
+
+    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}};
+    m.init(4, tris);
+
+    const auto vs = m.get_vertices();
+    REQUIRE(vs.size() == 4);
+    CHECK(m.get_one_ring_edges_for_vertex(vs[0]).size() == 2);
+    CHECK(m.get_one_ring_edges_for_vertex(vs[1]).size() == 3);
+    CHECK(m.get_one_ring_edges_for_vertex(vs[2]).size() == 3);
+    CHECK(m.get_one_ring_edges_for_vertex(vs[3]).size() == 2);
+}
+
 TEST_CASE("test_link_check", "[test_pre_check]")
 {
     TriMesh m;
@@ -362,7 +405,10 @@ TEST_CASE("test unique edge", "[test_2d_operation]")
 
 TEST_CASE("edge_collapse", "[test_2d_operation]")
 {
-    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}, {{4, 1, 0}}, {{0, 2, 5}}};
+    // std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 3, 2}}, {{4, 1, 0}}, {{0, 2,
+    // 5}}};
+    using namespace utils::examples::tri;
+    TriMeshVF input = edge_region();
     SECTION("rollback")
     {
         class NoCollapseMesh : public TriMesh
@@ -371,8 +417,10 @@ TEST_CASE("edge_collapse", "[test_2d_operation]")
             bool collapse_edge_after(const TriMesh::Tuple& loc) override { return false; };
         };
         auto m = NoCollapseMesh();
-        m.init(6, tris);
-        const auto tuple = NoCollapseMesh::Tuple(1, 0, 0, m);
+        // m.init(6, tris);
+        m.init(input.F);
+        // const auto tuple = NoCollapseMesh::Tuple(1, 0, 0, m);
+        const auto tuple = m.tuple_from_vids(4, 5, 1);
         REQUIRE(tuple.is_valid(m));
         std::vector<TriMesh::Tuple> dummy;
         REQUIRE_FALSE(m.collapse_edge(tuple, dummy));
@@ -387,8 +435,10 @@ TEST_CASE("edge_collapse", "[test_2d_operation]")
         };
         auto m = Collapse();
 
-        m.init(6, tris);
-        const auto tuple = Collapse::Tuple(1, 0, 0, m);
+        // m.init(6, tris);
+        m.init(input.F);
+        // const auto tuple = Collapse::Tuple(1, 0, 0, m);
+        const auto tuple = m.tuple_from_vids(4, 5, 1);
 
         REQUIRE(tuple.is_valid(m));
         std::vector<TriMesh::Tuple> dummy;
@@ -473,6 +523,17 @@ TEST_CASE("split_operation", "[test_2d_operation]")
         m.init(4, tris);
         auto edges = m.get_edges();
         TriMesh::Tuple edge(1, 0, 0, m);
+        std::vector<TriMesh::Tuple> dummy;
+        assert(edge.is_valid(m));
+        REQUIRE(m.split_edge(edge, dummy));
+        for (auto e : edges) REQUIRE_FALSE(e.is_valid(m));
+    }
+    SECTION("non-manifold-split")
+    {
+        std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{0, 3, 1}}, {{0, 1, 4}}};
+        m.init(5, tris);
+        auto edges = m.get_edges();
+        TriMesh::Tuple edge(0, 2, 0, m);
         std::vector<TriMesh::Tuple> dummy;
         assert(edge.is_valid(m));
         REQUIRE(m.split_edge(edge, dummy));
@@ -606,5 +667,52 @@ TEST_CASE("tri_face_split", "[test_2d_operation]")
             CHECK(m.edge_attrs[i].tag == 0);
         }
         CHECK(m.face_attrs[0].tag == 0);
+    }
+}
+
+TEST_CASE("non-manifold-edge-collapse", "[test_2d_operation]")
+{
+    using Tuple = TriMesh::Tuple;
+
+    TriMesh m;
+    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{0, 3, 1}}, {{0, 1, 4}}};
+    m.init(5, tris);
+
+    // split non-manifold edge
+    {
+        auto edges = m.get_edges();
+
+        Tuple edge = m.tuple_from_vids(0, 1, 2);
+        REQUIRE(edge.switch_faces(m).size() == 2);
+
+        std::vector<TriMesh::Tuple> dummy;
+        assert(edge.is_valid(m));
+        REQUIRE(m.split_edge(edge, dummy));
+
+        for (const Tuple& e : edges) {
+            REQUIRE_FALSE(e.is_valid(m));
+        }
+
+        REQUIRE(m.get_edges().size() == 11);
+    }
+    // collapse non-manifold edge
+    {
+        Tuple edge = m.tuple_from_vids(5, 0, 2);
+        std::vector<Tuple> e_before;
+        e_before.emplace_back(edge);
+        for (const Tuple& e : edge.switch_faces(m)) {
+            e_before.emplace_back(e);
+        }
+        REQUIRE(e_before.size() == 3);
+
+        std::vector<TriMesh::Tuple> dummy;
+        assert(edge.is_valid(m));
+        REQUIRE(m.collapse_edge(edge, dummy));
+
+        for (const Tuple& e : e_before) {
+            REQUIRE_FALSE(e.is_valid(m));
+        }
+        CHECK(m.get_vertices().size() == 5);
+        CHECK(m.get_faces().size() == 3);
     }
 }

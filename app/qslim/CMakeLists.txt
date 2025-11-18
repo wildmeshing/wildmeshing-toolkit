@@ -14,6 +14,7 @@ target_link_libraries(wmtk_qslim_lib PUBLIC
 	wmtk::toolkit
 	wmtk::data
 	igl::predicates
+	jse::jse
 	FastEnvelope
 )
 

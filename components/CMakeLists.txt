@@ -20,4 +20,5 @@ add_subdirectory("tetwild/wmtk/components/tetwild")
 add_subdirectory("simplicial_embedding/wmtk/components/simplicial_embedding")
 add_subdirectory("image_simulation/wmtk/components/image_simulation")
 add_subdirectory("c1_simplification/wmtk/components/c1_simplification")
+add_subdirectory("tet_remeshing/wmtk/components/tet_remeshing")
 

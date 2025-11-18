@@ -1,7 +1,7 @@
 # Include more application dependencies here
 include(cli11)
 
-file(GLOB APP_SOURCES CONFIGURE_DEPENDS "*.h" "*.cpp")
+file(GLOB APP_SOURCES CONFIGURE_DEPENDS "*.hpp" "*.h" "*.cpp")
 add_executable(qslim_app ${APP_SOURCES})
 # Direct dependencies
 target_link_libraries(qslim_app PUBLIC

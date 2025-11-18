@@ -10,6 +10,7 @@ nlohmann::json image_simulation_spec = R"(
     "required": ["application", "input"],
     "optional": [
       "output",
+      "ijk_to_ras",
       "skip_simplify",
       "use_sample_envelope",
       "num_threads",
@@ -18,7 +19,8 @@ nlohmann::json image_simulation_spec = R"(
       "eps",
       "length_rel",
       "stop_energy",
-      "write_vtu"
+      "write_vtu",
+      "log_file"
     ]
   },
   {
@@ -45,6 +47,29 @@ nlohmann::json image_simulation_spec = R"(
     "doc": "Output file name (without extension)."
   },
   {
+    "pointer": "/ijk_to_ras",
+    "type": "list",
+    "doc": "Transformation matrix (4x4 homogeneous coordinates) from image coordinates to the RAS coordinate system.",
+    "min": 4,
+    "max": 4,
+    "default": [
+      [1, 0, 0, 0],
+      [0, 1, 0, 0],
+      [0, 0, 1, 0],
+      [0, 0, 0, 1]
+    ]
+  },
+  {
+    "pointer": "/ijk_to_ras/*",
+    "type": "list",
+    "min": 4,
+    "max": 4
+  },
+  {
+    "pointer": "/ijk_to_ras/*/*",
+    "type": "float"
+  },
+  {
     "pointer": "/skip_simplify",
     "type": "bool",
     "default": false,
@@ -65,7 +90,7 @@ nlohmann::json image_simulation_spec = R"(
   {
     "pointer": "/max_iterations",
     "type": "int",
-    "default": 10,
+    "default": 80,
     "doc": "Maximum iterations before stopping."
   },
   {
@@ -97,6 +122,12 @@ nlohmann::json image_simulation_spec = R"(
     "type": "bool",
     "default": false,
     "doc": "Write not just MSH but also VTU output."
+  },
+  {
+    "pointer": "/log_file",
+    "type": "string",
+    "default": "",
+    "doc": "Logs are not just printed on the terminal but also saved in this file."
   }
 ]
 )"_json;
