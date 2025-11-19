@@ -279,9 +279,9 @@ void embed_surface(
         v_rational[i][1].init(embedded_vertices[3 * i + 1].get_mpq_t());
         v_rational[i][2].init(embedded_vertices[3 * i + 2].get_mpq_t());
 #else
-        v_rational[i][0].init(embedded_vertices[3 * i + 0].get_str());
-        v_rational[i][1].init(embedded_vertices[3 * i + 1].get_str());
-        v_rational[i][2].init(embedded_vertices[3 * i + 2].get_str());
+        v_rational[i][0].init_from_bin(embedded_vertices[3 * i + 0].get_str());
+        v_rational[i][1].init_from_bin(embedded_vertices[3 * i + 1].get_str());
+        v_rational[i][2].init_from_bin(embedded_vertices[3 * i + 2].get_str());
 #endif
     }
 

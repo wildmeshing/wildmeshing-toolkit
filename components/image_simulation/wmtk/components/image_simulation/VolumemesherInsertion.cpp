@@ -217,9 +217,9 @@ void ImageSimulationMesh::insertion_by_volumeremesher(
         v_rational.back()[1].init(embedded_vertices[3 * i + 1].get_mpq_t());
         v_rational.back()[2].init(embedded_vertices[3 * i + 2].get_mpq_t());
 #else
-        v_rational.back()[0].init(embedded_vertices[3 * i].get_str());
-        v_rational.back()[1].init(embedded_vertices[3 * i + 1].get_str());
-        v_rational.back()[2].init(embedded_vertices[3 * i + 2].get_str());
+        v_rational.back()[0].init_from_bin(embedded_vertices[3 * i].get_str());
+        v_rational.back()[1].init_from_bin(embedded_vertices[3 * i + 1].get_str());
+        v_rational.back()[2].init_from_bin(embedded_vertices[3 * i + 2].get_str());
 #endif
     }
 
