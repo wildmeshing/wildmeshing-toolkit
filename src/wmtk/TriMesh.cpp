@@ -843,7 +843,6 @@ void TriMesh::collapse_edge_conn(
     }
 
     // this is sorting
-    // TODO: change to sort, no need to unique
     vector_unique(m_vertex_connectivity[vid2].m_conn_tris);
 
     // for (size_t fid : n12_union_fids) {
