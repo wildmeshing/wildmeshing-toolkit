@@ -476,9 +476,15 @@ void TetWildMesh::insertion_by_volumeremesher_old(
 
     for (int i = 0; i < embedded_vertices.size() / 3; i++) {
         v_rational.push_back(Vector3r());
+#ifdef USE_GNU_GMP_CLASSES
         v_rational.back()[0].init(embedded_vertices[3 * i].get_mpq_t());
         v_rational.back()[1].init(embedded_vertices[3 * i + 1].get_mpq_t());
         v_rational.back()[2].init(embedded_vertices[3 * i + 2].get_mpq_t());
+#else
+        v_rational.back()[0].init(mpq_t::set_str(embedded_vertices[3 * i].get_str(), 2));
+        v_rational.back()[1].init(mpq_t::set_str(embedded_vertices[3 * i + 1].get_str(), 2));
+        v_rational.back()[2].init(mpq_t::set_str(embedded_vertices[3 * i + 2].get_str(), 2));
+#endif
     }
 
     std::vector<std::vector<size_t>> polygon_faces;
@@ -1054,9 +1060,15 @@ void TetWildMesh::insertion_by_volumeremesher(
 
     for (int i = 0; i < embedded_vertices.size() / 3; i++) {
         v_rational.push_back(Vector3r());
+#ifdef USE_GNU_GMP_CLASSES
         v_rational.back()[0].init(embedded_vertices[3 * i + 0].get_mpq_t());
         v_rational.back()[1].init(embedded_vertices[3 * i + 1].get_mpq_t());
         v_rational.back()[2].init(embedded_vertices[3 * i + 2].get_mpq_t());
+#else
+        v_rational.back()[0].init(mpq_t::set_str(embedded_vertices[3 * i + 0].get_str(), 2));
+        v_rational.back()[1].init(mpq_t::set_str(embedded_vertices[3 * i + 1].get_str(), 2));
+        v_rational.back()[2].init(mpq_t::set_str(embedded_vertices[3 * i + 2].get_str(), 2));
+#endif
     }
 
     for (const auto& vids : out_tets) {

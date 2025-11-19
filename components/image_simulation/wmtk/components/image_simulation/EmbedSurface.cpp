@@ -274,9 +274,15 @@ void embed_surface(
     assert(embedded_vertices.size() % 3 == 0);
     v_rational.resize(embedded_vertices.size() / 3);
     for (int i = 0; i < embedded_vertices.size() / 3; i++) {
+#ifdef USE_GNU_GMP_CLASSES
         v_rational[i][0].init(embedded_vertices[3 * i + 0].get_mpq_t());
         v_rational[i][1].init(embedded_vertices[3 * i + 1].get_mpq_t());
         v_rational[i][2].init(embedded_vertices[3 * i + 2].get_mpq_t());
+#else
+        v_rational[i][0].init(mpq_t::set_str(embedded_vertices[3 * i + 0].get_str(), 2));
+        v_rational[i][1].init(mpq_t::set_str(embedded_vertices[3 * i + 1].get_str(), 2));
+        v_rational[i][2].init(mpq_t::set_str(embedded_vertices[3 * i + 2].get_str(), 2));
+#endif
     }
 
     std::vector<std::vector<size_t>> polygon_faces;
