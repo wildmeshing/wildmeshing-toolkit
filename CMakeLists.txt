@@ -8,14 +8,17 @@ else()
 endif()
 
 # Check required CMake version
-set(REQUIRED_CMAKE_VERSION "3.15.0")
-
+set(REQUIRED_CMAKE_VERSION "3.25.0")
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     cmake_minimum_required(VERSION ${REQUIRED_CMAKE_VERSION})
+    if(CMAKE_VERSION VERSION_GREATER_EQUAL "4.0.0")
+        message(WARNING "CMake version is ${CMAKE_VERSION}, setting stuff for dependencies.")
+        SET(CMAKE_POLICY_VERSION_MINIMUM ${REQUIRED_CMAKE_VERSION})
+    endif()
 else()
     # Don't use cmake_minimum_required here to avoid implicitly overriding parent policies
     if(${CMAKE_VERSION} VERSION_LESS ${REQUIRED_CMAKE_VERSION})
-        message(FATAL_ERROR "CMake required version to build the toolkit is ${REQUIRED_CMAKE_VERSION}")
+        message(FATAL_ERROR "CMake required version to build WildMeshingToolkit is ${REQUIRED_CMAKE_VERSION}")
     endif()
 endif()
 
@@ -54,19 +57,14 @@ include(sanitizers)
 include(wmtk_colors)
 include(wmtk_warnings)
 include(wmtk_copy_dll)
-include(tracy)
 include(nlohmann_json)
-include(hdf5)
-include(high_five)
 include(delaunay_psm)
 include(onetbb)
 include(mshio)
 include(metis)
 include(gmp)
-include(probabilistic_quadrics)
 include(lagrange)
 include(libigl)
-igl_include(predicates)
 include(spdlog)
 include(paraviewo)
 include(fenvelope)
@@ -119,12 +117,8 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     mshio::mshio
     metis::metis
     lagrange::core
-    Tracy::TracyClient
     nlohmann_json::nlohmann_json
     nanoflann::nanoflann
-    HighFive::HighFive
-    hdf5::hdf5
-    probabilistic_quadrics::probabilistic_quadrics
     paraviewo::paraviewo
     FastEnvelope::FastEnvelope
     simple_bvh::simple_bvh

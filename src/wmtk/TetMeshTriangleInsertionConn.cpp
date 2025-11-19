@@ -409,7 +409,6 @@ void wmtk::TetMesh::subdivide_a_tet(
 
 bool wmtk::TetMesh::insert_point(const Tuple& t, std::vector<Tuple>& new_tets)
 {
-    ZoneScoped;
     if (!insert_point_before(t)) return false;
     start_protect_attributes();
     if (!insert_point_after(new_tets) || !invariants(new_tets)) {

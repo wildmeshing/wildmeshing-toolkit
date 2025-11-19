@@ -26,13 +26,10 @@ add_library(wmtk::incremental_tetwild ALIAS wmtk_incremental_tetwild)
 target_include_directories(wmtk_incremental_tetwild PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/)
 
 target_link_libraries(wmtk_incremental_tetwild PUBLIC
-	Tracy::TracyClient
 	wmtk::toolkit
 	wmtk::data
 	wmtk::sec_lib
 	wmtk::remeshing_lib
-	igl::predicates
-	gmp::gmp
 	VolumeRemesher::VolumeRemesher
 )
 
