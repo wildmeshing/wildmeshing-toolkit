@@ -420,7 +420,63 @@ public:
      * @param[out] new_tets a vector of Tuples for all the newly introduced tetra.
      * @return if collapse succeed
      */
-    bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_tets);
+    virtual bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_tets);
+
+    /**
+     * Collapse edge connectivity change part. Constains a link condition check and the connecticity
+     * update
+     *
+     * @param loc0 Input Tuple for the edge to collapse
+     * @param[out] new_tets a vector of Tuples for all the newly introduced tetra.
+     * @param[out] v1_id vertex id of the input tuple
+     * @param[out] new_loc result vertex tuple
+     * @param[out] rollback_vert_conn vertex connectivity got changed and will be involed in
+     * rollback
+     * @param[out] n1_t_ids_copy origninal (before collape) one ring tet ids connected to the input
+     * vertex
+     * @param[out] new_tet_id new tet ids added to v2
+     * @param[out] old_tets tets tv connectivities in n1_t_ids_copy
+     *
+     * @return if true collapse pass link condition check
+     */
+    bool collapse_edge_conn(
+        const Tuple& loc0,
+        std::vector<Tuple>& new_edges,
+        size_t& v1_id,
+        Tuple& new_loc,
+        std::map<size_t, wmtk::TetMesh::VertexConnectivity>& rollback_vert_conn,
+        std::vector<size_t>& n1_t_ids_copy,
+        std::vector<size_t>& new_tet_id,
+        std::vector<TetrahedronConnectivity>& old_tets);
+
+    /**
+     * Check topology after collapse connectivity change
+     *
+     * @param new_tet_id new tet ids added to v2
+     *
+     * @return if true the topology is valid
+     */
+    bool collapse_edge_check_topology(const std::vector<size_t>& new_tet_id);
+
+    /**
+     *  rollback function for collapse edges
+     *
+     * @param[out] v1_id vertex id of the input tuple
+     * @param[out] rollback_vert_conn vertex connectivity got changed and will be involed in
+     * rollback
+     * @param[out] n1_t_ids origninal (before collape) one ring tet ids connected to the input
+     * vertex
+     * @param[out] new_tet_id new tet ids added to v2
+     * @param[out] old_tets tets tv connectivities in n1_t_ids
+     *
+     */
+    void collapse_edge_rollback(
+        size_t& v1_id,
+        std::map<size_t, wmtk::TetMesh::VertexConnectivity>& rollback_vert_conn,
+        std::vector<size_t>& n1_t_ids,
+        std::vector<size_t>& new_tet_id,
+        std::vector<TetrahedronConnectivity>& old_tets);
+
     /**
      *Perform 4-4 swap between 2 tets
      *
@@ -605,8 +661,10 @@ private:
         std::vector<size_t>& new_center_vids,
         std::vector<std::array<size_t, 4>>& center_split_tets);
 
-protected:
+public:
     virtual bool invariants(const std::vector<Tuple>&) { return true; }
+
+protected:
     virtual bool triangle_insertion_before(const std::vector<Tuple>& faces) { return true; }
     virtual bool triangle_insertion_after(const std::vector<std::vector<Tuple>>&) { return true; }
 
@@ -983,6 +1041,8 @@ private:
         for (auto i : tets) tet_conn.push_back(conn[i]);
         return tet_conn;
     }
+
+public:
     void start_protect_attributes()
     {
         if (p_vertex_attrs) {
