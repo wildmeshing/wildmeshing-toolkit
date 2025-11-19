@@ -512,12 +512,12 @@ public:
         vol_rem::bigrational sy,
         vol_rem::bigrational sz);
 
-    bool checkTrackedFaces(
-        std::vector<vol_rem::bigrational>& vol_coords,
-        const std::vector<double>& surf_coords,
-        std::vector<uint32_t>& facets,
-        std::vector<uint32_t>& facets_on_input,
-        const std::vector<uint32_t>& surf_tris);
+    // bool checkTrackedFaces(
+    //     std::vector<vol_rem::bigrational>& vol_coords,
+    //     const std::vector<double>& surf_coords,
+    //     std::vector<uint32_t>& facets,
+    //     std::vector<uint32_t>& facets_on_input,
+    //     const std::vector<uint32_t>& surf_tris);
 
     int orient3D_wmtk_rational(
         wmtk::Rational px,
