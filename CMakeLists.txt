@@ -126,7 +126,6 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
 
 if(MSVC)
     target_compile_options(wildmeshing_toolkit PUBLIC /MP)
-    add_compile_options(/FS)
     target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/GL>)
     target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/LTCG>)
     target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/Ob2>) # inline whenever suitable
