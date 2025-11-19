@@ -33,6 +33,7 @@ void c1_simplification(nlohmann::json json_params)
     std::string tet_mesh_file = json_params["tet_mesh"];
     std::string uv_mesh_file = json_params["uv_mesh"];
     std::string dofs_file = json_params["dofs"];
+    std::string cones_file = json_params["cones"];
 
     std::string output_file = json_params["output"];
 
@@ -88,6 +89,16 @@ void c1_simplification(nlohmann::json json_params)
     }
     dofs.close();
 
+    // read cones
+    std::ifstream cones(cones_file);
+    std::vector<size_t> cone_vids;
+
+    size_t cid;
+    while (cones >> cid) {
+        cone_vids.push_back(cid);
+    }
+    cones.close();
+
     // TODO: read vertex mapping
     std::map<int64_t, int64_t> s2t_vid_map;
 
@@ -95,7 +106,7 @@ void c1_simplification(nlohmann::json json_params)
     wmtk::logger().info("meshes and dofs read.");
 
     MMSurfaceMesh surface_mesh(tet_mesh_ptr, uv_mesh_ptr, threshold * diag_length);
-    surface_mesh.init_from_eigen_with_map_and_dofs(s_V, s_F, s2t_vid_map, face_dofs);
+    surface_mesh.init_from_eigen_with_map_and_dofs(s_V, s_F, s2t_vid_map, face_dofs, cone_vids);
 
     wmtk::logger().info("initialized multimesh. tetmesh involved: {}", tet_mesh_ptr != nullptr);
     surface_mesh.output_tracked_vertices("initial_tracked_vertices.obj");
@@ -110,6 +121,12 @@ void c1_simplification(nlohmann::json json_params)
         auto edge_tuples = surface_mesh.get_edges();
         for (auto& e : edge_tuples) {
             if (e.is_valid(surface_mesh)) {
+                // check for seams
+                auto uv_es = surface_mesh.map_to_uv_edge_tuples(e);
+                // if (uv_es.size() < 2) {
+                //     continue;
+                // }
+
                 wmtk::logger().debug(
                     "try {} collapse e {} {}",
                     try_cnt,
@@ -117,12 +134,16 @@ void c1_simplification(nlohmann::json json_params)
                     e.switch_vertex(surface_mesh).vid(surface_mesh));
                 if (surface_mesh.multimesh_collapse_edge(e)) {
                     wmtk::logger().debug("succeeded");
-                    uv_mesh_ptr->output_uv_mesh("uv_" + std::to_string(total_suc_cnt) + ".obj");
-                    surface_mesh.output_tracked_vertices(
-                        "tracked_vertices" + std::to_string(total_suc_cnt) + ".obj");
+                    // uv_mesh_ptr->output_uv_mesh("uv_" + std::to_string(total_suc_cnt) + ".obj");
+                    // surface_mesh.output_tracked_vertices(
+                    //     "tracked_vertices" + std::to_string(total_suc_cnt) + ".obj");
                     suc_cnt++;
                     total_suc_cnt++;
                     // break;
+                } else if (surface_mesh.multimesh_collapse_edge(e.switch_vertex(surface_mesh))) {
+                    wmtk::logger().debug("succeeded other direction");
+                    suc_cnt++;
+                    total_suc_cnt++;
                 } else {
                     wmtk::logger().debug("failed");
                 }
@@ -133,13 +154,15 @@ void c1_simplification(nlohmann::json json_params)
                 // TODO: debug use, remove
                 // if (try_cnt > 4) break;
             }
+            // if (total_suc_cnt > 0) break;
             // break;
         }
 
+
         wmtk::logger().info("iter {} collapse success cnt: {}", iter_cnt, suc_cnt);
         iter_cnt++;
-        // total_suc_cnt += suc_cnt;
-        // break;
+
+        // if (total_suc_cnt > 0) break;
     } while (suc_cnt > 0);
 
     wmtk::logger().info("total collapse success cnt: {}", total_suc_cnt);

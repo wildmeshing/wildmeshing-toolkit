@@ -199,11 +199,11 @@ bool MMUVMesh::collapse_edge_before(const Tuple& t)
         return false;
     }
 
-    if (is_boundary_vertex(t) || is_boundary_vertex(t.switch_vertex(*this))) {
-        // boundary vertex cannot be collapsed
-        // TODO: change to weaker
-        return false;
-    }
+    // if (is_boundary_vertex(t) || is_boundary_vertex(t.switch_vertex(*this))) {
+    //     // boundary vertex cannot be collapsed
+    //     // TODO: change to weaker
+    //     return false;
+    // }
 
 
     // TODO: if seam connect together, only collapse to the shared vertex is allowed
@@ -290,7 +290,8 @@ void MMSurfaceMesh::init_from_eigen_with_map_and_dofs(
     const MatrixXd& V,
     const MatrixXi& F,
     const std::map<int64_t, int64_t>& s2t_vid_map,
-    const std::vector<Eigen::Matrix<double, 12, 3>>& dofs)
+    const std::vector<Eigen::Matrix<double, 12, 3>>& dofs,
+    const std::vector<size_t>& cone_vids)
 // const std::vector<Vector3d>& vgrads,
 // const std::vector<std::array<Vector3d, 3>>& egrads)
 {
@@ -345,6 +346,10 @@ void MMSurfaceMesh::init_from_eigen_with_map_and_dofs(
     // }
     for (size_t i = 0; i < tri_capacity(); ++i) {
         f_attrs[i].dofs = dofs[i];
+    }
+
+    for (const auto& vid : cone_vids) {
+        v_attrs[vid].is_cone = true;
     }
 }
 
@@ -546,6 +551,11 @@ void MMSurfaceMesh::clear_info_cache()
 {
     s_cache.layout_parts_map.clear();
     s_cache.tracked_vertex_info_cache.clear();
+    s_cache.collapse_area_fid_involved.clear();
+
+    s_cache.deleted_fid_2 = -1;
+    s_cache.deleted_vid_2 = -1;
+    s_cache.uv_collapse_to_v2_id = -1;
 }
 
 bool MMSurfaceMesh::collapse_edge_before(const Tuple& t)
@@ -553,6 +563,11 @@ bool MMSurfaceMesh::collapse_edge_before(const Tuple& t)
     // TODO: test use, remove this
     // return true;
     clear_info_cache();
+
+    if (v_attrs[t.vid(*this)].is_cone || v_attrs[t.switch_vertex(*this).vid(*this)].is_cone) {
+        wmtk::logger().debug("rejected by cone");
+        return false;
+    }
 
     // link condition
     if (!TriMesh::collapse_edge_before(t)) {
@@ -562,6 +577,8 @@ bool MMSurfaceMesh::collapse_edge_before(const Tuple& t)
 
     // check if map to multiple uv edges and has same v0
     const auto& uv_e_tuples = map_to_uv_edge_tuples(t);
+    const auto& uv_v_tuples = map_to_uv_vertex_tuples(t);
+
     if (uv_e_tuples.size() > 1) {
         assert(uv_e_tuples.size() == 2);
         if (uv_e_tuples[0].vid(*uvmesh_ptr) == uv_e_tuples[1].vid(*uvmesh_ptr)) {
@@ -587,10 +604,38 @@ bool MMSurfaceMesh::collapse_edge_before(const Tuple& t)
 
     // deleted vertex ids on at most two uv edges
     s_cache.deleted_vid_1 = uv_e_tuples[0].vid(*uvmesh_ptr);
+    s_cache.uv_collapse_to_v1_id = uv_e_tuples[0].switch_vertex(*uvmesh_ptr).vid(*uvmesh_ptr);
+
     if (uv_e_tuples.size() > 1) {
         s_cache.deleted_vid_2 = uv_e_tuples[1].vid(*uvmesh_ptr);
+        s_cache.uv_collapse_to_v2_id = uv_e_tuples[1].switch_vertex(*uvmesh_ptr).vid(*uvmesh_ptr);
     } else {
         s_cache.deleted_vid_2 = -1;
+        s_cache.uv_collapse_to_v2_id = -1;
+    }
+
+    // collapse area fids
+    auto f_involved = get_one_ring_tris_for_vertex(t);
+    std::vector<size_t> f_involved_vec;
+    for (const auto& f_tuple : f_involved) {
+        s_cache.collapse_area_fid_involved[f_tuple.fid(*this)] = true;
+        f_involved_vec.push_back(f_tuple.fid(*this));
+    }
+
+    // sanity check
+    std::vector<size_t> uv_f_involved;
+    for (const auto& uv_v : uv_v_tuples) {
+        auto uv_v_one_ring_face = uvmesh_ptr->get_one_ring_tris_for_vertex(uv_v);
+        for (const auto& uv_f : uv_v_one_ring_face) {
+            uv_f_involved.push_back(uv_f.fid(*uvmesh_ptr));
+        }
+    }
+
+    assert(f_involved_vec.size() == uv_f_involved.size());
+    for (const size_t& uv_fid : uv_f_involved) {
+        assert(
+            s_cache.collapse_area_fid_involved.find(uv_fid) !=
+            s_cache.collapse_area_fid_involved.end());
     }
 
 
@@ -604,7 +649,6 @@ bool MMSurfaceMesh::collapse_edge_before(const Tuple& t)
         uvmesh_ptr->v_attrs[uv_e_tuples[0].switch_vertex(*uvmesh_ptr).vid(*uvmesh_ptr)].pos;
 
     // layout parts
-    const auto& uv_v_tuples = map_to_uv_vertex_tuples(t);
     int processed_part_cnt = 1;
 
     // add first part
@@ -672,6 +716,8 @@ bool MMSurfaceMesh::collapse_edge_before(const Tuple& t)
 
             // add new part to map
             s_cache.layout_parts_map[uv_vid] = part_info;
+
+            processed_part_cnt++;
         }
     }
 
@@ -724,10 +770,13 @@ bool MMSurfaceMesh::collapse_edge_after(const Tuple& t)
             uvmesh_ptr->v_attrs[old_uv_vid].pos = part.new_pos;
         } else {
             if (old_uv_vid == s_cache.deleted_vid_1) {
-                auto uv_tuple_to_update = map_to_equivalent_uv_tuple(t);
-                uvmesh_ptr->v_attrs[uv_tuple_to_update.vid(*uvmesh_ptr)].pos = part.new_pos;
+                // auto uv_tuple_to_update = map_to_equivalent_uv_tuple(t);
+                // uvmesh_ptr->v_attrs[uv_tuple_to_update.vid(*uvmesh_ptr)].pos = part.new_pos;
+                uvmesh_ptr->v_attrs[s_cache.uv_collapse_to_v1_id].pos = part.new_pos;
             } else {
                 // TODO: add position for the other vertex
+                assert(old_uv_vid == s_cache.deleted_vid_2);
+                uvmesh_ptr->v_attrs[s_cache.uv_collapse_to_v2_id].pos = part.new_pos;
                 continue;
             }
         }
@@ -752,7 +801,7 @@ bool MMSurfaceMesh::collapse_edge_after(const Tuple& t)
         tracked_fid_to_vids_map.erase(s_cache.deleted_fid_2);
     }
 
-    // clear modified faces in map
+    // clear modified face to tracked vertex in map
     for (const auto& uv_v_after : uv_v_tuples_after) {
         for (const auto& uv_f : uvmesh_ptr->get_one_ring_tris_for_vertex(uv_v_after)) {
             // delete effected track id in kept faces
@@ -793,6 +842,7 @@ bool MMSurfaceMesh::collapse_edge_after(const Tuple& t)
         point_file.close();
 
         std::ofstream vchart_file("v_chart.obj");
+        std::ofstream v_tri_file("v_tris.obj");
         int tri_cnt = 0;
 
         bool found_flag = false;
@@ -807,12 +857,16 @@ bool MMSurfaceMesh::collapse_edge_after(const Tuple& t)
             if (s_cache.layout_parts_map.find(uv_v_after_vid) != s_cache.layout_parts_map.end()) {
                 part = s_cache.layout_parts_map.at(uv_v_after_vid);
                 // } else if (uv_v_after_vid == s_cache.ref_uv_v2_id) {
-            } else if (uv_v_after_vid == map_to_equivalent_uv_tuple(t).vid(*uvmesh_ptr)) {
+                // } else if (uv_v_after_vid == map_to_equivalent_uv_tuple(t).vid(*uvmesh_ptr)) {
+            } else if (uv_v_after_vid == s_cache.uv_collapse_to_v1_id) {
                 part = s_cache.layout_parts_map.at(s_cache.ref_uv_v1_id);
-            } else {
+            } else if (uv_v_after_vid == s_cache.uv_collapse_to_v2_id) {
                 // other side edge
                 assert(s_cache.deleted_vid_2 != -1);
                 part = s_cache.layout_parts_map.at(s_cache.deleted_vid_2);
+            } else {
+                // vertex not involved, skip
+                continue;
             }
 
             // rotation matrix for the triangles in this part
@@ -826,6 +880,13 @@ bool MMSurfaceMesh::collapse_edge_after(const Tuple& t)
             const auto& uv_v_after_one_ring_tris =
                 uvmesh_ptr->get_one_ring_tris_for_vertex(uv_v_after);
             for (const auto& tri_tuple : uv_v_after_one_ring_tris) {
+                size_t tri_fid = tri_tuple.fid(*uvmesh_ptr);
+                // if (s_cache.collapse_area_fid_involved.find(tri_fid) ==
+                //     s_cache.collapse_area_fid_involved.end()) {
+                //     // skip faces that are not involved if not collapsed edge
+                //     continue;
+                // }
+
                 auto v0 = tri_tuple.vid(*uvmesh_ptr);
                 auto v1 = tri_tuple.switch_vertex(*uvmesh_ptr).vid(*uvmesh_ptr);
                 auto v2 =
@@ -839,37 +900,50 @@ bool MMSurfaceMesh::collapse_edge_after(const Tuple& t)
                 Vector2d p2_chart = p0_chart + R_inv_part * vec02;
 
                 // std::cout << "tri: " << std::endl;
+                v_tri_file << "v " << uvmesh_ptr->v_attrs[v0].pos[0] << " "
+                           << uvmesh_ptr->v_attrs[v0].pos[1] << " 0" << std::endl;
+                v_tri_file << "v " << uvmesh_ptr->v_attrs[v1].pos[0] << " "
+                           << uvmesh_ptr->v_attrs[v1].pos[1] << " 0" << std::endl;
+                v_tri_file << "v " << uvmesh_ptr->v_attrs[v2].pos[0] << " "
+                           << uvmesh_ptr->v_attrs[v2].pos[1] << " 0" << std::endl;
+
                 vchart_file << "v " << p0_chart[0] << " " << p0_chart[1] << " 0" << std::endl;
                 vchart_file << "v " << p1_chart[0] << " " << p1_chart[1] << " 0" << std::endl;
                 vchart_file << "v " << p2_chart[0] << " " << p2_chart[1] << " 0" << std::endl;
                 tri_cnt++;
 
                 if (point_in_tri(tracked_v_chart_pos, p0_chart, p1_chart, p2_chart)) {
-                    found_flag = true;
+                    if (!found_flag) {
+                        found_flag = true;
 
-                    // update track vertex position
-                    auto& tracked_v = tracked_vertices[tracked_vid];
-                    tracked_v.uv_pos =
-                        uv_v_after_pos + R_part * (tracked_v_chart_pos - s_cache.v2_uv_pos);
+                        // update track vertex position
+                        auto& tracked_v = tracked_vertices[tracked_vid];
+                        tracked_v.uv_pos =
+                            uv_v_after_pos + R_part * (tracked_v_chart_pos - s_cache.v2_uv_pos);
 
-                    // update face id
-                    tracked_v.in_tri_id = tri_tuple.fid(*uvmesh_ptr);
+                        // update face id
+                        tracked_v.in_tri_id = tri_tuple.fid(*uvmesh_ptr);
 
-                    // update tracked_fid_to_vids_map
-                    tracked_fid_to_vids_map[tri_tuple.fid(*uvmesh_ptr)].push_back(tracked_vid);
+                        // update tracked_fid_to_vids_map
+                        tracked_fid_to_vids_map[tri_tuple.fid(*uvmesh_ptr)].push_back(tracked_vid);
 
-                    break;
+                        // break;
+                    }
                 }
             }
             if (found_flag) {
-                break;
+                // TODO: add break for efficiency
+                // no break for v_chart
+                // break;
             }
         }
         for (int i = 0; i < tri_cnt; ++i) {
             vchart_file << "f " << i * 3 + 1 << " " << i * 3 + 2 << " " << i * 3 + 3 << std::endl;
+            v_tri_file << "f " << i * 3 + 1 << " " << i * 3 + 2 << " " << i * 3 + 3 << std::endl;
         }
 
         vchart_file.close();
+        v_tri_file.close();
 
         assert(found_flag);
     }
@@ -1151,7 +1225,8 @@ bool MMSurfaceMesh::multimesh_collapse_edge(const Tuple& t)
 
 void MMSurfaceMesh::output_surface_mesh(const std::string& file)
 {
-    // consolidate_mesh();
+    // TODO: remove consolidate
+    consolidate_mesh();
 
     const auto& vertices = get_vertices();
     const auto& tris = get_faces();

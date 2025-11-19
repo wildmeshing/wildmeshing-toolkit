@@ -10,7 +10,8 @@ nlohmann::json c1_simplification_spec = R"([
       "surface_mesh",
       "tet_mesh",
       "uv_mesh",
-      "dofs"
+      "dofs",
+      "cones"
     ],
     "optional": [
       "output",
@@ -45,6 +46,11 @@ nlohmann::json c1_simplification_spec = R"([
     "pointer": "/dofs",
     "type": "string",
     "doc": "dofs file name"
+  },
+  {
+    "pointer": "/cones",
+    "type": "string",
+    "doc": "cone vids file name"
   },
   {
     "pointer": "/output",

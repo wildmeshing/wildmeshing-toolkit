@@ -178,7 +178,8 @@ public:
         const MatrixXd& V,
         const MatrixXi& F,
         const std::map<int64_t, int64_t>& s2t_vid_map,
-        const std::vector<Eigen::Matrix<double, 12, 3>>& dofs);
+        const std::vector<Eigen::Matrix<double, 12, 3>>& dofs,
+        const std::vector<size_t>& cone_vids);
     // const std::vector<Vector3d>& vgrads,
     // const std::vector<std::array<Vector3d, 3>>& egrads);
 
@@ -263,11 +264,15 @@ public:
         size_t deleted_fid_1;
         size_t deleted_fid_2 = -1;
 
-        size_t deleted_vid_1;
-        size_t deleted_vid_2 = -1;
+        size_t deleted_vid_1; // uv
+        size_t deleted_vid_2 = -1; // uv
+
+        size_t uv_collapse_to_v1_id; // uv
+        size_t uv_collapse_to_v2_id = -1; // uv
 
         std::map<size_t, LayoutPartInfo> layout_parts_map;
         std::vector<TrackedVertexInfo> tracked_vertex_info_cache;
+        std::map<size_t, bool> collapse_area_fid_involved;
     };
 
     SurfaceCollpaseInfoCache s_cache;
