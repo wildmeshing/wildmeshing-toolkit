@@ -312,7 +312,7 @@ public:
 
     /**
      * Generate a tuple using local vid and global fid
-     * @param vid1, vid2 are local vids
+     * @param vid1, vid2 are local vids TODO: these are global vids
      * @param fid globale fid for the triangle
      * @note tuple refers to vid1
      * @return vector of Tuples
@@ -365,7 +365,7 @@ private:
      */
     size_t get_next_empty_slot_v();
 
-protected:
+public:
     /**
      * @brief User specified invariants that can't be violated
      * @param std::vector<Tuple> a vector of Tuples that are concerned in a given operation
@@ -537,14 +537,39 @@ public:
      * @note collapse edge a,b and generate a new vertex c
      * @return if collapse succeed
      */
-    bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_t);
+    virtual bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_t);
+
+    /**
+     * Collpase an edge connectivity part
+     */
+    void collapse_edge_conn(
+        const Tuple& loc0,
+        std::vector<Tuple>& new_tris,
+        Tuple& return_t,
+        size_t& new_vid,
+        std::vector<std::pair<size_t, TriangleConnectivity>>& old_tris,
+        std::vector<std::pair<size_t, VertexConnectivity>>& old_vertices,
+        std::vector<std::pair<size_t, size_t>>& same_edge_vid_fid,
+        std::vector<size_t>& n12_intersect_fids);
+
+    /**
+     * collapse edge rollback
+     */
+
+    void collapse_edge_rollback(
+        size_t& new_vid,
+        std::vector<std::pair<size_t, TriangleConnectivity>>& old_tris,
+        std::vector<std::pair<size_t, VertexConnectivity>>& old_vertices,
+        std::vector<std::pair<size_t, size_t>>& same_edge_vid_fid,
+        std::vector<size_t>& n12_intersect_fids);
+
 
     /**
      * Swap an edge
      *
      * @param t Input Tuple for the edge to be swaped.
-     * @param[out] new_edges a vector of Tuples refering to the triangles incident to the new edge
-     * introduced
+     * @param[out] new_edges a vector of Tuples refering to the triangles incident to the new
+     * edge introduced
      * @note swap edge a,b to edge c,d
      * @return if swap succeed
      */
@@ -660,7 +685,7 @@ public:
         return Tuple(vid, local_eid, fid, *this);
     }
 
-private:
+public:
     /**
      * @brief Start the phase where the attributes that will be modified can be recorded
      *
