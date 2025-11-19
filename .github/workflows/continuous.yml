@@ -93,8 +93,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.CACHE_PATH }}
-          key: ${{ runner.os }}-${{ matrix.config }}-cache-${{ github.sha }}
-          restore-keys: ${{ runner.os }}-${{ matrix.config }}-cache
+          key: ${{ matrix.os }}-${{ matrix.config }}-cache-${{ github.sha }}
+          restore-keys: ${{ matrix.os }}-${{ matrix.config }}-cache
 
       - name: Prepare ccache
         run: |
