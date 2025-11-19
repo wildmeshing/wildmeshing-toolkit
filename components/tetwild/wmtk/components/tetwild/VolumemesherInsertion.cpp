@@ -481,9 +481,9 @@ void TetWildMesh::insertion_by_volumeremesher_old(
         v_rational.back()[1].init(embedded_vertices[3 * i + 1].get_mpq_t());
         v_rational.back()[2].init(embedded_vertices[3 * i + 2].get_mpq_t());
 #else
-        v_rational.back()[0].init(mpq_t::set_str(embedded_vertices[3 * i].get_str(), 2));
-        v_rational.back()[1].init(mpq_t::set_str(embedded_vertices[3 * i + 1].get_str(), 2));
-        v_rational.back()[2].init(mpq_t::set_str(embedded_vertices[3 * i + 2].get_str(), 2));
+        v_rational.back()[0].init(embedded_vertices[3 * i].get_str());
+        v_rational.back()[1].init(embedded_vertices[3 * i + 1].get_str());
+        v_rational.back()[2].init(embedded_vertices[3 * i + 2].get_str());
 #endif
     }
 
@@ -1065,9 +1065,9 @@ void TetWildMesh::insertion_by_volumeremesher(
         v_rational.back()[1].init(embedded_vertices[3 * i + 1].get_mpq_t());
         v_rational.back()[2].init(embedded_vertices[3 * i + 2].get_mpq_t());
 #else
-        v_rational.back()[0].init(mpq_t::set_str(embedded_vertices[3 * i + 0].get_str(), 2));
-        v_rational.back()[1].init(mpq_t::set_str(embedded_vertices[3 * i + 1].get_str(), 2));
-        v_rational.back()[2].init(mpq_t::set_str(embedded_vertices[3 * i + 2].get_str(), 2));
+        v_rational.back()[0].init(embedded_vertices[3 * i + 0].get_str());
+        v_rational.back()[1].init(embedded_vertices[3 * i + 1].get_str());
+        v_rational.back()[2].init(embedded_vertices[3 * i + 2].get_str());
 #endif
     }
 

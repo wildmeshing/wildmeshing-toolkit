@@ -18,6 +18,12 @@ public:
         mpq_set(value, v);
     }
 
+    template <>
+    void init(const std::string& bin)
+    {
+        mpq_set_str(value, bin.c_str(), 2);
+    }
+
     Rational()
     {
         mpq_init(value);
@@ -43,6 +49,7 @@ public:
         mpq_init(value);
         mpq_set(value, other.value);
     }
+
 
     ~Rational() { mpq_clear(value); }
 
