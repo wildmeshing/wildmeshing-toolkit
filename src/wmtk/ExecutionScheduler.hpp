@@ -18,8 +18,6 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
-#include <tracy/Tracy.hpp>
-
 #include <atomic>
 #include <cassert>
 #include <cstddef>
@@ -333,7 +331,6 @@ public:
                     }
                     cnt_update.store(0, std::memory_order_release);
                 }
-                FrameMark;
             }
         };
 

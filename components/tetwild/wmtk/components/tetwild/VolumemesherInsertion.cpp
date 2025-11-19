@@ -476,9 +476,15 @@ void TetWildMesh::insertion_by_volumeremesher_old(
 
     for (int i = 0; i < embedded_vertices.size() / 3; i++) {
         v_rational.push_back(Vector3r());
+#ifdef USE_GNU_GMP_CLASSES
         v_rational.back()[0].init(embedded_vertices[3 * i].get_mpq_t());
         v_rational.back()[1].init(embedded_vertices[3 * i + 1].get_mpq_t());
         v_rational.back()[2].init(embedded_vertices[3 * i + 2].get_mpq_t());
+#else
+        v_rational.back()[0].init_from_bin(embedded_vertices[3 * i].get_str());
+        v_rational.back()[1].init_from_bin(embedded_vertices[3 * i + 1].get_str());
+        v_rational.back()[2].init_from_bin(embedded_vertices[3 * i + 2].get_str());
+#endif
     }
 
     std::vector<std::vector<size_t>> polygon_faces;
@@ -1054,9 +1060,15 @@ void TetWildMesh::insertion_by_volumeremesher(
 
     for (int i = 0; i < embedded_vertices.size() / 3; i++) {
         v_rational.push_back(Vector3r());
+#ifdef USE_GNU_GMP_CLASSES
         v_rational.back()[0].init(embedded_vertices[3 * i + 0].get_mpq_t());
         v_rational.back()[1].init(embedded_vertices[3 * i + 1].get_mpq_t());
         v_rational.back()[2].init(embedded_vertices[3 * i + 2].get_mpq_t());
+#else
+        v_rational.back()[0].init_from_bin(embedded_vertices[3 * i + 0].get_str());
+        v_rational.back()[1].init_from_bin(embedded_vertices[3 * i + 1].get_str());
+        v_rational.back()[2].init_from_bin(embedded_vertices[3 * i + 2].get_str());
+#endif
     }
 
     for (const auto& vids : out_tets) {
@@ -1940,61 +1952,61 @@ int TetWildMesh::orient3D(
 //  ... at least a facet in 'facets_on_input' is not coplanar with any facet in 'triangle_indexes'
 // }
 //
-bool TetWildMesh::checkTrackedFaces(
-    std::vector<vol_rem::bigrational>& vol_coords,
-    const std::vector<double>& surf_coords,
-    std::vector<uint32_t>& facets,
-    std::vector<uint32_t>& facets_on_input,
-    const std::vector<uint32_t>& surf_tris)
-{
-    std::vector<uint32_t> fstart; // Vector containing the starting index of each face in 'facets'
-    for (uint32_t f_i = 0; f_i < facets.size(); f_i += (facets[f_i] + 1)) fstart.push_back(f_i);
-    vol_rem::bigrational v1[3], v2[3], v3[3], v4[3];
-    for (uint32_t ti : facets_on_input) // For each facet in the tracked surface
-    {
-        uint32_t start = fstart[ti];
-        uint32_t fnv = facets[start]; // num face vertices
-        const uint32_t* face_vrts = facets.data() + start + 1;
-        size_t i = 0;
-        for (; i < surf_tris.size(); i += 3) { // For each input triangular facet 'i'
-            v2[0] = surf_coords[surf_tris[i] * 3]; // Let v2,v3,v4 be the coordinates of its three
-                                                   // vertices
-            v2[1] = surf_coords[surf_tris[i] * 3 + 1];
-            v2[2] = surf_coords[surf_tris[i] * 3 + 2];
-            v3[0] = surf_coords[surf_tris[i + 1] * 3];
-            v3[1] = surf_coords[surf_tris[i + 1] * 3 + 1];
-            v3[2] = surf_coords[surf_tris[i + 1] * 3 + 2];
-            v4[0] = surf_coords[surf_tris[i + 2] * 3];
-            v4[1] = surf_coords[surf_tris[i + 2] * 3 + 1];
-            v4[2] = surf_coords[surf_tris[i + 2] * 3 + 2];
-            uint32_t v = 0;
-            for (; v < fnv; v++) { // For each vertex 'v' of 'ti'
-                const uint32_t vid = face_vrts[v];
-                v1[0] = vol_coords[vid * 3]; // Let v1 be v's coordinates
-                v1[1] = vol_coords[vid * 3 + 1];
-                v1[2] = vol_coords[vid * 3 + 2];
-                if (orient3D(
-                        v1[0],
-                        v1[1],
-                        v1[2],
-                        v2[0],
-                        v2[1],
-                        v2[2],
-                        v3[0],
-                        v3[1],
-                        v3[2],
-                        v4[0],
-                        v4[1],
-                        v4[2]) != 0)
-                    break; // 'v' is not coplanar with triangular facet 'i'
-            }
-            if (v == fnv) break; // All vertices of 'ti' are coplanar with triangular facet 'i'
-        }
-        if (i == surf_tris.size())
-            return false; // 'ti' is not coplanar with any triangular facet in surf_tris
-    }
-    return true;
-}
+// bool TetWildMesh::checkTrackedFaces(
+//     std::vector<vol_rem::bigrational>& vol_coords,
+//     const std::vector<double>& surf_coords,
+//     std::vector<uint32_t>& facets,
+//     std::vector<uint32_t>& facets_on_input,
+//     const std::vector<uint32_t>& surf_tris)
+// {
+//     std::vector<uint32_t> fstart; // Vector containing the starting index of each face in 'facets'
+//     for (uint32_t f_i = 0; f_i < facets.size(); f_i += (facets[f_i] + 1)) fstart.push_back(f_i);
+//     vol_rem::bigrational v1[3], v2[3], v3[3], v4[3];
+//     for (uint32_t ti : facets_on_input) // For each facet in the tracked surface
+//     {
+//         uint32_t start = fstart[ti];
+//         uint32_t fnv = facets[start]; // num face vertices
+//         const uint32_t* face_vrts = facets.data() + start + 1;
+//         size_t i = 0;
+//         for (; i < surf_tris.size(); i += 3) { // For each input triangular facet 'i'
+//             v2[0] = surf_coords[surf_tris[i] * 3]; // Let v2,v3,v4 be the coordinates of its three
+//                                                    // vertices
+//             v2[1] = surf_coords[surf_tris[i] * 3 + 1];
+//             v2[2] = surf_coords[surf_tris[i] * 3 + 2];
+//             v3[0] = surf_coords[surf_tris[i + 1] * 3];
+//             v3[1] = surf_coords[surf_tris[i + 1] * 3 + 1];
+//             v3[2] = surf_coords[surf_tris[i + 1] * 3 + 2];
+//             v4[0] = surf_coords[surf_tris[i + 2] * 3];
+//             v4[1] = surf_coords[surf_tris[i + 2] * 3 + 1];
+//             v4[2] = surf_coords[surf_tris[i + 2] * 3 + 2];
+//             uint32_t v = 0;
+//             for (; v < fnv; v++) { // For each vertex 'v' of 'ti'
+//                 const uint32_t vid = face_vrts[v];
+//                 v1[0] = vol_coords[vid * 3]; // Let v1 be v's coordinates
+//                 v1[1] = vol_coords[vid * 3 + 1];
+//                 v1[2] = vol_coords[vid * 3 + 2];
+//                 if (orient3D(
+//                         v1[0],
+//                         v1[1],
+//                         v1[2],
+//                         v2[0],
+//                         v2[1],
+//                         v2[2],
+//                         v3[0],
+//                         v3[1],
+//                         v3[2],
+//                         v4[0],
+//                         v4[1],
+//                         v4[2]) != 0)
+//                     break; // 'v' is not coplanar with triangular facet 'i'
+//             }
+//             if (v == fnv) break; // All vertices of 'ti' are coplanar with triangular facet 'i'
+//         }
+//         if (i == surf_tris.size())
+//             return false; // 'ti' is not coplanar with any triangular facet in surf_tris
+//     }
+//     return true;
+// }
 
 int TetWildMesh::orient3D_wmtk_rational(
     wmtk::Rational px,

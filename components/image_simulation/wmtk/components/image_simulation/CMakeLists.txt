@@ -15,7 +15,7 @@ set(SRC_FILES
 
 	extract_soup.hpp
 	extract_soup.cpp
-	
+
 	EmbedSurface.hpp
 	EmbedSurface.cpp
 
@@ -40,11 +40,9 @@ set(SRC_FILES
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
 
 target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC
-	Tracy::TracyClient
 	wmtk::toolkit
 	wmtk::data
 	wmtk::sec_lib
-	igl::predicates
 	VolumeRemesher::VolumeRemesher
 	jse::jse
 )

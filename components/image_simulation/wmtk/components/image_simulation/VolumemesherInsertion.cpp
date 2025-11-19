@@ -212,9 +212,15 @@ void ImageSimulationMesh::insertion_by_volumeremesher(
     //v_rational.resize(embedded_vertices.size() / 3);
     for (int i = 0; i < embedded_vertices.size() / 3; i++) {
         v_rational.push_back(Vector3r());
+#ifdef USE_GNU_GMP_CLASSES
         v_rational.back()[0].init(embedded_vertices[3 * i].get_mpq_t());
         v_rational.back()[1].init(embedded_vertices[3 * i + 1].get_mpq_t());
         v_rational.back()[2].init(embedded_vertices[3 * i + 2].get_mpq_t());
+#else
+        v_rational.back()[0].init_from_bin(embedded_vertices[3 * i].get_str());
+        v_rational.back()[1].init_from_bin(embedded_vertices[3 * i + 1].get_str());
+        v_rational.back()[2].init_from_bin(embedded_vertices[3 * i + 2].get_str());
+#endif
     }
 
     std::vector<std::vector<size_t>> polygon_faces;

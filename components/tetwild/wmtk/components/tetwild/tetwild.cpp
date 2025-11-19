@@ -94,8 +94,6 @@ void tetwild(nlohmann::json json_params)
         json_params = spec_engine.inject_defaults(json_params, tetwild_spec);
     }
 
-    ZoneScopedN("tetwildmain");
-
     tetwild::Parameters params;
 
     std::vector<std::string> input_paths = json_params["input"];

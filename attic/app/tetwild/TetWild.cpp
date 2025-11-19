@@ -37,7 +37,6 @@ void tetwild::TetWild::mesh_improvement(int max_its)
     ////preprocessing
     // TODO: refactor to eliminate repeated partition.
     //
-    ZoneScopedN("meshimprovementmain");
 
     compute_vertex_partition_morton();
 
@@ -580,8 +579,9 @@ std::vector<std::array<size_t, 3>> tetwild::TetWild::get_faces_by_condition(
         if (cond(m_face_attribute[fid])) {
             auto tid = fid / 4, lid = fid % 4;
             auto verts = get_face_vertices(f);
-            res.emplace_back(std::array<size_t, 3>{
-                {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
+            res.emplace_back(
+                std::array<size_t, 3>{
+                    {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
         }
     }
     return res;
