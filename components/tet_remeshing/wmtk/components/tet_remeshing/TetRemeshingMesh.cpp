@@ -51,7 +51,7 @@ void TetRemeshingMesh::mesh_improvement(int max_its)
     // write_vtu(fmt::format("debug_{}.vtu", m_debug_print_counter++));
 
     wmtk::logger().info("========it pre========");
-    local_operations({{0, 1, 0, 0}}, false);
+    local_operations({{0, 1, 0, 0}});
 
     ////operation loops
     bool is_hit_min_edge_length = false;
@@ -65,7 +65,16 @@ void TetRemeshingMesh::mesh_improvement(int max_its)
 
         ///energy check
         wmtk::logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
-        if (max_energy < m_params.stop_energy) break;
+        // if (max_energy < m_params.stop_energy) break;
+        const bool edge_length_done = is_edge_length_converged();
+        const bool energy_done = is_energy_converged();
+        if (edge_length_done && energy_done) {
+            break;
+        } else {
+            logger().info("Energy converged = {}", energy_done);
+            logger().info("Edge length converged = {}", edge_length_done);
+        }
+
         consolidate_mesh();
 
         // output_faces(
@@ -83,6 +92,7 @@ void TetRemeshingMesh::mesh_improvement(int max_its)
             if (m == M) {
                 wmtk::logger().info(">>>>adjust_sizing_field...");
                 is_hit_min_edge_length = adjust_sizing_field_serial(max_energy);
+                adjust_sizing_field_for_edge_length();
                 // is_hit_min_edge_length = adjust_sizing_field(max_energy);
                 wmtk::logger().info(">>>>adjust_sizing_field finished...");
                 m = 0;
@@ -101,9 +111,7 @@ void TetRemeshingMesh::mesh_improvement(int max_its)
     local_operations({{0, 1, 0, 0}});
 }
 
-std::tuple<double, double> TetRemeshingMesh::local_operations(
-    const std::array<int, 4>& ops,
-    bool collapse_limit_length)
+std::tuple<double, double> TetRemeshingMesh::local_operations(const std::array<int, 4>& ops)
 {
     igl::Timer timer;
 
@@ -144,45 +152,25 @@ std::tuple<double, double> TetRemeshingMesh::local_operations(
                     "#vertices {}, #tets {} after split",
                     vert_capacity(),
                     tet_capacity());
-                // auto faces = get_faces();
-                // for (auto f : faces) {
-                //     auto x = f.fid(*this);
-                // }
-                // if (!check_vertex_param_type()) {
-                //     std::cout << "missing param!!!!!!!!" << std::endl;
-                //     output_faces("bug_surface_miss_param_after_split.obj", [](auto& f) {
-                //         return f.m_is_surface_fs;
-                //     });
-                //     // exit(0);
-                // }
             }
-            // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
             auto [max_energy, avg_energy] = get_max_avg_energy();
             wmtk::logger().info("split max energy = {} avg = {}", max_energy, avg_energy);
+            auto [max_el, avg_el] = get_max_avg_edge_length();
+            wmtk::logger().info("split max edge length = {} avg = {}", max_el, avg_el);
             sanity_checks();
         } else if (i == 1) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==collapsing {}==", n);
-                collapse_all_edges(collapse_limit_length);
+                collapse_all_edges();
                 wmtk::logger().info(
                     "#vertices {}, #tets {} after collapse",
                     vert_capacity(),
                     tet_capacity());
-                // auto faces = get_faces();
-                // for (auto f : faces) {
-                //     auto x = f.fid(*this);
-                // }
-                // if (!check_vertex_param_type()) {
-                //     std::cout << "missing param!!!!!!!!" << std::endl;
-                //     output_faces("buf_surface_miss_param_after_collpase.obj", [](auto& f) {
-                //         return f.m_is_surface_fs;
-                //     });
-                //     // exit(0);
-                // }
             }
-            // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
             auto [max_energy, avg_energy] = get_max_avg_energy();
             wmtk::logger().info("collapse max energy = {} avg = {}", max_energy, avg_energy);
+            auto [max_el, avg_el] = get_max_avg_edge_length();
+            wmtk::logger().info("collapse max edge length = {} avg = {}", max_el, avg_el);
             sanity_checks();
         } else if (i == 2) {
             for (int n = 0; n < ops[i]; n++) {
@@ -191,21 +179,22 @@ std::tuple<double, double> TetRemeshingMesh::local_operations(
                 swap_all_edges();
                 swap_all_faces();
             }
-            // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
             auto [max_energy, avg_energy] = get_max_avg_energy();
             wmtk::logger().info("swap max energy = {} avg = {}", max_energy, avg_energy);
+            auto [max_el, avg_el] = get_max_avg_edge_length();
+            wmtk::logger().info("swap max edge length = {} avg = {}", max_el, avg_el);
             sanity_checks();
         } else if (i == 3) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==smoothing {}==", n);
                 smooth_all_vertices();
             }
-            // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
             auto [max_energy, avg_energy] = get_max_avg_energy();
             wmtk::logger().info("smooth max energy = {} avg = {}", max_energy, avg_energy);
+            auto [max_el, avg_el] = get_max_avg_edge_length();
+            wmtk::logger().info("smooth max edge length = {} avg = {}", max_el, avg_el);
             sanity_checks();
         }
-        // output_faces(fmt::format("out-op{}.obj", i), [](auto& f) { return f.m_is_surface_fs; });
     }
     write_vtu(fmt::format("debug_{}.vtu", debug_print_counter++));
     energy = get_max_avg_energy();
@@ -333,6 +322,60 @@ bool TetRemeshingMesh::adjust_sizing_field_serial(double max_energy)
     // std::cout << std::endl;
 
     return is_hit_min_edge_length.load();
+}
+
+bool TetRemeshingMesh::adjust_sizing_field_for_edge_length()
+{
+    std::vector<bool> visited(vert_capacity(), false);
+
+    const auto edges = get_edges();
+
+    const double min_refine_scalar = m_params.l_min / m_params.l;
+
+    /**
+     * If edges are too short, it means they could not be collapsed so far. Reduce target size for
+     * these edges to improve chances that all edges are within range.
+     */
+    for (const Tuple& t : edges) {
+        const size_t v0 = t.vid(*this);
+        const size_t v1 = t.switch_vertex(*this).vid(*this);
+
+        const Vector3d& p0 = m_vertex_attribute[v0].m_posf;
+        const Vector3d& p1 = m_vertex_attribute[v1].m_posf;
+        const double l = (p1 - p0).norm();
+
+        double& s0 = m_vertex_attribute[v0].m_sizing_scalar;
+        double& s1 = m_vertex_attribute[v1].m_sizing_scalar;
+        const double sizing_ratio = 0.5 * (s0 + s1);
+        const double target_length = m_params.l * sizing_ratio;
+        const double min_convergence_length =
+            target_length / (0.8 * m_params.edge_length_convergence_factor);
+        if (l < min_convergence_length) {
+            if (!visited[v0]) {
+                s0 *= 0.5;
+                visited[v0] = true;
+                s0 = std::max(s0, min_refine_scalar);
+            }
+            if (!visited[v1]) {
+                s1 *= 0.5;
+                visited[v1] = true;
+                s1 = std::max(s1, min_refine_scalar);
+            }
+        }
+    }
+    // smooth sizing field
+    for (const Tuple& t : edges) {
+        const size_t v0 = t.vid(*this);
+        const size_t v1 = t.switch_vertex(*this).vid(*this);
+
+        double& s0 = m_vertex_attribute[v0].m_sizing_scalar;
+        double& s1 = m_vertex_attribute[v1].m_sizing_scalar;
+        // if one of the two is way larger than the other, reduce the scaling factor
+        s0 = std::min(s0, 1.5 * s1);
+        s1 = std::min(s1, 1.5 * s0);
+    }
+
+    return true;
 }
 
 void bfs_orient(const Eigen::MatrixXi& F, Eigen::MatrixXi& FF, Eigen::VectorXi& C)
@@ -513,22 +556,16 @@ std::tuple<double, double> TetRemeshingMesh::get_max_avg_energy()
 {
     double max_energy = -1.;
     double avg_energy = 0.;
-    auto cnt = 0;
+    size_t cnt = 0;
 
     for (int i = 0; i < tet_capacity(); i++) {
         auto tup = tuple_from_tet(i);
-        if (!tup.is_valid(*this)) continue;
-        // auto vs = oriented_tet_vertices(tup);
+        if (!tup.is_valid(*this)) {
+            continue;
+        }
 
-        auto q = m_tet_attribute[tup.tid(*this)].m_quality;
+        const double& q = m_tet_attribute[tup.tid(*this)].m_quality;
         max_energy = std::max(max_energy, q);
-        // if (q > 1e6) {
-        //     for (auto v : vs) {
-        //         large_tet << "v " << m_vertex_attribute[v.vid(*this)].m_posf[0] << " "
-        //                   << m_vertex_attribute[v.vid(*this)].m_posf[1] << " "
-        //                   << m_vertex_attribute[v.vid(*this)].m_posf[2] << std::endl;
-        //     }
-        // }
         avg_energy += std::cbrt(q);
         cnt++;
     }
@@ -536,6 +573,78 @@ std::tuple<double, double> TetRemeshingMesh::get_max_avg_energy()
     avg_energy /= cnt;
 
     return std::make_tuple(std::cbrt(max_energy), avg_energy);
+}
+
+std::tuple<double, double> TetRemeshingMesh::get_max_avg_edge_length()
+{
+    const auto edges = get_edges();
+    double max_edge_length = 0;
+    double avg_edge_length = 0;
+
+    for (const Tuple& t : edges) {
+        const size_t v0 = t.vid(*this);
+        const size_t v1 = t.switch_vertex(*this).vid(*this);
+        const Vector3d p0 = m_vertex_attribute[v0].m_posf;
+        const Vector3d p1 = m_vertex_attribute[v1].m_posf;
+        const double l = (p1 - p0).norm();
+        max_edge_length = std::max(max_edge_length, l);
+        avg_edge_length += l;
+    }
+
+    avg_edge_length /= edges.size();
+
+    return std::make_tuple(max_edge_length, avg_edge_length);
+}
+
+bool TetRemeshingMesh::is_edge_length_converged()
+{
+    const auto edges = get_edges();
+
+    bool is_converged = true;
+
+    size_t short_edges = 0;
+    size_t long_edges = 0;
+
+    for (const Tuple& t : edges) {
+        const size_t v0 = t.vid(*this);
+        const size_t v1 = t.switch_vertex(*this).vid(*this);
+
+        const Vector3d& p0 = m_vertex_attribute[v0].m_posf;
+        const Vector3d& p1 = m_vertex_attribute[v1].m_posf;
+        const double l = (p1 - p0).norm();
+
+        const double& s0 = m_vertex_attribute[v0].m_sizing_scalar;
+        const double& s1 = m_vertex_attribute[v1].m_sizing_scalar;
+        const double sizing_ratio = 0.5 * (s0 + s1);
+        const double target_length = m_params.l * sizing_ratio;
+        const double min_convergence_length =
+            target_length / m_params.edge_length_convergence_factor;
+        const double max_convergence_length =
+            target_length * m_params.edge_length_convergence_factor;
+        // if (l < min_l || l > max_l) {
+        //     is_converged = false;
+        //    // TODO can break out of this
+        //}
+        if (l < min_convergence_length) {
+            is_converged = false;
+            ++short_edges;
+        }
+        if (l > max_convergence_length) {
+            is_converged = false;
+            ++long_edges;
+        }
+    }
+
+    logger().warn("Short edges ratio = {}", (double)short_edges / edges.size());
+    logger().warn("Long edges ratio = {}", (double)long_edges / edges.size());
+
+    return is_converged;
+}
+
+bool TetRemeshingMesh::is_energy_converged()
+{
+    const auto [max_e, avg_e] = get_max_avg_energy();
+    return max_e < m_params.stop_energy;
 }
 
 bool TetRemeshingMesh::is_inverted_f(const Tuple& loc) const
@@ -569,13 +678,20 @@ bool TetRemeshingMesh::is_inverted(const Tuple& loc) const
 double TetRemeshingMesh::get_quality(const Tuple& loc) const
 {
     std::array<Vector3d, 4> ps;
-    auto its = oriented_tet_vids(loc);
+    const auto its = oriented_tet_vids(loc);
 
-    auto energy = -1.;
+    for (auto k = 0; k < 4; k++) {
+        ps[k] = m_vertex_attribute[its[k]].m_posf;
+    }
+
+    double energy = -1.;
 
     std::array<double, 12> T;
-    for (auto k = 0; k < 4; k++)
-        for (auto j = 0; j < 3; j++) T[k * 3 + j] = ps[k][j];
+    for (size_t k = 0; k < 4; k++) {
+        for (size_t j = 0; j < 3; j++) {
+            T[k * 3 + j] = ps[k][j];
+        }
+    }
 
     energy = wmtk::AMIPS_energy_stable_p3<wmtk::Rational>(T);
 
@@ -1020,6 +1136,9 @@ void TetRemeshingMesh::write_vtu(const std::string& path)
     Eigen::MatrixXd V(vs.size(), 3);
     Eigen::MatrixXi T(tets.size(), 4);
 
+    Eigen::VectorXd v_sizing_field(vert_capacity());
+    v_sizing_field.setZero();
+
     Eigen::MatrixXd parts(tets.size(), 1);
     std::vector<MatrixXd> tags(m_tags_count, MatrixXd(tets.size(), 1));
     Eigen::MatrixXd amips(tets.size(), 1);
@@ -1043,6 +1162,7 @@ void TetRemeshingMesh::write_vtu(const std::string& path)
     for (const Tuple& v : vs) {
         const size_t vid = v.vid(*this);
         V.row(vid) = m_vertex_attribute[vid].m_posf;
+        v_sizing_field[vid] = m_vertex_attribute[vid].m_sizing_scalar;
     }
 
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
@@ -1053,6 +1173,7 @@ void TetRemeshingMesh::write_vtu(const std::string& path)
         writer->add_cell_field(fmt::format("tag_{}", j), tags[j]);
     }
     writer->add_cell_field("quality", amips);
+    writer->add_field("sizing_field", v_sizing_field);
     writer->write_mesh(path, V, T);
 }
 

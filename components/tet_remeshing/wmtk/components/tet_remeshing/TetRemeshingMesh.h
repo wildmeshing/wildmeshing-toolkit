@@ -283,7 +283,7 @@ public:
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
 
-    void collapse_all_edges(bool is_limit_length = true);
+    void collapse_all_edges();
     bool collapse_edge_before(const Tuple& t) override;
     bool collapse_edge_after(const Tuple& t) override;
 
@@ -311,10 +311,12 @@ public:
     bool is_edge_on_bbox(const Tuple& loc);
     //
     void mesh_improvement(int max_its = 80);
-    std::tuple<double, double> local_operations(
-        const std::array<int, 4>& ops,
-        bool collapse_limit_length = true);
+    std::tuple<double, double> local_operations(const std::array<int, 4>& ops);
     std::tuple<double, double> get_max_avg_energy();
+    std::tuple<double, double> get_max_avg_edge_length();
+
+    bool is_edge_length_converged();
+    bool is_energy_converged();
 
     bool check_attributes();
 
@@ -443,6 +445,8 @@ public:
     std::vector<std::array<size_t, 3>> triangulate_polygon_face(std::vector<Vector3r> points);
 
     bool adjust_sizing_field_serial(double max_energy);
+
+    bool adjust_sizing_field_for_edge_length();
 
     /**
      * @brief Find open boundary edges of the embedded surface and initialize a BVH for the open

@@ -284,7 +284,7 @@ void TetWildMesh::smooth_all_vertices()
     } else {
         timer.start();
         auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kSeq>();
-        executor.priority = [&](auto& m, auto op, auto& t) -> double { return rand(); };
+        // executor.priority = [&](auto& m, auto op, auto& t) -> double { return rand(); };
         executor(*this, collect_all_ops);
         time = timer.getElapsedTime();
         wmtk::logger().info("vertex smoothing operation time serial: {}s", time);
