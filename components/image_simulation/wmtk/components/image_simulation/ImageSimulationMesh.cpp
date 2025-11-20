@@ -14,7 +14,6 @@
 #include <tbb/concurrent_vector.h>
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/fmt/bundled/format.h>
-#include <tracy/Tracy.hpp>
 #include <igl/predicates/predicates.h>
 #include <igl/winding_number.h>
 #include <igl/write_triangle_mesh.h>
@@ -46,7 +45,6 @@ void ImageSimulationMesh::mesh_improvement(int max_its)
     ////preprocessing
     // TODO: refactor to eliminate repeated partition.
     //
-    ZoneScopedN("meshimprovementmain");
 
     compute_vertex_partition_morton();
 
@@ -696,8 +694,9 @@ std::vector<std::array<size_t, 3>> ImageSimulationMesh::get_faces_by_condition(
         if (cond(m_face_attribute[fid])) {
             auto tid = fid / 4, lid = fid % 4;
             auto verts = get_face_vertices(f);
-            res.emplace_back(std::array<size_t, 3>{
-                {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
+            res.emplace_back(
+                std::array<size_t, 3>{
+                    {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
         }
     }
     return res;

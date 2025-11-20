@@ -1,7 +1,5 @@
 #pragma once
 
-#include <tracy/Tracy.hpp>
-
 #include <algorithm>
 #include <array>
 #include <iostream>

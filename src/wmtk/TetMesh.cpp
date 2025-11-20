@@ -6,8 +6,6 @@
 
 #include <tbb/parallel_for.h>
 
-#include <tracy/Tracy.hpp>
-
 namespace wmtk {
 
 int TetMesh::get_next_empty_slot_t()
@@ -167,7 +165,6 @@ void TetMesh::init(const MatrixXi& T)
 
 std::vector<TetMesh::Tuple> TetMesh::get_edges() const
 {
-    ZoneScoped;
     std::vector<std::tuple<size_t, size_t, TetMesh::Tuple>> edges;
     edges.reserve(tet_capacity() * 6);
     for (int i = 0; i < tet_capacity(); i++) {
@@ -697,7 +694,6 @@ std::vector<TetMesh::Tuple> TetMesh::get_one_ring_vertices_for_vertex(const Tupl
 
 std::vector<size_t> TetMesh::get_one_ring_vids_for_vertex(size_t vid) const
 {
-    ZoneScoped;
     std::vector<size_t> v_ids;
     v_ids.reserve(m_vertex_connectivity[vid].m_conn_tets.size() * 4);
     for (int t_id : m_vertex_connectivity[vid].m_conn_tets) {
@@ -712,7 +708,6 @@ std::vector<size_t> TetMesh::get_one_ring_vids_for_vertex(size_t vid) const
 
 std::vector<size_t> TetMesh::get_one_ring_vids_for_vertex_adj(size_t vid) const
 {
-    ZoneScoped;
     std::vector<size_t> v_ids;
     v_ids.reserve(m_vertex_connectivity[vid].m_conn_tets.size() * 4);
     for (int t_id : m_vertex_connectivity[vid].m_conn_tets) {
@@ -740,7 +735,6 @@ std::vector<size_t> TetMesh::get_one_ring_vids_for_vertex_adj(
     size_t vid,
     std::vector<size_t>& cache)
 {
-    ZoneScoped;
     cache.clear();
     for (int t_id : m_vertex_connectivity[vid].m_conn_tets) {
         for (int j = 0; j < 4; j++) {

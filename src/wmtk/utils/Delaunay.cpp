@@ -38,6 +38,30 @@ bool is_inverted(
         return false;
     return true;
 }
+
+bool is_inverted(
+    const wmtk::delaunay::Point2D& p0,
+    const wmtk::delaunay::Point2D& p1,
+    const wmtk::delaunay::Point2D& p2)
+{
+    const Eigen::Vector2d v0(p0[0], p0[1]);
+    const Eigen::Vector2d v1(p1[0], p1[1]);
+    const Eigen::Vector2d v2(p2[0], p2[1]);
+
+    igl::predicates::exactinit();
+    auto res = igl::predicates::orient2d(v0, v1, v2);
+    int result;
+    if (res == igl::predicates::Orientation::POSITIVE)
+        result = 1;
+    else if (res == igl::predicates::Orientation::NEGATIVE)
+        result = -1;
+    else
+        result = 0;
+
+    if (result < 0) // neg result == pos tet (tet origin from geogram delaunay)
+        return true;
+    return false;
+}
 } // namespace
 
 namespace wmtk::delaunay {
@@ -77,19 +101,19 @@ auto delaunay3D(const std::vector<Point3D>& points)
     }
 
     // sort tets
-    for (auto& tet : tets) {
-        std::sort(tet.begin(), tet.end());
+    for (auto& tri : tets) {
+        std::sort(tri.begin(), tri.end());
     }
     std::sort(tets.begin(), tets.end());
 
-    for (auto& tet : tets) {
-        const Point3D p0 = points[tet[0]];
-        const Point3D p1 = points[tet[1]];
-        const Point3D p2 = points[tet[2]];
-        const Point3D p3 = points[tet[3]];
+    for (auto& tri : tets) {
+        const Point3D p0 = points[tri[0]];
+        const Point3D p1 = points[tri[1]];
+        const Point3D p2 = points[tri[2]];
+        const Point3D p3 = points[tri[3]];
         if (is_inverted(p0, p1, p2, p3)) {
             // std::cout << "Inverted tet found" << std::endl;
-            std::swap(tet[2], tet[3]); // invert tet
+            std::swap(tri[2], tri[3]); // invert tet
         }
     }
 
@@ -135,6 +159,16 @@ auto delaunay2D(const std::vector<Point2D>& points)
         std::sort(tri.begin(), tri.end());
     }
     std::sort(triangles.begin(), triangles.end());
+
+    for (auto& tri : triangles) {
+        const Point2D p0 = points[tri[0]];
+        const Point2D p1 = points[tri[1]];
+        const Point2D p2 = points[tri[2]];
+        if (is_inverted(p0, p1, p2)) {
+            // std::cout << "Inverted tet found" << std::endl;
+            std::swap(tri[1], tri[2]); // invert triangle
+        }
+    }
 
     return {vertices, triangles};
 }
