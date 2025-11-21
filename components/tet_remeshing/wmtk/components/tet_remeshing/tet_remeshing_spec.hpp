@@ -13,6 +13,7 @@ nlohmann::json tet_remeshing_spec = R"(
       "ijk_to_ras",
       "skip_simplify",
       "use_sample_envelope",
+      "use_tetgen",
       "num_threads",
       "max_iterations",
       "eps_rel",
@@ -81,6 +82,12 @@ nlohmann::json tet_remeshing_spec = R"(
     "type": "bool",
     "default": false,
     "doc": "Use sample envelope instead of exact one."
+  },
+  {
+    "pointer": "/use_tetgen",
+    "type": "bool",
+    "default": false,
+    "doc": "Use tetgen for embedding an image. Potentially faster but could fail."
   },
   {
     "pointer": "/num_threads",
