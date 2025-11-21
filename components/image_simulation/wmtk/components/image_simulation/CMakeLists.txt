@@ -45,6 +45,7 @@ target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC
 	wmtk::sec_lib
 	VolumeRemesher::VolumeRemesher
 	jse::jse
+	igl_copyleft::tetgen
 )
 
 ######################

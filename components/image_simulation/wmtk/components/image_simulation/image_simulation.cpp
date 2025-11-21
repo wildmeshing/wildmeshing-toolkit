@@ -6,19 +6,9 @@
 
 #include <jse/jse.h>
 #include <wmtk/TetMesh.h>
-#include <wmtk/utils/Partitioning.h>
-#include <paraviewo/VTUWriter.hpp>
 #include <wmtk/Types.hpp>
-#include <wmtk/envelope/Envelope.hpp>
-#include <wmtk/utils/InsertTriangleUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include <wmtk/utils/ManifoldUtils.hpp>
-#include <wmtk/utils/Reader.hpp>
-#include <wmtk/utils/io.hpp>
-#include <wmtk/utils/partition_utils.hpp>
 #include <wmtk/utils/resolve_path.hpp>
-
-#include <sec/ShortestEdgeCollapse.h>
 
 #include "EmbedSurface.hpp"
 #include "ImageSimulationMesh.h"
@@ -164,7 +154,9 @@ void image_simulation(nlohmann::json json_params)
         V_envelope = image_mesh.V_surface();
         F_envelope = image_mesh.F_surface();
 
-        const bool all_rounded = image_mesh.embed_surface();
+        // const bool all_rounded = image_mesh.embed_surface();
+        const bool all_rounded = json_params["use_tetgen"] ? image_mesh.embed_surface_tetgen()
+                                                           : image_mesh.embed_surface();
         image_mesh.consolidate();
 
         if (write_vtu) {

@@ -101,6 +101,7 @@ void tet_remeshing(nlohmann::json json_params)
     read_image_msh(input_paths[0], V_input, T_input, T_input_tag, V_envelope, F_envelope);
 
     params.init(V_input.colwise().minCoeff(), V_input.colwise().maxCoeff());
+    logger().info("Target edge length = {}", params.l);
 
     igl::Timer timer;
     timer.start();
