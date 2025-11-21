@@ -19,6 +19,7 @@ nlohmann::json tet_remeshing_spec = R"(
       "eps",
       "length_rel",
       "stop_energy",
+      "edge_length_convergence",
       "write_vtu",
       "log_file"
     ]
@@ -114,8 +115,14 @@ nlohmann::json tet_remeshing_spec = R"(
   {
     "pointer": "/stop_energy",
     "type": "float",
-    "default": 10,
+    "default": 1000,
     "doc": "Target energy. If all tets have an energy below this, tetwild will stop."
+  },
+  {
+    "pointer": "/edge_length_convergence",
+    "type": "float",
+    "default": 1e-2,
+    "doc": "The iteration will stop once the relative change of the mean and standard deviation of all edge lengths is below that value."
   },
   {
     "pointer": "/write_vtu",

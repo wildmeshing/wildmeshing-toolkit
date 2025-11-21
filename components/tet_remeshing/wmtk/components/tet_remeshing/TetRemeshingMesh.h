@@ -313,8 +313,12 @@ public:
     void mesh_improvement(int max_its = 80);
     std::tuple<double, double> local_operations(const std::array<int, 4>& ops);
     std::tuple<double, double> get_max_avg_energy();
-    std::tuple<double, double> get_max_avg_edge_length();
+    /**
+     * @brief Compute the mean and standard deviation of the edge lengths.
+     */
+    std::tuple<double, double> get_mean_dev_edge_length();
 
+    bool is_edge_length_in_range();
     bool is_edge_length_converged();
     bool is_energy_converged();
 
@@ -329,6 +333,12 @@ public:
     std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;
 
 private:
+    struct
+    {
+        double mean = std::numeric_limits<double>::max(); // mean of all edge lengths
+        double dev = std::numeric_limits<double>::max(); // standard deviation
+    } m_edge_length_stats;
+
     // tags: correspondence map from new tet-face node indices to in-triangle ids.
     // built up while triangles are inserted.
     tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;
