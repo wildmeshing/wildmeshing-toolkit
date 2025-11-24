@@ -422,6 +422,8 @@ public:
      */
     virtual bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_tets);
 
+    bool link_condition(const Tuple& t);
+
     /**
      * Collapse edge connectivity change part. Constains a link condition check and the connecticity
      * update
