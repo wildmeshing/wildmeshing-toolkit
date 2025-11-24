@@ -103,6 +103,9 @@ std::tuple<double, double> TetRemeshingMesh::local_operations(const std::array<i
     std::tuple<double, double> energy;
 
     auto sanity_checks = [this]() {
+        if (!m_params.perform_sanity_checks) {
+            return;
+        }
         logger().info("Perform sanity checks...");
         const auto faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
         for (const auto& verts : faces) {

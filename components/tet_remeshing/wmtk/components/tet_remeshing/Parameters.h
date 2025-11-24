@@ -23,6 +23,8 @@ struct Parameters
 
     double stop_energy = 10;
 
+    bool perform_sanity_checks = false;
+
     void init(const Vector3d& min_, const Vector3d& max_)
     {
         box_min = min_;
