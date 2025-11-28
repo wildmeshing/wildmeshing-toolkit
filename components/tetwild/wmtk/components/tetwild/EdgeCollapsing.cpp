@@ -60,7 +60,10 @@ void TetWildMesh::collapse_all_edges(bool is_limit_length)
         do {
             count_success.store(0, std::memory_order_release);
             wmtk::logger().info("Prepare to collapse {}", collect_all_ops.size());
+            igl::Timer t1;
+            t1.start();
             executor(*this, collect_all_ops);
+            wmtk::logger().info("edge collapse execute time: {}s", t1.getElapsedTimeInSec());
             wmtk::logger().info(
                 "Collapsed {}, retrying failed {}",
                 (int)count_success,
@@ -102,26 +105,11 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
     auto loc1 = switch_vertex(loc);
     size_t v2_id = loc1.vid(*this);
 
-    // bool debug_flag = (v1_id == 1060 && v2_id == 174);
-    // if (debug_flag) {
-    //     std::cout << m_vertex_attribute[v1_id].m_posf.transpose() << std::endl;
-    //     std::cout << m_vertex_attribute[v2_id].m_posf.transpose() << std::endl;
-    // }
-    //
     cache.v1_id = v1_id;
     cache.v2_id = v2_id;
 
     cache.edge_length =
         (VA[v1_id].m_posf - VA[v2_id].m_posf).norm(); // todo: duplicated computation
-
-    // debug code
-    // wmtk::logger().info(
-    //     "try to collapse eid:{}, vid1: {}, vid2: {}, length: {}",
-    //     loc.fid(*this),
-    //     v1_id,
-    //     v2_id,
-    //     cache.edge_length);
-
 
     ///check if on bbox/surface/boundary
     // bbox
@@ -132,9 +120,6 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
                     VA[v2_id].on_bbox_faces.begin(),
                     VA[v2_id].on_bbox_faces.end(),
                     on_bbox) == VA[v2_id].on_bbox_faces.end()) {
-                // debug code
-                // wmtk::logger().info("edge {} not passing bbox before check!", loc.fid(*this));
-                // if (debug_flag) std::cout << "box reject" << std::endl;
                 return false;
             }
     }
@@ -142,10 +127,6 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
     // surface
     if (cache.edge_length > 0 && VA[v1_id].m_is_on_surface) {
         if (!VA[v2_id].m_is_on_surface && m_envelope.is_outside(VA[v2_id].m_posf)) {
-            // debug code
-            // wmtk::logger().info("edge {} not passing surface before check!", loc.fid(*this));
-            // if (debug_flag) std::cout << "surface reject" << std::endl;
-
             return false;
         }
     }
@@ -161,29 +142,24 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
     }
 
 
-    auto n1_locs = get_one_ring_tets_for_vertex(loc);
-    auto n12_locs = get_incident_tets_for_edge(loc); // todo: duplicated computation
+    const auto n1_locs = get_one_ring_tids_for_vertex(loc);
+    const auto n12_locs = get_incident_tids_for_edge(loc); // todo: duplicated computation
 
-    std::map<size_t, double> qs;
+    cache.changed_tids.reserve(n1_locs.size() - n12_locs.size());
     cache.max_energy = 0;
-    for (const Tuple& l : n1_locs) {
-        qs[l.tid(*this)] = m_tet_attribute[l.tid(*this)].m_quality; // get_quality(l);
-        cache.max_energy = std::max(cache.max_energy, qs[l.tid(*this)]);
-    }
-    for (const Tuple& l : n12_locs) {
-        qs.erase(l.tid(*this));
-    }
-
-
-    for (auto& q : qs) {
-        //
-        cache.changed_tids.push_back(q.first);
+    for (const size_t& tid : n1_locs) {
+        const double q = m_tet_attribute[tid].m_quality;
+        cache.max_energy = std::max(cache.max_energy, q);
+        const auto vs = oriented_tet_vids(tid);
+        if (vs[0] != v2_id && vs[1] != v2_id && vs[2] != v2_id && vs[3] != v2_id) {
+            cache.changed_tids.emplace_back(tid);
+        }
     }
 
     //
     std::set<int> unique_fid;
-    for (auto& t : n12_locs) {
-        auto vs = oriented_tet_vids(t);
+    for (const size_t& tid : n12_locs) {
+        auto vs = oriented_tet_vids(tid);
         std::array<size_t, 3> f_vids = {{v1_id, 0, 0}};
         int cnt = 1;
         for (int j = 0; j < 4; j++) {
@@ -206,8 +182,8 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
         // this code must check if a face is tagged as boundary
         // only checking the vertices is not enough
         std::vector<std::array<size_t, 3>> fs;
-        for (const Tuple& t : n1_locs) {
-            const auto vs = oriented_tet_vids(t);
+        for (const size_t& tid : n1_locs) {
+            const auto vs = oriented_tet_vids(tid);
 
             int j_v1 = -1;
             auto skip = [&]() {
@@ -248,8 +224,8 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
         }
 
         std::vector<std::array<size_t, 2>> bs;
-        for (const Tuple& t : n1_locs) {
-            const auto vs = oriented_tet_vids(t);
+        for (const size_t& tid : n1_locs) {
+            const auto vs = oriented_tet_vids(tid);
 
             int j_v1 = -1;
             for (int j = 0; j < 4; j++) {
@@ -291,25 +267,6 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
         wmtk::vector_unique(bs);
         cache.boundary_edges = bs;
     }
-
-    // for (size_t tid : cache.changed_tids) { // fortest
-    //     assert(!is_inverted(tuple_from_tet(tid)));
-    // }
-
-    // debug code
-    // wmtk::logger().info("edge {} pass collapse before check", loc.fid(*this));
-
-    // test code
-    // check global number nonmanifold vertex
-
-    // cache.global_nonmani_ver_cnt = 0;
-    // for (auto v : get_vertices()) {
-    //     if (m_vertex_attribute[v.vid(*this)].m_is_on_surface) {
-    //         if (count_vertex_links(v) > 1) {
-    //             cache.global_nonmani_ver_cnt++;
-    //         }
-    //     }
-    // }
 
     return true;
 }

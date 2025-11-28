@@ -467,8 +467,17 @@ std::tuple<TetMesh::Tuple, size_t> TetMesh::tuple_from_face(const std::array<siz
     face.m_global_tid = global_tid;
     // fid
     std::array<int, 3> f;
-    for (int j = 0; j < 3; j++) {
-        f[j] = m_tet_connectivity[face.m_global_tid].find(vids[j]);
+    // for (int j = 0; j < 3; j++) {
+    //     f[j] = m_tet_connectivity[face.m_global_tid].find(vids[j]);
+    // }
+    {
+        const auto& vs = m_tet_connectivity[face.m_global_tid];
+        int k = 0;
+        for (int j = 0; j < 4; ++j) {
+            if (vs[j] == vids[0] || vs[j] == vids[1] || vs[j] == vids[2]) {
+                f[k++] = j;
+            }
+        }
     }
     std::sort(f.begin(), f.end());
     face.m_local_fid =
@@ -755,14 +764,27 @@ std::vector<TetMesh::Tuple> TetMesh::get_incident_tets_for_edge(
     const size_t vid0,
     const size_t vid1) const
 {
-    auto tids = set_intersection(
-        m_vertex_connectivity[vid0].m_conn_tets,
-        m_vertex_connectivity[vid1].m_conn_tets);
+    auto tids = get_incident_tids_for_edge(vid0, vid1);
     std::vector<Tuple> tets;
     for (int t_id : tids) {
         tets.push_back(tuple_from_tet(t_id));
     }
     return tets;
+}
+
+std::vector<size_t> TetMesh::get_incident_tids_for_edge(const Tuple& t) const
+{
+    int v1_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][0]];
+    int v2_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][1]];
+    return get_incident_tids_for_edge(v1_id, v2_id);
+}
+
+std::vector<size_t> TetMesh::get_incident_tids_for_edge(const size_t vid0, const size_t vid1) const
+{
+    auto tids = set_intersection(
+        m_vertex_connectivity[vid0].m_conn_tets,
+        m_vertex_connectivity[vid1].m_conn_tets);
+    return tids;
 }
 
 std::vector<TetMesh::Tuple> TetMesh::get_one_ring_tets_for_edge(const Tuple& t) const

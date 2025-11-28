@@ -951,6 +951,9 @@ public:
     std::vector<Tuple> get_incident_tets_for_edge(const Tuple& t) const;
     std::vector<Tuple> get_incident_tets_for_edge(const size_t vid0, const size_t vid1) const;
 
+    std::vector<size_t> get_incident_tids_for_edge(const Tuple& t) const;
+    std::vector<size_t> get_incident_tids_for_edge(const size_t vid0, const size_t vid1) const;
+
     /**
      * @brief Get the one ring tets for edge
      *
