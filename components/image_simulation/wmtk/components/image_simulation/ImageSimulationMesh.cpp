@@ -121,6 +121,9 @@ std::tuple<double, double> ImageSimulationMesh::local_operations(
     std::tuple<double, double> energy;
 
     auto sanity_checks = [this]() {
+        if (!m_params.perform_sanity_checks) {
+            return;
+        }
         logger().info("Perform sanity checks...");
         const auto faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
         for (const auto& verts : faces) {
@@ -694,9 +697,8 @@ std::vector<std::array<size_t, 3>> ImageSimulationMesh::get_faces_by_condition(
         if (cond(m_face_attribute[fid])) {
             auto tid = fid / 4, lid = fid % 4;
             auto verts = get_face_vertices(f);
-            res.emplace_back(
-                std::array<size_t, 3>{
-                    {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
+            res.emplace_back(std::array<size_t, 3>{
+                {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
         }
     }
     return res;
@@ -1133,6 +1135,9 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
     Eigen::MatrixXd V(vs.size(), 3);
     Eigen::MatrixXi T(tets.size(), 4);
 
+    Eigen::VectorXd v_sizing_field(vert_capacity());
+    v_sizing_field.setZero();
+
     Eigen::MatrixXd parts(tets.size(), 1);
     std::vector<MatrixXd> tags(m_tags_count, MatrixXd(tets.size(), 1));
     Eigen::MatrixXd amips(tets.size(), 1);
@@ -1156,6 +1161,7 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
     for (const Tuple& v : vs) {
         const size_t vid = v.vid(*this);
         V.row(vid) = m_vertex_attribute[vid].m_posf;
+        v_sizing_field[vid] = m_vertex_attribute[vid].m_sizing_scalar;
     }
 
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
@@ -1166,6 +1172,7 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
         writer->add_cell_field(fmt::format("tag_{}", j), tags[j]);
     }
     writer->add_cell_field("quality", amips);
+    writer->add_field("sizing_field", v_sizing_field);
     writer->write_mesh(path, V, T);
 }
 

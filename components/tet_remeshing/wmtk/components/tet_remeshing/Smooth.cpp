@@ -30,8 +30,8 @@ bool TetRemeshingMesh::smooth_after(const Tuple& t)
     const size_t vid = t.vid(*this);
 
     auto locs = get_one_ring_tets_for_vertex(t);
-    auto max_quality = 0.;
-    for (auto& tet : locs) {
+    double max_quality = 0.;
+    for (const Tuple& tet : locs) {
         max_quality = std::max(max_quality, m_tet_attribute[tet.tid(*this)].m_quality);
     }
 
@@ -43,13 +43,7 @@ bool TetRemeshingMesh::smooth_after(const Tuple& t)
         auto& T = assembles[loc_id];
         auto t_id = loc.tid(*this);
 
-        // assert(!is_inverted(loc));
-        if (is_inverted_f(loc)) {
-            // Neighbors that are not rounded could cause a tet to be inverted in floats
-            // std::cout << "Inverted tet " << m_vertex_attribute[vid].m_posf.transpose() <<
-            // std::endl;
-            return false;
-        }
+        assert(!is_inverted(loc));
         auto local_tuples = oriented_tet_vertices(loc);
         std::array<size_t, 4> local_verts;
         for (auto i = 0; i < 4; i++) {
@@ -222,7 +216,7 @@ bool TetRemeshingMesh::smooth_after(const Tuple& t)
     }
 
     // quality
-    auto max_after_quality = 0.;
+    double max_after_quality = 0.;
     for (const Tuple& loc : locs) {
         if (is_inverted(loc)) {
             return false;
@@ -231,7 +225,7 @@ bool TetRemeshingMesh::smooth_after(const Tuple& t)
         m_tet_attribute[t_id].m_quality = get_quality(loc);
         max_after_quality = std::max(max_after_quality, m_tet_attribute[t_id].m_quality);
     }
-    if (max_after_quality > max_quality) {
+    if (std::cbrt(max_after_quality) > m_params.stop_energy && max_after_quality > max_quality) {
         return false;
     }
 

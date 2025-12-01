@@ -11,7 +11,7 @@
 
 namespace wmtk::components::tet_remeshing {
 
-void TetRemeshingMesh::collapse_all_edges(bool is_limit_length)
+void TetRemeshingMesh::collapse_all_edges()
 {
     igl::Timer timer;
     double time;
@@ -47,13 +47,16 @@ void TetRemeshingMesh::collapse_all_edges(bool is_limit_length)
             auto& VA = m_vertex_attribute;
             auto& [weight, op, tup] = ele;
             auto length = m.get_length2(tup);
-            if (length != -weight) return false;
-            //
-            size_t v1_id = tup.vid(*this);
-            size_t v2_id = tup.switch_vertex(*this).vid(*this);
-            double sizing_ratio = (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar) / 2;
-            if (is_limit_length && length > m_params.collapsing_l2 * sizing_ratio * sizing_ratio)
+            if (length != -weight) {
                 return false;
+            }
+            //
+            size_t v0 = tup.vid(*this);
+            size_t v1 = tup.switch_vertex(*this).vid(*this);
+            double sizing_ratio = (VA[v0].m_sizing_scalar + VA[v1].m_sizing_scalar) / 2;
+            if (length > m_params.collapsing_l2 * sizing_ratio * sizing_ratio) {
+                return false;
+            }
             return true;
         };
 
@@ -299,11 +302,8 @@ bool TetRemeshingMesh::collapse_edge_after(const Tuple& loc)
             return false;
         }
         double q = get_quality(tet);
-        // only check quality if v1 is rounded
-        if (q > cache.max_energy) {
-            // if (debug_flag)
-            //     std::cout << "energy reject " << q << " " << cache.max_energy << std::endl;
-
+        // TODO: replace 1e5 with a variable
+        if (std::cbrt(q) > m_params.stop_energy && q > cache.max_energy) { // limit energy to 1e5
             return false;
         }
         qs.push_back(q);
@@ -327,24 +327,6 @@ bool TetRemeshingMesh::collapse_edge_after(const Tuple& loc)
             if (is_out) {
                 return false;
             }
-
-            // // open boundary envelope
-            // // by checking each edge on cached surface
-            // if (VA[vids[0]].m_is_on_open_boundary && VA[vids[1]].m_is_on_open_boundary) {
-            //     if (m_open_boundary_envelope.is_outside(
-            //             {{VA[vids[0]].m_posf, VA[vids[1]].m_posf, VA[vids[0]].m_posf}}))
-            //         return false;
-            // }
-            // if (VA[vids[1]].m_is_on_open_boundary && VA[vids[2]].m_is_on_open_boundary) {
-            //     if (m_open_boundary_envelope.is_outside(
-            //             {{VA[vids[1]].m_posf, VA[vids[2]].m_posf, VA[vids[1]].m_posf}}))
-            //         return false;
-            // }
-            // if (VA[vids[2]].m_is_on_open_boundary && VA[vids[0]].m_is_on_open_boundary) {
-            //     if (m_open_boundary_envelope.is_outside(
-            //             {{VA[vids[2]].m_posf, VA[vids[0]].m_posf, VA[vids[2]].m_posf}}))
-            //         return false;
-            // }
         }
         for (const auto& vids : cache.boundary_edges) {
             if (!is_open_boundary_edge(vids)) {
@@ -374,8 +356,6 @@ bool TetRemeshingMesh::collapse_edge_after(const Tuple& loc)
         //
         auto [_, global_fid] = tuple_from_face({{v2_id, old_vids[1], old_vids[2]}});
         if (global_fid == -1) {
-            // if (debug_flag) std::cout << "whatever reject" << std::endl;
-
             return false;
         }
         m_face_attribute[global_fid] = f_attr;

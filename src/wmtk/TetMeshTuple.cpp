@@ -130,32 +130,90 @@ size_t TetMesh::Tuple::eid(const TetMesh& m) const
 
 size_t TetMesh::Tuple::fid(const TetMesh& m) const
 {
-    std::array<size_t, 3> v_ids = {
+    std::array<size_t, 3> vids = {
         {m.m_tet_connectivity[m_global_tid][m_local_faces[m_local_fid][0]],
          m.m_tet_connectivity[m_global_tid][m_local_faces[m_local_fid][1]],
          m.m_tet_connectivity[m_global_tid][m_local_faces[m_local_fid][2]]}};
-    auto tmp = set_intersection(
-        m.m_vertex_connectivity[v_ids[0]].m_conn_tets,
-        m.m_vertex_connectivity[v_ids[1]].m_conn_tets);
-    auto n12_t_ids = set_intersection(tmp, m.m_vertex_connectivity[v_ids[2]].m_conn_tets);
-    assert(n12_t_ids.size() == 1 || n12_t_ids.size() == 2);
+    // auto tmp = set_intersection(
+    //     m.m_vertex_connectivity[v_ids[0]].m_conn_tets,
+    //     m.m_vertex_connectivity[v_ids[1]].m_conn_tets);
+    // auto n12_t_ids = set_intersection(tmp, m.m_vertex_connectivity[v_ids[2]].m_conn_tets);
+    // assert(n12_t_ids.size() == 1 || n12_t_ids.size() == 2);
+    //
+    // if (n12_t_ids.size() == 1) {
+    //     return m_global_tid * 4 + m_local_fid;
+    // }
+    //
+    // std::sort(v_ids.begin(), v_ids.end());
+    // int tid = *std::min_element(n12_t_ids.begin(), n12_t_ids.end());
+    // for (int j = 0; j < 4; j++) {
+    //     std::array<size_t, 3> tmp_v_ids = {
+    //         {m.m_tet_connectivity[tid][m_local_faces[j][0]],
+    //          m.m_tet_connectivity[tid][m_local_faces[j][1]],
+    //          m.m_tet_connectivity[tid][m_local_faces[j][2]]}};
+    //     std::sort(tmp_v_ids.begin(), tmp_v_ids.end());
+    //     if (tmp_v_ids == v_ids) return tid * 4 + j;
+    // }
+    //
+    // throw std::runtime_error("Tuple::fid(*this) error");
 
-    if (n12_t_ids.size() == 1) {
-        return m_global_tid * 4 + m_local_fid;
+    size_t v0_id = vids[0];
+    size_t v1_id = vids[1];
+    size_t v2_id = vids[2];
+
+    size_t tid = std::numeric_limits<size_t>::max();
+
+    // find lowest common tet id
+    {
+        const auto& t0 = m.m_vertex_connectivity[v0_id].m_conn_tets;
+        const auto& t1 = m.m_vertex_connectivity[v1_id].m_conn_tets;
+        const auto& t2 = m.m_vertex_connectivity[v2_id].m_conn_tets;
+        size_t i0 = 0;
+        size_t i1 = 0;
+        size_t i2 = 0;
+
+        if (t0.empty() || t1.empty() || t2.empty()) {
+            log_and_throw_error(
+                "Tuple::fid(*this) error: One of the vertices has an empty tet vector");
+        }
+
+        while (true) {
+            if (t0[i0] < t1[i1] || t0[i0] < t2[i2]) {
+                i0++;
+                if (i0 == t0.size()) {
+                    log_and_throw_error("Tuple::fid(*this) error");
+                }
+            }
+            if (t1[i1] < t2[i2] || t1[i1] < t0[i0]) {
+                i1++;
+                if (i1 == t1.size()) {
+                    log_and_throw_error("Tuple::fid(*this) error");
+                }
+            }
+            if (t2[i2] < t0[i0] || t2[i2] < t1[i1]) {
+                i2++;
+                if (i2 == t2.size()) {
+                    log_and_throw_error("Tuple::fid(*this) error");
+                }
+            }
+            if (t0[i0] == t1[i1] && t0[i0] == t2[i2]) {
+                tid = t0[i0];
+                break;
+            }
+        }
     }
 
-    std::sort(v_ids.begin(), v_ids.end());
-    int tid = *std::min_element(n12_t_ids.begin(), n12_t_ids.end());
-    for (int j = 0; j < 4; j++) {
-        std::array<size_t, 3> tmp_v_ids = {
-            {m.m_tet_connectivity[tid][m_local_faces[j][0]],
-             m.m_tet_connectivity[tid][m_local_faces[j][1]],
-             m.m_tet_connectivity[tid][m_local_faces[j][2]]}};
-        std::sort(tmp_v_ids.begin(), tmp_v_ids.end());
-        if (tmp_v_ids == v_ids) return tid * 4 + j;
+    // fid
+    std::array<int, 3> f;
+    for (int j = 0; j < 3; j++) {
+        f[j] = m.m_tet_connectivity[tid].find(vids[j]);
     }
+    std::sort(f.begin(), f.end());
+    size_t local_fid =
+        std::find(m_local_faces.begin(), m_local_faces.end(), f) - m_local_faces.begin();
 
-    throw std::runtime_error("Tuple::fid(*this) error");
+    size_t global_fid = tid * 4 + local_fid;
+    return global_fid;
 }
 
 size_t TetMesh::Tuple::tid(const TetMesh&) const

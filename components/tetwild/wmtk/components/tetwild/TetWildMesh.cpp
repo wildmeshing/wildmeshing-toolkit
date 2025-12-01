@@ -136,6 +136,9 @@ std::tuple<double, double> TetWildMesh::local_operations(
     std::tuple<double, double> energy;
 
     auto sanity_checks = [this]() {
+        if (!m_params.perform_sanity_checks) {
+            return;
+        }
         logger().info("Perform sanity checks...");
         const auto faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
         for (const auto& verts : faces) {
@@ -887,9 +890,8 @@ std::vector<std::array<size_t, 3>> TetWildMesh::get_faces_by_condition(
         if (cond(m_face_attribute[fid])) {
             auto tid = fid / 4, lid = fid % 4;
             auto verts = get_face_vertices(f);
-            res.emplace_back(
-                std::array<size_t, 3>{
-                    {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
+            res.emplace_back(std::array<size_t, 3>{
+                {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
         }
     }
     return res;
