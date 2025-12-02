@@ -102,7 +102,7 @@ public:
     SampleEnvelope& triangles_tree;
 
     // for open boundary
-    wmtk::ExactEnvelope m_open_boundary_envelope; // todo: add sample envelope option
+    wmtk::Envelope m_open_boundary_envelope; // todo: add sample envelope option
     SampleEnvelope boundaries_tree;
 
     TetWildMesh(
@@ -318,6 +318,10 @@ public:
     bool is_edge_on_bbox(const Tuple& loc);
     //
     void mesh_improvement(int max_its = 80);
+    /**
+     * @brief Call the original TetWild code.
+     */
+    void mesh_improvement_legacy(int max_its = 80);
     std::tuple<double, double> local_operations(
         const std::array<int, 4>& ops,
         bool collapse_limit_length = true);

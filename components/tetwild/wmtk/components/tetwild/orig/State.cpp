@@ -18,34 +18,27 @@
 
 namespace wmtk::components::tetwild::orig {
 
-State::State(const Args& args, const Eigen::MatrixXd& V)
+State::State(const Args& args, const double& bbox_diagonal)
     : working_dir(args.working_dir)
     , postfix(args.postfix)
     , stat_file(args.csv_file)
-    , bbox_diag(igl::bounding_box_diagonal(V))
+    , bbox_diag(bbox_diagonal)
     , eps_input(bbox_diag * args.eps_rel)
     , eps_delta(args.sampling_dist_rel > 0 ? 0 : eps_input / args.stage / std::sqrt(3))
-    , initial_edge_len(args.getAbsoluteEdgeLength(bbox_diag))
+    , initial_edge_len(args.getAbsoluteEdgeLength(bbox_diagonal))
     , bbox_dis(args.bbox_dis)
 {
     if (args.sampling_dist_rel > 0) {
         // for testing only
-        sampling_dist = bbox_diag * args.sampling_dist_rel / 100.0;
         eps = bbox_diag * args.eps_rel;
         eps_2 = eps * eps;
         if (args.stage != 1) {
             log_and_throw_error("args.stage should be equal to 1.");
         }
     } else {
-        // d_err = d/sqrt(3)
-        sampling_dist = eps_input / args.stage;
-        eps = eps_input - sampling_dist / std::sqrt(3) * (args.stage + 1 - sub_stage);
+        eps = eps_input;
         eps_2 = eps * eps;
-        // eps_delta = sampling_dist / std::sqrt(3);
     }
-
-    // logger().debug("eps = {}", eps);
-    // logger().debug("ideal_l = {}", initial_edge_len);
 }
 
 } // namespace wmtk::components::tetwild::orig

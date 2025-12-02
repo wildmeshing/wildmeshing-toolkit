@@ -24,9 +24,13 @@
 // clang-format on
 
 //#include <paraviewo/HDF5VTUWriter.hpp>
+#include <bitset>
+#include <limits>
 #include <paraviewo/VTUWriter.hpp>
 
-#include <limits>
+#include "orig/Args.h"
+#include "orig/MeshRefinement.h"
+#include "orig/State.h"
 
 namespace {
 static int debug_print_counter = 0;
@@ -125,6 +129,158 @@ void TetWildMesh::mesh_improvement(int max_its)
 
     wmtk::logger().info("========it post========");
     local_operations({{0, 1, 0, 0}});
+}
+
+void TetWildMesh::mesh_improvement_legacy(int max_its)
+{
+    logger().set_level(spdlog::level::level_enum::debug);
+
+    SampleEnvelope* env;
+    if (SampleEnvelope* d = dynamic_cast<SampleEnvelope*>(&m_envelope); d != nullptr) {
+        env = d;
+    } else {
+        log_and_throw_error("Legacy TetWild can only be used with sample envelope.");
+    }
+    SampleEnvelope* env_b;
+    if (SampleEnvelope* d = dynamic_cast<SampleEnvelope*>(&m_envelope); d != nullptr) {
+        env_b = d;
+    } else {
+        log_and_throw_error("Legacy TetWild can only be used with sample envelope.");
+    }
+
+    orig::Args args;
+    args.initial_edge_len_rel = m_params.lr;
+    args.initial_edge_len_abs = m_params.l;
+    args.eps_rel = m_params.epsr;
+    args.filter_energy_thres = m_params.stop_energy;
+    args.max_num_passes = max_its;
+    orig::State state(args, m_params.diag_l); // TODO check if params are correct
+    {
+        // check if mesh is closed
+        state.is_mesh_closed = true;
+        for (const Tuple& v : get_vertices()) {
+            const size_t vid = v.vid(*this);
+            if (m_vertex_attribute[vid].m_is_on_open_boundary) {
+                state.is_mesh_closed = false;
+                break;
+            }
+        }
+    }
+
+    orig::MeshRefinement legacy_tetwild(*env, *env_b, args, state);
+    // add tets and vertices
+    {
+        // tets
+        assert(legacy_tetwild.tets.empty());
+        legacy_tetwild.tets.reserve(tet_capacity());
+        for (size_t i = 0; i < tet_capacity(); ++i) {
+            const auto vi = oriented_tet_vids(i);
+            std::array<int, 4> v;
+            for (size_t j = 0; j < 4; ++j) {
+                v[j] = vi[j];
+            }
+            legacy_tetwild.tets.emplace_back(v);
+        }
+
+        // is_surface faces
+        legacy_tetwild.is_surface_fs.resize(tet_capacity());
+        for (size_t i = 0; i < legacy_tetwild.is_surface_fs.size(); ++i) {
+            for (size_t j = 0; j < 4; ++j) {
+                legacy_tetwild.is_surface_fs[i][j] = state.NOT_SURFACE;
+            }
+        }
+
+        for (size_t i = 0; i < legacy_tetwild.tets.size(); ++i) {
+            const auto& v = oriented_tet_vids(i);
+            const auto [f0, fid0] = tuple_from_face({{v[1], v[2], v[3]}});
+            const auto [f1, fid1] = tuple_from_face({{v[0], v[2], v[3]}});
+            const auto [f2, fid2] = tuple_from_face({{v[0], v[1], v[3]}});
+            const auto [f3, fid3] = tuple_from_face({{v[0], v[1], v[2]}});
+
+            if (m_face_attribute[fid0].m_is_surface_fs) {
+                legacy_tetwild.is_surface_fs[i][0] = 1;
+            }
+            if (m_face_attribute[fid1].m_is_surface_fs) {
+                legacy_tetwild.is_surface_fs[i][1] = 1;
+            }
+            if (m_face_attribute[fid2].m_is_surface_fs) {
+                legacy_tetwild.is_surface_fs[i][2] = 1;
+            }
+            if (m_face_attribute[fid3].m_is_surface_fs) {
+                legacy_tetwild.is_surface_fs[i][3] = 1;
+            }
+        }
+
+        // faces
+        std::map<int, int> bbx_fids;
+        bbx_fids[0] = -1;
+        bbx_fids[1] = -2;
+        bbx_fids[2] = -3;
+        bbx_fids[3] = -4;
+        bbx_fids[4] = -5;
+        bbx_fids[5] = -6;
+        // edges
+        std::map<std::set<int>, int> bbx_eids;
+        // 5
+        // 0, 2, 1, 3
+        // 4
+        bbx_eids[std::set<int>{5, 0}] = -1;
+        bbx_eids[std::set<int>{5, 2}] = -2;
+        bbx_eids[std::set<int>{5, 1}] = -3;
+        bbx_eids[std::set<int>{5, 3}] = -4;
+        bbx_eids[std::set<int>{0, 2}] = -5;
+        bbx_eids[std::set<int>{0, 3}] = -6;
+        bbx_eids[std::set<int>{2, 1}] = -7;
+        bbx_eids[std::set<int>{1, 3}] = -8;
+        bbx_eids[std::set<int>{4, 0}] = -9;
+        bbx_eids[std::set<int>{4, 2}] = -10;
+        bbx_eids[std::set<int>{4, 1}] = -11;
+        bbx_eids[std::set<int>{4, 3}] = -12;
+
+        // vertices
+        legacy_tetwild.tet_vertices.resize(vert_capacity());
+        for (size_t i = 0; i < vert_capacity(); ++i) {
+            const auto& VA = m_vertex_attribute[i];
+            orig::TetVertex& v = legacy_tetwild.tet_vertices[i];
+            v.pos = VA.m_pos;
+            v.posf = VA.m_posf;
+            v.is_on_bbox = !VA.on_bbox_faces.empty();
+            if (v.is_on_bbox) {
+                /**
+                 * This is a bit ugly but we need to assign all bbox faces and edges a unique ID
+                 */
+                for (const int fid : VA.on_bbox_faces) {
+                    v.on_face.insert(bbx_fids[fid]);
+                }
+
+                if (VA.on_bbox_faces.size() == 2) {
+                    std::set<int> bbx(VA.on_bbox_faces.begin(), VA.on_bbox_faces.end());
+                    v.on_edge.insert(bbx_eids[bbx]);
+                } else if (VA.on_bbox_faces.size() == 3) {
+                    // bbox corner
+                    for (size_t j = 0; j < 3; ++j) {
+                        std::set<int> bbx{VA.on_bbox_faces[j], VA.on_bbox_faces[(j + 1) % 3]};
+                        v.on_edge.insert(bbx_eids[bbx]);
+                    }
+                    v.on_fixed_vertex = true; // cannot move corner
+                } else if (VA.on_bbox_faces.size() > 3) {
+                    log_and_throw_error("Vertex should not be on more than 3 bbox faces");
+                }
+            }
+            v.is_on_boundary = VA.m_is_on_open_boundary;
+            v.is_on_surface = VA.m_is_on_surface;
+            v.is_rounded = VA.m_is_rounded;
+            for (const size_t tid : get_one_ring_tids_for_vertex(i)) {
+                v.conn_tets.insert(tid);
+            }
+        }
+    }
+
+    legacy_tetwild.prepareData();
+    legacy_tetwild.refine(state.ENERGY_AMIPS); // the actual tetwild
+
+    // writing back missing...
+    // use init() to overwrite old mesh
 }
 
 std::tuple<double, double> TetWildMesh::local_operations(

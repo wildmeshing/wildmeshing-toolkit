@@ -470,7 +470,7 @@ bool VertexSmoother::NewtonsMethod(
         Vector3r old_p = tet_vertices[v_id].pos;
         double a = 1;
         bool step_taken = false;
-        double new_energy;
+        double new_energy = old_energy;
 
         for (int it = 0; it < MAX_IT; it++) {
             // solve linear system
@@ -627,134 +627,6 @@ bool VertexSmoother::NewtonsUpdate(
     }
 
     return true;
-}
-
-int VertexSmoother::laplacianBoundary(
-    const std::vector<int>& b_v_ids,
-    const std::vector<bool>& tmp_is_on_surface,
-    const std::vector<bool>& tmp_t_is_removed)
-{
-    int cnt_suc = 0;
-    double max_slim_evergy = 0;
-    for (unsigned int i = 0; i < tet_qualities.size(); i++) {
-        if (tmp_t_is_removed[i]) continue;
-        if (tet_qualities[i].slim_energy > max_slim_evergy)
-            max_slim_evergy = tet_qualities[i].slim_energy;
-    }
-
-    for (int v_id : b_v_ids) {
-        // do laplacian on v_id
-        std::vector<std::array<int, 4>> new_tets;
-        std::unordered_set<int> n_v_ids;
-        //        std::unordered_set<int> n_v_ids2;
-        std::unordered_set<int> tmp_n_sf_v_ids;
-        std::unordered_set<int> n_sf_v_ids;
-        for (int t_id : tet_vertices[v_id].conn_tets) {
-            for (int j = 0; j < 4; j++) {
-                if (tmp_is_on_surface[tets[t_id][j]]) {
-                    tmp_n_sf_v_ids.insert(tets[t_id][j]);
-                    continue;
-                }
-                if (!tet_vertices[tets[t_id][j]].is_on_surface) n_v_ids.insert(tets[t_id][j]);
-            }
-            new_tets.push_back(tets[t_id]);
-        }
-        for (int n_sf_v_id : tmp_n_sf_v_ids) {
-            std::vector<int> t_ids;
-            setIntersection(tet_vertices[v_id].conn_tets, tet_vertices[n_sf_v_id].conn_tets, t_ids);
-            bool has_removed = false;
-            bool has_unremoved = false;
-            for (int t_id : t_ids) {
-                if (tmp_t_is_removed[t_id]) has_removed = true;
-                if (!tmp_t_is_removed[t_id]) has_unremoved = true;
-            }
-            if (has_removed && has_unremoved) n_sf_v_ids.insert(n_sf_v_id);
-        }
-        //        for(int n_v_id:n_v_ids){
-        //            for(int t_id:tet_vertices[n_v_id].conn_tets){
-        //                for(int j=0;j<4;j++)
-        //                    if(!tmp_is_on_surface[tets[t_id][j]] &&
-        //                    !tet_vertices[tets[t_id][j]].is_on_surface)
-        //                        n_v_ids2.insert(tets[t_id][j]);
-        //            }
-        //        }
-        std::array<double, 3> vec = {{0, 0, 0}};
-        for (int n_sf_v_id : n_sf_v_ids) {
-            for (int j = 0; j < 3; j++) vec[j] += tet_vertices[n_sf_v_id].posf[j];
-        }
-        for (int j = 0; j < 3; j++) {
-            vec[j] = (vec[j] / n_sf_v_ids.size()) - tet_vertices[v_id].posf[j];
-        }
-
-        // do bisection and check flipping
-        Vector3r old_p = tet_vertices[v_id].pos;
-        Vector3d old_pf = tet_vertices[v_id].posf;
-        double a = 1;
-        bool is_suc = false;
-        while (true) {
-            // give stop condition
-            bool is_stop = true;
-            for (int j = 0; j < 3; j++)
-                if (vec[j] * a > state.eps) is_stop = false;
-            if (is_stop) break;
-            tet_vertices[v_id].pos =
-                Vector3r(old_pf[0] + vec[0] * a, old_pf[1] + vec[1] * a, old_pf[2] + vec[2] * a);
-            tet_vertices[v_id].posf =
-                Vector3d(old_pf[0] + vec[0] * a, old_pf[1] + vec[1] * a, old_pf[2] + vec[2] * a);
-            if (isFlip(new_tets)) {
-                a /= 2;
-                continue;
-            }
-            // check quality
-            std::vector<TetQuality> tet_qs;
-            calTetQualities(new_tets, tet_qs);
-            bool is_valid = true;
-            for (int i = 0; i < tet_qs.size(); i++) {
-                if (tet_qs[i].slim_energy > max_slim_evergy) is_valid = false;
-            }
-            if (!is_valid) {
-                a /= 2;
-                continue;
-            }
-
-            int cnt = 0;
-            for (int t_id : tet_vertices[v_id].conn_tets) {
-                tet_qualities[t_id] = tet_qs[cnt++];
-            }
-
-            is_suc = true;
-            cnt_suc++;
-            break;
-        }
-        if (!is_suc) {
-            tet_vertices[v_id].pos = old_p;
-            tet_vertices[v_id].posf = old_pf;
-            continue;
-        }
-
-        std::vector<TetQuality> tet_qs;
-        calTetQualities(new_tets, tet_qs);
-        int cnt = 0;
-        for (int t_id : tet_vertices[v_id].conn_tets) {
-            tet_qualities[t_id] = tet_qs[cnt++];
-        }
-
-        // do normal smoothing on neighbor vertices
-        //        logger().debug("n_v_ids.size = {}", n_v_ids.size());
-        //        logger().debug("n_v_ids2.size = {}", n_v_ids2.size());
-        for (int n_v_id : n_v_ids) {
-            smoothSingleVertex(n_v_id, true);
-        }
-        //        for(int n_v_id:n_v_ids2){
-        //            smoothSingleVertex(n_v_id, true);
-        //        }
-        //        for(int n_v_id:n_v_ids){
-        //            smoothSingleVertex(n_v_id, true);
-        //        }
-    }
-
-    logger().debug("suc.size = {}", cnt_suc);
-    return cnt_suc;
 }
 
 } // namespace wmtk::components::tetwild::orig

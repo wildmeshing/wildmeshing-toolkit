@@ -26,10 +26,8 @@ public:
     const Args& args;
     State& state;
 
-    MatrixXd V_sf;
-    MatrixXi F_sf;
-    MatrixXd V_b;
-    MatrixXi F_b;
+    SampleEnvelope& env_sf; // surface envelope
+    SampleEnvelope& env_b; // boundary envelope
 
     // init
     std::vector<TetVertex> tet_vertices;
@@ -51,17 +49,9 @@ public:
     //     , state(st)
     //{}
 
-    MeshRefinement(
-        const MatrixXd& V_surf,
-        const MatrixXi& F_surf,
-        const MatrixXd& V_bound,
-        const MatrixXi& F_bound,
-        const Args& ar,
-        State& st)
-        : V_sf(V_surf)
-        , F_sf(F_surf)
-        , V_b(V_bound)
-        , F_b(F_bound)
+    MeshRefinement(SampleEnvelope& env_surf, SampleEnvelope& env_bound, const Args& ar, State& st)
+        : env_sf(env_surf)
+        , env_b(env_bound)
         , args(ar)
         , state(st)
     {}
@@ -128,8 +118,6 @@ public:
         bool is_clean_up_local,
         double filter_energy,
         bool is_lock = false);
-
-    void postProcess(VertexSmoother& smoother); // for lapacian smoothing
 
     int getInsideVertexSize();
     void markInOut(std::vector<bool>& tmp_t_is_removed);

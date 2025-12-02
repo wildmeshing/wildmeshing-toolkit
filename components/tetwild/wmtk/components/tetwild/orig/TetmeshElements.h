@@ -36,12 +36,7 @@ public:
     Vector3d posf;
     bool is_rounded = false;
 
-    void round()
-    {
-        // posf = Point_3f(CGAL::to_double(pos[0]), CGAL::to_double(pos[1]),
-        // CGAL::to_double(pos[2]));
-        posf = to_double(pos);
-    }
+    void round() { posf = to_double(pos); }
 
     ///for bbox
     bool is_on_bbox = false;

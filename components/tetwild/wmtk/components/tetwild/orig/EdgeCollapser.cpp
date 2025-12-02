@@ -288,7 +288,7 @@ int EdgeCollapser::collapseAnEdge(int v1_id, int v2_id)
     calTetQualities(new_tets, tet_qs);
     energy_time += tmp_timer.getElapsedTime();
 
-    if (energy_type != state.ENERGY_NA && is_check_quality) {
+    if (is_check_quality) {
         TetQuality old_tq, new_tq;
         getCheckQuality(old_t_ids, old_tq);
         getCheckQuality(tet_qs, new_tq);
@@ -313,8 +313,7 @@ int EdgeCollapser::collapseAnEdge(int v1_id, int v2_id)
 
     // check 3
     bool is_envelop_suc = false;
-    if (state.eps != state.EPSILON_NA && state.eps != state.EPSILON_INFINITE &&
-        tet_vertices[v1_id].is_on_surface) {
+    if (state.eps != state.EPSILON_INFINITE && tet_vertices[v1_id].is_on_surface) {
         if (!is_edge_degenerate && !isCollapsable_epsilon(v1_id, v2_id)) {
             return ENVELOP;
         }

@@ -46,12 +46,6 @@ public:
     std::vector<int> tets_tss;
     std::vector<int> tet_vertices_tss;
 
-    // for postprocessing
-    int laplacianBoundary(
-        const std::vector<int>& b_v_ids,
-        const std::vector<bool>& tmp_is_on_surface,
-        const std::vector<bool>& tmp_t_is_removed);
-
     int id_value_e = 0;
     int id_value_j = 1;
     int id_value_h = 2;

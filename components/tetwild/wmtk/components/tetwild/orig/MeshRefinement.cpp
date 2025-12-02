@@ -210,21 +210,6 @@ void MeshRefinement::refine(
     bool is_post,
     int scalar_update)
 {
-    // GEO::MeshFacetsAABBWithEps geo_sf_tree(geo_sf_mesh);
-    // GEO::MeshFacetsAABBWithEps geo_b_tree(geo_b_mesh);
-    SampleEnvelope geo_sf_tree;
-    std::vector<Vector3d> sf_vertices;
-    std::vector<Vector3i> sf_faces;
-    VF_to_vectors(V_sf, F_sf, sf_vertices, sf_faces);
-    geo_sf_tree.init(sf_vertices, sf_faces, state.eps);
-
-    SampleEnvelope geo_b_tree;
-    std::vector<Vector3d> b_vertices;
-    std::vector<Vector3i> b_faces;
-    VF_to_vectors(V_b, F_b, b_vertices, b_faces);
-    geo_b_tree.init(b_vertices, b_faces, state.eps);
-
-
     if (is_dealing_unrounded)
         min_adaptive_scale = state.eps / state.initial_edge_len * 0.5; // min to eps/2
     else
@@ -241,8 +226,8 @@ void MeshRefinement::refine(
         t_is_removed,
         tet_qualities,
         energy_type,
-        geo_sf_tree,
-        geo_b_tree,
+        env_sf,
+        env_b,
         args,
         state);
     EdgeSplitter splitter(
@@ -346,6 +331,7 @@ void MeshRefinement::refine(
         }
         avg_energy0 = avg_energy;
         max_energy0 = max_energy;
+        logger().info("Energy: avg = {} | max = {}", avg_energy, max_energy);
     }
 
     old_pass = old_pass + args.max_num_passes;
@@ -365,10 +351,10 @@ void MeshRefinement::refine(
                     for (int j = 0; j < 3; j++) {
                         l[j * 2] =
                             (tet_vertices[tets[i][0]].posf - tet_vertices[tets[i][j + 1]].posf)
-                                .norm();
+                                .squaredNorm();
                         l[j * 2 + 1] = (tet_vertices[tets[i][j + 1]].posf -
                                         tet_vertices[tets[i][(j + 1) % 3 + 1]].posf)
-                                           .norm();
+                                           .squaredNorm();
                     }
                     auto it = std::min_element(l.begin(), l.end());
                     f << "min_el = " << std::sqrt(*it) << "; ";
@@ -418,8 +404,6 @@ void MeshRefinement::refine(
 
     if (args.target_num_vertices > 0)
         applyTargetedVertexNum(splitter, collapser, edge_remover, smoother);
-
-    if (args.smooth_open_boundary) postProcess(smoother);
 }
 
 void MeshRefinement::refine_pre(
@@ -829,49 +813,7 @@ void MeshRefinement::updateScalarField(
     logger().debug("marked!");
     tmp_time = igl_timer.getElapsedTime();
     logger().debug("time = {}s", tmp_time);
-    addRecord(MeshRecord(MeshRecord::OpType::OP_ADAP_UPDATE, tmp_time, -1, -1), args, state);
     //    outputMidResult(true);
-}
-
-void MeshRefinement::postProcess(VertexSmoother& smoother)
-{
-    igl_timer.start();
-
-    std::vector<bool> tmp_t_is_removed;
-    markInOut(tmp_t_is_removed);
-
-    // get final surface and do smoothing
-    std::vector<int> b_v_ids;
-    std::vector<bool> tmp_is_on_surface(tet_vertices.size(), false);
-    for (int i = 0; i < tet_vertices.size(); i++) {
-        if (v_is_removed[i]) continue;
-        if (tet_vertices[i].is_on_bbox) continue;
-        bool has_removed = false;
-        bool has_unremoved = false;
-        for (int t_id : tet_vertices[i].conn_tets) {
-            if (tmp_t_is_removed[t_id]) {
-                has_removed = true;
-                if (has_unremoved) break;
-            }
-            if (!tmp_t_is_removed[t_id]) {
-                has_unremoved = true;
-                if (has_removed) break;
-            }
-        }
-        if (!has_removed || !has_unremoved) continue;
-        tmp_is_on_surface[i] = true;
-        if (!tet_vertices[i].is_on_surface) b_v_ids.push_back(i);
-    }
-    logger().debug("tmp_is_on_surface.size = {}", tmp_is_on_surface.size());
-    logger().debug("b_v_ids.size = {}", b_v_ids.size());
-    for (int i = 0; i < 20; i++) {
-        if (smoother.laplacianBoundary(b_v_ids, tmp_is_on_surface, tmp_t_is_removed) == 0) {
-            break;
-        }
-    }
-    smoother.outputInfo(MeshRecord::OpType::OP_SMOOTH, igl_timer.getElapsedTime());
-
-    t_is_removed = tmp_t_is_removed;
 }
 
 void MeshRefinement::getSurface(Eigen::MatrixXd& V, Eigen::MatrixXi& F)

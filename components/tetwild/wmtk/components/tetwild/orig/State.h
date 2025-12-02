@@ -23,11 +23,7 @@ namespace wmtk::components::tetwild::orig {
 struct State
 {
     const int EPSILON_INFINITE = -2;
-    const int EPSILON_NA = -1;
-    const int ENERGY_NA = 0;
-    const int ENERGY_AD = 1;
     const int ENERGY_AMIPS = 2;
-    const int ENERGY_DIRICHLET = 3;
     const double MAX_ENERGY = 1e50;
     const int NOT_SURFACE = std::numeric_limits<int>::max();
 
@@ -39,8 +35,6 @@ struct State
     double bbox_diag = 0; // bbox diagonal
     double eps = 0; // effective epsilon at the current stage (see \hat{\epsilon} in the paper)
     double eps_2 = 0;
-    double sampling_dist =
-        0; // sampling distance for triangles at the current stage (see d_k p.8 of the paper)
     double initial_edge_len =
         0; // initial target edge-length defined by the user (the final lengths can be lower,
            // depending on mesh quality and feature size)
@@ -72,7 +66,7 @@ struct State
     const bool is_print_tmp = false;
 
     // Set program constants given user parameters and input mesh
-    State(const Args& args, const Eigen::MatrixXd& V);
+    State(const Args& args, const double& bbox_diagonal);
 };
 
 
@@ -100,36 +94,8 @@ struct MeshRecord
     double timing;
     int n_v;
     int n_t;
-    double min_min_d_angle = -1;
-    double avg_min_d_angle = -1;
-    double max_max_d_angle = -1;
-    double avg_max_d_angle = -1;
     double max_energy = -1;
     double avg_energy = -1;
-
-    MeshRecord(
-        int op_,
-        double timing_,
-        int n_v_,
-        int n_t_,
-        double min_min_d_angle_,
-        double avg_min_d_angle_,
-        double max_max_d_angle_,
-        double avg_max_d_angle_,
-        double max_energy_,
-        double avg_energy_)
-    {
-        this->op = op_;
-        this->timing = timing_;
-        this->n_v = n_v_;
-        this->n_t = n_t_;
-        this->min_min_d_angle = min_min_d_angle_;
-        this->avg_min_d_angle = avg_min_d_angle_;
-        this->max_max_d_angle = max_max_d_angle_;
-        this->avg_max_d_angle = avg_max_d_angle_;
-        this->max_energy = max_energy_;
-        this->avg_energy = avg_energy_;
-    }
 
     MeshRecord(int op_, double timing_, int n_v_, int n_t_)
     {

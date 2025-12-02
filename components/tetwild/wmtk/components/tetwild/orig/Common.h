@@ -31,6 +31,4 @@ void setIntersection(
     const std::unordered_set<int>& s2,
     std::vector<int>& s);
 
-void addRecord(const MeshRecord& record, const Args& args, const State& state);
-
 } // namespace wmtk::components::tetwild::orig

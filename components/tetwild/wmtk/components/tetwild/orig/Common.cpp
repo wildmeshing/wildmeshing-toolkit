@@ -20,24 +20,6 @@
 
 namespace wmtk::components::tetwild::orig {
 
-void addRecord(const MeshRecord& record, const Args& args, const State& state)
-{
-    if (!args.write_csv_file) return;
-    static bool first_time = true;
-    std::ofstream f;
-    if (first_time) {
-        f.open(state.stat_file);
-        first_time = false;
-    } else {
-        f.open(state.stat_file, std::ios::app);
-    }
-    f << record.op << "," << record.timing << "," << record.n_v << "," << record.n_t << ","
-      << record.min_min_d_angle << "," << record.avg_min_d_angle << "," << record.max_max_d_angle
-      << "," << record.avg_max_d_angle << "," << record.max_energy << "," << record.avg_energy
-      << "\n";
-    f.close();
-}
-
 bool isHaveCommonEle(const std::unordered_set<int>& v1, const std::unordered_set<int>& v2)
 {
 #if 0

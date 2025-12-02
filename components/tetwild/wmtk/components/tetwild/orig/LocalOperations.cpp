@@ -244,12 +244,12 @@ void LocalOperations::calTetQualities(
 
 double LocalOperations::calEdgeLength(const std::array<int, 2>& v_ids)
 {
-    return (tet_vertices[v_ids[0]].posf - tet_vertices[v_ids[1]].posf).norm();
+    return (tet_vertices[v_ids[0]].posf - tet_vertices[v_ids[1]].posf).squaredNorm();
 }
 
 double LocalOperations::calEdgeLength(int v1_id, int v2_id, bool is_over_refine)
 {
-    return (tet_vertices[v1_id].posf - tet_vertices[v2_id].posf).norm();
+    return (tet_vertices[v1_id].posf - tet_vertices[v2_id].posf).squaredNorm();
 }
 
 void LocalOperations::calTetQuality_AMIPS(const std::array<int, 4>& tet, TetQuality& t_quality)

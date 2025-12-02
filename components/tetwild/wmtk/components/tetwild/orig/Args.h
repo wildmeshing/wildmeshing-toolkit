@@ -71,22 +71,12 @@ struct Args
     // Maximum number of mesh optimization iterations
     int max_num_passes = 80;
 
-    // Sample points at voxel centers for initial Delaunay triangulation
-    bool not_use_voxel_stuffing = false;
-
-    // Use Laplacian smoothing on the faces/vertices covering an open boundary after the mesh optimization step (post-processing)
-    bool smooth_open_boundary = false;
-
     // Target number of vertices (minimum), within 5% of tolerance
     int target_num_vertices = -1;
-
-    // Background mesh for the edge length sizing field
-    std::string background_mesh = "";
 
     double bbox_dis = 0.05; // relative bbox distance to the input
 
     // [debug] logging
-    bool write_csv_file = true;
     std::string working_dir = "";
     std::string postfix = "_";
     std::string csv_file = "";
