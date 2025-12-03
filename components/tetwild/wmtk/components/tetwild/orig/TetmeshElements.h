@@ -65,12 +65,12 @@ public:
 
     TetQuality() = default;
 
-    bool isBetterThan(const TetQuality& tq, int energy_type, const State& state)
+    bool isBetterThan(const TetQuality& tq, const State& state)
     {
         return slim_energy < tq.slim_energy;
     }
 
-    bool isBetterOrEqualThan(const TetQuality& tq, int energy_type, const State& state)
+    bool isBetterOrEqualThan(const TetQuality& tq, const State& state)
     {
         return slim_energy <= tq.slim_energy;
     }

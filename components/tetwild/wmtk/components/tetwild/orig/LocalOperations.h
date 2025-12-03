@@ -36,8 +36,6 @@ public:
     std::vector<bool>& t_is_removed;
     std::vector<TetQuality>& tet_qualities;
 
-    int energy_type;
-
     const SampleEnvelope& geo_sf_tree;
     const SampleEnvelope& geo_b_tree;
 
@@ -51,7 +49,6 @@ public:
         std::vector<bool>& v_is_rm,
         std::vector<bool>& t_is_rm,
         std::vector<TetQuality>& tet_qs,
-        int e_type,
         const SampleEnvelope& geo_tree,
         const SampleEnvelope& b_t,
         const Args& ar,
@@ -62,7 +59,6 @@ public:
         , v_is_removed(v_is_rm)
         , t_is_removed(t_is_rm)
         , tet_qualities(tet_qs)
-        , energy_type(e_type)
         , geo_sf_tree(geo_tree)
         , geo_b_tree(b_t)
         , args(ar)
@@ -73,22 +69,17 @@ public:
 
     void calTetQualities(
         const std::vector<std::array<int, 4>>& new_tets,
-        std::vector<TetQuality>& tet_qs,
-        bool all_measure = false);
+        std::vector<TetQuality>& tet_qs);
 
-    double calEdgeLength(const std::array<int, 2>& v_ids);
-    double calEdgeLength(int v1_id, int v2_id, bool is_over_refine = false);
+    double calEdgeLength(int v1_id, int v2_id);
     void calTetQuality_AMIPS(const std::array<int, 4>& tet, TetQuality& t_quality);
 
     bool isFlip(const std::vector<std::array<int, 4>>& new_tets);
     bool isTetFlip(const std::array<int, 4>& t);
     bool isTetFlip(int t_id);
 
-    //    void getWorstQuality(TetQuality& tq);
     void getAvgMaxEnergy(double& avg_tq, double& max_tq);
     double getMaxEnergy();
-    double getSecondMaxEnergy(double max_energy);
-    double getFilterEnergy(bool& is_clean_up);
 
     void getCheckQuality(const std::vector<TetQuality>& tet_qs, TetQuality& tq);
     void getCheckQuality(const std::vector<int>& t_ids, TetQuality& tq);
@@ -99,13 +90,10 @@ public:
     bool isEdgeOnBbox(int v1_id, int v2_id, const std::vector<int>& t_ids);
     bool isEdgeOnBoundary(int v1_id, int v2_id);
 
-    //    EnvelopSide getUpperLowerBounds(const std::array<Vector3d, 3>& tri);
     bool isFaceOutEnvelop(const std::array<Vector3d, 3>& tri);
     bool isPointOutEnvelop(const Vector3d& p);
     bool isPointOutBoundaryEnvelop(const Vector3d& p);
 
-    bool isTetOnSurface(int t_id);
-    bool isTetRounded(int t_id);
     void getFaceConnTets(int v1_id, int v2_id, int v3_id, std::vector<int>& t_ids);
     bool isIsolated(int v_id);
     bool isBoundaryPoint(int v_id);
@@ -116,7 +104,6 @@ public:
     std::array<double, 2> breakdown_timing0;
     std::array<std::string, 2> breakdown_name0 = {{"Envelop_sampling", "Envelop_AABBtree"}};
 
-    void checkUnrounded();
     int mid_id = 0;
 
     bool isLocked_ui(const std::array<int, 2>& e);

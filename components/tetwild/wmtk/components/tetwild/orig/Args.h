@@ -71,16 +71,7 @@ struct Args
     // Maximum number of mesh optimization iterations
     int max_num_passes = 80;
 
-    // Target number of vertices (minimum), within 5% of tolerance
-    int target_num_vertices = -1;
-
     double bbox_dis = 0.05; // relative bbox distance to the input
-
-    // [debug] logging
-    std::string working_dir = "";
-    std::string postfix = "_";
-    std::string csv_file = "";
-    int save_mid_result = -1; // save intermediate result
 
     bool is_quiet = false;
 };

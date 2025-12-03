@@ -277,7 +277,7 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
     }
 
     legacy_tetwild.prepareData();
-    legacy_tetwild.refine(state.ENERGY_AMIPS); // the actual tetwild
+    legacy_tetwild.refine(); // the actual tetwild
 
     // write back to our format
     {

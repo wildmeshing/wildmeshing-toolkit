@@ -23,14 +23,8 @@ namespace wmtk::components::tetwild::orig {
 struct State
 {
     const int EPSILON_INFINITE = -2;
-    const int ENERGY_AMIPS = 2;
     const double MAX_ENERGY = 1e50;
     const int NOT_SURFACE = std::numeric_limits<int>::max();
-
-    // paths used for i/o
-    const std::string working_dir;
-    const std::string stat_file;
-    const std::string postfix;
 
     double bbox_diag = 0; // bbox diagonal
     double eps = 0; // effective epsilon at the current stage (see \hat{\epsilon} in the paper)
@@ -51,19 +45,9 @@ struct State
     // [testing] //
     ///////////////
 
-    // Whether to use the max or the total energy when checking improvements in local operations
-    const bool use_energy_max = true;
-
-    // Use sampling to determine whether a face lies outside the envelope during mesh optimization
-    // (if false, then only its vertices are tested)
-    const bool use_sampling = true;
-
     // Project vertices to the plane of their one-ring instead of the original surface during vertex
     // smoothing
     const bool use_onering_projection = false;
-
-    // [debug]
-    const bool is_print_tmp = false;
 
     // Set program constants given user parameters and input mesh
     State(const Args& args, const double& bbox_diagonal);

@@ -42,13 +42,6 @@ public:
 
     int old_pass = 0;
 
-    // MeshRefinement(GEO::Mesh& sf_mesh, GEO::Mesh& b_mesh, const Args& ar, State& st)
-    //     : geo_sf_mesh(sf_mesh)
-    //     , geo_b_mesh(b_mesh)
-    //     , args(ar)
-    //     , state(st)
-    //{}
-
     MeshRefinement(SampleEnvelope& env_surf, SampleEnvelope& env_bound, const Args& ar, State& st)
         : env_sf(env_surf)
         , env_b(env_bound)
@@ -78,7 +71,6 @@ public:
     bool is_dealing_local = false;
 
     void refine(
-        int energy_type,
         const std::array<bool, 4>& ops = {{true, true, true, true}},
         bool is_pre = true,
         bool is_post = true,
@@ -93,23 +85,6 @@ public:
         EdgeCollapser& collapser,
         EdgeRemover& edge_remover,
         VertexSmoother& smoother);
-    void refine_local(
-        EdgeSplitter& splitter,
-        EdgeCollapser& collapser,
-        EdgeRemover& edge_remover,
-        VertexSmoother& smoother,
-        double target_energy = -1);
-    bool refine_unrounded(
-        EdgeSplitter& splitter,
-        EdgeCollapser& collapser,
-        EdgeRemover& edge_remover,
-        VertexSmoother& smoother);
-    void refine_revert(
-        EdgeSplitter& splitter,
-        EdgeCollapser& collapser,
-        EdgeRemover& edge_remover,
-        VertexSmoother& smoother);
-    bool isRegionFullyRounded();
 
     double min_adaptive_scale;
     bool is_hit_min = false;
@@ -121,11 +96,6 @@ public:
 
     int getInsideVertexSize();
     void markInOut(std::vector<bool>& tmp_t_is_removed);
-    void applyTargetedVertexNum(
-        EdgeSplitter& splitter,
-        EdgeCollapser& collapser,
-        EdgeRemover& edge_remover,
-        VertexSmoother& smoother);
 
     int mid_result = 0;
     void getSurface(Eigen::MatrixXd& V, Eigen::MatrixXi& F);

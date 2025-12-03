@@ -156,9 +156,13 @@ bool EdgeRemover::removeAnEdge_32(int v1_id, int v2_id, const std::vector<int>& 
     getCheckQuality(tet_qs, new_tq);
     if (equal_buget > 0) {
         equal_buget--;
-        if (!new_tq.isBetterOrEqualThan(old_tq, energy_type, state)) return false;
+        if (!new_tq.isBetterOrEqualThan(old_tq, state)) {
+            return false;
+        }
     } else {
-        if (!new_tq.isBetterThan(old_tq, energy_type, state)) return false;
+        if (!new_tq.isBetterThan(old_tq, state)) {
+            return false;
+        }
     }
 
     // real update
@@ -352,9 +356,9 @@ bool EdgeRemover::removeAnEdge_44(int v1_id, int v2_id, const std::vector<int>& 
         getCheckQuality(tmp_tet_qs, new_tq);
         if (equal_buget > 0) {
             equal_buget--;
-            if (!new_tq.isBetterOrEqualThan(old_tq, energy_type, state)) return false;
+            if (!new_tq.isBetterOrEqualThan(old_tq, state)) return false;
         } else {
-            if (!new_tq.isBetterThan(old_tq, energy_type, state)) return false;
+            if (!new_tq.isBetterThan(old_tq, state)) return false;
         }
 
         is_valid = true;
@@ -548,9 +552,13 @@ bool EdgeRemover::removeAnEdge_56(int v1_id, int v2_id, const std::vector<int>& 
         getCheckQuality(qs, new_tq);
         if (equal_buget > 0) {
             equal_buget--;
-            if (!new_tq.isBetterOrEqualThan(old_tq, energy_type, state)) continue;
+            if (!new_tq.isBetterOrEqualThan(old_tq, state)) {
+                continue;
+            }
         } else {
-            if (!new_tq.isBetterThan(old_tq, energy_type, state)) continue;
+            if (!new_tq.isBetterThan(old_tq, state)) {
+                continue;
+            }
         }
 
         old_tq = new_tq;
@@ -716,7 +724,7 @@ void EdgeRemover::getNewTetSlots(int n, std::vector<int>& new_conn_tets)
 void EdgeRemover::addNewEdge(const std::array<int, 2>& e)
 {
     if (isSwappable_cd1(e)) {
-        double weight = calEdgeLength(e);
+        double weight = calEdgeLength(e[0], e[1]);
         if (isSwappable_cd2(weight)) {
             if (e[0] > e[1]) {
                 ElementInQueue_er ele(std::array<int, 2>({{e[1], e[0]}}), weight);

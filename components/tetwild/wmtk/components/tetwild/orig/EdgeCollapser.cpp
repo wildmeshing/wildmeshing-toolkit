@@ -84,7 +84,7 @@ void EdgeCollapser::collapse()
 
         // during operations, the length of edges in the queue may be changed
         // also, we need to eliminate the old edges, that is, the edges have an wrong/old weight in the queue
-        double weight = calEdgeLength(v_ids);
+        double weight = calEdgeLength(v_ids[0], v_ids[1]);
         if (weight != old_weight || !isCollapsable_cd3(v_ids[0], v_ids[1], weight)) {
             continue;
         }
@@ -295,7 +295,7 @@ int EdgeCollapser::collapseAnEdge(int v1_id, int v2_id)
         if (is_soft) old_tq.slim_energy = soft_energy;
         if (!tet_vertices[v1_id].is_rounded) // remove an unroundable vertex anyway
             new_tq.slim_energy = 0;
-        if (!is_edge_degenerate && !new_tq.isBetterOrEqualThan(old_tq, energy_type, state)) {
+        if (!is_edge_degenerate && !new_tq.isBetterOrEqualThan(old_tq, state)) {
             return QUALITY;
         }
     }

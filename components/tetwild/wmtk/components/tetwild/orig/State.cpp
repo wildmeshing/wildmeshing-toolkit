@@ -19,10 +19,7 @@
 namespace wmtk::components::tetwild::orig {
 
 State::State(const Args& args, const double& bbox_diagonal)
-    : working_dir(args.working_dir)
-    , postfix(args.postfix)
-    , stat_file(args.csv_file)
-    , bbox_diag(bbox_diagonal)
+    : bbox_diag(bbox_diagonal)
     , eps_input(bbox_diag * args.eps_rel)
     , eps_delta(args.sampling_dist_rel > 0 ? 0 : eps_input / args.stage / std::sqrt(3))
     , initial_edge_len(args.getAbsoluteEdgeLength(bbox_diagonal))

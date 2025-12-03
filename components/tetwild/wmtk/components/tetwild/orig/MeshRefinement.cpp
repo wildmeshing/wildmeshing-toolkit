@@ -51,12 +51,11 @@ void MeshRefinement::prepareData(bool is_init)
         v_is_removed,
         t_is_removed,
         tet_qualities,
-        state.ENERGY_AMIPS,
         env,
         env,
         args,
         state);
-    localOperation.calTetQualities(tets, tet_qualities, true); // cal all measure
+    localOperation.calTetQualities(tets, tet_qualities);
     double tmp_time = igl_timer.getElapsedTime();
     logger().debug("{}s", tmp_time);
     localOperation.outputInfo(MeshRecord::OpType::OP_OPT_INIT, tmp_time);
@@ -204,7 +203,6 @@ int MeshRefinement::doOperationLoops(
 }
 
 void MeshRefinement::refine(
-    int energy_type,
     const std::array<bool, 4>& ops,
     bool is_pre,
     bool is_post,
@@ -225,7 +223,6 @@ void MeshRefinement::refine(
         v_is_removed,
         t_is_removed,
         tet_qualities,
-        energy_type,
         env_sf,
         env_b,
         args,
@@ -339,74 +336,9 @@ void MeshRefinement::refine(
 
     old_pass = old_pass + args.max_num_passes;
 
-    if (!args.is_quiet) {
-        double max_e = localOperation.getMaxEnergy();
-        if (max_e > 100) {
-            bool is_print = false;
-            std::ofstream f;
-            f.open(state.working_dir + args.postfix + ".tmp");
-            for (int i = 0; i < tet_qualities.size(); i++) {
-                if (t_is_removed[i]) continue;
-                if (tet_qualities[i].slim_energy > max_e * 0.9) {
-                    is_print = true;
-                    f << "tet " << i << ": energy = " << tet_qualities[i].slim_energy << "; ";
-                    std::array<double, 6> l;
-                    for (int j = 0; j < 3; j++) {
-                        l[j * 2] =
-                            (tet_vertices[tets[i][0]].posf - tet_vertices[tets[i][j + 1]].posf)
-                                .squaredNorm();
-                        l[j * 2 + 1] = (tet_vertices[tets[i][j + 1]].posf -
-                                        tet_vertices[tets[i][(j + 1) % 3 + 1]].posf)
-                                           .squaredNorm();
-                    }
-                    auto it = std::min_element(l.begin(), l.end());
-                    f << "min_el = " << std::sqrt(*it) << "; ";
-                    int n = it - l.begin();
-                    int v1_id, v2_id;
-                    if (n % 2 == 0) {
-                        v1_id = 0;
-                        v2_id = n / 2 + 1;
-                    } else {
-                        v1_id = (n - 1) / 2 + 1;
-                        v2_id = ((n - 1) / 2 + 1) % 3 + 1;
-                    }
-                    f << "v1 " << tets[i][v1_id] << " "
-                      << tet_vertices[tets[i][v1_id]].is_on_surface << " "
-                      << tet_vertices[tets[i][v1_id]].is_on_boundary << " "
-                      << localOperation.isPointOutEnvelop(tet_vertices[tets[i][v1_id]].posf) << " "
-                      << localOperation.isPointOutBoundaryEnvelop(tet_vertices[tets[i][v1_id]].posf)
-                      << "; "
-
-                      << "v2 " << tets[i][v2_id] << " "
-                      << tet_vertices[tets[i][v2_id]].is_on_surface << " "
-                      << tet_vertices[tets[i][v2_id]].is_on_boundary << " "
-                      << localOperation.isPointOutEnvelop(tet_vertices[tets[i][v2_id]].posf) << " "
-                      << localOperation.isPointOutBoundaryEnvelop(tet_vertices[tets[i][v2_id]].posf)
-                      << std::endl;
-                }
-            }
-            if (is_print) f << state.eps << std::endl;
-            f.close();
-        }
-    }
-
     if (is_post) {
-        if (args.target_num_vertices > 0) {
-            double n = getInsideVertexSize();
-            if (n > args.target_num_vertices) {
-                collapser.is_limit_length = false;
-                collapser.is_soft = true;
-                collapser.soft_energy = localOperation.getMaxEnergy();
-                collapser.budget = (n - args.target_num_vertices) *
-                                   std::count(v_is_removed.begin(), v_is_removed.end(), false) / n *
-                                   1.5;
-            }
-        }
         refine_post(splitter, collapser, edge_remover, smoother);
     }
-
-    if (args.target_num_vertices > 0)
-        applyTargetedVertexNum(splitter, collapser, edge_remover, smoother);
 
     logger().info("Final max energy: {}", localOperation.getMaxEnergy());
 }
@@ -446,114 +378,6 @@ void MeshRefinement::refine_post(
         edge_remover,
         smoother,
         std::array<bool, 4>{{false, true, false, false}});
-}
-
-void MeshRefinement::refine_local(
-    EdgeSplitter& splitter,
-    EdgeCollapser& collapser,
-    EdgeRemover& edge_remover,
-    VertexSmoother& smoother,
-    double target_energy)
-{
-    EdgeSplitter& localOperation = splitter;
-    double old_min_adaptive_scale = min_adaptive_scale;
-    min_adaptive_scale = state.eps / state.initial_edge_len * 0.5;
-
-    double avg_energy0, max_energy0;
-    localOperation.getAvgMaxEnergy(avg_energy0, max_energy0);
-    if (target_energy < 0) {
-        target_energy = max_energy0 / 100;
-        target_energy = std::max(target_energy, args.filter_energy_thres);
-    }
-    updateScalarField(false, true, target_energy * 0.8, true);
-    for (int pass = 0; pass < 20; pass++) {
-        logger().info("////////////////// Local Pass {} //////////////////", pass);
-        doOperations(splitter, collapser, edge_remover, smoother);
-
-        double avg_energy, max_energy;
-        localOperation.getAvgMaxEnergy(avg_energy, max_energy);
-        if (max_energy < target_energy) break;
-        avg_energy0 = avg_energy;
-        max_energy0 = max_energy;
-
-        if (pass > 0 && pass < args.max_num_passes - 1 &&
-            avg_energy0 - avg_energy < args.delta_energy_thres &&
-            max_energy - max_energy0 < args.delta_energy_thres) {
-            updateScalarField(false, true, target_energy);
-        }
-    }
-    min_adaptive_scale = old_min_adaptive_scale;
-    refine_revert(splitter, collapser, edge_remover, smoother);
-
-    for (int i = 0; i < tet_vertices.size(); i++) tet_vertices[i].is_locked = false;
-}
-
-bool MeshRefinement::refine_unrounded(
-    EdgeSplitter& splitter,
-    EdgeCollapser& collapser,
-    EdgeRemover& edge_remover,
-    VertexSmoother& smoother)
-{
-    EdgeSplitter& localOperation = splitter;
-    int scalar_update = 3;
-    double old_min_adaptive_scale = min_adaptive_scale;
-    min_adaptive_scale = state.eps / state.initial_edge_len * 0.5;
-
-    collapser.is_limit_length = false;
-    updateScalarField(true, false, -1, true);
-    for (int pass = 0; pass < 5 * scalar_update; pass++) {
-        logger().info("////////////////// Local Pass {} //////////////////", pass);
-        doOperations(splitter, collapser, edge_remover, smoother);
-
-        if (isRegionFullyRounded()) break;
-
-        if (scalar_update > 0 && pass % scalar_update == scalar_update - 1 &&
-            pass < args.max_num_passes * scalar_update - 1) {
-            updateScalarField(true, false, -1);
-        }
-    }
-    collapser.is_limit_length = true;
-    min_adaptive_scale = old_min_adaptive_scale;
-    refine_revert(splitter, collapser, edge_remover, smoother);
-
-    for (int i = 0; i < tet_vertices.size(); i++) tet_vertices[i].is_locked = false;
-
-    return false;
-}
-
-void MeshRefinement::refine_revert(
-    EdgeSplitter& splitter,
-    EdgeCollapser& collapser,
-    EdgeRemover& edge_remover,
-    VertexSmoother& smoother)
-{
-    EdgeSplitter& localOperation = splitter;
-    collapser.is_limit_length = false;
-    collapser.is_soft = true;
-
-    for (int i = 0; i < tet_vertices.size(); i++) {
-        if (!v_is_removed[i] && !tet_vertices[i].is_locked) tet_vertices[i].adaptive_scale = 1;
-    }
-
-    int n_v0 = std::count(v_is_removed.begin(), v_is_removed.end(), false);
-    for (int pass = 0; pass < 10; pass++) {
-        logger().info("////////////////// Local (revert) Pass {} //////////////////", pass);
-        doOperations(
-            splitter,
-            collapser,
-            edge_remover,
-            smoother,
-            std::array<bool, 4>({{false, true, true, true}}));
-        //        doOperations(splitter, collapser, edge_remover, smoother);
-
-        int n_v = std::count(v_is_removed.begin(), v_is_removed.end(), false);
-        if (n_v0 - n_v < 1) // when number of vertices becomes stable
-            break;
-        n_v0 = n_v;
-    }
-
-    collapser.is_limit_length = true;
-    collapser.is_soft = false;
 }
 
 int MeshRefinement::getInsideVertexSize()
@@ -601,94 +425,6 @@ void MeshRefinement::markInOut(std::vector<bool>& tmp_t_is_removed)
         tmp_t_is_removed[i] = !(W(cnt) > 0.5);
         cnt++;
     }
-}
-
-void MeshRefinement::applyTargetedVertexNum(
-    EdgeSplitter& splitter,
-    EdgeCollapser& collapser,
-    EdgeRemover& edge_remover,
-    VertexSmoother& smoother)
-{
-    if (args.target_num_vertices < 0) return;
-    if (args.target_num_vertices == 0)
-        for (int i = 0; i < t_is_removed.size(); i++) t_is_removed[i] = true;
-
-    double N = args.target_num_vertices; // targeted #v
-
-    // marking in/out
-    std::vector<bool> tmp_t_is_removed;
-    markInOut(tmp_t_is_removed);
-
-    for (int i = 0; i < tet_vertices.size(); i++) tet_vertices[i].is_locked = true;
-
-    for (int i = 0; i < tets.size(); i++) {
-        if (tmp_t_is_removed[i]) continue;
-        for (int j = 0; j < 4; j++) tet_vertices[tets[i][j]].is_locked = false;
-    }
-
-    int cnt = 0;
-    for (int i = 0; i < tet_vertices.size(); i++)
-        if (!v_is_removed[i] && !tet_vertices[i].is_locked) cnt++;
-
-    const double size_threshold = 0.05;
-    if (std::abs(cnt - N) / N < size_threshold) return;
-
-    logger().debug("{} -> target {}", cnt, N);
-
-    if (cnt > N) { // reduce vertices
-        double max_energy = splitter.getMaxEnergy();
-        for (int i = 0; i < tet_vertices.size(); i++) tet_vertices[i].adaptive_scale = 10;
-
-        collapser.is_soft = true;
-        collapser.soft_energy = max_energy;
-
-        collapser.budget = cnt - N;
-        for (int pass = 0; pass < 10; pass++) {
-            doOperations(
-                splitter,
-                collapser,
-                edge_remover,
-                smoother,
-                std::array<bool, 4>({{false, true, false, false}}));
-            doOperationLoops(
-                splitter,
-                collapser,
-                edge_remover,
-                smoother,
-                5,
-                std::array<bool, 4>({{false, false, true, true}}));
-            if (collapser.budget / N < size_threshold) break;
-        }
-    } else { // increase vertices
-        for (int i = 0; i < tet_vertices.size(); i++) tet_vertices[i].adaptive_scale = 0;
-
-        splitter.budget = N - cnt;
-        while (splitter.budget / N >= size_threshold) {
-            doOperations(
-                splitter,
-                collapser,
-                edge_remover,
-                smoother,
-                std::array<bool, 4>({{true, false, false, false}}));
-            doOperationLoops(
-                splitter,
-                collapser,
-                edge_remover,
-                smoother,
-                5,
-                std::array<bool, 4>({{false, false, true, true}}));
-            splitter.budget = N - getInsideVertexSize();
-        }
-    }
-}
-
-bool MeshRefinement::isRegionFullyRounded()
-{
-    for (int i = 0; i < tet_vertices.size(); i++) {
-        if (v_is_removed[i] || tet_vertices[i].is_locked) continue;
-        if (!tet_vertices[i].is_rounded) return false;
-    }
-    return true;
 }
 
 void MeshRefinement::updateScalarField(

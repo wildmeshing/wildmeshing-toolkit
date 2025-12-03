@@ -124,31 +124,19 @@ void LocalOperations::getCheckQuality(const std::vector<TetQuality>& tet_qs, Tet
 {
     double slim_sum = 0, slim_max = 0;
     for (int i = 0; i < tet_qs.size(); i++) {
-        if (state.use_energy_max) {
-            if (tet_qs[i].slim_energy > slim_max) slim_max = tet_qs[i].slim_energy;
-        } else
-            slim_sum += tet_qs[i].slim_energy * tet_qs[i].volume;
+        if (tet_qs[i].slim_energy > slim_max) slim_max = tet_qs[i].slim_energy;
     }
-    if (state.use_energy_max)
-        tq.slim_energy = slim_max;
-    else
-        tq.slim_energy = slim_sum;
+    tq.slim_energy = slim_max;
 }
 
 void LocalOperations::getCheckQuality(const std::vector<int>& t_ids, TetQuality& tq)
 {
     double slim_sum = 0, slim_max = 0;
     for (int i = 0; i < t_ids.size(); i++) {
-        if (state.use_energy_max) {
-            if (tet_qualities[t_ids[i]].slim_energy > slim_max)
-                slim_max = tet_qualities[t_ids[i]].slim_energy;
-        } else
-            slim_sum += tet_qualities[t_ids[i]].slim_energy * tet_qualities[t_ids[i]].volume;
+        if (tet_qualities[t_ids[i]].slim_energy > slim_max)
+            slim_max = tet_qualities[t_ids[i]].slim_energy;
     }
-    if (state.use_energy_max)
-        tq.slim_energy = slim_max;
-    else
-        tq.slim_energy = slim_sum;
+    tq.slim_energy = slim_max;
 }
 
 void LocalOperations::getAvgMaxEnergy(double& avg_tq, double& max_tq)
@@ -178,63 +166,9 @@ double LocalOperations::getMaxEnergy()
     return max_tq;
 }
 
-double LocalOperations::getSecondMaxEnergy(double max_energy)
-{
-    double max_tq = 0;
-    for (unsigned int i = 0; i < tet_qualities.size(); i++) {
-        if (t_is_removed[i]) continue;
-        if (tet_qualities[i].slim_energy == state.MAX_ENERGY) continue;
-        if (isTetLocked_ui(i)) continue;
-        if (tet_qualities[i].slim_energy > max_tq) max_tq = tet_qualities[i].slim_energy;
-    }
-    return max_tq;
-}
-
-double LocalOperations::getFilterEnergy(bool& is_clean_up)
-{
-    std::array<int, 11> buckets;
-    for (int i = 0; i < 11; i++) buckets[i] = 0;
-    for (unsigned int i = 0; i < tet_qualities.size(); i++) {
-        if (t_is_removed[i]) continue;
-        if (tet_qualities[i].slim_energy > args.filter_energy_thres - 1 + 1e10)
-            buckets[10]++;
-        else {
-            for (int j = 0; j < 10; j++) {
-                if (tet_qualities[i].slim_energy > args.filter_energy_thres - 1 + pow(10, j) &&
-                    tet_qualities[i].slim_energy <= args.filter_energy_thres - 1 + pow(10, j + 1)) {
-                    buckets[j]++;
-                    break;
-                }
-            }
-        }
-    }
-
-    std::array<int, 10> tmps1;
-    std::array<int, 10> tmps2;
-    for (int i = 0; i < 10; i++) {
-        tmps1[i] = std::accumulate(buckets.begin(), buckets.begin() + i + 1, 0);
-        tmps2[i] = std::accumulate(buckets.begin() + i + 1, buckets.end(), 0);
-    }
-
-    if (tmps1[0] >= tmps2[0]) {
-        is_clean_up = (tmps2[5] > 0);
-        return 8;
-    }
-    if (tmps1[8] <= tmps2[8]) return 1e11;
-
-    for (int i = 0; i < 8; i++) {
-        if (tmps1[i] < tmps2[i] && tmps1[i + 1] > tmps2[i + 1]) {
-            return args.filter_energy_thres - 1 + 5 * pow(10, i + 1);
-        }
-    }
-
-    return 8; // would never be execuate, it's fine
-}
-
 void LocalOperations::calTetQualities(
     const std::vector<std::array<int, 4>>& new_tets,
-    std::vector<TetQuality>& tet_qs,
-    bool all_measure)
+    std::vector<TetQuality>& tet_qs)
 {
     tet_qs.resize(new_tets.size());
     for (int i = 0; i < new_tets.size(); i++) {
@@ -242,48 +176,42 @@ void LocalOperations::calTetQualities(
     }
 }
 
-double LocalOperations::calEdgeLength(const std::array<int, 2>& v_ids)
-{
-    return (tet_vertices[v_ids[0]].posf - tet_vertices[v_ids[1]].posf).squaredNorm();
-}
-
-double LocalOperations::calEdgeLength(int v1_id, int v2_id, bool is_over_refine)
+double LocalOperations::calEdgeLength(int v1_id, int v2_id)
 {
     return (tet_vertices[v1_id].posf - tet_vertices[v2_id].posf).squaredNorm();
 }
 
 void LocalOperations::calTetQuality_AMIPS(const std::array<int, 4>& tet, TetQuality& t_quality)
 {
-    if (energy_type == state.ENERGY_AMIPS) {
-        igl::predicates::exactinit();
-        auto res = igl::predicates::orient3d(
-            tet_vertices[tet[0]].posf,
-            tet_vertices[tet[1]].posf,
-            tet_vertices[tet[2]].posf,
-            tet_vertices[tet[3]].posf);
-        int result;
-        if (res == igl::predicates::Orientation::POSITIVE)
-            result = 1;
-        else if (res == igl::predicates::Orientation::NEGATIVE)
-            result = -1;
-        else
-            result = 0;
+    igl::predicates::exactinit();
+    auto res = igl::predicates::orient3d(
+        tet_vertices[tet[0]].posf,
+        tet_vertices[tet[1]].posf,
+        tet_vertices[tet[2]].posf,
+        tet_vertices[tet[3]].posf);
+    int result;
+    if (res == igl::predicates::Orientation::POSITIVE)
+        result = 1;
+    else if (res == igl::predicates::Orientation::NEGATIVE)
+        result = -1;
+    else
+        result = 0;
 
-        // neg result == pos tet (tet origin from geogram delaunay)
-        if (result >= 0) { // degenerate in floats
-            t_quality.slim_energy = state.MAX_ENERGY;
-        } else {
-            std::array<double, 12> T;
-            for (int i = 0; i < 4; i++) {
-                for (int j = 0; j < 3; j++) {
-                    T[i * 3 + j] = tet_vertices[tet[i]].posf[j];
-                }
+    // neg result == pos tet (tet origin from geogram delaunay)
+    if (result >= 0) { // degenerate in floats
+        t_quality.slim_energy = state.MAX_ENERGY;
+    } else {
+        std::array<double, 12> T;
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 3; j++) {
+                T[i * 3 + j] = tet_vertices[tet[i]].posf[j];
             }
-            t_quality.slim_energy = wmtk::AMIPS_energy(T);
-            if (std::isinf(t_quality.slim_energy) || std::isnan(t_quality.slim_energy))
-                t_quality.slim_energy = state.MAX_ENERGY;
         }
+        t_quality.slim_energy = wmtk::AMIPS_energy(T);
+        if (std::isinf(t_quality.slim_energy) || std::isnan(t_quality.slim_energy))
+            t_quality.slim_energy = state.MAX_ENERGY;
     }
+
     if (std::isinf(t_quality.slim_energy) || std::isnan(t_quality.slim_energy) ||
         t_quality.slim_energy <= 0)
         t_quality.slim_energy = state.MAX_ENERGY;
@@ -384,22 +312,6 @@ bool LocalOperations::isPointOutBoundaryEnvelop(const Vector3d& p)
     return geo_b_tree.is_outside(p);
 }
 
-bool LocalOperations::isTetOnSurface(int t_id)
-{
-    for (int i = 0; i < 4; i++) {
-        if (is_surface_fs[t_id][i] != state.NOT_SURFACE) return false;
-    }
-    return true;
-}
-
-bool LocalOperations::isTetRounded(int t_id)
-{
-    for (int i = 0; i < 4; i++) {
-        if (!tet_vertices[tets[t_id][i]].is_rounded) return false;
-    }
-    return true;
-}
-
 void LocalOperations::getFaceConnTets(int v1_id, int v2_id, int v3_id, std::vector<int>& t_ids)
 {
     std::vector<int> v1, v2, v3, tmp;
@@ -456,67 +368,6 @@ bool LocalOperations::isBoundaryPoint(int v_id)
         if (isEdgeOnBoundary(n_v_id, v_id)) return true;
     }
     return false;
-}
-
-void LocalOperations::checkUnrounded()
-{
-    bool is_output = false;
-    for (unsigned int i = 0; i < tet_vertices.size(); i++) {
-        if (v_is_removed[i]) continue;
-        if (!tet_vertices[i].is_rounded) {
-            is_output = true;
-            break;
-        }
-    }
-    if (!is_output) return;
-
-    std::ofstream of;
-    of.open(state.working_dir + "unrounded_check.txt");
-    int cnt_sf = 0;
-    int cnt_b = 0;
-    int cnt_all = 0;
-    int cnt_sf1 = 0;
-    std::vector<double> diss;
-    for (unsigned int i = 0; i < tet_vertices.size(); i++) {
-        if (v_is_removed[i]) continue;
-        if (tet_vertices[i].is_rounded) continue;
-
-        cnt_all++;
-
-        if (tet_vertices[i].is_on_boundary) cnt_b++;
-        if (tet_vertices[i].is_on_surface) {
-            cnt_sf++;
-            continue;
-        }
-
-        bool is_found = false;
-        for (int t_id : tet_vertices[i].conn_tets) {
-            for (int j = 0; j < 4; j++) {
-                if (tets[t_id][j] == i) {
-                    if (is_surface_fs[t_id][j] != state.NOT_SURFACE) {
-                        cnt_sf1++;
-                        is_found = true;
-                    }
-                    break;
-                }
-            }
-            if (is_found) break;
-        }
-        if (is_found) continue;
-
-        double dis = sqrt(geo_sf_tree.squared_distance(tet_vertices[i].posf));
-        diss.push_back(dis);
-    }
-
-    of << "# all = " << cnt_all << std::endl;
-    of << "# surface = " << cnt_sf << std::endl;
-    of << "# boundary = " << cnt_b << std::endl;
-    //    of<<"Is closed? "<<is_closed<<std::endl;
-    of << "# connect to surface = " << cnt_sf1 << std::endl;
-    of << "# non-surface = " << diss.size() << std::endl;
-    for (double dis : diss) {
-        of << dis << std::endl;
-    }
 }
 
 bool LocalOperations::isLocked_ui(const std::array<int, 2>& e)

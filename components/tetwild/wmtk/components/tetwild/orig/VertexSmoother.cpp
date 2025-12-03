@@ -85,8 +85,8 @@ bool VertexSmoother::smoothSingleVertex(int v_id, bool is_cal_energy)
         return false;
     } else {
         Vector3d pf;
-        if (energy_type == state.ENERGY_AMIPS) {
-            if (!NewtonsMethod(t_ids, new_tets, v_id, pf)) return false;
+        if (!NewtonsMethod(t_ids, new_tets, v_id, pf)) {
+            return false;
         }
 
         // assign new coordinate and try to round it
@@ -189,8 +189,8 @@ void VertexSmoother::smoothSingle()
             continue;
         } else {
             Vector3d pf;
-            if (energy_type == state.ENERGY_AMIPS) {
-                if (!NewtonsMethod(t_ids, new_tets, v_id, pf)) continue;
+            if (!NewtonsMethod(t_ids, new_tets, v_id, pf)) {
+                continue;
             }
 #if TIMING_BREAKDOWN
             igl_timer.start();
@@ -316,8 +316,8 @@ void VertexSmoother::smoothSurface()
         if (!is_valid) {
             continue;
         } else {
-            if (energy_type == state.ENERGY_AMIPS) {
-                if (!NewtonsMethod(old_t_ids, new_tets, v_id, pf_out)) continue;
+            if (!NewtonsMethod(old_t_ids, new_tets, v_id, pf_out)) {
+                continue;
             }
             p_out = Vector3r(pf_out[0], pf_out[1], pf_out[2]);
         }
@@ -376,7 +376,7 @@ void VertexSmoother::smoothSurface()
         getCheckQuality(old_t_ids, old_tq);
         calTetQualities(new_tets, tet_qs);
         getCheckQuality(tet_qs, new_tq);
-        if (!new_tq.isBetterThan(old_tq, energy_type, state)) {
+        if (!new_tq.isBetterThan(old_tq, state)) {
             tet_vertices[v_id].pos = old_p;
             tet_vertices[v_id].posf = old_pf;
             continue;
@@ -539,9 +539,7 @@ double VertexSmoother::getNewEnergy(const std::vector<int>& t_ids)
                 t[j * 3 + k] = tet_vertices[tets[t_ids[i]][j]].posf[k];
             }
         }
-        if (energy_type == state.ENERGY_AMIPS) {
-            s_energy += AMIPS_energy(t);
-        }
+        s_energy += AMIPS_energy(t);
     }
 
     if (std::isinf(s_energy) || std::isnan(s_energy) || s_energy <= 0 ||

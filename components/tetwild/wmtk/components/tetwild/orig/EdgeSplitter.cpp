@@ -342,9 +342,8 @@ int EdgeSplitter::getOverRefineScale(int v1_id, int v2_id)
         std::vector<int> n12_t_ids;
         setIntersection(tet_vertices[v1_id].conn_tets, tet_vertices[v2_id].conn_tets, n12_t_ids);
         for (int i = 0; i < n12_t_ids.size(); i++) {
-            if (energy_type == state.ENERGY_AMIPS &&
-                tet_qualities[n12_t_ids[i]].slim_energy >
-                    500) { // todo: add || for other types of energy
+            if (tet_qualities[n12_t_ids[i]].slim_energy >
+                500) { // todo: add || for other types of energy
                 int scale = 1;
                 scale = (tet_qualities[n12_t_ids[i]].slim_energy - 500) / 500.0;
                 if (scale < 1)
