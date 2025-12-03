@@ -13,11 +13,8 @@
 
 #include "ForwardDecls.h"
 
-#include <geogram/basic/geometry.h>
 #include <unordered_set>
 #include <vector>
-
-#define TIMING_BREAKDOWN true
 
 namespace wmtk::components::tetwild::orig {
 

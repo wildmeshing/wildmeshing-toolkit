@@ -42,6 +42,7 @@ void EdgeCollapser::init()
     }
     std::sort(edges.begin(), edges.end());
     edges.erase(std::unique(edges.begin(), edges.end()), edges.end());
+    logger().info("#edges = {}", edges.size());
 
     const unsigned int edges_size = edges.size();
     for (unsigned int i = 0; i < edges_size; i++) {
@@ -65,7 +66,6 @@ void EdgeCollapser::init()
     counter = 0;
     suc_counter = 0;
     breakdown_timing = {{0, 0, 0, 0, 0}};
-    breakdown_timing0 = {{0, 0}};
 }
 
 void EdgeCollapser::collapse()
@@ -97,23 +97,17 @@ void EdgeCollapser::collapse()
                 break;
         }
 
-#if TIMING_BREAKDOWN
         igl_timer.start();
-#endif
         int return_code = collapseAnEdge(v_ids[0], v_ids[1]);
         if (return_code == SUCCESS) {
-#if TIMING_BREAKDOWN
             breakdown_timing[id_success] += igl_timer.getElapsedTime();
-#endif
             suc_counter++;
             if (budget > 0) {
                 budget--;
                 if (budget == 0) return;
             }
         } else if (return_code == ENVELOP_SUC) {
-#if TIMING_BREAKDOWN
             breakdown_timing[id_env_success] += igl_timer.getElapsedTime();
-#endif
             suc_counter++;
             cnt++;
             if (budget > 0) {
@@ -122,17 +116,11 @@ void EdgeCollapser::collapse()
             }
         } else {
             if (return_code == ENVELOP) {
-#if TIMING_BREAKDOWN
                 breakdown_timing[id_env_fail] += igl_timer.getElapsedTime();
-#endif
             } else if (return_code == FLIP) {
-#if TIMING_BREAKDOWN
                 breakdown_timing[id_flip_fail] += igl_timer.getElapsedTime();
-#endif
             } else {
-#if TIMING_BREAKDOWN
                 breakdown_timing[id_energy_fail] += igl_timer.getElapsedTime();
-#endif
             }
 
             inf_es.push_back(v_ids);
@@ -141,27 +129,26 @@ void EdgeCollapser::collapse()
 
         counter++;
     }
-    logger().debug("{} {} {}", suc_counter, counter, inf_es.size());
-    logger().debug("envelop accept = {}", envelop_accept_cnt);
+    logger().debug("executed: {} | success / fail: {} / {}", counter, suc_counter, inf_es.size());
+    logger().debug("envelope accept = {}", envelop_accept_cnt);
 
     if (suc_counter == 0 || inf_es.size() == 0) {
-        logger().debug("{}: {}s", breakdown_name0[id_sampling], breakdown_timing0[id_sampling]);
-        logger().debug("{}: {}s", breakdown_name0[id_aabb], breakdown_timing0[id_aabb]);
-        logger().debug("----");
-        for (int i = 0; i < breakdown_timing.size(); i++)
-            logger().debug("{}: {}s", breakdown_name[i], breakdown_timing[i]);
+        //// report timings
+        // logger().debug("----");
+        // for (int i = 0; i < breakdown_timing.size(); i++) {
+        //     logger().debug("{}: {}s", breakdown_name[i], breakdown_timing[i]);
+        // }
+        // logger().debug("energy_time = {}", energy_time);
 
-        logger().debug("energy_time = {}", energy_time);
-
-        return;
+        return; // this is the way out of collapse
     }
 
-    postProcess();
+    postProcess(); // recursive call. This function calles collapse() again.
 }
 
 void EdgeCollapser::postProcess()
 {
-    logger().debug("postProcess!");
+    // logger().debug("postProcess!");
     counter = 0;
     suc_counter = 0;
     envelop_accept_cnt = 0;
@@ -170,16 +157,18 @@ void EdgeCollapser::postProcess()
     //    std::sort(inf_es.begin(), inf_es.end());
     //    inf_es.erase(std::unique(inf_es.begin(), inf_es.end()), inf_es.end());
 
-#if TIMING_BREAKDOWN
     igl_timer.start();
-#endif
     std::vector<std::array<int, 2>> tmp_inf_es;
     const unsigned int inf_es_size = inf_es.size();
     tmp_inf_es.reserve(inf_es_size / 4.0 + 1);
     for (unsigned int i = 0; i < inf_es_size; i++) {
-        if (!isEdgeValid(inf_es[i])) continue;
+        if (!isEdgeValid(inf_es[i])) {
+            continue;
+        }
         double weight = calEdgeLength(inf_es[i][0], inf_es[i][1]);
-        if (!isCollapsable_cd3(inf_es[i][0], inf_es[i][1], weight)) continue;
+        if (!isCollapsable_cd3(inf_es[i][0], inf_es[i][1], weight)) {
+            continue;
+        }
 
         bool is_recal = false;
         for (auto it = tet_vertices[inf_es[i][0]].conn_tets.begin();
@@ -191,8 +180,6 @@ void EdgeCollapser::postProcess()
             }
         }
 
-        //        if (is_recal && isCollapsable_cd1(inf_es[i][0], inf_es[i][1]) &&
-        //        isCollapsable_cd2(inf_es[i][0], inf_es[i][1])) {
         if (is_recal && isCollapsable_cd1(inf_es[i][0], inf_es[i][1])) {
             if (!isLocked_ui(inf_es[i])) {
                 ElementInQueue_ec ele(inf_es[i], weight);
@@ -210,9 +197,7 @@ void EdgeCollapser::postProcess()
     ts++;
     inf_e_tss = std::vector<int>(inf_es.size(), ts);
 
-#if TIMING_BREAKDOWN
     breakdown_timing[id_postprocessing] += igl_timer.getElapsedTime();
-#endif
 
     collapse();
 }

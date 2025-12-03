@@ -143,9 +143,7 @@ void VertexSmoother::smoothSingle()
 
         counter++;
 
-#if TIMING_BREAKDOWN
         igl_timer.start();
-#endif
         std::vector<std::array<int, 4>> new_tets;
         std::vector<int> t_ids;
         for (auto it = tet_vertices[v_id].conn_tets.begin();
@@ -181,9 +179,7 @@ void VertexSmoother::smoothSingle()
                 break;
             }
         }
-#if TIMING_BREAKDOWN
         breakdown_timing[id_round] += igl_timer.getElapsedTime();
-#endif
 
         if (!is_valid) {
             continue;
@@ -192,9 +188,7 @@ void VertexSmoother::smoothSingle()
             if (!NewtonsMethod(t_ids, new_tets, v_id, pf)) {
                 continue;
             }
-#if TIMING_BREAKDOWN
             igl_timer.start();
-#endif
             // assign new coordinate and try to round it
             Vector3r old_p = tet_vertices[v_id].pos;
             Vector3d old_pf = tet_vertices[v_id].posf;
@@ -209,9 +203,7 @@ void VertexSmoother::smoothSingle()
                 tet_vertices[v_id].posf = old_pf;
                 tet_vertices[v_id].is_rounded = old_is_rounded;
             }
-#if TIMING_BREAKDOWN
             breakdown_timing[id_round] += igl_timer.getElapsedTime();
-#endif
         }
 
         ///update timestamps
@@ -235,13 +227,9 @@ void VertexSmoother::smoothSingle()
         new_tets.push_back(tets[i]);
     }
     std::vector<TetQuality> tet_qs;
-#if TIMING_BREAKDOWN
     igl_timer.start();
-#endif
     calTetQualities(new_tets, tet_qs);
-#if TIMING_BREAKDOWN
     breakdown_timing[id_value_e] += igl_timer.getElapsedTime();
-#endif
     int cnt = 0;
     for (int i = 0; i < tets.size(); i++) {
         if (t_is_removed[i]) continue;
@@ -323,9 +311,7 @@ void VertexSmoother::smoothSurface()
         }
 
         ///find one-ring surface faces
-#if TIMING_BREAKDOWN
         igl_timer.start();
-#endif
         std::vector<std::array<int, 3>> tri_ids;
         for (auto it = tet_vertices[v_id].conn_tets.begin();
              it != tet_vertices[v_id].conn_tets.end();
@@ -356,9 +342,7 @@ void VertexSmoother::smoothSurface()
             pf = nearest_pf;
             p = to_rational(nearest_pf);
         }
-#if TIMING_BREAKDOWN
         breakdown_timing[id_project] += igl_timer.getElapsedTime();
-#endif
 
         Vector3r old_p = tet_vertices[v_id].pos;
         Vector3d old_pf = tet_vertices[v_id].posf;
@@ -389,9 +373,7 @@ void VertexSmoother::smoothSurface()
             continue;
         }
 
-#if TIMING_BREAKDOWN
         igl_timer.start();
-#endif
 
         ///check if tris outside the envelop
         std::vector<std::array<Vector3d, 3>> trisf;
@@ -412,9 +394,7 @@ void VertexSmoother::smoothSurface()
                 break;
             }
         }
-#if TIMING_BREAKDOWN
         breakdown_timing[id_aabb] += igl_timer.getElapsedTime();
-#endif
         if (!is_valid) {
             tet_vertices[v_id].pos = old_p;
             tet_vertices[v_id].posf = old_pf;

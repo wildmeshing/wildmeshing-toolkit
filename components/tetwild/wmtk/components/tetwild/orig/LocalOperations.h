@@ -101,8 +101,6 @@ public:
     igl::Timer igl_timer0;
     int id_sampling = 0;
     int id_aabb = 1;
-    std::array<double, 2> breakdown_timing0;
-    std::array<std::string, 2> breakdown_name0 = {{"Envelop_sampling", "Envelop_AABBtree"}};
 
     int mid_id = 0;
 

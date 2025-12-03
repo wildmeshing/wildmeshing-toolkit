@@ -304,7 +304,8 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
         init(T);
 
         const auto& verts = legacy_tetwild.tet_vertices;
-        for (size_t i = 0; i < verts.size(); ++i) {
+        assert(verts.size() >= vert_capacity());
+        for (size_t i = 0; i < vert_capacity(); ++i) {
             auto& VA = m_vertex_attribute[i];
             const orig::TetVertex& v = verts[i];
             VA.m_is_rounded = v.is_rounded;
@@ -325,6 +326,11 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
                     VA.on_bbox_faces.emplace_back(1 - id);
                 }
                 std::sort(VA.on_bbox_faces.begin(), VA.on_bbox_faces.end());
+            }
+        }
+        for (size_t i = vert_capacity(); i < verts.size(); ++i) {
+            if (!legacy_tetwild.v_is_removed[i]) {
+                logger().error("Vertex {} is not removed", i);
             }
         }
 
@@ -464,8 +470,8 @@ std::tuple<double, double> TetWildMesh::local_operations(
                 split_all_edges();
                 wmtk::logger().info(
                     "#vertices {}, #tets {} after split",
-                    vert_capacity(),
-                    tet_capacity());
+                    get_vertices().size(),
+                    get_tets().size());
                 // auto faces = get_faces();
                 // for (auto f : faces) {
                 //     auto x = f.fid(*this);
@@ -488,8 +494,8 @@ std::tuple<double, double> TetWildMesh::local_operations(
                 collapse_all_edges(collapse_limit_length);
                 wmtk::logger().info(
                     "#vertices {}, #tets {} after collapse",
-                    vert_capacity(),
-                    tet_capacity());
+                    get_vertices().size(),
+                    get_tets().size());
                 // auto faces = get_faces();
                 // for (auto f : faces) {
                 //     auto x = f.fid(*this);

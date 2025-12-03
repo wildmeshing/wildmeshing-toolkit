@@ -36,13 +36,17 @@ void LocalOperations::outputInfo(int op_type, double time, bool is_log)
     }
 
 
-    logger().debug("# vertices = {}({}) {}(r)", cnt, tet_vertices.size(), r_cnt);
+    logger().debug(
+        "# vertices = {} (vector with removed: {}), rounded: {}",
+        cnt,
+        tet_vertices.size(),
+        r_cnt);
 
     cnt = 0;
     for (int i = 0; i < tets.size(); i++) {
         if (!t_is_removed[i]) cnt++;
     }
-    logger().debug("# tets = {}({})", cnt, tets.size());
+    logger().debug("# tets = {} (vector with removed: {})", cnt, tets.size());
     logger().debug("# total operations = {}", counter);
     logger().debug("# accepted operations = {}", suc_counter);
 
