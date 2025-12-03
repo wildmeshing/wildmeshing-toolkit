@@ -280,6 +280,7 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
     legacy_tetwild.refine(); // the actual tetwild
 
     // write back to our format
+    logger().info("Write back to WMTK format");
     {
         const auto& tets = legacy_tetwild.tets;
         size_t tet_count = std::count(
@@ -303,16 +304,21 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
         init(T);
 
         const auto& verts = legacy_tetwild.tet_vertices;
-
         for (size_t i = 0; i < verts.size(); ++i) {
             auto& VA = m_vertex_attribute[i];
             const orig::TetVertex& v = verts[i];
-            VA.m_pos = v.pos;
-            VA.m_posf = v.posf;
             VA.m_is_rounded = v.is_rounded;
+            if (v.is_rounded) {
+                VA.m_pos = to_rational(v.posf);
+                VA.m_posf = v.posf;
+            } else {
+                VA.m_pos = v.pos;
+                VA.m_posf = to_double(v.pos);
+            }
             VA.m_sizing_scalar = v.adaptive_scale;
             VA.m_is_on_surface = v.is_on_surface;
             VA.m_is_on_open_boundary = v.is_on_boundary;
+            // logger().info("DEBUG on_bbox");
             if (v.is_on_bbox) {
                 VA.on_bbox_faces.clear();
                 for (const int id : v.on_face) {
@@ -355,6 +361,7 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
             m_tet_attribute[t.tid(*this)].m_quality = e;
         }
     }
+    logger().info("Finish legacy mesh refinement.");
 }
 
 std::tuple<double, double> TetWildMesh::local_operations(
