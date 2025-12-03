@@ -290,7 +290,10 @@ void MeshRefinement::refine(
             }
         }
 
-        if (localOperation.getMaxEnergy() < args.filter_energy_thres) break;
+        if (localOperation.getMaxEnergy() < args.filter_energy_thres) {
+            logger().info("Max energy below threshold: {}", localOperation.getMaxEnergy());
+            break;
+        }
 
         // check and mark is_bad_element
         double avg_energy, max_energy;
@@ -404,6 +407,8 @@ void MeshRefinement::refine(
 
     if (args.target_num_vertices > 0)
         applyTargetedVertexNum(splitter, collapser, edge_remover, smoother);
+
+    logger().info("Final max energy: {}", localOperation.getMaxEnergy());
 }
 
 void MeshRefinement::refine_pre(
@@ -923,6 +928,50 @@ void MeshRefinement::getTrackedSurface(Eigen::MatrixXd& V, Eigen::MatrixXi& F)
         for (int j = 0; j < 3; j++) {
             F(cnt, j) = map_ids[fs[i][j + 3]];
             cnt++;
+        }
+    }
+}
+
+void MeshRefinement::getTrackedSurface_continuous(Eigen::MatrixXd& V, Eigen::MatrixXi& F)
+{
+    std::vector<std::array<int, 6>> fs;
+
+    for (int i = 0; i < tets.size(); i++) {
+        if (t_is_removed[i]) {
+            continue;
+        }
+        for (int j = 0; j < 4; j++) {
+            if (is_surface_fs[i][j] != state.NOT_SURFACE && is_surface_fs[i][j] >= 0) { // outside
+                std::array<int, 3> v_ids = {
+                    {tets[i][(j + 1) % 4], tets[i][(j + 2) % 4], tets[i][(j + 3) % 4]}};
+
+                Vector3r n = ((tet_vertices[v_ids[1]].pos) - tet_vertices[v_ids[0]].pos)
+                                 .cross((tet_vertices[v_ids[2]].pos) - tet_vertices[v_ids[0]].pos);
+                Vector3r d = (tet_vertices[v_ids[3]].pos) - tet_vertices[v_ids[0]].pos;
+                auto res = n.dot(d);
+
+                if (res <= 0) {
+                    int tmp = v_ids[0];
+                    v_ids[0] = v_ids[2];
+                    v_ids[2] = tmp;
+                }
+                std::array<int, 3> v_ids1 = v_ids;
+                std::sort(v_ids1.begin(), v_ids1.end());
+                fs.push_back(std::array<int, 6>(
+                    {{v_ids1[0], v_ids1[1], v_ids1[2], v_ids[0], v_ids[1], v_ids[2]}}));
+            }
+        }
+    }
+
+    V.resize(tet_vertices.size(), 3);
+    for (int i = 0; i < tet_vertices.size(); i++) {
+        V.row(i) = tet_vertices[i].posf;
+    }
+
+    F.resize(fs.size(), 3);
+    for (int i = 0; i < fs.size(); i++) {
+        for (int j = 0; j < 3; j++) {
+            F(i, j) = fs[i][j + 3];
         }
     }
 }

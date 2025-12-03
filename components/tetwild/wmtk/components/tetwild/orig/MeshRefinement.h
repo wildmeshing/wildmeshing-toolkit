@@ -130,6 +130,7 @@ public:
     int mid_result = 0;
     void getSurface(Eigen::MatrixXd& V, Eigen::MatrixXi& F);
     void getTrackedSurface(Eigen::MatrixXd& V, Eigen::MatrixXi& F);
+    void getTrackedSurface_continuous(Eigen::MatrixXd& V, Eigen::MatrixXi& F);
 };
 
 } // namespace wmtk::components::tetwild::orig

@@ -306,7 +306,12 @@ void tetwild(nlohmann::json json_params)
     wmtk::logger().info("MESH surface VERTEX COUNT BEFORE OPTIMIZE: {}", surface_v_cnt);
 
     // /////////mesh improvement
-    mesh_new.mesh_improvement(max_its);
+    if (json_params["use_legacy_code"]) {
+        logger().warn("Using legacy code for mesh improvement!");
+        mesh_new.mesh_improvement_legacy(max_its);
+    } else {
+        mesh_new.mesh_improvement(max_its);
+    }
 
     // mesh_new.output_mesh(output_path + "after_optimization.msh");
     // mesh_new.output_faces(output_path + "after_optimization_surface.obj", [](auto& f) {

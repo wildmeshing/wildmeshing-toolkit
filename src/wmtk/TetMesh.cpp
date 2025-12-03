@@ -110,7 +110,9 @@ void TetMesh::init_with_isolated_vertices(
     size_t n_vertices,
     const std::vector<std::array<size_t, 4>>& tets)
 {
+    m_vertex_connectivity.clear();
     m_vertex_connectivity.resize(n_vertices);
+    m_tet_connectivity.clear();
     m_tet_connectivity.resize(tets.size());
     current_vert_size = n_vertices;
     current_tet_size = tets.size();
@@ -133,15 +135,19 @@ void TetMesh::init_with_isolated_vertices(
 
     // resize attributes
     if (p_vertex_attrs) {
+        p_vertex_attrs->clear();
         p_vertex_attrs->resize(n_vertices);
     }
     if (p_tet_attrs) {
+        p_tet_attrs->clear();
         p_tet_attrs->resize(tets.size());
     }
     if (p_face_attrs) {
+        p_face_attrs->clear();
         p_face_attrs->resize(4 * tets.size());
     }
     if (p_edge_attrs) {
+        p_edge_attrs->clear();
         p_edge_attrs->resize(6 * tets.size());
     }
 }

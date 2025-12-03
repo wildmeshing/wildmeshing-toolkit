@@ -279,8 +279,82 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
     legacy_tetwild.prepareData();
     legacy_tetwild.refine(state.ENERGY_AMIPS); // the actual tetwild
 
-    // writing back missing...
-    // use init() to overwrite old mesh
+    // write back to our format
+    {
+        const auto& tets = legacy_tetwild.tets;
+        size_t tet_count = std::count(
+            legacy_tetwild.t_is_removed.begin(),
+            legacy_tetwild.t_is_removed.end(),
+            false);
+
+        MatrixXi T;
+        T.resize(tet_count, 4);
+        tet_count = 0;
+        for (size_t i = 0; i < tets.size(); ++i) {
+            if (legacy_tetwild.t_is_removed[i]) {
+                continue;
+            }
+            for (size_t j = 0; j < 4; ++j) {
+                T(tet_count, j) = tets[i][j];
+            }
+            ++tet_count;
+        }
+
+        init(T);
+
+        const auto& verts = legacy_tetwild.tet_vertices;
+
+        for (size_t i = 0; i < verts.size(); ++i) {
+            auto& VA = m_vertex_attribute[i];
+            const orig::TetVertex& v = verts[i];
+            VA.m_pos = v.pos;
+            VA.m_posf = v.posf;
+            VA.m_is_rounded = v.is_rounded;
+            VA.m_sizing_scalar = v.adaptive_scale;
+            VA.m_is_on_surface = v.is_on_surface;
+            VA.m_is_on_open_boundary = v.is_on_boundary;
+            if (v.is_on_bbox) {
+                VA.on_bbox_faces.clear();
+                for (const int id : v.on_face) {
+                    VA.on_bbox_faces.emplace_back(1 - id);
+                }
+                std::sort(VA.on_bbox_faces.begin(), VA.on_bbox_faces.end());
+            }
+        }
+
+        tet_count = 0;
+        for (size_t i = 0; i < tets.size(); ++i) {
+            if (legacy_tetwild.t_is_removed[i]) {
+                continue;
+            }
+            const auto& v = oriented_tet_vids(tet_count);
+            const auto [f0, fid0] = tuple_from_face({{v[1], v[2], v[3]}});
+            const auto [f1, fid1] = tuple_from_face({{v[0], v[2], v[3]}});
+            const auto [f2, fid2] = tuple_from_face({{v[0], v[1], v[3]}});
+            const auto [f3, fid3] = tuple_from_face({{v[0], v[1], v[2]}});
+
+            if (legacy_tetwild.is_surface_fs[i][0] == 1) {
+                m_face_attribute[fid0].m_is_surface_fs = true;
+            }
+            if (legacy_tetwild.is_surface_fs[i][1] == 1) {
+                m_face_attribute[fid1].m_is_surface_fs = true;
+            }
+            if (legacy_tetwild.is_surface_fs[i][2] == 1) {
+                m_face_attribute[fid2].m_is_surface_fs = true;
+            }
+            if (legacy_tetwild.is_surface_fs[i][3] == 1) {
+                m_face_attribute[fid3].m_is_surface_fs = true;
+            }
+            ++tet_count;
+        }
+
+        for (const Tuple& t : get_tets()) {
+            // This could be also transferred from legacy_tetwild but I wanted to do that here to
+            // ensure the energy is computed in the same way.
+            const double e = get_quality(t);
+            m_tet_attribute[t.tid(*this)].m_quality = e;
+        }
+    }
 }
 
 std::tuple<double, double> TetWildMesh::local_operations(

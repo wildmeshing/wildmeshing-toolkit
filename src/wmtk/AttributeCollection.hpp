@@ -22,8 +22,9 @@ class AbstractAttributeContainer
 {
 public:
     virtual ~AbstractAttributeContainer() = default;
-    virtual void move(size_t from, size_t to){};
+    virtual void move(size_t from, size_t to) {};
     virtual void resize(size_t) = 0;
+    virtual void clear() = 0;
     virtual void rollback() = 0;
     virtual void begin_protect() = 0;
     virtual void end_protect() = 0;
@@ -47,6 +48,7 @@ struct AttributeCollection : public AbstractAttributeContainer
         // }
         // TODO: in Concurrent, vertex partition id, vertex mutex should be part of attribute
     }
+    void clear() override { m_attributes.clear(); }
 
     bool assign(size_t to, T&& val) // always use this in OP_after
     {
