@@ -97,7 +97,7 @@ void EdgeSplitter::split()
         if (t_slot_size < es_queue.size() * 6 * 2)
             tets.reserve(es_queue.size() * 6 * 2 - t_slot_size + 1);
     }
-    logger().debug("{}", es_queue.size());
+    logger().debug("Queue size = {}", es_queue.size());
     logger().debug("ideal_weight = {}", ideal_weight);
 
     while (!es_queue.empty()) {

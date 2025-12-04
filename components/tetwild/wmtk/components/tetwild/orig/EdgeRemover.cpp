@@ -57,11 +57,13 @@ void EdgeRemover::init()
 
 void EdgeRemover::swap()
 {
-    tmp_cnt3 = 0;
-    tmp_cnt4 = 0;
-    tmp_cnt5 = 0;
-    tmp_cnt6 = 0;
-    int cnt5 = 0;
+    num_32_cases = 0;
+    num_44_cases = 0;
+    num_56_cases = 0;
+    num_6_cases = 0;
+    int cnt32 = 0;
+    int cnt44 = 0;
+    int cnt56 = 0;
 
     while (!er_queue.empty()) {
         const ElementInQueue_er& ele = er_queue.top();
@@ -88,36 +90,49 @@ void EdgeRemover::swap()
                 break;
         }
 
+        if (t_ids.size() >= 6) num_6_cases++;
+        if (t_ids.size() == 5) num_56_cases++;
+        if (t_ids.size() == 4) num_44_cases++;
+        if (t_ids.size() == 3) num_32_cases++;
+
         bool is_fail = false;
-        if (removeAnEdge_32(v_ids[0], v_ids[1], t_ids))
+        if (removeAnEdge_32(v_ids[0], v_ids[1], t_ids)) {
             suc_counter++;
-        else if (removeAnEdge_44(v_ids[0], v_ids[1], t_ids))
+            cnt32++;
+        } else if (removeAnEdge_44(v_ids[0], v_ids[1], t_ids)) {
             suc_counter++;
-        else if (removeAnEdge_56(v_ids[0], v_ids[1], t_ids)) {
+            cnt44++;
+        } else if (removeAnEdge_56(v_ids[0], v_ids[1], t_ids)) {
             suc_counter++;
-            cnt5++;
+            cnt56++;
         } else {
             is_fail = true;
         }
 
         counter++;
     }
-    logger().debug("tmp_cnt3 = {}", tmp_cnt3);
-    logger().debug("tmp_cnt4 = {}", tmp_cnt4);
-    logger().debug("tmp_cnt5 = {}", tmp_cnt5);
-    logger().debug("tmp_cnt6 = {}", tmp_cnt6);
-    logger().debug("{}", cnt5);
+    logger().debug(
+        "case 32 success / fail / all: {} / {} / {}",
+        cnt32,
+        num_32_cases - cnt32,
+        num_32_cases);
+    logger().debug(
+        "case 44 success / fail / all: {} / {} / {}",
+        cnt44,
+        num_44_cases - cnt44,
+        num_44_cases);
+    logger().debug(
+        "case 56 success / fail / all: {} / {} / {}",
+        cnt56,
+        num_56_cases - cnt56,
+        num_56_cases);
+    logger().debug("case >5 = {}", num_6_cases);
 
     logger().debug("energy_time = {}", energy_time);
 }
 
 bool EdgeRemover::removeAnEdge_32(int v1_id, int v2_id, const std::vector<int>& old_t_ids)
 {
-    if (old_t_ids.size() >= 6) tmp_cnt6++;
-    if (old_t_ids.size() == 5) tmp_cnt5++;
-    if (old_t_ids.size() == 4) tmp_cnt4++;
-    if (old_t_ids.size() == 3) tmp_cnt3++;
-
     if (old_t_ids.size() != 3) return false;
 
     // new_tets
@@ -356,9 +371,15 @@ bool EdgeRemover::removeAnEdge_44(int v1_id, int v2_id, const std::vector<int>& 
         getCheckQuality(tmp_tet_qs, new_tq);
         if (equal_buget > 0) {
             equal_buget--;
-            if (!new_tq.isBetterOrEqualThan(old_tq, state)) return false;
+            if (!new_tq.isBetterOrEqualThan(old_tq, state)) {
+                // return false;
+                continue;
+            }
         } else {
-            if (!new_tq.isBetterThan(old_tq, state)) return false;
+            if (!new_tq.isBetterThan(old_tq, state)) {
+                // return false;
+                continue;
+            }
         }
 
         is_valid = true;
@@ -681,14 +702,6 @@ bool EdgeRemover::isSwappable_cd1(
     return true;
 }
 
-bool EdgeRemover::isSwappable_cd2(double weight)
-{
-    return true;
-
-    if (weight > ideal_weight) return true;
-    return false;
-}
-
 bool EdgeRemover::isEdgeValid(const std::array<int, 2>& v_ids)
 {
     if (v_is_removed[v_ids[0]] || v_is_removed[v_ids[1]]) return false;
@@ -725,14 +738,12 @@ void EdgeRemover::addNewEdge(const std::array<int, 2>& e)
 {
     if (isSwappable_cd1(e)) {
         double weight = calEdgeLength(e[0], e[1]);
-        if (isSwappable_cd2(weight)) {
-            if (e[0] > e[1]) {
-                ElementInQueue_er ele(std::array<int, 2>({{e[1], e[0]}}), weight);
-                er_queue.push(ele);
-            } else {
-                ElementInQueue_er ele(e, weight);
-                er_queue.push(ele);
-            }
+        if (e[0] > e[1]) {
+            ElementInQueue_er ele(std::array<int, 2>({{e[1], e[0]}}), weight);
+            er_queue.push(ele);
+        } else {
+            ElementInQueue_er ele(e, weight);
+            er_queue.push(ele);
         }
     }
 }

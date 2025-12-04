@@ -51,10 +51,10 @@ public:
 
     int flag_cnt = 0;
 
-    int tmp_cnt3 = 0;
-    int tmp_cnt4 = 0;
-    int tmp_cnt5 = 0;
-    int tmp_cnt6 = 0;
+    int num_32_cases = 0;
+    int num_44_cases = 0;
+    int num_56_cases = 0;
+    int num_6_cases = 0;
 
     int equal_buget = 100;
 
@@ -75,7 +75,6 @@ public:
         bool is_check_conn_tet_num = false);
     bool isSwappable_cd1(const std::array<int, 2>& v_ids);
 
-    bool isSwappable_cd2(double weight);
     bool isEdgeValid(const std::array<int, 2>& v_ids);
     void getNewTetSlots(int n, std::vector<int>& new_conn_tets);
 

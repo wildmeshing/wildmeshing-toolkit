@@ -20,7 +20,7 @@ bool face_attribute_tracker(
 {
     changed_faces.clear();
     auto middle_face = std::set<int>();
-    for (auto t : incident_tets) {
+    for (const auto& t : incident_tets) {
         for (auto j = 0; j < 4; j++) {
             auto f_t = m.tuple_from_face(t.tid(m), j);
             auto global_fid = f_t.fid(m);
@@ -35,7 +35,7 @@ bool face_attribute_tracker(
         }
     }
 
-    for (auto f : middle_face) {
+    for (const size_t f : middle_face) {
         if (m_face_attribute[f].m_is_surface_fs || m_face_attribute[f].m_is_bbox_fs >= 0) {
             wmtk::logger().debug("Attempting to Swap a boundary/bbox face, reject.");
             return false;
@@ -53,7 +53,7 @@ void tracker_assign_after(
     auto middle_face = std::vector<size_t>();
     auto new_faces = std::set<std::array<size_t, 3>>();
 
-    for (auto t : incident_tets) {
+    for (const auto& t : incident_tets) {
         for (auto j = 0; j < 4; j++) {
             auto f_t = m.tuple_from_face(t.tid(m), j);
             auto global_fid = f_t.fid(m);
@@ -70,7 +70,7 @@ void tracker_assign_after(
             m_face_attribute[global_fid] = it->second; // m_face_attribute[it->second];
         }
     }
-    for (auto f : middle_face) {
+    for (const size_t f : middle_face) {
         m_face_attribute[f].reset();
     }
 }
@@ -80,8 +80,10 @@ void TetWildMesh::swap_all_edges()
     igl::Timer timer;
     double time;
     timer.start();
-    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_swap", loc);
+    std::vector<std::pair<std::string, Tuple>> collect_all_ops;
+    for (const Tuple& loc : get_edges()) {
+        collect_all_ops.emplace_back("edge_swap", loc);
+    }
     time = timer.getElapsedTime();
     wmtk::logger().info("edge swap prepare time: {}s", time);
     auto setup_and_execute = [&](auto& executor) {
@@ -108,49 +110,18 @@ void TetWildMesh::swap_all_edges()
     }
 }
 
-void TetWildMesh::swap_all_faces()
-{
-    igl::Timer timer;
-    double time;
-    timer.start();
-    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    for (auto& loc : get_edges()) collect_all_ops.emplace_back("face_swap", loc);
-    time = timer.getElapsedTime();
-    wmtk::logger().info("face swap prepare time: {}s", time);
-    auto setup_and_execute = [&](auto& executor) {
-        executor.renew_neighbor_tuples = wmtk::renewal_faces;
-        executor.priority = [](auto& m, auto op, auto& t) { return m.get_length2(t); };
-        executor.num_threads = NUM_THREADS;
-        executor(*this, collect_all_ops);
-    };
-    if (NUM_THREADS > 0) {
-        timer.start();
-        auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kPartition>();
-        executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
-            return m.try_set_face_mutex_two_ring(e, task_id);
-        };
-        setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        wmtk::logger().info("face swap operation time parallel: {}s", time);
-    } else {
-        timer.start();
-        auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kSeq>();
-        setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        wmtk::logger().info("face swap operation time serial: {}s", time);
-    }
-}
-
-
 bool TetWildMesh::swap_edge_before(const Tuple& t)
 {
-    if (!TetMesh::swap_edge_before(t)) return false;
-    // if (m_params.preserve_global_topology) return false;
+    if (!TetMesh::swap_edge_before(t)) {
+        return false;
+    }
 
-    if (is_edge_on_surface(t) || is_edge_on_bbox(t)) return false;
+    if (is_edge_on_surface(t) || is_edge_on_bbox(t)) {
+        return false;
+    }
     auto incident_tets = get_incident_tets_for_edge(t);
     auto max_energy = -1.0;
-    for (auto& l : incident_tets) {
+    for (const Tuple& l : incident_tets) {
         max_energy = std::max(m_tet_attribute[l.tid(*this)].m_quality, max_energy);
     }
     swap_cache.local().max_energy = max_energy;
@@ -189,6 +160,42 @@ bool TetWildMesh::swap_edge_after(const Tuple& t)
     cnt_swap++;
 
     return true;
+}
+
+
+void TetWildMesh::swap_all_faces()
+{
+    igl::Timer timer;
+    double time;
+    timer.start();
+    std::vector<std::pair<std::string, Tuple>> collect_all_ops;
+    for (const Tuple& loc : get_edges()) {
+        collect_all_ops.emplace_back("face_swap", loc);
+    }
+    time = timer.getElapsedTime();
+    wmtk::logger().info("face swap prepare time: {}s", time);
+    auto setup_and_execute = [&](auto& executor) {
+        executor.renew_neighbor_tuples = wmtk::renewal_faces;
+        executor.priority = [](auto& m, auto op, auto& t) { return m.get_length2(t); };
+        executor.num_threads = NUM_THREADS;
+        executor(*this, collect_all_ops);
+    };
+    if (NUM_THREADS > 0) {
+        timer.start();
+        auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kPartition>();
+        executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
+            return m.try_set_face_mutex_two_ring(e, task_id);
+        };
+        setup_and_execute(executor);
+        time = timer.getElapsedTime();
+        wmtk::logger().info("face swap operation time parallel: {}s", time);
+    } else {
+        timer.start();
+        auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kSeq>();
+        setup_and_execute(executor);
+        time = timer.getElapsedTime();
+        wmtk::logger().info("face swap operation time serial: {}s", time);
+    }
 }
 
 bool TetWildMesh::swap_face_before(const Tuple& t)
@@ -244,8 +251,10 @@ void TetWildMesh::swap_all_edges_44()
     igl::Timer timer;
     double time;
     timer.start();
-    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_swap_44", loc);
+    std::vector<std::pair<std::string, Tuple>> collect_all_ops;
+    for (const Tuple& loc : get_edges()) {
+        collect_all_ops.emplace_back("edge_swap_44", loc);
+    }
     time = timer.getElapsedTime();
     wmtk::logger().info("edge swap 44 prepare time: {}s", time);
     auto setup_and_execute = [&](auto& executor) {
@@ -284,6 +293,8 @@ bool TetWildMesh::swap_edge_44_before(const Tuple& t)
         max_energy = std::max(m_tet_attribute[l.tid(*this)].m_quality, max_energy);
     }
     swap_cache.local().max_energy = max_energy;
+    swap_cache.local().vid_1 = t.vid(*this);
+    swap_cache.local().vid_2 = t.switch_vertex(*this).vid(*this);
 
     if (!face_attribute_tracker(
             *this,
