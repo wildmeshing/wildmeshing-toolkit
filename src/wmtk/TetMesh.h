@@ -480,6 +480,15 @@ public:
         std::vector<TetrahedronConnectivity>& old_tets);
 
     /**
+     *Perform 5-6 swap
+     *
+     * @param t Input Tuple for the edge to swap.
+     * @param[out] new_tets a vector of Tuples for all the newly introduced tetra.
+     * @return true if swap succeed
+     * @note only happens on internal edges
+     */
+    bool swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tets);
+    /**
      *Perform 4-4 swap between 2 tets
      *
      * @param t Input Tuple for the edge to swap.
@@ -723,6 +732,21 @@ protected:
      * @return true if the modification succeed
      */
     virtual bool swap_edge_44_after(const Tuple& t) { return true; }
+    /**
+     * @brief User specified preparations and desideratas for a 5-6 edge swap before changing the
+     * connectivity
+     *
+     * @param t edge Tuple to be swaped
+     * @return true if the preparation succeed
+     */
+    virtual bool swap_edge_56_before(const Tuple& t) { return true; }
+    /**
+     * @brief User specified modifications and desideratas for after a 5-6 edge swap
+     *
+     * @param t edge Tuple that's swaped
+     * @return true if the modification succeed
+     */
+    virtual bool swap_edge_56_after(const Tuple& t) { return true; }
     /**
      * @brief User specified preparations and desideratas for an 3-2 edge swap before changing the
      * conenctivity
@@ -1026,24 +1050,26 @@ public:
     bool m_collapse_check_link_condition = true;
 
 private:
-    std::map<size_t, wmtk::TetMesh::VertexConnectivity> operation_update_connectivity_impl(
+    std::map<size_t, VertexConnectivity> operation_update_connectivity_impl(
         std::vector<size_t>& affected_tid,
         const std::vector<std::array<size_t, 4>>& new_tet_conn);
     void operation_failure_rollback_imp(
-        std::map<size_t, wmtk::TetMesh::VertexConnectivity>& rollback_vert_conn,
+        std::map<size_t, VertexConnectivity>& rollback_vert_conn,
         const std::vector<size_t>& affected,
         const std::vector<size_t>& new_tet_id,
-        const std::vector<wmtk::TetMesh::TetrahedronConnectivity>& old_tets);
-    std::map<size_t, wmtk::TetMesh::VertexConnectivity> operation_update_connectivity_impl(
+        const std::vector<TetrahedronConnectivity>& old_tets);
+    std::map<size_t, VertexConnectivity> operation_update_connectivity_impl(
         const std::vector<size_t>& remove_id,
         const std::vector<std::array<size_t, 4>>& new_tet_conn,
         std::vector<size_t>& allocate_id);
-    static std::vector<wmtk::TetMesh::TetrahedronConnectivity> record_old_tet_connectivity(
-        const wmtk::TetMesh::vector<wmtk::TetMesh::TetrahedronConnectivity>& conn,
+    static std::vector<TetrahedronConnectivity> record_old_tet_connectivity(
+        const TetMesh::vector<TetrahedronConnectivity>& conn,
         const std::vector<size_t>& tets)
     {
-        auto tet_conn = std::vector<wmtk::TetMesh::TetrahedronConnectivity>();
-        for (auto i : tets) tet_conn.push_back(conn[i]);
+        std::vector<TetrahedronConnectivity> tet_conn;
+        for (size_t i : tets) {
+            tet_conn.push_back(conn[i]);
+        }
         return tet_conn;
     }
 

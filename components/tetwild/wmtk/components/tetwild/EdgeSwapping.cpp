@@ -293,8 +293,6 @@ bool TetWildMesh::swap_edge_44_before(const Tuple& t)
         max_energy = std::max(m_tet_attribute[l.tid(*this)].m_quality, max_energy);
     }
     swap_cache.local().max_energy = max_energy;
-    swap_cache.local().vid_1 = t.vid(*this);
-    swap_cache.local().vid_2 = t.switch_vertex(*this).vid(*this);
 
     if (!face_attribute_tracker(
             *this,

@@ -10,10 +10,13 @@
 #include <vector>
 
 // TODO: this is a generic function, move to utils?
-auto replace(std::array<size_t, 4>& arr, size_t v0, size_t v1)
+void replace(std::array<size_t, 4>& arr, size_t v0, size_t v1)
 {
-    for (auto j = 0; j < arr.size(); j++)
-        if (arr[j] == v0) arr[j] = v1;
+    for (auto j = 0; j < arr.size(); j++) {
+        if (arr[j] == v0) {
+            arr[j] = v1;
+        }
+    }
 }
 
 // TODO: this is a generic function, move to utils?
@@ -25,18 +28,25 @@ constexpr auto find_other_v = [](auto& tet, auto& verts) {
     return *result.begin();
 };
 
-void wmtk::TetMesh::operation_failure_rollback_imp(
-    std::map<size_t, wmtk::TetMesh::VertexConnectivity>& rollback_vert_conn,
+namespace wmtk {
+
+
+void TetMesh::operation_failure_rollback_imp(
+    std::map<size_t, VertexConnectivity>& rollback_vert_conn,
     const std::vector<size_t>& affected,
     const std::vector<size_t>& new_tet_id,
-    const std::vector<wmtk::TetMesh::TetrahedronConnectivity>& old_tets)
+    const std::vector<TetrahedronConnectivity>& old_tets)
 {
-    for (auto ti : new_tet_id) {
+    for (const size_t ti : new_tet_id) {
         m_tet_connectivity[ti].m_is_removed = true;
         m_tet_connectivity[ti].hash--;
     }
-    for (auto i = 0; i < affected.size(); i++) m_tet_connectivity[affected[i]] = old_tets[i];
-    for (auto& [v, conn] : rollback_vert_conn) m_vertex_connectivity[v] = std::move(conn);
+    for (int i = 0; i < affected.size(); i++) {
+        m_tet_connectivity[affected[i]] = old_tets[i];
+    }
+    for (auto& [v, conn] : rollback_vert_conn) {
+        m_vertex_connectivity[v] = std::move(conn);
+    }
 
     rollback_protected_attributes();
 }
@@ -50,8 +60,7 @@ void wmtk::TetMesh::operation_failure_rollback_imp(
  * @param new_tet_conn
  * @return std::map<size_t, wmtk::TetMesh::VertexConnectivity>
  */
-std::map<size_t, wmtk::TetMesh::VertexConnectivity>
-wmtk::TetMesh::operation_update_connectivity_impl(
+std::map<size_t, TetMesh::VertexConnectivity> TetMesh::operation_update_connectivity_impl(
     std::vector<size_t>& remove_id,
     const std::vector<std::array<size_t, 4>>& new_tet_conn)
 {
@@ -61,8 +70,7 @@ wmtk::TetMesh::operation_update_connectivity_impl(
     return rollback_vert_conn;
 }
 
-std::map<size_t, wmtk::TetMesh::VertexConnectivity>
-wmtk::TetMesh::operation_update_connectivity_impl(
+std::map<size_t, TetMesh::VertexConnectivity> wmtk::TetMesh::operation_update_connectivity_impl(
     const std::vector<size_t>& remove_id,
     const std::vector<std::array<size_t, 4>>& new_tet_conn,
     std::vector<size_t>& allocate_id)
@@ -129,7 +137,7 @@ wmtk::TetMesh::operation_update_connectivity_impl(
 }
 
 
-bool wmtk::TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
+bool TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
 {
     // 3-2 edge to face.
     // only swap internal edges, not on boundary.
@@ -240,60 +248,59 @@ bool wmtk::TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples
 }
 
 
-auto swap_4_4(
+std::vector<std::array<size_t, 4>> swap_4_4(
     const std::vector<std::array<size_t, 4>>& tets,
     size_t u0,
     size_t u1,
     size_t v0,
     std::array<size_t, 2>& newedge)
 {
-    auto n0 = -1, n1 = -1, n2 = -1, n3 = -1;
-
     auto find = [](auto& arr, auto v) {
         for (auto i = 0; i < arr.size(); i++) {
             if (arr[i] == v) return i;
         }
         return -1;
     };
-    std::set<size_t> verts;
+
+    std::set<size_t> verts; // all vertices
     for (auto j = 0; j < 4; j++) {
         for (auto k = 0; k < 4; k++) {
             verts.insert(tets[j][k]);
         }
     }
+    // remove old edge from vertices
     verts.erase(u0);
     verts.erase(u1);
     assert(verts.size() == 4);
 
-    // auto v0 = (*verts.begin());
     auto find_other_v_local = [&](const auto& tet, const auto& tri) {
-        for (auto i = 0; i < tet.size(); i++) {
-            if (tet[i] != tri[0] && tet[i] != tri[1] && tet[i] != tri[2]) return i;
+        for (int i = 0; i < tet.size(); i++) {
+            if (tet[i] != tri[0] && tet[i] != tri[1] && tet[i] != tri[2]) {
+                return i;
+            }
         }
         return -1;
     };
-    auto ss = std::vector<size_t>();
-    for (auto j = 0; j < 4; j++) {
-        auto tri = std::array<size_t, 3>{{v0, u0, u1}};
+
+    std::vector<size_t> ss;
+    for (int j = 0; j < 4; j++) {
+        const std::array<size_t, 3> tri{{v0, u0, u1}};
         if (find(tets[j], v0) != -1) {
-            auto local_i = find_other_v_local(tets[j], tri);
+            int local_i = find_other_v_local(tets[j], tri);
             assert(local_i != -1);
             ss.push_back(tets[j][local_i]);
         }
     }
     assert(ss.size() == 2);
-    auto s0 = ss.front(), s1 = ss.back();
+    const size_t s0 = ss.front();
+    const size_t s1 = ss.back();
     verts.erase(v0);
     verts.erase(s0);
     verts.erase(s1);
     assert(verts.size() == 1);
-    auto v1 = (*verts.begin());
-    // if (type == 1) {
-    //     std::swap(v0, s0);
-    //     std::swap(v1, s1);
-    // }
+    const size_t v1 = (*verts.begin());
 
-    auto new_tet_conn = std::vector<std::array<size_t, 4>>();
+    std::vector<std::array<size_t, 4>> new_tet_conn;
     for (auto j = 0; j < 4; j++) {
         if (find(tets[j], v1) != -1) {
             new_tet_conn.push_back(tets[j]);
@@ -308,16 +315,19 @@ auto swap_4_4(
     return new_tet_conn;
 }
 
-bool wmtk::TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
+bool TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
 {
     // 4-4 edge to face.
     // only swap internal edges, not on boundary.
     // if (t.is_boundary_edge(*this)) return false;
-    if (!swap_edge_44_before(t)) return false;
-    auto v1_id = t.vid(*this);
-    auto v2_id = switch_vertex(t).vid(*this);
-    auto& nb1 = m_vertex_connectivity[v1_id];
-    auto& nb2 = m_vertex_connectivity[v2_id];
+    if (!swap_edge_44_before(t)) {
+        return false;
+    }
+    const SmartTuple tt(*this, t);
+    const size_t v1_id = tt.vid();
+    const size_t v2_id = tt.switch_vertex().vid();
+    const auto& nb1 = m_vertex_connectivity[v1_id];
+    const auto& nb2 = m_vertex_connectivity[v2_id];
     auto affected = set_intersection(nb1.m_conn_tets, nb2.m_conn_tets);
     assert(!affected.empty());
     if (affected.size() != 4) {
@@ -325,40 +335,49 @@ bool wmtk::TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tup
         return false;
     }
     std::set<size_t> verts;
-    for (auto ti : affected)
-        for (auto j = 0; j < 4; j++) verts.insert(m_tet_connectivity[ti][j]);
-    if (verts.size() != affected.size() + 2) return false; // boundary
+    for (auto ti : affected) {
+        for (auto j = 0; j < 4; j++) {
+            verts.insert(m_tet_connectivity[ti][j]);
+        }
+    }
+    if (verts.size() != affected.size() + 2) {
+        return false; // boundary
+    }
 
     // get vids for return
-    auto v_A = t.switch_edge(*this).switch_vertex(*this).vid(*this);
-    auto v_E = t.switch_face(*this).switch_edge(*this).switch_vertex(*this).vid(*this);
-    auto v_D = t.switch_vertex(*this).vid(*this);
-    auto v_C_tuple = t.switch_tetrahedron(*this);
+    // TODO this is probably faster when implemented with BFS as in the original TetWild
+    const size_t v_A = tt.switch_edge().switch_vertex().vid();
+    const size_t v_E = tt.switch_face().switch_edge().switch_vertex().vid();
+    const size_t v_D = tt.switch_vertex().vid();
+    const auto v_C_tuple = tt.switch_tetrahedron();
     assert(v_C_tuple.has_value());
-    auto v_C = (*v_C_tuple).switch_face(*this).switch_edge(*this).switch_vertex(*this).vid(*this);
-    auto v_F_tuple = t.switch_face(*this).switch_tetrahedron(*this);
-    auto v_F = (*v_F_tuple).switch_face(*this).switch_edge(*this).switch_vertex(*this).vid(*this);
+    const size_t v_C = (*v_C_tuple).switch_face().switch_edge().switch_vertex().vid();
+    const auto v_F_tuple = tt.switch_face().switch_tetrahedron();
+    assert(v_F_tuple.has_value());
+    const size_t v_F = (*v_F_tuple).switch_face().switch_edge().switch_vertex().vid();
 
-    auto old_tets = record_old_tet_connectivity(m_tet_connectivity, affected);
+    const auto old_tets = record_old_tet_connectivity(m_tet_connectivity, affected);
     auto old_tets_conn = std::vector<std::array<size_t, 4>>();
-    for (auto& ti : old_tets) old_tets_conn.push_back(ti.m_indices);
+    for (const auto& ti : old_tets) {
+        old_tets_conn.push_back(ti.m_indices);
+    }
 
     std::vector<size_t> new_tet_id;
     bool is_succeed = false;
-    // for (int type = 0; type < 2; type++) {
 
     std::array<size_t, 2> v0s = {{v_E, v_A}};
     for (size_t v0 : v0s) {
-        auto edge_vv = std::array<size_t, 2>();
+        std::array<size_t, 2> edge_vv;
+        // get new tet connectivity
         auto new_tets = swap_4_4(old_tets_conn, v1_id, v2_id, v0, edge_vv);
 
-
         new_tet_id = affected;
+        // update tet and vertex connectivity
         auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets);
         assert(new_tet_id.size() == 4);
 
+        // build return tuple and gather new tet tuples
         Tuple newt;
-
         if (v0 == v_A) {
             size_t tid_for_return = -1;
             for (size_t tid_v : m_vertex_connectivity[v_A].m_conn_tets) {
@@ -372,9 +391,9 @@ bool wmtk::TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tup
 
             assert(tid_for_return != -1);
 
-            auto eid_for_return = m_tet_connectivity[tid_for_return].find_local_edge(v_A, v_F);
+            int eid_for_return = m_tet_connectivity[tid_for_return].find_local_edge(v_A, v_F);
             assert(eid_for_return != -1);
-            auto fid_for_return = m_tet_connectivity[tid_for_return].find_local_face(v_A, v_D, v_F);
+            int fid_for_return = m_tet_connectivity[tid_for_return].find_local_face(v_A, v_D, v_F);
             assert(fid_for_return != -1);
             newt = Tuple(*this, v_A, eid_for_return, fid_for_return, tid_for_return);
         } else {
@@ -398,7 +417,9 @@ bool wmtk::TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tup
         }
 
 
-        for (auto ti : new_tet_id) new_tet_tuples.emplace_back(tuple_from_tet(ti));
+        for (const size_t ti : new_tet_id) {
+            new_tet_tuples.emplace_back(tuple_from_tet(ti));
+        }
         start_protect_attributes();
         if (!swap_edge_44_after(newt) || !invariants(new_tet_tuples)) { // rollback post-operation
             assert(affected.size() == old_tets.size());
@@ -409,13 +430,15 @@ bool wmtk::TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tup
         is_succeed = true;
         break;
     }
-    if (!is_succeed) return false;
+    if (!is_succeed) {
+        return false;
+    }
 
     return true;
 }
 
 
-bool wmtk::TetMesh::swap_face(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
+bool TetMesh::swap_face(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
 {
     {
         if (t.is_boundary_face(*this)) return false;
@@ -517,3 +540,160 @@ bool wmtk::TetMesh::swap_face(const Tuple& t, std::vector<Tuple>& new_tet_tuples
     logger().trace("swapped");
     return true;
 }
+
+/**
+ * @brief Perform the 5-6 swap for the edge (u0,u1)
+ *
+ * Sketch of 5-6 swap:
+ * The edge (u0,u1) is orthogonal to the drawing plane and therefore u0 and u1 are at the same
+ * position. Edges connecting u0/u1 with v0/v1/etc. were omitted.
+ *
+ *   v3 --------- v2              v3 --------- v2
+ *     |         |                  |\       /|
+ *     |    .    |                  | \     / |
+ *     |   u01   |       ===>       | |     | |
+ *   v4 \       / v1              v4 \ \   / / v1
+ *       \     /                      \|   |/
+ *        \   /                        \\ //
+ *         v0                           v0
+ *
+ * New triangles: (v0,v1,v2), (v0,v2,v3), (v0,v3,v4)
+ * These triangles plus u0/u1 form the new tets, 3 on each side of the drawing plane.
+ * (u0, v0,v1,v2)
+ * (u0, v0,v2,v3)
+ * (u0, v0,v3,v4)
+ * (u1, v0,v2,v1)
+ * (u1, v0,v3,v2)
+ * (u1, v0,v4,v3)
+ */
+std::vector<std::array<size_t, 4>> swap_5_6(
+    const std::vector<std::array<size_t, 4>>& tets,
+    size_t u0,
+    size_t u1,
+    size_t v0,
+    std::array<size_t, 3>& newtri)
+{
+    // use BFS to find oriented link vertices of (u0,u1)
+    std::vector<std::array<int, 3>> u12_link_e; // link edges
+    u12_link_e.reserve(tets.size());
+    for (int i = 0; i < tets.size(); i++) {
+        std::array<int, 3> e;
+        int cnt = 0;
+        for (int j = 0; j < 4; j++)
+            if (tets[i][j] != u0 && tets[i][j] != u1) {
+                e[cnt++] = tets[i][j];
+            }
+        e[cnt] = i;
+        u12_link_e.push_back(e);
+    }
+
+    std::vector<size_t> v; // (u0,u1) link vertices (sorted!)
+    v.reserve(5);
+    std::array<bool, 5> is_visited;
+    std::fill(is_visited.begin(), is_visited.end(), false);
+    v.push_back(u12_link_e[0][0]);
+    v.push_back(u12_link_e[0][1]);
+    is_visited[0] = true;
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 5; j++) {
+            if (!is_visited[j]) {
+                if (u12_link_e[j][0] == v.back()) {
+                    is_visited[j] = true;
+                    v.push_back(u12_link_e[j][1]);
+                } else if (u12_link_e[j][1] == v.back()) {
+                    is_visited[j] = true;
+                    v.push_back(u12_link_e[j][0]);
+                }
+                if (is_visited[j]) {
+                    break;
+                }
+            }
+        }
+    }
+
+    std::vector<std::array<size_t, 4>> new_tet_conn;
+    new_tet_conn.reserve(6);
+    // TODO check if that is the correct orientation. If not, swap u0 and u1!
+    new_tet_conn.push_back({{u0, v[0], v[1], v[2]}});
+    new_tet_conn.push_back({{u0, v[0], v[2], v[3]}});
+    new_tet_conn.push_back({{u0, v[0], v[3], v[4]}});
+    new_tet_conn.push_back({{u1, v[0], v[2], v[1]}});
+    new_tet_conn.push_back({{u1, v[0], v[3], v[2]}});
+    new_tet_conn.push_back({{u1, v[0], v[4], v[3]}});
+    newtri = {{v[0], v[2], v[3]}};
+    return new_tet_conn;
+}
+
+bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
+{
+    // only swap internal edges, not on boundary.
+    // if (t.is_boundary_edge(*this)) return false;
+    if (!swap_edge_56_before(t)) {
+        return false;
+    }
+    const SmartTuple tt(*this, t);
+    const size_t v1_id = tt.vid();
+    const size_t v2_id = tt.switch_vertex().vid();
+    const auto& nb1 = m_vertex_connectivity[v1_id];
+    const auto& nb2 = m_vertex_connectivity[v2_id];
+    auto affected = set_intersection(nb1.m_conn_tets, nb2.m_conn_tets);
+    assert(!affected.empty());
+    if (affected.size() != 5) {
+        logger().trace("selected edges need 4 neighbors to swap.");
+        return false;
+    }
+    std::set<size_t> verts;
+    for (auto ti : affected) {
+        for (auto j = 0; j < 4; j++) {
+            verts.insert(m_tet_connectivity[ti][j]);
+        }
+    }
+    if (verts.size() != affected.size() + 2) {
+        return false; // boundary
+    }
+    verts.erase(v1_id);
+    verts.erase(v2_id);
+
+    const auto old_tets = record_old_tet_connectivity(m_tet_connectivity, affected);
+    auto old_tets_conn = std::vector<std::array<size_t, 4>>();
+    for (const auto& ti : old_tets) {
+        old_tets_conn.push_back(ti.m_indices);
+    }
+
+    std::vector<size_t> new_tet_id;
+    bool is_succeed = false;
+
+    for (size_t v0 : verts) {
+        std::array<size_t, 3> face_vv;
+        // get new tet connectivity
+        auto new_tets = swap_5_6(old_tets_conn, v1_id, v2_id, v0, face_vv);
+
+        new_tet_id = affected;
+        // update tet and vertex connectivity
+        auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets);
+        assert(new_tet_id.size() == 6);
+
+        // build return tuple and gather new tet tuples
+        Tuple newt = tuple_from_vids(face_vv[0], face_vv[1], face_vv[2], v1_id);
+
+        for (const size_t ti : new_tet_id) {
+            new_tet_tuples.emplace_back(tuple_from_tet(ti));
+        }
+        start_protect_attributes();
+        if (!swap_edge_56_after(newt) || !invariants(new_tet_tuples)) { // rollback post-operation
+            assert(affected.size() == old_tets.size());
+            operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
+            continue;
+        }
+        release_protect_attributes();
+        is_succeed = true;
+        break;
+    }
+    if (!is_succeed) {
+        return false;
+    }
+
+    return true;
+}
+
+} // namespace wmtk
