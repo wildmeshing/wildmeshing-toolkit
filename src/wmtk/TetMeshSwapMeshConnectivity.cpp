@@ -610,6 +610,11 @@ std::vector<std::array<size_t, 4>> swap_5_6(
             }
         }
     }
+    assert(v.size() == 5);
+    {
+        auto it = std::find(v.begin(), v.end(), v0);
+        std::rotate(v.begin(), it, v.end());
+    }
 
     std::vector<std::array<size_t, 4>> new_tet_conn;
     new_tet_conn.reserve(6);
@@ -663,7 +668,7 @@ bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
     std::vector<size_t> new_tet_id;
     bool is_succeed = false;
 
-    for (size_t v0 : verts) {
+    for (const size_t v0 : verts) {
         std::array<size_t, 3> face_vv;
         // get new tet connectivity
         auto new_tets = swap_5_6(old_tets_conn, v1_id, v2_id, v0, face_vv);

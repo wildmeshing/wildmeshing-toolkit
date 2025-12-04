@@ -5,6 +5,44 @@
 
 using namespace wmtk;
 
+struct VertexAttributes
+{
+    Vector3d m_posf;
+};
+
+class TetMeshWithPosition : public wmtk::TetMesh
+{
+public:
+    TetMeshWithPosition() { p_vertex_attrs = &m_vertex_attribute; }
+
+    bool is_inverted_f(const Tuple& loc) const
+    {
+        auto vs = oriented_tet_vertices(loc);
+
+        igl::predicates::exactinit();
+        auto res = igl::predicates::orient3d(
+            m_vertex_attribute[vs[0].vid(*this)].m_posf,
+            m_vertex_attribute[vs[1].vid(*this)].m_posf,
+            m_vertex_attribute[vs[2].vid(*this)].m_posf,
+            m_vertex_attribute[vs[3].vid(*this)].m_posf);
+        int result;
+        if (res == igl::predicates::Orientation::POSITIVE)
+            result = 1;
+        else if (res == igl::predicates::Orientation::NEGATIVE)
+            result = -1;
+        else
+            result = 0;
+
+        if (result < 0) // neg result == pos tet (tet origin from geogram delaunay)
+            return false;
+        return true;
+    }
+
+public:
+    using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
+    VertAttCol m_vertex_attribute;
+};
+
 TEST_CASE("edge_splitting", "[tuple_operation]")
 {
     auto mesh = TetMesh();
@@ -159,7 +197,6 @@ TEST_CASE("forbidden-face-swap", "[tuple_operation]")
     REQUIRE(mesh.check_mesh_connectivity_validity());
 }
 
-
 TEST_CASE("tet_mesh_swap44", "[tuple_operation]")
 {
     TetMesh mesh;
@@ -187,6 +224,106 @@ TEST_CASE("tet_mesh_swap44", "[tuple_operation]")
         REQUIRE(cnt_swap == 1);
         REQUIRE(mesh.get_edges().size() == 13);
         REQUIRE(mesh.get_tets().size() == 4);
+    }
+}
+
+TEST_CASE("tet_mesh_swap56", "[tuple_operation]")
+{
+    TetMesh mesh;
+    using Tuple = TetMesh::Tuple;
+    // 01 is the common edge
+    mesh.init(7, {{{0, 1, 2, 3}}, {{0, 1, 3, 4}}, {{0, 1, 4, 5}}, {{0, 1, 5, 6}}, {{0, 1, 6, 2}}});
+
+    {
+        const auto edges = mesh.get_edges();
+
+        REQUIRE(edges.size() == 16);
+        auto cnt_swap = 0;
+        for (const Tuple& e : edges) {
+            if (!e.is_valid(mesh)) {
+                continue;
+            }
+            std::vector<Tuple> newt;
+            if (mesh.swap_edge_56(e, newt)) {
+                cnt_swap++;
+                REQUIRE_FALSE(e.is_valid(mesh));
+                REQUIRE(newt.front().is_valid(mesh));
+            }
+        }
+        REQUIRE(mesh.check_mesh_connectivity_validity());
+        CHECK(cnt_swap == 1);
+        CHECK(mesh.get_edges().size() == 17);
+        CHECK(mesh.get_tets().size() == 6);
+    }
+}
+
+TEST_CASE("tet_mesh_swap56_with_position", "[tuple_operation]")
+{
+    class TetMeshSwap : public TetMeshWithPosition
+    {
+    public:
+        bool swap_edge_56_after(const Tuple& t) override
+        {
+            const auto e1 = get_incident_tids_for_edge(t);
+            const auto e2 = get_incident_tids_for_edge(t.switch_edge(*this));
+            const auto tids = wmtk::set_union(e1, e2);
+            for (const size_t tid : tids) {
+                if (is_inverted_f(tuple_from_tet(tid))) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        bool invariants(const std::vector<Tuple>& tets) override
+        {
+            for (const Tuple& t : tets) {
+                if (is_inverted_f(t)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    };
+
+    TetMeshSwap mesh;
+    using Tuple = TetMesh::Tuple;
+    // 01 is the common edge
+    mesh.init(7, {{{0, 1, 2, 3}}, {{0, 1, 3, 4}}, {{0, 1, 4, 5}}, {{0, 1, 5, 6}}, {{0, 1, 6, 2}}});
+    {
+        mesh.m_vertex_attribute[0].m_posf = Vector3d(0, 0, -1);
+        mesh.m_vertex_attribute[1].m_posf = Vector3d(0, 0, 1);
+        mesh.m_vertex_attribute[2].m_posf = Vector3d(-1, -1, 0);
+        mesh.m_vertex_attribute[3].m_posf = Vector3d(1, -1, 0);
+        mesh.m_vertex_attribute[4].m_posf = Vector3d(1, 1, 0);
+        mesh.m_vertex_attribute[5].m_posf = Vector3d(0, 2, 0);
+        mesh.m_vertex_attribute[6].m_posf = Vector3d(-1, 1, 0);
+    }
+
+    REQUIRE(mesh.invariants(mesh.get_tets()));
+    REQUIRE(mesh.get_edges().size() == 16);
+    std::vector<Tuple> newt;
+
+    SECTION("basic")
+    {
+        const Tuple e = mesh.tuple_from_edge({{0, 1}});
+        REQUIRE(e.is_valid(mesh));
+        REQUIRE(mesh.swap_edge_56(e, newt));
+        REQUIRE(mesh.check_mesh_connectivity_validity());
+        CHECK(mesh.get_edges().size() == 17);
+        CHECK(mesh.get_tets().size() == 6);
+    }
+    SECTION("first-inverted")
+    {
+        mesh.m_vertex_attribute[3].m_posf = Vector3d(0.5, -0.5, 0);
+        mesh.m_vertex_attribute[4].m_posf = Vector3d(5, 1, 0);
+        REQUIRE(mesh.invariants(mesh.get_tets()));
+
+        const Tuple e = mesh.tuple_from_edge({{0, 1}});
+        REQUIRE(e.is_valid(mesh));
+        REQUIRE(mesh.swap_edge_56(e, newt));
+        REQUIRE(mesh.check_mesh_connectivity_validity());
+        CHECK(mesh.get_edges().size() == 17);
+        CHECK(mesh.get_tets().size() == 6);
     }
 }
 
