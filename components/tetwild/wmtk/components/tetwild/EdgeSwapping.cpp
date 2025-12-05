@@ -14,7 +14,7 @@ namespace wmtk::components::tetwild {
 
 bool face_attribute_tracker(
     const wmtk::TetMesh& m,
-    const std::vector<wmtk::TetMesh::Tuple>& incident_tets,
+    const std::vector<size_t>& incident_tets,
     const TetWildMesh::FaceAttCol& m_face_attribute,
     std::map<std::array<size_t, 3>, FaceAttributes>& changed_faces)
 {
@@ -22,7 +22,7 @@ bool face_attribute_tracker(
     std::set<int> middle_face;
     for (const auto& t : incident_tets) {
         for (auto j = 0; j < 4; j++) {
-            auto f_t = m.tuple_from_face(t.tid(m), j);
+            auto f_t = m.tuple_from_face(t, j);
             auto global_fid = f_t.fid(m);
             auto vs = m.get_face_vertices(f_t);
             auto vids = std::array<size_t, 3>{{vs[0].vid(m), vs[1].vid(m), vs[2].vid(m)}};
@@ -132,13 +132,17 @@ bool TetWildMesh::swap_edge_before(const Tuple& t)
         return false;
     }
 
+    auto incident_tets = get_incident_tids_for_edge(t);
+    if (incident_tets.size() != 3) {
+        return false;
+    }
+
     if (is_edge_on_surface(t) || is_edge_on_bbox(t)) {
         return false;
     }
-    auto incident_tets = get_incident_tets_for_edge(t);
     auto max_energy = -1.0;
-    for (const Tuple& l : incident_tets) {
-        max_energy = std::max(m_tet_attribute[l.tid(*this)].m_quality, max_energy);
+    for (const size_t l : incident_tets) {
+        max_energy = std::max(m_tet_attribute[l].m_quality, max_energy);
     }
     swap_cache.local().max_energy = max_energy;
 
@@ -229,7 +233,7 @@ bool TetWildMesh::swap_face_before(const Tuple& t)
         m_tet_attribute[t.tid(*this)].m_quality,
         m_tet_attribute[oppo_tet->tid(*this)].m_quality);
 
-    auto twotets = std::vector<Tuple>{{t, *oppo_tet}};
+    std::vector<size_t> twotets{{t.tid(*this), (*oppo_tet).tid(*this)}};
 
     if (!face_attribute_tracker(*this, twotets, m_face_attribute, swap_cache.local().changed_faces))
         return false;
@@ -299,14 +303,23 @@ void TetWildMesh::swap_all_edges_44()
 
 bool TetWildMesh::swap_edge_44_before(const Tuple& t)
 {
-    if (!TetMesh::swap_edge_44_before(t)) return false;
+    if (!TetMesh::swap_edge_44_before(t)) {
+        return false;
+    }
     // if (m_params.preserve_global_topology) return false;
 
-    if (is_edge_on_surface(t) || is_edge_on_bbox(t)) return false;
-    auto incident_tets = get_incident_tets_for_edge(t);
+    auto incident_tets = get_incident_tids_for_edge(t);
+    if (incident_tets.size() != 4) {
+        return false;
+    }
+
+    if (is_edge_on_surface(t) || is_edge_on_bbox(t)) {
+        return false;
+    }
+
     auto max_energy = -1.0;
     for (auto& l : incident_tets) {
-        max_energy = std::max(m_tet_attribute[l.tid(*this)].m_quality, max_energy);
+        max_energy = std::max(m_tet_attribute[l].m_quality, max_energy);
     }
     swap_cache.local().max_energy = max_energy;
 
@@ -385,7 +398,7 @@ bool TetWildMesh::swap_edge_56_before(const Tuple& t)
         return false;
     }
 
-    const auto incident_tets = get_incident_tets_for_edge(t);
+    const auto incident_tets = get_incident_tids_for_edge(t);
     if (incident_tets.size() != 5) {
         return false;
     }
@@ -394,8 +407,8 @@ bool TetWildMesh::swap_edge_56_before(const Tuple& t)
     }
 
     double max_energy = -1.0;
-    for (auto& l : incident_tets) {
-        max_energy = std::max(m_tet_attribute[l.tid(*this)].m_quality, max_energy);
+    for (const size_t l : incident_tets) {
+        max_energy = std::max(m_tet_attribute[l].m_quality, max_energy);
     }
     swap_cache.local().max_energy = max_energy;
 
@@ -410,11 +423,29 @@ bool TetWildMesh::swap_edge_56_before(const Tuple& t)
     return true;
 }
 
+double TetWildMesh::swap_edge_56_energy(const std::vector<std::array<size_t, 4>>& tets)
+{
+    double max_energy = -1;
+    for (const auto& vids : tets) {
+        if (is_inverted(vids)) {
+            return std::numeric_limits<double>::max();
+        }
+        const double e = get_quality(vids);
+        max_energy = std::max(max_energy, e);
+    }
+    return max_energy;
+}
+
 bool TetWildMesh::swap_edge_56_after(const Tuple& t)
 {
     if (!TetMesh::swap_edge_56_after(t)) {
         return false;
     }
+
+    /**
+     * There is no need to check for inversion or energy here. The operation would have been
+     * rejected already due to `swap_edge_56_energy()`.
+     */
 
     const auto e1 = get_incident_tids_for_edge(t);
     const auto e2 = get_incident_tids_for_edge(t.switch_edge(*this));
@@ -423,17 +454,9 @@ bool TetWildMesh::swap_edge_56_after(const Tuple& t)
     double max_energy = -1.0;
     for (const size_t tid : tids) {
         const Tuple tet = tuple_from_tet(tid);
-        if (is_inverted_f(tet)) {
-            return false;
-        }
-
         auto q = get_quality(tet);
         m_tet_attribute[tid].m_quality = q;
         max_energy = std::max(q, max_energy);
-    }
-
-    if (max_energy >= swap_cache.local().max_energy) {
-        return false;
     }
 
     tracker_assign_after(*this, tids, swap_cache.local().changed_faces, m_face_attribute);

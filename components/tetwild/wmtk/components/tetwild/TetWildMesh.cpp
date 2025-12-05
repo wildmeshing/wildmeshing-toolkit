@@ -1022,26 +1022,21 @@ bool TetWildMesh::is_inverted_f(const Tuple& loc) const
     return true;
 }
 
-bool TetWildMesh::is_inverted(const Tuple& loc) const
+bool TetWildMesh::is_inverted(const std::array<size_t, 4>& vs) const
 {
     // Return a positive value if the point pd lies below the
     // plane passing through pa, pb, and pc; "below" is defined so
     // that pa, pb, and pc appear in counterclockwise order when
     // viewed from above the plane.
 
-    auto vs = oriented_tet_vertices(loc);
-
-    //
-    if (m_vertex_attribute[vs[0].vid(*this)].m_is_rounded &&
-        m_vertex_attribute[vs[1].vid(*this)].m_is_rounded &&
-        m_vertex_attribute[vs[2].vid(*this)].m_is_rounded &&
-        m_vertex_attribute[vs[3].vid(*this)].m_is_rounded) {
+    if (m_vertex_attribute[vs[0]].m_is_rounded && m_vertex_attribute[vs[1]].m_is_rounded &&
+        m_vertex_attribute[vs[2]].m_is_rounded && m_vertex_attribute[vs[3]].m_is_rounded) {
         igl::predicates::exactinit();
         auto res = igl::predicates::orient3d(
-            m_vertex_attribute[vs[0].vid(*this)].m_posf,
-            m_vertex_attribute[vs[1].vid(*this)].m_posf,
-            m_vertex_attribute[vs[2].vid(*this)].m_posf,
-            m_vertex_attribute[vs[3].vid(*this)].m_posf);
+            m_vertex_attribute[vs[0]].m_posf,
+            m_vertex_attribute[vs[1]].m_posf,
+            m_vertex_attribute[vs[2]].m_posf,
+            m_vertex_attribute[vs[3]].m_posf);
         int result;
         if (res == igl::predicates::Orientation::POSITIVE)
             result = 1;
@@ -1054,19 +1049,22 @@ bool TetWildMesh::is_inverted(const Tuple& loc) const
             return false;
         return true;
     } else {
-        Vector3r n = ((m_vertex_attribute[vs[1].vid(*this)].m_pos) -
-                      m_vertex_attribute[vs[0].vid(*this)].m_pos)
-                         .cross(
-                             (m_vertex_attribute[vs[2].vid(*this)].m_pos) -
-                             m_vertex_attribute[vs[0].vid(*this)].m_pos);
-        Vector3r d = (m_vertex_attribute[vs[3].vid(*this)].m_pos) -
-                     m_vertex_attribute[vs[0].vid(*this)].m_pos;
+        Vector3r n =
+            ((m_vertex_attribute[vs[1]].m_pos) - m_vertex_attribute[vs[0]].m_pos)
+                .cross((m_vertex_attribute[vs[2]].m_pos) - m_vertex_attribute[vs[0]].m_pos);
+        Vector3r d = (m_vertex_attribute[vs[3]].m_pos) - m_vertex_attribute[vs[0]].m_pos;
         auto res = n.dot(d);
         if (res > 0) // predicates returns pos value: non-inverted
             return false;
         else
             return true;
     }
+}
+
+bool TetWildMesh::is_inverted(const Tuple& loc) const
+{
+    auto vs = oriented_tet_vids(loc);
+    return is_inverted(vs);
 }
 
 bool TetWildMesh::round(const Tuple& v)
@@ -1090,10 +1088,9 @@ bool TetWildMesh::round(const Tuple& v)
     return true;
 }
 
-double TetWildMesh::get_quality(const Tuple& loc) const
+double TetWildMesh::get_quality(const std::array<size_t, 4>& its) const
 {
     std::array<Vector3d, 4> ps;
-    auto its = oriented_tet_vids(loc);
     auto use_rational = false;
     for (auto k = 0; k < 4; k++) {
         ps[k] = m_vertex_attribute[its[k]].m_posf;
@@ -1117,6 +1114,12 @@ double TetWildMesh::get_quality(const Tuple& loc) const
     }
     if (std::isinf(energy) || std::isnan(energy) || energy < 27 - 1e-3) return MAX_ENERGY;
     return energy;
+}
+
+double TetWildMesh::get_quality(const Tuple& loc) const
+{
+    auto its = oriented_tet_vids(loc);
+    return get_quality(its);
 }
 
 

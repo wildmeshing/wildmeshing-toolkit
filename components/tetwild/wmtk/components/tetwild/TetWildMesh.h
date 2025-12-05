@@ -300,6 +300,7 @@ public:
 
     void swap_all_edges_56();
     bool swap_edge_56_before(const Tuple& t) override;
+    double swap_edge_56_energy(const std::vector<std::array<size_t, 4>>& tets) override;
     bool swap_edge_56_after(const Tuple& t) override;
 
     void swap_all_edges();
@@ -314,7 +315,9 @@ public:
      * @brief Inversion check using only floating point numbers.
      */
     bool is_inverted_f(const Tuple& loc) const;
+    bool is_inverted(const std::array<size_t, 4>& vs) const;
     bool is_inverted(const Tuple& loc) const;
+    double get_quality(const std::array<size_t, 4>& vs) const;
     double get_quality(const Tuple& loc) const;
     bool round(const Tuple& loc);
     //

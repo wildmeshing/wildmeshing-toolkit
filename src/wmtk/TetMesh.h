@@ -741,6 +741,17 @@ protected:
      */
     virtual bool swap_edge_56_before(const Tuple& t) { return true; }
     /**
+     * @brief User specified energy to decide which of the 5 possible orientations should be
+     * chosen.
+     *
+     * This MUST BE OVERRIDDEN or no swap will be accepted! The energy is also calculated before the
+     * swap and a swap is only accepted if the energy decreases.
+     *
+     * @param tets New tets after performing a 5-6 swap.
+     * @return energy The swap giving the tets with the lowest energy are chosen.
+     */
+    virtual double swap_edge_56_energy(const std::vector<std::array<size_t, 4>>& tets) { return 0; }
+    /**
      * @brief User specified modifications and desideratas for after a 5-6 edge swap
      *
      * @param t edge Tuple that's swaped

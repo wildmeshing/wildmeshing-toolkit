@@ -577,14 +577,14 @@ std::vector<std::array<size_t, 4>> swap_5_6(
     std::vector<std::array<int, 3>> u12_link_e; // link edges
     u12_link_e.reserve(tets.size());
     for (int i = 0; i < tets.size(); i++) {
-        std::array<int, 3> e;
+        std::array<int, 3> energy;
         int cnt = 0;
         for (int j = 0; j < 4; j++)
             if (tets[i][j] != u0 && tets[i][j] != u1) {
-                e[cnt++] = tets[i][j];
+                energy[cnt++] = tets[i][j];
             }
-        e[cnt] = i;
-        u12_link_e.push_back(e);
+        energy[cnt] = i;
+        u12_link_e.push_back(energy);
     }
 
     std::vector<size_t> n12_vs; // (u0,u1) link vertices (sorted!)
@@ -698,25 +698,40 @@ bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         old_tets_conn.push_back(ti.m_indices);
     }
 
-    std::vector<size_t> new_tet_id;
-    bool is_succeed = false;
+    std::vector<std::array<size_t, 4>> new_tets;
+    std::array<size_t, 3> new_face;
+    double min_energy = swap_edge_56_energy(old_tets_conn);
 
+    // find best 5-6 case
     for (const size_t v0 : verts) {
-        std::array<size_t, 3> face_vv;
-        // get new tet connectivity
-        auto new_tets = swap_5_6(old_tets_conn, v1_id, v2_id, v0, face_vv);
-        assert(v0 == face_vv[0]);
+        std::array<size_t, 3> face_vids;
+        auto tets = swap_5_6(old_tets_conn, v1_id, v2_id, v0, face_vids);
+        assert(v0 == face_vids[0]);
 
-        new_tet_id = affected;
+        double energy = swap_edge_56_energy(tets);
+        if (energy < min_energy) {
+            min_energy = energy;
+            new_tets = tets;
+            new_face = face_vids;
+        }
+    }
+
+    if (new_tets.empty()) {
+        return false;
+    }
+
+    std::vector<size_t> new_tet_id = affected;
+    bool is_succeed = false;
+    {
         // update tet and vertex connectivity
         auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets);
         assert(new_tet_id.size() == 6);
 
         // build return tuple and gather new tet tuples
         // Tuple newt = tuple_from_vids(face_vv[0], face_vv[1], face_vv[2], v1_id);
-        const auto& vf0 = m_vertex_connectivity[face_vv[0]];
-        const auto& vf1 = m_vertex_connectivity[face_vv[1]];
-        const auto& vf2 = m_vertex_connectivity[face_vv[2]];
+        const auto& vf0 = m_vertex_connectivity[new_face[0]];
+        const auto& vf1 = m_vertex_connectivity[new_face[1]];
+        const auto& vf2 = m_vertex_connectivity[new_face[2]];
         const auto& vf3 = m_vertex_connectivity[v1_id];
         const std::vector<size_t> tets01 = set_intersection(vf0.m_conn_tets, vf1.m_conn_tets);
         const std::vector<size_t> tets012 = set_intersection(tets01, vf2.m_conn_tets);
@@ -725,14 +740,14 @@ bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
             // The swap can create a tet with the same indices as an already existing tet. That case
             // is prohibited here.
             operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
-            continue;
+            return false;
         }
         const size_t tid = tets0123[0];
-        const size_t eid = m_tet_connectivity[tid].find_local_edge(face_vv[0], face_vv[1]);
+        const size_t eid = m_tet_connectivity[tid].find_local_edge(new_face[0], new_face[1]);
         const size_t fid =
-            m_tet_connectivity[tid].find_local_face(face_vv[0], face_vv[1], face_vv[2]);
+            m_tet_connectivity[tid].find_local_face(new_face[0], new_face[1], new_face[2]);
 
-        Tuple newt(*this, v0, eid, fid, tid);
+        Tuple newt(*this, new_face[0], eid, fid, tid);
 
         new_tet_tuples.clear();
         for (const size_t ti : new_tet_id) {
@@ -742,17 +757,63 @@ bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         if (!swap_edge_56_after(newt) || !invariants(new_tet_tuples)) { // rollback post-operation
             assert(affected.size() == old_tets.size());
             operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
-            continue;
+            return false;
         }
         release_protect_attributes();
-        is_succeed = true;
-        break;
-    }
-    if (!is_succeed) {
-        return false;
+        return true;
     }
 
-    return true;
+    // for (const size_t v0 : verts) {
+    //    // get new tet connectivity
+    //    auto new_tets = swap_5_6(old_tets_conn, v1_id, v2_id, v0, face_vv);
+    //    assert(v0 == face_vv[0]);
+    //
+    //    new_tet_id = affected;
+    //    // update tet and vertex connectivity
+    //    auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets);
+    //    assert(new_tet_id.size() == 6);
+    //
+    //    // build return tuple and gather new tet tuples
+    //    // Tuple newt = tuple_from_vids(face_vv[0], face_vv[1], face_vv[2], v1_id);
+    //    const auto& vf0 = m_vertex_connectivity[face_vv[0]];
+    //    const auto& vf1 = m_vertex_connectivity[face_vv[1]];
+    //    const auto& vf2 = m_vertex_connectivity[face_vv[2]];
+    //    const auto& vf3 = m_vertex_connectivity[v1_id];
+    //    const std::vector<size_t> tets01 = set_intersection(vf0.m_conn_tets, vf1.m_conn_tets);
+    //    const std::vector<size_t> tets012 = set_intersection(tets01, vf2.m_conn_tets);
+    //    const std::vector<size_t> tets0123 = set_intersection(tets012, vf3.m_conn_tets);
+    //    if (tets0123.size() != 1) {
+    //        // The swap can create a tet with the same indices as an already existing tet. That case
+    //        // is prohibited here.
+    //        operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
+    //        continue;
+    //    }
+    //    const size_t tid = tets0123[0];
+    //    const size_t eid = m_tet_connectivity[tid].find_local_edge(face_vv[0], face_vv[1]);
+    //    const size_t fid =
+    //        m_tet_connectivity[tid].find_local_face(face_vv[0], face_vv[1], face_vv[2]);
+    //
+    //    Tuple newt(*this, v0, eid, fid, tid);
+    //
+    //    new_tet_tuples.clear();
+    //    for (const size_t ti : new_tet_id) {
+    //        new_tet_tuples.emplace_back(tuple_from_tet(ti));
+    //    }
+    //    start_protect_attributes();
+    //    if (!swap_edge_56_after(newt) || !invariants(new_tet_tuples)) { // rollback post-operation
+    //        assert(affected.size() == old_tets.size());
+    //        operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
+    //        continue;
+    //    }
+    //    release_protect_attributes();
+    //    is_succeed = true;
+    //    break;
+    //}
+    // if (!is_succeed) {
+    //    return false;
+    //}
+    //
+    // return true;
 }
 
 } // namespace wmtk
