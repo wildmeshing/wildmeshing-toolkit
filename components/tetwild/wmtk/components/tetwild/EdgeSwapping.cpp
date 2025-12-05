@@ -19,7 +19,7 @@ bool face_attribute_tracker(
     std::map<std::array<size_t, 3>, FaceAttributes>& changed_faces)
 {
     changed_faces.clear();
-    auto middle_face = std::set<int>();
+    std::set<int> middle_face;
     for (const auto& t : incident_tets) {
         for (auto j = 0; j < 4; j++) {
             auto f_t = m.tuple_from_face(t.tid(m), j);
@@ -46,16 +46,16 @@ bool face_attribute_tracker(
 
 void tracker_assign_after(
     const wmtk::TetMesh& m,
-    const std::vector<wmtk::TetMesh::Tuple>& incident_tets,
+    const std::vector<size_t>& incident_tids,
     const std::map<std::array<size_t, 3>, FaceAttributes>& changed_faces,
     TetWildMesh::FaceAttCol& m_face_attribute)
 {
     auto middle_face = std::vector<size_t>();
     auto new_faces = std::set<std::array<size_t, 3>>();
 
-    for (const auto& t : incident_tets) {
+    for (const auto& t : incident_tids) {
         for (auto j = 0; j < 4; j++) {
-            auto f_t = m.tuple_from_face(t.tid(m), j);
+            auto f_t = m.tuple_from_face(t, j);
             auto global_fid = f_t.fid(m);
             auto vs = m.get_face_vertices(f_t);
             auto vids = std::array<size_t, 3>{{vs[0].vid(m), vs[1].vid(m), vs[2].vid(m)}};
@@ -74,6 +74,22 @@ void tracker_assign_after(
         m_face_attribute[f].reset();
     }
 }
+
+void tracker_assign_after(
+    const wmtk::TetMesh& m,
+    const std::vector<wmtk::TetMesh::Tuple>& incident_tets,
+    const std::map<std::array<size_t, 3>, FaceAttributes>& changed_faces,
+    TetWildMesh::FaceAttCol& m_face_attribute)
+{
+    std::vector<size_t> incident_tids;
+    incident_tids.reserve(incident_tets.size());
+    for (const wmtk::TetMesh::Tuple& t : incident_tets) {
+        incident_tids.emplace_back(t.tid(m));
+    }
+
+    tracker_assign_after(m, incident_tids, changed_faces, m_face_attribute);
+}
+
 
 void TetWildMesh::swap_all_edges()
 {
@@ -323,6 +339,104 @@ bool TetWildMesh::swap_edge_44_after(const Tuple& t)
     }
 
     tracker_assign_after(*this, incident_tets, swap_cache.local().changed_faces, m_face_attribute);
+
+    cnt_swap++;
+    return true;
+}
+
+void TetWildMesh::swap_all_edges_56()
+{
+    igl::Timer timer;
+    double time;
+    timer.start();
+    std::vector<std::pair<std::string, Tuple>> collect_all_ops;
+    for (const Tuple& loc : get_edges()) {
+        collect_all_ops.emplace_back("edge_swap_56", loc);
+    }
+    time = timer.getElapsedTime();
+    wmtk::logger().info("edge swap 56 prepare time: {}s", time);
+    auto setup_and_execute = [&](auto& executor) {
+        executor.renew_neighbor_tuples = wmtk::renewal_edges;
+        executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
+        executor.num_threads = NUM_THREADS;
+        executor(*this, collect_all_ops);
+    };
+    if (NUM_THREADS > 0) {
+        timer.start();
+        auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kPartition>();
+        executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
+            return m.try_set_edge_mutex_two_ring(e, task_id);
+        };
+        setup_and_execute(executor);
+        time = timer.getElapsedTime();
+        wmtk::logger().info("edge swap 56 operation time parallel: {}s", time);
+    } else {
+        timer.start();
+        auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kSeq>();
+        setup_and_execute(executor);
+        time = timer.getElapsedTime();
+        wmtk::logger().info("edge swap 56 operation time serial: {}s", time);
+    }
+}
+
+bool TetWildMesh::swap_edge_56_before(const Tuple& t)
+{
+    if (!TetMesh::swap_edge_56_before(t)) {
+        return false;
+    }
+
+    const auto incident_tets = get_incident_tets_for_edge(t);
+    if (incident_tets.size() != 5) {
+        return false;
+    }
+    if (is_edge_on_surface(t) || is_edge_on_bbox(t)) {
+        return false;
+    }
+
+    double max_energy = -1.0;
+    for (auto& l : incident_tets) {
+        max_energy = std::max(m_tet_attribute[l.tid(*this)].m_quality, max_energy);
+    }
+    swap_cache.local().max_energy = max_energy;
+
+    if (!face_attribute_tracker(
+            *this,
+            incident_tets,
+            m_face_attribute,
+            swap_cache.local().changed_faces)) {
+        return false;
+    }
+
+    return true;
+}
+
+bool TetWildMesh::swap_edge_56_after(const Tuple& t)
+{
+    if (!TetMesh::swap_edge_56_after(t)) {
+        return false;
+    }
+
+    const auto e1 = get_incident_tids_for_edge(t);
+    const auto e2 = get_incident_tids_for_edge(t.switch_edge(*this));
+    const auto tids = wmtk::set_union(e1, e2);
+
+    double max_energy = -1.0;
+    for (const size_t tid : tids) {
+        const Tuple tet = tuple_from_tet(tid);
+        if (is_inverted_f(tet)) {
+            return false;
+        }
+
+        auto q = get_quality(tet);
+        m_tet_attribute[tid].m_quality = q;
+        max_energy = std::max(q, max_energy);
+    }
+
+    if (max_energy >= swap_cache.local().max_energy) {
+        return false;
+    }
+
+    tracker_assign_after(*this, tids, swap_cache.local().changed_faces, m_face_attribute);
 
     cnt_swap++;
     return true;

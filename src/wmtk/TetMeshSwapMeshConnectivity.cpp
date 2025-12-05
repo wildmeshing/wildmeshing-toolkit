@@ -416,7 +416,7 @@ bool TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
             newt = Tuple(*this, v_E, eid_for_return, fid_for_return, tid_for_return);
         }
 
-
+        new_tet_tuples.clear();
         for (const size_t ti : new_tet_id) {
             new_tet_tuples.emplace_back(tuple_from_tet(ti));
         }
@@ -587,46 +587,79 @@ std::vector<std::array<size_t, 4>> swap_5_6(
         u12_link_e.push_back(e);
     }
 
-    std::vector<size_t> v; // (u0,u1) link vertices (sorted!)
-    v.reserve(5);
+    std::vector<size_t> n12_vs; // (u0,u1) link vertices (sorted!)
+    n12_vs.reserve(5);
+    std::vector<size_t> n12_ts; // (u0,u1) tets (sorted!)
+    n12_ts.reserve(5);
     std::array<bool, 5> is_visited;
     std::fill(is_visited.begin(), is_visited.end(), false);
-    v.push_back(u12_link_e[0][0]);
-    v.push_back(u12_link_e[0][1]);
+    n12_vs.push_back(u12_link_e[0][0]);
+    n12_vs.push_back(u12_link_e[0][1]);
+    n12_ts.push_back(u12_link_e[0][2]);
     is_visited[0] = true;
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 5; j++) {
-            if (!is_visited[j]) {
-                if (u12_link_e[j][0] == v.back()) {
-                    is_visited[j] = true;
-                    v.push_back(u12_link_e[j][1]);
-                } else if (u12_link_e[j][1] == v.back()) {
-                    is_visited[j] = true;
-                    v.push_back(u12_link_e[j][0]);
-                }
-                if (is_visited[j]) {
-                    break;
-                }
+            if (is_visited[j]) {
+                continue;
+            }
+            if (u12_link_e[j][0] == n12_vs.back()) {
+                is_visited[j] = true;
+                n12_vs.push_back(u12_link_e[j][1]);
+            } else if (u12_link_e[j][1] == n12_vs.back()) {
+                is_visited[j] = true;
+                n12_vs.push_back(u12_link_e[j][0]);
+            }
+            if (is_visited[j]) {
+                n12_ts.push_back(u12_link_e[j][2]);
+                break;
             }
         }
     }
-    assert(v.size() == 5);
-    {
-        auto it = std::find(v.begin(), v.end(), v0);
-        std::rotate(v.begin(), it, v.end());
-    }
+    n12_ts.push_back(
+        u12_link_e[std::find(is_visited.begin(), is_visited.end(), false) - is_visited.begin()][2]);
+    assert(n12_vs.size() == 5);
+    assert(n12_ts.size() == 5);
 
-    std::vector<std::array<size_t, 4>> new_tet_conn;
-    new_tet_conn.reserve(6);
-    // TODO check if that is the correct orientation. If not, swap u0 and u1!
-    new_tet_conn.push_back({{u0, v[0], v[1], v[2]}});
-    new_tet_conn.push_back({{u0, v[0], v[2], v[3]}});
-    new_tet_conn.push_back({{u0, v[0], v[3], v[4]}});
-    new_tet_conn.push_back({{u1, v[0], v[2], v[1]}});
-    new_tet_conn.push_back({{u1, v[0], v[3], v[2]}});
-    new_tet_conn.push_back({{u1, v[0], v[4], v[3]}});
-    newtri = {{v[0], v[2], v[3]}};
-    return new_tet_conn;
+    auto replace = [](const std::array<size_t, 4>& arr, size_t v_old, size_t v_new) {
+        std::array<size_t, 4> out = arr;
+        for (auto i = 0; i < arr.size(); i++) {
+            if (out[i] == v_old) {
+                out[i] = v_new;
+                break;
+            }
+        }
+        return out;
+    };
+
+    {
+        // index of v0
+        int i = std::distance(n12_vs.begin(), std::find(n12_vs.begin(), n12_vs.end(), v0));
+
+        // auto it = std::find(n12_vs.begin(), n12_vs.end(), v0);
+        // std::rotate(n12_vs.begin(), it, n12_vs.end());
+        auto tet_left = tets[n12_ts[(i - 1 + 5) % 5]];
+        auto tet_right = tets[n12_ts[i]];
+        auto tet_opp = tets[n12_ts[(i + 2) % 5]];
+
+
+        std::vector<std::array<size_t, 4>> new_tet_conn;
+        new_tet_conn.reserve(6);
+        auto tet_l1 = replace(tet_left, u0, n12_vs[(i - 2 + 5) % 5]);
+        auto tet_l2 = replace(tet_left, u1, n12_vs[(i - 2 + 5) % 5]);
+        auto tet_r1 = replace(tet_right, u0, n12_vs[(i + 2 + 5) % 5]);
+        auto tet_r2 = replace(tet_right, u1, n12_vs[(i + 2 + 5) % 5]);
+        auto tet_o1 = replace(tet_opp, u0, n12_vs[i]);
+        auto tet_o2 = replace(tet_opp, u1, n12_vs[i]);
+        new_tet_conn.push_back(tet_l1);
+        new_tet_conn.push_back(tet_l2);
+        new_tet_conn.push_back(tet_r1);
+        new_tet_conn.push_back(tet_r2);
+        new_tet_conn.push_back(tet_o1);
+        new_tet_conn.push_back(tet_o2);
+
+        newtri = {{n12_vs[i], n12_vs[(i + 2) % 5], n12_vs[(i - 2 + 5) % 5]}};
+        return new_tet_conn;
+    }
 }
 
 bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
@@ -672,6 +705,7 @@ bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         std::array<size_t, 3> face_vv;
         // get new tet connectivity
         auto new_tets = swap_5_6(old_tets_conn, v1_id, v2_id, v0, face_vv);
+        assert(v0 == face_vv[0]);
 
         new_tet_id = affected;
         // update tet and vertex connectivity
@@ -679,8 +713,28 @@ bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         assert(new_tet_id.size() == 6);
 
         // build return tuple and gather new tet tuples
-        Tuple newt = tuple_from_vids(face_vv[0], face_vv[1], face_vv[2], v1_id);
+        // Tuple newt = tuple_from_vids(face_vv[0], face_vv[1], face_vv[2], v1_id);
+        const auto& vf0 = m_vertex_connectivity[face_vv[0]];
+        const auto& vf1 = m_vertex_connectivity[face_vv[1]];
+        const auto& vf2 = m_vertex_connectivity[face_vv[2]];
+        const auto& vf3 = m_vertex_connectivity[v1_id];
+        const std::vector<size_t> tets01 = set_intersection(vf0.m_conn_tets, vf1.m_conn_tets);
+        const std::vector<size_t> tets012 = set_intersection(tets01, vf2.m_conn_tets);
+        const std::vector<size_t> tets0123 = set_intersection(tets012, vf3.m_conn_tets);
+        if (tets0123.size() != 1) {
+            // The swap can create a tet with the same indices as an already existing tet. That case
+            // is prohibited here.
+            operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
+            continue;
+        }
+        const size_t tid = tets0123[0];
+        const size_t eid = m_tet_connectivity[tid].find_local_edge(face_vv[0], face_vv[1]);
+        const size_t fid =
+            m_tet_connectivity[tid].find_local_face(face_vv[0], face_vv[1], face_vv[2]);
 
+        Tuple newt(*this, v0, eid, fid, tid);
+
+        new_tet_tuples.clear();
         for (const size_t ti : new_tet_id) {
             new_tet_tuples.emplace_back(tuple_from_tet(ti));
         }

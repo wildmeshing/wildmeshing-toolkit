@@ -298,6 +298,10 @@ public:
     bool swap_edge_44_before(const Tuple& t) override;
     bool swap_edge_44_after(const Tuple& t) override;
 
+    void swap_all_edges_56();
+    bool swap_edge_56_before(const Tuple& t) override;
+    bool swap_edge_56_after(const Tuple& t) override;
+
     void swap_all_edges();
     bool swap_edge_before(const Tuple& t) override;
     bool swap_edge_after(const Tuple& t) override;

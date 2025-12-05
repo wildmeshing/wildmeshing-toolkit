@@ -309,6 +309,10 @@ TEST_CASE("tet_mesh_swap56_with_position", "[tuple_operation]")
         REQUIRE(e.is_valid(mesh));
         REQUIRE(mesh.swap_edge_56(e, newt));
         REQUIRE(mesh.check_mesh_connectivity_validity());
+        CHECK(newt.size() == 6);
+        for (const Tuple& t : newt) {
+            CHECK(t.is_valid(mesh));
+        }
         CHECK(mesh.get_edges().size() == 17);
         CHECK(mesh.get_tets().size() == 6);
     }
@@ -322,6 +326,10 @@ TEST_CASE("tet_mesh_swap56_with_position", "[tuple_operation]")
         REQUIRE(e.is_valid(mesh));
         REQUIRE(mesh.swap_edge_56(e, newt));
         REQUIRE(mesh.check_mesh_connectivity_validity());
+        CHECK(newt.size() == 6);
+        for (const Tuple& t : newt) {
+            CHECK(t.is_valid(mesh));
+        }
         CHECK(mesh.get_edges().size() == 17);
         CHECK(mesh.get_tets().size() == 6);
     }

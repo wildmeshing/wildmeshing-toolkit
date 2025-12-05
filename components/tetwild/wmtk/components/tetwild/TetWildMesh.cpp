@@ -515,6 +515,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
         } else if (i == 2) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==swapping {}==", n);
+                swap_all_edges_56();
                 swap_all_edges_44();
                 swap_all_edges();
                 swap_all_faces();
