@@ -12,7 +12,6 @@
 #ifndef NEW_GTET_MESHREFINEMENT_H
 #define NEW_GTET_MESHREFINEMENT_H
 
-#include <geogram/mesh/mesh.h>
 #include <igl/Timer.h>
 
 #include "ForwardDecls.h"
