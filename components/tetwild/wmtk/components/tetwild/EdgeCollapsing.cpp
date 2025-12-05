@@ -27,7 +27,7 @@ void TetWildMesh::collapse_all_edges(bool is_limit_length)
     auto collect_failure_ops = tbb::concurrent_vector<std::pair<std::string, Tuple>>();
     std::atomic_int count_success = 0;
     time = timer.getElapsedTime();
-    wmtk::logger().info("edge collapse prepare time: {}s", time);
+    wmtk::logger().info("edge collapse prepare time: {:.4}s", time);
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = [&](const auto& m, auto op, const auto& newts) {
             count_success++;
@@ -64,7 +64,7 @@ void TetWildMesh::collapse_all_edges(bool is_limit_length)
             igl::Timer t1;
             t1.start();
             executor(*this, collect_all_ops);
-            wmtk::logger().info("edge collapse execute time: {}s", t1.getElapsedTimeInSec());
+            wmtk::logger().info("edge collapse execute time: {:.4}s", t1.getElapsedTimeInSec());
             wmtk::logger().info(
                 "Collapsed {}, retrying failed {}",
                 (int)count_success,
@@ -82,13 +82,13 @@ void TetWildMesh::collapse_all_edges(bool is_limit_length)
         };
         setup_and_execute(executor);
         time = timer.getElapsedTime();
-        wmtk::logger().info("edge collapse operation time parallel: {}s", time);
+        wmtk::logger().info("edge collapse operation time parallel: {:.4}s", time);
     } else {
         timer.start();
         auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
         time = timer.getElapsedTime();
-        wmtk::logger().info("edge collapse operation time serial: {}s", time);
+        wmtk::logger().info("edge collapse operation time serial: {:.4}s", time);
     }
 }
 

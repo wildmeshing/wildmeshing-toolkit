@@ -231,6 +231,8 @@ struct ExecutePass
         }
     };
 
+    ExecutePass(ExecutePass&) = delete;
+
 private:
     void operation_cleanup(AppMesh& m)
     { //
@@ -269,9 +271,6 @@ public:
         using Elem = std::tuple<double, Op, Tuple, size_t>; // priority, operation, tuple, #retries
         using Queue = tbb::concurrent_priority_queue<Elem>;
 
-        auto cnt_update = std::atomic<int>(0);
-        auto cnt_success = std::atomic<int>(0);
-        auto cnt_fail = std::atomic<int>(0);
         auto stop = std::atomic<bool>(false);
 
         std::vector<Queue> queues(num_threads);
@@ -375,5 +374,13 @@ public:
             (int)cnt_fail);
         return true;
     }
+
+    int get_cnt_success() const { return cnt_success; }
+    int get_cnt_fail() const { return cnt_fail; }
+
+private:
+    std::atomic_int cnt_update = 0;
+    std::atomic_int cnt_success = 0;
+    std::atomic_int cnt_fail = 0;
 };
 } // namespace wmtk

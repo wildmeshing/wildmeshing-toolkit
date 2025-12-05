@@ -80,7 +80,7 @@ void TetWildMesh::mesh_improvement(int max_its)
     for (int it = 0; it < max_its; it++) {
         ///ops
         wmtk::logger().info("\n========it {}========", it);
-        auto [max_energy, avg_energy] = local_operations({{1, 1, 1, 1}});
+        auto [max_energy, avg_energy] = local_operations({{1, 1, 5, 1}});
 
         ///energy check
         wmtk::logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
@@ -486,7 +486,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
             }
             // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
             auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("split max energy = {} avg = {}", max_energy, avg_energy);
+            wmtk::logger().info("split max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             sanity_checks();
         } else if (i == 1) {
             for (int n = 0; n < ops[i]; n++) {
@@ -510,19 +510,23 @@ std::tuple<double, double> TetWildMesh::local_operations(
             }
             // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
             auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("collapse max energy = {} avg = {}", max_energy, avg_energy);
+            wmtk::logger().info("collapse max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             sanity_checks();
         } else if (i == 2) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==swapping {}==", n);
-                swap_all_edges_56();
-                swap_all_edges_44();
-                swap_all_edges();
-                swap_all_faces();
+                int cnt_success = 0;
+                cnt_success += swap_all_edges_56();
+                cnt_success += swap_all_edges_44();
+                cnt_success += swap_all_edges();
+                cnt_success += swap_all_faces();
+                if (cnt_success == 0) {
+                    break;
+                }
             }
             // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
             auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("swap max energy = {} avg = {}", max_energy, avg_energy);
+            wmtk::logger().info("swap max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             sanity_checks();
         } else if (i == 3) {
             for (int n = 0; n < ops[i]; n++) {
@@ -531,15 +535,15 @@ std::tuple<double, double> TetWildMesh::local_operations(
             }
             // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
             auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("smooth max energy = {} avg = {}", max_energy, avg_energy);
+            wmtk::logger().info("smooth max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             sanity_checks();
         }
         // output_faces(fmt::format("out-op{}.obj", i), [](auto& f) { return f.m_is_surface_fs; });
     }
     // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
     energy = get_max_avg_energy();
-    wmtk::logger().info("max energy = {}", std::get<0>(energy));
-    wmtk::logger().info("avg energy = {}", std::get<1>(energy));
+    wmtk::logger().info("max energy = {:.6}", std::get<0>(energy));
+    wmtk::logger().info("avg energy = {:.6}", std::get<1>(energy));
     wmtk::logger().info("time = {}", timer.getElapsedTime());
 
 
