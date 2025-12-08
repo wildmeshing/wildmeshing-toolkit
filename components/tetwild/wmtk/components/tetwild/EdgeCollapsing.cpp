@@ -99,6 +99,7 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
 
     cache.changed_faces.clear();
     cache.changed_tids.clear();
+    cache.changed_energies.clear();
     cache.surface_faces.clear();
     cache.boundary_edges.clear();
 
@@ -157,6 +158,29 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
         }
     }
 
+    // pre-compute energies after collapse
+    cache.changed_energies.reserve(cache.changed_tids.size());
+    for (const size_t tid : cache.changed_tids) {
+        std::array<size_t, 4> vs = oriented_tet_vids(tid);
+        for (size_t i = 0; i < 4; ++i) {
+            if (vs[i] == v1_id) {
+                vs[i] = v2_id;
+                break;
+            }
+        }
+
+        if (is_inverted(vs)) {
+            return false;
+        }
+        double q = get_quality(vs);
+        // quality check only when v1 is rounded
+        if (VA[v1_id].m_is_rounded && q > cache.max_energy) {
+            return false;
+        }
+        cache.changed_energies.emplace_back(q);
+    }
+    assert(cache.changed_energies.size() == cache.changed_tids.size());
+
     //
     std::set<int> unique_fid;
     for (const size_t& tid : n12_locs) {
@@ -171,7 +195,9 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
         }
         auto [_1, global_fid1] = tuple_from_face(f_vids);
         auto [it, suc] = unique_fid.insert(global_fid1);
-        if (!suc) continue;
+        if (!suc) {
+            continue;
+        }
 
         auto [_2, global_fid2] = tuple_from_face({{v2_id, f_vids[1], f_vids[2]}});
         auto f_attr = m_face_attribute[global_fid1];
@@ -279,9 +305,6 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
     size_t v1_id = cache.v1_id;
     size_t v2_id = cache.v2_id;
 
-    // bool debug_flag = (v1_id == 1060 && v2_id == 174);
-
-
     if (!TetMesh::collapse_edge_after(loc)) {
         // debug code
         // wmtk::logger().info("edge {} not pass connectivity after check", loc.fid(*this));
@@ -296,33 +319,6 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
     // size_t v3_id = loc.switch_vertex(*this).vid(*this);
     // if (m_vertex_attribute[v2_id].is_freezed && m_vertex_attribute[v3_id].is_freezed) return
     // false;
-
-
-    // wmtk::logger().info("changed tids: {}", cache.changed_tids);
-
-    // check quality
-    std::vector<double> qs;
-    for (size_t tid : cache.changed_tids) {
-        auto tet = tuple_from_tet(tid);
-        auto tvs = oriented_tet_vertices(tet);
-
-        if (is_inverted(tet)) {
-            // if (debug_flag) std::cout << "tet inverted reject" << std::endl;
-            return false;
-        }
-        double q = get_quality(tet);
-        // only check quality if v1 is rounded
-        if (VA[v1_id].m_is_rounded && q > cache.max_energy) {
-            // if (debug_flag)
-            //     std::cout << "energy reject " << q << " " << cache.max_energy << std::endl;
-
-            return false;
-        }
-        qs.push_back(q);
-    }
-
-    // wmtk::logger().info("changed qualities: {}", qs);
-
 
     // open boundary - must be set before checking for open boundary
     VA[v2_id].m_is_on_open_boundary =
@@ -371,7 +367,7 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
     //// update attrs
     // tet attr
     for (int i = 0; i < cache.changed_tids.size(); i++) {
-        m_tet_attribute[cache.changed_tids[i]].m_quality = qs[i];
+        m_tet_attribute[cache.changed_tids[i]].m_quality = cache.changed_energies[i];
     }
     // vertex attr
     round(loc);

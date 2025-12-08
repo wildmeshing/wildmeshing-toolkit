@@ -119,6 +119,7 @@ public:
         p_face_attrs = &m_face_attribute;
         p_tet_attrs = &m_tet_attribute;
         m_collapse_check_link_condition = false;
+        m_collapse_check_manifold = false;
     }
 
     ~TetWildMesh() {}
@@ -402,6 +403,7 @@ private:
         // all edges incident to the deleted vertex(v1) that are on the open boundary
         std::vector<std::array<size_t, 2>> boundary_edges;
         std::vector<size_t> changed_tids;
+        std::vector<double> changed_energies;
 
         std::vector<std::array<size_t, 2>> failed_edges;
 

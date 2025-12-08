@@ -452,7 +452,8 @@ public:
         std::vector<TetrahedronConnectivity>& old_tets);
 
     /**
-     * Check topology after collapse connectivity change
+     * @brief Check topology after collapse connectivity change. This is a sanity check and should
+     * not be necessary.
      *
      * @param new_tet_id new tet ids added to v2
      *
@@ -1058,7 +1059,9 @@ public:
             if (v.m_conn_tets.empty()) v.m_is_removed = true;
         }
     }
-    bool m_collapse_check_link_condition = true;
+    bool m_collapse_check_link_condition = true; // classical link condition
+    bool m_collapse_check_topology = false; // sanity check
+    bool m_collapse_check_manifold = true; // manifoldness check after collapse
 
 private:
     std::map<size_t, VertexConnectivity> operation_update_connectivity_impl(

@@ -418,6 +418,10 @@ bool TetMesh::link_condition(const Tuple& t)
 
 bool TetMesh::collapse_edge_check_topology(const std::vector<size_t>& new_tet_id)
 {
+    if (!m_collapse_check_topology) {
+        return true;
+    }
+
     for (size_t t_id : new_tet_id)
         for (auto k = 0; k < 4; k++) {
             std::array<size_t, 3> vids;
@@ -486,12 +490,6 @@ bool TetMesh::collapse_edge_conn(
     n1_t_ids_copy = n1_t_ids;
     const auto& n2_t_ids = m_vertex_connectivity[v2_id].m_conn_tets;
 
-    std::set<std::array<size_t, 4>> verify_conns; // simplified manifold topology check.
-    for (const size_t _t : n2_t_ids) {
-        auto tet = m_tet_connectivity[_t].m_indices;
-        std::sort(tet.begin(), tet.end());
-        verify_conns.emplace(tet);
-    }
 
     auto new_tet_conn = std::vector<std::array<size_t, 4>>();
     new_tet_conn.reserve(n1_t_ids.size());
@@ -517,11 +515,19 @@ bool TetMesh::collapse_edge_conn(
         new_tet_conn.back()[l1] = v2_id;
         preserved_tids.push_back(t_id);
     }
-    {
+    if (m_collapse_check_manifold) {
+        std::set<std::array<size_t, 4>> verify_conns; // simplified manifold topology check.
+        for (const size_t _t : n2_t_ids) {
+            auto tet = m_tet_connectivity[_t].m_indices;
+            std::sort(tet.begin(), tet.end());
+            verify_conns.emplace(tet);
+        }
+
         for (std::array<size_t, 4> tet : new_tet_conn) {
             std::sort(tet.begin(), tet.end());
             auto [it, suc] = verify_conns.emplace(tet);
             if (!suc) { // duplicate
+                logger().error("broken topology after collapse");
                 return false;
             }
         }
