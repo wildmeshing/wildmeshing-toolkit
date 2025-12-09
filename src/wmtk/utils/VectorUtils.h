@@ -116,4 +116,24 @@ void set_union_inplace(std::vector<T>& vec, const std::vector<T>& vec2)
     std::inplace_merge(vec.begin(), boundary_it, vec.end());
     vector_unique(vec);
 }
+
+template <typename T, size_t N>
+inline void array_replace_inline(std::array<T, N>& arr, const T& v0, const T& v1)
+{
+    for (auto j = 0; j < N; j++) {
+        if (arr[j] == v0) {
+            arr[j] = v1;
+            break;
+        }
+    }
+}
+
+template <typename T, size_t N>
+inline std::array<T, N> array_replace(const std::array<T, N>& arr, const T& v0, const T& v1)
+{
+    std::array<size_t, 4> out = arr;
+    array_replace_inline(out, v0, v1);
+    return out;
+}
+
 } // namespace wmtk

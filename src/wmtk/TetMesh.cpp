@@ -655,6 +655,15 @@ std::array<TetMesh::Tuple, 3> TetMesh::get_face_vertices(const Tuple& t) const
     return vs;
 }
 
+std::array<size_t, 3> TetMesh::get_face_vids(const Tuple& t) const
+{
+    std::array<size_t, 3> vs;
+    vs[0] = t.vid(*this);
+    vs[1] = t.switch_vertex(*this).vid(*this);
+    vs[2] = t.switch_edge(*this).switch_vertex(*this).vid(*this);
+    return vs;
+}
+
 std::array<TetMesh::Tuple, 6> TetMesh::tet_edges(const Tuple& t) const
 {
     std::array<Tuple, 6> es;
@@ -774,6 +783,7 @@ std::vector<TetMesh::Tuple> TetMesh::get_incident_tets_for_edge(
     std::vector<Tuple> tets;
     for (int t_id : tids) {
         tets.push_back(tuple_from_tet(t_id));
+        assert(tets.back().is_valid(*this));
     }
     return tets;
 }

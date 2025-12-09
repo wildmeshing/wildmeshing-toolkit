@@ -87,7 +87,9 @@ struct AttributeCollection : public AbstractAttributeContainer
         recording.local() = false;
     }
 
-    const T& operator[](size_t i) const { return m_attributes[i]; }
+    const T& get(size_t i) const { return m_attributes[i]; }
+
+    const T& operator[](size_t i) const { return get(i); }
 
     T& operator[](size_t i)
     {

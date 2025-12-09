@@ -297,6 +297,7 @@ public:
 
     size_t swap_all_edges_44();
     bool swap_edge_44_before(const Tuple& t) override;
+    double swap_edge_44_energy(const std::vector<std::array<size_t, 4>>& tets) override;
     bool swap_edge_44_after(const Tuple& t) override;
 
     size_t swap_all_edges_56();
@@ -304,13 +305,15 @@ public:
     double swap_edge_56_energy(const std::vector<std::array<size_t, 4>>& tets) override;
     bool swap_edge_56_after(const Tuple& t) override;
 
-    size_t swap_all_edges();
+    size_t swap_all_edges_32();
     bool swap_edge_before(const Tuple& t) override;
     bool swap_edge_after(const Tuple& t) override;
 
     size_t swap_all_faces();
     bool swap_face_before(const Tuple& t) override;
     bool swap_face_after(const Tuple& t) override;
+
+    size_t swap_all_edges_all();
 
     /**
      * @brief Inversion check using only floating point numbers.

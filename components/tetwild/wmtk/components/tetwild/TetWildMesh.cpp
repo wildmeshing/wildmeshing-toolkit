@@ -80,7 +80,7 @@ void TetWildMesh::mesh_improvement(int max_its)
     for (int it = 0; it < max_its; it++) {
         ///ops
         wmtk::logger().info("\n========it {}========", it);
-        auto [max_energy, avg_energy] = local_operations({{1, 1, 5, 1}});
+        auto [max_energy, avg_energy] = local_operations({{1, 1, 1, 1}});
 
         ///energy check
         wmtk::logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
@@ -516,9 +516,10 @@ std::tuple<double, double> TetWildMesh::local_operations(
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==swapping {}==", n);
                 int cnt_success = 0;
-                cnt_success += swap_all_edges_56();
-                cnt_success += swap_all_edges_44();
-                cnt_success += swap_all_edges();
+                cnt_success += swap_all_edges_all();
+                // cnt_success += swap_all_edges_56();
+                // cnt_success += swap_all_edges_44();
+                // cnt_success += swap_all_edges();
                 cnt_success += swap_all_faces();
                 if (cnt_success == 0) {
                     break;
