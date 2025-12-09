@@ -512,20 +512,22 @@ bool TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
 
     std::vector<std::array<size_t, 4>> new_tets;
     std::array<size_t, 2> new_edge;
-    double min_energy = swap_edge_44_energy(old_tets_conn);
+    double min_energy = swap_edge_44_energy(old_tets_conn, 0);
 
     // find best 4-4 case
+    int op_case = 1;
     for (const size_t v0 : v0s) {
         std::array<size_t, 2> edge_vids;
         auto tets = swap_4_4(old_tets_conn, v1_id, v2_id, v0, edge_vids);
         assert(v0 == edge_vids[0]);
 
-        double energy = swap_edge_44_energy(tets);
+        double energy = swap_edge_44_energy(tets, op_case);
         if (energy < min_energy) {
             min_energy = energy;
             new_tets = tets;
             new_edge = edge_vids;
         }
+        ++op_case;
     }
 
     if (new_tets.empty()) {
@@ -723,20 +725,22 @@ bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
 
     std::vector<std::array<size_t, 4>> new_tets;
     std::array<size_t, 3> new_face;
-    double min_energy = swap_edge_56_energy(old_tets_conn);
+    double min_energy = swap_edge_56_energy(old_tets_conn, 0);
 
     // find best 5-6 case
+    int op_case = 1;
     for (const size_t v0 : verts) {
         std::array<size_t, 3> edge_vids;
         auto tets = swap_5_6(old_tets_conn, v1_id, v2_id, v0, edge_vids);
         assert(v0 == edge_vids[0]);
 
-        double energy = swap_edge_56_energy(tets);
+        double energy = swap_edge_56_energy(tets, op_case);
         if (energy < min_energy) {
             min_energy = energy;
             new_tets = tets;
             new_face = edge_vids;
         }
+        ++op_case;
     }
 
     if (new_tets.empty()) {

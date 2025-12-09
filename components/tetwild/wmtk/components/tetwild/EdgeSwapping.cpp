@@ -385,7 +385,9 @@ bool TetWildMesh::swap_edge_44_before(const Tuple& t)
     return true;
 }
 
-double TetWildMesh::swap_edge_44_energy(const std::vector<std::array<size_t, 4>>& tets)
+double TetWildMesh::swap_edge_44_energy(
+    const std::vector<std::array<size_t, 4>>& tets,
+    const int op_case)
 {
     double max_energy = -1;
     for (const auto& vids : tets) {
@@ -488,7 +490,9 @@ bool TetWildMesh::swap_edge_56_before(const Tuple& t)
     return true;
 }
 
-double TetWildMesh::swap_edge_56_energy(const std::vector<std::array<size_t, 4>>& tets)
+double TetWildMesh::swap_edge_56_energy(
+    const std::vector<std::array<size_t, 4>>& tets,
+    const int op_case)
 {
     double max_energy = -1;
     for (const auto& vids : tets) {

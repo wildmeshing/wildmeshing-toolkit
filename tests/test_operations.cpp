@@ -55,7 +55,8 @@ public:
         return wmtk::AMIPS_energy_stable_p3<wmtk::Rational>(T);
     }
 
-    double swap_edge_56_energy(const std::vector<std::array<size_t, 4>>& tets) override
+    double swap_edge_56_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
+        override
     {
         double max_energy = -1;
         for (const auto& vids : tets) {

@@ -730,13 +730,18 @@ protected:
      * @brief User specified energy to decide which of the 4 possible orientations should be
      * chosen.
      *
-     * This MUST BE OVERRIDDEN or no swap will be accepted! The energy is also calculated before the
-     * swap and a swap is only accepted if the energy decreases.
+     * Accepts the last shown orientation if not overridden.
      *
      * @param tets New tets after performing a 4-4 swap.
+     * @param op_case The operation case, where 0 are the tets before swap.
      * @return energy The swap giving the tets with the lowest energy are chosen.
      */
-    virtual double swap_edge_44_energy(const std::vector<std::array<size_t, 4>>& tets) { return 0; }
+    virtual double swap_edge_44_energy(
+        const std::vector<std::array<size_t, 4>>& tets,
+        const int op_case)
+    {
+        return -op_case;
+    }
     /**
      * @brief User specified modifications and desideratas for after a 4-4 edge swap
      *
@@ -756,13 +761,18 @@ protected:
      * @brief User specified energy to decide which of the 5 possible orientations should be
      * chosen.
      *
-     * This MUST BE OVERRIDDEN or no swap will be accepted! The energy is also calculated before the
-     * swap and a swap is only accepted if the energy decreases.
+     * Accepts the last shown orientation if not overridden.
      *
      * @param tets New tets after performing a 5-6 swap.
+     * @param op_case The operation case, where 0 are the tets before swap.
      * @return energy The swap giving the tets with the lowest energy are chosen.
      */
-    virtual double swap_edge_56_energy(const std::vector<std::array<size_t, 4>>& tets) { return 0; }
+    virtual double swap_edge_56_energy(
+        const std::vector<std::array<size_t, 4>>& tets,
+        const int op_case)
+    {
+        return -op_case;
+    }
     /**
      * @brief User specified modifications and desideratas for after a 5-6 edge swap
      *

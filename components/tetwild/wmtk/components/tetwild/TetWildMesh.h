@@ -297,12 +297,14 @@ public:
 
     size_t swap_all_edges_44();
     bool swap_edge_44_before(const Tuple& t) override;
-    double swap_edge_44_energy(const std::vector<std::array<size_t, 4>>& tets) override;
+    double swap_edge_44_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
+        override;
     bool swap_edge_44_after(const Tuple& t) override;
 
     size_t swap_all_edges_56();
     bool swap_edge_56_before(const Tuple& t) override;
-    double swap_edge_56_energy(const std::vector<std::array<size_t, 4>>& tets) override;
+    double swap_edge_56_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
+        override;
     bool swap_edge_56_after(const Tuple& t) override;
 
     size_t swap_all_edges_32();
