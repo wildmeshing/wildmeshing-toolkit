@@ -422,6 +422,8 @@ public:
      */
     virtual bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_tets);
 
+    bool link_condition(const Tuple& t);
+
     /**
      * Collapse edge connectivity change part. Constains a link condition check and the connecticity
      * update
@@ -450,7 +452,8 @@ public:
         std::vector<TetrahedronConnectivity>& old_tets);
 
     /**
-     * Check topology after collapse connectivity change
+     * @brief Check topology after collapse connectivity change. This is a sanity check and should
+     * not be necessary.
      *
      * @param new_tet_id new tet ids added to v2
      *
@@ -477,6 +480,15 @@ public:
         std::vector<size_t>& new_tet_id,
         std::vector<TetrahedronConnectivity>& old_tets);
 
+    /**
+     *Perform 5-6 swap
+     *
+     * @param t Input Tuple for the edge to swap.
+     * @param[out] new_tets a vector of Tuples for all the newly introduced tetra.
+     * @return true if swap succeed
+     * @note only happens on internal edges
+     */
+    bool swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tets);
     /**
      *Perform 4-4 swap between 2 tets
      *
@@ -715,12 +727,59 @@ protected:
      */
     virtual bool swap_edge_44_before(const Tuple& t) { return true; }
     /**
+     * @brief User specified energy to decide which of the 4 possible orientations should be
+     * chosen.
+     *
+     * Accepts the last shown orientation if not overridden.
+     *
+     * @param tets New tets after performing a 4-4 swap.
+     * @param op_case The operation case, where 0 are the tets before swap.
+     * @return energy The swap giving the tets with the lowest energy are chosen.
+     */
+    virtual double swap_edge_44_energy(
+        const std::vector<std::array<size_t, 4>>& tets,
+        const int op_case)
+    {
+        return -op_case;
+    }
+    /**
      * @brief User specified modifications and desideratas for after a 4-4 edge swap
      *
      * @param t edge Tuple that's swaped
      * @return true if the modification succeed
      */
     virtual bool swap_edge_44_after(const Tuple& t) { return true; }
+    /**
+     * @brief User specified preparations and desideratas for a 5-6 edge swap before changing the
+     * connectivity
+     *
+     * @param t edge Tuple to be swaped
+     * @return true if the preparation succeed
+     */
+    virtual bool swap_edge_56_before(const Tuple& t) { return true; }
+    /**
+     * @brief User specified energy to decide which of the 5 possible orientations should be
+     * chosen.
+     *
+     * Accepts the last shown orientation if not overridden.
+     *
+     * @param tets New tets after performing a 5-6 swap.
+     * @param op_case The operation case, where 0 are the tets before swap.
+     * @return energy The swap giving the tets with the lowest energy are chosen.
+     */
+    virtual double swap_edge_56_energy(
+        const std::vector<std::array<size_t, 4>>& tets,
+        const int op_case)
+    {
+        return -op_case;
+    }
+    /**
+     * @brief User specified modifications and desideratas for after a 5-6 edge swap
+     *
+     * @param t edge Tuple that's swaped
+     * @return true if the modification succeed
+     */
+    virtual bool swap_edge_56_after(const Tuple& t) { return true; }
     /**
      * @brief User specified preparations and desideratas for an 3-2 edge swap before changing the
      * conenctivity
@@ -949,6 +1008,9 @@ public:
     std::vector<Tuple> get_incident_tets_for_edge(const Tuple& t) const;
     std::vector<Tuple> get_incident_tets_for_edge(const size_t vid0, const size_t vid1) const;
 
+    std::vector<size_t> get_incident_tids_for_edge(const Tuple& t) const;
+    std::vector<size_t> get_incident_tids_for_edge(const size_t vid0, const size_t vid1) const;
+
     /**
      * @brief Get the one ring tets for edge
      *
@@ -982,6 +1044,8 @@ public:
      * @return std::array<Tuple, 3> an array of 3 Tuple points to the 3 vertices of a face
      */
     std::array<Tuple, 3> get_face_vertices(const Tuple& t) const;
+    std::array<size_t, 3> get_face_vids(const Tuple& t) const;
+
     /**
      * @brief get the 6 edges of a tet represented by Tuples
      *
@@ -1018,27 +1082,31 @@ public:
             if (v.m_conn_tets.empty()) v.m_is_removed = true;
         }
     }
-    bool m_collapse_check_link_condition = true;
+    bool m_collapse_check_link_condition = true; // classical link condition
+    bool m_collapse_check_topology = false; // sanity check
+    bool m_collapse_check_manifold = true; // manifoldness check after collapse
 
 private:
-    std::map<size_t, wmtk::TetMesh::VertexConnectivity> operation_update_connectivity_impl(
+    std::map<size_t, VertexConnectivity> operation_update_connectivity_impl(
         std::vector<size_t>& affected_tid,
         const std::vector<std::array<size_t, 4>>& new_tet_conn);
     void operation_failure_rollback_imp(
-        std::map<size_t, wmtk::TetMesh::VertexConnectivity>& rollback_vert_conn,
+        std::map<size_t, VertexConnectivity>& rollback_vert_conn,
         const std::vector<size_t>& affected,
         const std::vector<size_t>& new_tet_id,
-        const std::vector<wmtk::TetMesh::TetrahedronConnectivity>& old_tets);
-    std::map<size_t, wmtk::TetMesh::VertexConnectivity> operation_update_connectivity_impl(
+        const std::vector<TetrahedronConnectivity>& old_tets);
+    std::map<size_t, VertexConnectivity> operation_update_connectivity_impl(
         const std::vector<size_t>& remove_id,
         const std::vector<std::array<size_t, 4>>& new_tet_conn,
         std::vector<size_t>& allocate_id);
-    static std::vector<wmtk::TetMesh::TetrahedronConnectivity> record_old_tet_connectivity(
-        const wmtk::TetMesh::vector<wmtk::TetMesh::TetrahedronConnectivity>& conn,
+    static std::vector<TetrahedronConnectivity> record_old_tet_connectivity(
+        const TetMesh::vector<TetrahedronConnectivity>& conn,
         const std::vector<size_t>& tets)
     {
-        auto tet_conn = std::vector<wmtk::TetMesh::TetrahedronConnectivity>();
-        for (auto i : tets) tet_conn.push_back(conn[i]);
+        std::vector<TetrahedronConnectivity> tet_conn;
+        for (size_t i : tets) {
+            tet_conn.push_back(conn[i]);
+        }
         return tet_conn;
     }
 

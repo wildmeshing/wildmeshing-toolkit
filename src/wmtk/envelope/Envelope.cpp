@@ -183,9 +183,7 @@ bool SampleEnvelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri) const
 double SampleEnvelope::nearest_point(const Eigen::Vector3d& pts, Eigen::Vector3d& result) const
 {
     double dist;
-    SimpleBVH::Vector3d out;
-    m_bvh->nearest_facet(pts, out, dist);
-
+    m_bvh->nearest_facet(pts, result, dist);
     return dist;
 }
 

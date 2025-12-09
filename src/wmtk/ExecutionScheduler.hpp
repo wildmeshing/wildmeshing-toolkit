@@ -141,6 +141,14 @@ struct ExecutePass
                      else
                          return {};
                  }},
+                {"edge_swap_56",
+                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
+                     std::vector<Tuple> ret;
+                     if (m.swap_edge_56(t, ret))
+                         return ret;
+                     else
+                         return {};
+                 }},
                 {"edge_split",
                  [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
                      std::vector<Tuple> ret;
@@ -223,6 +231,8 @@ struct ExecutePass
         }
     };
 
+    ExecutePass(ExecutePass&) = delete;
+
 private:
     void operation_cleanup(AppMesh& m)
     { //
@@ -261,10 +271,10 @@ public:
         using Elem = std::tuple<double, Op, Tuple, size_t>; // priority, operation, tuple, #retries
         using Queue = tbb::concurrent_priority_queue<Elem>;
 
-        auto cnt_update = std::atomic<int>(0);
-        auto cnt_success = std::atomic<int>(0);
-        auto cnt_fail = std::atomic<int>(0);
         auto stop = std::atomic<bool>(false);
+        cnt_success = 0;
+        cnt_fail = 0;
+        cnt_update = 0;
 
         std::vector<Queue> queues(num_threads);
         Queue final_queue;
@@ -360,8 +370,20 @@ public:
             run_single_queue(final_queue, 0);
         }
 
-        logger().info("cnt_success {} cnt_fail {}", (int)cnt_success, (int)cnt_fail);
+        logger().info(
+            "executed: {} | success / fail: {} / {}",
+            (int)cnt_success + (int)cnt_fail,
+            (int)cnt_success,
+            (int)cnt_fail);
         return true;
     }
+
+    int get_cnt_success() const { return cnt_success; }
+    int get_cnt_fail() const { return cnt_fail; }
+
+private:
+    std::atomic_int cnt_update = 0;
+    std::atomic_int cnt_success = 0;
+    std::atomic_int cnt_fail = 0;
 };
 } // namespace wmtk

@@ -110,7 +110,9 @@ void TetMesh::init_with_isolated_vertices(
     size_t n_vertices,
     const std::vector<std::array<size_t, 4>>& tets)
 {
+    m_vertex_connectivity.clear();
     m_vertex_connectivity.resize(n_vertices);
+    m_tet_connectivity.clear();
     m_tet_connectivity.resize(tets.size());
     current_vert_size = n_vertices;
     current_tet_size = tets.size();
@@ -133,15 +135,19 @@ void TetMesh::init_with_isolated_vertices(
 
     // resize attributes
     if (p_vertex_attrs) {
+        p_vertex_attrs->clear();
         p_vertex_attrs->resize(n_vertices);
     }
     if (p_tet_attrs) {
+        p_tet_attrs->clear();
         p_tet_attrs->resize(tets.size());
     }
     if (p_face_attrs) {
+        p_face_attrs->clear();
         p_face_attrs->resize(4 * tets.size());
     }
     if (p_edge_attrs) {
+        p_edge_attrs->clear();
         p_edge_attrs->resize(6 * tets.size());
     }
 }
@@ -467,8 +473,17 @@ std::tuple<TetMesh::Tuple, size_t> TetMesh::tuple_from_face(const std::array<siz
     face.m_global_tid = global_tid;
     // fid
     std::array<int, 3> f;
-    for (int j = 0; j < 3; j++) {
-        f[j] = m_tet_connectivity[face.m_global_tid].find(vids[j]);
+    // for (int j = 0; j < 3; j++) {
+    //     f[j] = m_tet_connectivity[face.m_global_tid].find(vids[j]);
+    // }
+    {
+        const auto& vs = m_tet_connectivity[face.m_global_tid];
+        int k = 0;
+        for (int j = 0; j < 4; ++j) {
+            if (vs[j] == vids[0] || vs[j] == vids[1] || vs[j] == vids[2]) {
+                f[k++] = j;
+            }
+        }
     }
     std::sort(f.begin(), f.end());
     face.m_local_fid =
@@ -640,6 +655,15 @@ std::array<TetMesh::Tuple, 3> TetMesh::get_face_vertices(const Tuple& t) const
     return vs;
 }
 
+std::array<size_t, 3> TetMesh::get_face_vids(const Tuple& t) const
+{
+    std::array<size_t, 3> vs;
+    vs[0] = t.vid(*this);
+    vs[1] = t.switch_vertex(*this).vid(*this);
+    vs[2] = t.switch_edge(*this).switch_vertex(*this).vid(*this);
+    return vs;
+}
+
 std::array<TetMesh::Tuple, 6> TetMesh::tet_edges(const Tuple& t) const
 {
     std::array<Tuple, 6> es;
@@ -755,14 +779,28 @@ std::vector<TetMesh::Tuple> TetMesh::get_incident_tets_for_edge(
     const size_t vid0,
     const size_t vid1) const
 {
-    auto tids = set_intersection(
-        m_vertex_connectivity[vid0].m_conn_tets,
-        m_vertex_connectivity[vid1].m_conn_tets);
+    auto tids = get_incident_tids_for_edge(vid0, vid1);
     std::vector<Tuple> tets;
     for (int t_id : tids) {
         tets.push_back(tuple_from_tet(t_id));
+        assert(tets.back().is_valid(*this));
     }
     return tets;
+}
+
+std::vector<size_t> TetMesh::get_incident_tids_for_edge(const Tuple& t) const
+{
+    int v1_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][0]];
+    int v2_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][1]];
+    return get_incident_tids_for_edge(v1_id, v2_id);
+}
+
+std::vector<size_t> TetMesh::get_incident_tids_for_edge(const size_t vid0, const size_t vid1) const
+{
+    auto tids = set_intersection(
+        m_vertex_connectivity[vid0].m_conn_tets,
+        m_vertex_connectivity[vid1].m_conn_tets);
+    return tids;
 }
 
 std::vector<TetMesh::Tuple> TetMesh::get_one_ring_tets_for_edge(const Tuple& t) const
@@ -868,13 +906,13 @@ std::vector<std::array<size_t, 3>> TetMesh::vertex_adjacent_boundary_faces(const
 {
     auto v = tup.vid(*this);
     auto result_faces = std::set<std::array<size_t, 3>>();
-    for (auto t : m_vertex_connectivity[v].m_conn_tets) {
-        auto& tet = m_tet_connectivity[t];
+    for (const size_t t : m_vertex_connectivity[v].m_conn_tets) {
+        const auto& tet = m_tet_connectivity[t];
         for (auto j = 0; j < 4; j++) {
             if (tet[m_map_vertex2oppo_face[j]] == v)
                 continue; // only consider those not connecting to it.
-            auto& f = m_local_faces[j];
-            auto face = std::array<size_t, 3>{{tet[f[0]], tet[f[1]], tet[f[2]]}};
+            const auto& f = m_local_faces[j];
+            std::array<size_t, 3> face{{tet[f[0]], tet[f[1]], tet[f[2]]}};
             std::sort(face.begin(), face.end());
             auto it = result_faces.find(face);
             if (it == result_faces.end()) { // delete those appearing twice.

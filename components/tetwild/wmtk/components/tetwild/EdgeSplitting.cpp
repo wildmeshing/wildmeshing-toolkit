@@ -15,7 +15,7 @@ void TetWildMesh::split_all_edges()
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_split", loc);
     time = timer.getElapsedTime();
-    wmtk::logger().info("edge split prepare time: {}s", time);
+    wmtk::logger().info("edge split prepare time: {:.4}s", time);
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = wmtk::renewal_simple;
 
@@ -44,13 +44,13 @@ void TetWildMesh::split_all_edges()
         };
         setup_and_execute(executor);
         time = timer.getElapsedTime();
-        wmtk::logger().info("edge split operation time parallel: {}s", time);
+        wmtk::logger().info("edge split operation time parallel: {:.4}s", time);
     } else {
         timer.start();
         auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
         time = timer.getElapsedTime();
-        wmtk::logger().info("edge split operation time serial: {}s", time);
+        wmtk::logger().info("edge split operation time serial: {:.4}s", time);
     }
 }
 

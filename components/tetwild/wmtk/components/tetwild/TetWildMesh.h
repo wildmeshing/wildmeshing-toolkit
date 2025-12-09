@@ -102,7 +102,7 @@ public:
     SampleEnvelope& triangles_tree;
 
     // for open boundary
-    wmtk::ExactEnvelope m_open_boundary_envelope; // todo: add sample envelope option
+    wmtk::Envelope m_open_boundary_envelope; // todo: add sample envelope option
     SampleEnvelope boundaries_tree;
 
     TetWildMesh(
@@ -119,6 +119,7 @@ public:
         p_face_attrs = &m_face_attribute;
         p_tet_attrs = &m_tet_attribute;
         m_collapse_check_link_condition = false;
+        m_collapse_check_manifold = false;
     }
 
     ~TetWildMesh() {}
@@ -294,23 +295,35 @@ public:
     bool collapse_edge_before(const Tuple& t) override;
     bool collapse_edge_after(const Tuple& t) override;
 
-    void swap_all_edges_44();
+    size_t swap_all_edges_44();
     bool swap_edge_44_before(const Tuple& t) override;
+    double swap_edge_44_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
+        override;
     bool swap_edge_44_after(const Tuple& t) override;
 
-    void swap_all_edges();
+    size_t swap_all_edges_56();
+    bool swap_edge_56_before(const Tuple& t) override;
+    double swap_edge_56_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
+        override;
+    bool swap_edge_56_after(const Tuple& t) override;
+
+    size_t swap_all_edges_32();
     bool swap_edge_before(const Tuple& t) override;
     bool swap_edge_after(const Tuple& t) override;
 
-    void swap_all_faces();
+    size_t swap_all_faces();
     bool swap_face_before(const Tuple& t) override;
     bool swap_face_after(const Tuple& t) override;
+
+    size_t swap_all_edges_all();
 
     /**
      * @brief Inversion check using only floating point numbers.
      */
     bool is_inverted_f(const Tuple& loc) const;
+    bool is_inverted(const std::array<size_t, 4>& vs) const;
     bool is_inverted(const Tuple& loc) const;
+    double get_quality(const std::array<size_t, 4>& vs) const;
     double get_quality(const Tuple& loc) const;
     bool round(const Tuple& loc);
     //
@@ -318,6 +331,10 @@ public:
     bool is_edge_on_bbox(const Tuple& loc);
     //
     void mesh_improvement(int max_its = 80);
+    /**
+     * @brief Call the original TetWild code.
+     */
+    void mesh_improvement_legacy(int max_its = 80);
     std::tuple<double, double> local_operations(
         const std::array<int, 4>& ops,
         bool collapse_limit_length = true);
@@ -391,6 +408,7 @@ private:
         // all edges incident to the deleted vertex(v1) that are on the open boundary
         std::vector<std::array<size_t, 2>> boundary_edges;
         std::vector<size_t> changed_tids;
+        std::vector<double> changed_energies;
 
         std::vector<std::array<size_t, 2>> failed_edges;
 

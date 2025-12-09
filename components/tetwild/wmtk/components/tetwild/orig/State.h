@@ -1,0 +1,93 @@
+// This file is part of TetWild, a software for generating tetrahedral meshes.
+//
+// Copyright (C) 2018 Jeremie Dumas <jeremie.dumas@ens-lyon.org>
+//
+// This Source Code Form is subject to the terms of the Mozilla Public License
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can
+// obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Created by Jeremie Dumas on 09/04/18.
+//
+
+#pragma once
+
+#include <Eigen/Dense>
+#include <limits>
+#include <string>
+
+#include "ForwardDecls.h"
+
+namespace wmtk::components::tetwild::orig {
+
+// Global values computed from the user input
+struct State
+{
+    const int EPSILON_INFINITE = -2;
+    const double MAX_ENERGY = 1e50;
+    const int NOT_SURFACE = std::numeric_limits<int>::max();
+
+    double bbox_diag = 0; // bbox diagonal
+    double eps = 0; // effective epsilon at the current stage (see \hat{\epsilon} in the paper)
+    double eps_2 = 0;
+    double initial_edge_len =
+        0; // initial target edge-length defined by the user (the final lengths can be lower,
+           // depending on mesh quality and feature size)
+    bool is_mesh_closed = 0; // open mesh or closed mesh?
+
+    const double eps_input = 0; // target epsilon entered by the user
+    const double eps_delta = 0; // increment for the envelope at each sub-stage of the mesh
+                                // optimization (see (3) p.8 of the paper)
+    int sub_stage = 1; // sub-stage within the stage that tetwild was called with
+
+    double bbox_dis = 0.05; // relative bbox distance to the input
+
+    ///////////////
+    // [testing] //
+    ///////////////
+
+    // Project vertices to the plane of their one-ring instead of the original surface during vertex
+    // smoothing
+    const bool use_onering_projection = false;
+
+    // Set program constants given user parameters and input mesh
+    State(const Args& args, const double& bbox_diagonal);
+};
+
+
+struct MeshRecord
+{
+    enum OpType {
+        OP_INIT = 0,
+        OP_PREPROCESSING,
+        OP_DELAUNEY_TETRA,
+        OP_DIVFACE_MATCH,
+        OP_BSP,
+        OP_SIMPLE_TETRA,
+
+        OP_OPT_INIT,
+        OP_SPLIT,
+        OP_COLLAPSE,
+        OP_SWAP,
+        OP_SMOOTH,
+        OP_ADAP_UPDATE,
+        OP_WN,
+        OP_UNROUNDED
+    };
+
+    int op;
+    double timing;
+    int n_v;
+    int n_t;
+    double max_energy = -1;
+    double avg_energy = -1;
+
+    MeshRecord(int op_, double timing_, int n_v_, int n_t_)
+    {
+        this->op = op_;
+        this->timing = timing_;
+        this->n_v = n_v_;
+        this->n_t = n_t_;
+    }
+};
+
+} // namespace wmtk::components::tetwild::orig

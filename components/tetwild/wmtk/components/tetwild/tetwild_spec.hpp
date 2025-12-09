@@ -2,7 +2,8 @@
 #include <nlohmann/json.hpp>
 namespace {
 
-nlohmann::json tetwild_spec = R"([
+nlohmann::json tetwild_spec = R"(
+[
   {
     "pointer": "/",
     "type": "object",
@@ -11,6 +12,7 @@ nlohmann::json tetwild_spec = R"([
       "output",
       "skip_simplify",
       "use_sample_envelope",
+      "use_legacy_code",
       "num_threads",
       "max_iterations",
       "filter",
@@ -57,6 +59,12 @@ nlohmann::json tetwild_spec = R"([
     "type": "bool",
     "default": false,
     "doc": "Use sample envelope instead of exact one."
+  },
+  {
+    "pointer": "/use_legacy_code",
+    "type": "bool",
+    "default": false,
+    "doc": "Use the original TetWild code for the mesh improvement. This only works with 'use_sample_envelope'!"
   },
   {
     "pointer": "/num_threads",

@@ -269,7 +269,7 @@ void TetWildMesh::smooth_all_vertices()
         collect_all_ops.emplace_back("vertex_smooth", loc);
     }
     time = timer.getElapsedTime();
-    wmtk::logger().info("vertex smoothing prepare time: {}s", time);
+    wmtk::logger().info("vertex smoothing prepare time: {:.4}s", time);
     wmtk::logger().debug("Num verts {}", collect_all_ops.size());
     if (NUM_THREADS > 0) {
         timer.start();
@@ -280,14 +280,14 @@ void TetWildMesh::smooth_all_vertices()
         executor.num_threads = NUM_THREADS;
         executor(*this, collect_all_ops);
         time = timer.getElapsedTime();
-        wmtk::logger().info("vertex smoothing operation time parallel: {}s", time);
+        wmtk::logger().info("vertex smoothing operation time parallel: {:.4}s", time);
     } else {
         timer.start();
         auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kSeq>();
         // executor.priority = [&](auto& m, auto op, auto& t) -> double { return rand(); };
         executor(*this, collect_all_ops);
         time = timer.getElapsedTime();
-        wmtk::logger().info("vertex smoothing operation time serial: {}s", time);
+        wmtk::logger().info("vertex smoothing operation time serial: {:.4}s", time);
     }
 }
 

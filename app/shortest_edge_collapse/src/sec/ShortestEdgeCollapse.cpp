@@ -163,7 +163,7 @@ bool ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
                 .squaredNorm();
         return -len2;
     };
-    auto setup_and_execute = [&](auto executor) {
+    auto setup_and_execute = [&](auto& executor) {
         executor.num_threads = NUM_THREADS;
         executor.renew_neighbor_tuples = renew;
         executor.priority = measure_len2;
