@@ -5,6 +5,7 @@
 #include <igl/Timer.h>
 #include <algorithm>
 #include <atomic>
+#include <unordered_set>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -145,9 +146,8 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
 
 
     const auto n1_locs = get_one_ring_tids_for_vertex(loc);
-    const auto n12_locs = get_incident_tids_for_edge(loc); // todo: duplicated computation
 
-    cache.changed_tids.reserve(n1_locs.size() - n12_locs.size());
+    cache.changed_tids.reserve(n1_locs.size());
     cache.max_energy = 0;
     for (const size_t& tid : n1_locs) {
         const double q = m_tet_attribute.get(tid).m_quality;
@@ -182,7 +182,8 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
     assert(cache.changed_energies.size() == cache.changed_tids.size());
 
     //
-    std::set<int> unique_fid;
+    const auto n12_locs = get_incident_tids_for_edge(loc); // todo: duplicated computation
+    std::unordered_set<int> unique_fid;
     for (const size_t& tid : n12_locs) {
         auto vs = oriented_tet_vids(tid);
         std::array<size_t, 3> f_vids = {{v1_id, 0, 0}};

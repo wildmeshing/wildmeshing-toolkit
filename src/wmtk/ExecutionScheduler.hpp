@@ -272,6 +272,9 @@ public:
         using Queue = tbb::concurrent_priority_queue<Elem>;
 
         auto stop = std::atomic<bool>(false);
+        cnt_success = 0;
+        cnt_fail = 0;
+        cnt_update = 0;
 
         std::vector<Queue> queues(num_threads);
         Queue final_queue;
