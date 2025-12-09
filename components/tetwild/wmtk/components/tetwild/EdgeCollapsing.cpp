@@ -150,7 +150,7 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
     cache.changed_tids.reserve(n1_locs.size());
     cache.max_energy = 0;
     for (const size_t& tid : n1_locs) {
-        const double q = m_tet_attribute.get(tid).m_quality;
+        const double q = m_tet_attribute.at(tid).m_quality;
         cache.max_energy = std::max(cache.max_energy, q);
         const auto vs = oriented_tet_vids(tid);
         if (vs[0] != v2_id && vs[1] != v2_id && vs[2] != v2_id && vs[3] != v2_id) {
@@ -201,8 +201,8 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
         }
 
         auto [_2, global_fid2] = tuple_from_face({{v2_id, f_vids[1], f_vids[2]}});
-        auto f_attr = m_face_attribute.get(global_fid1);
-        f_attr.merge(m_face_attribute.get(global_fid2));
+        auto f_attr = m_face_attribute.at(global_fid1);
+        f_attr.merge(m_face_attribute.at(global_fid2));
         cache.changed_faces.push_back(std::make_pair(f_attr, f_vids));
     }
 
@@ -232,7 +232,7 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
                 if ((VA[va].m_is_on_surface && VA[vb].m_is_on_surface)) {
                     std::array<size_t, 3> f = {{v1_id, va, vb}};
                     const auto [f_tuple, fid] = tuple_from_face(f);
-                    if (!m_face_attribute.get(fid).m_is_surface_fs) {
+                    if (!m_face_attribute.at(fid).m_is_surface_fs) {
                         // check if this face is actually on the surface
                         continue;
                     }
@@ -245,7 +245,7 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
 
         for (auto& f : fs) {
             auto [_1, global_fid1] = tuple_from_face(f);
-            if (m_face_attribute.get(global_fid1).m_is_surface_fs) {
+            if (m_face_attribute.at(global_fid1).m_is_surface_fs) {
                 std::replace(f.begin(), f.end(), v1_id, v2_id);
                 cache.surface_faces.push_back(f);
             }
@@ -269,7 +269,7 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
                 if ((VA[va].m_is_on_surface && VA[vb].m_is_on_surface)) {
                     std::array<size_t, 3> f = {{v1_id, va, vb}};
                     const auto [f_tuple, fid] = tuple_from_face(f);
-                    if (!m_face_attribute.get(fid).m_is_surface_fs) {
+                    if (!m_face_attribute.at(fid).m_is_surface_fs) {
                         // check if this face is actually on the surface
                         continue;
                     }
@@ -414,26 +414,26 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
             auto f2vs = get_face_vertices(f2);
             auto f3vs = get_face_vertices(f3);
             auto f4vs = get_face_vertices(f4);
-            if (m_vertex_attribute.get(f1vs[0].vid(*this)).m_is_on_surface &&
-                m_vertex_attribute.get(f1vs[1].vid(*this)).m_is_on_surface &&
-                m_vertex_attribute.get(f1vs[2].vid(*this)).m_is_on_surface) {
-                if (m_face_attribute.get(f1.fid(*this)).m_is_surface_fs) surface_fs.push_back(f1);
+            if (m_vertex_attribute.at(f1vs[0].vid(*this)).m_is_on_surface &&
+                m_vertex_attribute.at(f1vs[1].vid(*this)).m_is_on_surface &&
+                m_vertex_attribute.at(f1vs[2].vid(*this)).m_is_on_surface) {
+                if (m_face_attribute.at(f1.fid(*this)).m_is_surface_fs) surface_fs.push_back(f1);
             }
 
-            if (m_vertex_attribute.get(f2vs[0].vid(*this)).m_is_on_surface &&
-                m_vertex_attribute.get(f2vs[1].vid(*this)).m_is_on_surface &&
-                m_vertex_attribute.get(f2vs[2].vid(*this)).m_is_on_surface) {
-                if (m_face_attribute.get(f2.fid(*this)).m_is_surface_fs) surface_fs.push_back(f2);
+            if (m_vertex_attribute.at(f2vs[0].vid(*this)).m_is_on_surface &&
+                m_vertex_attribute.at(f2vs[1].vid(*this)).m_is_on_surface &&
+                m_vertex_attribute.at(f2vs[2].vid(*this)).m_is_on_surface) {
+                if (m_face_attribute.at(f2.fid(*this)).m_is_surface_fs) surface_fs.push_back(f2);
             }
-            if (m_vertex_attribute.get(f3vs[0].vid(*this)).m_is_on_surface &&
-                m_vertex_attribute.get(f3vs[1].vid(*this)).m_is_on_surface &&
-                m_vertex_attribute.get(f3vs[2].vid(*this)).m_is_on_surface) {
-                if (m_face_attribute.get(f3.fid(*this)).m_is_surface_fs) surface_fs.push_back(f3);
+            if (m_vertex_attribute.at(f3vs[0].vid(*this)).m_is_on_surface &&
+                m_vertex_attribute.at(f3vs[1].vid(*this)).m_is_on_surface &&
+                m_vertex_attribute.at(f3vs[2].vid(*this)).m_is_on_surface) {
+                if (m_face_attribute.at(f3.fid(*this)).m_is_surface_fs) surface_fs.push_back(f3);
             }
-            if (m_vertex_attribute.get(f4vs[0].vid(*this)).m_is_on_surface &&
-                m_vertex_attribute.get(f4vs[1].vid(*this)).m_is_on_surface &&
-                m_vertex_attribute.get(f4vs[2].vid(*this)).m_is_on_surface) {
-                if (m_face_attribute.get(f4.fid(*this)).m_is_surface_fs) surface_fs.push_back(f4);
+            if (m_vertex_attribute.at(f4vs[0].vid(*this)).m_is_on_surface &&
+                m_vertex_attribute.at(f4vs[1].vid(*this)).m_is_on_surface &&
+                m_vertex_attribute.at(f4vs[2].vid(*this)).m_is_on_surface) {
+                if (m_face_attribute.at(f4.fid(*this)).m_is_surface_fs) surface_fs.push_back(f4);
             }
         }
         for (auto f : surface_fs) {

@@ -11,6 +11,7 @@
 #include <cassert>
 #include <map>
 #include <optional>
+#include <unordered_map>
 #include <vector>
 
 namespace wmtk {
@@ -87,9 +88,9 @@ struct AttributeCollection : public AbstractAttributeContainer
         recording.local() = false;
     }
 
-    const T& get(size_t i) const { return m_attributes[i]; }
+    const T& at(size_t i) const { return m_attributes[i]; }
 
-    const T& operator[](size_t i) const { return get(i); }
+    const T& operator[](size_t i) const { return at(i); }
 
     T& operator[](size_t i)
     {
@@ -99,10 +100,9 @@ struct AttributeCollection : public AbstractAttributeContainer
         return m_attributes[i];
     }
 
-    const T& at(size_t i) const { return m_attributes[i]; }
 
     size_t size() const { return m_attributes.size(); }
-    tbb::enumerable_thread_specific<std::map<size_t, T>> m_rollback_list;
+    tbb::enumerable_thread_specific<std::unordered_map<size_t, T>> m_rollback_list;
     // experimenting with tbb, could be templated as well.
     tbb::concurrent_vector<T> m_attributes;
     tbb::enumerable_thread_specific<bool> recording{false};
