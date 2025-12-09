@@ -565,8 +565,8 @@ void MeshRefinement::getSurface(Eigen::MatrixXd& V, Eigen::MatrixXi& F)
         if (t_is_removed[i]) continue;
         for (int j = 0; j < 4; j++) {
             if (is_surface_fs[i][j] != state.NOT_SURFACE && is_surface_fs[i][j] > 0) { // outside
-                std::array<int, 3> v_ids = {
-                    {tets[i][(j + 1) % 4], tets[i][(j + 2) % 4], tets[i][(j + 3) % 4]}};
+                std::array<int, 4> v_ids = {
+                    {tets[i][(j + 1) % 4], tets[i][(j + 2) % 4], tets[i][(j + 3) % 4], tets[i][j]}};
 
                 Vector3r n = ((tet_vertices[v_ids[1]].pos) - tet_vertices[v_ids[0]].pos)
                                  .cross((tet_vertices[v_ids[2]].pos) - tet_vertices[v_ids[0]].pos);
@@ -578,7 +578,8 @@ void MeshRefinement::getSurface(Eigen::MatrixXd& V, Eigen::MatrixXi& F)
                     v_ids[0] = v_ids[2];
                     v_ids[2] = tmp;
                 }
-                for (int k = 0; k < is_surface_fs[i][j]; k++) fs.push_back(v_ids);
+                for (int k = 0; k < is_surface_fs[i][j]; k++)
+                    fs.push_back({{v_ids[0], v_ids[1], v_ids[2]}});
                 for (int k = 0; k < 3; k++) vs.push_back(v_ids[k]);
             }
         }
@@ -607,8 +608,8 @@ void MeshRefinement::getTrackedSurface(Eigen::MatrixXd& V, Eigen::MatrixXi& F)
         if (t_is_removed[i]) continue;
         for (int j = 0; j < 4; j++) {
             if (is_surface_fs[i][j] != state.NOT_SURFACE && is_surface_fs[i][j] >= 0) { // outside
-                std::array<int, 3> v_ids = {
-                    {tets[i][(j + 1) % 4], tets[i][(j + 2) % 4], tets[i][(j + 3) % 4]}};
+                std::array<int, 4> v_ids = {
+                    {tets[i][(j + 1) % 4], tets[i][(j + 2) % 4], tets[i][(j + 3) % 4], tets[i][j]}};
 
                 Vector3r n = ((tet_vertices[v_ids[1]].pos) - tet_vertices[v_ids[0]].pos)
                                  .cross((tet_vertices[v_ids[2]].pos) - tet_vertices[v_ids[0]].pos);
@@ -620,10 +621,11 @@ void MeshRefinement::getTrackedSurface(Eigen::MatrixXd& V, Eigen::MatrixXi& F)
                     v_ids[0] = v_ids[2];
                     v_ids[2] = tmp;
                 }
-                std::array<int, 3> v_ids1 = v_ids;
+                std::array<int, 3> v_ids1 = {{v_ids[0], v_ids[1], v_ids[2]}};
                 std::sort(v_ids1.begin(), v_ids1.end());
-                fs.push_back(std::array<int, 6>(
-                    {{v_ids1[0], v_ids1[1], v_ids1[2], v_ids[0], v_ids[1], v_ids[2]}}));
+                fs.push_back(
+                    std::array<int, 6>(
+                        {{v_ids1[0], v_ids1[1], v_ids1[2], v_ids[0], v_ids[1], v_ids[2]}}));
                 for (int k = 0; k < 3; k++) vs.push_back(v_ids[k]);
             }
         }
@@ -678,8 +680,8 @@ void MeshRefinement::getTrackedSurface_continuous(Eigen::MatrixXd& V, Eigen::Mat
         }
         for (int j = 0; j < 4; j++) {
             if (is_surface_fs[i][j] != state.NOT_SURFACE && is_surface_fs[i][j] >= 0) { // outside
-                std::array<int, 3> v_ids = {
-                    {tets[i][(j + 1) % 4], tets[i][(j + 2) % 4], tets[i][(j + 3) % 4]}};
+                std::array<int, 4> v_ids = {
+                    {tets[i][(j + 1) % 4], tets[i][(j + 2) % 4], tets[i][(j + 3) % 4], tets[i][j]}};
 
                 Vector3r n = ((tet_vertices[v_ids[1]].pos) - tet_vertices[v_ids[0]].pos)
                                  .cross((tet_vertices[v_ids[2]].pos) - tet_vertices[v_ids[0]].pos);
@@ -691,10 +693,11 @@ void MeshRefinement::getTrackedSurface_continuous(Eigen::MatrixXd& V, Eigen::Mat
                     v_ids[0] = v_ids[2];
                     v_ids[2] = tmp;
                 }
-                std::array<int, 3> v_ids1 = v_ids;
+                std::array<int, 3> v_ids1 = {{v_ids[0], v_ids[1], v_ids[2]}};
                 std::sort(v_ids1.begin(), v_ids1.end());
-                fs.push_back(std::array<int, 6>(
-                    {{v_ids1[0], v_ids1[1], v_ids1[2], v_ids[0], v_ids[1], v_ids[2]}}));
+                fs.push_back(
+                    std::array<int, 6>(
+                        {{v_ids1[0], v_ids1[1], v_ids1[2], v_ids[0], v_ids[1], v_ids[2]}}));
             }
         }
     }
