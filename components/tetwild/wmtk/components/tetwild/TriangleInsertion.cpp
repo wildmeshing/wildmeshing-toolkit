@@ -79,7 +79,7 @@ void TetWildMesh::init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>
                 const Vector3d p(ds[0][i], ds[1][j], ds[2][k]);
 
                 Eigen::Vector3d n;
-                const double sqd = triangles_tree.nearest_point(p, n);
+                const double sqd = m_envelope.nearest_point(p, n);
 
                 if (sqd < min_dis) {
                     continue;

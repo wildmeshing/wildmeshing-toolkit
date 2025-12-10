@@ -295,14 +295,16 @@ void MeshRefinement::refine(
         // check and mark is_bad_element
         double avg_energy, max_energy;
         localOperation.getAvgMaxEnergy(avg_energy, max_energy);
+        logger().info("Energy: avg = {} | max = {}", avg_energy, max_energy);
         if (pass > 0 && pass < old_pass + args.max_num_passes - 1 &&
             avg_energy0 - avg_energy < args.delta_energy_thres &&
             max_energy0 - max_energy < args.delta_energy_thres) {
             if (update_cnt == 1) {
                 if (is_hit_min) {
                     update_buget--;
-                } else
+                } else {
                     continue;
+                }
             }
             if (update_buget == 0) {
                 if (state.sub_stage > 1 && state.sub_stage < args.stage) {
@@ -310,8 +312,10 @@ void MeshRefinement::refine(
                     state.eps_2 = state.eps * state.eps;
                     state.sub_stage++;
                     update_buget = 2;
-                } else
+                } else {
+                    logger().warn(">>>>>>>>>> update_budget = 0 -> break in pass {}", pass);
                     break;
+                }
             }
             update_cnt = 0;
 
@@ -331,7 +335,6 @@ void MeshRefinement::refine(
         }
         avg_energy0 = avg_energy;
         max_energy0 = max_energy;
-        logger().info("Energy: avg = {} | max = {}", avg_energy, max_energy);
     }
 
     old_pass = old_pass + args.max_num_passes;

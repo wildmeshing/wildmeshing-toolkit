@@ -95,7 +95,7 @@ void SampleEnvelope::init(
     const std::vector<Eigen::Vector3i>& F,
     const double _eps)
 {
-    if (use_exact) return exact_envelope.init(V, F, _eps);
+    exact_envelope.init(V, F, _eps);
 
     eps2 = _eps * _eps;
     sampling_dist = std::sqrt(eps2);

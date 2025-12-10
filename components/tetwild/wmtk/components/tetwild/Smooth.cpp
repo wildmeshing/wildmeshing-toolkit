@@ -174,8 +174,8 @@ bool TetWildMesh::smooth_after(const Tuple& t)
         {
             auto project = Eigen::Vector3d();
 
-            if (triangles_tree.initialized())
-                triangles_tree.nearest_point(m_vertex_attribute[vid].m_posf, project);
+            if (m_envelope.initialized())
+                m_envelope.nearest_point(m_vertex_attribute[vid].m_posf, project);
             else
                 project = wmtk::try_project(m_vertex_attribute[vid].m_posf, surface_assemble);
 
