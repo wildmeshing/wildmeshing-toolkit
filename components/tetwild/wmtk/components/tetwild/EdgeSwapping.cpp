@@ -291,7 +291,25 @@ size_t TetWildMesh::swap_all_edges_all()
     time = timer.getElapsedTime();
     wmtk::logger().info("edge swap prepare time: {:.4}s", time);
     auto setup_and_execute = [&](auto& executor) {
-        executor.renew_neighbor_tuples = wmtk::renewal_edges;
+        // executor.renew_neighbor_tuples = wmtk::renewal_edges;
+        executor.renew_neighbor_tuples =
+            [](const TetMesh& m, const std::string& op, const std::vector<Tuple>& newt) {
+                std::vector<std::pair<std::string, TetMesh::Tuple>> op_tups;
+                std::vector<TetMesh::Tuple> new_edges;
+                for (const TetMesh::Tuple& ti : newt) {
+                    for (auto j = 0; j < 6; j++) {
+                        new_edges.push_back(m.tuple_from_edge(ti.tid(m), j));
+                    }
+                };
+                wmtk::unique_edge_tuples(m, new_edges);
+                op_tups.reserve(new_edges.size() * 3);
+                for (const Tuple& loc : new_edges) {
+                    op_tups.emplace_back("edge_swap", loc);
+                    op_tups.emplace_back("edge_swap_44", loc);
+                    op_tups.emplace_back("edge_swap_56", loc);
+                }
+                return op_tups;
+            };
         executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
         executor.num_threads = NUM_THREADS;
         executor(*this, collect_all_ops);
