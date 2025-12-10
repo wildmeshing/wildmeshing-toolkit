@@ -68,6 +68,86 @@ int main(int argc, char** argv)
         logger().error("Could not load or parse JSON input file");
         logger().error(e.what());
     }
+    std::vector<size_t> fixed_vertices;
+
+    try {
+        if (json_params.contains("corner")) {
+            std::string corner_path = json_params["corner"].get<std::string>();
+            logger().info("Loading corner file: {}", corner_path);
+
+
+            nlohmann::json corner_json;
+            std::ifstream cifs(corner_path);
+            if (!cifs.is_open()) {
+                logger().error("Cannot open corner file {}", corner_path);
+            } else {
+                cifs >> corner_json;
+            }
+
+            for (auto it = corner_json.begin(); it != corner_json.end(); ++it) {
+                const nlohmann::json& val = it.value();
+
+                size_t vid;
+
+                if (val.is_number_integer() || val.is_number_unsigned()) {
+                    vid = val.get<size_t>();
+                } else if (val.is_string()) {
+                    vid = std::stoull(val.get<std::string>());
+                } else {
+                    logger().error("Corner entry has invalid type: {}", val.dump());
+                    continue;
+                }
+
+                fixed_vertices.push_back(vid);
+            }
+
+            logger().info("Loaded fixed vertices:");
+            for (size_t v : fixed_vertices) logger().info("  {}", v);
+        }
+    } catch (const std::exception& e) {
+        logger().error("Error reading corner vertices: {}", e.what());
+    }
+
+    nlohmann::json feature_edges;
+    std::vector<std::array<size_t, 2>> feature_edge_list;
+
+    try {
+        const std::string feature_edges_path = json_params["feature_edges"];
+        std::ifstream feifs(feature_edges_path);
+        if (!feifs.is_open()) {
+            logger().error("Could not open feature_edges file: {}", feature_edges_path);
+        } else {
+            feifs >> feature_edges;
+            logger().info("Loaded feature_edges data from {}", feature_edges_path);
+
+            feature_edge_list.reserve(feature_edges.size());
+
+            for (auto it = feature_edges.begin(); it != feature_edges.end(); ++it) {
+                const auto& key = it.key();
+
+                const auto comma_pos = key.find(',');
+                if (comma_pos == std::string::npos) {
+                    logger().warn("Invalid feature edge key (no comma): {}", key);
+                    continue;
+                }
+
+                const std::string_view s0(key.data(), comma_pos);
+                const std::string_view s1(key.data() + comma_pos + 1, key.size() - comma_pos - 1);
+
+                const size_t v0 = static_cast<size_t>(std::stoul(std::string(s0)));
+                const size_t v1 = static_cast<size_t>(std::stoul(std::string(s1)));
+
+                feature_edge_list.push_back({v0, v1});
+            }
+
+            // for (const auto& e : feature_edge_list) {
+            //     logger().info("feature edge: ({}, {})", e[0], e[1]);
+            // }
+        }
+    } catch (const std::exception& e) {
+        logger().error("Could not load or parse feature_edges JSON file: {}", e.what());
+    }
+
 
     // verify input and inject defaults
     {
@@ -103,22 +183,50 @@ int main(int argc, char** argv)
     std::vector<Eigen::Vector3d> verts;
     std::vector<std::array<size_t, 3>> tris;
     std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax;
-    double remove_duplicate_eps = 1e-5;
-    std::vector<size_t> modified_nonmanifold_v;
-    wmtk::stl_to_manifold_wmtk_input(
-        input_path,
-        remove_duplicate_eps,
-        box_minmax,
-        verts,
-        tris,
-        modified_nonmanifold_v);
+    // double remove_duplicate_eps = 1e-5;
 
+    // std::vector<size_t> modified_nonmanifold_v;
+    // wmtk::stl_to_manifold_wmtk_input(
+    //     input_path,
+    //     remove_duplicate_eps,
+    //     box_minmax,
+    //     verts,
+    //     tris,
+    //     modified_nonmanifold_v);
+
+    // double diag = (box_minmax.first - box_minmax.second).norm();
+    // const double envelope_size = env_rel * diag;
+    // igl::Timer timer;
+
+    // UniformRemeshing m(verts, num_threads, !sample_envelope);
+    // m.create_mesh(verts.size(), tris, modified_nonmanifold_v, freeze_boundary, envelope_size);
+
+    Eigen::MatrixXd inV;
+    Eigen::MatrixXi inF;
+    igl::read_triangle_mesh(input_path, inV, inF);
+    verts.resize(inV.rows());
+    tris.resize(inF.rows());
+    wmtk::eigen_to_wmtk_input(verts, tris, inV, inF);
+
+
+    box_minmax = std::pair(inV.colwise().minCoeff(), inV.colwise().maxCoeff());
     double diag = (box_minmax.first - box_minmax.second).norm();
     const double envelope_size = env_rel * diag;
     igl::Timer timer;
 
+    std::vector<size_t> frozen_verts;
+    frozen_verts.insert(frozen_verts.end(), fixed_vertices.begin(), fixed_vertices.end());
+
+    wmtk::logger().info("Total frozen vertices: {}", frozen_verts.size());
+
     UniformRemeshing m(verts, num_threads, !sample_envelope);
-    m.create_mesh(verts.size(), tris, modified_nonmanifold_v, freeze_boundary, envelope_size);
+    m.set_feature_edges(feature_edge_list);
+    m.create_mesh(verts.size(), tris, frozen_verts, freeze_boundary, envelope_size);
+
+    for (size_t v : fixed_vertices) {
+        const auto& attr = m.vertex_attrs[v];
+        logger().info("vertex {} freeze flag = {}", v, attr.freeze ? "true" : "false");
+    }
 
     {
         std::vector<double> properties = m.average_len_valen();
@@ -132,9 +240,29 @@ int main(int argc, char** argv)
     }
     logger().info("absolute target length: {}", length_abs);
 
+    // to check if fixed vertices are really fixed
+    std::unordered_map<size_t, Eigen::Vector3d> original_pos;
+    for (size_t v : fixed_vertices) {
+        original_pos[v] = verts[v];
+    }
+
+
     timer.start();
     run_remeshing(input_path, length_abs, output, m, itrs);
     timer.stop();
+
+    // to check the position change of fixed vertices
+    double max_movement = 0.0;
+    for (size_t v : fixed_vertices) {
+        const auto& attr = m.vertex_attrs[v];
+        Eigen::Vector3d after = attr.pos;
+        Eigen::Vector3d before = original_pos[v];
+        double dist = (after - before).norm();
+        max_movement = std::max(max_movement, dist);
+        logger().info("fixed vertex {} moved by {}", v, dist);
+    }
+
+    logger().info("Max movement among fixed vertices = {}", max_movement);
 
     const std::string report_file = json_params["report"];
     if (!report_file.empty()) {
