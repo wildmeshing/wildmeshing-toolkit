@@ -138,8 +138,6 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
     if (cache.edge_length > 0 && VA[v1_id].m_is_on_open_boundary) {
         if (!VA[v2_id].m_is_on_open_boundary &&
             m_open_boundary_envelope.is_outside(VA[v2_id].m_posf)) {
-            // if (debug_flag) std::cout << "open boundary reject" << std::endl;
-
             return false;
         }
     }
@@ -158,7 +156,7 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
         }
     }
 
-    // pre-compute energies after collapse
+    // pre-compute after-collapse energies
     cache.changed_energies.reserve(cache.changed_tids.size());
     for (const size_t tid : cache.changed_tids) {
         std::array<size_t, 4> vs = oriented_tet_vids(tid);
@@ -183,11 +181,11 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
 
     //
     const auto n12_locs = get_incident_tids_for_edge(loc); // todo: duplicated computation
-    std::unordered_set<int> unique_fid;
     for (const size_t& tid : n12_locs) {
         auto vs = oriented_tet_vids(tid);
         std::array<size_t, 3> f_vids = {{v1_id, 0, 0}};
         int cnt = 1;
+        // get the two vertices that are not v1/v2, i.e., the edge-link vertices.
         for (int j = 0; j < 4; j++) {
             if (vs[j] != v1_id && vs[j] != v2_id) {
                 f_vids[cnt] = vs[j];
@@ -195,11 +193,6 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
             }
         }
         auto [_1, global_fid1] = tuple_from_face(f_vids);
-        auto [it, suc] = unique_fid.insert(global_fid1);
-        if (!suc) {
-            continue;
-        }
-
         auto [_2, global_fid2] = tuple_from_face({{v2_id, f_vids[1], f_vids[2]}});
         auto f_attr = m_face_attribute.at(global_fid1);
         f_attr.merge(m_face_attribute.at(global_fid2));
@@ -207,7 +200,7 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
     }
 
     if (VA[v1_id].m_is_on_surface) {
-        // this code must check if a face is tagged as boundary
+        // this code must check if a face is tagged as surface face
         // only checking the vertices is not enough
         std::vector<std::array<size_t, 3>> fs;
         for (const size_t& tid : n1_locs) {
@@ -218,6 +211,7 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
                 for (int j = 0; j < 4; j++) {
                     const size_t vid = vs[j];
                     if (vid == v2_id) {
+                        // ignore tets incident to the edge (v1,v2)
                         return true; // v1-v2 definitely not on surface.
                     }
                     if (vid == v1_id) j_v1 = j;
@@ -243,15 +237,14 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
         }
         wmtk::vector_unique(fs);
 
+        cache.surface_faces.reserve(fs.size());
         for (auto& f : fs) {
-            auto [_1, global_fid1] = tuple_from_face(f);
-            if (m_face_attribute.at(global_fid1).m_is_surface_fs) {
-                std::replace(f.begin(), f.end(), v1_id, v2_id);
-                cache.surface_faces.push_back(f);
-            }
+            std::replace(f.begin(), f.end(), v1_id, v2_id);
+            cache.surface_faces.push_back(f);
         }
 
         std::vector<std::array<size_t, 2>> bs;
+        // iterate through all faces inicdent to v1
         for (const size_t& tid : n1_locs) {
             const auto vs = oriented_tet_vids(tid);
 
@@ -273,7 +266,7 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
                         // check if this face is actually on the surface
                         continue;
                     }
-                    if (va != v2_id) {
+                    if (va != v2_id) { // ignore collapsing edge (v1,v2)
                         std::array<size_t, 2> ba = {{v1_id, va}};
                         if (is_open_boundary_edge(ba)) {
                             ba[0] = v2_id; // replace v1 with v2 for check in `after` function
@@ -281,7 +274,7 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
                             bs.push_back(ba);
                         }
                     }
-                    if (vb != v2_id) {
+                    if (vb != v2_id) { // ignore collapsing edge (v1,v2)
                         std::array<size_t, 2> bb = {{v1_id, vb}};
                         if (is_open_boundary_edge(bb)) {
                             bb[0] = v2_id; // replace v1 with v2 for check in `after` function
@@ -333,8 +326,6 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
             bool is_out = m_envelope.is_outside(
                 {{VA[vids[0]].m_posf, VA[vids[1]].m_posf, VA[vids[2]].m_posf}});
             if (is_out) {
-                // if (debug_flag) std::cout << "surface enve reject" << std::endl;
-
                 return false;
             }
 
@@ -382,8 +373,6 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
         //
         auto [_, global_fid] = tuple_from_face({{v2_id, old_vids[1], old_vids[2]}});
         if (global_fid == -1) {
-            // if (debug_flag) std::cout << "whatever reject" << std::endl;
-
             return false;
         }
         m_face_attribute[global_fid] = f_attr;
@@ -967,63 +956,6 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
             }
         }
     }
-
-    // test code
-    // check global number nonmanifold vertex
-
-    // size_t nonmani_ver_cnt = 0;
-    // for (auto v : get_vertices()) {
-    //     if (m_vertex_attribute[v.vid(*this)].m_is_on_surface) {
-    //         if (count_vertex_links(v) > 1) {
-    //             nonmani_ver_cnt++;
-    //         }
-    //     }
-    // }
-    // if (nonmani_ver_cnt != cache.global_nonmani_ver_cnt) {
-    //     wmtk::logger().info(
-    //         "COLLAPSE EDGE CAUSE NONMANIFOLDNESS CHANGE ON VERTICE. BEFORE COUNT: {} AFTER COUNT:
-    //         "
-    //         "{}",
-    //         cache.global_nonmani_ver_cnt,
-    //         nonmani_ver_cnt);
-    // }
-
-    // geometry preservation
-    // if (m_params.preserve_geometry) {
-    //     std::vector<size_t> after_edge_incident_param_type = wmtk::set_intersection(
-    //         m_vertex_attribute[loc.vid(*this)].face_param_type,
-    //         m_vertex_attribute[loc.switch_vertex(*this).vid(*this)].face_param_type,
-    //     );
-
-
-    // }
-
-    // //// update attrs
-    // // tet attr
-    // for (int i = 0; i < cache.changed_tids.size(); i++) {
-    //     m_tet_attribute[cache.changed_tids[i]].m_quality = qs[i];
-    // }
-    // // vertex attr
-    // round(loc);
-    // VA[v2_id].m_is_on_surface = VA[v1_id].m_is_on_surface || VA[v2_id].m_is_on_surface;
-    // // open boundary
-    // VA[v2_id].m_is_on_open_boundary =
-    //     VA[v1_id].m_is_on_open_boundary || VA[v2_id].m_is_on_open_boundary;
-
-    // // no need to update on_bbox_faces
-    // // face attr
-    // for (auto& info : cache.changed_faces) {
-    //     auto& f_attr = info.first;
-    //     auto& old_vids = info.second;
-    //     //
-    //     auto [_, global_fid] = tuple_from_face({{v2_id, old_vids[1], old_vids[2]}});
-    //     if (global_fid == -1) {
-    //         // if (debug_flag) std::cout << "whatever reject" << std::endl;
-
-    //         return false;
-    //     }
-    //     m_face_attribute[global_fid] = f_attr;
-    // }
 
     return true;
 }

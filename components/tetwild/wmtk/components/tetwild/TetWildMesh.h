@@ -100,8 +100,7 @@ public:
     SampleEnvelope& m_envelope;
 
     // for open boundary
-    wmtk::Envelope m_open_boundary_envelope; // todo: add sample envelope option
-    SampleEnvelope boundaries_tree;
+    SampleEnvelope m_open_boundary_envelope; // todo: add sample envelope option
 
     TetWildMesh(Parameters& _m_params, SampleEnvelope& _m_envelope, int _num_threads = 1)
         : m_params(_m_params)

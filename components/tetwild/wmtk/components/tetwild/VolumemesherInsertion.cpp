@@ -1830,13 +1830,13 @@ void TetWildMesh::find_open_boundary()
 
     // for open boundary envelope
     std::vector<Eigen::Vector3d> v_posf(vert_capacity());
-    std::vector<Eigen::Vector3i> open_boundaries;
+    std::vector<Eigen::Vector2i> open_boundaries;
 
     for (size_t i = 0; i < vert_capacity(); i++) {
         v_posf[i] = m_vertex_attribute[i].m_posf;
     }
 
-    for (auto f : fs) {
+    for (Tuple f : fs) {
         auto fid = f.fid(*this);
         // std::cout << fid << ": ";
         if (!m_face_attribute[fid].m_is_surface_fs) continue;
@@ -1851,14 +1851,14 @@ void TetWildMesh::find_open_boundary()
         edge_on_open_boundary[eid3]++;
     }
 
-    for (auto e : es) {
+    for (const Tuple& e : es) {
         // std::cout << edge_on_open_boundary[e.eid(*this)] << " ";
         if (edge_on_open_boundary[e.eid(*this)] != 1) continue;
         size_t v1 = e.vid(*this);
         size_t v2 = e.switch_vertex(*this).vid(*this);
         m_vertex_attribute[v1].m_is_on_open_boundary = true;
         m_vertex_attribute[v2].m_is_on_open_boundary = true;
-        open_boundaries.push_back(Eigen::Vector3i(v1, v2, v1));
+        open_boundaries.push_back(Eigen::Vector2i(v1, v2));
     }
 
     wmtk::logger().info("open boundary num: {}", open_boundaries.size());
@@ -1867,7 +1867,6 @@ void TetWildMesh::find_open_boundary()
 
     // init open boundary envelope
     m_open_boundary_envelope.init(v_posf, open_boundaries, m_params.epsr * m_params.diag_l / 2.0);
-    boundaries_tree.init(v_posf, open_boundaries, m_params.epsr * m_params.diag_l / 2.0);
 }
 
 bool TetWildMesh::is_open_boundary_edge(const Tuple& e)
@@ -1878,10 +1877,8 @@ bool TetWildMesh::is_open_boundary_edge(const Tuple& e)
         !m_vertex_attribute[v2].m_is_on_open_boundary)
         return false;
 
-    return !m_open_boundary_envelope.is_outside(
-        {{m_vertex_attribute[v1].m_posf,
-          m_vertex_attribute[v2].m_posf,
-          m_vertex_attribute[v1].m_posf}});
+    return !m_open_boundary_envelope.is_outside(std::array<Eigen::Vector3d, 2>{
+        {m_vertex_attribute[v1].m_posf, m_vertex_attribute[v2].m_posf}});
 }
 
 bool TetWildMesh::is_open_boundary_edge(const std::array<size_t, 2>& e)
@@ -1892,10 +1889,8 @@ bool TetWildMesh::is_open_boundary_edge(const std::array<size_t, 2>& e)
         !m_vertex_attribute[v2].m_is_on_open_boundary)
         return false;
 
-    return !m_open_boundary_envelope.is_outside(
-        {{m_vertex_attribute[v1].m_posf,
-          m_vertex_attribute[v2].m_posf,
-          m_vertex_attribute[v1].m_posf}});
+    return !m_open_boundary_envelope.is_outside(std::array<Eigen::Vector3d, 2>{
+        {m_vertex_attribute[v1].m_posf, m_vertex_attribute[v2].m_posf}});
 }
 
 int TetWildMesh::orient3D(

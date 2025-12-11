@@ -131,10 +131,10 @@ bool TetWildMesh::smooth_after(const Tuple& t)
     if (m_vertex_attribute[vid].m_is_on_open_boundary) {
         auto project = Eigen::Vector3d();
 
-        if (boundaries_tree.initialized()) {
+        if (m_open_boundary_envelope.initialized()) {
             // project to envelope
             // std::cout << "in smoothing open boundary" << std::endl;
-            boundaries_tree.nearest_point(m_vertex_attribute[vid].m_posf, project);
+            m_open_boundary_envelope.nearest_point(m_vertex_attribute[vid].m_posf, project);
         } else {
             // project to neighborhood
             project = wmtk::try_project(m_vertex_attribute[vid].m_posf, boundary_assemble);
