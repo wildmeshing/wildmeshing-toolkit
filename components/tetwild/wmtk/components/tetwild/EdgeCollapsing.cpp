@@ -347,17 +347,18 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
             //         return false;
             // }
         }
-        for (const auto& vids : cache.boundary_edges) {
-            if (!is_open_boundary_edge(vids)) {
-                // edge was an open boundary before (that is why it got cached) but is not anymore
-                // after collapse
-                return false;
-            }
-        }
+        // for (const auto& vids : cache.boundary_edges) {
+        //     if (!is_open_boundary_edge(vids)) {
+        //        // edge was an open boundary before (that is why it got cached) but is not anymore
+        //        // after collapse
+        //        return false;
+        //    }
+        //}
     }
 
     if (VA[v2_id].m_is_on_open_boundary) {
         // check if boundary edges are topologically still boundaries
+        // TODO: should not be done here in collapse
         int boundary_edge_count = 0;
         for (const auto& e : cache.boundary_edges) {
             const auto e0_tids = get_one_ring_tids_for_vertex(e[0]);

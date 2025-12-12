@@ -77,7 +77,7 @@ auto newton_direction = [](auto& compute_energy,
     // H = \sum_i H_i(x)
     auto local_id = 0;
     for (auto& T : assembles) {
-        for (auto j = 0; j < 3; j++) {
+        for (int j = 0; j < 3; j++) {
             T[j] = pos[j]; // only filling the front point.
         }
         auto jac = decltype(total_jac)();
@@ -91,7 +91,7 @@ auto newton_direction = [](auto& compute_energy,
     }
     Eigen::Matrix<double, dim, 1> x = total_hess.ldlt().solve(total_jac);
     wmtk::logger().trace("energy {}", total_energy);
-    if (total_jac.isApprox(total_hess * x)) // a hacky PSD trick. TODO: change this.
+    if (total_jac.isApprox(total_hess * x, 1e-5)) // a hacky PSD trick. TODO: change this.
         return -x;
     else {
         wmtk::logger().trace("gradient descent instead.");
@@ -137,16 +137,21 @@ auto linesearch = [](auto&& energy_from_point,
                      const Eigen::Matrix<double, dim, 1>& pos,
                      const Eigen::Matrix<double, dim, 1>& dir,
                      const int& max_iter) {
-    auto lr = 0.5;
-    auto old_energy = energy_from_point(pos);
+    const double lr = 0.5;
+    const double old_energy = energy_from_point(pos);
+    double alpha = 1;
     wmtk::logger().trace("old energy {} dir {}", old_energy, dir.transpose());
-    for (auto iter = 1; iter <= max_iter; iter++) {
-        const Eigen::Matrix<double, dim, 1> newpos = pos + std::pow(lr, iter) * dir;
-        wmtk::logger()
-            .trace("pos {}, dir {}, [{}]", pos.transpose(), dir.transpose(), std::pow(lr, iter));
-        auto new_energy = energy_from_point(newpos);
-        wmtk::logger().trace("iter {}, E= {}, [{}]", iter, new_energy, newpos.transpose());
-        if (new_energy < old_energy) return newpos; // TODO: armijo conditions.
+    for (int iter = 1; iter <= max_iter; iter++) {
+        // const Eigen::Matrix<double, dim, 1> newpos = pos + std::pow(lr, iter) * dir;
+        const Eigen::Matrix<double, dim, 1> newpos = pos + alpha * dir;
+        // wmtk::logger()
+        //     .trace("pos {}, dir {}, [{}]", pos.transpose(), dir.transpose(), std::pow(lr, iter));
+        const double new_energy = energy_from_point(newpos);
+        // wmtk::logger().trace("iter {}, E= {}, [{}]", iter, new_energy, newpos.transpose());
+        if (new_energy < old_energy) {
+            return newpos; // TODO: armijo conditions.
+        }
+        alpha *= lr;
     }
     return pos;
 };
@@ -261,9 +266,9 @@ Eigen::Vector3d wmtk::newton_method_from_stack(
     Eigen::Vector3d old_pos(T0[0], T0[1], T0[2]);
 
     auto energy_from_point = [&assembles, &compute_energy](const Eigen::Vector3d& pos) -> double {
-        auto total_energy = 0.;
+        double total_energy = 0.;
         for (auto& T : assembles) {
-            for (auto j = 0; j < 3; j++) {
+            for (int j = 0; j < 3; j++) {
                 T[j] = pos[j]; // only filling the front point x,y,z.
             }
             total_energy += compute_energy(T);
@@ -277,15 +282,21 @@ Eigen::Vector3d wmtk::newton_method_from_stack(
             auto current_pos = pos;
             auto line_search_iters = 12;
             auto newton_iters = 10;
-            for (auto iter = 0; iter < newton_iters; iter++) {
-                auto dir = newton_direction<3>(
+            for (int iter = 0; iter < newton_iters; iter++) {
+                const Eigen::Vector3d dir = newton_direction<3>(
                     compute_energy,
                     compute_jacobian,
                     compute_hessian,
                     assembles,
                     current_pos);
-                auto newpos = linesearch<3>(energy_from_point, current_pos, dir, line_search_iters);
-                if ((newpos - current_pos).norm() < 1e-9) // barely moves
+                const Eigen::Vector3d newpos =
+                    linesearch<3>(energy_from_point, current_pos, dir, line_search_iters);
+                //if ((newpos - current_pos).norm() < 1e-9) // barely moves
+                //{
+                //    break;
+                //}
+                if (std::abs(energy_from_point(newpos) - energy_from_point(current_pos)) <
+                    1e-5) // energy didn't change much
                 {
                     break;
                 }
