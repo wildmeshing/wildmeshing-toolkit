@@ -24,8 +24,14 @@ public:
     {}
 
     void smooth();
+    /**
+     * @brief Smooth all vertices except for deleted, locked, bbox, and surface vertices.
+     */
     void smoothSingle();
     bool smoothSingleVertex(int v_id, bool is_cal_energy);
+    /**
+     * @brief Smooth all surface vertices except for deleted, and locked vertices.
+     */
     void smoothSurface();
 
     bool NewtonsMethod(

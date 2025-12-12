@@ -27,24 +27,24 @@ void VertexSmoother::smooth()
     int max_pass = 1;
     double v_cnt = std::count(v_is_removed.begin(), v_is_removed.end(), false);
     for (int i = 0; i < max_pass; i++) {
-        double suc_in = 0;
-        double suc_surface = 0;
+        // double suc_in = 0;
+        // double suc_surface = 0;
         smoothSingle();
-        suc_in = suc_counter;
+        // suc_in = suc_counter;
         if (state.eps >= 0) {
             smoothSurface();
-            suc_surface = suc_counter;
+            // suc_surface = suc_counter;
         }
-        logger().debug("{}", (suc_in + suc_surface) / v_cnt);
-        if (suc_in + suc_surface < v_cnt * 0.1) {
-            logger().debug("{}", i);
-            break;
-        }
+        //logger().debug("{}", (suc_in + suc_surface) / v_cnt);
+        // if (suc_in + suc_surface < v_cnt * 0.1) {
+        //     logger().debug("{}", i);
+        //     break;
+        // }
     }
-    for (int i = 0; i < breakdown_timing.size(); i++) {
-        logger().debug("{}: {}s", breakdown_name[i], breakdown_timing[i]);
-        breakdown_timing[i] = 0; // reset
-    }
+    // for (int i = 0; i < breakdown_timing.size(); i++) {
+    //     logger().debug("{}: {}s", breakdown_name[i], breakdown_timing[i]);
+    //    breakdown_timing[i] = 0; // reset
+    //}
 }
 
 bool VertexSmoother::smoothSingleVertex(int v_id, bool is_cal_energy)
@@ -129,18 +129,6 @@ void VertexSmoother::smoothSingle()
 
         if (tet_vertices[v_id].is_locked) continue;
 
-        ///check if its one-ring is changed
-        //        bool is_changed=false;
-        //        for(auto
-        //        it=tet_vertices[v_id].conn_tets.begin();it!=tet_vertices[v_id].conn_tets.end();it++){
-        //            if(tets_tss[*it]>tet_vertices_tss[v_id]){
-        //                is_changed=true;
-        //                break;
-        //            }
-        //        }
-        //        if(!is_changed)
-        //            continue;
-
         counter++;
 
         igl_timer.start();
@@ -157,10 +145,11 @@ void VertexSmoother::smoothSingle()
         if (!tet_vertices[v_id].is_rounded) {
             Vector3r old_p = tet_vertices[v_id].pos;
             tet_vertices[v_id].pos = to_rational(tet_vertices[v_id].posf);
-            if (isFlip(new_tets))
+            if (isFlip(new_tets)) {
                 tet_vertices[v_id].pos = old_p;
-            else
+            } else {
                 tet_vertices[v_id].is_rounded = true;
+            }
         }
 
         ///check if should use exact smoothing
@@ -182,29 +171,30 @@ void VertexSmoother::smoothSingle()
         breakdown_timing[id_round] += igl_timer.getElapsedTime();
 
         if (!is_valid) {
+            // Neighborhood is inverted in floating point precision. Do not smooth this vertex.
             continue;
-        } else {
-            Vector3d pf;
-            if (!NewtonsMethod(t_ids, new_tets, v_id, pf)) {
-                continue;
-            }
-            igl_timer.start();
-            // assign new coordinate and try to round it
-            Vector3r old_p = tet_vertices[v_id].pos;
-            Vector3d old_pf = tet_vertices[v_id].posf;
-            bool old_is_rounded = tet_vertices[v_id].is_rounded;
-            Vector3r p(pf[0], pf[1], pf[2]);
-            tet_vertices[v_id].pos = p;
-            tet_vertices[v_id].posf = pf;
-            tet_vertices[v_id].is_rounded = true;
-            if (isFlip(new_tets)) { // TODO: why it happens?
-                logger().debug("flip in the end");
-                tet_vertices[v_id].pos = old_p;
-                tet_vertices[v_id].posf = old_pf;
-                tet_vertices[v_id].is_rounded = old_is_rounded;
-            }
-            breakdown_timing[id_round] += igl_timer.getElapsedTime();
         }
+
+        Vector3d pf;
+        if (!NewtonsMethod(t_ids, new_tets, v_id, pf)) {
+            continue;
+        }
+        igl_timer.start();
+        // assign new coordinate and try to round it
+        Vector3r old_p = tet_vertices[v_id].pos;
+        Vector3d old_pf = tet_vertices[v_id].posf;
+        bool old_is_rounded = tet_vertices[v_id].is_rounded;
+        Vector3r p(pf[0], pf[1], pf[2]);
+        tet_vertices[v_id].pos = p;
+        tet_vertices[v_id].posf = pf;
+        tet_vertices[v_id].is_rounded = true;
+        if (isFlip(new_tets)) { // TODO: why it happens?
+            logger().debug("flip in the end");
+            tet_vertices[v_id].pos = old_p;
+            tet_vertices[v_id].posf = old_pf;
+            tet_vertices[v_id].is_rounded = old_is_rounded;
+        }
+        breakdown_timing[id_round] += igl_timer.getElapsedTime();
 
         ///update timestamps
         ts++;
@@ -216,6 +206,8 @@ void VertexSmoother::smoothSingle()
 
         suc_counter++;
     }
+
+    logger().debug("Totally {} (of {}) interior vertices are smoothed.", suc_counter, counter);
 
     // calculate the quality for all tets
     std::vector<std::array<int, 4>> new_tets; // todo: can be improve
@@ -298,17 +290,17 @@ void VertexSmoother::smoothSurface()
                 break;
             }
         }
-
-        Vector3r p_out;
-        Vector3d pf_out;
         if (!is_valid) {
+            // DZ: Neighborhood is inverted in floating point precision. Do not smooth this vertex.
             continue;
-        } else {
-            if (!NewtonsMethod(old_t_ids, new_tets, v_id, pf_out)) {
-                continue;
-            }
-            p_out = Vector3r(pf_out[0], pf_out[1], pf_out[2]);
         }
+
+        Vector3d pf_out;
+        if (!NewtonsMethod(old_t_ids, new_tets, v_id, pf_out)) {
+            continue;
+        }
+        Vector3r p_out(pf_out[0], pf_out[1], pf_out[2]);
+
 
         ///find one-ring surface faces
         igl_timer.start();
@@ -330,8 +322,7 @@ void VertexSmoother::smoothSurface()
 
         Vector3d pf;
         Vector3r p;
-        if (state.use_onering_projection) { // we have to use exact construction here. Or the
-                                            // projecting points may be not exactly on the plane.
+        if (state.use_onering_projection) {
             log_and_throw_error("removed code that appeared deprecated");
         } else {
             Vector3d nearest_pf;
@@ -347,10 +338,10 @@ void VertexSmoother::smoothSurface()
         Vector3r old_p = tet_vertices[v_id].pos;
         Vector3d old_pf = tet_vertices[v_id].posf;
         std::vector<TetQuality> tet_qs;
-        bool is_found = false;
 
         tet_vertices[v_id].posf = pf;
         tet_vertices[v_id].pos = p;
+        // DZ: projection could have flipped the incident tets
         if (isFlip(new_tets)) {
             tet_vertices[v_id].pos = old_p;
             tet_vertices[v_id].posf = old_pf;
@@ -361,13 +352,6 @@ void VertexSmoother::smoothSurface()
         calTetQualities(new_tets, tet_qs);
         getCheckQuality(tet_qs, new_tq);
         if (!new_tq.isBetterThan(old_tq, state)) {
-            tet_vertices[v_id].pos = old_p;
-            tet_vertices[v_id].posf = old_pf;
-            continue;
-        }
-        is_found = true;
-
-        if (!is_found) {
             tet_vertices[v_id].pos = old_p;
             tet_vertices[v_id].posf = old_pf;
             continue;
@@ -396,6 +380,7 @@ void VertexSmoother::smoothSurface()
         }
         breakdown_timing[id_aabb] += igl_timer.getElapsedTime();
         if (!is_valid) {
+            // DZ: surface left the envelope
             tet_vertices[v_id].pos = old_p;
             tet_vertices[v_id].posf = old_pf;
             continue;
@@ -424,7 +409,7 @@ void VertexSmoother::smoothSurface()
         sf_suc_counter++;
         if (sf_suc_counter % 1000 == 0) logger().debug("1000 accepted!");
     }
-    logger().debug("Totally {}({}) vertices on surface are smoothed.", sf_suc_counter, sf_counter);
+    logger().debug("Totally {} (of {}) surface vertices are smoothed.", sf_suc_counter, sf_counter);
 }
 
 bool VertexSmoother::NewtonsMethod(

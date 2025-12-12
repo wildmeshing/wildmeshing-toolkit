@@ -110,6 +110,9 @@ void tetwild(nlohmann::json json_params)
 
     params.preserve_topology = json_params["preserve_topology"];
 
+    params.debug_output = json_params["DEBUG_output"];
+    params.perform_sanity_checks = json_params["DEBUG_sanity_checks"];
+
     // logger settings
     {
         std::string log_file_name = json_params["log_file"];

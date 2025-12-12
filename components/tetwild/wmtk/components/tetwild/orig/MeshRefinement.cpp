@@ -121,6 +121,20 @@ int MeshRefinement::doOperations(
     bool is_log = true;
     double tmp_time;
 
+    auto log_energy = [&]() {
+        double avg_tq = 0;
+        double max_tq = 0;
+        int cnt = 0;
+        for (unsigned int i = 0; i < tet_qualities.size(); i++) {
+            if (t_is_removed[i]) continue;
+            if (tet_qualities[i].slim_energy > max_tq) max_tq = tet_qualities[i].slim_energy;
+            avg_tq += tet_qualities[i].slim_energy;
+            cnt++;
+        }
+        avg_tq /= cnt;
+        logger().info("Energy: avg = {} | max = {}", avg_tq, max_tq);
+    };
+
     if (ops[0]) {
         igl_timer.start();
         logger().info("edge splitting...");
@@ -129,6 +143,7 @@ int MeshRefinement::doOperations(
         tmp_time = igl_timer.getElapsedTime();
         splitter.outputInfo(MeshRecord::OpType::OP_SPLIT, tmp_time, is_log);
         logger().info("edge splitting done!");
+        log_energy();
         logger().info("time = {}s", tmp_time);
     }
 
@@ -140,6 +155,7 @@ int MeshRefinement::doOperations(
         tmp_time = igl_timer.getElapsedTime();
         collapser.outputInfo(MeshRecord::OpType::OP_COLLAPSE, tmp_time, is_log);
         logger().info("edge collasing done!");
+        log_energy();
         logger().info("time = {}s", tmp_time);
     }
 
@@ -151,6 +167,7 @@ int MeshRefinement::doOperations(
         tmp_time = igl_timer.getElapsedTime();
         edge_remover.outputInfo(MeshRecord::OpType::OP_SWAP, tmp_time, is_log);
         logger().info("edge removal done!");
+        log_energy();
         logger().info("time = {}s", tmp_time);
     }
 
@@ -161,6 +178,7 @@ int MeshRefinement::doOperations(
         tmp_time = igl_timer.getElapsedTime();
         smoother.outputInfo(MeshRecord::OpType::OP_SMOOTH, tmp_time, is_log);
         logger().info("vertex smooth done!");
+        log_energy();
         logger().info("time = {}s", tmp_time);
     }
 

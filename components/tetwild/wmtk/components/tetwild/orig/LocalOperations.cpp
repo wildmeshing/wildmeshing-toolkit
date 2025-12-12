@@ -288,6 +288,7 @@ bool LocalOperations::isEdgeOnBoundary(int v1_id, int v2_id)
             if (tets[t_id][j] == v1_id || tets[t_id][j] == v2_id) continue;
             opp_js[ii++] = j;
         }
+        // DZ: if the tet contains v1 and v2, then ii == 2
         if (ii == 2) {
             // DZ: opp_js vertices form a tet together with v1,v2
             if (is_surface_fs[t_id][opp_js[0]] != state.NOT_SURFACE) cnt++;
@@ -295,6 +296,7 @@ bool LocalOperations::isEdgeOnBoundary(int v1_id, int v2_id)
             if (cnt > 2) return false;
         }
     }
+    // all faces are visited twice, so cnt == 2 means there is one boundary face
     if (cnt == 2) // is boundary edge
         return true;
 
