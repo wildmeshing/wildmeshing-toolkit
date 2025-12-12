@@ -356,6 +356,54 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
         }
     }
 
+    if (VA[v2_id].m_is_on_open_boundary) {
+        // check if boundary edges are topologically still boundaries
+        int boundary_edge_count = 0;
+        for (const auto& e : cache.boundary_edges) {
+            const auto e0_tids = get_one_ring_tids_for_vertex(e[0]);
+            int cnt = 0;
+            for (int t_id : e0_tids) {
+                const auto vs = oriented_tet_vids(t_id);
+                std::array<int, 4> opp_js; // DZ: all vertices that are adjacent to v1 except for v2
+                int ii = 0;
+                for (int j = 0; j < 4; j++) {
+                    if (vs[j] == v1_id || vs[j] == v2_id) {
+                        continue;
+                    }
+                    opp_js[ii++] = j;
+                }
+                // DZ: if the tet contains v1 and v2, then ii == 2
+                if (ii != 2) {
+                    continue;
+                }
+                // DZ: opp_js vertices form a tet together with v1,v2
+                const auto [f0_tup, f0_id] =
+                    tuple_from_face({{e[0], vs[opp_js[0]], vs[opp_js[1]]}});
+                const auto [f1_tup, f1_id] =
+                    tuple_from_face({{e[1], vs[opp_js[0]], vs[opp_js[1]]}});
+                if (m_face_attribute.at(f0_id).m_is_surface_fs) {
+                    cnt++;
+                }
+                if (m_face_attribute.at(f1_id).m_is_surface_fs) {
+                    cnt++;
+                }
+                if (cnt > 2) {
+                    break;
+                }
+            }
+            // all faces are visited twice, so cnt == 2 means there is one boundary face
+            if (cnt == 2) {
+                // this is (still) a boundary edge
+                ++boundary_edge_count;
+            }
+        }
+        // even if the vertex was on a boundary, the boundary could have been collapsed away
+        if (boundary_edge_count == 0) {
+            VA[v2_id].m_is_on_open_boundary = false;
+        }
+    }
+
+
     //// update attrs
     // tet attr
     for (int i = 0; i < cache.changed_tids.size(); i++) {
