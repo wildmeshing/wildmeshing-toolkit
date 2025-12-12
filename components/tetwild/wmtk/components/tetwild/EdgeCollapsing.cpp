@@ -316,7 +316,7 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
 
     // open boundary - must be set before checking for open boundary
     VA[v2_id].m_is_on_open_boundary =
-        VA[v1_id].m_is_on_open_boundary || VA[v2_id].m_is_on_open_boundary;
+        VA.at(v1_id).m_is_on_open_boundary || VA.at(v2_id).m_is_on_open_boundary;
 
     // surface
     // and open boundary
@@ -324,7 +324,7 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
         for (auto& vids : cache.surface_faces) {
             // surface envelope
             bool is_out = m_envelope.is_outside(
-                {{VA[vids[0]].m_posf, VA[vids[1]].m_posf, VA[vids[2]].m_posf}});
+                {{VA.at(vids[0]).m_posf, VA.at(vids[1]).m_posf, VA.at(vids[2]).m_posf}});
             if (is_out) {
                 return false;
             }
@@ -356,10 +356,10 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
         //}
     }
 
-    if (VA[v2_id].m_is_on_open_boundary) {
+    if (VA.at(v2_id).m_is_on_open_boundary) {
         // check if boundary edges are topologically still boundaries
         if (!is_vertex_on_boundary(v2_id)) {
-            m_vertex_attribute[v2_id].m_is_on_open_boundary = false;
+            VA[v2_id].m_is_on_open_boundary = false;
         }
     }
 
@@ -371,7 +371,7 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
     }
     // vertex attr
     round(loc);
-    VA[v2_id].m_is_on_surface = VA[v1_id].m_is_on_surface || VA[v2_id].m_is_on_surface;
+    VA[v2_id].m_is_on_surface = VA.at(v1_id).m_is_on_surface || VA.at(v2_id).m_is_on_surface;
 
     // no need to update on_bbox_faces
     // face attr

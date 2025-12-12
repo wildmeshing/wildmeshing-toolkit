@@ -1207,7 +1207,7 @@ bool TetWildMesh::is_edge_on_bbox(const Tuple& loc)
 
 bool TetWildMesh::is_vertex_on_boundary(const size_t e0)
 {
-    if (!m_vertex_attribute[e0].m_is_on_open_boundary) {
+    if (!m_vertex_attribute.at(e0).m_is_on_open_boundary) {
         return false;
     }
 
@@ -1215,6 +1215,9 @@ bool TetWildMesh::is_vertex_on_boundary(const size_t e0)
     const auto e0_tids = get_one_ring_tids_for_vertex(e0);
 
     for (const size_t e1 : neigh_vids) {
+        if (!m_vertex_attribute.at(e1).m_is_on_open_boundary) {
+            continue;
+        }
         int cnt = 0;
         for (int t_id : e0_tids) {
             const auto vs = oriented_tet_vids(t_id);
@@ -1231,13 +1234,17 @@ bool TetWildMesh::is_vertex_on_boundary(const size_t e0)
                 continue;
             }
             // DZ: opp_js vertices form a tet together with v1,v2
-            const auto [f0_tup, f0_id] = tuple_from_face({{e0, vs[opp_js[0]], vs[opp_js[1]]}});
-            const auto [f1_tup, f1_id] = tuple_from_face({{e1, vs[opp_js[0]], vs[opp_js[1]]}});
-            if (m_face_attribute.at(f0_id).m_is_surface_fs) {
-                cnt++;
+            if (m_vertex_attribute.at(vs[opp_js[0]]).m_is_on_surface) {
+                const auto [f0_tup, f0_id] = tuple_from_face({{e0, e1, vs[opp_js[0]]}});
+                if (m_face_attribute.at(f0_id).m_is_surface_fs) {
+                    cnt++;
+                }
             }
-            if (m_face_attribute.at(f1_id).m_is_surface_fs) {
-                cnt++;
+            if (m_vertex_attribute.at(vs[opp_js[1]]).m_is_on_surface) {
+                const auto [f1_tup, f1_id] = tuple_from_face({{e0, e1, vs[opp_js[1]]}});
+                if (m_face_attribute.at(f1_id).m_is_surface_fs) {
+                    cnt++;
+                }
             }
             if (cnt > 2) {
                 break;
