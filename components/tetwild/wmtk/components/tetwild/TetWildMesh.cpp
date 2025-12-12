@@ -67,6 +67,8 @@ void TetWildMesh::mesh_improvement(int max_its)
 
     compute_vertex_partition_morton();
 
+    // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
+
     wmtk::logger().info("========it pre========");
     local_operations({{0, 1, 0, 0}}, false);
 
