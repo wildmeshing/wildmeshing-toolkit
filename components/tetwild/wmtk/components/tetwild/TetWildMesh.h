@@ -273,7 +273,6 @@ public:
     bool triangle_insertion_before(const std::vector<Tuple>& faces) override;
     bool triangle_insertion_after(const std::vector<std::vector<Tuple>>& new_faces) override;
 
-
 public:
     void split_all_edges();
     bool split_edge_before(const Tuple& t) override;
@@ -321,6 +320,11 @@ public:
     //
     bool is_edge_on_surface(const Tuple& loc);
     bool is_edge_on_bbox(const Tuple& loc);
+    /**
+     * brief Check if the vertex has an incident boundary edge.
+     * This performs a topological check.
+     */
+    bool is_vertex_on_boundary(const size_t vid);
     //
     void mesh_improvement(int max_its = 80);
     /**

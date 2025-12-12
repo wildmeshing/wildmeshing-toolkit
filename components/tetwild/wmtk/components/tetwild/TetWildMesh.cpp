@@ -67,8 +67,6 @@ void TetWildMesh::mesh_improvement(int max_its)
 
     compute_vertex_partition_morton();
 
-    save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
-
     wmtk::logger().info("========it pre========");
     local_operations({{0, 1, 0, 0}}, false);
 
@@ -86,12 +84,6 @@ void TetWildMesh::mesh_improvement(int max_its)
         wmtk::logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
         if (max_energy < m_params.stop_energy) break;
         consolidate_mesh();
-
-        // output_faces(
-        //     m_params.output_path + "after_iter" + std::to_string(it) + ".obj",
-        //     [](auto& f) { return f.m_is_surface_fs; });
-
-        // output_mesh(m_params.output_path + "after_iter" + std::to_string(it) + ".msh");
 
         wmtk::logger().info("v {} t {}", vert_capacity(), tet_capacity());
 
@@ -484,7 +476,9 @@ std::tuple<double, double> TetWildMesh::local_operations(
                 //     // exit(0);
                 // }
             }
-            // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
+            if (m_params.debug_output) {
+                save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
+            }
             auto [max_energy, avg_energy] = get_max_avg_energy();
             wmtk::logger().info("split max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             sanity_checks();
@@ -508,7 +502,9 @@ std::tuple<double, double> TetWildMesh::local_operations(
                 //     // exit(0);
                 // }
             }
-            // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
+            if (m_params.debug_output) {
+                save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
+            }
             auto [max_energy, avg_energy] = get_max_avg_energy();
             wmtk::logger().info("collapse max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             sanity_checks();
@@ -525,7 +521,9 @@ std::tuple<double, double> TetWildMesh::local_operations(
                     break;
                 }
             }
-            // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
+            if (m_params.debug_output) {
+                save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
+            }
             auto [max_energy, avg_energy] = get_max_avg_energy();
             wmtk::logger().info("swap max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             sanity_checks();
@@ -534,7 +532,9 @@ std::tuple<double, double> TetWildMesh::local_operations(
                 wmtk::logger().info("==smoothing {}==", n);
                 smooth_all_vertices();
             }
-            // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
+            if (m_params.debug_output) {
+                save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
+            }
             auto [max_energy, avg_energy] = get_max_avg_energy();
             wmtk::logger().info("smooth max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             sanity_checks();
@@ -1200,6 +1200,54 @@ bool TetWildMesh::is_edge_on_bbox(const Tuple& loc)
     for (size_t vid : n_vids) {
         auto [_, fid] = tuple_from_face({{v1_id, v2_id, vid}});
         if (m_face_attribute[fid].m_is_bbox_fs >= 0) return true;
+    }
+
+    return false;
+}
+
+bool TetWildMesh::is_vertex_on_boundary(const size_t e0)
+{
+    if (!m_vertex_attribute[e0].m_is_on_open_boundary) {
+        return false;
+    }
+
+    const auto neigh_vids = get_one_ring_vids_for_vertex(e0);
+    const auto e0_tids = get_one_ring_tids_for_vertex(e0);
+
+    for (const size_t e1 : neigh_vids) {
+        int cnt = 0;
+        for (int t_id : e0_tids) {
+            const auto vs = oriented_tet_vids(t_id);
+            std::array<int, 4> opp_js; // DZ: all vertices that are adjacent to e1 except for e2
+            int ii = 0;
+            for (int j = 0; j < 4; j++) {
+                if (vs[j] == e0 || vs[j] == e1) {
+                    continue;
+                }
+                opp_js[ii++] = j;
+            }
+            // DZ: if the tet contains e1 and e2, then ii == 2
+            if (ii != 2) {
+                continue;
+            }
+            // DZ: opp_js vertices form a tet together with v1,v2
+            const auto [f0_tup, f0_id] = tuple_from_face({{e0, vs[opp_js[0]], vs[opp_js[1]]}});
+            const auto [f1_tup, f1_id] = tuple_from_face({{e1, vs[opp_js[0]], vs[opp_js[1]]}});
+            if (m_face_attribute.at(f0_id).m_is_surface_fs) {
+                cnt++;
+            }
+            if (m_face_attribute.at(f1_id).m_is_surface_fs) {
+                cnt++;
+            }
+            if (cnt > 2) {
+                break;
+            }
+        }
+        // all faces are visited twice, so cnt == 2 means there is one boundary face
+        if (cnt == 2) {
+            // this is a boundary edge
+            return true;
+        }
     }
 
     return false;

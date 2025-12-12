@@ -19,11 +19,16 @@ bool TetWildMesh::smooth_before(const Tuple& t)
 {
     const bool r = round(t);
 
-    if (!m_vertex_attribute[t.vid(*this)].on_bbox_faces.empty()) return false;
+    const size_t vid = t.vid(*this);
 
-    // TODO update if vertex is on boundary here...
+    if (!m_vertex_attribute[vid].on_bbox_faces.empty()) return false;
 
-    if (m_vertex_attribute[t.vid(*this)].m_is_rounded) return true;
+    // update if vertex is on boundary
+    if (!is_vertex_on_boundary(vid)) {
+        m_vertex_attribute[vid].m_is_on_open_boundary = false;
+    }
+
+    if (m_vertex_attribute[vid].m_is_rounded) return true;
     // try to round.
     // Note: no need to roll back.
     return r;
