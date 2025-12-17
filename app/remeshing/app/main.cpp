@@ -9,7 +9,6 @@
 #include <igl/writeDMAT.h>
 #include <jse/jse.h>
 
-
 #include <stdlib.h>
 #include <chrono>
 #include <cstdlib>
@@ -34,6 +33,7 @@ void run_remeshing(std::string input, double len, std::string output, UniformRem
 
     m.consolidate_mesh();
     m.write_triangle_mesh(output);
+    m.write_feature_vertices_obj(output + ".feature_vertices.obj");
     auto properties = m.average_len_valen();
     wmtk::logger().info("runtime in ms {}", duration.count());
     wmtk::logger().info("current_memory {}", getCurrentRSS() / (1024. * 1024));
@@ -139,15 +139,22 @@ int main(int argc, char** argv)
 
                 feature_edge_list.push_back({v0, v1});
             }
-
-            // for (const auto& e : feature_edge_list) {
-            //     logger().info("feature edge: ({}, {})", e[0], e[1]);
-            // }
         }
     } catch (const std::exception& e) {
         logger().error("Could not load or parse feature_edges JSON file: {}", e.what());
     }
 
+    std::vector<size_t> feature_vertices;
+    feature_vertices.reserve(feature_edge_list.size() * 2);
+    for (const auto& e : feature_edge_list) {
+        feature_vertices.push_back(e[0]);
+        feature_vertices.push_back(e[1]);
+    }
+
+    std::sort(feature_vertices.begin(), feature_vertices.end());
+    feature_vertices.erase(
+        std::unique(feature_vertices.begin(), feature_vertices.end()),
+        feature_vertices.end());
 
     // verify input and inject defaults
     {
@@ -183,23 +190,6 @@ int main(int argc, char** argv)
     std::vector<Eigen::Vector3d> verts;
     std::vector<std::array<size_t, 3>> tris;
     std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax;
-    // double remove_duplicate_eps = 1e-5;
-
-    // std::vector<size_t> modified_nonmanifold_v;
-    // wmtk::stl_to_manifold_wmtk_input(
-    //     input_path,
-    //     remove_duplicate_eps,
-    //     box_minmax,
-    //     verts,
-    //     tris,
-    //     modified_nonmanifold_v);
-
-    // double diag = (box_minmax.first - box_minmax.second).norm();
-    // const double envelope_size = env_rel * diag;
-    // igl::Timer timer;
-
-    // UniformRemeshing m(verts, num_threads, !sample_envelope);
-    // m.create_mesh(verts.size(), tris, modified_nonmanifold_v, freeze_boundary, envelope_size);
 
     Eigen::MatrixXd inV;
     Eigen::MatrixXi inF;
@@ -207,7 +197,6 @@ int main(int argc, char** argv)
     verts.resize(inV.rows());
     tris.resize(inF.rows());
     wmtk::eigen_to_wmtk_input(verts, tris, inV, inF);
-
 
     box_minmax = std::pair(inV.colwise().minCoeff(), inV.colwise().maxCoeff());
     double diag = (box_minmax.first - box_minmax.second).norm();
@@ -221,6 +210,7 @@ int main(int argc, char** argv)
 
     UniformRemeshing m(verts, num_threads, !sample_envelope);
     m.set_feature_edges(feature_edge_list);
+    // m.set_feature_vertices(feature_vertices);
     m.create_mesh(verts.size(), tris, frozen_verts, freeze_boundary, envelope_size);
 
     for (size_t v : fixed_vertices) {

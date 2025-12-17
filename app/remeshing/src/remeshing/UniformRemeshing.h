@@ -29,16 +29,29 @@ struct VertexAttributes
     // TODO: in fact, partition id should not be vertex attribute, it is a fixed marker to distinguish tuple/operations.
     size_t partition_id;
     bool freeze = false;
+    bool feature = false; // added to mark feature vertices
+};
+
+struct EdgeAttributes
+{
+    bool feature = false; // added to mark feature edges
 };
 
 class UniformRemeshing : public wmtk::TriMesh
 {
 public:
+    void initialize_feature_edges();
+
     wmtk::SampleEnvelope m_envelope;
     bool m_has_envelope = false;
 
     using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
     VertAttCol vertex_attrs;
+
+    using EdgeAttCol = wmtk::AttributeCollection<EdgeAttributes>;
+    EdgeAttCol edge_attrs;
+
+    std::vector<uint64_t> m_feature_edge_keys;
 
     int retry_limit = 10;
     UniformRemeshing(
@@ -60,6 +73,10 @@ public:
         Eigen::Vector3d v1p;
         Eigen::Vector3d v2p;
         int partition_id;
+
+        size_t v0 = size_t(-1);
+        size_t v1 = size_t(-1);
+        bool was_feature_edge = false;
     };
     tbb::enumerable_thread_specific<PositionInfoCache> position_cache;
 
@@ -121,6 +138,15 @@ public:
     bool swap_remeshing();
     bool uniform_remeshing(double L, int interations);
     bool write_triangle_mesh(std::string path);
+
+    void set_feature_vertices(const std::vector<size_t>& feature_vertices);
+    void set_feature_edges(const std::vector<std::array<size_t, 2>>& feature_edges);
+    bool is_feature_vertex(size_t vid) const;
+    bool is_feature_edge(const Tuple& t) const;
+    bool write_feature_vertices_obj(const std::string& path) const;
+
+private:
+    std::vector<std::array<size_t, 2>> m_input_feature_edges;
 };
 
 } // namespace app::remeshing
