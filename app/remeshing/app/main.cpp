@@ -22,11 +22,17 @@ using namespace std::chrono;
 
 #include "remeshing_spec.hpp"
 
-void run_remeshing(std::string input, double len, std::string output, UniformRemeshing& m, int itrs)
+void run_remeshing(
+    std::string input,
+    double len,
+    std::string output,
+    UniformRemeshing& m,
+    int itrs,
+    bool debug_output = false)
 {
     auto start = high_resolution_clock::now();
     wmtk::logger().info("target len: {}", len);
-    m.uniform_remeshing(len, itrs);
+    m.uniform_remeshing(len, itrs, debug_output);
     // m.consolidate_mesh();
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(stop - start);
@@ -65,9 +71,20 @@ int main(int argc, char** argv)
         std::ifstream ifs(json_input_file);
         json_params = nlohmann::json::parse(ifs);
     } catch (const std::exception& e) {
-        logger().error("Could not load or parse JSON input file");
-        logger().error(e.what());
+        log_and_throw_error("Could not load or parse JSON input file: {}", e.what());
     }
+
+    // verify input and inject defaults
+    {
+        jse::JSE spec_engine;
+        bool r = spec_engine.verify_json(json_params, remeshing_spec);
+        if (!r) {
+            log_and_throw_error(spec_engine.log2str());
+        }
+        json_params = spec_engine.inject_defaults(json_params, remeshing_spec);
+    }
+
+
     std::vector<size_t> fixed_vertices;
 
     try {
@@ -84,9 +101,7 @@ int main(int argc, char** argv)
                 cifs >> corner_json;
             }
 
-            for (auto it = corner_json.begin(); it != corner_json.end(); ++it) {
-                const nlohmann::json& val = it.value();
-
+            for (const auto& val : corner_json) {
                 size_t vid;
 
                 if (val.is_number_integer() || val.is_number_unsigned()) {
@@ -101,11 +116,10 @@ int main(int argc, char** argv)
                 fixed_vertices.push_back(vid);
             }
 
-            logger().info("Loaded fixed vertices:");
-            for (size_t v : fixed_vertices) logger().info("  {}", v);
+            logger().info("Loaded fixed vertices: {}", fixed_vertices);
         }
     } catch (const std::exception& e) {
-        logger().error("Error reading corner vertices: {}", e.what());
+        log_and_throw_error("Error reading corner vertices: {}", e.what());
     }
 
     nlohmann::json feature_edges;
@@ -122,12 +136,10 @@ int main(int argc, char** argv)
 
             feature_edge_list.reserve(feature_edges.size());
 
-            for (auto it = feature_edges.begin(); it != feature_edges.end(); ++it) {
-                const auto& key = it.key();
-
+            for (const auto& [key, val] : feature_edges.items()) {
                 const auto comma_pos = key.find(',');
                 if (comma_pos == std::string::npos) {
-                    logger().warn("Invalid feature edge key (no comma): {}", key);
+                    logger().error("Invalid feature edge key (no comma): {}", key);
                     continue;
                 }
 
@@ -137,11 +149,11 @@ int main(int argc, char** argv)
                 const size_t v0 = static_cast<size_t>(std::stoul(std::string(s0)));
                 const size_t v1 = static_cast<size_t>(std::stoul(std::string(s1)));
 
-                feature_edge_list.push_back({v0, v1});
+                feature_edge_list.push_back({{v0, v1}});
             }
         }
     } catch (const std::exception& e) {
-        logger().error("Could not load or parse feature_edges JSON file: {}", e.what());
+        log_and_throw_error("Could not load or parse feature_edges JSON file: {}", e.what());
     }
 
     std::vector<size_t> feature_vertices;
@@ -150,21 +162,7 @@ int main(int argc, char** argv)
         feature_vertices.push_back(e[0]);
         feature_vertices.push_back(e[1]);
     }
-
-    std::sort(feature_vertices.begin(), feature_vertices.end());
-    feature_vertices.erase(
-        std::unique(feature_vertices.begin(), feature_vertices.end()),
-        feature_vertices.end());
-
-    // verify input and inject defaults
-    {
-        jse::JSE spec_engine;
-        bool r = spec_engine.verify_json(json_params, remeshing_spec);
-        if (!r) {
-            log_and_throw_error(spec_engine.log2str());
-        }
-        json_params = spec_engine.inject_defaults(json_params, remeshing_spec);
-    }
+    wmtk::vector_unique(feature_vertices);
 
     // logger settings
     {
@@ -184,6 +182,7 @@ int main(int argc, char** argv)
     const bool sample_envelope = json_params["use_sample_envelope"];
     const bool freeze_boundary = json_params["freeze_boundary"];
     double length_abs = json_params["length_abs"];
+    const bool debug_output = json_params["DEBUG_output"];
 
     wmtk::logger().info("remeshing on {}", input_path);
     wmtk::logger().info("freeze bnd {}", freeze_boundary);
@@ -203,19 +202,18 @@ int main(int argc, char** argv)
     const double envelope_size = env_rel * diag;
     igl::Timer timer;
 
-    std::vector<size_t> frozen_verts;
-    frozen_verts.insert(frozen_verts.end(), fixed_vertices.begin(), fixed_vertices.end());
-
-    wmtk::logger().info("Total frozen vertices: {}", frozen_verts.size());
+    wmtk::logger().info("Total frozen vertices: {}", fixed_vertices.size());
 
     UniformRemeshing m(verts, num_threads, !sample_envelope);
     m.set_feature_edges(feature_edge_list);
     // m.set_feature_vertices(feature_vertices);
-    m.create_mesh(verts.size(), tris, frozen_verts, freeze_boundary, envelope_size);
+    m.create_mesh(verts.size(), tris, fixed_vertices, freeze_boundary, envelope_size);
 
     for (size_t v : fixed_vertices) {
         const auto& attr = m.vertex_attrs[v];
-        logger().info("vertex {} freeze flag = {}", v, attr.freeze ? "true" : "false");
+        if (!m.vertex_attrs[v].is_freeze) {
+            log_and_throw_error("vertex {} is not frozen but is in fixed_vertices", v);
+        }
     }
 
     {
@@ -238,7 +236,7 @@ int main(int argc, char** argv)
 
 
     timer.start();
-    run_remeshing(input_path, length_abs, output, m, itrs);
+    run_remeshing(input_path, length_abs, output, m, itrs, debug_output);
     timer.stop();
 
     // to check the position change of fixed vertices

@@ -1,8 +1,9 @@
 #pragma once
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/utils/VectorUtils.h>
+#include <wmtk/AttributeCollection.hpp>
 #include <wmtk/envelope/Envelope.hpp>
-#include "wmtk/AttributeCollection.hpp"
+#include <wmtk/simplex/RawSimplex.hpp>
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -21,6 +22,7 @@
 #include <atomic>
 #include <memory>
 #include <queue>
+#include <wmtk/Types.hpp>
 namespace app::remeshing {
 
 struct VertexAttributes
@@ -28,13 +30,13 @@ struct VertexAttributes
     Eigen::Vector3d pos;
     // TODO: in fact, partition id should not be vertex attribute, it is a fixed marker to distinguish tuple/operations.
     size_t partition_id;
-    bool freeze = false;
-    bool feature = false; // added to mark feature vertices
+    bool is_freeze = false;
+    bool is_feature = false; // added to mark feature vertices
 };
 
 struct EdgeAttributes
 {
-    bool feature = false; // added to mark feature edges
+    bool is_feature = false; // added to mark feature edges
 };
 
 class UniformRemeshing : public wmtk::TriMesh
@@ -68,6 +70,21 @@ public:
         bool m_freeze = true,
         double eps = 0);
 
+    struct SplitInfoCache
+    {
+        // incident vertices
+        size_t v0 = size_t(-1);
+        size_t v1 = size_t(-1);
+        wmtk::Vector3d v0p;
+        wmtk::Vector3d v1p;
+        int partition_id;
+
+        bool is_feature_edge = false;
+
+        std::map<wmtk::simplex::Edge, EdgeAttributes> edge_attrs;
+    };
+    tbb::enumerable_thread_specific<SplitInfoCache> split_info_cache;
+
     struct PositionInfoCache
     {
         Eigen::Vector3d v1p;
@@ -76,11 +93,14 @@ public:
 
         size_t v0 = size_t(-1);
         size_t v1 = size_t(-1);
-        bool was_feature_edge = false;
+        bool is_feature_edge = false;
     };
     tbb::enumerable_thread_specific<PositionInfoCache> position_cache;
 
     void cache_edge_positions(const Tuple& t);
+
+    std::vector<std::array<size_t, 2>> get_edges_by_condition(
+        std::function<bool(const EdgeAttributes&)> cond) const;
 
     bool invariants(const std::vector<Tuple>& new_tris) override;
 
@@ -136,7 +156,7 @@ public:
     bool split_remeshing(double L);
     bool collapse_remeshing(double L);
     bool swap_remeshing();
-    bool uniform_remeshing(double L, int interations);
+    bool uniform_remeshing(double L, int interations, bool debug_output = false);
     bool write_triangle_mesh(std::string path);
 
     void set_feature_vertices(const std::vector<size_t>& feature_vertices);
@@ -144,6 +164,8 @@ public:
     bool is_feature_vertex(size_t vid) const;
     bool is_feature_edge(const Tuple& t) const;
     bool write_feature_vertices_obj(const std::string& path) const;
+
+    void write_vtu(const std::string& path) const;
 
 private:
     std::vector<std::array<size_t, 2>> m_input_feature_edges;

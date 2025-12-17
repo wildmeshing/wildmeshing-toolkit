@@ -7,11 +7,14 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <atomic>
+#include <paraviewo/VTUWriter.hpp>
 #include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/simplex/RawSimplex.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
-using namespace app::remeshing;
+
 using namespace wmtk;
 
+namespace {
 auto renew = [](auto& m, auto op, auto& tris) {
     auto edges = m.new_edges_after(tris);
     auto optup = std::vector<std::pair<std::string, TriMesh::Tuple>>();
@@ -24,6 +27,12 @@ auto edge_locker = [](auto& m, const auto& e, int task_id) {
     // TODO: this should not be here
     return m.try_set_edge_mutex_two_ring(e, task_id);
 };
+
+static int debug_print_counter = 0;
+} // namespace
+
+namespace app::remeshing {
+
 
 UniformRemeshing::UniformRemeshing(
     std::vector<Eigen::Vector3d> _m_vertex_positions,
@@ -50,12 +59,14 @@ void UniformRemeshing::create_mesh(
     double eps)
 {
     wmtk::TriMesh::init(n_vertices, tris);
-    std::vector<Eigen::Vector3d> V(n_vertices);
-    std::vector<Eigen::Vector3i> F(tris.size());
-    for (auto i = 0; i < V.size(); i++) {
+    std::vector<Vector3d> V(n_vertices);
+    std::vector<Vector3i> F(tris.size());
+    for (int i = 0; i < V.size(); i++) {
         V[i] = vertex_attrs[i].pos;
     }
-    for (int i = 0; i < F.size(); ++i) F[i] << tris[i][0], tris[i][1], tris[i][2];
+    for (int i = 0; i < F.size(); ++i) {
+        F[i] = Vector3i(tris[i][0], tris[i][1], tris[i][2]);
+    }
     if (eps > 0) {
         m_envelope.init(V, F, eps);
         m_has_envelope = true;
@@ -67,12 +78,12 @@ void UniformRemeshing::create_mesh(
 
     if (m_freeze) {
         for (auto v : frozen_verts) {
-            vertex_attrs[v].freeze = true;
+            vertex_attrs[v].is_freeze = true;
         }
-        for (auto e : get_edges()) {
+        for (const Tuple& e : get_edges()) {
             if (is_boundary_edge(e)) {
-                vertex_attrs[e.vid(*this)].freeze = true;
-                vertex_attrs[e.switch_vertex(*this).vid(*this)].freeze = true;
+                vertex_attrs[e.vid(*this)].is_freeze = true;
+                vertex_attrs[e.switch_vertex(*this).vid(*this)].is_freeze = true;
             }
         }
     }
@@ -88,7 +99,22 @@ void UniformRemeshing::cache_edge_positions(const Tuple& t)
 
     position_cache.local().v0 = t.vid(*this);
     position_cache.local().v1 = t.switch_vertex(*this).vid(*this);
-    position_cache.local().was_feature_edge = is_feature_edge(t);
+    position_cache.local().is_feature_edge = is_feature_edge(t);
+}
+
+std::vector<std::array<size_t, 2>> UniformRemeshing::get_edges_by_condition(
+    std::function<bool(const EdgeAttributes&)> cond) const
+{
+    std::vector<std::array<size_t, 2>> res;
+    for (const Tuple& e : get_edges()) {
+        auto eid = e.eid(*this);
+        if (cond(edge_attrs[eid])) {
+            size_t v0 = e.vid(*this);
+            size_t v1 = e.switch_vertex(*this).vid(*this);
+            res.emplace_back(std::array<size_t, 2>{{v0, v1}});
+        }
+    }
+    return res;
 }
 
 bool UniformRemeshing::invariants(const std::vector<Tuple>& new_tris)
@@ -227,7 +253,8 @@ bool UniformRemeshing::swap_edge_before(const Tuple& t)
         return false;
     }
     if (!TriMesh::swap_edge_before(t)) return false;
-    if (vertex_attrs[t.vid(*this)].freeze && vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
+    if (vertex_attrs[t.vid(*this)].is_freeze &&
+        vertex_attrs[t.switch_vertex(*this).vid(*this)].is_freeze)
         return false;
     return true;
 }
@@ -284,11 +311,11 @@ bool UniformRemeshing::collapse_edge_before(const Tuple& t)
     //     return false;
     // }
 
-    if (vertex_attrs[v0].feature || vertex_attrs[v1].feature) {
+    if (vertex_attrs[v0].is_feature || vertex_attrs[v1].is_feature) {
         return false;
     }
 
-    if (vertex_attrs[v0].freeze || vertex_attrs[v1].freeze) {
+    if (vertex_attrs[v0].is_freeze || vertex_attrs[v1].is_freeze) {
         return false;
     }
 
@@ -312,8 +339,41 @@ bool UniformRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
 
 bool UniformRemeshing::split_edge_before(const Tuple& t)
 {
-    if (!TriMesh::split_edge_before(t)) return false;
-    cache_edge_positions(t);
+    if (!TriMesh::split_edge_before(t)) {
+        return false;
+    }
+
+    auto& cache = split_info_cache.local();
+    cache.edge_attrs.clear();
+
+    cache.v0 = t.vid(*this);
+    cache.v1 = t.switch_vertex(*this).vid(*this);
+
+    cache.v0p = vertex_attrs.at(cache.v0).pos;
+    cache.v1p = vertex_attrs.at(cache.v1).pos;
+    cache.partition_id = vertex_attrs.at(cache.v0).partition_id;
+    cache.is_feature_edge = is_feature_edge(t);
+
+    // gather all surrounding edges
+    std::vector<simplex::Edge> edges;
+    edges.reserve(4);
+    {
+        const size_t v_opp = t.switch_edge(*this).switch_vertex(*this).vid(*this);
+        edges.emplace_back(cache.v0, v_opp);
+        edges.emplace_back(cache.v1, v_opp);
+    }
+    for (const Tuple t_opp : t.switch_faces(*this)) {
+        const size_t v_opp = t_opp.switch_edge(*this).switch_vertex(*this).vid(*this);
+        edges.emplace_back(cache.v0, v_opp);
+        edges.emplace_back(cache.v1, v_opp);
+    }
+
+    // save all edge attributes
+    for (const auto& e : edges) {
+        const size_t eid = eid_from_vids(e.vertices()[0], e.vertices()[1]);
+        cache.edge_attrs[e] = edge_attrs.at(eid);
+    }
+
     return true;
 }
 
@@ -337,28 +397,33 @@ bool UniformRemeshing::split_edge_before(const Tuple& t)
 
 bool UniformRemeshing::split_edge_after(const TriMesh::Tuple& t)
 {
-    const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
+    const auto& cache = split_info_cache.local();
+
+    const Eigen::Vector3d p = 0.5 * (cache.v0p + cache.v1p);
 
     const size_t vnew = t.switch_vertex(*this).vid(*this);
     vertex_attrs[vnew].pos = p;
-    vertex_attrs[vnew].partition_id = position_cache.local().partition_id;
+    vertex_attrs[vnew].partition_id = cache.partition_id;
+    vertex_attrs[vnew].is_feature = cache.is_feature_edge;
 
-    const size_t old0 = position_cache.local().v0;
-    const size_t old1 = position_cache.local().v1;
+    // update the edge attributes of the surrounding edges
+    std::vector<size_t> vids;
+    vids.reserve(cache.edge_attrs.size() * 2);
+    for (const auto& [edge, attrs] : cache.edge_attrs) {
+        const size_t eid = eid_from_vids(edge.vertices()[0], edge.vertices()[1]);
+        edge_attrs[eid] = attrs;
+        vids.push_back(edge.vertices()[0]);
+        vids.push_back(edge.vertices()[1]);
+    }
+    wmtk::vector_unique(vids);
 
-    const bool f0 = is_feature_vertex(old0);
-    const bool f1 = is_feature_vertex(old1);
-    vertex_attrs[vnew].feature = (f0 && f1);
-
-    if (position_cache.local().was_feature_edge) {
-        auto vt = t.switch_vertex(*this);
-        for (auto e : get_one_ring_edges_for_vertex(vt)) {
-            const size_t a = e.vid(*this);
-            const size_t b = e.switch_vertex(*this).vid(*this);
-            if ((a == vnew && (b == old0 || b == old1)) ||
-                (b == vnew && (a == old0 || a == old1))) {
-                edge_attrs[e.eid(*this)].feature = true;
-            }
+    // set attributes of new edges
+    for (size_t vid : vids) {
+        const size_t e = eid_from_vids(vnew, vid);
+        if (cache.is_feature_edge && (vid == cache.v0 || vid == cache.v1)) {
+            edge_attrs[e].is_feature = true;
+        } else {
+            edge_attrs[e].is_feature = false;
         }
     }
 
@@ -368,7 +433,7 @@ bool UniformRemeshing::split_edge_after(const TriMesh::Tuple& t)
 
 bool UniformRemeshing::smooth_before(const Tuple& t)
 {
-    if (vertex_attrs[t.vid(*this)].freeze) return false;
+    if (vertex_attrs[t.vid(*this)].is_freeze) return false;
     return true;
 }
 
@@ -720,33 +785,47 @@ Eigen::Vector3d UniformRemeshing::tangential_smooth(const Tuple& t)
 }
 
 
-bool UniformRemeshing::uniform_remeshing(double L, int iterations)
+bool UniformRemeshing::uniform_remeshing(double L, int iterations, bool debug_output)
 {
-    int cnt = 0;
     wmtk::logger().info("target len is: {}", L);
 
+    if (debug_output) {
+        write_vtu(fmt::format("debug_{}", debug_print_counter++));
+    }
+
     igl::Timer timer;
-    while (cnt < iterations) {
-        cnt++;
-        wmtk::logger().info("??? Pass ??? {}", cnt);
+    for (int cnt = 0; cnt < iterations; ++cnt) {
+        wmtk::logger().info("===== Pass {} of {} =====", cnt, iterations);
         // split
         timer.start();
         split_remeshing(L);
         wmtk::logger().info("--------split time-------: {} ms", timer.getElapsedTimeInMilliSec());
+        if (debug_output) {
+            write_vtu(fmt::format("debug_{}", debug_print_counter++));
+        }
         // collpase
         timer.start();
         collapse_remeshing(L);
         wmtk::logger().info(
             "--------collapse time-------: {} ms",
             timer.getElapsedTimeInMilliSec());
+        if (debug_output) {
+            write_vtu(fmt::format("debug_{}", debug_print_counter++));
+        }
         // swap edges
         timer.start();
         swap_remeshing();
         wmtk::logger().info("--------swap time-------: {} ms", timer.getElapsedTimeInMilliSec());
+        if (debug_output) {
+            write_vtu(fmt::format("debug_{}", debug_print_counter++));
+        }
         // smoothing
         timer.start();
         smooth_all_vertices();
         wmtk::logger().info("--------smooth time-------: {} ms", timer.getElapsedTimeInMilliSec());
+        if (debug_output) {
+            write_vtu(fmt::format("debug_{}", debug_print_counter++));
+        }
 
         partition_mesh_morton();
     }
@@ -781,12 +860,12 @@ bool UniformRemeshing::write_triangle_mesh(std::string path)
 void UniformRemeshing::set_feature_vertices(const std::vector<size_t>& feature_vertices)
 {
     for (size_t i = 0; i < vertex_attrs.size(); ++i) {
-        vertex_attrs[i].feature = false;
+        vertex_attrs[i].is_feature = false;
     }
 
     for (size_t v : feature_vertices) {
         if (v < vertex_attrs.size()) {
-            vertex_attrs[v].feature = true;
+            vertex_attrs[v].is_feature = true;
         } else {
             wmtk::logger().warn("set_feature_vertices: index {} out of range", v);
         }
@@ -797,12 +876,12 @@ void UniformRemeshing::set_feature_vertices(const std::vector<size_t>& feature_v
 
 bool UniformRemeshing::is_feature_vertex(size_t vid) const
 {
-    return vid < vertex_attrs.size() && vertex_attrs[vid].feature;
+    return vid < vertex_attrs.size() && vertex_attrs[vid].is_feature;
 }
 
 bool UniformRemeshing::is_feature_edge(const Tuple& t) const
 {
-    return edge_attrs[t.eid(*this)].feature;
+    return edge_attrs[t.eid(*this)].is_feature;
 }
 
 void UniformRemeshing::set_feature_edges(const std::vector<std::array<size_t, 2>>& feature_edges)
@@ -810,50 +889,33 @@ void UniformRemeshing::set_feature_edges(const std::vector<std::array<size_t, 2>
     m_input_feature_edges = feature_edges;
 }
 
-static inline uint64_t edge_key(size_t a, size_t b)
-{
-    if (a > b) std::swap(a, b);
-    return (uint64_t(a) << 32) ^ uint64_t(b);
-}
-
 void UniformRemeshing::initialize_feature_edges()
 {
-    std::vector<uint64_t> feature_edge;
-    feature_edge.reserve(m_input_feature_edges.size());
+    std::set<simplex::Edge> feature_edges;
 
+    for (const auto& [a, b] : m_input_feature_edges) {
+        feature_edges.insert(simplex::Edge(a, b));
 
-    for (const auto& ee : m_input_feature_edges) {
-        const size_t a = ee[0];
-        const size_t b = ee[1];
+        if (a >= vertex_attrs.size()) {
+            log_and_throw_error("Invalid feature edge ({},{}), vertex id {} is invalid", a, b, a);
+        }
+        if (b >= vertex_attrs.size()) {
+            log_and_throw_error("Invalid feature edge ({},{}), vertex id {} is invalid", a, b, b);
+        }
 
-        feature_edge.push_back(edge_key(a, b));
-
-        if (a < vertex_attrs.size()) vertex_attrs[a].feature = true;
-        if (b < vertex_attrs.size()) vertex_attrs[b].feature = true;
+        vertex_attrs[a].is_feature = true;
+        vertex_attrs[b].is_feature = true;
     }
-
-
-    std::sort(feature_edge.begin(), feature_edge.end());
-    feature_edge.erase(std::unique(feature_edge.begin(), feature_edge.end()), feature_edge.end());
-
-    for (auto e : get_edges()) {
-        const size_t eid = e.eid(*this);
-        if (eid >= edge_attrs.size()) edge_attrs.resize(eid + 1);
-        edge_attrs[eid].feature = false;
-    }
-
 
     size_t found = 0;
-    for (auto e : get_edges()) {
+    for (const Tuple& e : get_edges()) {
         const size_t a = e.vid(*this);
         const size_t b = e.switch_vertex(*this).vid(*this);
-        const size_t eid = e.eid(*this);
 
-        const uint64_t k = edge_key(a, b);
-
-        if (std::binary_search(feature_edge.begin(), feature_edge.end(), k)) {
-            if (eid >= edge_attrs.size()) edge_attrs.resize(eid + 1);
-            edge_attrs[eid].feature = true;
+        const simplex::Edge s(a, b);
+        if (feature_edges.count(s) > 0) {
+            const size_t eid = e.eid(*this);
+            edge_attrs[eid].is_feature = true;
             ++found;
         }
     }
@@ -861,12 +923,12 @@ void UniformRemeshing::initialize_feature_edges()
     wmtk::logger().info(
         "initialize_feature_edges: marked {} feature edges (requested {})",
         found,
-        feature_edge.size());
+        feature_edges.size());
 
-    if (found != feature_edge.size()) {
-        wmtk::logger().warn(
+    if (found != feature_edges.size()) {
+        log_and_throw_error(
             "initialize_feature_edges: {} requested feature edges were not found in the mesh",
-            feature_edge.size() - found);
+            feature_edges.size() - found);
     }
 }
 
@@ -879,7 +941,7 @@ bool UniformRemeshing::write_feature_vertices_obj(const std::string& path) const
     fmap.reserve(vertex_attrs.size());
 
     for (size_t i = 0; i < vertex_attrs.size(); ++i) {
-        if (!vertex_attrs[i].feature) continue;
+        if (!vertex_attrs[i].is_feature) continue;
         const auto& p = vertex_attrs[i].pos;
         out << "v " << p.x() << " " << p.y() << " " << p.z() << "\n";
         fmap.push_back(i);
@@ -891,3 +953,65 @@ bool UniformRemeshing::write_feature_vertices_obj(const std::string& path) const
 
     return true;
 }
+
+void UniformRemeshing::write_vtu(const std::string& path) const
+{
+    const std::string out_path = path + ".vtu";
+    logger().info("Write {}", out_path);
+    const auto& vs = get_vertices();
+    const auto& faces = get_faces();
+    const auto edges = get_edges_by_condition([](const EdgeAttributes& e) { return e.is_feature; });
+
+    Eigen::MatrixXd V(vert_capacity(), 3);
+    Eigen::MatrixXi F(tri_capacity(), 3);
+    Eigen::MatrixXi E(edges.size(), 2);
+
+    V.setZero();
+    F.setZero();
+    E.setZero();
+
+    Eigen::VectorXd v_is_feature(vert_capacity());
+    Eigen::VectorXd v_is_freeze(vert_capacity());
+
+    int index = 0;
+    for (const Tuple& t : faces) {
+        const auto& vs = oriented_tri_vids(t);
+        for (int j = 0; j < 3; j++) {
+            F(index, j) = vs[j];
+        }
+        ++index;
+    }
+
+    for (size_t i = 0; i < edges.size(); ++i) {
+        for (size_t j = 0; j < 2; ++j) {
+            E(i, j) = edges[i][j];
+        }
+    }
+
+    for (const Tuple& v : vs) {
+        const size_t vid = v.vid(*this);
+        V.row(vid) = vertex_attrs[vid].pos;
+        v_is_feature[vid] = vertex_attrs[vid].is_feature;
+        v_is_freeze[vid] = vertex_attrs[vid].is_freeze;
+    }
+
+    std::shared_ptr<paraviewo::ParaviewWriter> writer;
+    writer = std::make_shared<paraviewo::VTUWriter>();
+
+    writer->add_field("is_feature", v_is_feature);
+    writer->add_field("is_freeze", v_is_freeze);
+    writer->write_mesh(path + ".vtu", V, F);
+
+    // feature edges
+    {
+        const auto edge_out_path = path + "_edges.vtu";
+        std::shared_ptr<paraviewo::ParaviewWriter> edge_writer;
+        edge_writer = std::make_shared<paraviewo::VTUWriter>();
+        edge_writer->add_field("is_feature", v_is_feature);
+        edge_writer->add_field("is_freeze", v_is_freeze);
+
+        logger().info("Write {}", edge_out_path);
+        edge_writer->write_mesh(edge_out_path, V, E);
+    }
+}
+} // namespace app::remeshing
