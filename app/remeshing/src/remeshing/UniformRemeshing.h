@@ -85,6 +85,23 @@ public:
     };
     tbb::enumerable_thread_specific<SplitInfoCache> split_info_cache;
 
+    struct SwapInfoCache
+    {
+        size_t v0 = size_t(-1);
+        size_t v1 = size_t(-1);
+
+        // opposite vertices
+        size_t v2 = size_t(-1);
+        size_t v3 = size_t(-1);
+        wmtk::Vector3d v0p;
+        wmtk::Vector3d v1p;
+
+        bool is_feature_edge = false;
+        std::map<wmtk::simplex::Edge, EdgeAttributes> ring_edge_attrs;
+    };
+    tbb::enumerable_thread_specific<SwapInfoCache> swap_info_cache;
+
+
     struct PositionInfoCache
     {
         Eigen::Vector3d v1p;

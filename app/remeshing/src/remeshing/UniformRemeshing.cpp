@@ -253,20 +253,82 @@ bool UniformRemeshing::swap_edge_before(const Tuple& t)
         return false;
     }
     if (!TriMesh::swap_edge_before(t)) return false;
-    if (vertex_attrs[t.vid(*this)].is_freeze &&
-        vertex_attrs[t.switch_vertex(*this).vid(*this)].is_freeze)
+
+    const size_t v0 = t.vid(*this);
+    const size_t v1 = t.switch_vertex(*this).vid(*this);
+
+    if (vertex_attrs[v0].is_freeze && vertex_attrs[v1].is_freeze) {
         return false;
+    }
+
+    auto& cache = swap_info_cache.local();
+    cache.ring_edge_attrs.clear();
+
+    cache.v0 = v0;
+    cache.v1 = v1;
+
+    cache.v0p = vertex_attrs.at(cache.v0).pos;
+    cache.v1p = vertex_attrs.at(cache.v1).pos;
+
+    cache.is_feature_edge = is_feature_edge(t);
+
+    cache.v2 = t.switch_edge(*this).switch_vertex(*this).vid(*this);
+
+    size_t face_count = 0;
+    for (const Tuple t_opp : t.switch_faces(*this)) {
+        cache.v3 = t_opp.switch_edge(*this).switch_vertex(*this).vid(*this);
+        ++face_count;
+        if (face_count > 1) {
+            // Non-manifold edge (????)
+            return false;
+        }
+    }
+    if (face_count == 0) {
+        // Boundary edge (???)
+        return false;
+    }
+
+    const std::array<simplex::Edge, 4> ring_edges = {
+        simplex::Edge(cache.v0, cache.v2),
+        simplex::Edge(cache.v1, cache.v2),
+        simplex::Edge(cache.v0, cache.v3),
+        simplex::Edge(cache.v1, cache.v3)};
+
+    for (const auto& e : ring_edges) {
+        const auto& vs = e.vertices();
+        const size_t eid = eid_from_vids(vs[0], vs[1]);
+        cache.ring_edge_attrs[e] = edge_attrs.at(eid);
+    }
     return true;
 }
 
+
+// bool UniformRemeshing::swap_edge_after(const TriMesh::Tuple& t)
+// {
+//     const auto& cache = swap_info_cache.local();
+
+//     std::vector<TriMesh::Tuple> tris;
+//     tris.push_back(t);
+//     tris.push_back(t.switch_edge(*this));
+//     return true;
+// }
 
 bool UniformRemeshing::swap_edge_after(const TriMesh::Tuple& t)
 {
-    std::vector<TriMesh::Tuple> tris;
-    tris.push_back(t);
-    tris.push_back(t.switch_edge(*this));
+    const auto& cache = swap_info_cache.local();
+
+    for (const auto& [edge, attrs] : cache.ring_edge_attrs) {
+        const auto& vs = edge.vertices();
+        const size_t eid = eid_from_vids(vs[0], vs[1]);
+        edge_attrs[eid] = attrs;
+    }
+    const size_t e_new = eid_from_vids(cache.v2, cache.v3);
+
+    edge_attrs[e_new].is_feature = false;
+
     return true;
 }
+
 
 std::vector<TriMesh::Tuple> UniformRemeshing::replace_edges_after_split(
     const std::vector<TriMesh::Tuple>& tris,
@@ -307,9 +369,9 @@ bool UniformRemeshing::collapse_edge_before(const Tuple& t)
     size_t v0 = t.vid(*this);
     size_t v1 = t.switch_vertex(*this).vid(*this);
 
-    // if (is_feature_edge(t)) {
-    //     return false;
-    // }
+    if (is_feature_edge(t)) {
+        return false;
+    }
 
     if (vertex_attrs[v0].is_feature || vertex_attrs[v1].is_feature) {
         return false;
@@ -336,6 +398,7 @@ bool UniformRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
 
     return true;
 }
+
 
 bool UniformRemeshing::split_edge_before(const Tuple& t)
 {
@@ -377,24 +440,6 @@ bool UniformRemeshing::split_edge_before(const Tuple& t)
     return true;
 }
 
-
-// bool UniformRemeshing::split_edge_after(const TriMesh::Tuple& t)
-// {
-//     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
-//     auto vid = t.switch_vertex(*this).vid(*this);
-//     vertex_attrs[vid].pos = p;
-//     vertex_attrs[vid].partition_id = position_cache.local().partition_id;
-
-//     size_t v0 = t.vid(*this);
-//     size_t v1 = t.switch_vertex(*this).vid(*this);
-
-//     bool f0 = is_feature_vertex(v0);
-//     bool f1 = is_feature_vertex(v1);
-//     vertex_attrs[vid].feature = (f0 && f1);
-
-//     return true;
-// }
-
 bool UniformRemeshing::split_edge_after(const TriMesh::Tuple& t)
 {
     const auto& cache = split_info_cache.local();
@@ -434,6 +479,8 @@ bool UniformRemeshing::split_edge_after(const TriMesh::Tuple& t)
 bool UniformRemeshing::smooth_before(const Tuple& t)
 {
     if (vertex_attrs[t.vid(*this)].is_freeze) return false;
+    // if (vertex_attrs[t.vid(*this)].is_feature) return false;
+
     return true;
 }
 
@@ -445,8 +492,19 @@ bool UniformRemeshing::smooth_after(const TriMesh::Tuple& t)
     }
     Eigen::Vector3d after_smooth = tangential_smooth(t);
     if (after_smooth.hasNaN()) return false;
-    // add envelope projection and check here
-    // todo
+    // todo: add envelope projection and check here
+    // if (m_has_envelope) {
+    //     std::array<Eigen::Vector3d, 3> tri;
+    //     for (auto& tri_tup : one_ring_tris) {
+    //         auto vs = oriented_tri_vertices(tri_tup);
+    //         for (auto j = 0; j < 3; j++)
+    //             tri[j] = vertex_attrs[vs[j].vid(*this)].pos;
+    //         if (m_envelope.is_outside(tri)) {
+    //             after_smooth = m_envelope.project_to_envelope(after_smooth);
+    //             break;
+    //         }
+    //     }
+
     vertex_attrs[t.vid(*this)].pos = after_smooth;
     return true;
 }
