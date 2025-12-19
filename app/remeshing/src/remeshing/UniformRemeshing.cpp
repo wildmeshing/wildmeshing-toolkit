@@ -257,9 +257,9 @@ bool UniformRemeshing::swap_edge_before(const Tuple& t)
     const size_t v0 = t.vid(*this);
     const size_t v1 = t.switch_vertex(*this).vid(*this);
 
-    if (vertex_attrs[v0].is_freeze && vertex_attrs[v1].is_freeze) {
-        return false;
-    }
+    // if (vertex_attrs[v0].is_freeze && vertex_attrs[v1].is_freeze) {
+    //     return false;
+    // }
 
     auto& cache = swap_info_cache.local();
     cache.ring_edge_attrs.clear();
@@ -369,11 +369,11 @@ bool UniformRemeshing::collapse_edge_before(const Tuple& t)
     size_t v0 = t.vid(*this);
     size_t v1 = t.switch_vertex(*this).vid(*this);
 
-    if (is_feature_edge(t)) {
-        return false;
-    }
+    // if (is_feature_edge(t)) {
+    //     return false;
+    // }
 
-    if (vertex_attrs[v0].is_feature || vertex_attrs[v1].is_feature) {
+    if (!is_feature_edge(t) && (vertex_attrs[v0].is_feature || vertex_attrs[v1].is_feature)) {
         return false;
     }
 
@@ -479,7 +479,7 @@ bool UniformRemeshing::split_edge_after(const TriMesh::Tuple& t)
 bool UniformRemeshing::smooth_before(const Tuple& t)
 {
     if (vertex_attrs[t.vid(*this)].is_freeze) return false;
-    // if (vertex_attrs[t.vid(*this)].is_feature) return false;
+    if (vertex_attrs[t.vid(*this)].is_feature) return false;
 
     return true;
 }
