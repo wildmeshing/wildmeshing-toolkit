@@ -24,15 +24,13 @@ using namespace std::chrono;
 
 void run_remeshing(
     std::string input,
-    double len,
     std::string output,
     UniformRemeshing& m,
     int itrs,
     bool debug_output = false)
 {
     auto start = high_resolution_clock::now();
-    wmtk::logger().info("target len: {}", len);
-    m.uniform_remeshing(len, itrs, debug_output);
+    m.uniform_remeshing(itrs, debug_output);
     // m.consolidate_mesh();
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(stop - start);
@@ -86,54 +84,31 @@ int main(int argc, char** argv)
 
 
     std::vector<size_t> fixed_vertices;
+    std::vector<std::array<size_t, 2>> feature_edge_list;
+    std::vector<size_t> face_patch_ids;
 
     try {
-        if (json_params.contains("corner")) {
-            std::string corner_path = json_params["corner"].get<std::string>();
-            logger().info("Loading corner file: {}", corner_path);
+        if (json_params.contains("patches")) {
+            std::string patches_path = json_params["patches"];
+            logger().info("Loading patches info file: {}", patches_path);
 
 
-            nlohmann::json corner_json;
-            std::ifstream cifs(corner_path);
+            nlohmann::json patches_json;
+            std::ifstream cifs(patches_path);
             if (!cifs.is_open()) {
-                logger().error("Cannot open corner file {}", corner_path);
+                logger().error("Cannot open patches file {}", patches_path);
             } else {
-                cifs >> corner_json;
+                cifs >> patches_json;
             }
 
-            for (const auto& val : corner_json) {
-                size_t vid;
-
-                if (val.is_number_integer() || val.is_number_unsigned()) {
-                    vid = val.get<size_t>();
-                } else if (val.is_string()) {
-                    vid = std::stoull(val.get<std::string>());
-                } else {
-                    logger().error("Corner entry has invalid type: {}", val.dump());
-                    continue;
-                }
-
+            // fixed vertices
+            for (const size_t vid : patches_json["corner_vids"]) {
                 fixed_vertices.push_back(vid);
             }
-
             logger().info("Loaded fixed vertices: {}", fixed_vertices);
-        }
-    } catch (const std::exception& e) {
-        log_and_throw_error("Error reading corner vertices: {}", e.what());
-    }
 
-    nlohmann::json feature_edges;
-    std::vector<std::array<size_t, 2>> feature_edge_list;
-
-    try {
-        const std::string feature_edges_path = json_params["feature_edges"];
-        std::ifstream feifs(feature_edges_path);
-        if (!feifs.is_open()) {
-            logger().error("Could not open feature_edges file: {}", feature_edges_path);
-        } else {
-            feifs >> feature_edges;
-            logger().info("Loaded feature_edges data from {}", feature_edges_path);
-
+            // feature edges
+            const auto& feature_edges = patches_json["edge2seg"];
             feature_edge_list.reserve(feature_edges.size());
 
             for (const auto& [key, val] : feature_edges.items()) {
@@ -151,9 +126,17 @@ int main(int argc, char** argv)
 
                 feature_edge_list.push_back({{v0, v1}});
             }
+            logger().info("Loaded {} feature edges.", feature_edge_list.size());
+
+            const auto& pids = patches_json["fid2patch"];
+            face_patch_ids.resize(pids.size());
+            for (const auto& [key, pid] : pids.items()) {
+                const size_t fid = std::stoul(key);
+                face_patch_ids[fid] = pid;
+            }
         }
     } catch (const std::exception& e) {
-        log_and_throw_error("Could not load or parse feature_edges JSON file: {}", e.what());
+        log_and_throw_error("Error reading corner vertices: {}", e.what());
     }
 
     std::vector<size_t> feature_vertices;
@@ -177,6 +160,7 @@ int main(int argc, char** argv)
     const std::string output = json_params["output"];
     const double env_rel = json_params["eps_rel"];
     const double length_rel = json_params["length_rel"];
+    const double length_factor = json_params["length_factor"];
     const int num_threads = json_params["num_threads"];
     const int itrs = json_params["max_iterations"];
     const bool sample_envelope = json_params["use_sample_envelope"];
@@ -208,6 +192,7 @@ int main(int argc, char** argv)
     m.set_feature_edges(feature_edge_list);
     // m.set_feature_vertices(feature_vertices);
     m.create_mesh(verts.size(), tris, fixed_vertices, freeze_boundary, envelope_size);
+    m.set_patch_ids(face_patch_ids);
 
     for (size_t v : fixed_vertices) {
         const auto& attr = m.vertex_attrs[v];
@@ -216,7 +201,7 @@ int main(int argc, char** argv)
         }
     }
 
-    {
+    if (length_factor < 0) {
         std::vector<double> properties = m.average_len_valen();
         wmtk::logger().info("before remesh properties: {}", properties);
         if (length_abs < 0 && length_rel < 0) {
@@ -225,8 +210,12 @@ int main(int argc, char** argv)
         } else if (length_abs < 0) {
             length_abs = diag * length_rel;
         }
+        logger().info("absolute target length: {}", length_abs);
+        m.set_target_edge_length(length_abs);
+    } else {
+        logger().info("Use per-patch length with factor {}", length_factor);
+        m.set_per_patch_target_edge_length(length_factor);
     }
-    logger().info("absolute target length: {}", length_abs);
 
     // to check if fixed vertices are really fixed
     std::unordered_map<size_t, Eigen::Vector3d> original_pos;
@@ -236,7 +225,7 @@ int main(int argc, char** argv)
 
 
     timer.start();
-    run_remeshing(input_path, length_abs, output, m, itrs, debug_output);
+    run_remeshing(input_path, output, m, itrs, debug_output);
     timer.stop();
 
     // to check the position change of fixed vertices

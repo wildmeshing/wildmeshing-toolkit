@@ -16,6 +16,7 @@ nlohmann::json remeshing_spec = R"(
       "eps_rel",
       "length_rel",
       "length_abs",
+      "length_factor",
       "freeze_boundary",
       "log_file",
       "report",
@@ -68,6 +69,12 @@ nlohmann::json remeshing_spec = R"(
     "type": "float",
     "default": -1,
     "doc": "Absolute target edge length. If negative, relative length is used to compute the absolute. If this is negative as well, the average edge length of the input is used as target."
+  },
+  {
+    "pointer": "/length_factor",
+    "type": "float",
+    "default": -1,
+    "doc": "Use the per-patch maximum edge length and multiply that with this factor. For coarsening, use a factor >1, for refining <1."
   },
   {
     "pointer": "/freeze_boundary",

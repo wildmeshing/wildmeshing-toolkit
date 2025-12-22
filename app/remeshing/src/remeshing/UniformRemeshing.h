@@ -32,6 +32,7 @@ struct VertexAttributes
     size_t partition_id;
     bool is_freeze = false;
     bool is_feature = false; // added to mark feature vertices
+    double tal = -1; // target edge length
 };
 
 struct EdgeAttributes
@@ -39,11 +40,15 @@ struct EdgeAttributes
     bool is_feature = false; // added to mark feature edges
 };
 
+struct FaceAttributes
+{
+    size_t patch_id = -1;
+    double quality = -1;
+};
+
 class UniformRemeshing : public wmtk::TriMesh
 {
 public:
-    void initialize_feature_edges();
-
     wmtk::SampleEnvelope m_envelope;
     bool m_has_envelope = false;
 
@@ -52,6 +57,9 @@ public:
 
     using EdgeAttCol = wmtk::AttributeCollection<EdgeAttributes>;
     EdgeAttCol edge_attrs;
+
+    using FaceAttCol = wmtk::AttributeCollection<FaceAttributes>;
+    FaceAttCol face_attrs;
 
     std::vector<uint64_t> m_feature_edge_keys;
 
@@ -70,6 +78,16 @@ public:
         bool m_freeze = true,
         double eps = 0);
 
+    void initialize_feature_edges();
+
+    void set_target_edge_length(const double tal);
+    /**
+     * @brief Set the target edge length to the per-patch average.
+     *
+     * Smooth the edge length in between vertices to have a difference of at max 1.5.
+     */
+    void set_per_patch_target_edge_length(const double factor);
+
     struct SplitInfoCache
     {
         // incident vertices
@@ -77,11 +95,15 @@ public:
         size_t v1 = size_t(-1);
         wmtk::Vector3d v0p;
         wmtk::Vector3d v1p;
+        double v0_tal; // v0 target edge length
+        double v1_tal; // v1 target edge length
+
         int partition_id;
 
         bool is_feature_edge = false;
 
         std::map<wmtk::simplex::Edge, EdgeAttributes> edge_attrs;
+        std::unordered_map<size_t, FaceAttributes> face_attrs;
     };
     tbb::enumerable_thread_specific<SplitInfoCache> split_info_cache;
 
@@ -107,6 +129,8 @@ public:
         Eigen::Vector3d v1p;
         Eigen::Vector3d v2p;
         int partition_id;
+        double v0_tal; // v0 target edge length
+        double v1_tal; // v1 target edge length
 
         size_t v0 = size_t(-1);
         size_t v1 = size_t(-1);
@@ -155,9 +179,10 @@ public:
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
 
-    double compute_edge_cost_collapse(const TriMesh::Tuple& t, double L) const;
-    double compute_edge_cost_split(const TriMesh::Tuple& t, double L) const;
-    double compute_vertex_valence(const TriMesh::Tuple& t) const;
+    double compute_edge_cost_collapse(const Tuple& t) const;
+    double compute_edge_cost_split(const Tuple& t) const;
+    double compute_vertex_valence(const Tuple& t) const;
+    double compute_swap_energy(const Tuple& t) const;
     /**
      * @brief Report statistics.
      *
@@ -170,14 +195,36 @@ public:
      * min valence
      */
     std::vector<double> average_len_valen();
-    bool split_remeshing(double L);
-    bool collapse_remeshing(double L);
+    bool split_remeshing();
+    bool collapse_remeshing();
     bool swap_remeshing();
-    bool uniform_remeshing(double L, int interations, bool debug_output = false);
+    bool uniform_remeshing(int interations, bool debug_output = false);
     bool write_triangle_mesh(std::string path);
+
+    /**
+     * @brief Compute the shape quality.
+     *
+     * The shape quality is the area divided by the sum of the squared edge lengths.
+     * The quality is normalized, i.e., the best quality is 1 and the worst is 0.
+     */
+    double shape_quality(
+        const wmtk::Vector3d& p0,
+        const wmtk::Vector3d& p1,
+        const wmtk::Vector3d& p2) const;
+
+    /**
+     * @brief Get the quality of a single triangle.
+     */
+    double get_quality(const std::array<size_t, 3>& vs) const;
+    double get_quality(const Tuple& t) const;
+    /**
+     * @brief Update quality of all triangles.
+     */
+    void update_qualities();
 
     void set_feature_vertices(const std::vector<size_t>& feature_vertices);
     void set_feature_edges(const std::vector<std::array<size_t, 2>>& feature_edges);
+    void set_patch_ids(const std::vector<size_t>& patch_ids);
     bool is_feature_vertex(size_t vid) const;
     bool is_feature_edge(const Tuple& t) const;
     bool write_feature_vertices_obj(const std::string& path) const;
