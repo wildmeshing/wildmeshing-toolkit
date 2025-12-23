@@ -12,6 +12,7 @@ CPMAddPackage(
     GIT_TAG 3ea7f9480967fcf6bf02ce9b993c0ea6d2fc45f6
     OPTIONS
         LIBIGL_PREDICATES ON
+        LIBIGL_COPYLEFT_TETGEN ON
 )
 # include(eigen)
 FetchContent_MakeAvailable(libigl)

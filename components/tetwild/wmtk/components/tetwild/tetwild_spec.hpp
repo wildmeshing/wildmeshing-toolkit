@@ -2,7 +2,8 @@
 #include <nlohmann/json.hpp>
 namespace {
 
-nlohmann::json tetwild_spec = R"([
+nlohmann::json tetwild_spec = R"(
+[
   {
     "pointer": "/",
     "type": "object",
@@ -11,6 +12,7 @@ nlohmann::json tetwild_spec = R"([
       "output",
       "skip_simplify",
       "use_sample_envelope",
+      "use_legacy_code",
       "num_threads",
       "max_iterations",
       "filter",
@@ -20,7 +22,9 @@ nlohmann::json tetwild_spec = R"([
       "preserve_topology",
       "throw_on_fail",
       "log_file",
-      "report"
+      "report",
+      "DEBUG_output",
+      "DEBUG_sanity_checks"
     ]
   },
   {
@@ -57,6 +61,12 @@ nlohmann::json tetwild_spec = R"([
     "type": "bool",
     "default": false,
     "doc": "Use sample envelope instead of exact one."
+  },
+  {
+    "pointer": "/use_legacy_code",
+    "type": "bool",
+    "default": false,
+    "doc": "Use the original TetWild code for the mesh improvement. This only works with 'use_sample_envelope'!"
   },
   {
     "pointer": "/num_threads",
@@ -118,6 +128,18 @@ nlohmann::json tetwild_spec = R"([
     "type": "string",
     "default": "",
     "doc": "A JSON file that stores information about the result and the method execution, e.g., runtime."
+  },
+  {
+    "pointer": "/DEBUG_output",
+    "type": "bool",
+    "default": false,
+    "doc": "Write the mesh as debug_{}.vtu after every operation."
+  },
+  {
+    "pointer": "/DEBUG_sanity_checks",
+    "type": "bool",
+    "default": false,
+    "doc": "Perform sanity checks after every operation. This can be very slow and should only be used for debugging."
   }
 ]
 )"_json;

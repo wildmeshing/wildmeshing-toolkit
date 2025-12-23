@@ -368,7 +368,7 @@ bool QSLIM::collapse_qslim(int target_vert_number)
     auto measure_priority = [this](auto& m, auto op, const Tuple& new_e) {
         return -compute_cost_for_e(new_e);
     };
-    auto setup_and_execute = [&](auto executor) {
+    auto setup_and_execute = [&](auto& executor) {
         executor.num_threads = NUM_THREADS;
         executor.renew_neighbor_tuples = renew;
         executor.priority = measure_priority;

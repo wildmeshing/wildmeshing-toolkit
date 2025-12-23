@@ -13,12 +13,14 @@ nlohmann::json tet_remeshing_spec = R"(
       "ijk_to_ras",
       "skip_simplify",
       "use_sample_envelope",
+      "use_tetgen",
       "num_threads",
       "max_iterations",
       "eps_rel",
       "eps",
       "length_rel",
       "stop_energy",
+      "edge_length_convergence",
       "write_vtu",
       "log_file"
     ]
@@ -82,6 +84,12 @@ nlohmann::json tet_remeshing_spec = R"(
     "doc": "Use sample envelope instead of exact one."
   },
   {
+    "pointer": "/use_tetgen",
+    "type": "bool",
+    "default": false,
+    "doc": "Use tetgen for embedding an image. Potentially faster but could fail."
+  },
+  {
     "pointer": "/num_threads",
     "type": "int",
     "default": 0,
@@ -114,8 +122,14 @@ nlohmann::json tet_remeshing_spec = R"(
   {
     "pointer": "/stop_energy",
     "type": "float",
-    "default": 10,
+    "default": 1000,
     "doc": "Target energy. If all tets have an energy below this, tetwild will stop."
+  },
+  {
+    "pointer": "/edge_length_convergence",
+    "type": "float",
+    "default": 1e-2,
+    "doc": "The iteration will stop once the relative change of the mean and standard deviation of all edge lengths is below that value."
   },
   {
     "pointer": "/write_vtu",

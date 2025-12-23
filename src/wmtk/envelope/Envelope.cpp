@@ -95,7 +95,10 @@ void SampleEnvelope::init(
     const std::vector<Eigen::Vector3i>& F,
     const double _eps)
 {
-    if (use_exact) return exact_envelope.init(V, F, _eps);
+    if (!use_exact) {
+        logger().warn("Sample envelope is probably broken! Better to use the exact one.");
+    }
+    exact_envelope.init(V, F, _eps);
 
     eps2 = _eps * _eps;
     sampling_dist = std::sqrt(eps2);
@@ -107,6 +110,34 @@ void SampleEnvelope::init(
     }
     MatrixXi FF;
     FF.resize(F.size(), 3);
+    for (size_t i = 0; i < F.size(); ++i) {
+        FF.row(i) = F[i];
+    }
+
+    m_bvh = std::make_shared<SimpleBVH::BVH>();
+    m_bvh->init(VV, FF, 0);
+}
+
+void SampleEnvelope::init(
+    const std::vector<Eigen::Vector3d>& V,
+    const std::vector<Eigen::Vector2i>& F,
+    const double _eps)
+{
+    if (use_exact) {
+        log_and_throw_error("Cannot use an exact envelope for edges.");
+    }
+
+    sampling_dist = _eps;
+    const double real_envelope = _eps - _eps / sqrt(3);
+    eps2 = real_envelope * real_envelope;
+
+    MatrixXd VV;
+    VV.resize(V.size(), 3);
+    for (size_t i = 0; i < V.size(); ++i) {
+        VV.row(i) = V[i];
+    }
+    MatrixXi FF;
+    FF.resize(F.size(), 2);
     for (size_t i = 0; i < F.size(); ++i) {
         FF.row(i) = F[i];
     }
@@ -180,11 +211,48 @@ bool SampleEnvelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri) const
     return false;
 }
 
+bool SampleEnvelope::is_outside(const std::array<Vector3d, 2>& edge) const
+{
+    if (use_exact) {
+        log_and_throw_error("Cannot use an exact envelope for edges.");
+    }
+    static thread_local std::vector<Vector3d> pts;
+    pts.clear();
+
+    const int N = (edge[0] - edge[1]).norm() / sampling_dist + 1;
+    pts.reserve(N);
+
+    for (int n = 0; n <= N; n++) {
+        Vector3d tmp = edge[0] * (double(n) / N) + edge[1] * (double(N - n) / N);
+        pts.push_back(tmp);
+    }
+
+    Vector3d current_point = pts[0];
+
+    double sq_dist;
+    Vector3d nearest_point;
+    int prev_facet = m_bvh->nearest_facet(current_point, nearest_point, sq_dist);
+    if (sq_dist > eps2) {
+        wmtk::logger().trace("fail envelope check 4");
+        return true;
+    }
+
+    for (size_t i = 0; i < pts.size(); ++i) {
+        m_bvh->nearest_facet_with_hint(pts[i], prev_facet, nearest_point, sq_dist);
+        if (sq_dist > eps2) {
+            wmtk::logger().trace("fail envelope check 5");
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
 double SampleEnvelope::nearest_point(const Eigen::Vector3d& pts, Eigen::Vector3d& result) const
 {
     double dist;
     m_bvh->nearest_facet(pts, result, dist);
-
     return dist;
 }
 

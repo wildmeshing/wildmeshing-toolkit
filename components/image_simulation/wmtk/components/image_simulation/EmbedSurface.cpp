@@ -5,6 +5,7 @@
 #include <igl/is_vertex_manifold.h>
 #include <igl/remove_duplicate_vertices.h>
 #include <igl/remove_unreferenced.h>
+#include <igl/copyleft/tetgen/tetrahedralize.h>
 // igl must be included BEFORE VolumeRemesher
 #include <VolumeRemesher/embed.h>
 #include <VolumeRemesher/numerics.h>
@@ -784,6 +785,8 @@ void EmbedSurface::remove_duplicates(const double eps)
 
 bool EmbedSurface::embed_surface()
 {
+    logger().info("Embed with VolumeInsertion");
+
     std::shared_ptr<SampleEnvelope> ptr_env;
     {
         const auto v_simplified = V_surf_to_vector();
@@ -836,6 +839,142 @@ bool EmbedSurface::embed_surface()
     tag_tets_from_images(m_img_datas, m_xyz2ijk, m_V_emb, m_T_emb, m_T_tags);
 
     return all_rounded;
+}
+
+bool EmbedSurface::embed_surface_tetgen()
+{
+    logger().info("Embed with TetGen");
+
+    std::shared_ptr<SampleEnvelope> ptr_env;
+    {
+        const auto v_simplified = V_surf_to_vector();
+
+        std::vector<Eigen::Vector3i> tempF(m_F_surface.rows());
+        for (size_t i = 0; i < tempF.size(); ++i) {
+            tempF[i] = m_F_surface.row(i);
+        }
+        ptr_env = std::make_shared<SampleEnvelope>();
+        ptr_env->init(v_simplified, tempF, 0.5);
+    }
+
+    Eigen::MatrixXd V_in;
+    Eigen::MatrixXi F_in;
+    {
+        const Vector3d vertices_max = m_V_surface.colwise().maxCoeff();
+        const Vector3d vertices_min = m_V_surface.colwise().minCoeff();
+        const double diag = (vertices_max - vertices_min).norm();
+
+        // bbox
+        double delta = diag / 15.0;
+        const Vector3d box_min(
+            vertices_min[0] - delta,
+            vertices_min[1] - delta,
+            vertices_min[2] - delta);
+        const Vector3d box_max(
+            vertices_max[0] + delta,
+            vertices_max[1] + delta,
+            vertices_max[2] + delta);
+
+
+        // add corners of domain
+        std::vector<Vector3d> points(8);
+        for (int i = 0; i < 8; i++) {
+            Vector3d& p = points[i];
+            std::bitset<sizeof(int) * 8> a(i);
+            for (int j = 0; j < 3; j++) {
+                if (a.test(j)) {
+                    p[j] = box_max[j];
+                } else {
+                    p[j] = box_min[j];
+                }
+            }
+        }
+
+        const double voxel_resolution = diag / 20.0;
+        std::array<int, 3> N; // number of grid points per dimension
+        std::array<double, 3> h; // distance between grid points per dimension
+        for (int i = 0; i < 3; i++) {
+            const double D = box_max[i] - box_min[i];
+            N[i] = (D / voxel_resolution) + 1;
+            h[i] = D / N[i];
+        }
+
+        std::array<std::vector<double>, 3> ds;
+        for (int i = 0; i < 3; i++) {
+            ds[i].push_back(box_min[i]);
+            for (int j = 0; j < N[i] - 1; j++) {
+                ds[i].push_back(box_min[i] + h[i] * (j + 1));
+            }
+            ds[i].push_back(box_max[i]);
+        }
+
+        const double min_dis = voxel_resolution * voxel_resolution / 4;
+        //    double min_dis = state.target_edge_len * state.target_edge_len;//epsilon*2
+        for (int i = 0; i < ds[0].size(); i++) {
+            for (int j = 0; j < ds[1].size(); j++) {
+                for (int k = 0; k < ds[2].size(); k++) {
+                    if ((i == 0 || i == ds[0].size() - 1) && (j == 0 || j == ds[1].size() - 1) &&
+                        (k == 0 || k == ds[2].size() - 1)) {
+                        continue;
+                    }
+                    const Vector3d p(ds[0][i], ds[1][j], ds[2][k]);
+
+                    Eigen::Vector3d n;
+                    const double sqd = ptr_env->nearest_point(p, n);
+
+                    if (sqd < min_dis) {
+                        continue;
+                    }
+                    points.emplace_back(ds[0][i], ds[1][j], ds[2][k]);
+                }
+            }
+        }
+
+
+        V_in.resize(m_V_surface.rows() + points.size(), 3);
+        V_in.block(0, 0, m_V_surface.rows(), 3) = m_V_surface;
+        for (size_t i = 0; i < points.size(); ++i) {
+            V_in.row(m_V_surface.rows() + i) = points[i];
+        }
+        std::array<size_t, 8> p;
+        for (size_t i = 0; i < p.size(); ++i) {
+            p[i] = m_V_surface.rows() + i;
+        }
+
+
+        F_in = m_F_surface;
+        // F_in.resize(m_F_surface.rows() + 12, 3);
+        // F_in.block(0, 0, m_F_surface.rows(), 3) = m_F_surface;
+        // F_in.row(m_F_surface.rows() + 0) = Vector3i(p[0], p[1], p[2]);
+        // F_in.row(m_F_surface.rows() + 1) = Vector3i(p[1], p[3], p[2]);
+        // F_in.row(m_F_surface.rows() + 2) = Vector3i(p[0], p[5], p[1]);
+        // F_in.row(m_F_surface.rows() + 3) = Vector3i(p[0], p[4], p[5]);
+        // F_in.row(m_F_surface.rows() + 4) = Vector3i(p[0], p[6], p[4]);
+        // F_in.row(m_F_surface.rows() + 5) = Vector3i(p[0], p[2], p[6]);
+        // F_in.row(m_F_surface.rows() + 6) = Vector3i(p[7], p[3], p[2]);
+        // F_in.row(m_F_surface.rows() + 7) = Vector3i(p[7], p[2], p[6]);
+        // F_in.row(m_F_surface.rows() + 8) = Vector3i(p[7], p[6], p[4]);
+        // F_in.row(m_F_surface.rows() + 9) = Vector3i(p[7], p[4], p[5]);
+        // F_in.row(m_F_surface.rows() + 10) = Vector3i(p[7], p[5], p[1]);
+        // F_in.row(m_F_surface.rows() + 11) = Vector3i(p[7], p[1], p[3]);
+    }
+
+    MatrixXi TF;
+
+    int ret = igl::copyleft::tetgen::tetrahedralize(V_in, F_in, "pc", m_V_emb, m_T_emb, TF);
+    if (ret != 0) {
+        log_and_throw_error("TetGen returned with {}", ret);
+    }
+
+    m_V_emb_r.resizeLike(m_V_emb);
+    for (int i = 0; i < m_V_emb.rows(); ++i) {
+        m_V_emb_r.row(i) = to_rational(m_V_emb.row(i));
+    }
+
+    // add tags
+    tag_tets_from_images(m_img_datas, m_xyz2ijk, m_V_emb, m_T_emb, m_T_tags);
+
+    return true;
 }
 
 void EmbedSurface::consolidate()

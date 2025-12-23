@@ -110,6 +110,8 @@ public:
 
     bool embed_surface();
 
+    bool embed_surface_tetgen();
+
     /**
      * @brief Remove unreferenced vertices.
      */

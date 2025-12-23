@@ -110,6 +110,9 @@ void tetwild(nlohmann::json json_params)
 
     params.preserve_topology = json_params["preserve_topology"];
 
+    params.debug_output = json_params["DEBUG_output"];
+    params.perform_sanity_checks = json_params["DEBUG_sanity_checks"];
+
     // logger settings
     {
         std::string log_file_name = json_params["log_file"];
@@ -162,7 +165,7 @@ void tetwild(nlohmann::json json_params)
 
     double diag = (box_minmax.first - box_minmax.second).norm();
     const double envelope_size = params.epsr * diag;
-    app::sec::ShortestEdgeCollapse surf_mesh(verts, NUM_THREADS, false);
+    app::sec::ShortestEdgeCollapse surf_mesh(verts, NUM_THREADS, !use_sample_envelope);
     surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, envelope_size / 2);
     assert(surf_mesh.check_mesh_connectivity_validity());
 
@@ -200,21 +203,7 @@ void tetwild(nlohmann::json json_params)
     params.init(box_minmax.first, box_minmax.second);
     wmtk::remove_duplicates(vsimp, fsimp, 1e-10 * params.diag_l);
 
-    wmtk::ExactEnvelope exact_envelope;
-    {
-        std::vector<Eigen::Vector3i> tempF(fsimp.size());
-        for (auto i = 0; i < tempF.size(); i++) tempF[i] << fsimp[i][0], fsimp[i][1], fsimp[i][2];
-        exact_envelope.init(vsimp, tempF, envelope_size / 2);
-    }
-
-    // initiate the tetwild mesh using the original envelop
-    wmtk::Envelope* ptr_env;
-    if (use_sample_envelope) {
-        ptr_env = &(surf_mesh.m_envelope);
-    } else {
-        ptr_env = &(exact_envelope);
-    }
-    tetwild::TetWildMesh mesh(params, *ptr_env, surf_mesh.m_envelope, NUM_THREADS);
+    tetwild::TetWildMesh mesh(params, surf_mesh.m_envelope, NUM_THREADS);
 
     /////////////////////////////////////////////////////
 
@@ -255,7 +244,7 @@ void tetwild(nlohmann::json json_params)
         tet_face_on_input_surface);
 
     // generate new mesh
-    tetwild::TetWildMesh mesh_new(params, *ptr_env, surf_mesh.m_envelope, NUM_THREADS);
+    tetwild::TetWildMesh mesh_new(params, surf_mesh.m_envelope, NUM_THREADS);
 
     mesh_new.init_from_Volumeremesher(
         v_rational,
@@ -306,7 +295,12 @@ void tetwild(nlohmann::json json_params)
     wmtk::logger().info("MESH surface VERTEX COUNT BEFORE OPTIMIZE: {}", surface_v_cnt);
 
     // /////////mesh improvement
-    mesh_new.mesh_improvement(max_its);
+    if (json_params["use_legacy_code"]) {
+        logger().warn("Using legacy code for mesh improvement!");
+        mesh_new.mesh_improvement_legacy(max_its);
+    } else {
+        mesh_new.mesh_improvement(max_its);
+    }
 
     // mesh_new.output_mesh(output_path + "after_optimization.msh");
     // mesh_new.output_faces(output_path + "after_optimization_surface.obj", [](auto& f) {

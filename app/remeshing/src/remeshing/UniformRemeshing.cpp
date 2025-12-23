@@ -697,7 +697,7 @@ bool UniformRemeshing::collapse_remeshing()
         timer.getElapsedTimeInMilliSec());
 
     wmtk::logger().info("size for edges to be collapse is {}", collect_all_ops.size());
-    auto setup_and_execute = [&](auto executor) {
+    auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = renew;
         executor.priority = [&](auto& m, auto _, auto& e) {
             return m.compute_edge_cost_collapse(e);
@@ -797,7 +797,7 @@ bool UniformRemeshing::smooth_all_vertices()
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("vertex_smooth", loc);
 
-    auto setup_and_execute = [&](auto executor) {
+    auto setup_and_execute = [&](auto& executor) {
         executor.num_threads = NUM_THREADS;
 
         executor(*this, collect_all_ops);
@@ -830,7 +830,7 @@ bool UniformRemeshing::swap_remeshing()
     wmtk::logger().info("***** swap get edges time *****: {} ms", timer.getElapsedTimeInMilliSec());
 
 
-    auto setup_and_execute = [&](auto executor) {
+    auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = renew;
         executor.num_threads = NUM_THREADS;
         executor.priority = [](auto& m, auto op, const Tuple& e) {

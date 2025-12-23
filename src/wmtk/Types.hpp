@@ -75,6 +75,25 @@ inline void vectors_to_VF(
     }
 }
 
+inline void VF_to_vectors(
+    const MatrixXd& V,
+    const MatrixXi& F,
+    std::vector<Vector3d>& vertices,
+    std::vector<Vector3i>& faces)
+{
+    vertices.resize(V.rows());
+    faces.resize(F.rows());
+
+    for (size_t i = 0; i < V.rows(); i++) {
+        vertices[i] = V.row(i);
+    }
+    for (size_t i = 0; i < F.rows(); i++) {
+        faces[i][0] = F(i, 0);
+        faces[i][1] = F(i, 1);
+        faces[i][2] = F(i, 2);
+    }
+}
+
 inline bool
 tet_is_inverted(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const Vector3d& v3)
 {

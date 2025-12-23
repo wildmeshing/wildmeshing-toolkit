@@ -6,12 +6,14 @@
 namespace wmtk {
 void unique_edge_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& edges)
 {
-    auto edge_ids = std::vector<size_t>();
-    for (auto& e : edges) edge_ids.push_back(e.eid(m));
+    std::vector<size_t> edge_ids;
+    for (const TetMesh::Tuple& e : edges) {
+        edge_ids.push_back(e.eid(m));
+    }
     std::sort(edge_ids.begin(), edge_ids.end());
     edge_ids.erase(std::unique(edge_ids.begin(), edge_ids.end()), edge_ids.end());
     edges.clear();
-    for (auto i : edge_ids) {
+    for (size_t i : edge_ids) {
         edges.emplace_back(m.tuple_from_edge(i / 6, i % 6));
     }
 }
@@ -19,7 +21,7 @@ void unique_edge_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& edges)
 void unique_edge_tuples(const TriMesh& m, std::vector<TriMesh::Tuple>& edges)
 {
     std::vector<size_t> all_eids;
-    for (auto e : edges) {
+    for (const TriMesh::Tuple& e : edges) {
         all_eids.emplace_back(e.eid(m));
     }
     vector_unique(all_eids);
