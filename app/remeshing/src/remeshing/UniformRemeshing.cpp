@@ -483,16 +483,16 @@ bool UniformRemeshing::split_edge_after(const TriMesh::Tuple& t)
     const auto& cache = split_info_cache.local();
 
     const Eigen::Vector3d p = 0.5 * (cache.v0p + cache.v1p);
-    Eigen::Vector3d after_project;
-    if (cache.is_feature_edge) {
-        m_feature_envelope.nearest_point(p, after_project);
-    } else {
-        m_envelope.nearest_point(p, after_project);
-    }
+    // Eigen::Vector3d after_project;
+    //  if (cache.is_feature_edge) {
+    //      m_feature_envelope.nearest_point(p, after_project);
+    //  } else {
+    //      m_envelope.nearest_point(p, after_project);
+    //  }
 
     const size_t vnew = t.switch_vertex(*this).vid(*this);
     auto& vnew_attrs = vertex_attrs[vnew];
-    vnew_attrs.pos = after_project;
+    vnew_attrs.pos = p;
     vnew_attrs.partition_id = cache.partition_id;
     vnew_attrs.is_feature = cache.is_feature_edge;
     vnew_attrs.tal = 0.5 * (cache.v0_tal + cache.v1_tal);
