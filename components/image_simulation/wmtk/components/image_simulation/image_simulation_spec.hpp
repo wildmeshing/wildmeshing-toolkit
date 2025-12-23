@@ -21,6 +21,7 @@ nlohmann::json image_simulation_spec = R"(
       "stop_energy",
       "write_vtu",
       "log_file",
+      "report",
       "DEBUG_output",
       "DEBUG_sanity_checks"
     ]
