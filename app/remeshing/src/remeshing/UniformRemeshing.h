@@ -50,6 +50,7 @@ class UniformRemeshing : public wmtk::TriMesh
 {
 public:
     wmtk::SampleEnvelope m_envelope;
+    wmtk::SampleEnvelope m_feature_envelope; // envelope for feature edges
     bool m_has_envelope = false;
 
     using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
@@ -60,8 +61,6 @@ public:
 
     using FaceAttCol = wmtk::AttributeCollection<FaceAttributes>;
     FaceAttCol face_attrs;
-
-    std::vector<uint64_t> m_feature_edge_keys;
 
     int retry_limit = 10;
     UniformRemeshing(

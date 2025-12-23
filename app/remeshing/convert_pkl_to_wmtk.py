@@ -8,7 +8,7 @@ import json
 
 
 # default paths
-fused_path = "/mnt/c/Projects/wildmeshing-toolkit/app/remeshing/fused.pkl"
+fused_path = "fused.pkl"
 mesh_path = "mesh.obj"
 # feature_edge_vertex_path = "feature_edge_vertex.json"
 # feature_vertex_edge_path = "feature_vertex_edge.json"
@@ -18,8 +18,12 @@ patches_path = "patches.json"
 if __name__ == "__main__":
     # read arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("--fused", type=str, default=fused_path)
-    parser.add_argument("--mesh", type=str, default=mesh_path)
+    parser.add_argument(
+        "--fused", type=str, default=fused_path, help="input fused pkl file"
+    )
+    parser.add_argument(
+        "--mesh", type=str, default=mesh_path, help="output mesh obj file"
+    )
     # parser.add_argument(
     #     "--feature_edge_vertex", type=str, default=feature_edge_vertex_path
     # )
@@ -27,7 +31,9 @@ if __name__ == "__main__":
     #     "--feature_vertex_edge", type=str, default=feature_vertex_edge_path
     # )
     # parser.add_argument("--corner", type=str, default=corner_path)
-    parser.add_argument("--patches", type=str, default=patches_path)
+    parser.add_argument(
+        "--patches", type=str, default=patches_path, help="output patches json file"
+    )
     args = parser.parse_args()
 
     fused_path = args.fused

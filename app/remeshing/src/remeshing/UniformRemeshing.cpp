@@ -60,19 +60,6 @@ void UniformRemeshing::create_mesh(
     double eps)
 {
     wmtk::TriMesh::init(n_vertices, tris);
-    std::vector<Vector3d> V(n_vertices);
-    std::vector<Vector3i> F(tris.size());
-    for (int i = 0; i < V.size(); i++) {
-        V[i] = vertex_attrs[i].pos;
-    }
-    for (int i = 0; i < F.size(); ++i) {
-        F[i] = Vector3i(tris[i][0], tris[i][1], tris[i][2]);
-    }
-    if (eps > 0) {
-        m_envelope.init(V, F, eps);
-        m_has_envelope = true;
-    } else
-        m_envelope.init(V, F, 0.0);
 
     // TODO: this should not be here
     partition_mesh_morton();
@@ -90,6 +77,37 @@ void UniformRemeshing::create_mesh(
     }
     edge_attrs.resize(tri_capacity() * 3);
     initialize_feature_edges();
+
+    // init envelopes
+    {
+        std::vector<Vector3d> V(n_vertices);
+        std::vector<Vector3i> F(tris.size());
+        const auto feature_edges =
+            get_edges_by_condition([](const EdgeAttributes& e) { return e.is_feature; });
+        std::vector<Vector2i> E(feature_edges.size());
+
+        for (int i = 0; i < V.size(); i++) {
+            V[i] = vertex_attrs[i].pos;
+        }
+        for (int i = 0; i < F.size(); ++i) {
+            F[i] = Vector3i(tris[i][0], tris[i][1], tris[i][2]);
+        }
+        for (int i = 0; i < E.size(); ++i) {
+            E[i] = Vector2i(feature_edges[i][0], feature_edges[i][1]);
+        }
+        if (eps > 0) {
+            m_envelope.init(V, F, eps);
+            if (!feature_edges.empty()) {
+                m_feature_envelope.init(V, E, eps);
+            }
+            m_has_envelope = true;
+        } else {
+            m_envelope.init(V, F, 0.0);
+            if (!feature_edges.empty()) {
+                m_feature_envelope.init(V, E, 0.0);
+            }
+        }
+    }
 }
 
 void UniformRemeshing::cache_edge_positions(const Tuple& t)
@@ -466,7 +484,11 @@ bool UniformRemeshing::split_edge_after(const TriMesh::Tuple& t)
 
     const Eigen::Vector3d p = 0.5 * (cache.v0p + cache.v1p);
     Eigen::Vector3d after_project;
-    m_envelope.nearest_point(p, after_project);
+    if (cache.is_feature_edge) {
+        m_feature_envelope.nearest_point(p, after_project);
+    } else {
+        m_envelope.nearest_point(p, after_project);
+    }
 
     const size_t vnew = t.switch_vertex(*this).vid(*this);
     auto& vnew_attrs = vertex_attrs[vnew];
@@ -504,7 +526,6 @@ bool UniformRemeshing::split_edge_after(const TriMesh::Tuple& t)
         face_attrs[f1.fid(*this)] = attrs;
     }
 
-
     return true;
 }
 
@@ -539,7 +560,11 @@ bool UniformRemeshing::smooth_after(const TriMesh::Tuple& t)
     //     }
 
     Eigen::Vector3d after_project;
-    m_envelope.nearest_point(after_smooth, after_project);
+    if (vertex_attrs[t.vid(*this)].is_feature) {
+        m_feature_envelope.nearest_point(after_smooth, after_project);
+    } else {
+        m_envelope.nearest_point(after_smooth, after_project);
+    }
     // logger().warn("{} --> {}", after_smooth.transpose(), after_project.transpose());
 
     vertex_attrs[t.vid(*this)].pos = after_project;
