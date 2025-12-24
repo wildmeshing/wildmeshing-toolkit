@@ -63,11 +63,11 @@ void UniformRemeshing::create_mesh(
 
     // TODO: this should not be here
     partition_mesh_morton();
+    for (auto v : frozen_verts) {
+        vertex_attrs[v].is_freeze = true;
+    }
 
     if (m_freeze) {
-        for (auto v : frozen_verts) {
-            vertex_attrs[v].is_freeze = true;
-        }
         for (const Tuple& e : get_edges()) {
             if (is_boundary_edge(e)) {
                 vertex_attrs[e.vid(*this)].is_freeze = true;
@@ -403,6 +403,10 @@ bool UniformRemeshing::collapse_edge_before(const Tuple& t)
         return false;
     }
 
+    // if (is_feature_edge(t) && !vertex_attrs[v0].is_feature && vertex_attrs[v1].is_feature)
+    //     return false;
+
+
     if (vertex_attrs[v0].is_freeze || vertex_attrs[v1].is_freeze) {
         return false;
     }
@@ -423,6 +427,8 @@ bool UniformRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
     auto& attr = vertex_attrs[t.vid(*this)];
     attr.pos = p;
     attr.partition_id = cache.partition_id;
+
+
     /*
      * I am not sure if it is better to keep the target edge length of the remaining vertex or to
      * use the min of the two. The min seems to be quite aggressive.

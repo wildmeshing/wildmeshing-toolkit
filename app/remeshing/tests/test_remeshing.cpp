@@ -48,7 +48,7 @@ TEST_CASE("split_each_edge", "[test_remeshing]")
     std::vector<size_t> modified_v;
     m.create_mesh(3, tris, modified_v, 0);
     int target_vertnum = m.vert_capacity() + 3 * m.get_edges().size() + 3 * m.tri_capacity();
-    m.split_remeshing(2.7 / 2);
+    m.split_remeshing();
     m.consolidate_mesh();
     REQUIRE(target_vertnum == 15);
 
@@ -119,7 +119,7 @@ TEST_CASE("test_split", "[test_remeshing]")
     UniformRemeshing m(v);
     std::vector<size_t> modified_v;
     m.create_mesh(V.rows(), tri, modified_v, 0);
-    m.split_remeshing(m.average_len_valen()[0] * 0.5);
+    m.split_remeshing();
     REQUIRE(m.check_mesh_connectivity_validity());
 }
 
@@ -234,7 +234,7 @@ TEST_CASE("operation orient", "[test_remeshing]")
         REQUIRE(!is_inverted(tri));
     }
 
-    m.split_remeshing(0.8);
+    m.split_remeshing();
     fs = m.get_faces();
     for (auto f : fs) {
         std::array<double, 6> tri = {
@@ -247,7 +247,7 @@ TEST_CASE("operation orient", "[test_remeshing]")
         REQUIRE(!is_inverted(tri));
     }
 
-    m.collapse_remeshing(1.5);
+    m.collapse_remeshing();
     fs = m.get_faces();
     for (auto f : fs) {
         std::array<double, 6> tri = {

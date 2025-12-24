@@ -217,29 +217,10 @@ int main(int argc, char** argv)
         m.set_per_patch_target_edge_length(length_factor);
     }
 
-    // to check if fixed vertices are really fixed
-    std::unordered_map<size_t, Eigen::Vector3d> original_pos;
-    for (size_t v : fixed_vertices) {
-        original_pos[v] = verts[v];
-    }
-
-
     timer.start();
     run_remeshing(input_path, output, m, itrs, debug_output);
     timer.stop();
 
-    // to check the position change of fixed vertices
-    double max_movement = 0.0;
-    for (size_t v : fixed_vertices) {
-        const auto& attr = m.vertex_attrs[v];
-        Eigen::Vector3d after = attr.pos;
-        Eigen::Vector3d before = original_pos[v];
-        double dist = (after - before).norm();
-        max_movement = std::max(max_movement, dist);
-        logger().info("fixed vertex {} moved by {}", v, dist);
-    }
-
-    logger().info("Max movement among fixed vertices = {}", max_movement);
 
     const std::string report_file = json_params["report"];
     if (!report_file.empty()) {
