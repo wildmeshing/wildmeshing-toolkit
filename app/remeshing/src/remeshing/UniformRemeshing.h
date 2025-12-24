@@ -30,14 +30,14 @@ struct VertexAttributes
     Eigen::Vector3d pos;
     // TODO: in fact, partition id should not be vertex attribute, it is a fixed marker to distinguish tuple/operations.
     size_t partition_id;
-    bool is_freeze = false;
-    bool is_feature = false; // added to mark feature vertices
+    int is_freeze = 0;
+    bool is_feature = false;
     double tal = -1; // target edge length
 };
 
 struct EdgeAttributes
 {
-    bool is_feature = false; // added to mark feature edges
+    int is_feature = 0;
 };
 
 struct FaceAttributes
@@ -73,7 +73,7 @@ public:
     void create_mesh(
         size_t n_vertices,
         const std::vector<std::array<size_t, 3>>& tris,
-        const std::vector<size_t>& frozen_verts = std::vector<size_t>(),
+        const std::vector<std::pair<size_t, int>>& frozen_verts = {},
         bool m_freeze = true,
         double eps = 0);
 
@@ -99,7 +99,7 @@ public:
 
         int partition_id;
 
-        bool is_feature_edge = false;
+        int is_feature_edge = 0;
 
         std::map<wmtk::simplex::Edge, EdgeAttributes> edge_attrs;
         std::unordered_map<size_t, FaceAttributes> face_attrs;
@@ -117,7 +117,7 @@ public:
         wmtk::Vector3d v0p;
         wmtk::Vector3d v1p;
 
-        bool is_feature_edge = false;
+        int is_feature_edge = 0;
         std::map<wmtk::simplex::Edge, EdgeAttributes> ring_edge_attrs;
     };
     tbb::enumerable_thread_specific<SwapInfoCache> swap_info_cache;
@@ -133,7 +133,7 @@ public:
 
         size_t v0 = size_t(-1);
         size_t v1 = size_t(-1);
-        bool is_feature_edge = false;
+        int is_feature_edge = 0;
     };
     tbb::enumerable_thread_specific<PositionInfoCache> position_cache;
 
@@ -222,7 +222,7 @@ public:
     void update_qualities();
 
     void set_feature_vertices(const std::vector<size_t>& feature_vertices);
-    void set_feature_edges(const std::vector<std::array<size_t, 2>>& feature_edges);
+    void set_feature_edges(const std::vector<std::pair<std::array<size_t, 2>, int>>& feature_edges);
     void set_patch_ids(const std::vector<size_t>& patch_ids);
     bool is_feature_vertex(size_t vid) const;
     bool is_feature_edge(const Tuple& t) const;
@@ -231,7 +231,7 @@ public:
     void write_vtu(const std::string& path) const;
 
 private:
-    std::vector<std::array<size_t, 2>> m_input_feature_edges;
+    std::vector<std::pair<std::array<size_t, 2>, int>> m_input_feature_edges;
 };
 
 } // namespace app::remeshing

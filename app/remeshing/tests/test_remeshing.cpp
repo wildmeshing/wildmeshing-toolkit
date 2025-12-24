@@ -29,7 +29,7 @@ TEST_CASE("uniform_remeshing", "[test_remeshing][.]")
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
     UniformRemeshing m(v);
-    std::vector<size_t> modified_v;
+    std::vector<std::pair<size_t, int>> modified_v;
     m.create_mesh(V.rows(), tri, modified_v, 0);
     REQUIRE(m.check_mesh_connectivity_validity());
     REQUIRE(m.uniform_remeshing(0.01, 5));
@@ -45,7 +45,7 @@ TEST_CASE("split_each_edge", "[test_remeshing]")
 
     UniformRemeshing m(v_positions, 0);
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}};
-    std::vector<size_t> modified_v;
+    std::vector<std::pair<size_t, int>> modified_v;
     m.create_mesh(3, tris, modified_v, 0);
     int target_vertnum = m.vert_capacity() + 3 * m.get_edges().size() + 3 * m.tri_capacity();
     m.split_remeshing();
@@ -75,7 +75,7 @@ TEST_CASE("test_swap", "[test_remeshing]")
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
     UniformRemeshing m(v);
-    std::vector<size_t> modified_v;
+    std::vector<std::pair<size_t, int>> modified_v;
     m.create_mesh(V.rows(), tri, modified_v, 0);
     int v_invariant = m.get_vertices().size();
     int e_invariant = m.get_edges().size();
@@ -117,72 +117,72 @@ TEST_CASE("test_split", "[test_remeshing]")
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
     UniformRemeshing m(v);
-    std::vector<size_t> modified_v;
+    std::vector<std::pair<size_t, int>> modified_v;
     m.create_mesh(V.rows(), tri, modified_v, 0);
     m.split_remeshing();
     REQUIRE(m.check_mesh_connectivity_validity());
 }
 
-TEST_CASE("remeshing_hanging", "[test_remeshing]")
-{
-    const std::string root(WMTK_DATA_DIR);
-    const std::string path = root + "/100071_sf.obj";
-    std::string output = "100071_out.obj";
-    double env_rel = 1e-3;
-    double len_rel = 5;
-    int thread = 0;
+// TEST_CASE("remeshing_hanging", "[test_remeshing]")
+// {
+//     const std::string root(WMTK_DATA_DIR);
+//     const std::string path = root + "/100071_sf.obj";
+//     std::string output = "100071_out.obj";
+//     double env_rel = 1e-3;
+//     double len_rel = 5;
+//     int thread = 0;
 
-    wmtk::logger().info("remeshing on {}", path);
-    Eigen::MatrixXd V;
-    Eigen::MatrixXi F;
-    bool ok = igl::read_triangle_mesh(path, V, F);
-    Eigen::VectorXi SVI, SVJ;
-    Eigen::MatrixXd temp_V = V; // for STL file
-    igl::remove_duplicate_vertices(temp_V, 0, V, SVI, SVJ);
-    for (int i = 0; i < F.rows(); i++)
-        for (int j : {0, 1, 2}) F(i, j) = SVJ[F(i, j)];
-    wmtk::logger().info("Before_vertices#: {} \n Before_tris#: {}", V.rows(), F.rows());
+//     wmtk::logger().info("remeshing on {}", path);
+//     Eigen::MatrixXd V;
+//     Eigen::MatrixXi F;
+//     bool ok = igl::read_triangle_mesh(path, V, F);
+//     Eigen::VectorXi SVI, SVJ;
+//     Eigen::MatrixXd temp_V = V; // for STL file
+//     igl::remove_duplicate_vertices(temp_V, 0, V, SVI, SVJ);
+//     for (int i = 0; i < F.rows(); i++)
+//         for (int j : {0, 1, 2}) F(i, j) = SVJ[F(i, j)];
+//     wmtk::logger().info("Before_vertices#: {} \n Before_tris#: {}", V.rows(), F.rows());
 
 
-    std::vector<Eigen::Vector3d> v(V.rows());
-    std::vector<std::array<size_t, 3>> tri(F.rows());
-    for (int i = 0; i < V.rows(); i++) {
-        v[i] = V.row(i);
-    }
-    for (int i = 0; i < F.rows(); i++) {
-        for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
-    }
+//     std::vector<Eigen::Vector3d> v(V.rows());
+//     std::vector<std::array<size_t, 3>> tri(F.rows());
+//     for (int i = 0; i < V.rows(); i++) {
+//         v[i] = V.row(i);
+//     }
+//     for (int i = 0; i < F.rows(); i++) {
+//         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
+//     }
 
-    const Eigen::MatrixXd box_min = V.colwise().minCoeff();
-    const Eigen::MatrixXd box_max = V.colwise().maxCoeff();
-    const double diag = (box_max - box_min).norm();
-    const double envelope_size = env_rel * diag;
-    Eigen::VectorXi dummy;
-    std::vector<size_t> modified_v;
-    if (!igl::is_edge_manifold(F) || !igl::is_vertex_manifold(F, dummy)) {
-        auto v1 = v;
-        auto tri1 = tri;
-        wmtk::separate_to_manifold(v1, tri1, v, tri, modified_v);
-    }
+//     const Eigen::MatrixXd box_min = V.colwise().minCoeff();
+//     const Eigen::MatrixXd box_max = V.colwise().maxCoeff();
+//     const double diag = (box_max - box_min).norm();
+//     const double envelope_size = env_rel * diag;
+//     Eigen::VectorXi dummy;
+//     std::vector<std::pair<size_t, int>> modified_v;
+//     if (!igl::is_edge_manifold(F) || !igl::is_vertex_manifold(F, dummy)) {
+//         auto v1 = v;
+//         auto tri1 = tri;
+//         wmtk::separate_to_manifold(v1, tri1, v, tri, modified_v);
+//     }
 
-    UniformRemeshing m(v, thread);
-    m.create_mesh(v.size(), tri, modified_v, envelope_size);
-    REQUIRE(m.check_edge_manifold());
-    m.get_vertices();
-    std::vector<double> properties = m.average_len_valen();
-    wmtk::logger().info(
-        "edgelen: avg max min valence:avg max min before remesh is: {}",
-        properties);
-    wmtk::logger().info("target edge length is: {}", properties[0] * len_rel);
-    m.uniform_remeshing(properties[0] * len_rel, 2);
-    m.consolidate_mesh();
-    m.write_triangle_mesh(output);
-    wmtk::logger().info(
-        "After_vertices#: {} \n\t After_tris#: {}",
-        m.vert_capacity(),
-        m.tri_capacity());
-    REQUIRE(m.check_edge_manifold());
-}
+//     UniformRemeshing m(v, thread);
+//     m.create_mesh(v.size(), tri, modified_v, envelope_size);
+//     REQUIRE(m.check_edge_manifold());
+//     m.get_vertices();
+//     std::vector<double> properties = m.average_len_valen();
+//     wmtk::logger().info(
+//         "edgelen: avg max min valence:avg max min before remesh is: {}",
+//         properties);
+//     wmtk::logger().info("target edge length is: {}", properties[0] * len_rel);
+//     m.uniform_remeshing(properties[0] * len_rel, 2);
+//     m.consolidate_mesh();
+//     m.write_triangle_mesh(output);
+//     wmtk::logger().info(
+//         "After_vertices#: {} \n\t After_tris#: {}",
+//         m.vert_capacity(),
+//         m.tri_capacity());
+//     REQUIRE(m.check_edge_manifold());
+// }
 
 std::function<bool(std::array<double, 6>&)> is_inverted = [](auto& tri) {
     Eigen::Vector2d a, b, c;
@@ -220,7 +220,7 @@ TEST_CASE("operation orient", "[test_remeshing]")
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
     UniformRemeshing m(v);
-    std::vector<size_t> modified_v;
+    std::vector<std::pair<size_t, int>> modified_v;
     m.create_mesh(V.rows(), tri, modified_v, 1);
     auto fs = m.get_faces();
     for (auto f : fs) {

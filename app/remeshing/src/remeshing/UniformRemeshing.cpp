@@ -55,7 +55,7 @@ UniformRemeshing::UniformRemeshing(
 void UniformRemeshing::create_mesh(
     size_t n_vertices,
     const std::vector<std::array<size_t, 3>>& tris,
-    const std::vector<size_t>& frozen_verts,
+    const std::vector<std::pair<size_t, int>>& frozen_verts,
     bool m_freeze,
     double eps)
 {
@@ -63,15 +63,16 @@ void UniformRemeshing::create_mesh(
 
     // TODO: this should not be here
     partition_mesh_morton();
-    for (auto v : frozen_verts) {
-        vertex_attrs[v].is_freeze = true;
+
+    for (const auto& [v, corner_id] : frozen_verts) {
+        vertex_attrs[v].is_freeze = corner_id;
     }
 
     if (m_freeze) {
         for (const Tuple& e : get_edges()) {
             if (is_boundary_edge(e)) {
-                vertex_attrs[e.vid(*this)].is_freeze = true;
-                vertex_attrs[e.switch_vertex(*this).vid(*this)].is_freeze = true;
+                vertex_attrs[e.vid(*this)].is_freeze = 100000;
+                vertex_attrs[e.switch_vertex(*this).vid(*this)].is_freeze = 100000;
             }
         }
     }
@@ -125,7 +126,7 @@ void UniformRemeshing::cache_edge_positions(const Tuple& t)
 
     cache.v0 = v0;
     cache.v1 = v1;
-    cache.is_feature_edge = is_feature_edge(t);
+    cache.is_feature_edge = edge_attrs[t.eid(*this)].is_feature;
 }
 
 std::vector<std::array<size_t, 2>> UniformRemeshing::get_edges_by_condition(
@@ -304,7 +305,7 @@ bool UniformRemeshing::swap_edge_before(const Tuple& t)
     cache.v0p = vertex_attrs.at(cache.v0).pos;
     cache.v1p = vertex_attrs.at(cache.v1).pos;
 
-    cache.is_feature_edge = false; // must be false, was checked before
+    cache.is_feature_edge = 0; // must be false, was checked before
 
     cache.v2 = t.switch_edge(*this).switch_vertex(*this).vid(*this);
 
@@ -358,7 +359,7 @@ bool UniformRemeshing::swap_edge_after(const TriMesh::Tuple& t)
     }
     const size_t e_new = eid_from_vids(cache.v2, cache.v3);
 
-    edge_attrs[e_new].is_feature = false;
+    edge_attrs[e_new].is_feature = 0;
 
     return true;
 }
@@ -465,7 +466,7 @@ bool UniformRemeshing::split_edge_before(const Tuple& t)
     cache.v0_tal = vertex_attrs.at(cache.v0).tal;
     cache.v1_tal = vertex_attrs.at(cache.v1).tal;
     cache.partition_id = vertex_attrs.at(cache.v0).partition_id;
-    cache.is_feature_edge = is_feature_edge(t);
+    cache.is_feature_edge = edge_attrs[t.eid(*this)].is_feature;
 
     // gather all surrounding edges
     std::vector<simplex::Edge> edges;
@@ -522,13 +523,14 @@ bool UniformRemeshing::split_edge_after(const TriMesh::Tuple& t)
     }
     wmtk::vector_unique(vids);
 
+
     // set attributes of new edges
     for (size_t vid : vids) {
         const size_t e = eid_from_vids(vnew, vid);
         if (cache.is_feature_edge && (vid == cache.v0 || vid == cache.v1)) {
-            edge_attrs[e].is_feature = true;
+            edge_attrs[e].is_feature = cache.is_feature_edge;
         } else {
-            edge_attrs[e].is_feature = false;
+            edge_attrs[e].is_feature = 0;
         }
     }
 
@@ -1111,10 +1113,11 @@ bool UniformRemeshing::is_feature_vertex(size_t vid) const
 
 bool UniformRemeshing::is_feature_edge(const Tuple& t) const
 {
-    return edge_attrs[t.eid(*this)].is_feature;
+    return edge_attrs[t.eid(*this)].is_feature > 0;
 }
 
-void UniformRemeshing::set_feature_edges(const std::vector<std::array<size_t, 2>>& feature_edges)
+void UniformRemeshing::set_feature_edges(
+    const std::vector<std::pair<std::array<size_t, 2>, int>>& feature_edges)
 {
     m_input_feature_edges = feature_edges;
 }
@@ -1137,7 +1140,11 @@ void UniformRemeshing::initialize_feature_edges()
 {
     std::set<simplex::Edge> feature_edges;
 
-    for (const auto& [a, b] : m_input_feature_edges) {
+    for (const auto& item : m_input_feature_edges) {
+        const auto& ab = item.first;
+        const size_t a = ab[0];
+        const size_t b = ab[1];
+
         feature_edges.insert(simplex::Edge(a, b));
 
         if (a >= vertex_attrs.size()) {
@@ -1159,7 +1166,18 @@ void UniformRemeshing::initialize_feature_edges()
         const simplex::Edge s(a, b);
         if (feature_edges.count(s) > 0) {
             const size_t eid = e.eid(*this);
-            edge_attrs[eid].is_feature = true;
+
+            int seg_id = 0;
+            for (const auto& item : m_input_feature_edges) {
+                const auto& ab = item.first;
+                const int id = item.second;
+                if ((ab[0] == a && ab[1] == b) || (ab[0] == b && ab[1] == a)) {
+                    seg_id = id;
+                    break;
+                }
+            }
+
+            edge_attrs[eid].is_feature = seg_id;
             ++found;
         }
     }
@@ -1175,6 +1193,7 @@ void UniformRemeshing::initialize_feature_edges()
             feature_edges.size() - found);
     }
 }
+
 
 void UniformRemeshing::set_target_edge_length(const double tal)
 {
@@ -1279,7 +1298,18 @@ void UniformRemeshing::write_vtu(const std::string& path) const
     logger().info("Write {}", out_path);
     const auto& vs = get_vertices();
     const auto& faces = get_faces();
-    const auto edges = get_edges_by_condition([](const EdgeAttributes& e) { return e.is_feature; });
+
+    std::vector<std::array<size_t, 2>> edges;
+    std::vector<int> curve_ids;
+    for (const Tuple& e : get_edges()) {
+        auto eid = e.eid(*this);
+        if (edge_attrs[eid].is_feature) {
+            size_t v0 = e.vid(*this);
+            size_t v1 = e.switch_vertex(*this).vid(*this);
+            edges.emplace_back(std::array<size_t, 2>{{v0, v1}});
+            curve_ids.emplace_back(edge_attrs[eid].is_feature);
+        }
+    }
 
     Eigen::MatrixXd V(vert_capacity(), 3);
     Eigen::MatrixXi F(tri_capacity(), 3);
@@ -1294,6 +1324,11 @@ void UniformRemeshing::write_vtu(const std::string& path) const
     Eigen::VectorXd v_tal(vert_capacity());
     Eigen::VectorXd f_pid(tri_capacity());
     Eigen::VectorXd f_quality(tri_capacity());
+    Eigen::VectorXd c_id(curve_ids.size());
+
+    for (size_t i = 0; i < curve_ids.size(); ++i) {
+        c_id(i) = curve_ids[i] - 1;
+    }
 
     int index = 0;
     for (const Tuple& t : faces) {
@@ -1316,7 +1351,7 @@ void UniformRemeshing::write_vtu(const std::string& path) const
         const size_t vid = v.vid(*this);
         V.row(vid) = vertex_attrs[vid].pos;
         v_is_feature[vid] = vertex_attrs[vid].is_feature;
-        v_is_freeze[vid] = vertex_attrs[vid].is_freeze;
+        v_is_freeze[vid] = vertex_attrs[vid].is_freeze - 1;
         v_tal[vid] = vertex_attrs[vid].tal;
     }
 
@@ -1324,7 +1359,7 @@ void UniformRemeshing::write_vtu(const std::string& path) const
     writer = std::make_shared<paraviewo::VTUWriter>();
 
     writer->add_field("is_feature", v_is_feature);
-    writer->add_field("is_freeze", v_is_freeze);
+    writer->add_field("corner_id", v_is_freeze);
     writer->add_field("target_edge_length", v_tal);
     writer->add_cell_field("patch_id", f_pid);
     writer->add_cell_field("quality", f_quality);
@@ -1336,8 +1371,9 @@ void UniformRemeshing::write_vtu(const std::string& path) const
         std::shared_ptr<paraviewo::ParaviewWriter> edge_writer;
         edge_writer = std::make_shared<paraviewo::VTUWriter>();
         edge_writer->add_field("is_feature", v_is_feature);
-        edge_writer->add_field("is_freeze", v_is_freeze);
+        edge_writer->add_field("corner_id", v_is_freeze);
         edge_writer->add_field("target_edge_length", v_tal);
+        edge_writer->add_cell_field("curve_id", c_id);
 
         logger().info("Write {}", edge_out_path);
         edge_writer->write_mesh(edge_out_path, V, E);

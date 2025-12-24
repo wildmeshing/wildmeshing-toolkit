@@ -36,8 +36,13 @@ void run_remeshing(
     auto duration = duration_cast<milliseconds>(stop - start);
 
     m.consolidate_mesh();
-    m.write_triangle_mesh(output);
-    m.write_feature_vertices_obj(output + ".feature_vertices.obj");
+
+    std::filesystem::path outp(output);
+    std::string base = outp.replace_extension("").string();
+    m.write_vtu(output);
+
+    // m.write_triangle_mesh(output);
+    // m.write_feature_vertices_obj(output + ".feature_vertices.obj");
     auto properties = m.average_len_valen();
     wmtk::logger().info("runtime in ms {}", duration.count());
     wmtk::logger().info("current_memory {}", getCurrentRSS() / (1024. * 1024));
@@ -83,8 +88,9 @@ int main(int argc, char** argv)
     }
 
 
-    std::vector<size_t> fixed_vertices;
-    std::vector<std::array<size_t, 2>> feature_edge_list;
+    std::vector<std::pair<size_t, int>> fixed_vertices;
+    std::vector<std::pair<std::array<size_t, 2>, int>> feature_edge_list;
+
     std::vector<size_t> face_patch_ids;
 
     try {
@@ -101,13 +107,17 @@ int main(int argc, char** argv)
                 cifs >> patches_json;
             }
 
-            // fixed vertices
-            for (const size_t vid : patches_json["corner_vids"]) {
-                fixed_vertices.push_back(vid);
-            }
-            logger().info("Loaded fixed vertices: {}", fixed_vertices);
+            const auto& corners = patches_json["corner_vids"];
+            fixed_vertices.reserve(corners.size());
 
-            // feature edges
+            for (const auto& [key, val] : corners.items()) {
+                const int corner_ids = std::stoi(key) + 1; // add 1 so 0 means "not frozen"
+                const size_t vid = val.get<size_t>();
+
+                fixed_vertices.emplace_back(vid, corner_ids);
+            }
+            logger().info("Loaded {} fixed (corner) vertices.", fixed_vertices.size());
+
             const auto& feature_edges = patches_json["edge2seg"];
             feature_edge_list.reserve(feature_edges.size());
 
@@ -118,14 +128,14 @@ int main(int argc, char** argv)
                     continue;
                 }
 
-                const std::string_view s0(key.data(), comma_pos);
-                const std::string_view s1(key.data() + comma_pos + 1, key.size() - comma_pos - 1);
+                const size_t v0 = std::stoul(key.substr(0, comma_pos));
+                const size_t v1 = std::stoul(key.substr(comma_pos + 1));
 
-                const size_t v0 = static_cast<size_t>(std::stoul(std::string(s0)));
-                const size_t v1 = static_cast<size_t>(std::stoul(std::string(s1)));
+                const int seg_id_plus1 = val.get<int>() + 1; // <-- THIS is the id (+1)
 
-                feature_edge_list.push_back({{v0, v1}});
+                feature_edge_list.push_back({{{v0, v1}}, seg_id_plus1});
             }
+
             logger().info("Loaded {} feature edges.", feature_edge_list.size());
 
             const auto& pids = patches_json["fid2patch"];
@@ -141,10 +151,13 @@ int main(int argc, char** argv)
 
     std::vector<size_t> feature_vertices;
     feature_vertices.reserve(feature_edge_list.size() * 2);
+
     for (const auto& e : feature_edge_list) {
-        feature_vertices.push_back(e[0]);
-        feature_vertices.push_back(e[1]);
+        const auto& ab = e.first;
+        feature_vertices.push_back(ab[0]);
+        feature_vertices.push_back(ab[1]);
     }
+
     wmtk::vector_unique(feature_vertices);
 
     // logger settings
@@ -194,12 +207,6 @@ int main(int argc, char** argv)
     m.create_mesh(verts.size(), tris, fixed_vertices, freeze_boundary, envelope_size);
     m.set_patch_ids(face_patch_ids);
 
-    for (size_t v : fixed_vertices) {
-        const auto& attr = m.vertex_attrs[v];
-        if (!m.vertex_attrs[v].is_freeze) {
-            log_and_throw_error("vertex {} is not frozen but is in fixed_vertices", v);
-        }
-    }
 
     if (length_factor < 0) {
         std::vector<double> properties = m.average_len_valen();
