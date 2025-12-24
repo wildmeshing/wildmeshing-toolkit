@@ -149,7 +149,15 @@ bool UniformRemeshing::invariants(const std::vector<Tuple>& new_tris)
         for (auto& t : new_tris) {
             std::array<Eigen::Vector3d, 3> tris;
             auto vs = oriented_tri_vertices(t);
-            for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid(*this)].pos;
+
+            for (auto j = 0; j < 3; j++) {
+                const auto vid = vs[j].vid(*this);
+                tris[j] = vertex_attrs[vid].pos;
+
+                if (vertex_attrs[vid].is_feature && m_feature_envelope.is_outside(tris[j])) {
+                    return false;
+                }
+            }
             if (m_envelope.is_outside(tris)) {
                 return false;
             }
