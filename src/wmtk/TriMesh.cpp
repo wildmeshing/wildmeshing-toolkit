@@ -352,7 +352,7 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 
     // record the vids that will be modified for roll backs on failure
     std::vector<std::pair<size_t, VertexConnectivity>> old_vertices(2);
-    std::vector<std::pair<size_t, TriangleConnectivity>> old_tris(1);
+    std::vector<std::pair<size_t, TriangleConnectivity>> old_tris;
     old_vertices[0] = std::make_pair(vid1, m_vertex_connectivity[vid1]);
     old_vertices[1] = std::make_pair(vid2, m_vertex_connectivity[vid2]);
     for (size_t i = 0; i < vid3s.size(); ++i) {
