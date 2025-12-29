@@ -1,5 +1,6 @@
 #include "read_image_msh.hpp"
 
+#include <igl/predicates/predicates.h>
 #include <wmtk/utils/io.hpp>
 
 namespace wmtk::components::image_simulation {
@@ -49,6 +50,36 @@ void read_image_msh(
         msh.extract_tets([&T_input](size_t i, size_t v0, size_t v1, size_t v2, size_t v3) {
             T_input.row(i) << v0, v1, v2, v3;
         });
+
+        // check for inversion
+        {
+            const Vector3d p0 = V_input.row(T_input(0, 0));
+            const Vector3d p1 = V_input.row(T_input(0, 1));
+            const Vector3d p2 = V_input.row(T_input(0, 2));
+            const Vector3d p3 = V_input.row(T_input(0, 3));
+
+            igl::predicates::exactinit();
+            auto res = igl::predicates::orient3d(p0, p1, p2, p3);
+            int result;
+            if (res == igl::predicates::Orientation::POSITIVE)
+                result = 1;
+            else if (res == igl::predicates::Orientation::NEGATIVE)
+                result = -1;
+            else {
+                log_and_throw_error(
+                    "First tet is degenerate! Vertices: \n{},\n{},\n{},\n{}",
+                    p0,
+                    p1,
+                    p2,
+                    p3);
+            }
+
+            bool is_inverted = result >= 0;
+            if (is_inverted) {
+                logger().warn("First tet of input is inverted -> invert all tets.");
+                T_input.col(2).swap(T_input.col(3));
+            }
+        }
     }
 
     int tets_tags_count = 0;

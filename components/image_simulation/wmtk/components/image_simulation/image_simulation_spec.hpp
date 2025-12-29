@@ -19,8 +19,12 @@ nlohmann::json image_simulation_spec = R"(
       "eps",
       "length_rel",
       "stop_energy",
+      "preserve_topology",
       "write_vtu",
-      "log_file"
+      "log_file",
+      "report",
+      "DEBUG_output",
+      "DEBUG_sanity_checks"
     ]
   },
   {
@@ -118,6 +122,12 @@ nlohmann::json image_simulation_spec = R"(
     "doc": "Target energy. If all tets have an energy below this, tetwild will stop."
   },
   {
+    "pointer": "/preserve_topology",
+    "type": "bool",
+    "default": true,
+    "doc": "Preserve topology of input."
+  },
+  {
     "pointer": "/write_vtu",
     "type": "bool",
     "default": false,
@@ -128,6 +138,24 @@ nlohmann::json image_simulation_spec = R"(
     "type": "string",
     "default": "",
     "doc": "Logs are not just printed on the terminal but also saved in this file."
+  },
+  {
+    "pointer": "/report",
+    "type": "string",
+    "default": "",
+    "doc": "A JSON file that stores information about the result and the method execution, e.g., runtime."
+  },
+  {
+    "pointer": "/DEBUG_output",
+    "type": "bool",
+    "default": false,
+    "doc": "Write the mesh as debug_{}.vtu after every operation."
+  },
+  {
+    "pointer": "/DEBUG_sanity_checks",
+    "type": "bool",
+    "default": false,
+    "doc": "Perform sanity checks after every operation. This can be very slow and should only be used for debugging."
   }
 ]
 )"_json;

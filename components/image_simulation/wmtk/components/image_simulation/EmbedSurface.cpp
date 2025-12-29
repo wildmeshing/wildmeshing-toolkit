@@ -796,6 +796,7 @@ bool EmbedSurface::embed_surface()
             tempF[i] = m_F_surface.row(i);
         }
         ptr_env = std::make_shared<SampleEnvelope>();
+        ptr_env->use_exact = true;
         ptr_env->init(v_simplified, tempF, 0.5);
     }
 
@@ -854,6 +855,7 @@ bool EmbedSurface::embed_surface_tetgen()
             tempF[i] = m_F_surface.row(i);
         }
         ptr_env = std::make_shared<SampleEnvelope>();
+        ptr_env->use_exact = true;
         ptr_env->init(v_simplified, tempF, 0.5);
     }
 
@@ -1068,7 +1070,9 @@ void EmbedSurface::write_emb_vtu(const std::string& filename) const
     for (size_t i = 0; i < m_T_tags.cols(); ++i) {
         writer.add_cell_field(fmt::format("tag_{}", i), m_T_tags.col(i).cast<double>());
     }
-    writer.write_mesh(filename, m_V_emb, m_T_emb);
+    logger().info("Write {}.vtu and _surf.vtu", filename);
+    writer.write_mesh(filename + ".vtu", m_V_emb, m_T_emb);
+    writer.write_mesh(filename + "_surf.vtu", m_V_emb, m_F_on_surface);
 }
 
 std::pair<Vector3d, Vector3d> EmbedSurface::bbox_minmax() const

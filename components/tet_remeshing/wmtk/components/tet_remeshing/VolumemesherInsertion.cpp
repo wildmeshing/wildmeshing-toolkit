@@ -99,10 +99,9 @@ void TetRemeshingMesh::init_surfaces_and_boundaries()
 
         m_V_envelope = tempV;
         m_F_envelope = tempF;
-        m_envelope = std::make_shared<ExactEnvelope>();
+        m_envelope = std::make_shared<SampleEnvelope>();
+        m_envelope->use_exact = true;
         m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
-        triangles_tree = std::make_shared<SampleEnvelope>();
-        triangles_tree->init(m_V_envelope, m_F_envelope, m_envelope_eps);
     }
 
     // All surface faces must be inside the envelope
@@ -207,7 +206,6 @@ void TetRemeshingMesh::find_open_boundary()
 
     // init open boundary envelope
     m_open_boundary_envelope.init(v_posf, open_boundaries, m_params.epsr * m_params.diag_l / 2.0);
-    boundaries_tree.init(v_posf, open_boundaries, m_params.epsr * m_params.diag_l / 2.0);
 }
 
 bool TetRemeshingMesh::is_open_boundary_edge(const Tuple& e)
