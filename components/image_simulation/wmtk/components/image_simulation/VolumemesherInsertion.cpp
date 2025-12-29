@@ -696,10 +696,22 @@ void ImageSimulationMesh::init_from_image(
         m_vertex_attribute[i].m_is_rounded = true;
     }
 
-    // sanity check
-    for (const Tuple& t : get_tets()) {
-        if (is_inverted_f(t)) {
-            log_and_throw_error("Inverted tet in the input!");
+    // check for inverted mesh
+    {
+        bool is_inverted = false;
+        for (const Tuple& t : get_tets()) {
+            if (is_inverted ^ is_inverted_f(t)) {
+                if (!is_inverted) {
+                    is_inverted = true;
+                } else {
+                    log_and_throw_error("Tets with different orientations in the input!");
+                }
+            }
+        }
+
+        if (is_inverted) {
+            log_and_throw_error(
+                "Input mesh is fully inverted! This should not happen... Might be a bug.");
         }
     }
 
