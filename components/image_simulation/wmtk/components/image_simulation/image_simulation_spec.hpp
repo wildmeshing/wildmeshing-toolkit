@@ -19,6 +19,7 @@ nlohmann::json image_simulation_spec = R"(
       "eps",
       "length_rel",
       "stop_energy",
+      "preserve_topology",
       "write_vtu",
       "log_file",
       "report",
@@ -119,6 +120,12 @@ nlohmann::json image_simulation_spec = R"(
     "type": "float",
     "default": 10,
     "doc": "Target energy. If all tets have an energy below this, tetwild will stop."
+  },
+  {
+    "pointer": "/preserve_topology",
+    "type": "bool",
+    "default": true,
+    "doc": "Preserve topology of input."
   },
   {
     "pointer": "/write_vtu",

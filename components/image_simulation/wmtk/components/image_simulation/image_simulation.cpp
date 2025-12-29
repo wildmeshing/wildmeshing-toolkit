@@ -71,6 +71,7 @@ void image_simulation(nlohmann::json json_params)
     params.eps = json_params["eps"];
     params.lr = json_params["length_rel"];
     params.stop_energy = json_params["stop_energy"];
+    params.preserve_topology = json_params["preserve_topology"];
 
     const bool write_vtu = json_params["write_vtu"];
 
