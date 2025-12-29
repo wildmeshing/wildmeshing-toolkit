@@ -146,6 +146,13 @@ std::vector<std::array<size_t, 2>> UniformRemeshing::get_edges_by_condition(
 
 bool UniformRemeshing::invariants(const std::vector<Tuple>& new_tris)
 {
+    for (const Tuple& t : new_tris) {
+        const double q = get_quality(t);
+        if (q == 0) {
+            return false;
+        }
+    }
+
     if (m_has_envelope) {
         for (auto& t : new_tris) {
             std::array<Eigen::Vector3d, 3> tris;
