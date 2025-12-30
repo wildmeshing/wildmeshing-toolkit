@@ -13,16 +13,18 @@ mesh_path = "mesh.obj"
 # feature_edge_vertex_path = "feature_edge_vertex.json"
 # feature_vertex_edge_path = "feature_vertex_edge.json"
 # corner_path = "corner.json"
-patches_path = "patches.json"
+patches_path = "features.json"
+remesh_json_path = "remesh.json"
 
 if __name__ == "__main__":
     # read arguments
     parser = argparse.ArgumentParser()
+    parser.add_argument("output_dir", type=str, help="output directory")
     parser.add_argument(
-        "--fused", type=str, default=fused_path, help="input fused pkl file"
+        "--fused", type=str, default=None, help="input fused pkl file"
     )
     parser.add_argument(
-        "--mesh", type=str, default=mesh_path, help="output mesh obj file"
+        "--mesh", type=str, default=None, help="output mesh obj file"
     )
     # parser.add_argument(
     #     "--feature_edge_vertex", type=str, default=feature_edge_vertex_path
@@ -32,16 +34,38 @@ if __name__ == "__main__":
     # )
     # parser.add_argument("--corner", type=str, default=corner_path)
     parser.add_argument(
-        "--patches", type=str, default=patches_path, help="output patches json file"
+        "--patches", type=str, default=None, help="output patches json file"
+    )
+    parser.add_argument(
+        "--remesh_json",
+        type=str,
+        default=None,
+        help="output remeshing config json file (for -j remesh.json)",
     )
     args = parser.parse_args()
-
-    fused_path = args.fused
-    mesh_path = args.mesh
+    if args.fused:
+        fused_path = args.fused
+        print("using fused path: ", args.fused)
+    else:
+        fused_path = args.output_dir + "/" + fused_path
+    
+    if args.mesh:
+        mesh_path = args.mesh
+    else:
+        mesh_path = args.output_dir + "/" + mesh_path
     # feature_edge_vertex_path = args.feature_edge_vertex
     # feature_vertex_edge_path = args.feature_vertex_edge
     # corner_path = args.corner
-    patches_path = args.patches
+    if args.patches:
+        patches_path = args.patches
+    else:
+        patches_path = args.output_dir + "/" + patches_path
+
+    if args.remesh_json:
+        remesh_json_path = args.remesh_json
+    else:
+        remesh_json_path = args.output_dir + "/" + remesh_json_path
+    
 
     with open(fused_path, "rb") as file:
         data = pickle.load(file)
@@ -59,7 +83,8 @@ if __name__ == "__main__":
         corner2vids = data[4]
 
     # save_obj_mesh(mesh_path, V, F)
-    igl.writeOBJ(mesh_path, V, F)
+    igl.write_obj(mesh_path, V, F)
+    print("writing mesh to ", mesh_path)
 
     seg2edge = {}
     for k in edge2vidschain:
@@ -97,5 +122,28 @@ if __name__ == "__main__":
     with open(patches_path, "w") as f:
         print("writing patche info to ", patches_path)
         json.dump(patches_json, f, indent=4)
+
+    # Write a default remeshing config next to the produced mesh/patches so the
+    # remeshing app can be called with: `-j remesh.json`.
+    remesh_config = {
+        "input": mesh_path,
+        "output": args.output_dir + "/remeshed",
+        "patches": patches_path,
+        "log_file": "",
+        "report": "",
+        "num_threads": 0,
+        "max_iterations": 3,
+        "eps_rel": 0.001,
+        "use_sample_envelope": True,
+        "freeze_boundary": False,
+        "length_factor": -1.0,
+        "length_abs": -1.0,
+        "length_rel": 0.05,
+        "DEBUG_output": False,
+    }
+
+    with open(remesh_json_path, "w") as f:
+        print("writing remesh config to ", remesh_json_path)
+        json.dump(remesh_config, f, indent=4)
 
     print("===== conversion done =====")

@@ -8,6 +8,9 @@
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <igl/write_triangle_mesh.h>
+#include <igl/doublearea.h>
+#include <igl/internal_angles.h>
+#include <nlohmann/json.hpp>
 #include <tbb/concurrent_priority_queue.h>
 #include <tbb/concurrent_vector.h>
 #include <tbb/enumerable_thread_specific.h>

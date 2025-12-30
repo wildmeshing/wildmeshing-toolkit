@@ -29,6 +29,11 @@ void run_remeshing(
     int itrs,
     bool debug_output = false)
 {
+    // wmtk::logger().info(
+    //     "Before_vertices#: {} \n Before_tris#: {}",
+    //     m.vert_capacity(),
+    //     m.tri_capacity());
+
     auto start = high_resolution_clock::now();
     m.uniform_remeshing(itrs, debug_output);
     // m.consolidate_mesh();
@@ -44,14 +49,14 @@ void run_remeshing(
     // m.write_triangle_mesh(output);
     // m.write_feature_vertices_obj(output + ".feature_vertices.obj");
     auto properties = m.average_len_valen();
-    wmtk::logger().info("runtime in ms {}", duration.count());
-    wmtk::logger().info("current_memory {}", getCurrentRSS() / (1024. * 1024));
-    wmtk::logger().info("peak_memory {}", getPeakRSS() / (1024. * 1024));
-    wmtk::logger().info("after remesh properties: {}", properties);
-    wmtk::logger().info(
-        "After_vertices#: {} \n\t After_tris#: {}",
-        m.vert_capacity(),
-        m.tri_capacity());
+    // wmtk::logger().info("runtime in ms {}", duration.count());
+    // wmtk::logger().info("current_memory {}", getCurrentRSS() / (1024. * 1024));
+    // wmtk::logger().info("peak_memory {}", getPeakRSS() / (1024. * 1024));
+    // wmtk::logger().info("after remesh properties: {}", properties);
+    // wmtk::logger().info(
+    //     "After_vertices#: {} \n\t After_tris#: {}",
+    //     m.vert_capacity(),
+    //     m.tri_capacity());
 }
 
 int main(int argc, char** argv)
@@ -183,6 +188,17 @@ int main(int argc, char** argv)
 
     wmtk::logger().info("remeshing on {}", input_path);
     wmtk::logger().info("freeze bnd {}", freeze_boundary);
+    // create report file
+    auto report_file = output + "_report.json";
+
+    // Avoid confusion: if the report already exists, delete it and write a fresh one.
+    if (std::filesystem::exists(report_file)) {
+        std::filesystem::remove(report_file);
+    }
+
+    nlohmann::json report = nlohmann::json::object();
+    report["before"] = nlohmann::json::object();
+    report["after"] = nlohmann::json::object();
     std::vector<Eigen::Vector3d> verts;
     std::vector<std::array<size_t, 3>> tris;
     std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax;
@@ -193,6 +209,35 @@ int main(int argc, char** argv)
     verts.resize(inV.rows());
     tris.resize(inF.rows());
     wmtk::eigen_to_wmtk_input(verts, tris, inV, inF);
+
+    {
+        // basic mesh size stats
+        report["before"]["nV"] = static_cast<int64_t>(inV.rows());
+        report["before"]["nF"] = static_cast<int64_t>(inF.rows());
+
+        // min/max internal angle
+        {
+            Eigen::VectorXd angles;
+            igl::internal_angles(inV, inF, angles);
+            auto min_angle = angles.minCoeff();
+            auto max_angle = angles.maxCoeff();
+            logger().info("Before Min angle: {}, Max angle: {}", min_angle, max_angle);
+            report["before"]["min_angle"] = min_angle;
+            report["before"]["max_angle"] = max_angle;
+            report["before"]["avg_angle"] = angles.mean();
+        }
+        // min/max doublearea
+        {
+            Eigen::VectorXd double_areas;
+            igl::doublearea(inV, inF, double_areas);
+            auto min_da = double_areas.minCoeff();
+            auto max_da = double_areas.maxCoeff();
+            logger().info("Before Min double area: {}, Max double area: {}", min_da, max_da);
+            report["before"]["min_da"] = min_da;
+            report["before"]["max_da"] = max_da;
+            report["before"]["avg_da"] = double_areas.mean();
+        }
+    }
 
     box_minmax = std::pair(inV.colwise().minCoeff(), inV.colwise().maxCoeff());
     double diag = (box_minmax.first - box_minmax.second).norm();
@@ -223,27 +268,61 @@ int main(int argc, char** argv)
         logger().info("Use per-patch length with factor {}", length_factor);
         m.set_per_patch_target_edge_length(length_factor);
     }
+    auto properties = m.average_len_valen();
+    report["before"]["avg_length"] = properties[0];
+    report["before"]["max_length"] = properties[1];
+    report["before"]["min_length"] = properties[2];
+    report["before"]["avg_valence"] = properties[3];
+    report["before"]["max_valence"] = properties[4];
+    report["before"]["min_valence"] = properties[5];
+
+    // Write an initial report so downstream code (e.g. write_vtu inside run_remeshing)
+    // can update/append fields like after min/max angle and double-area.
+    {
+        std::ofstream fout(report_file);
+        fout << std::setw(4) << report;
+    }
 
     timer.start();
     run_remeshing(input_path, output, m, itrs, debug_output);
     timer.stop();
 
+    // Reload report in case downstream code (e.g. write_vtu) has updated it.
+    try {
+        std::ifstream fin(report_file);
+        if (fin) {
+            fin >> report;
+        }
+    } catch (const std::exception& e) {
+        logger().warn("Failed to reload report file {}: {}", report_file, e.what());
+    }
 
-    const std::string report_file = json_params["report"];
-    if (!report_file.empty()) {
+    if (!report.is_object()) {
+        report = nlohmann::json::object();
+    }
+    if (!report.contains("before") || !report["before"].is_object()) {
+        report["before"] = nlohmann::json::object();
+    }
+    if (!report.contains("after") || !report["after"].is_object()) {
+        report["after"] = nlohmann::json::object();
+    }
+
+    properties = m.average_len_valen();
+    report["after"]["nV"] = static_cast<int64_t>(m.vert_capacity());
+    report["after"]["nF"] = static_cast<int64_t>(m.tri_capacity());
+    report["after"]["avg_length"] = properties[0];
+    report["after"]["max_length"] = properties[1];
+    report["after"]["min_length"] = properties[2];
+    report["after"]["avg_valence"] = properties[3];
+    report["after"]["max_valence"] = properties[4];
+    report["after"]["min_valence"] = properties[5];
+
+    report["time_sec"] = timer.getElapsedTimeInSec();
+
+    // Persist final merged report.
+    {
         std::ofstream fout(report_file);
-        nlohmann::json report;
-        std::vector<double> properties = m.average_len_valen();
-        report["avg_length"] = properties[0];
-        report["max_length"] = properties[1];
-        report["min_length"] = properties[2];
-        report["avg_valence"] = properties[3];
-        report["max_valence"] = properties[4];
-        report["min_valence"] = properties[5];
-        report["target_length"] = length_abs;
-        report["time_sec"] = timer.getElapsedTimeInSec();
         fout << std::setw(4) << report;
-        fout.close();
     }
 
     return 0;

@@ -685,7 +685,6 @@ double UniformRemeshing::compute_swap_energy(const Tuple& t) const
 
     return before_swap - after_swap;
 }
-
 std::vector<double> UniformRemeshing::average_len_valen()
 {
     double average_len = 0.0;
@@ -1371,6 +1370,56 @@ void UniformRemeshing::write_vtu(const std::string& path) const
     writer->add_cell_field("patch_id", f_pid);
     writer->add_cell_field("quality", f_quality);
     writer->write_mesh(path + ".vtu", V, F);
+
+    // Update report file (if present) without having to pass JSON around.
+    // Contract: main writes report to `${output}_report.json` where `output` is
+    // the string passed to `write_vtu(output)`.
+    const std::string report_file = path + "_report.json";
+
+    nlohmann::json report = nlohmann::json::object();
+    if (std::filesystem::exists(report_file)) {
+        std::ifstream fin(report_file);
+        if (fin) {
+            fin >> report;
+        }
+    }
+    if (!report.is_object()) {
+        report = nlohmann::json::object();
+    }
+    if (!report.contains("after") || !report["after"].is_object()) {
+        report["after"] = nlohmann::json::object();
+    }
+
+    // min/max internal angle
+    {
+        Eigen::VectorXd angles;
+        igl::internal_angles(V, F, angles);
+        const auto min_angle = angles.minCoeff();
+        const auto max_angle = angles.maxCoeff();
+        report["after"]["min_angle"] = min_angle;
+        report["after"]["max_angle"] = max_angle;
+        const auto avg_angle = angles.mean();
+        report["after"]["avg_angle"] = avg_angle;
+    }
+
+    // min/max doublearea
+    {
+        Eigen::VectorXd double_areas;
+        igl::doublearea(V, F, double_areas);
+        const auto min_da = double_areas.minCoeff();
+        const auto max_da = double_areas.maxCoeff();
+        report["after"]["min_da"] = min_da;
+        report["after"]["max_da"] = max_da;
+        // avg double area
+        const auto avg_da = double_areas.mean();
+        report["after"]["avg_da"] = avg_da;
+    }
+
+    // Persist updated report
+    {
+        std::ofstream fout(report_file);
+        fout << std::setw(4) << report;
+    }
 
     // feature edges
     {
