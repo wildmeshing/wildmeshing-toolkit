@@ -46,6 +46,7 @@ REMESH_APP = os.path.join(
     PROJ_DIR,
     "remeshing",
     "wildmeshing-toolkit",
+    "build_stable",
     "app",
     "remeshing_app",
 )
