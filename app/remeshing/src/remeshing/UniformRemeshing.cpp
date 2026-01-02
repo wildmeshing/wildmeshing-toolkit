@@ -65,14 +65,14 @@ void UniformRemeshing::create_mesh(
     partition_mesh_morton();
 
     for (const auto& [v, corner_id] : frozen_verts) {
-        vertex_attrs[v].is_freeze = corner_id;
+        vertex_attrs[v].corner_id = corner_id;
     }
 
     if (m_freeze) {
         for (const Tuple& e : get_edges()) {
             if (is_boundary_edge(e)) {
-                vertex_attrs[e.vid(*this)].is_freeze = 100000;
-                vertex_attrs[e.switch_vertex(*this).vid(*this)].is_freeze = 100000;
+                vertex_attrs[e.vid(*this)].corner_id = 100000;
+                vertex_attrs[e.switch_vertex(*this).vid(*this)].corner_id = 100000;
             }
         }
     }
@@ -433,7 +433,7 @@ bool UniformRemeshing::collapse_edge_before(const Tuple& t)
     //     return false;
 
 
-    if (vertex_attrs[v0].is_freeze || vertex_attrs[v1].is_freeze) {
+    if (vertex_attrs[v0].corner_id >= 0 || vertex_attrs[v1].corner_id >= 0) {
         return false;
     }
 
@@ -571,7 +571,7 @@ bool UniformRemeshing::split_edge_after(const TriMesh::Tuple& t)
 
 bool UniformRemeshing::smooth_before(const Tuple& t)
 {
-    if (vertex_attrs[t.vid(*this)].is_freeze) return false;
+    if (vertex_attrs[t.vid(*this)].corner_id >= 0) return false;
     if (vertex_attrs[t.vid(*this)].is_feature) return false;
 
     return true;
@@ -1342,7 +1342,7 @@ void UniformRemeshing::write_vtu(const std::string& path) const
     E.setZero();
 
     Eigen::VectorXd v_is_feature(vert_capacity());
-    Eigen::VectorXd v_is_freeze(vert_capacity());
+    Eigen::VectorXd v_corner_id(vert_capacity());
     Eigen::VectorXd v_tal(vert_capacity());
     Eigen::VectorXd f_pid(tri_capacity());
     Eigen::VectorXd f_quality(tri_capacity());
@@ -1373,7 +1373,7 @@ void UniformRemeshing::write_vtu(const std::string& path) const
         const size_t vid = v.vid(*this);
         V.row(vid) = vertex_attrs[vid].pos;
         v_is_feature[vid] = vertex_attrs[vid].is_feature;
-        v_is_freeze[vid] = vertex_attrs[vid].is_freeze - 1;
+        v_corner_id[vid] = vertex_attrs[vid].corner_id;
         v_tal[vid] = vertex_attrs[vid].tal;
     }
 
@@ -1381,7 +1381,7 @@ void UniformRemeshing::write_vtu(const std::string& path) const
     writer = std::make_shared<paraviewo::VTUWriter>();
 
     writer->add_field("is_feature", v_is_feature);
-    writer->add_field("corner_id", v_is_freeze);
+    writer->add_field("corner_id", v_corner_id);
     writer->add_field("target_edge_length", v_tal);
     writer->add_cell_field("patch_id", f_pid);
     writer->add_cell_field("quality", f_quality);
@@ -1443,7 +1443,7 @@ void UniformRemeshing::write_vtu(const std::string& path) const
         std::shared_ptr<paraviewo::ParaviewWriter> edge_writer;
         edge_writer = std::make_shared<paraviewo::VTUWriter>();
         edge_writer->add_field("is_feature", v_is_feature);
-        edge_writer->add_field("corner_id", v_is_freeze);
+        edge_writer->add_field("corner_id", v_corner_id);
         edge_writer->add_field("target_edge_length", v_tal);
         edge_writer->add_cell_field("curve_id", c_id);
 

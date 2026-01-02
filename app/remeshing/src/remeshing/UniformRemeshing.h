@@ -33,7 +33,7 @@ struct VertexAttributes
     Eigen::Vector3d pos;
     // TODO: in fact, partition id should not be vertex attribute, it is a fixed marker to distinguish tuple/operations.
     size_t partition_id;
-    int is_freeze = 0;
+    int corner_id = -1;
     bool is_feature = false;
     double tal = -1; // target edge length
 };
