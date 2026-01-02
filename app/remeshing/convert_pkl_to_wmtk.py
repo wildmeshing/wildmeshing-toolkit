@@ -110,9 +110,9 @@ if __name__ == "__main__":
     # with open(corner_path, "w") as f:
     #     json.dump(corner2vids, f, indent=4)
 
-    corners = []
+    corners = {}
     for c in corner2vids:
-        corners.append(corner2vids[c])
+        corners[c] = corner2vids[c]
 
     patches_json = {}
     patches_json["fid2patch"] = fid2patch
