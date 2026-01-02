@@ -126,7 +126,7 @@ public:
     tbb::enumerable_thread_specific<SwapInfoCache> swap_info_cache;
 
 
-    struct PositionInfoCache
+    struct CollapseInfoCache
     {
         Eigen::Vector3d v1p;
         Eigen::Vector3d v2p;
@@ -137,8 +137,9 @@ public:
         size_t v0 = size_t(-1);
         size_t v1 = size_t(-1);
         int is_feature_edge = 0;
+        std::map<wmtk::simplex::Edge, EdgeAttributes> ring_edge_attrs;
     };
-    tbb::enumerable_thread_specific<PositionInfoCache> position_cache;
+    tbb::enumerable_thread_specific<CollapseInfoCache> collapse_info_cache;
 
     void cache_edge_positions(const Tuple& t);
 

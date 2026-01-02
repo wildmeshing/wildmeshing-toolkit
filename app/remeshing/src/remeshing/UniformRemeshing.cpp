@@ -113,7 +113,8 @@ void UniformRemeshing::create_mesh(
 
 void UniformRemeshing::cache_edge_positions(const Tuple& t)
 {
-    auto& cache = position_cache.local();
+    auto& cache = collapse_info_cache.local();
+    cache.ring_edge_attrs.clear();
 
     const size_t v0 = t.vid(*this);
     const size_t v1 = t.switch_vertex(*this).vid(*this);
@@ -126,7 +127,16 @@ void UniformRemeshing::cache_edge_positions(const Tuple& t)
 
     cache.v0 = v0;
     cache.v1 = v1;
-    cache.is_feature_edge = edge_attrs[t.eid(*this)].is_feature;
+    cache.is_feature_edge = edge_attrs.at(t.eid(*this)).is_feature;
+
+    // gather link edges of v0
+    const simplex::Vertex v0_simp(v0);
+    const auto tris = simplex_incident_triangles(v0_simp);
+    for (const auto& tri : tris.faces()) {
+        const simplex::Edge e = tri.opposite_edge(v0_simp);
+        const size_t eid = eid_from_vids(e.vertices()[0], e.vertices()[1]);
+        cache.ring_edge_attrs[e] = edge_attrs.at(eid);
+    }
 }
 
 std::vector<std::array<size_t, 2>> UniformRemeshing::get_edges_by_condition(
@@ -437,7 +447,7 @@ bool UniformRemeshing::collapse_edge_before(const Tuple& t)
 
 bool UniformRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
 {
-    const auto& cache = position_cache.local();
+    const auto& cache = collapse_info_cache.local();
 
     const Eigen::Vector3d p = (cache.v1p + cache.v2p) / 2.0;
     auto& attr = vertex_attrs[t.vid(*this)];
@@ -450,6 +460,12 @@ bool UniformRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
      * use the min of the two. The min seems to be quite aggressive.
      */
     // attr.tal = std::min(cache.v0_tal, cache.v1_tal);
+
+    // update the edge attributes of the surrounding edges
+    for (const auto& [edge, attrs] : cache.ring_edge_attrs) {
+        const size_t eid = eid_from_vids(edge.vertices()[0], edge.vertices()[1]);
+        edge_attrs[eid] = attrs;
+    }
 
     return true;
 }
@@ -484,7 +500,7 @@ bool UniformRemeshing::split_edge_before(const Tuple& t)
         edges.emplace_back(cache.v1, v_opp);
         cache.face_attrs[v_opp] = face_attrs.at(t.fid(*this));
     }
-    for (const Tuple t_opp : t.switch_faces(*this)) {
+    for (const Tuple& t_opp : t.switch_faces(*this)) {
         const size_t v_opp = t_opp.switch_edge(*this).switch_vertex(*this).vid(*this);
         edges.emplace_back(cache.v0, v_opp);
         edges.emplace_back(cache.v1, v_opp);
