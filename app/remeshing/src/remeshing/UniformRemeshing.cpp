@@ -1166,7 +1166,9 @@ void UniformRemeshing::initialize_feature_edges()
         const auto& ab = item.first;
         const size_t a = ab[0];
         const size_t b = ab[1];
-
+        if (a == b) {
+            continue;
+        }
         feature_edges.insert(simplex::Edge(a, b));
 
         if (a >= vertex_attrs.size()) {

@@ -87,12 +87,25 @@ if __name__ == "__main__":
     print("writing mesh to ", mesh_path)
 
     seg2edge = {}
+    degenerate_feature_edges_to_Cid = {}
     for k in edge2vidschain:
+        if len(edge2vidschain[k]) < 2:
+            seg2edge[(edge2vidschain[k][0], edge2vidschain[k][0])] = k
+            degenerate_feature_edges_to_Cid[k] = edge2vidschain[k][0]
+            continue
         for i in range(len(edge2vidschain[k]) - 1):
             seg = (edge2vidschain[k][i], edge2vidschain[k][i + 1])
             if seg[1] < seg[0]:
                 seg = (seg[1], seg[0])
             seg2edge[seg] = k
+     
+    vid_to_corner = {}
+    for c in corner2vids:
+        vid_to_corner[corner2vids[c]] = c
+    for k, vid in degenerate_feature_edges_to_Cid.items():
+        if vid not in vid_to_corner.keys():
+            raise RuntimeError("degenerate feature edge vid not in corner vids")
+        degenerate_feature_edges_to_Cid[k] = vid_to_corner[vid]
 
     # with open(feature_edge_vertex_path, "w") as f:
     #     json.dump(edge2vidschain, f, indent=4)
@@ -117,6 +130,7 @@ if __name__ == "__main__":
     patches_json = {}
     patches_json["fid2patch"] = fid2patch
     patches_json["edge2seg"] = seg2edge_tmp
+    patches_json["degenerate_feature_to_cid"] = degenerate_feature_edges_to_Cid
     patches_json["corner_vids"] = corners
 
     with open(patches_path, "w") as f:
