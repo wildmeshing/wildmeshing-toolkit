@@ -16,9 +16,11 @@ nlohmann::json remeshing_spec = R"(
       "eps_rel",
       "length_rel",
       "length_abs",
+      "length_factor",
       "freeze_boundary",
       "log_file",
-      "report"
+      "report",
+      "DEBUG_output"
     ]
   },
   {
@@ -66,7 +68,13 @@ nlohmann::json remeshing_spec = R"(
     "pointer": "/length_abs",
     "type": "float",
     "default": -1,
-    "doc": "Absolute target edge length. If negative, relative length is used to compute the absolute."
+    "doc": "Absolute target edge length. If negative, relative length is used to compute the absolute. If this is negative as well, the average edge length of the input is used as target."
+  },
+  {
+    "pointer": "/length_factor",
+    "type": "float",
+    "default": -1,
+    "doc": "Use the per-patch maximum edge length and multiply that with this factor. For coarsening, use a factor >1, for refining <1."
   },
   {
     "pointer": "/freeze_boundary",
@@ -85,6 +93,12 @@ nlohmann::json remeshing_spec = R"(
     "type": "string",
     "default": "",
     "doc": "A JSON file that stores information about the result and the method execution, e.g., runtime."
+  },
+  {
+    "pointer": "/DEBUG_output",
+    "type": "bool",
+    "default": false,
+    "doc": "Write the mesh as debug_{}.vtu after every operation."
   }
 ]
 )"_json;
