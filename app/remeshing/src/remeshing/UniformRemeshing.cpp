@@ -132,9 +132,19 @@ void UniformRemeshing::cache_edge_positions(const Tuple& t)
     // gather link edges of v0
     const simplex::Vertex v0_simp(v0);
     const auto tris = simplex_incident_triangles(v0_simp);
+    std::set<size_t> link_vids;
     for (const auto& tri : tris.faces()) {
         const simplex::Edge e = tri.opposite_edge(v0_simp);
         const size_t eid = eid_from_vids(e.vertices()[0], e.vertices()[1]);
+        cache.ring_edge_attrs[e] = edge_attrs.at(eid);
+        if (e.vertices()[0] != v1 && e.vertices()[1] != v1) {
+            link_vids.insert(e.vertices()[0]);
+            link_vids.insert(e.vertices()[1]);
+        }
+    }
+    for (const size_t vid : link_vids) {
+        const simplex::Edge e(vid, v1);
+        const size_t eid = eid_from_vids(vid, v0);
         cache.ring_edge_attrs[e] = edge_attrs.at(eid);
     }
 }
@@ -449,9 +459,13 @@ bool UniformRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
 {
     const auto& cache = collapse_info_cache.local();
 
-    const Eigen::Vector3d p = (cache.v1p + cache.v2p) / 2.0;
     auto& attr = vertex_attrs[t.vid(*this)];
-    attr.pos = p;
+
+    if (cache.is_feature_edge || !vertex_attrs.at(cache.v1).is_feature) {
+        // collase to midpoint if v1 is not a feature
+        const Eigen::Vector3d p = (cache.v1p + cache.v2p) / 2.0;
+        attr.pos = p;
+    }
     attr.partition_id = cache.partition_id;
 
 
