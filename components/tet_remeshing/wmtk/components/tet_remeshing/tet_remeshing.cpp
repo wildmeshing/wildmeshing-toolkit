@@ -68,6 +68,7 @@ void tet_remeshing(nlohmann::json json_params)
     params.lr = json_params["length_rel"];
     params.stop_energy = json_params["stop_energy"];
     params.preserve_topology = json_params["preserve_topology"];
+    params.edge_length_convergence = json_params["edge_length_convergence"];
 
     const bool write_vtu = json_params["write_vtu"];
 
