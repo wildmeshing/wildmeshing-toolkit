@@ -840,8 +840,8 @@ void TetWildMesh::compute_winding_numbers(const std::vector<std::string>& input_
         igl::read_triangle_mesh(input_path, inV, inF);
         VectorXi _I;
         igl::remove_unreferenced(inV, inF, V, F, _I);
-        assert(V_single.cols() == 3);
-        assert(F_single.cols() == 3);
+        assert(V.cols() == 3);
+        assert(F.cols() == 3);
 
         // compute winding number for V,F
         Eigen::VectorXd W;
