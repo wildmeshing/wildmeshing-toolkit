@@ -47,6 +47,7 @@ TEST_CASE("split_each_edge", "[test_remeshing]")
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}};
     std::vector<std::pair<size_t, int>> modified_v;
     m.create_mesh(3, tris, modified_v, 0);
+    m.set_target_edge_length(1.4);
     int target_vertnum = m.vert_capacity() + 3 * m.get_edges().size() + 3 * m.tri_capacity();
     m.split_remeshing();
     m.consolidate_mesh();
