@@ -120,6 +120,7 @@ TEST_CASE("test_split", "[test_remeshing]")
     UniformRemeshing m(v);
     std::vector<std::pair<size_t, int>> modified_v;
     m.create_mesh(V.rows(), tri, modified_v, 0);
+    m.set_target_edge_length(1);
     m.split_remeshing();
     REQUIRE(m.check_mesh_connectivity_validity());
 }
@@ -235,6 +236,7 @@ TEST_CASE("operation orient", "[test_remeshing]")
         REQUIRE(!is_inverted(tri));
     }
 
+    m.set_target_edge_length(1);
     m.split_remeshing();
     fs = m.get_faces();
     for (auto f : fs) {
