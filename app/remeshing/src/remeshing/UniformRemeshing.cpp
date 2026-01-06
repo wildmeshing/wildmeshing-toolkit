@@ -111,10 +111,10 @@ void UniformRemeshing::create_mesh(
     }
 }
 
-void UniformRemeshing::cache_edge_positions(const Tuple& t)
+bool UniformRemeshing::cache_edge_positions(const Tuple& t)
 {
     auto& cache = collapse_info_cache.local();
-    cache.ring_edge_attrs.clear();
+    cache.link_vertices.clear();
 
     const size_t v0 = t.vid(*this);
     const size_t v1 = t.switch_vertex(*this).vid(*this);
@@ -129,24 +129,38 @@ void UniformRemeshing::cache_edge_positions(const Tuple& t)
     cache.v1 = v1;
     cache.is_feature_edge = edge_attrs.at(t.eid(*this)).is_feature;
 
-    // gather link edges of v0
-    const simplex::Vertex v0_simp(v0);
-    const auto tris = simplex_incident_triangles(v0_simp);
-    std::set<size_t> link_vids;
-    for (const auto& tri : tris.faces()) {
-        const simplex::Edge e = tri.opposite_edge(v0_simp);
-        const size_t eid = eid_from_vids(e.vertices()[0], e.vertices()[1]);
-        cache.ring_edge_attrs[e] = edge_attrs.at(eid);
-        if (e.vertices()[0] != v1 && e.vertices()[1] != v1) {
-            link_vids.insert(e.vertices()[0]);
-            link_vids.insert(e.vertices()[1]);
+    auto add_link_vertices = [this, &v0, &v1, &cache](const Tuple& t_) {
+        // use a dummy to make sure the default value for is_feature is used
+        EdgeAttributes dummy;
+
+        const size_t v2 = t_.switch_edge(*this).switch_vertex(*this).vid(*this);
+        const size_t e0 = eid_from_vids(v0, v2);
+        const size_t e1 = eid_from_vids(v1, v2);
+        const int e0_is_feature = edge_attrs.at(e0).is_feature;
+        const int e1_is_feature = edge_attrs.at(e1).is_feature;
+        if (e0_is_feature != dummy.is_feature && e1_is_feature != dummy.is_feature) {
+            return false; // cannot merge two feature edges
+        }
+        if (e0_is_feature != dummy.is_feature) {
+            cache.link_vertices.emplace_back(v2, e0_is_feature);
+        } else if (e1_is_feature != dummy.is_feature) {
+            cache.link_vertices.emplace_back(v2, e1_is_feature);
+        } else {
+            cache.link_vertices.emplace_back(v2, dummy.is_feature);
+        }
+        return true;
+    };
+
+    if (!add_link_vertices(t)) {
+        return false;
+    }
+    for (const Tuple& t_opp : t.switch_faces(*this)) {
+        if (!add_link_vertices(t_opp)) {
+            return false;
         }
     }
-    for (const size_t vid : link_vids) {
-        const simplex::Edge e(vid, v1);
-        const size_t eid = eid_from_vids(vid, v0);
-        cache.ring_edge_attrs[e] = edge_attrs.at(eid);
-    }
+
+    return true;
 }
 
 std::vector<std::array<size_t, 2>> UniformRemeshing::get_edges_by_condition(
@@ -450,7 +464,38 @@ bool UniformRemeshing::collapse_edge_before(const Tuple& t)
     if (!TriMesh::collapse_edge_before(t)) {
         return false;
     }
-    cache_edge_positions(t);
+    if (!cache_edge_positions(t)) {
+        return false;
+    }
+
+    //// for debug
+    // if (v0 == 35465 && v1 == 36590) {
+    //     logger().error("DEBUG ({},{})", v0, v1);
+    //     logger().error("v0.is_feature = {}", vertex_attrs[v0].is_feature);
+    //     logger().error("v1.is_feature = {}", vertex_attrs[v1].is_feature);
+    //     logger().error("v0.corner_id = {}", vertex_attrs[v0].corner_id);
+    //     logger().error("v1.corner_id = {}", vertex_attrs[v1].corner_id);
+    //     logger().error("is_feature_edge = {}", is_feature_edge(t));
+    //     logger().error("t.is_feature = {}", edge_attrs[t.eid(*this)].is_feature);
+    //
+    //    { // DEBUG
+    //        logger().error("DEBUG v0 = {}", v0);
+    //        const Tuple v = tuple_from_vertex(v0);
+    //        for (const Tuple& e : get_one_ring_edges_for_vertex(v)) {
+    //            simplex::Edge s = simplex_from_edge(e);
+    //            logger().error("({}) = {}", s.vertices(), edge_attrs[e.eid(*this)].is_feature);
+    //        }
+    //    }
+    //    { // DEBUG
+    //        logger().error("DEBUG v1 = {}", v1);
+    //        const Tuple v = tuple_from_vertex(v1);
+    //        for (const Tuple& e : get_one_ring_edges_for_vertex(v)) {
+    //            simplex::Edge s = simplex_from_edge(e);
+    //            logger().error("({}) = {}", s.vertices(), edge_attrs[e.eid(*this)].is_feature);
+    //        }
+    //    }
+    //}
+
     return true;
 }
 
@@ -476,9 +521,32 @@ bool UniformRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
     // attr.tal = std::min(cache.v0_tal, cache.v1_tal);
 
     // update the edge attributes of the surrounding edges
-    for (const auto& [edge, attrs] : cache.ring_edge_attrs) {
-        const size_t eid = eid_from_vids(edge.vertices()[0], edge.vertices()[1]);
-        edge_attrs[eid] = attrs;
+    for (const auto [v2, f] : cache.link_vertices) {
+        const size_t eid = eid_from_vids(t.vid(*this), v2);
+        edge_attrs[eid].is_feature = f;
+    }
+
+    // sanity check (for debugging)
+    if (vertex_attrs.at(cache.v1).is_feature && vertex_attrs.at(cache.v1).corner_id < 0) {
+        // const Tuple v = tuple_from_vertex(55432);
+        size_t counter = 0;
+        for (const Tuple& e : get_one_ring_edges_for_vertex(t)) {
+            if (edge_attrs[e.eid(*this)].is_feature) {
+                counter++;
+            }
+        }
+        if (counter != 2) {
+            logger().error(
+                "v1 = {}, corner_id = {}",
+                cache.v1,
+                vertex_attrs.at(cache.v1).corner_id);
+            logger().error("Vertex now endpoint, after collapsing ({},{})", cache.v0, cache.v1);
+            for (const Tuple& e : get_one_ring_edges_for_vertex(t)) {
+                simplex::Edge s = simplex_from_edge(e);
+                logger().error("({}) = {}", s.vertices(), edge_attrs[e.eid(*this)].is_feature);
+            }
+            log_and_throw_error("Sanity check for feature edges failed!");
+        }
     }
 
     return true;

@@ -137,11 +137,12 @@ public:
         size_t v0 = size_t(-1);
         size_t v1 = size_t(-1);
         int is_feature_edge = 0;
-        std::map<wmtk::simplex::Edge, EdgeAttributes> ring_edge_attrs;
+        std::vector<std::tuple<size_t, int>>
+            link_vertices; // store the edge-link vertex v2 and the feature ID of (v0,v2) or (v1,v2)
     };
     tbb::enumerable_thread_specific<CollapseInfoCache> collapse_info_cache;
 
-    void cache_edge_positions(const Tuple& t);
+    bool cache_edge_positions(const Tuple& t);
 
     std::vector<std::array<size_t, 2>> get_edges_by_condition(
         std::function<bool(const EdgeAttributes&)> cond) const;
