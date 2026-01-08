@@ -42,6 +42,8 @@ if __name__ == "__main__":
         default=None,
         help="output remeshing config json file (for -j remesh.json)",
     )
+
+    parser.add_argument("--len_rel", type=float, default=0.05, help="relative length for remeshing")
     args = parser.parse_args()
     if args.fused:
         fused_path = args.fused
@@ -152,7 +154,7 @@ if __name__ == "__main__":
         "freeze_boundary": False,
         "length_factor": -1.0,
         "length_abs": -1.0,
-        "length_rel": 0.05,
+        "length_rel": args.len_rel,
         "DEBUG_output": False,
     }
 
