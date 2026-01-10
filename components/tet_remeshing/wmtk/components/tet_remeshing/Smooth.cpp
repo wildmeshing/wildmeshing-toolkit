@@ -239,6 +239,53 @@ bool TetRemeshingMesh::smooth_after(const Tuple& t)
     return true;
 }
 
+void TetRemeshingMesh::pull_towards_smooth_surface()
+{
+    for (const Tuple& t : get_vertices()) {
+        const size_t vid = t.vid(*this);
+        if (!m_vertex_attribute[vid].m_is_on_surface) {
+            continue;
+        }
+        if (m_vertex_attribute[vid].m_is_frozen) {
+            continue;
+        }
+
+        SimpleBVH::BVH& bvh =
+            m_vertex_attribute[vid].m_is_on_feature_edge ? *m_smooth_edges : *m_smooth_surface;
+
+        Vector3d& p = m_vertex_attribute[vid].m_posf;
+
+        Vector3d p_target;
+        double sq_dist;
+        bvh.nearest_facet(p, p_target, sq_dist);
+
+        const Vector3d p_old = p;
+        p = p_target;
+
+        const auto locs = get_one_ring_tets_for_vertex(t);
+
+        bool success = true;
+        for (size_t i = 0; i < 10; ++i) {
+            for (const Tuple& loc : locs) {
+                if (is_inverted(loc)) {
+                    success = false;
+                    break;
+                }
+            }
+
+            if (success) {
+                break;
+            }
+
+            p = 0.5 * (p_old + p);
+        }
+
+        if (!success) {
+            p = p_old;
+        }
+    }
+}
+
 void TetRemeshingMesh::smooth_all_vertices()
 {
     // the order is randomized in every iteration but deterministic when executed sequentially

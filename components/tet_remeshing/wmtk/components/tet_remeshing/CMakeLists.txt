@@ -26,6 +26,9 @@ set(SRC_FILES
 
 	read_image_msh.hpp
 	read_image_msh.cpp
+
+	SurfaceMesh.hpp
+	SurfaceMesh.cpp
     )
 
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

@@ -237,7 +237,56 @@ void TetImplicitsMesh::op_separate()
 
     m_new_tag = [this](const Vector3d&) { return m_params.output_tags[0]; };
 
-    compute();
+    // compute
+    {
+        // mark vertices as inside / outside
+        for (const Tuple& t : get_vertices()) {
+            auto& attrs = m_vertex_attribute[t.vid(*this)];
+            double d2 = m_sq_sdf(attrs.m_posf);
+            // also consider equal as inside
+            attrs.m_sq_sdf = d2;
+            attrs.m_is_inside = (d2 <= m_params.d2);
+        }
+
+        if (m_params.debug_output) {
+            write_vtu(fmt::format("debug_{}", debug_print_counter++));
+        }
+
+        // split edges in between inside/outide labels (marching tets)
+        std::vector<simplex::Edge> split_edges;
+        for (const Tuple& t : get_edges()) {
+            size_t v0 = t.vid(*this);
+            size_t v1 = t.switch_vertex(*this).vid(*this);
+
+            const auto& VA = m_vertex_attribute;
+            if (VA[v0].m_is_inside ^ VA[v1].m_is_inside) {
+                split_edges.emplace_back(v0, v1);
+            }
+        }
+
+        for (const auto& e : split_edges) {
+            const Tuple& t = tuple_from_edge(e.vertices());
+            std::vector<Tuple> new_tets;
+            split_edge(t, new_tets);
+        }
+
+        if (m_params.debug_output) {
+            write_vtu(fmt::format("debug_{}", debug_print_counter++));
+        }
+
+        // tag inside-tets with output_tag
+        for (const Tuple& t : get_tets()) {
+            const size_t tid = t.tid(*this);
+            if (tet_is_inside(tid)) {
+                const auto& tag = m_params.output_tags[0];
+                m_tet_attribute[tid].tags[tag.first] = tag.second;
+            }
+        }
+
+        if (m_params.debug_output) {
+            write_vtu(fmt::format("debug_{}", debug_print_counter++));
+        }
+    }
 
     m_sq_sdf = nullptr;
     m_new_tag = nullptr;
@@ -360,9 +409,9 @@ void TetImplicitsMesh::op_tight_seal()
         return sq_dist;
     };
 
-    // compute
     const double d2_actual = m_params.d2;
     m_params.d2 = 0;
+    // compute
     {
         // mark vertices as inside / outside
         for (const Tuple& t : get_vertices()) {
@@ -442,62 +491,6 @@ void TetImplicitsMesh::op_tight_seal()
     // remove temporary tag ID
     for (const Tuple& t : get_tets()) {
         m_tet_attribute[t.tid(*this)].tags.pop_back();
-    }
-
-    if (m_params.debug_output) {
-        write_vtu(fmt::format("debug_{}", debug_print_counter++));
-    }
-}
-
-void TetImplicitsMesh::compute()
-{
-    if (m_sq_sdf == nullptr || m_new_tag == nullptr) {
-        log_and_throw_error("No operation was set. Cannot compute.");
-    }
-
-    // mark vertices as inside / outside
-    for (const Tuple& t : get_vertices()) {
-        auto& attrs = m_vertex_attribute[t.vid(*this)];
-        double d2 = m_sq_sdf(attrs.m_posf);
-        // also consider equal as inside
-        attrs.m_sq_sdf = d2;
-        attrs.m_is_inside = (d2 <= m_params.d2);
-    }
-
-    if (m_params.debug_output) {
-        write_vtu(fmt::format("debug_{}", debug_print_counter++));
-    }
-
-    // split edges in between inside/outide labels (marching tets)
-    std::vector<simplex::Edge> split_edges;
-    for (const Tuple& t : get_edges()) {
-        size_t v0 = t.vid(*this);
-        size_t v1 = t.switch_vertex(*this).vid(*this);
-
-        const auto& VA = m_vertex_attribute;
-        if (VA[v0].m_is_inside ^ VA[v1].m_is_inside) {
-            split_edges.emplace_back(v0, v1);
-        }
-    }
-
-    for (const auto& e : split_edges) {
-        const Tuple& t = tuple_from_edge(e.vertices());
-        std::vector<Tuple> new_tets;
-        split_edge(t, new_tets);
-    }
-
-    if (m_params.debug_output) {
-        write_vtu(fmt::format("debug_{}", debug_print_counter++));
-    }
-
-    // tag inside-tets with output_tags
-    // an inside-tet is one with all vertices being inside
-    for (const Tuple& t : get_tets()) {
-        const size_t tid = t.tid(*this);
-        if (tet_is_inside(tid)) {
-            const auto tag = m_new_tag(tet_center(tid));
-            m_tet_attribute[tid].tags[tag.first] = tag.second;
-        }
     }
 
     if (m_params.debug_output) {

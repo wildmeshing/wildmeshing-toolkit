@@ -308,11 +308,6 @@ public:
     void op_tight_seal();
 
 private:
-    /**
-     * @brief Run marching tets with the given SDF.
-     */
-    void compute();
-
     struct SplitInfoCache
     {
         //        VertexAttributes vertex_info;

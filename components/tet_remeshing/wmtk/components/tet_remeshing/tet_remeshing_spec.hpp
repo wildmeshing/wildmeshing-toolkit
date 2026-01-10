@@ -16,6 +16,7 @@ nlohmann::json tet_remeshing_spec = R"(
       "use_tetgen",
       "num_threads",
       "max_iterations",
+      "surface_smoothing",
       "eps_rel",
       "eps",
       "length_rel",
@@ -104,6 +105,12 @@ nlohmann::json tet_remeshing_spec = R"(
     "type": "int",
     "default": 80,
     "doc": "Maximum iterations before stopping."
+  },
+  {
+    "pointer": "/surface_smoothing",
+    "type": "int",
+    "default": 0,
+    "doc": "When greater 0, remeshing will be performed multiple times, and before each iteration, the surface is smoothed."
   },
   {
     "pointer": "/eps_rel",

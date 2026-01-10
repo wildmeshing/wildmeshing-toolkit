@@ -14,7 +14,6 @@ set(SRC_FILES
 	Parameters.h
 
 	EdgeSplitting.cpp
-	Smooth.cpp
 
 	TetImplicitsMeshInit.cpp
 
