@@ -61,6 +61,7 @@ bool TetRemeshingMesh::split_edge_before(const Tuple& loc0)
     auto& cache = split_cache.local();
 
     cache.changed_faces.clear();
+    cache.tets.clear();
 
     cache.v1_id = loc0.vid(*this);
     auto loc1 = loc0.switch_vertex(*this);

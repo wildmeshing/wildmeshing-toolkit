@@ -1,6 +1,6 @@
-# incremental tet_remeshing
+# incremental tet_implicits
 
-set(COMPONENT_NAME tet_remeshing)
+set(COMPONENT_NAME tet_implicits)
 add_component(${COMPONENT_NAME})
 
 if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
@@ -8,27 +8,21 @@ if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
 endif()
 
 set(SRC_FILES
-    TetRemeshingMesh.cpp
-	TetRemeshingMesh.h
+    TetImplicitsMesh.cpp
+	TetImplicitsMesh.h
 
 	Parameters.h
 
 	EdgeSplitting.cpp
-	EdgeCollapsing.cpp
-	EdgeSwapping.cpp
-	Smooth.cpp
 
-	VolumemesherInsertion.cpp
+	TetImplicitsMeshInit.cpp
 
-	tet_remeshing.hpp
-	tet_remeshing.cpp
-	tet_remeshing_spec.hpp
+	tet_implicits.hpp
+	tet_implicits.cpp
+	tet_implicits_spec.hpp
 
 	read_image_msh.hpp
 	read_image_msh.cpp
-
-	SurfaceMesh.hpp
-	SurfaceMesh.cpp
     )
 
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

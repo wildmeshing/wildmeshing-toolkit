@@ -329,6 +329,8 @@ void tetwild(nlohmann::json json_params)
         int num_parts = mesh_new.flood_fill();
         logger().info("flood fill parts {}", num_parts);
     }
+    // compute per-input winding number
+    mesh_new.compute_winding_numbers(input_paths);
 
     // ////winding number
     if (filter_option == "input") {
@@ -410,7 +412,7 @@ void tetwild(nlohmann::json json_params)
         }
 
         // create envelope for output
-        SampleEnvelope env;
+        SampleEnvelope env(true);
         std::vector<Eigen::Vector3d> v_out;
         std::vector<Eigen::Vector3i> f_out;
         for (int i = 0; i < matV.rows(); ++i) {

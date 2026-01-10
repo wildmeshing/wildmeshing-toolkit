@@ -29,6 +29,10 @@ public:
     bool m_is_on_surface = false;
     std::vector<int> on_bbox_faces; // same as is_bbox_fs?
 
+    // for smoothing
+    bool m_is_on_feature_edge = false;
+    bool m_is_frozen = false;
+
     double m_sizing_scalar = 1;
 
     size_t partition_id = 0;
@@ -106,6 +110,8 @@ public:
 
     // for open boundary
     SampleEnvelope m_open_boundary_envelope; // todo: add sample envelope option
+    std::shared_ptr<SimpleBVH::BVH> m_smooth_surface; // used for smoothing
+    std::shared_ptr<SimpleBVH::BVH> m_smooth_edges;
 
     TetRemeshingMesh(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
         : m_params(_m_params)
@@ -265,6 +271,17 @@ public:
 
     void init_envelope(const MatrixXd& V, const MatrixXi& F);
 
+    void init_surface_smoothing(
+        const MatrixXd& VF,
+        const MatrixXi& FF,
+        const MatrixXd& VE,
+        const MatrixXi& EE);
+    /**
+     * @brief Set feature edge attributes for vertices.
+     * Used in smoothing.
+     */
+    void init_feature_edges();
+
     double get_length2(const Tuple& l) const;
 
     ////// Attributes related
@@ -280,6 +297,8 @@ public:
     void smooth_all_vertices();
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
+
+    void pull_towards_smooth_surface();
 
     void collapse_all_edges();
     bool collapse_edge_before(const Tuple& t) override;
@@ -325,6 +344,7 @@ public:
      */
     bool is_vertex_on_boundary(const size_t vid);
     //
+    void surface_smoothing(int max_its = 2);
     void mesh_improvement(int max_its = 80);
     std::tuple<double, double> local_operations(const std::array<int, 4>& ops);
     std::tuple<double, double> get_max_avg_energy();
@@ -502,6 +522,8 @@ public:
 
     // for boolean operations
     int flood_fill();
+
+    void get_surface(MatrixXd& V, MatrixXi& F) const;
 
     void write_vtu(const std::string& path);
 
