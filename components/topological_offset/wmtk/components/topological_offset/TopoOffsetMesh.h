@@ -4,6 +4,7 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Morton.h>
 #include <wmtk/utils/PartitionMesh.h>
+#include <bitset>
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/simplex/RawSimplex.hpp>
 #include "Parameters.h"
@@ -28,7 +29,7 @@ class VertexAttributes
 {
 public:
     Vector3d m_posf;
-    int label = 0;  // included in offset input
+    int label = 0; // included in offset input
     bool in_out = false;
     // size_t partition_id = 0;
 
@@ -57,9 +58,9 @@ class TetAttributes
 {
 public:
     // std::vector<size_t> tags;  // direct label ints, only one per tet per tag
-    bool in_out = false;  // in or out of mesh body
+    bool in_out = false; // in or out of mesh body
     int label = 0;
-    double wn = -999;  // default unset value
+    double wn = -999; // default unset value
 };
 
 
@@ -97,12 +98,11 @@ public:
 
     ////// Attributes related
     // void write_msh(std::string file);
-    void write_input_complex(const std::string &path);  // write out components labeled as offset input (non manifold components)
-    void write_vtu(const std::string& path);  // debugging, write .vtu of tet mesh
+    void write_input_complex(const std::string& path); // write out components labeled as offset
+                                                       // input (non manifold components)
+    void write_vtu(const std::string& path); // debugging, write .vtu of tet mesh
 
-    std::string tags_bit_rep(uint64_t tags) {
-        return std::bitset<64>(tags).to_string();
-    }
+    std::string tags_bit_rep(uint64_t tags) { return std::bitset<64>(tags).to_string(); }
 
     bool split_edge_before(const Tuple& t) override;
     bool split_edge_after(const Tuple& t) override;
@@ -118,7 +118,8 @@ public:
 private:
     // for edge splitting, new simplices inheret attributes from higher
     // simplex they 'grew' out of
-    struct EdgeSplitCache {
+    struct EdgeSplitCache
+    {
         size_t v1_id;
         size_t v2_id;
         VertexAttributes new_v;
@@ -126,7 +127,7 @@ private:
         // cache edge attributes
         EdgeAttributes split_e;
         std::map<size_t, EdgeAttributes> internal_e;
-        std::map<simplex::Edge, EdgeAttributes> external_e;  // edge is boundary edge (not link)
+        std::map<simplex::Edge, EdgeAttributes> external_e; // edge is boundary edge (not link)
         std::map<simplex::Edge, EdgeAttributes> link_e;
 
         // cache face attributes
@@ -139,7 +140,8 @@ private:
     };
     tbb::enumerable_thread_specific<EdgeSplitCache> edge_split_cache;
 
-    struct FaceSplitCache {
+    struct FaceSplitCache
+    {
         size_t v1_id;
         size_t v2_id;
         size_t v3_id;
@@ -156,9 +158,10 @@ private:
     };
     tbb::enumerable_thread_specific<FaceSplitCache> face_split_cache;
 
-    struct TetSplitCache {
+    struct TetSplitCache
+    {
         std::array<size_t, 4> v_ids;
-        
+
         // cache retained edge attributes
         std::map<simplex::Edge, EdgeAttributes> existing_e;
 
@@ -171,19 +174,21 @@ private:
     tbb::enumerable_thread_specific<TetSplitCache> tet_split_cache;
 
 public:
-    void init_from_image(const MatrixXd& V, const MatrixXi& T, const MatrixXd& T_tags,
+    void init_from_image(
+        const MatrixXd& V,
+        const MatrixXi& T,
+        const MatrixXd& T_tags,
         const std::map<std::string, int>& tag_label_map);
 
 
-
-    std::pair<size_t, size_t> label_non_manifold();  // return # of non manifold edges, verts
+    std::pair<size_t, size_t> label_non_manifold(); // return # of non manifold edges, verts
     bool edge_is_manifold(const Tuple& t) const;
     void edge_dfs_helper(std::set<size_t>& visited_tids, const Tuple& t) const;
-    bool vertex_is_manifold(const Tuple&t) const;
+    bool vertex_is_manifold(const Tuple& t) const;
     void vertex_dfs_helper(std::set<size_t>& visited_tids, const Tuple& t) const;
 
     bool is_simplicially_embedded() const;
-    bool tet_is_simp_emb(const Tuple &t) const;
+    bool tet_is_simp_emb(const Tuple& t) const;
     void simplicial_embedding();
 
     void perform_offset();
