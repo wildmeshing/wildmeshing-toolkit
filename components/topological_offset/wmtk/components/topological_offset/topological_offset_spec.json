@@ -6,12 +6,8 @@
     "optional": [
       "output",
       "tag_label",
-      "sep_tags",
-      "fill_tag",
-      "manifold_mode",
+      "wn_threshold",
       "manifold_union",
-      "num_threads",
-      "write_vtu",
       "log_file",
       "DEBUG_output"
     ]
@@ -36,50 +32,20 @@
   {
     "pointer": "/tag_label",
     "type": "string",
-    "default": "tag_0",
+    "default": "winding_number_tracked",
     "doc": "Tetwise tag label to identify components. If manifold extraction mode, cells assumed to have values 0/1."
   },
   {
-    "pointer": "/sep_tags",
-    "type": "list",
-    "default": [0, 1],
-    "doc": "List of tag values for components to pairwise separate.",
-    "min": 2
-  },
-  {
-    "pointer": "/sep_tags/*",
-    "type": "int",
-    "doc": "Tag value for component to be separated."
-  },
-  {
-    "pointer": "/fill_tag",
-    "type": "int",
-    "default": 0,
-    "doc": "Label for component to fill in offset"
-  },
-  {
-    "pointer": "/manifold_mode",
-    "type": "bool",
-    "default": false,
-    "doc": "Manifold extraction mode. If true, input is taken as all non-manifold simplices."
+    "pointer": "/wn_threshold",
+    "type": "float",
+    "default": 0.5,
+    "doc": "Winding number threshold for tet inclusion"
   },
   {
     "pointer": "/manifold_union",
     "type": "bool",
     "default": true,
-    "doc": "Only relevant in manifold extraction mode. If true, offsets are unioned with mesh, otherwise subtracted from mesh."
-  },
-  {
-    "pointer": "/num_threads",
-    "type": "int",
-    "default": 0,
-    "doc": "Number of threads used by the application."
-  },
-  {
-    "pointer": "/write_vtu",
-    "type": "bool",
-    "default": false,
-    "doc": "Write not just MSH but also VTU output."
+    "doc": "If true, offsets are unioned with mesh, otherwise subtracted from mesh."
   },
   {
     "pointer": "/log_file",
@@ -91,6 +57,6 @@
     "pointer": "/DEBUG_output",
     "type": "bool",
     "default": false,
-    "doc": "Write the mesh as out_{}.vtu after every operation."
+    "doc": "Write the tet mesh as out_{}.vtu after every operation."
   }
 ]

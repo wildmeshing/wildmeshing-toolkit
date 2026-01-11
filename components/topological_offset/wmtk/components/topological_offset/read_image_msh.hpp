@@ -10,6 +10,6 @@ void read_image_msh(
     const std::string& path,
     MatrixXd& V_input,
     MatrixXi& T_input,
-    MatrixXi& T_input_tag,
+    MatrixXd& T_input_tags,
     std::map<std::string, int>& tag_label_map);
 }

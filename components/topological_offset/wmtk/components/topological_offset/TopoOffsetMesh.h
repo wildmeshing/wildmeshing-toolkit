@@ -15,9 +15,9 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
-#include <igl/remove_unreferenced.h>
-#include <memory>
-#include <bitset>
+// #include <igl/remove_unreferenced.h>
+// #include <memory>
+
 
 namespace wmtk::components::topological_offset {
 
@@ -28,7 +28,8 @@ class VertexAttributes
 {
 public:
     Vector3d m_posf;
-    int label = 0;
+    int label = 0;  // included in offset input
+    bool in_out = false;
     // size_t partition_id = 0;
 
     VertexAttributes() {};
@@ -39,6 +40,7 @@ public:
 class EdgeAttributes
 {
 public:
+    bool in_out = false;
     int label = 0;
 };
 
@@ -46,6 +48,7 @@ public:
 class FaceAttributes
 {
 public:
+    bool in_out = false;
     int label = 0;
 };
 
@@ -53,8 +56,10 @@ public:
 class TetAttributes
 {
 public:
-    std::vector<size_t> tags;  // direct label ints, only one per tet per tag
+    // std::vector<size_t> tags;  // direct label ints, only one per tet per tag
+    bool in_out = false;  // in or out of mesh body
     int label = 0;
+    double wn = -999;  // default unset value
 };
 
 
@@ -63,9 +68,9 @@ class TopoOffsetMesh : public wmtk::TetMesh
 public:
     int m_vtu_counter = 0;
     int m_surfvtu_counter = 0;
-    int m_tags_count;
+    // int m_tags_count;
     std::array<size_t, 4> init_counts = {0, 0, 0, 0};
-    std::map<std::string, int> m_label_map;  // get index of label from string
+    // std::map<std::string, int> m_label_map;  // get index of label from string
 
     Parameters& m_params;
 
@@ -91,9 +96,9 @@ public:
     ~TopoOffsetMesh() {}
 
     ////// Attributes related
-    void write_msh(std::string file);
-    void write_input_complex(const std::string &path);
-    void write_vtu(const std::string& path);
+    // void write_msh(std::string file);
+    void write_input_complex(const std::string &path);  // write out components labeled as offset input (non manifold components)
+    void write_vtu(const std::string& path);  // debugging, write .vtu of tet mesh
 
     std::string tags_bit_rep(uint64_t tags) {
         return std::bitset<64>(tags).to_string();
@@ -166,15 +171,22 @@ private:
     tbb::enumerable_thread_specific<TetSplitCache> tet_split_cache;
 
 public:
-    void init_from_image(const MatrixXd& V, const MatrixXi& T, const MatrixXi& T_tags,
+    void init_from_image(const MatrixXd& V, const MatrixXi& T, const MatrixXd& T_tags,
         const std::map<std::string, int>& tag_label_map);
 
-    void simplicial_embedding();
 
-    void perform_offset();
+
+    std::pair<size_t, size_t> label_non_manifold();  // return # of non manifold edges, verts
+    bool edge_is_manifold(const Tuple& t) const;
+    void edge_dfs_helper(std::set<size_t>& visited_tids, const Tuple& t) const;
+    bool vertex_is_manifold(const Tuple&t) const;
+    void vertex_dfs_helper(std::set<size_t>& visited_tids, const Tuple& t) const;
 
     bool is_simplicially_embedded() const;
     bool tet_is_simp_emb(const Tuple &t) const;
+    void simplicial_embedding();
+
+    void perform_offset();
 };
 
 } // namespace wmtk::components::topological_offset

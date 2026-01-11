@@ -8,7 +8,7 @@ void read_image_msh(
     const std::string& path,
     MatrixXd& V_input,
     MatrixXi& T_input,
-    MatrixXi& T_input_tags,
+    MatrixXd& T_input_tags,
     std::map<std::string, int>& tag_label_map)
 {
     MshData msh;
@@ -60,10 +60,10 @@ void read_image_msh(
     }
     assert(tet_tags_count > 0);
 
-    // TESTING
-    for (const auto& pair : tag_label_map) {
-        logger().info("{}: {}", pair.first, pair.second);
-    }
+    // // TESTING
+    // for (const auto& pair : tag_label_map) {
+    //     logger().info("{}: {}", pair.first, pair.second);
+    // }
 
     // extract tags
     T_input_tags.resize(T_input.rows(), tet_tags_count);

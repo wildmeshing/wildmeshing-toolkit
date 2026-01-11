@@ -29,8 +29,12 @@ namespace wmtk::components::topological_offset {
 
 void topological_offset(nlohmann::json json_params)
 {
-    randMesh();
-    return;
+    // // test mesh generation - DEVELOPMENT
+    // // randMesh();
+    // // edgeNonManifoldMesh();
+    // edgeNonManifoldOBJ();
+    // return;
+    // // test mesh generation - DEVELOPMENT
 
     using wmtk::utils::resolve_path;
     using Tuple = TetMesh::Tuple;
@@ -62,17 +66,18 @@ void topological_offset(nlohmann::json json_params)
 
     // load params
     Parameters params;
-    params.tag_label = json_params["tag_label"];  // tag used to id components
-    for (int tag : json_params["sep_tags"]) {
-        params.sep_tags.push_back(tag);
-    }
-    params.fill_tag = json_params["fill_tag"];
-    params.manifold_mode = json_params["manifold_mode"];
+    params.tag_label = json_params["tag_label"];
+    // for (int tag : json_params["sep_tags"]) {
+    //     params.sep_tags.push_back(tag);
+    // }
+    // params.fill_tag = json_params["fill_tag"];
+    // params.manifold_mode = json_params["manifold_mode"];
+    params.wn_threshold = json_params["wn_threshold"];
     params.manifold_union = json_params["manifold_union"];
     params.output_path = resolve_path(root, json_params["output"]).string();
     std::filesystem::path output_filename = params.output_path;
-    int NUM_THREADS = json_params["num_threads"];
-    const bool write_vtu = json_params["write_vtu"];
+    // int NUM_THREADS = json_params["num_threads"];
+    int NUM_THREADS = 0;
     params.debug_output = json_params["DEBUG_output"];
 
     // input file must be .msh
@@ -83,7 +88,6 @@ void topological_offset(nlohmann::json json_params)
             output_filename.string());
     }
     output_filename.replace_extension(""); // extension is added back later
-
     if (std::filesystem::path(input_path).extension() != ".msh") {
         log_and_throw_error("Input must be a .msh file.");
     }
@@ -91,7 +95,7 @@ void topological_offset(nlohmann::json json_params)
     // read image / MSH
     MatrixXd V_input;
     MatrixXi T_input;
-    MatrixXi T_input_tags;
+    MatrixXd T_input_tags;
     std::map<std::string, int> tag_label_map;
 
     // input is a tet mesh
@@ -112,23 +116,32 @@ void topological_offset(nlohmann::json json_params)
     igl::Timer timer;
     timer.start();
 
-    // output input complex
+    // output input mesh as vtu
     if (mesh.m_params.debug_output) {
         mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
     }
 
-    // make embedding simplicial (split components per Alg 1)
-    bool dummy = mesh.is_simplicially_embedded();
-    mesh.simplicial_embedding();
-    mesh.consolidate_mesh();
-    dummy = mesh.is_simplicially_embedded();
-    if (mesh.m_params.debug_output) {  // intermediate output
-        mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
+    // identify non manifold components
+    logger().info("Identifying nonmanifold components...");
+    auto [nm_e_count, nm_v_count] = mesh.label_non_manifold();
+    logger().info("\tNonmanifold edges: {}", nm_e_count);
+    logger().info("\tNonmanifold vertices: {}", nm_v_count);
+    if (mesh.m_params.debug_output) {
+        mesh.write_input_complex(output_filename.string() + "_input_complex");
     }
 
-    // perform offset
-    mesh.perform_offset();
-    mesh.consolidate_mesh();
+    // // make embedding simplicial (split components per Alg 1)
+    // bool dummy = mesh.is_simplicially_embedded();
+    // mesh.simplicial_embedding();
+    // mesh.consolidate_mesh();
+    // dummy = mesh.is_simplicially_embedded();
+    // if (mesh.m_params.debug_output) {  // intermediate output
+    //     mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
+    // }
+
+    // // perform offset
+    // mesh.perform_offset();
+    // mesh.consolidate_mesh();
 
     double time = timer.getElapsedTime();
     wmtk::logger().info("total time {}s", time);
@@ -149,11 +162,9 @@ void topological_offset(nlohmann::json json_params)
     fout << "time: " << time << std::endl;
     fout.close();
 
-    mesh.write_msh(output_filename.string() + ".msh");
+    // mesh.write_msh(output_filename.string() + ".msh");
     if (mesh.m_params.debug_output) {  // use numbered vtu format
         mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
-    } else if (write_vtu) {
-        mesh.write_vtu(output_filename.string());
     }
 
     wmtk::logger().info("======= finish =========");

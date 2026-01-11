@@ -19,7 +19,15 @@ bool TopoOffsetMesh::split_edge_before(const Tuple& t) {
     // vertices
     cache.v1_id = t.vid(*this);
     cache.v2_id = switch_vertex(t).vid(*this);
-    cache.new_v = VertexAttributes((m_vertex_attribute[cache.v1_id].m_posf + m_vertex_attribute[cache.v2_id].m_posf) / 2);
+    Vector3d p1 = m_vertex_attribute[cache.v1_id].m_posf;
+    Vector3d p2 = m_vertex_attribute[cache.v2_id].m_posf;
+    Vector3d new_p = (p1 + p2) / 2;
+    Vector3d d1 = new_p - p1;
+    Vector3d d2 = new_p - p2;
+    if (d1.dot(d2) > 0) {  // floating point causes edge split to be outside endpoints
+        log_and_throw_error("Edge split fail: midpoint outside end vertices [edge (v{})-(v{})]", cache.v1_id, cache.v2_id);
+    }
+    cache.new_v = VertexAttributes(new_p);
     cache.new_v.label = m_edge_attribute[t.eid(*this)].label;
 
     // split edge
