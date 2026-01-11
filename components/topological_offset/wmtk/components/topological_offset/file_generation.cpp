@@ -36,6 +36,32 @@ void write_manual_msh(std::string path, std::vector<Point3D> verts, std::vector<
 }
 
 
+void vertNonManifoldOBJ() {
+    std::string path = "/Users/seb9449/Desktop/wildmeshing/manifold_extraction/topological_offset/nonman_vert.obj";
+
+    Eigen::MatrixXd V(7, 3);
+    V << 0, 0, 0,
+         0, -1, 0,
+         -1, 0, 0,
+         0, 0, -1,
+         1, 0, 0,
+         0, 0, 1,
+         0, 1, 0;
+
+    Eigen::MatrixXi F(8, 3);
+    F << 0, 2, 1,
+         0, 1, 3,
+         2, 0, 3,
+         1, 2, 3,
+         4, 5, 0,
+         0, 5, 6,
+         4, 0, 6,
+         6, 5, 4;
+
+    igl::write_triangle_mesh(path, V, F);
+}
+
+
 void edgeNonManifoldMesh() {
     std::string path = "/Users/seb9449/Desktop/wildmeshing/manifold_extraction/topological_offset/nonman_edge.msh";
 

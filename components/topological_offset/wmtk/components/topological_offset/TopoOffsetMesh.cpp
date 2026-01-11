@@ -29,11 +29,12 @@
 #include <paraviewo/VTUWriter.hpp>
 
 #include <limits>
+#include <cmath>
 
 
-namespace {
-static int debug_print_counter = 0;
-}
+// namespace {
+// static int debug_print_counter = 0;
+// }
 
 namespace wmtk::components::topological_offset {
 
@@ -77,7 +78,8 @@ void TopoOffsetMesh::init_from_image(const MatrixXd& V, const MatrixXi& T, const
     auto tets = get_tets();
     for (const Tuple& t : tets) {
         size_t i = t.tid(*this);
-        m_tet_attribute[i].wn = T_tags(i, tag_label_map.at(m_params.tag_label));
+        // m_tet_attribute[i].wn = T_tags(i, tag_label_map.at(m_params.tag_label));
+        m_tet_attribute[i].wn = std::abs(T_tags(i, tag_label_map.at(m_params.tag_label)));  // TESTING
         if (m_tet_attribute[i].wn > m_params.wn_threshold) {
             m_tet_attribute[i].in_out = 1;
         }
@@ -196,25 +198,24 @@ std::pair<size_t, size_t> TopoOffsetMesh::label_non_manifold() {
         }
     }
 
-    // // label nm vertices
-    // auto vertices = get_vertices();
-    // for (const Tuple& v : vertices) {
-    //     if (m_vertex_attribute[v.vid(*this)].in_out && !vertex_is_manifold(v)) {  // vert is part of input and not manifold
-    //         m_vertex_attribute[v.vid(*this)].label = 1;
-    //     }
-    // }
+    // label nm vertices
+    auto vertices = get_vertices();
+    for (const Tuple& v : vertices) {
+        if (m_vertex_attribute[v.vid(*this)].in_out && !vertex_is_manifold(v)) {  // vert is part of input and not manifold
+            m_vertex_attribute[v.vid(*this)].label = 1;
+        }
+    }
 
-    // // count number nm vertices
-    // size_t nm_vertex_count = 0;
-    // auto verts = get_vertices();
-    // for (const Tuple& v : verts) {
-    //     if (m_vertex_attribute[v.vid(*this)].label == 1) {
-    //         nm_vertex_count++;
-    //     }
-    // }
+    // count number nm vertices
+    size_t nm_vertex_count = 0;
+    auto verts = get_vertices();
+    for (const Tuple& v : verts) {
+        if (m_vertex_attribute[v.vid(*this)].label == 1) {
+            nm_vertex_count++;
+        }
+    }
 
-    // std::pair<size_t, size_t> ret_val(nm_edge_count, nm_vertex_count);
-    std::pair<size_t, size_t> ret_val(nm_edge_count, 0);
+    std::pair<size_t, size_t> ret_val(nm_edge_count, nm_vertex_count);
     return ret_val;
 }
 
@@ -228,30 +229,44 @@ bool TopoOffsetMesh::edge_is_manifold(const Tuple& t) const {
     auto nb_tets = get_incident_tets_for_edge(t);
     // nb_tets.push_back(t);
     // log_and_throw_error("{}", std::find(nb_tets.begin(), nb_tets.end(), t) == nb_tets.end());
-    // logger().info("*********** t {}", t.tid(*this));
-    // std::string idk = "";
+    // logger().info("*********** t {} e{}:v({})-v({})", t.tid(*this), t.eid(*this), t.vid(*this), t.switch_vertex(*this).vid(*this));
+    // logger().info("***** nb_tets *****");
     // for (auto nb_tet : nb_tets) {
-    //     idk += fmt::format(" {}", nb_tet.tid(*this));
+    //     logger().info("\t t{} f{} e{} v{}", nb_tet.tid(*this), nb_tet.fid(*this), nb_tet.eid(*this), nb_tet.vid(*this));
     // }
-    // logger().info(idk);
 
     std::set<Tuple> nb_in_tets;
-    for (const Tuple nb_tet : nb_tets) {
+    for (const Tuple& nb_tet : nb_tets) {
         if (m_tet_attribute[nb_tet.tid(*this)].in_out) {
-            nb_in_tets.insert(nb_tet);
+            // make nb_tet refer to edge of interest
+            auto v_ids = oriented_tet_vids(nb_tet);
+            std::vector<size_t> ordered_v_ids;
+            ordered_v_ids.push_back(t.vid(*this));
+            ordered_v_ids.push_back(t.switch_vertex(*this).vid(*this));
+            for (size_t v_id : v_ids) {
+                if (std::find(ordered_v_ids.begin(), ordered_v_ids.end(), v_id) == ordered_v_ids.end()) {  // v_id not in ordered_v_ids
+                    ordered_v_ids.push_back(v_id);
+                }
+            }
+            Tuple new_tet = tuple_from_vids(ordered_v_ids[0], ordered_v_ids[1], ordered_v_ids[2], ordered_v_ids[3]);
+            nb_in_tets.insert(new_tet);
         }
     }
+
+    // logger().info("***** nb_in_tets *****");
+    // for (auto nb_tet : nb_in_tets) {
+    //     logger().info("\t t{} f{} e{} v{}", nb_tet.tid(*this), nb_tet.fid(*this), nb_tet.eid(*this), nb_tet.vid(*this));
+    // }
 
     // run dfs
     std::set<size_t> visited_tids;
     // logger().info("-------------");
-    Tuple first_tet = *nb_in_tets.begin();
     // auto vs = oriented_tet_vids(first_tet);
     // logger().info("{} {} {} {} | e{} | t{},{}", vs[0], vs[1], vs[2], vs[3], first_tet.eid(*this), first_tet.tid(*this), m_tet_attribute[first_tet.tid(*this)].in_out);
-    edge_dfs_helper(visited_tids, first_tet);
+    edge_dfs_helper(visited_tids, *nb_in_tets.begin());
 
     // edge manifold iff all 'in' nb tets can be reached from every other
-    // logger().info("{} {}", visited_tids.size(), num_in_tets);
+    // logger().info("{} {} {}", visited_tids.size(), nb_in_tets.size(), nb_tets.size());
     // bool test = (visited_tids.size() > nb_in_tets.size());
     // if (test) {
     //     logger().info("******---------");
@@ -265,7 +280,7 @@ bool TopoOffsetMesh::edge_is_manifold(const Tuple& t) const {
     //         bs2 += fmt::format(" {}", id.tid(*this));
     //     }
     //     logger().info(bs2);
-    //     // log_and_throw_error("garbage garbage garbage garbage");
+    //     log_and_throw_error("garbage garbage garbage garbage");
     // }
     return (visited_tids.size() == nb_in_tets.size());
 }
@@ -274,10 +289,7 @@ bool TopoOffsetMesh::edge_is_manifold(const Tuple& t) const {
 void TopoOffsetMesh::edge_dfs_helper(std::set<size_t>& visited_tids, const Tuple& t) const {
     // if tet isn't in input or already visited
     size_t curr_tid = t.tid(*this);
-    // if (!m_tet_attribute[curr_tid].in_out || visited_tids.count(curr_tid)) {
-    //     return;
-    // }
-    if (visited_tids.count(curr_tid)) {
+    if (!m_tet_attribute[curr_tid].in_out || visited_tids.count(curr_tid)) {
         return;
     }
 
@@ -299,54 +311,71 @@ void TopoOffsetMesh::edge_dfs_helper(std::set<size_t>& visited_tids, const Tuple
 }
 
 
-// bool TopoOffsetMesh::vertex_is_manifold(const Tuple& t) const {
-//     if (!m_vertex_attribute[t.vid(*this)].in_out) {  // only call this function for vertices on input mesh
-//         return true;
-//     }
+bool TopoOffsetMesh::vertex_is_manifold(const Tuple& t) const {
+    if (!m_vertex_attribute[t.vid(*this)].in_out) {  // only call this function for vertices on input mesh
+        return true;
+    }
 
-//     auto nb_tets = get_one_ring_tets_for_vertex(t);  // vector<Tuple>
-//     std::vector<Tuple> in_nb_tets;
-//     for (Tuple nb_tet : nb_tets) {  // get vector of 'in' one ring tets of vertex
-//         if (m_tet_attribute[nb_tet.tid(*this)].in_out) {
-//             in_nb_tets.push_back(nb_tet);
-//         }
-//     }
+    auto nb_tets = get_one_ring_tets_for_vertex(t);  // vector<Tuple>
+    // logger().info("t{} f{} e{} v{}", t.tid(*this), t.fid(*this), t.eid(*this), t.vid(*this));
+    // for (const auto& tet : nb_tets) {
+    //     logger().info("\t t{} f{} e{} v{}", tet.tid(*this), tet.fid(*this), tet.eid(*this), tet.vid(*this));
+    // }
 
-//     // run bfs from arbitrary 'in' nb tet
-//     std::set<size_t> visited_tids;
-//     visited_tids.insert(in_nb_tets[0].tid(*this));  // NOTE: vertex is 'in', so at least one nb tet must be in
-//     vertex_dfs_helper(visited_tids, in_nb_tets[0]);
+    // find one ring tets in input mesh, make sure they refer to vertex of interest
+    std::vector<Tuple> in_nb_tets;
+    for (const Tuple& nb_tet : nb_tets) {  // get vector of 'in' one ring tets of vertex
+        if (m_tet_attribute[nb_tet.tid(*this)].in_out) {
+            auto v_ids = oriented_tet_vids(nb_tet);
+            std::vector<size_t> ordered_vids;
+            ordered_vids.push_back(t.vid(*this));
+            for (size_t v_id : v_ids) {
+                if (std::find(ordered_vids.begin(), ordered_vids.end(), v_id) == ordered_vids.end()) {  // v_id not in ordered_vids
+                    ordered_vids.push_back(v_id);
+                }
+            }
+            Tuple new_tet = tuple_from_vids(ordered_vids[0], ordered_vids[1], ordered_vids[2], ordered_vids[3]);
+            in_nb_tets.push_back(new_tet);
+        }
+    }
+    // logger().info("***********");
+    // for (const auto& tet : in_nb_tets) {
+    //     logger().info("\t t{} f{} e{} v{}", tet.tid(*this), tet.fid(*this), tet.eid(*this), tet.vid(*this));
+    // }
+    // log_and_throw_error("garbage garbage garbage");
 
-//     // vertex is manifold iff every 'in' one-ring tet is reachable from any other
-//     return (visited_tids.size() == in_nb_tets.size());
-// }
+    // run bfs from arbitrary 'in' nb tet
+    std::set<size_t> visited_tids;
+    vertex_dfs_helper(visited_tids, *in_nb_tets.begin());
+
+    // vertex is manifold iff every 'in' one-ring tet is reachable from any other
+    return (visited_tids.size() == in_nb_tets.size());
+}
 
 
-// void TopoOffsetMesh::vertex_dfs_helper(std::set<size_t>& visited_tids, const Tuple& t) const {
-//     std::set<Tuple> in_nb_tets;  // nb tets labeled 'in'
+void TopoOffsetMesh::vertex_dfs_helper(std::set<size_t>& visited_tids, const Tuple& t) const {
+    size_t curr_tid = t.tid(*this);
+    if (!m_tet_attribute[curr_tid].in_out || visited_tids.count(curr_tid)) {  // tet not in input, or has already been visited
+        return;
+    }
 
-//     auto t1 = switch_tetrahedron(t);
-//     if (t1.has_value() && m_tet_attribute[t1.value().tid(*this)].in_out) {
-//         in_nb_tets.insert(t1.value());
-//     }
+    visited_tids.insert(curr_tid);  // first time visiting and is in input mesh, add to visited
 
-//     auto t2 = switch_tetrahedron(switch_face(t));
-//     if (t2.has_value() && m_tet_attribute[t2.value().tid(*this)].in_out) {
-//         in_nb_tets.insert(t2.value());
-//     }
+    auto t1 = t.switch_tetrahedron(*this);
+    if (t1.has_value()) {
+        vertex_dfs_helper(visited_tids, t1.value());
+    }
 
-//     auto t3 = switch_tetrahedron(switch_face(switch_edge(t)));
-//     if (t3.has_value() && m_tet_attribute[t3.value().tid(*this)].in_out) {
-//         in_nb_tets.insert(t3.value());
-//     }
+    auto t2 = t.switch_face(*this).switch_tetrahedron(*this);
+    if (t2.has_value()) {
+        vertex_dfs_helper(visited_tids, t2.value());
+    }
 
-//     for (const Tuple& tet : in_nb_tets) {
-//         if (visited_tids.count(tet.tid(*this)) == 0) {  // new tet, add and continue bfs
-//             visited_tids.insert(tet.tid(*this));
-//             vertex_dfs_helper(visited_tids, tet);
-//         }
-//     }
-// }
+    auto t3 = t.switch_edge(*this).switch_face(*this).switch_tetrahedron(*this);
+    if (t3.has_value()) {
+        vertex_dfs_helper(visited_tids, t3.value());
+    }
+}
 
 
 bool TopoOffsetMesh::is_simplicially_embedded() const {

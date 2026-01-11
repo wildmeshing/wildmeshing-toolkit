@@ -32,7 +32,8 @@ void topological_offset(nlohmann::json json_params)
     // // test mesh generation - DEVELOPMENT
     // // randMesh();
     // // edgeNonManifoldMesh();
-    // edgeNonManifoldOBJ();
+    // // edgeNonManifoldOBJ();
+    // vertNonManifoldOBJ();
     // return;
     // // test mesh generation - DEVELOPMENT
 
