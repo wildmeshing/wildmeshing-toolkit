@@ -280,7 +280,11 @@ bool TopoOffsetMesh::vertex_is_manifold(const Tuple& t) const
     } // otherwise leave empty
     vertex_dfs_helper(visited_tids_out, out_nb_tets[0], false, out_b_faces);
 
-    return (visited_tids_in.size() + visited_tids_out.size() == is_bound_v + nb_tets.size());
+    bool res = (visited_tids_in.size() + visited_tids_out.size() == is_bound_v + nb_tets.size());
+    if (!res && is_bound_v) {
+        logger().warn("Vertex of offset input complex lies on mesh boundary: vid={}", t.vid(*this));
+    }
+    return res;
 }
 
 

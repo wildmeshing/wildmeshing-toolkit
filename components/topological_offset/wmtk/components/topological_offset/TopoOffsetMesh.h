@@ -68,6 +68,7 @@ public:
     int m_vtu_counter = 0;
     int m_surfvtu_counter = 0;
     std::array<size_t, 4> init_counts = {0, 0, 0, 0};
+    bool m_boundary_input_vert_found = false;
 
     Parameters& m_params;
 
