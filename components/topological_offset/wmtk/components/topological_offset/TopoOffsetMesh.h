@@ -185,7 +185,9 @@ public:
     bool edge_is_manifold(const Tuple& t) const;
     void edge_dfs_helper(std::set<size_t>& visited_tids, const Tuple& t) const;
     bool vertex_is_manifold(const Tuple& t) const;
-    void vertex_dfs_helper(std::set<size_t>& visited_tids, const Tuple& t) const;
+    void vertex_dfs_helper(std::set<size_t>& visited_tids, const Tuple& t, const bool include)
+        const;
+    bool is_boundary_vertex(size_t vid) const;
 
     bool is_simplicially_embedded() const;
     bool tet_is_simp_emb(const Tuple& t) const;

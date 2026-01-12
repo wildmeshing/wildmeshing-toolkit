@@ -32,15 +32,6 @@ namespace wmtk::components::topological_offset {
 
 void topological_offset(nlohmann::json json_params)
 {
-    // // test mesh generation - DEVELOPMENT
-    // randMeshSphere();
-    // // randMesh();
-    // // edgeNonManifoldMesh();
-    // // edgeNonManifoldOBJ();
-    // // vertNonManifoldOBJ();
-    // return;
-    // // test mesh generation - DEVELOPMENT
-
     using wmtk::utils::resolve_path;
     using Tuple = TetMesh::Tuple;
 
@@ -55,16 +46,6 @@ void topological_offset(nlohmann::json json_params)
     }
 
     const std::filesystem::path root = json_params["json_input_file"];
-
-    // // logger settings
-    // {
-    //     std::string log_file_name = json_params["log_file"];
-    //     if (!log_file_name.empty()) {
-    //         log_file_name = resolve_path(root, log_file_name).string();
-    //         wmtk::set_file_logger(log_file_name);
-    //         logger().flush_on(spdlog::level::info);
-    //     }
-    // }
 
     // load input file path
     std::string input_path = resolve_path(root, json_params["input"]).string();

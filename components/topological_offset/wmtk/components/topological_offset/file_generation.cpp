@@ -1,6 +1,8 @@
 #include <igl/write_triangle_mesh.h>
+#include <wmtk/TetMesh.h>
 #include <wmtk/components/topological_offset/TopoOffsetMesh.h>
 #include <Eigen/Core>
+#include <Eigen/Dense>
 #include <cstdlib>
 #include <random>
 #include <wmtk/utils/Delaunay.hpp>
@@ -149,16 +151,28 @@ void randMeshSphere()
     std::map<std::string, int> label_map;
     read_image_msh(ipath, V, T, Tags, label_map);
 
+    // wmtk::TetMesh mesh;
+    // mesh.init(V.rows(), T);
+
     // random winding numbers
     unsigned seed = 0;
     std::mt19937 engine(seed);
     std::uniform_real_distribution<double> dist(0, 1);
     for (int i = 0; i < T.rows(); i++) {
-        Tags(i, label_map["winding_number_tracked"]) = dist(engine);
+        Vector3d v1 = V.row(T(i, 0));
+        Vector3d v2 = V.row(T(i, 1));
+        Vector3d v3 = V.row(T(i, 2));
+        Vector3d v4 = V.row(T(i, 3));
+        Vector3d m = (v1 + v2 + v3 + v4) / 4;
+        if (m.norm() > 0.5) {
+            Tags(i, label_map["winding_number_tracked"]) = 1.0;
+        } else {
+            Tags(i, label_map["winding_number_tracked"]) = dist(engine);
+        }
     }
 
     // save mesh
     std::string opath = "/Users/seb9449/Desktop/wildmeshing/manifold_extraction/topological_offset/"
-                        "rand_sphere_1.msh";
+                        "rand_sphere_2.msh";
     write_image_msh(opath, V, T, Tags, label_map);
 }
