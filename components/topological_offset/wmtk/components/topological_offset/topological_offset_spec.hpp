@@ -7,20 +7,24 @@ nlohmann::json topological_offset_spec = R"(
   {
     "pointer": "/",
     "type": "object",
-    "required": ["application", "input"],
+    "required": [
+      "application",
+      "input"
+    ],
     "optional": [
       "output",
       "tag_label",
       "wn_threshold",
       "manifold_union",
-      "log_file",
       "DEBUG_output"
     ]
   },
   {
     "pointer": "/application",
     "type": "string",
-    "options": ["topological_offset"],
+    "options": [
+      "topological_offset"
+    ],
     "doc": "Application name must be topological_offset."
   },
   {
@@ -31,8 +35,8 @@ nlohmann::json topological_offset_spec = R"(
   {
     "pointer": "/output",
     "type": "string",
-    "default": "out",
-    "doc": "Output file name (without extension)."
+    "default": "out.obj",
+    "doc": "Output file name (with extension)."
   },
   {
     "pointer": "/tag_label",
@@ -53,19 +57,12 @@ nlohmann::json topological_offset_spec = R"(
     "doc": "If true, offsets are unioned with mesh, otherwise subtracted from mesh."
   },
   {
-    "pointer": "/log_file",
-    "type": "string",
-    "default": "",
-    "doc": "Logs are not just printed on the terminal but also saved in this file."
-  },
-  {
     "pointer": "/DEBUG_output",
     "type": "bool",
     "default": false,
     "doc": "Write the tet mesh as out_{}.vtu after every operation."
   }
 ]
-
 )"_json;
 
 }

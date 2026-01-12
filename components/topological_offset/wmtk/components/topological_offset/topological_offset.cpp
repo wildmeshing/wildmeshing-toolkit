@@ -8,11 +8,14 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
+#include <igl/is_edge_manifold.h>
+#include <igl/is_vertex_manifold.h>
+#include <igl/remove_unreferenced.h>
 #include "Parameters.h"
 #include "TopoOffsetMesh.h"
 #include "read_image_msh.hpp"
 
-#include "file_generation.cpp"  // DEVELOPMENT
+#include "file_generation.cpp" // DEVELOPMENT
 
 #include "topological_offset_spec.hpp"
 
@@ -30,10 +33,11 @@ namespace wmtk::components::topological_offset {
 void topological_offset(nlohmann::json json_params)
 {
     // // test mesh generation - DEVELOPMENT
+    // randMeshSphere();
     // // randMesh();
     // // edgeNonManifoldMesh();
     // // edgeNonManifoldOBJ();
-    // vertNonManifoldOBJ();
+    // // vertNonManifoldOBJ();
     // return;
     // // test mesh generation - DEVELOPMENT
 
@@ -52,15 +56,15 @@ void topological_offset(nlohmann::json json_params)
 
     const std::filesystem::path root = json_params["json_input_file"];
 
-    // logger settings
-    {
-        std::string log_file_name = json_params["log_file"];
-        if (!log_file_name.empty()) {
-            log_file_name = resolve_path(root, log_file_name).string();
-            wmtk::set_file_logger(log_file_name);
-            logger().flush_on(spdlog::level::info);
-        }
-    }
+    // // logger settings
+    // {
+    //     std::string log_file_name = json_params["log_file"];
+    //     if (!log_file_name.empty()) {
+    //         log_file_name = resolve_path(root, log_file_name).string();
+    //         wmtk::set_file_logger(log_file_name);
+    //         logger().flush_on(spdlog::level::info);
+    //     }
+    // }
 
     // load input file path
     std::string input_path = resolve_path(root, json_params["input"]).string();
@@ -82,13 +86,19 @@ void topological_offset(nlohmann::json json_params)
     params.debug_output = json_params["DEBUG_output"];
 
     // input file must be .msh
-    if (output_filename.has_extension() && output_filename.extension() != ".msh") {
-        output_filename.replace_extension(".msh");
-        logger().warn(
-            "Extension of provided output filename is ignored. Output will be {}",
-            output_filename.string());
-    }
-    output_filename.replace_extension(""); // extension is added back later
+    // if (output_filename.has_extension() && output_filename.extension() != ".msh") {
+    //     output_filename.replace_extension(".msh");
+    //     logger().warn(
+    //         "Extension of provided output filename is ignored. Output will be {}",
+    //         output_filename.string());
+    // }
+    // output_filename.replace_extension(""); // extension is added back later
+
+    // debug output filename
+    std::filesystem::path debug_outfilename = output_filename;
+    debug_outfilename.replace_extension("");
+
+    // input must be .msh
     if (std::filesystem::path(input_path).extension() != ".msh") {
         log_and_throw_error("Input must be a .msh file.");
     }
@@ -114,13 +124,13 @@ void topological_offset(nlohmann::json json_params)
     mesh.init_counts[2] = mesh.get_faces().size();
     mesh.init_counts[3] = mesh.tet_size();
 
-    igl::Timer timer;
-    timer.start();
-
     // output input mesh as vtu
     if (mesh.m_params.debug_output) {
-        mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
+        mesh.write_vtu(debug_outfilename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
     }
+
+    igl::Timer timer;
+    timer.start();
 
     // identify non manifold components
     logger().info("Identifying nonmanifold components...");
@@ -128,27 +138,45 @@ void topological_offset(nlohmann::json json_params)
     logger().info("\tNonmanifold edges: {}", nm_e_count);
     logger().info("\tNonmanifold vertices: {}", nm_v_count);
     if (mesh.m_params.debug_output) {
-        mesh.write_input_complex(output_filename.string() + "_input_complex");
+        mesh.write_input_complex(debug_outfilename.string() + "_input_complex");
     }
 
-    // // make embedding simplicial (split components per Alg 1)
-    // bool dummy = mesh.is_simplicially_embedded();
-    // mesh.simplicial_embedding();
-    // mesh.consolidate_mesh();
-    // dummy = mesh.is_simplicially_embedded();
-    // if (mesh.m_params.debug_output) {  // intermediate output
-    //     mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
-    // }
+    // make embedding simplicial (split components per Alg 1)
+    logger().info("Creating simplicial embedding...");
+    bool dummy = mesh.is_simplicially_embedded();
+    mesh.simplicial_embedding();
+    mesh.consolidate_mesh();
+    dummy = mesh.is_simplicially_embedded();
+    if (mesh.m_params.debug_output) { // intermediate output
+        mesh.write_vtu(debug_outfilename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
+    }
 
-    // // perform offset
-    // mesh.perform_offset();
-    // mesh.consolidate_mesh();
+    // perform offset
+    logger().info("Performing offset...");
+    mesh.perform_offset();
+    mesh.consolidate_mesh();
 
+    // get surface mesh
+    logger().info("Extracting surface mesh...");
+    MatrixXd V_out;
+    MatrixXi F_out;
+    mesh.extract_surface_mesh(V_out, F_out);
+    MatrixXd V_out_reduced;
+    MatrixXi F_out_reduced;
+    MatrixXi I; // index map, don't actually need
+    MatrixXi B; // dummy variable
+    igl::remove_unreferenced(V_out, F_out, V_out_reduced, F_out_reduced, I);
+    logger().info("\tSurface edge manifoldness check: {}", igl::is_edge_manifold(F_out_reduced));
+    logger().info(
+        "\tSurface vertex manifoldness check: {}",
+        igl::is_vertex_manifold(F_out_reduced, B));
+
+    // stop timer
     double time = timer.getElapsedTime();
     wmtk::logger().info("total time {}s", time);
 
     // output
-    std::ofstream fout(output_filename.string() + ".log");
+    std::ofstream fout(debug_outfilename.string() + ".log");
     fout << "before:" << std::endl;
     fout << "\t#t: " << mesh.init_counts[3] << std::endl;
     fout << "\t#f: " << mesh.init_counts[2] << std::endl;
@@ -164,8 +192,14 @@ void topological_offset(nlohmann::json json_params)
     fout.close();
 
     // mesh.write_msh(output_filename.string() + ".msh");
-    if (mesh.m_params.debug_output) {  // use numbered vtu format
-        mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
+
+    // write output surface
+    logger().info("Write {}", output_filename.string());
+    igl::write_triangle_mesh(output_filename, V_out_reduced, F_out_reduced);
+
+    // write vtu
+    if (mesh.m_params.debug_output) {
+        mesh.write_vtu(debug_outfilename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
     }
 
     wmtk::logger().info("======= finish =========");

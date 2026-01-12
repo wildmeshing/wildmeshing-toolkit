@@ -20,6 +20,8 @@ set(SRC_FILES
 
 	read_image_msh.hpp
 	read_image_msh.cpp
+	write_image_msh.hpp
+	write_image_msh.cpp
 
 	file_generation.cpp
     )

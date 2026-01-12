@@ -192,6 +192,8 @@ public:
     void simplicial_embedding();
 
     void perform_offset();
+
+    void extract_surface_mesh(MatrixXd& V, MatrixXi& F);
 };
 
 } // namespace wmtk::components::topological_offset

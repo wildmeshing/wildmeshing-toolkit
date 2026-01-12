@@ -1,23 +1,29 @@
-#include <cstdlib>
-#include <wmtk/components/topological_offset/TopoOffsetMesh.h>
-#include <wmtk/utils/Delaunay.hpp>
 #include <igl/write_triangle_mesh.h>
+#include <wmtk/components/topological_offset/TopoOffsetMesh.h>
 #include <Eigen/Core>
+#include <cstdlib>
+#include <random>
+#include <wmtk/utils/Delaunay.hpp>
 #include <wmtk/utils/io.hpp>
 #include "read_image_msh.hpp"
+#include "write_image_msh.hpp"
 
 
 using namespace wmtk::delaunay;
+using namespace wmtk::components::topological_offset;
 
 
-void write_manual_msh(std::string path, std::vector<Point3D> verts, std::vector<Tetrahedron> tets, std::vector<double> wns) {
+void write_manual_msh(
+    std::string path,
+    std::vector<Point3D> verts,
+    std::vector<Tetrahedron> tets,
+    std::vector<double> wns)
+{
     // logger().info("Write {}", file);
 
     wmtk::MshData msh;
 
-    msh.add_tet_vertices(verts.size(), [&](size_t i) {
-        return verts[i];
-    });
+    msh.add_tet_vertices(verts.size(), [&](size_t i) { return verts[i]; });
 
     msh.add_tets(tets.size(), [&](size_t i) {
         std::array<size_t, 4> data;
@@ -28,42 +34,31 @@ void write_manual_msh(std::string path, std::vector<Point3D> verts, std::vector<
         return data;
     });
 
-    msh.add_tet_attribute<1>("winding_number_tracked", [&](size_t i) {
-        return wns[i];
-    });
+    msh.add_tet_attribute<1>("winding_number_tracked", [&](size_t i) { return wns[i]; });
 
     msh.save(path, true);
 }
 
 
-void vertNonManifoldOBJ() {
-    std::string path = "/Users/seb9449/Desktop/wildmeshing/manifold_extraction/topological_offset/nonman_vert.obj";
+void vertNonManifoldOBJ()
+{
+    std::string path =
+        "/Users/seb9449/Desktop/wildmeshing/manifold_extraction/topological_offset/nonman_vert.obj";
 
     Eigen::MatrixXd V(7, 3);
-    V << 0, 0, 0,
-         0, -1, 0,
-         -1, 0, 0,
-         0, 0, -1,
-         1, 0, 0,
-         0, 0, 1,
-         0, 1, 0;
+    V << 0, 0, 0, 0, -1, 0, -1, 0, 0, 0, 0, -1, 1, 0, 0, 0, 0, 1, 0, 1, 0;
 
     Eigen::MatrixXi F(8, 3);
-    F << 0, 2, 1,
-         0, 1, 3,
-         2, 0, 3,
-         1, 2, 3,
-         4, 5, 0,
-         0, 5, 6,
-         4, 0, 6,
-         6, 5, 4;
+    F << 0, 2, 1, 0, 1, 3, 2, 0, 3, 1, 2, 3, 4, 5, 0, 0, 5, 6, 4, 0, 6, 6, 5, 4;
 
     igl::write_triangle_mesh(path, V, F);
 }
 
 
-void edgeNonManifoldMesh() {
-    std::string path = "/Users/seb9449/Desktop/wildmeshing/manifold_extraction/topological_offset/nonman_edge.msh";
+void edgeNonManifoldMesh()
+{
+    std::string path =
+        "/Users/seb9449/Desktop/wildmeshing/manifold_extraction/topological_offset/nonman_edge.msh";
 
     std::vector<Point3D> verts;
     verts.push_back({-1, 0, 0});
@@ -85,42 +80,36 @@ void edgeNonManifoldMesh() {
 }
 
 
-void edgeNonManifoldOBJ() {
-    std::string path = "/Users/seb9449/Desktop/wildmeshing/manifold_extraction/topological_offset/nonman_edge.obj";
+void edgeNonManifoldOBJ()
+{
+    std::string path =
+        "/Users/seb9449/Desktop/wildmeshing/manifold_extraction/topological_offset/nonman_edge.obj";
 
     Eigen::MatrixXd V(6, 3);
-    V << -1, 0, 0,
-         0, -1, 0,
-         0, 0, 0,
-         0, 0, 1,
-         1, 0, 0,
-         0, 1, 0;
+    V << -1, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0;
 
     Eigen::MatrixXi F(8, 3);
-    F << 0, 1, 3,
-         1, 2, 3,
-         0, 3, 2,
-         2, 1, 0,
-         5, 3, 4,
-         2, 3, 5,
-         4, 3, 2,
-         4, 2, 5;
+    F << 0, 1, 3, 1, 2, 3, 0, 3, 2, 2, 1, 0, 5, 3, 4, 2, 3, 5, 4, 3, 2, 4, 2, 5;
 
     igl::write_triangle_mesh(path, V, F);
 }
 
 
-void randMesh() {
-    const int N_POINTS = 1000;
-    std::srand(0);
+void randMesh()
+{
+    const int N_POINTS = 20;
+    unsigned seed = 0;
+    std::mt19937 engine(seed);
+    std::uniform_real_distribution<double> dist(-10, 10);
     // std::string opath = "/Users/seb9449/Desktop/wildmeshing/point_cloud.obj";
-    std::string opath = "/Users/seb9449/Desktop/wildmeshing/manifold_extraction/topological_offset/rand_mesh.msh";
+    std::string opath = "/Users/seb9449/Desktop/wildmeshing/manifold_extraction/topological_offset/"
+                        "rand_mesh_20p_robust.msh";
 
     std::vector<Point3D> points;
     for (int i = 0; i < N_POINTS; i++) {
-        double x = ((double) (std::rand() % 10000)) / 1000.0;
-        double y = ((double) (std::rand() % 10000)) / 1000.0;
-        double z = ((double) (std::rand() % 10000)) / 1000.0;
+        double x = dist(engine);
+        double y = dist(engine);
+        double z = dist(engine);
         Point3D p = {x, y, z};
         points.push_back(p);
     }
@@ -138,16 +127,38 @@ void randMesh() {
 
     // random tagging
     std::vector<double> wns;
-    std::srand(100);
+    std::uniform_real_distribution<double> wn_dist(0, 1);
     for (int i = 0; i < tets.size(); i++) {
-        double val = ((double) std::rand()) / 100000.0;
-        double ipart;
-        double dpart;
-        dpart = std::modf(val, &ipart);
-        wns.push_back(dpart);
+        double val = wn_dist(engine);
+        wns.push_back(val);
     }
 
     // save
     write_manual_msh(opath, verts, tets, wns);
 }
 
+
+void randMeshSphere()
+{
+    // load mesh
+    std::string ipath = "/Users/seb9449/Desktop/wildmeshing/manifold_extraction/topological_offset/"
+                        "sphere_output_final.msh";
+    MatrixXd V;
+    MatrixXi T;
+    MatrixXd Tags;
+    std::map<std::string, int> label_map;
+    read_image_msh(ipath, V, T, Tags, label_map);
+
+    // random winding numbers
+    unsigned seed = 0;
+    std::mt19937 engine(seed);
+    std::uniform_real_distribution<double> dist(0, 1);
+    for (int i = 0; i < T.rows(); i++) {
+        Tags(i, label_map["winding_number_tracked"]) = dist(engine);
+    }
+
+    // save mesh
+    std::string opath = "/Users/seb9449/Desktop/wildmeshing/manifold_extraction/topological_offset/"
+                        "rand_sphere_1.msh";
+    write_image_msh(opath, V, T, Tags, label_map);
+}

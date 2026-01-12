@@ -1,7 +1,7 @@
 #pragma once
 
-#include <string>
 #include <map>
+#include <string>
 #include <wmtk/Types.hpp>
 
 namespace wmtk::components::topological_offset {
