@@ -414,7 +414,7 @@ std::vector<TriMesh::Tuple> UniformRemeshing::replace_edges_after_split(
     // only push back those edges which are already present, but invalidated by hash mechanism.
     std::vector<TriMesh::Tuple> new_edges;
     new_edges.reserve(tris.size());
-    for (auto t : tris) {
+    for (const Tuple& t : tris) {
         auto tmptup = (t.switch_vertex(*this)).switch_edge(*this);
         if (tmptup.vid(*this) < vid_threshold &&
             (tmptup.switch_vertex(*this)).vid(*this) < vid_threshold)
@@ -888,16 +888,16 @@ bool UniformRemeshing::split_remeshing()
         timer.getElapsedTimeInMilliSec());
 
     wmtk::logger().info("size for edges to be split is {}", collect_all_ops.size());
-    auto edges2 = tbb::concurrent_vector<std::pair<std::string, TriMesh::Tuple>>();
+    // auto edges2 = tbb::concurrent_vector<std::pair<std::string, TriMesh::Tuple>>();
     auto setup_and_execute = [&](auto& executor) {
         vid_threshold = vert_capacity();
         executor.num_threads = NUM_THREADS;
         executor.renew_neighbor_tuples = [&](auto& m, auto op, auto& tris) {
             count_success++;
             auto edges = m.replace_edges_after_split(tris, vid_threshold);
-            for (const Tuple& e2 : m.new_sub_edges_after_split(tris)) {
-                edges2.emplace_back(op, e2);
-            }
+            // for (const Tuple& e2 : m.new_sub_edges_after_split(tris)) {
+            //     edges2.emplace_back(op, e2);
+            // }
             auto optup = std::vector<std::pair<std::string, TriMesh::Tuple>>();
             for (const Tuple& e : edges) {
                 optup.emplace_back(op, e);
@@ -914,15 +914,17 @@ bool UniformRemeshing::split_remeshing()
             return true;
         };
         // Execute!!
-        do {
-            count_success.store(0, std::memory_order_release);
-            executor(*this, collect_all_ops);
-            collect_all_ops.clear();
-            for (auto& item : edges2) {
-                collect_all_ops.emplace_back(item);
-            }
-            edges2.clear();
-        } while (count_success.load(std::memory_order_acquire) > 0);
+        count_success.store(0, std::memory_order_release);
+        executor(*this, collect_all_ops);
+        // do {
+        //     count_success.store(0, std::memory_order_release);
+        //     executor(*this, collect_all_ops);
+        //     collect_all_ops.clear();
+        //     for (auto& item : edges2) {
+        //         collect_all_ops.emplace_back(item);
+        //     }
+        //     edges2.clear();
+        // } while (count_success.load(std::memory_order_acquire) > 0);
     };
 
     if (NUM_THREADS > 0) {
