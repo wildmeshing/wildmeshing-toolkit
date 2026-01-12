@@ -13,6 +13,7 @@ nlohmann::json remeshing_spec = R"(
       "use_sample_envelope",
       "num_threads",
       "max_iterations",
+      "eps",
       "eps_rel",
       "length_rel",
       "length_abs",
@@ -51,6 +52,12 @@ nlohmann::json remeshing_spec = R"(
     "type": "int",
     "default": 3,
     "doc": "Maximum iterations before stopping."
+  },
+  {
+    "pointer": "/eps",
+    "type": "float",
+    "default": -1,
+    "doc": "Envelope thickness"
   },
   {
     "pointer": "/eps_rel",

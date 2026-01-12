@@ -176,7 +176,8 @@ int main(int argc, char** argv)
 
     const std::string input_path = json_params["input"];
     const std::string output = json_params["output"];
-    const double env_rel = json_params["eps_rel"];
+    double eps = json_params["eps"];
+    const double eps_rel = json_params["eps_rel"];
     const double length_rel = json_params["length_rel"];
     const double length_factor = json_params["length_factor"];
     const int num_threads = json_params["num_threads"];
@@ -241,7 +242,9 @@ int main(int argc, char** argv)
 
     box_minmax = std::pair(inV.colwise().minCoeff(), inV.colwise().maxCoeff());
     double diag = (box_minmax.first - box_minmax.second).norm();
-    const double envelope_size = env_rel * diag;
+    if (eps < 0) {
+        eps = eps_rel * diag;
+    }
     igl::Timer timer;
 
     wmtk::logger().info("Total frozen vertices: {}", fixed_vertices.size());
@@ -249,7 +252,7 @@ int main(int argc, char** argv)
     UniformRemeshing m(verts, num_threads, !sample_envelope);
     m.set_feature_edges(feature_edge_list);
     // m.set_feature_vertices(feature_vertices);
-    m.create_mesh(verts.size(), tris, fixed_vertices, freeze_boundary, envelope_size);
+    m.create_mesh(verts.size(), tris, fixed_vertices, freeze_boundary, eps);
     m.set_patch_ids(face_patch_ids);
 
 
