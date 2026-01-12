@@ -82,9 +82,11 @@ void TopoOffsetMesh::init_from_image(
     for (const Tuple& t : tets) {
         size_t i = t.tid(*this);
         m_tet_attribute[i].wn = T_tags(i, tag_label_map.at(m_params.tag_label));
-        if (m_tet_attribute[i].wn > m_params.wn_threshold) {
-            m_tet_attribute[i].in_out = true;
-        }
+        // if (m_tet_attribute[i].wn > m_params.wn_threshold) {
+        //     m_tet_attribute[i].in_out = true;
+        // }
+        m_tet_attribute[i].in_out = (m_tet_attribute[i].wn > m_params.wn_include_range[0]) &&
+                                    (m_tet_attribute[i].wn < m_params.wn_include_range[1]);
     }
 
     // propagate in_out to faces
@@ -735,7 +737,7 @@ void TopoOffsetMesh::write_vtu(const std::string& path)
 {
     consolidate_mesh();
     const std::string out_path = path + ".vtu";
-    logger().info("Write {}", out_path);
+    logger().info("[this may take a while] Write {}", out_path);
     const auto& vs = get_vertices();
     const auto& tets = get_tets();
 

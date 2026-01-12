@@ -53,12 +53,10 @@ void topological_offset(nlohmann::json json_params)
     // load params
     Parameters params;
     params.tag_label = json_params["tag_label"];
-    // for (int tag : json_params["sep_tags"]) {
-    //     params.sep_tags.push_back(tag);
-    // }
-    // params.fill_tag = json_params["fill_tag"];
-    // params.manifold_mode = json_params["manifold_mode"];
-    params.wn_threshold = json_params["wn_threshold"];
+    // params.wn_threshold = json_params["wn_threshold"];
+    // params.threshold_invert = json_params["threshold_invert"];
+    params.wn_include_range[0] = json_params["wn_include"][0];
+    params.wn_include_range[1] = json_params["wn_include"][1];
     params.manifold_union = json_params["manifold_union"];
     params.output_path = resolve_path(root, json_params["output"]).string();
     std::filesystem::path output_filename = params.output_path;
@@ -66,16 +64,7 @@ void topological_offset(nlohmann::json json_params)
     int NUM_THREADS = 0;
     params.debug_output = json_params["DEBUG_output"];
 
-    // input file must be .msh
-    // if (output_filename.has_extension() && output_filename.extension() != ".msh") {
-    //     output_filename.replace_extension(".msh");
-    //     logger().warn(
-    //         "Extension of provided output filename is ignored. Output will be {}",
-    //         output_filename.string());
-    // }
-    // output_filename.replace_extension(""); // extension is added back later
-
-    // debug output filename
+    // debugging output filename
     std::filesystem::path debug_outfilename = output_filename;
     debug_outfilename.replace_extension("");
 

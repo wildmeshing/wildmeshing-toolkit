@@ -7,10 +7,7 @@ struct Parameters
 {
     // parameters set by user
     std::string tag_label;
-    // std::vector<int> sep_tags;
-    // int fill_tag;
-    // bool manifold_mode;
-    double wn_threshold;
+    std::array<double, 2> wn_include_range;
     bool manifold_union;
     std::string output_path;
     bool debug_output = false;
