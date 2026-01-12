@@ -1246,62 +1246,71 @@ void UniformRemeshing::set_patch_ids(const std::vector<size_t>& patch_ids)
 
 void UniformRemeshing::initialize_feature_edges()
 {
-    std::set<simplex::Edge> feature_edges;
+    logger().info("Init feature edges");
+    std::map<simplex::Edge, int> feature_edges;
 
     for (const auto& item : m_input_feature_edges) {
         const auto& ab = item.first;
-        const size_t a = ab[0];
-        const size_t b = ab[1];
-        if (a == b) {
+        const size_t v0 = ab[0];
+        const size_t v1 = ab[1];
+        if (v0 == v1) {
             continue;
         }
-        feature_edges.insert(simplex::Edge(a, b));
+        feature_edges[simplex::Edge(v0, v1)] = item.second;
 
-        if (a >= vertex_attrs.size()) {
-            log_and_throw_error("Invalid feature edge ({},{}), vertex id {} is invalid", a, b, a);
+        if (v0 >= vertex_attrs.size()) {
+            log_and_throw_error(
+                "Invalid feature edge ({},{}), vertex id {} is invalid",
+                v0,
+                v1,
+                v0);
         }
-        if (b >= vertex_attrs.size()) {
-            log_and_throw_error("Invalid feature edge ({},{}), vertex id {} is invalid", a, b, b);
+        if (v1 >= vertex_attrs.size()) {
+            log_and_throw_error(
+                "Invalid feature edge ({},{}), vertex id {} is invalid",
+                v0,
+                v1,
+                v1);
         }
 
-        vertex_attrs[a].is_feature = true;
-        vertex_attrs[b].is_feature = true;
+        vertex_attrs[v0].is_feature = true;
+        vertex_attrs[v1].is_feature = true;
+
+        const size_t eid = eid_from_vids(v0, v1);
+        edge_attrs[eid].is_feature = item.second;
     }
 
-    size_t found = 0;
-    for (const Tuple& e : get_edges()) {
-        const size_t a = e.vid(*this);
-        const size_t b = e.switch_vertex(*this).vid(*this);
+    // size_t found = 0;
+    // for (const Tuple& e : get_edges()) {
+    //     const size_t v0 = e.vid(*this);
+    //     const size_t v1 = e.switch_vertex(*this).vid(*this);
+    //
+    //     const simplex::Edge s(v0, v1);
+    //     if (feature_edges.count(s) > 0) {
+    //         const size_t eid = e.eid(*this);
+    //
+    //         int seg_id = feature_edges[s];
+    //        // for (const auto& item : m_input_feature_edges) {
+    //        //     const auto& ab = item.first;
+    //        //     const int id = item.second;
+    //        //     if ((ab[0] == v0 && ab[1] == v1) || (ab[0] == v1 && ab[1] == v0)) {
+    //        //         seg_id = id;
+    //        //         break;
+    //        //     }
+    //        // }
+    //
+    //        edge_attrs[eid].is_feature = seg_id;
+    //        ++found;
+    //    }
+    //}
 
-        const simplex::Edge s(a, b);
-        if (feature_edges.count(s) > 0) {
-            const size_t eid = e.eid(*this);
+    wmtk::logger().info("initialize_feature_edges: marked {} feature edges", feature_edges.size());
 
-            int seg_id = 0;
-            for (const auto& item : m_input_feature_edges) {
-                const auto& ab = item.first;
-                const int id = item.second;
-                if ((ab[0] == a && ab[1] == b) || (ab[0] == b && ab[1] == a)) {
-                    seg_id = id;
-                    break;
-                }
-            }
-
-            edge_attrs[eid].is_feature = seg_id;
-            ++found;
-        }
-    }
-
-    wmtk::logger().info(
-        "initialize_feature_edges: marked {} feature edges (requested {})",
-        found,
-        feature_edges.size());
-
-    if (found != feature_edges.size()) {
-        log_and_throw_error(
-            "initialize_feature_edges: {} requested feature edges were not found in the mesh",
-            feature_edges.size() - found);
-    }
+    // if (found != feature_edges.size()) {
+    //     log_and_throw_error(
+    //         "initialize_feature_edges: {} requested feature edges were not found in the mesh",
+    //         feature_edges.size() - found);
+    // }
 }
 
 
