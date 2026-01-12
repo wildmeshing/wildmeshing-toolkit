@@ -895,9 +895,9 @@ bool UniformRemeshing::split_remeshing()
         executor.renew_neighbor_tuples = [&](auto& m, auto op, auto& tris) {
             count_success++;
             auto edges = m.replace_edges_after_split(tris, vid_threshold);
-            for (const Tuple& e2 : m.new_sub_edges_after_split(tris)) {
-                edges2.emplace_back(op, e2);
-            }
+            // for (const Tuple& e2 : m.new_sub_edges_after_split(tris)) {
+            //     edges2.emplace_back(op, e2);
+            // }
             auto optup = std::vector<std::pair<std::string, TriMesh::Tuple>>();
             for (const Tuple& e : edges) {
                 optup.emplace_back(op, e);
@@ -940,7 +940,7 @@ bool UniformRemeshing::split_remeshing()
 bool UniformRemeshing::smooth_all_vertices()
 {
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    for (auto& loc : get_edges()) collect_all_ops.emplace_back("vertex_smooth", loc);
+    for (auto& loc : get_vertices()) collect_all_ops.emplace_back("vertex_smooth", loc);
 
     auto setup_and_execute = [&](auto& executor) {
         executor.num_threads = NUM_THREADS;
