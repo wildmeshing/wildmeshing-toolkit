@@ -379,16 +379,20 @@ bool UniformRemeshing::swap_edge_before(const Tuple& t)
         const Vector3d& p3 = vertex_attrs.at(v3).pos;
 
         // current
-        const Vector3d n0 = (p1 - p0).cross(p2 - p0).normalized();
-        const Vector3d n1 = (p3 - p0).cross(p1 - p0).normalized();
-        const double a_before = n0.dot(n1);
-        // after swap
-        const Vector3d n2 = (p2 - p3).cross(p0 - p3).normalized();
-        const Vector3d n3 = (p1 - p3).cross(p2 - p3).normalized();
-        const double a_after = n2.dot(n3);
+        Vector3d n0 = (p1 - p0).cross(p2 - p0);
+        Vector3d n1 = (p3 - p0).cross(p1 - p0);
+        if (n0.norm() > 1e-12 && n1.norm() > 1e-12) {
+            n0.normalize();
+            n1.normalize();
+            const double a_before = n0.dot(n1);
+            // after swap
+            Vector3d n2 = (p2 - p3).cross(p0 - p3).normalized();
+            Vector3d n3 = (p1 - p3).cross(p2 - p3).normalized();
+            const double a_after = n2.dot(n3);
 
-        if (a_after < a_before && a_after < -0.5) {
-            return false;
+            if (a_after < a_before && a_after < -0.5) {
+                return false;
+            }
         }
     }
 
