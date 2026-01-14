@@ -333,6 +333,11 @@ bool UniformRemeshing::swap_edge_before(const Tuple& t)
     const size_t v0 = t.vid(*this);
     const size_t v1 = t.switch_vertex(*this).vid(*this);
 
+    // do not swap if vertex has valence 3
+    if (get_valence_for_vertex(v0) == 3 || get_valence_for_vertex(v1) == 3) {
+        return false;
+    }
+
     // if (vertex_attrs[v0].is_freeze && vertex_attrs[v1].is_freeze) {
     //     return false;
     // }
@@ -351,7 +356,7 @@ bool UniformRemeshing::swap_edge_before(const Tuple& t)
     cache.v2 = t.switch_edge(*this).switch_vertex(*this).vid(*this);
 
     size_t face_count = 0;
-    for (const Tuple t_opp : t.switch_faces(*this)) {
+    for (const Tuple& t_opp : t.switch_faces(*this)) {
         cache.v3 = t_opp.switch_edge(*this).switch_vertex(*this).vid(*this);
         ++face_count;
         if (face_count > 1) {
@@ -362,6 +367,29 @@ bool UniformRemeshing::swap_edge_before(const Tuple& t)
     if (face_count == 0) {
         // Boundary edge (???)
         return false;
+    }
+
+    // normal check
+    {
+        const size_t v2 = cache.v2;
+        const size_t v3 = cache.v3;
+        const Vector3d& p0 = cache.v0p;
+        const Vector3d& p1 = cache.v1p;
+        const Vector3d& p2 = vertex_attrs.at(v2).pos;
+        const Vector3d& p3 = vertex_attrs.at(v3).pos;
+
+        // current
+        const Vector3d n0 = (p1 - p0).cross(p2 - p0).normalized();
+        const Vector3d n1 = (p3 - p0).cross(p1 - p0).normalized();
+        const double a_before = n0.dot(n1);
+        // after swap
+        const Vector3d n2 = (p2 - p3).cross(p0 - p3).normalized();
+        const Vector3d n3 = (p1 - p3).cross(p2 - p3).normalized();
+        const double a_after = n2.dot(n3);
+
+        if (a_after < a_before && a_after < -0.5) {
+            return false;
+        }
     }
 
     const std::array<simplex::Edge, 4> ring_edges = {
