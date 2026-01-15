@@ -705,9 +705,17 @@ bool UniformRemeshing::smooth_before(const Tuple& t)
 bool UniformRemeshing::smooth_after(const TriMesh::Tuple& t)
 {
     auto one_ring_tris = get_one_ring_tris_for_vertex(t);
-    if (one_ring_tris.size() < 2) {
+    if (one_ring_tris.size() <= 2) {
         return false;
     }
+
+    // store min quality before
+    double min_q = std::numeric_limits<double>::max();
+    for (const Tuple& n : one_ring_tris) {
+        double q = get_quality(n);
+        min_q = std::min(min_q, q);
+    }
+
     Eigen::Vector3d after_smooth = tangential_smooth(t);
     if (after_smooth.hasNaN()) return false;
     // todo: add envelope projection and check here
@@ -732,6 +740,15 @@ bool UniformRemeshing::smooth_after(const TriMesh::Tuple& t)
     // logger().warn("{} --> {}", after_smooth.transpose(), after_project.transpose());
 
     vertex_attrs[t.vid(*this)].pos = after_project;
+
+    // reject if quality after is worse
+    for (const Tuple& n : one_ring_tris) {
+        double q = get_quality(n);
+        if (q < min_q && q < 0.1) {
+            return false;
+        }
+    }
+
     return true;
 }
 
