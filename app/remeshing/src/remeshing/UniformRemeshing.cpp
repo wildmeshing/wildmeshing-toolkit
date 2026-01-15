@@ -119,10 +119,12 @@ bool UniformRemeshing::cache_edge_positions(const Tuple& t)
     const size_t v0 = t.vid(*this);
     const size_t v1 = t.switch_vertex(*this).vid(*this);
 
-    cache.v1p = vertex_attrs.at(v0).pos;
-    cache.v2p = vertex_attrs.at(v1).pos;
+    cache.v0p = vertex_attrs.at(v0).pos;
+    cache.v1p = vertex_attrs.at(v1).pos;
     cache.v0_tal = vertex_attrs.at(v0).tal;
     cache.v1_tal = vertex_attrs.at(v1).tal;
+    cache.v0_corner_id = vertex_attrs.at(v0).corner_id;
+    cache.v1_corner_id = vertex_attrs.at(v1).corner_id;
     cache.partition_id = vertex_attrs.at(v0).partition_id;
 
     cache.v0 = v0;
@@ -489,7 +491,10 @@ bool UniformRemeshing::collapse_edge_before(const Tuple& t)
     //     return false;
 
 
-    if (vertex_attrs[v0].corner_id >= 0 || vertex_attrs[v1].corner_id >= 0) {
+    // if (vertex_attrs[v0].corner_id >= 0 || vertex_attrs[v1].corner_id >= 0) {
+    //     return false;
+    // }
+    if (vertex_attrs[v0].corner_id >= 0 && vertex_attrs[v1].corner_id >= 0) {
         return false;
     }
 
@@ -538,9 +543,15 @@ bool UniformRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
 
     auto& attr = vertex_attrs[t.vid(*this)];
 
-    if (cache.is_feature_edge || !vertex_attrs.at(cache.v1).is_feature) {
+    if (cache.v0_corner_id >= 0) {
+        attr.pos = cache.v0p;
+        attr.corner_id = cache.v0_corner_id;
+    } else if (cache.v1_corner_id >= 0) {
+        attr.pos = cache.v1p;
+        attr.corner_id = cache.v1_corner_id;
+    } else if (cache.is_feature_edge || !vertex_attrs.at(cache.v1).is_feature) {
         // collase to midpoint if v1 is not a feature
-        const Eigen::Vector3d p = (cache.v1p + cache.v2p) / 2.0;
+        const Eigen::Vector3d p = (cache.v0p + cache.v1p) / 2.0;
         attr.pos = p;
     }
     attr.partition_id = cache.partition_id;
@@ -1463,7 +1474,7 @@ void UniformRemeshing::write_vtu(const std::string& path) const
     }
 
     Eigen::MatrixXd V(vert_capacity(), 3);
-    Eigen::MatrixXi F(tri_capacity(), 3);
+    Eigen::MatrixXi F(faces.size(), 3);
     Eigen::MatrixXi E(edges.size(), 2);
 
     V.setZero();
@@ -1473,8 +1484,9 @@ void UniformRemeshing::write_vtu(const std::string& path) const
     Eigen::VectorXd v_is_feature(vert_capacity());
     Eigen::VectorXd v_corner_id(vert_capacity());
     Eigen::VectorXd v_tal(vert_capacity());
-    Eigen::VectorXd f_pid(tri_capacity());
-    Eigen::VectorXd f_quality(tri_capacity());
+    Eigen::VectorXd v_valence(vert_capacity());
+    Eigen::VectorXd f_pid(faces.size());
+    Eigen::VectorXd f_quality(faces.size());
     Eigen::VectorXd c_id(curve_ids.size());
 
     for (size_t i = 0; i < curve_ids.size(); ++i) {
@@ -1504,6 +1516,7 @@ void UniformRemeshing::write_vtu(const std::string& path) const
         v_is_feature[vid] = vertex_attrs[vid].is_feature;
         v_corner_id[vid] = vertex_attrs[vid].corner_id;
         v_tal[vid] = vertex_attrs[vid].tal;
+        v_valence[vid] = get_valence_for_vertex(vid);
     }
 
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
@@ -1512,6 +1525,7 @@ void UniformRemeshing::write_vtu(const std::string& path) const
     writer->add_field("is_feature", v_is_feature);
     writer->add_field("corner_id", v_corner_id);
     writer->add_field("target_edge_length", v_tal);
+    writer->add_field("valence", v_valence);
     writer->add_cell_field("patch_id", f_pid);
     writer->add_cell_field("quality", f_quality);
     writer->write_mesh(path + ".vtu", V, F);
@@ -1574,6 +1588,7 @@ void UniformRemeshing::write_vtu(const std::string& path) const
         edge_writer->add_field("is_feature", v_is_feature);
         edge_writer->add_field("corner_id", v_corner_id);
         edge_writer->add_field("target_edge_length", v_tal);
+        edge_writer->add_field("valence", v_valence);
         edge_writer->add_cell_field("curve_id", c_id);
 
         logger().info("Write {}", edge_out_path);

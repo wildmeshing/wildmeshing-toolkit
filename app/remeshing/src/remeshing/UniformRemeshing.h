@@ -128,11 +128,13 @@ public:
 
     struct CollapseInfoCache
     {
+        Eigen::Vector3d v0p;
         Eigen::Vector3d v1p;
-        Eigen::Vector3d v2p;
         int partition_id;
         double v0_tal; // v0 target edge length
         double v1_tal; // v1 target edge length
+        int v0_corner_id;
+        int v1_corner_id;
 
         size_t v0 = size_t(-1);
         size_t v1 = size_t(-1);
