@@ -31,5 +31,6 @@ Eigen::Vector3d CT_eval(const double& u, const double& v, const Eigen::Matrix<do
 Eigen::Matrix<double, 3, 2>
 CT_grad(const double& u, const double& v, const Eigen::Matrix<double, 12, 3>& dofs);
 
+void read_tetmesh(const std::string& filename, Eigen::MatrixXd& V, Eigen::MatrixXi& T);
 
 } // namespace wmtk::components::c1_simplification

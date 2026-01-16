@@ -174,12 +174,43 @@ public:
         // p_face_attrs = f_attrs;
     }
 
+    // for uv tracking
+    struct tracked_vertex
+    {
+        Vector2d uv_pos;
+        Vector3d surface_pos;
+
+        size_t vid;
+        size_t in_tri_id = -1;
+
+        Vector3d dfdu;
+        Vector3d dfdv;
+        int micro_id;
+        double micro_u;
+        double micro_v;
+        Vector2d micro_v0;
+        Vector2d micro_v1;
+        Vector2d micro_v2;
+
+        double area;
+
+        tracked_vertex() {}
+
+        tracked_vertex(const Vector2d& p, const Vector3d& sp, const size_t& id, const size_t& fid)
+            : uv_pos(p)
+            , surface_pos(sp)
+            , vid(id)
+            , in_tri_id(fid)
+        {}
+    };
+
     void init_from_eigen_with_map_and_dofs(
         const MatrixXd& V,
         const MatrixXi& F,
         const std::map<int64_t, int64_t>& s2t_vid_map,
         const std::vector<Eigen::Matrix<double, 12, 3>>& dofs,
-        const std::vector<size_t>& cone_vids);
+        const std::vector<size_t>& cone_vids,
+        const std::vector<tracked_vertex>& tracked_vs);
     // const std::vector<Vector3d>& vgrads,
     // const std::vector<std::array<Vector3d, 3>>& egrads);
 
@@ -193,7 +224,17 @@ public:
 
     bool collapse_edge_before(const Tuple& t) override;
     bool collapse_edge_after(const Tuple& t) override;
+
+    bool tetmesh_inversion_before_check(const Tuple& t);
     bool multimesh_collapse_edge(const Tuple& t);
+
+    bool multimesh_swap_edge_before(const Tuple& t);
+    // bool multimesh_swap_edge_after(const Tuple& t);
+    bool multimesh_swap_edge(const Tuple& t);
+    bool swap_tet_inversion_check(const Tuple& t);
+
+    double triangle_quality_2d(const Vector2d& p0, const Vector2d& p1, const Vector2d& p2);
+
 
     Eigen::Matrix<double, 12, 3> assemble_dofs(const size_t& fid);
 
@@ -280,31 +321,17 @@ public:
     std::shared_ptr<MMTetMesh> tetmesh_ptr;
     std::shared_ptr<MMUVMesh> uvmesh_ptr;
 
-    // for uv tracking
-    struct tracked_vertex
-    {
-        Vector2d uv_pos;
-        Vector3d surface_pos;
-
-        size_t vid;
-        size_t in_tri_id = -1;
-
-        tracked_vertex() {}
-
-        tracked_vertex(const Vector2d& p, const Vector3d& sp, const size_t& id, const size_t& fid)
-            : uv_pos(p)
-            , surface_pos(sp)
-            , vid(id)
-            , in_tri_id(fid)
-        {}
-    };
-
     std::vector<tracked_vertex> tracked_vertices;
 
     std::map<size_t, std::vector<size_t>> tracked_fid_to_vids_map;
     std::map<size_t, size_t> tracked_vid_to_fid_map;
 
     void output_tracked_vertices(const std::string& filename);
+    void write_tracked_vertices_info(const std::string& filename);
+    void write_micro_triangle_tracked_vertices_info(const std::string& filename);
+
+    void multimesh_consolidated_output(const std::string& filename);
+    void multimesh_consolidated_micro_tri_output(const std::string& filename);
 };
 
 

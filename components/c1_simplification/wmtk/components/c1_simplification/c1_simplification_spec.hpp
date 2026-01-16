@@ -11,7 +11,8 @@ nlohmann::json c1_simplification_spec = R"([
       "tet_mesh",
       "uv_mesh",
       "dofs",
-      "cones"
+      "cones",
+      "tracked_vertices_file"
     ],
     "optional": [
       "output",
@@ -51,6 +52,11 @@ nlohmann::json c1_simplification_spec = R"([
     "pointer": "/cones",
     "type": "string",
     "doc": "cone vids file name"
+  },
+  {
+    "pointer": "/tracked_vertices_file",
+    "type": "string",
+    "doc": "tracked vertices information file name"
   },
   {
     "pointer": "/output",

@@ -342,9 +342,12 @@ public:
     AbstractAttributeContainer* p_edge_attrs = nullptr;
     AbstractAttributeContainer* p_face_attrs = nullptr;
 
-private:
+
+public:
     vector<VertexConnectivity> m_vertex_connectivity;
     vector<TriangleConnectivity> m_tri_connectivity;
+
+private:
     std::atomic_long current_vert_size;
     std::atomic_long current_tri_size;
     tbb::spin_mutex vertex_connectivity_lock;
@@ -352,6 +355,8 @@ private:
     bool vertex_connectivity_synchronizing_flag = false;
     bool tri_connectivity_synchronizing_flag = false;
     int MAX_THREADS = 128;
+
+public:
     /**
      * @brief Get the next avaiblie global index for the triangle
      *
@@ -604,6 +609,11 @@ public:
     {
         return m_vertex_connectivity[t.vid(*this)].m_conn_tris.size();
     }
+
+    /**
+     * @brief get the one ring vertices for a vertex
+     */
+    std::vector<Tuple> get_one_ring_vertices_for_vertex(const Tuple& t) const;
 
     /**
      * @brief Get the one ring tris for a vertex

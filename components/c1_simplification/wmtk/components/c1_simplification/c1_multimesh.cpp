@@ -35,9 +35,9 @@ namespace wmtk::components::c1_simplification {
 void MMTetMesh::init_from_eigen(const MatrixXd& V, const MatrixXi& T)
 {
     // initialize connectivity
-    std::cout << 0 << std::endl;
+    // std::cout << 0 << std::endl;
     init(T);
-    std::cout << 1 << std::endl;
+    // std::cout << 1 << std::endl;
 
     // initialize attributes
     v_attrs.resize(V.rows());
@@ -73,6 +73,8 @@ bool MMTetMesh::collapse_edge_before(const Tuple& t)
 {
     // TODO: test use, remove this
     // return true;
+
+    // caching
 
     auto& VA = v_attrs;
     auto& cache = t_cache;
@@ -224,8 +226,8 @@ bool MMUVMesh::collapse_edge_after(const Tuple& t)
     // return true;
     // v_attrs[t.vid(*this)].pos = uv_cache.v2_pos;
 
-    // TODO: update position in surface after, only check invertion and quality here. call this
-    // after surface after
+    // TODO (done): update position in surface after, only check invertion and quality here. call
+    // this after surface after
 
     for (const auto& f : get_one_ring_tris_for_vertex(t)) {
         if (is_inverted(f)) {
@@ -241,7 +243,7 @@ bool MMUVMesh::collapse_edge_after(const Tuple& t)
         double s = (a + b + c) / 2.0;
 
         double ratio = (8 * (s - a) * (s - b) * (s - c)) / (a * b * c);
-        if (ratio < 0.1) {
+        if (ratio < 0.2) {
             wmtk::logger().debug("collapse rejected by small aspect ratio {}", ratio);
             return false;
         }
@@ -291,7 +293,8 @@ void MMSurfaceMesh::init_from_eigen_with_map_and_dofs(
     const MatrixXi& F,
     const std::map<int64_t, int64_t>& s2t_vid_map,
     const std::vector<Eigen::Matrix<double, 12, 3>>& dofs,
-    const std::vector<size_t>& cone_vids)
+    const std::vector<size_t>& cone_vids,
+    const std::vector<tracked_vertex>& tracked_vs)
 // const std::vector<Vector3d>& vgrads,
 // const std::vector<std::array<Vector3d, 3>>& egrads)
 {
@@ -312,25 +315,37 @@ void MMSurfaceMesh::init_from_eigen_with_map_and_dofs(
     }
 
     // initialize tracked vertices
-    auto vertices = get_vertices();
-    for (size_t i = 0; i < vertices.size(); ++i) {
-        auto uv_v_tuples = map_to_uv_vertex_tuples(vertices[i]);
 
-        // use the first uv position
-        assert(uv_v_tuples.size() > 0);
-        auto uv_pos = uvmesh_ptr->v_attrs[uv_v_tuples[0].vid(*uvmesh_ptr)].pos;
-        auto fid = uv_v_tuples[0].fid(*uvmesh_ptr);
+    tracked_vertices = tracked_vs;
+    for (size_t i = 0; i < tracked_vertices.size(); ++i) {
+        size_t fid = tracked_vertices[i].in_tri_id;
 
-        // assign tracked v to the tuple fid
-        tracked_vertices.emplace_back(uv_pos, v_attrs[i].pos, i, fid);
-
-        // tracked_vid_to_fid_map[i] = fid;
         if (tracked_fid_to_vids_map.find(fid) != tracked_fid_to_vids_map.end()) {
             tracked_fid_to_vids_map[fid].push_back(i);
         } else {
             tracked_fid_to_vids_map[fid] = {i};
         }
     }
+
+    // auto vertices = get_vertices();
+    // for (size_t i = 0; i < vertices.size(); ++i) {
+    //     auto uv_v_tuples = map_to_uv_vertex_tuples(vertices[i]);
+
+    //     // use the first uv position
+    //     assert(uv_v_tuples.size() > 0);
+    //     auto uv_pos = uvmesh_ptr->v_attrs[uv_v_tuples[0].vid(*uvmesh_ptr)].pos;
+    //     auto fid = uv_v_tuples[0].fid(*uvmesh_ptr);
+
+    //     // assign tracked v to the tuple fid
+    //     tracked_vertices.emplace_back(uv_pos, v_attrs[i].pos, i, fid);
+
+    //     // tracked_vid_to_fid_map[i] = fid;
+    //     if (tracked_fid_to_vids_map.find(fid) != tracked_fid_to_vids_map.end()) {
+    //         tracked_fid_to_vids_map[fid].push_back(i);
+    //     } else {
+    //         tracked_fid_to_vids_map[fid] = {i};
+    //     }
+    // }
 
     // // assign local edge midgrad to global edge attributes
     // for (size_t i = 0; i < tri_capacity(); ++i) {
@@ -344,6 +359,7 @@ void MMSurfaceMesh::init_from_eigen_with_map_and_dofs(
     //         e_attrs[eid] = egrads[i][k];
     //     }
     // }
+
     for (size_t i = 0; i < tri_capacity(); ++i) {
         f_attrs[i].dofs = dofs[i];
     }
@@ -389,7 +405,7 @@ std::vector<TriMesh::Tuple> MMSurfaceMesh::map_to_uv_edge_tuples(const Tuple& e)
     auto vid0 = v0.vid(*this);
     auto vid1 = v1.vid(*this);
 
-    auto tri_vids = oriented_tri_vids(e);
+    auto tri_vids = oriented_tri_vids(e.fid(*this));
 
     int lid0 = -1;
     int lid1 = -1;
@@ -406,7 +422,7 @@ std::vector<TriMesh::Tuple> MMSurfaceMesh::map_to_uv_edge_tuples(const Tuple& e)
     assert(lid0 != -1);
     assert(lid1 != -1);
 
-    auto uv_vids = uvmesh_ptr->oriented_tri_vids(e);
+    auto uv_vids = uvmesh_ptr->oriented_tri_vids(e.fid(*this));
     auto uv_vid0 = uv_vids[lid0];
     auto e0_lid = e.local_eid(*this);
 
@@ -424,8 +440,8 @@ std::vector<TriMesh::Tuple> MMSurfaceMesh::map_to_uv_edge_tuples(const Tuple& e)
     Tuple e1 = e.switch_face(*this).value();
     auto e1_lid = e1.local_eid(*this);
 
-    auto tri_vids_other = oriented_tri_vids(e1);
-    auto uv_vids_other = uvmesh_ptr->oriented_tri_vids(e1);
+    auto tri_vids_other = oriented_tri_vids(e1.fid(*this));
+    auto uv_vids_other = uvmesh_ptr->oriented_tri_vids(e1.fid(*this));
 
     int lid0_other = -1;
     int lid1_other = -1;
@@ -564,8 +580,30 @@ bool MMSurfaceMesh::collapse_edge_before(const Tuple& t)
     // return true;
     clear_info_cache();
 
+    // check cone
     if (v_attrs[t.vid(*this)].is_cone || v_attrs[t.switch_vertex(*this).vid(*this)].is_cone) {
         wmtk::logger().debug("rejected by cone");
+        return false;
+    }
+
+    // check in cone one ring
+    for (const auto& one_ring_v : get_one_ring_vertices_for_vertex(t)) {
+        if (v_attrs[one_ring_v.vid(*this)].is_cone) {
+            wmtk::logger().debug("rejected by cone adjacent");
+            return false;
+        }
+    }
+
+    // for (const auto& one_ring_v : get_one_ring_vertices_for_vertex(t.switch_vertex(*this))) {
+    //     if (v_attrs[one_ring_v.vid(*this)].is_cone) {
+    //         wmtk::logger().debug("rejected by cone adjacent");
+    //         return false;
+    //     }
+    // }
+
+    // check boundary, TODO: change for feature edges
+    if (is_boundary_edge(t)) {
+        wmtk::logger().debug("rejected by boundary edge");
         return false;
     }
 
@@ -721,9 +759,70 @@ bool MMSurfaceMesh::collapse_edge_before(const Tuple& t)
         }
     }
 
-    // TODO: ccw traverse for surface mesh with boundaries, first test without this
+    // ccw traverse for surface mesh with boundaries, first test without this
+    cur_tuple = t.switch_edge(*this);
+    accumulated_rot = 0;
+    while (processed_part_cnt < uv_v_tuples.size()) {
+        // first one must be in the map, so uninitialized prev_uv_tuple is safe
+        auto uv_tuple = map_to_equivalent_uv_tuple(cur_tuple);
+        if (s_cache.layout_parts_map.find(uv_tuple.vid(*uvmesh_ptr)) !=
+            s_cache.layout_parts_map.end()) {
+            // already processed this part, skip, update cur/prev tuple
+            if (!is_boundary_edge(cur_tuple)) {
+                cur_tuple = cur_tuple.switch_face(*this).value().switch_edge(*this);
+                prev_uv_tuple = uv_tuple;
+            } else {
+                break;
+            }
+        } else {
+            // compute a new part
+            size_t uv_vid = uv_tuple.vid(*uvmesh_ptr);
 
-    // TODO: cache all effected tracked vertex
+            // prev ref edge
+            const auto& prev_v1 = prev_uv_tuple.vid(*uvmesh_ptr);
+            const auto& prev_v2 = prev_uv_tuple.switch_vertex(*uvmesh_ptr).vid(*uvmesh_ptr);
+            const auto& prev_v1_pos = uvmesh_ptr->v_attrs[prev_v1].pos;
+            const auto& prev_v2_pos = uvmesh_ptr->v_attrs[prev_v2].pos;
+
+            Vector2d prev_edge_vec = prev_v2_pos - prev_v1_pos;
+
+            // cur ref edge, do a swtich edge on cur_tuple
+            auto cur_uv_edge_tuple = uv_tuple.switch_edge(*uvmesh_ptr);
+            const auto& cur_v1 = cur_uv_edge_tuple.vid(*uvmesh_ptr);
+            const auto& cur_v2 = cur_uv_edge_tuple.switch_vertex(*uvmesh_ptr).vid(*uvmesh_ptr);
+            const auto& cur_v1_pos = uvmesh_ptr->v_attrs[cur_v1].pos;
+            const auto& cur_v2_pos = uvmesh_ptr->v_attrs[cur_v2].pos;
+
+            Vector2d cur_edge_vec = cur_v2_pos - cur_v1_pos;
+
+            // use atan2 to compute angle from prev edge to cur edge
+            double angle =
+                atan2(cur_edge_vec[1], cur_edge_vec[0]) - atan2(prev_edge_vec[1], prev_edge_vec[0]);
+
+            // accumulate angle from original ref
+            accumulated_rot += angle;
+
+            // construct new layout part
+            LayoutPartInfo part_info;
+            part_info.ref_uv_vid = uv_vid;
+            part_info.rotation = accumulated_rot;
+            part_info.translation = cur_v1_pos - prev_v1_pos;
+
+            Eigen::Matrix2d R;
+            R << cos(accumulated_rot), -sin(accumulated_rot), sin(accumulated_rot),
+                cos(accumulated_rot);
+
+            part_info.new_pos = cur_v1_pos + R * collapse_vec;
+
+            // add new part to map
+            s_cache.layout_parts_map[uv_vid] = part_info;
+
+            processed_part_cnt++;
+        }
+    }
+
+
+    // cache all effected tracked vertex
     std::vector<size_t> effected_tracked_vids;
 
     // get real one ring by computing each one ring
@@ -761,6 +860,45 @@ bool MMSurfaceMesh::collapse_edge_after(const Tuple& t)
         return false;
     }
 
+    // check 2-separate cone condition
+    const auto& one_ring_after = get_one_ring_vertices_for_vertex(t);
+
+    // check for t it self
+    int adj_cone_cnt = 0;
+    if (v_attrs[t.vid(*this)].is_cone) {
+        adj_cone_cnt++;
+    }
+    for (const auto& v : one_ring_after) {
+        if (v_attrs[v.vid(*this)].is_cone) {
+            adj_cone_cnt++;
+        }
+    }
+    if (adj_cone_cnt > 1) {
+        wmtk::logger().debug("collapse rejected by cone separation");
+        return false;
+    }
+
+    // check for one ring
+    for (const auto& v : one_ring_after) {
+        adj_cone_cnt = 0;
+        if (v_attrs[v.vid(*this)].is_cone) {
+            adj_cone_cnt++;
+        }
+
+        const auto& one_ring_for_v = get_one_ring_vertices_for_vertex(v);
+        for (const auto& vv : one_ring_for_v) {
+            if (v_attrs[vv.vid(*this)].is_cone) {
+                adj_cone_cnt++;
+            }
+        }
+
+        if (adj_cone_cnt > 1) {
+            wmtk::logger().debug("collapse rejected by cone separation");
+            return false;
+        }
+    }
+
+
     // update uv position
     for (const auto& pair : s_cache.layout_parts_map) {
         const auto& old_uv_vid = pair.first;
@@ -774,7 +912,7 @@ bool MMSurfaceMesh::collapse_edge_after(const Tuple& t)
                 // uvmesh_ptr->v_attrs[uv_tuple_to_update.vid(*uvmesh_ptr)].pos = part.new_pos;
                 uvmesh_ptr->v_attrs[s_cache.uv_collapse_to_v1_id].pos = part.new_pos;
             } else {
-                // TODO: add position for the other vertex
+                // add position for the other vertex
                 assert(old_uv_vid == s_cache.deleted_vid_2);
                 uvmesh_ptr->v_attrs[s_cache.uv_collapse_to_v2_id].pos = part.new_pos;
                 continue;
@@ -795,158 +933,160 @@ bool MMSurfaceMesh::collapse_edge_after(const Tuple& t)
         }
     }
 
-    // delete removed faces in map
-    tracked_fid_to_vids_map.erase(s_cache.deleted_fid_1);
-    if (s_cache.deleted_fid_2 != -1) {
-        tracked_fid_to_vids_map.erase(s_cache.deleted_fid_2);
-    }
+    // // delete removed faces in map
+    // tracked_fid_to_vids_map.erase(s_cache.deleted_fid_1);
+    // if (s_cache.deleted_fid_2 != -1) {
+    //     tracked_fid_to_vids_map.erase(s_cache.deleted_fid_2);
+    // }
 
-    // clear modified face to tracked vertex in map
-    for (const auto& uv_v_after : uv_v_tuples_after) {
-        for (const auto& uv_f : uvmesh_ptr->get_one_ring_tris_for_vertex(uv_v_after)) {
-            // delete effected track id in kept faces
-            for (const auto& tvinfo : s_cache.tracked_vertex_info_cache) {
-                const auto& tracked_vid = tvinfo.vid;
-                auto it = std::find(
-                    tracked_fid_to_vids_map[uv_f.fid(*uvmesh_ptr)].begin(),
-                    tracked_fid_to_vids_map[uv_f.fid(*uvmesh_ptr)].end(),
-                    tracked_vid);
-                if (it != tracked_fid_to_vids_map[uv_f.fid(*uvmesh_ptr)].end()) {
-                    tracked_fid_to_vids_map[uv_f.fid(*uvmesh_ptr)].erase(it);
-                }
-            }
-        }
-    }
+    // // clear modified face to tracked vertex in map
+    // for (const auto& uv_v_after : uv_v_tuples_after) {
+    //     for (const auto& uv_f : uvmesh_ptr->get_one_ring_tris_for_vertex(uv_v_after)) {
+    //         // delete effected track id in kept faces
+    //         for (const auto& tvinfo : s_cache.tracked_vertex_info_cache) {
+    //             const auto& tracked_vid = tvinfo.vid;
+    //             auto it = std::find(
+    //                 tracked_fid_to_vids_map[uv_f.fid(*uvmesh_ptr)].begin(),
+    //                 tracked_fid_to_vids_map[uv_f.fid(*uvmesh_ptr)].end(),
+    //                 tracked_vid);
+    //             if (it != tracked_fid_to_vids_map[uv_f.fid(*uvmesh_ptr)].end()) {
+    //                 tracked_fid_to_vids_map[uv_f.fid(*uvmesh_ptr)].erase(it);
+    //             }
+    //         }
+    //     }
+    // }
 
-    // find new uv position for tracked vertices
+    // // find new uv position for tracked vertices
 
 
-    for (const auto& tvinfo : s_cache.tracked_vertex_info_cache) {
-        const auto& tracked_vid = tvinfo.vid;
-        const auto& ref_uv_vid = tvinfo.ref_uv_vid;
-        const auto& tracked_pos = tvinfo.uv_pos;
-        const auto& ref_uv_pos = tvinfo.ref_uv_pos;
-        const auto& rotation = tvinfo.rotation;
+    // for (const auto& tvinfo : s_cache.tracked_vertex_info_cache) {
+    //     const auto& tracked_vid = tvinfo.vid;
+    //     const auto& ref_uv_vid = tvinfo.ref_uv_vid;
+    //     const auto& tracked_pos = tvinfo.uv_pos;
+    //     const auto& ref_uv_pos = tvinfo.ref_uv_pos;
+    //     const auto& rotation = tvinfo.rotation;
 
-        Vector2d tracked_v_chart_pos; // tracked position in vertex chart. rotate and translate if
-                                      // not in the first part
-        Eigen::Matrix2d R_inv;
-        R_inv << cos(-rotation), -sin(-rotation), sin(-rotation), cos(-rotation);
+    //     Vector2d tracked_v_chart_pos; // tracked position in vertex chart. rotate and translate if
+    //                                   // not in the first part
+    //     Eigen::Matrix2d R_inv;
+    //     R_inv << cos(-rotation), -sin(-rotation), sin(-rotation), cos(-rotation);
 
-        tracked_v_chart_pos = R_inv * (tracked_pos - ref_uv_pos) + s_cache.v1_uv_pos;
+    //     tracked_v_chart_pos = R_inv * (tracked_pos - ref_uv_pos) + s_cache.v1_uv_pos;
 
-        std::ofstream point_file("point.obj");
+    //     std::ofstream point_file("point.obj");
 
-        point_file << "v " << tracked_v_chart_pos[0] << " " << tracked_v_chart_pos[1] << " 0"
-                   << std::endl;
-        point_file.close();
+    //     point_file << "v " << tracked_v_chart_pos[0] << " " << tracked_v_chart_pos[1] << " 0"
+    //                << std::endl;
+    //     point_file.close();
 
-        std::ofstream vchart_file("v_chart.obj");
-        std::ofstream v_tri_file("v_tris.obj");
-        int tri_cnt = 0;
+    //     std::ofstream vchart_file("v_chart.obj");
+    //     std::ofstream v_tri_file("v_tris.obj");
+    //     int tri_cnt = 0;
 
-        bool found_flag = false;
+    //     bool found_flag = false;
 
-        // use tracked pos in chart and traverse through charts
-        for (const auto& uv_v_after : uv_v_tuples_after) {
-            const auto& uv_v_after_vid = uv_v_after.vid(*uvmesh_ptr);
-            const auto& uv_v_after_pos = uvmesh_ptr->v_attrs[uv_v_after_vid].pos;
+    //     // use tracked pos in chart and traverse through charts
+    //     for (const auto& uv_v_after : uv_v_tuples_after) {
+    //         const auto& uv_v_after_vid = uv_v_after.vid(*uvmesh_ptr);
+    //         const auto& uv_v_after_pos = uvmesh_ptr->v_attrs[uv_v_after_vid].pos;
 
-            // find related part
-            LayoutPartInfo part;
-            if (s_cache.layout_parts_map.find(uv_v_after_vid) != s_cache.layout_parts_map.end()) {
-                part = s_cache.layout_parts_map.at(uv_v_after_vid);
-                // } else if (uv_v_after_vid == s_cache.ref_uv_v2_id) {
-                // } else if (uv_v_after_vid == map_to_equivalent_uv_tuple(t).vid(*uvmesh_ptr)) {
-            } else if (uv_v_after_vid == s_cache.uv_collapse_to_v1_id) {
-                part = s_cache.layout_parts_map.at(s_cache.ref_uv_v1_id);
-            } else if (uv_v_after_vid == s_cache.uv_collapse_to_v2_id) {
-                // other side edge
-                assert(s_cache.deleted_vid_2 != -1);
-                part = s_cache.layout_parts_map.at(s_cache.deleted_vid_2);
-            } else {
-                // vertex not involved, skip
-                continue;
-            }
+    //         // find related part
+    //         LayoutPartInfo part;
+    //         if (s_cache.layout_parts_map.find(uv_v_after_vid) != s_cache.layout_parts_map.end())
+    //         {
+    //             part = s_cache.layout_parts_map.at(uv_v_after_vid);
+    //             // } else if (uv_v_after_vid == s_cache.ref_uv_v2_id) {
+    //             // } else if (uv_v_after_vid == map_to_equivalent_uv_tuple(t).vid(*uvmesh_ptr)) {
+    //         } else if (uv_v_after_vid == s_cache.uv_collapse_to_v1_id) {
+    //             part = s_cache.layout_parts_map.at(s_cache.ref_uv_v1_id);
+    //         } else if (uv_v_after_vid == s_cache.uv_collapse_to_v2_id) {
+    //             // other side edge
+    //             assert(s_cache.deleted_vid_2 != -1);
+    //             part = s_cache.layout_parts_map.at(s_cache.deleted_vid_2);
+    //         } else {
+    //             // vertex not involved, skip
+    //             continue;
+    //         }
 
-            // rotation matrix for the triangles in this part
-            Eigen::Matrix2d R_inv_part, R_part;
-            R_inv_part << cos(-part.rotation), -sin(-part.rotation), sin(-part.rotation),
-                cos(-part.rotation);
-            R_part << cos(part.rotation), -sin(part.rotation), sin(part.rotation),
-                cos(part.rotation);
+    //         // rotation matrix for the triangles in this part
+    //         Eigen::Matrix2d R_inv_part, R_part;
+    //         R_inv_part << cos(-part.rotation), -sin(-part.rotation), sin(-part.rotation),
+    //             cos(-part.rotation);
+    //         R_part << cos(part.rotation), -sin(part.rotation), sin(part.rotation),
+    //             cos(part.rotation);
 
-            // traverse tris in this part with rotation and translation
-            const auto& uv_v_after_one_ring_tris =
-                uvmesh_ptr->get_one_ring_tris_for_vertex(uv_v_after);
-            for (const auto& tri_tuple : uv_v_after_one_ring_tris) {
-                size_t tri_fid = tri_tuple.fid(*uvmesh_ptr);
-                // if (s_cache.collapse_area_fid_involved.find(tri_fid) ==
-                //     s_cache.collapse_area_fid_involved.end()) {
-                //     // skip faces that are not involved if not collapsed edge
-                //     continue;
-                // }
+    //         // traverse tris in this part with rotation and translation
+    //         const auto& uv_v_after_one_ring_tris =
+    //             uvmesh_ptr->get_one_ring_tris_for_vertex(uv_v_after);
+    //         for (const auto& tri_tuple : uv_v_after_one_ring_tris) {
+    //             size_t tri_fid = tri_tuple.fid(*uvmesh_ptr);
+    //             // if (s_cache.collapse_area_fid_involved.find(tri_fid) ==
+    //             //     s_cache.collapse_area_fid_involved.end()) {
+    //             //     // skip faces that are not involved if not collapsed edge
+    //             //     continue;
+    //             // }
 
-                auto v0 = tri_tuple.vid(*uvmesh_ptr);
-                auto v1 = tri_tuple.switch_vertex(*uvmesh_ptr).vid(*uvmesh_ptr);
-                auto v2 =
-                    tri_tuple.switch_edge(*uvmesh_ptr).switch_vertex(*uvmesh_ptr).vid(*uvmesh_ptr);
-                Vector2d vec01 = uvmesh_ptr->v_attrs[v1].pos - uvmesh_ptr->v_attrs[v0].pos;
-                Vector2d vec02 = uvmesh_ptr->v_attrs[v2].pos - uvmesh_ptr->v_attrs[v0].pos;
+    //             auto v0 = tri_tuple.vid(*uvmesh_ptr);
+    //             auto v1 = tri_tuple.switch_vertex(*uvmesh_ptr).vid(*uvmesh_ptr);
+    //             auto v2 =
+    //                 tri_tuple.switch_edge(*uvmesh_ptr).switch_vertex(*uvmesh_ptr).vid(*uvmesh_ptr);
+    //             Vector2d vec01 = uvmesh_ptr->v_attrs[v1].pos - uvmesh_ptr->v_attrs[v0].pos;
+    //             Vector2d vec02 = uvmesh_ptr->v_attrs[v2].pos - uvmesh_ptr->v_attrs[v0].pos;
 
-                // move and rotate the triangle to v2
-                Vector2d p0_chart = s_cache.v2_uv_pos;
-                Vector2d p1_chart = p0_chart + R_inv_part * vec01;
-                Vector2d p2_chart = p0_chart + R_inv_part * vec02;
+    //             // move and rotate the triangle to v2
+    //             Vector2d p0_chart = s_cache.v2_uv_pos;
+    //             Vector2d p1_chart = p0_chart + R_inv_part * vec01;
+    //             Vector2d p2_chart = p0_chart + R_inv_part * vec02;
 
-                // std::cout << "tri: " << std::endl;
-                v_tri_file << "v " << uvmesh_ptr->v_attrs[v0].pos[0] << " "
-                           << uvmesh_ptr->v_attrs[v0].pos[1] << " 0" << std::endl;
-                v_tri_file << "v " << uvmesh_ptr->v_attrs[v1].pos[0] << " "
-                           << uvmesh_ptr->v_attrs[v1].pos[1] << " 0" << std::endl;
-                v_tri_file << "v " << uvmesh_ptr->v_attrs[v2].pos[0] << " "
-                           << uvmesh_ptr->v_attrs[v2].pos[1] << " 0" << std::endl;
+    //             // std::cout << "tri: " << std::endl;
+    //             v_tri_file << "v " << uvmesh_ptr->v_attrs[v0].pos[0] << " "
+    //                        << uvmesh_ptr->v_attrs[v0].pos[1] << " 0" << std::endl;
+    //             v_tri_file << "v " << uvmesh_ptr->v_attrs[v1].pos[0] << " "
+    //                        << uvmesh_ptr->v_attrs[v1].pos[1] << " 0" << std::endl;
+    //             v_tri_file << "v " << uvmesh_ptr->v_attrs[v2].pos[0] << " "
+    //                        << uvmesh_ptr->v_attrs[v2].pos[1] << " 0" << std::endl;
 
-                vchart_file << "v " << p0_chart[0] << " " << p0_chart[1] << " 0" << std::endl;
-                vchart_file << "v " << p1_chart[0] << " " << p1_chart[1] << " 0" << std::endl;
-                vchart_file << "v " << p2_chart[0] << " " << p2_chart[1] << " 0" << std::endl;
-                tri_cnt++;
+    //             vchart_file << "v " << p0_chart[0] << " " << p0_chart[1] << " 0" << std::endl;
+    //             vchart_file << "v " << p1_chart[0] << " " << p1_chart[1] << " 0" << std::endl;
+    //             vchart_file << "v " << p2_chart[0] << " " << p2_chart[1] << " 0" << std::endl;
+    //             tri_cnt++;
 
-                if (point_in_tri(tracked_v_chart_pos, p0_chart, p1_chart, p2_chart)) {
-                    if (!found_flag) {
-                        found_flag = true;
+    //             if (point_in_tri(tracked_v_chart_pos, p0_chart, p1_chart, p2_chart)) {
+    //                 if (!found_flag) {
+    //                     found_flag = true;
 
-                        // update track vertex position
-                        auto& tracked_v = tracked_vertices[tracked_vid];
-                        tracked_v.uv_pos =
-                            uv_v_after_pos + R_part * (tracked_v_chart_pos - s_cache.v2_uv_pos);
+    //                     // update track vertex position
+    //                     auto& tracked_v = tracked_vertices[tracked_vid];
+    //                     tracked_v.uv_pos =
+    //                         uv_v_after_pos + R_part * (tracked_v_chart_pos - s_cache.v2_uv_pos);
 
-                        // update face id
-                        tracked_v.in_tri_id = tri_tuple.fid(*uvmesh_ptr);
+    //                     // update face id
+    //                     tracked_v.in_tri_id = tri_tuple.fid(*uvmesh_ptr);
 
-                        // update tracked_fid_to_vids_map
-                        tracked_fid_to_vids_map[tri_tuple.fid(*uvmesh_ptr)].push_back(tracked_vid);
+    //                     // update tracked_fid_to_vids_map
+    //                     tracked_fid_to_vids_map[tri_tuple.fid(*uvmesh_ptr)].push_back(tracked_vid);
 
-                        // break;
-                    }
-                }
-            }
-            if (found_flag) {
-                // TODO: add break for efficiency
-                // no break for v_chart
-                // break;
-            }
-        }
-        for (int i = 0; i < tri_cnt; ++i) {
-            vchart_file << "f " << i * 3 + 1 << " " << i * 3 + 2 << " " << i * 3 + 3 << std::endl;
-            v_tri_file << "f " << i * 3 + 1 << " " << i * 3 + 2 << " " << i * 3 + 3 << std::endl;
-        }
+    //                     // break;
+    //                 }
+    //             }
+    //         }
+    //         if (found_flag) {
+    //             // TODO: add break for efficiency
+    //             // no break for v_chart
+    //             // break;
+    //         }
+    //     }
+    //     for (int i = 0; i < tri_cnt; ++i) {
+    //         vchart_file << "f " << i * 3 + 1 << " " << i * 3 + 2 << " " << i * 3 + 3 <<
+    //         std::endl; v_tri_file << "f " << i * 3 + 1 << " " << i * 3 + 2 << " " << i * 3 + 3 <<
+    //         std::endl;
+    //     }
 
-        vchart_file.close();
-        v_tri_file.close();
+    //     vchart_file.close();
+    //     v_tri_file.close();
 
-        assert(found_flag);
-    }
+    //     assert(found_flag);
+    // }
 
 
     // // old code to deprecate
@@ -1006,6 +1146,74 @@ bool MMSurfaceMesh::collapse_edge_after(const Tuple& t)
     return true;
 }
 
+bool MMSurfaceMesh::tetmesh_inversion_before_check(const Tuple& t)
+{
+    igl::predicates::exactinit();
+    auto tv0 = map_to_tet_vertex_tuple(t);
+    auto tv1 = map_to_tet_vertex_tuple(t.switch_vertex(*this));
+
+    auto tv0_id = tv0.vid(*tetmesh_ptr);
+    auto tv1_id = tv1.vid(*tetmesh_ptr);
+
+    auto tv0_pos = tetmesh_ptr->v_attrs[tv0_id].pos;
+    auto tv1_pos = tetmesh_ptr->v_attrs[tv1_id].pos;
+
+    auto one_ring_tets = tetmesh_ptr->get_one_ring_tets_for_vertex(tv0);
+
+    for (const auto& tet : one_ring_tets) {
+        // for each tet, replace tv0_pos with tv1_pos and check inversion
+        // only check for preserved tets. if tet contain tv2 then skip
+        auto tet_vids = tetmesh_ptr->oriented_tet_vids(tet);
+        int tv0_local_id = -1;
+        int tv1_local_id = -1;
+
+        for (int k = 0; k < 4; ++k) {
+            if (tet_vids[k] == tv0_id) {
+                tv0_local_id = k;
+            }
+            if (tet_vids[k] == tv1_id) {
+                // skip this tet
+                tv1_local_id = k;
+                break;
+            }
+        }
+
+        assert(tv0_local_id > -1);
+
+        if (tv1_local_id != -1) {
+            // skip this tet
+            continue;
+        }
+
+        // assemble collapse after position
+        std::array<Vector3d, 4> t_pos = {
+            {tetmesh_ptr->v_attrs[tet_vids[0]].pos,
+             tetmesh_ptr->v_attrs[tet_vids[1]].pos,
+             tetmesh_ptr->v_attrs[tet_vids[2]].pos,
+             tetmesh_ptr->v_attrs[tet_vids[3]].pos}};
+
+        t_pos[tv0_local_id] = tv1_pos;
+
+        auto res = igl::predicates::orient3d(t_pos[0], t_pos[1], t_pos[2], t_pos[3]);
+        // TODO: check orientation sign from input
+        int result;
+        if (res == igl::predicates::Orientation::POSITIVE)
+            result = 1;
+        else if (res == igl::predicates::Orientation::NEGATIVE)
+            result = -1;
+        else
+            result = 0;
+
+        if (result >= 0) {
+            // TODO: tetwild convention negative result => positive tet,  positive result =>
+            // negative tet
+            return false;
+        }
+    }
+
+    return true;
+}
+
 bool MMSurfaceMesh::multimesh_collapse_edge(const Tuple& t)
 {
     // backup of tracked vertices
@@ -1042,12 +1250,17 @@ bool MMSurfaceMesh::multimesh_collapse_edge(const Tuple& t)
     std::vector<MMTetMesh::TetrahedronConnectivity> tet_old_tets;
     if (tetmesh_ptr != nullptr) {
         auto t_e_tuple = map_to_tet_edge_tuple(t);
-        if (!tetmesh_ptr->collapse_edge_before(t_e_tuple)) {
-            wmtk::logger().debug("collapse rejected by tet before");
 
+        // TODO: check inversion in before
+        if (!tetmesh_inversion_before_check(t)) {
+            wmtk::logger().debug("collapse rejected by tet inversion before check");
             return false;
         }
 
+        if (!tetmesh_ptr->collapse_edge_before(t_e_tuple)) {
+            wmtk::logger().debug("collapse rejected by tet before");
+            return false;
+        }
 
         // connectivity change
         // first call tet one because it involves link condition check
@@ -1193,7 +1406,172 @@ bool MMSurfaceMesh::multimesh_collapse_edge(const Tuple& t)
         tracked_fid_to_vids_map = tracked_fid_to_vids_map_copy;
         tracked_vertices = tracked_vertices_copy;
         return false;
+    } else {
+        // update tracked vertices
+
+        // delete removed faces in map
+        tracked_fid_to_vids_map.erase(s_cache.deleted_fid_1);
+        if (s_cache.deleted_fid_2 != -1) {
+            tracked_fid_to_vids_map.erase(s_cache.deleted_fid_2);
+        }
+
+        auto uv_v_tuples_after = map_to_uv_vertex_tuples(s_return_t);
+
+        // clear modified face to tracked vertex in map
+        for (const auto& uv_v_after : uv_v_tuples_after) {
+            for (const auto& uv_f : uvmesh_ptr->get_one_ring_tris_for_vertex(uv_v_after)) {
+                // delete effected track id in kept faces
+                for (const auto& tvinfo : s_cache.tracked_vertex_info_cache) {
+                    const auto& tracked_vid = tvinfo.vid;
+                    auto it = std::find(
+                        tracked_fid_to_vids_map[uv_f.fid(*uvmesh_ptr)].begin(),
+                        tracked_fid_to_vids_map[uv_f.fid(*uvmesh_ptr)].end(),
+                        tracked_vid);
+                    if (it != tracked_fid_to_vids_map[uv_f.fid(*uvmesh_ptr)].end()) {
+                        tracked_fid_to_vids_map[uv_f.fid(*uvmesh_ptr)].erase(it);
+                    }
+                }
+            }
+        }
+
+        // find new uv position for tracked vertices
+
+
+        for (const auto& tvinfo : s_cache.tracked_vertex_info_cache) {
+            const auto& tracked_vid = tvinfo.vid;
+            const auto& ref_uv_vid = tvinfo.ref_uv_vid;
+            const auto& tracked_pos = tvinfo.uv_pos;
+            const auto& ref_uv_pos = tvinfo.ref_uv_pos;
+            const auto& rotation = tvinfo.rotation;
+
+            Vector2d tracked_v_chart_pos; // tracked position in vertex chart. rotate and translate
+                                          // if not in the first part
+            Eigen::Matrix2d R_inv;
+            R_inv << cos(-rotation), -sin(-rotation), sin(-rotation), cos(-rotation);
+
+            tracked_v_chart_pos = R_inv * (tracked_pos - ref_uv_pos) + s_cache.v1_uv_pos;
+
+            // std::ofstream point_file("point.obj");
+
+            // point_file << "v " << tracked_v_chart_pos[0] << " " << tracked_v_chart_pos[1] << " 0"
+            //            << std::endl;
+            // point_file.close();
+
+            // std::ofstream vchart_file("v_chart.obj");
+            // std::ofstream v_tri_file("v_tris.obj");
+            int tri_cnt = 0;
+
+            bool found_flag = false;
+
+            // use tracked pos in chart and traverse through charts
+            for (const auto& uv_v_after : uv_v_tuples_after) {
+                const auto& uv_v_after_vid = uv_v_after.vid(*uvmesh_ptr);
+                const auto& uv_v_after_pos = uvmesh_ptr->v_attrs[uv_v_after_vid].pos;
+
+                // find related part
+                LayoutPartInfo part;
+                if (s_cache.layout_parts_map.find(uv_v_after_vid) !=
+                    s_cache.layout_parts_map.end()) {
+                    part = s_cache.layout_parts_map.at(uv_v_after_vid);
+                    // } else if (uv_v_after_vid == s_cache.ref_uv_v2_id) {
+                    // } else if (uv_v_after_vid == map_to_equivalent_uv_tuple(t).vid(*uvmesh_ptr))
+                    // {
+                } else if (uv_v_after_vid == s_cache.uv_collapse_to_v1_id) {
+                    part = s_cache.layout_parts_map.at(s_cache.ref_uv_v1_id);
+                } else if (uv_v_after_vid == s_cache.uv_collapse_to_v2_id) {
+                    // other side edge
+                    assert(s_cache.deleted_vid_2 != -1);
+                    part = s_cache.layout_parts_map.at(s_cache.deleted_vid_2);
+                } else {
+                    // vertex not involved, skip
+                    continue;
+                }
+
+                // rotation matrix for the triangles in this part
+                Eigen::Matrix2d R_inv_part, R_part;
+                R_inv_part << cos(-part.rotation), -sin(-part.rotation), sin(-part.rotation),
+                    cos(-part.rotation);
+                R_part << cos(part.rotation), -sin(part.rotation), sin(part.rotation),
+                    cos(part.rotation);
+
+                // traverse tris in this part with rotation and translation
+                const auto& uv_v_after_one_ring_tris =
+                    uvmesh_ptr->get_one_ring_tris_for_vertex(uv_v_after);
+                for (const auto& tri_tuple : uv_v_after_one_ring_tris) {
+                    size_t tri_fid = tri_tuple.fid(*uvmesh_ptr);
+                    // if (s_cache.collapse_area_fid_involved.find(tri_fid) ==
+                    //     s_cache.collapse_area_fid_involved.end()) {
+                    //     // skip faces that are not involved if not collapsed edge
+                    //     continue;
+                    // }
+
+                    auto v0 = tri_tuple.vid(*uvmesh_ptr);
+                    auto v1 = tri_tuple.switch_vertex(*uvmesh_ptr).vid(*uvmesh_ptr);
+                    auto v2 = tri_tuple.switch_edge(*uvmesh_ptr)
+                                  .switch_vertex(*uvmesh_ptr)
+                                  .vid(*uvmesh_ptr);
+                    Vector2d vec01 = uvmesh_ptr->v_attrs[v1].pos - uvmesh_ptr->v_attrs[v0].pos;
+                    Vector2d vec02 = uvmesh_ptr->v_attrs[v2].pos - uvmesh_ptr->v_attrs[v0].pos;
+
+                    // move and rotate the triangle to v2
+                    Vector2d p0_chart = s_cache.v2_uv_pos;
+                    Vector2d p1_chart = p0_chart + R_inv_part * vec01;
+                    Vector2d p2_chart = p0_chart + R_inv_part * vec02;
+
+                    // // std::cout << "tri: " << std::endl;
+                    // v_tri_file << "v " << uvmesh_ptr->v_attrs[v0].pos[0] << " "
+                    //            << uvmesh_ptr->v_attrs[v0].pos[1] << " 0" << std::endl;
+                    // v_tri_file << "v " << uvmesh_ptr->v_attrs[v1].pos[0] << " "
+                    //            << uvmesh_ptr->v_attrs[v1].pos[1] << " 0" << std::endl;
+                    // v_tri_file << "v " << uvmesh_ptr->v_attrs[v2].pos[0] << " "
+                    //            << uvmesh_ptr->v_attrs[v2].pos[1] << " 0" << std::endl;
+
+                    // vchart_file << "v " << p0_chart[0] << " " << p0_chart[1] << " 0" <<
+                    // std::endl; vchart_file << "v " << p1_chart[0] << " " << p1_chart[1] << " 0"
+                    // << std::endl; vchart_file << "v " << p2_chart[0] << " " << p2_chart[1] << "
+                    // 0" << std::endl;
+                    tri_cnt++;
+
+                    if (point_in_tri(tracked_v_chart_pos, p0_chart, p1_chart, p2_chart)) {
+                        if (!found_flag) {
+                            found_flag = true;
+
+                            // update track vertex position
+                            auto& tracked_v = tracked_vertices[tracked_vid];
+                            tracked_v.uv_pos =
+                                uv_v_after_pos + R_part * (tracked_v_chart_pos - s_cache.v2_uv_pos);
+
+                            // update face id
+                            tracked_v.in_tri_id = tri_tuple.fid(*uvmesh_ptr);
+
+                            // update tracked_fid_to_vids_map
+                            tracked_fid_to_vids_map[tri_tuple.fid(*uvmesh_ptr)].push_back(
+                                tracked_vid);
+
+                            // break;
+                        }
+                    }
+                }
+                if (found_flag) {
+                    // TODO: add break for efficiency
+                    // no break for v_chart
+                    // break;
+                }
+            }
+            // for (int i = 0; i < tri_cnt; ++i) {
+            //     vchart_file << "f " << i * 3 + 1 << " " << i * 3 + 2 << " " << i * 3 + 3
+            //                 << std::endl;
+            //     v_tri_file << "f " << i * 3 + 1 << " " << i * 3 + 2 << " " << i * 3 + 3
+            //                << std::endl;
+            // }
+
+            // vchart_file.close();
+            // v_tri_file.close();
+
+            assert(found_flag);
+        }
     }
+
 
     // post process of return values
     // TODO: add return reference
@@ -1234,8 +1612,8 @@ void MMSurfaceMesh::output_surface_mesh(const std::string& file)
     std::ofstream output(file);
 
     for (size_t i = 0; i < vertices.size(); ++i) {
-        output << "v" << " " << v_attrs[vertices[i].vid(*this)].pos[0] << " "
-               << v_attrs[vertices[i].vid(*this)].pos[1] << " "
+        output << std::setprecision(16) << "v" << " " << v_attrs[vertices[i].vid(*this)].pos[0]
+               << " " << v_attrs[vertices[i].vid(*this)].pos[1] << " "
                << v_attrs[vertices[i].vid(*this)].pos[2] << std::endl;
     }
 
@@ -1250,9 +1628,831 @@ void MMSurfaceMesh::output_tracked_vertices(const std::string& filename)
 {
     std::ofstream output(filename);
     for (size_t i = 0; i < tracked_vertices.size(); ++i) {
-        output << "v " << tracked_vertices[i].uv_pos[0] << " " << tracked_vertices[i].uv_pos[1]
-               << " 0" << std::endl;
+        output << std::setprecision(16) << "v " << tracked_vertices[i].uv_pos[0] << " "
+               << tracked_vertices[i].uv_pos[1] << " 0" << std::endl;
     }
 }
+
+
+void MMSurfaceMesh::write_tracked_vertices_info(const std::string& filename)
+{
+    std::ofstream output(filename);
+    std::ofstream r_output("reconstructed_" + filename);
+    std::ofstream n_output("non_consolidate_f_" + filename);
+
+    std::unordered_map<int64_t, int64_t> consolidated_fid_map;
+    const auto& faces = get_faces();
+    for (int64_t i = 0; i < faces.size(); ++i) {
+        consolidated_fid_map[faces[i].fid(*this)] = i;
+    }
+
+    for (size_t i = 0; i < tracked_vertices.size(); ++i) {
+        const auto& pos = tracked_vertices[i].surface_pos;
+        const auto& fid = tracked_vertices[i].in_tri_id;
+
+        const auto& info = tracked_vertices[i];
+
+        auto uv_tri = uvmesh_ptr->oriented_tri_vids(fid);
+
+        Eigen::Vector2d uv_local = barycentric_coord_in_tri(
+            tracked_vertices[i].uv_pos,
+            uvmesh_ptr->v_attrs[uv_tri[0]].pos,
+            uvmesh_ptr->v_attrs[uv_tri[1]].pos,
+            uvmesh_ptr->v_attrs[uv_tri[2]].pos);
+
+        assert(uv_local[0] > -1e-7 && uv_local[0] < 1 + 1e-7);
+        assert(uv_local[1] > -1e-7 && uv_local[1] < 1 + 1e-7 - uv_local[0]);
+
+        // output << std::setprecision(16) << consolidated_fid_map[fid] << " " << pos[0] << " "
+        //        << pos[1] << " " << pos[2] << " " << uv_local[0] << " " << uv_local[1] << " 1"
+        //        << std::endl;
+
+        output << std::setprecision(16) << consolidated_fid_map[fid] << " " << pos[0] << " "
+               << pos[1] << " " << pos[2] << " " << uv_local[0] << " " << uv_local[1] << " "
+               << info.dfdu[0] << " " << info.dfdu[1] << " " << info.dfdu[2] << " " << info.dfdv[0]
+               << " " << info.dfdv[1] << " " << info.dfdv[2] << " " << info.micro_id << " "
+               << info.micro_u << " " << info.micro_v << " " << info.micro_v0[0] << " "
+               << info.micro_v0[1] << " " << info.micro_v1[0] << " " << info.micro_v1[1] << " "
+               << info.micro_v2[0] << " " << info.micro_v2[1] << " " << info.area << std::endl;
+
+        // n_output << std::setprecision(16) << fid << " " << pos[0] << " " << pos[1] << " " <<
+        // pos[2]
+        //          << " " << uv_local[0] << " " << uv_local[1] << " 1" << std::endl;
+
+
+        auto reconstructed_pos =
+            uv_local[0] * uvmesh_ptr->v_attrs[uv_tri[0]].pos +
+            uv_local[1] * uvmesh_ptr->v_attrs[uv_tri[1]].pos +
+            (1.0 - uv_local[0] - uv_local[1]) * uvmesh_ptr->v_attrs[uv_tri[2]].pos;
+        r_output << std::setprecision(16) << "v " << reconstructed_pos[0] << " "
+                 << reconstructed_pos[1] << " 0" << std::endl;
+
+        n_output << std::setprecision(16) << fid << " " << pos[0] << " " << pos[1] << " " << pos[2]
+                 << " " << uv_local[0] << " " << uv_local[1] << " 1 " << reconstructed_pos[0] << " "
+                 << reconstructed_pos[1] << std::endl;
+    }
+    output.close();
+}
+
+void MMSurfaceMesh::write_micro_triangle_tracked_vertices_info(const std::string& filename)
+{
+    std::ofstream output(filename);
+    std::ofstream r_output("reconstructed_" + filename);
+
+    std::unordered_map<int64_t, int64_t> consolidated_fid_map;
+    const auto& faces = get_faces();
+    for (int64_t i = 0; i < faces.size(); ++i) {
+        consolidated_fid_map[faces[i].fid(*this)] = i;
+    }
+
+    for (size_t i = 0; i < tracked_vertices.size(); ++i) {
+        const auto& pos = tracked_vertices[i].surface_pos;
+        const auto& fid = tracked_vertices[i].in_tri_id;
+
+        auto uv_tri = uvmesh_ptr->oriented_tri_vids(fid);
+
+        auto center_pos = (uvmesh_ptr->v_attrs[uv_tri[0]].pos + uvmesh_ptr->v_attrs[uv_tri[1]].pos +
+                           uvmesh_ptr->v_attrs[uv_tri[2]].pos) /
+                          3.0;
+
+        auto micro_idx = -1;
+
+        for (int k = 0; k < 3; ++k) {
+            if (point_in_tri(
+                    tracked_vertices[i].uv_pos,
+                    uvmesh_ptr->v_attrs[uv_tri[k]].pos,
+                    uvmesh_ptr->v_attrs[uv_tri[(k + 1) % 3]].pos,
+                    center_pos)) {
+                micro_idx = k;
+
+                Eigen::Vector2d uv_local = barycentric_coord_in_tri(
+                    tracked_vertices[i].uv_pos,
+                    uvmesh_ptr->v_attrs[uv_tri[k]].pos,
+                    uvmesh_ptr->v_attrs[uv_tri[(k + 1) % 3]].pos,
+                    center_pos);
+
+                assert(uv_local[0] > -1e-7 && uv_local[0] < 1 + 1e-7);
+                assert(uv_local[1] > -1e-7 && uv_local[1] < 1 + 1e-7 - uv_local[0]);
+
+                output << std::setprecision(16) << consolidated_fid_map[fid] * 3 + k << " "
+                       << pos[0] << " " << pos[1] << " " << pos[2] << " " << uv_local[0] << " "
+                       << uv_local[1] << " 1" << std::endl;
+
+                auto reconstructed_pos =
+                    uv_local[0] * uvmesh_ptr->v_attrs[uv_tri[k]].pos +
+                    uv_local[1] * uvmesh_ptr->v_attrs[uv_tri[(k + 1) % 3]].pos +
+                    (1.0 - uv_local[0] - uv_local[1]) * center_pos;
+                r_output << std::setprecision(16) << "v " << reconstructed_pos[0] << " "
+                         << reconstructed_pos[1] << " 0" << std::endl;
+                break;
+            }
+        }
+    }
+    output.close();
+    r_output.close();
+}
+
+void MMSurfaceMesh::multimesh_consolidated_output(const std::string& filename)
+{
+    // TODO: add tetmesh
+    // now only for surface mesh and uvmesh
+    std::ofstream obj_file(filename + ".obj");
+    std::ofstream uv_file(filename + "_uv.obj");
+
+    obj_file << std::setprecision(16);
+    uv_file << std::setprecision(16);
+
+    std::unordered_map<size_t, size_t> surface_v_map, uv_v_map;
+    const auto& surface_vs = get_vertices();
+    const auto& uv_vs = uvmesh_ptr->get_vertices();
+
+    size_t s_v_cnt = 0;
+    for (const auto& v : surface_vs) {
+        surface_v_map[v.vid(*this)] = s_v_cnt++;
+    }
+
+    size_t uv_v_cnt = 0;
+    for (const auto& v : uv_vs) {
+        uv_v_map[v.vid(*uvmesh_ptr)] = uv_v_cnt++;
+    }
+
+    assert(s_v_cnt = surface_vs.size());
+    assert(uv_v_cnt = uv_vs.size());
+
+    // write to obj
+    for (const auto& v : surface_vs) {
+        const Eigen::Vector3d& pos = v_attrs[v.vid(*this)].pos;
+        obj_file << std::setprecision(16) << "v " << pos[0] << " " << pos[1] << " " << pos[2]
+                 << std::endl;
+    }
+
+    for (const auto& v : uv_vs) {
+        const Eigen::Vector2d& pos = uvmesh_ptr->v_attrs[v.vid(*uvmesh_ptr)].pos;
+        obj_file << "vt " << pos[0] << " " << pos[1] << std::endl;
+        uv_file << "v " << pos[0] << " " << pos[1] << " 0" << std::endl;
+    }
+
+    const auto& surface_fs = get_faces();
+    const auto& uv_fs = uvmesh_ptr->get_faces();
+
+    assert(surface_fs.size() == uv_fs.size());
+
+    for (size_t i = 0; i < surface_fs.size(); ++i) {
+        const auto& s_f = oriented_tri_vids(surface_fs[i].fid(*this));
+        const auto& uv_f = uvmesh_ptr->oriented_tri_vids(uv_fs[i].fid(*uvmesh_ptr));
+        assert(surface_fs[i].fid(*this) == uv_fs[i].fid(*uvmesh_ptr));
+
+        obj_file << "f " << surface_v_map[s_f[0]] + 1 << "/" << uv_v_map[uv_f[0]] + 1 << " "
+                 << surface_v_map[s_f[1]] + 1 << "/" << uv_v_map[uv_f[1]] + 1 << " "
+                 << surface_v_map[s_f[2]] + 1 << "/" << uv_v_map[uv_f[2]] + 1 << std::endl;
+        uv_file << "f " << uv_v_map[uv_f[0]] + 1 << " " << uv_v_map[uv_f[1]] + 1 << " "
+                << uv_v_map[uv_f[2]] + 1 << std::endl;
+    }
+
+    obj_file.close();
+    uv_file.close();
+}
+
+void MMSurfaceMesh::multimesh_consolidated_micro_tri_output(const std::string& filename)
+{
+    std::ofstream uv_file(filename + ".obj");
+
+    uv_file << std::setprecision(16);
+
+    std::unordered_map<size_t, size_t> surface_v_map, uv_v_map;
+    const auto& uv_vs = uvmesh_ptr->get_vertices();
+
+    size_t uv_v_cnt = 0;
+    for (const auto& v : uv_vs) {
+        uv_v_map[v.vid(*uvmesh_ptr)] = uv_v_cnt++;
+    }
+    assert(uv_v_cnt = uv_vs.size());
+
+    // write to obj
+    for (const auto& v : uv_vs) {
+        const Eigen::Vector2d& pos = uvmesh_ptr->v_attrs[v.vid(*uvmesh_ptr)].pos;
+        uv_file << "v " << pos[0] << " " << pos[1] << " 0" << std::endl;
+    }
+
+    const auto& uv_fs = uvmesh_ptr->get_faces();
+
+    for (size_t i = 0; i < uv_fs.size(); ++i) {
+        const auto& uv_f = uvmesh_ptr->oriented_tri_vids(uv_fs[i].fid(*uvmesh_ptr));
+
+        auto center_pos = (uvmesh_ptr->v_attrs[uv_f[0]].pos + uvmesh_ptr->v_attrs[uv_f[1]].pos +
+                           uvmesh_ptr->v_attrs[uv_f[2]].pos) /
+                          3.0;
+
+        uv_file << "v " << center_pos[0] << " " << center_pos[1] << " 0" << std::endl;
+    }
+
+    for (size_t i = 0; i < uv_fs.size(); ++i) {
+        const auto& uv_f = uvmesh_ptr->oriented_tri_vids(uv_fs[i].fid(*uvmesh_ptr));
+
+        uv_file << "f " << uv_v_map[uv_f[0]] + 1 << " " << uv_v_map[uv_f[1]] + 1 << " "
+                << uv_v_cnt + i + 1 << std::endl;
+        uv_file << "f " << uv_v_map[uv_f[1]] + 1 << " " << uv_v_map[uv_f[2]] + 1 << " "
+                << uv_v_cnt + i + 1 << std::endl;
+        uv_file << "f " << uv_v_map[uv_f[2]] + 1 << " " << uv_v_map[uv_f[0]] + 1 << " "
+                << uv_v_cnt + i + 1 << std::endl;
+    }
+
+    uv_file.close();
+}
+
+
+double
+MMSurfaceMesh::triangle_quality_2d(const Vector2d& p0, const Vector2d& p1, const Vector2d& p2)
+{
+    double a = (p0 - p1).norm();
+    double b = (p1 - p2).norm();
+    double c = (p2 - p0).norm();
+    double s = (a + b + c) / 2.0;
+
+    double ratio = (8 * (s - a) * (s - b) * (s - c)) / (a * b * c);
+
+    return ratio;
+}
+
+bool is_inverted_2d(const Vector2d& p0, const Vector2d& p1, const Vector2d& p2)
+{
+    igl::predicates::exactinit();
+    auto res = igl::predicates::orient2d(p0, p1, p2);
+    int result;
+    if (res == igl::predicates::Orientation::POSITIVE)
+        result = 1;
+    else if (res == igl::predicates::Orientation::NEGATIVE)
+        result = -1;
+    else
+        result = 0;
+
+    if (result > 0) // TODO::check this sign
+        return false;
+    return true;
+}
+
+bool MMSurfaceMesh::swap_tet_inversion_check(const Tuple& t)
+{
+    int sv0 = t.vid(*this);
+    int sv1 = t.switch_vertex(*this).vid(*this);
+    int sv2 = t.switch_edge(*this).switch_vertex(*this).vid(*this);
+
+    int tv0 = map_to_tet_vertex_tuple(t).vid(*tetmesh_ptr);
+    int tv1 = map_to_tet_vertex_tuple(t.switch_vertex(*this)).vid(*tetmesh_ptr);
+    int tv_target =
+        map_to_tet_vertex_tuple(t.switch_edge(*this).switch_vertex(*this)).vid(*tetmesh_ptr);
+
+    auto tet_edge_tuple = map_to_tet_edge_tuple(t);
+
+    auto one_ring_tets = tetmesh_ptr->get_one_ring_tets_for_edge(tet_edge_tuple);
+
+    for (const auto& tet : one_ring_tets) {
+        auto tet_verts = tetmesh_ptr->oriented_tet_vids(tet);
+
+        int tv0_local_vid = -1;
+        int tv1_local_vid = -1;
+        int tv_target_local_vid = -1;
+        for (int k = 0; k < 4; ++k) {
+            if (tv_target == tet_verts[k]) {
+                tv_target_local_vid = k;
+            }
+            if (tv0 == tet_verts[k]) {
+                tv0_local_vid = k;
+            }
+            if (tv1 == tet_verts[k]) {
+                tv1_local_vid = k;
+            }
+        }
+        assert(tv0_local_vid > -1);
+        assert(tv1_local_vid > -1);
+
+        if (tv_target_local_vid != -1) {
+            // skip, this tet degenerate after swap
+            continue;
+        }
+
+        // check two new tet orientation
+        std::array<Vector3d, 4> new_tet_0_v_pos = {
+            {tetmesh_ptr->v_attrs[tet_verts[0]].pos,
+             tetmesh_ptr->v_attrs[tet_verts[1]].pos,
+             tetmesh_ptr->v_attrs[tet_verts[2]].pos,
+             tetmesh_ptr->v_attrs[tet_verts[3]].pos}};
+        new_tet_0_v_pos[tv0_local_vid] = tetmesh_ptr->v_attrs[tv_target].pos;
+
+        std::array<Vector3d, 4> new_tet_1_v_pos = {
+            {tetmesh_ptr->v_attrs[tet_verts[0]].pos,
+             tetmesh_ptr->v_attrs[tet_verts[1]].pos,
+             tetmesh_ptr->v_attrs[tet_verts[2]].pos,
+             tetmesh_ptr->v_attrs[tet_verts[3]].pos}};
+        new_tet_0_v_pos[tv1_local_vid] = tetmesh_ptr->v_attrs[tv_target].pos;
+
+        std::array<std::array<Vector3d, 4>, 2> new_t_v = {{new_tet_0_v_pos, new_tet_1_v_pos}};
+        for (const auto& t_pos : new_t_v) {
+            auto res = igl::predicates::orient3d(t_pos[0], t_pos[1], t_pos[2], t_pos[3]);
+            // TODO: check orientation sign from input
+            int result;
+            if (res == igl::predicates::Orientation::POSITIVE)
+                result = 1;
+            else if (res == igl::predicates::Orientation::NEGATIVE)
+                result = -1;
+            else
+                result = 0;
+
+            if (result >= 0) {
+                // TODO: tetwild convention negative result => positive tet,  positive result =>
+                // negative tet
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+bool MMSurfaceMesh::multimesh_swap_edge(const Tuple& t)
+{
+    // check surface boundary
+    if (is_boundary_edge(t)) {
+        // no swap on surface boundary
+        return false;
+    }
+
+    const auto& uv_e_tuples = map_to_uv_edge_tuples(t);
+    // TODO: check is feature
+
+    // check if two uv edges share a vertex
+    if (uv_e_tuples.size() > 1) {
+        if (uv_e_tuples[0].vid(*uvmesh_ptr) == uv_e_tuples[1].vid(*uvmesh_ptr)) {
+            wmtk::logger().debug("swap rejected by uv sharing same vertex case 1");
+            return false;
+        }
+
+        if (uv_e_tuples[0].switch_vertex(*uvmesh_ptr).vid(*uvmesh_ptr) ==
+            uv_e_tuples[1].switch_vertex(*uvmesh_ptr).vid(*uvmesh_ptr)) {
+            wmtk::logger().debug("swap rejected by uv sharing same vertex case 2");
+            return false;
+        }
+    }
+
+
+    // check around cone: any of the endpoint is a cone or both adjacent to the same cone
+    if (v_attrs[t.vid(*this)].is_cone) {
+        wmtk::logger().debug("swap rejected by cone 0");
+        return false;
+    }
+    if (v_attrs[t.switch_vertex(*this).vid(*this)].is_cone) {
+        wmtk::logger().debug("swap rejected by cone 1");
+        return false;
+    }
+    if (v_attrs[t.switch_edge(*this).switch_vertex(*this).vid(*this)].is_cone) {
+        wmtk::logger().debug("swap rejected by cone 2");
+        return false;
+    }
+    if (v_attrs[t.switch_face(*this).value().switch_edge(*this).switch_vertex(*this).vid(*this)]
+            .is_cone) {
+        wmtk::logger().debug("swap rejected by cone 2p");
+        return false;
+    }
+
+    // check tet inversion
+    if (!swap_tet_inversion_check(t)) {
+        wmtk::logger().debug("swap rejected by tet inversion");
+    }
+
+    // build uv edge chart
+    Vector2d translation; // translation for p2_p_target
+    double rotation; // rotation for p2_p_target
+    Eigen::Matrix2d R;
+
+    Vector2d p0, p1, p2, p0_p, p1_p,
+        p2_p; // p0 and p0_p are same vertex in 3d, same for p1 and p1_p
+    Vector2d p2_p_target;
+
+
+    assert(uv_e_tuples.size() > 0);
+    if (uv_e_tuples.size() == 1) {
+        // not on seam
+        auto v0 = uv_e_tuples[0];
+        auto v1 = uv_e_tuples[0].switch_vertex(*uvmesh_ptr);
+        auto v2 = uv_e_tuples[0].switch_edge(*uvmesh_ptr).switch_vertex(*uvmesh_ptr);
+
+        auto v0_p = uv_e_tuples[0].switch_face(*uvmesh_ptr).value();
+        auto v1_p = v0_p.switch_vertex(*uvmesh_ptr);
+        auto v2_p = v0_p.switch_edge(*uvmesh_ptr).switch_vertex(*uvmesh_ptr);
+
+        p0 = uvmesh_ptr->v_attrs[v0.vid(*uvmesh_ptr)].pos;
+        p1 = uvmesh_ptr->v_attrs[v1.vid(*uvmesh_ptr)].pos;
+        p2 = uvmesh_ptr->v_attrs[v2.vid(*uvmesh_ptr)].pos;
+
+        p0_p = uvmesh_ptr->v_attrs[v0_p.vid(*uvmesh_ptr)].pos;
+        p1_p = uvmesh_ptr->v_attrs[v1_p.vid(*uvmesh_ptr)].pos;
+        p2_p = uvmesh_ptr->v_attrs[v2_p.vid(*uvmesh_ptr)].pos;
+
+        translation = Vector2d(0, 0);
+        rotation = 0;
+
+        p2_p_target = p2_p;
+    } else {
+        // on seam
+        auto v0 = uv_e_tuples[0];
+        auto v1 = uv_e_tuples[0].switch_vertex(*uvmesh_ptr);
+        auto v2 = uv_e_tuples[0].switch_edge(*uvmesh_ptr).switch_vertex(*uvmesh_ptr);
+
+        auto v0_p = uv_e_tuples[1];
+        auto v1_p = v0_p.switch_vertex(*uvmesh_ptr);
+        auto v2_p = v0_p.switch_edge(*uvmesh_ptr).switch_vertex(*uvmesh_ptr);
+
+        p0 = uvmesh_ptr->v_attrs[v0.vid(*uvmesh_ptr)].pos;
+        p1 = uvmesh_ptr->v_attrs[v1.vid(*uvmesh_ptr)].pos;
+        p2 = uvmesh_ptr->v_attrs[v2.vid(*uvmesh_ptr)].pos;
+
+        p0_p = uvmesh_ptr->v_attrs[v0_p.vid(*uvmesh_ptr)].pos;
+        p1_p = uvmesh_ptr->v_attrs[v1_p.vid(*uvmesh_ptr)].pos;
+        p2_p = uvmesh_ptr->v_attrs[v2_p.vid(*uvmesh_ptr)].pos;
+
+        // compute translation
+        translation = p0 - p0_p; // translation from p0_p to p_0
+
+        // compute rotation
+        auto e01 = p1 - p0;
+        auto e01_p = p1_p - p0_p;
+        rotation = atan2(e01[1], e01[0]) - atan2(e01_p[1], e01_p[0]); // rotation from e01_p to e01
+        R << cos(rotation), -sin(rotation), sin(rotation), cos(rotation);
+
+        auto e02_p = p2_p - p0_p;
+        p2_p_target = p0 + R * e02_p;
+    }
+
+    // result triangles are (p0, p2_p_target, p2) and (p1, p2, p2_p_target)
+    // check inversion
+    if (is_inverted_2d(p0, p2_p_target, p2)) {
+        wmtk::logger().debug("swap rejected by uvmesh mesh invertion 0");
+        return false;
+    }
+    if (is_inverted_2d(p1, p2, p2_p_target)) {
+        wmtk::logger().debug("swap rejected by uvmesh mesh invertion 1");
+        return false;
+    }
+
+    // check vertex manifoldness (for v2_p if seam)
+    if (uv_e_tuples.size() > 1) {
+        auto uv_v2_p = uv_e_tuples[1].switch_edge(*uvmesh_ptr).switch_vertex(*uvmesh_ptr);
+        int target_one_ring_size =
+            uvmesh_ptr->m_vertex_connectivity[uv_v2_p.vid(*uvmesh_ptr)].m_conn_tris.size();
+
+        auto start_tuple = uv_v2_p;
+        if (uvmesh_ptr->is_boundary_edge(start_tuple)) {
+            start_tuple = start_tuple.switch_edge(*uvmesh_ptr);
+        }
+
+        int one_ring_cnt = 1; // including fid1
+        while (!uvmesh_ptr->is_boundary_edge(start_tuple)) {
+            start_tuple = start_tuple.switch_face(*uvmesh_ptr).value().switch_edge(*uvmesh_ptr);
+            one_ring_cnt++;
+
+            if (one_ring_cnt == target_one_ring_size) {
+                break;
+            }
+        }
+
+        if (one_ring_cnt < target_one_ring_size) {
+            wmtk::logger().debug("swap rejected by uvmesh mesh vertex manifoldness");
+            return false;
+        }
+    }
+
+    // get data for tet swap
+    int tv0 = map_to_tet_vertex_tuple(t).vid(*tetmesh_ptr);
+    int tv1 = map_to_tet_vertex_tuple(t.switch_vertex(*this)).vid(*tetmesh_ptr);
+    int tv_target =
+        map_to_tet_vertex_tuple(t.switch_edge(*this).switch_vertex(*this)).vid(*tetmesh_ptr);
+
+    auto tet_edge_tuple = map_to_tet_edge_tuple(t);
+
+    // check quality
+    double quality_0_before, quality_1_before, quality_0_after, quality_1_after;
+    quality_0_before = triangle_quality_2d(p0, p1, p2);
+    quality_1_before = triangle_quality_2d(p1_p, p0_p, p2_p);
+    quality_0_after = triangle_quality_2d(p0, p2_p_target, p2);
+    quality_1_after = triangle_quality_2d(p1, p2, p2_p_target);
+
+    if (std::min(quality_0_before, quality_1_before) + 1e-8 >=
+        std::min(quality_0_after, quality_1_after)) {
+        // no need to swap, quality before is better
+        wmtk::logger().debug(
+            "swap rejected by uvmesh mesh quality, before {} {}, after {} {}",
+            quality_0_before,
+            quality_1_before,
+            quality_0_after,
+            quality_1_after);
+        return false;
+    }
+
+    // do the swap
+    auto fid0 = t.fid(*this);
+    auto fid1 = t.switch_face(*this).value().fid(*this);
+
+    // update f0 to (v0, v2_tar, v2), f1 to (v1, v2, v2_tar)
+    // update surface f conn and face hash. no need to update position
+    auto s_v0_id = t.vid(*this);
+    auto s_v1_id = t.switch_vertex(*this).vid(*this);
+    auto s_v2_id = t.switch_edge(*this).switch_vertex(*this).vid(*this);
+    auto s_v2_id_p =
+        t.switch_face(*this).value().switch_edge(*this).switch_vertex(*this).vid(*this);
+
+    this->m_tri_connectivity[fid0].m_indices[0] = s_v0_id;
+    this->m_tri_connectivity[fid0].m_indices[1] = s_v2_id_p;
+    this->m_tri_connectivity[fid0].m_indices[2] = s_v2_id;
+    this->m_tri_connectivity[fid0].hash++;
+
+    this->m_tri_connectivity[fid1].m_indices[0] = s_v1_id;
+    this->m_tri_connectivity[fid1].m_indices[1] = s_v2_id;
+    this->m_tri_connectivity[fid1].m_indices[2] = s_v2_id_p;
+    this->m_tri_connectivity[fid1].hash++;
+
+    vector_erase(this->m_vertex_connectivity[s_v0_id].m_conn_tris, fid1); // update vf
+    vector_erase(this->m_vertex_connectivity[s_v1_id].m_conn_tris, fid0);
+    this->m_vertex_connectivity[s_v2_id].m_conn_tris.push_back(fid1);
+    vector_unique(this->m_vertex_connectivity[s_v2_id].m_conn_tris);
+    this->m_vertex_connectivity[s_v2_id_p].m_conn_tris.push_back(fid0);
+    vector_unique(this->m_vertex_connectivity[s_v2_id_p].m_conn_tris);
+
+    // update uv f conn and face hash
+    auto uv_v0_id = uv_e_tuples[0].vid(*uvmesh_ptr);
+    auto uv_v1_id = uv_e_tuples[0].switch_vertex(*uvmesh_ptr).vid(*uvmesh_ptr);
+    auto uv_v2_id =
+        uv_e_tuples[0].switch_edge(*uvmesh_ptr).switch_vertex(*uvmesh_ptr).vid(*uvmesh_ptr);
+    size_t uv_v0_id_p, uv_v1_id_p, uv_v2_id_p, uv_v2_id_p_target;
+
+    if (uv_e_tuples.size() == 1) {
+        // not on seam
+        uv_v0_id_p = uv_v0_id;
+        uv_v1_id_p = uv_v1_id;
+        uv_v2_id_p = uv_e_tuples[0]
+                         .switch_face(*uvmesh_ptr)
+                         .value()
+                         .switch_edge(*uvmesh_ptr)
+                         .switch_vertex(*uvmesh_ptr)
+                         .vid(*uvmesh_ptr);
+        uv_v2_id_p_target = uv_v2_id_p;
+
+        uvmesh_ptr->m_tri_connectivity[fid0].m_indices[0] = uv_v0_id;
+        uvmesh_ptr->m_tri_connectivity[fid0].m_indices[1] = uv_v2_id_p;
+        uvmesh_ptr->m_tri_connectivity[fid0].m_indices[2] = uv_v2_id;
+        uvmesh_ptr->m_tri_connectivity[fid0].hash++;
+
+        uvmesh_ptr->m_tri_connectivity[fid1].m_indices[0] = uv_v1_id;
+        uvmesh_ptr->m_tri_connectivity[fid1].m_indices[1] = uv_v2_id;
+        uvmesh_ptr->m_tri_connectivity[fid1].m_indices[2] = uv_v2_id_p;
+        uvmesh_ptr->m_tri_connectivity[fid1].hash++;
+
+        vector_erase(uvmesh_ptr->m_vertex_connectivity[uv_v0_id].m_conn_tris, fid1); // update vf
+        vector_erase(uvmesh_ptr->m_vertex_connectivity[uv_v1_id].m_conn_tris, fid0);
+        uvmesh_ptr->m_vertex_connectivity[uv_v2_id].m_conn_tris.push_back(fid1);
+        vector_unique(uvmesh_ptr->m_vertex_connectivity[uv_v2_id].m_conn_tris);
+        uvmesh_ptr->m_vertex_connectivity[uv_v2_id_p].m_conn_tris.push_back(fid0);
+        vector_unique(uvmesh_ptr->m_vertex_connectivity[uv_v2_id_p].m_conn_tris);
+    } else {
+        // on seam
+        // need a new vertex for v2_p
+        uv_v0_id_p = uv_e_tuples[1].vid(*uvmesh_ptr);
+        uv_v1_id_p = uv_e_tuples[1].switch_vertex(*uvmesh_ptr).vid(*uvmesh_ptr);
+        uv_v2_id_p =
+            uv_e_tuples[1].switch_edge(*uvmesh_ptr).switch_vertex(*uvmesh_ptr).vid(*uvmesh_ptr);
+
+        uv_v2_id_p_target = uvmesh_ptr->get_next_empty_slot_v();
+
+        // update fv
+        uvmesh_ptr->m_tri_connectivity[fid0].m_indices[0] = uv_v0_id;
+        uvmesh_ptr->m_tri_connectivity[fid0].m_indices[1] = uv_v2_id_p_target;
+        uvmesh_ptr->m_tri_connectivity[fid0].m_indices[2] = uv_v2_id;
+        uvmesh_ptr->m_tri_connectivity[fid0].hash++;
+
+        uvmesh_ptr->m_tri_connectivity[fid1].m_indices[0] = uv_v1_id;
+        uvmesh_ptr->m_tri_connectivity[fid1].m_indices[1] = uv_v2_id;
+        uvmesh_ptr->m_tri_connectivity[fid1].m_indices[2] = uv_v2_id_p_target;
+        uvmesh_ptr->m_tri_connectivity[fid1].hash++;
+
+        // update vf for v0 v1 v2 v2_p_target
+        // v0: f0 -> f0 unchanged
+        // v1: f0 -> f1
+        vector_erase(uvmesh_ptr->m_vertex_connectivity[uv_v1_id].m_conn_tris, fid0);
+        uvmesh_ptr->m_vertex_connectivity[uv_v1_id].m_conn_tris.push_back(fid1);
+        vector_unique(uvmesh_ptr->m_vertex_connectivity[uv_v1_id].m_conn_tris);
+        // v2: f0 -> f0 f1
+        uvmesh_ptr->m_vertex_connectivity[uv_v2_id].m_conn_tris.push_back(fid1);
+        vector_unique(uvmesh_ptr->m_vertex_connectivity[uv_v2_id].m_conn_tris);
+        // v2_p_target: nothing -> f0 f1
+        uvmesh_ptr->m_vertex_connectivity[uv_v2_id_p_target].m_conn_tris.reserve(2);
+        uvmesh_ptr->m_vertex_connectivity[uv_v2_id_p_target].m_conn_tris.emplace_back(fid0);
+        uvmesh_ptr->m_vertex_connectivity[uv_v2_id_p_target].m_conn_tris.emplace_back(fid1);
+        std::sort(
+            uvmesh_ptr->m_vertex_connectivity[uv_v2_id_p_target].m_conn_tris.begin(),
+            uvmesh_ptr->m_vertex_connectivity[uv_v2_id_p_target].m_conn_tris.end());
+
+        // remove fid1 from v0_p v1_p v2_p, if m_conn_tris becomes 0, remove vertices
+        vector_erase(uvmesh_ptr->m_vertex_connectivity[uv_v0_id_p].m_conn_tris, fid1);
+        if (uvmesh_ptr->m_vertex_connectivity[uv_v0_id_p].m_conn_tris.size() == 0) {
+            uvmesh_ptr->m_vertex_connectivity[uv_v0_id_p].m_is_removed = true;
+        }
+        vector_erase(uvmesh_ptr->m_vertex_connectivity[uv_v1_id_p].m_conn_tris, fid1);
+        if (uvmesh_ptr->m_vertex_connectivity[uv_v1_id_p].m_conn_tris.size() == 0) {
+            uvmesh_ptr->m_vertex_connectivity[uv_v1_id_p].m_is_removed = true;
+        }
+        vector_erase(uvmesh_ptr->m_vertex_connectivity[uv_v2_id_p].m_conn_tris, fid1);
+        if (uvmesh_ptr->m_vertex_connectivity[uv_v2_id_p].m_conn_tris.size() == 0) {
+            uvmesh_ptr->m_vertex_connectivity[uv_v2_id_p].m_is_removed = true;
+        }
+
+        // set attribute pos for new  v2_p_target
+        uvmesh_ptr->v_attrs[uv_v2_id_p_target].pos = p2_p_target;
+        uvmesh_ptr->v_attrs[uv_v2_id_p_target].is_cone = false;
+    }
+
+
+    //  run tet swap
+
+
+    auto one_ring_tets = tetmesh_ptr->get_one_ring_tets_for_edge(tet_edge_tuple);
+
+    for (const auto& tet : one_ring_tets) {
+        size_t tid = tet.tid(*tetmesh_ptr);
+
+        auto tet_verts = tetmesh_ptr->oriented_tet_vids(tet);
+
+        int tv0_local_vid = -1;
+        int tv1_local_vid = -1;
+        int tv_target_local_vid = -1;
+        for (int k = 0; k < 4; ++k) {
+            if (tv_target == tet_verts[k]) {
+                tv_target_local_vid = k;
+            }
+            if (tv0 == tet_verts[k]) {
+                tv0_local_vid = k;
+            }
+            if (tv1 == tet_verts[k]) {
+                tv1_local_vid = k;
+            }
+        }
+        assert(tv0_local_vid > -1);
+        assert(tv1_local_vid > -1);
+
+        // set current tet as removed
+        tetmesh_ptr->m_tet_connectivity[tid].m_is_removed = true;
+
+        // remove current tid in tvids
+        for (int k = 0; k < 4; ++k) {
+            vector_erase(tetmesh_ptr->m_vertex_connectivity[tet_verts[k]].m_conn_tets, tid);
+        }
+
+        // add new tets
+        if (tv_target_local_vid != -1) {
+            // skip, this tet degenerate after swap
+            continue;
+        }
+
+        // get two new tets
+        size_t new_tid_0 = tetmesh_ptr->get_next_empty_slot_t();
+        size_t new_tid_1 = tetmesh_ptr->get_next_empty_slot_t();
+
+        std::array<size_t, 4> new_tet_conn_0 = {
+            {tet_verts[0], tet_verts[1], tet_verts[2], tet_verts[3]}};
+        new_tet_conn_0[tv1_local_vid] =
+            tv_target; // replace v1 with v target, this tet connect to v0
+
+        std::array<size_t, 4> new_tet_conn_1 = {
+            {tet_verts[0], tet_verts[1], tet_verts[2], tet_verts[3]}};
+        new_tet_conn_1[tv0_local_vid] =
+            tv_target; // replace v0 with v target, this tet connect to v1
+
+        // add tet conn
+        tetmesh_ptr->m_tet_connectivity[new_tid_0].m_indices = new_tet_conn_0;
+        tetmesh_ptr->m_tet_connectivity[new_tid_0].m_is_removed = false;
+        tetmesh_ptr->m_tet_connectivity[new_tid_0].hash++;
+
+        tetmesh_ptr->m_tet_connectivity[new_tid_1].m_indices = new_tet_conn_1;
+        tetmesh_ptr->m_tet_connectivity[new_tid_1].m_is_removed = false;
+        tetmesh_ptr->m_tet_connectivity[new_tid_1].hash++;
+
+        // add new tet to v conn
+        for (size_t tvid : new_tet_conn_0) {
+            tetmesh_ptr->m_vertex_connectivity[tvid].m_conn_tets.push_back(new_tid_0);
+        }
+
+        for (size_t tvid : new_tet_conn_1) {
+            tetmesh_ptr->m_vertex_connectivity[tvid].m_conn_tets.push_back(new_tid_1);
+        }
+    }
+
+
+    // update tracked vertices in fid0 and fid1
+    auto f0_tracked_vertices = tracked_fid_to_vids_map[fid0];
+    auto f1_tracked_vertices = tracked_fid_to_vids_map[fid1];
+
+    std::vector<size_t> new_f0_tvs, new_f1_tvs;
+
+    if (uv_e_tuples.size() == 1) {
+        // not seam
+        for (const auto& i : f0_tracked_vertices) {
+            auto& tv = tracked_vertices[i];
+            bool found = false;
+
+            auto tv_pos = tv.uv_pos;
+            // find which new tri it lies in
+            if (point_in_tri(tv_pos, p0, p2_p_target, p2)) {
+                found = true;
+
+                tv.in_tri_id = fid0;
+                new_f0_tvs.push_back(i);
+            } else if (point_in_tri(tv_pos, p1, p2, p2_p_target)) {
+                found = true;
+
+                tv.in_tri_id = fid1;
+                new_f1_tvs.push_back(i);
+            }
+
+            assert(found);
+        }
+
+        for (const auto& i : f1_tracked_vertices) {
+            auto& tv = tracked_vertices[i];
+            bool found = false;
+
+            auto tv_pos = tv.uv_pos;
+            // find which new tri it lies in
+            if (point_in_tri(tv_pos, p0, p2_p_target, p2)) {
+                found = true;
+
+                tv.in_tri_id = fid0;
+                new_f0_tvs.push_back(i);
+            } else if (point_in_tri(tv_pos, p1, p2, p2_p_target)) {
+                found = true;
+
+                tv.in_tri_id = fid1;
+                new_f1_tvs.push_back(i);
+            }
+
+            assert(found);
+        }
+    } else {
+        // seam
+        // tracked vertices in f0 is the same as non seam
+        for (const auto& i : f0_tracked_vertices) {
+            auto& tv = tracked_vertices[i];
+            bool found = false;
+
+            auto tv_pos = tv.uv_pos;
+            // find which new tri it lies in
+            if (point_in_tri(tv_pos, p0, p2_p_target, p2)) {
+                found = true;
+
+                tv.in_tri_id = fid0;
+                new_f0_tvs.push_back(i);
+            } else if (point_in_tri(tv_pos, p1, p2, p2_p_target)) {
+                found = true;
+
+                tv.in_tri_id = fid1;
+                new_f1_tvs.push_back(i);
+            }
+
+            assert(found);
+        }
+
+        // need translation and rotation for tracked vertices in f1
+        for (const auto& i : f1_tracked_vertices) {
+            auto& tv = tracked_vertices[i];
+            bool found = false;
+
+
+            auto tv_pos = p0 + R * (tv.uv_pos - p0_p);
+            // find which new tri it lies in
+            if (point_in_tri(tv_pos, p0, p2_p_target, p2)) {
+                found = true;
+
+                tv.in_tri_id = fid0;
+                tv.uv_pos = tv_pos;
+                new_f0_tvs.push_back(i);
+            } else if (point_in_tri(tv_pos, p1, p2, p2_p_target)) {
+                found = true;
+
+                tv.in_tri_id = fid1;
+                tv.uv_pos = tv_pos;
+                new_f1_tvs.push_back(i);
+            }
+
+            assert(found);
+        }
+    }
+
+    // update tracked vertices f to v map
+    tracked_fid_to_vids_map[fid0] = new_f0_tvs;
+    tracked_fid_to_vids_map[fid1] = new_f1_tvs;
+
+
+    // return tuple_from_edge(s_v0_id, s_v2_id_p, fid0);
+
+    return true;
+}
+
 
 } // namespace wmtk::components::c1_simplification

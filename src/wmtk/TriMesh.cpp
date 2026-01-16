@@ -1172,6 +1172,32 @@ std::vector<size_t> TriMesh::get_one_ring_vids_for_vertex_duplicate(const size_t
     return one_ring;
 }
 
+std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_vertices_for_vertex(
+    const wmtk::TriMesh::Tuple& t) const
+{
+    std::vector<TriMesh::Tuple> one_ring;
+    size_t vid = t.vid(*this);
+    auto& conn_tri = m_vertex_connectivity[vid].m_conn_tris;
+
+    std::unordered_map<size_t, bool> visited;
+    visited[vid] = true; // prevent pushing t in to one ring
+
+    one_ring.reserve(conn_tri.size() * 4);
+    for (size_t tri : conn_tri) {
+        for (auto j : m_tri_connectivity[tri].m_indices) {
+            if (visited.find(j) != visited.end()) {
+                // skip if already pushed
+                continue;
+            } else {
+                visited[j] = true;
+                one_ring.push_back(tuple_from_vertex(j));
+            }
+        }
+    }
+
+    return one_ring;
+}
+
 std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_tris_for_vertex(
     const wmtk::TriMesh::Tuple& t) const
 {

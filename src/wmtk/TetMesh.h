@@ -627,7 +627,7 @@ public:
     // AbstractAttributeContainer vertex_attrs, edge_attrs, face_attrs, tet_attrs;
 
 
-private:
+public:
     // Stores the connectivity of the mesh
     vector<VertexConnectivity> m_vertex_connectivity;
     vector<TetrahedronConnectivity> m_tet_connectivity;

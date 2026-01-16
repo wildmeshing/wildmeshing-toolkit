@@ -46,8 +46,8 @@ Eigen::Vector2d barycentric_coord_in_tri(
         wmtk::logger().warn("nearly degenerated triangle");
     }
 
-    double v = (d11 * d20 - d01 * d21) / denom;
-    double w = (d00 * d21 - d01 * d20) / denom;
+    double w = (d11 * d20 - d01 * d21) / denom;
+    double v = (d00 * d21 - d01 * d20) / denom;
     double u = 1.0 - v - w;
 
     return Eigen::Vector2d(u, v);
@@ -163,5 +163,28 @@ CT_grad(const double& u, const double& v, const Eigen::Matrix<double, 12, 3>& do
 
     return grad;
 }
+
+void read_tetmesh(const std::string& filename, Eigen::MatrixXd& V, Eigen::MatrixXi& T)
+{
+    std::ifstream file(filename);
+
+    int v_vnt, tet_cnt;
+    file >> v_vnt >> tet_cnt;
+
+    V.resize(v_vnt, 3);
+    T.resize(tet_cnt, 4);
+    wmtk::logger().info("read tetmesh #V: {} #T: {}", v_vnt, tet_cnt);
+
+    for (int i = 0; i < v_vnt; ++i) {
+        file >> V(i, 0) >> V(i, 1) >> V(i, 2);
+    }
+
+    for (int i = 0; i < tet_cnt; ++i) {
+        file >> T(i, 0) >> T(i, 1) >> T(i, 2) >> T(i, 3);
+    }
+
+    wmtk::logger().info("read tetmesh #V: {} #T: {}", v_vnt, tet_cnt);
+}
+
 
 } // namespace wmtk::components::c1_simplification
