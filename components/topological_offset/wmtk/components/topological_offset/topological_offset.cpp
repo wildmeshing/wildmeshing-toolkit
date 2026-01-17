@@ -99,6 +99,27 @@ void topological_offset(nlohmann::json json_params)
         mesh.write_vtu(debug_outfilename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
     }
 
+    // write surface from input
+    logger().info("Writing surface mesh pre-offset...");
+    MatrixXd pre_V_out;
+    MatrixXi pre_F_out;
+    mesh.extract_surface_mesh(pre_V_out, pre_F_out);
+    MatrixXd pre_V_out_reduced;
+    MatrixXi pre_F_out_reduced;
+    MatrixXi pre_I; // index map, don't actually need
+    MatrixXi pre_B; // dummy variable
+    igl::remove_unreferenced(pre_V_out, pre_F_out, pre_V_out_reduced, pre_F_out_reduced, pre_I);
+    logger().info(
+        "\tPre-offset surface edge manifoldness check: {}",
+        igl::is_edge_manifold(pre_F_out_reduced));
+    logger().info(
+        "\tPre-offset surface vertex manifoldness check: {}",
+        igl::is_vertex_manifold(pre_F_out_reduced, pre_B));
+    std::string inp_surf_outfname = debug_outfilename.string() + "_preoffset_surf.obj";
+    logger().info("Write {}", inp_surf_outfname);
+    igl::write_triangle_mesh(inp_surf_outfname, pre_V_out_reduced, pre_F_out_reduced);
+
+    // start timer
     igl::Timer timer;
     timer.start();
 
