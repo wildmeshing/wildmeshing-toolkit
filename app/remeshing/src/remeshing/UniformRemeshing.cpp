@@ -78,37 +78,6 @@ void UniformRemeshing::create_mesh(
     }
     edge_attrs.resize(tri_capacity() * 3);
     initialize_feature_edges();
-
-    // init envelopes
-    {
-        std::vector<Vector3d> V(n_vertices);
-        std::vector<Vector3i> F(tris.size());
-        const auto feature_edges =
-            get_edges_by_condition([](const EdgeAttributes& e) { return e.is_feature; });
-        std::vector<Vector2i> E(feature_edges.size());
-
-        for (int i = 0; i < V.size(); i++) {
-            V[i] = vertex_attrs[i].pos;
-        }
-        for (int i = 0; i < F.size(); ++i) {
-            F[i] = Vector3i(tris[i][0], tris[i][1], tris[i][2]);
-        }
-        for (int i = 0; i < E.size(); ++i) {
-            E[i] = Vector2i(feature_edges[i][0], feature_edges[i][1]);
-        }
-        if (eps > 0) {
-            m_envelope.init(V, F, eps);
-            if (!feature_edges.empty()) {
-                m_feature_envelope.init(V, E, eps);
-            }
-            m_has_envelope = true;
-        } else {
-            m_envelope.init(V, F, 0.0);
-            if (!feature_edges.empty()) {
-                m_feature_envelope.init(V, E, 0.0);
-            }
-        }
-    }
 }
 
 bool UniformRemeshing::cache_edge_positions(const Tuple& t)

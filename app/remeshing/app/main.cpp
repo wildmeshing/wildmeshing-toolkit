@@ -245,6 +245,9 @@ int main(int argc, char** argv)
     if (eps < 0) {
         eps = eps_rel * diag;
     }
+    wmtk::logger().info("Mesh diag: {}", diag);
+    wmtk::logger().info("Relative eps: {}", eps_rel);
+    wmtk::logger().info("Envelope thickness eps: {}", eps);
     igl::Timer timer;
 
     wmtk::logger().info("Total frozen vertices: {}", fixed_vertices.size());
@@ -267,6 +270,10 @@ int main(int argc, char** argv)
         }
         logger().info("absolute target length: {}", length_abs);
         m.set_target_edge_length(length_abs);
+
+        // wmtk::logger().info("Mesh diag: {}", diag);
+        // wmtk::logger().info("Relative eps: {}", eps_rel);
+        // wmtk::logger().info("Envelope thickness eps: {}", eps);
     } else {
         logger().info("Use per-patch length with factor {}", length_factor);
         m.set_per_patch_target_edge_length(length_factor);
@@ -278,7 +285,43 @@ int main(int argc, char** argv)
     report["before"]["avg_valence"] = properties[3];
     report["before"]["max_valence"] = properties[4];
     report["before"]["min_valence"] = properties[5];
+    // init envelopes
+    {
+        eps = properties[0] * 0.5; // reset eps to half of avg edge length
+        const auto feature_edges =
+            m.get_edges_by_condition([](const EdgeAttributes& e) { return e.is_feature; });
 
+        // Convert inV from Eigen::MatrixXd to std::vector<Eigen::Vector3d>
+        std::vector<Eigen::Vector3d> V_vec(inV.rows());
+        for (int i = 0; i < inV.rows(); ++i) {
+            V_vec[i] = inV.row(i);
+        }
+
+        // Convert inF from Eigen::MatrixXi to std::vector<Eigen::Vector3i>
+        std::vector<Eigen::Vector3i> F_vec(inF.rows());
+        for (int i = 0; i < inF.rows(); ++i) {
+            F_vec[i] = inF.row(i);
+        }
+
+        // Convert feature edges to std::vector<Eigen::Vector2i>
+        std::vector<Eigen::Vector2i> E_vec(feature_edges.size());
+        for (int i = 0; i < feature_edges.size(); ++i) {
+            E_vec[i] = Eigen::Vector2i(feature_edges[i][0], feature_edges[i][1]);
+        }
+
+        if (eps > 0) {
+            m.m_envelope.init(V_vec, F_vec, eps);
+            if (!feature_edges.empty()) {
+                m.m_feature_envelope.init(V_vec, E_vec, eps);
+            }
+            m.m_has_envelope = true;
+        } else {
+            m.m_envelope.init(V_vec, F_vec, 0.0);
+            if (!feature_edges.empty()) {
+                m.m_feature_envelope.init(V_vec, E_vec, 0.0);
+            }
+        }
+    }
     // Write an initial report so downstream code (e.g. write_vtu inside run_remeshing)
     // can update/append fields like after min/max angle and double-area.
     {
