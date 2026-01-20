@@ -3,6 +3,7 @@
 #include <CLI/CLI.hpp>
 
 #include <wmtk/utils/Reader.hpp>
+#include <wmtk/utils/io.hpp>
 
 #include <igl/Timer.h>
 #include <igl/read_triangle_mesh.h>
@@ -206,7 +207,18 @@ int main(int argc, char** argv)
 
     Eigen::MatrixXd inV;
     Eigen::MatrixXi inF;
-    igl::read_triangle_mesh(input_path, inV, inF);
+    if (std::filesystem::path(input_path).extension() == ".msh") {
+        MshData msh;
+        msh.load(input_path);
+        inV.resize(msh.get_num_face_vertices(), 3);
+        inF.resize(msh.get_num_faces(), 3);
+        msh.extract_face_vertices(
+            [&inV](size_t i, double x, double y, double z) { inV.row(i) << x, y, z; });
+        msh.extract_faces(
+            [&inF](size_t i, size_t v0, size_t v1, size_t v2) { inF.row(i) << v0, v1, v2; });
+    } else {
+        igl::read_triangle_mesh(input_path, inV, inF);
+    }
     verts.resize(inV.rows());
     tris.resize(inF.rows());
     wmtk::eigen_to_wmtk_input(verts, tris, inV, inF);

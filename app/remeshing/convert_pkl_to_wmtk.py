@@ -3,13 +3,14 @@ import pickle
 import numpy as np
 import argparse
 import json
+import meshio
 
 # from abs.utils import * # was used to save obj mesh but IGL can do that as well
 
 
 # default paths
 fused_path = "fused.pkl"
-mesh_path = "mesh.obj"
+mesh_path = "mesh.msh"
 # feature_edge_vertex_path = "feature_edge_vertex.json"
 # feature_vertex_edge_path = "feature_vertex_edge.json"
 # corner_path = "corner.json"
@@ -84,9 +85,16 @@ if __name__ == "__main__":
         # corner is the CAD vertex and the vids is the vertex id in the mesh
         corner2vids = data[4]
 
-    # save_obj_mesh(mesh_path, V, F)
-    igl.write_obj(mesh_path, V, F)
     print("writing mesh to ", mesh_path)
+    if mesh_path.endswith(".obj"):
+        # save_obj_mesh(mesh_path, V, F)
+        igl.write_obj(mesh_path, V, F)
+    else:
+        # write with meshio to support more formats
+        mesh = meshio.Mesh(points=V, cells=[("triangle", F)])
+        meshio.write(mesh_path, mesh,file_format="gmsh",
+                binary=True)
+    print("mesh written.")
 
     seg2edge = {}
     degenerate_feature_edges_to_Cid = {}
