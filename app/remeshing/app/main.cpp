@@ -230,7 +230,7 @@ int main(int argc, char** argv)
 
         // min/max internal angle
         {
-            Eigen::VectorXd angles;
+            Eigen::MatrixXd angles;
             igl::internal_angles(inV, inF, angles);
             auto min_angle = angles.minCoeff();
             auto max_angle = angles.maxCoeff();

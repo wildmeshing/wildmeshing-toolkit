@@ -1538,7 +1538,7 @@ void UniformRemeshing::write_vtu(const std::string& path) const
 
     // min/max internal angle
     {
-        Eigen::VectorXd angles;
+        Eigen::MatrixXd angles;
         igl::internal_angles(V, F, angles);
         const auto min_angle = angles.minCoeff();
         const auto max_angle = angles.maxCoeff();
