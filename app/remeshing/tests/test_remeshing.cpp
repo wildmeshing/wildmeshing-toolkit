@@ -35,7 +35,7 @@ TEST_CASE("uniform_remeshing", "[test_remeshing][.]")
     REQUIRE(m.uniform_remeshing(0.01, 5));
 }
 
-TEST_CASE("split_each_edge", "[test_remeshing]")
+TEST_CASE("split_each_edge", "[test_remeshing][.]")
 {
     std::vector<Eigen::Vector3d> v_positions(3);
     v_positions[0] = Eigen::Vector3d(2, 3.5, 0);
@@ -56,7 +56,7 @@ TEST_CASE("split_each_edge", "[test_remeshing]")
     REQUIRE(m.vert_capacity() == target_vertnum);
 }
 
-TEST_CASE("test_swap", "[test_remeshing]")
+TEST_CASE("test_swap", "[test_remeshing][.]")
 {
     const std::string root(WMTK_DATA_DIR);
     const std::string path = root + "/circle.obj";
@@ -99,7 +99,7 @@ TEST_CASE("test_swap", "[test_remeshing]")
     REQUIRE(m.get_edges().size() == e_invariant);
 }
 
-TEST_CASE("test_split", "[test_remeshing]")
+TEST_CASE("test_split", "[test_remeshing][.]")
 {
     const std::string root(WMTK_DATA_DIR);
     const std::string path = root + "/fan.obj";
