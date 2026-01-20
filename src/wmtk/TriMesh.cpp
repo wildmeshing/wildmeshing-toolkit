@@ -1396,7 +1396,7 @@ TriMesh::Tuple TriMesh::tuple_from_edge(size_t vid1, size_t vid2, size_t fid) co
     return Tuple(vid1, 3 - (a + b), fid, *this);
 }
 
-TriMesh::Tuple wmtk::TriMesh::tuple_from_vids(size_t vid0, size_t vid1, size_t vid2) const
+TriMesh::Tuple TriMesh::tuple_from_vids(size_t vid0, size_t vid1, size_t vid2) const
 {
     const auto& vf0 = m_vertex_connectivity[vid0];
     const auto& vf1 = m_vertex_connectivity[vid1];
@@ -1436,17 +1436,46 @@ TriMesh::Tuple wmtk::TriMesh::tuple_from_vids(size_t vid0, size_t vid1, size_t v
     return Tuple();
 }
 
-simplex::Vertex wmtk::TriMesh::simplex_from_vertex(const Tuple& t) const
+size_t TriMesh::eid_from_vids(size_t vid0, size_t vid1) const
+{
+    const std::vector<size_t>& fids = m_vertex_connectivity[vid0].m_conn_tris;
+
+    // find face that contain m_vid and v_opp
+    for (const size_t f : fids) {
+        const auto& f_vids = m_tri_connectivity[f].m_indices;
+
+        int local_v0 = -1;
+        int local_v1 = -1;
+        for (size_t i = 0; i < f_vids.size(); ++i) {
+            if (f_vids[i] == vid0) {
+                local_v0 = i;
+            } else if (f_vids[i] == vid1) {
+                local_v1 = i;
+            }
+        }
+        if (local_v1 == -1) {
+            continue;
+        }
+        assert(local_v0 != -1);
+        size_t local_eid = 3 - (local_v0 + local_v1);
+        // fids are sorted --> return smallest fid
+        return 3 * f + local_eid;
+    }
+
+    log_and_throw_error("Could not find edge id for vertices ({},{})", vid0, vid1);
+}
+
+simplex::Vertex TriMesh::simplex_from_vertex(const Tuple& t) const
 {
     return simplex::Vertex(t.vid(*this));
 }
 
-simplex::Edge wmtk::TriMesh::simplex_from_edge(const Tuple& t) const
+simplex::Edge TriMesh::simplex_from_edge(const Tuple& t) const
 {
     return simplex::Edge(t.vid(*this), t.switch_vertex(*this).vid(*this));
 }
 
-simplex::Face wmtk::TriMesh::simplex_from_face(const Tuple& t) const
+simplex::Face TriMesh::simplex_from_face(const Tuple& t) const
 {
     const auto vs = oriented_tri_vids(t.fid(*this));
     return simplex::Face(vs[0], vs[1], vs[2]);

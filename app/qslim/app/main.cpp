@@ -99,7 +99,6 @@ int main(int argc, char** argv)
 
     const double diag = (box_minmax.first - box_minmax.second).norm();
     const double envelope_size = env_rel * diag;
-
     igl::Timer timer;
     timer.start();
     QSLIM m(verts, num_thread);
