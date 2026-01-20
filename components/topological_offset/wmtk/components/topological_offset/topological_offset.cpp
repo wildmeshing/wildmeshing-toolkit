@@ -11,6 +11,7 @@
 #include <igl/is_edge_manifold.h>
 #include <igl/is_vertex_manifold.h>
 #include <igl/remove_unreferenced.h>
+#include <igl/write_triangle_mesh.h>
 #include "Parameters.h"
 #include "TopoOffsetMesh.h"
 #include "read_image_msh.hpp"
@@ -53,10 +54,8 @@ void topological_offset(nlohmann::json json_params)
     // load params
     Parameters params;
     params.tag_label = json_params["tag_label"];
-    // params.wn_threshold = json_params["wn_threshold"];
-    // params.threshold_invert = json_params["threshold_invert"];
-    params.wn_include_range[0] = json_params["wn_include"][0];
-    params.wn_include_range[1] = json_params["wn_include"][1];
+    params.val_include_range[0] = json_params["val_include"][0];
+    params.val_include_range[1] = json_params["val_include"][1];
     params.manifold_union = json_params["manifold_union"];
     params.output_path = resolve_path(root, json_params["output"]).string();
     std::filesystem::path output_filename = params.output_path;
@@ -76,16 +75,16 @@ void topological_offset(nlohmann::json json_params)
     // read image / MSH
     MatrixXd V_input;
     MatrixXi T_input;
-    MatrixXd T_input_tags;
-    std::map<std::string, int> tag_label_map;
+    MatrixXd T_input_tag;
+    // std::map<std::string, int> tag_label_map;
 
     // input is a tet mesh
     logger().info("Input mesh: {}", input_path);
-    read_image_msh(input_path, V_input, T_input, T_input_tags, tag_label_map);
+    read_image_msh(input_path, V_input, T_input, T_input_tag, params.tag_label);
 
     // initialize mesh
     topological_offset::TopoOffsetMesh mesh(params, NUM_THREADS);
-    mesh.init_from_image(V_input, T_input, T_input_tags, tag_label_map);
+    mesh.init_from_image(V_input, T_input, T_input_tag);
     mesh.consolidate_mesh();
 
     // record counts (mostly debugging, this is probably really slow)

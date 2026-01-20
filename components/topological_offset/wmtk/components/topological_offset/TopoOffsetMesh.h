@@ -58,7 +58,7 @@ class TetAttributes
 public:
     bool in_out = false; // in or out of mesh body
     int label = 0;
-    double wn = -999; // default unset value
+    double val = -999; // default unset value
 };
 
 
@@ -170,12 +170,16 @@ private:
     tbb::enumerable_thread_specific<TetSplitCache> tet_split_cache;
 
 public:
-    void init_from_image(
-        const MatrixXd& V,
-        const MatrixXi& T,
-        const MatrixXd& T_tags,
-        const std::map<std::string, int>& tag_label_map);
+    // void init_from_image(
+    //     const MatrixXd& V,
+    //     const MatrixXi& T,
+    //     const MatrixXd& T_tags,
+    //     const std::map<std::string, int>& tag_label_map);
 
+    void init_from_image(
+        const MatrixXd& V, // V by 3
+        const MatrixXi& T, // T by 4
+        const MatrixXd& T_tag); // T by 1
 
     std::pair<size_t, size_t> label_non_manifold(); // return # of non manifold edges, verts
     bool edge_is_manifold(const Tuple& t) const;

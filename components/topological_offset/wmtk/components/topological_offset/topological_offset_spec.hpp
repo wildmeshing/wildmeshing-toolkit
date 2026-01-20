@@ -14,7 +14,7 @@ nlohmann::json topological_offset_spec = R"(
     "optional": [
       "output",
       "tag_label",
-      "wn_include",
+      "val_include",
       "manifold_union",
       "DEBUG_output"
     ]
@@ -45,7 +45,7 @@ nlohmann::json topological_offset_spec = R"(
     "doc": "Tetwise tag label to identify components. If manifold extraction mode, cells assumed to have values 0/1."
   },
   {
-    "pointer": "/wn_include",
+    "pointer": "/val_include",
     "type": "list",
     "default": [
       0.5,
@@ -56,7 +56,7 @@ nlohmann::json topological_offset_spec = R"(
     "doc": "Winding number inclusion range, all tets with winding # in range are taken as input object"
   },
   {
-    "pointer": "/wn_include/*",
+    "pointer": "/val_include/*",
     "type": "float",
     "doc": "Winding number upper/lower bound"
   },

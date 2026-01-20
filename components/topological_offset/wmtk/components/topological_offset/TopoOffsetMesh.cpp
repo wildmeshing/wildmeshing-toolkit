@@ -44,30 +44,28 @@ VertexAttributes::VertexAttributes(const Vector3d& p)
 {}
 
 
-void TopoOffsetMesh::init_from_image(
-    const MatrixXd& V,
-    const MatrixXi& T,
-    const MatrixXd& T_tags,
-    const std::map<std::string, int>& tag_label_map)
+// assumes tag has been found. won't be called otherwise
+void TopoOffsetMesh::init_from_image(const MatrixXd& V, const MatrixXi& T, const MatrixXd& T_tag)
 {
     // assert dimensions
     assert(V.cols() == 3);
     assert(T.cols() == 4);
-    assert(T.rows() == T_tags.rows());
+    assert(T.rows() == T_tag.rows());
+    assert(T_tag.cols() == 1);
 
-    // extract tag of interest and set map
-    if (tag_label_map.count(m_params.tag_label) == 0) { // desired tag not found
-        std::string existing_tags = "";
-        for (const auto& pair : tag_label_map) {
-            existing_tags += (" (" + pair.first + ")");
-        }
-        log_and_throw_error(
-            "Tag label '{}' not found in input mesh. [Tags found:{}]",
-            m_params.tag_label,
-            existing_tags);
-    }
+    // // extract tag of interest and set map
+    // if (tag_label_map.count(m_params.tag_label) == 0) { // desired tag not found
+    //     std::string existing_tags = "";
+    //     for (const auto& pair : tag_label_map) {
+    //         existing_tags += (" (" + pair.first + ")");
+    //     }
+    //     log_and_throw_error(
+    //         "Tag label '{}' not found in input mesh. [Tags found:{}]",
+    //         m_params.tag_label,
+    //         existing_tags);
+    // }
 
-    Eigen::MatrixXd T_tag = T_tags(Eigen::all, tag_label_map.at(m_params.tag_label));
+    // Eigen::MatrixXd T_tag = T_tags(Eigen::all, tag_label_map.at(m_params.tag_label));
 
     // initialize connectivity
     init(T);
@@ -81,12 +79,9 @@ void TopoOffsetMesh::init_from_image(
     auto tets = get_tets();
     for (const Tuple& t : tets) {
         size_t i = t.tid(*this);
-        m_tet_attribute[i].wn = T_tags(i, tag_label_map.at(m_params.tag_label));
-        // if (m_tet_attribute[i].wn > m_params.wn_threshold) {
-        //     m_tet_attribute[i].in_out = true;
-        // }
-        m_tet_attribute[i].in_out = (m_tet_attribute[i].wn > m_params.wn_include_range[0]) &&
-                                    (m_tet_attribute[i].wn < m_params.wn_include_range[1]);
+        m_tet_attribute[i].val = T_tag(i, 0);
+        m_tet_attribute[i].in_out = (m_tet_attribute[i].val > m_params.val_include_range[0]) &&
+                                    (m_tet_attribute[i].val < m_params.val_include_range[1]);
     }
 
     // propagate in_out to faces
@@ -710,9 +705,10 @@ void TopoOffsetMesh::write_input_complex(const std::string& path)
         }
     }
 
-    // get all offset input tets
+    // get all offset input tets ( this should never happen? )
     bool flag = false;
-    for (size_t i = 0; i < tet_size(); i++) {
+    int num_tets = tet_size();
+    for (size_t i = 0; i < num_tets; i++) {
         if (m_tet_attribute[i].label == 1) {
             flag = true;
             auto vids = oriented_tet_vids(i);
@@ -730,6 +726,7 @@ void TopoOffsetMesh::write_input_complex(const std::string& path)
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
     writer = std::make_shared<paraviewo::VTUWriter>();
     writer->write_mesh(path + ".vtu", V, cells, true, false);
+    logger().info("*****6");
 }
 
 
@@ -737,7 +734,7 @@ void TopoOffsetMesh::write_vtu(const std::string& path)
 {
     consolidate_mesh();
     const std::string out_path = path + ".vtu";
-    logger().info("[this may take a while] Write {}", out_path);
+    logger().info("Write {}", out_path);
     const auto& vs = get_vertices();
     const auto& tets = get_tets();
 
@@ -750,13 +747,13 @@ void TopoOffsetMesh::write_vtu(const std::string& path)
     // std::vector<MatrixXi> tags(m_tags_count, MatrixXi(tet_capacity(), 1));
     MatrixXi L(tet_capacity(), 1);
     MatrixXi IN_OUT(tet_capacity(), 1);
-    MatrixXd WN(tet_capacity(), 1);
+    MatrixXd VAL(tet_capacity(), 1);
 
     int index = 0;
     for (const Tuple& t : tets) {
         L(index, 0) = m_tet_attribute[t.tid(*this)].label;
         IN_OUT(index, 0) = m_tet_attribute[t.tid(*this)].in_out;
-        WN(index, 0) = m_tet_attribute[t.tid(*this)].wn;
+        VAL(index, 0) = m_tet_attribute[t.tid(*this)].val;
 
         const auto& loc_vs = oriented_tet_vertices(t);
         for (int j = 0; j < 4; j++) {
@@ -775,7 +772,7 @@ void TopoOffsetMesh::write_vtu(const std::string& path)
 
     writer->add_cell_field("label", L.cast<double>());
     writer->add_cell_field("in_out", IN_OUT.cast<double>());
-    writer->add_cell_field("wn", WN);
+    writer->add_cell_field(m_params.tag_label, VAL);
     writer->write_mesh(out_path, V, T);
 }
 
