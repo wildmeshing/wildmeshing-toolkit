@@ -38,4 +38,9 @@ add_executable(wmtk_app main.cpp)
 target_link_libraries(wmtk_app PRIVATE 
     nlohmann_json::nlohmann_json
     CLI11::CLI11
+    FastEnvelope::FastEnvelope
 )
+
+if(WMTK_PYBIND)
+    add_subdirectory(pywmtk)
+endif()

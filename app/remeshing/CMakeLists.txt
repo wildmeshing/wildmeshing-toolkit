@@ -23,6 +23,9 @@ target_link_libraries(wmtk_remeshing_lib PUBLIC
 	igl::predicates
 	wmtk::sec_lib
 )
+target_link_libraries(wmtk_remeshing_lib PRIVATE
+    FastEnvelope::FastEnvelope
+)
 
 add_subdirectory(app)
 if(WMTK_APP_UNIT_TESTS)

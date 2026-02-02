@@ -43,7 +43,8 @@ void image_simulation(nlohmann::json json_params)
         json_params = spec_engine.inject_defaults(json_params, image_simulation_spec);
     }
 
-    const std::filesystem::path root = json_params["json_input_file"];
+    const std::filesystem::path root =
+        json_params.contains("json_input_file") ? json_params["json_input_file"] : "";
 
     // logger settings
     {

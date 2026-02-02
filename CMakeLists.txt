@@ -71,12 +71,19 @@ include(fenvelope)
 include(nanoflann)
 
 include(simple_bvh)
+include(pybind11)
+include(pybind11_json)
 
 # Sort projects inside the solution
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Generate position independent code by default
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+option(WMTK_PYBIND "Generate python bindings" ON)
+if(WMTK_PYBIND)
+    include(pybind11)
+endif()
 
 # ###############################################################################
 # WildMeshingToolkit library
@@ -147,7 +154,7 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     add_subdirectory(tests)
 
     # wmtk_app
-    add_subdirectory(app)
+    add_subdirectory(app) # also contains python bindings
     # components (automatically added to the app)
     add_subdirectory(components)
 endif()
