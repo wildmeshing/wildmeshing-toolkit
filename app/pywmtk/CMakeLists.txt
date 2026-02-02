@@ -6,4 +6,8 @@ target_link_libraries(pywmtk PUBLIC
     nlohmann_json::nlohmann_json
 )
 
+if(NOT MSVC)
+    target_compile_options(pywmtk PUBLIC -fPIC)
+endif(NOT MSVC)
+
 set_target_properties(pywmtk PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
