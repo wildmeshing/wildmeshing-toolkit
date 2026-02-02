@@ -1,23 +1,23 @@
+#pragma once
+#include <nlohmann/json.hpp>
+namespace {
+
+nlohmann::json tet_implicits_spec = R"(
 [
   {
     "pointer": "/",
     "type": "object",
-    "required": ["application", "input"],
+    "required": ["application", "input", "operation"],
     "optional": [
       "output",
-      "ijk_to_ras",
-      "skip_simplify",
-      "use_sample_envelope",
-      "use_tetgen",
+      "input_tags",
+      "output_tags",
       "num_threads",
-      "max_iterations",
-      "surface_smoothing",
       "eps_rel",
       "eps",
-      "length_rel",
-      "stop_energy",
+      "d_rel",
+      "d",
       "preserve_topology",
-      "edge_length_convergence",
       "write_vtu",
       "log_file",
       "report",
@@ -28,19 +28,26 @@
   {
     "pointer": "/application",
     "type": "string",
-    "options": ["tet_remeshing"],
-    "doc": "Application name must be tet_remeshing."
+    "options": ["tet_implicits"],
+    "doc": "Application name must be tet_implicits."
   },
   {
     "pointer": "/input",
     "type": "list",
     "doc": "List of triangular input meshes.",
-    "min": 1
+    "min": 1,
+    "max": 1
   },
   {
     "pointer": "/input/*",
     "type": "string",
     "doc": "Triangular input mesh."
+  },
+  {
+    "pointer": "/operation",
+    "type": "string",
+    "options": ["separate", "tight_seal"],
+    "doc": "The operation to be performed."
   },
   {
     "pointer": "/output",
@@ -49,63 +56,44 @@
     "doc": "Output file name (without extension)."
   },
   {
-    "pointer": "/ijk_to_ras",
+    "pointer": "/input_tags",
     "type": "list",
-    "doc": "Transformation matrix (4x4 homogeneous coordinates) from image coordinates to the RAS coordinate system.",
-    "min": 4,
-    "max": 4,
-    "default": [
-      [1, 0, 0, 0],
-      [0, 1, 0, 0],
-      [0, 0, 1, 0],
-      [0, 0, 0, 1]
-    ]
+    "default": [],
+    "doc": "Input tags for the operation."
   },
   {
-    "pointer": "/ijk_to_ras/*",
+    "pointer": "/input_tags/*",
     "type": "list",
-    "min": 4,
-    "max": 4
+    "min": 2,
+    "max": 2,
+    "doc": "Tags are given by the tag_attribute ID and the ID within that tag_attribute. For example, if tag_attributes are [tag_0, tag_1], then the tag 2 in tag_0 is [0,2]."
   },
   {
-    "pointer": "/ijk_to_ras/*/*",
-    "type": "float"
+    "pointer": "/input_tags/*/*",
+    "type": "int"
   },
   {
-    "pointer": "/skip_simplify",
-    "type": "bool",
-    "default": false,
-    "doc": "If true, input simplification will be skipped."
+    "pointer": "/output_tags",
+    "type": "list",
+    "default": [],
+    "doc": "Output tags for the operation."
   },
   {
-    "pointer": "/use_sample_envelope",
-    "type": "bool",
-    "default": false,
-    "doc": "Use sample envelope instead of exact one."
+    "pointer": "/output_tags/*",
+    "type": "list",
+    "min": 2,
+    "max": 2,
+    "doc": "Tags are given by the tag_attribute ID and the ID within that tag_attribute. For example, if tag_attributes are [tag_0, tag_1], then the tag 2 in tag_0 is [0,2]."
   },
   {
-    "pointer": "/use_tetgen",
-    "type": "bool",
-    "default": false,
-    "doc": "Use tetgen for embedding an image. Potentially faster but could fail."
+    "pointer": "/output_tags/*/*",
+    "type": "int"
   },
   {
     "pointer": "/num_threads",
     "type": "int",
     "default": 0,
     "doc": "Number of threads used by the application"
-  },
-  {
-    "pointer": "/max_iterations",
-    "type": "int",
-    "default": 80,
-    "doc": "Maximum iterations before stopping."
-  },
-  {
-    "pointer": "/surface_smoothing",
-    "type": "int",
-    "default": 0,
-    "doc": "When greater 0, remeshing will be performed multiple times, and before each iteration, the surface is smoothed."
   },
   {
     "pointer": "/eps_rel",
@@ -120,28 +108,22 @@
     "doc": "Absolute envelope thickness. If this value is negative, the relative envelope thickness is used to compute the absolute one."
   },
   {
-    "pointer": "/length_rel",
+    "pointer": "/d_rel",
     "type": "float",
     "default": 5e-2,
-    "doc": "Target edge length relative to the bounding box"
+    "doc": "Variable d relative to the bounding box"
   },
   {
-    "pointer": "/stop_energy",
+    "pointer": "/d",
     "type": "float",
-    "default": 1000,
-    "doc": "Target energy. If all tets have an energy below this, tetwild will stop."
+    "default": -1,
+    "doc": "Variable d"
   },
   {
     "pointer": "/preserve_topology",
     "type": "bool",
     "default": true,
     "doc": "Preserve topology of input."
-  },
-  {
-    "pointer": "/edge_length_convergence",
-    "type": "float",
-    "default": 1e-2,
-    "doc": "The iteration will stop once the relative change of the mean and standard deviation of all edge lengths is below that value."
   },
   {
     "pointer": "/write_vtu",
@@ -174,3 +156,6 @@
     "doc": "Perform sanity checks after every operation. This can be very slow and should only be used for debugging."
   }
 ]
+)"_json;
+
+}

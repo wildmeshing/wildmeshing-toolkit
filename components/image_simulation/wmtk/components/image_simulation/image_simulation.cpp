@@ -72,8 +72,12 @@ void image_simulation(nlohmann::json json_params)
     params.eps = json_params["eps"];
     params.lr = json_params["length_rel"];
     params.stop_energy = json_params["stop_energy"];
+    params.preserve_topology = json_params["preserve_topology"];
 
     const bool write_vtu = json_params["write_vtu"];
+
+    params.debug_output = json_params["DEBUG_output"];
+    params.perform_sanity_checks = json_params["DEBUG_sanity_checks"];
 
     std::filesystem::path output_filename = params.output_path;
 
@@ -87,7 +91,7 @@ void image_simulation(nlohmann::json json_params)
 
     auto get_unique_vtu_name = [&output_filename]() -> std::string {
         static size_t vtu_counter = 0;
-        return fmt::format("{}_{}.vtu", output_filename.string(), vtu_counter++);
+        return fmt::format("{}_{}", output_filename.string(), vtu_counter++);
     };
 
     // read image / MSH

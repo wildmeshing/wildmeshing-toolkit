@@ -48,7 +48,7 @@ void ImageSimulationMesh::mesh_improvement(int max_its)
 
     compute_vertex_partition_morton();
 
-    // write_vtu(fmt::format("debug_{}.vtu", m_debug_print_counter++));
+    // write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
 
     wmtk::logger().info("========it pre========");
     local_operations({{0, 1, 0, 0}}, false);
@@ -127,9 +127,9 @@ std::tuple<double, double> ImageSimulationMesh::local_operations(
         logger().info("Perform sanity checks...");
         const auto faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
         for (const auto& verts : faces) {
-            const auto& p0 = m_vertex_attribute[verts[0]].m_posf;
-            const auto& p1 = m_vertex_attribute[verts[1]].m_posf;
-            const auto& p2 = m_vertex_attribute[verts[2]].m_posf;
+            const auto p0 = m_vertex_attribute[verts[0]].m_posf;
+            const auto p1 = m_vertex_attribute[verts[1]].m_posf;
+            const auto p2 = m_vertex_attribute[verts[2]].m_posf;
             if (m_envelope->is_outside({{p0, p1, p2}})) {
                 logger().error("Face {} is outside!", verts);
             }
@@ -164,8 +164,8 @@ std::tuple<double, double> ImageSimulationMesh::local_operations(
                 split_all_edges();
                 wmtk::logger().info(
                     "#vertices {}, #tets {} after split",
-                    vert_capacity(),
-                    tet_capacity());
+                    get_vertices().size(),
+                    get_tets().size());
                 // auto faces = get_faces();
                 // for (auto f : faces) {
                 //     auto x = f.fid(*this);
@@ -178,9 +178,11 @@ std::tuple<double, double> ImageSimulationMesh::local_operations(
                 //     // exit(0);
                 // }
             }
-            // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
+            if (m_params.debug_output) {
+                write_vtu(fmt::format("debug_{}", debug_print_counter++));
+            }
             auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("split max energy = {} avg = {}", max_energy, avg_energy);
+            wmtk::logger().info("split max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             sanity_checks();
         } else if (i == 1) {
             for (int n = 0; n < ops[i]; n++) {
@@ -188,8 +190,8 @@ std::tuple<double, double> ImageSimulationMesh::local_operations(
                 collapse_all_edges(collapse_limit_length);
                 wmtk::logger().info(
                     "#vertices {}, #tets {} after collapse",
-                    vert_capacity(),
-                    tet_capacity());
+                    get_vertices().size(),
+                    get_tets().size());
                 // auto faces = get_faces();
                 // for (auto f : faces) {
                 //     auto x = f.fid(*this);
@@ -202,37 +204,49 @@ std::tuple<double, double> ImageSimulationMesh::local_operations(
                 //     // exit(0);
                 // }
             }
-            // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
+            if (m_params.debug_output) {
+                write_vtu(fmt::format("debug_{}", debug_print_counter++));
+            }
             auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("collapse max energy = {} avg = {}", max_energy, avg_energy);
+            wmtk::logger().info("collapse max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             sanity_checks();
         } else if (i == 2) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==swapping {}==", n);
-                swap_all_edges_44();
-                swap_all_edges();
-                swap_all_faces();
+                int cnt_success = 0;
+                cnt_success += swap_all_edges_all();
+                // cnt_success += swap_all_edges_56();
+                // cnt_success += swap_all_edges_44();
+                // cnt_success += swap_all_edges();
+                cnt_success += swap_all_faces();
+                if (cnt_success == 0) {
+                    break;
+                }
             }
-            // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
+            if (m_params.debug_output) {
+                write_vtu(fmt::format("debug_{}", debug_print_counter++));
+            }
             auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("swap max energy = {} avg = {}", max_energy, avg_energy);
+            wmtk::logger().info("swap max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             sanity_checks();
         } else if (i == 3) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==smoothing {}==", n);
                 smooth_all_vertices();
             }
-            // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
+            if (m_params.debug_output) {
+                write_vtu(fmt::format("debug_{}", debug_print_counter++));
+            }
             auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("smooth max energy = {} avg = {}", max_energy, avg_energy);
+            wmtk::logger().info("smooth max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             sanity_checks();
         }
         // output_faces(fmt::format("out-op{}.obj", i), [](auto& f) { return f.m_is_surface_fs; });
     }
-    write_vtu(fmt::format("debug_{}.vtu", debug_print_counter++));
+    // write_vtu(fmt::format("debug_{}", debug_print_counter++));
     energy = get_max_avg_energy();
-    wmtk::logger().info("max energy = {}", std::get<0>(energy));
-    wmtk::logger().info("avg energy = {}", std::get<1>(energy));
+    wmtk::logger().info("max energy = {:.6}", std::get<0>(energy));
+    wmtk::logger().info("avg energy = {:.6}", std::get<1>(energy));
     wmtk::logger().info("time = {}", timer.getElapsedTime());
 
 
@@ -470,10 +484,9 @@ void ImageSimulationMesh::init_envelope(const MatrixXd& V, const MatrixXi& F)
         m_F_envelope[i] = F.row(i);
     }
 
-    m_envelope = std::make_shared<ExactEnvelope>();
+    m_envelope = std::make_shared<SampleEnvelope>();
+    m_envelope->use_exact = true;
     m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
-    triangles_tree = std::make_shared<SampleEnvelope>();
-    triangles_tree->init(m_V_envelope, m_F_envelope, m_envelope_eps);
 }
 
 double ImageSimulationMesh::get_length2(const Tuple& l) const
@@ -583,26 +596,21 @@ bool ImageSimulationMesh::is_inverted_f(const Tuple& loc) const
     return true;
 }
 
-bool ImageSimulationMesh::is_inverted(const Tuple& loc) const
+bool ImageSimulationMesh::is_inverted(const std::array<size_t, 4>& vs) const
 {
     // Return a positive value if the point pd lies below the
     // plane passing through pa, pb, and pc; "below" is defined so
     // that pa, pb, and pc appear in counterclockwise order when
     // viewed from above the plane.
 
-    auto vs = oriented_tet_vertices(loc);
-
-    //
-    if (m_vertex_attribute[vs[0].vid(*this)].m_is_rounded &&
-        m_vertex_attribute[vs[1].vid(*this)].m_is_rounded &&
-        m_vertex_attribute[vs[2].vid(*this)].m_is_rounded &&
-        m_vertex_attribute[vs[3].vid(*this)].m_is_rounded) {
+    if (m_vertex_attribute[vs[0]].m_is_rounded && m_vertex_attribute[vs[1]].m_is_rounded &&
+        m_vertex_attribute[vs[2]].m_is_rounded && m_vertex_attribute[vs[3]].m_is_rounded) {
         igl::predicates::exactinit();
         auto res = igl::predicates::orient3d(
-            m_vertex_attribute[vs[0].vid(*this)].m_posf,
-            m_vertex_attribute[vs[1].vid(*this)].m_posf,
-            m_vertex_attribute[vs[2].vid(*this)].m_posf,
-            m_vertex_attribute[vs[3].vid(*this)].m_posf);
+            m_vertex_attribute[vs[0]].m_posf,
+            m_vertex_attribute[vs[1]].m_posf,
+            m_vertex_attribute[vs[2]].m_posf,
+            m_vertex_attribute[vs[3]].m_posf);
         int result;
         if (res == igl::predicates::Orientation::POSITIVE)
             result = 1;
@@ -615,19 +623,22 @@ bool ImageSimulationMesh::is_inverted(const Tuple& loc) const
             return false;
         return true;
     } else {
-        Vector3r n = ((m_vertex_attribute[vs[1].vid(*this)].m_pos) -
-                      m_vertex_attribute[vs[0].vid(*this)].m_pos)
-                         .cross(
-                             (m_vertex_attribute[vs[2].vid(*this)].m_pos) -
-                             m_vertex_attribute[vs[0].vid(*this)].m_pos);
-        Vector3r d = (m_vertex_attribute[vs[3].vid(*this)].m_pos) -
-                     m_vertex_attribute[vs[0].vid(*this)].m_pos;
+        Vector3r n =
+            ((m_vertex_attribute[vs[1]].m_pos) - m_vertex_attribute[vs[0]].m_pos)
+                .cross((m_vertex_attribute[vs[2]].m_pos) - m_vertex_attribute[vs[0]].m_pos);
+        Vector3r d = (m_vertex_attribute[vs[3]].m_pos) - m_vertex_attribute[vs[0]].m_pos;
         auto res = n.dot(d);
         if (res > 0) // predicates returns pos value: non-inverted
             return false;
         else
             return true;
     }
+}
+
+bool ImageSimulationMesh::is_inverted(const Tuple& loc) const
+{
+    auto vs = oriented_tet_vids(loc);
+    return is_inverted(vs);
 }
 
 bool ImageSimulationMesh::round(const Tuple& v)
@@ -653,11 +664,10 @@ bool ImageSimulationMesh::round(const Tuple& v)
     return true;
 }
 
-double ImageSimulationMesh::get_quality(const Tuple& loc) const
+double ImageSimulationMesh::get_quality(const std::array<size_t, 4>& its) const
 {
     std::array<Vector3d, 4> ps;
-    auto its = oriented_tet_vids(loc);
-    auto use_rational = false;
+    bool use_rational = false;
     for (auto k = 0; k < 4; k++) {
         ps[k] = m_vertex_attribute[its[k]].m_posf;
         if (!m_vertex_attribute[its[k]].m_is_rounded) {
@@ -680,6 +690,12 @@ double ImageSimulationMesh::get_quality(const Tuple& loc) const
     }
     if (std::isinf(energy) || std::isnan(energy) || energy < 27 - 1e-3) return MAX_ENERGY;
     return energy;
+}
+
+double ImageSimulationMesh::get_quality(const Tuple& loc) const
+{
+    auto its = oriented_tet_vids(loc);
+    return get_quality(its);
 }
 
 
@@ -755,6 +771,61 @@ bool ImageSimulationMesh::is_edge_on_bbox(const Tuple& loc)
     for (size_t vid : n_vids) {
         auto [_, fid] = tuple_from_face({{v1_id, v2_id, vid}});
         if (m_face_attribute[fid].m_is_bbox_fs >= 0) return true;
+    }
+
+    return false;
+}
+
+bool ImageSimulationMesh::is_vertex_on_boundary(const size_t e0)
+{
+    if (!m_vertex_attribute.at(e0).m_is_on_open_boundary) {
+        return false;
+    }
+
+    const auto neigh_vids = get_one_ring_vids_for_vertex(e0);
+    const auto e0_tids = get_one_ring_tids_for_vertex(e0);
+
+    for (const size_t e1 : neigh_vids) {
+        if (!m_vertex_attribute.at(e1).m_is_on_open_boundary) {
+            continue;
+        }
+        int cnt = 0;
+        for (int t_id : e0_tids) {
+            const auto vs = oriented_tet_vids(t_id);
+            std::array<int, 4> opp_js; // DZ: all vertices that are adjacent to e1 except for e2
+            int ii = 0;
+            for (int j = 0; j < 4; j++) {
+                if (vs[j] == e0 || vs[j] == e1) {
+                    continue;
+                }
+                opp_js[ii++] = j;
+            }
+            // DZ: if the tet contains e1 and e2, then ii == 2
+            if (ii != 2) {
+                continue;
+            }
+            // DZ: opp_js vertices form a tet together with v1,v2
+            if (m_vertex_attribute.at(vs[opp_js[0]]).m_is_on_surface) {
+                const auto [f0_tup, f0_id] = tuple_from_face({{e0, e1, vs[opp_js[0]]}});
+                if (m_face_attribute.at(f0_id).m_is_surface_fs) {
+                    cnt++;
+                }
+            }
+            if (m_vertex_attribute.at(vs[opp_js[1]]).m_is_on_surface) {
+                const auto [f1_tup, f1_id] = tuple_from_face({{e0, e1, vs[opp_js[1]]}});
+                if (m_face_attribute.at(f1_id).m_is_surface_fs) {
+                    cnt++;
+                }
+            }
+            if (cnt > 2) {
+                break;
+            }
+        }
+        // all faces are visited twice, so cnt == 2 means there is one boundary face
+        if (cnt == 2) {
+            // this is a boundary edge
+            return true;
+        }
     }
 
     return false;
@@ -1127,20 +1198,27 @@ int ImageSimulationMesh::flood_fill()
 
 void ImageSimulationMesh::write_vtu(const std::string& path)
 {
-    consolidate_mesh();
-    logger().info("Write {}", path);
+    // consolidate_mesh();
+    const std::string out_path = path + ".vtu";
+    logger().info("Write {}", out_path);
     const auto& vs = get_vertices();
     const auto& tets = get_tets();
+    const auto faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
 
-    Eigen::MatrixXd V(vs.size(), 3);
-    Eigen::MatrixXi T(tets.size(), 4);
+    Eigen::MatrixXd V(vert_capacity(), 3);
+    Eigen::MatrixXi T(tet_capacity(), 4);
+    Eigen::MatrixXi F(faces.size(), 3);
+
+    V.setZero();
+    T.setZero();
+    F.setZero();
 
     Eigen::VectorXd v_sizing_field(vert_capacity());
     v_sizing_field.setZero();
 
-    Eigen::MatrixXd parts(tets.size(), 1);
-    std::vector<MatrixXd> tags(m_tags_count, MatrixXd(tets.size(), 1));
-    Eigen::MatrixXd amips(tets.size(), 1);
+    Eigen::MatrixXd parts(tet_capacity(), 1);
+    std::vector<MatrixXd> tags(m_tags_count, MatrixXd(tet_capacity(), 1));
+    Eigen::MatrixXd amips(tet_capacity(), 1);
 
     int index = 0;
     for (const Tuple& t : tets) {
@@ -1158,6 +1236,12 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
         ++index;
     }
 
+    for (size_t i = 0; i < faces.size(); ++i) {
+        for (size_t j = 0; j < 3; ++j) {
+            F(i, j) = faces[i][j];
+        }
+    }
+
     for (const Tuple& v : vs) {
         const size_t vid = v.vid(*this);
         V.row(vid) = m_vertex_attribute[vid].m_posf;
@@ -1173,7 +1257,18 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
     }
     writer->add_cell_field("quality", amips);
     writer->add_field("sizing_field", v_sizing_field);
-    writer->write_mesh(path, V, T);
+    writer->write_mesh(path + ".vtu", V, T);
+
+    // surface
+    {
+        const auto surf_out_path = path + "_surf.vtu";
+        std::shared_ptr<paraviewo::ParaviewWriter> surf_writer;
+        surf_writer = std::make_shared<paraviewo::VTUWriter>();
+        surf_writer->add_field("sizing_field", v_sizing_field);
+
+        logger().info("Write {}", surf_out_path);
+        surf_writer->write_mesh(surf_out_path, V, F);
+    }
 }
 
 void ImageSimulationMesh::write_surface(const std::string& path) const

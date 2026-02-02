@@ -29,6 +29,10 @@ public:
     bool m_is_on_surface = false;
     std::vector<int> on_bbox_faces; // same as is_bbox_fs?
 
+    // for smoothing
+    bool m_is_on_feature_edge = false;
+    bool m_is_frozen = false;
+
     double m_sizing_scalar = 1;
 
     size_t partition_id = 0;
@@ -101,14 +105,13 @@ public:
     Parameters& m_params;
     std::vector<Vector3d> m_V_envelope;
     std::vector<Vector3i> m_F_envelope;
-    std::shared_ptr<Envelope> m_envelope;
-    // for surface projection
-    std::shared_ptr<SampleEnvelope> triangles_tree;
+    std::shared_ptr<SampleEnvelope> m_envelope;
     double m_envelope_eps = -1;
 
     // for open boundary
-    wmtk::ExactEnvelope m_open_boundary_envelope; // todo: add sample envelope option
-    SampleEnvelope boundaries_tree;
+    SampleEnvelope m_open_boundary_envelope; // todo: add sample envelope option
+    std::shared_ptr<SimpleBVH::BVH> m_smooth_surface; // used for smoothing
+    std::shared_ptr<SimpleBVH::BVH> m_smooth_edges;
 
     TetRemeshingMesh(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
         : m_params(_m_params)
@@ -119,6 +122,7 @@ public:
         p_face_attrs = &m_face_attribute;
         p_tet_attrs = &m_tet_attribute;
         m_collapse_check_link_condition = false;
+        m_collapse_check_manifold = false;
     }
 
     ~TetRemeshingMesh() {}
@@ -267,6 +271,17 @@ public:
 
     void init_envelope(const MatrixXd& V, const MatrixXi& F);
 
+    void init_surface_smoothing(
+        const MatrixXd& VF,
+        const MatrixXi& FF,
+        const MatrixXd& VE,
+        const MatrixXi& EE);
+    /**
+     * @brief Set feature edge attributes for vertices.
+     * Used in smoothing.
+     */
+    void init_feature_edges();
+
     double get_length2(const Tuple& l) const;
 
     ////// Attributes related
@@ -283,33 +298,53 @@ public:
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
 
+    void pull_towards_smooth_surface();
+
     void collapse_all_edges();
     bool collapse_edge_before(const Tuple& t) override;
     bool collapse_edge_after(const Tuple& t) override;
 
-    void swap_all_edges_44();
+    size_t swap_all_edges_44();
     bool swap_edge_44_before(const Tuple& t) override;
+    double swap_edge_44_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
+        override;
     bool swap_edge_44_after(const Tuple& t) override;
 
-    void swap_all_edges();
+    size_t swap_all_edges_56();
+    bool swap_edge_56_before(const Tuple& t) override;
+    double swap_edge_56_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
+        override;
+    bool swap_edge_56_after(const Tuple& t) override;
+
+    size_t swap_all_edges_32();
     bool swap_edge_before(const Tuple& t) override;
     bool swap_edge_after(const Tuple& t) override;
 
-    void swap_all_faces();
+    size_t swap_all_faces();
     bool swap_face_before(const Tuple& t) override;
     bool swap_face_after(const Tuple& t) override;
+
+    size_t swap_all_edges_all();
 
     /**
      * @brief Inversion check using only floating point numbers.
      */
     bool is_inverted_f(const Tuple& loc) const;
+    bool is_inverted(const std::array<size_t, 4>& vs) const;
     bool is_inverted(const Tuple& loc) const;
+    double get_quality(const std::array<size_t, 4>& vs) const;
     double get_quality(const Tuple& loc) const;
 
     //
     bool is_edge_on_surface(const Tuple& loc);
     bool is_edge_on_bbox(const Tuple& loc);
+    /**
+     * brief Check if the vertex has an incident boundary edge.
+     * This performs a topological check.
+     */
+    bool is_vertex_on_boundary(const size_t vid);
     //
+    void surface_smoothing(int max_its = 2);
     void mesh_improvement(int max_its = 80);
     std::tuple<double, double> local_operations(const std::array<int, 4>& ops);
     std::tuple<double, double> get_max_avg_energy();
@@ -387,6 +422,7 @@ private:
         // all edges incident to the deleted vertex(v1) that are on the open boundary
         std::vector<std::array<size_t, 2>> boundary_edges;
         std::vector<size_t> changed_tids;
+        std::vector<double> changed_energies;
 
         std::vector<std::array<size_t, 2>> failed_edges;
 
@@ -486,6 +522,8 @@ public:
 
     // for boolean operations
     int flood_fill();
+
+    void get_surface(MatrixXd& V, MatrixXi& F) const;
 
     void write_vtu(const std::string& path);
 

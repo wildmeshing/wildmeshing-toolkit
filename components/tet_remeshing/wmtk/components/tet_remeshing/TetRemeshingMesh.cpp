@@ -38,6 +38,39 @@ VertexAttributes::VertexAttributes(const Vector3d& p)
     : m_posf(p)
 {}
 
+void TetRemeshingMesh::surface_smoothing(int max_its)
+{
+    log_and_throw_error("code was not tested");
+
+    for (size_t it = 0; it < max_its; ++it) {
+        wmtk::logger().info("\n========surface smoothing it {}========", it);
+        init_feature_edges(); // TODO vertex tags for feature egdes and frozen vertices are broken!
+        if (m_params.debug_output) {
+            write_vtu(fmt::format("debug_{}", debug_print_counter++));
+        }
+
+        pull_towards_smooth_surface();
+
+        if (m_params.debug_output) {
+            write_vtu(fmt::format("debug_{}", debug_print_counter++));
+        }
+
+        // update envelope
+        {
+            m_envelope = nullptr;
+            m_V_envelope.clear();
+            m_F_envelope.clear();
+            MatrixXd V;
+            MatrixXi F;
+            get_surface(V, F);
+            init_envelope(V, F);
+        }
+
+        // tetwild
+        local_operations({{1, 1, 1, 1}});
+    }
+}
+
 void TetRemeshingMesh::mesh_improvement(int max_its)
 {
     ////preprocessing
@@ -138,11 +171,14 @@ std::tuple<double, double> TetRemeshingMesh::local_operations(const std::array<i
                 split_all_edges();
                 wmtk::logger().info(
                     "#vertices {}, #tets {} after split",
-                    vert_capacity(),
-                    tet_capacity());
+                    get_vertices().size(),
+                    get_tets().size());
+            }
+            if (m_params.debug_output) {
+                write_vtu(fmt::format("debug_{}", debug_print_counter++));
             }
             auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("split max energy = {:.4} avg = {:.4}", max_energy, avg_energy);
+            wmtk::logger().info("split max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             auto [mean_el, dev_el] = get_mean_dev_edge_length();
             wmtk::logger().info("split mean edge length = {:.4} dev = {:.4}", mean_el, dev_el);
             sanity_checks();
@@ -152,20 +188,32 @@ std::tuple<double, double> TetRemeshingMesh::local_operations(const std::array<i
                 collapse_all_edges();
                 wmtk::logger().info(
                     "#vertices {}, #tets {} after collapse",
-                    vert_capacity(),
-                    tet_capacity());
+                    get_vertices().size(),
+                    get_tets().size());
+            }
+            if (m_params.debug_output) {
+                write_vtu(fmt::format("debug_{}", debug_print_counter++));
             }
             auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("collapse max energy = {:.4} avg = {:.4}", max_energy, avg_energy);
+            wmtk::logger().info("collapse max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             auto [mean_el, dev_el] = get_mean_dev_edge_length();
             wmtk::logger().info("collapse mean edge length = {:.4} dev = {:.4}", mean_el, dev_el);
             sanity_checks();
         } else if (i == 2) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==swapping {}==", n);
-                swap_all_edges_44();
-                swap_all_edges();
-                swap_all_faces();
+                int cnt_success = 0;
+                cnt_success += swap_all_edges_all();
+                // cnt_success += swap_all_edges_56();
+                // cnt_success += swap_all_edges_44();
+                // cnt_success += swap_all_edges();
+                cnt_success += swap_all_faces();
+                if (cnt_success == 0) {
+                    break;
+                }
+            }
+            if (m_params.debug_output) {
+                write_vtu(fmt::format("debug_{}", debug_print_counter++));
             }
             auto [max_energy, avg_energy] = get_max_avg_energy();
             wmtk::logger().info("swap max energy = {:.4} avg = {:.4}", max_energy, avg_energy);
@@ -178,16 +226,16 @@ std::tuple<double, double> TetRemeshingMesh::local_operations(const std::array<i
                 smooth_all_vertices();
             }
             auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("smooth max energy = {:.4} avg = {:.4}", max_energy, avg_energy);
+            wmtk::logger().info("smooth max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             auto [mean_el, dev_el] = get_mean_dev_edge_length();
             wmtk::logger().info("smooth mean edge length = {:.4} dev = {:.4}", mean_el, dev_el);
             sanity_checks();
         }
     }
-    write_vtu(fmt::format("debug_{}.vtu", debug_print_counter++));
+    // write_vtu(fmt::format("debug_{}", debug_print_counter++));
     energy = get_max_avg_energy();
-    wmtk::logger().info("max energy = {}", std::get<0>(energy));
-    wmtk::logger().info("avg energy = {}", std::get<1>(energy));
+    wmtk::logger().info("max energy = {:.6}", std::get<0>(energy));
+    wmtk::logger().info("avg energy = {:.6}", std::get<1>(energy));
     wmtk::logger().info("time = {}", timer.getElapsedTime());
 
 
@@ -487,10 +535,85 @@ void TetRemeshingMesh::init_envelope(const MatrixXd& V, const MatrixXi& F)
         m_F_envelope[i] = F.row(i);
     }
 
-    m_envelope = std::make_shared<ExactEnvelope>();
+    m_envelope = std::make_shared<SampleEnvelope>();
+    m_envelope->use_exact = true;
     m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
-    triangles_tree = std::make_shared<SampleEnvelope>();
-    triangles_tree->init(m_V_envelope, m_F_envelope, m_envelope_eps);
+}
+
+void TetRemeshingMesh::init_surface_smoothing(
+    const MatrixXd& VF,
+    const MatrixXi& FF,
+    const MatrixXd& VE,
+    const MatrixXi& EE)
+{
+    assert(FF.cols() == 3);
+    assert(EE.cols() == 2);
+
+    m_smooth_surface = std::make_shared<SimpleBVH::BVH>();
+    m_smooth_surface->init(VF, FF, 0);
+
+    m_smooth_edges = std::make_shared<SimpleBVH::BVH>();
+    m_smooth_edges->init(VE, EE, 0);
+}
+
+void TetRemeshingMesh::init_feature_edges()
+{
+    assert(m_smooth_surface);
+    assert(m_smooth_edges);
+
+    // count how many incident feature edges a vertex has
+    std::vector<size_t> v_count(vert_capacity(), 0);
+
+    for (size_t i = 0; i < v_count.size(); ++i) {
+        m_vertex_attribute[i].m_is_on_feature_edge = false;
+        m_vertex_attribute[i].m_is_frozen = true;
+    }
+
+    for (const Tuple& t : get_edges()) {
+        const auto tets = get_incident_tets_for_edge(t);
+        const size_t v0 = t.vid(*this);
+        const size_t v1 = t.switch_vertex(*this).vid(*this);
+
+        if (!m_vertex_attribute[v0].m_is_on_surface || !m_vertex_attribute[v1].m_is_on_surface) {
+            continue;
+        }
+
+        size_t n_faces = 0;
+
+        const simplex::Edge edge(v0, v1);
+        for (const Tuple& t : tets) {
+            const simplex::Tet tet = simplex_from_tet(t);
+            const simplex::Edge opp = tet.opposite_edge(edge);
+            for (const size_t v2 : opp.vertices()) {
+                if (!m_vertex_attribute[v2].m_is_on_surface) {
+                    continue;
+                }
+                const auto [_, fid] = tuple_from_face({{v0, v1, v2}});
+                if (m_face_attribute[fid].m_is_surface_fs) {
+                    ++n_faces;
+                }
+            }
+        }
+
+        if (n_faces == 4) { // every faces is counted twice
+            continue;
+        }
+
+        m_vertex_attribute[v0].m_is_on_feature_edge = true;
+        m_vertex_attribute[v1].m_is_on_feature_edge = true;
+        ++v_count[v0];
+        ++v_count[v1];
+    }
+
+    for (size_t i = 0; i < v_count.size(); ++i) {
+        if (!m_vertex_attribute[i].m_is_on_feature_edge) {
+            continue;
+        }
+        if (v_count[i] != 2) {
+            continue;
+        }
+        m_vertex_attribute[i].m_is_frozen = true;
+    }
 }
 
 double TetRemeshingMesh::get_length2(const Tuple& l) const
@@ -698,35 +821,61 @@ bool TetRemeshingMesh::is_inverted_f(const Tuple& loc) const
     return true;
 }
 
-bool TetRemeshingMesh::is_inverted(const Tuple& loc) const
+bool TetRemeshingMesh::is_inverted(const std::array<size_t, 4>& vs) const
 {
-    return is_inverted_f(loc);
+    // Return a positive value if the point pd lies below the
+    // plane passing through pa, pb, and pc; "below" is defined so
+    // that pa, pb, and pc appear in counterclockwise order when
+    // viewed from above the plane.
+
+    igl::predicates::exactinit();
+    auto res = igl::predicates::orient3d(
+        m_vertex_attribute[vs[0]].m_posf,
+        m_vertex_attribute[vs[1]].m_posf,
+        m_vertex_attribute[vs[2]].m_posf,
+        m_vertex_attribute[vs[3]].m_posf);
+    int result;
+    if (res == igl::predicates::Orientation::POSITIVE)
+        result = 1;
+    else if (res == igl::predicates::Orientation::NEGATIVE)
+        result = -1;
+    else
+        result = 0;
+
+    if (result < 0) // neg result == pos tet (tet origin from geogram delaunay)
+        return false;
+    return true;
 }
 
-double TetRemeshingMesh::get_quality(const Tuple& loc) const
+bool TetRemeshingMesh::is_inverted(const Tuple& loc) const
+{
+    auto vs = oriented_tet_vids(loc);
+    return is_inverted(vs);
+}
+
+double TetRemeshingMesh::get_quality(const std::array<size_t, 4>& its) const
 {
     std::array<Vector3d, 4> ps;
-    const auto its = oriented_tet_vids(loc);
-
-    for (auto k = 0; k < 4; k++) {
+    for (int k = 0; k < 4; k++) {
         ps[k] = m_vertex_attribute[its[k]].m_posf;
     }
-
     double energy = -1.;
+    {
+        std::array<double, 12> T;
+        for (int k = 0; k < 4; k++)
+            for (int j = 0; j < 3; j++) T[k * 3 + j] = ps[k][j];
 
-    std::array<double, 12> T;
-    for (size_t k = 0; k < 4; k++) {
-        for (size_t j = 0; j < 3; j++) {
-            T[k * 3 + j] = ps[k][j];
-        }
+        energy = wmtk::AMIPS_energy_stable_p3<wmtk::Rational>(T);
     }
-
-    energy = wmtk::AMIPS_energy_stable_p3<wmtk::Rational>(T);
-
     if (std::isinf(energy) || std::isnan(energy) || energy < 27 - 1e-3) return MAX_ENERGY;
     return energy;
 }
 
+double TetRemeshingMesh::get_quality(const Tuple& loc) const
+{
+    auto its = oriented_tet_vids(loc);
+    return get_quality(its);
+}
 
 bool TetRemeshingMesh::invariants(const std::vector<Tuple>& tets)
 {
@@ -805,6 +954,61 @@ bool TetRemeshingMesh::is_edge_on_bbox(const Tuple& loc)
     return false;
 }
 
+bool TetRemeshingMesh::is_vertex_on_boundary(const size_t e0)
+{
+    if (!m_vertex_attribute.at(e0).m_is_on_open_boundary) {
+        return false;
+    }
+
+    const auto neigh_vids = get_one_ring_vids_for_vertex(e0);
+    const auto e0_tids = get_one_ring_tids_for_vertex(e0);
+
+    for (const size_t e1 : neigh_vids) {
+        if (!m_vertex_attribute.at(e1).m_is_on_open_boundary) {
+            continue;
+        }
+        int cnt = 0;
+        for (int t_id : e0_tids) {
+            const auto vs = oriented_tet_vids(t_id);
+            std::array<int, 4> opp_js; // DZ: all vertices that are adjacent to e1 except for e2
+            int ii = 0;
+            for (int j = 0; j < 4; j++) {
+                if (vs[j] == e0 || vs[j] == e1) {
+                    continue;
+                }
+                opp_js[ii++] = j;
+            }
+            // DZ: if the tet contains e1 and e2, then ii == 2
+            if (ii != 2) {
+                continue;
+            }
+            // DZ: opp_js vertices form a tet together with v1,v2
+            if (m_vertex_attribute.at(vs[opp_js[0]]).m_is_on_surface) {
+                const auto [f0_tup, f0_id] = tuple_from_face({{e0, e1, vs[opp_js[0]]}});
+                if (m_face_attribute.at(f0_id).m_is_surface_fs) {
+                    cnt++;
+                }
+            }
+            if (m_vertex_attribute.at(vs[opp_js[1]]).m_is_on_surface) {
+                const auto [f1_tup, f1_id] = tuple_from_face({{e0, e1, vs[opp_js[1]]}});
+                if (m_face_attribute.at(f1_id).m_is_surface_fs) {
+                    cnt++;
+                }
+            }
+            if (cnt > 2) {
+                break;
+            }
+        }
+        // all faces are visited twice, so cnt == 2 means there is one boundary face
+        if (cnt == 2) {
+            // this is a boundary edge
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool TetRemeshingMesh::check_attributes()
 {
     for (auto& f : get_faces()) {
@@ -842,7 +1046,7 @@ bool TetRemeshingMesh::check_attributes()
     }
 
     const auto& vs = get_vertices();
-    for (const auto& v : vs) {
+    for (const Tuple& v : vs) {
         size_t i = v.vid(*this);
         if (m_vertex_attribute[i].m_is_on_surface) {
             bool is_out = m_envelope->is_outside(m_vertex_attribute[i].m_posf);
@@ -1154,22 +1358,63 @@ int TetRemeshingMesh::flood_fill()
     return current_id;
 }
 
+void TetRemeshingMesh::get_surface(MatrixXd& V, MatrixXi& F) const
+{
+    std::vector<std::array<size_t, 3>> outface;
+    for (const Tuple& f : get_faces()) {
+        if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) {
+            continue;
+        }
+        const auto verts = get_face_vertices(f);
+        std::array<size_t, 3> vids = {
+            {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}};
+        outface.emplace_back(vids);
+    }
+    V = MatrixXd::Zero(vert_capacity(), 3);
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        V.row(vid) = m_vertex_attribute[vid].m_posf;
+    }
+    F = MatrixXi(outface.size(), 3);
+    for (size_t i = 0; i < outface.size(); i++) {
+        F.row(i) << outface[i][0], outface[i][1], outface[i][2];
+    }
+
+    MatrixXd NV;
+    MatrixXi NF;
+    MatrixXi I;
+    igl::remove_unreferenced(V, F, NV, NF, I);
+    V = NV;
+    F = NF;
+}
+
 void TetRemeshingMesh::write_vtu(const std::string& path)
 {
-    consolidate_mesh();
-    logger().info("Write {}", path);
+    // consolidate_mesh();
+    const std::string out_path = path + ".vtu";
+    logger().info("Write {}", out_path);
     const auto& vs = get_vertices();
     const auto& tets = get_tets();
+    const auto faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
 
-    Eigen::MatrixXd V(vs.size(), 3);
-    Eigen::MatrixXi T(tets.size(), 4);
+    MatrixXd V(vert_capacity(), 3);
+    MatrixXi T(tet_capacity(), 4);
+    MatrixXi F(faces.size(), 3);
 
-    Eigen::VectorXd v_sizing_field(vert_capacity());
+    V.setZero();
+    T.setZero();
+    F.setZero();
+
+    VectorXd v_sizing_field(vert_capacity());
     v_sizing_field.setZero();
+    VectorXd v_on_feature(vert_capacity());
+    v_on_feature.setZero();
+    VectorXd v_is_frozen(vert_capacity());
+    v_is_frozen.setZero();
 
-    Eigen::MatrixXd parts(tets.size(), 1);
-    std::vector<MatrixXd> tags(m_tags_count, MatrixXd(tets.size(), 1));
-    Eigen::MatrixXd amips(tets.size(), 1);
+    MatrixXd parts(tet_capacity(), 1);
+    std::vector<MatrixXd> tags(m_tags_count, MatrixXd(tet_capacity(), 1));
+    MatrixXd amips(tet_capacity(), 1);
 
     int index = 0;
     for (const Tuple& t : tets) {
@@ -1187,10 +1432,18 @@ void TetRemeshingMesh::write_vtu(const std::string& path)
         ++index;
     }
 
+    for (size_t i = 0; i < faces.size(); ++i) {
+        for (size_t j = 0; j < 3; ++j) {
+            F(i, j) = faces[i][j];
+        }
+    }
+
     for (const Tuple& v : vs) {
         const size_t vid = v.vid(*this);
         V.row(vid) = m_vertex_attribute[vid].m_posf;
         v_sizing_field[vid] = m_vertex_attribute[vid].m_sizing_scalar;
+        v_on_feature[vid] = m_vertex_attribute[vid].m_is_on_feature_edge;
+        v_is_frozen[vid] = m_vertex_attribute[vid].m_is_frozen;
     }
 
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
@@ -1202,7 +1455,22 @@ void TetRemeshingMesh::write_vtu(const std::string& path)
     }
     writer->add_cell_field("quality", amips);
     writer->add_field("sizing_field", v_sizing_field);
-    writer->write_mesh(path, V, T);
+    writer->add_field("on_feature", v_on_feature);
+    writer->add_field("is_frozen", v_is_frozen);
+    writer->write_mesh(path + ".vtu", V, T);
+
+    // surface
+    {
+        const auto surf_out_path = path + "_surf.vtu";
+        std::shared_ptr<paraviewo::ParaviewWriter> surf_writer;
+        surf_writer = std::make_shared<paraviewo::VTUWriter>();
+        surf_writer->add_field("sizing_field", v_sizing_field);
+        surf_writer->add_field("on_feature", v_on_feature);
+        surf_writer->add_field("is_frozen", v_is_frozen);
+
+        logger().info("Write {}", surf_out_path);
+        surf_writer->write_mesh(surf_out_path, V, F);
+    }
 }
 
 void TetRemeshingMesh::write_surface(const std::string& path) const
