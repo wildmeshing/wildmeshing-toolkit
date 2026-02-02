@@ -696,10 +696,22 @@ void ImageSimulationMesh::init_from_image(
         m_vertex_attribute[i].m_is_rounded = true;
     }
 
-    // sanity check
-    for (const Tuple& t : get_tets()) {
-        if (is_inverted_f(t)) {
-            log_and_throw_error("Inverted tet in the input!");
+    // check for inverted mesh
+    {
+        bool is_inverted = false;
+        for (const Tuple& t : get_tets()) {
+            if (is_inverted ^ is_inverted_f(t)) {
+                if (!is_inverted) {
+                    is_inverted = true;
+                } else {
+                    log_and_throw_error("Tets with different orientations in the input!");
+                }
+            }
+        }
+
+        if (is_inverted) {
+            log_and_throw_error(
+                "Input mesh is fully inverted! This should not happen... Might be a bug.");
         }
     }
 
@@ -771,10 +783,9 @@ void ImageSimulationMesh::init_surfaces_and_boundaries()
 
         m_V_envelope = tempV;
         m_F_envelope = tempF;
-        m_envelope = std::make_shared<ExactEnvelope>();
+        m_envelope = std::make_shared<SampleEnvelope>();
+        m_envelope->use_exact = true;
         m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
-        triangles_tree = std::make_shared<SampleEnvelope>();
-        triangles_tree->init(m_V_envelope, m_F_envelope, m_envelope_eps);
     }
 
     // All surface faces must be inside the envelope
@@ -888,7 +899,6 @@ void ImageSimulationMesh::find_open_boundary()
 
     // init open boundary envelope
     m_open_boundary_envelope.init(v_posf, open_boundaries, m_params.epsr * m_params.diag_l / 2.0);
-    boundaries_tree.init(v_posf, open_boundaries, m_params.epsr * m_params.diag_l / 2.0);
 }
 
 bool ImageSimulationMesh::is_open_boundary_edge(const Tuple& e)

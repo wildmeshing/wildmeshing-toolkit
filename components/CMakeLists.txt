@@ -21,4 +21,5 @@ add_subdirectory("simplicial_embedding/wmtk/components/simplicial_embedding")
 add_subdirectory("image_simulation/wmtk/components/image_simulation")
 add_subdirectory("c1_simplification/wmtk/components/c1_simplification")
 add_subdirectory("tet_remeshing/wmtk/components/tet_remeshing")
-
+add_subdirectory("topological_offset/wmtk/components/topological_offset")
+add_subdirectory("tet_implicits/wmtk/components/tet_implicits")

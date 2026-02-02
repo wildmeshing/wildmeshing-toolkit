@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include <igl/remove_unreferenced.h>
 #include <jse/jse.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/Types.hpp>
@@ -9,6 +10,7 @@
 #include <wmtk/utils/resolve_path.hpp>
 
 #include "Parameters.h"
+#include "SurfaceMesh.hpp"
 #include "TetRemeshingMesh.h"
 #include "read_image_msh.hpp"
 
@@ -62,13 +64,19 @@ void tet_remeshing(nlohmann::json json_params)
     bool use_sample_envelope = json_params["use_sample_envelope"];
     int NUM_THREADS = json_params["num_threads"];
     int max_its = json_params["max_iterations"];
+    const int surface_smoothing = json_params["surface_smoothing"];
 
     params.epsr = json_params["eps_rel"];
     params.eps = json_params["eps"];
     params.lr = json_params["length_rel"];
     params.stop_energy = json_params["stop_energy"];
+    params.preserve_topology = json_params["preserve_topology"];
+    params.edge_length_convergence = json_params["edge_length_convergence"];
 
     const bool write_vtu = json_params["write_vtu"];
+
+    params.debug_output = json_params["DEBUG_output"];
+    params.perform_sanity_checks = json_params["DEBUG_sanity_checks"];
 
     std::filesystem::path output_filename = params.output_path;
 
@@ -82,7 +90,7 @@ void tet_remeshing(nlohmann::json json_params)
 
     auto get_unique_vtu_name = [&output_filename]() -> std::string {
         static size_t vtu_counter = 0;
-        return fmt::format("{}_{}.vtu", output_filename.string(), vtu_counter++);
+        return fmt::format("{}_{}", output_filename.string(), vtu_counter++);
     };
 
     if (std::filesystem::path(input_paths[0]).extension() != ".msh") {
@@ -138,7 +146,32 @@ void tet_remeshing(nlohmann::json json_params)
     }
 
     // /////////mesh improvement
-    mesh.mesh_improvement(max_its); // <-- tetwild
+    if (surface_smoothing > 0) {
+        logger().warn(
+            "Performing surface smoothing with {} iterations. Surface will change!",
+            surface_smoothing);
+
+        MatrixXd V;
+        MatrixXi F;
+        MatrixXd VE;
+        MatrixXi EE;
+        // compute smooth surface
+        mesh.get_surface(V, F);
+
+        surf::SurfaceMesh surf_mesh(V, F, NUM_THREADS);
+        surf_mesh.write_vtu("surf_0");
+        surf_mesh.smooth_all(surface_smoothing);
+        surf_mesh.write_vtu("surf_1");
+
+        surf_mesh.get_surface(V, F);
+        surf_mesh.get_edge_mesh(VE, EE);
+
+        // give surface/edges to mesh so that it can push there during optimization
+        mesh.init_surface_smoothing(V, F, VE, EE);
+        mesh.surface_smoothing(max_its);
+    } else {
+        mesh.mesh_improvement(max_its); // <-- tetwild
+    }
 
     mesh.consolidate_mesh();
     double time = timer.getElapsedTime();

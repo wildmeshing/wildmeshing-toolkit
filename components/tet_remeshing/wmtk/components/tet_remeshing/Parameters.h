@@ -10,6 +10,7 @@ struct Parameters
     double lr = 5e-2; // target edge length (relative)
     double l = -1.; // target edge length (absolute)
     double l_min = -1;
+    bool preserve_topology = false;
     std::string output_path;
 
     // parameters set in `init` function based on mesh bbox
@@ -23,6 +24,7 @@ struct Parameters
 
     double stop_energy = 10;
 
+    bool debug_output = false;
     bool perform_sanity_checks = false;
 
     void init(const Vector3d& min_, const Vector3d& max_)

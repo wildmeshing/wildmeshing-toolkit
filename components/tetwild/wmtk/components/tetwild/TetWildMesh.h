@@ -86,6 +86,7 @@ public:
     double m_quality;
     double m_winding_number_input = 0; // winding number w.r.t. the input
     double m_winding_number_tracked = 0; // winding number w.r.t. the tracked surface
+    std::vector<double> m_winding_number_per_input;
     int part_id = -1; // flood fill ID
 };
 
@@ -345,6 +346,8 @@ public:
     void compute_winding_number(
         const std::vector<Vector3d>& vertices = {},
         const std::vector<std::array<size_t, 3>>& faces = {});
+
+    void compute_winding_numbers(const std::vector<std::string>& input_paths);
 
     void filter_with_input_surface_winding_number();
     void filter_with_tracked_surface_winding_number();

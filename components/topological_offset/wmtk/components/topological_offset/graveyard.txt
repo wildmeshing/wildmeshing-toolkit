@@ -1,0 +1,49 @@
+    // //  TESTING
+    // logger().info("--------");
+    // for (int i = 0; i < mesh.vertex_size(); i++) {
+    //     Eigen::Vector3d p = mesh.m_vertex_attribute[i].m_posf;
+    //     logger().info("v{}: ({}, {}, {})", i, p(0), p(1), p(2));
+    // }
+    // logger().info("--------");
+
+    // auto edges1 = mesh.get_edges();
+    // logger().info("--------");
+    // for (const TetMesh::Tuple e : edges1) {
+    //     std::array<size_t, 2> vs = {e.vid(mesh), mesh.switch_vertex(e).vid(mesh)};
+    //     logger().info("e{}: {} {}", e.eid(mesh), vs[0], vs[1]);
+    // }
+    // logger().info("--------");
+
+    // auto faces1 = mesh.get_faces();
+    // logger().info("--------");
+    // for (const TetMesh::Tuple f : faces1) {
+    //     auto vs = mesh.get_face_vids(f);
+    //     logger().info("f{}: {} {} {}", f.fid(mesh), vs[0], vs[1], vs[2]);
+    // }
+    // logger().info("--------");
+
+    // auto tets1 = mesh.get_tets();
+    // logger().info("--------");
+    // for (const TetMesh::Tuple t : tets1) {
+    //     auto vs = mesh.oriented_tet_vids(t);
+    //     logger().info("t{}: {} {} {} {}", t.tid(mesh), vs[0], vs[1], vs[2], vs[3]);
+    // }
+    // logger().info("--------");
+    // // TESTING
+
+    // auto edges = mesh.get_edges();
+    // for (const TetMesh::Tuple& edge : edges) {
+    //     std::cout << fmt::format("{} {} {} {}\n", edge.tid(mesh), edge.fid(mesh), edge.eid(mesh), edge.vid(mesh));
+    // }
+    // auto [_, global_fid] = mesh.tuple_from_face({4, 0, 3});
+    // std::cout << global_fid << std::endl;
+
+    // auto res = igl::predicates::orient3d(mesh.m_vertex_attribute[0].m_posf,
+    //                                      mesh.m_vertex_attribute[1].m_posf,
+    //                                      mesh.m_vertex_attribute[2].m_posf,
+    //                                      mesh.m_vertex_attribute[3].m_posf);
+    // for (int i = 0; i < 4; i++) {
+    //     std::cout << mesh.m_vertex_attribute[i].m_posf << std::endl;
+    //     std::cout << "---" << std::endl;
+    // }
+    // std::cout << (res == igl::predicates::Orientation::POSITIVE) << std::endl;
