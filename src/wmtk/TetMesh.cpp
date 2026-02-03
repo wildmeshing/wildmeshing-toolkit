@@ -78,8 +78,8 @@ void TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& 
 {
     m_vertex_connectivity.resize(n_vertices);
     m_tet_connectivity.resize(tets.size());
-    current_vert_size = n_vertices;
-    current_tet_size = tets.size();
+    current_vert_size = (long)n_vertices;
+    current_tet_size = (long)tets.size();
     for (int i = 0; i < tets.size(); i++) {
         m_tet_connectivity[i].m_indices = tets[i];
         for (int j = 0; j < 4; j++) {
@@ -114,8 +114,8 @@ void TetMesh::init_with_isolated_vertices(
     m_vertex_connectivity.resize(n_vertices);
     m_tet_connectivity.clear();
     m_tet_connectivity.resize(tets.size());
-    current_vert_size = n_vertices;
-    current_tet_size = tets.size();
+    current_vert_size = (long)n_vertices;
+    current_tet_size = (long)tets.size();
     for (size_t i = 0; i < tets.size(); i++) {
         m_tet_connectivity[i].m_indices = tets[i];
         for (int j = 0; j < 4; j++) {
@@ -263,7 +263,7 @@ bool TetMesh::check_mesh_connectivity_validity() const
     }
     for (size_t i = 0; i < vert_capacity(); i++) {
         if (m_vertex_connectivity[i].m_is_removed) continue;
-        for (int tid : m_vertex_connectivity[i].m_conn_tets)
+        for (size_t tid : m_vertex_connectivity[i].m_conn_tets)
             assert(!m_tet_connectivity[tid].m_is_removed && "m_tet_connectivity[tid].m_is_removed");
     }
 
@@ -355,8 +355,8 @@ TetMesh::Tuple TetMesh::tuple_from_edge(size_t tid, int local_eid) const
     assert(tid < tet_capacity());
     assert(local_eid >= 0 && local_eid < m_local_edges.size());
 
-    int vid = m_tet_connectivity[tid][m_local_edges[local_eid][0]];
-    int fid = m_map_edge2face[local_eid];
+    size_t vid = m_tet_connectivity[tid][m_local_edges[local_eid][0]];
+    size_t fid = m_map_edge2face[local_eid];
     return Tuple(*this, vid, local_eid, fid, tid);
 }
 
@@ -365,7 +365,7 @@ TetMesh::Tuple TetMesh::tuple_from_face(size_t tid, int local_fid) const
     assert(tid < tet_capacity());
     assert(local_fid >= 0 && local_fid < m_local_faces.size());
 
-    int vid = m_tet_connectivity[tid][m_local_faces[local_fid][0]];
+    size_t vid = m_tet_connectivity[tid][m_local_faces[local_fid][0]];
     int lvid1 = m_local_faces[local_fid][0];
     int lvid2 = m_local_faces[local_fid][1];
     int eid = -1;
@@ -564,7 +564,7 @@ TetMesh::Tuple TetMesh::tuple_from_vertex(size_t vid) const
     assert(vid < vert_capacity());
     if (m_vertex_connectivity[vid].m_is_removed) return Tuple();
 
-    int tid = m_vertex_connectivity[vid].m_conn_tets[0];
+    size_t tid = m_vertex_connectivity[vid].m_conn_tets[0];
     int j = m_tet_connectivity[tid].find(vid);
     int eid = m_map_vertex2edge[j];
     int fid = m_map_edge2face[eid];
@@ -577,7 +577,7 @@ TetMesh::Tuple TetMesh::tuple_from_tet(size_t tid) const
     assert(tid < tet_capacity());
     if (m_tet_connectivity[tid].m_is_removed) return Tuple();
 
-    int vid = m_tet_connectivity[tid][0];
+    size_t vid = m_tet_connectivity[tid][0];
     int eid = m_map_vertex2edge[0];
     int fid = m_map_edge2face[eid];
     return Tuple(*this, vid, eid, fid, tid);
@@ -702,8 +702,8 @@ std::vector<TetMesh::Tuple> TetMesh::get_one_ring_tets_for_vertex(const Tuple& t
 std::vector<TetMesh::Tuple> TetMesh::get_one_ring_vertices_for_vertex(const Tuple& t) const
 {
     std::vector<size_t> v_ids;
-    for (int t_id : m_vertex_connectivity[t.m_global_vid].m_conn_tets) {
-        for (int j = 0; j < 4; j++) {
+    for (size_t t_id : m_vertex_connectivity[t.m_global_vid].m_conn_tets) {
+        for (size_t j = 0; j < 4; j++) {
             v_ids.push_back(m_tet_connectivity[t_id][j]);
         }
     }
@@ -720,8 +720,8 @@ std::vector<size_t> TetMesh::get_one_ring_vids_for_vertex(size_t vid) const
 {
     std::vector<size_t> v_ids;
     v_ids.reserve(m_vertex_connectivity[vid].m_conn_tets.size() * 4);
-    for (int t_id : m_vertex_connectivity[vid].m_conn_tets) {
-        for (int j = 0; j < 4; j++) {
+    for (size_t t_id : m_vertex_connectivity[vid].m_conn_tets) {
+        for (size_t j = 0; j < 4; j++) {
             v_ids.push_back(m_tet_connectivity[t_id][j]);
         }
     }
@@ -734,8 +734,8 @@ std::vector<size_t> TetMesh::get_one_ring_vids_for_vertex_adj(size_t vid) const
 {
     std::vector<size_t> v_ids;
     v_ids.reserve(m_vertex_connectivity[vid].m_conn_tets.size() * 4);
-    for (int t_id : m_vertex_connectivity[vid].m_conn_tets) {
-        for (int j = 0; j < 4; j++) {
+    for (size_t t_id : m_vertex_connectivity[vid].m_conn_tets) {
+        for (size_t j = 0; j < 4; j++) {
             v_ids.push_back(m_tet_connectivity[t_id][j]);
         }
     }
@@ -747,8 +747,8 @@ std::vector<size_t> TetMesh::get_one_ring_vids_for_vertex_adj(size_t vid) const
 std::vector<size_t> TetMesh::get_one_ring_vids_for_vertex(size_t vid, std::vector<size_t>& cache)
 {
     cache.clear();
-    for (int t_id : m_vertex_connectivity[vid].m_conn_tets) {
-        for (int j = 0; j < 4; j++) {
+    for (size_t t_id : m_vertex_connectivity[vid].m_conn_tets) {
+        for (size_t j = 0; j < 4; j++) {
             cache.push_back(m_tet_connectivity[t_id][j]);
         }
     }
@@ -760,8 +760,8 @@ std::vector<size_t> TetMesh::get_one_ring_vids_for_vertex_adj(
     std::vector<size_t>& cache)
 {
     cache.clear();
-    for (int t_id : m_vertex_connectivity[vid].m_conn_tets) {
-        for (int j = 0; j < 4; j++) {
+    for (size_t t_id : m_vertex_connectivity[vid].m_conn_tets) {
+        for (size_t j = 0; j < 4; j++) {
             cache.push_back(m_tet_connectivity[t_id][j]);
         }
     }
@@ -770,8 +770,8 @@ std::vector<size_t> TetMesh::get_one_ring_vids_for_vertex_adj(
 
 std::vector<TetMesh::Tuple> TetMesh::get_incident_tets_for_edge(const Tuple& t) const
 {
-    int v1_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][0]];
-    int v2_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][1]];
+    size_t v1_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][0]];
+    size_t v2_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][1]];
     return get_incident_tets_for_edge(v1_id, v2_id);
 }
 
@@ -781,7 +781,7 @@ std::vector<TetMesh::Tuple> TetMesh::get_incident_tets_for_edge(
 {
     auto tids = get_incident_tids_for_edge(vid0, vid1);
     std::vector<Tuple> tets;
-    for (int t_id : tids) {
+    for (size_t t_id : tids) {
         tets.push_back(tuple_from_tet(t_id));
         assert(tets.back().is_valid(*this));
     }
@@ -790,8 +790,8 @@ std::vector<TetMesh::Tuple> TetMesh::get_incident_tets_for_edge(
 
 std::vector<size_t> TetMesh::get_incident_tids_for_edge(const Tuple& t) const
 {
-    int v1_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][0]];
-    int v2_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][1]];
+    size_t v1_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][0]];
+    size_t v2_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][1]];
     return get_incident_tids_for_edge(v1_id, v2_id);
 }
 
@@ -805,8 +805,8 @@ std::vector<size_t> TetMesh::get_incident_tids_for_edge(const size_t vid0, const
 
 std::vector<TetMesh::Tuple> TetMesh::get_one_ring_tets_for_edge(const Tuple& t) const
 {
-    int v1_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][0]];
-    int v2_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][1]];
+    size_t v1_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][0]];
+    size_t v2_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][1]];
 
     auto tids = m_vertex_connectivity[v1_id].m_conn_tets;
     tids.insert(
@@ -816,7 +816,7 @@ std::vector<TetMesh::Tuple> TetMesh::get_one_ring_tets_for_edge(const Tuple& t) 
     vector_unique(tids);
 
     std::vector<Tuple> tets;
-    for (int t_id : tids) {
+    for (size_t t_id : tids) {
         tets.emplace_back(tuple_from_tet(t_id));
     }
     return tets;
@@ -931,7 +931,7 @@ int TetMesh::release_vertex_mutex_in_stack()
 {
     int num_released = 0;
     auto& stack = mutex_release_stack.local();
-    for (int i = stack.size() - 1; i >= 0; i--) {
+    for (int i = (int)stack.size() - 1; i >= 0; i--) {
         unlock_vertex_mutex(stack[i]);
         num_released++;
     }
@@ -1297,9 +1297,9 @@ void TetMesh::for_each_edge(const std::function<void(const TetMesh::Tuple&)>& fu
         tbb::task_arena arena(NUM_THREADS);
         arena.execute([&] {
             tbb::parallel_for(
-                tbb::blocked_range<int>(0, tet_capacity()),
-                [&](tbb::blocked_range<int> r) {
-                    for (int i = r.begin(); i < r.end(); i++) {
+                tbb::blocked_range<size_t>(0, tet_capacity()),
+                [&](tbb::blocked_range<size_t> r) {
+                    for (size_t i = r.begin(); i < r.end(); i++) {
                         if (!tuple_from_tet(i).is_valid(*this)) continue;
                         for (int j = 0; j < 6; j++) {
                             auto tup = tuple_from_edge(i, j);
@@ -1317,21 +1317,21 @@ void TetMesh::for_each_edge(const std::function<void(const TetMesh::Tuple&)>& fu
 void TetMesh::for_each_tetra(const std::function<void(const TetMesh::Tuple&)>& func)
 {
     if (NUM_THREADS == 0) {
-        std::cout << "in serial for each tet" << std::endl;
+        // std::cout << "in serial for each tet" << std::endl;
         for (int i = 0; i < tet_capacity(); i++) {
             auto tup = tuple_from_tet(i);
             if (!tup.is_valid(*this)) continue;
             func(tup);
         }
     } else {
-        std::cout << "in parallel for each tet" << std::endl;
+        // std::cout << "in parallel for each tet" << std::endl;
 
         tbb::task_arena arena(NUM_THREADS);
         arena.execute([&] {
             tbb::parallel_for(
-                tbb::blocked_range<int>(0, tet_capacity()),
-                [&](tbb::blocked_range<int> r) {
-                    for (int i = r.begin(); i < r.end(); i++) {
+                tbb::blocked_range<size_t>(0, tet_capacity()),
+                [&](tbb::blocked_range<size_t> r) {
+                    for (size_t i = r.begin(); i < r.end(); i++) {
                         auto tup = tuple_from_tet(i);
                         if (!tup.is_valid(*this)) continue;
                         func(tup);
@@ -1356,9 +1356,9 @@ void TetMesh::for_each_vertex(const std::function<void(const TetMesh::Tuple&)>& 
         tbb::task_arena arena(NUM_THREADS);
         arena.execute([&] {
             tbb::parallel_for(
-                tbb::blocked_range<int>(0, vert_capacity()),
-                [&](tbb::blocked_range<int> r) {
-                    for (int i = r.begin(); i < r.end(); i++) {
+                tbb::blocked_range<size_t>(0, vert_capacity()),
+                [&](tbb::blocked_range<size_t> r) {
+                    for (size_t i = r.begin(); i < r.end(); i++) {
                         auto tup = tuple_from_vertex(i);
                         if (!tup.is_valid(*this)) continue;
                         func(tup);

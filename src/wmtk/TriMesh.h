@@ -670,7 +670,7 @@ public:
     Tuple tuple_from_vertex(size_t vid) const
     {
         auto fid = m_vertex_connectivity[vid][0];
-        auto eid = m_tri_connectivity[fid].find(vid);
+        auto eid = m_tri_connectivity[fid].find((int)vid);
         return Tuple(vid, (eid + 1) % 3, fid, *this);
     }
     /**

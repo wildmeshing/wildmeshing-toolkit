@@ -56,7 +56,7 @@ public:
         mshio::NodeBlock block;
         block.num_nodes_in_block = 0;
         block.entity_dim = dim;
-        block.entity_tag = m_spec.nodes.num_entity_blocks + 1;
+        block.entity_tag = (int)m_spec.nodes.num_entity_blocks + 1;
 
         m_spec.nodes.num_entity_blocks += 1;
         m_spec.nodes.entity_blocks.push_back(std::move(block));
@@ -338,7 +338,7 @@ public:
                 break;
             case 2:
                 extract_simplex_elements<2>([&F](size_t i, size_t v0, size_t v1, size_t v2) {
-                    F.row(i) = Vector3i(v0, v1, v2);
+                    F.row(i) = Vector3i((int)v0, (int)v1, (int)v2);
                 });
                 break;
             case 3:
