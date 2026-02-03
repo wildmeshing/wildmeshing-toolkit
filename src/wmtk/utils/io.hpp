@@ -344,7 +344,7 @@ public:
             case 3:
                 extract_simplex_elements<3>(
                     [&F](size_t i, size_t v0, size_t v1, size_t v2, size_t v3) {
-                        F.row(i) = Vector4i(v0, v1, v2, v3);
+                        F.row(i) = Vector4i((int)v0, (int)v1, (int)v2, (int)v3);
                     });
                 break;
             default: log_and_throw_error("Cannot extract elements for dimension {}", dim);
@@ -383,7 +383,7 @@ private:
         block.tags.reserve(num_vertices);
         block.data.reserve(num_vertices * 3);
         block.entity_dim = DIM;
-        block.entity_tag = m_spec.nodes.num_entity_blocks + 1;
+        block.entity_tag = (int)m_spec.nodes.num_entity_blocks + 1;
 
         const size_t tag_offset = m_spec.nodes.max_node_tag;
         for (size_t i = 0; i < num_vertices; i++) {

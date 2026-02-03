@@ -57,7 +57,7 @@ void ShortestEdgeCollapse::create_mesh(
             V[i] = vertex_attrs[i].pos;
         }
         for (size_t i = 0; i < F.size(); ++i) {
-            F[i] << tris[i][0], tris[i][1], tris[i][2];
+            F[i] << (int)tris[i][0], (int)tris[i][1], (int)tris[i][2];
         }
         m_envelope.init(V, F, eps);
         m_has_envelope = true;
@@ -106,7 +106,7 @@ bool ShortestEdgeCollapse::write_triangle_mesh(std::string path)
         auto i = t.fid(*this);
         auto vs = oriented_tri_vertices(t);
         for (int j = 0; j < 3; j++) {
-            F(i, j) = vs[j].vid(*this);
+            F(i, j) = (int)vs[j].vid(*this);
         }
     }
 

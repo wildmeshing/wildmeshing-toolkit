@@ -177,7 +177,7 @@ public:
 
             struct sortstruct
             {
-                int order;
+                size_t order;
                 Resorting::MortonCode64 morton;
             };
 
@@ -245,7 +245,7 @@ public:
 
             tbb::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
 
-            int interval = list_v.size() / NUM_THREADS + 1;
+            size_t interval = list_v.size() / NUM_THREADS + 1;
 
             tbb::parallel_for(
                 tbb::blocked_range<size_t>(0, list_v.size()),
@@ -515,8 +515,8 @@ public:
     bool is_open_boundary_edge(const std::array<size_t, 2>& e);
 
     // for topology preservation
-    int count_vertex_links(const Tuple& v);
-    int count_edge_links(const Tuple& e);
+    size_t count_vertex_links(const Tuple& v);
+    size_t count_edge_links(const Tuple& e);
 
     // debug functions
     int orient3D(

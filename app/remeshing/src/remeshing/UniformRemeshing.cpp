@@ -54,7 +54,7 @@ void UniformRemeshing::create_mesh(
     for (auto i = 0; i < V.size(); i++) {
         V[i] = vertex_attrs[i].pos;
     }
-    for (int i = 0; i < F.size(); ++i) F[i] << tris[i][0], tris[i][1], tris[i][2];
+    for (int i = 0; i < F.size(); ++i) F[i] << (int)tris[i][0], (int)tris[i][1], (int)tris[i][2];
     if (eps > 0) {
         m_envelope.init(V, F, eps);
         m_has_envelope = true;
@@ -118,11 +118,13 @@ void UniformRemeshing::partition_mesh_morton()
     arena.execute([&] {
         std::vector<Eigen::Vector3d> V_v(vert_capacity());
 
-        tbb::parallel_for(tbb::blocked_range<int>(0, V_v.size()), [&](tbb::blocked_range<int> r) {
-            for (int i = r.begin(); i < r.end(); i++) {
-                V_v[i] = vertex_attrs[i].pos;
-            }
-        });
+        tbb::parallel_for(
+            tbb::blocked_range<size_t>(0, V_v.size()),
+            [&](tbb::blocked_range<size_t> r) {
+                for (size_t i = r.begin(); i < r.end(); i++) {
+                    V_v[i] = vertex_attrs[i].pos;
+                }
+            });
 
         struct sortstruct
         {
@@ -149,11 +151,13 @@ void UniformRemeshing::partition_mesh_morton()
 
         Eigen::Vector3d center = (vmin + vmax) / 2;
 
-        tbb::parallel_for(tbb::blocked_range<int>(0, V.size()), [&](tbb::blocked_range<int> r) {
-            for (int i = r.begin(); i < r.end(); i++) {
-                V[i] = V[i] - center;
-            }
-        });
+        tbb::parallel_for(
+            tbb::blocked_range<size_t>(0, V.size()),
+            [&](tbb::blocked_range<size_t> r) {
+                for (size_t i = r.begin(); i < r.end(); i++) {
+                    V[i] = V[i] - center;
+                }
+            });
 
         Eigen::Vector3d scale_point =
             vmax - center; // after placing box at origin, vmax and vmin are symetric.
@@ -164,22 +168,26 @@ void UniformRemeshing::partition_mesh_morton()
         zscale = fabs(scale_point[2]);
         double scale = std::max(std::max(xscale, yscale), zscale);
         if (scale > 300) {
-            tbb::parallel_for(tbb::blocked_range<int>(0, V.size()), [&](tbb::blocked_range<int> r) {
-                for (int i = r.begin(); i < r.end(); i++) {
-                    V[i] = V[i] / scale;
-                }
-            });
+            tbb::parallel_for(
+                tbb::blocked_range<size_t>(0, V.size()),
+                [&](tbb::blocked_range<size_t> r) {
+                    for (size_t i = r.begin(); i < r.end(); i++) {
+                        V[i] = V[i] / scale;
+                    }
+                });
         }
 
-        tbb::parallel_for(tbb::blocked_range<int>(0, V.size()), [&](tbb::blocked_range<int> r) {
-            for (int i = r.begin(); i < r.end(); i++) {
-                list_v[i].morton = Resorting::MortonCode64(
-                    int(V[i][0] * multi),
-                    int(V[i][1] * multi),
-                    int(V[i][2] * multi));
-                list_v[i].order = i;
-            }
-        });
+        tbb::parallel_for(
+            tbb::blocked_range<size_t>(0, V.size()),
+            [&](tbb::blocked_range<size_t> r) {
+                for (size_t i = r.begin(); i < r.end(); i++) {
+                    list_v[i].morton = Resorting::MortonCode64(
+                        int(V[i][0] * multi),
+                        int(V[i][1] * multi),
+                        int(V[i][2] * multi));
+                    list_v[i].order = i;
+                }
+            });
 
         const auto morton_compare = [](const sortstruct& a, const sortstruct& b) {
             return (a.morton < b.morton);
@@ -187,12 +195,12 @@ void UniformRemeshing::partition_mesh_morton()
 
         tbb::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
 
-        int interval = list_v.size() / NUM_THREADS + 1;
+        size_t interval = list_v.size() / NUM_THREADS + 1;
 
         tbb::parallel_for(
-            tbb::blocked_range<int>(0, list_v.size()),
-            [&](tbb::blocked_range<int> r) {
-                for (int i = r.begin(); i < r.end(); i++) {
+            tbb::blocked_range<size_t>(0, list_v.size()),
+            [&](tbb::blocked_range<size_t> r) {
+                for (size_t i = r.begin(); i < r.end(); i++) {
                     vertex_attrs[list_v[i].order].partition_id = i / interval;
                 }
             });
@@ -338,7 +346,7 @@ double UniformRemeshing::compute_edge_cost_split(const TriMesh::Tuple& t, double
 
 double UniformRemeshing::compute_vertex_valence(const TriMesh::Tuple& t) const
 {
-    std::vector<std::pair<TriMesh::Tuple, int>> valences(3);
+    std::vector<std::pair<TriMesh::Tuple, size_t>> valences(3);
     valences[0] = std::make_pair(t, get_valence_for_vertex(t));
     auto t2 = t.switch_vertex(*this);
     valences[1] = std::make_pair(t2, get_valence_for_vertex(t2));
@@ -699,7 +707,7 @@ bool UniformRemeshing::write_triangle_mesh(std::string path)
         auto i = t.fid(*this);
         auto vs = oriented_tri_vertices(t);
         for (int j = 0; j < 3; j++) {
-            F(i, j) = vs[j].vid(*this);
+            F(i, j) = (int)vs[j].vid(*this);
         }
     }
     igl::write_triangle_mesh(path, V, F);

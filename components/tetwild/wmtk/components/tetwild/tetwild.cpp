@@ -156,7 +156,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     {
         Eigen::MatrixXi F(tris.size(), 3);
         for (int i = 0; i < tris.size(); ++i) {
-            F.row(i) = Eigen::Vector3i(tris[i][0], tris[i][1], tris[i][2]);
+            F.row(i) = Eigen::Vector3i((int)tris[i][0], (int)tris[i][1], (int)tris[i][2]);
         }
 
         const auto ecs = compute_euler_characteristics(F);
@@ -392,7 +392,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         }
         matF.resize(outface.size(), 3);
         for (auto i = 0; i < outface.size(); i++) {
-            matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
+            matF.row(i) << (int)outface[i][0], (int)outface[i][1], (int)outface[i][2];
         }
 
         wmtk::logger().info("#output faces = {}", outface.size());
@@ -409,7 +409,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         }
         Eigen::MatrixXi F(tris.size(), 3);
         for (int i = 0; i < tris.size(); ++i) {
-            F.row(i) = Eigen::Vector3i(tris[i][0], tris[i][1], tris[i][2]);
+            F.row(i) = Eigen::Vector3i((int)tris[i][0], (int)tris[i][1], (int)tris[i][2]);
         }
 
         // create envelope for output

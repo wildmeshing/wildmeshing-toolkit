@@ -14,7 +14,7 @@
 #include <wmtk/utils/Morton.h>
 
 void wmtk::partition_vertex_morton(
-    int vert_size,
+    size_t vert_size,
     const std::function<Eigen::Vector3d(size_t)>& pos,
     int num_partition,
     std::vector<size_t>& result)
@@ -103,7 +103,7 @@ void wmtk::partition_vertex_morton(
 
         tbb::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
 
-        int interval = list_v.size() / num_partition + 1;
+        size_t interval = list_v.size() / num_partition + 1;
 
         result.clear();
         result.resize(vert_size);

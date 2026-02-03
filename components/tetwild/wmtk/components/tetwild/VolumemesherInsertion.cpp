@@ -301,10 +301,10 @@ void TetWildMesh::insertion_by_volumeremesher_old(
 
     for (int i = 0; i < tets.size(); ++i) {
         auto tet_vids = oriented_tet_vids(tets[i]);
-        tet_index[4 * i] = tet_vids[0];
-        tet_index[4 * i + 1] = tet_vids[1];
-        tet_index[4 * i + 2] = tet_vids[2];
-        tet_index[4 * i + 3] = tet_vids[3];
+        tet_index[4 * i] = (int)tet_vids[0];
+        tet_index[4 * i + 1] = (int)tet_vids[1];
+        tet_index[4 * i + 2] = (int)tet_vids[2];
+        tet_index[4 * i + 3] = (int)tet_vids[3];
     }
 
     // prepare input surfaces info
@@ -320,9 +320,9 @@ void TetWildMesh::insertion_by_volumeremesher_old(
     }
 
     for (int i = 0; i < faces.size(); ++i) {
-        tri_index[3 * i] = faces[i][0];
-        tri_index[3 * i + 1] = faces[i][1];
-        tri_index[3 * i + 2] = faces[i][2];
+        tri_index[3 * i] = (int)faces[i][0];
+        tri_index[3 * i + 1] = (int)faces[i][1];
+        tri_index[3 * i + 2] = (int)faces[i][2];
     }
 
     // {
@@ -604,7 +604,7 @@ void TetWildMesh::insertion_by_volumeremesher_old(
                 polygon_face[0],
                 polygon_face[1],
                 polygon_face[2]};
-            int idx = triangulated_faces.size();
+            size_t idx = triangulated_faces.size();
             triangulated_faces.push_back(triangle_face);
             if (polygon_faces_on_input_surface[i]) {
                 triangulated_faces_on_input.push_back(true);
@@ -637,7 +637,7 @@ void TetWildMesh::insertion_by_volumeremesher_old(
                     polygon_face[clipped_indices[j][2]]};
                 // std::cout<<triangle_face[0]<<" "<<triangle_face[1]<<"
                 // "<<triangle_face[2]<<std::endl;
-                int idx = triangulated_faces.size();
+                size_t idx = triangulated_faces.size();
                 triangulated_faces.push_back(triangle_face);
 
                 // track input faces
@@ -702,8 +702,8 @@ void TetWildMesh::insertion_by_volumeremesher_old(
         wmtk::vector_unique(polygon_vertices);
 
         // compute number of triangle faces
-        int num_faces = 0;
-        for (auto f : polygon_cell) {
+        size_t num_faces = 0;
+        for (size_t f : polygon_cell) {
             num_faces += map_poly_to_tri_face[f].size();
         }
 
@@ -961,10 +961,10 @@ void TetWildMesh::insertion_by_volumeremesher(
 
     for (int i = 0; i < tets.size(); ++i) {
         auto tet_vids = oriented_tet_vids(tets[i]);
-        tet_indices[4 * i] = tet_vids[0];
-        tet_indices[4 * i + 1] = tet_vids[1];
-        tet_indices[4 * i + 2] = tet_vids[2];
-        tet_indices[4 * i + 3] = tet_vids[3];
+        tet_indices[4 * i] = (int)tet_vids[0];
+        tet_indices[4 * i + 1] = (int)tet_vids[1];
+        tet_indices[4 * i + 2] = (int)tet_vids[2];
+        tet_indices[4 * i + 3] = (int)tet_vids[3];
     }
 
     // prepare input surfaces info
@@ -986,9 +986,9 @@ void TetWildMesh::insertion_by_volumeremesher(
     }
 
     for (int i = 0; i < faces.size(); ++i) {
-        triangle_indices[3 * i] = faces[i][0];
-        triangle_indices[3 * i + 1] = faces[i][1];
-        triangle_indices[3 * i + 2] = faces[i][2];
+        triangle_indices[3 * i] = (int)faces[i][0];
+        triangle_indices[3 * i + 1] = (int)faces[i][1];
+        triangle_indices[3 * i + 2] = (int)faces[i][2];
     }
 
     std::cout << tri_vrt_coord.size() << std::endl;
@@ -1101,14 +1101,14 @@ void TetWildMesh::insertion_by_volumeremesher(
 
     wmtk::logger().info("Tags loop...");
     std::vector<bool> polygon_faces_on_input(polygon_faces.size(), false);
-    for (int64_t i = 0; i < embedded_facets_on_input.size(); ++i) {
+    for (size_t i = 0; i < embedded_facets_on_input.size(); ++i) {
         polygon_faces_on_input[embedded_facets_on_input[i]] = true;
     }
     wmtk::logger().info("done");
 
     wmtk::logger().info("tracking surface...");
     assert(final_tets_parent_faces.size() == out_tets.size());
-    for (int64_t i = 0; i < out_tets.size(); ++i) {
+    for (size_t i = 0; i < out_tets.size(); ++i) {
         const auto& tetra = out_tets[i];
         const uint32_t tetra_parent = final_tets_parent[i];
 
@@ -1184,7 +1184,7 @@ void TetWildMesh::insertion_by_volumeremesher(
     std::vector<Vector3r> v_coords_final;
     std::vector<bool> is_v_on_input_buffer;
 
-    for (int64_t i = 0; i < v_rational.size(); ++i) {
+    for (size_t i = 0; i < v_rational.size(); ++i) {
         if (v_is_used_in_tet[i]) {
             v_map[i] = v_coords_final.size();
             v_coords_final.emplace_back(v_rational[i]);

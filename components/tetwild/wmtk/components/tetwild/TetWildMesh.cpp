@@ -158,7 +158,7 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
             const auto vi = oriented_tet_vids(i);
             std::array<int, 4> v;
             for (size_t j = 0; j < 4; ++j) {
-                v[j] = vi[j];
+                v[j] = (int)vi[j];
             }
             legacy_tetwild.tets.emplace_back(v);
         }
@@ -252,7 +252,7 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
             v.is_on_surface = VA.m_is_on_surface;
             v.is_rounded = VA.m_is_rounded;
             for (const size_t tid : get_one_ring_tids_for_vertex(i)) {
-                v.conn_tets.insert(tid);
+                v.conn_tets.insert((int)tid);
             }
         }
     }
@@ -500,7 +500,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
         } else if (i == 2) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==swapping {}==", n);
-                int cnt_success = 0;
+                size_t cnt_success = 0;
                 cnt_success += swap_all_edges_all();
                 // cnt_success += swap_all_edges_56();
                 // cnt_success += swap_all_edges_44();
@@ -741,11 +741,13 @@ void TetWildMesh::compute_winding_number(
         V.resize(vertices.size(), 3);
         F.resize(faces.size(), 3);
 
-        for (int i = 0; i < V.rows(); i++) {
+        for (size_t i = 0; i < (size_t)V.rows(); i++) {
             V.row(i) = vertices[i];
         }
-        for (int i = 0; i < F.rows(); i++) {
-            for (auto j = 0; j < 3; j++) F(i, j) = faces[i][j];
+        for (size_t i = 0; i < (size_t)F.rows(); i++) {
+            for (size_t j = 0; j < 3; j++) {
+                F(i, j) = (int)faces[i][j];
+            }
         }
     } else { // use track to filter
         auto outface = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
@@ -756,7 +758,7 @@ void TetWildMesh::compute_winding_number(
         }
         F.resize(outface.size(), 3);
         for (auto i = 0; i < outface.size(); i++) {
-            F.row(i) << outface[i][0], outface[i][1], outface[i][2];
+            F.row(i) << (int)outface[i][0], (int)outface[i][1], (int)outface[i][2];
         }
         // wmtk::logger().info("Output face size {}", outface.size());
         auto F0 = F;
@@ -942,7 +944,7 @@ void TetWildMesh::output_faces(std::string file, std::function<bool(const FaceAt
     }
     Eigen::MatrixXi matF(outface.size(), 3);
     for (auto i = 0; i < outface.size(); i++) {
-        matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
+        matF.row(i) << (int)outface[i][0], (int)outface[i][1], (int)outface[i][2];
     }
     wmtk::logger().info("Output face size {}", outface.size());
     igl::write_triangle_mesh(file, matV, matF);
@@ -1266,7 +1268,7 @@ bool TetWildMesh::is_vertex_on_boundary(const size_t e0)
             continue;
         }
         int cnt = 0;
-        for (int t_id : e0_tids) {
+        for (size_t t_id : e0_tids) {
             const auto vs = oriented_tet_vids(t_id);
             std::array<int, 4> opp_js; // DZ: all vertices that are adjacent to e1 except for e2
             int ii = 0;
@@ -1432,7 +1434,7 @@ void union_uf(int u, int v, std::vector<int>& parent)
     }
 }
 
-int TetWildMesh::count_vertex_links(const Tuple& v)
+size_t TetWildMesh::count_vertex_links(const Tuple& v)
 {
     // get one ring faces on surface
     auto one_ring_tets = get_one_ring_tets_for_vertex(v);
@@ -1500,7 +1502,7 @@ int TetWildMesh::count_vertex_links(const Tuple& v)
     }
 
     // adjacency matrix
-    int m = one_ring_surface_vertices.size();
+    size_t m = one_ring_surface_vertices.size();
     bool** adj_mat = new bool*[m];
     for (int i = 0; i < m; i++) {
         adj_mat[i] = new bool[m];
@@ -1659,7 +1661,7 @@ int TetWildMesh::count_vertex_links(const Tuple& v)
 //     return 0;
 // }
 
-int TetWildMesh::count_edge_links(const Tuple& e)
+size_t TetWildMesh::count_edge_links(const Tuple& e)
 {
     size_t vid1 = e.vid(*this);
     size_t vid2 = e.switch_vertex(*this).vid(*this);
@@ -1865,14 +1867,14 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
 
         const auto vs = oriented_tet_vertices(t);
         for (int j = 0; j < 4; j++) {
-            T(index, j) = vs[j].vid(*this);
+            T(index, j) = (int)vs[j].vid(*this);
         }
         ++index;
     }
 
     for (size_t i = 0; i < faces.size(); ++i) {
         for (size_t j = 0; j < 3; ++j) {
-            F(i, j) = faces[i][j];
+            F(i, j) = (int)faces[i][j];
         }
     }
 
@@ -2080,7 +2082,7 @@ TetWildMesh::ExportStruct TetWildMesh::export_mesh_data() const
         e.t_winding_number_tracked(index, 0) = m_tet_attribute[tid].m_winding_number_tracked;
         e.t_amips(index, 0) = std::cbrt(m_tet_attribute[tid].m_quality);
 
-        for (size_t i = 0; i < e.t_winding_number_per_input.cols(); ++i) {
+        for (size_t i = 0; i < (size_t)e.t_winding_number_per_input.cols(); ++i) {
             e.t_winding_number_per_input(index, i) =
                 m_tet_attribute[tid].m_winding_number_per_input[i];
         }
@@ -2094,7 +2096,7 @@ TetWildMesh::ExportStruct TetWildMesh::export_mesh_data() const
 
     for (size_t i = 0; i < faces.size(); ++i) {
         for (size_t j = 0; j < 3; ++j) {
-            e.F(i, j) = faces[i][j];
+            e.F(i, j) = (int)faces[i][j];
         }
     }
 

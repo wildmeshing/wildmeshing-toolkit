@@ -160,7 +160,7 @@ auto triangle_insert_prepare_info(
         //
         if (coplanar_f_lvids.size() == 1) {
             int lvid = coplanar_f_lvids[0];
-            int vid = vertex_vids[lvid];
+            size_t vid = vertex_vids[lvid];
             auto p = wmtk::project_point_to_2d(vertex_pos_r(vid), squeeze_to_2d_dir);
             bool is_inside = wmtk::is_point_inside_triangle(p, tri2);
             //

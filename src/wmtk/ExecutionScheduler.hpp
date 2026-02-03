@@ -100,7 +100,7 @@ struct ExecutePass
     std::function<void(const AppMesh&, Op, const Tuple& t)> on_fail = [](auto&, auto, auto&) {};
 
 
-    size_t num_threads = 1;
+    int num_threads = 1;
 
     /**
      * To Avoid mutual locking, retry limit is set, and then put in a serial queue in the end.

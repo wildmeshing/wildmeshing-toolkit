@@ -59,7 +59,7 @@ public:
     {
         Eigen::Vector3d v1p;
         Eigen::Vector3d v2p;
-        int partition_id;
+        size_t partition_id;
     };
     tbb::enumerable_thread_specific<PositionInfoCache> position_cache;
 

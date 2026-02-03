@@ -38,7 +38,7 @@ void SimplicialEmbeddingTriMesh::set_positions(const std::vector<Vector2d>& vert
     assert(vertex_positions.size() == vert_capacity());
     vertex_attrs.resize(vertex_positions.size());
 
-    for (int64_t i = 0; i < vertex_positions.size(); i++) {
+    for (size_t i = 0; i < vertex_positions.size(); i++) {
         vertex_attrs[i].pos = vertex_positions[i];
     }
 }
@@ -382,16 +382,16 @@ void SimplicialEmbeddingTriMesh::write(const std::filesystem::path& filename) co
     const SimplicialEmbeddingTriMesh& m = *this;
 
     io::TriVTUWriter writer(m);
-    writer.add_vertex_positions([&m](int i) { return m.vertex_attrs[i].pos; });
+    writer.add_vertex_positions([&m](size_t i) { return m.vertex_attrs[i].pos; });
 
-    writer.add_vertex_attribute("vid", [&m](int i) { return i; });
-    writer.add_vertex_attribute("v_tag", [&m](int i) { return m.vertex_attrs[i].tag; });
+    writer.add_vertex_attribute("vid", [&m](size_t i) { return i; });
+    writer.add_vertex_attribute("v_tag", [&m](size_t i) { return m.vertex_attrs[i].tag; });
 
-    writer.add_edge_attribute("eid", [&m](int i) { return i; });
-    writer.add_edge_attribute("e_tag", [&m](int i) { return m.edge_attrs[i].tag; });
+    writer.add_edge_attribute("eid", [&m](size_t i) { return i; });
+    writer.add_edge_attribute("e_tag", [&m](size_t i) { return m.edge_attrs[i].tag; });
 
-    writer.add_triangle_attribute("fid", [&m](int i) { return i; });
-    writer.add_triangle_attribute("f_tag", [&m](int i) { return m.face_attrs[i].tag; });
+    writer.add_triangle_attribute("fid", [&m](size_t i) { return i; });
+    writer.add_triangle_attribute("f_tag", [&m](size_t i) { return m.face_attrs[i].tag; });
 
     writer.write_triangles(filename.string() + "_f.vtu");
     writer.write_edges(filename.string() + "_e.vtu");
