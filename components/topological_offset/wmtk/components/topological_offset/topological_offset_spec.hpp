@@ -13,9 +13,10 @@ nlohmann::json topological_offset_spec = R"(
     ],
     "optional": [
       "output",
-      "tag_label",
-      "val_include",
-      "manifold_union",
+      "tag_name",
+      "sep_tag_vals",
+      "offset_tag_val",
+      "save_vtu",
       "DEBUG_output"
     ]
   },
@@ -35,36 +36,40 @@ nlohmann::json topological_offset_spec = R"(
   {
     "pointer": "/output",
     "type": "string",
-    "default": "out.obj",
-    "doc": "Output file name (with extension)."
+    "default": "out",
+    "doc": "Output file name (without extension)."
   },
   {
-    "pointer": "/tag_label",
+    "pointer": "/save_vtu",
+    "type": "bool",
+    "default": "false",
+    "doc": "Save .vtu of output mesh"
+  },
+  {
+    "pointer": "/tag_name",
     "type": "string",
-    "default": "winding_number_tracked",
-    "doc": "Tetwise tag label to identify components. If manifold extraction mode, cells assumed to have values 0/1."
+    "default": "tag_0",
+    "doc": "Tetwise tag name to determine boundaries for offset"
   },
   {
-    "pointer": "/val_include",
+    "pointer": "/sep_tag_vals",
     "type": "list",
     "default": [
-      0.5,
-      1.0
+      0,
+      1
     ],
     "min": 2,
-    "max": 2,
-    "doc": "Winding number inclusion range, all tets with winding # in range are taken as input object"
+    "doc": "Tag values whose pairwise boundaries will be offset"
   },
   {
-    "pointer": "/val_include/*",
-    "type": "float",
-    "doc": "Winding number upper/lower bound"
+    "pointer": "/sep_tag_vals/*",
+    "type": "int"
   },
   {
-    "pointer": "/manifold_union",
-    "type": "bool",
-    "default": true,
-    "doc": "If true, offsets are unioned with mesh, otherwise subtracted from mesh."
+    "pointer": "/offset_tag_val",
+    "type": "int",
+    "default": 0,
+    "doc": "Tag value to fill offset region"
   },
   {
     "pointer": "/DEBUG_output",

@@ -1,0 +1,78 @@
+#pragma once
+#include <nlohmann/json.hpp>
+namespace {
+
+nlohmann::json manifold_extraction_spec = R"(
+[
+  {
+    "pointer": "/",
+    "type": "object",
+    "required": [
+      "application",
+      "input"
+    ],
+    "optional": [
+      "output",
+      "tag_label",
+      "val_include",
+      "manifold_union",
+      "DEBUG_output"
+    ]
+  },
+  {
+    "pointer": "/application",
+    "type": "string",
+    "options": [
+      "manifold_extraction"
+    ],
+    "doc": "Application name must be manifold_extraction."
+  },
+  {
+    "pointer": "/input",
+    "type": "string",
+    "doc": "Tetrahedral input mesh."
+  },
+  {
+    "pointer": "/output",
+    "type": "string",
+    "default": "out.obj",
+    "doc": "Output file name (with extension)."
+  },
+  {
+    "pointer": "/tag_label",
+    "type": "string",
+    "default": "winding_number_tracked",
+    "doc": "Tetwise tag label to identify components. If manifold extraction mode, cells assumed to have values 0/1."
+  },
+  {
+    "pointer": "/val_include",
+    "type": "list",
+    "default": [
+      0.5,
+      1.0
+    ],
+    "min": 2,
+    "max": 2,
+    "doc": "Winding number inclusion range, all tets with winding # in range are taken as input object"
+  },
+  {
+    "pointer": "/val_include/*",
+    "type": "float",
+    "doc": "Winding number upper/lower bound"
+  },
+  {
+    "pointer": "/manifold_union",
+    "type": "bool",
+    "default": true,
+    "doc": "If true, offsets are unioned with mesh, otherwise subtracted from mesh."
+  },
+  {
+    "pointer": "/DEBUG_output",
+    "type": "bool",
+    "default": false,
+    "doc": "Write the tet mesh as out_{}.vtu after every operation."
+  }
+]
+)"_json;
+
+}

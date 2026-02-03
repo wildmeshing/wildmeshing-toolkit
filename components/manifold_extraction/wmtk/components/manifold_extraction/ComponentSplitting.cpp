@@ -1,11 +1,11 @@
 #include <set>
-#include "TopoOffsetMesh.h"
+#include "ManExtractMesh.h"
 
 
-namespace wmtk::components::topological_offset {
+namespace wmtk::components::manifold_extraction {
 
 
-bool TopoOffsetMesh::split_edge_before(const Tuple& t)
+bool ManExtractMesh::split_edge_before(const Tuple& t)
 {
     // load and reset cache
     auto& cache = edge_split_cache.local();
@@ -16,8 +16,6 @@ bool TopoOffsetMesh::split_edge_before(const Tuple& t)
     cache.internal_f.clear();
     cache.external_f.clear();
     cache.tets.clear();
-
-    size_t e_id = t.eid(*this);
 
     // vertices
     cache.v1_id = t.vid(*this);
@@ -34,10 +32,10 @@ bool TopoOffsetMesh::split_edge_before(const Tuple& t)
             cache.v2_id);
     }
     cache.new_v = VertexAttributes(new_p);
-    cache.new_v.label = m_edge_attribute[e_id].label;
+    cache.new_v.label = m_edge_attribute[t.eid(*this)].label;
 
     // split edge
-    cache.split_e = m_edge_attribute[e_id];
+    cache.split_e = m_edge_attribute[t.eid(*this)];
 
     // link edge maps (and collect opp vert ids)
     std::set<size_t> opp_verts;
@@ -92,7 +90,7 @@ bool TopoOffsetMesh::split_edge_before(const Tuple& t)
 }
 
 
-bool TopoOffsetMesh::split_edge_after(const Tuple& t)
+bool ManExtractMesh::split_edge_after(const Tuple& t)
 {
     if (!TetMesh::split_edge_after(t)) {
         return false;
@@ -163,7 +161,7 @@ bool TopoOffsetMesh::split_edge_after(const Tuple& t)
 }
 
 
-bool TopoOffsetMesh::split_face_before(const Tuple& t)
+bool ManExtractMesh::split_face_before(const Tuple& t)
 {
     // load and reset cache
     auto& cache = face_split_cache.local();
@@ -236,7 +234,7 @@ bool TopoOffsetMesh::split_face_before(const Tuple& t)
 }
 
 
-bool TopoOffsetMesh::split_face_after(const Tuple& t)
+bool ManExtractMesh::split_face_after(const Tuple& t)
 {
     if (!TetMesh::split_face_after(t)) {
         return false;
@@ -316,7 +314,7 @@ bool TopoOffsetMesh::split_face_after(const Tuple& t)
 }
 
 
-bool TopoOffsetMesh::split_tet_before(const Tuple& t)
+bool ManExtractMesh::split_tet_before(const Tuple& t)
 {
     auto& cache = tet_split_cache.local();
     cache.existing_e.clear();
@@ -352,7 +350,7 @@ bool TopoOffsetMesh::split_tet_before(const Tuple& t)
     return true;
 }
 
-bool TopoOffsetMesh::split_tet_after(const Tuple& t)
+bool ManExtractMesh::split_tet_after(const Tuple& t)
 {
     if (!TetMesh::split_tet_after(t)) {
         return false;
@@ -407,4 +405,4 @@ bool TopoOffsetMesh::split_tet_after(const Tuple& t)
     return true;
 }
 
-} // namespace wmtk::components::topological_offset
+} // namespace wmtk::components::manifold_extraction

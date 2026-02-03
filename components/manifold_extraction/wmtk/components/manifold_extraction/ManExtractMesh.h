@@ -16,8 +16,11 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
+// #include <igl/remove_unreferenced.h>
+// #include <memory>
 
-namespace wmtk::components::topological_offset {
+
+namespace wmtk::components::manifold_extraction {
 
 
 // for all attributes:
@@ -27,6 +30,7 @@ class VertexAttributes
 public:
     Vector3d m_posf;
     int label = 0;
+    bool in_out = false;
 
     VertexAttributes() {};
     VertexAttributes(const Vector3d& p);
@@ -36,6 +40,7 @@ public:
 class EdgeAttributes
 {
 public:
+    bool in_out = false;
     int label = 0;
 };
 
@@ -43,6 +48,7 @@ public:
 class FaceAttributes
 {
 public:
+    bool in_out = false;
     int label = 0;
 };
 
@@ -50,19 +56,19 @@ public:
 class TetAttributes
 {
 public:
-    int label = 0; // must be zero for all tets
-    std::vector<double> tags;
+    bool in_out = false; // in or out of mesh body
+    int label = 0;
+    double val = -999; // default unset value
 };
 
 
-class TopoOffsetMesh : public wmtk::TetMesh
+class ManExtractMesh : public wmtk::TetMesh
 {
 public:
     int m_vtu_counter = 0;
-    std::array<size_t, 4> m_init_counts = {0, 0, 0, 0};
-    std::vector<std::string> m_all_tag_names;
-    size_t m_tags_count;
-    int m_toi_ind; // index of tag of interest
+    int m_surfvtu_counter = 0;
+    std::array<size_t, 4> init_counts = {0, 0, 0, 0};
+    bool m_boundary_input_vert_found = false;
 
     Parameters& m_params;
 
@@ -75,7 +81,7 @@ public:
     FaceAttCol m_face_attribute;
     TetAttCol m_tet_attribute;
 
-    TopoOffsetMesh(Parameters& _m_params, int _num_threads = 0)
+    ManExtractMesh(Parameters& _m_params, int _num_threads = 0)
         : m_params(_m_params)
     {
         NUM_THREADS = _num_threads;
@@ -85,12 +91,12 @@ public:
         p_tet_attrs = &m_tet_attribute;
     }
 
-    ~TopoOffsetMesh() {}
+    ~ManExtractMesh() {}
 
     ////// Attributes related
-    void write_input_complex(const std::string& path); // write components labeled to be offset
+    void write_input_complex(const std::string& path); // write out components labeled as offset
+                                                       // input (non manifold components)
     void write_vtu(const std::string& path); // debugging, write .vtu of tet mesh
-    void write_msh(const std::string& file);
 
     std::string tags_bit_rep(uint64_t tags) { return std::bitset<64>(tags).to_string(); }
 
@@ -164,41 +170,40 @@ private:
     tbb::enumerable_thread_specific<TetSplitCache> tet_split_cache;
 
 public:
+    // void init_from_image(
+    //     const MatrixXd& V,
+    //     const MatrixXi& T,
+    //     const MatrixXd& T_tags,
+    //     const std::map<std::string, int>& tag_label_map);
+
     void init_from_image(
         const MatrixXd& V, // V by 3
         const MatrixXi& T, // T by 4
-        const MatrixXd& T_tags, // T by N
-        const std::vector<std::string>& all_tag_names);
+        const MatrixXd& T_tag); // T by 1
+
+    std::pair<size_t, size_t> label_non_manifold(); // return # of non manifold edges, verts
+    bool edge_is_manifold(const Tuple& t) const;
+    void edge_dfs_helper(std::set<size_t>& visited_tids, const Tuple& t) const;
+    bool vertex_is_manifold(const Tuple& t) const;
+    void vertex_dfs_helper(
+        std::set<size_t>& visited_tids,
+        const Tuple& t,
+        const bool include,
+        const std::vector<simplex::Face>& b_out_faces) const;
+    bool is_boundary_vertex(size_t vid) const;
+    std::vector<simplex::Face> get_boundary_faces_for_out_tets(size_t vid) const;
+
 
     bool is_simplicially_embedded() const;
     bool tet_is_simp_emb(const Tuple& t) const;
     void simplicial_embedding();
+
     void perform_offset();
 
-private: // helpers
-    int count_sep_tags(const std::set<int> tags) const
-    {
-        auto sep_tags = m_params.sep_tag_vals;
-        return std::count_if(tags.begin(), tags.end(), [&sep_tags](int elem) {
-            return (std::find(sep_tags.begin(), sep_tags.end(), elem) != sep_tags.end());
-        });
-    }
+    void extract_surface_mesh(MatrixXd& V, MatrixXi& F);
 
-    void sort_edges_by_length(std::vector<simplex::Edge>& edges)
-    {
-        std::sort(
-            edges.begin(),
-            edges.end(),
-            [this](const simplex::Edge& e1, const simplex::Edge& e2) {
-                double len1 = (m_vertex_attribute[e1.vertices()[0]].m_posf -
-                               m_vertex_attribute[e1.vertices()[1]].m_posf)
-                                  .norm();
-                double len2 = (m_vertex_attribute[e2.vertices()[0]].m_posf -
-                               m_vertex_attribute[e2.vertices()[1]].m_posf)
-                                  .norm();
-                return len1 > len2;
-            });
-    }
+    // DEBUGGING
+    void label_boundary_verts_1();
 };
 
-} // namespace wmtk::components::topological_offset
+} // namespace wmtk::components::manifold_extraction
