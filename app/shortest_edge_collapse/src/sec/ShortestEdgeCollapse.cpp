@@ -25,9 +25,9 @@ ShortestEdgeCollapse::ShortestEdgeCollapse(
         vertex_attrs[i] = {_m_vertex_positions[i], 0, false};
 }
 
-void ShortestEdgeCollapse::set_freeze(TriMesh::Tuple& v)
+void ShortestEdgeCollapse::set_freeze(const TriMesh::Tuple& v)
 {
-    for (auto e : get_one_ring_edges_for_vertex(v)) {
+    for (const Tuple& e : get_one_ring_edges_for_vertex(v)) {
         if (is_boundary_edge(e)) {
             vertex_attrs[v.vid(*this)].freeze = true;
             continue;
@@ -53,16 +53,20 @@ void ShortestEdgeCollapse::create_mesh(
     if (eps > 0) {
         std::vector<Eigen::Vector3d> V(n_vertices);
         std::vector<Eigen::Vector3i> F(tris.size());
-        for (auto i = 0; i < V.size(); i++) {
+        for (size_t i = 0; i < V.size(); i++) {
             V[i] = vertex_attrs[i].pos;
         }
-        for (int i = 0; i < F.size(); ++i) F[i] << tris[i][0], tris[i][1], tris[i][2];
+        for (size_t i = 0; i < F.size(); ++i) {
+            F[i] << tris[i][0], tris[i][1], tris[i][2];
+        }
         m_envelope.init(V, F, eps);
         m_has_envelope = true;
     }
     partition_mesh();
-    for (auto v : frozen_verts) vertex_attrs[v].freeze = true;
-    for (auto v : get_vertices()) { // the better way is to iterate through edges.
+    for (size_t v : frozen_verts) {
+        vertex_attrs[v].freeze = true;
+    }
+    for (const Tuple& v : get_vertices()) { // the better way is to iterate through edges.
         set_freeze(v);
     }
 }

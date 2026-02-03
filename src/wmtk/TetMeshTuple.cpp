@@ -378,6 +378,10 @@ void TetMesh::Tuple::check_validity(const TetMesh& m) const
         {m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][0]],
          m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][1]]}};
     assert(std::find(e_vids.begin(), e_vids.end(), m_global_vid) != e_vids.end());
-    for (int e_vid : e_vids) assert(std::find(f_vids.begin(), f_vids.end(), e_vid) != f_vids.end());
-    for (int f_vid : f_vids) assert(m.m_tet_connectivity[m_global_tid].find(f_vid) >= 0);
+    for (size_t e_vid : e_vids) {
+        assert(std::find(f_vids.begin(), f_vids.end(), e_vid) != f_vids.end());
+    }
+    for (size_t f_vid : f_vids) {
+        assert(m.m_tet_connectivity[m_global_tid].find(f_vid) >= 0);
+    }
 }

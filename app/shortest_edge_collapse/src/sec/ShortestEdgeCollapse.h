@@ -45,7 +45,7 @@ public:
         int num_threads = 1,
         bool use_exact_envelope = true);
 
-    void set_freeze(TriMesh::Tuple& v);
+    void set_freeze(const TriMesh::Tuple& v);
 
     void create_mesh_nofreeze(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris);
 

@@ -4,8 +4,8 @@
 #include <tbb/parallel_for.h>
 #include <tbb/parallel_sort.h>
 #include <tbb/task_arena.h>
-#include <wmtk/utils/Partitioning.h>
 #include <wmtk/utils/Morton.h>
+#include <wmtk/utils/Partitioning.h>
 
 namespace wmtk {
 
@@ -13,10 +13,10 @@ constexpr auto _partition_faces = [](auto& m, auto num_partition) {
     auto f_tuples = m.get_faces();
     Eigen::MatrixXi F(f_tuples.size(), 3);
     for (int i = 0; i < f_tuples.size(); i++) {
-        F(i, 0) = f_tuples[i].vid(m);
+        F(i, 0) = (int)f_tuples[i].vid(m);
         auto e1 = f_tuples[i].switch_vertex(m);
-        F(i, 1) = e1.vid(m);
-        F(i, 2) = e1.switch_edge(m).switch_vertex(m).vid(m);
+        F(i, 1) = (int)e1.vid(m);
+        F(i, 2) = (int)e1.switch_edge(m).switch_vertex(m).vid(m);
     }
 
     Eigen::VectorXi I, J;
@@ -51,7 +51,7 @@ std::vector<size_t> partition_morton(std::vector<Eigen::Vector3d> vertex_positio
 {
     std::vector<size_t> partition_id(vertex_position.size());
     tbb::task_arena arena(NUM_THREADS);
-    
+
     arena.execute([&] {
         std::vector<Eigen::Vector3d> V_v = vertex_position;
         struct sortstruct
@@ -76,11 +76,13 @@ std::vector<size_t> partition_morton(std::vector<Eigen::Vector3d> vertex_positio
         }
         // get_bb_corners(V, vmin, vmax);
         Eigen::Vector3d center = (vmin + vmax) / 2;
-        tbb::parallel_for(tbb::blocked_range<int>(0, V.size()), [&](tbb::blocked_range<int> r) {
-            for (int i = r.begin(); i < r.end(); i++) {
-                V[i] = V[i] - center;
-            }
-        });
+        tbb::parallel_for(
+            tbb::blocked_range<size_t>(0, V.size()),
+            [&](tbb::blocked_range<size_t> r) {
+                for (size_t i = r.begin(); i < r.end(); i++) {
+                    V[i] = V[i] - center;
+                }
+            });
         Eigen::Vector3d scale_point =
             vmax - center; // after placing box at origin, vmax and vmin are symetric.
         double xscale, yscale, zscale;
@@ -90,23 +92,25 @@ std::vector<size_t> partition_morton(std::vector<Eigen::Vector3d> vertex_positio
         double scale = std::max(std::max(xscale, yscale), zscale);
         if (scale > 300) {
             tbb::parallel_for(
-                tbb::blocked_range<int>(0, V.size()),
-                [&](tbb::blocked_range<int> r) {
-                    for (int i = r.begin(); i < r.end(); i++) {
+                tbb::blocked_range<size_t>(0, V.size()),
+                [&](tbb::blocked_range<size_t> r) {
+                    for (size_t i = r.begin(); i < r.end(); i++) {
                         V[i] = V[i] / scale;
                     }
                 });
         }
-        tbb::parallel_for(tbb::blocked_range<int>(0, V.size()), [&](tbb::blocked_range<int> r) {
-            for (int i = r.begin(); i < r.end(); i++) {
-                list_v[i].morton = Resorting::MortonCode64(
-                    int(V[i][0] * multi),
-                    int(V[i][1] * multi),
-                    int(V[i][2] * multi));
-                list_v[i].order = i;
-            }
-        });
-        
+        tbb::parallel_for(
+            tbb::blocked_range<size_t>(0, V.size()),
+            [&](tbb::blocked_range<size_t> r) {
+                for (size_t i = r.begin(); i < r.end(); i++) {
+                    list_v[i].morton = Resorting::MortonCode64(
+                        int(V[i][0] * multi),
+                        int(V[i][1] * multi),
+                        int(V[i][2] * multi));
+                    list_v[i].order = i;
+                }
+            });
+
         const auto morton_compare = [](const sortstruct& a, const sortstruct& b) {
             return (a.morton < b.morton);
         };
@@ -114,9 +118,9 @@ std::vector<size_t> partition_morton(std::vector<Eigen::Vector3d> vertex_positio
         int interval = list_v.size() / NUM_THREADS + 1;
 
         tbb::parallel_for(
-            tbb::blocked_range<int>(0, list_v.size()),
-            [&](tbb::blocked_range<int> r) {
-                for (int i = r.begin(); i < r.end(); i++) {
+            tbb::blocked_range<size_t>(0, list_v.size()),
+            [&](tbb::blocked_range<size_t> r) {
+                for (size_t i = r.begin(); i < r.end(); i++) {
                     partition_id[list_v[i].order] = i / interval;
                 }
             });

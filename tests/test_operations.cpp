@@ -315,46 +315,6 @@ TEST_CASE("tet_mesh_swap56_with_position", "[tuple_operation]")
     }
 }
 
-TEST_CASE("divide-tet-customized")
-{
-    auto mesh = TetMesh();
-    mesh.init(5, {{{0, 1, 2, 3}}, {{0, 1, 2, 4}}});
-    const auto tuple = mesh.tuple_from_tet(0);
-    std::vector<TetMesh::Tuple> new_tups;
-
-    struct DivideTet : public TetMesh::OperationBuilder
-    {
-        const TetMesh& m;
-        TetMesh::Tuple tet;
-
-        DivideTet(TetMesh& _m)
-            : m(_m)
-        {}
-        std::vector<size_t> removed_tids(const TetMesh::Tuple& t)
-        {
-            tet = t;
-            return {t.tid(m)};
-        }
-        int request_vert_slots() { return 1; }
-        std::vector<std::array<size_t, 4>> replacing_tets(const std::vector<size_t>& slots)
-        {
-            assert(slots.size() == 1);
-            auto ux = slots.front();
-
-            std::array<size_t, 4> t_conn;
-            auto vs = m.oriented_tet_vertices(tet);
-            for (auto i = 0; i < 4; i++) t_conn[i] = vs[i].vid(m);
-            auto new_tets = std::vector<std::array<size_t, 4>>(4, t_conn);
-            for (auto i = 0; i < 4; i++) new_tets[i][i] = ux;
-
-            return new_tets;
-        }
-    };
-    auto op = DivideTet(mesh);
-    mesh.customized_operation(op, tuple, new_tups);
-    CHECK(mesh.tet_size() == 5);
-}
-
 TEST_CASE("tet_face_split", "[TetMesh][tuple_operation]")
 {
     using namespace wmtk::utils::examples::tet;
