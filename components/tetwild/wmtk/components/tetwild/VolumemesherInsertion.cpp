@@ -276,8 +276,7 @@ void TetWildMesh::insertion_by_volumeremesher_old(
     std::vector<std::array<size_t, 4>>& tets_after,
     std::vector<bool>& tet_face_on_input_surface)
 {
-    std::cout << "vertices size: " << vertices.size() << std::endl;
-    std::cout << "faces size: " << faces.size() << std::endl;
+    logger().info("Insertion #v = {}, #f = {}", vertices.size(), faces.size());
 
     // generate background mesh
     init_from_delaunay_box_mesh(vertices);
@@ -290,8 +289,7 @@ void TetWildMesh::insertion_by_volumeremesher_old(
     auto tets = get_tets();
     std::vector<double> tet_ver_coord(3 * tet_vers.size());
     std::vector<uint32_t> tet_index(4 * tets.size());
-    std::cout << "tetver size: " << tet_vers.size() << std::endl;
-    std::cout << "tet size: " << tets.size() << std::endl;
+    logger().info("after delaunay #V = {}, #T = {}", tet_vers.size(), tets.size());
     // tet_ver_coord.reserve(3 * tet_vers.size());
     // tet_index.reserve(4 * tets.size());
 
@@ -347,10 +345,10 @@ void TetWildMesh::insertion_by_volumeremesher_old(
     //     off.close();
     // }
 
-    std::cout << tri_ver_coord.size() << std::endl;
-    std::cout << tri_index.size() << std::endl;
-    std::cout << tet_ver_coord.size() << std::endl;
-    std::cout << tet_index.size() << std::endl;
+    // std::cout << tri_ver_coord.size() << std::endl;
+    // std::cout << tri_index.size() << std::endl;
+    // std::cout << tet_ver_coord.size() << std::endl;
+    // std::cout << tet_index.size() << std::endl;
 
     std::vector<vol_rem::bigrational> embedded_vertices;
     std::vector<uint32_t> embedded_facets;
@@ -363,7 +361,7 @@ void TetWildMesh::insertion_by_volumeremesher_old(
     std::vector<std::vector<uint32_t>> final_tets_parent_faces;
 
     {
-        logger().info("Check degenerate before embedding");
+        logger().info("Check degenerate before embedding...");
         for (int i = 0; i < tri_index.size(); i += 3) {
             int id0 = tri_index[i + 0];
             int id1 = tri_index[i + 1];
@@ -532,7 +530,7 @@ void TetWildMesh::insertion_by_volumeremesher_old(
         i += cellsize;
     }
 
-    std::cout << "polygon cells num: " << polygon_cells.size() << std::endl;
+    logger().info("#polygon cells = {}", polygon_cells.size());
 
     // check polygon face validity
     // only for debug use
@@ -653,7 +651,7 @@ void TetWildMesh::insertion_by_volumeremesher_old(
         }
     }
 
-    std::cout << "poly_cnt:" << poly_cnt << std::endl;
+    logger().info("#triangulated polygons = {}", poly_cnt);
 
     // std::cout << triangulated_faces.size() << std::endl;
     // int sum = 0;
@@ -670,10 +668,6 @@ void TetWildMesh::insertion_by_volumeremesher_old(
     //     if (triangulated_faces_on_input[i]) on_sur_cnt++;
     // }
     // std::cout << "triangulated faces on input: " << on_sur_cnt << std::endl;
-
-    std::cout << "finish triangulation" << std::endl;
-
-    std::cout << "vertice before tetra num: " << v_rational.size() << std::endl;
 
     // invert the orientation of all the triangles
     // maybe commented
@@ -818,11 +812,10 @@ void TetWildMesh::insertion_by_volumeremesher_old(
         }
     }
 
-    std::cout << "polygon was tet num: " << was_tet_cnt << std::endl;
-    std::cout << "vertices final num: " << v_rational.size() << std::endl;
-    std::cout << "tets final num: " << tets_final.size() << std::endl;
-
-    std::cout << "track face size: " << tet_face_on_input_surface.size() << std::endl;
+    // std::cout << "polygon was tet num: " << was_tet_cnt << std::endl;
+    // std::cout << "vertices final num: " << v_rational.size() << std::endl;
+    // std::cout << "tets final num: " << tets_final.size() << std::endl;
+    // std::cout << "track face size: " << tet_face_on_input_surface.size() << std::endl;
 
     facets_after = triangulated_faces;
     tets_after = tets_final;
@@ -842,6 +835,7 @@ void TetWildMesh::insertion_by_volumeremesher_old(
     for (size_t i = 0; i < is_v_on_input.size(); i++) {
         if (is_v_on_input[i]) on_surface_v_cnt++;
     }
+    logger().info("{} of {} vertices are on the surface", on_surface_v_cnt, is_v_on_input.size());
 
     for (const auto& t : tets_after) {
         const Vector3r p0 = v_rational[t[0]];
@@ -922,9 +916,6 @@ void TetWildMesh::insertion_by_volumeremesher_old(
     //     }
     //     off.close();
     // }
-
-    std::cout << "v on surface vector size: " << is_v_on_input.size();
-    std::cout << "v on surface: " << on_surface_v_cnt << std::endl;
 }
 
 
@@ -1533,7 +1524,7 @@ void TetWildMesh::init_from_Volumeremesher(
     }
 
     const auto faces = get_faces();
-    std::cout << "faces size: " << faces.size() << std::endl;
+    logger().info("#faces = {}", faces.size());
     for (const Tuple& f : faces) {
         const size_t fid = f.fid(*this);
         if (m_face_attribute[fid].m_is_surface_fs == 1) {
@@ -1579,14 +1570,6 @@ void TetWildMesh::init_from_Volumeremesher(
 
     for_each_vertex(
         [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
-
-
-    // test code
-    for (const Tuple& f : get_faces()) {
-        auto fid = f.fid(*this);
-    }
-
-    std::cout << "pass test fid" << std::endl;
 
     // track open boundaries
     find_open_boundary();
@@ -1823,9 +1806,8 @@ void TetWildMesh::init_from_Volumeremesher(
 
 void TetWildMesh::find_open_boundary()
 {
-    auto fs = get_faces();
-    std::cout << "fs size: " << fs.size() << std::endl;
-    auto es = get_edges();
+    const auto fs = get_faces();
+    const auto es = get_edges();
     std::vector<int> edge_on_open_boundary(6 * tet_capacity(), 0);
 
     // for open boundary envelope
@@ -1836,15 +1818,14 @@ void TetWildMesh::find_open_boundary()
         v_posf[i] = m_vertex_attribute[i].m_posf;
     }
 
-    for (Tuple f : fs) {
+    for (const Tuple& f : fs) {
         auto fid = f.fid(*this);
-        // std::cout << fid << ": ";
-        if (!m_face_attribute[fid].m_is_surface_fs) continue;
+        if (!m_face_attribute[fid].m_is_surface_fs) {
+            continue;
+        }
         size_t eid1 = f.eid(*this);
         size_t eid2 = f.switch_edge(*this).eid(*this);
         size_t eid3 = f.switch_vertex(*this).switch_edge(*this).eid(*this);
-
-        // std::cout << eid1 << " " << eid2 << " " << eid3 << std::endl;
 
         edge_on_open_boundary[eid1]++;
         edge_on_open_boundary[eid2]++;
@@ -1852,8 +1833,9 @@ void TetWildMesh::find_open_boundary()
     }
 
     for (const Tuple& e : es) {
-        // std::cout << edge_on_open_boundary[e.eid(*this)] << " ";
-        if (edge_on_open_boundary[e.eid(*this)] != 1) continue;
+        if (edge_on_open_boundary[e.eid(*this)] != 1) {
+            continue;
+        }
         size_t v1 = e.vid(*this);
         size_t v2 = e.switch_vertex(*this).vid(*this);
         m_vertex_attribute[v1].m_is_on_open_boundary = true;
@@ -1863,7 +1845,9 @@ void TetWildMesh::find_open_boundary()
 
     wmtk::logger().info("open boundary num: {}", open_boundaries.size());
 
-    if (open_boundaries.size() == 0) return;
+    if (open_boundaries.size() == 0) {
+        return;
+    }
 
     // init open boundary envelope
     m_open_boundary_envelope.init(v_posf, open_boundaries, m_params.epsr * m_params.diag_l / 2.0);

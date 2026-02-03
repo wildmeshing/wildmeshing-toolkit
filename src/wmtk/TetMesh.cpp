@@ -1345,14 +1345,14 @@ void TetMesh::for_each_tetra(const std::function<void(const TetMesh::Tuple&)>& f
 void TetMesh::for_each_vertex(const std::function<void(const TetMesh::Tuple&)>& func)
 {
     if (NUM_THREADS == 0) {
-        std::cout << "in serial for each vertex" << std::endl;
+        // std::cout << "in serial for each vertex" << std::endl;
         for (int i = 0; i < vert_capacity(); i++) {
             auto tup = tuple_from_vertex(i);
             if (!tup.is_valid(*this)) continue;
             func(tup);
         }
     } else {
-        std::cout << "in parallel for each vertex" << std::endl;
+        // std::cout << "in parallel for each vertex" << std::endl;
         tbb::task_arena arena(NUM_THREADS);
         arena.execute([&] {
             tbb::parallel_for(

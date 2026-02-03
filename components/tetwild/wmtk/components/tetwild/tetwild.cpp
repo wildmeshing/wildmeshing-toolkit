@@ -228,8 +228,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     std::vector<std::array<size_t, 4>> tets;
     std::vector<bool> tet_face_on_input_surface;
 
-    std::cout << "vsimp size: " << vsimp.size() << std::endl;
-    std::cout << "fsimp size: " << fsimp.size() << std::endl;
+    logger().info("simplified: #v = {}, #f = {}", vsimp.size(), fsimp.size());
 
     igl::Timer insertion_timer;
     insertion_timer.start();
@@ -242,6 +241,8 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         is_v_on_input,
         tets,
         tet_face_on_input_surface);
+
+    logger().info("=== finished insertion");
 
     // generate new mesh
     tetwild::TetWildMesh mesh_new(params, surf_mesh.m_envelope, NUM_THREADS);
@@ -261,7 +262,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     // });
 
 
-    wmtk::logger().info("volume remesher insertion time: {}s", insertion_time);
+    wmtk::logger().info("volume remesher insertion time: {:.4}s", insertion_time);
 
     // mesh_new.output_tetrahedralized_embedded_mesh(
     //     "tetrahedralized_embedded_mesh.txt",
@@ -291,8 +292,8 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         }
     }
 
-    wmtk::logger().info("MESH NONMANIFOLD VERTEX COUNT BEFORE OPTIMIZE: {}", nonmani_ver_cnt);
-    wmtk::logger().info("MESH surface VERTEX COUNT BEFORE OPTIMIZE: {}", surface_v_cnt);
+    wmtk::logger().info("#non-manifold vertices before optimization: {}", nonmani_ver_cnt);
+    wmtk::logger().info("#surface vertices before optimization: {}", surface_v_cnt);
 
     // /////////mesh improvement
     if (json_params["use_legacy_code"]) {
@@ -345,7 +346,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     mesh_new.consolidate_mesh();
 
     double time = timer.getElapsedTime();
-    wmtk::logger().info("total time {}s", time);
+    wmtk::logger().info("total time {:.4}s", time);
     if (mesh_new.tet_size() == 0) {
         log_and_throw_error("Empty Output after Filter!");
     }
@@ -394,7 +395,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
         }
 
-        wmtk::logger().info("Output face size {}", outface.size());
+        wmtk::logger().info("#output faces = {}", outface.size());
     }
 
     // Hausdorff + Euler Characteristic

@@ -52,20 +52,6 @@ void TetWildMesh::mesh_improvement(int max_its)
     // TODO: refactor to eliminate repeated partition.
     //
 
-    // rounding
-    // std::atomic_int cnt_round(0);
-    // std::atomic_int cnt_valid(0);
-
-    // auto vertices = get_vertices();
-    // for (auto v : vertices) {
-    //     // debug code
-    //     if (v.is_valid(*this)) cnt_valid++;
-
-    //     if (round(v)) cnt_round++;
-    // }
-
-    // wmtk::logger().info("cnt_round {}/{}", cnt_round, cnt_valid);
-
     compute_vertex_partition_morton();
 
     // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
@@ -84,11 +70,11 @@ void TetWildMesh::mesh_improvement(int max_its)
         auto [max_energy, avg_energy] = local_operations({{1, 1, 1, 1}});
 
         ///energy check
-        wmtk::logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
+        wmtk::logger().info("max energy {:.6} | stop {:.6}", max_energy, m_params.stop_energy);
         if (max_energy < m_params.stop_energy) break;
         consolidate_mesh();
 
-        wmtk::logger().info("v {} t {}", vert_capacity(), tet_capacity());
+        wmtk::logger().info("#V = {}, #T = {}", vert_capacity(), tet_capacity());
 
         auto cnt_round = 0, cnt_verts = 0;
         TetMesh::for_each_vertex([&](auto& v) {
@@ -464,7 +450,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
                 wmtk::logger().info("==splitting {}==", n);
                 split_all_edges();
                 wmtk::logger().info(
-                    "#vertices {}, #tets {} after split",
+                    "#V = {}, #T = {} after split",
                     get_vertices().size(),
                     get_tets().size());
                 // auto faces = get_faces();
@@ -490,7 +476,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
                 wmtk::logger().info("==collapsing {}==", n);
                 collapse_all_edges(collapse_limit_length);
                 wmtk::logger().info(
-                    "#vertices {}, #tets {} after collapse",
+                    "#V = {}, #T = {} after collapse",
                     get_vertices().size(),
                     get_tets().size());
                 // auto faces = get_faces();
@@ -548,7 +534,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
     energy = get_max_avg_energy();
     wmtk::logger().info("max energy = {:.6}", std::get<0>(energy));
     wmtk::logger().info("avg energy = {:.6}", std::get<1>(energy));
-    wmtk::logger().info("time = {}", timer.getElapsedTime());
+    wmtk::logger().info("time = {:.4}s", timer.getElapsedTime());
 
 
     return energy;
@@ -556,7 +542,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
 
 bool TetWildMesh::adjust_sizing_field_serial(double max_energy)
 {
-    wmtk::logger().info("#vertices {}, #tets {}", vert_capacity(), tet_capacity());
+    wmtk::logger().info("#V {}, #T {}", vert_capacity(), tet_capacity());
 
     const double stop_filter_energy = m_params.stop_energy * 0.8;
     double filter_energy = std::max(max_energy / 100, stop_filter_energy);

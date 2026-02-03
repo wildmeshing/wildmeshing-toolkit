@@ -174,7 +174,7 @@ void stl_to_manifold_wmtk_input(
     }
 
 
-    logger().info("In \"Read.cpp\": Check faces for collinearity...");
+    // logger().info("In \"Read.cpp\": Check faces for collinearity...");
     for (size_t i = 0; i < F.rows(); ++i) {
         Eigen::Vector3d v0 = V.row(F(i, 0));
         Eigen::Vector3d v1 = V.row(F(i, 1));
@@ -188,7 +188,7 @@ void stl_to_manifold_wmtk_input(
                 v2.transpose());
         }
     }
-    logger().info("done");
+    // logger().info("done");
 }
 
 } // namespace wmtk
