@@ -356,7 +356,7 @@ public:
     bool check_attributes();
 
     std::vector<std::array<size_t, 3>> get_faces_by_condition(
-        std::function<bool(const FaceAttributes&)> cond);
+        std::function<bool(const FaceAttributes&)> cond) const;
 
     bool invariants(const std::vector<Tuple>& t) override; // this is now automatically checked
 
@@ -566,6 +566,24 @@ public:
 
     // initialize sizing field (for topology preservation)
     void init_sizing_field();
+
+public:
+    struct ExportStruct
+    {
+        // tet mesh
+        MatrixXd V;
+        MatrixXi T;
+        // tracked surface
+        MatrixXi F;
+        // attributes
+        VectorXd t_amips;
+        VectorXd t_winding_number_input;
+        VectorXd t_winding_number_tracked;
+        MatrixXd t_winding_number_per_input;
+        VectorXi t_part;
+    };
+    // export functionality
+    ExportStruct export_mesh_data() const;
 };
 
 

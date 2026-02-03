@@ -1195,7 +1195,7 @@ bool TetWildMesh::invariants(const std::vector<Tuple>& tets)
 }
 
 std::vector<std::array<size_t, 3>> TetWildMesh::get_faces_by_condition(
-    std::function<bool(const FaceAttributes&)> cond)
+    std::function<bool(const FaceAttributes&)> cond) const
 {
     auto res = std::vector<std::array<size_t, 3>>();
     for (auto f : get_faces()) {
@@ -2054,6 +2054,70 @@ void TetWildMesh::init_sizing_field()
             }
         }
     }
+}
+
+TetWildMesh::ExportStruct TetWildMesh::export_mesh_data() const
+{
+    ExportStruct e;
+
+    const auto vs = get_vertices();
+    const auto tets = get_tets();
+    const auto faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
+
+    e.V.resize(vert_capacity(), 3);
+    e.T.resize(tet_capacity(), 4);
+    e.F.resize(faces.size(), 3);
+
+    e.V.setZero();
+    e.T.setZero();
+    e.F.setZero();
+
+    e.t_part.resize(tet_capacity(), 1);
+    e.t_part.setZero();
+    e.t_winding_number_input.resize(tet_capacity(), 1);
+    e.t_winding_number_input.setZero();
+    e.t_winding_number_tracked.resize(tet_capacity(), 1);
+    e.t_winding_number_tracked.setZero();
+    e.t_amips.resize(tet_capacity(), 1);
+    e.t_amips.setZero();
+    if (!tets.empty()) {
+        e.t_winding_number_per_input.resize(
+            tet_capacity(),
+            m_tet_attribute[tets[0].tid(*this)].m_winding_number_per_input.size());
+    }
+
+    int index = 0;
+    for (const Tuple& t : tets) {
+        size_t tid = t.tid(*this);
+        e.t_part(index, 0) = m_tet_attribute[tid].part_id;
+        e.t_winding_number_input(index, 0) = m_tet_attribute[tid].m_winding_number_input;
+        e.t_winding_number_tracked(index, 0) = m_tet_attribute[tid].m_winding_number_tracked;
+        e.t_amips(index, 0) = std::cbrt(m_tet_attribute[tid].m_quality);
+
+        for (size_t i = 0; i < e.t_winding_number_per_input.cols(); ++i) {
+            e.t_winding_number_per_input(index, i) =
+                m_tet_attribute[tid].m_winding_number_per_input[i];
+        }
+
+        const auto vs = oriented_tet_vertices(t);
+        for (int j = 0; j < 4; j++) {
+            e.T(index, j) = vs[j].vid(*this);
+        }
+        ++index;
+    }
+
+    for (size_t i = 0; i < faces.size(); ++i) {
+        for (size_t j = 0; j < 3; ++j) {
+            e.F(i, j) = faces[i][j];
+        }
+    }
+
+    for (const auto& v : vs) {
+        const auto vid = v.vid(*this);
+        e.V.row(vid) = m_vertex_attribute[vid].m_posf;
+    }
+
+    return e;
 }
 
 } // namespace wmtk::components::tetwild
