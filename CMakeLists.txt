@@ -142,9 +142,13 @@ endif()
 
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
+    include(CTest)
+
     # Unit tests
-    enable_testing()
-    add_subdirectory(tests)
+    if(BUILD_TESTING)
+        enable_testing()
+        add_subdirectory(tests)
+    endif()
 
     # wmtk_app
     add_subdirectory(app) # also contains python bindings
