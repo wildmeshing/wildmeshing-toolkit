@@ -1,324 +1,317 @@
-#include <catch2/catch_test_macros.hpp>
-#include <wmtk/components/topological_offset/TopoOffsetMesh.h>
+#include <igl/predicates/predicates.h>
 #include <wmtk/TetMesh.h>
+#include <wmtk/components/topological_offset/TopoOffsetMesh.h>
+#include <catch2/catch_test_macros.hpp>
 
 using namespace wmtk;
 using namespace components::topological_offset;
 
 
-// // TESTING
-// void topological_offset(nlohmann::json json_params) {
-//     Eigen::MatrixXd V(4, 3);
-//     V << 0, 0, 0,
-//          1, 0, 0,
-//          0, 1, 0,
-//          0, 0, 1;
-//     Eigen::MatrixXi T(1, 4);
-//     T << 0, 1, 2, 3;
-//     Eigen::MatrixXi Tags(1, 1);
-//     Tags << 0;
-
-//     Parameters param;
-//     param.tag = 0;
-//     param.sep_tags.push_back(1); param.sep_tags.push_back(4);
-//     topological_offset::TopoOffsetMesh mesh(param, 0);
-//     std::string outf = "/Users/seb9449/Desktop/wildmeshing/test/out";
-
-//     mesh.init_from_image(V, T, Tags);
-//     logger().info("{} {} {} {}", mesh.tet_size(), mesh.get_faces().size(), mesh.get_edges().size(), mesh.vertex_size());
-//     mesh.write_vtu(outf + fmt::format("_{}", mesh.m_vtu_counter++));
-
-//     std::vector<wmtk::TetMesh::Tuple> new_edges;
-//     wmtk::TetMesh::Tuple e = mesh.tuple_from_edge({0, 1});
-//     mesh.split_edge(e, new_edges);
-//     logger().info("{} {} {} {}", mesh.tet_size(), mesh.get_faces().size(), mesh.get_edges().size(), mesh.vertex_size());
-//     mesh.write_vtu(outf + fmt::format("_{}", mesh.m_vtu_counter++));
-
-//     mesh.consolidate_mesh();
-//     logger().info("{} {} {} {}", mesh.tet_size(), mesh.get_faces().size(), mesh.get_edges().size(), mesh.vertex_size());
-// }
+// used for checking attribute propagatoin. values are arbitrary
+const int V0_LABEL = 10;
+const int V1_LABEL = 11;
+const int V2_LABEL = 12;
+const int V3_LABEL = 13;
+const int E0_LABEL = 20;
+const int E1_LABEL = 21;
+const int E2_LABEL = 22;
+const int E3_LABEL = 23;
+const int E4_LABEL = 24;
+const int E5_LABEL = 25;
+const int F0_LABEL = 30;
+const int F1_LABEL = 31;
+const int F2_LABEL = 32;
+const int F3_LABEL = 33;
+const int T0_LABEL = 40;
+const std::vector<double> T0_TAGS = {128.0};
 
 
-// EDGE SPLIT TESTING
-// this should go somewhere else, just testing for now
-void unit_tests1() {
-    Eigen::MatrixXd V(4, 3);
-    V << 0, 0, 0,
-         1, 0, 0,
-         0, 0, 1,
-         0, 1, 0;
+TEST_CASE("edge_split", "[split_op]")
+{
+    Eigen::Matrix<double, Eigen::Dynamic, 3> V(4, 3);
+    V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
     Eigen::MatrixXi T(1, 4);
     T << 0, 1, 2, 3;
-    Eigen::MatrixXi Tags(1, 1);
-    Tags << 0;
+    Eigen::MatrixXd Tags(1, 1);
+    Tags << 128.0;
 
     Parameters param;
-    param.tag = 0;
-    param.sep_tags.push_back(1); param.sep_tags.push_back(4);
-    topological_offset::TopoOffsetMesh mesh(param, 0);
-    // std::string outf = "/Users/seb9449/Desktop/wildmeshing/test/edgesplittest_out";
-    
-    mesh.init_from_image(V, T, Tags);
-    // mesh.write_vtu(outf + "_0");
-    // auto res = igl::predicates::orient3d(mesh.m_vertex_attribute[0].m_posf,
-    //                                      mesh.m_vertex_attribute[1].m_posf,
-    //                                      mesh.m_vertex_attribute[2].m_posf,
-    //                                      mesh.m_vertex_attribute[3].m_posf);
-    // for (int i = 0; i < 4; i++) {
-    //     std::cout << mesh.m_vertex_attribute[i].m_posf << std::endl;
-    //     std::cout << "---" << std::endl;
-    // }
-    // std::cout << (res == igl::predicates::Orientation::POSITIVE) << std::endl;
+    param.tag_name = "dummy";
+    param.sep_tag_vals.push_back(1);
+    param.sep_tag_vals.push_back(4);
+    TopoOffsetMesh mesh(param, 0);
+    std::vector<std::string> tag_names(1, "dummy");
+    mesh.init_from_image(V, T, Tags, tag_names);
 
     // give every component unique tag combo
-    mesh.m_vertex_attribute[0].label = 1;
-    mesh.m_vertex_attribute[1].label = 2;
-    mesh.m_vertex_attribute[2].label = 3;
-    mesh.m_vertex_attribute[3].label = 4;
-    mesh.m_edge_attribute[0].label = 5;
-    mesh.m_edge_attribute[1].label = 6;
-    mesh.m_edge_attribute[2].label = 7;
-    mesh.m_edge_attribute[3].label = 8;
-    mesh.m_edge_attribute[4].label = 9;
-    mesh.m_edge_attribute[5].label = 10;
-    mesh.m_face_attribute[0].label = 11;
-    mesh.m_face_attribute[1].label = 12;
-    mesh.m_face_attribute[2].label = 13;
-    mesh.m_face_attribute[3].label = 14;
-    mesh.m_tet_attribute[0].label = 15;
+    mesh.m_vertex_attribute[0].label = V0_LABEL;
+    mesh.m_vertex_attribute[1].label = V1_LABEL;
+    mesh.m_vertex_attribute[2].label = V2_LABEL;
+    mesh.m_vertex_attribute[3].label = V3_LABEL;
+    mesh.m_edge_attribute[0].label = E0_LABEL;
+    mesh.m_edge_attribute[1].label = E1_LABEL;
+    mesh.m_edge_attribute[2].label = E2_LABEL;
+    mesh.m_edge_attribute[3].label = E3_LABEL;
+    mesh.m_edge_attribute[4].label = E4_LABEL;
+    mesh.m_edge_attribute[5].label = E5_LABEL;
+    mesh.m_face_attribute[0].label = F0_LABEL;
+    mesh.m_face_attribute[1].label = F1_LABEL;
+    mesh.m_face_attribute[2].label = F2_LABEL;
+    mesh.m_face_attribute[3].label = F3_LABEL;
+    mesh.m_tet_attribute[0].label = T0_LABEL;
 
-    TetMesh::Tuple e = mesh.tuple_from_edge({1, 3});
+    // split edge
+    TetMesh::Tuple e = mesh.tuple_from_edge({1, 2});
     std::vector<TetMesh::Tuple> garbage;
-    // std::cout << fmt::format("{} {} {} {}", e.tid(mesh), e.fid(mesh), e.eid(mesh), e.vid(mesh));
     mesh.split_edge(e, garbage);
-    // std::cout << fmt::format("{} {} {} {}", e.tid(mesh), e.fid(mesh), e.eid(mesh), e.vid(mesh));
-    // mesh.write_vtu(outf + "_1");
 
-    // auto edges = mesh.get_edges();
-    // for (const TetMesh::Tuple& edge : edges) {
-    //     std::cout << fmt::format("{} {} {} {}\n", edge.tid(mesh), edge.fid(mesh), edge.eid(mesh), edge.vid(mesh));
-    // }
-    auto [_, global_fid] = mesh.tuple_from_face({4, 0, 3});
-    // std::cout << global_fid << std::endl;
+    // // ensure proper propagation of attributes
+    // vertex
+    REQUIRE(mesh.m_vertex_attribute[0].label == V0_LABEL);
+    REQUIRE(mesh.m_vertex_attribute[1].label == V1_LABEL);
+    REQUIRE(mesh.m_vertex_attribute[2].label == V2_LABEL);
+    REQUIRE(mesh.m_vertex_attribute[3].label == V3_LABEL);
+    REQUIRE(mesh.m_vertex_attribute[4].label == E1_LABEL);
 
-    std::cout << (mesh.m_vertex_attribute[0].label == 1) << std::endl;
-    std::cout << (mesh.m_vertex_attribute[1].label == 2) << std::endl;
-    std::cout << (mesh.m_vertex_attribute[2].label == 3) << std::endl;
-    std::cout << (mesh.m_vertex_attribute[3].label == 4) << std::endl;
-    std::cout << (mesh.m_vertex_attribute[4].label == 9) << std::endl;
-    std::cout << (mesh.m_edge_attribute[0].label == 5) << std::endl;
-    std::cout << (mesh.m_edge_attribute[1].label == 6) << std::endl;
-    std::cout << (mesh.m_edge_attribute[2].label == 7) << std::endl;
-    std::cout << (mesh.m_edge_attribute[3].label == 13) << std::endl;
-    std::cout << (mesh.m_edge_attribute[4].label == 9) << std::endl;
-    std::cout << (mesh.m_edge_attribute[5].label == 14) << std::endl;
-    std::cout << (mesh.m_edge_attribute[9].label == 8) << std::endl;
-    std::cout << (mesh.m_edge_attribute[10].label == 9) << std::endl;
-    std::cout << (mesh.m_edge_attribute[11].label == 10) << std::endl;
-    std::cout << (mesh.m_face_attribute[0].label == 11) << std::endl;
-    std::cout << (mesh.m_face_attribute[1].label == 15) << std::endl;
-    std::cout << (mesh.m_face_attribute[2].label == 13) << std::endl;
-    std::cout << (mesh.m_face_attribute[3].label == 14) << std::endl;
-    std::cout << (mesh.m_face_attribute[5].label == 12) << std::endl;
-    std::cout << (mesh.m_face_attribute[6].label == 13) << std::endl;
-    std::cout << (mesh.m_face_attribute[7].label == 14) << std::endl;
-    std::cout << (mesh.m_tet_attribute[0].label == 15) << std::endl;
-    std::cout << (mesh.m_tet_attribute[1].label == 15) << std::endl;
+    // edges
+    std::array<std::array<size_t, 3>, 9> edges = {
+        {// {v0id, v1id, correct label}
+         {0, 1, E0_LABEL},
+         {0, 2, E2_LABEL},
+         {0, 3, E3_LABEL},
+         {0, 4, F0_LABEL},
+         {1, 3, E4_LABEL},
+         {1, 4, E1_LABEL},
+         {2, 3, E5_LABEL},
+         {2, 4, E1_LABEL},
+         {3, 4, F3_LABEL}}};
+    for (int i = 0; i < 9; i++) {
+        size_t v0 = edges[i][0];
+        size_t v1 = edges[i][1];
+        int correct_label = edges[i][2];
+        int actual_label = mesh.m_edge_attribute[mesh.tuple_from_edge({v0, v1}).eid(mesh)].label;
+        REQUIRE(actual_label == correct_label);
+    }
+
+    // faces
+    std::array<std::array<size_t, 4>, 7> faces = {
+        {{0, 1, 3, F2_LABEL},
+         {0, 1, 4, F0_LABEL},
+         {0, 2, 3, F1_LABEL},
+         {0, 2, 4, F0_LABEL},
+         {0, 3, 4, T0_LABEL},
+         {1, 3, 4, F3_LABEL},
+         {2, 3, 4, F3_LABEL}}};
+    for (int i = 0; i < 7; i++) {
+        size_t v0 = faces[i][0];
+        size_t v1 = faces[i][1];
+        size_t v2 = faces[i][2];
+        int correct_label = faces[i][3];
+        int actual_label =
+            mesh.m_face_attribute[std::get<1>(mesh.tuple_from_face({v0, v1, v2}))].label;
+        REQUIRE(correct_label == actual_label);
+    }
+
+    // tets
+    for (int i = 0; i < 2; i++) {
+        REQUIRE(mesh.m_tet_attribute[i].label == T0_LABEL);
+        REQUIRE(mesh.m_tet_attribute[i].tags == T0_TAGS);
+    }
 }
-// void topological_offset(nlohmann::json json_params) {unit_tests1();}
 
 
-// FACE SPLIT TESTING
-// this should go somewhere else, just testing for now
-void unit_tests2() {
-    Eigen::MatrixXd V(4, 3);
-    V << 0, 0, 0,
-         1, 0, 0,
-         0, 0, 1,
-         0, 1, 0;
+TEST_CASE("face_split", "[split_op]")
+{
+    Eigen::Matrix<double, Eigen::Dynamic, 3> V(4, 3);
+    V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
     Eigen::MatrixXi T(1, 4);
     T << 0, 1, 2, 3;
-    Eigen::MatrixXi Tags(1, 1);
-    Tags << 0;
+    Eigen::MatrixXd Tags(1, 1);
+    Tags << 128.0;
 
     Parameters param;
-    param.tag = 0;
-    param.sep_tags.push_back(1); param.sep_tags.push_back(4);
-    topological_offset::TopoOffsetMesh mesh(param, 0);
-    std::string outf = "/Users/seb9449/Desktop/wildmeshing/test/edgesplittest_out";
-    
-    mesh.init_from_image(V, T, Tags);
-    mesh.write_vtu(outf + "_0");
+    param.tag_name = "dummy";
+    param.sep_tag_vals.push_back(1);
+    param.sep_tag_vals.push_back(4);
+    TopoOffsetMesh mesh(param, 0);
+    std::vector<std::string> tag_names(1, "dummy");
+    mesh.init_from_image(V, T, Tags, tag_names);
 
     // give every component unique tag combo
-    mesh.m_vertex_attribute[0].label = 1;
-    mesh.m_vertex_attribute[1].label = 2;
-    mesh.m_vertex_attribute[2].label = 3;
-    mesh.m_vertex_attribute[3].label = 4;
-    mesh.m_edge_attribute[0].label = 5;
-    mesh.m_edge_attribute[1].label = 6;
-    mesh.m_edge_attribute[2].label = 7;
-    mesh.m_edge_attribute[3].label = 8;
-    mesh.m_edge_attribute[4].label = 9;
-    mesh.m_edge_attribute[5].label = 10;
-    mesh.m_face_attribute[0].label = 11;
-    mesh.m_face_attribute[1].label = 12;
-    mesh.m_face_attribute[2].label = 13;
-    mesh.m_face_attribute[3].label = 14;
-    mesh.m_tet_attribute[0].label = 15;
+    mesh.m_vertex_attribute[0].label = V0_LABEL;
+    mesh.m_vertex_attribute[1].label = V1_LABEL;
+    mesh.m_vertex_attribute[2].label = V2_LABEL;
+    mesh.m_vertex_attribute[3].label = V3_LABEL;
+    mesh.m_edge_attribute[0].label = E0_LABEL;
+    mesh.m_edge_attribute[1].label = E1_LABEL;
+    mesh.m_edge_attribute[2].label = E2_LABEL;
+    mesh.m_edge_attribute[3].label = E3_LABEL;
+    mesh.m_edge_attribute[4].label = E4_LABEL;
+    mesh.m_edge_attribute[5].label = E5_LABEL;
+    mesh.m_face_attribute[0].label = F0_LABEL;
+    mesh.m_face_attribute[1].label = F1_LABEL;
+    mesh.m_face_attribute[2].label = F2_LABEL;
+    mesh.m_face_attribute[3].label = F3_LABEL;
+    mesh.m_tet_attribute[0].label = T0_LABEL;
 
-    auto [f, _] = mesh.tuple_from_face({1, 2, 3});
+    // split face
+    auto [ftup, _] = mesh.tuple_from_face({1, 2, 3});
     std::vector<TetMesh::Tuple> garbage;
-    // logger().info("t{} f{} e{} v{}", f.tid(mesh), f.fid(mesh), f.eid(mesh), f.vid(mesh));
-    mesh.split_face(f, garbage);
-    // logger().info("{} {} {} {}", f.tid(mesh), f.fid(mesh), f.eid(mesh), f.vid(mesh));
-    mesh.write_vtu(outf + "_1");
+    mesh.split_face(ftup, garbage);
 
-    std::cout << (mesh.m_vertex_attribute[0].label == 1) << std::endl;
-    std::cout << (mesh.m_vertex_attribute[1].label == 2) << std::endl;
-    std::cout << (mesh.m_vertex_attribute[2].label == 3) << std::endl;
-    std::cout << (mesh.m_vertex_attribute[3].label == 4) << std::endl;
-    std::cout << (mesh.m_vertex_attribute[4].label == 14) << std::endl;
-    std::cout << (mesh.m_edge_attribute[0].label == 5) << std::endl;
-    std::cout << (mesh.m_edge_attribute[1].label == 14) << std::endl;
-    std::cout << (mesh.m_edge_attribute[2].label == 15) << std::endl;
-    std::cout << (mesh.m_edge_attribute[3].label == 8) << std::endl;
-    std::cout << (mesh.m_edge_attribute[4].label == 9) << std::endl;
-    std::cout << (mesh.m_edge_attribute[5].label == 14) << std::endl;
-    std::cout << (mesh.m_edge_attribute[7].label == 6) << std::endl;
-    std::cout << (mesh.m_edge_attribute[8].label == 7) << std::endl;
-    std::cout << (mesh.m_edge_attribute[11].label == 14) << std::endl;
-    std::cout << (mesh.m_edge_attribute[17].label == 10) << std::endl;
-    std::cout << (mesh.m_face_attribute[0].label == 15) << std::endl;
-    std::cout << (mesh.m_face_attribute[1].label == 15) << std::endl;
-    std::cout << (mesh.m_face_attribute[2].label == 13) << std::endl;
-    std::cout << (mesh.m_face_attribute[3].label == 14) << std::endl;
-    std::cout << (mesh.m_face_attribute[4].label == 11) << std::endl;
-    std::cout << (mesh.m_face_attribute[5].label == 15) << std::endl;
-    std::cout << (mesh.m_face_attribute[7].label == 14) << std::endl;
-    std::cout << (mesh.m_face_attribute[9].label == 12) << std::endl;
-    std::cout << (mesh.m_face_attribute[11].label == 14) << std::endl;
-    std::cout << (mesh.m_tet_attribute[0].label == 15) << std::endl;
-    std::cout << (mesh.m_tet_attribute[1].label == 15) << std::endl;
-    std::cout << (mesh.m_tet_attribute[2].label == 15) << std::endl;
-    std::cout << std::endl;
-    std::cout << mesh.m_edge_attribute[4].label << std::endl;
-    std::cout << mesh.m_edge_attribute[7].label << std::endl;
-    std::cout << mesh.m_edge_attribute[17].label << std::endl;
+    // // ensure proper propagation of attributes
+    // vertex
+    REQUIRE(mesh.m_vertex_attribute[0].label == V0_LABEL);
+    REQUIRE(mesh.m_vertex_attribute[1].label == V1_LABEL);
+    REQUIRE(mesh.m_vertex_attribute[2].label == V2_LABEL);
+    REQUIRE(mesh.m_vertex_attribute[3].label == V3_LABEL);
+    REQUIRE(mesh.m_vertex_attribute[4].label == F3_LABEL);
+
+    // edges
+    std::array<std::array<size_t, 3>, 10> edges = {
+        {// {v0id, v1id, correct label}
+         {0, 1, E0_LABEL},
+         {0, 2, E2_LABEL},
+         {0, 3, E3_LABEL},
+         {0, 4, T0_LABEL},
+         {1, 2, E1_LABEL},
+         {1, 3, E4_LABEL},
+         {1, 4, F3_LABEL},
+         {2, 3, E5_LABEL},
+         {2, 4, F3_LABEL},
+         {3, 4, F3_LABEL}}};
+    for (int i = 0; i < 9; i++) {
+        size_t v0 = edges[i][0];
+        size_t v1 = edges[i][1];
+        int correct_label = edges[i][2];
+        int actual_label = mesh.m_edge_attribute[mesh.tuple_from_edge({v0, v1}).eid(mesh)].label;
+        REQUIRE(actual_label == correct_label);
+    }
+
+    // faces
+    std::array<std::array<size_t, 4>, 9> faces = {
+        {// {v0id, v1id, v2id, correct label}
+         {0, 1, 2, F0_LABEL},
+         {0, 1, 3, F2_LABEL},
+         {0, 1, 4, T0_LABEL},
+         {0, 2, 3, F1_LABEL},
+         {0, 2, 4, T0_LABEL},
+         {0, 3, 4, T0_LABEL},
+         {1, 2, 4, F3_LABEL},
+         {1, 3, 4, F3_LABEL},
+         {2, 3, 4, F3_LABEL}}};
+    for (int i = 0; i < 7; i++) {
+        size_t v0 = faces[i][0];
+        size_t v1 = faces[i][1];
+        size_t v2 = faces[i][2];
+        int correct_label = faces[i][3];
+        int actual_label =
+            mesh.m_face_attribute[std::get<1>(mesh.tuple_from_face({v0, v1, v2}))].label;
+        REQUIRE(correct_label == actual_label);
+    }
+
+    // tets
+    for (int i = 0; i < 3; i++) {
+        REQUIRE(mesh.m_tet_attribute[i].label == T0_LABEL);
+        REQUIRE(mesh.m_tet_attribute[i].tags == T0_TAGS);
+    }
 }
-// void topological_offset(nlohmann::json json_params) {unit_tests2();}
 
 
-// TET SPLIT TESTING
-// this should go somewhere else, just testing for now
-void unit_tests3() {
-    Eigen::MatrixXd V(4, 3);
-    V << 0, 0, 0,
-         1, 0, 0,
-         0, 0, 1,
-         0, 1, 0;
+TEST_CASE("tet_split", "[split_op]")
+{
+    Eigen::Matrix<double, Eigen::Dynamic, 3> V(4, 3);
+    V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
     Eigen::MatrixXi T(1, 4);
     T << 0, 1, 2, 3;
-    Eigen::MatrixXi Tags(1, 1);
-    Tags << 0;
+    Eigen::MatrixXd Tags(1, 1);
+    Tags << 128.0;
 
     Parameters param;
-    param.tag = 0;
-    param.sep_tags.push_back(1); param.sep_tags.push_back(4);
-    topological_offset::TopoOffsetMesh mesh(param, 0);
-    std::string outf = "/Users/seb9449/Desktop/wildmeshing/test/edgesplittest_out";
-    
-    mesh.init_from_image(V, T, Tags);
-    mesh.write_vtu(outf + "_0");
+    param.tag_name = "dummy";
+    param.sep_tag_vals.push_back(1);
+    param.sep_tag_vals.push_back(4);
+    TopoOffsetMesh mesh(param, 0);
+    std::vector<std::string> tag_names(1, "dummy");
+    mesh.init_from_image(V, T, Tags, tag_names);
 
     // give every component unique tag combo
-    mesh.m_vertex_attribute[0].label = 1;
-    mesh.m_vertex_attribute[1].label = 2;
-    mesh.m_vertex_attribute[2].label = 3;
-    mesh.m_vertex_attribute[3].label = 4;
-    mesh.m_edge_attribute[0].label = 5;
-    mesh.m_edge_attribute[1].label = 6;
-    mesh.m_edge_attribute[2].label = 7;
-    mesh.m_edge_attribute[3].label = 8;
-    mesh.m_edge_attribute[4].label = 9;
-    mesh.m_edge_attribute[5].label = 10;
-    mesh.m_face_attribute[0].label = 11;
-    mesh.m_face_attribute[1].label = 12;
-    mesh.m_face_attribute[2].label = 13;
-    mesh.m_face_attribute[3].label = 14;
-    mesh.m_tet_attribute[0].label = 15;
+    mesh.m_vertex_attribute[0].label = V0_LABEL;
+    mesh.m_vertex_attribute[1].label = V1_LABEL;
+    mesh.m_vertex_attribute[2].label = V2_LABEL;
+    mesh.m_vertex_attribute[3].label = V3_LABEL;
+    mesh.m_edge_attribute[0].label = E0_LABEL;
+    mesh.m_edge_attribute[1].label = E1_LABEL;
+    mesh.m_edge_attribute[2].label = E2_LABEL;
+    mesh.m_edge_attribute[3].label = E3_LABEL;
+    mesh.m_edge_attribute[4].label = E4_LABEL;
+    mesh.m_edge_attribute[5].label = E5_LABEL;
+    mesh.m_face_attribute[0].label = F0_LABEL;
+    mesh.m_face_attribute[1].label = F1_LABEL;
+    mesh.m_face_attribute[2].label = F2_LABEL;
+    mesh.m_face_attribute[3].label = F3_LABEL;
+    mesh.m_tet_attribute[0].label = T0_LABEL;
 
-    TetMesh::Tuple t = mesh.tuple_from_tet(0);
+    // split face
+    TetMesh::Tuple ttup = mesh.tuple_from_tet(0);
     std::vector<TetMesh::Tuple> garbage;
-    // logger().info("t{} f{} e{} v{}", f.tid(mesh), f.fid(mesh), f.eid(mesh), f.vid(mesh));
-    mesh.split_tet(t, garbage);
-    // logger().info("{} {} {} {}", f.tid(mesh), f.fid(mesh), f.eid(mesh), f.vid(mesh));
-    mesh.write_vtu(outf + "_1");
+    mesh.split_tet(ttup, garbage);
 
-    // //  TESTING
-    // logger().info("--------");
-    // for (int i = 0; i < mesh.vertex_size(); i++) {
-    //     Eigen::Vector3d p = mesh.m_vertex_attribute[i].m_posf;
-    //     logger().info("v{}: ({}, {}, {})", i, p(0), p(1), p(2));
-    // }
-    // logger().info("--------");
+    // // ensure proper propagation of attributes
+    // vertex
+    REQUIRE(mesh.m_vertex_attribute[0].label == V0_LABEL);
+    REQUIRE(mesh.m_vertex_attribute[1].label == V1_LABEL);
+    REQUIRE(mesh.m_vertex_attribute[2].label == V2_LABEL);
+    REQUIRE(mesh.m_vertex_attribute[3].label == V3_LABEL);
+    REQUIRE(mesh.m_vertex_attribute[4].label == T0_LABEL);
 
-    // auto edges1 = mesh.get_edges();
-    // logger().info("--------");
-    // for (const TetMesh::Tuple e : edges1) {
-    //     std::array<size_t, 2> vs = {e.vid(mesh), mesh.switch_vertex(e).vid(mesh)};
-    //     logger().info("e{}: {} {}", e.eid(mesh), vs[0], vs[1]);
-    // }
-    // logger().info("--------");
+    // edges
+    std::array<std::array<size_t, 3>, 10> edges = {
+        {// {v0id, v1id, correct label}
+         {0, 1, E0_LABEL},
+         {0, 2, E2_LABEL},
+         {0, 3, E3_LABEL},
+         {0, 4, T0_LABEL},
+         {1, 2, E1_LABEL},
+         {1, 3, E4_LABEL},
+         {1, 4, T0_LABEL},
+         {2, 3, E5_LABEL},
+         {2, 4, T0_LABEL},
+         {3, 4, T0_LABEL}}};
+    for (int i = 0; i < 9; i++) {
+        size_t v0 = edges[i][0];
+        size_t v1 = edges[i][1];
+        int correct_label = edges[i][2];
+        int actual_label = mesh.m_edge_attribute[mesh.tuple_from_edge({v0, v1}).eid(mesh)].label;
+        REQUIRE(actual_label == correct_label);
+    }
 
-    // auto faces1 = mesh.get_faces();
-    // logger().info("--------");
-    // for (const TetMesh::Tuple f : faces1) {
-    //     auto vs = mesh.get_face_vids(f);
-    //     logger().info("f{}: {} {} {}", f.fid(mesh), vs[0], vs[1], vs[2]);
-    // }
-    // logger().info("--------");
+    // faces
+    std::array<std::array<size_t, 4>, 10> faces = {
+        {// {v0id, v1id, v2id, correct label}
+         {0, 1, 2, F0_LABEL},
+         {0, 1, 3, F2_LABEL},
+         {0, 1, 4, T0_LABEL},
+         {0, 2, 3, F1_LABEL},
+         {0, 2, 4, T0_LABEL},
+         {0, 3, 4, T0_LABEL},
+         {1, 2, 3, F3_LABEL},
+         {1, 2, 4, T0_LABEL},
+         {1, 3, 4, T0_LABEL},
+         {2, 3, 4, T0_LABEL}}};
+    for (int i = 0; i < 7; i++) {
+        size_t v0 = faces[i][0];
+        size_t v1 = faces[i][1];
+        size_t v2 = faces[i][2];
+        int correct_label = faces[i][3];
+        int actual_label =
+            mesh.m_face_attribute[std::get<1>(mesh.tuple_from_face({v0, v1, v2}))].label;
+        REQUIRE(correct_label == actual_label);
+    }
 
-    // auto tets1 = mesh.get_tets();
-    // logger().info("--------");
-    // for (const TetMesh::Tuple t : tets1) {
-    //     auto vs = mesh.oriented_tet_vids(t);
-    //     logger().info("t{}: {} {} {} {}", t.tid(mesh), vs[0], vs[1], vs[2], vs[3]);
-    // }
-    // logger().info("--------");
-    // // TESTING
-
-    logger().info("{}", mesh.m_vertex_attribute[0].label == 1);
-    logger().info("{}", mesh.m_vertex_attribute[1].label == 2);
-    logger().info("{}", mesh.m_vertex_attribute[2].label == 3);
-    logger().info("{}", mesh.m_vertex_attribute[3].label == 4);
-    logger().info("{}", mesh.m_vertex_attribute[4].label == 15);
-
-    logger().info("{}", mesh.m_edge_attribute[0].label == 15);
-    logger().info("{}", mesh.m_edge_attribute[1].label == 6);
-    logger().info("{}", mesh.m_edge_attribute[2].label == 15);
-    logger().info("{}", mesh.m_edge_attribute[3].label == 15);
-    logger().info("{}", mesh.m_edge_attribute[4].label == 9);
-    logger().info("{}", mesh.m_edge_attribute[5].label == 10);
-    logger().info("{}", mesh.m_edge_attribute[6].label == 15);
-    logger().info("{}", mesh.m_edge_attribute[8].label == 7);
-    logger().info("{}", mesh.m_edge_attribute[9].label == 8);
-    logger().info("{}", mesh.m_edge_attribute[12].label == 5);
-
-    logger().info("{}", mesh.m_face_attribute[0].label == 15);
-    logger().info("{}", mesh.m_face_attribute[1].label == 15);
-    logger().info("{}", mesh.m_face_attribute[2].label == 15);
-    logger().info("{}", mesh.m_face_attribute[3].label == 14);
-    logger().info("{}", mesh.m_face_attribute[4].label == 15);
-    logger().info("{}", mesh.m_face_attribute[5].label == 12);
-    logger().info("{}", mesh.m_face_attribute[6].label == 15);
-    logger().info("{}", mesh.m_face_attribute[8].label == 15);
-    logger().info("{}", mesh.m_face_attribute[10].label == 13);
-    logger().info("{}", mesh.m_face_attribute[12].label == 11);
-
-    logger().info("{}", mesh.m_tet_attribute[0].label == 15);
-    logger().info("{}", mesh.m_tet_attribute[1].label == 15);
-    logger().info("{}", mesh.m_tet_attribute[2].label == 15);
-    logger().info("{}", mesh.m_tet_attribute[3].label == 15);
+    // tets
+    for (int i = 0; i < 4; i++) {
+        REQUIRE(mesh.m_tet_attribute[i].label == T0_LABEL);
+        REQUIRE(mesh.m_tet_attribute[i].tags == T0_TAGS);
+    }
 }
-// void topological_offset(nlohmann::json json_params) {unit_tests3();}

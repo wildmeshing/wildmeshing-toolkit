@@ -32,10 +32,6 @@
 #include <limits>
 
 
-// namespace {
-// static int debug_print_counter = 0;
-// }
-
 namespace wmtk::components::manifold_extraction {
 
 
@@ -52,20 +48,6 @@ void ManExtractMesh::init_from_image(const MatrixXd& V, const MatrixXi& T, const
     assert(T.cols() == 4);
     assert(T.rows() == T_tag.rows());
     assert(T_tag.cols() == 1);
-
-    // // extract tag of interest and set map
-    // if (tag_label_map.count(m_params.tag_label) == 0) { // desired tag not found
-    //     std::string existing_tags = "";
-    //     for (const auto& pair : tag_label_map) {
-    //         existing_tags += (" (" + pair.first + ")");
-    //     }
-    //     log_and_throw_error(
-    //         "Tag label '{}' not found in input mesh. [Tags found:{}]",
-    //         m_params.tag_label,
-    //         existing_tags);
-    // }
-
-    // Eigen::MatrixXd T_tag = T_tags(Eigen::all, tag_label_map.at(m_params.tag_label));
 
     // initialize connectivity
     init(T);
@@ -91,7 +73,7 @@ void ManExtractMesh::init_from_image(const MatrixXd& V, const MatrixXi& T, const
             m_face_attribute[f.fid(*this)].in_out = true;
         } else {
             auto other_tet = switch_tetrahedron(f);
-            if (other_tet.has_value() && m_tet_attribute[other_tet.value().tid(*this)].in_out) {
+            if (other_tet && m_tet_attribute[other_tet.value().tid(*this)].in_out) {
                 m_face_attribute[f.fid(*this)].in_out = true;
             }
         }
@@ -214,12 +196,12 @@ void ManExtractMesh::edge_dfs_helper(std::set<size_t>& visited_tids, const Tuple
     visited_tids.insert(curr_tid); // tet is in input mesh, and haven't visited before.
 
     auto t1 = t.switch_tetrahedron(*this);
-    if (t1.has_value()) {
+    if (t1) {
         edge_dfs_helper(visited_tids, t1.value());
     }
 
     auto t2 = t.switch_face(*this).switch_tetrahedron(*this);
-    if (t2.has_value()) {
+    if (t2) {
         edge_dfs_helper(visited_tids, t2.value());
     }
 }
@@ -304,21 +286,21 @@ void ManExtractMesh::vertex_dfs_helper(
         false; // whether to propagate search 'through' external 'out' space
 
     auto t1 = t.switch_tetrahedron(*this);
-    if (t1.has_value()) {
+    if (t1) {
         vertex_dfs_helper(visited_tids, t1.value(), include, b_out_faces);
     } else if (!include) { // boundary face and we're searching through out tets
         search_through_external_space = true;
     }
 
     auto t2 = t.switch_face(*this).switch_tetrahedron(*this);
-    if (t2.has_value()) {
+    if (t2) {
         vertex_dfs_helper(visited_tids, t2.value(), include, b_out_faces);
     } else if (!include) {
         search_through_external_space = true;
     }
 
     auto t3 = t.switch_edge(*this).switch_face(*this).switch_tetrahedron(*this);
-    if (t3.has_value()) {
+    if (t3) {
         vertex_dfs_helper(visited_tids, t3.value(), include, b_out_faces);
     } else if (!include) {
         search_through_external_space = true;
@@ -346,7 +328,7 @@ bool ManExtractMesh::is_boundary_vertex(size_t vid) const
             size_t v3 = vs[(i + 2) % 4];
             if ((v1 == vid) || (v2 == vid) || (v3 == vid)) {
                 auto [ftup, _] = tuple_from_face({v1, v2, v3});
-                if (!ftup.switch_tetrahedron(*this).has_value()) { // is boundary face
+                if (!ftup.switch_tetrahedron(*this)) { // is boundary face
                     return true;
                 }
             }
@@ -370,7 +352,7 @@ std::vector<simplex::Face> ManExtractMesh::get_boundary_faces_for_out_tets(size_
             size_t v2 = vs[(i + 1) % 4];
             size_t v3 = vs[(i + 2) % 4];
             auto [ftup, _] = tuple_from_face({v1, v2, v3});
-            if (!ftup.switch_tetrahedron(*this).has_value()) { // boundary face
+            if (!ftup.switch_tetrahedron(*this)) { // boundary face
                 b_out_faces.push_back(simplex::Face(v1, v2, v3));
             }
         }
@@ -569,7 +551,7 @@ void ManExtractMesh::extract_surface_mesh(MatrixXd& V, MatrixXi& F)
     auto faces = get_faces();
     for (const Tuple& f : faces) {
         auto other_tet = f.switch_tetrahedron(*this);
-        if (other_tet.has_value()) { // both tets exist
+        if (other_tet) { // both tets exist
             Tuple in;
             if (!m_tet_attribute[f.tid(*this)].in_out &&
                 m_tet_attribute[other_tet.value().tid(*this)].in_out) { // f tet is out, other is in
@@ -653,6 +635,19 @@ void ManExtractMesh::extract_surface_mesh(MatrixXd& V, MatrixXi& F)
 
 bool ManExtractMesh::invariants(const std::vector<Tuple>& tets)
 {
+    igl::predicates::exactinit();
+    for (const Tuple& t : tets) {
+        auto vs = oriented_tet_vids(t);
+        auto res = igl::predicates::orient3d(
+            m_vertex_attribute[vs[0]].m_posf,
+            m_vertex_attribute[vs[1]].m_posf,
+            m_vertex_attribute[vs[2]].m_posf,
+            m_vertex_attribute[vs[3]].m_posf);
+
+        if (res != igl::predicates::Orientation::NEGATIVE) {
+            return false;
+        }
+    }
     return true;
 }
 

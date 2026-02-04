@@ -38,6 +38,6 @@ target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC
 ## TESTS
 ######################
 
-# if(${WMTK_COMPONENT_TESTS})
-#     add_subdirectory(tests)
-# endif()
+if(${WMTK_COMPONENT_TESTS})
+    add_subdirectory(tests)
+endif()

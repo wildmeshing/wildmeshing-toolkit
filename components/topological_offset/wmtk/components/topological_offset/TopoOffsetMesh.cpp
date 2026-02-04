@@ -93,7 +93,7 @@ void TopoOffsetMesh::init_from_image(
         std::set<int> nb_tags;
         nb_tags.insert(T_tag(f.tid(*this), 0));
         auto other = f.switch_tetrahedron(*this);
-        if (other.has_value()) {
+        if (other) {
             nb_tags.insert(T_tag(other.value().tid(*this), 0));
         }
 
@@ -336,6 +336,19 @@ void TopoOffsetMesh::perform_offset()
 
 bool TopoOffsetMesh::invariants(const std::vector<Tuple>& tets)
 {
+    igl::predicates::exactinit();
+    for (const Tuple& t : tets) {
+        auto vs = oriented_tet_vids(t);
+        auto res = igl::predicates::orient3d(
+            m_vertex_attribute[vs[0]].m_posf,
+            m_vertex_attribute[vs[1]].m_posf,
+            m_vertex_attribute[vs[2]].m_posf,
+            m_vertex_attribute[vs[3]].m_posf);
+
+        if (res != igl::predicates::Orientation::NEGATIVE) {
+            return false;
+        }
+    }
     return true;
 }
 

@@ -22,8 +22,6 @@ set(SRC_FILES
 	read_image_msh.cpp
 	write_image_msh.hpp
 	write_image_msh.cpp
-
-	file_generation.cpp
     )
 
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
@@ -38,6 +36,6 @@ target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC
 ## TESTS
 ######################
 
-# if(${WMTK_COMPONENT_TESTS})
-#     add_subdirectory(tests)
-# endif()
+if(${WMTK_COMPONENT_TESTS})
+    add_subdirectory(tests)
+endif()

@@ -93,8 +93,7 @@ void read_image_msh(
             p3);
     }
 
-    bool is_inverted = result >= 0;
-    if (is_inverted) {
+    if (result >= 0) {
         logger().warn("First tet of input is inverted -> invert all tets.");
         T_input.col(2).swap(T_input.col(3));
     }
