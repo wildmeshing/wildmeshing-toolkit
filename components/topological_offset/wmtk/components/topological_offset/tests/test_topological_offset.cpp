@@ -7,7 +7,7 @@ using namespace wmtk;
 using namespace components::topological_offset;
 
 
-// used for checking attribute propagatoin. values are arbitrary
+// used for checking attribute propagation. values are arbitrary
 const int V0_LABEL = 10;
 const int V1_LABEL = 11;
 const int V2_LABEL = 12;
@@ -313,5 +313,47 @@ TEST_CASE("tet_split", "[split_op]")
     for (int i = 0; i < 4; i++) {
         REQUIRE(mesh.m_tet_attribute[i].label == T0_LABEL);
         REQUIRE(mesh.m_tet_attribute[i].tags == T0_TAGS);
+    }
+}
+
+
+TEST_CASE("invariant", "[split_op]")
+{
+    Eigen::Matrix<double, Eigen::Dynamic, 3> V(4, 3);
+    V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
+    Eigen::MatrixXd Tags(1, 1);
+    Tags << 0.0;
+
+    { // mesh 1 (bad)
+        Eigen::MatrixXi T(1, 4);
+        T << 0, 1, 3, 2;
+
+        Parameters param;
+        param.tag_name = "dummy";
+        param.sep_tag_vals.push_back(1);
+        param.sep_tag_vals.push_back(4);
+        TopoOffsetMesh mesh(param, 0);
+        std::vector<std::string> tag_names(1, "dummy");
+        mesh.init_from_image(V, T, Tags, tag_names);
+
+        std::vector<TetMesh::Tuple> tets;
+        tets.push_back(mesh.tuple_from_tet(0));
+        REQUIRE((mesh.invariants(tets) == false));
+    }
+    { // mesh 2 (good)
+        Eigen::MatrixXi T(1, 4);
+        T << 0, 1, 2, 3;
+
+        Parameters param;
+        param.tag_name = "dummy";
+        param.sep_tag_vals.push_back(1);
+        param.sep_tag_vals.push_back(4);
+        TopoOffsetMesh mesh(param, 0);
+        std::vector<std::string> tag_names(1, "dummy");
+        mesh.init_from_image(V, T, Tags, tag_names);
+
+        std::vector<TetMesh::Tuple> tets;
+        tets.push_back(mesh.tuple_from_tet(0));
+        REQUIRE(mesh.invariants(tets));
     }
 }

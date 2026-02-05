@@ -316,7 +316,7 @@ void ManExtractMesh::vertex_dfs_helper(
 }
 
 
-// NOTE: this function is very slow, but makes this thing more robust
+// NOTE: this function is very slow, but necessary to handle nonmanifold verts on boundary of mesh
 bool ManExtractMesh::is_boundary_vertex(size_t vid) const
 {
     auto t_ids = get_one_ring_tids_for_vertex(vid);
@@ -721,7 +721,6 @@ void ManExtractMesh::write_input_complex(const std::string& path)
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
     writer = std::make_shared<paraviewo::VTUWriter>();
     writer->write_mesh(path + ".vtu", V, cells, true, false);
-    logger().info("*****6");
 }
 
 
