@@ -56,9 +56,9 @@ size_t TriMesh::Tuple::eid(const TriMesh& m) const
         int local_v1 = -1;
         for (size_t i = 0; i < f_vids.size(); ++i) {
             if (f_vids[i] == m_vid) {
-                local_v0 = i;
+                local_v0 = (int)i;
             } else if (f_vids[i] == v_opp) {
-                local_v1 = i;
+                local_v1 = (int)i;
             }
         }
         if (local_v1 == -1) {
@@ -214,9 +214,9 @@ std::vector<TriMesh::Tuple> TriMesh::Tuple::switch_faces(const TriMesh& m) const
         int local_v1 = -1;
         for (size_t i = 0; i < f_vids.size(); ++i) {
             if (f_vids[i] == loc_v0) {
-                local_v0 = i;
+                local_v0 = (int)i;
             } else if (f_vids[i] == v1) {
-                local_v1 = i;
+                local_v1 = (int)i;
             }
         }
         if (local_v0 == -1 || local_v1 == -1) {
@@ -253,9 +253,9 @@ bool TriMesh::Tuple::is_valid(const TriMesh& m) const
     assert(lvid == 0 || lvid == 1 || lvid == 2);
 
     // Condition 2: eid is valid
-    const int loc_v0 = m.m_tri_connectivity[m_fid][0];
-    const int v1 = m.m_tri_connectivity[m_fid][1];
-    const int v2 = m.m_tri_connectivity[m_fid][2];
+    const size_t loc_v0 = m.m_tri_connectivity[m_fid][0];
+    const size_t v1 = m.m_tri_connectivity[m_fid][1];
+    const size_t v2 = m.m_tri_connectivity[m_fid][2];
     switch (m_eid) {
     case 0: assert(m_vid == v1 || m_vid == v2); break;
     case 1: assert(m_vid == loc_v0 || m_vid == v2); break;
@@ -1271,7 +1271,7 @@ std::array<size_t, 3> TriMesh::oriented_tri_vids(const Tuple& t) const
     return oriented_tri_vids(fid);
 }
 
-std::array<size_t, 3> TriMesh::oriented_tri_vids(const int fid) const
+std::array<size_t, 3> TriMesh::oriented_tri_vids(const size_t fid) const
 {
     std::array<size_t, 3> incident_verts;
     auto indices = m_tri_connectivity[fid].m_indices;
@@ -1296,8 +1296,8 @@ void TriMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 3>>& 
             m_vertex_connectivity[tris[i][j]].m_conn_tris.push_back(i);
         }
     }
-    current_vert_size = n_vertices;
-    current_tri_size = tris.size();
+    current_vert_size = (long)n_vertices;
+    current_tri_size = (long)tris.size();
 
     m_vertex_mutex.grow_to_at_least(n_vertices);
 
@@ -1692,7 +1692,7 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
 int TriMesh::release_vertex_mutex_in_stack()
 {
     int num_released = 0;
-    for (int i = mutex_release_stack.local().size() - 1; i >= 0; i--) {
+    for (int i = (int)mutex_release_stack.local().size() - 1; i >= 0; i--) {
         unlock_vertex_mutex(mutex_release_stack.local()[i]);
         num_released++;
     }
@@ -1843,9 +1843,9 @@ void wmtk::TriMesh::for_each_edge(const std::function<void(const TriMesh::Tuple&
     tbb::task_arena arena(NUM_THREADS);
     arena.execute([&] {
         tbb::parallel_for(
-            tbb::blocked_range<int>(0, tri_capacity()),
-            [&](const tbb::blocked_range<int>& r) {
-                for (int i = r.begin(); i < r.end(); i++) {
+            tbb::blocked_range<size_t>(0, tri_capacity()),
+            [&](const tbb::blocked_range<size_t>& r) {
+                for (size_t i = r.begin(); i < r.end(); i++) {
                     if (!tuple_from_tri(i).is_valid(*this)) continue;
                     for (int j = 0; j < 3; j++) {
                         auto tup = tuple_from_edge(i, j);
@@ -1863,9 +1863,9 @@ void wmtk::TriMesh::for_each_vertex(const std::function<void(const TriMesh::Tupl
     tbb::task_arena arena(NUM_THREADS);
     arena.execute([&] {
         tbb::parallel_for(
-            tbb::blocked_range<int>(0, vert_capacity()),
-            [&](tbb::blocked_range<int> r) {
-                for (int i = r.begin(); i < r.end(); i++) {
+            tbb::blocked_range<size_t>(0, vert_capacity()),
+            [&](tbb::blocked_range<size_t> r) {
+                for (size_t i = r.begin(); i < r.end(); i++) {
                     auto tup = tuple_from_vertex(i);
                     if (!tup.is_valid(*this)) continue;
                     func(tup);
@@ -1879,9 +1879,9 @@ void wmtk::TriMesh::for_each_face(const std::function<void(const TriMesh::Tuple&
     tbb::task_arena arena(NUM_THREADS);
     arena.execute([&] {
         tbb::parallel_for(
-            tbb::blocked_range<int>(0, tri_capacity()),
-            [&](tbb::blocked_range<int> r) {
-                for (int i = r.begin(); i < r.end(); i++) {
+            tbb::blocked_range<size_t>(0, tri_capacity()),
+            [&](tbb::blocked_range<size_t> r) {
+                for (size_t i = r.begin(); i < r.end(); i++) {
                     auto tup = tuple_from_tri(i);
                     if (!tup.is_valid(*this)) continue;
                     func(tup);

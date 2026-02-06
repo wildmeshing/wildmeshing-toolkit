@@ -13,11 +13,11 @@ void match_tet_faces_to_triangles(
 {
     is_matched.resize(faces.size(), false);
 
-    std::map<std::array<size_t, 3>, size_t> map_surface;
+    std::map<std::array<size_t, 3>, int> map_surface;
     for (size_t i = 0; i < faces.size(); i++) {
         auto f = faces[i];
         std::sort(f.begin(), f.end());
-        map_surface[f] = i;
+        map_surface[f] = (int)i;
     }
     for (auto t : m.get_tets()) {
         auto vs = m.oriented_tet_vertices(t);
@@ -47,7 +47,8 @@ bool remove_duplicates(
         V_tmp.row(i) = vertices[i];
     }
     for (int i = 0; i < faces.size(); i++) {
-        F_tmp.row(i) << faces[i][0], faces[i][1], faces[i][2]; // note: using int here
+        F_tmp.row(i) << (int)faces[i][0], (int)faces[i][1],
+            (int)faces[i][2]; // note: using int here
     }
 
     //

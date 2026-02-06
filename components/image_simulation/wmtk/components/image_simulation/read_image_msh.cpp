@@ -48,7 +48,7 @@ void read_image_msh(
         msh.extract_tet_vertices(
             [&V_input](size_t i, double x, double y, double z) { V_input.row(i) << x, y, z; });
         msh.extract_tets([&T_input](size_t i, size_t v0, size_t v1, size_t v2, size_t v3) {
-            T_input.row(i) << v0, v1, v2, v3;
+            T_input.row(i) << (int)v0, (int)v1, (int)v2, (int)v3;
         });
 
         // check for inversion

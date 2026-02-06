@@ -32,7 +32,7 @@ void TetRemeshingMesh::init_from_image(const MatrixXd& V, const MatrixXi& T, con
     }
 
     // add tags
-    for (size_t i = 0; i < T_tags.rows(); ++i) {
+    for (size_t i = 0; i < (size_t)T_tags.rows(); ++i) {
         m_tet_attribute[i].tags.resize(m_tags_count);
         for (size_t j = 0; j < m_tags_count; ++j) {
             m_tet_attribute[i].tags[j] = T_tags(i, j);

@@ -67,11 +67,11 @@ inline void vectors_to_VF(
     V.resize(vertices.size(), 3);
     F.resize(faces.size(), 3);
 
-    for (size_t i = 0; i < V.rows(); i++) {
+    for (int i = 0; i < V.rows(); i++) {
         V.row(i) = vertices[i];
     }
-    for (size_t i = 0; i < F.rows(); i++) {
-        F.row(i) = Vector3i(faces[i][0], faces[i][1], faces[i][2]);
+    for (int i = 0; i < F.rows(); i++) {
+        F.row(i) = Vector3i((int)faces[i][0], (int)faces[i][1], (int)faces[i][2]);
     }
 }
 
@@ -84,10 +84,10 @@ inline void VF_to_vectors(
     vertices.resize(V.rows());
     faces.resize(F.rows());
 
-    for (size_t i = 0; i < V.rows(); i++) {
+    for (int i = 0; i < V.rows(); i++) {
         vertices[i] = V.row(i);
     }
-    for (size_t i = 0; i < F.rows(); i++) {
+    for (int i = 0; i < F.rows(); i++) {
         faces[i][0] = F(i, 0);
         faces[i][1] = F(i, 1);
         faces[i][2] = F(i, 2);
@@ -137,14 +137,14 @@ inline bool tri_is_inverted(const Vector2d& v0, const Vector2d& v1, const Vector
 inline bool VF_rational_to_double(const MatrixXr& V_in, const MatrixXi& F, MatrixXd& V_out)
 {
     V_out.resizeLike(V_in);
-    for (size_t i = 0; i < V_in.size(); ++i) {
+    for (int i = 0; i < V_in.size(); ++i) {
         V_out(i) = V_in(i).to_double();
     }
 
     // check for inversion
     if (F.cols() == 3) {
         // 2D
-        for (size_t i = 0; i < F.rows(); ++i) {
+        for (int i = 0; i < F.rows(); ++i) {
             const auto& s = F.row(i);
             if (tri_is_inverted(V_out.row(s[0]), V_out.row(s[1]), V_out.row(s[2]))) {
                 return false;
@@ -152,7 +152,7 @@ inline bool VF_rational_to_double(const MatrixXr& V_in, const MatrixXi& F, Matri
         }
     } else if (F.cols() == 4) {
         // 3D
-        for (size_t i = 0; i < F.rows(); ++i) {
+        for (int i = 0; i < F.rows(); ++i) {
             const auto& s = F.row(i);
             if (tet_is_inverted(
                     V_out.row(s[0]),

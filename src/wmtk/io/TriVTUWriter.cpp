@@ -25,7 +25,7 @@ TriVTUWriter::TriVTUWriter(const TriMesh& mesh)
     for (int i = 0; i < face_tuples.size(); ++i) {
         const auto v = m_mesh.oriented_tri_vertices(face_tuples[i]);
         for (int j = 0; j < v.size(); ++j) {
-            m_F(i, j) = vid_map[v[j].vid(m_mesh)];
+            m_F(i, j) = (int)vid_map[v[j].vid(m_mesh)];
         }
     }
 
@@ -72,11 +72,11 @@ bool TriVTUWriter::write_edges(const std::filesystem::path& filename)
     return r;
 }
 
-void TriVTUWriter::add_vertex_positions(const std::function<VectorXd(const int)>& f)
+void TriVTUWriter::add_vertex_positions(const std::function<VectorXd(const size_t)>& f)
 {
     const std::vector<Tuple> tuples = m_mesh.get_vertices();
 
-    m_V.resize(tuples.size(), f(tuples[0].vid(m_mesh)).size());
+    m_V.resize((int)tuples.size(), (int)f(tuples[0].vid(m_mesh)).size());
 
     for (int i = 0; i < tuples.size(); ++i) {
         const Tuple& t = tuples[i];
@@ -87,7 +87,7 @@ void TriVTUWriter::add_vertex_positions(const std::function<VectorXd(const int)>
 
 void TriVTUWriter::add_vertex_attribute(
     const std::string& name,
-    const std::function<VectorXd(const int)>& f)
+    const std::function<VectorXd(const size_t)>& f)
 {
     const std::vector<Tuple> tuples = m_mesh.get_vertices();
 
@@ -105,14 +105,14 @@ void TriVTUWriter::add_vertex_attribute(
 
 void TriVTUWriter::add_vertex_attribute(
     const std::string& name,
-    const std::function<double(const int)>& f)
+    const std::function<double(const size_t)>& f)
 {
     add_vertex_attribute(name, [&f](int i) { return VectorXd::Constant(1, f(i)); });
 }
 
 void TriVTUWriter::add_edge_attribute(
     const std::string& name,
-    const std::function<VectorXd(const int)>& f)
+    const std::function<VectorXd(const size_t)>& f)
 {
     const std::vector<Tuple> tuples = m_mesh.get_edges();
 
@@ -130,14 +130,14 @@ void TriVTUWriter::add_edge_attribute(
 
 void TriVTUWriter::add_edge_attribute(
     const std::string& name,
-    const std::function<double(const int)>& f)
+    const std::function<double(const size_t)>& f)
 {
-    add_edge_attribute(name, [&f](int i) { return VectorXd::Constant(1, f(i)); });
+    add_edge_attribute(name, [&f](size_t i) { return VectorXd::Constant(1, f(i)); });
 }
 
 void TriVTUWriter::add_triangle_attribute(
     const std::string& name,
-    const std::function<VectorXd(const int)>& f)
+    const std::function<VectorXd(const size_t)>& f)
 {
     const std::vector<Tuple> tuples = m_mesh.get_faces();
 
@@ -155,9 +155,9 @@ void TriVTUWriter::add_triangle_attribute(
 
 void TriVTUWriter::add_triangle_attribute(
     const std::string& name,
-    const std::function<double(const int)>& f)
+    const std::function<double(const size_t)>& f)
 {
-    add_triangle_attribute(name, [&f](int i) { return VectorXd::Constant(1, f(i)); });
+    add_triangle_attribute(name, [&f](size_t i) { return VectorXd::Constant(1, f(i)); });
 }
 
 } // namespace wmtk::io

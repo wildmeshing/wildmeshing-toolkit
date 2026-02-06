@@ -160,7 +160,7 @@ auto triangle_insert_prepare_info(
         //
         if (coplanar_f_lvids.size() == 1) {
             int lvid = coplanar_f_lvids[0];
-            int vid = vertex_vids[lvid];
+            size_t vid = vertex_vids[lvid];
             auto p = wmtk::project_point_to_2d(vertex_pos_r(vid), squeeze_to_2d_dir);
             bool is_inside = wmtk::is_point_inside_triangle(p, tri2);
             //
@@ -290,9 +290,11 @@ auto triangle_insert_prepare_info(
             // add new tets
             if (need_subdivision) {
                 auto incident_tets = m.get_incident_tets_for_edge(edges[l_eid]);
-                for (auto& t : incident_tets) {
-                    int tid = t.tid(m);
-                    if (visited.find(tid) != visited.end()) continue;
+                for (const auto& t : incident_tets) {
+                    size_t tid = t.tid(m);
+                    if (visited.find(tid) != visited.end()) {
+                        continue;
+                    }
 
                     tet_queue.push(t);
                     visited.insert(tid);
@@ -363,8 +365,10 @@ auto triangle_insert_prepare_info(
                 auto res = m.switch_tetrahedron(m.tuple_from_face(tet.tid(m), j));
                 if (res.has_value()) {
                     auto n_tet = res.value();
-                    int tid = n_tet.tid(m);
-                    if (visited.find(tid) != visited.end()) continue;
+                    size_t tid = n_tet.tid(m);
+                    if (visited.find(tid) != visited.end()) {
+                        continue;
+                    }
                     // add lock
                     tet_queue.push(n_tet);
                     visited.insert(tid);

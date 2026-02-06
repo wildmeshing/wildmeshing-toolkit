@@ -82,7 +82,7 @@ std::vector<int> compute_euler_characteristics(const MatrixXi& F)
     return euler_characteristics;
 }
 
-void tetwild(nlohmann::json json_params)
+TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 {
     // verify input and inject defaults
     {
@@ -156,7 +156,7 @@ void tetwild(nlohmann::json json_params)
     {
         Eigen::MatrixXi F(tris.size(), 3);
         for (int i = 0; i < tris.size(); ++i) {
-            F.row(i) = Eigen::Vector3i(tris[i][0], tris[i][1], tris[i][2]);
+            F.row(i) = Eigen::Vector3i((int)tris[i][0], (int)tris[i][1], (int)tris[i][2]);
         }
 
         const auto ecs = compute_euler_characteristics(F);
@@ -228,8 +228,7 @@ void tetwild(nlohmann::json json_params)
     std::vector<std::array<size_t, 4>> tets;
     std::vector<bool> tet_face_on_input_surface;
 
-    std::cout << "vsimp size: " << vsimp.size() << std::endl;
-    std::cout << "fsimp size: " << fsimp.size() << std::endl;
+    logger().info("simplified: #v = {}, #f = {}", vsimp.size(), fsimp.size());
 
     igl::Timer insertion_timer;
     insertion_timer.start();
@@ -242,6 +241,8 @@ void tetwild(nlohmann::json json_params)
         is_v_on_input,
         tets,
         tet_face_on_input_surface);
+
+    logger().info("=== finished insertion");
 
     // generate new mesh
     tetwild::TetWildMesh mesh_new(params, surf_mesh.m_envelope, NUM_THREADS);
@@ -261,7 +262,7 @@ void tetwild(nlohmann::json json_params)
     // });
 
 
-    wmtk::logger().info("volume remesher insertion time: {}s", insertion_time);
+    wmtk::logger().info("volume remesher insertion time: {:.4}s", insertion_time);
 
     // mesh_new.output_tetrahedralized_embedded_mesh(
     //     "tetrahedralized_embedded_mesh.txt",
@@ -282,7 +283,7 @@ void tetwild(nlohmann::json json_params)
 
     size_t nonmani_ver_cnt = 0;
     size_t surface_v_cnt = 0;
-    for (auto v : mesh_new.get_vertices()) {
+    for (const auto& v : mesh_new.get_vertices()) {
         if (mesh_new.m_vertex_attribute[v.vid(mesh_new)].m_is_on_surface) {
             surface_v_cnt++;
             if (mesh_new.count_vertex_links(v) > 1) {
@@ -291,8 +292,8 @@ void tetwild(nlohmann::json json_params)
         }
     }
 
-    wmtk::logger().info("MESH NONMANIFOLD VERTEX COUNT BEFORE OPTIMIZE: {}", nonmani_ver_cnt);
-    wmtk::logger().info("MESH surface VERTEX COUNT BEFORE OPTIMIZE: {}", surface_v_cnt);
+    wmtk::logger().info("#non-manifold vertices before optimization: {}", nonmani_ver_cnt);
+    wmtk::logger().info("#surface vertices before optimization: {}", surface_v_cnt);
 
     // /////////mesh improvement
     if (json_params["use_legacy_code"]) {
@@ -345,7 +346,7 @@ void tetwild(nlohmann::json json_params)
     mesh_new.consolidate_mesh();
 
     double time = timer.getElapsedTime();
-    wmtk::logger().info("total time {}s", time);
+    wmtk::logger().info("total time {:.4}s", time);
     if (mesh_new.tet_size() == 0) {
         log_and_throw_error("Empty Output after Filter!");
     }
@@ -391,14 +392,14 @@ void tetwild(nlohmann::json json_params)
         }
         matF.resize(outface.size(), 3);
         for (auto i = 0; i < outface.size(); i++) {
-            matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
+            matF.row(i) << (int)outface[i][0], (int)outface[i][1], (int)outface[i][2];
         }
 
-        wmtk::logger().info("Output face size {}", outface.size());
+        wmtk::logger().info("#output faces = {}", outface.size());
     }
 
     // Hausdorff + Euler Characteristic
-    double hausdorff_distance = 0;
+    double hausdorff_distance = -1;
     std::vector<int> ecs_input;
     std::vector<int> ecs_output;
     {
@@ -408,7 +409,7 @@ void tetwild(nlohmann::json json_params)
         }
         Eigen::MatrixXi F(tris.size(), 3);
         for (int i = 0; i < tris.size(); ++i) {
-            F.row(i) = Eigen::Vector3i(tris[i][0], tris[i][1], tris[i][2]);
+            F.row(i) = Eigen::Vector3i((int)tris[i][0], (int)tris[i][1], (int)tris[i][2]);
         }
 
         // create envelope for output
@@ -423,23 +424,31 @@ void tetwild(nlohmann::json json_params)
         }
         env.init(v_out, f_out, params.eps);
 
-        const int n_samples = 10000;
-        Eigen::MatrixXd B;
-        Eigen::MatrixXi FI;
-        Eigen::MatrixXd X;
+        // Hausdorff
+        if (json_params["DEBUG_hausdorff"]) {
+            const int n_samples = 10000;
+            Eigen::MatrixXd B;
+            Eigen::MatrixXi FI;
+            Eigen::MatrixXd X;
 
-        igl::random_points_on_mesh(n_samples, V, F, B, FI, X);
+            igl::random_points_on_mesh(n_samples, V, F, B, FI, X);
 
-        for (int i = 0; i < X.rows(); ++i) {
-            Eigen::Vector3d p = X.row(i);
-            Eigen::Vector3d r;
-            double d = env.nearest_point(p, r);
-            hausdorff_distance = std::max(hausdorff_distance, d);
-        }
-        hausdorff_distance = std::sqrt(hausdorff_distance);
-        logger().info("Hausdorff distance = {} | Envelope = {}", hausdorff_distance, params.eps);
-        if (hausdorff_distance > params.eps) {
-            logger().warn("Hausdorff distance is larger than the envelope!");
+            for (int i = 0; i < X.rows(); ++i) {
+                Eigen::Vector3d p = X.row(i);
+                Eigen::Vector3d r;
+                double d = env.nearest_point(p, r);
+                hausdorff_distance = std::max(hausdorff_distance, d);
+            }
+            hausdorff_distance = std::sqrt(hausdorff_distance);
+            logger().info(
+                "Hausdorff distance = {:.4} | Envelope = {:.4}",
+                hausdorff_distance,
+                params.eps);
+            if (hausdorff_distance > params.eps) {
+                logger().warn("Hausdorff distance is larger than the envelope!");
+            } else {
+                logger().info("Hausdorff distance is smaller than envelope (as expected).");
+            }
         }
 
         ecs_input = compute_euler_characteristics(F);
@@ -499,6 +508,17 @@ void tetwild(nlohmann::json json_params)
     igl::write_triangle_mesh(output_path + "_surface.obj", matV, matF);
 
     wmtk::logger().info("======= finish =========");
+
+    return mesh_new.export_mesh_data();
+}
+
+
+void tetwild(nlohmann::json json_params)
+{
+    auto e = tetwild_with_export(json_params);
+    logger().info("V ({},{})", e.V.rows(), e.V.cols());
+    logger().info("T ({},{})", e.T.rows(), e.T.cols());
+    logger().info("F ({},{})", e.F.rows(), e.F.cols());
 }
 
 } // namespace wmtk::components::tetwild

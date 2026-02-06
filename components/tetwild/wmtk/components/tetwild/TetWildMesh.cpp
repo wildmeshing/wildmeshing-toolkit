@@ -52,20 +52,6 @@ void TetWildMesh::mesh_improvement(int max_its)
     // TODO: refactor to eliminate repeated partition.
     //
 
-    // rounding
-    // std::atomic_int cnt_round(0);
-    // std::atomic_int cnt_valid(0);
-
-    // auto vertices = get_vertices();
-    // for (auto v : vertices) {
-    //     // debug code
-    //     if (v.is_valid(*this)) cnt_valid++;
-
-    //     if (round(v)) cnt_round++;
-    // }
-
-    // wmtk::logger().info("cnt_round {}/{}", cnt_round, cnt_valid);
-
     compute_vertex_partition_morton();
 
     // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
@@ -84,11 +70,11 @@ void TetWildMesh::mesh_improvement(int max_its)
         auto [max_energy, avg_energy] = local_operations({{1, 1, 1, 1}});
 
         ///energy check
-        wmtk::logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
+        wmtk::logger().info("max energy {:.6} | stop {:.6}", max_energy, m_params.stop_energy);
         if (max_energy < m_params.stop_energy) break;
         consolidate_mesh();
 
-        wmtk::logger().info("v {} t {}", vert_capacity(), tet_capacity());
+        wmtk::logger().info("#V = {}, #T = {}", vert_capacity(), tet_capacity());
 
         auto cnt_round = 0, cnt_verts = 0;
         TetMesh::for_each_vertex([&](auto& v) {
@@ -172,7 +158,7 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
             const auto vi = oriented_tet_vids(i);
             std::array<int, 4> v;
             for (size_t j = 0; j < 4; ++j) {
-                v[j] = vi[j];
+                v[j] = (int)vi[j];
             }
             legacy_tetwild.tets.emplace_back(v);
         }
@@ -266,7 +252,7 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
             v.is_on_surface = VA.m_is_on_surface;
             v.is_rounded = VA.m_is_rounded;
             for (const size_t tid : get_one_ring_tids_for_vertex(i)) {
-                v.conn_tets.insert(tid);
+                v.conn_tets.insert((int)tid);
             }
         }
     }
@@ -464,7 +450,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
                 wmtk::logger().info("==splitting {}==", n);
                 split_all_edges();
                 wmtk::logger().info(
-                    "#vertices {}, #tets {} after split",
+                    "#V = {}, #T = {} after split",
                     get_vertices().size(),
                     get_tets().size());
                 // auto faces = get_faces();
@@ -490,7 +476,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
                 wmtk::logger().info("==collapsing {}==", n);
                 collapse_all_edges(collapse_limit_length);
                 wmtk::logger().info(
-                    "#vertices {}, #tets {} after collapse",
+                    "#V = {}, #T = {} after collapse",
                     get_vertices().size(),
                     get_tets().size());
                 // auto faces = get_faces();
@@ -514,7 +500,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
         } else if (i == 2) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==swapping {}==", n);
-                int cnt_success = 0;
+                size_t cnt_success = 0;
                 cnt_success += swap_all_edges_all();
                 // cnt_success += swap_all_edges_56();
                 // cnt_success += swap_all_edges_44();
@@ -548,7 +534,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
     energy = get_max_avg_energy();
     wmtk::logger().info("max energy = {:.6}", std::get<0>(energy));
     wmtk::logger().info("avg energy = {:.6}", std::get<1>(energy));
-    wmtk::logger().info("time = {}", timer.getElapsedTime());
+    wmtk::logger().info("time = {:.4}s", timer.getElapsedTime());
 
 
     return energy;
@@ -556,7 +542,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
 
 bool TetWildMesh::adjust_sizing_field_serial(double max_energy)
 {
-    wmtk::logger().info("#vertices {}, #tets {}", vert_capacity(), tet_capacity());
+    wmtk::logger().info("#V {}, #T {}", vert_capacity(), tet_capacity());
 
     const double stop_filter_energy = m_params.stop_energy * 0.8;
     double filter_energy = std::max(max_energy / 100, stop_filter_energy);
@@ -755,11 +741,13 @@ void TetWildMesh::compute_winding_number(
         V.resize(vertices.size(), 3);
         F.resize(faces.size(), 3);
 
-        for (int i = 0; i < V.rows(); i++) {
+        for (size_t i = 0; i < (size_t)V.rows(); i++) {
             V.row(i) = vertices[i];
         }
-        for (int i = 0; i < F.rows(); i++) {
-            for (auto j = 0; j < 3; j++) F(i, j) = faces[i][j];
+        for (size_t i = 0; i < (size_t)F.rows(); i++) {
+            for (size_t j = 0; j < 3; j++) {
+                F(i, j) = (int)faces[i][j];
+            }
         }
     } else { // use track to filter
         auto outface = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
@@ -770,7 +758,7 @@ void TetWildMesh::compute_winding_number(
         }
         F.resize(outface.size(), 3);
         for (auto i = 0; i < outface.size(); i++) {
-            F.row(i) << outface[i][0], outface[i][1], outface[i][2];
+            F.row(i) << (int)outface[i][0], (int)outface[i][1], (int)outface[i][2];
         }
         // wmtk::logger().info("Output face size {}", outface.size());
         auto F0 = F;
@@ -956,7 +944,7 @@ void TetWildMesh::output_faces(std::string file, std::function<bool(const FaceAt
     }
     Eigen::MatrixXi matF(outface.size(), 3);
     for (auto i = 0; i < outface.size(); i++) {
-        matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
+        matF.row(i) << (int)outface[i][0], (int)outface[i][1], (int)outface[i][2];
     }
     wmtk::logger().info("Output face size {}", outface.size());
     igl::write_triangle_mesh(file, matV, matF);
@@ -1195,7 +1183,7 @@ bool TetWildMesh::invariants(const std::vector<Tuple>& tets)
 }
 
 std::vector<std::array<size_t, 3>> TetWildMesh::get_faces_by_condition(
-    std::function<bool(const FaceAttributes&)> cond)
+    std::function<bool(const FaceAttributes&)> cond) const
 {
     auto res = std::vector<std::array<size_t, 3>>();
     for (auto f : get_faces()) {
@@ -1280,7 +1268,7 @@ bool TetWildMesh::is_vertex_on_boundary(const size_t e0)
             continue;
         }
         int cnt = 0;
-        for (int t_id : e0_tids) {
+        for (size_t t_id : e0_tids) {
             const auto vs = oriented_tet_vids(t_id);
             std::array<int, 4> opp_js; // DZ: all vertices that are adjacent to e1 except for e2
             int ii = 0;
@@ -1446,7 +1434,7 @@ void union_uf(int u, int v, std::vector<int>& parent)
     }
 }
 
-int TetWildMesh::count_vertex_links(const Tuple& v)
+size_t TetWildMesh::count_vertex_links(const Tuple& v)
 {
     // get one ring faces on surface
     auto one_ring_tets = get_one_ring_tets_for_vertex(v);
@@ -1514,7 +1502,7 @@ int TetWildMesh::count_vertex_links(const Tuple& v)
     }
 
     // adjacency matrix
-    int m = one_ring_surface_vertices.size();
+    size_t m = one_ring_surface_vertices.size();
     bool** adj_mat = new bool*[m];
     for (int i = 0; i < m; i++) {
         adj_mat[i] = new bool[m];
@@ -1673,7 +1661,7 @@ int TetWildMesh::count_vertex_links(const Tuple& v)
 //     return 0;
 // }
 
-int TetWildMesh::count_edge_links(const Tuple& e)
+size_t TetWildMesh::count_edge_links(const Tuple& e)
 {
     size_t vid1 = e.vid(*this);
     size_t vid2 = e.switch_vertex(*this).vid(*this);
@@ -1879,14 +1867,14 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
 
         const auto vs = oriented_tet_vertices(t);
         for (int j = 0; j < 4; j++) {
-            T(index, j) = vs[j].vid(*this);
+            T(index, j) = (int)vs[j].vid(*this);
         }
         ++index;
     }
 
     for (size_t i = 0; i < faces.size(); ++i) {
         for (size_t j = 0; j < 3; ++j) {
-            F(i, j) = faces[i][j];
+            F(i, j) = (int)faces[i][j];
         }
     }
 
@@ -2054,6 +2042,70 @@ void TetWildMesh::init_sizing_field()
             }
         }
     }
+}
+
+TetWildMesh::ExportStruct TetWildMesh::export_mesh_data() const
+{
+    ExportStruct e;
+
+    const auto vs = get_vertices();
+    const auto tets = get_tets();
+    const auto faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
+
+    e.V.resize(vert_capacity(), 3);
+    e.T.resize(tet_capacity(), 4);
+    e.F.resize(faces.size(), 3);
+
+    e.V.setZero();
+    e.T.setZero();
+    e.F.setZero();
+
+    e.t_part.resize(tet_capacity(), 1);
+    e.t_part.setZero();
+    e.t_winding_number_input.resize(tet_capacity(), 1);
+    e.t_winding_number_input.setZero();
+    e.t_winding_number_tracked.resize(tet_capacity(), 1);
+    e.t_winding_number_tracked.setZero();
+    e.t_amips.resize(tet_capacity(), 1);
+    e.t_amips.setZero();
+    if (!tets.empty()) {
+        e.t_winding_number_per_input.resize(
+            tet_capacity(),
+            m_tet_attribute[tets[0].tid(*this)].m_winding_number_per_input.size());
+    }
+
+    int index = 0;
+    for (const Tuple& t : tets) {
+        size_t tid = t.tid(*this);
+        e.t_part(index, 0) = m_tet_attribute[tid].part_id;
+        e.t_winding_number_input(index, 0) = m_tet_attribute[tid].m_winding_number_input;
+        e.t_winding_number_tracked(index, 0) = m_tet_attribute[tid].m_winding_number_tracked;
+        e.t_amips(index, 0) = std::cbrt(m_tet_attribute[tid].m_quality);
+
+        for (size_t i = 0; i < (size_t)e.t_winding_number_per_input.cols(); ++i) {
+            e.t_winding_number_per_input(index, i) =
+                m_tet_attribute[tid].m_winding_number_per_input[i];
+        }
+
+        const auto vs = oriented_tet_vertices(t);
+        for (int j = 0; j < 4; j++) {
+            e.T(index, j) = vs[j].vid(*this);
+        }
+        ++index;
+    }
+
+    for (size_t i = 0; i < faces.size(); ++i) {
+        for (size_t j = 0; j < 3; ++j) {
+            e.F(i, j) = (int)faces[i][j];
+        }
+    }
+
+    for (const auto& v : vs) {
+        const auto vid = v.vid(*this);
+        e.V.row(vid) = m_vertex_attribute[vid].m_posf;
+    }
+
+    return e;
 }
 
 } // namespace wmtk::components::tetwild

@@ -5,7 +5,7 @@
 
 namespace wmtk {
 void partition_vertex_morton(
-    int vert_size,
+    size_t vert_size,
     const std::function<Eigen::Vector3d(size_t)>& pos,
     int num_partition,
     std::vector<size_t>&);

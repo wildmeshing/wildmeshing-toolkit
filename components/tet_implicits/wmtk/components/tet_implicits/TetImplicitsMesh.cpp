@@ -566,8 +566,8 @@ void TetImplicitsMesh::write_vtu(const std::string& path)
         amips[index] = std::cbrt(m_tet_attribute[tid].m_quality);
 
         const auto& vs = oriented_tet_vertices(t);
-        for (int j = 0; j < 4; j++) {
-            T(index, j) = vs[j].vid(*this);
+        for (size_t j = 0; j < 4; j++) {
+            T(index, j) = (int)vs[j].vid(*this);
         }
         ++index;
     }

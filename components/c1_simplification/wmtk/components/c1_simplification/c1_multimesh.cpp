@@ -519,7 +519,7 @@ std::vector<TriMesh::Tuple> MMSurfaceMesh::map_to_uv_vertex_tuples(const Tuple& 
 TriMesh::Tuple MMSurfaceMesh::map_to_equivalent_uv_tuple(const Tuple& t)
 {
     size_t fid = t.fid(*this);
-    int leid = t.local_eid(*this);
+    size_t leid = t.local_eid(*this);
 
     size_t vid = t.vid(*this);
     int lvid = -1;
