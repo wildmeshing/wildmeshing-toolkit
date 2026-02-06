@@ -1,0 +1,26 @@
+[build-system]
+requires = ["scikit-build-core>=0.10", "pybind11>=2.11"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "pywmtk"
+version = "0.1.0"
+description = "Python bindings for WildMeshingToolkit"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { file = "LICENSE" }
+authors = [{ name = "WildMeshingToolkit" }]
+
+[tool.scikit-build]
+cmake.minimum-version = "3.25"
+cmake.args = [
+  "-DWMTK_PYBIND=ON",
+  "-DCMAKE_INSTALL_DEFAULT_COMPONENT_NAME=python_bindings",
+  "-DBUILD_TESTING=OFF",
+  "-DWMTK_APP_HARMTET=OFF",
+  "-DWMTK_APP_UNIFORM_REMESH=ON",
+  "-DWMTK_APP_SEC=ON",
+  "-DWMTK_APP_QSLIM=OFF",
+  "-DWMTK_APP_INTERIOR_TET_OPT=OFF",
+]
+install.components = ["python_bindings"]

@@ -71,12 +71,19 @@ include(fenvelope)
 include(nanoflann)
 
 include(simple_bvh)
+include(pybind11)
+include(pybind11_json)
 
 # Sort projects inside the solution
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Generate position independent code by default
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+option(WMTK_PYBIND "Generate python bindings" ON)
+if(WMTK_PYBIND)
+    include(pybind11)
+endif()
 
 # ###############################################################################
 # WildMeshingToolkit library
@@ -126,13 +133,6 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
 
 if(MSVC)
     target_compile_options(wildmeshing_toolkit PUBLIC /MP)
-    # target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/GL>)
-    # target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/LTCG>)
-    # target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/Ob2>) # inline whenever suitable
-    # target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/Ot>) # favor faster code over binary size
-    # target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELEASE>:/GL>)
-    # target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELEASE>:/LTCG>)
-    # target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELEASE>:/Ot>)
     target_compile_definitions(wildmeshing_toolkit PUBLIC _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS)
 endif()
 
@@ -142,12 +142,16 @@ endif()
 
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
+    include(CTest)
+
     # Unit tests
-    enable_testing()
-    add_subdirectory(tests)
+    if(BUILD_TESTING)
+        enable_testing()
+        add_subdirectory(tests)
+    endif()
 
     # wmtk_app
-    add_subdirectory(app)
+    add_subdirectory(app) # also contains python bindings
     # components (automatically added to the app)
     add_subdirectory(components)
 endif()
