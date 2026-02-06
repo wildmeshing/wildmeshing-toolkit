@@ -2,7 +2,7 @@
 
 #include <wmtk/utils/io.hpp>
 
-namespace wmtk::components::tet_remeshing {
+namespace wmtk::components::tet_implicits {
 
 void read_image_msh(
     const std::string& path,
@@ -39,8 +39,9 @@ void read_image_msh(
 
     } else {
         // only read volume directly from .msh and ignore other entities
-        logger().info("Could not find pysical groups ImageVolume and EnvelopeSurface. Reading only "
-                      "tet data from MSH.");
+        logger().info(
+            "Could not find pysical groups ImageVolume and EnvelopeSurface. Reading only "
+            "tet data from MSH.");
 
         V_input.resize(msh.get_num_tet_vertices(), 3);
         T_input.resize(msh.get_num_tets(), 4);
@@ -103,4 +104,4 @@ void read_image_msh(
     }
 }
 
-} // namespace wmtk::components::tet_remeshing
+} // namespace wmtk::components::tet_implicits

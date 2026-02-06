@@ -1,8 +1,7 @@
-#include "tet_remeshing.hpp"
+#include "tet_implicits.hpp"
 
 #include <vector>
 
-#include <igl/remove_unreferenced.h>
 #include <jse/jse.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/Types.hpp>
@@ -10,11 +9,10 @@
 #include <wmtk/utils/resolve_path.hpp>
 
 #include "Parameters.h"
-#include "SurfaceMesh.hpp"
-#include "TetRemeshingMesh.h"
+#include "TetImplicitsMesh.h"
 #include "read_image_msh.hpp"
 
-#include "tet_remeshing_spec.hpp"
+#include "tet_implicits_spec.hpp"
 
 // Enables passing Eigen matrices to fmt/spdlog.
 template <typename T>
@@ -24,9 +22,9 @@ struct fmt::formatter<T, std::enable_if_t<std::is_base_of_v<Eigen::DenseBase<T>,
 };
 
 
-namespace wmtk::components::tet_remeshing {
+namespace wmtk::components::tet_implicits {
 
-void tet_remeshing(nlohmann::json json_params)
+void tet_implicits(nlohmann::json json_params)
 {
     using wmtk::utils::resolve_path;
     using Tuple = TetMesh::Tuple;
@@ -34,11 +32,11 @@ void tet_remeshing(nlohmann::json json_params)
     // verify input and inject defaults
     {
         jse::JSE spec_engine;
-        bool r = spec_engine.verify_json(json_params, tet_remeshing_spec);
+        bool r = spec_engine.verify_json(json_params, tet_implicits_spec);
         if (!r) {
             log_and_throw_error(spec_engine.log2str());
         }
-        json_params = spec_engine.inject_defaults(json_params, tet_remeshing_spec);
+        json_params = spec_engine.inject_defaults(json_params, tet_implicits_spec);
     }
 
     const std::filesystem::path root = json_params["json_input_file"];
@@ -58,20 +56,22 @@ void tet_remeshing(nlohmann::json json_params)
         p = resolve_path(root, p).string();
     }
 
+    if (std::filesystem::path(input_paths[0]).extension() != ".msh") {
+        log_and_throw_error("Input must be a .msh file.");
+    }
+
     Parameters params;
     params.output_path = resolve_path(root, json_params["output"]).string();
-    bool skip_simplify = json_params["skip_simplify"];
-    bool use_sample_envelope = json_params["use_sample_envelope"];
     int NUM_THREADS = json_params["num_threads"];
-    int max_its = json_params["max_iterations"];
-    const int surface_smoothing = json_params["surface_smoothing"];
+    const std::string op = json_params["operation"];
 
+    params.input_tags = json_params["input_tags"];
+    params.output_tags = json_params["output_tags"];
     params.epsr = json_params["eps_rel"];
     params.eps = json_params["eps"];
-    params.lr = json_params["length_rel"];
-    params.stop_energy = json_params["stop_energy"];
+    params.dr = json_params["d_rel"];
+    params.d = json_params["d"];
     params.preserve_topology = json_params["preserve_topology"];
-    params.edge_length_convergence = json_params["edge_length_convergence"];
 
     const bool write_vtu = json_params["write_vtu"];
 
@@ -93,10 +93,6 @@ void tet_remeshing(nlohmann::json json_params)
         return fmt::format("{}_{}", output_filename.string(), vtu_counter++);
     };
 
-    if (std::filesystem::path(input_paths[0]).extension() != ".msh") {
-        log_and_throw_error("Input must be a .msh file.");
-    }
-
     // read image / MSH
     MatrixXd V_input;
     MatrixXi T_input;
@@ -109,78 +105,37 @@ void tet_remeshing(nlohmann::json json_params)
     read_image_msh(input_paths[0], V_input, T_input, T_input_tag, V_envelope, F_envelope);
 
     params.init(V_input.colwise().minCoeff(), V_input.colwise().maxCoeff());
-    logger().info("Target edge length = {}", params.l);
+    logger().info(
+        "===== Params =====\n  operation = {}\n  input_tags = {}\n  output_tags = {}\n  d = {}\n",
+        op,
+        params.input_tags,
+        params.output_tags,
+        params.d);
 
     igl::Timer timer;
     timer.start();
 
-    tet_remeshing::TetRemeshingMesh mesh(params, params.eps, NUM_THREADS);
-    // first init envelope
-    if (V_envelope.size() != 0) {
-        mesh.init_envelope(V_envelope, F_envelope);
-    }
+    tet_implicits::TetImplicitsMesh mesh(params, NUM_THREADS);
+
     mesh.init_from_image(V_input, T_input, T_input_tag);
 
     mesh.consolidate_mesh();
-    {
-        int num_parts = mesh.flood_fill();
-        logger().info("flood fill parts {}", num_parts);
-    }
 
     if (write_vtu) mesh.write_vtu(get_unique_vtu_name());
 
-    {
-        size_t nonmani_ver_cnt = 0;
-        size_t surface_v_cnt = 0;
-        for (const Tuple& v : mesh.get_vertices()) {
-            if (mesh.m_vertex_attribute[v.vid(mesh)].m_is_on_surface) {
-                surface_v_cnt++;
-                if (mesh.count_vertex_links(v) > 1) {
-                    nonmani_ver_cnt++;
-                }
-            }
-        }
-
-        wmtk::logger().info("MESH NONMANIFOLD VERTEX COUNT BEFORE OPTIMIZE: {}", nonmani_ver_cnt);
-        wmtk::logger().info("MESH surface VERTEX COUNT BEFORE OPTIMIZE: {}", surface_v_cnt);
-    }
-
-    // /////////mesh improvement
-    if (surface_smoothing > 0) {
-        logger().warn(
-            "Performing surface smoothing with {} iterations. Surface will change!",
-            surface_smoothing);
-
-        MatrixXd V;
-        MatrixXi F;
-        MatrixXd VE;
-        MatrixXi EE;
-        // compute smooth surface
-        mesh.get_surface(V, F);
-
-        surf::SurfaceMesh surf_mesh(V, F, NUM_THREADS);
-        surf_mesh.write_vtu("surf_0");
-        surf_mesh.smooth_all(surface_smoothing);
-        surf_mesh.write_vtu("surf_1");
-
-        surf_mesh.get_surface(V, F);
-        surf_mesh.get_edge_mesh(VE, EE);
-
-        // give surface/edges to mesh so that it can push there during optimization
-        mesh.init_surface_smoothing(V, F, VE, EE);
-        mesh.surface_smoothing(max_its);
-    } else {
-        mesh.mesh_improvement(max_its); // <-- tetwild
+    // implicits
+    if (op == "separate") {
+        logger().info("Separate tags {} by distance {}", params.input_tags, params.d);
+        mesh.op_separate();
+    } else if (op == "tight_seal") {
+        logger().info("Tight seal tags {} within distance {}", params.input_tags, params.d);
+        mesh.op_tight_seal();
     }
 
     mesh.consolidate_mesh();
     double time = timer.getElapsedTime();
     wmtk::logger().info("total time {}s", time);
 
-    {
-        int num_parts = mesh.flood_fill();
-        logger().info("flood fill parts {}", num_parts);
-    }
 
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
@@ -197,9 +152,9 @@ void tet_remeshing(nlohmann::json json_params)
     wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
     mesh.write_msh(output_filename.string() + ".msh");
     if (write_vtu) mesh.write_vtu(get_unique_vtu_name());
-    if (write_vtu) mesh.write_surface(output_filename.string() + "_surface.obj");
+    // if (write_vtu) mesh.write_surface(output_filename.string() + "_surface.obj");
 
     wmtk::logger().info("======= finish =========");
 }
 
-} // namespace wmtk::components::tet_remeshing
+} // namespace wmtk::components::tet_implicits

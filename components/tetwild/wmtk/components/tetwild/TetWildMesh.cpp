@@ -17,6 +17,7 @@
 #include <igl/predicates/predicates.h>
 #include <igl/winding_number.h>
 #include <igl/write_triangle_mesh.h>
+#include <igl/read_triangle_mesh.h>
 #include <igl/Timer.h>
 #include <igl/orientable_patches.h>
 #include <wmtk/utils/EnableWarnings.hpp>
@@ -821,6 +822,54 @@ void TetWildMesh::compute_winding_number(
     }
 }
 
+void TetWildMesh::compute_winding_numbers(const std::vector<std::string>& input_paths)
+{
+    const auto& tets = get_tets();
+    Eigen::MatrixXd C = Eigen::MatrixXd::Zero(tets.size(), 3);
+    for (size_t i = 0; i < tets.size(); i++) {
+        const auto vs = oriented_tet_vids(tets[i]);
+        for (size_t v : vs) {
+            C.row(i) += m_vertex_attribute[v].m_posf;
+        }
+        C.row(i) /= 4;
+    }
+
+    for (const std::string& input_path : input_paths) {
+        MatrixXd inV, V;
+        MatrixXi inF, F;
+        igl::read_triangle_mesh(input_path, inV, inF);
+        VectorXi _I;
+        igl::remove_unreferenced(inV, inF, V, F, _I);
+        assert(V.cols() == 3);
+        assert(F.cols() == 3);
+
+        // compute winding number for V,F
+        Eigen::VectorXd W;
+        igl::winding_number(V, F, C, W);
+
+        if (W.maxCoeff() <= 0.5) {
+            // all removed, let's invert.
+            wmtk::logger().info("Correcting winding number");
+            for (auto i = 0; i < F.rows(); i++) {
+                auto temp = F(i, 0);
+                F(i, 0) = F(i, 1);
+                F(i, 1) = temp;
+            }
+            igl::winding_number(V, F, C, W);
+        }
+
+        if (W.maxCoeff() <= 0.5) {
+            wmtk::logger().warn("No winding number above 0.5 for input_path {}", input_path);
+        }
+
+        // store winding number in mesh
+        for (int i = 0; i < tets.size(); ++i) {
+            const size_t tid = tets[i].tid(*this);
+            m_tet_attribute[tid].m_winding_number_per_input.push_back(W(i));
+        }
+    }
+}
+
 void TetWildMesh::filter_with_input_surface_winding_number()
 {
     std::vector<size_t> rm_tids;
@@ -953,6 +1002,16 @@ void TetWildMesh::output_mesh(std::string file)
     msh.add_tet_attribute<1>("part", [&](size_t i) {
         return std::cbrt(m_tet_attribute[i].part_id);
     });
+
+    // per input winding number
+    if (!tets.empty()) {
+        const size_t n = m_tet_attribute[tets[0].tid(*this)].m_winding_number_per_input.size();
+        for (size_t j = 0; j < n; ++j) {
+            msh.add_tet_attribute<1>(fmt::format("wn_{}", j), [&](size_t i) {
+                return std::cbrt(m_tet_attribute[i].m_winding_number_per_input[j]);
+            });
+        }
+    }
 
     msh.save(file, true);
 }
@@ -1773,29 +1832,37 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
     const auto tets = get_tets();
     const auto faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
 
-    Eigen::MatrixXd V(vert_capacity(), 3);
-    Eigen::MatrixXi T(tet_capacity(), 4);
-    Eigen::MatrixXi F(faces.size(), 3);
+    MatrixXd V(vert_capacity(), 3);
+    MatrixXi T(tet_capacity(), 4);
+    MatrixXi F(faces.size(), 3);
 
     V.setZero();
     T.setZero();
     F.setZero();
 
-    Eigen::MatrixXd parts(tet_capacity(), 1);
+    MatrixXd parts(tet_capacity(), 1);
     parts.setZero();
-    Eigen::MatrixXd wn_input(tet_capacity(), 1);
+    MatrixXd wn_input(tet_capacity(), 1);
     wn_input.setZero();
-    Eigen::MatrixXd wn_tracked(tet_capacity(), 1);
+    MatrixXd wn_tracked(tet_capacity(), 1);
     wn_tracked.setZero();
-    Eigen::MatrixXd t_energy(tet_capacity(), 1);
+    MatrixXd t_energy(tet_capacity(), 1);
     t_energy.setZero();
-    Eigen::VectorXd v_sizing_field(vert_capacity());
+    std::vector<VectorXd> wn_per_input;
+    if (!tets.empty()) {
+        wn_per_input.resize(m_tet_attribute[tets[0].tid(*this)].m_winding_number_per_input.size());
+        for (VectorXd& wn : wn_per_input) {
+            wn.resize(tet_capacity());
+        }
+    }
+
+    VectorXd v_sizing_field(vert_capacity());
     v_sizing_field.setZero();
-    Eigen::VectorXd v_is_rounded(vert_capacity());
+    VectorXd v_is_rounded(vert_capacity());
     v_is_rounded.setZero();
-    Eigen::VectorXd v_is_on_surface(vert_capacity());
+    VectorXd v_is_on_surface(vert_capacity());
     v_is_on_surface.setZero();
-    Eigen::VectorXd v_is_on_open_boundary(vert_capacity());
+    VectorXd v_is_on_open_boundary(vert_capacity());
     v_is_on_open_boundary.setZero();
 
     int index = 0;
@@ -1805,6 +1872,10 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
         wn_input(index, 0) = m_tet_attribute[tid].m_winding_number_input;
         wn_tracked(index, 0) = m_tet_attribute[tid].m_winding_number_tracked;
         t_energy(index, 0) = std::cbrt(m_tet_attribute[tid].m_quality);
+
+        for (size_t i = 0; i < wn_per_input.size(); ++i) {
+            wn_per_input[i][index] = m_tet_attribute[tid].m_winding_number_per_input[i];
+        }
 
         const auto vs = oriented_tet_vertices(t);
         for (int j = 0; j < 4; j++) {
@@ -1819,7 +1890,7 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
         }
     }
 
-    for (auto v : vs) {
+    for (const auto& v : vs) {
         const auto vid = v.vid(*this);
         V.row(vid) = m_vertex_attribute[vid].m_posf;
         v_sizing_field[vid] = m_vertex_attribute[vid].m_sizing_scalar;
@@ -1830,7 +1901,7 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
 
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
     if (use_hdf5) {
-        throw std::runtime_error("Cannot write HDF5");
+        log_and_throw_error("Cannot write HDF5");
         // writer = std::make_shared<paraviewo::HDF5VTUWriter>();
     } else {
         writer = std::make_shared<paraviewo::VTUWriter>();
@@ -1842,6 +1913,10 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
     writer->add_cell_field("winding_number_input", wn_input);
     writer->add_cell_field("winding_number_tracked", wn_tracked);
     writer->add_cell_field("t_energy", t_energy);
+    for (size_t i = 0; i < wn_per_input.size(); ++i) {
+        std::string wn_name = fmt::format("wn_{}", i);
+        writer->add_cell_field(wn_name, wn_per_input[i]);
+    }
     writer->add_field("sizing_field", v_sizing_field);
     writer->add_field("is_rounded", v_is_rounded);
     writer->add_field("on_surface", v_is_on_surface);
