@@ -78,8 +78,10 @@ void stl_to_manifold_wmtk_input(
         V,
         SVI,
         SVJ);
-    for (int i = 0; i < F.rows(); i++)
-        for (int j : {0, 1, 2}) F(i, j) = SVJ[F(i, j)];
+    for (int i = 0; i < F.rows(); ++i)
+        for (int j = 0; j < 3; ++j) {
+            F(i, j) = SVJ[F(i, j)];
+        }
     auto F1 = F;
 
     resolve_duplicated_faces(F1, F);
@@ -124,8 +126,8 @@ void stl_to_manifold_wmtk_input(
         assert(V_single.cols() == 3);
         assert(F_single.cols() == 3);
 
-        const size_t nV_old = V.rows();
-        const size_t nF_old = F.rows();
+        const int nV_old = V.rows();
+        const int nF_old = F.rows();
 
         V.conservativeResize(V.rows() + V_single.rows(), 3);
         V.block(nV_old, 0, V_single.rows(), 3) = V_single;
@@ -175,7 +177,7 @@ void stl_to_manifold_wmtk_input(
 
 
     // logger().info("In \"Read.cpp\": Check faces for collinearity...");
-    for (size_t i = 0; i < F.rows(); ++i) {
+    for (int i = 0; i < F.rows(); ++i) {
         Eigen::Vector3d v0 = V.row(F(i, 0));
         Eigen::Vector3d v1 = V.row(F(i, 1));
         Eigen::Vector3d v2 = V.row(F(i, 2));

@@ -84,7 +84,7 @@ auto delaunay3D(const std::vector<Point3D>& points)
 
     // Run!
     geo_assert(points.size() > 0);
-    engine->set_vertices(points.size(), points.front().data());
+    engine->set_vertices((GEO::index_t)points.size(), points.front().data());
 
     // Extract output.
     const size_t num_vertices = engine->nb_vertices();
@@ -92,12 +92,16 @@ auto delaunay3D(const std::vector<Point3D>& points)
     std::vector<Point3D> vertices(num_vertices);
     std::vector<Tetrahedron> tets(num_tets);
 
-    for (size_t i = 0; i < num_vertices; i++) {
-        for (auto j = 0; j < 3; j++) vertices[i][j] = engine->vertex_ptr(i)[j];
+    for (GEO::index_t i = 0; i < num_vertices; i++) {
+        for (size_t j = 0; j < 3; j++) {
+            vertices[i][j] = engine->vertex_ptr(i)[j];
+        }
     }
 
-    for (size_t i = 0; i < num_tets; i++) {
-        for (auto j = 0; j < 4; j++) tets[i][j] = engine->cell_vertex(i, j);
+    for (GEO::index_t i = 0; i < num_tets; i++) {
+        for (GEO::index_t j = 0; j < 4; j++) {
+            tets[i][j] = engine->cell_vertex(i, j);
+        }
     }
 
     // sort tets
@@ -138,7 +142,7 @@ auto delaunay2D(const std::vector<Point2D>& points)
 
     // Run!
     geo_assert(points.size() > 0);
-    engine->set_vertices(points.size(), points.front().data());
+    engine->set_vertices((GEO::index_t)points.size(), points.front().data());
 
     // Extract output.
     const size_t num_vertices = engine->nb_vertices();
@@ -146,12 +150,16 @@ auto delaunay2D(const std::vector<Point2D>& points)
     std::vector<Point2D> vertices(num_vertices);
     std::vector<Triangle> triangles(num_triangles);
 
-    for (size_t i = 0; i < num_vertices; i++) {
-        for (auto j = 0; j < 2; j++) vertices[i][j] = engine->vertex_ptr(i)[j];
+    for (GEO::index_t i = 0; i < num_vertices; i++) {
+        for (GEO::index_t j = 0; j < 2; j++) {
+            vertices[i][j] = engine->vertex_ptr(i)[j];
+        }
     }
 
-    for (size_t i = 0; i < num_triangles; i++) {
-        for (auto j = 0; j < 3; j++) triangles[i][j] = engine->cell_vertex(i, j);
+    for (GEO::index_t i = 0; i < num_triangles; i++) {
+        for (GEO::index_t j = 0; j < 3; j++) {
+            triangles[i][j] = engine->cell_vertex(i, j);
+        }
     }
 
     // sort tets

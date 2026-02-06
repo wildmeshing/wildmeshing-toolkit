@@ -56,7 +56,7 @@ std::vector<size_t> partition_morton(std::vector<Eigen::Vector3d> vertex_positio
         std::vector<Eigen::Vector3d> V_v = vertex_position;
         struct sortstruct
         {
-            int order;
+            size_t order = -1;
             Resorting::MortonCode64 morton;
         };
         std::vector<sortstruct> list_v;
@@ -115,7 +115,7 @@ std::vector<size_t> partition_morton(std::vector<Eigen::Vector3d> vertex_positio
             return (a.morton < b.morton);
         };
         tbb::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
-        int interval = list_v.size() / NUM_THREADS + 1;
+        size_t interval = list_v.size() / NUM_THREADS + 1;
 
         tbb::parallel_for(
             tbb::blocked_range<size_t>(0, list_v.size()),

@@ -128,7 +128,7 @@ void UniformRemeshing::partition_mesh_morton()
 
         struct sortstruct
         {
-            int order;
+            size_t order;
             Resorting::MortonCode64 morton;
         };
 
