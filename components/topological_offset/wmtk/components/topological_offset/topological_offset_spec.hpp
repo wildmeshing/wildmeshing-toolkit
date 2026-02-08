@@ -13,6 +13,7 @@ nlohmann::json topological_offset_spec = R"(
     ],
     "optional": [
       "output",
+      "2d",
       "tag_name",
       "sep_tag_vals",
       "offset_tag_val",
@@ -38,6 +39,12 @@ nlohmann::json topological_offset_spec = R"(
     "type": "string",
     "default": "out",
     "doc": "Output file name (without extension)."
+  },
+  {
+    "pointer": "/2d",
+    "type": "bool",
+    "default": "false",
+    "doc": "Set to true if input is 2D triangle mesh"
   },
   {
     "pointer": "/save_vtu",

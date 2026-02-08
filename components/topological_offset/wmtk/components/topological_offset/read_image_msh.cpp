@@ -1,5 +1,4 @@
 #include "read_image_msh.hpp"
-
 #include <wmtk/utils/io.hpp>
 
 namespace wmtk::components::topological_offset {
@@ -50,7 +49,7 @@ void read_image_msh(
             tag_vals.push_back(curr_tags);
         } else { // num entries != num tets
             logger().warn(
-                "Size mismatched tet data [{}] ignored ({} entries, {} tets)",
+                "Size-mismatched tet data [{}] ignored ({} entries, {} tets)",
                 data.header.string_tags[0],
                 data.header.int_tags[2],
                 T_input.rows());
@@ -61,7 +60,7 @@ void read_image_msh(
     std::vector<std::string>::iterator it =
         std::find(all_tag_names.begin(), all_tag_names.end(), tag_name);
     if (it == all_tag_names.end()) {
-        log_and_throw_error("Tag name {} not found in input mesh '{}'", tag_name, path);
+        log_and_throw_error("Tag [{}] not found in input mesh '{}'", tag_name, path);
     }
 
     // save tag values to tag matrix
@@ -72,32 +71,33 @@ void read_image_msh(
     }
 
     // inversion check
-    const Vector3d p0 = V_input.row(T_input(0, 0));
-    const Vector3d p1 = V_input.row(T_input(0, 1));
-    const Vector3d p2 = V_input.row(T_input(0, 2));
-    const Vector3d p3 = V_input.row(T_input(0, 3));
+    {
+        const Vector3d p0 = V_input.row(T_input(0, 0));
+        const Vector3d p1 = V_input.row(T_input(0, 1));
+        const Vector3d p2 = V_input.row(T_input(0, 2));
+        const Vector3d p3 = V_input.row(T_input(0, 3));
 
-    igl::predicates::exactinit();
-    auto res = igl::predicates::orient3d(p0, p1, p2, p3);
-    int result;
-    if (res == igl::predicates::Orientation::POSITIVE) {
-        result = 1;
-    } else if (res == igl::predicates::Orientation::NEGATIVE) {
-        result = -1;
-    } else {
-        log_and_throw_error(
-            "First tet is degenerate! Vertices: \n{},\n{},\n{},\n{}",
-            p0,
-            p1,
-            p2,
-            p3);
-    }
+        igl::predicates::exactinit();
+        auto res = igl::predicates::orient3d(p0, p1, p2, p3);
+        int result;
+        if (res == igl::predicates::Orientation::POSITIVE) {
+            result = 1;
+        } else if (res == igl::predicates::Orientation::NEGATIVE) {
+            result = -1;
+        } else {
+            log_and_throw_error(
+                "First tet is degenerate! Vertices: \n{},\n{},\n{},\n{}",
+                p0,
+                p1,
+                p2,
+                p3);
+        }
 
-    if (result >= 0) {
-        logger().warn("First tet of input is inverted -> invert all tets.");
-        T_input.col(2).swap(T_input.col(3));
+        if (result >= 0) {
+            logger().warn("First tet of input is inverted -> invert all tets.");
+            T_input.col(2).swap(T_input.col(3));
+        }
     }
-    // end inversion check
 }
 
 } // namespace wmtk::components::topological_offset

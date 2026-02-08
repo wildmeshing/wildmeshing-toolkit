@@ -1,6 +1,8 @@
 #include <igl/predicates/predicates.h>
 #include <wmtk/TetMesh.h>
+#include <wmtk/TriMesh.h>
 #include <wmtk/components/topological_offset/TopoOffsetMesh.h>
+#include <wmtk/components/topological_offset/TopoOffsetTriMesh.h>
 #include <catch2/catch_test_macros.hpp>
 
 using namespace wmtk;
@@ -24,9 +26,11 @@ const int F2_LABEL = 32;
 const int F3_LABEL = 33;
 const int T0_LABEL = 40;
 const std::vector<double> T0_TAGS = {128.0};
+const std::vector<double> F0_TAGS = {128.0}; // for trimesh
+const std::vector<double> F1_TAGS = {256.0}; // for trimesh
 
 
-TEST_CASE("edge_split", "[split_op]")
+TEST_CASE("edge_split_3d", "[split_op][3d]")
 {
     Eigen::Matrix<double, Eigen::Dynamic, 3> V(4, 3);
     V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
@@ -120,7 +124,7 @@ TEST_CASE("edge_split", "[split_op]")
 }
 
 
-TEST_CASE("face_split", "[split_op]")
+TEST_CASE("face_split_3d", "[split_op][3d]")
 {
     Eigen::Matrix<double, Eigen::Dynamic, 3> V(4, 3);
     V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
@@ -218,7 +222,7 @@ TEST_CASE("face_split", "[split_op]")
 }
 
 
-TEST_CASE("tet_split", "[split_op]")
+TEST_CASE("tet_split_3d", "[split_op][3d]")
 {
     Eigen::Matrix<double, Eigen::Dynamic, 3> V(4, 3);
     V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
@@ -317,7 +321,7 @@ TEST_CASE("tet_split", "[split_op]")
 }
 
 
-TEST_CASE("invariant", "[split_op]")
+TEST_CASE("invariant_3d", "[3d]")
 {
     Eigen::Matrix<double, Eigen::Dynamic, 3> V(4, 3);
     V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
@@ -355,5 +359,264 @@ TEST_CASE("invariant", "[split_op]")
         std::vector<TetMesh::Tuple> tets;
         tets.push_back(mesh.tuple_from_tet(0));
         REQUIRE(mesh.invariants(tets));
+    }
+}
+
+
+TEST_CASE("edge_split_2d_1face", "[split_op][2d]")
+{
+    Eigen::Matrix<double, 3, 2> V(3, 2);
+    V << 0, 0, 1, 0, 0, 1;
+    Eigen::MatrixXi F(1, 3);
+    F << 0, 1, 2;
+    Eigen::MatrixXd Tags(1, 1);
+    Tags << 128.0;
+
+    Parameters param;
+    param.tag_name = "dummy";
+    param.sep_tag_vals.push_back(1);
+    param.sep_tag_vals.push_back(4);
+    TopoOffsetTriMesh mesh(param, 0);
+    std::vector<std::string> tag_names(1, "dummy");
+    mesh.init_from_image(V, F, Tags, tag_names);
+
+    // give every component unique tag combo
+    mesh.m_vertex_attribute[0].label = V0_LABEL;
+    mesh.m_vertex_attribute[1].label = V1_LABEL;
+    mesh.m_vertex_attribute[2].label = V2_LABEL;
+    mesh.m_edge_attribute[0].label = E0_LABEL;
+    mesh.m_edge_attribute[1].label = E1_LABEL;
+    mesh.m_edge_attribute[2].label = E2_LABEL;
+    mesh.m_face_attribute[0].label = F0_LABEL;
+    mesh.m_face_attribute[0].tags = F0_TAGS;
+
+    // split edge
+    TriMesh::Tuple e = mesh.tuple_from_edge(1, 2, 0);
+    std::vector<TriMesh::Tuple> garbage;
+    mesh.split_edge(e, garbage);
+
+    // // ensure proper propagation of attributes
+    // vertex
+    REQUIRE(mesh.m_vertex_attribute[0].label == V0_LABEL);
+    REQUIRE(mesh.m_vertex_attribute[1].label == V1_LABEL);
+    REQUIRE(mesh.m_vertex_attribute[2].label == V2_LABEL);
+    REQUIRE(mesh.m_vertex_attribute[3].label == E0_LABEL);
+
+    // edges
+    std::array<std::array<size_t, 4>, 5> edges = {
+        {// {v0id, v1id, v_other, correct label}
+         {0, 1, 3, E2_LABEL},
+         {0, 2, 3, E1_LABEL},
+         {0, 3, 1, F0_LABEL},
+         {1, 3, 0, E0_LABEL},
+         {2, 3, 0, E0_LABEL}}};
+    for (int i = 0; i < 5; i++) {
+        size_t v0 = edges[i][0];
+        size_t v1 = edges[i][1];
+        size_t v_other = edges[i][2];
+        int correct_label = edges[i][3];
+        TriMesh::Tuple ftup = mesh.tuple_from_simplex(simplex::Face(v0, v1, v_other));
+        int actual_label =
+            mesh.m_edge_attribute[mesh.tuple_from_edge(v0, v1, ftup.fid(mesh)).eid(mesh)].label;
+        REQUIRE(actual_label == correct_label);
+    }
+
+    // faces
+    for (int i = 0; i < 2; i++) {
+        REQUIRE(mesh.m_face_attribute[i].label == F0_LABEL);
+        REQUIRE(mesh.m_face_attribute[i].tags == F0_TAGS);
+    }
+}
+
+
+TEST_CASE("edge_split_2d_2faces", "[split_op][2d]")
+{
+    Eigen::Matrix<double, 4, 2> V(4, 2);
+    V << 0, 0, 1, 0, 0, 1, 1, 1;
+    Eigen::MatrixXi F(2, 3);
+    F << 0, 1, 2, 1, 3, 2;
+    Eigen::MatrixXd Tags(2, 1);
+    Tags << 128.0, 256.0;
+
+    Parameters param;
+    param.tag_name = "dummy";
+    param.sep_tag_vals.push_back(1);
+    param.sep_tag_vals.push_back(4);
+    TopoOffsetTriMesh mesh(param, 0);
+    std::vector<std::string> tag_names(1, "dummy");
+    mesh.init_from_image(V, F, Tags, tag_names);
+
+    // give every component unique tag combo
+    mesh.m_vertex_attribute[0].label = V0_LABEL;
+    mesh.m_vertex_attribute[1].label = V1_LABEL;
+    mesh.m_vertex_attribute[2].label = V2_LABEL;
+    mesh.m_vertex_attribute[3].label = V3_LABEL;
+    mesh.m_edge_attribute[0].label = E0_LABEL;
+    mesh.m_edge_attribute[1].label = E1_LABEL;
+    mesh.m_edge_attribute[2].label = E2_LABEL;
+    mesh.m_edge_attribute[3].label = E3_LABEL;
+    mesh.m_edge_attribute[5].label = E5_LABEL;
+    mesh.m_face_attribute[0].label = F0_LABEL;
+    mesh.m_face_attribute[0].tags = F0_TAGS;
+    mesh.m_face_attribute[1].label = F1_LABEL;
+    mesh.m_face_attribute[1].tags = F1_TAGS;
+
+    // split edge
+    TriMesh::Tuple e = mesh.tuple_from_edge(1, 2, 0);
+    std::vector<TriMesh::Tuple> garbage;
+    mesh.split_edge(e, garbage);
+
+    // // ensure proper propagation of attributes
+    // vertex
+    REQUIRE(mesh.m_vertex_attribute[0].label == V0_LABEL);
+    REQUIRE(mesh.m_vertex_attribute[1].label == V1_LABEL);
+    REQUIRE(mesh.m_vertex_attribute[2].label == V2_LABEL);
+    REQUIRE(mesh.m_vertex_attribute[3].label == V3_LABEL);
+    REQUIRE(mesh.m_vertex_attribute[4].label == E0_LABEL);
+
+    // edges
+    std::array<std::array<size_t, 4>, 8> edges = {
+        {// {v0id, v1id, correct label}
+         {0, 1, E2_LABEL},
+         {0, 2, E1_LABEL},
+         {0, 4, F0_LABEL},
+         {1, 3, E5_LABEL},
+         {1, 4, E0_LABEL},
+         {2, 3, E3_LABEL},
+         {2, 4, E0_LABEL},
+         {3, 4, F1_LABEL}}};
+    for (int i = 0; i < 8; i++) {
+        size_t v0 = edges[i][0];
+        size_t v1 = edges[i][1];
+        int correct_label = edges[i][2];
+        size_t e_id = mesh.edge_id_from_simplex(simplex::Edge(v0, v1));
+        int actual_label = mesh.m_edge_attribute[e_id].label;
+        REQUIRE(actual_label == correct_label);
+    }
+
+    // faces
+    std::array<std::array<size_t, 3>, 4> faces = {{{0, 1, 4}, {0, 4, 2}, {1, 3, 4}, {4, 3, 2}}};
+    for (int i = 0; i < 4; i++) {
+        TriMesh::Tuple ftup =
+            mesh.tuple_from_simplex(simplex::Face(faces[i][0], faces[i][1], faces[i][2]));
+        size_t f_id = ftup.fid(mesh);
+        if (i < 2) {
+            REQUIRE(mesh.m_face_attribute[f_id].label == F0_LABEL);
+            REQUIRE(mesh.m_face_attribute[f_id].tags == F0_TAGS);
+        } else {
+            REQUIRE(mesh.m_face_attribute[f_id].label == F1_LABEL);
+            REQUIRE(mesh.m_face_attribute[f_id].tags == F1_TAGS);
+        }
+    }
+}
+
+
+TEST_CASE("face_split_2d", "[split_op][2d]")
+{
+    Eigen::Matrix<double, 3, 2> V(3, 2);
+    V << 0, 0, 1, 0, 0, 1;
+    Eigen::MatrixXi F(1, 3);
+    F << 0, 1, 2;
+    Eigen::MatrixXd Tags(1, 1);
+    Tags << 128.0;
+
+    Parameters param;
+    param.tag_name = "dummy";
+    param.sep_tag_vals.push_back(1);
+    param.sep_tag_vals.push_back(4);
+    TopoOffsetTriMesh mesh(param, 0);
+    std::vector<std::string> tag_names(1, "dummy");
+    mesh.init_from_image(V, F, Tags, tag_names);
+
+    // give every component unique tag combo
+    mesh.m_vertex_attribute[0].label = V0_LABEL;
+    mesh.m_vertex_attribute[1].label = V1_LABEL;
+    mesh.m_vertex_attribute[2].label = V2_LABEL;
+    mesh.m_edge_attribute[0].label = E0_LABEL;
+    mesh.m_edge_attribute[1].label = E1_LABEL;
+    mesh.m_edge_attribute[2].label = E2_LABEL;
+    mesh.m_face_attribute[0].label = F0_LABEL;
+    mesh.m_face_attribute[0].tags = F0_TAGS;
+
+    // split face
+    TriMesh::Tuple f = mesh.tuple_from_simplex(simplex::Face(0, 1, 2));
+    std::vector<TriMesh::Tuple> garbage;
+    mesh.split_face(f, garbage);
+
+    // // ensure proper propagation of attributes
+    // vertex
+    REQUIRE(mesh.m_vertex_attribute[0].label == V0_LABEL);
+    REQUIRE(mesh.m_vertex_attribute[1].label == V1_LABEL);
+    REQUIRE(mesh.m_vertex_attribute[2].label == V2_LABEL);
+    REQUIRE(mesh.m_vertex_attribute[3].label == F0_LABEL);
+
+    // edges
+    std::array<std::array<size_t, 4>, 6> edges = {
+        {// {v0id, v1id, correct label}
+         {0, 1, E2_LABEL},
+         {0, 2, E1_LABEL},
+         {0, 3, F0_LABEL},
+         {1, 2, E0_LABEL},
+         {1, 3, F0_LABEL},
+         {2, 3, F0_LABEL}}};
+    for (int i = 0; i < 6; i++) {
+        size_t v0 = edges[i][0];
+        size_t v1 = edges[i][1];
+        int correct_label = edges[i][2];
+        size_t e_id = mesh.edge_id_from_simplex(simplex::Edge(v0, v1));
+        int actual_label = mesh.m_edge_attribute[e_id].label;
+        REQUIRE(actual_label == correct_label);
+    }
+
+    // faces
+    std::array<std::array<size_t, 3>, 4> faces = {{{0, 1, 3}, {0, 3, 2}, {1, 2, 3}}};
+    for (int i = 0; i < 3; i++) {
+        TriMesh::Tuple ftup =
+            mesh.tuple_from_simplex(simplex::Face(faces[i][0], faces[i][1], faces[i][2]));
+        size_t f_id = ftup.fid(mesh);
+        REQUIRE(mesh.m_face_attribute[f_id].label == F0_LABEL);
+        REQUIRE(mesh.m_face_attribute[f_id].tags == F0_TAGS);
+    }
+}
+
+
+TEST_CASE("invariant_2d", "[2d]")
+{
+    Eigen::Matrix<double, 3, 2> V(3, 2);
+    V << 0, 0, 1, 0, 0, 1;
+    Eigen::MatrixXd Tags(1, 1);
+    Tags << 0.0;
+
+    { // mesh 1 (bad)
+        Eigen::MatrixXi F(1, 3);
+        F << 0, 2, 1;
+
+        Parameters param;
+        param.tag_name = "dummy";
+        param.sep_tag_vals.push_back(1);
+        param.sep_tag_vals.push_back(4);
+        TopoOffsetTriMesh mesh(param, 0);
+        std::vector<std::string> tag_names(1, "dummy");
+        mesh.init_from_image(V, F, Tags, tag_names);
+
+        std::vector<TriMesh::Tuple> tris;
+        tris.push_back(mesh.tuple_from_tri(0));
+        REQUIRE((mesh.invariants(tris) == false));
+    }
+    { // mesh 2 (good)
+        Eigen::MatrixXi F(1, 3);
+        F << 0, 1, 2;
+
+        Parameters param;
+        param.tag_name = "dummy";
+        param.sep_tag_vals.push_back(1);
+        param.sep_tag_vals.push_back(4);
+        TopoOffsetTriMesh mesh(param, 0);
+        std::vector<std::string> tag_names(1, "dummy");
+        mesh.init_from_image(V, F, Tags, tag_names);
+
+        std::vector<TriMesh::Tuple> tris;
+        tris.push_back(mesh.tuple_from_tri(0));
+        REQUIRE(mesh.invariants(tris));
     }
 }

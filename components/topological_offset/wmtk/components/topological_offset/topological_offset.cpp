@@ -14,7 +14,9 @@
 #include <igl/write_triangle_mesh.h>
 #include "Parameters.h"
 #include "TopoOffsetMesh.h"
+#include "TopoOffsetTriMesh.h"
 #include "read_image_msh.hpp"
+#include "read_image_msh_2d.hpp"
 
 #include "file_generation.cpp" // DEVELOPMENT
 
@@ -34,7 +36,6 @@ namespace wmtk::components::topological_offset {
 void topological_offset(nlohmann::json json_params)
 {
     using wmtk::utils::resolve_path;
-    using Tuple = TetMesh::Tuple;
 
     // verify input and inject defaults
     {
@@ -58,6 +59,7 @@ void topological_offset(nlohmann::json json_params)
         params.sep_tag_vals.push_back(val);
     }
     params.offset_tag_val = json_params["offset_tag_val"];
+    bool twoD = json_params["2d"];
     params.output_path = resolve_path(root, json_params["output"]).string();
 
     std::filesystem::path output_filename = params.output_path;
@@ -79,81 +81,162 @@ void topological_offset(nlohmann::json json_params)
         log_and_throw_error("Input must be a .msh file.");
     }
 
-    // read image / MSH
-    MatrixXd V_input;
-    MatrixXi T_input;
-    MatrixXd T_input_tags;
-    // std::map<std::string, int> tag_label_map;
-    std::vector<std::string> all_tag_labels;
+    if (twoD) {
+        // read MSH
+        MatrixXd V_input;
+        MatrixXi F_input;
+        MatrixXd F_input_tags;
+        std::vector<std::string> all_tag_labels;
 
-    // input is a tet mesh
-    logger().info("Input mesh: {}", input_path);
-    read_image_msh(input_path, V_input, T_input, T_input_tags, params.tag_name, all_tag_labels);
+        // input is a 2d triangle mesh
+        logger().info("Input mesh (2D trimesh): {}", input_path);
+        read_image_msh_2d(
+            input_path,
+            V_input,
+            F_input,
+            F_input_tags,
+            params.tag_name,
+            all_tag_labels);
 
-    // initialize mesh
-    topological_offset::TopoOffsetMesh mesh(params, NUM_THREADS);
-    mesh.init_from_image(V_input, T_input, T_input_tags, all_tag_labels);
-    mesh.consolidate_mesh();
+        // initialize mesh
+        TopoOffsetTriMesh mesh(params, NUM_THREADS);
+        mesh.init_from_image(V_input, F_input, F_input_tags, all_tag_labels);
+        mesh.consolidate_mesh();
 
-    // record counts (mostly debugging, this is probably really slow)
-    mesh.m_init_counts[0] = mesh.vertex_size();
-    mesh.m_init_counts[1] = mesh.get_edges().size();
-    mesh.m_init_counts[2] = mesh.get_faces().size();
-    mesh.m_init_counts[3] = mesh.tet_size();
+        // set initial counts
+        mesh.m_init_counts[0] = mesh.get_vertices().size();
+        mesh.m_init_counts[1] = mesh.get_edges().size();
+        mesh.m_init_counts[2] = mesh.get_faces().size();
 
-    // output input complex and entire mesh as vtu
-    if (mesh.m_params.debug_output) {
-        mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
-        mesh.write_input_complex(output_filename.string() + "_input_complex");
+        // output input complex and entire mesh as vtu
+        if (mesh.m_params.debug_output) {
+            mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
+            mesh.write_input_complex(output_filename.string() + "_input_complex");
+        }
+
+        // start timer
+        igl::Timer timer;
+        timer.start();
+
+        // make embedding simplicial
+        logger().info("Creating simplicial embedding...");
+        if (!mesh.is_simplicially_embedded()) {
+            mesh.simplicial_embedding();
+        }
+        bool dummy = mesh.is_simplicially_embedded();
+        mesh.consolidate_mesh();
+        if (mesh.m_params.debug_output) {
+            mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
+        }
+
+        // perform offset
+        logger().info("Performing offset...");
+        mesh.perform_offset();
+        mesh.consolidate_mesh();
+
+        // stop timer
+        double time = timer.getElapsedTime();
+        wmtk::logger().info("total time {}s", time);
+
+        // output
+        std::ofstream fout(output_filename.string() + ".log");
+        fout << "before:" << std::endl;
+        fout << "\t#f: " << mesh.m_init_counts[2] << std::endl;
+        fout << "\t#e: " << mesh.m_init_counts[1] << std::endl;
+        fout << "\t#v: " << mesh.m_init_counts[0] << std::endl;
+        fout << "after:" << std::endl;
+        fout << "\t#f: " << mesh.get_faces().size() << std::endl;
+        fout << "\t#e: " << mesh.get_edges().size() << std::endl;
+        fout << "\t#v: " << mesh.get_vertices().size() << std::endl;
+        fout << "threads: " << NUM_THREADS << std::endl;
+        fout << "time: " << time << std::endl;
+        fout.close();
+
+        // mesh.write_msh(output_filename.string()); // write .msh
+        if (mesh.m_params.debug_output) {
+            mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
+        } else if (mesh.m_params.save_vtu) { // write .vtu
+            mesh.write_vtu(output_filename.string());
+        }
+
+        wmtk::logger().info("======= finish =========");
+    } else {
+        // read MSH
+        MatrixXd V_input;
+        MatrixXi T_input;
+        MatrixXd T_input_tags;
+        std::vector<std::string> all_tag_labels;
+
+        // input is a tet mesh
+        logger().info("Input mesh (3D tetmesh): {}", input_path);
+        read_image_msh(input_path, V_input, T_input, T_input_tags, params.tag_name, all_tag_labels);
+
+        // initialize mesh
+        TopoOffsetMesh mesh(params, NUM_THREADS);
+        mesh.init_from_image(V_input, T_input, T_input_tags, all_tag_labels);
+        mesh.consolidate_mesh();
+
+        // record counts (mostly debugging, this is probably really slow)
+        mesh.m_init_counts[0] = mesh.vertex_size();
+        mesh.m_init_counts[1] = mesh.get_edges().size();
+        mesh.m_init_counts[2] = mesh.get_faces().size();
+        mesh.m_init_counts[3] = mesh.tet_size();
+
+        // output input complex and entire mesh as vtu
+        if (mesh.m_params.debug_output) {
+            mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
+            mesh.write_input_complex(output_filename.string() + "_input_complex");
+        }
+
+        // start timer
+        igl::Timer timer;
+        timer.start();
+
+        // make embedding simplicial (split components per Alg 1)
+        logger().info("Creating simplicial embedding...");
+        if (!mesh.is_simplicially_embedded()) { // internally prints to console
+            mesh.simplicial_embedding();
+        }
+        mesh.consolidate_mesh();
+        bool dummy = mesh.is_simplicially_embedded(); // internally prints to console
+        if (mesh.m_params.debug_output) { // intermediate output
+            mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
+        }
+
+        // perform offset
+        logger().info("Performing offset...");
+        mesh.perform_offset();
+        mesh.consolidate_mesh();
+
+        // stop timer
+        double time = timer.getElapsedTime();
+        wmtk::logger().info("total time {}s", time);
+
+        // output
+        std::ofstream fout(output_filename.string() + ".log");
+        fout << "before:" << std::endl;
+        fout << "\t#t: " << mesh.m_init_counts[3] << std::endl;
+        fout << "\t#f: " << mesh.m_init_counts[2] << std::endl;
+        fout << "\t#e: " << mesh.m_init_counts[1] << std::endl;
+        fout << "\t#v: " << mesh.m_init_counts[0] << std::endl;
+        fout << "after:" << std::endl;
+        fout << "\t#t: " << mesh.tet_size() << std::endl;
+        fout << "\t#f: " << mesh.get_faces().size() << std::endl;
+        fout << "\t#e: " << mesh.get_edges().size() << std::endl;
+        fout << "\t#v: " << mesh.vertex_size() << std::endl;
+        fout << "threads: " << NUM_THREADS << std::endl;
+        fout << "time: " << time << std::endl;
+        fout.close();
+
+        mesh.write_msh(output_filename.string()); // write .msh
+        if (mesh.m_params.debug_output) {
+            mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
+        } else if (mesh.m_params.save_vtu) { // write .vtu
+            mesh.write_vtu(output_filename.string());
+        }
+
+        wmtk::logger().info("======= finish =========");
     }
-
-    // start timer
-    igl::Timer timer;
-    timer.start();
-
-    // make embedding simplicial (split components per Alg 1)
-    logger().info("Creating simplicial embedding...");
-    bool dummy = mesh.is_simplicially_embedded(); // internally prints to console
-    mesh.simplicial_embedding();
-    mesh.consolidate_mesh();
-    dummy = mesh.is_simplicially_embedded(); // internally prints to console
-    if (mesh.m_params.debug_output) { // intermediate output
-        mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
-    }
-
-    // perform offset
-    logger().info("Performing offset...");
-    mesh.perform_offset();
-    mesh.consolidate_mesh();
-
-    // stop timer
-    double time = timer.getElapsedTime();
-    wmtk::logger().info("total time {}s", time);
-
-    // output
-    std::ofstream fout(output_filename.string() + ".log");
-    fout << "before:" << std::endl;
-    fout << "\t#t: " << mesh.m_init_counts[3] << std::endl;
-    fout << "\t#f: " << mesh.m_init_counts[2] << std::endl;
-    fout << "\t#e: " << mesh.m_init_counts[1] << std::endl;
-    fout << "\t#v: " << mesh.m_init_counts[0] << std::endl;
-    fout << "after:" << std::endl;
-    fout << "\t#t: " << mesh.tet_size() << std::endl;
-    fout << "\t#f: " << mesh.get_faces().size() << std::endl;
-    fout << "\t#e: " << mesh.get_edges().size() << std::endl;
-    fout << "\t#v: " << mesh.vertex_size() << std::endl;
-    fout << "threads: " << NUM_THREADS << std::endl;
-    fout << "time: " << time << std::endl;
-    fout.close();
-
-    mesh.write_msh(output_filename.string()); // write .msh
-    if (mesh.m_params.debug_output) {
-        mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
-    } else if (mesh.m_params.save_vtu) { // write .vtu
-        mesh.write_vtu(output_filename.string());
-    }
-
-    wmtk::logger().info("======= finish =========");
 }
 
 

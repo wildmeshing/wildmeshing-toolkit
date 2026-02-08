@@ -1,5 +1,6 @@
 #include <set>
 #include "TopoOffsetMesh.h"
+#include "TopoOffsetTriMesh.h"
 
 
 namespace wmtk::components::topological_offset {
@@ -235,6 +236,7 @@ bool TopoOffsetMesh::split_face_after(const Tuple& t)
     } // why tf do we need this?
 
     auto& cache = face_split_cache.local();
+    // size_t v_id = t.vid(*this);
     size_t v_id = vertex_size() - 1;
     size_t v1_id = cache.v1_id;
     size_t v2_id = cache.v2_id;
@@ -344,6 +346,7 @@ bool TopoOffsetMesh::split_tet_before(const Tuple& t)
     return true;
 }
 
+
 bool TopoOffsetMesh::split_tet_after(const Tuple& t)
 {
     if (!TetMesh::split_tet_after(t)) {
@@ -394,6 +397,162 @@ bool TopoOffsetMesh::split_tet_after(const Tuple& t)
             auto [_, glob_fid] = tuple_from_face({v1, v2, v_id});
             m_face_attribute[glob_fid].label = tet_label;
         }
+    }
+
+    return true;
+}
+
+
+bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
+{
+    // load and clear cache
+    auto& cache = edge_split_cache.local();
+    cache.existing_eattr.clear();
+    cache.opp_v_fattr.clear();
+
+    size_t e_id = t.eid(*this);
+
+    // new vertex
+    cache.v1_id = t.vid(*this);
+    cache.v2_id = t.switch_vertex(*this).vid(*this);
+    Vector2d p1 = m_vertex_attribute[cache.v1_id].m_posf;
+    Vector2d p2 = m_vertex_attribute[cache.v2_id].m_posf;
+    cache.new_v = VertexAttributes2d((p1 + p2) / 2);
+    cache.new_v.label = m_edge_attribute[e_id].label;
+
+    // split edge attribute
+    cache.split_eattr = m_edge_attribute[e_id];
+
+    // per-opp vert attributes
+    std::vector<size_t> opp_v_ids;
+    opp_v_ids.push_back(t.switch_edge(*this).switch_vertex(*this).vid(*this));
+    auto other = t.switch_face(*this);
+    if (other) {
+        opp_v_ids.push_back(other.value().switch_edge(*this).switch_vertex(*this).vid(*this));
+    }
+    for (const size_t opp_v_id : opp_v_ids) {
+        Tuple ftup = tuple_from_simplex(simplex::Face(opp_v_id, cache.v1_id, cache.v2_id));
+        size_t f_id = ftup.fid(*this);
+
+        simplex::Edge e1(cache.v1_id, opp_v_id);
+        size_t e1_id = tuple_from_edge(cache.v1_id, opp_v_id, f_id).eid(*this);
+        simplex::Edge e2(cache.v2_id, opp_v_id);
+        size_t e2_id = tuple_from_edge(cache.v2_id, opp_v_id, f_id).eid(*this);
+
+        cache.existing_eattr[e1] = m_edge_attribute[e1_id];
+        cache.existing_eattr[e2] = m_edge_attribute[e2_id];
+        cache.opp_v_fattr[opp_v_id] = m_face_attribute[f_id];
+    }
+
+    return true;
+}
+
+
+bool TopoOffsetTriMesh::split_edge_after(const Tuple& t)
+{
+    if (!TriMesh::split_edge_after(t)) {
+        return false;
+    } // why tf do we need this?
+
+    auto& cache = edge_split_cache.local();
+    size_t v_id = get_vertices().size() - 1;
+    m_vertex_attribute[v_id] = cache.new_v;
+
+    // split edge attributes
+    for (const auto& pair : cache.opp_v_fattr) {
+        size_t opp_v_id = pair.first;
+
+        Tuple ftup_1 = tuple_from_simplex(simplex::Face(cache.v1_id, v_id, opp_v_id));
+        size_t f1_id = ftup_1.fid(*this);
+        m_edge_attribute[tuple_from_edge(cache.v1_id, v_id, f1_id).eid(*this)] = cache.split_eattr;
+
+        Tuple ftup_2 = tuple_from_simplex(simplex::Face(cache.v2_id, v_id, opp_v_id));
+        size_t f2_id = ftup_2.fid(*this);
+        m_edge_attribute[tuple_from_edge(cache.v2_id, v_id, f2_id).eid(*this)] = cache.split_eattr;
+
+        break;
+    }
+
+    // per existing edge attributes
+    for (const auto& pair : cache.existing_eattr) {
+        size_t e_id = edge_id_from_simplex(pair.first);
+        m_edge_attribute[e_id] = pair.second;
+    }
+
+    // new edges and faces
+    for (const auto& pair : cache.opp_v_fattr) {
+        size_t opp_v_id = pair.first;
+        FaceAttributes2d f_attr = pair.second;
+
+        size_t f1_id = tuple_from_simplex(simplex::Face(cache.v1_id, v_id, opp_v_id)).fid(*this);
+        m_face_attribute[f1_id] = f_attr;
+        size_t f2_id = tuple_from_simplex(simplex::Face(cache.v2_id, v_id, opp_v_id)).fid(*this);
+        m_face_attribute[f2_id] = f_attr;
+        size_t new_e_id = edge_id_from_simplex(simplex::Edge(opp_v_id, v_id));
+        m_edge_attribute[new_e_id].label = pair.second.label;
+    }
+
+    return true;
+}
+
+
+bool TopoOffsetTriMesh::split_face_before(const Tuple& t)
+{
+    auto& cache = face_split_cache.local();
+    cache.existing_eattr.clear();
+
+    // face id, retain attribute
+    size_t f_id = t.fid(*this);
+    cache.split_fattr = m_face_attribute[f_id];
+
+    // vertices (new vertex attributes too)
+    cache.v1_id = t.vid(*this);
+    cache.v2_id = t.switch_vertex(*this).vid(*this);
+    cache.v3_id = t.switch_edge(*this).switch_vertex(*this).vid(*this);
+    Vector2d p1 = m_vertex_attribute[cache.v1_id].m_posf;
+    Vector2d p2 = m_vertex_attribute[cache.v2_id].m_posf;
+    Vector2d p3 = m_vertex_attribute[cache.v3_id].m_posf;
+    cache.new_v = VertexAttributes2d((p1 + p2 + p3) / 3);
+    cache.new_v.label = cache.split_fattr.label;
+
+    // existing edges
+    simplex::Edge e1(cache.v1_id, cache.v2_id);
+    simplex::Edge e2(cache.v2_id, cache.v3_id);
+    simplex::Edge e3(cache.v1_id, cache.v3_id);
+    cache.existing_eattr[e1] = m_edge_attribute[edge_id_from_simplex(e1)];
+    cache.existing_eattr[e2] = m_edge_attribute[edge_id_from_simplex(e2)];
+    cache.existing_eattr[e3] = m_edge_attribute[edge_id_from_simplex(e3)];
+
+    return true;
+}
+
+
+bool TopoOffsetTriMesh::split_face_after(const Tuple& t)
+{
+    if (!TriMesh::split_face_after(t)) {
+        return false;
+    }
+
+    auto& cache = face_split_cache.local();
+    size_t v_id = get_vertices().size() - 1;
+    m_vertex_attribute[v_id] = cache.new_v;
+
+    // existing edges
+    for (const auto& pair : cache.existing_eattr) {
+        size_t e_id = edge_id_from_simplex(pair.first);
+        m_edge_attribute[e_id] = pair.second;
+    }
+
+    // all internal edges and faces
+    std::array<size_t, 3> vs = {cache.v1_id, cache.v2_id, cache.v3_id};
+    for (int i = 0; i < 3; i++) {
+        // edge
+        size_t e_id = edge_id_from_simplex(simplex::Edge(vs[i], v_id));
+        m_edge_attribute[e_id].label = cache.split_fattr.label;
+
+        // face
+        size_t f_id = tuple_from_simplex(simplex::Face(vs[i], vs[(i + 1) % 3], v_id)).fid(*this);
+        m_face_attribute[f_id] = cache.split_fattr;
     }
 
     return true;

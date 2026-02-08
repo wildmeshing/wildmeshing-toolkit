@@ -1,40 +1,23 @@
 
 #include "TopoOffsetMesh.h"
 
-#include "wmtk/utils/Rational.hpp"
-
-#include <wmtk/utils/AMIPS.h>
-#include <wmtk/envelope/KNN.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/io.hpp>
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <tbb/concurrent_vector.h>
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/fmt/bundled/format.h>
 #include <igl/predicates/predicates.h>
-#include <igl/winding_number.h>
-#include <igl/write_triangle_mesh.h>
-#include <igl/remove_unreferenced.h>
 #include <igl/Timer.h>
-#include <igl/orientable_patches.h>
 #include <wmtk/utils/EnableWarnings.hpp>
-#include <wmtk/utils/GeoUtils.h>
-#include <wmtk/ExecutionScheduler.hpp>
-#include <wmtk/utils/ExecutorUtils.hpp>
 // clang-format on
 
 #include <paraviewo/VTUWriter.hpp>
 
-#include <cmath>
-#include <limits>
+// #include <cmath>
+// #include <limits>
 
-
-// namespace {
-// static int debug_print_counter = 0;
-// }
 
 namespace wmtk::components::topological_offset {
 
@@ -54,7 +37,7 @@ void TopoOffsetMesh::init_from_image(
     // assert dimensions
     assert(V.cols() == 3);
     assert(T.cols() == 4);
-    assert(T.rows() == T_tag.rows());
+    assert(T.rows() == T_tags.rows());
 
     // save tags info to mesh (assumes desired tag is in tag names found)
     auto it = std::find(
@@ -168,10 +151,10 @@ bool TopoOffsetMesh::is_simplicially_embedded() const
         bad_tets += (!tet_is_simp_emb(t));
     }
     if (bad_tets == 0) {
-        logger().info("\tMesh simplicially embedded: TRUE");
+        logger().info("\tBoundary simplicially embedded: TRUE");
         return true;
     } else {
-        logger().info("\tMesh simplicially embedded: FALSE ({} bad tets)", bad_tets);
+        logger().info("\tBoundary simplicially embedded: FALSE ({} bad tets)", bad_tets);
         return false;
     }
 }
@@ -216,6 +199,7 @@ void TopoOffsetMesh::simplicial_embedding()
                 auto [_, glob_fid] = tuple_from_face({v1, v2, v3});
                 if (m_face_attribute[glob_fid].label != 1) {
                     to_split = false;
+                    break;
                 }
             }
 
@@ -357,8 +341,7 @@ void TopoOffsetMesh::write_input_complex(const std::string& path)
 {
     logger().info("Write {}.vtu", path);
 
-    std::vector<int> vid_map(vertex_size(),
-                             -1); // vid_map[i] gives new vertex id for old id 'i'
+    std::vector<int> vid_map(vertex_size(), -1); // vid_map[i] gives new vertex id for old id 'i'
     std::vector<std::vector<int>> cells;
 
     // extract required vertices and populate id map
@@ -378,7 +361,7 @@ void TopoOffsetMesh::write_input_complex(const std::string& path)
 
     // get all offset input edges
     auto edges = get_edges();
-    for (const Tuple e : edges) {
+    for (const Tuple& e : edges) {
         if (m_edge_attribute[e.eid(*this)].label == 1) {
             std::vector<int> curr_e;
             curr_e.push_back(vid_map[e.vid(*this)]);
@@ -389,7 +372,7 @@ void TopoOffsetMesh::write_input_complex(const std::string& path)
 
     // get all offset input faces
     auto faces = get_faces();
-    for (const Tuple f : faces) {
+    for (const Tuple& f : faces) {
         if (m_face_attribute[f.fid(*this)].label == 1) {
             std::vector<int> curr_f;
             curr_f.push_back(vid_map[f.vid(*this)]);
@@ -401,7 +384,7 @@ void TopoOffsetMesh::write_input_complex(const std::string& path)
         }
     }
 
-    // get all offset input tets ( this should never happen? )
+    // get all offset input tets (this should never happen)
     bool flag = false;
     int num_tets = tet_size();
     for (size_t i = 0; i < num_tets; i++) {
@@ -412,11 +395,12 @@ void TopoOffsetMesh::write_input_complex(const std::string& path)
             for (const size_t vid : vids) {
                 curr_t.push_back(vid_map[vid]);
             }
+            cells.push_back(curr_t);
         }
     }
     if (flag) {
         logger().warn("One or more tet included in complex to offset.");
-    };
+    }
 
     // output
     std::shared_ptr<paraviewo::ParaviewWriter> writer;

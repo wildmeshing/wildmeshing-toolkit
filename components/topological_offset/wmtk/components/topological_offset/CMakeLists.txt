@@ -8,8 +8,11 @@ if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
 endif()
 
 set(SRC_FILES
-    TopoOffsetMesh.cpp
 	TopoOffsetMesh.h
+    TopoOffsetMesh.cpp
+
+	TopoOffsetTriMesh.h
+	TopoOffsetTriMesh.cpp
 
 	Parameters.h
 	ComponentSplitting.cpp
@@ -20,8 +23,9 @@ set(SRC_FILES
 
 	read_image_msh.hpp
 	read_image_msh.cpp
-	write_image_msh.hpp
-	write_image_msh.cpp
+
+	read_image_msh_2d.hpp
+	read_image_msh_2d.cpp
 
 	file_generation.cpp
     )

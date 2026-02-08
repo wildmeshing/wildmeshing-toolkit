@@ -2,17 +2,11 @@
 
 #include <igl/Timer.h>
 #include <wmtk/TetMesh.h>
-#include <wmtk/utils/Morton.h>
-#include <wmtk/utils/PartitionMesh.h>
-#include <bitset>
-#include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/simplex/RawSimplex.hpp>
 #include "Parameters.h"
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <tbb/concurrent_map.h>
-#include <tbb/parallel_sort.h>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
@@ -87,23 +81,20 @@ public:
 
     ~TopoOffsetMesh() {}
 
-    ////// Attributes related
     void write_input_complex(const std::string& path); // write components labeled to be offset
     void write_vtu(const std::string& path); // debugging, write .vtu of tet mesh
     void write_msh(const std::string& file);
 
-    std::string tags_bit_rep(uint64_t tags) { return std::bitset<64>(tags).to_string(); }
+    // std::string tags_bit_rep(uint64_t tags) { return std::bitset<64>(tags).to_string(); }
 
+    // splitting
     bool split_edge_before(const Tuple& t) override;
     bool split_edge_after(const Tuple& t) override;
-
     bool split_face_before(const Tuple& t) override;
     bool split_face_after(const Tuple& t) override;
-
     bool split_tet_before(const Tuple& t) override;
     bool split_tet_after(const Tuple& t) override;
-
-    bool invariants(const std::vector<Tuple>& t) override; // this is now automatically checked
+    bool invariants(const std::vector<Tuple>& tets) override; // this is now automatically checked
 
 private:
     // for edge splitting, new simplices inheret attributes from higher
