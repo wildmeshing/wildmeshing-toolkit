@@ -1,4 +1,0 @@
-var structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_rational_01_4 =
-[
-    [ "type", "structwmtk_1_1attribute_1_1type__from__attribute__type__enum_3_01_attribute_type_1_1_rational_01_4.html#a0c386469cec663c8499f053bcb5c8215", null ]
-];

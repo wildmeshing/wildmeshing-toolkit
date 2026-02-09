@@ -1,6 +1,14 @@
 var searchData=
 [
-  ['_5factivate_0',['_activate',['../classwmtk_1_1attribute_1_1_index_flag_accessor.html#af06d8fe6a9f16a0b9ac09e6eae9e797d',1,'wmtk::attribute::IndexFlagAccessor']]],
-  ['_5fdeactivate_1',['_deactivate',['../classwmtk_1_1attribute_1_1_index_flag_accessor.html#a28d998e53d6514482b6035319cf5f2c7',1,'wmtk::attribute::IndexFlagAccessor']]],
-  ['_5fis_5factive_2',['_is_active',['../classwmtk_1_1attribute_1_1_index_flag_accessor.html#a08ce19b077654f9e384d8c3fffcbbd0b',1,'wmtk::attribute::IndexFlagAccessor']]]
+  ['add_0',['add',['../classwmtk_1_1simplex_1_1_raw_simplex_collection.html#a0ea56616bb29e8a0d18b90eaea0f5f01',1,'wmtk::simplex::RawSimplexCollection']]],
+  ['add_5fedge_5fattribute_1',['add_edge_attribute',['../classwmtk_1_1io_1_1_tet_v_t_u_writer.html#a767ec9b2338187acf1aadee45a93af9b',1,'wmtk::io::TetVTUWriter::add_edge_attribute()'],['../classwmtk_1_1io_1_1_tri_v_t_u_writer.html#a9a29de04161b8ef34bd88991dfaa9150',1,'wmtk::io::TriVTUWriter::add_edge_attribute()']]],
+  ['add_5fface_5fvertices_2',['add_face_vertices',['../classwmtk_1_1_msh_data.html#ad46529f098d386d7d1d086d095133c01',1,'wmtk::MshData']]],
+  ['add_5ffaces_3',['add_faces',['../classwmtk_1_1_msh_data.html#a6cd5022e3aec2e52eff3e614aa95b588',1,'wmtk::MshData']]],
+  ['add_5fphysical_5fgroup_4',['add_physical_group',['../classwmtk_1_1_msh_data.html#a2cca8600a38697cbcebf14002ab7f34b',1,'wmtk::MshData']]],
+  ['add_5ftet_5fattribute_5',['add_tet_attribute',['../classwmtk_1_1io_1_1_tet_v_t_u_writer.html#a2e4fc3f699396ee5c18230a468a39a2e',1,'wmtk::io::TetVTUWriter']]],
+  ['add_5ftriangle_5fattribute_6',['add_triangle_attribute',['../classwmtk_1_1io_1_1_tet_v_t_u_writer.html#ad71c8cc3ca7b0b9b2db4e47b75e7720e',1,'wmtk::io::TetVTUWriter::add_triangle_attribute()'],['../classwmtk_1_1io_1_1_tri_v_t_u_writer.html#adee26003d6a5dc634bae3553e9605aac',1,'wmtk::io::TriVTUWriter::add_triangle_attribute()']]],
+  ['add_5fvertex_5fattribute_7',['add_vertex_attribute',['../classwmtk_1_1io_1_1_tet_v_t_u_writer.html#a7b38528511ef1c6e4bc05a327bbbd008',1,'wmtk::io::TetVTUWriter::add_vertex_attribute()'],['../classwmtk_1_1io_1_1_tri_v_t_u_writer.html#aa7fe61fd2391c509e6bbb94e8521f215',1,'wmtk::io::TriVTUWriter::add_vertex_attribute()']]],
+  ['add_5fvertex_5fpositions_8',['add_vertex_positions',['../classwmtk_1_1io_1_1_tet_v_t_u_writer.html#a31053aef1ae2d5bb3b2d1a04232b419e',1,'wmtk::io::TetVTUWriter::add_vertex_positions()'],['../classwmtk_1_1io_1_1_tri_v_t_u_writer.html#a5d1c873bea2e29eb44100706e18095eb',1,'wmtk::io::TriVTUWriter::add_vertex_positions()']]],
+  ['are_5fsimplex_5fcollections_5fequal_9',['are_simplex_collections_equal',['../classwmtk_1_1simplex_1_1_raw_simplex_collection.html#a0025f07627de350121c040451e7e94a3',1,'wmtk::simplex::RawSimplexCollection']]],
+  ['average_5flen_5fvalen_10',['average_len_valen',['../classapp_1_1remeshing_1_1_uniform_remeshing.html#aca4c28e43c2b5bd33becc9989bc5ba00',1,'app::remeshing::UniformRemeshing']]]
 ];

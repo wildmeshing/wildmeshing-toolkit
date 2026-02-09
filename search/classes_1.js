@@ -1,7 +1,5 @@
 var searchData=
 [
-  ['basecollapsenewattributestrategy_0',['BaseCollapseNewAttributeStrategy',['../classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy.html',1,'wmtk::operations']]],
-  ['basesplitnewattributestrategy_1',['BaseSplitNewAttributeStrategy',['../classwmtk_1_1operations_1_1_base_split_new_attribute_strategy.html',1,'wmtk::operations']]],
-  ['bbox_2',['bbox',['../structwmtk_1_1components_1_1internal_1_1bbox.html',1,'wmtk::components::internal']]],
-  ['boundarychecker_3',['BoundaryChecker',['../classwmtk_1_1multimesh_1_1_boundary_checker.html',1,'wmtk::multimesh']]]
+  ['collapseinfocache_0',['CollapseInfoCache',['../structapp_1_1interior__tet__opt_1_1_interior_tet_opt_1_1_collapse_info_cache.html',1,'app::interior_tet_opt::InteriorTetOpt']]],
+  ['cuttable_1',['CutTable',['../classwmtk_1_1_cut_table.html',1,'wmtk']]]
 ];

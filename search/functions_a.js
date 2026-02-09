@@ -1,5 +1,7 @@
 var searchData=
 [
-  ['k_5fring_0',['k_ring',['../namespacewmtk_1_1simplex.html#aaf868371b90dc2c2a009e7a6832cd7f9',1,'wmtk::simplex']]],
-  ['keys_1',['keys',['../classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a4795bb447cc7b560c22c53eff33b58dc',1,'wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache']]]
+  ['release_5fprotect_5fattributes_0',['release_protect_attributes',['../classwmtk_1_1_tri_mesh.html#a225083671f68132708976d88be0e2de4',1,'wmtk::TriMesh']]],
+  ['remove_5ftets_5fby_5fids_1',['remove_tets_by_ids',['../classwmtk_1_1_tet_mesh.html#afcb8ea0a43e2a2063af41b6a2ba8c91f',1,'wmtk::TetMesh']]],
+  ['rollback_2',['rollback',['../structwmtk_1_1_attribute_collection.html#a15d5ca94f6995d3e1363804f79d7c287',1,'wmtk::AttributeCollection']]],
+  ['rollback_5fprotected_5fattributes_3',['rollback_protected_attributes',['../classwmtk_1_1_tri_mesh.html#a6419d01660badf33195e0c3ad52d07f1',1,'wmtk::TriMesh']]]
 ];

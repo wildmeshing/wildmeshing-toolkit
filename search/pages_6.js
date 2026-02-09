@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['procedural_20component_0',['Procedural Component',['../md_components_2procedural_2wmtk_2components_2procedural_2_r_e_a_d_m_e.html',1,'']]]
+  ['toolkit_3a_20declarative_20specification_20for_20unstructured_20mesh_20editing_20algorithms_0',['Wildmeshing-toolkit: Declarative Specification for Unstructured Mesh Editing Algorithms',['../index.html',1,'']]]
 ];

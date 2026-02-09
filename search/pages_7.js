@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['readme_0',['README',['../md_src_2wmtk_2utils_2metaprogramming_2_r_e_a_d_m_e.html',1,'']]]
+  ['unstructured_20mesh_20editing_20algorithms_0',['Wildmeshing-toolkit: Declarative Specification for Unstructured Mesh Editing Algorithms',['../index.html',1,'']]]
 ];
