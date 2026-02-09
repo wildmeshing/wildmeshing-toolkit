@@ -1,4 +1,4 @@
-#include "topological_offset.hpp"
+#include "manifold_extraction.hpp"
 
 #include <vector>
 
@@ -12,13 +12,13 @@
 #include <igl/is_vertex_manifold.h>
 #include <igl/remove_unreferenced.h>
 #include <igl/write_triangle_mesh.h>
+#include "ManExtractMesh.h"
 #include "Parameters.h"
-#include "TopoOffsetMesh.h"
 #include "read_image_msh.hpp"
 
 #include "file_generation.cpp" // DEVELOPMENT
 
-#include "topological_offset_spec.hpp"
+#include "manifold_extraction_spec.hpp"
 
 // Enables passing Eigen matrices to fmt/spdlog.
 template <typename T>
@@ -28,10 +28,10 @@ struct fmt::formatter<T, std::enable_if_t<std::is_base_of_v<Eigen::DenseBase<T>,
 };
 
 
-namespace wmtk::components::topological_offset {
+namespace wmtk::components::manifold_extraction {
 
 
-void topological_offset(nlohmann::json json_params)
+void manifold_extraction(nlohmann::json json_params)
 {
     using wmtk::utils::resolve_path;
     using Tuple = TetMesh::Tuple;
@@ -39,11 +39,11 @@ void topological_offset(nlohmann::json json_params)
     // verify input and inject defaults
     {
         jse::JSE spec_engine;
-        bool r = spec_engine.verify_json(json_params, topological_offset_spec);
+        bool r = spec_engine.verify_json(json_params, manifold_extraction_spec);
         if (!r) {
             log_and_throw_error(spec_engine.log2str());
         }
-        json_params = spec_engine.inject_defaults(json_params, topological_offset_spec);
+        json_params = spec_engine.inject_defaults(json_params, manifold_extraction_spec);
     }
 
     const std::filesystem::path root = json_params["json_input_file"];
@@ -83,7 +83,7 @@ void topological_offset(nlohmann::json json_params)
     read_image_msh(input_path, V_input, T_input, T_input_tag, params.tag_label);
 
     // initialize mesh
-    topological_offset::TopoOffsetMesh mesh(params, NUM_THREADS);
+    manifold_extraction::ManExtractMesh mesh(params, NUM_THREADS);
     mesh.init_from_image(V_input, T_input, T_input_tag);
     mesh.consolidate_mesh();
 
@@ -196,4 +196,4 @@ void topological_offset(nlohmann::json json_params)
 }
 
 
-} // namespace wmtk::components::topological_offset
+} // namespace wmtk::components::manifold_extraction

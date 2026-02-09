@@ -2,7 +2,7 @@
 #include <wmtk/Types.hpp>
 
 
-namespace wmtk::components::topological_offset {
+namespace wmtk::components::manifold_extraction {
 struct Parameters
 {
     // parameters set by user
@@ -12,4 +12,4 @@ struct Parameters
     std::string output_path;
     bool debug_output = false;
 };
-} // namespace wmtk::components::topological_offset
+} // namespace wmtk::components::manifold_extraction

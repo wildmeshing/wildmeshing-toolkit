@@ -1,3 +1,8 @@
+#pragma once
+#include <nlohmann/json.hpp>
+namespace {
+
+nlohmann::json manifold_extraction_spec = R"(
 [
   {
     "pointer": "/",
@@ -18,9 +23,9 @@
     "pointer": "/application",
     "type": "string",
     "options": [
-      "topological_offset"
+      "manifold_extraction"
     ],
-    "doc": "Application name must be topological_offset."
+    "doc": "Application name must be manifold_extraction."
   },
   {
     "pointer": "/input",
@@ -68,3 +73,6 @@
     "doc": "Write the tet mesh as out_{}.vtu after every operation."
   }
 ]
+)"_json;
+
+}

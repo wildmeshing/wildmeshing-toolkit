@@ -20,7 +20,7 @@
 // #include <memory>
 
 
-namespace wmtk::components::topological_offset {
+namespace wmtk::components::manifold_extraction {
 
 
 // for all attributes:
@@ -62,7 +62,7 @@ public:
 };
 
 
-class TopoOffsetMesh : public wmtk::TetMesh
+class ManExtractMesh : public wmtk::TetMesh
 {
 public:
     int m_vtu_counter = 0;
@@ -81,7 +81,7 @@ public:
     FaceAttCol m_face_attribute;
     TetAttCol m_tet_attribute;
 
-    TopoOffsetMesh(Parameters& _m_params, int _num_threads = 0)
+    ManExtractMesh(Parameters& _m_params, int _num_threads = 0)
         : m_params(_m_params)
     {
         NUM_THREADS = _num_threads;
@@ -91,7 +91,7 @@ public:
         p_tet_attrs = &m_tet_attribute;
     }
 
-    ~TopoOffsetMesh() {}
+    ~ManExtractMesh() {}
 
     ////// Attributes related
     void write_input_complex(const std::string& path); // write out components labeled as offset
@@ -206,4 +206,4 @@ public:
     void label_boundary_verts_1();
 };
 
-} // namespace wmtk::components::topological_offset
+} // namespace wmtk::components::manifold_extraction

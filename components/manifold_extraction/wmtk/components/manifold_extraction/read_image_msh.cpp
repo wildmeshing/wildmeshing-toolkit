@@ -2,7 +2,7 @@
 
 #include <wmtk/utils/io.hpp>
 
-namespace wmtk::components::topological_offset {
+namespace wmtk::components::manifold_extraction {
 
 void read_image_msh(
     const std::string& path,
@@ -168,4 +168,4 @@ void read_image_msh(
     // }
 }
 
-} // namespace wmtk::components::topological_offset
+} // namespace wmtk::components::manifold_extraction

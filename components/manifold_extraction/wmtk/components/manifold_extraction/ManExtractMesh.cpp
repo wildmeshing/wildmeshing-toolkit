@@ -1,5 +1,5 @@
 
-#include "TopoOffsetMesh.h"
+#include "ManExtractMesh.h"
 
 #include "wmtk/utils/Rational.hpp"
 
@@ -32,11 +32,7 @@
 #include <limits>
 
 
-// namespace {
-// static int debug_print_counter = 0;
-// }
-
-namespace wmtk::components::topological_offset {
+namespace wmtk::components::manifold_extraction {
 
 
 VertexAttributes::VertexAttributes(const Vector3d& p)
@@ -45,27 +41,13 @@ VertexAttributes::VertexAttributes(const Vector3d& p)
 
 
 // assumes tag has been found. won't be called otherwise
-void TopoOffsetMesh::init_from_image(const MatrixXd& V, const MatrixXi& T, const MatrixXd& T_tag)
+void ManExtractMesh::init_from_image(const MatrixXd& V, const MatrixXi& T, const MatrixXd& T_tag)
 {
     // assert dimensions
     assert(V.cols() == 3);
     assert(T.cols() == 4);
     assert(T.rows() == T_tag.rows());
     assert(T_tag.cols() == 1);
-
-    // // extract tag of interest and set map
-    // if (tag_label_map.count(m_params.tag_label) == 0) { // desired tag not found
-    //     std::string existing_tags = "";
-    //     for (const auto& pair : tag_label_map) {
-    //         existing_tags += (" (" + pair.first + ")");
-    //     }
-    //     log_and_throw_error(
-    //         "Tag label '{}' not found in input mesh. [Tags found:{}]",
-    //         m_params.tag_label,
-    //         existing_tags);
-    // }
-
-    // Eigen::MatrixXd T_tag = T_tags(Eigen::all, tag_label_map.at(m_params.tag_label));
 
     // initialize connectivity
     init(T);
@@ -91,7 +73,7 @@ void TopoOffsetMesh::init_from_image(const MatrixXd& V, const MatrixXi& T, const
             m_face_attribute[f.fid(*this)].in_out = true;
         } else {
             auto other_tet = switch_tetrahedron(f);
-            if (other_tet.has_value() && m_tet_attribute[other_tet.value().tid(*this)].in_out) {
+            if (other_tet && m_tet_attribute[other_tet.value().tid(*this)].in_out) {
                 m_face_attribute[f.fid(*this)].in_out = true;
             }
         }
@@ -124,7 +106,7 @@ void TopoOffsetMesh::init_from_image(const MatrixXd& V, const MatrixXi& T, const
 }
 
 
-std::pair<size_t, size_t> TopoOffsetMesh::label_non_manifold()
+std::pair<size_t, size_t> ManExtractMesh::label_non_manifold()
 {
     // label nm edges
     size_t nm_edge_count = 0;
@@ -162,7 +144,7 @@ std::pair<size_t, size_t> TopoOffsetMesh::label_non_manifold()
 }
 
 
-bool TopoOffsetMesh::edge_is_manifold(const Tuple& t) const
+bool ManExtractMesh::edge_is_manifold(const Tuple& t) const
 {
     if (!m_edge_attribute[t.eid(*this)].in_out) { // only call for edges on input mesh
         return true;
@@ -203,7 +185,7 @@ bool TopoOffsetMesh::edge_is_manifold(const Tuple& t) const
 }
 
 
-void TopoOffsetMesh::edge_dfs_helper(std::set<size_t>& visited_tids, const Tuple& t) const
+void ManExtractMesh::edge_dfs_helper(std::set<size_t>& visited_tids, const Tuple& t) const
 {
     // if tet isn't in input or already visited
     size_t curr_tid = t.tid(*this);
@@ -214,18 +196,18 @@ void TopoOffsetMesh::edge_dfs_helper(std::set<size_t>& visited_tids, const Tuple
     visited_tids.insert(curr_tid); // tet is in input mesh, and haven't visited before.
 
     auto t1 = t.switch_tetrahedron(*this);
-    if (t1.has_value()) {
+    if (t1) {
         edge_dfs_helper(visited_tids, t1.value());
     }
 
     auto t2 = t.switch_face(*this).switch_tetrahedron(*this);
-    if (t2.has_value()) {
+    if (t2) {
         edge_dfs_helper(visited_tids, t2.value());
     }
 }
 
 
-bool TopoOffsetMesh::vertex_is_manifold(const Tuple& t) const
+bool ManExtractMesh::vertex_is_manifold(const Tuple& t) const
 {
     if (!m_vertex_attribute[t.vid(*this)]
              .in_out) { // only call this function for vertices on input mesh
@@ -286,7 +268,7 @@ bool TopoOffsetMesh::vertex_is_manifold(const Tuple& t) const
 
 
 // external space is treated as a single 'out' polyhedra
-void TopoOffsetMesh::vertex_dfs_helper(
+void ManExtractMesh::vertex_dfs_helper(
     std::set<size_t>& visited_tids,
     const Tuple& t,
     const bool include,
@@ -304,21 +286,21 @@ void TopoOffsetMesh::vertex_dfs_helper(
         false; // whether to propagate search 'through' external 'out' space
 
     auto t1 = t.switch_tetrahedron(*this);
-    if (t1.has_value()) {
+    if (t1) {
         vertex_dfs_helper(visited_tids, t1.value(), include, b_out_faces);
     } else if (!include) { // boundary face and we're searching through out tets
         search_through_external_space = true;
     }
 
     auto t2 = t.switch_face(*this).switch_tetrahedron(*this);
-    if (t2.has_value()) {
+    if (t2) {
         vertex_dfs_helper(visited_tids, t2.value(), include, b_out_faces);
     } else if (!include) {
         search_through_external_space = true;
     }
 
     auto t3 = t.switch_edge(*this).switch_face(*this).switch_tetrahedron(*this);
-    if (t3.has_value()) {
+    if (t3) {
         vertex_dfs_helper(visited_tids, t3.value(), include, b_out_faces);
     } else if (!include) {
         search_through_external_space = true;
@@ -334,8 +316,8 @@ void TopoOffsetMesh::vertex_dfs_helper(
 }
 
 
-// NOTE: this function is very slow, but makes this thing more robust
-bool TopoOffsetMesh::is_boundary_vertex(size_t vid) const
+// NOTE: this function is very slow, but necessary to handle nonmanifold verts on boundary of mesh
+bool ManExtractMesh::is_boundary_vertex(size_t vid) const
 {
     auto t_ids = get_one_ring_tids_for_vertex(vid);
     for (size_t t_id : t_ids) {
@@ -346,7 +328,7 @@ bool TopoOffsetMesh::is_boundary_vertex(size_t vid) const
             size_t v3 = vs[(i + 2) % 4];
             if ((v1 == vid) || (v2 == vid) || (v3 == vid)) {
                 auto [ftup, _] = tuple_from_face({v1, v2, v3});
-                if (!ftup.switch_tetrahedron(*this).has_value()) { // is boundary face
+                if (!ftup.switch_tetrahedron(*this)) { // is boundary face
                     return true;
                 }
             }
@@ -356,7 +338,7 @@ bool TopoOffsetMesh::is_boundary_vertex(size_t vid) const
 }
 
 
-std::vector<simplex::Face> TopoOffsetMesh::get_boundary_faces_for_out_tets(size_t vid) const
+std::vector<simplex::Face> ManExtractMesh::get_boundary_faces_for_out_tets(size_t vid) const
 {
     std::vector<simplex::Face> b_out_faces;
     auto inc_tids = get_one_ring_tids_for_vertex(vid);
@@ -370,7 +352,7 @@ std::vector<simplex::Face> TopoOffsetMesh::get_boundary_faces_for_out_tets(size_
             size_t v2 = vs[(i + 1) % 4];
             size_t v3 = vs[(i + 2) % 4];
             auto [ftup, _] = tuple_from_face({v1, v2, v3});
-            if (!ftup.switch_tetrahedron(*this).has_value()) { // boundary face
+            if (!ftup.switch_tetrahedron(*this)) { // boundary face
                 b_out_faces.push_back(simplex::Face(v1, v2, v3));
             }
         }
@@ -379,7 +361,7 @@ std::vector<simplex::Face> TopoOffsetMesh::get_boundary_faces_for_out_tets(size_
 }
 
 
-bool TopoOffsetMesh::is_simplicially_embedded() const
+bool ManExtractMesh::is_simplicially_embedded() const
 {
     int bad_tets = 0;
     auto tets = get_tets();
@@ -396,7 +378,7 @@ bool TopoOffsetMesh::is_simplicially_embedded() const
 }
 
 
-bool TopoOffsetMesh::tet_is_simp_emb(const Tuple& t) const
+bool ManExtractMesh::tet_is_simp_emb(const Tuple& t) const
 {
     auto vs = oriented_tet_vids(t);
     std::vector<size_t> vs_in;
@@ -419,7 +401,7 @@ bool TopoOffsetMesh::tet_is_simp_emb(const Tuple& t) const
 }
 
 
-void TopoOffsetMesh::simplicial_embedding()
+void ManExtractMesh::simplicial_embedding()
 {
     // identify necessary tets to split (by vertices)
     std::vector<simplex::Tet> tets_to_split;
@@ -507,7 +489,7 @@ void TopoOffsetMesh::simplicial_embedding()
 }
 
 
-void TopoOffsetMesh::perform_offset()
+void ManExtractMesh::perform_offset()
 {
     // mark edges to split
     std::vector<simplex::Edge> e_to_split;
@@ -553,7 +535,7 @@ void TopoOffsetMesh::perform_offset()
 }
 
 
-void TopoOffsetMesh::extract_surface_mesh(MatrixXd& V, MatrixXi& F)
+void ManExtractMesh::extract_surface_mesh(MatrixXd& V, MatrixXi& F)
 {
     // get vertices
     auto verts = get_vertices();
@@ -569,7 +551,7 @@ void TopoOffsetMesh::extract_surface_mesh(MatrixXd& V, MatrixXi& F)
     auto faces = get_faces();
     for (const Tuple& f : faces) {
         auto other_tet = f.switch_tetrahedron(*this);
-        if (other_tet.has_value()) { // both tets exist
+        if (other_tet) { // both tets exist
             Tuple in;
             if (!m_tet_attribute[f.tid(*this)].in_out &&
                 m_tet_attribute[other_tet.value().tid(*this)].in_out) { // f tet is out, other is in
@@ -651,13 +633,26 @@ void TopoOffsetMesh::extract_surface_mesh(MatrixXd& V, MatrixXi& F)
 }
 
 
-bool TopoOffsetMesh::invariants(const std::vector<Tuple>& tets)
+bool ManExtractMesh::invariants(const std::vector<Tuple>& tets)
 {
+    igl::predicates::exactinit();
+    for (const Tuple& t : tets) {
+        auto vs = oriented_tet_vids(t);
+        auto res = igl::predicates::orient3d(
+            m_vertex_attribute[vs[0]].m_posf,
+            m_vertex_attribute[vs[1]].m_posf,
+            m_vertex_attribute[vs[2]].m_posf,
+            m_vertex_attribute[vs[3]].m_posf);
+
+        if (res != igl::predicates::Orientation::NEGATIVE) {
+            return false;
+        }
+    }
     return true;
 }
 
 
-void TopoOffsetMesh::write_input_complex(const std::string& path)
+void ManExtractMesh::write_input_complex(const std::string& path)
 {
     logger().info("Write {}.vtu", path);
 
@@ -726,11 +721,10 @@ void TopoOffsetMesh::write_input_complex(const std::string& path)
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
     writer = std::make_shared<paraviewo::VTUWriter>();
     writer->write_mesh(path + ".vtu", V, cells, true, false);
-    logger().info("*****6");
 }
 
 
-void TopoOffsetMesh::write_vtu(const std::string& path)
+void ManExtractMesh::write_vtu(const std::string& path)
 {
     consolidate_mesh();
     const std::string out_path = path + ".vtu";
@@ -778,7 +772,7 @@ void TopoOffsetMesh::write_vtu(const std::string& path)
 
 
 // DEBUGGING
-void TopoOffsetMesh::label_boundary_verts_1()
+void ManExtractMesh::label_boundary_verts_1()
 {
     auto vertices = get_vertices();
     for (const Tuple& v : vertices) {
@@ -789,4 +783,4 @@ void TopoOffsetMesh::label_boundary_verts_1()
 }
 
 
-} // namespace wmtk::components::topological_offset
+} // namespace wmtk::components::manifold_extraction
