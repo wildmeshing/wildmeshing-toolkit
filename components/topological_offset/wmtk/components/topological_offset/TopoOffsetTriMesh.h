@@ -83,6 +83,7 @@ public:
     // output
     void write_input_complex(const std::string& path);
     void write_vtu(const std::string& path);
+    void write_msh(const std::string& file);
 
 private:
     struct EdgeSplitCache

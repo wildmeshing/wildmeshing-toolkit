@@ -1,6 +1,7 @@
 #include "TopoOffsetTriMesh.h"
 #include <igl/predicates/predicates.h>
 #include <paraviewo/VTUWriter.hpp>
+#include <wmtk/utils/io.hpp>
 
 
 namespace wmtk::components::topological_offset {
@@ -376,5 +377,43 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
     writer->write_mesh(out_path, V, F);
 }
 
+
+void TopoOffsetTriMesh::write_msh(const std::string& file)
+{
+    logger().info("Write {}.msh", file);
+    consolidate_mesh();
+
+    wmtk::MshData msh;
+
+    // set vertices
+    const auto& verts = get_vertices();
+    msh.add_face_vertices(verts.size(), [&](size_t k) {
+        size_t i = verts[k].vid(*this);
+        Vector2d p2d = m_vertex_attribute[i].m_posf;
+        return Vector3d(p2d(0), p2d(1), 0.0);
+    });
+
+    // set faces
+    const auto& tris = get_faces();
+    msh.add_faces(tris.size(), [&](size_t k) {
+        auto i = tris[k].fid(*this);
+        auto vs = oriented_tri_vids(i);
+        std::array<size_t, 3> f_verts;
+        for (int j = 0; j < 3; j++) {
+            f_verts[j] = vs[j];
+            assert(f_verts[j] < verts.size());
+        }
+        return f_verts;
+    });
+
+    // set tags perface
+    for (size_t j = 0; j < m_tags_count; j++) {
+        msh.add_face_attribute<1>(m_all_tag_names[j], [&](size_t i) {
+            return m_face_attribute[i].tags[j];
+        });
+    }
+
+    msh.save(file + ".msh", true);
+}
 
 } // namespace wmtk::components::topological_offset

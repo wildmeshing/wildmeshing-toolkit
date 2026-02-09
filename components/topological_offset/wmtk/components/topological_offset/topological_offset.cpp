@@ -122,8 +122,8 @@ void topological_offset(nlohmann::json json_params)
         logger().info("Creating simplicial embedding...");
         if (!mesh.is_simplicially_embedded()) {
             mesh.simplicial_embedding();
+            bool dummy = mesh.is_simplicially_embedded();
         }
-        bool dummy = mesh.is_simplicially_embedded();
         mesh.consolidate_mesh();
         if (mesh.m_params.debug_output) {
             mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
@@ -152,7 +152,7 @@ void topological_offset(nlohmann::json json_params)
         fout << "time: " << time << std::endl;
         fout.close();
 
-        // mesh.write_msh(output_filename.string()); // write .msh
+        mesh.write_msh(output_filename.string()); // write .msh
         if (mesh.m_params.debug_output) {
             mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
         } else if (mesh.m_params.save_vtu) { // write .vtu
@@ -196,9 +196,9 @@ void topological_offset(nlohmann::json json_params)
         logger().info("Creating simplicial embedding...");
         if (!mesh.is_simplicially_embedded()) { // internally prints to console
             mesh.simplicial_embedding();
+            bool dummy = mesh.is_simplicially_embedded(); // internally prints to console
         }
         mesh.consolidate_mesh();
-        bool dummy = mesh.is_simplicially_embedded(); // internally prints to console
         if (mesh.m_params.debug_output) { // intermediate output
             mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
         }
