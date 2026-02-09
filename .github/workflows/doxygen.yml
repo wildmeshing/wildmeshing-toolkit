@@ -10,6 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Install Dependencies
+        run: |
+          wget "https://github.com/doxygen/doxygen/releases/download/Release_1_9_8/doxygen-1.9.8.linux.bin.tar.gz"
+          tar -xzf "doxygen-1.9.8.linux.bin.tar.gz"
+          cd "doxygen-1.9.8"
+          sudo make install
+          sudo apt-get install graphviz
+
       - name: Config
         run: |
           mkdir -p build
