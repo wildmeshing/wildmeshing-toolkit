@@ -55,7 +55,7 @@ void unique_directed_edge_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& 
         edges.end(),
         [&](const TetMesh::Tuple& a, const TetMesh::Tuple& b) {
             throw "check me!";
-            const int aeid = a.eid(m), beid = b.eid(m);
+            const size_t aeid = a.eid(m), beid = b.eid(m);
             if (aeid == beid) return a.vid(m) < b.vid(m);
             return aeid < beid;
         });

@@ -1,7 +1,6 @@
 import igl
 import numpy as np
 import argparse
-import nrrd
 
 """
 Rasterize a mesh into a voxel grid using libigl's winding number function.
@@ -13,9 +12,11 @@ python rasterize_mesh.py --i input_mesh.obj --o output_volume.raw --nx 50 --ny 5
 Arguments:
 --i: Path to the input mesh file (OBJ format). Multiple files can be provided.
 --o: Path to the output volume file (RAW format). If the filename ends with .nrrd, the output will be saved in NRRD format.
---nx: Dimension of the voxel grid in the X direction (optional, default = 50).
---ny: Dimension of the voxel grid in the Y direction (optional, default = 50).
---nz: Dimension of the voxel grid in the Z direction (optional, default = 50).
+--na: Dimension of the voxel grid in the direction with smallest extent (optional). The other dimensions are set adaptively to maintain aspect ratio 1.
+--spacing: Voxel spacing (optional). If not provided, spacing is computed based on other parameters.
+--nx: Dimension of the voxel grid in the X direction (optional).
+--ny: Dimension of the voxel grid in the Y direction (optional).
+--nz: Dimension of the voxel grid in the Z direction (optional).
 """
 
 
@@ -58,31 +59,38 @@ if __name__ == "__main__":
         "--o", type=str, help="Path to the output volume file (RAW format)."
     )
     parser.add_argument(
+        "--na",
+        type=int,
+        help="Dimension of the voxel grid in the direction with smallest extent.",
+    )
+    parser.add_argument(
+        "--spacing",
+        type=float,
+        help="Voxel spacing. If not provided, spacing is computed based on other parameters.",
+    )
+    parser.add_argument(
         "--nx",
         type=int,
-        default=50,
         help="Dimension of the voxel grid in the X direction.",
     )
     parser.add_argument(
         "--ny",
         type=int,
-        default=50,
         help="Dimension of the voxel grid in the Y direction.",
     )
     parser.add_argument(
         "--nz",
         type=int,
-        default=50,
         help="Dimension of the voxel grid in the Z direction.",
     )
 
     args = parser.parse_args()
-    n = np.array([args.nx, args.ny, args.nz])
-
-    if len(args.i) == 0:
-        print("Please provide one or multiple input meshes file using --i")
-        exit(1)
-
+    ## make sure either all of nx, ny, nz are provided or none of them are provided
+    assert ((args.nx is None and args.ny is None and args.nz is None)
+            or (args.nx is not None and args.ny is not None and args.nz is not None and args.spacing is None)), "Either provide all of --nx, --ny, --nz or none of them. Don't provide --spacing with them."
+    assert args.na is None or args.spacing is None, "Provide either --na or --spacing, not both."
+    
+    
     # get bbox from all meshes
     all_V = []
     all_F = []
@@ -107,19 +115,42 @@ if __name__ == "__main__":
     bbox_max += 0.05 * diag
 
     dim = bbox_max - bbox_min
-    spacing = dim / n
 
+    if args.nx is None:
+        if args.spacing is not None:
+            spacing = args.spacing
+        elif args.na is not None:
+            spacing = dim.min() / args.na
+        else:
+            assert False, "Either --spacing or --na must be provided."
+        n = np.ceil(dim / spacing).astype(int)
+    else:
+        spacing = np.array([dim[0] / args.nx, dim[1] / args.ny, dim[2] / args.nz])
+        n = np.array([args.nx, args.ny, args.nz])
+
+
+        
+    
+
+    if len(args.i) == 0:
+        print("Please provide one or multiple input meshes file using --i")
+        exit(1)
+
+    # Use complex number syntax to ensure we get exactly n[i] points in each dimension
     grid_points = (
         np.mgrid[
-            bbox_min[0] : bbox_max[0] : spacing[0],
-            bbox_min[1] : bbox_max[1] : spacing[1],
-            bbox_min[2] : bbox_max[2] : spacing[2],
+            bbox_min[0] : bbox_max[0] : n[0]*1j,
+            bbox_min[1] : bbox_max[1] : n[1]*1j,
+            bbox_min[2] : bbox_max[2] : n[2]*1j,
         ]
         .reshape(3, -1)
         .T
     )
+    
     # Make sure the query points are C-contiguous and float64 (row-major)
     grid_points = np.ascontiguousarray(grid_points, dtype=np.float64)
+
+    print(grid_points.shape)
 
     volume = np.zeros(n, dtype=np.uint8)
     volume = add_padding(volume)
@@ -138,8 +169,18 @@ if __name__ == "__main__":
         volume = np.maximum(volume, vol)  # combine volumes
 
     if args.o.endswith(".nrrd"):
+        import nrrd
         nrrd.write(args.o, volume)
+    elif args.o.endswith(".mat"):
+        import scipy.io
+
+        scipy.io.savemat(args.o, {"volume": volume})
+    elif args.o.endswith(".h5"):
+        import h5py
+
+        with h5py.File(args.o, "w") as f:
+            f.create_dataset("volume", data=volume)
     else:
         write_array_data_ascii(args.o, volume)
 
-    print(f"=== Finished rasterization and wrote {args.o} ===")
+    print(f"=== Finished rasterization and wrote {args.o} === with spacing {spacing} and size {n}")

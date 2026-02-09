@@ -67,8 +67,8 @@ void SurfaceMesh::get_surface(MatrixXd& V, MatrixXi& F) const
     int index = 0;
     for (const Tuple& t : faces) {
         const auto& vs = oriented_tri_vids(t);
-        for (int j = 0; j < 3; j++) {
-            F(index, j) = vs[j];
+        for (size_t j = 0; j < 3; j++) {
+            F(index, j) = (int)vs[j];
         }
         ++index;
     }
@@ -103,7 +103,7 @@ void SurfaceMesh::get_edge_mesh(MatrixXd& V, MatrixXi& E) const
 
     for (size_t i = 0; i < edges.size(); ++i) {
         for (size_t j = 0; j < 2; ++j) {
-            E(i, j) = edges[i][j];
+            E(i, j) = (int)edges[i][j];
         }
     }
 
@@ -243,14 +243,14 @@ void SurfaceMesh::write_vtu(const std::string& path)
     for (const Tuple& t : faces) {
         const auto& vs = oriented_tri_vids(t);
         for (int j = 0; j < 3; j++) {
-            F(index, j) = vs[j];
+            F(index, j) = (int)vs[j];
         }
         ++index;
     }
 
     for (size_t i = 0; i < edges.size(); ++i) {
         for (size_t j = 0; j < 2; ++j) {
-            E(i, j) = edges[i][j];
+            E(i, j) = (int)edges[i][j];
         }
     }
 

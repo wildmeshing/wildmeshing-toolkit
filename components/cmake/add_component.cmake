@@ -26,6 +26,10 @@ function(add_component COMPONENT_NAME)
 
     # add component to wmtk app
     target_link_libraries(wmtk_app PRIVATE wmtk::${COMPONENT_NAME})
+    # add component to python bindings
+    if(WMTK_PYBIND)
+        target_link_libraries(pywmtk PUBLIC wmtk::${COMPONENT_NAME})
+    endif()
 
     # Group source files for IDEs
     file(GLOB_RECURSE COMPONENTS_FILES_FOR_SOURCE_GROUP "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp" "${CMAKE_CURRENT_SOURCE_DIR}/*.h")

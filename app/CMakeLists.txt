@@ -39,3 +39,7 @@ target_link_libraries(wmtk_app PRIVATE
     nlohmann_json::nlohmann_json
     CLI11::CLI11
 )
+
+if(WMTK_PYBIND)
+    add_subdirectory(pywmtk)
+endif()

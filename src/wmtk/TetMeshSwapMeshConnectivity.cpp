@@ -161,14 +161,14 @@ bool TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         auto t1_id = affected[1];
         auto t2_id = affected[2];
         auto n0_id = -1, n1_id = -1, n2_id = -1;
-        for (int j = 0; j < 4; j++) {
+        for (size_t j = 0; j < 4; j++) {
             auto v0j = tet_conn[t0_id][j];
             if (v0j != v1_id && v0j != v2_id) {
-                if (tet_conn[t1_id].find(v0j) != -1) n1_id = v0j;
-                if (tet_conn[t2_id].find(v0j) != -1) n2_id = v0j;
+                if (tet_conn[t1_id].find(v0j) != -1) n1_id = (int)v0j;
+                if (tet_conn[t2_id].find(v0j) != -1) n2_id = (int)v0j;
             }
             if (tet_conn[t0_id].find(tet_conn[t1_id].m_indices[j]) == -1)
-                n0_id = tet_conn[t1_id].m_indices[j];
+                n0_id = (int)tet_conn[t1_id].m_indices[j];
         }
         assert(n0_id != n1_id && n1_id != n2_id);
         // T0 = (n1,n2,v1,*v2*) -> (n1,n2,v1,*n0*)
@@ -334,14 +334,14 @@ std::vector<std::array<size_t, 4>> swap_4_4(
         // use BFS to find oriented link vertices of (u0,u1)
         std::vector<std::array<int, 3>> u12_link_e; // link edges
         u12_link_e.reserve(tets.size());
-        for (int i = 0; i < tets.size(); i++) {
+        for (size_t i = 0; i < tets.size(); i++) {
             std::array<int, 3> energy;
-            int cnt = 0;
-            for (int j = 0; j < 4; j++)
+            size_t cnt = 0;
+            for (size_t j = 0; j < 4; j++)
                 if (tets[i][j] != u0 && tets[i][j] != u1) {
-                    energy[cnt++] = tets[i][j];
+                    energy[cnt++] = (int)tets[i][j];
                 }
-            energy[cnt] = i;
+            energy[cnt] = (int)i;
             u12_link_e.push_back(energy);
         }
 
@@ -613,14 +613,14 @@ std::vector<std::array<size_t, 4>> swap_5_6(
     // use BFS to find oriented link vertices of (u0,u1)
     std::vector<std::array<int, 3>> u12_link_e; // link edges
     u12_link_e.reserve(tets.size());
-    for (int i = 0; i < tets.size(); i++) {
+    for (size_t i = 0; i < tets.size(); i++) {
         std::array<int, 3> energy;
-        int cnt = 0;
-        for (int j = 0; j < 4; j++)
+        size_t cnt = 0;
+        for (size_t j = 0; j < 4; j++)
             if (tets[i][j] != u0 && tets[i][j] != u1) {
-                energy[cnt++] = tets[i][j];
+                energy[cnt++] = (int)tets[i][j];
             }
-        energy[cnt] = i;
+        energy[cnt] = (int)i;
         u12_link_e.push_back(energy);
     }
 
