@@ -153,9 +153,9 @@ public:
             std::vector<Eigen::Vector3d> V_v(vert_capacity());
 
             tbb::parallel_for(
-                tbb::blocked_range<int>(0, V_v.size()),
-                [&](tbb::blocked_range<int> r) {
-                    for (int i = r.begin(); i < r.end(); i++) {
+                tbb::blocked_range<size_t>(0, V_v.size()),
+                [&](tbb::blocked_range<size_t> r) {
+                    for (size_t i = r.begin(); i < r.end(); i++) {
                         V_v[i] = m_vertex_attribute[i].m_posf;
                     }
                 });
@@ -163,7 +163,7 @@ public:
 
             struct sortstruct
             {
-                int order;
+                size_t order;
                 Resorting::MortonCode64 morton;
             };
 
@@ -186,11 +186,13 @@ public:
             // get_bb_corners(V, vmin, vmax);
             Eigen::Vector3d center = (vmin + vmax) / 2;
 
-            tbb::parallel_for(tbb::blocked_range<int>(0, V.size()), [&](tbb::blocked_range<int> r) {
-                for (int i = r.begin(); i < r.end(); i++) {
-                    V[i] = V[i] - center;
-                }
-            });
+            tbb::parallel_for(
+                tbb::blocked_range<size_t>(0, V.size()),
+                [&](tbb::blocked_range<size_t> r) {
+                    for (size_t i = r.begin(); i < r.end(); i++) {
+                        V[i] = V[i] - center;
+                    }
+                });
 
             Eigen::Vector3d scale_point =
                 vmax - center; // after placing box at origin, vmax and vmin are symetric.
@@ -202,24 +204,26 @@ public:
             double scale = std::max(std::max(xscale, yscale), zscale);
             if (scale > 300) {
                 tbb::parallel_for(
-                    tbb::blocked_range<int>(0, V.size()),
-                    [&](tbb::blocked_range<int> r) {
-                        for (int i = r.begin(); i < r.end(); i++) {
+                    tbb::blocked_range<size_t>(0, V.size()),
+                    [&](tbb::blocked_range<size_t> r) {
+                        for (size_t i = r.begin(); i < r.end(); i++) {
                             V[i] = V[i] / scale;
                         }
                     });
             }
 
             constexpr int multi = 1000;
-            tbb::parallel_for(tbb::blocked_range<int>(0, V.size()), [&](tbb::blocked_range<int> r) {
-                for (int i = r.begin(); i < r.end(); i++) {
-                    list_v[i].morton = Resorting::MortonCode64(
-                        int(V[i][0] * multi),
-                        int(V[i][1] * multi),
-                        int(V[i][2] * multi));
-                    list_v[i].order = i;
-                }
-            });
+            tbb::parallel_for(
+                tbb::blocked_range<size_t>(0, V.size()),
+                [&](tbb::blocked_range<size_t> r) {
+                    for (size_t i = r.begin(); i < r.end(); i++) {
+                        list_v[i].morton = Resorting::MortonCode64(
+                            int(V[i][0] * multi),
+                            int(V[i][1] * multi),
+                            int(V[i][2] * multi));
+                        list_v[i].order = i;
+                    }
+                });
 
             const auto morton_compare = [](const sortstruct& a, const sortstruct& b) {
                 return (a.morton < b.morton);
@@ -227,12 +231,12 @@ public:
 
             tbb::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
 
-            int interval = list_v.size() / NUM_THREADS + 1;
+            size_t interval = list_v.size() / NUM_THREADS + 1;
 
             tbb::parallel_for(
-                tbb::blocked_range<int>(0, list_v.size()),
-                [&](tbb::blocked_range<int> r) {
-                    for (int i = r.begin(); i < r.end(); i++) {
+                tbb::blocked_range<size_t>(0, list_v.size()),
+                [&](tbb::blocked_range<size_t> r) {
+                    for (size_t i = r.begin(); i < r.end(); i++) {
                         m_vertex_attribute[list_v[i].order].partition_id = i / interval;
                     }
                 });

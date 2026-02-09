@@ -99,8 +99,8 @@ void wmtk::TetMesh::triangle_insertion(
         });
     old_face_vids.erase(it, old_face_vids.end());
     //
-    for (auto& info : old_face_vids) {
-        old_faces.push_back(tuple_from_face(info[3], info[4]));
+    for (const auto& info : old_face_vids) {
+        old_faces.push_back(tuple_from_face(info[3], (int)info[4]));
     }
     if (!triangle_insertion_before(old_faces)) return; // remember old_faces vids in cache
 
@@ -130,8 +130,8 @@ void wmtk::TetMesh::triangle_insertion(
         assert(i < new_faces.size());
         //
 
-        for (auto& f_info : info.second) {
-            new_faces[i].push_back(tuple_from_face(f_info[3], f_info[4]));
+        for (const auto& f_info : info.second) {
+            new_faces[i].push_back(tuple_from_face(f_info[3], (int)f_info[4]));
         }
     }
     // TODO: no invariants
@@ -177,7 +177,9 @@ void wmtk::TetMesh::subdivide_tets(
                  m_tet_connectivity[t_id][utils::tet_element_topology::local_edges[j][1]]}};
             if (e[0] > e[1]) std::swap(e[0], e[1]);
             auto it = map_edge2vid.find(e);
-            if (it != map_edge2vid.end()) new_v_ids[j] = it->second;
+            if (it != map_edge2vid.end()) {
+                new_v_ids[j] = (int)it->second;
+            }
         }
 
         subdivide_a_tet(
@@ -206,7 +208,7 @@ void wmtk::TetMesh::subdivide_tets(
 
 
         std::map<size_t, std::vector<size_t>> new_conn_tets;
-        for (int vid : vids) {
+        for (size_t vid : vids) {
             new_conn_tets[vid] = {};
         }
         //
@@ -220,7 +222,7 @@ void wmtk::TetMesh::subdivide_tets(
             }
         }
         //
-        for (int vid : vids) {
+        for (size_t vid : vids) {
             m_vertex_connectivity[vid].m_conn_tets = new_conn_tets[vid];
             std::sort(
                 m_vertex_connectivity[vid].m_conn_tets.begin(),

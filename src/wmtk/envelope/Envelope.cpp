@@ -178,10 +178,9 @@ bool SampleEnvelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri) const
     Vector3d bvh_nearest_point;
     int bvh_prev_facet = -1;
 
-    int cnt = 0;
-    const unsigned int ps_size = ps.size();
-    for (unsigned int i = ps_size / 2; i < ps.size();
-         i = (i + 1) % ps_size) { // check from the middle
+    size_t cnt = 0;
+    const size_t ps_size = ps.size();
+    for (size_t i = ps_size / 2; i < ps.size(); i = (i + 1) % ps_size) { // check from the middle
 
         const Vector3d& bvh_p = ps[i];
         if (bvh_prev_facet != -1) {
@@ -203,7 +202,9 @@ bool SampleEnvelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri) const
             return true;
         }
         cnt++;
-        if (cnt >= ps_size) break;
+        if (cnt >= ps_size) {
+            break;
+        }
     }
 
 

@@ -24,7 +24,8 @@ nlohmann::json tetwild_spec = R"(
       "log_file",
       "report",
       "DEBUG_output",
-      "DEBUG_sanity_checks"
+      "DEBUG_sanity_checks",
+      "DEBUG_hausdorff"
     ]
   },
   {
@@ -140,6 +141,12 @@ nlohmann::json tetwild_spec = R"(
     "type": "bool",
     "default": false,
     "doc": "Perform sanity checks after every operation. This can be very slow and should only be used for debugging."
+  },
+  {
+    "pointer": "/DEBUG_hausdorff",
+    "type": "bool",
+    "default": false,
+    "doc": "Sanity Check: Compute and report the Hausdorff distance of the output to the input. Should be always smaller than eps."
   }
 ]
 )"_json;
