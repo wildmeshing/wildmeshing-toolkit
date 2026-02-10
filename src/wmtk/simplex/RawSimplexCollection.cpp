@@ -108,6 +108,17 @@ bool RawSimplexCollection::are_simplex_collections_equal(
     return collection_a.m_t == collection_b.m_t;
 }
 
+std::vector<Face> RawSimplexCollection::faces_with_edge(const Edge& e) const
+{
+    std::vector<Face> fs;
+    for (const Face& f : m_f) {
+        if (f.contains(e)) {
+            fs.push_back(f);
+        }
+    }
+    return fs;
+}
+
 size_t RawSimplexCollection::size() const
 {
     return m_v.size() + m_e.size() + m_f.size() + m_t.size();

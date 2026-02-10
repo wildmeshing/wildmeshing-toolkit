@@ -1695,6 +1695,192 @@ size_t TetWildMesh::count_edge_links(const Tuple& e)
     return incident_surface_faces.size();
 }
 
+simplex::RawSimplexCollection TetWildMesh::get_surface_faces_for_vertex(const size_t vid) const
+{
+    using namespace simplex;
+
+    RawSimplexCollection sc;
+
+    if (!m_vertex_attribute.at(vid).m_is_on_surface) {
+        // no face can be on the surface if the vertex is not on the surface
+        return sc;
+    }
+
+    const auto tids = get_one_ring_tids_for_vertex(vid);
+    for (const size_t tid : tids) {
+        const Tet tet = simplex_from_tet(tid);
+        const Face f_opp = tet.opposite_face(vid);
+        const auto& vs = f_opp.vertices();
+        for (size_t i = 0; i < 3; ++i) {
+            size_t j = (i + 1) % 3;
+            if (!m_vertex_attribute.at(vs[i]).m_is_on_surface ||
+                !m_vertex_attribute.at(vs[j]).m_is_on_surface) {
+                // face cannot be on the surface
+                continue;
+            }
+
+            const auto [f_tuple, fid] = tuple_from_face({vid, vs[i], vs[j]});
+
+            if (m_face_attribute.at(fid).m_is_surface_fs) {
+                sc.add(Face(vid, vs[i], vs[j]));
+            }
+        }
+    }
+    sc.sort_and_clean();
+
+    return sc;
+}
+
+size_t TetWildMesh::get_num_surface_faces_for_edge(const std::array<size_t, 2>& vids) const
+{
+    const size_t& v0 = vids[0];
+    const size_t& v1 = vids[1];
+
+    // vertices must be on the surface, otherwise edge cannot be on the surface
+    if (!m_vertex_attribute.at(v0).m_is_on_surface || !m_vertex_attribute.at(v1).m_is_on_surface) {
+        return 0;
+    }
+
+    const auto n12_locs = get_incident_tids_for_edge(v0, v1);
+
+    std::vector<size_t> link_vs;
+    link_vs.reserve(n12_locs.size());
+    for (const size_t& tid : n12_locs) {
+        const auto vs = oriented_tet_vids(tid);
+        for (int i = 0; i < 4; ++i) {
+            if (vs[i] != v0 && vs[i] != v1) {
+                link_vs.push_back(vs[i]);
+            }
+        }
+    }
+    wmtk::vector_unique(link_vs);
+
+    size_t surface_count = 0;
+    for (const size_t v2 : link_vs) {
+        const auto [f_tuple, fid] = tuple_from_face({{v0, v1, v2}});
+        if (m_face_attribute.at(fid).m_is_surface_fs) {
+            ++surface_count;
+        }
+    }
+
+    return surface_count;
+}
+
+size_t TetWildMesh::get_order_of_edge(const std::array<size_t, 2>& vids) const
+{
+    const size_t surface_count = get_num_surface_faces_for_edge(vids);
+    if (surface_count == 0) {
+        // edge is not on the surface
+        return 0;
+    }
+    if (surface_count == 2) {
+        // edge is on the surface
+        return 1;
+    }
+    // edge is on the surface boundary or non-manifold
+    return 2;
+}
+
+size_t TetWildMesh::get_order_of_vertex(const size_t vid) const
+{
+    return m_vertex_attribute.at(vid).m_order;
+}
+
+void TetWildMesh::init_vertex_order()
+{
+    for (const Tuple& t : get_vertices()) {
+        init_vertex_order(t.vid(*this));
+    }
+}
+
+void TetWildMesh::init_vertex_order(const size_t vid)
+{
+    const auto& VA = m_vertex_attribute.at(vid);
+    auto& VA_order = m_vertex_attribute[vid].m_order;
+
+    if (!VA.m_is_on_surface) {
+        VA_order = 0;
+        return;
+    }
+
+    VA_order = 1;
+
+    // check incident order-2 edges
+    const auto vvs = get_one_ring_vids_for_vertex(vid);
+    std::map<size_t, size_t> edge_orders_count;
+    for (const size_t v : vvs) {
+        const size_t nf = get_num_surface_faces_for_edge({v, vid});
+        if (nf == 0 || nf == 2) {
+            continue;
+        }
+        if (edge_orders_count.count(nf) == 0) {
+            edge_orders_count[nf] = 1;
+        } else {
+            ++edge_orders_count[nf];
+        }
+    }
+    if (edge_orders_count.size() != 0) {
+        if (edge_orders_count.size() == 1 && edge_orders_count.begin()->second == 2) {
+            /**
+             * The vertex is either on a boundary or on a non-manifold edge and has two edges
+             * incident that are of the same type.
+             */
+            VA_order = 2;
+            // do not return here, vertex could still be non-manifold
+        } else {
+            /**
+             * The vertex is either at the end of a non-manifold edge or the number of incident
+             * faces is different for the incident edges. In both cases, the vertex must be order 3.
+             */
+            VA_order = 3;
+            // highest possible order reached; we can return here
+            return;
+        }
+    }
+
+    /**
+     * Check if vertex is non-manifold:
+     * All faces must be reachable by iterating through edges, starting from one face.
+     */
+
+    const auto face_collection = get_surface_faces_for_vertex(vid);
+    const auto& faces = face_collection.faces();
+
+    if (faces.empty()) {
+        log_and_throw_error("Vertex must have incindent surface faces");
+    }
+
+    std::set<simplex::Face> found_faces;
+    std::queue<simplex::Face> q;
+
+    q.push(faces[0]);
+    found_faces.insert(faces[0]);
+
+    while (!q.empty()) {
+        const simplex::Face f = q.front();
+        q.pop();
+
+        const auto& vs = f.vertices();
+        // navigate through all edges to find other faces
+        for (size_t i = 0; i < 3; ++i) {
+            const size_t j = (i + 1) % 3;
+            const simplex::Edge e(vs[i], vs[j]);
+            const auto neighs = face_collection.faces_with_edge(e);
+            for (const simplex::Face& n : neighs) {
+                if (found_faces.count(n) == 0) {
+                    q.push(n);
+                    found_faces.insert(n);
+                }
+            }
+        }
+    }
+
+    if (found_faces.size() != faces.size()) {
+        // surface is non-manifold in this vertex
+        VA_order = 3;
+    }
+}
+
 bool TetWildMesh::check_vertex_param_type()
 {
     // std::ofstream file("missing_param_v.obj");
@@ -1852,6 +2038,8 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
     v_is_on_surface.setZero();
     VectorXd v_is_on_open_boundary(vert_capacity());
     v_is_on_open_boundary.setZero();
+    VectorXd v_order(vert_capacity());
+    v_order.setZero();
 
     int index = 0;
     for (const Tuple& t : tets) {
@@ -1885,6 +2073,7 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
         v_is_rounded[vid] = m_vertex_attribute[vid].m_is_rounded ? 1 : 0;
         v_is_on_surface[vid] = m_vertex_attribute[vid].m_is_on_surface ? 1 : 0;
         v_is_on_open_boundary[vid] = m_vertex_attribute[vid].m_is_on_open_boundary ? 1 : 0;
+        v_order[vid] = m_vertex_attribute[vid].m_order;
     }
 
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
@@ -1909,6 +2098,7 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
     writer->add_field("is_rounded", v_is_rounded);
     writer->add_field("on_surface", v_is_on_surface);
     writer->add_field("on_open_boundary", v_is_on_open_boundary);
+    writer->add_field("order", v_order);
 
 
     logger().info("Write {}", out_path);
@@ -1923,6 +2113,7 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
         surf_writer->add_field("is_rounded", v_is_rounded);
         surf_writer->add_field("on_surface", v_is_on_surface);
         surf_writer->add_field("on_open_boundary", v_is_on_open_boundary);
+        surf_writer->add_field("order", v_order);
 
         logger().info("Write {}", surf_out_path);
         surf_writer->write_mesh(surf_out_path, V, F);

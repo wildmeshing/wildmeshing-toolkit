@@ -1,6 +1,7 @@
 
 
 #include <igl/write_triangle_mesh.h>
+#include <sec/ShortestEdgeCollapse.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/components/tetwild/Parameters.h>
 #include <wmtk/components/tetwild/TetWildMesh.h>
@@ -110,4 +111,141 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation][.]")
     // wmtk::logger().info("start insertion");
     // mesh.init_from_input_surface(vertices, faces, partition_id);
     // wmtk::logger().info("end insertion");
+}
+
+TEST_CASE("vertex_order", "[tetwild][.]")
+{
+    using Tuple = TetMesh::Tuple;
+
+    MatrixXd V;
+    MatrixXi F;
+
+    size_t nvo3; // number of order 3 vertices
+    // SECTION("shark-fin")
+    //{
+    //    // one-sided shark fin
+    //    V.resize(9, 3);
+    //    V.row(0) = Vector3d(0, 0, 0);
+    //    V.row(1) = Vector3d(2, 0, 0);
+    //    V.row(2) = Vector3d(3, 0, 0);
+    //    V.row(3) = Vector3d(1, 1, 0);
+    //    V.row(4) = Vector3d(3, 1, 0);
+    //    V.row(5) = Vector3d(0, 2, 0);
+    //    V.row(6) = Vector3d(2, 2, 0);
+    //    V.row(7) = Vector3d(3, 2, 0);
+    //    V.row(8) = Vector3d(2, 1, 1);
+    //    F.resize(8, 3);
+    //    F.row(0) = Vector3i(0, 1, 3);
+    //    F.row(1) = Vector3i(1, 4, 3);
+    //    F.row(2) = Vector3i(1, 2, 4);
+    //    F.row(3) = Vector3i(0, 3, 5);
+    //    F.row(4) = Vector3i(3, 6, 5);
+    //    F.row(5) = Vector3i(3, 4, 6);
+    //    F.row(6) = Vector3i(4, 7, 6);
+    //    F.row(7) = Vector3i(3, 4, 8);
+    //
+    //    nvo3 = 2;
+    //}
+    // SECTION("two-triangles")
+    //{
+    //    // two triangles touching in one vertex
+    //    V.resize(5, 3);
+    //    V.row(0) = Vector3d(0, 0, 0);
+    //    V.row(1) = Vector3d(2, 0, 0);
+    //    V.row(2) = Vector3d(1, 1, 0);
+    //    V.row(3) = Vector3d(0, 2, 0);
+    //    V.row(4) = Vector3d(2, 2, 0);
+    //    F.resize(2, 3);
+    //    F.row(0) = Vector3i(0, 1, 2);
+    //    F.row(1) = Vector3i(2, 4, 3);
+    //
+    //    nvo3 = 1;
+    //}
+    SECTION("two-triangles-disconnected")
+    {
+        // two triangles touching in one vertex
+        V.resize(6, 3);
+        V.row(0) = Vector3d(0, 0, 0);
+        V.row(1) = Vector3d(2, 0, 0);
+        V.row(2) = Vector3d(1, 1, 0);
+        V.row(3) = Vector3d(0, 2, 0);
+        V.row(4) = Vector3d(2, 2, 0);
+        V.row(5) = Vector3d(1, 1, 0);
+        F.resize(2, 3);
+        F.row(0) = Vector3i(0, 1, 2);
+        F.row(1) = Vector3i(5, 4, 3);
+
+        nvo3 = 0;
+    }
+
+    std::vector<Vector3d> vertices;
+    std::vector<std::array<size_t, 3>> faces;
+
+    VF_to_vectors(V, F, vertices, faces);
+
+    Parameters params;
+    params.init(vertices, faces);
+
+    app::sec::ShortestEdgeCollapse surf_mesh(vertices, 0);
+    {
+        std::vector<size_t> frozen_verts;
+        surf_mesh.create_mesh(vertices.size(), faces, frozen_verts, 0.1);
+    }
+    REQUIRE(surf_mesh.check_mesh_connectivity_validity());
+
+
+    std::vector<Vector3r> v_rational;
+    std::vector<std::array<size_t, 3>> facets;
+    std::vector<bool> is_v_on_input;
+    std::vector<std::array<size_t, 4>> tets;
+    std::vector<bool> tet_face_on_input_surface;
+    {
+        TetWildMesh mesh_insertion(params, surf_mesh.m_envelope, 0);
+        mesh_insertion.insertion_by_volumeremesher_old(
+            vertices,
+            faces,
+            v_rational,
+            facets,
+            is_v_on_input,
+            tets,
+            tet_face_on_input_surface);
+    }
+
+    // generate new mesh
+    TetWildMesh mesh(params, surf_mesh.m_envelope, 0);
+
+    mesh.init_from_Volumeremesher(
+        v_rational,
+        facets,
+        is_v_on_input,
+        tets,
+        tet_face_on_input_surface);
+
+    mesh.init_vertex_order();
+
+    mesh.save_paraview("debug_shark_fin", false);
+
+    // check order of vertices
+    size_t vo3_count = 0;
+    for (const Tuple& t : mesh.get_vertices()) {
+        const size_t vid = t.vid(mesh);
+        const size_t vo = mesh.get_order_of_vertex(vid);
+        if (vo == 3) {
+            ++vo3_count;
+        }
+
+        if (vo == 2) {
+            // must have order 2 edges incident
+            const auto vs = mesh.get_one_ring_vids_for_vertex(vid);
+            size_t eo2_count = 0;
+            for (const size_t v : vs) {
+                if (mesh.get_order_of_edge({vid, v}) == 2) {
+                    ++eo2_count;
+                }
+            }
+            CHECK(eo2_count == 2);
+        }
+    }
+
+    CHECK(nvo3 == vo3_count);
 }

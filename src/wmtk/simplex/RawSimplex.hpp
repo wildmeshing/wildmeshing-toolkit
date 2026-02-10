@@ -63,6 +63,7 @@ public:
     Edge opposite_edge(const int64_t excluded_id) const;
     Edge opposite_edge(const Vertex& v) const;
     Vertex opposite_vertex(const Edge& e) const;
+    bool contains(const Edge& e) const;
 };
 
 class Tet : public RawSimplex<4>

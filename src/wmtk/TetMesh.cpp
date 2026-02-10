@@ -618,7 +618,12 @@ TetMesh::Tuple TetMesh::tuple_from_vids(size_t vid0, size_t vid1, size_t vid2, s
 
 simplex::Tet TetMesh::simplex_from_tet(const Tuple& t) const
 {
-    const auto v = oriented_tet_vids(t.tid(*this));
+    return simplex_from_tet(t.tid(*this));
+}
+
+simplex::Tet TetMesh::simplex_from_tet(const size_t tid) const
+{
+    const auto v = oriented_tet_vids(tid);
     const simplex::Tet tet(v[0], v[1], v[2], v[3]);
     return tet;
 }

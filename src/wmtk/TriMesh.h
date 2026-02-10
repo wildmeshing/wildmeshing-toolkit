@@ -503,7 +503,7 @@ public:
      */
     bool is_boundary_edge(const TriMesh::Tuple& t) const
     {
-        if (!t.switch_face(*this).has_value()) return true;
+        if (t.switch_faces(*this).size() == 1) return true;
         return false;
     }
 

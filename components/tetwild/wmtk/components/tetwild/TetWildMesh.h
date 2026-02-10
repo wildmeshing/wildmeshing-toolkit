@@ -37,7 +37,15 @@ public:
     bool m_is_rounded = false;
 
     bool m_is_on_surface = false;
-    std::vector<int> on_bbox_faces; // same as is_bbox_fs?
+    /**
+     * The order of a vertex in a TetMesh is as follows:
+     * 0: vertex is not on the surface
+     * 1: vertex is on the surface
+     * 2: vertex is on the boundary of the surface or a non-manifold edge
+     * 3: vertex is at the boundary of a non-manifold edge or a non-manifold vertex
+     */
+    size_t m_order = 0;
+    std::vector<int> on_bbox_faces;
 
     double m_sizing_scalar = 1;
 
@@ -518,6 +526,43 @@ public:
     size_t count_vertex_links(const Tuple& v);
     size_t count_edge_links(const Tuple& e);
 
+public:
+    /**
+     * @brief Get all faces on the surface that are incident to vid.
+     */
+    simplex::RawSimplexCollection get_surface_faces_for_vertex(const size_t vid) const;
+    /**
+     * @brief Compute the number of faces on the surface incident to the edge.
+     */
+    size_t get_num_surface_faces_for_edge(const std::array<size_t, 2>& vids) const;
+    /**
+     * @brief Compute the order of an edge.
+     *
+     * The order of an edge in a TetMesh is as follows:
+     * 0: the edge is not on the surface
+     * 1: the edge is on the surface
+     * 2: the edge is on the surface boundary or non-manifold
+     */
+    size_t get_order_of_edge(const std::array<size_t, 2>& vids) const;
+    /**
+     * @brief Compute the order of a vertex.
+     *
+     * The order of a vertex in a TetMesh is as follows:
+     * 0: vertex is not on the surface
+     * 1: vertex is on the surface
+     * 2: vertex is on the surface boundary or a non-manifold edge
+     * 3: vertex is at the boundary of a non-manifold edge or a non-manifold vertex
+     */
+    size_t get_order_of_vertex(const size_t vid) const;
+    /**
+     * @brief Compute the vertex order for every vertex.
+     *
+     * This function relies on `get_order_of_edge`.
+     */
+    void init_vertex_order();
+    void init_vertex_order(const size_t vid);
+
+public:
     // debug functions
     int orient3D(
         vol_rem::bigrational px,

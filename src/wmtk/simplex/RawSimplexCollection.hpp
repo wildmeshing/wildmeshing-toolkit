@@ -108,6 +108,8 @@ public:
     template <int N>
     static RawSimplexCollection faces_from_simplex(const RawSimplex<N>& simplex);
 
+    std::vector<Face> faces_with_edge(const Edge& e) const;
+
     size_t size() const;
 
 private:
