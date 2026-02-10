@@ -14,6 +14,9 @@ include(add_component_test)
 set(WMTK_AUTOGEN_COMMENT "// This file was auto-generated with CMake\n")
 file(WRITE "${CMAKE_SOURCE_DIR}/app/components_include.hpp" ${WMTK_AUTOGEN_COMMENT})
 file(WRITE "${CMAKE_SOURCE_DIR}/app/components_map.hpp" ${WMTK_AUTOGEN_COMMENT})
+if(WMTK_BUILD_INTEGRATION_TESTS)
+    target_include_directories(wmtk_integration_tests PUBLIC  "${CMAKE_SOURCE_DIR}/app")
+endif()
 
 # list of all components
 add_subdirectory("tetwild/wmtk/components/tetwild")
@@ -22,4 +25,3 @@ add_subdirectory("image_simulation/wmtk/components/image_simulation")
 add_subdirectory("c1_simplification/wmtk/components/c1_simplification")
 add_subdirectory("tet_remeshing/wmtk/components/tet_remeshing")
 add_subdirectory("tet_implicits/wmtk/components/tet_implicits")
-
