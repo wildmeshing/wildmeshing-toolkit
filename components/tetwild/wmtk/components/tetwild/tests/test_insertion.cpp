@@ -120,47 +120,47 @@ TEST_CASE("vertex_order", "[tetwild][.]")
     MatrixXd V;
     MatrixXi F;
 
-    size_t nvo3; // number of order 3 vertices
-    // SECTION("shark-fin")
-    //{
-    //    // one-sided shark fin
-    //    V.resize(9, 3);
-    //    V.row(0) = Vector3d(0, 0, 0);
-    //    V.row(1) = Vector3d(2, 0, 0);
-    //    V.row(2) = Vector3d(3, 0, 0);
-    //    V.row(3) = Vector3d(1, 1, 0);
-    //    V.row(4) = Vector3d(3, 1, 0);
-    //    V.row(5) = Vector3d(0, 2, 0);
-    //    V.row(6) = Vector3d(2, 2, 0);
-    //    V.row(7) = Vector3d(3, 2, 0);
-    //    V.row(8) = Vector3d(2, 1, 1);
-    //    F.resize(8, 3);
-    //    F.row(0) = Vector3i(0, 1, 3);
-    //    F.row(1) = Vector3i(1, 4, 3);
-    //    F.row(2) = Vector3i(1, 2, 4);
-    //    F.row(3) = Vector3i(0, 3, 5);
-    //    F.row(4) = Vector3i(3, 6, 5);
-    //    F.row(5) = Vector3i(3, 4, 6);
-    //    F.row(6) = Vector3i(4, 7, 6);
-    //    F.row(7) = Vector3i(3, 4, 8);
-    //
-    //    nvo3 = 2;
-    //}
-    // SECTION("two-triangles")
-    //{
-    //    // two triangles touching in one vertex
-    //    V.resize(5, 3);
-    //    V.row(0) = Vector3d(0, 0, 0);
-    //    V.row(1) = Vector3d(2, 0, 0);
-    //    V.row(2) = Vector3d(1, 1, 0);
-    //    V.row(3) = Vector3d(0, 2, 0);
-    //    V.row(4) = Vector3d(2, 2, 0);
-    //    F.resize(2, 3);
-    //    F.row(0) = Vector3i(0, 1, 2);
-    //    F.row(1) = Vector3i(2, 4, 3);
-    //
-    //    nvo3 = 1;
-    //}
+    size_t nvo3 = 0; // number of order 3 vertices
+    SECTION("shark-fin")
+    {
+        // one-sided shark fin
+        V.resize(9, 3);
+        V.row(0) = Vector3d(0, 0, 0);
+        V.row(1) = Vector3d(2, 0, 0);
+        V.row(2) = Vector3d(3, 0, 0);
+        V.row(3) = Vector3d(1, 1, 0);
+        V.row(4) = Vector3d(3, 1, 0);
+        V.row(5) = Vector3d(0, 2, 0);
+        V.row(6) = Vector3d(2, 2, 0);
+        V.row(7) = Vector3d(3, 2, 0);
+        V.row(8) = Vector3d(2, 1, 1);
+        F.resize(8, 3);
+        F.row(0) = Vector3i(0, 1, 3);
+        F.row(1) = Vector3i(1, 4, 3);
+        F.row(2) = Vector3i(1, 2, 4);
+        F.row(3) = Vector3i(0, 3, 5);
+        F.row(4) = Vector3i(3, 6, 5);
+        F.row(5) = Vector3i(3, 4, 6);
+        F.row(6) = Vector3i(4, 7, 6);
+        F.row(7) = Vector3i(3, 4, 8);
+
+        nvo3 = 2;
+    }
+    SECTION("two-triangles")
+    {
+        // two triangles touching in one vertex
+        V.resize(5, 3);
+        V.row(0) = Vector3d(0, 0, 0);
+        V.row(1) = Vector3d(2, 0, 0);
+        V.row(2) = Vector3d(1, 1, 0);
+        V.row(3) = Vector3d(0, 2, 0);
+        V.row(4) = Vector3d(2, 2, 0);
+        F.resize(2, 3);
+        F.row(0) = Vector3i(0, 1, 2);
+        F.row(1) = Vector3i(2, 4, 3);
+
+        nvo3 = 1;
+    }
     SECTION("two-triangles-disconnected")
     {
         // two triangles touching in one vertex
@@ -170,12 +170,34 @@ TEST_CASE("vertex_order", "[tetwild][.]")
         V.row(2) = Vector3d(1, 1, 0);
         V.row(3) = Vector3d(0, 2, 0);
         V.row(4) = Vector3d(2, 2, 0);
-        V.row(5) = Vector3d(1, 1, 0);
+        V.row(5) = Vector3d(1, 1.1, 0);
         F.resize(2, 3);
         F.row(0) = Vector3i(0, 1, 2);
-        F.row(1) = Vector3i(5, 4, 3);
+        F.row(1) = Vector3i(3, 4, 5);
 
         nvo3 = 0;
+    }
+    SECTION("hour-glass")
+    {
+        V.resize(7, 3);
+        V.row(0) = Vector3d(0, 0, 0);
+        V.row(1) = Vector3d(0, -1, 0);
+        V.row(2) = Vector3d(-1, 0, 0);
+        V.row(3) = Vector3d(0, 0, -1);
+        V.row(4) = Vector3d(1, 0, 0);
+        V.row(5) = Vector3d(0, 0, 1);
+        V.row(6) = Vector3d(0, 1, 0);
+        F.resize(8, 3);
+        F.row(0) = Vector3i(0, 2, 1);
+        F.row(1) = Vector3i(0, 1, 3);
+        F.row(2) = Vector3i(2, 0, 3);
+        F.row(3) = Vector3i(1, 2, 3);
+        F.row(4) = Vector3i(4, 5, 0);
+        F.row(5) = Vector3i(0, 5, 6);
+        F.row(6) = Vector3i(4, 0, 6);
+        F.row(7) = Vector3i(6, 5, 4);
+
+        nvo3 = 1;
     }
 
     std::vector<Vector3d> vertices;
@@ -223,7 +245,7 @@ TEST_CASE("vertex_order", "[tetwild][.]")
 
     mesh.init_vertex_order();
 
-    mesh.save_paraview("debug_shark_fin", false);
+    // mesh.save_paraview("debug_shark_fin", false);
 
     // check order of vertices
     size_t vo3_count = 0;
@@ -239,7 +261,7 @@ TEST_CASE("vertex_order", "[tetwild][.]")
             const auto vs = mesh.get_one_ring_vids_for_vertex(vid);
             size_t eo2_count = 0;
             for (const size_t v : vs) {
-                if (mesh.get_order_of_edge({vid, v}) == 2) {
+                if (mesh.get_order_of_edge({{vid, v}}) == 2) {
                     ++eo2_count;
                 }
             }
