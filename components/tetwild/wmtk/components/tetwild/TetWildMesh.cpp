@@ -1899,9 +1899,9 @@ bool TetWildMesh::substructure_link_condition(const Tuple& e_tuple) const
         return false;
     }
 
-    const auto n1_locs = get_one_ring_tids_for_vertex(u_id);
-    const auto n2_locs = get_one_ring_tids_for_vertex(v_id);
-    const auto n12_locs = set_intersection(n1_locs, n2_locs);
+    const auto u_locs = get_one_ring_tids_for_vertex(u_id);
+    const auto v_locs = get_one_ring_tids_for_vertex(v_id);
+    const auto e_locs = set_intersection(u_locs, v_locs);
 
     RawSimplexCollection link_u_0;
     RawSimplexCollection link_u_1;
@@ -1919,10 +1919,10 @@ bool TetWildMesh::substructure_link_condition(const Tuple& e_tuple) const
     {
         const Vertex u(u_id);
 
-        link_u_0.reserve_faces(n1_locs.size());
-        link_u_0.reserve_edges(n1_locs.size() * 3);
-        link_u_0.reserve_vertices(n1_locs.size() * 3);
-        for (const size_t tid : n1_locs) {
+        link_u_0.reserve_faces(u_locs.size());
+        link_u_0.reserve_edges(u_locs.size() * 3);
+        link_u_0.reserve_vertices(u_locs.size() * 3);
+        for (const size_t tid : u_locs) {
             const Tet tet = simplex_from_tet(tid);
             const Face f = tet.opposite_face(u);
             link_u_0.add(f);
@@ -1947,6 +1947,10 @@ bool TetWildMesh::substructure_link_condition(const Tuple& e_tuple) const
         }
         u_surface_edges.sort_and_clean();
         for (const Edge& e : u_surface_edges.edges()) {
+            if (get_order_of_vertex(e.vertices()[0]) < 2 &&
+                get_order_of_vertex(e.vertices()[1]) < 2) {
+                continue;
+            }
             const size_t e_order = get_order_of_edge(e.vertices());
             if (e_order < 2) {
                 continue;
@@ -1966,10 +1970,10 @@ bool TetWildMesh::substructure_link_condition(const Tuple& e_tuple) const
     {
         const Vertex v(v_id);
 
-        link_v_0.reserve_faces(n2_locs.size());
-        link_v_0.reserve_edges(n2_locs.size() * 3);
-        link_v_0.reserve_vertices(n2_locs.size() * 3);
-        for (const size_t tid : n2_locs) {
+        link_v_0.reserve_faces(v_locs.size());
+        link_v_0.reserve_edges(v_locs.size() * 3);
+        link_v_0.reserve_vertices(v_locs.size() * 3);
+        for (const size_t tid : v_locs) {
             const Tet tet = simplex_from_tet(tid);
             const Face f = tet.opposite_face(v);
             link_v_0.add(f);
@@ -1994,6 +1998,10 @@ bool TetWildMesh::substructure_link_condition(const Tuple& e_tuple) const
         }
         v_surface_edges.sort_and_clean();
         for (const Edge& e : v_surface_edges.edges()) {
+            if (get_order_of_vertex(e.vertices()[0]) < 2 &&
+                get_order_of_vertex(e.vertices()[1]) < 2) {
+                continue;
+            }
             const size_t e_order = get_order_of_edge(e.vertices());
             if (e_order < 2) {
                 continue;
@@ -2012,9 +2020,9 @@ bool TetWildMesh::substructure_link_condition(const Tuple& e_tuple) const
     {
         const Edge e(u_id, v_id);
 
-        link_e_0.reserve_edges(n12_locs.size());
-        link_e_0.reserve_vertices(n12_locs.size() * 2);
-        for (const size_t tid : n12_locs) {
+        link_e_0.reserve_edges(e_locs.size());
+        link_e_0.reserve_vertices(e_locs.size() * 2);
+        for (const size_t tid : e_locs) {
             const Tet tet = simplex_from_tet(tid);
             const Edge e_opp = tet.opposite_edge(e);
             link_e_0.add(e_opp);
@@ -2027,9 +2035,9 @@ bool TetWildMesh::substructure_link_condition(const Tuple& e_tuple) const
         for (const Face& f : e_surface_faces.faces()) {
             const Tet tw(f, w_id);
             const Edge e_opp = tw.opposite_edge(e);
-            link_e_1.add(e_opp);
-            link_e_1.add(RawSimplexCollection::faces_from_simplex(e_opp));
-            link_e_1.add(f.opposite_vertex(e)); // unsure if neccessary, it was in pseudo code
+            link_e_0.add(e_opp);
+            link_e_0.add(RawSimplexCollection::faces_from_simplex(e_opp));
+            link_e_1.add(f.opposite_vertex(e));
         }
 
         if (edge_order > 1) {

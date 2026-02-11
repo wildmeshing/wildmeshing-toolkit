@@ -563,6 +563,14 @@ public:
     void init_vertex_order();
     void init_vertex_order(const size_t vid);
 
+    /**
+     * @brief Link condition that also considers substructures.
+     *
+     * Implementation based on the pseudo code from the paper:
+     * Vivodtzev et. al. - Substructure Topology Preserving Simplification of Tetrahedral Meshes
+     *
+     * The math and the pseudo code in the paper contain errors! The theory itself is correct.
+     */
     bool substructure_link_condition(const Tuple& e_tuple) const;
 
 public:
