@@ -1719,7 +1719,7 @@ simplex::RawSimplexCollection TetWildMesh::get_surface_faces_for_vertex(const si
                 continue;
             }
 
-            const auto [f_tuple, fid] = tuple_from_face({vid, vs[i], vs[j]});
+            const auto [f_tuple, fid] = tuple_from_face({{vid, vs[i], vs[j]}});
 
             if (m_face_attribute.at(fid).m_is_surface_fs) {
                 sc.add(Face(vid, vs[i], vs[j]));
@@ -1879,6 +1879,177 @@ void TetWildMesh::init_vertex_order(const size_t vid)
         // surface is non-manifold in this vertex
         VA_order = 3;
     }
+}
+
+bool TetWildMesh::substructure_link_condition(const Tuple& e_tuple) const
+{
+    const size_t u_id = e_tuple.vid(*this);
+    const size_t v_id = e_tuple.switch_vertex(*this).vid(*this);
+
+    using namespace simplex;
+
+    const size_t edge_order = get_order_of_edge({{u_id, v_id}});
+    const size_t u_order = get_order_of_vertex(u_id);
+    const size_t v_order = get_order_of_vertex(v_id);
+
+    // If the edge is lower order than both vertices, we know for sure that this edge must not
+    // be collapsed. Example: edge in space (order 0) connecting two surfaces (order 1).
+    // This check also covers the case that both vertices are order 3
+    if (edge_order < u_order && edge_order < v_order) {
+        return false;
+    }
+
+    const auto n1_locs = get_one_ring_tids_for_vertex(u_id);
+    const auto n2_locs = get_one_ring_tids_for_vertex(v_id);
+    const auto n12_locs = set_intersection(n1_locs, n2_locs);
+
+    RawSimplexCollection link_u_0;
+    RawSimplexCollection link_u_1;
+    RawSimplexCollection link_v_0;
+    RawSimplexCollection link_v_1;
+    RawSimplexCollection link_e_0;
+    RawSimplexCollection link_e_1;
+
+    constexpr size_t w_id = -1; // dummy vertex
+    const Vertex w(w_id);
+
+
+    // v1 links
+    const RawSimplexCollection u_surface_faces = get_surface_faces_for_vertex(u_id);
+    {
+        const Vertex u(u_id);
+
+        link_u_0.reserve_faces(n1_locs.size());
+        link_u_0.reserve_edges(n1_locs.size() * 3);
+        link_u_0.reserve_vertices(n1_locs.size() * 3);
+        for (const size_t tid : n1_locs) {
+            const Tet tet = simplex_from_tet(tid);
+            const Face f = tet.opposite_face(u);
+            link_u_0.add(f);
+            link_u_0.add(RawSimplexCollection::faces_from_simplex(f));
+        }
+
+        RawSimplexCollection u_surface_edges;
+        for (const Face& f : u_surface_faces.faces()) {
+            const Tet tw(f, w_id);
+
+            const Face fw = tw.opposite_face(u);
+            link_u_0.add(fw);
+            link_u_0.add(RawSimplexCollection::faces_from_simplex(fw));
+
+            const Edge e_opp = f.opposite_edge(u);
+            link_u_1.add(e_opp);
+            link_u_1.add(RawSimplexCollection::faces_from_simplex(e_opp));
+
+            // collect edges adjacent to u
+            u_surface_edges.add(Edge(u_id, e_opp.vertices()[0]));
+            u_surface_edges.add(Edge(u_id, e_opp.vertices()[1]));
+        }
+        u_surface_edges.sort_and_clean();
+        for (const Edge& e : u_surface_edges.edges()) {
+            const size_t e_order = get_order_of_edge(e.vertices());
+            if (e_order < 2) {
+                continue;
+            }
+            const Face fw(e, w_id);
+            const Edge ew = fw.opposite_edge(u);
+            link_u_0.add(ew);
+            link_u_0.add(RawSimplexCollection::faces_from_simplex(ew));
+            link_u_1.add(ew);
+            link_u_1.add(RawSimplexCollection::faces_from_simplex(ew));
+        }
+        link_u_0.sort_and_clean();
+        link_u_1.sort_and_clean();
+    }
+    // v2 links
+    const RawSimplexCollection v_surface_faces = get_surface_faces_for_vertex(v_id);
+    {
+        const Vertex v(v_id);
+
+        link_v_0.reserve_faces(n2_locs.size());
+        link_v_0.reserve_edges(n2_locs.size() * 3);
+        link_v_0.reserve_vertices(n2_locs.size() * 3);
+        for (const size_t tid : n2_locs) {
+            const Tet tet = simplex_from_tet(tid);
+            const Face f = tet.opposite_face(v);
+            link_v_0.add(f);
+            link_v_0.add(RawSimplexCollection::faces_from_simplex(f));
+        }
+
+        RawSimplexCollection v_surface_edges;
+        for (const Face& f : v_surface_faces.faces()) {
+            const Tet tw(f, w_id);
+
+            const Face fw = tw.opposite_face(v);
+            link_v_0.add(fw);
+            link_v_0.add(RawSimplexCollection::faces_from_simplex(fw));
+
+            const Edge e_opp = f.opposite_edge(v);
+            link_v_1.add(e_opp);
+            link_v_1.add(RawSimplexCollection::faces_from_simplex(e_opp));
+
+            // collect edges adjacent to v
+            v_surface_edges.add(Edge(v_id, e_opp.vertices()[0]));
+            v_surface_edges.add(Edge(v_id, e_opp.vertices()[1]));
+        }
+        v_surface_edges.sort_and_clean();
+        for (const Edge& e : v_surface_edges.edges()) {
+            const size_t e_order = get_order_of_edge(e.vertices());
+            if (e_order < 2) {
+                continue;
+            }
+            const Face fw(e, w_id);
+            const Edge ew = fw.opposite_edge(v);
+            link_v_0.add(ew);
+            link_v_0.add(RawSimplexCollection::faces_from_simplex(ew));
+            link_v_1.add(ew);
+            link_v_1.add(RawSimplexCollection::faces_from_simplex(ew));
+        }
+        link_v_0.sort_and_clean();
+        link_v_1.sort_and_clean();
+    }
+    // edge links
+    {
+        const Edge e(u_id, v_id);
+
+        link_e_0.reserve_edges(n12_locs.size());
+        link_e_0.reserve_vertices(n12_locs.size() * 2);
+        for (const size_t tid : n12_locs) {
+            const Tet tet = simplex_from_tet(tid);
+            const Edge e_opp = tet.opposite_edge(e);
+            link_e_0.add(e_opp);
+            link_e_0.add(RawSimplexCollection::faces_from_simplex(e_opp));
+        }
+
+        const RawSimplexCollection e_surface_faces =
+            RawSimplexCollection::get_intersection(u_surface_faces, v_surface_faces);
+
+        for (const Face& f : e_surface_faces.faces()) {
+            const Tet tw(f, w_id);
+            const Edge e_opp = tw.opposite_edge(e);
+            link_e_1.add(e_opp);
+            link_e_1.add(RawSimplexCollection::faces_from_simplex(e_opp));
+            link_e_1.add(f.opposite_vertex(e)); // unsure if neccessary, it was in pseudo code
+        }
+
+        if (edge_order > 1) {
+            link_e_0.add(w);
+            link_e_1.add(w);
+        }
+        link_e_0.sort_and_clean();
+        link_e_1.sort_and_clean();
+    }
+
+    const auto link_uv_0 = RawSimplexCollection::get_intersection(link_u_0, link_v_0);
+    if (link_uv_0 != link_e_0) {
+        return false;
+    }
+    const auto link_uv_1 = RawSimplexCollection::get_intersection(link_u_1, link_v_1);
+    if (link_uv_1 != link_e_1) {
+        return false;
+    }
+
+    return true;
 }
 
 bool TetWildMesh::check_vertex_param_type()

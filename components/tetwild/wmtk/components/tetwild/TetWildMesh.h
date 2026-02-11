@@ -398,6 +398,7 @@ private:
         size_t v2_id;
         bool is_edge_on_surface = false;
         bool is_edge_open_boundary = false;
+        size_t edge_order = 0;
         std::vector<size_t> v1_param_type;
         std::vector<size_t> v2_param_type;
 
@@ -561,6 +562,8 @@ public:
      */
     void init_vertex_order();
     void init_vertex_order(const size_t vid);
+
+    bool substructure_link_condition(const Tuple& e_tuple) const;
 
 public:
     // debug functions

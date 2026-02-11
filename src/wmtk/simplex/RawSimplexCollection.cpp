@@ -124,4 +124,14 @@ size_t RawSimplexCollection::size() const
     return m_v.size() + m_e.size() + m_f.size() + m_t.size();
 }
 
+bool RawSimplexCollection::operator==(const RawSimplexCollection& that) const
+{
+    return (m_v == that.m_v) && (m_e == that.m_e) && (m_f == that.m_f) && (m_t == that.m_t);
+}
+bool RawSimplexCollection::operator!=(const RawSimplexCollection& that) const
+{
+    return !(*this == that);
+}
+
+
 } // namespace wmtk::simplex

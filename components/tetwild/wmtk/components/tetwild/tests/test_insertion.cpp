@@ -206,6 +206,7 @@ TEST_CASE("vertex_order", "[tetwild][.]")
     VF_to_vectors(V, F, vertices, faces);
 
     Parameters params;
+    params.preserve_topology = true;
     params.init(vertices, faces);
 
     app::sec::ShortestEdgeCollapse surf_mesh(vertices, 0);
@@ -242,8 +243,6 @@ TEST_CASE("vertex_order", "[tetwild][.]")
         is_v_on_input,
         tets,
         tet_face_on_input_surface);
-
-    mesh.init_vertex_order();
 
     // mesh.save_paraview("debug_shark_fin", false);
 

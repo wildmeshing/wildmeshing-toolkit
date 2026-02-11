@@ -1569,7 +1569,7 @@ void TetWildMesh::init_from_Volumeremesher(
     }
 
     for_each_vertex(
-        [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
+        [&](auto& v) { vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
 
     // track open boundaries
     find_open_boundary();
@@ -1578,8 +1578,20 @@ void TetWildMesh::init_from_Volumeremesher(
     for (const Tuple& e : get_edges()) {
         if (is_open_boundary_edge(e)) open_boundary_cnt++;
     }
-    wmtk::logger().info("#open boundary edges: {}", open_boundary_cnt);
+    logger().info("#open boundary edges: {}", open_boundary_cnt);
 
+    init_vertex_order();
+    {
+        std::array<size_t, 4> vo{0, 0, 0, 0};
+        const auto vs = get_vertices();
+        for (const Tuple& t : vs) {
+            const size_t o = m_vertex_attribute.at(t.vid(*this)).m_order;
+            assert(o < 4);
+            ++vo[o];
+        }
+        assert(vo[0] + vo[1] + vo[2] + vo[3] == vs.size());
+        logger().info("{} vertices with order counts (0,1,2,3): {}", vs.size(), vo);
+    }
 
     // enable on for tests
     // debug codes

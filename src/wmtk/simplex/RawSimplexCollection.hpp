@@ -112,6 +112,9 @@ public:
 
     size_t size() const;
 
+    bool operator==(const RawSimplexCollection& that) const;
+    bool operator!=(const RawSimplexCollection& that) const;
+
 private:
     std::vector<Vertex> m_v;
     std::vector<Edge> m_e;
