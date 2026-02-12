@@ -5,11 +5,6 @@ file(GLOB_RECURSE LIB_SOURCES CONFIGURE_DEPENDS
     "src/*.hpp"
 )
 
-if(NOT WMTK_APP_SEC)
-message(FATAL_ERROR "Remeshing requires shorted edge collapse app; try WMTK_APP_SEC=ON")
-endif()
-
-
 add_library(wmtk_remeshing_lib "${LIB_SOURCES}")
 add_library(wmtk::remeshing_lib ALIAS wmtk_remeshing_lib)
 
