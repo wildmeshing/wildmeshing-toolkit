@@ -222,40 +222,40 @@ TEST_CASE("operation orient", "[test_remeshing]")
     std::vector<size_t> modified_v;
     m.create_mesh(V.rows(), tri, modified_v, 1);
     auto fs = m.get_faces();
-    for (auto f : fs) {
+    for (const auto& f : fs) {
         std::array<double, 6> tri = {
-            m.vertex_attrs[f.vid(m)].pos(0),
-            m.vertex_attrs[f.vid(m)].pos(1),
-            m.vertex_attrs[f.switch_vertex(m).vid(m)].pos(0),
-            m.vertex_attrs[f.switch_vertex(m).vid(m)].pos(1),
-            m.vertex_attrs[(f.switch_edge(m)).switch_vertex(m).vid(m)].pos(0),
-            m.vertex_attrs[(f.switch_edge(m)).switch_vertex(m).vid(m)].pos(1)};
+            {m.vertex_attrs[f.vid(m)].pos(0),
+             m.vertex_attrs[f.vid(m)].pos(1),
+             m.vertex_attrs[f.switch_vertex(m).vid(m)].pos(0),
+             m.vertex_attrs[f.switch_vertex(m).vid(m)].pos(1),
+             m.vertex_attrs[(f.switch_edge(m)).switch_vertex(m).vid(m)].pos(0),
+             m.vertex_attrs[(f.switch_edge(m)).switch_vertex(m).vid(m)].pos(1)}};
         REQUIRE(!is_inverted(tri));
     }
 
     m.split_remeshing(0.8);
     fs = m.get_faces();
-    for (auto f : fs) {
+    for (const auto& f : fs) {
         std::array<double, 6> tri = {
-            m.vertex_attrs[f.vid(m)].pos(0),
-            m.vertex_attrs[f.vid(m)].pos(1),
-            m.vertex_attrs[f.switch_vertex(m).vid(m)].pos(0),
-            m.vertex_attrs[f.switch_vertex(m).vid(m)].pos(1),
-            m.vertex_attrs[(f.switch_edge(m)).switch_vertex(m).vid(m)].pos(0),
-            m.vertex_attrs[(f.switch_edge(m)).switch_vertex(m).vid(m)].pos(1)};
+            {m.vertex_attrs[f.vid(m)].pos(0),
+             m.vertex_attrs[f.vid(m)].pos(1),
+             m.vertex_attrs[f.switch_vertex(m).vid(m)].pos(0),
+             m.vertex_attrs[f.switch_vertex(m).vid(m)].pos(1),
+             m.vertex_attrs[(f.switch_edge(m)).switch_vertex(m).vid(m)].pos(0),
+             m.vertex_attrs[(f.switch_edge(m)).switch_vertex(m).vid(m)].pos(1)}};
         REQUIRE(!is_inverted(tri));
     }
 
     m.collapse_remeshing(1.5);
     fs = m.get_faces();
-    for (auto f : fs) {
+    for (const auto& f : fs) {
         std::array<double, 6> tri = {
-            m.vertex_attrs[f.vid(m)].pos(0),
-            m.vertex_attrs[f.vid(m)].pos(1),
-            m.vertex_attrs[f.switch_vertex(m).vid(m)].pos(0),
-            m.vertex_attrs[f.switch_vertex(m).vid(m)].pos(1),
-            m.vertex_attrs[(f.switch_edge(m)).switch_vertex(m).vid(m)].pos(0),
-            m.vertex_attrs[(f.switch_edge(m)).switch_vertex(m).vid(m)].pos(1)};
+            {m.vertex_attrs[f.vid(m)].pos(0),
+             m.vertex_attrs[f.vid(m)].pos(1),
+             m.vertex_attrs[f.switch_vertex(m).vid(m)].pos(0),
+             m.vertex_attrs[f.switch_vertex(m).vid(m)].pos(1),
+             m.vertex_attrs[(f.switch_edge(m)).switch_vertex(m).vid(m)].pos(0),
+             m.vertex_attrs[(f.switch_edge(m)).switch_vertex(m).vid(m)].pos(1)}};
         REQUIRE(!is_inverted(tri));
     }
 
