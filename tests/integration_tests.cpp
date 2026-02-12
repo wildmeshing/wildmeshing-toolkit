@@ -53,7 +53,27 @@ void wmtk_wrapper(const nlohmann::json& j)
     components_map[app_str](j);
 }
 
-TEST_CASE("TetWild", tags_integration)
+void wmtk_wrapper(const path& json_input_file)
+{
+    const auto j = load_json(json_input_file);
+    wmtk_wrapper(j);
+}
+
+TEST_CASE("Integration_Tests", tags_integration)
+{
+    namespace fs = std::filesystem;
+
+    for (const auto& dir_entry : fs::directory_iterator(integration_tests_dir)) {
+        const path& f = dir_entry.path();
+        if (!f.has_extension() || f.extension() != ".json") {
+            continue;
+        }
+        logger().info(">>>>>>>>>> Integration test: {} <<<<<<<<<<", f.filename().string());
+        CHECK_NOTHROW(wmtk_wrapper(f));
+    }
+}
+
+TEST_CASE("TetWild", tags_integration + "[.]")
 {
     const path f = integration_tests_dir / "tetwild.json";
     nlohmann::json j;

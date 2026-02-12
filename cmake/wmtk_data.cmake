@@ -15,8 +15,8 @@ ExternalProject_Add(
     PREFIX "${FETCHCONTENT_BASE_DIR}/wmtk-test-data"
     SOURCE_DIR ${WMTK_DATA_ROOT}
 
-    GIT_REPOSITORY https://github.com/wildmeshing/data.git
-    GIT_TAG 74c95f45172d793d5feef42a1d0355ce2eca9cfb
+    GIT_REPOSITORY https://github.com/wildmeshing/data2.git
+    GIT_TAG 4ecd71fc9f977216007e3f64b665795afeb82f4b
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
