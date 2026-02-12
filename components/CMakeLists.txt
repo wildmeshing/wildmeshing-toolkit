@@ -19,6 +19,7 @@ if(WMTK_BUILD_INTEGRATION_TESTS)
 endif()
 
 # list of all components
+add_subdirectory("shortest_edge_collapse/wmtk/components/shortest_edge_collapse")
 add_subdirectory("tetwild/wmtk/components/tetwild")
 add_subdirectory("simplicial_embedding/wmtk/components/simplicial_embedding")
 add_subdirectory("image_simulation/wmtk/components/image_simulation")

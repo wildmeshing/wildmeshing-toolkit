@@ -4,7 +4,6 @@ include(jse)
 
 option(WMTK_APP_HARMTET "Harmonic Triangulation app" ON)
 option(WMTK_APP_UNIFORM_REMESH "uniform remesh for surfaces" ON)
-option(WMTK_APP_SEC "surface shortest edge collapse" ON)
 option(WMTK_APP_QSLIM "surface qslim simplification" ON)
 option(WMTK_APP_INTERIOR_TET_OPT "interior tet opt application" ON)
 
@@ -20,10 +19,6 @@ endif()
 
 if(WMTK_APP_UNIFORM_REMESH)
     add_subdirectory(remeshing)
-endif()
-
-if(WMTK_APP_SEC)
-    add_subdirectory(shortest_edge_collapse)
 endif()
 
 if(WMTK_APP_QSLIM)

@@ -21,7 +21,6 @@ target_link_libraries(wmtk_remeshing_lib PUBLIC
 	wmtk::toolkit
 	wmtk::data
 	igl::predicates
-	wmtk::sec_lib
 )
 
 add_subdirectory(app)

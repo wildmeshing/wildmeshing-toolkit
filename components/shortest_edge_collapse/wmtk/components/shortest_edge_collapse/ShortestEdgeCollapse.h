@@ -23,7 +23,7 @@
 
 #include <wmtk/envelope/Envelope.hpp>
 
-namespace app::sec {
+namespace wmtk::components::shortest_edge_collapse {
 
 struct VertexAttributes
 {
@@ -77,4 +77,4 @@ private:
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& t) const;
 };
 
-} // namespace app::sec
+} // namespace wmtk::components::shortest_edge_collapse

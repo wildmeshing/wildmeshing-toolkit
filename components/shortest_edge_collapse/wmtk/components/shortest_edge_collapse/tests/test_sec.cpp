@@ -1,5 +1,3 @@
-#include <sec/ShortestEdgeCollapse.h>
-
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/ManifoldUtils.hpp>
 
@@ -11,9 +9,10 @@
 #include <Eigen/Core>
 #include <catch2/catch_test_macros.hpp>
 
+#include <wmtk/components/shortest_edge_collapse/ShortestEdgeCollapse.h>
 
-using namespace app::sec;
 using namespace wmtk;
+using namespace components::shortest_edge_collapse;
 
 TEST_CASE("separate-manifold-patch", "[test_sec]")
 {

@@ -7,8 +7,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-using namespace wmtk;
-using namespace app::sec;
+namespace wmtk::components::shortest_edge_collapse {
 
 ShortestEdgeCollapse::ShortestEdgeCollapse(
     std::vector<Eigen::Vector3d> _m_vertex_positions,
@@ -110,6 +109,7 @@ bool ShortestEdgeCollapse::write_triangle_mesh(std::string path)
         }
     }
 
+    logger().info("Write {}", path);
     return igl::write_triangle_mesh(path, V, F);
 }
 
@@ -190,3 +190,5 @@ bool ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
     }
     return true;
 }
+
+} // namespace wmtk::components::shortest_edge_collapse

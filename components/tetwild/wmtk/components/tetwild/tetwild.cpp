@@ -1,6 +1,5 @@
 #include "tetwild.hpp"
 
-#include <sec/ShortestEdgeCollapse.h>
 #include "Parameters.h"
 #include "TetWildMesh.h"
 
@@ -9,6 +8,7 @@
 #include <wmtk/utils/Partitioning.h>
 #include <wmtk/utils/Reader.hpp>
 
+#include <wmtk/components/shortest_edge_collapse/ShortestEdgeCollapse.h>
 #include <memory>
 #include <vector>
 #include <wmtk/envelope/Envelope.hpp>
@@ -174,7 +174,10 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     double diag = (box_minmax.first - box_minmax.second).norm();
     const double envelope_size = params.epsr * diag;
-    app::sec::ShortestEdgeCollapse surf_mesh(verts, NUM_THREADS, !use_sample_envelope);
+    shortest_edge_collapse::ShortestEdgeCollapse surf_mesh(
+        verts,
+        NUM_THREADS,
+        !use_sample_envelope);
     surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, envelope_size / 2);
     assert(surf_mesh.check_mesh_connectivity_validity());
 
