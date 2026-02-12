@@ -2,13 +2,12 @@
 #include <igl/is_vertex_manifold.h>
 #include <igl/read_triangle_mesh.h>
 #include <igl/remove_duplicate_vertices.h>
-#include <remeshing/UniformRemeshing.h>
+#include <wmtk/components/isotropic_remeshing/IsotropicRemeshing.h>
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/utils/ManifoldUtils.hpp>
 
-
 using namespace wmtk;
-using namespace app::remeshing;
+using namespace components::isotropic_remeshing;
 
 TEST_CASE("uniform_remeshing", "[test_remeshing][.]")
 {
@@ -28,7 +27,7 @@ TEST_CASE("uniform_remeshing", "[test_remeshing][.]")
     for (int i = 0; i < F.rows(); i++) {
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
-    UniformRemeshing m(v);
+    IsotropicRemeshing m(v);
     std::vector<size_t> modified_v;
     m.create_mesh(V.rows(), tri, modified_v, 0);
     REQUIRE(m.check_mesh_connectivity_validity());
@@ -43,7 +42,7 @@ TEST_CASE("split_each_edge", "[test_remeshing]")
 
     v_positions[2] = Eigen::Vector3d(0, 0, 0);
 
-    UniformRemeshing m(v_positions, 0);
+    IsotropicRemeshing m(v_positions, 0);
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}};
     std::vector<size_t> modified_v;
     m.create_mesh(3, tris, modified_v, 0);
@@ -74,7 +73,7 @@ TEST_CASE("test_swap", "[test_remeshing]")
     for (int i = 0; i < F.rows(); i++) {
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
-    UniformRemeshing m(v);
+    IsotropicRemeshing m(v);
     std::vector<size_t> modified_v;
     m.create_mesh(V.rows(), tri, modified_v, 0);
     int v_invariant = m.get_vertices().size();
@@ -116,7 +115,7 @@ TEST_CASE("test_split", "[test_remeshing]")
     for (int i = 0; i < F.rows(); i++) {
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
-    UniformRemeshing m(v);
+    IsotropicRemeshing m(v);
     std::vector<size_t> modified_v;
     m.create_mesh(V.rows(), tri, modified_v, 0);
     m.split_remeshing(m.average_len_valen()[0] * 0.5);
@@ -165,7 +164,7 @@ TEST_CASE("remeshing_hanging", "[test_remeshing]")
         wmtk::separate_to_manifold(v1, tri1, v, tri, modified_v);
     }
 
-    UniformRemeshing m(v, thread);
+    IsotropicRemeshing m(v, thread);
     m.create_mesh(v.size(), tri, modified_v, envelope_size);
     REQUIRE(m.check_edge_manifold());
     m.get_vertices();
@@ -219,7 +218,7 @@ TEST_CASE("operation orient", "[test_remeshing]")
     for (int i = 0; i < F.rows(); i++) {
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
-    UniformRemeshing m(v);
+    IsotropicRemeshing m(v);
     std::vector<size_t> modified_v;
     m.create_mesh(V.rows(), tri, modified_v, 1);
     auto fs = m.get_faces();

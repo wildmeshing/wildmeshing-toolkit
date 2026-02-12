@@ -55,7 +55,6 @@ target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC
 	wmtk::toolkit
 	wmtk::data
 	wmtk::shortest_edge_collapse
-	wmtk::remeshing_lib
 	igl::predicates
 	VolumeRemesher::VolumeRemesher
 	jse::jse

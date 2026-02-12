@@ -2,7 +2,7 @@
   {
     "pointer": "/",
     "type": "object",
-    "required": ["input"],
+    "required": ["application", "input"],
     "optional": [
       "output",
       "use_sample_envelope",
@@ -15,6 +15,12 @@
       "log_file",
       "report"
     ]
+  },
+  {
+    "pointer": "/application",
+    "type": "string",
+    "options": ["isotropic_remeshing"],
+    "doc": "Application name must be isotropic_remeshing."
   },
   {
     "pointer": "/input",

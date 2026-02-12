@@ -1,4 +1,5 @@
-#include "UniformRemeshing.h"
+#include "IsotropicRemeshing.h"
+
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
 #include <igl/predicates/predicates.h>
@@ -9,8 +10,8 @@
 #include <atomic>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
-using namespace app::remeshing;
-using namespace wmtk;
+
+namespace wmtk::components::isotropic_remeshing {
 
 auto renew = [](auto& m, auto op, auto& tris) {
     auto edges = m.new_edges_after(tris);
@@ -25,7 +26,7 @@ auto edge_locker = [](auto& m, const auto& e, int task_id) {
     return m.try_set_edge_mutex_two_ring(e, task_id);
 };
 
-UniformRemeshing::UniformRemeshing(
+IsotropicRemeshing::IsotropicRemeshing(
     std::vector<Eigen::Vector3d> _m_vertex_positions,
     int num_threads,
     bool use_exact)
@@ -41,7 +42,7 @@ UniformRemeshing::UniformRemeshing(
         vertex_attrs[i] = {_m_vertex_positions[i], 0};
 }
 
-void UniformRemeshing::create_mesh(
+void IsotropicRemeshing::create_mesh(
     size_t n_vertices,
     const std::vector<std::array<size_t, 3>>& tris,
     const std::vector<size_t>& frozen_verts,
@@ -77,14 +78,14 @@ void UniformRemeshing::create_mesh(
     }
 }
 
-void UniformRemeshing::cache_edge_positions(const Tuple& t)
+void IsotropicRemeshing::cache_edge_positions(const Tuple& t)
 {
     position_cache.local().v1p = vertex_attrs[t.vid(*this)].pos;
     position_cache.local().v2p = vertex_attrs[t.switch_vertex(*this).vid(*this)].pos;
     position_cache.local().partition_id = vertex_attrs[t.vid(*this)].partition_id;
 }
 
-bool UniformRemeshing::invariants(const std::vector<Tuple>& new_tris)
+bool IsotropicRemeshing::invariants(const std::vector<Tuple>& new_tris)
 {
     if (m_has_envelope) {
         for (auto& t : new_tris) {
@@ -100,7 +101,7 @@ bool UniformRemeshing::invariants(const std::vector<Tuple>& new_tris)
 }
 
 // TODO: this should not be here
-void UniformRemeshing::partition_mesh()
+void IsotropicRemeshing::partition_mesh()
 {
     auto m_vertex_partition_id = partition_TriMesh(*this, NUM_THREADS);
     for (auto i = 0; i < m_vertex_partition_id.size(); i++)
@@ -108,7 +109,7 @@ void UniformRemeshing::partition_mesh()
 }
 
 // TODO: morton should not be here, but inside wmtk
-void UniformRemeshing::partition_mesh_morton()
+void IsotropicRemeshing::partition_mesh_morton()
 {
     if (NUM_THREADS == 0) return;
     wmtk::logger().info("Number of parts: {} by morton", NUM_THREADS);
@@ -207,7 +208,7 @@ void UniformRemeshing::partition_mesh_morton()
     });
 }
 
-std::vector<TriMesh::Tuple> UniformRemeshing::new_edges_after(
+std::vector<TriMesh::Tuple> IsotropicRemeshing::new_edges_after(
     const std::vector<TriMesh::Tuple>& tris) const
 {
     std::vector<TriMesh::Tuple> new_edges;
@@ -221,7 +222,7 @@ std::vector<TriMesh::Tuple> UniformRemeshing::new_edges_after(
     return new_edges;
 }
 
-bool UniformRemeshing::swap_edge_before(const Tuple& t)
+bool IsotropicRemeshing::swap_edge_before(const Tuple& t)
 {
     if (!TriMesh::swap_edge_before(t)) return false;
     if (vertex_attrs[t.vid(*this)].freeze && vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
@@ -230,7 +231,7 @@ bool UniformRemeshing::swap_edge_before(const Tuple& t)
 }
 
 
-bool UniformRemeshing::swap_edge_after(const TriMesh::Tuple& t)
+bool IsotropicRemeshing::swap_edge_after(const TriMesh::Tuple& t)
 {
     std::vector<TriMesh::Tuple> tris;
     tris.push_back(t);
@@ -238,7 +239,7 @@ bool UniformRemeshing::swap_edge_after(const TriMesh::Tuple& t)
     return true;
 }
 
-std::vector<TriMesh::Tuple> UniformRemeshing::replace_edges_after_split(
+std::vector<TriMesh::Tuple> IsotropicRemeshing::replace_edges_after_split(
     const std::vector<TriMesh::Tuple>& tris,
     const size_t vid_threshold) const
 {
@@ -255,7 +256,7 @@ std::vector<TriMesh::Tuple> UniformRemeshing::replace_edges_after_split(
     return new_edges;
 }
 
-std::vector<TriMesh::Tuple> UniformRemeshing::new_sub_edges_after_split(
+std::vector<TriMesh::Tuple> IsotropicRemeshing::new_sub_edges_after_split(
     const std::vector<TriMesh::Tuple>& tris) const
 {
     // only push back the renewed original edges
@@ -272,7 +273,7 @@ std::vector<TriMesh::Tuple> UniformRemeshing::new_sub_edges_after_split(
 }
 
 
-bool UniformRemeshing::collapse_edge_before(const Tuple& t)
+bool IsotropicRemeshing::collapse_edge_before(const Tuple& t)
 {
     if (!TriMesh::collapse_edge_before(t)) return false;
     if (vertex_attrs[t.vid(*this)].freeze || vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
@@ -282,7 +283,7 @@ bool UniformRemeshing::collapse_edge_before(const Tuple& t)
 }
 
 
-bool UniformRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
+bool IsotropicRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
     auto vid = t.vid(*this);
@@ -292,7 +293,7 @@ bool UniformRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
     return true;
 }
 
-bool UniformRemeshing::split_edge_before(const Tuple& t)
+bool IsotropicRemeshing::split_edge_before(const Tuple& t)
 {
     if (!TriMesh::split_edge_before(t)) return false;
     cache_edge_positions(t);
@@ -300,7 +301,7 @@ bool UniformRemeshing::split_edge_before(const Tuple& t)
 }
 
 
-bool UniformRemeshing::split_edge_after(const TriMesh::Tuple& t)
+bool IsotropicRemeshing::split_edge_after(const TriMesh::Tuple& t)
 {
     const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
     auto vid = t.switch_vertex(*this).vid(*this);
@@ -309,13 +310,13 @@ bool UniformRemeshing::split_edge_after(const TriMesh::Tuple& t)
     return true;
 }
 
-bool UniformRemeshing::smooth_before(const Tuple& t)
+bool IsotropicRemeshing::smooth_before(const Tuple& t)
 {
     if (vertex_attrs[t.vid(*this)].freeze) return false;
     return true;
 }
 
-bool UniformRemeshing::smooth_after(const TriMesh::Tuple& t)
+bool IsotropicRemeshing::smooth_after(const TriMesh::Tuple& t)
 {
     auto one_ring_tris = get_one_ring_tris_for_vertex(t);
     if (one_ring_tris.size() < 2) {
@@ -327,7 +328,7 @@ bool UniformRemeshing::smooth_after(const TriMesh::Tuple& t)
     return true;
 }
 
-double UniformRemeshing::compute_edge_cost_collapse(const TriMesh::Tuple& t, double L) const
+double IsotropicRemeshing::compute_edge_cost_collapse(const TriMesh::Tuple& t, double L) const
 {
     double l =
         (vertex_attrs[t.vid(*this)].pos - vertex_attrs[t.switch_vertex(*this).vid(*this)].pos)
@@ -335,7 +336,7 @@ double UniformRemeshing::compute_edge_cost_collapse(const TriMesh::Tuple& t, dou
     if (l < (4. / 5.) * L) return ((4. / 5.) * L - l);
     return -1;
 }
-double UniformRemeshing::compute_edge_cost_split(const TriMesh::Tuple& t, double L) const
+double IsotropicRemeshing::compute_edge_cost_split(const TriMesh::Tuple& t, double L) const
 {
     double l =
         (vertex_attrs[t.vid(*this)].pos - vertex_attrs[t.switch_vertex(*this).vid(*this)].pos)
@@ -344,7 +345,7 @@ double UniformRemeshing::compute_edge_cost_split(const TriMesh::Tuple& t, double
     return -1;
 }
 
-double UniformRemeshing::compute_vertex_valence(const TriMesh::Tuple& t) const
+double IsotropicRemeshing::compute_vertex_valence(const TriMesh::Tuple& t) const
 {
     std::vector<std::pair<TriMesh::Tuple, size_t>> valences(3);
     valences[0] = std::make_pair(t, get_valence_for_vertex(t));
@@ -381,7 +382,7 @@ double UniformRemeshing::compute_vertex_valence(const TriMesh::Tuple& t) const
     return (cost_before_swap - cost_after_swap);
 }
 
-std::vector<double> UniformRemeshing::average_len_valen()
+std::vector<double> IsotropicRemeshing::average_len_valen()
 {
     double average_len = 0.0;
     double average_valen = 0.0;
@@ -412,7 +413,7 @@ std::vector<double> UniformRemeshing::average_len_valen()
     return rtn;
 }
 
-std::vector<TriMesh::Tuple> UniformRemeshing::new_edges_after_swap(const TriMesh::Tuple& t) const
+std::vector<TriMesh::Tuple> IsotropicRemeshing::new_edges_after_swap(const TriMesh::Tuple& t) const
 {
     std::vector<TriMesh::Tuple> new_edges;
 
@@ -423,7 +424,7 @@ std::vector<TriMesh::Tuple> UniformRemeshing::new_edges_after_swap(const TriMesh
     return new_edges;
 }
 
-bool UniformRemeshing::collapse_remeshing(double L)
+bool IsotropicRemeshing::collapse_remeshing(double L)
 {
     igl::Timer timer;
     timer.start();
@@ -453,17 +454,17 @@ bool UniformRemeshing::collapse_remeshing(double L)
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<IsotropicRemeshing, ExecutionPolicy::kPartition>();
         executor.lock_vertices = edge_locker;
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<IsotropicRemeshing, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     }
 
     return true;
 }
-bool UniformRemeshing::split_remeshing(double L)
+bool IsotropicRemeshing::split_remeshing(double L)
 {
     igl::Timer timer;
     timer.start();
@@ -512,18 +513,18 @@ bool UniformRemeshing::split_remeshing(double L)
     };
 
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<IsotropicRemeshing, ExecutionPolicy::kPartition>();
         executor.lock_vertices = edge_locker;
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<IsotropicRemeshing, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     }
 
     return true;
 }
 
-bool UniformRemeshing::smooth_all_vertices()
+bool IsotropicRemeshing::smooth_all_vertices()
 {
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("vertex_smooth", loc);
@@ -534,20 +535,20 @@ bool UniformRemeshing::smooth_all_vertices()
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<IsotropicRemeshing, ExecutionPolicy::kPartition>();
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
             return m.try_set_vertex_mutex_one_ring(e, task_id);
         };
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<IsotropicRemeshing, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     }
 
     return true;
 }
 
-bool UniformRemeshing::swap_remeshing()
+bool IsotropicRemeshing::swap_remeshing()
 {
     igl::Timer timer;
     timer.start();
@@ -576,17 +577,17 @@ bool UniformRemeshing::swap_remeshing()
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<IsotropicRemeshing, ExecutionPolicy::kPartition>();
         executor.lock_vertices = edge_locker;
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<UniformRemeshing, ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<IsotropicRemeshing, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     }
 
     return true;
 }
-double area(UniformRemeshing& m, std::array<TriMesh::Tuple, 3>& verts)
+double area(IsotropicRemeshing& m, std::array<TriMesh::Tuple, 3>& verts)
 {
     return ((m.vertex_attrs[verts[0].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos)
                 .cross(m.vertex_attrs[verts[1].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos))
@@ -594,14 +595,14 @@ double area(UniformRemeshing& m, std::array<TriMesh::Tuple, 3>& verts)
            2.0;
 }
 
-Eigen::Vector3d normal(UniformRemeshing& m, std::array<TriMesh::Tuple, 3>& verts)
+Eigen::Vector3d normal(IsotropicRemeshing& m, std::array<TriMesh::Tuple, 3>& verts)
 {
     return ((m.vertex_attrs[verts[0].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos)
                 .cross(m.vertex_attrs[verts[1].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos))
         .normalized();
 }
 
-Eigen::Vector3d UniformRemeshing::smooth(const TriMesh::Tuple& t)
+Eigen::Vector3d IsotropicRemeshing::smooth(const TriMesh::Tuple& t)
 {
     auto one_ring_edges = get_one_ring_edges_for_vertex(t);
     if (one_ring_edges.size() < 3) return vertex_attrs[t.vid(*this)].pos;
@@ -624,7 +625,7 @@ Eigen::Vector3d UniformRemeshing::smooth(const TriMesh::Tuple& t)
     return after_smooth;
 }
 
-Eigen::Vector3d UniformRemeshing::tangential_smooth(const Tuple& t)
+Eigen::Vector3d IsotropicRemeshing::tangential_smooth(const Tuple& t)
 {
     auto one_ring_tris = get_one_ring_tris_for_vertex(t);
     if (one_ring_tris.size() < 2) return vertex_attrs[t.vid(*this)].pos;
@@ -659,7 +660,7 @@ Eigen::Vector3d UniformRemeshing::tangential_smooth(const Tuple& t)
 }
 
 
-bool UniformRemeshing::uniform_remeshing(double L, int iterations)
+bool IsotropicRemeshing::uniform_remeshing(double L, int iterations)
 {
     int cnt = 0;
     wmtk::logger().info("target len is: {}", L);
@@ -693,7 +694,7 @@ bool UniformRemeshing::uniform_remeshing(double L, int iterations)
     wmtk::logger().info("+++++++++finished+++++++++");
     return true;
 }
-bool UniformRemeshing::write_triangle_mesh(std::string path)
+bool IsotropicRemeshing::write_triangle_mesh(std::string path)
 {
     // write the collapsed mesh into a obj and assert the mesh is manifold
     Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vert_capacity(), 3);
@@ -716,3 +717,5 @@ bool UniformRemeshing::write_triangle_mesh(std::string path)
 
     return manifold;
 }
+
+} // namespace wmtk::components::isotropic_remeshing

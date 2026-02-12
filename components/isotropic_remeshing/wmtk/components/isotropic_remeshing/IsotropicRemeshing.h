@@ -1,4 +1,5 @@
 #pragma once
+
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/envelope/Envelope.hpp>
@@ -21,7 +22,8 @@
 #include <atomic>
 #include <memory>
 #include <queue>
-namespace app::remeshing {
+
+namespace wmtk::components::isotropic_remeshing {
 
 struct VertexAttributes
 {
@@ -31,7 +33,7 @@ struct VertexAttributes
     bool freeze = false;
 };
 
-class UniformRemeshing : public wmtk::TriMesh
+class IsotropicRemeshing : public wmtk::TriMesh
 {
 public:
     wmtk::SampleEnvelope m_envelope;
@@ -41,12 +43,12 @@ public:
     VertAttCol vertex_attrs;
 
     int retry_limit = 10;
-    UniformRemeshing(
+    IsotropicRemeshing(
         std::vector<Eigen::Vector3d> _m_vertex_positions,
         int num_threads = 1,
         bool use_exact = true);
 
-    ~UniformRemeshing() {}
+    ~IsotropicRemeshing() {}
 
     void create_mesh(
         size_t n_vertices,
@@ -123,4 +125,4 @@ public:
     bool write_triangle_mesh(std::string path);
 };
 
-} // namespace app::remeshing
+} // namespace wmtk::components::isotropic_remeshing

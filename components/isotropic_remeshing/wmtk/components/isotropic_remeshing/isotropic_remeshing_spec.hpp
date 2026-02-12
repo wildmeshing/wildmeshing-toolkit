@@ -2,12 +2,12 @@
 #include <nlohmann/json.hpp>
 namespace {
 
-nlohmann::json remeshing_spec = R"(
+nlohmann::json isotropic_remeshing_spec = R"(
 [
   {
     "pointer": "/",
     "type": "object",
-    "required": ["input"],
+    "required": ["application", "input"],
     "optional": [
       "output",
       "use_sample_envelope",
@@ -20,6 +20,12 @@ nlohmann::json remeshing_spec = R"(
       "log_file",
       "report"
     ]
+  },
+  {
+    "pointer": "/application",
+    "type": "string",
+    "options": ["isotropic_remeshing"],
+    "doc": "Application name must be isotropic_remeshing."
   },
   {
     "pointer": "/input",
@@ -66,7 +72,7 @@ nlohmann::json remeshing_spec = R"(
     "pointer": "/length_abs",
     "type": "float",
     "default": -1,
-    "doc": "Absolute target edge length. If negative, relative length is used to compute the absolute."
+    "doc": "Absolute target edge length. If negative, relative length is used to compute the absolute. If this is negative as well, the average edge length of the input is used as target."
   },
   {
     "pointer": "/freeze_boundary",

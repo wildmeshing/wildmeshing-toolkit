@@ -3,7 +3,6 @@ include(wmtk_data)
 include(jse)
 
 option(WMTK_APP_HARMTET "Harmonic Triangulation app" ON)
-option(WMTK_APP_UNIFORM_REMESH "uniform remesh for surfaces" ON)
 option(WMTK_APP_QSLIM "surface qslim simplification" ON)
 option(WMTK_APP_INTERIOR_TET_OPT "interior tet opt application" ON)
 
@@ -15,10 +14,6 @@ endif()
 
 if(WMTK_APP_HARMTET)
     add_subdirectory(harmonic_tet)
-endif()
-
-if(WMTK_APP_UNIFORM_REMESH)
-    add_subdirectory(remeshing)
 endif()
 
 if(WMTK_APP_QSLIM)
