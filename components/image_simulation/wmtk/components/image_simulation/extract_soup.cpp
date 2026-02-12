@@ -1,7 +1,7 @@
 #include "extract_soup.hpp"
 
 #include <igl/writeOFF.h>
-#include <sec/ShortestEdgeCollapse.h>
+//#include <sec/ShortestEdgeCollapse.h>
 #include <wmtk/utils/InsertTriangleUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Reader.hpp>
