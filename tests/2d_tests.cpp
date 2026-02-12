@@ -451,7 +451,7 @@ TEST_CASE("edge_collapse", "[test_2d_operation]")
 TEST_CASE("swap_operation", "[test_2d_operation]")
 {
     const std::string root(WMTK_DATA_DIR);
-    const std::string path = root + "/fan.obj";
+    const std::string path = root + "/models/fan.obj";
 
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;

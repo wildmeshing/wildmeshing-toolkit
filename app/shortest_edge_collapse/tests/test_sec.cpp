@@ -166,7 +166,7 @@ TEST_CASE("shortest_edge_collapse_closed_mesh", "[test_sec]")
         // then test on a cube
         // will have a tet in the end
         const std::string root(WMTK_DATA_DIR);
-        const std::string path = root + "/piece_0.obj";
+        const std::string path = root + "/models/piece_0.obj";
 
         Eigen::MatrixXd V;
         Eigen::MatrixXi F;
@@ -201,7 +201,7 @@ TEST_CASE("shortest_edge_collapse_closed_mesh", "[test_sec]")
 TEST_CASE("shortest_edge_collapse_octocat", "[test_sec][.slow]")
 {
     const std::string root(WMTK_DATA_DIR);
-    const std::string path = root + "/Octocat.obj";
+    const std::string path = root + "/models/Octocat.obj";
 
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
@@ -226,7 +226,7 @@ TEST_CASE("shortest_edge_collapse_octocat", "[test_sec][.slow]")
 TEST_CASE("edge_manifold", "[test_sec]")
 {
     const std::string root(WMTK_DATA_DIR);
-    const std::string path = root + "/circle.obj";
+    const std::string path = root + "/models/circle.obj";
 
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
@@ -251,7 +251,7 @@ TEST_CASE("edge_manifold", "[test_sec]")
 TEST_CASE("shortest_edge_collapse_circle", "[test_sec]")
 {
     const std::string root(WMTK_DATA_DIR);
-    const std::string path = root + "/circle.obj";
+    const std::string path = root + "/models/circle.obj";
 
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
@@ -281,7 +281,7 @@ TEST_CASE("shortest_edge_collapse_circle", "[test_sec]")
 TEST_CASE("metis_test_bigmesh", "[test_sec][.slow]")
 {
     const std::string root(WMTK_DATA_DIR);
-    const std::string path = root + "/circle.obj";
+    const std::string path = root + "/models/circle.obj";
 
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
