@@ -16,6 +16,9 @@ set(SRC_FILES
 
 	Parameters.h
 	ComponentSplitting.cpp
+	Spatial.cpp
+	Circle.hpp
+	Circle.cpp
 
 	topological_offset.hpp
 	topological_offset.cpp

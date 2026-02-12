@@ -22,12 +22,12 @@
 
 #include "topological_offset_spec.hpp"
 
-// Enables passing Eigen matrices to fmt/spdlog.
-template <typename T>
-struct fmt::formatter<T, std::enable_if_t<std::is_base_of_v<Eigen::DenseBase<T>, T>, char>>
-    : ostream_formatter
-{
-};
+// // Enables passing Eigen matrices to fmt/spdlog.
+// template <typename T>
+// struct fmt::formatter<T, std::enable_if_t<std::is_base_of_v<Eigen::DenseBase<T>, T>, char>>
+//     : ostream_formatter
+// {
+// };
 
 
 namespace wmtk::components::topological_offset {
@@ -59,6 +59,13 @@ void topological_offset(nlohmann::json json_params)
         params.sep_tag_vals.push_back(val);
     }
     params.offset_tag_val = json_params["offset_tag_val"];
+    params.target_distance = json_params["target_distance"];
+    params.relative_ball_threshold = json_params["relative_ball_threshold"];
+    if (params.relative_ball_threshold < 0.0 || params.relative_ball_threshold > 1.0) {
+        log_and_throw_error(
+            "Invalid relative_ball_threshold [{}], must be between 0 and 1.",
+            params.relative_ball_threshold);
+    }
     bool twoD = json_params["2d"];
     params.output_path = resolve_path(root, json_params["output"]).string();
 
@@ -101,6 +108,7 @@ void topological_offset(nlohmann::json json_params)
         // initialize mesh
         TopoOffsetTriMesh mesh(params, NUM_THREADS);
         mesh.init_from_image(V_input, F_input, F_input_tags, all_tag_labels);
+        mesh.init_input_complex_bvh();
         mesh.consolidate_mesh();
 
         // set initial counts
@@ -131,7 +139,31 @@ void topological_offset(nlohmann::json json_params)
 
         // perform offset
         logger().info("Performing offset...");
-        mesh.perform_offset();
+        if (mesh.m_params.target_distance <= 0.0) {
+            mesh.marching_tets_midpoint();
+            mesh.set_offset_tri_tags();
+        } else { // conservative growth
+            // run BFS, save after
+            mesh.grow_offset_conservative();
+            if (mesh.m_params.debug_output) {
+                mesh.set_offset_tri_tags();
+                mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
+            }
+
+            // simplicially embed again, if needed
+            if (!mesh.is_simplicially_embedded()) {
+                mesh.simplicial_embedding();
+                bool dummy = mesh.is_simplicially_embedded();
+            }
+            if (mesh.m_params.debug_output) {
+                mesh.set_offset_tri_tags();
+                mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
+            }
+
+            // marching tets
+            mesh.marching_tets_midpoint();
+            mesh.set_offset_tri_tags();
+        }
         mesh.consolidate_mesh();
 
         // stop timer

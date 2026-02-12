@@ -1,9 +1,13 @@
+#include <igl/point_simplex_squared_distance.h>
 #include <igl/predicates/predicates.h>
+#include <math.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/TriMesh.h>
 #include <wmtk/components/topological_offset/TopoOffsetMesh.h>
 #include <wmtk/components/topological_offset/TopoOffsetTriMesh.h>
 #include <catch2/catch_test_macros.hpp>
+#include <queue>
+#include <wmtk/components/topological_offset/Circle.hpp>
 
 using namespace wmtk;
 using namespace components::topological_offset;
@@ -620,3 +624,179 @@ TEST_CASE("invariant_2d", "[2d]")
         REQUIRE(mesh.invariants(tris));
     }
 }
+
+
+TEST_CASE("circle_tri_overlap", "[dist_growth][2d]")
+{
+    Eigen::MatrixXd V(3, 2);
+    V << 0, 0, 0, 1, 1, 0;
+    Eigen::MatrixXi F(1, 3);
+    F << 0, 1, 2;
+    Eigen::MatrixXd Tags(1, 1); // dont care
+    Tags << 0.0;
+
+    Parameters param;
+    param.tag_name = "dummy";
+    param.sep_tag_vals.push_back(1);
+    param.sep_tag_vals.push_back(4);
+    TopoOffsetTriMesh mesh(param, 0);
+    std::vector<std::string> tag_names(1, "dummy");
+    mesh.init_from_image(V, F, Tags, tag_names);
+
+    Circle circ1(Vector2d(1.0, 1.0), 0.5); // false
+    Circle circ2(Vector2d(0.55, 0.55), 0.5); // true
+    Circle circ3(Vector2d(0.2, 0.2), 0.1); // true
+    Circle circ4(Vector2d(0.2, 0.2), 1000.0); // true
+    Circle circ5(Vector2d(10.0, 10.0), 1.0); // false
+
+    REQUIRE(!circ1.overlaps_tri(mesh, 0));
+    REQUIRE(circ2.overlaps_tri(mesh, 0));
+    REQUIRE(circ3.overlaps_tri(mesh, 0));
+    REQUIRE(circ4.overlaps_tri(mesh, 0));
+    REQUIRE(!circ5.overlaps_tri(mesh, 0));
+}
+
+
+TEST_CASE("circle_refine", "[dist_growth][2d]")
+{
+    Circle c(Vector2d(0.0, 0.0), 1.0);
+    std::queue<Circle> q;
+    c.refine(q);
+    REQUIRE(q.size() == 4);
+
+    double r_new = q.front().radius();
+    REQUIRE(fabs(r_new - 0.5) < pow(10, -6));
+
+    Vector2d c1 = q.front().center();
+    REQUIRE(fabs(c1(0) + (1.0 / (2.0 * sqrt(2.0)))) < pow(10, -6));
+    REQUIRE(fabs(c1(1) + (1.0 / (2.0 * sqrt(2.0)))) < pow(10, -6));
+}
+
+
+TEST_CASE("circle_init", "[dist_growth][2d]")
+{
+    MatrixXd V(3, 2);
+    V << 0, 0, 1, 0, 0.5, 0.5 * sqrt(3.0);
+    MatrixXi F(1, 3);
+    F << 0, 1, 2;
+    Eigen::MatrixXd Tags(1, 1); // dont care
+    Tags << 0.0;
+
+    Parameters param;
+    param.tag_name = "dummy";
+    param.sep_tag_vals.push_back(1);
+    param.sep_tag_vals.push_back(4);
+    TopoOffsetTriMesh mesh(param, 0);
+    std::vector<std::string> tag_names(1, "dummy");
+    mesh.init_from_image(V, F, Tags, tag_names);
+
+    Circle circ(mesh, 0);
+    REQUIRE(fabs(circ.radius() - (sqrt(2.0) / 2.0)) < pow(10, -6));
+}
+
+
+TEST_CASE("dist_to_mesh", "[dist_growth][2d]")
+{
+    Eigen::MatrixXd V(3, 2);
+    V << 0, 0, 0, 1, 1, 0;
+    Eigen::MatrixXi F(1, 3);
+    F << 0, 1, 2;
+    Eigen::MatrixXd Tags(1, 1); // dont care
+    Tags << 0.0;
+
+    Parameters param;
+    param.tag_name = "dummy";
+    param.sep_tag_vals.push_back(1);
+    param.sep_tag_vals.push_back(4);
+    TopoOffsetTriMesh mesh(param, 0);
+    std::vector<std::string> tag_names(1, "dummy");
+    mesh.init_from_image(V, F, Tags, tag_names);
+
+    // label one vert as input
+    mesh.m_vertex_attribute[0].label = 1;
+    mesh.init_input_complex_bvh();
+    Vector2d q(1.0, 1.0);
+    double dist = mesh.dist_to_input_complex(q);
+    REQUIRE(fabs(dist - sqrt(2.0)) < pow(10, -6));
+
+    Vector2d q0(0.0, 0.0);
+    dist = mesh.dist_to_input_complex(q0);
+    REQUIRE(fabs(dist) < pow(10, -6));
+
+    // label edges and vertices as input
+    for (int i = 0; i < 3; i++) {
+        mesh.m_edge_attribute[i].label = 1;
+        mesh.m_vertex_attribute[i].label = 1;
+    }
+    mesh.init_input_complex_bvh();
+
+    Vector2d q1(1.0, 1.0);
+    dist = mesh.dist_to_input_complex(q1);
+    REQUIRE(fabs(dist - (sqrt(2) / 2.0)) < pow(10, -6));
+
+    Vector2d q2(0.0, 0.0);
+    dist = mesh.dist_to_input_complex(q2);
+    REQUIRE(fabs(dist) < pow(10, -6));
+
+    Vector2d q3(10.0, 0.0);
+    dist = mesh.dist_to_input_complex(q3);
+    REQUIRE(fabs(dist - 9.0) < pow(10, -6));
+}
+
+
+// TEST_CASE("simplex_dist", "[debug][2d]")
+// {
+//     MatrixXd V(3, 2);
+//     V << 0, 0, 1, 0, 0, 1;
+//     MatrixXi F(1, 3);
+//     F << 0, 1, 2;
+//     double distance;
+//     Vector2d closest_p;
+//     igl::point_simplex_squared_distance<2>(Vector2d(0.2, 0.2), V, F, 0, distance, closest_p);
+//     std::cout << distance << std::endl;
+//     std::cout << closest_p(0) << " " << closest_p(1) << std::endl;
+// }
+
+
+// TEST_CASE("hex_offset_debug", "[debug][2d]")
+// {
+//     MatrixXd V(10, 2);
+//     V.row(0) = Vector2d(0.0, 0.0);
+//     for (int i = 0; i < 6; i++) {
+//         double theta = (M_PI / 3.0) * i;
+//         V(i + 1, 0) = 2.5 * cos(theta);
+//         V(i + 1, 1) = 2.5 * sin(theta);
+//     }
+//     V.row(7) = Vector2d(-5.25, 0.433013);
+//     V.row(8) = Vector2d(-5.5, 0.866025);
+//     V.row(9) = Vector2d(-5.0, 0.866025);
+//     MatrixXi F(7, 3);
+//     F << 0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 6, 0, 6, 1, 7, 8, 9;
+//     MatrixXd Tags(7, 1);
+//     Tags.fill(128.0);
+
+//     Parameters param;
+//     param.tag_name = "dummy";
+//     param.sep_tag_vals.push_back(1);
+//     param.sep_tag_vals.push_back(4);
+//     param.target_distance = 3.1;
+//     TopoOffsetTriMesh mesh(param, 0);
+//     std::vector<std::string> tag_names(1, "dummy");
+//     mesh.init_from_image(V, F, Tags, tag_names);
+//     std::string path =
+//         "/Users/seb9449/Desktop/wildmeshing/image_sim/adaptive_growth/hex_offset_debug";
+//     mesh.write_vtu(path);
+
+//     // label input
+//     for (int i = 0; i < 6; i++) {
+//         simplex::Edge e(i + 1, ((i + 1) % 6) + 1);
+//         TriMesh::Tuple etup = mesh.get_tuple_from_edge(e);
+//         mesh.m_edge_attribute[etup.eid(mesh)].label = 1;
+//         mesh.m_vertex_attribute[etup.vid(mesh)].label = 1;
+//         mesh.m_vertex_attribute[etup.switch_vertex(mesh).vid(mesh)].label = 1;
+//     }
+//     mesh.write_input_complex(path + "_inputcomplex");
+
+//     bool res = mesh.tri_is_in_offset_conservative(6, 0.01 * 3.1);
+//     REQUIRE(!res);
+// }

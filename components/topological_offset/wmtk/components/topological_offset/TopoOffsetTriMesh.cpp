@@ -1,6 +1,7 @@
 #include "TopoOffsetTriMesh.h"
 #include <igl/predicates/predicates.h>
 #include <paraviewo/VTUWriter.hpp>
+#include <queue>
 #include <wmtk/utils/io.hpp>
 
 
@@ -102,18 +103,66 @@ void TopoOffsetTriMesh::init_from_image(
 }
 
 
+void TopoOffsetTriMesh::init_input_complex_bvh()
+{
+    m_input_complex_bvh.clear(); // in case resetting it now
+
+    // extract edges and isolated verts in input complex
+    std::vector<std::array<size_t, 2>> components;
+    auto edges = get_edges();
+    for (const Tuple& e : edges) {
+        if (m_edge_attribute[e.eid(*this)].label == 1) {
+            components.push_back({e.vid(*this), e.switch_vertex(*this).vid(*this)});
+        }
+    }
+
+    auto verts = get_vertices();
+    MatrixXd V(verts.size(), 2);
+    for (const Tuple& v : verts) {
+        size_t v_id = v.vid(*this);
+        V.row(v_id) = m_vertex_attribute[v_id].m_posf;
+
+        if (m_vertex_attribute[v_id].label != 1) {
+            continue;
+        }
+        auto inc_edges = get_one_ring_edges_for_vertex(v);
+        bool isolated = true;
+        for (const Tuple& e : inc_edges) {
+            if (m_edge_attribute[e.eid(*this)].label == 1) {
+                isolated = false;
+                break;
+            }
+        }
+        if (isolated) components.push_back({v_id, v_id});
+    }
+
+    MatrixXi E(components.size(), 2); // copy edges (and isolated vert 'psuedoedges')
+    int index = 0;
+    for (const auto& comp : components) {
+        E(index, 0) = comp[0];
+        E(index, 1) = comp[1];
+        index++;
+    }
+
+    m_input_complex_bvh.init(V, E, 1e-6);
+}
+
+
 bool TopoOffsetTriMesh::is_simplicially_embedded() const
 {
     int bad_tris = 0;
     auto tris = get_faces();
     for (const Tuple& f : tris) {
+        if (m_face_attribute[f.fid(*this)].label != 0) continue;
         bad_tris += (!tri_is_simp_emb(f));
     }
     if (bad_tris == 0) {
-        logger().info("\tBoundary simplicially embedded: TRUE");
+        logger().info("\tInput complex/offset simplicially embedded: TRUE");
         return true;
     } else {
-        logger().info("\tBoundary simplicially embedded: FALSE ({} bad tris)", bad_tris);
+        logger().info(
+            "\tInput complex/offset simplicially embedded: FALSE ({} bad tris)",
+            bad_tris);
         return false;
     }
 }
@@ -122,10 +171,15 @@ bool TopoOffsetTriMesh::is_simplicially_embedded() const
 bool TopoOffsetTriMesh::tri_is_simp_emb(const Tuple& t) const
 {
     size_t f_id = t.fid(*this);
+    if (m_face_attribute[f_id].label != 0) {
+        logger().warn("Non-background tri tested for simp emb");
+        return true;
+    }
+
     auto vs = oriented_tri_vids(f_id);
     std::vector<size_t> vs_in;
     for (int i = 0; i < 3; i++) {
-        if (m_vertex_attribute[vs[i]].label == 1) {
+        if (m_vertex_attribute[vs[i]].label != 0) {
             vs_in.push_back(vs[i]);
         }
     }
@@ -134,7 +188,7 @@ bool TopoOffsetTriMesh::tri_is_simp_emb(const Tuple& t) const
         return true;
     } else if (vs_in.size() == 2) { // potentially one edge in input
         size_t e_id = edge_id_from_simplex(simplex::Edge(vs_in[0], vs_in[1]));
-        return (m_edge_attribute[e_id].label == 1);
+        return (m_edge_attribute[e_id].label != 0);
     } else { // all 3 verts in input, cant be simplicially embedded
         return false;
     }
@@ -149,20 +203,20 @@ void TopoOffsetTriMesh::simplicial_embedding()
     for (const Tuple& f : tris) {
         size_t f_id = f.fid(*this);
         auto vs = oriented_tri_vids(f_id);
-        if (m_face_attribute[f_id].label != 1) {
+        if (m_face_attribute[f_id].label == 0) {
             bool to_split = true;
             for (int i = 0; i < 3; i++) {
                 size_t v1 = vs[i];
                 size_t v2 = vs[(i + 1) % 3];
                 size_t e_id = edge_id_from_simplex(simplex::Edge(v1, v2));
-                if (m_edge_attribute[e_id].label != 1) {
+                if (m_edge_attribute[e_id].label == 0) {
                     to_split = false;
                     break;
                 }
             }
 
             if (to_split) { // tri not in input but all edges are
-                tris_to_split.push_back(simplex::Face());
+                tris_to_split.push_back(simplex::Face(vs[0], vs[1], vs[2]));
             }
         }
     }
@@ -181,10 +235,10 @@ void TopoOffsetTriMesh::simplicial_embedding()
     auto edges = get_edges();
     for (const Tuple& e : edges) {
         size_t e_id = e.eid(*this);
-        if (m_edge_attribute[e_id].label != 1) {
+        if (m_edge_attribute[e_id].label == 0) {
             size_t v1_id = e.vid(*this);
             size_t v2_id = e.switch_vertex(*this).vid(*this);
-            if ((m_vertex_attribute[v1_id].label == 1) && (m_vertex_attribute[v2_id].label == 1)) {
+            if ((m_vertex_attribute[v1_id].label != 0) && (m_vertex_attribute[v2_id].label != 0)) {
                 edges_to_split.push_back(simplex::Edge(v1_id, v2_id));
             }
         }
@@ -200,16 +254,24 @@ void TopoOffsetTriMesh::simplicial_embedding()
 }
 
 
-void TopoOffsetTriMesh::perform_offset()
+void TopoOffsetTriMesh::marching_tets_midpoint()
 {
     // mark edges to split
     std::vector<simplex::Edge> e_to_split;
+    std::vector<size_t> frontier_verts; // the one-ring of these verts must be labelled offset
     auto edges = get_edges();
     for (const Tuple& e : edges) {
         size_t v1 = e.vid(*this);
         size_t v2 = e.switch_vertex(*this).vid(*this);
-        if ((m_vertex_attribute[v1].label + m_vertex_attribute[v2].label) == 1) {
+
+        // if one background and the other input/offset
+        if ((m_vertex_attribute[v1].label == 0) != (m_vertex_attribute[v2].label == 0)) {
             e_to_split.push_back(simplex::Edge(v1, v2));
+            if (m_vertex_attribute[v1].label != 0) { // frontier vert
+                frontier_verts.push_back(v1);
+            } else {
+                frontier_verts.push_back(v2);
+            }
         }
     }
 
@@ -218,29 +280,94 @@ void TopoOffsetTriMesh::perform_offset()
     sort_edges_by_length(e_to_split);
 
     // actually split edges
-    std::vector<Tuple> new_edges;
+    std::vector<Tuple> garbage;
     for (const simplex::Edge& e : e_to_split) {
         // split edge
-        new_edges.clear();
+        garbage.clear();
         Tuple t = get_tuple_from_edge(e);
-        split_edge(t, new_edges);
+        split_edge(t, garbage);
     }
 
-    // mark all offset tris (incident to any vert with label 1)
-    auto tris = get_faces();
-    for (const Tuple& f : tris) {
-        size_t f_id = f.fid(*this);
-        auto vs = oriented_tri_vids(f_id);
-        bool in_offset = false;
-        for (size_t v_id : vs) {
-            if (m_vertex_attribute[v_id].label == 1) {
-                in_offset = true;
-                break;
-            }
+    // mark all offset tris (incident to any vert with label 1 or 2)
+    for (const size_t v_id : frontier_verts) {
+        auto tris = get_one_ring_tris_for_vertex(tuple_from_vertex(v_id));
+        for (const Tuple& t : tris) {
+            m_face_attribute[t.fid(*this)].label = 2;
+        }
+    }
+}
+
+
+void TopoOffsetTriMesh::grow_offset_conservative()
+{
+    std::queue<Tuple> tris_q;
+    auto all_tris = get_faces();
+    // std::map<size_t, bool> visited;
+
+    for (const Tuple& f : all_tris) {
+        // visited[f.fid(*this)] = false; // initialize visited array
+        if (tri_consistent_topology(f.fid(*this))) {
+            tris_q.push(f);
+        }
+    }
+
+    int testing = 0;
+    while (!tris_q.empty()) {
+        testing++;
+        if (testing % 10000 == 0) {
+            logger().info("queue size: {}", tris_q.size());
         }
 
+        Tuple curr_tri = tris_q.front();
+        tris_q.pop();
+
+        size_t tri_id = curr_tri.fid(*this);
+        if (m_face_attribute[tri_id].label == 2) { // already in offset
+            continue;
+        }
+
+        // ensure tri doesn't change topology
+        if (!tri_consistent_topology(tri_id)) {
+            continue;
+        }
+
+        // if tri is within offset, include in front and for all edge adjacent tris, add to queue if
+        // adjacent to front via 2 or fewer edges
+        bool in_offset = tri_is_in_offset_conservative(
+            tri_id,
+            m_params.relative_ball_threshold * m_params.target_distance);
         if (in_offset) {
-            m_face_attribute[f_id].label = 2;
+            m_face_attribute[tri_id].label = 2;
+            auto vs = oriented_tri_vids(tri_id);
+            for (int i = 0; i < 3; i++) { // propagate labels to edges and verts
+                if (m_vertex_attribute[vs[i]].label != 1) {
+                    m_vertex_attribute[vs[i]].label = 2;
+                }
+                size_t e_id = tuple_from_edge(tri_id, i).eid(*this);
+                if (m_edge_attribute[e_id].label != 1) {
+                    m_edge_attribute[e_id].label = 2;
+                }
+            }
+
+            // collect edge adjacent faces, add to queue if they dont change topology
+            auto adj_tris = get_edge_adjacent_faces(curr_tri);
+            for (const Tuple& f : adj_tris) {
+                if (m_face_attribute[f.fid(*this)].label == 2) {
+                    continue;
+                }
+                tris_q.push(f);
+            }
+        }
+    }
+}
+
+
+void TopoOffsetTriMesh::set_offset_tri_tags()
+{
+    auto faces = get_faces();
+    for (const Tuple& f : faces) {
+        size_t f_id = f.fid(*this);
+        if (m_face_attribute[f_id].label == 2) {
             m_face_attribute[f_id].tags[m_toi_ind] = m_params.offset_tag_val;
         }
     }

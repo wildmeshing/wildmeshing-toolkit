@@ -17,6 +17,8 @@ nlohmann::json topological_offset_spec = R"(
       "tag_name",
       "sep_tag_vals",
       "offset_tag_val",
+      "target_distance",
+      "relative_ball_threshold",
       "save_vtu",
       "DEBUG_output"
     ]
@@ -47,12 +49,6 @@ nlohmann::json topological_offset_spec = R"(
     "doc": "Set to true if input is 2D triangle mesh"
   },
   {
-    "pointer": "/save_vtu",
-    "type": "bool",
-    "default": "false",
-    "doc": "Save .vtu of output mesh"
-  },
-  {
     "pointer": "/tag_name",
     "type": "string",
     "default": "tag_0",
@@ -77,6 +73,24 @@ nlohmann::json topological_offset_spec = R"(
     "type": "int",
     "default": 0,
     "doc": "Tag value to fill offset region"
+  },
+  {
+    "pointer": "/target_distance",
+    "type": "float",
+    "default": -1.0,
+    "doc": "Target distance for offset. If negative, no distance adaptation."
+  },
+  {
+    "pointer": "/relative_ball_threshold",
+    "type": "float",
+    "default": 0.1,
+    "doc": "Radius relative to target_distance to stop circle (2d) or sphere (3d) splitting in conservative distance approximation."
+  },
+  {
+    "pointer": "/save_vtu",
+    "type": "bool",
+    "default": "false",
+    "doc": "Save .vtu of output mesh"
   },
   {
     "pointer": "/DEBUG_output",
