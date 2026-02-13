@@ -1,14 +1,7 @@
 var searchData=
 [
-  ['vert_5fcapacity_0',['vert_capacity',['../classwmtk_1_1_tet_mesh.html#a204a973795d87f3b69a06cf699b400f2',1,'wmtk::TetMesh::vert_capacity()'],['../classwmtk_1_1_tri_mesh.html#a8f4722aa023014096691a82acb1fa1e8',1,'wmtk::TriMesh::vert_capacity()']]],
-  ['vertex_1',['Vertex',['../classwmtk_1_1simplex_1_1_vertex.html',1,'wmtk::simplex']]],
-  ['vertex_5fadjacent_5fboundary_5ffaces_2',['vertex_adjacent_boundary_faces',['../classwmtk_1_1_tet_mesh.html#afe4337bd64e1919a0e116949bfada886',1,'wmtk::TetMesh']]],
-  ['vertex_5fsize_3',['vertex_size',['../classwmtk_1_1_tet_mesh.html#aa01f98d58759678484cb37e13d035d68',1,'wmtk::TetMesh']]],
-  ['vertexattribute_4',['VertexAttribute',['../structapp_1_1interior__tet__opt_1_1_vertex_attribute.html',1,'app::interior_tet_opt']]],
-  ['vertexattributes_5',['vertexattributes',['../structapp_1_1qslim_1_1_vertex_attributes.html',1,'app::qslim::VertexAttributes'],['../structapp_1_1remeshing_1_1_vertex_attributes.html',1,'app::remeshing::VertexAttributes'],['../structapp_1_1sec_1_1_vertex_attributes.html',1,'app::sec::VertexAttributes'],['../structharmonic__tet_1_1_harmonic_tet_1_1_vertex_attributes.html',1,'harmonic_tet::HarmonicTet::VertexAttributes']]],
-  ['vertexconnectivity_6',['vertexconnectivity',['../classwmtk_1_1_tet_mesh_1_1_vertex_connectivity.html',1,'wmtk::TetMesh::VertexConnectivity'],['../classwmtk_1_1_tri_mesh_1_1_vertex_connectivity.html',1,'wmtk::TriMesh::VertexConnectivity']]],
-  ['vertexmutex_7',['vertexmutex',['../classwmtk_1_1_tri_mesh_1_1_vertex_mutex.html',1,'wmtk::TriMesh::VertexMutex'],['../classwmtk_1_1_tet_mesh_1_1_vertex_mutex.html',1,'wmtk::TetMesh::VertexMutex']]],
-  ['vertices_8',['vertices',['../classwmtk_1_1simplex_1_1_raw_simplex_collection.html#a1472f044afb9ce2a43599fb7ee3cbeb3',1,'wmtk::simplex::RawSimplexCollection']]],
-  ['via_20cmake_9',['via CMake',['../index.html#autotoc_md2',1,'']]],
-  ['vid_10',['vid',['../classwmtk_1_1_tet_mesh_1_1_tuple.html#acbb74bf154ffde866b0e83015e2fdd80',1,'wmtk::TetMesh::Tuple::vid()'],['../classwmtk_1_1_tri_mesh_1_1_tuple.html#aca27bf9b696588c5eebcd06b45f05f05',1,'wmtk::TriMesh::Tuple::vid()']]]
+  ['wildmeshing_20toolkit_3a_20declarative_20specification_20for_20unstructured_20mesh_20editing_20algorithms_0',['Wildmeshing-toolkit: Declarative Specification for Unstructured Mesh Editing Algorithms',['../index.html',1,'']]],
+  ['write_5fedges_1',['write_edges',['../classwmtk_1_1io_1_1_tet_v_t_u_writer.html#a15ada683bb3977684e69171f08fdcc2a',1,'wmtk::io::TetVTUWriter::write_edges()'],['../classwmtk_1_1io_1_1_tri_v_t_u_writer.html#a4053d887e2def1b077540951bc31e81f',1,'wmtk::io::TriVTUWriter::write_edges()']]],
+  ['write_5ftets_2',['write_tets',['../classwmtk_1_1io_1_1_tet_v_t_u_writer.html#a5c2e367ab03f0940e91195abc65d60be',1,'wmtk::io::TetVTUWriter']]],
+  ['write_5ftriangles_3',['write_triangles',['../classwmtk_1_1io_1_1_tet_v_t_u_writer.html#a6239f07c6babee792affa6f5cb58caec',1,'wmtk::io::TetVTUWriter::write_triangles()'],['../classwmtk_1_1io_1_1_tri_v_t_u_writer.html#a6806fb50bc931b36b61be4a1624411b1',1,'wmtk::io::TriVTUWriter::write_triangles()']]]
 ];
