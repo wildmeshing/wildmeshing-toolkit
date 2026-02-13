@@ -37,7 +37,15 @@ public:
     bool m_is_rounded = false;
 
     bool m_is_on_surface = false;
-    std::vector<int> on_bbox_faces; // same as is_bbox_fs?
+    /**
+     * The order of a vertex in a TetMesh is as follows:
+     * 0: vertex is not on the surface
+     * 1: vertex is on the surface
+     * 2: vertex is on the boundary of the surface or a non-manifold edge
+     * 3: vertex is at the boundary of a non-manifold edge or a non-manifold vertex
+     */
+    size_t m_order = 0;
+    std::vector<int> on_bbox_faces;
 
     double m_sizing_scalar = 1;
 
@@ -390,6 +398,7 @@ private:
         size_t v2_id;
         bool is_edge_on_surface = false;
         bool is_edge_open_boundary = false;
+        size_t edge_order = 0;
         std::vector<size_t> v1_param_type;
         std::vector<size_t> v2_param_type;
 
@@ -518,6 +527,58 @@ public:
     size_t count_vertex_links(const Tuple& v);
     size_t count_edge_links(const Tuple& e);
 
+public:
+    /**
+     * @brief Get all faces on the surface that are incident to vid.
+     */
+    simplex::RawSimplexCollection get_surface_faces_for_vertex(const size_t vid) const;
+    /**
+     * @brief Compute the number of faces on the surface incident to the edge.
+     */
+    size_t get_num_surface_faces_for_edge(const std::array<size_t, 2>& vids) const;
+    /**
+     * @brief Compute the order of an edge.
+     *
+     * The order of an edge in a TetMesh is as follows:
+     * 0: the edge is not on the surface
+     * 1: the edge is on the surface
+     * 2: the edge is on the surface boundary or non-manifold
+     */
+    size_t get_order_of_edge(const std::array<size_t, 2>& vids) const;
+    /**
+     * @brief Compute the order of a vertex.
+     *
+     * The order of a vertex in a TetMesh is as follows:
+     * 0: vertex is not on the surface
+     * 1: vertex is on the surface
+     * 2: vertex is on the surface boundary or a non-manifold edge
+     * 3: vertex is at the boundary of a non-manifold edge or a non-manifold vertex
+     */
+    size_t get_order_of_vertex(const size_t vid) const;
+    /**
+     * @brief Compute the vertex order for every vertex.
+     *
+     * This function relies on `get_order_of_edge`.
+     */
+    void init_vertex_order();
+    void init_vertex_order(const size_t vid);
+
+    /**
+     * @brief Link condition that also considers substructures.
+     *
+     * Implementation based on the pseudo code from the paper:
+     * Vivodtzev et. al. - Substructure Topology Preserving Simplification of Tetrahedral Meshes
+     *
+     * The math and the pseudo code in the paper contain errors! The theory itself is correct.
+     *
+     * The link condition must be evaluated for the mesh and all substructures (surfaces, lines,
+     * points). If there is a substructure simplex in the star, the simplex is extended with a dummy
+     * vertex (e.g., an edge becomes a face) and this extended simplex must also be considered for
+     * the link.
+     */
+    bool substructure_link_condition(const Tuple& e_tuple) const;
+
+public:
     // debug functions
     int orient3D(
         vol_rem::bigrational px,

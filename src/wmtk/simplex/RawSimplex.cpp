@@ -82,6 +82,15 @@ Face::Face(size_t v0, size_t v1, size_t v2)
     std::sort(m_vertices.begin(), m_vertices.end());
 }
 
+Face::Face(const Edge& e, size_t v2)
+{
+    m_vertices[0] = e.vertices()[0];
+    m_vertices[1] = e.vertices()[1];
+    m_vertices[2] = v2;
+    std::sort(m_vertices.begin(), m_vertices.end());
+}
+
+
 Edge Face::opposite_edge(const int64_t excluded_id) const
 {
     auto a = array_without<3>(m_vertices, excluded_id);
@@ -100,6 +109,24 @@ Vertex Face::opposite_vertex(const Edge& v) const
     return Vertex(a[0]);
 }
 
+bool Face::contains(const Edge& e) const
+{
+    bool found_v0 = false;
+    bool found_v1 = false;
+
+    // could be implemented smarter but should do the job
+    for (const size_t v : m_vertices) {
+        if (!found_v0 && v == e.vertices()[0]) {
+            found_v0 = true;
+        }
+        if (!found_v1 && v == e.vertices()[1]) {
+            found_v1 = true;
+        }
+    }
+
+    return found_v0 && found_v1;
+}
+
 Tet::Tet(size_t v0, size_t v1, size_t v2, size_t v3)
 {
     m_vertices[0] = v0;
@@ -108,6 +135,15 @@ Tet::Tet(size_t v0, size_t v1, size_t v2, size_t v3)
     m_vertices[3] = v3;
     std::sort(m_vertices.begin(), m_vertices.end());
 }
+Tet::Tet(const Face& f, size_t v3)
+{
+    m_vertices[0] = f.vertices()[0];
+    m_vertices[1] = f.vertices()[1];
+    m_vertices[2] = f.vertices()[2];
+    m_vertices[3] = v3;
+    std::sort(m_vertices.begin(), m_vertices.end());
+}
+
 
 Face Tet::opposite_face(const int64_t excluded_id) const
 {

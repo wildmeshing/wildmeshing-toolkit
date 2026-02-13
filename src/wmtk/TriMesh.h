@@ -501,11 +501,7 @@ public:
      *
      * @param t Tuple refering to an edge
      */
-    bool is_boundary_edge(const TriMesh::Tuple& t) const
-    {
-        if (!t.switch_face(*this).has_value()) return true;
-        return false;
-    }
+    bool is_boundary_edge(const TriMesh::Tuple& t) const { return t.switch_faces(*this).empty(); }
 
     /**
      * @brief check if the vertex that's represented by a Tuple is at the boundary of the mesh

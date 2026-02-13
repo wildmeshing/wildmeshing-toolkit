@@ -58,11 +58,13 @@ class Face : public RawSimplex<3>
 public:
     Face() = default;
     Face(size_t v0, size_t v1, size_t v2);
+    Face(const Edge& e, size_t v2);
     Face(const Face&) = default;
 
     Edge opposite_edge(const int64_t excluded_id) const;
     Edge opposite_edge(const Vertex& v) const;
     Vertex opposite_vertex(const Edge& e) const;
+    bool contains(const Edge& e) const;
 };
 
 class Tet : public RawSimplex<4>
@@ -70,6 +72,7 @@ class Tet : public RawSimplex<4>
 public:
     Tet() = default;
     Tet(size_t v0, size_t v1, size_t v2, size_t v3);
+    Tet(const Face& f, size_t v3);
     Tet(const Tet&) = default;
 
     Face opposite_face(const int64_t excluded_id) const;

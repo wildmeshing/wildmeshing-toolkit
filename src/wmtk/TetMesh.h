@@ -890,6 +890,7 @@ public:
      * @param vids Global vertex index of the face
      */
     std::tuple<Tuple, size_t> tuple_from_face(const std::array<size_t, 3>& vids) const;
+    std::tuple<Tuple, size_t> tuple_from_face(const simplex::Face& f) const;
 
     /**
      * @brief get a Tuple from global vertex index
@@ -912,6 +913,7 @@ public:
     Tuple tuple_from_vids(size_t vid0, size_t vid1, size_t vid2, size_t vid3) const;
 
     simplex::Tet simplex_from_tet(const Tuple& t) const;
+    simplex::Tet simplex_from_tet(const size_t tid) const;
 
     /**
      * @brief wrapper function from Tuple::switch_vertex
