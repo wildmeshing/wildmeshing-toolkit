@@ -28,6 +28,52 @@ struct fmt::formatter<T, std::enable_if_t<std::is_base_of_v<Eigen::DenseBase<T>,
 
 namespace wmtk::components::image_simulation {
 
+Matrix4d get_ijk2xyz(const nlohmann::json& json_params)
+{
+    const std::array<std::array<double, 4>, 4> ijk_to_ras = json_params["ijk_to_ras"];
+    Matrix4d ijk2ras;
+    for (size_t i = 0; i < 4; ++i) {
+        for (size_t j = 0; j < 4; ++j) {
+            ijk2ras(i, j) = ijk_to_ras[i][j];
+        }
+    }
+    logger().info("IJK to RAS:\n{}", ijk2ras);
+    /**
+     * R = -x
+     * A = z
+     * S = y
+     */
+    Matrix4d ras2xyz;
+    ras2xyz << -1, 0, 0, 0, //
+        0, 0, 1, 0, //
+        0, 1, 0, 0, //
+        0, 0, 0, 1;
+    Matrix4d ijk2xyz = ras2xyz * ijk2ras;
+
+    return ijk2xyz;
+}
+
+struct InputData
+{
+    MatrixXd V_input;
+    MatrixXr V_input_r;
+    MatrixXi T_input;
+    MatrixXi T_input_tag;
+
+    MatrixXd V_envelope;
+    MatrixXi F_envelope;
+};
+
+void run_3D(const nlohmann::json& json_params, const InputData& input)
+{
+    // TODO
+}
+
+void run_2D(const nlohmann::json& json_params, const InputData& input)
+{
+    // TODO
+}
+
 void image_simulation(nlohmann::json json_params)
 {
     using wmtk::utils::resolve_path;
@@ -63,10 +109,11 @@ void image_simulation(nlohmann::json json_params)
 
     Parameters params;
     params.output_path = resolve_path(root, json_params["output"]).string();
-    bool skip_simplify = json_params["skip_simplify"];
-    bool use_sample_envelope = json_params["use_sample_envelope"];
-    int NUM_THREADS = json_params["num_threads"];
-    int max_its = json_params["max_iterations"];
+    const bool skip_simplify = json_params["skip_simplify"];
+    const bool use_sample_envelope = json_params["use_sample_envelope"];
+    const int NUM_THREADS = json_params["num_threads"];
+    const int max_its = json_params["max_iterations"];
+    const std::string image_dimension = json_params["dimension"];
 
     params.epsr = json_params["eps_rel"];
     params.eps = json_params["eps"];
@@ -95,36 +142,17 @@ void image_simulation(nlohmann::json json_params)
     };
 
     // read image / MSH
-    MatrixXd V_input;
-    MatrixXr V_input_r;
-    MatrixXi T_input;
-    MatrixXi T_input_tag;
-
-    MatrixXd V_envelope;
-    MatrixXi F_envelope;
+    InputData input_data;
+    MatrixXd& V_input = input_data.V_input;
+    MatrixXr& V_input_r = input_data.V_input_r;
+    MatrixXi& T_input = input_data.T_input;
+    MatrixXi& T_input_tag = input_data.T_input_tag;
+    MatrixXd& V_envelope = input_data.V_envelope;
+    MatrixXi& F_envelope = input_data.F_envelope;
 
     if (std::filesystem::path(input_paths[0]).extension() != ".msh") {
         // convert images to tet mesh
-
-        const std::array<std::array<double, 4>, 4> ijk_to_ras = json_params["ijk_to_ras"];
-        Matrix4d ijk2ras;
-        for (size_t i = 0; i < 4; ++i) {
-            for (size_t j = 0; j < 4; ++j) {
-                ijk2ras(i, j) = ijk_to_ras[i][j];
-            }
-        }
-        logger().info("IJK to RAS:\n{}", ijk2ras);
-        /**
-         * R = -x
-         * A = z
-         * S = y
-         */
-        Matrix4d ras2xyz;
-        ras2xyz << -1, 0, 0, 0, //
-            0, 0, 1, 0, //
-            0, 1, 0, 0, //
-            0, 0, 0, 1;
-        Matrix4d ijk2xyz = ras2xyz * ijk2ras;
+        Matrix4d ijk2xyz = get_ijk2xyz(json_params);
 
         logger().info(
             "Converting images {} into mesh {}",

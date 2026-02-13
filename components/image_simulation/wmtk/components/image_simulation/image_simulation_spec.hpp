@@ -11,6 +11,7 @@ nlohmann::json image_simulation_spec = R"(
     "optional": [
       "output",
       "ijk_to_ras",
+      "dimension",
       "skip_simplify",
       "use_sample_envelope",
       "use_tetgen",
@@ -63,6 +64,13 @@ nlohmann::json image_simulation_spec = R"(
       [0, 0, 1, 0],
       [0, 0, 0, 1]
     ]
+  },
+  {
+    "pointer": "/dimension",
+    "type": "string",
+    "options": ["2D", "3D"],
+    "default": "3D",
+    "doc": "Image dimension."
   },
   {
     "pointer": "/ijk_to_ras/*",
