@@ -162,7 +162,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>    <span class="keyword">const</span> MatrixXd&amp; V,</div>
 <div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>    <span class="keyword">const</span> MatrixXi&amp; F,</div>
 <div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>    std::vector&lt;Vector3d&gt;&amp; vertices,</div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>    std::vector&lt;Vector3i&gt;&amp; faces)</div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>    std::vector&lt;std::array&lt;size_t, 3&gt;&gt;&amp; faces)</div>
 <div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>{</div>
 <div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>    vertices.resize(V.rows());</div>
 <div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>    faces.resize(F.rows());</div>
