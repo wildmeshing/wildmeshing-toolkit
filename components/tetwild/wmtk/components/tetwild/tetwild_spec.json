@@ -73,14 +73,14 @@
   {
     "pointer": "/max_iterations",
     "type": "int",
-    "default": 10,
+    "default": 80,
     "doc": "Maximum iterations before stopping."
   },
   {
     "pointer": "/filter",
     "type": "string",
     "options": ["flood", "input", "tracked", "none"],
-    "default": "tracked",
+    "default": "none",
     "doc": "Remove the outside region based on different criteria. 'flood': flood fill. 'input': winding number w.r.t. the input. 'tracked': winding number w.r.t. the tracked surface. 'none': Do not filter. Flood fill only works if the input is closed. Otherwise, it results in an empty mesh. Filtering w.r.t. the input might cause wrinkles along the surface as some tets might be falsely tagged. Filtering w.r.t. the tracked surface can lead to missing pieces if the input consists of multiple components."
   },
   {

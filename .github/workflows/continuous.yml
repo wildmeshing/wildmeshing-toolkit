@@ -54,9 +54,14 @@ jobs:
         run: |
           mkdir -p build
           cd build
+          WMTK_INTEGRATION_TESTS_FLAG=""
+          if [ "${{ matrix.config }}" = "Release" ]; then
+            WMTK_INTEGRATION_TESTS_FLAG="-DWMTK_BUILD_INTEGRATION_TESTS=ON"
+          fi
           cmake .. \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_BUILD_TYPE=${{ matrix.config }}
+            -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
+            ${WMTK_INTEGRATION_TESTS_FLAG}
 
       - name: Build
         run: cd build; make -j2; ccache --show-stats

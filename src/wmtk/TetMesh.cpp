@@ -538,6 +538,11 @@ std::tuple<TetMesh::Tuple, size_t> TetMesh::tuple_from_face(const std::array<siz
     // return std::make_tuple(face, global_fid);
 }
 
+std::tuple<TetMesh::Tuple, size_t> TetMesh::tuple_from_face(const simplex::Face& f) const
+{
+    return tuple_from_face(f.vertices());
+}
+
 TetMesh::Tuple TetMesh::tuple_from_edge(const std::array<size_t, 2>& vids) const
 {
     auto tets = set_intersection(
@@ -618,7 +623,12 @@ TetMesh::Tuple TetMesh::tuple_from_vids(size_t vid0, size_t vid1, size_t vid2, s
 
 simplex::Tet TetMesh::simplex_from_tet(const Tuple& t) const
 {
-    const auto v = oriented_tet_vids(t.tid(*this));
+    return simplex_from_tet(t.tid(*this));
+}
+
+simplex::Tet TetMesh::simplex_from_tet(const size_t tid) const
+{
+    const auto v = oriented_tet_vids(tid);
     const simplex::Tet tet(v[0], v[1], v[2], v[3]);
     return tet;
 }

@@ -18,9 +18,6 @@ cmake.args = [
   "-DCMAKE_INSTALL_DEFAULT_COMPONENT_NAME=python_bindings",
   "-DBUILD_TESTING=OFF",
   "-DWMTK_APP_HARMTET=OFF",
-  "-DWMTK_APP_UNIFORM_REMESH=ON",
-  "-DWMTK_APP_SEC=ON",
-  "-DWMTK_APP_QSLIM=OFF",
   "-DWMTK_APP_INTERIOR_TET_OPT=OFF",
 ]
 install.components = ["python_bindings"]

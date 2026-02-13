@@ -79,7 +79,7 @@ inline void VF_to_vectors(
     const MatrixXd& V,
     const MatrixXi& F,
     std::vector<Vector3d>& vertices,
-    std::vector<Vector3i>& faces)
+    std::vector<std::array<size_t, 3>>& faces)
 {
     vertices.resize(V.rows());
     faces.resize(F.rows());
