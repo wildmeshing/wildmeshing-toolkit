@@ -319,7 +319,7 @@ TEST_CASE("rand_mesh", "[manifold_check][slow]")
         double x = dist(engine);
         double y = dist(engine);
         double z = dist(engine);
-        Point3D p = {x, y, z};
+        Point3D p = {{x, y, z}};
         points.push_back(p);
     }
 
@@ -354,7 +354,7 @@ TEST_CASE("rand_mesh", "[manifold_check][slow]")
 
     // params for process
     Parameters params;
-    params.val_include_range = {0.5, 1.0};
+    params.val_include_range = {{0.5, 1.0}};
     params.manifold_union = false;
     ManExtractMesh mesh(params, 0);
 
