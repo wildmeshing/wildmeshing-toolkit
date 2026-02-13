@@ -21,7 +21,7 @@
 #include <wmtk/utils/Reader.hpp>
 #include <wmtk/utils/io.hpp>
 
-#include <sec/ShortestEdgeCollapse.h>
+#include <wmtk/components/shortest_edge_collapse/ShortestEdgeCollapse.h>
 
 #include "extract_soup.hpp"
 
@@ -740,7 +740,7 @@ void EmbedSurface::simplify_surface(const double eps)
     std::vector<Eigen::Vector3d> verts = V_surf_to_vector();
     std::vector<std::array<size_t, 3>> tris = F_surf_to_vector();
 
-    app::sec::ShortestEdgeCollapse surf_mesh(verts, 0, false);
+    shortest_edge_collapse::ShortestEdgeCollapse surf_mesh(verts, 0, false);
 
     // must be a small envelope to ensure correct tet tags later on
     surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, eps);

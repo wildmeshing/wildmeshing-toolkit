@@ -5,6 +5,7 @@
 #include <igl/read_triangle_mesh.h>
 #include <igl/remove_duplicate_vertices.h>
 #include <igl/remove_unreferenced.h>
+#include <filesystem>
 #include <wmtk/utils/ManifoldUtils.hpp>
 #include <wmtk/utils/predicates.hpp>
 
@@ -114,6 +115,9 @@ void stl_to_manifold_wmtk_input(
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     for (const std::string p : input_paths) {
+        if (!std::filesystem::exists(p)) {
+            log_and_throw_error("File {} does not exist", p);
+        }
         Eigen::MatrixXd V_single;
         Eigen::MatrixXi F_single;
         {

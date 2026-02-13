@@ -46,6 +46,7 @@ project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
 
 # ###############################################################################
 option(WMTK_BUILD_DOCS "Build doxygen" OFF)
+option(WMTK_BUILD_INTEGRATION_TESTS "Build integration tests (might take very long to run)" OFF) # off by default
 option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option due to use of TBB
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -142,17 +143,18 @@ endif()
 
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
+    # wmtk_app
+    add_subdirectory(app) # also contains python bindings
+    
     include(CTest)
-
+    
     # Unit tests
     if(BUILD_TESTING)
         enable_testing()
         add_subdirectory(tests)
     endif()
 
-    # wmtk_app
-    add_subdirectory(app) # also contains python bindings
-    # components (automatically added to the app)
+    # components (automatically added to the app and integration tests)
     add_subdirectory(components)
 endif()
 

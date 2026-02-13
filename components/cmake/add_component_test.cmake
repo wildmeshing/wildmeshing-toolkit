@@ -34,6 +34,7 @@ function(add_component_test COMPONENT_NAME)
         Catch2::Catch2WithMain
         wmtk::warnings 
         wmtk::toolkit
+        wmtk::data
     )
 
     # Group source files for IDEs
