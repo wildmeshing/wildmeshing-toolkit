@@ -1,11 +1,10 @@
-#include <igl/read_triangle_mesh.h>
-#include <qslim/QSLIM.h>
-
 #include <catch2/catch_test_macros.hpp>
 
-using namespace wmtk;
-using namespace app::qslim;
+#include <igl/read_triangle_mesh.h>
+#include <wmtk/components/qslim/QSlimMesh.h>
 
+using namespace wmtk;
+using namespace components::qslim;
 
 TEST_CASE("qec", "[test_qslim][.]")
 {
@@ -26,7 +25,7 @@ TEST_CASE("qec", "[test_qslim][.]")
     for (int i = 0; i < F.rows(); i++) {
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
-    QSLIM m(v);
+    QSlimMesh m(v);
     m.create_mesh(V.rows(), tri);
     REQUIRE(m.check_mesh_connectivity_validity());
     REQUIRE(m.collapse_qslim(V.rows() - 2));
@@ -55,7 +54,7 @@ TEST_CASE("qec_cost", "[test_qslim]")
     for (int i = 0; i < F.rows(); i++) {
         for (int j = 0; j < 3; j++) tri[i][j] = (size_t)F(i, j);
     }
-    QSLIM m(v);
+    QSlimMesh m(v);
     m.create_mesh(V.rows(), tri);
     auto edges = m.get_edges();
     Eigen::MatrixXd writem(edges.size(), 7);

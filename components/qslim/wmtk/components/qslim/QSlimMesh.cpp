@@ -1,4 +1,4 @@
-#include "QSLIM.h"
+#include "QSlimMesh.h"
 
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
@@ -7,11 +7,9 @@
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 
-using namespace wmtk;
-using namespace app::qslim;
+namespace wmtk::components::qslim {
 
-
-QSLIM::QSLIM(std::vector<Eigen::Vector3d> _m_vertex_positions, int num_threads)
+QSlimMesh::QSlimMesh(std::vector<Eigen::Vector3d> _m_vertex_positions, int num_threads)
 {
     p_vertex_attrs = &vertex_attrs;
     p_face_attrs = &face_attrs;
@@ -25,7 +23,7 @@ QSLIM::QSLIM(std::vector<Eigen::Vector3d> _m_vertex_positions, int num_threads)
     }
 }
 
-void QSLIM::set_freeze(TriMesh::Tuple& v)
+void QSlimMesh::set_freeze(TriMesh::Tuple& v)
 {
     for (auto e : get_one_ring_edges_for_vertex(v)) {
         if (is_boundary_edge(e)) {
@@ -35,7 +33,7 @@ void QSLIM::set_freeze(TriMesh::Tuple& v)
     }
 }
 
-void QSLIM::create_mesh(
+void QSlimMesh::create_mesh(
     size_t n_vertices,
     const std::vector<std::array<size_t, 3>>& tris,
     const std::vector<size_t>& frozen_verts,
@@ -80,7 +78,7 @@ void QSLIM::create_mesh(
     // }
 }
 
-void QSLIM::initiate_quadrics_for_face()
+void QSlimMesh::initiate_quadrics_for_face()
 {
     // initaite A, b, c for each traingle
     // auto faces = get_faces();
@@ -93,7 +91,7 @@ void QSLIM::initiate_quadrics_for_face()
     });
 }
 
-void QSLIM::initiate_quadrics_for_vertices()
+void QSlimMesh::initiate_quadrics_for_vertices()
 { // get one circle of faces and linearly add A,b, c
 
     for_each_vertex([&](auto& tup) {
@@ -116,7 +114,7 @@ void QSLIM::initiate_quadrics_for_vertices()
     });
 }
 
-void QSLIM::partition_mesh_morton()
+void QSlimMesh::partition_mesh_morton()
 {
     if (NUM_THREADS == 0) return;
     wmtk::logger().info("Number of parts: {} by morton", NUM_THREADS);
@@ -210,7 +208,7 @@ void QSLIM::partition_mesh_morton()
 
 // called in collapse_edge_after. update the quadric for v
 // adding the A, b , c for two vertices of the old edge and store at the vert_attr of new vertex
-void QSLIM::update_quadrics(const Tuple& new_v)
+void QSlimMesh::update_quadrics(const Tuple& new_v)
 {
     vertex_attrs[new_v.vid(*this)].Q = {
         cache.local().Q1.A + cache.local().Q2.A,
@@ -219,7 +217,7 @@ void QSLIM::update_quadrics(const Tuple& new_v)
 }
 
 // want to store the A, b, c for each face as face attribute
-Quadrics QSLIM::compute_quadric_for_face(const TriMesh::Tuple& f_tuple)
+Quadrics QSlimMesh::compute_quadric_for_face(const TriMesh::Tuple& f_tuple)
 {
     Quadrics Q;
     Eigen::Vector3d n = face_attrs[f_tuple.fid(*this)].n;
@@ -229,7 +227,7 @@ Quadrics QSLIM::compute_quadric_for_face(const TriMesh::Tuple& f_tuple)
     Q.c = d * d;
     return Q;
 }
-double QSLIM::compute_cost_for_e(const TriMesh::Tuple& v_tuple)
+double QSlimMesh::compute_cost_for_e(const TriMesh::Tuple& v_tuple)
 {
     // first get Q
     Quadrics& Q1 = vertex_attrs[v_tuple.vid(*this)].Q;
@@ -265,7 +263,7 @@ double QSLIM::compute_cost_for_e(const TriMesh::Tuple& v_tuple)
     return cost;
 }
 
-bool QSLIM::invariants(const std::vector<Tuple>& new_tris)
+bool QSlimMesh::invariants(const std::vector<Tuple>& new_tris)
 {
     if (m_has_envelope) {
         for (const Tuple& t : new_tris) {
@@ -282,7 +280,7 @@ bool QSLIM::invariants(const std::vector<Tuple>& new_tris)
     return true;
 }
 
-bool QSLIM::write_triangle_mesh(std::string path)
+bool QSlimMesh::write_triangle_mesh(std::string path)
 {
     Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vert_capacity(), 3);
     for (auto& t : get_vertices()) {
@@ -302,7 +300,7 @@ bool QSLIM::write_triangle_mesh(std::string path)
     return igl::write_triangle_mesh(path, V, F);
 }
 
-bool QSLIM::collapse_edge_before(const Tuple& t)
+bool QSlimMesh::collapse_edge_before(const Tuple& t)
 {
     if (!TriMesh::collapse_edge_before(t)) return false;
     if (vertex_attrs[t.vid(*this)].freeze || vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
@@ -317,7 +315,7 @@ bool QSLIM::collapse_edge_before(const Tuple& t)
 }
 
 
-bool QSLIM::collapse_edge_after(const TriMesh::Tuple& t)
+bool QSlimMesh::collapse_edge_after(const TriMesh::Tuple& t)
 {
     auto vid = t.vid(*this);
     vertex_attrs[vid].pos = cache.local().vbar;
@@ -328,7 +326,8 @@ bool QSLIM::collapse_edge_after(const TriMesh::Tuple& t)
 }
 
 
-std::vector<TriMesh::Tuple> QSLIM::new_edges_after(const std::vector<TriMesh::Tuple>& tris) const
+std::vector<TriMesh::Tuple> QSlimMesh::new_edges_after(
+    const std::vector<TriMesh::Tuple>& tris) const
 {
     std::vector<TriMesh::Tuple> new_edges;
     std::vector<TriMesh::Tuple> one_ring_verts;
@@ -348,7 +347,7 @@ std::vector<TriMesh::Tuple> QSLIM::new_edges_after(const std::vector<TriMesh::Tu
     return new_edges;
 }
 
-bool QSLIM::collapse_qslim(int target_vert_number)
+bool QSlimMesh::collapse_qslim(int target_vert_number)
 {
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     int starting_num = vert_capacity();
@@ -391,14 +390,16 @@ bool QSLIM::collapse_qslim(int target_vert_number)
     };
 
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<QSLIM, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<QSlimMesh, ExecutionPolicy::kPartition>();
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<QSLIM, ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<QSlimMesh, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
     }
     return true;
 }
+
+} // namespace wmtk::components::qslim

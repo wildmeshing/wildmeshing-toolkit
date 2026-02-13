@@ -3,7 +3,6 @@ include(wmtk_data)
 include(jse)
 
 option(WMTK_APP_HARMTET "Harmonic Triangulation app" ON)
-option(WMTK_APP_QSLIM "surface qslim simplification" ON)
 option(WMTK_APP_INTERIOR_TET_OPT "interior tet opt application" ON)
 
 option(WMTK_APP_UNIT_TESTS "unit tests for applications" ON)
@@ -14,10 +13,6 @@ endif()
 
 if(WMTK_APP_HARMTET)
     add_subdirectory(harmonic_tet)
-endif()
-
-if(WMTK_APP_QSLIM)
-    add_subdirectory(qslim)
 endif()
 
 # ###############################################################################

@@ -23,7 +23,7 @@
 #include <memory>
 #include <queue>
 
-namespace app::qslim {
+namespace wmtk::components::qslim {
 
 struct Quadrics
 {
@@ -51,7 +51,7 @@ struct EdgeAttributes
     Eigen::Vector3d vbar; // for quadrics computation
 };
 
-class QSLIM : public wmtk::TriMesh
+class QSlimMesh : public wmtk::TriMesh
 {
 public:
     // wmtk::ExactEnvelope m_envelope;
@@ -62,10 +62,10 @@ public:
     wmtk::AttributeCollection<EdgeAttributes> edge_attrs;
 
     int retry_limit = 10;
-    QSLIM(std::vector<Eigen::Vector3d> _m_vertex_positions, int num_threads = 1);
+    QSlimMesh(std::vector<Eigen::Vector3d> _m_vertex_positions, int num_threads = 1);
     void set_freeze(TriMesh::Tuple& v);
 
-    ~QSLIM() {}
+    ~QSlimMesh() {}
 
     void create_mesh(
         size_t n_vertices,
@@ -112,4 +112,4 @@ private:
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& t) const;
 };
 
-} // namespace app::qslim
+} // namespace wmtk::components::qslim

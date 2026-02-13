@@ -1,8 +1,13 @@
+#pragma once
+#include <nlohmann/json.hpp>
+namespace {
+
+nlohmann::json qslim_spec = R"(
 [
   {
     "pointer": "/",
     "type": "object",
-    "required": ["input"],
+    "required": ["application", "input"],
     "optional": [
       "output",
       "num_threads",
@@ -10,8 +15,15 @@
       "target_rel",
       "target_abs",
       "log_file",
-      "report"
+      "report",
+      "throw_on_fail"
     ]
+  },
+  {
+    "pointer": "/application",
+    "type": "string",
+    "options": ["qslim"],
+    "doc": "Application name must be qslim."
   },
   {
     "pointer": "/input",
@@ -59,5 +71,14 @@
     "type": "string",
     "default": "",
     "doc": "A JSON file that stores information about the result and the method execution, e.g., runtime."
+  },
+  {
+    "pointer": "/throw_on_fail",
+    "type": "bool",
+    "default": false,
+    "doc": "Throw exception if the output does not fulfil the desired criteria. No output will be generated."
   }
 ]
+)"_json;
+
+}

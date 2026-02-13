@@ -16,7 +16,7 @@ ExternalProject_Add(
     SOURCE_DIR ${WMTK_DATA_ROOT}
 
     GIT_REPOSITORY https://github.com/wildmeshing/data2.git
-    GIT_TAG 77961db68ed8c1c199807666c415fc9b1327468f
+    GIT_TAG 3033cda43fc0cc1f3339b7d7b8c51046ef4e6bc1
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
