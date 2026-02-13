@@ -254,11 +254,10 @@ void TopoOffsetTriMesh::simplicial_embedding()
 }
 
 
-void TopoOffsetTriMesh::marching_tets_midpoint()
+void TopoOffsetTriMesh::marching_tets()
 {
     // mark edges to split
     std::vector<simplex::Edge> e_to_split;
-    std::vector<size_t> frontier_verts; // the one-ring of these verts must be labelled offset
     auto edges = get_edges();
     for (const Tuple& e : edges) {
         size_t v1 = e.vid(*this);
@@ -266,26 +265,32 @@ void TopoOffsetTriMesh::marching_tets_midpoint()
 
         // if one background and the other input/offset
         if ((m_vertex_attribute[v1].label == 0) != (m_vertex_attribute[v2].label == 0)) {
-            e_to_split.push_back(simplex::Edge(v1, v2));
-            if (m_vertex_attribute[v1].label != 0) { // frontier vert
-                frontier_verts.push_back(v1);
-            } else {
-                frontier_verts.push_back(v2);
-            }
+            e_to_split.emplace_back(v1, v2);
         }
     }
 
     // sort edges by length
-    logger().info("\tSorting edges by length...");
-    sort_edges_by_length(e_to_split);
+    if (m_params.sorted_marching) {
+        logger().info("\tSorting edges by length...");
+        sort_edges_by_length(e_to_split);
+    }
 
     // actually split edges
     std::vector<Tuple> garbage;
+    std::vector<size_t> frontier_verts; // the one-ring of these verts must be labelled offset
     for (const simplex::Edge& e : e_to_split) {
+        // get vert of edge in offset
+        size_t v_in = e.vertices()[0];
+        if (m_vertex_attribute[v_in].label == 0) {
+            v_in = e.vertices()[1];
+        }
+
         // split edge
         garbage.clear();
         Tuple t = get_tuple_from_edge(e);
-        split_edge(t, garbage);
+        if (split_edge(t, garbage)) { // this should never fail
+            frontier_verts.push_back(v_in);
+        }
     }
 
     // mark all offset tris (incident to any vert with label 1 or 2)

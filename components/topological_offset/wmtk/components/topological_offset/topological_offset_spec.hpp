@@ -19,6 +19,8 @@ nlohmann::json topological_offset_spec = R"(
       "offset_tag_val",
       "target_distance",
       "relative_ball_threshold",
+      "edge_search_termination_len",
+      "sorted_marching",
       "save_vtu",
       "DEBUG_output"
     ]
@@ -45,7 +47,7 @@ nlohmann::json topological_offset_spec = R"(
   {
     "pointer": "/2d",
     "type": "bool",
-    "default": "false",
+    "default": false,
     "doc": "Set to true if input is 2D triangle mesh"
   },
   {
@@ -87,9 +89,21 @@ nlohmann::json topological_offset_spec = R"(
     "doc": "Radius relative to target_distance to stop circle (2d) or sphere (3d) splitting in conservative distance approximation."
   },
   {
+    "pointer": "/edge_search_termination_len",
+    "type": "float",
+    "default": 1e-3,
+    "doc": "Length below which binary search will be terminated for function-guided edge splitting"
+  },
+  {
+    "pointer": "/sorted_marching",
+    "type": "bool",
+    "default": false,
+    "doc": "Execute marching tets in decreasing order of edge length. Increases run time, may increase output mesh quality."
+  },
+  {
     "pointer": "/save_vtu",
     "type": "bool",
-    "default": "false",
+    "default": false,
     "doc": "Save .vtu of output mesh"
   },
   {

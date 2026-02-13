@@ -63,7 +63,7 @@ TEST_CASE("edge_split", "[split_op]")
     mesh.m_tet_attribute[0].label = T0_LABEL;
 
     // split edge
-    TetMesh::Tuple e = mesh.tuple_from_edge({1, 2});
+    TetMesh::Tuple e = mesh.tuple_from_edge({{1, 2}});
     std::vector<TetMesh::Tuple> garbage;
     mesh.split_edge(e, garbage);
 
@@ -78,39 +78,39 @@ TEST_CASE("edge_split", "[split_op]")
     // edges
     std::array<std::array<size_t, 3>, 9> edges = {
         {// {v0id, v1id, correct label}
-         {0, 1, E0_LABEL},
-         {0, 2, E2_LABEL},
-         {0, 3, E3_LABEL},
-         {0, 4, F0_LABEL},
-         {1, 3, E4_LABEL},
-         {1, 4, E1_LABEL},
-         {2, 3, E5_LABEL},
-         {2, 4, E1_LABEL},
-         {3, 4, F3_LABEL}}};
+         {{0, 1, E0_LABEL}},
+         {{0, 2, E2_LABEL}},
+         {{0, 3, E3_LABEL}},
+         {{0, 4, F0_LABEL}},
+         {{1, 3, E4_LABEL}},
+         {{1, 4, E1_LABEL}},
+         {{2, 3, E5_LABEL}},
+         {{2, 4, E1_LABEL}},
+         {{3, 4, F3_LABEL}}}};
     for (int i = 0; i < 9; i++) {
         size_t v0 = edges[i][0];
         size_t v1 = edges[i][1];
         int correct_label = edges[i][2];
-        int actual_label = mesh.m_edge_attribute[mesh.tuple_from_edge({v0, v1}).eid(mesh)].label;
+        int actual_label = mesh.m_edge_attribute[mesh.tuple_from_edge({{v0, v1}}).eid(mesh)].label;
         REQUIRE(actual_label == correct_label);
     }
 
     // faces
     std::array<std::array<size_t, 4>, 7> faces = {
-        {{0, 1, 3, F2_LABEL},
-         {0, 1, 4, F0_LABEL},
-         {0, 2, 3, F1_LABEL},
-         {0, 2, 4, F0_LABEL},
-         {0, 3, 4, T0_LABEL},
-         {1, 3, 4, F3_LABEL},
-         {2, 3, 4, F3_LABEL}}};
+        {{{0, 1, 3, F2_LABEL}},
+         {{0, 1, 4, F0_LABEL}},
+         {{0, 2, 3, F1_LABEL}},
+         {{0, 2, 4, F0_LABEL}},
+         {{0, 3, 4, T0_LABEL}},
+         {{1, 3, 4, F3_LABEL}},
+         {{2, 3, 4, F3_LABEL}}}};
     for (int i = 0; i < 7; i++) {
         size_t v0 = faces[i][0];
         size_t v1 = faces[i][1];
         size_t v2 = faces[i][2];
         int correct_label = faces[i][3];
         int actual_label =
-            mesh.m_face_attribute[std::get<1>(mesh.tuple_from_face({v0, v1, v2}))].label;
+            mesh.m_face_attribute[std::get<1>(mesh.tuple_from_face({{v0, v1, v2}}))].label;
         REQUIRE(correct_label == actual_label);
     }
 
@@ -152,7 +152,7 @@ TEST_CASE("face_split", "[split_op]")
     mesh.m_tet_attribute[0].label = T0_LABEL;
 
     // split face
-    auto [ftup, _] = mesh.tuple_from_face({1, 2, 3});
+    auto [ftup, _] = mesh.tuple_from_face({{1, 2, 3}});
     std::vector<TetMesh::Tuple> garbage;
     mesh.split_face(ftup, garbage);
 
@@ -167,43 +167,43 @@ TEST_CASE("face_split", "[split_op]")
     // edges
     std::array<std::array<size_t, 3>, 10> edges = {
         {// {v0id, v1id, correct label}
-         {0, 1, E0_LABEL},
-         {0, 2, E2_LABEL},
-         {0, 3, E3_LABEL},
-         {0, 4, T0_LABEL},
-         {1, 2, E1_LABEL},
-         {1, 3, E4_LABEL},
-         {1, 4, F3_LABEL},
-         {2, 3, E5_LABEL},
-         {2, 4, F3_LABEL},
-         {3, 4, F3_LABEL}}};
+         {{0, 1, E0_LABEL}},
+         {{0, 2, E2_LABEL}},
+         {{0, 3, E3_LABEL}},
+         {{0, 4, T0_LABEL}},
+         {{1, 2, E1_LABEL}},
+         {{1, 3, E4_LABEL}},
+         {{1, 4, F3_LABEL}},
+         {{2, 3, E5_LABEL}},
+         {{2, 4, F3_LABEL}},
+         {{3, 4, F3_LABEL}}}};
     for (int i = 0; i < 9; i++) {
         size_t v0 = edges[i][0];
         size_t v1 = edges[i][1];
         int correct_label = edges[i][2];
-        int actual_label = mesh.m_edge_attribute[mesh.tuple_from_edge({v0, v1}).eid(mesh)].label;
+        int actual_label = mesh.m_edge_attribute[mesh.tuple_from_edge({{v0, v1}}).eid(mesh)].label;
         REQUIRE(actual_label == correct_label);
     }
 
     // faces
     std::array<std::array<size_t, 4>, 9> faces = {
         {// {v0id, v1id, v2id, correct label}
-         {0, 1, 2, F0_LABEL},
-         {0, 1, 3, F2_LABEL},
-         {0, 1, 4, T0_LABEL},
-         {0, 2, 3, F1_LABEL},
-         {0, 2, 4, T0_LABEL},
-         {0, 3, 4, T0_LABEL},
-         {1, 2, 4, F3_LABEL},
-         {1, 3, 4, F3_LABEL},
-         {2, 3, 4, F3_LABEL}}};
+         {{0, 1, 2, F0_LABEL}},
+         {{0, 1, 3, F2_LABEL}},
+         {{0, 1, 4, T0_LABEL}},
+         {{0, 2, 3, F1_LABEL}},
+         {{0, 2, 4, T0_LABEL}},
+         {{0, 3, 4, T0_LABEL}},
+         {{1, 2, 4, F3_LABEL}},
+         {{1, 3, 4, F3_LABEL}},
+         {{2, 3, 4, F3_LABEL}}}};
     for (int i = 0; i < 7; i++) {
         size_t v0 = faces[i][0];
         size_t v1 = faces[i][1];
         size_t v2 = faces[i][2];
         int correct_label = faces[i][3];
         int actual_label =
-            mesh.m_face_attribute[std::get<1>(mesh.tuple_from_face({v0, v1, v2}))].label;
+            mesh.m_face_attribute[std::get<1>(mesh.tuple_from_face({{v0, v1, v2}}))].label;
         REQUIRE(correct_label == actual_label);
     }
 
@@ -260,44 +260,44 @@ TEST_CASE("tet_split", "[split_op]")
     // edges
     std::array<std::array<size_t, 3>, 10> edges = {
         {// {v0id, v1id, correct label}
-         {0, 1, E0_LABEL},
-         {0, 2, E2_LABEL},
-         {0, 3, E3_LABEL},
-         {0, 4, T0_LABEL},
-         {1, 2, E1_LABEL},
-         {1, 3, E4_LABEL},
-         {1, 4, T0_LABEL},
-         {2, 3, E5_LABEL},
-         {2, 4, T0_LABEL},
-         {3, 4, T0_LABEL}}};
+         {{0, 1, E0_LABEL}},
+         {{0, 2, E2_LABEL}},
+         {{0, 3, E3_LABEL}},
+         {{0, 4, T0_LABEL}},
+         {{1, 2, E1_LABEL}},
+         {{1, 3, E4_LABEL}},
+         {{1, 4, T0_LABEL}},
+         {{2, 3, E5_LABEL}},
+         {{2, 4, T0_LABEL}},
+         {{3, 4, T0_LABEL}}}};
     for (int i = 0; i < 9; i++) {
         size_t v0 = edges[i][0];
         size_t v1 = edges[i][1];
         int correct_label = edges[i][2];
-        int actual_label = mesh.m_edge_attribute[mesh.tuple_from_edge({v0, v1}).eid(mesh)].label;
+        int actual_label = mesh.m_edge_attribute[mesh.tuple_from_edge({{v0, v1}}).eid(mesh)].label;
         REQUIRE(actual_label == correct_label);
     }
 
     // faces
     std::array<std::array<size_t, 4>, 10> faces = {
         {// {v0id, v1id, v2id, correct label}
-         {0, 1, 2, F0_LABEL},
-         {0, 1, 3, F2_LABEL},
-         {0, 1, 4, T0_LABEL},
-         {0, 2, 3, F1_LABEL},
-         {0, 2, 4, T0_LABEL},
-         {0, 3, 4, T0_LABEL},
-         {1, 2, 3, F3_LABEL},
-         {1, 2, 4, T0_LABEL},
-         {1, 3, 4, T0_LABEL},
-         {2, 3, 4, T0_LABEL}}};
+         {{0, 1, 2, F0_LABEL}},
+         {{0, 1, 3, F2_LABEL}},
+         {{0, 1, 4, T0_LABEL}},
+         {{0, 2, 3, F1_LABEL}},
+         {{0, 2, 4, T0_LABEL}},
+         {{0, 3, 4, T0_LABEL}},
+         {{1, 2, 3, F3_LABEL}},
+         {{1, 2, 4, T0_LABEL}},
+         {{1, 3, 4, T0_LABEL}},
+         {{2, 3, 4, T0_LABEL}}}};
     for (int i = 0; i < 7; i++) {
         size_t v0 = faces[i][0];
         size_t v1 = faces[i][1];
         size_t v2 = faces[i][2];
         int correct_label = faces[i][3];
         int actual_label =
-            mesh.m_face_attribute[std::get<1>(mesh.tuple_from_face({v0, v1, v2}))].label;
+            mesh.m_face_attribute[std::get<1>(mesh.tuple_from_face({{v0, v1, v2}}))].label;
         REQUIRE(correct_label == actual_label);
     }
 

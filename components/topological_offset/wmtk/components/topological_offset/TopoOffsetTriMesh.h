@@ -35,13 +35,21 @@ public:
 
 class TopoOffsetTriMesh : public wmtk::TriMesh
 {
+public: // mode for splitting in marching tets
+    enum class EdgeSplitMode {
+        Midpoint = 0,
+        BinarySearch =
+            1 // requires that every edge being split has one vertex labelled 0 and the other 1 or 2
+    };
+
 public:
     int m_vtu_counter = 0;
-    std::array<size_t, 3> m_init_counts = {0, 0, 0};
+    std::array<size_t, 3> m_init_counts = {{0, 0, 0}};
     std::vector<std::string> m_all_tag_names;
     size_t m_tags_count;
     int m_toi_ind; // index of tag of interest
     SimpleBVH::BVH m_input_complex_bvh;
+    EdgeSplitMode m_edge_split_mode = EdgeSplitMode::Midpoint;
 
     Parameters& m_params;
 
@@ -72,6 +80,7 @@ public:
     void init_input_complex_bvh();
 
     // splitting
+    void edge_split_binary_search(const size_t v1, const size_t v2, Vector2d& p_new) const;
     bool split_edge_before(const Tuple& t) override;
     bool split_edge_after(const Tuple& t) override;
     bool split_face_before(const Tuple& t) override;
@@ -87,7 +96,7 @@ public:
     bool tri_consistent_topology(const size_t f_id) const;
     bool tri_is_in_offset_conservative(const size_t f_id, const double threshold_r) const;
     void grow_offset_conservative();
-    void marching_tets_midpoint();
+    void marching_tets();
 
     // set tag for offset region
     void set_offset_tri_tags();
@@ -142,10 +151,10 @@ private: // helpers
             [this](const simplex::Edge& e1, const simplex::Edge& e2) {
                 double len1 = (m_vertex_attribute[e1.vertices()[0]].m_posf -
                                m_vertex_attribute[e1.vertices()[1]].m_posf)
-                                  .norm();
+                                  .squaredNorm();
                 double len2 = (m_vertex_attribute[e2.vertices()[0]].m_posf -
                                m_vertex_attribute[e2.vertices()[1]].m_posf)
-                                  .norm();
+                                  .squaredNorm();
                 return len1 > len2;
             });
     }

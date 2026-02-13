@@ -53,7 +53,7 @@ class TopoOffsetMesh : public wmtk::TetMesh
 {
 public:
     int m_vtu_counter = 0;
-    std::array<size_t, 4> m_init_counts = {0, 0, 0, 0};
+    std::array<size_t, 4> m_init_counts = {{0, 0, 0, 0}};
     std::vector<std::string> m_all_tag_names;
     size_t m_tags_count;
     int m_toi_ind; // index of tag of interest

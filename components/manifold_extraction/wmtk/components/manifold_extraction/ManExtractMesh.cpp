@@ -327,7 +327,7 @@ bool ManExtractMesh::is_boundary_vertex(size_t vid) const
             size_t v2 = vs[(i + 1) % 4];
             size_t v3 = vs[(i + 2) % 4];
             if ((v1 == vid) || (v2 == vid) || (v3 == vid)) {
-                auto [ftup, _] = tuple_from_face({v1, v2, v3});
+                auto [ftup, _] = tuple_from_face({{v1, v2, v3}});
                 if (!ftup.switch_tetrahedron(*this)) { // is boundary face
                     return true;
                 }
@@ -351,7 +351,7 @@ std::vector<simplex::Face> ManExtractMesh::get_boundary_faces_for_out_tets(size_
             size_t v1 = vs[i];
             size_t v2 = vs[(i + 1) % 4];
             size_t v3 = vs[(i + 2) % 4];
-            auto [ftup, _] = tuple_from_face({v1, v2, v3});
+            auto [ftup, _] = tuple_from_face({{v1, v2, v3}});
             if (!ftup.switch_tetrahedron(*this)) { // boundary face
                 b_out_faces.push_back(simplex::Face(v1, v2, v3));
             }
@@ -390,10 +390,10 @@ bool ManExtractMesh::tet_is_simp_emb(const Tuple& t) const
     if (vs_in.size() <= 1) { // nothing or just one vertex in input
         return true;
     } else if (vs_in.size() == 2) { // potentially one edge in input
-        size_t glob_eid = tuple_from_edge({vs_in[0], vs_in[1]}).eid(*this);
+        size_t glob_eid = tuple_from_edge({{vs_in[0], vs_in[1]}}).eid(*this);
         return (m_edge_attribute[glob_eid].label == 1);
     } else if (vs_in.size() == 3) { // potentially one face in input
-        auto [_, glob_fid] = tuple_from_face({vs_in[0], vs_in[1], vs_in[2]});
+        auto [_, glob_fid] = tuple_from_face({{vs_in[0], vs_in[1], vs_in[2]}});
         return (m_face_attribute[glob_fid].label == 1);
     } else { // potentially four faces in input
         return false;
@@ -414,7 +414,7 @@ void ManExtractMesh::simplicial_embedding()
                 size_t v1 = vs[i];
                 size_t v2 = vs[(i + 1) % 4];
                 size_t v3 = vs[(i + 2) % 4];
-                auto [_, glob_fid] = tuple_from_face({v1, v2, v3});
+                auto [_, glob_fid] = tuple_from_face({{v1, v2, v3}});
                 if (m_face_attribute[glob_fid].label != 1) {
                     to_split = false;
                 }
@@ -445,7 +445,7 @@ void ManExtractMesh::simplicial_embedding()
             for (int i = 0; i < 3; i++) {
                 size_t v1 = vs[i];
                 size_t v2 = vs[(i + 1) % 3];
-                size_t glob_eid = tuple_from_edge({v1, v2}).eid(*this);
+                size_t glob_eid = tuple_from_edge({{v1, v2}}).eid(*this);
                 if (m_edge_attribute[glob_eid].label != 1) {
                     to_split = false;
                 }
@@ -460,7 +460,7 @@ void ManExtractMesh::simplicial_embedding()
     // actually split faces
     for (const simplex::Face& f : faces_to_split) {
         const auto& vs = f.vertices();
-        auto [t, _] = tuple_from_face({vs[0], vs[1], vs[2]});
+        auto [t, _] = tuple_from_face({{vs[0], vs[1], vs[2]}});
         std::vector<Tuple> garbage;
         split_face(t, garbage);
     }

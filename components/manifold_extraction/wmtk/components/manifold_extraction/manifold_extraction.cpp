@@ -20,12 +20,12 @@
 
 #include "manifold_extraction_spec.hpp"
 
-// Enables passing Eigen matrices to fmt/spdlog.
-template <typename T>
-struct fmt::formatter<T, std::enable_if_t<std::is_base_of_v<Eigen::DenseBase<T>, T>, char>>
-    : ostream_formatter
-{
-};
+// // Enables passing Eigen matrices to fmt/spdlog.
+// template <typename T>
+// struct fmt::formatter<T, std::enable_if_t<std::is_base_of_v<Eigen::DenseBase<T>, T>, char>>
+//     : ostream_formatter
+// {
+// };
 
 
 namespace wmtk::components::manifold_extraction {
@@ -34,7 +34,6 @@ namespace wmtk::components::manifold_extraction {
 void manifold_extraction(nlohmann::json json_params)
 {
     using wmtk::utils::resolve_path;
-    using Tuple = TetMesh::Tuple;
 
     // verify input and inject defaults
     {
@@ -181,11 +180,9 @@ void manifold_extraction(nlohmann::json json_params)
     fout << "time: " << time << std::endl;
     fout.close();
 
-    // mesh.write_msh(output_filename.string() + ".msh");
-
     // write output surface
     logger().info("Write {}", output_filename.string());
-    igl::write_triangle_mesh(output_filename, V_out_reduced, F_out_reduced);
+    igl::write_triangle_mesh(output_filename.string(), V_out_reduced, F_out_reduced);
 
     // write vtu
     if (mesh.m_params.debug_output) {

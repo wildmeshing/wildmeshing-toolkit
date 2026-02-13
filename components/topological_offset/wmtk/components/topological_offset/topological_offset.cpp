@@ -61,6 +61,8 @@ void topological_offset(nlohmann::json json_params)
     params.offset_tag_val = json_params["offset_tag_val"];
     params.target_distance = json_params["target_distance"];
     params.relative_ball_threshold = json_params["relative_ball_threshold"];
+    params.edge_search_term_len = json_params["edge_search_termination_len"];
+    params.sorted_marching = json_params["sorted_marching"];
     if (params.relative_ball_threshold < 0.0 || params.relative_ball_threshold > 1.0) {
         log_and_throw_error(
             "Invalid relative_ball_threshold [{}], must be between 0 and 1.",
@@ -140,7 +142,7 @@ void topological_offset(nlohmann::json json_params)
         // perform offset
         logger().info("Performing offset...");
         if (mesh.m_params.target_distance <= 0.0) {
-            mesh.marching_tets_midpoint();
+            mesh.marching_tets();
             mesh.set_offset_tri_tags();
         } else { // conservative growth
             // run BFS, save after
@@ -160,8 +162,10 @@ void topological_offset(nlohmann::json json_params)
                 mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
             }
 
-            // marching tets
-            mesh.marching_tets_midpoint();
+            // marching tets (using binary search edge split)
+            mesh.m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::BinarySearch;
+            mesh.marching_tets();
+            mesh.m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Midpoint;
             mesh.set_offset_tri_tags();
         }
         mesh.consolidate_mesh();
