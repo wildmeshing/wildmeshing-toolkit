@@ -1,8 +1,8 @@
 
 
 #include <igl/write_triangle_mesh.h>
-#include <sec/ShortestEdgeCollapse.h>
 #include <wmtk/TetMesh.h>
+#include <wmtk/components/shortest_edge_collapse/ShortestEdgeCollapse.h>
 #include <wmtk/components/tetwild/Parameters.h>
 #include <wmtk/components/tetwild/TetWildMesh.h>
 
@@ -113,7 +113,7 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation][.]")
     // wmtk::logger().info("end insertion");
 }
 
-TEST_CASE("vertex_order", "[tetwild][.]")
+TEST_CASE("vertex_order", "[tetwild]")
 {
     using Tuple = TetMesh::Tuple;
 
@@ -209,7 +209,7 @@ TEST_CASE("vertex_order", "[tetwild][.]")
     params.preserve_topology = true;
     params.init(vertices, faces);
 
-    app::sec::ShortestEdgeCollapse surf_mesh(vertices, 0);
+    components::shortest_edge_collapse::ShortestEdgeCollapse surf_mesh(vertices, 0);
     {
         std::vector<size_t> frozen_verts;
         surf_mesh.create_mesh(vertices.size(), faces, frozen_verts, 0.1);

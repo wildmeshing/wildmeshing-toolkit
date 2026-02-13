@@ -570,6 +570,11 @@ public:
      * Vivodtzev et. al. - Substructure Topology Preserving Simplification of Tetrahedral Meshes
      *
      * The math and the pseudo code in the paper contain errors! The theory itself is correct.
+     *
+     * The link condition must be evaluated for the mesh and all substructures (surfaces, lines,
+     * points). If there is a substructure simplex in the star, the simplex is extended with a dummy
+     * vertex (e.g., an edge becomes a face) and this extended simplex must also be considered for
+     * the link.
      */
     bool substructure_link_condition(const Tuple& e_tuple) const;
 

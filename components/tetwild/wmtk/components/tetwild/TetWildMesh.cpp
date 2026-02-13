@@ -1913,9 +1913,12 @@ bool TetWildMesh::substructure_link_condition(const Tuple& e_tuple) const
     constexpr size_t w_id = -1; // dummy vertex
     const Vertex w(w_id);
 
-
-    // v1 links
     const RawSimplexCollection u_surface_faces = get_surface_faces_for_vertex(u_id);
+    const RawSimplexCollection v_surface_faces = get_surface_faces_for_vertex(v_id);
+    const RawSimplexCollection e_surface_faces =
+        RawSimplexCollection::get_intersection(u_surface_faces, v_surface_faces);
+
+    // vertex u links
     {
         const Vertex u(u_id);
 
@@ -1925,48 +1928,49 @@ bool TetWildMesh::substructure_link_condition(const Tuple& e_tuple) const
         for (const size_t tid : u_locs) {
             const Tet tet = simplex_from_tet(tid);
             const Face f = tet.opposite_face(u);
-            link_u_0.add(f);
-            link_u_0.add(RawSimplexCollection::faces_from_simplex(f));
+            link_u_0.add_with_faces(f);
         }
 
-        RawSimplexCollection u_surface_edges;
+        link_u_1.reserve_edges(u_surface_faces.faces().size());
+        link_u_1.reserve_vertices(u_surface_faces.faces().size() * 2);
+
+        RawSimplexCollection order2_edges;
         for (const Face& f : u_surface_faces.faces()) {
             const Tet tw(f, w_id);
 
             const Face fw = tw.opposite_face(u);
-            link_u_0.add(fw);
-            link_u_0.add(RawSimplexCollection::faces_from_simplex(fw));
+            link_u_0.add_with_faces(fw);
 
             const Edge e_opp = f.opposite_edge(u);
-            link_u_1.add(e_opp);
-            link_u_1.add(RawSimplexCollection::faces_from_simplex(e_opp));
+            link_u_1.add_with_faces(e_opp);
 
-            // collect edges adjacent to u
-            u_surface_edges.add(Edge(u_id, e_opp.vertices()[0]));
-            u_surface_edges.add(Edge(u_id, e_opp.vertices()[1]));
+            const auto& [ev0, ev1] = e_opp.vertices();
+
+            // collect order 2 edges
+            if (u_order > 1 || get_order_of_vertex(ev0) > 1) {
+                const Edge e0(u_id, ev0);
+                if (get_order_of_edge(e0.vertices()) > 1) {
+                    order2_edges.add(e0);
+                }
+            }
+            if (u_order > 1 || get_order_of_vertex(ev1) > 1) {
+                const Edge e1(u_id, ev1);
+                if (get_order_of_edge(e1.vertices()) > 1) {
+                    order2_edges.add(e1);
+                }
+            }
         }
-        u_surface_edges.sort_and_clean();
-        for (const Edge& e : u_surface_edges.edges()) {
-            if (get_order_of_vertex(e.vertices()[0]) < 2 &&
-                get_order_of_vertex(e.vertices()[1]) < 2) {
-                continue;
-            }
-            const size_t e_order = get_order_of_edge(e.vertices());
-            if (e_order < 2) {
-                continue;
-            }
+        order2_edges.sort_and_clean();
+        for (const Edge& e : order2_edges.edges()) {
             const Face fw(e, w_id);
             const Edge ew = fw.opposite_edge(u);
-            link_u_0.add(ew);
-            link_u_0.add(RawSimplexCollection::faces_from_simplex(ew));
-            link_u_1.add(ew);
-            link_u_1.add(RawSimplexCollection::faces_from_simplex(ew));
+            link_u_0.add_with_faces(ew);
+            link_u_1.add_with_faces(ew);
         }
         link_u_0.sort_and_clean();
         link_u_1.sort_and_clean();
     }
-    // v2 links
-    const RawSimplexCollection v_surface_faces = get_surface_faces_for_vertex(v_id);
+    // vertex v links
     {
         const Vertex v(v_id);
 
@@ -1976,42 +1980,44 @@ bool TetWildMesh::substructure_link_condition(const Tuple& e_tuple) const
         for (const size_t tid : v_locs) {
             const Tet tet = simplex_from_tet(tid);
             const Face f = tet.opposite_face(v);
-            link_v_0.add(f);
-            link_v_0.add(RawSimplexCollection::faces_from_simplex(f));
+            link_v_0.add_with_faces(f);
         }
 
-        RawSimplexCollection v_surface_edges;
+        link_v_1.reserve_edges(v_surface_faces.faces().size());
+        link_v_1.reserve_vertices(v_surface_faces.faces().size() * 2);
+
+        RawSimplexCollection order2_edges;
         for (const Face& f : v_surface_faces.faces()) {
             const Tet tw(f, w_id);
 
             const Face fw = tw.opposite_face(v);
-            link_v_0.add(fw);
-            link_v_0.add(RawSimplexCollection::faces_from_simplex(fw));
+            link_v_0.add_with_faces(fw);
 
             const Edge e_opp = f.opposite_edge(v);
-            link_v_1.add(e_opp);
-            link_v_1.add(RawSimplexCollection::faces_from_simplex(e_opp));
+            link_v_1.add_with_faces(e_opp);
 
-            // collect edges adjacent to v
-            v_surface_edges.add(Edge(v_id, e_opp.vertices()[0]));
-            v_surface_edges.add(Edge(v_id, e_opp.vertices()[1]));
+            const auto& [ev0, ev1] = e_opp.vertices();
+
+            // collect order 2 edges
+            if (v_order > 1 || get_order_of_vertex(ev0) > 1) {
+                const Edge e0(v_id, ev0);
+                if (get_order_of_edge(e0.vertices()) > 1) {
+                    order2_edges.add(e0);
+                }
+            }
+            if (v_order > 1 || get_order_of_vertex(ev1) > 1) {
+                const Edge e1(v_id, ev1);
+                if (get_order_of_edge(e1.vertices()) > 1) {
+                    order2_edges.add(e1);
+                }
+            }
         }
-        v_surface_edges.sort_and_clean();
-        for (const Edge& e : v_surface_edges.edges()) {
-            if (get_order_of_vertex(e.vertices()[0]) < 2 &&
-                get_order_of_vertex(e.vertices()[1]) < 2) {
-                continue;
-            }
-            const size_t e_order = get_order_of_edge(e.vertices());
-            if (e_order < 2) {
-                continue;
-            }
+        order2_edges.sort_and_clean();
+        for (const Edge& e : order2_edges.edges()) {
             const Face fw(e, w_id);
             const Edge ew = fw.opposite_edge(v);
-            link_v_0.add(ew);
-            link_v_0.add(RawSimplexCollection::faces_from_simplex(ew));
-            link_v_1.add(ew);
-            link_v_1.add(RawSimplexCollection::faces_from_simplex(ew));
+            link_v_0.add_with_faces(ew);
+            link_v_1.add_with_faces(ew);
         }
         link_v_0.sort_and_clean();
         link_v_1.sort_and_clean();
@@ -2025,18 +2031,15 @@ bool TetWildMesh::substructure_link_condition(const Tuple& e_tuple) const
         for (const size_t tid : e_locs) {
             const Tet tet = simplex_from_tet(tid);
             const Edge e_opp = tet.opposite_edge(e);
-            link_e_0.add(e_opp);
-            link_e_0.add(RawSimplexCollection::faces_from_simplex(e_opp));
+            link_e_0.add_with_faces(e_opp);
         }
 
-        const RawSimplexCollection e_surface_faces =
-            RawSimplexCollection::get_intersection(u_surface_faces, v_surface_faces);
+        link_e_1.reserve_vertices(e_surface_faces.size());
 
         for (const Face& f : e_surface_faces.faces()) {
             const Tet tw(f, w_id);
             const Edge e_opp = tw.opposite_edge(e);
-            link_e_0.add(e_opp);
-            link_e_0.add(RawSimplexCollection::faces_from_simplex(e_opp));
+            link_e_0.add_with_faces(e_opp);
             link_e_1.add(f.opposite_vertex(e));
         }
 
