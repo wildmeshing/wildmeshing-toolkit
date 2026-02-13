@@ -9,7 +9,7 @@ using namespace wmtk;
 TEST_CASE("optimize_mesh", "[test_runner]")
 {
     const std::string root(WMTK_DATA_DIR);
-    const std::string path = root + "/Octocat.obj";
+    const std::string path = root + "/models/Octocat.obj";
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     bool ok = igl::read_triangle_mesh(path, V, F);
