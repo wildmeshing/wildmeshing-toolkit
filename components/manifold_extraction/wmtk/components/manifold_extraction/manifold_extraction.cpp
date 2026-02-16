@@ -20,12 +20,12 @@
 
 #include "manifold_extraction_spec.hpp"
 
-// Enables passing Eigen matrices to fmt/spdlog.
-template <typename T>
-struct fmt::formatter<T, std::enable_if_t<std::is_base_of_v<Eigen::DenseBase<T>, T>, char>>
-    : ostream_formatter
-{
-};
+// // Enables passing Eigen matrices to fmt/spdlog.
+// template <typename T>
+// struct fmt::formatter<T, std::enable_if_t<std::is_base_of_v<Eigen::DenseBase<T>, T>, char>>
+//     : ostream_formatter
+// {
+// };
 
 
 namespace wmtk::components::manifold_extraction {
@@ -34,7 +34,6 @@ namespace wmtk::components::manifold_extraction {
 void manifold_extraction(nlohmann::json json_params)
 {
     using wmtk::utils::resolve_path;
-    using Tuple = TetMesh::Tuple;
 
     // verify input and inject defaults
     {
@@ -156,10 +155,11 @@ void manifold_extraction(nlohmann::json json_params)
     MatrixXi I; // index map, don't actually need
     MatrixXi B; // dummy variable
     igl::remove_unreferenced(V_out, F_out, V_out_reduced, F_out_reduced, I);
-    logger().info("\tSurface edge manifoldness check: {}", igl::is_edge_manifold(F_out_reduced));
-    logger().info(
-        "\tSurface vertex manifoldness check: {}",
-        igl::is_vertex_manifold(F_out_reduced, B));
+    if (!(igl::is_edge_manifold(F_out_reduced) && igl::is_vertex_manifold(F_out_reduced, B))) {
+        log_and_throw_error("Extracted surface is not manifold.");
+    } else {
+        logger().info("Extracted surface manifold check: PASSED");
+    }
 
     // stop timer
     double time = timer.getElapsedTime();
@@ -181,11 +181,9 @@ void manifold_extraction(nlohmann::json json_params)
     fout << "time: " << time << std::endl;
     fout.close();
 
-    // mesh.write_msh(output_filename.string() + ".msh");
-
     // write output surface
     logger().info("Write {}", output_filename.string());
-    igl::write_triangle_mesh(output_filename, V_out_reduced, F_out_reduced);
+    igl::write_triangle_mesh(output_filename.string(), V_out_reduced, F_out_reduced);
 
     // write vtu
     if (mesh.m_params.debug_output) {
