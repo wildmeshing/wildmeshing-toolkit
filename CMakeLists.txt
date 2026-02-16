@@ -46,6 +46,7 @@ project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
 
 # ###############################################################################
 option(WMTK_BUILD_DOCS "Build doxygen" OFF)
+option(WMTK_BUILD_INTEGRATION_TESTS "Build integration tests (might take very long to run)" OFF) # off by default
 option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option due to use of TBB
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -71,12 +72,19 @@ include(fenvelope)
 include(nanoflann)
 
 include(simple_bvh)
+include(pybind11)
+include(pybind11_json)
 
 # Sort projects inside the solution
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Generate position independent code by default
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+option(WMTK_PYBIND "Generate python bindings" ON)
+if(WMTK_PYBIND)
+    include(pybind11)
+endif()
 
 # ###############################################################################
 # WildMeshingToolkit library
@@ -126,13 +134,6 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
 
 if(MSVC)
     target_compile_options(wildmeshing_toolkit PUBLIC /MP)
-    # target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/GL>)
-    # target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/LTCG>)
-    # target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/Ob2>) # inline whenever suitable
-    # target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/Ot>) # favor faster code over binary size
-    # target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELEASE>:/GL>)
-    # target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELEASE>:/LTCG>)
-    # target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELEASE>:/Ot>)
     target_compile_definitions(wildmeshing_toolkit PUBLIC _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS)
 endif()
 
@@ -142,13 +143,18 @@ endif()
 
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
-    # Unit tests
-    enable_testing()
-    add_subdirectory(tests)
-
     # wmtk_app
-    add_subdirectory(app)
-    # components (automatically added to the app)
+    add_subdirectory(app) # also contains python bindings
+    
+    include(CTest)
+    
+    # Unit tests
+    if(BUILD_TESTING)
+        enable_testing()
+        add_subdirectory(tests)
+    endif()
+
+    # components (automatically added to the app and integration tests)
     add_subdirectory(components)
 endif()
 

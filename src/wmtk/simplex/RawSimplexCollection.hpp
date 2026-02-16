@@ -35,12 +35,32 @@ public:
     /**
      * @brief Add simplex to the collection.
      *
-     * There is no sorting or any check if the vertex already exists
+     * There is no sorting or any check if the simplex already exists.
      */
     void add(const Vertex& s) { m_v.emplace_back(s); }
     void add(const Edge& s) { m_e.emplace_back(s); }
     void add(const Face& s) { m_f.emplace_back(s); }
     void add(const Tet& s) { m_t.emplace_back(s); }
+    /**
+     * @brief Add the simplex and its faces to the collection.
+     *
+     * There is no sorting or any check if the simplex already exists.
+     */
+    void add_with_faces(const Edge& s)
+    {
+        add(s);
+        add(faces_from_simplex(s));
+    }
+    void add_with_faces(const Face& s)
+    {
+        add(s);
+        add(faces_from_simplex(s));
+    }
+    void add_with_faces(const Tet& s)
+    {
+        add(s);
+        add(faces_from_simplex(s));
+    }
 
     void add(const RawSimplexCollection& simplex_collection);
 
@@ -108,7 +128,12 @@ public:
     template <int N>
     static RawSimplexCollection faces_from_simplex(const RawSimplex<N>& simplex);
 
+    std::vector<Face> faces_with_edge(const Edge& e) const;
+
     size_t size() const;
+
+    bool operator==(const RawSimplexCollection& that) const;
+    bool operator!=(const RawSimplexCollection& that) const;
 
 private:
     std::vector<Vertex> m_v;

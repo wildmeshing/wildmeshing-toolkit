@@ -36,6 +36,9 @@ endif()
 add_library(GKlib STATIC ${INC_FILES} ${SRC_FILES})
 add_library(GKlib::GKlib ALIAS GKlib)
 
+# Enable position-independent code for static library to allow linking into shared objects
+set_target_properties(GKlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 if(MSVC)
     target_compile_definitions(GKlib PUBLIC USE_GKREGEX)
     target_compile_definitions(GKlib PUBLIC "__thread=__declspec(thread)")

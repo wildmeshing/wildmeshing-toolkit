@@ -52,20 +52,6 @@ void TetWildMesh::mesh_improvement(int max_its)
     // TODO: refactor to eliminate repeated partition.
     //
 
-    // rounding
-    // std::atomic_int cnt_round(0);
-    // std::atomic_int cnt_valid(0);
-
-    // auto vertices = get_vertices();
-    // for (auto v : vertices) {
-    //     // debug code
-    //     if (v.is_valid(*this)) cnt_valid++;
-
-    //     if (round(v)) cnt_round++;
-    // }
-
-    // wmtk::logger().info("cnt_round {}/{}", cnt_round, cnt_valid);
-
     compute_vertex_partition_morton();
 
     // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
@@ -84,11 +70,11 @@ void TetWildMesh::mesh_improvement(int max_its)
         auto [max_energy, avg_energy] = local_operations({{1, 1, 1, 1}});
 
         ///energy check
-        wmtk::logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
+        wmtk::logger().info("max energy {:.6} | stop {:.6}", max_energy, m_params.stop_energy);
         if (max_energy < m_params.stop_energy) break;
         consolidate_mesh();
 
-        wmtk::logger().info("v {} t {}", vert_capacity(), tet_capacity());
+        wmtk::logger().info("#V = {}, #T = {}", vert_capacity(), tet_capacity());
 
         auto cnt_round = 0, cnt_verts = 0;
         TetMesh::for_each_vertex([&](auto& v) {
@@ -172,7 +158,7 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
             const auto vi = oriented_tet_vids(i);
             std::array<int, 4> v;
             for (size_t j = 0; j < 4; ++j) {
-                v[j] = vi[j];
+                v[j] = (int)vi[j];
             }
             legacy_tetwild.tets.emplace_back(v);
         }
@@ -266,7 +252,7 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
             v.is_on_surface = VA.m_is_on_surface;
             v.is_rounded = VA.m_is_rounded;
             for (const size_t tid : get_one_ring_tids_for_vertex(i)) {
-                v.conn_tets.insert(tid);
+                v.conn_tets.insert((int)tid);
             }
         }
     }
@@ -464,7 +450,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
                 wmtk::logger().info("==splitting {}==", n);
                 split_all_edges();
                 wmtk::logger().info(
-                    "#vertices {}, #tets {} after split",
+                    "#V = {}, #T = {} after split",
                     get_vertices().size(),
                     get_tets().size());
                 // auto faces = get_faces();
@@ -490,7 +476,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
                 wmtk::logger().info("==collapsing {}==", n);
                 collapse_all_edges(collapse_limit_length);
                 wmtk::logger().info(
-                    "#vertices {}, #tets {} after collapse",
+                    "#V = {}, #T = {} after collapse",
                     get_vertices().size(),
                     get_tets().size());
                 // auto faces = get_faces();
@@ -514,7 +500,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
         } else if (i == 2) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==swapping {}==", n);
-                int cnt_success = 0;
+                size_t cnt_success = 0;
                 cnt_success += swap_all_edges_all();
                 // cnt_success += swap_all_edges_56();
                 // cnt_success += swap_all_edges_44();
@@ -548,7 +534,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
     energy = get_max_avg_energy();
     wmtk::logger().info("max energy = {:.6}", std::get<0>(energy));
     wmtk::logger().info("avg energy = {:.6}", std::get<1>(energy));
-    wmtk::logger().info("time = {}", timer.getElapsedTime());
+    wmtk::logger().info("time = {:.4}s", timer.getElapsedTime());
 
 
     return energy;
@@ -556,7 +542,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
 
 bool TetWildMesh::adjust_sizing_field_serial(double max_energy)
 {
-    wmtk::logger().info("#vertices {}, #tets {}", vert_capacity(), tet_capacity());
+    wmtk::logger().info("#V {}, #T {}", vert_capacity(), tet_capacity());
 
     const double stop_filter_energy = m_params.stop_energy * 0.8;
     double filter_energy = std::max(max_energy / 100, stop_filter_energy);
@@ -755,11 +741,13 @@ void TetWildMesh::compute_winding_number(
         V.resize(vertices.size(), 3);
         F.resize(faces.size(), 3);
 
-        for (int i = 0; i < V.rows(); i++) {
+        for (size_t i = 0; i < (size_t)V.rows(); i++) {
             V.row(i) = vertices[i];
         }
-        for (int i = 0; i < F.rows(); i++) {
-            for (auto j = 0; j < 3; j++) F(i, j) = faces[i][j];
+        for (size_t i = 0; i < (size_t)F.rows(); i++) {
+            for (size_t j = 0; j < 3; j++) {
+                F(i, j) = (int)faces[i][j];
+            }
         }
     } else { // use track to filter
         auto outface = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
@@ -770,7 +758,7 @@ void TetWildMesh::compute_winding_number(
         }
         F.resize(outface.size(), 3);
         for (auto i = 0; i < outface.size(); i++) {
-            F.row(i) << outface[i][0], outface[i][1], outface[i][2];
+            F.row(i) << (int)outface[i][0], (int)outface[i][1], (int)outface[i][2];
         }
         // wmtk::logger().info("Output face size {}", outface.size());
         auto F0 = F;
@@ -956,7 +944,7 @@ void TetWildMesh::output_faces(std::string file, std::function<bool(const FaceAt
     }
     Eigen::MatrixXi matF(outface.size(), 3);
     for (auto i = 0; i < outface.size(); i++) {
-        matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
+        matF.row(i) << (int)outface[i][0], (int)outface[i][1], (int)outface[i][2];
     }
     wmtk::logger().info("Output face size {}", outface.size());
     igl::write_triangle_mesh(file, matV, matF);
@@ -1195,7 +1183,7 @@ bool TetWildMesh::invariants(const std::vector<Tuple>& tets)
 }
 
 std::vector<std::array<size_t, 3>> TetWildMesh::get_faces_by_condition(
-    std::function<bool(const FaceAttributes&)> cond)
+    std::function<bool(const FaceAttributes&)> cond) const
 {
     auto res = std::vector<std::array<size_t, 3>>();
     for (auto f : get_faces()) {
@@ -1280,7 +1268,7 @@ bool TetWildMesh::is_vertex_on_boundary(const size_t e0)
             continue;
         }
         int cnt = 0;
-        for (int t_id : e0_tids) {
+        for (size_t t_id : e0_tids) {
             const auto vs = oriented_tet_vids(t_id);
             std::array<int, 4> opp_js; // DZ: all vertices that are adjacent to e1 except for e2
             int ii = 0;
@@ -1446,7 +1434,7 @@ void union_uf(int u, int v, std::vector<int>& parent)
     }
 }
 
-int TetWildMesh::count_vertex_links(const Tuple& v)
+size_t TetWildMesh::count_vertex_links(const Tuple& v)
 {
     // get one ring faces on surface
     auto one_ring_tets = get_one_ring_tets_for_vertex(v);
@@ -1514,7 +1502,7 @@ int TetWildMesh::count_vertex_links(const Tuple& v)
     }
 
     // adjacency matrix
-    int m = one_ring_surface_vertices.size();
+    size_t m = one_ring_surface_vertices.size();
     bool** adj_mat = new bool*[m];
     for (int i = 0; i < m; i++) {
         adj_mat[i] = new bool[m];
@@ -1673,7 +1661,7 @@ int TetWildMesh::count_vertex_links(const Tuple& v)
 //     return 0;
 // }
 
-int TetWildMesh::count_edge_links(const Tuple& e)
+size_t TetWildMesh::count_edge_links(const Tuple& e)
 {
     size_t vid1 = e.vid(*this);
     size_t vid2 = e.switch_vertex(*this).vid(*this);
@@ -1705,6 +1693,374 @@ int TetWildMesh::count_edge_links(const Tuple& e)
     wmtk::vector_unique(incident_surface_faces);
 
     return incident_surface_faces.size();
+}
+
+simplex::RawSimplexCollection TetWildMesh::get_surface_faces_for_vertex(const size_t vid) const
+{
+    using namespace simplex;
+
+    RawSimplexCollection sc;
+
+    if (!m_vertex_attribute.at(vid).m_is_on_surface) {
+        // no face can be on the surface if the vertex is not on the surface
+        return sc;
+    }
+
+    const auto tids = get_one_ring_tids_for_vertex(vid);
+    for (const size_t tid : tids) {
+        const Tet tet = simplex_from_tet(tid);
+        const Face f_opp = tet.opposite_face(vid);
+        const auto& vs = f_opp.vertices();
+        for (size_t i = 0; i < 3; ++i) {
+            size_t j = (i + 1) % 3;
+            if (!m_vertex_attribute.at(vs[i]).m_is_on_surface ||
+                !m_vertex_attribute.at(vs[j]).m_is_on_surface) {
+                // face cannot be on the surface
+                continue;
+            }
+
+            const auto [f_tuple, fid] = tuple_from_face({{vid, vs[i], vs[j]}});
+
+            if (m_face_attribute.at(fid).m_is_surface_fs) {
+                sc.add(Face(vid, vs[i], vs[j]));
+            }
+        }
+    }
+    sc.sort_and_clean();
+
+    return sc;
+}
+
+size_t TetWildMesh::get_num_surface_faces_for_edge(const std::array<size_t, 2>& vids) const
+{
+    const size_t& v0 = vids[0];
+    const size_t& v1 = vids[1];
+
+    // vertices must be on the surface, otherwise edge cannot be on the surface
+    if (!m_vertex_attribute.at(v0).m_is_on_surface || !m_vertex_attribute.at(v1).m_is_on_surface) {
+        return 0;
+    }
+
+    const auto n12_locs = get_incident_tids_for_edge(v0, v1);
+
+    std::vector<size_t> link_vs;
+    link_vs.reserve(n12_locs.size());
+    for (const size_t& tid : n12_locs) {
+        const auto vs = oriented_tet_vids(tid);
+        for (int i = 0; i < 4; ++i) {
+            if (vs[i] != v0 && vs[i] != v1) {
+                link_vs.push_back(vs[i]);
+            }
+        }
+    }
+    wmtk::vector_unique(link_vs);
+
+    size_t surface_count = 0;
+    for (const size_t v2 : link_vs) {
+        const auto [f_tuple, fid] = tuple_from_face({{v0, v1, v2}});
+        if (m_face_attribute.at(fid).m_is_surface_fs) {
+            ++surface_count;
+        }
+    }
+
+    return surface_count;
+}
+
+size_t TetWildMesh::get_order_of_edge(const std::array<size_t, 2>& vids) const
+{
+    const size_t surface_count = get_num_surface_faces_for_edge(vids);
+    if (surface_count == 0) {
+        // edge is not on the surface
+        return 0;
+    }
+    if (surface_count == 2) {
+        // edge is on the surface
+        return 1;
+    }
+    // edge is on the surface boundary or non-manifold
+    return 2;
+}
+
+size_t TetWildMesh::get_order_of_vertex(const size_t vid) const
+{
+    return m_vertex_attribute.at(vid).m_order;
+}
+
+void TetWildMesh::init_vertex_order()
+{
+    for (const Tuple& t : get_vertices()) {
+        init_vertex_order(t.vid(*this));
+    }
+}
+
+void TetWildMesh::init_vertex_order(const size_t vid)
+{
+    const auto& VA = m_vertex_attribute.at(vid);
+    auto& VA_order = m_vertex_attribute[vid].m_order;
+
+    if (!VA.m_is_on_surface) {
+        VA_order = 0;
+        return;
+    }
+
+    VA_order = 1;
+
+    // check incident order-2 edges
+    const auto vvs = get_one_ring_vids_for_vertex(vid);
+    std::map<size_t, size_t> edge_orders_count;
+    for (const size_t v : vvs) {
+        const size_t nf = get_num_surface_faces_for_edge({v, vid});
+        if (nf == 0 || nf == 2) {
+            continue;
+        }
+        if (edge_orders_count.count(nf) == 0) {
+            edge_orders_count[nf] = 1;
+        } else {
+            ++edge_orders_count[nf];
+        }
+    }
+    if (edge_orders_count.size() != 0) {
+        if (edge_orders_count.size() == 1 && edge_orders_count.begin()->second == 2) {
+            /**
+             * The vertex is either on a boundary or on a non-manifold edge and has two edges
+             * incident that are of the same type.
+             */
+            VA_order = 2;
+            // do not return here, vertex could still be non-manifold
+        } else {
+            /**
+             * The vertex is either at the end of a non-manifold edge or the number of incident
+             * faces is different for the incident edges. In both cases, the vertex must be order 3.
+             */
+            VA_order = 3;
+            // highest possible order reached; we can return here
+            return;
+        }
+    }
+
+    /**
+     * Check if vertex is non-manifold:
+     * All faces must be reachable by iterating through edges, starting from one face.
+     */
+
+    const auto face_collection = get_surface_faces_for_vertex(vid);
+    const auto& faces = face_collection.faces();
+
+    if (faces.empty()) {
+        log_and_throw_error("Vertex must have incindent surface faces");
+    }
+
+    std::set<simplex::Face> found_faces;
+    std::queue<simplex::Face> q;
+
+    q.push(faces[0]);
+    found_faces.insert(faces[0]);
+
+    while (!q.empty()) {
+        const simplex::Face f = q.front();
+        q.pop();
+
+        const auto& vs = f.vertices();
+        // navigate through all edges to find other faces
+        for (size_t i = 0; i < 3; ++i) {
+            const size_t j = (i + 1) % 3;
+            const simplex::Edge e(vs[i], vs[j]);
+            const auto neighs = face_collection.faces_with_edge(e);
+            for (const simplex::Face& n : neighs) {
+                if (found_faces.count(n) == 0) {
+                    q.push(n);
+                    found_faces.insert(n);
+                }
+            }
+        }
+    }
+
+    if (found_faces.size() != faces.size()) {
+        // surface is non-manifold in this vertex
+        VA_order = 3;
+    }
+}
+
+bool TetWildMesh::substructure_link_condition(const Tuple& e_tuple) const
+{
+    const size_t u_id = e_tuple.vid(*this);
+    const size_t v_id = e_tuple.switch_vertex(*this).vid(*this);
+
+    using namespace simplex;
+
+    const size_t edge_order = get_order_of_edge({{u_id, v_id}});
+    const size_t u_order = get_order_of_vertex(u_id);
+    const size_t v_order = get_order_of_vertex(v_id);
+
+    // If the edge is lower order than both vertices, we know for sure that this edge must not
+    // be collapsed. Example: edge in space (order 0) connecting two surfaces (order 1).
+    // This check also covers the case that both vertices are order 3
+    if (edge_order < u_order && edge_order < v_order) {
+        return false;
+    }
+
+    const auto u_locs = get_one_ring_tids_for_vertex(u_id);
+    const auto v_locs = get_one_ring_tids_for_vertex(v_id);
+    const auto e_locs = set_intersection(u_locs, v_locs);
+
+    RawSimplexCollection link_u_0;
+    RawSimplexCollection link_u_1;
+    RawSimplexCollection link_v_0;
+    RawSimplexCollection link_v_1;
+    RawSimplexCollection link_e_0;
+    RawSimplexCollection link_e_1;
+
+    constexpr size_t w_id = -1; // dummy vertex
+    const Vertex w(w_id);
+
+    const RawSimplexCollection u_surface_faces = get_surface_faces_for_vertex(u_id);
+    const RawSimplexCollection v_surface_faces = get_surface_faces_for_vertex(v_id);
+    const RawSimplexCollection e_surface_faces =
+        RawSimplexCollection::get_intersection(u_surface_faces, v_surface_faces);
+
+    // vertex u links
+    {
+        const Vertex u(u_id);
+
+        link_u_0.reserve_faces(u_locs.size());
+        link_u_0.reserve_edges(u_locs.size() * 3);
+        link_u_0.reserve_vertices(u_locs.size() * 3);
+        for (const size_t tid : u_locs) {
+            const Tet tet = simplex_from_tet(tid);
+            const Face f = tet.opposite_face(u);
+            link_u_0.add_with_faces(f);
+        }
+
+        link_u_1.reserve_edges(u_surface_faces.faces().size());
+        link_u_1.reserve_vertices(u_surface_faces.faces().size() * 2);
+
+        RawSimplexCollection order2_edges;
+        for (const Face& f : u_surface_faces.faces()) {
+            const Tet tw(f, w_id);
+
+            const Face fw = tw.opposite_face(u);
+            link_u_0.add_with_faces(fw);
+
+            const Edge e_opp = f.opposite_edge(u);
+            link_u_1.add_with_faces(e_opp);
+
+            const auto& [ev0, ev1] = e_opp.vertices();
+
+            // collect order 2 edges
+            if (u_order > 1 || get_order_of_vertex(ev0) > 1) {
+                const Edge e0(u_id, ev0);
+                if (get_order_of_edge(e0.vertices()) > 1) {
+                    order2_edges.add(e0);
+                }
+            }
+            if (u_order > 1 || get_order_of_vertex(ev1) > 1) {
+                const Edge e1(u_id, ev1);
+                if (get_order_of_edge(e1.vertices()) > 1) {
+                    order2_edges.add(e1);
+                }
+            }
+        }
+        order2_edges.sort_and_clean();
+        for (const Edge& e : order2_edges.edges()) {
+            const Face fw(e, w_id);
+            const Edge ew = fw.opposite_edge(u);
+            link_u_0.add_with_faces(ew);
+            link_u_1.add_with_faces(ew);
+        }
+        link_u_0.sort_and_clean();
+        link_u_1.sort_and_clean();
+    }
+    // vertex v links
+    {
+        const Vertex v(v_id);
+
+        link_v_0.reserve_faces(v_locs.size());
+        link_v_0.reserve_edges(v_locs.size() * 3);
+        link_v_0.reserve_vertices(v_locs.size() * 3);
+        for (const size_t tid : v_locs) {
+            const Tet tet = simplex_from_tet(tid);
+            const Face f = tet.opposite_face(v);
+            link_v_0.add_with_faces(f);
+        }
+
+        link_v_1.reserve_edges(v_surface_faces.faces().size());
+        link_v_1.reserve_vertices(v_surface_faces.faces().size() * 2);
+
+        RawSimplexCollection order2_edges;
+        for (const Face& f : v_surface_faces.faces()) {
+            const Tet tw(f, w_id);
+
+            const Face fw = tw.opposite_face(v);
+            link_v_0.add_with_faces(fw);
+
+            const Edge e_opp = f.opposite_edge(v);
+            link_v_1.add_with_faces(e_opp);
+
+            const auto& [ev0, ev1] = e_opp.vertices();
+
+            // collect order 2 edges
+            if (v_order > 1 || get_order_of_vertex(ev0) > 1) {
+                const Edge e0(v_id, ev0);
+                if (get_order_of_edge(e0.vertices()) > 1) {
+                    order2_edges.add(e0);
+                }
+            }
+            if (v_order > 1 || get_order_of_vertex(ev1) > 1) {
+                const Edge e1(v_id, ev1);
+                if (get_order_of_edge(e1.vertices()) > 1) {
+                    order2_edges.add(e1);
+                }
+            }
+        }
+        order2_edges.sort_and_clean();
+        for (const Edge& e : order2_edges.edges()) {
+            const Face fw(e, w_id);
+            const Edge ew = fw.opposite_edge(v);
+            link_v_0.add_with_faces(ew);
+            link_v_1.add_with_faces(ew);
+        }
+        link_v_0.sort_and_clean();
+        link_v_1.sort_and_clean();
+    }
+    // edge links
+    {
+        const Edge e(u_id, v_id);
+
+        link_e_0.reserve_edges(e_locs.size());
+        link_e_0.reserve_vertices(e_locs.size() * 2);
+        for (const size_t tid : e_locs) {
+            const Tet tet = simplex_from_tet(tid);
+            const Edge e_opp = tet.opposite_edge(e);
+            link_e_0.add_with_faces(e_opp);
+        }
+
+        link_e_1.reserve_vertices(e_surface_faces.size());
+
+        for (const Face& f : e_surface_faces.faces()) {
+            const Tet tw(f, w_id);
+            const Edge e_opp = tw.opposite_edge(e);
+            link_e_0.add_with_faces(e_opp);
+            link_e_1.add(f.opposite_vertex(e));
+        }
+
+        if (edge_order > 1) {
+            link_e_0.add(w);
+            link_e_1.add(w);
+        }
+        link_e_0.sort_and_clean();
+        link_e_1.sort_and_clean();
+    }
+
+    const auto link_uv_0 = RawSimplexCollection::get_intersection(link_u_0, link_v_0);
+    if (link_uv_0 != link_e_0) {
+        return false;
+    }
+    const auto link_uv_1 = RawSimplexCollection::get_intersection(link_u_1, link_v_1);
+    if (link_uv_1 != link_e_1) {
+        return false;
+    }
+
+    return true;
 }
 
 bool TetWildMesh::check_vertex_param_type()
@@ -1864,6 +2220,8 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
     v_is_on_surface.setZero();
     VectorXd v_is_on_open_boundary(vert_capacity());
     v_is_on_open_boundary.setZero();
+    VectorXd v_order(vert_capacity());
+    v_order.setZero();
 
     int index = 0;
     for (const Tuple& t : tets) {
@@ -1879,14 +2237,14 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
 
         const auto vs = oriented_tet_vertices(t);
         for (int j = 0; j < 4; j++) {
-            T(index, j) = vs[j].vid(*this);
+            T(index, j) = (int)vs[j].vid(*this);
         }
         ++index;
     }
 
     for (size_t i = 0; i < faces.size(); ++i) {
         for (size_t j = 0; j < 3; ++j) {
-            F(i, j) = faces[i][j];
+            F(i, j) = (int)faces[i][j];
         }
     }
 
@@ -1897,6 +2255,7 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
         v_is_rounded[vid] = m_vertex_attribute[vid].m_is_rounded ? 1 : 0;
         v_is_on_surface[vid] = m_vertex_attribute[vid].m_is_on_surface ? 1 : 0;
         v_is_on_open_boundary[vid] = m_vertex_attribute[vid].m_is_on_open_boundary ? 1 : 0;
+        v_order[vid] = m_vertex_attribute[vid].m_order;
     }
 
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
@@ -1921,6 +2280,7 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
     writer->add_field("is_rounded", v_is_rounded);
     writer->add_field("on_surface", v_is_on_surface);
     writer->add_field("on_open_boundary", v_is_on_open_boundary);
+    writer->add_field("order", v_order);
 
 
     logger().info("Write {}", out_path);
@@ -1935,6 +2295,7 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
         surf_writer->add_field("is_rounded", v_is_rounded);
         surf_writer->add_field("on_surface", v_is_on_surface);
         surf_writer->add_field("on_open_boundary", v_is_on_open_boundary);
+        surf_writer->add_field("order", v_order);
 
         logger().info("Write {}", surf_out_path);
         surf_writer->write_mesh(surf_out_path, V, F);
@@ -2054,6 +2415,70 @@ void TetWildMesh::init_sizing_field()
             }
         }
     }
+}
+
+TetWildMesh::ExportStruct TetWildMesh::export_mesh_data() const
+{
+    ExportStruct e;
+
+    const auto vs = get_vertices();
+    const auto tets = get_tets();
+    const auto faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
+
+    e.V.resize(vert_capacity(), 3);
+    e.T.resize(tet_capacity(), 4);
+    e.F.resize(faces.size(), 3);
+
+    e.V.setZero();
+    e.T.setZero();
+    e.F.setZero();
+
+    e.t_part.resize(tet_capacity(), 1);
+    e.t_part.setZero();
+    e.t_winding_number_input.resize(tet_capacity(), 1);
+    e.t_winding_number_input.setZero();
+    e.t_winding_number_tracked.resize(tet_capacity(), 1);
+    e.t_winding_number_tracked.setZero();
+    e.t_amips.resize(tet_capacity(), 1);
+    e.t_amips.setZero();
+    if (!tets.empty()) {
+        e.t_winding_number_per_input.resize(
+            tet_capacity(),
+            m_tet_attribute[tets[0].tid(*this)].m_winding_number_per_input.size());
+    }
+
+    int index = 0;
+    for (const Tuple& t : tets) {
+        size_t tid = t.tid(*this);
+        e.t_part(index, 0) = m_tet_attribute[tid].part_id;
+        e.t_winding_number_input(index, 0) = m_tet_attribute[tid].m_winding_number_input;
+        e.t_winding_number_tracked(index, 0) = m_tet_attribute[tid].m_winding_number_tracked;
+        e.t_amips(index, 0) = std::cbrt(m_tet_attribute[tid].m_quality);
+
+        for (size_t i = 0; i < (size_t)e.t_winding_number_per_input.cols(); ++i) {
+            e.t_winding_number_per_input(index, i) =
+                m_tet_attribute[tid].m_winding_number_per_input[i];
+        }
+
+        const auto vs = oriented_tet_vertices(t);
+        for (int j = 0; j < 4; j++) {
+            e.T(index, j) = vs[j].vid(*this);
+        }
+        ++index;
+    }
+
+    for (size_t i = 0; i < faces.size(); ++i) {
+        for (size_t j = 0; j < 3; ++j) {
+            e.F(i, j) = (int)faces[i][j];
+        }
+    }
+
+    for (const auto& v : vs) {
+        const auto vid = v.vid(*this);
+        e.V.row(vid) = m_vertex_attribute[vid].m_posf;
+    }
+
+    return e;
 }
 
 } // namespace wmtk::components::tetwild

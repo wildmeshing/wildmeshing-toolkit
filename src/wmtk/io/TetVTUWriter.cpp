@@ -24,8 +24,8 @@ TetVTUWriter::TetVTUWriter(const TetMesh& mesh)
     m_T.resize(tet_tuples.size(), 4);
     for (int i = 0; i < tet_tuples.size(); ++i) {
         const auto v = m_mesh.oriented_tet_vertices(tet_tuples[i]);
-        for (int j = 0; j < v.size(); ++j) {
-            m_T(i, j) = vid_map[v[j].vid(m_mesh)];
+        for (size_t j = 0; j < v.size(); ++j) {
+            m_T(i, j) = (int)vid_map[v[j].vid(m_mesh)];
         }
     }
 
@@ -35,8 +35,8 @@ TetVTUWriter::TetVTUWriter(const TetMesh& mesh)
     for (int i = 0; i < face_tuples.size(); ++i) {
         const Tuple& t = face_tuples[i];
         const std::array<Tuple, 3> v = m_mesh.get_face_vertices(t);
-        for (int j = 0; j < v.size(); ++j) {
-            m_F(i, j) = vid_map[v[j].vid(m_mesh)];
+        for (size_t j = 0; j < v.size(); ++j) {
+            m_F(i, j) = (int)vid_map[v[j].vid(m_mesh)];
         }
     }
 
@@ -55,13 +55,13 @@ TetVTUWriter::TetVTUWriter(const TetMesh& mesh)
     m_V = MatrixXd::Zero(m_mesh.vert_capacity(), 3);
 }
 
-void TetVTUWriter::add_vertex_positions(const std::function<VectorXd(const int)>& f)
+void TetVTUWriter::add_vertex_positions(const std::function<VectorXd(const size_t)>& f)
 {
     const std::vector<Tuple> tuples = m_mesh.get_vertices();
 
     m_V.resize(tuples.size(), f(tuples[0].vid(m_mesh)).size());
 
-    for (int i = 0; i < tuples.size(); ++i) {
+    for (size_t i = 0; i < tuples.size(); ++i) {
         const Tuple& t = tuples[i];
         const size_t id = t.vid(m_mesh);
         m_V.row(i) = f(id);
@@ -70,7 +70,7 @@ void TetVTUWriter::add_vertex_positions(const std::function<VectorXd(const int)>
 
 void TetVTUWriter::add_vertex_attribute(
     const std::string& name,
-    const std::function<VectorXd(const int)>& f)
+    const std::function<VectorXd(const size_t)>& f)
 {
     const std::vector<Tuple> tuples = m_mesh.get_vertices();
 
@@ -88,7 +88,7 @@ void TetVTUWriter::add_vertex_attribute(
 
 void TetVTUWriter::add_edge_attribute(
     const std::string& name,
-    const std::function<VectorXd(const int)>& f)
+    const std::function<VectorXd(const size_t)>& f)
 {
     const std::vector<Tuple> tuples = m_mesh.get_edges();
 
@@ -106,7 +106,7 @@ void TetVTUWriter::add_edge_attribute(
 
 void TetVTUWriter::add_triangle_attribute(
     const std::string& name,
-    const std::function<VectorXd(const int)>& f)
+    const std::function<VectorXd(const size_t)>& f)
 {
     const std::vector<Tuple> tuples = m_mesh.get_faces();
 
@@ -124,7 +124,7 @@ void TetVTUWriter::add_triangle_attribute(
 
 void TetVTUWriter::add_tet_attribute(
     const std::string& name,
-    const std::function<VectorXd(const int)>& f)
+    const std::function<VectorXd(const size_t)>& f)
 {
     const std::vector<Tuple> tuples = m_mesh.get_tets();
 

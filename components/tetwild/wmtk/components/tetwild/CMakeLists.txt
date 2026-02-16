@@ -54,8 +54,7 @@ target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
 target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC
 	wmtk::toolkit
 	wmtk::data
-	wmtk::sec_lib
-	wmtk::remeshing_lib
+	wmtk::shortest_edge_collapse
 	igl::predicates
 	VolumeRemesher::VolumeRemesher
 	jse::jse

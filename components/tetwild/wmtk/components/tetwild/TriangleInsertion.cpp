@@ -254,7 +254,7 @@ void TetWildMesh::init_from_input_surface(
         wmtk::logger().info("insertion queue {}: {}", i, insertion_queues[i].size());
     }
 
-    tbb::task_arena arena(insertion_queues.size());
+    tbb::task_arena arena((int)insertion_queues.size());
     tbb::task_group tg;
 
     arena.execute([&, &m = *this, &tet_face_tags = this->tet_face_tags]() {

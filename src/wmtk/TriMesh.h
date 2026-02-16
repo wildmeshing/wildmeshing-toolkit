@@ -256,10 +256,12 @@ public:
          * @return local vid of the vertex given the triangle
          * \n -1 if the vertex is not incident to the triangle
          */
-        inline int find(int v_id) const
+        inline int find(size_t v_id) const
         {
             for (int j = 0; j < 3; j++) {
-                if (v_id == m_indices[j]) return j;
+                if (v_id == m_indices[j]) {
+                    return j;
+                }
             }
             return -1;
         }
@@ -499,11 +501,7 @@ public:
      *
      * @param t Tuple refering to an edge
      */
-    bool is_boundary_edge(const TriMesh::Tuple& t) const
-    {
-        if (!t.switch_face(*this).has_value()) return true;
-        return false;
-    }
+    bool is_boundary_edge(const TriMesh::Tuple& t) const { return t.switch_faces(*this).empty(); }
 
     /**
      * @brief check if the vertex that's represented by a Tuple is at the boundary of the mesh
@@ -646,7 +644,7 @@ public:
      * @return global vids of incident vertices
      */
     std::array<size_t, 3> oriented_tri_vids(const Tuple& t) const;
-    std::array<size_t, 3> oriented_tri_vids(const int i) const;
+    std::array<size_t, 3> oriented_tri_vids(const size_t i) const;
 
     /**
      * Generate a face Tuple using global fid
@@ -670,7 +668,7 @@ public:
     Tuple tuple_from_vertex(size_t vid) const
     {
         auto fid = m_vertex_connectivity[vid][0];
-        auto eid = m_tri_connectivity[fid].find(vid);
+        auto eid = m_tri_connectivity[fid].find((int)vid);
         return Tuple(vid, (eid + 1) % 3, fid, *this);
     }
     /**

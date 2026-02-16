@@ -1,3 +1,6 @@
+if(NOT BUILD_TESTING)
+    return()
+endif()
 if(NOT ${WMTK_ENABLE_COMPONENT_TEST_${COMPONENT_NAME}})
     return()
 endif()

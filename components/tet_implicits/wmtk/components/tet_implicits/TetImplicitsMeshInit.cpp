@@ -33,7 +33,7 @@ void TetImplicitsMesh::init_from_image(const MatrixXd& V, const MatrixXi& T, con
     logger().info("Sanity check passed; no inverted tets found");
 
     // add tags
-    for (size_t i = 0; i < T_tags.rows(); ++i) {
+    for (int i = 0; i < T_tags.rows(); ++i) {
         m_tet_attribute[i].tags.resize(m_tags_count);
         for (size_t j = 0; j < m_tags_count; ++j) {
             m_tet_attribute[i].tags[j] = T_tags(i, j);
@@ -79,7 +79,7 @@ void TetImplicitsMesh::init_bvhs()
         const size_t v1 = ff.switch_vertex().vid();
         const size_t v2 = ff.switch_edge().switch_vertex().vid();
 
-        for (int64_t j = 0; j < m_tags_count; ++j) {
+        for (size_t j = 0; j < m_tags_count; ++j) {
             const int64_t tag0 = m_tet_attribute[ff.tid()].tags[j];
             const int64_t tag1 = m_tet_attribute[t_opp.value().tid()].tags[j];
 
@@ -88,8 +88,8 @@ void TetImplicitsMesh::init_bvhs()
             }
 
             // has two different tags --> add to BVHs
-            F_vectors[std::make_pair(j, tag0)].emplace_back(v0, v1, v2);
-            F_vectors[std::make_pair(j, tag1)].emplace_back(v0, v1, v2);
+            F_vectors[std::make_pair(j, tag0)].emplace_back((int)v0, (int)v1, (int)v2);
+            F_vectors[std::make_pair(j, tag1)].emplace_back((int)v0, (int)v1, (int)v2);
         }
     }
 

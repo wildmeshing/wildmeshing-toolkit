@@ -422,9 +422,9 @@ bool TetRemeshingMesh::collapse_edge_after(const Tuple& loc)
 
     // global topology check
     if (m_params.preserve_topology) {
-        std::map<std::pair<size_t, size_t>, int>
+        std::map<std::pair<size_t, size_t>, size_t>
             after_edge_link; // edge represented by sorted vids (could use simplex::Edge here)
-        std::map<size_t, int> after_vertex_link;
+        std::map<size_t, size_t> after_vertex_link;
 
         auto v_on_surf = [this](const Tuple& t) {
             return m_vertex_attribute[t.vid(*this)].m_is_on_surface;

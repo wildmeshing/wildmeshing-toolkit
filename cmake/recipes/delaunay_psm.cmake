@@ -22,3 +22,4 @@ target_include_directories(delaunay_psm PUBLIC ${delauanay_psm_SOURCE_DIR})
 add_library(geogram::delaunay_psm ALIAS delaunay_psm)
 
 set_target_properties(delaunay_psm PROPERTIES FOLDER third_party)
+set_target_properties(delaunay_psm PROPERTIES POSITION_INDEPENDENT_CODE ON)

@@ -202,7 +202,7 @@ std::tuple<double, double> TetRemeshingMesh::local_operations(const std::array<i
         } else if (i == 2) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==swapping {}==", n);
-                int cnt_success = 0;
+                size_t cnt_success = 0;
                 cnt_success += swap_all_edges_all();
                 // cnt_success += swap_all_edges_56();
                 // cnt_success += swap_all_edges_44();
@@ -508,7 +508,7 @@ void TetRemeshingMesh::output_faces(
     }
     Eigen::MatrixXi matF(outface.size(), 3);
     for (auto i = 0; i < outface.size(); i++) {
-        matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
+        matF.row(i) << (int)outface[i][0], (int)outface[i][1], (int)outface[i][2];
     }
     wmtk::logger().info("Output face size {}", outface.size());
     igl::write_triangle_mesh(file, matV, matF);
@@ -968,7 +968,7 @@ bool TetRemeshingMesh::is_vertex_on_boundary(const size_t e0)
             continue;
         }
         int cnt = 0;
-        for (int t_id : e0_tids) {
+        for (const size_t t_id : e0_tids) {
             const auto vs = oriented_tet_vids(t_id);
             std::array<int, 4> opp_js; // DZ: all vertices that are adjacent to e1 except for e2
             int ii = 0;
@@ -1098,7 +1098,7 @@ void union_uf(int u, int v, std::vector<int>& parent)
     }
 }
 
-int TetRemeshingMesh::count_vertex_links(const Tuple& v)
+size_t TetRemeshingMesh::count_vertex_links(const Tuple& v)
 {
     // get one ring faces on surface
     const auto one_ring_tets = get_one_ring_tets_for_vertex(v);
@@ -1178,7 +1178,7 @@ int TetRemeshingMesh::count_vertex_links(const Tuple& v)
     }
 
     // adjacency matrix
-    int m = one_ring_surface_vertices.size();
+    size_t m = one_ring_surface_vertices.size();
     bool** adj_mat = new bool*[m];
     for (int i = 0; i < m; i++) {
         adj_mat[i] = new bool[m];
@@ -1225,7 +1225,7 @@ int TetRemeshingMesh::count_vertex_links(const Tuple& v)
     return cnt_links;
 }
 
-int TetRemeshingMesh::count_edge_links(const Tuple& e)
+size_t TetRemeshingMesh::count_edge_links(const Tuple& e)
 {
     const size_t vid1 = e.vid(*this);
     const size_t vid2 = e.switch_vertex(*this).vid(*this);
@@ -1377,7 +1377,7 @@ void TetRemeshingMesh::get_surface(MatrixXd& V, MatrixXi& F) const
     }
     F = MatrixXi(outface.size(), 3);
     for (size_t i = 0; i < outface.size(); i++) {
-        F.row(i) << outface[i][0], outface[i][1], outface[i][2];
+        F.row(i) << (int)outface[i][0], (int)outface[i][1], (int)outface[i][2];
     }
 
     MatrixXd NV;
@@ -1416,7 +1416,7 @@ void TetRemeshingMesh::write_vtu(const std::string& path)
     std::vector<MatrixXd> tags(m_tags_count, MatrixXd(tet_capacity(), 1));
     MatrixXd amips(tet_capacity(), 1);
 
-    int index = 0;
+    size_t index = 0;
     for (const Tuple& t : tets) {
         size_t tid = t.tid(*this);
         parts(index, 0) = m_tet_attribute[tid].part_id;
@@ -1426,15 +1426,15 @@ void TetRemeshingMesh::write_vtu(const std::string& path)
         amips(index, 0) = std::cbrt(m_tet_attribute[tid].m_quality);
 
         const auto& vs = oriented_tet_vertices(t);
-        for (int j = 0; j < 4; j++) {
-            T(index, j) = vs[j].vid(*this);
+        for (size_t j = 0; j < 4; j++) {
+            T(index, j) = (int)vs[j].vid(*this);
         }
         ++index;
     }
 
     for (size_t i = 0; i < faces.size(); ++i) {
         for (size_t j = 0; j < 3; ++j) {
-            F(i, j) = faces[i][j];
+            F(i, j) = (int)faces[i][j];
         }
     }
 
@@ -1492,7 +1492,7 @@ void TetRemeshingMesh::write_surface(const std::string& path) const
     }
     Eigen::MatrixXi matF(outface.size(), 3);
     for (size_t i = 0; i < outface.size(); i++) {
-        matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
+        matF.row(i) << (int)outface[i][0], (int)outface[i][1], (int)outface[i][2];
     }
     igl::write_triangle_mesh(path, matV, matF);
 

@@ -24,7 +24,8 @@ nlohmann::json tetwild_spec = R"(
       "log_file",
       "report",
       "DEBUG_output",
-      "DEBUG_sanity_checks"
+      "DEBUG_sanity_checks",
+      "DEBUG_hausdorff"
     ]
   },
   {
@@ -77,14 +78,14 @@ nlohmann::json tetwild_spec = R"(
   {
     "pointer": "/max_iterations",
     "type": "int",
-    "default": 10,
+    "default": 80,
     "doc": "Maximum iterations before stopping."
   },
   {
     "pointer": "/filter",
     "type": "string",
     "options": ["flood", "input", "tracked", "none"],
-    "default": "tracked",
+    "default": "none",
     "doc": "Remove the outside region based on different criteria. 'flood': flood fill. 'input': winding number w.r.t. the input. 'tracked': winding number w.r.t. the tracked surface. 'none': Do not filter. Flood fill only works if the input is closed. Otherwise, it results in an empty mesh. Filtering w.r.t. the input might cause wrinkles along the surface as some tets might be falsely tagged. Filtering w.r.t. the tracked surface can lead to missing pieces if the input consists of multiple components."
   },
   {
@@ -140,6 +141,12 @@ nlohmann::json tetwild_spec = R"(
     "type": "bool",
     "default": false,
     "doc": "Perform sanity checks after every operation. This can be very slow and should only be used for debugging."
+  },
+  {
+    "pointer": "/DEBUG_hausdorff",
+    "type": "bool",
+    "default": false,
+    "doc": "Sanity Check: Compute and report the Hausdorff distance of the output to the input. Should be always smaller than eps."
   }
 ]
 )"_json;
