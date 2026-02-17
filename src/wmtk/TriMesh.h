@@ -610,6 +610,8 @@ public:
      * @return a vector of Tuples refering to one-ring tris
      */
     std::vector<Tuple> get_one_ring_tris_for_vertex(const Tuple& t) const;
+    const std::vector<size_t>& get_one_ring_fids_for_vertex(const Tuple& t) const;
+    const std::vector<size_t>& get_one_ring_fids_for_vertex(const size_t vid) const;
     /**
      * @brief Get the vids of the incident one ring tris for a vertex
      *
@@ -617,6 +619,8 @@ public:
      * @return a vector of vids that can have duplicates
      */
     std::vector<size_t> get_one_ring_vids_for_vertex_duplicate(const size_t& t) const;
+
+    std::vector<size_t> get_incident_fids_for_edge(const Tuple& t) const;
 
     /**
      * @brief Get all edges that are incident to the vertex of Tuple `t`.
@@ -645,6 +649,9 @@ public:
      */
     std::array<size_t, 3> oriented_tri_vids(const Tuple& t) const;
     std::array<size_t, 3> oriented_tri_vids(const size_t i) const;
+
+    std::array<Tuple, 2> get_edge_vertices(const Tuple& t) const;
+    std::array<size_t, 2> get_edge_vids(const Tuple& t) const;
 
     /**
      * Generate a face Tuple using global fid
@@ -682,6 +689,8 @@ public:
         auto vid = m_tri_connectivity[fid][(local_eid + 1) % 3];
         return Tuple(vid, local_eid, fid, *this);
     }
+
+    std::tuple<Tuple, size_t> tuple_from_edge(const std::array<size_t, 2>& vids) const;
 
 public:
     /**

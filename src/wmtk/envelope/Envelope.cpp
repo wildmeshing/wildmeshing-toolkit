@@ -145,6 +145,33 @@ void SampleEnvelope::init(
     m_bvh = std::make_shared<SimpleBVH::BVH>();
     m_bvh->init(VV, FF, 0);
 }
+void SampleEnvelope::init(
+    const std::vector<Eigen::Vector2d>& V,
+    const std::vector<Eigen::Vector2i>& F,
+    const double _eps)
+{
+    if (use_exact) {
+        log_and_throw_error("Cannot use an exact envelope for edges.");
+    }
+
+    sampling_dist = _eps;
+    const double real_envelope = _eps - _eps / sqrt(3);
+    eps2 = real_envelope * real_envelope;
+
+    MatrixXd VV;
+    VV.resize(V.size(), 2);
+    for (size_t i = 0; i < V.size(); ++i) {
+        VV.row(i) = V[i];
+    }
+    MatrixXi FF;
+    FF.resize(F.size(), 2);
+    for (size_t i = 0; i < F.size(); ++i) {
+        FF.row(i) = F[i];
+    }
+
+    m_bvh = std::make_shared<SimpleBVH::BVH>();
+    m_bvh->init(VV, FF, 0);
+}
 
 bool SampleEnvelope::is_outside(const Eigen::Vector3d& pts) const
 {
@@ -154,6 +181,11 @@ bool SampleEnvelope::is_outside(const Eigen::Vector3d& pts) const
     double dist2 = squared_distance(pts);
 
     return (dist2 > eps2);
+}
+
+bool SampleEnvelope::is_outside(const Eigen::Vector2d& pts) const
+{
+    return is_outside(Vector3d(pts[0], pts[1], 0));
 }
 
 bool SampleEnvelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri) const
@@ -247,6 +279,15 @@ bool SampleEnvelope::is_outside(const std::array<Vector3d, 2>& edge) const
     }
 
     return false;
+}
+
+bool SampleEnvelope::is_outside(const std::array<Vector2d, 2>& edge) const
+{
+    std::array<Vector3d, 2> e;
+    for (size_t i = 0; i < edge.size(); ++i) {
+        e[i] = Vector3d(edge[i][0], edge[i][1], 0);
+    }
+    return is_outside(e);
 }
 
 

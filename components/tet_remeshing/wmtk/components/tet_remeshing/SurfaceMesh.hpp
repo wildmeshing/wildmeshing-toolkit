@@ -60,6 +60,11 @@ public:
     // TODO: This should not be exposed to the application, but hidden in wmtk
     void partition_mesh_morton();
 
+    size_t get_partition_id(const Tuple& loc) const
+    {
+        return vertex_attrs[loc.vid(*this)].partition_id;
+    }
+
     void smooth_surface();
     void smooth_edges();
     void smooth_all(const size_t num_iterations);

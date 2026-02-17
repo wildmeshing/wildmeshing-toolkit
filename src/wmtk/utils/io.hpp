@@ -267,6 +267,16 @@ public:
         return get_element_attribute_names<3>();
     }
 
+    std::vector<std::string> get_all_element_attribute_names() const
+    {
+        std::vector<std::string> attr_names;
+        attr_names.reserve(m_spec.element_data.size());
+        for (const auto& data : m_spec.element_data) {
+            attr_names.push_back(data.header.string_tags.front());
+        }
+        return attr_names;
+    }
+
     template <typename Fn>
     void extract_edge_vertex_attribute(const std::string& attr_name, Fn&& set_attr)
     {
