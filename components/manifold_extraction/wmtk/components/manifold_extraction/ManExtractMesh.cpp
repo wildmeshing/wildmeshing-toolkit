@@ -380,6 +380,10 @@ bool ManExtractMesh::is_simplicially_embedded() const
 
 bool ManExtractMesh::tet_is_simp_emb(const Tuple& t) const
 {
+    if (m_tet_attribute[t.tid(*this)].label == 1) { // tet is in input
+        return true;
+    }
+
     auto vs = oriented_tet_vids(t);
     std::vector<size_t> vs_in;
     for (int i = 0; i < 4; i++) {
@@ -395,7 +399,7 @@ bool ManExtractMesh::tet_is_simp_emb(const Tuple& t) const
     } else if (vs_in.size() == 3) { // potentially one face in input
         auto [_, glob_fid] = tuple_from_face({{vs_in[0], vs_in[1], vs_in[2]}});
         return (m_face_attribute[glob_fid].label == 1);
-    } else { // potentially four faces in input
+    } else {
         return false;
     }
 }
@@ -738,16 +742,15 @@ void ManExtractMesh::write_vtu(const std::string& path)
     V.setZero();
     T.setZero();
 
-    // std::vector<MatrixXi> tags(m_tags_count, MatrixXi(tet_capacity(), 1));
-    MatrixXi L(tet_capacity(), 1);
-    MatrixXi IN_OUT(tet_capacity(), 1);
-    MatrixXd VAL(tet_capacity(), 1);
+    MatrixXi label(tet_capacity(), 1);
+    MatrixXi in_out(tet_capacity(), 1);
+    MatrixXd val(tet_capacity(), 1);
 
     int index = 0;
     for (const Tuple& t : tets) {
-        L(index, 0) = m_tet_attribute[t.tid(*this)].label;
-        IN_OUT(index, 0) = m_tet_attribute[t.tid(*this)].in_out;
-        VAL(index, 0) = m_tet_attribute[t.tid(*this)].val;
+        label(index, 0) = m_tet_attribute[t.tid(*this)].label;
+        in_out(index, 0) = m_tet_attribute[t.tid(*this)].in_out;
+        val(index, 0) = m_tet_attribute[t.tid(*this)].val;
 
         const auto& loc_vs = oriented_tet_vertices(t);
         for (int j = 0; j < 4; j++) {
@@ -764,22 +767,10 @@ void ManExtractMesh::write_vtu(const std::string& path)
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
     writer = std::make_shared<paraviewo::VTUWriter>();
 
-    writer->add_cell_field("label", L.cast<double>());
-    writer->add_cell_field("in_out", IN_OUT.cast<double>());
-    writer->add_cell_field(m_params.tag_label, VAL);
+    writer->add_cell_field("label", label.cast<double>());
+    writer->add_cell_field("in_out", in_out.cast<double>());
+    writer->add_cell_field(m_params.tag_label, val);
     writer->write_mesh(out_path, V, T);
-}
-
-
-// DEBUGGING
-void ManExtractMesh::label_boundary_verts_1()
-{
-    auto vertices = get_vertices();
-    for (const Tuple& v : vertices) {
-        if (is_boundary_vertex(v.vid(*this))) {
-            m_vertex_attribute[v.vid(*this)].label = 1;
-        }
-    }
 }
 
 

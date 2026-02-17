@@ -155,10 +155,11 @@ void manifold_extraction(nlohmann::json json_params)
     MatrixXi I; // index map, don't actually need
     MatrixXi B; // dummy variable
     igl::remove_unreferenced(V_out, F_out, V_out_reduced, F_out_reduced, I);
-    logger().info("\tSurface edge manifoldness check: {}", igl::is_edge_manifold(F_out_reduced));
-    logger().info(
-        "\tSurface vertex manifoldness check: {}",
-        igl::is_vertex_manifold(F_out_reduced, B));
+    if (!(igl::is_edge_manifold(F_out_reduced) && igl::is_vertex_manifold(F_out_reduced, B))) {
+        log_and_throw_error("Extracted surface is not manifold.");
+    } else {
+        logger().info("Extracted surface manifold check: PASSED");
+    }
 
     // stop timer
     double time = timer.getElapsedTime();

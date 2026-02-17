@@ -39,7 +39,7 @@ bool ManExtractMesh::split_edge_before(const Tuple& t)
         opp_verts.insert(opp.vertices()[1]);
 
         // link edge attribute
-        Tuple e1 = tuple_from_edge({{opp.vertices()[0], opp.vertices()[1]}});
+        Tuple e1 = tuple_from_edge(opp.vertices());
         cache.link_e[opp] = m_edge_attribute[e1.eid(*this)];
 
         // face attributes
@@ -66,10 +66,10 @@ bool ManExtractMesh::split_edge_before(const Tuple& t)
         new_eattr.label = m_face_attribute[global_fid1].label;
         cache.internal_e[opp_vid] = new_eattr;
 
-        size_t glob_eid1 = tuple_from_edge({{cache.v1_id, opp_vid}}).eid(*this);
-        size_t glob_eid2 = tuple_from_edge({{cache.v2_id, opp_vid}}).eid(*this);
         simplex::Edge e1(cache.v1_id, opp_vid);
         simplex::Edge e2(cache.v2_id, opp_vid);
+        size_t glob_eid1 = tuple_from_edge(e1.vertices()).eid(*this);
+        size_t glob_eid2 = tuple_from_edge(e2.vertices()).eid(*this);
         cache.external_e[e1] = m_edge_attribute[glob_eid1];
         cache.external_e[e2] = m_edge_attribute[glob_eid2];
 
@@ -124,8 +124,7 @@ bool ManExtractMesh::split_edge_after(const Tuple& t)
         m_face_attribute[glob_fid3] = cache.external_f[std::make_pair(link_edge, v2_id)];
 
         // edge attributes
-        size_t link_e_glob_id =
-            tuple_from_edge({{link_edge.vertices()[0], link_edge.vertices()[1]}}).eid(*this);
+        size_t link_e_glob_id = tuple_from_edge(link_edge.vertices()).eid(*this);
         m_edge_attribute[link_e_glob_id] = pair.second;
     }
 
