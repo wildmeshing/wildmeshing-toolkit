@@ -41,7 +41,7 @@ struct VertexAttributes
 class EdgeAttributes
 {
 public:
-    double tag;
+    double tag; // TODO: is this used?
 
     bool m_is_surface_fs = false; // 0; 1
     /**
@@ -108,6 +108,7 @@ public:
     {
         NUM_THREADS = _num_threads;
         p_vertex_attrs = &m_vertex_attribute;
+        p_edge_attrs = &m_edge_attribute;
         p_face_attrs = &m_face_attribute;
     }
 
@@ -200,15 +201,16 @@ private:
         //        VertexAttributes vertex_info;
         size_t v1_id;
         size_t v2_id;
-        bool is_edge_on_surface = false;
-        bool is_edge_open_boundary = false;
         std::vector<size_t> v1_param_type;
         std::vector<size_t> v2_param_type;
 
-        std::vector<std::pair<EdgeAttributes, std::array<size_t, 2>>> changed_edges;
+        EdgeAttributes old_e_attrs;
+
+        // std::vector<std::pair<EdgeAttributes, std::array<size_t, 2>>> changed_edges;
+        std::map<simplex::Edge, EdgeAttributes> changed_edges;
 
         /**
-         * All tets incident to the splitted edge, identified by the link vertex (the vertex
+         * All faces incident to the splitted edge, identified by the link vertex (the vertex
          * opposite to the splitted edge).
          */
         std::map<size_t, FaceAttributes> faces;

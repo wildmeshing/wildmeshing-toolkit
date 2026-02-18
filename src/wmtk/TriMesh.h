@@ -326,6 +326,7 @@ public:
     simplex::Vertex simplex_from_vertex(const Tuple& t) const;
     simplex::Edge simplex_from_edge(const Tuple& t) const;
     simplex::Face simplex_from_face(const Tuple& t) const;
+    simplex::Face simplex_from_face(const size_t fid) const;
 
     Tuple tuple_from_simplex(const simplex::Face& s) const;
     // Tuple tuple_from_simplex(const simplex::Edge& s) const;
@@ -621,6 +622,7 @@ public:
     std::vector<size_t> get_one_ring_vids_for_vertex_duplicate(const size_t& t) const;
 
     std::vector<size_t> get_incident_fids_for_edge(const Tuple& t) const;
+    std::vector<size_t> get_incident_fids_for_edge(const size_t vid0, const size_t vid1) const;
 
     /**
      * @brief Get all edges that are incident to the vertex of Tuple `t`.
