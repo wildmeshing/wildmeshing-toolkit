@@ -169,6 +169,8 @@ inline bool VF_rational_to_double(const MatrixXr& V_in, const MatrixXi& F, Matri
     return true;
 }
 
+} // namespace wmtk
+
 // Enables passing Eigen matrices to fmt/spdlog.
 template <typename T>
 struct fmt::formatter<
@@ -178,5 +180,3 @@ struct fmt::formatter<
         char>> : ostream_formatter
 {
 };
-
-} // namespace wmtk
