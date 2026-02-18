@@ -13,7 +13,6 @@ RUN apt-get update && \
     libmpfr-dev \
     libssl-dev \
     ccache \
-    python3 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set workdir
@@ -30,6 +29,7 @@ RUN if [ -d .git ]; then git submodule update --init --recursive; fi
 RUN --mount=type=cache,target=/root/.ccache \
     cmake -S . -B build \
     -DWMTK_WITH_CCACHE=ON \
+    -DWMTK_PYBIND=OFF \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_FLAGS_DEBUGNOSYMBOLS=""
 
