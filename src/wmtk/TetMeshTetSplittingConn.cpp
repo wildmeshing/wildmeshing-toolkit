@@ -123,7 +123,7 @@ bool TetMesh::split_tet(const Tuple& t, std::vector<Tuple>& new_tets)
     new_tets = get_one_ring_tets_for_vertex(new_t.switch_vertex(*this));
 
     start_protect_attributes();
-    if (!split_face_after(new_t) || !invariants(new_tets)) {
+    if (!split_tet_after(new_t) || !invariants(new_tets)) {
         // rollback topo
         // restore old v, t
         for (const auto& old_v : old_vertices) {

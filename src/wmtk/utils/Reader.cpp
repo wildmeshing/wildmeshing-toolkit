@@ -57,14 +57,15 @@ void stl_to_manifold_wmtk_input(
 {
     Eigen::MatrixXd inV, V;
     Eigen::MatrixXi inF, F;
-    igl::read_triangle_mesh(input_path, inV, inF);
+    if (!igl::read_triangle_mesh(input_path, inV, inF)) {
+        log_and_throw_error("Could not read {}", input_path);
+    }
     Eigen::VectorXi _I;
 
     igl::remove_unreferenced(inV, inF, V, F, _I);
 
     if (V.rows() == 0 || F.rows() == 0) {
-        wmtk::logger().info("== finish with Empty Input, stop.");
-        exit(0);
+        log_and_throw_error("== finish with Empty Input, stop.");
     }
 
     box_minmax = std::pair(V.colwise().minCoeff(), V.colwise().maxCoeff());
@@ -123,7 +124,9 @@ void stl_to_manifold_wmtk_input(
         {
             Eigen::MatrixXd inV;
             Eigen::MatrixXi inF;
-            igl::read_triangle_mesh(p, inV, inF);
+            if (!igl::read_triangle_mesh(p, inV, inF)) {
+                log_and_throw_error("Could not read {}", p);
+            }
             Eigen::VectorXi _I;
             igl::remove_unreferenced(inV, inF, V_single, F_single, _I);
         }
@@ -142,8 +145,7 @@ void stl_to_manifold_wmtk_input(
     }
 
     if (V.rows() == 0 || F.rows() == 0) {
-        wmtk::logger().info("== finish with Empty Input, stop.");
-        exit(0);
+        log_and_throw_error("== finish with Empty Input, stop.");
     }
 
     box_minmax = std::pair(V.colwise().minCoeff(), V.colwise().maxCoeff());
