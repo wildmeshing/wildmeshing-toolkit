@@ -13,6 +13,7 @@ RUN apt-get update && \
     libmpfr-dev \
     libssl-dev \
     ccache \
+    python3 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set workdir
