@@ -77,7 +77,7 @@ void ImageSimulationMeshTri::partition_mesh_morton()
         vmax = V.front();
 
         for (size_t j = 0; j < V.size(); j++) {
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < 2; i++) {
                 vmin(i) = std::min(vmin(i), V[j](i));
                 vmax(i) = std::max(vmax(i), V[j](i));
             }
@@ -114,10 +114,8 @@ void ImageSimulationMeshTri::partition_mesh_morton()
             tbb::blocked_range<size_t>(0, V.size()),
             [&](tbb::blocked_range<size_t> r) {
                 for (size_t i = r.begin(); i < r.end(); i++) {
-                    list_v[i].morton = Resorting::MortonCode64(
-                        int(V[i][0] * multi),
-                        int(V[i][1] * multi),
-                        int(V[i][2] * multi));
+                    list_v[i].morton =
+                        Resorting::MortonCode64(int(V[i][0] * multi), int(V[i][1] * multi), 0);
                     list_v[i].order = i;
                 }
             });
