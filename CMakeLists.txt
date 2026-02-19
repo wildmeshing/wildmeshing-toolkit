@@ -72,9 +72,6 @@ include(fenvelope)
 include(nanoflann)
 
 include(simple_bvh)
-include(pybind11)
-include(pybind11_json)
-
 # Sort projects inside the solution
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -83,6 +80,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 option(WMTK_PYBIND "Generate python bindings" ON)
 if(WMTK_PYBIND)
+    include(pybind11)
+    include(pybind11_json)
+
     include(pybind11)
 endif()
 
@@ -145,9 +145,9 @@ endif()
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     # wmtk_app
     add_subdirectory(app) # also contains python bindings
-    
+
     include(CTest)
-    
+
     # Unit tests
     if(BUILD_TESTING)
         enable_testing()
