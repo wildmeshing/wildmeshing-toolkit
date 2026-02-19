@@ -11,7 +11,9 @@
 #include <atomic>
 #include <paraviewo/VTUWriter.hpp>
 #include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
+#include <wmtk/utils/io.hpp>
 
 
 namespace {
@@ -20,10 +22,21 @@ static int debug_print_counter = 0;
 
 namespace wmtk::components::image_simulation::tri {
 
-auto renew = [](auto& m, auto op, auto& tris) {
-    auto edges = m.new_edges_after(tris);
-    auto optup = std::vector<std::pair<std::string, TriMesh::Tuple>>();
-    for (auto& e : edges) optup.emplace_back(op, e);
+auto renew = [](const ImageSimulationMeshTri& m, auto op, auto& tris) {
+    using Tuple = TriMesh::Tuple;
+    std::vector<Tuple> edges;
+    for (const auto& t : tris) {
+        for (auto j = 0; j < 3; j++) {
+            edges.push_back(m.tuple_from_edge(t.fid(m), j));
+        }
+    }
+    wmtk::unique_edge_tuples(m, edges);
+
+    std::vector<std::pair<std::string, Tuple>> optup;
+    optup.reserve(edges.size());
+    for (const Tuple& e : edges) {
+        optup.emplace_back(op, e);
+    }
     return optup;
 };
 
@@ -312,7 +325,49 @@ bool ImageSimulationMeshTri::adjust_sizing_field_serial(double max_energy)
 
 void ImageSimulationMeshTri::write_msh(std::string file)
 {
-    log_and_throw_error("not implemented");
+    consolidate_mesh();
+
+    wmtk::MshData msh;
+
+    const auto& vtx = get_vertices();
+    msh.add_face_vertices(vtx.size(), [&](size_t k) {
+        auto i = vtx[k].vid(*this);
+        Vector2d p2 = m_vertex_attribute[i].m_pos;
+        return Vector3d(p2[0], p2[1], 0);
+    });
+
+    const auto faces = get_faces();
+    msh.add_faces(faces.size(), [&](size_t k) {
+        const size_t fid = faces[k].fid(*this);
+        auto vs = oriented_tri_vertices(faces[k]);
+        std::array<size_t, 3> data;
+        for (size_t j = 0; j < 3; j++) {
+            data[j] = vs[j].vid(*this);
+            assert(data[j] < vtx.size());
+        }
+        return data;
+    });
+
+    msh.add_face_vertex_attribute<1>("sizing_scalar", [&](size_t i) {
+        return m_vertex_attribute[i].m_sizing_scalar;
+    });
+    msh.add_face_attribute<1>("quality", [&](size_t i) { return m_face_attribute[i].m_quality; });
+
+    for (size_t j = 0; j < m_tags_count; ++j) {
+        msh.add_face_attribute<1>(fmt::format("tag_{}", j), [&](size_t i) {
+            return m_face_attribute[i].tags[j];
+        });
+    }
+
+    msh.add_physical_group("ImageVolume");
+
+    msh.add_edge_vertices(m_V_envelope.size(), [this](size_t k) {
+        return Vector3d(m_V_envelope[k][0], m_V_envelope[k][1], 0);
+    });
+    msh.add_edges(m_E_envelope.size(), [this](size_t k) { return m_E_envelope[k]; });
+    msh.add_physical_group("EnvelopeSurface");
+
+    msh.save(file, true);
 }
 
 void ImageSimulationMeshTri::write_vtu(const std::string& path)
@@ -883,36 +938,308 @@ bool ImageSimulationMeshTri::collapse_edge_after(const Tuple& loc)
 
 size_t ImageSimulationMeshTri::swap_all_edges()
 {
-    log_and_throw_error("not implemented");
+    std::vector<std::pair<std::string, Tuple>> collect_all_ops;
+    {
+        igl::Timer timer;
+        timer.start();
+        const auto edges = get_edges();
+        collect_all_ops.reserve(edges.size());
+        for (const Tuple& t : edges) {
+            collect_all_ops.emplace_back("edge_swap", t);
+        }
+        timer.stop();
+        logger().info("edge collapse prepare time: {:.4}s", timer.getElapsedTimeInSec());
+    }
+    logger().info("#E = {}", collect_all_ops.size());
+
+    auto setup_and_execute = [&](auto& executor) {
+        executor.renew_neighbor_tuples = renew;
+        executor.num_threads = NUM_THREADS;
+        executor.priority = [](const ImageSimulationMeshTri& m, std::string op, const Tuple& e) {
+            return m.swap_weight(e);
+        };
+        executor.should_renew = [](auto val) { return (val > 0); };
+        executor.is_weight_up_to_date = [](const ImageSimulationMeshTri& m, auto& ele) {
+            auto& [val, _, e] = ele;
+            const double w = m.swap_weight(e);
+            return (w > 1e-5) && ((w - val) * (w - val) < 1e-8);
+        };
+        executor(*this, collect_all_ops);
+    };
+    if (NUM_THREADS > 0) {
+        auto executor = wmtk::ExecutePass<ImageSimulationMeshTri, ExecutionPolicy::kPartition>();
+        executor.lock_vertices = edge_locker;
+        setup_and_execute(executor);
+    } else {
+        auto executor = wmtk::ExecutePass<ImageSimulationMeshTri, ExecutionPolicy::kSeq>();
+        setup_and_execute(executor);
+    }
+
+    return true;
+}
+
+double ImageSimulationMeshTri::swap_weight(const Tuple& t) const
+{
+    const SmartTuple tt(*this, t);
+    const auto t_opp = tt.switch_face();
+    if (!t_opp) {
+        return std::numeric_limits<double>::lowest();
+    }
+
+    if (is_edge_on_surface(t)) {
+        return std::numeric_limits<double>::lowest();
+    }
+
+    const size_t v0 = tt.vid();
+    const size_t v1 = tt.switch_vertex().vid();
+    const size_t v2 = tt.switch_edge().switch_vertex().vid();
+    const size_t v3 = t_opp.value().switch_edge().switch_vertex().vid();
+
+    // before swap
+    const double q012 = get_quality({{v0, v1, v2}});
+    const double q031 = get_quality({{v0, v3, v1}});
+    // after swap
+    const double q032 = get_quality({{v0, v3, v2}});
+    const double q231 = get_quality({{v2, v3, v1}});
+
+    const double q_before = std::max(q012, q031);
+    const double q_after = std::max(q032, q231);
+
+    return q_before - q_after;
 }
 
 bool ImageSimulationMeshTri::swap_edge_before(const Tuple& t)
 {
-    log_and_throw_error("not implemented");
-    return false;
+    if (is_edge_on_surface(t)) {
+        return false;
+    }
+
+    const auto& FA = m_face_attribute;
+    auto& cache = swap_cache.local();
+    cache.changed_edges.clear();
+
+    const auto incident_faces = get_incident_fids_for_edge(t);
+
+    cache.face_tags = FA[incident_faces[0]].tags;
+
+    double max_energy = -1.0;
+    for (const size_t fid : incident_faces) {
+        max_energy = std::max(FA[fid].m_quality, max_energy);
+        if (FA[fid].tags != cache.face_tags) {
+            log_and_throw_error("not all tets have the same tag"); // for debugging
+        }
+    }
+    cache.max_energy = max_energy;
+
+    // cache edges
+    for (const size_t fid : incident_faces) {
+        for (int j = 0; j < 3; j++) {
+            const Tuple t = tuple_from_edge(fid, j);
+            simplex::Edge e = simplex_from_edge(t);
+            cache.changed_edges.try_emplace(e, m_edge_attribute[t.eid(*this)]);
+        }
+    }
+
+    return true;
 }
 
 bool ImageSimulationMeshTri::swap_edge_after(const Tuple& t)
 {
-    log_and_throw_error("not implemented");
+    auto& cache = swap_cache.local();
+    const auto incident_faces = get_incident_fids_for_edge(t);
+
+    auto& FA = m_face_attribute;
+
+    double max_energy = -1.0;
+    for (const size_t fid : incident_faces) {
+        if (is_inverted(fid)) {
+            return false;
+        }
+        double q = get_quality(fid);
+        FA[fid].m_quality = q;
+        max_energy = std::max(q, max_energy);
+
+        FA[fid].tags = cache.face_tags;
+    }
+    if (max_energy >= cache.max_energy) {
+        return false;
+    }
+
+    // cached edges
+    for (const auto& [e, e_attrs] : cache.changed_edges) {
+        const auto [_, eid] = tuple_from_edge(e.vertices());
+        m_edge_attribute[eid] = e_attrs;
+    }
+
     return false;
 }
 
 void ImageSimulationMeshTri::smooth_all_vertices()
 {
-    log_and_throw_error("not implemented");
+    igl::Timer timer;
+    timer.start();
+    std::vector<std::pair<std::string, Tuple>> collect_all_ops;
+    for (const Tuple& t : get_vertices()) {
+        collect_all_ops.emplace_back("vertex_smooth", t);
+    }
+    logger().info("vertex smoothing prepare time: {:.4}s", timer.getElapsedTimeInSec());
+    logger().info("#V = {}", collect_all_ops.size());
+    if (NUM_THREADS > 0) {
+        timer.start();
+        ExecutePass<ImageSimulationMeshTri, ExecutionPolicy::kPartition> executor;
+        executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
+            return m.try_set_vertex_mutex_one_ring(e, task_id);
+        };
+        executor.num_threads = NUM_THREADS;
+        executor(*this, collect_all_ops);
+        logger().info("vertex smoothing time parallel: {:.4}s", timer.getElapsedTimeInSec());
+    } else {
+        timer.start();
+        ExecutePass<ImageSimulationMeshTri, ExecutionPolicy::kSeq> executor;
+        executor(*this, collect_all_ops);
+        logger().info("vertex smoothing time serial: {:.4}s", timer.getElapsedTimeInSec());
+    }
 }
 
 bool ImageSimulationMeshTri::smooth_before(const Tuple& t)
 {
-    log_and_throw_error("not implemented");
-    return false;
+    const size_t vid = t.vid(*this);
+    if (!m_vertex_attribute.at(vid).on_bbox_faces.empty()) {
+        return false;
+    }
+
+    return true;
 }
 
 bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
 {
-    log_and_throw_error("not implemented");
-    return false;
+    // Newton iterations are encapsulated here.
+    logger().trace("Newton iteration for vertex smoothing.");
+    const size_t vid = t.vid(*this);
+
+    const auto& VA = m_vertex_attribute;
+
+    const auto locs = get_one_ring_fids_for_vertex(t);
+    assert(locs.size() > 0);
+
+    double max_quality = 0.;
+    for (const size_t fid : locs) {
+        max_quality = std::max(max_quality, m_face_attribute[fid].m_quality);
+    }
+
+    std::vector<std::array<double, 6>> assembles;
+    assembles.reserve(locs.size());
+
+    for (const size_t fid : locs) {
+        if (is_inverted(fid)) {
+            log_and_throw_error("Inverted face before smoothing!");
+        }
+        std::array<size_t, 3> local_verts = oriented_tri_vids(fid);
+        {
+            size_t v_loc = 0;
+            for (size_t i = 0; i < 3; ++i) {
+                if (local_verts[i] == vid) {
+                    v_loc = i;
+                    break;
+                }
+            }
+            std::array<size_t, 3> buf = local_verts;
+            local_verts[0] = buf[v_loc];
+            local_verts[1] = buf[(v_loc + 1) % 3];
+            local_verts[2] = buf[(v_loc + 2) % 3];
+        }
+
+        std::array<double, 6> T;
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 2; j++) {
+                T[i * 2 + j] = VA[local_verts[i]].m_pos[j];
+            }
+        }
+        assembles.push_back(T);
+    }
+
+    const Vector2d old_pos = VA[vid].m_pos;
+
+    m_vertex_attribute[vid].m_pos =
+        newton_method_from_stack(assembles, AMIPS2D_energy, AMIPS2D_jacobian, AMIPS2D_hessian);
+
+    wmtk::logger().trace(
+        "old pos {} -> new pos {}",
+        old_pos.transpose(),
+        VA[vid].m_pos.transpose());
+
+    std::vector<std::array<double, 4>> surface_assemble;
+    if (VA[vid].m_is_on_surface) {
+        std::set<size_t> unique_eid;
+        for (const size_t fid : locs) {
+            for (size_t j = 0; j < 3; j++) {
+                Tuple f_t = tuple_from_edge(fid, j);
+                size_t eid = f_t.eid(*this);
+                auto [it, suc] = unique_eid.emplace(eid);
+                if (!suc) {
+                    continue;
+                }
+                if (m_edge_attribute[eid].m_is_surface_fs) {
+                    auto vs_id = get_edge_vids(f_t);
+                    if (vs_id[1] == vid) {
+                        std::swap(vs_id[1], vs_id[0]);
+                    }
+                    if (vs_id[0] != vid) {
+                        continue; // does not contain point of interest
+                    }
+                    std::array<double, 4> coords;
+                    for (int k = 0; k < 2; k++) {
+                        for (int kk = 0; kk < 2; kk++) {
+                            coords[k * 2 + kk] = VA[vs_id[k]].m_pos[kk];
+                        }
+                    }
+                    surface_assemble.emplace_back(coords);
+                }
+            }
+        }
+        {
+            assert(m_envelope->initialized());
+            Vector2d project;
+            m_envelope->nearest_point(VA[vid].m_pos, project);
+
+            m_vertex_attribute[vid].m_pos = project;
+        }
+
+        for (auto& n : surface_assemble) {
+            for (int kk = 0; kk < 2; kk++) {
+                n[kk] = VA[vid].m_pos[kk];
+            }
+        }
+    }
+
+    // check surface containment
+    for (const auto& n : surface_assemble) {
+        std::array<Eigen::Vector2d, 2> edge;
+        for (int k = 0; k < 2; k++) {
+            for (int kk = 0; kk < 2; kk++) {
+                edge[k][kk] = n[k * 2 + kk];
+            }
+        }
+        if (m_envelope->is_outside(edge)) {
+            return false;
+        }
+    }
+
+    // quality
+    auto max_after_quality = 0.;
+    for (const size_t fid : locs) {
+        if (is_inverted(fid)) {
+            return false;
+        }
+        const double q = get_quality(fid);
+        m_face_attribute[fid].m_quality = q;
+        max_after_quality = std::max(max_after_quality, q);
+    }
+    if (max_after_quality > max_quality) {
+        return false;
+    }
+
+    return true;
 }
 
 
@@ -934,6 +1261,11 @@ bool ImageSimulationMeshTri::is_inverted(const Tuple& loc) const
     return is_inverted(oriented_tri_vids(loc));
 }
 
+bool ImageSimulationMeshTri::is_inverted(const size_t fid) const
+{
+    return is_inverted(oriented_tri_vids(fid));
+}
+
 double ImageSimulationMeshTri::get_quality(const std::array<size_t, 3>& vs) const
 {
     std::array<Vector2d, 3> ps;
@@ -949,7 +1281,7 @@ double ImageSimulationMeshTri::get_quality(const std::array<size_t, 3>& vs) cons
             }
         energy = AMIPS2D_energy(T);
     }
-    if (std::isinf(energy) || std::isnan(energy)) {
+    if (std::isinf(energy) || std::isnan(energy) || energy < 2 - 1e-3) {
         return MAX_ENERGY;
     }
     return energy;
@@ -958,6 +1290,11 @@ double ImageSimulationMeshTri::get_quality(const std::array<size_t, 3>& vs) cons
 double ImageSimulationMeshTri::get_quality(const Tuple& loc) const
 {
     return get_quality(oriented_tri_vids(loc));
+}
+
+double ImageSimulationMeshTri::get_quality(const size_t fid) const
+{
+    return get_quality(oriented_tri_vids(fid));
 }
 
 bool ImageSimulationMeshTri::is_edge_on_surface(const Tuple& loc) const
@@ -1005,7 +1342,9 @@ void ImageSimulationMeshTri::mesh_improvement(int max_its)
 
         ///energy check
         wmtk::logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
-        if (max_energy < m_params.stop_energy) break;
+        if (max_energy < m_params.stop_energy) {
+            break;
+        }
         consolidate_mesh();
 
         wmtk::logger().info("#V =  {}, #T = {}", vert_capacity(), tri_capacity());

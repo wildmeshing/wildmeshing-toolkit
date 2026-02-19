@@ -297,6 +297,12 @@ double SampleEnvelope::nearest_point(const Eigen::Vector3d& pts, Eigen::Vector3d
     m_bvh->nearest_facet(pts, result, dist);
     return dist;
 }
+double SampleEnvelope::nearest_point(const Eigen::Vector2d& pts, Eigen::Vector2d& result) const
+{
+    double dist;
+    m_bvh->nearest_facet(pts, result, dist);
+    return dist;
+}
 
 double SampleEnvelope::squared_distance(const Eigen::Vector3d& p) const
 {

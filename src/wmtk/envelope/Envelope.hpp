@@ -78,6 +78,7 @@ public:
     bool is_outside(const Eigen::Vector3d& pts) const;
     bool is_outside(const Eigen::Vector2d& pts) const;
     double nearest_point(const Eigen::Vector3d& pts, Eigen::Vector3d& result) const;
+    double nearest_point(const Eigen::Vector2d& pts, Eigen::Vector2d& result) const;
     bool initialized() { return m_bvh != nullptr; };
 
     double squared_distance(const Eigen::Vector3d& p) const;

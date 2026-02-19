@@ -161,6 +161,12 @@ public:
     bool collapse_edge_after(const Tuple& t) override;
 
     size_t swap_all_edges();
+    /**
+     * @brief The quality improvement of a swap.
+     *
+     * Used to determine the priority and weight of a swap operation.
+     */
+    double swap_weight(const Tuple& t) const;
     bool swap_edge_before(const Tuple& t) override;
     bool swap_edge_after(const Tuple& t) override;
 
@@ -173,8 +179,10 @@ public:
      */
     bool is_inverted(const std::array<size_t, 3>& vs) const;
     bool is_inverted(const Tuple& loc) const;
+    bool is_inverted(const size_t fid) const;
     double get_quality(const std::array<size_t, 3>& vs) const;
     double get_quality(const Tuple& loc) const;
+    double get_quality(const size_t fid) const;
 
     //
     bool is_edge_on_surface(const Tuple& loc) const;
@@ -237,7 +245,7 @@ private:
     struct SwapInfoCache
     {
         double max_energy;
-        std::map<std::array<size_t, 2>, EdgeAttributes> changed_edges;
+        std::map<simplex::Edge, EdgeAttributes> changed_edges;
         std::vector<int64_t> face_tags;
     };
     tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
