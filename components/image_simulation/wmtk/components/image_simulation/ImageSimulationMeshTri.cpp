@@ -559,7 +559,7 @@ bool ImageSimulationMeshTri::split_edge_after(const Tuple& loc)
         m_edge_attribute[eid1] = cache.old_e_attrs;
         m_edge_attribute[eid2] = cache.old_e_attrs;
         for (const auto& [vid, _] : cache.faces) {
-            const auto [_, eid] = tuple_from_edge({{v_id, vid}});
+            const auto [_tup, eid] = tuple_from_edge({{v_id, vid}});
             m_edge_attribute[eid].reset();
         }
     }
