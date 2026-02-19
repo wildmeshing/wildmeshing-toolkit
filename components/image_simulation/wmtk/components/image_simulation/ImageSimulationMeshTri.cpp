@@ -806,7 +806,7 @@ bool ImageSimulationMeshTri::collapse_edge_before(const Tuple& loc)
             return false;
         }
         double q = get_quality(vs);
-        if (q > cache.max_energy) {
+        if (q > m_params.stop_energy && q > cache.max_energy) {
             return false;
         }
         cache.changed_energies.emplace_back(q);
@@ -903,9 +903,10 @@ bool ImageSimulationMeshTri::collapse_edge_after(const Tuple& loc)
     // surface
     if (cache.edge_length > 0) {
         for (auto& vids : cache.surface_edges) {
+            const Vector2d a = VA.at(vids[0]).m_pos;
+            const Vector2d b = VA.at(vids[1]).m_pos;
             // surface envelope
-            bool is_out = m_envelope->is_outside(
-                std::array<Vector2d, 2>{VA.at(vids[0]).m_pos, VA.at(vids[1]).m_pos});
+            bool is_out = m_envelope->is_outside(std::array<Vector2d, 2>{a, b});
             if (is_out) {
                 return false;
             }
@@ -1032,11 +1033,15 @@ bool ImageSimulationMeshTri::swap_edge_before(const Tuple& t)
     cache.max_energy = max_energy;
 
     // cache edges
+    simplex::Edge edge = simplex_from_edge(t);
     for (const size_t fid : incident_faces) {
         for (int j = 0; j < 3; j++) {
-            const Tuple t = tuple_from_edge(fid, j);
-            simplex::Edge e = simplex_from_edge(t);
-            cache.changed_edges.try_emplace(e, m_edge_attribute[t.eid(*this)]);
+            const Tuple tup = tuple_from_edge(fid, j);
+            simplex::Edge e = simplex_from_edge(tup);
+            if (e == edge) {
+                continue;
+            }
+            cache.changed_edges.try_emplace(e, m_edge_attribute[tup.eid(*this)]);
         }
     }
 
@@ -1070,8 +1075,9 @@ bool ImageSimulationMeshTri::swap_edge_after(const Tuple& t)
         const auto [_, eid] = tuple_from_edge(e.vertices());
         m_edge_attribute[eid] = e_attrs;
     }
+    m_edge_attribute[t.eid(*this)].reset();
 
-    return false;
+    return true;
 }
 
 void ImageSimulationMeshTri::smooth_all_vertices()

@@ -271,7 +271,7 @@ bool SampleEnvelope::is_outside(const std::array<Vector3d, 2>& edge) const
     }
 
     for (size_t i = 0; i < pts.size(); ++i) {
-        m_bvh->nearest_facet_with_hint(pts[i], prev_facet, nearest_point, sq_dist);
+        m_bvh->nearest_facet(pts[i], nearest_point, sq_dist);
         if (sq_dist > eps2) {
             wmtk::logger().trace("fail envelope check 5");
             return true;
