@@ -343,8 +343,9 @@ public:
             F.resize(n_F, dim + 1);
             switch (dim) {
             case 1:
-                extract_simplex_elements<1>(
-                    [&F](size_t i, size_t v0, size_t v1) { F.row(i) = Vector2i(v0, v1); });
+                extract_simplex_elements<1>([&F](size_t i, size_t v0, size_t v1) {
+                    F.row(i) = Vector2i((int)v0, (int)v1);
+                });
                 break;
             case 2:
                 extract_simplex_elements<2>([&F](size_t i, size_t v0, size_t v1, size_t v2) {

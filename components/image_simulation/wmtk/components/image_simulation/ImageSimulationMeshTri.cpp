@@ -318,6 +318,30 @@ void ImageSimulationMeshTri::init_surfaces_and_boundaries()
         [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
 }
 
+void ImageSimulationMeshTri::init_envelope(const MatrixXd& V, const MatrixXi& E)
+{
+    if (m_envelope) {
+        log_and_throw_error("Envelope was already initialized once.");
+    }
+    assert(m_V_envelope.empty() && m_E_envelope.empty());
+    assert(V.size() != 0 && E.size() != 0);
+    assert(V.cols() == 2); // vertices must be in 2D
+    assert(E.cols() == 2); // envelope must be edges
+
+
+    m_V_envelope.resize(V.rows());
+    for (size_t i = 0; i < m_V_envelope.size(); ++i) {
+        m_V_envelope[i] = V.row(i);
+    }
+    m_E_envelope.resize(E.rows());
+    for (size_t i = 0; i < m_E_envelope.size(); ++i) {
+        m_E_envelope[i] = E.row(i);
+    }
+
+    m_envelope = std::make_shared<SampleEnvelope>();
+    m_envelope->init(m_V_envelope, m_E_envelope, m_envelope_eps);
+}
+
 bool ImageSimulationMeshTri::adjust_sizing_field_serial(double max_energy)
 {
     log_and_throw_error("not implemented");
@@ -367,6 +391,7 @@ void ImageSimulationMeshTri::write_msh(std::string file)
     msh.add_edges(m_E_envelope.size(), [this](size_t k) { return m_E_envelope[k]; });
     msh.add_physical_group("EnvelopeSurface");
 
+    logger().info("Write {}", file);
     msh.save(file, true);
 }
 

@@ -98,32 +98,43 @@ InputData read_image_msh(const std::string& path)
     std::optional<mshio::PhysicalGroup> ph_vol = msh.get_physical_group_by_name("ImageVolume");
     std::optional<mshio::PhysicalGroup> ph_env = msh.get_physical_group_by_name("EnvelopeSurface");
 
+    const bool has_tets = msh.get_num_tets() != 0;
+    const bool has_faces = msh.get_num_faces() != 0;
+
     if (ph_vol && ph_env) {
         logger().info("Found ImageVolume and EnvelopeSurface.");
 
-        if (ph_vol.value().dim != 3) {
+        if (ph_vol.value().dim != 3 && ph_vol.value().dim != 2) {
             log_and_throw_error(
                 "Unexpected dimension {} of pysical group {}",
                 ph_vol.value().dim,
                 ph_vol.value().name);
         }
-        if (ph_env.value().dim != 2) {
+        if (ph_env.value().dim != 2 && ph_env.value().dim != 1) {
             log_and_throw_error(
                 "Unexpected dimension {} of pysical group {}",
                 ph_env.value().dim,
                 ph_env.value().name);
         }
 
-        msh.get_VF(3, ph_vol.value().tag, input_data.V_input, input_data.T_input);
-        msh.get_VF(2, ph_env.value().tag, input_data.V_envelope, input_data.F_envelope);
+        if (has_faces && !has_tets) {
+            logger().info("Read 2D input.");
+            msh.get_VF(2, ph_vol.value().tag, input_data.V_input, input_data.T_input);
+            msh.get_VF(1, ph_env.value().tag, input_data.V_envelope, input_data.F_envelope);
+            auto& Vi = input_data.V_input;
+            Vi = Vi.block(0, 0, Vi.rows(), 2).eval();
+            auto& Ve = input_data.V_envelope;
+            Ve = Ve.block(0, 0, Ve.rows(), 2).eval();
+        } else {
+            logger().info("Read 3D input.");
+            msh.get_VF(3, ph_vol.value().tag, input_data.V_input, input_data.T_input);
+            msh.get_VF(2, ph_env.value().tag, input_data.V_envelope, input_data.F_envelope);
+        }
 
     } else {
         // only read volume directly from .msh and ignore other entities
         logger().info("Could not find pysical groups ImageVolume and EnvelopeSurface. Reading only "
                       "tet data (in 2D face data) from MSH.");
-
-        const bool has_tets = msh.get_num_tets() != 0;
-        const bool has_faces = msh.get_num_faces() != 0;
 
         if (has_faces && !has_tets) {
             logger().info("Read 2D input.");

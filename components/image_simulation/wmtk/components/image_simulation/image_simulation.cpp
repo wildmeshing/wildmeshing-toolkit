@@ -151,8 +151,7 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
     image_simulation::tri::ImageSimulationMeshTri mesh(params, params.eps, NUM_THREADS);
     // first init envelope
     if (input_data.V_envelope.size() != 0) {
-        log_and_throw_error("loading envelope from image is not implemented");
-        // mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);
+        mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);
     }
     if (input_data.V_input_r.size() != 0) {
         log_and_throw_error("Input must be float for 2D!");

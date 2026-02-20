@@ -140,7 +140,7 @@ public:
 
     void init_surfaces_and_boundaries();
 
-    // void init_envelope(const MatrixXd& V, const MatrixXi& F);
+    void init_envelope(const MatrixXd& V, const MatrixXi& F);
 
     bool adjust_sizing_field_serial(double max_energy);
 
