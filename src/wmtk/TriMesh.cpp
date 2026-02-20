@@ -1273,6 +1273,13 @@ std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_edges_for_vertex(
     return one_ring_edges;
 }
 
+std::vector<wmtk::TriMesh::Tuple> wmtk::TriMesh::get_one_ring_edges_for_vertex(
+    const size_t vid) const
+{
+    const Tuple t = tuple_from_vertex(vid);
+    return get_one_ring_edges_for_vertex(t);
+}
+
 std::array<wmtk::TriMesh::Tuple, 3> TriMesh::oriented_tri_vertices(
     const wmtk::TriMesh::Tuple& t) const
 {

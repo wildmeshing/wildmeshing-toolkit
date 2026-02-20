@@ -204,7 +204,7 @@ void ImageSimulationMeshTri::init_from_image(
 
 
     // add tags
-    for (size_t i = 0; i < T_tags.rows(); ++i) {
+    for (size_t i = 0; i < (size_t)T_tags.rows(); ++i) {
         m_face_attribute[i].tags.resize(m_tags_count);
         for (size_t j = 0; j < m_tags_count; ++j) {
             m_face_attribute[i].tags[j] = T_tags(i, j);
@@ -370,7 +370,7 @@ void ImageSimulationMeshTri::write_msh(std::string file)
     msh.save(file, true);
 }
 
-void ImageSimulationMeshTri::write_vtu(const std::string& path)
+void ImageSimulationMeshTri::write_vtu(const std::string& path) const
 {
     // consolidate_mesh();
     const std::string out_path = path + ".vtu";
@@ -402,15 +402,15 @@ void ImageSimulationMeshTri::write_vtu(const std::string& path)
         amips(index, 0) = m_face_attribute[tid].m_quality;
 
         const auto& vs = oriented_tri_vids(t);
-        for (int j = 0; j < 3; j++) {
-            F(index, j) = vs[j];
+        for (size_t j = 0; j < 3; j++) {
+            F(index, j) = (int)vs[j];
         }
         ++index;
     }
 
     for (size_t i = 0; i < edges.size(); ++i) {
         for (size_t j = 0; j < 2; ++j) {
-            E(i, j) = edges[i][j];
+            E(i, j) = (int)edges[i][j];
         }
     }
 
@@ -443,7 +443,7 @@ void ImageSimulationMeshTri::write_vtu(const std::string& path)
 }
 
 std::vector<std::array<size_t, 2>> ImageSimulationMeshTri::get_edges_by_condition(
-    std::function<bool(const EdgeAttributes&)> cond)
+    std::function<bool(const EdgeAttributes&)> cond) const
 {
     std::vector<std::array<size_t, 2>> res;
     for (const Tuple& e : get_edges()) {
@@ -845,11 +845,16 @@ bool ImageSimulationMeshTri::collapse_edge_before(const Tuple& loc)
         }
     }
 
-    if (m_params.preserve_topology && VA[v1_id].m_is_on_surface && VA[v2_id].m_is_on_surface) {
-        // simplified topology preservation check
-        size_t eid = loc.eid(*this);
-        if (!m_edge_attribute[eid].m_is_surface_fs) {
-            return false;
+    if (m_params.preserve_topology) {
+        const bool v1_surf = VA[v1_id].m_is_on_surface;
+        const bool v2_surf = VA[v2_id].m_is_on_surface;
+        const bool v1_bbox = !VA[v1_id].on_bbox_faces.empty();
+        const bool v2_bbox = !VA[v2_id].on_bbox_faces.empty();
+
+        if ((v1_surf || v1_bbox) && (v2_surf || v2_bbox)) {
+            if (!substructure_link_condition(loc)) {
+                return false;
+            }
         }
     }
 
@@ -1282,6 +1287,16 @@ bool ImageSimulationMeshTri::is_edge_on_surface(const Tuple& loc) const
     const size_t eid = loc.eid(*this);
     return m_edge_attribute[eid].m_is_surface_fs;
 }
+bool ImageSimulationMeshTri::is_edge_on_surface(const std::array<size_t, 2>& vids) const
+{
+    if (!m_vertex_attribute.at(vids[0]).m_is_on_surface ||
+        !m_vertex_attribute.at(vids[1]).m_is_on_surface) {
+        return false;
+    }
+
+    const auto [_, eid] = tuple_from_edge(vids);
+    return m_edge_attribute[eid].m_is_surface_fs;
+}
 bool ImageSimulationMeshTri::is_edge_on_bbox(const Tuple& loc) const
 {
     const auto vs = get_edge_vids(loc);
@@ -1291,6 +1306,16 @@ bool ImageSimulationMeshTri::is_edge_on_bbox(const Tuple& loc) const
     }
 
     const size_t eid = loc.eid(*this);
+    return m_edge_attribute[eid].m_is_bbox_fs >= 0;
+}
+
+bool ImageSimulationMeshTri::is_edge_on_bbox(const std::array<size_t, 2>& vids) const
+{
+    if (m_vertex_attribute.at(vids[0]).on_bbox_faces.empty() ||
+        m_vertex_attribute.at(vids[1]).on_bbox_faces.empty()) {
+        return false;
+    }
+    const auto [_, eid] = tuple_from_edge(vids);
     return m_edge_attribute[eid].m_is_bbox_fs >= 0;
 }
 
@@ -1418,7 +1443,7 @@ std::tuple<double, double> ImageSimulationMeshTri::local_operations(
         } else if (i == 2) {
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==swapping {}==", n);
-                int cnt_success = swap_all_edges();
+                size_t cnt_success = swap_all_edges();
                 if (cnt_success == 0) {
                     break;
                 }
@@ -1473,5 +1498,170 @@ std::tuple<double, double> ImageSimulationMeshTri::get_max_avg_energy()
     return std::make_tuple(max_energy, avg_energy);
 }
 
+simplex::RawSimplexCollection ImageSimulationMeshTri::get_order1_edges_for_vertex(
+    const size_t vid) const
+{
+    using namespace simplex;
+
+    RawSimplexCollection sc;
+
+    if (!m_vertex_attribute.at(vid).m_is_on_surface &&
+        m_vertex_attribute.at(vid).on_bbox_faces.empty()) {
+        // no face can be on the surface if the vertex is not on the surface
+        return sc;
+    }
+
+    const auto edges = get_one_ring_edges_for_vertex(vid);
+    for (const Tuple& t : edges) {
+        const simplex::Edge e(vid, t.vid(*this));
+        if (get_order_of_edge(e.vertices()) == 1) {
+            sc.add(e);
+        }
+    }
+
+    sc.sort_and_clean();
+
+    return sc;
+}
+
+size_t ImageSimulationMeshTri::get_order_of_edge(const std::array<size_t, 2>& vids) const
+{
+    return (is_edge_on_surface(vids) || is_edge_on_bbox(vids)) ? 1 : 0;
+}
+
+size_t ImageSimulationMeshTri::get_order_of_vertex(const size_t vid) const
+{
+    const auto edges = get_one_ring_edges_for_vertex(vid);
+    size_t surface_count = 0;
+    for (const Tuple& t : edges) {
+        if (get_order_of_edge({{vid, t.vid(*this)}}) > 0) {
+            ++surface_count;
+        }
+    }
+    if (surface_count == 0) {
+        // vertex is not on the surface
+        return 0;
+    }
+    if (surface_count == 2) {
+        // vertex is on the surface
+        return 1;
+    }
+    // vertex is on the surface boundary or non-manifold
+    return 2;
+}
+
+bool ImageSimulationMeshTri::substructure_link_condition(const Tuple& e_tuple) const
+{
+    const size_t u_id = e_tuple.vid(*this);
+    const size_t v_id = e_tuple.switch_vertex(*this).vid(*this);
+
+    using namespace simplex;
+
+    const size_t edge_order = get_order_of_edge({{u_id, v_id}});
+    const size_t u_order = get_order_of_vertex(u_id);
+    const size_t v_order = get_order_of_vertex(v_id);
+
+    // If the edge is lower order than both vertices, we know for sure that this edge must not
+    // be collapsed. Example: edge in space (order 0) connecting two surfaces (order 1).
+    // This check also covers the case that both vertices are order 3
+    if (edge_order < u_order && edge_order < v_order) {
+        return false;
+    }
+
+    const auto u_locs = get_one_ring_fids_for_vertex(u_id);
+    const auto v_locs = get_one_ring_fids_for_vertex(v_id);
+    const auto e_locs = set_intersection(u_locs, v_locs);
+
+    RawSimplexCollection link_u_0;
+    RawSimplexCollection link_u_1;
+    RawSimplexCollection link_v_0;
+    RawSimplexCollection link_v_1;
+    RawSimplexCollection link_e_0;
+    RawSimplexCollection link_e_1;
+
+    constexpr size_t w_id = -1; // dummy vertex
+    const Vertex w(w_id);
+
+    const RawSimplexCollection u_surface_edges = get_order1_edges_for_vertex(u_id);
+    const RawSimplexCollection v_surface_edges = get_order1_edges_for_vertex(v_id);
+
+    // vertex u links
+    {
+        const Vertex u(u_id);
+        link_u_0.reserve_edges(u_locs.size());
+        link_u_0.reserve_vertices(u_locs.size() * 2);
+        for (const size_t fid : u_locs) {
+            const Face f = simplex_from_face(fid);
+            const Edge e = f.opposite_edge(u);
+            link_u_0.add_with_faces(e);
+        }
+
+        link_u_1.reserve_edges(u_surface_edges.faces().size());
+        link_u_1.reserve_vertices(u_surface_edges.faces().size() * 2);
+
+        for (const Edge& e : u_surface_edges.edges()) {
+            const Face fw(e, w_id);
+            const Edge ew = fw.opposite_edge(u);
+            link_u_0.add_with_faces(ew);
+
+            const Vertex e_opp = e.opposite_vertex(u);
+            link_u_1.add(e_opp);
+        }
+        link_u_0.sort_and_clean();
+        link_u_1.sort_and_clean();
+    }
+    // vertex v links
+    {
+        const Vertex v(v_id);
+        link_v_0.reserve_edges(v_locs.size());
+        link_v_0.reserve_vertices(v_locs.size() * 2);
+        for (const size_t fid : v_locs) {
+            const Face f = simplex_from_face(fid);
+            const Edge e = f.opposite_edge(v);
+            link_v_0.add_with_faces(e);
+        }
+
+        link_v_1.reserve_edges(v_surface_edges.faces().size());
+        link_v_1.reserve_vertices(v_surface_edges.faces().size() * 2);
+
+        for (const Edge& e : v_surface_edges.edges()) {
+            const Face fw(e, w_id);
+            const Edge ew = fw.opposite_edge(v);
+            link_v_0.add_with_faces(ew);
+
+            const Vertex e_opp = e.opposite_vertex(v);
+            link_v_1.add(e_opp);
+        }
+        link_v_0.sort_and_clean();
+        link_v_1.sort_and_clean();
+    }
+    // edge links
+    {
+        const Edge e(u_id, v_id);
+        link_e_0.reserve_edges(e_locs.size());
+        link_e_0.reserve_vertices(e_locs.size() * 2);
+        for (const size_t fid : e_locs) {
+            const Face face = simplex_from_face(fid);
+            const Vertex v_opp = face.opposite_vertex(e);
+            link_e_0.add(v_opp);
+        }
+
+        if (edge_order > 0) {
+            link_e_0.add(w);
+        }
+        link_e_0.sort_and_clean();
+    }
+
+    const auto link_uv_0 = RawSimplexCollection::get_intersection(link_u_0, link_v_0);
+    if (link_uv_0 != link_e_0) {
+        return false;
+    }
+    const auto link_uv_1 = RawSimplexCollection::get_intersection(link_u_1, link_v_1);
+    if (!link_uv_1.empty()) {
+        return false;
+    }
+
+    return true;
+}
 
 } // namespace wmtk::components::image_simulation::tri

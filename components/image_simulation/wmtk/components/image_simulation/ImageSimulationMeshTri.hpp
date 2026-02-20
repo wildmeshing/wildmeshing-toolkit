@@ -146,10 +146,10 @@ public:
 
     void write_msh(std::string file);
 
-    void write_vtu(const std::string& path);
+    void write_vtu(const std::string& path) const;
 
     std::vector<std::array<size_t, 2>> get_edges_by_condition(
-        std::function<bool(const EdgeAttributes&)> cond);
+        std::function<bool(const EdgeAttributes&)> cond) const;
 
 public:
     void split_all_edges();
@@ -186,7 +186,9 @@ public:
 
     //
     bool is_edge_on_surface(const Tuple& loc) const;
+    bool is_edge_on_surface(const std::array<size_t, 2>& vids) const;
     bool is_edge_on_bbox(const Tuple& loc) const;
+    bool is_edge_on_bbox(const std::array<size_t, 2>& vids) const;
     //
     void mesh_improvement(int max_its = 80);
     std::tuple<double, double> local_operations(
@@ -194,12 +196,15 @@ public:
         bool collapse_limit_length = true);
     std::tuple<double, double> get_max_avg_energy();
 
-    std::vector<std::array<size_t, 3>> get_faces_by_condition(
-        std::function<bool(const FaceAttributes&)> cond);
+    /**
+     * @brief Get all edges on the surface that are incident to vid.
+     */
+    simplex::RawSimplexCollection get_order1_edges_for_vertex(const size_t vid) const;
 
-    // debug use
-    std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;
+    size_t get_order_of_edge(const std::array<size_t, 2>& vids) const;
+    size_t get_order_of_vertex(const size_t vid) const;
 
+    bool substructure_link_condition(const Tuple& e_tuple) const;
 
 private:
     ////// Operations

@@ -634,6 +634,7 @@ public:
      * @return one-ring
      */
     std::vector<Tuple> get_one_ring_edges_for_vertex(const Tuple& t) const;
+    std::vector<Tuple> get_one_ring_edges_for_vertex(const size_t vid) const;
 
     /**
      * @brief Get the incident vertices for a triangle
