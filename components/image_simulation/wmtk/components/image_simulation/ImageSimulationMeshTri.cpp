@@ -645,37 +645,9 @@ bool ImageSimulationMeshTri::split_edge_after(const Tuple& loc)
 
 void ImageSimulationMeshTri::collapse_all_edges(bool is_limit_length)
 {
-    igl::Timer timer;
-    double time;
-    timer.start();
+    std::vector<std::pair<std::string, Tuple>> all_ops;
 
-    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    {
-        const auto all_edges = get_edges();
-        logger().info("#E = {}", all_edges.size());
-        for (const Tuple& loc : all_edges) {
-            // collect all edges. Filtering too long edges happens in `is_weight_up_to_date`
-            collect_all_ops.emplace_back("edge_collapse", loc);
-            collect_all_ops.emplace_back("edge_collapse", loc.switch_vertex(*this));
-        }
-    }
-    auto collect_failure_ops = tbb::concurrent_vector<std::pair<std::string, Tuple>>();
-    std::atomic_int count_success = 0;
-    time = timer.getElapsedTime();
-    wmtk::logger().info("edge collapse prepare time: {:.4}s", time);
     auto setup_and_execute = [&](auto& executor) {
-        executor.renew_neighbor_tuples = [&count_success](
-                                             const ImageSimulationMeshTri& m,
-                                             Op op,
-                                             const std::vector<Tuple>& newts) {
-            count_success++;
-            std::vector<std::pair<std::string, Tuple>> op_tups;
-            for (const Tuple& t : newts) {
-                op_tups.emplace_back(op, t);
-                op_tups.emplace_back(op, t.switch_vertex(m));
-            }
-            return op_tups;
-        };
         executor.priority = [](const ImageSimulationMeshTri& m, Op op, const Tuple& t) {
             return -m.get_length2(t);
         };
@@ -697,42 +669,38 @@ void ImageSimulationMeshTri::collapse_all_edges(bool is_limit_length)
             return true;
         };
 
-        executor.on_fail =
-            [&collect_failure_ops](const ImageSimulationMeshTri& m, Op op, const Tuple& t) {
-                collect_failure_ops.emplace_back(op, t);
-            };
         // Execute!!
         do {
-            count_success.store(0, std::memory_order_release);
-            wmtk::logger().info("Prepare to collapse {}", collect_all_ops.size());
-            executor(*this, collect_all_ops);
-            wmtk::logger().info(
-                "Collapsed {}, retrying failed {}",
-                (int)count_success,
-                collect_failure_ops.size());
-            collect_all_ops.clear();
-            for (const auto& item : collect_failure_ops) {
-                collect_all_ops.emplace_back(item);
+            all_ops.clear();
+            const auto all_edges = get_edges();
+            logger().info("#E = {}", all_edges.size());
+            for (const Tuple& loc : all_edges) {
+                // collect all edges. Filtering too long edges happens in `is_weight_up_to_date`
+                all_ops.emplace_back("edge_collapse", loc);
+                all_ops.emplace_back("edge_collapse", loc.switch_vertex(*this));
             }
-            collect_failure_ops.clear();
-        } while (count_success.load(std::memory_order_acquire) > 0);
+            executor(*this, all_ops);
+            logger().info(
+                "success: {}, failed: {}",
+                executor.get_cnt_success(),
+                executor.get_cnt_fail());
+        } while (executor.get_cnt_success() > 0);
     };
+
+    igl::Timer timer;
+    timer.start();
     if (NUM_THREADS > 0) {
-        timer.start();
-        auto executor = ExecutePass<ImageSimulationMeshTri, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = ExecutePass<ImageSimulationMeshTri, ExecutionPolicy::kPartition>();
         executor.lock_vertices =
             [](ImageSimulationMeshTri& m, const Tuple& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
         setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        wmtk::logger().info("edge collapse operation time parallel: {:.4}s", time);
+        wmtk::logger().info("edge collapse time parallel: {:.4}s", timer.getElapsedTimeInSec());
     } else {
-        timer.start();
-        auto executor = ExecutePass<ImageSimulationMeshTri, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = ExecutePass<ImageSimulationMeshTri, ExecutionPolicy::kSeq>();
         setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        wmtk::logger().info("edge collapse operation time serial: {:.4}s", time);
+        wmtk::logger().info("edge collapse time serial: {:.4}s", timer.getElapsedTimeInSec());
     }
 }
 
