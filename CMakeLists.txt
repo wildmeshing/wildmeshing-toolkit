@@ -41,6 +41,16 @@ if(WMTK_WITH_CCACHE AND CCACHE_PROGRAM)
     endforeach()
 endif()
 
+################################################################################
+# CMake Policies
+################################################################################
+
+cmake_policy(SET CMP0054 NEW) # Only interpret if() arguments as variables or keywords when unquoted.
+cmake_policy(SET CMP0076 NEW) # target_sources() command converts relative paths to absolute.
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24")
+  cmake_policy(SET CMP0135 NEW) # Set the timestamps of all extracted contents to the time of the extraction.
+endif()
+
 # ###############################################################################
 project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
 

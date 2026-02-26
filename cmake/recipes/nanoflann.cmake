@@ -16,6 +16,4 @@ CPMAddPackage(
     "MASTER_PROJECT_HAS_TARGET_UNINSTALL ON"
 )
 set_target_properties(nanoflann PROPERTIES FOLDER third_party)
-if(WIN32)
-    set_target_properties(nanoflann_uninstall PROPERTIES FOLDER third_party)
-endif()
+set_target_properties(uninstall PROPERTIES FOLDER third_party)

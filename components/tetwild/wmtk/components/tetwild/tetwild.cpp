@@ -440,7 +440,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         if (json_params["DEBUG_hausdorff"]) {
             const int n_samples = 10000;
             Eigen::MatrixXd B;
-            Eigen::MatrixXi FI;
+            Eigen::VectorX<int64_t> FI; // must be int64 for new MSVC compiler
             Eigen::MatrixXd X;
 
             igl::random_points_on_mesh(n_samples, V, F, B, FI, X);

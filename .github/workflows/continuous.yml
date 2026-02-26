@@ -126,12 +126,13 @@ jobs:
 
   Windows:
     name: Windows (${{ matrix.config }})
-    runs-on: windows-2022
+    runs-on: ${{ matrix.os }}
     env:
       SCCACHE_IDLE_TIMEOUT: "12000"
     strategy:
       fail-fast: false
       matrix:
+        os: [windows-2022, windows-2025-vs2026]
         config: [Debug, Release]
 
     steps:
