@@ -13,7 +13,6 @@ nlohmann::json topological_offset_spec = R"(
     ],
     "optional": [
       "output",
-      "2d",
       "tag_name",
       "sep_tag_vals",
       "offset_tag_val",
@@ -45,12 +44,6 @@ nlohmann::json topological_offset_spec = R"(
     "doc": "Output file name (without extension)."
   },
   {
-    "pointer": "/2d",
-    "type": "bool",
-    "default": false,
-    "doc": "Set to true if input is 2D triangle mesh"
-  },
-  {
     "pointer": "/tag_name",
     "type": "string",
     "default": "tag_0",
@@ -80,7 +73,7 @@ nlohmann::json topological_offset_spec = R"(
     "pointer": "/target_distance",
     "type": "float",
     "default": -1.0,
-    "doc": "Target distance for offset. If negative, no distance adaptation."
+    "doc": "Target distance for offset. If negative, the offset is created by splitting adjacent edges at their midpoints."
   },
   {
     "pointer": "/relative_ball_threshold",

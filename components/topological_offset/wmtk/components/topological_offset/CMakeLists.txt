@@ -15,6 +15,7 @@ set(SRC_FILES
 	TopoOffsetTriMesh.cpp
 
 	Parameters.h
+	
 	ComponentSplitting.cpp
 	Spatial.cpp
 	Circle.hpp
@@ -26,11 +27,6 @@ set(SRC_FILES
 
 	read_image_msh.hpp
 	read_image_msh.cpp
-
-	read_image_msh_2d.hpp
-	read_image_msh_2d.cpp
-
-	file_generation.cpp
     )
 
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

@@ -16,18 +16,8 @@
 #include "TopoOffsetMesh.h"
 #include "TopoOffsetTriMesh.h"
 #include "read_image_msh.hpp"
-#include "read_image_msh_2d.hpp"
-
-#include "file_generation.cpp" // DEVELOPMENT
 
 #include "topological_offset_spec.hpp"
-
-// // Enables passing Eigen matrices to fmt/spdlog.
-// template <typename T>
-// struct fmt::formatter<T, std::enable_if_t<std::is_base_of_v<Eigen::DenseBase<T>, T>, char>>
-//     : ostream_formatter
-// {
-// };
 
 
 namespace wmtk::components::topological_offset {
@@ -68,7 +58,6 @@ void topological_offset(nlohmann::json json_params)
             "Invalid relative_ball_threshold [{}], must be between 0 and 1.",
             params.relative_ball_threshold);
     }
-    bool twoD = json_params["2d"];
     params.output_path = resolve_path(root, json_params["output"]).string();
 
     std::filesystem::path output_filename = params.output_path;
@@ -90,22 +79,15 @@ void topological_offset(nlohmann::json json_params)
         log_and_throw_error("Input must be a .msh file.");
     }
 
-    if (twoD) {
-        // read MSH
-        MatrixXd V_input;
-        MatrixXi F_input;
-        MatrixXd F_input_tags;
-        std::vector<std::string> all_tag_labels;
+    MatrixXd V_input;
+    MatrixXi F_input;
+    MatrixXd F_input_tags;
+    std::vector<std::string> all_tag_labels;
+    read_image_msh(input_path, V_input, F_input, F_input_tags, params.tag_name, all_tag_labels);
 
-        // input is a 2d triangle mesh
+    if (F_input.cols() == 3) {
+        // input is a tri mesh
         logger().info("Input mesh (2D trimesh): {}", input_path);
-        read_image_msh_2d(
-            input_path,
-            V_input,
-            F_input,
-            F_input_tags,
-            params.tag_name,
-            all_tag_labels);
 
         // initialize mesh
         TopoOffsetTriMesh mesh(params, NUM_THREADS);
@@ -197,19 +179,12 @@ void topological_offset(nlohmann::json json_params)
 
         wmtk::logger().info("======= finish =========");
     } else {
-        // read MSH
-        MatrixXd V_input;
-        MatrixXi T_input;
-        MatrixXd T_input_tags;
-        std::vector<std::string> all_tag_labels;
-
         // input is a tet mesh
         logger().info("Input mesh (3D tetmesh): {}", input_path);
-        read_image_msh(input_path, V_input, T_input, T_input_tags, params.tag_name, all_tag_labels);
 
         // initialize mesh
         TopoOffsetMesh mesh(params, NUM_THREADS);
-        mesh.init_from_image(V_input, T_input, T_input_tags, all_tag_labels);
+        mesh.init_from_image(V_input, F_input, F_input_tags, all_tag_labels);
         mesh.consolidate_mesh();
 
         // record counts (mostly debugging, this is probably really slow)
