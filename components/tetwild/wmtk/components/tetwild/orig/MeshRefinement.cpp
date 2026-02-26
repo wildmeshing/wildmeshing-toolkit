@@ -644,9 +644,8 @@ void MeshRefinement::getTrackedSurface(Eigen::MatrixXd& V, Eigen::MatrixXi& F)
                 }
                 std::array<int, 3> v_ids1 = {{v_ids[0], v_ids[1], v_ids[2]}};
                 std::sort(v_ids1.begin(), v_ids1.end());
-                fs.push_back(
-                    std::array<int, 6>(
-                        {{v_ids1[0], v_ids1[1], v_ids1[2], v_ids[0], v_ids[1], v_ids[2]}}));
+                fs.push_back(std::array<int, 6>(
+                    {{v_ids1[0], v_ids1[1], v_ids1[2], v_ids[0], v_ids[1], v_ids[2]}}));
                 for (int k = 0; k < 3; k++) vs.push_back(v_ids[k]);
             }
         }
@@ -716,9 +715,8 @@ void MeshRefinement::getTrackedSurface_continuous(Eigen::MatrixXd& V, Eigen::Mat
                 }
                 std::array<int, 3> v_ids1 = {{v_ids[0], v_ids[1], v_ids[2]}};
                 std::sort(v_ids1.begin(), v_ids1.end());
-                fs.push_back(
-                    std::array<int, 6>(
-                        {{v_ids1[0], v_ids1[1], v_ids1[2], v_ids[0], v_ids[1], v_ids[2]}}));
+                fs.push_back(std::array<int, 6>(
+                    {{v_ids1[0], v_ids1[1], v_ids1[2], v_ids[0], v_ids[1], v_ids[2]}}));
             }
         }
     }

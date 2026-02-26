@@ -26,7 +26,7 @@ public:
 
     size_t partition_id = 0;
 
-    VertexAttributes() {};
+    VertexAttributes(){};
     VertexAttributes(const Vector3d& p);
 };
 
@@ -35,7 +35,7 @@ class EdgeAttributes
 public:
     bool m_is_on_edge = false;
 
-    EdgeAttributes() {};
+    EdgeAttributes(){};
 };
 
 class SurfaceMesh : public wmtk::TriMesh
