@@ -91,6 +91,8 @@ void TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& 
     // concurrent
     m_vertex_mutex.grow_to_at_least(n_vertices);
 
+    logger().info("Init attribute vectors");
+
     // resize attributes
     if (p_vertex_attrs) {
         p_vertex_attrs->resize(n_vertices);
