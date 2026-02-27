@@ -73,9 +73,9 @@ TEST_CASE("Integration_Tests", tags_integration)
     }
 }
 
-TEST_CASE("TetWild", tags_integration + "[.]")
+TEST_CASE("TetWild", tags_integration + "")
 {
-    const path f = integration_tests_dir / "tetwild.json";
+    const path f = integration_tests_dir / "tetwild_octocat.json";
     nlohmann::json j;
     REQUIRE_NOTHROW(j = load_json(f));
     REQUIRE_NOTHROW(wmtk_wrapper(j));
