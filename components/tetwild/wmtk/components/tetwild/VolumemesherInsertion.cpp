@@ -282,6 +282,7 @@ void TetWildMesh::insertion_by_volumeremesher_old(
     init_from_delaunay_box_mesh(vertices);
     // output_mesh("background_tetmesh.msh");
     // std::cout << "background_tetmesh written!" << std::endl;
+    logger().info("Delaunay finished");
 
     // prepare tet vertices and tet index info
 
