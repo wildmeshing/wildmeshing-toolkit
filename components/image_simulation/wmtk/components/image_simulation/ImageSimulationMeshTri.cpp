@@ -1523,6 +1523,11 @@ std::tuple<double, double> ImageSimulationMeshTri::get_max_avg_energy()
     return std::make_tuple(max_energy, avg_energy);
 }
 
+void ImageSimulationMeshTri::fill_holes_topo()
+{
+    log_and_throw_error("fill_holes_topo() is not implemented");
+}
+
 simplex::RawSimplexCollection ImageSimulationMeshTri::get_order1_edges_for_vertex(
     const size_t vid) const
 {

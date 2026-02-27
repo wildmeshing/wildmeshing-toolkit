@@ -169,8 +169,15 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
 
     write_unique_vtu();
 
-    // /////////mesh improvement
-    mesh.mesh_improvement(max_its); // <-- tetwild
+    // /////////apply operation
+    const std::string operation = json_params["operation"];
+    if (operation == "remeshing") {
+        mesh.mesh_improvement(max_its); // <-- tetwild
+    } else if (operation == "fill_holes_topo") {
+        mesh.fill_holes_topo();
+    } else {
+        log_and_throw_error("Unknown image simulation operation");
+    }
 
     mesh.consolidate_mesh();
     double time = timer.getElapsedTime();

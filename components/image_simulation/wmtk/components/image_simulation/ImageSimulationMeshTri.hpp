@@ -196,6 +196,8 @@ public:
         bool collapse_limit_length = true);
     std::tuple<double, double> get_max_avg_energy();
 
+    void fill_holes_topo();
+
     /**
      * @brief Get all edges on the surface that are incident to vid.
      */

@@ -9,6 +9,7 @@ nlohmann::json image_simulation_spec = R"(
     "type": "object",
     "required": ["application", "input"],
     "optional": [
+      "operation",
       "output",
       "ijk_to_ras",
       "skip_simplify",
@@ -44,6 +45,13 @@ nlohmann::json image_simulation_spec = R"(
     "pointer": "/input/*",
     "type": "string",
     "doc": "Triangular input mesh."
+  },
+  {
+    "pointer": "/operation",
+    "type": "string",
+    "default": "remeshing",
+    "options": ["remeshing", "fill_holes_topo"],
+    "doc": "Image simulation contains multiple operations for modifying the image. Depending on the operation, more parameters might be required."
   },
   {
     "pointer": "/output",
