@@ -267,6 +267,16 @@ public:
         return get_element_attribute_names<3>();
     }
 
+    std::vector<std::string> get_all_element_attribute_names() const
+    {
+        std::vector<std::string> attr_names;
+        attr_names.reserve(m_spec.element_data.size());
+        for (const auto& data : m_spec.element_data) {
+            attr_names.push_back(data.header.string_tags.front());
+        }
+        return attr_names;
+    }
+
     template <typename Fn>
     void extract_edge_vertex_attribute(const std::string& attr_name, Fn&& set_attr)
     {
@@ -333,8 +343,9 @@ public:
             F.resize(n_F, dim + 1);
             switch (dim) {
             case 1:
-                extract_simplex_elements<1>(
-                    [&F](size_t i, size_t v0, size_t v1) { F.row(i) = Vector2i(v0, v1); });
+                extract_simplex_elements<1>([&F](size_t i, size_t v0, size_t v1) {
+                    F.row(i) = Vector2i((int)v0, (int)v1);
+                });
                 break;
             case 2:
                 extract_simplex_elements<2>([&F](size_t i, size_t v0, size_t v1, size_t v2) {

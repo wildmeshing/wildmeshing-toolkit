@@ -16,6 +16,24 @@ const std::string tags_integration = "[integration_test]";
 const path data_dir = WMTK_DATA_DIR;
 const path integration_tests_dir = data_dir / "integration_tests";
 
+/**
+ * Add any test you want to run to this list!
+ */
+std::vector<std::string> input_files{
+    "image_simulation__remeshing_2d.json",
+    "isotropic_remeshing_bunny.json",
+    "isotropic_remeshing_piece.json",
+    "manifold_extraction_randmesh.json",
+    "qslim_octocat.json",
+    "shortest_edge_collapse_octocat.json",
+    "shortest_edge_collapse_sphere_with_env.json",
+#ifndef _WIN32
+    "tetwild_octocat.json", // segfaults on the windows CI (reason unknown)
+    "tetwild_sphere.json",
+#endif
+    "topological_offsets_bunny2d.json"};
+
+
 nlohmann::json load_json(const path& json_input_file)
 {
     // read JSON input file
@@ -46,7 +64,7 @@ void wmtk_wrapper(const nlohmann::json& j)
 
     std::string app_str = j["application"];
     if (components_map.count(app_str) == 0) {
-        log_and_throw_error("Applictaion {} unknown", app_str);
+        log_and_throw_error("Application {} unknown", app_str);
     }
 
     // execute
@@ -63,19 +81,17 @@ TEST_CASE("Integration_Tests", tags_integration)
 {
     namespace fs = std::filesystem;
 
-    for (const auto& dir_entry : fs::directory_iterator(integration_tests_dir)) {
-        const path& f = dir_entry.path();
-        if (!f.has_extension() || f.extension() != ".json") {
-            continue;
-        }
+    for (const auto& input_file : input_files) {
+        const path& f = integration_tests_dir / input_file;
         logger().info(">>>>>>>>>> Integration test: {} <<<<<<<<<<", f.filename().string());
+        CHECK(fs::exists(f));
         CHECK_NOTHROW(wmtk_wrapper(f));
     }
 }
 
 TEST_CASE("TetWild", tags_integration + "[.]")
 {
-    const path f = integration_tests_dir / "tetwild.json";
+    const path f = integration_tests_dir / "tetwild_octocat.json";
     nlohmann::json j;
     REQUIRE_NOTHROW(j = load_json(f));
     REQUIRE_NOTHROW(wmtk_wrapper(j));

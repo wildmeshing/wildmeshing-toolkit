@@ -15,8 +15,8 @@ struct Parameters
 
     // parameters set in `init` function based on mesh bbox
     double diag_l = -1.;
-    Vector3d box_min = Vector3d::Zero();
-    Vector3d box_max = Vector3d::Ones();
+    VectorXd box_min;
+    VectorXd box_max;
     double splitting_l2 = -1.; // the lower bound length (squared) for edge split
     double collapsing_l2 =
         std::numeric_limits<double>::max(); // the upper bound length (squared) for edge collapse
@@ -26,7 +26,7 @@ struct Parameters
     bool debug_output = false;
     bool perform_sanity_checks = false;
 
-    void init(const Vector3d& min_, const Vector3d& max_)
+    void init(const VectorXd& min_, const VectorXd& max_)
     {
         box_min = min_;
         box_max = max_;

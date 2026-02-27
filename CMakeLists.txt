@@ -82,8 +82,6 @@ option(WMTK_PYBIND "Generate python bindings" ON)
 if(WMTK_PYBIND)
     include(pybind11)
     include(pybind11_json)
-
-    include(pybind11)
 endif()
 
 # ###############################################################################
