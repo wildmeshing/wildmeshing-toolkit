@@ -294,146 +294,143 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span> </div>
 <div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>    <span class="keywordtype">size_t</span> get_partition_id(<span class="keyword">const</span> AppMesh&amp; m, <span class="keyword">const</span> Tuple&amp; e)</div>
 <div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>    {</div>
-<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>        <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (policy == ExecutionPolicy::kSeq) <span class="keywordflow">return</span> 0;</div>
-<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>        <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (std::is_base_of&lt;wmtk::TetMesh, AppMesh&gt;::value)</div>
-<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>            <span class="keywordflow">return</span> m.get_partition_id(e);</div>
-<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>        <span class="keywordflow">else</span> <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (std::is_base_of&lt;wmtk::TriMesh, AppMesh&gt;::value) <span class="comment">// TODO: make same</span></div>
-<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>                                                                           <span class="comment">// interface.</span></div>
-<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>            <span class="keywordflow">return</span> m.vertex_attrs[e.vid(m)].partition_id; <span class="comment">// TODO: this is temporary.</span></div>
-<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>        <span class="keywordflow">return</span> 0;</div>
-<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>    }</div>
-<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span> </div>
-<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span><span class="keyword">public</span>:</div>
-<div class="foldopen" id="foldopen00269" data-start="{" data-end="}">
-<div class="line"><a id="l00269" name="l00269"></a><span class="lineno"><a class="line" href="structwmtk_1_1_execute_pass.html#a6ef45354e7b9b6ef1f33f4c5ecdb1a7d">  269</a></span>    <span class="keywordtype">bool</span> <a class="code hl_function" href="structwmtk_1_1_execute_pass.html#a6ef45354e7b9b6ef1f33f4c5ecdb1a7d">operator()</a>(AppMesh&amp; m, <span class="keyword">const</span> std::vector&lt;std::pair&lt;Op, Tuple&gt;&gt;&amp; operation_tuples)</div>
-<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>    {</div>
-<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>        <span class="keyword">using </span>Elem = std::tuple&lt;double, Op, Tuple, size_t&gt;; <span class="comment">// priority, operation, tuple, #retries</span></div>
-<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>        <span class="keyword">using </span>Queue = tbb::concurrent_priority_queue&lt;Elem&gt;;</div>
-<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span> </div>
-<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>        <span class="keyword">auto</span> stop = std::atomic&lt;bool&gt;(<span class="keyword">false</span>);</div>
-<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>        cnt_success = 0;</div>
-<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>        cnt_fail = 0;</div>
-<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>        cnt_update = 0;</div>
+<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>        <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (policy == ExecutionPolicy::kSeq) {</div>
+<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>            <span class="keywordflow">return</span> 0;</div>
+<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>        }</div>
+<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>        <span class="keywordflow">return</span> m.get_partition_id(e);</div>
+<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>    }</div>
+<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span> </div>
+<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span><span class="keyword">public</span>:</div>
+<div class="foldopen" id="foldopen00266" data-start="{" data-end="}">
+<div class="line"><a id="l00266" name="l00266"></a><span class="lineno"><a class="line" href="structwmtk_1_1_execute_pass.html#a6ef45354e7b9b6ef1f33f4c5ecdb1a7d">  266</a></span>    <span class="keywordtype">bool</span> <a class="code hl_function" href="structwmtk_1_1_execute_pass.html#a6ef45354e7b9b6ef1f33f4c5ecdb1a7d">operator()</a>(AppMesh&amp; m, <span class="keyword">const</span> std::vector&lt;std::pair&lt;Op, Tuple&gt;&gt;&amp; operation_tuples)</div>
+<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>    {</div>
+<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>        <span class="keyword">using </span>Elem = std::tuple&lt;double, Op, Tuple, size_t&gt;; <span class="comment">// priority, operation, tuple, #retries</span></div>
+<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>        <span class="keyword">using </span>Queue = tbb::concurrent_priority_queue&lt;Elem&gt;;</div>
+<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span> </div>
+<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>        <span class="keyword">auto</span> stop = std::atomic&lt;bool&gt;(<span class="keyword">false</span>);</div>
+<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>        cnt_success = 0;</div>
+<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>        cnt_fail = 0;</div>
+<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>        cnt_update = 0;</div>
+<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span> </div>
+<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>        std::vector&lt;Queue&gt; queues(num_threads);</div>
+<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>        Queue final_queue;</div>
 <div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span> </div>
-<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>        std::vector&lt;Queue&gt; queues(num_threads);</div>
-<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>        Queue final_queue;</div>
-<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span> </div>
-<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>        <span class="keyword">auto</span> run_single_queue = [&amp;](Queue&amp; Q, <span class="keywordtype">int</span> task_id) {</div>
-<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>            Elem ele_in_queue;</div>
-<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>            <span class="keywordflow">while</span> ([&amp;]() { <span class="keywordflow">return</span> Q.try_pop(ele_in_queue); }()) {</div>
-<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>                <span class="keyword">auto</span>&amp; [weight, op, tup, retry] = ele_in_queue;</div>
-<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>                <span class="keywordflow">if</span> (!tup.is_valid(m)) {</div>
-<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>                    <span class="keywordflow">continue</span>;</div>
-<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>                }</div>
-<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span> </div>
-<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>                std::vector&lt;Elem&gt; renewed_elements;</div>
-<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>                {</div>
-<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>                    <span class="keyword">auto</span> locked_vid = <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a7737b4d1080c804fd46f7d7e77c98ddb">lock_vertices</a>(</div>
-<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>                        m,</div>
-<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>                        tup,</div>
-<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>                        task_id); <span class="comment">// Note that returning `Tuples` would be invalid.</span></div>
-<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>                    <span class="keywordflow">if</span> (!locked_vid) {</div>
-<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>                        retry++;</div>
-<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span>                        <span class="keywordflow">if</span> (retry &lt; <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a0fa4ec20a2b09df699a065e31d8f0758">max_retry_limit</a>) {</div>
-<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>                            Q.emplace(ele_in_queue);</div>
-<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>                        } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span>                            retry = 0;</div>
-<div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span>                            final_queue.emplace(ele_in_queue);</div>
-<div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span>                        }</div>
-<div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span>                        <span class="keywordflow">continue</span>;</div>
-<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span>                    }</div>
-<div class="line"><a id="l00306" name="l00306"></a><span class="lineno">  306</span>                    <span class="keywordflow">if</span> (tup.is_valid(m)) {</div>
-<div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span>                        <span class="keywordflow">if</span> (!<a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#ad60058e9b843d5200ee24070f6d82da8">is_weight_up_to_date</a>(</div>
-<div class="line"><a id="l00308" name="l00308"></a><span class="lineno">  308</span>                                m,</div>
-<div class="line"><a id="l00309" name="l00309"></a><span class="lineno">  309</span>                                std::tuple&lt;double, Op, Tuple&gt;(weight, op, tup))) {</div>
-<div class="line"><a id="l00310" name="l00310"></a><span class="lineno">  310</span>                            operation_cleanup(m);</div>
-<div class="line"><a id="l00311" name="l00311"></a><span class="lineno">  311</span>                            <span class="keywordflow">continue</span>;</div>
-<div class="line"><a id="l00312" name="l00312"></a><span class="lineno">  312</span>                        } <span class="comment">// this can encode, in qslim, recompute(energy) == weight.</span></div>
-<div class="line"><a id="l00313" name="l00313"></a><span class="lineno">  313</span>                        <span class="keyword">auto</span> newtup = <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#afcccd2862bdaac206b0d9322c4d7786b">edit_operation_maps</a>[op](m, tup);</div>
-<div class="line"><a id="l00314" name="l00314"></a><span class="lineno">  314</span>                        std::vector&lt;std::pair&lt;Op, Tuple&gt;&gt; renewed_tuples;</div>
-<div class="line"><a id="l00315" name="l00315"></a><span class="lineno">  315</span>                        <span class="keywordflow">if</span> (newtup) {</div>
-<div class="line"><a id="l00316" name="l00316"></a><span class="lineno">  316</span>                            renewed_tuples = <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a4e703287ef6828166a4238ca054064e2">renew_neighbor_tuples</a>(m, op, newtup.value());</div>
-<div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span>                            cnt_success++;</div>
-<div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span>                            cnt_update++;</div>
-<div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span>                        } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span>                            <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a1a3f76d4718c918a2ceea6e7addfa52b">on_fail</a>(m, op, tup);</div>
-<div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span>                            cnt_fail++;</div>
-<div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span>                        }</div>
-<div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span>                        <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; [o, e] : renewed_tuples) {</div>
-<div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span>                            <span class="keyword">auto</span> val = <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#ab915e7cd93b20a81573ef291272757ee">priority</a>(m, o, e);</div>
-<div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span>                            <span class="keywordflow">if</span> (<a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a7073caa314f6fbd0e9ba43044872fa1c">should_renew</a>(val)) {</div>
-<div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span>                                renewed_elements.emplace_back(val, o, e, 0);</div>
-<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>                            }</div>
-<div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span>                        }</div>
-<div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span>                    }</div>
-<div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span>                    operation_cleanup(m); <span class="comment">// Maybe use RAII</span></div>
+<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>        <span class="keyword">auto</span> run_single_queue = [&amp;](Queue&amp; Q, <span class="keywordtype">int</span> task_id) {</div>
+<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>            Elem ele_in_queue;</div>
+<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>            <span class="keywordflow">while</span> ([&amp;]() { <span class="keywordflow">return</span> Q.try_pop(ele_in_queue); }()) {</div>
+<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>                <span class="keyword">auto</span>&amp; [weight, op, tup, retry] = ele_in_queue;</div>
+<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>                <span class="keywordflow">if</span> (!tup.is_valid(m)) {</div>
+<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>                    <span class="keywordflow">continue</span>;</div>
+<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>                }</div>
+<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span> </div>
+<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>                std::vector&lt;Elem&gt; renewed_elements;</div>
+<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>                {</div>
+<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>                    <span class="keyword">auto</span> locked_vid = <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a7737b4d1080c804fd46f7d7e77c98ddb">lock_vertices</a>(</div>
+<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>                        m,</div>
+<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>                        tup,</div>
+<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>                        task_id); <span class="comment">// Note that returning `Tuples` would be invalid.</span></div>
+<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>                    <span class="keywordflow">if</span> (!locked_vid) {</div>
+<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>                        retry++;</div>
+<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>                        <span class="keywordflow">if</span> (retry &lt; <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a0fa4ec20a2b09df699a065e31d8f0758">max_retry_limit</a>) {</div>
+<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>                            Q.emplace(ele_in_queue);</div>
+<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>                        } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span>                            retry = 0;</div>
+<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>                            final_queue.emplace(ele_in_queue);</div>
+<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>                        }</div>
+<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span>                        <span class="keywordflow">continue</span>;</div>
+<div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span>                    }</div>
+<div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span>                    <span class="keywordflow">if</span> (tup.is_valid(m)) {</div>
+<div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span>                        <span class="keywordflow">if</span> (!<a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#ad60058e9b843d5200ee24070f6d82da8">is_weight_up_to_date</a>(</div>
+<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span>                                m,</div>
+<div class="line"><a id="l00306" name="l00306"></a><span class="lineno">  306</span>                                std::tuple&lt;double, Op, Tuple&gt;(weight, op, tup))) {</div>
+<div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span>                            operation_cleanup(m);</div>
+<div class="line"><a id="l00308" name="l00308"></a><span class="lineno">  308</span>                            <span class="keywordflow">continue</span>;</div>
+<div class="line"><a id="l00309" name="l00309"></a><span class="lineno">  309</span>                        } <span class="comment">// this can encode, in qslim, recompute(energy) == weight.</span></div>
+<div class="line"><a id="l00310" name="l00310"></a><span class="lineno">  310</span>                        <span class="keyword">auto</span> newtup = <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#afcccd2862bdaac206b0d9322c4d7786b">edit_operation_maps</a>[op](m, tup);</div>
+<div class="line"><a id="l00311" name="l00311"></a><span class="lineno">  311</span>                        std::vector&lt;std::pair&lt;Op, Tuple&gt;&gt; renewed_tuples;</div>
+<div class="line"><a id="l00312" name="l00312"></a><span class="lineno">  312</span>                        <span class="keywordflow">if</span> (newtup) {</div>
+<div class="line"><a id="l00313" name="l00313"></a><span class="lineno">  313</span>                            renewed_tuples = <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a4e703287ef6828166a4238ca054064e2">renew_neighbor_tuples</a>(m, op, newtup.value());</div>
+<div class="line"><a id="l00314" name="l00314"></a><span class="lineno">  314</span>                            cnt_success++;</div>
+<div class="line"><a id="l00315" name="l00315"></a><span class="lineno">  315</span>                            cnt_update++;</div>
+<div class="line"><a id="l00316" name="l00316"></a><span class="lineno">  316</span>                        } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span>                            <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a1a3f76d4718c918a2ceea6e7addfa52b">on_fail</a>(m, op, tup);</div>
+<div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span>                            cnt_fail++;</div>
+<div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span>                        }</div>
+<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span>                        <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; [o, e] : renewed_tuples) {</div>
+<div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span>                            <span class="keyword">auto</span> val = <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#ab915e7cd93b20a81573ef291272757ee">priority</a>(m, o, e);</div>
+<div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span>                            <span class="keywordflow">if</span> (<a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a7073caa314f6fbd0e9ba43044872fa1c">should_renew</a>(val)) {</div>
+<div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span>                                renewed_elements.emplace_back(val, o, e, 0);</div>
+<div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span>                            }</div>
+<div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span>                        }</div>
+<div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span>                    }</div>
+<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>                    operation_cleanup(m); <span class="comment">// Maybe use RAII</span></div>
+<div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span>                }</div>
+<div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span>                <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; e : renewed_elements) {</div>
+<div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span>                    Q.emplace(e);</div>
 <div class="line"><a id="l00331" name="l00331"></a><span class="lineno">  331</span>                }</div>
-<div class="line"><a id="l00332" name="l00332"></a><span class="lineno">  332</span>                <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; e : renewed_elements) {</div>
-<div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span>                    Q.emplace(e);</div>
-<div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span>                }</div>
-<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span> </div>
-<div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span>                <span class="keywordflow">if</span> (stop.load(std::memory_order_acquire)) <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span>                <span class="keywordflow">if</span> (cnt_success &gt; <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a4842b950c3f22f8f4b358dde129f226f">stopping_criterion_checking_frequency</a>) {</div>
-<div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span>                    <span class="keywordflow">if</span> (<a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#adf9b2f5a9247ddce33ea9755fdd6f9b6">stopping_criterion</a>(m)) {</div>
-<div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span>                        stop.store(<span class="keyword">true</span>);</div>
-<div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span>                        <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span>                    }</div>
-<div class="line"><a id="l00342" name="l00342"></a><span class="lineno">  342</span>                    cnt_update.store(0, std::memory_order_release);</div>
-<div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span>                }</div>
-<div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span>            }</div>
-<div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span>        };</div>
-<div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span> </div>
-<div class="line"><a id="l00347" name="l00347"></a><span class="lineno">  347</span>        <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (policy == ExecutionPolicy::kSeq) {</div>
-<div class="line"><a id="l00348" name="l00348"></a><span class="lineno">  348</span>            <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; [op, e] : operation_tuples) {</div>
-<div class="line"><a id="l00349" name="l00349"></a><span class="lineno">  349</span>                <span class="keywordflow">if</span> (!e.is_valid(m)) <span class="keywordflow">continue</span>;</div>
-<div class="line"><a id="l00350" name="l00350"></a><span class="lineno">  350</span>                final_queue.emplace(<a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#ab915e7cd93b20a81573ef291272757ee">priority</a>(m, op, e), op, e, 0);</div>
-<div class="line"><a id="l00351" name="l00351"></a><span class="lineno">  351</span>            }</div>
-<div class="line"><a id="l00352" name="l00352"></a><span class="lineno">  352</span>            run_single_queue(final_queue, 0);</div>
-<div class="line"><a id="l00353" name="l00353"></a><span class="lineno">  353</span>        } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span>            <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; [op, e] : operation_tuples) {</div>
-<div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span>                <span class="keywordflow">if</span> (!e.is_valid(m)) <span class="keywordflow">continue</span>;</div>
-<div class="line"><a id="l00356" name="l00356"></a><span class="lineno">  356</span>                queues[get_partition_id(m, e)].emplace(<a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#ab915e7cd93b20a81573ef291272757ee">priority</a>(m, op, e), op, e, 0);</div>
-<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>            }</div>
-<div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span>            <span class="comment">// Comment out parallel: work on serial first.</span></div>
-<div class="line"><a id="l00359" name="l00359"></a><span class="lineno">  359</span>            tbb::task_arena arena(num_threads);</div>
-<div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span>            tbb::task_group tg;</div>
-<div class="line"><a id="l00361" name="l00361"></a><span class="lineno">  361</span>            arena.execute([&amp;queues, &amp;run_single_queue, &amp;tg]() {</div>
-<div class="line"><a id="l00362" name="l00362"></a><span class="lineno">  362</span>                <span class="keywordflow">for</span> (<span class="keywordtype">int</span> task_id = 0; task_id &lt; queues.size(); task_id++) {</div>
-<div class="line"><a id="l00363" name="l00363"></a><span class="lineno">  363</span>                    tg.run([&amp;run_single_queue, &amp;queues, task_id] {</div>
-<div class="line"><a id="l00364" name="l00364"></a><span class="lineno">  364</span>                        run_single_queue(queues[task_id], task_id);</div>
-<div class="line"><a id="l00365" name="l00365"></a><span class="lineno">  365</span>                    });</div>
-<div class="line"><a id="l00366" name="l00366"></a><span class="lineno">  366</span>                }</div>
-<div class="line"><a id="l00367" name="l00367"></a><span class="lineno">  367</span>                tg.wait();</div>
-<div class="line"><a id="l00368" name="l00368"></a><span class="lineno">  368</span>            });</div>
-<div class="line"><a id="l00369" name="l00369"></a><span class="lineno">  369</span>            logger().debug(<span class="stringliteral">&quot;Parallel Complete, remains element {}&quot;</span>, final_queue.size());</div>
-<div class="line"><a id="l00370" name="l00370"></a><span class="lineno">  370</span>            run_single_queue(final_queue, 0);</div>
-<div class="line"><a id="l00371" name="l00371"></a><span class="lineno">  371</span>        }</div>
-<div class="line"><a id="l00372" name="l00372"></a><span class="lineno">  372</span> </div>
-<div class="line"><a id="l00373" name="l00373"></a><span class="lineno">  373</span>        logger().info(</div>
-<div class="line"><a id="l00374" name="l00374"></a><span class="lineno">  374</span>            <span class="stringliteral">&quot;executed: {} | success / fail: {} / {}&quot;</span>,</div>
-<div class="line"><a id="l00375" name="l00375"></a><span class="lineno">  375</span>            (<span class="keywordtype">int</span>)cnt_success + (<span class="keywordtype">int</span>)cnt_fail,</div>
-<div class="line"><a id="l00376" name="l00376"></a><span class="lineno">  376</span>            (<span class="keywordtype">int</span>)cnt_success,</div>
-<div class="line"><a id="l00377" name="l00377"></a><span class="lineno">  377</span>            (<span class="keywordtype">int</span>)cnt_fail);</div>
-<div class="line"><a id="l00378" name="l00378"></a><span class="lineno">  378</span>        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00379" name="l00379"></a><span class="lineno">  379</span>    }</div>
+<div class="line"><a id="l00332" name="l00332"></a><span class="lineno">  332</span> </div>
+<div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span>                <span class="keywordflow">if</span> (stop.load(std::memory_order_acquire)) <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span>                <span class="keywordflow">if</span> (cnt_success &gt; <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a4842b950c3f22f8f4b358dde129f226f">stopping_criterion_checking_frequency</a>) {</div>
+<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span>                    <span class="keywordflow">if</span> (<a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#adf9b2f5a9247ddce33ea9755fdd6f9b6">stopping_criterion</a>(m)) {</div>
+<div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span>                        stop.store(<span class="keyword">true</span>);</div>
+<div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span>                        <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span>                    }</div>
+<div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span>                    cnt_update.store(0, std::memory_order_release);</div>
+<div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span>                }</div>
+<div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span>            }</div>
+<div class="line"><a id="l00342" name="l00342"></a><span class="lineno">  342</span>        };</div>
+<div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span> </div>
+<div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span>        <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (policy == ExecutionPolicy::kSeq) {</div>
+<div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span>            <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; [op, e] : operation_tuples) {</div>
+<div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span>                <span class="keywordflow">if</span> (!e.is_valid(m)) <span class="keywordflow">continue</span>;</div>
+<div class="line"><a id="l00347" name="l00347"></a><span class="lineno">  347</span>                final_queue.emplace(<a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#ab915e7cd93b20a81573ef291272757ee">priority</a>(m, op, e), op, e, 0);</div>
+<div class="line"><a id="l00348" name="l00348"></a><span class="lineno">  348</span>            }</div>
+<div class="line"><a id="l00349" name="l00349"></a><span class="lineno">  349</span>            run_single_queue(final_queue, 0);</div>
+<div class="line"><a id="l00350" name="l00350"></a><span class="lineno">  350</span>        } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00351" name="l00351"></a><span class="lineno">  351</span>            <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; [op, e] : operation_tuples) {</div>
+<div class="line"><a id="l00352" name="l00352"></a><span class="lineno">  352</span>                <span class="keywordflow">if</span> (!e.is_valid(m)) <span class="keywordflow">continue</span>;</div>
+<div class="line"><a id="l00353" name="l00353"></a><span class="lineno">  353</span>                queues[get_partition_id(m, e)].emplace(<a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#ab915e7cd93b20a81573ef291272757ee">priority</a>(m, op, e), op, e, 0);</div>
+<div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span>            }</div>
+<div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span>            <span class="comment">// Comment out parallel: work on serial first.</span></div>
+<div class="line"><a id="l00356" name="l00356"></a><span class="lineno">  356</span>            tbb::task_arena arena(num_threads);</div>
+<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>            tbb::task_group tg;</div>
+<div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span>            arena.execute([&amp;queues, &amp;run_single_queue, &amp;tg]() {</div>
+<div class="line"><a id="l00359" name="l00359"></a><span class="lineno">  359</span>                <span class="keywordflow">for</span> (<span class="keywordtype">int</span> task_id = 0; task_id &lt; queues.size(); task_id++) {</div>
+<div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span>                    tg.run([&amp;run_single_queue, &amp;queues, task_id] {</div>
+<div class="line"><a id="l00361" name="l00361"></a><span class="lineno">  361</span>                        run_single_queue(queues[task_id], task_id);</div>
+<div class="line"><a id="l00362" name="l00362"></a><span class="lineno">  362</span>                    });</div>
+<div class="line"><a id="l00363" name="l00363"></a><span class="lineno">  363</span>                }</div>
+<div class="line"><a id="l00364" name="l00364"></a><span class="lineno">  364</span>                tg.wait();</div>
+<div class="line"><a id="l00365" name="l00365"></a><span class="lineno">  365</span>            });</div>
+<div class="line"><a id="l00366" name="l00366"></a><span class="lineno">  366</span>            logger().debug(<span class="stringliteral">&quot;Parallel Complete, remains element {}&quot;</span>, final_queue.size());</div>
+<div class="line"><a id="l00367" name="l00367"></a><span class="lineno">  367</span>            run_single_queue(final_queue, 0);</div>
+<div class="line"><a id="l00368" name="l00368"></a><span class="lineno">  368</span>        }</div>
+<div class="line"><a id="l00369" name="l00369"></a><span class="lineno">  369</span> </div>
+<div class="line"><a id="l00370" name="l00370"></a><span class="lineno">  370</span>        logger().info(</div>
+<div class="line"><a id="l00371" name="l00371"></a><span class="lineno">  371</span>            <span class="stringliteral">&quot;executed: {} | success / fail: {} / {}&quot;</span>,</div>
+<div class="line"><a id="l00372" name="l00372"></a><span class="lineno">  372</span>            (<span class="keywordtype">int</span>)cnt_success + (<span class="keywordtype">int</span>)cnt_fail,</div>
+<div class="line"><a id="l00373" name="l00373"></a><span class="lineno">  373</span>            (<span class="keywordtype">int</span>)cnt_success,</div>
+<div class="line"><a id="l00374" name="l00374"></a><span class="lineno">  374</span>            (<span class="keywordtype">int</span>)cnt_fail);</div>
+<div class="line"><a id="l00375" name="l00375"></a><span class="lineno">  375</span>        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00376" name="l00376"></a><span class="lineno">  376</span>    }</div>
 </div>
+<div class="line"><a id="l00377" name="l00377"></a><span class="lineno">  377</span> </div>
+<div class="line"><a id="l00378" name="l00378"></a><span class="lineno">  378</span>    <span class="keywordtype">int</span> get_cnt_success()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> cnt_success; }</div>
+<div class="line"><a id="l00379" name="l00379"></a><span class="lineno">  379</span>    <span class="keywordtype">int</span> get_cnt_fail()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> cnt_fail; }</div>
 <div class="line"><a id="l00380" name="l00380"></a><span class="lineno">  380</span> </div>
-<div class="line"><a id="l00381" name="l00381"></a><span class="lineno">  381</span>    <span class="keywordtype">int</span> get_cnt_success()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> cnt_success; }</div>
-<div class="line"><a id="l00382" name="l00382"></a><span class="lineno">  382</span>    <span class="keywordtype">int</span> get_cnt_fail()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> cnt_fail; }</div>
-<div class="line"><a id="l00383" name="l00383"></a><span class="lineno">  383</span> </div>
-<div class="line"><a id="l00384" name="l00384"></a><span class="lineno">  384</span><span class="keyword">private</span>:</div>
-<div class="line"><a id="l00385" name="l00385"></a><span class="lineno">  385</span>    std::atomic_int cnt_update = 0;</div>
-<div class="line"><a id="l00386" name="l00386"></a><span class="lineno">  386</span>    std::atomic_int cnt_success = 0;</div>
-<div class="line"><a id="l00387" name="l00387"></a><span class="lineno">  387</span>    std::atomic_int cnt_fail = 0;</div>
-<div class="line"><a id="l00388" name="l00388"></a><span class="lineno">  388</span>};</div>
+<div class="line"><a id="l00381" name="l00381"></a><span class="lineno">  381</span><span class="keyword">private</span>:</div>
+<div class="line"><a id="l00382" name="l00382"></a><span class="lineno">  382</span>    std::atomic_int cnt_update = 0;</div>
+<div class="line"><a id="l00383" name="l00383"></a><span class="lineno">  383</span>    std::atomic_int cnt_success = 0;</div>
+<div class="line"><a id="l00384" name="l00384"></a><span class="lineno">  384</span>    std::atomic_int cnt_fail = 0;</div>
+<div class="line"><a id="l00385" name="l00385"></a><span class="lineno">  385</span>};</div>
 </div>
-<div class="line"><a id="l00389" name="l00389"></a><span class="lineno">  389</span>} <span class="comment">// namespace wmtk</span></div>
+<div class="line"><a id="l00386" name="l00386"></a><span class="lineno">  386</span>} <span class="comment">// namespace wmtk</span></div>
 <div class="ttc" id="astructwmtk_1_1_execute_pass_html"><div class="ttname"><a href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a></div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:35</div></div>
 <div class="ttc" id="astructwmtk_1_1_execute_pass_html_a0fa4ec20a2b09df699a065e31d8f0758"><div class="ttname"><a href="structwmtk_1_1_execute_pass.html#a0fa4ec20a2b09df699a065e31d8f0758">wmtk::ExecutePass::max_retry_limit</a></div><div class="ttdeci">size_t max_retry_limit</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:109</div></div>
 <div class="ttc" id="astructwmtk_1_1_execute_pass_html_a1a3f76d4718c918a2ceea6e7addfa52b"><div class="ttname"><a href="structwmtk_1_1_execute_pass.html#a1a3f76d4718c918a2ceea6e7addfa52b">wmtk::ExecutePass::on_fail</a></div><div class="ttdeci">std::function&lt; void(const AppMesh &amp;, Op, const Tuple &amp;t)&gt; on_fail</div><div class="ttdoc">used to collect operations that are not finished and used for later re-execution</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:100</div></div>
 <div class="ttc" id="astructwmtk_1_1_execute_pass_html_a4842b950c3f22f8f4b358dde129f226f"><div class="ttname"><a href="structwmtk_1_1_execute_pass.html#a4842b950c3f22f8f4b358dde129f226f">wmtk::ExecutePass::stopping_criterion_checking_frequency</a></div><div class="ttdeci">size_t stopping_criterion_checking_frequency</div><div class="ttdoc">checking frequency to decide whether to stop execution given the stopping criterion</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:84</div></div>
 <div class="ttc" id="astructwmtk_1_1_execute_pass_html_a4e703287ef6828166a4238ca054064e2"><div class="ttname"><a href="structwmtk_1_1_execute_pass.html#a4e703287ef6828166a4238ca054064e2">wmtk::ExecutePass::renew_neighbor_tuples</a></div><div class="ttdeci">std::function&lt; std::vector&lt; std::pair&lt; Op, Tuple &gt; &gt;(const AppMesh &amp;, Op, const std::vector&lt; Tuple &gt; &amp;)&gt; renew_neighbor_tuples</div><div class="ttdoc">renew neighboring Tuples after each operation depends on the operation</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:62</div></div>
-<div class="ttc" id="astructwmtk_1_1_execute_pass_html_a6ef45354e7b9b6ef1f33f4c5ecdb1a7d"><div class="ttname"><a href="structwmtk_1_1_execute_pass.html#a6ef45354e7b9b6ef1f33f4c5ecdb1a7d">wmtk::ExecutePass::operator()</a></div><div class="ttdeci">bool operator()(AppMesh &amp;m, const std::vector&lt; std::pair&lt; Op, Tuple &gt; &gt; &amp;operation_tuples)</div><div class="ttdoc">Executes the operations for an application when the lambda function is invoked. The rules that are cu...</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:269</div></div>
+<div class="ttc" id="astructwmtk_1_1_execute_pass_html_a6ef45354e7b9b6ef1f33f4c5ecdb1a7d"><div class="ttname"><a href="structwmtk_1_1_execute_pass.html#a6ef45354e7b9b6ef1f33f4c5ecdb1a7d">wmtk::ExecutePass::operator()</a></div><div class="ttdeci">bool operator()(AppMesh &amp;m, const std::vector&lt; std::pair&lt; Op, Tuple &gt; &gt; &amp;operation_tuples)</div><div class="ttdoc">Executes the operations for an application when the lambda function is invoked. The rules that are cu...</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:266</div></div>
 <div class="ttc" id="astructwmtk_1_1_execute_pass_html_a7073caa314f6fbd0e9ba43044872fa1c"><div class="ttname"><a href="structwmtk_1_1_execute_pass.html#a7073caa314f6fbd0e9ba43044872fa1c">wmtk::ExecutePass::should_renew</a></div><div class="ttdeci">std::function&lt; bool(double)&gt; should_renew</div><div class="ttdoc">check on wheather new operations should be added to the priority queue</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:56</div></div>
 <div class="ttc" id="astructwmtk_1_1_execute_pass_html_a7737b4d1080c804fd46f7d7e77c98ddb"><div class="ttname"><a href="structwmtk_1_1_execute_pass.html#a7737b4d1080c804fd46f7d7e77c98ddb">wmtk::ExecutePass::lock_vertices</a></div><div class="ttdeci">std::function&lt; bool(AppMesh &amp;, const Tuple &amp;, int task_id)&gt; lock_vertices</div><div class="ttdoc">lock the vertices concerned depends on the operation</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:68</div></div>
 <div class="ttc" id="astructwmtk_1_1_execute_pass_html_ab915e7cd93b20a81573ef291272757ee"><div class="ttname"><a href="structwmtk_1_1_execute_pass.html#ab915e7cd93b20a81573ef291272757ee">wmtk::ExecutePass::priority</a></div><div class="ttdeci">std::function&lt; double(const AppMesh &amp;, Op op, const Tuple &amp;)&gt; priority</div><div class="ttdoc">Priority function (default to edge length)</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:49</div></div>

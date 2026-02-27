@@ -11,7 +11,7 @@ var searchData=
   ['tetrahedronconnectivity_8',['TetrahedronConnectivity',['../classwmtk_1_1_tet_mesh_1_1_tetrahedron_connectivity.html',1,'wmtk::TetMesh']]],
   ['tetvtuwriter_9',['tetvtuwriter',['../classwmtk_1_1io_1_1_tet_v_t_u_writer.html',1,'wmtk::io::TetVTUWriter'],['../classwmtk_1_1io_1_1_tet_v_t_u_writer.html#a277bdbcec2d01076b00c7f522dcd9562',1,'wmtk::io::TetVTUWriter::TetVTUWriter()']]],
   ['tid_10',['tid',['../classwmtk_1_1_tet_mesh_1_1_tuple.html#ab8af2ebc7c790390f1b719077b4aae66',1,'wmtk::TetMesh::Tuple']]],
-  ['toolkit_3a_20declarative_20specification_20for_20unstructured_20mesh_20editing_20algorithms_11',['Wildmeshing-toolkit: Declarative Specification for Unstructured Mesh Editing Algorithms',['../index.html',1,'']]],
+  ['toolkit_11',['Wildmeshing Toolkit',['../index.html',1,'']]],
   ['tri_5fcapacity_12',['tri_capacity',['../classwmtk_1_1_tri_mesh.html#ab64cc4ece77d894286c2e433e039dae2',1,'wmtk::TriMesh']]],
   ['triangle_5finsertion_13',['triangle_insertion',['../classwmtk_1_1_tet_mesh.html#a8f7b6c14954922b629677a700b8251eb',1,'wmtk::TetMesh']]],
   ['triangleconnectivity_14',['TriangleConnectivity',['../classwmtk_1_1_tri_mesh_1_1_triangle_connectivity.html',1,'wmtk::TriMesh']]],

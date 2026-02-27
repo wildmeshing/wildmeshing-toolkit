@@ -2,9 +2,9 @@ var searchData=
 [
   ['init_0',['init',['../classwmtk_1_1_tet_mesh.html#a52a44bea81d91f805cbb5d27acb7bec1',1,'wmtk::TetMesh::init(size_t n_vertices, const std::vector&lt; std::array&lt; size_t, 4 &gt; &gt; &amp;tets)'],['../classwmtk_1_1_tet_mesh.html#a0710ac8de9beae8410e2ff62ee1d83f3',1,'wmtk::TetMesh::init(const MatrixXi &amp;T)'],['../classwmtk_1_1_tri_mesh.html#a8b73b58387664feb724e992e2395d3cc',1,'wmtk::TriMesh::init(size_t n_vertices, const std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;tris)'],['../classwmtk_1_1_tri_mesh.html#a8b2971358fc0e1ffca3406d5958a8e74',1,'wmtk::TriMesh::init(const MatrixXi &amp;F)']]],
   ['insert_5fpoint_1',['insert_point',['../classwmtk_1_1_tet_mesh.html#a3334fb0ca8c134d5f30a859dc3795527',1,'wmtk::TetMesh']]],
-  ['installation_2',['Installation',['../index.html#autotoc_md1',1,'']]],
+  ['installation_2',['Installation',['..//home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/README.md#autotoc_md1',1,'']]],
   ['interiortetopt_3',['InteriorTetOpt',['../structapp_1_1interior__tet__opt_1_1_interior_tet_opt.html',1,'app::interior_tet_opt']]],
-  ['invariant_20design_4',['Explicit Invariant Design',['../index.html#autotoc_md6',1,'']]],
+  ['invariant_20design_4',['Explicit Invariant Design',['..//home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/README.md#autotoc_md6',1,'']]],
   ['invariants_5',['invariants',['../classwmtk_1_1_tri_mesh.html#a3d8bb552e20bda83d8113874e62f54fe',1,'wmtk::TriMesh']]],
   ['is_5fboundary_5fedge_6',['is_boundary_edge',['../classwmtk_1_1_tet_mesh_1_1_tuple.html#ade407919430873037e472748005623b7',1,'wmtk::TetMesh::Tuple::is_boundary_edge()'],['../classwmtk_1_1_tri_mesh.html#adcc31a34edcc7605d3bbfa25bae84ece',1,'wmtk::TriMesh::is_boundary_edge()']]],
   ['is_5fboundary_5fface_7',['is_boundary_face',['../classwmtk_1_1_tet_mesh_1_1_tuple.html#a2e708b580de8fa535d3f169522eab354',1,'wmtk::TetMesh::Tuple']]],

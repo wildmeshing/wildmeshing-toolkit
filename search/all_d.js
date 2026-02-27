@@ -5,7 +5,6 @@ var searchData=
   ['m_5fis_5fremoved_2',['m_is_removed',['../classwmtk_1_1_tri_mesh_1_1_vertex_connectivity.html#af85b47973f5937266c235d9f688b6742',1,'wmtk::TriMesh::VertexConnectivity::m_is_removed'],['../classwmtk_1_1_tri_mesh_1_1_triangle_connectivity.html#a1753f3561e7cb7c824b534db353e32e9',1,'wmtk::TriMesh::TriangleConnectivity::m_is_removed']]],
   ['m_5flocal_5fedges_3',['m_local_edges',['../classwmtk_1_1_tet_mesh.html#ade7fb5d05c627df8d2b47fb27b1bd69b',1,'wmtk::TetMesh']]],
   ['max_5fretry_5flimit_4',['max_retry_limit',['../structwmtk_1_1_execute_pass.html#a0fa4ec20a2b09df699a065e31d8f0758',1,'wmtk::ExecutePass']]],
-  ['mesh_20editing_20algorithms_5',['Wildmeshing-toolkit: Declarative Specification for Unstructured Mesh Editing Algorithms',['../index.html',1,'']]],
-  ['mortoncode64_6',['MortonCode64',['../class_resorting_1_1_morton_code64.html',1,'Resorting']]],
-  ['mshdata_7',['MshData',['../classwmtk_1_1_msh_data.html',1,'wmtk']]]
+  ['mortoncode64_5',['MortonCode64',['../class_resorting_1_1_morton_code64.html',1,'Resorting']]],
+  ['mshdata_6',['MshData',['../classwmtk_1_1_msh_data.html',1,'wmtk']]]
 ];
