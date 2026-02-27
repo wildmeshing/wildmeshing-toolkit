@@ -31,7 +31,7 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
         json_params.contains("json_input_file") ? json_params["json_input_file"] : "";
 
     Parameters params;
-    params.output_path = resolve_path(root, json_params["output"]).string();
+    params.output_path = json_params["output"];
     const bool skip_simplify = json_params["skip_simplify"];
     const bool use_sample_envelope = json_params["use_sample_envelope"];
     const int NUM_THREADS = json_params["num_threads"];
@@ -124,7 +124,7 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
         json_params.contains("json_input_file") ? json_params["json_input_file"] : "";
 
     Parameters params;
-    params.output_path = resolve_path(root, json_params["output"]).string();
+    params.output_path = json_params["output"];
     const bool skip_simplify = json_params["skip_simplify"];
     const bool use_sample_envelope = json_params["use_sample_envelope"];
     const int NUM_THREADS = json_params["num_threads"];

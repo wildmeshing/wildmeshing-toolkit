@@ -46,7 +46,7 @@ void wmtk_wrapper(const nlohmann::json& j)
 
     std::string app_str = j["application"];
     if (components_map.count(app_str) == 0) {
-        log_and_throw_error("Applictaion {} unknown", app_str);
+        log_and_throw_error("Application {} unknown", app_str);
     }
 
     // execute
