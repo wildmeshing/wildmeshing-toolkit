@@ -9,6 +9,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <atomic>
+#include <unordered_map>
 #include <paraviewo/VTUWriter.hpp>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
@@ -1523,9 +1524,380 @@ std::tuple<double, double> ImageSimulationMeshTri::get_max_avg_energy()
     return std::make_tuple(max_energy, avg_energy);
 }
 
-void ImageSimulationMeshTri::fill_holes_topo()
+std::vector<ImageSimulationMeshTri::ConnectedComponent>
+ImageSimulationMeshTri::compute_connected_components() const
 {
-    log_and_throw_error("fill_holes_topo() is not implemented");
+    const size_t n_faces = tri_capacity();
+    std::vector<int> comp_id(n_faces, -1);
+    std::vector<ConnectedComponent> components;
+
+    // Pass 1: BFS to assign component ids and collect faces per component
+    for (size_t fid = 0; fid < n_faces; ++fid) {
+        if (!tuple_from_tri(fid).is_valid(*this)) continue;
+        if (comp_id[fid] != -1) continue;
+
+        const int64_t tag = m_face_attribute[fid].tags[0];
+        const int comp_idx = (int)components.size();
+        ConnectedComponent& comp = components.emplace_back();
+        if (tag == -1) log_and_throw_error(fmt::format("Face {} has invalid tag -1", fid));
+        comp.tag = tag;
+
+        comp.faces.push_back(fid);
+        comp_id[fid] = comp_idx;
+
+        for (size_t i = 0; i < comp.faces.size(); ++i) { // BFS loop with comp.faces growing
+            const size_t cur = comp.faces[i];
+            const auto fvs = oriented_tri_vids(cur);
+            const Vector2d& fp0 = m_vertex_attribute[fvs[0]].m_pos;
+            const Vector2d& fp1 = m_vertex_attribute[fvs[1]].m_pos;
+            const Vector2d& fp2 = m_vertex_attribute[fvs[2]].m_pos;
+            comp.area += 0.5 * std::abs(
+                (fp1[0] - fp0[0]) * (fp2[1] - fp0[1]) -
+                (fp1[1] - fp0[1]) * (fp2[0] - fp0[0]));
+            for (int j = 0; j < 3; ++j) {
+                const Tuple edge_tup = tuple_from_edge(cur, j);
+                const auto t_opp = edge_tup.switch_face(*this);
+                if (!t_opp) continue;
+                const size_t nbr = t_opp->fid(*this);
+                if (m_face_attribute[nbr].tags[0] == tag && comp_id[nbr] == -1) {
+                    comp_id[nbr] = comp_idx;
+                    comp.faces.push_back(nbr);
+                }
+            }
+        }
+    }
+
+    // Pass 2: populate surrounding_comp_ids by scanning all boundary edges
+    for (size_t fid = 0; fid < n_faces; ++fid) {
+        if (!tuple_from_tri(fid).is_valid(*this)) continue;
+        const size_t cidx = comp_id[fid];
+        for (int j = 0; j < 3; ++j) {
+            const Tuple edge_tup = tuple_from_edge(fid, j);
+            const auto t_opp = edge_tup.switch_face(*this);
+            if (!t_opp) {
+                components[cidx].touches_boundary = true;
+                continue;
+            }
+            const size_t nbr_cidx = comp_id[t_opp->fid(*this)];
+            if (nbr_cidx != cidx) {
+                components[cidx].surrounding_comp_ids.insert(nbr_cidx);
+            }
+        }
+    }
+
+    return components;
+}
+
+void ImageSimulationMeshTri::engulf_component(
+    std::vector<ImageSimulationMeshTri::ConnectedComponent>& components,
+    const size_t hole_comp_id, const size_t engulfing_comp_id)
+{    if (hole_comp_id >= components.size() || engulfing_comp_id >= components.size()) {
+        log_and_throw_error("Invalid component ids for engulfing: hole_comp_id = {}, engulfing_comp_id = {}, total components = {}",
+            hole_comp_id, engulfing_comp_id, components.size());
+    }
+    auto& hole_comp = components[hole_comp_id];
+    auto& engulfing_comp = components[engulfing_comp_id];
+
+    for (const size_t fid : hole_comp.faces) {
+        m_face_attribute[fid].tags[0] = engulfing_comp.tag;
+    }
+    engulfing_comp.area += hole_comp.area;
+    engulfing_comp.faces.insert(
+        engulfing_comp.faces.end(), hole_comp.faces.begin(), hole_comp.faces.end());
+    engulfing_comp.surrounding_comp_ids.erase(hole_comp_id);    
+    hole_comp = ConnectedComponent();
+}
+
+void ImageSimulationMeshTri::engulf_components(
+    std::vector<ImageSimulationMeshTri::ConnectedComponent>& components,
+    const std::vector<size_t>& hole_comp_ids, const std::unordered_set<size_t>& engulfing_comp_ids)
+{
+    
+    
+    if (engulfing_comp_ids.empty()) {
+        log_and_throw_error("No engulfing components found for hole component(s) {}", fmt::join(hole_comp_ids, ","));
+    }
+    else if (engulfing_comp_ids.size() == 1) {
+        for (const size_t comp_id : hole_comp_ids) {
+            engulf_component(components, comp_id, *engulfing_comp_ids.begin());
+        }
+        return;
+    }
+    else {
+        // Build face->component mapping from current components state
+        const size_t n_faces = tri_capacity();
+        std::vector<size_t> comp_id_map(n_faces, std::numeric_limits<size_t>::max());
+        for (size_t i = 0; i < components.size(); ++i) {
+            for (const size_t fid : components[i].faces) {
+                comp_id_map[fid] = i;
+            }
+        }
+        
+        // Build boundary between hole components and engulfing components
+        std::vector<std::pair<Vector2d, size_t>> boundary_edge_centroids;
+        for (const size_t comp_id : hole_comp_ids) {
+            auto& comp = components[comp_id];
+            for (const size_t fid : comp.faces) {
+                if (!tuple_from_tri(fid).is_valid(*this)) continue;
+                for (int j = 0; j < 3; ++j) {
+                    const Tuple edge_tup = tuple_from_edge(fid, j);
+                    const auto t_opp = edge_tup.switch_face(*this);
+                    if (!t_opp) continue;
+                    const size_t nbr_cidx = comp_id_map[t_opp->fid(*this)];
+                    if (engulfing_comp_ids.count(nbr_cidx)) { // neighbor is one of the engulfing components
+                        const auto vs = get_edge_vids(edge_tup);
+                        const Vector2d& p0 = m_vertex_attribute[vs[0]].m_pos;
+                        const Vector2d& p1 = m_vertex_attribute[vs[1]].m_pos;
+                        boundary_edge_centroids.emplace_back((p0 + p1) / 2.0, nbr_cidx);
+                    }
+                }
+            }
+        }
+
+        // For each hole face find nearest boundary edge centroid and assign to corresponding engulfing component
+        for (const size_t comp_id : hole_comp_ids) {
+            auto& comp = components[comp_id];
+            for (const size_t fid : comp.faces) {
+                const auto fvs = oriented_tri_vids(fid);
+                const Vector2d& fp0 = m_vertex_attribute[fvs[0]].m_pos;
+                const Vector2d& fp1 = m_vertex_attribute[fvs[1]].m_pos;
+                const Vector2d& fp2 = m_vertex_attribute[fvs[2]].m_pos;
+                const Vector2d face_centroid = (fp0 + fp1 + fp2) / 3.0;
+
+                double min_dist = std::numeric_limits<double>::max();
+                size_t closest_comp_id = std::numeric_limits<size_t>::max();
+                for (const auto& [edge_centroid, nbr_cidx] : boundary_edge_centroids) {
+                    const double dist = (face_centroid - edge_centroid).norm();
+                    if (dist < min_dist) {
+                        min_dist = dist;
+                        closest_comp_id = nbr_cidx;
+                    }
+                }
+                if (closest_comp_id == std::numeric_limits<size_t>::max()) {
+                    log_and_throw_error("Failed to find closest component for face {}", fid);
+                }
+                m_face_attribute[fid].tags[0] = components[closest_comp_id].tag;
+                components[closest_comp_id].area += 0.5 * std::abs(
+                    (fp1[0] - fp0[0]) * (fp2[1] - fp0[1]) -
+                    (fp1[1] - fp0[1]) * (fp2[0] - fp0[0]));
+                components[closest_comp_id].faces.push_back(fid);
+                comp_id_map[fid] = closest_comp_id;
+            }
+        }
+        // Update surrounding_comp_ids for newly merged components
+        for (const size_t comp_id : hole_comp_ids) {
+                auto& comp = components[comp_id];
+            for (const size_t fid : comp.faces) {
+                if (!tuple_from_tri(fid).is_valid(*this)) continue;
+                const size_t cidx = comp_id_map[fid];
+                for (int j = 0; j < 3; ++j) {
+                    const Tuple edge_tup = tuple_from_edge(fid, j);
+                    const auto t_opp = edge_tup.switch_face(*this);
+                    if (!t_opp) continue;
+                    const size_t nbr_cidx = comp_id_map[t_opp->fid(*this)];
+                    if (nbr_cidx == std::numeric_limits<size_t>::max()) continue;
+                    if (nbr_cidx == comp_id) continue;
+                    if (nbr_cidx != cidx) {
+                        components[cidx].surrounding_comp_ids.insert(nbr_cidx);
+                        components[nbr_cidx].surrounding_comp_ids.insert(cidx);
+                    }
+                }
+            }
+        }
+
+        for (const size_t comp_id : hole_comp_ids) {
+            for (auto& c : components) {
+                c.surrounding_comp_ids.erase(comp_id);
+            }
+            components[comp_id] = ConnectedComponent();
+        }
+    }
+}
+
+void ImageSimulationMeshTri::extract_hole_clusters(std::vector<ImageSimulationMeshTri::ConnectedComponent>& components, std::unordered_set<int64_t>& tags, std::vector<std::vector<size_t>>& hole_clusters, double threshold)
+{
+    // BFS-cluster all non-fill-tag components by adjacency.
+    // Each cluster is a maximal group of connected non-fill-tag components.
+    // A cluster is enclosed if every surrounding component outside it is in tags.
+    std::vector<size_t> cluster_id(components.size(), -1);
+    std::vector<ComponentCluster> component_clusters;
+    for (size_t i = 0; i < components.size(); ++i) {
+        if (components[i].faces.empty() || tags.count(components[i].tag) || components[i].touches_boundary) continue;
+        if (cluster_id[i] != -1) continue;
+        const size_t cid = component_clusters.size();
+        ComponentCluster& cluster = component_clusters.emplace_back();
+        cluster.comp_ids.push_back(i);
+        cluster_id[i] = cid;
+        for (size_t qi = 0; qi < cluster.comp_ids.size(); ++qi) { // BFS loop with cluster.comp_ids growing
+            const size_t cur = cluster.comp_ids[qi];
+            cluster.area += components[cur].area;
+            for (const size_t sid : components[cur].surrounding_comp_ids) {
+                if (components[sid].faces.empty()) continue;
+                if (tags.count(components[sid].tag)) continue;
+                if (components[sid].touches_boundary) {
+                    cluster.enclosed = false; // neighbour escapes to mesh boundary
+                    continue;
+                }
+                if (cluster_id[sid] == -1) {
+                    cluster_id[sid] = cid;
+                    cluster.comp_ids.push_back(sid);
+                }
+            }
+        }
+        // also mark not enclosed if any member touches a non-fill-tag component outside this cluster
+        for (const size_t ci : cluster.comp_ids) {
+            for (const size_t sid : components[ci].surrounding_comp_ids) {
+                if (!components[sid].faces.empty() &&
+                    !tags.count(components[sid].tag) &&
+                    cluster_id[sid] != cid) {
+                    cluster.enclosed = false;
+                }
+            }
+        }
+    }
+
+    // fill enclosed clusters whose total area is below threshold
+    for (const ComponentCluster& cluster : component_clusters) {
+        if (!cluster.enclosed) continue;
+        if (cluster.area >= threshold) continue;
+        hole_clusters.push_back({});
+        for (const size_t ci : cluster.comp_ids) {
+            hole_clusters.back().push_back(ci);
+        }
+    }
+}
+
+void ImageSimulationMeshTri::recompute_surface_info()
+{
+    for (const Tuple& e : get_edges()) {
+        SmartTuple ee(*this, e);
+        m_edge_attribute[ee.eid()].m_is_surface_fs = 0;
+    }
+    for (size_t vid = 0; vid < vert_capacity(); ++vid) {
+        m_vertex_attribute[vid].m_is_on_surface = false;
+    }
+    for (const Tuple& e : get_edges()) {
+        SmartTuple ee(*this, e);
+        const auto t_opp = ee.switch_face();
+        if (!t_opp) continue;
+        bool has_diff_tag = false;
+        for (size_t j = 0; j < m_tags_count; ++j) {
+            if (m_face_attribute[ee.fid()].tags[j] != m_face_attribute[t_opp->fid()].tags[j]) {
+                has_diff_tag = true;
+                break;
+            }
+        }
+        if (!has_diff_tag) continue;
+        m_edge_attribute[ee.eid()].m_is_surface_fs = 1;
+        const size_t v1 = ee.vid();
+        const size_t v2 = ee.switch_vertex().vid();
+        m_vertex_attribute[v1].m_is_on_surface = true;
+        m_vertex_attribute[v2].m_is_on_surface = true;
+    }
+}
+void ImageSimulationMeshTri::fill_holes_topo(
+    const std::vector<int64_t>& fill_holes_tags,
+    double threshold)
+{
+    if (m_tags_count == 0) {
+        logger().warn("fill_holes_topo: no tags, skipping");
+        return;
+    }
+
+    // -- Step 1: compute all connected components with their surrounding component ids
+    auto components = compute_connected_components();
+
+    // -- Step 2: for each fill_tag, fill all enclosed components
+    bool any_filled = false;
+    for (const int64_t fill_tag : fill_holes_tags) {
+
+        std::vector<std::vector<size_t>> hole_clusters;
+        std::unordered_set<int64_t> tags{fill_tag};
+        extract_hole_clusters(components, tags, hole_clusters, threshold);
+        
+        for (const auto& hole_cluster : hole_clusters) {
+            // Collect the fill-tag component indices that surround this cluster
+            std::unordered_set<size_t> engulfing_comp_ids;
+            for (const size_t ci : hole_cluster) {
+                for (const size_t sid : components[ci].surrounding_comp_ids) {
+                    if (!components[sid].faces.empty() && components[sid].tag == fill_tag) {
+                        engulfing_comp_ids.insert(sid);
+                    }
+                }
+            }
+            engulf_components(components, hole_cluster, engulfing_comp_ids);
+            any_filled = true;
+        }
+        if (hole_clusters.empty()) {
+            logger().info(
+                "fill_holes_topo: no enclosed components found for fill_tag {}", fill_tag);
+        }
+    }
+
+    if (!any_filled) return;
+
+    // -- Step 3: recompute m_is_surface_fs and m_is_on_surface
+    recompute_surface_info();
+}
+void ImageSimulationMeshTri::keep_largest_connected_component(const std::vector<int64_t>& lcc_tags)
+{
+    auto components = compute_connected_components();
+    if (components.empty()) {
+        logger().warn("keep_largest_connected_component: no components found, skipping");
+        return;
+    }
+    // For each tag in lcc_tags, find the largest component with that tag and mark all other components with that tag for removal
+    for (const int64_t lcc_tag : lcc_tags) {
+        int largest_comp_id = -1;
+        double largest_area = -1.0;
+        for (size_t i = 0; i < components.size(); ++i) {
+            if (components[i].faces.empty() || components[i].tag != lcc_tag) continue;
+            if (components[i].area > largest_area) {
+                largest_area = components[i].area;
+                largest_comp_id = i;
+            }
+        }
+        if (largest_comp_id == -1) {
+            logger().warn(
+                "keep_largest_connected_component: no component found for tag {}, skipping",
+                lcc_tag);
+            continue;
+        }
+        for (size_t i = 0; i < components.size(); ++i) {
+            if (components[i].faces.empty() || components[i].tag != lcc_tag || (int)i == largest_comp_id)
+                continue;
+            // Copy surrounding_comp_ids — engulf_components will reset components[i]
+            std::unordered_set<size_t> surr = components[i].surrounding_comp_ids;
+            engulf_components(components, std::vector<size_t>{i}, surr);
+        }
+    }
+
+    recompute_surface_info();
+}
+
+void ImageSimulationMeshTri::tight_seal_topo(const std::vector<std::unordered_set<int64_t>>& tight_seal_tag_sets, double threshold)
+{
+    auto components = compute_connected_components();
+
+    for (const auto& tag_set : tight_seal_tag_sets) {
+        std::vector<std::vector<size_t>> hole_clusters;
+        std::unordered_set<int64_t> tags_copy(tag_set.begin(), tag_set.end());
+        extract_hole_clusters(components, tags_copy, hole_clusters, threshold);
+        for (const auto& hole_cluster : hole_clusters) {
+            // Collect component indices in tag_set that surround this cluster
+            std::unordered_set<size_t> engulfing_comp_ids;
+            for (const size_t ci : hole_cluster) {
+                for (const size_t sid : components[ci].surrounding_comp_ids) {
+                    if (!components[sid].faces.empty() && tag_set.count(components[sid].tag)) {
+                        engulfing_comp_ids.insert(sid);
+                    }
+                }
+            }
+            engulf_components(components, hole_cluster, engulfing_comp_ids);
+        }
+    }
+
+    recompute_surface_info();
 }
 
 simplex::RawSimplexCollection ImageSimulationMeshTri::get_order1_edges_for_vertex(

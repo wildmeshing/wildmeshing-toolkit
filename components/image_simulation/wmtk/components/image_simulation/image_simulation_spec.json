@@ -21,7 +21,11 @@
       "log_file",
       "report",
       "DEBUG_output",
-      "DEBUG_sanity_checks"
+      "DEBUG_sanity_checks",
+      "fill_holes_tags",
+      "fill_holes_threshold",
+      "tight_seal_tag_sets",
+      "tight_seal_threshold"
     ]
   },
   {
@@ -45,7 +49,7 @@
     "pointer": "/operation",
     "type": "string",
     "default": "remeshing",
-    "options": ["remeshing", "fill_holes_topo"],
+    "options": ["remeshing", "fill_holes_topo", "tight_seal_topo"],
     "doc": "Image simulation contains multiple operations for modifying the image. Depending on the operation, more parameters might be required."
   },
   {
@@ -166,5 +170,39 @@
     "type": "bool",
     "default": false,
     "doc": "Perform sanity checks after every operation. This can be very slow and should only be used for debugging."
+  },
+  {
+    "pointer": "/fill_holes_tags",
+    "type": "list",
+    "default": [0],
+    "doc": "For fill_holes_topo: list of tag values used to fill enclosed connected components (processed in order)."
+  },
+  {
+    "pointer": "/fill_holes_tags/*",
+    "type": "int",
+    "doc": "A tag value to fill enclosed connected components of other tags."
+  },
+  {
+    "pointer": "/fill_holes_threshold",
+    "type": "float",
+    "default": -1,
+    "doc": "For fill_holes_topo: only fill a connected component if its area is less than this threshold. Negative value means no threshold (fill all enclosed components)."
+  },
+  {
+    "pointer": "/tight_seal_tag_sets",
+    "type": "list",
+    "default": [[0]],
+    "doc": "For tight_seal_topo: list of tag sets. Each set defines a group of tags whose enclosed holes are filled. Can be a flat list [t1,t2] (treated as one set) or a list of lists [[t1,t2],[t3]]."
+  },
+  {
+    "pointer": "/tight_seal_tag_sets/*",
+    "type": "int",
+    "doc": "A tag value in the tight seal tag set (when tight_seal_tag_sets is a flat list of ints)."
+  },
+  {
+    "pointer": "/tight_seal_threshold",
+    "type": "float",
+    "default": -1,
+    "doc": "For tight_seal_topo: only fill a hole cluster if its total area is less than this threshold. Negative value means no threshold."
   }
 ]

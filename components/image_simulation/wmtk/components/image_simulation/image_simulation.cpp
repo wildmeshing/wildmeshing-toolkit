@@ -174,7 +174,31 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
     if (operation == "remeshing") {
         mesh.mesh_improvement(max_its); // <-- tetwild
     } else if (operation == "fill_holes_topo") {
-        mesh.fill_holes_topo();
+        const std::vector<int64_t> fill_holes_tags =
+            json_params["fill_holes_tags"].get<std::vector<int64_t>>();
+        const double raw_threshold = json_params["fill_holes_threshold"].get<double>();
+        const double threshold =
+            raw_threshold < 0 ? std::numeric_limits<double>::infinity() : raw_threshold;
+        mesh.fill_holes_topo(fill_holes_tags, threshold);
+    } else if (operation == "tight_seal_topo") {
+        // Accept either [[t1,t2],[t3,...]] (list of sets) or flat [t1,t2] (one set)
+        std::vector<std::unordered_set<int64_t>> tag_sets;
+        const auto& raw = json_params["tight_seal_tag_sets"];
+        if (!raw.empty() && raw[0].is_array()) {
+            for (const auto& s : raw) {
+                std::unordered_set<int64_t> ts;
+                for (const auto& v : s) ts.insert(v.get<int64_t>());
+                tag_sets.push_back(std::move(ts));
+            }
+        } else {
+            std::unordered_set<int64_t> ts;
+            for (const auto& v : raw) ts.insert(v.get<int64_t>());
+            tag_sets.push_back(std::move(ts));
+        }
+        const double raw_threshold = json_params["tight_seal_threshold"].get<double>();
+        const double threshold =
+            raw_threshold < 0 ? std::numeric_limits<double>::infinity() : raw_threshold;
+        mesh.tight_seal_topo(tag_sets, threshold);
     } else {
         log_and_throw_error("Unknown image simulation operation");
     }
