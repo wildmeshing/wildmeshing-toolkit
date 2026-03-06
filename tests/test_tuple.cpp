@@ -173,7 +173,7 @@ TEST_CASE("tuple_iterator", "[test_tuple][TetMesh]")
 
             EdgeIterator(const TetMesh& m, value_type ptr)
                 : m_tuple(ptr)
-                , mesh(m) {};
+                , mesh(m){};
 
             EdgeIterator operator++()
             {
