@@ -93,14 +93,12 @@ void TetWildMesh::init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>
     m_params.box_max = box_max;
 
     ///delaunay
-    auto [unused_points, tets] = wmtk::delaunay::delaunay3D(points);
-    wmtk::logger().info(
-        "after delauney tets.size() {}  points.size() {}",
-        tets.size(),
-        points.size());
+    auto [unused_points, tets] = delaunay::delaunay3D(points);
+    logger().info("after delauney tets.size() {}  points.size() {}", tets.size(), points.size());
 
     // conn
     init(points.size(), tets);
+    logger().info("init finished");
     // attr
     m_vertex_attribute.m_attributes.resize(points.size());
     m_tet_attribute.m_attributes.resize(tets.size());
@@ -109,6 +107,7 @@ void TetWildMesh::init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>
         m_vertex_attribute[i].m_pos = Vector3r(points[i][0], points[i][1], points[i][2]);
         m_vertex_attribute[i].m_posf = Vector3d(points[i][0], points[i][1], points[i][2]);
     }
+    logger().info("attribute vectors created");
 }
 
 

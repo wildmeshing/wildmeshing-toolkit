@@ -427,20 +427,6 @@ private:
         std::vector<std::array<size_t, 2>> boundary_edges;
         std::vector<size_t> changed_tids;
         std::vector<double> changed_energies;
-
-        std::vector<std::array<size_t, 2>> failed_edges;
-
-        std::map<std::pair<size_t, size_t>, int> edge_link;
-        std::map<size_t, int> vertex_link;
-        size_t global_nonmani_ver_cnt;
-
-        // debug use
-        std::vector<size_t> one_ring_surface_vertices;
-        std::vector<std::pair<size_t, size_t>> one_ring_surface_edges;
-        std::vector<std::array<size_t, 3>> one_ring_surface;
-
-        // for geometry preservation
-        std::vector<size_t> edge_incident_param_type;
     };
     tbb::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
 
@@ -485,7 +471,6 @@ public:
      *
      * @param V #Vx3 vertices of the tet mesh
      * @param T #Tx4 vertex IDs for all tets
-     * @param F #Fx3 vertex IDs of all embedded faces
      * @param T_tags #Tx1 image data represented by the individual tets
      */
     void init_from_image(const MatrixXr& V, const MatrixXi& T, const MatrixXi& T_tags);
@@ -519,19 +504,12 @@ public:
     bool is_open_boundary_edge(const Tuple& e);
     bool is_open_boundary_edge(const std::array<size_t, 2>& e);
 
-    // for topology preservation
-    int count_vertex_links(const Tuple& v);
-    int count_edge_links(const Tuple& e);
-
     // for boolean operations
     int flood_fill();
 
     void write_vtu(const std::string& path);
 
     void write_surface(const std::string& path) const;
-
-    // initialize sizing field (for topology preservation)
-    void init_sizing_field();
 };
 
 } // namespace wmtk::components::image_simulation

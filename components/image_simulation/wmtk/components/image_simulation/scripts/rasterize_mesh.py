@@ -124,6 +124,10 @@ if __name__ == "__main__":
         else:
             assert False, "Either --spacing or --na must be provided."
         n = np.ceil(dim / spacing).astype(int)
+        # Adjust bbox to ensure spacing is exactly as requested
+        # With n points, we have (n-1) intervals, so extent = (n-1) * spacing
+        new_dim = (n - 1) * spacing
+        bbox_max = bbox_min + new_dim
     else:
         spacing = np.array([dim[0] / args.nx, dim[1] / args.ny, dim[2] / args.nz])
         n = np.array([args.nx, args.ny, args.nz])
@@ -151,7 +155,7 @@ if __name__ == "__main__":
     grid_points = np.ascontiguousarray(grid_points, dtype=np.float64)
 
     print(grid_points.shape)
-
+    
     volume = np.zeros(n, dtype=np.uint8)
     volume = add_padding(volume)
 

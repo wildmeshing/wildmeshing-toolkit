@@ -92,16 +92,16 @@ void TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& 
     m_vertex_mutex.grow_to_at_least(n_vertices);
 
     // resize attributes
-    if (p_vertex_attrs) {
+    if (p_vertex_attrs != nullptr) {
         p_vertex_attrs->resize(n_vertices);
     }
-    if (p_tet_attrs) {
+    if (p_tet_attrs != nullptr) {
         p_tet_attrs->resize(tets.size());
     }
-    if (p_face_attrs) {
+    if (p_face_attrs != nullptr) {
         p_face_attrs->resize(4 * tets.size());
     }
-    if (p_edge_attrs) {
+    if (p_edge_attrs != nullptr) {
         p_edge_attrs->resize(6 * tets.size());
     }
 }

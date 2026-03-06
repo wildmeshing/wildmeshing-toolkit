@@ -37,6 +37,11 @@ public:
     int retry_limit = 10;
     SimplicialEmbeddingTriMesh();
 
+    size_t get_partition_id(const Tuple& loc) const
+    {
+        return vertex_attrs[loc.vid(*this)].partition_id;
+    }
+
     void set_positions(const std::vector<Vector2d>& vertex_positions);
     void set_positions(const MatrixXd& V);
     void set_num_threads(const int64_t num_threads);
