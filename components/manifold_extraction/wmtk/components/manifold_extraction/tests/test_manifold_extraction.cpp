@@ -76,16 +76,17 @@ TEST_CASE("edge_split", "[split_op]")
     REQUIRE(mesh.m_vertex_attribute[4].label == E1_LABEL);
 
     // edges
-    std::array<std::array<size_t, 3>, 9> edges = {{// {v0id, v1id, correct label}
-                                                   {{0, 1, E0_LABEL}},
-                                                   {{0, 2, E2_LABEL}},
-                                                   {{0, 3, E3_LABEL}},
-                                                   {{0, 4, F0_LABEL}},
-                                                   {{1, 3, E4_LABEL}},
-                                                   {{1, 4, E1_LABEL}},
-                                                   {{2, 3, E5_LABEL}},
-                                                   {{2, 4, E1_LABEL}},
-                                                   {{3, 4, F3_LABEL}}}};
+    std::array<std::array<size_t, 3>, 9> edges = {
+        {// {v0id, v1id, correct label}
+         {{0, 1, E0_LABEL}},
+         {{0, 2, E2_LABEL}},
+         {{0, 3, E3_LABEL}},
+         {{0, 4, F0_LABEL}},
+         {{1, 3, E4_LABEL}},
+         {{1, 4, E1_LABEL}},
+         {{2, 3, E5_LABEL}},
+         {{2, 4, E1_LABEL}},
+         {{3, 4, F3_LABEL}}}};
     for (int i = 0; i < 9; i++) {
         size_t v0 = edges[i][0];
         size_t v1 = edges[i][1];
@@ -164,17 +165,18 @@ TEST_CASE("face_split", "[split_op]")
     REQUIRE(mesh.m_vertex_attribute[4].label == F3_LABEL);
 
     // edges
-    std::array<std::array<size_t, 3>, 10> edges = {{// {v0id, v1id, correct label}
-                                                    {{0, 1, E0_LABEL}},
-                                                    {{0, 2, E2_LABEL}},
-                                                    {{0, 3, E3_LABEL}},
-                                                    {{0, 4, T0_LABEL}},
-                                                    {{1, 2, E1_LABEL}},
-                                                    {{1, 3, E4_LABEL}},
-                                                    {{1, 4, F3_LABEL}},
-                                                    {{2, 3, E5_LABEL}},
-                                                    {{2, 4, F3_LABEL}},
-                                                    {{3, 4, F3_LABEL}}}};
+    std::array<std::array<size_t, 3>, 10> edges = {
+        {// {v0id, v1id, correct label}
+         {{0, 1, E0_LABEL}},
+         {{0, 2, E2_LABEL}},
+         {{0, 3, E3_LABEL}},
+         {{0, 4, T0_LABEL}},
+         {{1, 2, E1_LABEL}},
+         {{1, 3, E4_LABEL}},
+         {{1, 4, F3_LABEL}},
+         {{2, 3, E5_LABEL}},
+         {{2, 4, F3_LABEL}},
+         {{3, 4, F3_LABEL}}}};
     for (int i = 0; i < 9; i++) {
         size_t v0 = edges[i][0];
         size_t v1 = edges[i][1];
@@ -184,16 +186,17 @@ TEST_CASE("face_split", "[split_op]")
     }
 
     // faces
-    std::array<std::array<size_t, 4>, 9> faces = {{// {v0id, v1id, v2id, correct label}
-                                                   {{0, 1, 2, F0_LABEL}},
-                                                   {{0, 1, 3, F2_LABEL}},
-                                                   {{0, 1, 4, T0_LABEL}},
-                                                   {{0, 2, 3, F1_LABEL}},
-                                                   {{0, 2, 4, T0_LABEL}},
-                                                   {{0, 3, 4, T0_LABEL}},
-                                                   {{1, 2, 4, F3_LABEL}},
-                                                   {{1, 3, 4, F3_LABEL}},
-                                                   {{2, 3, 4, F3_LABEL}}}};
+    std::array<std::array<size_t, 4>, 9> faces = {
+        {// {v0id, v1id, v2id, correct label}
+         {{0, 1, 2, F0_LABEL}},
+         {{0, 1, 3, F2_LABEL}},
+         {{0, 1, 4, T0_LABEL}},
+         {{0, 2, 3, F1_LABEL}},
+         {{0, 2, 4, T0_LABEL}},
+         {{0, 3, 4, T0_LABEL}},
+         {{1, 2, 4, F3_LABEL}},
+         {{1, 3, 4, F3_LABEL}},
+         {{2, 3, 4, F3_LABEL}}}};
     for (int i = 0; i < 7; i++) {
         size_t v0 = faces[i][0];
         size_t v1 = faces[i][1];
@@ -255,17 +258,18 @@ TEST_CASE("tet_split", "[split_op]")
     REQUIRE(mesh.m_vertex_attribute[4].label == T0_LABEL);
 
     // edges
-    std::array<std::array<size_t, 3>, 10> edges = {{// {v0id, v1id, correct label}
-                                                    {{0, 1, E0_LABEL}},
-                                                    {{0, 2, E2_LABEL}},
-                                                    {{0, 3, E3_LABEL}},
-                                                    {{0, 4, T0_LABEL}},
-                                                    {{1, 2, E1_LABEL}},
-                                                    {{1, 3, E4_LABEL}},
-                                                    {{1, 4, T0_LABEL}},
-                                                    {{2, 3, E5_LABEL}},
-                                                    {{2, 4, T0_LABEL}},
-                                                    {{3, 4, T0_LABEL}}}};
+    std::array<std::array<size_t, 3>, 10> edges = {
+        {// {v0id, v1id, correct label}
+         {{0, 1, E0_LABEL}},
+         {{0, 2, E2_LABEL}},
+         {{0, 3, E3_LABEL}},
+         {{0, 4, T0_LABEL}},
+         {{1, 2, E1_LABEL}},
+         {{1, 3, E4_LABEL}},
+         {{1, 4, T0_LABEL}},
+         {{2, 3, E5_LABEL}},
+         {{2, 4, T0_LABEL}},
+         {{3, 4, T0_LABEL}}}};
     for (int i = 0; i < 9; i++) {
         size_t v0 = edges[i][0];
         size_t v1 = edges[i][1];
@@ -275,17 +279,18 @@ TEST_CASE("tet_split", "[split_op]")
     }
 
     // faces
-    std::array<std::array<size_t, 4>, 10> faces = {{// {v0id, v1id, v2id, correct label}
-                                                    {{0, 1, 2, F0_LABEL}},
-                                                    {{0, 1, 3, F2_LABEL}},
-                                                    {{0, 1, 4, T0_LABEL}},
-                                                    {{0, 2, 3, F1_LABEL}},
-                                                    {{0, 2, 4, T0_LABEL}},
-                                                    {{0, 3, 4, T0_LABEL}},
-                                                    {{1, 2, 3, F3_LABEL}},
-                                                    {{1, 2, 4, T0_LABEL}},
-                                                    {{1, 3, 4, T0_LABEL}},
-                                                    {{2, 3, 4, T0_LABEL}}}};
+    std::array<std::array<size_t, 4>, 10> faces = {
+        {// {v0id, v1id, v2id, correct label}
+         {{0, 1, 2, F0_LABEL}},
+         {{0, 1, 3, F2_LABEL}},
+         {{0, 1, 4, T0_LABEL}},
+         {{0, 2, 3, F1_LABEL}},
+         {{0, 2, 4, T0_LABEL}},
+         {{0, 3, 4, T0_LABEL}},
+         {{1, 2, 3, F3_LABEL}},
+         {{1, 2, 4, T0_LABEL}},
+         {{1, 3, 4, T0_LABEL}},
+         {{2, 3, 4, T0_LABEL}}}};
     for (int i = 0; i < 7; i++) {
         size_t v0 = faces[i][0];
         size_t v1 = faces[i][1];
