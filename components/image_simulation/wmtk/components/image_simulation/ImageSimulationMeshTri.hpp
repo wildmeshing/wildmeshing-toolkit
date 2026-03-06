@@ -289,6 +289,11 @@ private:
         std::vector<int64_t> face_tags;
     };
     tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
+
+    // When set, split_edge_after binary-searches vmid onto the zero-crossing of this function.
+    // Negative = stays on v1 side, positive = stays on v2 side.
+    // Set before split_edge(), cleared immediately after.
+    std::function<double(const Vector2d&)> m_voronoi_split_fn = nullptr;
 };
 
 } // namespace wmtk::components::image_simulation::tri

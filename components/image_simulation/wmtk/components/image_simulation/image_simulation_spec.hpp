@@ -30,7 +30,8 @@ nlohmann::json image_simulation_spec = R"(
       "fill_holes_tags",
       "fill_holes_threshold",
       "tight_seal_tag_sets",
-      "tight_seal_threshold"
+      "tight_seal_threshold",
+      "keep_largest_cc_tags"
     ]
   },
   {
@@ -54,7 +55,7 @@ nlohmann::json image_simulation_spec = R"(
     "pointer": "/operation",
     "type": "string",
     "default": "remeshing",
-    "options": ["remeshing", "fill_holes_topo", "tight_seal_topo"],
+    "options": ["remeshing", "fill_holes_topo", "tight_seal_topo", "keep_largest_cc"],
     "doc": "Image simulation contains multiple operations for modifying the image. Depending on the operation, more parameters might be required."
   },
   {
@@ -197,18 +198,34 @@ nlohmann::json image_simulation_spec = R"(
     "pointer": "/tight_seal_tag_sets",
     "type": "list",
     "default": [[0]],
-    "doc": "For tight_seal_topo: list of tag sets. Each set defines a group of tags whose enclosed holes are filled. Can be a flat list [t1,t2] (treated as one set) or a list of lists [[t1,t2],[t3]]."
+    "doc": "For tight_seal_topo: list of tag sets. Each inner list defines a group of tags whose enclosed holes are filled, e.g. [[1,2],[3]]."
   },
   {
     "pointer": "/tight_seal_tag_sets/*",
+    "type": "list",
+    "doc": "One tag set: a list of tag values that are treated as a group for hole filling."
+  },
+  {
+    "pointer": "/tight_seal_tag_sets/*/*",
     "type": "int",
-    "doc": "A tag value in the tight seal tag set (when tight_seal_tag_sets is a flat list of ints)."
+    "doc": "A tag value in this tag set."
   },
   {
     "pointer": "/tight_seal_threshold",
     "type": "float",
     "default": -1,
     "doc": "For tight_seal_topo: only fill a hole cluster if its total area is less than this threshold. Negative value means no threshold."
+  },
+  {
+    "pointer": "/keep_largest_cc_tags",
+    "type": "list",
+    "default": [0],
+    "doc": "For keep_largest_cc: list of tag values for which only the largest connected component is kept; all smaller components are merged into their neighbours."
+  },
+  {
+    "pointer": "/keep_largest_cc_tags/*",
+    "type": "int",
+    "doc": "A tag value whose smaller connected components will be removed."
   }
 ]
 )"_json;
