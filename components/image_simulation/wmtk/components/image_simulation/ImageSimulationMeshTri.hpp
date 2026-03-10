@@ -5,6 +5,7 @@
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
+#include <wmtk/optimization/solver.hpp>
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -102,6 +103,8 @@ public:
     bool m_collapse_check_topology = false; // sanity check
     bool m_collapse_check_manifold = false; // manifoldness check after collapse
 
+    std::unique_ptr<polysolve::nonlinear::Solver> m_solver;
+
     ImageSimulationMeshTri(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
         : m_params(_m_params)
         , m_envelope_eps(envelope_eps)
@@ -110,6 +113,9 @@ public:
         p_vertex_attrs = &m_vertex_attribute;
         p_edge_attrs = &m_edge_attribute;
         p_face_attrs = &m_face_attribute;
+
+        m_solver = optimization::create_basic_solver();
+        optimization::deactivate_opt_logger();
     }
 
     ~ImageSimulationMeshTri() {}
