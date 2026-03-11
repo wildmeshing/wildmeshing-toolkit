@@ -426,8 +426,9 @@ private:
         const auto& vertex_block = m_spec.nodes.entity_blocks.back();
         // assert(!vertex_block.tags.empty());
         if (vertex_block.entity_dim != DIM) {
-            log_and_throw_error("It seems the last added vertex block has different dimension "
-                                "than the elements you want to add.");
+            log_and_throw_error(
+                "It seems the last added vertex block has different dimension "
+                "than the elements you want to add.");
         }
 
         mshio::ElementBlock block;
@@ -480,8 +481,9 @@ private:
         assert(num_vertices != 0);
 
         if (vertex_block.entity_dim != ELEMENT_DIM) {
-            throw std::runtime_error("It seems the last added vertex block has different dimension "
-                                     "from the vertex attribute you want to add.");
+            throw std::runtime_error(
+                "It seems the last added vertex block has different dimension "
+                "from the vertex attribute you want to add.");
         }
 
         mshio::Data data;
