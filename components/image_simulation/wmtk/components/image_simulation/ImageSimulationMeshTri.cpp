@@ -13,6 +13,8 @@
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/optimization/AMIPSEnergy.hpp>
 #include <wmtk/optimization/DirichletEnergy.hpp>
+#include <wmtk/optimization/EnergySum.hpp>
+#include <wmtk/optimization/EnvelopeEnergy.hpp>
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
@@ -1170,16 +1172,18 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
     const Vector2d old_pos = VA[vid].m_pos;
 
     // call to polysolve
-    {
-        optimization::AMIPSEnergy2D energy(assembles);
-        auto x = energy.initial_position();
-        try {
-            m_solver->minimize(energy, x);
-        } catch (const std::exception& e) {
-            // polysolve might throw errors that we want to ignore (e.g., line search failed)
-        }
-        m_vertex_attribute[vid].m_pos = x;
-    }
+    std::shared_ptr<optimization::EnergySum::Problem> total_energy;
+    auto amips_energy = std::make_shared<optimization::AMIPSEnergy2D>(assembles);
+    total_energy = amips_energy;
+    //{
+    //    auto x = amips_energy->initial_position();
+    //    try {
+    //        m_solver->minimize(*amips_energy, x);
+    //    } catch (const std::exception& e) {
+    //        // polysolve might throw errors that we want to ignore (e.g., line search failed)
+    //    }
+    //    m_vertex_attribute[vid].m_pos = x;
+    //}
 
     // m_vertex_attribute[vid].m_pos =
     //     newton_method_from_stack(assembles, AMIPS2D_energy, AMIPS2D_jacobian, AMIPS2D_hessian);
@@ -1227,41 +1231,46 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
         //    m_vertex_attribute[vid].m_pos = project;
         //}
 
-        // call to polysolve
-        {
-            optimization::DirichletEnergy2D energy(surface_assemble);
-            auto x = energy.initial_position();
-            try {
-                m_solver->minimize(energy, x);
-            } catch (const std::exception& e) {
-                // polysolve might throw errors that we want to ignore (e.g., line search failed)
-            }
-            m_vertex_attribute[vid].m_pos = x;
+        auto smooth_energy = std::make_shared<optimization::DirichletEnergy2D>(surface_assemble);
+        auto envelope_energy =
+            std::make_shared<optimization::EnvelopeEnergy2D>(m_envelope, surface_assemble);
+        auto energy_sum = std::make_shared<optimization::EnergySum>();
+        energy_sum->add_energy(amips_energy);
+        energy_sum->add_energy(smooth_energy, 10);
+        energy_sum->add_energy(envelope_energy, 100);
+        total_energy = energy_sum;
+    }
 
-            return true; // DEBUG CODE!!!!
+    {
+        auto x = amips_energy->initial_position();
+        try {
+            m_solver->minimize(*total_energy, x);
+        } catch (const std::exception&) {
+            // polysolve might throw errors that we want to ignore (e.g., line search failed)
         }
+        m_vertex_attribute[vid].m_pos = x;
+    }
 
-        for (auto& n : surface_assemble) {
-            for (int kk = 0; kk < 2; kk++) {
-                n[kk] = VA[vid].m_pos[kk];
-            }
+    for (auto& n : surface_assemble) {
+        for (int kk = 0; kk < 2; kk++) {
+            n[kk] = VA[vid].m_pos[kk];
         }
     }
 
-    //// check surface containment
-    // for (const auto& n : surface_assemble) {
-    //     std::array<Eigen::Vector2d, 2> edge;
-    //     for (int k = 0; k < 2; k++) {
-    //         for (int kk = 0; kk < 2; kk++) {
-    //             edge[k][kk] = n[k * 2 + kk];
-    //         }
-    //     }
-    //     if (m_envelope->is_outside(edge)) {
-    //         return false;
-    //     }
-    // }
+    // check surface containment
+    for (const auto& n : surface_assemble) {
+        std::array<Eigen::Vector2d, 2> edge;
+        for (int k = 0; k < 2; k++) {
+            for (int kk = 0; kk < 2; kk++) {
+                edge[k][kk] = n[k * 2 + kk];
+            }
+        }
+        if (m_envelope->is_outside(edge)) {
+            return false;
+        }
+    }
 
-    // quality
+    // quality (only check if not on surface)
     auto max_after_quality = 0.;
     for (const size_t fid : locs) {
         if (is_inverted(fid)) {
@@ -1271,8 +1280,10 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
         m_face_attribute[fid].m_quality = q;
         max_after_quality = std::max(max_after_quality, q);
     }
-    if (max_after_quality > max_quality) {
-        return false;
+    if (!VA[vid].m_is_on_surface) {
+        if (max_after_quality > max_quality) {
+            return false;
+        }
     }
 
     return true;
@@ -1515,9 +1526,9 @@ std::tuple<double, double> ImageSimulationMeshTri::local_operations(
             for (int n = 0; n < ops[i]; n++) {
                 wmtk::logger().info("==smoothing {}==", n);
                 smooth_all_vertices();
-            }
-            if (m_params.debug_output) {
-                write_vtu(fmt::format("debug_{}", debug_print_counter++));
+                if (m_params.debug_output) {
+                    write_vtu(fmt::format("debug_{}", debug_print_counter++));
+                }
             }
             auto [max_energy, avg_energy] = get_max_avg_energy();
             wmtk::logger().info("smooth max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
