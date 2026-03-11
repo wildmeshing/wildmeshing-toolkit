@@ -771,8 +771,11 @@ bool ImageSimulationMeshTri::collapse_edge_before(const Tuple& loc)
 
     // surface
     if (cache.edge_length > 0 && VA[v1_id].m_is_on_surface) {
-        if (!VA[v2_id].m_is_on_surface && m_envelope->is_outside(VA[v2_id].m_pos)) {
-            return false;
+        // if (!VA[v2_id].m_is_on_surface && m_envelope->is_outside(VA[v2_id].m_pos)) {
+        //     return false;
+        // }
+        if (!VA[v2_id].m_is_on_surface) {
+            return false; // do not collapse away from surface
         }
     }
 
