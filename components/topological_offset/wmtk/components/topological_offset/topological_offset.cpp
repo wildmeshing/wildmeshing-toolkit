@@ -44,11 +44,12 @@ void topological_offset(nlohmann::json json_params)
 
     // load params
     Parameters params;
-    params.tag_name = json_params["tag_name"];
-    for (const int& val : json_params["sep_tag_vals"]) {
-        params.sep_tag_vals.push_back(val);
+    for (const std::vector<int>& offset_tag_pair : json_params["offset_tags"]) {
+        params.offset_tags.push_back({{offset_tag_pair[0], offset_tag_pair[1]}});
     }
-    params.offset_tag_val = json_params["offset_tag_val"];
+    for (const std::vector<int>& offset_tag_val_pair : json_params["offset_tag_val"]) {
+        params.offset_tag_val.push_back({{offset_tag_val_pair[0], offset_tag_val_pair[1]}});
+    }
     params.target_distance = json_params["target_distance"];
     params.relative_ball_threshold = json_params["relative_ball_threshold"];
     params.edge_search_term_len = json_params["edge_search_termination_len"];
@@ -82,16 +83,14 @@ void topological_offset(nlohmann::json json_params)
     MatrixXd V_input;
     MatrixXi F_input;
     MatrixXd F_input_tags;
-    std::vector<std::string> all_tag_labels;
-    read_image_msh(input_path, V_input, F_input, F_input_tags, params.tag_name, all_tag_labels);
+    read_image_msh(input_path, V_input, F_input, F_input_tags);
 
-    if (F_input.cols() == 3) {
-        // input is a tri mesh
+    if (F_input.cols() == 3) { // input is a 2d tri mesh
         logger().info("Input mesh (2D trimesh): {}", input_path);
 
         // initialize mesh
         TopoOffsetTriMesh mesh(params, NUM_THREADS);
-        mesh.init_from_image(V_input, F_input, F_input_tags, all_tag_labels);
+        mesh.init_from_image(V_input, F_input, F_input_tags);
         mesh.init_input_complex_bvh();
         mesh.consolidate_mesh();
 
@@ -178,13 +177,12 @@ void topological_offset(nlohmann::json json_params)
         }
 
         wmtk::logger().info("======= finish =========");
-    } else {
-        // input is a tet mesh
+    } else { // input is a 3d tet mesh
         logger().info("Input mesh (3D tetmesh): {}", input_path);
 
         // initialize mesh
         TopoOffsetMesh mesh(params, NUM_THREADS);
-        mesh.init_from_image(V_input, F_input, F_input_tags, all_tag_labels);
+        mesh.init_from_image(V_input, F_input, F_input_tags);
         mesh.consolidate_mesh();
 
         // record counts (mostly debugging, this is probably really slow)
@@ -217,6 +215,7 @@ void topological_offset(nlohmann::json json_params)
         // perform offset
         logger().info("Performing offset...");
         mesh.perform_offset();
+        mesh.set_offset_tet_tags();
         mesh.consolidate_mesh();
 
         // stop timer

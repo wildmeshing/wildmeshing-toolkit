@@ -16,27 +16,13 @@ VertexAttributes2d::VertexAttributes2d(const Vector2d& p)
 void TopoOffsetTriMesh::init_from_image(
     const MatrixXd& V,
     const MatrixXi& F,
-    const MatrixXd& F_tags,
-    const std::vector<std::string>& all_tag_names)
+    const MatrixXd& F_tags)
 {
     // assert dimensions
     assert(V.cols() == 2);
     assert(F.cols() == 3);
     assert(F.rows() == F_tags.rows());
-
-    // save tags info to mesh (assumes desired tag is in tag name list)
-    auto it = std::find(
-        all_tag_names.begin(),
-        all_tag_names.end(),
-        m_params.tag_name); // note: this is a const iterator
-    m_toi_ind = std::distance(all_tag_names.begin(), it);
-    m_tags_count = all_tag_names.size();
-    for (const auto& name : all_tag_names) {
-        m_all_tag_names.push_back(name);
-    }
-
-    // extract tag of interest
-    MatrixXi F_tag = F_tags.col(m_toi_ind).cast<int>(); // toi vals as ints
+    m_tags_count = F_tags.cols();
 
     // initialize connectivity
     init(F);
@@ -45,6 +31,7 @@ void TopoOffsetTriMesh::init_from_image(
     m_edge_attribute.m_attributes.resize(3 * F.rows());
     m_face_attribute.m_attributes.resize(F.rows());
 
+
     // propagate labels to faces
     auto faces = get_faces();
     for (const Tuple& f : faces) {
@@ -52,52 +39,50 @@ void TopoOffsetTriMesh::init_from_image(
         for (int i = 0; i < m_tags_count; i++) {
             m_face_attribute[f_id].tags.push_back(F_tags(f_id, i));
         }
-    }
 
-    // label boundary edges
-    auto edges = get_edges();
-    for (const Tuple& e : edges) {
-        // find unique incident face tags
-        std::set<int> nb_tags;
-        nb_tags.insert(F_tag(e.fid(*this), 0));
-        auto other = e.switch_face(*this);
-        if (other) {
-            nb_tags.insert(F_tag(other.value().fid(*this), 0));
-        }
+        if (m_params.offset_tags.size() == 1) { // 'single body' mode
+            if (m_face_attribute[f_id].tags[m_params.offset_tags[0][0]] ==
+                m_params.offset_tags[0][1]) {
+                m_face_attribute[f_id].label = 1;
 
-        // count number of unique incident face tags in sep_tags
-        if (count_sep_tags(nb_tags) >= 2) { // can be max of two (assume 2d edge manifold)
-            size_t e_id = e.eid(*this);
-            m_edge_attribute[e_id].label = 1;
-
-            // label children vertices as input
-            m_vertex_attribute[e.vid(*this)].label = 1;
-            m_vertex_attribute[e.switch_vertex(*this).vid(*this)].label = 1;
+                // propagate to edges and verts in tri
+                m_edge_attribute[f.eid(*this)].label = 1;
+                m_edge_attribute[f.switch_edge(*this).eid(*this)].label = 1;
+                m_edge_attribute[f.switch_vertex(*this).switch_edge(*this).eid(*this)].label = 1;
+                m_vertex_attribute[f.vid(*this)].label = 1;
+                m_vertex_attribute[f.switch_vertex(*this).vid(*this)].label = 1;
+                m_vertex_attribute[f.switch_edge(*this).switch_vertex(*this).vid(*this)].label = 1;
+            }
         }
     }
 
-    // label boundary vertices ( and set position)
+    // set position of verts
     auto verts = get_vertices();
     for (const Tuple& v : verts) {
-        // set coords
         size_t v_id = v.vid(*this);
         m_vertex_attribute[v_id].m_posf = V.row(v_id);
+    }
 
-        // check if vertex already labeled from edge
-        if (m_vertex_attribute[v_id].label == 1) {
-            continue;
+    // compute intersections for edges/verts if not in 'single body' mode
+    if (m_params.offset_tags.size() > 1) {
+        auto edges = get_edges();
+        for (const Tuple& e : edges) {
+            if (edge_in_tag_intersection(e)) {
+                m_edge_attribute[e.eid(*this)].label = 1;
+
+                // propagate to children verts
+                m_vertex_attribute[e.vid(*this)].label = 1;
+                m_vertex_attribute[e.switch_vertex(*this).vid(*this)].label = 1;
+            }
         }
 
-        // collect incident face tags
-        auto inc_f_ids = get_one_ring_tris_for_vertex(v);
-        std::set<int> nb_tags;
-        for (const Tuple& f : inc_f_ids) {
-            nb_tags.insert(F_tag(f.fid(*this), 0));
-        }
-
-        // determine if on boundary of sep tags
-        if (count_sep_tags(nb_tags) >= 2) {
-            m_vertex_attribute[v_id].label = 1;
+        for (const Tuple& v : verts) {
+            // skip if already labeled (from parent edge)
+            if (m_vertex_attribute[v.vid(*this)].label != 1) {
+                if (vertex_in_tag_intersection(v)) {
+                    m_vertex_attribute[v.vid(*this)].label = 1;
+                }
+            }
         }
     }
 }
@@ -153,7 +138,6 @@ bool TopoOffsetTriMesh::is_simplicially_embedded() const
     int bad_tris = 0;
     auto tris = get_faces();
     for (const Tuple& f : tris) {
-        if (m_face_attribute[f.fid(*this)].label != 0) continue;
         bad_tris += (!tri_is_simp_emb(f));
     }
     if (bad_tris == 0) {
@@ -171,8 +155,7 @@ bool TopoOffsetTriMesh::is_simplicially_embedded() const
 bool TopoOffsetTriMesh::tri_is_simp_emb(const Tuple& t) const
 {
     size_t f_id = t.fid(*this);
-    if (m_face_attribute[f_id].label != 0) {
-        logger().warn("Non-background tri tested for simp emb");
+    if (m_face_attribute[f_id].label != 0) { // entire tri in input
         return true;
     }
 
@@ -189,7 +172,7 @@ bool TopoOffsetTriMesh::tri_is_simp_emb(const Tuple& t) const
     } else if (vs_in.size() == 2) { // potentially one edge in input
         size_t e_id = edge_id_from_simplex(simplex::Edge(vs_in[0], vs_in[1]));
         return (m_edge_attribute[e_id].label != 0);
-    } else { // all 3 verts in input, cant be simplicially embedded
+    } else { // all 3 verts in input but tri isnt, cant be simplicially embedded
         return false;
     }
 }
@@ -290,6 +273,8 @@ void TopoOffsetTriMesh::marching_tets()
         Tuple t = get_tuple_from_edge(e);
         if (split_edge(t, garbage)) { // this should never fail
             frontier_verts.push_back(v_in);
+        } else {
+            log_and_throw_error("edge split failed!");
         }
     }
 
@@ -297,7 +282,9 @@ void TopoOffsetTriMesh::marching_tets()
     for (const size_t v_id : frontier_verts) {
         auto tris = get_one_ring_tris_for_vertex(tuple_from_vertex(v_id));
         for (const Tuple& t : tris) {
-            m_face_attribute[t.fid(*this)].label = 2;
+            if (m_face_attribute[t.fid(*this)].label == 0) { // dont want to overwrite if in input
+                m_face_attribute[t.fid(*this)].label = 2;
+            }
         }
     }
 }
@@ -373,16 +360,25 @@ void TopoOffsetTriMesh::set_offset_tri_tags()
     for (const Tuple& f : faces) {
         size_t f_id = f.fid(*this);
         if (m_face_attribute[f_id].label == 2) {
-            m_face_attribute[f_id].tags[m_toi_ind] = m_params.offset_tag_val;
+            for (const auto& tag : m_params.offset_tag_val) {
+                if (tag[0] >= m_face_attribute[f_id].tags.size()) {
+                    log_and_throw_error(
+                        "offset_tag_val [{}, {}] given, but tag_{} does not exist in tri mesh",
+                        tag[0],
+                        tag[1],
+                        tag[0]);
+                }
+                m_face_attribute[f_id].tags[tag[0]] = tag[1];
+            }
         }
     }
 }
 
 
-bool TopoOffsetTriMesh::invariants(const std::vector<Tuple>& tets)
+bool TopoOffsetTriMesh::invariants(const std::vector<Tuple>& tris)
 {
     igl::predicates::exactinit();
-    for (const Tuple& t : tets) {
+    for (const Tuple& t : tris) {
         auto vs = oriented_tri_vids(t);
 
         auto res = igl::predicates::orient2d(
@@ -433,13 +429,11 @@ void TopoOffsetTriMesh::write_input_complex(const std::string& path)
         }
     }
 
-    // get all offset input triangles (should never happen)
-    bool flag = false;
+    // get all offset input triangles
     auto faces = get_faces();
     for (const Tuple& f : faces) {
         size_t f_id = f.fid(*this);
         if (m_face_attribute[f_id].label == 1) {
-            flag = true;
             auto v_ids = oriented_tri_vids(f_id);
             std::vector<int> curr_f;
             for (const size_t v_id : v_ids) {
@@ -447,9 +441,6 @@ void TopoOffsetTriMesh::write_input_complex(const std::string& path)
             }
             cells.push_back(curr_f);
         }
-    }
-    if (flag) {
-        logger().warn("One or more triangle included in complex to offset.");
     }
 
     // output
@@ -479,12 +470,12 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
     for (const Tuple& f : tris) {
         size_t f_id = f.fid(*this);
 
-        // set tet tags
+        // set tri tags
         for (int i = 0; i < m_tags_count; i++) {
             tags[i](f_id, 0) = m_face_attribute[f_id].tags[i];
         }
 
-        // set tet verts
+        // set tri verts
         const auto& loc_vs = oriented_tri_vertices(f);
         for (int j = 0; j < 3; j++) {
             F(f.fid(*this), j) = loc_vs[j].vid(*this);
@@ -500,10 +491,8 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
     writer = std::make_shared<paraviewo::VTUWriter>();
 
-    int index = 0;
-    for (const std::string& tag_name : m_all_tag_names) {
-        writer->add_cell_field(tag_name, tags[index]);
-        index++;
+    for (int i = 0; i < m_tags_count; i++) {
+        writer->add_cell_field(fmt::format("tag_{}", i), tags[i]);
     }
 
     writer->write_mesh(out_path, V, F);
@@ -539,8 +528,8 @@ void TopoOffsetTriMesh::write_msh(const std::string& file)
     });
 
     // set tags perface
-    for (size_t j = 0; j < m_tags_count; j++) {
-        msh.add_face_attribute<1>(m_all_tag_names[j], [&](size_t i) {
+    for (int j = 0; j < m_tags_count; j++) {
+        msh.add_face_attribute<1>(fmt::format("tag_{}", j), [&](size_t i) {
             return m_face_attribute[i].tags[j];
         });
     }

@@ -44,12 +44,10 @@ TEST_CASE("edge_split_3d", "[split_op][3d]")
     Tags << 128.0;
 
     Parameters param;
-    param.tag_name = "dummy";
-    param.sep_tag_vals.push_back(1);
-    param.sep_tag_vals.push_back(4);
+    param.offset_tags.push_back({{0, 1}});
+    param.offset_tags.push_back({{0, 4}});
     TopoOffsetMesh mesh(param, 0);
-    std::vector<std::string> tag_names(1, "dummy");
-    mesh.init_from_image(V, T, Tags, tag_names);
+    mesh.init_from_image(V, T, Tags);
 
     // give every component unique tag combo
     mesh.m_vertex_attribute[0].label = V0_LABEL;
@@ -138,12 +136,10 @@ TEST_CASE("face_split_3d", "[split_op][3d]")
     Tags << 128.0;
 
     Parameters param;
-    param.tag_name = "dummy";
-    param.sep_tag_vals.push_back(1);
-    param.sep_tag_vals.push_back(4);
+    param.offset_tags.push_back({{0, 1}});
+    param.offset_tags.push_back({{0, 4}});
     TopoOffsetMesh mesh(param, 0);
-    std::vector<std::string> tag_names(1, "dummy");
-    mesh.init_from_image(V, T, Tags, tag_names);
+    mesh.init_from_image(V, T, Tags);
 
     // give every component unique tag combo
     mesh.m_vertex_attribute[0].label = V0_LABEL;
@@ -236,12 +232,10 @@ TEST_CASE("tet_split_3d", "[split_op][3d]")
     Tags << 128.0;
 
     Parameters param;
-    param.tag_name = "dummy";
-    param.sep_tag_vals.push_back(1);
-    param.sep_tag_vals.push_back(4);
+    param.offset_tags.push_back({{0, 1}});
+    param.offset_tags.push_back({{0, 4}});
     TopoOffsetMesh mesh(param, 0);
-    std::vector<std::string> tag_names(1, "dummy");
-    mesh.init_from_image(V, T, Tags, tag_names);
+    mesh.init_from_image(V, T, Tags);
 
     // give every component unique tag combo
     mesh.m_vertex_attribute[0].label = V0_LABEL;
@@ -337,12 +331,10 @@ TEST_CASE("invariant_3d", "[3d]")
         T << 0, 1, 3, 2;
 
         Parameters param;
-        param.tag_name = "dummy";
-        param.sep_tag_vals.push_back(1);
-        param.sep_tag_vals.push_back(4);
+        param.offset_tags.push_back({{0, 1}});
+        param.offset_tags.push_back({{0, 4}});
         TopoOffsetMesh mesh(param, 0);
-        std::vector<std::string> tag_names(1, "dummy");
-        mesh.init_from_image(V, T, Tags, tag_names);
+        mesh.init_from_image(V, T, Tags);
 
         std::vector<TetMesh::Tuple> tets;
         tets.push_back(mesh.tuple_from_tet(0));
@@ -353,12 +345,10 @@ TEST_CASE("invariant_3d", "[3d]")
         T << 0, 1, 2, 3;
 
         Parameters param;
-        param.tag_name = "dummy";
-        param.sep_tag_vals.push_back(1);
-        param.sep_tag_vals.push_back(4);
+        param.offset_tags.push_back({{0, 1}});
+        param.offset_tags.push_back({{0, 4}});
         TopoOffsetMesh mesh(param, 0);
-        std::vector<std::string> tag_names(1, "dummy");
-        mesh.init_from_image(V, T, Tags, tag_names);
+        mesh.init_from_image(V, T, Tags);
 
         std::vector<TetMesh::Tuple> tets;
         tets.push_back(mesh.tuple_from_tet(0));
@@ -377,12 +367,10 @@ TEST_CASE("edge_split_2d_1face", "[split_op][2d]")
     Tags << 128.0;
 
     Parameters param;
-    param.tag_name = "dummy";
-    param.sep_tag_vals.push_back(1);
-    param.sep_tag_vals.push_back(4);
+    param.offset_tags.push_back({{0, 1}});
+    param.offset_tags.push_back({{0, 4}});
     TopoOffsetTriMesh mesh(param, 0);
-    std::vector<std::string> tag_names(1, "dummy");
-    mesh.init_from_image(V, F, Tags, tag_names);
+    mesh.init_from_image(V, F, Tags);
 
     // give every component unique tag combo
     mesh.m_vertex_attribute[0].label = V0_LABEL;
@@ -443,12 +431,10 @@ TEST_CASE("edge_split_2d_2faces", "[split_op][2d]")
     Tags << 128.0, 256.0;
 
     Parameters param;
-    param.tag_name = "dummy";
-    param.sep_tag_vals.push_back(1);
-    param.sep_tag_vals.push_back(4);
+    param.offset_tags.push_back({{0, 1}});
+    param.offset_tags.push_back({{0, 4}});
     TopoOffsetTriMesh mesh(param, 0);
-    std::vector<std::string> tag_names(1, "dummy");
-    mesh.init_from_image(V, F, Tags, tag_names);
+    mesh.init_from_image(V, F, Tags);
 
     // give every component unique tag combo
     mesh.m_vertex_attribute[0].label = V0_LABEL;
@@ -526,12 +512,10 @@ TEST_CASE("face_split_2d", "[split_op][2d]")
     Tags << 128.0;
 
     Parameters param;
-    param.tag_name = "dummy";
-    param.sep_tag_vals.push_back(1);
-    param.sep_tag_vals.push_back(4);
+    param.offset_tags.push_back({{0, 1}});
+    param.offset_tags.push_back({{0, 4}});
     TopoOffsetTriMesh mesh(param, 0);
-    std::vector<std::string> tag_names(1, "dummy");
-    mesh.init_from_image(V, F, Tags, tag_names);
+    mesh.init_from_image(V, F, Tags);
 
     // give every component unique tag combo
     mesh.m_vertex_attribute[0].label = V0_LABEL;
@@ -597,12 +581,10 @@ TEST_CASE("invariant_2d", "[2d]")
         F << 0, 2, 1;
 
         Parameters param;
-        param.tag_name = "dummy";
-        param.sep_tag_vals.push_back(1);
-        param.sep_tag_vals.push_back(4);
+        param.offset_tags.push_back({{0, 1}});
+        param.offset_tags.push_back({{0, 4}});
         TopoOffsetTriMesh mesh(param, 0);
-        std::vector<std::string> tag_names(1, "dummy");
-        mesh.init_from_image(V, F, Tags, tag_names);
+        mesh.init_from_image(V, F, Tags);
 
         std::vector<TriMesh::Tuple> tris;
         tris.push_back(mesh.tuple_from_tri(0));
@@ -613,12 +595,10 @@ TEST_CASE("invariant_2d", "[2d]")
         F << 0, 1, 2;
 
         Parameters param;
-        param.tag_name = "dummy";
-        param.sep_tag_vals.push_back(1);
-        param.sep_tag_vals.push_back(4);
+        param.offset_tags.push_back({{0, 1}});
+        param.offset_tags.push_back({{0, 4}});
         TopoOffsetTriMesh mesh(param, 0);
-        std::vector<std::string> tag_names(1, "dummy");
-        mesh.init_from_image(V, F, Tags, tag_names);
+        mesh.init_from_image(V, F, Tags);
 
         std::vector<TriMesh::Tuple> tris;
         tris.push_back(mesh.tuple_from_tri(0));
@@ -637,12 +617,10 @@ TEST_CASE("circle_tri_overlap", "[dist_growth][2d]")
     Tags << 0.0;
 
     Parameters param;
-    param.tag_name = "dummy";
-    param.sep_tag_vals.push_back(1);
-    param.sep_tag_vals.push_back(4);
+    param.offset_tags.push_back({{0, 1}});
+    param.offset_tags.push_back({{0, 4}});
     TopoOffsetTriMesh mesh(param, 0);
-    std::vector<std::string> tag_names(1, "dummy");
-    mesh.init_from_image(V, F, Tags, tag_names);
+    mesh.init_from_image(V, F, Tags);
 
     Circle circ1(Vector2d(1.0, 1.0), 0.5); // false
     Circle circ2(Vector2d(0.55, 0.55), 0.5); // true
@@ -684,12 +662,10 @@ TEST_CASE("circle_init", "[dist_growth][2d]")
     Tags << 0.0;
 
     Parameters param;
-    param.tag_name = "dummy";
-    param.sep_tag_vals.push_back(1);
-    param.sep_tag_vals.push_back(4);
+    param.offset_tags.push_back({{0, 1}});
+    param.offset_tags.push_back({{0, 4}});
     TopoOffsetTriMesh mesh(param, 0);
-    std::vector<std::string> tag_names(1, "dummy");
-    mesh.init_from_image(V, F, Tags, tag_names);
+    mesh.init_from_image(V, F, Tags);
 
     Circle circ(mesh, 0);
     REQUIRE(fabs(circ.radius() - (sqrt(2.0) / 2.0)) < pow(10, -6));
@@ -706,12 +682,10 @@ TEST_CASE("dist_to_mesh", "[dist_growth][2d]")
     Tags << 0.0;
 
     Parameters param;
-    param.tag_name = "dummy";
-    param.sep_tag_vals.push_back(1);
-    param.sep_tag_vals.push_back(4);
+    param.offset_tags.push_back({{0, 1}});
+    param.offset_tags.push_back({{0, 4}});
     TopoOffsetTriMesh mesh(param, 0);
-    std::vector<std::string> tag_names(1, "dummy");
-    mesh.init_from_image(V, F, Tags, tag_names);
+    mesh.init_from_image(V, F, Tags);
 
     // label one vert as input
     mesh.m_vertex_attribute[0].label = 1;
@@ -743,61 +717,3 @@ TEST_CASE("dist_to_mesh", "[dist_growth][2d]")
     dist = mesh.dist_to_input_complex(q3);
     REQUIRE(fabs(dist - 9.0) < pow(10, -6));
 }
-
-
-// TEST_CASE("simplex_dist", "[debug][2d]")
-// {
-//     MatrixXd V(3, 2);
-//     V << 0, 0, 1, 0, 0, 1;
-//     MatrixXi F(1, 3);
-//     F << 0, 1, 2;
-//     double distance;
-//     Vector2d closest_p;
-//     igl::point_simplex_squared_distance<2>(Vector2d(0.2, 0.2), V, F, 0, distance, closest_p);
-//     std::cout << distance << std::endl;
-//     std::cout << closest_p(0) << " " << closest_p(1) << std::endl;
-// }
-
-
-// TEST_CASE("hex_offset_debug", "[debug][2d]")
-// {
-//     MatrixXd V(10, 2);
-//     V.row(0) = Vector2d(0.0, 0.0);
-//     for (int i = 0; i < 6; i++) {
-//         double theta = (M_PI / 3.0) * i;
-//         V(i + 1, 0) = 2.5 * cos(theta);
-//         V(i + 1, 1) = 2.5 * sin(theta);
-//     }
-//     V.row(7) = Vector2d(-5.25, 0.433013);
-//     V.row(8) = Vector2d(-5.5, 0.866025);
-//     V.row(9) = Vector2d(-5.0, 0.866025);
-//     MatrixXi F(7, 3);
-//     F << 0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 6, 0, 6, 1, 7, 8, 9;
-//     MatrixXd Tags(7, 1);
-//     Tags.fill(128.0);
-
-//     Parameters param;
-//     param.tag_name = "dummy";
-//     param.sep_tag_vals.push_back(1);
-//     param.sep_tag_vals.push_back(4);
-//     param.target_distance = 3.1;
-//     TopoOffsetTriMesh mesh(param, 0);
-//     std::vector<std::string> tag_names(1, "dummy");
-//     mesh.init_from_image(V, F, Tags, tag_names);
-//     std::string path =
-//         "/Users/seb9449/Desktop/wildmeshing/image_sim/adaptive_growth/hex_offset_debug";
-//     mesh.write_vtu(path);
-
-//     // label input
-//     for (int i = 0; i < 6; i++) {
-//         simplex::Edge e(i + 1, ((i + 1) % 6) + 1);
-//         TriMesh::Tuple etup = mesh.get_tuple_from_edge(e);
-//         mesh.m_edge_attribute[etup.eid(mesh)].label = 1;
-//         mesh.m_vertex_attribute[etup.vid(mesh)].label = 1;
-//         mesh.m_vertex_attribute[etup.switch_vertex(mesh).vid(mesh)].label = 1;
-//     }
-//     mesh.write_input_complex(path + "_inputcomplex");
-
-//     bool res = mesh.tri_is_in_offset_conservative(6, 0.01 * 3.1);
-//     REQUIRE(!res);
-// }

@@ -9,9 +9,7 @@ void read_image_msh(
     const std::string& path,
     MatrixXd& V_input,
     MatrixXi& F_input,
-    MatrixXd& F_input_tags,
-    const std::string& tag_name,
-    std::vector<std::string>& all_tag_names)
+    MatrixXd& F_input_tags)
 {
     MshData msh;
     msh.load(path);
@@ -88,50 +86,47 @@ void read_image_msh(
         }
     }
 
-    std::vector<MatrixXd> tag_vals; // for reading tag values
-    // check if data exists, is right size, and is scalar. if so, save and update tag list
-    auto m_spec = msh.m_spec;
-    for (const auto& data : m_spec.element_data) {
-        if ((data.header.int_tags.size() >= 3) &&
-            (data.header.int_tags[2] == F_input.rows())) { // data size == tet size
-            if (data.header.int_tags[1] != 1) { // value is not scalar. bad
-                logger().warn(
-                    "Non-scalar data [{}] ignored (size: {})",
-                    data.header.string_tags[0],
-                    data.header.int_tags[1]);
+    // read tag data
+    if (F_input.cols() == 4) { // tet mesh
+        int tet_tags_count = 0;
+        for (const std::string& attr_name : msh.get_tet_attribute_names()) {
+            if (attr_name.substr(0, 4) == "tag_") {
+                tet_tags_count++;
+            }
+        }
+
+        F_input_tags.resize(F_input.rows(), tet_tags_count);
+        for (const std::string& attr_name : msh.get_tet_attribute_names()) {
+            if (attr_name.substr(0, 4) != "tag_") {
                 continue;
             }
-
-            all_tag_names.push_back(data.header.string_tags[0]); // get name
-            MatrixXd curr_tags(F_input.rows(), 1);
-            auto entries = data.entries;
-            int index = 0;
-            for (const auto& entry : entries) {
-                curr_tags(index, 0) = entry.data[0];
-                index++;
-            }
-            tag_vals.push_back(curr_tags);
-        } else { // num entries != num tets
-            logger().warn(
-                "Size-mismatched facet data [{}] ignored ({} entries, {} facets)",
-                data.header.string_tags[0],
-                data.header.int_tags[2],
-                F_input.rows());
+            const int tag_id = std::stoi(attr_name.substr(4));
+            msh.extract_tet_attribute(
+                attr_name,
+                [&F_input_tags, &tag_id](size_t i, std::vector<double> val) {
+                    F_input_tags(i, tag_id) = val[0];
+                });
         }
-    }
+    } else {
+        int face_tags_count = 0;
+        for (const std::string& attr_name : msh.get_all_element_attribute_names()) {
+            if (attr_name.substr(0, 4) == "tag_") {
+                face_tags_count++;
+            }
+        }
 
-    // throw error if desired tag name not found
-    std::vector<std::string>::iterator it =
-        std::find(all_tag_names.begin(), all_tag_names.end(), tag_name);
-    if (it == all_tag_names.end()) {
-        log_and_throw_error("Tag [{}] not found in input mesh '{}'", tag_name, path);
-    }
-
-    // save tag values to tag matrix
-    int num_cols = tag_vals.size();
-    F_input_tags.resize(F_input.rows(), tag_vals.size());
-    for (int j = 0; j < num_cols; j++) {
-        F_input_tags.col(j) = tag_vals[j];
+        F_input_tags.resize(F_input.rows(), face_tags_count);
+        for (const std::string& attr_name : msh.get_all_element_attribute_names()) {
+            if (attr_name.substr(0, 4) != "tag_") {
+                continue;
+            }
+            const int tag_id = std::stoi(attr_name.substr(4));
+            msh.extract_face_attribute(
+                attr_name,
+                [&F_input_tags, &tag_id](size_t i, std::vector<double> val) {
+                    F_input_tags(i, tag_id) = val[0];
+                });
+        }
     }
 }
 

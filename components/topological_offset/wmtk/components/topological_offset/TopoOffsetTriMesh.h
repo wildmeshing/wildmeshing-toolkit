@@ -45,9 +45,7 @@ public: // mode for splitting in marching tets
 public:
     int m_vtu_counter = 0;
     std::array<size_t, 3> m_init_counts = {{0, 0, 0}};
-    std::vector<std::string> m_all_tag_names;
     size_t m_tags_count;
-    int m_toi_ind; // index of tag of interest
     SimpleBVH::BVH m_input_complex_bvh;
     EdgeSplitMode m_edge_split_mode = EdgeSplitMode::Midpoint;
 
@@ -75,8 +73,7 @@ public:
     void init_from_image(
         const MatrixXd& V, // V by 3
         const MatrixXi& F, // F by 3
-        const MatrixXd& F_tags, // F by N
-        const std::vector<std::string>& all_tag_names);
+        const MatrixXd& F_tags); // F by N
     void init_input_complex_bvh();
 
     // splitting
@@ -85,7 +82,7 @@ public:
     bool split_edge_after(const Tuple& t) override;
     bool split_face_before(const Tuple& t) override;
     bool split_face_after(const Tuple& t) override;
-    bool invariants(const std::vector<Tuple>& tets) override;
+    bool invariants(const std::vector<Tuple>& tris) override;
 
     // simplicial embedding
     bool is_simplicially_embedded() const;
@@ -135,14 +132,66 @@ private:
     tbb::enumerable_thread_specific<FaceSplitCache> face_split_cache;
 
 private: // helpers
-    int count_sep_tags(const std::set<int> tags) const
+    /**
+     * @brief check whether an edge is in offset intersection (ie, edge is adjacent to at
+     * least one face of every [tag num, tag val] pair in offset_tags)
+     */
+    bool edge_in_tag_intersection(const Tuple& e)
     {
-        auto sep_tags = m_params.sep_tag_vals;
-        return std::count_if(tags.begin(), tags.end(), [&sep_tags](int elem) {
-            return (std::find(sep_tags.begin(), sep_tags.end(), elem) != sep_tags.end());
-        });
+        // collect adjacent face(s)
+        std::vector<size_t> nb_fids;
+        nb_fids.push_back(e.fid(*this));
+        auto other = e.switch_face(*this);
+        if (other) {
+            nb_fids.push_back(other.value().fid(*this));
+        }
+
+        for (const auto& pair : m_params.offset_tags) {
+            bool tag_found = false;
+            for (size_t nb_fid : nb_fids) {
+                if (m_face_attribute[nb_fid].tags[pair[0]] == pair[1]) {
+                    tag_found = true;
+                    break;
+                }
+            }
+
+            if (tag_found) {
+                continue;
+            }
+            return false; // one of offset_tags not adjacent to edge. not in intersection region
+        }
+        return true; // all offset_tags found adjacent to edge
     }
 
+    /**
+     * @brief check whether a vertex is in offset intersection (ie, vertex is adjacent
+     * to at least one face of every [tag num, tag val] pair in offset_tags)
+     */
+    bool vertex_in_tag_intersection(const Tuple& v)
+    {
+        // collect adjacent face(s)
+        auto nb_fids = get_one_ring_fids_for_vertex(v.vid(*this));
+
+        for (const auto& pair : m_params.offset_tags) {
+            bool tag_found = false;
+            for (size_t nb_fid : nb_fids) {
+                if (m_face_attribute[nb_fid].tags[pair[0]] == pair[1]) {
+                    tag_found = true;
+                    break;
+                }
+            }
+
+            if (tag_found) {
+                continue;
+            }
+            return false; // one of offset_tags not found. vert not in intersection region
+        }
+        return true; // all offset_tags found, vert is in intersection region
+    }
+
+    /**
+     * @brief sort vector of edge simplices in place by decreasing length
+     */
     void sort_edges_by_length(std::vector<simplex::Edge>& edges)
     {
         std::sort(

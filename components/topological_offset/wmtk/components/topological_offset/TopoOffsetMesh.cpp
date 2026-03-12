@@ -28,27 +28,13 @@ VertexAttributes::VertexAttributes(const Vector3d& p)
 
 
 // assumes tag has been found. won't be called otherwise
-void TopoOffsetMesh::init_from_image(
-    const MatrixXd& V,
-    const MatrixXi& T,
-    const MatrixXd& T_tags,
-    const std::vector<std::string>& all_tag_names)
+void TopoOffsetMesh::init_from_image(const MatrixXd& V, const MatrixXi& T, const MatrixXd& T_tags)
 {
     // assert dimensions
     assert(V.cols() == 3);
     assert(T.cols() == 4);
     assert(T.rows() == T_tags.rows());
-
-    // save tags info to mesh (assumes desired tag is in tag names found)
-    auto it = std::find(
-        all_tag_names.begin(),
-        all_tag_names.end(),
-        m_params.tag_name); // note: this is const iterator
-    m_toi_ind = std::distance(all_tag_names.begin(), it);
-    m_tags_count = all_tag_names.size();
-    for (const auto& name : all_tag_names) {
-        m_all_tag_names.push_back(name);
-    }
+    m_tags_count = T_tags.cols();
 
     // initialize connectivity
     init(T);
@@ -58,8 +44,6 @@ void TopoOffsetMesh::init_from_image(
     m_face_attribute.m_attributes.resize(4 * T.rows());
     m_tet_attribute.m_attributes.resize(T.rows());
 
-    MatrixXi T_tag = T_tags.col(m_toi_ind).cast<int>(); // toi vals as ints
-
     // propogate labels to tets
     auto tets = get_tets();
     for (const Tuple& t : tets) {
@@ -67,77 +51,67 @@ void TopoOffsetMesh::init_from_image(
         for (int i = 0; i < m_tags_count; i++) {
             m_tet_attribute[t_id].tags.push_back(T_tags(t_id, i));
         }
-    }
 
-    // label boundary faces
-    auto faces = get_faces();
-    for (const Tuple& f : faces) {
-        // find unique incident tet tags
-        std::set<int> nb_tags;
-        nb_tags.insert(T_tag(f.tid(*this), 0));
-        auto other = f.switch_tetrahedron(*this);
-        if (other) {
-            nb_tags.insert(T_tag(other.value().tid(*this), 0));
-        }
+        if (m_params.offset_tags.size() == 1) { // 'single body' mode
+            if (m_tet_attribute[t_id].tags[m_params.offset_tags[0][0]] ==
+                m_params.offset_tags[0][1]) { // tet is in input body
 
-        // count number of unique incident tet tags in sep_tags
-        if (count_sep_tags(nb_tags) >= 2) { // can be max of two for face-manifold mesh
-            size_t f_id = f.fid(*this);
-            m_face_attribute[f_id].label = 1;
+                m_tet_attribute[t_id].label = 1;
 
-            // label children edges and vertices as input
-            m_edge_attribute[f.eid(*this)].label = 1;
-            m_edge_attribute[f.switch_edge(*this).eid(*this)].label = 1;
-            m_edge_attribute[f.switch_vertex(*this).switch_edge(*this).eid(*this)].label = 1;
-            m_vertex_attribute[f.vid(*this)].label = 1;
-            m_vertex_attribute[f.switch_vertex(*this).vid(*this)].label = 1;
-            m_vertex_attribute[f.switch_edge(*this).switch_vertex(*this).vid(*this)].label = 1;
+                // propagate to children faces, edges, and verts
+                auto v_ids = oriented_tet_vids(t_id);
+                for (const size_t& v_id : v_ids) {
+                    m_vertex_attribute[v_id].label = 1;
+                }
+                for (int i = 0; i < 6; i++) {
+                    m_edge_attribute[tuple_from_edge(t_id, i).eid(*this)].label = 1;
+                }
+                for (int i = 0; i < 4; i++) {
+                    m_face_attribute[tuple_from_face(t_id, i).fid(*this)].label = 1;
+                }
+            }
         }
     }
 
-    // label boundary edges. NOTE: ideally could skip over edges already labelled via parent face
-    auto edges = get_edges();
-    for (const Tuple& e : edges) {
-        // find unique incident tet tags
-        std::set<int> nb_tags;
-        auto inc_t_ids = get_incident_tids_for_edge(e);
-        for (const size_t& t_id : inc_t_ids) {
-            nb_tags.insert(T_tag(t_id, 0));
-        }
-
-        // count number of unique incident tet tags in sep_tags
-        if (count_sep_tags(nb_tags) >= 2) {
-            size_t e_id = e.eid(*this);
-            m_edge_attribute[e_id].label = 1;
-
-            // label children verts as input
-            m_vertex_attribute[e.vid(*this)].label = 1;
-            m_vertex_attribute[e.switch_vertex(*this).vid(*this)].label = 1;
-        }
-    }
-
-    // label boundary vertices (and set coords)
+    // set vertex positions
     auto verts = get_vertices();
     for (const Tuple& v : verts) {
-        // set position
         size_t v_id = v.vid(*this);
         m_vertex_attribute[v_id].m_posf = V.row(v_id);
+    }
 
-        // check if vertex already labeled (cheap, might as well do)
-        if (m_vertex_attribute[v_id].label == 1) {
-            continue;
+    // if not 'single body mode', compute intersection region of offset_tags
+    if (m_params.offset_tags.size() > 1) {
+        auto faces = get_faces();
+        for (const Tuple& f : faces) {
+            if (face_in_tag_intersection(f)) {
+                m_face_attribute[f.fid(*this)].label = 1;
+
+                // propagate to children
+                m_edge_attribute[f.eid(*this)].label = 1;
+                m_edge_attribute[f.switch_edge(*this).eid(*this)].label = 1;
+                m_edge_attribute[f.switch_vertex(*this).switch_edge(*this).eid(*this)].label = 1;
+                m_vertex_attribute[f.vid(*this)].label = 1;
+                m_vertex_attribute[f.switch_vertex(*this).vid(*this)].label = 1;
+                m_vertex_attribute[f.switch_edge(*this).switch_vertex(*this).vid(*this)].label = 1;
+            }
         }
 
-        // collect incident tet tags
-        auto inc_t_ids = get_one_ring_tids_for_vertex(v_id);
-        std::set<int> nb_tags;
-        for (const size_t& t_id : inc_t_ids) {
-            nb_tags.insert(T_tag(t_id, 0));
+        auto edges = get_edges();
+        for (const Tuple& e : edges) {
+            size_t e_id = e.eid(*this);
+            if (m_edge_attribute[e_id].label != 1 && edge_in_tag_intersection(e)) {
+                m_edge_attribute[e_id].label = 1;
+                m_vertex_attribute[e.vid(*this)].label = 1;
+                m_vertex_attribute[e.switch_vertex(*this).vid(*this)].label = 1;
+            }
         }
 
-        // determine if on boundary of sep tags
-        if (count_sep_tags(nb_tags) >= 2) {
-            m_vertex_attribute[v_id].label = 1;
+        for (const Tuple& v : verts) {
+            size_t v_id = v.vid(*this);
+            if (m_vertex_attribute[v_id].label != 1 && vertex_in_tag_intersection(v)) {
+                m_vertex_attribute[v_id].label = 1;
+            }
         }
     }
 }
@@ -162,6 +136,11 @@ bool TopoOffsetMesh::is_simplicially_embedded() const
 
 bool TopoOffsetMesh::tet_is_simp_emb(const Tuple& t) const
 {
+    size_t t_id = t.tid(*this);
+    if (m_tet_attribute[t_id].label != 0) { // entire tet in input/offset
+        return true;
+    }
+
     auto vs = oriented_tet_vids(t);
     std::vector<size_t> vs_in;
     for (int i = 0; i < 4; i++) {
@@ -177,7 +156,7 @@ bool TopoOffsetMesh::tet_is_simp_emb(const Tuple& t) const
     } else if (vs_in.size() == 3) { // potentially one face in input
         auto [_, glob_fid] = tuple_from_face({{vs_in[0], vs_in[1], vs_in[2]}});
         return (m_face_attribute[glob_fid].label == 1);
-    } else { // all four verts in complex, can't be simplicially embedded
+    } else { // all four verts in complex but tet isn't, can't be simplicially embedded
         return false;
     }
 }
@@ -190,14 +169,14 @@ void TopoOffsetMesh::simplicial_embedding()
     auto tets = get_tets();
     for (const Tuple& tet : tets) {
         auto vs = oriented_tet_vids(tet);
-        if (m_tet_attribute[tet.tid(*this)].label != 1) {
+        if (m_tet_attribute[tet.tid(*this)].label == 0) {
             bool to_split = true;
             for (int i = 0; i < 4; i++) {
                 size_t v1 = vs[i];
                 size_t v2 = vs[(i + 1) % 4];
                 size_t v3 = vs[(i + 2) % 4];
                 auto [_, glob_fid] = tuple_from_face({{v1, v2, v3}});
-                if (m_face_attribute[glob_fid].label != 1) {
+                if (m_face_attribute[glob_fid].label == 0) {
                     to_split = false;
                     break;
                 }
@@ -223,13 +202,13 @@ void TopoOffsetMesh::simplicial_embedding()
     auto faces = get_faces();
     for (const Tuple& f : faces) {
         auto vs = get_face_vids(f);
-        if (m_face_attribute[f.fid(*this)].label != 1) {
+        if (m_face_attribute[f.fid(*this)].label == 0) {
             bool to_split = true;
             for (int i = 0; i < 3; i++) {
                 size_t v1 = vs[i];
                 size_t v2 = vs[(i + 1) % 3];
                 size_t glob_eid = tuple_from_edge({{v1, v2}}).eid(*this);
-                if (m_edge_attribute[glob_eid].label != 1) {
+                if (m_edge_attribute[glob_eid].label == 0) {
                     to_split = false;
                 }
             }
@@ -253,10 +232,10 @@ void TopoOffsetMesh::simplicial_embedding()
     std::vector<simplex::Edge> edges_to_split;
     auto edges = get_edges();
     for (const Tuple& e : edges) {
-        if (m_edge_attribute[e.eid(*this)].label != 1) { // edge not in input
+        if (m_edge_attribute[e.eid(*this)].label == 0) { // edge not in input
             size_t v1_id = e.vid(*this);
             size_t v2_id = switch_vertex(e).vid(*this);
-            if ((m_vertex_attribute[v1_id].label == 1) && (m_vertex_attribute[v2_id].label == 1)) {
+            if ((m_vertex_attribute[v1_id].label != 0) && (m_vertex_attribute[v2_id].label != 0)) {
                 edges_to_split.push_back(simplex::Edge(v1_id, v2_id));
             }
         }
@@ -280,39 +259,67 @@ void TopoOffsetMesh::perform_offset()
     for (const Tuple& e : edges) {
         size_t v1 = e.vid(*this);
         size_t v2 = e.switch_vertex(*this).vid(*this);
-        if ((m_vertex_attribute[v1].label + m_vertex_attribute[v2].label) == 1) {
-            e_to_split.push_back(simplex::Edge(v1, v2));
+
+        // if one background and other in input/offset
+        if ((m_vertex_attribute[v1].label == 0) != (m_vertex_attribute[v2].label == 0)) {
+            e_to_split.emplace_back(v1, v2);
         }
     }
 
     // sort edges (split longest first), should give better output mesh quality
-    logger().info("\tSorting edges by length...");
-    sort_edges_by_length(e_to_split);
-
-    // actually split edges
-    std::vector<Tuple> new_edges;
-    for (const simplex::Edge& e : e_to_split) {
-        // split edge
-        new_edges.clear();
-        Tuple t = tuple_from_edge(e.vertices());
-        split_edge(t, new_edges);
+    if (m_params.sorted_marching) {
+        logger().info("\tSorting edges by length...");
+        sort_edges_by_length(e_to_split);
     }
 
-    // mark all offset tets (all tets with any vertex labeled 1)
-    auto tets = get_tets();
-    for (const Tuple& tet : tets) {
-        auto vs = oriented_tet_vids(tet);
-
-        bool in_offset = false;
-        for (size_t v : vs) { // vertices
-            if (m_vertex_attribute[v].label == 1) {
-                in_offset = true;
-            }
+    // actually split edges
+    std::vector<Tuple> garbage;
+    std::vector<size_t> frontier_verts; // one ring of these verts are in offset
+    for (const simplex::Edge& e : e_to_split) {
+        // determine which vertex in input/offset
+        size_t v_in = e.vertices()[0];
+        if (m_vertex_attribute[v_in].label == 0) {
+            v_in = e.vertices()[1];
         }
 
-        if (in_offset) {
-            m_tet_attribute[tet.tid(*this)].label = 2; // not actually used anywhere
-            m_tet_attribute[tet.tid(*this)].tags[m_toi_ind] = m_params.offset_tag_val;
+        // split edge
+        garbage.clear();
+        Tuple t = tuple_from_edge(e.vertices());
+        if (split_edge(t, garbage)) { // should never fail
+            frontier_verts.push_back(v_in);
+        } else {
+            log_and_throw_error("edge split failed!");
+        }
+    }
+
+    // mark all offset tets
+    for (const size_t& v_id : frontier_verts) {
+        auto t_ids = get_one_ring_tids_for_vertex(v_id);
+        for (const size_t& t_id : t_ids) {
+            if (m_tet_attribute[t_id].label == 0) {
+                m_tet_attribute[t_id].label = 2;
+            }
+        }
+    }
+}
+
+
+void TopoOffsetMesh::set_offset_tet_tags()
+{
+    auto tets = get_tets();
+    for (const Tuple& t : tets) {
+        size_t t_id = t.tid(*this);
+        if (m_tet_attribute[t_id].label == 2) {
+            for (const auto& tag : m_params.offset_tag_val) {
+                if (tag[0] >= m_tet_attribute[t_id].tags.size()) {
+                    log_and_throw_error(
+                        "offset_tag_val [{}, {}] given, but tag_{} does not exist in tri mesh",
+                        tag[0],
+                        tag[1],
+                        tag[0]);
+                }
+                m_tet_attribute[t_id].tags[tag[0]] = tag[1];
+            }
         }
     }
 }
@@ -384,12 +391,10 @@ void TopoOffsetMesh::write_input_complex(const std::string& path)
         }
     }
 
-    // get all offset input tets (this should never happen)
-    bool flag = false;
+    // get all offset input tets
     int num_tets = tet_size();
     for (size_t i = 0; i < num_tets; i++) {
         if (m_tet_attribute[i].label == 1) {
-            flag = true;
             auto vids = oriented_tet_vids(i);
             std::vector<int> curr_t;
             for (const size_t vid : vids) {
@@ -397,9 +402,6 @@ void TopoOffsetMesh::write_input_complex(const std::string& path)
             }
             cells.push_back(curr_t);
         }
-    }
-    if (flag) {
-        logger().warn("One or more tet included in complex to offset.");
     }
 
     // output
@@ -449,10 +451,8 @@ void TopoOffsetMesh::write_vtu(const std::string& path)
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
     writer = std::make_shared<paraviewo::VTUWriter>();
 
-    int index = 0;
-    for (const std::string& tag_name : m_all_tag_names) {
-        writer->add_cell_field(tag_name, tags[index]);
-        index++;
+    for (int i = 0; i < m_tags_count; i++) {
+        writer->add_cell_field(fmt::format("tag_{}", i), tags[i]);
     }
 
     writer->write_mesh(out_path, V, T);
@@ -484,8 +484,8 @@ void TopoOffsetMesh::write_msh(const std::string& file)
         return data;
     });
 
-    for (size_t j = 0; j < m_tags_count; ++j) {
-        msh.add_tet_attribute<1>(m_all_tag_names[j], [&](size_t i) {
+    for (int j = 0; j < m_tags_count; j++) {
+        msh.add_tet_attribute<1>(fmt::format("tag_{}", j), [&](size_t i) {
             return m_tet_attribute[i].tags[j];
         });
     }

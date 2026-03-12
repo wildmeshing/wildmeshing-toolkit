@@ -54,9 +54,7 @@ class TopoOffsetMesh : public wmtk::TetMesh
 public:
     int m_vtu_counter = 0;
     std::array<size_t, 4> m_init_counts = {{0, 0, 0, 0}};
-    std::vector<std::string> m_all_tag_names;
     size_t m_tags_count;
-    int m_toi_ind; // index of tag of interest
 
     Parameters& m_params;
 
@@ -84,8 +82,6 @@ public:
     void write_input_complex(const std::string& path); // write components labeled to be offset
     void write_vtu(const std::string& path); // debugging, write .vtu of tet mesh
     void write_msh(const std::string& file);
-
-    // std::string tags_bit_rep(uint64_t tags) { return std::bitset<64>(tags).to_string(); }
 
     // splitting
     bool split_edge_before(const Tuple& t) override;
@@ -158,23 +154,99 @@ public:
     void init_from_image(
         const MatrixXd& V, // V by 3
         const MatrixXi& T, // T by 4
-        const MatrixXd& T_tags, // T by N
-        const std::vector<std::string>& all_tag_names);
+        const MatrixXd& T_tags); // T by N
 
     bool is_simplicially_embedded() const;
     bool tet_is_simp_emb(const Tuple& t) const;
     void simplicial_embedding();
     void perform_offset();
 
+    // set tag for offset region
+    void set_offset_tet_tags();
+
 private: // helpers
-    int count_sep_tags(const std::set<int> tags) const
+    /**
+     * @brief check if a face is in the intersection region of offset_tags
+     */
+    bool face_in_tag_intersection(const Tuple& f)
     {
-        auto sep_tags = m_params.sep_tag_vals;
-        return std::count_if(tags.begin(), tags.end(), [&sep_tags](int elem) {
-            return (std::find(sep_tags.begin(), sep_tags.end(), elem) != sep_tags.end());
-        });
+        // get adjacent tet(s) for face
+        std::vector<size_t> nb_tids;
+        nb_tids.push_back(f.tid(*this));
+        auto other = f.switch_tetrahedron(*this);
+        if (other) {
+            nb_tids.push_back(other.value().tid(*this));
+        }
+
+        for (const auto& pair : m_params.offset_tags) {
+            bool tag_found = false;
+            for (const size_t nb_tid : nb_tids) {
+                if (m_tet_attribute[nb_tid].tags[pair[0]] == pair[1]) {
+                    tag_found = true;
+                    break;
+                }
+            }
+
+            if (tag_found) {
+                continue;
+            }
+            return false; // no nb tets have this tag
+        }
+        return true; // all offset_tags have at least one incident tet
     }
 
+
+    /**
+     * @brief check if an edge is in the intersection region of offset_tags
+     */
+    bool edge_in_tag_intersection(const Tuple& e)
+    {
+        auto nb_tids = get_incident_tids_for_edge(e); // get incident tets
+        for (const auto& pair : m_params.offset_tags) {
+            bool tag_found = false;
+            for (const size_t& t_id : nb_tids) {
+                if (m_tet_attribute[t_id].tags[pair[0]] == pair[1]) {
+                    tag_found = true;
+                    break;
+                }
+            }
+
+            if (tag_found) {
+                continue;
+            }
+            return false; // no incident tet has given tag in offset_tags
+        }
+        return true; // all offset_tags found in at least one incident tet to edge
+    }
+
+
+    /**
+     * @brief check if a vertex is in the intersection region of offset_tags
+     */
+    bool vertex_in_tag_intersection(const Tuple& v)
+    {
+        auto nb_tids = get_one_ring_tids_for_vertex(v.vid(*this));
+        for (const auto& pair : m_params.offset_tags) {
+            bool tag_found = false;
+            for (const size_t t_id : nb_tids) {
+                if (m_tet_attribute[t_id].tags[pair[0]] == pair[1]) {
+                    tag_found = true;
+                    break;
+                }
+            }
+
+            if (tag_found) {
+                continue;
+            }
+            return false;
+        }
+        return true;
+    }
+
+
+    /**
+     * @brief sort edge simplices in place by decreasing edge length
+     */
     void sort_edges_by_length(std::vector<simplex::Edge>& edges)
     {
         std::sort(

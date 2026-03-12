@@ -13,8 +13,7 @@ nlohmann::json topological_offset_spec = R"(
     ],
     "optional": [
       "output",
-      "tag_name",
-      "sep_tag_vals",
+      "offset_tags",
       "offset_tag_val",
       "target_distance",
       "relative_ball_threshold",
@@ -44,30 +43,47 @@ nlohmann::json topological_offset_spec = R"(
     "doc": "Output file name (without extension)."
   },
   {
-    "pointer": "/tag_name",
-    "type": "string",
-    "default": "tag_0",
-    "doc": "Tetwise tag name to determine boundaries for offset"
-  },
-  {
-    "pointer": "/sep_tag_vals",
+    "pointer": "/offset_tags",
     "type": "list",
     "default": [
-      0,
-      1
+      [
+        0,
+        1
+      ]
     ],
-    "min": 2,
-    "doc": "Tag values whose pairwise boundaries will be offset"
+    "min": 1,
+    "doc": "List of [tag num, tag val] pairs. If one given, that region is offset. If multiple, the intersection of all is offset."
   },
   {
-    "pointer": "/sep_tag_vals/*",
+    "pointer": "/offset_tags/*",
+    "type": "list",
+    "min": 2,
+    "max": 2
+  },
+  {
+    "pointer": "/offset_tags/*/*",
     "type": "int"
   },
   {
     "pointer": "/offset_tag_val",
-    "type": "int",
-    "default": 0,
-    "doc": "Tag value to fill offset region"
+    "type": "list",
+    "default": [
+      [
+        0,
+        0
+      ]
+    ],
+    "doc": "[Tag num, tag val] pairs to set for offset result. Missing tag nums inherit from parent tris/tets."
+  },
+  {
+    "pointer": "/offset_tag_val/*",
+    "type": "list",
+    "min": 2,
+    "max": 2
+  },
+  {
+    "pointer": "/offset_tag_val/*/*",
+    "type": "int"
   },
   {
     "pointer": "/target_distance",
