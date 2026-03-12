@@ -386,6 +386,7 @@ bool TopoOffsetTriMesh::invariants(const std::vector<Tuple>& tris)
             m_vertex_attribute[vs[1]].m_posf,
             m_vertex_attribute[vs[2]].m_posf);
         if (res != igl::predicates::Orientation::POSITIVE) {
+            log_and_throw_error("INVERTED TRIANGLE DURING OFFSET");
             return false;
         }
     }

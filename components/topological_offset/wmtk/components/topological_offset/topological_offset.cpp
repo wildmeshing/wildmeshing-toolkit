@@ -155,6 +155,10 @@ void topological_offset(nlohmann::json json_params)
         double time = timer.getElapsedTime();
         wmtk::logger().info("total time {}s", time);
 
+        // inversion check
+        auto tris = mesh.get_faces();
+        bool dummy = mesh.invariants(tris);
+
         // output
         std::ofstream fout(output_filename.string() + ".log");
         fout << "before:" << std::endl;
@@ -221,6 +225,10 @@ void topological_offset(nlohmann::json json_params)
         // stop timer
         double time = timer.getElapsedTime();
         wmtk::logger().info("total time {}s", time);
+
+        // inversion check
+        auto tets = mesh.get_tets();
+        bool dummy = mesh.invariants(tets);
 
         // output
         std::ofstream fout(output_filename.string() + ".log");

@@ -337,6 +337,7 @@ bool TopoOffsetMesh::invariants(const std::vector<Tuple>& tets)
             m_vertex_attribute[vs[3]].m_posf);
 
         if (res != igl::predicates::Orientation::NEGATIVE) {
+            log_and_throw_error("INVERTED TET DURING OFFSET");
             return false;
         }
     }
