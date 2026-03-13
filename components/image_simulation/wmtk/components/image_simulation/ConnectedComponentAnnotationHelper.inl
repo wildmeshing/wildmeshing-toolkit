@@ -26,8 +26,8 @@ ImageSimulationMeshTri::compute_connected_components() const
             const Vector2d& fp1 = m_vertex_attribute[fvs[1]].m_pos;
             const Vector2d& fp2 = m_vertex_attribute[fvs[2]].m_pos;
             comp.area += 0.5 * std::abs(
-                (fp1[0] - fp0[0]) * (fp2[1] - fp0[1]) -
-                (fp1[1] - fp0[1]) * (fp2[0] - fp0[0]));
+                                   (fp1[0] - fp0[0]) * (fp2[1] - fp0[1]) -
+                                   (fp1[1] - fp0[1]) * (fp2[0] - fp0[0]));
             for (int j = 0; j < 3; ++j) {
                 const Tuple edge_tup = tuple_from_edge(cur, j);
                 const auto t_opp = edge_tup.switch_face(*this);
@@ -64,10 +64,16 @@ ImageSimulationMeshTri::compute_connected_components() const
 
 void ImageSimulationMeshTri::engulf_component(
     std::vector<ImageSimulationMeshTri::ConnectedComponent>& components,
-    const size_t hole_comp_id, const size_t engulfing_comp_id)
-{    if (hole_comp_id >= components.size() || engulfing_comp_id >= components.size()) {
-        log_and_throw_error("Invalid component ids for engulfing: hole_comp_id = {}, engulfing_comp_id = {}, total components = {}",
-            hole_comp_id, engulfing_comp_id, components.size());
+    const size_t hole_comp_id,
+    const size_t engulfing_comp_id)
+{
+    if (hole_comp_id >= components.size() || engulfing_comp_id >= components.size()) {
+        log_and_throw_error(
+            "Invalid component ids for engulfing: hole_comp_id = {}, engulfing_comp_id = {}, total "
+            "components = {}",
+            hole_comp_id,
+            engulfing_comp_id,
+            components.size());
     }
     auto& hole_comp = components[hole_comp_id];
     auto& engulfing_comp = components[engulfing_comp_id];
@@ -77,27 +83,28 @@ void ImageSimulationMeshTri::engulf_component(
     }
     engulfing_comp.area += hole_comp.area;
     engulfing_comp.faces.insert(
-        engulfing_comp.faces.end(), hole_comp.faces.begin(), hole_comp.faces.end());
-    engulfing_comp.surrounding_comp_ids.erase(hole_comp_id);    
+        engulfing_comp.faces.end(),
+        hole_comp.faces.begin(),
+        hole_comp.faces.end());
+    engulfing_comp.surrounding_comp_ids.erase(hole_comp_id);
     hole_comp = ConnectedComponent();
 }
 
 void ImageSimulationMeshTri::engulf_components(
     std::vector<ImageSimulationMeshTri::ConnectedComponent>& components,
-    const std::vector<size_t>& hole_comp_ids, const std::unordered_set<size_t>& engulfing_comp_ids)
+    const std::vector<size_t>& hole_comp_ids,
+    const std::unordered_set<size_t>& engulfing_comp_ids)
 {
-    
-    
     if (engulfing_comp_ids.empty()) {
-        log_and_throw_error("No engulfing components found for hole component(s) {}", fmt::join(hole_comp_ids, ","));
-    }
-    else if (engulfing_comp_ids.size() == 1) {
+        log_and_throw_error(
+            "No engulfing components found for hole component(s) {}",
+            fmt::join(hole_comp_ids, ","));
+    } else if (engulfing_comp_ids.size() == 1) {
         for (const size_t comp_id : hole_comp_ids) {
             engulf_component(components, comp_id, *engulfing_comp_ids.begin());
         }
         return;
-    }
-    else {
+    } else {
         // Build face->component mapping from current components state
         std::vector<size_t> comp_id_map(tri_capacity(), std::numeric_limits<size_t>::max());
         for (size_t i = 0; i < components.size(); ++i) {
@@ -116,7 +123,8 @@ void ImageSimulationMeshTri::engulf_components(
                     const auto t_opp = edge_tup.switch_face(*this);
                     if (!t_opp) continue;
                     const size_t nbr_cidx = comp_id_map[t_opp->fid(*this)];
-                    if (engulfing_comp_ids.count(nbr_cidx)) { // neighbor is one of the engulfing components
+                    if (engulfing_comp_ids.count(
+                            nbr_cidx)) { // neighbor is one of the engulfing components
                         const auto vs = get_edge_vids(edge_tup);
                         const Vector2d& p0 = m_vertex_attribute[vs[0]].m_pos;
                         const Vector2d& p1 = m_vertex_attribute[vs[1]].m_pos;
@@ -143,20 +151,26 @@ void ImageSimulationMeshTri::engulf_components(
             size_t closest = std::numeric_limits<size_t>::max();
             double min_dist = std::numeric_limits<double>::max();
             for (const auto& [cidx, d] : dists) {
-                if (d < min_dist) { min_dist = d; closest = cidx; }
+                if (d < min_dist) {
+                    min_dist = d;
+                    closest = cidx;
+                }
             }
             return closest;
         };
 
         // Compute vertex_closest_comp for all vertices of hole faces
-        const std::unordered_set<size_t> hole_comp_ids_set(hole_comp_ids.begin(), hole_comp_ids.end());
+        const std::unordered_set<size_t> hole_comp_ids_set(
+            hole_comp_ids.begin(),
+            hole_comp_ids.end());
         std::unordered_map<size_t, size_t> vertex_closest_comp; // vid -> closest engulfing comp_id
         for (const size_t comp_id : hole_comp_ids) {
             for (const size_t fid : components[comp_id].faces) {
                 const auto fvs = oriented_tri_vids(fid);
                 for (const size_t vid : fvs) {
                     if (vertex_closest_comp.count(vid)) continue;
-                    vertex_closest_comp[vid] = compute_vertex_closest_comp(m_vertex_attribute[vid].m_pos);
+                    vertex_closest_comp[vid] =
+                        compute_vertex_closest_comp(m_vertex_attribute[vid].m_pos);
                 }
             }
         }
@@ -179,18 +193,25 @@ void ImageSimulationMeshTri::engulf_components(
                             cb != std::numeric_limits<size_t>::max() && ca != cb) {
                             edges_to_split_set.emplace(std::min(va, vb), std::max(va, vb));
                         }
-                    }
-                    else log_and_throw_error(fmt::format("Vertex {} or {} has no closest component; this should not happen", va, vb));
+                    } else
+                        log_and_throw_error(
+                            fmt::format(
+                                "Vertex {} or {} has no closest component; this should not happen",
+                                va,
+                                vb));
                 }
             }
         }
 
         // Helper: signed distance between two engulfing comps at position p.
         // Negative = closer to comp_a centroids, positive = closer to comp_b centroids.
-        const auto voronoi_sign = [&](const Vector2d& p, const size_t comp_a, const size_t comp_b) -> double {
+        const auto voronoi_sign =
+            [&](const Vector2d& p, const size_t comp_a, const size_t comp_b) -> double {
             const auto dists = comp_min_sq_dists(p);
-            const double da = dists.count(comp_a) ? dists.at(comp_a) : std::numeric_limits<double>::max();
-            const double db = dists.count(comp_b) ? dists.at(comp_b) : std::numeric_limits<double>::max();
+            const double da =
+                dists.count(comp_a) ? dists.at(comp_a) : std::numeric_limits<double>::max();
+            const double db =
+                dists.count(comp_b) ? dists.at(comp_b) : std::numeric_limits<double>::max();
             return da - db;
         };
 
@@ -215,21 +236,46 @@ void ImageSimulationMeshTri::engulf_components(
             {
                 const double sign_a = voronoi_sign(m_vertex_attribute[va].m_pos, comp_a, comp_b);
                 const double sign_b = voronoi_sign(m_vertex_attribute[vb].m_pos, comp_a, comp_b);
-                
-                if (sign_a * sign_b > 0.0) log_and_throw_error(fmt::format("Endpoints {} and {} of edge to split have same sign {}, {}: this should not happen", va, vb, sign_a, sign_b));
-                if (sign_a > 0.0 || sign_b < 0.0) log_and_throw_error(fmt::format("Endpoint signs for edge to split are sign_a = {}, sign_b = {}: this should not happen", sign_a, sign_b));
 
-                const double total = sign_b - sign_a; 
-                if (total < 1e-10) // both comps are very close to equidistant — skip split and mark both endpoints as equidistant to avoid numerical issues with voronoi_sign near the boundary
+                if (sign_a * sign_b > 0.0)
+                    log_and_throw_error(
+                        fmt::format(
+                            "Endpoints {} and {} of edge to split have same sign {}, {}: this "
+                            "should not happen",
+                            va,
+                            vb,
+                            sign_a,
+                            sign_b));
+                if (sign_a > 0.0 || sign_b < 0.0)
+                    log_and_throw_error(
+                        fmt::format(
+                            "Endpoint signs for edge to split are sign_a = {}, sign_b = {}: this "
+                            "should not happen",
+                            sign_a,
+                            sign_b));
+
+                const double total = sign_b - sign_a;
+                if (total < 1e-10) // both comps are very close to equidistant — skip split and mark
+                                   // both endpoints as equidistant to avoid numerical issues with
+                                   // voronoi_sign near the boundary
                 {
                     vertex_closest_comp[va] = std::numeric_limits<size_t>::max();
                     vertex_closest_comp[vb] = std::numeric_limits<size_t>::max();
                     continue;
                 }
-                constexpr double kMinFrac = 1e-3; // manual tolerance to avoid degenerate splits; if the boundary is within 0.1% of the edge length from an endpoint, skip the split and mark that endpoint as equidistant.
+                constexpr double kMinFrac =
+                    1e-3; // manual tolerance to avoid degenerate splits; if the boundary is within
+                          // 0.1% of the edge length from an endpoint, skip the split and mark that
+                          // endpoint as equidistant.
                 const double t = std::abs(sign_a) / total;
-                if (t < kMinFrac) { vertex_closest_comp[va] = std::numeric_limits<size_t>::max(); continue; }
-                if (t > 1.0 - kMinFrac) { vertex_closest_comp[vb] = std::numeric_limits<size_t>::max(); continue; }
+                if (t < kMinFrac) {
+                    vertex_closest_comp[va] = std::numeric_limits<size_t>::max();
+                    continue;
+                }
+                if (t > 1.0 - kMinFrac) {
+                    vertex_closest_comp[vb] = std::numeric_limits<size_t>::max();
+                    continue;
+                }
             }
 
             m_voronoi_split_fn = [&, comp_a, comp_b](const Vector2d& p) -> double {
@@ -239,9 +285,12 @@ void ImageSimulationMeshTri::engulf_components(
             const bool split_success = split_edge(edge_tup, new_tris);
             m_voronoi_split_fn = nullptr;
             if (!split_success || new_tris.empty()) {
-                if (!split_success) logger().warn(
-                    "engulf_components: split_edge({},{}) failed; assignment will use centroid fallback",
-                    va, vb);
+                if (!split_success)
+                    logger().warn(
+                        "engulf_components: split_edge({},{}) failed; assignment will use centroid "
+                        "fallback",
+                        va,
+                        vb);
             } else {
                 const size_t vmid = new_tris[0].vid(*this);
                 vertex_closest_comp[vmid] = std::numeric_limits<size_t>::max(); // equidistant
@@ -293,21 +342,29 @@ void ImageSimulationMeshTri::engulf_components(
                 }
                 if (conflict || closest == std::numeric_limits<size_t>::max()) {
                     const Vector2d centroid =
-                        (m_vertex_attribute[fvs[0]].m_pos +
-                         m_vertex_attribute[fvs[1]].m_pos +
-                         m_vertex_attribute[fvs[2]].m_pos) / 3.0;
+                        (m_vertex_attribute[fvs[0]].m_pos + m_vertex_attribute[fvs[1]].m_pos +
+                         m_vertex_attribute[fvs[2]].m_pos) /
+                        3.0;
                     closest = compute_vertex_closest_comp(centroid);
-                    if (conflict) logger().warn("Face {} has conflicting vertex assignments after split; using centroid fallback for assignment",fid);
-                    if (closest == std::numeric_limits<size_t>::max()) logger().warn("Face {} has no definite vertex assignments after split; using centroid fallback for assignment", fid);
+                    if (conflict)
+                        logger().warn(
+                            "Face {} has conflicting vertex assignments after split; using "
+                            "centroid fallback for assignment",
+                            fid);
+                    if (closest == std::numeric_limits<size_t>::max())
+                        logger().warn(
+                            "Face {} has no definite vertex assignments after split; using "
+                            "centroid fallback for assignment",
+                            fid);
                 }
-                
+
                 const auto& fp0 = m_vertex_attribute[fvs[0]].m_pos;
                 const auto& fp1 = m_vertex_attribute[fvs[1]].m_pos;
                 const auto& fp2 = m_vertex_attribute[fvs[2]].m_pos;
                 m_face_attribute[fid].tags[0] = components[closest].tag;
                 components[closest].area += 0.5 * std::abs(
-                    (fp1[0] - fp0[0]) * (fp2[1] - fp0[1]) -
-                    (fp1[1] - fp0[1]) * (fp2[0] - fp0[0]));
+                                                      (fp1[0] - fp0[0]) * (fp2[1] - fp0[1]) -
+                                                      (fp1[1] - fp0[1]) * (fp2[0] - fp0[0]));
                 components[closest].faces.push_back(fid);
                 comp_id_map[fid] = closest;
                 newly_assigned[closest].push_back(fid);
@@ -332,7 +389,7 @@ void ImageSimulationMeshTri::engulf_components(
             }
         }
 
-        // --- DEBUG: 
+        // --- DEBUG:
         {
             static int debug_call = 0;
             const std::string debug_path = fmt::format("/tmp/engulf_debug_{}.vtu", debug_call++);
@@ -355,12 +412,16 @@ void ImageSimulationMeshTri::engulf_components(
             const int nv = (int)row_vids.size();
             Eigen::MatrixXd V(nv, 3);
             Eigen::VectorXd closest_label(nv), voronoi_sdf(nv);
-            V.setZero(); closest_label.setZero(); voronoi_sdf.setZero();
+            V.setZero();
+            closest_label.setZero();
+            voronoi_sdf.setZero();
 
             for (int i = 0; i < nv; ++i) {
                 const size_t vid = row_vids[i];
                 const Vector2d& p = m_vertex_attribute[vid].m_pos;
-                V(i, 0) = p[0]; V(i, 1) = p[1]; V(i, 2) = 0.0;
+                V(i, 0) = p[0];
+                V(i, 1) = p[1];
+                V(i, 2) = 0.0;
 
                 // Find the two closest comps using the shared helper.
                 const auto comp_min_sq = comp_min_sq_dists(p);
@@ -369,20 +430,26 @@ void ImageSimulationMeshTri::engulf_components(
                 double d1sq = std::numeric_limits<double>::max();
                 double d2sq = std::numeric_limits<double>::max();
                 for (const auto& [cidx, dsq] : comp_min_sq) {
-                    if (dsq < d1sq) { d2sq = d1sq; c2 = c1; d1sq = dsq; c1 = cidx; }
-                    else if (dsq < d2sq) { d2sq = dsq; c2 = cidx; }
+                    if (dsq < d1sq) {
+                        d2sq = d1sq;
+                        c2 = c1;
+                        d1sq = dsq;
+                        c1 = cidx;
+                    } else if (dsq < d2sq) {
+                        d2sq = dsq;
+                        c2 = cidx;
+                    }
                 }
                 // voronoi_sign(p, c1, c2) = min_sq_dist_c1 - min_sq_dist_c2
                 // This is exactly what is used in the splitting λ, so values here are
                 // directly comparable to the binary-search target (zero crossing).
-                voronoi_sdf[i] = (c2 != std::numeric_limits<size_t>::max())
-                    ? voronoi_sign(p, c1, c2)
-                    : 0.0;
+                voronoi_sdf[i] =
+                    (c2 != std::numeric_limits<size_t>::max()) ? voronoi_sign(p, c1, c2) : 0.0;
 
                 // Label: closest comp from vertex_closest_comp (-1 = equidistant)
                 const size_t c = vertex_closest_comp.count(vid)
-                    ? vertex_closest_comp.at(vid)
-                    : std::numeric_limits<size_t>::max();
+                                     ? vertex_closest_comp.at(vid)
+                                     : std::numeric_limits<size_t>::max();
                 closest_label[i] = (c == std::numeric_limits<size_t>::max()) ? -1.0 : (double)c;
             }
 
@@ -392,9 +459,10 @@ void ImageSimulationMeshTri::engulf_components(
                 for (const size_t fid : components[comp_id].faces) {
                     if (!tuple_from_tri(fid).is_valid(*this)) continue;
                     const auto fvs = oriented_tri_vids(fid);
-                    face_list.push_back({(size_t)vid_to_row.at(fvs[0]),
-                                         (size_t)vid_to_row.at(fvs[1]),
-                                         (size_t)vid_to_row.at(fvs[2])});
+                    face_list.push_back(
+                        {(size_t)vid_to_row.at(fvs[0]),
+                         (size_t)vid_to_row.at(fvs[1]),
+                         (size_t)vid_to_row.at(fvs[2])});
                 }
             }
             Eigen::MatrixXi F((int)face_list.size(), 3);
@@ -403,10 +471,10 @@ void ImageSimulationMeshTri::engulf_components(
                 F(i, 0) = (int)face_list[i][0];
                 F(i, 1) = (int)face_list[i][1];
                 F(i, 2) = (int)face_list[i][2];
-                const double ax = V(F(i,0),0), ay = V(F(i,0),1);
-                const double bx = V(F(i,1),0), by = V(F(i,1),1);
-                const double cx = V(F(i,2),0), cy = V(F(i,2),1);
-                face_area[i] = 0.5 * std::abs((bx-ax)*(cy-ay) - (by-ay)*(cx-ax));
+                const double ax = V(F(i, 0), 0), ay = V(F(i, 0), 1);
+                const double bx = V(F(i, 1), 0), by = V(F(i, 1), 1);
+                const double cx = V(F(i, 2), 0), cy = V(F(i, 2), 1);
+                face_area[i] = 0.5 * std::abs((bx - ax) * (cy - ay) - (by - ay) * (cx - ax));
             }
             // Check for zero/near-zero area faces
             constexpr double kAreaTol = 1e-10;
@@ -417,16 +485,24 @@ void ImageSimulationMeshTri::engulf_components(
                     wmtk::log_and_throw_error(
                         "DEBUG engulf_components: face row {} (verts [{},{},{}]) "
                         "has near-zero area = {} | pos [{},{}] [{},{}] [{},{}]",
-                        i, F(i,0), F(i,1), F(i,2), face_area[i],
-                        V(F(i,0),0), V(F(i,0),1),
-                        V(F(i,1),0), V(F(i,1),1),
-                        V(F(i,2),0), V(F(i,2),1));
+                        i,
+                        F(i, 0),
+                        F(i, 1),
+                        F(i, 2),
+                        face_area[i],
+                        V(F(i, 0), 0),
+                        V(F(i, 0), 1),
+                        V(F(i, 1), 0),
+                        V(F(i, 1), 1),
+                        V(F(i, 2), 0),
+                        V(F(i, 2), 1));
                 }
             }
             if (zero_area_count > 0)
                 wmtk::log_and_throw_error(
                     "DEBUG engulf_components: {} / {} hole faces have near-zero area",
-                    zero_area_count, face_list.size());
+                    zero_area_count,
+                    face_list.size());
 
             // Verify: equidistant-labeled vertices should have voronoi_sdf ≈ 0 for SOME
             // component pair — the pair used when splitting may differ from the globally
@@ -437,16 +513,21 @@ void ImageSimulationMeshTri::engulf_components(
                 if (comp_min_sq.size() < 2) continue;
                 // Find the nearest centroid distance (denominator for rel)
                 double d1sq = std::numeric_limits<double>::max();
-                for (const auto& [cidx, dsq] : comp_min_sq)
-                    d1sq = std::min(d1sq, dsq);
+                for (const auto& [cidx, dsq] : comp_min_sq) d1sq = std::min(d1sq, dsq);
                 // Find the pair (ca, cb) that minimizes |voronoi_sign| = |d_ca - d_cb|
                 double min_abs_sign = std::numeric_limits<double>::max();
                 size_t best_ca = 0, best_cb = 0;
-                const std::vector<std::pair<size_t,double>> comp_vec(comp_min_sq.begin(), comp_min_sq.end());
+                const std::vector<std::pair<size_t, double>> comp_vec(
+                    comp_min_sq.begin(),
+                    comp_min_sq.end());
                 for (size_t ai = 0; ai < comp_vec.size(); ++ai)
                     for (size_t bi = ai + 1; bi < comp_vec.size(); ++bi) {
                         const double s = std::abs(comp_vec[ai].second - comp_vec[bi].second);
-                        if (s < min_abs_sign) { min_abs_sign = s; best_ca = comp_vec[ai].first; best_cb = comp_vec[bi].first; }
+                        if (s < min_abs_sign) {
+                            min_abs_sign = s;
+                            best_ca = comp_vec[ai].first;
+                            best_cb = comp_vec[bi].first;
+                        }
                     }
                 constexpr double kMinFrac = 0.01;
                 const double rel = (abs(d1sq) > 1e-8) ? min_abs_sign / d1sq : min_abs_sign;
@@ -455,7 +536,13 @@ void ImageSimulationMeshTri::engulf_components(
                     wmtk::log_and_throw_error(
                         "DEBUG engulf_components: vertex {} labeled equidistant "
                         "but best pair voronoi_sign(ca={},cb={})={:.4f} rel={:.4f} | pos [{}, {}]",
-                        vid, best_ca, best_cb, min_abs_sign, rel, V(i, 0), V(i, 1));
+                        vid,
+                        best_ca,
+                        best_cb,
+                        min_abs_sign,
+                        rel,
+                        V(i, 0),
+                        V(i, 1));
                 }
             }
         }
@@ -470,7 +557,11 @@ void ImageSimulationMeshTri::engulf_components(
     }
 }
 
-void ImageSimulationMeshTri::extract_hole_clusters(std::vector<ImageSimulationMeshTri::ConnectedComponent>& components, std::unordered_set<int64_t>& tags, std::vector<std::vector<size_t>>& hole_clusters, double threshold)
+void ImageSimulationMeshTri::extract_hole_clusters(
+    std::vector<ImageSimulationMeshTri::ConnectedComponent>& components,
+    std::unordered_set<int64_t>& tags,
+    std::vector<std::vector<size_t>>& hole_clusters,
+    double threshold)
 {
     // BFS-cluster all non-fill-tag components by adjacency.
     // Each cluster is a maximal group of connected non-fill-tag components.
@@ -478,13 +569,16 @@ void ImageSimulationMeshTri::extract_hole_clusters(std::vector<ImageSimulationMe
     std::vector<size_t> cluster_id(components.size(), -1);
     std::vector<ComponentCluster> component_clusters;
     for (size_t i = 0; i < components.size(); ++i) {
-        if (components[i].faces.empty() || tags.count(components[i].tag) || components[i].touches_boundary) continue;
+        if (components[i].faces.empty() || tags.count(components[i].tag) ||
+            components[i].touches_boundary)
+            continue;
         if (cluster_id[i] != -1) continue;
         const size_t cid = component_clusters.size();
         ComponentCluster& cluster = component_clusters.emplace_back();
         cluster.comp_ids.push_back(i);
         cluster_id[i] = cid;
-        for (size_t qi = 0; qi < cluster.comp_ids.size(); ++qi) { // BFS loop with cluster.comp_ids growing
+        for (size_t qi = 0; qi < cluster.comp_ids.size();
+             ++qi) { // BFS loop with cluster.comp_ids growing
             const size_t cur = cluster.comp_ids[qi];
             cluster.area += components[cur].area;
             for (const size_t sid : components[cur].surrounding_comp_ids) {
@@ -500,11 +594,11 @@ void ImageSimulationMeshTri::extract_hole_clusters(std::vector<ImageSimulationMe
                 }
             }
         }
-        // also mark not enclosed if any member touches a non-fill-tag component outside this cluster
+        // also mark not enclosed if any member touches a non-fill-tag component outside this
+        // cluster
         for (const size_t ci : cluster.comp_ids) {
             for (const size_t sid : components[ci].surrounding_comp_ids) {
-                if (!components[sid].faces.empty() &&
-                    !tags.count(components[sid].tag) &&
+                if (!components[sid].faces.empty() && !tags.count(components[sid].tag) &&
                     cluster_id[sid] != cid) {
                     cluster.enclosed = false;
                 }
