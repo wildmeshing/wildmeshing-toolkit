@@ -151,3 +151,39 @@ TEST_CASE("amips_plus_dirichlet_energy_2d", "[energies]")
     V.row(4) = x;
     write();
 }
+
+TEST_CASE("smoothing_energy_2d", "[energies]")
+{
+    const Vector2d p0(0.8, 1);
+    std::vector<std::array<double, 4>> cells;
+    cells.push_back({{p0[0], p0[1], 0, 0}});
+    cells.push_back({{p0[0], p0[1], 1, 0}});
+
+    optimization::SmoothingEnergy2D energy(cells);
+    double M;
+    Vector3d L_w;
+    optimization::SmoothingEnergy2D::compute_local_mass_and_stiffness(cells, M, L_w);
+    energy.add_mass_and_stiffness_matrix(M, L_w);
+
+    CHECK(energy.is_step_valid(p0, p0));
+
+    {
+        VectorXd g;
+        energy.gradient(p0, g);
+        CHECK(g[1] > 0);
+
+        MatrixXd h;
+        CHECK_NOTHROW(energy.hessian(p0, h));
+    }
+    auto x = energy.initial_position();
+    const double e_before = energy.value(x);
+    {
+        auto m_solver = optimization::create_basic_solver();
+        optimization::deactivate_opt_logger();
+
+        CHECK_NOTHROW(m_solver->minimize(energy, x));
+    }
+    const double e_after = energy.value(x);
+    CHECK(e_after < e_before);
+    CHECK(e_after < 1e-5);
+}

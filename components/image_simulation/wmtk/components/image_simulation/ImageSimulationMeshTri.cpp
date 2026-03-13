@@ -487,6 +487,27 @@ std::vector<std::array<size_t, 2>> ImageSimulationMeshTri::get_edges_by_conditio
 
 void ImageSimulationMeshTri::split_all_edges()
 {
+    // build mass-matrix
+    {
+        const auto vs = get_vertices();
+        m_surface_mass.resize(vert_capacity());
+        for (const Tuple& t : vs) {
+            const size_t vid = t.vid(*this);
+            if (!m_vertex_attribute.at(vid).m_is_on_surface) {
+                continue;
+            }
+            const auto es = get_order1_edges_for_vertex(vid);
+            double mass = 0;
+            for (const simplex::Edge& e : es.edges()) {
+                const Vector2d& p0 = m_vertex_attribute.at(e.vertices()[0]).m_pos;
+                const Vector2d& p1 = m_vertex_attribute.at(e.vertices()[1]).m_pos;
+                mass += 0.5 * (p1 - p0).norm();
+            }
+            m_surface_mass[vid] = mass;
+        }
+    }
+
+
     igl::Timer timer;
     double time;
     timer.start();
