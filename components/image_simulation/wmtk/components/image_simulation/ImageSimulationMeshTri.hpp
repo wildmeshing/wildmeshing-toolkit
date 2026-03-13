@@ -199,7 +199,8 @@ public:
         bool collapse_limit_length = true);
     std::tuple<double, double> get_max_avg_energy();
 
-    // Returns: (face ids in component, set of distinct tags of all neighboring faces across tag boundaries) - defined according to tag_0
+    // Returns: (face ids in component, set of distinct tags of all neighboring faces across tag
+    // boundaries) - defined according to tag_0
     struct ConnectedComponent
     {
         int64_t tag = -1;
@@ -209,8 +210,14 @@ public:
         bool touches_boundary = false;
     };
     std::vector<ConnectedComponent> compute_connected_components() const;
-    void engulf_component(std::vector<ConnectedComponent>& components, const size_t hole_comp_id, const size_t engulfing_comp_id);
-    void engulf_components(std::vector<ConnectedComponent>& components, const std::vector<size_t>& hole_comp_ids, const std::unordered_set<size_t>& engulfing_comp_ids);
+    void engulf_component(
+        std::vector<ConnectedComponent>& components,
+        const size_t hole_comp_id,
+        const size_t engulfing_comp_id);
+    void engulf_components(
+        std::vector<ConnectedComponent>& components,
+        const std::vector<size_t>& hole_comp_ids,
+        const std::unordered_set<size_t>& engulfing_comp_ids);
     void keep_largest_connected_component(const std::vector<int64_t>& lcc_tags);
 
     // A cluster is a maximal group of connected non-fill-tag ConnectedComponents.
@@ -221,14 +228,20 @@ public:
         double area = 0.0;
         bool enclosed = true;
     };
-    void extract_hole_clusters(std::vector<ConnectedComponent>& components, std::unordered_set<int64_t>& tags, std::vector<std::vector<size_t>>& hole_clusters, double threshold);
+    void extract_hole_clusters(
+        std::vector<ConnectedComponent>& components,
+        std::unordered_set<int64_t>& tags,
+        std::vector<std::vector<size_t>>& hole_clusters,
+        double threshold);
 
     void recompute_surface_info();
     void fill_holes_topo(
         const std::vector<int64_t>& fill_holes_tags,
         double threshold = std::numeric_limits<double>::infinity());
-    
-    void tight_seal_topo(const std::vector<std::unordered_set<int64_t>>& tight_seal_tag_sets, double threshold = std::numeric_limits<double>::infinity());
+
+    void tight_seal_topo(
+        const std::vector<std::unordered_set<int64_t>>& tight_seal_tag_sets,
+        double threshold = std::numeric_limits<double>::infinity());
 
 
     /**
