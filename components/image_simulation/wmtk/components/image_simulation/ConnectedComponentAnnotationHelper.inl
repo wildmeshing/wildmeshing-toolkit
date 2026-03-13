@@ -126,16 +126,24 @@ void ImageSimulationMeshTri::engulf_components(
             }
         }
 
-        // Helper: find closest engulfing comp for a given vertex position
+        // Helper: per-comp minimum squared distance from pos to any centroid of that comp.
+        const auto comp_min_sq_dists = [&](const Vector2d& pos) {
+            std::unordered_map<size_t, double> result;
+            for (const auto& [centroid, cidx] : boundary_edge_centroids) {
+                const double d = (pos - centroid).squaredNorm();
+                auto [it, ins] = result.emplace(cidx, d);
+                if (!ins) it->second = std::min(it->second, d);
+            }
+            return result;
+        };
+
+        // Helper: find closest engulfing comp for a given vertex position.
         const auto compute_vertex_closest_comp = [&](const Vector2d& pos) -> size_t {
-            double min_dist = std::numeric_limits<double>::max();
+            const auto dists = comp_min_sq_dists(pos);
             size_t closest = std::numeric_limits<size_t>::max();
-            for (const auto& [centroid, nbr_cidx] : boundary_edge_centroids) {
-                const double dist = (pos - centroid).squaredNorm();
-                if (dist < min_dist) {
-                    min_dist = dist;
-                    closest = nbr_cidx;
-                }
+            double min_dist = std::numeric_limits<double>::max();
+            for (const auto& [cidx, d] : dists) {
+                if (d < min_dist) { min_dist = d; closest = cidx; }
             }
             return closest;
         };
@@ -166,13 +174,13 @@ void ImageSimulationMeshTri::engulf_components(
                     if (vertex_closest_comp.count(va) && vertex_closest_comp.count(vb)) {
                         const size_t ca = vertex_closest_comp.at(va);
                         const size_t cb = vertex_closest_comp.at(vb);
-                        // Skip if either endpoint is equidistant 
-                        // would have no centroids for that comp and produce garbage values.
+                        // Skip if either endpoint is equidistant
                         if (ca != std::numeric_limits<size_t>::max() &&
                             cb != std::numeric_limits<size_t>::max() && ca != cb) {
                             edges_to_split_set.emplace(std::min(va, vb), std::max(va, vb));
                         }
                     }
+                    else log_and_throw_error(fmt::format("Vertex {} or {} has no closest component; this should not happen", va, vb));
                 }
             }
         }
@@ -180,14 +188,10 @@ void ImageSimulationMeshTri::engulf_components(
         // Helper: signed distance between two engulfing comps at position p.
         // Negative = closer to comp_a centroids, positive = closer to comp_b centroids.
         const auto voronoi_sign = [&](const Vector2d& p, const size_t comp_a, const size_t comp_b) -> double {
-            double min_a = std::numeric_limits<double>::max();
-            double min_b = std::numeric_limits<double>::max();
-            for (const auto& [centroid, cidx] : boundary_edge_centroids) {
-                const double d = (p - centroid).squaredNorm();
-                if (cidx == comp_a) min_a = std::min(min_a, d);
-                if (cidx == comp_b) min_b = std::min(min_b, d);
-            }
-            return min_a - min_b;
+            const auto dists = comp_min_sq_dists(p);
+            const double da = dists.count(comp_a) ? dists.at(comp_a) : std::numeric_limits<double>::max();
+            const double db = dists.count(comp_b) ? dists.at(comp_b) : std::numeric_limits<double>::max();
+            return da - db;
         };
 
         // Split disagreement edges; split_edge_after binary-searches vmid onto the
@@ -211,9 +215,18 @@ void ImageSimulationMeshTri::engulf_components(
             {
                 const double sign_a = voronoi_sign(m_vertex_attribute[va].m_pos, comp_a, comp_b);
                 const double sign_b = voronoi_sign(m_vertex_attribute[vb].m_pos, comp_a, comp_b);
-                const double total = std::abs(sign_a) + std::abs(sign_b);
-                constexpr double kMinFrac = 0.01;
-                if (total == 0.0) continue; // both equidistant
+                
+                if (sign_a * sign_b > 0.0) log_and_throw_error(fmt::format("Endpoints {} and {} of edge to split have same sign {}, {}: this should not happen", va, vb, sign_a, sign_b));
+                if (sign_a > 0.0 || sign_b < 0.0) log_and_throw_error(fmt::format("Endpoint signs for edge to split are sign_a = {}, sign_b = {}: this should not happen", sign_a, sign_b));
+
+                const double total = sign_b - sign_a; 
+                if (total < 1e-10) // both comps are very close to equidistant — skip split and mark both endpoints as equidistant to avoid numerical issues with voronoi_sign near the boundary
+                {
+                    vertex_closest_comp[va] = std::numeric_limits<size_t>::max();
+                    vertex_closest_comp[vb] = std::numeric_limits<size_t>::max();
+                    continue;
+                }
+                constexpr double kMinFrac = 1e-3; // manual tolerance to avoid degenerate splits; if the boundary is within 0.1% of the edge length from an endpoint, skip the split and mark that endpoint as equidistant.
                 const double t = std::abs(sign_a) / total;
                 if (t < kMinFrac) { vertex_closest_comp[va] = std::numeric_limits<size_t>::max(); continue; }
                 if (t > 1.0 - kMinFrac) { vertex_closest_comp[vb] = std::numeric_limits<size_t>::max(); continue; }
@@ -319,7 +332,7 @@ void ImageSimulationMeshTri::engulf_components(
             }
         }
 
-        // --- DEBUG: export mesh with per-vertex distance and label data ---
+        // --- DEBUG: 
         {
             static int debug_call = 0;
             const std::string debug_path = fmt::format("/tmp/engulf_debug_{}.vtu", debug_call++);
@@ -349,14 +362,8 @@ void ImageSimulationMeshTri::engulf_components(
                 const Vector2d& p = m_vertex_attribute[vid].m_pos;
                 V(i, 0) = p[0]; V(i, 1) = p[1]; V(i, 2) = 0.0;
 
-                // Find the two closest comps by per-comp minimum squared distance —
-                // same computation as closest_comp / voronoi_sign uses.
-                std::unordered_map<size_t, double> comp_min_sq;
-                for (const auto& [centroid, cidx] : boundary_edge_centroids) {
-                    const double d = (p - centroid).squaredNorm();
-                    auto [it, ins] = comp_min_sq.emplace(cidx, d);
-                    if (!ins) it->second = std::min(it->second, d);
-                }
+                // Find the two closest comps using the shared helper.
+                const auto comp_min_sq = comp_min_sq_dists(p);
                 size_t c1 = std::numeric_limits<size_t>::max();
                 size_t c2 = std::numeric_limits<size_t>::max();
                 double d1sq = std::numeric_limits<double>::max();
@@ -407,7 +414,7 @@ void ImageSimulationMeshTri::engulf_components(
             for (int i = 0; i < (int)face_list.size(); ++i) {
                 if (face_area[i] < kAreaTol) {
                     ++zero_area_count;
-                    wmtk::logger().warn(
+                    wmtk::log_and_throw_error(
                         "DEBUG engulf_components: face row {} (verts [{},{},{}]) "
                         "has near-zero area = {} | pos [{},{}] [{},{}] [{},{}]",
                         i, F(i,0), F(i,1), F(i,2), face_area[i],
@@ -417,7 +424,7 @@ void ImageSimulationMeshTri::engulf_components(
                 }
             }
             if (zero_area_count > 0)
-                wmtk::logger().warn(
+                wmtk::log_and_throw_error(
                     "DEBUG engulf_components: {} / {} hole faces have near-zero area",
                     zero_area_count, face_list.size());
 
@@ -426,13 +433,7 @@ void ImageSimulationMeshTri::engulf_components(
             // nearest two, so we check the minimum |voronoi_sign| over all pairs.
             for (int i = 0; i < nv; ++i) {
                 if (closest_label[i] != -1.0) continue;
-                // Build per-component minimum squared distances
-                std::unordered_map<size_t, double> comp_min_sq;
-                for (const auto& [centroid, cidx] : boundary_edge_centroids) {
-                    const double d = (m_vertex_attribute[row_vids[i]].m_pos - centroid).squaredNorm();
-                    auto [it, ins] = comp_min_sq.emplace(cidx, d);
-                    if (!ins) it->second = std::min(it->second, d);
-                }
+                const auto comp_min_sq = comp_min_sq_dists(m_vertex_attribute[row_vids[i]].m_pos);
                 if (comp_min_sq.size() < 2) continue;
                 // Find the nearest centroid distance (denominator for rel)
                 double d1sq = std::numeric_limits<double>::max();
@@ -448,22 +449,15 @@ void ImageSimulationMeshTri::engulf_components(
                         if (s < min_abs_sign) { min_abs_sign = s; best_ca = comp_vec[ai].first; best_cb = comp_vec[bi].first; }
                     }
                 constexpr double kMinFrac = 0.01;
-                const double rel = (d1sq > 0) ? min_abs_sign / d1sq : min_abs_sign;
+                const double rel = (abs(d1sq) > 1e-8) ? min_abs_sign / d1sq : min_abs_sign;
                 if (rel > kMinFrac) {
                     const size_t vid = row_vids[i];
-                    wmtk::logger().warn(
+                    wmtk::log_and_throw_error(
                         "DEBUG engulf_components: vertex {} labeled equidistant "
                         "but best pair voronoi_sign(ca={},cb={})={:.4f} rel={:.4f} | pos [{}, {}]",
                         vid, best_ca, best_cb, min_abs_sign, rel, V(i, 0), V(i, 1));
                 }
             }
-
-            paraviewo::VTUWriter dbg_writer;
-            dbg_writer.add_field("closest_comp", closest_label);
-            dbg_writer.add_field("voronoi_sdf", voronoi_sdf);
-            dbg_writer.add_cell_field("face_area", face_area);
-            dbg_writer.write_mesh(debug_path, V, F);
-            wmtk::logger().info("engulf_components debug mesh written to {}", debug_path);
         }
         // --- END DEBUG ---
 
