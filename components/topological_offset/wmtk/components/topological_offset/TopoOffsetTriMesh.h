@@ -1,7 +1,7 @@
 #pragma once
 #include <wmtk/TriMesh.h>
-#include <SimpleBVH/BVH.hpp>
 #include "Parameters.h"
+#include "SimplicialComplexBVH.hpp"
 
 
 namespace wmtk::components::topological_offset {
@@ -46,7 +46,7 @@ public:
     int m_vtu_counter = 0;
     std::array<size_t, 3> m_init_counts = {{0, 0, 0}};
     size_t m_tags_count;
-    SimpleBVH::BVH m_input_complex_bvh;
+    SimplicialComplexBVH m_input_complex_bvh;
     EdgeSplitMode m_edge_split_mode = EdgeSplitMode::Midpoint;
 
     Parameters& m_params;
@@ -89,7 +89,7 @@ public:
     bool tri_is_simp_emb(const Tuple& t) const;
     void simplicial_embedding();
 
-    // adaptive offset
+    // variable offset
     bool tri_consistent_topology(const size_t f_id) const;
     bool tri_is_in_offset_conservative(const size_t f_id, const double threshold_r) const;
     void grow_offset_conservative();
@@ -248,9 +248,6 @@ public: // helpers
         }
         return adj_tris;
     }
-
-public: // spatial queries
-    double dist_to_input_complex(const Vector2d& p) const;
 };
 
 

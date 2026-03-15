@@ -8,6 +8,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <queue>
 #include <wmtk/components/topological_offset/Circle.hpp>
+#include <wmtk/components/topological_offset/Sphere.hpp>
 
 using namespace wmtk;
 using namespace components::topological_offset;
@@ -672,7 +673,7 @@ TEST_CASE("circle_init", "[dist_growth][2d]")
 }
 
 
-TEST_CASE("dist_to_mesh", "[dist_growth][2d]")
+TEST_CASE("dist_to_trimesh", "[dist_growth][2d]")
 {
     Eigen::MatrixXd V(3, 2);
     V << 0, 0, 0, 1, 1, 0;
@@ -691,11 +692,11 @@ TEST_CASE("dist_to_mesh", "[dist_growth][2d]")
     mesh.m_vertex_attribute[0].label = 1;
     mesh.init_input_complex_bvh();
     Vector2d q(1.0, 1.0);
-    double dist = mesh.dist_to_input_complex(q);
+    double dist = mesh.m_input_complex_bvh.dist(q);
     REQUIRE(fabs(dist - sqrt(2.0)) < pow(10, -6));
 
     Vector2d q0(0.0, 0.0);
-    dist = mesh.dist_to_input_complex(q0);
+    dist = mesh.m_input_complex_bvh.dist(q0);
     REQUIRE(fabs(dist) < pow(10, -6));
 
     // label edges and vertices as input
@@ -706,14 +707,141 @@ TEST_CASE("dist_to_mesh", "[dist_growth][2d]")
     mesh.init_input_complex_bvh();
 
     Vector2d q1(1.0, 1.0);
-    dist = mesh.dist_to_input_complex(q1);
+    dist = mesh.m_input_complex_bvh.dist(q1);
     REQUIRE(fabs(dist - (sqrt(2) / 2.0)) < pow(10, -6));
 
     Vector2d q2(0.0, 0.0);
-    dist = mesh.dist_to_input_complex(q2);
+    dist = mesh.m_input_complex_bvh.dist(q2);
     REQUIRE(fabs(dist) < pow(10, -6));
 
     Vector2d q3(10.0, 0.0);
-    dist = mesh.dist_to_input_complex(q3);
+    dist = mesh.m_input_complex_bvh.dist(q3);
     REQUIRE(fabs(dist - 9.0) < pow(10, -6));
+}
+
+
+TEST_CASE("dist_to_tetmesh", "[dist_growth][3d]")
+{
+    Eigen::MatrixXd V(4, 3);
+    V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
+    Eigen::MatrixXi T(1, 4);
+    T << 0, 1, 2, 3;
+    Eigen::MatrixXd Tags(1, 1); // dont care
+    Tags << 0.0;
+
+    Parameters param;
+    param.offset_tags.push_back({{0, 1}});
+    param.offset_tags.push_back({{0, 4}});
+    TopoOffsetMesh mesh(param, 0);
+    mesh.init_from_image(V, T, Tags);
+
+    // label one vert as input
+    mesh.m_vertex_attribute[0].label = 1;
+    mesh.init_input_complex_bvh();
+    Vector3d q(1.0, 1.0, 1.0);
+    double dist = mesh.m_input_complex_bvh.dist(q);
+    REQUIRE(fabs(dist - sqrt(3.0)) < pow(10, -6));
+
+    Vector3d q0(0.0, 0.0, 0.0);
+    dist = mesh.m_input_complex_bvh.dist(q0);
+    REQUIRE(fabs(dist) < pow(10, -6));
+
+    // label faces, edges, and vertices as input
+    for (int i = 0; i < 4; i++) {
+        mesh.m_face_attribute[i].label = 1;
+    }
+    for (int i = 0; i < 6; i++) {
+        mesh.m_edge_attribute[i].label = 1;
+    }
+    for (int i = 0; i < 4; i++) {
+        mesh.m_vertex_attribute[i].label = 1;
+    }
+    mesh.init_input_complex_bvh();
+
+    Vector3d q1(1.0, 1.0, 1.0);
+    dist = mesh.m_input_complex_bvh.dist(q1);
+    REQUIRE(fabs(dist - (2.0 / sqrt(3.0))) < pow(10, -6));
+
+    Vector3d q2(0.0, 0.0, 0.0);
+    dist = mesh.m_input_complex_bvh.dist(q2);
+    REQUIRE(fabs(dist) < pow(10, -6));
+
+    Vector3d q3(10.0, 2.0, 1.0);
+    dist = mesh.m_input_complex_bvh.dist(q3);
+    REQUIRE(fabs(dist - sqrt(86.0)) < pow(10, -6));
+
+    Vector3d q4(0.1, 0.2, 0.3);
+    dist = mesh.m_input_complex_bvh.dist(q4);
+    REQUIRE(fabs(dist - 0.1) < pow(10, -6));
+
+    // label tet as input
+    mesh.m_tet_attribute[0].label = 1;
+    mesh.init_input_complex_bvh();
+
+    dist = mesh.m_input_complex_bvh.dist(q4);
+    REQUIRE(fabs(dist) < pow(10, -6));
+
+    dist = mesh.m_input_complex_bvh.dist(q3);
+    REQUIRE(fabs(dist - sqrt(86.0)) < pow(10, -6));
+}
+
+
+TEST_CASE("cube_tet_fit", "[dist_growth][3d]")
+{
+    Vector3d p0(0.0, 0.0, 0.0);
+    Vector3d p1(1.0, 0.0, 0.0);
+    Vector3d p2(0.0, 2.0, 0.0);
+    Vector3d p3(0.0, 0.0, 3.0);
+    Vector3d res_c;
+    double res_l;
+    Sphere::fit_cube(p0, p1, p2, p3, res_c, res_l);
+    bool res = (fabs(res_c(0) - 0.5) < pow(10, -6)) && (fabs(res_c(1) - 1.0) < pow(10, -6)) &&
+               (fabs(res_c(2) - 1.5) < pow(10, -6)) && (fabs(res_l - 3.0) < pow(10, -6));
+    REQUIRE(res);
+}
+
+
+TEST_CASE("sphere_tet_overlap", "[dist_growth][3d]")
+{
+    Eigen::MatrixXd V(4, 3);
+    V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
+    Eigen::MatrixXi T(1, 4);
+    T << 0, 1, 2, 3;
+    Eigen::MatrixXd Tags(1, 1); // dont care
+    Tags << 0.0;
+
+    Parameters param;
+    param.offset_tags.push_back({{0, 1}});
+    param.offset_tags.push_back({{0, 4}});
+    TopoOffsetMesh mesh(param, 0);
+    mesh.init_from_image(V, T, Tags);
+
+    Sphere sphere1(Vector3d(1.0, 1.0, 1.0), 0.5); // false
+    Sphere sphere2(Vector3d(0.55, 0.55, 0.55), 0.5); // true
+    Sphere sphere3(Vector3d(0.2, 0.2, 0.2), 0.1); // true
+    Sphere sphere4(Vector3d(0.2, 0.2, 0.2), 1000.0); // true
+    Sphere sphere5(Vector3d(10.0, 10.0, 10.0), 1.0); // false
+
+    REQUIRE(!sphere1.overlaps_tet(mesh, 0));
+    REQUIRE(sphere2.overlaps_tet(mesh, 0));
+    REQUIRE(sphere3.overlaps_tet(mesh, 0));
+    REQUIRE(sphere4.overlaps_tet(mesh, 0));
+    REQUIRE(!sphere5.overlaps_tet(mesh, 0));
+}
+
+
+TEST_CASE("sphere_refine", "[dist_growth][2d]")
+{
+    Sphere s(Vector3d(0.0, 0.0, 0.0), 1.0);
+    std::queue<Sphere> q;
+    s.refine(q);
+    REQUIRE(q.size() == 8);
+
+    double r_new = q.front().radius();
+    REQUIRE(fabs(r_new - 0.5) < pow(10, -6));
+
+    Vector3d c1 = q.front().center();
+    REQUIRE(fabs(c1(0) + (1.0 / (2.0 * sqrt(3.0)))) < pow(10, -6));
+    REQUIRE(fabs(c1(1) + (1.0 / (2.0 * sqrt(3.0)))) < pow(10, -6));
+    REQUIRE(fabs(c1(2) + (1.0 / (2.0 * sqrt(3.0)))) < pow(10, -6));
 }

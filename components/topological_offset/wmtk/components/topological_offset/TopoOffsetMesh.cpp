@@ -117,6 +117,160 @@ void TopoOffsetMesh::init_from_image(const MatrixXd& V, const MatrixXi& T, const
 }
 
 
+void TopoOffsetMesh::init_input_complex_bvh()
+{
+    // used a few times, just collect once
+    auto tets = get_tets();
+    auto faces = get_faces();
+    auto edges = get_edges();
+    auto verts = get_vertices();
+
+    // to check if a face is in the closure of input complex tets
+    std::map<simplex::Face, bool> face_in_closure;
+    for (const Tuple& f : faces) {
+        size_t v0 = f.vid(*this);
+        size_t v1 = f.switch_vertex(*this).vid(*this);
+        size_t v2 = f.switch_edge(*this).switch_vertex(*this).vid(*this);
+        face_in_closure[simplex::Face(v0, v1, v2)] = false;
+    }
+
+    // to check if an edge is in the closure of input complex tets and faces
+    std::map<simplex::Edge, bool> edge_in_closure;
+    for (const Tuple& e : edges) {
+        size_t v0 = e.vid(*this);
+        size_t v1 = e.switch_vertex(*this).vid(*this);
+        edge_in_closure[simplex::Edge(v0, v1)] = false;
+    }
+
+    // to check if a vertex is in the closure of input complex tets, faces, and edges
+    std::map<size_t, bool> vertex_in_closure;
+    for (const Tuple& v : verts) {
+        vertex_in_closure[v.vid(*this)] = false;
+    }
+
+    // collect tets in input complex
+    std::vector<simplex::Tet> complex_tets;
+    for (const Tuple& t : tets) {
+        size_t t_id = t.tid(*this);
+        if (m_tet_attribute[t_id].label == 1) {
+            auto vs = oriented_tet_vids(t_id);
+            complex_tets.emplace_back(vs[0], vs[1], vs[2], vs[3]);
+            face_in_closure[simplex::Face(vs[0], vs[1], vs[2])] = true;
+            face_in_closure[simplex::Face(vs[1], vs[2], vs[3])] = true;
+            face_in_closure[simplex::Face(vs[2], vs[3], vs[1])] = true;
+            face_in_closure[simplex::Face(vs[3], vs[0], vs[1])] = true;
+            edge_in_closure[simplex::Edge(vs[0], vs[1])] = true;
+            edge_in_closure[simplex::Edge(vs[0], vs[2])] = true;
+            edge_in_closure[simplex::Edge(vs[0], vs[3])] = true;
+            edge_in_closure[simplex::Edge(vs[1], vs[2])] = true;
+            edge_in_closure[simplex::Edge(vs[1], vs[3])] = true;
+            edge_in_closure[simplex::Edge(vs[2], vs[3])] = true;
+            vertex_in_closure[vs[0]] = true;
+            vertex_in_closure[vs[1]] = true;
+            vertex_in_closure[vs[2]] = true;
+            vertex_in_closure[vs[3]] = true;
+        }
+    }
+
+    // collect isolated faces in input complex
+    std::vector<simplex::Face> complex_faces;
+    for (const Tuple& f : faces) {
+        size_t f_id = f.fid(*this);
+        size_t v0 = f.vid(*this);
+        size_t v1 = f.switch_vertex(*this).vid(*this);
+        size_t v2 = f.switch_edge(*this).switch_vertex(*this).vid(*this);
+        simplex::Face f_simp(v0, v1, v2);
+        if (!face_in_closure[f_simp] && m_face_attribute[f_id].label == 1) {
+            complex_faces.emplace_back(v0, v1, v2);
+            face_in_closure[f_simp] = true;
+            edge_in_closure[simplex::Edge(v0, v1)] = true;
+            edge_in_closure[simplex::Edge(v1, v2)] = true;
+            edge_in_closure[simplex::Edge(v2, v0)] = true;
+            vertex_in_closure[v0] = true;
+            vertex_in_closure[v1] = true;
+            vertex_in_closure[v2] = true;
+        }
+    }
+
+    // collect isolated edges in input complex
+    std::vector<simplex::Edge> complex_edges;
+    for (const Tuple& e : edges) {
+        size_t e_id = e.eid(*this);
+        size_t v0 = e.vid(*this);
+        size_t v1 = e.switch_vertex(*this).vid(*this);
+        simplex::Edge e_simp(v0, v1);
+        if (!edge_in_closure[e_simp] && m_edge_attribute[e_id].label == 1) {
+            complex_edges.emplace_back(v0, v1);
+            edge_in_closure[e_simp] = true;
+            vertex_in_closure[v0] = true;
+            vertex_in_closure[v1] = true;
+        }
+    }
+
+    // collect isolated vertices
+    std::vector<size_t> complex_verts;
+    for (const Tuple& v : verts) {
+        size_t v_id = v.vid(*this);
+        if (!vertex_in_closure[v_id] && m_vertex_attribute[v_id].label == 1) {
+            complex_verts.push_back(v_id);
+            vertex_in_closure[v_id] = true;
+        }
+    }
+
+    // extract vertices included in simplicial complex
+    std::vector<Vector3d> V_vec;
+    std::map<size_t, size_t> v_id_map;
+    for (const Tuple& v : verts) {
+        size_t v_id = v.vid(*this);
+        if (vertex_in_closure[v_id]) {
+            v_id_map[v_id] = V_vec.size();
+            V_vec.push_back(m_vertex_attribute[v_id].m_posf);
+        }
+    }
+    MatrixXd V(V_vec.size(), 3);
+    for (int i = 0; i < V_vec.size(); i++) {
+        V.row(i) = V_vec[i];
+    }
+
+    MatrixXi T(complex_tets.size(), 4); // tets
+    int index = 0;
+    for (const simplex::Tet& t_simp : complex_tets) {
+        auto vs = t_simp.vertices();
+        // NOTE: does vertex id order matter here?
+        T.row(index) << v_id_map[vs[0]], v_id_map[vs[1]], v_id_map[vs[2]], v_id_map[vs[3]];
+        index++;
+    }
+
+    MatrixXi F(complex_faces.size(), 3); // faces
+    index = 0;
+    for (const simplex::Face& f_simp : complex_faces) {
+        auto vs = f_simp.vertices();
+        // NOTE: does vertex id order matter here?
+        F.row(index) << v_id_map[vs[0]], v_id_map[vs[1]], v_id_map[vs[2]];
+        index++;
+    }
+
+    MatrixXi E(complex_edges.size(), 2); // edges
+    index = 0;
+    for (const simplex::Edge& e_simp : complex_edges) {
+        auto vs = e_simp.vertices();
+        E.row(index) << v_id_map[vs[0]], v_id_map[vs[1]];
+        index++;
+    }
+
+    MatrixXi P(complex_verts.size(), 1); // isolated vertices
+    index = 0;
+    for (const size_t& v_id : complex_verts) {
+        P(index, 0) = v_id_map[v_id];
+        index++;
+    }
+
+    // set BVH
+    m_input_complex_bvh.clear(); // in case resetting now
+    m_input_complex_bvh.init(V, T, F, E, P);
+}
+
+
 bool TopoOffsetMesh::is_simplicially_embedded() const
 {
     int bad_tets = 0;
@@ -144,7 +298,7 @@ bool TopoOffsetMesh::tet_is_simp_emb(const Tuple& t) const
     auto vs = oriented_tet_vids(t);
     std::vector<size_t> vs_in;
     for (int i = 0; i < 4; i++) {
-        if (m_vertex_attribute[vs[i]].label == 1) {
+        if (m_vertex_attribute[vs[i]].label != 0) {
             vs_in.push_back(vs[i]);
         }
     }
@@ -152,10 +306,10 @@ bool TopoOffsetMesh::tet_is_simp_emb(const Tuple& t) const
         return true;
     } else if (vs_in.size() == 2) { // potentially one edge in input
         size_t glob_eid = tuple_from_edge({{vs_in[0], vs_in[1]}}).eid(*this);
-        return (m_edge_attribute[glob_eid].label == 1);
+        return (m_edge_attribute[glob_eid].label != 0);
     } else if (vs_in.size() == 3) { // potentially one face in input
         auto [_, glob_fid] = tuple_from_face({{vs_in[0], vs_in[1], vs_in[2]}});
-        return (m_face_attribute[glob_fid].label == 1);
+        return (m_face_attribute[glob_fid].label != 0);
     } else { // all four verts in complex but tet isn't, can't be simplicially embedded
         return false;
     }
@@ -251,7 +405,7 @@ void TopoOffsetMesh::simplicial_embedding()
 }
 
 
-void TopoOffsetMesh::perform_offset()
+void TopoOffsetMesh::marching_tets()
 {
     // mark edges to split
     std::vector<simplex::Edge> e_to_split;
@@ -304,6 +458,67 @@ void TopoOffsetMesh::perform_offset()
 }
 
 
+void TopoOffsetMesh::grow_offset_conservative()
+{
+    std::queue<Tuple> tets_q;
+    auto all_tets = get_tets();
+
+    for (const Tuple& t : all_tets) {
+        if (tet_consistent_topology(t.tid(*this))) {
+            tets_q.push(t);
+        }
+    }
+
+    while (!tets_q.empty()) {
+        Tuple curr_tet = tets_q.front();
+        tets_q.pop();
+
+        size_t tet_id = curr_tet.tid(*this);
+        if (m_tet_attribute[tet_id].label != 0) { // already in offset
+            continue;
+        }
+
+        // ensure tet wouldn't change topology
+        if (!tet_consistent_topology(tet_id)) {
+            continue;
+        }
+
+        bool in_offset = tet_is_in_offset_conservative(
+            tet_id,
+            m_params.relative_ball_threshold * m_params.target_distance);
+        if (in_offset) {
+            m_tet_attribute[tet_id].label = 2;
+            for (int i = 0; i < 4; i++) { // propagate label to faces
+                size_t f_id = tuple_from_face(tet_id, i).fid(*this);
+                if (m_face_attribute[f_id].label != 1) {
+                    m_face_attribute[f_id].label = 2;
+                }
+            }
+            for (int i = 0; i < 6; i++) {
+                size_t e_id = tuple_from_edge(tet_id, i).eid(*this);
+                if (m_edge_attribute[e_id].label != 1) {
+                    m_edge_attribute[e_id].label = 2;
+                }
+            }
+            auto vs = oriented_tet_vids(tet_id);
+            for (const size_t& v_id : vs) {
+                if (m_vertex_attribute[v_id].label != 1) {
+                    m_vertex_attribute[v_id].label = 2;
+                }
+            }
+
+            auto adj_tets = get_face_adjacent_tets(curr_tet);
+            for (const Tuple& t : adj_tets) {
+                if (m_tet_attribute[t.tid(*this)].label == 2) {
+                    continue;
+                }
+                tets_q.push(t);
+            }
+        }
+    }
+}
+
+
 void TopoOffsetMesh::set_offset_tet_tags()
 {
     auto tets = get_tets();
@@ -337,7 +552,6 @@ bool TopoOffsetMesh::invariants(const std::vector<Tuple>& tets)
             m_vertex_attribute[vs[3]].m_posf);
 
         if (res != igl::predicates::Orientation::NEGATIVE) {
-            log_and_throw_error("INVERTED TET DURING OFFSET");
             return false;
         }
     }

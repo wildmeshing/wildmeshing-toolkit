@@ -90,46 +90,109 @@ void TopoOffsetTriMesh::init_from_image(
 
 void TopoOffsetTriMesh::init_input_complex_bvh()
 {
-    m_input_complex_bvh.clear(); // in case resetting it now
-
-    // extract edges and isolated verts in input complex
-    std::vector<std::array<size_t, 2>> components;
+    // used a few times. just collect once
+    auto faces = get_faces();
     auto edges = get_edges();
+    auto verts = get_vertices();
+
+    // to check if an edge is in closure of input complex faces
+    std::map<simplex::Edge, bool> edge_in_closure;
     for (const Tuple& e : edges) {
-        if (m_edge_attribute[e.eid(*this)].label == 1) {
-            components.push_back({e.vid(*this), e.switch_vertex(*this).vid(*this)});
+        edge_in_closure[simplex_from_edge(e)] = false;
+    }
+
+    // to check if vertex is in closure of input complex faces and edges
+    std::map<size_t, bool> vertex_in_closure;
+    for (const Tuple& v : verts) {
+        vertex_in_closure[v.vid(*this)] = false;
+    }
+
+    // collect faces in input complex
+    std::vector<simplex::Face> complex_faces;
+    for (const Tuple& f : faces) {
+        size_t f_id = f.fid(*this);
+        if (m_face_attribute[f_id].label == 1) {
+            size_t v0 = f.vid(*this);
+            size_t v1 = f.switch_vertex(*this).vid(*this);
+            size_t v2 = f.switch_edge(*this).switch_vertex(*this).vid(*this);
+            complex_faces.emplace_back(v0, v1, v2);
+            edge_in_closure[simplex::Edge(v0, v1)] = true;
+            edge_in_closure[simplex::Edge(v1, v2)] = true;
+            edge_in_closure[simplex::Edge(v0, v2)] = true;
+            vertex_in_closure[v0] = true;
+            vertex_in_closure[v1] = true;
+            vertex_in_closure[v2] = true;
         }
     }
 
-    auto verts = get_vertices();
-    MatrixXd V(verts.size(), 2);
+    // collect edges in input complex that are not contained in a face
+    std::vector<simplex::Edge> complex_edges;
+    for (const Tuple& e : edges) {
+        simplex::Edge e_simp = simplex_from_edge(e);
+        if (!edge_in_closure[e_simp] && m_edge_attribute[e.eid(*this)].label == 1) {
+            size_t v0 = e.vid(*this);
+            size_t v1 = e.switch_vertex(*this).vid(*this);
+            complex_edges.emplace_back(v0, v1);
+            edge_in_closure[e_simp] = true;
+            vertex_in_closure[v0] = true;
+            vertex_in_closure[v1] = true;
+        }
+    }
+
+    // collect vertices in input complex not contained in an edge or face
+    std::vector<size_t> complex_verts;
     for (const Tuple& v : verts) {
         size_t v_id = v.vid(*this);
-        V.row(v_id) = m_vertex_attribute[v_id].m_posf;
-
-        if (m_vertex_attribute[v_id].label != 1) {
-            continue;
+        if (!vertex_in_closure[v_id] && m_vertex_attribute[v_id].label == 1) {
+            complex_verts.push_back(v_id);
+            vertex_in_closure[v_id] = true;
         }
-        auto inc_edges = get_one_ring_edges_for_vertex(v);
-        bool isolated = true;
-        for (const Tuple& e : inc_edges) {
-            if (m_edge_attribute[e.eid(*this)].label == 1) {
-                isolated = false;
-                break;
-            }
-        }
-        if (isolated) components.push_back({v_id, v_id});
     }
 
-    MatrixXi E(components.size(), 2); // copy edges (and isolated vert 'psuedoedges')
+    // extract vertices included in simplicial complex
+    std::vector<Vector2d> V_vec;
+    std::map<size_t, size_t> v_index_map; // new = map[old]
+    for (const Tuple& v : verts) {
+        size_t v_id = v.vid(*this);
+        if (vertex_in_closure[v_id]) {
+            v_index_map[v_id] = V_vec.size();
+            V_vec.push_back(m_vertex_attribute[v_id].m_posf);
+        }
+    }
+    MatrixXd V(V_vec.size(), 2);
+    for (int i = 0; i < V_vec.size(); i++) {
+        V.row(i) = V_vec[i];
+    }
+
+    MatrixXi T(0, 4); // no tets
+
+    MatrixXi F(complex_faces.size(), 3); // faces
     int index = 0;
-    for (const auto& comp : components) {
-        E(index, 0) = comp[0];
-        E(index, 1) = comp[1];
+    for (const simplex::Face& f_simp : complex_faces) {
+        auto vs = f_simp.vertices();
+        // NOTE: does id order matter here (i.e., in BVH class?)
+        F.row(index) << v_index_map[vs[0]], v_index_map[vs[1]], v_index_map[vs[2]];
         index++;
     }
 
-    m_input_complex_bvh.init(V, E, 1e-6);
+    MatrixXi E(complex_edges.size(), 2); // isolated edges
+    index = 0;
+    for (const simplex::Edge& e_simp : complex_edges) {
+        auto vs = e_simp.vertices();
+        E.row(index) << v_index_map[vs[0]], v_index_map[vs[1]];
+        index++;
+    }
+
+    MatrixXi P(complex_verts.size(), 1); // isolated vertices
+    index = 0;
+    for (const size_t& v_id : complex_verts) {
+        P(index, 0) = v_index_map[v_id];
+        index++;
+    }
+
+    // set BVH
+    m_input_complex_bvh.clear(); // in case resetting it now
+    m_input_complex_bvh.init(V, T, F, E, P);
 }
 
 
@@ -303,18 +366,18 @@ void TopoOffsetTriMesh::grow_offset_conservative()
         }
     }
 
-    int testing = 0;
+    // int testing = 0;
     while (!tris_q.empty()) {
-        testing++;
-        if (testing % 10000 == 0) {
-            logger().info("queue size: {}", tris_q.size());
-        }
+        // testing++;
+        // if (testing % 10000 == 0) {
+        //     logger().info("queue size: {}", tris_q.size());
+        // }
 
         Tuple curr_tri = tris_q.front();
         tris_q.pop();
 
         size_t tri_id = curr_tri.fid(*this);
-        if (m_face_attribute[tri_id].label == 2) { // already in offset
+        if (m_face_attribute[tri_id].label != 0) { // already in offset
             continue;
         }
 
@@ -386,7 +449,6 @@ bool TopoOffsetTriMesh::invariants(const std::vector<Tuple>& tris)
             m_vertex_attribute[vs[1]].m_posf,
             m_vertex_attribute[vs[2]].m_posf);
         if (res != igl::predicates::Orientation::POSITIVE) {
-            log_and_throw_error("INVERTED TRIANGLE DURING OFFSET");
             return false;
         }
     }

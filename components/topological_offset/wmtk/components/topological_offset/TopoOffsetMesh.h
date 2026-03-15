@@ -4,6 +4,7 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/simplex/RawSimplex.hpp>
 #include "Parameters.h"
+#include "SimplicialComplexBVH.hpp"
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -51,10 +52,19 @@ public:
 
 class TopoOffsetMesh : public wmtk::TetMesh
 {
+public: // mode for splitting in marching tets
+    enum class EdgeSplitMode {
+        Midpoint = 0,
+        BinarySearch =
+            1 // requires that every edge being split has one vertex labelled 0 and the other 1 or 2
+    };
+
 public:
     int m_vtu_counter = 0;
     std::array<size_t, 4> m_init_counts = {{0, 0, 0, 0}};
     size_t m_tags_count;
+    SimplicialComplexBVH m_input_complex_bvh;
+    EdgeSplitMode m_edge_split_mode = EdgeSplitMode::Midpoint;
 
     Parameters& m_params;
 
@@ -79,11 +89,14 @@ public:
 
     ~TopoOffsetMesh() {}
 
-    void write_input_complex(const std::string& path); // write components labeled to be offset
-    void write_vtu(const std::string& path); // debugging, write .vtu of tet mesh
-    void write_msh(const std::string& file);
+    void init_from_image(
+        const MatrixXd& V, // V by 3
+        const MatrixXi& T, // T by 4
+        const MatrixXd& T_tags); // T by N
+    void init_input_complex_bvh();
 
     // splitting
+    void edge_split_binary_search(const size_t v1, const size_t v2, Vector3d& p_new) const;
     bool split_edge_before(const Tuple& t) override;
     bool split_edge_after(const Tuple& t) override;
     bool split_face_before(const Tuple& t) override;
@@ -91,6 +104,25 @@ public:
     bool split_tet_before(const Tuple& t) override;
     bool split_tet_after(const Tuple& t) override;
     bool invariants(const std::vector<Tuple>& tets) override; // this is now automatically checked
+
+    // simplicial embedding
+    bool is_simplicially_embedded() const;
+    bool tet_is_simp_emb(const Tuple& t) const;
+    void simplicial_embedding();
+
+    // variable offset
+    bool tet_consistent_topology(const size_t t_id) const;
+    bool tet_is_in_offset_conservative(const size_t t_id, const double threshold_r) const;
+    void grow_offset_conservative();
+    void marching_tets();
+
+    // set tag for offset region
+    void set_offset_tet_tags();
+
+    // output
+    void write_input_complex(const std::string& path); // write components labeled to be offset
+    void write_vtu(const std::string& path); // debugging, write .vtu of tet mesh
+    void write_msh(const std::string& file);
 
 private:
     // for edge splitting, new simplices inheret attributes from higher
@@ -150,20 +182,6 @@ private:
     };
     tbb::enumerable_thread_specific<TetSplitCache> tet_split_cache;
 
-public:
-    void init_from_image(
-        const MatrixXd& V, // V by 3
-        const MatrixXi& T, // T by 4
-        const MatrixXd& T_tags); // T by N
-
-    bool is_simplicially_embedded() const;
-    bool tet_is_simp_emb(const Tuple& t) const;
-    void simplicial_embedding();
-    void perform_offset();
-
-    // set tag for offset region
-    void set_offset_tet_tags();
-
 private: // helpers
     /**
      * @brief check if a face is in the intersection region of offset_tags
@@ -195,7 +213,6 @@ private: // helpers
         return true; // all offset_tags have at least one incident tet
     }
 
-
     /**
      * @brief check if an edge is in the intersection region of offset_tags
      */
@@ -218,7 +235,6 @@ private: // helpers
         }
         return true; // all offset_tags found in at least one incident tet to edge
     }
-
 
     /**
      * @brief check if a vertex is in the intersection region of offset_tags
@@ -243,7 +259,6 @@ private: // helpers
         return true;
     }
 
-
     /**
      * @brief sort edge simplices in place by decreasing edge length
      */
@@ -262,6 +277,31 @@ private: // helpers
                 return len1 > len2;
             });
     }
+
+public: // helpers
+    std::vector<Tuple> get_face_adjacent_tets(const Tuple& t) const
+    {
+        std::vector<Tuple> adj_tets;
+        auto tet_1 = t.switch_tetrahedron(*this);
+        if (tet_1) {
+            adj_tets.push_back(tet_1.value());
+        }
+        auto tet_2 = t.switch_face(*this).switch_tetrahedron(*this);
+        if (tet_2) {
+            adj_tets.push_back(tet_2.value());
+        }
+        auto tet_3 = t.switch_edge(*this).switch_face(*this).switch_tetrahedron(*this);
+        if (tet_3) {
+            adj_tets.push_back(tet_3.value());
+        }
+        auto tet_4 =
+            t.switch_vertex(*this).switch_edge(*this).switch_face(*this).switch_tetrahedron(*this);
+        if (tet_4) {
+            adj_tets.push_back(tet_4.value());
+        }
+        return adj_tets;
+    }
 };
+
 
 } // namespace wmtk::components::topological_offset

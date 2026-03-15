@@ -7,6 +7,30 @@ namespace wmtk::components::topological_offset {
 
 
 //// TetMesh splitting
+
+// v1 must have label 0/1, v2 has label 0
+void TopoOffsetMesh::edge_split_binary_search(const size_t v1, const size_t v2, Vector3d& p_new)
+    const
+{
+    const double eps = m_params.edge_search_term_len;
+    const Vector3d v1_pos = m_vertex_attribute[v1].m_posf;
+    const Vector3d v2_pos = m_vertex_attribute[v2].m_posf;
+
+    Vector3d p1 = v1_pos;
+    Vector3d p2 = v2_pos;
+    while ((p2 - p1).norm() > eps) {
+        Vector3d p = (p1 + p2) / 2.0;
+        double dist = m_input_complex_bvh.dist(p);
+        if (dist < m_params.target_distance) {
+            p1 = p;
+        } else {
+            p2 = p;
+        }
+    }
+    p_new = (p1 + p2) / 2.0;
+}
+
+
 bool TopoOffsetMesh::split_edge_before(const Tuple& t)
 {
     // load and reset cache
@@ -26,7 +50,27 @@ bool TopoOffsetMesh::split_edge_before(const Tuple& t)
     cache.v2_id = switch_vertex(t).vid(*this);
     Vector3d p1 = m_vertex_attribute[cache.v1_id].m_posf;
     Vector3d p2 = m_vertex_attribute[cache.v2_id].m_posf;
-    cache.new_v = VertexAttributes((p1 + p2) / 2);
+    Vector3d p_new;
+    if (m_edge_split_mode == EdgeSplitMode::Midpoint) {
+        p_new = (p1 + p2) / 2.0;
+    } else if (m_edge_split_mode == EdgeSplitMode::BinarySearch) {
+        if ((m_vertex_attribute[cache.v1_id].label == 0) &&
+            (m_vertex_attribute[cache.v2_id].label != 0)) {
+            edge_split_binary_search(cache.v2_id, cache.v1_id, p_new);
+        } else if (
+            (m_vertex_attribute[cache.v1_id].label != 0) &&
+            (m_vertex_attribute[cache.v2_id].label == 0)) {
+            edge_split_binary_search(cache.v1_id, cache.v2_id, p_new);
+        } else {
+            log_and_throw_error(
+                "Invalid edge [{}] for binary search split. Both vertices in/out of offset/input "
+                "complex.",
+                e_id);
+        }
+    } else {
+        log_and_throw_error("Invalid edge split mode.");
+    }
+    cache.new_v = VertexAttributes(p_new);
     cache.new_v.label = m_edge_attribute[e_id].label;
 
     // split edge
@@ -405,7 +449,7 @@ bool TopoOffsetMesh::split_tet_after(const Tuple& t)
 
 //// TriMesh splitting
 
-// v1 must have label 1/0, v2 has label 0. Returns false if solution point sufficiently close to v1
+// v1 must have label 1/2, v2 has label 0
 void TopoOffsetTriMesh::edge_split_binary_search(const size_t v1, const size_t v2, Vector2d& p_new)
     const
 {
@@ -417,7 +461,7 @@ void TopoOffsetTriMesh::edge_split_binary_search(const size_t v1, const size_t v
     Vector2d p2 = v2_pos;
     while ((p2 - p1).norm() > eps) {
         Vector2d p = (p1 + p2) / 2.0;
-        double dist = dist_to_input_complex(p);
+        double dist = m_input_complex_bvh.dist(p);
         if (dist < m_params.target_distance) {
             p1 = p;
         } else {
@@ -425,19 +469,6 @@ void TopoOffsetTriMesh::edge_split_binary_search(const size_t v1, const size_t v
         }
     }
     p_new = (p1 + p2) / 2.0;
-
-    // // if trying to set too close to p2, bump split point to 90% p2/10% p1 to retain tri quality.
-    // // if trying to set too close to p1, don't split. This is to retain a
-    // // conservative offset, ie all points in the created offset are guaranteed to be
-    // // within the theoretical offset.
-    // p_new = p1;
-    // if (((p_new - v1_pos).norm() / (v2_pos - v1_pos).norm()) < 0.1) {
-    //     return false;
-    // }
-    // if (((v2_pos - p_new).norm() / (v2_pos - v1_pos).norm()) < 0.1) {
-    //     p_new = (0.9 * v2_pos) + (0.1 * v1_pos);
-    // }
-    // return true;
 }
 
 

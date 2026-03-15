@@ -157,7 +157,10 @@ void topological_offset(nlohmann::json json_params)
 
         // inversion check
         auto tris = mesh.get_faces();
-        bool dummy = mesh.invariants(tris);
+        bool noninverted = mesh.invariants(tris);
+        if (!noninverted) {
+            log_and_throw_error("INVERTED TRIANGLE DURING OFFSET");
+        }
 
         // output
         std::ofstream fout(output_filename.string() + ".log");
@@ -187,6 +190,7 @@ void topological_offset(nlohmann::json json_params)
         // initialize mesh
         TopoOffsetMesh mesh(params, NUM_THREADS);
         mesh.init_from_image(V_input, F_input, F_input_tags);
+        mesh.init_input_complex_bvh();
         mesh.consolidate_mesh();
 
         // record counts (mostly debugging, this is probably really slow)
@@ -218,8 +222,33 @@ void topological_offset(nlohmann::json json_params)
 
         // perform offset
         logger().info("Performing offset...");
-        mesh.perform_offset();
-        mesh.set_offset_tet_tags();
+        if (mesh.m_params.target_distance <= 0.0) { // midpoint split offset
+            mesh.marching_tets();
+            mesh.set_offset_tet_tags();
+        } else { // variable offset distance
+            // run BFS, save after
+            mesh.grow_offset_conservative();
+            if (mesh.m_params.debug_output) {
+                mesh.set_offset_tet_tags();
+                mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
+            }
+
+            // simplicially embed again, if needed
+            if (!mesh.is_simplicially_embedded()) {
+                mesh.simplicial_embedding();
+                bool dummy = mesh.is_simplicially_embedded();
+            }
+            if (mesh.m_params.debug_output) {
+                mesh.set_offset_tet_tags();
+                mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
+            }
+
+            // marching tets (using binary search edge split)
+            mesh.m_edge_split_mode = TopoOffsetMesh::EdgeSplitMode::BinarySearch;
+            mesh.marching_tets();
+            mesh.m_edge_split_mode = TopoOffsetMesh::EdgeSplitMode::Midpoint;
+            mesh.set_offset_tet_tags();
+        }
         mesh.consolidate_mesh();
 
         // stop timer
@@ -228,7 +257,10 @@ void topological_offset(nlohmann::json json_params)
 
         // inversion check
         auto tets = mesh.get_tets();
-        bool dummy = mesh.invariants(tets);
+        bool noninverted = mesh.invariants(tets);
+        if (!noninverted) {
+            log_and_throw_error("INVERTED TET DURING OFFSET");
+        }
 
         // output
         std::ofstream fout(output_filename.string() + ".log");
