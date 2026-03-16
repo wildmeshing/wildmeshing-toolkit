@@ -26,7 +26,7 @@ if(WIN32)
         include(CPM)
         CPMAddPackage(
             NAME gmp_mpfr
-            URL "https://github.com/CGAL/cgal/releases/download/v5.2.1/CGAL-5.2.1-win64-auxiliary-libraries-gmp-mpfr.zip"
+            URL "https://github.com/CGAL/cgal/releases/download/v6.1.1/CGAL-6.1.1-win64-auxiliary-libraries-gmp-mpfr.zip"
             DOWNLOAD_ONLY YES
         )
 
