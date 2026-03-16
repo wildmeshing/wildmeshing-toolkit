@@ -1,5 +1,8 @@
 #include "TopoOffsetTriMesh.h"
+#include <igl/is_edge_manifold.h>
+#include <igl/is_vertex_manifold.h>
 #include <igl/predicates/predicates.h>
+#include <igl/remove_unreferenced.h>
 #include <paraviewo/VTUWriter.hpp>
 #include <queue>
 #include <wmtk/utils/io.hpp>
@@ -435,6 +438,58 @@ void TopoOffsetTriMesh::set_offset_tri_tags()
             }
         }
     }
+}
+
+
+bool TopoOffsetTriMesh::offset_is_manifold()
+{
+    // vertex map
+    std::map<size_t, bool> included_vids;
+    auto verts = get_vertices();
+    for (const Tuple& v : verts) {
+        included_vids[v.vid(*this)] = false;
+    }
+
+    // collect faces in offset region
+    auto tris = get_faces();
+    std::vector<Vector3i> offset_tris;
+    for (const Tuple& t : tris) {
+        size_t t_id = t.fid(*this);
+        if (m_face_attribute[t_id].label == 2) {
+            auto vs = oriented_tri_vids(t_id);
+            offset_tris.emplace_back(vs[0], vs[1], vs[2]);
+            included_vids[vs[0]] = true;
+            included_vids[vs[1]] = true;
+            included_vids[vs[2]] = true;
+        }
+    }
+
+    // create consolidated v_id map
+    int vert_count = 0;
+    std::map<size_t, size_t> v_id_map;
+    for (const auto& pair : included_vids) {
+        if (pair.second) {
+            v_id_map[pair.first] = vert_count;
+            vert_count++;
+        }
+    }
+
+    // form matrix
+    MatrixXi F(offset_tris.size(), 3);
+    for (int i = 0; i < offset_tris.size(); i++) {
+        for (int j = 0; j < 3; j++) {
+            F(i, j) = v_id_map[offset_tris[i](j)];
+        }
+    }
+
+    // edge manifold check
+    bool is_edge_man = igl::is_edge_manifold(F);
+
+    // vertex manifold check
+    VectorXi B;
+    bool is_vert_man = igl::is_vertex_manifold(F, B);
+
+    return (is_edge_man && is_vert_man);
 }
 
 

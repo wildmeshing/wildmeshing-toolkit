@@ -98,6 +98,9 @@ public:
     // set tag for offset region
     void set_offset_tri_tags();
 
+    // check if offset region (triangles labelled 2) is manifold
+    bool offset_is_manifold();
+
     // output
     void write_input_complex(const std::string& path);
     void write_vtu(const std::string& path);

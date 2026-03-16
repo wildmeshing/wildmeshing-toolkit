@@ -19,6 +19,7 @@ nlohmann::json topological_offset_spec = R"(
       "relative_ball_threshold",
       "edge_search_termination_len",
       "sorted_marching",
+      "check_manifoldness",
       "save_vtu",
       "DEBUG_output"
     ]
@@ -108,6 +109,12 @@ nlohmann::json topological_offset_spec = R"(
     "type": "bool",
     "default": false,
     "doc": "Execute marching tets in decreasing order of edge length. Increases run time, may increase output mesh quality."
+  },
+  {
+    "pointer": "/check_manifoldness",
+    "type": "bool",
+    "default": true,
+    "doc": "After performing offset, check if offset region is manifold"
   },
   {
     "pointer": "/save_vtu",

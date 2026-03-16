@@ -60,6 +60,7 @@ void topological_offset(nlohmann::json json_params)
             params.relative_ball_threshold);
     }
     params.output_path = resolve_path(root, json_params["output"]).string();
+    bool check_manifoldness = json_params["check_manifoldness"];
 
     std::filesystem::path output_filename = params.output_path;
     if (output_filename.has_extension() && output_filename.extension() != ".msh") {
@@ -160,6 +161,15 @@ void topological_offset(nlohmann::json json_params)
         bool noninverted = mesh.invariants(tris);
         if (!noninverted) {
             log_and_throw_error("INVERTED TRIANGLE DURING OFFSET");
+        }
+
+        // offset region manifoldness check
+        if (check_manifoldness) {
+            if (mesh.offset_is_manifold()) {
+                logger().info("Offset region manifold check passed.");
+            } else {
+                log_and_throw_error("OFFSET REGION IS NOT MANIFOLD");
+            }
         }
 
         // output
