@@ -4,7 +4,7 @@ namespace wmtk::optimization {
 
 EnvelopeEnergy2D::EnvelopeEnergy2D(
     const std::shared_ptr<SampleEnvelope>& envelope,
-    const const std::array<Vector2d, 3>& pts)
+    const std::array<Vector2d, 3>& pts)
     : m_envelope(envelope)
     , m_pts(pts)
 {

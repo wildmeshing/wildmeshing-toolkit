@@ -33,7 +33,15 @@ TEST_CASE("amips_energy_2d", "[energies]")
     auto x = energy.initial_position();
     const double e_before = energy.value(x);
     {
-        auto m_solver = optimization::create_basic_solver();
+        auto linear_solver_params = optimization::basic_linear_solver_params;
+        auto nonlinear_solver_params = optimization::basic_nonlinear_solver_params;
+        nonlinear_solver_params["max_iterations"] = 100;
+
+        auto m_solver = polysolve::nonlinear::Solver::create(
+            nonlinear_solver_params,
+            linear_solver_params,
+            1,
+            opt_logger());
         optimization::deactivate_opt_logger();
 
         CHECK_NOTHROW(m_solver->minimize(energy, x));
