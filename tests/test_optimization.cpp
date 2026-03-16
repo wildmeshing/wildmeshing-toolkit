@@ -154,16 +154,14 @@ TEST_CASE("amips_plus_dirichlet_energy_2d", "[energies]")
 
 TEST_CASE("smoothing_energy_2d", "[energies]")
 {
-    const Vector2d p0(0.8, 1);
-    std::vector<std::array<double, 4>> cells;
-    cells.push_back({{p0[0], p0[1], 0, 0}});
-    cells.push_back({{p0[0], p0[1], 1, 0}});
+    const Vector2d p0(0.8, 1); // this vertex is optimized
+    const Vector2d p1(0, 0);
+    const Vector2d p2(1, 0);
 
-    optimization::SmoothingEnergy2D energy(cells);
     double M;
     Vector3d L_w;
-    optimization::SmoothingEnergy2D::compute_local_mass_and_stiffness(cells, M, L_w);
-    energy.add_mass_and_stiffness_matrix(M, L_w);
+    optimization::SmoothingEnergy2D::local_mass_and_stiffness({{p0, p1, p2}}, M, L_w);
+    optimization::SmoothingEnergy2D energy({{p0, p1, p2}}, M, L_w);
 
     CHECK(energy.is_step_valid(p0, p0));
 

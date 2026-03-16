@@ -105,6 +105,7 @@ public:
 
     std::unique_ptr<polysolve::nonlinear::Solver> m_solver;
     std::vector<double> m_surface_mass; // the mass matrix for surface vertices
+    std::vector<Vector3d> m_surface_stiffness; // stiffness matrix for surface vertices
 
     ImageSimulationMeshTri(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
         : m_params(_m_params)

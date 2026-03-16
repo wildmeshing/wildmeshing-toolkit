@@ -487,27 +487,6 @@ std::vector<std::array<size_t, 2>> ImageSimulationMeshTri::get_edges_by_conditio
 
 void ImageSimulationMeshTri::split_all_edges()
 {
-    // build mass-matrix
-    {
-        const auto vs = get_vertices();
-        m_surface_mass.resize(vert_capacity());
-        for (const Tuple& t : vs) {
-            const size_t vid = t.vid(*this);
-            if (!m_vertex_attribute.at(vid).m_is_on_surface) {
-                continue;
-            }
-            const auto es = get_order1_edges_for_vertex(vid);
-            double mass = 0;
-            for (const simplex::Edge& e : es.edges()) {
-                const Vector2d& p0 = m_vertex_attribute.at(e.vertices()[0]).m_pos;
-                const Vector2d& p1 = m_vertex_attribute.at(e.vertices()[1]).m_pos;
-                mass += 0.5 * (p1 - p0).norm();
-            }
-            m_surface_mass[vid] = mass;
-        }
-    }
-
-
     igl::Timer timer;
     double time;
     timer.start();
@@ -1111,6 +1090,37 @@ void ImageSimulationMeshTri::smooth_all_vertices()
 {
     assert(m_solver);
 
+    // build mass-matrix
+    {
+        const auto vs = get_vertices();
+        m_surface_mass.resize(vert_capacity());
+        m_surface_stiffness.resize(vert_capacity());
+        for (const Tuple& t : vs) {
+            const size_t vid = t.vid(*this);
+            if (!m_vertex_attribute.at(vid).m_is_on_surface) {
+                continue;
+            }
+            const auto es = get_order1_edges_for_vertex(vid);
+            if (es.size() != 2) {
+                continue;
+            }
+            auto& M = m_surface_mass[vid];
+            auto& L_w = m_surface_stiffness[vid];
+
+            std::array<Vector2d, 3> pts;
+            pts[0] = m_vertex_attribute.at(vid).m_pos;
+
+            for (size_t i = 0; i < 2; ++i) {
+                const auto& vs = es.edges()[i].vertices();
+                size_t neighbor_id = vs[0] != vid ? vs[0] : vs[1];
+                pts[i + 1] = m_vertex_attribute.at(neighbor_id).m_pos;
+            }
+
+            optimization::SmoothingEnergy2D::local_mass_and_stiffness(pts, M, L_w);
+            // optimization::SmoothingEnergy2D::uniform_mass_and_stiffness(pts, M, L_w);
+        }
+    }
+
     igl::Timer timer;
     timer.start();
     std::vector<std::pair<std::string, Tuple>> collect_all_ops;
@@ -1218,7 +1228,21 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
         VA[vid].m_pos.transpose());
 
     std::vector<std::array<double, 4>> surface_assemble;
+    std::array<Vector2d, 3> surface_pts;
     if (VA[vid].m_is_on_surface) {
+        const auto es = get_order1_edges_for_vertex(vid);
+        if (es.size() != 2) {
+            return false; // can only smooth vertices with 2 neighbors
+        }
+
+        surface_pts[0] = m_vertex_attribute.at(vid).m_pos;
+
+        for (size_t i = 0; i < 2; ++i) {
+            const auto& vs = es.edges()[i].vertices();
+            size_t neighbor_id = vs[0] != vid ? vs[0] : vs[1];
+            surface_pts[i + 1] = m_vertex_attribute.at(neighbor_id).m_pos;
+        }
+
         std::set<size_t> unique_eid;
         for (const size_t fid : locs) {
             for (size_t j = 0; j < 3; j++) {
@@ -1255,13 +1279,17 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
         //    m_vertex_attribute[vid].m_pos = project;
         //}
 
-        auto smooth_energy = std::make_shared<optimization::DirichletEnergy2D>(surface_assemble);
+        const auto& M = m_surface_mass[vid];
+        const auto& L_w = m_surface_stiffness[vid];
+
+        // auto smooth_energy = std::make_shared<optimization::DirichletEnergy2D>(surface_assemble);
+        auto smooth_energy = std::make_shared<optimization::SmoothingEnergy2D>(surface_pts, M, L_w);
         auto envelope_energy =
             std::make_shared<optimization::EnvelopeEnergy2D>(m_envelope, surface_assemble);
         auto energy_sum = std::make_shared<optimization::EnergySum>();
         energy_sum->add_energy(amips_energy);
-        energy_sum->add_energy(smooth_energy, 10);
-        energy_sum->add_energy(envelope_energy, 100);
+        energy_sum->add_energy(smooth_energy, 1e2);
+        energy_sum->add_energy(envelope_energy, 1e2 * M);
         total_energy = energy_sum;
     }
 
