@@ -19,7 +19,7 @@ public:
      */
     EnvelopeEnergy2D(
         const std::shared_ptr<SampleEnvelope>& envelope,
-        const std::vector<std::array<double, 4>>& cells);
+        const std::array<Vector2d, 3>& pts);
 
     double value(const TVector& x) override;
     void gradient(const TVector& x, TVector& gradv) override;
@@ -35,7 +35,7 @@ public:
 
 private:
     std::shared_ptr<SampleEnvelope> m_envelope;
-    std::vector<std::array<double, 4>> m_cells;
+    std::array<Vector2d, 3> m_pts;
 };
 
 } // namespace wmtk::optimization

@@ -1227,7 +1227,6 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
         old_pos.transpose(),
         VA[vid].m_pos.transpose());
 
-    std::vector<std::array<double, 4>> surface_assemble;
     std::array<Vector2d, 3> surface_pts;
     if (VA[vid].m_is_on_surface) {
         const auto es = get_order1_edges_for_vertex(vid);
@@ -1243,33 +1242,6 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
             surface_pts[i + 1] = m_vertex_attribute.at(neighbor_id).m_pos;
         }
 
-        std::set<size_t> unique_eid;
-        for (const size_t fid : locs) {
-            for (size_t j = 0; j < 3; j++) {
-                Tuple f_t = tuple_from_edge(fid, j);
-                size_t eid = f_t.eid(*this);
-                auto [it, suc] = unique_eid.emplace(eid);
-                if (!suc) {
-                    continue;
-                }
-                if (m_edge_attribute[eid].m_is_surface_fs) {
-                    auto vs_id = get_edge_vids(f_t);
-                    if (vs_id[1] == vid) {
-                        std::swap(vs_id[1], vs_id[0]);
-                    }
-                    if (vs_id[0] != vid) {
-                        continue; // does not contain point of interest
-                    }
-                    std::array<double, 4> coords;
-                    for (int k = 0; k < 2; k++) {
-                        for (int kk = 0; kk < 2; kk++) {
-                            coords[k * 2 + kk] = VA[vs_id[k]].m_pos[kk];
-                        }
-                    }
-                    surface_assemble.emplace_back(coords);
-                }
-            }
-        }
         // project to surface
         //{
         //    assert(m_envelope->initialized());
@@ -1282,10 +1254,9 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
         const auto& M = m_surface_mass[vid];
         const auto& L_w = m_surface_stiffness[vid];
 
-        // auto smooth_energy = std::make_shared<optimization::DirichletEnergy2D>(surface_assemble);
         auto smooth_energy = std::make_shared<optimization::SmoothingEnergy2D>(surface_pts, M, L_w);
         auto envelope_energy =
-            std::make_shared<optimization::EnvelopeEnergy2D>(m_envelope, surface_assemble);
+            std::make_shared<optimization::EnvelopeEnergy2D>(m_envelope, surface_pts);
         auto energy_sum = std::make_shared<optimization::EnergySum>();
         energy_sum->add_energy(amips_energy);
         energy_sum->add_energy(smooth_energy, 1e2);
@@ -1293,6 +1264,7 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
         total_energy = energy_sum;
     }
 
+    // solve
     {
         auto x = amips_energy->initial_position();
         try {
@@ -1303,22 +1275,15 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
         m_vertex_attribute[vid].m_pos = x;
     }
 
-    for (auto& n : surface_assemble) {
-        for (int kk = 0; kk < 2; kk++) {
-            n[kk] = VA[vid].m_pos[kk];
-        }
-    }
-
     // check surface containment
-    for (const auto& n : surface_assemble) {
-        std::array<Eigen::Vector2d, 2> edge;
-        for (int k = 0; k < 2; k++) {
-            for (int kk = 0; kk < 2; kk++) {
-                edge[k][kk] = n[k * 2 + kk];
+    if (VA[vid].m_is_on_surface) {
+        for (size_t i = 0; i < 2; ++i) {
+            std::array<Eigen::Vector2d, 2> edge;
+            edge[0] = VA[vid].m_pos;
+            edge[1] = surface_pts[i + 1];
+            if (m_envelope->is_outside(edge)) {
+                return false;
             }
-        }
-        if (m_envelope->is_outside(edge)) {
-            return false;
         }
     }
 

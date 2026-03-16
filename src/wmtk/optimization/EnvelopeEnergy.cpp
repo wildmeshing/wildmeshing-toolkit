@@ -4,9 +4,9 @@ namespace wmtk::optimization {
 
 EnvelopeEnergy2D::EnvelopeEnergy2D(
     const std::shared_ptr<SampleEnvelope>& envelope,
-    const std::vector<std::array<double, 4>>& cells)
+    const const std::array<Vector2d, 3>& pts)
     : m_envelope(envelope)
-    , m_cells(cells)
+    , m_pts(pts)
 {
     assert(m_envelope);
 }
@@ -40,10 +40,10 @@ bool EnvelopeEnergy2D::is_step_valid(const TVector& x0, const TVector& x1)
     if (m_envelope->is_outside(r)) {
         return false;
     }
-    // for (const auto& cell : m_cells) {
+    // for (size_t i = 0; i < 2; ++i) {
     //     std::array<Eigen::Vector2d, 2> edge;
     //     edge[0] = r;
-    //     edge[1] = Vector2d(cell[2], cell[3]);
+    //     edge[1] = m_pts[i + 1];
     //     if (m_envelope->is_outside(edge)) {
     //         return false;
     //     }
