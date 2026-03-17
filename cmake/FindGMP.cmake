@@ -28,6 +28,7 @@ if(WIN32)
     find_file(GMP_RUNTIME_LIB
         NAMES
             gmp.dll
+            gmp-10.dll
             libgmp-10.dll
         PATHS
             ENV GMP_DIR
