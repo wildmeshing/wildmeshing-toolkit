@@ -1,4 +1,5 @@
 #include "ImageSimulationMeshTri.hpp"
+#include "ConnectedComponentAnnotationHelper.cpp"
 
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
@@ -1560,8 +1561,6 @@ std::tuple<double, double> ImageSimulationMeshTri::get_max_avg_energy()
 
     return std::make_tuple(max_energy, avg_energy);
 }
-
-#include "ConnectedComponentAnnotationHelper.inl"
 
 void ImageSimulationMeshTri::fill_holes_topo(
     const std::vector<int64_t>& fill_holes_tags,
