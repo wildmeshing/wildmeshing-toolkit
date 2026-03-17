@@ -1,5 +1,6 @@
 std::vector<wmtk::components::image_simulation::tri::ImageSimulationMeshTri::ConnectedComponent>
-wmtk::components::image_simulation::tri::ImageSimulationMeshTri::compute_connected_components() const
+wmtk::components::image_simulation::tri::ImageSimulationMeshTri::compute_connected_components()
+    const
 {
     const size_t n_faces = tri_capacity();
     std::vector<int> comp_id(n_faces, -1);
@@ -73,7 +74,9 @@ wmtk::components::image_simulation::tri::ImageSimulationMeshTri::compute_connect
 }
 
 void wmtk::components::image_simulation::tri::ImageSimulationMeshTri::engulf_component(
-    std::vector<wmtk::components::image_simulation::tri::ImageSimulationMeshTri::ConnectedComponent>& components,
+    std::vector<
+        wmtk::components::image_simulation::tri::ImageSimulationMeshTri::ConnectedComponent>&
+        components,
     const size_t hole_comp_id,
     const size_t engulfing_comp_id)
 {
@@ -101,7 +104,9 @@ void wmtk::components::image_simulation::tri::ImageSimulationMeshTri::engulf_com
 }
 
 void wmtk::components::image_simulation::tri::ImageSimulationMeshTri::engulf_components(
-    std::vector<wmtk::components::image_simulation::tri::ImageSimulationMeshTri::ConnectedComponent>& components,
+    std::vector<
+        wmtk::components::image_simulation::tri::ImageSimulationMeshTri::ConnectedComponent>&
+        components,
     const std::vector<size_t>& hole_comp_ids,
     const std::unordered_set<size_t>& engulfing_comp_ids)
 {
@@ -610,7 +615,9 @@ void wmtk::components::image_simulation::tri::ImageSimulationMeshTri::engulf_com
 }
 
 void wmtk::components::image_simulation::tri::ImageSimulationMeshTri::extract_hole_clusters(
-    std::vector<wmtk::components::image_simulation::tri::ImageSimulationMeshTri::ConnectedComponent>& components,
+    std::vector<
+        wmtk::components::image_simulation::tri::ImageSimulationMeshTri::ConnectedComponent>&
+        components,
     std::unordered_set<int64_t>& tags,
     std::vector<std::vector<size_t>>& hole_clusters,
     double threshold)

@@ -174,8 +174,7 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
     if (operation == "remeshing") {
         mesh.mesh_improvement(max_its); // <-- tetwild
     } else if (operation == "fill_holes_topo") {
-        const std::vector<int64_t> fill_holes_tags =
-            json_params["fill_holes_tags"];
+        const std::vector<int64_t> fill_holes_tags = json_params["fill_holes_tags"];
         const double raw_threshold = json_params["fill_holes_threshold"];
         const double threshold =
             raw_threshold < 0 ? std::numeric_limits<double>::infinity() : raw_threshold;
@@ -195,8 +194,7 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
             raw_threshold < 0 ? std::numeric_limits<double>::infinity() : raw_threshold;
         mesh.tight_seal_topo(tag_sets, threshold);
     } else if (operation == "keep_largest_cc") {
-        const std::vector<int64_t> lcc_tags =
-            json_params["keep_largest_cc_tags"];
+        const std::vector<int64_t> lcc_tags = json_params["keep_largest_cc_tags"];
         mesh.keep_largest_connected_component(lcc_tags);
     } else {
         log_and_throw_error("Unknown image simulation operation");
