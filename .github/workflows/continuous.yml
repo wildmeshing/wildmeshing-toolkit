@@ -147,6 +147,10 @@ jobs:
       - name: Install Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
 
+      - name: VCPKG
+        run: |
+          vcpkg install gmp:x64-windows
+
       - name: Dependencies
         run: |
           choco install -y sccache
@@ -176,6 +180,7 @@ jobs:
             -DCMAKE_POLICY_DEFAULT_CMP0141=NEW ^
             -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded ^
             -DCMAKE_BUILD_TYPE=${{ matrix.config }} ^
+            -DCMAKE_PREFIX_PATH=C:/vcpkg/installed/x64-windows ^
             %WMTK_INTEGRATION_TESTS_FLAG% ^
             -B build ^
             -S .
