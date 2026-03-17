@@ -18,7 +18,7 @@ if(WIN32)
         lib
     )
 
-    find_file(GMP_TRY_RUNTIME_LIB
+    find_file(GMP_TRY_FIND_RUNTIME_LIB
         NAMES
             gmp.dll
             gmp-10.dll
@@ -27,11 +27,12 @@ if(WIN32)
             ENV GMP_DIR
             ${LIB_INSTALL_DIR}
         PATH_SUFFIXES
+            bin
             lib
     )
 
-    if(GMP_TRY_FIND_INCLUDES AND GMP_TRY_FIND_LIBRARIES AND GMP_TRY_RUNTIME_LIB)
-        message(STATUS "System GMP found: ${GMP_TRY_FIND_INCLUDES}")
+    if(GMP_TRY_FIND_INCLUDES AND GMP_TRY_FIND_LIBRARIES AND GMP_TRY_FIND_RUNTIME_LIB)
+        message(STATUS "System GMP found: \n  ${GMP_TRY_FIND_INCLUDES}\n  ${GMP_TRY_FIND_LIBRARIES}\n  ${GMP_TRY_FIND_RUNTIME_LIB}")
     else()
         message(WARNING "Third-party: downloading gmp + mpfr. The code may be crazy slow! Please install GMP using your preferred package manager. Do not forget to delete your <build>/CMakeCache.txt for the changes to take effect.")
 
