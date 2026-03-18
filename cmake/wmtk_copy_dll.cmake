@@ -85,8 +85,7 @@ function(wmtk_copy_dll target)
             "    message(STATUS \"For target ${target}, copy $<TARGET_FILE:${DEPENDENCY}> to $<TARGET_FILE_DIR:${target}>/$<TARGET_FILE_NAME:${DEPENDENCY}>\")\n"
             "    execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different "
             "\"$<TARGET_FILE:${DEPENDENCY}>\" " # copy source
-            "\"$<TARGET_FILE_DIR:${target}>/$<TARGET_FILE_NAME:${DEPENDENCY}>\" " # copy destination
-            "RESULT_VARIABLE COPY_RESULT)\n"
+            "\"$<TARGET_FILE_DIR:${target}>/$<TARGET_FILE_NAME:${DEPENDENCY}>\")\n" # copy destination
             "    if(NOT EXISTS \"$<TARGET_FILE_DIR:${target}>/$<TARGET_FILE_NAME:${DEPENDENCY}>\")\n"
             "        message(FATAL_ERROR \"Failed to copy dependency $<TARGET_FILE:${DEPENDENCY}> for target ${target}.\")\n"
             "    endif()\n"
