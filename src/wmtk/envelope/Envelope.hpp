@@ -82,6 +82,7 @@ public:
     bool initialized() { return m_bvh != nullptr; };
 
     double squared_distance(const Eigen::Vector3d& p) const;
+    double squared_distance(const Eigen::Vector2d& p) const;
 
 private:
     std::vector<int> geo_vertex_ind;

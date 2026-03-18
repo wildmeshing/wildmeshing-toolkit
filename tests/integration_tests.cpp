@@ -30,10 +30,8 @@ std::vector<std::string> input_files{
     "qslim_octocat.json",
     "shortest_edge_collapse_octocat.json",
     "shortest_edge_collapse_sphere_with_env.json",
-#ifndef _WIN32
-    "tetwild_octocat.json", // segfaults on the windows CI (reason unknown)
+    "tetwild_octocat.json",
     "tetwild_sphere.json",
-#endif
     "topological_offsets_bunny2d.json"};
 
 

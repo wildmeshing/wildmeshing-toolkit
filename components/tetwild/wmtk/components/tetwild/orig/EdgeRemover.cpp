@@ -225,35 +225,41 @@ bool EdgeRemover::removeAnEdge_32(int v1_id, int v2_id, const std::vector<int>& 
             is_surface_fs[t_ids[1]][i] = state.NOT_SURFACE;
     }
 
-    tet_vertices[v_ids[0]].conn_tets.erase(std::find(
-        tet_vertices[v_ids[0]].conn_tets.begin(),
-        tet_vertices[v_ids[0]].conn_tets.end(),
-        old_t_ids[0]));
-    tet_vertices[v_ids[1]].conn_tets.erase(std::find(
-        tet_vertices[v_ids[1]].conn_tets.begin(),
-        tet_vertices[v_ids[1]].conn_tets.end(),
-        old_t_ids[0]));
+    tet_vertices[v_ids[0]].conn_tets.erase(
+        std::find(
+            tet_vertices[v_ids[0]].conn_tets.begin(),
+            tet_vertices[v_ids[0]].conn_tets.end(),
+            old_t_ids[0]));
+    tet_vertices[v_ids[1]].conn_tets.erase(
+        std::find(
+            tet_vertices[v_ids[1]].conn_tets.begin(),
+            tet_vertices[v_ids[1]].conn_tets.end(),
+            old_t_ids[0]));
 
     tet_vertices[v_ids[0]].conn_tets.insert(t_ids[1]);
     tet_vertices[v_ids[1]].conn_tets.insert(t_ids[0]);
 
-    tet_vertices[v1_id].conn_tets.erase(std::find(
-        tet_vertices[v1_id].conn_tets.begin(),
-        tet_vertices[v1_id].conn_tets.end(),
-        old_t_ids[0]));
-    tet_vertices[v2_id].conn_tets.erase(std::find(
-        tet_vertices[v2_id].conn_tets.begin(),
-        tet_vertices[v2_id].conn_tets.end(),
-        old_t_ids[0]));
+    tet_vertices[v1_id].conn_tets.erase(
+        std::find(
+            tet_vertices[v1_id].conn_tets.begin(),
+            tet_vertices[v1_id].conn_tets.end(),
+            old_t_ids[0]));
+    tet_vertices[v2_id].conn_tets.erase(
+        std::find(
+            tet_vertices[v2_id].conn_tets.begin(),
+            tet_vertices[v2_id].conn_tets.end(),
+            old_t_ids[0]));
 
-    tet_vertices[v1_id].conn_tets.erase(std::find(
-        tet_vertices[v1_id].conn_tets.begin(),
-        tet_vertices[v1_id].conn_tets.end(),
-        t_ids[0]));
-    tet_vertices[v2_id].conn_tets.erase(std::find(
-        tet_vertices[v2_id].conn_tets.begin(),
-        tet_vertices[v2_id].conn_tets.end(),
-        t_ids[1]));
+    tet_vertices[v1_id].conn_tets.erase(
+        std::find(
+            tet_vertices[v1_id].conn_tets.begin(),
+            tet_vertices[v1_id].conn_tets.end(),
+            t_ids[0]));
+    tet_vertices[v2_id].conn_tets.erase(
+        std::find(
+            tet_vertices[v2_id].conn_tets.begin(),
+            tet_vertices[v2_id].conn_tets.end(),
+            t_ids[1]));
 
     for (int i = 0; i < 2; i++) {
         tet_qualities[t_ids[i]] = tet_qs[i];
@@ -410,16 +416,18 @@ bool EdgeRemover::removeAnEdge_44(int v1_id, int v2_id, const std::vector<int>& 
 
     for (int j = 0; j < new_tets.size(); j++) {
         if (tags[j] == 0) {
-            tet_vertices[v1_id].conn_tets.erase(std::find(
-                tet_vertices[v1_id].conn_tets.begin(),
-                tet_vertices[v1_id].conn_tets.end(),
-                old_t_ids[j]));
+            tet_vertices[v1_id].conn_tets.erase(
+                std::find(
+                    tet_vertices[v1_id].conn_tets.begin(),
+                    tet_vertices[v1_id].conn_tets.end(),
+                    old_t_ids[j]));
             tet_vertices[v_ids[0]].conn_tets.insert(old_t_ids[j]);
         } else {
-            tet_vertices[v2_id].conn_tets.erase(std::find(
-                tet_vertices[v2_id].conn_tets.begin(),
-                tet_vertices[v2_id].conn_tets.end(),
-                old_t_ids[j]));
+            tet_vertices[v2_id].conn_tets.erase(
+                std::find(
+                    tet_vertices[v2_id].conn_tets.begin(),
+                    tet_vertices[v2_id].conn_tets.end(),
+                    old_t_ids[j]));
             tet_vertices[v_ids[1]].conn_tets.insert(old_t_ids[j]);
         }
         tets[old_t_ids[j]] = new_tets[j];

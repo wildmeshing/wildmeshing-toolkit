@@ -338,15 +338,17 @@ int EdgeCollapser::collapseAnEdge(int v1_id, int v2_id)
             t_is_removed[old_t_ids[i]] = true;
             for (int j = 0; j < 4; j++)
                 if (tets[old_t_ids[i]][j] != v1_id && tets[old_t_ids[i]][j] != v2_id) {
-                    tet_vertices[tets[old_t_ids[i]][j]].conn_tets.erase(std::find(
-                        tet_vertices[tets[old_t_ids[i]][j]].conn_tets.begin(),
-                        tet_vertices[tets[old_t_ids[i]][j]].conn_tets.end(),
-                        old_t_ids[i]));
+                    tet_vertices[tets[old_t_ids[i]][j]].conn_tets.erase(
+                        std::find(
+                            tet_vertices[tets[old_t_ids[i]][j]].conn_tets.begin(),
+                            tet_vertices[tets[old_t_ids[i]][j]].conn_tets.end(),
+                            old_t_ids[i]));
                 }
-            tet_vertices[v2_id].conn_tets.erase(std::find(
-                tet_vertices[v2_id].conn_tets.begin(),
-                tet_vertices[v2_id].conn_tets.end(),
-                old_t_ids[i]));
+            tet_vertices[v2_id].conn_tets.erase(
+                std::find(
+                    tet_vertices[v2_id].conn_tets.begin(),
+                    tet_vertices[v2_id].conn_tets.end(),
+                    old_t_ids[i]));
         } else {
             tet_vertices[v2_id].conn_tets.insert(old_t_ids[i]);
             tet_qualities[old_t_ids[i]] = tet_qs[cnt];

@@ -57,8 +57,8 @@ function(wmtk_copy_dll target)
         message(FATAL_ERROR "wmtk_copy_dll() was called on a non-executable target: ${target}")
     endif()
 
-    # Create a custom command to do the actual copy. This needs to be executed before Catch2's POST_BUILD command,
-    # so we define this as a PRE_LINK command for the executable target.
+    # Create a custom command to do the actual copy. We use POST_BUILD so the executable output directory
+    # always exists before attempting to copy dependencies.
     add_custom_command(
         TARGET ${target}
         PRE_LINK
@@ -80,10 +80,21 @@ function(wmtk_copy_dll target)
 
         # Instruction to copy target file if it exists
         string(APPEND COPY_SCRIPT_CONTENT
-            "if(EXISTS \"$<TARGET_FILE:${DEPENDENCY}>\")\n    "
-                "execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different "
-                "\"$<TARGET_FILE:${DEPENDENCY}>\" "
-                "\"$<TARGET_FILE_DIR:${target}>/$<TARGET_FILE_NAME:${DEPENDENCY}>\")\n"
+            "set(SRC_FILE \"$<TARGET_FILE:${DEPENDENCY}>\")\n"
+            "if(EXISTS \"\${SRC_FILE}\")\n"
+            "    set(DEST_FILE \"$<TARGET_FILE_DIR:${target}>/$<TARGET_FILE_NAME:${DEPENDENCY}>\")\n"
+            "    message(STATUS \"Copying: \${SRC_FILE} -> \${DEST_FILE}\")\n"
+            "    execute_process(COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different "
+            "\"\${SRC_FILE}\" \"\${DEST_FILE}\" "
+            "RESULT_VARIABLE COPY_RESULT ERROR_VARIABLE COPY_ERROR)\n"
+            "    if(NOT COPY_RESULT EQUAL 0)\n"
+            "        message(FATAL_ERROR \"Failed to copy \${SRC_FILE} to \${DEST_FILE} for target ${target}. Result: \${COPY_RESULT}, Error: \${COPY_ERROR}\")\n"
+            "    endif()\n"
+            "    if(NOT EXISTS \"\${DEST_FILE}\")\n"
+            "        message(FATAL_ERROR \"Copy completed (exit 0) but destination file does not exist: \${DEST_FILE}\")\n"
+            "    endif()\n"
+            "else()\n    "
+            "message(STATUS \"Dependency does not exist (will not copy): \${SRC_FILE}\")\n"
             "endif()\n"
         )
     endforeach()
