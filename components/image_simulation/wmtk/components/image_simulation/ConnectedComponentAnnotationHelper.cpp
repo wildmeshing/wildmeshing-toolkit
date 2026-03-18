@@ -1,8 +1,7 @@
 namespace wmtk::components::image_simulation::tri {
 
 std::vector<ImageSimulationMeshTri::ConnectedComponent>
-ImageSimulationMeshTri::compute_connected_components()
-    const
+ImageSimulationMeshTri::compute_connected_components() const
 {
     const size_t n_faces = tri_capacity();
     std::vector<int> comp_id(n_faces, -1);
