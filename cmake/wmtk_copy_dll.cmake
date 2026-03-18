@@ -87,7 +87,7 @@ function(wmtk_copy_dll target)
             "\"$<TARGET_FILE:${DEPENDENCY}>\" " # copy source
             "\"$<TARGET_FILE_DIR:${target}>/$<TARGET_FILE_NAME:${DEPENDENCY}>\" " # copy destination
             "RESULT_VARIABLE COPY_RESULT)\n"
-            "    if(NOT COPY_RESULT EQUAL 0)\n"
+            "    if(NOT EXISTS \"$<TARGET_FILE_DIR:${target}>/$<TARGET_FILE_NAME:${DEPENDENCY}>\")\n"
             "        message(FATAL_ERROR \"Failed to copy dependency $<TARGET_FILE:${DEPENDENCY}> for target ${target}.\")\n"
             "    endif()\n"
             "else()\n    "
