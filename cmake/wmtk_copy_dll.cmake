@@ -57,11 +57,12 @@ function(wmtk_copy_dll target)
         message(FATAL_ERROR "wmtk_copy_dll() was called on a non-executable target: ${target}")
     endif()
 
-    # Create a custom command to do the actual copy. This needs to be executed before Catch2's POST_BUILD command,
-    # so we define this as a PRE_LINK command for the executable target.
+    # Create a custom command to do the actual copy. We use POST_BUILD so the executable output directory
+    # always exists before attempting to copy dependencies.
     add_custom_command(
         TARGET ${target}
-        PRE_LINK
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${target}>"
         COMMAND ${CMAKE_COMMAND} -E touch "${CMAKE_BINARY_DIR}/runtime_deps/copy_dll_${target}_$<CONFIG>.cmake"
         COMMAND ${CMAKE_COMMAND} -P "${CMAKE_BINARY_DIR}/runtime_deps/copy_dll_${target}_$<CONFIG>.cmake"
         COMMENT "Copying dlls for target ${target}"
@@ -80,12 +81,18 @@ function(wmtk_copy_dll target)
 
         # Instruction to copy target file if it exists
         string(APPEND COPY_SCRIPT_CONTENT
-            "message(STATUS \"For target ${target}, copy $<TARGET_FILE:${DEPENDENCY}> to $<TARGET_FILE_DIR:${target}>/$<TARGET_FILE_NAME:${DEPENDENCY}>\")\n"
-            # "if(EXISTS \"$<TARGET_FILE:${DEPENDENCY}>\")\n    "
-            "execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different "
-            "\"$<TARGET_FILE:${DEPENDENCY}>\" "
-            "\"$<TARGET_FILE_DIR:${target}>/$<TARGET_FILE_NAME:${DEPENDENCY}>\")\n"
-            # "endif()\n"
+            "if(EXISTS \"$<TARGET_FILE:${DEPENDENCY}>\")\n"
+            "    message(STATUS \"For target ${target}, copy $<TARGET_FILE:${DEPENDENCY}> to $<TARGET_FILE_DIR:${target}>/$<TARGET_FILE_NAME:${DEPENDENCY}>\")\n"
+            "    execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different "
+            "\"$<TARGET_FILE:${DEPENDENCY}>\" " # copy source
+            "\"$<TARGET_FILE_DIR:${target}>/$<TARGET_FILE_NAME:${DEPENDENCY}>\" " # copy destination
+            "RESULT_VARIABLE COPY_RESULT)\n"
+            "    if(NOT COPY_RESULT EQUAL 0)\n"
+            "        message(FATAL_ERROR \"Failed to copy dependency $<TARGET_FILE:${DEPENDENCY}> for target ${target}.\")\n"
+            "    endif()\n"
+            "else()\n    "
+            "message(STATUS \"For target ${target}, cannot copy. Dependency $<TARGET_FILE:${DEPENDENCY}> does not exist.\")\n"
+            "endif()\n"
         )
     endforeach()
 

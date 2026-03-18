@@ -35,7 +35,7 @@ target_link_libraries(wmtk_tests PUBLIC
 wmtk_copy_dll(wmtk_tests)
 
 # Register unit tests
-catch_discover_tests(wmtk_tests)
+catch_discover_tests(wmtk_tests DISCOVERY_MODE PRE_TEST)
 
 if(WMTK_BUILD_INTEGRATION_TESTS)
     message(STATUS "Include integration tests.")
@@ -54,6 +54,6 @@ if(WMTK_BUILD_INTEGRATION_TESTS)
     wmtk_copy_dll(wmtk_integration_tests)
 
     # Register unit tests
-    catch_discover_tests(wmtk_integration_tests)
+    catch_discover_tests(wmtk_integration_tests DISCOVERY_MODE PRE_TEST)
 
 endif()
