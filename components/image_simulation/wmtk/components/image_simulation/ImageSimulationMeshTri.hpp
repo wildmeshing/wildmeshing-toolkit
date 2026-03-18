@@ -1,5 +1,8 @@
 #pragma once
 
+#include <limits>
+#include <unordered_set>
+
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
@@ -204,7 +207,109 @@ public:
         bool collapse_limit_length = true);
     std::tuple<double, double> get_max_avg_energy();
 
-    void fill_holes_topo();
+    /**
+     * @brief Connected Component according to tag_0
+     *
+     * @param tag value of tag_0
+     * @param faces vector of face ids in the connected component
+     * @param surrounding_comp_ids set of distinct connected component ids (in an external list) of
+     * all neighboring faces across tag_0 boundaries
+     * @param area total area of the connected component
+     * @param touches_boundary whether the connected component touches the boundary of the mesh
+     */
+    struct ConnectedComponent
+    {
+        int64_t tag = -1;
+        std::vector<size_t> faces;
+        std::unordered_set<size_t> surrounding_comp_ids;
+        double area = 0.0;
+        bool touches_boundary = false;
+    };
+
+    /**
+     * @brief Compute connected components of the mesh according to tag_0, and return a vector of
+     * ConnectedComponent structs.
+     */
+    std::vector<ConnectedComponent> compute_connected_components() const;
+
+    /**
+     * @brief Replace a component with id hole_comp_id with another component with id
+     * engulfing_comp_id, and keep the components vector consistent. This is used to fill holes in
+     * the mesh.
+     * @param components vector of ConnectedComponent structs, representing the connected components
+     * of the mesh according to tag_0
+     * @param hole_comp_id the id of the component to be engulfed (i.e. the hole)
+     * @param engulfing_comp_id the id of the component that engulfs the hole
+     */
+    void engulf_component(
+        std::vector<ConnectedComponent>& components,
+        const size_t hole_comp_id,
+        const size_t engulfing_comp_id);
+
+    /**
+     * @brief Replace each component in hole_comp_ids with nearest component from
+     * engulfing_comp_ids, and keep the components vector consistent.
+     * @param components vector of ConnectedComponent structs, representing the connected components
+     * of the mesh according to tag_0
+     * @param hole_comp_ids vector of ids of components to be engulfed (i.e. the holes)
+     * @param engulfing_comp_ids set of ids of components that can engulf the holes
+     */
+    void engulf_components(
+        std::vector<ConnectedComponent>& components,
+        const std::vector<size_t>& hole_comp_ids,
+        const std::unordered_set<size_t>& engulfing_comp_ids);
+
+    /**
+     * @brief Keep only the largest connected component for each of the distinct tag_0 values, and
+     * engulf all other components.
+     *
+     * @param lcc_tags
+     */
+    void keep_largest_connected_component(const std::vector<int64_t>& lcc_tags);
+
+    /**
+     * @brief A cluster of connected components. Used to store a maximal group of connected
+     * non-fill-tag ConnectedComponents for filling holes.
+     * @param comp_ids vector of indices into the components vector, representing the connected
+     * components in the cluster
+     * @param area total area of the cluster
+     * @param enclosed whether the cluster is enclosed by fill_tag components (i.e. whether the
+     * cluster is a hole that can be filled)
+     */
+    struct ComponentCluster
+    {
+        std::vector<size_t> comp_ids; // indices into components vector
+        double area = 0.0;
+        bool enclosed = true;
+    };
+
+    /**
+     * @brief Extract clusters of connected components that represent holes in the mesh.
+     *
+     * @param components vector of ConnectedComponent structs, representing the connected components
+     * of the mesh according to tag_0
+     * @param tags set of tag_0 values which define the holes to be filled
+     * @param hole_clusters vector of clusters of connected components that represent holes in the
+     * mesh.
+     * @param threshold area threshold for the hole clusters. Clusters with area below the threshold
+     * will not be filled.
+     */
+    void extract_hole_clusters(
+        std::vector<ConnectedComponent>& components,
+        std::unordered_set<int64_t>& tags,
+        std::vector<std::vector<size_t>>& hole_clusters,
+        double threshold);
+
+    void recompute_surface_info();
+
+    void fill_holes_topo(
+        const std::vector<int64_t>& fill_holes_tags,
+        double threshold = std::numeric_limits<double>::infinity());
+
+    void tight_seal_topo(
+        const std::vector<std::unordered_set<int64_t>>& tight_seal_tag_sets,
+        double threshold = std::numeric_limits<double>::infinity());
+
 
     /**
      * @brief Get all edges on the surface that are incident to vid.
@@ -264,6 +369,11 @@ private:
         std::vector<int64_t> face_tags;
     };
     tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
+
+    // When set, split_edge_after binary-searches vmid onto the zero-crossing of this function.
+    // Negative = stays on v1 side, positive = stays on v2 side.
+    // Set before split_edge(), cleared immediately after.
+    std::function<double(const Vector2d&)> m_voronoi_split_fn = nullptr;
 };
 
 } // namespace wmtk::components::image_simulation::tri
