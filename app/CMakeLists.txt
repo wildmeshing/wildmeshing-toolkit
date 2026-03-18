@@ -20,10 +20,13 @@ endif()
 # ###############################################################################
 
 add_executable(wmtk_app main.cpp)
-target_link_libraries(wmtk_app PRIVATE 
+target_link_libraries(wmtk_app PUBLIC 
+    wmtk::toolkit
     nlohmann_json::nlohmann_json
     CLI11::CLI11
 )
+
+wmtk_copy_dll(wmtk_app)
 
 if(WMTK_PYBIND)
     add_subdirectory(pywmtk)

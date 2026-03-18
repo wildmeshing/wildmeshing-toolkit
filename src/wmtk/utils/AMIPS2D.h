@@ -10,12 +10,13 @@
 #include <array>
 
 namespace wmtk {
-    double AMIPS2D_energy(const std::array<double, 6>& T);
-    void AMIPS2D_jacobian(const std::array<double, 6>& T, Eigen::Vector2d& J);
-    void AMIPS2D_hessian(const std::array<double, 6>& T, Eigen::Matrix2d& H);
+double AMIPS2D_energy(const std::array<double, 6>& T);
+void AMIPS2D_jacobian(const std::array<double, 6>& T, Eigen::Vector2d& J);
+void AMIPS2D_hessian(const std::array<double, 6>& T, Eigen::Matrix2d& H);
 
-    // TODO add support for features
-    // double AMIPS2D_energy(const feature::FeatureElement &feature, const double t, const std::array<double, 6>& T);
-    // double AMIPS2D_jacobian(const feature::FeatureElement &feature, const double t, const std::array<double, 6>& T);
-    // double AMIPS2D_hessian(const feature::FeatureElement &feature, const double t, const std::array<double, 6>& T);
-}
+// TODO add support for features
+// double AMIPS2D_energy(const feature::FeatureElement &feature, const double t, const
+// std::array<double, 6>& T); double AMIPS2D_jacobian(const feature::FeatureElement &feature, const
+// double t, const std::array<double, 6>& T); double AMIPS2D_hessian(const feature::FeatureElement
+// &feature, const double t, const std::array<double, 6>& T);
+} // namespace wmtk

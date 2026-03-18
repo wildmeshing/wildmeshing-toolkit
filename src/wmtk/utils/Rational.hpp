@@ -11,7 +11,7 @@ class Rational
 public:
     mpq_t value;
     void canonicalize() { mpq_canonicalize(value); }
-    int get_sign() { return mpq_sgn(value); }
+    int get_sign() const { return mpq_sgn(value); }
     template <typename T>
     void init(const T& v)
     {

@@ -16,6 +16,8 @@ set(TEST_SOURCES
     test_raw_simplex_collection.cpp
     test_simplex_navigation.cpp
     test_tuple.cpp
+    test_orient.cpp
+    test_optimization.cpp
 )
 
 add_executable(wmtk_tests ${TEST_SOURCES})

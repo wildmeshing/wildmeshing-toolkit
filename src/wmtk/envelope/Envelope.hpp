@@ -32,8 +32,8 @@ class ExactEnvelope : public Envelope, public fastEnvelope::FastEnvelope
 {
 public:
     ExactEnvelope()
-        : fastEnvelope::FastEnvelope::FastEnvelope(){};
-    ~ExactEnvelope(){};
+        : fastEnvelope::FastEnvelope::FastEnvelope() {};
+    ~ExactEnvelope() {};
     void init(
         const std::vector<Eigen::Vector3d>& m_ver,
         const std::vector<Eigen::Vector3i>& m_faces,
@@ -56,7 +56,7 @@ class SampleEnvelope : public wmtk::Envelope
 {
 public:
     SampleEnvelope(bool exact = false)
-        : use_exact(exact){};
+        : use_exact(exact) {};
     double eps2 = 1e-6;
     double sampling_dist = 1e-3;
     bool use_exact = false;
@@ -82,6 +82,7 @@ public:
     bool initialized() { return m_bvh != nullptr; };
 
     double squared_distance(const Eigen::Vector3d& p) const;
+    double squared_distance(const Eigen::Vector2d& p) const;
 
 private:
     std::vector<int> geo_vertex_ind;

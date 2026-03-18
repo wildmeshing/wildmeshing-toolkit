@@ -10,8 +10,9 @@ double AMIPS_energy(const std::array<double, 12>& T);
 void AMIPS_jacobian(const std::array<double, 12>& T, Eigen::Vector3d& result_0);
 void AMIPS_hessian(const std::array<double, 12>& T, Eigen::Matrix3d& result_0);
 template <typename rational, typename dtype>
-double AMIPS_energy_rational_p3(const std::array<dtype, 12>& T){
-     std::array<rational, 12> r_T;
+double AMIPS_energy_rational_p3(const std::array<dtype, 12>& T)
+{
+    std::array<rational, 12> r_T;
     for (int j = 0; j < 12; j++) r_T[j] = T[j];
     const rational twothird = rational(2) / rational(3);
     auto tmp = ((-r_T[1 + 2] + r_T[1 + 5]) * r_T[1 + 1] + r_T[1 + 2] * r_T[1 + 7] +
@@ -63,6 +64,5 @@ double AMIPS_energy_stable_p3(const std::array<double, 12>& T)
     } else {
         return AMIPS_energy_rational_p3<rational>(T);
     }
-   
 }
 } // namespace wmtk
