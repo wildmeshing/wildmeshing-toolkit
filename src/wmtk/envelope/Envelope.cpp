@@ -312,4 +312,12 @@ double SampleEnvelope::squared_distance(const Eigen::Vector3d& p) const
     return d2;
 }
 
+double SampleEnvelope::squared_distance(const Eigen::Vector2d& p) const
+{
+    double d2;
+    SimpleBVH::Vector2d out;
+    m_bvh->nearest_facet(p, out, d2);
+    return d2;
+}
+
 } // namespace wmtk

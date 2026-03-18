@@ -28,15 +28,20 @@ if(WIN32)
     find_file(GMP_RUNTIME_LIB
         NAMES
             gmp.dll
+            gmp-10.dll
             libgmp-10.dll
         PATHS
             ENV GMP_DIR
             ${LIB_INSTALL_DIR}
         PATH_SUFFIXES
+            bin
             lib
     )
     list(APPEND GMP_EXTRA_VARS GMP_RUNTIME_LIB)
+
+    message(STATUS "Windows GMP Paths: \n  ${GMP_INCLUDES}\n  ${GMP_LIBRARIES}\n  ${GMP_RUNTIME_LIB}")
 endif()
+
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(GMP
