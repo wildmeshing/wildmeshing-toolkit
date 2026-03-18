@@ -1,5 +1,7 @@
-std::vector<wmtk::components::image_simulation::tri::ImageSimulationMeshTri::ConnectedComponent>
-wmtk::components::image_simulation::tri::ImageSimulationMeshTri::compute_connected_components()
+namespace wmtk::components::image_simulation::tri {
+
+std::vector<ImageSimulationMeshTri::ConnectedComponent>
+ImageSimulationMeshTri::compute_connected_components()
     const
 {
     const size_t n_faces = tri_capacity();
@@ -73,10 +75,8 @@ wmtk::components::image_simulation::tri::ImageSimulationMeshTri::compute_connect
     return components;
 }
 
-void wmtk::components::image_simulation::tri::ImageSimulationMeshTri::engulf_component(
-    std::vector<
-        wmtk::components::image_simulation::tri::ImageSimulationMeshTri::ConnectedComponent>&
-        components,
+void ImageSimulationMeshTri::engulf_component(
+    std::vector<ImageSimulationMeshTri::ConnectedComponent>& components,
     const size_t hole_comp_id,
     const size_t engulfing_comp_id)
 {
@@ -103,10 +103,8 @@ void wmtk::components::image_simulation::tri::ImageSimulationMeshTri::engulf_com
     hole_comp = ConnectedComponent();
 }
 
-void wmtk::components::image_simulation::tri::ImageSimulationMeshTri::engulf_components(
-    std::vector<
-        wmtk::components::image_simulation::tri::ImageSimulationMeshTri::ConnectedComponent>&
-        components,
+void ImageSimulationMeshTri::engulf_components(
+    std::vector<ImageSimulationMeshTri::ConnectedComponent>& components,
     const std::vector<size_t>& hole_comp_ids,
     const std::unordered_set<size_t>& engulfing_comp_ids)
 {
@@ -614,10 +612,8 @@ void wmtk::components::image_simulation::tri::ImageSimulationMeshTri::engulf_com
     }
 }
 
-void wmtk::components::image_simulation::tri::ImageSimulationMeshTri::extract_hole_clusters(
-    std::vector<
-        wmtk::components::image_simulation::tri::ImageSimulationMeshTri::ConnectedComponent>&
-        components,
+void ImageSimulationMeshTri::extract_hole_clusters(
+    std::vector<ImageSimulationMeshTri::ConnectedComponent>& components,
     std::unordered_set<int64_t>& tags,
     std::vector<std::vector<size_t>>& hole_clusters,
     double threshold)
@@ -687,7 +683,7 @@ void wmtk::components::image_simulation::tri::ImageSimulationMeshTri::extract_ho
     }
 }
 
-void wmtk::components::image_simulation::tri::ImageSimulationMeshTri::recompute_surface_info()
+void ImageSimulationMeshTri::recompute_surface_info()
 {
     for (const Tuple& e : get_edges()) {
         SmartTuple ee(*this, e);
@@ -719,3 +715,5 @@ void wmtk::components::image_simulation::tri::ImageSimulationMeshTri::recompute_
         m_vertex_attribute[v2].m_is_on_surface = true;
     }
 }
+
+} // namespace wmtk::components::image_simulation::tri
