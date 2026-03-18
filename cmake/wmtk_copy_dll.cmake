@@ -80,11 +80,12 @@ function(wmtk_copy_dll target)
 
         # Instruction to copy target file if it exists
         string(APPEND COPY_SCRIPT_CONTENT
-            "if(EXISTS \"$<TARGET_FILE:${DEPENDENCY}>\")\n    "
-                "execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different "
-                "\"$<TARGET_FILE:${DEPENDENCY}>\" "
-                "\"$<TARGET_FILE_DIR:${target}>/$<TARGET_FILE_NAME:${DEPENDENCY}>\")\n"
-            "endif()\n"
+            "message(STATUS \"For target ${target}, copy $<TARGET_FILE:${DEPENDENCY}> to $<TARGET_FILE_DIR:${target}>/$<TARGET_FILE_NAME:${DEPENDENCY}>\")\n"
+            # "if(EXISTS \"$<TARGET_FILE:${DEPENDENCY}>\")\n    "
+            "execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different "
+            "\"$<TARGET_FILE:${DEPENDENCY}>\" "
+            "\"$<TARGET_FILE_DIR:${target}>/$<TARGET_FILE_NAME:${DEPENDENCY}>\")\n"
+            # "endif()\n"
         )
     endforeach()
 

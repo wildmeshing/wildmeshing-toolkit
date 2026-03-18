@@ -38,9 +38,10 @@ if(WIN32)
             lib
     )
     list(APPEND GMP_EXTRA_VARS GMP_RUNTIME_LIB)
+
+    message(STATUS "Windows GMP Paths: \n  ${GMP_INCLUDES}\n  ${GMP_LIBRARIES}\n  ${GMP_RUNTIME_LIB}")
 endif()
 
-# message(STATUS "GMP Paths: \n  ${GMP_INCLUDES}\n  ${GMP_LIBRARIES}\n  ${GMP_RUNTIME_LIB}")
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(GMP
