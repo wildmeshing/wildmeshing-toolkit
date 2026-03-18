@@ -1,6 +1,4 @@
 var searchData=
 [
-  ['eid_0',['eid',['../classwmtk_1_1_tet_mesh_1_1_tuple.html#a64010c58c9f5b170f4ca17b89de1b653',1,'wmtk::TetMesh::Tuple::eid()'],['../classwmtk_1_1_tri_mesh_1_1_tuple.html#a21dc175ee57f96f0bf44ef7babb9fd4a',1,'wmtk::TriMesh::Tuple::eid()']]],
-  ['end_5fprotect_1',['end_protect',['../structwmtk_1_1_attribute_collection.html#abc4e548acb727ba52b6ab64aa3d6e742',1,'wmtk::AttributeCollection']]],
-  ['executepass_2',['ExecutePass',['../structwmtk_1_1_execute_pass.html#afe72d11683b6cc09ef8c55796557aa32',1,'wmtk::ExecutePass']]]
+  ['dirichletenergy2d_0',['DirichletEnergy2D',['../classwmtk_1_1optimization_1_1_dirichlet_energy2_d.html#a2b7dc2a306ad9a529f4cb62256755413',1,'wmtk::optimization::DirichletEnergy2D']]]
 ];

@@ -1,6 +1,8 @@
 var searchData=
 [
-  ['write_5fedges_0',['write_edges',['../classwmtk_1_1io_1_1_tet_v_t_u_writer.html#a15ada683bb3977684e69171f08fdcc2a',1,'wmtk::io::TetVTUWriter::write_edges()'],['../classwmtk_1_1io_1_1_tri_v_t_u_writer.html#a4053d887e2def1b077540951bc31e81f',1,'wmtk::io::TriVTUWriter::write_edges()']]],
-  ['write_5ftets_1',['write_tets',['../classwmtk_1_1io_1_1_tet_v_t_u_writer.html#a5c2e367ab03f0940e91195abc65d60be',1,'wmtk::io::TetVTUWriter']]],
-  ['write_5ftriangles_2',['write_triangles',['../classwmtk_1_1io_1_1_tet_v_t_u_writer.html#a6239f07c6babee792affa6f5cb58caec',1,'wmtk::io::TetVTUWriter::write_triangles()'],['../classwmtk_1_1io_1_1_tri_v_t_u_writer.html#a6806fb50bc931b36b61be4a1624411b1',1,'wmtk::io::TriVTUWriter::write_triangles()']]]
+  ['vert_5fcapacity_0',['vert_capacity',['../classwmtk_1_1_tet_mesh.html#a204a973795d87f3b69a06cf699b400f2',1,'wmtk::TetMesh::vert_capacity()'],['../classwmtk_1_1_tri_mesh.html#a8f4722aa023014096691a82acb1fa1e8',1,'wmtk::TriMesh::vert_capacity()']]],
+  ['vertex_5fadjacent_5fboundary_5ffaces_1',['vertex_adjacent_boundary_faces',['../classwmtk_1_1_tet_mesh.html#afe4337bd64e1919a0e116949bfada886',1,'wmtk::TetMesh']]],
+  ['vertex_5fsize_2',['vertex_size',['../classwmtk_1_1_tet_mesh.html#aa01f98d58759678484cb37e13d035d68',1,'wmtk::TetMesh']]],
+  ['vertices_3',['vertices',['../classwmtk_1_1simplex_1_1_raw_simplex_collection.html#a1472f044afb9ce2a43599fb7ee3cbeb3',1,'wmtk::simplex::RawSimplexCollection']]],
+  ['vid_4',['vid',['../classwmtk_1_1_tet_mesh_1_1_tuple.html#acbb74bf154ffde866b0e83015e2fdd80',1,'wmtk::TetMesh::Tuple::vid()'],['../classwmtk_1_1_tri_mesh_1_1_tuple.html#aca27bf9b696588c5eebcd06b45f05f05',1,'wmtk::TriMesh::Tuple::vid()']]]
 ];

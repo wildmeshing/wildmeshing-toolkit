@@ -1,5 +1,10 @@
 var searchData=
 [
-  ['link_5fcondition_0',['link_condition',['../classwmtk_1_1_tet_mesh.html#a5dde52f8c3642ed037019ff31daf6330',1,'wmtk::TetMesh']]],
-  ['local_5feid_1',['local_eid',['../classwmtk_1_1_tri_mesh_1_1_tuple.html#af74485b73b9169fc3978dc11264b2b1b',1,'wmtk::TriMesh::Tuple']]]
+  ['init_0',['init',['../classwmtk_1_1_tet_mesh.html#a52a44bea81d91f805cbb5d27acb7bec1',1,'wmtk::TetMesh::init(size_t n_vertices, const std::vector&lt; std::array&lt; size_t, 4 &gt; &gt; &amp;tets)'],['../classwmtk_1_1_tet_mesh.html#a0710ac8de9beae8410e2ff62ee1d83f3',1,'wmtk::TetMesh::init(const MatrixXi &amp;T)'],['../classwmtk_1_1_tri_mesh.html#a8b73b58387664feb724e992e2395d3cc',1,'wmtk::TriMesh::init(size_t n_vertices, const std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;tris)'],['../classwmtk_1_1_tri_mesh.html#a8b2971358fc0e1ffca3406d5958a8e74',1,'wmtk::TriMesh::init(const MatrixXi &amp;F)']]],
+  ['insert_5fpoint_1',['insert_point',['../classwmtk_1_1_tet_mesh.html#a3334fb0ca8c134d5f30a859dc3795527',1,'wmtk::TetMesh']]],
+  ['invariants_2',['invariants',['../classwmtk_1_1_tri_mesh.html#a3d8bb552e20bda83d8113874e62f54fe',1,'wmtk::TriMesh']]],
+  ['is_5fboundary_5fedge_3',['is_boundary_edge',['../classwmtk_1_1_tet_mesh_1_1_tuple.html#ade407919430873037e472748005623b7',1,'wmtk::TetMesh::Tuple::is_boundary_edge()'],['../classwmtk_1_1_tri_mesh.html#adcc31a34edcc7605d3bbfa25bae84ece',1,'wmtk::TriMesh::is_boundary_edge()']]],
+  ['is_5fboundary_5fface_4',['is_boundary_face',['../classwmtk_1_1_tet_mesh_1_1_tuple.html#a2e708b580de8fa535d3f169522eab354',1,'wmtk::TetMesh::Tuple']]],
+  ['is_5fboundary_5fvertex_5',['is_boundary_vertex',['../classwmtk_1_1_tri_mesh.html#af69f2ad9b7b8b70c297337e0f26e75e4',1,'wmtk::TriMesh']]],
+  ['is_5fvalid_6',['is_valid',['../classwmtk_1_1_tet_mesh_1_1_tuple.html#a194c005c743775e7e74a0205b2f29c48',1,'wmtk::TetMesh::Tuple::is_valid()'],['../classwmtk_1_1_tri_mesh_1_1_tuple.html#a3856af55a040259ae692b680515913d6',1,'wmtk::TriMesh::Tuple::is_valid()']]]
 ];
