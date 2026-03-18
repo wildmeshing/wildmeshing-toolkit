@@ -61,8 +61,7 @@ function(wmtk_copy_dll target)
     # always exists before attempting to copy dependencies.
     add_custom_command(
         TARGET ${target}
-        POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${target}>"
+        PRE_LINK
         COMMAND ${CMAKE_COMMAND} -E touch "${CMAKE_BINARY_DIR}/runtime_deps/copy_dll_${target}_$<CONFIG>.cmake"
         COMMAND ${CMAKE_COMMAND} -P "${CMAKE_BINARY_DIR}/runtime_deps/copy_dll_${target}_$<CONFIG>.cmake"
         COMMENT "Copying dlls for target ${target}"
@@ -81,26 +80,21 @@ function(wmtk_copy_dll target)
 
         # Instruction to copy target file if it exists
         string(APPEND COPY_SCRIPT_CONTENT
-            "if(EXISTS \"$<TARGET_FILE:${DEPENDENCY}>\")\n"
-            "    set(DEST_DIR \"$<TARGET_FILE_DIR:${target}>\")\n"
+            "set(SRC_FILE \"$<TARGET_FILE:${DEPENDENCY}>\")\n"
+            "if(EXISTS \"\${SRC_FILE}\")\n"
             "    set(DEST_FILE \"$<TARGET_FILE_DIR:${target}>/$<TARGET_FILE_NAME:${DEPENDENCY}>\")\n"
-            "    message(STATUS \"Creating destination directory: \${DEST_DIR}\")\n"
-            "    execute_process(COMMAND \"${CMAKE_COMMAND}\" -E make_directory \"\${DEST_DIR}\" RESULT_VARIABLE DIR_RESULT)\n"
-            "    if(NOT DIR_RESULT EQUAL 0)\n"
-            "        message(FATAL_ERROR \"Failed to create destination directory \${DEST_DIR} for target ${target}. Result: \${DIR_RESULT}\")\n"
-            "    endif()\n"
-            "    message(STATUS \"Copying: $<TARGET_FILE:${DEPENDENCY}> -> \${DEST_FILE}\")\n"
+            "    message(STATUS \"Copying: \${SRC_FILE} -> \${DEST_FILE}\")\n"
             "    execute_process(COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different "
-            "\"$<TARGET_FILE:${DEPENDENCY}>\" \"\${DEST_FILE}\" "
+            "\"\${SRC_FILE}\" \"\${DEST_FILE}\" "
             "RESULT_VARIABLE COPY_RESULT ERROR_VARIABLE COPY_ERROR)\n"
             "    if(NOT COPY_RESULT EQUAL 0)\n"
-            "        message(FATAL_ERROR \"Failed to copy $<TARGET_FILE:${DEPENDENCY}> to \${DEST_FILE} for target ${target}. Result: \${COPY_RESULT}, Error: \${COPY_ERROR}\")\n"
+            "        message(FATAL_ERROR \"Failed to copy \${SRC_FILE} to \${DEST_FILE} for target ${target}. Result: \${COPY_RESULT}, Error: \${COPY_ERROR}\")\n"
             "    endif()\n"
             "    if(NOT EXISTS \"\${DEST_FILE}\")\n"
             "        message(FATAL_ERROR \"Copy completed (exit 0) but destination file does not exist: \${DEST_FILE}\")\n"
             "    endif()\n"
             "else()\n    "
-            "message(STATUS \"Dependency does not exist (will not copy): $<TARGET_FILE:${DEPENDENCY}>\")\n"
+            "message(STATUS \"Dependency does not exist (will not copy): \${SRC_FILE}\")\n"
             "endif()\n"
         )
     endforeach()
