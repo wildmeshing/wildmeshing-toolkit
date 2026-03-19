@@ -39,8 +39,18 @@ public:
         const MatrixXi& P)
     {
         m_is_3d = (V.cols() == 3);
+        MatrixXd V_3d; // if V 2d, pad vertices to 3d (BVH needs this. should be fixed inside BVH)
+        if (!m_is_3d) {
+            V_3d.resize(V.rows(), 3);
+            V_3d.setZero();
+            V_3d.block(0, 0, V.rows(), V.cols()) = V;
+        } else {
+            V_3d = V;
+        }
+        assert(V_3d.rows() == V.rows());
+        assert(V_3d.cols() == 3);
 
-        std::vector<Eigen::Vector3i> faces; // extract isolated faces
+        std::vector<Vector3i> faces; // extract isolated faces
         for (int i = 0; i < F.rows(); i++) {
             faces.push_back(F.row(i));
         }
@@ -67,7 +77,7 @@ public:
             for (size_t i = 0; i < faces.size(); i++) {
                 F_combo.row(i) = faces[i];
             }
-            m_tri_bvh.init(V, F_combo, 1e-6);
+            m_tri_bvh.init(V_3d, F_combo, 1e-6);
             m_has_tris = true;
         }
 
@@ -84,7 +94,7 @@ public:
             for (size_t i = 0; i < edges.size(); i++) {
                 E_combo.row(i) = edges[i];
             }
-            m_edge_bvh.init(V, E_combo, 1e-6);
+            m_edge_bvh.init(V_3d, E_combo, 1e-6);
             m_has_edges = true;
         }
     }

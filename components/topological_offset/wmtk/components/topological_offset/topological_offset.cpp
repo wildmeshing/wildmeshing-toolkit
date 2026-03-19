@@ -168,7 +168,19 @@ void topological_offset(nlohmann::json json_params)
         auto tris = mesh.get_faces();
         bool noninverted = mesh.invariants(tris);
         if (!noninverted) {
-            log_and_throw_error("INVERTED TRIANGLE DURING OFFSET");
+            // std::vector<size_t> bad_tris; // get bad triangles
+            std::string bad_tris_str = "";
+            for (const TriMesh::Tuple& t : tris) {
+                std::vector<TriMesh::Tuple> tvec;
+                tvec.push_back(t);
+                if (!mesh.invariants(tvec)) {
+                    // bad_tris.push_back(t.fid(mesh));
+                    bad_tris_str += (" " + std::to_string(t.fid(mesh)));
+                }
+            }
+            mesh.write_msh(output_filename.string()); // DEBUG: write .msh anyway
+            // log_and_throw_error("INVERSION DURING OFFSET: {} bad tris", bad_tris.size());
+            log_and_throw_error("INVERSION DURING OFFSET! bad tris: {}", bad_tris_str);
         }
 
         // offset region manifoldness check
