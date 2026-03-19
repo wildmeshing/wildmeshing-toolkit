@@ -455,7 +455,10 @@ bool TopoOffsetTriMesh::offset_is_manifold()
     std::vector<Vector3i> offset_tris;
     for (const Tuple& t : tris) {
         size_t t_id = t.fid(*this);
-        if (m_face_attribute[t_id].label == 2) {
+        bool in_manifold_region =
+            ((m_params.offset_tags.size() == 1) && (m_face_attribute[t_id].label != 0)) ||
+            (m_face_attribute[t_id].label == 2);
+        if (in_manifold_region) {
             auto vs = oriented_tri_vids(t_id);
             offset_tris.emplace_back(vs[0], vs[1], vs[2]);
             included_vids[vs[0]] = true;

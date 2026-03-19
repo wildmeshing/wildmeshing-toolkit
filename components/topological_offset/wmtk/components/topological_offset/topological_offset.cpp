@@ -168,6 +168,7 @@ void topological_offset(nlohmann::json json_params)
             if (mesh.offset_is_manifold()) {
                 logger().info("Offset region manifold check passed.");
             } else {
+                mesh.write_msh(output_filename.string()); // DEBUG: write .msh anyway
                 log_and_throw_error("OFFSET REGION IS NOT MANIFOLD");
             }
         }

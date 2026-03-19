@@ -74,6 +74,7 @@ nlohmann::json topological_offset_spec = R"(
         0
       ]
     ],
+    "min": 1,
     "doc": "[Tag num, tag val] pairs to set for offset result. Missing tag nums inherit from parent tris/tets."
   },
   {
