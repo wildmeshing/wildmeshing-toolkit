@@ -20,10 +20,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        config: [Debug, Release]
         include:
           - os: ubuntu-latest
+            config: Debug
+            integration_tests_flag: &integration_tests_off ''
+            name: Linux
+          - os: ubuntu-latest
+            config: Release
+            integration_tests_flag: &integration_tests_on '-DWMTK_BUILD_INTEGRATION_TESTS=ON'
             name: Linux
     steps:
       - name: Checkout repository
@@ -54,14 +58,10 @@ jobs:
         run: |
           mkdir -p build
           cd build
-          WMTK_INTEGRATION_TESTS_FLAG=""
-          if [ "${{ matrix.config }}" = "Release" ]; then
-            WMTK_INTEGRATION_TESTS_FLAG="-DWMTK_BUILD_INTEGRATION_TESTS=ON"
-          fi
           cmake .. \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
-            ${WMTK_INTEGRATION_TESTS_FLAG}
+            ${{ matrix.integration_tests_flag }}
 
       - name: Build
         run: cd build; make -j2; ccache --show-stats
@@ -79,8 +79,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, macos-14]
-        config: [Debug, Release]
+        include:
+          - os: macos-latest
+            config: Debug
+            integration_tests_flag: *integration_tests_off
+          - os: macos-latest
+            config: Release
+            integration_tests_flag: *integration_tests_on
+          - os: macos-14
+            config: Debug
+            integration_tests_flag: *integration_tests_off
+          - os: macos-14
+            config: Release
+            integration_tests_flag: *integration_tests_on
 
     steps:
       - name: Checkout repository
@@ -110,13 +121,10 @@ jobs:
         run: |
           mkdir -p build
           cd build
-          WMTK_INTEGRATION_TESTS_FLAG=""
-          if [ "${{ matrix.config }}" = "Release" ]; then
-            WMTK_INTEGRATION_TESTS_FLAG="-DWMTK_BUILD_INTEGRATION_TESTS=ON"
-          fi
           cmake .. \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_BUILD_TYPE=${{ matrix.config }}
+            -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
+            ${{ matrix.integration_tests_flag }}
 
       - name: Build
         run: cd build; make -j2; ccache --show-stats
@@ -129,15 +137,34 @@ jobs:
   ####################
 
   Windows:
-    name: Windows (${{ matrix.config }})
+    name: ${{ matrix.name }} (${{ matrix.config }})
     runs-on: ${{ matrix.os }}
     env:
       SCCACHE_IDLE_TIMEOUT: "12000"
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2022, windows-2025-vs2026]
-        config: [Debug, Release]
+        include:
+          - os: windows-2022
+            name: Windows 2022
+            config: Debug
+            vs_path: &vs_path_2022 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat'
+            integration_tests_flag: *integration_tests_off
+          - os: windows-2022
+            name: Windows 2022
+            config: Release
+            vs_path: *vs_path_2022
+            integration_tests_flag: *integration_tests_on
+          - os: windows-2025-vs2026
+            name: Windows 2025 (VS 2026)
+            config: Debug
+            vs_path: &vs_path_2026 'C:\Program Files\Microsoft Visual Studio\18\Enterprise\Common7\Tools\VsDevCmd.bat'
+            integration_tests_flag: *integration_tests_off
+          - os: windows-2025-vs2026
+            name: Windows 2025 (VS 2026)
+            config: Release
+            vs_path: *vs_path_2026
+            integration_tests_flag: *integration_tests_on
 
     steps:
       - name: Checkout repository
@@ -173,22 +200,26 @@ jobs:
       - name: Configure
         shell: cmd
         run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=x64
-          set WMTK_INTEGRATION_TESTS_FLAG=
-          if "${{ matrix.config }}"=="Release" set WMTK_INTEGRATION_TESTS_FLAG=-DWMTK_BUILD_INTEGRATION_TESTS=ON
+          echo Runner OS: ${{ matrix.os }}
+          echo Build Config: ${{ matrix.config }}
+          echo VS Dev Cmd: ${{ matrix.vs_path }}
+          call "${{ matrix.vs_path }}" -arch=x64
           cmake -G Ninja ^
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache ^
             -DCMAKE_POLICY_DEFAULT_CMP0141=NEW ^
             -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded ^
             -DCMAKE_BUILD_TYPE=${{ matrix.config }} ^
-            %WMTK_INTEGRATION_TESTS_FLAG% ^
+            ${{ matrix.integration_tests_flag }} ^
             -B build ^
             -S .
 
       - name: Build
         shell: cmd
         run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=x64
+          echo Runner OS: ${{ matrix.os }}
+          echo Build Config: ${{ matrix.config }}
+          echo VS Dev Cmd: ${{ matrix.vs_path }}
+          call "${{ matrix.vs_path }}" -arch=x64
           cmake --build build -j2 && sccache --show-stats
 
       - name: Tests
