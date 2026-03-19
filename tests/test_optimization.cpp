@@ -6,6 +6,7 @@
 #include <polysolve/nonlinear/Solver.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/optimization/AMIPSEnergy.hpp>
+#include <wmtk/optimization/BarrierEnergy.hpp>
 #include <wmtk/optimization/DirichletEnergy.hpp>
 #include <wmtk/optimization/EnergySum.hpp>
 #include <wmtk/optimization/solver.hpp>
@@ -226,7 +227,7 @@ TEST_CASE("ipc", "[energies][ipc]")
     // collisions.build(collision_mesh, V, dhat);
     collisions.build(candidates, collision_mesh, V, dhat);
 
-    const ipc::BarrierPotential B(dhat, 1);
+    const ipc::BarrierPotential B(dhat);
     double barrier_potential = B(collisions, collision_mesh, V);
     // logger().info("Potential = {}", barrier_potential);
 
@@ -245,11 +246,72 @@ TEST_CASE("ipc", "[energies][ipc]")
     v2_hess.setZero();
     v2_hess(0, 0) = barrier_potential_hess.coeff(2 * i, 2 * i);
     v2_hess(1, 1) = barrier_potential_hess.coeff(2 * i + 1, 2 * i + 1);
-    logger().info("Hess v2 = \n{}", v2_hess);
+    // logger().info("Hess v2 = \n{}", v2_hess);
 
     CHECK(v2_hess(0, 0) == 0);
     CHECK(v2_hess(0, 1) == 0);
     CHECK(v2_hess(1, 0) == 0);
     CHECK(v2_hess(1, 1) > 0);
     // logger().info("Hess full = \n{}", MatrixXd(barrier_potential_hess));
+}
+
+TEST_CASE("barrier_energy_2d", "[energies][ipc]")
+{
+    // 4 edges, two top two bottom
+    MatrixXd V;
+    V.resize(6, 2);
+    // bottom two edges
+    V.row(0) = Vector2d(0, 0);
+    V.row(1) = Vector2d(10, 0);
+    V.row(2) = Vector2d(20, 0);
+    // top two edges
+    V.row(3) = Vector2d(0, 1e-3);
+    V.row(4) = Vector2d(10, 1e-3);
+    V.row(5) = Vector2d(20, 1e-3);
+
+    MatrixXi E;
+    E.resize(4, 2);
+    E.row(0) = Vector2i(0, 1);
+    E.row(1) = Vector2i(1, 2);
+    E.row(2) = Vector2i(3, 4);
+    E.row(3) = Vector2i(4, 5);
+
+
+    optimization::BarrierEnergy2D energy(V, E, 4, 1);
+    const Vector2d p0 = energy.initial_position();
+    CHECK(energy.is_step_valid(p0, p0));
+
+    {
+        VectorXd g;
+        energy.gradient(p0, g);
+        REQUIRE(g.size() == 2);
+        CHECK(g[1] < 0);
+
+        MatrixXd h;
+        CHECK_NOTHROW(energy.hessian(p0, h));
+    }
+    auto x = energy.initial_position();
+    const double e_before = energy.value(x);
+    CHECK(e_before > 0);
+    {
+        auto linear_solver_params = optimization::basic_linear_solver_params;
+        auto nonlinear_solver_params = optimization::basic_nonlinear_solver_params;
+        nonlinear_solver_params["max_iterations"] = 100;
+
+        auto solver = polysolve::nonlinear::Solver::create(
+            nonlinear_solver_params,
+            linear_solver_params,
+            1,
+            opt_logger());
+        optimization::deactivate_opt_logger();
+
+        CHECK_NOTHROW(solver->minimize(energy, x));
+    }
+    const double e_after = energy.value(x);
+    CHECK(e_after < e_before);
+    {
+        VectorXd g;
+        energy.gradient(x, g);
+        CHECK(g[1] < 1e-6);
+    }
 }
