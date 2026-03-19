@@ -131,6 +131,7 @@ public:
     std::vector<Face> faces_with_edge(const Edge& e) const;
 
     size_t size() const;
+    bool empty() const { return size() == 0; }
 
     bool operator==(const RawSimplexCollection& that) const;
     bool operator!=(const RawSimplexCollection& that) const;

@@ -13,6 +13,8 @@ using MatrixX = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
 using MatrixXd = MatrixX<double>;
 using MatrixXi = MatrixX<int>;
 using MatrixXr = MatrixX<Rational>;
+using Matrix2d = Eigen::Matrix2d;
+using Matrix3d = Eigen::Matrix3d;
 using Matrix4d = Eigen::Matrix4d;
 
 template <typename T, int R>
@@ -170,3 +172,13 @@ inline bool VF_rational_to_double(const MatrixXr& V_in, const MatrixXi& F, Matri
 }
 
 } // namespace wmtk
+
+// Enables passing Eigen matrices to fmt/spdlog.
+template <typename T>
+struct fmt::formatter<
+    T,
+    std::enable_if_t<
+        std::is_base_of_v<Eigen::DenseBase<T>, T> && !fmt::is_range<T, char>::value,
+        char>> : ostream_formatter
+{
+};

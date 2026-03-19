@@ -9,6 +9,7 @@ nlohmann::json image_simulation_spec = R"(
     "type": "object",
     "required": ["application", "input"],
     "optional": [
+      "operation",
       "output",
       "ijk_to_ras",
       "skip_simplify",
@@ -25,7 +26,12 @@ nlohmann::json image_simulation_spec = R"(
       "log_file",
       "report",
       "DEBUG_output",
-      "DEBUG_sanity_checks"
+      "DEBUG_sanity_checks",
+      "fill_holes_tags",
+      "fill_holes_threshold",
+      "tight_seal_tag_sets",
+      "tight_seal_threshold",
+      "keep_largest_cc_tags"
     ]
   },
   {
@@ -44,6 +50,13 @@ nlohmann::json image_simulation_spec = R"(
     "pointer": "/input/*",
     "type": "string",
     "doc": "Triangular input mesh."
+  },
+  {
+    "pointer": "/operation",
+    "type": "string",
+    "default": "remeshing",
+    "options": ["remeshing", "fill_holes_topo", "tight_seal_topo", "keep_largest_cc"],
+    "doc": "Image simulation contains multiple operations for modifying the image. Depending on the operation, more parameters might be required."
   },
   {
     "pointer": "/output",
@@ -163,6 +176,56 @@ nlohmann::json image_simulation_spec = R"(
     "type": "bool",
     "default": false,
     "doc": "Perform sanity checks after every operation. This can be very slow and should only be used for debugging."
+  },
+  {
+    "pointer": "/fill_holes_tags",
+    "type": "list",
+    "default": [0],
+    "doc": "For fill_holes_topo: list of tag values used to fill enclosed connected components (processed in order)."
+  },
+  {
+    "pointer": "/fill_holes_tags/*",
+    "type": "int",
+    "doc": "A tag value to fill enclosed connected components of other tags."
+  },
+  {
+    "pointer": "/fill_holes_threshold",
+    "type": "float",
+    "default": -1,
+    "doc": "For fill_holes_topo: only fill a connected component if its area is less than this threshold. Negative value means no threshold (fill all enclosed components)."
+  },
+  {
+    "pointer": "/tight_seal_tag_sets",
+    "type": "list",
+    "default": [[0]],
+    "doc": "For tight_seal_topo: list of tag sets. Each inner list defines a group of tags whose enclosed holes are filled, e.g. [[1,2],[3]]."
+  },
+  {
+    "pointer": "/tight_seal_tag_sets/*",
+    "type": "list",
+    "doc": "One tag set: a list of tag values that are treated as a group for hole filling."
+  },
+  {
+    "pointer": "/tight_seal_tag_sets/*/*",
+    "type": "int",
+    "doc": "A tag value in this tag set."
+  },
+  {
+    "pointer": "/tight_seal_threshold",
+    "type": "float",
+    "default": -1,
+    "doc": "For tight_seal_topo: only fill a hole cluster if its total area is less than this threshold. Negative value means no threshold."
+  },
+  {
+    "pointer": "/keep_largest_cc_tags",
+    "type": "list",
+    "default": [0],
+    "doc": "For keep_largest_cc: list of tag values for which only the largest connected component is kept; all smaller components are merged into their neighbours."
+  },
+  {
+    "pointer": "/keep_largest_cc_tags/*",
+    "type": "int",
+    "doc": "A tag value whose smaller connected components will be removed."
   }
 ]
 )"_json;

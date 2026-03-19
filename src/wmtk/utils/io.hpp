@@ -267,6 +267,16 @@ public:
         return get_element_attribute_names<3>();
     }
 
+    std::vector<std::string> get_all_element_attribute_names() const
+    {
+        std::vector<std::string> attr_names;
+        attr_names.reserve(m_spec.element_data.size());
+        for (const auto& data : m_spec.element_data) {
+            attr_names.push_back(data.header.string_tags.front());
+        }
+        return attr_names;
+    }
+
     template <typename Fn>
     void extract_edge_vertex_attribute(const std::string& attr_name, Fn&& set_attr)
     {
@@ -333,8 +343,9 @@ public:
             F.resize(n_F, dim + 1);
             switch (dim) {
             case 1:
-                extract_simplex_elements<1>(
-                    [&F](size_t i, size_t v0, size_t v1) { F.row(i) = Vector2i(v0, v1); });
+                extract_simplex_elements<1>([&F](size_t i, size_t v0, size_t v1) {
+                    F.row(i) = Vector2i((int)v0, (int)v1);
+                });
                 break;
             case 2:
                 extract_simplex_elements<2>([&F](size_t i, size_t v0, size_t v1, size_t v2) {
@@ -415,8 +426,9 @@ private:
         const auto& vertex_block = m_spec.nodes.entity_blocks.back();
         // assert(!vertex_block.tags.empty());
         if (vertex_block.entity_dim != DIM) {
-            log_and_throw_error("It seems the last added vertex block has different dimension "
-                                "than the elements you want to add.");
+            log_and_throw_error(
+                "It seems the last added vertex block has different dimension "
+                "than the elements you want to add.");
         }
 
         mshio::ElementBlock block;
@@ -469,8 +481,9 @@ private:
         assert(num_vertices != 0);
 
         if (vertex_block.entity_dim != ELEMENT_DIM) {
-            throw std::runtime_error("It seems the last added vertex block has different dimension "
-                                     "from the vertex attribute you want to add.");
+            throw std::runtime_error(
+                "It seems the last added vertex block has different dimension "
+                "from the vertex attribute you want to add.");
         }
 
         mshio::Data data;

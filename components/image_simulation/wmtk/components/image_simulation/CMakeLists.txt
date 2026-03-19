@@ -35,6 +35,9 @@ set(SRC_FILES
 
 	read_image_msh.hpp
 	read_image_msh.cpp
+
+	ImageSimulationMeshTri.hpp
+	ImageSimulationMeshTri.cpp
     )
 
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

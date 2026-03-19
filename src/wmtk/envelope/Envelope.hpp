@@ -68,13 +68,21 @@ public:
         const std::vector<Eigen::Vector3d>& m_ver,
         const std::vector<Eigen::Vector2i>& m_edges,
         const double);
+    void init(
+        const std::vector<Eigen::Vector2d>& m_ver,
+        const std::vector<Eigen::Vector2i>& m_edges,
+        const double);
     bool is_outside(const std::array<Eigen::Vector3d, 3>& tris) const;
     bool is_outside(const std::array<Eigen::Vector3d, 2>& edge) const;
+    bool is_outside(const std::array<Eigen::Vector2d, 2>& edge) const;
     bool is_outside(const Eigen::Vector3d& pts) const;
+    bool is_outside(const Eigen::Vector2d& pts) const;
     double nearest_point(const Eigen::Vector3d& pts, Eigen::Vector3d& result) const;
+    double nearest_point(const Eigen::Vector2d& pts, Eigen::Vector2d& result) const;
     bool initialized() { return m_bvh != nullptr; };
 
     double squared_distance(const Eigen::Vector3d& p) const;
+    double squared_distance(const Eigen::Vector2d& p) const;
 
 private:
     std::vector<int> geo_vertex_ind;

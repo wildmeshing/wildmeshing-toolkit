@@ -87,6 +87,11 @@ public:
     // TODO: This should not be exposed to the application, but hidden in wmtk
     void partition_mesh_morton();
 
+    size_t get_partition_id(const Tuple& loc) const
+    {
+        return vertex_attrs[loc.vid(*this)].partition_id;
+    }
+
 public:
     bool collapse_edge_before(const Tuple& t) override;
     bool collapse_edge_after(const Tuple& t) override;

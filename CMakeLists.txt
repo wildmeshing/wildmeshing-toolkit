@@ -80,6 +80,7 @@ include(spdlog)
 include(paraviewo)
 include(fenvelope)
 include(nanoflann)
+include(polysolve)
 
 include(simple_bvh)
 # Sort projects inside the solution
@@ -92,8 +93,6 @@ option(WMTK_PYBIND "Generate python bindings" ON)
 if(WMTK_PYBIND)
     include(pybind11)
     include(pybind11_json)
-
-    include(pybind11)
 endif()
 
 # ###############################################################################
@@ -140,6 +139,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     paraviewo::paraviewo
     FastEnvelope::FastEnvelope
     simple_bvh::simple_bvh
+    polysolve::polysolve
 )
 
 if(MSVC)

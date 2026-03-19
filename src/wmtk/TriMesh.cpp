@@ -1171,8 +1171,19 @@ std::vector<size_t> TriMesh::get_one_ring_vids_for_vertex_duplicate(const size_t
     return one_ring;
 }
 
-std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_tris_for_vertex(
-    const wmtk::TriMesh::Tuple& t) const
+std::vector<size_t> TriMesh::get_incident_fids_for_edge(const Tuple& t) const
+{
+    return get_incident_fids_for_edge(t.vid(*this), t.switch_vertex(*this).vid(*this));
+}
+
+std::vector<size_t> TriMesh::get_incident_fids_for_edge(const size_t vid0, const size_t vid1) const
+{
+    const auto& v0 = get_one_ring_fids_for_vertex(vid0);
+    const auto& v1 = get_one_ring_fids_for_vertex(vid1);
+    return set_intersection(v0, v1);
+}
+
+std::vector<TriMesh::Tuple> TriMesh::get_one_ring_tris_for_vertex(const TriMesh::Tuple& t) const
 {
     std::vector<TriMesh::Tuple> one_ring;
     size_t vid = t.vid(*this);
@@ -1185,6 +1196,16 @@ std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_tris_for_vertex(
     }
 
     return one_ring;
+}
+
+const std::vector<size_t>& TriMesh::get_one_ring_fids_for_vertex(const Tuple& t) const
+{
+    return get_one_ring_fids_for_vertex(t.vid(*this));
+}
+
+const std::vector<size_t>& TriMesh::get_one_ring_fids_for_vertex(const size_t vid) const
+{
+    return m_vertex_connectivity[vid].m_conn_tris;
 }
 
 std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_edges_for_vertex(
@@ -1252,6 +1273,13 @@ std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_edges_for_vertex(
     return one_ring_edges;
 }
 
+std::vector<wmtk::TriMesh::Tuple> wmtk::TriMesh::get_one_ring_edges_for_vertex(
+    const size_t vid) const
+{
+    const Tuple t = tuple_from_vertex(vid);
+    return get_one_ring_edges_for_vertex(t);
+}
+
 std::array<wmtk::TriMesh::Tuple, 3> TriMesh::oriented_tri_vertices(
     const wmtk::TriMesh::Tuple& t) const
 {
@@ -1282,6 +1310,51 @@ std::array<size_t, 3> TriMesh::oriented_tri_vids(const size_t fid) const
 
     return incident_verts;
 }
+
+std::array<TriMesh::Tuple, 2> TriMesh::get_edge_vertices(const Tuple& t) const
+{
+    return std::array<TriMesh::Tuple, 2>{t, t.switch_vertex(*this)};
+}
+
+std::array<size_t, 2> TriMesh::get_edge_vids(const Tuple& t) const
+{
+    return std::array<size_t, 2>{t.vid(*this), t.switch_vertex(*this).vid(*this)};
+}
+
+std::tuple<TriMesh::Tuple, size_t> TriMesh::tuple_from_edge(const std::array<size_t, 2>& vids) const
+{
+    const std::vector<size_t>& fids = m_vertex_connectivity[vids[0]].m_conn_tris;
+
+    // find face that contains both vertices
+    size_t local_eid = std::numeric_limits<size_t>::max();
+    size_t fid = std::numeric_limits<size_t>::max();
+    for (const size_t f : fids) {
+        const auto& f_vids = m_tri_connectivity[f].m_indices;
+
+        int local_v0 = -1;
+        int local_v1 = -1;
+        for (size_t i = 0; i < f_vids.size(); ++i) {
+            if (f_vids[i] == vids[0]) {
+                local_v0 = (int)i;
+            } else if (f_vids[i] == vids[1]) {
+                local_v1 = (int)i;
+            }
+        }
+        if (local_v1 == -1) {
+            continue;
+        }
+        assert(local_v0 != -1);
+        local_eid = 3 - (local_v0 + local_v1);
+        fid = f;
+        break;
+    }
+    assert(local_eid != std::numeric_limits<size_t>::max());
+
+    const Tuple edge(vids[0], local_eid, fid, *this);
+    const size_t eid = 3 * fid + local_eid;
+    return std::make_tuple(edge, eid);
+}
+
 
 void TriMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris)
 {
@@ -1448,7 +1521,12 @@ simplex::Edge wmtk::TriMesh::simplex_from_edge(const Tuple& t) const
 
 simplex::Face wmtk::TriMesh::simplex_from_face(const Tuple& t) const
 {
-    const auto vs = oriented_tri_vids(t.fid(*this));
+    return simplex_from_face(t.fid(*this));
+}
+
+simplex::Face wmtk::TriMesh::simplex_from_face(const size_t fid) const
+{
+    const auto vs = oriented_tri_vids(fid);
     return simplex::Face(vs[0], vs[1], vs[2]);
 }
 
@@ -1538,8 +1616,12 @@ size_t TriMesh::get_next_empty_slot_t()
             }
             tri_connectivity_synchronizing_flag = true;
             auto current_capacity = m_tri_connectivity.size();
-            if (p_edge_attrs) p_edge_attrs->resize(2 * current_capacity * 3);
-            if (p_face_attrs) p_face_attrs->resize(2 * current_capacity);
+            if (p_edge_attrs) {
+                p_edge_attrs->resize(2 * current_capacity * 3);
+            }
+            if (p_face_attrs) {
+                p_face_attrs->resize(2 * current_capacity);
+            }
             m_tri_connectivity.grow_to_at_least(2 * current_capacity);
             tri_connectivity_synchronizing_flag = false;
             tri_connectivity_lock.unlock();

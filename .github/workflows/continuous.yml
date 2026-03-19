@@ -27,7 +27,7 @@ jobs:
             name: Linux
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.1.6
+        uses: actions/checkout@v6
         with:
           fetch-depth: 10
 
@@ -39,7 +39,7 @@ jobs:
 
       - name: Cache Build
         id: cache-build
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ env.CACHE_PATH }}
           key: ${{ runner.os }}-${{ matrix.config }}-cache-${{ github.sha }}
@@ -84,7 +84,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.1.6
+        uses: actions/checkout@v6
         with:
           fetch-depth: 10
 
@@ -95,7 +95,7 @@ jobs:
 
       - name: Cache Build
         id: cache-build
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ env.CACHE_PATH }}
           key: ${{ matrix.os }}-${{ matrix.config }}-cache-${{ github.sha }}
@@ -110,6 +110,10 @@ jobs:
         run: |
           mkdir -p build
           cd build
+          WMTK_INTEGRATION_TESTS_FLAG=""
+          if [ "${{ matrix.config }}" = "Release" ]; then
+            WMTK_INTEGRATION_TESTS_FLAG="-DWMTK_BUILD_INTEGRATION_TESTS=ON"
+          fi
           cmake .. \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_BUILD_TYPE=${{ matrix.config }}
@@ -137,12 +141,16 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.1.6
+        uses: actions/checkout@v6
         with:
           fetch-depth: 10
 
-      - name: Install Ninja
-        uses: seanmiddleditch/gha-setup-ninja@master
+      # - name: Install Ninja
+      #   uses: seanmiddleditch/gha-setup-ninja@master
+
+      # - name: VCPKG
+      #   run: |
+      #     vcpkg install gmp:x64-windows
 
       - name: Dependencies
         run: |
@@ -151,7 +159,7 @@ jobs:
 
       - name: Cache build
         id: cache-build
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ env.SCCACHE_DIR }}
           key: ${{ runner.os }}-${{ matrix.config }}-cache-${{ github.sha }}
@@ -166,11 +174,14 @@ jobs:
         shell: cmd
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=x64
+          set WMTK_INTEGRATION_TESTS_FLAG=
+          if "${{ matrix.config }}"=="Release" set WMTK_INTEGRATION_TESTS_FLAG=-DWMTK_BUILD_INTEGRATION_TESTS=ON
           cmake -G Ninja ^
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache ^
             -DCMAKE_POLICY_DEFAULT_CMP0141=NEW ^
             -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded ^
             -DCMAKE_BUILD_TYPE=${{ matrix.config }} ^
+            %WMTK_INTEGRATION_TESTS_FLAG% ^
             -B build ^
             -S .
 

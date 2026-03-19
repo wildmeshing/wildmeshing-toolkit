@@ -75,6 +75,11 @@ public:
     // TODO: morton should not be here, but inside wmtk
     void partition_mesh_morton();
 
+    size_t get_partition_id(const Tuple& loc) const
+    {
+        return vertex_attrs[loc.vid(*this)].partition_id;
+    }
+
     bool smooth_all_vertices();
 
     Eigen::Vector3d smooth(const Tuple& t);

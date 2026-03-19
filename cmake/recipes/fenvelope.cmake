@@ -10,21 +10,21 @@ set(FAST_ENVELOPE_ENABLE_TBB OFF)
 
 include(cli11)
 
-# HACK because there is a linker error on Windows otherwise
-if(WIN32)
-    set(FAST_ENVELOPE_WITH_GEOGRAM_PREDICATES ON)
-    set(FAST_ENVELOPE_WITH_GEOGRAM_PSM_PREDICATES OFF)
-else()
-    set(FAST_ENVELOPE_WITH_GEOGRAM_PREDICATES OFF)
-    set(FAST_ENVELOPE_WITH_GEOGRAM_PSM_PREDICATES ON)
-endif()
+# # HACK because there is a linker error on Windows otherwise
+# if(WIN32)
+#     set(FAST_ENVELOPE_WITH_GEOGRAM_PREDICATES ON)
+#     set(FAST_ENVELOPE_WITH_GEOGRAM_PSM_PREDICATES OFF)
+# else()
+#     set(FAST_ENVELOPE_WITH_GEOGRAM_PREDICATES OFF)
+#     set(FAST_ENVELOPE_WITH_GEOGRAM_PSM_PREDICATES ON)
+# endif()
 
 
 message(STATUS "Third-party: creating target 'FastEnvelope::FastEnvelope'")
 
 
 include(CPM)
-CPMAddPackage("gh:daniel-zint/fast-envelope#7a78a56e1337c37b0476d49ddb9fd806c1250464")
+CPMAddPackage("gh:daniel-zint/fast-envelope#0046a216171237aab654dd1580aa8a5eaef675ee")
 
 set_target_properties(FastEnvelope PROPERTIES FOLDER third_party)
 add_library(FastEnvelope::FastEnvelope ALIAS FastEnvelope)

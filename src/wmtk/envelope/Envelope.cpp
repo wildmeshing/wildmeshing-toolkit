@@ -145,6 +145,33 @@ void SampleEnvelope::init(
     m_bvh = std::make_shared<SimpleBVH::BVH>();
     m_bvh->init(VV, FF, 0);
 }
+void SampleEnvelope::init(
+    const std::vector<Eigen::Vector2d>& V,
+    const std::vector<Eigen::Vector2i>& F,
+    const double _eps)
+{
+    if (use_exact) {
+        log_and_throw_error("Cannot use an exact envelope for edges.");
+    }
+
+    sampling_dist = _eps;
+    const double real_envelope = _eps - _eps / sqrt(3);
+    eps2 = real_envelope * real_envelope;
+
+    MatrixXd VV;
+    VV.resize(V.size(), 2);
+    for (size_t i = 0; i < V.size(); ++i) {
+        VV.row(i) = V[i];
+    }
+    MatrixXi FF;
+    FF.resize(F.size(), 2);
+    for (size_t i = 0; i < F.size(); ++i) {
+        FF.row(i) = F[i];
+    }
+
+    m_bvh = std::make_shared<SimpleBVH::BVH>();
+    m_bvh->init(VV, FF, 0);
+}
 
 bool SampleEnvelope::is_outside(const Eigen::Vector3d& pts) const
 {
@@ -154,6 +181,11 @@ bool SampleEnvelope::is_outside(const Eigen::Vector3d& pts) const
     double dist2 = squared_distance(pts);
 
     return (dist2 > eps2);
+}
+
+bool SampleEnvelope::is_outside(const Eigen::Vector2d& pts) const
+{
+    return is_outside(Vector3d(pts[0], pts[1], 0));
 }
 
 bool SampleEnvelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri) const
@@ -239,7 +271,7 @@ bool SampleEnvelope::is_outside(const std::array<Vector3d, 2>& edge) const
     }
 
     for (size_t i = 0; i < pts.size(); ++i) {
-        m_bvh->nearest_facet_with_hint(pts[i], prev_facet, nearest_point, sq_dist);
+        m_bvh->nearest_facet(pts[i], nearest_point, sq_dist);
         if (sq_dist > eps2) {
             wmtk::logger().trace("fail envelope check 5");
             return true;
@@ -249,8 +281,23 @@ bool SampleEnvelope::is_outside(const std::array<Vector3d, 2>& edge) const
     return false;
 }
 
+bool SampleEnvelope::is_outside(const std::array<Vector2d, 2>& edge) const
+{
+    std::array<Vector3d, 2> e;
+    for (size_t i = 0; i < edge.size(); ++i) {
+        e[i] = Vector3d(edge[i][0], edge[i][1], 0);
+    }
+    return is_outside(e);
+}
+
 
 double SampleEnvelope::nearest_point(const Eigen::Vector3d& pts, Eigen::Vector3d& result) const
+{
+    double dist;
+    m_bvh->nearest_facet(pts, result, dist);
+    return dist;
+}
+double SampleEnvelope::nearest_point(const Eigen::Vector2d& pts, Eigen::Vector2d& result) const
 {
     double dist;
     m_bvh->nearest_facet(pts, result, dist);
@@ -261,6 +308,14 @@ double SampleEnvelope::squared_distance(const Eigen::Vector3d& p) const
 {
     double d2;
     SimpleBVH::Vector3d out;
+    m_bvh->nearest_facet(p, out, d2);
+    return d2;
+}
+
+double SampleEnvelope::squared_distance(const Eigen::Vector2d& p) const
+{
+    double d2;
+    SimpleBVH::Vector2d out;
     m_bvh->nearest_facet(p, out, d2);
     return d2;
 }
