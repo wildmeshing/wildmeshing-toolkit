@@ -110,8 +110,7 @@ void topological_offset(nlohmann::json json_params)
                     bad_tris_str += (std::to_string(t.fid(mesh)) + " ");
                 }
             }
-            logger().info("Inverted input element. Aborting. Bad tri ids: {}", bad_tris_str);
-            return;
+            log_and_throw_error("Inverted input element. Aborting. Bad tri ids: {}", bad_tris_str);
         }
         tris_before.clear();
 
