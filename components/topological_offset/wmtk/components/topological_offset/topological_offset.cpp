@@ -115,13 +115,6 @@ void topological_offset(nlohmann::json json_params)
         }
         tris_before.clear();
 
-        Vector2d p223 = mesh.m_vertex_attribute[223].m_posf;
-        Vector2d p346 = mesh.m_vertex_attribute[346].m_posf;
-        Vector2d p2018 = mesh.m_vertex_attribute[2018].m_posf;
-        logger().info("p223: {}, {}", p223(0), p223(1));
-        logger().info("p346: {}, {}", p346(0), p346(1));
-        logger().info("p2018: {}, {}", p2018(0), p2018(1));
-
         // initialize BVH
         mesh.init_input_complex_bvh();
         mesh.consolidate_mesh();
