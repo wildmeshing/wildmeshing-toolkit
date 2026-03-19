@@ -169,7 +169,6 @@ void ImageSimulationMeshTri::init_from_image(
     const MatrixXd& V,
     const MatrixXi& T,
     const MatrixXi& T_tags)
-
 {
     assert(V.cols() == 2);
     assert(T.cols() == 3);
@@ -220,7 +219,6 @@ void ImageSimulationMeshTri::init_from_image(
 }
 
 void ImageSimulationMeshTri::init_surfaces_and_boundaries()
-
 {
     const auto edges = get_edges();
     logger().info("#E = {}", edges.size());
@@ -1116,7 +1114,7 @@ void ImageSimulationMeshTri::smooth_all_vertices()
                 pts[i + 1] = m_vertex_attribute.at(neighbor_id).m_pos;
             }
 
-            optimization::SmoothingEnergy2D::local_mass_and_stiffness(pts, M, L_w);
+            optimization::BiharmonicEnergy2D::local_mass_and_stiffness(pts, M, L_w);
             // optimization::SmoothingEnergy2D::uniform_mass_and_stiffness(pts, M, L_w);
         }
     }
@@ -1254,7 +1252,8 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
         const auto& M = m_surface_mass[vid];
         const auto& L_w = m_surface_stiffness[vid];
 
-        auto smooth_energy = std::make_shared<optimization::SmoothingEnergy2D>(surface_pts, M, L_w);
+        auto smooth_energy =
+            std::make_shared<optimization::BiharmonicEnergy2D>(surface_pts, M, L_w);
         auto envelope_energy =
             std::make_shared<optimization::EnvelopeEnergy2D>(m_envelope, surface_pts);
         auto energy_sum = std::make_shared<optimization::EnergySum>();
