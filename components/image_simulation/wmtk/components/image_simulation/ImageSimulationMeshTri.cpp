@@ -1,4 +1,5 @@
 #include "ImageSimulationMeshTri.hpp"
+#include "ConnectedComponentAnnotationHelper.cpp"
 
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
@@ -9,7 +10,10 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <atomic>
+#include <map>
 #include <paraviewo/VTUWriter.hpp>
+#include <set>
+#include <unordered_map>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/optimization/AMIPSEnergy.hpp>
 #include <wmtk/optimization/DirichletEnergy.hpp>
@@ -605,13 +609,48 @@ bool ImageSimulationMeshTri::split_edge_after(const Tuple& loc)
     const size_t v2_id = cache.v2_id;
 
     /// check inversion & rounding
-    m_vertex_attribute[v_id].m_pos =
-        (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
+    auto& p = m_vertex_attribute[v_id].m_pos;
+    p = (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
 
     for (const Tuple& t : locs) {
         if (is_inverted(t)) {
             return false;
         }
+    }
+
+    // If a Voronoi split function is set, binary-search vmid onto its zero-crossing.
+    // p0 stays on the negative side, p1 on the positive side.
+    if (m_voronoi_split_fn) {
+        Vector2d p0 = m_vertex_attribute[v1_id].m_pos;
+        Vector2d p1 = m_vertex_attribute[v2_id].m_pos;
+        if (m_voronoi_split_fn(p0) >= 0) std::swap(p0, p1); // ensure p0 is negative side
+        for (int i = 0; i < 20; ++i) {
+            p = 0.5 * (p0 + p1);
+            bool inv = false;
+            for (const Tuple& t : locs) {
+                if (is_inverted(t)) {
+                    inv = true;
+                    break;
+                }
+            }
+            if (inv || (p1 - p0).squaredNorm() < 1e-20) break;
+            if (m_voronoi_split_fn(p) < 0)
+                p0 = p;
+            else
+                p1 = p;
+        }
+        // final inversion guard: revert to midpoint if needed
+        bool inv = false;
+        for (const Tuple& t : locs) {
+            if (is_inverted(t)) {
+                inv = true;
+                logger().warn(
+                    "Voronoi split resulted in inversion, reverting to midpoint. Iteration: {}",
+                    debug_print_counter++);
+                break;
+            }
+        }
+        if (inv) p = (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
     }
 
     // update face attributes
@@ -1582,9 +1621,127 @@ std::tuple<double, double> ImageSimulationMeshTri::get_max_avg_energy()
     return std::make_tuple(max_energy, avg_energy);
 }
 
-void ImageSimulationMeshTri::fill_holes_topo()
+void ImageSimulationMeshTri::fill_holes_topo(
+    const std::vector<int64_t>& fill_holes_tags,
+    double threshold)
 {
-    log_and_throw_error("fill_holes_topo() is not implemented");
+    if (m_tags_count == 0) {
+        logger().warn("fill_holes_topo: no tags, skipping");
+        return;
+    }
+
+    // -- Step 1: compute all connected components with their surrounding component ids
+    auto components = compute_connected_components();
+
+    // -- Step 2: for each fill_tag, fill all enclosed components
+    bool any_filled = false;
+    for (const int64_t fill_tag : fill_holes_tags) {
+        std::vector<std::vector<size_t>> hole_clusters;
+        std::unordered_set<int64_t> tags{fill_tag};
+        extract_hole_clusters(components, tags, hole_clusters, threshold);
+
+        for (const auto& hole_cluster : hole_clusters) {
+            // Collect the fill-tag component indices that surround this cluster
+            std::unordered_set<size_t> engulfing_comp_ids;
+            for (const size_t ci : hole_cluster) {
+                for (const size_t sid : components[ci].surrounding_comp_ids) {
+                    if (!components[sid].faces.empty() && components[sid].tag == fill_tag) {
+                        engulfing_comp_ids.insert(sid);
+                    }
+                }
+            }
+            engulf_components(components, hole_cluster, engulfing_comp_ids);
+            any_filled = true;
+        }
+        if (hole_clusters.empty()) {
+            logger().info(
+                "fill_holes_topo: no enclosed components found for fill_tag {}",
+                fill_tag);
+        }
+    }
+
+    if (!any_filled) return;
+
+    // -- Step 3: recompute m_is_surface_fs and m_is_on_surface
+    recompute_surface_info();
+}
+void ImageSimulationMeshTri::keep_largest_connected_component(const std::vector<int64_t>& lcc_tags)
+{
+    auto components = compute_connected_components();
+    if (components.empty()) {
+        logger().warn("keep_largest_connected_component: no components found, skipping");
+        return;
+    }
+    // For each tag in lcc_tags, find the largest component with that tag and mark all other
+    // components with that tag for removal
+    for (const int64_t lcc_tag : lcc_tags) {
+        int largest_comp_id = -1;
+        double largest_area = -1.0;
+        for (size_t i = 0; i < components.size(); ++i) {
+            if (components[i].faces.empty() || components[i].tag != lcc_tag) continue;
+            if (components[i].area > largest_area) {
+                largest_area = components[i].area;
+                largest_comp_id = i;
+            }
+        }
+        if (largest_comp_id == -1) {
+            logger().warn(
+                "keep_largest_connected_component: no component found for tag {}, skipping",
+                lcc_tag);
+            continue;
+        }
+        for (size_t i = 0; i < components.size(); ++i) {
+            if (components[i].faces.empty() || components[i].tag != lcc_tag ||
+                (int)i == largest_comp_id)
+                continue;
+            // Copy surrounding_comp_ids — engulf_components will reset components[i]
+            std::unordered_set<size_t> surr = components[i].surrounding_comp_ids;
+            engulf_components(components, std::vector<size_t>{i}, surr);
+        }
+    }
+
+    recompute_surface_info();
+}
+
+void ImageSimulationMeshTri::tight_seal_topo(
+    const std::vector<std::unordered_set<int64_t>>& tight_seal_tag_sets,
+    double threshold)
+{
+    auto components = compute_connected_components();
+
+    for (const auto& tag_set : tight_seal_tag_sets) {
+        std::vector<std::vector<size_t>> hole_clusters;
+        std::unordered_set<int64_t> tags_copy(tag_set.begin(), tag_set.end());
+        extract_hole_clusters(components, tags_copy, hole_clusters, threshold);
+        for (const auto& hole_cluster : hole_clusters) {
+            // Collect component indices in tag_set that surround this cluster
+            std::unordered_set<size_t> engulfing_comp_ids;
+            std::unordered_set<int64_t> surrounding_tags;
+            for (const size_t ci : hole_cluster) {
+                for (const size_t sid : components[ci].surrounding_comp_ids) {
+                    if (!components[sid].faces.empty() && tag_set.count(components[sid].tag)) {
+                        engulfing_comp_ids.insert(sid);
+                        surrounding_tags.insert(components[sid].tag);
+                    }
+                }
+            }
+            // check surrounding tags is the same as tag_set
+            if (surrounding_tags != tag_set) continue; // harmless hole, skip
+            std::cout << "Engulfing_comp_ids: ";
+            for (const auto& id : engulfing_comp_ids) {
+                std::cout << id << " ";
+            }
+            std::cout << std::endl;
+            std::cout << "Surrounding_tags: ";
+            for (const auto& tag : surrounding_tags) {
+                std::cout << tag << " ";
+            }
+            std::cout << std::endl;
+            engulf_components(components, hole_cluster, engulfing_comp_ids);
+        }
+    }
+
+    recompute_surface_info();
 }
 
 simplex::RawSimplexCollection ImageSimulationMeshTri::get_order1_edges_for_vertex(
