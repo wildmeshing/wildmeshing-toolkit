@@ -95,9 +95,32 @@ void topological_offset(nlohmann::json json_params)
 
         // check empty input
         if (mesh.empty_input_complex()) {
-            logger().info("Empty input complex. Aborting");
+            logger().info("Empty input complex. Aborting.");
             return;
         }
+
+        // check for inversions in input mesh
+        auto tris_before = mesh.get_faces();
+        if (!mesh.invariants(tris_before)) {
+            std::string bad_tris_str = "";
+            for (const TriMesh::Tuple& t : tris_before) {
+                std::vector<TriMesh::Tuple> tvec;
+                tvec.push_back(t);
+                if (!mesh.invariants(tvec)) {
+                    bad_tris_str += (std::to_string(t.fid(mesh)) + " ");
+                }
+            }
+            logger().info("Inverted input element. Aborting. Bad tri ids: {}", bad_tris_str);
+            return;
+        }
+        tris_before.clear();
+
+        Vector2d p223 = mesh.m_vertex_attribute[223].m_posf;
+        Vector2d p346 = mesh.m_vertex_attribute[346].m_posf;
+        Vector2d p2018 = mesh.m_vertex_attribute[2018].m_posf;
+        logger().info("p223: {}, {}", p223(0), p223(1));
+        logger().info("p346: {}, {}", p346(0), p346(1));
+        logger().info("p2018: {}, {}", p2018(0), p2018(1));
 
         // initialize BVH
         mesh.init_input_complex_bvh();
@@ -180,7 +203,7 @@ void topological_offset(nlohmann::json json_params)
             }
             mesh.write_msh(output_filename.string()); // DEBUG: write .msh anyway
             // log_and_throw_error("INVERSION DURING OFFSET: {} bad tris", bad_tris.size());
-            log_and_throw_error("INVERSION DURING OFFSET! bad tris: {}", bad_tris_str);
+            log_and_throw_error("INVERSION DURING OFFSET! bad tri ids: {}", bad_tris_str);
         }
 
         // offset region manifoldness check
