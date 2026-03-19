@@ -74,6 +74,7 @@ public:
         const MatrixXd& V, // V by 3
         const MatrixXi& F, // F by 3
         const MatrixXd& F_tags); // F by N
+    bool empty_input_complex();
     void init_input_complex_bvh();
 
     // splitting

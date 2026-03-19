@@ -91,6 +91,19 @@ void TopoOffsetTriMesh::init_from_image(
 }
 
 
+bool TopoOffsetTriMesh::empty_input_complex()
+{
+    auto verts = get_vertices();
+    for (const Tuple& v : verts) {
+        size_t v_id = v.vid(*this);
+        if (m_vertex_attribute[v_id].label == 1) {
+            return false;
+        }
+    }
+    return true;
+}
+
+
 void TopoOffsetTriMesh::init_input_complex_bvh()
 {
     // used a few times. just collect once

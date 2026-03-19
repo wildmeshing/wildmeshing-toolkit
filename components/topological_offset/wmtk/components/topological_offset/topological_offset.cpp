@@ -92,6 +92,14 @@ void topological_offset(nlohmann::json json_params)
         // initialize mesh
         TopoOffsetTriMesh mesh(params, NUM_THREADS);
         mesh.init_from_image(V_input, F_input, F_input_tags);
+
+        // check empty input
+        if (mesh.empty_input_complex()) {
+            logger().info("Empty input complex. Aborting");
+            return;
+        }
+
+        // initialize BVH
         mesh.init_input_complex_bvh();
         mesh.consolidate_mesh();
 
