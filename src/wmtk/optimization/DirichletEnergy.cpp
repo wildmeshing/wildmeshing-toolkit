@@ -44,7 +44,7 @@ void DirichletEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
 }
 
 
-SmoothingEnergy2D::SmoothingEnergy2D(
+BiharmonicEnergy2D::BiharmonicEnergy2D(
     const std::array<Vector2d, 3>& pts,
     const double& M,
     const Vector3d& L_w)
@@ -56,12 +56,12 @@ SmoothingEnergy2D::SmoothingEnergy2D(
     m_LTML_row = m_M_inv * m_L_w_row[0] * m_L_w_row;
 }
 
-SmoothingEnergy2D::TVector SmoothingEnergy2D::initial_position() const
+BiharmonicEnergy2D::TVector BiharmonicEnergy2D::initial_position() const
 {
     return m_pts[0];
 }
 
-double SmoothingEnergy2D::value(const TVector& x)
+double BiharmonicEnergy2D::value(const TVector& x)
 {
     assert(x.size() == 2);
     double energy = 0;
@@ -74,7 +74,7 @@ double SmoothingEnergy2D::value(const TVector& x)
     return energy;
 }
 
-void SmoothingEnergy2D::gradient(const TVector& x, TVector& gradv)
+void BiharmonicEnergy2D::gradient(const TVector& x, TVector& gradv)
 {
     assert(x.size() == 2);
     gradv.resize(2);
@@ -85,13 +85,13 @@ void SmoothingEnergy2D::gradient(const TVector& x, TVector& gradv)
     }
 }
 
-void SmoothingEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
+void BiharmonicEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
 {
     assert(x.size() == 2);
     hessian = Matrix2d::Identity() * 2 * m_LTML_row[0];
 }
 
-void SmoothingEnergy2D::local_mass_and_stiffness(
+void BiharmonicEnergy2D::local_mass_and_stiffness(
     const std::array<Vector2d, 3>& pts,
     double& M,
     Vector3d& L_w)
@@ -106,7 +106,7 @@ void SmoothingEnergy2D::local_mass_and_stiffness(
     L_w[2] = 1 / e2;
 }
 
-void SmoothingEnergy2D::uniform_mass_and_stiffness(
+void BiharmonicEnergy2D::uniform_mass_and_stiffness(
     const std::array<Vector2d, 3>& pts,
     double& M,
     Vector3d& L_w)

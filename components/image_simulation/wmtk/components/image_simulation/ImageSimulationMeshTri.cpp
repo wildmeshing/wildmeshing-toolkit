@@ -15,6 +15,7 @@
 #include <set>
 #include <unordered_map>
 #include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/envelope/KNN.hpp>
 #include <wmtk/optimization/AMIPSEnergy.hpp>
 #include <wmtk/optimization/DirichletEnergy.hpp>
 #include <wmtk/optimization/EnergySum.hpp>
@@ -173,7 +174,6 @@ void ImageSimulationMeshTri::init_from_image(
     const MatrixXd& V,
     const MatrixXi& T,
     const MatrixXi& T_tags)
-
 {
     assert(V.cols() == 2);
     assert(T.cols() == 3);
@@ -224,7 +224,6 @@ void ImageSimulationMeshTri::init_from_image(
 }
 
 void ImageSimulationMeshTri::init_surfaces_and_boundaries()
-
 {
     const auto edges = get_edges();
     logger().info("#E = {}", edges.size());
@@ -352,8 +351,112 @@ void ImageSimulationMeshTri::init_envelope(const MatrixXd& V, const MatrixXi& E)
 }
 
 bool ImageSimulationMeshTri::adjust_sizing_field_serial(double max_energy)
+
 {
-    log_and_throw_error("not implemented");
+    wmtk::logger().info("#V {}, #F {}", vert_capacity(), tri_capacity());
+
+    const double stop_filter_energy = m_params.stop_energy * 0.8;
+    double filter_energy = std::max(max_energy / 100, stop_filter_energy);
+    filter_energy = std::min(filter_energy, 100.);
+
+    const auto recover_scalar = 1.5;
+    const auto refine_scalar = 0.5;
+    const auto min_refine_scalar = m_params.l_min / m_params.l;
+
+    // outputs scale_multipliers
+    std::vector<double> scale_multipliers(vert_capacity(), recover_scalar);
+
+    std::vector<Vector3d> pts;
+    std::queue<size_t> v_queue;
+
+    for (int i = 0; i < tri_capacity(); i++) {
+        const Tuple t = tuple_from_tri(i);
+        if (!t.is_valid(*this)) {
+            continue;
+        }
+        const size_t fid = t.fid(*this);
+        if (m_face_attribute.at(fid).m_quality < filter_energy) {
+            continue;
+        }
+        const auto vs = oriented_tri_vids(t);
+        Vector2d c(0, 0); // center
+        for (int j = 0; j < 3; j++) {
+            c += m_vertex_attribute.at(vs[j]).m_pos;
+            v_queue.emplace(vs[j]);
+        }
+        c /= 3;
+        pts.emplace_back(Vector3d(c[0], c[1], 0));
+    }
+
+    wmtk::logger().info("filter energy {} Low Quality Tets {}", filter_energy, pts.size());
+
+    const double R = m_params.l * 1.8;
+
+    int sum = 0;
+    int adjcnt = 0;
+
+    std::vector<bool> visited(vert_capacity(), false);
+
+    KNN knn(pts);
+
+    std::vector<size_t> cache_one_ring;
+    // size_t vid;
+    while (!v_queue.empty()) {
+        sum++;
+        const size_t vid = v_queue.front();
+        v_queue.pop();
+        if (visited[vid]) continue;
+        visited[vid] = true;
+        adjcnt++;
+
+        const auto& pos_v = m_vertex_attribute.at(vid).m_pos;
+        const Vector3d p(pos_v[0], pos_v[1], 0);
+        double sq_dist = 0.;
+        uint32_t idx;
+        knn.nearest_neighbor(p, idx, sq_dist);
+        const double dist = std::sqrt(sq_dist);
+
+        if (dist > R) { // outside R-ball, unmark.
+            continue;
+        }
+
+        scale_multipliers[vid] = std::min(
+            scale_multipliers[vid],
+            dist / R * (1 - refine_scalar) + refine_scalar); // linear interpolate
+
+        get_one_ring_vids_for_vertex_duplicate(vid, cache_one_ring);
+        for (size_t n_vid : cache_one_ring) {
+            if (visited[n_vid]) {
+                continue;
+            }
+            v_queue.push(n_vid);
+        }
+    }
+
+    logger().info("sum = {}; adjacent = {}", sum, adjcnt);
+
+    std::atomic_bool is_hit_min_edge_length = false;
+
+    for (int i = 0; i < vert_capacity(); i++) {
+        const Tuple v = tuple_from_vertex(i);
+        if (!v.is_valid(*this)) {
+            continue;
+        }
+        const size_t vid = v.vid(*this);
+        auto& v_attr = m_vertex_attribute[vid];
+
+        auto new_scale = v_attr.m_sizing_scalar * scale_multipliers[vid];
+        if (new_scale > 1) {
+            v_attr.m_sizing_scalar = 1;
+        } else if (new_scale < min_refine_scalar) {
+            is_hit_min_edge_length = true;
+            v_attr.m_sizing_scalar = min_refine_scalar;
+        } else {
+            v_attr.m_sizing_scalar = new_scale;
+        }
+    }
+
+    return is_hit_min_edge_length.load();
 }
 
 void ImageSimulationMeshTri::write_msh(std::string file)
@@ -1155,9 +1258,47 @@ void ImageSimulationMeshTri::smooth_all_vertices()
                 pts[i + 1] = m_vertex_attribute.at(neighbor_id).m_pos;
             }
 
-            optimization::SmoothingEnergy2D::local_mass_and_stiffness(pts, M, L_w);
+            optimization::BiharmonicEnergy2D::local_mass_and_stiffness(pts, M, L_w);
             // optimization::SmoothingEnergy2D::uniform_mass_and_stiffness(pts, M, L_w);
         }
+    }
+    // init barrier energy
+    {
+        logger().info("Build barrier energy");
+        MatrixXd V;
+        MatrixXi E;
+        // gather all surface edges
+        std::vector<Vector2d> surf_points;
+        m_global_to_local_vid_map.resize(vert_capacity());
+        for (size_t i = 0; i < vert_capacity(); ++i) {
+            const Tuple v = tuple_from_vertex(i);
+            if (!v.is_valid(*this)) {
+                continue;
+            }
+            const size_t vid = v.vid(*this);
+            if (!m_vertex_attribute.at(vid).m_is_on_surface) {
+                continue;
+            }
+            surf_points.push_back(m_vertex_attribute.at(vid).m_pos);
+            m_global_to_local_vid_map[vid] = surf_points.size() - 1;
+        }
+
+        V.resize(surf_points.size(), 2);
+        for (size_t i = 0; i < surf_points.size(); ++i) {
+            V.row(i) = surf_points[i];
+        }
+
+        const auto surf_edges = get_edges_by_condition([](auto& f) { return f.m_is_surface_fs; });
+        E.resize(surf_edges.size(), 2);
+        for (size_t i = 0; i < surf_edges.size(); ++i) {
+            const size_t v0 = m_global_to_local_vid_map[surf_edges[i][0]];
+            const size_t v1 = m_global_to_local_vid_map[surf_edges[i][1]];
+            E.row(i) = Vector2i(v0, v1);
+        }
+
+        const double dhat = 1.0; // TODO should not be hard-coded!!!
+        m_barrier_energy = std::make_shared<optimization::BarrierEnergy2D>(V, E, 0, dhat);
+        logger().info("Finished building barrier energy.");
     }
 
     igl::Timer timer;
@@ -1293,13 +1434,18 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
         const auto& M = m_surface_mass[vid];
         const auto& L_w = m_surface_stiffness[vid];
 
-        auto smooth_energy = std::make_shared<optimization::SmoothingEnergy2D>(surface_pts, M, L_w);
+        auto smooth_energy =
+            std::make_shared<optimization::BiharmonicEnergy2D>(surface_pts, M, L_w);
         auto envelope_energy =
             std::make_shared<optimization::EnvelopeEnergy2D>(m_envelope, surface_pts);
         auto energy_sum = std::make_shared<optimization::EnergySum>();
         energy_sum->add_energy(amips_energy);
         energy_sum->add_energy(smooth_energy, 1e2);
         energy_sum->add_energy(envelope_energy, 1e2 * M);
+
+        m_barrier_energy->replace_vid(m_global_to_local_vid_map[vid]);
+        energy_sum->add_energy(m_barrier_energy, 1e4);
+
         total_energy = energy_sum;
     }
 
@@ -1321,6 +1467,7 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
             edge[0] = VA[vid].m_pos;
             edge[1] = surface_pts[i + 1];
             if (m_envelope->is_outside(edge)) {
+                m_barrier_energy->V().row(m_global_to_local_vid_map[vid]) = old_pos;
                 return false;
             }
         }
@@ -1330,6 +1477,9 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
     auto max_after_quality = 0.;
     for (const size_t fid : locs) {
         if (is_inverted(fid)) {
+            if (VA[vid].m_is_on_surface) {
+                m_barrier_energy->V().row(m_global_to_local_vid_map[vid]) = old_pos;
+            }
             return false;
         }
         const double q = get_quality(fid);

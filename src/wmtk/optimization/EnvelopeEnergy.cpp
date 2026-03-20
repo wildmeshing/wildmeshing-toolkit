@@ -36,18 +36,19 @@ void EnvelopeEnergy2D::solution_changed(const TVector& new_x) {}
 
 bool EnvelopeEnergy2D::is_step_valid(const TVector& x0, const TVector& x1)
 {
-    Vector2d r(x1);
-    if (m_envelope->is_outside(r)) {
-        return false;
-    }
-    // for (size_t i = 0; i < 2; ++i) {
-    //     std::array<Eigen::Vector2d, 2> edge;
-    //     edge[0] = r;
-    //     edge[1] = m_pts[i + 1];
-    //     if (m_envelope->is_outside(edge)) {
-    //         return false;
-    //     }
+    // Vector2d r(x1);
+    // if (m_envelope->is_outside(r)) {
+    //     return false;
     // }
+
+    //  for (size_t i = 0; i < 2; ++i) {
+    //      std::array<Eigen::Vector2d, 2> edge;
+    //      edge[0] = r;
+    //      edge[1] = m_pts[i + 1];
+    //      if (m_envelope->is_outside(edge)) {
+    //          return false;
+    //      }
+    //  }
 
     return true;
 }
