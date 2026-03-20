@@ -620,6 +620,8 @@ public:
      * @return a vector of vids that can have duplicates
      */
     std::vector<size_t> get_one_ring_vids_for_vertex_duplicate(const size_t& t) const;
+    void get_one_ring_vids_for_vertex_duplicate(const size_t& t, std::vector<size_t>& one_ring)
+        const;
 
     std::vector<size_t> get_incident_fids_for_edge(const Tuple& t) const;
     std::vector<size_t> get_incident_fids_for_edge(const size_t vid0, const size_t vid1) const;

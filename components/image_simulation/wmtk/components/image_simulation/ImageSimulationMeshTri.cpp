@@ -15,6 +15,7 @@
 #include <set>
 #include <unordered_map>
 #include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/envelope/KNN.hpp>
 #include <wmtk/optimization/AMIPSEnergy.hpp>
 #include <wmtk/optimization/DirichletEnergy.hpp>
 #include <wmtk/optimization/EnergySum.hpp>
@@ -350,8 +351,112 @@ void ImageSimulationMeshTri::init_envelope(const MatrixXd& V, const MatrixXi& E)
 }
 
 bool ImageSimulationMeshTri::adjust_sizing_field_serial(double max_energy)
+
 {
-    log_and_throw_error("not implemented");
+    wmtk::logger().info("#V {}, #F {}", vert_capacity(), tri_capacity());
+
+    const double stop_filter_energy = m_params.stop_energy * 0.8;
+    double filter_energy = std::max(max_energy / 100, stop_filter_energy);
+    filter_energy = std::min(filter_energy, 100.);
+
+    const auto recover_scalar = 1.5;
+    const auto refine_scalar = 0.5;
+    const auto min_refine_scalar = m_params.l_min / m_params.l;
+
+    // outputs scale_multipliers
+    std::vector<double> scale_multipliers(vert_capacity(), recover_scalar);
+
+    std::vector<Vector3d> pts;
+    std::queue<size_t> v_queue;
+
+    for (int i = 0; i < tri_capacity(); i++) {
+        const Tuple t = tuple_from_tri(i);
+        if (!t.is_valid(*this)) {
+            continue;
+        }
+        const size_t fid = t.fid(*this);
+        if (m_face_attribute.at(fid).m_quality < filter_energy) {
+            continue;
+        }
+        const auto vs = oriented_tri_vids(t);
+        Vector2d c(0, 0); // center
+        for (int j = 0; j < 3; j++) {
+            c += m_vertex_attribute.at(vs[j]).m_pos;
+            v_queue.emplace(vs[j]);
+        }
+        c /= 3;
+        pts.emplace_back(Vector3d(c[0], c[1], 0));
+    }
+
+    wmtk::logger().info("filter energy {} Low Quality Tets {}", filter_energy, pts.size());
+
+    const double R = m_params.l * 1.8;
+
+    int sum = 0;
+    int adjcnt = 0;
+
+    std::vector<bool> visited(vert_capacity(), false);
+
+    KNN knn(pts);
+
+    std::vector<size_t> cache_one_ring;
+    // size_t vid;
+    while (!v_queue.empty()) {
+        sum++;
+        const size_t vid = v_queue.front();
+        v_queue.pop();
+        if (visited[vid]) continue;
+        visited[vid] = true;
+        adjcnt++;
+
+        const auto& pos_v = m_vertex_attribute.at(vid).m_pos;
+        const Vector3d p(pos_v[0], pos_v[1], 0);
+        double sq_dist = 0.;
+        uint32_t idx;
+        knn.nearest_neighbor(p, idx, sq_dist);
+        const double dist = std::sqrt(sq_dist);
+
+        if (dist > R) { // outside R-ball, unmark.
+            continue;
+        }
+
+        scale_multipliers[vid] = std::min(
+            scale_multipliers[vid],
+            dist / R * (1 - refine_scalar) + refine_scalar); // linear interpolate
+
+        get_one_ring_vids_for_vertex_duplicate(vid, cache_one_ring);
+        for (size_t n_vid : cache_one_ring) {
+            if (visited[n_vid]) {
+                continue;
+            }
+            v_queue.push(n_vid);
+        }
+    }
+
+    logger().info("sum = {}; adjacent = {}", sum, adjcnt);
+
+    std::atomic_bool is_hit_min_edge_length = false;
+
+    for (int i = 0; i < vert_capacity(); i++) {
+        const Tuple v = tuple_from_vertex(i);
+        if (!v.is_valid(*this)) {
+            continue;
+        }
+        const size_t vid = v.vid(*this);
+        auto& v_attr = m_vertex_attribute[vid];
+
+        auto new_scale = v_attr.m_sizing_scalar * scale_multipliers[vid];
+        if (new_scale > 1) {
+            v_attr.m_sizing_scalar = 1;
+        } else if (new_scale < min_refine_scalar) {
+            is_hit_min_edge_length = true;
+            v_attr.m_sizing_scalar = min_refine_scalar;
+        } else {
+            v_attr.m_sizing_scalar = new_scale;
+        }
+    }
+
+    return is_hit_min_edge_length.load();
 }
 
 void ImageSimulationMeshTri::write_msh(std::string file)

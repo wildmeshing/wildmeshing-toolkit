@@ -198,7 +198,7 @@ TEST_CASE("biharmonic_energy_2d", "[energies]")
     CHECK(e_after < 1e-5);
 }
 
-TEST_CASE("ipc", "[energies][ipc]")
+TEST_CASE("ipc_2d", "[energies][ipc]")
 {
     // two edges
     MatrixXd V;
@@ -314,4 +314,84 @@ TEST_CASE("barrier_energy_2d", "[energies][ipc]")
         energy.gradient(x, g);
         CHECK(g[1] < 1e-6);
     }
+}
+
+TEST_CASE("barrier_plus_biharmonic_energy_2d", "[energies][ipc]")
+{
+    // 4 edges, two top two bottom
+    MatrixXd V;
+    V.resize(6, 2);
+    // bottom two edges
+    V.row(0) = Vector2d(0, 0);
+    V.row(1) = Vector2d(10, 0);
+    V.row(2) = Vector2d(20, 0);
+    // top two edges
+    V.row(3) = Vector2d(0, 1e-3);
+    V.row(4) = Vector2d(10, 1e-3);
+    V.row(5) = Vector2d(20, 1e-3);
+    std::array<Vector2d, 3> top_vs;
+    top_vs[0] = V.row(4); // optimized vertex
+    top_vs[1] = V.row(3); // neighbor
+    top_vs[2] = V.row(5); // neighbor
+
+    MatrixXi E;
+    E.resize(4, 2);
+    E.row(0) = Vector2i(0, 1);
+    E.row(1) = Vector2i(1, 2);
+    E.row(2) = Vector2i(3, 4);
+    E.row(3) = Vector2i(4, 5);
+
+    optimization::EnergySum energy;
+
+    std::shared_ptr<optimization::BarrierEnergy2D> barrier_energy =
+        std::make_shared<optimization::BarrierEnergy2D>(V, E, 4, 1);
+
+    double M;
+    Vector3d L_w;
+    optimization::BiharmonicEnergy2D::local_mass_and_stiffness(top_vs, M, L_w);
+    std::shared_ptr<optimization::BiharmonicEnergy2D> biharmonic_energy =
+        std::make_shared<optimization::BiharmonicEnergy2D>(top_vs, M, L_w);
+
+    energy.add_energy(barrier_energy, 1);
+    energy.add_energy(biharmonic_energy, 1e3);
+
+    const Vector2d p0 = barrier_energy->initial_position();
+    CHECK(barrier_energy->is_step_valid(p0, p0));
+
+
+    {
+        VectorXd g;
+        energy.gradient(p0, g);
+        REQUIRE(g.size() == 2);
+        CHECK(g[1] < 0);
+
+        MatrixXd h;
+        CHECK_NOTHROW(energy.hessian(p0, h));
+    }
+    auto x = barrier_energy->initial_position();
+    const double e_before = energy.value(x);
+    CHECK(e_before > 0);
+    {
+        auto linear_solver_params = optimization::basic_linear_solver_params;
+        auto nonlinear_solver_params = optimization::basic_nonlinear_solver_params;
+        nonlinear_solver_params["max_iterations"] = 100;
+
+        auto solver = polysolve::nonlinear::Solver::create(
+            nonlinear_solver_params,
+            linear_solver_params,
+            1,
+            opt_logger());
+        optimization::deactivate_opt_logger();
+
+        CHECK_NOTHROW(solver->minimize(energy, x));
+    }
+    const double e_after = energy.value(x);
+    logger().info("x = {}", x);
+    CHECK(e_after < e_before);
+
+    // vertex should be somewhere between 1e-3 and 1
+    CHECK(x[1] > 1e-3);
+    CHECK(x[1] < 1);
+    // vertex should not move to the side
+    CHECK(std::abs(x[0] - 10) < 1e-4);
 }
