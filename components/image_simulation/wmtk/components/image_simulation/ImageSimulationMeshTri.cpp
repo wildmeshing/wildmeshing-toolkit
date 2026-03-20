@@ -1262,6 +1262,44 @@ void ImageSimulationMeshTri::smooth_all_vertices()
             // optimization::SmoothingEnergy2D::uniform_mass_and_stiffness(pts, M, L_w);
         }
     }
+    // init barrier energy
+    {
+        logger().info("Build barrier energy");
+        MatrixXd V;
+        MatrixXi E;
+        // gather all surface edges
+        std::vector<Vector2d> surf_points;
+        m_global_to_local_vid_map.resize(vert_capacity());
+        for (size_t i = 0; i < vert_capacity(); ++i) {
+            const Tuple v = tuple_from_vertex(i);
+            if (!v.is_valid(*this)) {
+                continue;
+            }
+            const size_t vid = v.vid(*this);
+            if (!m_vertex_attribute.at(vid).m_is_on_surface) {
+                continue;
+            }
+            surf_points.push_back(m_vertex_attribute.at(vid).m_pos);
+            m_global_to_local_vid_map[vid] = surf_points.size() - 1;
+        }
+
+        V.resize(surf_points.size(), 2);
+        for (size_t i = 0; i < surf_points.size(); ++i) {
+            V.row(i) = surf_points[i];
+        }
+
+        const auto surf_edges = get_edges_by_condition([](auto& f) { return f.m_is_surface_fs; });
+        E.resize(surf_edges.size(), 2);
+        for (size_t i = 0; i < surf_edges.size(); ++i) {
+            const size_t v0 = m_global_to_local_vid_map[surf_edges[i][0]];
+            const size_t v1 = m_global_to_local_vid_map[surf_edges[i][1]];
+            E.row(i) = Vector2i(v0, v1);
+        }
+
+        const double dhat = 1.0; // TODO should not be hard-coded!!!
+        m_barrier_energy = std::make_shared<optimization::BarrierEnergy2D>(V, E, 0, dhat);
+        logger().info("Finished building barrier energy.");
+    }
 
     igl::Timer timer;
     timer.start();
@@ -1404,6 +1442,10 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
         energy_sum->add_energy(amips_energy);
         energy_sum->add_energy(smooth_energy, 1e2);
         energy_sum->add_energy(envelope_energy, 1e2 * M);
+
+        m_barrier_energy->replace_vid(m_global_to_local_vid_map[vid]);
+        energy_sum->add_energy(m_barrier_energy, 1e4);
+
         total_energy = energy_sum;
     }
 
@@ -1425,6 +1467,7 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
             edge[0] = VA[vid].m_pos;
             edge[1] = surface_pts[i + 1];
             if (m_envelope->is_outside(edge)) {
+                m_barrier_energy->V().row(m_global_to_local_vid_map[vid]) = old_pos;
                 return false;
             }
         }
@@ -1434,6 +1477,9 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
     auto max_after_quality = 0.;
     for (const size_t fid : locs) {
         if (is_inverted(fid)) {
+            if (VA[vid].m_is_on_surface) {
+                m_barrier_energy->V().row(m_global_to_local_vid_map[vid]) = old_pos;
+            }
             return false;
         }
         const double q = get_quality(fid);

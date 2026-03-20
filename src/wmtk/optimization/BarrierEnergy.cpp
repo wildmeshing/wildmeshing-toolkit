@@ -25,6 +25,19 @@ BarrierEnergy2D::TVector BarrierEnergy2D::initial_position() const
     return m_x0;
 }
 
+void BarrierEnergy2D::replace_vid(const size_t vid)
+{
+    //// reset m_V
+    // m_V.row(m_vid) = m_x0;
+
+    // set new vid
+    m_vid = vid;
+    m_x0 = m_V.row(m_vid);
+
+    m_collisions.build(m_collision_mesh, m_V, m_B.dhat());
+}
+
+
 double BarrierEnergy2D::value(const TVector& x)
 {
     assert(x.size() == 2);

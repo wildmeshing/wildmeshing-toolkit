@@ -18,13 +18,17 @@ public:
     /**
      * @brief Barrier energy for a polyline in 2D
      *
-     * Each triangle must be provided as an array of 6 values: {x0, y0, x1, y1, x2, y2}.
-     * The first two entries (x0, y0) must be the same for all triangles and will be replaced with
-     * `x` during optimization.
+     * The energy is defined over an entire polyline described by V and E. But the optimization only
+     * considers one vertex with ID `vid`. The `vid` can be replaced to optimize another vertex
+     * position later on.
      */
     BarrierEnergy2D(const MatrixXd& V, const MatrixXi& E, const size_t vid, const double dhat);
 
     TVector initial_position() const;
+
+    void replace_vid(const size_t vid);
+
+    MatrixXd& V() { return m_V; }
 
     double value(const TVector& x) override;
     void gradient(const TVector& x, TVector& gradv) override;

@@ -43,7 +43,7 @@ struct Parameters
         else
             eps = epsr * diag_l;
 
-        l_min = eps;
+        l_min = 0.5 * eps;
     }
     void init(
         const std::vector<Vector3d>& vertices,
