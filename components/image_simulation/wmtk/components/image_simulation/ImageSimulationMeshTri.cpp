@@ -1324,6 +1324,28 @@ void ImageSimulationMeshTri::smooth_all_vertices()
         executor(*this, collect_all_ops);
         logger().info("vertex smoothing time serial: {:.4}s", timer.getElapsedTimeInSec());
     }
+
+    // re-build envelope
+    {
+        logger().info("Re-build envelope");
+        MatrixXd V;
+        V.resize(vert_capacity(), 2);
+        for (size_t i = 0; i < vert_capacity(); ++i) {
+            const Tuple v = tuple_from_vertex(i);
+            const size_t vid = v.vid(*this);
+            V.row(i) = m_vertex_attribute.at(vid).m_pos;
+        }
+
+        const auto surf_edges = get_edges_by_condition([](auto& f) { return f.m_is_surface_fs; });
+        MatrixXi E;
+        E.resize(surf_edges.size(), 2);
+        for (size_t i = 0; i < surf_edges.size(); ++i) {
+            E.row(i) = Vector2i((int)surf_edges[i][0], (int)surf_edges[i][1]);
+        }
+
+        m_envelope = nullptr;
+        init_envelope(V, E);
+    }
 }
 
 bool ImageSimulationMeshTri::smooth_before(const Tuple& t)
@@ -1444,7 +1466,7 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
         energy_sum->add_energy(envelope_energy, 1e2 * M);
 
         m_barrier_energy->replace_vid(m_global_to_local_vid_map[vid]);
-        energy_sum->add_energy(m_barrier_energy, 1e4);
+        energy_sum->add_energy(m_barrier_energy, 1e1);
 
         total_energy = energy_sum;
     }
@@ -1466,10 +1488,10 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
             std::array<Eigen::Vector2d, 2> edge;
             edge[0] = VA[vid].m_pos;
             edge[1] = surface_pts[i + 1];
-            if (m_envelope->is_outside(edge)) {
-                m_barrier_energy->V().row(m_global_to_local_vid_map[vid]) = old_pos;
-                return false;
-            }
+            // if (m_envelope->is_outside(edge)) {
+            //     m_barrier_energy->V().row(m_global_to_local_vid_map[vid]) = old_pos;
+            //     return false;
+            // }
         }
     }
 
