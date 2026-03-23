@@ -919,6 +919,10 @@ bool ImageSimulationMeshTri::collapse_edge_before(const Tuple& loc)
         if (!VA[v2_id].m_is_on_surface) {
             return false; // do not collapse away from surface
         }
+
+        if (get_order_of_vertex(v1_id) > 1) {
+            return false; // do not move singular vertices
+        }
     }
 
     const auto& n1_locs = get_one_ring_fids_for_vertex(loc);
@@ -1296,8 +1300,7 @@ void ImageSimulationMeshTri::smooth_all_vertices()
             E.row(i) = Vector2i(v0, v1);
         }
 
-        const double dhat = 1.0; // TODO should not be hard-coded!!!
-        m_barrier_energy = std::make_shared<optimization::BarrierEnergy2D>(V, E, 0, dhat);
+        m_barrier_energy = std::make_shared<optimization::BarrierEnergy2D>(V, E, 0, m_params.dhat);
         logger().info("Finished building barrier energy.");
     }
 
@@ -1326,8 +1329,8 @@ void ImageSimulationMeshTri::smooth_all_vertices()
     }
 
     // re-build envelope
-    {
-        logger().info("Re-build envelope");
+    if (m_params.smooth_without_envelope) {
+        logger().warn("Update envelope");
         MatrixXd V;
         V.resize(vert_capacity(), 2);
         for (size_t i = 0; i < vert_capacity(); ++i) {
@@ -1458,15 +1461,17 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
 
         auto smooth_energy =
             std::make_shared<optimization::BiharmonicEnergy2D>(surface_pts, M, L_w);
-        auto envelope_energy =
-            std::make_shared<optimization::EnvelopeEnergy2D>(m_envelope, surface_pts);
+        auto envelope_energy = std::make_shared<optimization::EnvelopeEnergy2D>(
+            m_envelope,
+            surface_pts,
+            !m_params.smooth_without_envelope);
         auto energy_sum = std::make_shared<optimization::EnergySum>();
-        energy_sum->add_energy(amips_energy);
-        energy_sum->add_energy(smooth_energy, 1e2);
-        energy_sum->add_energy(envelope_energy, 1e2 * M);
+        energy_sum->add_energy(amips_energy, m_params.w_amips);
+        energy_sum->add_energy(smooth_energy, m_params.w_smooth);
+        energy_sum->add_energy(envelope_energy, M * m_params.w_envelope);
 
         m_barrier_energy->replace_vid(m_global_to_local_vid_map[vid]);
-        energy_sum->add_energy(m_barrier_energy, 1e1);
+        energy_sum->add_energy(m_barrier_energy, m_params.w_separate);
 
         total_energy = energy_sum;
     }
@@ -1488,10 +1493,10 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
             std::array<Eigen::Vector2d, 2> edge;
             edge[0] = VA[vid].m_pos;
             edge[1] = surface_pts[i + 1];
-            // if (m_envelope->is_outside(edge)) {
-            //     m_barrier_energy->V().row(m_global_to_local_vid_map[vid]) = old_pos;
-            //     return false;
-            // }
+            if (!m_params.smooth_without_envelope && m_envelope->is_outside(edge)) {
+                m_barrier_energy->V().row(m_global_to_local_vid_map[vid]) = old_pos;
+                return false;
+            }
         }
     }
 

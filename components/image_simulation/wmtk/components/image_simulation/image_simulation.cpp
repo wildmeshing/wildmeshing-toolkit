@@ -136,6 +136,16 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
     params.stop_energy = json_params["stop_energy"];
     params.preserve_topology = json_params["preserve_topology"];
 
+    params.smooth_without_envelope = json_params["smooth_without_envelope"];
+
+    params.w_amips = json_params["w_amips"];
+    params.w_smooth = json_params["w_smooth"];
+    params.w_envelope = json_params["w_envelope"];
+    params.w_separate = json_params["w_separate"];
+
+    params.dhat = json_params["dhat"];
+    params.dhat_rel = json_params["dhat_rel"];
+
     const bool write_vtu = json_params["write_vtu"];
 
     params.debug_output = json_params["DEBUG_output"];
