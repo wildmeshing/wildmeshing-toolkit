@@ -8,7 +8,6 @@
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
-#include <wmtk/optimization/BarrierEnergy.hpp>
 #include <wmtk/optimization/solver.hpp>
 
 // clang-format off
@@ -110,8 +109,6 @@ public:
     std::unique_ptr<polysolve::nonlinear::Solver> m_solver;
     std::vector<double> m_surface_mass; // the mass matrix for surface vertices
     std::vector<Vector3d> m_surface_stiffness; // stiffness matrix for surface vertices
-    std::shared_ptr<optimization::BarrierEnergy2D> m_barrier_energy;
-    std::vector<size_t> m_global_to_local_vid_map; // mapping vids to the surface vids
 
     ImageSimulationMeshTri(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
         : m_params(_m_params)
@@ -323,6 +320,18 @@ public:
     size_t get_order_of_vertex(const size_t vid) const;
 
     bool substructure_link_condition(const Tuple& e_tuple) const;
+
+    /**
+     * @brief Find the substructure region that might be affected by minimal separation.
+     *
+     * The region considers all edges within 1.5 * (dhat + l_max), where l_max is the maximum
+     * incident edge length to the vertex and dhat is given by the parameters.
+     *
+     * @param v_tuple The vertex the region should be found for.
+     * @param V Nx2 vertex positions in the region
+     * @param E Nx2 edges in the region
+     */
+    void substructure_region(const Tuple& v_tuple, MatrixXd& V, MatrixXi& E, size_t& vid) const;
 
 private:
     ////// Operations
