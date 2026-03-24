@@ -288,7 +288,9 @@ void TopoOffsetTriMesh::simplicial_embedding()
         const auto& vs = f.vertices();
         Tuple t = tuple_from_vids(vs[0], vs[1], vs[2]);
         std::vector<Tuple> garbage;
-        split_face(t, garbage);
+        if (!split_face(t, garbage)) {
+            log_and_throw_error("face split failed! (simplicial_embedding)");
+        }
     }
     logger().info("\tTris split: {}", tris_to_split.size());
 
@@ -310,7 +312,9 @@ void TopoOffsetTriMesh::simplicial_embedding()
     for (const simplex::Edge& e : edges_to_split) {
         Tuple t = get_tuple_from_edge(e);
         std::vector<Tuple> garbage;
-        split_edge(t, garbage);
+        if (!split_edge(t, garbage)) {
+            log_and_throw_error("edge split failed! (simplicial_embedding)");
+        }
     }
     logger().info("\tEdges split: {}", edges_to_split.size());
 }
@@ -353,7 +357,7 @@ void TopoOffsetTriMesh::marching_tets()
         if (split_edge(t, garbage)) { // this should never fail
             frontier_verts.push_back(v_in);
         } else {
-            log_and_throw_error("edge split failed!");
+            log_and_throw_error("edge split failed! (marching_tets)");
         }
     }
 

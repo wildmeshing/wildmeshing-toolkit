@@ -152,6 +152,7 @@ void topological_offset(nlohmann::json json_params)
         } else { // conservative growth
             // run BFS, save after
             mesh.grow_offset_conservative();
+            mesh.consolidate_mesh();
             if (mesh.m_params.debug_output) {
                 mesh.set_offset_tri_tags();
                 mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
@@ -161,6 +162,7 @@ void topological_offset(nlohmann::json json_params)
             if (!mesh.is_simplicially_embedded()) {
                 mesh.simplicial_embedding();
                 bool dummy = mesh.is_simplicially_embedded();
+                mesh.consolidate_mesh();
             }
             if (mesh.m_params.debug_output) {
                 mesh.set_offset_tri_tags();
@@ -171,9 +173,9 @@ void topological_offset(nlohmann::json json_params)
             mesh.m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::BinarySearch;
             mesh.marching_tets();
             mesh.m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Midpoint;
+            mesh.consolidate_mesh();
             mesh.set_offset_tri_tags();
         }
-        mesh.consolidate_mesh();
 
         // stop timer
         double time = timer.getElapsedTime();

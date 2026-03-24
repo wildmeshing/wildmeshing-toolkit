@@ -133,7 +133,7 @@ bool TopoOffsetMesh::split_edge_after(const Tuple& t)
 {
     if (!TetMesh::split_edge_after(t)) {
         return false;
-    } // why tf do we need this?
+    } // why do we need this?
 
     auto& cache = edge_split_cache.local();
     const size_t v_id = t.vid(*this); // new vertex
@@ -277,7 +277,7 @@ bool TopoOffsetMesh::split_face_after(const Tuple& t)
 {
     if (!TetMesh::split_face_after(t)) {
         return false;
-    } // why tf do we need this?
+    } // why do we need this?
 
     auto& cache = face_split_cache.local();
     // size_t v_id = t.vid(*this);
@@ -395,7 +395,7 @@ bool TopoOffsetMesh::split_tet_after(const Tuple& t)
 {
     if (!TetMesh::split_tet_after(t)) {
         return false;
-    } // why tf do we need this?
+    } // why do we need this?
 
     auto& cache = tet_split_cache.local();
     int tet_label = cache.tet.label;
@@ -541,10 +541,15 @@ bool TopoOffsetTriMesh::split_edge_after(const Tuple& t)
 {
     if (!TriMesh::split_edge_after(t)) {
         return false;
-    } // why tf do we need this?
+    } // why do we need this?
 
     auto& cache = edge_split_cache.local();
     size_t v_id = get_vertices().size() - 1;
+    // std::vector<size_t> opp_vids;
+    // for (const auto& pair : cache.opp_v_fattr) {
+    //     opp_vids.push_back(pair.first);
+    // }
+    // size_t v_id = edge_split_get_new_vid(cache.v1_id, cache.v2_id, opp_vids);
     m_vertex_attribute[v_id] = cache.new_v;
 
     // split edge attributes

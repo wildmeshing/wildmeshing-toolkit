@@ -347,7 +347,9 @@ void TopoOffsetMesh::simplicial_embedding()
         const auto& vs = tet.vertices();
         Tuple t = tuple_from_vids(vs[0], vs[1], vs[2], vs[3]);
         std::vector<Tuple> garbage;
-        split_tet(t, garbage);
+        if (!split_tet(t, garbage)) {
+            log_and_throw_error("tet split failed! (simplicial_embedding)");
+        }
     }
     logger().info("\tTets split: {}", tets_to_split.size());
 
@@ -378,7 +380,9 @@ void TopoOffsetMesh::simplicial_embedding()
         const auto& vs = f.vertices();
         auto [t, _] = tuple_from_face({{vs[0], vs[1], vs[2]}});
         std::vector<Tuple> garbage;
-        split_face(t, garbage);
+        if (!split_face(t, garbage)) {
+            log_and_throw_error("face split failed! (simplicial_embedding)");
+        }
     }
     logger().info("\tFaces split: {}", faces_to_split.size());
 
@@ -399,7 +403,9 @@ void TopoOffsetMesh::simplicial_embedding()
     for (const simplex::Edge& e : edges_to_split) {
         Tuple t = tuple_from_edge(e.vertices());
         std::vector<Tuple> garbage;
-        split_edge(t, garbage);
+        if (!split_edge(t, garbage)) {
+            log_and_throw_error("edge split failed! (simplicial_embedding)");
+        }
     }
     logger().info("\tEdges split: {}", edges_to_split.size());
 }

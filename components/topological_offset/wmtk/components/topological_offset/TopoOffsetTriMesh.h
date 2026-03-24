@@ -1,5 +1,7 @@
 #pragma once
 #include <wmtk/TriMesh.h>
+#include <algorithm>
+#include <set>
 #include "Parameters.h"
 #include "SimplicialComplexBVH.hpp"
 
@@ -252,6 +254,95 @@ public: // helpers
         }
         return adj_tris;
     }
+
+    // /**
+    //  * @brief retreive id of new vertex after splitting the edge v1--v2.
+    //  * NOTE: assumes edge v1--v2 in mesh has just been split. This will cause an error if not
+    //  */
+    // size_t edge_split_get_new_vid(size_t v1, size_t v2, const std::vector<size_t>& opp_vids)
+    // const
+    // {
+    //     // function to construct one ring set from duplicates vector
+    //     auto construct_set = [](const size_t& v_orig,
+    //                             const std::vector<size_t>& v_vec) -> std::set<size_t> {
+    //         std::set<size_t> ret;
+    //         for (const size_t& v_id : v_vec) {
+    //             if (v_id != v_orig) {
+    //                 ret.insert(v_id);
+    //             }
+    //         }
+    //         return ret;
+    //     };
+
+    //     // construct one ring verts around v1 (not including v1)
+    //     auto v1_ring_dup = get_one_ring_vids_for_vertex_duplicate(v1);
+    //     std::set<size_t> v1_ring = construct_set(v1, v1_ring_dup);
+
+    //     // construct one ring verts around v2 (not including v2)
+    //     auto v2_ring_dup = get_one_ring_vids_for_vertex_duplicate(v2);
+    //     std::set<size_t> v2_ring = construct_set(v2, v2_ring_dup);
+
+    //     // intersect v1 and v2 one rings
+    //     std::set<size_t> set_intersection_12;
+    //     std::set_intersection(
+    //         v1_ring.begin(),
+    //         v1_ring.end(),
+    //         v2_ring.begin(),
+    //         v2_ring.end(),
+    //         std::inserter(set_intersection_12, set_intersection_12.begin()));
+
+    //     // get intersection of one rings for two opp verts
+    //     std::set<size_t> set_intersection_opp;
+    //     if (opp_vids.size() == 1) {
+    //         auto v_opp_ring_dup = get_one_ring_vids_for_vertex_duplicate(opp_vids[0]);
+    //         set_intersection_opp = construct_set(opp_vids[0], v_opp_ring_dup);
+    //     } else if (opp_vids.size() == 2) {
+    //         auto v_opp1_ring_dup = get_one_ring_vids_for_vertex_duplicate(opp_vids[0]);
+    //         std::set<size_t> v_opp1_ring = construct_set(opp_vids[0], v_opp1_ring_dup);
+    //         auto v_opp2_ring_dup = get_one_ring_vids_for_vertex_duplicate(opp_vids[1]);
+    //         std::set<size_t> v_opp2_ring = construct_set(opp_vids[1], v_opp2_ring_dup);
+    //         std::set_intersection(
+    //             v_opp1_ring.begin(),
+    //             v_opp1_ring.end(),
+    //             v_opp2_ring.begin(),
+    //             v_opp2_ring.end(),
+    //             std::inserter(set_intersection_opp, set_intersection_opp.begin()));
+    //     } else {
+    //         log_and_throw_error(
+    //             "Invalid input opp_vids (size {}) in edge_split_get_new_vid",
+    //             opp_vids.size());
+    //     }
+
+    //     // // remove opp_vids from v1/v2 one ring intersection
+    //     // for (const size_t& opp_v_id : opp_vids) {
+    //     //     set_intersection_12.erase(opp_v_id);
+    //     // }
+
+    //     // if (set_intersection_12.size() == 1) {
+    //     //     return *set_intersection_12.begin();
+    //     // } else {
+    //     //     log_and_throw_error(
+    //     //         "Invalid intersection result (final size {}) in edge_split_get_new_vid",
+    //     //         set_intersection_12.size());
+    //     // }
+
+    //     // intersect intermediate results
+    //     std::set<size_t> final_intersection;
+    //     std::set_intersection(
+    //         set_intersection_12.begin(),
+    //         set_intersection_12.end(),
+    //         set_intersection_opp.begin(),
+    //         set_intersection_opp.end(),
+    //         std::inserter(final_intersection, final_intersection.begin()));
+
+    //     if (final_intersection.size() == 1) {
+    //         return *final_intersection.begin();
+    //     } else {
+    //         log_and_throw_error(
+    //             "Invalid intersection result (final size {}) in edge_split_get_new_vid",
+    //             final_intersection.size());
+    //     }
+    // }
 };
 
 
