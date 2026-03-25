@@ -144,7 +144,7 @@ public:
         /**
          * TODO explain scaling factor
          */
-        m_s_barrier = 1. / (m_params.diag_l2 * m_params.dhat * m_params.dhat);
+        m_s_barrier = 1. / (m_params.diag_l4);
     }
 
     ~ImageSimulationMeshTri() {}
