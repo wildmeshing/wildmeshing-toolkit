@@ -15,8 +15,12 @@ struct Parameters
 
     // parameters set in `init` function based on mesh bbox
     double diag_l = -1.;
+    double diag_l2 = -1.;
+    double diag_l3 = -1.;
+    double diag_l4 = -1.;
     VectorXd box_min;
     VectorXd box_max;
+    double vol = -1; // bbox volume
     double splitting_l2 = -1.; // the lower bound length (squared) for edge split
     double collapsing_l2 =
         std::numeric_limits<double>::max(); // the upper bound length (squared) for edge collapse
@@ -41,7 +45,11 @@ struct Parameters
     {
         box_min = min_;
         box_max = max_;
+        vol = (box_max - box_min).prod();
         diag_l = (box_max - box_min).norm();
+        diag_l2 = diag_l * diag_l;
+        diag_l3 = diag_l * diag_l * diag_l;
+        diag_l4 = diag_l * diag_l * diag_l * diag_l;
         if (l > 0)
             lr = l / diag_l;
         else

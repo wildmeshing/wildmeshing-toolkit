@@ -19,7 +19,7 @@ public:
      * The first two entries (x0, y0) must be the same for all triangles and will be replaced with
      * `x` during optimization.
      */
-    AMIPSEnergy2D(std::vector<std::array<double, 6>>& cells);
+    AMIPSEnergy2D(std::vector<std::array<double, 6>>& cells, bool area_weighted = false);
 
     TVector initial_position() const;
 
@@ -37,6 +37,7 @@ public:
 
 private:
     std::vector<std::array<double, 6>> m_cells;
+    std::vector<double> m_weights;
 };
 
 } // namespace wmtk::optimization

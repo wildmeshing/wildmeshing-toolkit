@@ -93,6 +93,7 @@ public:
     std::vector<Vector2d> m_V_envelope;
     std::vector<Vector2i> m_E_envelope;
     std::shared_ptr<SampleEnvelope> m_envelope;
+    std::shared_ptr<SampleEnvelope> m_envelope_orig;
     double m_envelope_eps = -1;
 
     using VertAttCol = AttributeCollection<VertexAttributes>;
@@ -110,6 +111,12 @@ public:
     std::vector<double> m_surface_mass; // the mass matrix for surface vertices
     std::vector<Vector3d> m_surface_stiffness; // stiffness matrix for surface vertices
 
+    // scaling factors
+    double m_s_amips = -1;
+    double m_s_smooth = -1;
+    double m_s_envelope = -1;
+    double m_s_barrier = -1;
+
     ImageSimulationMeshTri(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
         : m_params(_m_params)
         , m_envelope_eps(envelope_eps)
@@ -121,6 +128,23 @@ public:
 
         m_solver = optimization::create_basic_solver();
         optimization::deactivate_opt_logger();
+
+        m_s_amips = 1.;
+        /**
+         * TODO explain scaling factor
+         */
+        m_s_smooth = m_params.diag_l;
+        /**
+         * The diagonal compensates for the mass dimension (in 2D its just a length, in 3D its an
+         * area and we need the squared diagonal).
+         * eps makes it such that the energy is relative to the envelope thickness. As it's a
+         * squared energy, we need eps^2.
+         */
+        m_s_envelope = 1. / (m_params.diag_l * m_params.eps * m_params.eps);
+        /**
+         * TODO explain scaling factor
+         */
+        m_s_barrier = 1. / (m_params.diag_l2 * m_params.dhat * m_params.dhat);
     }
 
     ~ImageSimulationMeshTri() {}
@@ -181,9 +205,13 @@ public:
     bool swap_edge_before(const Tuple& t) override;
     bool swap_edge_after(const Tuple& t) override;
 
-    void smooth_all_vertices();
+    void smooth_all_vertices(const size_t n_iters = 1);
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
+    /**
+     * For debugging purposes.
+     */
+    void log_total_surface_energy();
     //
     /**
      * @brief Inversion check using only floating point numbers.

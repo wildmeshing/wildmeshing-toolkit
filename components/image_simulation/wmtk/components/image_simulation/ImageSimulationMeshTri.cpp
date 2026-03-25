@@ -278,6 +278,7 @@ void ImageSimulationMeshTri::init_surfaces_and_boundaries()
         m_E_envelope = tempE;
         m_envelope = std::make_shared<SampleEnvelope>();
         m_envelope->init(m_V_envelope, m_E_envelope, m_envelope_eps);
+        m_envelope_orig = m_envelope;
     }
 
     // All surface edges must be inside the envelope
@@ -350,6 +351,10 @@ void ImageSimulationMeshTri::init_envelope(const MatrixXd& V, const MatrixXi& E)
 
     m_envelope = std::make_shared<SampleEnvelope>();
     m_envelope->init(m_V_envelope, m_E_envelope, m_envelope_eps);
+
+    if (!m_envelope_orig) {
+        m_envelope_orig = m_envelope;
+    }
 }
 
 bool ImageSimulationMeshTri::adjust_sizing_field_serial(double max_energy)
@@ -1234,7 +1239,7 @@ bool ImageSimulationMeshTri::swap_edge_after(const Tuple& t)
     return true;
 }
 
-void ImageSimulationMeshTri::smooth_all_vertices()
+void ImageSimulationMeshTri::smooth_all_vertices(const size_t n_iters)
 {
     assert(m_solver);
 
@@ -1269,28 +1274,34 @@ void ImageSimulationMeshTri::smooth_all_vertices()
         }
     }
 
-    igl::Timer timer;
-    timer.start();
-    std::vector<std::pair<std::string, Tuple>> collect_all_ops;
-    for (const Tuple& t : get_vertices()) {
-        collect_all_ops.emplace_back("vertex_smooth", t);
-    }
-    logger().info("vertex smoothing prepare time: {:.4}s", timer.getElapsedTimeInSec());
-    logger().info("#V = {}", collect_all_ops.size());
-    if (NUM_THREADS > 0) {
+    for (size_t i = 0; i < n_iters; ++i) {
+        // log_total_surface_energy();
+        igl::Timer timer;
         timer.start();
-        ExecutePass<ImageSimulationMeshTri, ExecutionPolicy::kPartition> executor;
-        executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
-            return m.try_set_vertex_mutex_one_ring(e, task_id);
-        };
-        executor.num_threads = NUM_THREADS;
-        executor(*this, collect_all_ops);
-        logger().info("vertex smoothing time parallel: {:.4}s", timer.getElapsedTimeInSec());
-    } else {
-        timer.start();
-        ExecutePass<ImageSimulationMeshTri, ExecutionPolicy::kSeq> executor;
-        executor(*this, collect_all_ops);
-        logger().info("vertex smoothing time serial: {:.4}s", timer.getElapsedTimeInSec());
+        std::vector<std::pair<std::string, Tuple>> collect_all_ops;
+        for (const Tuple& t : get_vertices()) {
+            collect_all_ops.emplace_back("vertex_smooth", t);
+        }
+        logger().info("vertex smoothing prepare time: {:.4}s", timer.getElapsedTimeInSec());
+        logger().info("#V = {}", collect_all_ops.size());
+        if (NUM_THREADS > 0) {
+            timer.start();
+            ExecutePass<ImageSimulationMeshTri, ExecutionPolicy::kPartition> executor;
+            executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
+                return m.try_set_vertex_mutex_one_ring(e, task_id);
+            };
+            executor.num_threads = NUM_THREADS;
+            executor(*this, collect_all_ops);
+            logger().info("vertex smoothing time parallel: {:.4}s", timer.getElapsedTimeInSec());
+        } else {
+            timer.start();
+            ExecutePass<ImageSimulationMeshTri, ExecutionPolicy::kSeq> executor;
+            executor(*this, collect_all_ops);
+            logger().info("vertex smoothing time serial: {:.4}s", timer.getElapsedTimeInSec());
+        }
+        if (m_params.debug_output) {
+            write_vtu(fmt::format("debug_{}", debug_print_counter++));
+        }
     }
 
     // re-build envelope
@@ -1379,6 +1390,9 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
 
     // call to polysolve
     std::shared_ptr<optimization::EnergySum::Problem> total_energy;
+    // auto amips_energy = std::make_shared<optimization::AMIPSEnergy2D>(
+    //     assembles,
+    //    VA[vid].m_is_on_surface); // area weighted if on surface
     auto amips_energy = std::make_shared<optimization::AMIPSEnergy2D>(assembles);
     total_energy = amips_energy;
     //{
@@ -1423,33 +1437,45 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
         //    m_vertex_attribute[vid].m_pos = project;
         //}
 
+        // mass and stiffness
         const auto& M = m_surface_mass[vid];
         const auto& L_w = m_surface_stiffness[vid];
 
         auto smooth_energy =
             std::make_shared<optimization::BiharmonicEnergy2D>(surface_pts, M, L_w);
         auto envelope_energy = std::make_shared<optimization::EnvelopeEnergy2D>(
-            m_envelope,
+            m_envelope_orig,
             surface_pts,
             !m_params.smooth_without_envelope);
         auto energy_sum = std::make_shared<optimization::EnergySum>();
-        energy_sum->add_energy(amips_energy, m_params.w_amips);
-        energy_sum->add_energy(smooth_energy, m_params.w_smooth);
-        energy_sum->add_energy(envelope_energy, M * m_params.w_envelope);
+        energy_sum->add_energy(amips_energy, m_s_amips * m_params.w_amips);
+        energy_sum->add_energy(smooth_energy, m_s_smooth * m_params.w_smooth);
+        energy_sum->add_energy(envelope_energy, m_s_envelope * M * m_params.w_envelope);
 
         // barrier energy
-        {
-            MatrixXd V;
-            MatrixXi E;
-            size_t vid_local;
-            substructure_region(t, V, E, vid_local);
+        MatrixXd V_barrier;
+        MatrixXi E_barrier;
+        size_t vid_barrier;
+        substructure_region(t, V_barrier, E_barrier, vid_barrier);
 
-            auto barrier_energy =
-                std::make_shared<optimization::BarrierEnergy2D>(V, E, vid_local, m_params.dhat);
-            energy_sum->add_energy(barrier_energy, m_params.w_separate);
-        }
+        auto barrier_energy = std::make_shared<optimization::BarrierEnergy2D>(
+            V_barrier,
+            E_barrier,
+            vid_barrier,
+            m_params.dhat);
+        energy_sum->add_energy(barrier_energy, m_s_barrier * m_params.w_separate);
+
 
         total_energy = energy_sum;
+
+        // log energies
+        // logger().info(
+        //    "V {}:\n  AMIPS = {}\n  Smooth = {}\n  Envel = {}\n  Barrier = {}",
+        //    vid,
+        //    s_amips * amips_energy->value(old_pos),
+        //    s_smooth * smooth_energy->value(old_pos),
+        //    s_envelope * envelope_energy->value(old_pos),
+        //    s_barrier * barrier_energy->value(old_pos));
     }
 
     // solve
@@ -1492,6 +1518,188 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
     }
 
     return true;
+}
+
+void ImageSimulationMeshTri::log_total_surface_energy()
+{
+    // build mass-matrix
+    {
+        const auto vs = get_vertices();
+        m_surface_mass.resize(vert_capacity());
+        m_surface_stiffness.resize(vert_capacity());
+        for (const Tuple& t : vs) {
+            const size_t vid = t.vid(*this);
+            if (!m_vertex_attribute.at(vid).m_is_on_surface) {
+                continue;
+            }
+            const auto es = get_order1_edges_for_vertex(vid);
+            if (es.size() != 2) {
+                continue;
+            }
+            auto& M = m_surface_mass[vid];
+            auto& L_w = m_surface_stiffness[vid];
+
+            std::array<Vector2d, 3> pts;
+            pts[0] = m_vertex_attribute.at(vid).m_pos;
+
+            for (size_t i = 0; i < 2; ++i) {
+                const auto& vs = es.edges()[i].vertices();
+                size_t neighbor_id = vs[0] != vid ? vs[0] : vs[1];
+                pts[i + 1] = m_vertex_attribute.at(neighbor_id).m_pos;
+            }
+
+            optimization::BiharmonicEnergy2D::local_mass_and_stiffness(pts, M, L_w);
+            // optimization::SmoothingEnergy2D::uniform_mass_and_stiffness(pts, M, L_w);
+        }
+    }
+
+    double e_sum = 0;
+    double e_amips = 0;
+    double e_smooth = 0;
+    double e_envelope = 0;
+    double e_barrier = 0;
+    double e_s_amips = 0;
+    double e_s_smooth = 0;
+    double e_s_envelope = 0;
+    double e_s_barrier = 0;
+    // double e_sw_amips = 0;
+    // double e_sw_smooth = 0;
+    // double e_sw_envelope = 0;
+    // double e_sw_barrier = 0;
+    size_t n_pts = 0;
+
+    const auto& VA = m_vertex_attribute;
+    for (const Tuple& t : get_vertices()) {
+        const size_t vid = t.vid(*this);
+        if (!VA[vid].m_is_on_surface) {
+            continue;
+        }
+
+        const auto locs = get_one_ring_fids_for_vertex(t);
+        assert(locs.size() > 0);
+
+        std::vector<std::array<double, 6>> assembles;
+        assembles.reserve(locs.size());
+
+        for (const size_t fid : locs) {
+            std::array<size_t, 3> local_verts = oriented_tri_vids(fid);
+
+            size_t v_loc = 0;
+            for (size_t i = 0; i < 3; ++i) {
+                if (local_verts[i] == vid) {
+                    v_loc = i;
+                    break;
+                }
+            }
+            std::array<size_t, 3> buf = local_verts;
+            local_verts[0] = buf[v_loc];
+            local_verts[1] = buf[(v_loc + 1) % 3];
+            local_verts[2] = buf[(v_loc + 2) % 3];
+
+            std::array<double, 6> T;
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 2; j++) {
+                    T[i * 2 + j] = VA[local_verts[i]].m_pos[j];
+                }
+            }
+            assembles.push_back(T);
+        }
+
+        const Vector2d old_pos = VA[vid].m_pos;
+
+        auto amips_energy = std::make_shared<optimization::AMIPSEnergy2D>(assembles);
+
+        const auto es = get_order1_edges_for_vertex(vid);
+        if (es.size() != 2) {
+            continue;
+        }
+
+        std::array<Vector2d, 3> surface_pts;
+        surface_pts[0] = m_vertex_attribute.at(vid).m_pos;
+
+        for (size_t i = 0; i < 2; ++i) {
+            const auto& vs = es.edges()[i].vertices();
+            size_t neighbor_id = vs[0] != vid ? vs[0] : vs[1];
+            surface_pts[i + 1] = m_vertex_attribute.at(neighbor_id).m_pos;
+        }
+
+        // mass and stiffness
+        const auto& M = m_surface_mass[vid];
+        const auto& L_w = m_surface_stiffness[vid];
+
+        auto smooth_energy =
+            std::make_shared<optimization::BiharmonicEnergy2D>(surface_pts, M, L_w);
+        auto envelope_energy = std::make_shared<optimization::EnvelopeEnergy2D>(
+            m_envelope_orig,
+            surface_pts,
+            !m_params.smooth_without_envelope);
+        auto energy_sum = std::make_shared<optimization::EnergySum>();
+        energy_sum->add_energy(amips_energy, m_s_amips * m_params.w_amips);
+        energy_sum->add_energy(smooth_energy, m_s_smooth * m_params.w_smooth);
+        energy_sum->add_energy(envelope_energy, m_s_envelope * M * m_params.w_envelope);
+
+        // barrier energy
+        MatrixXd V_barrier;
+        MatrixXi E_barrier;
+        size_t vid_barrier;
+        substructure_region(t, V_barrier, E_barrier, vid_barrier);
+
+        auto barrier_energy = std::make_shared<optimization::BarrierEnergy2D>(
+            V_barrier,
+            E_barrier,
+            vid_barrier,
+            m_params.dhat);
+        energy_sum->add_energy(barrier_energy, m_s_barrier * m_params.w_separate);
+
+        e_sum += energy_sum->value(old_pos);
+        e_amips += amips_energy->value(old_pos);
+        e_smooth += smooth_energy->value(old_pos);
+        e_envelope += M * envelope_energy->value(old_pos);
+        e_barrier += barrier_energy->value(old_pos);
+
+        e_s_amips += m_s_amips * amips_energy->value(old_pos);
+        e_s_smooth += m_s_smooth * smooth_energy->value(old_pos);
+        e_s_envelope += m_s_envelope * M * envelope_energy->value(old_pos);
+        e_s_barrier += m_s_barrier * barrier_energy->value(old_pos);
+
+        // e_sw_amips += m_s_amips * m_params.w_amips * amips_energy->value(old_pos);
+        // e_sw_smooth += m_s_smooth * m_params.w_smooth * smooth_energy->value(old_pos);
+        // e_sw_envelope += m_s_envelope * M * m_params.w_envelope *
+        // envelope_energy->value(old_pos); e_sw_barrier += m_s_barrier * m_params.w_separate *
+        // barrier_energy->value(old_pos);
+        ++n_pts;
+    }
+
+    logger().warn(
+        ">>>>> Energies <<<<<\nSUM = {}\n  AMIPS = {}\n  Smooth = {}\n  Envelope = {}\n  Barrier = "
+        "{}\n  #V = {}",
+        e_sum,
+        e_amips,
+        e_smooth,
+        e_envelope,
+        e_barrier,
+        n_pts);
+    logger().warn(
+        ">>>>> Scaled Energies <<<<<\n  AMIPS = {}\n  Smooth = {}\n  Envelope = "
+        "{}\n  Barrier = {}",
+        e_s_amips,
+        e_s_smooth,
+        e_s_envelope,
+        e_s_barrier);
+    // logger().warn(
+    //     ">>>>> Scaled and Weighted Energies <<<<<\n  AMIPS = {}\n  Smooth = {}\n  Envelope = "
+    //     "{}\n  Barrier = {}",
+    //     e_sw_amips,
+    //     e_sw_smooth,
+    //     e_sw_envelope,
+    //     e_sw_barrier);
+    logger().warn(
+        ">>>>> Scaling Factors <<<<<\n  AMIPS = {}\n  Smooth = {}\n  Envelope = "
+        "{}\n  Barrier = {}",
+        m_s_amips,
+        m_s_smooth,
+        m_s_envelope,
+        m_s_barrier);
 }
 
 
@@ -1610,7 +1818,7 @@ void ImageSimulationMeshTri::mesh_improvement(int max_its)
     for (int it = 0; it < max_its; it++) {
         ///ops
         wmtk::logger().info("\n========it {}========", it);
-        auto [max_energy, avg_energy] = local_operations({{1, 1, 1, 1}});
+        auto [max_energy, avg_energy] = local_operations({{1, 1, 1, 50}});
 
         ///energy check
         wmtk::logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
@@ -1728,13 +1936,8 @@ std::tuple<double, double> ImageSimulationMeshTri::local_operations(
             wmtk::logger().info("swap max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             sanity_checks();
         } else if (i == 3) {
-            for (int n = 0; n < ops[i]; n++) {
-                wmtk::logger().info("==smoothing {}==", n);
-                smooth_all_vertices();
-                if (m_params.debug_output) {
-                    write_vtu(fmt::format("debug_{}", debug_print_counter++));
-                }
-            }
+            wmtk::logger().info("==smoothing ==");
+            smooth_all_vertices(ops[i]);
             auto [max_energy, avg_energy] = get_max_avg_energy();
             wmtk::logger().info("smooth max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             sanity_checks();
