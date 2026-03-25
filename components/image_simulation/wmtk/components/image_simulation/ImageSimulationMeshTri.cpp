@@ -1244,36 +1244,34 @@ void ImageSimulationMeshTri::smooth_all_vertices(const size_t n_iters)
     assert(m_solver);
 
     // build mass-matrix
-    {
-        const auto vs = get_vertices();
-        m_surface_mass.resize(vert_capacity());
-        m_surface_stiffness.resize(vert_capacity());
-        for (const Tuple& t : vs) {
-            const size_t vid = t.vid(*this);
-            if (!m_vertex_attribute.at(vid).m_is_on_surface) {
-                continue;
-            }
-            const auto es = get_order1_edges_for_vertex(vid);
-            if (es.size() != 2) {
-                continue;
-            }
-            auto& M = m_surface_mass[vid];
-            auto& L_w = m_surface_stiffness[vid];
-
-            std::array<Vector2d, 3> pts;
-            pts[0] = m_vertex_attribute.at(vid).m_pos;
-
-            for (size_t i = 0; i < 2; ++i) {
-                const auto& vs = es.edges()[i].vertices();
-                size_t neighbor_id = vs[0] != vid ? vs[0] : vs[1];
-                pts[i + 1] = m_vertex_attribute.at(neighbor_id).m_pos;
-            }
-
-            optimization::BiharmonicEnergy2D::local_mass_and_stiffness(pts, M, L_w);
-            // optimization::SmoothingEnergy2D::uniform_mass_and_stiffness(pts, M, L_w);
+    m_surface_mass.resize(vert_capacity());
+    m_surface_stiffness.resize(vert_capacity());
+    for (const Tuple& t : get_vertices()) {
+        const size_t vid = t.vid(*this);
+        if (!m_vertex_attribute.at(vid).m_is_on_surface) {
+            continue;
         }
+        const auto es = get_order1_edges_for_vertex(vid);
+        if (es.size() != 2) {
+            continue;
+        }
+        auto& M = m_surface_mass[vid];
+        auto& L_w = m_surface_stiffness[vid];
+
+        std::array<Vector2d, 3> pts;
+        pts[0] = m_vertex_attribute.at(vid).m_pos;
+
+        for (size_t i = 0; i < 2; ++i) {
+            const auto& vs = es.edges()[i].vertices();
+            size_t neighbor_id = vs[0] != vid ? vs[0] : vs[1];
+            pts[i + 1] = m_vertex_attribute.at(neighbor_id).m_pos;
+        }
+
+        optimization::BiharmonicEnergy2D::local_mass_and_stiffness(pts, M, L_w);
+        // optimization::SmoothingEnergy2D::uniform_mass_and_stiffness(pts, M, L_w);
     }
 
+    // actual smoothing
     for (size_t i = 0; i < n_iters; ++i) {
         // log_total_surface_energy();
         igl::Timer timer;
@@ -1818,7 +1816,7 @@ void ImageSimulationMeshTri::mesh_improvement(int max_its)
     for (int it = 0; it < max_its; it++) {
         ///ops
         wmtk::logger().info("\n========it {}========", it);
-        auto [max_energy, avg_energy] = local_operations({{1, 1, 1, 50}});
+        auto [max_energy, avg_energy] = local_operations({{1, 1, 1, 1}});
 
         ///energy check
         wmtk::logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);

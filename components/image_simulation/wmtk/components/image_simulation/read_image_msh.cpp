@@ -133,8 +133,9 @@ InputData read_image_msh(const std::string& path)
 
     } else {
         // only read volume directly from .msh and ignore other entities
-        logger().info("Could not find pysical groups ImageVolume and EnvelopeSurface. Reading only "
-                      "tet data (in 2D face data) from MSH.");
+        logger().info(
+            "Could not find pysical groups ImageVolume and EnvelopeSurface. Reading only "
+            "tet data (in 2D face data) from MSH.");
 
         if (has_faces && !has_tets) {
             logger().info("Read 2D input.");
