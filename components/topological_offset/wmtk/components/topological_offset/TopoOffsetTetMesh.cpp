@@ -1,5 +1,5 @@
 
-#include "TopoOffsetMesh.h"
+#include "TopoOffsetTetMesh.h"
 
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/io.hpp>
@@ -13,10 +13,11 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
+#include <igl/boundary_facets.h>
+#include <igl/is_edge_manifold.h>
+#include <igl/is_vertex_manifold.h>
+#include <igl/remove_unreferenced.h>
 #include <paraviewo/VTUWriter.hpp>
-
-// #include <cmath>
-// #include <limits>
 
 
 namespace wmtk::components::topological_offset {
@@ -28,7 +29,10 @@ VertexAttributes::VertexAttributes(const Vector3d& p)
 
 
 // assumes tag has been found. won't be called otherwise
-void TopoOffsetMesh::init_from_image(const MatrixXd& V, const MatrixXi& T, const MatrixXd& T_tags)
+void TopoOffsetTetMesh::init_from_image(
+    const MatrixXd& V,
+    const MatrixXi& T,
+    const MatrixXd& T_tags)
 {
     // assert dimensions
     assert(V.cols() == 3);
@@ -117,7 +121,20 @@ void TopoOffsetMesh::init_from_image(const MatrixXd& V, const MatrixXi& T, const
 }
 
 
-void TopoOffsetMesh::init_input_complex_bvh()
+bool TopoOffsetTetMesh::empty_input_complex()
+{
+    auto verts = get_vertices();
+    for (const Tuple& v : verts) {
+        size_t v_id = v.vid(*this);
+        if (m_vertex_attribute[v_id].label == 1) {
+            return false;
+        }
+    }
+    return true;
+}
+
+
+void TopoOffsetTetMesh::init_input_complex_bvh()
 {
     // used a few times, just collect once
     auto tets = get_tets();
@@ -271,7 +288,7 @@ void TopoOffsetMesh::init_input_complex_bvh()
 }
 
 
-bool TopoOffsetMesh::is_simplicially_embedded() const
+bool TopoOffsetTetMesh::is_simplicially_embedded() const
 {
     int bad_tets = 0;
     auto tets = get_tets();
@@ -288,7 +305,7 @@ bool TopoOffsetMesh::is_simplicially_embedded() const
 }
 
 
-bool TopoOffsetMesh::tet_is_simp_emb(const Tuple& t) const
+bool TopoOffsetTetMesh::tet_is_simp_emb(const Tuple& t) const
 {
     size_t t_id = t.tid(*this);
     if (m_tet_attribute[t_id].label != 0) { // entire tet in input/offset
@@ -316,7 +333,7 @@ bool TopoOffsetMesh::tet_is_simp_emb(const Tuple& t) const
 }
 
 
-void TopoOffsetMesh::simplicial_embedding()
+void TopoOffsetTetMesh::simplicial_embedding()
 {
     // identify necessary tets to split (by vertices)
     std::vector<simplex::Tet> tets_to_split;
@@ -411,7 +428,7 @@ void TopoOffsetMesh::simplicial_embedding()
 }
 
 
-void TopoOffsetMesh::marching_tets()
+void TopoOffsetTetMesh::marching_tets()
 {
     // mark edges to split
     std::vector<simplex::Edge> e_to_split;
@@ -464,7 +481,7 @@ void TopoOffsetMesh::marching_tets()
 }
 
 
-void TopoOffsetMesh::grow_offset_conservative()
+void TopoOffsetTetMesh::grow_offset_conservative()
 {
     std::queue<Tuple> tets_q;
     auto all_tets = get_tets();
@@ -525,7 +542,7 @@ void TopoOffsetMesh::grow_offset_conservative()
 }
 
 
-void TopoOffsetMesh::set_offset_tet_tags()
+void TopoOffsetTetMesh::set_offset_tet_tags()
 {
     auto tets = get_tets();
     for (const Tuple& t : tets) {
@@ -546,7 +563,48 @@ void TopoOffsetMesh::set_offset_tet_tags()
 }
 
 
-bool TopoOffsetMesh::invariants(const std::vector<Tuple>& tets)
+bool TopoOffsetTetMesh::offset_is_manifold()
+{
+    // collect tets in closed offset (labelled 1 or 2)
+    auto tets = get_tets();
+    std::vector<Vector4i> offset_tets;
+    for (const Tuple& t : tets) {
+        size_t t_id = t.tid(*this);
+        if (m_tet_attribute[t_id].label != 0) {
+            auto vs = oriented_tet_vids(t_id);
+            offset_tets.emplace_back(vs[0], vs[1], vs[2], vs[3]);
+        }
+    }
+
+    // construct tet matrix
+    MatrixXi T(offset_tets.size(), 4);
+    for (int i = 0; i < offset_tets.size(); i++) {
+        T.row(i) = offset_tets[i];
+    }
+
+    // extract boundary
+    MatrixXi F;
+    igl::boundary_facets(T, F);
+
+    // remove unreferenced
+    VectorXi I;
+    VectorXi J;
+    igl::remove_unreferenced(F.maxCoeff() + 1, F, I, J);
+    for (int i = 0; i < F.rows(); i++) {
+        for (int j = 0; j < F.cols(); j++) {
+            F(i, j) = I(F(i, j));
+        }
+    }
+
+    // check manifoldness
+    bool is_edge_man = igl::is_edge_manifold(F);
+    VectorXi B;
+    bool is_vert_man = igl::is_vertex_manifold(F, B);
+    return (is_edge_man && is_vert_man);
+}
+
+
+bool TopoOffsetTetMesh::invariants(const std::vector<Tuple>& tets)
 {
     igl::predicates::exactinit();
     for (const Tuple& t : tets) {
@@ -565,7 +623,7 @@ bool TopoOffsetMesh::invariants(const std::vector<Tuple>& tets)
 }
 
 
-void TopoOffsetMesh::write_input_complex(const std::string& path)
+void TopoOffsetTetMesh::write_input_complex(const std::string& path)
 {
     logger().info("Write {}.vtu", path);
 
@@ -632,7 +690,7 @@ void TopoOffsetMesh::write_input_complex(const std::string& path)
 }
 
 
-void TopoOffsetMesh::write_vtu(const std::string& path)
+void TopoOffsetTetMesh::write_vtu(const std::string& path)
 {
     const std::string out_path = path + ".vtu";
     logger().info("Write {}", out_path);
@@ -680,7 +738,7 @@ void TopoOffsetMesh::write_vtu(const std::string& path)
 }
 
 
-void TopoOffsetMesh::write_msh(const std::string& file)
+void TopoOffsetTetMesh::write_msh(const std::string& file)
 {
     logger().info("Write {}.msh", file);
     consolidate_mesh();

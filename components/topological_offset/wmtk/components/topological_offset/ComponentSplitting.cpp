@@ -1,5 +1,5 @@
 #include <set>
-#include "TopoOffsetMesh.h"
+#include "TopoOffsetTetMesh.h"
 #include "TopoOffsetTriMesh.h"
 
 
@@ -9,7 +9,7 @@ namespace wmtk::components::topological_offset {
 //// TetMesh splitting
 
 // v1 must have label 0/1, v2 has label 0
-void TopoOffsetMesh::edge_split_binary_search(const size_t v1, const size_t v2, Vector3d& p_new)
+void TopoOffsetTetMesh::edge_split_binary_search(const size_t v1, const size_t v2, Vector3d& p_new)
     const
 {
     const double eps = m_params.edge_search_term_len;
@@ -31,7 +31,7 @@ void TopoOffsetMesh::edge_split_binary_search(const size_t v1, const size_t v2, 
 }
 
 
-bool TopoOffsetMesh::split_edge_before(const Tuple& t)
+bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
 {
     // load and reset cache
     auto& cache = edge_split_cache.local();
@@ -129,7 +129,7 @@ bool TopoOffsetMesh::split_edge_before(const Tuple& t)
 }
 
 
-bool TopoOffsetMesh::split_edge_after(const Tuple& t)
+bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
 {
     if (!TetMesh::split_edge_after(t)) {
         return false;
@@ -199,7 +199,7 @@ bool TopoOffsetMesh::split_edge_after(const Tuple& t)
 }
 
 
-bool TopoOffsetMesh::split_face_before(const Tuple& t)
+bool TopoOffsetTetMesh::split_face_before(const Tuple& t)
 {
     // load and reset cache
     auto& cache = face_split_cache.local();
@@ -273,7 +273,7 @@ bool TopoOffsetMesh::split_face_before(const Tuple& t)
 }
 
 
-bool TopoOffsetMesh::split_face_after(const Tuple& t)
+bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
 {
     if (!TetMesh::split_face_after(t)) {
         return false;
@@ -354,7 +354,7 @@ bool TopoOffsetMesh::split_face_after(const Tuple& t)
 }
 
 
-bool TopoOffsetMesh::split_tet_before(const Tuple& t)
+bool TopoOffsetTetMesh::split_tet_before(const Tuple& t)
 {
     auto& cache = tet_split_cache.local();
     cache.existing_e.clear();
@@ -391,7 +391,7 @@ bool TopoOffsetMesh::split_tet_before(const Tuple& t)
 }
 
 
-bool TopoOffsetMesh::split_tet_after(const Tuple& t)
+bool TopoOffsetTetMesh::split_tet_after(const Tuple& t)
 {
     if (!TetMesh::split_tet_after(t)) {
         return false;

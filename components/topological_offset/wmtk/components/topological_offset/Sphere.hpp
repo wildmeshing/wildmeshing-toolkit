@@ -2,7 +2,7 @@
 #include <igl/barycentric_coordinates.h>
 #include <igl/point_mesh_squared_distance.h>
 #include <queue>
-#include "TopoOffsetMesh.h"
+#include "TopoOffsetTetMesh.h"
 
 
 namespace wmtk::components::topological_offset {
@@ -53,7 +53,7 @@ public:
         , m_r(r)
     {}
 
-    Sphere(const TopoOffsetMesh& mesh, const size_t t_id)
+    Sphere(const TopoOffsetTetMesh& mesh, const size_t t_id)
     {
         auto vs = mesh.oriented_tet_vids(t_id);
         double side_length;
@@ -101,7 +101,7 @@ public:
     /**
      * @brief check if a sphere overlaps given tet
      */
-    bool overlaps_tet(const TopoOffsetMesh& mesh, const size_t t_id) const
+    bool overlaps_tet(const TopoOffsetTetMesh& mesh, const size_t t_id) const
     {
         auto vs = mesh.oriented_tet_vids(t_id);
         MatrixXd V(4, 3);

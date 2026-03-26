@@ -3,7 +3,7 @@
 #include <math.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/TriMesh.h>
-#include <wmtk/components/topological_offset/TopoOffsetMesh.h>
+#include <wmtk/components/topological_offset/TopoOffsetTetMesh.h>
 #include <wmtk/components/topological_offset/TopoOffsetTriMesh.h>
 #include <catch2/catch_test_macros.hpp>
 #include <queue>
@@ -47,7 +47,7 @@ TEST_CASE("edge_split_3d", "[split_op][3d]")
     Parameters param;
     param.offset_tags.push_back({{0, 1}});
     param.offset_tags.push_back({{0, 4}});
-    TopoOffsetMesh mesh(param, 0);
+    TopoOffsetTetMesh mesh(param, 0);
     mesh.init_from_image(V, T, Tags);
 
     // give every component unique tag combo
@@ -139,7 +139,7 @@ TEST_CASE("face_split_3d", "[split_op][3d]")
     Parameters param;
     param.offset_tags.push_back({{0, 1}});
     param.offset_tags.push_back({{0, 4}});
-    TopoOffsetMesh mesh(param, 0);
+    TopoOffsetTetMesh mesh(param, 0);
     mesh.init_from_image(V, T, Tags);
 
     // give every component unique tag combo
@@ -235,7 +235,7 @@ TEST_CASE("tet_split_3d", "[split_op][3d]")
     Parameters param;
     param.offset_tags.push_back({{0, 1}});
     param.offset_tags.push_back({{0, 4}});
-    TopoOffsetMesh mesh(param, 0);
+    TopoOffsetTetMesh mesh(param, 0);
     mesh.init_from_image(V, T, Tags);
 
     // give every component unique tag combo
@@ -334,7 +334,7 @@ TEST_CASE("invariant_3d", "[3d]")
         Parameters param;
         param.offset_tags.push_back({{0, 1}});
         param.offset_tags.push_back({{0, 4}});
-        TopoOffsetMesh mesh(param, 0);
+        TopoOffsetTetMesh mesh(param, 0);
         mesh.init_from_image(V, T, Tags);
 
         std::vector<TetMesh::Tuple> tets;
@@ -348,7 +348,7 @@ TEST_CASE("invariant_3d", "[3d]")
         Parameters param;
         param.offset_tags.push_back({{0, 1}});
         param.offset_tags.push_back({{0, 4}});
-        TopoOffsetMesh mesh(param, 0);
+        TopoOffsetTetMesh mesh(param, 0);
         mesh.init_from_image(V, T, Tags);
 
         std::vector<TetMesh::Tuple> tets;
@@ -732,7 +732,7 @@ TEST_CASE("dist_to_tetmesh", "[dist_growth][3d]")
     Parameters param;
     param.offset_tags.push_back({{0, 1}});
     param.offset_tags.push_back({{0, 4}});
-    TopoOffsetMesh mesh(param, 0);
+    TopoOffsetTetMesh mesh(param, 0);
     mesh.init_from_image(V, T, Tags);
 
     // label one vert as input
@@ -813,7 +813,7 @@ TEST_CASE("sphere_tet_overlap", "[dist_growth][3d]")
     Parameters param;
     param.offset_tags.push_back({{0, 1}});
     param.offset_tags.push_back({{0, 4}});
-    TopoOffsetMesh mesh(param, 0);
+    TopoOffsetTetMesh mesh(param, 0);
     mesh.init_from_image(V, T, Tags);
 
     Sphere sphere1(Vector3d(1.0, 1.0, 1.0), 0.5); // false

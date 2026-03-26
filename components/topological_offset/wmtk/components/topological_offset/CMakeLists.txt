@@ -8,8 +8,8 @@ if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
 endif()
 
 set(SRC_FILES
-	TopoOffsetMesh.h
-    TopoOffsetMesh.cpp
+	TopoOffsetTetMesh.h
+    TopoOffsetTetMesh.cpp
 
 	TopoOffsetTriMesh.h
 	TopoOffsetTriMesh.cpp

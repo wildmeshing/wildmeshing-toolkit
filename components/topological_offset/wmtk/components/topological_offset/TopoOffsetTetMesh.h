@@ -50,7 +50,7 @@ public:
 };
 
 
-class TopoOffsetMesh : public wmtk::TetMesh
+class TopoOffsetTetMesh : public wmtk::TetMesh
 {
 public: // mode for splitting in marching tets
     enum class EdgeSplitMode {
@@ -77,7 +77,7 @@ public:
     FaceAttCol m_face_attribute;
     TetAttCol m_tet_attribute;
 
-    TopoOffsetMesh(Parameters& _m_params, int _num_threads = 0)
+    TopoOffsetTetMesh(Parameters& _m_params, int _num_threads = 0)
         : m_params(_m_params)
     {
         NUM_THREADS = _num_threads;
@@ -87,46 +87,118 @@ public:
         p_tet_attrs = &m_tet_attribute;
     }
 
-    ~TopoOffsetMesh() {}
+    ~TopoOffsetTetMesh() {}
 
-    void init_from_image(
-        const MatrixXd& V, // V by 3
-        const MatrixXi& T, // T by 4
-        const MatrixXd& T_tags); // T by N
+    /**
+     * @brief initialize TetMesh from vertex, tet, and tag data
+     * @param V: #V by 3 vertex matrix
+     * @param T: #T by 4 tet matrix
+     * @param T_tags: #T by #tags tag matrix
+     */
+    void init_from_image(const MatrixXd& V, const MatrixXi& T, const MatrixXd& T_tags);
+
+    /**
+     * @brief check if the input complex is empty. Only valid after calling init_from_image(...).
+     * Checks if any vertices (therefore any simplices) are labelled 1, if not returns true
+     */
+    bool empty_input_complex();
+
+    /**
+     * @brief initialize BVH for input complex. Must be called after init_from_image(...)
+     */
     void init_input_complex_bvh();
 
-    // splitting
+    /**
+     * @brief split edge at point by minimizing m_params.target_distance - d() (where d() is
+     * distance to input complex via BVH) along the edge. Uses binary search, so implicitly assumes
+     * distance field is monotonic along edge. May give weird results if not monotonic
+     */
     void edge_split_binary_search(const size_t v1, const size_t v2, Vector3d& p_new) const;
+
+    //// overriden splits/invariants
     bool split_edge_before(const Tuple& t) override;
     bool split_edge_after(const Tuple& t) override;
     bool split_face_before(const Tuple& t) override;
     bool split_face_after(const Tuple& t) override;
     bool split_tet_before(const Tuple& t) override;
     bool split_tet_after(const Tuple& t) override;
-    bool invariants(const std::vector<Tuple>& tets) override; // this is now automatically checked
+    bool invariants(const std::vector<Tuple>& tets) override;
+    //// overriden splits/invariants
 
-    // simplicial embedding
-    bool is_simplicially_embedded() const;
-    bool tet_is_simp_emb(const Tuple& t) const;
-    void simplicial_embedding();
-
-    // variable offset
-    bool tet_consistent_topology(const size_t t_id) const;
-    bool tet_is_in_offset_conservative(const size_t t_id, const double threshold_r) const;
-    void grow_offset_conservative();
+    /**
+     * @brief execute simplistic marching tets. All edges with one vertex labelled 0 and the other 1/2
+     * are split. If m_edge_split_mode=BinarySearch, edges are split according to BVH distance field
+     * and the offset target distance (m_params.target_distance). If m_edge_split_mode=Midpoint,
+     * edges are split at the midpoint
+     */
     void marching_tets();
 
-    // set tag for offset region
+
+    //// simplicial embedding stuff
+    /**
+     * @brief check if the input complex (simplices labelled 1) are simplicially embedded w.r.t. the
+     * entire mesh
+     */
+    bool is_simplicially_embedded() const;
+
+    /**
+     * @brief check if a tet satisfies simpicial embedding criteria w.r.t. input complex
+     * (simplices labelled 1)
+     */
+    bool tet_is_simp_emb(const Tuple& t) const;
+
+    /**
+     * @brief make mesh a simplicial embedding of the input complex (simplices labelled 1)
+     */
+    void simplicial_embedding();
+    //// simplicial embedding stuff
+
+    //// variable offset stuff
+    /**
+     * @brief check if adding a tet to the offset region does not change the topology of the
+     * offset. Returns true if topology would not be changed
+     */
+    bool tet_consistent_topology(const size_t t_id) const;
+
+    /**
+     * @brief check if a tet is inside the offset (implicitly defined via BVH distance field to
+     * input complex) via conservative sphere subdivision estimation
+     */
+    bool tet_is_in_offset_conservative(const size_t t_id, const double threshold_r) const;
+
+    /**
+     * @brief grow offset region conservatively using conservative checks while ensuring consistent
+     * topology
+     */
+    void grow_offset_conservative();
+    //// variable offset stuff
+
+    /**
+     * @brief update 'tags' data for tets in the offset region (tets labelled 2) based on
+     * the given offset tag values in m_params.offset_tag_value
+     */
     void set_offset_tet_tags();
 
-    // output
+    /**
+     * @brief verify that the closed offset region (simplices labelled 1 or 2) form a manifold
+     * region. This should be true for any offset. This function is for verification.
+     * @note We first collect the tets labelled 1 or 2, then extract the boundary of this region
+     * and check if it is manifold.
+     */
+    bool offset_is_manifold();
+
+    //// output stuff
     void write_input_complex(const std::string& path); // write components labeled to be offset
     void write_vtu(const std::string& path); // debugging, write .vtu of tet mesh
     void write_msh(const std::string& file);
+    //// output stuff
 
 private:
-    // for edge splitting, new simplices inheret attributes from higher
-    // simplex they 'grew' out of
+    /**
+     * @note for all split caches, simplex attributes are inherited from the simplex (of same or
+     * higher order) they are 'borne' out of
+     */
+
     struct EdgeSplitCache
     {
         size_t v1_id;
@@ -279,6 +351,9 @@ private: // helpers
     }
 
 public: // helpers
+    /**
+     * @brief get tets (as Tuples) that are face-adjacent to the given tet (as Tuple)
+     */
     std::vector<Tuple> get_face_adjacent_tets(const Tuple& t) const
     {
         std::vector<Tuple> adj_tets;

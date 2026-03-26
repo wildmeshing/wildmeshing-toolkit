@@ -3,14 +3,14 @@
 #include <queue>
 #include "Circle.hpp"
 #include "Sphere.hpp"
-#include "TopoOffsetMesh.h"
+#include "TopoOffsetTetMesh.h"
 #include "TopoOffsetTriMesh.h"
 
 
 namespace wmtk::components::topological_offset {
 
 
-bool TopoOffsetMesh::tet_is_in_offset_conservative(const size_t t_id, const double threshold_r)
+bool TopoOffsetTetMesh::tet_is_in_offset_conservative(const size_t t_id, const double threshold_r)
     const
 {
     std::queue<Sphere> q;
@@ -51,7 +51,7 @@ bool TopoOffsetMesh::tet_is_in_offset_conservative(const size_t t_id, const doub
 }
 
 
-bool TopoOffsetMesh::tet_consistent_topology(const size_t t_id) const
+bool TopoOffsetTetMesh::tet_consistent_topology(const size_t t_id) const
 {
     // collect vertices in input/offset
     auto vs = oriented_tet_vids(t_id);

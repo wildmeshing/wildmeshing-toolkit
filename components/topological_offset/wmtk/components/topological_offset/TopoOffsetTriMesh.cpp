@@ -467,15 +467,12 @@ bool TopoOffsetTriMesh::offset_is_manifold()
         included_vids[v.vid(*this)] = false;
     }
 
-    // collect faces in offset region
+    // collect faces in closed offset region (labelled 1 or 2)
     auto tris = get_faces();
     std::vector<Vector3i> offset_tris;
     for (const Tuple& t : tris) {
         size_t t_id = t.fid(*this);
-        bool in_manifold_region =
-            ((m_params.offset_tags.size() == 1) && (m_face_attribute[t_id].label != 0)) ||
-            (m_face_attribute[t_id].label == 2);
-        if (in_manifold_region) {
+        if (m_face_attribute[t_id].label != 0) {
             auto vs = oriented_tri_vids(t_id);
             offset_tris.emplace_back(vs[0], vs[1], vs[2]);
             included_vids[vs[0]] = true;
@@ -489,8 +486,7 @@ bool TopoOffsetTriMesh::offset_is_manifold()
     std::map<size_t, size_t> v_id_map;
     for (const auto& pair : included_vids) {
         if (pair.second) {
-            v_id_map[pair.first] = vert_count;
-            vert_count++;
+            v_id_map[pair.first] = vert_count++;
         }
     }
 
@@ -502,13 +498,10 @@ bool TopoOffsetTriMesh::offset_is_manifold()
         }
     }
 
-    // edge manifold check
+    // check manifoldness
     bool is_edge_man = igl::is_edge_manifold(F);
-
-    // vertex manifold check
     VectorXi B;
     bool is_vert_man = igl::is_vertex_manifold(F, B);
-
     return (is_edge_man && is_vert_man);
 }
 
