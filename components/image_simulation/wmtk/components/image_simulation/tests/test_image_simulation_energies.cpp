@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <filesystem>
+#include <wmtk/Types.hpp>
 #include <wmtk/components/image_simulation/ImageSimulationMeshTri.hpp>
 #include <wmtk/components/image_simulation/read_image_msh.hpp>
 
@@ -18,12 +19,15 @@ const std::string test_release_only = "";
 const std::string test_release_only = "[.]";
 #endif
 
-std::shared_ptr<tri::ImageSimulationMeshTri> init_optimization_tests(Parameters& params)
+std::shared_ptr<tri::ImageSimulationMeshTri> init_optimization_tests(
+    Parameters& params,
+    double input_scale = 1.0)
 {
     const fs::path model_path = data_dir / "models" / "lego_separated.msh";
     REQUIRE(fs::exists(model_path));
 
-    const auto input_data = read_image_msh(model_path.string());
+    auto input_data = read_image_msh(model_path.string());
+    input_data.V_input *= input_scale;
 
     params.dhat_rel = 3e-2;
     params.epsr = 1e-2;
@@ -37,7 +41,85 @@ std::shared_ptr<tri::ImageSimulationMeshTri> init_optimization_tests(Parameters&
 
 TEST_CASE("scale-invariance", test_groups)
 {
-    //
+    using Tuple = TriMesh::Tuple;
+
+    struct Energies
+    {
+        double amips = -1, smooth = -1, envelope = -1, barrier = -1;
+    };
+
+
+    auto collect_energies = [](double scale) {
+        Parameters params;
+        auto mesh_ptr = init_optimization_tests(params, scale);
+        tri::ImageSimulationMeshTri& mesh = *mesh_ptr;
+
+        mesh.build_mass_matrix();
+
+        const auto& VA = mesh.m_vertex_attribute;
+
+        std::vector<Energies> energies;
+
+        for (const Tuple& t : mesh.get_vertices()) {
+            const size_t vid = t.vid(mesh);
+            if (vid < 9800) {
+                continue;
+            }
+            if (!VA[vid].m_is_on_surface) {
+                continue;
+            }
+
+            auto smooth_energy = mesh.get_smooth_energy(t);
+
+            if (!smooth_energy) {
+                continue;
+            }
+
+            auto amips_energy = mesh.get_amips_energy(t);
+            auto envelope_energy = mesh.get_envelope_energy(t);
+            auto barrier_energy = mesh.get_barrier_energy(t);
+
+            const Vector2d& x = VA[vid].m_pos;
+
+            Energies e;
+            e.amips = amips_energy->value(x);
+            e.smooth = smooth_energy->value(x);
+            e.envelope = envelope_energy->value(x);
+            e.barrier = barrier_energy->value(x);
+            energies.push_back(e);
+        }
+
+        return energies;
+    };
+
+
+    const auto a = collect_energies(1);
+    const auto b = collect_energies(100);
+
+    REQUIRE(a.size() == b.size());
+    for (size_t i = 0; i < a.size(); ++i) {
+        // compare all energies
+        if (a[i].amips == 0) {
+            CHECK(b[i].amips == 0);
+        } else {
+            CHECK(std::abs(a[i].amips - b[i].amips) / a[i].amips < 1e-8);
+        }
+        if (a[i].smooth == 0) {
+            CHECK(b[i].smooth == 0);
+        } else {
+            CHECK(std::abs(a[i].smooth - b[i].smooth) / a[i].smooth < 1e-8);
+        }
+        if (a[i].envelope == 0) {
+            CHECK(b[i].envelope == 0);
+        } else {
+            CHECK(std::abs(a[i].envelope - b[i].envelope) / a[i].envelope < 1e-8);
+        }
+        if (a[i].barrier == 0) {
+            CHECK(b[i].barrier == 0);
+        } else {
+            CHECK(std::abs(a[i].barrier - b[i].barrier) / a[i].barrier < 1e-8);
+        }
+    }
 }
 
 TEST_CASE("barrier-bfs", test_groups + test_release_only)
