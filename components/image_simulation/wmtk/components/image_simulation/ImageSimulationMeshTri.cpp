@@ -10,7 +10,6 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <atomic>
-#include <ipc/distance/point_edge.hpp>
 #include <map>
 #include <paraviewo/VTUWriter.hpp>
 #include <set>
@@ -1243,33 +1242,7 @@ void ImageSimulationMeshTri::smooth_all_vertices(const size_t n_iters)
 {
     assert(m_solver);
 
-    // build mass-matrix
-    m_surface_mass.resize(vert_capacity());
-    m_surface_stiffness.resize(vert_capacity());
-    for (const Tuple& t : get_vertices()) {
-        const size_t vid = t.vid(*this);
-        if (!m_vertex_attribute.at(vid).m_is_on_surface) {
-            continue;
-        }
-        const auto es = get_order1_edges_for_vertex(vid);
-        if (es.size() != 2) {
-            continue;
-        }
-        auto& M = m_surface_mass[vid];
-        auto& L_w = m_surface_stiffness[vid];
-
-        std::array<Vector2d, 3> pts;
-        pts[0] = m_vertex_attribute.at(vid).m_pos;
-
-        for (size_t i = 0; i < 2; ++i) {
-            const auto& vs = es.edges()[i].vertices();
-            size_t neighbor_id = vs[0] != vid ? vs[0] : vs[1];
-            pts[i + 1] = m_vertex_attribute.at(neighbor_id).m_pos;
-        }
-
-        optimization::BiharmonicEnergy2D::local_mass_and_stiffness(pts, M, L_w);
-        // optimization::SmoothingEnergy2D::uniform_mass_and_stiffness(pts, M, L_w);
-    }
+    build_mass_matrix();
 
     // actual smoothing
     for (size_t i = 0; i < n_iters; ++i) {
@@ -1345,7 +1318,7 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
 
     const auto& VA = m_vertex_attribute;
 
-    const auto locs = get_one_ring_fids_for_vertex(t);
+    const auto& locs = get_one_ring_fids_for_vertex(t);
     assert(locs.size() > 0);
 
     double max_quality = 0.;
@@ -1353,132 +1326,41 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
         max_quality = std::max(max_quality, m_face_attribute[fid].m_quality);
     }
 
-    std::vector<std::array<double, 6>> assembles;
-    assembles.reserve(locs.size());
-
-    for (const size_t fid : locs) {
-        if (is_inverted(fid)) {
-            log_and_throw_error("Inverted face before smoothing!");
-        }
-        std::array<size_t, 3> local_verts = oriented_tri_vids(fid);
-        {
-            size_t v_loc = 0;
-            for (size_t i = 0; i < 3; ++i) {
-                if (local_verts[i] == vid) {
-                    v_loc = i;
-                    break;
-                }
-            }
-            std::array<size_t, 3> buf = local_verts;
-            local_verts[0] = buf[v_loc];
-            local_verts[1] = buf[(v_loc + 1) % 3];
-            local_verts[2] = buf[(v_loc + 2) % 3];
-        }
-
-        std::array<double, 6> T;
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 2; j++) {
-                T[i * 2 + j] = VA[local_verts[i]].m_pos[j];
-            }
-        }
-        assembles.push_back(T);
-    }
+    std::vector<std::array<double, 6>> assembles = get_amips_assembles(t);
 
     const Vector2d old_pos = VA[vid].m_pos;
 
     // call to polysolve
-    std::shared_ptr<optimization::EnergySum::Problem> total_energy;
-    // auto amips_energy = std::make_shared<optimization::AMIPSEnergy2D>(
-    //     assembles,
-    //    VA[vid].m_is_on_surface); // area weighted if on surface
-    auto amips_energy = std::make_shared<optimization::AMIPSEnergy2D>(assembles);
-    total_energy = amips_energy;
-    //{
-    //    auto x = amips_energy->initial_position();
-    //    try {
-    //        m_solver->minimize(*amips_energy, x);
-    //    } catch (const std::exception& e) {
-    //        // polysolve might throw errors that we want to ignore (e.g., line search failed)
-    //    }
-    //    m_vertex_attribute[vid].m_pos = x;
-    //}
+    std::shared_ptr<polysolve::nonlinear::Problem> total_energy;
 
-    // m_vertex_attribute[vid].m_pos =
-    //     newton_method_from_stack(assembles, AMIPS2D_energy, AMIPS2D_jacobian, AMIPS2D_hessian);
-
-    wmtk::logger().trace(
-        "old pos {} -> new pos {}",
-        old_pos.transpose(),
-        VA[vid].m_pos.transpose());
+    auto amips_energy = get_amips_energy(t);
 
     std::array<Vector2d, 3> surface_pts;
     if (VA[vid].m_is_on_surface) {
-        const auto es = get_order1_edges_for_vertex(vid);
-        if (es.size() != 2) {
-            return false; // can only smooth vertices with 2 neighbors
+        auto smooth_energy = get_smooth_energy(t);
+
+        if (!smooth_energy) {
+            // Could not construct smooth energy --> cannot move that vertex
+            return false;
         }
 
-        surface_pts[0] = m_vertex_attribute.at(vid).m_pos;
+        auto envelope_energy = get_envelope_energy(t);
+        auto barrier_energy = get_barrier_energy(t);
 
-        for (size_t i = 0; i < 2; ++i) {
-            const auto& vs = es.edges()[i].vertices();
-            size_t neighbor_id = vs[0] != vid ? vs[0] : vs[1];
-            surface_pts[i + 1] = m_vertex_attribute.at(neighbor_id).m_pos;
-        }
-
-        // project to surface
-        //{
-        //    assert(m_envelope->initialized());
-        //    Vector2d project;
-        //    m_envelope->nearest_point(VA[vid].m_pos, project);
-        //
-        //    m_vertex_attribute[vid].m_pos = project;
-        //}
-
-        // mass and stiffness
-        const auto& M = m_surface_mass[vid];
-        const auto& L_w = m_surface_stiffness[vid];
-
-        auto smooth_energy =
-            std::make_shared<optimization::BiharmonicEnergy2D>(surface_pts, M, L_w);
-        auto envelope_energy = std::make_shared<optimization::EnvelopeEnergy2D>(
-            m_envelope_orig,
-            surface_pts,
-            !m_params.smooth_without_envelope);
         auto energy_sum = std::make_shared<optimization::EnergySum>();
-        energy_sum->add_energy(amips_energy, m_s_amips * m_params.w_amips);
-        energy_sum->add_energy(smooth_energy, m_s_smooth * m_params.w_smooth);
-        energy_sum->add_energy(envelope_energy, m_s_envelope * M * m_params.w_envelope);
-
-        // barrier energy
-        MatrixXd V_barrier;
-        MatrixXi E_barrier;
-        size_t vid_barrier;
-        substructure_region(t, V_barrier, E_barrier, vid_barrier);
-
-        auto barrier_energy = std::make_shared<optimization::BarrierEnergy2D>(
-            V_barrier,
-            E_barrier,
-            vid_barrier,
-            m_params.dhat);
-        energy_sum->add_energy(barrier_energy, m_s_barrier * m_params.w_separate);
-
+        energy_sum->add_energy(amips_energy);
+        energy_sum->add_energy(smooth_energy);
+        energy_sum->add_energy(envelope_energy);
+        energy_sum->add_energy(barrier_energy);
 
         total_energy = energy_sum;
-
-        // log energies
-        // logger().info(
-        //    "V {}:\n  AMIPS = {}\n  Smooth = {}\n  Envel = {}\n  Barrier = {}",
-        //    vid,
-        //    s_amips * amips_energy->value(old_pos),
-        //    s_smooth * smooth_energy->value(old_pos),
-        //    s_envelope * envelope_energy->value(old_pos),
-        //    s_barrier * barrier_energy->value(old_pos));
+    } else {
+        total_energy = amips_energy;
     }
 
     // solve
     {
-        auto x = amips_energy->initial_position();
+        VectorXd x = old_pos;
         try {
             m_solver->minimize(*total_energy, x);
         } catch (const std::exception&) {
@@ -1486,6 +1368,8 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
         }
         m_vertex_attribute[vid].m_pos = x;
     }
+
+    logger().trace("old pos {} -> new pos {}", old_pos.transpose(), VA[vid].m_pos.transpose());
 
     // check surface containment
     if (VA[vid].m_is_on_surface) {
@@ -1518,70 +1402,161 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
     return true;
 }
 
-void ImageSimulationMeshTri::log_total_surface_energy()
+void ImageSimulationMeshTri::build_mass_matrix()
 {
-    // build mass-matrix
-    {
-        const auto vs = get_vertices();
-        m_surface_mass.resize(vert_capacity());
-        m_surface_stiffness.resize(vert_capacity());
-        for (const Tuple& t : vs) {
-            const size_t vid = t.vid(*this);
-            if (!m_vertex_attribute.at(vid).m_is_on_surface) {
-                continue;
-            }
-            const auto es = get_order1_edges_for_vertex(vid);
-            if (es.size() != 2) {
-                continue;
-            }
-            auto& M = m_surface_mass[vid];
-            auto& L_w = m_surface_stiffness[vid];
-
-            std::array<Vector2d, 3> pts;
-            pts[0] = m_vertex_attribute.at(vid).m_pos;
-
-            for (size_t i = 0; i < 2; ++i) {
-                const auto& vs = es.edges()[i].vertices();
-                size_t neighbor_id = vs[0] != vid ? vs[0] : vs[1];
-                pts[i + 1] = m_vertex_attribute.at(neighbor_id).m_pos;
-            }
-
-            optimization::BiharmonicEnergy2D::local_mass_and_stiffness(pts, M, L_w);
-            // optimization::SmoothingEnergy2D::uniform_mass_and_stiffness(pts, M, L_w);
-        }
-    }
-
-    double e_sum = 0;
-    double e_amips = 0;
-    double e_smooth = 0;
-    double e_envelope = 0;
-    double e_barrier = 0;
-    double e_s_amips = 0;
-    double e_s_smooth = 0;
-    double e_s_envelope = 0;
-    double e_s_barrier = 0;
-    // double e_sw_amips = 0;
-    // double e_sw_smooth = 0;
-    // double e_sw_envelope = 0;
-    // double e_sw_barrier = 0;
-    size_t n_pts = 0;
-
-    const auto& VA = m_vertex_attribute;
+    m_surface_mass.resize(vert_capacity());
+    m_surface_stiffness.resize(vert_capacity());
     for (const Tuple& t : get_vertices()) {
         const size_t vid = t.vid(*this);
-        if (!VA[vid].m_is_on_surface) {
+        if (!m_vertex_attribute.at(vid).m_is_on_surface) {
             continue;
         }
+        const auto es = get_order1_edges_for_vertex(vid);
+        if (es.size() != 2) {
+            continue;
+        }
+        auto& M = m_surface_mass[vid];
+        auto& L_w = m_surface_stiffness[vid];
 
-        const auto locs = get_one_ring_fids_for_vertex(t);
-        assert(locs.size() > 0);
+        std::array<Vector2d, 3> pts;
+        pts[0] = m_vertex_attribute.at(vid).m_pos;
 
-        std::vector<std::array<double, 6>> assembles;
-        assembles.reserve(locs.size());
+        for (size_t i = 0; i < 2; ++i) {
+            const auto& vs = es.edges()[i].vertices();
+            size_t neighbor_id = vs[0] != vid ? vs[0] : vs[1];
+            pts[i + 1] = m_vertex_attribute.at(neighbor_id).m_pos;
+        }
 
-        for (const size_t fid : locs) {
-            std::array<size_t, 3> local_verts = oriented_tri_vids(fid);
+        optimization::BiharmonicEnergy2D::local_mass_and_stiffness(pts, M, L_w);
+        // optimization::SmoothingEnergy2D::uniform_mass_and_stiffness(pts, M, L_w);
+    }
+}
 
+std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMeshTri::get_smooth_energy(
+    const Tuple& t) const
+{
+    const auto& VA = m_vertex_attribute;
+    const size_t vid = t.vid(*this);
+
+    if (!VA[vid].m_is_on_surface) {
+        return nullptr;
+    }
+
+    const auto es = get_order1_edges_for_vertex(vid);
+    if (es.size() != 2) {
+        return nullptr; // can only smooth vertices with 2 neighbors
+    }
+
+    std::array<Vector2d, 3> surface_pts;
+    surface_pts[0] = VA[vid].m_pos;
+
+    for (size_t i = 0; i < 2; ++i) {
+        const auto& vs = es.edges()[i].vertices();
+        size_t neighbor_id = vs[0] != vid ? vs[0] : vs[1];
+        surface_pts[i + 1] = VA[neighbor_id].m_pos;
+    }
+
+    // mass and stiffness
+    const auto& M = m_surface_mass[vid];
+    const auto& L_w = m_surface_stiffness[vid];
+
+    const double w = m_s_smooth * m_params.w_smooth;
+
+    auto smooth_energy = std::make_shared<optimization::BiharmonicEnergy2D>(surface_pts, M, L_w, w);
+
+    return smooth_energy;
+}
+
+std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMeshTri::get_envelope_energy(
+    const Tuple& t) const
+{
+    const auto& M = m_surface_mass[t.vid(*this)];
+    const double w = m_s_envelope * M * m_params.w_envelope;
+
+    auto envelope_energy = std::make_shared<optimization::EnvelopeEnergy2D>(
+        m_envelope_orig,
+        w,
+        !m_params.smooth_without_envelope);
+    return envelope_energy;
+}
+
+std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMeshTri::get_barrier_energy(
+    const Tuple& t,
+    const bool use_full_surface) const
+{
+    const auto& VA = m_vertex_attribute;
+    const size_t vid = t.vid(*this);
+
+    if (!VA[vid].m_is_on_surface) {
+        return nullptr;
+    }
+
+    // barrier energy
+    MatrixXd V_barrier;
+    MatrixXi E_barrier;
+    size_t vid_barrier;
+    if (!use_full_surface) {
+        substructure_region(t, V_barrier, E_barrier, vid_barrier);
+    } else {
+        // this is horribly expensive and is only here for testing
+
+        std::vector<Vector2d> surf_points;
+        std::vector<size_t> global_to_local_vid_map(vert_capacity());
+        for (size_t i = 0; i < vert_capacity(); ++i) {
+            const Tuple v = tuple_from_vertex(i);
+            if (!v.is_valid(*this)) {
+                continue;
+            }
+            const size_t _vid = v.vid(*this);
+            if (!m_vertex_attribute.at(_vid).m_is_on_surface) {
+                continue;
+            }
+            surf_points.push_back(m_vertex_attribute.at(_vid).m_pos);
+            global_to_local_vid_map[_vid] = surf_points.size() - 1;
+        }
+
+        V_barrier.resize(surf_points.size(), 2);
+        for (size_t i = 0; i < surf_points.size(); ++i) {
+            V_barrier.row(i) = surf_points[i];
+        }
+
+        const auto surf_edges = get_edges_by_condition([](auto& f) { return f.m_is_surface_fs; });
+        E_barrier.resize(surf_edges.size(), 2);
+        for (size_t i = 0; i < surf_edges.size(); ++i) {
+            const size_t v0 = global_to_local_vid_map[surf_edges[i][0]];
+            const size_t v1 = global_to_local_vid_map[surf_edges[i][1]];
+            E_barrier.row(i) = Vector2i(v0, v1);
+        }
+
+        vid_barrier = global_to_local_vid_map[vid];
+    }
+
+    auto barrier_energy = std::make_shared<optimization::BarrierEnergy2D>(
+        V_barrier,
+        E_barrier,
+        vid_barrier,
+        m_params.dhat,
+        m_s_barrier * m_params.w_separate);
+
+    return barrier_energy;
+}
+
+std::vector<std::array<double, 6>> ImageSimulationMeshTri::get_amips_assembles(const Tuple& t) const
+{
+    const size_t vid = t.vid(*this);
+    const auto& locs = get_one_ring_fids_for_vertex(t);
+
+    const auto& VA = m_vertex_attribute;
+
+    std::vector<std::array<double, 6>> assembles;
+    assembles.reserve(locs.size());
+
+    for (const size_t fid : locs) {
+        if (is_inverted(fid)) {
+            log_and_throw_error("Inverted face in amips assemble!");
+        }
+        std::array<size_t, 3> local_verts = oriented_tri_vids(fid);
+        {
             size_t v_loc = 0;
             for (size_t i = 0; i < 3; ++i) {
                 if (local_verts[i] == vid) {
@@ -1593,78 +1568,73 @@ void ImageSimulationMeshTri::log_total_surface_energy()
             local_verts[0] = buf[v_loc];
             local_verts[1] = buf[(v_loc + 1) % 3];
             local_verts[2] = buf[(v_loc + 2) % 3];
+        }
 
-            std::array<double, 6> T;
-            for (int i = 0; i < 3; i++) {
-                for (int j = 0; j < 2; j++) {
-                    T[i * 2 + j] = VA[local_verts[i]].m_pos[j];
-                }
+        std::array<double, 6> T;
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 2; j++) {
+                T[i * 2 + j] = VA[local_verts[i]].m_pos[j];
             }
-            assembles.push_back(T);
+        }
+        assembles.push_back(T);
+    }
+
+    return assembles;
+}
+
+std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMeshTri::get_amips_energy(
+    const Tuple& t) const
+{
+    const double w = m_s_amips * m_params.w_amips;
+
+    const auto assembles = get_amips_assembles(t);
+    auto amips_energy = std::make_shared<optimization::AMIPSEnergy2D>(assembles, w);
+    assert(amips_energy->initial_position() == m_vertex_attribute.at(t.vid(*this)).m_pos);
+    return amips_energy;
+}
+
+void ImageSimulationMeshTri::log_total_surface_energy()
+{
+    build_mass_matrix();
+
+    double e_sum = 0;
+    double e_amips = 0;
+    double e_smooth = 0;
+    double e_envelope = 0;
+    double e_barrier = 0;
+    size_t n_pts = 0;
+
+    const auto& VA = m_vertex_attribute;
+    for (const Tuple& t : get_vertices()) {
+        const size_t vid = t.vid(*this);
+        if (!VA[vid].m_is_on_surface) {
+            continue;
         }
 
         const Vector2d old_pos = VA[vid].m_pos;
 
-        auto amips_energy = std::make_shared<optimization::AMIPSEnergy2D>(assembles);
+        auto amips_energy = get_amips_energy(t);
+        auto smooth_energy = get_smooth_energy(t);
 
-        const auto es = get_order1_edges_for_vertex(vid);
-        if (es.size() != 2) {
+        if (!smooth_energy) {
             continue;
         }
 
-        std::array<Vector2d, 3> surface_pts;
-        surface_pts[0] = m_vertex_attribute.at(vid).m_pos;
+        auto envelope_energy = get_envelope_energy(t);
+        auto barrier_energy = get_barrier_energy(t);
 
-        for (size_t i = 0; i < 2; ++i) {
-            const auto& vs = es.edges()[i].vertices();
-            size_t neighbor_id = vs[0] != vid ? vs[0] : vs[1];
-            surface_pts[i + 1] = m_vertex_attribute.at(neighbor_id).m_pos;
-        }
-
-        // mass and stiffness
-        const auto& M = m_surface_mass[vid];
-        const auto& L_w = m_surface_stiffness[vid];
-
-        auto smooth_energy =
-            std::make_shared<optimization::BiharmonicEnergy2D>(surface_pts, M, L_w);
-        auto envelope_energy = std::make_shared<optimization::EnvelopeEnergy2D>(
-            m_envelope_orig,
-            surface_pts,
-            !m_params.smooth_without_envelope);
         auto energy_sum = std::make_shared<optimization::EnergySum>();
-        energy_sum->add_energy(amips_energy, m_s_amips * m_params.w_amips);
-        energy_sum->add_energy(smooth_energy, m_s_smooth * m_params.w_smooth);
-        energy_sum->add_energy(envelope_energy, m_s_envelope * M * m_params.w_envelope);
-
-        // barrier energy
-        MatrixXd V_barrier;
-        MatrixXi E_barrier;
-        size_t vid_barrier;
-        substructure_region(t, V_barrier, E_barrier, vid_barrier);
-
-        auto barrier_energy = std::make_shared<optimization::BarrierEnergy2D>(
-            V_barrier,
-            E_barrier,
-            vid_barrier,
-            m_params.dhat);
-        energy_sum->add_energy(barrier_energy, m_s_barrier * m_params.w_separate);
+        energy_sum->add_energy(amips_energy);
+        energy_sum->add_energy(smooth_energy);
+        energy_sum->add_energy(envelope_energy);
+        energy_sum->add_energy(barrier_energy);
 
         e_sum += energy_sum->value(old_pos);
         e_amips += amips_energy->value(old_pos);
         e_smooth += smooth_energy->value(old_pos);
-        e_envelope += M * envelope_energy->value(old_pos);
+        e_envelope += envelope_energy->value(old_pos);
         e_barrier += barrier_energy->value(old_pos);
 
-        e_s_amips += m_s_amips * amips_energy->value(old_pos);
-        e_s_smooth += m_s_smooth * smooth_energy->value(old_pos);
-        e_s_envelope += m_s_envelope * M * envelope_energy->value(old_pos);
-        e_s_barrier += m_s_barrier * barrier_energy->value(old_pos);
-
-        // e_sw_amips += m_s_amips * m_params.w_amips * amips_energy->value(old_pos);
-        // e_sw_smooth += m_s_smooth * m_params.w_smooth * smooth_energy->value(old_pos);
-        // e_sw_envelope += m_s_envelope * M * m_params.w_envelope *
-        // envelope_energy->value(old_pos); e_sw_barrier += m_s_barrier * m_params.w_separate *
-        // barrier_energy->value(old_pos);
         ++n_pts;
     }
 
@@ -1677,27 +1647,6 @@ void ImageSimulationMeshTri::log_total_surface_energy()
         e_envelope,
         e_barrier,
         n_pts);
-    logger().warn(
-        ">>>>> Scaled Energies <<<<<\n  AMIPS = {}\n  Smooth = {}\n  Envelope = "
-        "{}\n  Barrier = {}",
-        e_s_amips,
-        e_s_smooth,
-        e_s_envelope,
-        e_s_barrier);
-    // logger().warn(
-    //     ">>>>> Scaled and Weighted Energies <<<<<\n  AMIPS = {}\n  Smooth = {}\n  Envelope = "
-    //     "{}\n  Barrier = {}",
-    //     e_sw_amips,
-    //     e_sw_smooth,
-    //     e_sw_envelope,
-    //     e_sw_barrier);
-    logger().warn(
-        ">>>>> Scaling Factors <<<<<\n  AMIPS = {}\n  Smooth = {}\n  Envelope = "
-        "{}\n  Barrier = {}",
-        m_s_amips,
-        m_s_smooth,
-        m_s_envelope,
-        m_s_barrier);
 }
 
 
@@ -2309,8 +2258,10 @@ void ImageSimulationMeshTri::substructure_region(
             for (const Tuple& t : get_one_ring_edges_for_vertex(v_a)) {
                 const size_t v_b = t.vid(*this);
                 const Vector2d& p_b = VA[v_b].m_pos;
-                const double d2 = ipc::point_edge_distance(p0, p_a, p_b);
-                if (d2 > r2) {
+                const double l = (p_a - p_b).norm();
+                const Vector2d p_mid = 0.5 * (p_a + p_b);
+                const double d = (p_mid - p0).norm() - l;
+                if (d > r) {
                     continue; // edge is too far away
                 }
                 candidates.add(simplex::Edge(v_a, v_b));

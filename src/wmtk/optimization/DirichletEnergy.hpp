@@ -55,7 +55,11 @@ public:
      * Three positions must be provided, the optimized position (p0) and its two neighbors (p1, p2).
      *
      */
-    BiharmonicEnergy2D(const std::array<Vector2d, 3>& pts, const double& M, const Vector3d& L_w);
+    BiharmonicEnergy2D(
+        const std::array<Vector2d, 3>& pts,
+        const double& M,
+        const Vector3d& L_w,
+        const double weight = 1);
 
     TVector initial_position() const;
 
@@ -103,6 +107,8 @@ private:
      * LTML.row(0) = M_inv * L_w(0,0) * L_w.row(0) <-- this is what is stored in m_LTML_row
      */
     Vector3d m_LTML_row;
+
+    double m_weight;
 };
 
 } // namespace wmtk::optimization

@@ -7,12 +7,14 @@ BarrierEnergy2D::BarrierEnergy2D(
     const MatrixXd& V,
     const MatrixXi& E,
     const size_t vid,
-    const double dhat)
+    const double dhat,
+    const double weight)
     : m_collision_mesh(V, E)
     , m_V(V)
     , m_B(dhat)
     , m_x0(V.row(vid))
     , m_vid(vid)
+    , m_weight(weight)
 {
     assert(V.cols() == 2);
     assert(E.cols() == 2);
@@ -43,7 +45,7 @@ double BarrierEnergy2D::value(const TVector& x)
     assert(x.size() == 2);
     update_collisions(x);
     double potential = m_B(m_collisions, m_collision_mesh, m_V);
-    return potential;
+    return m_weight * potential;
 }
 
 void BarrierEnergy2D::gradient(const TVector& x, TVector& gradv)
@@ -51,7 +53,7 @@ void BarrierEnergy2D::gradient(const TVector& x, TVector& gradv)
     assert(x.size() == 2);
     update_collisions(x);
     VectorXd grad = m_B.gradient(m_collisions, m_collision_mesh, m_V);
-    gradv = grad.segment<2>(m_vid * 2);
+    gradv = m_weight * grad.segment<2>(m_vid * 2);
 }
 
 void BarrierEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
@@ -64,7 +66,7 @@ void BarrierEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
     v_hess.setZero();
     v_hess(0, 0) = hess.coeff(2 * m_vid, 2 * m_vid);
     v_hess(1, 1) = hess.coeff(2 * m_vid + 1, 2 * m_vid + 1);
-    hessian = v_hess;
+    hessian = m_weight * v_hess;
 }
 
 void BarrierEnergy2D::update_collisions(const TVector& x)

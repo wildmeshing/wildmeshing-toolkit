@@ -47,11 +47,13 @@ void DirichletEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
 BiharmonicEnergy2D::BiharmonicEnergy2D(
     const std::array<Vector2d, 3>& pts,
     const double& M,
-    const Vector3d& L_w)
+    const Vector3d& L_w,
+    const double weight)
     : m_pts(pts)
     , m_M(M)
     , m_M_inv(1. / M)
     , m_L_w_row(L_w)
+    , m_weight(weight)
 {
     m_LTML_row = m_M_inv * m_L_w_row[0] * m_L_w_row;
 }
@@ -71,7 +73,7 @@ double BiharmonicEnergy2D::value(const TVector& x)
         energy += m_M_inv * Lwv * Lwv;
     }
 
-    return energy;
+    return m_weight * energy;
 }
 
 void BiharmonicEnergy2D::gradient(const TVector& x, TVector& gradv)
@@ -83,12 +85,14 @@ void BiharmonicEnergy2D::gradient(const TVector& x, TVector& gradv)
         Vector3d v(x[i], m_pts[1][i], m_pts[2][i]);
         gradv[i] = 2 * m_LTML_row.dot(v);
     }
+
+    gradv *= m_weight;
 }
 
 void BiharmonicEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
 {
     assert(x.size() == 2);
-    hessian = Matrix2d::Identity() * 2 * m_LTML_row[0];
+    hessian = m_weight * Matrix2d::Identity() * 2 * m_LTML_row[0];
 }
 
 void BiharmonicEnergy2D::local_mass_and_stiffness(

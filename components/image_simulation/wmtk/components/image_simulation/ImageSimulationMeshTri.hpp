@@ -5,6 +5,7 @@
 
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/utils/VectorUtils.h>
+#include <polysolve/nonlinear/Problem.hpp>
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
@@ -208,6 +209,23 @@ public:
     void smooth_all_vertices(const size_t n_iters = 1);
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
+
+    void build_mass_matrix();
+    std::shared_ptr<polysolve::nonlinear::Problem> get_smooth_energy(const Tuple& t) const;
+    std::shared_ptr<polysolve::nonlinear::Problem> get_envelope_energy(const Tuple& t) const;
+    /**
+     * @brief Get the energy for minimal separation.
+     *
+     * By default, this method constructs the energy only using a local neighborhood. Using the
+     * entire surface is extremely slow.
+     */
+    std::shared_ptr<polysolve::nonlinear::Problem> get_barrier_energy(
+        const Tuple& t,
+        const bool use_full_surface = false) const;
+
+    std::vector<std::array<double, 6>> get_amips_assembles(const Tuple& t) const;
+    std::shared_ptr<polysolve::nonlinear::Problem> get_amips_energy(const Tuple& t) const;
+
     /**
      * For debugging purposes.
      */

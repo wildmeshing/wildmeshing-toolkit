@@ -19,7 +19,7 @@ public:
      */
     EnvelopeEnergy2D(
         const std::shared_ptr<SampleEnvelope>& envelope,
-        const std::array<Vector2d, 3>& pts,
+        const double weight = 1,
         bool check_step_validity = true);
 
     double value(const TVector& x) override;
@@ -36,8 +36,7 @@ public:
 
 private:
     std::shared_ptr<SampleEnvelope> m_envelope;
-    std::array<Vector2d, 3> m_pts;
-
+    double m_weight;
     bool m_check_step_validity;
 };
 

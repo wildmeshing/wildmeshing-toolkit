@@ -22,7 +22,12 @@ public:
      * considers one vertex with ID `vid`. The `vid` can be replaced to optimize another vertex
      * position later on.
      */
-    BarrierEnergy2D(const MatrixXd& V, const MatrixXi& E, const size_t vid, const double dhat);
+    BarrierEnergy2D(
+        const MatrixXd& V,
+        const MatrixXi& E,
+        const size_t vid,
+        const double dhat,
+        const double weight = 1);
 
     TVector initial_position() const;
 
@@ -52,6 +57,8 @@ private:
 
     Vector2d m_x0;
     size_t m_vid;
+
+    double m_weight;
 };
 
 } // namespace wmtk::optimization
