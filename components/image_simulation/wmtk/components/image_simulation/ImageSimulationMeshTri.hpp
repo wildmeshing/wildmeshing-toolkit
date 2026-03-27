@@ -132,18 +132,25 @@ public:
 
         m_s_amips = 1.;
         /**
-         * TODO explain scaling factor
+         * The bilaplacian energy for smoothing in 2D scales inverse to the length, because the
+         * Laplace operator times the positions scales inverse to the length. The mass scales with
+         * the length but as the bilaplacian contains twice the Laplace operator times positions but
+         * only once the mass, the entire energy scales inverse to the length.
+         *
+         * In 3D, the mass scales to length^2 and therefore the energy is dimensionless. That is not
+         * the case in 2D.
          */
         m_s_smooth = m_params.diag_l;
         /**
-         * The diagonal compensates for the mass dimension (in 2D its just a length, in 3D its an
+         * The diagonal compensates for the mass (in 2D its just a length, in 3D its an
          * area and we need the squared diagonal).
          * eps makes it such that the energy is relative to the envelope thickness. As it's a
          * squared energy, we need eps^2.
          */
         m_s_envelope = 1. / (m_params.diag_l * m_params.eps * m_params.eps);
         /**
-         * TODO explain scaling factor
+         * The barrier energy computes a double-sided squared distance and therefore needs to be
+         * scaled by length^4.
          */
         m_s_barrier = 1. / (m_params.diag_l4);
     }

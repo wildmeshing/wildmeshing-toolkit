@@ -39,15 +39,24 @@ std::shared_ptr<tri::ImageSimulationMeshTri> init_optimization_tests(
     return mesh;
 }
 
-TEST_CASE("scale-invariance", test_groups)
+void compare(const double a, const double b, const double tol = 1e-12)
 {
+    REQUIRE(((a != 0) && (b != 0)));
+    const double rel = std::abs(a - b) / std::abs(a);
+    // logger().info("a = {}, b = {}, rel = {}", a, b, rel);
+    CHECK(rel < tol);
+}
+
+TEST_CASE("scale-invariance", test_groups + test_release_only)
+{
+    logger().set_level(spdlog::level::off);
+
     using Tuple = TriMesh::Tuple;
 
     struct Energies
     {
         double amips = -1, smooth = -1, envelope = -1, barrier = -1;
     };
-
 
     auto collect_energies = [](double scale) {
         Parameters params;
@@ -62,7 +71,7 @@ TEST_CASE("scale-invariance", test_groups)
 
         for (const Tuple& t : mesh.get_vertices()) {
             const size_t vid = t.vid(mesh);
-            if (vid < 9800) {
+            if (vid < 9700) {
                 continue;
             }
             if (!VA[vid].m_is_on_surface) {
@@ -79,12 +88,23 @@ TEST_CASE("scale-invariance", test_groups)
             auto envelope_energy = mesh.get_envelope_energy(t);
             auto barrier_energy = mesh.get_barrier_energy(t);
 
+            // find a position to test the envelope energy
+            Tuple n;
+            for (const Tuple& tt : mesh.get_one_ring_edges_for_vertex(vid)) {
+                if (!VA[tt.vid(mesh)].m_is_on_surface) {
+                    n = tt;
+                    break;
+                }
+            }
+            REQUIRE(n.is_valid(mesh));
+
             const Vector2d& x = VA[vid].m_pos;
+            const Vector2d& y = VA[n.vid(mesh)].m_pos;
 
             Energies e;
             e.amips = amips_energy->value(x);
-            e.smooth = smooth_energy->value(x);
-            e.envelope = envelope_energy->value(x);
+            e.smooth = smooth_energy->value(y);
+            e.envelope = envelope_energy->value(y);
             e.barrier = barrier_energy->value(x);
             energies.push_back(e);
         }
@@ -94,36 +114,26 @@ TEST_CASE("scale-invariance", test_groups)
 
 
     const auto a = collect_energies(1);
-    const auto b = collect_energies(100);
+    const auto b = collect_energies(1024);
 
     REQUIRE(a.size() == b.size());
     for (size_t i = 0; i < a.size(); ++i) {
         // compare all energies
-        if (a[i].amips == 0) {
-            CHECK(b[i].amips == 0);
-        } else {
-            CHECK(std::abs(a[i].amips - b[i].amips) / a[i].amips < 1e-8);
-        }
-        if (a[i].smooth == 0) {
-            CHECK(b[i].smooth == 0);
-        } else {
-            CHECK(std::abs(a[i].smooth - b[i].smooth) / a[i].smooth < 1e-8);
-        }
-        if (a[i].envelope == 0) {
-            CHECK(b[i].envelope == 0);
-        } else {
-            CHECK(std::abs(a[i].envelope - b[i].envelope) / a[i].envelope < 1e-8);
-        }
-        if (a[i].barrier == 0) {
-            CHECK(b[i].barrier == 0);
-        } else {
-            CHECK(std::abs(a[i].barrier - b[i].barrier) / a[i].barrier < 1e-8);
-        }
+        // logger().info("amips");
+        compare(a[i].amips, b[i].amips);
+        // logger().info("smooth");
+        compare(a[i].smooth, b[i].smooth);
+        // logger().info("env");
+        compare(a[i].envelope, b[i].envelope);
+        // logger().info("barrier");
+        compare(a[i].barrier, b[i].barrier);
     }
 }
 
 TEST_CASE("barrier-bfs", test_groups + test_release_only)
 {
+    logger().set_level(spdlog::level::off);
+
     using Tuple = TriMesh::Tuple;
     Parameters params;
     auto mesh_ptr = init_optimization_tests(params);
