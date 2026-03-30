@@ -125,8 +125,8 @@ void ImageSimulationMeshTri::engulf_components(
             }
         }
 
-        // Build boundary edge centroids between hole and engulfing components
-        std::vector<std::pair<Vector2d, size_t>> boundary_edge_centroids;
+        // Build boundary edges between hole and engulfing components
+        std::vector<std::tuple<Vector2d, Vector2d, size_t>> boundary_edges;
         for (const size_t comp_id : hole_comp_ids) {
             for (const size_t fid : components[comp_id].faces) {
                 if (!tuple_from_tri(fid).is_valid(*this)) {
@@ -142,19 +142,20 @@ void ImageSimulationMeshTri::engulf_components(
                     if (engulfing_comp_ids.count(
                             nbr_cidx)) { // neighbor is one of the engulfing components
                         const auto vs = get_edge_vids(edge_tup);
-                        const Vector2d& p0 = m_vertex_attribute[vs[0]].m_pos;
-                        const Vector2d& p1 = m_vertex_attribute[vs[1]].m_pos;
-                        boundary_edge_centroids.emplace_back((p0 + p1) / 2.0, nbr_cidx);
+                        boundary_edges.emplace_back(
+                            m_vertex_attribute[vs[0]].m_pos,
+                            m_vertex_attribute[vs[1]].m_pos,
+                            nbr_cidx);
                     }
                 }
             }
         }
 
-        // Helper: per-comp minimum squared distance from pos to any centroid of that comp.
+        // Helper: per-comp minimum squared distance from pos to any boundary edge of that comp.
         const auto comp_min_sq_dists = [&](const Vector2d& pos) {
             std::unordered_map<size_t, double> result;
-            for (const auto& [centroid, cidx] : boundary_edge_centroids) {
-                const double d = (pos - centroid).squaredNorm();
+            for (const auto& [e0, e1, cidx] : boundary_edges) {
+                const double d = ipc::point_edge_distance(pos, e0, e1);
                 auto [it, ins] = result.emplace(cidx, d);
                 if (!ins) {
                     it->second = std::min(it->second, d);
