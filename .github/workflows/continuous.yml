@@ -182,7 +182,7 @@ jobs:
       - name: Dependencies (install sccache)
         shell: pwsh
         run: |
-          $version = "v0.8.2"  # pick a known-good version for your repo
+          $version = "v0.8.2"
           $zip = "sccache-$version-x86_64-pc-windows-msvc.zip"
           $url = "https://github.com/mozilla/sccache/releases/download/$version/$zip"
 
@@ -192,10 +192,16 @@ jobs:
           Invoke-WebRequest -Uri $url -OutFile "$dest\sccache.zip"
           Expand-Archive -Path "$dest\sccache.zip" -DestinationPath $dest -Force
 
-          # The zip typically contains sccache.exe at the root; adjust if needed
-          Add-Content $env:GITHUB_PATH $dest
+          # Find where sccache.exe actually ended up
+          $exe = Get-ChildItem -Path $dest -Recurse -Filter "sccache.exe" | Select-Object -First 1
+          if (-not $exe) { throw "sccache.exe not found after extracting $zip into $dest" }
+
+          Add-Content $env:GITHUB_PATH $exe.DirectoryName
 
           "SCCACHE_DIR=$env:LOCALAPPDATA\Mozilla\sccache" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+          # Sanity check
+          & $exe.FullName -V
 
       - name: Cache build
         id: cache-build
