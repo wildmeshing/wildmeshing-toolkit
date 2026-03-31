@@ -1,4 +1,6 @@
 #include "ImageSimulationMeshTri.hpp"
+
+#include <ipc/distance/point_edge.hpp>
 #include "ConnectedComponentAnnotationHelper.cpp"
 
 #include <igl/Timer.h>
