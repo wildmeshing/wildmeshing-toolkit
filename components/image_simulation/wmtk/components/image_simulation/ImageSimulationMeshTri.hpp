@@ -5,6 +5,7 @@
 
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/utils/VectorUtils.h>
+#include <polysolve/nonlinear/Problem.hpp>
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
@@ -93,6 +94,7 @@ public:
     std::vector<Vector2d> m_V_envelope;
     std::vector<Vector2i> m_E_envelope;
     std::shared_ptr<SampleEnvelope> m_envelope;
+    std::shared_ptr<SampleEnvelope> m_envelope_orig;
     double m_envelope_eps = -1;
 
     using VertAttCol = AttributeCollection<VertexAttributes>;
@@ -110,6 +112,12 @@ public:
     std::vector<double> m_surface_mass; // the mass matrix for surface vertices
     std::vector<Vector3d> m_surface_stiffness; // stiffness matrix for surface vertices
 
+    // scaling factors
+    double m_s_amips = -1;
+    double m_s_smooth = -1;
+    double m_s_envelope = -1;
+    double m_s_barrier = -1;
+
     ImageSimulationMeshTri(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
         : m_params(_m_params)
         , m_envelope_eps(envelope_eps)
@@ -121,6 +129,32 @@ public:
 
         m_solver = optimization::create_basic_solver();
         optimization::deactivate_opt_logger();
+
+        m_s_amips = 1.;
+        /**
+         * The bilaplacian energy for smoothing in 2D scales inverse to the length, because the
+         * Laplace operator times the positions scales inverse to the length. The mass scales with
+         * the length but as the bilaplacian contains twice the Laplace operator times positions but
+         * only once the mass, the entire energy scales inverse to the length.
+         *
+         * In 3D, the mass scales to length^2 and therefore the energy is dimensionless. That is not
+         * the case in 2D.
+         */
+        m_s_smooth = m_params.diag_l;
+        /**
+         * The diagonal compensates for the mass (in 2D its just a length, in 3D its an
+         * area and we need the squared diagonal).
+         * eps makes it such that the energy is relative to the envelope thickness. As it's a
+         * squared energy, we need eps^2.
+         */
+        m_s_envelope = 1. / (m_params.diag_l * m_params.eps * m_params.eps);
+        /**
+         * The barrier energy computes a double-sided squared distance and therefore needs to be
+         * scaled by length^4.
+         */
+        m_s_barrier = 1. / (m_params.diag_l4);
+
+        init_separation_weight();
     }
 
     ~ImageSimulationMeshTri() {}
@@ -153,11 +187,14 @@ public:
 
     void init_envelope(const MatrixXd& V, const MatrixXi& F);
 
+    void init_separation_weight();
+
     bool adjust_sizing_field_serial(double max_energy);
 
     void write_msh(std::string file);
 
     void write_vtu(const std::string& path) const;
+    void write_vtu_with_energies(const std::string& path) const;
 
     std::vector<std::array<size_t, 2>> get_edges_by_condition(
         std::function<bool(const EdgeAttributes&)> cond) const;
@@ -181,9 +218,30 @@ public:
     bool swap_edge_before(const Tuple& t) override;
     bool swap_edge_after(const Tuple& t) override;
 
-    void smooth_all_vertices();
+    void smooth_all_vertices(const size_t n_iters = 1);
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
+
+    void build_mass_matrix();
+    std::shared_ptr<polysolve::nonlinear::Problem> get_smooth_energy(const Tuple& t) const;
+    std::shared_ptr<polysolve::nonlinear::Problem> get_envelope_energy(const Tuple& t) const;
+    /**
+     * @brief Get the energy for minimal separation.
+     *
+     * By default, this method constructs the energy only using a local neighborhood. Using the
+     * entire surface is extremely slow.
+     */
+    std::shared_ptr<polysolve::nonlinear::Problem> get_barrier_energy(
+        const Tuple& t,
+        const bool use_full_surface = false) const;
+
+    std::vector<std::array<double, 6>> get_amips_assembles(const Tuple& t) const;
+    std::shared_ptr<polysolve::nonlinear::Problem> get_amips_energy(const Tuple& t) const;
+
+    /**
+     * For debugging purposes.
+     */
+    void log_total_surface_energy();
     //
     /**
      * @brief Inversion check using only floating point numbers.
@@ -320,6 +378,18 @@ public:
     size_t get_order_of_vertex(const size_t vid) const;
 
     bool substructure_link_condition(const Tuple& e_tuple) const;
+
+    /**
+     * @brief Find the substructure region that might be affected by minimal separation.
+     *
+     * The region considers all edges within 1.5 * (dhat + l_max), where l_max is the maximum
+     * incident edge length to the vertex and dhat is given by the parameters.
+     *
+     * @param v_tuple The vertex the region should be found for.
+     * @param V Nx2 vertex positions in the region
+     * @param E Nx2 edges in the region
+     */
+    void substructure_region(const Tuple& v_tuple, MatrixXd& V, MatrixXi& E, size_t& vid) const;
 
 private:
     ////// Operations

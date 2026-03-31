@@ -17,6 +17,13 @@
       "length_rel",
       "stop_energy",
       "preserve_topology",
+      "w_amips",
+      "w_smooth",
+      "w_envelope",
+      "w_separate",
+      "dhat_rel",
+      "dhat",
+      "smooth_without_envelope",
       "write_vtu",
       "log_file",
       "report",
@@ -50,7 +57,12 @@
     "pointer": "/operation",
     "type": "string",
     "default": "remeshing",
-    "options": ["remeshing", "fill_holes_topo", "tight_seal_topo", "keep_largest_cc"],
+    "options": [
+      "remeshing",
+      "fill_holes_topo",
+      "tight_seal_topo",
+      "keep_largest_cc"
+    ],
     "doc": "Image simulation contains multiple operations for modifying the image. Depending on the operation, more parameters might be required."
   },
   {
@@ -141,6 +153,48 @@
     "type": "bool",
     "default": true,
     "doc": "Preserve topology of input."
+  },
+  {
+    "pointer": "/w_amips",
+    "type": "float",
+    "default": 1,
+    "doc": "AMIPS energy."
+  },
+  {
+    "pointer": "/w_smooth",
+    "type": "float",
+    "default": 1,
+    "doc": "Smoothing energy."
+  },
+  {
+    "pointer": "/w_envelope",
+    "type": "float",
+    "default": 1,
+    "doc": "Envelope energy."
+  },
+  {
+    "pointer": "/w_separate",
+    "type": "float",
+    "default": 1,
+    "doc": "Separation energy."
+  },
+  {
+    "pointer": "/dhat_rel",
+    "type": "float",
+    "default": 2e-3,
+    "doc": "The separation distance that should be enforced by the optimization relative to the bbox."
+  },
+  {
+    "pointer": "/dhat",
+    "type": "float",
+    "default": -1,
+    "doc": "The separation distance that should be enforced by the optimization. If this value is negative, the relative dhat is used to compute the absolute one."
+  },
+  {
+    "pointer": "/smooth_without_envelope",
+    "type": "bool",
+    "default": false,
+    "doc": "Ignore the envelope during smoothing and re-compute it afterwards. This may cause the geometry to drift!"
   },
   {
     "pointer": "/write_vtu",

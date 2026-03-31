@@ -1159,16 +1159,23 @@ void TriMesh::consolidate_mesh()
 std::vector<size_t> TriMesh::get_one_ring_vids_for_vertex_duplicate(const size_t& vid) const
 {
     std::vector<size_t> one_ring;
-    auto& conn_tri = m_vertex_connectivity[vid].m_conn_tris;
+    get_one_ring_vids_for_vertex_duplicate(vid, one_ring);
+    return one_ring;
+}
 
+void wmtk::TriMesh::get_one_ring_vids_for_vertex_duplicate(
+    const size_t& vid,
+    std::vector<size_t>& one_ring) const
+{
+    const auto& conn_tri = m_vertex_connectivity[vid].m_conn_tris;
+
+    one_ring.clear();
     one_ring.reserve(conn_tri.size() * 4);
     for (size_t tri : conn_tri) {
-        for (auto j : m_tri_connectivity[tri].m_indices) {
+        for (size_t j : m_tri_connectivity[tri].m_indices) {
             one_ring.push_back(j);
         }
     }
-
-    return one_ring;
 }
 
 std::vector<size_t> TriMesh::get_incident_fids_for_edge(const Tuple& t) const

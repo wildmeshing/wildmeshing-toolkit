@@ -37,7 +37,7 @@ private:
     std::vector<std::array<double, 4>> m_cells;
 };
 
-class SmoothingEnergy2D : public polysolve::nonlinear::Problem
+class BiharmonicEnergy2D : public polysolve::nonlinear::Problem
 {
 public:
     using typename polysolve::nonlinear::Problem::Scalar;
@@ -45,11 +45,21 @@ public:
     using typename polysolve::nonlinear::Problem::TVector;
 
     /**
-     * @brief The smoothing energy of a vertex position on a polyline.
+     * @brief The biharmonic energy of a vertex position on a polyline.
+     *
+     * The energy is defined as:
+     * \int_M \Vert \Delta_M p \Vert^2
+     * In descrete form:
+     * \sum_{i=1}^n A_i \Vert L p_i \Vert^2
      *
      * Three positions must be provided, the optimized position (p0) and its two neighbors (p1, p2).
+     *
      */
-    SmoothingEnergy2D(const std::array<Vector2d, 3>& pts, const double& M, const Vector3d& L_w);
+    BiharmonicEnergy2D(
+        const std::array<Vector2d, 3>& pts,
+        const double& M,
+        const Vector3d& L_w,
+        const double weight = 1);
 
     TVector initial_position() const;
 
@@ -97,6 +107,8 @@ private:
      * LTML.row(0) = M_inv * L_w(0,0) * L_w.row(0) <-- this is what is stored in m_LTML_row
      */
     Vector3d m_LTML_row;
+
+    double m_weight;
 };
 
 } // namespace wmtk::optimization
