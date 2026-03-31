@@ -224,6 +224,8 @@ void ImageSimulationMeshTri::init_from_image(
     }
 
     init_surfaces_and_boundaries();
+
+    init_separation_weight();
 }
 
 void ImageSimulationMeshTri::init_surfaces_and_boundaries()
@@ -356,6 +358,12 @@ void ImageSimulationMeshTri::init_envelope(const MatrixXd& V, const MatrixXi& E)
     if (!m_envelope_orig) {
         m_envelope_orig = m_envelope;
     }
+}
+
+void ImageSimulationMeshTri::init_separation_weight()
+{
+    //m_params.w_separate = m_params.w_envelope * (16. / 5.) * m_params.dhat;
+    logger().info("Barrier weight = {}, dhat = {}", m_params.w_separate, m_params.dhat);
 }
 
 bool ImageSimulationMeshTri::adjust_sizing_field_serial(double max_energy)
@@ -581,6 +589,124 @@ void ImageSimulationMeshTri::write_vtu(const std::string& path) const
         std::shared_ptr<paraviewo::ParaviewWriter> surf_writer;
         surf_writer = std::make_shared<paraviewo::VTUWriter>();
         surf_writer->add_field("sizing_field", v_sizing_field);
+
+        logger().info("Write {}", surf_out_path);
+        surf_writer->write_mesh(surf_out_path, V, E);
+    }
+}
+
+void ImageSimulationMeshTri::write_vtu_with_energies(const std::string& path) const
+{
+    // consolidate_mesh();
+    const std::string out_path = path + ".vtu";
+    logger().info("Write with energies {}", out_path);
+    const auto& vs = get_vertices();
+    const auto& faces = get_faces();
+    const auto edges = get_edges_by_condition([](auto& f) { return f.m_is_surface_fs; });
+
+    MatrixXd V(vert_capacity(), 2);
+    MatrixXi F(tri_capacity(), 3);
+    MatrixXi E(edges.size(), 2);
+
+    V.setZero();
+    F.setZero();
+    E.setZero();
+
+    VectorXd v_sizing_field(vert_capacity());
+    v_sizing_field.setZero();
+    MatrixXd v_energy_grad_barrier(vert_capacity(), 2);
+    v_energy_grad_barrier.setZero();
+    MatrixXd v_energy_grad_smooth(vert_capacity(), 2);
+    v_energy_grad_smooth.setZero();
+    MatrixXd v_energy_grad_amips(vert_capacity(), 2);
+    v_energy_grad_amips.setZero();
+    MatrixXd v_energy_grad_envelope(vert_capacity(), 2);
+    v_energy_grad_envelope.setZero();
+    MatrixXd v_energy_grad_sum(vert_capacity(), 2);
+    v_energy_grad_sum.setZero();
+
+    std::vector<MatrixXd> tags(m_tags_count, MatrixXd(tri_capacity(), 1));
+    MatrixXd amips(tri_capacity(), 1);
+
+    int index = 0;
+    for (const Tuple& t : faces) {
+        size_t tid = t.fid(*this);
+        for (size_t j = 0; j < m_tags_count; ++j) {
+            tags[j](index, 0) = m_face_attribute[tid].tags[j];
+        }
+        amips(index, 0) = m_face_attribute[tid].m_quality;
+
+        const auto& vs = oriented_tri_vids(t);
+        for (size_t j = 0; j < 3; j++) {
+            F(index, j) = (int)vs[j];
+        }
+        ++index;
+    }
+
+    for (size_t i = 0; i < edges.size(); ++i) {
+        for (size_t j = 0; j < 2; ++j) {
+            E(i, j) = (int)edges[i][j];
+        }
+    }
+
+    for (const Tuple& v : vs) {
+        const size_t vid = v.vid(*this);
+        const Vector2d& x = m_vertex_attribute.at(vid).m_pos;
+        V.row(vid) = m_vertex_attribute[vid].m_pos;
+        v_sizing_field[vid] = m_vertex_attribute[vid].m_sizing_scalar;
+
+        if (m_vertex_attribute.at(vid).m_is_on_surface) {
+            auto amips_energy = get_amips_energy(v);
+            auto smooth_energy = get_smooth_energy(v);
+            auto envelope_energy = get_envelope_energy(v);
+            auto barrier_energy = get_barrier_energy(v);
+
+            if (!smooth_energy) {
+                continue;
+            }
+
+            auto energy_sum = std::make_shared<optimization::EnergySum>();
+            energy_sum->add_energy(amips_energy);
+            energy_sum->add_energy(smooth_energy);
+            energy_sum->add_energy(envelope_energy);
+            energy_sum->add_energy(barrier_energy);
+
+            VectorXd g;
+            amips_energy->gradient(x, g);
+            v_energy_grad_amips.row(vid) = g;
+            smooth_energy->gradient(x, g);
+            v_energy_grad_smooth.row(vid) = g;
+            envelope_energy->gradient(x, g);
+            v_energy_grad_envelope.row(vid) = g;
+            barrier_energy->gradient(x, g);
+            v_energy_grad_barrier.row(vid) = g;
+            energy_sum->gradient(x, g);
+            v_energy_grad_sum.row(vid) = g;
+        }
+    }
+
+    std::shared_ptr<paraviewo::ParaviewWriter> writer;
+    writer = std::make_shared<paraviewo::VTUWriter>();
+
+    for (size_t j = 0; j < m_tags_count; ++j) {
+        writer->add_cell_field(fmt::format("tag_{}", j), tags[j]);
+    }
+    writer->add_cell_field("quality", amips);
+    writer->add_field("sizing_field", v_sizing_field);
+    writer->write_mesh(path + ".vtu", V, F);
+
+    // surface
+    {
+        const auto surf_out_path = path + "_surf.vtu";
+        std::shared_ptr<paraviewo::ParaviewWriter> surf_writer;
+        surf_writer = std::make_shared<paraviewo::VTUWriter>();
+        surf_writer->add_field("sizing_field", v_sizing_field);
+        surf_writer->add_field("amips_grad", v_energy_grad_amips);
+        surf_writer->add_field("smooth_grad", v_energy_grad_smooth);
+        surf_writer->add_field("envelope_grad", v_energy_grad_envelope);
+        surf_writer->add_field("barrier_grad", v_energy_grad_barrier);
+        surf_writer->add_field("sum_grad", v_energy_grad_sum);
+
 
         logger().info("Write {}", surf_out_path);
         surf_writer->write_mesh(surf_out_path, V, E);
@@ -1375,6 +1501,8 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
 
     // check surface containment
     if (VA[vid].m_is_on_surface) {
+        // write_vtu_with_energies(fmt::format("debug_smooth_{}", debug_print_counter++));
+
         for (size_t i = 0; i < 2; ++i) {
             std::array<Eigen::Vector2d, 2> edge;
             edge[0] = VA[vid].m_pos;
