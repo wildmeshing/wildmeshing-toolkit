@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: wmtk::optimization::SmoothingEnergy2D Class Reference</title>
+<title>Wildmeshing Toolkit: wmtk::optimization::BiharmonicEnergy2D Class Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -69,7 +69,7 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>optimization</b></li><li class="navelem"><a class="el" href="classwmtk_1_1optimization_1_1_smoothing_energy2_d.html">SmoothingEnergy2D</a></li>  </ul>
+<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>optimization</b></li><li class="navelem"><a class="el" href="classwmtk_1_1optimization_1_1_biharmonic_energy2_d.html">BiharmonicEnergy2D</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
@@ -77,74 +77,77 @@ $(function() {
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
-<a href="classwmtk_1_1optimization_1_1_smoothing_energy2_d-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">wmtk::optimization::SmoothingEnergy2D Class Reference</div></div>
+<a href="classwmtk_1_1optimization_1_1_biharmonic_energy2_d-members.html">List of all members</a>  </div>
+  <div class="headertitle"><div class="title">wmtk::optimization::BiharmonicEnergy2D Class Reference</div></div>
 </div><!--header-->
 <div class="contents">
 <div class="dynheader">
-Inheritance diagram for wmtk::optimization::SmoothingEnergy2D:</div>
+Inheritance diagram for wmtk::optimization::BiharmonicEnergy2D:</div>
 <div class="dyncontent">
  <div class="center">
-  <img src="classwmtk_1_1optimization_1_1_smoothing_energy2_d.png" alt=""/>
+  <img src="classwmtk_1_1optimization_1_1_biharmonic_energy2_d.png" alt=""/>
  </div></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ad36e9a344e09e49f45265b14dad0050e" id="r_ad36e9a344e09e49f45265b14dad0050e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1optimization_1_1_smoothing_energy2_d.html#ad36e9a344e09e49f45265b14dad0050e">SmoothingEnergy2D</a> (const std::array&lt; Vector2d, 3 &gt; &amp;pts, const double &amp;M, const Vector3d &amp;L_w)</td></tr>
-<tr class="memdesc:ad36e9a344e09e49f45265b14dad0050e"><td class="mdescLeft">&#160;</td><td class="mdescRight">The smoothing energy of a vertex position on a polyline.  <br /></td></tr>
-<tr class="separator:ad36e9a344e09e49f45265b14dad0050e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab23b8d4e7a39f529635c374cc7da2535" id="r_ab23b8d4e7a39f529635c374cc7da2535"><td class="memItemLeft" align="right" valign="top"><a id="ab23b8d4e7a39f529635c374cc7da2535" name="ab23b8d4e7a39f529635c374cc7da2535"></a>
+<tr class="memitem:ab51dd8588beb68812381e95dc6da2d22" id="r_ab51dd8588beb68812381e95dc6da2d22"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1optimization_1_1_biharmonic_energy2_d.html#ab51dd8588beb68812381e95dc6da2d22">BiharmonicEnergy2D</a> (const std::array&lt; Vector2d, 3 &gt; &amp;pts, const double &amp;M, const Vector3d &amp;L_w, const double weight=1)</td></tr>
+<tr class="memdesc:ab51dd8588beb68812381e95dc6da2d22"><td class="mdescLeft">&#160;</td><td class="mdescRight">The biharmonic energy of a vertex position on a polyline.  <br /></td></tr>
+<tr class="separator:ab51dd8588beb68812381e95dc6da2d22"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9eda31a0f31c00209c30a47414ecd96c" id="r_a9eda31a0f31c00209c30a47414ecd96c"><td class="memItemLeft" align="right" valign="top"><a id="a9eda31a0f31c00209c30a47414ecd96c" name="a9eda31a0f31c00209c30a47414ecd96c"></a>
 TVector&#160;</td><td class="memItemRight" valign="bottom"><b>initial_position</b> () const</td></tr>
-<tr class="separator:ab23b8d4e7a39f529635c374cc7da2535"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af398b9901b841b15246e4bddab218103" id="r_af398b9901b841b15246e4bddab218103"><td class="memItemLeft" align="right" valign="top"><a id="af398b9901b841b15246e4bddab218103" name="af398b9901b841b15246e4bddab218103"></a>
+<tr class="separator:a9eda31a0f31c00209c30a47414ecd96c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abd6b33fbf9d4d86f8f8e052b6fb10fb1" id="r_abd6b33fbf9d4d86f8f8e052b6fb10fb1"><td class="memItemLeft" align="right" valign="top"><a id="abd6b33fbf9d4d86f8f8e052b6fb10fb1" name="abd6b33fbf9d4d86f8f8e052b6fb10fb1"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>value</b> (const TVector &amp;x) override</td></tr>
-<tr class="separator:af398b9901b841b15246e4bddab218103"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0a6263f491195b86a67c9ccc4081640e" id="r_a0a6263f491195b86a67c9ccc4081640e"><td class="memItemLeft" align="right" valign="top"><a id="a0a6263f491195b86a67c9ccc4081640e" name="a0a6263f491195b86a67c9ccc4081640e"></a>
+<tr class="separator:abd6b33fbf9d4d86f8f8e052b6fb10fb1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:add5c529cdb19a2a652023cee50d3f2ee" id="r_add5c529cdb19a2a652023cee50d3f2ee"><td class="memItemLeft" align="right" valign="top"><a id="add5c529cdb19a2a652023cee50d3f2ee" name="add5c529cdb19a2a652023cee50d3f2ee"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>gradient</b> (const TVector &amp;x, TVector &amp;gradv) override</td></tr>
-<tr class="separator:a0a6263f491195b86a67c9ccc4081640e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a092a13f8f081f830f286321ff9dd87e6" id="r_a092a13f8f081f830f286321ff9dd87e6"><td class="memItemLeft" align="right" valign="top"><a id="a092a13f8f081f830f286321ff9dd87e6" name="a092a13f8f081f830f286321ff9dd87e6"></a>
+<tr class="separator:add5c529cdb19a2a652023cee50d3f2ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abff685f900231d81d17b79b45bcda159" id="r_abff685f900231d81d17b79b45bcda159"><td class="memItemLeft" align="right" valign="top"><a id="abff685f900231d81d17b79b45bcda159" name="abff685f900231d81d17b79b45bcda159"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>hessian</b> (const TVector &amp;x, THessian &amp;hessian) override</td></tr>
-<tr class="separator:a092a13f8f081f830f286321ff9dd87e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4a95c393a96e2e88148c0086a902cd9b" id="r_a4a95c393a96e2e88148c0086a902cd9b"><td class="memItemLeft" align="right" valign="top"><a id="a4a95c393a96e2e88148c0086a902cd9b" name="a4a95c393a96e2e88148c0086a902cd9b"></a>
+<tr class="separator:abff685f900231d81d17b79b45bcda159"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a03838f03e413ce3f89d433c2800685dd" id="r_a03838f03e413ce3f89d433c2800685dd"><td class="memItemLeft" align="right" valign="top"><a id="a03838f03e413ce3f89d433c2800685dd" name="a03838f03e413ce3f89d433c2800685dd"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>hessian</b> (const TVector &amp;x, MatrixXd &amp;hessian) override</td></tr>
-<tr class="separator:a4a95c393a96e2e88148c0086a902cd9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af6b0316982ad3d7e3eaf0667b8802366" id="r_af6b0316982ad3d7e3eaf0667b8802366"><td class="memItemLeft" align="right" valign="top"><a id="af6b0316982ad3d7e3eaf0667b8802366" name="af6b0316982ad3d7e3eaf0667b8802366"></a>
+<tr class="separator:a03838f03e413ce3f89d433c2800685dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae66249b72c96694258d7438c2a870ee0" id="r_ae66249b72c96694258d7438c2a870ee0"><td class="memItemLeft" align="right" valign="top"><a id="ae66249b72c96694258d7438c2a870ee0" name="ae66249b72c96694258d7438c2a870ee0"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>solution_changed</b> (const TVector &amp;new_x) override</td></tr>
-<tr class="separator:af6b0316982ad3d7e3eaf0667b8802366"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:ae66249b72c96694258d7438c2a870ee0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:af7b492c14ecd0e10c355cb8349fa3388" id="r_af7b492c14ecd0e10c355cb8349fa3388"><td class="memItemLeft" align="right" valign="top"><a id="af7b492c14ecd0e10c355cb8349fa3388" name="af7b492c14ecd0e10c355cb8349fa3388"></a>
+<tr class="memitem:a288e9ed17796002a60e48c4de4feb95c" id="r_a288e9ed17796002a60e48c4de4feb95c"><td class="memItemLeft" align="right" valign="top"><a id="a288e9ed17796002a60e48c4de4feb95c" name="a288e9ed17796002a60e48c4de4feb95c"></a>
 static void&#160;</td><td class="memItemRight" valign="bottom"><b>local_mass_and_stiffness</b> (const std::array&lt; Vector2d, 3 &gt; &amp;pts, double &amp;M, Vector3d &amp;L_w)</td></tr>
-<tr class="separator:af7b492c14ecd0e10c355cb8349fa3388"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a287096c5cd4cf71e50397c604fe9e52e" id="r_a287096c5cd4cf71e50397c604fe9e52e"><td class="memItemLeft" align="right" valign="top"><a id="a287096c5cd4cf71e50397c604fe9e52e" name="a287096c5cd4cf71e50397c604fe9e52e"></a>
+<tr class="separator:a288e9ed17796002a60e48c4de4feb95c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7492166e557cc207424742b4213682f2" id="r_a7492166e557cc207424742b4213682f2"><td class="memItemLeft" align="right" valign="top"><a id="a7492166e557cc207424742b4213682f2" name="a7492166e557cc207424742b4213682f2"></a>
 static void&#160;</td><td class="memItemRight" valign="bottom"><b>uniform_mass_and_stiffness</b> (const std::array&lt; Vector2d, 3 &gt; &amp;pts, double &amp;M, Vector3d &amp;L_w)</td></tr>
-<tr class="separator:a287096c5cd4cf71e50397c604fe9e52e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a7492166e557cc207424742b4213682f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a769ddccf25bda29965f1ec3482e5faef" id="r_a769ddccf25bda29965f1ec3482e5faef"><td class="memItemLeft" align="right" valign="top">std::array&lt; Vector2d, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1optimization_1_1_smoothing_energy2_d.html#a769ddccf25bda29965f1ec3482e5faef">m_pts</a></td></tr>
-<tr class="separator:a769ddccf25bda29965f1ec3482e5faef"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a96c68cde9dc8fb1854161a2aaca3f9c0" id="r_a96c68cde9dc8fb1854161a2aaca3f9c0"><td class="memItemLeft" align="right" valign="top">Vector3d&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1optimization_1_1_smoothing_energy2_d.html#a96c68cde9dc8fb1854161a2aaca3f9c0">m_L_w_row</a></td></tr>
-<tr class="separator:a96c68cde9dc8fb1854161a2aaca3f9c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab88c4e573d02bf564c835ea2d0c1cb48" id="r_ab88c4e573d02bf564c835ea2d0c1cb48"><td class="memItemLeft" align="right" valign="top"><a id="ab88c4e573d02bf564c835ea2d0c1cb48" name="ab88c4e573d02bf564c835ea2d0c1cb48"></a>
+<tr class="memitem:a66af4f6ef683d9cb3dc361e62eef8314" id="r_a66af4f6ef683d9cb3dc361e62eef8314"><td class="memItemLeft" align="right" valign="top">std::array&lt; Vector2d, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1optimization_1_1_biharmonic_energy2_d.html#a66af4f6ef683d9cb3dc361e62eef8314">m_pts</a></td></tr>
+<tr class="separator:a66af4f6ef683d9cb3dc361e62eef8314"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5d13f38fe0cd861b42537adfe1a17d55" id="r_a5d13f38fe0cd861b42537adfe1a17d55"><td class="memItemLeft" align="right" valign="top">Vector3d&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1optimization_1_1_biharmonic_energy2_d.html#a5d13f38fe0cd861b42537adfe1a17d55">m_L_w_row</a></td></tr>
+<tr class="separator:a5d13f38fe0cd861b42537adfe1a17d55"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab7151f9c88bd7ff6c64fcd75dd415ce5" id="r_ab7151f9c88bd7ff6c64fcd75dd415ce5"><td class="memItemLeft" align="right" valign="top"><a id="ab7151f9c88bd7ff6c64fcd75dd415ce5" name="ab7151f9c88bd7ff6c64fcd75dd415ce5"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>m_M</b></td></tr>
-<tr class="separator:ab88c4e573d02bf564c835ea2d0c1cb48"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a69eca624e40ae530f49c128f1921e190" id="r_a69eca624e40ae530f49c128f1921e190"><td class="memItemLeft" align="right" valign="top"><a id="a69eca624e40ae530f49c128f1921e190" name="a69eca624e40ae530f49c128f1921e190"></a>
+<tr class="separator:ab7151f9c88bd7ff6c64fcd75dd415ce5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a71c1267ab50e333f5cec8afec2b6b768" id="r_a71c1267ab50e333f5cec8afec2b6b768"><td class="memItemLeft" align="right" valign="top"><a id="a71c1267ab50e333f5cec8afec2b6b768" name="a71c1267ab50e333f5cec8afec2b6b768"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>m_M_inv</b></td></tr>
-<tr class="separator:a69eca624e40ae530f49c128f1921e190"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4c22fc660b261aec24f751cbd7d6d234" id="r_a4c22fc660b261aec24f751cbd7d6d234"><td class="memItemLeft" align="right" valign="top">Vector3d&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1optimization_1_1_smoothing_energy2_d.html#a4c22fc660b261aec24f751cbd7d6d234">m_LTML_row</a></td></tr>
-<tr class="separator:a4c22fc660b261aec24f751cbd7d6d234"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a71c1267ab50e333f5cec8afec2b6b768"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0411834214252d9394bdc7e0207c7137" id="r_a0411834214252d9394bdc7e0207c7137"><td class="memItemLeft" align="right" valign="top">Vector3d&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1optimization_1_1_biharmonic_energy2_d.html#a0411834214252d9394bdc7e0207c7137">m_LTML_row</a></td></tr>
+<tr class="separator:a0411834214252d9394bdc7e0207c7137"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae2cb290717053698fe819cf0fdae1179" id="r_ae2cb290717053698fe819cf0fdae1179"><td class="memItemLeft" align="right" valign="top"><a id="ae2cb290717053698fe819cf0fdae1179" name="ae2cb290717053698fe819cf0fdae1179"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>m_weight</b></td></tr>
+<tr class="separator:ae2cb290717053698fe819cf0fdae1179"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="ad36e9a344e09e49f45265b14dad0050e" name="ad36e9a344e09e49f45265b14dad0050e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad36e9a344e09e49f45265b14dad0050e">&#9670;&#160;</a></span>SmoothingEnergy2D()</h2>
+<a id="ab51dd8588beb68812381e95dc6da2d22" name="ab51dd8588beb68812381e95dc6da2d22"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab51dd8588beb68812381e95dc6da2d22">&#9670;&#160;</a></span>BiharmonicEnergy2D()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">wmtk::optimization::SmoothingEnergy2D::SmoothingEnergy2D </td>
+          <td class="memname">wmtk::optimization::BiharmonicEnergy2D::BiharmonicEnergy2D </td>
           <td>(</td>
           <td class="paramtype">const std::array&lt; Vector2d, 3 &gt; &amp;&#160;</td>
           <td class="paramname"><em>pts</em>, </td>
@@ -159,7 +162,13 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>m_M_inv</b></td></t
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const Vector3d &amp;&#160;</td>
-          <td class="paramname"><em>L_w</em>&#160;</td>
+          <td class="paramname"><em>L_w</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>weight</em> = <code>1</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -169,14 +178,15 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>m_M_inv</b></td></t
       </table>
 </div><div class="memdoc">
 
-<p>The smoothing energy of a vertex position on a polyline. </p>
+<p>The biharmonic energy of a vertex position on a polyline. </p>
+<p>The energy is defined as: \int_M \Vert \Delta_M p \Vert^2 In descrete form: \sum_{i=1}^n A_i \Vert L p_i \Vert^2</p>
 <p>Three positions must be provided, the optimized position (p0) and its two neighbors (p1, p2). </p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a96c68cde9dc8fb1854161a2aaca3f9c0" name="a96c68cde9dc8fb1854161a2aaca3f9c0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a96c68cde9dc8fb1854161a2aaca3f9c0">&#9670;&#160;</a></span>m_L_w_row</h2>
+<a id="a5d13f38fe0cd861b42537adfe1a17d55" name="a5d13f38fe0cd861b42537adfe1a17d55"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5d13f38fe0cd861b42537adfe1a17d55">&#9670;&#160;</a></span>m_L_w_row</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -185,7 +195,7 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>m_M_inv</b></td></t
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">Vector3d wmtk::optimization::SmoothingEnergy2D::m_L_w_row</td>
+          <td class="memname">Vector3d wmtk::optimization::BiharmonicEnergy2D::m_L_w_row</td>
         </tr>
       </table>
   </td>
@@ -199,8 +209,8 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>m_M_inv</b></td></t
 
 </div>
 </div>
-<a id="a4c22fc660b261aec24f751cbd7d6d234" name="a4c22fc660b261aec24f751cbd7d6d234"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4c22fc660b261aec24f751cbd7d6d234">&#9670;&#160;</a></span>m_LTML_row</h2>
+<a id="a0411834214252d9394bdc7e0207c7137" name="a0411834214252d9394bdc7e0207c7137"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0411834214252d9394bdc7e0207c7137">&#9670;&#160;</a></span>m_LTML_row</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -209,7 +219,7 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>m_M_inv</b></td></t
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">Vector3d wmtk::optimization::SmoothingEnergy2D::m_LTML_row</td>
+          <td class="memname">Vector3d wmtk::optimization::BiharmonicEnergy2D::m_LTML_row</td>
         </tr>
       </table>
   </td>
@@ -223,8 +233,8 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>m_M_inv</b></td></t
 
 </div>
 </div>
-<a id="a769ddccf25bda29965f1ec3482e5faef" name="a769ddccf25bda29965f1ec3482e5faef"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a769ddccf25bda29965f1ec3482e5faef">&#9670;&#160;</a></span>m_pts</h2>
+<a id="a66af4f6ef683d9cb3dc361e62eef8314" name="a66af4f6ef683d9cb3dc361e62eef8314"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a66af4f6ef683d9cb3dc361e62eef8314">&#9670;&#160;</a></span>m_pts</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -233,7 +243,7 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>m_M_inv</b></td></t
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::array&lt;Vector2d, 3&gt; wmtk::optimization::SmoothingEnergy2D::m_pts</td>
+          <td class="memname">std::array&lt;Vector2d, 3&gt; wmtk::optimization::BiharmonicEnergy2D::m_pts</td>
         </tr>
       </table>
   </td>

@@ -89,9 +89,9 @@ Inheritance diagram for wmtk::optimization::AMIPSEnergy2D:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a54a248a2f75205ca31b3418277ecc4df" id="r_a54a248a2f75205ca31b3418277ecc4df"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1optimization_1_1_a_m_i_p_s_energy2_d.html#a54a248a2f75205ca31b3418277ecc4df">AMIPSEnergy2D</a> (std::vector&lt; std::array&lt; double, 6 &gt; &gt; &amp;cells)</td></tr>
-<tr class="memdesc:a54a248a2f75205ca31b3418277ecc4df"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sum of AMIPS energies for 2D triangles.  <br /></td></tr>
-<tr class="separator:a54a248a2f75205ca31b3418277ecc4df"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3459476c6f50cd3cafd3e912b6aeadbd" id="r_a3459476c6f50cd3cafd3e912b6aeadbd"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1optimization_1_1_a_m_i_p_s_energy2_d.html#a3459476c6f50cd3cafd3e912b6aeadbd">AMIPSEnergy2D</a> (const std::vector&lt; std::array&lt; double, 6 &gt; &gt; &amp;cells, const double weight=1)</td></tr>
+<tr class="memdesc:a3459476c6f50cd3cafd3e912b6aeadbd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sum of AMIPS energies for 2D triangles.  <br /></td></tr>
+<tr class="separator:a3459476c6f50cd3cafd3e912b6aeadbd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac8665af28332133dae1fdd4b91b766c8" id="r_ac8665af28332133dae1fdd4b91b766c8"><td class="memItemLeft" align="right" valign="top"><a id="ac8665af28332133dae1fdd4b91b766c8" name="ac8665af28332133dae1fdd4b91b766c8"></a>
 TVector&#160;</td><td class="memItemRight" valign="bottom"><b>initial_position</b> () const</td></tr>
 <tr class="separator:ac8665af28332133dae1fdd4b91b766c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -119,10 +119,13 @@ Private Attributes</h2></td></tr>
 <tr class="memitem:a378f5ac2be3619447b3e5bd906f514a4" id="r_a378f5ac2be3619447b3e5bd906f514a4"><td class="memItemLeft" align="right" valign="top"><a id="a378f5ac2be3619447b3e5bd906f514a4" name="a378f5ac2be3619447b3e5bd906f514a4"></a>
 std::vector&lt; std::array&lt; double, 6 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_cells</b></td></tr>
 <tr class="separator:a378f5ac2be3619447b3e5bd906f514a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7775df5abb8fd2a0f3c682a1a1c4f6b1" id="r_a7775df5abb8fd2a0f3c682a1a1c4f6b1"><td class="memItemLeft" align="right" valign="top"><a id="a7775df5abb8fd2a0f3c682a1a1c4f6b1" name="a7775df5abb8fd2a0f3c682a1a1c4f6b1"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>m_weight</b></td></tr>
+<tr class="separator:a7775df5abb8fd2a0f3c682a1a1c4f6b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a54a248a2f75205ca31b3418277ecc4df" name="a54a248a2f75205ca31b3418277ecc4df"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a54a248a2f75205ca31b3418277ecc4df">&#9670;&#160;</a></span>AMIPSEnergy2D()</h2>
+<a id="a3459476c6f50cd3cafd3e912b6aeadbd" name="a3459476c6f50cd3cafd3e912b6aeadbd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3459476c6f50cd3cafd3e912b6aeadbd">&#9670;&#160;</a></span>AMIPSEnergy2D()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -130,9 +133,19 @@ std::vector&lt; std::array&lt; double, 6 &gt; &gt;&#160;</td><td class="memItemR
         <tr>
           <td class="memname">wmtk::optimization::AMIPSEnergy2D::AMIPSEnergy2D </td>
           <td>(</td>
-          <td class="paramtype">std::vector&lt; std::array&lt; double, 6 &gt; &gt; &amp;&#160;</td>
-          <td class="paramname"><em>cells</em></td><td>)</td>
+          <td class="paramtype">const std::vector&lt; std::array&lt; double, 6 &gt; &gt; &amp;&#160;</td>
+          <td class="paramname"><em>cells</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>weight</em> = <code>1</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">

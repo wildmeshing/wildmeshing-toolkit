@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['collapseinfocache_0',['CollapseInfoCache',['../structapp_1_1interior__tet__opt_1_1_interior_tet_opt_1_1_collapse_info_cache.html',1,'app::interior_tet_opt::InteriorTetOpt']]],
-  ['cuttable_1',['CutTable',['../classwmtk_1_1_cut_table.html',1,'wmtk']]]
+  ['barrierenergy2d_0',['BarrierEnergy2D',['../classwmtk_1_1optimization_1_1_barrier_energy2_d.html',1,'wmtk::optimization']]],
+  ['biharmonicenergy2d_1',['BiharmonicEnergy2D',['../classwmtk_1_1optimization_1_1_biharmonic_energy2_d.html',1,'wmtk::optimization']]]
 ];

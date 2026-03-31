@@ -89,10 +89,10 @@ Inheritance diagram for wmtk::optimization::EnvelopeEnergy2D:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a30a58f45f0f433b64a2ad9aa658be97e" id="r_a30a58f45f0f433b64a2ad9aa658be97e"><td class="memItemLeft" align="right" valign="top"><a id="a30a58f45f0f433b64a2ad9aa658be97e" name="a30a58f45f0f433b64a2ad9aa658be97e"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>EnvelopeEnergy2D</b> (const std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt; &amp;envelope, const std::array&lt; Vector2d, 3 &gt; &amp;pts)</td></tr>
-<tr class="memdesc:a30a58f45f0f433b64a2ad9aa658be97e"><td class="mdescLeft">&#160;</td><td class="mdescRight">The energy is the squared distance to an envelope. <br /></td></tr>
-<tr class="separator:a30a58f45f0f433b64a2ad9aa658be97e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a28a7cf111187d3ecb8eab07c58cd8d2c" id="r_a28a7cf111187d3ecb8eab07c58cd8d2c"><td class="memItemLeft" align="right" valign="top"><a id="a28a7cf111187d3ecb8eab07c58cd8d2c" name="a28a7cf111187d3ecb8eab07c58cd8d2c"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>EnvelopeEnergy2D</b> (const std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt; &amp;envelope, const double weight=1, bool check_step_validity=true)</td></tr>
+<tr class="memdesc:a28a7cf111187d3ecb8eab07c58cd8d2c"><td class="mdescLeft">&#160;</td><td class="mdescRight">The energy is the squared distance to an envelope. <br /></td></tr>
+<tr class="separator:a28a7cf111187d3ecb8eab07c58cd8d2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a243cf6ae626d0b088ab517cce7c515db" id="r_a243cf6ae626d0b088ab517cce7c515db"><td class="memItemLeft" align="right" valign="top"><a id="a243cf6ae626d0b088ab517cce7c515db" name="a243cf6ae626d0b088ab517cce7c515db"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>value</b> (const TVector &amp;x) override</td></tr>
 <tr class="separator:a243cf6ae626d0b088ab517cce7c515db"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -117,9 +117,12 @@ Private Attributes</h2></td></tr>
 <tr class="memitem:a17e9c0817d8afadbf83cf75a9c3525a1" id="r_a17e9c0817d8afadbf83cf75a9c3525a1"><td class="memItemLeft" align="right" valign="top"><a id="a17e9c0817d8afadbf83cf75a9c3525a1" name="a17e9c0817d8afadbf83cf75a9c3525a1"></a>
 std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope</b></td></tr>
 <tr class="separator:a17e9c0817d8afadbf83cf75a9c3525a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6c98c10718d74037ef53da7b028d9d01" id="r_a6c98c10718d74037ef53da7b028d9d01"><td class="memItemLeft" align="right" valign="top"><a id="a6c98c10718d74037ef53da7b028d9d01" name="a6c98c10718d74037ef53da7b028d9d01"></a>
-std::array&lt; Vector2d, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_pts</b></td></tr>
-<tr class="separator:a6c98c10718d74037ef53da7b028d9d01"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:add47b578ec0045ac707552fc07563bf6" id="r_add47b578ec0045ac707552fc07563bf6"><td class="memItemLeft" align="right" valign="top"><a id="add47b578ec0045ac707552fc07563bf6" name="add47b578ec0045ac707552fc07563bf6"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>m_weight</b></td></tr>
+<tr class="separator:add47b578ec0045ac707552fc07563bf6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8a1fd961b3b1c02e21363f6473fe9142" id="r_a8a1fd961b3b1c02e21363f6473fe9142"><td class="memItemLeft" align="right" valign="top"><a id="a8a1fd961b3b1c02e21363f6473fe9142" name="a8a1fd961b3b1c02e21363f6473fe9142"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_check_step_validity</b></td></tr>
+<tr class="separator:a8a1fd961b3b1c02e21363f6473fe9142"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/optimization/<a class="el" href="_envelope_energy_8hpp_source.html">EnvelopeEnergy.hpp</a></li>

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['knn_0',['KNN',['../classwmtk_1_1_k_n_n.html',1,'wmtk']]]
+  ['interiortetopt_0',['InteriorTetOpt',['../structapp_1_1interior__tet__opt_1_1_interior_tet_opt.html',1,'app::interior_tet_opt']]]
 ];
