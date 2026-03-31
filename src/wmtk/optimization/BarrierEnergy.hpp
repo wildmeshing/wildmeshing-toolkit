@@ -1,10 +1,16 @@
 #pragma once
 
+// #define WMTK_SMOOTH_BARRIER
+
 #include <ipc/collisions/normal/normal_collisions.hpp>
 #include <ipc/ipc.hpp>
 #include <ipc/potentials/barrier_potential.hpp>
+#ifdef WMTK_SMOOTH_BARRIER
+#include <ipc/smooth_contact/smooth_contact_potential.hpp>
+#endif
 #include <polysolve/nonlinear/Problem.hpp>
 #include <wmtk/Types.hpp>
+
 
 namespace wmtk::optimization {
 
@@ -52,8 +58,15 @@ public:
 private:
     ipc::CollisionMesh m_collision_mesh;
     MatrixXd m_V;
+#ifdef WMTK_SMOOTH_BARRIER
+    ipc::SmoothContactParameters m_params;
+    ipc::SmoothCollisions m_smooth_collisions;
+    ipc::SmoothContactPotential m_smooth_B;
+#else
     ipc::NormalCollisions m_collisions;
     ipc::BarrierPotential m_B;
+#endif
+
 
     Vector2d m_x0;
     size_t m_vid;

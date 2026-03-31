@@ -153,6 +153,8 @@ public:
          * scaled by length^4.
          */
         m_s_barrier = 1. / (m_params.diag_l4);
+
+        init_separation_weight();
     }
 
     ~ImageSimulationMeshTri() {}
@@ -185,11 +187,14 @@ public:
 
     void init_envelope(const MatrixXd& V, const MatrixXi& F);
 
+    void init_separation_weight();
+
     bool adjust_sizing_field_serial(double max_energy);
 
     void write_msh(std::string file);
 
     void write_vtu(const std::string& path) const;
+    void write_vtu_with_energies(const std::string& path) const;
 
     std::vector<std::array<size_t, 2>> get_edges_by_condition(
         std::function<bool(const EdgeAttributes&)> cond) const;
