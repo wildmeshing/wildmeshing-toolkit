@@ -390,13 +390,13 @@ bool QSlimMesh::collapse_qslim(int target_vert_number)
     };
 
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<QSlimMesh, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<QSlimMesh>(ExecutionPolicy::kPartition);
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<QSlimMesh, ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<QSlimMesh>(ExecutionPolicy::kSeq);
         setup_and_execute(executor);
     }
     return true;

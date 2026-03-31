@@ -269,7 +269,7 @@ void TetWildMesh::smooth_all_vertices()
     wmtk::logger().debug("Num verts {}", collect_all_ops.size());
     if (NUM_THREADS > 0) {
         timer.start();
-        auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kPartition);
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_vertex_mutex_one_ring(e, task_id);
         };
@@ -279,7 +279,7 @@ void TetWildMesh::smooth_all_vertices()
         wmtk::logger().info("vertex smoothing operation time parallel: {:.4}s", time);
     } else {
         timer.start();
-        auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kSeq);
         // executor.priority = [&](auto& m, auto op, auto& t) -> double { return rand(); };
         executor(*this, collect_all_ops);
         time = timer.getElapsedTime();

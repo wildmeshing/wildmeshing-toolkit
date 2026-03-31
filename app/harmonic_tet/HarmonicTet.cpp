@@ -163,14 +163,14 @@ void harmonic_tet::HarmonicTet::smooth_all_vertices(bool interior_only)
     }
     wmtk::logger().debug("Num verts {}", collect_all_ops.size());
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<HarmonicTet>(ExecutionPolicy::kPartition);
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_vertex_mutex_one_ring(e, task_id);
         };
         executor.num_threads = NUM_THREADS;
         executor(*this, collect_all_ops);
     } else {
-        auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<HarmonicTet>(ExecutionPolicy::kSeq);
         executor(*this, collect_all_ops);
     }
 }
@@ -188,7 +188,7 @@ void HarmonicTet::swap_all_faces(bool parallel)
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_faces()) collect_all_ops.emplace_back("face_swap", loc);
     if (parallel) {
-        auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<HarmonicTet>(ExecutionPolicy::kPartition);
         executor.renew_neighbor_tuples = wmtk::renewal_faces;
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_face_mutex_two_ring(e, task_id);
@@ -196,7 +196,7 @@ void HarmonicTet::swap_all_faces(bool parallel)
         executor.num_threads = NUM_THREADS;
         executor(*this, collect_all_ops);
     } else {
-        auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<HarmonicTet>(ExecutionPolicy::kSeq);
         executor.renew_neighbor_tuples = wmtk::renewal_faces;
         executor.num_threads = 1;
         executor(*this, collect_all_ops);
@@ -373,13 +373,13 @@ int HarmonicTet::swap_all()
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<HarmonicTet>(ExecutionPolicy::kPartition);
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<HarmonicTet>(ExecutionPolicy::kSeq);
         executor.num_threads = 1;
         setup_and_execute(executor);
     }
@@ -420,7 +420,7 @@ void HarmonicTet::swap_all_edges(bool parallel)
     };
 
     if (parallel) {
-        auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<HarmonicTet>(ExecutionPolicy::kPartition);
         executor.num_threads = NUM_THREADS;
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
             return m.try_set_edge_mutex_two_ring(e, task_id);
@@ -429,7 +429,7 @@ void HarmonicTet::swap_all_edges(bool parallel)
         executor.should_renew = [](auto val) { return val > 0; };
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<HarmonicTet, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<HarmonicTet>(ExecutionPolicy::kSeq);
         executor.num_threads = 1;
         setup_and_execute(executor);
     }

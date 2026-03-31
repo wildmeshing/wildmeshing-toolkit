@@ -771,8 +771,7 @@ void ImageSimulationMeshTri::split_all_edges()
     };
     if (NUM_THREADS > 0) {
         timer.start();
-        auto executor =
-            wmtk::ExecutePass<ImageSimulationMeshTri, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = ExecutePass<ImageSimulationMeshTri>(ExecutionPolicy::kPartition);
         executor.lock_vertices = [&](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
@@ -781,7 +780,7 @@ void ImageSimulationMeshTri::split_all_edges()
         wmtk::logger().info("edge split operation time parallel: {:.4}s", time);
     } else {
         timer.start();
-        auto executor = wmtk::ExecutePass<ImageSimulationMeshTri, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = ExecutePass<ImageSimulationMeshTri>(ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge split operation time serial: {:.4}s", time);
@@ -994,7 +993,7 @@ void ImageSimulationMeshTri::collapse_all_edges(bool is_limit_length)
     igl::Timer timer;
     timer.start();
     if (NUM_THREADS > 0) {
-        auto executor = ExecutePass<ImageSimulationMeshTri, ExecutionPolicy::kPartition>();
+        auto executor = ExecutePass<ImageSimulationMeshTri>(ExecutionPolicy::kPartition);
         executor.lock_vertices =
             [](ImageSimulationMeshTri& m, const Tuple& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
@@ -1002,7 +1001,7 @@ void ImageSimulationMeshTri::collapse_all_edges(bool is_limit_length)
         setup_and_execute(executor);
         wmtk::logger().info("edge collapse time parallel: {:.4}s", timer.getElapsedTimeInSec());
     } else {
-        auto executor = ExecutePass<ImageSimulationMeshTri, ExecutionPolicy::kSeq>();
+        auto executor = ExecutePass<ImageSimulationMeshTri>(ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         wmtk::logger().info("edge collapse time serial: {:.4}s", timer.getElapsedTimeInSec());
     }
@@ -1252,11 +1251,11 @@ size_t ImageSimulationMeshTri::swap_all_edges()
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<ImageSimulationMeshTri, ExecutionPolicy::kPartition>();
+        auto executor = ExecutePass<ImageSimulationMeshTri>(ExecutionPolicy::kPartition);
         executor.lock_vertices = edge_locker;
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<ImageSimulationMeshTri, ExecutionPolicy::kSeq>();
+        auto executor = ExecutePass<ImageSimulationMeshTri>(ExecutionPolicy::kSeq);
         setup_and_execute(executor);
     }
 
@@ -1383,7 +1382,7 @@ void ImageSimulationMeshTri::smooth_all_vertices(const size_t n_iters)
         logger().info("#V = {}", collect_all_ops.size());
         if (NUM_THREADS > 0) {
             timer.start();
-            ExecutePass<ImageSimulationMeshTri, ExecutionPolicy::kPartition> executor;
+            ExecutePass<ImageSimulationMeshTri> executor(ExecutionPolicy::kPartition);
             executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
                 return m.try_set_vertex_mutex_one_ring(e, task_id);
             };
@@ -1392,7 +1391,7 @@ void ImageSimulationMeshTri::smooth_all_vertices(const size_t n_iters)
             logger().info("vertex smoothing time parallel: {:.4}s", timer.getElapsedTimeInSec());
         } else {
             timer.start();
-            ExecutePass<ImageSimulationMeshTri, ExecutionPolicy::kSeq> executor;
+            ExecutePass<ImageSimulationMeshTri> executor(ExecutionPolicy::kSeq);
             executor(*this, collect_all_ops);
             logger().info("vertex smoothing time serial: {:.4}s", timer.getElapsedTimeInSec());
         }

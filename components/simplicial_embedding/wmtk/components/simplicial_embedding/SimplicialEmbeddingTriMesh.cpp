@@ -321,12 +321,11 @@ bool SimplicialEmbeddingTriMesh::edge_split_simplicial_embedding()
     };
 
     if (NUM_THREADS > 0) {
-        auto executor =
-            wmtk::ExecutePass<SimplicialEmbeddingTriMesh, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<SimplicialEmbeddingTriMesh>(ExecutionPolicy::kPartition);
         executor.lock_vertices = edge_locker;
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<SimplicialEmbeddingTriMesh, ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<SimplicialEmbeddingTriMesh>(ExecutionPolicy::kSeq);
         setup_and_execute(executor);
     }
 
@@ -359,12 +358,11 @@ bool SimplicialEmbeddingTriMesh::face_split_simplicial_embedding()
     };
 
     if (NUM_THREADS > 0) {
-        auto executor =
-            wmtk::ExecutePass<SimplicialEmbeddingTriMesh, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<SimplicialEmbeddingTriMesh>(ExecutionPolicy::kPartition);
         executor.lock_vertices = face_locker;
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<SimplicialEmbeddingTriMesh, ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<SimplicialEmbeddingTriMesh>(ExecutionPolicy::kSeq);
         setup_and_execute(executor);
     }
 
