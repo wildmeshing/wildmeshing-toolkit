@@ -23,11 +23,11 @@ jobs:
         include:
           - os: ubuntu-latest
             config: Debug
-            integration_tests_flag: &integration_tests_off ''
+            integration_tests_flag: &integration_tests_off ""
             name: Linux
           - os: ubuntu-latest
             config: Release
-            integration_tests_flag: &integration_tests_on '-DWMTK_BUILD_INTEGRATION_TESTS=ON'
+            integration_tests_flag: &integration_tests_on "-DWMTK_BUILD_INTEGRATION_TESTS=ON"
             name: Linux
     steps:
       - name: Checkout repository
@@ -179,10 +179,23 @@ jobs:
       #   run: |
       #     vcpkg install gmp:x64-windows
 
-      - name: Dependencies
+      - name: Dependencies (install sccache)
+        shell: pwsh
         run: |
-          choco install -y sccache
-          "SCCACHE_DIR=${env:LOCALAPPDATA}\Mozilla\sccache" | Out-File -FilePath $env:GITHUB_ENV -Append
+          $version = "v0.8.2"  # pick a known-good version for your repo
+          $zip = "sccache-$version-x86_64-pc-windows-msvc.zip"
+          $url = "https://github.com/mozilla/sccache/releases/download/$version/$zip"
+
+          $dest = "$env:RUNNER_TEMP\sccache"
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+
+          Invoke-WebRequest -Uri $url -OutFile "$dest\sccache.zip"
+          Expand-Archive -Path "$dest\sccache.zip" -DestinationPath $dest -Force
+
+          # The zip typically contains sccache.exe at the root; adjust if needed
+          Add-Content $env:GITHUB_PATH $dest
+
+          "SCCACHE_DIR=$env:LOCALAPPDATA\Mozilla\sccache" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Cache build
         id: cache-build
