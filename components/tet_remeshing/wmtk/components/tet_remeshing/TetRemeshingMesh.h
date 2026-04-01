@@ -520,10 +520,6 @@ public:
     bool is_open_boundary_edge(const Tuple& e);
     bool is_open_boundary_edge(const std::array<size_t, 2>& e);
 
-    // for topology preservation
-    size_t count_vertex_links(const Tuple& v);
-    size_t count_edge_links(const Tuple& e);
-
     // for boolean operations
     int flood_fill();
 

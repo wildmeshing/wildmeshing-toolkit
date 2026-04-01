@@ -23,6 +23,7 @@
 #include <igl/doublearea.h>
 #include <igl/readMESH.h>
 #include <igl/read_triangle_mesh.h>
+#include <queue>
 
 
 struct

@@ -511,11 +511,6 @@ public:
 
     void output_tracked_surface(std::string output_file);
 
-    long long checksum_vidx();
-    wmtk::Rational checksum_vpos();
-    long long checksum_tidx();
-    double checksum_tquality();
-
     bool adjust_sizing_field_serial(double max_energy);
 
     // for open boundary
@@ -523,60 +518,16 @@ public:
     bool is_open_boundary_edge(const Tuple& e);
     bool is_open_boundary_edge(const std::array<size_t, 2>& e);
 
-    // for topology preservation
-    size_t count_vertex_links(const Tuple& v);
-    size_t count_edge_links(const Tuple& e);
-
 public:
-    /**
-     * @brief Get all faces on the surface that are incident to vid.
-     */
-    simplex::SimplexCollection get_surface_faces_for_vertex(const size_t vid) const;
-    /**
-     * @brief Compute the number of faces on the surface incident to the edge.
-     */
-    size_t get_num_surface_faces_for_edge(const std::array<size_t, 2>& vids) const;
-    /**
-     * @brief Compute the order of an edge.
-     *
-     * The order of an edge in a TetMesh is as follows:
-     * 0: the edge is not on the surface
-     * 1: the edge is on the surface
-     * 2: the edge is on the surface boundary or non-manifold
-     */
-    size_t get_order_of_edge(const std::array<size_t, 2>& vids) const;
-    /**
-     * @brief Compute the order of a vertex.
-     *
-     * The order of a vertex in a TetMesh is as follows:
-     * 0: vertex is not on the surface
-     * 1: vertex is on the surface
-     * 2: vertex is on the surface boundary or a non-manifold edge
-     * 3: vertex is at the boundary of a non-manifold edge or a non-manifold vertex
-     */
-    size_t get_order_of_vertex(const size_t vid) const;
+    bool vertex_is_on_surface(const size_t vid) const override;
+
+    bool face_is_on_surface(const size_t fid) const override;
+
+    size_t get_order_of_vertex(const size_t vid) const override;
     /**
      * @brief Compute the vertex order for every vertex.
-     *
-     * This function relies on `get_order_of_edge`.
      */
     void init_vertex_order();
-    void init_vertex_order(const size_t vid);
-
-    /**
-     * @brief Link condition that also considers substructures.
-     *
-     * Implementation based on the pseudo code from the paper:
-     * Vivodtzev et. al. - Substructure Topology Preserving Simplification of Tetrahedral Meshes
-     *
-     * The math and the pseudo code in the paper contain errors! The theory itself is correct.
-     *
-     * The link condition must be evaluated for the mesh and all substructures (surfaces, lines,
-     * points). If there is a substructure simplex in the star, the simplex is extended with a dummy
-     * vertex (e.g., an edge becomes a face) and this extended simplex must also be considered for
-     * the link.
-     */
-    bool substructure_link_condition(const Tuple& e_tuple) const;
 
 public:
     // debug functions

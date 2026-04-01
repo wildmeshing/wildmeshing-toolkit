@@ -11,6 +11,7 @@
 
 #include <Eigen/Core>
 #include <array>
+#include <queue>
 #include <vector>
 #include <wmtk/Types.hpp>
 
