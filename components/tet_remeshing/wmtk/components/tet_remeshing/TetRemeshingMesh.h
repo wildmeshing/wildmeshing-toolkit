@@ -5,7 +5,7 @@
 #include <wmtk/utils/Morton.h>
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/envelope/Envelope.hpp>
-#include <wmtk/simplex/RawSimplex.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 #include "Parameters.h"
 
 // clang-format off

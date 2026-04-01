@@ -531,7 +531,7 @@ public:
     /**
      * @brief Get all faces on the surface that are incident to vid.
      */
-    simplex::RawSimplexCollection get_surface_faces_for_vertex(const size_t vid) const;
+    simplex::SimplexCollection get_surface_faces_for_vertex(const size_t vid) const;
     /**
      * @brief Compute the number of faces on the surface incident to the edge.
      */

@@ -372,7 +372,7 @@ public:
     /**
      * @brief Get all edges on the surface that are incident to vid.
      */
-    simplex::RawSimplexCollection get_order1_edges_for_vertex(const size_t vid) const;
+    simplex::SimplexCollection get_order1_edges_for_vertex(const size_t vid) const;
 
     size_t get_order_of_edge(const std::array<size_t, 2>& vids) const;
     size_t get_order_of_vertex(const size_t vid) const;

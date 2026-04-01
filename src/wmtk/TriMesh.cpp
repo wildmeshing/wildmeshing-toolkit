@@ -1543,11 +1543,10 @@ TriMesh::Tuple wmtk::TriMesh::tuple_from_simplex(const simplex::Face& s) const
     return tuple_from_vids(v[0], v[1], v[2]);
 }
 
-simplex::RawSimplexCollection wmtk::TriMesh::simplex_incident_triangles(
-    const simplex::Vertex& v) const
+simplex::SimplexCollection wmtk::TriMesh::simplex_incident_triangles(const simplex::Vertex& v) const
 {
     const auto fids = m_vertex_connectivity[v.vertices()[0]].m_conn_tris;
-    simplex::RawSimplexCollection sc;
+    simplex::SimplexCollection sc;
 
     for (const size_t fid : fids) {
         const auto vids = oriented_tri_vids(fid);
@@ -1557,8 +1556,7 @@ simplex::RawSimplexCollection wmtk::TriMesh::simplex_incident_triangles(
     return sc;
 }
 
-simplex::RawSimplexCollection wmtk::TriMesh::simplex_incident_triangles(
-    const simplex::Edge& e) const
+simplex::SimplexCollection wmtk::TriMesh::simplex_incident_triangles(const simplex::Edge& e) const
 {
     const simplex::Vertex loc_v0(e.vertices()[0]);
     const simplex::Vertex v1(e.vertices()[1]);
@@ -1566,13 +1564,13 @@ simplex::RawSimplexCollection wmtk::TriMesh::simplex_incident_triangles(
     const auto sc0 = simplex_incident_triangles(loc_v0);
     const auto sc1 = simplex_incident_triangles(v1);
 
-    return simplex::RawSimplexCollection::get_intersection(sc0, sc1);
+    return simplex::SimplexCollection::get_intersection(sc0, sc1);
 }
 
-simplex::RawSimplexCollection wmtk::TriMesh::simplex_link_vertices(const simplex::Vertex& v) const
+simplex::SimplexCollection wmtk::TriMesh::simplex_link_vertices(const simplex::Vertex& v) const
 {
     const auto tris = simplex_incident_triangles(v);
-    simplex::RawSimplexCollection sc;
+    simplex::SimplexCollection sc;
     sc.reserve_vertices(tris.faces().size() * 2);
     for (const simplex::Face& f : tris.faces()) {
         for (const size_t vid : f.vertices()) {
@@ -1586,10 +1584,10 @@ simplex::RawSimplexCollection wmtk::TriMesh::simplex_link_vertices(const simplex
     return sc;
 }
 
-simplex::RawSimplexCollection wmtk::TriMesh::simplex_link_vertices(const simplex::Edge& e) const
+simplex::SimplexCollection wmtk::TriMesh::simplex_link_vertices(const simplex::Edge& e) const
 {
     const auto tris = simplex_incident_triangles(e);
-    simplex::RawSimplexCollection sc;
+    simplex::SimplexCollection sc;
     sc.reserve_vertices(tris.faces().size());
     for (const simplex::Face& f : tris.faces()) {
         sc.add(f.opposite_vertex(e));
@@ -1599,10 +1597,10 @@ simplex::RawSimplexCollection wmtk::TriMesh::simplex_link_vertices(const simplex
     return sc;
 }
 
-simplex::RawSimplexCollection wmtk::TriMesh::simplex_link_edges(const simplex::Vertex& v) const
+simplex::SimplexCollection wmtk::TriMesh::simplex_link_edges(const simplex::Vertex& v) const
 {
     const auto tris = simplex_incident_triangles(v);
-    simplex::RawSimplexCollection sc;
+    simplex::SimplexCollection sc;
     sc.reserve_edges(tris.faces().size());
     for (const simplex::Face& f : tris.faces()) {
         sc.add(f.opposite_edge(v));

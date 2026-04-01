@@ -4,7 +4,7 @@
 #include <type_traits>
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/Types.hpp>
-#include <wmtk/simplex/RawSimplex.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <tbb/concurrent_vector.h>

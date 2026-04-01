@@ -6,7 +6,7 @@
 #include <wmtk/utils/PartitionMesh.h>
 #include <SimpleBVH/BVH.hpp>
 #include <functional>
-#include <wmtk/simplex/RawSimplex.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 
 #include "Parameters.h"
 

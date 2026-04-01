@@ -2173,12 +2173,12 @@ void ImageSimulationMeshTri::tight_seal_topo(
     recompute_surface_info();
 }
 
-simplex::RawSimplexCollection ImageSimulationMeshTri::get_order1_edges_for_vertex(
+simplex::SimplexCollection ImageSimulationMeshTri::get_order1_edges_for_vertex(
     const size_t vid) const
 {
     using namespace simplex;
 
-    RawSimplexCollection sc;
+    SimplexCollection sc;
 
     if (!m_vertex_attribute.at(vid).m_is_on_surface &&
         m_vertex_attribute.at(vid).on_bbox_faces.empty()) {
@@ -2247,18 +2247,18 @@ bool ImageSimulationMeshTri::substructure_link_condition(const Tuple& e_tuple) c
     const auto v_locs = get_one_ring_fids_for_vertex(v_id);
     const auto e_locs = set_intersection(u_locs, v_locs);
 
-    RawSimplexCollection link_u_0;
-    RawSimplexCollection link_u_1;
-    RawSimplexCollection link_v_0;
-    RawSimplexCollection link_v_1;
-    RawSimplexCollection link_e_0;
-    RawSimplexCollection link_e_1;
+    SimplexCollection link_u_0;
+    SimplexCollection link_u_1;
+    SimplexCollection link_v_0;
+    SimplexCollection link_v_1;
+    SimplexCollection link_e_0;
+    SimplexCollection link_e_1;
 
     constexpr size_t w_id = -1; // dummy vertex
     const Vertex w(w_id);
 
-    const RawSimplexCollection u_surface_edges = get_order1_edges_for_vertex(u_id);
-    const RawSimplexCollection v_surface_edges = get_order1_edges_for_vertex(v_id);
+    const SimplexCollection u_surface_edges = get_order1_edges_for_vertex(u_id);
+    const SimplexCollection v_surface_edges = get_order1_edges_for_vertex(v_id);
 
     // vertex u links
     {
@@ -2327,11 +2327,11 @@ bool ImageSimulationMeshTri::substructure_link_condition(const Tuple& e_tuple) c
         link_e_0.sort_and_clean();
     }
 
-    const auto link_uv_0 = RawSimplexCollection::get_intersection(link_u_0, link_v_0);
+    const auto link_uv_0 = SimplexCollection::get_intersection(link_u_0, link_v_0);
     if (link_uv_0 != link_e_0) {
         return false;
     }
-    const auto link_uv_1 = RawSimplexCollection::get_intersection(link_u_1, link_v_1);
+    const auto link_uv_1 = SimplexCollection::get_intersection(link_u_1, link_v_1);
     if (!link_uv_1.empty()) {
         return false;
     }
@@ -2368,7 +2368,7 @@ void ImageSimulationMeshTri::substructure_region(
     const double r = 1.5 * m_params.dhat + l_max; // region radius
     const double r2 = r * r;
 
-    simplex::RawSimplexCollection candidates; // all edges within the region
+    simplex::SimplexCollection candidates; // all edges within the region
 
     // make a BFS to find edges within distance
     std::unordered_set<size_t> visited;

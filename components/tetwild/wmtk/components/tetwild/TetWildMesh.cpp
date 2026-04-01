@@ -1191,9 +1191,8 @@ std::vector<std::array<size_t, 3>> TetWildMesh::get_faces_by_condition(
         if (cond(m_face_attribute[fid])) {
             auto tid = fid / 4, lid = fid % 4;
             auto verts = get_face_vertices(f);
-            res.emplace_back(
-                std::array<size_t, 3>{
-                    {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
+            res.emplace_back(std::array<size_t, 3>{
+                {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
         }
     }
     return res;
@@ -1696,11 +1695,11 @@ size_t TetWildMesh::count_edge_links(const Tuple& e)
     return incident_surface_faces.size();
 }
 
-simplex::RawSimplexCollection TetWildMesh::get_surface_faces_for_vertex(const size_t vid) const
+simplex::SimplexCollection TetWildMesh::get_surface_faces_for_vertex(const size_t vid) const
 {
     using namespace simplex;
 
-    RawSimplexCollection sc;
+    SimplexCollection sc;
 
     if (!m_vertex_attribute.at(vid).m_is_on_surface) {
         // no face can be on the surface if the vertex is not on the surface
@@ -1904,20 +1903,20 @@ bool TetWildMesh::substructure_link_condition(const Tuple& e_tuple) const
     const auto v_locs = get_one_ring_tids_for_vertex(v_id);
     const auto e_locs = set_intersection(u_locs, v_locs);
 
-    RawSimplexCollection link_u_0;
-    RawSimplexCollection link_u_1;
-    RawSimplexCollection link_v_0;
-    RawSimplexCollection link_v_1;
-    RawSimplexCollection link_e_0;
-    RawSimplexCollection link_e_1;
+    SimplexCollection link_u_0;
+    SimplexCollection link_u_1;
+    SimplexCollection link_v_0;
+    SimplexCollection link_v_1;
+    SimplexCollection link_e_0;
+    SimplexCollection link_e_1;
 
     constexpr size_t w_id = -1; // dummy vertex
     const Vertex w(w_id);
 
-    const RawSimplexCollection u_surface_faces = get_surface_faces_for_vertex(u_id);
-    const RawSimplexCollection v_surface_faces = get_surface_faces_for_vertex(v_id);
-    const RawSimplexCollection e_surface_faces =
-        RawSimplexCollection::get_intersection(u_surface_faces, v_surface_faces);
+    const SimplexCollection u_surface_faces = get_surface_faces_for_vertex(u_id);
+    const SimplexCollection v_surface_faces = get_surface_faces_for_vertex(v_id);
+    const SimplexCollection e_surface_faces =
+        SimplexCollection::get_intersection(u_surface_faces, v_surface_faces);
 
     // vertex u links
     {
@@ -1935,7 +1934,7 @@ bool TetWildMesh::substructure_link_condition(const Tuple& e_tuple) const
         link_u_1.reserve_edges(u_surface_faces.faces().size());
         link_u_1.reserve_vertices(u_surface_faces.faces().size() * 2);
 
-        RawSimplexCollection order2_edges;
+        SimplexCollection order2_edges;
         for (const Face& f : u_surface_faces.faces()) {
             const Tet tw(f, w_id);
 
@@ -1987,7 +1986,7 @@ bool TetWildMesh::substructure_link_condition(const Tuple& e_tuple) const
         link_v_1.reserve_edges(v_surface_faces.faces().size());
         link_v_1.reserve_vertices(v_surface_faces.faces().size() * 2);
 
-        RawSimplexCollection order2_edges;
+        SimplexCollection order2_edges;
         for (const Face& f : v_surface_faces.faces()) {
             const Tet tw(f, w_id);
 
@@ -2052,11 +2051,11 @@ bool TetWildMesh::substructure_link_condition(const Tuple& e_tuple) const
         link_e_1.sort_and_clean();
     }
 
-    const auto link_uv_0 = RawSimplexCollection::get_intersection(link_u_0, link_v_0);
+    const auto link_uv_0 = SimplexCollection::get_intersection(link_u_0, link_v_0);
     if (link_uv_0 != link_e_0) {
         return false;
     }
-    const auto link_uv_1 = RawSimplexCollection::get_intersection(link_u_1, link_v_1);
+    const auto link_uv_1 = SimplexCollection::get_intersection(link_u_1, link_v_1);
     if (link_uv_1 != link_e_1) {
         return false;
     }

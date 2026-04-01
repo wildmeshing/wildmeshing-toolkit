@@ -3,8 +3,8 @@
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/Types.hpp>
-#include <wmtk/simplex/RawSimplex.hpp>
-#include <wmtk/simplex/RawSimplexCollection.hpp>
+#include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/simplex/SimplexCollection.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 // clang-format off
@@ -331,11 +331,11 @@ public:
     Tuple tuple_from_simplex(const simplex::Face& s) const;
     // Tuple tuple_from_simplex(const simplex::Edge& s) const;
 
-    simplex::RawSimplexCollection simplex_incident_triangles(const simplex::Vertex& v) const;
-    simplex::RawSimplexCollection simplex_incident_triangles(const simplex::Edge& e) const;
-    simplex::RawSimplexCollection simplex_link_vertices(const simplex::Vertex& v) const;
-    simplex::RawSimplexCollection simplex_link_vertices(const simplex::Edge& e) const;
-    simplex::RawSimplexCollection simplex_link_edges(const simplex::Vertex& v) const;
+    simplex::SimplexCollection simplex_incident_triangles(const simplex::Vertex& v) const;
+    simplex::SimplexCollection simplex_incident_triangles(const simplex::Edge& e) const;
+    simplex::SimplexCollection simplex_link_vertices(const simplex::Vertex& v) const;
+    simplex::SimplexCollection simplex_link_vertices(const simplex::Edge& e) const;
+    simplex::SimplexCollection simplex_link_edges(const simplex::Vertex& v) const;
 
     template <typename T>
     using vector = tbb::concurrent_vector<T>;
