@@ -519,6 +519,8 @@ public:
     bool is_open_boundary_edge(const std::array<size_t, 2>& e);
 
 public:
+    // substructure functions
+
     bool vertex_is_on_surface(const size_t vid) const override;
 
     bool face_is_on_surface(const size_t fid) const override;

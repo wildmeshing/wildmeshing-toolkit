@@ -1540,7 +1540,7 @@ void ImageSimulationMeshTri::build_mass_matrix()
         if (!m_vertex_attribute.at(vid).m_is_on_surface) {
             continue;
         }
-        const auto es = get_order1_edges_for_vertex(vid);
+        const auto es = get_surface_edges_for_vertex(vid);
         if (es.size() != 2) {
             continue;
         }
@@ -1571,7 +1571,7 @@ std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMeshTri::get_smoot
         return nullptr;
     }
 
-    const auto es = get_order1_edges_for_vertex(vid);
+    const auto es = get_surface_edges_for_vertex(vid);
     if (es.size() != 2) {
         return nullptr; // can only smooth vertices with 2 neighbors
     }
@@ -2171,172 +2171,6 @@ void ImageSimulationMeshTri::tight_seal_topo(
     }
 
     recompute_surface_info();
-}
-
-simplex::SimplexCollection ImageSimulationMeshTri::get_order1_edges_for_vertex(
-    const size_t vid) const
-{
-    using namespace simplex;
-
-    SimplexCollection sc;
-
-    if (!m_vertex_attribute.at(vid).m_is_on_surface &&
-        m_vertex_attribute.at(vid).on_bbox_faces.empty()) {
-        // no face can be on the surface if the vertex is not on the surface
-        return sc;
-    }
-
-    const auto edges = get_one_ring_edges_for_vertex(vid);
-    for (const Tuple& t : edges) {
-        const simplex::Edge e(vid, t.vid(*this));
-        if (get_order_of_edge(e.vertices()) == 1) {
-            sc.add(e);
-        }
-    }
-
-    sc.sort_and_clean();
-
-    return sc;
-}
-
-size_t ImageSimulationMeshTri::get_order_of_edge(const std::array<size_t, 2>& vids) const
-{
-    return (is_edge_on_surface(vids) || is_edge_on_bbox(vids)) ? 1 : 0;
-}
-
-size_t ImageSimulationMeshTri::get_order_of_vertex(const size_t vid) const
-{
-    const auto edges = get_one_ring_edges_for_vertex(vid);
-    size_t surface_count = 0;
-    for (const Tuple& t : edges) {
-        if (get_order_of_edge({{vid, t.vid(*this)}}) > 0) {
-            ++surface_count;
-        }
-    }
-    if (surface_count == 0) {
-        // vertex is not on the surface
-        return 0;
-    }
-    if (surface_count == 2) {
-        // vertex is on the surface
-        return 1;
-    }
-    // vertex is on the surface boundary or non-manifold
-    return 2;
-}
-
-bool ImageSimulationMeshTri::substructure_link_condition(const Tuple& e_tuple) const
-{
-    const size_t u_id = e_tuple.vid(*this);
-    const size_t v_id = e_tuple.switch_vertex(*this).vid(*this);
-
-    using namespace simplex;
-
-    const size_t edge_order = get_order_of_edge({{u_id, v_id}});
-    const size_t u_order = get_order_of_vertex(u_id);
-    const size_t v_order = get_order_of_vertex(v_id);
-
-    // If the edge is lower order than both vertices, we know for sure that this edge must not
-    // be collapsed. Example: edge in space (order 0) connecting two surfaces (order 1).
-    // This check also covers the case that both vertices are order 3
-    if (edge_order < u_order && edge_order < v_order) {
-        return false;
-    }
-
-    const auto u_locs = get_one_ring_fids_for_vertex(u_id);
-    const auto v_locs = get_one_ring_fids_for_vertex(v_id);
-    const auto e_locs = set_intersection(u_locs, v_locs);
-
-    SimplexCollection link_u_0;
-    SimplexCollection link_u_1;
-    SimplexCollection link_v_0;
-    SimplexCollection link_v_1;
-    SimplexCollection link_e_0;
-    SimplexCollection link_e_1;
-
-    constexpr size_t w_id = -1; // dummy vertex
-    const Vertex w(w_id);
-
-    const SimplexCollection u_surface_edges = get_order1_edges_for_vertex(u_id);
-    const SimplexCollection v_surface_edges = get_order1_edges_for_vertex(v_id);
-
-    // vertex u links
-    {
-        const Vertex u(u_id);
-        link_u_0.reserve_edges(u_locs.size());
-        link_u_0.reserve_vertices(u_locs.size() * 2);
-        for (const size_t fid : u_locs) {
-            const Face f = simplex_from_face(fid);
-            const Edge e = f.opposite_edge(u);
-            link_u_0.add_with_faces(e);
-        }
-
-        link_u_1.reserve_edges(u_surface_edges.faces().size());
-        link_u_1.reserve_vertices(u_surface_edges.faces().size() * 2);
-
-        for (const Edge& e : u_surface_edges.edges()) {
-            const Face fw(e, w_id);
-            const Edge ew = fw.opposite_edge(u);
-            link_u_0.add_with_faces(ew);
-
-            const Vertex e_opp = e.opposite_vertex(u);
-            link_u_1.add(e_opp);
-        }
-        link_u_0.sort_and_clean();
-        link_u_1.sort_and_clean();
-    }
-    // vertex v links
-    {
-        const Vertex v(v_id);
-        link_v_0.reserve_edges(v_locs.size());
-        link_v_0.reserve_vertices(v_locs.size() * 2);
-        for (const size_t fid : v_locs) {
-            const Face f = simplex_from_face(fid);
-            const Edge e = f.opposite_edge(v);
-            link_v_0.add_with_faces(e);
-        }
-
-        link_v_1.reserve_edges(v_surface_edges.faces().size());
-        link_v_1.reserve_vertices(v_surface_edges.faces().size() * 2);
-
-        for (const Edge& e : v_surface_edges.edges()) {
-            const Face fw(e, w_id);
-            const Edge ew = fw.opposite_edge(v);
-            link_v_0.add_with_faces(ew);
-
-            const Vertex e_opp = e.opposite_vertex(v);
-            link_v_1.add(e_opp);
-        }
-        link_v_0.sort_and_clean();
-        link_v_1.sort_and_clean();
-    }
-    // edge links
-    {
-        const Edge e(u_id, v_id);
-        link_e_0.reserve_edges(e_locs.size());
-        link_e_0.reserve_vertices(e_locs.size() * 2);
-        for (const size_t fid : e_locs) {
-            const Face face = simplex_from_face(fid);
-            const Vertex v_opp = face.opposite_vertex(e);
-            link_e_0.add(v_opp);
-        }
-
-        if (edge_order > 0) {
-            link_e_0.add(w);
-        }
-        link_e_0.sort_and_clean();
-    }
-
-    const auto link_uv_0 = SimplexCollection::get_intersection(link_u_0, link_v_0);
-    if (link_uv_0 != link_e_0) {
-        return false;
-    }
-    const auto link_uv_1 = SimplexCollection::get_intersection(link_u_1, link_v_1);
-    if (!link_uv_1.empty()) {
-        return false;
-    }
-
-    return true;
 }
 
 void ImageSimulationMeshTri::substructure_region(

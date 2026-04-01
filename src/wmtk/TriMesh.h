@@ -829,6 +829,68 @@ public:
      */
     void for_each_vertex(const std::function<void(const Tuple&)>&);
     int NUM_THREADS = 0;
+
+public:
+    // substructure functionality
+
+    /**
+     * @brief Is a vertex part of the substructure
+     *
+     * @param vid Vertex ID
+     */
+    virtual bool vertex_is_on_surface(const size_t vid) const { return false; }
+
+    /**
+     * @brief Is an edge part of the substructure
+     *
+     * @param vids The vertex IDs of the edge
+     */
+    virtual bool edge_is_on_surface(const std::array<size_t, 2>& vids) const { return false; }
+
+    /**
+     * @brief Get all edges on the surface that are incident to vid.
+     *
+     * @param vid Vertex ID
+     */
+    simplex::SimplexCollection get_surface_edges_for_vertex(const size_t vid) const;
+
+    /**
+     * @brief Compute the order of an edge.
+     *
+     * The order of an edge in a TriMesh is as follows:
+     * 0: the edge is not on the surface
+     * 1: the edge is on the surface
+     *
+     * @param vids The vertex IDs of the edge
+     */
+    size_t get_order_of_edge(const std::array<size_t, 2>& vids) const;
+
+    /**
+     * @brief Get the order of a vertex
+     *
+     * The order of a vertex in a TriMesh is as follows:
+     * 0: vertex is not on the surface
+     * 1: vertex is on the surface
+     * 2: vertex is a non-manifold vertex in the substructure
+     *
+     * @param vid Vertex ID
+     */
+    size_t get_order_of_vertex(const size_t vid) const;
+
+    /**
+     * @brief Link condition that also considers substructures.
+     *
+     * Implementation based on the pseudo code from the paper:
+     * Vivodtzev et. al. - Substructure Topology Preserving Simplification of Tetrahedral Meshes
+     *
+     * The math and the pseudo code in the paper contain errors! The theory itself is correct.
+     *
+     * The link condition must be evaluated for the mesh and all substructures (surfaces, lines,
+     * points). If there is a substructure simplex in the star, the simplex is extended with a dummy
+     * vertex (e.g., an edge becomes a face) and this extended simplex must also be considered for
+     * the link.
+     */
+    bool substructure_link_condition(const Tuple& e_tuple) const;
 };
 
 } // namespace wmtk
