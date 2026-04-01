@@ -82,7 +82,7 @@ void ImageSimulationMesh::collapse_all_edges(bool is_limit_length)
     };
     if (NUM_THREADS > 0) {
         timer.start();
-        auto executor = ExecutePass<ImageSimulationMesh, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = ExecutePass<ImageSimulationMesh>(ExecutionPolicy::kPartition);
         executor.lock_vertices = [](ImageSimulationMesh& m, const Tuple& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
@@ -91,7 +91,7 @@ void ImageSimulationMesh::collapse_all_edges(bool is_limit_length)
         wmtk::logger().info("edge collapse operation time parallel: {:.4}s", time);
     } else {
         timer.start();
-        auto executor = ExecutePass<ImageSimulationMesh, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = ExecutePass<ImageSimulationMesh>(ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge collapse operation time serial: {:.4}s", time);

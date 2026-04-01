@@ -109,17 +109,17 @@ TEST_CASE("tri_simplex_link", "[raw_simplex_collection]")
         const auto sc = m.simplex_link_edges(Vertex(0));
         CHECK(sc.size() == 2);
         REQUIRE(sc.edges().size() == 2);
-        RawSimplexCollection comp;
+        SimplexCollection comp;
         comp.add(Edge(1, 4));
         comp.add(Edge(3, 4));
-        CHECK(RawSimplexCollection::are_simplex_collections_equal(sc, comp));
+        CHECK(SimplexCollection::are_simplex_collections_equal(sc, comp));
     }
     // interior vertex - edges
     {
         const auto sc = m.simplex_link_edges(Vertex(4));
         CHECK(sc.size() == 6);
         REQUIRE(sc.edges().size() == 6);
-        RawSimplexCollection comp;
+        SimplexCollection comp;
         comp.add(Edge(0, 1));
         comp.add(Edge(1, 5));
         comp.add(Edge(5, 8));
@@ -127,6 +127,6 @@ TEST_CASE("tri_simplex_link", "[raw_simplex_collection]")
         comp.add(Edge(7, 3));
         comp.add(Edge(3, 0));
         comp.sort_and_clean();
-        CHECK(RawSimplexCollection::are_simplex_collections_equal(sc, comp));
+        CHECK(SimplexCollection::are_simplex_collections_equal(sc, comp));
     }
 }

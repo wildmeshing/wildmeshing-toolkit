@@ -85,7 +85,7 @@ void TetRemeshingMesh::collapse_all_edges()
     };
     if (NUM_THREADS > 0) {
         timer.start();
-        auto executor = ExecutePass<TetRemeshingMesh, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = ExecutePass<TetRemeshingMesh>(wmtk::ExecutionPolicy::kPartition);
         executor.lock_vertices = [](TetRemeshingMesh& m, const Tuple& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
@@ -94,7 +94,7 @@ void TetRemeshingMesh::collapse_all_edges()
         wmtk::logger().info("edge collapse operation time parallel: {:.4}s", time);
     } else {
         timer.start();
-        auto executor = ExecutePass<TetRemeshingMesh, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = ExecutePass<TetRemeshingMesh>(wmtk::ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge collapse operation time serial: {:.4}s", time);
@@ -417,146 +417,6 @@ bool TetRemeshingMesh::collapse_edge_after(const Tuple& loc)
             return false;
         }
         m_face_attribute[global_fid] = f_attr;
-    }
-
-
-    // global topology check
-    if (m_params.preserve_topology) {
-        std::map<std::pair<size_t, size_t>, size_t>
-            after_edge_link; // edge represented by sorted vids (could use simplex::Edge here)
-        std::map<size_t, size_t> after_vertex_link;
-
-        auto v_on_surf = [this](const Tuple& t) {
-            return m_vertex_attribute[t.vid(*this)].m_is_on_surface;
-        };
-
-        auto one_ring_tets = get_one_ring_tets_for_vertex(loc);
-        std::vector<Tuple> surface_fs;
-        for (const Tuple& t : one_ring_tets) {
-            const Tuple f1 = t;
-            const Tuple f2 = t.switch_face(*this);
-            const Tuple f3 = t.switch_edge(*this).switch_face(*this);
-            const Tuple f4 = t.switch_vertex(*this).switch_edge(*this).switch_face(*this);
-
-            const auto f1vs = get_face_vertices(f1);
-            if (v_on_surf(f1vs[0]) && v_on_surf(f1vs[1]) && v_on_surf(f1vs[2])) {
-                if (m_face_attribute[f1.fid(*this)].m_is_surface_fs) surface_fs.push_back(f1);
-            }
-            const auto f2vs = get_face_vertices(f2);
-            if (v_on_surf(f2vs[0]) && v_on_surf(f2vs[1]) && v_on_surf(f2vs[2])) {
-                if (m_face_attribute[f2.fid(*this)].m_is_surface_fs) surface_fs.push_back(f2);
-            }
-            const auto f3vs = get_face_vertices(f3);
-            if (v_on_surf(f3vs[0]) && v_on_surf(f3vs[1]) && v_on_surf(f3vs[2])) {
-                if (m_face_attribute[f3.fid(*this)].m_is_surface_fs) surface_fs.push_back(f3);
-            }
-            const auto f4vs = get_face_vertices(f4);
-            if (v_on_surf(f4vs[0]) && v_on_surf(f4vs[1]) && v_on_surf(f4vs[2])) {
-                if (m_face_attribute[f4.fid(*this)].m_is_surface_fs) surface_fs.push_back(f4);
-            }
-        }
-        for (const Tuple& f : surface_fs) {
-            // e1 = v1v2 e2 = v1v3 e3 = v2v3
-            const Tuple v1 = f;
-            const Tuple v2 = v1.switch_vertex(*this);
-            const Tuple v3 = v1.switch_edge(*this).switch_vertex(*this);
-            const Tuple e1 = v1;
-            const Tuple e2 = v1.switch_edge(*this);
-            const Tuple e3 = v1.switch_vertex(*this).switch_edge(*this);
-
-            const size_t vid1 = v1.vid(*this);
-            const size_t vid2 = v2.vid(*this);
-            const size_t vid3 = v3.vid(*this);
-
-
-            if (after_vertex_link.find(vid1) == after_vertex_link.end()) {
-                after_vertex_link[vid1] = count_vertex_links(v1);
-            }
-            if (after_vertex_link.find(vid2) == after_vertex_link.end()) {
-                after_vertex_link[vid2] = count_vertex_links(v2);
-            }
-            if (after_vertex_link.find(vid3) == after_vertex_link.end()) {
-                after_vertex_link[vid3] = count_vertex_links(v3);
-            }
-
-            if (vid1 < vid2) {
-                if (after_edge_link.find(std::make_pair(vid1, vid2)) == after_edge_link.end()) {
-                    after_edge_link[std::make_pair(vid1, vid2)] = count_edge_links(e1);
-                }
-            } else {
-                if (after_edge_link.find(std::make_pair(vid2, vid1)) == after_edge_link.end()) {
-                    after_edge_link[std::make_pair(vid2, vid1)] = count_edge_links(e1);
-                }
-            }
-
-            if (vid1 < vid3) {
-                if (after_edge_link.find(std::make_pair(vid1, vid3)) == after_edge_link.end()) {
-                    after_edge_link[std::make_pair(vid1, vid3)] = count_edge_links(e2);
-                }
-            } else {
-                if (after_edge_link.find(std::make_pair(vid3, vid1)) == after_edge_link.end()) {
-                    after_edge_link[std::make_pair(vid3, vid1)] = count_edge_links(e2);
-                }
-            }
-
-            if (vid2 < vid3) {
-                if (after_edge_link.find(std::make_pair(vid2, vid3)) == after_edge_link.end()) {
-                    after_edge_link[std::make_pair(vid2, vid3)] = count_edge_links(e3);
-                }
-            } else {
-                if (after_edge_link.find(std::make_pair(vid3, vid2)) == after_edge_link.end()) {
-                    after_edge_link[std::make_pair(vid3, vid2)] = count_edge_links(e3);
-                }
-            }
-        }
-
-        // check if #links remain the same
-        for (const auto& [key, val] : cache.vertex_link) {
-            if (key == v1_id) {
-                // the collpased vertex
-                if (val != after_vertex_link[v2_id]) {
-                    return false;
-                }
-            } else {
-                if (val != after_vertex_link[key]) {
-                    return false;
-                }
-            }
-        }
-
-        for (const auto& [key, val] : cache.edge_link) {
-            if (key.first == v1_id && key.second == v2_id) {
-                continue;
-            }
-            if (key.first == v2_id && key.second == v1_id) {
-                continue;
-            }
-            if (key.first == v1_id) {
-                if (v2_id < key.second) {
-                    if (val != after_edge_link[std::make_pair(v2_id, key.second)]) {
-                        return false;
-                    }
-                } else {
-                    if (val != after_edge_link[std::make_pair(key.second, v2_id)]) {
-                        return false;
-                    }
-                }
-            } else if (key.second == v1_id) {
-                if (v2_id < key.first) {
-                    if (val != after_edge_link[std::make_pair(v2_id, key.first)]) {
-                        return false;
-                    }
-                } else {
-                    if (val != after_edge_link[std::make_pair(key.first, v2_id)]) {
-                        return false;
-                    }
-                }
-            } else {
-                if (val != after_edge_link[key]) {
-                    return false;
-                }
-            }
-        }
     }
 
     return true;

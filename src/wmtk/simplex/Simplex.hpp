@@ -13,19 +13,19 @@ namespace wmtk::simplex {
  * A simplex represented by its vertex IDs.
  */
 template <int N>
-class RawSimplex
+class Simplex
 {
 public:
-    RawSimplex() = default;
-    RawSimplex(std::array<size_t, N>&& vertices)
+    Simplex() = default;
+    Simplex(std::array<size_t, N>&& vertices)
         : m_vertices{std::move(vertices)}
     {
         std::sort(m_vertices.begin(), m_vertices.end());
     }
 
-    RawSimplex& operator=(const RawSimplex& o) = default;
-    bool operator==(const RawSimplex& o) const { return m_vertices == o.m_vertices; }
-    bool operator<(const RawSimplex& o) const { return m_vertices < o.m_vertices; }
+    Simplex& operator=(const Simplex& o) = default;
+    bool operator==(const Simplex& o) const { return m_vertices == o.m_vertices; }
+    bool operator<(const Simplex& o) const { return m_vertices < o.m_vertices; }
 
     const std::array<size_t, N>& vertices() const { return m_vertices; }
 
@@ -33,7 +33,7 @@ protected:
     std::array<size_t, N> m_vertices;
 };
 
-class Vertex : public RawSimplex<1>
+class Vertex : public Simplex<1>
 {
 public:
     Vertex() = default;
@@ -42,7 +42,7 @@ public:
     size_t id() const { return vertices()[0]; }
 };
 
-class Edge : public RawSimplex<2>
+class Edge : public Simplex<2>
 {
 public:
     Edge() = default;
@@ -53,7 +53,7 @@ public:
     Vertex opposite_vertex(const Vertex& v) const;
 };
 
-class Face : public RawSimplex<3>
+class Face : public Simplex<3>
 {
 public:
     Face() = default;
@@ -67,7 +67,7 @@ public:
     bool contains(const Edge& e) const;
 };
 
-class Tet : public RawSimplex<4>
+class Tet : public Simplex<4>
 {
 public:
     Tet() = default;

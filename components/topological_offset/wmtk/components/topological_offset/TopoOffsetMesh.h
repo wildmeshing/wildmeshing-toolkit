@@ -2,7 +2,7 @@
 
 #include <igl/Timer.h>
 #include <wmtk/TetMesh.h>
-#include <wmtk/simplex/RawSimplex.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 #include "Parameters.h"
 
 // clang-format off

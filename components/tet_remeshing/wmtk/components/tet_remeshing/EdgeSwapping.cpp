@@ -95,7 +95,7 @@ size_t TetRemeshingMesh::swap_all_edges_32()
     };
     if (NUM_THREADS > 0) {
         timer.start();
-        auto executor = wmtk::ExecutePass<TetRemeshingMesh, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<TetRemeshingMesh>(wmtk::ExecutionPolicy::kPartition);
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
@@ -105,7 +105,7 @@ size_t TetRemeshingMesh::swap_all_edges_32()
         return executor.get_cnt_success();
     } else {
         timer.start();
-        auto executor = wmtk::ExecutePass<TetRemeshingMesh, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<TetRemeshingMesh>(wmtk::ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge swap operation time serial: {:.4}s", time);
@@ -201,7 +201,7 @@ size_t TetRemeshingMesh::swap_all_faces()
     };
     if (NUM_THREADS > 0) {
         timer.start();
-        auto executor = wmtk::ExecutePass<TetRemeshingMesh, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<TetRemeshingMesh>(wmtk::ExecutionPolicy::kPartition);
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_face_mutex_two_ring(e, task_id);
         };
@@ -211,7 +211,7 @@ size_t TetRemeshingMesh::swap_all_faces()
         return executor.get_cnt_success();
     } else {
         timer.start();
-        auto executor = wmtk::ExecutePass<TetRemeshingMesh, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<TetRemeshingMesh>(wmtk::ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("face swap operation time serial: {:.4}s", time);
@@ -336,7 +336,7 @@ size_t TetRemeshingMesh::swap_all_edges_all()
     };
     if (NUM_THREADS > 0) {
         timer.start();
-        auto executor = wmtk::ExecutePass<TetRemeshingMesh, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<TetRemeshingMesh>(wmtk::ExecutionPolicy::kPartition);
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
@@ -346,7 +346,7 @@ size_t TetRemeshingMesh::swap_all_edges_all()
         return executor.get_cnt_success();
     } else {
         timer.start();
-        auto executor = wmtk::ExecutePass<TetRemeshingMesh, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<TetRemeshingMesh>(wmtk::ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge swap operation time serial: {:.4}s", time);
@@ -373,7 +373,7 @@ size_t TetRemeshingMesh::swap_all_edges_44()
     };
     if (NUM_THREADS > 0) {
         timer.start();
-        auto executor = wmtk::ExecutePass<TetRemeshingMesh, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<TetRemeshingMesh>(wmtk::ExecutionPolicy::kPartition);
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
@@ -383,7 +383,7 @@ size_t TetRemeshingMesh::swap_all_edges_44()
         return executor.get_cnt_success();
     } else {
         timer.start();
-        auto executor = wmtk::ExecutePass<TetRemeshingMesh, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<TetRemeshingMesh>(wmtk::ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge swap 44 operation time serial: {:.4}s", time);
@@ -488,7 +488,7 @@ size_t TetRemeshingMesh::swap_all_edges_56()
     };
     if (NUM_THREADS > 0) {
         timer.start();
-        auto executor = wmtk::ExecutePass<TetRemeshingMesh, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<TetRemeshingMesh>(wmtk::ExecutionPolicy::kPartition);
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
@@ -498,7 +498,7 @@ size_t TetRemeshingMesh::swap_all_edges_56()
         return executor.get_cnt_success();
     } else {
         timer.start();
-        auto executor = wmtk::ExecutePass<TetRemeshingMesh, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<TetRemeshingMesh>(wmtk::ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge swap 56 operation time serial: {:.4}s", time);

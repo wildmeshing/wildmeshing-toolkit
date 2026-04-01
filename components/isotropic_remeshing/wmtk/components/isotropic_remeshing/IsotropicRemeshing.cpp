@@ -454,11 +454,11 @@ bool IsotropicRemeshing::collapse_remeshing(double L)
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<IsotropicRemeshing, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<IsotropicRemeshing>(ExecutionPolicy::kPartition);
         executor.lock_vertices = edge_locker;
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<IsotropicRemeshing, ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<IsotropicRemeshing>(ExecutionPolicy::kSeq);
         setup_and_execute(executor);
     }
 
@@ -513,11 +513,11 @@ bool IsotropicRemeshing::split_remeshing(double L)
     };
 
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<IsotropicRemeshing, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<IsotropicRemeshing>(ExecutionPolicy::kPartition);
         executor.lock_vertices = edge_locker;
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<IsotropicRemeshing, ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<IsotropicRemeshing>(ExecutionPolicy::kSeq);
         setup_and_execute(executor);
     }
 
@@ -535,13 +535,13 @@ bool IsotropicRemeshing::smooth_all_vertices()
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<IsotropicRemeshing, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<IsotropicRemeshing>(ExecutionPolicy::kPartition);
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
             return m.try_set_vertex_mutex_one_ring(e, task_id);
         };
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<IsotropicRemeshing, ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<IsotropicRemeshing>(ExecutionPolicy::kSeq);
         setup_and_execute(executor);
     }
 
@@ -577,11 +577,11 @@ bool IsotropicRemeshing::swap_remeshing()
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<IsotropicRemeshing, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<IsotropicRemeshing>(ExecutionPolicy::kPartition);
         executor.lock_vertices = edge_locker;
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<IsotropicRemeshing, ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<IsotropicRemeshing>(ExecutionPolicy::kSeq);
         setup_and_execute(executor);
     }
 

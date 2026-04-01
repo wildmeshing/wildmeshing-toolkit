@@ -293,20 +293,6 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     //     return f.m_is_bbox_fs != -1;
     // });
 
-    size_t nonmani_ver_cnt = 0;
-    size_t surface_v_cnt = 0;
-    for (const auto& v : mesh_new.get_vertices()) {
-        if (mesh_new.m_vertex_attribute[v.vid(mesh_new)].m_is_on_surface) {
-            surface_v_cnt++;
-            if (mesh_new.count_vertex_links(v) > 1) {
-                nonmani_ver_cnt++;
-            }
-        }
-    }
-
-    wmtk::logger().info("#non-manifold vertices before optimization: {}", nonmani_ver_cnt);
-    wmtk::logger().info("#surface vertices before optimization: {}", surface_v_cnt);
-
     // /////////mesh improvement
     if (json_params["use_legacy_code"]) {
         logger().warn("Using legacy code for mesh improvement!");

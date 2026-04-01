@@ -370,16 +370,6 @@ public:
 
 
     /**
-     * @brief Get all edges on the surface that are incident to vid.
-     */
-    simplex::RawSimplexCollection get_order1_edges_for_vertex(const size_t vid) const;
-
-    size_t get_order_of_edge(const std::array<size_t, 2>& vids) const;
-    size_t get_order_of_vertex(const size_t vid) const;
-
-    bool substructure_link_condition(const Tuple& e_tuple) const;
-
-    /**
      * @brief Find the substructure region that might be affected by minimal separation.
      *
      * The region considers all edges within 1.5 * (dhat + l_max), where l_max is the maximum
@@ -390,6 +380,23 @@ public:
      * @param E Nx2 edges in the region
      */
     void substructure_region(const Tuple& v_tuple, MatrixXd& V, MatrixXi& E, size_t& vid) const;
+
+    bool vertex_is_on_surface(const size_t vid) const override
+    {
+        return m_vertex_attribute.at(vid).m_is_on_surface ||
+               !m_vertex_attribute.at(vid).on_bbox_faces.empty();
+    }
+    bool edge_is_on_surface(const std::array<size_t, 2>& vids) const override
+    {
+        if (!vertex_is_on_surface(vids[0]) || !vertex_is_on_surface(vids[1])) {
+            return false;
+        }
+
+        const auto [_, eid] = tuple_from_edge(vids);
+        bool on_surface = m_edge_attribute.at(eid).m_is_surface_fs;
+        bool on_bbox = m_edge_attribute.at(eid).m_is_bbox_fs >= 0;
+        return on_surface || on_bbox;
+    }
 
 private:
     ////// Operations
