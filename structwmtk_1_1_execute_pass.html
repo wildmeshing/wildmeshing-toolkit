@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: wmtk::ExecutePass&lt; AppMesh, policy &gt; Struct Template Reference</title>
+<title>Wildmeshing Toolkit: wmtk::ExecutePass&lt; AppMesh &gt; Struct Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -80,110 +80,113 @@ $(function() {
 <a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="structwmtk_1_1_execute_pass-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">wmtk::ExecutePass&lt; AppMesh, policy &gt; Struct Template Reference</div></div>
+  <div class="headertitle"><div class="title">wmtk::ExecutePass&lt; AppMesh &gt; Struct Template Reference</div></div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:ab0fe2d123f083cbf5ab2d7cf38a5d133" id="r_ab0fe2d123f083cbf5ab2d7cf38a5d133"><td class="memItemLeft" align="right" valign="top"><a id="ab0fe2d123f083cbf5ab2d7cf38a5d133" name="ab0fe2d123f083cbf5ab2d7cf38a5d133"></a>
+<tr class="memitem:a15645e72c41371271fd2dd2451634066" id="r_a15645e72c41371271fd2dd2451634066"><td class="memItemLeft" align="right" valign="top"><a id="a15645e72c41371271fd2dd2451634066" name="a15645e72c41371271fd2dd2451634066"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>Tuple</b> = typename AppMesh::Tuple</td></tr>
-<tr class="separator:ab0fe2d123f083cbf5ab2d7cf38a5d133"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a15645e72c41371271fd2dd2451634066"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:afe72d11683b6cc09ef8c55796557aa32" id="r_afe72d11683b6cc09ef8c55796557aa32"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#afe72d11683b6cc09ef8c55796557aa32">ExecutePass</a> ()</td></tr>
-<tr class="memdesc:afe72d11683b6cc09ef8c55796557aa32"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a new Execute Pass object. It contains the name-to-operation map and the functions that define the rules for operations.  <br /></td></tr>
-<tr class="separator:afe72d11683b6cc09ef8c55796557aa32"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa027d1a0088981ca6728a42f89c40e22" id="r_aa027d1a0088981ca6728a42f89c40e22"><td class="memItemLeft" align="right" valign="top"><a id="aa027d1a0088981ca6728a42f89c40e22" name="aa027d1a0088981ca6728a42f89c40e22"></a>
+<tr class="memitem:a922fdd528b06468eafe56f70d0b8d2aa" id="r_a922fdd528b06468eafe56f70d0b8d2aa"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a922fdd528b06468eafe56f70d0b8d2aa">ExecutePass</a> (const ExecutionPolicy &amp;policy_=ExecutionPolicy::kSeq)</td></tr>
+<tr class="memdesc:a922fdd528b06468eafe56f70d0b8d2aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a new Execute Pass object. It contains the name-to-operation map and the functions that define the rules for operations.  <br /></td></tr>
+<tr class="separator:a922fdd528b06468eafe56f70d0b8d2aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5cde4d88730979f622ed4193e3e2cb40" id="r_a5cde4d88730979f622ed4193e3e2cb40"><td class="memItemLeft" align="right" valign="top"><a id="a5cde4d88730979f622ed4193e3e2cb40" name="a5cde4d88730979f622ed4193e3e2cb40"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>ExecutePass</b> (<a class="el" href="structwmtk_1_1_execute_pass.html">ExecutePass</a> &amp;)=delete</td></tr>
-<tr class="separator:aa027d1a0088981ca6728a42f89c40e22"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6ef45354e7b9b6ef1f33f4c5ecdb1a7d" id="r_a6ef45354e7b9b6ef1f33f4c5ecdb1a7d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a6ef45354e7b9b6ef1f33f4c5ecdb1a7d">operator()</a> (AppMesh &amp;m, const std::vector&lt; std::pair&lt; Op, Tuple &gt; &gt; &amp;operation_tuples)</td></tr>
-<tr class="memdesc:a6ef45354e7b9b6ef1f33f4c5ecdb1a7d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Executes the operations for an application when the lambda function is invoked. The rules that are customizly defined for applications are applied.  <br /></td></tr>
-<tr class="separator:a6ef45354e7b9b6ef1f33f4c5ecdb1a7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a11eb9e698c3bb22a12106467974175c9" id="r_a11eb9e698c3bb22a12106467974175c9"><td class="memItemLeft" align="right" valign="top"><a id="a11eb9e698c3bb22a12106467974175c9" name="a11eb9e698c3bb22a12106467974175c9"></a>
+<tr class="separator:a5cde4d88730979f622ed4193e3e2cb40"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac7d73ef75b92299972f3fb90c5ef048b" id="r_ac7d73ef75b92299972f3fb90c5ef048b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#ac7d73ef75b92299972f3fb90c5ef048b">operator()</a> (AppMesh &amp;m, const std::vector&lt; std::pair&lt; Op, Tuple &gt; &gt; &amp;operation_tuples)</td></tr>
+<tr class="memdesc:ac7d73ef75b92299972f3fb90c5ef048b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Executes the operations for an application when the lambda function is invoked. The rules that are customizly defined for applications are applied.  <br /></td></tr>
+<tr class="separator:ac7d73ef75b92299972f3fb90c5ef048b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adda51de95e01b8ece0a223cbd4b95adf" id="r_adda51de95e01b8ece0a223cbd4b95adf"><td class="memItemLeft" align="right" valign="top"><a id="adda51de95e01b8ece0a223cbd4b95adf" name="adda51de95e01b8ece0a223cbd4b95adf"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>get_cnt_success</b> () const</td></tr>
-<tr class="separator:a11eb9e698c3bb22a12106467974175c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a56d80ba2308eb50d6b6e0720b1eb42ca" id="r_a56d80ba2308eb50d6b6e0720b1eb42ca"><td class="memItemLeft" align="right" valign="top"><a id="a56d80ba2308eb50d6b6e0720b1eb42ca" name="a56d80ba2308eb50d6b6e0720b1eb42ca"></a>
+<tr class="separator:adda51de95e01b8ece0a223cbd4b95adf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a21ed2776d66d88f6b4f41e09e06be8ec" id="r_a21ed2776d66d88f6b4f41e09e06be8ec"><td class="memItemLeft" align="right" valign="top"><a id="a21ed2776d66d88f6b4f41e09e06be8ec" name="a21ed2776d66d88f6b4f41e09e06be8ec"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>get_cnt_fail</b> () const</td></tr>
-<tr class="separator:a56d80ba2308eb50d6b6e0720b1eb42ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a21ed2776d66d88f6b4f41e09e06be8ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:afcccd2862bdaac206b0d9322c4d7786b" id="r_afcccd2862bdaac206b0d9322c4d7786b"><td class="memItemLeft" align="right" valign="top"><a id="afcccd2862bdaac206b0d9322c4d7786b" name="afcccd2862bdaac206b0d9322c4d7786b"></a>
+<tr class="memitem:aece7de4f87c75dd0ba113a39e9b18a04" id="r_aece7de4f87c75dd0ba113a39e9b18a04"><td class="memItemLeft" align="right" valign="top"><a id="aece7de4f87c75dd0ba113a39e9b18a04" name="aece7de4f87c75dd0ba113a39e9b18a04"></a>
 std::map&lt; Op, std::function&lt; std::optional&lt; std::vector&lt; Tuple &gt; &gt;(AppMesh &amp;, const Tuple &amp;)&gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>edit_operation_maps</b></td></tr>
-<tr class="memdesc:afcccd2862bdaac206b0d9322c4d7786b"><td class="mdescLeft">&#160;</td><td class="mdescRight">A dictionary that registers names with operations. <br /></td></tr>
-<tr class="separator:afcccd2862bdaac206b0d9322c4d7786b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab915e7cd93b20a81573ef291272757ee" id="r_ab915e7cd93b20a81573ef291272757ee"><td class="memItemLeft" align="right" valign="top">std::function&lt; double(const AppMesh &amp;, Op op, const Tuple &amp;)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#ab915e7cd93b20a81573ef291272757ee">priority</a></td></tr>
-<tr class="memdesc:ab915e7cd93b20a81573ef291272757ee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Priority function (default to edge length)  <br /></td></tr>
-<tr class="separator:ab915e7cd93b20a81573ef291272757ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7073caa314f6fbd0e9ba43044872fa1c" id="r_a7073caa314f6fbd0e9ba43044872fa1c"><td class="memItemLeft" align="right" valign="top"><a id="a7073caa314f6fbd0e9ba43044872fa1c" name="a7073caa314f6fbd0e9ba43044872fa1c"></a>
-std::function&lt; bool(double)&gt;&#160;</td><td class="memItemRight" valign="bottom"><b>should_renew</b> = [](auto) { return true; }</td></tr>
-<tr class="memdesc:a7073caa314f6fbd0e9ba43044872fa1c"><td class="mdescLeft">&#160;</td><td class="mdescRight">check on wheather new operations should be added to the priority queue <br /></td></tr>
-<tr class="separator:a7073caa314f6fbd0e9ba43044872fa1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4e703287ef6828166a4238ca054064e2" id="r_a4e703287ef6828166a4238ca054064e2"><td class="memItemLeft" align="right" valign="top">std::function&lt; std::vector&lt; std::pair&lt; Op, Tuple &gt; &gt;(const AppMesh &amp;, Op, const std::vector&lt; Tuple &gt; &amp;)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a4e703287ef6828166a4238ca054064e2">renew_neighbor_tuples</a></td></tr>
-<tr class="memdesc:a4e703287ef6828166a4238ca054064e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">renew neighboring Tuples after each operation depends on the operation  <br /></td></tr>
-<tr class="separator:a4e703287ef6828166a4238ca054064e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7737b4d1080c804fd46f7d7e77c98ddb" id="r_a7737b4d1080c804fd46f7d7e77c98ddb"><td class="memItemLeft" align="right" valign="top">std::function&lt; bool(AppMesh &amp;, const Tuple &amp;, int task_id)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a7737b4d1080c804fd46f7d7e77c98ddb">lock_vertices</a></td></tr>
-<tr class="memdesc:a7737b4d1080c804fd46f7d7e77c98ddb"><td class="mdescLeft">&#160;</td><td class="mdescRight">lock the vertices concerned depends on the operation  <br /></td></tr>
-<tr class="separator:a7737b4d1080c804fd46f7d7e77c98ddb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adf9b2f5a9247ddce33ea9755fdd6f9b6" id="r_adf9b2f5a9247ddce33ea9755fdd6f9b6"><td class="memItemLeft" align="right" valign="top">std::function&lt; bool(const AppMesh &amp;)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#adf9b2f5a9247ddce33ea9755fdd6f9b6">stopping_criterion</a></td></tr>
-<tr class="memdesc:adf9b2f5a9247ddce33ea9755fdd6f9b6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stopping Criterion based on the whole mesh For efficiency, not every time is checked. In serial, this may go over all the elements. For parallel, this involves synchronization. So there is a checking frequency.  <br /></td></tr>
-<tr class="separator:adf9b2f5a9247ddce33ea9755fdd6f9b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4842b950c3f22f8f4b358dde129f226f" id="r_a4842b950c3f22f8f4b358dde129f226f"><td class="memItemLeft" align="right" valign="top"><a id="a4842b950c3f22f8f4b358dde129f226f" name="a4842b950c3f22f8f4b358dde129f226f"></a>
+<tr class="memdesc:aece7de4f87c75dd0ba113a39e9b18a04"><td class="mdescLeft">&#160;</td><td class="mdescRight">A dictionary that registers names with operations. <br /></td></tr>
+<tr class="separator:aece7de4f87c75dd0ba113a39e9b18a04"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8862fb195ad95a30e1f99cc13f4855fc" id="r_a8862fb195ad95a30e1f99cc13f4855fc"><td class="memItemLeft" align="right" valign="top">std::function&lt; double(const AppMesh &amp;, Op op, const Tuple &amp;)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a8862fb195ad95a30e1f99cc13f4855fc">priority</a></td></tr>
+<tr class="memdesc:a8862fb195ad95a30e1f99cc13f4855fc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Priority function (default to edge length)  <br /></td></tr>
+<tr class="separator:a8862fb195ad95a30e1f99cc13f4855fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:addd10a3e42d324239dc3c970580d373f" id="r_addd10a3e42d324239dc3c970580d373f"><td class="memItemLeft" align="right" valign="top"><a id="addd10a3e42d324239dc3c970580d373f" name="addd10a3e42d324239dc3c970580d373f"></a>
+std::function&lt; bool(double)&gt;&#160;</td><td class="memItemRight" valign="bottom"><b>should_renew</b> = [](double) { return true; }</td></tr>
+<tr class="memdesc:addd10a3e42d324239dc3c970580d373f"><td class="mdescLeft">&#160;</td><td class="mdescRight">check on wheather new operations should be added to the priority queue <br /></td></tr>
+<tr class="separator:addd10a3e42d324239dc3c970580d373f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a76cbf1fcebd336fd5d7afb36f2f1091c" id="r_a76cbf1fcebd336fd5d7afb36f2f1091c"><td class="memItemLeft" align="right" valign="top">std::function&lt; std::vector&lt; std::pair&lt; Op, Tuple &gt; &gt;(const AppMesh &amp;, Op, const std::vector&lt; Tuple &gt; &amp;)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a76cbf1fcebd336fd5d7afb36f2f1091c">renew_neighbor_tuples</a></td></tr>
+<tr class="memdesc:a76cbf1fcebd336fd5d7afb36f2f1091c"><td class="mdescLeft">&#160;</td><td class="mdescRight">renew neighboring Tuples after each operation depends on the operation  <br /></td></tr>
+<tr class="separator:a76cbf1fcebd336fd5d7afb36f2f1091c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a69daee2667787799dc04e5e24e62cc95" id="r_a69daee2667787799dc04e5e24e62cc95"><td class="memItemLeft" align="right" valign="top">std::function&lt; bool(AppMesh &amp;, const Tuple &amp;, int task_id)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a69daee2667787799dc04e5e24e62cc95">lock_vertices</a></td></tr>
+<tr class="memdesc:a69daee2667787799dc04e5e24e62cc95"><td class="mdescLeft">&#160;</td><td class="mdescRight">lock the vertices concerned depends on the operation  <br /></td></tr>
+<tr class="separator:a69daee2667787799dc04e5e24e62cc95"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af20086623771fe01053a53b98a086b9b" id="r_af20086623771fe01053a53b98a086b9b"><td class="memItemLeft" align="right" valign="top">std::function&lt; bool(const AppMesh &amp;)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#af20086623771fe01053a53b98a086b9b">stopping_criterion</a></td></tr>
+<tr class="memdesc:af20086623771fe01053a53b98a086b9b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stopping Criterion based on the whole mesh For efficiency, not every time is checked. In serial, this may go over all the elements. For parallel, this involves synchronization. So there is a checking frequency.  <br /></td></tr>
+<tr class="separator:af20086623771fe01053a53b98a086b9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a821948f937feea93d9de593b525cde58" id="r_a821948f937feea93d9de593b525cde58"><td class="memItemLeft" align="right" valign="top"><a id="a821948f937feea93d9de593b525cde58" name="a821948f937feea93d9de593b525cde58"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>stopping_criterion_checking_frequency</b> = std::numeric_limits&lt;size_t&gt;::max()</td></tr>
-<tr class="memdesc:a4842b950c3f22f8f4b358dde129f226f"><td class="mdescLeft">&#160;</td><td class="mdescRight">checking frequency to decide whether to stop execution given the stopping criterion <br /></td></tr>
-<tr class="separator:a4842b950c3f22f8f4b358dde129f226f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad60058e9b843d5200ee24070f6d82da8" id="r_ad60058e9b843d5200ee24070f6d82da8"><td class="memItemLeft" align="right" valign="top">std::function&lt; bool(const AppMesh &amp;, const std::tuple&lt; double, Op, Tuple &gt; &amp;t)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#ad60058e9b843d5200ee24070f6d82da8">is_weight_up_to_date</a></td></tr>
-<tr class="memdesc:ad60058e9b843d5200ee24070f6d82da8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Should Process drops some Tuple from being processed. For example, if the energy is out-dated. This is in addition to calling tuple valid.  <br /></td></tr>
-<tr class="separator:ad60058e9b843d5200ee24070f6d82da8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1a3f76d4718c918a2ceea6e7addfa52b" id="r_a1a3f76d4718c918a2ceea6e7addfa52b"><td class="memItemLeft" align="right" valign="top"><a id="a1a3f76d4718c918a2ceea6e7addfa52b" name="a1a3f76d4718c918a2ceea6e7addfa52b"></a>
-std::function&lt; void(const AppMesh &amp;, Op, const Tuple &amp;t)&gt;&#160;</td><td class="memItemRight" valign="bottom"><b>on_fail</b> = [](auto&amp;, auto, auto&amp;) {}</td></tr>
-<tr class="memdesc:a1a3f76d4718c918a2ceea6e7addfa52b"><td class="mdescLeft">&#160;</td><td class="mdescRight">used to collect operations that are not finished and used for later re-execution <br /></td></tr>
-<tr class="separator:a1a3f76d4718c918a2ceea6e7addfa52b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2d428d3a911ae82639d8d2045c9dc5a7" id="r_a2d428d3a911ae82639d8d2045c9dc5a7"><td class="memItemLeft" align="right" valign="top"><a id="a2d428d3a911ae82639d8d2045c9dc5a7" name="a2d428d3a911ae82639d8d2045c9dc5a7"></a>
+<tr class="memdesc:a821948f937feea93d9de593b525cde58"><td class="mdescLeft">&#160;</td><td class="mdescRight">checking frequency to decide whether to stop execution given the stopping criterion <br /></td></tr>
+<tr class="separator:a821948f937feea93d9de593b525cde58"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5fe5a0adce54ae594b2067748e0b2a53" id="r_a5fe5a0adce54ae594b2067748e0b2a53"><td class="memItemLeft" align="right" valign="top">std::function&lt; bool(const AppMesh &amp;, const std::tuple&lt; double, Op, Tuple &gt; &amp;t)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a5fe5a0adce54ae594b2067748e0b2a53">is_weight_up_to_date</a></td></tr>
+<tr class="memdesc:a5fe5a0adce54ae594b2067748e0b2a53"><td class="mdescLeft">&#160;</td><td class="mdescRight">Should Process drops some Tuple from being processed. For example, if the energy is out-dated. This is in addition to calling tuple valid.  <br /></td></tr>
+<tr class="separator:a5fe5a0adce54ae594b2067748e0b2a53"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3f597bfe79378fcf121e2298fa1aa937" id="r_a3f597bfe79378fcf121e2298fa1aa937"><td class="memItemLeft" align="right" valign="top">std::function&lt; void(const AppMesh &amp;, Op, const Tuple &amp;t)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a3f597bfe79378fcf121e2298fa1aa937">on_fail</a></td></tr>
+<tr class="memdesc:a3f597bfe79378fcf121e2298fa1aa937"><td class="mdescLeft">&#160;</td><td class="mdescRight">used to collect operations that are not finished and used for later re-execution  <br /></td></tr>
+<tr class="separator:a3f597bfe79378fcf121e2298fa1aa937"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae6dff0c288d32933805ff6fcc0884b05" id="r_ae6dff0c288d32933805ff6fcc0884b05"><td class="memItemLeft" align="right" valign="top"><a id="ae6dff0c288d32933805ff6fcc0884b05" name="ae6dff0c288d32933805ff6fcc0884b05"></a>
+ExecutionPolicy&#160;</td><td class="memItemRight" valign="bottom"><b>policy</b></td></tr>
+<tr class="separator:ae6dff0c288d32933805ff6fcc0884b05"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0b265e367953809f88baac59a8aab6a3" id="r_a0b265e367953809f88baac59a8aab6a3"><td class="memItemLeft" align="right" valign="top"><a id="a0b265e367953809f88baac59a8aab6a3" name="a0b265e367953809f88baac59a8aab6a3"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>num_threads</b> = 1</td></tr>
-<tr class="separator:a2d428d3a911ae82639d8d2045c9dc5a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0fa4ec20a2b09df699a065e31d8f0758" id="r_a0fa4ec20a2b09df699a065e31d8f0758"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a0fa4ec20a2b09df699a065e31d8f0758">max_retry_limit</a> = 10</td></tr>
-<tr class="separator:a0fa4ec20a2b09df699a065e31d8f0758"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a0b265e367953809f88baac59a8aab6a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a02a89f6f7fe09f5c6f1d1c2207ed4c58" id="r_a02a89f6f7fe09f5c6f1d1c2207ed4c58"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a02a89f6f7fe09f5c6f1d1c2207ed4c58">max_retry_limit</a> = 10</td></tr>
+<tr class="separator:a02a89f6f7fe09f5c6f1d1c2207ed4c58"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
-<tr class="memitem:a3c0be6d31f055294d559028d7ea8d2c4" id="r_a3c0be6d31f055294d559028d7ea8d2c4"><td class="memItemLeft" align="right" valign="top"><a id="a3c0be6d31f055294d559028d7ea8d2c4" name="a3c0be6d31f055294d559028d7ea8d2c4"></a>
+<tr class="memitem:ad23f5a900db4f0f0be70ad3b0d00d2bb" id="r_ad23f5a900db4f0f0be70ad3b0d00d2bb"><td class="memItemLeft" align="right" valign="top"><a id="ad23f5a900db4f0f0be70ad3b0d00d2bb" name="ad23f5a900db4f0f0be70ad3b0d00d2bb"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>operation_cleanup</b> (AppMesh &amp;m)</td></tr>
-<tr class="separator:a3c0be6d31f055294d559028d7ea8d2c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5eadf70a00a73556bb75af4067f7776c" id="r_a5eadf70a00a73556bb75af4067f7776c"><td class="memItemLeft" align="right" valign="top"><a id="a5eadf70a00a73556bb75af4067f7776c" name="a5eadf70a00a73556bb75af4067f7776c"></a>
+<tr class="separator:ad23f5a900db4f0f0be70ad3b0d00d2bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a91b4d3835c9160e8347fd9b28ed82e08" id="r_a91b4d3835c9160e8347fd9b28ed82e08"><td class="memItemLeft" align="right" valign="top"><a id="a91b4d3835c9160e8347fd9b28ed82e08" name="a91b4d3835c9160e8347fd9b28ed82e08"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>get_partition_id</b> (const AppMesh &amp;m, const Tuple &amp;e)</td></tr>
-<tr class="separator:a5eadf70a00a73556bb75af4067f7776c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a91b4d3835c9160e8347fd9b28ed82e08"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a4c87a4f31e73a6edb4d2ce2612931dff" id="r_a4c87a4f31e73a6edb4d2ce2612931dff"><td class="memItemLeft" align="right" valign="top"><a id="a4c87a4f31e73a6edb4d2ce2612931dff" name="a4c87a4f31e73a6edb4d2ce2612931dff"></a>
+<tr class="memitem:a410392fe83579d385a4c835f6d4b000c" id="r_a410392fe83579d385a4c835f6d4b000c"><td class="memItemLeft" align="right" valign="top"><a id="a410392fe83579d385a4c835f6d4b000c" name="a410392fe83579d385a4c835f6d4b000c"></a>
 std::atomic_int&#160;</td><td class="memItemRight" valign="bottom"><b>cnt_update</b> = 0</td></tr>
-<tr class="separator:a4c87a4f31e73a6edb4d2ce2612931dff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a397e22a99a752b4c198939d1fc3013ab" id="r_a397e22a99a752b4c198939d1fc3013ab"><td class="memItemLeft" align="right" valign="top"><a id="a397e22a99a752b4c198939d1fc3013ab" name="a397e22a99a752b4c198939d1fc3013ab"></a>
+<tr class="separator:a410392fe83579d385a4c835f6d4b000c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab8f2dfa9597e4f3117ef1ee7399b4fe6" id="r_ab8f2dfa9597e4f3117ef1ee7399b4fe6"><td class="memItemLeft" align="right" valign="top"><a id="ab8f2dfa9597e4f3117ef1ee7399b4fe6" name="ab8f2dfa9597e4f3117ef1ee7399b4fe6"></a>
 std::atomic_int&#160;</td><td class="memItemRight" valign="bottom"><b>cnt_success</b> = 0</td></tr>
-<tr class="separator:a397e22a99a752b4c198939d1fc3013ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad2bee8958c7b4cc9fec761eeb680d2e6" id="r_ad2bee8958c7b4cc9fec761eeb680d2e6"><td class="memItemLeft" align="right" valign="top"><a id="ad2bee8958c7b4cc9fec761eeb680d2e6" name="ad2bee8958c7b4cc9fec761eeb680d2e6"></a>
+<tr class="separator:ab8f2dfa9597e4f3117ef1ee7399b4fe6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afdbeca361c0184aef938a59c60f2045b" id="r_afdbeca361c0184aef938a59c60f2045b"><td class="memItemLeft" align="right" valign="top"><a id="afdbeca361c0184aef938a59c60f2045b" name="afdbeca361c0184aef938a59c60f2045b"></a>
 std::atomic_int&#160;</td><td class="memItemRight" valign="bottom"><b>cnt_fail</b> = 0</td></tr>
-<tr class="separator:ad2bee8958c7b4cc9fec761eeb680d2e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:afdbeca361c0184aef938a59c60f2045b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="afe72d11683b6cc09ef8c55796557aa32" name="afe72d11683b6cc09ef8c55796557aa32"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afe72d11683b6cc09ef8c55796557aa32">&#9670;&#160;</a></span>ExecutePass()</h2>
+<a id="a922fdd528b06468eafe56f70d0b8d2aa" name="a922fdd528b06468eafe56f70d0b8d2aa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a922fdd528b06468eafe56f70d0b8d2aa">&#9670;&#160;</a></span>ExecutePass()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class AppMesh , ExecutionPolicy policy = ExecutionPolicy::kSeq&gt; </div>
+template&lt;class AppMesh &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh, policy &gt;::ExecutePass </td>
+          <td class="memname"><a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh &gt;::ExecutePass </td>
           <td>(</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramtype">const ExecutionPolicy &amp;&#160;</td>
+          <td class="paramname"><em>policy_</em> = <code>ExecutionPolicy::kSeq</code></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -200,19 +203,19 @@ template&lt;class AppMesh , ExecutionPolicy policy = ExecutionPolicy::kSeq&gt; <
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a6ef45354e7b9b6ef1f33f4c5ecdb1a7d" name="a6ef45354e7b9b6ef1f33f4c5ecdb1a7d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6ef45354e7b9b6ef1f33f4c5ecdb1a7d">&#9670;&#160;</a></span>operator()()</h2>
+<a id="ac7d73ef75b92299972f3fb90c5ef048b" name="ac7d73ef75b92299972f3fb90c5ef048b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac7d73ef75b92299972f3fb90c5ef048b">&#9670;&#160;</a></span>operator()()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class AppMesh , ExecutionPolicy policy = ExecutionPolicy::kSeq&gt; </div>
+template&lt;class AppMesh &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">bool <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh, policy &gt;::operator() </td>
+          <td class="memname">bool <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh &gt;::operator() </td>
           <td>(</td>
           <td class="paramtype">AppMesh &amp;&#160;</td>
           <td class="paramname"><em>m</em>, </td>
@@ -249,16 +252,16 @@ template&lt;class AppMesh , ExecutionPolicy policy = ExecutionPolicy::kSeq&gt; <
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="ad60058e9b843d5200ee24070f6d82da8" name="ad60058e9b843d5200ee24070f6d82da8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad60058e9b843d5200ee24070f6d82da8">&#9670;&#160;</a></span>is_weight_up_to_date</h2>
+<a id="a5fe5a0adce54ae594b2067748e0b2a53" name="a5fe5a0adce54ae594b2067748e0b2a53"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5fe5a0adce54ae594b2067748e0b2a53">&#9670;&#160;</a></span>is_weight_up_to_date</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class AppMesh , ExecutionPolicy policy = ExecutionPolicy::kSeq&gt; </div>
+template&lt;class AppMesh &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">std::function&lt;bool(const AppMesh&amp;, const std::tuple&lt;double, Op, Tuple&gt;&amp; t)&gt; <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh, policy &gt;::is_weight_up_to_date</td>
+          <td class="memname">std::function&lt;bool(const AppMesh&amp;, const std::tuple&lt;double, Op, Tuple&gt;&amp; t)&gt; <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh &gt;::is_weight_up_to_date</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -272,16 +275,16 @@ template&lt;class AppMesh , ExecutionPolicy policy = ExecutionPolicy::kSeq&gt; <
 
 </div>
 </div>
-<a id="a7737b4d1080c804fd46f7d7e77c98ddb" name="a7737b4d1080c804fd46f7d7e77c98ddb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7737b4d1080c804fd46f7d7e77c98ddb">&#9670;&#160;</a></span>lock_vertices</h2>
+<a id="a69daee2667787799dc04e5e24e62cc95" name="a69daee2667787799dc04e5e24e62cc95"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a69daee2667787799dc04e5e24e62cc95">&#9670;&#160;</a></span>lock_vertices</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class AppMesh , ExecutionPolicy policy = ExecutionPolicy::kSeq&gt; </div>
+template&lt;class AppMesh &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">std::function&lt;bool(AppMesh&amp;, const Tuple&amp;, int task_id)&gt; <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh, policy &gt;::lock_vertices</td>
+          <td class="memname">std::function&lt;bool(AppMesh&amp;, const Tuple&amp;, int task_id)&gt; <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh &gt;::lock_vertices</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -292,16 +295,16 @@ template&lt;class AppMesh , ExecutionPolicy policy = ExecutionPolicy::kSeq&gt; <
 
 </div>
 </div>
-<a id="a0fa4ec20a2b09df699a065e31d8f0758" name="a0fa4ec20a2b09df699a065e31d8f0758"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0fa4ec20a2b09df699a065e31d8f0758">&#9670;&#160;</a></span>max_retry_limit</h2>
+<a id="a02a89f6f7fe09f5c6f1d1c2207ed4c58" name="a02a89f6f7fe09f5c6f1d1c2207ed4c58"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a02a89f6f7fe09f5c6f1d1c2207ed4c58">&#9670;&#160;</a></span>max_retry_limit</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class AppMesh , ExecutionPolicy policy = ExecutionPolicy::kSeq&gt; </div>
+template&lt;class AppMesh &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">size_t <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh, policy &gt;::max_retry_limit = 10</td>
+          <td class="memname">size_t <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh &gt;::max_retry_limit = 10</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -309,57 +312,78 @@ template&lt;class AppMesh , ExecutionPolicy policy = ExecutionPolicy::kSeq&gt; <
 
 </div>
 </div>
-<a id="ab915e7cd93b20a81573ef291272757ee" name="ab915e7cd93b20a81573ef291272757ee"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab915e7cd93b20a81573ef291272757ee">&#9670;&#160;</a></span>priority</h2>
+<a id="a3f597bfe79378fcf121e2298fa1aa937" name="a3f597bfe79378fcf121e2298fa1aa937"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3f597bfe79378fcf121e2298fa1aa937">&#9670;&#160;</a></span>on_fail</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class AppMesh , ExecutionPolicy policy = ExecutionPolicy::kSeq&gt; </div>
+template&lt;class AppMesh &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">std::function&lt;double(const AppMesh&amp;, Op op, const Tuple&amp;)&gt; <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh, policy &gt;::priority</td>
+          <td class="memname">std::function&lt;void(const AppMesh&amp;, Op, const Tuple&amp; t)&gt; <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh &gt;::on_fail</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line">= [](<span class="keyword">auto</span>&amp;, <span class="keyword">auto</span>, <span class="keyword">auto</span>&amp;) {</div>
-<div class="line">        <span class="keywordflow">return</span> 0.;</div>
-<div class="line">    }</div>
+<b>Initial value:</b><div class="fragment"><div class="line">=</div>
+<div class="line">        [](<span class="keyword">const</span> AppMesh&amp;, Op, <span class="keyword">const</span> Tuple&amp; t) {}</div>
+</div><!-- fragment -->
+<p>used to collect operations that are not finished and used for later re-execution </p>
+
+</div>
+</div>
+<a id="a8862fb195ad95a30e1f99cc13f4855fc" name="a8862fb195ad95a30e1f99cc13f4855fc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8862fb195ad95a30e1f99cc13f4855fc">&#9670;&#160;</a></span>priority</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class AppMesh &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">std::function&lt;double(const AppMesh&amp;, Op op, const Tuple&amp;)&gt; <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh &gt;::priority</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line">=</div>
+<div class="line">        [](<span class="keyword">const</span> AppMesh&amp;, Op, <span class="keyword">const</span> Tuple&amp;) { <span class="keywordflow">return</span> 0.; }</div>
 </div><!-- fragment -->
 <p>Priority function (default to edge length) </p>
 
 </div>
 </div>
-<a id="a4e703287ef6828166a4238ca054064e2" name="a4e703287ef6828166a4238ca054064e2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4e703287ef6828166a4238ca054064e2">&#9670;&#160;</a></span>renew_neighbor_tuples</h2>
+<a id="a76cbf1fcebd336fd5d7afb36f2f1091c" name="a76cbf1fcebd336fd5d7afb36f2f1091c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a76cbf1fcebd336fd5d7afb36f2f1091c">&#9670;&#160;</a></span>renew_neighbor_tuples</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class AppMesh , ExecutionPolicy policy = ExecutionPolicy::kSeq&gt; </div>
+template&lt;class AppMesh &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">std::function&lt;std::vector&lt;std::pair&lt;Op, Tuple&gt; &gt;(const AppMesh&amp;, Op, const std::vector&lt;Tuple&gt;&amp;)&gt; <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh, policy &gt;::renew_neighbor_tuples</td>
+          <td class="memname">std::function&lt;std::vector&lt;std::pair&lt;Op, Tuple&gt; &gt;(const AppMesh&amp;, Op, const std::vector&lt;Tuple&gt;&amp;)&gt; <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh &gt;::renew_neighbor_tuples</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
-<div class="line">            [](<span class="keyword">auto</span>&amp;, <span class="keyword">auto</span>, <span class="keyword">auto</span>&amp;) -&gt; std::vector&lt;std::pair&lt;Op, Tuple&gt;&gt; { <span class="keywordflow">return</span> {}; }</div>
+<div class="line">            [](<span class="keyword">const</span> AppMesh&amp;, Op, <span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp;) -&gt; std::vector&lt;std::pair&lt;Op, Tuple&gt;&gt; {</div>
+<div class="line">        <span class="keywordflow">return</span> {};</div>
+<div class="line">    }</div>
 </div><!-- fragment -->
 <p>renew neighboring Tuples after each operation depends on the operation </p>
 
 </div>
 </div>
-<a id="adf9b2f5a9247ddce33ea9755fdd6f9b6" name="adf9b2f5a9247ddce33ea9755fdd6f9b6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adf9b2f5a9247ddce33ea9755fdd6f9b6">&#9670;&#160;</a></span>stopping_criterion</h2>
+<a id="af20086623771fe01053a53b98a086b9b" name="af20086623771fe01053a53b98a086b9b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af20086623771fe01053a53b98a086b9b">&#9670;&#160;</a></span>stopping_criterion</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class AppMesh , ExecutionPolicy policy = ExecutionPolicy::kSeq&gt; </div>
+template&lt;class AppMesh &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">std::function&lt;bool(const AppMesh&amp;)&gt; <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh, policy &gt;::stopping_criterion</td>
+          <td class="memname">std::function&lt;bool(const AppMesh&amp;)&gt; <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh &gt;::stopping_criterion</td>
         </tr>
       </table>
 </div><div class="memdoc">

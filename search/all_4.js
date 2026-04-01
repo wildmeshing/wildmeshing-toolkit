@@ -14,8 +14,9 @@ var searchData=
   ['collapse_5fedge_5frollback_11',['collapse_edge_rollback',['../classwmtk_1_1_tet_mesh.html#ac318a145d4e4318a677b23fe9ea76b13',1,'wmtk::TetMesh::collapse_edge_rollback()'],['../classwmtk_1_1_tri_mesh.html#a0b4d2accb9901bfe2b53deda5be39bb9',1,'wmtk::TriMesh::collapse_edge_rollback()']]],
   ['collapseinfocache_12',['CollapseInfoCache',['../structapp_1_1interior__tet__opt_1_1_interior_tet_opt_1_1_collapse_info_cache.html',1,'app::interior_tet_opt::InteriorTetOpt']]],
   ['command_20line_20executions_20for_20example_20applications_13',['Command Line Executions for Example Applications',['..//home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/README.md#autotoc_md13',1,'']]],
-  ['consolidate_5fmesh_14',['consolidate_mesh',['../classwmtk_1_1_tri_mesh.html#a9939b4491bd9afc357468072368ab392',1,'wmtk::TriMesh::consolidate_mesh()'],['../classwmtk_1_1_tet_mesh.html#a1f972b55f0a7c6eb66bbc1e9c8927204',1,'wmtk::TetMesh::consolidate_mesh()']]],
-  ['contains_15',['contains',['../classwmtk_1_1simplex_1_1_raw_simplex_collection.html#a7abb09d38bf2eb4885c84026728c6ad4',1,'wmtk::simplex::RawSimplexCollection']]],
-  ['coord_5ft_16',['coord_t',['../structwmtk_1_1_point_cloud.html#a8a5ee08f920008a95123018d5a661b28',1,'wmtk::PointCloud']]],
-  ['cuttable_17',['CutTable',['../classwmtk_1_1_cut_table.html',1,'wmtk']]]
+  ['compute_5fvertex_5forder_14',['compute_vertex_order',['../classwmtk_1_1_tet_mesh.html#a00f6ccb1bf8f444f2f9faa580ca027fe',1,'wmtk::TetMesh']]],
+  ['consolidate_5fmesh_15',['consolidate_mesh',['../classwmtk_1_1_tet_mesh.html#a1f972b55f0a7c6eb66bbc1e9c8927204',1,'wmtk::TetMesh::consolidate_mesh()'],['../classwmtk_1_1_tri_mesh.html#a9939b4491bd9afc357468072368ab392',1,'wmtk::TriMesh::consolidate_mesh()']]],
+  ['contains_16',['contains',['../classwmtk_1_1simplex_1_1_simplex_collection.html#ad9db4629037a1f764af8d7cd03211f21',1,'wmtk::simplex::SimplexCollection']]],
+  ['coord_5ft_17',['coord_t',['../structwmtk_1_1_point_cloud.html#a8a5ee08f920008a95123018d5a661b28',1,'wmtk::PointCloud']]],
+  ['cuttable_18',['CutTable',['../classwmtk_1_1_cut_table.html',1,'wmtk']]]
 ];

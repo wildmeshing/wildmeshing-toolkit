@@ -366,6 +366,33 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>for_each_vertex</b> (
 void&#160;</td><td class="memItemRight" valign="bottom"><b>for_each_tetra</b> (const std::function&lt; void(const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">TetMesh::Tuple</a> &amp;)&gt; &amp;)</td></tr>
 <tr class="memdesc:aec1d260008716c0274510291ec635a79"><td class="mdescLeft">&#160;</td><td class="mdescRight">perform the given function for each tet <br /></td></tr>
 <tr class="separator:aec1d260008716c0274510291ec635a79"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aad8ff59652ffd269251e99e86296ab33" id="r_aad8ff59652ffd269251e99e86296ab33"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#aad8ff59652ffd269251e99e86296ab33">vertex_is_on_surface</a> (const size_t vid) const</td></tr>
+<tr class="memdesc:aad8ff59652ffd269251e99e86296ab33"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is a vertex part of the substructure.  <br /></td></tr>
+<tr class="separator:aad8ff59652ffd269251e99e86296ab33"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a33236c0cc24dc37be3e5c2b70ea5e1db" id="r_a33236c0cc24dc37be3e5c2b70ea5e1db"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a33236c0cc24dc37be3e5c2b70ea5e1db">face_is_on_surface</a> (const size_t fid) const</td></tr>
+<tr class="memdesc:a33236c0cc24dc37be3e5c2b70ea5e1db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is a face part of the substructure.  <br /></td></tr>
+<tr class="separator:a33236c0cc24dc37be3e5c2b70ea5e1db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6e952112c8395bd4f82f66e635b009eb" id="r_a6e952112c8395bd4f82f66e635b009eb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html">simplex::SimplexCollection</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a6e952112c8395bd4f82f66e635b009eb">get_surface_faces_for_vertex</a> (const size_t vid) const</td></tr>
+<tr class="memdesc:a6e952112c8395bd4f82f66e635b009eb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get all faces on the surface that are incident to vid.  <br /></td></tr>
+<tr class="separator:a6e952112c8395bd4f82f66e635b009eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa644f00fb4bf8c4c692b0c16bdb9435b" id="r_aa644f00fb4bf8c4c692b0c16bdb9435b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html">simplex::SimplexCollection</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#aa644f00fb4bf8c4c692b0c16bdb9435b">get_surface_faces_for_edge</a> (const std::array&lt; size_t, 2 &gt; &amp;vids) const</td></tr>
+<tr class="memdesc:aa644f00fb4bf8c4c692b0c16bdb9435b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get all faces on the surface that are incident to the edge.  <br /></td></tr>
+<tr class="separator:aa644f00fb4bf8c4c692b0c16bdb9435b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2cecfd81bafe5f6339c9ef6554426650" id="r_a2cecfd81bafe5f6339c9ef6554426650"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a2cecfd81bafe5f6339c9ef6554426650">get_num_surface_faces_for_edge</a> (const std::array&lt; size_t, 2 &gt; &amp;vids) const</td></tr>
+<tr class="memdesc:a2cecfd81bafe5f6339c9ef6554426650"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the number of surface faces incident to the edge.  <br /></td></tr>
+<tr class="separator:a2cecfd81bafe5f6339c9ef6554426650"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a00f6ccb1bf8f444f2f9faa580ca027fe" id="r_a00f6ccb1bf8f444f2f9faa580ca027fe"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a00f6ccb1bf8f444f2f9faa580ca027fe">compute_vertex_order</a> (const size_t vid) const</td></tr>
+<tr class="memdesc:a00f6ccb1bf8f444f2f9faa580ca027fe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the vertex order for a single vertex.  <br /></td></tr>
+<tr class="separator:a00f6ccb1bf8f444f2f9faa580ca027fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a19396b059d5afd8a5dd9c7f3439f41e9" id="r_a19396b059d5afd8a5dd9c7f3439f41e9"><td class="memItemLeft" align="right" valign="top">virtual size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a19396b059d5afd8a5dd9c7f3439f41e9">get_order_of_vertex</a> (const size_t vid) const</td></tr>
+<tr class="memdesc:a19396b059d5afd8a5dd9c7f3439f41e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the order of a vertex.  <br /></td></tr>
+<tr class="separator:a19396b059d5afd8a5dd9c7f3439f41e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7dde1e0405cb3cb1c354da9a6014b416" id="r_a7dde1e0405cb3cb1c354da9a6014b416"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a7dde1e0405cb3cb1c354da9a6014b416">get_order_of_edge</a> (const std::array&lt; size_t, 2 &gt; &amp;vids) const</td></tr>
+<tr class="memdesc:a7dde1e0405cb3cb1c354da9a6014b416"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the order of an edge.  <br /></td></tr>
+<tr class="separator:a7dde1e0405cb3cb1c354da9a6014b416"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa85f8199512a563b9c64b1338536e261" id="r_aa85f8199512a563b9c64b1338536e261"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#aa85f8199512a563b9c64b1338536e261">substructure_link_condition</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;e_tuple) const</td></tr>
+<tr class="memdesc:aa85f8199512a563b9c64b1338536e261"><td class="mdescLeft">&#160;</td><td class="mdescRight">Link condition that also considers substructures.  <br /></td></tr>
+<tr class="separator:aa85f8199512a563b9c64b1338536e261"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -900,6 +927,70 @@ static constexpr std::array&lt; int, 6 &gt;&#160;</td><td class="memItemRight" v
 
 </div>
 </div>
+<a id="a00f6ccb1bf8f444f2f9faa580ca027fe" name="a00f6ccb1bf8f444f2f9faa580ca027fe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a00f6ccb1bf8f444f2f9faa580ca027fe">&#9670;&#160;</a></span>compute_vertex_order()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::TetMesh::compute_vertex_order </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>vid</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Compute the vertex order for a single vertex. </p>
+<p>This is expensive. It is recommended to store the vertex order as vertex attribute and only compute it once.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">vid</td><td>Vertex ID </td></tr>
+  </table>
+  </dd>
+</dl>
+<p>The vertex is either on a boundary or on a non-manifold edge and has two edges incident that are of the same type.</p>
+<p>The vertex is either at the end of a non-manifold edge or the number of incident faces is different for the incident edges. In both cases, the vertex must be order 3.</p>
+<p>Check if vertex is non-manifold: All faces must be reachable by iterating through edges, starting from one face.</p>
+
+</div>
+</div>
+<a id="a33236c0cc24dc37be3e5c2b70ea5e1db" name="a33236c0cc24dc37be3e5c2b70ea5e1db"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a33236c0cc24dc37be3e5c2b70ea5e1db">&#9670;&#160;</a></span>face_is_on_surface()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool wmtk::TetMesh::face_is_on_surface </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>fid</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Is a face part of the substructure. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">fid</td><td>Face ID </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="a7139838491f2cc1e77551a4de5f62378" name="a7139838491f2cc1e77551a4de5f62378"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7139838491f2cc1e77551a4de5f62378">&#9670;&#160;</a></span>for_each_face()</h2>
 
@@ -1018,6 +1109,32 @@ static constexpr std::array&lt; int, 6 &gt;&#160;</td><td class="memItemRight" v
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>incident tets </dd></dl>
+
+</div>
+</div>
+<a id="a2cecfd81bafe5f6339c9ef6554426650" name="a2cecfd81bafe5f6339c9ef6554426650"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2cecfd81bafe5f6339c9ef6554426650">&#9670;&#160;</a></span>get_num_surface_faces_for_edge()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::TetMesh::get_num_surface_faces_for_edge </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; size_t, 2 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vids</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Get the number of surface faces incident to the edge. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">vids</td><td>The vertex IDs of the edge </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1191,6 +1308,121 @@ static constexpr std::array&lt; int, 6 &gt;&#160;</td><td class="memItemRight" v
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>std::vector&lt;size_t&gt; vectotr of one-ring vids </dd></dl>
+
+</div>
+</div>
+<a id="a7dde1e0405cb3cb1c354da9a6014b416" name="a7dde1e0405cb3cb1c354da9a6014b416"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7dde1e0405cb3cb1c354da9a6014b416">&#9670;&#160;</a></span>get_order_of_edge()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::TetMesh::get_order_of_edge </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; size_t, 2 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vids</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Compute the order of an edge. </p>
+<p>The order of an edge in a <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> is as follows: 0: the edge is not on the surface 1: the edge is on the surface 2: the edge is on the surface boundary or non-manifold</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">vids</td><td>The vertex IDs of the edge </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a19396b059d5afd8a5dd9c7f3439f41e9" name="a19396b059d5afd8a5dd9c7f3439f41e9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a19396b059d5afd8a5dd9c7f3439f41e9">&#9670;&#160;</a></span>get_order_of_vertex()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual size_t wmtk::TetMesh::get_order_of_vertex </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>vid</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get the order of a vertex. </p>
+<p>The order of a vertex in a <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> is as follows: 0: vertex is not on the surface 1: vertex is on the surface 2: vertex is on the surface boundary or a non-manifold edge 3: vertex is at the boundary of a non-manifold edge or a non-manifold vertex</p>
+<p>Computing the vertex order is expensive. It is recommended to store the vertex order as a vertex attribute and override this method.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">vid</td><td>Vertex ID </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="aa644f00fb4bf8c4c692b0c16bdb9435b" name="aa644f00fb4bf8c4c692b0c16bdb9435b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa644f00fb4bf8c4c692b0c16bdb9435b">&#9670;&#160;</a></span>get_surface_faces_for_edge()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html">simplex::SimplexCollection</a> wmtk::TetMesh::get_surface_faces_for_edge </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; size_t, 2 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vids</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Get all faces on the surface that are incident to the edge. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">vids</td><td>The vertex IDs of the edge </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a6e952112c8395bd4f82f66e635b009eb" name="a6e952112c8395bd4f82f66e635b009eb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6e952112c8395bd4f82f66e635b009eb">&#9670;&#160;</a></span>get_surface_faces_for_vertex()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html">simplex::SimplexCollection</a> wmtk::TetMesh::get_surface_faces_for_vertex </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>vid</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Get all faces on the surface that are incident to vid. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">vid</td><td>Vertex ID </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2054,6 +2286,29 @@ false </dd></dl>
 <p>record infos</p>
 <p>insert new tets</p>
 <p>update conn_tets</p>
+
+</div>
+</div>
+<a id="aa85f8199512a563b9c64b1338536e261" name="aa85f8199512a563b9c64b1338536e261"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa85f8199512a563b9c64b1338536e261">&#9670;&#160;</a></span>substructure_link_condition()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::TetMesh::substructure_link_condition </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>e_tuple</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Link condition that also considers substructures. </p>
+<p>Implementation based on the pseudo code from the paper: Vivodtzev et. al. - Substructure Topology Preserving Simplification of Tetrahedral Meshes</p>
+<p>The math and the pseudo code in the paper contain errors! The theory itself is correct.</p>
+<p>The link condition must be evaluated for the mesh and all substructures (surfaces, lines, points). If there is a substructure simplex in the star, the simplex is extended with a dummy vertex (e.g., an edge becomes a face) and this extended simplex must also be considered for the link. </p>
 
 </div>
 </div>
@@ -3274,6 +3529,40 @@ false </dd></dl>
 
 </div>
 </div>
+<a id="aad8ff59652ffd269251e99e86296ab33" name="aad8ff59652ffd269251e99e86296ab33"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aad8ff59652ffd269251e99e86296ab33">&#9670;&#160;</a></span>vertex_is_on_surface()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool wmtk::TetMesh::vertex_is_on_surface </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>vid</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Is a vertex part of the substructure. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">vid</td><td>Vertex ID </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <h2 class="groupheader">Member Data Documentation</h2>
 <a id="ade7fb5d05c627df8d2b47fb27b1bd69b" name="ade7fb5d05c627df8d2b47fb27b1bd69b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ade7fb5d05c627df8d2b47fb27b1bd69b">&#9670;&#160;</a></span>m_local_edges</h2>
@@ -3355,6 +3644,7 @@ false </dd></dl>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/<b>TetMeshEdgeCollapsingConn.cpp</b></li>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/<b>TetMeshEdgeSplittingConn.cpp</b></li>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/<b>TetMeshFaceSplittingConn.cpp</b></li>
+<li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/<b>TetMeshSubstructure.cpp</b></li>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/<b>TetMeshSwapMeshConnectivity.cpp</b></li>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/<b>TetMeshTetSplittingConn.cpp</b></li>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/<b>TetMeshTriangleInsertionConn.cpp</b></li>
