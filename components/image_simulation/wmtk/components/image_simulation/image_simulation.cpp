@@ -286,7 +286,7 @@ void image_simulation(nlohmann::json json_params)
             ? read_image_msh(input_paths[0])
             : read_image(input_paths, output_filename.string(), json_params);
 
-    if (input_data.T_input.rows() == 3) {
+    if (input_data.T_input.cols() == 4) {
         run_3D(json_params, input_data);
     } else {
         run_2D(json_params, input_data);
