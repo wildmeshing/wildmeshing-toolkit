@@ -89,14 +89,14 @@ void read_image_msh(
     // read tag data
     if (F_input.cols() == 4) { // tet mesh
         int tet_tags_count = 0;
-        for (const std::string& attr_name : msh.get_tet_attribute_names()) {
+        for (const std::string& attr_name : msh.get_all_element_attribute_names()) {
             if (attr_name.substr(0, 4) == "tag_") {
                 tet_tags_count++;
             }
         }
 
         F_input_tags.resize(F_input.rows(), tet_tags_count);
-        for (const std::string& attr_name : msh.get_tet_attribute_names()) {
+        for (const std::string& attr_name : msh.get_all_element_attribute_names()) {
             if (attr_name.substr(0, 4) != "tag_") {
                 continue;
             }

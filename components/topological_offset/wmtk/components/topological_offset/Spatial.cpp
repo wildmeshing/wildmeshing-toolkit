@@ -69,7 +69,7 @@ bool TopoOffsetTetMesh::tet_consistent_topology(const size_t t_id) const
                 (m_face_attribute[tuple_from_face(t_id, i).fid(*this)].label != 0);
         }
         return (num_faces_in_input == 1);
-    } else if (vs_in.size() == 4) { // must have one or two faces, no isolated edges in input
+    } else if (vs_in.size() == 4) { // must have two or three faces, no isolated edges in input
         std::vector<Tuple> faces_in_input;
         for (int i = 0; i < 4; i++) {
             Tuple f = tuple_from_face(t_id, i);
@@ -80,19 +80,23 @@ bool TopoOffsetTetMesh::tet_consistent_topology(const size_t t_id) const
         if (faces_in_input.size() == 3) {
             return true;
         } else if (faces_in_input.size() == 2) { // must guarantee no floating edge
-            std::vector<size_t> potential_edge; // will have two verts. logic
-            for (const size_t& v_id : vs_in) {
-                bool in1 =
-                    (v_id == faces_in_input[0].vid(*this)) ||
-                    (v_id == faces_in_input[0].switch_vertex(*this).vid(*this)) ||
-                    (v_id == faces_in_input[0].switch_edge(*this).switch_vertex(*this).vid(*this));
-                bool in2 =
-                    (v_id == faces_in_input[1].vid(*this)) ||
-                    (v_id == faces_in_input[1].switch_vertex(*this).vid(*this)) ||
-                    (v_id == faces_in_input[1].switch_edge(*this).switch_vertex(*this).vid(*this));
-                if (in1 && in2) potential_edge.push_back(v_id);
-            }
-            size_t opp_eid = tuple_from_edge({{potential_edge[0], potential_edge[1]}}).eid(*this);
+            std::vector<size_t> face1_vs;
+            face1_vs.push_back(faces_in_input[0].vid(*this));
+            face1_vs.push_back(faces_in_input[0].switch_vertex(*this).vid(*this));
+            face1_vs.push_back(
+                faces_in_input[0].switch_edge(*this).switch_vertex(*this).vid(*this));
+            std::sort(face1_vs.begin(), face1_vs.end());
+            std::vector<size_t> face2_vs;
+            face2_vs.push_back(faces_in_input[1].vid(*this));
+            face2_vs.push_back(faces_in_input[1].switch_vertex(*this).vid(*this));
+            face2_vs.push_back(
+                faces_in_input[1].switch_edge(*this).switch_vertex(*this).vid(*this));
+            std::sort(face2_vs.begin(), face2_vs.end());
+            std::vector<size_t> shared_edge_vids = set_intersection(face1_vs, face2_vs);
+            simplex::Tet tet_simp = simplex_from_tet(t_id);
+            simplex::Edge oppo_edge =
+                tet_simp.opposite_edge(simplex::Edge(shared_edge_vids[0], shared_edge_vids[1]));
+            size_t opp_eid = tuple_from_edge(oppo_edge.vertices()).eid(*this);
             return (m_edge_attribute[opp_eid].label == 0);
         } else { // no bueno
             return false;
