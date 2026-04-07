@@ -21,6 +21,7 @@ nlohmann::json image_simulation_spec = R"(
       "eps",
       "length_rel",
       "stop_energy",
+      "stop_at_float",
       "preserve_topology",
       "w_amips",
       "w_smooth",
@@ -152,6 +153,12 @@ nlohmann::json image_simulation_spec = R"(
     "type": "float",
     "default": 10,
     "doc": "Target energy. If all tets have an energy below this, tetwild will stop."
+  },
+  {
+    "pointer": "/stop_at_float",
+    "type": "bool",
+    "default": true,
+    "doc": "Stop when all vertices are in floating point precision, i.e., no more rational numbers are needed. stop_energy will be ignored when this is true."
   },
   {
     "pointer": "/preserve_topology",

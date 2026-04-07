@@ -41,6 +41,7 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     params.eps = json_params["eps"];
     params.lr = json_params["length_rel"];
     params.stop_energy = json_params["stop_energy"];
+    params.stop_at_float = json_params["stop_at_float"];
     params.preserve_topology = json_params["preserve_topology"];
 
     const bool write_vtu = json_params["write_vtu"];
@@ -109,6 +110,7 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
 
     wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
     mesh.write_msh(output_filename.string() + ".msh");
+    mesh.write_msh_groups(output_filename.string() + "_groups.msh");
     write_unique_vtu();
     if (write_vtu) {
         mesh.write_surface(output_filename.string() + "_surface.obj");
@@ -134,6 +136,7 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
     params.eps = json_params["eps"];
     params.lr = json_params["length_rel"];
     params.stop_energy = json_params["stop_energy"];
+    params.stop_at_float = json_params["stop_at_float"];
     params.preserve_topology = json_params["preserve_topology"];
 
     params.smooth_without_envelope = json_params["smooth_without_envelope"];

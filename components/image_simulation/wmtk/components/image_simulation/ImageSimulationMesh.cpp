@@ -42,6 +42,11 @@ VertexAttributes::VertexAttributes(const Vector3r& p)
 
 void ImageSimulationMesh::mesh_improvement(int max_its)
 {
+    if (all_rounded() && m_params.stop_at_float) {
+        logger().info("All vertices are rounded. Stop.");
+        return;
+    }
+
     ////preprocessing
     // TODO: refactor to eliminate repeated partition.
     //
@@ -65,7 +70,9 @@ void ImageSimulationMesh::mesh_improvement(int max_its)
 
         ///energy check
         wmtk::logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
-        if (max_energy < m_params.stop_energy) break;
+        if (max_energy < m_params.stop_energy) {
+            break;
+        }
         consolidate_mesh();
 
         // output_faces(
@@ -74,17 +81,11 @@ void ImageSimulationMesh::mesh_improvement(int max_its)
 
         // output_mesh(m_params.output_path + "after_iter" + std::to_string(it) + ".msh");
 
-        wmtk::logger().info("v {} t {}", vert_capacity(), tet_capacity());
+        logger().info("V = {}, T = {}", vert_capacity(), tet_capacity());
 
-        auto cnt_round = 0, cnt_verts = 0;
-        TetMesh::for_each_vertex([&](auto& v) {
-            if (m_vertex_attribute[v.vid(*this)].m_is_rounded) cnt_round++;
-            cnt_verts++;
-        });
-        if (cnt_round < cnt_verts) {
-            wmtk::logger().info("rounded {}/{}", cnt_round, cnt_verts);
-        } else {
-            wmtk::logger().info("All rounded!", cnt_round, cnt_verts);
+        if (all_rounded() && m_params.stop_at_float) {
+            logger().info("All vertices are rounded. Stop.");
+            break;
         }
 
         ///sizing field
@@ -92,10 +93,10 @@ void ImageSimulationMesh::mesh_improvement(int max_its)
             (pre_avg_energy - avg_energy) / avg_energy < 0.1) {
             m++;
             if (m == M) {
-                wmtk::logger().info(">>>>adjust_sizing_field...");
+                logger().info(">>>>adjust_sizing_field...");
                 is_hit_min_edge_length = adjust_sizing_field_serial(max_energy);
                 // is_hit_min_edge_length = adjust_sizing_field(max_energy);
-                wmtk::logger().info(">>>>adjust_sizing_field finished...");
+                logger().info(">>>>adjust_sizing_field finished...");
                 m = 0;
             }
         } else {
@@ -544,6 +545,79 @@ void ImageSimulationMesh::write_msh(std::string file)
     msh.save(file, true);
 }
 
+void ImageSimulationMesh::write_msh_groups(std::string file)
+{
+    consolidate_mesh();
+
+    wmtk::MshData msh;
+
+    const auto& vtx = get_vertices();
+    msh.add_tet_vertices(vtx.size(), [&](size_t k) {
+        auto i = vtx[k].vid(*this);
+        return m_vertex_attribute[i].m_posf;
+    });
+
+    const auto& tets = get_tets();
+    // msh.add_tets(tets.size(), [&](size_t k) {
+    //     auto i = tets[k].tid(*this);
+    //     auto vs = oriented_tet_vertices(tets[k]);
+    //     std::array<size_t, 4> data;
+    //     for (int j = 0; j < 4; j++) {
+    //         data[j] = vs[j].vid(*this);
+    //         assert(data[j] < vtx.size());
+    //     }
+    //     return data;
+    // });
+
+    // msh.add_tet_attribute<1>("ref", [&](size_t i) { return m_tet_attribute[i].tags[0]; });
+
+    msh.add_physical_group("ImageVolume");
+
+    // add a group for each tag
+    for (size_t tag_img = 0; tag_img < m_tags_count; ++tag_img) {
+        size_t tag_id = tag_img == 0 ? 0 : 1;
+
+        std::vector<Tuple> tets_with_tag;
+        tets_with_tag.reserve(tets.size());
+
+        for (;; ++tag_id) {
+            tets_with_tag.clear();
+            for (const Tuple& t : tets) {
+                const size_t tid = t.tid(*this);
+                if (m_tet_attribute[tid].tags[tag_img] == tag_id) {
+                    tets_with_tag.push_back(t);
+                }
+            }
+
+            if (tets_with_tag.empty()) {
+                break;
+            }
+
+            const std::string group_name = fmt::format("tag_{}_{}", tag_img, tag_id);
+
+            msh.add_empty_vertices(3);
+            msh.add_tets(tets_with_tag.size(), [&](size_t k) {
+                auto vs = oriented_tet_vertices(tets_with_tag[k]);
+                std::array<size_t, 4> data;
+                for (int j = 0; j < 4; j++) {
+                    data[j] = vs[j].vid(*this);
+                }
+                return data;
+            });
+
+            msh.add_physical_group(group_name);
+        }
+        break;
+    }
+
+    // auto faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
+    // msh.add_empty_vertices(2);
+    // msh.add_faces(faces.size(), [&faces](size_t k) { return faces[k]; });
+    // msh.add_physical_group("ImageSurface");
+
+    msh.save(file, false);
+}
+
 std::tuple<double, double> ImageSimulationMesh::get_max_avg_energy()
 {
     double max_energy = -1.;
@@ -719,6 +793,25 @@ std::vector<std::array<size_t, 3>> ImageSimulationMesh::get_faces_by_condition(
         }
     }
     return res;
+}
+
+bool ImageSimulationMesh::all_rounded() const
+{
+    size_t cnt_round = 0;
+    size_t cnt_verts = 0;
+    for (const Tuple& t : get_vertices()) {
+        if (m_vertex_attribute[t.vid(*this)].m_is_rounded) {
+            cnt_round++;
+        }
+        cnt_verts++;
+    }
+    if (cnt_round < cnt_verts) {
+        wmtk::logger().info("rounded {}/{}", cnt_round, cnt_verts);
+        return false;
+    } else {
+        wmtk::logger().info("All rounded!", cnt_round, cnt_verts);
+        return true;
+    }
 }
 
 bool ImageSimulationMesh::is_edge_on_surface(const Tuple& loc)

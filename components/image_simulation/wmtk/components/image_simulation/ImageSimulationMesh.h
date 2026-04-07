@@ -281,6 +281,7 @@ public:
     ////// Attributes related
 
     void write_msh(std::string file);
+    void write_msh_groups(std::string file);
     void output_faces(std::string file, std::function<bool(const FaceAttributes&)> cond);
 
     void init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>& vertices);
@@ -352,6 +353,13 @@ public:
      * @return True if successful or already rounded, false otherwise.
      */
     bool round(const Tuple& loc);
+
+    /**
+     * @brief Check if all vertices of the mesh are rounded.
+     *
+     */
+    bool all_rounded() const;
+
     //
     bool is_edge_on_surface(const Tuple& loc);
     bool is_edge_on_bbox(const Tuple& loc);

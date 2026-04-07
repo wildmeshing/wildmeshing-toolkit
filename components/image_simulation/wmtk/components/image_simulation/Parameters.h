@@ -26,6 +26,7 @@ struct Parameters
         std::numeric_limits<double>::max(); // the upper bound length (squared) for edge collapse
 
     double stop_energy = 10;
+    bool stop_at_float = false;
 
     bool debug_output = false;
     bool perform_sanity_checks = false;
