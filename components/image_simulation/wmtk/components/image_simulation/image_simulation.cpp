@@ -77,10 +77,6 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     };
 
     mesh.consolidate_mesh();
-    {
-        int num_parts = mesh.flood_fill();
-        logger().info("flood fill parts {}", num_parts);
-    }
 
     write_unique_vtu();
 
@@ -90,11 +86,6 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     mesh.consolidate_mesh();
     double time = timer.getElapsedTime();
     wmtk::logger().info("total time {}s", time);
-
-    {
-        int num_parts = mesh.flood_fill();
-        logger().info("flood fill parts {}", num_parts);
-    }
 
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();

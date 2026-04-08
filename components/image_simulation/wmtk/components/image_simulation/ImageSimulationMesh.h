@@ -104,7 +104,6 @@ public:
     double m_quality;
     double m_winding_number = 0;
     std::vector<int64_t> tags;
-    int part_id = -1;
 };
 
 class ImageSimulationMesh : public wmtk::TetMesh
@@ -519,9 +518,6 @@ public:
      */
     bool is_open_boundary_edge(const Tuple& e);
     bool is_open_boundary_edge(const std::array<size_t, 2>& e);
-
-    // for boolean operations
-    int flood_fill();
 
     void write_vtu(const std::string& path);
 
