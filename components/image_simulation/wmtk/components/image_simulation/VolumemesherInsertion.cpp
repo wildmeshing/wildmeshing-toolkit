@@ -733,7 +733,7 @@ void ImageSimulationMesh::init_from_image(
 void ImageSimulationMesh::init_surfaces_and_boundaries()
 {
     const auto faces = get_faces();
-    std::cout << "faces size: " << faces.size() << std::endl;
+    logger().info("F = {}", faces.size());
 
     // tag surface faces and vertices
     std::vector<Eigen::Vector3i> tempF;
@@ -786,21 +786,27 @@ void ImageSimulationMesh::init_surfaces_and_boundaries()
         m_envelope = std::make_shared<SampleEnvelope>();
         m_envelope->use_exact = true;
         m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
-    }
-
-    // All surface faces must be inside the envelope
-    {
-        logger().info("Envelope sanity check");
-        const auto surf_faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
-        for (const auto& verts : surf_faces) {
-            const auto& p0 = m_vertex_attribute[verts[0]].m_posf;
-            const auto& p1 = m_vertex_attribute[verts[1]].m_posf;
-            const auto& p2 = m_vertex_attribute[verts[2]].m_posf;
-            if (m_envelope->is_outside({{p0, p1, p2}})) {
-                log_and_throw_error("Face {} is outside!", verts);
-            }
+    } else {
+        // All surface faces must be inside the envelope
+        {
+            logger().info("Envelope sanity check");
+            const auto surf_faces =
+                get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
+            for_each_face([&](const Tuple& t) {
+                const size_t fid = t.fid(*this);
+                if (!m_face_attribute.at(fid).m_is_surface_fs) {
+                    return;
+                }
+                const auto verts = get_face_vids(t);
+                const auto& p0 = m_vertex_attribute[verts[0]].m_posf;
+                const auto& p1 = m_vertex_attribute[verts[1]].m_posf;
+                const auto& p2 = m_vertex_attribute[verts[2]].m_posf;
+                if (m_envelope->is_outside({{p0, p1, p2}})) {
+                    log_and_throw_error("Face {} is outside!", verts);
+                }
+            });
+            logger().info("Envelope sanity check done");
         }
-        logger().info("Envelope sanity check done");
     }
 
     // track bounding box

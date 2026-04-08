@@ -133,7 +133,7 @@ InputData read_image_msh(const std::string& path)
 
     } else {
         // only read volume directly from .msh and ignore other entities
-        logger().info(
+        logger().info( //
             "Could not find pysical groups ImageVolume and EnvelopeSurface. Reading only "
             "tet data (in 2D face data) from MSH.");
 
@@ -244,7 +244,7 @@ InputData read_image(
     }
 
     // convert image into tet mesh
-    EmbedSurface image_mesh(input_paths, ijk2xyz);
+    EmbedSurface image_mesh(input_paths, ijk2xyz, skip_simplify);
 
     if (!skip_simplify) {
         logger().info("Simplify...");
@@ -257,8 +257,8 @@ InputData read_image(
         image_mesh.write_surf_off(output_filename + "_input.off");
     }
 
-    input_data.V_envelope = image_mesh.V_surface();
-    input_data.F_envelope = image_mesh.F_surface();
+    // input_data.V_envelope = image_mesh.V_surface();
+    // input_data.F_envelope = image_mesh.F_surface();
 
     // const bool all_rounded = image_mesh.embed_surface();
     const bool all_rounded =

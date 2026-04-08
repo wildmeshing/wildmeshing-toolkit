@@ -10,7 +10,6 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
-#include "EmbedSurface.hpp"
 #include "ImageSimulationMesh.h"
 #include "ImageSimulationMeshTri.hpp"
 #include "Parameters.h"
