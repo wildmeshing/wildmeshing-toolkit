@@ -40,6 +40,7 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     params.epsr = json_params["eps_rel"];
     params.eps = json_params["eps"];
     params.lr = json_params["length_rel"];
+    params.l = json_params["length"];
     params.stop_energy = json_params["stop_energy"];
     params.stop_at_float = json_params["stop_at_float"];
     params.preserve_topology = json_params["preserve_topology"];

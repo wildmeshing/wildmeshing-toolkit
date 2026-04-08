@@ -787,7 +787,7 @@ std::vector<std::array<size_t, 3>> ImageSimulationMesh::get_faces_by_condition(
         if (cond(m_face_attribute[fid])) {
             auto tid = fid / 4, lid = fid % 4;
             auto verts = get_face_vertices(f);
-            res.emplace_back(
+            res.emplace_back( //
                 std::array<size_t, 3>{
                     {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
         }
@@ -1225,6 +1225,29 @@ void ImageSimulationMesh::write_surface(const std::string& path) const
     igl::write_triangle_mesh(path, matV, matF);
 
     wmtk::logger().info("Output face size {}", outface.size());
+}
+
+bool ImageSimulationMesh::vertex_is_on_surface(const size_t vid) const
+{
+    return m_vertex_attribute.at(vid).m_is_on_surface;
+}
+
+bool ImageSimulationMesh::face_is_on_surface(const size_t fid) const
+{
+    return m_face_attribute.at(fid).m_is_surface_fs;
+}
+
+size_t ImageSimulationMesh::get_order_of_vertex(const size_t vid) const
+{
+    return m_vertex_attribute.at(vid).m_order;
+}
+
+void ImageSimulationMesh::init_vertex_order()
+{
+    for (const Tuple& t : get_vertices()) {
+        const size_t vid = t.vid(*this);
+        m_vertex_attribute[vid].m_order = compute_vertex_order(vid);
+    }
 }
 
 } // namespace wmtk::components::image_simulation

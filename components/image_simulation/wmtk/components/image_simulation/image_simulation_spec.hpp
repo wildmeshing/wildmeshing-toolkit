@@ -19,6 +19,7 @@ nlohmann::json image_simulation_spec = R"(
       "max_iterations",
       "eps_rel",
       "eps",
+      "length",
       "length_rel",
       "stop_energy",
       "stop_at_float",
@@ -141,6 +142,12 @@ nlohmann::json image_simulation_spec = R"(
     "type": "float",
     "default": -1,
     "doc": "Absolute envelope thickness. If this value is negative, the relative envelope thickness is used to compute the absolute one."
+  },
+  {
+    "pointer": "/length",
+    "type": "float",
+    "default": -1,
+    "doc": "Absolute target edge length. If this value is negative, the relative length is used to compute the absolute one."
   },
   {
     "pointer": "/length_rel",

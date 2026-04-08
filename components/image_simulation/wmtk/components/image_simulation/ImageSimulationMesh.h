@@ -38,6 +38,14 @@ public:
     bool m_is_rounded = false;
 
     bool m_is_on_surface = false;
+    /**
+     * The order of a vertex in a TetMesh is as follows:
+     * 0: vertex is not on the surface
+     * 1: vertex is on the surface
+     * 2: vertex is on the boundary of the surface or a non-manifold edge
+     * 3: vertex is at the boundary of a non-manifold edge or a non-manifold vertex
+     */
+    size_t m_order = 0;
     std::vector<int> on_bbox_faces; // same as is_bbox_fs?
 
     double m_sizing_scalar = 1;
@@ -518,6 +526,19 @@ public:
     void write_vtu(const std::string& path);
 
     void write_surface(const std::string& path) const;
+
+public:
+    // substructure functions
+
+    bool vertex_is_on_surface(const size_t vid) const override;
+
+    bool face_is_on_surface(const size_t fid) const override;
+
+    size_t get_order_of_vertex(const size_t vid) const override;
+    /**
+     * @brief Compute the vertex order for every vertex.
+     */
+    void init_vertex_order();
 };
 
 } // namespace wmtk::components::image_simulation
