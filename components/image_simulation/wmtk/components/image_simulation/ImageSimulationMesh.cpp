@@ -557,28 +557,16 @@ void ImageSimulationMesh::write_msh_groups(std::string file)
         return m_vertex_attribute[i].m_posf;
     });
 
-    const auto& tets = get_tets();
-    // msh.add_tets(tets.size(), [&](size_t k) {
-    //     auto i = tets[k].tid(*this);
-    //     auto vs = oriented_tet_vertices(tets[k]);
-    //     std::array<size_t, 4> data;
-    //     for (int j = 0; j < 4; j++) {
-    //         data[j] = vs[j].vid(*this);
-    //         assert(data[j] < vtx.size());
-    //     }
-    //     return data;
-    // });
-
-    // msh.add_tet_attribute<1>("ref", [&](size_t i) { return m_tet_attribute[i].tags[0]; });
-
     msh.add_physical_group("ImageVolume");
+
+    const auto& tets = get_tets();
+
+    std::vector<Tuple> tets_with_tag;
+    tets_with_tag.reserve(tets.size());
 
     // add a group for each tag
     for (size_t tag_img = 0; tag_img < m_tags_count; ++tag_img) {
         size_t tag_id = tag_img == 0 ? 0 : 1;
-
-        std::vector<Tuple> tets_with_tag;
-        tets_with_tag.reserve(tets.size());
 
         for (;; ++tag_id) {
             tets_with_tag.clear();
@@ -609,11 +597,6 @@ void ImageSimulationMesh::write_msh_groups(std::string file)
         }
         break;
     }
-
-    // auto faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
-    // msh.add_empty_vertices(2);
-    // msh.add_faces(faces.size(), [&faces](size_t k) { return faces[k]; });
-    // msh.add_physical_group("ImageSurface");
 
     msh.save(file, false);
 }

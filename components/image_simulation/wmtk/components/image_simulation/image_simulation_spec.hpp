@@ -26,10 +26,7 @@ nlohmann::json image_simulation_spec = R"(
       "preserve_topology",
       "w_amips",
       "w_smooth",
-      "w_envelope",
-      "w_separate",
-      "dhat_rel",
-      "dhat",
+      "separation_factor",
       "smooth_without_envelope",
       "write_vtu",
       "log_file",
@@ -176,38 +173,20 @@ nlohmann::json image_simulation_spec = R"(
   {
     "pointer": "/w_amips",
     "type": "float",
-    "default": 1,
-    "doc": "AMIPS energy."
+    "default": 0.1,
+    "doc": "AMIPS energy. Sum of energy weights must be smaller than 1!"
   },
   {
     "pointer": "/w_smooth",
     "type": "float",
-    "default": 1,
-    "doc": "Smoothing energy."
+    "default": 0,
+    "doc": "Surface smoothing energy. Sum of energy weights must be smaller than 1!"
   },
   {
-    "pointer": "/w_envelope",
+    "pointer": "/separation_factor",
     "type": "float",
     "default": 1,
-    "doc": "Envelope energy."
-  },
-  {
-    "pointer": "/w_separate",
-    "type": "float",
-    "default": 1,
-    "doc": "Separation energy."
-  },
-  {
-    "pointer": "/dhat_rel",
-    "type": "float",
-    "default": 2e-3,
-    "doc": "The separation distance that should be enforced by the optimization relative to the bbox."
-  },
-  {
-    "pointer": "/dhat",
-    "type": "float",
-    "default": -1,
-    "doc": "The separation distance that should be enforced by the optimization. If this value is negative, the relative dhat is used to compute the absolute one."
+    "doc": "Usually, surfaces are pushed apart to create a gap in the size of the smallest allowed edge length. The separation factor can increase or decrease that gap. If set to 0 or negative, no separation is performed."
   },
   {
     "pointer": "/smooth_without_envelope",

@@ -154,6 +154,25 @@ public:
          */
         m_s_barrier = 1. / (m_params.diag_l4);
 
+        // check weights (ignoring barrier here)
+        {
+            double& wa = m_params.w_amips;
+            double& ws = m_params.w_smooth;
+            const double sum = wa + ws;
+            if (sum > 1) {
+                wa /= sum;
+                ws /= sum;
+                logger().warn(
+                    "Weights for AMIPS and smooth sum up to greater than 1. Rescaling to \n  "
+                    "w_amips = {}, \n  w_smooth = {}",
+                    wa,
+                    ws);
+            }
+            double& we = m_params.w_envelope;
+            we = 1 - (wa + ws);
+            logger().info("w_envelope = {}", we);
+        }
+
         init_separation_weight();
     }
 
@@ -223,6 +242,12 @@ public:
     bool smooth_after(const Tuple& t) override;
 
     void build_mass_matrix();
+    /**
+     * @brief A vector containing the vertex position and all positions of the surface neighbors.
+     *
+     * Returns an empty vector if vertex is not on the surface.
+     */
+    std::vector<Vector2d> get_surface_assembles(const Tuple& t) const;
     std::shared_ptr<polysolve::nonlinear::Problem> get_smooth_energy(const Tuple& t) const;
     std::shared_ptr<polysolve::nonlinear::Problem> get_envelope_energy(const Tuple& t) const;
     /**

@@ -29,12 +29,15 @@
 
 namespace wmtk::components::image_simulation {
 
-// TODO: missing comments on what these attributes are
 class VertexAttributes
 {
 public:
-    Vector3r m_pos;
-    Vector3d m_posf;
+    Vector3r m_pos; // exact position in rational
+    Vector3d m_posf; // position as double
+    /**
+     * If a vertex cannot be rounded without inverting a tet, the exact position must be used. Once
+     * the vertex can be rounded to double precision, the rational representation is obsolete.
+     */
     bool m_is_rounded = false;
 
     bool m_is_on_surface = false;
@@ -50,6 +53,9 @@ public:
 
     double m_sizing_scalar = 1;
 
+    /**
+     * Required for multi-threading.
+     */
     size_t partition_id = 0;
 
     // for open boundary
@@ -66,13 +72,14 @@ public:
 //     bool m_is_on_open_boundary = false;
 // };
 
-// TODO: missing comments on what these attributes are
 class FaceAttributes
 {
 public:
-    double tag;
+    /**
+     * Is this face a part of the surface.
+     */
+    bool m_is_surface_fs = false;
 
-    bool m_is_surface_fs = false; // 0; 1
     /**
      * Keep track which bbox side the face is on
      * -1: none
@@ -97,12 +104,17 @@ public:
     }
 };
 
-// TODO: missing comments on what these attributes are
 class TetAttributes
 {
 public:
+    /**
+     * cubed (!) AMIPS quality
+     */
     double m_quality;
-    double m_winding_number = 0;
+    /**
+     * All image labels. Each image is represented by one entry in the vector. All tets must have
+     * the same tags.size().
+     */
     std::vector<int64_t> tags;
 };
 
