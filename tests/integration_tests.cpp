@@ -21,6 +21,7 @@ const path integration_tests_dir = data_dir / "integration_tests";
  */
 std::vector<std::string> input_files{
     "image_simulation__remeshing_2d.json",
+    "image_simulation_energies_2d",
     "image_simulation_fill_holes_2d.json",
     "image_simulation_keep_lcc_2d.json",
     "image_simulation_tight_seal_2d.json",
