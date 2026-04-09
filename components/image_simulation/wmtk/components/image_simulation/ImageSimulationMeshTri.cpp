@@ -1687,6 +1687,11 @@ std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMeshTri::get_barri
         return nullptr;
     }
 
+    const auto& M = m_surface_mass[t.vid(*this)];
+    if (M <= 0) {
+        return nullptr;
+    }
+
     // barrier energy
     MatrixXd V_barrier;
     MatrixXi E_barrier;
@@ -1727,12 +1732,14 @@ std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMeshTri::get_barri
         vid_barrier = global_to_local_vid_map[vid];
     }
 
+    // The inverse mass comes from the weight compuation based on the envelope energy. This contains
+    // the mass and therefore the barrier energy must contain the inverse.
     auto barrier_energy = std::make_shared<optimization::BarrierEnergy2D>(
         V_barrier,
         E_barrier,
         vid_barrier,
         m_params.dhat,
-        m_s_barrier * m_params.w_separate);
+        m_s_barrier * m_params.w_separate / M);
 
     return barrier_energy;
 }

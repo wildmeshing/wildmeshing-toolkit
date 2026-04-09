@@ -43,7 +43,7 @@ VertexAttributes::VertexAttributes(const Vector3r& p)
 void ImageSimulationMesh::mesh_improvement(int max_its)
 {
     if (all_rounded() && m_params.stop_at_float) {
-        logger().info("All vertices are rounded. Stop.");
+        logger().info("===== All vertices are rounded. Stop. =====");
         return;
     }
 

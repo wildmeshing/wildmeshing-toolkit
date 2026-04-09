@@ -161,7 +161,7 @@ nlohmann::json image_simulation_spec = R"(
   {
     "pointer": "/stop_at_float",
     "type": "bool",
-    "default": true,
+    "default": false,
     "doc": "Stop when all vertices are in floating point precision, i.e., no more rational numbers are needed. stop_energy will be ignored when this is true."
   },
   {
