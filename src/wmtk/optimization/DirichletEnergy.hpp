@@ -178,6 +178,8 @@ public:
 
     /**
      * @brief Get the adjacency for vid from the global stiffness matrix.
+     *
+     * The adjacency does not contain vid itself.
      */
     static void adjacency_from_stiffness(
         const size_t vid,

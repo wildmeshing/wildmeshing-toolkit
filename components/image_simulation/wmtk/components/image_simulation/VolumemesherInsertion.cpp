@@ -786,6 +786,7 @@ void ImageSimulationMesh::init_surfaces_and_boundaries()
         m_envelope = std::make_shared<SampleEnvelope>();
         m_envelope->use_exact = true;
         m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
+        m_envelope_orig = m_envelope;
     } else {
         // All surface faces must be inside the envelope
         {

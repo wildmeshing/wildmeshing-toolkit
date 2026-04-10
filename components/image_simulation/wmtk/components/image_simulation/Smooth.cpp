@@ -9,6 +9,7 @@
 #include <wmtk/optimization/AMIPSEnergy.hpp>
 #include <wmtk/optimization/DirichletEnergy.hpp>
 #include <wmtk/optimization/EnergySum.hpp>
+#include <wmtk/optimization/EnvelopeEnergy.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 
@@ -47,7 +48,7 @@ bool ImageSimulationMesh::smooth_after(const Tuple& t)
     const auto& TA = m_tet_attribute;
 
     const auto locs = get_one_ring_tets_for_vertex(t);
-    assert(!locs.empty);
+    assert(!locs.empty());
     double max_quality = 0.;
     for (auto& tet : locs) {
         max_quality = std::max(max_quality, TA[tet.tid(*this)].m_quality);
@@ -147,6 +148,9 @@ bool ImageSimulationMesh::smooth_after(const Tuple& t)
         if (m_params.w_amips > 0) {
             energy_sum->add_energy(amips_energy);
         }
+        if (m_params.w_envelope > 0) {
+            energy_sum->add_energy(get_envelope_energy(t));
+        }
 
         total_energy = energy_sum;
     }
@@ -162,21 +166,25 @@ bool ImageSimulationMesh::smooth_after(const Tuple& t)
         m_vertex_attribute[vid].m_posf = x;
     }
 
-    logger().trace("old pos {} -> new pos {}", old_pos.transpose(), VA[vid].m_posf.transpose());
+    logger().trace("old pos {} -> new pos {}", old_pos, VA[vid].m_posf);
 
+    // check surface containment
+    if (VA[vid].m_is_on_surface && !m_params.smooth_without_envelope) {
+        // write_vtu_with_energies(fmt::format("debug_smooth_{}", debug_print_counter++));
+        const simplex::SimplexCollection surf_assembles = get_surface_faces_for_vertex(vid);
+        for (size_t i = 0; i < surf_assembles.faces().size(); ++i) {
+            const simplex::Face& f = surf_assembles.faces()[i];
 
-    //// check surface containment
-    // for (const auto& n : surface_assemble) {
-    //     std::array<Eigen::Vector3d, 3> tri;
-    //     for (int k = 0; k < 3; k++) {
-    //         for (int kk = 0; kk < 3; kk++) {
-    //             tri[k][kk] = n[k * 3 + kk];
-    //         }
-    //     }
-    //     if (m_envelope->is_outside(tri)) {
-    //         return false;
-    //     }
-    // }
+            std::array<Eigen::Vector3d, 3> face;
+            face[0] = VA[f.vertices()[0]].m_posf;
+            face[1] = VA[f.vertices()[1]].m_posf;
+            face[2] = VA[f.vertices()[2]].m_posf;
+
+            if (m_envelope->is_outside(face)) {
+                return false;
+            }
+        }
+    }
 
     // rational position must be updated before the inversion check!
     m_vertex_attribute[vid].m_pos = to_rational(VA[vid].m_posf);
@@ -242,6 +250,35 @@ void ImageSimulationMesh::smooth_all_vertices(const size_t n_iters = 1)
         if (m_params.debug_output) {
             write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
         }
+    }
+
+    // re-build envelope
+    if (m_params.smooth_without_envelope) {
+        logger().warn("Update envelope");
+        MatrixXd V;
+        V.resize(vert_capacity(), 3);
+        V.setZero();
+        for (size_t i = 0; i < vert_capacity(); ++i) {
+            const Tuple v = tuple_from_vertex(i);
+            if (!v.is_valid(*this)) {
+                continue;
+            }
+            const size_t vid = v.vid(*this);
+            V.row(i) = m_vertex_attribute.at(vid).m_posf;
+        }
+
+        const auto surf_faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
+        MatrixXi F;
+        F.resize(surf_faces.size(), 3);
+        for (size_t i = 0; i < surf_faces.size(); ++i) {
+            F.row(i) =
+                Vector3i((int)surf_faces[i][0], (int)surf_faces[i][1], (int)surf_faces[i][2]);
+        }
+
+        m_envelope = nullptr;
+        m_V_envelope.clear();
+        m_F_envelope.clear();
+        init_envelope(V, F);
     }
 }
 
@@ -475,7 +512,7 @@ std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMesh::get_amips_en
 
     const auto assembles = get_amips_assembles(t);
     auto amips_energy = std::make_shared<optimization::AMIPSEnergy3D>(assembles, w);
-    assert(amips_energy->initial_position() == m_vertex_attribute.at(t.vid(*this)).m_pos);
+    assert(amips_energy->initial_position() == m_vertex_attribute.at(t.vid(*this)).m_posf);
     return amips_energy;
 }
 
@@ -513,6 +550,20 @@ std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMesh::get_smooth_e
     auto smooth_energy = std::make_shared<optimization::BiharmonicEnergy3D>(pts, M, L_w, w);
 
     return smooth_energy;
+}
+
+std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMesh::get_envelope_energy(
+    const Tuple& t) const
+{
+    size_t vid = t.vid(*this);
+    const auto& M = m_surface_mass.coeff(vid, vid);
+    const double w = m_s_envelope * M * m_params.w_envelope;
+
+    auto envelope_energy = std::make_shared<optimization::EnvelopeEnergy3D>(
+        m_envelope_orig,
+        w,
+        !m_params.smooth_without_envelope);
+    return envelope_energy;
 }
 
 } // namespace wmtk::components::image_simulation

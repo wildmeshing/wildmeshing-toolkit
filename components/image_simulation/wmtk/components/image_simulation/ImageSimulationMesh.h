@@ -135,6 +135,7 @@ public:
     std::vector<Vector3d> m_V_envelope;
     std::vector<Vector3i> m_F_envelope;
     std::shared_ptr<SampleEnvelope> m_envelope;
+    std::shared_ptr<SampleEnvelope> m_envelope_orig;
     double m_envelope_eps = -1;
 
     // for open boundary
@@ -422,6 +423,7 @@ public:
     std::shared_ptr<polysolve::nonlinear::Problem> get_amips_energy(const Tuple& t) const;
 
     std::shared_ptr<polysolve::nonlinear::Problem> get_smooth_energy(const Tuple& t) const;
+    std::shared_ptr<polysolve::nonlinear::Problem> get_envelope_energy(const Tuple& t) const;
 
 
     /**

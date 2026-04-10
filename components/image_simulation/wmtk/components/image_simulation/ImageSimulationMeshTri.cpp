@@ -1450,8 +1450,12 @@ void ImageSimulationMeshTri::smooth_all_vertices(const size_t n_iters)
         logger().warn("Update envelope");
         MatrixXd V;
         V.resize(vert_capacity(), 2);
+        V.setZero();
         for (size_t i = 0; i < vert_capacity(); ++i) {
             const Tuple v = tuple_from_vertex(i);
+            if (!v.is_valid(*this)) {
+                continue;
+            }
             const size_t vid = v.vid(*this);
             V.row(i) = m_vertex_attribute.at(vid).m_pos;
         }
@@ -1550,14 +1554,14 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
     logger().trace("old pos {} -> new pos {}", old_pos.transpose(), VA[vid].m_pos.transpose());
 
     // check surface containment
-    if (VA[vid].m_is_on_surface) {
+    if (VA[vid].m_is_on_surface && !m_params.smooth_without_envelope) {
         // write_vtu_with_energies(fmt::format("debug_smooth_{}", debug_print_counter++));
 
         for (size_t i = 1; i < surf_assembles.size(); ++i) {
             std::array<Eigen::Vector2d, 2> edge;
             edge[0] = VA[vid].m_pos;
             edge[1] = surf_assembles[i];
-            if (!m_params.smooth_without_envelope && m_envelope->is_outside(edge)) {
+            if (m_envelope->is_outside(edge)) {
                 return false;
             }
         }

@@ -479,6 +479,7 @@ void ImageSimulationMesh::init_envelope(const MatrixXd& V, const MatrixXi& F)
     m_envelope = std::make_shared<SampleEnvelope>();
     m_envelope->use_exact = true;
     m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
+    m_envelope_orig = m_envelope;
 }
 
 double ImageSimulationMesh::get_length2(const Tuple& l) const
