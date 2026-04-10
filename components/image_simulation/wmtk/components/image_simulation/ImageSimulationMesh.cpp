@@ -27,10 +27,6 @@
 
 #include <limits>
 
-namespace {
-static int debug_print_counter = 0;
-}
-
 namespace wmtk::components::image_simulation {
 
 
@@ -55,7 +51,7 @@ void ImageSimulationMesh::mesh_improvement(int max_its)
 
     // write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
 
-    wmtk::logger().info("========it pre========");
+    logger().info("========it pre========");
     local_operations({{0, 1, 0, 0}}, false);
 
     ////operation loops
@@ -65,11 +61,11 @@ void ImageSimulationMesh::mesh_improvement(int max_its)
     double pre_max_energy = 0., pre_avg_energy = 0.;
     for (int it = 0; it < max_its; it++) {
         ///ops
-        wmtk::logger().info("\n========it {}========", it);
+        logger().info("\n========it {}========", it);
         auto [max_energy, avg_energy] = local_operations({{1, 1, 1, 1}});
 
         ///energy check
-        wmtk::logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
+        logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
         if (max_energy < m_params.stop_energy) {
             break;
         }
@@ -109,7 +105,7 @@ void ImageSimulationMesh::mesh_improvement(int max_its)
         }
     }
 
-    wmtk::logger().info("========it post========");
+    logger().info("========it post========");
     local_operations({{0, 1, 0, 0}});
 }
 
@@ -161,9 +157,9 @@ std::tuple<double, double> ImageSimulationMesh::local_operations(
         timer.start();
         if (i == 0) {
             for (int n = 0; n < ops[i]; n++) {
-                wmtk::logger().info("==splitting {}==", n);
+                logger().info("==splitting {}==", n);
                 split_all_edges();
-                wmtk::logger().info(
+                logger().info(
                     "#vertices {}, #tets {} after split",
                     get_vertices().size(),
                     get_tets().size());
@@ -180,16 +176,16 @@ std::tuple<double, double> ImageSimulationMesh::local_operations(
                 // }
             }
             if (m_params.debug_output) {
-                write_vtu(fmt::format("debug_{}", debug_print_counter++));
+                write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
             }
             auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("split max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+            logger().info("split max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             sanity_checks();
         } else if (i == 1) {
             for (int n = 0; n < ops[i]; n++) {
-                wmtk::logger().info("==collapsing {}==", n);
+                logger().info("==collapsing {}==", n);
                 collapse_all_edges(collapse_limit_length);
-                wmtk::logger().info(
+                logger().info(
                     "#vertices {}, #tets {} after collapse",
                     get_vertices().size(),
                     get_tets().size());
@@ -206,14 +202,14 @@ std::tuple<double, double> ImageSimulationMesh::local_operations(
                 // }
             }
             if (m_params.debug_output) {
-                write_vtu(fmt::format("debug_{}", debug_print_counter++));
+                write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
             }
             auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("collapse max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+            logger().info("collapse max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             sanity_checks();
         } else if (i == 2) {
             for (int n = 0; n < ops[i]; n++) {
-                wmtk::logger().info("==swapping {}==", n);
+                logger().info("==swapping {}==", n);
                 int cnt_success = 0;
                 cnt_success += swap_all_edges_all();
                 // cnt_success += swap_all_edges_56();
@@ -225,30 +221,25 @@ std::tuple<double, double> ImageSimulationMesh::local_operations(
                 }
             }
             if (m_params.debug_output) {
-                write_vtu(fmt::format("debug_{}", debug_print_counter++));
+                write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
             }
             auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("swap max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+            logger().info("swap max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             sanity_checks();
         } else if (i == 3) {
-            for (int n = 0; n < ops[i]; n++) {
-                wmtk::logger().info("==smoothing {}==", n);
-                smooth_all_vertices();
-            }
-            if (m_params.debug_output) {
-                write_vtu(fmt::format("debug_{}", debug_print_counter++));
-            }
+            logger().info("==smoothing ==");
+            smooth_all_vertices(ops[i]);
             auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("smooth max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+            logger().info("smooth max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             sanity_checks();
         }
         // output_faces(fmt::format("out-op{}.obj", i), [](auto& f) { return f.m_is_surface_fs; });
     }
-    // write_vtu(fmt::format("debug_{}", debug_print_counter++));
+    // write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
     energy = get_max_avg_energy();
-    wmtk::logger().info("max energy = {:.6}", std::get<0>(energy));
-    wmtk::logger().info("avg energy = {:.6}", std::get<1>(energy));
-    wmtk::logger().info("time = {}", timer.getElapsedTime());
+    logger().info("max energy = {:.6}", std::get<0>(energy));
+    logger().info("avg energy = {:.6}", std::get<1>(energy));
+    logger().info("time = {}", timer.getElapsedTime());
 
 
     return energy;
@@ -256,7 +247,7 @@ std::tuple<double, double> ImageSimulationMesh::local_operations(
 
 bool ImageSimulationMesh::adjust_sizing_field_serial(double max_energy)
 {
-    wmtk::logger().info("#vertices {}, #tets {}", vert_capacity(), tet_capacity());
+    logger().info("#vertices {}, #tets {}", vert_capacity(), tet_capacity());
 
     const double stop_filter_energy = m_params.stop_energy * 0.8;
     double filter_energy = std::max(max_energy / 100, stop_filter_energy);
@@ -290,7 +281,7 @@ bool ImageSimulationMesh::adjust_sizing_field_serial(double max_energy)
     // std::cout << std::endl;
 
 
-    wmtk::logger().info("filter energy {} Low Quality Tets {}", filter_energy, pts.size());
+    logger().info("filter energy {} Low Quality Tets {}", filter_energy, pts.size());
 
     // debug code
     // std::queue<size_t> v_queue_serial;
@@ -460,7 +451,7 @@ void ImageSimulationMesh::output_faces(
     for (auto i = 0; i < outface.size(); i++) {
         matF.row(i) << outface[i][0], outface[i][1], outface[i][2];
     }
-    wmtk::logger().info("Output face size {}", outface.size());
+    logger().info("Output face size {}", outface.size());
     igl::write_triangle_mesh(file, matV, matF);
 }
 
@@ -789,10 +780,10 @@ bool ImageSimulationMesh::all_rounded() const
         cnt_verts++;
     }
     if (cnt_round < cnt_verts) {
-        wmtk::logger().info("rounded {}/{}", cnt_round, cnt_verts);
+        logger().info("rounded {}/{}", cnt_round, cnt_verts);
         return false;
     } else {
-        wmtk::logger().info("All rounded!", cnt_round, cnt_verts);
+        logger().info("All rounded!", cnt_round, cnt_verts);
         return true;
     }
 }
@@ -918,7 +909,7 @@ bool ImageSimulationMesh::check_attributes()
             if (!(m_vertex_attribute[vs[0].vid(*this)].m_is_on_surface &&
                   m_vertex_attribute[vs[1].vid(*this)].m_is_on_surface &&
                   m_vertex_attribute[vs[2].vid(*this)].m_is_on_surface)) {
-                wmtk::logger().critical("surface track wrong");
+                logger().critical("surface track wrong");
                 return false;
             }
             bool is_out = m_envelope->is_outside(
@@ -926,7 +917,7 @@ bool ImageSimulationMesh::check_attributes()
                   m_vertex_attribute[vs[1].vid(*this)].m_posf,
                   m_vertex_attribute[vs[2].vid(*this)].m_posf}});
             if (is_out) {
-                wmtk::logger().critical(
+                logger().critical(
                     "is_out f {} {} {}",
                     vs[0].vid(*this),
                     vs[1].vid(*this),
@@ -938,7 +929,7 @@ bool ImageSimulationMesh::check_attributes()
             if (!(!m_vertex_attribute[vs[0].vid(*this)].on_bbox_faces.empty() &&
                   !m_vertex_attribute[vs[1].vid(*this)].on_bbox_faces.empty() &&
                   !m_vertex_attribute[vs[2].vid(*this)].on_bbox_faces.empty())) {
-                wmtk::logger().critical("bbox track wrong {}", fid);
+                logger().critical("bbox track wrong {}", fid);
                 return false;
             }
         }
@@ -950,7 +941,7 @@ bool ImageSimulationMesh::check_attributes()
         if (m_vertex_attribute[i].m_is_on_surface) {
             bool is_out = m_envelope->is_outside(m_vertex_attribute[i].m_posf);
             if (is_out) {
-                wmtk::logger().critical("is_out v");
+                logger().critical("is_out v");
                 return false;
             }
         }
@@ -960,13 +951,13 @@ bool ImageSimulationMesh::check_attributes()
             if (m_vertex_attribute[i].m_pos[0] != m_vertex_attribute[i].m_posf[0] ||
                 m_vertex_attribute[i].m_pos[1] != m_vertex_attribute[i].m_posf[1] ||
                 m_vertex_attribute[i].m_pos[2] != m_vertex_attribute[i].m_posf[2]) {
-                wmtk::logger().critical("rounding error {} rounded", i);
+                logger().critical("rounding error {} rounded", i);
                 return false;
             }
         } else {
             Vector3d p = to_double(m_vertex_attribute[i].m_pos);
             if (p != m_vertex_attribute[i].m_posf) {
-                wmtk::logger().critical("rounding error {} unrounded", i);
+                logger().critical("rounding error {} unrounded", i);
                 return false;
             }
         }
@@ -978,7 +969,7 @@ bool ImageSimulationMesh::check_attributes()
         size_t i = t.tid(*this);
         double q = get_quality(t);
         if (q != m_tet_attribute[i].m_quality) {
-            wmtk::logger().critical(
+            logger().critical(
                 "q!=m_tet_attribute[i].m_quality {} {}",
                 q,
                 m_tet_attribute[i].m_quality);
@@ -1108,7 +1099,7 @@ void ImageSimulationMesh::write_surface(const std::string& path) const
     }
     igl::write_triangle_mesh(path, matV, matF);
 
-    wmtk::logger().info("Output face size {}", outface.size());
+    logger().info("Output face size {}", outface.size());
 }
 
 bool ImageSimulationMesh::vertex_is_on_surface(const size_t vid) const

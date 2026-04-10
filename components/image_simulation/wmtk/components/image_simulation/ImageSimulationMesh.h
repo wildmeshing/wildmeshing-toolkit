@@ -4,8 +4,11 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Morton.h>
 #include <wmtk/utils/PartitionMesh.h>
+#include <polysolve/nonlinear/Problem.hpp>
 #include <wmtk/envelope/Envelope.hpp>
+#include <wmtk/optimization/solver.hpp>
 #include <wmtk/simplex/Simplex.hpp>
+
 #include "Parameters.h"
 
 // clang-format off
@@ -137,6 +140,16 @@ public:
     // for open boundary
     SampleEnvelope m_open_boundary_envelope; // todo: add sample envelope option
 
+    std::unique_ptr<polysolve::nonlinear::Solver> m_solver;
+    Eigen::SparseMatrix<double> m_surface_mass; // the mass matrix for surface vertices
+    Eigen::SparseMatrix<double> m_surface_stiffness; // stiffness matrix for surface vertices
+
+    // scaling factors
+    double m_s_amips = -1;
+    double m_s_smooth = -1;
+    double m_s_envelope = -1;
+    double m_s_barrier = -1;
+
     ImageSimulationMesh(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
         : m_params(_m_params)
         , m_envelope_eps(envelope_eps)
@@ -147,6 +160,44 @@ public:
         p_tet_attrs = &m_tet_attribute;
         m_collapse_check_link_condition = false;
         m_collapse_check_manifold = false;
+
+        m_solver = optimization::create_basic_solver();
+        optimization::deactivate_opt_logger();
+
+        m_s_amips = 1.;
+        /**
+         * TODO
+         */
+        m_s_smooth = 1.;
+        /**
+         * TODO
+         */
+        m_s_envelope = 1. / (m_params.diag_l * m_params.eps * m_params.eps);
+        /**
+         * TODO
+         */
+        m_s_barrier = 1. / (m_params.diag_l4);
+
+        // check weights (ignoring barrier here)
+        {
+            double& wa = m_params.w_amips;
+            double& ws = m_params.w_smooth;
+            const double sum = wa + ws;
+            if (sum > 1) {
+                wa /= sum;
+                ws /= sum;
+                logger().warn(
+                    "Weights for AMIPS and smooth sum up to greater than 1. Rescaling to \n  "
+                    "w_amips = {}, \n  w_smooth = {}",
+                    wa,
+                    ws);
+            }
+            double& we = m_params.w_envelope;
+            we = 1 - (wa + ws);
+            logger().info("w_envelope = {}", we);
+        }
+
+        // init_separation_weight();
     }
 
     ~ImageSimulationMesh() {}
@@ -320,7 +371,7 @@ public:
     bool split_edge_before(const Tuple& t) override;
     bool split_edge_after(const Tuple& loc) override;
 
-    void smooth_all_vertices();
+    void smooth_all_vertices(const size_t n_iters);
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
 
@@ -363,6 +414,15 @@ public:
     bool is_inverted(const Tuple& loc) const;
     double get_quality(const std::array<size_t, 4>& vs) const;
     double get_quality(const Tuple& loc) const;
+
+    void build_mass_matrix();
+
+    std::vector<std::array<double, 12>> get_amips_assembles(const Tuple& t) const;
+
+    std::shared_ptr<polysolve::nonlinear::Problem> get_amips_energy(const Tuple& t) const;
+
+    std::shared_ptr<polysolve::nonlinear::Problem> get_smooth_energy(const Tuple& t) const;
+
 
     /**
      * @brief Round a vertex position to floating point.

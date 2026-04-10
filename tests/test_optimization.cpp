@@ -1,5 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <igl/readOBJ.h>
+#include <igl/writeOFF.h>
+#include <filesystem>
 #include <ipc/collisions/normal/normal_collisions.hpp>
 #include <ipc/ipc.hpp>
 #include <ipc/potentials/barrier_potential.hpp>
@@ -12,9 +15,11 @@
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/utils/examples/TriMesh_examples.hpp>
 
-#include <igl/writeOFF.h>
-
 using namespace wmtk;
+
+namespace fs = std::filesystem;
+
+const fs::path data_dir = WMTK_DATA_DIR;
 
 TEST_CASE("amips_energy_2d", "[energies]")
 {
@@ -53,6 +58,45 @@ TEST_CASE("amips_energy_2d", "[energies]")
     const double e_after = energy.value(x);
     CHECK(e_after < e_before);
     CHECK(e_after < 2 + 1e-6); // should have perfect quality, i.e. AMIPS=2
+}
+
+TEST_CASE("amips_energy_3d", "[energies]")
+{
+    const Vector3d p0(0.25, 0.25, 1e-2);
+    std::vector<std::array<double, 12>> cells;
+    cells.push_back({{p0[0], p0[1], p0[2], 0, 0, 0, 0, 1, 0, 1, 0, 0}});
+
+    optimization::AMIPSEnergy3D energy(cells);
+    CHECK(energy.is_step_valid(p0, p0));
+    CHECK_FALSE(energy.is_step_valid(p0, -p0));
+
+    {
+        VectorXd g;
+        energy.gradient(p0, g);
+        CHECK(g[2] < 0);
+
+        MatrixXd h;
+        CHECK_NOTHROW(energy.hessian(p0, h));
+    }
+    auto x = energy.initial_position();
+    const double e_before = energy.value(x);
+    {
+        auto linear_solver_params = optimization::basic_linear_solver_params;
+        auto nonlinear_solver_params = optimization::basic_nonlinear_solver_params;
+        nonlinear_solver_params["max_iterations"] = 100;
+
+        auto m_solver = polysolve::nonlinear::Solver::create(
+            nonlinear_solver_params,
+            linear_solver_params,
+            1,
+            opt_logger());
+        optimization::deactivate_opt_logger();
+
+        CHECK_NOTHROW(m_solver->minimize(energy, x));
+    }
+    const double e_after = energy.value(x);
+    CHECK(e_after < e_before);
+    CHECK(x[2] > p0[2]);
 }
 
 TEST_CASE("dirichlet_energy_2d", "[energies]")
@@ -196,6 +240,156 @@ TEST_CASE("biharmonic_energy_2d", "[energies]")
     const double e_after = energy.value(x);
     CHECK(e_after < e_before);
     CHECK(e_after < 1e-5);
+}
+
+TEST_CASE("biharmonic_energy_uniform_3d", "[energies]")
+{
+    // one-ring
+    MatrixXd pts;
+    pts.resize(7, 3);
+    pts.row(0) = Vector3d(0.5, 0.5, 1); // this vertex is optimized
+    pts.row(1) = Vector3d(1, 0, 0);
+    pts.row(2) = Vector3d(0.5, 1, 0);
+    pts.row(3) = Vector3d(-0.5, 1, 0);
+    pts.row(4) = Vector3d(-1, 0, 0);
+    pts.row(5) = Vector3d(-0.5, -1, 0);
+    pts.row(6) = Vector3d(0.5, -1, 0);
+    const Vector3d p0 = pts.row(0);
+
+    double M;
+    VectorXd L_w;
+    optimization::BiharmonicEnergy3D::uniform_mass_and_stiffness(pts, M, L_w);
+    optimization::BiharmonicEnergy3D energy(pts, M, L_w);
+
+    CHECK(energy.is_step_valid(p0, p0));
+
+    {
+        VectorXd g;
+        energy.gradient(p0, g);
+        CHECK(g[2] > 0);
+
+        MatrixXd h;
+        CHECK_NOTHROW(energy.hessian(p0, h));
+    }
+    auto x = energy.initial_position();
+    const double e_before = energy.value(x);
+    {
+        auto m_solver = optimization::create_basic_solver();
+        optimization::deactivate_opt_logger();
+
+        CHECK_NOTHROW(m_solver->minimize(energy, x));
+    }
+    const double e_after = energy.value(x);
+    CHECK(e_after < e_before);
+    CHECK(e_after < 1e-5);
+}
+
+TEST_CASE("biharmonic_energy_cotan_3d", "[energies]")
+{
+    // one-ring
+    MatrixXd pts;
+    pts.resize(7, 3);
+    pts.row(0) = Vector3d(0.1, 0.3, 1); // this vertex is optimized
+    pts.row(1) = Vector3d(1, 0, 0);
+    pts.row(2) = Vector3d(0.5, 1, 0);
+    pts.row(3) = Vector3d(-0.5, 1, 0);
+    pts.row(4) = Vector3d(-1, 0, 0);
+    pts.row(5) = Vector3d(-0.5, -1, 0);
+    pts.row(6) = Vector3d(0.5, -1, 0);
+    const Vector3d p0 = pts.row(0);
+
+    MatrixXi tris;
+    tris.resize(6, 3);
+    for (size_t i = 0; i < tris.rows(); ++i) {
+        size_t v1 = i + 1;
+        size_t v2 = (i + 1) % tris.rows() + 1;
+        tris.row(i) = Vector3i(0, v1, v2);
+    }
+
+    Eigen::SparseMatrix<double> M_glob;
+    Eigen::SparseMatrix<double> L_glob;
+    optimization::BiharmonicEnergy3D::global_mass_and_stiffness(pts, tris, M_glob, L_glob);
+    double M;
+    VectorXd L_w;
+    optimization::BiharmonicEnergy3D::extract_local_mass_and_stiffness(0, M_glob, L_glob, M, L_w);
+
+    optimization::BiharmonicEnergy3D energy(pts, M, L_w);
+
+    CHECK(energy.is_step_valid(p0, p0));
+
+    {
+        VectorXd g;
+        energy.gradient(p0, g);
+        CHECK(g[2] > 0);
+
+        MatrixXd h;
+        CHECK_NOTHROW(energy.hessian(p0, h));
+    }
+    auto x = energy.initial_position();
+    const double e_before = energy.value(x);
+    {
+        auto m_solver = optimization::create_basic_solver();
+        optimization::deactivate_opt_logger();
+
+        CHECK_NOTHROW(m_solver->minimize(energy, x));
+    }
+    const double e_after = energy.value(x);
+    CHECK(e_after < e_before);
+    CHECK(e_after < 1e-5);
+}
+
+TEST_CASE("biharmonic_energy_bunny_3d", "[energies][.]")
+{
+    // one-ring
+    MatrixXd V;
+    MatrixXi F;
+
+    igl::readOBJ((data_dir / "models" / "bunny.obj").string(), V, F);
+
+    Eigen::SparseMatrix<double> M_glob;
+    Eigen::SparseMatrix<double> L_glob;
+    optimization::BiharmonicEnergy3D::global_mass_and_stiffness(V, F, M_glob, L_glob);
+
+    auto m_solver = optimization::create_basic_solver();
+    optimization::deactivate_opt_logger();
+
+    size_t n_iters = 1;
+
+    double M;
+    VectorXd L_w;
+    std::vector<size_t> adj;
+    for (size_t i = 0; i < n_iters; ++i) {
+        for (size_t vid = 0; vid < V.rows(); ++vid) {
+            // get local points and triangles
+            optimization::BiharmonicEnergy3D::adjacency_from_stiffness(vid, L_glob, adj);
+            if (adj.empty()) {
+                continue;
+            }
+            MatrixXd pts;
+            pts.resize(adj.size() + 1, 3);
+            pts.row(0) = V.row(vid);
+            for (size_t j = 0; j < adj.size(); ++j) {
+                pts.row(j + 1) = V.row(adj[j]);
+            }
+
+            optimization::BiharmonicEnergy3D::extract_local_mass_and_stiffness(
+                vid,
+                M_glob,
+                L_glob,
+                M,
+                L_w);
+
+            REQUIRE(pts.rows() == L_w.size());
+
+            optimization::BiharmonicEnergy3D energy(pts, M, L_w);
+            auto x = energy.initial_position();
+            const double e_before = energy.value(x);
+            CHECK_NOTHROW(m_solver->minimize(energy, x));
+            V.row(vid) = x;
+        }
+
+        // igl::writeOFF(fmt::format("debug_{}.off", i), V, F);
+    }
 }
 
 TEST_CASE("ipc_2d", "[energies][ipc]")

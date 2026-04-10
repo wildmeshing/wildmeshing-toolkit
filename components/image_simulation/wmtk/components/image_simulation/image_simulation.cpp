@@ -44,6 +44,12 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     params.stop_at_float = json_params["stop_at_float"];
     params.preserve_topology = json_params["preserve_topology"];
 
+    params.smooth_without_envelope = json_params["smooth_without_envelope"];
+
+    params.w_amips = json_params["w_amips"];
+    params.w_smooth = json_params["w_smooth"];
+    params.separation_factor = json_params["separation_factor"];
+
     const bool write_vtu = json_params["write_vtu"];
 
     params.debug_output = json_params["DEBUG_output"];
