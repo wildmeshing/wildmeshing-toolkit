@@ -224,8 +224,6 @@ void ImageSimulationMeshTri::init_from_image(
     }
 
     init_surfaces_and_boundaries();
-
-    init_separation_weight();
 }
 
 void ImageSimulationMeshTri::init_surfaces_and_boundaries()
@@ -362,8 +360,48 @@ void ImageSimulationMeshTri::init_envelope(const MatrixXd& V, const MatrixXi& E)
 
 void ImageSimulationMeshTri::init_separation_weight()
 {
+    if (m_params.separation_factor <= 0) {
+        m_params.w_separate = 0;
+        logger().warn(
+            "Separation factor is {} -> No separation. IPC barrier weight = {}",
+            m_params.separation_factor,
+            m_params.w_separate);
+        return;
+    }
     //m_params.w_separate = m_params.w_envelope * (16. / 5.) * m_params.dhat;
-    logger().info("Barrier weight = {}, dhat = {}", m_params.w_separate, m_params.dhat);
+
+    /**
+     * This assumes that the barrier term is the clamped log barrier term:
+     * E_B = b(d) = -(d-\hat{d})^2\ln\left(\frac{d}{\hat{d}}\right)
+     *
+     * E_B' = b'(\hat{d}/2) = \hat{d} * (\ln(2) - 0.5)
+     *
+     * smooth scaling: s_B = 1/l^4
+     * envelope scaling: s_E = 1 / (l * eps^2)
+     *
+     * l is the bounding box diagonal.
+     *
+     * The envelope energy E_E = \Vert p - p_0 \Vert^2
+     * E_E'(\hat{d}/2) = \hat{d}
+     *
+     * We compute w_E from
+     * s_B w_B E_B' = s_E w_E E_E'
+     *
+     * w_B = w_E l^3 / (eps^2 * (\ln(2) - 0.5))
+     */
+
+    const double l3 = m_params.diag_l3;
+    const double eps2 = m_params.eps * m_params.eps;
+    const double ln2 = std::log(2.0);
+
+    m_params.w_separate = m_params.w_envelope * l3 / (eps2 * (ln2 - 0.5));
+
+    logger().info("IPC barrier weight = {}, dhat = {}", m_params.w_separate, m_params.dhat);
+
+    if (m_params.w_separate < 0) {
+        logger().error("Negative separation weight: {}. Setting weight to 0.", m_params.w_separate);
+        m_params.w_separate = 0;
+    }
 }
 
 bool ImageSimulationMeshTri::adjust_sizing_field_serial(double max_energy)
@@ -656,6 +694,8 @@ void ImageSimulationMeshTri::write_vtu_with_energies(const std::string& path) co
         v_sizing_field[vid] = m_vertex_attribute[vid].m_sizing_scalar;
 
         if (m_vertex_attribute.at(vid).m_is_on_surface) {
+            auto energy_sum = std::make_shared<optimization::EnergySum>();
+
             auto amips_energy = get_amips_energy(v);
             auto smooth_energy = get_smooth_energy(v);
             auto envelope_energy = get_envelope_energy(v);
@@ -665,7 +705,6 @@ void ImageSimulationMeshTri::write_vtu_with_energies(const std::string& path) co
                 continue;
             }
 
-            auto energy_sum = std::make_shared<optimization::EnergySum>();
             energy_sum->add_energy(amips_energy);
             energy_sum->add_energy(smooth_energy);
             energy_sum->add_energy(envelope_energy);
@@ -1369,6 +1408,10 @@ void ImageSimulationMeshTri::smooth_all_vertices(const size_t n_iters)
 {
     assert(m_solver);
 
+    /**
+     * Mass matrix is only necessary if w_smooth is positive but we still compute the mass matrix
+     * all the time. It's rather cheap to do and allows for printing all the energy terms.
+     */
     build_mass_matrix();
 
     // actual smoothing
@@ -1462,23 +1505,31 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
 
     auto amips_energy = get_amips_energy(t);
 
-    std::array<Vector2d, 3> surface_pts;
+    const auto surf_assembles = get_surface_assembles(t);
     if (VA[vid].m_is_on_surface) {
-        auto smooth_energy = get_smooth_energy(t);
+        assert(!surf_assembles.empty());
 
-        if (!smooth_energy) {
-            // Could not construct smooth energy --> cannot move that vertex
+        if (surf_assembles.size() != 3) {
             return false;
         }
 
-        auto envelope_energy = get_envelope_energy(t);
-        auto barrier_energy = get_barrier_energy(t);
-
         auto energy_sum = std::make_shared<optimization::EnergySum>();
-        energy_sum->add_energy(amips_energy);
-        energy_sum->add_energy(smooth_energy);
-        energy_sum->add_energy(envelope_energy);
-        energy_sum->add_energy(barrier_energy);
+
+        if (m_params.w_smooth > 0) {
+            auto smooth_energy = get_smooth_energy(t);
+            assert(smooth_energy);
+            energy_sum->add_energy(smooth_energy);
+        }
+
+        if (m_params.w_amips > 0) {
+            energy_sum->add_energy(amips_energy);
+        }
+        if (m_params.w_envelope > 0) {
+            energy_sum->add_energy(get_envelope_energy(t));
+        }
+        if (m_params.w_separate > 0) {
+            energy_sum->add_energy(get_barrier_energy(t));
+        }
 
         total_energy = energy_sum;
     } else {
@@ -1502,10 +1553,10 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
     if (VA[vid].m_is_on_surface) {
         // write_vtu_with_energies(fmt::format("debug_smooth_{}", debug_print_counter++));
 
-        for (size_t i = 0; i < 2; ++i) {
+        for (size_t i = 1; i < surf_assembles.size(); ++i) {
             std::array<Eigen::Vector2d, 2> edge;
             edge[0] = VA[vid].m_pos;
-            edge[1] = surface_pts[i + 1];
+            edge[1] = surf_assembles[i];
             if (!m_params.smooth_without_envelope && m_envelope->is_outside(edge)) {
                 return false;
             }
@@ -1561,28 +1612,40 @@ void ImageSimulationMeshTri::build_mass_matrix()
     }
 }
 
+std::vector<Vector2d> ImageSimulationMeshTri::get_surface_assembles(const Tuple& t) const
+{
+    const auto& VA = m_vertex_attribute;
+    const size_t vid = t.vid(*this);
+
+    std::vector<Vector2d> surface_pts;
+
+    if (!VA[vid].m_is_on_surface) {
+        return surface_pts;
+    }
+
+    const auto es = get_surface_edges_for_vertex(vid);
+
+    surface_pts.resize(es.size() + 1);
+    surface_pts[0] = VA[vid].m_pos;
+
+    for (size_t i = 0; i < es.edges().size(); ++i) {
+        const auto& vs = es.edges()[i].vertices();
+        size_t neighbor_id = vs[0] != vid ? vs[0] : vs[1];
+        surface_pts[i + 1] = VA[neighbor_id].m_pos;
+    }
+
+    return surface_pts;
+}
+
 std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMeshTri::get_smooth_energy(
     const Tuple& t) const
 {
     const auto& VA = m_vertex_attribute;
     const size_t vid = t.vid(*this);
 
-    if (!VA[vid].m_is_on_surface) {
+    auto surf_assembles_vec = get_surface_assembles(t);
+    if (surf_assembles_vec.size() != 3) {
         return nullptr;
-    }
-
-    const auto es = get_surface_edges_for_vertex(vid);
-    if (es.size() != 2) {
-        return nullptr; // can only smooth vertices with 2 neighbors
-    }
-
-    std::array<Vector2d, 3> surface_pts;
-    surface_pts[0] = VA[vid].m_pos;
-
-    for (size_t i = 0; i < 2; ++i) {
-        const auto& vs = es.edges()[i].vertices();
-        size_t neighbor_id = vs[0] != vid ? vs[0] : vs[1];
-        surface_pts[i + 1] = VA[neighbor_id].m_pos;
     }
 
     // mass and stiffness
@@ -1591,7 +1654,11 @@ std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMeshTri::get_smoot
 
     const double w = m_s_smooth * m_params.w_smooth;
 
-    auto smooth_energy = std::make_shared<optimization::BiharmonicEnergy2D>(surface_pts, M, L_w, w);
+    std::array<Vector2d, 3> pts{
+        surf_assembles_vec[0],
+        surf_assembles_vec[1],
+        surf_assembles_vec[2]};
+    auto smooth_energy = std::make_shared<optimization::BiharmonicEnergy2D>(pts, M, L_w, w);
 
     return smooth_energy;
 }
@@ -1617,6 +1684,11 @@ std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMeshTri::get_barri
     const size_t vid = t.vid(*this);
 
     if (!VA[vid].m_is_on_surface) {
+        return nullptr;
+    }
+
+    const auto& M = m_surface_mass[t.vid(*this)];
+    if (M <= 0) {
         return nullptr;
     }
 
@@ -1660,12 +1732,14 @@ std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMeshTri::get_barri
         vid_barrier = global_to_local_vid_map[vid];
     }
 
+    // The inverse mass comes from the weight compuation based on the envelope energy. This contains
+    // the mass and therefore the barrier energy must contain the inverse.
     auto barrier_energy = std::make_shared<optimization::BarrierEnergy2D>(
         V_barrier,
         E_barrier,
         vid_barrier,
         m_params.dhat,
-        m_s_barrier * m_params.w_separate);
+        m_s_barrier * m_params.w_separate / M);
 
     return barrier_energy;
 }
@@ -1714,7 +1788,7 @@ std::vector<std::array<double, 6>> ImageSimulationMeshTri::get_amips_assembles(c
 std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMeshTri::get_amips_energy(
     const Tuple& t) const
 {
-    const double w = m_s_amips * m_params.w_amips;
+    const double w = m_params.w_amips > 0 ? m_s_amips * m_params.w_amips : 1;
 
     const auto assembles = get_amips_assembles(t);
     auto amips_energy = std::make_shared<optimization::AMIPSEnergy2D>(assembles, w);
@@ -1903,7 +1977,7 @@ void ImageSimulationMeshTri::mesh_improvement(int max_its)
         }
         consolidate_mesh();
 
-        wmtk::logger().info("#V =  {}, #T = {}", vert_capacity(), tri_capacity());
+        wmtk::logger().info("#V = {}, #T = {}", vert_capacity(), tri_capacity());
 
         ///sizing field
         if (it > 0 && pre_max_energy - max_energy < 5e-1 &&

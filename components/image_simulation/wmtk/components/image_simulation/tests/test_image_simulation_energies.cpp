@@ -29,7 +29,6 @@ std::shared_ptr<tri::ImageSimulationMeshTri> init_optimization_tests(
     auto input_data = read_image_msh(model_path.string());
     input_data.V_input *= input_scale;
 
-    params.dhat_rel = 3e-2;
     params.epsr = 1e-2;
     params.init(input_data.V_input.colwise().minCoeff(), input_data.V_input.colwise().maxCoeff());
 
@@ -60,6 +59,8 @@ TEST_CASE("scale-invariance", test_groups + test_release_only)
 
     auto collect_energies = [](double scale) {
         Parameters params;
+        params.w_amips = 1e-8;
+        params.w_smooth = 1e-4;
         auto mesh_ptr = init_optimization_tests(params, scale);
         tri::ImageSimulationMeshTri& mesh = *mesh_ptr;
 
@@ -139,6 +140,8 @@ TEST_CASE("barrier-bfs", test_groups + test_release_only)
     auto mesh_ptr = init_optimization_tests(params);
     tri::ImageSimulationMeshTri& mesh = *mesh_ptr;
 
+    mesh.build_mass_matrix();
+
     const auto& VA = mesh.m_vertex_attribute;
 
     for (const Tuple& t : mesh.get_vertices()) {
@@ -154,6 +157,10 @@ TEST_CASE("barrier-bfs", test_groups + test_release_only)
 
         auto loc = mesh.get_barrier_energy(t, false);
         auto glob = mesh.get_barrier_energy(t, true);
+
+        if (!loc) {
+            continue;
+        }
 
         const Vector2d& x = VA[vid].m_pos;
 

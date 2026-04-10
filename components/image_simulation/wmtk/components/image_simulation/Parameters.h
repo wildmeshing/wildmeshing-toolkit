@@ -26,6 +26,7 @@ struct Parameters
         std::numeric_limits<double>::max(); // the upper bound length (squared) for edge collapse
 
     double stop_energy = 10;
+    bool stop_at_float = false;
 
     bool debug_output = false;
     bool perform_sanity_checks = false;
@@ -34,12 +35,12 @@ struct Parameters
 
     // weighting terms for the optimization
     double w_amips = 1;
-    double w_smooth = 1;
-    double w_envelope = 1;
-    double w_separate = 1;
+    double w_smooth = 0;
+    double w_envelope = 0;
+    double w_separate = 0;
 
-    double dhat_rel = 2e-3;
     double dhat = -1;
+    double separation_factor = 1;
 
     void init(const VectorXd& min_, const VectorXd& max_)
     {
@@ -65,11 +66,7 @@ struct Parameters
 
         l_min = 0.5 * eps;
 
-        if (dhat > 0) {
-            dhat_rel = dhat / diag_l;
-        } else {
-            dhat = dhat_rel * diag_l;
-        }
+        dhat = separation_factor * l_min;
     }
     void init(
         const std::vector<Vector3d>& vertices,
