@@ -165,6 +165,8 @@ private:
     MatrixXd m_V_surface;
     MatrixXi m_F_surface;
 
+    std::vector<std::vector<std::pair<size_t, size_t>>> m_F_tags_surface;
+
     std::vector<size_t> modified_nonmanifold_v;
 
     // the embedding

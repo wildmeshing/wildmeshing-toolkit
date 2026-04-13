@@ -182,7 +182,7 @@ bool ImageSimulationMesh::collapse_edge_before(const Tuple& loc) // input is an 
         }
         double q = get_quality(vs);
         // quality check only when v1 is rounded
-        if (VA[v1_id].m_is_rounded && q > cache.max_energy) {
+        if (m_collapse_check_quality && VA[v1_id].m_is_rounded && q > cache.max_energy) {
             return false;
         }
         cache.changed_energies.emplace_back(q);

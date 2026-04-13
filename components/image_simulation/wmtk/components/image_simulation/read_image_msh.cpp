@@ -249,9 +249,9 @@ InputData read_image(
     if (!skip_simplify) {
         logger().info("Simplify...");
         image_mesh.simplify_surface(eps);
+        image_mesh.remove_duplicates(eps);
         logger().info("done");
     }
-    image_mesh.remove_duplicates(eps);
 
     if (write_vtu) {
         image_mesh.write_surf_off(output_filename + "_input.off");

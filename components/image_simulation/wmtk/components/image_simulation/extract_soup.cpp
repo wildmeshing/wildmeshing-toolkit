@@ -77,14 +77,17 @@ void extract_triangle_soup_from_image(std::string filename, Eigen::MatrixXi& F, 
     std::vector<std::vector<std::vector<size_t>>> data;
     read_array_data_ascii(data, filename);
 
-    extract_triangle_soup_from_image(data, F, V);
+    MatrixXi F_tags;
+    extract_triangle_soup_from_image(data, F, V, F_tags);
 }
 
 void extract_triangle_soup_from_image(
     const std::vector<std::vector<std::vector<size_t>>>& data,
-    Eigen::MatrixXi& F,
-    Eigen::MatrixXd& V)
+    MatrixXi& F,
+    MatrixXd& V,
+    MatrixXi& F_tags)
 {
+    // get the number of triangles
     size_t tri_num = 0;
     for (size_t i = 0; i < data.size() - 1; i++) {
         for (size_t j = 0; j < data[0].size() - 1; j++) {
@@ -108,7 +111,9 @@ void extract_triangle_soup_from_image(
 
     F.resize(tri_num, 3);
     V.resize(3 * tri_num, 3);
+    F_tags.resize(tri_num, 2);
 
+    // build triangles whenever the data changes between two cells
     size_t cur_v_id = 0;
     size_t cur_f_id = 0;
     for (size_t i = 0; i < data.size() - 1; i++) {
@@ -146,7 +151,8 @@ void extract_triangle_soup_from_image(
                     V.row(vid3) = v2;
                     V.row(vid4) = v4;
                     V.row(vid5) = v1;
-
+                    F_tags.row(fid0) = Vector2i(right_data, cur_data);
+                    F_tags.row(fid1) = Vector2i(right_data, cur_data);
                 } else if (cur_data < right_data) {
                     size_t vid0, vid1, vid2, vid3, vid4, vid5, fid0, fid1;
                     vid0 = cur_v_id;
@@ -167,6 +173,8 @@ void extract_triangle_soup_from_image(
                     V.row(vid3) = v4;
                     V.row(vid4) = v5;
                     V.row(vid5) = v2;
+                    F_tags.row(fid0) = Vector2i(cur_data, right_data);
+                    F_tags.row(fid1) = Vector2i(cur_data, right_data);
                 }
 
                 if (cur_data > ahead_data) {
@@ -189,6 +197,8 @@ void extract_triangle_soup_from_image(
                     V.row(vid3) = v1;
                     V.row(vid4) = v4;
                     V.row(vid5) = v3;
+                    F_tags.row(fid0) = Vector2i(ahead_data, cur_data);
+                    F_tags.row(fid1) = Vector2i(ahead_data, cur_data);
                 } else if (cur_data < ahead_data) {
                     size_t vid0, vid1, vid2, vid3, vid4, vid5, fid0, fid1;
                     vid0 = cur_v_id;
@@ -209,6 +219,8 @@ void extract_triangle_soup_from_image(
                     V.row(vid3) = v3;
                     V.row(vid4) = v4;
                     V.row(vid5) = v1;
+                    F_tags.row(fid0) = Vector2i(cur_data, ahead_data);
+                    F_tags.row(fid1) = Vector2i(cur_data, ahead_data);
                 }
 
                 if (cur_data > top_data) {
@@ -231,6 +243,8 @@ void extract_triangle_soup_from_image(
                     V.row(vid3) = v3;
                     V.row(vid4) = v4;
                     V.row(vid5) = v5;
+                    F_tags.row(fid0) = Vector2i(top_data, cur_data);
+                    F_tags.row(fid1) = Vector2i(top_data, cur_data);
                 } else if (cur_data < top_data) {
                     size_t vid0, vid1, vid2, vid3, vid4, vid5, fid0, fid1;
                     vid0 = cur_v_id;
@@ -251,6 +265,8 @@ void extract_triangle_soup_from_image(
                     V.row(vid3) = v3;
                     V.row(vid4) = v6;
                     V.row(vid5) = v5;
+                    F_tags.row(fid0) = Vector2i(cur_data, top_data);
+                    F_tags.row(fid1) = Vector2i(cur_data, top_data);
                 }
             }
         }
@@ -260,8 +276,7 @@ void extract_triangle_soup_from_image(
     // igl::writeOFF(output_path, V, F);
     // igl::writeOBJ(output_path, V, F);
 
-    wmtk::logger().info("V:{}", V.rows());
-    wmtk::logger().info("F:{}", F.rows());
+    logger().info("V = {}, F = {}", V.rows(), F.rows());
 }
 
 void tag_tets_from_image(const std::string& filename, ImageSimulationMesh& mesh)

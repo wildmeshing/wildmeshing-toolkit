@@ -138,6 +138,8 @@ public:
     std::shared_ptr<SampleEnvelope> m_envelope_orig;
     double m_envelope_eps = -1;
 
+    bool m_collapse_check_quality = true;
+
     // for open boundary
     SampleEnvelope m_open_boundary_envelope; // todo: add sample envelope option
 
