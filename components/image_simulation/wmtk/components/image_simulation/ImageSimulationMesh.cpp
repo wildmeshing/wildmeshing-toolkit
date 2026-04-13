@@ -52,7 +52,7 @@ void ImageSimulationMesh::mesh_improvement(int max_its)
     // write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
 
     logger().info("========it pre========");
-    local_operations({{0, 1, 0, 0}}, false);
+    local_operations({{0, 1, 0, 0}});
 
     ////operation loops
     bool is_hit_min_edge_length = false;

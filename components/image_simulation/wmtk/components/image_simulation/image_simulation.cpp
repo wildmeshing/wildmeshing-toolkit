@@ -86,6 +86,12 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
 
     write_unique_vtu();
 
+
+    if (json_params["pre_coarsen"]) {
+        // collapse for getting the right edge length
+        mesh.collapse_all_edges_ignore_quality();
+    }
+
     // /////////mesh improvement
     mesh.mesh_improvement(max_its); // <-- tetwild
 

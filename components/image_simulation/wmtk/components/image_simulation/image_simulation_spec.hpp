@@ -28,6 +28,7 @@ nlohmann::json image_simulation_spec = R"(
       "w_smooth",
       "separation_factor",
       "smooth_without_envelope",
+      "pre_coarsen",
       "write_vtu",
       "log_file",
       "report",
@@ -193,6 +194,12 @@ nlohmann::json image_simulation_spec = R"(
     "type": "bool",
     "default": false,
     "doc": "Ignore the envelope during smoothing and re-compute it afterwards. This may cause the geometry to drift!"
+  },
+  {
+    "pointer": "/pre_coarsen",
+    "type": "bool",
+    "default": true,
+    "doc": "Pre-coarsen the input and re-compute the envelope afterwards. This speeds up remeshing for the cost of a small additional geometric error."
   },
   {
     "pointer": "/write_vtu",
