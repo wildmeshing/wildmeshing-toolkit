@@ -288,6 +288,51 @@ void TopoOffsetTetMesh::init_input_complex_bvh()
 }
 
 
+size_t TopoOffsetTetMesh::flood_fill()
+{
+    size_t current_id = 0;
+    auto verts = get_vertices();
+    std::map<size_t, bool> visited_verts;
+
+    for (const Tuple& v : verts) {
+        size_t v_id = v.vid(*this);
+        if (m_vertex_attribute[v_id].label == 0) continue; // vertex not in complex
+        if (visited_verts.find(v_id) != visited_verts.end()) continue; // vertex already visited
+
+        visited_verts[v_id] = true;
+        m_vertex_attribute[v_id].component_id = current_id;
+        std::queue<size_t> bfs_queue;
+
+        // initial propagation
+        auto onering_verts = connected_components_helper(v_id);
+        for (const size_t& other_v_id : onering_verts) {
+            if (visited_verts.find(other_v_id) == visited_verts.end()) { // other vertex not visited
+                bfs_queue.push(other_v_id);
+            }
+        }
+
+        while (!bfs_queue.empty()) {
+            size_t curr_vid = bfs_queue.front();
+            bfs_queue.pop();
+            if (visited_verts.find(curr_vid) != visited_verts.end()) continue; // already visited
+            visited_verts[curr_vid] = true;
+            m_vertex_attribute[curr_vid].component_id = current_id;
+
+            // propagate
+            auto onering_verts_tmp = connected_components_helper(curr_vid);
+            for (const size_t& other_v_id : onering_verts_tmp) {
+                if (visited_verts.find(other_v_id) == visited_verts.end()) {
+                    bfs_queue.push(other_v_id);
+                }
+            }
+        }
+        current_id++;
+    }
+
+    return current_id;
+}
+
+
 bool TopoOffsetTetMesh::is_simplicially_embedded() const
 {
     int bad_tets = 0;
@@ -532,7 +577,7 @@ void TopoOffsetTetMesh::grow_offset_conservative()
 
             auto adj_tets = get_face_adjacent_tets(curr_tet);
             for (const Tuple& t : adj_tets) {
-                if (m_tet_attribute[t.tid(*this)].label == 2) {
+                if (m_tet_attribute[t.tid(*this)].label != 0) {
                     continue;
                 }
                 tets_q.push(t);

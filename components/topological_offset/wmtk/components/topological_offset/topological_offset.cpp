@@ -258,6 +258,10 @@ void topological_offset(nlohmann::json json_params)
         }
         tets_before.clear();
 
+        // initial number of connected components
+        size_t initial_num_comps = mesh.flood_fill();
+        mesh.reset_connected_components();
+
         // initialize BVH
         mesh.init_input_complex_bvh();
         mesh.consolidate_mesh();
@@ -351,6 +355,20 @@ void topological_offset(nlohmann::json json_params)
                 // mesh.write_msh(output_filename.string()); // DEBUG: write .msh anyway
                 log_and_throw_error("OFFSET REGION IS NOT MANIFOLD");
             }
+        }
+
+        // connected components check
+        size_t final_num_comps = mesh.flood_fill();
+        mesh.reset_connected_components();
+        if (final_num_comps != initial_num_comps) {
+            log_and_throw_error(
+                "# CONNECTED COMPONENTS MISMATCH: {} before, {} after",
+                initial_num_comps,
+                final_num_comps);
+        } else {
+            logger().info(
+                "connected components check passed. (# components={})",
+                initial_num_comps);
         }
 
         // output

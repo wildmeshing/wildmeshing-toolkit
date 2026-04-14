@@ -9,6 +9,7 @@
 #include <queue>
 #include <wmtk/components/topological_offset/Circle.hpp>
 #include <wmtk/components/topological_offset/Sphere.hpp>
+#include <wmtk/simplex/RawSimplex.hpp>
 
 using namespace wmtk;
 using namespace components::topological_offset;
@@ -845,3 +846,63 @@ TEST_CASE("sphere_refine", "[dist_growth][2d]")
     REQUIRE(fabs(c1(1) + (1.0 / (2.0 * sqrt(3.0)))) < pow(10, -6));
     REQUIRE(fabs(c1(2) + (1.0 / (2.0 * sqrt(3.0)))) < pow(10, -6));
 }
+
+
+// TEST_CASE("edge_face_coface", "[traversal][3d]")
+// {
+//     { // single tet
+//         Eigen::MatrixXd V(4, 3); // dont care about values
+//         Eigen::MatrixXi T(1, 4);
+//         T << 0, 1, 2, 3;
+//         Eigen::MatrixXd Tags(1, 1); // dont care
+//         Tags << 0.0;
+//         Parameters param;
+//         param.offset_tags.push_back({{0, 1}});
+//         param.offset_tags.push_back({{0, 4}});
+//         TopoOffsetTetMesh mesh(param, 0);
+//         mesh.init_from_image(V, T, Tags);
+
+//         TopoOffsetTetMesh::Tuple edge = mesh.tuple_from_edge({{0, 1}});
+//         auto ret = mesh.get_edge_faces_cofaces(edge);
+//         bool res = (ret.size() == 2) && (ret[0].size() == 2) && (ret[1].size() == 4);
+//         std::cout << ret.size() << " " << ret[0].size() << " " << ret[1].size() << std::endl;
+//         for (TopoOffsetTetMesh::Tuple tup : ret[1]) {
+//             std::cout << tup.vid(mesh) << " " << tup.switch_vertex(mesh).vid(mesh) << std::endl;
+//         }
+//         REQUIRE(res);
+//     }
+//     { // 5 tets unclosed
+//         Eigen::MatrixXd V(8, 3); // dont care about values
+//         Eigen::MatrixXi T(5, 4);
+//         T << 0, 1, 2, 3, 0, 1, 3, 4, 0, 1, 4, 5, 0, 1, 5, 6, 0, 1, 6, 7;
+//         Eigen::MatrixXd Tags(5, 1); // dont care
+//         Tags << 0.0, 0.0, 0.0, 0.0, 0.0;
+//         Parameters param;
+//         param.offset_tags.push_back({{0, 1}});
+//         param.offset_tags.push_back({{0, 4}});
+//         TopoOffsetTetMesh mesh(param, 0);
+//         mesh.init_from_image(V, T, Tags);
+
+//         TopoOffsetTetMesh::Tuple edge = mesh.tuple_from_vids(0, 1, 4, 5);
+//         auto ret = mesh.get_edge_faces_cofaces(edge);
+//         bool res = (ret.size() == 2) && (ret[0].size() == 2) && (ret[1].size() == 12);
+//         REQUIRE(res);
+//     }
+//     { // 5 tets closed
+//         Eigen::MatrixXd V(7, 3); // dont care about values
+//         Eigen::MatrixXi T(5, 4);
+//         T << 0, 1, 2, 3, 0, 1, 3, 4, 0, 1, 4, 5, 0, 1, 5, 6, 0, 1, 6, 2;
+//         Eigen::MatrixXd Tags(5, 1); // dont care
+//         Tags << 0.0, 0.0, 0.0, 0.0, 0.0;
+//         Parameters param;
+//         param.offset_tags.push_back({{0, 1}});
+//         param.offset_tags.push_back({{0, 4}});
+//         TopoOffsetTetMesh mesh(param, 0);
+//         mesh.init_from_image(V, T, Tags);
+
+//         TopoOffsetTetMesh::Tuple edge = mesh.tuple_from_vids(0, 1, 2, 3);
+//         auto ret = mesh.get_edge_faces_cofaces(edge);
+//         bool res = (ret.size() == 2) && (ret[0].size() == 2) && (ret[1].size() == 10);
+//         REQUIRE(res);
+//     }
+// }

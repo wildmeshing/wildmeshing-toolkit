@@ -1,4 +1,6 @@
 #pragma once
+#include <igl/AABB.h>
+#include <igl/in_element.h>
 #include <Eigen/Dense>
 #include <SimpleBVH/BVH.hpp>
 
@@ -9,6 +11,10 @@ namespace wmtk::components::topological_offset {
 class SimplicialComplexBVH
 {
 private:
+    // tet bvh
+    igl::AABB<MatrixXd, 3> m_tet_aabb_tree;
+    bool m_has_tets;
+
     // triangle bvh
     SimpleBVH::BVH m_tri_bvh;
     bool m_has_tris;
@@ -20,6 +26,7 @@ private:
     bool m_is_3d;
     MatrixXd m_V_T = MatrixXd(0, 3); // tet vertices
     MatrixXi m_T_T = MatrixXi(0, 4); // tets w.r.t. V_T vertices
+    // igl::AABB<MatrixXd, 3> m_tet_aabb_tree;
 
 public:
     /**
@@ -50,15 +57,14 @@ public:
         assert(V_3d.rows() == V.rows());
         assert(V_3d.cols() == 3);
 
-        std::vector<Vector3i> faces; // extract isolated faces
+        // extract isolated faces
+        std::vector<Vector3i> faces;
         for (int i = 0; i < F.rows(); i++) {
             faces.push_back(F.row(i));
         }
 
         // complex is 3d and has tets
         if (m_is_3d && T.rows() > 0) {
-            m_V_T = V;
-            m_T_T = T;
             for (int i = 0; i < T.rows(); i++) {
                 int a = T(i, 0);
                 int b = T(i, 1);
@@ -69,6 +75,11 @@ public:
                 faces.emplace_back(b, c, d);
                 faces.emplace_back(a, d, c);
             }
+
+            m_V_T = V;
+            m_T_T = T;
+            m_has_tets = true;
+            m_tet_aabb_tree.init(m_V_T, m_T_T);
         }
 
         // initialize triangle bvh
@@ -99,62 +110,70 @@ public:
         }
     }
 
+    // /**
+    //  * @brief check if a point is inside a given tet. This may not be robust
+    //  */
+    // bool inside_tet(const Vector3d& p, const size_t tet_id) const
+    // {
+    //     Vector3d v0 = m_V_T.row(m_T_T(tet_id, 0));
+    //     Vector3d v1 = m_V_T.row(m_T_T(tet_id, 1));
+    //     Vector3d v2 = m_V_T.row(m_T_T(tet_id, 2));
+    //     Vector3d v3 = m_V_T.row(m_T_T(tet_id, 3));
+
+    //     // fast reject
+    //     double min_x = std::min({v0.x(), v1.x(), v2.x(), v3.x()});
+    //     double max_x = std::max({v0.x(), v1.x(), v2.x(), v3.x()});
+    //     if (p.x() < min_x || p.x() > max_x) {
+    //         return false;
+    //     }
+    //     double min_y = std::min({v0.y(), v1.y(), v2.y(), v3.y()});
+    //     double max_y = std::max({v0.y(), v1.y(), v2.y(), v3.y()});
+    //     if (p.y() < min_y || p.y() > max_y) {
+    //         return false;
+    //     }
+    //     double min_z = std::min({v0.z(), v1.z(), v2.z(), v3.z()});
+    //     double max_z = std::max({v0.z(), v1.z(), v2.z(), v3.z()});
+    //     if (p.z() < min_z || p.z() > max_z) {
+    //         return false;
+    //     }
+
+    //     // fast reject failed, actually compute
+    //     Eigen::Matrix3d Basis;
+    //     Basis.col(0) = v0 - v3;
+    //     Basis.col(1) = v1 - v3;
+    //     Basis.col(2) = v2 - v3;
+
+    //     Eigen::Vector3d rhs = p - v3;
+    //     Eigen::Vector3d uvw = Basis.partialPivLu().solve(rhs);
+
+    //     const double eps = 1e-6;
+    //     return (uvw(0) >= -eps) && (uvw(1) >= -eps) && (uvw(2) >= -eps) && (uvw.sum() <= 1 +
+    //     eps);
+    // }
+
     /**
-     * @brief check if a point is inside a given tet. This may not be robust
-     */
-    bool inside_tet(const Vector3d& p, const size_t tet_id) const
-    {
-        Vector3d v0 = m_V_T.row(m_T_T(tet_id, 0));
-        Vector3d v1 = m_V_T.row(m_T_T(tet_id, 1));
-        Vector3d v2 = m_V_T.row(m_T_T(tet_id, 2));
-        Vector3d v3 = m_V_T.row(m_T_T(tet_id, 3));
-
-        // fast reject
-        double min_x = std::min({v0.x(), v1.x(), v2.x(), v3.x()});
-        double max_x = std::max({v0.x(), v1.x(), v2.x(), v3.x()});
-        if (p.x() < min_x || p.x() > max_x) {
-            return false;
-        }
-        double min_y = std::min({v0.y(), v1.y(), v2.y(), v3.y()});
-        double max_y = std::max({v0.y(), v1.y(), v2.y(), v3.y()});
-        if (p.y() < min_y || p.y() > max_y) {
-            return false;
-        }
-        double min_z = std::min({v0.z(), v1.z(), v2.z(), v3.z()});
-        double max_z = std::max({v0.z(), v1.z(), v2.z(), v3.z()});
-        if (p.z() < min_z || p.z() > max_z) {
-            return false;
-        }
-
-        // fast reject failed, actually compute
-        Eigen::Matrix3d Basis;
-        Basis.col(0) = v0 - v3;
-        Basis.col(1) = v1 - v3;
-        Basis.col(2) = v2 - v3;
-
-        Eigen::Vector3d rhs = p - v3;
-        Eigen::Vector3d uvw = Basis.partialPivLu().solve(rhs);
-
-        const double eps = 1e-6;
-        return (uvw(0) >= -eps) && (uvw(1) >= -eps) && (uvw(2) >= -eps) && (uvw.sum() <= 1 + eps);
-    }
-
-    /**
-     * @brief check if a point is inside any tet. NOTE: this can be sped up with a true tetmesh bvh
+     * @brief check if a point is inside any tet. NOTE: this can be sped up with a true tetmesh
+     bvh
      */
     bool inside_any_tet(const Vector3d& p) const
     {
         // 2D or no tets
-        if (!m_is_3d || m_T_T.rows() == 0) {
+        if (!m_has_tets) {
             return false;
         }
 
-        for (int i = 0; i < m_T_T.rows(); i++) {
-            if (inside_tet(p, i)) {
-                return true;
-            }
-        }
-        return false;
+        Eigen::MatrixXd Q(1, 3);
+        Q.row(0) = p;
+        Eigen::VectorXi I;
+        igl::in_element(m_V_T, m_T_T, Q, m_tet_aabb_tree, I);
+        return (I(0) != -1);
+
+        // for (int i = 0; i < m_T_T.rows(); i++) {
+        //     if (inside_tet(p, i)) {
+        //         return true;
+        //     }
+        // }
+        // return false;
     }
 
     /**
@@ -173,7 +192,7 @@ public:
         }
 
         // inside tet check
-        if (m_is_3d && m_T_T.rows() > 0) { // has any tets
+        if (m_has_tets) { // has any tets
             if (inside_any_tet(p3)) {
                 return 0.0;
             }
@@ -204,6 +223,8 @@ public:
         m_has_tris = false;
         m_edge_bvh.clear();
         m_has_edges = false;
+        m_tet_aabb_tree = igl::AABB<MatrixXd, 3>(); // reset
+        m_has_tets = false;
         m_V_T.resize(0, 3);
         m_T_T.resize(0, 4);
     }

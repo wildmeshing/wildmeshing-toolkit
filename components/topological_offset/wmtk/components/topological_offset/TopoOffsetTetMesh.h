@@ -22,6 +22,7 @@ class VertexAttributes
 public:
     Vector3d m_posf;
     int label = 0;
+    size_t component_id = 0;
 
     VertexAttributes() {};
     VertexAttributes(const Vector3d& p);
@@ -32,6 +33,7 @@ class EdgeAttributes
 {
 public:
     int label = 0;
+    // size_t component_id;
 };
 
 
@@ -39,6 +41,7 @@ class FaceAttributes
 {
 public:
     int label = 0;
+    // size_t component_id;
 };
 
 
@@ -47,6 +50,7 @@ class TetAttributes
 public:
     int label = 0; // must be zero for all tets
     std::vector<double> tags;
+    // size_t component_id;
 };
 
 
@@ -114,6 +118,11 @@ public:
      * distance field is monotonic along edge. May give weird results if not monotonic
      */
     void edge_split_binary_search(const size_t v1, const size_t v2, Vector3d& p_new) const;
+
+    /**
+     * @brief label connected simplicial complex components (simplices labelled 1 or 2)
+     */
+    size_t flood_fill();
 
     //// overriden splits/invariants
     bool split_edge_before(const Tuple& t) override;
@@ -375,6 +384,34 @@ public: // helpers
             adj_tets.push_back(tet_4.value());
         }
         return adj_tets;
+    }
+
+    /**
+     * @brief get all one-ring vertices through input simplices (labelled 1)
+     */
+    std::vector<size_t> connected_components_helper(const size_t& v_id)
+    {
+        auto onering_v_ids = get_one_ring_vids_for_vertex(v_id);
+        std::vector<size_t> ret_v_ids;
+        for (const size_t& other_v_id : onering_v_ids) {
+            size_t e_id = tuple_from_edge({{v_id, other_v_id}}).eid(*this);
+            if (m_edge_attribute[e_id].label != 0) { // edge labelled 1 or 2
+                ret_v_ids.push_back(other_v_id);
+            }
+        }
+        return ret_v_ids;
+    }
+
+    /**
+     * @brief reset connected component assignments.
+     */
+    void reset_connected_components()
+    {
+        auto verts = get_vertices();
+        for (const Tuple& v : verts) {
+            size_t v_id = v.vid(*this);
+            m_vertex_attribute[v_id].component_id = 0;
+        }
     }
 };
 
