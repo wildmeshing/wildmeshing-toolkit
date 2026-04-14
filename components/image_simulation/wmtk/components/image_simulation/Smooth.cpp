@@ -83,8 +83,16 @@ bool ImageSimulationMesh::smooth_after(const Tuple& t)
     //    m_vertex_attribute[vid].m_posf = project;
     //}
 
-    // TODO directly store an array of Vector3d here
-    std::vector<std::array<double, 9>> surface_assemble;
+    auto solve = [&]() {
+        VectorXd x = VA[vid].m_posf;
+        try {
+            m_solver->minimize(*total_energy, x);
+        } catch (const std::exception&) {
+            // polysolve might throw errors that we want to ignore (e.g., line search failed)
+        }
+        m_vertex_attribute[vid].m_posf = x;
+    };
+
     if (VA[vid].m_is_on_surface) {
         // std::set<size_t> unique_fid;
         // for (const Tuple& t : locs) {
@@ -133,9 +141,20 @@ bool ImageSimulationMesh::smooth_after(const Tuple& t)
             return false;
         }
 
-        // const auto surface_faces = get_surface_faces_for_vertex(vid);
-
         auto energy_sum = std::make_shared<optimization::EnergySum>();
+
+        auto envelope_energy = get_envelope_energy(t);
+        // do one solve without weights for amips and envelope
+        if (m_params.w_amips > 0) {
+            energy_sum->add_energy(amips_energy, 1. / m_params.w_amips);
+        }
+        if (m_params.w_envelope > 0) {
+            energy_sum->add_energy(envelope_energy, 1. / m_params.w_envelope);
+        }
+        total_energy = energy_sum;
+        solve();
+
+        energy_sum = std::make_shared<optimization::EnergySum>();
 
         if (m_params.w_smooth > 0) {
             auto smooth_energy = get_smooth_energy(t);
@@ -144,26 +163,17 @@ bool ImageSimulationMesh::smooth_after(const Tuple& t)
             }
             energy_sum->add_energy(smooth_energy);
         }
-
         if (m_params.w_amips > 0) {
             energy_sum->add_energy(amips_energy);
         }
         if (m_params.w_envelope > 0) {
-            energy_sum->add_energy(get_envelope_energy(t));
+            energy_sum->add_energy(envelope_energy);
         }
-
         total_energy = energy_sum;
-    }
-
-    // solve
-    {
-        VectorXd x = old_pos;
-        try {
-            m_solver->minimize(*total_energy, x);
-        } catch (const std::exception&) {
-            // polysolve might throw errors that we want to ignore (e.g., line search failed)
-        }
-        m_vertex_attribute[vid].m_posf = x;
+        solve();
+    } else {
+        // not on the surface
+        solve();
     }
 
     logger().trace("old pos {} -> new pos {}", old_pos, VA[vid].m_posf);

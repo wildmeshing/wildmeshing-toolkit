@@ -383,23 +383,23 @@ bool ImageSimulationMesh::collapse_edge_after(const Tuple& loc)
     return true;
 }
 
-void ImageSimulationMesh::collapse_all_edges_ignore_quality()
+void ImageSimulationMesh::simplify()
 {
     if (m_params.debug_output) {
         write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
     }
-    logger().info("Collapse ignoring quality");
+    logger().info("===== Simplify =====");
 
     // re-build envelope
     m_envelope->use_exact = false;
-    m_envelope->init(m_V_envelope, m_F_envelope, 0.1 * m_envelope_eps);
+    m_envelope->init(m_V_envelope, m_F_envelope, m_params.eps_simplify);
 
     m_collapse_check_quality = false;
     collapse_all_edges();
-    m_collapse_check_quality = true;
     if (m_params.debug_output) {
         write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
     }
+    m_collapse_check_quality = true;
 
     // re-build envelope
     {
@@ -429,6 +429,7 @@ void ImageSimulationMesh::collapse_all_edges_ignore_quality()
         m_F_envelope.clear();
         init_envelope(V, F);
     }
+    logger().info("===== Simplification done =====");
 }
 
 } // namespace wmtk::components::image_simulation

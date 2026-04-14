@@ -635,10 +635,7 @@ void tag_tets_from_images(
     }
 }
 
-EmbedSurface::EmbedSurface(
-    const std::vector<std::string>& img_filenames,
-    const Matrix4d& ijk2xyz,
-    const bool skip_simplify)
+EmbedSurface::EmbedSurface(const std::vector<std::string>& img_filenames, const Matrix4d& ijk2xyz)
     : m_img_filenames(img_filenames)
     , m_ijk2xyz(ijk2xyz)
     , m_xyz2ijk(ijk2xyz.inverse())
@@ -774,11 +771,7 @@ EmbedSurface::EmbedSurface(
             std::swap(V, V_buf);
         };
 
-        for (size_t n = 0; n < 100; ++n) {
-            smooth_step(lambda);
-            smooth_step(my);
-
-            //  clamp
+        auto clamp_step = [&]() {
             for (int i = 0; i < V.rows(); ++i) {
                 const Vector3d& p0 = V_orig.row(i);
                 const Vector3d& p1 = V.row(i);
@@ -786,6 +779,12 @@ EmbedSurface::EmbedSurface(
                 dir = dir.cwiseMax(-clamp_to).cwiseMin(clamp_to);
                 V.row(i) = p0 + dir;
             }
+        };
+
+        for (size_t n = 0; n < 100; ++n) {
+            smooth_step(lambda);
+            smooth_step(my);
+            clamp_step();
         }
         // igl::writeOFF("debug_out.off", V, F);
     }
@@ -795,21 +794,6 @@ EmbedSurface::EmbedSurface(
     verts.resize(V.rows());
     tris.resize(F.rows());
     wmtk::eigen_to_wmtk_input(verts, tris, V, F);
-
-
-    if (!skip_simplify) {
-        /**
-         * Manifoldnes is only necessary for simplification. And even this should be removed in the
-         * future as our simplification should also work on non-manifold meshes.
-         */
-        Eigen::VectorXi dummy;
-        if (!igl::is_edge_manifold(F) || !igl::is_vertex_manifold(F, dummy)) {
-            auto v1 = verts;
-            auto tri1 = tris;
-            logger().info("Separate to manifold");
-            wmtk::separate_to_manifold(v1, tri1, verts, tris, modified_nonmanifold_v);
-        }
-    }
 
     // apply dimensions
     logger().info("Convert from image to world coordinates (ijk to xyz)");

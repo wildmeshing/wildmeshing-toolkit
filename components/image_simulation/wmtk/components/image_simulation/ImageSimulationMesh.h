@@ -387,7 +387,7 @@ public:
     bool collapse_edge_before(const Tuple& t) override;
     bool collapse_edge_after(const Tuple& t) override;
 
-    void collapse_all_edges_ignore_quality();
+    void simplify();
 
     size_t swap_all_edges_44();
     bool swap_edge_44_before(const Tuple& t) override;

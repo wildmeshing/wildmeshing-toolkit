@@ -44,6 +44,9 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     params.stop_at_float = json_params["stop_at_float"];
     params.preserve_topology = json_params["preserve_topology"];
 
+    params.epsr_simplify = json_params["eps_simplify_rel"];
+    params.epsr = json_params["eps_simplify"];
+
     params.smooth_without_envelope = json_params["smooth_without_envelope"];
 
     params.w_amips = json_params["w_amips"];
@@ -87,9 +90,9 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     write_unique_vtu();
 
 
-    if (json_params["pre_coarsen"]) {
+    if (!skip_simplify) {
         // collapse for getting the right edge length
-        mesh.collapse_all_edges_ignore_quality();
+        mesh.simplify();
     }
 
     // /////////mesh improvement

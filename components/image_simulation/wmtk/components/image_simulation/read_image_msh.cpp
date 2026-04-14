@@ -226,7 +226,6 @@ InputData read_image(
 
     Matrix4d ijk2xyz = get_ijk2xyz(json_params);
 
-    const bool skip_simplify = json_params["skip_simplify"];
     const bool use_sample_envelope = json_params["use_sample_envelope"];
     const int NUM_THREADS = json_params["num_threads"];
     const int max_its = json_params["max_iterations"];
@@ -244,14 +243,7 @@ InputData read_image(
     }
 
     // convert image into tet mesh
-    EmbedSurface image_mesh(input_paths, ijk2xyz, skip_simplify);
-
-    if (!skip_simplify) {
-        logger().info("Simplify...");
-        image_mesh.simplify_surface(eps);
-        image_mesh.remove_duplicates(eps);
-        logger().info("done");
-    }
+    EmbedSurface image_mesh(input_paths, ijk2xyz);
 
     if (write_vtu) {
         image_mesh.write_surf_off(output_filename + "_input.off");
