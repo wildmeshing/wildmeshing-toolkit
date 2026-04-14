@@ -9,7 +9,7 @@
 #include <queue>
 #include <wmtk/components/topological_offset/Circle.hpp>
 #include <wmtk/components/topological_offset/Sphere.hpp>
-#include <wmtk/simplex/RawSimplex.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 
 using namespace wmtk;
 using namespace components::topological_offset;

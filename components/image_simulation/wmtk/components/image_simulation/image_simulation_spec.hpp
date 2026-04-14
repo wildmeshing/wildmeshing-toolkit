@@ -19,9 +19,15 @@ nlohmann::json image_simulation_spec = R"(
       "max_iterations",
       "eps_rel",
       "eps",
+      "length",
       "length_rel",
       "stop_energy",
+      "stop_at_float",
       "preserve_topology",
+      "w_amips",
+      "w_smooth",
+      "separation_factor",
+      "smooth_without_envelope",
       "write_vtu",
       "log_file",
       "report",
@@ -55,7 +61,12 @@ nlohmann::json image_simulation_spec = R"(
     "pointer": "/operation",
     "type": "string",
     "default": "remeshing",
-    "options": ["remeshing", "fill_holes_topo", "tight_seal_topo", "keep_largest_cc"],
+    "options": [
+      "remeshing",
+      "fill_holes_topo",
+      "tight_seal_topo",
+      "keep_largest_cc"
+    ],
     "doc": "Image simulation contains multiple operations for modifying the image. Depending on the operation, more parameters might be required."
   },
   {
@@ -130,6 +141,12 @@ nlohmann::json image_simulation_spec = R"(
     "doc": "Absolute envelope thickness. If this value is negative, the relative envelope thickness is used to compute the absolute one."
   },
   {
+    "pointer": "/length",
+    "type": "float",
+    "default": -1,
+    "doc": "Absolute target edge length. If this value is negative, the relative length is used to compute the absolute one."
+  },
+  {
     "pointer": "/length_rel",
     "type": "float",
     "default": 5e-2,
@@ -142,10 +159,40 @@ nlohmann::json image_simulation_spec = R"(
     "doc": "Target energy. If all tets have an energy below this, tetwild will stop."
   },
   {
+    "pointer": "/stop_at_float",
+    "type": "bool",
+    "default": false,
+    "doc": "Stop when all vertices are in floating point precision, i.e., no more rational numbers are needed. stop_energy will be ignored when this is true."
+  },
+  {
     "pointer": "/preserve_topology",
     "type": "bool",
     "default": true,
     "doc": "Preserve topology of input."
+  },
+  {
+    "pointer": "/w_amips",
+    "type": "float",
+    "default": 0.1,
+    "doc": "AMIPS energy. Sum of energy weights must be smaller than 1!"
+  },
+  {
+    "pointer": "/w_smooth",
+    "type": "float",
+    "default": 0,
+    "doc": "Surface smoothing energy. Sum of energy weights must be smaller than 1!"
+  },
+  {
+    "pointer": "/separation_factor",
+    "type": "float",
+    "default": 1,
+    "doc": "Usually, surfaces are pushed apart to create a gap in the size of the smallest allowed edge length. The separation factor can increase or decrease that gap. If set to 0 or negative, no separation is performed."
+  },
+  {
+    "pointer": "/smooth_without_envelope",
+    "type": "bool",
+    "default": false,
+    "doc": "Ignore the envelope during smoothing and re-compute it afterwards. This may cause the geometry to drift!"
   },
   {
     "pointer": "/write_vtu",

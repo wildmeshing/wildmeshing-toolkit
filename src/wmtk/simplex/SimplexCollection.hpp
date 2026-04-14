@@ -1,23 +1,23 @@
 #pragma once
 
 #include <cassert>
-#include "RawSimplex.hpp"
+#include "Simplex.hpp"
 
 namespace wmtk::simplex {
 
-class RawSimplexCollection
+class SimplexCollection
 {
 public:
-    RawSimplexCollection() = default;
+    SimplexCollection() = default;
 
-    // RawSimplexCollection(std::vector<RawSimplex>&& simplices = {})
+    // SimplexCollection(std::vector<Simplex>&& simplices = {})
     //     : m_simplices(std::move(simplices))
     //{}
 
     /**
-     * @brief Return const reference to the RawSimplex vector.
+     * @brief Return const reference to the Simplex vector.
      */
-    // const std::vector<RawSimplex>& simplex_vector() const { return m_simplices; }
+    // const std::vector<Simplex>& simplex_vector() const { return m_simplices; }
 
     /**
      * @brief Return vector of all vertices.
@@ -62,7 +62,7 @@ public:
         add(faces_from_simplex(s));
     }
 
-    void add(const RawSimplexCollection& simplex_collection);
+    void add(const SimplexCollection& simplex_collection);
 
     /**
      * @brief Sort simplex vector and remove duplicates.
@@ -100,18 +100,18 @@ public:
      *
      * The collections must be sorted!
      */
-    static RawSimplexCollection get_union(
-        const RawSimplexCollection& collection_a,
-        const RawSimplexCollection& collection_b);
+    static SimplexCollection get_union(
+        const SimplexCollection& collection_a,
+        const SimplexCollection& collection_b);
 
     /**
      * @brief Get intersection of two simplex collections.
      *
      * The collections must be sorted!
      */
-    static RawSimplexCollection get_intersection(
-        const RawSimplexCollection& collection_a,
-        const RawSimplexCollection& collection_b);
+    static SimplexCollection get_intersection(
+        const SimplexCollection& collection_a,
+        const SimplexCollection& collection_b);
 
     /**
      * @brief Check if the two simplex collections are equal
@@ -119,22 +119,22 @@ public:
      * The collections must be cleaned and sorted.
      */
     static bool are_simplex_collections_equal(
-        const RawSimplexCollection& collection_a,
-        const RawSimplexCollection& collection_b);
+        const SimplexCollection& collection_a,
+        const SimplexCollection& collection_b);
 
     /**
      * @brief Get all faces of the simplex
      */
     template <int N>
-    static RawSimplexCollection faces_from_simplex(const RawSimplex<N>& simplex);
+    static SimplexCollection faces_from_simplex(const Simplex<N>& simplex);
 
     std::vector<Face> faces_with_edge(const Edge& e) const;
 
     size_t size() const;
     bool empty() const { return size() == 0; }
 
-    bool operator==(const RawSimplexCollection& that) const;
-    bool operator!=(const RawSimplexCollection& that) const;
+    bool operator==(const SimplexCollection& that) const;
+    bool operator!=(const SimplexCollection& that) const;
 
 private:
     std::vector<Vertex> m_v;
@@ -144,11 +144,11 @@ private:
 };
 
 template <int N>
-inline RawSimplexCollection RawSimplexCollection::faces_from_simplex(const RawSimplex<N>& simplex)
+inline SimplexCollection SimplexCollection::faces_from_simplex(const Simplex<N>& simplex)
 {
     const auto& v = simplex.vertices();
 
-    RawSimplexCollection sc;
+    SimplexCollection sc;
 
     if constexpr (N == 1) {
         // do nothing

@@ -11,7 +11,7 @@ include(FetchContent)
 FetchContent_Declare(
     delauanay_psm
     GIT_REPOSITORY https://github.com/wildmeshing/Delaunay_psm
-    GIT_TAG 80242c22dc09ee215bc7037e561af0c4779e6cc7
+    GIT_TAG 85225e697ce496e744589b1576718754499e03a4
 )
 FetchContent_MakeAvailable(delauanay_psm)
 

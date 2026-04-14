@@ -41,6 +41,16 @@ if(WMTK_WITH_CCACHE AND CCACHE_PROGRAM)
     endforeach()
 endif()
 
+################################################################################
+# CMake Policies
+################################################################################
+
+cmake_policy(SET CMP0054 NEW) # Only interpret if() arguments as variables or keywords when unquoted.
+cmake_policy(SET CMP0076 NEW) # target_sources() command converts relative paths to absolute.
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24")
+  cmake_policy(SET CMP0135 NEW) # Set the timestamps of all extracted contents to the time of the extraction.
+endif()
+
 # ###############################################################################
 project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
 
@@ -59,6 +69,7 @@ include(wmtk_colors)
 include(wmtk_warnings)
 include(wmtk_copy_dll)
 include(nlohmann_json)
+include(eigen)
 include(delaunay_psm)
 include(onetbb)
 include(mshio)
@@ -71,6 +82,7 @@ include(paraviewo)
 include(fenvelope)
 include(nanoflann)
 include(polysolve)
+include(ipc_toolkit)
 
 include(simple_bvh)
 # Sort projects inside the solution
@@ -130,6 +142,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     FastEnvelope::FastEnvelope
     simple_bvh::simple_bvh
     polysolve::polysolve
+    ipc::toolkit
 )
 
 if(MSVC)

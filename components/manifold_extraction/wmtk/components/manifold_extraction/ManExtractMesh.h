@@ -6,7 +6,7 @@
 #include <wmtk/utils/PartitionMesh.h>
 #include <bitset>
 #include <wmtk/envelope/Envelope.hpp>
-#include <wmtk/simplex/RawSimplex.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 #include "Parameters.h"
 
 // clang-format off

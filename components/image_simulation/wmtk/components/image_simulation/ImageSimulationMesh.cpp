@@ -42,6 +42,11 @@ VertexAttributes::VertexAttributes(const Vector3r& p)
 
 void ImageSimulationMesh::mesh_improvement(int max_its)
 {
+    if (all_rounded() && m_params.stop_at_float) {
+        logger().info("===== All vertices are rounded. Stop. =====");
+        return;
+    }
+
     ////preprocessing
     // TODO: refactor to eliminate repeated partition.
     //
@@ -65,7 +70,9 @@ void ImageSimulationMesh::mesh_improvement(int max_its)
 
         ///energy check
         wmtk::logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
-        if (max_energy < m_params.stop_energy) break;
+        if (max_energy < m_params.stop_energy) {
+            break;
+        }
         consolidate_mesh();
 
         // output_faces(
@@ -74,17 +81,11 @@ void ImageSimulationMesh::mesh_improvement(int max_its)
 
         // output_mesh(m_params.output_path + "after_iter" + std::to_string(it) + ".msh");
 
-        wmtk::logger().info("v {} t {}", vert_capacity(), tet_capacity());
+        logger().info("V = {}, T = {}", vert_capacity(), tet_capacity());
 
-        auto cnt_round = 0, cnt_verts = 0;
-        TetMesh::for_each_vertex([&](auto& v) {
-            if (m_vertex_attribute[v.vid(*this)].m_is_rounded) cnt_round++;
-            cnt_verts++;
-        });
-        if (cnt_round < cnt_verts) {
-            wmtk::logger().info("rounded {}/{}", cnt_round, cnt_verts);
-        } else {
-            wmtk::logger().info("All rounded!", cnt_round, cnt_verts);
+        if (all_rounded() && m_params.stop_at_float) {
+            logger().info("All vertices are rounded. Stop.");
+            break;
         }
 
         ///sizing field
@@ -92,10 +93,10 @@ void ImageSimulationMesh::mesh_improvement(int max_its)
             (pre_avg_energy - avg_energy) / avg_energy < 0.1) {
             m++;
             if (m == M) {
-                wmtk::logger().info(">>>>adjust_sizing_field...");
+                logger().info(">>>>adjust_sizing_field...");
                 is_hit_min_edge_length = adjust_sizing_field_serial(max_energy);
                 // is_hit_min_edge_length = adjust_sizing_field(max_energy);
-                wmtk::logger().info(">>>>adjust_sizing_field finished...");
+                logger().info(">>>>adjust_sizing_field finished...");
                 m = 0;
             }
         } else {
@@ -544,6 +545,62 @@ void ImageSimulationMesh::write_msh(std::string file)
     msh.save(file, true);
 }
 
+void ImageSimulationMesh::write_msh_groups(std::string file)
+{
+    consolidate_mesh();
+
+    wmtk::MshData msh;
+
+    const auto& vtx = get_vertices();
+    msh.add_tet_vertices(vtx.size(), [&](size_t k) {
+        auto i = vtx[k].vid(*this);
+        return m_vertex_attribute[i].m_posf;
+    });
+
+    msh.add_physical_group("ImageVolume");
+
+    const auto& tets = get_tets();
+
+    std::vector<Tuple> tets_with_tag;
+    tets_with_tag.reserve(tets.size());
+
+    // add a group for each tag
+    for (size_t tag_img = 0; tag_img < m_tags_count; ++tag_img) {
+        size_t tag_id = tag_img == 0 ? 0 : 1;
+
+        for (;; ++tag_id) {
+            tets_with_tag.clear();
+            for (const Tuple& t : tets) {
+                const size_t tid = t.tid(*this);
+                if (m_tet_attribute[tid].tags[tag_img] == tag_id) {
+                    tets_with_tag.push_back(t);
+                }
+            }
+
+            if (tets_with_tag.empty()) {
+                break;
+            }
+
+            const std::string group_name = fmt::format("tag_{}_{}", tag_img, tag_id);
+
+            msh.add_empty_vertices(3);
+            msh.add_tets(tets_with_tag.size(), [&](size_t k) {
+                auto vs = oriented_tet_vertices(tets_with_tag[k]);
+                std::array<size_t, 4> data;
+                for (int j = 0; j < 4; j++) {
+                    data[j] = vs[j].vid(*this);
+                }
+                return data;
+            });
+
+            msh.add_physical_group(group_name);
+        }
+        break;
+    }
+
+    msh.save(file, false);
+}
+
 std::tuple<double, double> ImageSimulationMesh::get_max_avg_energy()
 {
     double max_energy = -1.;
@@ -713,12 +770,31 @@ std::vector<std::array<size_t, 3>> ImageSimulationMesh::get_faces_by_condition(
         if (cond(m_face_attribute[fid])) {
             auto tid = fid / 4, lid = fid % 4;
             auto verts = get_face_vertices(f);
-            res.emplace_back(
+            res.emplace_back( //
                 std::array<size_t, 3>{
                     {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
         }
     }
     return res;
+}
+
+bool ImageSimulationMesh::all_rounded() const
+{
+    size_t cnt_round = 0;
+    size_t cnt_verts = 0;
+    for (const Tuple& t : get_vertices()) {
+        if (m_vertex_attribute[t.vid(*this)].m_is_rounded) {
+            cnt_round++;
+        }
+        cnt_verts++;
+    }
+    if (cnt_round < cnt_verts) {
+        wmtk::logger().info("rounded {}/{}", cnt_round, cnt_verts);
+        return false;
+    } else {
+        wmtk::logger().info("All rounded!", cnt_round, cnt_verts);
+        return true;
+    }
 }
 
 bool ImageSimulationMesh::is_edge_on_surface(const Tuple& loc)
@@ -937,102 +1013,6 @@ void union_uf(int u, int v, std::vector<int>& parent)
     }
 }
 
-int ImageSimulationMesh::flood_fill()
-{
-    int current_id = 0;
-    auto tets = get_tets();
-    std::map<size_t, bool> visited;
-
-    for (const Tuple& t : tets) {
-        size_t tid = t.tid(*this);
-        if (visited.find(tid) != visited.end()) continue;
-
-        visited[tid] = true;
-
-        m_tet_attribute[tid].part_id = current_id;
-
-        auto f1 = t;
-        auto f2 = t.switch_face(*this);
-        auto f3 = t.switch_edge(*this).switch_face(*this);
-        auto f4 = t.switch_vertex(*this).switch_edge(*this).switch_face(*this);
-
-        std::queue<Tuple> bfs_queue;
-
-        if (!m_face_attribute[f1.fid(*this)].m_is_surface_fs) {
-            auto oppo_t = f1.switch_tetrahedron(*this);
-            if (oppo_t.has_value()) {
-                if (visited.find((*oppo_t).tid(*this)) == visited.end()) bfs_queue.push(*oppo_t);
-            }
-        }
-        if (!m_face_attribute[f2.fid(*this)].m_is_surface_fs) {
-            auto oppo_t = f2.switch_tetrahedron(*this);
-            if (oppo_t.has_value()) {
-                if (visited.find((*oppo_t).tid(*this)) == visited.end()) bfs_queue.push(*oppo_t);
-            }
-        }
-        if (!m_face_attribute[f3.fid(*this)].m_is_surface_fs) {
-            auto oppo_t = f3.switch_tetrahedron(*this);
-            if (oppo_t.has_value()) {
-                if (visited.find((*oppo_t).tid(*this)) == visited.end()) bfs_queue.push(*oppo_t);
-            }
-        }
-        if (!m_face_attribute[f4.fid(*this)].m_is_surface_fs) {
-            auto oppo_t = f4.switch_tetrahedron(*this);
-            if (oppo_t.has_value()) {
-                if (visited.find((*oppo_t).tid(*this)) == visited.end()) bfs_queue.push(*oppo_t);
-            }
-        }
-
-        while (!bfs_queue.empty()) {
-            auto tmp = bfs_queue.front();
-            bfs_queue.pop();
-            size_t tmp_id = tmp.tid(*this);
-            if (visited.find(tmp_id) != visited.end()) continue;
-
-            visited[tmp_id] = true;
-
-            m_tet_attribute[tmp_id].part_id = current_id;
-
-            auto f_tmp1 = tmp;
-            auto f_tmp2 = tmp.switch_face(*this);
-            auto f_tmp3 = tmp.switch_edge(*this).switch_face(*this);
-            auto f_tmp4 = tmp.switch_vertex(*this).switch_edge(*this).switch_face(*this);
-
-            if (!m_face_attribute[f_tmp1.fid(*this)].m_is_surface_fs) {
-                auto oppo_t = f_tmp1.switch_tetrahedron(*this);
-                if (oppo_t.has_value()) {
-                    if (visited.find((*oppo_t).tid(*this)) == visited.end())
-                        bfs_queue.push(*oppo_t);
-                }
-            }
-            if (!m_face_attribute[f_tmp2.fid(*this)].m_is_surface_fs) {
-                auto oppo_t = f_tmp2.switch_tetrahedron(*this);
-                if (oppo_t.has_value()) {
-                    if (visited.find((*oppo_t).tid(*this)) == visited.end())
-                        bfs_queue.push(*oppo_t);
-                }
-            }
-            if (!m_face_attribute[f_tmp3.fid(*this)].m_is_surface_fs) {
-                auto oppo_t = f_tmp3.switch_tetrahedron(*this);
-                if (oppo_t.has_value()) {
-                    if (visited.find((*oppo_t).tid(*this)) == visited.end())
-                        bfs_queue.push(*oppo_t);
-                }
-            }
-            if (!m_face_attribute[f_tmp4.fid(*this)].m_is_surface_fs) {
-                auto oppo_t = f_tmp4.switch_tetrahedron(*this);
-                if (oppo_t.has_value()) {
-                    if (visited.find((*oppo_t).tid(*this)) == visited.end())
-                        bfs_queue.push(*oppo_t);
-                }
-            }
-        }
-
-        current_id++;
-    }
-    return current_id;
-}
-
 void ImageSimulationMesh::write_vtu(const std::string& path)
 {
     // consolidate_mesh();
@@ -1053,14 +1033,12 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
     Eigen::VectorXd v_sizing_field(vert_capacity());
     v_sizing_field.setZero();
 
-    Eigen::MatrixXd parts(tet_capacity(), 1);
     std::vector<MatrixXd> tags(m_tags_count, MatrixXd(tet_capacity(), 1));
     Eigen::MatrixXd amips(tet_capacity(), 1);
 
     int index = 0;
     for (const Tuple& t : tets) {
         size_t tid = t.tid(*this);
-        parts(index, 0) = m_tet_attribute[tid].part_id;
         for (size_t j = 0; j < m_tags_count; ++j) {
             tags[j](index, 0) = m_tet_attribute[tid].tags[j];
         }
@@ -1088,7 +1066,6 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
     writer = std::make_shared<paraviewo::VTUWriter>();
 
-    writer->add_cell_field("part", parts);
     for (size_t j = 0; j < m_tags_count; ++j) {
         writer->add_cell_field(fmt::format("tag_{}", j), tags[j]);
     }
@@ -1132,6 +1109,29 @@ void ImageSimulationMesh::write_surface(const std::string& path) const
     igl::write_triangle_mesh(path, matV, matF);
 
     wmtk::logger().info("Output face size {}", outface.size());
+}
+
+bool ImageSimulationMesh::vertex_is_on_surface(const size_t vid) const
+{
+    return m_vertex_attribute.at(vid).m_is_on_surface;
+}
+
+bool ImageSimulationMesh::face_is_on_surface(const size_t fid) const
+{
+    return m_face_attribute.at(fid).m_is_surface_fs;
+}
+
+size_t ImageSimulationMesh::get_order_of_vertex(const size_t vid) const
+{
+    return m_vertex_attribute.at(vid).m_order;
+}
+
+void ImageSimulationMesh::init_vertex_order()
+{
+    for (const Tuple& t : get_vertices()) {
+        const size_t vid = t.vid(*this);
+        m_vertex_attribute[vid].m_order = compute_vertex_order(vid);
+    }
 }
 
 } // namespace wmtk::components::image_simulation

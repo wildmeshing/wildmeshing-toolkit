@@ -134,13 +134,13 @@ void SurfaceMesh::smooth_surface()
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<SurfaceMesh, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<SurfaceMesh>(ExecutionPolicy::kPartition);
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
             return m.try_set_vertex_mutex_one_ring(e, task_id);
         };
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<SurfaceMesh, ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<SurfaceMesh>(ExecutionPolicy::kSeq);
         setup_and_execute(executor);
     }
 }
@@ -159,13 +159,13 @@ void SurfaceMesh::smooth_edges()
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<SurfaceMesh, ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<SurfaceMesh>(ExecutionPolicy::kPartition);
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
             return m.try_set_vertex_mutex_one_ring(e, task_id);
         };
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<SurfaceMesh, ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<SurfaceMesh>(ExecutionPolicy::kSeq);
         setup_and_execute(executor);
     }
 }

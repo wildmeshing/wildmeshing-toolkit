@@ -94,7 +94,10 @@ void tag_tets_from_images(
 class EmbedSurface
 {
 public:
-    EmbedSurface(const std::vector<std::string>& img_filenames, const Matrix4d& ijk2xyz);
+    EmbedSurface(
+        const std::vector<std::string>& img_filenames,
+        const Matrix4d& ijk2xyz,
+        const bool skip_simplify = false);
 
     /**
      * @brief Simplify the input surface while staying within the eps envelope.

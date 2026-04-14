@@ -13,6 +13,7 @@ set(SRC_FILES
     test_operation_smooth.cpp
     test_operations.cpp
     test_runner.cpp
+    test_image_simulation_energies.cpp
     )
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

@@ -130,22 +130,6 @@ void tet_remeshing(nlohmann::json json_params)
 
     if (write_vtu) mesh.write_vtu(get_unique_vtu_name());
 
-    {
-        size_t nonmani_ver_cnt = 0;
-        size_t surface_v_cnt = 0;
-        for (const Tuple& v : mesh.get_vertices()) {
-            if (mesh.m_vertex_attribute[v.vid(mesh)].m_is_on_surface) {
-                surface_v_cnt++;
-                if (mesh.count_vertex_links(v) > 1) {
-                    nonmani_ver_cnt++;
-                }
-            }
-        }
-
-        wmtk::logger().info("MESH NONMANIFOLD VERTEX COUNT BEFORE OPTIMIZE: {}", nonmani_ver_cnt);
-        wmtk::logger().info("MESH surface VERTEX COUNT BEFORE OPTIMIZE: {}", surface_v_cnt);
-    }
-
     // /////////mesh improvement
     if (surface_smoothing > 0) {
         logger().warn(

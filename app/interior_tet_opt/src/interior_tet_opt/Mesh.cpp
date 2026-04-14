@@ -327,13 +327,13 @@ void InteriorTetOpt::split_all_edges()
         wmtk::logger().info("edge split operation time: {}s", time);
     };
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<InteriorTetOpt, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<InteriorTetOpt>(wmtk::ExecutionPolicy::kPartition);
         executor.lock_vertices = [&](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<InteriorTetOpt, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<InteriorTetOpt>(wmtk::ExecutionPolicy::kSeq);
         setup_and_execute(executor);
     }
 }
@@ -351,7 +351,7 @@ void InteriorTetOpt::smooth_all_vertices()
     wmtk::logger().debug("Num verts {}", collect_all_ops.size());
     if (NUM_THREADS > 0) {
         timer.start();
-        auto executor = wmtk::ExecutePass<InteriorTetOpt, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<InteriorTetOpt>(wmtk::ExecutionPolicy::kPartition);
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_vertex_mutex_one_ring(e, task_id);
         };
@@ -361,7 +361,7 @@ void InteriorTetOpt::smooth_all_vertices()
         wmtk::logger().info("vertex smoothing operation time parallel: {}s", time);
     } else {
         timer.start();
-        auto executor = wmtk::ExecutePass<InteriorTetOpt, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<InteriorTetOpt>(wmtk::ExecutionPolicy::kSeq);
         executor(*this, collect_all_ops);
         time = timer.getElapsedTime();
         wmtk::logger().info("vertex smoothing operation time serial: {}s", time);
@@ -428,7 +428,7 @@ void InteriorTetOpt::collapse_all_edges(bool is_limit_length)
     };
     if (NUM_THREADS > 0) {
         timer.start();
-        auto executor = wmtk::ExecutePass<InteriorTetOpt, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<InteriorTetOpt>(wmtk::ExecutionPolicy::kPartition);
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
@@ -437,7 +437,7 @@ void InteriorTetOpt::collapse_all_edges(bool is_limit_length)
         wmtk::logger().info("edge collapse operation time parallel: {}s", time);
     } else {
         timer.start();
-        auto executor = wmtk::ExecutePass<InteriorTetOpt, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<InteriorTetOpt>(wmtk::ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge collapse operation time serial: {}s", time);
@@ -460,7 +460,7 @@ void InteriorTetOpt::swap_all_edges_44()
     };
     if (NUM_THREADS > 0) {
         timer.start();
-        auto executor = wmtk::ExecutePass<InteriorTetOpt, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<InteriorTetOpt>(wmtk::ExecutionPolicy::kPartition);
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
@@ -469,7 +469,7 @@ void InteriorTetOpt::swap_all_edges_44()
         wmtk::logger().info("edge swap 44 operation time parallel: {}s", time);
     } else {
         timer.start();
-        auto executor = wmtk::ExecutePass<InteriorTetOpt, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<InteriorTetOpt>(wmtk::ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge swap 44 operation time serial: {}s", time);
@@ -492,7 +492,7 @@ void InteriorTetOpt::swap_all_edges()
     };
     if (NUM_THREADS > 0) {
         timer.start();
-        auto executor = wmtk::ExecutePass<InteriorTetOpt, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<InteriorTetOpt>(wmtk::ExecutionPolicy::kPartition);
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
@@ -501,7 +501,7 @@ void InteriorTetOpt::swap_all_edges()
         wmtk::logger().info("edge swap operation time parallel: {}s", time);
     } else {
         timer.start();
-        auto executor = wmtk::ExecutePass<InteriorTetOpt, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<InteriorTetOpt>(wmtk::ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge swap operation time serial: {}s", time);
@@ -524,7 +524,7 @@ void InteriorTetOpt::swap_all_faces()
     };
     if (NUM_THREADS > 0) {
         timer.start();
-        auto executor = wmtk::ExecutePass<InteriorTetOpt, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<InteriorTetOpt>(wmtk::ExecutionPolicy::kPartition);
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_face_mutex_two_ring(e, task_id);
         };
@@ -533,7 +533,7 @@ void InteriorTetOpt::swap_all_faces()
         wmtk::logger().info("face swap operation time parallel: {}s", time);
     } else {
         timer.start();
-        auto executor = wmtk::ExecutePass<InteriorTetOpt, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<InteriorTetOpt>(wmtk::ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("face swap operation time serial: {}s", time);

@@ -1,10 +1,10 @@
 #pragma once
 
 #include <wmtk/utils/VectorUtils.h>
-#include <type_traits>
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/Types.hpp>
-#include <wmtk/simplex/RawSimplex.hpp>
+#include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/simplex/SimplexCollection.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <tbb/concurrent_vector.h>
@@ -16,7 +16,6 @@
 #include <limits>
 #include <map>
 #include <optional>
-#include <queue>
 #include <vector>
 
 namespace wmtk {
@@ -1310,6 +1309,97 @@ public:
      */
     void for_each_tetra(const std::function<void(const TetMesh::Tuple&)>&);
     int NUM_THREADS = 0;
+
+public:
+    // substructure functionality
+
+    /**
+     * @brief Is a vertex part of the substructure
+     *
+     * @param vid Vertex ID
+     */
+    virtual bool vertex_is_on_surface(const size_t vid) const { return false; }
+
+    /**
+     * @brief Is a face part of the substructure
+     *
+     * @param fid Face ID
+     */
+    virtual bool face_is_on_surface(const size_t fid) const { return false; }
+
+    /**
+     * @brief Get all faces on the surface that are incident to vid.
+     *
+     * @param vid Vertex ID
+     */
+    simplex::SimplexCollection get_surface_faces_for_vertex(const size_t vid) const;
+
+    /**
+     * @brief Get all faces on the surface that are incident to the edge.
+     *
+     * @param vids The vertex IDs of the edge
+     */
+    simplex::SimplexCollection get_surface_faces_for_edge(const std::array<size_t, 2>& vids) const;
+    /**
+     * @brief Get the number of surface faces incident to the edge.
+     *
+     * @param vids The vertex IDs of the edge
+     */
+    size_t get_num_surface_faces_for_edge(const std::array<size_t, 2>& vids) const;
+
+
+    /**
+     * @brief Compute the vertex order for a single vertex.
+     *
+     * This is expensive. It is recommended to store the vertex order as vertex attribute and only
+     * compute it once.
+     *
+     * @param vid Vertex ID
+     */
+    size_t compute_vertex_order(const size_t vid) const;
+
+    /**
+     * @brief Get the order of a vertex
+     *
+     * The order of a vertex in a TetMesh is as follows:
+     * 0: vertex is not on the surface
+     * 1: vertex is on the surface
+     * 2: vertex is on the surface boundary or a non-manifold edge
+     * 3: vertex is at the boundary of a non-manifold edge or a non-manifold vertex
+     *
+     * Computing the vertex order is expensive. It is recommended to store the vertex order as a
+     * vertex attribute and override this method.
+     *
+     * @param vid Vertex ID
+     */
+    virtual size_t get_order_of_vertex(const size_t vid) const { return compute_vertex_order(vid); }
+
+    /**
+     * @brief Compute the order of an edge.
+     *
+     * The order of an edge in a TetMesh is as follows:
+     * 0: the edge is not on the surface
+     * 1: the edge is on the surface
+     * 2: the edge is on the surface boundary or non-manifold
+     *
+     * @param vids The vertex IDs of the edge
+     */
+    size_t get_order_of_edge(const std::array<size_t, 2>& vids) const;
+
+    /**
+     * @brief Link condition that also considers substructures.
+     *
+     * Implementation based on the pseudo code from the paper:
+     * Vivodtzev et. al. - Substructure Topology Preserving Simplification of Tetrahedral Meshes
+     *
+     * The math and the pseudo code in the paper contain errors! The theory itself is correct.
+     *
+     * The link condition must be evaluated for the mesh and all substructures (surfaces, lines,
+     * points). If there is a substructure simplex in the star, the simplex is extended with a dummy
+     * vertex (e.g., an edge becomes a face) and this extended simplex must also be considered for
+     * the link.
+     */
+    bool substructure_link_condition(const Tuple& e_tuple) const;
 };
 
 

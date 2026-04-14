@@ -5,7 +5,7 @@
 #include <wmtk/utils/Morton.h>
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/envelope/Envelope.hpp>
-#include <wmtk/simplex/RawSimplex.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 #include "Parameters.h"
 
 // clang-format off
@@ -29,19 +29,33 @@
 
 namespace wmtk::components::image_simulation {
 
-// TODO: missing comments on what these attributes are
 class VertexAttributes
 {
 public:
-    Vector3r m_pos;
-    Vector3d m_posf;
+    Vector3r m_pos; // exact position in rational
+    Vector3d m_posf; // position as double
+    /**
+     * If a vertex cannot be rounded without inverting a tet, the exact position must be used. Once
+     * the vertex can be rounded to double precision, the rational representation is obsolete.
+     */
     bool m_is_rounded = false;
 
     bool m_is_on_surface = false;
+    /**
+     * The order of a vertex in a TetMesh is as follows:
+     * 0: vertex is not on the surface
+     * 1: vertex is on the surface
+     * 2: vertex is on the boundary of the surface or a non-manifold edge
+     * 3: vertex is at the boundary of a non-manifold edge or a non-manifold vertex
+     */
+    size_t m_order = 0;
     std::vector<int> on_bbox_faces; // same as is_bbox_fs?
 
     double m_sizing_scalar = 1;
 
+    /**
+     * Required for multi-threading.
+     */
     size_t partition_id = 0;
 
     // for open boundary
@@ -58,13 +72,14 @@ public:
 //     bool m_is_on_open_boundary = false;
 // };
 
-// TODO: missing comments on what these attributes are
 class FaceAttributes
 {
 public:
-    double tag;
+    /**
+     * Is this face a part of the surface.
+     */
+    bool m_is_surface_fs = false;
 
-    bool m_is_surface_fs = false; // 0; 1
     /**
      * Keep track which bbox side the face is on
      * -1: none
@@ -89,14 +104,18 @@ public:
     }
 };
 
-// TODO: missing comments on what these attributes are
 class TetAttributes
 {
 public:
+    /**
+     * cubed (!) AMIPS quality
+     */
     double m_quality;
-    double m_winding_number = 0;
+    /**
+     * All image labels. Each image is represented by one entry in the vector. All tets must have
+     * the same tags.size().
+     */
     std::vector<int64_t> tags;
-    int part_id = -1;
 };
 
 class ImageSimulationMesh : public wmtk::TetMesh
@@ -281,6 +300,7 @@ public:
     ////// Attributes related
 
     void write_msh(std::string file);
+    void write_msh_groups(std::string file);
     void output_faces(std::string file, std::function<bool(const FaceAttributes&)> cond);
 
     void init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>& vertices);
@@ -352,6 +372,13 @@ public:
      * @return True if successful or already rounded, false otherwise.
      */
     bool round(const Tuple& loc);
+
+    /**
+     * @brief Check if all vertices of the mesh are rounded.
+     *
+     */
+    bool all_rounded() const;
+
     //
     bool is_edge_on_surface(const Tuple& loc);
     bool is_edge_on_bbox(const Tuple& loc);
@@ -504,12 +531,22 @@ public:
     bool is_open_boundary_edge(const Tuple& e);
     bool is_open_boundary_edge(const std::array<size_t, 2>& e);
 
-    // for boolean operations
-    int flood_fill();
-
     void write_vtu(const std::string& path);
 
     void write_surface(const std::string& path) const;
+
+public:
+    // substructure functions
+
+    bool vertex_is_on_surface(const size_t vid) const override;
+
+    bool face_is_on_surface(const size_t fid) const override;
+
+    size_t get_order_of_vertex(const size_t vid) const override;
+    /**
+     * @brief Compute the vertex order for every vertex.
+     */
+    void init_vertex_order();
 };
 
 } // namespace wmtk::components::image_simulation

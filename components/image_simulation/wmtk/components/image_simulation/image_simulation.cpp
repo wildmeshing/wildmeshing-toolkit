@@ -10,7 +10,6 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
-#include "EmbedSurface.hpp"
 #include "ImageSimulationMesh.h"
 #include "ImageSimulationMeshTri.hpp"
 #include "Parameters.h"
@@ -40,7 +39,9 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     params.epsr = json_params["eps_rel"];
     params.eps = json_params["eps"];
     params.lr = json_params["length_rel"];
+    params.l = json_params["length"];
     params.stop_energy = json_params["stop_energy"];
+    params.stop_at_float = json_params["stop_at_float"];
     params.preserve_topology = json_params["preserve_topology"];
 
     const bool write_vtu = json_params["write_vtu"];
@@ -76,10 +77,6 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     };
 
     mesh.consolidate_mesh();
-    {
-        int num_parts = mesh.flood_fill();
-        logger().info("flood fill parts {}", num_parts);
-    }
 
     write_unique_vtu();
 
@@ -89,11 +86,6 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     mesh.consolidate_mesh();
     double time = timer.getElapsedTime();
     wmtk::logger().info("total time {}s", time);
-
-    {
-        int num_parts = mesh.flood_fill();
-        logger().info("flood fill parts {}", num_parts);
-    }
 
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
@@ -109,6 +101,7 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
 
     wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
     mesh.write_msh(output_filename.string() + ".msh");
+    mesh.write_msh_groups(output_filename.string() + "_groups.msh");
     write_unique_vtu();
     if (write_vtu) {
         mesh.write_surface(output_filename.string() + "_surface.obj");
@@ -133,8 +126,16 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
     params.epsr = json_params["eps_rel"];
     params.eps = json_params["eps"];
     params.lr = json_params["length_rel"];
+    params.l = json_params["length"];
     params.stop_energy = json_params["stop_energy"];
+    params.stop_at_float = json_params["stop_at_float"];
     params.preserve_topology = json_params["preserve_topology"];
+
+    params.smooth_without_envelope = json_params["smooth_without_envelope"];
+
+    params.w_amips = json_params["w_amips"];
+    params.w_smooth = json_params["w_smooth"];
+    params.separation_factor = json_params["separation_factor"];
 
     const bool write_vtu = json_params["write_vtu"];
 
@@ -276,7 +277,7 @@ void image_simulation(nlohmann::json json_params)
             ? read_image_msh(input_paths[0])
             : read_image(input_paths, output_filename.string(), json_params);
 
-    if (input_data.T_input.rows() == 3) {
+    if (input_data.T_input.cols() == 4) {
         run_3D(json_params, input_data);
     } else {
         run_2D(json_params, input_data);

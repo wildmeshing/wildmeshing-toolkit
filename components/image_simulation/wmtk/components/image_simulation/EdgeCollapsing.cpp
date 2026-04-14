@@ -82,7 +82,7 @@ void ImageSimulationMesh::collapse_all_edges(bool is_limit_length)
     };
     if (NUM_THREADS > 0) {
         timer.start();
-        auto executor = ExecutePass<ImageSimulationMesh, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = ExecutePass<ImageSimulationMesh>(ExecutionPolicy::kPartition);
         executor.lock_vertices = [](ImageSimulationMesh& m, const Tuple& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
@@ -91,7 +91,7 @@ void ImageSimulationMesh::collapse_all_edges(bool is_limit_length)
         wmtk::logger().info("edge collapse operation time parallel: {:.4}s", time);
     } else {
         timer.start();
-        auto executor = ExecutePass<ImageSimulationMesh, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = ExecutePass<ImageSimulationMesh>(ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge collapse operation time serial: {:.4}s", time);
@@ -295,28 +295,7 @@ bool ImageSimulationMesh::collapse_edge_before(const Tuple& loc) // input is an 
     }
 
     if (m_params.preserve_topology && VA[v1_id].m_is_on_surface && VA[v2_id].m_is_on_surface) {
-        // check if vertices are on the surface but the edge is not
-        std::vector<size_t> link_vs;
-        link_vs.reserve(n12_locs.size());
-        for (const size_t& tid : n12_locs) {
-            const auto vs = oriented_tet_vids(tid);
-            for (int i = 0; i < 4; ++i) {
-                if (vs[i] != v1_id && vs[i] != v2_id) {
-                    link_vs.push_back(vs[i]);
-                }
-            }
-        }
-        wmtk::vector_unique(link_vs);
-
-        bool edge_is_on_surface = false;
-        for (const size_t v3_id : link_vs) {
-            const auto [f_tuple, fid] = tuple_from_face({{v1_id, v2_id, v3_id}});
-            if (m_face_attribute[fid].m_is_surface_fs) {
-                edge_is_on_surface = true;
-                break;
-            }
-        }
-        if (!edge_is_on_surface) {
+        if (!substructure_link_condition(loc)) {
             return false;
         }
     }

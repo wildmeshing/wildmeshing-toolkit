@@ -1,8 +1,12 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <ipc/collisions/normal/normal_collisions.hpp>
+#include <ipc/ipc.hpp>
+#include <ipc/potentials/barrier_potential.hpp>
 #include <polysolve/nonlinear/Solver.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/optimization/AMIPSEnergy.hpp>
+#include <wmtk/optimization/BarrierEnergy.hpp>
 #include <wmtk/optimization/DirichletEnergy.hpp>
 #include <wmtk/optimization/EnergySum.hpp>
 #include <wmtk/optimization/solver.hpp>
@@ -160,7 +164,7 @@ TEST_CASE("amips_plus_dirichlet_energy_2d", "[energies]")
     write();
 }
 
-TEST_CASE("smoothing_energy_2d", "[energies]")
+TEST_CASE("biharmonic_energy_2d", "[energies]")
 {
     const Vector2d p0(0.8, 1); // this vertex is optimized
     const Vector2d p1(0, 0);
@@ -168,8 +172,8 @@ TEST_CASE("smoothing_energy_2d", "[energies]")
 
     double M;
     Vector3d L_w;
-    optimization::SmoothingEnergy2D::local_mass_and_stiffness({{p0, p1, p2}}, M, L_w);
-    optimization::SmoothingEnergy2D energy({{p0, p1, p2}}, M, L_w);
+    optimization::BiharmonicEnergy2D::local_mass_and_stiffness({{p0, p1, p2}}, M, L_w);
+    optimization::BiharmonicEnergy2D energy({{p0, p1, p2}}, M, L_w);
 
     CHECK(energy.is_step_valid(p0, p0));
 
@@ -192,4 +196,202 @@ TEST_CASE("smoothing_energy_2d", "[energies]")
     const double e_after = energy.value(x);
     CHECK(e_after < e_before);
     CHECK(e_after < 1e-5);
+}
+
+TEST_CASE("ipc_2d", "[energies][ipc]")
+{
+    // two edges
+    MatrixXd V;
+    V.resize(4, 2);
+    // e0
+    V.row(0) = Vector2d(0, 0);
+    V.row(1) = Vector2d(10, 0);
+    // e1
+    V.row(2) = Vector2d(0, 1e-3);
+    V.row(3) = Vector2d(10, 1e-3);
+
+    MatrixXi E;
+    E.resize(1, 2);
+    E.row(0) = Vector2i(0, 1);
+    // E.row(1) = Vector2i(2, 3);
+
+    ipc::CollisionMesh collision_mesh(V, E);
+
+    const double dhat = 1;
+
+    ipc::Candidates candidates; // gather all interesting pairs in here
+    candidates.ev_candidates.emplace_back(0, 2);
+    candidates.ev_candidates.emplace_back(0, 3);
+
+    ipc::NormalCollisions collisions;
+    // collisions.build(collision_mesh, V, dhat);
+    collisions.build(candidates, collision_mesh, V, dhat);
+
+    const ipc::BarrierPotential B(dhat);
+    double barrier_potential = B(collisions, collision_mesh, V);
+    // logger().info("Potential = {}", barrier_potential);
+
+    VectorXd barrier_potential_grad = B.gradient(collisions, collision_mesh, V);
+    // logger().info("Grad Potential = \n{}", barrier_potential_grad);
+
+    size_t i = 2;
+    Vector2d v2_grad(barrier_potential_grad[2 * i + 0], barrier_potential_grad[2 * i + 1]);
+    // logger().info("Grad Potential v2 = {}", v2_grad.transpose());
+
+    CHECK(v2_grad[1] < 0);
+    CHECK(v2_grad[0] == 0);
+
+    Eigen::SparseMatrix<double> barrier_potential_hess = B.hessian(collisions, collision_mesh, V);
+    Matrix2d v2_hess;
+    v2_hess.setZero();
+    v2_hess(0, 0) = barrier_potential_hess.coeff(2 * i, 2 * i);
+    v2_hess(1, 1) = barrier_potential_hess.coeff(2 * i + 1, 2 * i + 1);
+    // logger().info("Hess v2 = \n{}", v2_hess);
+
+    CHECK(v2_hess(0, 0) == 0);
+    CHECK(v2_hess(0, 1) == 0);
+    CHECK(v2_hess(1, 0) == 0);
+    CHECK(v2_hess(1, 1) > 0);
+    // logger().info("Hess full = \n{}", MatrixXd(barrier_potential_hess));
+}
+
+TEST_CASE("barrier_energy_2d", "[energies][ipc]")
+{
+    // 4 edges, two top two bottom
+    MatrixXd V;
+    V.resize(6, 2);
+    // bottom two edges
+    V.row(0) = Vector2d(0, 0);
+    V.row(1) = Vector2d(10, 0);
+    V.row(2) = Vector2d(20, 0);
+    // top two edges
+    V.row(3) = Vector2d(0, 1e-3);
+    V.row(4) = Vector2d(10, 1e-3);
+    V.row(5) = Vector2d(20, 1e-3);
+
+    MatrixXi E;
+    E.resize(4, 2);
+    E.row(0) = Vector2i(0, 1);
+    E.row(1) = Vector2i(1, 2);
+    E.row(2) = Vector2i(3, 4);
+    E.row(3) = Vector2i(4, 5);
+
+
+    optimization::BarrierEnergy2D energy(V, E, 4, 1);
+    const Vector2d p0 = energy.initial_position();
+    CHECK(energy.is_step_valid(p0, p0));
+
+    {
+        VectorXd g;
+        energy.gradient(p0, g);
+        REQUIRE(g.size() == 2);
+        CHECK(g[1] < 0);
+
+        MatrixXd h;
+        CHECK_NOTHROW(energy.hessian(p0, h));
+    }
+    auto x = energy.initial_position();
+    const double e_before = energy.value(x);
+    CHECK(e_before > 0);
+    {
+        auto linear_solver_params = optimization::basic_linear_solver_params;
+        auto nonlinear_solver_params = optimization::basic_nonlinear_solver_params;
+        nonlinear_solver_params["max_iterations"] = 100;
+
+        auto solver = polysolve::nonlinear::Solver::create(
+            nonlinear_solver_params,
+            linear_solver_params,
+            1,
+            opt_logger());
+        optimization::deactivate_opt_logger();
+
+        CHECK_NOTHROW(solver->minimize(energy, x));
+    }
+    const double e_after = energy.value(x);
+    CHECK(e_after < e_before);
+    {
+        VectorXd g;
+        energy.gradient(x, g);
+        CHECK(g[1] < 1e-6);
+    }
+}
+
+TEST_CASE("barrier_plus_biharmonic_energy_2d", "[energies][ipc]")
+{
+    // 4 edges, two top two bottom
+    MatrixXd V;
+    V.resize(6, 2);
+    // bottom two edges
+    V.row(0) = Vector2d(0, 0);
+    V.row(1) = Vector2d(10, 0);
+    V.row(2) = Vector2d(20, 0);
+    // top two edges
+    V.row(3) = Vector2d(0, 1e-3);
+    V.row(4) = Vector2d(10, 1e-3);
+    V.row(5) = Vector2d(20, 1e-3);
+    std::array<Vector2d, 3> top_vs;
+    top_vs[0] = V.row(4); // optimized vertex
+    top_vs[1] = V.row(3); // neighbor
+    top_vs[2] = V.row(5); // neighbor
+
+    MatrixXi E;
+    E.resize(4, 2);
+    E.row(0) = Vector2i(0, 1);
+    E.row(1) = Vector2i(1, 2);
+    E.row(2) = Vector2i(3, 4);
+    E.row(3) = Vector2i(4, 5);
+
+    optimization::EnergySum energy;
+
+    std::shared_ptr<optimization::BarrierEnergy2D> barrier_energy =
+        std::make_shared<optimization::BarrierEnergy2D>(V, E, 4, 1);
+
+    double M;
+    Vector3d L_w;
+    optimization::BiharmonicEnergy2D::local_mass_and_stiffness(top_vs, M, L_w);
+    std::shared_ptr<optimization::BiharmonicEnergy2D> biharmonic_energy =
+        std::make_shared<optimization::BiharmonicEnergy2D>(top_vs, M, L_w);
+
+    energy.add_energy(barrier_energy, 1);
+    energy.add_energy(biharmonic_energy, 1e3);
+
+    const Vector2d p0 = barrier_energy->initial_position();
+    CHECK(barrier_energy->is_step_valid(p0, p0));
+
+
+    {
+        VectorXd g;
+        energy.gradient(p0, g);
+        REQUIRE(g.size() == 2);
+        CHECK(g[1] < 0);
+
+        MatrixXd h;
+        CHECK_NOTHROW(energy.hessian(p0, h));
+    }
+    auto x = barrier_energy->initial_position();
+    const double e_before = energy.value(x);
+    CHECK(e_before > 0);
+    {
+        auto linear_solver_params = optimization::basic_linear_solver_params;
+        auto nonlinear_solver_params = optimization::basic_nonlinear_solver_params;
+        nonlinear_solver_params["max_iterations"] = 100;
+
+        auto solver = polysolve::nonlinear::Solver::create(
+            nonlinear_solver_params,
+            linear_solver_params,
+            1,
+            opt_logger());
+        optimization::deactivate_opt_logger();
+
+        CHECK_NOTHROW(solver->minimize(energy, x));
+    }
+    const double e_after = energy.value(x);
+    logger().info("x = {}", x);
+    CHECK(e_after < e_before);
+
+    // vertex should be somewhere between 1e-3 and 1
+    CHECK(x[1] > 1e-3);
+    CHECK(x[1] < 1);
+    // vertex should not move to the side
+    CHECK(std::abs(x[0] - 10) < 1e-4);
 }

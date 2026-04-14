@@ -1,8 +1,8 @@
-#include "RawSimplex.hpp"
+#include "Simplex.hpp"
 
 #include <algorithm>
 
-#include "RawSimplexCollection.hpp"
+#include "SimplexCollection.hpp"
 
 namespace {
 template <int N>
