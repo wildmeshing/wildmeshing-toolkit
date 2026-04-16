@@ -274,4 +274,47 @@ InputData read_image(
     return input_data;
 }
 
+InputData read_mesh(
+    const std::vector<std::string>& input_paths,
+    const std::string& output_filename,
+    const nlohmann::json& json_params)
+{
+    InputData input_data;
+
+    const bool use_sample_envelope = json_params["use_sample_envelope"];
+    const int NUM_THREADS = json_params["num_threads"];
+    const int max_its = json_params["max_iterations"];
+    const bool write_vtu = json_params["write_vtu"];
+
+    // convert mesh into tet mesh
+    EmbedSurface image_mesh(input_paths);
+
+    if (write_vtu) {
+        image_mesh.write_surf_off(output_filename + "_input.off");
+    }
+
+    input_data.V_envelope = image_mesh.V_surface();
+    input_data.F_envelope = image_mesh.F_surface();
+
+    const bool all_rounded =
+        json_params["use_tetgen"] ? image_mesh.embed_surface_tetgen() : image_mesh.embed_surface();
+    image_mesh.consolidate();
+
+    if (write_vtu) {
+        image_mesh.write_emb_surf_off(output_filename + "_input_emb.off");
+    }
+
+    input_data.V_input = image_mesh.V_emb();
+    if (!all_rounded) {
+        input_data.V_input_r = image_mesh.V_emb_r();
+    }
+    input_data.T_input = image_mesh.T_emb();
+    input_data.T_input_tag = image_mesh.T_tags();
+
+    wmtk::logger().info("======= finish image-tet conversion =========");
+
+    return input_data;
+}
+
+
 } // namespace wmtk::components::image_simulation

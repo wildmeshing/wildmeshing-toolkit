@@ -61,9 +61,6 @@ public:
      */
     size_t partition_id = 0;
 
-    // for open boundary
-    bool m_is_on_open_boundary = false;
-
     VertexAttributes() {};
     VertexAttributes(const Vector3r& p);
 };
@@ -141,7 +138,7 @@ public:
     bool m_collapse_check_quality = true;
 
     // for open boundary
-    SampleEnvelope m_open_boundary_envelope; // todo: add sample envelope option
+    std::shared_ptr<SampleEnvelope> m_order_2_edge_envelope; // todo: add sample envelope option
 
     std::unique_ptr<polysolve::nonlinear::Solver> m_solver;
     Eigen::SparseMatrix<double> m_surface_mass; // the mass matrix for surface vertices
@@ -448,11 +445,6 @@ public:
     //
     bool is_edge_on_surface(const Tuple& loc);
     bool is_edge_on_bbox(const Tuple& loc);
-    /**
-     * brief Check if the vertex has an incident boundary edge.
-     * This performs a topological check.
-     */
-    bool is_vertex_on_boundary(const size_t vid);
     //
     void mesh_improvement(int max_its = 80);
     std::tuple<double, double> local_operations(
@@ -520,6 +512,8 @@ private:
         std::vector<std::array<size_t, 2>> boundary_edges;
         std::vector<size_t> changed_tids;
         std::vector<double> changed_energies;
+
+        size_t edge_order;
     };
     tbb::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
 
@@ -584,7 +578,7 @@ public:
      * used.
      *
      */
-    void find_open_boundary();
+    void find_order_2_edges();
     /**
      * @brief Checks if an edge COULD be an open boundary edge.
      *
@@ -594,8 +588,8 @@ public:
      * boundary! For example, an almost degenerate triangle with two edges on the open boundary
      * could cause a false positive result.
      */
-    bool is_open_boundary_edge(const Tuple& e);
-    bool is_open_boundary_edge(const std::array<size_t, 2>& e);
+    bool is_order_2_edge(const Tuple& e) const;
+    bool is_order_2_edge(const std::array<size_t, 2>& e) const;
 
     void write_vtu(const std::string& path);
 

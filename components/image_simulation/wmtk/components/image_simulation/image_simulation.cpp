@@ -45,7 +45,7 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     params.preserve_topology = json_params["preserve_topology"];
 
     params.epsr_simplify = json_params["eps_simplify_rel"];
-    params.epsr = json_params["eps_simplify"];
+    params.eps_simplify = json_params["eps_simplify"];
 
     params.smooth_without_envelope = json_params["smooth_without_envelope"];
 
@@ -287,10 +287,15 @@ void image_simulation(nlohmann::json json_params)
     };
 
     // read image or .msh
-    const InputData input_data =
-        (std::filesystem::path(input_paths[0]).extension() == ".msh")
-            ? read_image_msh(input_paths[0])
-            : read_image(input_paths, output_filename.string(), json_params);
+    InputData input_data;
+    std::string extension = std::filesystem::path(input_paths[0]).extension().string();
+    if (extension == ".msh") {
+        input_data = read_image_msh(input_paths[0]);
+    } else if (extension == ".raw") {
+        input_data = read_image(input_paths, output_filename.string(), json_params);
+    } else {
+        input_data = read_mesh(input_paths, output_filename.string(), json_params);
+    }
 
     if (input_data.T_input.cols() == 4) {
         run_3D(json_params, input_data);

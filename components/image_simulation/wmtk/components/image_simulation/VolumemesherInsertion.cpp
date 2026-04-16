@@ -583,11 +583,11 @@ void ImageSimulationMesh::init_from_Volumeremesher(
         [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
 
     // track open boundaries
-    find_open_boundary();
+    find_order_2_edges();
 
     int open_boundary_cnt = 0;
     for (const Tuple& e : get_edges()) {
-        if (is_open_boundary_edge(e)) {
+        if (is_order_2_edge(e)) {
             open_boundary_cnt++;
         }
     }
@@ -655,6 +655,8 @@ void ImageSimulationMesh::init_from_image(
     }
 
     init_surfaces_and_boundaries();
+
+    init_vertex_order();
 
     // rounding
     size_t cnt_round = 0;
@@ -724,6 +726,8 @@ void ImageSimulationMesh::init_from_image(
     }
 
     init_surfaces_and_boundaries();
+
+    init_vertex_order();
 
     // init qualities
     for_each_tetra(
@@ -846,11 +850,11 @@ void ImageSimulationMesh::init_surfaces_and_boundaries()
         [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
 
     // track open boundaries
-    find_open_boundary();
+    find_order_2_edges();
 
     int open_boundary_cnt = 0;
     for (const Tuple& e : get_edges()) {
-        if (is_open_boundary_edge(e)) {
+        if (is_order_2_edge(e)) {
             open_boundary_cnt++;
         }
     }
@@ -858,88 +862,49 @@ void ImageSimulationMesh::init_surfaces_and_boundaries()
 }
 
 
-void ImageSimulationMesh::find_open_boundary()
+void ImageSimulationMesh::find_order_2_edges()
 {
-    const auto faces = get_faces();
-    std::vector<int> edge_on_open_boundary(6 * tet_capacity(), 0);
-
     // for open boundary envelope
     std::vector<Eigen::Vector3d> v_posf(vert_capacity());
-    std::vector<Eigen::Vector3i> open_boundaries;
+    std::vector<Eigen::Vector2i> order_2_edges;
 
     for (size_t i = 0; i < vert_capacity(); i++) {
         v_posf[i] = m_vertex_attribute[i].m_posf;
     }
 
-    for (const Tuple& f : faces) {
-        const SmartTuple ff(*this, f);
-        const size_t fid = ff.fid();
-        if (!m_face_attribute[fid].m_is_surface_fs) {
-            continue;
-        }
-        size_t eid1 = ff.eid();
-        size_t eid2 = ff.switch_edge().eid();
-        size_t eid3 = ff.switch_vertex().switch_edge().eid();
-
-        edge_on_open_boundary[eid1]++;
-        edge_on_open_boundary[eid2]++;
-        edge_on_open_boundary[eid3]++;
-    }
-
     const auto edges = get_edges();
     for (const Tuple& e : edges) {
-        if (edge_on_open_boundary[e.eid(*this)] != 1) {
-            continue;
+        const size_t v1 = e.vid(*this);
+        const size_t v2 = e.switch_vertex(*this).vid(*this);
+        if (is_order_2_edge({{v1, v2}})) {
+            order_2_edges.emplace_back(v1, v2);
         }
-        size_t v1 = e.vid(*this);
-        size_t v2 = e.switch_vertex(*this).vid(*this);
-        m_vertex_attribute[v1].m_is_on_open_boundary = true;
-        m_vertex_attribute[v2].m_is_on_open_boundary = true;
-        open_boundaries.emplace_back(v1, v2, v1); // degenerate triangle to mimic the edge
     }
 
-    wmtk::logger().info("open boundary num: {}", open_boundaries.size());
+    logger().info("order 2 edge num: {}", order_2_edges.size());
 
-    if (open_boundaries.size() == 0) {
+    if (order_2_edges.size() == 0) {
         return;
     }
 
     // init open boundary envelope
-    m_open_boundary_envelope.init(v_posf, open_boundaries, m_params.epsr * m_params.diag_l / 2.0);
+    m_order_2_edge_envelope = std::make_shared<SampleEnvelope>();
+    m_order_2_edge_envelope->init(v_posf, order_2_edges, m_params.epsr * m_params.diag_l / 2.0);
 }
 
-bool ImageSimulationMesh::is_open_boundary_edge(const Tuple& e)
+bool ImageSimulationMesh::is_order_2_edge(const Tuple& e) const
 {
     size_t v1 = e.vid(*this);
     size_t v2 = e.switch_vertex(*this).vid(*this);
-    if (!m_vertex_attribute[v1].m_is_on_open_boundary ||
-        !m_vertex_attribute[v2].m_is_on_open_boundary)
-        return false;
-
-    /*
-     * This code is not reliable. If the envelope is chosen too large, elements could be reported as
-     * boundary even though they aren't. Especially, when there are sliver triangles that are barely
-     * not inverted.
-     */
-
-    return !m_open_boundary_envelope.is_outside(
-        {{m_vertex_attribute[v1].m_posf,
-          m_vertex_attribute[v2].m_posf,
-          m_vertex_attribute[v1].m_posf}});
+    return is_order_2_edge({{v1, v2}});
 }
 
-bool ImageSimulationMesh::is_open_boundary_edge(const std::array<size_t, 2>& e)
+bool ImageSimulationMesh::is_order_2_edge(const std::array<size_t, 2>& e) const
 {
-    size_t v1 = e[0];
-    size_t v2 = e[1];
-    if (!m_vertex_attribute[v1].m_is_on_open_boundary ||
-        !m_vertex_attribute[v2].m_is_on_open_boundary)
-        return false;
-
-    return !m_open_boundary_envelope.is_outside(
-        {{m_vertex_attribute[v1].m_posf,
-          m_vertex_attribute[v2].m_posf,
-          m_vertex_attribute[v1].m_posf}});
+    // if (m_vertex_attribute[e[0]].m_order < 2 || m_vertex_attribute[e[1]].m_order < 2) {
+    //     return false;
+    // }
+    return get_order_of_edge(e) == 2;
 }
 
 } // namespace wmtk::components::image_simulation

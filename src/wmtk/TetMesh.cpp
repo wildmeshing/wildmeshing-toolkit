@@ -633,6 +633,13 @@ simplex::Tet TetMesh::simplex_from_tet(const size_t tid) const
     return tet;
 }
 
+simplex::Edge TetMesh::simplex_from_edge(const Tuple& t) const
+{
+    size_t v0 = t.vid(*this);
+    size_t v1 = t.switch_vertex(*this).vid(*this);
+    return simplex::Edge(v0, v1);
+}
+
 
 std::array<TetMesh::Tuple, 4> TetMesh::oriented_tet_vertices(const Tuple& t) const
 {

@@ -27,11 +27,6 @@ bool ImageSimulationMesh::smooth_before(const Tuple& t)
 
     if (!m_vertex_attribute[vid].on_bbox_faces.empty()) return false;
 
-    // update if vertex is on boundary
-    if (!is_vertex_on_boundary(vid)) {
-        m_vertex_attribute[vid].m_is_on_open_boundary = false;
-    }
-
     if (m_vertex_attribute[vid].m_is_rounded) return true;
     // try to round.
     // Note: no need to roll back.
@@ -94,52 +89,10 @@ bool ImageSimulationMesh::smooth_after(const Tuple& t)
     };
 
     if (VA[vid].m_is_on_surface) {
-        // std::set<size_t> unique_fid;
-        // for (const Tuple& t : locs) {
-        //     for (auto j = 0; j < 4; j++) {
-        //         auto f_t = tuple_from_face(t.tid(*this), j);
-        //         auto fid = f_t.fid(*this);
-        //         auto [it, suc] = unique_fid.emplace(fid);
-        //         if (!suc) continue;
-        //         if (m_face_attribute[fid].m_is_surface_fs) {
-        //             auto vs_id = get_face_vids(f_t);
-        //             for (int k : {1, 2}) {
-        //                 if (vs_id[k] == vid) {
-        //                     std::swap(vs_id[k], vs_id[0]);
-        //                 }
-        //             }
-        //             if (vs_id[0] != vid) {
-        //                continue; // does not contain point of interest
-        //            }
-        //            std::array<double, 9> coords;
-        //            for (int k = 0; k < 3; k++) {
-        //                for (int kk = 0; kk < 3; kk++) {
-        //                    coords[k * 3 + kk] = m_vertex_attribute[vs_id[k]].m_posf[kk];
-        //                }
-        //            }
-        //            surface_assemble.emplace_back(coords);
-        //        }
-        //    }
-        //}
-        // if (!m_vertex_attribute[vid].m_is_on_open_boundary) {
-        //    assert(m_envelope->initialized());
-        //    Vector3d project;
-        //    m_envelope->nearest_point(m_vertex_attribute[vid].m_posf, project);
-        //    m_vertex_attribute[vid].m_posf = project;
-        //}
-        //
-        // for (auto& n : surface_assemble) {
-        //    for (int kk = 0; kk < 3; kk++) {
-        //        n[kk] = m_vertex_attribute[vid].m_posf[kk];
-        //    }
-        //}
-
-        if (VA[vid].m_order > 1) {
-            // TODO cannot smooth vertices on non-manifold edges
-            logger().warn("Ignoring vertices with order {}", VA[vid].m_order);
-            // only order 3 vertices should be fixed
-            return false;
-        }
+        // if (VA[vid].m_order == 3) {
+        //     logger().warn("Ignoring vertices with order {}", VA[vid].m_order);
+        //     return false;
+        // }
 
         auto energy_sum = std::make_shared<optimization::EnergySum>();
 
@@ -154,14 +107,14 @@ bool ImageSimulationMesh::smooth_after(const Tuple& t)
         total_energy = energy_sum;
         solve();
 
+        // second solve (with proper weights)
         energy_sum = std::make_shared<optimization::EnergySum>();
 
         if (m_params.w_smooth > 0) {
             auto smooth_energy = get_smooth_energy(t);
-            if (!smooth_energy) {
-                log_and_throw_error("Could not construct smooth energy for vertex {}", vid);
+            if (smooth_energy) {
+                energy_sum->add_energy(smooth_energy);
             }
-            energy_sum->add_energy(smooth_energy);
         }
         if (m_params.w_amips > 0) {
             energy_sum->add_energy(amips_energy);
@@ -567,12 +520,15 @@ std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMesh::get_envelope
 {
     size_t vid = t.vid(*this);
     const auto& M = m_surface_mass.coeff(vid, vid);
-    const double w = m_s_envelope * M * m_params.w_envelope;
+    const double w = m_s_envelope * m_params.w_envelope;
 
-    auto envelope_energy = std::make_shared<optimization::EnvelopeEnergy3D>(
-        m_envelope_orig,
-        w,
-        !m_params.smooth_without_envelope);
+    auto env = m_envelope_orig;
+    if (m_vertex_attribute[vid].m_order > 1) {
+        env = m_order_2_edge_envelope;
+    }
+
+    auto envelope_energy =
+        std::make_shared<optimization::EnvelopeEnergy3D>(env, w, !m_params.smooth_without_envelope);
     return envelope_energy;
 }
 

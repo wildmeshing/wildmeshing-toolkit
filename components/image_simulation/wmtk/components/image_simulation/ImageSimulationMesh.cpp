@@ -845,61 +845,6 @@ bool ImageSimulationMesh::is_edge_on_bbox(const Tuple& loc)
     return false;
 }
 
-bool ImageSimulationMesh::is_vertex_on_boundary(const size_t e0)
-{
-    if (!m_vertex_attribute.at(e0).m_is_on_open_boundary) {
-        return false;
-    }
-
-    const auto neigh_vids = get_one_ring_vids_for_vertex(e0);
-    const auto e0_tids = get_one_ring_tids_for_vertex(e0);
-
-    for (const size_t e1 : neigh_vids) {
-        if (!m_vertex_attribute.at(e1).m_is_on_open_boundary) {
-            continue;
-        }
-        int cnt = 0;
-        for (int t_id : e0_tids) {
-            const auto vs = oriented_tet_vids(t_id);
-            std::array<int, 4> opp_js; // DZ: all vertices that are adjacent to e1 except for e2
-            int ii = 0;
-            for (int j = 0; j < 4; j++) {
-                if (vs[j] == e0 || vs[j] == e1) {
-                    continue;
-                }
-                opp_js[ii++] = j;
-            }
-            // DZ: if the tet contains e1 and e2, then ii == 2
-            if (ii != 2) {
-                continue;
-            }
-            // DZ: opp_js vertices form a tet together with v1,v2
-            if (m_vertex_attribute.at(vs[opp_js[0]]).m_is_on_surface) {
-                const auto [f0_tup, f0_id] = tuple_from_face({{e0, e1, vs[opp_js[0]]}});
-                if (m_face_attribute.at(f0_id).m_is_surface_fs) {
-                    cnt++;
-                }
-            }
-            if (m_vertex_attribute.at(vs[opp_js[1]]).m_is_on_surface) {
-                const auto [f1_tup, f1_id] = tuple_from_face({{e0, e1, vs[opp_js[1]]}});
-                if (m_face_attribute.at(f1_id).m_is_surface_fs) {
-                    cnt++;
-                }
-            }
-            if (cnt > 2) {
-                break;
-            }
-        }
-        // all faces are visited twice, so cnt == 2 means there is one boundary face
-        if (cnt == 2) {
-            // this is a boundary edge
-            return true;
-        }
-    }
-
-    return false;
-}
-
 bool ImageSimulationMesh::check_attributes()
 {
     for (auto& f : get_faces()) {
@@ -1013,17 +958,28 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
     const auto& vs = get_vertices();
     const auto& tets = get_tets();
     const auto faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
+    std::vector<simplex::Edge> edges;
+    for (const Tuple& t : get_edges()) {
+        simplex::Edge e = simplex_from_edge(t);
+        if (is_order_2_edge(e.vertices())) {
+            edges.push_back(e);
+        }
+    }
 
-    Eigen::MatrixXd V(vert_capacity(), 3);
-    Eigen::MatrixXi T(tet_capacity(), 4);
-    Eigen::MatrixXi F(faces.size(), 3);
+    MatrixXd V(vert_capacity(), 3);
+    MatrixXi T(tet_capacity(), 4);
+    MatrixXi F(faces.size(), 3);
+    MatrixXi E(edges.size(), 2);
 
     V.setZero();
     T.setZero();
     F.setZero();
+    E.setZero();
 
-    Eigen::VectorXd v_sizing_field(vert_capacity());
+    VectorXd v_sizing_field(vert_capacity());
     v_sizing_field.setZero();
+    VectorXd v_order(vert_capacity());
+    v_order.setZero();
 
     std::vector<MatrixXd> tags(m_tags_count, MatrixXd(tet_capacity(), 1));
     Eigen::MatrixXd amips(tet_capacity(), 1);
@@ -1049,10 +1005,16 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
         }
     }
 
+    for (size_t i = 0; i < edges.size(); ++i) {
+        E(i, 0) = edges[i].vertices()[0];
+        E(i, 1) = edges[i].vertices()[1];
+    }
+
     for (const Tuple& v : vs) {
         const size_t vid = v.vid(*this);
         V.row(vid) = m_vertex_attribute[vid].m_posf;
         v_sizing_field[vid] = m_vertex_attribute[vid].m_sizing_scalar;
+        v_order[vid] = m_vertex_attribute[vid].m_order;
     }
 
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
@@ -1071,9 +1033,21 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
         std::shared_ptr<paraviewo::ParaviewWriter> surf_writer;
         surf_writer = std::make_shared<paraviewo::VTUWriter>();
         surf_writer->add_field("sizing_field", v_sizing_field);
+        surf_writer->add_field("order", v_order);
 
         logger().info("Write {}", surf_out_path);
         surf_writer->write_mesh(surf_out_path, V, F);
+    }
+    // edges
+    {
+        const auto edge_out_path = path + "_edge.vtu";
+        std::shared_ptr<paraviewo::ParaviewWriter> edge_writer;
+        edge_writer = std::make_shared<paraviewo::VTUWriter>();
+        edge_writer->add_field("sizing_field", v_sizing_field);
+        edge_writer->add_field("order", v_order);
+
+        logger().info("Write {}", edge_out_path);
+        edge_writer->write_mesh(edge_out_path, V, E);
     }
 }
 
@@ -1120,10 +1094,16 @@ size_t ImageSimulationMesh::get_order_of_vertex(const size_t vid) const
 
 void ImageSimulationMesh::init_vertex_order()
 {
+    std::array<size_t, 4> count{0, 0, 0, 0};
+
     for (const Tuple& t : get_vertices()) {
         const size_t vid = t.vid(*this);
-        m_vertex_attribute[vid].m_order = compute_vertex_order(vid);
+        const size_t order = compute_vertex_order(vid);
+        m_vertex_attribute[vid].m_order = order;
+        count[order]++;
     }
+
+    logger().info("Vertex order count (0,1,2,3): {}", count);
 }
 
 } // namespace wmtk::components::image_simulation

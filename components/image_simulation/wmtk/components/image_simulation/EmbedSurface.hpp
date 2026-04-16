@@ -97,6 +97,11 @@ public:
     EmbedSurface(const std::vector<std::string>& img_filenames, const Matrix4d& ijk2xyz);
 
     /**
+     * @brief Input from meshes.
+     */
+    EmbedSurface(const std::vector<std::string>& img_filenames);
+
+    /**
      * @brief Simplify the input surface while staying within the eps envelope.
      *
      * @param eps The absolute envelope thickness.
@@ -152,6 +157,8 @@ private:
     void V_surf_from_vector(const std::vector<Eigen::Vector3d>& verts);
     void F_surf_from_vector(const std::vector<std::array<size_t, 3>>& tris);
 
+    void tag_from_winding_number();
+
 private:
     std::vector<std::string> m_img_filenames;
     std::vector<ImageData> m_img_datas;
@@ -174,6 +181,13 @@ private:
     MatrixXi m_F_on_surface;
     // tags on the tets
     MatrixXi m_T_tags;
+
+    // input from triangle meshes
+    std::vector<MatrixXd> Vs;
+    std::vector<MatrixXi> Fs;
+
+public:
+    bool m_smooth_surface = false;
 };
 
 } // namespace wmtk::components::image_simulation
