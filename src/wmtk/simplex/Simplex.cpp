@@ -169,4 +169,14 @@ Vertex Tet::opposite_vertex(const Face& v) const
     return Vertex(a[0]);
 }
 
+std::array<Face, 4> Tet::faces() const
+{
+    return {{
+        Face(m_vertices[0], m_vertices[1], m_vertices[2]),
+        Face(m_vertices[0], m_vertices[1], m_vertices[3]),
+        Face(m_vertices[0], m_vertices[2], m_vertices[3]),
+        Face(m_vertices[1], m_vertices[2], m_vertices[3]) //
+    }};
+}
+
 } // namespace wmtk::simplex

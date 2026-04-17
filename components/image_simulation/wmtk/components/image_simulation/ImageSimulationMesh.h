@@ -197,7 +197,7 @@ public:
             logger().info("w_envelope = {}", we);
         }
 
-        // init_separation_weight();
+        init_separation_weight();
     }
 
     ~ImageSimulationMesh() {}
@@ -346,6 +346,8 @@ public:
 
     void init_envelope(const MatrixXd& V, const MatrixXi& F);
 
+    void init_separation_weight();
+
     double get_length2(const Tuple& l) const;
 
     ////// Attributes related
@@ -425,6 +427,12 @@ public:
 
     std::shared_ptr<polysolve::nonlinear::Problem> get_smooth_energy(const Tuple& t) const;
     std::shared_ptr<polysolve::nonlinear::Problem> get_envelope_energy(const Tuple& t) const;
+    std::shared_ptr<polysolve::nonlinear::Problem> get_barrier_energy(
+        const Tuple& t,
+        const bool use_full_surface = false) const;
+
+    void substructure_region(const Tuple& v_tuple, MatrixXd& V, MatrixXi& E, size_t& vid_local)
+        const;
 
 
     /**
@@ -455,7 +463,7 @@ public:
     bool check_attributes();
 
     std::vector<std::array<size_t, 3>> get_faces_by_condition(
-        std::function<bool(const FaceAttributes&)> cond);
+        std::function<bool(const FaceAttributes&)> cond) const;
 
     bool invariants(const std::vector<Tuple>& t) override; // this is now automatically checked
 

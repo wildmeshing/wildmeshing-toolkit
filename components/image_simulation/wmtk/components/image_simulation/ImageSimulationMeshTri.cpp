@@ -376,7 +376,7 @@ void ImageSimulationMeshTri::init_separation_weight()
      *
      * E_B' = b'(\hat{d}/2) = \hat{d} * (\ln(2) - 0.5)
      *
-     * smooth scaling: s_B = 1/l^4
+     * barrier scaling: s_B = 1/l^4
      * envelope scaling: s_E = 1 / (l * eps^2)
      *
      * l is the bounding box diagonal.

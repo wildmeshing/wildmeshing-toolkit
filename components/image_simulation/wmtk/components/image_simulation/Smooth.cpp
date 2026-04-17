@@ -6,7 +6,10 @@
 #include <igl/Timer.h>
 #include <wmtk/utils/AMIPS.h>
 #include <array>
+#include <ipc/distance/point_triangle.hpp>
+#include <unordered_set>
 #include <wmtk/optimization/AMIPSEnergy.hpp>
+#include <wmtk/optimization/BarrierEnergy.hpp>
 #include <wmtk/optimization/DirichletEnergy.hpp>
 #include <wmtk/optimization/EnergySum.hpp>
 #include <wmtk/optimization/EnvelopeEnergy.hpp>
@@ -121,6 +124,9 @@ bool ImageSimulationMesh::smooth_after(const Tuple& t)
         }
         if (m_params.w_envelope > 0) {
             energy_sum->add_energy(envelope_energy);
+        }
+        if (m_params.w_separate > 0) {
+            energy_sum->add_energy(get_barrier_energy(t));
         }
         total_energy = energy_sum;
         solve();
@@ -519,7 +525,7 @@ std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMesh::get_envelope
     const Tuple& t) const
 {
     size_t vid = t.vid(*this);
-    const auto& M = m_surface_mass.coeff(vid, vid);
+    // const auto& M = m_surface_mass.coeff(vid, vid);
     const double w = m_s_envelope * m_params.w_envelope;
 
     auto env = m_envelope_orig;
@@ -530,6 +536,238 @@ std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMesh::get_envelope
     auto envelope_energy =
         std::make_shared<optimization::EnvelopeEnergy3D>(env, w, !m_params.smooth_without_envelope);
     return envelope_energy;
+}
+
+std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMesh::get_barrier_energy(
+    const Tuple& t,
+    const bool use_full_surface) const
+{
+    const auto& VA = m_vertex_attribute;
+    const size_t vid = t.vid(*this);
+
+    if (!VA[vid].m_is_on_surface) {
+        return nullptr;
+    }
+
+    // const auto& M = m_surface_mass.coeff(vid, vid);
+    // if (M <= 0) {
+    //     return nullptr;
+    // }
+
+    // barrier energy
+    MatrixXd V_barrier;
+    MatrixXi F_barrier;
+    size_t vid_barrier;
+    if (!use_full_surface) {
+        substructure_region(t, V_barrier, F_barrier, vid_barrier);
+    } else {
+        // this is horribly expensive and is only here for testing
+
+        std::vector<Vector3d> surf_points;
+        std::vector<size_t> global_to_local_vid_map(vert_capacity());
+        for (size_t i = 0; i < vert_capacity(); ++i) {
+            const Tuple v = tuple_from_vertex(i);
+            if (!v.is_valid(*this)) {
+                continue;
+            }
+            const size_t _vid = v.vid(*this);
+            if (!m_vertex_attribute.at(_vid).m_is_on_surface) {
+                continue;
+            }
+            surf_points.push_back(m_vertex_attribute.at(_vid).m_posf);
+            global_to_local_vid_map[_vid] = surf_points.size() - 1;
+        }
+
+        V_barrier.resize(surf_points.size(), 3);
+        for (size_t i = 0; i < surf_points.size(); ++i) {
+            V_barrier.row(i) = surf_points[i];
+        }
+
+        const auto faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
+        F_barrier.resize(faces.size(), 3);
+        for (size_t i = 0; i < faces.size(); ++i) {
+            const size_t v0 = global_to_local_vid_map[faces[i][0]];
+            const size_t v1 = global_to_local_vid_map[faces[i][1]];
+            const size_t v2 = global_to_local_vid_map[faces[i][2]];
+            F_barrier.row(i) = Vector3i(v0, v1, v2);
+        }
+
+        vid_barrier = global_to_local_vid_map[vid];
+    }
+
+    auto barrier_energy = std::make_shared<optimization::BarrierEnergy3D>(
+        V_barrier,
+        F_barrier,
+        vid_barrier,
+        m_params.dhat,
+        m_s_barrier * m_params.w_separate);
+
+    return barrier_energy;
+}
+
+void ImageSimulationMesh::substructure_region(
+    const Tuple& v_tuple,
+    MatrixXd& V,
+    MatrixXi& F,
+    size_t& vid_local) const
+{
+    const auto& VA = m_vertex_attribute;
+    const size_t vid_global = v_tuple.vid(*this);
+
+    if (!VA[vid_global].m_is_on_surface) {
+        log_and_throw_error(
+            "Cannot compute substructure region for vertex that is not on the surface");
+        // We actually could compute this but it doesn't make sense. Remove this if-statement if we
+        // should ever need to compute regions for vertices not on the surface.
+    }
+
+    const Vector3d& p0 = VA[vid_global].m_posf;
+
+    double l_max = 0; // longest incident edge length
+    for (const size_t& v1 : get_one_ring_vids_for_vertex(vid_global)) {
+        const Vector3d& p1 = VA[v1].m_posf;
+        const double l_squared = (p1 - p0).squaredNorm();
+        l_max = std::max(l_max, l_squared);
+    }
+    l_max = std::sqrt(l_max);
+
+    const double r = 1.5 * m_params.dhat + l_max; // region radius
+    const double r2 = r * r;
+
+    simplex::SimplexCollection candidates; // all faces within the region
+
+    // make a BFS to find faces within distance
+    std::unordered_set<size_t> visited;
+    std::queue<size_t> q;
+    q.push(vid_global);
+    visited.insert(vid_global);
+
+    while (!q.empty()) {
+        const size_t v_a = q.front();
+        q.pop();
+
+        const Vector3d& p_a = VA[v_a].m_posf;
+        const double d2_a = (p0 - p_a).squaredNorm();
+
+        for (const size_t& tid : get_one_ring_tids_for_vertex(vid_global)) {
+            // get all faces from tet
+            simplex::Tet tet = simplex_from_tet(tid);
+            const auto fs = tet.faces();
+
+            for (size_t i = 0; i < 4; ++i) {
+                const Vector3d& t1 = VA[fs[i].vertices()[0]].m_posf;
+                const Vector3d& t2 = VA[fs[i].vertices()[1]].m_posf;
+                const Vector3d& t3 = VA[fs[i].vertices()[2]].m_posf;
+
+                // if p_a is within the region, skip distance test for triangles
+                if (d2_a <= r2) {
+                    const double d2 = ipc::point_triangle_distance(p0, t1, t2, t3);
+                    if (d2 > r2) {
+                        // triangle is too far away
+                        continue;
+                    }
+                }
+
+                candidates.add(fs[i]);
+                // add vertices to queue
+                for (size_t j = 0; j < 3; ++j) {
+                    const size_t v_b = fs[i].vertices()[j];
+                    if (visited.count(v_b) == 0) {
+                        q.push(v_b);
+                        visited.insert(v_b);
+                    }
+                }
+            }
+        }
+    }
+    candidates.sort_and_clean();
+
+    std::vector<simplex::Face> faces; // faces on the surface
+    for (const auto& f : candidates.faces()) {
+        const auto [tup, fid] = tuple_from_face(f.vertices());
+        if (face_is_on_surface(fid)) {
+            faces.push_back(f);
+        }
+    }
+
+    std::unordered_set<size_t> region_vertices;
+    for (const auto& f : faces) {
+        region_vertices.insert(f.vertices()[0]);
+        region_vertices.insert(f.vertices()[1]);
+        region_vertices.insert(f.vertices()[2]);
+    }
+
+    // build V and F
+    std::vector<Vector3d> points;
+    std::unordered_map<size_t, size_t> global_to_local_vid_map;
+    for (const size_t i : region_vertices) {
+        const Tuple v = tuple_from_vertex(i);
+        assert(v.is_valid(*this));
+        assert(VA[i].m_is_on_surface);
+        points.push_back(VA[i].m_posf);
+        global_to_local_vid_map[i] = points.size() - 1;
+    }
+
+    V.resize(points.size(), 3);
+    for (size_t i = 0; i < points.size(); ++i) {
+        V.row(i) = points[i];
+    }
+
+    F.resize(faces.size(), 3);
+    for (size_t i = 0; i < faces.size(); ++i) {
+        const size_t v0 = global_to_local_vid_map[faces[i].vertices()[0]];
+        const size_t v1 = global_to_local_vid_map[faces[i].vertices()[1]];
+        const size_t v2 = global_to_local_vid_map[faces[i].vertices()[2]];
+        F.row(i) = Vector3i(v0, v1, v2);
+    }
+
+    vid_local = global_to_local_vid_map[vid_global];
+}
+
+void ImageSimulationMesh::init_separation_weight()
+{
+    if (m_params.separation_factor <= 0) {
+        m_params.w_separate = 0;
+        logger().warn(
+            "Separation factor is {} -> No separation. IPC barrier weight = {}",
+            m_params.separation_factor,
+            m_params.w_separate);
+        return;
+    }
+    //m_params.w_separate = m_params.w_envelope * (16. / 5.) * m_params.dhat;
+
+    /**
+     * This assumes that the barrier term is the clamped log barrier term:
+     * E_B = b(d) = -(d-\hat{d})^2\ln\left(\frac{d}{\hat{d}}\right)
+     *
+     * E_B' = b'(\hat{d}/2) = \hat{d} * (\ln(2) - 0.5)
+     *
+     * barrier scaling: s_B = 1/l^4
+     * envelope scaling: s_E = 1 / (l * eps^2)
+     *
+     * l is the bounding box diagonal.
+     *
+     * The envelope energy E_E = \Vert p - p_0 \Vert^2
+     * E_E'(\hat{d}/2) = \hat{d}
+     *
+     * We compute w_E from
+     * s_B w_B E_B' = s_E w_E E_E'
+     *
+     * w_B = w_E l^3 / (eps^2 * (\ln(2) - 0.5))
+     */
+
+    const double l3 = m_params.diag_l3;
+    const double eps2 = m_params.eps * m_params.eps;
+    const double ln2 = std::log(2.0);
+
+    m_params.w_separate = m_params.w_envelope * l3 / (eps2 * (ln2 - 0.5));
+
+    logger().info("IPC barrier weight = {}, dhat = {}", m_params.w_separate, m_params.dhat);
+
+    if (m_params.w_separate < 0) {
+        logger().error("Negative separation weight: {}. Setting weight to 0.", m_params.w_separate);
+        m_params.w_separate = 0;
+    }
 }
 
 } // namespace wmtk::components::image_simulation

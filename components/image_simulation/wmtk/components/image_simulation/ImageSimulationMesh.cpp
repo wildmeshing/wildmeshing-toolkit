@@ -754,7 +754,7 @@ bool ImageSimulationMesh::invariants(const std::vector<Tuple>& tets)
 }
 
 std::vector<std::array<size_t, 3>> ImageSimulationMesh::get_faces_by_condition(
-    std::function<bool(const FaceAttributes&)> cond)
+    std::function<bool(const FaceAttributes&)> cond) const
 {
     auto res = std::vector<std::array<size_t, 3>>();
     for (auto f : get_faces()) {
