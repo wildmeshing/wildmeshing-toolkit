@@ -34,6 +34,32 @@ Matrix4d get_ijk2xyz(const nlohmann::json& json_params)
     return ijk2xyz;
 }
 
+Matrix4d get_input_transform(const nlohmann::json& json_params, const size_t input_index)
+{
+    const nlohmann::json& its_j = json_params["input_transform"];
+
+    if (input_index >= its_j.size()) {
+        return Matrix4d::Identity();
+    }
+    if (its_j[input_index].size() == 0) {
+        return Matrix4d::Identity();
+    }
+    if (its_j[input_index].size() != 4) {
+        log_and_throw_error("Input transform for input {} is invalid.", input_index);
+    }
+
+    const std::array<std::array<double, 4>, 4> it_arr = its_j[input_index];
+    Matrix4d A;
+    for (size_t i = 0; i < 4; ++i) {
+        for (size_t j = 0; j < 4; ++j) {
+            A(i, j) = it_arr[i][j];
+        }
+    }
+    logger().info("Input transform for input {}:\n{}", input_index, A);
+
+    return A;
+}
+
 void positive_orientation_3D(const MatrixXd& V, MatrixXi& T)
 {
     const Vector3d p0 = V.row(T(0, 0));
@@ -281,13 +307,18 @@ InputData read_mesh(
 {
     InputData input_data;
 
+    std::vector<Matrix4d> input_transforms(input_paths.size());
+    for (size_t i = 0; i < input_transforms.size(); ++i) {
+        input_transforms[i] = get_input_transform(json_params, i);
+    }
+
     const bool use_sample_envelope = json_params["use_sample_envelope"];
     const int NUM_THREADS = json_params["num_threads"];
     const int max_its = json_params["max_iterations"];
     const bool write_vtu = json_params["write_vtu"];
 
     // convert mesh into tet mesh
-    EmbedSurface image_mesh(input_paths);
+    EmbedSurface image_mesh(input_paths, input_transforms);
 
     if (write_vtu) {
         image_mesh.write_surf_off(output_filename + "_input.off");

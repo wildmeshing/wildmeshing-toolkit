@@ -20,11 +20,12 @@ const path integration_tests_dir = data_dir / "integration_tests";
  * Add any test you want to run to this list!
  */
 std::vector<std::string> input_files{
-    "image_simulation__remeshing_2d.json",
+    "image_simulation_remeshing_2d.json",
     "image_simulation_energies_2d.json",
     "image_simulation_fill_holes_2d.json",
     "image_simulation_keep_lcc_2d.json",
     "image_simulation_tight_seal_2d.json",
+    "image_simulation_double_sphere_3d.json",
     "isotropic_remeshing_bunny.json",
     "isotropic_remeshing_piece.json",
     "manifold_extraction_randmesh.json",

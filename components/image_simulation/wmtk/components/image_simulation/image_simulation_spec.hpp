@@ -12,6 +12,7 @@ nlohmann::json image_simulation_spec = R"(
       "operation",
       "output",
       "ijk_to_ras",
+      "input_transform",
       "skip_simplify",
       "use_sample_envelope",
       "use_tetgen",
@@ -101,9 +102,31 @@ nlohmann::json image_simulation_spec = R"(
     "type": "float"
   },
   {
+    "pointer": "/input_transform",
+    "type": "list",
+    "doc": "Transformation matrices for the inputs. Transformations are optional and don't need to be described for all inputs.",
+    "default": []
+  },
+  {
+    "pointer": "/input_transform/*",
+    "type": "list",
+    "doc": "Transformation matrix (4x4 homogeneous coordinates) for one input.",
+    "max": 4
+  },
+  {
+    "pointer": "/input_transform/*/*",
+    "type": "list",
+    "min": 4,
+    "max": 4
+  },
+  {
+    "pointer": "/input_transform/*/*",
+    "type": "float"
+  },
+  {
     "pointer": "/skip_simplify",
     "type": "bool",
-    "default": false,
+    "default": true,
     "doc": "If true, input simplification will be skipped."
   },
   {

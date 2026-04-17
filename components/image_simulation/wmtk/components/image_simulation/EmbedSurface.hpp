@@ -99,7 +99,9 @@ public:
     /**
      * @brief Input from meshes.
      */
-    EmbedSurface(const std::vector<std::string>& img_filenames);
+    EmbedSurface(
+        const std::vector<std::string>& img_filenames,
+        const std::vector<Matrix4d>& img_transform = {});
 
     /**
      * @brief Simplify the input surface while staying within the eps envelope.

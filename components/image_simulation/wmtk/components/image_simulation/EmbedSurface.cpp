@@ -848,9 +848,13 @@ EmbedSurface::EmbedSurface(const std::vector<std::string>& img_filenames, const 
     F_surf_from_vector(tris);
 }
 
-EmbedSurface::EmbedSurface(const std::vector<std::string>& img_filenames)
+EmbedSurface::EmbedSurface(
+    const std::vector<std::string>& img_filenames,
+    const std::vector<Matrix4d>& img_transform)
     : m_img_filenames(img_filenames)
 {
+    assert(img_filenames.size() == img_transform.size());
+
     Vs.resize(m_img_filenames.size());
     Fs.resize(m_img_filenames.size());
 
@@ -863,6 +867,14 @@ EmbedSurface::EmbedSurface(const std::vector<std::string>& img_filenames)
 
         assert(Vs[i].cols() == 3);
         assert(F_single.cols() == 3);
+
+        // apply transform to Vs[i]
+        for (size_t j = 0; j < Vs[i].rows(); ++j) {
+            Vector3d v = Vs[i].row(j);
+            Vector4d x = to_homogenuous(v);
+            x = img_transform[i] * x;
+            Vs[i].row(j) = from_homogenuous(x);
+        }
 
         Fs[i] = F_single;
 
