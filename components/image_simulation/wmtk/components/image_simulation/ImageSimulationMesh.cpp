@@ -23,6 +23,7 @@
 #include <wmtk/utils/GeoUtils.h>
 // clang-format on
 
+#include <paraviewo/VTMWriter.hpp>
 #include <paraviewo/VTUWriter.hpp>
 
 #include <limits>
@@ -1030,38 +1031,43 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
         v_order[vid] = m_vertex_attribute[vid].m_order;
     }
 
-    std::shared_ptr<paraviewo::ParaviewWriter> writer;
-    writer = std::make_shared<paraviewo::VTUWriter>();
+    paraviewo::VTUWriter writer;
 
     for (size_t j = 0; j < m_tags_count; ++j) {
-        writer->add_cell_field(fmt::format("tag_{}", j), tags[j]);
+        writer.add_cell_field(fmt::format("tag_{}", j), tags[j]);
     }
-    writer->add_cell_field("quality", amips);
-    writer->add_field("sizing_field", v_sizing_field);
-    writer->write_mesh(path + ".vtu", V, T);
+    writer.add_cell_field("quality", amips);
+    writer.add_field("sizing_field", v_sizing_field);
+    writer.write_mesh(out_path, V, T);
 
     // surface
+    const std::string surf_out_path = path + "_surf.vtu";
     {
-        const auto surf_out_path = path + "_surf.vtu";
-        std::shared_ptr<paraviewo::ParaviewWriter> surf_writer;
-        surf_writer = std::make_shared<paraviewo::VTUWriter>();
-        surf_writer->add_field("sizing_field", v_sizing_field);
-        surf_writer->add_field("order", v_order);
+        paraviewo::VTUWriter surf_writer;
+        surf_writer.add_field("sizing_field", v_sizing_field);
+        surf_writer.add_field("order", v_order);
 
         logger().info("Write {}", surf_out_path);
-        surf_writer->write_mesh(surf_out_path, V, F);
+        surf_writer.write_mesh(surf_out_path, V, F);
     }
     // edges
+    const std::string edge_out_path = path + "_edge.vtu";
     {
-        const auto edge_out_path = path + "_edge.vtu";
-        std::shared_ptr<paraviewo::ParaviewWriter> edge_writer;
-        edge_writer = std::make_shared<paraviewo::VTUWriter>();
-        edge_writer->add_field("sizing_field", v_sizing_field);
-        edge_writer->add_field("order", v_order);
+        paraviewo::VTUWriter edge_writer;
+        edge_writer.add_field("sizing_field", v_sizing_field);
+        edge_writer.add_field("order", v_order);
 
         logger().info("Write {}", edge_out_path);
-        edge_writer->write_mesh(edge_out_path, V, E);
+        edge_writer.write_mesh(edge_out_path, V, E);
     }
+
+    // VTM
+    const std::string vtm_path = path + ".vtm";
+    paraviewo::VTMWriter vtm(m_debug_print_counter);
+    vtm.add_dataset("tets", "mesh", out_path);
+    vtm.add_dataset("faces", "mesh", surf_out_path);
+    vtm.add_dataset("edges", "mesh", edge_out_path);
+    vtm.save(vtm_path);
 }
 
 void ImageSimulationMesh::write_surface(const std::string& path) const
