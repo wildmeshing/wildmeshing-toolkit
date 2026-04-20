@@ -128,7 +128,7 @@ public:
     const MatrixXr& V_emb_r() const { return m_V_emb_r; }
     const MatrixXd& V_surface() const { return m_V_surface; }
     const MatrixXi& T_emb() const { return m_T_emb; }
-    const MatrixXi& T_tags() const { return m_T_tags; }
+    const MatrixSi& T_tags() const { return m_T_tags; }
     const MatrixXi& F_on_surface() const { return m_F_on_surface; }
     const MatrixXi& F_surface() const { return m_F_surface; }
 
@@ -182,7 +182,7 @@ private:
     // triangles of the embedding representing the surface
     MatrixXi m_F_on_surface;
     // tags on the tets
-    MatrixXi m_T_tags;
+    MatrixSi m_T_tags;
 
     // input from triangle meshes
     std::vector<MatrixXd> Vs;

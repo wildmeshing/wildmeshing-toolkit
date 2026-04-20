@@ -112,10 +112,10 @@ public:
      */
     double m_quality;
     /**
-     * All image labels. Each image is represented by one entry in the vector. All tets must have
-     * the same tags.size().
+     * All image labels. Stored as pairs of image ID and the tag within the image. Using a sparse
+     * vector, so 0 entries are ommitted.
      */
-    std::vector<int64_t> tags;
+    VectorSi tags;
 };
 
 class ImageSimulationMesh : public wmtk::TetMesh
@@ -378,11 +378,6 @@ public:
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
 
-    /**
-     * A short-cut to perform laplacian smoothing on the input surface
-     */
-    void smooth_input(const int n_iterations);
-
     void collapse_all_edges(bool is_limit_length = true);
     bool collapse_edge_before(const Tuple& t) override;
     bool collapse_edge_after(const Tuple& t) override;
@@ -531,7 +526,7 @@ private:
     {
         double max_energy;
         std::map<std::array<size_t, 3>, FaceAttributes> changed_faces;
-        std::vector<int64_t> tet_tags;
+        VectorSi tet_tags;
     };
     tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
 
@@ -569,8 +564,8 @@ public:
      * @param T #Tx4 vertex IDs for all tets
      * @param T_tags #Tx1 image data represented by the individual tets
      */
-    void init_from_image(const MatrixXr& V, const MatrixXi& T, const MatrixXi& T_tags);
-    void init_from_image(const MatrixXd& V, const MatrixXi& T, const MatrixXi& T_tags);
+    void init_from_image(const MatrixXr& V, const MatrixXi& T, const MatrixSi& T_tags);
+    void init_from_image(const MatrixXd& V, const MatrixXi& T, const MatrixSi& T_tags);
 
     void init_surfaces_and_boundaries();
 

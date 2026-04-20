@@ -11,7 +11,7 @@ struct InputData
     MatrixXd V_input;
     MatrixXr V_input_r;
     MatrixXi T_input;
-    MatrixXi T_input_tag;
+    MatrixSi T_input_tag;
 
     MatrixXd V_envelope;
     MatrixXi F_envelope;

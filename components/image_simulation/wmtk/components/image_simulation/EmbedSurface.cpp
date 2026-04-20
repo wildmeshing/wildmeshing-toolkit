@@ -625,7 +625,7 @@ void tag_tets_from_images(
     const Matrix4d& xyz2ijk,
     const MatrixXd& V,
     const MatrixXi& T,
-    MatrixXi& T_tags)
+    MatrixSi& T_tags)
 {
     T_tags.resize(T.rows(), data.size());
     T_tags.setZero();
@@ -633,8 +633,14 @@ void tag_tets_from_images(
     for (size_t i = 0; i < data.size(); ++i) {
         VectorXi t;
         tag_tets_from_image(data[i], xyz2ijk, V, T, t);
-        T_tags.col(i) = t;
+        for (size_t j = 0; j < t.size(); ++j) {
+            if (t[j] == 0) {
+                continue;
+            }
+            T_tags.coeffRef(i, j) = t[j];
+        }
     }
+    T_tags.makeCompressed();
 }
 
 EmbedSurface::EmbedSurface(const std::vector<std::string>& img_filenames, const Matrix4d& ijk2xyz)
@@ -1095,7 +1101,7 @@ bool EmbedSurface::embed_surface()
             for (size_t img_id = 0; img_id < m_T_tags.cols(); ++img_id) {
                 std::map<int, int> m;
                 for (size_t j = 0; j < region.size(); ++j) {
-                    int tag = m_T_tags(region[j], img_id);
+                    int tag = m_T_tags.coeff(region[j], img_id);
                     if (m.count(tag) == 0) {
                         m[tag] = 1;
                     } else {
@@ -1112,7 +1118,7 @@ bool EmbedSurface::embed_surface()
                 }
                 assert(max_count > 0);
                 for (size_t j = 0; j < region.size(); ++j) {
-                    m_T_tags(region[j], img_id) = max_tag;
+                    m_T_tags.coeffRef(region[j], img_id) = max_tag;
                 }
             }
         }
@@ -1331,7 +1337,7 @@ void EmbedSurface::write_emb_msh(const std::string& filename) const
 
     for (size_t i = 0; i < m_T_tags.cols(); ++i) {
         msh.add_tet_attribute<1>(fmt::format("tag_{}", i), [this, i](size_t j) {
-            return m_T_tags(j, i);
+            return m_T_tags.coeff(j, i);
         });
     }
 
@@ -1432,9 +1438,13 @@ void EmbedSurface::tag_from_winding_number()
         igl::winding_number(Vs[i], Fs[i], P, W);
         assert(W.size() == m_T_tags.rows());
         for (size_t j = 0; j < W.size(); ++j) {
-            m_T_tags(j, i) = W[j] < 0.5 ? 0 : 1;
+            if (W[j] < 0.5) {
+                continue;
+            }
+            m_T_tags.coeffRef(j, i) = 1;
         }
     }
+    m_T_tags.makeCompressed();
 }
 
 } // namespace wmtk::components::image_simulation

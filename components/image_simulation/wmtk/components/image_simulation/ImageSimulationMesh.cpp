@@ -524,7 +524,7 @@ void ImageSimulationMesh::write_msh(std::string file)
 
     for (size_t j = 0; j < m_tags_count; ++j) {
         msh.add_tet_attribute<1>(fmt::format("tag_{}", j), [&](size_t i) {
-            return m_tet_attribute[i].tags[j];
+            return m_tet_attribute[i].tags.coeff(j);
         });
     }
 
@@ -549,22 +549,40 @@ void ImageSimulationMesh::write_msh_groups(std::string file)
         return m_vertex_attribute[i].m_posf;
     });
 
-    msh.add_physical_group("ImageVolume");
-
     const auto& tets = get_tets();
 
     std::vector<Tuple> tets_with_tag;
     tets_with_tag.reserve(tets.size());
 
+    auto msh_add_tets = [&]() {
+        msh.add_tets(tets_with_tag.size(), [&](size_t k) {
+            auto vs = oriented_tet_vertices(tets_with_tag[k]);
+            std::array<size_t, 4> data;
+            for (int j = 0; j < 4; j++) {
+                data[j] = vs[j].vid(*this);
+            }
+            return data;
+        });
+    };
+
+    // ambient mesh (no non-zero tags)
+    for (const Tuple& t : tets) {
+        const size_t tid = t.tid(*this);
+        if (m_tet_attribute[tid].tags.nonZeros() == 0) {
+            tets_with_tag.push_back(t);
+        }
+    }
+    msh_add_tets();
+
+    msh.add_physical_group("ambient");
+
     // add a group for each tag
     for (size_t tag_img = 0; tag_img < m_tags_count; ++tag_img) {
-        size_t tag_id = tag_img == 0 ? 0 : 1;
-
-        for (;; ++tag_id) {
+        for (size_t tag_id = 1;; ++tag_id) {
             tets_with_tag.clear();
             for (const Tuple& t : tets) {
                 const size_t tid = t.tid(*this);
-                if (m_tet_attribute[tid].tags[tag_img] == tag_id) {
+                if (m_tet_attribute[tid].tags.coeff(tag_img) == tag_id) {
                     tets_with_tag.push_back(t);
                 }
             }
@@ -573,22 +591,17 @@ void ImageSimulationMesh::write_msh_groups(std::string file)
                 break;
             }
 
-            const std::string group_name = fmt::format("tag_{}_{}", tag_img, tag_id);
-
             msh.add_empty_vertices(3);
-            msh.add_tets(tets_with_tag.size(), [&](size_t k) {
-                auto vs = oriented_tet_vertices(tets_with_tag[k]);
-                std::array<size_t, 4> data;
-                for (int j = 0; j < 4; j++) {
-                    data[j] = vs[j].vid(*this);
-                }
-                return data;
-            });
+            msh_add_tets();
 
+            const std::string group_name = fmt::format("tag_{}_{}", tag_img, tag_id);
             msh.add_physical_group(group_name);
         }
-        break;
     }
+
+    msh.add_face_vertices(m_V_envelope.size(), [this](size_t k) { return m_V_envelope[k]; });
+    msh.add_faces(m_F_envelope.size(), [this](size_t k) { return m_F_envelope[k]; });
+    msh.add_physical_group("EnvelopeSurface");
 
     msh.save(file, false);
 }
@@ -988,7 +1001,7 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
     for (const Tuple& t : tets) {
         size_t tid = t.tid(*this);
         for (size_t j = 0; j < m_tags_count; ++j) {
-            tags[j](index, 0) = m_tet_attribute[tid].tags[j];
+            tags[j](index, 0) = m_tet_attribute[tid].tags.coeff(j);
         }
         amips(index, 0) = std::cbrt(m_tet_attribute[tid].m_quality);
 

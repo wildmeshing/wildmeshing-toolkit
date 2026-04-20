@@ -618,7 +618,7 @@ void ImageSimulationMesh::init_from_Volumeremesher(
 void ImageSimulationMesh::init_from_image(
     const MatrixXr& V,
     const MatrixXi& T,
-    const MatrixXi& T_tags)
+    const MatrixSi& T_tags)
 {
     assert(V.cols() == 3);
     assert(T.cols() == 4);
@@ -650,7 +650,10 @@ void ImageSimulationMesh::init_from_image(
     for (size_t i = 0; i < T_tags.rows(); ++i) {
         m_tet_attribute[i].tags.resize(m_tags_count);
         for (size_t j = 0; j < m_tags_count; ++j) {
-            m_tet_attribute[i].tags[j] = T_tags(i, j);
+            // m_tet_attribute[i].tags[j] = T_tags.coeff(i, j);
+            if (T_tags.coeff(i, j) != 0) {
+                m_tet_attribute[i].tags.coeffRef(j) = T_tags.coeff(i, j);
+            }
         }
     }
 
@@ -676,7 +679,7 @@ void ImageSimulationMesh::init_from_image(
 void ImageSimulationMesh::init_from_image(
     const MatrixXd& V,
     const MatrixXi& T,
-    const MatrixXi& T_tags)
+    const MatrixSi& T_tags)
 {
     assert(V.cols() == 3);
     assert(T.cols() == 4);
@@ -721,7 +724,10 @@ void ImageSimulationMesh::init_from_image(
     for (size_t i = 0; i < T_tags.rows(); ++i) {
         m_tet_attribute[i].tags.resize(m_tags_count);
         for (size_t j = 0; j < m_tags_count; ++j) {
-            m_tet_attribute[i].tags[j] = T_tags(i, j);
+            // m_tet_attribute[i].tags[j] = T_tags.coeff(i, j);
+            if (T_tags.coeff(i, j) != 0) {
+                m_tet_attribute[i].tags.coeffRef(j) = T_tags.coeff(i, j);
+            }
         }
     }
 
@@ -752,8 +758,8 @@ void ImageSimulationMesh::init_surfaces_and_boundaries()
         bool has_two_tags = false;
 
         for (size_t j = 0; j < m_tags_count; ++j) {
-            const int64_t tag0 = m_tet_attribute[ff.tid()].tags[j];
-            const int64_t tag1 = m_tet_attribute[t_opp.value().tid()].tags[j];
+            const int64_t tag0 = m_tet_attribute[ff.tid()].tags.coeff(j);
+            const int64_t tag1 = m_tet_attribute[t_opp.value().tid()].tags.coeff(j);
 
             if (tag0 != tag1) {
                 has_two_tags = true;

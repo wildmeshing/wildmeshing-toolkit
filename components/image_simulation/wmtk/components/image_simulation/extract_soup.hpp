@@ -29,8 +29,6 @@ void extract_triangle_soup_from_image(
     MatrixXd& V,
     MatrixXi& F_tags);
 
-void tag_tets_from_image(const std::string& filename, ImageSimulationMesh& mesh);
-
 void image_to_tagged_tets(const std::string& filename, MatrixXd& V, MatrixXi& T, VectorXi T_tags);
 
 } // namespace wmtk::components::image_simulation

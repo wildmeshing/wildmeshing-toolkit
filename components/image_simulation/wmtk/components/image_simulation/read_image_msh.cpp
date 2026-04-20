@@ -213,7 +213,7 @@ InputData read_image_msh(const std::string& path)
                 attr_name,
                 [&input_data, &tag_id](size_t i, std::vector<double> val) {
                     assert(val.size() == 1);
-                    input_data.T_input_tag(i, tag_id) = val[0];
+                    input_data.T_input_tag.coeffRef(i, tag_id) = val[0];
                 });
         }
     } else {
@@ -235,7 +235,7 @@ InputData read_image_msh(const std::string& path)
                 attr_name,
                 [&input_data, &tag_id](size_t i, std::vector<double> val) {
                     assert(val.size() == 1);
-                    input_data.T_input_tag(i, tag_id) = val[0];
+                    input_data.T_input_tag.coeffRef(i, tag_id) = val[0];
                 });
         }
     }

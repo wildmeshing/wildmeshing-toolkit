@@ -103,7 +103,7 @@ bool ImageSimulationMesh::split_edge_before(const Tuple& loc0)
     for (const Tuple& t : tets) {
         const simplex::Tet tet = simplex_from_tet(t);
         const simplex::Edge opp = tet.opposite_edge(edge);
-        if (m_tet_attribute.at(t.tid(*this)).tags.empty()) {
+        if (m_tet_attribute.at(t.tid(*this)).tags.size() == 0) {
             log_and_throw_error("No tags in tet {}", t.tid(*this)); // for debugging
         }
         cache.tets[opp] = m_tet_attribute.at(t.tid(*this));

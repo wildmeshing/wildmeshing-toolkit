@@ -176,7 +176,7 @@ double ImageSimulationMeshTri::get_length2(const Tuple& l) const
 void ImageSimulationMeshTri::init_from_image(
     const MatrixXd& V,
     const MatrixXi& T,
-    const MatrixXi& T_tags)
+    const MatrixSi& T_tags)
 {
     assert(V.cols() == 2);
     assert(T.cols() == 3);
@@ -219,7 +219,7 @@ void ImageSimulationMeshTri::init_from_image(
     for (size_t i = 0; i < (size_t)T_tags.rows(); ++i) {
         m_face_attribute[i].tags.resize(m_tags_count);
         for (size_t j = 0; j < m_tags_count; ++j) {
-            m_face_attribute[i].tags[j] = T_tags(i, j);
+            m_face_attribute[i].tags[j] = T_tags.coeff(i, j);
         }
     }
 

@@ -2,6 +2,7 @@
 
 #include <igl/predicates/predicates.h>
 #include <Eigen/Core>
+#include <Eigen/Sparse>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
 
@@ -16,6 +17,12 @@ using MatrixXr = MatrixX<Rational>;
 using Matrix2d = Eigen::Matrix2d;
 using Matrix3d = Eigen::Matrix3d;
 using Matrix4d = Eigen::Matrix4d;
+
+template <typename T>
+using MatrixS = Eigen::SparseMatrix<T>;
+
+using MatrixSi = MatrixS<int>;
+using MatrixSd = MatrixS<double>;
 
 template <typename T, int R>
 using Vector = Eigen::Matrix<T, R, 1>;
@@ -34,6 +41,12 @@ using Vector2i = Vector<int, 2>;
 using Vector3i = Vector<int, 3>;
 using Vector4i = Vector<int, 4>;
 using VectorXi = Vector<int, Eigen::Dynamic>;
+
+template <typename T>
+using VectorS = Eigen::SparseVector<T>;
+
+using VectorSi = VectorS<int>;
+using VectorSd = VectorS<double>;
 
 inline Vector3r to_rational(const Vector3d& p0)
 {
