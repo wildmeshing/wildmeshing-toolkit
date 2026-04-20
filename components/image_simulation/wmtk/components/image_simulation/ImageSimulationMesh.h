@@ -140,7 +140,7 @@ public:
     // for open boundary
     std::shared_ptr<SampleEnvelope> m_order_2_edge_envelope; // todo: add sample envelope option
 
-    std::unique_ptr<polysolve::nonlinear::Solver> m_solver;
+    tbb::enumerable_thread_specific<std::unique_ptr<polysolve::nonlinear::Solver>> m_solver;
     Eigen::SparseMatrix<double> m_surface_mass; // the mass matrix for surface vertices
     Eigen::SparseMatrix<double> m_surface_stiffness; // stiffness matrix for surface vertices
 
@@ -161,7 +161,8 @@ public:
         m_collapse_check_link_condition = false;
         m_collapse_check_manifold = false;
 
-        m_solver = optimization::create_basic_solver();
+        // solver is lazily created on first use
+
         optimization::deactivate_opt_logger();
 
         m_s_amips = 1.;

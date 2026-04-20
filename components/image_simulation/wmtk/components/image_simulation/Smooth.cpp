@@ -58,6 +58,11 @@ bool ImageSimulationMesh::smooth_after(const Tuple& t)
         }
     }
 
+    auto& solver = m_solver.local();
+    if (!solver) {
+        solver = optimization::create_basic_solver();
+    }
+
     const Vector3d old_pos = VA[vid].m_posf;
 
     // m_vertex_attribute[vid].m_posf = wmtk::newton_method_from_stack(
@@ -84,7 +89,7 @@ bool ImageSimulationMesh::smooth_after(const Tuple& t)
     auto solve = [&]() {
         VectorXd x = VA[vid].m_posf;
         try {
-            m_solver->minimize(*total_energy, x);
+            solver->minimize(*total_energy, x);
         } catch (const std::exception&) {
             // polysolve might throw errors that we want to ignore (e.g., line search failed)
         }
