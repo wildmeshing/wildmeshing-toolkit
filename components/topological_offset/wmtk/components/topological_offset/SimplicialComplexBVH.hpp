@@ -110,47 +110,6 @@ public:
         }
     }
 
-    // /**
-    //  * @brief check if a point is inside a given tet. This may not be robust
-    //  */
-    // bool inside_tet(const Vector3d& p, const size_t tet_id) const
-    // {
-    //     Vector3d v0 = m_V_T.row(m_T_T(tet_id, 0));
-    //     Vector3d v1 = m_V_T.row(m_T_T(tet_id, 1));
-    //     Vector3d v2 = m_V_T.row(m_T_T(tet_id, 2));
-    //     Vector3d v3 = m_V_T.row(m_T_T(tet_id, 3));
-
-    //     // fast reject
-    //     double min_x = std::min({v0.x(), v1.x(), v2.x(), v3.x()});
-    //     double max_x = std::max({v0.x(), v1.x(), v2.x(), v3.x()});
-    //     if (p.x() < min_x || p.x() > max_x) {
-    //         return false;
-    //     }
-    //     double min_y = std::min({v0.y(), v1.y(), v2.y(), v3.y()});
-    //     double max_y = std::max({v0.y(), v1.y(), v2.y(), v3.y()});
-    //     if (p.y() < min_y || p.y() > max_y) {
-    //         return false;
-    //     }
-    //     double min_z = std::min({v0.z(), v1.z(), v2.z(), v3.z()});
-    //     double max_z = std::max({v0.z(), v1.z(), v2.z(), v3.z()});
-    //     if (p.z() < min_z || p.z() > max_z) {
-    //         return false;
-    //     }
-
-    //     // fast reject failed, actually compute
-    //     Eigen::Matrix3d Basis;
-    //     Basis.col(0) = v0 - v3;
-    //     Basis.col(1) = v1 - v3;
-    //     Basis.col(2) = v2 - v3;
-
-    //     Eigen::Vector3d rhs = p - v3;
-    //     Eigen::Vector3d uvw = Basis.partialPivLu().solve(rhs);
-
-    //     const double eps = 1e-6;
-    //     return (uvw(0) >= -eps) && (uvw(1) >= -eps) && (uvw(2) >= -eps) && (uvw.sum() <= 1 +
-    //     eps);
-    // }
-
     /**
      * @brief check if a point is inside any tet. NOTE: this can be sped up with a true tetmesh
      bvh
@@ -167,13 +126,6 @@ public:
         Eigen::VectorXi I;
         igl::in_element(m_V_T, m_T_T, Q, m_tet_aabb_tree, I);
         return (I(0) != -1);
-
-        // for (int i = 0; i < m_T_T.rows(); i++) {
-        //     if (inside_tet(p, i)) {
-        //         return true;
-        //     }
-        // }
-        // return false;
     }
 
     /**

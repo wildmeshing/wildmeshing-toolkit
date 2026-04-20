@@ -16,4 +16,4 @@ void read_image_msh(
     MatrixXd& F_input_tags);
 
 
-}
+} // namespace wmtk::components::topological_offset
