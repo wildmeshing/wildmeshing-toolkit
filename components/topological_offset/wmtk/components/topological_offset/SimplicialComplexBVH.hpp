@@ -1,0 +1,186 @@
+#pragma once
+#include <igl/AABB.h>
+#include <igl/in_element.h>
+#include <Eigen/Dense>
+#include <SimpleBVH/BVH.hpp>
+
+
+namespace wmtk::components::topological_offset {
+
+
+class SimplicialComplexBVH
+{
+private:
+    // tet bvh
+    igl::AABB<MatrixXd, 3> m_tet_aabb_tree;
+    bool m_has_tets;
+
+    // triangle bvh
+    SimpleBVH::BVH m_tri_bvh;
+    bool m_has_tris;
+
+    // edge bvh
+    SimpleBVH::BVH m_edge_bvh;
+    bool m_has_edges;
+
+    bool m_is_3d;
+    MatrixXd m_V_T = MatrixXd(0, 3); // tet vertices
+    MatrixXi m_T_T = MatrixXi(0, 4); // tets w.r.t. V_T vertices
+    // igl::AABB<MatrixXd, 3> m_tet_aabb_tree;
+
+public:
+    /**
+     * @brief initialize BVH from "closed" simplicial complex
+     * @param V: Nx2 or Nx3, all vertices contained anywhere in complex
+     * @param T: Mx4, tets contained in complex
+     * @param F: Lx3, isolated faces contained in complex (ie, faces not in any tet)
+     * @param E: Kx2, isolated edges contained in complex (ie, edges not in any faces or tets)
+     * @param P: Jx1, isolated vertices contained in complex (ie, verts not in any edges, faces, or
+     * tets)
+     */
+    void init(
+        const MatrixXd& V,
+        const MatrixXi& T,
+        const MatrixXi& F,
+        const MatrixXi& E,
+        const MatrixXi& P)
+    {
+        m_is_3d = (V.cols() == 3);
+        MatrixXd V_3d; // if V 2d, pad vertices to 3d (BVH needs this. should be fixed inside BVH)
+        if (!m_is_3d) {
+            V_3d.resize(V.rows(), 3);
+            V_3d.setZero();
+            V_3d.block(0, 0, V.rows(), V.cols()) = V;
+        } else {
+            V_3d = V;
+        }
+        assert(V_3d.rows() == V.rows());
+        assert(V_3d.cols() == 3);
+
+        // extract isolated faces
+        std::vector<Vector3i> faces;
+        for (int i = 0; i < F.rows(); i++) {
+            faces.push_back(F.row(i));
+        }
+
+        // complex is 3d and has tets
+        if (m_is_3d && T.rows() > 0) {
+            for (int i = 0; i < T.rows(); i++) {
+                int a = T(i, 0);
+                int b = T(i, 1);
+                int c = T(i, 2);
+                int d = T(i, 3);
+                faces.emplace_back(a, c, b);
+                faces.emplace_back(a, b, d);
+                faces.emplace_back(b, c, d);
+                faces.emplace_back(a, d, c);
+            }
+
+            m_V_T = V;
+            m_T_T = T;
+            m_has_tets = true;
+            m_tet_aabb_tree.init(m_V_T, m_T_T);
+        }
+
+        // initialize triangle bvh
+        if (!faces.empty()) {
+            MatrixXi F_combo(faces.size(), 3);
+            for (size_t i = 0; i < faces.size(); i++) {
+                F_combo.row(i) = faces[i];
+            }
+            m_tri_bvh.init(V_3d, F_combo, 1e-6);
+            m_has_tris = true;
+        }
+
+        std::vector<Eigen::Vector2i> edges; // extract isolated edges
+        for (int i = 0; i < E.rows(); i++) { // actual edges
+            edges.push_back(E.row(i));
+        }
+        for (int i = 0; i < P.rows(); i++) { // pseudo edges
+            edges.emplace_back(P(i), P(i));
+        }
+
+        if (!edges.empty()) {
+            MatrixXi E_combo(edges.size(), 2);
+            for (size_t i = 0; i < edges.size(); i++) {
+                E_combo.row(i) = edges[i];
+            }
+            m_edge_bvh.init(V_3d, E_combo, 1e-6);
+            m_has_edges = true;
+        }
+    }
+
+    /**
+     * @brief check if a point is inside any tet. NOTE: this can be sped up with a true tetmesh
+     bvh
+     */
+    bool inside_any_tet(const Vector3d& p) const
+    {
+        // 2D or no tets
+        if (!m_has_tets) {
+            return false;
+        }
+
+        Eigen::MatrixXd Q(1, 3);
+        Q.row(0) = p;
+        Eigen::VectorXi I;
+        igl::in_element(m_V_T, m_T_T, Q, m_tet_aabb_tree, I);
+        return (I(0) != -1);
+    }
+
+    /**
+     * @brief compute distance to complex
+     */
+    double squared_dist(const VectorXd& p) const
+    {
+        double min_sq_dist = std::numeric_limits<double>::max();
+
+        // pad to 3d if necessary
+        Vector3d p3;
+        if (p.size() == 2) {
+            p3 << p(0), p(1), 0.0;
+        } else {
+            p3 = p;
+        }
+
+        // inside tet check
+        if (m_has_tets) { // has any tets
+            if (inside_any_tet(p3)) {
+                return 0.0;
+            }
+        }
+
+        Vector3d closest_p;
+        double tmp_sq_dist;
+
+        if (m_has_tris) { // min dist to isolated triangles (and tet faces)
+            m_tri_bvh.nearest_facet(p3, closest_p, min_sq_dist);
+        }
+
+        if (m_has_edges) { // min dist to isolated edges (and 'pseudo'edges, ie isolated vertices)
+            m_edge_bvh.nearest_facet(p3, closest_p, tmp_sq_dist);
+            if (tmp_sq_dist < min_sq_dist) {
+                min_sq_dist = tmp_sq_dist;
+            }
+        }
+
+        return min_sq_dist;
+    }
+
+    double dist(const VectorXd& p) const { return sqrt(squared_dist(p)); }
+
+    void clear()
+    {
+        m_tri_bvh.clear();
+        m_has_tris = false;
+        m_edge_bvh.clear();
+        m_has_edges = false;
+        m_tet_aabb_tree = igl::AABB<MatrixXd, 3>(); // reset
+        m_has_tets = false;
+        m_V_T.resize(0, 3);
+        m_T_T.resize(0, 4);
+    }
+};
+
+
+} // namespace wmtk::components::topological_offset

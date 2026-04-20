@@ -8,8 +8,8 @@ if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
 endif()
 
 set(SRC_FILES
-	TopoOffsetMesh.h
-    TopoOffsetMesh.cpp
+	TopoOffsetTetMesh.h
+    TopoOffsetTetMesh.cpp
 
 	TopoOffsetTriMesh.h
 	TopoOffsetTriMesh.cpp
@@ -17,9 +17,10 @@ set(SRC_FILES
 	Parameters.h
 	
 	ComponentSplitting.cpp
+	SimplicialComplexBVH.hpp
 	Spatial.cpp
 	Circle.hpp
-	Circle.cpp
+	Sphere.hpp
 
 	topological_offset.hpp
 	topological_offset.cpp
