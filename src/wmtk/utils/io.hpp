@@ -313,6 +313,11 @@ public:
         extract_element_attribute<3>(attr_name, std::forward<Fn>(set_attr));
     }
 
+    const std::vector<mshio::PhysicalGroup>& get_physical_groups()
+    {
+        return m_spec.physical_groups;
+    }
+
     /**
      * @brief Returns the (first) physical group with the given name, if it exists.
      */
@@ -343,24 +348,32 @@ public:
             F.resize(n_F, dim + 1);
             switch (dim) {
             case 1:
-                extract_simplex_elements<1>([&F](size_t i, size_t v0, size_t v1) {
-                    F.row(i) = Vector2i((int)v0, (int)v1);
-                });
+                extract_simplex_elements<1>(
+                    [&F](size_t i, size_t v0, size_t v1) { F.row(i) = Vector2i((int)v0, (int)v1); },
+                    tag);
                 break;
             case 2:
-                extract_simplex_elements<2>([&F](size_t i, size_t v0, size_t v1, size_t v2) {
-                    F.row(i) = Vector3i((int)v0, (int)v1, (int)v2);
-                });
+                extract_simplex_elements<2>(
+                    [&F](size_t i, size_t v0, size_t v1, size_t v2) {
+                        F.row(i) = Vector3i((int)v0, (int)v1, (int)v2);
+                    },
+                    tag);
                 break;
             case 3:
                 extract_simplex_elements<3>(
                     [&F](size_t i, size_t v0, size_t v1, size_t v2, size_t v3) {
                         F.row(i) = Vector4i((int)v0, (int)v1, (int)v2, (int)v3);
-                    });
+                    },
+                    tag);
                 break;
             default: log_and_throw_error("Cannot extract elements for dimension {}", dim);
             }
         }
+    }
+
+    void get_VF(const mshio::PhysicalGroup& ph, MatrixXd& V, MatrixXi& F)
+    {
+        get_VF(ph.dim, ph.tag, V, F);
     }
 
     void save(const std::string& filename, bool binary = true)
@@ -426,9 +439,8 @@ private:
         const auto& vertex_block = m_spec.nodes.entity_blocks.back();
         // assert(!vertex_block.tags.empty());
         if (vertex_block.entity_dim != DIM) {
-            log_and_throw_error(
-                "It seems the last added vertex block has different dimension "
-                "than the elements you want to add.");
+            log_and_throw_error("It seems the last added vertex block has different dimension "
+                                "than the elements you want to add.");
         }
 
         mshio::ElementBlock block;
@@ -481,9 +493,8 @@ private:
         assert(num_vertices != 0);
 
         if (vertex_block.entity_dim != ELEMENT_DIM) {
-            throw std::runtime_error(
-                "It seems the last added vertex block has different dimension "
-                "from the vertex attribute you want to add.");
+            throw std::runtime_error("It seems the last added vertex block has different dimension "
+                                     "from the vertex attribute you want to add.");
         }
 
         mshio::Data data;
@@ -662,11 +673,14 @@ private:
     }
 
     template <int DIM, typename Fn>
-    void extract_simplex_elements(Fn&& set_element_cb) const
+    void extract_simplex_elements(Fn&& set_element_cb, const int tag = -1) const
     {
         const auto* vertex_block = get_vertex_block(DIM);
-        const auto* element_block = get_simplex_element_block(DIM);
-        if (element_block == nullptr) return;
+        const auto* element_block =
+            tag == -1 ? get_simplex_element_block(DIM) : get_simplex_element_block(DIM, tag);
+        if (element_block == nullptr) {
+            return;
+        }
         assert(vertex_block != nullptr);
 
         const size_t num_elements = element_block->num_elements_in_block;
