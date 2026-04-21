@@ -238,6 +238,9 @@ template&lt;typename Fn &gt; </td></tr>
 template&lt;typename Fn &gt; </td></tr>
 <tr class="memitem:aceddb5c280fdd679860dacd6da65e641"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>extract_tet_attribute</b> (const std::string &amp;attr_name, Fn &amp;&amp;set_attr)</td></tr>
 <tr class="separator:aceddb5c280fdd679860dacd6da65e641"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a19eaac2a227ff149350a306376b8d587" id="r_a19eaac2a227ff149350a306376b8d587"><td class="memItemLeft" align="right" valign="top"><a id="a19eaac2a227ff149350a306376b8d587" name="a19eaac2a227ff149350a306376b8d587"></a>
+const std::vector&lt; mshio::PhysicalGroup &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>get_physical_groups</b> ()</td></tr>
+<tr class="separator:a19eaac2a227ff149350a306376b8d587"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac215fcef3ccce43fbeeb49036ede747c" id="r_ac215fcef3ccce43fbeeb49036ede747c"><td class="memItemLeft" align="right" valign="top"><a id="ac215fcef3ccce43fbeeb49036ede747c" name="ac215fcef3ccce43fbeeb49036ede747c"></a>
 std::optional&lt; mshio::PhysicalGroup &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_physical_group_by_name</b> (const std::string &amp;name)</td></tr>
 <tr class="memdesc:ac215fcef3ccce43fbeeb49036ede747c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the (first) physical group with the given name, if it exists. <br /></td></tr>
@@ -245,6 +248,9 @@ std::optional&lt; mshio::PhysicalGroup &gt;&#160;</td><td class="memItemRight" v
 <tr class="memitem:af7e8bde9c9c94897839c3cddaa4659ca" id="r_af7e8bde9c9c94897839c3cddaa4659ca"><td class="memItemLeft" align="right" valign="top"><a id="af7e8bde9c9c94897839c3cddaa4659ca" name="af7e8bde9c9c94897839c3cddaa4659ca"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>get_VF</b> (const int &amp;dim, const int &amp;tag, MatrixXd &amp;V, MatrixXi &amp;F)</td></tr>
 <tr class="separator:af7e8bde9c9c94897839c3cddaa4659ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac4b6ee7c1acbe1022d7d0b781c5abd6a" id="r_ac4b6ee7c1acbe1022d7d0b781c5abd6a"><td class="memItemLeft" align="right" valign="top"><a id="ac4b6ee7c1acbe1022d7d0b781c5abd6a" name="ac4b6ee7c1acbe1022d7d0b781c5abd6a"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>get_VF</b> (const mshio::PhysicalGroup &amp;ph, MatrixXd &amp;V, MatrixXi &amp;F)</td></tr>
+<tr class="separator:ac4b6ee7c1acbe1022d7d0b781c5abd6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab920f7fd8da17fe1bc8b3926fbfe0e7b" id="r_ab920f7fd8da17fe1bc8b3926fbfe0e7b"><td class="memItemLeft" align="right" valign="top"><a id="ab920f7fd8da17fe1bc8b3926fbfe0e7b" name="ab920f7fd8da17fe1bc8b3926fbfe0e7b"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>save</b> (const std::string &amp;filename, bool binary=true)</td></tr>
 <tr class="separator:ab920f7fd8da17fe1bc8b3926fbfe0e7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -314,10 +320,10 @@ template&lt;typename Fn &gt; </td></tr>
 template&lt;typename Fn &gt; </td></tr>
 <tr class="memitem:a4cce663e26a82115aaa4fde753284156"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>extract_vertices</b> (const int dim, const int tag, Fn &amp;&amp;set_vertex_cb) const</td></tr>
 <tr class="separator:a4cce663e26a82115aaa4fde753284156"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acae55a72d45ca6d810780ba8f529f3f9" id="r_acae55a72d45ca6d810780ba8f529f3f9"><td class="memTemplParams" colspan="2"><a id="acae55a72d45ca6d810780ba8f529f3f9" name="acae55a72d45ca6d810780ba8f529f3f9"></a>
+<tr class="memitem:adab85573edc4a4b3db8fc44c1d4b7283" id="r_adab85573edc4a4b3db8fc44c1d4b7283"><td class="memTemplParams" colspan="2"><a id="adab85573edc4a4b3db8fc44c1d4b7283" name="adab85573edc4a4b3db8fc44c1d4b7283"></a>
 template&lt;int DIM, typename Fn &gt; </td></tr>
-<tr class="memitem:acae55a72d45ca6d810780ba8f529f3f9"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>extract_simplex_elements</b> (Fn &amp;&amp;set_element_cb) const</td></tr>
-<tr class="separator:acae55a72d45ca6d810780ba8f529f3f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adab85573edc4a4b3db8fc44c1d4b7283"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>extract_simplex_elements</b> (Fn &amp;&amp;set_element_cb, const int tag=-1) const</td></tr>
+<tr class="separator:adab85573edc4a4b3db8fc44c1d4b7283"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac22760821c5e3e7c14a8106d6f3337f5" id="r_ac22760821c5e3e7c14a8106d6f3337f5"><td class="memTemplParams" colspan="2"><a id="ac22760821c5e3e7c14a8106d6f3337f5" name="ac22760821c5e3e7c14a8106d6f3337f5"></a>
 template&lt;int DIM&gt; </td></tr>
 <tr class="memitem:ac22760821c5e3e7c14a8106d6f3337f5"><td class="memTemplItemLeft" align="right" valign="top">std::vector&lt; std::string &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>get_vertex_attribute_names</b> () const</td></tr>

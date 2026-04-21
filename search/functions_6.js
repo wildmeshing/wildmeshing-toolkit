@@ -26,5 +26,6 @@ var searchData=
   ['get_5ftets_23',['get_tets',['../classwmtk_1_1_tet_mesh.html#a85f0d6a1932eb7dd90ee21384ac95c39',1,'wmtk::TetMesh']]],
   ['get_5funion_24',['get_union',['../classwmtk_1_1simplex_1_1_simplex_collection.html#a3017a2acb6c3f7262cc6aa8c47df8a55',1,'wmtk::simplex::SimplexCollection']]],
   ['get_5fvalence_5ffor_5fvertex_25',['get_valence_for_vertex',['../classwmtk_1_1_tri_mesh.html#a24bb2f44a4eaf19f4e3ca2d0d53442f2',1,'wmtk::TriMesh']]],
-  ['get_5fvertices_26',['get_vertices',['../classwmtk_1_1_tet_mesh.html#ae3b5a2540332a1777d407b0c0b6beff3',1,'wmtk::TetMesh::get_vertices()'],['../classwmtk_1_1_tri_mesh.html#a286a3f4e4b464723a1f7b17d9cb6a446',1,'wmtk::TriMesh::get_vertices()']]]
+  ['get_5fvertices_26',['get_vertices',['../classwmtk_1_1_tet_mesh.html#ae3b5a2540332a1777d407b0c0b6beff3',1,'wmtk::TetMesh::get_vertices()'],['../classwmtk_1_1_tri_mesh.html#a286a3f4e4b464723a1f7b17d9cb6a446',1,'wmtk::TriMesh::get_vertices()']]],
+  ['global_5fmass_5fand_5fstiffness_27',['global_mass_and_stiffness',['../classwmtk_1_1optimization_1_1_biharmonic_energy3_d.html#afe791009fda6bc8859ae4307c90db562',1,'wmtk::optimization::BiharmonicEnergy3D']]]
 ];

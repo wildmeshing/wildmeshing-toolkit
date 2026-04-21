@@ -105,8 +105,11 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span>    std::vector&lt;Eigen::Vector3d&gt;&amp; verts,</div>
 <div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span>    std::vector&lt;std::array&lt;size_t, 3&gt;&gt;&amp; tris,</div>
 <div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span>    std::vector&lt;size_t&gt;&amp; modified_nonmanifold_v);</div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="keywordtype">void</span> resolve_duplicated_faces(<span class="keyword">const</span> Eigen::MatrixXi&amp; inF, Eigen::MatrixXi&amp; outF);</div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span>} <span class="comment">// namespace wmtk</span></div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="keywordtype">void</span> resolve_duplicated_faces(</div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span>    <span class="keyword">const</span> Eigen::MatrixXi&amp; inF,</div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span>    Eigen::MatrixXi&amp; outF,</div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>    Eigen::VectorXi&amp; J);</div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>} <span class="comment">// namespace wmtk</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

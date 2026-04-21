@@ -5,5 +5,7 @@ var searchData=
   ['end_5fprotect_2',['end_protect',['../structwmtk_1_1_attribute_collection.html#abc4e548acb727ba52b6ab64aa3d6e742',1,'wmtk::AttributeCollection']]],
   ['energysum_3',['EnergySum',['../classwmtk_1_1optimization_1_1_energy_sum.html#a540c1c64b915780064af3ad91b01b867',1,'wmtk::optimization::EnergySum']]],
   ['envelopeenergy2d_4',['EnvelopeEnergy2D',['../classwmtk_1_1optimization_1_1_envelope_energy2_d.html#a28a7cf111187d3ecb8eab07c58cd8d2c',1,'wmtk::optimization::EnvelopeEnergy2D']]],
-  ['executepass_5',['ExecutePass',['../structwmtk_1_1_execute_pass.html#a922fdd528b06468eafe56f70d0b8d2aa',1,'wmtk::ExecutePass']]]
+  ['envelopeenergy3d_5',['EnvelopeEnergy3D',['../classwmtk_1_1optimization_1_1_envelope_energy3_d.html#a1b5cc4d05a97d36a87f6bf0e17f826f2',1,'wmtk::optimization::EnvelopeEnergy3D']]],
+  ['executepass_6',['ExecutePass',['../structwmtk_1_1_execute_pass.html#a922fdd528b06468eafe56f70d0b8d2aa',1,'wmtk::ExecutePass']]],
+  ['extract_5flocal_5fmass_5fand_5fstiffness_7',['extract_local_mass_and_stiffness',['../classwmtk_1_1optimization_1_1_biharmonic_energy3_d.html#a654742df49121602c0af86edbd0ef12e',1,'wmtk::optimization::BiharmonicEnergy3D']]]
 ];
