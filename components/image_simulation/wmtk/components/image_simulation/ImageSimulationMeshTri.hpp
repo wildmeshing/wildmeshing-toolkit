@@ -200,7 +200,7 @@ public:
      * @param T #Tx4 vertex IDs for all faces
      * @param T_tags #Tx1 image data represented by the individual faces
      */
-    void init_from_image(const MatrixXd& V, const MatrixXi& T, const MatrixXi& T_tags);
+    void init_from_image(const MatrixXd& V, const MatrixXi& T, const MatrixSi& T_tags);
 
     void init_surfaces_and_boundaries();
 

@@ -135,9 +135,9 @@ bool ImageSimulationMesh::swap_edge_before(const Tuple& t)
     double max_energy = -1.0;
     for (const size_t l : incident_tets) {
         max_energy = std::max(TA[l].m_quality, max_energy);
-        if (TA[l].tags != cache.tet_tags) {
-            log_and_throw_error("not all tets have the same tag"); // for debugging
-        }
+        // if (TA[l].tags != cache.tet_tags) {
+        //    log_and_throw_error("not all tets have the same tag"); // for debugging
+        //}
     }
     cache.max_energy = max_energy;
 
@@ -267,9 +267,9 @@ bool ImageSimulationMesh::swap_face_before(const Tuple& t)
     }
 
     cache.tet_tags = TA[tt.tid()].tags;
-    if (TA[oppo_tet.value().tid()].tags != cache.tet_tags) {
-        log_and_throw_error("not all tets have the same tag"); // for debugging
-    }
+    // if (TA[oppo_tet.value().tid()].tags != cache.tet_tags) {
+    //    log_and_throw_error("not all tets have the same tag"); // for debugging
+    //}
 
     std::vector<size_t> twotets{t0, t1};
 
@@ -413,12 +413,12 @@ bool ImageSimulationMesh::swap_edge_44_before(const Tuple& t)
     double max_energy = -1.0;
     for (const size_t l : incident_tets) {
         max_energy = std::max(TA[l].m_quality, max_energy);
-        if (TA[l].tags != cache.tet_tags) {
-            log_and_throw_error(
-                "not all tets have the same tags. {} != {}",
-                cache.tet_tags,
-                TA[l].tags); // for debugging
-        }
+        // if (TA[l].tags != cache.tet_tags) {
+        //     log_and_throw_error(
+        //         "not all tets have the same tags. {} != {}",
+        //         cache.tet_tags,
+        //        TA[l].tags); // for debugging
+        //}
     }
     cache.max_energy = max_energy;
 
@@ -526,12 +526,12 @@ bool ImageSimulationMesh::swap_edge_56_before(const Tuple& t)
     double max_energy = -1.0;
     for (const size_t l : incident_tets) {
         max_energy = std::max(TA[l].m_quality, max_energy);
-        if (TA[l].tags != cache.tet_tags) {
-            log_and_throw_error(
-                "not all tets have the same tags. {} != {}",
-                cache.tet_tags,
-                TA[l].tags); // for debugging
-        }
+        // if (TA[l].tags != cache.tet_tags) {
+        //     log_and_throw_error(
+        //         "not all tets have the same tags. {} != {}",
+        //         cache.tet_tags,
+        //        TA[l].tags); // for debugging
+        //}
     }
 
     face_attribute_tracker(

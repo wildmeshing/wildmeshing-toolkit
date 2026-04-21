@@ -1,8 +1,10 @@
 #include "read_image_msh.hpp"
 
 #include <igl/predicates/predicates.h>
+#include <set>
 #include <wmtk/Types.hpp>
 #include <wmtk/components/image_simulation/EmbedSurface.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/io.hpp>
 
@@ -32,6 +34,32 @@ Matrix4d get_ijk2xyz(const nlohmann::json& json_params)
     Matrix4d ijk2xyz = ras2xyz * ijk2ras;
 
     return ijk2xyz;
+}
+
+Matrix4d get_input_transform(const nlohmann::json& json_params, const size_t input_index)
+{
+    const nlohmann::json& its_j = json_params["input_transform"];
+
+    if (input_index >= its_j.size()) {
+        return Matrix4d::Identity();
+    }
+    if (its_j[input_index].size() == 0) {
+        return Matrix4d::Identity();
+    }
+    if (its_j[input_index].size() != 4) {
+        log_and_throw_error("Input transform for input {} is invalid.", input_index);
+    }
+
+    const std::array<std::array<double, 4>, 4> it_arr = its_j[input_index];
+    Matrix4d A;
+    for (size_t i = 0; i < 4; ++i) {
+        for (size_t j = 0; j < 4; ++j) {
+            A(i, j) = it_arr[i][j];
+        }
+    }
+    logger().info("Input transform for input {}:\n{}", input_index, A);
+
+    return A;
 }
 
 void positive_orientation_3D(const MatrixXd& V, MatrixXi& T)
@@ -100,6 +128,89 @@ InputData read_image_msh(const std::string& path)
 
     const bool has_tets = msh.get_num_tets() != 0;
     const bool has_faces = msh.get_num_faces() != 0;
+
+    const auto ph_groups = msh.get_physical_groups();
+
+    if (!ph_groups.empty() && !(ph_vol && ph_env)) {
+        logger().info("Reading input from pyhsical groups.");
+
+        std::vector<MatrixXd> Vs;
+        std::vector<MatrixXi> Fs;
+
+        MatrixXd V_envelope;
+        MatrixXi F_envelope;
+        for (const mshio::PhysicalGroup& ph : msh.get_physical_groups()) {
+            MatrixXd V;
+            MatrixXi F;
+            msh.get_VF(ph, V, F);
+            if ((has_tets && ph.dim == 2) || (ph.dim == 1)) {
+                // this must be the envelope surface
+                if (V_envelope.size() != 0) {
+                    log_and_throw_error("Multiple `envelope` groups found in {}", path);
+                }
+                input_data.V_envelope = V;
+                input_data.F_envelope = F;
+            } else {
+                Vs.push_back(V);
+                Fs.push_back(F);
+            }
+        }
+
+        // combine all vertices
+        if (Vs.empty()) {
+            log_and_throw_error("No vertices found in {}", path);
+        }
+        auto& V = input_data.V_input;
+        for (const auto& VV : Vs) {
+            if (VV.rows() == 0) {
+                continue;
+            }
+            const size_t n = V.rows();
+            V.conservativeResize(n + VV.rows(), VV.cols());
+            V.block(n, 0, VV.rows(), V.cols()) = VV;
+        }
+
+        // combine all tets
+        if (has_tets) {
+            if (Fs.empty()) {
+                log_and_throw_error("No tets found in {}", path);
+            }
+            std::map<simplex::Tet, size_t> tet_ids;
+            std::vector<Vector4i> tets;
+
+            for (const auto& TT : Fs) {
+                for (size_t i = 0; i < TT.rows(); ++i) {
+                    const Vector4i& t = TT.row(i);
+                    const simplex::Tet s(t[0], t[1], t[2], t[3]);
+                    if (tet_ids.count(s) == 0) {
+                        tet_ids[s] = tets.size();
+                        tets.push_back(t);
+                    }
+                }
+            }
+
+            auto& T = input_data.T_input;
+            T.resize(tets.size(), 4);
+            for (size_t i = 0; i < tets.size(); ++i) {
+                T.row(i) = tets[i];
+            }
+
+            // tags
+            input_data.T_input_tag.resize(input_data.T_input.rows(), Fs.size());
+            for (size_t i = 0; i < Fs.size(); ++i) {
+                for (size_t j = 0; j < Fs[i].rows(); ++j) {
+                    const Vector4i& t = Fs[i].row(j);
+                    const simplex::Tet s(t[0], t[1], t[2], t[3]);
+                    const size_t tid = tet_ids[s];
+                    input_data.T_input_tag.coeffRef(tid, i) = 1;
+                }
+            }
+        } else {
+            log_and_throw_error("Read MSH with physical groups not implemented for 2D");
+        }
+
+        return input_data;
+    }
 
     if (ph_vol && ph_env) {
         logger().info("Found ImageVolume and EnvelopeSurface.");
@@ -187,7 +298,7 @@ InputData read_image_msh(const std::string& path)
                 attr_name,
                 [&input_data, &tag_id](size_t i, std::vector<double> val) {
                     assert(val.size() == 1);
-                    input_data.T_input_tag(i, tag_id) = val[0];
+                    input_data.T_input_tag.coeffRef(i, tag_id) = val[0];
                 });
         }
     } else {
@@ -209,7 +320,7 @@ InputData read_image_msh(const std::string& path)
                 attr_name,
                 [&input_data, &tag_id](size_t i, std::vector<double> val) {
                     assert(val.size() == 1);
-                    input_data.T_input_tag(i, tag_id) = val[0];
+                    input_data.T_input_tag.coeffRef(i, tag_id) = val[0];
                 });
         }
     }
@@ -226,7 +337,6 @@ InputData read_image(
 
     Matrix4d ijk2xyz = get_ijk2xyz(json_params);
 
-    const bool skip_simplify = json_params["skip_simplify"];
     const bool use_sample_envelope = json_params["use_sample_envelope"];
     const int NUM_THREADS = json_params["num_threads"];
     const int max_its = json_params["max_iterations"];
@@ -244,14 +354,7 @@ InputData read_image(
     }
 
     // convert image into tet mesh
-    EmbedSurface image_mesh(input_paths, ijk2xyz, skip_simplify);
-
-    if (!skip_simplify) {
-        logger().info("Simplify...");
-        image_mesh.simplify_surface(eps);
-        logger().info("done");
-    }
-    image_mesh.remove_duplicates(eps);
+    EmbedSurface image_mesh(input_paths, ijk2xyz);
 
     if (write_vtu) {
         image_mesh.write_surf_off(output_filename + "_input.off");
@@ -281,5 +384,53 @@ InputData read_image(
 
     return input_data;
 }
+
+InputData read_mesh(
+    const std::vector<std::string>& input_paths,
+    const std::string& output_filename,
+    const nlohmann::json& json_params)
+{
+    InputData input_data;
+
+    std::vector<Matrix4d> input_transforms(input_paths.size());
+    for (size_t i = 0; i < input_transforms.size(); ++i) {
+        input_transforms[i] = get_input_transform(json_params, i);
+    }
+
+    const bool use_sample_envelope = json_params["use_sample_envelope"];
+    const int NUM_THREADS = json_params["num_threads"];
+    const int max_its = json_params["max_iterations"];
+    const bool write_vtu = json_params["write_vtu"];
+
+    // convert mesh into tet mesh
+    EmbedSurface image_mesh(input_paths, input_transforms);
+
+    if (write_vtu) {
+        image_mesh.write_surf_off(output_filename + "_input.off");
+    }
+
+    input_data.V_envelope = image_mesh.V_surface();
+    input_data.F_envelope = image_mesh.F_surface();
+
+    const bool all_rounded =
+        json_params["use_tetgen"] ? image_mesh.embed_surface_tetgen() : image_mesh.embed_surface();
+    image_mesh.consolidate();
+
+    if (write_vtu) {
+        image_mesh.write_emb_surf_off(output_filename + "_input_emb.off");
+    }
+
+    input_data.V_input = image_mesh.V_emb();
+    if (!all_rounded) {
+        input_data.V_input_r = image_mesh.V_emb_r();
+    }
+    input_data.T_input = image_mesh.T_emb();
+    input_data.T_input_tag = image_mesh.T_tags();
+
+    wmtk::logger().info("======= finish image-tet conversion =========");
+
+    return input_data;
+}
+
 
 } // namespace wmtk::components::image_simulation

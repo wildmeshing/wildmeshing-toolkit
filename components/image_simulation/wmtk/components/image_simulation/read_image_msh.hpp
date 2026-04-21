@@ -11,7 +11,7 @@ struct InputData
     MatrixXd V_input;
     MatrixXr V_input_r;
     MatrixXi T_input;
-    MatrixXi T_input_tag;
+    MatrixSi T_input_tag;
 
     MatrixXd V_envelope;
     MatrixXi F_envelope;
@@ -28,6 +28,16 @@ InputData read_image_msh(const std::string& path);
  * The color in the image become tet tags.
  */
 InputData read_image(
+    const std::vector<std::string>& input_paths,
+    const std::string& output_filename,
+    const nlohmann::json& json_params);
+
+/**
+ * @brief Read one or multiple meshes and convert them into a tet mesh.
+ *
+ * Winding number is used to tag inside/outside.
+ */
+InputData read_mesh(
     const std::vector<std::string>& input_paths,
     const std::string& output_filename,
     const nlohmann::json& json_params);

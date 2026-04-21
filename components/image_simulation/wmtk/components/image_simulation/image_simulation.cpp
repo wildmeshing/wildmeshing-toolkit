@@ -44,6 +44,15 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     params.stop_at_float = json_params["stop_at_float"];
     params.preserve_topology = json_params["preserve_topology"];
 
+    params.epsr_simplify = json_params["eps_simplify_rel"];
+    params.eps_simplify = json_params["eps_simplify"];
+
+    params.smooth_without_envelope = json_params["smooth_without_envelope"];
+
+    params.w_amips = json_params["w_amips"];
+    params.w_smooth = json_params["w_smooth"];
+    params.separation_factor = json_params["separation_factor"];
+
     const bool write_vtu = json_params["write_vtu"];
 
     params.debug_output = json_params["DEBUG_output"];
@@ -79,6 +88,12 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     mesh.consolidate_mesh();
 
     write_unique_vtu();
+
+
+    if (!skip_simplify) {
+        // collapse for getting the right edge length
+        mesh.simplify();
+    }
 
     // /////////mesh improvement
     mesh.mesh_improvement(max_its); // <-- tetwild
@@ -272,10 +287,15 @@ void image_simulation(nlohmann::json json_params)
     };
 
     // read image or .msh
-    const InputData input_data =
-        (std::filesystem::path(input_paths[0]).extension() == ".msh")
-            ? read_image_msh(input_paths[0])
-            : read_image(input_paths, output_filename.string(), json_params);
+    InputData input_data;
+    std::string extension = std::filesystem::path(input_paths[0]).extension().string();
+    if (extension == ".msh") {
+        input_data = read_image_msh(input_paths[0]);
+    } else if (extension == ".raw") {
+        input_data = read_image(input_paths, output_filename.string(), json_params);
+    } else {
+        input_data = read_mesh(input_paths, output_filename.string(), json_params);
+    }
 
     if (input_data.T_input.cols() == 4) {
         run_3D(json_params, input_data);

@@ -26,20 +26,25 @@ void eigen_to_wmtk_input(
     }
 }
 
-void resolve_duplicated_faces(const Eigen::MatrixXi& inF, Eigen::MatrixXi& outF)
+void resolve_duplicated_faces(const Eigen::MatrixXi& inF, Eigen::MatrixXi& outF, Eigen::VectorXi& J)
 {
     std::map<std::array<int, 3>, int> unique;
     std::vector<Eigen::Vector3i> newF;
     newF.reserve(inF.rows());
-    for (auto i = 0; i < inF.rows(); i++) {
+    J.resize(inF.rows());
+
+    for (int i = 0; i < inF.rows(); i++) {
         std::array<int, 3> tri;
-        for (auto j = 0; j < 3; j++) tri[j] = inF(i, j);
+        for (int j = 0; j < 3; j++) {
+            tri[j] = inF(i, j);
+        }
 
         std::sort(tri.begin(), tri.end());
-        auto [it, suc] = unique.emplace(tri, i);
+        auto [it, suc] = unique.try_emplace(tri, i);
         if (suc) {
             newF.emplace_back(inF.row(i));
         }
+        J[i] = it->second;
     }
     outF.resize(newF.size(), 3);
     for (auto i = 0; i < newF.size(); i++) {
@@ -80,13 +85,17 @@ void stl_to_manifold_wmtk_input(
         V,
         SVI,
         SVJ);
-    for (int i = 0; i < F.rows(); ++i)
+    for (int i = 0; i < F.rows(); ++i) {
         for (int j = 0; j < 3; ++j) {
             F(i, j) = SVJ[F(i, j)];
         }
-    auto F1 = F;
+    }
 
-    resolve_duplicated_faces(F1, F);
+    {
+        auto F1 = F;
+        VectorXi J;
+        resolve_duplicated_faces(F1, F, J);
+    }
 
 
     verts.resize(V.rows());
@@ -160,11 +169,17 @@ void stl_to_manifold_wmtk_input(
         V,
         SVI,
         SVJ);
-    for (int i = 0; i < F.rows(); i++)
-        for (int j : {0, 1, 2}) F(i, j) = SVJ[F(i, j)];
-    auto F1 = F;
+    for (int i = 0; i < F.rows(); i++) {
+        for (int j : {0, 1, 2}) {
+            F(i, j) = SVJ[F(i, j)];
+        }
+    }
 
-    resolve_duplicated_faces(F1, F);
+    {
+        auto F1 = F;
+        VectorXi J;
+        resolve_duplicated_faces(F1, F, J);
+    }
 
 
     verts.resize(V.rows());

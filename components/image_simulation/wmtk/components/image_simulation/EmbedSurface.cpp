@@ -6,6 +6,10 @@
 #include <igl/remove_duplicate_vertices.h>
 #include <igl/remove_unreferenced.h>
 #include <igl/copyleft/tetgen/tetrahedralize.h>
+#include <igl/adjacency_list.h>
+#include <igl/tet_tet_adjacency.h>
+#include <igl/read_triangle_mesh.h>
+#include <igl/winding_number.h>
 // igl must be included BEFORE VolumeRemesher
 #include <VolumeRemesher/embed.h>
 #include <VolumeRemesher/numerics.h>
@@ -621,7 +625,7 @@ void tag_tets_from_images(
     const Matrix4d& xyz2ijk,
     const MatrixXd& V,
     const MatrixXi& T,
-    MatrixXi& T_tags)
+    MatrixSi& T_tags)
 {
     T_tags.resize(T.rows(), data.size());
     T_tags.setZero();
@@ -629,14 +633,17 @@ void tag_tets_from_images(
     for (size_t i = 0; i < data.size(); ++i) {
         VectorXi t;
         tag_tets_from_image(data[i], xyz2ijk, V, T, t);
-        T_tags.col(i) = t;
+        for (size_t j = 0; j < t.size(); ++j) {
+            if (t[j] == 0) {
+                continue;
+            }
+            T_tags.coeffRef(i, j) = t[j];
+        }
     }
+    T_tags.makeCompressed();
 }
 
-EmbedSurface::EmbedSurface(
-    const std::vector<std::string>& img_filenames,
-    const Matrix4d& ijk2xyz,
-    const bool skip_simplify)
+EmbedSurface::EmbedSurface(const std::vector<std::string>& img_filenames, const Matrix4d& ijk2xyz)
     : m_img_filenames(img_filenames)
     , m_ijk2xyz(ijk2xyz)
     , m_xyz2ijk(ijk2xyz.inverse())
@@ -649,7 +656,8 @@ EmbedSurface::EmbedSurface(
         read_array_data_ascii(m_img_datas[i], m_img_filenames[i]);
         MatrixXd V_single;
         MatrixXi F_single;
-        extract_triangle_soup_from_image(m_img_datas[i], F_single, V_single);
+        MatrixXi F_tags_single;
+        extract_triangle_soup_from_image(m_img_datas[i], F_single, V_single, F_tags_single);
 
         assert(V_single.cols() == 3);
         assert(F_single.cols() == 3);
@@ -663,6 +671,14 @@ EmbedSurface::EmbedSurface(
         F_single.array() += nV_old;
         m_F_surface.conservativeResize(m_F_surface.rows() + F_single.rows(), 3);
         m_F_surface.block(nF_old, 0, F_single.rows(), 3) = F_single;
+
+        m_F_tags_surface.reserve(m_F_tags_surface.size() + F_tags_single.rows());
+        for (size_t j = 0; j < F_tags_single.rows(); ++j) {
+            std::vector<std::pair<size_t, size_t>> tags = {
+                std::make_pair(i, (size_t)F_tags_single(j, 0)),
+                std::make_pair(i, (size_t)F_tags_single(j, 1))};
+            m_F_tags_surface.push_back(tags);
+        }
     }
 
 
@@ -672,15 +688,16 @@ EmbedSurface::EmbedSurface(
     MatrixXi F;
     VectorXi _I;
 
+    // remove unreferenced vertices
     igl::remove_unreferenced(m_V_surface, m_F_surface, V, F, _I);
 
     if (V.rows() == 0 || F.rows() == 0) {
         log_and_throw_error("Empty Input");
     }
 
-    const std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax =
-        std::pair(V.colwise().minCoeff(), V.colwise().maxCoeff());
-    double diag = (box_minmax.first - box_minmax.second).norm();
+    // const std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax =
+    //     std::pair(V.colwise().minCoeff(), V.colwise().maxCoeff());
+    // double diag = (box_minmax.first - box_minmax.second).norm();
 
     // using the same error tolerance as in tetwild
     Eigen::VectorXi SVI, SVJ, SVK;
@@ -688,14 +705,17 @@ EmbedSurface::EmbedSurface(
 
     const Vector4d single_voxel_max = ijk2xyz * Vector4d::Ones();
     const Vector4d single_voxel_min = ijk2xyz * Vector4d(0, 0, 0, 1);
-    double eps = (from_homogenuous(single_voxel_max) - from_homogenuous(single_voxel_min))
-                     .cwiseAbs()
-                     .minCoeff() *
-                 0.01;
-    if (eps <= 0) {
-        logger().warn("EPS = {}, ijk_to_ras matix might be broken! Changing eps to 1e-4", eps);
-        eps = 1e-4;
-    }
+    //// ??? this might be wrong. I think we are still in voxel space here, so eps should be a fixed
+    //// value like 0.1.
+    // double eps = (from_homogenuous(single_voxel_max) - from_homogenuous(single_voxel_min))
+    //                  .cwiseAbs()
+    //                  .minCoeff() *
+    //              0.01;
+    // if (eps <= 0) {
+    //     logger().warn("EPS = {}, ijk_to_ras matix might be broken! Changing eps to 1e-4", eps);
+    //     eps = 1e-4;
+    // }
+    double eps = 0.1;
 
     igl::remove_duplicate_vertices(temp_V, eps, V, SVI, SVJ);
     for (int i = 0; i < F.rows(); i++) {
@@ -703,32 +723,123 @@ EmbedSurface::EmbedSurface(
             F(i, j) = SVJ[F(i, j)];
         }
     }
-    MatrixXi F1 = F;
 
-    resolve_duplicated_faces(F1, F);
+    // remove duplicate faces and merge tag data
+    {
+        MatrixXi F1 = F;
+        VectorXi J;
+        resolve_duplicated_faces(F1, F, J);
+
+        std::vector<std::vector<std::pair<size_t, size_t>>> tags_surface;
+        tags_surface.resize(F.rows());
+        for (size_t i = 0; i < J.rows(); ++i) {
+            if (i == J[i]) {
+                tags_surface[i] = m_F_tags_surface[i];
+            } else {
+                tags_surface[J[i]].insert(
+                    tags_surface[J[i]].end(),
+                    m_F_tags_surface[i].begin(),
+                    m_F_tags_surface[i].end());
+            }
+        }
+        m_F_tags_surface = tags_surface;
+    }
+    wmtk::logger().info("after remove duplicate v#: {} f#: {}", V.rows(), F.rows());
+
+    // uniform laplacian smoothing
+    if (m_smooth_surface) {
+        logger().info("Taubin smoothing on input");
+        // igl::writeOFF("debug_in.off", V, F);
+        const MatrixXd V_orig = V;
+        MatrixXd V_buf = V;
+
+        const double lambda = 0.5;
+        const double my = -0.53;
+        // const double clamp_to = 0.249;
+        const double clamp_to = std::sqrt(0.1249);
+
+        std::vector<std::vector<int>> A;
+        igl::adjacency_list(F, A);
+
+        std::vector<bool> vertex_is_nonmanifold(V.rows(), false);
+        {
+            // find vertices on non-manifold edges
+            std::map<simplex::Edge, size_t> edge_face_counter;
+            for (int i = 0; i < F.rows(); ++i) {
+                for (int j = 0; j < 3; ++j) {
+                    const simplex::Edge e(F(i, j), F(i, (j + 1) % 3));
+                    auto [it, suc] = edge_face_counter.try_emplace(e, 0);
+                    it->second++;
+                }
+            }
+            for (const auto& [e, fs] : edge_face_counter) {
+                if (fs != 2) {
+                    vertex_is_nonmanifold[e.vertices()[0]] = true;
+                    vertex_is_nonmanifold[e.vertices()[1]] = true;
+                }
+            }
+        }
+
+        for (int i = 0; i < V.rows(); ++i) {
+            const auto& neighs = A[i];
+            if (!vertex_is_nonmanifold[i]) {
+                continue;
+            }
+            std::vector<int> n;
+            n.reserve(neighs.size());
+            for (const int neigh : neighs) {
+                if (vertex_is_nonmanifold[neigh]) {
+                    n.push_back(neigh);
+                }
+            }
+            A[i] = n;
+        }
+
+        auto smooth_step = [&](const double factor) {
+            for (int i = 0; i < V.rows(); ++i) {
+                const auto& neighs = A[i];
+                if (neighs.empty()) {
+                    continue;
+                }
+
+                Vector3d Lp = Vector3d::Zero();
+                for (const int j : neighs) {
+                    Lp += V.row(j);
+                }
+                Lp /= neighs.size();
+                Lp -= V.row(i);
+
+                V_buf.row(i) = V.row(i).transpose() + factor * Lp;
+            }
+            std::swap(V, V_buf);
+        };
+
+        auto clamp_step = [&]() {
+            for (int i = 0; i < V.rows(); ++i) {
+                const Vector3d& p0 = V_orig.row(i);
+                const Vector3d& p1 = V.row(i);
+                Vector3d dir = (p1 - p0);
+                // dir = dir.cwiseMax(-clamp_to).cwiseMin(clamp_to);
+                if (dir.norm() > clamp_to) {
+                    dir = dir.normalized() * clamp_to;
+                }
+                V.row(i) = p0 + dir;
+            }
+        };
+
+        for (size_t n = 0; n < 100; ++n) {
+            smooth_step(lambda);
+            smooth_step(my);
+            clamp_step();
+        }
+        // igl::writeOFF("debug_out.off", V, F);
+    }
 
     std::vector<Eigen::Vector3d> verts;
     std::vector<std::array<size_t, 3>> tris;
     verts.resize(V.rows());
     tris.resize(F.rows());
     wmtk::eigen_to_wmtk_input(verts, tris, V, F);
-
-    wmtk::logger().info("after remove duplicate v#: {} f#: {}", V.rows(), F.rows());
-
-    Eigen::VectorXi dummy;
-
-    if (!skip_simplify) {
-        /**
-         * Manifoldnes is only necessary for simplification. And even this should be removed in the
-         * future as our simplification should also work on non-manifold meshes.
-         */
-        if (!igl::is_edge_manifold(F) || !igl::is_vertex_manifold(F, dummy)) {
-            auto v1 = verts;
-            auto tri1 = tris;
-            logger().info("Separate to manifold");
-            wmtk::separate_to_manifold(v1, tri1, verts, tris, modified_nonmanifold_v);
-        }
-    }
 
     // apply dimensions
     logger().info("Convert from image to world coordinates (ijk to xyz)");
@@ -738,6 +849,72 @@ EmbedSurface::EmbedSurface(
         v = from_homogenuous(vh);
     }
     logger().info("Finished conversion.");
+
+    V_surf_from_vector(verts);
+    F_surf_from_vector(tris);
+}
+
+EmbedSurface::EmbedSurface(
+    const std::vector<std::string>& img_filenames,
+    const std::vector<Matrix4d>& img_transform)
+    : m_img_filenames(img_filenames)
+{
+    assert(img_filenames.size() == img_transform.size());
+
+    Vs.resize(m_img_filenames.size());
+    Fs.resize(m_img_filenames.size());
+
+    for (size_t i = 0; i < m_img_filenames.size(); ++i) {
+        if (!std::filesystem::exists(m_img_filenames[i])) {
+            log_and_throw_error("Input file {} does not exist", m_img_filenames[i]);
+        }
+        MatrixXi F_single;
+        igl::read_triangle_mesh(m_img_filenames[i], Vs[i], F_single);
+
+        assert(Vs[i].cols() == 3);
+        assert(F_single.cols() == 3);
+
+        // apply transform to Vs[i]
+        for (size_t j = 0; j < Vs[i].rows(); ++j) {
+            Vector3d v = Vs[i].row(j);
+            Vector4d x = to_homogenuous(v);
+            x = img_transform[i] * x;
+            Vs[i].row(j) = from_homogenuous(x);
+        }
+
+        Fs[i] = F_single;
+
+        const size_t nV_old = m_V_surface.rows();
+        const size_t nF_old = m_F_surface.rows();
+
+        m_V_surface.conservativeResize(m_V_surface.rows() + Vs[i].rows(), 3);
+        m_V_surface.block(nV_old, 0, Vs[i].rows(), 3) = Vs[i];
+
+        F_single.array() += nV_old;
+        m_F_surface.conservativeResize(m_F_surface.rows() + F_single.rows(), 3);
+        m_F_surface.block(nF_old, 0, Fs[i].rows(), 3) = F_single;
+    }
+
+
+    // process triangle soup
+    MatrixXd V;
+    MatrixXi F;
+    VectorXi _I;
+
+    // remove unreferenced vertices
+    igl::remove_unreferenced(m_V_surface, m_F_surface, V, F, _I);
+
+    if (V.rows() == 0 || F.rows() == 0) {
+        log_and_throw_error("Empty Input");
+    }
+
+    wmtk::logger().info("All inputs #V = {}, #F = {}", V.rows(), F.rows());
+
+    std::vector<Eigen::Vector3d> verts;
+    std::vector<std::array<size_t, 3>> tris;
+    verts.resize(V.rows());
+    tris.resize(F.rows());
+    wmtk::eigen_to_wmtk_input(verts, tris, V, F);
 
     V_surf_from_vector(verts);
     F_surf_from_vector(tris);
@@ -796,6 +973,15 @@ bool EmbedSurface::embed_surface()
 {
     logger().info("Embed with VolumeInsertion");
 
+
+    double eps = 0.5;
+    if (!Fs.empty()) {
+        const std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax =
+            std::pair(m_V_surface.colwise().minCoeff(), m_V_surface.colwise().maxCoeff());
+        double diag = (box_minmax.first - box_minmax.second).norm();
+        eps = 1e-2 * diag;
+    }
+
     std::shared_ptr<SampleEnvelope> ptr_env;
     {
         const auto v_simplified = V_surf_to_vector();
@@ -806,7 +992,7 @@ bool EmbedSurface::embed_surface()
         }
         ptr_env = std::make_shared<SampleEnvelope>();
         ptr_env->use_exact = true;
-        ptr_env->init(v_simplified, tempF, 0.5);
+        ptr_env->init(v_simplified, tempF, eps);
     }
 
     std::vector<wmtk::delaunay::Point3D> points;
@@ -829,7 +1015,7 @@ bool EmbedSurface::embed_surface()
         T_vol.row(i) = Vector4i(t[0], t[1], t[2], t[3]);
     }
 
-    wmtk::components::image_simulation::embed_surface(
+    image_simulation::embed_surface(
         m_V_surface,
         m_F_surface,
         V_vol,
@@ -846,7 +1032,99 @@ bool EmbedSurface::embed_surface()
     }
 
     // add tags
-    tag_tets_from_images(m_img_datas, m_xyz2ijk, m_V_emb, m_T_emb, m_T_tags);
+    if (!Fs.empty()) {
+        tag_from_winding_number();
+    } else {
+        assert(!m_img_datas.empty());
+        tag_tets_from_images(m_img_datas, m_xyz2ijk, m_V_emb, m_T_emb, m_T_tags);
+    }
+
+    /**
+     * Cluster tags by flood-filling regions that are bounded by the surface. All tags within one
+     * region are unified by taking the tag with most occurances.
+     *
+     * This is for several reasons not the best way to do this.
+     * 1. The tags should be volume-weighted so that the tag that represents the most volume should
+     * be picked.
+     * 2. We should not rely on geometric look-up at all, but use the information stored in
+     * m_F_tags_surface. This is more work so I took a shortcut here.
+     */
+    {
+        std::set<simplex::Face> surface;
+        for (size_t i = 0; i < m_F_on_surface.rows(); ++i) {
+            const simplex::Face f(m_F_on_surface(i, 0), m_F_on_surface(i, 1), m_F_on_surface(i, 2));
+            surface.insert(f);
+        }
+
+        // flood fill regions
+        std::vector<bool> visited(m_T_emb.rows(), false);
+        MatrixXi TT;
+        igl::tet_tet_adjacency(m_T_emb, TT);
+
+        for (size_t i = 0; i < m_T_emb.rows(); ++i) {
+            if (visited[i]) {
+                continue;
+            }
+
+            std::queue<size_t> q;
+            q.push(i);
+            visited[i] = true;
+
+            std::vector<size_t> region; // all tets in that region
+
+            while (!q.empty()) {
+                size_t tid = q.front();
+                q.pop();
+
+                region.push_back(tid);
+                const auto& tet = m_T_emb.row(tid);
+
+                // face-vertex IDs according to igl::tet_tet_adjacency
+                std::array<simplex::Face, 4> f{{
+                    simplex::Face(tet[0], tet[1], tet[2]),
+                    simplex::Face(tet[0], tet[1], tet[3]),
+                    simplex::Face(tet[1], tet[2], tet[3]),
+                    simplex::Face(tet[2], tet[0], tet[3]),
+                }};
+                for (size_t j = 0; j < 4; ++j) {
+                    if (TT(tid, j) < 0) {
+                        continue; // boundary
+                    }
+                    if (surface.count(f[j]) == 0 && !visited[TT(tid, j)]) {
+                        visited[TT(tid, j)] = true;
+                        q.push(TT(tid, j));
+                    }
+                }
+            }
+
+            // get all tags for one image
+            for (size_t img_id = 0; img_id < m_T_tags.cols(); ++img_id) {
+                std::map<int, int> m;
+                for (size_t j = 0; j < region.size(); ++j) {
+                    int tag = m_T_tags.coeff(region[j], img_id);
+                    if (m.count(tag) == 0) {
+                        m[tag] = 1;
+                    } else {
+                        m[tag] += 1;
+                    }
+                }
+                int max_count = -1;
+                int max_tag = -1;
+                for (const auto& [tag, count] : m) {
+                    if (count > max_count) {
+                        max_count = count;
+                        max_tag = tag;
+                    }
+                }
+                assert(max_count > 0);
+                for (size_t j = 0; j < region.size(); ++j) {
+                    if (m_T_tags.coeff(region[j], img_id) != max_tag) {
+                        m_T_tags.coeffRef(region[j], img_id) = max_tag;
+                    }
+                }
+            }
+        }
+    }
 
     return all_rounded;
 }
@@ -970,7 +1248,7 @@ bool EmbedSurface::embed_surface_tetgen()
         // F_in.row(m_F_surface.rows() + 11) = Vector3i(p[7], p[1], p[3]);
     }
 
-    MatrixXi TF;
+    MatrixXi TF; // boundary faces from tetgen
 
     int ret = igl::copyleft::tetgen::tetrahedralize(V_in, F_in, "pc", m_V_emb, m_T_emb, TF);
     if (ret != 0) {
@@ -983,7 +1261,12 @@ bool EmbedSurface::embed_surface_tetgen()
     }
 
     // add tags
-    tag_tets_from_images(m_img_datas, m_xyz2ijk, m_V_emb, m_T_emb, m_T_tags);
+    if (!Fs.empty()) {
+        tag_from_winding_number();
+    } else {
+        assert(!m_img_datas.empty());
+        tag_tets_from_images(m_img_datas, m_xyz2ijk, m_V_emb, m_T_emb, m_T_tags);
+    }
 
     return true;
 }
@@ -1056,7 +1339,7 @@ void EmbedSurface::write_emb_msh(const std::string& filename) const
 
     for (size_t i = 0; i < m_T_tags.cols(); ++i) {
         msh.add_tet_attribute<1>(fmt::format("tag_{}", i), [this, i](size_t j) {
-            return m_T_tags(j, i);
+            return m_T_tags.coeff(j, i);
         });
     }
 
@@ -1134,6 +1417,36 @@ void EmbedSurface::F_surf_from_vector(const std::vector<std::array<size_t, 3>>& 
         m_F_surface(i, 1) = tris[i][1];
         m_F_surface(i, 2) = tris[i][2];
     }
+}
+
+void EmbedSurface::tag_from_winding_number()
+{
+    m_T_tags.resize(m_T_emb.rows(), Fs.size());
+    m_T_tags.setZero();
+
+    MatrixXd P;
+    P.resize(m_T_emb.rows(), 3);
+    for (size_t i = 0; i < m_T_emb.rows(); ++i) {
+        const Vector3d v0 = m_V_emb.row(m_T_emb(i, 0));
+        const Vector3d v1 = m_V_emb.row(m_T_emb(i, 1));
+        const Vector3d v2 = m_V_emb.row(m_T_emb(i, 2));
+        const Vector3d v3 = m_V_emb.row(m_T_emb(i, 3));
+        P.row(i) = (v0 + v1 + v2 + v3) * 0.25;
+    }
+
+    VectorXd W;
+    W.resize(m_T_emb.rows());
+    for (size_t i = 0; i < Fs.size(); ++i) {
+        igl::winding_number(Vs[i], Fs[i], P, W);
+        assert(W.size() == m_T_tags.rows());
+        for (size_t j = 0; j < W.size(); ++j) {
+            if (W[j] < 0.5) {
+                continue;
+            }
+            m_T_tags.coeffRef(j, i) = 1;
+        }
+    }
+    m_T_tags.makeCompressed();
 }
 
 } // namespace wmtk::components::image_simulation

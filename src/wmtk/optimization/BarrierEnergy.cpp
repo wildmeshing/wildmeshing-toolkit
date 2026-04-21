@@ -112,4 +112,79 @@ void BarrierEnergy2D::update_collisions(const TVector& x)
 #endif
 }
 
+
+BarrierEnergy3D::BarrierEnergy3D(
+    const MatrixXd& V,
+    const MatrixXi& F,
+    const size_t vid,
+    const double dhat,
+    const double weight)
+    : m_collision_mesh(V, F)
+    , m_V(V)
+    , m_B(dhat)
+    , m_x0(V.row(vid))
+    , m_vid(vid)
+    , m_weight(weight)
+{
+    assert(V.cols() == 3);
+    assert(F.cols() == 3);
+
+    m_collisions.build(m_collision_mesh, m_V, m_B.dhat());
+}
+
+BarrierEnergy3D::TVector BarrierEnergy3D::initial_position() const
+{
+    return m_x0;
+}
+
+void BarrierEnergy3D::replace_vid(const size_t vid)
+{
+    // set new vid
+    m_vid = vid;
+    m_x0 = m_V.row(m_vid);
+    m_collisions.build(m_collision_mesh, m_V, m_B.dhat());
+}
+
+double BarrierEnergy3D::value(const TVector& x)
+{
+    assert(x.size() == 3);
+    update_collisions(x);
+    double potential = m_B(m_collisions, m_collision_mesh, m_V);
+    return m_weight * potential;
+}
+
+void BarrierEnergy3D::gradient(const TVector& x, TVector& gradv)
+{
+    assert(x.size() == 3);
+    update_collisions(x);
+    VectorXd grad = m_B.gradient(m_collisions, m_collision_mesh, m_V);
+    gradv = m_weight * grad.segment<3>(m_vid * 3);
+}
+
+void BarrierEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
+{
+    assert(x.size() == 3);
+    update_collisions(x);
+    Eigen::SparseMatrix<double> hess = m_B.hessian(m_collisions, m_collision_mesh, m_V);
+
+    Matrix3d v_hess;
+    v_hess.setZero();
+    v_hess(0, 0) = hess.coeff(3 * m_vid + 0, 3 * m_vid + 0);
+    v_hess(1, 1) = hess.coeff(3 * m_vid + 1, 3 * m_vid + 1);
+    v_hess(2, 2) = hess.coeff(3 * m_vid + 2, 3 * m_vid + 2);
+    hessian = m_weight * v_hess;
+}
+
+void BarrierEnergy3D::update_collisions(const TVector& x)
+{
+    assert(m_V.cols() == x.size());
+    const VectorXd& curr = m_V.row(m_vid);
+    if (curr == x) {
+        return;
+    }
+
+    m_V.row(m_vid) = x;
+    m_collisions.build(m_collision_mesh, m_V, m_B.dhat());
+}
+
 } // namespace wmtk::optimization

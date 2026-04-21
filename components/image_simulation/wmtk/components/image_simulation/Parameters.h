@@ -13,6 +13,9 @@ struct Parameters
     bool preserve_topology = false;
     std::string output_path;
 
+    double epsr_simplify = 2e-3; // relative error bound (wrt diagonal) for simplification
+    double eps_simplify = -1.; // absolute error bound for simplification
+
     // parameters set in `init` function based on mesh bbox
     double diag_l = -1.;
     double diag_l2 = -1.;
@@ -62,6 +65,12 @@ struct Parameters
             epsr = eps / diag_l;
         } else {
             eps = epsr * diag_l;
+        }
+
+        if (eps_simplify > 0) {
+            epsr_simplify = eps_simplify / diag_l;
+        } else {
+            eps_simplify = epsr_simplify * diag_l;
         }
 
         l_min = 0.5 * eps;

@@ -40,4 +40,40 @@ private:
     double m_weight;
 };
 
+
+class AMIPSEnergy3D : public polysolve::nonlinear::Problem
+{
+public:
+    using typename polysolve::nonlinear::Problem::Scalar;
+    using typename polysolve::nonlinear::Problem::THessian;
+    using typename polysolve::nonlinear::Problem::TVector;
+
+    /**
+     * @brief Sum of AMIPS energies for 3D tets.
+     *
+     * Each tet must be provided as an array of 12 values: {x0, y0, z0, x1, y1, x2, ...}.
+     * The first three entries (x0, y0, z0) must be the same for all tets and will be replaced with
+     * `x` during optimization.
+     */
+    AMIPSEnergy3D(const std::vector<std::array<double, 12>>& cells, const double weight = 1);
+
+    TVector initial_position() const;
+
+    double value(const TVector& x) override;
+    void gradient(const TVector& x, TVector& gradv) override;
+    void hessian(const TVector& x, THessian& hessian) override
+    {
+        log_and_throw_error("Sparse functions do not exist, use dense solver");
+    }
+    void hessian(const TVector& x, MatrixXd& hessian) override;
+
+    void solution_changed(const TVector& new_x) override;
+
+    bool is_step_valid(const TVector& x0, const TVector& x1) override;
+
+private:
+    std::vector<std::array<double, 12>> m_cells;
+    double m_weight;
+};
+
 } // namespace wmtk::optimization

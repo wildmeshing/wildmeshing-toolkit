@@ -79,6 +79,11 @@ public:
     Face opposite_face(const Vertex& v) const;
     Edge opposite_edge(const Edge& e) const;
     Vertex opposite_vertex(const Face& f) const;
+
+    /**
+     * Get the 4 faces from the tet
+     */
+    std::array<simplex::Face, 4> faces() const;
 };
 
 } // namespace wmtk::simplex

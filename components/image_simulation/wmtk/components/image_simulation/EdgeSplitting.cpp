@@ -70,7 +70,7 @@ bool ImageSimulationMesh::split_edge_before(const Tuple& loc0)
     cache.is_edge_on_surface = is_edge_on_surface(loc0);
 
     // todo: can be optimized
-    cache.is_edge_open_boundary = cache.is_edge_on_surface && is_open_boundary_edge(loc0);
+    cache.is_edge_open_boundary = cache.is_edge_on_surface && is_order_2_edge(loc0);
 
     /// save face track info
     auto comp = [](const std::pair<FaceAttributes, std::array<size_t, 3>>& v1,
@@ -103,7 +103,7 @@ bool ImageSimulationMesh::split_edge_before(const Tuple& loc0)
     for (const Tuple& t : tets) {
         const simplex::Tet tet = simplex_from_tet(t);
         const simplex::Edge opp = tet.opposite_edge(edge);
-        if (m_tet_attribute.at(t.tid(*this)).tags.empty()) {
+        if (m_tet_attribute.at(t.tid(*this)).tags.size() == 0) {
             log_and_throw_error("No tags in tet {}", t.tid(*this)); // for debugging
         }
         cache.tets[opp] = m_tet_attribute.at(t.tid(*this));
@@ -177,11 +177,20 @@ bool ImageSimulationMesh::split_edge_after(const Tuple& loc)
     m_vertex_attribute[v_id].on_bbox_faces = wmtk::set_intersection(
         m_vertex_attribute[v1_id].on_bbox_faces,
         m_vertex_attribute[v2_id].on_bbox_faces);
+
+
     // surface
     m_vertex_attribute[v_id].m_is_on_surface = cache.is_edge_on_surface;
+    if (cache.is_edge_on_surface) {
+        m_vertex_attribute[v_id].m_order = 1;
+    } else {
+        m_vertex_attribute[v_id].m_order = 0;
+    }
 
     // open boundary
-    m_vertex_attribute[v_id].m_is_on_open_boundary = cache.is_edge_open_boundary;
+    if (cache.is_edge_open_boundary) {
+        m_vertex_attribute[v_id].m_order = 2;
+    }
 
     /// update face attribute
     // add new and erase old

@@ -25,6 +25,7 @@ std::vector<std::string> input_files{
     "image_simulation_fill_holes_2d.json",
     "image_simulation_keep_lcc_2d.json",
     "image_simulation_tight_seal_2d.json",
+    "image_simulation_double_sphere_3d.json",
     "isotropic_remeshing_bunny.json",
     "isotropic_remeshing_piece.json",
     "manifold_extraction_randmesh.json",

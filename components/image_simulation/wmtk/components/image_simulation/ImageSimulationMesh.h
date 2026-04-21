@@ -4,8 +4,11 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Morton.h>
 #include <wmtk/utils/PartitionMesh.h>
+#include <polysolve/nonlinear/Problem.hpp>
 #include <wmtk/envelope/Envelope.hpp>
+#include <wmtk/optimization/solver.hpp>
 #include <wmtk/simplex/Simplex.hpp>
+
 #include "Parameters.h"
 
 // clang-format off
@@ -58,9 +61,6 @@ public:
      */
     size_t partition_id = 0;
 
-    // for open boundary
-    bool m_is_on_open_boundary = false;
-
     VertexAttributes() {};
     VertexAttributes(const Vector3r& p);
 };
@@ -112,10 +112,10 @@ public:
      */
     double m_quality;
     /**
-     * All image labels. Each image is represented by one entry in the vector. All tets must have
-     * the same tags.size().
+     * All image labels. Stored as pairs of image ID and the tag within the image. Using a sparse
+     * vector, so 0 entries are ommitted.
      */
-    std::vector<int64_t> tags;
+    VectorSi tags;
 };
 
 class ImageSimulationMesh : public wmtk::TetMesh
@@ -132,10 +132,23 @@ public:
     std::vector<Vector3d> m_V_envelope;
     std::vector<Vector3i> m_F_envelope;
     std::shared_ptr<SampleEnvelope> m_envelope;
+    std::shared_ptr<SampleEnvelope> m_envelope_orig;
     double m_envelope_eps = -1;
 
+    bool m_collapse_check_quality = true;
+
     // for open boundary
-    SampleEnvelope m_open_boundary_envelope; // todo: add sample envelope option
+    std::shared_ptr<SampleEnvelope> m_order_2_edge_envelope; // todo: add sample envelope option
+
+    tbb::enumerable_thread_specific<std::unique_ptr<polysolve::nonlinear::Solver>> m_solver;
+    Eigen::SparseMatrix<double> m_surface_mass; // the mass matrix for surface vertices
+    Eigen::SparseMatrix<double> m_surface_stiffness; // stiffness matrix for surface vertices
+
+    // scaling factors
+    double m_s_amips = -1;
+    double m_s_smooth = -1;
+    double m_s_envelope = -1;
+    double m_s_barrier = -1;
 
     ImageSimulationMesh(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
         : m_params(_m_params)
@@ -147,6 +160,45 @@ public:
         p_tet_attrs = &m_tet_attribute;
         m_collapse_check_link_condition = false;
         m_collapse_check_manifold = false;
+
+        // solver is lazily created on first use
+
+        optimization::deactivate_opt_logger();
+
+        m_s_amips = 1.;
+        /**
+         * TODO
+         */
+        m_s_smooth = 1.;
+        /**
+         * TODO
+         */
+        m_s_envelope = 1. / (m_params.diag_l * m_params.eps * m_params.eps);
+        /**
+         * TODO
+         */
+        m_s_barrier = 1. / (m_params.diag_l4);
+
+        // check weights (ignoring barrier here)
+        {
+            double& wa = m_params.w_amips;
+            double& ws = m_params.w_smooth;
+            const double sum = wa + ws;
+            if (sum > 1) {
+                wa /= sum;
+                ws /= sum;
+                logger().warn(
+                    "Weights for AMIPS and smooth sum up to greater than 1. Rescaling to \n  "
+                    "w_amips = {}, \n  w_smooth = {}",
+                    wa,
+                    ws);
+            }
+            double& we = m_params.w_envelope;
+            we = 1 - (wa + ws);
+            logger().info("w_envelope = {}", we);
+        }
+
+        init_separation_weight();
     }
 
     ~ImageSimulationMesh() {}
@@ -295,6 +347,8 @@ public:
 
     void init_envelope(const MatrixXd& V, const MatrixXi& F);
 
+    void init_separation_weight();
+
     double get_length2(const Tuple& l) const;
 
     ////// Attributes related
@@ -320,18 +374,15 @@ public:
     bool split_edge_before(const Tuple& t) override;
     bool split_edge_after(const Tuple& loc) override;
 
-    void smooth_all_vertices();
+    void smooth_all_vertices(const size_t n_iters);
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
-
-    /**
-     * A short-cut to perform laplacian smoothing on the input surface
-     */
-    void smooth_input(const int n_iterations);
 
     void collapse_all_edges(bool is_limit_length = true);
     bool collapse_edge_before(const Tuple& t) override;
     bool collapse_edge_after(const Tuple& t) override;
+
+    void simplify();
 
     size_t swap_all_edges_44();
     bool swap_edge_44_before(const Tuple& t) override;
@@ -364,6 +415,22 @@ public:
     double get_quality(const std::array<size_t, 4>& vs) const;
     double get_quality(const Tuple& loc) const;
 
+    void build_mass_matrix();
+
+    std::vector<std::array<double, 12>> get_amips_assembles(const Tuple& t) const;
+
+    std::shared_ptr<polysolve::nonlinear::Problem> get_amips_energy(const Tuple& t) const;
+
+    std::shared_ptr<polysolve::nonlinear::Problem> get_smooth_energy(const Tuple& t) const;
+    std::shared_ptr<polysolve::nonlinear::Problem> get_envelope_energy(const Tuple& t) const;
+    std::shared_ptr<polysolve::nonlinear::Problem> get_barrier_energy(
+        const Tuple& t,
+        const bool use_full_surface = false) const;
+
+    void substructure_region(const Tuple& v_tuple, MatrixXd& V, MatrixXi& E, size_t& vid_local)
+        const;
+
+
     /**
      * @brief Round a vertex position to floating point.
      *
@@ -382,11 +449,6 @@ public:
     //
     bool is_edge_on_surface(const Tuple& loc);
     bool is_edge_on_bbox(const Tuple& loc);
-    /**
-     * brief Check if the vertex has an incident boundary edge.
-     * This performs a topological check.
-     */
-    bool is_vertex_on_boundary(const size_t vid);
     //
     void mesh_improvement(int max_its = 80);
     std::tuple<double, double> local_operations(
@@ -397,7 +459,7 @@ public:
     bool check_attributes();
 
     std::vector<std::array<size_t, 3>> get_faces_by_condition(
-        std::function<bool(const FaceAttributes&)> cond);
+        std::function<bool(const FaceAttributes&)> cond) const;
 
     bool invariants(const std::vector<Tuple>& t) override; // this is now automatically checked
 
@@ -454,6 +516,8 @@ private:
         std::vector<std::array<size_t, 2>> boundary_edges;
         std::vector<size_t> changed_tids;
         std::vector<double> changed_energies;
+
+        size_t edge_order;
     };
     tbb::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
 
@@ -462,7 +526,7 @@ private:
     {
         double max_energy;
         std::map<std::array<size_t, 3>, FaceAttributes> changed_faces;
-        std::vector<int64_t> tet_tags;
+        VectorSi tet_tags;
     };
     tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
 
@@ -500,8 +564,8 @@ public:
      * @param T #Tx4 vertex IDs for all tets
      * @param T_tags #Tx1 image data represented by the individual tets
      */
-    void init_from_image(const MatrixXr& V, const MatrixXi& T, const MatrixXi& T_tags);
-    void init_from_image(const MatrixXd& V, const MatrixXi& T, const MatrixXi& T_tags);
+    void init_from_image(const MatrixXr& V, const MatrixXi& T, const MatrixSi& T_tags);
+    void init_from_image(const MatrixXd& V, const MatrixXi& T, const MatrixSi& T_tags);
 
     void init_surfaces_and_boundaries();
 
@@ -518,7 +582,7 @@ public:
      * used.
      *
      */
-    void find_open_boundary();
+    void find_order_2_edges();
     /**
      * @brief Checks if an edge COULD be an open boundary edge.
      *
@@ -528,8 +592,8 @@ public:
      * boundary! For example, an almost degenerate triangle with two edges on the open boundary
      * could cause a false positive result.
      */
-    bool is_open_boundary_edge(const Tuple& e);
-    bool is_open_boundary_edge(const std::array<size_t, 2>& e);
+    bool is_order_2_edge(const Tuple& e) const;
+    bool is_order_2_edge(const std::array<size_t, 2>& e) const;
 
     void write_vtu(const std::string& path);
 

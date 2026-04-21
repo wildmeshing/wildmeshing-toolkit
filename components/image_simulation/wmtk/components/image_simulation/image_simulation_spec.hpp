@@ -12,6 +12,7 @@ nlohmann::json image_simulation_spec = R"(
       "operation",
       "output",
       "ijk_to_ras",
+      "input_transform",
       "skip_simplify",
       "use_sample_envelope",
       "use_tetgen",
@@ -19,6 +20,8 @@ nlohmann::json image_simulation_spec = R"(
       "max_iterations",
       "eps_rel",
       "eps",
+      "eps_simplify_rel",
+      "eps_simplify",
       "length",
       "length_rel",
       "stop_energy",
@@ -99,9 +102,31 @@ nlohmann::json image_simulation_spec = R"(
     "type": "float"
   },
   {
+    "pointer": "/input_transform",
+    "type": "list",
+    "doc": "Transformation matrices for the inputs. Transformations are optional and don't need to be described for all inputs.",
+    "default": []
+  },
+  {
+    "pointer": "/input_transform/*",
+    "type": "list",
+    "doc": "Transformation matrix (4x4 homogeneous coordinates) for one input.",
+    "max": 4
+  },
+  {
+    "pointer": "/input_transform/*/*",
+    "type": "list",
+    "min": 4,
+    "max": 4
+  },
+  {
+    "pointer": "/input_transform/*/*",
+    "type": "float"
+  },
+  {
     "pointer": "/skip_simplify",
     "type": "bool",
-    "default": false,
+    "default": true,
     "doc": "If true, input simplification will be skipped."
   },
   {
@@ -139,6 +164,18 @@ nlohmann::json image_simulation_spec = R"(
     "type": "float",
     "default": -1,
     "doc": "Absolute envelope thickness. If this value is negative, the relative envelope thickness is used to compute the absolute one."
+  },
+  {
+    "pointer": "/eps_simplify_rel",
+    "type": "float",
+    "default": 2e-3,
+    "doc": "Envelope thickness relative to the bounding box for the initial simplification."
+  },
+  {
+    "pointer": "/eps_simplify",
+    "type": "float",
+    "default": -1,
+    "doc": "Absolute envelope thickness for the initial simplification. If this value is negative, the relative envelope thickness is used to compute the absolute one."
   },
   {
     "pointer": "/length",

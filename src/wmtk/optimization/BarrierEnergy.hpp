@@ -74,4 +74,57 @@ private:
     double m_weight;
 };
 
+class BarrierEnergy3D : public polysolve::nonlinear::Problem
+{
+public:
+    using typename polysolve::nonlinear::Problem::Scalar;
+    using typename polysolve::nonlinear::Problem::THessian;
+    using typename polysolve::nonlinear::Problem::TVector;
+
+    /**
+     * @brief Barrier energy for a polyline in 2D
+     *
+     * The energy is defined over an entire polyline described by V and E. But the optimization only
+     * considers one vertex with ID `vid`. The `vid` can be replaced to optimize another vertex
+     * position later on.
+     */
+    BarrierEnergy3D(
+        const MatrixXd& V,
+        const MatrixXi& F,
+        const size_t vid,
+        const double dhat,
+        const double weight = 1);
+
+    TVector initial_position() const;
+
+    void replace_vid(const size_t vid);
+
+    MatrixXd& V() { return m_V; }
+
+    double value(const TVector& x) override;
+    void gradient(const TVector& x, TVector& gradv) override;
+    void hessian(const TVector& x, THessian& hessian) override
+    {
+        log_and_throw_error("Sparse functions do not exist, use dense solver");
+    }
+    void hessian(const TVector& x, MatrixXd& hessian) override;
+
+    void solution_changed(const TVector& new_x) override {}
+
+    bool is_step_valid(const TVector& x0, const TVector& x1) override { return true; }
+
+    void update_collisions(const TVector& x);
+
+private:
+    ipc::CollisionMesh m_collision_mesh;
+    MatrixXd m_V;
+    ipc::NormalCollisions m_collisions;
+    ipc::BarrierPotential m_B;
+
+    Vector3d m_x0;
+    size_t m_vid;
+
+    double m_weight;
+};
+
 } // namespace wmtk::optimization

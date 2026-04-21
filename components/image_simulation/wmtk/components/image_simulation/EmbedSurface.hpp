@@ -94,10 +94,14 @@ void tag_tets_from_images(
 class EmbedSurface
 {
 public:
+    EmbedSurface(const std::vector<std::string>& img_filenames, const Matrix4d& ijk2xyz);
+
+    /**
+     * @brief Input from meshes.
+     */
     EmbedSurface(
         const std::vector<std::string>& img_filenames,
-        const Matrix4d& ijk2xyz,
-        const bool skip_simplify = false);
+        const std::vector<Matrix4d>& img_transform = {});
 
     /**
      * @brief Simplify the input surface while staying within the eps envelope.
@@ -124,7 +128,7 @@ public:
     const MatrixXr& V_emb_r() const { return m_V_emb_r; }
     const MatrixXd& V_surface() const { return m_V_surface; }
     const MatrixXi& T_emb() const { return m_T_emb; }
-    const MatrixXi& T_tags() const { return m_T_tags; }
+    const MatrixSi& T_tags() const { return m_T_tags; }
     const MatrixXi& F_on_surface() const { return m_F_on_surface; }
     const MatrixXi& F_surface() const { return m_F_surface; }
 
@@ -155,6 +159,8 @@ private:
     void V_surf_from_vector(const std::vector<Eigen::Vector3d>& verts);
     void F_surf_from_vector(const std::vector<std::array<size_t, 3>>& tris);
 
+    void tag_from_winding_number();
+
 private:
     std::vector<std::string> m_img_filenames;
     std::vector<ImageData> m_img_datas;
@@ -165,6 +171,8 @@ private:
     MatrixXd m_V_surface;
     MatrixXi m_F_surface;
 
+    std::vector<std::vector<std::pair<size_t, size_t>>> m_F_tags_surface;
+
     std::vector<size_t> modified_nonmanifold_v;
 
     // the embedding
@@ -174,7 +182,14 @@ private:
     // triangles of the embedding representing the surface
     MatrixXi m_F_on_surface;
     // tags on the tets
-    MatrixXi m_T_tags;
+    MatrixSi m_T_tags;
+
+    // input from triangle meshes
+    std::vector<MatrixXd> Vs;
+    std::vector<MatrixXi> Fs;
+
+public:
+    bool m_smooth_surface = false;
 };
 
 } // namespace wmtk::components::image_simulation

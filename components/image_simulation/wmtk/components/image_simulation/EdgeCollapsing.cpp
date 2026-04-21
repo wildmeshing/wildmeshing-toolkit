@@ -1,11 +1,8 @@
 #include "ImageSimulationMesh.h"
-#include "oneapi/tbb/concurrent_vector.h"
 #include "wmtk/TetMesh.h"
 
 #include <igl/Timer.h>
 #include <algorithm>
-#include <atomic>
-#include <unordered_set>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -18,31 +15,8 @@ void ImageSimulationMesh::collapse_all_edges(bool is_limit_length)
     double time;
     timer.start();
 
-    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    {
-        const auto all_edges = get_edges();
-        logger().info("#edges = {}", all_edges.size());
-        for (const Tuple& loc : all_edges) {
-            // collect all edges. Filtering too long edges happens in `is_weight_up_to_date`
-            collect_all_ops.emplace_back("edge_collapse", loc);
-            collect_all_ops.emplace_back("edge_collapse", loc.switch_vertex(*this));
-        }
-    }
-    auto collect_failure_ops = tbb::concurrent_vector<std::pair<std::string, Tuple>>();
-    std::atomic_int count_success = 0;
-    time = timer.getElapsedTime();
-    wmtk::logger().info("edge collapse prepare time: {:.4}s", time);
+    std::vector<std::pair<std::string, Tuple>> all_ops;
     auto setup_and_execute = [&](auto& executor) {
-        executor.renew_neighbor_tuples =
-            [&count_success](const ImageSimulationMesh& m, Op op, const std::vector<Tuple>& newts) {
-                count_success++;
-                std::vector<std::pair<std::string, Tuple>> op_tups;
-                for (const auto& t : newts) {
-                    op_tups.emplace_back(op, t);
-                    op_tups.emplace_back(op, t.switch_vertex(m));
-                }
-                return op_tups;
-            };
         executor.priority = [](const ImageSimulationMesh& m, Op op, const Tuple& t) {
             return -m.get_length2(t);
         };
@@ -52,7 +26,9 @@ void ImageSimulationMesh::collapse_all_edges(bool is_limit_length)
             auto& VA = m_vertex_attribute;
             auto& [weight, op, tup] = ele;
             auto length = m.get_length2(tup);
-            if (length != -weight) return false;
+            if (length != -weight) {
+                return false;
+            }
             //
             size_t v1_id = tup.vid(*this);
             size_t v2_id = tup.switch_vertex(*this).vid(*this);
@@ -62,23 +38,22 @@ void ImageSimulationMesh::collapse_all_edges(bool is_limit_length)
             return true;
         };
 
-        executor.on_fail =
-            [&collect_failure_ops](const ImageSimulationMesh& m, Op op, const Tuple& t) {
-                collect_failure_ops.emplace_back(op, t);
-            };
         // Execute!!
         do {
-            count_success.store(0, std::memory_order_release);
-            wmtk::logger().info("Prepare to collapse {}", collect_all_ops.size());
-            executor(*this, collect_all_ops);
-            wmtk::logger().info(
-                "Collapsed {}, retrying failed {}",
-                (int)count_success,
-                collect_failure_ops.size());
-            collect_all_ops.clear();
-            for (auto& item : collect_failure_ops) collect_all_ops.emplace_back(item);
-            collect_failure_ops.clear();
-        } while (count_success.load(std::memory_order_acquire) > 0);
+            all_ops.clear();
+            const auto all_edges = get_edges();
+            logger().info("#E = {}", all_edges.size());
+            for (const Tuple& loc : all_edges) {
+                // collect all edges. Filtering too long edges happens in `is_weight_up_to_date`
+                all_ops.emplace_back("edge_collapse", loc);
+                all_ops.emplace_back("edge_collapse", loc.switch_vertex(*this));
+            }
+            executor(*this, all_ops);
+            logger().info(
+                "success: {}, failed: {}",
+                executor.get_cnt_success(),
+                executor.get_cnt_fail());
+        } while (executor.get_cnt_success() > 0);
     };
     if (NUM_THREADS > 0) {
         timer.start();
@@ -116,8 +91,7 @@ bool ImageSimulationMesh::collapse_edge_before(const Tuple& loc) // input is an 
     cache.v1_id = v1_id;
     cache.v2_id = v2_id;
 
-    cache.edge_length =
-        (VA[v1_id].m_posf - VA[v2_id].m_posf).norm(); // todo: duplicated computation
+    cache.edge_length = (VA[v1_id].m_posf - VA[v2_id].m_posf).norm();
 
     ///check if on bbox/surface/boundary
     // bbox
@@ -134,15 +108,15 @@ bool ImageSimulationMesh::collapse_edge_before(const Tuple& loc) // input is an 
 
     // surface
     if (cache.edge_length > 0 && VA[v1_id].m_is_on_surface) {
-        if (!VA[v2_id].m_is_on_surface && m_envelope->is_outside(VA[v2_id].m_posf)) {
+        if (!VA[v2_id].m_is_on_surface) {
+            // do not collapse away from surface
             return false;
         }
     }
 
     // open boundary
-    if (cache.edge_length > 0 && VA[v1_id].m_is_on_open_boundary) {
-        if (!VA[v2_id].m_is_on_open_boundary &&
-            m_open_boundary_envelope.is_outside(VA[v2_id].m_posf)) {
+    if (cache.edge_length > 0 && VA[v1_id].m_order == 2) {
+        if (VA[v2_id].m_order < 2) {
             return false;
         }
     }
@@ -177,7 +151,7 @@ bool ImageSimulationMesh::collapse_edge_before(const Tuple& loc) // input is an 
         }
         double q = get_quality(vs);
         // quality check only when v1 is rounded
-        if (VA[v1_id].m_is_rounded && q > cache.max_energy) {
+        if (m_collapse_check_quality && VA[v1_id].m_is_rounded && q > cache.max_energy) {
             return false;
         }
         cache.changed_energies.emplace_back(q);
@@ -185,7 +159,7 @@ bool ImageSimulationMesh::collapse_edge_before(const Tuple& loc) // input is an 
     assert(cache.changed_energies.size() == cache.changed_tids.size());
 
     //
-    const auto n12_locs = get_incident_tids_for_edge(loc); // todo: duplicated computation
+    const auto n12_locs = get_incident_tids_for_edge(loc);
     for (const size_t& tid : n12_locs) {
         auto vs = oriented_tet_vids(tid);
         std::array<size_t, 3> f_vids = {{v1_id, 0, 0}};
@@ -207,45 +181,52 @@ bool ImageSimulationMesh::collapse_edge_before(const Tuple& loc) // input is an 
     if (VA[v1_id].m_is_on_surface) {
         // this code must check if a face is tagged as surface face
         // only checking the vertices is not enough
-        std::vector<std::array<size_t, 3>> fs;
-        for (const size_t& tid : n1_locs) {
-            const auto vs = oriented_tet_vids(tid);
 
-            int j_v1 = -1;
-            auto skip = [&]() {
-                for (int j = 0; j < 4; j++) {
-                    const size_t vid = vs[j];
-                    if (vid == v2_id) {
-                        // ignore tets incident to the edge (v1,v2)
-                        return true; // v1-v2 definitely not on surface.
-                    }
-                    if (vid == v1_id) j_v1 = j;
-                }
-                return false;
-            };
-            if (skip()) continue;
+        // std::vector<std::array<size_t, 3>> fs;
+        simplex::SimplexCollection fs = get_surface_faces_for_vertex(v1_id);
+        // for (const size_t& tid : n1_locs) {
+        //     const auto vs = oriented_tet_vids(tid);
+        //
+        //     int j_v1 = -1;
+        //     auto skip = [&]() {
+        //         for (int j = 0; j < 4; j++) {
+        //             const size_t vid = vs[j];
+        //             if (vid == v2_id) {
+        //                // ignore tets incident to the edge (v1,v2)
+        //                return true; // v1-v2 definitely not on surface.
+        //            }
+        //            if (vid == v1_id) j_v1 = j;
+        //        }
+        //        return false;
+        //    };
+        //    if (skip()) continue;
+        //
+        //    for (int k = 0; k < 3; k++) {
+        //        auto va = vs[(j_v1 + 1 + k) % 4];
+        //        auto vb = vs[(j_v1 + 1 + (k + 1) % 3) % 4];
+        //        if ((VA[va].m_is_on_surface && VA[vb].m_is_on_surface)) {
+        //            std::array<size_t, 3> f = {{v1_id, va, vb}};
+        //            const auto [f_tuple, fid] = tuple_from_face(f);
+        //            if (!m_face_attribute.at(fid).m_is_surface_fs) {
+        //                // check if this face is actually on the surface
+        //                continue;
+        //            }
+        //            std::sort(f.begin(), f.end());
+        //            fs.push_back(f);
+        //        }
+        //    }
+        //}
+        // wmtk::vector_unique(fs);
 
-            for (int k = 0; k < 3; k++) {
-                auto va = vs[(j_v1 + 1 + k) % 4];
-                auto vb = vs[(j_v1 + 1 + (k + 1) % 3) % 4];
-                if ((VA[va].m_is_on_surface && VA[vb].m_is_on_surface)) {
-                    std::array<size_t, 3> f = {{v1_id, va, vb}};
-                    const auto [f_tuple, fid] = tuple_from_face(f);
-                    if (!m_face_attribute.at(fid).m_is_surface_fs) {
-                        // check if this face is actually on the surface
-                        continue;
-                    }
-                    std::sort(f.begin(), f.end());
-                    fs.push_back(f);
-                }
+        cache.surface_faces.reserve(fs.faces().size());
+        for (auto& f : fs.faces()) {
+            const simplex::Edge e_opp = f.opposite_edge(v1_id);
+            const size_t e0 = e_opp.vertices()[0];
+            const size_t e1 = e_opp.vertices()[1];
+            if (e0 == v2_id || e1 == v2_id) {
+                continue;
             }
-        }
-        wmtk::vector_unique(fs);
-
-        cache.surface_faces.reserve(fs.size());
-        for (auto& f : fs) {
-            std::replace(f.begin(), f.end(), v1_id, v2_id);
-            cache.surface_faces.push_back(f);
+            cache.surface_faces.push_back({{v2_id, e0, e1}});
         }
 
         std::vector<std::array<size_t, 2>> bs;
@@ -262,30 +243,30 @@ bool ImageSimulationMesh::collapse_edge_before(const Tuple& loc) // input is an 
             }
 
             for (int k = 0; k < 3; k++) {
-                auto va = vs[(j_v1 + 1 + k) % 4];
-                auto vb = vs[(j_v1 + 1 + (k + 1) % 3) % 4];
-                if ((VA[va].m_is_on_surface && VA[vb].m_is_on_surface)) {
-                    std::array<size_t, 3> f = {{v1_id, va, vb}};
-                    const auto [f_tuple, fid] = tuple_from_face(f);
-                    if (!m_face_attribute.at(fid).m_is_surface_fs) {
-                        // check if this face is actually on the surface
-                        continue;
+                const size_t va = vs[(j_v1 + 1 + k) % 4];
+                const size_t vb = vs[(j_v1 + 1 + (k + 1) % 3) % 4];
+                if ((!VA[va].m_is_on_surface || !VA[vb].m_is_on_surface)) {
+                    continue;
+                }
+                const auto [f_tuple, fid] = tuple_from_face({{v1_id, va, vb}});
+                if (!m_face_attribute.at(fid).m_is_surface_fs) {
+                    // check if this face is actually on the surface
+                    continue;
+                }
+                if (va != v2_id) { // ignore collapsing edge (v1,v2)
+                    std::array<size_t, 2> ba = {{v1_id, va}};
+                    if (is_order_2_edge(ba)) {
+                        ba[0] = v2_id; // replace v1 with v2 for check in `after` function
+                        std::sort(ba.begin(), ba.end());
+                        bs.push_back(ba);
                     }
-                    if (va != v2_id) { // ignore collapsing edge (v1,v2)
-                        std::array<size_t, 2> ba = {{v1_id, va}};
-                        if (is_open_boundary_edge(ba)) {
-                            ba[0] = v2_id; // replace v1 with v2 for check in `after` function
-                            std::sort(ba.begin(), ba.end());
-                            bs.push_back(ba);
-                        }
-                    }
-                    if (vb != v2_id) { // ignore collapsing edge (v1,v2)
-                        std::array<size_t, 2> bb = {{v1_id, vb}};
-                        if (is_open_boundary_edge(bb)) {
-                            bb[0] = v2_id; // replace v1 with v2 for check in `after` function
-                            std::sort(bb.begin(), bb.end());
-                            bs.push_back(bb);
-                        }
+                }
+                if (vb != v2_id) { // ignore collapsing edge (v1,v2)
+                    std::array<size_t, 2> bb = {{v1_id, vb}};
+                    if (is_order_2_edge(bb)) {
+                        bb[0] = v2_id; // replace v1 with v2 for check in `after` function
+                        std::sort(bb.begin(), bb.end());
+                        bs.push_back(bb);
                     }
                 }
             }
@@ -299,6 +280,7 @@ bool ImageSimulationMesh::collapse_edge_before(const Tuple& loc) // input is an 
             return false;
         }
     }
+    cache.edge_order = get_order_of_edge({{v1_id, v2_id}});
 
     return true;
 }
@@ -311,26 +293,14 @@ bool ImageSimulationMesh::collapse_edge_after(const Tuple& loc)
     size_t v2_id = cache.v2_id;
 
     if (!TetMesh::collapse_edge_after(loc)) {
-        // debug code
-        // wmtk::logger().info("edge {} not pass connectivity after check", loc.fid(*this));
-        // if (debug_flag) std::cout << "connectivity reject" << std::endl;
-
         return false;
     }
-    // auto& VA = m_vertex_attribute;
-    // auto& cache = collapse_cache.local();
-    // size_t v1_id = cache.v1_id;
-    // size_t v2_id = cache.v2_id;
-    // size_t v3_id = loc.switch_vertex(*this).vid(*this);
-    // if (m_vertex_attribute[v2_id].is_freezed && m_vertex_attribute[v3_id].is_freezed) return
-    // false;
 
     // open boundary - must be set before checking for open boundary
-    VA[v2_id].m_is_on_open_boundary =
-        VA.at(v1_id).m_is_on_open_boundary || VA.at(v2_id).m_is_on_open_boundary;
+    VA[v2_id].m_order = std::max(VA.at(v1_id).m_order, VA.at(v2_id).m_order);
 
     // surface
-    // and open boundary
+    // and order 2 edges
     if (cache.edge_length > 0) {
         for (auto& vids : cache.surface_faces) {
             // surface envelope
@@ -339,41 +309,14 @@ bool ImageSimulationMesh::collapse_edge_after(const Tuple& loc)
             if (is_out) {
                 return false;
             }
-
-            // // open boundary envelope
-            // // by checking each edge on cached surface
-            // if (VA[vids[0]].m_is_on_open_boundary && VA[vids[1]].m_is_on_open_boundary) {
-            //     if (m_open_boundary_envelope.is_outside(
-            //             {{VA[vids[0]].m_posf, VA[vids[1]].m_posf, VA[vids[0]].m_posf}}))
-            //         return false;
-            // }
-            // if (VA[vids[1]].m_is_on_open_boundary && VA[vids[2]].m_is_on_open_boundary) {
-            //     if (m_open_boundary_envelope.is_outside(
-            //             {{VA[vids[1]].m_posf, VA[vids[2]].m_posf, VA[vids[1]].m_posf}}))
-            //         return false;
-            // }
-            // if (VA[vids[2]].m_is_on_open_boundary && VA[vids[0]].m_is_on_open_boundary) {
-            //     if (m_open_boundary_envelope.is_outside(
-            //             {{VA[vids[2]].m_posf, VA[vids[0]].m_posf, VA[vids[2]].m_posf}}))
-            //         return false;
-            // }
         }
-        // for (const auto& vids : cache.boundary_edges) {
-        //     if (!is_open_boundary_edge(vids)) {
-        //        // edge was an open boundary before (that is why it got cached) but is not anymore
-        //        // after collapse
-        //        return false;
-        //    }
-        //}
-    }
-
-    if (VA.at(v2_id).m_is_on_open_boundary) {
-        // check if boundary edges are topologically still boundaries
-        if (!is_vertex_on_boundary(v2_id)) {
-            VA[v2_id].m_is_on_open_boundary = false;
+        for (const auto& vids : cache.boundary_edges) {
+            std::array<Vector3d, 2> pts{{VA.at(vids[0]).m_posf, VA.at(vids[1]).m_posf}};
+            if (m_order_2_edge_envelope->is_outside(pts)) {
+                return false;
+            }
         }
     }
-
 
     //// update attrs
     // tet attr
@@ -398,6 +341,55 @@ bool ImageSimulationMesh::collapse_edge_after(const Tuple& loc)
     }
 
     return true;
+}
+
+void ImageSimulationMesh::simplify()
+{
+    if (m_params.debug_output) {
+        write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+    }
+    logger().info("===== Simplify =====");
+
+    // re-build envelope
+    m_envelope->use_exact = false;
+    m_envelope->init(m_V_envelope, m_F_envelope, m_params.eps_simplify);
+
+    m_collapse_check_quality = false;
+    collapse_all_edges();
+    if (m_params.debug_output) {
+        write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+    }
+    m_collapse_check_quality = true;
+
+    // re-build envelope
+    {
+        logger().warn("Update envelope");
+        MatrixXd V;
+        V.resize(vert_capacity(), 3);
+        V.setZero();
+        for (size_t i = 0; i < vert_capacity(); ++i) {
+            const Tuple v = tuple_from_vertex(i);
+            if (!v.is_valid(*this)) {
+                continue;
+            }
+            const size_t vid = v.vid(*this);
+            V.row(i) = m_vertex_attribute.at(vid).m_posf;
+        }
+
+        const auto surf_faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
+        MatrixXi F;
+        F.resize(surf_faces.size(), 3);
+        for (size_t i = 0; i < surf_faces.size(); ++i) {
+            F.row(i) =
+                Vector3i((int)surf_faces[i][0], (int)surf_faces[i][1], (int)surf_faces[i][2]);
+        }
+
+        m_envelope = nullptr;
+        m_V_envelope.clear();
+        m_F_envelope.clear();
+        init_envelope(V, F);
+    }
+    logger().info("===== Simplification done =====");
 }
 
 } // namespace wmtk::components::image_simulation
