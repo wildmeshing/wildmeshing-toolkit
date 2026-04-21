@@ -1118,7 +1118,9 @@ bool EmbedSurface::embed_surface()
                 }
                 assert(max_count > 0);
                 for (size_t j = 0; j < region.size(); ++j) {
-                    m_T_tags.coeffRef(region[j], img_id) = max_tag;
+                    if (m_T_tags.coeff(region[j], img_id) != max_tag) {
+                        m_T_tags.coeffRef(region[j], img_id) = max_tag;
+                    }
                 }
             }
         }
