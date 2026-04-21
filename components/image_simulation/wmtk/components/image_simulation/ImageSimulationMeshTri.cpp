@@ -573,14 +573,14 @@ void ImageSimulationMeshTri::write_msh_groups(std::string file)
         return Vector3d(p2[0], p2[1], 0);
     });
 
-    const auto& tets = get_faces();
+    const auto& faces = get_faces();
 
-    std::vector<Tuple> tets_with_tag;
-    tets_with_tag.reserve(tets.size());
+    std::vector<Tuple> faces_with_tag;
+    faces_with_tag.reserve(faces.size());
 
-    auto msh_add_tets = [&]() {
-        msh.add_faces(tets_with_tag.size(), [&](size_t k) {
-            auto vs = oriented_tri_vids(tets_with_tag[k]);
+    auto msh_add_faces = [&]() {
+        msh.add_faces(faces_with_tag.size(), [&](size_t k) {
+            auto vs = oriented_tri_vids(faces_with_tag[k]);
             std::array<size_t, 3> data;
             for (int j = 0; j < 3; j++) {
                 data[j] = vs[j];
@@ -590,33 +590,33 @@ void ImageSimulationMeshTri::write_msh_groups(std::string file)
     };
 
     // ambient mesh (no non-zero tags)
-    for (const Tuple& t : tets) {
-        const size_t tid = t.fid(*this);
-        if (m_face_attribute[tid].tags.nonZeros() == 0) {
-            tets_with_tag.push_back(t);
+    for (const Tuple& t : faces) {
+        const size_t fid = t.fid(*this);
+        if (m_face_attribute[fid].tags.nonZeros() == 0) {
+            faces_with_tag.push_back(t);
         }
     }
-    msh_add_tets();
+    msh_add_faces();
 
     msh.add_physical_group("ambient");
 
     // add a group for each tag
     for (size_t tag_img = 0; tag_img < m_tags_count; ++tag_img) {
         for (size_t tag_id = 1;; ++tag_id) {
-            tets_with_tag.clear();
-            for (const Tuple& t : tets) {
-                const size_t tid = t.fid(*this);
-                if (m_face_attribute[tid].tags.coeff(tag_img) == tag_id) {
-                    tets_with_tag.push_back(t);
+            faces_with_tag.clear();
+            for (const Tuple& t : faces) {
+                const size_t fid = t.fid(*this);
+                if (m_face_attribute[fid].tags.coeff(tag_img) == tag_id) {
+                    faces_with_tag.push_back(t);
                 }
             }
 
-            if (tets_with_tag.empty()) {
+            if (faces_with_tag.empty()) {
                 break;
             }
 
             msh.add_empty_vertices(2);
-            msh_add_tets();
+            msh_add_faces();
 
             const std::string group_name = fmt::format("tag_{}_{}", tag_img, tag_id);
             msh.add_physical_group(group_name);

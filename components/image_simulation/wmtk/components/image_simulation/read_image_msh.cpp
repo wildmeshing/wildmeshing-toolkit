@@ -200,7 +200,8 @@ InputData read_image_msh(const std::string& path)
 
             // tags
             input_data.T_input_tag.resize(input_data.T_input.rows(), Fs.size());
-            for (size_t i = 0; i < Fs.size(); ++i) {
+            // assume Fs[0] are ambient faces
+            for (size_t i = 1; i < Fs.size(); ++i) {
                 for (size_t j = 0; j < Fs[i].rows(); ++j) {
                     const Vector4i& t = Fs[i].row(j);
                     const simplex::Tet s(t[0], t[1], t[2], t[3]);
@@ -209,7 +210,45 @@ InputData read_image_msh(const std::string& path)
                 }
             }
         } else {
-            log_and_throw_error("Read MSH with physical groups not implemented for 2D");
+            auto& Vi = input_data.V_input;
+            Vi = Vi.block(0, 0, Vi.rows(), 2).eval();
+            auto& Ve = input_data.V_envelope;
+            Ve = Ve.block(0, 0, Ve.rows(), 2).eval();
+
+            if (Fs.empty()) {
+                log_and_throw_error("No faces found in {}", path);
+            }
+            std::map<simplex::Face, size_t> tet_ids;
+            std::vector<Vector3i> tets;
+
+            for (const auto& TT : Fs) {
+                for (size_t i = 0; i < TT.rows(); ++i) {
+                    const Vector3i& t = TT.row(i);
+                    const simplex::Face s(t[0], t[1], t[2]);
+                    if (tet_ids.count(s) == 0) {
+                        tet_ids[s] = tets.size();
+                        tets.push_back(t);
+                    }
+                }
+            }
+
+            auto& T = input_data.T_input;
+            T.resize(tets.size(), 3);
+            for (size_t i = 0; i < tets.size(); ++i) {
+                T.row(i) = tets[i];
+            }
+
+            // tags
+            input_data.T_input_tag.resize(input_data.T_input.rows(), Fs.size());
+            // assume Fs[0] are ambient faces
+            for (size_t i = 1; i < Fs.size(); ++i) {
+                for (size_t j = 0; j < Fs[i].rows(); ++j) {
+                    const Vector3i& t = Fs[i].row(j);
+                    const simplex::Face s(t[0], t[1], t[2]);
+                    const size_t tid = tet_ids[s];
+                    input_data.T_input_tag.coeffRef(tid, i) = 1;
+                }
+            }
         }
 
         return input_data;

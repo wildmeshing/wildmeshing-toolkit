@@ -127,7 +127,8 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     }
 
     mesh.consolidate_mesh();
-    logger().info("total time {}s", timer.getElapsedTime());
+    double time = timer.getElapsedTime();
+    wmtk::logger().info("total time {}s", time);
 
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();

@@ -221,10 +221,10 @@ void ImageSimulationMeshTri::engulf_components(
                             edges_to_split_set.emplace(std::min(va, vb), std::max(va, vb));
                         }
                     } else {
-                        log_and_throw_error(fmt::format(
+                        log_and_throw_error(
                             "Vertex {} or {} has no closest component; this should not happen",
                             va,
-                            vb));
+                            vb);
                     }
                 }
             }
@@ -268,20 +268,20 @@ void ImageSimulationMeshTri::engulf_components(
                 const double sign_b = voronoi_sign(m_vertex_attribute[vb].m_pos, comp_a, comp_b);
 
                 if (sign_a * sign_b > 0.0) {
-                    log_and_throw_error(fmt::format(
+                    log_and_throw_error(
                         "Endpoints {} and {} of edge to split have same sign {}, {}: this "
                         "should not happen",
                         va,
                         vb,
                         sign_a,
-                        sign_b));
+                        sign_b);
                 }
                 if (sign_a > 0.0 || sign_b < 0.0) {
-                    log_and_throw_error(fmt::format(
+                    log_and_throw_error(
                         "Endpoint signs for edge to split are sign_a = {}, sign_b = {}: this "
                         "should not happen",
                         sign_a,
-                        sign_b));
+                        sign_b);
                 }
 
                 const double total = sign_b - sign_a;
