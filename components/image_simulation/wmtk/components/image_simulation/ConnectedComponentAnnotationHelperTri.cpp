@@ -1,3 +1,7 @@
+#include "ImageSimulationMeshTri.hpp"
+
+#include <ipc/distance/point_edge.hpp>
+
 namespace wmtk::components::image_simulation::tri {
 
 std::vector<ImageSimulationMeshTri::ConnectedComponent>
@@ -16,7 +20,7 @@ ImageSimulationMeshTri::compute_connected_components() const
             continue;
         }
 
-        const int64_t tag = m_face_attribute[fid].tags[0];
+        const int64_t tag = m_face_attribute[fid].tags.coeff(0);
         const int comp_idx = (int)components.size();
         ConnectedComponent& comp = components.emplace_back();
         if (tag == -1) {
@@ -43,7 +47,7 @@ ImageSimulationMeshTri::compute_connected_components() const
                     continue;
                 }
                 const size_t nbr = t_opp->fid(*this);
-                if (m_face_attribute[nbr].tags[0] == tag && comp_id[nbr] == -1) {
+                if (m_face_attribute[nbr].tags.coeff(0) == tag && comp_id[nbr] == -1) {
                     comp_id[nbr] = comp_idx;
                     comp.faces.push_back(nbr);
                 }
@@ -91,7 +95,7 @@ void ImageSimulationMeshTri::engulf_component(
     auto& engulfing_comp = components[engulfing_comp_id];
 
     for (const size_t fid : hole_comp.faces) {
-        m_face_attribute[fid].tags[0] = engulfing_comp.tag;
+        m_face_attribute[fid].tags.coeffRef(0) = engulfing_comp.tag;
     }
     engulfing_comp.area += hole_comp.area;
     engulfing_comp.faces.insert(
@@ -217,11 +221,10 @@ void ImageSimulationMeshTri::engulf_components(
                             edges_to_split_set.emplace(std::min(va, vb), std::max(va, vb));
                         }
                     } else {
-                        log_and_throw_error(
-                            fmt::format(
-                                "Vertex {} or {} has no closest component; this should not happen",
-                                va,
-                                vb));
+                        log_and_throw_error(fmt::format(
+                            "Vertex {} or {} has no closest component; this should not happen",
+                            va,
+                            vb));
                     }
                 }
             }
@@ -265,22 +268,20 @@ void ImageSimulationMeshTri::engulf_components(
                 const double sign_b = voronoi_sign(m_vertex_attribute[vb].m_pos, comp_a, comp_b);
 
                 if (sign_a * sign_b > 0.0) {
-                    log_and_throw_error(
-                        fmt::format(
-                            "Endpoints {} and {} of edge to split have same sign {}, {}: this "
-                            "should not happen",
-                            va,
-                            vb,
-                            sign_a,
-                            sign_b));
+                    log_and_throw_error(fmt::format(
+                        "Endpoints {} and {} of edge to split have same sign {}, {}: this "
+                        "should not happen",
+                        va,
+                        vb,
+                        sign_a,
+                        sign_b));
                 }
                 if (sign_a > 0.0 || sign_b < 0.0) {
-                    log_and_throw_error(
-                        fmt::format(
-                            "Endpoint signs for edge to split are sign_a = {}, sign_b = {}: this "
-                            "should not happen",
-                            sign_a,
-                            sign_b));
+                    log_and_throw_error(fmt::format(
+                        "Endpoint signs for edge to split are sign_a = {}, sign_b = {}: this "
+                        "should not happen",
+                        sign_a,
+                        sign_b));
                 }
 
                 const double total = sign_b - sign_a;
@@ -334,7 +335,7 @@ void ImageSimulationMeshTri::engulf_components(
                     if (comp_id_map[nfid] != std::numeric_limits<size_t>::max()) {
                         continue;
                     }
-                    const int64_t ftag = m_face_attribute[nfid].tags[0];
+                    const int64_t ftag = m_face_attribute[nfid].tags.coeff(0);
                     for (const size_t hcid : hole_comp_ids) {
                         if (components[hcid].tag == ftag) {
                             comp_id_map[nfid] = hcid;
@@ -401,7 +402,7 @@ void ImageSimulationMeshTri::engulf_components(
                 const auto& fp0 = m_vertex_attribute[fvs[0]].m_pos;
                 const auto& fp1 = m_vertex_attribute[fvs[1]].m_pos;
                 const auto& fp2 = m_vertex_attribute[fvs[2]].m_pos;
-                m_face_attribute[fid].tags[0] = components[closest].tag;
+                m_face_attribute[fid].tags.coeffRef(0) = components[closest].tag;
                 components[closest].area += 0.5 * std::abs(
                                                       (fp1[0] - fp0[0]) * (fp2[1] - fp0[1]) -
                                                       (fp1[1] - fp0[1]) * (fp2[0] - fp0[0]));
@@ -700,7 +701,8 @@ void ImageSimulationMeshTri::recompute_surface_info()
         }
         bool has_diff_tag = false;
         for (size_t j = 0; j < m_tags_count; ++j) {
-            if (m_face_attribute[ee.fid()].tags[j] != m_face_attribute[t_opp->fid()].tags[j]) {
+            if (m_face_attribute[ee.fid()].tags.coeff(j) !=
+                m_face_attribute[t_opp->fid()].tags.coeff(j)) {
                 has_diff_tag = true;
                 break;
             }

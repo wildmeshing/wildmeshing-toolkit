@@ -121,6 +121,9 @@ InputData read_image_msh(const std::string& path)
     InputData input_data;
 
     MshData msh;
+    if (!std::filesystem::exists(path)) {
+        log_and_throw_error("File {} does not exist.", path);
+    }
     msh.load(path);
 
     std::optional<mshio::PhysicalGroup> ph_vol = msh.get_physical_group_by_name("ImageVolume");

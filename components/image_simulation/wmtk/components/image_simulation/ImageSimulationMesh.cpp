@@ -604,7 +604,7 @@ void ImageSimulationMesh::write_msh_groups(std::string file)
     msh.add_faces(m_F_envelope.size(), [this](size_t k) { return m_F_envelope[k]; });
     msh.add_physical_group("EnvelopeSurface");
 
-    msh.save(file, false);
+    msh.save(file, true);
 }
 
 std::tuple<double, double> ImageSimulationMesh::get_max_avg_energy()

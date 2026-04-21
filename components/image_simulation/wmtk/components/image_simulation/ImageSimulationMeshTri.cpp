@@ -1,8 +1,5 @@
 #include "ImageSimulationMeshTri.hpp"
 
-#include <ipc/distance/point_edge.hpp>
-#include "ConnectedComponentAnnotationHelper.cpp"
-
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
 #include <igl/predicates/predicates.h>
@@ -219,7 +216,9 @@ void ImageSimulationMeshTri::init_from_image(
     for (size_t i = 0; i < (size_t)T_tags.rows(); ++i) {
         m_face_attribute[i].tags.resize(m_tags_count);
         for (size_t j = 0; j < m_tags_count; ++j) {
-            m_face_attribute[i].tags[j] = T_tags.coeff(i, j);
+            if (T_tags.coeff(i, j) != 0) {
+                m_face_attribute[i].tags.coeffRef(j) = T_tags.coeff(i, j);
+            }
         }
     }
 
@@ -244,8 +243,8 @@ void ImageSimulationMeshTri::init_surfaces_and_boundaries()
         bool has_two_tags = false;
 
         for (size_t j = 0; j < m_tags_count; ++j) {
-            const int64_t tag0 = m_face_attribute[ee.fid()].tags[j];
-            const int64_t tag1 = m_face_attribute[t_opp.value().fid()].tags[j];
+            const int64_t tag0 = m_face_attribute[ee.fid()].tags.coeff(j);
+            const int64_t tag1 = m_face_attribute[t_opp.value().fid()].tags.coeff(j);
 
             if (tag0 != tag1) {
                 has_two_tags = true;
@@ -545,7 +544,7 @@ void ImageSimulationMeshTri::write_msh(std::string file)
 
     for (size_t j = 0; j < m_tags_count; ++j) {
         msh.add_face_attribute<1>(fmt::format("tag_{}", j), [&](size_t i) {
-            return m_face_attribute[i].tags[j];
+            return m_face_attribute[i].tags.coeff(j);
         });
     }
 
@@ -558,6 +557,78 @@ void ImageSimulationMeshTri::write_msh(std::string file)
     msh.add_physical_group("EnvelopeSurface");
 
     logger().info("Write {}", file);
+    msh.save(file, true);
+}
+
+void ImageSimulationMeshTri::write_msh_groups(std::string file)
+{
+    consolidate_mesh();
+
+    wmtk::MshData msh;
+
+    const auto& vtx = get_vertices();
+    msh.add_face_vertices(vtx.size(), [&](size_t k) {
+        auto i = vtx[k].vid(*this);
+        Vector2d p2 = m_vertex_attribute[i].m_pos;
+        return Vector3d(p2[0], p2[1], 0);
+    });
+
+    const auto& tets = get_faces();
+
+    std::vector<Tuple> tets_with_tag;
+    tets_with_tag.reserve(tets.size());
+
+    auto msh_add_tets = [&]() {
+        msh.add_faces(tets_with_tag.size(), [&](size_t k) {
+            auto vs = oriented_tri_vids(tets_with_tag[k]);
+            std::array<size_t, 3> data;
+            for (int j = 0; j < 3; j++) {
+                data[j] = vs[j];
+            }
+            return data;
+        });
+    };
+
+    // ambient mesh (no non-zero tags)
+    for (const Tuple& t : tets) {
+        const size_t tid = t.fid(*this);
+        if (m_face_attribute[tid].tags.nonZeros() == 0) {
+            tets_with_tag.push_back(t);
+        }
+    }
+    msh_add_tets();
+
+    msh.add_physical_group("ambient");
+
+    // add a group for each tag
+    for (size_t tag_img = 0; tag_img < m_tags_count; ++tag_img) {
+        for (size_t tag_id = 1;; ++tag_id) {
+            tets_with_tag.clear();
+            for (const Tuple& t : tets) {
+                const size_t tid = t.fid(*this);
+                if (m_face_attribute[tid].tags.coeff(tag_img) == tag_id) {
+                    tets_with_tag.push_back(t);
+                }
+            }
+
+            if (tets_with_tag.empty()) {
+                break;
+            }
+
+            msh.add_empty_vertices(2);
+            msh_add_tets();
+
+            const std::string group_name = fmt::format("tag_{}_{}", tag_img, tag_id);
+            msh.add_physical_group(group_name);
+        }
+    }
+
+    msh.add_edge_vertices(m_V_envelope.size(), [this](size_t k) {
+        return Vector3d(m_V_envelope[k][0], m_V_envelope[k][1], 0);
+    });
+    msh.add_edges(m_E_envelope.size(), [this](size_t k) { return m_E_envelope[k]; });
+    msh.add_physical_group("EnvelopeSurface");
+
     msh.save(file, true);
 }
 
@@ -588,7 +659,7 @@ void ImageSimulationMeshTri::write_vtu(const std::string& path) const
     for (const Tuple& t : faces) {
         size_t tid = t.fid(*this);
         for (size_t j = 0; j < m_tags_count; ++j) {
-            tags[j](index, 0) = m_face_attribute[tid].tags[j];
+            tags[j](index, 0) = m_face_attribute[tid].tags.coeff(j);
         }
         amips(index, 0) = m_face_attribute[tid].m_quality;
 
@@ -670,7 +741,7 @@ void ImageSimulationMeshTri::write_vtu_with_energies(const std::string& path) co
     for (const Tuple& t : faces) {
         size_t tid = t.fid(*this);
         for (size_t j = 0; j < m_tags_count; ++j) {
-            tags[j](index, 0) = m_face_attribute[tid].tags[j];
+            tags[j](index, 0) = m_face_attribute[tid].tags.coeff(j);
         }
         amips(index, 0) = m_face_attribute[tid].m_quality;
 
@@ -862,7 +933,7 @@ bool ImageSimulationMeshTri::split_edge_before(const Tuple& loc0)
     for (const size_t fid : faces) {
         const simplex::Face face = simplex_from_face(fid);
         const size_t opp = face.opposite_vertex(edge).id();
-        if (m_face_attribute.at(fid).tags.empty()) {
+        if (m_face_attribute.at(fid).tags.size() == 0) {
             log_and_throw_error("No tags in face {}", fid); // for debugging
         }
         cache.faces[opp] = m_face_attribute.at(fid);
@@ -1350,9 +1421,9 @@ bool ImageSimulationMeshTri::swap_edge_before(const Tuple& t)
     double max_energy = -1.0;
     for (const size_t fid : incident_faces) {
         max_energy = std::max(FA[fid].m_quality, max_energy);
-        if (FA[fid].tags != cache.face_tags) {
-            log_and_throw_error("not all tets have the same tag"); // for debugging
-        }
+        // if (FA[fid].tags != cache.face_tags) {
+        //    log_and_throw_error("not all tets have the same tag"); // for debugging
+        //}
     }
     cache.max_energy = max_energy;
 

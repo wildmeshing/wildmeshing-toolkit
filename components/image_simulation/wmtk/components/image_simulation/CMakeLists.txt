@@ -38,6 +38,7 @@ set(SRC_FILES
 
 	ImageSimulationMeshTri.hpp
 	ImageSimulationMeshTri.cpp
+	ConnectedComponentAnnotationHelperTri.cpp
     )
 
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

@@ -78,7 +78,7 @@ class FaceAttributes
 public:
     double m_quality;
     double m_winding_number = 0;
-    std::vector<int64_t> tags;
+    VectorSi tags;
     int part_id = -1;
 };
 
@@ -211,6 +211,7 @@ public:
     bool adjust_sizing_field_serial(double max_energy);
 
     void write_msh(std::string file);
+    void write_msh_groups(std::string file);
 
     void write_vtu(const std::string& path) const;
     void write_vtu_with_energies(const std::string& path) const;
@@ -468,7 +469,7 @@ private:
     {
         double max_energy;
         std::map<simplex::Edge, EdgeAttributes> changed_edges;
-        std::vector<int64_t> face_tags;
+        VectorSi face_tags;
     };
     tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
 

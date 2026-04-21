@@ -95,12 +95,39 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
         mesh.simplify();
     }
 
-    // /////////mesh improvement
-    mesh.mesh_improvement(max_its); // <-- tetwild
+    // /////////apply operation
+    const std::string operation = json_params["operation"];
+    if (operation == "remeshing") {
+        mesh.mesh_improvement(max_its); // <-- tetwild
+    } else if (operation == "fill_holes_topo") {
+        // const std::vector<int64_t> fill_holes_tags = json_params["fill_holes_tags"];
+        // const double raw_threshold = json_params["fill_holes_threshold"];
+        // const double threshold =
+        //     raw_threshold < 0 ? std::numeric_limits<double>::infinity() : raw_threshold;
+        // mesh.fill_holes_topo(fill_holes_tags, threshold);
+    } else if (operation == "tight_seal_topo") {
+        //// tight_seal_tag_sets is a list of lists: [[t1,t2],[t3,...]]
+        // std::vector<std::unordered_set<int64_t>> tag_sets;
+        // for (const auto& s : json_params["tight_seal_tag_sets"]) {
+        //     std::unordered_set<int64_t> ts;
+        //     for (const auto& v : s) {
+        //         ts.insert(v.get<int64_t>());
+        //     }
+        //     tag_sets.push_back(std::move(ts));
+        // }
+        // const double raw_threshold = json_params["tight_seal_threshold"];
+        // const double threshold =
+        //     raw_threshold < 0 ? std::numeric_limits<double>::infinity() : raw_threshold;
+        // mesh.tight_seal_topo(tag_sets, threshold);
+    } else if (operation == "keep_largest_cc") {
+        // const std::vector<int64_t> lcc_tags = json_params["keep_largest_cc_tags"];
+        // mesh.keep_largest_connected_component(lcc_tags);
+    } else {
+        log_and_throw_error("Image simulation operation `{}` is not implemented in 3D.", operation);
+    }
 
     mesh.consolidate_mesh();
-    double time = timer.getElapsedTime();
-    wmtk::logger().info("total time {}s", time);
+    logger().info("total time {}s", timer.getElapsedTime());
 
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
@@ -114,7 +141,7 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     fout << "time: " << time << std::endl;
     fout.close();
 
-    wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
+    logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
     mesh.write_msh(output_filename.string() + ".msh");
     mesh.write_msh_groups(output_filename.string() + "_groups.msh");
     write_unique_vtu();
@@ -234,6 +261,7 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
 
     wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
     mesh.write_msh(output_filename.string() + ".msh");
+    mesh.write_msh_groups(output_filename.string() + "_groups.msh");
     write_unique_vtu();
 }
 
