@@ -435,7 +435,9 @@ void ManExtractMesh::simplicial_embedding()
         const auto& vs = tet.vertices();
         Tuple t = tuple_from_vids(vs[0], vs[1], vs[2], vs[3]);
         std::vector<Tuple> garbage;
-        split_tet(t, garbage);
+        if (!split_tet(t, garbage)) {
+            log_and_throw_error("tet split failed! (simplicial embedding)");
+        }
     }
     logger().info("\tTets split: {}", tets_to_split.size());
 
@@ -466,7 +468,9 @@ void ManExtractMesh::simplicial_embedding()
         const auto& vs = f.vertices();
         auto [t, _] = tuple_from_face({{vs[0], vs[1], vs[2]}});
         std::vector<Tuple> garbage;
-        split_face(t, garbage);
+        if (!split_face(t, garbage)) {
+            log_and_throw_error("face split failed! (simplicial embedding)");
+        }
     }
     logger().info("\tFaces split: {}", faces_to_split.size());
 
@@ -487,7 +491,9 @@ void ManExtractMesh::simplicial_embedding()
     for (const simplex::Edge& e : edges_to_split) {
         Tuple t = tuple_from_edge(e.vertices());
         std::vector<Tuple> garbage;
-        split_edge(t, garbage);
+        if (!split_edge(t, garbage)) {
+            log_and_throw_error("edge split failed! (simplicial embedding)");
+        }
     }
     logger().info("\tEdges split: {}", edges_to_split.size());
 }
@@ -511,7 +517,9 @@ void ManExtractMesh::perform_offset()
         // split edge
         new_edges.clear();
         Tuple t = tuple_from_edge(e.vertices());
-        split_edge(t, new_edges);
+        if (!split_edge(t, new_edges)) {
+            log_and_throw_error("edge split failed! (marching tets)");
+        }
     }
 
     // mark all offset tets (all tets with any vert labeled 1)
