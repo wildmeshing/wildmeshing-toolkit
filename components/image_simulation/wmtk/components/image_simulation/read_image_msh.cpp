@@ -323,6 +323,7 @@ InputData read_image_msh(const std::string& path)
     }
 
     if (input_data.T_input.cols() == 4) {
+        log_and_throw_error("This code was not used for a long time and is probably outdated");
         int tets_tags_count = 0;
         for (const std::string& attr_name : msh.get_tet_attribute_names()) {
             if (attr_name.substr(0, 4) == "tag_") {
@@ -351,8 +352,8 @@ InputData read_image_msh(const std::string& path)
                 ++tets_tags_count;
             }
         }
-
-        input_data.T_input_tag.resize(input_data.T_input.rows(), tets_tags_count);
+        MatrixXi input_tags;
+        input_tags.resize(input_data.T_input.rows(), tets_tags_count);
         for (const std::string& attr_name : msh.get_all_element_attribute_names()) {
             if (attr_name.substr(0, 4) != "tag_") {
                 continue;
@@ -360,11 +361,36 @@ InputData read_image_msh(const std::string& path)
             const int tag_id = std::stoi(attr_name.substr(4));
             msh.extract_face_attribute(
                 attr_name,
-                [&input_data, &tag_id](size_t i, std::vector<double> val) {
+                [&tag_id, &input_tags](size_t i, std::vector<double> val) {
                     assert(val.size() == 1);
-                    input_data.T_input_tag.coeffRef(i, tag_id) = val[0];
+                    input_tags(i, tag_id) = val[0];
                 });
         }
+
+        // convert input tags to "binary"
+        MatrixXi input_tags_bin;
+        for (int j = 0; j < input_tags.cols(); ++j) {
+            VectorXi img = input_tags.col(j);
+            int max_id = img.maxCoeff();
+            MatrixXi img_bin;
+            img_bin.resize(img.rows(), max_id);
+            img_bin.setZero();
+            for (int i = 0; i < img.size(); ++i) {
+                if (img[i] == 0) {
+                    continue;
+                }
+                img_bin(i, img[i] - 1) = 1;
+            }
+            // input_data.T_input_tag.conservativeResize()
+            auto& Ti = input_tags_bin;
+            int nc = Ti.cols();
+            Ti.conservativeResize(img_bin.rows(), Ti.cols() + img_bin.cols());
+            Ti.block(0, nc, img_bin.rows(), img_bin.cols()) = img_bin;
+        }
+
+        input_data.T_input_tag = input_tags_bin.sparseView();
+
+        // input_data.T_input_tag = input_tags;
     }
 
     return input_data;

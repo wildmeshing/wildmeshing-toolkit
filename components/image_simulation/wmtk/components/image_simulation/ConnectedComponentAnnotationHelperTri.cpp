@@ -33,13 +33,7 @@ ImageSimulationMeshTri::compute_connected_components() const
 
         for (size_t i = 0; i < comp.faces.size(); ++i) { // BFS loop with comp.faces growing
             const size_t cur = comp.faces[i];
-            const auto fvs = oriented_tri_vids(cur);
-            const Vector2d& fp0 = m_vertex_attribute[fvs[0]].m_pos;
-            const Vector2d& fp1 = m_vertex_attribute[fvs[1]].m_pos;
-            const Vector2d& fp2 = m_vertex_attribute[fvs[2]].m_pos;
-            comp.area += 0.5 * std::abs(
-                                   (fp1[0] - fp0[0]) * (fp2[1] - fp0[1]) -
-                                   (fp1[1] - fp0[1]) * (fp2[0] - fp0[0]));
+            comp.area += triangle_area(cur);
             for (int j = 0; j < 3; ++j) {
                 const Tuple edge_tup = tuple_from_edge(cur, j);
                 const auto t_opp = edge_tup.switch_face(*this);

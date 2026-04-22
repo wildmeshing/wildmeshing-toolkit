@@ -1982,6 +1982,17 @@ double ImageSimulationMeshTri::get_quality(const size_t fid) const
     return get_quality(oriented_tri_vids(fid));
 }
 
+double ImageSimulationMeshTri::triangle_area(const size_t fid) const
+{
+    const auto vs = oriented_tri_vids(fid);
+    const Vector2d& p0 = m_vertex_attribute[vs[0]].m_pos;
+    const Vector2d& p1 = m_vertex_attribute[vs[1]].m_pos;
+    const Vector2d& p2 = m_vertex_attribute[vs[2]].m_pos;
+    const double area =
+        0.5 * std::abs((p1[0] - p0[0]) * (p2[1] - p0[1]) - (p1[1] - p0[1]) * (p2[0] - p0[0]));
+    return area;
+}
+
 bool ImageSimulationMeshTri::is_edge_on_surface(const Tuple& loc) const
 {
     const auto vs = get_edge_vids(loc);

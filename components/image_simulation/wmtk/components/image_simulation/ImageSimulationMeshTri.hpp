@@ -279,6 +279,8 @@ public:
     double get_quality(const Tuple& loc) const;
     double get_quality(const size_t fid) const;
 
+    double triangle_area(const size_t fid) const;
+
     //
     bool is_edge_on_surface(const Tuple& loc) const;
     bool is_edge_on_surface(const std::array<size_t, 2>& vids) const;
