@@ -214,10 +214,10 @@ void ImageSimulationMeshTri::init_from_image(
 
     // add tags
     for (size_t i = 0; i < (size_t)T_tags.rows(); ++i) {
-        m_face_attribute[i].tags.resize(m_tags_count);
+        // m_face_attribute[i].tags.resize(m_tags_count);
         for (size_t j = 0; j < m_tags_count; ++j) {
             if (T_tags.coeff(i, j) != 0) {
-                m_face_attribute[i].tags.coeffRef(j) = T_tags.coeff(i, j);
+                m_face_attribute[i].tags.insert(j);
             }
         }
     }
@@ -243,8 +243,8 @@ void ImageSimulationMeshTri::init_surfaces_and_boundaries()
         bool has_two_tags = false;
 
         for (size_t j = 0; j < m_tags_count; ++j) {
-            const int64_t tag0 = m_face_attribute[ee.fid()].tags.coeff(j);
-            const int64_t tag1 = m_face_attribute[t_opp.value().fid()].tags.coeff(j);
+            const auto& tag0 = m_face_attribute[ee.fid()].tags;
+            const auto& tag1 = m_face_attribute[t_opp.value().fid()].tags;
 
             if (tag0 != tag1) {
                 has_two_tags = true;
@@ -544,7 +544,7 @@ void ImageSimulationMeshTri::write_msh(std::string file)
 
     for (size_t j = 0; j < m_tags_count; ++j) {
         msh.add_face_attribute<1>(fmt::format("tag_{}", j), [&](size_t i) {
-            return m_face_attribute[i].tags.coeff(j);
+            return m_face_attribute[i].tags.count(j) ? 1 : 0;
         });
     }
 
@@ -592,7 +592,7 @@ void ImageSimulationMeshTri::write_msh_groups(std::string file)
     // ambient mesh (no non-zero tags)
     for (const Tuple& t : faces) {
         const size_t fid = t.fid(*this);
-        if (m_face_attribute[fid].tags.nonZeros() == 0) {
+        if (m_face_attribute[fid].tags.empty()) {
             faces_with_tag.push_back(t);
         }
     }
@@ -602,25 +602,23 @@ void ImageSimulationMeshTri::write_msh_groups(std::string file)
 
     // add a group for each tag
     for (size_t tag_img = 0; tag_img < m_tags_count; ++tag_img) {
-        for (size_t tag_id = 1;; ++tag_id) {
-            faces_with_tag.clear();
-            for (const Tuple& t : faces) {
-                const size_t fid = t.fid(*this);
-                if (m_face_attribute[fid].tags.coeff(tag_img) == tag_id) {
-                    faces_with_tag.push_back(t);
-                }
+        faces_with_tag.clear();
+        for (const Tuple& t : faces) {
+            const size_t fid = t.fid(*this);
+            if (m_face_attribute[fid].tags.count(tag_img)) {
+                faces_with_tag.push_back(t);
             }
-
-            if (faces_with_tag.empty()) {
-                break;
-            }
-
-            msh.add_empty_vertices(2);
-            msh_add_faces();
-
-            const std::string group_name = fmt::format("tag_{}_{}", tag_img, tag_id);
-            msh.add_physical_group(group_name);
         }
+
+        if (faces_with_tag.empty()) {
+            break;
+        }
+
+        msh.add_empty_vertices(2);
+        msh_add_faces();
+
+        const std::string group_name = fmt::format("tag_{}", tag_img);
+        msh.add_physical_group(group_name);
     }
 
     msh.add_edge_vertices(m_V_envelope.size(), [this](size_t k) {
@@ -659,7 +657,7 @@ void ImageSimulationMeshTri::write_vtu(const std::string& path) const
     for (const Tuple& t : faces) {
         size_t tid = t.fid(*this);
         for (size_t j = 0; j < m_tags_count; ++j) {
-            tags[j](index, 0) = m_face_attribute[tid].tags.coeff(j);
+            tags[j](index, 0) = m_face_attribute[tid].tags.count(j) ? 1 : 0;
         }
         amips(index, 0) = m_face_attribute[tid].m_quality;
 
@@ -741,7 +739,7 @@ void ImageSimulationMeshTri::write_vtu_with_energies(const std::string& path) co
     for (const Tuple& t : faces) {
         size_t tid = t.fid(*this);
         for (size_t j = 0; j < m_tags_count; ++j) {
-            tags[j](index, 0) = m_face_attribute[tid].tags.coeff(j);
+            tags[j](index, 0) = m_face_attribute[tid].tags.count(j) ? 1 : 0;
         }
         amips(index, 0) = m_face_attribute[tid].m_quality;
 
@@ -971,7 +969,9 @@ bool ImageSimulationMeshTri::split_edge_after(const Tuple& loc)
     if (m_voronoi_split_fn) {
         Vector2d p0 = m_vertex_attribute[v1_id].m_pos;
         Vector2d p1 = m_vertex_attribute[v2_id].m_pos;
-        if (m_voronoi_split_fn(p0) >= 0) std::swap(p0, p1); // ensure p0 is negative side
+        if (m_voronoi_split_fn(p0) >= 0) {
+            std::swap(p0, p1); // ensure p0 is negative side
+        }
         for (int i = 0; i < 20; ++i) {
             p = 0.5 * (p0 + p1);
             bool inv = false;
@@ -981,11 +981,14 @@ bool ImageSimulationMeshTri::split_edge_after(const Tuple& loc)
                     break;
                 }
             }
-            if (inv || (p1 - p0).squaredNorm() < 1e-20) break;
-            if (m_voronoi_split_fn(p) < 0)
+            if (inv || (p1 - p0).squaredNorm() < 1e-20) {
+                break;
+            }
+            if (m_voronoi_split_fn(p) < 0) {
                 p0 = p;
-            else
+            } else {
                 p1 = p;
+            }
         }
         // final inversion guard: revert to midpoint if needed
         bool inv = false;
@@ -998,7 +1001,9 @@ bool ImageSimulationMeshTri::split_edge_after(const Tuple& loc)
                 break;
             }
         }
-        if (inv) p = (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
+        if (inv) {
+            p = (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
+        }
     }
 
     // update face attributes
@@ -1421,9 +1426,9 @@ bool ImageSimulationMeshTri::swap_edge_before(const Tuple& t)
     double max_energy = -1.0;
     for (const size_t fid : incident_faces) {
         max_energy = std::max(FA[fid].m_quality, max_energy);
-        // if (FA[fid].tags != cache.face_tags) {
-        //    log_and_throw_error("not all tets have the same tag"); // for debugging
-        //}
+        if (FA[fid].tags != cache.face_tags) {
+            log_and_throw_error("not all tets have the same tag"); // for debugging
+        }
     }
     cache.max_energy = max_energy;
 
@@ -2211,7 +2216,7 @@ std::tuple<double, double> ImageSimulationMeshTri::get_max_avg_energy()
 }
 
 void ImageSimulationMeshTri::fill_holes_topo(
-    const std::vector<int64_t>& fill_holes_tags,
+    const std::vector<FaceTag>& fill_holes_tags,
     double threshold)
 {
     if (m_tags_count == 0) {
@@ -2219,118 +2224,350 @@ void ImageSimulationMeshTri::fill_holes_topo(
         return;
     }
 
-    // -- Step 1: compute all connected components with their surrounding component ids
-    auto components = compute_connected_components();
+    for (const FaceTag& fill_tag : fill_holes_tags) {
+        const std::vector<ConnectedComponent> holes = find_holes({fill_tag});
 
-    // -- Step 2: for each fill_tag, fill all enclosed components
-    bool any_filled = false;
-    for (const int64_t fill_tag : fill_holes_tags) {
-        std::vector<std::vector<size_t>> hole_clusters;
-        std::unordered_set<int64_t> tags{fill_tag};
-        extract_hole_clusters(components, tags, hole_clusters, threshold);
+        logger().info("Found {} holes for tags {}.", holes.size(), fill_tag);
 
-        for (const auto& hole_cluster : hole_clusters) {
-            // Collect the fill-tag component indices that surround this cluster
-            std::unordered_set<size_t> engulfing_comp_ids;
-            for (const size_t ci : hole_cluster) {
-                for (const size_t sid : components[ci].surrounding_comp_ids) {
-                    if (!components[sid].faces.empty() && components[sid].tag == fill_tag) {
-                        engulfing_comp_ids.insert(sid);
-                    }
+        size_t fill_counter = 0;
+        size_t bndy_counter = 0;
+        for (const ConnectedComponent& comp : holes) {
+            if (comp.touches_boundary) {
+                ++bndy_counter;
+                continue;
+            }
+            ++fill_counter;
+            for (const size_t fid : comp.faces) {
+                auto& tag = m_face_attribute[fid].tags;
+                tag.insert(fill_tag.begin(), fill_tag.end());
+            }
+        }
+        logger().info(
+            "{} holes were filled, {} holes were on the boundary",
+            fill_counter,
+            bndy_counter);
+    }
+
+    //// -- Step 1: compute all connected components with their surrounding component ids
+    // auto components = compute_connected_components();
+    //
+    //// -- Step 2: for each fill_tag, fill all enclosed components
+    // bool any_filled = false;
+    // for (const FaceTag& fill_tag : fill_holes_tags) {
+    //     std::vector<ComponentCluster> hole_clusters;
+    //     std::set<FaceTag> tags{fill_tag};
+    //     extract_hole_clusters(components, tags, hole_clusters, threshold);
+    //
+    //     for (const auto& hole_cluster : hole_clusters) {
+    //        // Collect the fill-tag component indices that surround this cluster
+    //        std::set<size_t> engulfing_comp_ids;
+    //        for (const size_t ci : hole_cluster.comp_ids) {
+    //            for (const size_t sid : components[ci].surrounding_comp_ids) {
+    //                if (!components[sid].faces.empty() && components[sid].tag == fill_tag) {
+    //                    engulfing_comp_ids.insert(sid);
+    //                }
+    //            }
+    //        }
+    //        engulf_components(components, hole_cluster, engulfing_comp_ids);
+    //        any_filled = true;
+    //    }
+    //    if (hole_clusters.empty()) {
+    //        logger().info(
+    //            "fill_holes_topo: no enclosed components found for fill_tag {}",
+    //            fill_tag);
+    //    }
+    //}
+    //
+    // if (!any_filled) return;
+    //
+    //// -- Step 3: recompute m_is_surface_fs and m_is_on_surface
+    // recompute_surface_info();
+}
+
+void ImageSimulationMeshTri::keep_largest_connected_component(const std::vector<FaceTag>& lcc_tags)
+{
+    for (const FaceTag& lcc_tag : lcc_tags) {
+        const auto components = compute_connected_components(lcc_tag);
+        logger().info("Found {} components with tag {}.", components.size(), lcc_tag);
+
+        size_t largest_id = -1;
+        double largest_area = -1;
+        for (size_t i = 0; i < components.size(); ++i) {
+            if (largest_area < components[i].area) {
+                largest_area = components[i].area;
+                largest_id = i;
+            }
+        }
+
+        for (size_t i = 0; i < components.size(); ++i) {
+            if (i == largest_id) {
+                continue;
+            }
+            for (const size_t fid : components[i].faces) {
+                auto& tag = m_face_attribute[fid].tags;
+                for (const size_t remove_tag : lcc_tag) {
+                    tag.erase(remove_tag);
                 }
             }
-            engulf_components(components, hole_cluster, engulfing_comp_ids);
-            any_filled = true;
-        }
-        if (hole_clusters.empty()) {
-            logger().info(
-                "fill_holes_topo: no enclosed components found for fill_tag {}",
-                fill_tag);
         }
     }
 
-    if (!any_filled) return;
-
-    // -- Step 3: recompute m_is_surface_fs and m_is_on_surface
-    recompute_surface_info();
-}
-void ImageSimulationMeshTri::keep_largest_connected_component(const std::vector<int64_t>& lcc_tags)
-{
-    auto components = compute_connected_components();
-    if (components.empty()) {
-        logger().warn("keep_largest_connected_component: no components found, skipping");
-        return;
-    }
-    // For each tag in lcc_tags, find the largest component with that tag and mark all other
-    // components with that tag for removal
-    for (const int64_t lcc_tag : lcc_tags) {
-        int largest_comp_id = -1;
-        double largest_area = -1.0;
-        for (size_t i = 0; i < components.size(); ++i) {
-            if (components[i].faces.empty() || components[i].tag != lcc_tag) continue;
-            if (components[i].area > largest_area) {
-                largest_area = components[i].area;
-                largest_comp_id = i;
-            }
-        }
-        if (largest_comp_id == -1) {
-            logger().warn(
-                "keep_largest_connected_component: no component found for tag {}, skipping",
-                lcc_tag);
-            continue;
-        }
-        for (size_t i = 0; i < components.size(); ++i) {
-            if (components[i].faces.empty() || components[i].tag != lcc_tag ||
-                (int)i == largest_comp_id)
-                continue;
-            // Copy surrounding_comp_ids — engulf_components will reset components[i]
-            std::unordered_set<size_t> surr = components[i].surrounding_comp_ids;
-            engulf_components(components, std::vector<size_t>{i}, surr);
-        }
-    }
-
-    recompute_surface_info();
+    // auto components = compute_connected_components();
+    // if (components.empty()) {
+    //     logger().warn("keep_largest_connected_component: no components found, skipping");
+    //     return;
+    // }
+    //// For each tag in lcc_tags, find the largest component with that tag and mark all other
+    //// components with that tag for removal
+    // for (const FaceTag& lcc_tag : lcc_tags) {
+    //     int largest_comp_id = -1;
+    //     double largest_area = -1.0;
+    //     for (size_t i = 0; i < components.size(); ++i) {
+    //         if (components[i].faces.empty() || components[i].tag != lcc_tag) continue;
+    //         if (components[i].area > largest_area) {
+    //             largest_area = components[i].area;
+    //             largest_comp_id = i;
+    //         }
+    //     }
+    //     if (largest_comp_id == -1) {
+    //         logger().warn(
+    //             "keep_largest_connected_component: no component found for tag {}, skipping",
+    //             lcc_tag);
+    //         continue;
+    //     }
+    //     for (size_t i = 0; i < components.size(); ++i) {
+    //         if (components[i].faces.empty() || components[i].tag != lcc_tag ||
+    //             (int)i == largest_comp_id)
+    //             continue;
+    //        // Copy surrounding_comp_ids — engulf_components will reset components[i]
+    //        std::set<size_t> surr = components[i].surrounding_comp_ids;
+    //        ComponentCluster cc;
+    //        cc.comp_ids.push_back(i);
+    //        cc.area = components[i].area;
+    //        engulf_components(components, cc, surr);
+    //    }
+    //}
+    //
+    // recompute_surface_info();
 }
 
 void ImageSimulationMeshTri::tight_seal_topo(
-    const std::vector<std::unordered_set<int64_t>>& tight_seal_tag_sets,
+    const std::vector<std::vector<FaceTag>>& tight_seal_tag_sets,
     double threshold)
 {
-    auto components = compute_connected_components();
+    auto get_center = [&](const size_t fid) {
+        const auto vs = oriented_tri_vids(fid);
+        const Vector2d& p0 = m_vertex_attribute[vs[0]].m_pos;
+        const Vector2d& p1 = m_vertex_attribute[vs[1]].m_pos;
+        const Vector2d& p2 = m_vertex_attribute[vs[2]].m_pos;
+        return (p0 + p1 + p2) / 3;
+    };
 
-    for (const auto& tag_set : tight_seal_tag_sets) {
-        std::vector<std::vector<size_t>> hole_clusters;
-        std::unordered_set<int64_t> tags_copy(tag_set.begin(), tag_set.end());
-        extract_hole_clusters(components, tags_copy, hole_clusters, threshold);
-        for (const auto& hole_cluster : hole_clusters) {
-            // Collect component indices in tag_set that surround this cluster
-            std::unordered_set<size_t> engulfing_comp_ids;
-            std::unordered_set<int64_t> surrounding_tags;
-            for (const size_t ci : hole_cluster) {
-                for (const size_t sid : components[ci].surrounding_comp_ids) {
-                    if (!components[sid].faces.empty() && tag_set.count(components[sid].tag)) {
-                        engulfing_comp_ids.insert(sid);
-                        surrounding_tags.insert(components[sid].tag);
+    for (const std::vector<FaceTag>& tag_set : tight_seal_tag_sets) {
+        if (tag_set.size() != 2) {
+            log_and_throw_error(
+                "Can only create a tight seal between two tags. Input contains {} tags. Input was "
+                "{}",
+                tag_set.size(),
+                tag_set);
+        }
+
+        auto holes = find_holes(tag_set);
+        logger().info("Found {} holes in between tags {}", holes.size(), tag_set);
+
+        // find the holes that connect to all tags in tag_set
+        std::vector<ConnectedComponent> holes_seal;
+        for (const ConnectedComponent& hole : holes) {
+            if (hole.touches_boundary) {
+                continue;
+            }
+
+            std::vector<bool> found_tag_set(tag_set.size(), false);
+
+            for (const size_t fid : hole.faces) {
+                for (int j = 0; j < 3; ++j) {
+                    const Tuple edge_tup = tuple_from_edge(fid, j);
+                    const auto t_opp = edge_tup.switch_face(*this);
+                    if (!t_opp) {
+                        // boundary
+                        continue;
+                    }
+                    const size_t nbr = t_opp->fid(*this);
+                    const FaceTag& ntag = m_face_attribute[nbr].tags;
+                    for (size_t i = 0; i < tag_set.size(); ++i) {
+                        if (set_includes(ntag, tag_set[i])) {
+                            found_tag_set[i] = true;
+                        }
+                    }
+                }
+
+                bool found_all = true;
+                for (size_t i = 0; i < tag_set.size(); ++i) {
+                    if (!found_tag_set[i]) {
+                        found_all = false;
+                        break;
+                    }
+                }
+                if (found_all) {
+                    holes_seal.push_back(hole);
+                    break;
+                }
+            }
+        }
+
+        logger().info("Found {} holes to seal in between tags {}", holes_seal.size(), tag_set);
+
+        if (holes_seal.empty()) {
+            continue;
+        }
+
+        std::vector<SimpleBVH::BVH> bvhs;
+        for (const auto& tag : tag_set) {
+            // build BVH
+            auto& bvh = bvhs.emplace_back();
+
+            const auto components = compute_connected_components(tag);
+            // extract boundary edges
+            std::vector<Vector2i> edges;
+            std::vector<Vector2d> vertices;
+            for (const auto& component : components) {
+                for (const size_t fid : component.faces) {
+                    for (int j = 0; j < 3; ++j) {
+                        const Tuple edge_tup = tuple_from_edge(fid, j);
+                        const auto t_opp = edge_tup.switch_face(*this);
+                        if (!t_opp) {
+                            // boundary
+                            continue;
+                        }
+                        const size_t nbr = t_opp->fid(*this);
+                        const FaceTag& ntag = m_face_attribute[nbr].tags;
+                        for (size_t i = 0; i < tag_set.size(); ++i) {
+                            if (!set_includes(ntag, tag)) {
+                                // found a component boundary, add to BVH
+                                size_t v0 = edge_tup.vid(*this);
+                                size_t v1 = edge_tup.switch_vertex(*this).vid(*this);
+                                size_t nv = vertices.size();
+                                edges.emplace_back(nv, nv + 1);
+                                vertices.push_back(m_vertex_attribute.at(v0).m_pos);
+                                vertices.push_back(m_vertex_attribute.at(v1).m_pos);
+                            }
+                        }
                     }
                 }
             }
-            // check surrounding tags is the same as tag_set
-            if (surrounding_tags != tag_set) continue; // harmless hole, skip
-            std::cout << "Engulfing_comp_ids: ";
-            for (const auto& id : engulfing_comp_ids) {
-                std::cout << id << " ";
+
+            assert(2 * edges.size() == vertices.size());
+
+            MatrixXd V;
+            V.resize(vertices.size(), 2);
+            for (size_t i = 0; i < vertices.size(); ++i) {
+                V.row(i) = vertices[i];
             }
-            std::cout << std::endl;
-            std::cout << "Surrounding_tags: ";
-            for (const auto& tag : surrounding_tags) {
-                std::cout << tag << " ";
+            MatrixXi E;
+            E.resize(edges.size(), 2);
+            for (size_t i = 0; i < edges.size(); ++i) {
+                E.row(i) = edges[i];
             }
-            std::cout << std::endl;
-            engulf_components(components, hole_cluster, engulfing_comp_ids);
+
+
+            bvh.init(V, E, 0);
+        }
+
+        // build SDF
+        m_voronoi_split_fn = [&](const Vector2d& p) -> double {
+            double sq_dist;
+            Vector2d nearest_point;
+
+            bvhs[0].nearest_facet(p, nearest_point, sq_dist);
+            const double da = std::sqrt(sq_dist);
+
+            bvhs[1].nearest_facet(p, nearest_point, sq_dist);
+            const double db = std::sqrt(sq_dist);
+
+            return da - db;
+        };
+
+        // seal holes
+        for (const ConnectedComponent& hole : holes_seal) {
+            std::vector<simplex::Edge> split_edges;
+            for (const size_t fid : hole.faces) {
+                const Vector2d p = get_center(fid);
+                const double d = m_voronoi_split_fn(p);
+                auto& tag = m_face_attribute[fid].tags;
+                if (d < 0) {
+                    tag.insert(tag_set[0].begin(), tag_set[0].end());
+                } else {
+                    tag.insert(tag_set[1].begin(), tag_set[1].end());
+                }
+
+                for (int j = 0; j < 3; ++j) {
+                    const Tuple t = tuple_from_edge(fid, j);
+                    const size_t v0 = t.vid(*this);
+                    const size_t v1 = t.switch_vertex(*this).vid(*this);
+                    const double d0 = m_voronoi_split_fn(m_vertex_attribute.at(v0).m_pos);
+                    const double d1 = m_voronoi_split_fn(m_vertex_attribute.at(v1).m_pos);
+                    if (std::signbit(d0) != std::signbit(d1)) {
+                        split_edges.emplace_back(v0, v1);
+                    }
+                }
+            }
+            vector_unique(split_edges);
+
+            std::vector<Tuple> new_tris;
+            for (const simplex::Edge& e : split_edges) {
+                const auto [t, eid] = tuple_from_edge(e.vertices());
+                split_edge(t, new_tris);
+                for (const Tuple& f_tup : new_tris) {
+                    const size_t fid = f_tup.fid(*this);
+                    const Vector2d p = get_center(fid);
+                    const double d = m_voronoi_split_fn(p);
+                    auto& tag = m_face_attribute[fid].tags;
+                    if (d < 0) {
+                        tag.insert(tag_set[0].begin(), tag_set[0].end());
+                        for (const size_t tt : tag_set[1]) {
+                            tag.erase(tt);
+                        }
+                    } else {
+                        tag.insert(tag_set[1].begin(), tag_set[1].end());
+                        for (const size_t tt : tag_set[0]) {
+                            tag.erase(tt);
+                        }
+                    }
+                }
+            }
         }
     }
 
-    recompute_surface_info();
+
+    // auto components = compute_connected_components();
+    //
+    // for (const std::set<FaceTag>& tag_set : tight_seal_tag_sets) {
+    //     std::vector<ComponentCluster> hole_clusters;
+    //     std::set<FaceTag> tags_copy = tag_set;
+    //     extract_hole_clusters(components, tags_copy, hole_clusters, threshold);
+    //     for (const auto& hole_cluster : hole_clusters) {
+    //        // Collect component indices in tag_set that surround this cluster
+    //        std::set<size_t> engulfing_comp_ids;
+    //        std::set<FaceTag> surrounding_tags;
+    //        for (const size_t ci : hole_cluster.comp_ids) {
+    //            for (const size_t sid : components[ci].surrounding_comp_ids) {
+    //                if (!components[sid].faces.empty() && tag_set.count(components[sid].tag)) {
+    //                    engulfing_comp_ids.insert(sid);
+    //                    surrounding_tags.insert(components[sid].tag);
+    //                }
+    //            }
+    //        }
+    //        // check surrounding tags is the same as tag_set
+    //        if (surrounding_tags != tag_set) {
+    //            continue; // harmless hole, skip
+    //        }
+    //        logger().info("Engulfing_comp_ids: {}", engulfing_comp_ids);
+    //        logger().info("Surrounding_tags: {}", surrounding_tags);
+    //        engulf_components(components, hole_cluster, engulfing_comp_ids);
+    //    }
+    //}
+    //
+    // recompute_surface_info();
 }
 
 void ImageSimulationMeshTri::substructure_region(
@@ -2416,7 +2653,7 @@ void ImageSimulationMeshTri::substructure_region(
         }
     }
 
-    std::unordered_set<size_t> region_vertices;
+    std::set<size_t> region_vertices;
     for (const auto& e : edges) {
         region_vertices.insert(e.vertices()[0]);
         region_vertices.insert(e.vertices()[1]);

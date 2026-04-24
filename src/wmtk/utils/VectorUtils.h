@@ -136,4 +136,18 @@ inline std::array<T, N> array_replace(const std::array<T, N>& arr, const T& v0, 
     return out;
 }
 
+/**
+ * @brief Check if `a` includes `b`.
+ *
+ * Example:
+ * a = [1,2,3]
+ * b = [2]
+ * set_includes(a, b); // returns true
+ */
+template <typename T>
+inline bool set_includes(const std::set<T>& a, const std::set<T>& b)
+{
+    return std::includes(a.begin(), a.end(), b.begin(), b.end());
+}
+
 } // namespace wmtk

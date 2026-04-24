@@ -264,11 +264,16 @@ nlohmann::json image_simulation_spec = R"(
   {
     "pointer": "/fill_holes_tags",
     "type": "list",
-    "default": [0],
+    "default": [[0]],
     "doc": "For fill_holes_topo: list of tag values used to fill enclosed connected components (processed in order)."
   },
   {
     "pointer": "/fill_holes_tags/*",
+    "type": "list",
+    "doc": "A list of tag values to fill enclosed connected components of other tags."
+  },
+  {
+    "pointer": "/fill_holes_tags/*/*",
     "type": "int",
     "doc": "A tag value to fill enclosed connected components of other tags."
   },
@@ -291,6 +296,11 @@ nlohmann::json image_simulation_spec = R"(
   },
   {
     "pointer": "/tight_seal_tag_sets/*/*",
+    "type": "list",
+    "doc": "A tag value in this tag set."
+  },
+  {
+    "pointer": "/tight_seal_tag_sets/*/*/*",
     "type": "int",
     "doc": "A tag value in this tag set."
   },
@@ -303,14 +313,19 @@ nlohmann::json image_simulation_spec = R"(
   {
     "pointer": "/keep_largest_cc_tags",
     "type": "list",
-    "default": [0],
-    "doc": "For keep_largest_cc: list of tag values for which only the largest connected component is kept; all smaller components are merged into their neighbours."
+    "default": [[0]],
+    "doc": "For keep_largest_cc: list of tag values for which only the largest connected component is kept."
   },
   {
     "pointer": "/keep_largest_cc_tags/*",
+    "type": "list",
+    "doc": "A list of tag values whose smaller connected components will be removed."
+  },
+  {
+    "pointer": "/keep_largest_cc_tags/*/*",
     "type": "int",
-    "doc": "A tag value whose smaller connected components will be removed."
-  }
+    "doc": "A tag value."
+  }  
 ]
 )"_json;
 

@@ -27,6 +27,8 @@
 
 namespace wmtk::components::image_simulation::tri {
 
+using FaceTag = std::set<int64_t>;
+
 struct VertexAttributes
 {
     Vector2d m_pos;
@@ -78,7 +80,7 @@ class FaceAttributes
 public:
     double m_quality;
     double m_winding_number = 0;
-    VectorSi tags;
+    FaceTag tags;
     int part_id = -1;
 };
 
@@ -305,11 +307,28 @@ public:
      */
     struct ConnectedComponent
     {
-        int64_t tag = -1;
+        int64_t id = -1; // component ID in vector of components
+        FaceTag tag;
         std::vector<size_t> faces;
-        std::unordered_set<size_t> surrounding_comp_ids;
+        std::set<size_t> surrounding_comp_ids;
         double area = 0.0;
         bool touches_boundary = false;
+    };
+
+    /**
+     * @brief A cluster of connected components. Used to store a maximal group of connected
+     * non-fill-tag ConnectedComponents for filling holes.
+     * @param comp_ids vector of indices into the components vector, representing the connected
+     * components in the cluster
+     * @param area total area of the cluster
+     * @param enclosed whether the cluster is enclosed by fill_tag components (i.e. whether the
+     * cluster is a hole that can be filled)
+     */
+    struct ComponentCluster
+    {
+        std::vector<size_t> comp_ids; // indices into components vector
+        double area = 0.0;
+        bool enclosed = true;
     };
 
     /**
@@ -317,6 +336,29 @@ public:
      * ConnectedComponent structs.
      */
     std::vector<ConnectedComponent> compute_connected_components() const;
+
+    /**
+     * @brief Find all connected components that contain the `tag_in` tags.
+     */
+    std::vector<ConnectedComponent> compute_connected_components(const FaceTag& tag_in) const;
+    /**
+     * @brief Find all regions that do not contain the tags from `tag_in`.
+     *
+     * The `tag_in` vector represents a list of tag intersections.
+     * Example: tag_in = {{1,2},{3}}
+     * A face will be considered as a hole if its tags neither include {1,2} or {3}.
+     * The following would be holes:
+     * {}
+     * {1,4}
+     * The following would be NOT holes:
+     * {1,2,4} <- contains 1 and 2
+     * {3} <- contains 3
+     * {1,3} <- contains 3
+     *
+     * The returned vector also contains "holes" that touch the boundary. They should be ommitted in
+     * hole filling.
+     */
+    std::vector<ConnectedComponent> find_holes(const std::vector<FaceTag>& tag_in) const;
 
     /**
      * @brief Replace a component with id hole_comp_id with another component with id
@@ -342,8 +384,8 @@ public:
      */
     void engulf_components(
         std::vector<ConnectedComponent>& components,
-        const std::vector<size_t>& hole_comp_ids,
-        const std::unordered_set<size_t>& engulfing_comp_ids);
+        const ComponentCluster& hole_comp_ids,
+        const std::set<size_t>& engulfing_comp_ids);
 
     /**
      * @brief Keep only the largest connected component for each of the distinct tag_0 values, and
@@ -351,23 +393,7 @@ public:
      *
      * @param lcc_tags
      */
-    void keep_largest_connected_component(const std::vector<int64_t>& lcc_tags);
-
-    /**
-     * @brief A cluster of connected components. Used to store a maximal group of connected
-     * non-fill-tag ConnectedComponents for filling holes.
-     * @param comp_ids vector of indices into the components vector, representing the connected
-     * components in the cluster
-     * @param area total area of the cluster
-     * @param enclosed whether the cluster is enclosed by fill_tag components (i.e. whether the
-     * cluster is a hole that can be filled)
-     */
-    struct ComponentCluster
-    {
-        std::vector<size_t> comp_ids; // indices into components vector
-        double area = 0.0;
-        bool enclosed = true;
-    };
+    void keep_largest_connected_component(const std::vector<FaceTag>& lcc_tags);
 
     /**
      * @brief Extract clusters of connected components that represent holes in the mesh.
@@ -382,18 +408,18 @@ public:
      */
     void extract_hole_clusters(
         std::vector<ConnectedComponent>& components,
-        std::unordered_set<int64_t>& tags,
-        std::vector<std::vector<size_t>>& hole_clusters,
+        std::set<FaceTag>& tags,
+        std::vector<ComponentCluster>& hole_clusters,
         double threshold);
 
     void recompute_surface_info();
 
     void fill_holes_topo(
-        const std::vector<int64_t>& fill_holes_tags,
+        const std::vector<FaceTag>& fill_holes_tags,
         double threshold = std::numeric_limits<double>::infinity());
 
     void tight_seal_topo(
-        const std::vector<std::unordered_set<int64_t>>& tight_seal_tag_sets,
+        const std::vector<std::vector<FaceTag>>& tight_seal_tag_sets,
         double threshold = std::numeric_limits<double>::infinity());
 
 
@@ -471,7 +497,7 @@ private:
     {
         double max_energy;
         std::map<simplex::Edge, EdgeAttributes> changed_edges;
-        VectorSi face_tags;
+        FaceTag face_tags;
     };
     tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
 
