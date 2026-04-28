@@ -199,14 +199,14 @@ InputData read_image_msh(const std::string& path)
             }
 
             // tags
-            input_data.T_input_tag.resize(input_data.T_input.rows(), Fs.size());
+            input_data.T_input_tag.resize(input_data.T_input.rows(), Fs.size() - 1);
             // assume Fs[0] are ambient faces
             for (size_t i = 1; i < Fs.size(); ++i) {
                 for (size_t j = 0; j < Fs[i].rows(); ++j) {
                     const Vector4i& t = Fs[i].row(j);
                     const simplex::Tet s(t[0], t[1], t[2], t[3]);
                     const size_t tid = tet_ids[s];
-                    input_data.T_input_tag.coeffRef(tid, i) = 1;
+                    input_data.T_input_tag.coeffRef(tid, i - 1) = 1;
                 }
             }
         } else {
@@ -239,14 +239,14 @@ InputData read_image_msh(const std::string& path)
             }
 
             // tags
-            input_data.T_input_tag.resize(input_data.T_input.rows(), Fs.size());
+            input_data.T_input_tag.resize(input_data.T_input.rows(), Fs.size() - 1);
             // assume Fs[0] are ambient faces
             for (size_t i = 1; i < Fs.size(); ++i) {
                 for (size_t j = 0; j < Fs[i].rows(); ++j) {
                     const Vector3i& t = Fs[i].row(j);
                     const simplex::Face s(t[0], t[1], t[2]);
                     const size_t tid = tet_ids[s];
-                    input_data.T_input_tag.coeffRef(tid, i) = 1;
+                    input_data.T_input_tag.coeffRef(tid, i - 1) = 1;
                 }
             }
         }

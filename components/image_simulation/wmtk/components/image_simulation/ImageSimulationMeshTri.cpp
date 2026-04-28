@@ -564,6 +564,7 @@ void ImageSimulationMeshTri::write_msh_groups(std::string file)
 {
     consolidate_mesh();
 
+
     wmtk::MshData msh;
 
     const auto& vtx = get_vertices();
@@ -575,8 +576,27 @@ void ImageSimulationMeshTri::write_msh_groups(std::string file)
 
     const auto& faces = get_faces();
 
+    int64_t max_tag = -1;
+    for (const Tuple& t : faces) {
+        const size_t fid = t.fid(*this);
+        const auto& tags = m_face_attribute[fid].tags;
+        if (tags.size() == 0) {
+            continue;
+        }
+        int64_t mt = *tags.rbegin();
+        max_tag = std::max(max_tag, mt);
+    }
+
     std::vector<Tuple> faces_with_tag;
     faces_with_tag.reserve(faces.size());
+
+    if (m_tags_count < max_tag + 1) {
+        logger().warn(
+            "Max tag is {} but m_tags_count is {}. Adjusting m_tags_count.",
+            max_tag,
+            m_tags_count);
+        m_tags_count = max_tag + 1;
+    }
 
     auto msh_add_faces = [&]() {
         msh.add_faces(faces_with_tag.size(), [&](size_t k) {
@@ -600,6 +620,7 @@ void ImageSimulationMeshTri::write_msh_groups(std::string file)
 
     msh.add_physical_group("ambient");
 
+
     // add a group for each tag
     for (size_t tag_img = 0; tag_img < m_tags_count; ++tag_img) {
         faces_with_tag.clear();
@@ -611,7 +632,7 @@ void ImageSimulationMeshTri::write_msh_groups(std::string file)
         }
 
         if (faces_with_tag.empty()) {
-            break;
+            continue;
         }
 
         msh.add_empty_vertices(2);
@@ -2355,6 +2376,10 @@ void ImageSimulationMeshTri::tight_seal_topo(
     const std::vector<std::vector<FaceTag>>& tight_seal_tag_sets,
     double threshold)
 {
+    if (m_params.debug_output) {
+        write_vtu(fmt::format("debug_{}", debug_print_counter++));
+    }
+
     auto get_center = [&](const size_t fid) {
         const auto vs = oriented_tri_vids(fid);
         const Vector2d& p0 = m_vertex_attribute[vs[0]].m_pos;
@@ -2421,9 +2446,9 @@ void ImageSimulationMeshTri::tight_seal_topo(
             continue;
         }
 
+        // BVH for each tag_set
         std::vector<SimpleBVH::BVH> bvhs;
         for (const auto& tag : tag_set) {
-            // build BVH
             auto& bvh = bvhs.emplace_back();
 
             const auto components = compute_connected_components(tag);
@@ -2513,13 +2538,32 @@ void ImageSimulationMeshTri::tight_seal_topo(
             }
             vector_unique(split_edges);
 
+            if (m_params.debug_output) {
+                write_vtu(fmt::format("debug_{}", debug_print_counter++));
+            }
+
             std::vector<Tuple> new_tris;
             for (const simplex::Edge& e : split_edges) {
                 const auto [t, eid] = tuple_from_edge(e.vertices());
-                split_edge(t, new_tris);
+                if (!split_edge(t, new_tris)) {
+                    continue;
+                }
                 for (const Tuple& f_tup : new_tris) {
                     const size_t fid = f_tup.fid(*this);
-                    const Vector2d p = get_center(fid);
+                    const auto vs = oriented_tri_vids(fid);
+                    // find vertex from splitted edge
+                    size_t vid = -1;
+                    for (const size_t v : vs) {
+                        if (e.vertices()[0] == v || e.vertices()[1] == v) {
+                            vid = v;
+                            break;
+                        }
+                    }
+                    if (vid == -1) {
+                        log_and_throw_error("Could not find edge-vertex after split.");
+                    }
+
+                    const Vector2d& p = m_vertex_attribute[vid].m_pos;
                     const double d = m_voronoi_split_fn(p);
                     auto& tag = m_face_attribute[fid].tags;
                     if (d < 0) {
@@ -2534,6 +2578,10 @@ void ImageSimulationMeshTri::tight_seal_topo(
                         }
                     }
                 }
+            }
+
+            if (m_params.debug_output) {
+                write_vtu(fmt::format("debug_{}", debug_print_counter++));
             }
         }
     }
