@@ -2531,7 +2531,8 @@ void ImageSimulationMeshTri::tight_seal_topo(
                     const size_t v1 = t.switch_vertex(*this).vid(*this);
                     const double d0 = m_voronoi_split_fn(m_vertex_attribute.at(v0).m_pos);
                     const double d1 = m_voronoi_split_fn(m_vertex_attribute.at(v1).m_pos);
-                    if (std::signbit(d0) != std::signbit(d1)) {
+                    // only split edges if their endpoints aren't already on the surface
+                    if ((d0 < -1e-20 && d1 > 1e-20) || (d1 < -1e-20 && d0 > 1e-20)) {
                         split_edges.emplace_back(v0, v1);
                     }
                 }
@@ -2579,7 +2580,6 @@ void ImageSimulationMeshTri::tight_seal_topo(
                     }
                 }
             }
-
             if (m_params.debug_output) {
                 write_vtu(fmt::format("debug_{}", debug_print_counter++));
             }
