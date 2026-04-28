@@ -550,11 +550,13 @@ void ImageSimulationMeshTri::write_msh(std::string file)
 
     msh.add_physical_group("ImageVolume");
 
-    msh.add_edge_vertices(m_V_envelope.size(), [this](size_t k) {
-        return Vector3d(m_V_envelope[k][0], m_V_envelope[k][1], 0);
-    });
-    msh.add_edges(m_E_envelope.size(), [this](size_t k) { return m_E_envelope[k]; });
-    msh.add_physical_group("EnvelopeSurface");
+    if (m_envelope) {
+        msh.add_edge_vertices(m_V_envelope.size(), [this](size_t k) {
+            return Vector3d(m_V_envelope[k][0], m_V_envelope[k][1], 0);
+        });
+        msh.add_edges(m_E_envelope.size(), [this](size_t k) { return m_E_envelope[k]; });
+        msh.add_physical_group("EnvelopeSurface");
+    }
 
     logger().info("Write {}", file);
     msh.save(file, true);
@@ -642,11 +644,13 @@ void ImageSimulationMeshTri::write_msh_groups(std::string file)
         msh.add_physical_group(group_name);
     }
 
-    msh.add_edge_vertices(m_V_envelope.size(), [this](size_t k) {
-        return Vector3d(m_V_envelope[k][0], m_V_envelope[k][1], 0);
-    });
-    msh.add_edges(m_E_envelope.size(), [this](size_t k) { return m_E_envelope[k]; });
-    msh.add_physical_group("EnvelopeSurface");
+    if (m_envelope) {
+        msh.add_edge_vertices(m_V_envelope.size(), [this](size_t k) {
+            return Vector3d(m_V_envelope[k][0], m_V_envelope[k][1], 0);
+        });
+        msh.add_edges(m_E_envelope.size(), [this](size_t k) { return m_E_envelope[k]; });
+        msh.add_physical_group("EnvelopeSurface");
+    }
 
     msh.save(file, true);
 }
@@ -952,9 +956,9 @@ bool ImageSimulationMeshTri::split_edge_before(const Tuple& loc0)
     for (const size_t fid : faces) {
         const simplex::Face face = simplex_from_face(fid);
         const size_t opp = face.opposite_vertex(edge).id();
-        if (m_face_attribute.at(fid).tags.size() == 0) {
-            log_and_throw_error("No tags in face {}", fid); // for debugging
-        }
+        // if (m_face_attribute.at(fid).tags.size() == 0) {
+        //    log_and_throw_error("No tags in face {}", fid); // for debugging
+        //}
         cache.faces[opp] = m_face_attribute.at(fid);
     }
 
@@ -2269,40 +2273,9 @@ void ImageSimulationMeshTri::fill_holes_topo(
             bndy_counter);
     }
 
-    //// -- Step 1: compute all connected components with their surrounding component ids
-    // auto components = compute_connected_components();
-    //
-    //// -- Step 2: for each fill_tag, fill all enclosed components
-    // bool any_filled = false;
-    // for (const FaceTag& fill_tag : fill_holes_tags) {
-    //     std::vector<ComponentCluster> hole_clusters;
-    //     std::set<FaceTag> tags{fill_tag};
-    //     extract_hole_clusters(components, tags, hole_clusters, threshold);
-    //
-    //     for (const auto& hole_cluster : hole_clusters) {
-    //        // Collect the fill-tag component indices that surround this cluster
-    //        std::set<size_t> engulfing_comp_ids;
-    //        for (const size_t ci : hole_cluster.comp_ids) {
-    //            for (const size_t sid : components[ci].surrounding_comp_ids) {
-    //                if (!components[sid].faces.empty() && components[sid].tag == fill_tag) {
-    //                    engulfing_comp_ids.insert(sid);
-    //                }
-    //            }
-    //        }
-    //        engulf_components(components, hole_cluster, engulfing_comp_ids);
-    //        any_filled = true;
-    //    }
-    //    if (hole_clusters.empty()) {
-    //        logger().info(
-    //            "fill_holes_topo: no enclosed components found for fill_tag {}",
-    //            fill_tag);
-    //    }
-    //}
-    //
-    // if (!any_filled) return;
-    //
-    //// -- Step 3: recompute m_is_surface_fs and m_is_on_surface
-    // recompute_surface_info();
+    m_E_envelope.clear();
+    m_V_envelope.clear();
+    m_envelope.reset();
 }
 
 void ImageSimulationMeshTri::keep_largest_connected_component(const std::vector<FaceTag>& lcc_tags)
@@ -2333,43 +2306,9 @@ void ImageSimulationMeshTri::keep_largest_connected_component(const std::vector<
         }
     }
 
-    // auto components = compute_connected_components();
-    // if (components.empty()) {
-    //     logger().warn("keep_largest_connected_component: no components found, skipping");
-    //     return;
-    // }
-    //// For each tag in lcc_tags, find the largest component with that tag and mark all other
-    //// components with that tag for removal
-    // for (const FaceTag& lcc_tag : lcc_tags) {
-    //     int largest_comp_id = -1;
-    //     double largest_area = -1.0;
-    //     for (size_t i = 0; i < components.size(); ++i) {
-    //         if (components[i].faces.empty() || components[i].tag != lcc_tag) continue;
-    //         if (components[i].area > largest_area) {
-    //             largest_area = components[i].area;
-    //             largest_comp_id = i;
-    //         }
-    //     }
-    //     if (largest_comp_id == -1) {
-    //         logger().warn(
-    //             "keep_largest_connected_component: no component found for tag {}, skipping",
-    //             lcc_tag);
-    //         continue;
-    //     }
-    //     for (size_t i = 0; i < components.size(); ++i) {
-    //         if (components[i].faces.empty() || components[i].tag != lcc_tag ||
-    //             (int)i == largest_comp_id)
-    //             continue;
-    //        // Copy surrounding_comp_ids — engulf_components will reset components[i]
-    //        std::set<size_t> surr = components[i].surrounding_comp_ids;
-    //        ComponentCluster cc;
-    //        cc.comp_ids.push_back(i);
-    //        cc.area = components[i].area;
-    //        engulf_components(components, cc, surr);
-    //    }
-    //}
-    //
-    // recompute_surface_info();
+    m_E_envelope.clear();
+    m_V_envelope.clear();
+    m_envelope.reset();
 }
 
 void ImageSimulationMeshTri::tight_seal_topo(
@@ -2586,36 +2525,9 @@ void ImageSimulationMeshTri::tight_seal_topo(
         }
     }
 
-
-    // auto components = compute_connected_components();
-    //
-    // for (const std::set<FaceTag>& tag_set : tight_seal_tag_sets) {
-    //     std::vector<ComponentCluster> hole_clusters;
-    //     std::set<FaceTag> tags_copy = tag_set;
-    //     extract_hole_clusters(components, tags_copy, hole_clusters, threshold);
-    //     for (const auto& hole_cluster : hole_clusters) {
-    //        // Collect component indices in tag_set that surround this cluster
-    //        std::set<size_t> engulfing_comp_ids;
-    //        std::set<FaceTag> surrounding_tags;
-    //        for (const size_t ci : hole_cluster.comp_ids) {
-    //            for (const size_t sid : components[ci].surrounding_comp_ids) {
-    //                if (!components[sid].faces.empty() && tag_set.count(components[sid].tag)) {
-    //                    engulfing_comp_ids.insert(sid);
-    //                    surrounding_tags.insert(components[sid].tag);
-    //                }
-    //            }
-    //        }
-    //        // check surrounding tags is the same as tag_set
-    //        if (surrounding_tags != tag_set) {
-    //            continue; // harmless hole, skip
-    //        }
-    //        logger().info("Engulfing_comp_ids: {}", engulfing_comp_ids);
-    //        logger().info("Surrounding_tags: {}", surrounding_tags);
-    //        engulf_components(components, hole_cluster, engulfing_comp_ids);
-    //    }
-    //}
-    //
-    // recompute_surface_info();
+    m_E_envelope.clear();
+    m_V_envelope.clear();
+    m_envelope.reset();
 }
 
 void ImageSimulationMeshTri::substructure_region(
