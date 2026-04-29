@@ -1155,4 +1155,21 @@ void ImageSimulationMesh::init_vertex_order()
     logger().info("Vertex order count (0,1,2,3): {}", count);
 }
 
+double ImageSimulationMesh::tet_volume(const size_t tid) const
+{
+    const auto vs = oriented_tet_vids(tid);
+    const Vector3d& p0 = m_vertex_attribute[vs[0]].m_posf;
+    const Vector3d& p1 = m_vertex_attribute[vs[1]].m_posf;
+    const Vector3d& p2 = m_vertex_attribute[vs[2]].m_posf;
+    const Vector3d& p3 = m_vertex_attribute[vs[3]].m_posf;
+
+    const Vector3d a = (p1 - p0);
+    const Vector3d b = (p2 - p0);
+    const Vector3d c = (p3 - p0);
+
+    const double v = (1. / 6.) * a.cross(b).dot(c);
+
+    return std::abs(v);
+}
+
 } // namespace wmtk::components::image_simulation

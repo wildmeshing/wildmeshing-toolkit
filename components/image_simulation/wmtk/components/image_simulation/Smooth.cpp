@@ -543,10 +543,10 @@ void ImageSimulationMesh::substructure_region(
 
 void ImageSimulationMesh::init_separation_weight()
 {
-    // if (m_params.preserve_topology) {
-    //    // no separation for not preserving topology
-    //    m_params.w_separate = 0;
-    //}
+    if (m_params.preserve_topology) {
+        // no separation for not preserving topology
+        m_params.w_separate = 0;
+    }
     if (m_params.separation_factor <= 0) {
         m_params.w_separate = 0;
         logger().warn(

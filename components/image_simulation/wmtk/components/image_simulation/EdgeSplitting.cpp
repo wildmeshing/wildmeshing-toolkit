@@ -131,12 +131,12 @@ bool ImageSimulationMesh::split_edge_after(const Tuple& loc)
     const size_t v2_id = cache.v2_id;
 
     /// check inversion & rounding
-    m_vertex_attribute[v_id].m_posf =
-        (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2;
+    auto& p = m_vertex_attribute[v_id].m_posf;
+    p = (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2;
     m_vertex_attribute[v_id].m_is_rounded = true;
 
     // this has to be done before the inversion check
-    m_vertex_attribute[v_id].m_pos = to_rational(m_vertex_attribute[v_id].m_posf);
+    m_vertex_attribute[v_id].m_pos = to_rational(p);
 
     for (auto& loc : locs) {
         if (is_inverted(loc)) {
@@ -147,7 +147,51 @@ bool ImageSimulationMesh::split_edge_after(const Tuple& loc)
     if (!m_vertex_attribute[v_id].m_is_rounded) {
         m_vertex_attribute[v_id].m_pos =
             (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
-        m_vertex_attribute[v_id].m_posf = to_double(m_vertex_attribute[v_id].m_pos);
+        p = to_double(m_vertex_attribute[v_id].m_pos);
+    }
+
+    // If a Voronoi split function is set, binary-search vmid onto its zero-crossing.
+    // p0 stays on the negative side, p1 on the positive side.
+    if (m_voronoi_split_fn) {
+        Vector3d p0 = m_vertex_attribute[v1_id].m_posf;
+        Vector3d p1 = m_vertex_attribute[v2_id].m_posf;
+        if (m_voronoi_split_fn(p0) >= 0) {
+            std::swap(p0, p1); // ensure p0 is negative side
+        }
+        for (int i = 0; i < 20; ++i) {
+            p = 0.5 * (p0 + p1);
+            m_vertex_attribute[v_id].m_pos = to_rational(p);
+            bool inv = false;
+            for (const Tuple& t : locs) {
+                if (is_inverted(t)) {
+                    inv = true;
+                    break;
+                }
+            }
+            if (inv || (p1 - p0).squaredNorm() < 1e-20) {
+                break;
+            }
+            if (m_voronoi_split_fn(p) < 0) {
+                p0 = p;
+            } else {
+                p1 = p;
+            }
+        }
+        // final inversion guard: revert to midpoint if needed
+        bool inv = false;
+        for (const Tuple& t : locs) {
+            if (is_inverted(t)) {
+                inv = true;
+                logger().warn(
+                    "Voronoi split resulted in inversion, reverting to midpoint. Iteration: {}",
+                    m_debug_print_counter++);
+                break;
+            }
+        }
+        if (inv) {
+            p = (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2;
+            m_vertex_attribute[v_id].m_pos = to_rational(p);
+        }
     }
 
     // update tet attributes

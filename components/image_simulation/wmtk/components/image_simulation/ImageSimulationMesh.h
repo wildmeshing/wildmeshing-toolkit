@@ -151,6 +151,10 @@ public:
     double m_s_envelope = -1;
     double m_s_barrier = -1;
 
+    // When set, split_edge_after binary-searches vmid onto the zero-crossing of this function.
+    // Negative = stays on v1 side, positive = stays on v2 side.
+    std::function<double(const Vector3d&)> m_voronoi_split_fn = nullptr;
+
     ImageSimulationMesh(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
         : m_params(_m_params)
         , m_envelope_eps(envelope_eps)
@@ -610,6 +614,72 @@ public:
      * @brief Compute the vertex order for every vertex.
      */
     void init_vertex_order();
+
+public:
+    // Annotations
+
+    double tet_volume(const size_t tid) const;
+
+    /**
+     * @brief Find all connected components that contain the `tag_in` tags.
+     */
+    std::vector<ConnectedComponent> compute_connected_components(const CellTag& tag_in) const;
+
+    /**
+     * @brief Find all regions that do not contain the tags from `tag_in`.
+     *
+     * The `tag_in` vector represents a list of tag intersections.
+     * Example: tag_in = {{1,2},{3}}
+     * A face will be considered as a hole if its tags neither include {1,2} or {3}.
+     * The following would be holes:
+     * {}
+     * {1,4}
+     * The following would be NOT holes:
+     * {1,2,4} <- contains 1 and 2
+     * {3} <- contains 3
+     * {1,3} <- contains 3
+     *
+     * The returned vector also contains "holes" that touch the boundary. They should be
+     * ommitted in hole filling.
+     */
+    std::vector<ConnectedComponent> find_holes(const std::vector<CellTag>& tag_in) const;
+
+    /**
+     * @brief Compute the boundary of a tag.
+     *
+     * @param tag A set of tags that must be present in a tet for being considered as
+     * tagged.
+     * @param V Vertices of the tag boundary.
+     * @param F Faces of the tag boundary.
+     */
+    void compute_tag_boundary(const CellTag& tag, MatrixXd& V, MatrixXi& F) const;
+
+    /**
+     * @brief Keep only the largest connected component for each of the distinct tag_0 values,
+     * and engulf all other components.
+     *
+     * @param lcc_tags
+     * @param n_lcc The number of largest components that should be kept.
+     */
+    void keep_largest_connected_component(
+        const std::vector<CellTag>& lcc_tags,
+        const size_t n_lcc = 1);
+
+    void fill_holes_topo(
+        const std::vector<CellTag>& fill_holes_tags,
+        double threshold = std::numeric_limits<double>::infinity());
+
+    void seal_connected_components(
+        const std::vector<CellTag>& tag_sets,
+        const std::vector<ConnectedComponent>& components);
+
+    void tight_seal_topo(
+        const std::vector<std::vector<CellTag>>& tight_seal_tag_sets,
+        double threshold = std::numeric_limits<double>::infinity());
+
+    void resolve_intersections(const std::vector<CellTag>& intersecting_tags);
+
+    void replace_tags(const std::vector<CellTag>& tags_in, const CellTag& tag_out);
 };
 
 } // namespace wmtk::components::image_simulation
