@@ -109,7 +109,14 @@ bool ImageSimulationMesh::smooth_after(const Tuple& t)
             energy_sum->add_energy(envelope_energy);
         }
         if (m_params.w_separate > 0) {
-            energy_sum->add_energy(get_barrier_energy(t));
+            auto barrier_energy = get_barrier_energy(t);
+            double val = barrier_energy->value(old_pos);
+            // only consider energy if it is non-zero at rest
+            if (val > 0) {
+                energy_sum->add_energy(barrier_energy);
+            } else {
+                logger().trace("Ignore barrier energy for zero rest state.");
+            }
         }
         total_energy = energy_sum;
         solve();
@@ -335,6 +342,12 @@ std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMesh::get_envelope
     auto env = m_envelope_orig;
     if (m_vertex_attribute[vid].m_order > 1) {
         env = m_order_2_edge_envelope;
+    }
+
+    if (!env) {
+        log_and_throw_error(
+            "Envelope was not initialized. Vertex was of order {}",
+            m_vertex_attribute[vid].m_order);
     }
 
     auto envelope_energy =

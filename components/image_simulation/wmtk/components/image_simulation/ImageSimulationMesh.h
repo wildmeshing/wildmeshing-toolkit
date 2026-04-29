@@ -517,8 +517,6 @@ private:
         std::vector<std::array<size_t, 2>> boundary_edges;
         std::vector<size_t> changed_tids;
         std::vector<double> changed_energies;
-
-        size_t edge_order;
     };
     tbb::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
 

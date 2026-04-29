@@ -70,7 +70,11 @@ bool ImageSimulationMesh::split_edge_before(const Tuple& loc0)
     cache.is_edge_on_surface = is_edge_on_surface(loc0);
 
     // todo: can be optimized
-    cache.is_edge_open_boundary = cache.is_edge_on_surface && is_order_2_edge(loc0);
+    if (m_params.preserve_topology) {
+        cache.is_edge_open_boundary = cache.is_edge_on_surface && is_order_2_edge(loc0);
+    } else {
+        cache.is_edge_open_boundary = false;
+    }
 
     /// save face track info
     auto comp = [](const std::pair<FaceAttributes, std::array<size_t, 3>>& v1,
@@ -181,15 +185,15 @@ bool ImageSimulationMesh::split_edge_after(const Tuple& loc)
 
     // surface
     m_vertex_attribute[v_id].m_is_on_surface = cache.is_edge_on_surface;
-    if (cache.is_edge_on_surface) {
-        m_vertex_attribute[v_id].m_order = 1;
-    } else {
-        m_vertex_attribute[v_id].m_order = 0;
-    }
-
-    // open boundary
-    if (cache.is_edge_open_boundary) {
-        m_vertex_attribute[v_id].m_order = 2;
+    if (m_params.preserve_topology) {
+        if (cache.is_edge_on_surface) {
+            m_vertex_attribute[v_id].m_order = 1;
+        } else {
+            m_vertex_attribute[v_id].m_order = 0;
+        }
+        if (cache.is_edge_open_boundary) {
+            m_vertex_attribute[v_id].m_order = 2;
+        }
     }
 
     /// update face attribute

@@ -657,7 +657,9 @@ void ImageSimulationMesh::init_from_image(
 
     init_surfaces_and_boundaries();
 
-    init_vertex_order();
+    if (m_params.preserve_topology) {
+        init_vertex_order();
+    }
 
     // rounding
     size_t cnt_round = 0;
@@ -729,7 +731,9 @@ void ImageSimulationMesh::init_from_image(
 
     init_surfaces_and_boundaries();
 
-    init_vertex_order();
+    if (m_params.preserve_topology) {
+        init_vertex_order();
+    }
 
     // init qualities
     for_each_tetra(
@@ -843,16 +847,18 @@ void ImageSimulationMesh::init_surfaces_and_boundaries()
     for_each_vertex(
         [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
 
-    // track open boundaries
-    find_order_2_edges();
+    if (m_params.preserve_topology) {
+        // track open boundaries
+        find_order_2_edges();
 
-    int open_boundary_cnt = 0;
-    for (const Tuple& e : get_edges()) {
-        if (is_order_2_edge(e)) {
-            open_boundary_cnt++;
+        int open_boundary_cnt = 0;
+        for (const Tuple& e : get_edges()) {
+            if (is_order_2_edge(e)) {
+                open_boundary_cnt++;
+            }
         }
+        logger().info("#open boundary edges: {}", open_boundary_cnt);
     }
-    wmtk::logger().info("#open boundary edges: {}", open_boundary_cnt);
 }
 
 
