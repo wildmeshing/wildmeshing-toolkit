@@ -216,7 +216,7 @@ nlohmann::json image_simulation_spec = R"(
   {
     "pointer": "/w_amips",
     "type": "float",
-    "default": 0.1,
+    "default": 1e-4,
     "doc": "AMIPS energy. Sum of energy weights must be smaller than 1!"
   },
   {

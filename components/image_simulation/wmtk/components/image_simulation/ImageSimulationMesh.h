@@ -9,6 +9,7 @@
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 
+#include "ConnectedComponent.hpp"
 #include "Parameters.h"
 
 // clang-format off
@@ -115,7 +116,7 @@ public:
      * All image labels. Stored as pairs of image ID and the tag within the image. Using a sparse
      * vector, so 0 entries are ommitted.
      */
-    VectorSi tags;
+    CellTag tags;
 };
 
 class ImageSimulationMesh : public wmtk::TetMesh
@@ -526,7 +527,7 @@ private:
     {
         double max_energy;
         std::map<std::array<size_t, 3>, FaceAttributes> changed_faces;
-        VectorSi tet_tags;
+        CellTag tet_tags;
     };
     tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
 

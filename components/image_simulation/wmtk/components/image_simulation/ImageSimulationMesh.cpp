@@ -525,15 +525,17 @@ void ImageSimulationMesh::write_msh(std::string file)
 
     for (size_t j = 0; j < m_tags_count; ++j) {
         msh.add_tet_attribute<1>(fmt::format("tag_{}", j), [&](size_t i) {
-            return m_tet_attribute[i].tags.coeff(j);
+            return m_tet_attribute[i].tags.count(j) ? 1 : 0;
         });
     }
 
     msh.add_physical_group("ImageVolume");
 
-    msh.add_face_vertices(m_V_envelope.size(), [this](size_t k) { return m_V_envelope[k]; });
-    msh.add_faces(m_F_envelope.size(), [this](size_t k) { return m_F_envelope[k]; });
-    msh.add_physical_group("EnvelopeSurface");
+    if (m_envelope) {
+        msh.add_face_vertices(m_V_envelope.size(), [this](size_t k) { return m_V_envelope[k]; });
+        msh.add_faces(m_F_envelope.size(), [this](size_t k) { return m_F_envelope[k]; });
+        msh.add_physical_group("EnvelopeSurface");
+    }
 
     msh.save(file, true);
 }
@@ -552,6 +554,25 @@ void ImageSimulationMesh::write_msh_groups(std::string file)
 
     const auto& tets = get_tets();
 
+    int64_t max_tag = -1;
+    for (const Tuple& t : tets) {
+        const size_t fid = t.fid(*this);
+        const auto& tags = m_tet_attribute[fid].tags;
+        if (tags.size() == 0) {
+            continue;
+        }
+        int64_t mt = *tags.rbegin();
+        max_tag = std::max(max_tag, mt);
+    }
+
+    if (m_tags_count < max_tag + 1) {
+        logger().warn(
+            "Max tag is {} but m_tags_count is {}. Adjusting m_tags_count.",
+            max_tag,
+            m_tags_count);
+        m_tags_count = max_tag + 1;
+    }
+
     std::vector<Tuple> tets_with_tag;
     tets_with_tag.reserve(tets.size());
 
@@ -569,7 +590,7 @@ void ImageSimulationMesh::write_msh_groups(std::string file)
     // ambient mesh (no non-zero tags)
     for (const Tuple& t : tets) {
         const size_t tid = t.tid(*this);
-        if (m_tet_attribute[tid].tags.nonZeros() == 0) {
+        if (m_tet_attribute[tid].tags.empty()) {
             tets_with_tag.push_back(t);
         }
     }
@@ -579,30 +600,30 @@ void ImageSimulationMesh::write_msh_groups(std::string file)
 
     // add a group for each tag
     for (size_t tag_img = 0; tag_img < m_tags_count; ++tag_img) {
-        for (size_t tag_id = 1;; ++tag_id) {
-            tets_with_tag.clear();
-            for (const Tuple& t : tets) {
-                const size_t tid = t.tid(*this);
-                if (m_tet_attribute[tid].tags.coeff(tag_img) == tag_id) {
-                    tets_with_tag.push_back(t);
-                }
+        tets_with_tag.clear();
+        for (const Tuple& t : tets) {
+            const size_t tid = t.tid(*this);
+            if (m_tet_attribute[tid].tags.count(tag_img)) {
+                tets_with_tag.push_back(t);
             }
-
-            if (tets_with_tag.empty()) {
-                break;
-            }
-
-            msh.add_empty_vertices(3);
-            msh_add_tets();
-
-            const std::string group_name = fmt::format("tag_{}_{}", tag_img, tag_id);
-            msh.add_physical_group(group_name);
         }
+
+        if (tets_with_tag.empty()) {
+            continue;
+        }
+
+        msh.add_empty_vertices(3);
+        msh_add_tets();
+
+        const std::string group_name = fmt::format("tag_{}", tag_img);
+        msh.add_physical_group(group_name);
     }
 
-    msh.add_face_vertices(m_V_envelope.size(), [this](size_t k) { return m_V_envelope[k]; });
-    msh.add_faces(m_F_envelope.size(), [this](size_t k) { return m_F_envelope[k]; });
-    msh.add_physical_group("EnvelopeSurface");
+    if (m_envelope) {
+        msh.add_face_vertices(m_V_envelope.size(), [this](size_t k) { return m_V_envelope[k]; });
+        msh.add_faces(m_F_envelope.size(), [this](size_t k) { return m_F_envelope[k]; });
+        msh.add_physical_group("EnvelopeSurface");
+    }
 
     msh.save(file, true);
 }
@@ -1002,7 +1023,7 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
     for (const Tuple& t : tets) {
         size_t tid = t.tid(*this);
         for (size_t j = 0; j < m_tags_count; ++j) {
-            tags[j](index, 0) = m_tet_attribute[tid].tags.coeff(j);
+            tags[j](index, 0) = m_tet_attribute[tid].tags.count(j) ? 1 : 0;
         }
         amips(index, 0) = std::cbrt(m_tet_attribute[tid].m_quality);
 

@@ -235,20 +235,12 @@ void ImageSimulationMeshTri::init_surfaces_and_boundaries()
             continue;
         }
 
-        bool has_two_tags = false;
-
-        for (size_t j = 0; j < m_tags_count; ++j) {
+        {
             const auto& tag0 = m_face_attribute[ee.fid()].tags;
             const auto& tag1 = m_face_attribute[t_opp.value().fid()].tags;
-
-            if (tag0 != tag1) {
-                has_two_tags = true;
-                break;
+            if (tag0 == tag1) {
+                continue;
             }
-        }
-
-        if (!has_two_tags) {
-            continue;
         }
 
         m_edge_attribute[ee.eid()].m_is_surface_fs = 1;
@@ -584,9 +576,6 @@ void ImageSimulationMeshTri::write_msh_groups(std::string file)
         max_tag = std::max(max_tag, mt);
     }
 
-    std::vector<Tuple> faces_with_tag;
-    faces_with_tag.reserve(faces.size());
-
     if (m_tags_count < max_tag + 1) {
         logger().warn(
             "Max tag is {} but m_tags_count is {}. Adjusting m_tags_count.",
@@ -594,6 +583,9 @@ void ImageSimulationMeshTri::write_msh_groups(std::string file)
             m_tags_count);
         m_tags_count = max_tag + 1;
     }
+
+    std::vector<Tuple> faces_with_tag;
+    faces_with_tag.reserve(faces.size());
 
     auto msh_add_faces = [&]() {
         msh.add_faces(faces_with_tag.size(), [&](size_t k) {

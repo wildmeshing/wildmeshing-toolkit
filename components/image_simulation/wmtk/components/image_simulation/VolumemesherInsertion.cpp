@@ -647,12 +647,10 @@ void ImageSimulationMesh::init_from_image(
     }
 
     // add tags
-    for (size_t i = 0; i < T_tags.rows(); ++i) {
-        m_tet_attribute[i].tags.resize(m_tags_count);
+    for (size_t i = 0; i < (size_t)T_tags.rows(); ++i) {
         for (size_t j = 0; j < m_tags_count; ++j) {
-            // m_tet_attribute[i].tags[j] = T_tags.coeff(i, j);
             if (T_tags.coeff(i, j) != 0) {
-                m_tet_attribute[i].tags.coeffRef(j) = T_tags.coeff(i, j);
+                m_tet_attribute[i].tags.insert(j);
             }
         }
     }
@@ -721,12 +719,10 @@ void ImageSimulationMesh::init_from_image(
     }
 
     // add tags
-    for (size_t i = 0; i < T_tags.rows(); ++i) {
-        m_tet_attribute[i].tags.resize(m_tags_count);
+    for (size_t i = 0; i < (size_t)T_tags.rows(); ++i) {
         for (size_t j = 0; j < m_tags_count; ++j) {
-            // m_tet_attribute[i].tags[j] = T_tags.coeff(i, j);
             if (T_tags.coeff(i, j) != 0) {
-                m_tet_attribute[i].tags.coeffRef(j) = T_tags.coeff(i, j);
+                m_tet_attribute[i].tags.insert(j);
             }
         }
     }
@@ -755,20 +751,12 @@ void ImageSimulationMesh::init_surfaces_and_boundaries()
             continue;
         }
 
-        bool has_two_tags = false;
-
-        for (size_t j = 0; j < m_tags_count; ++j) {
-            const int64_t tag0 = m_tet_attribute[ff.tid()].tags.coeff(j);
-            const int64_t tag1 = m_tet_attribute[t_opp.value().tid()].tags.coeff(j);
-
-            if (tag0 != tag1) {
-                has_two_tags = true;
-                break;
+        {
+            const auto& tag0 = m_tet_attribute[ff.tid()].tags;
+            const auto& tag1 = m_tet_attribute[t_opp.value().tid()].tags;
+            if (tag0 == tag1) {
+                continue;
             }
-        }
-
-        if (!has_two_tags) {
-            continue;
         }
 
         m_face_attribute[ff.fid()].m_is_surface_fs = 1;
