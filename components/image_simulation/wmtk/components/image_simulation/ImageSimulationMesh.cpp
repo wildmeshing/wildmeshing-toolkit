@@ -175,13 +175,16 @@ std::tuple<double, double> ImageSimulationMesh::local_operations(
                 //     });
                 //     // exit(0);
                 // }
+                if (m_params.debug_output) {
+                    write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+                }
+                auto [max_energy, avg_energy] = get_max_avg_energy();
+                logger().info("split max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+                sanity_checks();
+                if (max_energy < m_params.stop_energy) {
+                    return std::make_tuple(max_energy, avg_energy);
+                }
             }
-            if (m_params.debug_output) {
-                write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
-            }
-            auto [max_energy, avg_energy] = get_max_avg_energy();
-            logger().info("split max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
-            sanity_checks();
         } else if (i == 1) {
             for (int n = 0; n < ops[i]; n++) {
                 logger().info("==collapsing {}==", n);
@@ -201,13 +204,16 @@ std::tuple<double, double> ImageSimulationMesh::local_operations(
                 //     });
                 //     // exit(0);
                 // }
+                if (m_params.debug_output) {
+                    write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+                }
+                auto [max_energy, avg_energy] = get_max_avg_energy();
+                logger().info("collapse max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+                sanity_checks();
+                if (max_energy < m_params.stop_energy) {
+                    return std::make_tuple(max_energy, avg_energy);
+                }
             }
-            if (m_params.debug_output) {
-                write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
-            }
-            auto [max_energy, avg_energy] = get_max_avg_energy();
-            logger().info("collapse max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
-            sanity_checks();
         } else if (i == 2) {
             for (int n = 0; n < ops[i]; n++) {
                 logger().info("==swapping {}==", n);
@@ -217,22 +223,25 @@ std::tuple<double, double> ImageSimulationMesh::local_operations(
                 // cnt_success += swap_all_edges_44();
                 // cnt_success += swap_all_edges();
                 cnt_success += swap_all_faces();
-                if (cnt_success == 0) {
-                    break;
+                if (m_params.debug_output) {
+                    write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+                }
+                auto [max_energy, avg_energy] = get_max_avg_energy();
+                logger().info("swap max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+                sanity_checks();
+                if (max_energy < m_params.stop_energy) {
+                    return std::make_tuple(max_energy, avg_energy);
                 }
             }
-            if (m_params.debug_output) {
-                write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
-            }
-            auto [max_energy, avg_energy] = get_max_avg_energy();
-            logger().info("swap max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
-            sanity_checks();
         } else if (i == 3) {
             logger().info("==smoothing ==");
             smooth_all_vertices(ops[i]);
             auto [max_energy, avg_energy] = get_max_avg_energy();
             logger().info("smooth max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             sanity_checks();
+            if (ops[i] > 0 && max_energy < m_params.stop_energy) {
+                return std::make_tuple(max_energy, avg_energy);
+            }
         }
         // output_faces(fmt::format("out-op{}.obj", i), [](auto& f) { return f.m_is_surface_fs; });
     }
@@ -556,8 +565,8 @@ void ImageSimulationMesh::write_msh_groups(std::string file)
 
     int64_t max_tag = -1;
     for (const Tuple& t : tets) {
-        const size_t fid = t.fid(*this);
-        const auto& tags = m_tet_attribute[fid].tags;
+        const size_t tid = t.tid(*this);
+        const auto& tags = m_tet_attribute[tid].tags;
         if (tags.size() == 0) {
             continue;
         }
