@@ -25,11 +25,6 @@
 #include <wmtk/utils/TupleUtils.hpp>
 #include <wmtk/utils/io.hpp>
 
-
-namespace {
-static int debug_print_counter = 0;
-}
-
 namespace wmtk::components::image_simulation::tri {
 
 auto renew = [](const ImageSimulationMeshTri& m, auto op, auto& tris) {
@@ -1022,7 +1017,7 @@ bool ImageSimulationMeshTri::split_edge_after(const Tuple& loc)
                 inv = true;
                 logger().warn(
                     "Voronoi split resulted in inversion, reverting to midpoint. Iteration: {}",
-                    debug_print_counter++);
+                    m_debug_print_counter++);
                 break;
             }
         }
@@ -1542,7 +1537,7 @@ void ImageSimulationMeshTri::smooth_all_vertices(const size_t n_iters)
             logger().info("vertex smoothing time serial: {:.4}s", timer.getElapsedTimeInSec());
         }
         if (m_params.debug_output) {
-            write_vtu(fmt::format("debug_{}", debug_print_counter++));
+            write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
         }
     }
 
@@ -1656,7 +1651,7 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
 
     // check surface containment
     if (VA[vid].m_is_on_surface && !m_params.smooth_without_envelope) {
-        // write_vtu_with_energies(fmt::format("debug_smooth_{}", debug_print_counter++));
+        // write_vtu_with_energies(fmt::format("debug_smooth_{}", m_debug_print_counter++));
 
         for (size_t i = 1; i < surf_assembles.size(); ++i) {
             std::array<Eigen::Vector2d, 2> edge;
@@ -2071,7 +2066,7 @@ void ImageSimulationMeshTri::mesh_improvement(int max_its)
     ////preprocessing
     partition_mesh_morton();
 
-    // write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+    // write_vtu(fmt::format("debug_{}", m_m_debug_print_counter++));
 
     wmtk::logger().info("========it pre========");
     local_operations({{0, 1, 0, 0}}, false);
@@ -2167,7 +2162,7 @@ std::tuple<double, double> ImageSimulationMeshTri::local_operations(
                     get_faces().size());
             }
             if (m_params.debug_output) {
-                write_vtu(fmt::format("debug_{}", debug_print_counter++));
+                write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
             }
             auto [max_energy, avg_energy] = get_max_avg_energy();
             wmtk::logger().info("split max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
@@ -2182,7 +2177,7 @@ std::tuple<double, double> ImageSimulationMeshTri::local_operations(
                     get_faces().size());
             }
             if (m_params.debug_output) {
-                write_vtu(fmt::format("debug_{}", debug_print_counter++));
+                write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
             }
             auto [max_energy, avg_energy] = get_max_avg_energy();
             wmtk::logger().info("collapse max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
@@ -2196,7 +2191,7 @@ std::tuple<double, double> ImageSimulationMeshTri::local_operations(
                 }
             }
             if (m_params.debug_output) {
-                write_vtu(fmt::format("debug_{}", debug_print_counter++));
+                write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
             }
             auto [max_energy, avg_energy] = get_max_avg_energy();
             wmtk::logger().info("swap max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
@@ -2238,296 +2233,6 @@ std::tuple<double, double> ImageSimulationMeshTri::get_max_avg_energy()
     avg_energy /= cnt;
 
     return std::make_tuple(max_energy, avg_energy);
-}
-
-void ImageSimulationMeshTri::fill_holes_topo(
-    const std::vector<FaceTag>& fill_holes_tags,
-    double threshold)
-{
-    if (m_tags_count == 0) {
-        logger().warn("fill_holes_topo: no tags, skipping");
-        return;
-    }
-
-    for (const FaceTag& fill_tag : fill_holes_tags) {
-        const std::vector<ConnectedComponent> holes = find_holes({fill_tag});
-
-        logger().info("Found {} holes for tags {}.", holes.size(), fill_tag);
-
-        size_t fill_counter = 0;
-        size_t bndy_counter = 0;
-        for (const ConnectedComponent& comp : holes) {
-            if (comp.touches_boundary) {
-                ++bndy_counter;
-                continue;
-            }
-            ++fill_counter;
-            for (const size_t fid : comp.faces) {
-                auto& tag = m_face_attribute[fid].tags;
-                tag.insert(fill_tag.begin(), fill_tag.end());
-            }
-        }
-        logger().info(
-            "{} holes were filled, {} holes were on the boundary",
-            fill_counter,
-            bndy_counter);
-    }
-
-    m_E_envelope.clear();
-    m_V_envelope.clear();
-    m_envelope.reset();
-}
-
-void ImageSimulationMeshTri::keep_largest_connected_component(const std::vector<FaceTag>& lcc_tags)
-{
-    for (const FaceTag& lcc_tag : lcc_tags) {
-        const auto components = compute_connected_components(lcc_tag);
-        logger().info("Found {} components with tag {}.", components.size(), lcc_tag);
-
-        size_t largest_id = -1;
-        double largest_area = -1;
-        for (size_t i = 0; i < components.size(); ++i) {
-            if (largest_area < components[i].area) {
-                largest_area = components[i].area;
-                largest_id = i;
-            }
-        }
-
-        for (size_t i = 0; i < components.size(); ++i) {
-            if (i == largest_id) {
-                continue;
-            }
-            for (const size_t fid : components[i].faces) {
-                auto& tag = m_face_attribute[fid].tags;
-                for (const size_t remove_tag : lcc_tag) {
-                    tag.erase(remove_tag);
-                }
-            }
-        }
-    }
-
-    m_E_envelope.clear();
-    m_V_envelope.clear();
-    m_envelope.reset();
-}
-
-void ImageSimulationMeshTri::tight_seal_topo(
-    const std::vector<std::vector<FaceTag>>& tight_seal_tag_sets,
-    double threshold)
-{
-    if (m_params.debug_output) {
-        write_vtu(fmt::format("debug_{}", debug_print_counter++));
-    }
-
-    auto get_center = [&](const size_t fid) {
-        const auto vs = oriented_tri_vids(fid);
-        const Vector2d& p0 = m_vertex_attribute[vs[0]].m_pos;
-        const Vector2d& p1 = m_vertex_attribute[vs[1]].m_pos;
-        const Vector2d& p2 = m_vertex_attribute[vs[2]].m_pos;
-        return (p0 + p1 + p2) / 3;
-    };
-
-    for (const std::vector<FaceTag>& tag_set : tight_seal_tag_sets) {
-        if (tag_set.size() != 2) {
-            log_and_throw_error(
-                "Can only create a tight seal between two tags. Input contains {} tags. Input was "
-                "{}",
-                tag_set.size(),
-                tag_set);
-        }
-
-        auto holes = find_holes(tag_set);
-        logger().info("Found {} holes in between tags {}", holes.size(), tag_set);
-
-        // find the holes that connect to all tags in tag_set
-        std::vector<ConnectedComponent> holes_seal;
-        for (const ConnectedComponent& hole : holes) {
-            if (hole.touches_boundary) {
-                continue;
-            }
-
-            std::vector<bool> found_tag_set(tag_set.size(), false);
-
-            for (const size_t fid : hole.faces) {
-                for (int j = 0; j < 3; ++j) {
-                    const Tuple edge_tup = tuple_from_edge(fid, j);
-                    const auto t_opp = edge_tup.switch_face(*this);
-                    if (!t_opp) {
-                        // boundary
-                        continue;
-                    }
-                    const size_t nbr = t_opp->fid(*this);
-                    const FaceTag& ntag = m_face_attribute[nbr].tags;
-                    for (size_t i = 0; i < tag_set.size(); ++i) {
-                        if (set_includes(ntag, tag_set[i])) {
-                            found_tag_set[i] = true;
-                        }
-                    }
-                }
-
-                bool found_all = true;
-                for (size_t i = 0; i < tag_set.size(); ++i) {
-                    if (!found_tag_set[i]) {
-                        found_all = false;
-                        break;
-                    }
-                }
-                if (found_all) {
-                    holes_seal.push_back(hole);
-                    break;
-                }
-            }
-        }
-
-        logger().info("Found {} holes to seal in between tags {}", holes_seal.size(), tag_set);
-
-        if (holes_seal.empty()) {
-            continue;
-        }
-
-        // BVH for each tag_set
-        std::vector<SimpleBVH::BVH> bvhs;
-        for (const auto& tag : tag_set) {
-            auto& bvh = bvhs.emplace_back();
-
-            const auto components = compute_connected_components(tag);
-            // extract boundary edges
-            std::vector<Vector2i> edges;
-            std::vector<Vector2d> vertices;
-            for (const auto& component : components) {
-                for (const size_t fid : component.faces) {
-                    for (int j = 0; j < 3; ++j) {
-                        const Tuple edge_tup = tuple_from_edge(fid, j);
-                        const auto t_opp = edge_tup.switch_face(*this);
-                        if (!t_opp) {
-                            // boundary
-                            continue;
-                        }
-                        const size_t nbr = t_opp->fid(*this);
-                        const FaceTag& ntag = m_face_attribute[nbr].tags;
-                        for (size_t i = 0; i < tag_set.size(); ++i) {
-                            if (!set_includes(ntag, tag)) {
-                                // found a component boundary, add to BVH
-                                size_t v0 = edge_tup.vid(*this);
-                                size_t v1 = edge_tup.switch_vertex(*this).vid(*this);
-                                size_t nv = vertices.size();
-                                edges.emplace_back(nv, nv + 1);
-                                vertices.push_back(m_vertex_attribute.at(v0).m_pos);
-                                vertices.push_back(m_vertex_attribute.at(v1).m_pos);
-                            }
-                        }
-                    }
-                }
-            }
-
-            assert(2 * edges.size() == vertices.size());
-
-            MatrixXd V;
-            V.resize(vertices.size(), 2);
-            for (size_t i = 0; i < vertices.size(); ++i) {
-                V.row(i) = vertices[i];
-            }
-            MatrixXi E;
-            E.resize(edges.size(), 2);
-            for (size_t i = 0; i < edges.size(); ++i) {
-                E.row(i) = edges[i];
-            }
-
-
-            bvh.init(V, E, 0);
-        }
-
-        // build SDF
-        m_voronoi_split_fn = [&](const Vector2d& p) -> double {
-            double sq_dist;
-            Vector2d nearest_point;
-
-            bvhs[0].nearest_facet(p, nearest_point, sq_dist);
-            const double da = std::sqrt(sq_dist);
-
-            bvhs[1].nearest_facet(p, nearest_point, sq_dist);
-            const double db = std::sqrt(sq_dist);
-
-            return da - db;
-        };
-
-        // seal holes
-        for (const ConnectedComponent& hole : holes_seal) {
-            std::vector<simplex::Edge> split_edges;
-            for (const size_t fid : hole.faces) {
-                const Vector2d p = get_center(fid);
-                const double d = m_voronoi_split_fn(p);
-                auto& tag = m_face_attribute[fid].tags;
-                if (d < 0) {
-                    tag.insert(tag_set[0].begin(), tag_set[0].end());
-                } else {
-                    tag.insert(tag_set[1].begin(), tag_set[1].end());
-                }
-
-                for (int j = 0; j < 3; ++j) {
-                    const Tuple t = tuple_from_edge(fid, j);
-                    const size_t v0 = t.vid(*this);
-                    const size_t v1 = t.switch_vertex(*this).vid(*this);
-                    const double d0 = m_voronoi_split_fn(m_vertex_attribute.at(v0).m_pos);
-                    const double d1 = m_voronoi_split_fn(m_vertex_attribute.at(v1).m_pos);
-                    // only split edges if their endpoints aren't already on the surface
-                    if ((d0 < -1e-20 && d1 > 1e-20) || (d1 < -1e-20 && d0 > 1e-20)) {
-                        split_edges.emplace_back(v0, v1);
-                    }
-                }
-            }
-            vector_unique(split_edges);
-
-            if (m_params.debug_output) {
-                write_vtu(fmt::format("debug_{}", debug_print_counter++));
-            }
-
-            std::vector<Tuple> new_tris;
-            for (const simplex::Edge& e : split_edges) {
-                const auto [t, eid] = tuple_from_edge(e.vertices());
-                if (!split_edge(t, new_tris)) {
-                    continue;
-                }
-                for (const Tuple& f_tup : new_tris) {
-                    const size_t fid = f_tup.fid(*this);
-                    const auto vs = oriented_tri_vids(fid);
-                    // find vertex from splitted edge
-                    size_t vid = -1;
-                    for (const size_t v : vs) {
-                        if (e.vertices()[0] == v || e.vertices()[1] == v) {
-                            vid = v;
-                            break;
-                        }
-                    }
-                    if (vid == -1) {
-                        log_and_throw_error("Could not find edge-vertex after split.");
-                    }
-
-                    const Vector2d& p = m_vertex_attribute[vid].m_pos;
-                    const double d = m_voronoi_split_fn(p);
-                    auto& tag = m_face_attribute[fid].tags;
-                    if (d < 0) {
-                        tag.insert(tag_set[0].begin(), tag_set[0].end());
-                        for (const size_t tt : tag_set[1]) {
-                            tag.erase(tt);
-                        }
-                    } else {
-                        tag.insert(tag_set[1].begin(), tag_set[1].end());
-                        for (const size_t tt : tag_set[0]) {
-                            tag.erase(tt);
-                        }
-                    }
-                }
-            }
-            if (m_params.debug_output) {
-                write_vtu(fmt::format("debug_{}", debug_print_counter++));
-            }
-        }
-    }
-
-    m_E_envelope.clear();
-    m_V_envelope.clear();
-    m_envelope.reset();
 }
 
 void ImageSimulationMeshTri::substructure_region(

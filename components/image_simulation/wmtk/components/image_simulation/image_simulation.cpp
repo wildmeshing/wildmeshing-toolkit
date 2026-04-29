@@ -119,8 +119,8 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
         // const double threshold =
         //     raw_threshold < 0 ? std::numeric_limits<double>::infinity() : raw_threshold;
         // mesh.tight_seal_topo(tag_sets, threshold);
-    } else if (operation == "keep_largest_cc") {
-        // const std::vector<int64_t> lcc_tags = json_params["keep_largest_cc_tags"];
+    } else if (operation == "keep_lcc") {
+        // const std::vector<int64_t> lcc_tags = json_params["keep_lcc_tags"];
         // mesh.keep_largest_connected_component(lcc_tags);
     } else {
         log_and_throw_error("Image simulation operation `{}` is not implemented in 3D.", operation);
@@ -226,21 +226,21 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
     } else if (operation == "tight_seal_topo") {
         // tight_seal_tag_sets is a list of lists: [[t1,t2],[t3,...]]
         std::vector<std::vector<std::set<int64_t>>> tag_sets = json_params["tight_seal_tag_sets"];
-        // for (const auto& s : json_params["tight_seal_tag_sets"]) {
-        //     std::vector<std::set<int64_t>> ts;
-        //     log_and_throw_error("broken code");
-        //    // for (const auto& v : s) {
-        //    //     ts.insert(v.get<int64_t>());
-        //    // }
-        //    tag_sets.push_back(std::move(ts));
-        //}
         const double raw_threshold = json_params["tight_seal_threshold"];
         const double threshold =
             raw_threshold < 0 ? std::numeric_limits<double>::infinity() : raw_threshold;
         mesh.tight_seal_topo(tag_sets, threshold);
-    } else if (operation == "keep_largest_cc") {
-        const std::vector<std::set<int64_t>> lcc_tags = json_params["keep_largest_cc_tags"];
-        mesh.keep_largest_connected_component(lcc_tags);
+    } else if (operation == "keep_lcc") {
+        const std::vector<std::set<int64_t>> lcc_tags = json_params["keep_lcc_tags"];
+        const size_t n_lcc = json_params["keep_lcc_num"];
+        mesh.keep_largest_connected_component(lcc_tags, n_lcc);
+    } else if (operation == "resolve_intersections") {
+        const std::vector<CellTag> tags = json_params["resolve_intersections_tags"];
+        mesh.resolve_intersections(tags);
+    } else if (operation == "replace_tags") {
+        const std::vector<CellTag> tags_in = json_params["replace_tags_in"];
+        const CellTag tag_out = json_params["replace_tags_out"];
+        mesh.replace_tags(tags_in, tag_out);
     } else {
         log_and_throw_error("Unknown image simulation operation");
     }

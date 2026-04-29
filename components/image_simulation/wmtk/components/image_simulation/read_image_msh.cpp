@@ -213,7 +213,9 @@ InputData read_image_msh(const std::string& path)
             auto& Vi = input_data.V_input;
             Vi = Vi.block(0, 0, Vi.rows(), 2).eval();
             auto& Ve = input_data.V_envelope;
-            Ve = Ve.block(0, 0, Ve.rows(), 2).eval();
+            if (Ve.size() > 0) {
+                Ve = Ve.block(0, 0, Ve.rows(), 2).eval();
+            }
 
             if (Fs.empty()) {
                 log_and_throw_error("No faces found in {}", path);
