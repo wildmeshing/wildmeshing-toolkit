@@ -647,19 +647,19 @@ void ImageSimulationMesh::init_from_image(
     }
 
     // add tags
-    for (size_t i = 0; i < T_tags.rows(); ++i) {
-        m_tet_attribute[i].tags.resize(m_tags_count);
+    for (size_t i = 0; i < (size_t)T_tags.rows(); ++i) {
         for (size_t j = 0; j < m_tags_count; ++j) {
-            // m_tet_attribute[i].tags[j] = T_tags.coeff(i, j);
             if (T_tags.coeff(i, j) != 0) {
-                m_tet_attribute[i].tags.coeffRef(j) = T_tags.coeff(i, j);
+                m_tet_attribute[i].tags.insert(j);
             }
         }
     }
 
     init_surfaces_and_boundaries();
 
-    init_vertex_order();
+    if (m_params.preserve_topology) {
+        init_vertex_order();
+    }
 
     // rounding
     size_t cnt_round = 0;
@@ -721,19 +721,19 @@ void ImageSimulationMesh::init_from_image(
     }
 
     // add tags
-    for (size_t i = 0; i < T_tags.rows(); ++i) {
-        m_tet_attribute[i].tags.resize(m_tags_count);
+    for (size_t i = 0; i < (size_t)T_tags.rows(); ++i) {
         for (size_t j = 0; j < m_tags_count; ++j) {
-            // m_tet_attribute[i].tags[j] = T_tags.coeff(i, j);
             if (T_tags.coeff(i, j) != 0) {
-                m_tet_attribute[i].tags.coeffRef(j) = T_tags.coeff(i, j);
+                m_tet_attribute[i].tags.insert(j);
             }
         }
     }
 
     init_surfaces_and_boundaries();
 
-    init_vertex_order();
+    if (m_params.preserve_topology) {
+        init_vertex_order();
+    }
 
     // init qualities
     for_each_tetra(
@@ -755,20 +755,12 @@ void ImageSimulationMesh::init_surfaces_and_boundaries()
             continue;
         }
 
-        bool has_two_tags = false;
-
-        for (size_t j = 0; j < m_tags_count; ++j) {
-            const int64_t tag0 = m_tet_attribute[ff.tid()].tags.coeff(j);
-            const int64_t tag1 = m_tet_attribute[t_opp.value().tid()].tags.coeff(j);
-
-            if (tag0 != tag1) {
-                has_two_tags = true;
-                break;
+        {
+            const auto& tag0 = m_tet_attribute[ff.tid()].tags;
+            const auto& tag1 = m_tet_attribute[t_opp.value().tid()].tags;
+            if (tag0 == tag1) {
+                continue;
             }
-        }
-
-        if (!has_two_tags) {
-            continue;
         }
 
         m_face_attribute[ff.fid()].m_is_surface_fs = 1;
@@ -797,27 +789,24 @@ void ImageSimulationMesh::init_surfaces_and_boundaries()
         m_envelope->use_exact = true;
         m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
         m_envelope_orig = m_envelope;
-    } else {
+    } else if (m_params.operation == "remeshing") {
         // All surface faces must be inside the envelope
-        {
-            logger().info("Envelope sanity check");
-            const auto surf_faces =
-                get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
-            for_each_face([&](const Tuple& t) {
-                const size_t fid = t.fid(*this);
-                if (!m_face_attribute.at(fid).m_is_surface_fs) {
-                    return;
-                }
-                const auto verts = get_face_vids(t);
-                const auto& p0 = m_vertex_attribute[verts[0]].m_posf;
-                const auto& p1 = m_vertex_attribute[verts[1]].m_posf;
-                const auto& p2 = m_vertex_attribute[verts[2]].m_posf;
-                if (m_envelope->is_outside({{p0, p1, p2}})) {
-                    log_and_throw_error("Face {} is outside!", verts);
-                }
-            });
-            logger().info("Envelope sanity check done");
-        }
+        logger().info("Envelope sanity check");
+        const auto surf_faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
+        for_each_face([&](const Tuple& t) {
+            const size_t fid = t.fid(*this);
+            if (!m_face_attribute.at(fid).m_is_surface_fs) {
+                return;
+            }
+            const auto verts = get_face_vids(t);
+            const auto& p0 = m_vertex_attribute[verts[0]].m_posf;
+            const auto& p1 = m_vertex_attribute[verts[1]].m_posf;
+            const auto& p2 = m_vertex_attribute[verts[2]].m_posf;
+            if (m_envelope->is_outside({{p0, p1, p2}})) {
+                log_and_throw_error("Face {} is outside!", verts);
+            }
+        });
+        logger().info("Envelope sanity check done");
     }
 
     // track bounding box
@@ -855,16 +844,18 @@ void ImageSimulationMesh::init_surfaces_and_boundaries()
     for_each_vertex(
         [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
 
-    // track open boundaries
-    find_order_2_edges();
+    if (m_params.preserve_topology) {
+        // track open boundaries
+        find_order_2_edges();
 
-    int open_boundary_cnt = 0;
-    for (const Tuple& e : get_edges()) {
-        if (is_order_2_edge(e)) {
-            open_boundary_cnt++;
+        int open_boundary_cnt = 0;
+        for (const Tuple& e : get_edges()) {
+            if (is_order_2_edge(e)) {
+                open_boundary_cnt++;
+            }
         }
+        logger().info("#open boundary edges: {}", open_boundary_cnt);
     }
-    wmtk::logger().info("#open boundary edges: {}", open_boundary_cnt);
 }
 
 

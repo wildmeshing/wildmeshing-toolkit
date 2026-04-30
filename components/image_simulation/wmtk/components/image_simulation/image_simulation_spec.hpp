@@ -40,7 +40,11 @@ nlohmann::json image_simulation_spec = R"(
       "fill_holes_threshold",
       "tight_seal_tag_sets",
       "tight_seal_threshold",
-      "keep_largest_cc_tags"
+      "keep_lcc_tags",
+      "keep_lcc_num",
+      "resolve_intersections_tags",
+      "replace_tags_in",
+      "replace_tags_out"
     ]
   },
   {
@@ -68,7 +72,9 @@ nlohmann::json image_simulation_spec = R"(
       "remeshing",
       "fill_holes_topo",
       "tight_seal_topo",
-      "keep_largest_cc"
+      "keep_lcc",
+      "resolve_intersections",
+      "replace_tags"
     ],
     "doc": "Image simulation contains multiple operations for modifying the image. Depending on the operation, more parameters might be required."
   },
@@ -210,7 +216,7 @@ nlohmann::json image_simulation_spec = R"(
   {
     "pointer": "/w_amips",
     "type": "float",
-    "default": 0.1,
+    "default": 1e-4,
     "doc": "AMIPS energy. Sum of energy weights must be smaller than 1!"
   },
   {
@@ -264,11 +270,16 @@ nlohmann::json image_simulation_spec = R"(
   {
     "pointer": "/fill_holes_tags",
     "type": "list",
-    "default": [0],
+    "default": [[0]],
     "doc": "For fill_holes_topo: list of tag values used to fill enclosed connected components (processed in order)."
   },
   {
     "pointer": "/fill_holes_tags/*",
+    "type": "list",
+    "doc": "A list of tag values to fill enclosed connected components of other tags."
+  },
+  {
+    "pointer": "/fill_holes_tags/*/*",
     "type": "int",
     "doc": "A tag value to fill enclosed connected components of other tags."
   },
@@ -291,6 +302,11 @@ nlohmann::json image_simulation_spec = R"(
   },
   {
     "pointer": "/tight_seal_tag_sets/*/*",
+    "type": "list",
+    "doc": "A tag value in this tag set."
+  },
+  {
+    "pointer": "/tight_seal_tag_sets/*/*/*",
     "type": "int",
     "doc": "A tag value in this tag set."
   },
@@ -301,15 +317,71 @@ nlohmann::json image_simulation_spec = R"(
     "doc": "For tight_seal_topo: only fill a hole cluster if its total area is less than this threshold. Negative value means no threshold."
   },
   {
-    "pointer": "/keep_largest_cc_tags",
+    "pointer": "/keep_lcc_tags",
     "type": "list",
-    "default": [0],
-    "doc": "For keep_largest_cc: list of tag values for which only the largest connected component is kept; all smaller components are merged into their neighbours."
+    "default": [],
+    "doc": "For keep_lcc: list of tag values for which only the largest connected component is kept."
   },
   {
-    "pointer": "/keep_largest_cc_tags/*",
+    "pointer": "/keep_lcc_tags/*",
+    "type": "list",
+    "doc": "A list of tag values whose smaller connected components will be removed."
+  },
+  {
+    "pointer": "/keep_lcc_tags/*/*",
     "type": "int",
-    "doc": "A tag value whose smaller connected components will be removed."
+    "doc": "A tag value."
+  },
+  {
+    "pointer": "/keep_lcc_num",
+    "type": "int",
+    "default": 1,
+    "doc": "Number of largest connected components that are kept. By default, only the largest one is kept."
+  },
+  {
+    "pointer": "/resolve_intersections_tags",
+    "type": "list",
+    "default": [],
+    "doc": "Resolve intersections between tags by filling the areas with intersections with the nearest of the intersecting tags."
+  },
+  {
+    "pointer": "/resolve_intersections_tags/*",
+    "type": "list",
+    "min": 2,
+    "max": 2,
+    "doc": "A list of intersecting tags."
+  },
+  {
+    "pointer": "/resolve_intersections_tags/*/*",
+    "type": "int",
+    "doc": "A tag value."
+  },
+  {
+    "pointer": "/replace_tags_in",
+    "type": "list",
+    "default": [],
+    "doc": "Replace the tags by the output tags."
+  },
+  {
+    "pointer": "/replace_tags_in/*",
+    "type": "list",
+    "doc": "A list of tags whose intersection should be replaced."
+  },
+  {
+    "pointer": "/replace_tags_in/*/*",
+    "type": "int",
+    "doc": "A tag value."
+  },
+  {
+    "pointer": "/replace_tags_out",
+    "type": "list",
+    "default": [],
+    "doc": "The output tags that should replace the input tags."
+  },
+  {
+    "pointer": "/replace_tags_out/*",
+    "type": "int",
+    "doc": "A tag value."
   }
 ]
 )"_json;

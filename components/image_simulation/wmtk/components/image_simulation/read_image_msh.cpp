@@ -121,6 +121,9 @@ InputData read_image_msh(const std::string& path)
     InputData input_data;
 
     MshData msh;
+    if (!std::filesystem::exists(path)) {
+        log_and_throw_error("File {} does not exist.", path);
+    }
     msh.load(path);
 
     std::optional<mshio::PhysicalGroup> ph_vol = msh.get_physical_group_by_name("ImageVolume");
@@ -196,17 +199,58 @@ InputData read_image_msh(const std::string& path)
             }
 
             // tags
-            input_data.T_input_tag.resize(input_data.T_input.rows(), Fs.size());
-            for (size_t i = 0; i < Fs.size(); ++i) {
+            input_data.T_input_tag.resize(input_data.T_input.rows(), Fs.size() - 1);
+            // assume Fs[0] are ambient faces
+            for (size_t i = 1; i < Fs.size(); ++i) {
                 for (size_t j = 0; j < Fs[i].rows(); ++j) {
                     const Vector4i& t = Fs[i].row(j);
                     const simplex::Tet s(t[0], t[1], t[2], t[3]);
                     const size_t tid = tet_ids[s];
-                    input_data.T_input_tag.coeffRef(tid, i) = 1;
+                    input_data.T_input_tag.coeffRef(tid, i - 1) = 1;
                 }
             }
         } else {
-            log_and_throw_error("Read MSH with physical groups not implemented for 2D");
+            auto& Vi = input_data.V_input;
+            Vi = Vi.block(0, 0, Vi.rows(), 2).eval();
+            auto& Ve = input_data.V_envelope;
+            if (Ve.size() > 0) {
+                Ve = Ve.block(0, 0, Ve.rows(), 2).eval();
+            }
+
+            if (Fs.empty()) {
+                log_and_throw_error("No faces found in {}", path);
+            }
+            std::map<simplex::Face, size_t> tet_ids;
+            std::vector<Vector3i> tets;
+
+            for (const auto& TT : Fs) {
+                for (size_t i = 0; i < TT.rows(); ++i) {
+                    const Vector3i& t = TT.row(i);
+                    const simplex::Face s(t[0], t[1], t[2]);
+                    if (tet_ids.count(s) == 0) {
+                        tet_ids[s] = tets.size();
+                        tets.push_back(t);
+                    }
+                }
+            }
+
+            auto& T = input_data.T_input;
+            T.resize(tets.size(), 3);
+            for (size_t i = 0; i < tets.size(); ++i) {
+                T.row(i) = tets[i];
+            }
+
+            // tags
+            input_data.T_input_tag.resize(input_data.T_input.rows(), Fs.size() - 1);
+            // assume Fs[0] are ambient faces
+            for (size_t i = 1; i < Fs.size(); ++i) {
+                for (size_t j = 0; j < Fs[i].rows(); ++j) {
+                    const Vector3i& t = Fs[i].row(j);
+                    const simplex::Face s(t[0], t[1], t[2]);
+                    const size_t tid = tet_ids[s];
+                    input_data.T_input_tag.coeffRef(tid, i - 1) = 1;
+                }
+            }
         }
 
         return input_data;
@@ -281,6 +325,7 @@ InputData read_image_msh(const std::string& path)
     }
 
     if (input_data.T_input.cols() == 4) {
+        log_and_throw_error("This code was not used for a long time and is probably outdated");
         int tets_tags_count = 0;
         for (const std::string& attr_name : msh.get_tet_attribute_names()) {
             if (attr_name.substr(0, 4) == "tag_") {
@@ -309,8 +354,8 @@ InputData read_image_msh(const std::string& path)
                 ++tets_tags_count;
             }
         }
-
-        input_data.T_input_tag.resize(input_data.T_input.rows(), tets_tags_count);
+        MatrixXi input_tags;
+        input_tags.resize(input_data.T_input.rows(), tets_tags_count);
         for (const std::string& attr_name : msh.get_all_element_attribute_names()) {
             if (attr_name.substr(0, 4) != "tag_") {
                 continue;
@@ -318,11 +363,36 @@ InputData read_image_msh(const std::string& path)
             const int tag_id = std::stoi(attr_name.substr(4));
             msh.extract_face_attribute(
                 attr_name,
-                [&input_data, &tag_id](size_t i, std::vector<double> val) {
+                [&tag_id, &input_tags](size_t i, std::vector<double> val) {
                     assert(val.size() == 1);
-                    input_data.T_input_tag.coeffRef(i, tag_id) = val[0];
+                    input_tags(i, tag_id) = val[0];
                 });
         }
+
+        // convert input tags to "binary"
+        MatrixXi input_tags_bin;
+        for (int j = 0; j < input_tags.cols(); ++j) {
+            VectorXi img = input_tags.col(j);
+            int max_id = img.maxCoeff();
+            MatrixXi img_bin;
+            img_bin.resize(img.rows(), max_id);
+            img_bin.setZero();
+            for (int i = 0; i < img.size(); ++i) {
+                if (img[i] == 0) {
+                    continue;
+                }
+                img_bin(i, img[i] - 1) = 1;
+            }
+            // input_data.T_input_tag.conservativeResize()
+            auto& Ti = input_tags_bin;
+            int nc = Ti.cols();
+            Ti.conservativeResize(img_bin.rows(), Ti.cols() + img_bin.cols());
+            Ti.block(0, nc, img_bin.rows(), img_bin.cols()) = img_bin;
+        }
+
+        input_data.T_input_tag = input_tags_bin.sparseView();
+
+        // input_data.T_input_tag = input_tags;
     }
 
     return input_data;

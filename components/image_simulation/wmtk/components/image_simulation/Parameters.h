@@ -45,6 +45,8 @@ struct Parameters
     double dhat = -1;
     double separation_factor = 1;
 
+    std::string operation = "remeshing";
+
     void init(const VectorXd& min_, const VectorXd& max_)
     {
         box_min = min_;

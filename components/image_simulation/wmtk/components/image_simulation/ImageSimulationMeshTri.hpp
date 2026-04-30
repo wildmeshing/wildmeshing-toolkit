@@ -23,6 +23,7 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
+#include "ConnectedComponent.hpp"
 #include "Parameters.h"
 
 namespace wmtk::components::image_simulation::tri {
@@ -78,7 +79,7 @@ class FaceAttributes
 public:
     double m_quality;
     double m_winding_number = 0;
-    std::vector<int64_t> tags;
+    CellTag tags;
     int part_id = -1;
 };
 
@@ -211,6 +212,7 @@ public:
     bool adjust_sizing_field_serial(double max_energy);
 
     void write_msh(std::string file);
+    void write_msh_groups(std::string file);
 
     void write_vtu(const std::string& path) const;
     void write_vtu_with_energies(const std::string& path) const;
@@ -278,6 +280,8 @@ public:
     double get_quality(const Tuple& loc) const;
     double get_quality(const size_t fid) const;
 
+    double triangle_area(const size_t fid) const;
+
     //
     bool is_edge_on_surface(const Tuple& loc) const;
     bool is_edge_on_surface(const std::array<size_t, 2>& vids) const;
@@ -291,108 +295,64 @@ public:
     std::tuple<double, double> get_max_avg_energy();
 
     /**
-     * @brief Connected Component according to tag_0
+     * @brief Find all connected components that contain the `tag_in` tags.
+     */
+    std::vector<ConnectedComponent> compute_connected_components(const CellTag& tag_in) const;
+
+    /**
+     * @brief Find all regions that do not contain the tags from `tag_in`.
      *
-     * @param tag value of tag_0
-     * @param faces vector of face ids in the connected component
-     * @param surrounding_comp_ids set of distinct connected component ids (in an external list) of
-     * all neighboring faces across tag_0 boundaries
-     * @param area total area of the connected component
-     * @param touches_boundary whether the connected component touches the boundary of the mesh
+     * The `tag_in` vector represents a list of tag intersections.
+     * Example: tag_in = {{1,2},{3}}
+     * A face will be considered as a hole if its tags neither include {1,2} or {3}.
+     * The following would be holes:
+     * {}
+     * {1,4}
+     * The following would be NOT holes:
+     * {1,2,4} <- contains 1 and 2
+     * {3} <- contains 3
+     * {1,3} <- contains 3
+     *
+     * The returned vector also contains "holes" that touch the boundary. They should be ommitted in
+     * hole filling.
      */
-    struct ConnectedComponent
-    {
-        int64_t tag = -1;
-        std::vector<size_t> faces;
-        std::unordered_set<size_t> surrounding_comp_ids;
-        double area = 0.0;
-        bool touches_boundary = false;
-    };
+    std::vector<ConnectedComponent> find_holes(const std::vector<CellTag>& tag_in) const;
 
     /**
-     * @brief Compute connected components of the mesh according to tag_0, and return a vector of
-     * ConnectedComponent structs.
+     * @brief Compute the boundary of a tag.
+     *
+     * @param tag A set of tags that must be present in a triangle for being considered as tagged.
+     * @param V Vertices of the tag boundary.
+     * @param E Edges of the tag boundary.
      */
-    std::vector<ConnectedComponent> compute_connected_components() const;
-
-    /**
-     * @brief Replace a component with id hole_comp_id with another component with id
-     * engulfing_comp_id, and keep the components vector consistent. This is used to fill holes in
-     * the mesh.
-     * @param components vector of ConnectedComponent structs, representing the connected components
-     * of the mesh according to tag_0
-     * @param hole_comp_id the id of the component to be engulfed (i.e. the hole)
-     * @param engulfing_comp_id the id of the component that engulfs the hole
-     */
-    void engulf_component(
-        std::vector<ConnectedComponent>& components,
-        const size_t hole_comp_id,
-        const size_t engulfing_comp_id);
-
-    /**
-     * @brief Replace each component in hole_comp_ids with nearest component from
-     * engulfing_comp_ids, and keep the components vector consistent.
-     * @param components vector of ConnectedComponent structs, representing the connected components
-     * of the mesh according to tag_0
-     * @param hole_comp_ids vector of ids of components to be engulfed (i.e. the holes)
-     * @param engulfing_comp_ids set of ids of components that can engulf the holes
-     */
-    void engulf_components(
-        std::vector<ConnectedComponent>& components,
-        const std::vector<size_t>& hole_comp_ids,
-        const std::unordered_set<size_t>& engulfing_comp_ids);
+    void compute_tag_boundary(const CellTag& tag, MatrixXd& V, MatrixXi& E) const;
 
     /**
      * @brief Keep only the largest connected component for each of the distinct tag_0 values, and
      * engulf all other components.
      *
      * @param lcc_tags
+     * @param n_lcc The number of largest components that should be kept.
      */
-    void keep_largest_connected_component(const std::vector<int64_t>& lcc_tags);
-
-    /**
-     * @brief A cluster of connected components. Used to store a maximal group of connected
-     * non-fill-tag ConnectedComponents for filling holes.
-     * @param comp_ids vector of indices into the components vector, representing the connected
-     * components in the cluster
-     * @param area total area of the cluster
-     * @param enclosed whether the cluster is enclosed by fill_tag components (i.e. whether the
-     * cluster is a hole that can be filled)
-     */
-    struct ComponentCluster
-    {
-        std::vector<size_t> comp_ids; // indices into components vector
-        double area = 0.0;
-        bool enclosed = true;
-    };
-
-    /**
-     * @brief Extract clusters of connected components that represent holes in the mesh.
-     *
-     * @param components vector of ConnectedComponent structs, representing the connected components
-     * of the mesh according to tag_0
-     * @param tags set of tag_0 values which define the holes to be filled
-     * @param hole_clusters vector of clusters of connected components that represent holes in the
-     * mesh.
-     * @param threshold area threshold for the hole clusters. Clusters with area below the threshold
-     * will not be filled.
-     */
-    void extract_hole_clusters(
-        std::vector<ConnectedComponent>& components,
-        std::unordered_set<int64_t>& tags,
-        std::vector<std::vector<size_t>>& hole_clusters,
-        double threshold);
-
-    void recompute_surface_info();
+    void keep_largest_connected_component(
+        const std::vector<CellTag>& lcc_tags,
+        const size_t n_lcc = 1);
 
     void fill_holes_topo(
-        const std::vector<int64_t>& fill_holes_tags,
+        const std::vector<CellTag>& fill_holes_tags,
         double threshold = std::numeric_limits<double>::infinity());
+
+    void seal_connected_components(
+        const std::vector<CellTag>& tag_sets,
+        const std::vector<ConnectedComponent>& components);
 
     void tight_seal_topo(
-        const std::vector<std::unordered_set<int64_t>>& tight_seal_tag_sets,
+        const std::vector<std::vector<CellTag>>& tight_seal_tag_sets,
         double threshold = std::numeric_limits<double>::infinity());
 
+    void resolve_intersections(const std::vector<CellTag>& intersecting_tags);
+
+    void replace_tags(const std::vector<CellTag>& tags_in, const CellTag& tag_out);
 
     /**
      * @brief Find the substructure region that might be affected by minimal separation.
@@ -468,7 +428,7 @@ private:
     {
         double max_energy;
         std::map<simplex::Edge, EdgeAttributes> changed_edges;
-        std::vector<int64_t> face_tags;
+        CellTag face_tags;
     };
     tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
 

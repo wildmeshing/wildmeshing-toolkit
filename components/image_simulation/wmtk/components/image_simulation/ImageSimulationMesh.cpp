@@ -175,13 +175,16 @@ std::tuple<double, double> ImageSimulationMesh::local_operations(
                 //     });
                 //     // exit(0);
                 // }
+                if (m_params.debug_output) {
+                    write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+                }
+                auto [max_energy, avg_energy] = get_max_avg_energy();
+                logger().info("split max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+                sanity_checks();
+                if (max_energy < m_params.stop_energy) {
+                    return std::make_tuple(max_energy, avg_energy);
+                }
             }
-            if (m_params.debug_output) {
-                write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
-            }
-            auto [max_energy, avg_energy] = get_max_avg_energy();
-            logger().info("split max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
-            sanity_checks();
         } else if (i == 1) {
             for (int n = 0; n < ops[i]; n++) {
                 logger().info("==collapsing {}==", n);
@@ -201,13 +204,16 @@ std::tuple<double, double> ImageSimulationMesh::local_operations(
                 //     });
                 //     // exit(0);
                 // }
+                if (m_params.debug_output) {
+                    write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+                }
+                auto [max_energy, avg_energy] = get_max_avg_energy();
+                logger().info("collapse max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+                sanity_checks();
+                if (max_energy < m_params.stop_energy) {
+                    return std::make_tuple(max_energy, avg_energy);
+                }
             }
-            if (m_params.debug_output) {
-                write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
-            }
-            auto [max_energy, avg_energy] = get_max_avg_energy();
-            logger().info("collapse max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
-            sanity_checks();
         } else if (i == 2) {
             for (int n = 0; n < ops[i]; n++) {
                 logger().info("==swapping {}==", n);
@@ -217,22 +223,25 @@ std::tuple<double, double> ImageSimulationMesh::local_operations(
                 // cnt_success += swap_all_edges_44();
                 // cnt_success += swap_all_edges();
                 cnt_success += swap_all_faces();
-                if (cnt_success == 0) {
-                    break;
+                if (m_params.debug_output) {
+                    write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+                }
+                auto [max_energy, avg_energy] = get_max_avg_energy();
+                logger().info("swap max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+                sanity_checks();
+                if (max_energy < m_params.stop_energy) {
+                    return std::make_tuple(max_energy, avg_energy);
                 }
             }
-            if (m_params.debug_output) {
-                write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
-            }
-            auto [max_energy, avg_energy] = get_max_avg_energy();
-            logger().info("swap max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
-            sanity_checks();
         } else if (i == 3) {
             logger().info("==smoothing ==");
             smooth_all_vertices(ops[i]);
             auto [max_energy, avg_energy] = get_max_avg_energy();
             logger().info("smooth max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             sanity_checks();
+            if (ops[i] > 0 && max_energy < m_params.stop_energy) {
+                return std::make_tuple(max_energy, avg_energy);
+            }
         }
         // output_faces(fmt::format("out-op{}.obj", i), [](auto& f) { return f.m_is_surface_fs; });
     }
@@ -525,15 +534,17 @@ void ImageSimulationMesh::write_msh(std::string file)
 
     for (size_t j = 0; j < m_tags_count; ++j) {
         msh.add_tet_attribute<1>(fmt::format("tag_{}", j), [&](size_t i) {
-            return m_tet_attribute[i].tags.coeff(j);
+            return m_tet_attribute[i].tags.count(j) ? 1 : 0;
         });
     }
 
     msh.add_physical_group("ImageVolume");
 
-    msh.add_face_vertices(m_V_envelope.size(), [this](size_t k) { return m_V_envelope[k]; });
-    msh.add_faces(m_F_envelope.size(), [this](size_t k) { return m_F_envelope[k]; });
-    msh.add_physical_group("EnvelopeSurface");
+    if (m_envelope) {
+        msh.add_face_vertices(m_V_envelope.size(), [this](size_t k) { return m_V_envelope[k]; });
+        msh.add_faces(m_F_envelope.size(), [this](size_t k) { return m_F_envelope[k]; });
+        msh.add_physical_group("EnvelopeSurface");
+    }
 
     msh.save(file, true);
 }
@@ -552,6 +563,25 @@ void ImageSimulationMesh::write_msh_groups(std::string file)
 
     const auto& tets = get_tets();
 
+    int64_t max_tag = -1;
+    for (const Tuple& t : tets) {
+        const size_t tid = t.tid(*this);
+        const auto& tags = m_tet_attribute[tid].tags;
+        if (tags.size() == 0) {
+            continue;
+        }
+        int64_t mt = *tags.rbegin();
+        max_tag = std::max(max_tag, mt);
+    }
+
+    if (m_tags_count < max_tag + 1) {
+        logger().warn(
+            "Max tag is {} but m_tags_count is {}. Adjusting m_tags_count.",
+            max_tag,
+            m_tags_count);
+        m_tags_count = max_tag + 1;
+    }
+
     std::vector<Tuple> tets_with_tag;
     tets_with_tag.reserve(tets.size());
 
@@ -569,7 +599,7 @@ void ImageSimulationMesh::write_msh_groups(std::string file)
     // ambient mesh (no non-zero tags)
     for (const Tuple& t : tets) {
         const size_t tid = t.tid(*this);
-        if (m_tet_attribute[tid].tags.nonZeros() == 0) {
+        if (m_tet_attribute[tid].tags.empty()) {
             tets_with_tag.push_back(t);
         }
     }
@@ -579,32 +609,32 @@ void ImageSimulationMesh::write_msh_groups(std::string file)
 
     // add a group for each tag
     for (size_t tag_img = 0; tag_img < m_tags_count; ++tag_img) {
-        for (size_t tag_id = 1;; ++tag_id) {
-            tets_with_tag.clear();
-            for (const Tuple& t : tets) {
-                const size_t tid = t.tid(*this);
-                if (m_tet_attribute[tid].tags.coeff(tag_img) == tag_id) {
-                    tets_with_tag.push_back(t);
-                }
+        tets_with_tag.clear();
+        for (const Tuple& t : tets) {
+            const size_t tid = t.tid(*this);
+            if (m_tet_attribute[tid].tags.count(tag_img)) {
+                tets_with_tag.push_back(t);
             }
-
-            if (tets_with_tag.empty()) {
-                break;
-            }
-
-            msh.add_empty_vertices(3);
-            msh_add_tets();
-
-            const std::string group_name = fmt::format("tag_{}_{}", tag_img, tag_id);
-            msh.add_physical_group(group_name);
         }
+
+        if (tets_with_tag.empty()) {
+            continue;
+        }
+
+        msh.add_empty_vertices(3);
+        msh_add_tets();
+
+        const std::string group_name = fmt::format("tag_{}", tag_img);
+        msh.add_physical_group(group_name);
     }
 
-    msh.add_face_vertices(m_V_envelope.size(), [this](size_t k) { return m_V_envelope[k]; });
-    msh.add_faces(m_F_envelope.size(), [this](size_t k) { return m_F_envelope[k]; });
-    msh.add_physical_group("EnvelopeSurface");
+    if (m_envelope) {
+        msh.add_face_vertices(m_V_envelope.size(), [this](size_t k) { return m_V_envelope[k]; });
+        msh.add_faces(m_F_envelope.size(), [this](size_t k) { return m_F_envelope[k]; });
+        msh.add_physical_group("EnvelopeSurface");
+    }
 
-    msh.save(file, false);
+    msh.save(file, true);
 }
 
 std::tuple<double, double> ImageSimulationMesh::get_max_avg_energy()
@@ -1002,7 +1032,7 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
     for (const Tuple& t : tets) {
         size_t tid = t.tid(*this);
         for (size_t j = 0; j < m_tags_count; ++j) {
-            tags[j](index, 0) = m_tet_attribute[tid].tags.coeff(j);
+            tags[j](index, 0) = m_tet_attribute[tid].tags.count(j) ? 1 : 0;
         }
         amips(index, 0) = std::cbrt(m_tet_attribute[tid].m_quality);
 
@@ -1123,6 +1153,23 @@ void ImageSimulationMesh::init_vertex_order()
     }
 
     logger().info("Vertex order count (0,1,2,3): {}", count);
+}
+
+double ImageSimulationMesh::tet_volume(const size_t tid) const
+{
+    const auto vs = oriented_tet_vids(tid);
+    const Vector3d& p0 = m_vertex_attribute[vs[0]].m_posf;
+    const Vector3d& p1 = m_vertex_attribute[vs[1]].m_posf;
+    const Vector3d& p2 = m_vertex_attribute[vs[2]].m_posf;
+    const Vector3d& p3 = m_vertex_attribute[vs[3]].m_posf;
+
+    const Vector3d a = (p1 - p0);
+    const Vector3d b = (p2 - p0);
+    const Vector3d c = (p3 - p0);
+
+    const double v = (1. / 6.) * a.cross(b).dot(c);
+
+    return std::abs(v);
 }
 
 } // namespace wmtk::components::image_simulation
