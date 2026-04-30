@@ -173,7 +173,7 @@ void ImageSimulationMesh::compute_tag_boundary(const CellTag& tag, MatrixXd& V, 
 
     assert(3 * faces.size() == vertices.size());
 
-    V.resize(vertices.size(), 2);
+    V.resize(vertices.size(), 3);
     for (size_t i = 0; i < vertices.size(); ++i) {
         V.row(i) = vertices[i];
     }
@@ -284,7 +284,7 @@ void ImageSimulationMesh::seal_connected_components(
                 tag.insert(tag_set[1].begin(), tag_set[1].end());
             }
 
-            for (int j = 0; j < 3; ++j) {
+            for (int j = 0; j < 6; ++j) {
                 const Tuple t = tuple_from_edge(tid, j);
                 const size_t v0 = t.vid(*this);
                 const size_t v1 = t.switch_vertex(*this).vid(*this);
@@ -302,14 +302,18 @@ void ImageSimulationMesh::seal_connected_components(
             write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
         }
 
-        std::vector<Tuple> new_tets;
+        std::vector<Tuple> new_edges;
         for (const simplex::Edge& e : split_edges) {
             const Tuple t = tuple_from_edge(e.vertices());
-            if (!split_edge(t, new_tets)) {
+
+            if (!split_edge(t, new_edges)) {
                 continue;
             }
-            for (const Tuple& t_tup : new_tets) {
-                const size_t tid = t_tup.tid(*this);
+
+            const size_t v_new = split_cache.local().v_new;
+            std::vector<size_t> tids = get_one_ring_tids_for_vertex(v_new);
+
+            for (const size_t tid : tids) {
                 const auto vs = oriented_tet_vids(tid);
                 // find vertex from splitted edge
                 size_t vid = -1;
@@ -339,6 +343,7 @@ void ImageSimulationMesh::seal_connected_components(
                 }
             }
         }
+
         if (m_params.debug_output) {
             write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
         }
@@ -537,7 +542,7 @@ void ImageSimulationMesh::resolve_intersections(const std::vector<CellTag>& inte
 
 void ImageSimulationMesh::replace_tags(const std::vector<CellTag>& tags_in, const CellTag& tag_out)
 {
-    for (const Tuple& t : get_faces()) {
+    for (const Tuple& t : get_tets()) {
         CellTag& tags = m_tet_attribute[t.tid(*this)].tags;
         bool found_some = false;
         for (const CellTag& tag : tags_in) {
@@ -553,6 +558,10 @@ void ImageSimulationMesh::replace_tags(const std::vector<CellTag>& tags_in, cons
             tags.insert(tag_out.begin(), tag_out.end());
         }
     }
+
+    m_F_envelope.clear();
+    m_V_envelope.clear();
+    m_envelope.reset();
 }
 
 } // namespace wmtk::components::image_simulation

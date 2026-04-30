@@ -126,6 +126,7 @@ bool ImageSimulationMesh::split_edge_after(const Tuple& loc)
     const size_t v_id = loc.vid(*this);
 
     auto& cache = split_cache.local();
+    cache.v_new = v_id;
 
     const size_t v1_id = cache.v1_id;
     const size_t v2_id = cache.v2_id;

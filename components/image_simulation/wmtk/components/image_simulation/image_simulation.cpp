@@ -58,6 +58,8 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     params.debug_output = json_params["DEBUG_output"];
     params.perform_sanity_checks = json_params["DEBUG_sanity_checks"];
 
+    params.operation = json_params["operation"];
+
     std::filesystem::path output_filename = params.output_path;
 
     params.init(input_data.V_input.colwise().minCoeff(), input_data.V_input.colwise().maxCoeff());
@@ -96,34 +98,35 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     }
 
     // /////////apply operation
-    const std::string operation = json_params["operation"];
+    const std::string operation = params.operation;
     if (operation == "remeshing") {
         mesh.mesh_improvement(max_its); // <-- tetwild
     } else if (operation == "fill_holes_topo") {
-        // const std::vector<int64_t> fill_holes_tags = json_params["fill_holes_tags"];
-        // const double raw_threshold = json_params["fill_holes_threshold"];
-        // const double threshold =
-        //     raw_threshold < 0 ? std::numeric_limits<double>::infinity() : raw_threshold;
-        // mesh.fill_holes_topo(fill_holes_tags, threshold);
+        const std::vector<std::set<int64_t>> fill_holes_tags = json_params["fill_holes_tags"];
+        const double raw_threshold = json_params["fill_holes_threshold"];
+        const double threshold =
+            raw_threshold < 0 ? std::numeric_limits<double>::infinity() : raw_threshold;
+        mesh.fill_holes_topo(fill_holes_tags, threshold);
     } else if (operation == "tight_seal_topo") {
-        //// tight_seal_tag_sets is a list of lists: [[t1,t2],[t3,...]]
-        // std::vector<std::unordered_set<int64_t>> tag_sets;
-        // for (const auto& s : json_params["tight_seal_tag_sets"]) {
-        //     std::unordered_set<int64_t> ts;
-        //     for (const auto& v : s) {
-        //         ts.insert(v.get<int64_t>());
-        //     }
-        //     tag_sets.push_back(std::move(ts));
-        // }
-        // const double raw_threshold = json_params["tight_seal_threshold"];
-        // const double threshold =
-        //     raw_threshold < 0 ? std::numeric_limits<double>::infinity() : raw_threshold;
-        // mesh.tight_seal_topo(tag_sets, threshold);
+        // tight_seal_tag_sets is a list of lists: [[t1,t2],[t3,...]]
+        std::vector<std::vector<std::set<int64_t>>> tag_sets = json_params["tight_seal_tag_sets"];
+        const double raw_threshold = json_params["tight_seal_threshold"];
+        const double threshold =
+            raw_threshold < 0 ? std::numeric_limits<double>::infinity() : raw_threshold;
+        mesh.tight_seal_topo(tag_sets, threshold);
     } else if (operation == "keep_lcc") {
-        // const std::vector<int64_t> lcc_tags = json_params["keep_lcc_tags"];
-        // mesh.keep_largest_connected_component(lcc_tags);
+        const std::vector<std::set<int64_t>> lcc_tags = json_params["keep_lcc_tags"];
+        const size_t n_lcc = json_params["keep_lcc_num"];
+        mesh.keep_largest_connected_component(lcc_tags, n_lcc);
+    } else if (operation == "resolve_intersections") {
+        const std::vector<CellTag> tags = json_params["resolve_intersections_tags"];
+        mesh.resolve_intersections(tags);
+    } else if (operation == "replace_tags") {
+        const std::vector<CellTag> tags_in = json_params["replace_tags_in"];
+        const CellTag tag_out = json_params["replace_tags_out"];
+        mesh.replace_tags(tags_in, tag_out);
     } else {
-        log_and_throw_error("Image simulation operation `{}` is not implemented in 3D.", operation);
+        log_and_throw_error("Unknown image simulation operation");
     }
 
     mesh.consolidate_mesh();
@@ -185,6 +188,8 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
     params.debug_output = json_params["DEBUG_output"];
     params.perform_sanity_checks = json_params["DEBUG_sanity_checks"];
 
+    params.operation = json_params["operation"];
+
     std::filesystem::path output_filename = params.output_path;
 
     params.init(input_data.V_input.colwise().minCoeff(), input_data.V_input.colwise().maxCoeff());
@@ -214,7 +219,7 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
     write_unique_vtu();
 
     // /////////apply operation
-    const std::string operation = json_params["operation"];
+    const std::string operation = params.operation;
     if (operation == "remeshing") {
         mesh.mesh_improvement(max_its); // <-- tetwild
     } else if (operation == "fill_holes_topo") {

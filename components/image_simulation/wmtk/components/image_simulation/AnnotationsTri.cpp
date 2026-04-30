@@ -553,6 +553,10 @@ void ImageSimulationMeshTri::replace_tags(
             tags.insert(tag_out.begin(), tag_out.end());
         }
     }
+
+    m_E_envelope.clear();
+    m_V_envelope.clear();
+    m_envelope.reset();
 }
 
 } // namespace wmtk::components::image_simulation::tri
