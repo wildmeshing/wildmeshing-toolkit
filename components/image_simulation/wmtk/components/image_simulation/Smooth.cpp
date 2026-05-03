@@ -110,12 +110,14 @@ bool ImageSimulationMesh::smooth_after(const Tuple& t)
         }
         if (m_params.w_separate > 0) {
             auto barrier_energy = get_barrier_energy(t);
-            double val = barrier_energy->value(old_pos);
-            // only consider energy if it is non-zero at rest
-            if (val > 0) {
-                energy_sum->add_energy(barrier_energy);
-            } else {
-                logger().trace("Ignore barrier energy for zero rest state.");
+            if (barrier_energy) {
+                double val = barrier_energy->value(old_pos);
+                // only consider energy if it is non-zero at rest
+                if (val > 0) {
+                    energy_sum->add_energy(barrier_energy);
+                } else {
+                    logger().trace("Ignore barrier energy for zero rest state.");
+                }
             }
         }
         total_energy = energy_sum;
@@ -251,6 +253,10 @@ void ImageSimulationMesh::build_mass_matrix()
         F.row(i) = Vector3i(faces[i][0], faces[i][1], faces[i][2]);
     }
 
+    if (F.rows() == 0) {
+        logger().warn("No surface faces found. Mass matrix cannot be built.");
+        return;
+    }
     optimization::BiharmonicEnergy3D::global_mass_and_stiffness(
         V,
         F,
@@ -410,6 +416,10 @@ std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMesh::get_barrier_
         }
 
         vid_barrier = global_to_local_vid_map[vid];
+    }
+
+    if (F_barrier.rows() == 0) {
+        return nullptr;
     }
 
     auto barrier_energy = std::make_shared<optimization::BarrierEnergy3D>(

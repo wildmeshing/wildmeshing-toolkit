@@ -1049,7 +1049,7 @@ bool EmbedSurface::embed_surface()
      * 2. We should not rely on geometric look-up at all, but use the information stored in
      * m_F_tags_surface. This is more work so I took a shortcut here.
      */
-    {
+    if (false) {
         std::set<simplex::Face> surface;
         for (size_t i = 0; i < m_F_on_surface.rows(); ++i) {
             const simplex::Face f(m_F_on_surface(i, 0), m_F_on_surface(i, 1), m_F_on_surface(i, 2));
