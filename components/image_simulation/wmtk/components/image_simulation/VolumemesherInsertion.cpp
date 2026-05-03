@@ -793,6 +793,7 @@ void ImageSimulationMesh::init_surfaces_and_boundaries()
         // All surface faces must be inside the envelope
         logger().info("Envelope sanity check");
         const auto surf_faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
+        bool is_outside = false;
         for_each_face([&](const Tuple& t) {
             const size_t fid = t.fid(*this);
             if (!m_face_attribute.at(fid).m_is_surface_fs) {
@@ -803,10 +804,27 @@ void ImageSimulationMesh::init_surfaces_and_boundaries()
             const auto& p1 = m_vertex_attribute[verts[1]].m_posf;
             const auto& p2 = m_vertex_attribute[verts[2]].m_posf;
             if (m_envelope->is_outside({{p0, p1, p2}})) {
-                log_and_throw_error("Face {} is outside!", verts);
+                // logger().warn("Face {} is outside!", verts);
+                is_outside = true;
             }
         });
         logger().info("Envelope sanity check done");
+        if (!is_outside) {
+            logger().info("All surface faces are inside the envelope.");
+        } else {
+            logger().warn("Some surface faces are outside the envelope. Re-build envelope");
+            logger().info("Init envelope from tet tags");
+            std::vector<Eigen::Vector3d> tempV(vert_capacity());
+            for (int i = 0; i < vert_capacity(); i++) {
+                tempV[i] = m_vertex_attribute[i].m_posf;
+            }
+            m_V_envelope = tempV;
+            m_F_envelope = tempF;
+            m_envelope = std::make_shared<SampleEnvelope>();
+            m_envelope->use_exact = true;
+            m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
+            m_envelope_orig = m_envelope;
+        }
     }
 
     // track bounding box
