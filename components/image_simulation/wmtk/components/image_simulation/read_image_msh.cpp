@@ -471,6 +471,7 @@ InputData read_mesh(
     const int NUM_THREADS = json_params["num_threads"];
     const int max_its = json_params["max_iterations"];
     const bool write_vtu = json_params["write_vtu"];
+    const bool preserve_topology = json_params["preserve_topology"];
 
     // convert mesh into tet mesh
     EmbedSurface image_mesh(input_paths, input_transforms);
@@ -482,8 +483,9 @@ InputData read_mesh(
     input_data.V_envelope = image_mesh.V_surface();
     input_data.F_envelope = image_mesh.F_surface();
 
-    const bool all_rounded =
-        json_params["use_tetgen"] ? image_mesh.embed_surface_tetgen() : image_mesh.embed_surface();
+    const bool all_rounded = json_params["use_tetgen"]
+                                 ? image_mesh.embed_surface_tetgen()
+                                 : image_mesh.embed_surface(preserve_topology);
     image_mesh.consolidate();
 
     if (write_vtu) {
