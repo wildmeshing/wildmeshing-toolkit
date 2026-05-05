@@ -159,7 +159,7 @@ bool ManExtractMesh::split_face_before(const Tuple& t)
     cache.existing_f.clear();
     cache.tets.clear();
 
-    // get split face tags (used a bunch later)
+    // get split face label (used a bunch later)
     size_t split_f_id = t.fid(*this);
     cache.splitf_label = m_face_attribute[split_f_id].label;
 

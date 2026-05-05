@@ -13,15 +13,15 @@ class SimplicialComplexBVH
 private:
     // tet bvh
     igl::AABB<MatrixXd, 3> m_tet_aabb_tree;
-    bool m_has_tets;
+    bool m_has_tets = false;
 
     // triangle bvh
     SimpleBVH::BVH m_tri_bvh;
-    bool m_has_tris;
+    bool m_has_tris = false;
 
     // edge bvh
     SimpleBVH::BVH m_edge_bvh;
-    bool m_has_edges;
+    bool m_has_edges = false;
 
     bool m_is_3d;
     MatrixXd m_V_T = MatrixXd(0, 3); // tet vertices
@@ -78,6 +78,7 @@ public:
 
             m_V_T = V;
             m_T_T = T;
+            // m_T_T.col(2).swap(m_T_T.col(3));
             m_has_tets = true;
             m_tet_aabb_tree.init(m_V_T, m_T_T);
         }
@@ -111,8 +112,7 @@ public:
     }
 
     /**
-     * @brief check if a point is inside any tet. NOTE: this can be sped up with a true tetmesh
-     bvh
+     * @brief check if a point is inside any tet.
      */
     bool inside_any_tet(const Vector3d& p) const
     {

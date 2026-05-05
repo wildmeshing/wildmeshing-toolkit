@@ -14,7 +14,7 @@ nlohmann::json topological_offset_spec = R"(
     "optional": [
       "output",
       "offset_tags",
-      "offset_tag_val",
+      "offset_output_tag",
       "target_distance",
       "relative_ball_threshold",
       "edge_search_termination_len",
@@ -46,46 +46,30 @@ nlohmann::json topological_offset_spec = R"(
   {
     "pointer": "/offset_tags",
     "type": "list",
-    "default": [
-      [
-        0,
-        1
-      ]
-    ],
+    "default": [[0]],
     "min": 1,
-    "doc": "List of [tag num, tag val] pairs. If one given, that region is offset. If multiple, the intersection of all is offset."
+    "doc": "List of tag sets. The intersection of the union of each set will be offset. [] is ambient space. Eg, [[], [1, 2]] offsets the intersection between ambient space and the union of tags 1 and 2."
   },
   {
     "pointer": "/offset_tags/*",
     "type": "list",
-    "min": 2,
-    "max": 2
+    "doc": "A set of tags, the union of which will be taken (ambient space if empty)."
   },
   {
     "pointer": "/offset_tags/*/*",
-    "type": "int"
+    "type": "int",
+    "doc": "A tag."
   },
   {
-    "pointer": "/offset_tag_val",
+    "pointer": "/offset_output_tag",
     "type": "list",
-    "default": [
-      [
-        0,
-        0
-      ]
-    ],
-    "min": 1,
-    "doc": "[Tag num, tag val] pairs to set for offset result. Missing tag nums inherit from parent tris/tets."
+    "default": [],
+    "doc": "Set of tags to set for resulting offset region (empty for ambient)."
   },
   {
-    "pointer": "/offset_tag_val/*",
-    "type": "list",
-    "min": 2,
-    "max": 2
-  },
-  {
-    "pointer": "/offset_tag_val/*/*",
-    "type": "int"
+    "pointer": "/offset_output_tag/*",
+    "type": "int",
+    "doc": "A tag."
   },
   {
     "pointer": "/target_distance",
