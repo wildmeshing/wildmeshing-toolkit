@@ -4,11 +4,11 @@ set(COMPONENT_NAME manifold_extraction)
 add_component(${COMPONENT_NAME})
 
 if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
-    return()
+	return()
 endif()
 
 set(SRC_FILES
-    ManExtractMesh.cpp
+	ManExtractMesh.cpp
 	ManExtractMesh.h
 
 	Parameters.h
@@ -20,17 +20,13 @@ set(SRC_FILES
 
 	read_image_msh.hpp
 	read_image_msh.cpp
-	write_image_msh.hpp
-	write_image_msh.cpp
-    )
+)
 
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
 
-
-######################
-## TESTS
-######################
-
+# #####################
+# # TESTS
+# #####################
 if(${WMTK_COMPONENT_TESTS})
-    add_subdirectory(tests)
+	add_subdirectory(tests)
 endif()

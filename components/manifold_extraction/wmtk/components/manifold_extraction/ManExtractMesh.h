@@ -30,7 +30,7 @@ class VertexAttributes
 public:
     Vector3d m_posf;
     int label = 0;
-    bool in_out = false;
+    bool on_surf = false;
 
     VertexAttributes() {};
     VertexAttributes(const Vector3d& p);
@@ -40,16 +40,16 @@ public:
 class EdgeAttributes
 {
 public:
-    bool in_out = false;
     int label = 0;
+    bool on_surf = false;
 };
 
 
 class FaceAttributes
 {
 public:
-    bool in_out = false;
     int label = 0;
+    bool on_surf = false;
 };
 
 
@@ -58,7 +58,7 @@ class TetAttributes
 public:
     bool in_out = false; // in or out of mesh body
     int label = 0;
-    double val = -999; // default unset value
+    std::set<int64_t> tag;
 };
 
 
@@ -71,6 +71,12 @@ public:
     bool m_boundary_input_vert_found = false;
 
     Parameters& m_params;
+    size_t m_tags_count;
+
+    // dont actually use this
+    bool m_has_envelope = false;
+    MatrixXd m_V_envelope;
+    MatrixXi m_F_envelope;
 
     using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
     using EdgeAttCol = wmtk::AttributeCollection<EdgeAttributes>;
@@ -157,9 +163,16 @@ public:
      * @brief initialize mesh from vertices, faces, and tag matrices
      */
     void init_from_image(
-        const MatrixXd& V, // V by 3
-        const MatrixXi& T, // T by 4
-        const MatrixXd& T_tag); // T by 1
+        const MatrixXd& V,
+        const MatrixXi& T,
+        const MatrixSi& T_tag,
+        const MatrixXd& V_env,
+        const MatrixXi& F_env);
+
+    /**
+     * @brief set on_surf boolean for all simplices
+     */
+    void label_surface_simplices(bool need_to_clear);
 
     /**
      * @brief label nonmanifold simplices (edges and verts). Corresponding attributes have label set
@@ -230,6 +243,11 @@ public:
     void perform_offset();
 
     /**
+     * @brief update tet tags based off offset label and union/subtract mode. if union mode, all tets with label 2 are given in_tag, for subtraction mode replace_tag
+     */
+    void set_offset_tags();
+
+    /**
      * @brief extract tri mesh separating 'inside' tets from 'outside' tets. Resulting mesh is
      * guaranteed to be manifold.
      */
@@ -241,9 +259,63 @@ public:
     void write_input_complex(const std::string& path);
 
     /**
+     * @brief write surface (boundary of in_tag)
+     */
+    void write_surface(const std::string& path);
+
+    /**
      * @brief write tet mesh to vtu file
      */
     void write_vtu(const std::string& path); // debugging, write .vtu of tet mesh
+
+    /**
+     * @brief write tet mesh to msh file with physical groups format
+     */
+    void write_msh_groups(const std::string& path);
+
+private: // helpers
+    // /**
+    //  * @brief return true if all tags in tag1 are present in tag2. If tag2 is empty, only return
+    //  * true if tag1 empty (ambient).
+    //  */
+    // bool all_tags_present(std::set<int64_t> tag1, std::set<int64_t> tag2)
+    // {
+    //     if (tag2.empty()) {
+    //         return tag1.empty();
+    //     }
+    //     if (tag1.empty()) { // tag1 is ambient and tag2 is not.
+    //         return false;
+    //     }
+
+    //     for (const int64_t& i : tag1) {
+    //         if (tag2.find(i) == tag2.end()) {
+    //             return false;
+    //         }
+    //     }
+    //     return true;
+    // }
+
+    /**
+     * @brief determine if any tag from tag1 is also present in tag2.
+     * @note if tag2 is empty (ambient), return true if tag1 is empty, otherwise false (tag2 is
+     * ambient, so only 'element' is ambient)
+     */
+    bool any_tag_present(const std::set<int64_t>& tag1, const std::set<int64_t>& tag2)
+    {
+        if (tag2.empty()) {
+            return tag1.empty();
+        }
+        if (tag1.empty()) { // tag1 is ambient, tag2 is not
+            return false;
+        }
+
+        for (const int64_t& i : tag1) {
+            if (tag2.find(i) != tag2.end()) {
+                return true;
+            }
+        }
+        return false;
+    }
 };
 
 } // namespace wmtk::components::manifold_extraction

@@ -37,18 +37,17 @@ void topological_offset(nlohmann::json json_params)
         json_params = spec_engine.inject_defaults(json_params, topological_offset_spec);
     }
 
-    const std::filesystem::path root = json_params["json_input_file"];
+    const std::filesystem::path root =
+        json_params.contains("json_input_file") ? json_params["json_input_file"] : "";
 
     // load input file path
     std::string input_path = resolve_path(root, json_params["input"]).string();
 
     // load params
     Parameters params;
-    for (const std::vector<int>& offset_tag_pair : json_params["offset_tags"]) {
-        params.offset_tags.push_back({{offset_tag_pair[0], offset_tag_pair[1]}});
-    }
-    for (const std::vector<int>& offset_tag_val_pair : json_params["offset_tag_val"]) {
-        params.offset_tag_val.push_back({{offset_tag_val_pair[0], offset_tag_val_pair[1]}});
+    params.offset_tags = json_params["offset_tags"];
+    for (const int64_t& tag : json_params["offset_output_tag"]) {
+        params.offset_output_tag.insert(tag);
     }
     params.target_distance = json_params["target_distance"];
     params.relative_ball_threshold = json_params["relative_ball_threshold"];
@@ -81,17 +80,18 @@ void topological_offset(nlohmann::json json_params)
         log_and_throw_error("Input must be a .msh file.");
     }
 
-    MatrixXd V_input;
-    MatrixXi F_input;
-    MatrixXd F_input_tags;
-    read_image_msh(input_path, V_input, F_input, F_input_tags);
-
-    if (F_input.cols() == 3) { // input is a 2d tri mesh
+    InputData input_data = read_image_msh(input_path);
+    if (input_data.T_input.cols() == 3) { // input is a 2d tri mesh
         logger().info("Input mesh (2D trimesh): {}", input_path);
 
         // initialize mesh
         TopoOffsetTriMesh mesh(params, NUM_THREADS);
-        mesh.init_from_image(V_input, F_input, F_input_tags);
+        mesh.init_from_image(
+            input_data.V_input,
+            input_data.T_input,
+            input_data.T_input_tags,
+            input_data.V_envelope,
+            input_data.F_envelope);
 
         // check empty input
         if (mesh.empty_input_complex()) {
@@ -222,7 +222,8 @@ void topological_offset(nlohmann::json json_params)
         fout << "time: " << time << std::endl;
         fout.close();
 
-        mesh.write_msh(output_filename.string()); // write .msh
+        mesh.write_msh(output_filename.string()); // write .msh (ImageVolume)
+        mesh.write_msh_groups(output_filename.string()); // write .msh
         if (mesh.m_params.debug_output) {
             mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
         } else if (mesh.m_params.save_vtu) { // write .vtu
@@ -235,7 +236,12 @@ void topological_offset(nlohmann::json json_params)
 
         // initialize mesh
         TopoOffsetTetMesh mesh(params, NUM_THREADS);
-        mesh.init_from_image(V_input, F_input, F_input_tags);
+        mesh.init_from_image(
+            input_data.V_input,
+            input_data.T_input,
+            input_data.T_input_tags,
+            input_data.V_envelope,
+            input_data.F_envelope);
 
         // check empty input
         if (mesh.empty_input_complex()) {
@@ -388,6 +394,7 @@ void topological_offset(nlohmann::json json_params)
         fout.close();
 
         mesh.write_msh(output_filename.string()); // write .msh
+        mesh.write_msh_groups(output_filename.string()); // write .msh with physical groups
         if (mesh.m_params.debug_output) {
             mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
         } else if (mesh.m_params.save_vtu) { // write .vtu

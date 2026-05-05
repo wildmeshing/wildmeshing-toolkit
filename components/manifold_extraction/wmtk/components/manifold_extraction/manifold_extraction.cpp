@@ -16,8 +16,6 @@
 #include "Parameters.h"
 #include "read_image_msh.hpp"
 
-#include "file_generation.cpp" // DEVELOPMENT
-
 #include "manifold_extraction_spec.hpp"
 
 // // Enables passing Eigen matrices to fmt/spdlog.
@@ -45,22 +43,26 @@ void manifold_extraction(nlohmann::json json_params)
         json_params = spec_engine.inject_defaults(json_params, manifold_extraction_spec);
     }
 
-    const std::filesystem::path root = json_params["json_input_file"];
+    const std::filesystem::path root =
+        json_params.contains("json_input_file") ? json_params["json_input_file"] : "";
 
     // load input file path
     std::string input_path = resolve_path(root, json_params["input"]).string();
 
     // load params
     Parameters params;
-    params.tag_label = json_params["tag_label"];
-    params.val_include_range[0] = json_params["val_include"][0];
-    params.val_include_range[1] = json_params["val_include"][1];
+    for (int64_t i : json_params["in_tag"]) {
+        params.in_tag.insert(i);
+    }
+    for (int64_t i : json_params["replace_tag"]) {
+        params.replace_tag.insert(i);
+    }
     params.manifold_union = json_params["manifold_union"];
     params.output_path = resolve_path(root, json_params["output"]).string();
-    std::filesystem::path output_filename = params.output_path;
-    // int NUM_THREADS = json_params["num_threads"];
-    int NUM_THREADS = 0;
     params.debug_output = json_params["DEBUG_output"];
+    params.write_surface = json_params["write_surface"];
+    std::filesystem::path output_filename = params.output_path;
+    int NUM_THREADS = 0;
 
     // debugging output filename
     std::filesystem::path debug_outfilename = output_filename;
@@ -72,18 +74,17 @@ void manifold_extraction(nlohmann::json json_params)
     }
 
     // read image / MSH
-    MatrixXd V_input;
-    MatrixXi T_input;
-    MatrixXd T_input_tag;
-    // std::map<std::string, int> tag_label_map;
-
-    // input is a tet mesh
     logger().info("Input mesh: {}", input_path);
-    read_image_msh(input_path, V_input, T_input, T_input_tag, params.tag_label);
+    InputData input_data = read_image_msh(input_path);
 
     // initialize mesh
     manifold_extraction::ManExtractMesh mesh(params, NUM_THREADS);
-    mesh.init_from_image(V_input, T_input, T_input_tag);
+    mesh.init_from_image(
+        input_data.V_input,
+        input_data.T_input,
+        input_data.T_input_tags,
+        input_data.V_envelope,
+        input_data.F_envelope);
     mesh.consolidate_mesh();
 
     // record counts (mostly debugging, this is probably really slow)
@@ -98,24 +99,9 @@ void manifold_extraction(nlohmann::json json_params)
     }
 
     // write surface from input
-    logger().info("Writing surface mesh pre-offset...");
-    MatrixXd pre_V_out;
-    MatrixXi pre_F_out;
-    mesh.extract_surface_mesh(pre_V_out, pre_F_out);
-    MatrixXd pre_V_out_reduced;
-    MatrixXi pre_F_out_reduced;
-    MatrixXi pre_I; // index map, don't actually need
-    MatrixXi pre_B; // dummy variable
-    igl::remove_unreferenced(pre_V_out, pre_F_out, pre_V_out_reduced, pre_F_out_reduced, pre_I);
-    logger().info(
-        "\tPre-offset surface edge manifoldness check: {}",
-        igl::is_edge_manifold(pre_F_out_reduced));
-    logger().info(
-        "\tPre-offset surface vertex manifoldness check: {}",
-        igl::is_vertex_manifold(pre_F_out_reduced, pre_B));
-    std::string inp_surf_outfname = debug_outfilename.string() + "_preoffset_surf.obj";
-    logger().info("Write {}", inp_surf_outfname);
-    igl::write_triangle_mesh(inp_surf_outfname, pre_V_out_reduced, pre_F_out_reduced);
+    if (mesh.m_params.write_surface) {
+        mesh.write_surface(debug_outfilename.string() + "_preoffset_surf");
+    }
 
     // start timer
     igl::Timer timer;
@@ -143,7 +129,9 @@ void manifold_extraction(nlohmann::json json_params)
     // perform offset
     logger().info("Performing offset...");
     mesh.perform_offset();
+    mesh.label_surface_simplices(true);
     mesh.consolidate_mesh();
+    mesh.set_offset_tags();
 
     // get surface mesh
     logger().info("Extracting surface mesh...");
@@ -159,6 +147,11 @@ void manifold_extraction(nlohmann::json json_params)
         log_and_throw_error("Extracted surface is not manifold.");
     } else {
         logger().info("Extracted surface manifold check: PASSED");
+    }
+    if (mesh.m_params.write_surface) {
+        // write output surface
+        logger().info("Write {}", output_filename.string());
+        igl::write_triangle_mesh(output_filename.string() + ".obj", V_out_reduced, F_out_reduced);
     }
 
     // stop timer
@@ -181,15 +174,11 @@ void manifold_extraction(nlohmann::json json_params)
     fout << "time: " << time << std::endl;
     fout.close();
 
-    // write output surface
-    logger().info("Write {}", output_filename.string());
-    igl::write_triangle_mesh(output_filename.string(), V_out_reduced, F_out_reduced);
-
     // write vtu
     if (mesh.m_params.debug_output) {
         mesh.write_vtu(debug_outfilename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
     }
-
+    mesh.write_msh_groups(output_filename.string());
     wmtk::logger().info("======= finish =========");
 }
 
