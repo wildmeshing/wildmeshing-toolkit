@@ -1492,8 +1492,6 @@ bool ImageSimulationMeshTri::swap_edge_after(const Tuple& t)
 
 void ImageSimulationMeshTri::smooth_all_vertices(const size_t n_iters)
 {
-    assert(m_solver);
-
     /**
      * Mass matrix is only necessary if w_smooth is positive but we still compute the mass matrix
      * all the time. It's rather cheap to do and allows for printing all the energy terms.
@@ -1586,6 +1584,11 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
         max_quality = std::max(max_quality, m_face_attribute[fid].m_quality);
     }
 
+    auto& solver = m_solver.local();
+    if (!solver) {
+        solver = optimization::create_basic_solver();
+    }
+
     std::vector<std::array<double, 6>> assembles = get_amips_assembles(t);
 
     const Vector2d old_pos = VA[vid].m_pos;
@@ -1630,7 +1633,7 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
     {
         VectorXd x = old_pos;
         try {
-            m_solver->minimize(*total_energy, x);
+            solver->minimize(*total_energy, x);
         } catch (const std::exception&) {
             // polysolve might throw errors that we want to ignore (e.g., line search failed)
         }
