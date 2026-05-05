@@ -928,7 +928,7 @@ void TopoOffsetTetMesh::write_msh(const std::string& file)
 
 void TopoOffsetTetMesh::write_msh_groups(const std::string& file)
 {
-    logger().info("Write {}.msh", file);
+    logger().info("Write {}_groups.msh", file);
     consolidate_mesh();
 
     wmtk::MshData msh;
@@ -1007,14 +1007,14 @@ void TopoOffsetTetMesh::write_msh_groups(const std::string& file)
     }
 
     if (m_has_envelope) {
-        msh.add_edge_vertices(m_V_envelope.rows(), [this](size_t k) {
+        msh.add_face_vertices(m_V_envelope.rows(), [this](size_t k) {
             return m_V_envelope.row(k);
         });
-        msh.add_edges(m_F_envelope.rows(), [this](size_t k) { return m_F_envelope.row(k); });
+        msh.add_faces(m_F_envelope.rows(), [this](size_t k) { return m_F_envelope.row(k); });
         msh.add_physical_group("EnvelopeSurface");
     }
 
-    msh.save(file + ".msh", true);
+    msh.save(file + "_groups.msh", true);
 }
 
 

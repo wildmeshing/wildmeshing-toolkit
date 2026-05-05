@@ -274,25 +274,47 @@ public:
     void write_msh_groups(const std::string& path);
 
 private: // helpers
+    // /**
+    //  * @brief return true if all tags in tag1 are present in tag2. If tag2 is empty, only return
+    //  * true if tag1 empty (ambient).
+    //  */
+    // bool all_tags_present(std::set<int64_t> tag1, std::set<int64_t> tag2)
+    // {
+    //     if (tag2.empty()) {
+    //         return tag1.empty();
+    //     }
+    //     if (tag1.empty()) { // tag1 is ambient and tag2 is not.
+    //         return false;
+    //     }
+
+    //     for (const int64_t& i : tag1) {
+    //         if (tag2.find(i) == tag2.end()) {
+    //             return false;
+    //         }
+    //     }
+    //     return true;
+    // }
+
     /**
-     * @brief return true if all tags in tag1 are present in tag2. If tag2 is empty, only return
-     * true if tag1 empty (ambient).
+     * @brief determine if any tag from tag1 is also present in tag2.
+     * @note if tag2 is empty (ambient), return true if tag1 is empty, otherwise false (tag2 is
+     * ambient, so only 'element' is ambient)
      */
-    bool all_tags_present(std::set<int64_t> tag1, std::set<int64_t> tag2)
+    bool any_tag_present(const std::set<int64_t>& tag1, const std::set<int64_t>& tag2)
     {
         if (tag2.empty()) {
             return tag1.empty();
         }
-        if (tag1.empty()) { // tag1 is ambient and tag2 is not.
+        if (tag1.empty()) { // tag1 is ambient, tag2 is not
             return false;
         }
 
         for (const int64_t& i : tag1) {
-            if (tag2.find(i) == tag2.end()) {
-                return false;
+            if (tag2.find(i) != tag2.end()) {
+                return true;
             }
         }
-        return true;
+        return false;
     }
 };
 

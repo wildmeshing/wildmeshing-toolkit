@@ -37,7 +37,8 @@ void topological_offset(nlohmann::json json_params)
         json_params = spec_engine.inject_defaults(json_params, topological_offset_spec);
     }
 
-    const std::filesystem::path root = json_params["json_input_file"];
+    const std::filesystem::path root =
+        json_params.contains("json_input_file") ? json_params["json_input_file"] : "";
 
     // load input file path
     std::string input_path = resolve_path(root, json_params["input"]).string();
@@ -222,7 +223,7 @@ void topological_offset(nlohmann::json json_params)
         fout.close();
 
         mesh.write_msh(output_filename.string()); // write .msh (ImageVolume)
-        mesh.write_msh_groups(output_filename.string() + "_groups"); // write .msh
+        mesh.write_msh_groups(output_filename.string()); // write .msh
         if (mesh.m_params.debug_output) {
             mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
         } else if (mesh.m_params.save_vtu) { // write .vtu

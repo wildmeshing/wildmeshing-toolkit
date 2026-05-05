@@ -51,8 +51,8 @@ TEST_CASE("edge_split_3d", "[split_op][3d]")
     Tags.coeffRef(0, 2) = 1;
 
     Parameters param;
-    param.offset_tags.push_back({{0, 1}});
-    param.offset_tags.push_back({{0, 4}});
+    param.offset_tags.push_back(std::set<int64_t>{0, 1});
+    param.offset_tags.push_back(std::set<int64_t>{0, 4});
     TopoOffsetTetMesh mesh(param, 0);
     MatrixXd V_env_dummy;
     MatrixXi F_env_dummy;
@@ -149,8 +149,8 @@ TEST_CASE("face_split_3d", "[split_op][3d]")
     Tags.coeffRef(0, 2) = 1;
 
     Parameters param;
-    param.offset_tags.push_back({{0, 1}});
-    param.offset_tags.push_back({{0, 4}});
+    param.offset_tags.push_back(std::set<int64_t>{0, 1});
+    param.offset_tags.push_back(std::set<int64_t>{0, 4});
     TopoOffsetTetMesh mesh(param, 0);
     MatrixXd V_env_dummy;
     MatrixXi F_env_dummy;
@@ -251,8 +251,8 @@ TEST_CASE("tet_split_3d", "[split_op][3d]")
     Tags.coeffRef(0, 2) = 1;
 
     Parameters param;
-    param.offset_tags.push_back({{0, 1}});
-    param.offset_tags.push_back({{0, 4}});
+    param.offset_tags.push_back(std::set<int64_t>{0, 1});
+    param.offset_tags.push_back(std::set<int64_t>{0, 4});
     TopoOffsetTetMesh mesh(param, 0);
     MatrixXd V_env_dummy;
     MatrixXi F_env_dummy;
@@ -354,8 +354,8 @@ TEST_CASE("invariant_3d", "[3d]")
         T << 0, 1, 3, 2;
 
         Parameters param;
-        param.offset_tags.push_back({{0, 1}});
-        param.offset_tags.push_back({{0, 4}});
+        param.offset_tags.push_back(std::set<int64_t>{0, 1});
+        param.offset_tags.push_back(std::set<int64_t>{0, 4});
         TopoOffsetTetMesh mesh(param, 0);
         mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy);
 
@@ -368,8 +368,8 @@ TEST_CASE("invariant_3d", "[3d]")
         T << 0, 1, 2, 3;
 
         Parameters param;
-        param.offset_tags.push_back({{0, 1}});
-        param.offset_tags.push_back({{0, 4}});
+        param.offset_tags.push_back(std::set<int64_t>{0, 1});
+        param.offset_tags.push_back(std::set<int64_t>{0, 4});
         TopoOffsetTetMesh mesh(param, 0);
         mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy);
 
@@ -392,8 +392,8 @@ TEST_CASE("edge_split_2d_1face", "[split_op][2d]")
     Tags.coeffRef(0, 2) = 1;
 
     Parameters param;
-    param.offset_tags.push_back({{0, 1}});
-    param.offset_tags.push_back({{0, 4}});
+    param.offset_tags.push_back(std::set<int64_t>{0, 1});
+    param.offset_tags.push_back(std::set<int64_t>{0, 4});
     TopoOffsetTriMesh mesh(param, 0);
     MatrixXd V_env_dummy;
     MatrixXi F_env_dummy;
@@ -462,8 +462,8 @@ TEST_CASE("edge_split_2d_2faces", "[split_op][2d]")
     Tags.coeffRef(1, 2) = 0;
 
     Parameters param;
-    param.offset_tags.push_back({{0, 1}});
-    param.offset_tags.push_back({{0, 4}});
+    param.offset_tags.push_back(std::set<int64_t>{0, 1});
+    param.offset_tags.push_back(std::set<int64_t>{0, 4});
     TopoOffsetTriMesh mesh(param, 0);
     MatrixXd V_env_dummy;
     MatrixXi F_env_dummy;
@@ -545,8 +545,8 @@ TEST_CASE("face_split_2d", "[split_op][2d]")
     Tags.coeffRef(0, 2) = 1;
 
     Parameters param;
-    param.offset_tags.push_back({{0, 1}});
-    param.offset_tags.push_back({{0, 4}});
+    param.offset_tags.push_back(std::set<int64_t>{0, 1});
+    param.offset_tags.push_back(std::set<int64_t>{0, 4});
     TopoOffsetTriMesh mesh(param, 0);
     MatrixXd V_env_dummy;
     MatrixXi F_env_dummy;
@@ -617,8 +617,8 @@ TEST_CASE("invariant_2d", "[2d]")
         F << 0, 2, 1;
 
         Parameters param;
-        param.offset_tags.push_back({{0, 1}});
-        param.offset_tags.push_back({{0, 4}});
+        param.offset_tags.push_back(std::set<int64_t>{0, 1});
+        param.offset_tags.push_back(std::set<int64_t>{0, 4});
         TopoOffsetTriMesh mesh(param, 0);
         mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy);
 
@@ -631,8 +631,8 @@ TEST_CASE("invariant_2d", "[2d]")
         F << 0, 1, 2;
 
         Parameters param;
-        param.offset_tags.push_back({{0, 1}});
-        param.offset_tags.push_back({{0, 4}});
+        param.offset_tags.push_back(std::set<int64_t>{0, 1});
+        param.offset_tags.push_back(std::set<int64_t>{0, 4});
         TopoOffsetTriMesh mesh(param, 0);
         mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy);
 
@@ -655,8 +655,8 @@ TEST_CASE("circle_tri_overlap", "[dist_growth][2d]")
     MatrixXi F_env_dummy;
 
     Parameters param;
-    param.offset_tags.push_back({{0, 1}});
-    param.offset_tags.push_back({{0, 4}});
+    param.offset_tags.push_back(std::set<int64_t>{0, 1});
+    param.offset_tags.push_back(std::set<int64_t>{0, 4});
     TopoOffsetTriMesh mesh(param, 0);
     mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy);
 
@@ -702,8 +702,8 @@ TEST_CASE("circle_init", "[dist_growth][2d]")
     MatrixXi F_env_dummy;
 
     Parameters param;
-    param.offset_tags.push_back({{0, 1}});
-    param.offset_tags.push_back({{0, 4}});
+    param.offset_tags.push_back(std::set<int64_t>{0, 1});
+    param.offset_tags.push_back(std::set<int64_t>{0, 4});
     TopoOffsetTriMesh mesh(param, 0);
     mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy);
 
@@ -724,8 +724,8 @@ TEST_CASE("dist_to_trimesh", "[dist_growth][2d]")
     MatrixXi F_env_dummy;
 
     Parameters param;
-    param.offset_tags.push_back({{0, 1}});
-    param.offset_tags.push_back({{0, 4}});
+    param.offset_tags.push_back(std::set<int64_t>{0, 1});
+    param.offset_tags.push_back(std::set<int64_t>{0, 4});
     TopoOffsetTriMesh mesh(param, 0);
     mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy);
 
@@ -773,8 +773,8 @@ TEST_CASE("dist_to_tetmesh", "[dist_growth][3d]")
     MatrixXi F_env_dummy;
 
     Parameters param;
-    param.offset_tags.push_back({{0, 1}});
-    param.offset_tags.push_back({{0, 4}});
+    param.offset_tags.push_back(std::set<int64_t>{0, 1});
+    param.offset_tags.push_back(std::set<int64_t>{0, 4});
     TopoOffsetTetMesh mesh(param, 0);
     mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy);
 
@@ -856,8 +856,8 @@ TEST_CASE("sphere_tet_overlap", "[dist_growth][3d]")
     MatrixXi F_env_dummy;
 
     Parameters param;
-    param.offset_tags.push_back({{0, 1}});
-    param.offset_tags.push_back({{0, 4}});
+    param.offset_tags.push_back(std::set<int64_t>{0, 1});
+    param.offset_tags.push_back(std::set<int64_t>{0, 4});
     TopoOffsetTetMesh mesh(param, 0);
     mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy);
 

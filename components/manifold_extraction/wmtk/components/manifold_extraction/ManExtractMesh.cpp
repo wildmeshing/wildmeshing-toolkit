@@ -84,7 +84,7 @@ void ManExtractMesh::init_from_image(
     // set in_out for tets
     for (const Tuple& t : tets) {
         size_t t_id = t.tid(*this);
-        if (all_tags_present(m_tet_attribute[t_id].tag, m_params.in_tag)) {
+        if (any_tag_present(m_tet_attribute[t_id].tag, m_params.in_tag)) {
             m_tet_attribute[t_id].in_out = true;
         }
     }
@@ -884,7 +884,7 @@ void ManExtractMesh::write_vtu(const std::string& path)
 
 void ManExtractMesh::write_msh_groups(const std::string& path)
 {
-    logger().info("Write {}.msh", path);
+    logger().info("Write {}_groups.msh", path);
     consolidate_mesh();
 
     wmtk::MshData msh;
@@ -970,7 +970,7 @@ void ManExtractMesh::write_msh_groups(const std::string& path)
         msh.add_physical_group("EnvelopeSurface");
     }
 
-    msh.save(path + ".msh", true);
+    msh.save(path + "_groups.msh", true);
 }
 
 

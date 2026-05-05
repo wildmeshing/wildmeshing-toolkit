@@ -43,7 +43,8 @@ void manifold_extraction(nlohmann::json json_params)
         json_params = spec_engine.inject_defaults(json_params, manifold_extraction_spec);
     }
 
-    const std::filesystem::path root = json_params["json_input_file"];
+    const std::filesystem::path root =
+        json_params.contains("json_input_file") ? json_params["json_input_file"] : "";
 
     // load input file path
     std::string input_path = resolve_path(root, json_params["input"]).string();

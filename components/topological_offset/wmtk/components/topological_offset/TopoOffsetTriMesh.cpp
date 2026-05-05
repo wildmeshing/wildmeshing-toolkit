@@ -759,7 +759,7 @@ void TopoOffsetTriMesh::write_msh(const std::string& file)
 
 void TopoOffsetTriMesh::write_msh_groups(const std::string& file)
 {
-    logger().info("Write {}.msh", file);
+    logger().info("Write {}_groups.msh", file);
     consolidate_mesh();
 
     wmtk::MshData msh;
@@ -846,7 +846,7 @@ void TopoOffsetTriMesh::write_msh_groups(const std::string& file)
         msh.add_physical_group("EnvelopeSurface");
     }
 
-    msh.save(file + ".msh", true);
+    msh.save(file + "_groups.msh", true);
 }
 
 
