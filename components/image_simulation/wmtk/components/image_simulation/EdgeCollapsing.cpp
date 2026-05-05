@@ -229,50 +229,52 @@ bool ImageSimulationMesh::collapse_edge_before(const Tuple& loc) // input is an 
             cache.surface_faces.push_back({{v2_id, e0, e1}});
         }
 
-        std::vector<std::array<size_t, 2>> bs;
-        // iterate through all faces inicdent to v1
-        for (const size_t& tid : n1_locs) {
-            const auto vs = oriented_tet_vids(tid);
+        if (m_params.preserve_topology) {
+            std::vector<std::array<size_t, 2>> bs;
+            // iterate through all faces inicdent to v1
+            for (const size_t& tid : n1_locs) {
+                const auto vs = oriented_tet_vids(tid);
 
-            int j_v1 = -1;
-            for (int j = 0; j < 4; j++) {
-                const size_t vid = vs[j];
-                if (vid == v1_id) {
-                    j_v1 = j;
-                }
-            }
-
-            for (int k = 0; k < 3; k++) {
-                const size_t va = vs[(j_v1 + 1 + k) % 4];
-                const size_t vb = vs[(j_v1 + 1 + (k + 1) % 3) % 4];
-                if ((!VA[va].m_is_on_surface || !VA[vb].m_is_on_surface)) {
-                    continue;
-                }
-                const auto [f_tuple, fid] = tuple_from_face({{v1_id, va, vb}});
-                if (!m_face_attribute.at(fid).m_is_surface_fs) {
-                    // check if this face is actually on the surface
-                    continue;
-                }
-                if (va != v2_id) { // ignore collapsing edge (v1,v2)
-                    std::array<size_t, 2> ba = {{v1_id, va}};
-                    if (is_order_2_edge(ba)) {
-                        ba[0] = v2_id; // replace v1 with v2 for check in `after` function
-                        std::sort(ba.begin(), ba.end());
-                        bs.push_back(ba);
+                int j_v1 = -1;
+                for (int j = 0; j < 4; j++) {
+                    const size_t vid = vs[j];
+                    if (vid == v1_id) {
+                        j_v1 = j;
                     }
                 }
-                if (vb != v2_id) { // ignore collapsing edge (v1,v2)
-                    std::array<size_t, 2> bb = {{v1_id, vb}};
-                    if (is_order_2_edge(bb)) {
-                        bb[0] = v2_id; // replace v1 with v2 for check in `after` function
-                        std::sort(bb.begin(), bb.end());
-                        bs.push_back(bb);
+
+                for (int k = 0; k < 3; k++) {
+                    const size_t va = vs[(j_v1 + 1 + k) % 4];
+                    const size_t vb = vs[(j_v1 + 1 + (k + 1) % 3) % 4];
+                    if ((!VA[va].m_is_on_surface || !VA[vb].m_is_on_surface)) {
+                        continue;
+                    }
+                    const auto [f_tuple, fid] = tuple_from_face({{v1_id, va, vb}});
+                    if (!m_face_attribute.at(fid).m_is_surface_fs) {
+                        // check if this face is actually on the surface
+                        continue;
+                    }
+                    if (va != v2_id) { // ignore collapsing edge (v1,v2)
+                        std::array<size_t, 2> ba = {{v1_id, va}};
+                        if (is_order_2_edge(ba)) {
+                            ba[0] = v2_id; // replace v1 with v2 for check in `after` function
+                            std::sort(ba.begin(), ba.end());
+                            bs.push_back(ba);
+                        }
+                    }
+                    if (vb != v2_id) { // ignore collapsing edge (v1,v2)
+                        std::array<size_t, 2> bb = {{v1_id, vb}};
+                        if (is_order_2_edge(bb)) {
+                            bb[0] = v2_id; // replace v1 with v2 for check in `after` function
+                            std::sort(bb.begin(), bb.end());
+                            bs.push_back(bb);
+                        }
                     }
                 }
             }
+            wmtk::vector_unique(bs);
+            cache.boundary_edges = bs;
         }
-        wmtk::vector_unique(bs);
-        cache.boundary_edges = bs;
     }
 
     if (m_params.preserve_topology && VA[v1_id].m_is_on_surface && VA[v2_id].m_is_on_surface) {
@@ -280,7 +282,6 @@ bool ImageSimulationMesh::collapse_edge_before(const Tuple& loc) // input is an 
             return false;
         }
     }
-    cache.edge_order = get_order_of_edge({{v1_id, v2_id}});
 
     return true;
 }

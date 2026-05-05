@@ -115,7 +115,7 @@ public:
      */
     void remove_duplicates(const double eps);
 
-    bool embed_surface();
+    bool embed_surface(const bool flood_fill = false);
 
     bool embed_surface_tetgen();
 

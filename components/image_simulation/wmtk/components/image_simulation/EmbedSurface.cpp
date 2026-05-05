@@ -969,10 +969,9 @@ void EmbedSurface::remove_duplicates(const double eps)
     F_surf_from_vector(f);
 }
 
-bool EmbedSurface::embed_surface()
+bool EmbedSurface::embed_surface(const bool flood_fill)
 {
     logger().info("Embed with VolumeInsertion");
-
 
     double eps = 0.5;
     if (!Fs.empty()) {
@@ -1049,7 +1048,7 @@ bool EmbedSurface::embed_surface()
      * 2. We should not rely on geometric look-up at all, but use the information stored in
      * m_F_tags_surface. This is more work so I took a shortcut here.
      */
-    {
+    if (flood_fill) {
         std::set<simplex::Face> surface;
         for (size_t i = 0; i < m_F_on_surface.rows(); ++i) {
             const simplex::Face f(m_F_on_surface(i, 0), m_F_on_surface(i, 1), m_F_on_surface(i, 2));

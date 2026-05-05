@@ -15,6 +15,14 @@ set_target_properties(pywmtk PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY
 include(GNUInstallDirs)
 if(DEFINED SKBUILD)
     install(TARGETS pywmtk LIBRARY DESTINATION "${SKBUILD_PLATLIB_DIR}" COMPONENT python_bindings)
+
+    if(WIN32 AND TARGET gmp::gmp)
+        install(
+            IMPORTED_RUNTIME_ARTIFACTS gmp::gmp
+            RUNTIME DESTINATION "${SKBUILD_PLATLIB_DIR}"
+            COMPONENT python_bindings
+        )
+    endif()
 else()
     install(TARGETS pywmtk LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 endif()
