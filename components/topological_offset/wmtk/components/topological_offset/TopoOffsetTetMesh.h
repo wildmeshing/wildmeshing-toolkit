@@ -33,7 +33,6 @@ class EdgeAttributes
 {
 public:
     int label = 0;
-    // size_t component_id;
 };
 
 
@@ -41,16 +40,14 @@ class FaceAttributes
 {
 public:
     int label = 0;
-    // size_t component_id;
 };
 
 
 class TetAttributes
 {
 public:
-    int label = 0; // must be zero for all tets
-    std::vector<double> tags;
-    // size_t component_id;
+    int label = 0;
+    std::set<int64_t> tag;
 };
 
 
@@ -69,6 +66,11 @@ public:
     size_t m_tags_count;
     SimplicialComplexBVH m_input_complex_bvh;
     EdgeSplitMode m_edge_split_mode = EdgeSplitMode::Midpoint;
+
+    // dont actually use, just for retaining in output
+    bool m_has_envelope;
+    MatrixXd m_V_envelope;
+    MatrixXi m_F_envelope;
 
     Parameters& m_params;
 
@@ -98,8 +100,15 @@ public:
      * @param V: #V by 3 vertex matrix
      * @param T: #T by 4 tet matrix
      * @param T_tags: #T by #tags tag matrix
+     * @param V_env: #V_env by 3 EnvelopeSurface vertices
+     * @param F_env: #F_env by 3 EnvelopeSurface faces
      */
-    void init_from_image(const MatrixXd& V, const MatrixXi& T, const MatrixXd& T_tags);
+    void init_from_image(
+        const MatrixXd& V,
+        const MatrixXi& T,
+        const MatrixSi& T_tags,
+        const MatrixXd& V_env,
+        const MatrixXi F_env);
 
     /**
      * @brief check if the input complex is empty. Only valid after calling init_from_image(...).
@@ -200,6 +209,7 @@ public:
     void write_input_complex(const std::string& path); // write components labeled to be offset
     void write_vtu(const std::string& path); // debugging, write .vtu of tet mesh
     void write_msh(const std::string& file);
+    void write_msh_groups(const std::string& file);
     //// output stuff
 
 private:
@@ -265,79 +275,25 @@ private:
 
 private: // helpers
     /**
-     * @brief check if a face is in the intersection region of offset_tags
+     * @brief determine if any tag from tag1 is also present in tag2.
+     * @note if tag2 is empty (ambient), return true if tag1 is empty, otherwise false (tag2 is
+     * ambient, so only 'element' is ambient)
      */
-    bool face_in_tag_intersection(const Tuple& f)
+    bool any_tag_present(const std::set<int64_t>& tag1, const std::set<int64_t>& tag2)
     {
-        // get adjacent tet(s) for face
-        std::vector<size_t> nb_tids;
-        nb_tids.push_back(f.tid(*this));
-        auto other = f.switch_tetrahedron(*this);
-        if (other) {
-            nb_tids.push_back(other.value().tid(*this));
+        if (tag2.empty()) {
+            return tag1.empty();
         }
-
-        for (const auto& pair : m_params.offset_tags) {
-            bool tag_found = false;
-            for (const size_t nb_tid : nb_tids) {
-                if (m_tet_attribute[nb_tid].tags[pair[0]] == pair[1]) {
-                    tag_found = true;
-                    break;
-                }
-            }
-
-            if (tag_found) {
-                continue;
-            }
-            return false; // no nb tets have this tag
-        }
-        return true; // all offset_tags have at least one incident tet
-    }
-
-    /**
-     * @brief check if an edge is in the intersection region of offset_tags
-     */
-    bool edge_in_tag_intersection(const Tuple& e)
-    {
-        auto nb_tids = get_incident_tids_for_edge(e); // get incident tets
-        for (const auto& pair : m_params.offset_tags) {
-            bool tag_found = false;
-            for (const size_t& t_id : nb_tids) {
-                if (m_tet_attribute[t_id].tags[pair[0]] == pair[1]) {
-                    tag_found = true;
-                    break;
-                }
-            }
-
-            if (tag_found) {
-                continue;
-            }
-            return false; // no incident tet has given tag in offset_tags
-        }
-        return true; // all offset_tags found in at least one incident tet to edge
-    }
-
-    /**
-     * @brief check if a vertex is in the intersection region of offset_tags
-     */
-    bool vertex_in_tag_intersection(const Tuple& v)
-    {
-        auto nb_tids = get_one_ring_tids_for_vertex(v.vid(*this));
-        for (const auto& pair : m_params.offset_tags) {
-            bool tag_found = false;
-            for (const size_t t_id : nb_tids) {
-                if (m_tet_attribute[t_id].tags[pair[0]] == pair[1]) {
-                    tag_found = true;
-                    break;
-                }
-            }
-
-            if (tag_found) {
-                continue;
-            }
+        if (tag1.empty()) { // tag1 is ambient, tag2 is not
             return false;
         }
-        return true;
+
+        for (const int64_t& i : tag1) {
+            if (tag2.find(i) != tag2.end()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

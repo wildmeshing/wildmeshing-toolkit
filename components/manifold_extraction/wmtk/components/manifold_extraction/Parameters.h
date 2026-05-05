@@ -6,10 +6,11 @@ namespace wmtk::components::manifold_extraction {
 struct Parameters
 {
     // parameters set by user
-    std::string tag_label;
-    std::array<double, 2> val_include_range;
+    std::set<int64_t> in_tag;
+    std::set<int64_t> replace_tag;
     bool manifold_union;
     std::string output_path;
-    bool debug_output = false;
+    bool debug_output;
+    bool write_surface;
 };
 } // namespace wmtk::components::manifold_extraction

@@ -19,12 +19,16 @@ VertexAttributes2d::VertexAttributes2d(const Vector2d& p)
 void TopoOffsetTriMesh::init_from_image(
     const MatrixXd& V,
     const MatrixXi& F,
-    const MatrixXd& F_tags)
+    const MatrixSi& F_tags,
+    MatrixXd& V_env,
+    MatrixXi& F_env)
 {
     // assert dimensions
     assert(V.cols() == 2);
     assert(F.cols() == 3);
     assert(F.rows() == F_tags.rows());
+    assert((V_env.rows() == 0) || (V_env.cols() == 2));
+    assert((F_env.rows() == 0) || (F_env.cols() == 2)); // edges, envelope
     m_tags_count = F_tags.cols();
 
     // initialize connectivity
@@ -34,27 +38,31 @@ void TopoOffsetTriMesh::init_from_image(
     m_edge_attribute.m_attributes.resize(3 * F.rows());
     m_face_attribute.m_attributes.resize(F.rows());
 
+    // set envelope data
+    if (V_env.rows() > 0) {
+        logger().info(
+            "Envelope ({} vertices, {} edges) found. will be retained in output.",
+            V_env.rows(),
+            F_env.rows());
+        m_has_envelope = true;
+        m_V_envelope = V_env;
+        m_F_envelope = F_env;
+    }
 
-    // propagate labels to faces
+    // // check if any tags present
+    // MatrixSi F_tags_copy = F_tags;
+    // F_tags_copy.makeCompressed();
+    // int maxCoeff = F_tags_copy.coeffs().maxCoeff();
+    // F_tags_copy.resize(0, 0);
+    // logger().info("F_tags max coeff: {}", maxCoeff);
+
+    // propagate tags to faces
     auto faces = get_faces();
     for (const Tuple& f : faces) {
         size_t f_id = f.fid(*this);
-        for (int i = 0; i < m_tags_count; i++) {
-            m_face_attribute[f_id].tags.push_back(F_tags(f_id, i));
-        }
-
-        if (m_params.offset_tags.size() == 1) { // 'single body' mode
-            if (m_face_attribute[f_id].tags[m_params.offset_tags[0][0]] ==
-                m_params.offset_tags[0][1]) {
-                m_face_attribute[f_id].label = 1;
-
-                // propagate to edges and verts in tri
-                m_edge_attribute[f.eid(*this)].label = 1;
-                m_edge_attribute[f.switch_edge(*this).eid(*this)].label = 1;
-                m_edge_attribute[f.switch_vertex(*this).switch_edge(*this).eid(*this)].label = 1;
-                m_vertex_attribute[f.vid(*this)].label = 1;
-                m_vertex_attribute[f.switch_vertex(*this).vid(*this)].label = 1;
-                m_vertex_attribute[f.switch_edge(*this).switch_vertex(*this).vid(*this)].label = 1;
+        for (int j = 0; j < F_tags.cols(); j++) {
+            if (F_tags.coeff(f_id, j) == 1) {
+                m_face_attribute[f_id].tag.insert(j);
             }
         }
     }
@@ -66,26 +74,99 @@ void TopoOffsetTriMesh::init_from_image(
         m_vertex_attribute[v_id].m_posf = V.row(v_id);
     }
 
-    // compute intersections for edges/verts if not in 'single body' mode
-    if (m_params.offset_tags.size() > 1) {
-        auto edges = get_edges();
-        for (const Tuple& e : edges) {
-            if (edge_in_tag_intersection(e)) {
-                m_edge_attribute[e.eid(*this)].label = 1;
-
-                // propagate to children verts
-                m_vertex_attribute[e.vid(*this)].label = 1;
-                m_vertex_attribute[e.switch_vertex(*this).vid(*this)].label = 1;
+    // compute intersection of unions for faces.
+    for (const Tuple& f : faces) {
+        size_t f_id = f.fid(*this);
+        bool in_input = true; // json specifies at least one tag set, so can safely set this.
+        const std::set<int64_t> f_tag = m_face_attribute[f_id].tag;
+        for (const std::set<int64_t>& tag : m_params.offset_tags) {
+            if (!any_tag_present(f_tag, tag)) {
+                in_input = false;
+                break;
             }
         }
+        if (in_input) {
+            m_face_attribute[f_id].label = 1;
+            // propagate to edges and verts in tri
+            m_edge_attribute[f.eid(*this)].label = 1;
+            m_edge_attribute[f.switch_edge(*this).eid(*this)].label = 1;
+            m_edge_attribute[f.switch_vertex(*this).switch_edge(*this).eid(*this)].label = 1;
+            m_vertex_attribute[f.vid(*this)].label = 1;
+            m_vertex_attribute[f.switch_vertex(*this).vid(*this)].label = 1;
+            m_vertex_attribute[f.switch_edge(*this).switch_vertex(*this).vid(*this)].label = 1;
+        }
+    }
 
-        for (const Tuple& v : verts) {
-            // skip if already labeled (from parent edge)
-            if (m_vertex_attribute[v.vid(*this)].label != 1) {
-                if (vertex_in_tag_intersection(v)) {
-                    m_vertex_attribute[v.vid(*this)].label = 1;
+    // compute intersection of unions for edges.
+    auto edges = get_edges();
+    for (const Tuple& e : edges) {
+        // check if edge already in input via face
+        size_t e_id = e.eid(*this);
+        if (m_edge_attribute[e_id].label == 1) {
+            continue;
+        }
+
+        // gather incident face(s)
+        std::vector<std::set<int64_t>> inc_tags;
+        inc_tags.push_back(m_face_attribute[e.fid(*this)].tag);
+        auto other = e.switch_face(*this);
+        if (other) {
+            inc_tags.push_back(m_face_attribute[other.value().fid(*this)].tag);
+        }
+
+        // check if criteria met
+        bool in_input = true;
+        for (const std::set<int64_t>& tag : m_params.offset_tags) {
+            bool union_present = false;
+            for (const std::set<int64_t>& inc_tag : inc_tags) {
+                if (any_tag_present(inc_tag, tag)) {
+                    union_present = true;
                 }
             }
+            if (!union_present) {
+                in_input = false;
+                break;
+            }
+        }
+        if (in_input) {
+            m_edge_attribute[e_id].label = 1;
+            // propagate to vertices
+            m_vertex_attribute[e.vid(*this)].label = 1;
+            m_vertex_attribute[e.switch_vertex(*this).vid(*this)].label = 1;
+        }
+    }
+
+    // compute intersection of unions for vertices.
+    for (const Tuple& v : verts) {
+        // check if vertex already in input via face or edge
+        size_t v_id = v.vid(*this);
+        if (m_vertex_attribute[v_id].label == 1) {
+            continue;
+        }
+
+        // get incident face tags
+        auto inc_fids = get_one_ring_fids_for_vertex(v_id);
+        std::vector<std::set<int64_t>> inc_tags;
+        for (const size_t& f_id : inc_fids) {
+            inc_tags.push_back(m_face_attribute[f_id].tag);
+        }
+
+        // check if vertex meets criteria
+        bool in_input = true;
+        for (const std::set<int64_t>& tag : m_params.offset_tags) {
+            bool union_present = false;
+            for (const std::set<int64_t>& inc_tag : inc_tags) {
+                if (any_tag_present(inc_tag, tag)) {
+                    union_present = true;
+                }
+            }
+            if (!union_present) {
+                in_input = false;
+                break;
+            }
+        }
+        if (in_input) {
+            m_vertex_attribute[v_id].label = 1;
         }
     }
 }
@@ -443,16 +524,7 @@ void TopoOffsetTriMesh::set_offset_tri_tags()
     for (const Tuple& f : faces) {
         size_t f_id = f.fid(*this);
         if (m_face_attribute[f_id].label == 2) {
-            for (const auto& tag : m_params.offset_tag_val) {
-                if (tag[0] >= m_face_attribute[f_id].tags.size()) {
-                    log_and_throw_error(
-                        "offset_tag_val [{}, {}] given, but tag_{} does not exist in tri mesh",
-                        tag[0],
-                        tag[1],
-                        tag[0]);
-                }
-                m_face_attribute[f_id].tags[tag[0]] = tag[1];
-            }
+            m_face_attribute[f_id].tag = m_params.offset_output_tag;
         }
     }
 }
@@ -583,14 +655,15 @@ void TopoOffsetTriMesh::write_input_complex(const std::string& path)
 
 void TopoOffsetTriMesh::write_vtu(const std::string& path)
 {
-    const std::string out_path = path + ".vtu";
-    logger().info("Write {}", out_path);
+    logger().info("Write {}.vtu", path);
+    logger().warn("Any new tags added during topological offset will not appear in vtu.");
+
 
     consolidate_mesh();
     const auto& vs = get_vertices();
     const auto& tris = get_faces();
 
-    Eigen::MatrixXd V(vs.size(), 3);
+    Eigen::MatrixXd V(vs.size(), 2);
     Eigen::MatrixXi F(tris.size(), 3);
 
     V.setZero();
@@ -602,8 +675,8 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
         size_t f_id = f.fid(*this);
 
         // set tri tags
-        for (int i = 0; i < m_tags_count; i++) {
-            tags[i](f_id, 0) = m_face_attribute[f_id].tags[i];
+        for (int j = 0; j < m_tags_count; j++) {
+            tags[j](f_id, 0) = (m_face_attribute[f_id].tag.count(j) == 1) ? 1 : 0;
         }
 
         // set tri verts
@@ -615,18 +688,24 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
 
     for (const Tuple& v : vs) {
         const size_t v_id = v.vid(*this);
-        Vector2d p2d = m_vertex_attribute[v_id].m_posf;
-        V.row(v_id) = Vector3d(p2d(0), p2d(1), 0.0);
+        V.row(v_id) = m_vertex_attribute[v_id].m_posf;
     }
 
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
     writer = std::make_shared<paraviewo::VTUWriter>();
-
     for (int i = 0; i < m_tags_count; i++) {
         writer->add_cell_field(fmt::format("tag_{}", i), tags[i]);
     }
+    writer->write_mesh(path + ".vtu", V, F);
 
-    writer->write_mesh(out_path, V, F);
+    // surface output
+    if (m_has_envelope) {
+        const auto out_surf_path = path + "_surf.vtu";
+        std::shared_ptr<paraviewo::ParaviewWriter> surf_writer;
+        surf_writer = std::make_shared<paraviewo::VTUWriter>();
+        logger().info("Write {}", out_surf_path);
+        surf_writer->write_mesh(out_surf_path, m_V_envelope, m_F_envelope);
+    }
 }
 
 
@@ -658,14 +737,117 @@ void TopoOffsetTriMesh::write_msh(const std::string& file)
         return f_verts;
     });
 
-    // set tags perface
-    for (int j = 0; j < m_tags_count; j++) {
+    // add tags under ImageVolume physical group
+    for (size_t j = 0; j < m_tags_count; j++) {
         msh.add_face_attribute<1>(fmt::format("tag_{}", j), [&](size_t i) {
-            return m_face_attribute[i].tags[j];
+            return ((m_face_attribute[i].tag.count(j) == 1) ? 1 : 0);
         });
+    }
+    msh.add_physical_group("ImageVolume");
+
+    if (m_has_envelope) {
+        msh.add_edge_vertices(m_V_envelope.rows(), [this](size_t k) {
+            return Vector3d(m_V_envelope(k, 0), m_V_envelope(k, 1), 0);
+        });
+        msh.add_edges(m_F_envelope.rows(), [this](size_t k) { return m_F_envelope.row(k); });
+        msh.add_physical_group("EnvelopeSurface");
     }
 
     msh.save(file + ".msh", true);
 }
+
+
+void TopoOffsetTriMesh::write_msh_groups(const std::string& file)
+{
+    logger().info("Write {}.msh", file);
+    consolidate_mesh();
+
+    wmtk::MshData msh;
+
+    // set vertices
+    const auto& verts = get_vertices();
+    msh.add_face_vertices(verts.size(), [&](size_t k) {
+        auto i = verts[k].vid(*this);
+        Vector2d p2 = m_vertex_attribute[i].m_posf;
+        return Vector3d(p2(0), p2(1), 0);
+    });
+
+    const auto& faces = get_faces();
+
+    int64_t max_tag = -1;
+    for (const Tuple& f : faces) {
+        size_t f_id = f.fid(*this);
+        const auto& tag = m_face_attribute[f_id].tag;
+        if (tag.empty()) {
+            continue;
+        }
+        int64_t mt = *tag.rbegin();
+        max_tag = std::max(max_tag, mt);
+    }
+
+    if (m_tags_count < max_tag + 1) {
+        logger().warn(
+            "Max tag is {} but but m_tags_count is {}. Adjusting m_tags_count",
+            max_tag,
+            m_tags_count);
+        m_tags_count = max_tag + 1;
+    }
+
+    std::vector<Tuple> faces_with_tag;
+    faces_with_tag.reserve(faces.size());
+
+    auto msh_add_faces = [&]() {
+        msh.add_faces(faces_with_tag.size(), [&](size_t k) {
+            auto vs = oriented_tri_vids(faces_with_tag[k]);
+            std::array<size_t, 3> data;
+            for (int j = 0; j < 3; j++) {
+                data[j] = vs[j];
+            }
+            return data;
+        });
+    };
+
+    // add ambient mesh
+    for (const Tuple& f : faces) {
+        size_t f_id = f.fid(*this);
+        if (m_face_attribute[f_id].tag.empty()) {
+            faces_with_tag.push_back(f);
+        }
+    }
+    msh_add_faces();
+    msh.add_physical_group("ambient");
+
+    // group for each tag
+    for (size_t tag_img = 0; tag_img < m_tags_count; tag_img++) {
+        faces_with_tag.clear();
+        for (const Tuple& f : faces) {
+            size_t f_id = f.fid(*this);
+            if (m_face_attribute[f_id].tag.count(tag_img) != 0) {
+                faces_with_tag.push_back(f);
+            }
+        }
+
+        if (faces_with_tag.empty()) {
+            continue;
+        }
+
+        msh.add_empty_vertices(2);
+        msh_add_faces();
+
+        const std::string group_name = fmt::format("tag_{}", tag_img);
+        msh.add_physical_group(group_name);
+    }
+
+    if (m_has_envelope) {
+        msh.add_edge_vertices(m_V_envelope.rows(), [this](size_t k) {
+            return Vector3d(m_V_envelope(k, 0), m_V_envelope(k, 1), 0);
+        });
+        msh.add_edges(m_F_envelope.rows(), [this](size_t k) { return m_F_envelope.row(k); });
+        msh.add_physical_group("EnvelopeSurface");
+    }
+
+    msh.save(file + ".msh", true);
+}
+
 
 } // namespace wmtk::components::topological_offset

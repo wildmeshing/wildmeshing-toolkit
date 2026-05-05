@@ -5,15 +5,23 @@
 namespace wmtk::components::topological_offset {
 
 
+struct InputData
+{
+    MatrixXd V_input;
+    MatrixXi T_input;
+    MatrixSi T_input_tags;
+
+    // note: not actually used, just for spitting back to output
+    MatrixXd V_envelope;
+    MatrixXi F_envelope;
+};
+
+
 /**
- * @brief read vertex and tri/tet data from msh (based on whether any tets are in msh).
- * Tags are assumed to be labeled sequentially from tag_0
+ * @brief read vertex and cell data from msh. physical groups are detected if present.
+ * @note if "EnvelopeSurface" is present it will be extracted and retained
  */
-void read_image_msh(
-    const std::string& path,
-    MatrixXd& V_input,
-    MatrixXi& F_input,
-    MatrixXd& F_input_tags);
+InputData read_image_msh(const std::string& path);
 
 
 } // namespace wmtk::components::topological_offset

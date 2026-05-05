@@ -28,13 +28,14 @@ std::vector<std::string> input_files{
     "image_simulation_double_sphere_3d.json",
     "isotropic_remeshing_bunny.json",
     "isotropic_remeshing_piece.json",
-    "manifold_extraction_randmesh.json",
     "qslim_octocat.json",
     "shortest_edge_collapse_octocat.json",
     "shortest_edge_collapse_sphere_with_env.json",
     "tetwild_octocat.json",
     "tetwild_sphere.json",
-    "topological_offsets_bunny2d.json"};
+    "topological_offset_2d.json",
+    "topological_offset_3d.json",
+    "manifold_extraction_3d.json"};
 
 
 nlohmann::json load_json(const path& json_input_file)
