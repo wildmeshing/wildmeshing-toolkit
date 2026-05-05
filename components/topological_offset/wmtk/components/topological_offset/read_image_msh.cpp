@@ -1,4 +1,6 @@
 #include "read_image_msh.hpp"
+#include <filesystem>
+#include <set>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/utils/io.hpp>
 
