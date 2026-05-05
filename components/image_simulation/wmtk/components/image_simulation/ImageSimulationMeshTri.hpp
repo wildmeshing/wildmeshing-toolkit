@@ -109,7 +109,7 @@ public:
     bool m_collapse_check_topology = false; // sanity check
     bool m_collapse_check_manifold = false; // manifoldness check after collapse
 
-    std::unique_ptr<polysolve::nonlinear::Solver> m_solver;
+    tbb::enumerable_thread_specific<std::unique_ptr<polysolve::nonlinear::Solver>> m_solver;
     std::vector<double> m_surface_mass; // the mass matrix for surface vertices
     std::vector<Vector3d> m_surface_stiffness; // stiffness matrix for surface vertices
 
@@ -128,7 +128,6 @@ public:
         p_edge_attrs = &m_edge_attribute;
         p_face_attrs = &m_face_attribute;
 
-        m_solver = optimization::create_basic_solver();
         optimization::deactivate_opt_logger();
 
         m_s_amips = 1.;
