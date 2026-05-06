@@ -34,7 +34,8 @@ void TopoOffsetTetMesh::init_from_image(
     const MatrixXi& T,
     const MatrixSi& T_tags,
     const MatrixXd& V_env,
-    const MatrixXi F_env)
+    const MatrixXi F_env,
+    const std::vector<std::string>& tag_names)
 {
     // assert dimensions
     assert(V.cols() == 3);
@@ -57,6 +58,30 @@ void TopoOffsetTetMesh::init_from_image(
         m_has_envelope = true;
         m_V_envelope = V_env;
         m_F_envelope = F_env;
+    }
+
+    // set tag string/id maps
+    for (int64_t i = 0; i < tag_names.size(); i++) {
+        m_tag_id_to_name[i] = tag_names[i];
+        m_tag_name_to_id[tag_names[i]] = i;
+    }
+    for (const std::string& tag : m_params.offset_output_tag) {
+        if (std::find(tag_names.begin(), tag_names.end(), tag) == tag_names.end()) {
+            int64_t new_id = m_tag_id_to_name.size();
+            m_tag_id_to_name[new_id] = tag;
+            m_tag_name_to_id[tag] = new_id;
+            m_tags_count++;
+        }
+    }
+    for (const std::set<std::string>& nameset : m_params.offset_tags) {
+        std::set<int64_t> idset;
+        for (const std::string& name : nameset) {
+            idset.insert(m_tag_name_to_id[name]);
+        }
+        m_offset_tags_ids.push_back(idset);
+    }
+    for (const std::string& name : m_params.offset_output_tag) {
+        m_offset_output_tag_ids.insert(m_tag_name_to_id[name]);
     }
 
     // propagate labels to tets
@@ -82,7 +107,7 @@ void TopoOffsetTetMesh::init_from_image(
         size_t t_id = t.tid(*this);
         bool in_input = true;
         const std::set<int64_t> t_tag = m_tet_attribute[t_id].tag;
-        for (const std::set<int64_t> tag : m_params.offset_tags) {
+        for (const std::set<int64_t> tag : m_offset_tags_ids) {
             if (!any_tag_present(t_tag, tag)) {
                 in_input = false;
                 break;
@@ -123,7 +148,7 @@ void TopoOffsetTetMesh::init_from_image(
 
         // check if in intersection of unions
         bool in_input = true;
-        for (const std::set<int64_t> tag : m_params.offset_tags) {
+        for (const std::set<int64_t> tag : m_offset_tags_ids) {
             bool union_present = false;
             for (const std::set<int64_t> t_tag : inc_tags) {
                 if (any_tag_present(t_tag, tag)) {
@@ -166,7 +191,7 @@ void TopoOffsetTetMesh::init_from_image(
 
         // check if criteria met
         bool in_input = true;
-        for (const std::set<int64_t>& tag : m_params.offset_tags) {
+        for (const std::set<int64_t>& tag : m_offset_tags_ids) {
             bool union_present = false;
             for (const std::set<int64_t>& t_tag : inc_tags) {
                 if (any_tag_present(t_tag, tag)) {
@@ -200,7 +225,7 @@ void TopoOffsetTetMesh::init_from_image(
         }
 
         bool in_input = true;
-        for (const std::set<int64_t>& tag : m_params.offset_tags) {
+        for (const std::set<int64_t>& tag : m_offset_tags_ids) {
             bool union_present = false;
             for (const std::set<int64_t>& t_tag : inc_tags) {
                 if (any_tag_present(t_tag, tag)) {
@@ -692,7 +717,7 @@ void TopoOffsetTetMesh::set_offset_tet_tags()
     for (const Tuple& t : tets) {
         size_t t_id = t.tid(*this);
         if (m_tet_attribute[t_id].label == 2) {
-            m_tet_attribute[t_id].tag = m_params.offset_output_tag;
+            m_tet_attribute[t_id].tag = m_offset_output_tag_ids;
         }
     }
 }
@@ -864,8 +889,8 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
 
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
     writer = std::make_shared<paraviewo::VTUWriter>();
-    for (int i = 0; i < m_tags_count; i++) {
-        writer->add_cell_field(fmt::format("tag_{}", i), tags[i]);
+    for (int64_t i = 0; i < m_tags_count; i++) {
+        writer->add_cell_field(m_tag_id_to_name[i], tags[i]);
     }
     writer->write_mesh(path + ".vtu", V, T);
 
@@ -906,8 +931,8 @@ void TopoOffsetTetMesh::write_msh(const std::string& file)
     });
 
     // add tags under ImageVolume physical group
-    for (int j = 0; j < m_tags_count; j++) {
-        msh.add_tet_attribute<1>(fmt::format("tag_{}", j), [&](size_t i) {
+    for (int64_t j = 0; j < m_tags_count; j++) {
+        msh.add_tet_attribute<1>(m_tag_id_to_name[j], [&](size_t i) {
             return (m_tet_attribute[i].tag.count(j) == 1) ? 1 : 0;
         });
     }
@@ -986,7 +1011,7 @@ void TopoOffsetTetMesh::write_msh_groups(const std::string& file)
     msh.add_physical_group("ambient");
 
     // group for each tag
-    for (size_t tag_img = 0; tag_img < m_tags_count; tag_img++) {
+    for (int64_t tag_img = 0; tag_img < m_tags_count; tag_img++) {
         tets_with_tag.clear();
         for (const Tuple& t : tets) {
             size_t t_id = t.tid(*this);
@@ -1002,7 +1027,7 @@ void TopoOffsetTetMesh::write_msh_groups(const std::string& file)
         msh.add_empty_vertices(3);
         msh_add_tets();
 
-        const std::string group_name = fmt::format("tag_{}", tag_img);
+        const std::string group_name = m_tag_id_to_name[tag_img];
         msh.add_physical_group(group_name);
     }
 
