@@ -171,19 +171,23 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
 
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
-    std::ofstream fout(output_filename.string() + ".log");
-    fout << "#t: " << mesh.tet_size() << std::endl;
-    fout << "#v: " << mesh.vertex_size() << std::endl;
-    fout << "max_energy: " << max_energy << std::endl;
-    fout << "avg_energy: " << avg_energy << std::endl;
-    fout << "eps: " << params.eps << std::endl;
-    fout << "threads: " << NUM_THREADS << std::endl;
-    fout << "time: " << time << std::endl;
-    fout.close();
+    std::string report_filename = json_params["report"];
+    if (!report_filename.empty()) {
+        std::ofstream fout(report_filename);
+        fout << "#t: " << mesh.tet_size() << std::endl;
+        fout << "#v: " << mesh.vertex_size() << std::endl;
+        fout << "max_energy: " << max_energy << std::endl;
+        fout << "avg_energy: " << avg_energy << std::endl;
+        fout << "eps: " << params.eps << std::endl;
+        fout << "threads: " << NUM_THREADS << std::endl;
+        fout << "time: " << time << std::endl;
+        fout.close();
+    }
 
     logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
-    // mesh.write_msh(output_filename.string() + ".msh");
-    mesh.write_msh_groups(output_filename.string() + ".msh");
+    const bool write_envelope = json_params["write_envelope"];
+    // mesh.write_msh(output_filename.string() + ".msh", write_envelope);
+    mesh.write_msh_groups(output_filename.string() + ".msh", write_envelope);
     write_unique_vtu();
     if (write_vtu) {
         mesh.write_surface(output_filename.string() + "_surface.obj");
@@ -324,19 +328,23 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
 
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
-    std::ofstream fout(output_filename.string() + ".log");
-    fout << "#f: " << mesh.get_faces().size() << std::endl;
-    fout << "#v: " << mesh.get_vertices().size() << std::endl;
-    fout << "max_energy: " << max_energy << std::endl;
-    fout << "avg_energy: " << avg_energy << std::endl;
-    fout << "eps: " << params.eps << std::endl;
-    fout << "threads: " << NUM_THREADS << std::endl;
-    fout << "time: " << time << std::endl;
-    fout.close();
+    std::string report_filename = json_params["report"];
+    if (!report_filename.empty()) {
+        std::ofstream fout(report_filename);
+        fout << "#t: " << mesh.get_faces().size() << std::endl;
+        fout << "#v: " << mesh.get_vertices().size() << std::endl;
+        fout << "max_energy: " << max_energy << std::endl;
+        fout << "avg_energy: " << avg_energy << std::endl;
+        fout << "eps: " << params.eps << std::endl;
+        fout << "threads: " << NUM_THREADS << std::endl;
+        fout << "time: " << time << std::endl;
+        fout.close();
+    }
 
     wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
-    // mesh.write_msh(output_filename.string() + ".msh");
-    mesh.write_msh_groups(output_filename.string() + ".msh");
+    const bool write_envelope = json_params["write_envelope"];
+    // mesh.write_msh(output_filename.string() + ".msh", write_envelope);
+    mesh.write_msh_groups(output_filename.string() + ".msh", write_envelope);
     write_unique_vtu();
 }
 

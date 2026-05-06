@@ -362,8 +362,8 @@ public:
 
     ////// Attributes related
 
-    void write_msh(std::string file);
-    void write_msh_groups(std::string file);
+    void write_msh(std::string file, const bool write_envelope = true);
+    void write_msh_groups(std::string file, const bool write_envelope = true);
     void output_faces(std::string file, std::function<bool(const FaceAttributes&)> cond);
 
     void init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>& vertices);

@@ -90,6 +90,7 @@ public:
      */
     BarrierEnergy3D(
         const MatrixXd& V,
+        const MatrixXi& E,
         const MatrixXi& F,
         const size_t vid,
         const double dhat,

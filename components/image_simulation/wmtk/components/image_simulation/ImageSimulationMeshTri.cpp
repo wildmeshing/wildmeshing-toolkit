@@ -522,7 +522,7 @@ bool ImageSimulationMeshTri::adjust_sizing_field_serial(double max_energy)
     return is_hit_min_edge_length.load();
 }
 
-void ImageSimulationMeshTri::write_msh(std::string file)
+void ImageSimulationMeshTri::write_msh(std::string file, const bool write_envelope)
 {
     consolidate_mesh();
 
@@ -560,7 +560,7 @@ void ImageSimulationMeshTri::write_msh(std::string file)
 
     msh.add_physical_group("ImageVolume");
 
-    if (m_envelope) {
+    if (m_envelope && write_envelope) {
         msh.add_edge_vertices(m_V_envelope.size(), [this](size_t k) {
             return Vector3d(m_V_envelope[k][0], m_V_envelope[k][1], 0);
         });
@@ -572,7 +572,7 @@ void ImageSimulationMeshTri::write_msh(std::string file)
     msh.save(file, true);
 }
 
-void ImageSimulationMeshTri::write_msh_groups(std::string file)
+void ImageSimulationMeshTri::write_msh_groups(std::string file, const bool write_envelope)
 {
     consolidate_mesh();
 
@@ -667,7 +667,7 @@ void ImageSimulationMeshTri::write_msh_groups(std::string file)
         msh.add_physical_group(group_name);
     }
 
-    if (m_envelope) {
+    if (m_envelope && write_envelope) {
         msh.add_edge_vertices(m_V_envelope.size(), [this](size_t k) {
             return Vector3d(m_V_envelope[k][0], m_V_envelope[k][1], 0);
         });

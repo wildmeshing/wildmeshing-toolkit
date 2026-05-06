@@ -32,6 +32,7 @@ nlohmann::json image_simulation_spec = R"(
       "separation_factor",
       "smooth_without_envelope",
       "write_vtu",
+      "write_envelope",
       "log_file",
       "report",
       "DEBUG_output",
@@ -242,6 +243,12 @@ nlohmann::json image_simulation_spec = R"(
     "type": "bool",
     "default": false,
     "doc": "Write not just MSH but also VTU output."
+  },
+  {
+    "pointer": "/write_envelope",
+    "type": "bool",
+    "default": true,
+    "doc": "Save the envelope in the MSH output (as a separate physical group with tag 'envelope')."
   },
   {
     "pointer": "/log_file",

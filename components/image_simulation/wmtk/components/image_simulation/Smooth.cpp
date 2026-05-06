@@ -4,6 +4,7 @@
 
 #include <Eigen/src/Core/util/Constants.h>
 #include <igl/Timer.h>
+#include <igl/edges.h>
 #include <wmtk/utils/AMIPS.h>
 #include <array>
 #include <ipc/distance/point_triangle.hpp>
@@ -422,8 +423,12 @@ std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMesh::get_barrier_
         return nullptr;
     }
 
+    MatrixXi E_barrier;
+    igl::edges(F_barrier, E_barrier);
+
     auto barrier_energy = std::make_shared<optimization::BarrierEnergy3D>(
         V_barrier,
+        E_barrier,
         F_barrier,
         vid_barrier,
         m_params.dhat,

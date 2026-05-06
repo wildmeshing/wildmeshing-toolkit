@@ -520,7 +520,7 @@ double ImageSimulationMesh::get_length2(const Tuple& l) const
     return length;
 }
 
-void ImageSimulationMesh::write_msh(std::string file)
+void ImageSimulationMesh::write_msh(std::string file, const bool write_envelope)
 {
     consolidate_mesh();
 
@@ -559,7 +559,7 @@ void ImageSimulationMesh::write_msh(std::string file)
 
     msh.add_physical_group("ImageVolume");
 
-    if (m_envelope) {
+    if (m_envelope && write_envelope) {
         msh.add_face_vertices(m_V_envelope.size(), [this](size_t k) { return m_V_envelope[k]; });
         msh.add_faces(m_F_envelope.size(), [this](size_t k) { return m_F_envelope[k]; });
         msh.add_physical_group("EnvelopeSurface");
@@ -568,7 +568,7 @@ void ImageSimulationMesh::write_msh(std::string file)
     msh.save(file, true);
 }
 
-void ImageSimulationMesh::write_msh_groups(std::string file)
+void ImageSimulationMesh::write_msh_groups(std::string file, const bool write_envelope)
 {
     consolidate_mesh();
 
@@ -661,7 +661,7 @@ void ImageSimulationMesh::write_msh_groups(std::string file)
         msh.add_physical_group(group_name);
     }
 
-    if (m_envelope) {
+    if (m_envelope && write_envelope) {
         msh.add_face_vertices(m_V_envelope.size(), [this](size_t k) { return m_V_envelope[k]; });
         msh.add_faces(m_F_envelope.size(), [this](size_t k) { return m_F_envelope[k]; });
         msh.add_physical_group("EnvelopeSurface");

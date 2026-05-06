@@ -220,8 +220,8 @@ public:
 
     bool adjust_sizing_field_serial(double max_energy);
 
-    void write_msh(std::string file);
-    void write_msh_groups(std::string file);
+    void write_msh(std::string file, const bool write_envelope = true);
+    void write_msh_groups(std::string file, const bool write_envelope = true);
 
     void write_vtu(const std::string& path) const;
     void write_vtu_with_energies(const std::string& path) const;
