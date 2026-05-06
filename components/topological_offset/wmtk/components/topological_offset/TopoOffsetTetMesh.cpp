@@ -853,7 +853,6 @@ void TopoOffsetTetMesh::write_input_complex(const std::string& path)
 void TopoOffsetTetMesh::write_vtu(const std::string& path)
 {
     logger().info("Write {}.vtu", path);
-    logger().warn("Any new tags added during topological offset will not appear in vtu.");
 
     consolidate_mesh();
     const auto& vs = get_vertices();

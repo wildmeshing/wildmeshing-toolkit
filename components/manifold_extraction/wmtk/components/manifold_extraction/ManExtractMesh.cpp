@@ -852,7 +852,6 @@ void ManExtractMesh::write_surface(const std::string& path)
 void ManExtractMesh::write_vtu(const std::string& path)
 {
     logger().info("Write {}.vtu", path);
-    logger().warn("Any new tags added during manifold extraction will not appear in vtu.");
 
     consolidate_mesh();
     const auto& vs = get_vertices();
