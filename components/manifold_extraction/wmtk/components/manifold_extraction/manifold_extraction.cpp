@@ -51,10 +51,10 @@ void manifold_extraction(nlohmann::json json_params)
 
     // load params
     Parameters params;
-    for (int64_t i : json_params["in_tag"]) {
+    for (std::string i : json_params["in_tag"]) {
         params.in_tag.insert(i);
     }
-    for (int64_t i : json_params["replace_tag"]) {
+    for (std::string i : json_params["replace_tag"]) {
         params.replace_tag.insert(i);
     }
     params.manifold_union = json_params["manifold_union"];
@@ -84,7 +84,8 @@ void manifold_extraction(nlohmann::json json_params)
         input_data.T_input,
         input_data.T_input_tags,
         input_data.V_envelope,
-        input_data.F_envelope);
+        input_data.F_envelope,
+        input_data.tag_names);
     mesh.consolidate_mesh();
 
     // record counts (mostly debugging, this is probably really slow)

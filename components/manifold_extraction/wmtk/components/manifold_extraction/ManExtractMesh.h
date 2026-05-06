@@ -73,6 +73,12 @@ public:
     Parameters& m_params;
     size_t m_tags_count;
 
+    // tag mapping stuff
+    std::map<std::string, int64_t> m_tag_name_to_id;
+    std::map<int64_t, std::string> m_tag_id_to_name;
+    std::set<int64_t> m_in_tag_ids;
+    std::set<int64_t> m_replace_tag_ids;
+
     // dont actually use this
     bool m_has_envelope = false;
     MatrixXd m_V_envelope;
@@ -167,7 +173,8 @@ public:
         const MatrixXi& T,
         const MatrixSi& T_tag,
         const MatrixXd& V_env,
-        const MatrixXi& F_env);
+        const MatrixXi& F_env,
+        const std::vector<std::string>& tag_names);
 
     /**
      * @brief set on_surf boolean for all simplices

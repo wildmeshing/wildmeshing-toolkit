@@ -85,6 +85,7 @@ InputData read_image_msh(const std::string& path)
 
         std::vector<MatrixXd> Vs;
         std::vector<MatrixXi> Fs;
+        std::vector<std::string> tag_names;
         MatrixXd V_env;
         MatrixXi F_env;
 
@@ -92,6 +93,7 @@ InputData read_image_msh(const std::string& path)
             MatrixXd V;
             MatrixXi F;
             msh.get_VF(group, V, F);
+            tag_names.push_back(group.name);
             if ((has_tets && group.dim == 2) || (group.dim == 1)) { // envelope surface
                 if (V_env.size() != 0) {
                     log_and_throw_error("Multiple envelope groups found in {}", path);
@@ -153,6 +155,7 @@ InputData read_image_msh(const std::string& path)
                     size_t t_id = ids[tet_simp];
                     input_data.T_input_tags.coeffRef(t_id, i - 1) = 1;
                 }
+                input_data.tag_names.push_back(tag_names[i]);
             }
         } else { // 2d
             // resize vert matrices
@@ -196,6 +199,7 @@ InputData read_image_msh(const std::string& path)
                     size_t f_id = ids[face_simp];
                     input_data.T_input_tags.coeffRef(f_id, i - 1) = 1;
                 }
+                input_data.tag_names.push_back(tag_names[i]);
             }
         }
         return input_data;
@@ -313,6 +317,9 @@ InputData read_image_msh(const std::string& path)
             input_tags_bin.block(0, nc, img_bin.rows(), img_bin.cols()) = img_bin;
         }
         input_data.T_input_tags = input_tags_bin.sparseView();
+        for (int j = 0; j < input_tags_bin.cols(); j++) {
+            input_data.tag_names.push_back("tag_" + std::to_string(j));
+        }
     } else {
         assert(input_data.T_input.cols() == 3);
         int faces_tags_count = 0;
@@ -358,6 +365,9 @@ InputData read_image_msh(const std::string& path)
             input_tags_bin.block(0, nc, img_bin.rows(), img_bin.cols()) = img_bin;
         }
         input_data.T_input_tags = input_tags_bin.sparseView();
+        for (int j = 0; j < input_tags_bin.cols(); j++) {
+            input_data.tag_names.push_back("tag_" + std::to_string(j));
+        }
     }
 
     return input_data;

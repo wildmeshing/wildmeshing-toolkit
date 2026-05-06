@@ -46,7 +46,7 @@ void topological_offset(nlohmann::json json_params)
     // load params
     Parameters params;
     params.offset_tags = json_params["offset_tags"];
-    for (const int64_t& tag : json_params["offset_output_tag"]) {
+    for (const std::string& tag : json_params["offset_output_tag"]) {
         params.offset_output_tag.insert(tag);
     }
     params.target_distance = json_params["target_distance"];
@@ -91,7 +91,8 @@ void topological_offset(nlohmann::json json_params)
             input_data.T_input,
             input_data.T_input_tags,
             input_data.V_envelope,
-            input_data.F_envelope);
+            input_data.F_envelope,
+            input_data.tag_names);
 
         // check empty input
         if (mesh.empty_input_complex()) {
@@ -241,7 +242,8 @@ void topological_offset(nlohmann::json json_params)
             input_data.T_input,
             input_data.T_input_tags,
             input_data.V_envelope,
-            input_data.F_envelope);
+            input_data.F_envelope,
+            input_data.tag_names);
 
         // check empty input
         if (mesh.empty_input_complex()) {
@@ -393,7 +395,7 @@ void topological_offset(nlohmann::json json_params)
         fout << "time: " << time << std::endl;
         fout.close();
 
-        mesh.write_msh(output_filename.string()); // write .msh
+        // mesh.write_msh(output_filename.string()); // write .msh
         mesh.write_msh_groups(output_filename.string()); // write .msh with physical groups
         if (mesh.m_params.debug_output) {
             mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));

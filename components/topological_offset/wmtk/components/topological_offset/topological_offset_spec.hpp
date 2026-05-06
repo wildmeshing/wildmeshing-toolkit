@@ -46,9 +46,9 @@ nlohmann::json topological_offset_spec = R"(
   {
     "pointer": "/offset_tags",
     "type": "list",
-    "default": [[0]],
+    "default": [["tag_0"]],
     "min": 1,
-    "doc": "List of tag sets. The intersection of the union of each set will be offset. [] is ambient space. Eg, [[], [1, 2]] offsets the intersection between ambient space and the union of tags 1 and 2."
+    "doc": "List of tag sets. The intersection of the union of each set will be offset. [] is ambient space. Eg, [[], ['tag_1', 'tag_2']] offsets the intersection between ambient space and the union of tags 1 and 2."
   },
   {
     "pointer": "/offset_tags/*",
@@ -57,7 +57,7 @@ nlohmann::json topological_offset_spec = R"(
   },
   {
     "pointer": "/offset_tags/*/*",
-    "type": "int",
+    "type": "string",
     "doc": "A tag."
   },
   {
@@ -68,7 +68,7 @@ nlohmann::json topological_offset_spec = R"(
   },
   {
     "pointer": "/offset_output_tag/*",
-    "type": "int",
+    "type": "string",
     "doc": "A tag."
   },
   {

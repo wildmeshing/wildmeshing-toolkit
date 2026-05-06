@@ -67,6 +67,12 @@ public:
     SimplicialComplexBVH m_input_complex_bvh;
     EdgeSplitMode m_edge_split_mode = EdgeSplitMode::Midpoint;
 
+    // tag map stuff
+    std::map<std::string, int64_t> m_tag_name_to_id;
+    std::map<int64_t, std::string> m_tag_id_to_name;
+    std::vector<std::set<int64_t>> m_offset_tags_ids;
+    std::set<int64_t> m_offset_output_tag_ids;
+
     // dont actually use, just for retaining in output
     bool m_has_envelope;
     MatrixXd m_V_envelope;
@@ -108,7 +114,8 @@ public:
         const MatrixXi& T,
         const MatrixSi& T_tags,
         const MatrixXd& V_env,
-        const MatrixXi F_env);
+        const MatrixXi F_env,
+        const std::vector<std::string>& tag_names);
 
     /**
      * @brief check if the input complex is empty. Only valid after calling init_from_image(...).
