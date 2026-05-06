@@ -109,18 +109,18 @@ bool ImageSimulationMesh::smooth_after(const Tuple& t)
         if (m_params.w_envelope > 0) {
             energy_sum->add_energy(envelope_energy);
         }
-        if (m_params.w_separate > 0) {
-            auto barrier_energy = get_barrier_energy(t);
-            if (barrier_energy) {
-                double val = barrier_energy->value(old_pos);
-                // only consider energy if it is non-zero at rest
-                if (val > 0) {
-                    energy_sum->add_energy(barrier_energy);
-                } else {
-                    logger().trace("Ignore barrier energy for zero rest state.");
-                }
-            }
-        }
+        // if (m_params.w_separate > 0) {
+        //     auto barrier_energy = get_barrier_energy(t);
+        //     if (barrier_energy) {
+        //         double val = barrier_energy->value(old_pos);
+        //         // only consider energy if it is non-zero at rest
+        //         if (val > 0) {
+        //             energy_sum->add_energy(barrier_energy);
+        //         } else {
+        //             logger().trace("Ignore barrier energy for zero rest state.");
+        //         }
+        //     }
+        // }
         total_energy = energy_sum;
         solve();
     } else {

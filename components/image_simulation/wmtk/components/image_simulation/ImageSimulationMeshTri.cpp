@@ -817,7 +817,7 @@ void ImageSimulationMeshTri::write_vtu_with_energies(const std::string& path) co
             auto amips_energy = get_amips_energy(v);
             auto smooth_energy = get_smooth_energy(v);
             auto envelope_energy = get_envelope_energy(v);
-            auto barrier_energy = get_barrier_energy(v);
+            // auto barrier_energy = get_barrier_energy(v);
 
             if (!smooth_energy) {
                 continue;
@@ -826,7 +826,7 @@ void ImageSimulationMeshTri::write_vtu_with_energies(const std::string& path) co
             energy_sum->add_energy(amips_energy);
             energy_sum->add_energy(smooth_energy);
             energy_sum->add_energy(envelope_energy);
-            energy_sum->add_energy(barrier_energy);
+            // energy_sum->add_energy(barrier_energy);
 
             VectorXd g;
             amips_energy->gradient(x, g);
@@ -835,8 +835,8 @@ void ImageSimulationMeshTri::write_vtu_with_energies(const std::string& path) co
             v_energy_grad_smooth.row(vid) = g;
             envelope_energy->gradient(x, g);
             v_energy_grad_envelope.row(vid) = g;
-            barrier_energy->gradient(x, g);
-            v_energy_grad_barrier.row(vid) = g;
+            // barrier_energy->gradient(x, g);
+            // v_energy_grad_barrier.row(vid) = g;
             energy_sum->gradient(x, g);
             v_energy_grad_sum.row(vid) = g;
         }
@@ -1659,9 +1659,9 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
         if (m_params.w_envelope > 0) {
             energy_sum->add_energy(get_envelope_energy(t));
         }
-        if (m_params.w_separate > 0) {
-            energy_sum->add_energy(get_barrier_energy(t));
-        }
+        // if (m_params.w_separate > 0) {
+        //     energy_sum->add_energy(get_barrier_energy(t));
+        // }
 
         total_energy = energy_sum;
     } else {
@@ -1956,19 +1956,19 @@ void ImageSimulationMeshTri::log_total_surface_energy()
         }
 
         auto envelope_energy = get_envelope_energy(t);
-        auto barrier_energy = get_barrier_energy(t);
+        // auto barrier_energy = get_barrier_energy(t);
 
         auto energy_sum = std::make_shared<optimization::EnergySum>();
         energy_sum->add_energy(amips_energy);
         energy_sum->add_energy(smooth_energy);
         energy_sum->add_energy(envelope_energy);
-        energy_sum->add_energy(barrier_energy);
+        // energy_sum->add_energy(barrier_energy);
 
         e_sum += energy_sum->value(old_pos);
         e_amips += amips_energy->value(old_pos);
         e_smooth += smooth_energy->value(old_pos);
         e_envelope += envelope_energy->value(old_pos);
-        e_barrier += barrier_energy->value(old_pos);
+        // e_barrier += barrier_energy->value(old_pos);
 
         ++n_pts;
     }
