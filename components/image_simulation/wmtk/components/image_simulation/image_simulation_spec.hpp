@@ -32,6 +32,7 @@ nlohmann::json image_simulation_spec = R"(
       "separation_factor",
       "smooth_without_envelope",
       "write_vtu",
+      "write_envelope",
       "log_file",
       "report",
       "DEBUG_output",
@@ -244,6 +245,12 @@ nlohmann::json image_simulation_spec = R"(
     "doc": "Write not just MSH but also VTU output."
   },
   {
+    "pointer": "/write_envelope",
+    "type": "bool",
+    "default": true,
+    "doc": "Save the envelope in the MSH output (as a separate physical group with tag 'envelope')."
+  },
+  {
     "pointer": "/log_file",
     "type": "string",
     "default": "",
@@ -270,7 +277,7 @@ nlohmann::json image_simulation_spec = R"(
   {
     "pointer": "/fill_holes_tags",
     "type": "list",
-    "default": [[0]],
+    "default": [[]],
     "doc": "For fill_holes_topo: list of tag values used to fill enclosed connected components (processed in order)."
   },
   {
@@ -280,7 +287,7 @@ nlohmann::json image_simulation_spec = R"(
   },
   {
     "pointer": "/fill_holes_tags/*/*",
-    "type": "int",
+    "type": "string",
     "doc": "A tag value to fill enclosed connected components of other tags."
   },
   {
@@ -292,7 +299,7 @@ nlohmann::json image_simulation_spec = R"(
   {
     "pointer": "/tight_seal_tag_sets",
     "type": "list",
-    "default": [[0]],
+    "default": [[]],
     "doc": "For tight_seal_topo: list of tag sets. Each inner list defines a group of tags whose enclosed holes are filled, e.g. [[1,2],[3]]."
   },
   {
@@ -307,7 +314,7 @@ nlohmann::json image_simulation_spec = R"(
   },
   {
     "pointer": "/tight_seal_tag_sets/*/*/*",
-    "type": "int",
+    "type": "string",
     "doc": "A tag value in this tag set."
   },
   {
@@ -329,7 +336,7 @@ nlohmann::json image_simulation_spec = R"(
   },
   {
     "pointer": "/keep_lcc_tags/*/*",
-    "type": "int",
+    "type": "string",
     "doc": "A tag value."
   },
   {
@@ -353,7 +360,7 @@ nlohmann::json image_simulation_spec = R"(
   },
   {
     "pointer": "/resolve_intersections_tags/*/*",
-    "type": "int",
+    "type": "string",
     "doc": "A tag value."
   },
   {
@@ -369,7 +376,7 @@ nlohmann::json image_simulation_spec = R"(
   },
   {
     "pointer": "/replace_tags_in/*/*",
-    "type": "int",
+    "type": "string",
     "doc": "A tag value."
   },
   {
@@ -380,7 +387,7 @@ nlohmann::json image_simulation_spec = R"(
   },
   {
     "pointer": "/replace_tags_out/*",
-    "type": "int",
+    "type": "string",
     "doc": "A tag value."
   }
 ]

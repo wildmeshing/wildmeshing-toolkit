@@ -115,11 +115,12 @@ void BarrierEnergy2D::update_collisions(const TVector& x)
 
 BarrierEnergy3D::BarrierEnergy3D(
     const MatrixXd& V,
+    const MatrixXi& E,
     const MatrixXi& F,
     const size_t vid,
     const double dhat,
     const double weight)
-    : m_collision_mesh(V, F)
+    : m_collision_mesh(V, E, F)
     , m_V(V)
     , m_B(dhat)
     , m_x0(V.row(vid))

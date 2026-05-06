@@ -168,11 +168,13 @@ double ImageSimulationMeshTri::get_length2(const Tuple& l) const
 void ImageSimulationMeshTri::init_from_image(
     const MatrixXd& V,
     const MatrixXi& T,
-    const MatrixSi& T_tags)
+    const MatrixSi& T_tags,
+    const std::vector<std::string>& tag_names)
 {
     assert(V.cols() == 2);
     assert(T.cols() == 3);
     assert(T_tags.rows() == T.rows());
+    assert(T_tags.cols() == tag_names.size());
 
     init(T);
 
@@ -215,6 +217,12 @@ void ImageSimulationMeshTri::init_from_image(
                 m_face_attribute[i].tags.insert(j);
             }
         }
+    }
+
+    // add tag names
+    for (size_t i = 0; i < tag_names.size(); ++i) {
+        m_tag_id_to_name[i] = tag_names[i];
+        m_tag_name_to_id[tag_names[i]] = i;
     }
 
     init_surfaces_and_boundaries();
@@ -388,8 +396,25 @@ void ImageSimulationMeshTri::init_separation_weight()
     }
 }
 
-bool ImageSimulationMeshTri::adjust_sizing_field_serial(double max_energy)
+CellTag ImageSimulationMeshTri::string_set_to_cell_tag(const std::set<std::string>& str_set)
+{
+    CellTag cell_tag;
+    for (const auto& str : str_set) {
+        const auto it = m_tag_name_to_id.find(str);
+        if (it != m_tag_name_to_id.end()) {
+            cell_tag.insert(it->second);
+        } else {
+            logger().warn("Tag name {} does not exist! Adding new tag.", str);
+            int64_t new_id = m_tags_count++;
+            m_tag_name_to_id[str] = new_id;
+            m_tag_id_to_name[new_id] = str;
+            cell_tag.insert(new_id);
+        }
+    }
+    return cell_tag;
+}
 
+bool ImageSimulationMeshTri::adjust_sizing_field_serial(double max_energy)
 {
     wmtk::logger().info("#V {}, #F {}", vert_capacity(), tri_capacity());
 
@@ -497,7 +522,7 @@ bool ImageSimulationMeshTri::adjust_sizing_field_serial(double max_energy)
     return is_hit_min_edge_length.load();
 }
 
-void ImageSimulationMeshTri::write_msh(std::string file)
+void ImageSimulationMeshTri::write_msh(std::string file, const bool write_envelope)
 {
     consolidate_mesh();
 
@@ -535,7 +560,7 @@ void ImageSimulationMeshTri::write_msh(std::string file)
 
     msh.add_physical_group("ImageVolume");
 
-    if (m_envelope) {
+    if (m_envelope && write_envelope) {
         msh.add_edge_vertices(m_V_envelope.size(), [this](size_t k) {
             return Vector3d(m_V_envelope[k][0], m_V_envelope[k][1], 0);
         });
@@ -547,10 +572,9 @@ void ImageSimulationMeshTri::write_msh(std::string file)
     msh.save(file, true);
 }
 
-void ImageSimulationMeshTri::write_msh_groups(std::string file)
+void ImageSimulationMeshTri::write_msh_groups(std::string file, const bool write_envelope)
 {
     consolidate_mesh();
-
 
     wmtk::MshData msh;
 
@@ -625,11 +649,25 @@ void ImageSimulationMeshTri::write_msh_groups(std::string file)
         msh.add_empty_vertices(2);
         msh_add_faces();
 
-        const std::string group_name = fmt::format("tag_{}", tag_img);
+        std::string group_name;
+        if (m_tag_id_to_name.count(tag_img)) {
+            group_name = m_tag_id_to_name[tag_img];
+        } else {
+            group_name = fmt::format("tag_{}", tag_img);
+            while (m_tag_name_to_id.count(group_name)) {
+                group_name += "_";
+            }
+            m_tag_name_to_id[group_name] = tag_img;
+            m_tag_id_to_name[tag_img] = group_name;
+            logger().warn(
+                "Tag {} does not have a name. Assigning the name {}.",
+                tag_img,
+                group_name);
+        }
         msh.add_physical_group(group_name);
     }
 
-    if (m_envelope) {
+    if (m_envelope && write_envelope) {
         msh.add_edge_vertices(m_V_envelope.size(), [this](size_t k) {
             return Vector3d(m_V_envelope[k][0], m_V_envelope[k][1], 0);
         });
@@ -637,6 +675,7 @@ void ImageSimulationMeshTri::write_msh_groups(std::string file)
         msh.add_physical_group("EnvelopeSurface");
     }
 
+    logger().info("Write {}", file);
     msh.save(file, true);
 }
 
@@ -778,7 +817,7 @@ void ImageSimulationMeshTri::write_vtu_with_energies(const std::string& path) co
             auto amips_energy = get_amips_energy(v);
             auto smooth_energy = get_smooth_energy(v);
             auto envelope_energy = get_envelope_energy(v);
-            auto barrier_energy = get_barrier_energy(v);
+            // auto barrier_energy = get_barrier_energy(v);
 
             if (!smooth_energy) {
                 continue;
@@ -787,7 +826,7 @@ void ImageSimulationMeshTri::write_vtu_with_energies(const std::string& path) co
             energy_sum->add_energy(amips_energy);
             energy_sum->add_energy(smooth_energy);
             energy_sum->add_energy(envelope_energy);
-            energy_sum->add_energy(barrier_energy);
+            // energy_sum->add_energy(barrier_energy);
 
             VectorXd g;
             amips_energy->gradient(x, g);
@@ -796,8 +835,8 @@ void ImageSimulationMeshTri::write_vtu_with_energies(const std::string& path) co
             v_energy_grad_smooth.row(vid) = g;
             envelope_energy->gradient(x, g);
             v_energy_grad_envelope.row(vid) = g;
-            barrier_energy->gradient(x, g);
-            v_energy_grad_barrier.row(vid) = g;
+            // barrier_energy->gradient(x, g);
+            // v_energy_grad_barrier.row(vid) = g;
             energy_sum->gradient(x, g);
             v_energy_grad_sum.row(vid) = g;
         }
@@ -1620,9 +1659,9 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
         if (m_params.w_envelope > 0) {
             energy_sum->add_energy(get_envelope_energy(t));
         }
-        if (m_params.w_separate > 0) {
-            energy_sum->add_energy(get_barrier_energy(t));
-        }
+        // if (m_params.w_separate > 0) {
+        //     energy_sum->add_energy(get_barrier_energy(t));
+        // }
 
         total_energy = energy_sum;
     } else {
@@ -1917,19 +1956,19 @@ void ImageSimulationMeshTri::log_total_surface_energy()
         }
 
         auto envelope_energy = get_envelope_energy(t);
-        auto barrier_energy = get_barrier_energy(t);
+        // auto barrier_energy = get_barrier_energy(t);
 
         auto energy_sum = std::make_shared<optimization::EnergySum>();
         energy_sum->add_energy(amips_energy);
         energy_sum->add_energy(smooth_energy);
         energy_sum->add_energy(envelope_energy);
-        energy_sum->add_energy(barrier_energy);
+        // energy_sum->add_energy(barrier_energy);
 
         e_sum += energy_sum->value(old_pos);
         e_amips += amips_energy->value(old_pos);
         e_smooth += smooth_energy->value(old_pos);
         e_envelope += envelope_energy->value(old_pos);
-        e_barrier += barrier_energy->value(old_pos);
+        // e_barrier += barrier_energy->value(old_pos);
 
         ++n_pts;
     }

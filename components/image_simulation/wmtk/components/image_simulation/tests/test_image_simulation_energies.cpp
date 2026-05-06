@@ -33,7 +33,11 @@ std::shared_ptr<tri::ImageSimulationMeshTri> init_optimization_tests(
     params.init(input_data.V_input.colwise().minCoeff(), input_data.V_input.colwise().maxCoeff());
 
     auto mesh = std::make_shared<tri::ImageSimulationMeshTri>(params, params.eps);
-    mesh->init_from_image(input_data.V_input, input_data.T_input, input_data.T_input_tag);
+    mesh->init_from_image(
+        input_data.V_input,
+        input_data.T_input,
+        input_data.T_input_tag,
+        input_data.tag_names);
 
     return mesh;
 }
