@@ -88,6 +88,8 @@ class ImageSimulationMeshTri : public wmtk::TriMesh
 public:
     int m_debug_print_counter = 0;
     size_t m_tags_count = 0;
+    std::map<int64_t, std::string> m_tag_id_to_name;
+    std::map<std::string, int64_t> m_tag_name_to_id;
 
     const double MAX_ENERGY = std::numeric_limits<double>::max();
 
@@ -199,14 +201,22 @@ public:
      * @param V #Vx3 vertices of the tet mesh
      * @param T #Tx4 vertex IDs for all faces
      * @param T_tags #Tx1 image data represented by the individual faces
+     * @param tag_names Names for each tag in T_tags. The size must be the same as the number of
+     * columns in T_tags.
      */
-    void init_from_image(const MatrixXd& V, const MatrixXi& T, const MatrixSi& T_tags);
+    void init_from_image(
+        const MatrixXd& V,
+        const MatrixXi& T,
+        const MatrixSi& T_tags,
+        const std::vector<std::string>& tag_names);
 
     void init_surfaces_and_boundaries();
 
     void init_envelope(const MatrixXd& V, const MatrixXi& F);
 
     void init_separation_weight();
+
+    CellTag string_set_to_cell_tag(const std::set<std::string>& str_set);
 
     bool adjust_sizing_field_serial(double max_energy);
 

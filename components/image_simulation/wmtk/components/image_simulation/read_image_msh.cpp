@@ -139,6 +139,7 @@ InputData read_image_msh(const std::string& path)
 
         std::vector<MatrixXd> Vs;
         std::vector<MatrixXi> Fs;
+        std::vector<std::string> tag_names;
 
         MatrixXd V_envelope;
         MatrixXi F_envelope;
@@ -146,6 +147,7 @@ InputData read_image_msh(const std::string& path)
             MatrixXd V;
             MatrixXi F;
             msh.get_VF(ph, V, F);
+            tag_names.push_back(ph.name);
             if ((has_tets && ph.dim == 2) || (ph.dim == 1)) {
                 // this must be the envelope surface
                 if (V_envelope.size() != 0) {
@@ -208,6 +210,7 @@ InputData read_image_msh(const std::string& path)
                     const size_t tid = tet_ids[s];
                     input_data.T_input_tag.coeffRef(tid, i - 1) = 1;
                 }
+                input_data.tag_names.push_back(tag_names[i]);
             }
         } else {
             auto& Vi = input_data.V_input;
@@ -250,6 +253,7 @@ InputData read_image_msh(const std::string& path)
                     const size_t tid = tet_ids[s];
                     input_data.T_input_tag.coeffRef(tid, i - 1) = 1;
                 }
+                input_data.tag_names.push_back(tag_names[i]);
             }
         }
 
@@ -391,8 +395,9 @@ InputData read_image_msh(const std::string& path)
         }
 
         input_data.T_input_tag = input_tags_bin.sparseView();
-
-        // input_data.T_input_tag = input_tags;
+        for (int j = 0; j < input_tags_bin.cols(); ++j) {
+            input_data.tag_names.push_back("tag_" + std::to_string(j));
+        }
     }
 
     return input_data;
@@ -498,6 +503,9 @@ InputData read_mesh(
     }
     input_data.T_input = image_mesh.T_emb();
     input_data.T_input_tag = image_mesh.T_tags();
+    for (int i = 0; i < input_data.T_input_tag.cols(); ++i) {
+        input_data.tag_names.push_back("tag_" + std::to_string(i));
+    }
 
     wmtk::logger().info("======= finish image-tet conversion =========");
 

@@ -124,6 +124,8 @@ class ImageSimulationMesh : public wmtk::TetMesh
 public:
     int m_debug_print_counter = 0;
     size_t m_tags_count = 0;
+    std::map<int64_t, std::string> m_tag_id_to_name;
+    std::map<std::string, int64_t> m_tag_name_to_id;
 
     double time_env = 0.0;
     igl::Timer isout_timer;
@@ -354,6 +356,8 @@ public:
 
     void init_separation_weight();
 
+    CellTag string_set_to_cell_tag(const std::set<std::string>& str_set);
+
     double get_length2(const Tuple& l) const;
 
     ////// Attributes related
@@ -568,8 +572,16 @@ public:
      * @param T #Tx4 vertex IDs for all tets
      * @param T_tags #Tx1 image data represented by the individual tets
      */
-    void init_from_image(const MatrixXr& V, const MatrixXi& T, const MatrixSi& T_tags);
-    void init_from_image(const MatrixXd& V, const MatrixXi& T, const MatrixSi& T_tags);
+    void init_from_image(
+        const MatrixXr& V,
+        const MatrixXi& T,
+        const MatrixSi& T_tags,
+        const std::vector<std::string>& tag_names);
+    void init_from_image(
+        const MatrixXd& V,
+        const MatrixXi& T,
+        const MatrixSi& T_tags,
+        const std::vector<std::string>& tag_names);
 
     void init_surfaces_and_boundaries();
 

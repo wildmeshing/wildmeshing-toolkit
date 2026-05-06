@@ -255,6 +255,25 @@ std::tuple<double, double> ImageSimulationMesh::local_operations(
     return energy;
 }
 
+CellTag wmtk::components::image_simulation::ImageSimulationMesh::string_set_to_cell_tag(
+    const std::set<std::string>& str_set)
+{
+    CellTag cell_tag;
+    for (const auto& str : str_set) {
+        const auto it = m_tag_name_to_id.find(str);
+        if (it != m_tag_name_to_id.end()) {
+            cell_tag.insert(it->second);
+        } else {
+            logger().warn("Tag name {} does not exist! Adding new tag.", str);
+            int64_t new_id = m_tags_count++;
+            m_tag_name_to_id[str] = new_id;
+            m_tag_id_to_name[new_id] = str;
+            cell_tag.insert(new_id);
+        }
+    }
+    return cell_tag;
+}
+
 bool ImageSimulationMesh::adjust_sizing_field_serial(double max_energy)
 {
     logger().info("#vertices {}, #tets {}", vert_capacity(), tet_capacity());
@@ -624,7 +643,21 @@ void ImageSimulationMesh::write_msh_groups(std::string file)
         msh.add_empty_vertices(3);
         msh_add_tets();
 
-        const std::string group_name = fmt::format("tag_{}", tag_img);
+        std::string group_name;
+        if (m_tag_id_to_name.count(tag_img)) {
+            group_name = m_tag_id_to_name[tag_img];
+        } else {
+            group_name = fmt::format("tag_{}", tag_img);
+            while (m_tag_name_to_id.count(group_name)) {
+                group_name += "_";
+            }
+            m_tag_name_to_id[group_name] = tag_img;
+            m_tag_id_to_name[tag_img] = group_name;
+            logger().warn(
+                "Tag {} does not have a name. Assigning the name {}.",
+                tag_img,
+                group_name);
+        }
         msh.add_physical_group(group_name);
     }
 

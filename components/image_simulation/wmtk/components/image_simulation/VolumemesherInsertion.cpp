@@ -618,7 +618,8 @@ void ImageSimulationMesh::init_from_Volumeremesher(
 void ImageSimulationMesh::init_from_image(
     const MatrixXr& V,
     const MatrixXi& T,
-    const MatrixSi& T_tags)
+    const MatrixSi& T_tags,
+    const std::vector<std::string>& tag_names)
 {
     assert(V.cols() == 3);
     assert(T.cols() == 4);
@@ -655,6 +656,12 @@ void ImageSimulationMesh::init_from_image(
         }
     }
 
+    // add tag names
+    for (size_t i = 0; i < tag_names.size(); ++i) {
+        m_tag_id_to_name[i] = tag_names[i];
+        m_tag_name_to_id[tag_names[i]] = i;
+    }
+
     init_surfaces_and_boundaries();
 
     if (m_params.preserve_topology) {
@@ -679,7 +686,8 @@ void ImageSimulationMesh::init_from_image(
 void ImageSimulationMesh::init_from_image(
     const MatrixXd& V,
     const MatrixXi& T,
-    const MatrixSi& T_tags)
+    const MatrixSi& T_tags,
+    const std::vector<std::string>& tag_names)
 {
     assert(V.cols() == 3);
     assert(T.cols() == 4);
@@ -727,6 +735,12 @@ void ImageSimulationMesh::init_from_image(
                 m_tet_attribute[i].tags.insert(j);
             }
         }
+    }
+
+    // add tag names
+    for (size_t i = 0; i < tag_names.size(); ++i) {
+        m_tag_id_to_name[i] = tag_names[i];
+        m_tag_name_to_id[tag_names[i]] = i;
     }
 
     init_surfaces_and_boundaries();

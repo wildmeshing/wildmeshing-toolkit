@@ -12,6 +12,7 @@ struct InputData
     MatrixXr V_input_r;
     MatrixXi T_input;
     MatrixSi T_input_tag;
+    std::vector<std::string> tag_names;
 
     MatrixXd V_envelope;
     MatrixXi F_envelope;
