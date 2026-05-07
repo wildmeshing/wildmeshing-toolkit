@@ -9,6 +9,9 @@
 namespace wmtk::components::topological_offset {
 
 
+const std::set<int64_t> TEMP_OFFSET_TRI_TAG{-1};
+
+
 class VertexAttributes2d
 {
 public:
@@ -153,12 +156,18 @@ public:
     void simplicial_embedding();
     //// simplicial embedding stuff
 
-    //// variable offset stuff
+    // variable offset stuff
+
+    /**
+     * @brief check if removing the given face from the given tag set would retain its topology
+     */
+    bool tag_tri_consistent_topology(size_t f_id, int64_t tag) const;
+
     /**
      * @brief check if adding a triangle to the offset region does not change the topology of the
      * offset. Returns true if topology would not be changed
      */
-    bool tri_consistent_topology(const size_t f_id) const;
+    bool offset_tri_consistent_topology(const size_t f_id) const;
 
     /**
      * @brief check if a triangle is inside the offset (implicitly defined via BVH distance field to
@@ -228,24 +237,29 @@ private:
 private: // helpers
     /**
      * @brief determine if any tag from tag1 is also present in tag2.
-     * @note if tag2 is empty (ambient), return true if tag1 is empty, otherwise false (tag2 is
-     * ambient, so only 'element' is ambient)
      */
-    bool any_tag_present(const std::set<int64_t>& tag1, const std::set<int64_t>& tag2)
+    bool any_tag_present(const std::set<int64_t>& tag1, const std::set<int64_t>& tag2) const
     {
-        if (tag2.empty()) {
-            return tag1.empty();
-        }
-        if (tag1.empty()) { // tag1 is ambient and tag2 is not
-            return false;
-        }
-
         for (const int64_t& i : tag1) {
             if (tag2.find(i) != tag2.end()) {
                 return true;
             }
         }
         return false;
+
+        // if (tag2.empty()) {
+        //     return tag1.empty();
+        // }
+        // if (tag1.empty()) { // tag1 is ambient and tag2 is not
+        //     return false;
+        // }
+
+        // for (const int64_t& i : tag1) {
+        //     if (tag2.find(i) != tag2.end()) {
+        //         return true;
+        //     }
+        // }
+        // return false;
     }
 
     /**

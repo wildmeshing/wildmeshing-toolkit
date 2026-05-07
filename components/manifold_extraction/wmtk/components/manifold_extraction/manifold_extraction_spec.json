@@ -39,7 +39,7 @@
     "type": "list",
     "default": ["tag_0"],
     "min": 1,
-    "doc": "Tag set to considered inside the surface (empty for ambient)."
+    "doc": "Tag set to considered inside the surface"
   },
   {
     "pointer": "/in_tag/*",
@@ -56,7 +56,7 @@
     "pointer": "/replace_tag",
     "type": "list",
     "default": [],
-    "doc": "Only relevant for subtract mode (manifold_union=false). Tag set to fill subtracted regions with. Empty for ambient."
+    "doc": "Only relevant for subtract mode (manifold_union=false). Tag set to fill subtracted regions with"
   },
   {
     "pointer": "/replace_tag/*",

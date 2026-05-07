@@ -146,14 +146,13 @@ InputData read_image_msh(const std::string& path)
                 T.row(i) = tets[i];
             }
 
-            // tags - NOTE: assume Fs[0] is "ambient" group
-            input_data.T_input_tags.resize(input_data.T_input.rows(), Fs.size() - 1);
-            for (size_t i = 1; i < Fs.size(); i++) {
+            input_data.T_input_tags.resize(input_data.T_input.rows(), Fs.size());
+            for (size_t i = 0; i < Fs.size(); i++) {
                 for (size_t j = 0; j < Fs[i].rows(); j++) {
                     const Vector4i& t = Fs[i].row(j);
                     simplex::Tet tet_simp(t(0), t(1), t(2), t(3));
                     size_t t_id = ids[tet_simp];
-                    input_data.T_input_tags.coeffRef(t_id, i - 1) = 1;
+                    input_data.T_input_tags.coeffRef(t_id, i) = 1;
                 }
                 input_data.tag_names.push_back(tag_names[i]);
             }
@@ -190,14 +189,13 @@ InputData read_image_msh(const std::string& path)
                 T.row(i) = faces[i];
             }
 
-            // tags - again, assume first (Fs[0]) is "ambient"
-            input_data.T_input_tags.resize(input_data.T_input.rows(), Fs.size() - 1);
-            for (size_t i = 1; i < Fs.size(); i++) {
+            input_data.T_input_tags.resize(input_data.T_input.rows(), Fs.size());
+            for (size_t i = 0; i < Fs.size(); i++) {
                 for (size_t j = 0; j < Fs[i].rows(); j++) {
                     const Vector3i& f = Fs[i].row(j);
                     const simplex::Face face_simp(f(0), f(1), f(2));
                     size_t f_id = ids[face_simp];
-                    input_data.T_input_tags.coeffRef(f_id, i - 1) = 1;
+                    input_data.T_input_tags.coeffRef(f_id, i) = 1;
                 }
                 input_data.tag_names.push_back(tag_names[i]);
             }
