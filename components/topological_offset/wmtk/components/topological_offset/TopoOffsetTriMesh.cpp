@@ -464,9 +464,21 @@ void TopoOffsetTriMesh::marching_tets()
     for (const size_t v_id : frontier_verts) {
         auto tris = get_one_ring_tris_for_vertex(tuple_from_vertex(v_id));
         for (const Tuple& t : tris) {
-            if (m_face_attribute[t.fid(*this)].label == 0) { // dont want to overwrite if in input
-                m_face_attribute[t.fid(*this)].label = 2;
-                m_face_attribute[t.fid(*this)].tag = TEMP_OFFSET_TRI_TAG;
+            size_t f_id = t.fid(*this);
+            if (m_face_attribute[f_id].label == 0) { // dont want to overwrite if in input
+                m_face_attribute[f_id].label = 2;
+                m_face_attribute[f_id].tag = TEMP_OFFSET_TRI_TAG;
+                // propagate to children
+                auto vs = oriented_tri_vids(f_id);
+                for (int i = 0; i < 3; i++) {
+                    if (m_vertex_attribute[vs[i]].label != 1) {
+                        m_vertex_attribute[vs[i]].label = 2;
+                    }
+                    size_t e_id = tuple_from_edge(f_id, i).eid(*this);
+                    if (m_edge_attribute[e_id].label != 1) {
+                        m_edge_attribute[e_id].label = 2;
+                    }
+                }
             }
         }
     }
@@ -477,22 +489,16 @@ void TopoOffsetTriMesh::grow_offset_conservative()
 {
     std::queue<Tuple> tris_q;
     auto all_tris = get_faces();
-    // std::map<size_t, bool> visited;
 
     for (const Tuple& f : all_tris) {
-        // visited[f.fid(*this)] = false; // initialize visited array
-        if (offset_tri_consistent_topology(f.fid(*this))) {
+        size_t f_id = f.fid(*this);
+        if (m_face_attribute[f_id].label != 2 && offset_tri_consistent_topology(f_id)) {
             tris_q.push(f);
         }
     }
+    logger().info("\tInitial queue size {}", tris_q.size());
 
-    // int testing = 0;
     while (!tris_q.empty()) {
-        // testing++;
-        // if (testing % 10000 == 0) {
-        //     logger().info("queue size: {}", tris_q.size());
-        // }
-
         Tuple curr_tri = tris_q.front();
         tris_q.pop();
 
