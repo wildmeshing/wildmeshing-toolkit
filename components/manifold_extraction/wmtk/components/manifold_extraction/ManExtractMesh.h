@@ -171,7 +171,7 @@ public:
     void init_from_image(
         const MatrixXd& V,
         const MatrixXi& T,
-        const MatrixSi& T_tag,
+        const MatrixSi& T_tags,
         const MatrixXd& V_env,
         const MatrixXi& F_env,
         const std::vector<std::string>& tag_names);

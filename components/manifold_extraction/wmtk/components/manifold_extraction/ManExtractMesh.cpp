@@ -44,7 +44,7 @@ VertexAttributes::VertexAttributes(const Vector3d& p)
 void ManExtractMesh::init_from_image(
     const MatrixXd& V,
     const MatrixXi& T,
-    const MatrixSi& T_tag,
+    const MatrixSi& T_tags,
     const MatrixXd& V_env,
     const MatrixXi& F_env,
     const std::vector<std::string>& tag_names)
@@ -52,7 +52,7 @@ void ManExtractMesh::init_from_image(
     // assert dimensions
     assert(V.cols() == 3);
     assert(T.cols() == 4);
-    assert(T.rows() == T_tag.rows());
+    assert(T.rows() == T_tags.rows());
     assert((V_env.rows() == 0) || (V_env.cols() == 3));
     assert((F_env.rows() == 0) || (F_env.cols() == 3));
 
@@ -71,7 +71,7 @@ void ManExtractMesh::init_from_image(
     }
 
     // set tag name id map stuff
-    m_tags_count = T_tag.cols();
+    m_tags_count = T_tags.cols();
     for (int64_t i = 0; i < tag_names.size(); i++) {
         m_tag_id_to_name[i] = tag_names[i];
         m_tag_name_to_id[tag_names[i]] = i;
@@ -91,13 +91,12 @@ void ManExtractMesh::init_from_image(
         m_replace_tag_ids.insert(m_tag_name_to_id[name]);
     }
 
-
     // initialize tet tags. if tet tag is subset of in_tag, then in_out=true
     auto tets = get_tets();
     for (const Tuple& t : tets) {
         size_t t_id = t.tid(*this);
-        for (int j = 0; j < m_tags_count; j++) {
-            if (T_tag.coeff(t_id, j) == 1) {
+        for (int j = 0; j < T_tags.cols(); j++) {
+            if (T_tags.coeff(t_id, j) == 1) {
                 m_tet_attribute[t_id].tag.insert(j);
             }
         }
@@ -905,38 +904,12 @@ void ManExtractMesh::write_vtu(const std::string& path)
 
 void ManExtractMesh::write_msh_groups(const std::string& path)
 {
-    logger().info("Write {}_groups.msh", path);
+    logger().info("Write {}.msh", path);
     consolidate_mesh();
 
     wmtk::MshData msh;
 
-    // set vertices
-    const auto& verts = get_vertices();
-    msh.add_tet_vertices(verts.size(), [&](size_t k) {
-        auto i = verts[k].vid(*this);
-        return m_vertex_attribute[i].m_posf;
-    });
-
     const auto& tets = get_tets();
-
-    int64_t max_tag = -1;
-    for (const Tuple& t : tets) {
-        size_t t_id = t.tid(*this);
-        const auto& tag = m_tet_attribute[t_id].tag;
-        if (tag.empty()) {
-            continue;
-        }
-        int64_t mt = *tag.rbegin();
-        max_tag = std::max(max_tag, mt);
-    }
-
-    if (m_tags_count < max_tag + 1) {
-        logger().warn(
-            "Max tag is {} but but m_tags_count is {}. Adjusting m_tags_count",
-            max_tag,
-            m_tags_count);
-        m_tags_count = max_tag + 1;
-    }
 
     std::vector<Tuple> tets_with_tag;
     tets_with_tag.reserve(tets.size());
@@ -952,16 +925,6 @@ void ManExtractMesh::write_msh_groups(const std::string& path)
         });
     };
 
-    // add ambient mesh
-    for (const Tuple& t : tets) {
-        size_t t_id = t.tid(*this);
-        if (m_tet_attribute[t_id].tag.empty()) {
-            tets_with_tag.push_back(t);
-        }
-    }
-    msh_add_tets();
-    msh.add_physical_group("ambient");
-
     // group for each tag
     for (int64_t tag_img = 0; tag_img < m_tags_count; tag_img++) {
         tets_with_tag.clear();
@@ -976,10 +939,19 @@ void ManExtractMesh::write_msh_groups(const std::string& path)
             continue;
         }
 
-        msh.add_empty_vertices(3);
+        if (tag_img == 0) {
+            // set vertices
+            const auto& verts = get_vertices();
+            msh.add_tet_vertices(verts.size(), [&](size_t k) {
+                auto i = verts[k].vid(*this);
+                return m_vertex_attribute[i].m_posf;
+            });
+        } else {
+            msh.add_empty_vertices(3);
+        }
         msh_add_tets();
 
-        const std::string group_name = fmt::format(m_tag_id_to_name[tag_img]);
+        const std::string group_name = m_tag_id_to_name[tag_img];
         msh.add_physical_group(group_name);
     }
 
@@ -991,7 +963,7 @@ void ManExtractMesh::write_msh_groups(const std::string& path)
         msh.add_physical_group("EnvelopeSurface");
     }
 
-    msh.save(path + "_groups.msh", true);
+    msh.save(path + ".msh", true);
 }
 
 

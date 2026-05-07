@@ -466,6 +466,7 @@ void TopoOffsetTriMesh::marching_tets()
         for (const Tuple& t : tris) {
             if (m_face_attribute[t.fid(*this)].label == 0) { // dont want to overwrite if in input
                 m_face_attribute[t.fid(*this)].label = 2;
+                m_face_attribute[t.fid(*this)].tag = TEMP_OFFSET_TRI_TAG;
             }
         }
     }
@@ -480,7 +481,7 @@ void TopoOffsetTriMesh::grow_offset_conservative()
 
     for (const Tuple& f : all_tris) {
         // visited[f.fid(*this)] = false; // initialize visited array
-        if (tri_consistent_topology(f.fid(*this))) {
+        if (offset_tri_consistent_topology(f.fid(*this))) {
             tris_q.push(f);
         }
     }
@@ -501,7 +502,7 @@ void TopoOffsetTriMesh::grow_offset_conservative()
         }
 
         // ensure tri doesn't change topology
-        if (!tri_consistent_topology(tri_id)) {
+        if (!offset_tri_consistent_topology(tri_id)) {
             continue;
         }
 
@@ -512,6 +513,7 @@ void TopoOffsetTriMesh::grow_offset_conservative()
             m_params.relative_ball_threshold * m_params.target_distance);
         if (in_offset) {
             m_face_attribute[tri_id].label = 2;
+            m_face_attribute[tri_id].tag = TEMP_OFFSET_TRI_TAG;
             auto vs = oriented_tri_vids(tri_id);
             for (int i = 0; i < 3; i++) { // propagate labels to edges and verts
                 if (m_vertex_attribute[vs[i]].label != 1) {
@@ -679,22 +681,42 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
     const auto& vs = get_vertices();
     const auto& tris = get_faces();
 
+    bool has_tmp_tag = false;
+    for (const Tuple& f : tris) {
+        if (m_face_attribute[f.fid(*this)].tag == TEMP_OFFSET_TRI_TAG) {
+            has_tmp_tag = true;
+            continue;
+        }
+    }
+
     Eigen::MatrixXd V(vs.size(), 2);
     Eigen::MatrixXi F(tris.size(), 3);
 
     V.setZero();
     F.setZero();
 
-    std::vector<MatrixXd> tags(m_tags_count, MatrixXd(tris.size(), 1));
+    // hacky (has_tmp_tag)
+    std::vector<MatrixXd> tags(m_tags_count + (has_tmp_tag ? 1 : 0), MatrixXd(tris.size(), 1));
 
     for (const Tuple& f : tris) {
         size_t f_id = f.fid(*this);
+
+        // also hacky but whatever.
+        if (has_tmp_tag && (m_face_attribute[f_id].tag == TEMP_OFFSET_TRI_TAG)) {
+            tags[m_tags_count](f_id, 0) = 1;
+            for (int j = 0; j < m_tags_count; j++) {
+                tags[j](f_id, 0) = 0;
+            }
+            continue;
+        }
 
         // set tri tags
         for (int j = 0; j < m_tags_count; j++) {
             tags[j](f_id, 0) = (m_face_attribute[f_id].tag.count(j) == 1) ? 1 : 0;
         }
+    }
 
+    for (const Tuple& f : tris) {
         // set tri verts
         const auto& loc_vs = oriented_tri_vertices(f);
         for (int j = 0; j < 3; j++) {
@@ -711,6 +733,9 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
     writer = std::make_shared<paraviewo::VTUWriter>();
     for (int64_t i = 0; i < m_tags_count; i++) {
         writer->add_cell_field(m_tag_id_to_name[i], tags[i]);
+    }
+    if (has_tmp_tag) {
+        writer->add_cell_field("offset_tag", tags[m_tags_count]); // also hacky but it works.
     }
     writer->write_mesh(path + ".vtu", V, F);
 
@@ -775,39 +800,12 @@ void TopoOffsetTriMesh::write_msh(const std::string& file)
 
 void TopoOffsetTriMesh::write_msh_groups(const std::string& file)
 {
-    logger().info("Write {}_groups.msh", file);
+    logger().info("Write {}.msh", file);
     consolidate_mesh();
 
     wmtk::MshData msh;
 
-    // set vertices
-    const auto& verts = get_vertices();
-    msh.add_face_vertices(verts.size(), [&](size_t k) {
-        auto i = verts[k].vid(*this);
-        Vector2d p2 = m_vertex_attribute[i].m_posf;
-        return Vector3d(p2(0), p2(1), 0);
-    });
-
     const auto& faces = get_faces();
-
-    int64_t max_tag = -1;
-    for (const Tuple& f : faces) {
-        size_t f_id = f.fid(*this);
-        const auto& tag = m_face_attribute[f_id].tag;
-        if (tag.empty()) {
-            continue;
-        }
-        int64_t mt = *tag.rbegin();
-        max_tag = std::max(max_tag, mt);
-    }
-
-    if (m_tags_count < max_tag + 1) {
-        logger().warn(
-            "Max tag is {} but but m_tags_count is {}. Adjusting m_tags_count",
-            max_tag,
-            m_tags_count);
-        m_tags_count = max_tag + 1;
-    }
 
     std::vector<Tuple> faces_with_tag;
     faces_with_tag.reserve(faces.size());
@@ -823,16 +821,6 @@ void TopoOffsetTriMesh::write_msh_groups(const std::string& file)
         });
     };
 
-    // add ambient mesh
-    for (const Tuple& f : faces) {
-        size_t f_id = f.fid(*this);
-        if (m_face_attribute[f_id].tag.empty()) {
-            faces_with_tag.push_back(f);
-        }
-    }
-    msh_add_faces();
-    msh.add_physical_group("ambient");
-
     // group for each tag
     for (int64_t tag_img = 0; tag_img < m_tags_count; tag_img++) {
         faces_with_tag.clear();
@@ -847,7 +835,17 @@ void TopoOffsetTriMesh::write_msh_groups(const std::string& file)
             continue;
         }
 
-        msh.add_empty_vertices(2);
+        if (tag_img == 0) {
+            // set vertices
+            const auto& verts = get_vertices();
+            msh.add_face_vertices(verts.size(), [&](size_t k) {
+                auto i = verts[k].vid(*this);
+                Vector2d p2 = m_vertex_attribute[i].m_posf;
+                return Vector3d(p2(0), p2(1), 0);
+            });
+        } else {
+            msh.add_empty_vertices(2);
+        }
         msh_add_faces();
 
         const std::string group_name = m_tag_id_to_name[tag_img];
@@ -862,7 +860,7 @@ void TopoOffsetTriMesh::write_msh_groups(const std::string& file)
         msh.add_physical_group("EnvelopeSurface");
     }
 
-    msh.save(file + "_groups.msh", true);
+    msh.save(file + ".msh", true);
 }
 
 
