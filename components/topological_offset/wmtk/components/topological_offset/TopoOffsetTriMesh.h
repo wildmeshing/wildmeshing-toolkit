@@ -9,7 +9,8 @@
 namespace wmtk::components::topological_offset {
 
 
-const std::set<int64_t> TEMP_OFFSET_TRI_TAG{-1};
+const int64_t TEMP_OFFSET_TRI_TAG = -1;
+const std::set<int64_t> TEMP_OFFSET_TRI_TAG_SET{TEMP_OFFSET_TRI_TAG};
 
 
 class VertexAttributes2d
@@ -138,7 +139,7 @@ public:
      * and the offset target distance (m_params.target_distance). If m_edge_split_mode=Midpoint,
      * edges are split at the midpoint
      */
-    void marching_tets();
+    void marching_tris();
 
 
     //// simplicial embedding stuff

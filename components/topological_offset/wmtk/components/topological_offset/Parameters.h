@@ -8,6 +8,7 @@ struct Parameters
     // parameters set by user
     std::vector<std::set<std::string>> offset_tags;
     std::set<std::string> offset_output_tag;
+    bool respect_all_topologies;
     double target_distance;
     double relative_ball_threshold;
     double edge_search_term_len;

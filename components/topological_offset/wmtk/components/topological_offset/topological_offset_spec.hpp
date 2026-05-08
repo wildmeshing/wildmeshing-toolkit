@@ -15,6 +15,7 @@ nlohmann::json topological_offset_spec = R"(
       "output",
       "offset_tags",
       "offset_output_tag",
+      "respect_all_topologies",
       "target_distance",
       "relative_ball_threshold",
       "edge_search_termination_len",
@@ -66,12 +67,18 @@ nlohmann::json topological_offset_spec = R"(
     "type": "list",
     "default": [],
     "min": 1,
-    "doc": "Set of tags to set for resulting offset region"
+    "doc": "Set of tags to append to elements in the resulting offset region (note that no tags are overwritten)."
   },
   {
     "pointer": "/offset_output_tag/*",
     "type": "string",
     "doc": "A tag."
+  },
+  {
+    "pointer": "/respect_all_topologies",
+    "type": "bool",
+    "default": "true",
+    "doc": "If true, the topology of every tag after offset initialization is respected as if the offset was to replace all tags. If false, only the topology of the offset is respected."
   },
   {
     "pointer": "/target_distance",
