@@ -564,4 +564,24 @@ void ImageSimulationMesh::replace_tags(const std::vector<CellTag>& tags_in, cons
     m_envelope.reset();
 }
 
+void ImageSimulationMesh::tag_priority(const std::vector<int64_t>& tags_order)
+{
+    for (const Tuple& t : get_tets()) {
+        CellTag& tags = m_tet_attribute[t.tid(*this)].tags;
+        for (size_t i = 0; i < tags_order.size(); ++i) {
+            if (tags.find(tags_order[i]) != tags.end()) {
+                // found the highest priority tag, remove all lower priority tags
+                for (size_t j = i + 1; j < tags_order.size(); ++j) {
+                    tags.erase(tags_order[j]);
+                }
+                break;
+            }
+        }
+    }
+
+    m_F_envelope.clear();
+    m_V_envelope.clear();
+    m_envelope.reset();
+}
+
 } // namespace wmtk::components::image_simulation

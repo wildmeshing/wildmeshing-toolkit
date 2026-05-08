@@ -363,6 +363,8 @@ public:
 
     void replace_tags(const std::vector<CellTag>& tags_in, const CellTag& tag_out);
 
+    void tag_priority(const std::vector<int64_t>& tags_order);
+
     /**
      * @brief Find the substructure region that might be affected by minimal separation.
      *

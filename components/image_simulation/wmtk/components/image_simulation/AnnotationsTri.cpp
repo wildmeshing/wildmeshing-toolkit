@@ -559,4 +559,24 @@ void ImageSimulationMeshTri::replace_tags(
     m_envelope.reset();
 }
 
+void ImageSimulationMeshTri::tag_priority(const std::vector<int64_t>& tags_order)
+{
+    for (const Tuple& t : get_faces()) {
+        CellTag& tags = m_face_attribute[t.fid(*this)].tags;
+        for (size_t i = 0; i < tags_order.size(); ++i) {
+            if (tags.find(tags_order[i]) != tags.end()) {
+                // found the highest priority tag, remove all lower priority tags
+                for (size_t j = i + 1; j < tags_order.size(); ++j) {
+                    tags.erase(tags_order[j]);
+                }
+                break;
+            }
+        }
+    }
+
+    m_E_envelope.clear();
+    m_V_envelope.clear();
+    m_envelope.reset();
+}
+
 } // namespace wmtk::components::image_simulation::tri

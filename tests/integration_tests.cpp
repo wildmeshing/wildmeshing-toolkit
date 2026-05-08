@@ -27,6 +27,7 @@ std::vector<std::string> input_files{
     "image_simulation_tight_seal_2d.json",
     "image_simulation_replace_tags_2d.json",
     "image_simulation_resolve_intersections_2d.json",
+    "image_simulation_tag_priority_2d.json",
     "image_simulation_double_sphere_3d.json",
     "image_simulation_double_sphere_notop_3d.json",
     "image_simulation_tight_seal_3d.json",
