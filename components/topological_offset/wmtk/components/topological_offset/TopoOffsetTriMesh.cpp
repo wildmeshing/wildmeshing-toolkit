@@ -492,7 +492,7 @@ void TopoOffsetTriMesh::grow_offset_conservative()
 
     for (const Tuple& f : all_tris) {
         size_t f_id = f.fid(*this);
-        if (m_face_attribute[f_id].label != 2 && offset_tri_consistent_topology(f_id)) {
+        if (m_face_attribute[f_id].label == 0 && offset_tri_consistent_topology(f_id)) {
             tris_q.push(f);
         }
     }

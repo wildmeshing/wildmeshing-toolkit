@@ -677,7 +677,7 @@ void TopoOffsetTetMesh::grow_offset_conservative()
 
     for (const Tuple& t : all_tets) {
         size_t t_id = t.tid(*this);
-        if ((m_tet_attribute[t_id].label != 2) && offset_tet_consistent_topology(t_id)) {
+        if ((m_tet_attribute[t_id].label == 0) && offset_tet_consistent_topology(t_id)) {
             tets_q.push(t);
         }
     }
