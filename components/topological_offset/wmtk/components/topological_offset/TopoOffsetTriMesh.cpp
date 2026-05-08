@@ -50,6 +50,15 @@ void TopoOffsetTriMesh::init_from_image(
         m_F_envelope = F_env;
     }
 
+    // check that all tags are present
+    for (const std::set<std::string>& nameset : m_params.offset_tags) {
+        for (const std::string& name : nameset) {
+            if (std::find(tag_names.begin(), tag_names.end(), name) == tag_names.end()) {
+                log_and_throw_error("Given tag '{}' in offset_tags does not exist in mesh.", name);
+            }
+        }
+    }
+
     // set tag string/id maps
     for (int64_t i = 0; i < tag_names.size(); i++) {
         m_tag_id_to_name[i] = tag_names[i];
