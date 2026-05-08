@@ -59,8 +59,12 @@ class TopoOffsetTetMesh : public wmtk::TetMesh
 public: // mode for splitting in marching tets
     enum class EdgeSplitMode {
         Midpoint = 0,
-        BinarySearch =
-            1 // requires that every edge being split has one vertex labelled 0 and the other 1 or 2
+        BinarySearch = 1, // requires that every edge being split has one vertex labelled 0 and the
+                          // other 1 or 2
+        Initial = 2 // requires that every edge being split has one vertex labelled 0 and the other
+                    // 1 or 2. This is really hacky. This initializes the offset using the minimum
+                    // of half the target distance and half the edge length. Basically we want to
+                    // initialize the offset with as high of quality as possible
     };
 
 public:

@@ -57,7 +57,10 @@ bool TopoOffsetTetMesh::offset_tet_consistent_topology(const size_t t_id) const
     auto vs = oriented_tet_vids(t_id);
     std::vector<size_t> vs_in;
     for (int i = 0; i < 4; i++) {
-        if (m_vertex_attribute[vs[i]].label != 0) {
+        if (m_vertex_attribute[vs[i]].label == 1) { // bad
+            log_and_throw_error("Input adjacent tet given to offset_tet_consistent_topology");
+        }
+        if (m_vertex_attribute[vs[i]].label == 2) { // otherwise if label is 2 (offset)
             vs_in.push_back(vs[i]);
         }
     }
@@ -67,14 +70,14 @@ bool TopoOffsetTetMesh::offset_tet_consistent_topology(const size_t t_id) const
         int num_faces_in_input = 0;
         for (int i = 0; i < 4; i++) {
             num_faces_in_input +=
-                (m_face_attribute[tuple_from_face(t_id, i).fid(*this)].label != 0);
+                (m_face_attribute[tuple_from_face(t_id, i).fid(*this)].label == 2);
         }
         offset_consistent = (num_faces_in_input == 1);
     } else if (vs_in.size() == 4) { // must have two or three faces, no isolated edges in input
         std::vector<Tuple> faces_in_input;
         for (int i = 0; i < 4; i++) {
             Tuple f = tuple_from_face(t_id, i);
-            if (m_face_attribute[f.fid(*this)].label != 0) {
+            if (m_face_attribute[f.fid(*this)].label == 2) {
                 faces_in_input.push_back(f);
             }
         }
@@ -256,22 +259,27 @@ bool TopoOffsetTriMesh::offset_tri_consistent_topology(const size_t f_id) const
 
     auto vs = oriented_tri_vids(f_id);
     std::vector<size_t> vs_in;
-    for (int i = 0; i < 3; i++) {
-        if (m_vertex_attribute[vs[i]].label != 0) {
-            vs_in.push_back(vs[i]);
+    for (const size_t& v : vs) {
+        if (m_vertex_attribute[v].label == 1) {
+            log_and_throw_error(
+                "Input adjacent tri (id {}) given to offset_tri_consistent_topology",
+                f_id);
+        }
+        if (m_vertex_attribute[v].label == 2) {
+            vs_in.push_back(v);
         }
     }
 
     if (vs_in.size() == 3) { // must have exactly two edges in
         int num_es_in = 0;
         for (int i = 0; i < 3; i++) {
-            num_es_in += (m_edge_attribute[tuple_from_edge(f_id, i).eid(*this)].label != 0);
+            num_es_in += (m_edge_attribute[tuple_from_edge(f_id, i).eid(*this)].label == 2);
         }
         // logger().info("\t{}", num_es_in == 2);
         offset_consistent = (num_es_in == 2);
     } else if (vs_in.size() == 2) { // must have exactly one edge in (between two 'in' verts)
         simplex::Edge e(vs_in[0], vs_in[1]);
-        offset_consistent = (m_edge_attribute[edge_id_from_simplex(e)].label != 0);
+        offset_consistent = (m_edge_attribute[edge_id_from_simplex(e)].label == 2);
     } else { // 0 or 1 vertex in, topology would be changed
         offset_consistent = false;
     }

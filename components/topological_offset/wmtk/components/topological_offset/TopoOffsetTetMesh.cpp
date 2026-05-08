@@ -60,6 +60,15 @@ void TopoOffsetTetMesh::init_from_image(
         m_F_envelope = F_env;
     }
 
+    // check if all given physical groups exist
+    for (const std::set<std::string>& nameset : m_params.offset_tags) {
+        for (const std::string& name : nameset) {
+            if (std::find(tag_names.begin(), tag_names.end(), name) == tag_names.end()) {
+                log_and_throw_error("Given tag '{}' in offset_tags does not exist in mesh.", name);
+            }
+        }
+    }
+
     // set tag string/id maps
     for (int64_t i = 0; i < tag_names.size(); i++) {
         m_tag_id_to_name[i] = tag_names[i];
@@ -638,13 +647,32 @@ void TopoOffsetTetMesh::marching_tets()
         }
     }
 
-    // mark all offset tets
+    // mark all offset tets and children
     for (const size_t& v_id : frontier_verts) {
         auto t_ids = get_one_ring_tids_for_vertex(v_id);
         for (const size_t& t_id : t_ids) {
             if (m_tet_attribute[t_id].label == 0) {
                 m_tet_attribute[t_id].label = 2;
                 m_tet_attribute[t_id].tag = TEMP_OFFSET_TET_TAG;
+                // propagate to children
+                for (int i = 0; i < 4; i++) {
+                    size_t f_id = tuple_from_face(t_id, i).fid(*this);
+                    if (m_face_attribute[f_id].label != 1) {
+                        m_face_attribute[f_id].label = 2;
+                    }
+                }
+                for (int i = 0; i < 6; i++) {
+                    size_t e_id = tuple_from_edge(t_id, i).eid(*this);
+                    if (m_edge_attribute[e_id].label != 1) {
+                        m_edge_attribute[e_id].label = 2;
+                    }
+                }
+                auto vs = oriented_tet_vids(t_id);
+                for (const size_t& v_id : vs) {
+                    if (m_vertex_attribute[v_id].label != 1) {
+                        m_vertex_attribute[v_id].label = 2;
+                    }
+                }
             }
         }
     }
@@ -657,10 +685,12 @@ void TopoOffsetTetMesh::grow_offset_conservative()
     auto all_tets = get_tets();
 
     for (const Tuple& t : all_tets) {
-        if (offset_tet_consistent_topology(t.tid(*this))) {
+        size_t t_id = t.tid(*this);
+        if ((m_tet_attribute[t_id].label == 0) && offset_tet_consistent_topology(t_id)) {
             tets_q.push(t);
         }
     }
+    logger().info("\tInitial queue size {}", tets_q.size());
 
     while (!tets_q.empty()) {
         Tuple curr_tet = tets_q.front();

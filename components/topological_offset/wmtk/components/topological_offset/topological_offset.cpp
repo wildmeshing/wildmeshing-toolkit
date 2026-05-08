@@ -144,6 +144,7 @@ void topological_offset(nlohmann::json json_params)
         timer.start();
 
         // make embedding simplicial
+        mesh.m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Midpoint;
         logger().info("Creating simplicial embedding...");
         if (!mesh.is_simplicially_embedded()) {
             mesh.simplicial_embedding();
@@ -161,29 +162,37 @@ void topological_offset(nlohmann::json json_params)
             mesh.set_offset_tri_tags();
             mesh.consolidate_mesh();
         } else { // conservative growth
+            // initializing offset
+            mesh.m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Initial;
+            mesh.marching_tets();
+            mesh.consolidate_mesh();
+            if (mesh.m_params.debug_output) {
+                mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
+            }
+
             // run BFS, save after
             mesh.grow_offset_conservative();
             mesh.consolidate_mesh();
             if (mesh.m_params.debug_output) {
-                mesh.set_offset_tri_tags();
+                // mesh.set_offset_tri_tags();
                 mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
             }
 
             // simplicially embed again, if needed
+            mesh.m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Midpoint;
             if (!mesh.is_simplicially_embedded()) {
                 mesh.simplicial_embedding();
                 bool dummy = mesh.is_simplicially_embedded();
                 mesh.consolidate_mesh();
             }
             if (mesh.m_params.debug_output) {
-                mesh.set_offset_tri_tags();
+                // mesh.set_offset_tri_tags();
                 mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
             }
 
             // marching tets (using binary search edge split)
             mesh.m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::BinarySearch;
             mesh.marching_tets();
-            mesh.m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Midpoint;
             mesh.consolidate_mesh();
             mesh.set_offset_tri_tags();
         }
@@ -303,6 +312,7 @@ void topological_offset(nlohmann::json json_params)
 
         // make embedding simplicial (split components per Alg 1)
         logger().info("Creating simplicial embedding...");
+        mesh.m_edge_split_mode = TopoOffsetTetMesh::EdgeSplitMode::Midpoint;
         if (!mesh.is_simplicially_embedded()) { // internally prints to console
             mesh.simplicial_embedding();
             bool dummy = mesh.is_simplicially_embedded(); // internally prints to console
@@ -319,29 +329,38 @@ void topological_offset(nlohmann::json json_params)
             mesh.set_offset_tet_tags();
             mesh.consolidate_mesh();
         } else { // variable offset distance
+            // initialize offset
+            logger().info("Initializing offset...");
+            mesh.m_edge_split_mode = TopoOffsetTetMesh::EdgeSplitMode::Initial;
+            mesh.marching_tets();
+            mesh.consolidate_mesh();
+            if (mesh.m_params.debug_output) {
+                mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
+            }
+
             // run BFS, save after
             mesh.grow_offset_conservative();
             mesh.consolidate_mesh();
             if (mesh.m_params.debug_output) {
-                mesh.set_offset_tet_tags();
+                // mesh.set_offset_tet_tags();
                 mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
             }
 
             // simplicially embed again, if needed
+            mesh.m_edge_split_mode = TopoOffsetTetMesh::EdgeSplitMode::Midpoint;
             if (!mesh.is_simplicially_embedded()) {
                 mesh.simplicial_embedding();
                 bool dummy = mesh.is_simplicially_embedded();
                 mesh.consolidate_mesh();
             }
             if (mesh.m_params.debug_output) {
-                mesh.set_offset_tet_tags();
+                // mesh.set_offset_tet_tags();
                 mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
             }
 
             // marching tets (using binary search edge split)
             mesh.m_edge_split_mode = TopoOffsetTetMesh::EdgeSplitMode::BinarySearch;
             mesh.marching_tets();
-            mesh.m_edge_split_mode = TopoOffsetTetMesh::EdgeSplitMode::Midpoint;
             mesh.consolidate_mesh();
             mesh.set_offset_tet_tags();
         }
