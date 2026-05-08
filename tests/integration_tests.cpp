@@ -42,6 +42,8 @@ std::vector<std::string> input_files{
     "tetwild_octocat.json",
     "tetwild_sphere.json",
     "topological_offset_2d.json",
+    "topological_offset_2d_vertex_input.json",
+    "topological_offset_3d_edge_input.json",
     "topological_offset_3d.json",
     "manifold_extraction_3d.json"};
 
