@@ -693,6 +693,18 @@ public:
     void resolve_intersections(const std::vector<CellTag>& intersecting_tags);
 
     void replace_tags(const std::vector<CellTag>& tags_in, const CellTag& tag_out);
+
+    /**
+     * @brief Gives tags priority over others.
+     *
+     * If a tet has multiple tags, only the one with the
+     * highest priority will be kept. The priority is determined by the order of the tags in the
+     * input vector, e.g., if tag A is before tag B in the vector, then A has higher priority than
+     * B.
+     *
+     * @param tags A vector of tags, where the order determines the priority.
+     */
+    void tag_priority(const std::vector<int64_t>& tags);
 };
 
 } // namespace wmtk::components::image_simulation
