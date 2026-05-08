@@ -77,7 +77,7 @@ nlohmann::json topological_offset_spec = R"(
   {
     "pointer": "/respect_all_topologies",
     "type": "bool",
-    "default": "true",
+    "default": false,
     "doc": "If true, the topology of every tag after offset initialization is respected as if the offset was to replace all tags. If false, only the topology of the offset is respected."
   },
   {
