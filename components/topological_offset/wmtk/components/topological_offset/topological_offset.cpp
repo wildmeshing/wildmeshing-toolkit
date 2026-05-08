@@ -46,7 +46,7 @@ void topological_offset(nlohmann::json json_params)
     // load params
     Parameters params;
     params.offset_tags = json_params["offset_tags"];
-    for (const int64_t& tag : json_params["offset_output_tag"]) {
+    for (const std::string& tag : json_params["offset_output_tag"]) {
         params.offset_output_tag.insert(tag);
     }
     params.target_distance = json_params["target_distance"];
@@ -75,6 +75,14 @@ void topological_offset(nlohmann::json json_params)
     params.save_vtu = json_params["save_vtu"];
     params.debug_output = json_params["DEBUG_output"];
 
+    if (params.debug_output) {
+        logger().info("====== input parameters =======");
+        logger().info("target_distance: {}", params.target_distance);
+        logger().info("relative_ball_threshold: {}", params.relative_ball_threshold);
+        logger().info("edge_search_term_len: {}", params.edge_search_term_len);
+        logger().info("===============================");
+    }
+
     // input must be .msh
     if (std::filesystem::path(input_path).extension() != ".msh") {
         log_and_throw_error("Input must be a .msh file.");
@@ -91,11 +99,13 @@ void topological_offset(nlohmann::json json_params)
             input_data.T_input,
             input_data.T_input_tags,
             input_data.V_envelope,
-            input_data.F_envelope);
+            input_data.F_envelope,
+            input_data.tag_names);
 
         // check empty input
         if (mesh.empty_input_complex()) {
-            logger().info("Empty input complex. Aborting.");
+            logger().warn("Empty input complex. Output mesh is same as the input.");
+            mesh.write_msh_groups(output_filename.string());
             return;
         }
 
@@ -222,11 +232,12 @@ void topological_offset(nlohmann::json json_params)
         fout << "time: " << time << std::endl;
         fout.close();
 
-        mesh.write_msh(output_filename.string()); // write .msh (ImageVolume)
-        mesh.write_msh_groups(output_filename.string()); // write .msh
+        // mesh.write_msh(output_filename.string()); // write .msh (ImageVolume)
+        mesh.write_msh_groups(output_filename.string()); // write .msh with physical groups
         if (mesh.m_params.debug_output) {
             mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
-        } else if (mesh.m_params.save_vtu) { // write .vtu
+        }
+        if (mesh.m_params.save_vtu) { // write .vtu
             mesh.write_vtu(output_filename.string());
         }
 
@@ -241,11 +252,13 @@ void topological_offset(nlohmann::json json_params)
             input_data.T_input,
             input_data.T_input_tags,
             input_data.V_envelope,
-            input_data.F_envelope);
+            input_data.F_envelope,
+            input_data.tag_names);
 
         // check empty input
         if (mesh.empty_input_complex()) {
-            logger().info("Empty input complex. Aborting.");
+            logger().warn("Empty input complex. Output mesh is same as the input.");
+            mesh.write_msh_groups(output_filename.string());
             return;
         }
 
@@ -393,11 +406,12 @@ void topological_offset(nlohmann::json json_params)
         fout << "time: " << time << std::endl;
         fout.close();
 
-        mesh.write_msh(output_filename.string()); // write .msh
+        // mesh.write_msh(output_filename.string()); // write .msh
         mesh.write_msh_groups(output_filename.string()); // write .msh with physical groups
         if (mesh.m_params.debug_output) {
             mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
-        } else if (mesh.m_params.save_vtu) { // write .vtu
+        }
+        if (mesh.m_params.save_vtu) { // write .vtu
             mesh.write_vtu(output_filename.string());
         }
 

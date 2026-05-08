@@ -41,29 +41,31 @@
   {
     "pointer": "/offset_tags",
     "type": "list",
-    "default": [[0]],
+    "default": [["tag_0"]],
     "min": 1,
-    "doc": "List of tag sets. The intersection of the union of each set will be offset. [] is ambient space. Eg, [[], [1, 2]] offsets the intersection between ambient space and the union of tags 1 and 2."
+    "doc": "List of tag sets. The intersection of the union of each set will be offset. Eg, [['tag_0'], ['tag_1', 'tag_2']] offsets the intersection between tag 0 and the union of tags 1 and 2."
   },
   {
     "pointer": "/offset_tags/*",
     "type": "list",
+    "min": 1,
     "doc": "A set of tags, the union of which will be taken (ambient space if empty)."
   },
   {
     "pointer": "/offset_tags/*/*",
-    "type": "int",
+    "type": "string",
     "doc": "A tag."
   },
   {
     "pointer": "/offset_output_tag",
     "type": "list",
     "default": [],
-    "doc": "Set of tags to set for resulting offset region (empty for ambient)."
+    "min": 1,
+    "doc": "Set of tags to set for resulting offset region"
   },
   {
     "pointer": "/offset_output_tag/*",
-    "type": "int",
+    "type": "string",
     "doc": "A tag."
   },
   {

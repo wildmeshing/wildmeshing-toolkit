@@ -6,8 +6,8 @@ namespace wmtk::components::topological_offset {
 struct Parameters
 {
     // parameters set by user
-    std::vector<std::set<int64_t>> offset_tags;
-    std::set<int64_t> offset_output_tag;
+    std::vector<std::set<std::string>> offset_tags;
+    std::set<std::string> offset_output_tag;
     double target_distance;
     double relative_ball_threshold;
     double edge_search_term_len;

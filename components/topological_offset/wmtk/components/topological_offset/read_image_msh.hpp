@@ -10,6 +10,7 @@ struct InputData
     MatrixXd V_input;
     MatrixXi T_input;
     MatrixSi T_input_tags;
+    std::vector<std::string> tag_names;
 
     // note: not actually used, just for spitting back to output
     MatrixXd V_envelope;

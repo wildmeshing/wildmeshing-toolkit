@@ -46,17 +46,18 @@ TEST_CASE("edge_split_3d", "[split_op][3d]")
 
     // tet has tag 2
     MatrixSi Tags(1, 3);
+    std::vector<std::string> tag_names = {"a", "b", "c"};
     Tags.coeffRef(0, 0) = 0;
     Tags.coeffRef(0, 1) = 0;
     Tags.coeffRef(0, 2) = 1;
 
     Parameters param;
-    param.offset_tags.push_back(std::set<int64_t>{0, 1});
-    param.offset_tags.push_back(std::set<int64_t>{0, 4});
+    param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_1"});
+    param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_4"});
     TopoOffsetTetMesh mesh(param, 0);
     MatrixXd V_env_dummy;
     MatrixXi F_env_dummy;
-    mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy);
+    mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, tag_names);
 
     // give every component unique tag combo
     mesh.m_vertex_attribute[0].label = V0_LABEL;
@@ -144,17 +145,18 @@ TEST_CASE("face_split_3d", "[split_op][3d]")
 
     // tet has tag 2
     MatrixSi Tags(1, 3);
+    std::vector<std::string> tag_names = {"a", "b", "c"};
     Tags.coeffRef(0, 0) = 0;
     Tags.coeffRef(0, 1) = 0;
     Tags.coeffRef(0, 2) = 1;
 
     Parameters param;
-    param.offset_tags.push_back(std::set<int64_t>{0, 1});
-    param.offset_tags.push_back(std::set<int64_t>{0, 4});
+    param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_1"});
+    param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_4"});
     TopoOffsetTetMesh mesh(param, 0);
     MatrixXd V_env_dummy;
     MatrixXi F_env_dummy;
-    mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy);
+    mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, tag_names);
 
     // give every component unique tag combo
     mesh.m_vertex_attribute[0].label = V0_LABEL;
@@ -246,17 +248,18 @@ TEST_CASE("tet_split_3d", "[split_op][3d]")
 
     // tet has tag 2
     MatrixSi Tags(1, 3);
+    std::vector<std::string> tag_names = {"a", "b", "c"};
     Tags.coeffRef(0, 0) = 0;
     Tags.coeffRef(0, 1) = 0;
     Tags.coeffRef(0, 2) = 1;
 
     Parameters param;
-    param.offset_tags.push_back(std::set<int64_t>{0, 1});
-    param.offset_tags.push_back(std::set<int64_t>{0, 4});
+    param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_1"});
+    param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_4"});
     TopoOffsetTetMesh mesh(param, 0);
     MatrixXd V_env_dummy;
     MatrixXi F_env_dummy;
-    mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy);
+    mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, tag_names);
 
     // give every component unique tag combo
     mesh.m_vertex_attribute[0].label = V0_LABEL;
@@ -345,6 +348,7 @@ TEST_CASE("invariant_3d", "[3d]")
     Eigen::Matrix<double, Eigen::Dynamic, 3> V(4, 3);
     V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
     MatrixSi Tags(1, 1);
+    std::vector<std::string> tag_names = {"a"};
     Tags.coeffRef(0, 0) = 0;
     MatrixXd V_env_dummy;
     MatrixXi F_env_dummy;
@@ -354,10 +358,10 @@ TEST_CASE("invariant_3d", "[3d]")
         T << 0, 1, 3, 2;
 
         Parameters param;
-        param.offset_tags.push_back(std::set<int64_t>{0, 1});
-        param.offset_tags.push_back(std::set<int64_t>{0, 4});
+        param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_1"});
+        param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_4"});
         TopoOffsetTetMesh mesh(param, 0);
-        mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy);
+        mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, tag_names);
 
         std::vector<TetMesh::Tuple> tets;
         tets.push_back(mesh.tuple_from_tet(0));
@@ -368,10 +372,10 @@ TEST_CASE("invariant_3d", "[3d]")
         T << 0, 1, 2, 3;
 
         Parameters param;
-        param.offset_tags.push_back(std::set<int64_t>{0, 1});
-        param.offset_tags.push_back(std::set<int64_t>{0, 4});
+        param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_1"});
+        param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_4"});
         TopoOffsetTetMesh mesh(param, 0);
-        mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy);
+        mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, tag_names);
 
         std::vector<TetMesh::Tuple> tets;
         tets.push_back(mesh.tuple_from_tet(0));
@@ -387,17 +391,18 @@ TEST_CASE("edge_split_2d_1face", "[split_op][2d]")
     Eigen::MatrixXi F(1, 3);
     F << 0, 1, 2;
     MatrixSi Tags(1, 3);
+    std::vector<std::string> tag_names = {"a", "b", "c"};
     Tags.coeffRef(0, 0) = 0;
     Tags.coeffRef(0, 1) = 0;
     Tags.coeffRef(0, 2) = 1;
 
     Parameters param;
-    param.offset_tags.push_back(std::set<int64_t>{0, 1});
-    param.offset_tags.push_back(std::set<int64_t>{0, 4});
+    param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_1"});
+    param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_4"});
     TopoOffsetTriMesh mesh(param, 0);
     MatrixXd V_env_dummy;
     MatrixXi F_env_dummy;
-    mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy);
+    mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy, tag_names);
 
     // give every component unique tag combo
     mesh.m_vertex_attribute[0].label = V0_LABEL;
@@ -454,6 +459,7 @@ TEST_CASE("edge_split_2d_2faces", "[split_op][2d]")
     Eigen::MatrixXi F(2, 3);
     F << 0, 1, 2, 1, 3, 2;
     MatrixSi Tags(2, 3);
+    std::vector<std::string> tag_names = {"a", "b", "c"};
     Tags.coeffRef(0, 0) = 0;
     Tags.coeffRef(0, 1) = 0;
     Tags.coeffRef(0, 2) = 1;
@@ -462,12 +468,12 @@ TEST_CASE("edge_split_2d_2faces", "[split_op][2d]")
     Tags.coeffRef(1, 2) = 0;
 
     Parameters param;
-    param.offset_tags.push_back(std::set<int64_t>{0, 1});
-    param.offset_tags.push_back(std::set<int64_t>{0, 4});
+    param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_1"});
+    param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_4"});
     TopoOffsetTriMesh mesh(param, 0);
     MatrixXd V_env_dummy;
     MatrixXi F_env_dummy;
-    mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy);
+    mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy, tag_names);
 
     // give every component unique tag combo
     mesh.m_vertex_attribute[0].label = V0_LABEL;
@@ -540,17 +546,18 @@ TEST_CASE("face_split_2d", "[split_op][2d]")
     Eigen::MatrixXi F(1, 3);
     F << 0, 1, 2;
     MatrixSi Tags(1, 3);
+    std::vector<std::string> tag_names = {"a", "b", "c"};
     Tags.coeffRef(0, 0) = 0;
     Tags.coeffRef(0, 1) = 0;
     Tags.coeffRef(0, 2) = 1;
 
     Parameters param;
-    param.offset_tags.push_back(std::set<int64_t>{0, 1});
-    param.offset_tags.push_back(std::set<int64_t>{0, 4});
+    param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_1"});
+    param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_4"});
     TopoOffsetTriMesh mesh(param, 0);
     MatrixXd V_env_dummy;
     MatrixXi F_env_dummy;
-    mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy);
+    mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy, tag_names);
 
     // give every component unique tag combo
     mesh.m_vertex_attribute[0].label = V0_LABEL;
@@ -608,6 +615,7 @@ TEST_CASE("invariant_2d", "[2d]")
     Eigen::Matrix<double, 3, 2> V(3, 2);
     V << 0, 0, 1, 0, 0, 1;
     MatrixSi Tags(1, 1);
+    std::vector<std::string> tag_names = {"a"};
     Tags.coeffRef(0, 0) = 0;
     MatrixXd V_env_dummy;
     MatrixXi F_env_dummy;
@@ -617,10 +625,10 @@ TEST_CASE("invariant_2d", "[2d]")
         F << 0, 2, 1;
 
         Parameters param;
-        param.offset_tags.push_back(std::set<int64_t>{0, 1});
-        param.offset_tags.push_back(std::set<int64_t>{0, 4});
+        param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_1"});
+        param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_4"});
         TopoOffsetTriMesh mesh(param, 0);
-        mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy);
+        mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy, tag_names);
 
         std::vector<TriMesh::Tuple> tris;
         tris.push_back(mesh.tuple_from_tri(0));
@@ -631,10 +639,10 @@ TEST_CASE("invariant_2d", "[2d]")
         F << 0, 1, 2;
 
         Parameters param;
-        param.offset_tags.push_back(std::set<int64_t>{0, 1});
-        param.offset_tags.push_back(std::set<int64_t>{0, 4});
+        param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_1"});
+        param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_4"});
         TopoOffsetTriMesh mesh(param, 0);
-        mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy);
+        mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy, tag_names);
 
         std::vector<TriMesh::Tuple> tris;
         tris.push_back(mesh.tuple_from_tri(0));
@@ -650,15 +658,16 @@ TEST_CASE("circle_tri_overlap", "[dist_growth][2d]")
     Eigen::MatrixXi F(1, 3);
     F << 0, 1, 2;
     MatrixSi Tags(1, 1); // dont care
+    std::vector<std::string> tag_names = {"a"};
     Tags.coeffRef(0, 0) = 0;
     MatrixXd V_env_dummy;
     MatrixXi F_env_dummy;
 
     Parameters param;
-    param.offset_tags.push_back(std::set<int64_t>{0, 1});
-    param.offset_tags.push_back(std::set<int64_t>{0, 4});
+    param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_1"});
+    param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_4"});
     TopoOffsetTriMesh mesh(param, 0);
-    mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy);
+    mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy, tag_names);
 
     Circle circ1(Vector2d(1.0, 1.0), 0.5); // false
     Circle circ2(Vector2d(0.55, 0.55), 0.5); // true
@@ -697,15 +706,16 @@ TEST_CASE("circle_init", "[dist_growth][2d]")
     MatrixXi F(1, 3);
     F << 0, 1, 2;
     MatrixSi Tags(1, 1); // dont care
+    std::vector<std::string> tag_names = {"a"};
     Tags.coeffRef(0, 0) = 0;
     MatrixXd V_env_dummy;
     MatrixXi F_env_dummy;
 
     Parameters param;
-    param.offset_tags.push_back(std::set<int64_t>{0, 1});
-    param.offset_tags.push_back(std::set<int64_t>{0, 4});
+    param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_1"});
+    param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_4"});
     TopoOffsetTriMesh mesh(param, 0);
-    mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy);
+    mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy, tag_names);
 
     Circle circ(mesh, 0);
     REQUIRE(fabs(circ.radius() - (sqrt(2.0) / 2.0)) < pow(10, -6));
@@ -719,15 +729,16 @@ TEST_CASE("dist_to_trimesh", "[dist_growth][2d]")
     Eigen::MatrixXi F(1, 3);
     F << 0, 1, 2;
     MatrixSi Tags(1, 1); // dont care
+    std::vector<std::string> tag_names = {"a"};
     Tags.coeffRef(0, 0) = 0;
     MatrixXd V_env_dummy;
     MatrixXi F_env_dummy;
 
     Parameters param;
-    param.offset_tags.push_back(std::set<int64_t>{0, 1});
-    param.offset_tags.push_back(std::set<int64_t>{0, 4});
+    param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_1"});
+    param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_4"});
     TopoOffsetTriMesh mesh(param, 0);
-    mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy);
+    mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy, tag_names);
 
     // label one vert as input
     mesh.m_vertex_attribute[0].label = 1;
@@ -768,15 +779,16 @@ TEST_CASE("dist_to_tetmesh", "[dist_growth][3d]")
     Eigen::MatrixXi T(1, 4);
     T << 0, 1, 2, 3;
     MatrixSi Tags(1, 1); // dont care
+    std::vector<std::string> tag_names = {"a"};
     Tags.coeffRef(0, 0) = 0;
     MatrixXd V_env_dummy;
     MatrixXi F_env_dummy;
 
     Parameters param;
-    param.offset_tags.push_back(std::set<int64_t>{0, 1});
-    param.offset_tags.push_back(std::set<int64_t>{0, 4});
+    param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_1"});
+    param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_4"});
     TopoOffsetTetMesh mesh(param, 0);
-    mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy);
+    mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, tag_names);
 
     // label one vert as input
     mesh.m_vertex_attribute[0].label = 1;
@@ -851,15 +863,16 @@ TEST_CASE("sphere_tet_overlap", "[dist_growth][3d]")
     Eigen::MatrixXi T(1, 4);
     T << 0, 1, 2, 3;
     MatrixSi Tags(1, 1); // dont care
+    std::vector<std::string> tag_names = {"a"};
     Tags.coeffRef(0, 0) = 0;
     MatrixXd V_env_dummy;
     MatrixXi F_env_dummy;
 
     Parameters param;
-    param.offset_tags.push_back(std::set<int64_t>{0, 1});
-    param.offset_tags.push_back(std::set<int64_t>{0, 4});
+    param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_1"});
+    param.offset_tags.push_back(std::set<std::string>{"tag_0", "tag_4"});
     TopoOffsetTetMesh mesh(param, 0);
-    mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy);
+    mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, tag_names);
 
     Sphere sphere1(Vector3d(1.0, 1.0, 1.0), 0.5); // false
     Sphere sphere2(Vector3d(0.55, 0.55, 0.55), 0.5); // true

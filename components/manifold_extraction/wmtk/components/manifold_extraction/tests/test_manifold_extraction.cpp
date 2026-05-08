@@ -40,6 +40,7 @@ TEST_CASE("edge_split", "[split_op]")
     Eigen::MatrixXi T(1, 4);
     T << 0, 1, 2, 3;
     MatrixSi Tag(1, 3);
+    std::vector<std::string> tag_names = {"a", "b", "c"};
     Tag.coeffRef(0, 0) = 0;
     Tag.coeffRef(0, 1) = 0;
     Tag.coeffRef(0, 2) = 1;
@@ -48,7 +49,7 @@ TEST_CASE("edge_split", "[split_op]")
 
     Parameters param;
     ManExtractMesh mesh(param, 0);
-    mesh.init_from_image(V, T, Tag, V_env_dummy, F_env_dummy);
+    mesh.init_from_image(V, T, Tag, V_env_dummy, F_env_dummy, tag_names);
 
     // give every component unique tag combo
     mesh.m_vertex_attribute[0].label = V0_LABEL;
@@ -134,6 +135,7 @@ TEST_CASE("face_split", "[split_op]")
     Eigen::MatrixXi T(1, 4);
     T << 0, 1, 2, 3;
     MatrixSi Tag(1, 3);
+    std::vector<std::string> tag_names = {"a", "b", "c"};
     Tag.coeffRef(0, 0) = 0;
     Tag.coeffRef(0, 1) = 0;
     Tag.coeffRef(0, 2) = 1;
@@ -142,7 +144,7 @@ TEST_CASE("face_split", "[split_op]")
 
     Parameters param;
     ManExtractMesh mesh(param, 0);
-    mesh.init_from_image(V, T, Tag, V_env_dummy, F_env_dummy);
+    mesh.init_from_image(V, T, Tag, V_env_dummy, F_env_dummy, tag_names);
 
     // give every component unique tag combo
     mesh.m_vertex_attribute[0].label = V0_LABEL;
@@ -232,6 +234,7 @@ TEST_CASE("tet_split", "[split_op]")
     Eigen::MatrixXi T(1, 4);
     T << 0, 1, 2, 3;
     MatrixSi Tag(1, 3);
+    std::vector<std::string> tag_names = {"a", "b", "c"};
     Tag.coeffRef(0, 0) = 0;
     Tag.coeffRef(0, 1) = 0;
     Tag.coeffRef(0, 2) = 1;
@@ -240,7 +243,7 @@ TEST_CASE("tet_split", "[split_op]")
 
     Parameters param;
     ManExtractMesh mesh(param, 0);
-    mesh.init_from_image(V, T, Tag, V_env_dummy, F_env_dummy);
+    mesh.init_from_image(V, T, Tag, V_env_dummy, F_env_dummy, tag_names);
 
     // give every component unique tag combo
     mesh.m_vertex_attribute[0].label = V0_LABEL;

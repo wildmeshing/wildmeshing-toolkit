@@ -42,13 +42,13 @@ nlohmann::json manifold_extraction_spec = R"(
   {
     "pointer": "/in_tag",
     "type": "list",
-    "default": [0],
+    "default": ["tag_0"],
     "min": 1,
-    "doc": "Tag set to considered inside the surface."
+    "doc": "Tag set to considered inside the surface (empty for ambient)."
   },
   {
     "pointer": "/in_tag/*",
-    "type": "int",
+    "type": "string",
     "doc": "A tag."
   },
   {
@@ -61,7 +61,12 @@ nlohmann::json manifold_extraction_spec = R"(
     "pointer": "/replace_tag",
     "type": "list",
     "default": [],
-    "doc": "Only relevant for subtract mode (manifold_union=false). Tag set to fill subtracted regions with. Ambient (empty) by default."
+    "doc": "Only relevant for subtract mode (manifold_union=false). Tag set to fill subtracted regions with. Empty for ambient."
+  },
+  {
+    "pointer": "/replace_tag/*",
+    "type": "string",
+    "doc": "A tag."
   },
   {
     "pointer": "/DEBUG_output",

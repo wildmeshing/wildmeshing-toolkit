@@ -85,6 +85,7 @@ InputData read_image_msh(const std::string& path)
 
         std::vector<MatrixXd> Vs;
         std::vector<MatrixXi> Fs;
+        std::vector<std::string> tag_names;
         MatrixXd V_env;
         MatrixXi F_env;
 
@@ -92,6 +93,7 @@ InputData read_image_msh(const std::string& path)
             MatrixXd V;
             MatrixXi F;
             msh.get_VF(group, V, F);
+            tag_names.push_back(group.name);
             if ((has_tets && group.dim == 2) || (group.dim == 1)) { // envelope surface
                 if (V_env.size() != 0) {
                     log_and_throw_error("Multiple envelope groups found in {}", path);
@@ -144,15 +146,15 @@ InputData read_image_msh(const std::string& path)
                 T.row(i) = tets[i];
             }
 
-            // tags - NOTE: assume Fs[0] is "ambient" group
-            input_data.T_input_tags.resize(input_data.T_input.rows(), Fs.size() - 1);
-            for (size_t i = 1; i < Fs.size(); i++) {
+            input_data.T_input_tags.resize(input_data.T_input.rows(), Fs.size());
+            for (size_t i = 0; i < Fs.size(); i++) {
                 for (size_t j = 0; j < Fs[i].rows(); j++) {
                     const Vector4i& t = Fs[i].row(j);
                     simplex::Tet tet_simp(t(0), t(1), t(2), t(3));
                     size_t t_id = ids[tet_simp];
-                    input_data.T_input_tags.coeffRef(t_id, i - 1) = 1;
+                    input_data.T_input_tags.coeffRef(t_id, i) = 1;
                 }
+                input_data.tag_names.push_back(tag_names[i]);
             }
         } else { // 2d
             // resize vert matrices
@@ -187,15 +189,15 @@ InputData read_image_msh(const std::string& path)
                 T.row(i) = faces[i];
             }
 
-            // tags - again, assume first (Fs[0]) is "ambient"
-            input_data.T_input_tags.resize(input_data.T_input.rows(), Fs.size() - 1);
-            for (size_t i = 1; i < Fs.size(); i++) {
+            input_data.T_input_tags.resize(input_data.T_input.rows(), Fs.size());
+            for (size_t i = 0; i < Fs.size(); i++) {
                 for (size_t j = 0; j < Fs[i].rows(); j++) {
                     const Vector3i& f = Fs[i].row(j);
                     const simplex::Face face_simp(f(0), f(1), f(2));
                     size_t f_id = ids[face_simp];
-                    input_data.T_input_tags.coeffRef(f_id, i - 1) = 1;
+                    input_data.T_input_tags.coeffRef(f_id, i) = 1;
                 }
+                input_data.tag_names.push_back(tag_names[i]);
             }
         }
         return input_data;
@@ -313,6 +315,9 @@ InputData read_image_msh(const std::string& path)
             input_tags_bin.block(0, nc, img_bin.rows(), img_bin.cols()) = img_bin;
         }
         input_data.T_input_tags = input_tags_bin.sparseView();
+        for (int j = 0; j < input_tags_bin.cols(); j++) {
+            input_data.tag_names.push_back("tag_" + std::to_string(j));
+        }
     } else {
         assert(input_data.T_input.cols() == 3);
         int faces_tags_count = 0;
@@ -358,6 +363,9 @@ InputData read_image_msh(const std::string& path)
             input_tags_bin.block(0, nc, img_bin.rows(), img_bin.cols()) = img_bin;
         }
         input_data.T_input_tags = input_tags_bin.sparseView();
+        for (int j = 0; j < input_tags_bin.cols(); j++) {
+            input_data.tag_names.push_back("tag_" + std::to_string(j));
+        }
     }
 
     return input_data;

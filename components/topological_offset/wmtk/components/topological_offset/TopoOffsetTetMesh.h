@@ -15,6 +15,9 @@
 namespace wmtk::components::topological_offset {
 
 
+const std::set<int64_t> TEMP_OFFSET_TET_TAG{-1};
+
+
 // for all attributes:
 // label: 0=default, 1=input, 2=offset
 class VertexAttributes
@@ -67,6 +70,12 @@ public:
     SimplicialComplexBVH m_input_complex_bvh;
     EdgeSplitMode m_edge_split_mode = EdgeSplitMode::Midpoint;
 
+    // tag map stuff
+    std::map<std::string, int64_t> m_tag_name_to_id;
+    std::map<int64_t, std::string> m_tag_id_to_name;
+    std::vector<std::set<int64_t>> m_offset_tags_ids;
+    std::set<int64_t> m_offset_output_tag_ids;
+
     // dont actually use, just for retaining in output
     bool m_has_envelope;
     MatrixXd m_V_envelope;
@@ -108,7 +117,8 @@ public:
         const MatrixXi& T,
         const MatrixSi& T_tags,
         const MatrixXd& V_env,
-        const MatrixXi F_env);
+        const MatrixXi F_env,
+        const std::vector<std::string>& tag_names);
 
     /**
      * @brief check if the input complex is empty. Only valid after calling init_from_image(...).
@@ -173,10 +183,15 @@ public:
 
     //// variable offset stuff
     /**
+     * @brief check if removing the tet would change the topology of any label
+     */
+    bool tag_tet_consistent_topology(size_t t_id, int64_t tag) const;
+
+    /**
      * @brief check if adding a tet to the offset region does not change the topology of the
      * offset. Returns true if topology would not be changed
      */
-    bool tet_consistent_topology(const size_t t_id) const;
+    bool offset_tet_consistent_topology(const size_t t_id) const;
 
     /**
      * @brief check if a tet is inside the offset (implicitly defined via BVH distance field to
@@ -207,7 +222,7 @@ public:
 
     //// output stuff
     void write_input_complex(const std::string& path); // write components labeled to be offset
-    void write_vtu(const std::string& path); // debugging, write .vtu of tet mesh
+    void write_vtu(const std::string& path);
     void write_msh(const std::string& file);
     void write_msh_groups(const std::string& file);
     //// output stuff
