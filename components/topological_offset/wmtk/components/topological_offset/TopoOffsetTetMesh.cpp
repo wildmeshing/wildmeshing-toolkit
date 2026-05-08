@@ -681,8 +681,6 @@ void TopoOffsetTetMesh::marching_tets()
 
 void TopoOffsetTetMesh::grow_offset_conservative()
 {
-    bool any_change = false;
-
     std::queue<Tuple> tets_q;
     auto all_tets = get_tets();
 
@@ -712,7 +710,6 @@ void TopoOffsetTetMesh::grow_offset_conservative()
             tet_id,
             m_params.relative_ball_threshold * m_params.target_distance);
         if (in_offset) {
-            any_change = true;
             m_tet_attribute[tet_id].label = 2;
             // m_tet_attribute[tet_id].tag = TEMP_OFFSET_TET_TAG_SET;
             for (int i = 0; i < 4; i++) { // propagate label to faces
@@ -743,10 +740,6 @@ void TopoOffsetTetMesh::grow_offset_conservative()
                 tets_q.push(t);
             }
         }
-    }
-
-    if (any_change) {
-        grow_offset_conservative();
     }
 }
 

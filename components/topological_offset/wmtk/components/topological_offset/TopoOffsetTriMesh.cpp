@@ -496,8 +496,6 @@ void TopoOffsetTriMesh::marching_tris()
 
 void TopoOffsetTriMesh::grow_offset_conservative()
 {
-    bool any_change = false;
-
     std::queue<Tuple> tris_q;
     auto all_tris = get_faces();
 
@@ -529,7 +527,6 @@ void TopoOffsetTriMesh::grow_offset_conservative()
             tri_id,
             m_params.relative_ball_threshold * m_params.target_distance);
         if (in_offset) {
-            any_change = true;
             m_face_attribute[tri_id].label = 2;
             // m_face_attribute[tri_id].tag = TEMP_OFFSET_TRI_TAG_SET;
             auto vs = oriented_tri_vids(tri_id);
@@ -552,10 +549,6 @@ void TopoOffsetTriMesh::grow_offset_conservative()
                 tris_q.push(f);
             }
         }
-    }
-
-    if (any_change) {
-        grow_offset_conservative();
     }
 }
 
