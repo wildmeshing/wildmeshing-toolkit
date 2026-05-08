@@ -161,6 +161,14 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
         const std::set<std::string> tag_out_name = json_params["replace_tags_out"];
         CellTag tag_out = mesh.string_set_to_cell_tag(tag_out_name);
         mesh.replace_tags(tags_in, tag_out);
+    } else if (operation == "tag_priority") {
+        const std::vector<std::string> tag_priority_names = json_params["tag_priority"];
+        std::vector<int64_t> tag_priority;
+        for (const auto& tag_name : tag_priority_names) {
+            CellTag tag = mesh.string_set_to_cell_tag({tag_name});
+            tag_priority.push_back(*tag.begin());
+        }
+        mesh.tag_priority(tag_priority);
     } else {
         log_and_throw_error("Unknown image simulation operation");
     }
@@ -318,6 +326,14 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
         const std::set<std::string> tag_out_name = json_params["replace_tags_out"];
         CellTag tag_out = mesh.string_set_to_cell_tag(tag_out_name);
         mesh.replace_tags(tags_in, tag_out);
+    } else if (operation == "tag_priority") {
+        const std::vector<std::string> tag_priority_names = json_params["tag_priority"];
+        std::vector<int64_t> tag_priority;
+        for (const auto& tag_name : tag_priority_names) {
+            CellTag tag = mesh.string_set_to_cell_tag({tag_name});
+            tag_priority.push_back(*tag.begin());
+        }
+        mesh.tag_priority(tag_priority);
     } else {
         log_and_throw_error("Unknown image simulation operation");
     }

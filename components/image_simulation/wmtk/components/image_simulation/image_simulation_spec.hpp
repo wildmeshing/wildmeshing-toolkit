@@ -45,7 +45,8 @@ nlohmann::json image_simulation_spec = R"(
       "keep_lcc_num",
       "resolve_intersections_tags",
       "replace_tags_in",
-      "replace_tags_out"
+      "replace_tags_out",
+      "tag_priority"
     ]
   },
   {
@@ -75,7 +76,8 @@ nlohmann::json image_simulation_spec = R"(
       "tight_seal_topo",
       "keep_lcc",
       "resolve_intersections",
-      "replace_tags"
+      "replace_tags",
+      "tag_priority"
     ],
     "doc": "Image simulation contains multiple operations for modifying the image. Depending on the operation, more parameters might be required."
   },
@@ -387,6 +389,17 @@ nlohmann::json image_simulation_spec = R"(
   },
   {
     "pointer": "/replace_tags_out/*",
+    "type": "string",
+    "doc": "A tag value."
+  },
+  {
+    "pointer": "/tag_priority",
+    "type": "list",
+    "default": [],
+    "doc": "List of tags for the tag_priority operation. Tags earlier in the list have higher priority."
+  },
+  {
+    "pointer": "/tag_priority/*",
     "type": "string",
     "doc": "A tag value."
   }
