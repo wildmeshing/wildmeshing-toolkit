@@ -15,7 +15,8 @@
 namespace wmtk::components::topological_offset {
 
 
-const std::set<int64_t> TEMP_OFFSET_TET_TAG{-1};
+const int64_t TEMP_OFFSET_TET_TAG = -1;
+const std::set<int64_t> TEMP_OFFSET_TET_TAG_SET{TEMP_OFFSET_TET_TAG};
 
 
 // for all attributes:

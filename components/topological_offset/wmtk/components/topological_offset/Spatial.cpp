@@ -53,6 +53,10 @@ bool TopoOffsetTetMesh::tet_is_in_offset_conservative(const size_t t_id, const d
 
 bool TopoOffsetTetMesh::offset_tet_consistent_topology(const size_t t_id) const
 {
+    if (m_tet_attribute[t_id].label != 0) {
+        log_and_throw_error("non label-0 tet id={} given to consistent topology check", t_id);
+    }
+
     // collect vertices in input/offset
     auto vs = oriented_tet_vids(t_id);
     std::vector<size_t> vs_in;
@@ -114,26 +118,40 @@ bool TopoOffsetTetMesh::offset_tet_consistent_topology(const size_t t_id) const
     }
 
     // check if any topologies would be changed
-    for (const int64_t& tag : m_tet_attribute[t_id].tag) {
-        if (!tag_tet_consistent_topology(t_id, tag)) {
-            return false;
+    if (m_params.respect_all_topologies) {
+        for (const int64_t& tag : m_tet_attribute[t_id].tag) {
+            if (!tag_tet_consistent_topology(t_id, tag)) {
+                return false;
+            }
         }
     }
+
     return true;
 }
 
 
 bool TopoOffsetTetMesh::tag_tet_consistent_topology(size_t t_id, int64_t tag) const
 {
+    // look at same inline function in tag_tri_consistent_topology for explanation of why we need
+    // this. Basically this function is only called if in respect_all_topologies mode, in which case
+    // we need to 'simulate' all offset tets as being a part of the offset and the offset only.
+    auto get_tags = [this](size_t _t_id) {
+        if (m_tet_attribute[_t_id].label != 0) {
+            return TEMP_OFFSET_TET_TAG_SET;
+        } else {
+            return m_tet_attribute[_t_id].tag;
+        }
+    };
+
     // collect boundary vertices
     auto vs = oriented_tet_vids(t_id);
     std::vector<size_t> boundary_vs;
     for (const size_t& v : vs) {
         auto one_ring_tids = get_one_ring_tids_for_vertex(v);
         bool v_in = false;
-        bool first_in = m_tet_attribute[one_ring_tids[0]].tag.count(tag) != 0;
+        bool first_in = get_tags(one_ring_tids[0]).count(tag) != 0;
         for (const size_t& tid : one_ring_tids) {
-            bool t_in = m_tet_attribute[tid].tag.count(tag) != 0;
+            bool t_in = get_tags(tid).count(tag) != 0;
             if (t_in != first_in) {
                 v_in = true;
                 break;
@@ -152,9 +170,9 @@ bool TopoOffsetTetMesh::tag_tet_consistent_topology(size_t t_id, int64_t tag) co
             Tuple etup = tuple_from_edge(e.vertices());
             auto incident_tids = get_incident_tids_for_edge(etup);
             bool e_in = false;
-            bool first_in = m_tet_attribute[incident_tids[0]].tag.count(tag) != 0;
+            bool first_in = get_tags(incident_tids[0]).count(tag) != 0;
             for (const size_t& tid : incident_tids) {
-                bool t_in = m_tet_attribute[tid].tag.count(tag) != 0;
+                bool t_in = get_tags(tid).count(tag) != 0;
                 if (t_in != first_in) {
                     e_in = true;
                     break;
@@ -172,11 +190,11 @@ bool TopoOffsetTetMesh::tag_tet_consistent_topology(size_t t_id, int64_t tag) co
 
         auto other = ftup.switch_tetrahedron(*this);
         if (other) {
-            bool t1_in = m_tet_attribute[ftup.tid(*this)].tag.count(tag) != 0;
-            bool t2_in = m_tet_attribute[other.value().tid(*this)].tag.count(tag) != 0;
+            bool t1_in = get_tags(ftup.tid(*this)).count(tag) != 0;
+            bool t2_in = get_tags(other.value().tid(*this)).count(tag) != 0;
             boundary_faces[f] = (t1_in && !t2_in) || (!t1_in && t2_in);
         } else {
-            boundary_faces[f] = m_tet_attribute[ftup.tid(*this)].tag.count(tag) != 0;
+            boundary_faces[f] = get_tags(ftup.tid(*this)).count(tag) != 0;
         }
     }
 
@@ -255,6 +273,10 @@ bool TopoOffsetTriMesh::tri_is_in_offset_conservative(const size_t f_id, const d
 
 bool TopoOffsetTriMesh::offset_tri_consistent_topology(const size_t f_id) const
 {
+    if (m_face_attribute[f_id].label != 0) {
+        log_and_throw_error("non label-0 tri id={} given to consistent topology check", f_id);
+    }
+
     bool offset_consistent;
 
     auto vs = oriented_tri_vids(f_id);
@@ -289,26 +311,41 @@ bool TopoOffsetTriMesh::offset_tri_consistent_topology(const size_t f_id) const
     }
 
     // check if any topologies changed by adding this tri to offset
-    for (const int64_t& id : m_face_attribute[f_id].tag) {
-        if (!tag_tri_consistent_topology(f_id, id)) {
-            return false;
+    if (m_params.respect_all_topologies) {
+        for (const int64_t& id : m_face_attribute[f_id].tag) {
+            if (!tag_tri_consistent_topology(f_id, id)) {
+                return false;
+            }
         }
     }
+
     return true;
 }
 
 
+// NOTE: this is only called if in 'respect_all_topologies' mode
 bool TopoOffsetTriMesh::tag_tri_consistent_topology(size_t f_id, int64_t tag) const
 {
+    // Basically if we are in respect_all_topologies mode, if a tet is in the offset, we must
+    // consider it as only having the tag TMP_TRI_OFFSET_TAG (ie, as if it were to overwrite all
+    // tags)
+    auto get_tags = [this](size_t _f_id) {
+        if (m_face_attribute[_f_id].label != 0) {
+            return TEMP_OFFSET_TRI_TAG_SET;
+        } else {
+            return m_face_attribute[_f_id].tag;
+        }
+    };
+
     // collect boundary vertices
     auto vs = oriented_tri_vids(f_id);
     std::vector<size_t> boundary_vs;
     for (const size_t& v : vs) {
         auto one_ring_fids = get_one_ring_fids_for_vertex(v);
         bool v_in = false;
-        bool first_in = m_face_attribute[one_ring_fids[0]].tag.count(tag) != 0;
+        bool first_in = get_tags(one_ring_fids[0]).count(tag) != 0;
         for (const size_t& fid : one_ring_fids) {
-            bool f_in = m_face_attribute[fid].tag.count(tag) != 0;
+            bool f_in = get_tags(fid).count(tag) != 0;
             if (f_in != first_in) {
                 v_in = true;
                 break;
@@ -327,11 +364,11 @@ bool TopoOffsetTriMesh::tag_tri_consistent_topology(size_t f_id, int64_t tag) co
 
         auto other = etup.switch_face(*this);
         if (other) {
-            bool f1_in = m_face_attribute[etup.fid(*this)].tag.count(tag) != 0;
-            bool f2_in = m_face_attribute[other.value().fid(*this)].tag.count(tag) != 0;
+            bool f1_in = get_tags(etup.fid(*this)).count(tag) != 0;
+            bool f2_in = get_tags(other.value().fid(*this)).count(tag) != 0;
             boundary_edges[e] = (f1_in && !f2_in) || (!f1_in && f2_in);
         } else {
-            boundary_edges[e] = m_face_attribute[etup.fid(*this)].tag.count(tag) != 0;
+            boundary_edges[e] = get_tags(etup.fid(*this)).count(tag) != 0;
         }
     }
 

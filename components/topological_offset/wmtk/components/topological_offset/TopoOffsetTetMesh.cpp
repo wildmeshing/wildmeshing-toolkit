@@ -643,7 +643,7 @@ void TopoOffsetTetMesh::marching_tets()
         if (split_edge(t, garbage)) { // should never fail
             frontier_verts.push_back(v_in);
         } else {
-            log_and_throw_error("edge split failed!");
+            log_and_throw_error("edge split failed! (marching_tets)");
         }
     }
 
@@ -653,7 +653,7 @@ void TopoOffsetTetMesh::marching_tets()
         for (const size_t& t_id : t_ids) {
             if (m_tet_attribute[t_id].label == 0) {
                 m_tet_attribute[t_id].label = 2;
-                m_tet_attribute[t_id].tag = TEMP_OFFSET_TET_TAG;
+                // m_tet_attribute[t_id].tag = TEMP_OFFSET_TET_TAG_SET;
                 // propagate to children
                 for (int i = 0; i < 4; i++) {
                     size_t f_id = tuple_from_face(t_id, i).fid(*this);
@@ -686,7 +686,7 @@ void TopoOffsetTetMesh::grow_offset_conservative()
 
     for (const Tuple& t : all_tets) {
         size_t t_id = t.tid(*this);
-        if ((m_tet_attribute[t_id].label == 0) && offset_tet_consistent_topology(t_id)) {
+        if ((m_tet_attribute[t_id].label == 0) && (offset_tet_consistent_topology(t_id))) {
             tets_q.push(t);
         }
     }
@@ -702,7 +702,7 @@ void TopoOffsetTetMesh::grow_offset_conservative()
         }
 
         // ensure tet wouldn't change topology
-        if (!offset_tet_consistent_topology(tet_id)) {
+        if ((m_tet_attribute[tet_id].label != 0) || (!offset_tet_consistent_topology(tet_id))) {
             continue;
         }
 
@@ -711,7 +711,7 @@ void TopoOffsetTetMesh::grow_offset_conservative()
             m_params.relative_ball_threshold * m_params.target_distance);
         if (in_offset) {
             m_tet_attribute[tet_id].label = 2;
-            m_tet_attribute[tet_id].tag = TEMP_OFFSET_TET_TAG;
+            // m_tet_attribute[tet_id].tag = TEMP_OFFSET_TET_TAG_SET;
             for (int i = 0; i < 4; i++) { // propagate label to faces
                 size_t f_id = tuple_from_face(tet_id, i).fid(*this);
                 if (m_face_attribute[f_id].label != 1) {
@@ -731,6 +731,7 @@ void TopoOffsetTetMesh::grow_offset_conservative()
                 }
             }
 
+            // collect adjacent tets, add to queue
             auto adj_tets = get_face_adjacent_tets(curr_tet);
             for (const Tuple& t : adj_tets) {
                 if (m_tet_attribute[t.tid(*this)].label != 0) {
@@ -749,7 +750,9 @@ void TopoOffsetTetMesh::set_offset_tet_tags()
     for (const Tuple& t : tets) {
         size_t t_id = t.tid(*this);
         if (m_tet_attribute[t_id].label == 2) {
-            m_tet_attribute[t_id].tag = m_offset_output_tag_ids;
+            for (const int64_t& tag : m_offset_output_tag_ids) {
+                m_tet_attribute[t_id].tag.insert(tag);
+            }
         }
     }
 }
@@ -884,19 +887,11 @@ void TopoOffsetTetMesh::write_input_complex(const std::string& path)
 
 void TopoOffsetTetMesh::write_vtu(const std::string& path)
 {
-    logger().info("Write {}.vtu", path);
+    logger().info("Write {}.vtu (tag for offset is included)", path);
 
     consolidate_mesh();
     const auto& vs = get_vertices();
     const auto& tets = get_tets();
-
-    bool has_tmp_tag = false;
-    for (const Tuple& t : tets) {
-        if (m_tet_attribute[t.tid(*this)].tag == TEMP_OFFSET_TET_TAG) {
-            has_tmp_tag = true;
-            continue;
-        }
-    }
 
     Eigen::MatrixXd V(vert_capacity(), 3);
     Eigen::MatrixXi T(tet_capacity(), 4);
@@ -904,23 +899,16 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     V.setZero();
     T.setZero();
 
-    std::vector<MatrixXd> tags(m_tags_count + (has_tmp_tag ? 1 : 0), MatrixXd(tet_capacity(), 1));
+    std::vector<MatrixXd> tags(m_tags_count + 1, MatrixXd(tet_capacity(), 1));
 
     for (const Tuple& t : tets) {
         size_t t_id = t.tid(*this);
-
-        if (has_tmp_tag && m_tet_attribute[t_id].tag == TEMP_OFFSET_TET_TAG) {
-            tags[m_tags_count](t_id, 0) = 1;
-            for (int j = 0; j < m_tags_count; j++) {
-                tags[j](t_id, 0) = 0;
-            }
-            continue;
-        }
 
         // set tet tags
         for (int i = 0; i < m_tags_count; i++) {
             tags[i](t_id, 0) = (m_tet_attribute[t_id].tag.count(i) == 1) ? 1 : 0;
         }
+        tags[m_tags_count](t_id, 0) = (m_tet_attribute[t_id].label == 2) ? 1 : 0;
     }
 
     // set tet verts
@@ -942,9 +930,7 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     for (int64_t i = 0; i < m_tags_count; i++) {
         writer->add_cell_field(m_tag_id_to_name[i], tags[i]);
     }
-    if (has_tmp_tag) {
-        writer->add_cell_field("offset_tag", tags[m_tags_count]);
-    }
+    writer->add_cell_field("offset_tag", tags[m_tags_count]);
     writer->write_mesh(path + ".vtu", V, T);
 
     // envelope

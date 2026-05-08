@@ -49,6 +49,7 @@ void topological_offset(nlohmann::json json_params)
     for (const std::string& tag : json_params["offset_output_tag"]) {
         params.offset_output_tag.insert(tag);
     }
+    params.respect_all_topologies = json_params["respect_all_topologies"];
     params.target_distance = json_params["target_distance"];
     params.relative_ball_threshold = json_params["relative_ball_threshold"];
     params.edge_search_term_len = json_params["edge_search_termination_len"];
@@ -158,15 +159,16 @@ void topological_offset(nlohmann::json json_params)
         // perform offset
         logger().info("Performing offset...");
         if (mesh.m_params.target_distance <= 0.0) {
-            mesh.marching_tets();
+            mesh.marching_tris();
             mesh.set_offset_tri_tags();
             mesh.consolidate_mesh();
         } else { // conservative growth
             // initializing offset
             mesh.m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Initial;
-            mesh.marching_tets();
+            mesh.marching_tris();
             mesh.consolidate_mesh();
             if (mesh.m_params.debug_output) {
+                mesh.set_offset_tri_tags();
                 mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
             }
 
@@ -174,7 +176,7 @@ void topological_offset(nlohmann::json json_params)
             mesh.grow_offset_conservative();
             mesh.consolidate_mesh();
             if (mesh.m_params.debug_output) {
-                // mesh.set_offset_tri_tags();
+                mesh.set_offset_tri_tags();
                 mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
             }
 
@@ -186,15 +188,15 @@ void topological_offset(nlohmann::json json_params)
                 mesh.consolidate_mesh();
             }
             if (mesh.m_params.debug_output) {
-                // mesh.set_offset_tri_tags();
+                mesh.set_offset_tri_tags();
                 mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
             }
 
             // marching tets (using binary search edge split)
             mesh.m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::BinarySearch;
-            mesh.marching_tets();
-            mesh.consolidate_mesh();
+            mesh.marching_tris();
             mesh.set_offset_tri_tags();
+            mesh.consolidate_mesh();
         }
 
         // stop timer
@@ -335,6 +337,7 @@ void topological_offset(nlohmann::json json_params)
             mesh.marching_tets();
             mesh.consolidate_mesh();
             if (mesh.m_params.debug_output) {
+                mesh.set_offset_tet_tags();
                 mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
             }
 
@@ -342,7 +345,7 @@ void topological_offset(nlohmann::json json_params)
             mesh.grow_offset_conservative();
             mesh.consolidate_mesh();
             if (mesh.m_params.debug_output) {
-                // mesh.set_offset_tet_tags();
+                mesh.set_offset_tet_tags();
                 mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
             }
 
@@ -354,15 +357,15 @@ void topological_offset(nlohmann::json json_params)
                 mesh.consolidate_mesh();
             }
             if (mesh.m_params.debug_output) {
-                // mesh.set_offset_tet_tags();
+                mesh.set_offset_tet_tags();
                 mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
             }
 
             // marching tets (using binary search edge split)
             mesh.m_edge_split_mode = TopoOffsetTetMesh::EdgeSplitMode::BinarySearch;
             mesh.marching_tets();
-            mesh.consolidate_mesh();
             mesh.set_offset_tet_tags();
+            mesh.consolidate_mesh();
         }
 
         // stop timer
