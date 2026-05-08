@@ -67,6 +67,28 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
                 "complex.",
                 e_id);
         }
+    } else if (m_edge_split_mode == EdgeSplitMode::Initial) {
+        // determine split distance
+        double edge_len = (p1 - p2).norm();
+        double split_dist = (edge_len / 2.0);
+        if (m_params.target_distance < (edge_len / 2.0)) {
+            split_dist = (m_params.target_distance / 2.0); // hacky. will be split again later
+        }
+
+        // set split point
+        if ((m_vertex_attribute[cache.v1_id].label == 0) &&
+            (m_vertex_attribute[cache.v2_id].label == 1)) {
+            p_new = ((p1 - p2) * (split_dist / edge_len)) + p2;
+        } else if (
+            (m_vertex_attribute[cache.v1_id].label == 1) &&
+            (m_vertex_attribute[cache.v2_id].label == 0)) {
+            p_new = ((p2 - p1) * (split_dist / edge_len)) + p1;
+        } else {
+            log_and_throw_error(
+                "Invalid edge [{}] for initial edge split. Both vertices in/out of input "
+                "complex.",
+                e_id);
+        }
     } else {
         log_and_throw_error("Invalid edge split mode.");
     }
@@ -500,6 +522,28 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
         } else {
             log_and_throw_error(
                 "Invalid edge [{}] for binary search split. Both vertices in/out of offset/input "
+                "complex.",
+                e_id);
+        }
+    } else if (m_edge_split_mode == EdgeSplitMode::Initial) {
+        // determine split distance
+        double edge_len = (p1 - p2).norm();
+        double split_dist = (edge_len / 2.0);
+        if (m_params.target_distance < (edge_len / 2.0)) {
+            split_dist = (m_params.target_distance / 2.0); // hacky. will be split again later
+        }
+
+        // set split point
+        if ((m_vertex_attribute[cache.v1_id].label == 0) &&
+            (m_vertex_attribute[cache.v2_id].label == 1)) {
+            p_new = ((p1 - p2) * (split_dist / edge_len)) + p2;
+        } else if (
+            (m_vertex_attribute[cache.v1_id].label == 1) &&
+            (m_vertex_attribute[cache.v2_id].label == 0)) {
+            p_new = ((p2 - p1) * (split_dist / edge_len)) + p1;
+        } else {
+            log_and_throw_error(
+                "Invalid edge [{}] for initial edge split. Both vertices in/out of input "
                 "complex.",
                 e_id);
         }
