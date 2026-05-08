@@ -32,6 +32,7 @@ std::vector<std::string> input_files{
     "image_simulation_tight_seal_3d.json",
     "image_simulation_replace_tags_3d.json",
     "image_simulation_resolve_intersections_3d.json",
+    "image_simulation_tag_priority_3d.json",
     "isotropic_remeshing_bunny.json",
     "isotropic_remeshing_piece.json",
     "qslim_octocat.json",
