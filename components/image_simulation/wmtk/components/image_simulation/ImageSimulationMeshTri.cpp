@@ -1475,9 +1475,6 @@ bool ImageSimulationMeshTri::swap_edge_before(const Tuple& t)
     double max_energy = -1.0;
     for (const size_t fid : incident_faces) {
         max_energy = std::max(FA[fid].m_quality, max_energy);
-        if (FA[fid].tags != cache.face_tags) {
-            log_and_throw_error("not all tets have the same tag"); // for debugging
-        }
     }
     cache.max_energy = max_energy;
 
