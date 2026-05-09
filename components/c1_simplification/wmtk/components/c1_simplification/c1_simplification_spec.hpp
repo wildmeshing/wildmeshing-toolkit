@@ -12,12 +12,15 @@ nlohmann::json c1_simplification_spec = R"([
       "uv_mesh",
       "dofs",
       "cones",
-      "tracked_vertices_file"
+      "tracked_vertices_file",
+      "s2t_v_map"
     ],
     "optional": [
       "output",
       "threshold",
-      "log_level"
+      "log_level",
+      "feature_edges",
+      "iters"
     ]
   },
   {
@@ -59,6 +62,17 @@ nlohmann::json c1_simplification_spec = R"([
     "doc": "tracked vertices information file name"
   },
   {
+    "pointer": "/s2t_v_map",
+    "type": "string",
+    "doc": "s2t_v_map file name"
+  },
+  {
+    "pointer": "/feature_edges",
+    "type": "string",
+    "doc": "feature_edges file name",
+    "default": ""
+  },
+  {
     "pointer": "/output",
     "type": "string",
     "default": "out",
@@ -69,6 +83,12 @@ nlohmann::json c1_simplification_spec = R"([
     "type": "int",
     "default": 2,
     "doc": "wmtk logger level."
+  },
+  {
+    "pointer": "/iters",
+    "type": "int",
+    "default": 5,
+    "doc": "iterations of simplification"
   },
   {
     "pointer": "/threshold",

@@ -293,6 +293,9 @@ public:
 
     struct SurfaceCollpaseInfoCache
     {
+        size_t before_collapse_vid_1; // surface
+        size_t before_collapse_vid_2; // surface
+
         Vector3d old_pos;
         Vector3d v2_pos;
 
@@ -325,6 +328,9 @@ public:
 
     std::map<size_t, std::vector<size_t>> tracked_fid_to_vids_map;
     std::map<size_t, size_t> tracked_vid_to_fid_map;
+
+    std::map<std::pair<size_t, size_t>, bool> feature_edges_map;
+    std::vector<int> feature_v_type;
 
     void output_tracked_vertices(const std::string& filename);
     void write_tracked_vertices_info(const std::string& filename);

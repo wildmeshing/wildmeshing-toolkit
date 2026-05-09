@@ -10,7 +10,8 @@
       "dofs"
     ],
     "optional": [
-      "output"
+      "output",
+      "feature_edges"
     ]
   },
   {
@@ -40,6 +41,11 @@
     "pointer": "/dofs",
     "type": "string",
     "doc": "dofs file name"
+  },
+  {
+    "pointer": "/feature_edges",
+    "type": "string",
+    "doc": "feature_edges file name"
   },
   {
     "pointer": "/output",

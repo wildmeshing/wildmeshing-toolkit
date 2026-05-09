@@ -36,10 +36,13 @@ void c1_simplification(nlohmann::json json_params)
     std::string surface_mesh_file = json_params["surface_mesh"];
     std::string tet_mesh_file = json_params["tet_mesh"];
     std::string uv_mesh_file = json_params["uv_mesh"];
-    std::string dofs_file = json_params["dofs"];
+    // std::string dofs_file = json_params["dofs"];
     std::string cones_file = json_params["cones"];
-    std::string tracked_vertices_filename = json_params["tracked_vertices_file"];
+    // std::string tracked_vertices_filename = json_params["tracked_vertices_file"];
     std::string s2t_v_map_file = json_params["s2t_v_map"];
+    std::string feature_edges_file = json_params["feature_edges"];
+    // std::string winding_numbers_files = json_params["winding_numbers"]; // TOD): add winding numbers
+    int iters = json_params["iters"];
 
     std::string output_file = json_params["output"];
 
@@ -89,17 +92,17 @@ void c1_simplification(nlohmann::json json_params)
     }
 
     // read dofs
-    std::ifstream dofs(dofs_file);
+    // std::ifstream dofs(dofs_file);
     std::vector<Eigen::Matrix<double, 12, 3>> face_dofs(s_F.rows());
 
-    for (size_t i = 0; i < s_F.rows(); ++i) {
-        for (int row = 0; row < 12; ++row) {
-            for (int col = 0; col < 3; ++col) {
-                dofs >> face_dofs[i](row, col);
-            }
-        }
-    }
-    dofs.close();
+    // for (size_t i = 0; i < s_F.rows(); ++i) {
+    //     for (int row = 0; row < 12; ++row) {
+    //         for (int col = 0; col < 3; ++col) {
+    //             dofs >> face_dofs[i](row, col);
+    //         }
+    //     }
+    // }
+    // dofs.close();
 
     // read cones
     std::ifstream cones(cones_file);
@@ -111,51 +114,67 @@ void c1_simplification(nlohmann::json json_params)
     }
     cones.close();
 
-    // read tracked vertices
-    std::ifstream tracked_vertices_file(tracked_vertices_filename);
+    // read feature edges
+    std::map<std::pair<size_t, size_t>, bool> feature_edges_map;
+    std::vector<int> feature_v_type(
+        s_V.rows(),
+        0); // 0: none, 1: endpoint, 2: midpoint, 3 intersection
+    if (feature_edges_file != "") {
+        std::ifstream feature_edges(feature_edges_file);
+        int e0, e1;
+        while (feature_edges >> e0 >> e1) {
+            feature_edges_map[std::make_pair(e0, e1)] = true; // only push one direction
+            feature_v_type[e0]++;
+            feature_v_type[e1]++;
+        }
+    }
+
+    // // read tracked vertices
+    // std::ifstream tracked_vertices_file(tracked_vertices_filename);
     std::vector<MMSurfaceMesh::tracked_vertex> tracked_vertices;
 
 
-    // file << std::setprecision(16) << info.fid << " " << info.pos_3d[0] << " "
-    //  << info.pos_3d[1] << " " << info.pos_3d[2] << " " << info.pos_uv[0]
-    //  << " " << info.pos_uv[1] << " " << info.dfdu[0] << " " << info.dfdu[1]
-    //  << " " << info.dfdu[2] << " " << info.dfdv[0] << " " << info.dfdv[1]
-    //  << " " << info.dfdv[2] << " " << info.micro_id << " " << info.micro_u
-    //  << " " << info.micro_v << " " << info.micro_v0[0] << " "
-    //  << info.micro_v0[1] << " " << info.micro_v1[0] << " "
-    //  << info.micro_v1[1] << " " << info.micro_v2[0] << " "
-    //  << info.micro_v2[1] << " " << info.area << std::endl;
+    // // file << std::setprecision(16) << info.fid << " " << info.pos_3d[0] << " "
+    // //  << info.pos_3d[1] << " " << info.pos_3d[2] << " " << info.pos_uv[0]
+    // //  << " " << info.pos_uv[1] << " " << info.dfdu[0] << " " << info.dfdu[1]
+    // //  << " " << info.dfdu[2] << " " << info.dfdv[0] << " " << info.dfdv[1]
+    // //  << " " << info.dfdv[2] << " " << info.micro_id << " " << info.micro_u
+    // //  << " " << info.micro_v << " " << info.micro_v0[0] << " "
+    // //  << info.micro_v0[1] << " " << info.micro_v1[0] << " "
+    // //  << info.micro_v1[1] << " " << info.micro_v2[0] << " "
+    // //  << info.micro_v2[1] << " " << info.area << std::endl;
 
 
-    int64_t fid, micro_id;
-    double px, py, pz, s, t, dux, duy, duz, dvx, dvy, dvz, micro_u, micro_v, mv0_u, mv0_v, mv1_u,
-        mv1_v, mv2_u, mv2_v, area;
-    int64_t tracked_v_cnt = 0;
-    while (tracked_vertices_file >> fid >> px >> py >> pz >> s >> t >> dux >> duy >> duz >> dvx >>
-           dvy >> dvz >> micro_id >> micro_u >> micro_v >> mv0_u >> mv0_v >> mv1_u >> mv1_v >>
-           mv2_u >> mv2_v >> area) {
-        MMSurfaceMesh::tracked_vertex tracked_v;
-        tracked_v.uv_pos = Vector2d(s, t);
-        tracked_v.surface_pos = Vector3d(px, py, pz);
-        tracked_v.in_tri_id = fid;
-        tracked_v.vid = tracked_v_cnt;
+    // int64_t fid, micro_id;
+    // double px, py, pz, s, t, dux, duy, duz, dvx, dvy, dvz, micro_u, micro_v, mv0_u, mv0_v, mv1_u,
+    //     mv1_v, mv2_u, mv2_v, area;
+    // int64_t tracked_v_cnt = 0;
+    // while (tracked_vertices_file >> fid >> px >> py >> pz >> s >> t >> dux >> duy >> duz >> dvx
+    // >>
+    //        dvy >> dvz >> micro_id >> micro_u >> micro_v >> mv0_u >> mv0_v >> mv1_u >> mv1_v >>
+    //        mv2_u >> mv2_v >> area) {
+    //     MMSurfaceMesh::tracked_vertex tracked_v;
+    //     tracked_v.uv_pos = Vector2d(s, t);
+    //     tracked_v.surface_pos = Vector3d(px, py, pz);
+    //     tracked_v.in_tri_id = fid;
+    //     tracked_v.vid = tracked_v_cnt;
 
-        tracked_v.dfdu = Vector3d(dux, duy, duz);
-        tracked_v.dfdv = Vector3d(dvx, dvy, dvz);
-        tracked_v.micro_id = micro_id;
-        tracked_v.micro_u = micro_u;
-        tracked_v.micro_v = micro_v;
-        tracked_v.micro_v0 = Vector2d(mv0_u, mv0_v);
-        tracked_v.micro_v1 = Vector2d(mv1_u, mv1_v);
-        tracked_v.micro_v2 = Vector2d(mv2_u, mv2_v);
-        tracked_v.area = area;
+    //     tracked_v.dfdu = Vector3d(dux, duy, duz);
+    //     tracked_v.dfdv = Vector3d(dvx, dvy, dvz);
+    //     tracked_v.micro_id = micro_id;
+    //     tracked_v.micro_u = micro_u;
+    //     tracked_v.micro_v = micro_v;
+    //     tracked_v.micro_v0 = Vector2d(mv0_u, mv0_v);
+    //     tracked_v.micro_v1 = Vector2d(mv1_u, mv1_v);
+    //     tracked_v.micro_v2 = Vector2d(mv2_u, mv2_v);
+    //     tracked_v.area = area;
 
-        tracked_vertices.push_back(tracked_v);
+    //     tracked_vertices.push_back(tracked_v);
 
-        tracked_v_cnt++;
-    }
+    //     tracked_v_cnt++;
+    // }
 
-    tracked_vertices_file.close();
+    // tracked_vertices_file.close();
 
 
     // read vertex mapping
@@ -173,7 +192,7 @@ void c1_simplification(nlohmann::json json_params)
     }
 
 
-    wmtk::logger().info("meshes and dofs read.");
+    // wmtk::logger().info("meshes and dofs read.");
 
     MMSurfaceMesh surface_mesh(tet_mesh_ptr, uv_mesh_ptr, threshold * diag_length);
 
@@ -185,8 +204,11 @@ void c1_simplification(nlohmann::json json_params)
         cone_vids,
         tracked_vertices);
 
+    surface_mesh.feature_edges_map = feature_edges_map;
+    surface_mesh.feature_v_type = feature_v_type;
+
     wmtk::logger().info("initialized multimesh. tetmesh involved: {}", tet_mesh_ptr != nullptr);
-    surface_mesh.output_tracked_vertices("initial_tracked_vertices.obj");
+    // surface_mesh.output_tracked_vertices("initial_tracked_vertices.obj");
 
     int suc_cnt = 0;
     int iter_cnt = 0;
@@ -196,10 +218,10 @@ void c1_simplification(nlohmann::json json_params)
 
     surface_mesh.multimesh_consolidated_output(
         output_file + "_multi_" + std::to_string(total_suc_cnt));
-    surface_mesh.output_tracked_vertices(
-        output_file + "_tracked_vertices_" + std::to_string(total_suc_cnt) + ".obj");
-    surface_mesh.write_tracked_vertices_info(
-        output_file + "_tracked_vertices_info_" + std::to_string(total_suc_cnt) + ".txt");
+    // surface_mesh.output_tracked_vertices(
+    //     output_file + "_tracked_vertices_" + std::to_string(total_suc_cnt) + ".obj");
+    // surface_mesh.write_tracked_vertices_info(
+    //     output_file + "_tracked_vertices_info_" + std::to_string(total_suc_cnt) + ".txt");
 
 
     auto edge_length_compare = [&](const MMSurfaceMesh::Tuple& e1, const MMSurfaceMesh::Tuple& e2) {
@@ -221,7 +243,7 @@ void c1_simplification(nlohmann::json json_params)
     };
 
 
-    for (int iter = 0; iter < 5; ++iter) {
+    for (int iter = 0; iter < iters; ++iter) {
         wmtk::logger().info("----------------------- pass {} ----------------------", iter);
         wmtk::logger().info("executing collapse ...");
 
@@ -327,7 +349,16 @@ void c1_simplification(nlohmann::json json_params)
             total_suc_cnt,
             total_try_cnt);
 
-        // surface_mesh.multimesh_consolidated_output(output_file + "_multi_after_collapse");
+        // check tet inversion
+        const auto& tets_after_collapse = tet_mesh_ptr->get_tets();
+        for (const auto& t : tets_after_collapse) {
+            if (tet_mesh_ptr->is_inverted(t)) {
+                wmtk::logger().error("tet {} is inverted", t.tid(*tet_mesh_ptr));
+            }
+        }
+
+        surface_mesh.multimesh_consolidated_output(output_file + "_multi_after_collapse");
+        // return;
         // surface_mesh.output_tracked_vertices(output_file +
         // "_tracked_vertices_after_collapse.obj"); surface_mesh.write_tracked_vertices_info(
         //     output_file + "_tracked_vertices_info_after_collapse.txt");
@@ -429,15 +460,28 @@ void c1_simplification(nlohmann::json json_params)
             "total swap success cnt: {} out of {} tries",
             total_suc_cnt,
             total_try_cnt);
+
+        // check tet inversion
+        const auto& tets_after_swap = tet_mesh_ptr->get_tets();
+        for (const auto& t : tets_after_swap) {
+            if (tet_mesh_ptr->is_inverted(t)) {
+                wmtk::logger().error("tet {} is inverted", t.tid(*tet_mesh_ptr));
+            }
+        }
+
+        if (total_suc_cnt == 0) {
+            break;
+        }
     }
 
-    surface_mesh.multimesh_consolidated_output(output_file + "_multi");
-    surface_mesh.output_tracked_vertices(output_file + "_tracked_vertices.obj");
-    surface_mesh.write_tracked_vertices_info(output_file + "_tracked_vertices_info.txt");
 
-    surface_mesh.multimesh_consolidated_micro_tri_output(output_file + "_micro_uv");
-    surface_mesh.write_micro_triangle_tracked_vertices_info(
-        output_file + "_tracked_vertices_info_micro.txt");
+    surface_mesh.multimesh_consolidated_output(output_file + "_multi");
+    // surface_mesh.output_tracked_vertices(output_file + "_tracked_vertices.obj");
+    // surface_mesh.write_tracked_vertices_info(output_file + "_tracked_vertices_info.txt");
+
+    // surface_mesh.multimesh_consolidated_micro_tri_output(output_file + "_micro_uv");
+    // surface_mesh.write_micro_triangle_tracked_vertices_info(
+    //     output_file + "_tracked_vertices_info_micro.txt");
 
     // surface_mesh.output_surface_mesh(output_file + "_surface" + ".obj");
     // uv_mesh_ptr->output_uv_mesh(output_file + "_uv.obj");
