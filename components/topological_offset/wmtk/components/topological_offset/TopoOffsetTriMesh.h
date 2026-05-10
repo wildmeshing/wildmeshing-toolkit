@@ -65,6 +65,10 @@ public:
     std::vector<std::set<int64_t>> m_offset_tags_ids;
     std::set<int64_t> m_offset_output_tag_ids;
 
+    // if in 'singlebody' mode
+    bool m_singlebody = false;
+    int64_t m_single_tag;
+
     // just for retaining in output. dont actually use
     bool m_has_envelope = false;
     MatrixXd m_V_envelope;

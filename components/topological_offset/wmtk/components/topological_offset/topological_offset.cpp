@@ -49,7 +49,13 @@ void topological_offset(nlohmann::json json_params)
     for (const std::string& tag : json_params["offset_output_tag"]) {
         params.offset_output_tag.insert(tag);
     }
+    for (const std::string& tag : json_params["protected_tags"]) {
+        params.protected_tags.push_back(tag);
+    }
     params.respect_all_topologies = json_params["respect_all_topologies"];
+    params.overwrite = json_params["overwrite_tags"];
+    params.offset_in = json_params["offset_in"];
+    params.offset_out = json_params["offset_out"];
     params.target_distance = json_params["target_distance"];
     params.relative_ball_threshold = json_params["relative_ball_threshold"];
     params.edge_search_term_len = json_params["edge_search_termination_len"];
@@ -167,18 +173,10 @@ void topological_offset(nlohmann::json json_params)
             mesh.m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Initial;
             mesh.marching_tris();
             mesh.consolidate_mesh();
-            if (mesh.m_params.debug_output) {
-                mesh.set_offset_tri_tags();
-                mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
-            }
 
-            // run BFS, save after
+            // run BFS
             mesh.grow_offset_conservative();
             mesh.consolidate_mesh();
-            if (mesh.m_params.debug_output) {
-                mesh.set_offset_tri_tags();
-                mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
-            }
 
             // simplicially embed again, if needed
             mesh.m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Midpoint;
@@ -186,10 +184,6 @@ void topological_offset(nlohmann::json json_params)
                 mesh.simplicial_embedding();
                 bool dummy = mesh.is_simplicially_embedded();
                 mesh.consolidate_mesh();
-            }
-            if (mesh.m_params.debug_output) {
-                mesh.set_offset_tri_tags();
-                mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
             }
 
             // marching tets (using binary search edge split)
@@ -336,18 +330,10 @@ void topological_offset(nlohmann::json json_params)
             mesh.m_edge_split_mode = TopoOffsetTetMesh::EdgeSplitMode::Initial;
             mesh.marching_tets();
             mesh.consolidate_mesh();
-            if (mesh.m_params.debug_output) {
-                mesh.set_offset_tet_tags();
-                mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
-            }
 
-            // run BFS, save after
+            // run BFS
             mesh.grow_offset_conservative();
             mesh.consolidate_mesh();
-            if (mesh.m_params.debug_output) {
-                mesh.set_offset_tet_tags();
-                mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
-            }
 
             // simplicially embed again, if needed
             mesh.m_edge_split_mode = TopoOffsetTetMesh::EdgeSplitMode::Midpoint;
@@ -355,10 +341,6 @@ void topological_offset(nlohmann::json json_params)
                 mesh.simplicial_embedding();
                 bool dummy = mesh.is_simplicially_embedded();
                 mesh.consolidate_mesh();
-            }
-            if (mesh.m_params.debug_output) {
-                mesh.set_offset_tet_tags();
-                mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
             }
 
             // marching tets (using binary search edge split)
