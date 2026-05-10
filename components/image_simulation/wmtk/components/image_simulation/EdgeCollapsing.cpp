@@ -108,7 +108,7 @@ bool ImageSimulationMesh::collapse_edge_before(const Tuple& loc) // input is an 
 
     // surface
     if (cache.edge_length > 0 && VA[v1_id].m_is_on_surface) {
-        if (!VA[v2_id].m_is_on_surface) {
+        if (VA[v1_id].m_is_rounded && !VA[v2_id].m_is_on_surface) {
             // do not collapse away from surface
             return false;
         }
@@ -346,6 +346,7 @@ bool ImageSimulationMesh::collapse_edge_after(const Tuple& loc)
 
 void ImageSimulationMesh::simplify()
 {
+    compute_vertex_partition_morton();
     if (m_params.debug_output) {
         write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
     }
