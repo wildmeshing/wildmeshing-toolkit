@@ -274,6 +274,7 @@ void ImageSimulationMesh::seal_connected_components(
     // seal holes
     for (const ConnectedComponent& hole : components) {
         std::vector<simplex::Edge> split_edges;
+        std::set<size_t> vids;
         for (const size_t tid : hole.cells) {
             const Vector3d p = get_center(tid);
             const double d = m_voronoi_split_fn(p);
@@ -288,6 +289,8 @@ void ImageSimulationMesh::seal_connected_components(
                 const Tuple t = tuple_from_edge(tid, j);
                 const size_t v0 = t.vid(*this);
                 const size_t v1 = t.switch_vertex(*this).vid(*this);
+                vids.insert(v0);
+                vids.insert(v1);
                 const double d0 = m_voronoi_split_fn(m_vertex_attribute.at(v0).m_posf);
                 const double d1 = m_voronoi_split_fn(m_vertex_attribute.at(v1).m_posf);
                 // only split edges if their endpoints aren't already on the surface
@@ -317,12 +320,25 @@ void ImageSimulationMesh::seal_connected_components(
                 const auto vs = oriented_tet_vids(tid);
                 // find vertex from splitted edge
                 size_t vid = -1;
+                bool is_inside = true;
                 for (const size_t v : vs) {
+                    if (v == v_new) {
+                        continue;
+                    }
                     if (e.vertices()[0] == v || e.vertices()[1] == v) {
                         vid = v;
+                    } else if (vids.count(v) == 0) {
+                        // check the two other vertices if they are hole vertices
+                        is_inside = false;
                         break;
                     }
                 }
+
+                if (!is_inside) {
+                    // not inside the hole, do not change tags
+                    continue;
+                }
+
                 if (vid == -1) {
                     log_and_throw_error("Could not find edge-vertex after split.");
                 }
