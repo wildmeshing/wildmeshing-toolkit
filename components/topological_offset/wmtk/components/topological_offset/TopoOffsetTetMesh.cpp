@@ -111,144 +111,243 @@ void TopoOffsetTetMesh::init_from_image(
         m_vertex_attribute[v_id].m_posf = V.row(v_id);
     }
 
-    // identify offset input tets
-    for (const Tuple& t : tets) {
-        size_t t_id = t.tid(*this);
-        bool in_input = true;
-        const std::set<int64_t> t_tag = m_tet_attribute[t_id].tag;
-        for (const std::set<int64_t> tag : m_offset_tags_ids) {
-            if (!any_tag_present(t_tag, tag)) {
-                in_input = false;
-                break;
+    if (m_params.offset_tags.size() == 1 && m_params.offset_tags[0].size() == 1) {
+        m_singlebody = true;
+        m_single_tag = *m_offset_tags_ids[0].begin();
+        if (!(m_params.offset_in || m_params.offset_out)) {
+            log_and_throw_error(
+                "At least one of offset_in and offset_out must be true for singlebody mode.");
+        }
+        logger().info("Using single body mode for '{}'", m_tag_id_to_name[m_single_tag]);
+
+        if (m_params.offset_in && m_params.offset_out) { // input complex is body boundary
+            for (const Tuple& t : tets) {
+                size_t t_id = t.tid(*this);
+                if (m_tet_attribute[t_id].tag.count(m_single_tag) == 0) {
+                    continue;
+                }
+
+                auto check_and_set = [this](const Tuple& tup) {
+                    auto other = tup.switch_tetrahedron(*this);
+                    if (!other ||
+                        (m_tet_attribute[other.value().tid(*this)].tag.count(m_single_tag) == 0)) {
+                        m_face_attribute[tup.fid(*this)].label = 1;
+                        // propagate to children simplices
+                        m_edge_attribute[tup.eid(*this)].label = 1;
+                        m_edge_attribute[tup.switch_edge(*this).eid(*this)].label = 1;
+                        m_edge_attribute[tup.switch_vertex(*this).switch_edge(*this).eid(*this)]
+                            .label = 1;
+                        m_vertex_attribute[tup.vid(*this)].label = 1;
+                        m_vertex_attribute[tup.switch_vertex(*this).vid(*this)].label = 1;
+                        m_vertex_attribute[tup.switch_edge(*this).switch_vertex(*this).vid(*this)]
+                            .label = 1;
+                    }
+                };
+
+                // for each face, check if boundary and if so, set as input
+                check_and_set(t);
+                check_and_set(t.switch_face(*this));
+                check_and_set(t.switch_edge(*this).switch_face(*this));
+                check_and_set(t.switch_vertex(*this).switch_edge(*this).switch_face(*this));
+            }
+        } else if (m_params.offset_in) { // input complex is everything outside body
+            for (const Tuple& t : tets) {
+                size_t t_id = t.tid(*this);
+                if (m_tet_attribute[t_id].tag.count(m_single_tag) == 0) {
+                    m_tet_attribute[t_id].label = 1;
+                    // propagate to faces, edges, verts
+                    auto v_ids = oriented_tet_vids(t_id);
+                    for (const size_t& v_id : v_ids) {
+                        m_vertex_attribute[v_id].label = 1;
+                    }
+                    for (int i = 0; i < 6; i++) {
+                        m_edge_attribute[tuple_from_edge(t_id, i).eid(*this)].label = 1;
+                    }
+                    for (int i = 0; i < 4; i++) {
+                        m_face_attribute[tuple_from_face(t_id, i).fid(*this)].label = 1;
+                    }
+                } else {
+                    auto check_and_set = [this](const Tuple& tup) {
+                        auto other = tup.switch_tetrahedron(*this);
+                        if (!other) {
+                            m_face_attribute[tup.fid(*this)].label = 1;
+                            // propagate to children simplices
+                            m_edge_attribute[tup.eid(*this)].label = 1;
+                            m_edge_attribute[tup.switch_edge(*this).eid(*this)].label = 1;
+                            m_edge_attribute[tup.switch_vertex(*this).switch_edge(*this).eid(*this)]
+                                .label = 1;
+                            m_vertex_attribute[tup.vid(*this)].label = 1;
+                            m_vertex_attribute[tup.switch_vertex(*this).vid(*this)].label = 1;
+                            m_vertex_attribute[tup.switch_edge(*this).switch_vertex(*this).vid(
+                                                   *this)]
+                                .label = 1;
+                        }
+                    };
+
+                    check_and_set(t);
+                    check_and_set(t.switch_face(*this));
+                    check_and_set(t.switch_edge(*this).switch_face(*this));
+                    check_and_set(t.switch_vertex(*this).switch_edge(*this).switch_face(*this));
+                }
+            }
+        } else if (m_params.offset_out) {
+            for (const Tuple& t : tets) {
+                size_t t_id = t.tid(*this);
+                if (m_tet_attribute[t_id].tag.count(m_single_tag) != 0) {
+                    m_tet_attribute[t_id].label = 1;
+                    // propagate to faces, edges, verts
+                    auto v_ids = oriented_tet_vids(t_id);
+                    for (const size_t& v_id : v_ids) {
+                        m_vertex_attribute[v_id].label = 1;
+                    }
+                    for (int i = 0; i < 6; i++) {
+                        m_edge_attribute[tuple_from_edge(t_id, i).eid(*this)].label = 1;
+                    }
+                    for (int i = 0; i < 4; i++) {
+                        m_face_attribute[tuple_from_face(t_id, i).fid(*this)].label = 1;
+                    }
+                }
             }
         }
-        if (in_input) {
-            m_tet_attribute[t_id].label = 1;
-            // propagate to faces, edges, verts
-            auto v_ids = oriented_tet_vids(t_id);
-            for (const size_t& v_id : v_ids) {
+    } else {
+        for (const Tuple& t : tets) {
+            size_t t_id = t.tid(*this);
+            bool in_input = true;
+            const std::set<int64_t> t_tag = m_tet_attribute[t_id].tag;
+            for (const std::set<int64_t> tag : m_offset_tags_ids) {
+                if (!any_tag_present(t_tag, tag)) {
+                    in_input = false;
+                    break;
+                }
+            }
+            if (in_input) {
+                m_tet_attribute[t_id].label = 1;
+                // propagate to faces, edges, verts
+                auto v_ids = oriented_tet_vids(t_id);
+                for (const size_t& v_id : v_ids) {
+                    m_vertex_attribute[v_id].label = 1;
+                }
+                for (int i = 0; i < 6; i++) {
+                    m_edge_attribute[tuple_from_edge(t_id, i).eid(*this)].label = 1;
+                }
+                for (int i = 0; i < 4; i++) {
+                    m_face_attribute[tuple_from_face(t_id, i).fid(*this)].label = 1;
+                }
+            }
+        }
+
+        // identify offset input faces
+        const auto& faces = get_faces();
+        for (const Tuple& f : faces) {
+            // check if parent tet tagged
+            size_t f_id = f.fid(*this);
+            if (m_face_attribute[f_id].label == 1) {
+                continue;
+            }
+
+            // gather incident tet tag(s)
+            std::vector<std::set<int64_t>> inc_tags;
+            inc_tags.push_back(m_tet_attribute[f.tid(*this)].tag);
+            auto other = f.switch_tetrahedron(*this);
+            if (other) {
+                inc_tags.push_back(m_tet_attribute[other.value().tid(*this)].tag);
+            }
+
+            // check if in intersection of unions
+            bool in_input = true;
+            for (const std::set<int64_t> tag : m_offset_tags_ids) {
+                bool union_present = false;
+                for (const std::set<int64_t> t_tag : inc_tags) {
+                    if (any_tag_present(t_tag, tag)) {
+                        union_present = true;
+                        break;
+                    }
+                }
+                if (!union_present) {
+                    in_input = false;
+                    break;
+                }
+            }
+            if (in_input) {
+                m_face_attribute[f_id].label = 1;
+                // propagate to children simplices
+                m_edge_attribute[f.eid(*this)].label = 1;
+                m_edge_attribute[f.switch_edge(*this).eid(*this)].label = 1;
+                m_edge_attribute[f.switch_vertex(*this).switch_edge(*this).eid(*this)].label = 1;
+                m_vertex_attribute[f.vid(*this)].label = 1;
+                m_vertex_attribute[f.switch_vertex(*this).vid(*this)].label = 1;
+                m_vertex_attribute[f.switch_edge(*this).switch_vertex(*this).vid(*this)].label = 1;
+            }
+        }
+
+        // identify offset input edges
+        const auto& edges = get_edges();
+        for (const Tuple& e : edges) {
+            // check if already labelled from parent simplex
+            size_t e_id = e.eid(*this);
+            if (m_edge_attribute[e_id].label == 1) {
+                continue;
+            }
+
+            // gather incident tag sets
+            auto inc_tids = get_incident_tids_for_edge(e);
+            std::vector<std::set<int64_t>> inc_tags;
+            for (const size_t& t_id : inc_tids) {
+                inc_tags.push_back(m_tet_attribute[t_id].tag);
+            }
+
+            // check if criteria met
+            bool in_input = true;
+            for (const std::set<int64_t>& tag : m_offset_tags_ids) {
+                bool union_present = false;
+                for (const std::set<int64_t>& t_tag : inc_tags) {
+                    if (any_tag_present(t_tag, tag)) {
+                        union_present = true;
+                        break;
+                    }
+                }
+                if (!union_present) {
+                    in_input = false;
+                    break;
+                }
+            }
+            if (in_input) {
+                m_edge_attribute[e_id].label = 1;
+                m_vertex_attribute[e.vid(*this)].label = 1;
+                m_vertex_attribute[e.switch_vertex(*this).vid(*this)].label = 1;
+            }
+        }
+
+        // identify vertices in input
+        for (const Tuple& v : verts) {
+            size_t v_id = v.vid(*this);
+            if (m_vertex_attribute[v_id].label == 1) {
+                continue;
+            }
+
+            auto inc_tids = get_one_ring_tids_for_vertex(v_id);
+            std::vector<std::set<int64_t>> inc_tags;
+            for (const size_t& t_id : inc_tids) {
+                inc_tags.push_back(m_tet_attribute[t_id].tag);
+            }
+
+            bool in_input = true;
+            for (const std::set<int64_t>& tag : m_offset_tags_ids) {
+                bool union_present = false;
+                for (const std::set<int64_t>& t_tag : inc_tags) {
+                    if (any_tag_present(t_tag, tag)) {
+                        union_present = true;
+                        break;
+                    }
+                }
+                if (!union_present) {
+                    in_input = false;
+                    break;
+                }
+            }
+            if (in_input) {
                 m_vertex_attribute[v_id].label = 1;
             }
-            for (int i = 0; i < 6; i++) {
-                m_edge_attribute[tuple_from_edge(t_id, i).eid(*this)].label = 1;
-            }
-            for (int i = 0; i < 4; i++) {
-                m_face_attribute[tuple_from_face(t_id, i).fid(*this)].label = 1;
-            }
-        }
-    }
-
-    // identify offset input faces
-    const auto& faces = get_faces();
-    for (const Tuple& f : faces) {
-        // check if parent tet tagged
-        size_t f_id = f.fid(*this);
-        if (m_face_attribute[f_id].label == 1) {
-            continue;
-        }
-
-        // gather incident tet tag(s)
-        std::vector<std::set<int64_t>> inc_tags;
-        inc_tags.push_back(m_tet_attribute[f.tid(*this)].tag);
-        auto other = f.switch_tetrahedron(*this);
-        if (other) {
-            inc_tags.push_back(m_tet_attribute[other.value().tid(*this)].tag);
-        }
-
-        // check if in intersection of unions
-        bool in_input = true;
-        for (const std::set<int64_t> tag : m_offset_tags_ids) {
-            bool union_present = false;
-            for (const std::set<int64_t> t_tag : inc_tags) {
-                if (any_tag_present(t_tag, tag)) {
-                    union_present = true;
-                    break;
-                }
-            }
-            if (!union_present) {
-                in_input = false;
-                break;
-            }
-        }
-        if (in_input) {
-            m_face_attribute[f_id].label = 1;
-            // propagate to children simplices
-            m_edge_attribute[f.eid(*this)].label = 1;
-            m_edge_attribute[f.switch_edge(*this).eid(*this)].label = 1;
-            m_edge_attribute[f.switch_vertex(*this).switch_edge(*this).eid(*this)].label = 1;
-            m_vertex_attribute[f.vid(*this)].label = 1;
-            m_vertex_attribute[f.switch_vertex(*this).vid(*this)].label = 1;
-            m_vertex_attribute[f.switch_edge(*this).switch_vertex(*this).vid(*this)].label = 1;
-        }
-    }
-
-    // identify offset input edges
-    const auto& edges = get_edges();
-    for (const Tuple& e : edges) {
-        // check if already labelled from parent simplex
-        size_t e_id = e.eid(*this);
-        if (m_edge_attribute[e_id].label == 1) {
-            continue;
-        }
-
-        // gather incident tag sets
-        auto inc_tids = get_incident_tids_for_edge(e);
-        std::vector<std::set<int64_t>> inc_tags;
-        for (const size_t& t_id : inc_tids) {
-            inc_tags.push_back(m_tet_attribute[t_id].tag);
-        }
-
-        // check if criteria met
-        bool in_input = true;
-        for (const std::set<int64_t>& tag : m_offset_tags_ids) {
-            bool union_present = false;
-            for (const std::set<int64_t>& t_tag : inc_tags) {
-                if (any_tag_present(t_tag, tag)) {
-                    union_present = true;
-                    break;
-                }
-            }
-            if (!union_present) {
-                in_input = false;
-                break;
-            }
-        }
-        if (in_input) {
-            m_edge_attribute[e_id].label = 1;
-            m_vertex_attribute[e.vid(*this)].label = 1;
-            m_vertex_attribute[e.switch_vertex(*this).vid(*this)].label = 1;
-        }
-    }
-
-    // identify vertices in input
-    for (const Tuple& v : verts) {
-        size_t v_id = v.vid(*this);
-        if (m_vertex_attribute[v_id].label == 1) {
-            continue;
-        }
-
-        auto inc_tids = get_one_ring_tids_for_vertex(v_id);
-        std::vector<std::set<int64_t>> inc_tags;
-        for (const size_t& t_id : inc_tids) {
-            inc_tags.push_back(m_tet_attribute[t_id].tag);
-        }
-
-        bool in_input = true;
-        for (const std::set<int64_t>& tag : m_offset_tags_ids) {
-            bool union_present = false;
-            for (const std::set<int64_t>& t_tag : inc_tags) {
-                if (any_tag_present(t_tag, tag)) {
-                    union_present = true;
-                    break;
-                }
-            }
-            if (!union_present) {
-                in_input = false;
-                break;
-            }
-        }
-        if (in_input) {
-            m_vertex_attribute[v_id].label = 1;
         }
     }
 }
@@ -750,8 +849,29 @@ void TopoOffsetTetMesh::set_offset_tet_tags()
     for (const Tuple& t : tets) {
         size_t t_id = t.tid(*this);
         if (m_tet_attribute[t_id].label == 2) {
-            for (const int64_t& tag : m_offset_output_tag_ids) {
-                m_tet_attribute[t_id].tag.insert(tag);
+            if (m_params.overwrite) {
+                std::set<int64_t> new_tag;
+
+                // add existing protected tags
+                for (const int64_t& existing_tag : m_tet_attribute[t_id].tag) {
+                    if (std::find(
+                            m_params.protected_tags.begin(),
+                            m_params.protected_tags.end(),
+                            m_tag_id_to_name[existing_tag]) != m_params.protected_tags.end()) {
+                        new_tag.insert(existing_tag);
+                    }
+                }
+
+                // add offset tags
+                for (const int64_t& tag : m_offset_output_tag_ids) {
+                    new_tag.insert(tag);
+                }
+
+                m_tet_attribute[t_id].tag = new_tag;
+            } else {
+                for (const int64_t& tag : m_offset_output_tag_ids) {
+                    m_tet_attribute[t_id].tag.insert(tag);
+                }
             }
         }
     }

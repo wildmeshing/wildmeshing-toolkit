@@ -101,99 +101,175 @@ void TopoOffsetTriMesh::init_from_image(
         m_vertex_attribute[v_id].m_posf = V.row(v_id);
     }
 
-    // compute intersection of unions for faces.
-    for (const Tuple& f : faces) {
-        size_t f_id = f.fid(*this);
-        bool in_input = true; // json specifies at least one tag set, so can safely set this.
-        const std::set<int64_t> f_tag = m_face_attribute[f_id].tag;
-        for (const std::set<int64_t>& tag : m_offset_tags_ids) {
-            if (!any_tag_present(f_tag, tag)) {
-                in_input = false;
-                break;
-            }
+    // check if in singlebody mode
+    if (m_params.offset_tags.size() == 1 && m_params.offset_tags[0].size() == 1) {
+        m_singlebody = true;
+        m_single_tag = *m_offset_tags_ids[0].begin();
+        if (!(m_params.offset_in || m_params.offset_out)) {
+            log_and_throw_error(
+                "At least one of offset_in and offset_out must be true for singlebody mode.");
         }
-        if (in_input) {
-            m_face_attribute[f_id].label = 1;
-            // propagate to edges and verts in tri
-            m_edge_attribute[f.eid(*this)].label = 1;
-            m_edge_attribute[f.switch_edge(*this).eid(*this)].label = 1;
-            m_edge_attribute[f.switch_vertex(*this).switch_edge(*this).eid(*this)].label = 1;
-            m_vertex_attribute[f.vid(*this)].label = 1;
-            m_vertex_attribute[f.switch_vertex(*this).vid(*this)].label = 1;
-            m_vertex_attribute[f.switch_edge(*this).switch_vertex(*this).vid(*this)].label = 1;
-        }
-    }
+        logger().info("Using single body mode for '{}'", m_tag_id_to_name[m_single_tag]);
 
-    // compute intersection of unions for edges.
-    auto edges = get_edges();
-    for (const Tuple& e : edges) {
-        // check if edge already in input via face
-        size_t e_id = e.eid(*this);
-        if (m_edge_attribute[e_id].label == 1) {
-            continue;
-        }
-
-        // gather incident face(s)
-        std::vector<std::set<int64_t>> inc_tags;
-        inc_tags.push_back(m_face_attribute[e.fid(*this)].tag);
-        auto other = e.switch_face(*this);
-        if (other) {
-            inc_tags.push_back(m_face_attribute[other.value().fid(*this)].tag);
-        }
-
-        // check if criteria met
-        bool in_input = true;
-        for (const std::set<int64_t>& tag : m_offset_tags_ids) {
-            bool union_present = false;
-            for (const std::set<int64_t>& inc_tag : inc_tags) {
-                if (any_tag_present(inc_tag, tag)) {
-                    union_present = true;
+        if (m_params.offset_in && m_params.offset_out) { // input complex is boundary simplices
+            for (const Tuple& f : faces) {
+                size_t f_id = f.fid(*this);
+                if (m_face_attribute[f_id].tag.count(m_single_tag) != 0) {
+                    Tuple ftup = tuple_from_tri(f_id);
+                    auto vs = oriented_tri_vids(f_id);
+                    for (int i = 0; i < 3; i++) {
+                        Tuple etup = tuple_from_edge(vs[i], vs[(i + 1) % 3], f_id);
+                        auto other = etup.switch_face(*this);
+                        if (!other || (m_face_attribute[other.value().fid(*this)].tag.count(
+                                           m_single_tag) == 0)) {
+                            size_t e_id = etup.eid(*this);
+                            m_edge_attribute[e_id].label = 1;
+                            m_vertex_attribute[vs[i]].label = 1;
+                            m_vertex_attribute[vs[(i + 1) % 3]].label = 1;
+                        }
+                    }
                 }
             }
-            if (!union_present) {
-                in_input = false;
-                break;
-            }
-        }
-        if (in_input) {
-            m_edge_attribute[e_id].label = 1;
-            // propagate to vertices
-            m_vertex_attribute[e.vid(*this)].label = 1;
-            m_vertex_attribute[e.switch_vertex(*this).vid(*this)].label = 1;
-        }
-    }
-
-    // compute intersection of unions for vertices.
-    for (const Tuple& v : verts) {
-        // check if vertex already in input via face or edge
-        size_t v_id = v.vid(*this);
-        if (m_vertex_attribute[v_id].label == 1) {
-            continue;
-        }
-
-        // get incident face tags
-        auto inc_fids = get_one_ring_fids_for_vertex(v_id);
-        std::vector<std::set<int64_t>> inc_tags;
-        for (const size_t& f_id : inc_fids) {
-            inc_tags.push_back(m_face_attribute[f_id].tag);
-        }
-
-        // check if vertex meets criteria
-        bool in_input = true;
-        for (const std::set<int64_t>& tag : m_offset_tags_ids) {
-            bool union_present = false;
-            for (const std::set<int64_t>& inc_tag : inc_tags) {
-                if (any_tag_present(inc_tag, tag)) {
-                    union_present = true;
+        } else if (m_params.offset_in) { // input complex is everything outside body plus boundary
+                                         // faces (hacky but works)
+            for (const Tuple& f : faces) {
+                size_t f_id = f.fid(*this);
+                if (m_face_attribute[f_id].tag.count(m_single_tag) == 0) {
+                    m_face_attribute[f_id].label = 1;
+                    // propagate to edges and verts in tri
+                    m_edge_attribute[f.eid(*this)].label = 1;
+                    m_edge_attribute[f.switch_edge(*this).eid(*this)].label = 1;
+                    m_edge_attribute[f.switch_vertex(*this).switch_edge(*this).eid(*this)].label =
+                        1;
+                    m_vertex_attribute[f.vid(*this)].label = 1;
+                    m_vertex_attribute[f.switch_vertex(*this).vid(*this)].label = 1;
+                    m_vertex_attribute[f.switch_edge(*this).switch_vertex(*this).vid(*this)].label =
+                        1;
+                } else { // face is in body, check for boundary edges
+                    auto vs = oriented_tri_vids(f_id);
+                    for (int i = 0; i < 3; i++) {
+                        Tuple etup = tuple_from_edge(vs[i], vs[(i + 1) % 3], f_id);
+                        auto other = etup.switch_face(*this);
+                        if (!other) {
+                            m_edge_attribute[etup.eid(*this)].label = 1;
+                            m_vertex_attribute[etup.vid(*this)].label = 1;
+                            m_vertex_attribute[etup.switch_vertex(*this).vid(*this)].label = 1;
+                        }
+                    }
                 }
             }
-            if (!union_present) {
-                in_input = false;
-                break;
+        } else { // input complex is body itself
+            for (const Tuple& f : faces) {
+                size_t f_id = f.fid(*this);
+                if (m_face_attribute[f_id].tag.count(m_single_tag) != 0) {
+                    m_face_attribute[f_id].label = 1;
+                    // propagate to edges and verts in tri
+                    m_edge_attribute[f.eid(*this)].label = 1;
+                    m_edge_attribute[f.switch_edge(*this).eid(*this)].label = 1;
+                    m_edge_attribute[f.switch_vertex(*this).switch_edge(*this).eid(*this)].label =
+                        1;
+                    m_vertex_attribute[f.vid(*this)].label = 1;
+                    m_vertex_attribute[f.switch_vertex(*this).vid(*this)].label = 1;
+                    m_vertex_attribute[f.switch_edge(*this).switch_vertex(*this).vid(*this)].label =
+                        1;
+                }
             }
         }
-        if (in_input) {
-            m_vertex_attribute[v_id].label = 1;
+    } else {
+        // compute intersection of unions for faces.
+        for (const Tuple& f : faces) {
+            size_t f_id = f.fid(*this);
+            bool in_input = true; // json specifies at least one tag set, so can safely set this.
+            const std::set<int64_t> f_tag = m_face_attribute[f_id].tag;
+            for (const std::set<int64_t>& tag : m_offset_tags_ids) {
+                if (!any_tag_present(f_tag, tag)) {
+                    in_input = false;
+                    break;
+                }
+            }
+            if (in_input) {
+                m_face_attribute[f_id].label = 1;
+                // propagate to edges and verts in tri
+                m_edge_attribute[f.eid(*this)].label = 1;
+                m_edge_attribute[f.switch_edge(*this).eid(*this)].label = 1;
+                m_edge_attribute[f.switch_vertex(*this).switch_edge(*this).eid(*this)].label = 1;
+                m_vertex_attribute[f.vid(*this)].label = 1;
+                m_vertex_attribute[f.switch_vertex(*this).vid(*this)].label = 1;
+                m_vertex_attribute[f.switch_edge(*this).switch_vertex(*this).vid(*this)].label = 1;
+            }
+        }
+
+        // compute intersection of unions for edges.
+        auto edges = get_edges();
+        for (const Tuple& e : edges) {
+            // check if edge already in input via face
+            size_t e_id = e.eid(*this);
+            if (m_edge_attribute[e_id].label == 1) {
+                continue;
+            }
+
+            // gather incident face(s)
+            std::vector<std::set<int64_t>> inc_tags;
+            inc_tags.push_back(m_face_attribute[e.fid(*this)].tag);
+            auto other = e.switch_face(*this);
+            if (other) {
+                inc_tags.push_back(m_face_attribute[other.value().fid(*this)].tag);
+            }
+
+            // check if criteria met
+            bool in_input = true;
+            for (const std::set<int64_t>& tag : m_offset_tags_ids) {
+                bool union_present = false;
+                for (const std::set<int64_t>& inc_tag : inc_tags) {
+                    if (any_tag_present(inc_tag, tag)) {
+                        union_present = true;
+                    }
+                }
+                if (!union_present) {
+                    in_input = false;
+                    break;
+                }
+            }
+            if (in_input) {
+                m_edge_attribute[e_id].label = 1;
+                // propagate to vertices
+                m_vertex_attribute[e.vid(*this)].label = 1;
+                m_vertex_attribute[e.switch_vertex(*this).vid(*this)].label = 1;
+            }
+        }
+
+        // compute intersection of unions for vertices.
+        for (const Tuple& v : verts) {
+            // check if vertex already in input via face or edge
+            size_t v_id = v.vid(*this);
+            if (m_vertex_attribute[v_id].label == 1) {
+                continue;
+            }
+
+            // get incident face tags
+            auto inc_fids = get_one_ring_fids_for_vertex(v_id);
+            std::vector<std::set<int64_t>> inc_tags;
+            for (const size_t& f_id : inc_fids) {
+                inc_tags.push_back(m_face_attribute[f_id].tag);
+            }
+
+            // check if vertex meets criteria
+            bool in_input = true;
+            for (const std::set<int64_t>& tag : m_offset_tags_ids) {
+                bool union_present = false;
+                for (const std::set<int64_t>& inc_tag : inc_tags) {
+                    if (any_tag_present(inc_tag, tag)) {
+                        union_present = true;
+                    }
+                }
+                if (!union_present) {
+                    in_input = false;
+                    break;
+                }
+            }
+            if (in_input) {
+                m_vertex_attribute[v_id].label = 1;
+            }
         }
     }
 }
@@ -559,8 +635,29 @@ void TopoOffsetTriMesh::set_offset_tri_tags()
     for (const Tuple& f : faces) {
         size_t f_id = f.fid(*this);
         if (m_face_attribute[f_id].label == 2) {
-            for (const int64_t& tag : m_offset_output_tag_ids) {
-                m_face_attribute[f_id].tag.insert(tag);
+            if (m_params.overwrite) {
+                std::set<int64_t> new_tag;
+
+                // add existing protected tags
+                for (const int64_t& existing_tag : m_face_attribute[f_id].tag) {
+                    if (std::find(
+                            m_params.protected_tags.begin(),
+                            m_params.protected_tags.end(),
+                            m_tag_id_to_name[existing_tag]) != m_params.protected_tags.end()) {
+                        new_tag.insert(existing_tag);
+                    }
+                }
+
+                // add offset tags
+                for (const int64_t& tag : m_offset_output_tag_ids) {
+                    new_tag.insert(tag);
+                }
+
+                m_face_attribute[f_id].tag = new_tag;
+            } else {
+                for (const int64_t& tag : m_offset_output_tag_ids) {
+                    m_face_attribute[f_id].tag.insert(tag);
+                }
             }
         }
     }
