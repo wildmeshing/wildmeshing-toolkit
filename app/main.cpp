@@ -1,4 +1,3 @@
-#include <tbb/global_control.h>
 #include <CLI/CLI.hpp>
 #include <filesystem>
 #include <map>
@@ -12,8 +11,6 @@ using namespace wmtk;
 
 int main(int argc, char** argv)
 {
-    tbb::global_control tbb_limit(tbb::global_control::max_allowed_parallelism, 1);
-
     CLI::App app{argv[0]};
     std::filesystem::path json_input_file;
 
