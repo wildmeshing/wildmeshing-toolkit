@@ -264,7 +264,7 @@ void SurfaceMesh::write_vtu(const std::string& path)
     paraviewo::VTUWriter writer;
     writer.add_field("on_edge", v_is_on_edge);
     writer.add_field("is_frozen", v_is_frozen);
-    writer.write_mesh(path + ".vtu", V, F);
+    writer.write_mesh(path + ".vtu", V, F, paraviewo::CellType::Triangle);
 
     // feature edges
     {
@@ -274,7 +274,7 @@ void SurfaceMesh::write_vtu(const std::string& path)
         edge_writer.add_field("is_frozen", v_is_frozen);
 
         logger().info("Write {}", edge_out_path);
-        edge_writer.write_mesh(edge_out_path, V, E);
+        edge_writer.write_mesh(edge_out_path, V, E, paraviewo::CellType::Line);
     }
 }
 

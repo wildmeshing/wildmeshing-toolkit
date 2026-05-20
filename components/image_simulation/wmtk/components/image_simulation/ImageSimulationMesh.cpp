@@ -1101,7 +1101,7 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
     }
     writer.add_cell_field("quality", amips);
     writer.add_field("sizing_field", v_sizing_field);
-    writer.write_mesh(out_path, V, T);
+    writer.write_mesh(out_path, V, T, paraviewo::CellType::Tetrahedron);
 
     // surface
     const std::string surf_out_path = path + "_surf.vtu";
@@ -1111,7 +1111,7 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
         surf_writer.add_field("order", v_order);
 
         logger().info("Write {}", surf_out_path);
-        surf_writer.write_mesh(surf_out_path, V, F);
+        surf_writer.write_mesh(surf_out_path, V, F, paraviewo::CellType::Triangle);
     }
     // edges
     const std::string edge_out_path = path + "_edge.vtu";
@@ -1121,7 +1121,7 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
         edge_writer.add_field("order", v_order);
 
         logger().info("Write {}", edge_out_path);
-        edge_writer.write_mesh(edge_out_path, V, E);
+        edge_writer.write_mesh(edge_out_path, V, E, paraviewo::CellType::Line);
     }
 
     // VTM

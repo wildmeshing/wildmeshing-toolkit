@@ -737,7 +737,7 @@ void TopoOffsetTriMesh::write_input_complex(const std::string& path)
     std::vector<int> vid_map(
         get_vertices().size(),
         -1); // vid_map[i] gives new vertex id for old id 'i'
-    std::vector<std::vector<int>> cells;
+    std::vector<paraviewo::CellElement> cells;
 
     // extract required vertices and populate id map
     std::vector<Eigen::Vector3d> verts_to_offset;
@@ -759,9 +759,10 @@ void TopoOffsetTriMesh::write_input_complex(const std::string& path)
     auto edges = get_edges();
     for (const Tuple& e : edges) {
         if (m_edge_attribute[e.eid(*this)].label == 1) {
-            std::vector<int> curr_e;
-            curr_e.push_back(vid_map[e.vid(*this)]);
-            curr_e.push_back(vid_map[e.switch_vertex(*this).vid(*this)]);
+            paraviewo::CellElement curr_e;
+            curr_e.ctype = paraviewo::CellType::Line;
+            curr_e.vertices.push_back(vid_map[e.vid(*this)]);
+            curr_e.vertices.push_back(vid_map[e.switch_vertex(*this).vid(*this)]);
             cells.push_back(curr_e);
         }
     }
@@ -776,14 +777,17 @@ void TopoOffsetTriMesh::write_input_complex(const std::string& path)
             for (const size_t v_id : v_ids) {
                 curr_f.push_back(vid_map[v_id]);
             }
-            cells.push_back(curr_f);
+            paraviewo::CellElement curr_f_elem;
+            curr_f_elem.vertices = curr_f;
+            curr_f_elem.ctype = paraviewo::CellType::Triangle;
+            cells.push_back(curr_f_elem);
         }
     }
 
     // output
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
     writer = std::make_shared<paraviewo::VTUWriter>();
-    writer->write_mesh(path + ".vtu", V, cells, true, false);
+    writer->write_mesh(path + ".vtu", V, cells);
 }
 
 
@@ -832,7 +836,7 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
         writer->add_cell_field(m_tag_id_to_name[i], tags[i]);
     }
     writer->add_cell_field("offset_tag", tags[m_tags_count]); // also hacky but it works.
-    writer->write_mesh(path + ".vtu", V, F);
+    writer->write_mesh(path + ".vtu", V, F, paraviewo::CellType::Triangle);
 
     // surface output
     if (m_has_envelope) {
@@ -840,7 +844,8 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
         std::shared_ptr<paraviewo::ParaviewWriter> surf_writer;
         surf_writer = std::make_shared<paraviewo::VTUWriter>();
         logger().info("Write {}", out_surf_path);
-        surf_writer->write_mesh(out_surf_path, m_V_envelope, m_F_envelope);
+        surf_writer
+            ->write_mesh(out_surf_path, m_V_envelope, m_F_envelope, paraviewo::CellType::Line);
     }
 }
 

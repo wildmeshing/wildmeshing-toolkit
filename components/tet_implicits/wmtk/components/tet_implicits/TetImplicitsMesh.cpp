@@ -599,7 +599,7 @@ void TetImplicitsMesh::write_vtu(const std::string& path)
     writer->add_cell_field("quality", amips);
     writer->add_field("sdf", v_sdf);
     writer->add_field("is_inside", v_is_inside);
-    writer->write_mesh(path + ".vtu", V, T);
+    writer->write_mesh(path + ".vtu", V, T, paraviewo::CellType::Tetrahedron);
 
     //// surface
     //{
@@ -609,7 +609,7 @@ void TetImplicitsMesh::write_vtu(const std::string& path)
     //    surf_writer->add_field("sizing_field", v_sizing_field);
     //
     //    logger().info("Write {}", surf_out_path);
-    //    surf_writer->write_mesh(surf_out_path, V, F);
+    //    surf_writer->write_mesh(surf_out_path, V, F, paraviewo::CellType::Triangle);
     //}
 }
 

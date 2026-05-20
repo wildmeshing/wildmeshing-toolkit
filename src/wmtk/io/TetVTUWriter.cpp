@@ -150,7 +150,7 @@ bool TetVTUWriter::write_tets(const std::filesystem::path& filename)
         writer.add_cell_field(name, attr);
     }
 
-    bool r = writer.write_mesh(filename.string(), m_V, m_T);
+    bool r = writer.write_mesh(filename.string(), m_V, m_T, paraviewo::CellType::Tetrahedron);
     return r;
 }
 
@@ -164,7 +164,7 @@ bool TetVTUWriter::write_triangles(const std::filesystem::path& filename)
         writer.add_cell_field(name, attr);
     }
 
-    bool r = writer.write_mesh(filename.string(), m_V, m_F);
+    bool r = writer.write_mesh(filename.string(), m_V, m_F, paraviewo::CellType::Triangle);
     return r;
 }
 
@@ -178,7 +178,7 @@ bool TetVTUWriter::write_edges(const std::filesystem::path& filename)
         writer.add_cell_field(name, attr);
     }
 
-    bool r = writer.write_mesh(filename.string(), m_V, m_E);
+    bool r = writer.write_mesh(filename.string(), m_V, m_E, paraviewo::CellType::Line);
     return r;
 }
 
