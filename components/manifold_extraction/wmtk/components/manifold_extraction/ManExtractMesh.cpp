@@ -763,7 +763,7 @@ void ManExtractMesh::write_input_complex(const std::string& path)
 
     std::vector<int> vid_map(vertex_size(),
                              -1); // vid_map[i] gives new vertex id for old id 'i'
-    std::vector<std::vector<int>> cells;
+    std::vector<paraviewo::CellElement> cells;
 
     // extract required vertices and populate id map
     std::vector<Eigen::Vector3d> verts_to_offset; // vertices to offset
@@ -787,7 +787,10 @@ void ManExtractMesh::write_input_complex(const std::string& path)
             std::vector<int> curr_e;
             curr_e.push_back(vid_map[e.vid(*this)]);
             curr_e.push_back(vid_map[switch_vertex(e).vid(*this)]);
-            cells.push_back(curr_e);
+            paraviewo::CellElement curr_e_elem;
+            curr_e_elem.vertices = curr_e;
+            curr_e_elem.ctype = paraviewo::CellType::Line;
+            cells.push_back(curr_e_elem);
         }
     }
 
@@ -801,7 +804,10 @@ void ManExtractMesh::write_input_complex(const std::string& path)
             curr_f.push_back(vid_map[f1.vid(*this)]);
             Tuple f2 = switch_vertex(switch_edge(f1));
             curr_f.push_back(vid_map[f2.vid(*this)]);
-            cells.push_back(curr_f);
+            paraviewo::CellElement curr_f_elem;
+            curr_f_elem.vertices = curr_f;
+            curr_f_elem.ctype = paraviewo::CellType::Triangle;
+            cells.push_back(curr_f_elem);
         }
     }
 
@@ -816,6 +822,10 @@ void ManExtractMesh::write_input_complex(const std::string& path)
             for (const size_t vid : vids) {
                 curr_t.push_back(vid_map[vid]);
             }
+            paraviewo::CellElement curr_t_elem;
+            curr_t_elem.vertices = curr_t;
+            curr_t_elem.ctype = paraviewo::CellType::Tetrahedron;
+            cells.push_back(curr_t_elem);
         }
     }
     if (flag) {
@@ -825,7 +835,7 @@ void ManExtractMesh::write_input_complex(const std::string& path)
     // output
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
     writer = std::make_shared<paraviewo::VTUWriter>();
-    writer->write_mesh(path + ".vtu", V, cells, true, false);
+    writer->write_mesh(path + ".vtu", V, cells);
 }
 
 
@@ -889,7 +899,7 @@ void ManExtractMesh::write_vtu(const std::string& path)
     for (int64_t i = 0; i < m_tags_count; i++) {
         writer->add_cell_field(m_tag_id_to_name[i], tags[i]);
     }
-    writer->write_mesh(path + ".vtu", V, T);
+    writer->write_mesh(path + ".vtu", V, T, paraviewo::CellType::Tetrahedron);
 
     // envelope
     if (m_has_envelope) {
@@ -897,7 +907,8 @@ void ManExtractMesh::write_vtu(const std::string& path)
         std::shared_ptr<paraviewo::ParaviewWriter> surf_writer;
         surf_writer = std::make_shared<paraviewo::VTUWriter>();
         logger().info("Write {}", out_surf_path);
-        surf_writer->write_mesh(out_surf_path, m_V_envelope, m_F_envelope);
+        surf_writer
+            ->write_mesh(out_surf_path, m_V_envelope, m_F_envelope, paraviewo::CellType::Triangle);
     }
 }
 

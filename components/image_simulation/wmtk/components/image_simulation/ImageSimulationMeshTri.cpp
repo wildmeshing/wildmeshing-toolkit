@@ -737,7 +737,7 @@ void ImageSimulationMeshTri::write_vtu(const std::string& path) const
     }
     writer->add_cell_field("quality", amips);
     writer->add_field("sizing_field", v_sizing_field);
-    writer->write_mesh(path + ".vtu", V, F);
+    writer->write_mesh(path + ".vtu", V, F, paraviewo::CellType::Triangle);
 
     // surface
     {
@@ -747,7 +747,7 @@ void ImageSimulationMeshTri::write_vtu(const std::string& path) const
         surf_writer->add_field("sizing_field", v_sizing_field);
 
         logger().info("Write {}", surf_out_path);
-        surf_writer->write_mesh(surf_out_path, V, E);
+        surf_writer->write_mesh(surf_out_path, V, E, paraviewo::CellType::Line);
     }
 }
 
@@ -850,7 +850,7 @@ void ImageSimulationMeshTri::write_vtu_with_energies(const std::string& path) co
     }
     writer->add_cell_field("quality", amips);
     writer->add_field("sizing_field", v_sizing_field);
-    writer->write_mesh(path + ".vtu", V, F);
+    writer->write_mesh(path + ".vtu", V, F, paraviewo::CellType::Triangle);
 
     // surface
     {
@@ -866,7 +866,7 @@ void ImageSimulationMeshTri::write_vtu_with_energies(const std::string& path) co
 
 
         logger().info("Write {}", surf_out_path);
-        surf_writer->write_mesh(surf_out_path, V, E);
+        surf_writer->write_mesh(surf_out_path, V, E, paraviewo::CellType::Line);
     }
 }
 

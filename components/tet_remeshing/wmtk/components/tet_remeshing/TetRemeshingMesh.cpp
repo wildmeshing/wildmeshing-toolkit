@@ -1294,7 +1294,7 @@ void TetRemeshingMesh::write_vtu(const std::string& path)
     writer->add_field("sizing_field", v_sizing_field);
     writer->add_field("on_feature", v_on_feature);
     writer->add_field("is_frozen", v_is_frozen);
-    writer->write_mesh(path + ".vtu", V, T);
+    writer->write_mesh(path + ".vtu", V, T, paraviewo::CellType::Tetrahedron);
 
     // surface
     {
@@ -1306,7 +1306,7 @@ void TetRemeshingMesh::write_vtu(const std::string& path)
         surf_writer->add_field("is_frozen", v_is_frozen);
 
         logger().info("Write {}", surf_out_path);
-        surf_writer->write_mesh(surf_out_path, V, F);
+        surf_writer->write_mesh(surf_out_path, V, F, paraviewo::CellType::Triangle);
     }
 }
 

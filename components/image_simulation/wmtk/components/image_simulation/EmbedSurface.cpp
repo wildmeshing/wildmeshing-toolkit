@@ -1362,8 +1362,9 @@ void EmbedSurface::write_emb_vtu(const std::string& filename) const
         writer.add_cell_field(fmt::format("tag_{}", i), m_T_tags.col(i).cast<double>());
     }
     logger().info("Write {}.vtu and _surf.vtu", filename);
-    writer.write_mesh(filename + ".vtu", m_V_emb, m_T_emb);
-    writer.write_mesh(filename + "_surf.vtu", m_V_emb, m_F_on_surface);
+    writer.write_mesh(filename + ".vtu", m_V_emb, m_T_emb, paraviewo::CellType::Tetrahedron);
+    writer
+        .write_mesh(filename + "_surf.vtu", m_V_emb, m_F_on_surface, paraviewo::CellType::Triangle);
 }
 
 std::pair<Vector3d, Vector3d> EmbedSurface::bbox_minmax() const
