@@ -302,7 +302,7 @@ bool TetMesh::substructure_link_condition(const Tuple& e_tuple) const
             const Edge ew = fw.opposite_edge(u);
             link_u_0.add_with_faces(ew);
             link_u_1.add_with_faces(ew);
-            const Vertex vw = ew.opposite_vertex(u);
+            const Vertex vw = e.opposite_vertex(u);
             link_u_2.add(vw);
         }
         link_u_0.sort_and_clean();
@@ -357,7 +357,7 @@ bool TetMesh::substructure_link_condition(const Tuple& e_tuple) const
             const Edge ew = fw.opposite_edge(v);
             link_v_0.add_with_faces(ew);
             link_v_1.add_with_faces(ew);
-            const Vertex vw = ew.opposite_vertex(v);
+            const Vertex vw = e.opposite_vertex(v);
             link_v_2.add(vw);
         }
         link_v_0.sort_and_clean();
