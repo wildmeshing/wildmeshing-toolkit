@@ -58,17 +58,13 @@ TEST_CASE("scale-invariance", test_groups + test_release_only)
 
     struct Energies
     {
-        double amips = -1, smooth = -1, envelope = -1, barrier = -1;
+        double amips = -1, envelope = -1;
     };
 
     auto collect_energies = [](double scale) {
         Parameters params;
-        params.w_amips = 1e-8;
-        params.w_smooth = 1e-4;
         auto mesh_ptr = init_optimization_tests(params, scale);
         tri::ImageSimulationMeshTri& mesh = *mesh_ptr;
-
-        mesh.build_mass_matrix();
 
         const auto& VA = mesh.m_vertex_attribute;
 
@@ -83,15 +79,8 @@ TEST_CASE("scale-invariance", test_groups + test_release_only)
                 continue;
             }
 
-            auto smooth_energy = mesh.get_smooth_energy(t);
-
-            if (!smooth_energy) {
-                continue;
-            }
-
             auto amips_energy = mesh.get_amips_energy(t);
             auto envelope_energy = mesh.get_envelope_energy(t);
-            auto barrier_energy = mesh.get_barrier_energy(t);
 
             // find a position to test the envelope energy
             Tuple n;
@@ -108,9 +97,7 @@ TEST_CASE("scale-invariance", test_groups + test_release_only)
 
             Energies e;
             e.amips = amips_energy->value(x);
-            e.smooth = smooth_energy->value(y);
             e.envelope = envelope_energy->value(y);
-            e.barrier = barrier_energy->value(x);
             energies.push_back(e);
         }
 
@@ -126,64 +113,7 @@ TEST_CASE("scale-invariance", test_groups + test_release_only)
         // compare all energies
         // logger().info("amips");
         compare(a[i].amips, b[i].amips);
-        // logger().info("smooth");
-        compare(a[i].smooth, b[i].smooth);
         // logger().info("env");
         compare(a[i].envelope, b[i].envelope);
-        // logger().info("barrier");
-        compare(a[i].barrier, b[i].barrier);
-    }
-}
-
-TEST_CASE("barrier-bfs", test_groups + test_release_only)
-{
-    logger().set_level(spdlog::level::off);
-
-    using Tuple = TriMesh::Tuple;
-    Parameters params;
-    auto mesh_ptr = init_optimization_tests(params);
-    tri::ImageSimulationMeshTri& mesh = *mesh_ptr;
-
-    mesh.build_mass_matrix();
-
-    const auto& VA = mesh.m_vertex_attribute;
-
-    for (const Tuple& t : mesh.get_vertices()) {
-        const size_t vid = t.vid(mesh);
-        if (vid < 8000) {
-            continue;
-        }
-        if (!VA[vid].m_is_on_surface) {
-            continue;
-        }
-
-        mesh.m_s_barrier = 1; // remove weight
-
-        auto loc = mesh.get_barrier_energy(t, false);
-        auto glob = mesh.get_barrier_energy(t, true);
-
-        if (!loc) {
-            continue;
-        }
-
-        const Vector2d& x = VA[vid].m_pos;
-
-        double v_loc = loc->value(x);
-        VectorXd g_loc;
-        loc->gradient(x, g_loc);
-        MatrixXd h_loc;
-        loc->hessian(x, h_loc);
-
-        double v_glob = glob->value(x);
-        VectorXd g_glob;
-        glob->gradient(x, g_glob);
-        MatrixXd h_glob;
-        glob->hessian(x, h_glob);
-
-        // logger()
-        //     .info("v = {}: g_loc = {}, g_glob = {}", vid, g_loc.transpose(), g_glob.transpose());
-
-        CHECK((g_loc - g_glob).squaredNorm() < 1e-10);
-        CHECK((h_loc - h_glob).squaredNorm() < 1e-10);
     }
 }

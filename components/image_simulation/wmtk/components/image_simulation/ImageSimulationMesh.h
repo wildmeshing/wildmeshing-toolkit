@@ -144,14 +144,10 @@ public:
     std::shared_ptr<SampleEnvelope> m_order_2_edge_envelope; // todo: add sample envelope option
 
     tbb::enumerable_thread_specific<std::unique_ptr<polysolve::nonlinear::Solver>> m_solver;
-    Eigen::SparseMatrix<double> m_surface_mass; // the mass matrix for surface vertices
-    Eigen::SparseMatrix<double> m_surface_stiffness; // stiffness matrix for surface vertices
 
     // scaling factors
     double m_s_amips = -1;
-    double m_s_smooth = -1;
     double m_s_envelope = -1;
-    double m_s_barrier = -1;
 
     // When set, split_edge_after binary-searches vmid onto the zero-crossing of this function.
     // Negative = stays on v1 side, positive = stays on v2 side.
@@ -173,39 +169,12 @@ public:
         optimization::deactivate_opt_logger();
 
         m_s_amips = 1.;
-        /**
-         * TODO
-         */
-        m_s_smooth = 1.;
-        /**
-         * TODO
-         */
         m_s_envelope = 1. / (m_params.diag_l * m_params.eps * m_params.eps);
-        /**
-         * TODO
-         */
-        m_s_barrier = 1. / (m_params.diag_l4);
 
-        // check weights (ignoring barrier here)
-        {
-            double& wa = m_params.w_amips;
-            double& ws = m_params.w_smooth;
-            const double sum = wa + ws;
-            if (sum > 1) {
-                wa /= sum;
-                ws /= sum;
-                logger().warn(
-                    "Weights for AMIPS and smooth sum up to greater than 1. Rescaling to \n  "
-                    "w_amips = {}, \n  w_smooth = {}",
-                    wa,
-                    ws);
-            }
-            double& we = m_params.w_envelope;
-            we = 1 - (wa + ws);
-            logger().info("w_envelope = {}", we);
-        }
-
-        init_separation_weight();
+        double& wa = m_params.w_amips;
+        double& we = m_params.w_envelope;
+        we = 1 - wa;
+        logger().info("w_envelope = {}", we);
     }
 
     ~ImageSimulationMesh() {}
@@ -354,8 +323,6 @@ public:
 
     void init_envelope(const MatrixXd& V, const MatrixXi& F);
 
-    void init_separation_weight();
-
     CellTag string_set_to_cell_tag(const std::set<std::string>& str_set);
 
     double get_length2(const Tuple& l) const;
@@ -424,21 +391,10 @@ public:
     double get_quality(const std::array<size_t, 4>& vs) const;
     double get_quality(const Tuple& loc) const;
 
-    void build_mass_matrix();
-
     std::vector<std::array<double, 12>> get_amips_assembles(const Tuple& t) const;
 
     std::shared_ptr<polysolve::nonlinear::Problem> get_amips_energy(const Tuple& t) const;
-
-    std::shared_ptr<polysolve::nonlinear::Problem> get_smooth_energy(const Tuple& t) const;
     std::shared_ptr<polysolve::nonlinear::Problem> get_envelope_energy(const Tuple& t) const;
-    std::shared_ptr<polysolve::nonlinear::Problem> get_barrier_energy(
-        const Tuple& t,
-        const bool use_full_surface = false) const;
-
-    void substructure_region(const Tuple& v_tuple, MatrixXd& V, MatrixXi& E, size_t& vid_local)
-        const;
-
 
     /**
      * @brief Round a vertex position to floating point.

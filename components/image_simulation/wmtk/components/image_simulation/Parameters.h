@@ -37,13 +37,8 @@ struct Parameters
     bool smooth_without_envelope = false;
 
     // weighting terms for the optimization
-    double w_amips = 1;
-    double w_smooth = 0;
+    double w_amips = 1e-4;
     double w_envelope = 0;
-    double w_separate = 0;
-
-    double dhat = -1;
-    double separation_factor = 1;
 
     std::string operation = "remeshing";
 
@@ -76,8 +71,6 @@ struct Parameters
         }
 
         l_min = 0.5 * eps;
-
-        dhat = separation_factor * l_min;
     }
     void init(
         const std::vector<Vector3d>& vertices,
