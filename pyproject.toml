@@ -13,6 +13,17 @@ authors = [{ name = "WildMeshingToolkit" }]
 
 [tool.scikit-build]
 cmake.minimum-version = "3.25"
+
+# --- Build Configuration ---
+# To switch to Debug, comment out the Release lines and uncomment the Debug lines
+# cmake.build-type = "Release"
+# build-dir = "build/Release"
+
+# cmake.build-type = "Debug"
+# build-dir = "build/Debug"
+cmake.build-type = "RelWithDebInfo"
+build-dir = "build/RelWithDebInfo"
+
 cmake.args = [
   "-DWMTK_PYBIND=ON",
   "-DCMAKE_INSTALL_DEFAULT_COMPONENT_NAME=python_bindings",
