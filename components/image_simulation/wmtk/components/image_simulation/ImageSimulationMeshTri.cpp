@@ -16,7 +16,6 @@
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/envelope/KNN.hpp>
 #include <wmtk/optimization/AMIPSEnergy.hpp>
-#include <wmtk/optimization/BarrierEnergy.hpp>
 #include <wmtk/optimization/DirichletEnergy.hpp>
 #include <wmtk/optimization/EnergySum.hpp>
 #include <wmtk/optimization/EnvelopeEnergy.hpp>
@@ -347,52 +346,6 @@ void ImageSimulationMeshTri::init_envelope(const MatrixXd& V, const MatrixXi& E)
 
     if (!m_envelope_orig) {
         m_envelope_orig = m_envelope;
-    }
-}
-
-void ImageSimulationMeshTri::init_separation_weight()
-{
-    if (m_params.separation_factor <= 0) {
-        m_params.w_separate = 0;
-        logger().warn(
-            "Separation factor is {} -> No separation. IPC barrier weight = {}",
-            m_params.separation_factor,
-            m_params.w_separate);
-        return;
-    }
-    //m_params.w_separate = m_params.w_envelope * (16. / 5.) * m_params.dhat;
-
-    /**
-     * This assumes that the barrier term is the clamped log barrier term:
-     * E_B = b(d) = -(d-\hat{d})^2\ln\left(\frac{d}{\hat{d}}\right)
-     *
-     * E_B' = b'(\hat{d}/2) = \hat{d} * (\ln(2) - 0.5)
-     *
-     * barrier scaling: s_B = 1/l^4
-     * envelope scaling: s_E = 1 / (l * eps^2)
-     *
-     * l is the bounding box diagonal.
-     *
-     * The envelope energy E_E = \Vert p - p_0 \Vert^2
-     * E_E'(\hat{d}/2) = \hat{d}
-     *
-     * We compute w_E from
-     * s_B w_B E_B' = s_E w_E E_E'
-     *
-     * w_B = w_E l^3 / (eps^2 * (\ln(2) - 0.5))
-     */
-
-    const double l3 = m_params.diag_l3;
-    const double eps2 = m_params.eps * m_params.eps;
-    const double ln2 = std::log(2.0);
-
-    m_params.w_separate = m_params.w_envelope * l3 / (eps2 * (ln2 - 0.5));
-
-    logger().info("IPC barrier weight = {}, dhat = {}", m_params.w_separate, m_params.dhat);
-
-    if (m_params.w_separate < 0) {
-        logger().error("Negative separation weight: {}. Setting weight to 0.", m_params.w_separate);
-        m_params.w_separate = 0;
     }
 }
 
@@ -770,10 +723,6 @@ void ImageSimulationMeshTri::write_vtu_with_energies(const std::string& path) co
 
     VectorXd v_sizing_field(vert_capacity());
     v_sizing_field.setZero();
-    MatrixXd v_energy_grad_barrier(vert_capacity(), 2);
-    v_energy_grad_barrier.setZero();
-    MatrixXd v_energy_grad_smooth(vert_capacity(), 2);
-    v_energy_grad_smooth.setZero();
     MatrixXd v_energy_grad_amips(vert_capacity(), 2);
     v_energy_grad_amips.setZero();
     MatrixXd v_energy_grad_envelope(vert_capacity(), 2);
@@ -815,28 +764,16 @@ void ImageSimulationMeshTri::write_vtu_with_energies(const std::string& path) co
             auto energy_sum = std::make_shared<optimization::EnergySum>();
 
             auto amips_energy = get_amips_energy(v);
-            auto smooth_energy = get_smooth_energy(v);
             auto envelope_energy = get_envelope_energy(v);
-            // auto barrier_energy = get_barrier_energy(v);
-
-            if (!smooth_energy) {
-                continue;
-            }
 
             energy_sum->add_energy(amips_energy);
-            energy_sum->add_energy(smooth_energy);
             energy_sum->add_energy(envelope_energy);
-            // energy_sum->add_energy(barrier_energy);
 
             VectorXd g;
             amips_energy->gradient(x, g);
             v_energy_grad_amips.row(vid) = g;
-            smooth_energy->gradient(x, g);
-            v_energy_grad_smooth.row(vid) = g;
             envelope_energy->gradient(x, g);
             v_energy_grad_envelope.row(vid) = g;
-            // barrier_energy->gradient(x, g);
-            // v_energy_grad_barrier.row(vid) = g;
             energy_sum->gradient(x, g);
             v_energy_grad_sum.row(vid) = g;
         }
@@ -859,9 +796,7 @@ void ImageSimulationMeshTri::write_vtu_with_energies(const std::string& path) co
         surf_writer = std::make_shared<paraviewo::VTUWriter>();
         surf_writer->add_field("sizing_field", v_sizing_field);
         surf_writer->add_field("amips_grad", v_energy_grad_amips);
-        surf_writer->add_field("smooth_grad", v_energy_grad_smooth);
         surf_writer->add_field("envelope_grad", v_energy_grad_envelope);
-        surf_writer->add_field("barrier_grad", v_energy_grad_barrier);
         surf_writer->add_field("sum_grad", v_energy_grad_sum);
 
 
@@ -1528,13 +1463,6 @@ bool ImageSimulationMeshTri::swap_edge_after(const Tuple& t)
 
 void ImageSimulationMeshTri::smooth_all_vertices(const size_t n_iters)
 {
-    /**
-     * Mass matrix is only necessary if w_smooth is positive but we still compute the mass matrix
-     * all the time. It's rather cheap to do and allows for printing all the energy terms.
-     */
-    build_mass_matrix();
-
-    // actual smoothing
     for (size_t i = 0; i < n_iters; ++i) {
         // log_total_surface_energy();
         igl::Timer timer;
@@ -1638,17 +1566,7 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
     if (VA[vid].m_is_on_surface) {
         assert(!surf_assembles.empty());
 
-        if (surf_assembles.size() != 3) {
-            return false;
-        }
-
         auto energy_sum = std::make_shared<optimization::EnergySum>();
-
-        if (m_params.w_smooth > 0) {
-            auto smooth_energy = get_smooth_energy(t);
-            assert(smooth_energy);
-            energy_sum->add_energy(smooth_energy);
-        }
 
         if (m_params.w_amips > 0) {
             energy_sum->add_energy(amips_energy);
@@ -1656,9 +1574,6 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
         if (m_params.w_envelope > 0) {
             energy_sum->add_energy(get_envelope_energy(t));
         }
-        // if (m_params.w_separate > 0) {
-        //     energy_sum->add_energy(get_barrier_energy(t));
-        // }
 
         total_energy = energy_sum;
     } else {
@@ -1711,36 +1626,6 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
     return true;
 }
 
-void ImageSimulationMeshTri::build_mass_matrix()
-{
-    m_surface_mass.resize(vert_capacity());
-    m_surface_stiffness.resize(vert_capacity());
-    for (const Tuple& t : get_vertices()) {
-        const size_t vid = t.vid(*this);
-        if (!m_vertex_attribute.at(vid).m_is_on_surface) {
-            continue;
-        }
-        const auto es = get_surface_edges_for_vertex(vid);
-        if (es.size() != 2) {
-            continue;
-        }
-        auto& M = m_surface_mass[vid];
-        auto& L_w = m_surface_stiffness[vid];
-
-        std::array<Vector2d, 3> pts;
-        pts[0] = m_vertex_attribute.at(vid).m_pos;
-
-        for (size_t i = 0; i < 2; ++i) {
-            const auto& vs = es.edges()[i].vertices();
-            size_t neighbor_id = vs[0] != vid ? vs[0] : vs[1];
-            pts[i + 1] = m_vertex_attribute.at(neighbor_id).m_pos;
-        }
-
-        optimization::BiharmonicEnergy2D::local_mass_and_stiffness(pts, M, L_w);
-        // optimization::SmoothingEnergy2D::uniform_mass_and_stiffness(pts, M, L_w);
-    }
-}
-
 std::vector<Vector2d> ImageSimulationMeshTri::get_surface_assembles(const Tuple& t) const
 {
     const auto& VA = m_vertex_attribute;
@@ -1766,111 +1651,17 @@ std::vector<Vector2d> ImageSimulationMeshTri::get_surface_assembles(const Tuple&
     return surface_pts;
 }
 
-std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMeshTri::get_smooth_energy(
-    const Tuple& t) const
-{
-    const auto& VA = m_vertex_attribute;
-    const size_t vid = t.vid(*this);
-
-    auto surf_assembles_vec = get_surface_assembles(t);
-    if (surf_assembles_vec.size() != 3) {
-        return nullptr;
-    }
-
-    // mass and stiffness
-    const auto& M = m_surface_mass[vid];
-    const auto& L_w = m_surface_stiffness[vid];
-
-    const double w = m_s_smooth * m_params.w_smooth;
-
-    std::array<Vector2d, 3> pts{
-        surf_assembles_vec[0],
-        surf_assembles_vec[1],
-        surf_assembles_vec[2]};
-    auto smooth_energy = std::make_shared<optimization::BiharmonicEnergy2D>(pts, M, L_w, w);
-
-    return smooth_energy;
-}
 
 std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMeshTri::get_envelope_energy(
     const Tuple& t) const
 {
-    const auto& M = m_surface_mass[t.vid(*this)];
-    const double w = m_s_envelope * M * m_params.w_envelope;
+    const double w = m_s_envelope * m_params.w_envelope;
 
     auto envelope_energy = std::make_shared<optimization::EnvelopeEnergy2D>(
         m_envelope_orig,
         w,
         !m_params.smooth_without_envelope);
     return envelope_energy;
-}
-
-std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMeshTri::get_barrier_energy(
-    const Tuple& t,
-    const bool use_full_surface) const
-{
-    const auto& VA = m_vertex_attribute;
-    const size_t vid = t.vid(*this);
-
-    if (!VA[vid].m_is_on_surface) {
-        return nullptr;
-    }
-
-    const auto& M = m_surface_mass[t.vid(*this)];
-    if (M <= 0) {
-        return nullptr;
-    }
-
-    // barrier energy
-    MatrixXd V_barrier;
-    MatrixXi E_barrier;
-    size_t vid_barrier;
-    if (!use_full_surface) {
-        substructure_region(t, V_barrier, E_barrier, vid_barrier);
-    } else {
-        // this is horribly expensive and is only here for testing
-
-        std::vector<Vector2d> surf_points;
-        std::vector<size_t> global_to_local_vid_map(vert_capacity());
-        for (size_t i = 0; i < vert_capacity(); ++i) {
-            const Tuple v = tuple_from_vertex(i);
-            if (!v.is_valid(*this)) {
-                continue;
-            }
-            const size_t _vid = v.vid(*this);
-            if (!m_vertex_attribute.at(_vid).m_is_on_surface) {
-                continue;
-            }
-            surf_points.push_back(m_vertex_attribute.at(_vid).m_pos);
-            global_to_local_vid_map[_vid] = surf_points.size() - 1;
-        }
-
-        V_barrier.resize(surf_points.size(), 2);
-        for (size_t i = 0; i < surf_points.size(); ++i) {
-            V_barrier.row(i) = surf_points[i];
-        }
-
-        const auto surf_edges = get_edges_by_condition([](auto& f) { return f.m_is_surface_fs; });
-        E_barrier.resize(surf_edges.size(), 2);
-        for (size_t i = 0; i < surf_edges.size(); ++i) {
-            const size_t v0 = global_to_local_vid_map[surf_edges[i][0]];
-            const size_t v1 = global_to_local_vid_map[surf_edges[i][1]];
-            E_barrier.row(i) = Vector2i(v0, v1);
-        }
-
-        vid_barrier = global_to_local_vid_map[vid];
-    }
-
-    // The inverse mass comes from the weight compuation based on the envelope energy. This contains
-    // the mass and therefore the barrier energy must contain the inverse.
-    auto barrier_energy = std::make_shared<optimization::BarrierEnergy2D>(
-        V_barrier,
-        E_barrier,
-        vid_barrier,
-        m_params.dhat,
-        m_s_barrier * m_params.w_separate / M);
-
-    return barrier_energy;
 }
 
 std::vector<std::array<double, 6>> ImageSimulationMeshTri::get_amips_assembles(const Tuple& t) const
@@ -1927,13 +1718,10 @@ std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMeshTri::get_amips
 
 void ImageSimulationMeshTri::log_total_surface_energy()
 {
-    build_mass_matrix();
-
     double e_sum = 0;
     double e_amips = 0;
     double e_smooth = 0;
     double e_envelope = 0;
-    double e_barrier = 0;
     size_t n_pts = 0;
 
     const auto& VA = m_vertex_attribute;
@@ -1946,38 +1734,25 @@ void ImageSimulationMeshTri::log_total_surface_energy()
         const Vector2d old_pos = VA[vid].m_pos;
 
         auto amips_energy = get_amips_energy(t);
-        auto smooth_energy = get_smooth_energy(t);
-
-        if (!smooth_energy) {
-            continue;
-        }
 
         auto envelope_energy = get_envelope_energy(t);
-        // auto barrier_energy = get_barrier_energy(t);
 
         auto energy_sum = std::make_shared<optimization::EnergySum>();
         energy_sum->add_energy(amips_energy);
-        energy_sum->add_energy(smooth_energy);
         energy_sum->add_energy(envelope_energy);
-        // energy_sum->add_energy(barrier_energy);
 
         e_sum += energy_sum->value(old_pos);
         e_amips += amips_energy->value(old_pos);
-        e_smooth += smooth_energy->value(old_pos);
         e_envelope += envelope_energy->value(old_pos);
-        // e_barrier += barrier_energy->value(old_pos);
 
         ++n_pts;
     }
 
     logger().warn(
-        ">>>>> Energies <<<<<\nSUM = {}\n  AMIPS = {}\n  Smooth = {}\n  Envelope = {}\n  Barrier = "
-        "{}\n  #V = {}",
+        ">>>>> Energies <<<<<\nSUM = {}\n  AMIPS = {}\n  Envelope = {}\n  #V = {}",
         e_sum,
         e_amips,
-        e_smooth,
         e_envelope,
-        e_barrier,
         n_pts);
 }
 
@@ -2262,121 +2037,6 @@ std::tuple<double, double> ImageSimulationMeshTri::get_max_avg_energy()
     avg_energy /= cnt;
 
     return std::make_tuple(max_energy, avg_energy);
-}
-
-void ImageSimulationMeshTri::substructure_region(
-    const Tuple& v_tuple,
-    MatrixXd& V,
-    MatrixXi& E,
-    size_t& vid_local) const
-{
-    const auto& VA = m_vertex_attribute;
-    const size_t vid_global = v_tuple.vid(*this);
-
-    if (!VA[vid_global].m_is_on_surface) {
-        log_and_throw_error(
-            "Cannot compute substructure region for vertex that is not on the surface");
-        // We actually could compute this but it doesn't make sense. Remove this if-statement if we
-        // should ever need to compute regions for vertices not on the surface.
-    }
-
-    const Vector2d& p0 = VA[vid_global].m_pos;
-
-    double l_max = 0; // longest incident edge length
-    for (const Tuple& t : get_one_ring_edges_for_vertex(v_tuple)) {
-        const Vector2d& p1 = VA[t.vid(*this)].m_pos;
-        const double l_squared = (p1 - p0).squaredNorm();
-        l_max = std::max(l_max, l_squared);
-    }
-    l_max = std::sqrt(l_max);
-
-    const double r = 1.5 * m_params.dhat + l_max; // region radius
-    const double r2 = r * r;
-
-    simplex::SimplexCollection candidates; // all edges within the region
-
-    // make a BFS to find edges within distance
-    std::unordered_set<size_t> visited;
-    std::queue<size_t> q;
-    q.push(vid_global);
-    visited.insert(vid_global);
-
-    while (!q.empty()) {
-        const size_t v_a = q.front();
-        q.pop();
-
-        const Vector2d& p_a = VA[v_a].m_pos;
-
-        if ((p_a - p0).squaredNorm() > r2) {
-            // add vertices that are connected through edges within the radius
-            for (const Tuple& t : get_one_ring_edges_for_vertex(v_a)) {
-                const size_t v_b = t.vid(*this);
-                const Vector2d& p_b = VA[v_b].m_pos;
-                const double l = (p_a - p_b).norm();
-                const Vector2d p_mid = 0.5 * (p_a + p_b);
-                const double d = (p_mid - p0).norm() - l;
-                if (d > r) {
-                    continue; // edge is too far away
-                }
-                candidates.add(simplex::Edge(v_a, v_b));
-                if (visited.count(v_b) != 0) {
-                    continue;
-                }
-                q.push(v_b);
-                visited.insert(v_b);
-            }
-        } else {
-            // no need to check edge distance as p_a is already within the radius
-            for (const Tuple& t : get_one_ring_edges_for_vertex(v_a)) {
-                const size_t v_b = t.vid(*this);
-                candidates.add(simplex::Edge(v_a, v_b));
-                if (visited.count(v_b) != 0) {
-                    continue;
-                }
-                q.push(v_b);
-                visited.insert(v_b);
-            }
-        }
-    }
-    candidates.sort_and_clean();
-
-    std::vector<simplex::Edge> edges; // edges on the surface
-    for (const auto& e : candidates.edges()) {
-        if (is_edge_on_surface(e.vertices())) {
-            edges.push_back(e);
-        }
-    }
-
-    std::set<size_t> region_vertices;
-    for (const auto& e : edges) {
-        region_vertices.insert(e.vertices()[0]);
-        region_vertices.insert(e.vertices()[1]);
-    }
-
-    // build V and E
-    std::vector<Vector2d> points;
-    std::unordered_map<size_t, size_t> global_to_local_vid_map;
-    for (const size_t i : region_vertices) {
-        const Tuple v = tuple_from_vertex(i);
-        assert(v.is_valid(*this));
-        assert(VA[i].m_is_on_surface);
-        points.push_back(VA[i].m_pos);
-        global_to_local_vid_map[i] = points.size() - 1;
-    }
-
-    V.resize(points.size(), 2);
-    for (size_t i = 0; i < points.size(); ++i) {
-        V.row(i) = points[i];
-    }
-
-    E.resize(edges.size(), 2);
-    for (size_t i = 0; i < edges.size(); ++i) {
-        const size_t v0 = global_to_local_vid_map[edges[i].vertices()[0]];
-        const size_t v1 = global_to_local_vid_map[edges[i].vertices()[1]];
-        E.row(i) = Vector2i(v0, v1);
-    }
-
-    vid_local = global_to_local_vid_map[vid_global];
 }
 
 } // namespace wmtk::components::image_simulation::tri

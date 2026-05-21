@@ -82,7 +82,6 @@ include(paraviewo)
 include(fenvelope)
 include(nanoflann)
 include(polysolve)
-include(ipc_toolkit)
 
 include(simple_bvh)
 # Sort projects inside the solution
@@ -142,7 +141,6 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     FastEnvelope::FastEnvelope
     simple_bvh::simple_bvh
     polysolve::polysolve
-    ipc::toolkit
 )
 
 if(MSVC)
