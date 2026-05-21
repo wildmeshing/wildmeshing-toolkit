@@ -35,6 +35,44 @@ public:
      * @return std::string The string representation of the expression.
      */
     virtual std::string to_string() const = 0;
+
+    /**
+     * @brief Checks if the expression contains a logical NOT operation.
+     */
+    virtual bool contains_not() const { return false; }
+
+    /**
+     * @brief Checks if the expression contains a logical AND operation.
+     */
+    virtual bool contains_and() const { return false; }
+
+    /**
+     * @brief Checks if the expression contains a logical OR operation.
+     */
+    virtual bool contains_or() const { return false; }
+
+    /**
+     * @brief Checks if the expression contains only logical AND operations or none.
+     */
+    bool contains_only_and() const { return !contains_or() && !contains_not(); }
+    /**
+     * @brief Checks if the expression contains only logical OR operations or none.
+     */
+    bool contains_only_or() const { return !contains_and() && !contains_not(); }
+    /**
+     * @brief Checks if the expression contains only logical NOT operations or none.
+     */
+    bool contains_only_not() const { return !contains_and() && !contains_or(); }
+
+    /**
+     * @brief Returns the set of tags involved in this expression.
+     *
+     * This is useful for intent operations to determine which tags are relevant for the operation.
+     *
+     * @return CellTag The set of tags involved in this expression.
+     */
+    virtual CellTag tags_involved() const = 0;
+    virtual std::set<std::string> tag_names_involved() const = 0;
 };
 
 using ExpressionPtr = std::unique_ptr<Expression>;
@@ -45,15 +83,19 @@ using ExpressionPtr = std::unique_ptr<Expression>;
 class TagExpr : public Expression
 {
 public:
-    explicit TagExpr(int64_t tag)
+    explicit TagExpr(int64_t tag, const std::string& name)
         : m_tag(tag)
+        , m_name(name)
     {}
 
     bool eval(const CellTag& tags) const override { return tags.count(m_tag) != 0; }
-    std::string to_string() const override { return "\"" + std::to_string(m_tag) + "\""; }
+    std::string to_string() const override { return "\"" + m_name + "\""; }
+    CellTag tags_involved() const override { return {m_tag}; }
+    std::set<std::string> tag_names_involved() const override { return {m_name}; }
 
 private:
     int64_t m_tag;
+    std::string m_name;
 };
 
 /**
@@ -66,6 +108,8 @@ public:
 
     bool eval(const CellTag& tags) const override { return tags.empty(); }
     std::string to_string() const override { return "\"_\""; }
+    CellTag tags_involved() const override { return {}; }
+    std::set<std::string> tag_names_involved() const override { return {}; }
 };
 
 /**
@@ -80,6 +124,15 @@ public:
 
     bool eval(const CellTag& tags) const override { return !m_expr->eval(tags); }
     std::string to_string() const override { return "!(" + m_expr->to_string() + ")"; }
+
+    bool contains_not() const override { return true; }
+    bool contains_and() const override { return m_expr->contains_and(); }
+    bool contains_or() const override { return m_expr->contains_or(); }
+    CellTag tags_involved() const override { return m_expr->tags_involved(); }
+    std::set<std::string> tag_names_involved() const override
+    {
+        return m_expr->tag_names_involved();
+    }
 
 private:
     ExpressionPtr m_expr;
@@ -103,6 +156,25 @@ public:
     std::string to_string() const override
     {
         return "(" + m_left->to_string() + " & " + m_right->to_string() + ")";
+    }
+
+    bool contains_not() const override { return m_left->contains_not() || m_right->contains_not(); }
+    bool contains_and() const override { return true; }
+    bool contains_or() const override { return m_left->contains_or() || m_right->contains_or(); }
+    CellTag tags_involved() const override
+    {
+        CellTag tags = m_left->tags_involved();
+        CellTag right_tags = m_right->tags_involved();
+        tags.insert(right_tags.begin(), right_tags.end());
+        return tags;
+    }
+
+    std::set<std::string> tag_names_involved() const override
+    {
+        auto names = m_left->tag_names_involved();
+        auto right_names = m_right->tag_names_involved();
+        names.insert(right_names.begin(), right_names.end());
+        return names;
     }
 
 private:
@@ -129,6 +201,24 @@ public:
     std::string to_string() const override
     {
         return "(" + m_left->to_string() + " | " + m_right->to_string() + ")";
+    }
+
+    bool contains_not() const override { return m_left->contains_not() || m_right->contains_not(); }
+    bool contains_and() const override { return m_left->contains_and() || m_right->contains_and(); }
+    bool contains_or() const override { return true; }
+    CellTag tags_involved() const override
+    {
+        CellTag tags = m_left->tags_involved();
+        CellTag right_tags = m_right->tags_involved();
+        tags.insert(right_tags.begin(), right_tags.end());
+        return tags;
+    }
+    std::set<std::string> tag_names_involved() const override
+    {
+        auto names = m_left->tag_names_involved();
+        auto right_names = m_right->tag_names_involved();
+        names.insert(right_names.begin(), right_names.end());
+        return names;
     }
 
 private:

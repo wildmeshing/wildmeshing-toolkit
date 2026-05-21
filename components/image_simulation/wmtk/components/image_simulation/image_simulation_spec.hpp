@@ -44,7 +44,8 @@ nlohmann::json image_simulation_spec = R"(
       "resolve_intersections_tags",
       "replace_tags_in",
       "replace_tags_out",
-      "tag_priority"
+      "tag_priority",
+      "tags_selection"
     ]
   },
   {
@@ -361,24 +362,14 @@ nlohmann::json image_simulation_spec = R"(
   },
   {
     "pointer": "/replace_tags_in/*",
-    "type": "list",
-    "doc": "A list of tags whose intersection should be replaced."
-  },
-  {
-    "pointer": "/replace_tags_in/*/*",
     "type": "string",
-    "doc": "A tag value."
+    "doc": "An intersection of tags that should be replaced."
   },
   {
     "pointer": "/replace_tags_out",
-    "type": "list",
-    "default": [],
-    "doc": "The output tags that should replace the input tags."
-  },
-  {
-    "pointer": "/replace_tags_out/*",
     "type": "string",
-    "doc": "A tag value."
+    "default": "_",
+    "doc": "The output tags (written as intersection) that should replace the input tags."
   },
   {
     "pointer": "/tag_priority",
@@ -390,6 +381,12 @@ nlohmann::json image_simulation_spec = R"(
     "pointer": "/tag_priority/*",
     "type": "string",
     "doc": "A tag value."
+  },
+  {
+    "pointer": "/tags_selection",
+    "type": "string",
+    "default": "_ | !_",
+    "doc": "A boolean expression that defines the input selection for intent operations. `_` represents empty tags."
   }
 ]
 )"_json;

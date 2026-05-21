@@ -94,14 +94,10 @@ ExpressionPtr Parser::parsePrimary()
     if (it != m_tag_name_to_id.end()) {
         tag_id = it->second;
     } else {
-        log_and_throw_error(
-            "Unknown tag: {} in expression {}, at position {}",
-            ident,
-            m_input,
-            m_pos);
+        logger().warn("Tag name {} does not exist!", ident);
     }
 
-    return std::make_unique<TagExpr>(tag_id);
+    return std::make_unique<TagExpr>(tag_id, ident);
 }
 
 std::string Parser::parseIdentifier()
@@ -138,6 +134,12 @@ void Parser::skipWhitespace()
     while (m_pos < m_input.size() && std::isspace(static_cast<unsigned char>(m_input[m_pos]))) {
         ++m_pos;
     }
+}
+
+ExpressionPtr parse(const std::string& input, const std::map<std::string, int64_t>& tag_name_to_id)
+{
+    Parser parser(input, tag_name_to_id);
+    return parser.parse();
 }
 
 } // namespace wmtk::components::image_simulation::expression_parser

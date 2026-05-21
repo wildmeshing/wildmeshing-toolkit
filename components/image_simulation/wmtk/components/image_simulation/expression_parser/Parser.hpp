@@ -82,4 +82,13 @@ private:
     std::map<std::string, int64_t> m_tag_name_to_id;
 };
 
+/**
+ * @brief Parses a boolean expression from a string input.
+ *
+ * @param input The input string containing the expression to parse.
+ * @param tag_name_to_id A map from tag names to their respective IDs.
+ * @return ExpressionPtr The root of the parsed expression tree.
+ */
+ExpressionPtr parse(const std::string& input, const std::map<std::string, int64_t>& tag_name_to_id);
+
 } // namespace wmtk::components::image_simulation::expression_parser

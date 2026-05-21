@@ -13,6 +13,7 @@
 #include "ImageSimulationMesh.h"
 #include "ImageSimulationMeshTri.hpp"
 #include "Parameters.h"
+#include "expression_parser/Parser.hpp"
 #include "extract_soup.hpp"
 #include "read_image_msh.hpp"
 
@@ -103,6 +104,11 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
         mesh.simplify();
     }
 
+    const std::string tags_selection_str = json_params["tags_selection"];
+    const auto tags_selection_expr =
+        expression_parser::parse(tags_selection_str, mesh.m_tag_name_to_id);
+    logger().info("Parsed tags_selection expression: {}", tags_selection_expr->to_string());
+
     // /////////apply operation
     const std::string operation = params.operation;
     if (operation == "remeshing") {
@@ -151,13 +157,24 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
         }
         mesh.resolve_intersections(tags);
     } else if (operation == "replace_tags") {
-        const std::vector<std::set<std::string>> tags_in_names = json_params["replace_tags_in"];
+        const std::vector<std::string> tags_in_names = json_params["replace_tags_in"];
         std::vector<CellTag> tags_in;
         for (const auto& tag_set_names : tags_in_names) {
-            tags_in.push_back(mesh.string_set_to_cell_tag(tag_set_names));
+            const auto expr_in = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
+            logger().info("Parsed tags_in expression: {}", expr_in->to_string());
+            if (!expr_in->contains_only_and()) {
+                log_and_throw_error("Only AND operation is allowed in replace_tags_in expression.");
+            }
+            tags_in.push_back(expr_in->tags_involved());
         }
-        const std::set<std::string> tag_out_name = json_params["replace_tags_out"];
-        CellTag tag_out = mesh.string_set_to_cell_tag(tag_out_name);
+        const std::string tag_out_name = json_params["replace_tags_out"];
+        const auto expr_out = expression_parser::parse(tag_out_name, mesh.m_tag_name_to_id);
+        logger().info("Parsed replace_tags_out expression: {}", expr_out->to_string());
+        if (!expr_out->contains_only_and()) {
+            log_and_throw_error("Only AND operation is allowed in replace_tags_out expression.");
+        }
+
+        CellTag tag_out = mesh.string_set_to_cell_tag(expr_out->tag_names_involved());
         mesh.replace_tags(tags_in, tag_out);
     } else if (operation == "tag_priority") {
         const std::vector<std::string> tag_priority_names = json_params["tag_priority"];
