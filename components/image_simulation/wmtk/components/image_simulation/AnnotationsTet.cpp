@@ -1,5 +1,7 @@
 #include "ImageSimulationMesh.h"
 
+#include <unordered_set>
+
 namespace wmtk::components::image_simulation {
 
 std::vector<ConnectedComponent> ImageSimulationMesh::compute_connected_components(
@@ -274,7 +276,8 @@ void ImageSimulationMesh::seal_connected_components(
     // seal holes
     for (const ConnectedComponent& hole : components) {
         std::vector<simplex::Edge> split_edges;
-        std::set<size_t> vids;
+        std::unordered_set<size_t> vids;
+        std::unordered_set<size_t> vids_left;
         for (const size_t tid : hole.cells) {
             const Vector3d p = get_center(tid);
             const double d = m_voronoi_split_fn(p);
@@ -299,6 +302,12 @@ void ImageSimulationMesh::seal_connected_components(
                 }
             }
         }
+        for (const size_t vid : vids) {
+            const double d = m_voronoi_split_fn(m_vertex_attribute.at(vid).m_posf);
+            if (d < 0) {
+                vids_left.insert(vid);
+            }
+        }
         vector_unique(split_edges);
 
         if (m_params.debug_output) {
@@ -306,6 +315,7 @@ void ImageSimulationMesh::seal_connected_components(
         }
 
         std::vector<Tuple> new_edges;
+        std::unordered_set<size_t> new_vertices;
         for (const simplex::Edge& e : split_edges) {
             const Tuple t = tuple_from_edge(e.vertices());
 
@@ -315,6 +325,8 @@ void ImageSimulationMesh::seal_connected_components(
 
             const size_t v_new = split_cache.local().v_new;
             std::vector<size_t> tids = get_one_ring_tids_for_vertex(v_new);
+
+            new_vertices.insert(v_new);
 
             for (const size_t tid : tids) {
                 const auto vs = oriented_tet_vids(tid);
@@ -327,7 +339,7 @@ void ImageSimulationMesh::seal_connected_components(
                     }
                     if (e.vertices()[0] == v || e.vertices()[1] == v) {
                         vid = v;
-                    } else if (vids.count(v) == 0) {
+                    } else if (vids.count(v) == 0 && new_vertices.count(v) == 0) {
                         // check the two other vertices if they are hole vertices
                         is_inside = false;
                         break;
@@ -343,10 +355,8 @@ void ImageSimulationMesh::seal_connected_components(
                     log_and_throw_error("Could not find edge-vertex after split.");
                 }
 
-                const Vector3d& p = m_vertex_attribute[vid].m_posf;
-                const double d = m_voronoi_split_fn(p);
                 auto& tag = m_tet_attribute[tid].tags;
-                if (d < 0) {
+                if (vids_left.count(vid) > 0) {
                     for (const size_t tt : tag_set[1]) {
                         tag.erase(tt);
                     }
@@ -358,6 +368,10 @@ void ImageSimulationMesh::seal_connected_components(
                     tag.insert(tag_set[1].begin(), tag_set[1].end());
                 }
             }
+
+            // if (m_params.debug_output) {
+            //     write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+            // }
         }
 
         if (m_params.debug_output) {
@@ -503,6 +517,11 @@ void ImageSimulationMesh::resolve_intersections(const std::vector<CellTag>& inte
                 "Can only resolve intersections between two tags at once. Input was {}",
                 tag_set);
         }
+
+        if (m_params.debug_output) {
+            write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+        }
+
         std::vector<ConnectedComponent> components = compute_connected_components(tag_set);
         if (components.empty()) {
             logger().info("No intersections in between tags {}", tag_set);
@@ -518,6 +537,10 @@ void ImageSimulationMesh::resolve_intersections(const std::vector<CellTag>& inte
                     tag.erase(tt);
                 }
             }
+        }
+
+        if (m_params.debug_output) {
+            write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
         }
 
         std::vector<CellTag> tag_vec;

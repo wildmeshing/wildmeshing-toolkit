@@ -1057,6 +1057,8 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
     v_sizing_field.setZero();
     VectorXd v_order(vert_capacity());
     v_order.setZero();
+    VectorXd v_id(vert_capacity());
+    v_id.setZero();
 
     std::vector<MatrixXd> tags(m_tags_count, MatrixXd(tet_capacity(), 1));
     Eigen::MatrixXd amips(tet_capacity(), 1);
@@ -1092,6 +1094,7 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
         V.row(vid) = m_vertex_attribute[vid].m_posf;
         v_sizing_field[vid] = m_vertex_attribute[vid].m_sizing_scalar;
         v_order[vid] = m_vertex_attribute[vid].m_order;
+        v_id[vid] = vid;
     }
 
     paraviewo::VTUWriter writer;
@@ -1101,6 +1104,7 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
     }
     writer.add_cell_field("quality", amips);
     writer.add_field("sizing_field", v_sizing_field);
+    writer.add_field("vid", v_id);
     writer.write_mesh(out_path, V, T, paraviewo::CellType::Tetrahedron);
 
     // surface
@@ -1109,6 +1113,7 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
         paraviewo::VTUWriter surf_writer;
         surf_writer.add_field("sizing_field", v_sizing_field);
         surf_writer.add_field("order", v_order);
+        surf_writer.add_field("vid", v_id);
 
         logger().info("Write {}", surf_out_path);
         surf_writer.write_mesh(surf_out_path, V, F, paraviewo::CellType::Triangle);
@@ -1119,6 +1124,8 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
         paraviewo::VTUWriter edge_writer;
         edge_writer.add_field("sizing_field", v_sizing_field);
         edge_writer.add_field("order", v_order);
+        edge_writer.add_field("vid", v_id);
+
 
         logger().info("Write {}", edge_out_path);
         edge_writer.write_mesh(edge_out_path, V, E, paraviewo::CellType::Line);
