@@ -268,18 +268,13 @@ nlohmann::json image_simulation_spec = R"(
   {
     "pointer": "/fill_holes_tags",
     "type": "list",
-    "default": [[]],
+    "default": [],
     "doc": "For fill_holes_topo: list of tag values used to fill enclosed connected components (processed in order)."
   },
   {
     "pointer": "/fill_holes_tags/*",
-    "type": "list",
-    "doc": "A list of tag values to fill enclosed connected components of other tags."
-  },
-  {
-    "pointer": "/fill_holes_tags/*/*",
     "type": "string",
-    "doc": "A tag value to fill enclosed connected components of other tags."
+    "doc": "An intersection of tag values to fill holes."
   },
   {
     "pointer": "/fill_holes_threshold",
@@ -300,13 +295,8 @@ nlohmann::json image_simulation_spec = R"(
   },
   {
     "pointer": "/tight_seal_tag_sets/*/*",
-    "type": "list",
-    "doc": "A tag value in this tag set."
-  },
-  {
-    "pointer": "/tight_seal_tag_sets/*/*/*",
     "type": "string",
-    "doc": "A tag value in this tag set."
+    "doc": "An intersection of tags."
   },
   {
     "pointer": "/tight_seal_threshold",
@@ -322,13 +312,8 @@ nlohmann::json image_simulation_spec = R"(
   },
   {
     "pointer": "/keep_lcc_tags/*",
-    "type": "list",
-    "doc": "A list of tag values whose smaller connected components will be removed."
-  },
-  {
-    "pointer": "/keep_lcc_tags/*/*",
     "type": "string",
-    "doc": "A tag value."
+    "doc": "An intersection of tags whose smaller connected components will be removed."
   },
   {
     "pointer": "/keep_lcc_num",
@@ -344,15 +329,8 @@ nlohmann::json image_simulation_spec = R"(
   },
   {
     "pointer": "/resolve_intersections_tags/*",
-    "type": "list",
-    "min": 2,
-    "max": 2,
-    "doc": "A list of intersecting tags."
-  },
-  {
-    "pointer": "/resolve_intersections_tags/*/*",
     "type": "string",
-    "doc": "A tag value."
+    "doc": "An intersection of two tags"
   },
   {
     "pointer": "/replace_tags_in",
