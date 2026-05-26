@@ -112,6 +112,7 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     // /////////apply operation
     const std::string operation = params.operation;
     if (operation == "remeshing") {
+        mesh.set_length_regions(json_params["length_region"]);
         mesh.mesh_improvement(max_its); // <-- tetwild
     } else if (operation == "fill_holes_topo") {
         const std::vector<std::string> fill_holes_tags_names = json_params["fill_holes_tags"];

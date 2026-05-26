@@ -11,6 +11,7 @@ nlohmann::json image_simulation_spec = R"(
     "optional": [
       "operation",
       "output",
+      "input_names",
       "ijk_to_ras",
       "input_transform",
       "skip_simplify",
@@ -24,6 +25,7 @@ nlohmann::json image_simulation_spec = R"(
       "eps_simplify",
       "length",
       "length_rel",
+      "length_region",
       "stop_energy",
       "stop_at_float",
       "preserve_topology",
@@ -64,6 +66,17 @@ nlohmann::json image_simulation_spec = R"(
     "pointer": "/input/*",
     "type": "string",
     "doc": "Triangular input mesh."
+  },
+  {
+    "pointer": "/input_names",
+    "type": "list",
+    "doc": "List of names for the input meshes. If no names are assigned, the meshes will be named tag_0, tag_1, etc.",
+    "default": []
+  },
+  {
+    "pointer": "/input_names/*",
+    "type": "string",
+    "doc": "Name for one input mesh."
   },
   {
     "pointer": "/operation",
@@ -198,6 +211,36 @@ nlohmann::json image_simulation_spec = R"(
     "doc": "Target edge length relative to the bounding box"
   },
   {
+    "pointer": "/length_region",
+    "type": "list",
+    "default": [],
+    "doc": "Prescribe a length for a specific region defined by tags. The length can be absolute (length) or relative (length_rel). The smallest prescibed length will be used for each region."
+  },
+  {
+    "pointer": "/length_region/*",
+    "type": "object",
+    "required": ["tags"],
+    "optional": ["length", "length_rel"],
+    "doc": "A region and its target length."
+  },
+  {
+    "pointer": "/length_region/*/tags",
+    "type": "string",
+    "doc": "A region of tags."
+  },
+  {
+    "pointer": "/length_region/*/length",
+    "type": "float",
+    "default": -1,
+    "doc": "Absolute target edge length for the region."
+  },
+  {
+    "pointer": "/length_region/*/length_rel",
+    "type": "float",
+    "default": 5e-2,
+    "doc": "Relative target edge length for the region."
+  },
+  {
     "pointer": "/stop_energy",
     "type": "float",
     "default": 10,
@@ -285,12 +328,14 @@ nlohmann::json image_simulation_spec = R"(
   {
     "pointer": "/tight_seal_tag_sets",
     "type": "list",
-    "default": [[]],
+    "default": [],
     "doc": "For tight_seal_topo: list of tag sets. Each inner list defines a group of tags whose enclosed holes are filled, e.g. [[1,2],[3]]."
   },
   {
     "pointer": "/tight_seal_tag_sets/*",
     "type": "list",
+    "min": 2,
+    "max": 2,
     "doc": "One tag set: a list of tag values that are treated as a group for hole filling."
   },
   {

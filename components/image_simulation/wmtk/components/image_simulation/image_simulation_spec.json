@@ -6,6 +6,7 @@
     "optional": [
       "operation",
       "output",
+      "input_names",
       "ijk_to_ras",
       "input_transform",
       "skip_simplify",
@@ -19,6 +20,7 @@
       "eps_simplify",
       "length",
       "length_rel",
+      "length_region",
       "stop_energy",
       "stop_at_float",
       "preserve_topology",
@@ -59,6 +61,17 @@
     "pointer": "/input/*",
     "type": "string",
     "doc": "Triangular input mesh."
+  },
+  {
+    "pointer": "/input_names",
+    "type": "list",
+    "doc": "List of names for the input meshes. If no names are assigned, the meshes will be named tag_0, tag_1, etc.",
+    "default": []
+  },
+  {
+    "pointer": "/input_names/*",
+    "type": "string",
+    "doc": "Name for one input mesh."
   },
   {
     "pointer": "/operation",
@@ -191,6 +204,36 @@
     "type": "float",
     "default": 5e-2,
     "doc": "Target edge length relative to the bounding box"
+  },
+  {
+    "pointer": "/length_region",
+    "type": "list",
+    "default": [],
+    "doc": "Prescribe a length for a specific region defined by tags. The length can be absolute (length) or relative (length_rel). The smallest prescibed length will be used for each region."
+  },
+  {
+    "pointer": "/length_region/*",
+    "type": "object",
+    "required": ["tags"],
+    "optional": ["length", "length_rel"],
+    "doc": "A region and its target length."
+  },
+  {
+    "pointer": "/length_region/*/tags",
+    "type": "string",
+    "doc": "A region of tags."
+  },
+  {
+    "pointer": "/length_region/*/length",
+    "type": "float",
+    "default": -1,
+    "doc": "Absolute target edge length for the region."
+  },
+  {
+    "pointer": "/length_region/*/length_rel",
+    "type": "float",
+    "default": 5e-2,
+    "doc": "Relative target edge length for the region."
   },
   {
     "pointer": "/stop_energy",
