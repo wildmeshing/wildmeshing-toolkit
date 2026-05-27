@@ -41,6 +41,10 @@ set(SRC_FILES
 	ConnectedComponent.hpp
 	AnnotationsTri.cpp
 	AnnotationsTet.cpp
+
+	expression_parser/Expression.hpp
+	expression_parser/Parser.hpp
+	expression_parser/Parser.cpp
     )
 
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

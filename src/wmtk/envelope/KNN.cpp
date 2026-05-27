@@ -28,4 +28,14 @@ void KNN::nearest_neighbors(
         sq_dist.data());
 }
 
+void KNN::r_nearest_neighbors(
+    const Vector3d& query_point,
+    const double& radius,
+    std::vector<nanoflann::ResultItem<uint32_t, double>>& matches) const
+{
+    nanoflann::SearchParameters params;
+    params.sorted = false;
+    m_kd_tree->radiusSearch(query_point.data(), radius, matches, params);
+}
+
 } // namespace wmtk

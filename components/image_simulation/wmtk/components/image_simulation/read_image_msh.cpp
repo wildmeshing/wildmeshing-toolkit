@@ -477,6 +477,7 @@ InputData read_mesh(
     const int max_its = json_params["max_iterations"];
     const bool write_vtu = json_params["write_vtu"];
     const bool preserve_topology = json_params["preserve_topology"];
+    const std::vector<std::string> input_names = json_params["input_names"];
 
     // convert mesh into tet mesh
     EmbedSurface image_mesh(input_paths, input_transforms);
@@ -505,6 +506,12 @@ InputData read_mesh(
     input_data.T_input_tag = image_mesh.T_tags();
     for (int i = 0; i < input_data.T_input_tag.cols(); ++i) {
         input_data.tag_names.push_back("tag_" + std::to_string(i));
+    }
+
+    for (int i = 0; i < input_data.T_input_tag.cols(); ++i) {
+        if (i < input_names.size()) {
+            input_data.tag_names[i] = input_names[i];
+        }
     }
 
     wmtk::logger().info("======= finish image-tet conversion =========");

@@ -31,6 +31,8 @@
 #include <igl/remove_unreferenced.h>
 #include <memory>
 
+#include "expression_parser/Expression.hpp"
+
 namespace wmtk::components::image_simulation {
 
 class VertexAttributes
@@ -137,6 +139,9 @@ public:
     std::shared_ptr<SampleEnvelope> m_envelope;
     std::shared_ptr<SampleEnvelope> m_envelope_orig;
     double m_envelope_eps = -1;
+
+    using ExprPtr = expression_parser::ExpressionPtr;
+    std::vector<std::tuple<ExprPtr, double>> m_length_regions;
 
     bool m_collapse_check_quality = true;
 
@@ -324,6 +329,8 @@ public:
     void init_envelope(const MatrixXd& V, const MatrixXi& F);
 
     CellTag string_set_to_cell_tag(const std::set<std::string>& str_set);
+
+    void set_length_regions(const nlohmann::json& length_region_json);
 
     double get_length2(const Tuple& l) const;
 

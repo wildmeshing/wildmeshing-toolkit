@@ -28,6 +28,8 @@
 
 #include <limits>
 
+#include "expression_parser/Parser.hpp"
+
 namespace wmtk::components::image_simulation {
 
 
@@ -274,6 +276,50 @@ CellTag wmtk::components::image_simulation::ImageSimulationMesh::string_set_to_c
     return cell_tag;
 }
 
+void ImageSimulationMesh::set_length_regions(const nlohmann::json& length_region_json)
+{
+    if (!length_region_json.is_array()) {
+        log_and_throw_error(
+            "length_region should be an array of objects, each defining a region and its target "
+            "length.");
+    }
+
+    for (const auto& region_json : length_region_json) {
+        if (!region_json.contains("tags")) {
+            log_and_throw_error("Each length_region entry must contain a 'tags' field.");
+        }
+        const std::string tags_str_set = region_json["tags"];
+        auto& [expr, length] = m_length_regions.emplace_back();
+        expr = expression_parser::parse(tags_str_set, m_tag_name_to_id);
+
+        length = region_json["length"];
+        double length_rel = region_json["length_rel"];
+        if (length < 0 && length_rel < 0) {
+            log_and_throw_error(
+                "Each length_region entry must specify at least one of 'length' or 'length_rel'.");
+        }
+
+        if (length_rel > 0) {
+            length = length_rel * m_params.diag_l;
+        }
+    }
+
+    // apply length regions to vertices
+    for (const auto& [expr, length] : m_length_regions) {
+        for (const Tuple& t : get_tets()) {
+            const auto tid = t.tid(*this);
+            if (!expr->eval(m_tet_attribute[tid].tags)) {
+                continue;
+            }
+            const auto vs = oriented_tet_vids(tid);
+            for (const size_t& vid : vs) {
+                auto& s = m_vertex_attribute[vid].m_sizing_scalar;
+                s = std::min(s, length / m_params.l);
+            }
+        }
+    }
+}
+
 bool ImageSimulationMesh::adjust_sizing_field_serial(double max_energy)
 {
     logger().info("#vertices {}, #tets {}", vert_capacity(), tet_capacity());
@@ -282,114 +328,164 @@ bool ImageSimulationMesh::adjust_sizing_field_serial(double max_energy)
     double filter_energy = std::max(max_energy / 100, stop_filter_energy);
     filter_energy = std::min(filter_energy, 100.);
 
-    const auto recover_scalar = 1.5;
-    const auto refine_scalar = 0.5;
-    const auto min_refine_scalar = m_params.l_min / m_params.l;
+    const double recover_scalar = 1.5;
+    const double refine_scalar = 0.5;
+    const double min_refine_scalar = m_params.l_min / m_params.l;
 
-    // outputs scale_multipliers
-    std::vector<double> scale_multipliers(vert_capacity(), recover_scalar);
+    // // outputs scale_multipliers
+    // std::vector<double> scale_multipliers(vert_capacity(), recover_scalar);
 
     std::vector<Vector3d> pts;
+    std::map<size_t, double> pts_scalars;
     std::queue<size_t> v_queue;
 
     for (int i = 0; i < tet_capacity(); i++) {
-        auto t = tuple_from_tet(i);
-        if (!t.is_valid(*this)) continue;
-        auto tid = t.tid(*this);
-        if (std::cbrt(m_tet_attribute[tid].m_quality) < filter_energy) continue;
-        auto vs = oriented_tet_vids(t);
+        const Tuple t = tuple_from_tet(i);
+        if (!t.is_valid(*this)) {
+            continue;
+        }
+        const size_t tid = t.tid(*this);
+        if (std::cbrt(m_tet_attribute[tid].m_quality) < filter_energy) {
+            continue;
+        }
+        const auto vs = oriented_tet_vids(t);
         Vector3d c(0, 0, 0);
+        double s = 0;
         for (int j = 0; j < 4; j++) {
             c += (m_vertex_attribute[vs[j]].m_posf);
             v_queue.emplace(vs[j]);
-            // std::cout << vs[j] << " ";
+            s = std::max(s, m_vertex_attribute[vs[j]].m_sizing_scalar);
         }
+        pts_scalars[pts.size()] = s;
         pts.emplace_back(c / 4);
     }
 
-    // std::cout << std::endl;
-
-
     logger().info("filter energy {} Low Quality Tets {}", filter_energy, pts.size());
-
-    // debug code
-    // std::queue<size_t> v_queue_serial;
-    // for (tbb::concurrent_queue<size_t>::const_iterator i(v_queue.unsafe_begin());
-    //      i != v_queue.unsafe_end();
-    //      ++i) {
-    //     // std::cout << *i << " ";
-    //     v_queue_serial.push(*i);
-    // }
-    // std::cout << std::endl;
 
     const double R = m_params.l * 1.8;
 
     int sum = 0;
     int adjcnt = 0;
 
-    std::vector<bool> visited(vert_capacity(), false);
-
     KNN knn(pts);
 
-    std::vector<size_t> cache_one_ring;
-    // size_t vid;
+    bool is_hit_min_edge_length = false;
+    /**
+     * Iterate through all vertices.
+     * For each vertex, find all pts in the R-ball neighborhood.
+     * Compute scalar based on the distance to the point.
+     * Take smallest of all computed values.
+     *
+     * If no neighbor, multiply by recover_scalar.
+     */
+    for (int i = 0; i < vert_capacity(); i++) {
+        const Tuple v = tuple_from_vertex(i);
+        if (!v.is_valid(*this)) {
+            continue;
+        }
+        const size_t vid = v.vid(*this);
+        const auto& pos_v = m_vertex_attribute[vid].m_posf;
 
-    while (!v_queue.empty()) {
-        // std::cout << vid << " ";
-        sum++;
-        size_t vid = v_queue.front();
-        // std::cout << vid << " ";
-        v_queue.pop();
-        if (visited[vid]) continue;
-        visited[vid] = true;
-        adjcnt++;
+        std::vector<nanoflann::ResultItem<uint32_t, double>> matches;
+        knn.r_nearest_neighbors(pos_v, R * R, matches);
 
-        auto& pos_v = m_vertex_attribute[vid].m_posf;
-        double sq_dist = 0.;
-        uint32_t idx;
-        knn.nearest_neighbor(pos_v, idx, sq_dist);
-        const double dist = std::sqrt(sq_dist);
+        auto& v_scalar = m_vertex_attribute[vid].m_sizing_scalar;
 
-        if (dist > R) { // outside R-ball, unmark.
+        if (matches.empty()) {
+            v_scalar = std::min(recover_scalar * v_scalar, 1.);
             continue;
         }
 
-        scale_multipliers[vid] = std::min(
-            scale_multipliers[vid],
-            dist / R * (1 - refine_scalar) + refine_scalar); // linear interpolate
+        for (const auto& [index, sq_dist] : matches) {
+            const auto& pt = pts[index];
+            const double dist = std::sqrt(sq_dist);
+            // linear interpolate between refine_scalar and 1 based on distance
+            double u = dist / R * (1 - refine_scalar) + refine_scalar;
+            double scalar = u * pts_scalars[index];
+            v_scalar = std::min(v_scalar, scalar);
+        }
 
-        auto vids = get_one_ring_vids_for_vertex_adj(vid, cache_one_ring);
-        for (size_t n_vid : vids) {
-            if (visited[n_vid]) continue;
-            v_queue.push(n_vid);
+        if (v_scalar < min_refine_scalar) {
+            v_scalar = min_refine_scalar;
+            is_hit_min_edge_length = true;
         }
     }
 
-    // std::cout << std::endl;
-
-    std::cout << sum << " " << adjcnt << std::endl;
-
-    std::atomic_bool is_hit_min_edge_length = false;
-
-    for (int i = 0; i < vert_capacity(); i++) {
-        auto v = tuple_from_vertex(i);
-        if (!v.is_valid(*this)) continue;
-        auto vid = v.vid(*this);
-        // std::cout << vid << " ";
-        auto& v_attr = m_vertex_attribute[vid];
-
-        auto new_scale = v_attr.m_sizing_scalar * scale_multipliers[vid];
-        if (new_scale > 1)
-            v_attr.m_sizing_scalar = 1;
-        else if (new_scale < min_refine_scalar) {
-            is_hit_min_edge_length = true;
-            v_attr.m_sizing_scalar = min_refine_scalar;
-        } else
-            v_attr.m_sizing_scalar = new_scale;
+    // apply length regions to vertices
+    for (const auto& [expr, length] : m_length_regions) {
+        for (const Tuple& t : get_tets()) {
+            const auto tid = t.tid(*this);
+            if (!expr->eval(m_tet_attribute[tid].tags)) {
+                continue;
+            }
+            const auto vs = oriented_tet_vids(tid);
+            for (const size_t& vid : vs) {
+                auto& s = m_vertex_attribute[vid].m_sizing_scalar;
+                s = std::min(s, length / m_params.l);
+            }
+        }
     }
-    // std::cout << std::endl;
 
-    return is_hit_min_edge_length.load();
+    // std::vector<bool> visited(vert_capacity(), false);
+    // std::vector<size_t> cache_one_ring;
+    // // size_t vid;
+
+    // while (!v_queue.empty()) {
+    //     sum++;
+    //     size_t vid = v_queue.front();
+    //     v_queue.pop();
+    //     if (visited[vid]) {
+    //         continue;
+    //     }
+    //     visited[vid] = true;
+    //     adjcnt++;
+
+    //     const Vector3d& pos_v = m_vertex_attribute[vid].m_posf;
+    //     double sq_dist = 0.;
+    //     uint32_t idx;
+    //     knn.nearest_neighbor(pos_v, idx, sq_dist);
+
+    //     const double dist = std::sqrt(sq_dist);
+
+    //     if (dist > R) { // outside R-ball, unmark.
+    //         continue;
+    //     }
+
+    //     scale_multipliers[vid] = std::min(
+    //         scale_multipliers[vid],
+    //         dist / R * (1 - refine_scalar) + refine_scalar); // linear interpolate
+
+    //     const auto vids = get_one_ring_vids_for_vertex_adj(vid, cache_one_ring);
+    //     for (size_t n_vid : vids) {
+    //         if (visited[n_vid]) {
+    //             continue;
+    //         }
+    //         v_queue.push(n_vid);
+    //     }
+    // }
+
+    // std::cout << sum << " " << adjcnt << std::endl;
+
+    // bool is_hit_min_edge_length = false;
+    // for (int i = 0; i < vert_capacity(); i++) {
+    //     const Tuple v = tuple_from_vertex(i);
+    //     if (!v.is_valid(*this)) {
+    //         continue;
+    //     }
+    //     const size_t vid = v.vid(*this);
+    //     auto& v_attr = m_vertex_attribute[vid];
+
+    //     const double new_scale = v_attr.m_sizing_scalar * scale_multipliers[vid];
+    //     if (new_scale > 1)
+    //         v_attr.m_sizing_scalar = 1;
+    //     else if (new_scale < min_refine_scalar) {
+    //         is_hit_min_edge_length = true;
+    //         v_attr.m_sizing_scalar = min_refine_scalar;
+    //     } else
+    //         v_attr.m_sizing_scalar = new_scale;
+    // }
+
+    return is_hit_min_edge_length;
 }
 
 void bfs_orient(const Eigen::MatrixXi& F, Eigen::MatrixXi& FF, Eigen::VectorXi& C)
@@ -1057,6 +1153,8 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
     v_sizing_field.setZero();
     VectorXd v_order(vert_capacity());
     v_order.setZero();
+    VectorXd v_id(vert_capacity());
+    v_id.setZero();
 
     std::vector<MatrixXd> tags(m_tags_count, MatrixXd(tet_capacity(), 1));
     Eigen::MatrixXd amips(tet_capacity(), 1);
@@ -1092,15 +1190,21 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
         V.row(vid) = m_vertex_attribute[vid].m_posf;
         v_sizing_field[vid] = m_vertex_attribute[vid].m_sizing_scalar;
         v_order[vid] = m_vertex_attribute[vid].m_order;
+        v_id[vid] = vid;
     }
 
     paraviewo::VTUWriter writer;
 
     for (size_t j = 0; j < m_tags_count; ++j) {
-        writer.add_cell_field(fmt::format("tag_{}", j), tags[j]);
+        if (m_tag_id_to_name.count(j)) {
+            writer.add_cell_field(m_tag_id_to_name[j], tags[j]);
+        } else {
+            writer.add_cell_field(fmt::format("tag_{}", j), tags[j]);
+        }
     }
     writer.add_cell_field("quality", amips);
     writer.add_field("sizing_field", v_sizing_field);
+    writer.add_field("vid", v_id);
     writer.write_mesh(out_path, V, T, paraviewo::CellType::Tetrahedron);
 
     // surface
@@ -1109,6 +1213,7 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
         paraviewo::VTUWriter surf_writer;
         surf_writer.add_field("sizing_field", v_sizing_field);
         surf_writer.add_field("order", v_order);
+        surf_writer.add_field("vid", v_id);
 
         logger().info("Write {}", surf_out_path);
         surf_writer.write_mesh(surf_out_path, V, F, paraviewo::CellType::Triangle);
@@ -1119,6 +1224,8 @@ void ImageSimulationMesh::write_vtu(const std::string& path)
         paraviewo::VTUWriter edge_writer;
         edge_writer.add_field("sizing_field", v_sizing_field);
         edge_writer.add_field("order", v_order);
+        edge_writer.add_field("vid", v_id);
+
 
         logger().info("Write {}", edge_out_path);
         edge_writer.write_mesh(edge_out_path, V, E, paraviewo::CellType::Line);

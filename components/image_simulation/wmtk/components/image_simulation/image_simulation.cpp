@@ -13,6 +13,7 @@
 #include "ImageSimulationMesh.h"
 #include "ImageSimulationMeshTri.hpp"
 #include "Parameters.h"
+#include "expression_parser/Parser.hpp"
 #include "extract_soup.hpp"
 #include "read_image_msh.hpp"
 
@@ -103,16 +104,27 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
         mesh.simplify();
     }
 
+    const std::string tags_selection_str = json_params["tags_selection"];
+    const auto tags_selection_expr =
+        expression_parser::parse(tags_selection_str, mesh.m_tag_name_to_id);
+    logger().info("Parsed tags_selection expression: {}", tags_selection_expr->to_string());
+
     // /////////apply operation
     const std::string operation = params.operation;
     if (operation == "remeshing") {
+        mesh.set_length_regions(json_params["length_region"]);
         mesh.mesh_improvement(max_its); // <-- tetwild
     } else if (operation == "fill_holes_topo") {
-        const std::vector<std::set<std::string>> fill_holes_tags_names =
-            json_params["fill_holes_tags"];
-        std::vector<std::set<int64_t>> fill_holes_tags;
+        const std::vector<std::string> fill_holes_tags_names = json_params["fill_holes_tags"];
+        std::vector<CellTag> fill_holes_tags;
         for (const auto& tag_set_names : fill_holes_tags_names) {
-            fill_holes_tags.push_back(mesh.string_set_to_cell_tag(tag_set_names));
+            // fill_holes_tags.push_back(mesh.string_set_to_cell_tag(tag_set_names));
+            const auto expr = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
+            logger().info("Parsed fill_holes_tags expression: {}", expr->to_string());
+            if (!expr->contains_only_and()) {
+                log_and_throw_error("Only AND operation is allowed in fill_holes_tags expression.");
+            }
+            fill_holes_tags.push_back(expr->tags_involved());
         }
         const double raw_threshold = json_params["fill_holes_threshold"];
         const double threshold =
@@ -120,13 +132,20 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
         mesh.fill_holes_topo(fill_holes_tags, threshold);
     } else if (operation == "tight_seal_topo") {
         // tight_seal_tag_sets is a list of lists: [[t1,t2],[t3,...]]
-        const std::vector<std::vector<std::set<std::string>>> tag_sets_names =
+        const std::vector<std::vector<std::string>> tag_sets_names =
             json_params["tight_seal_tag_sets"];
-        std::vector<std::vector<std::set<int64_t>>> tag_sets;
+        std::vector<std::vector<CellTag>> tag_sets;
         for (const auto& tag_set_names_vec : tag_sets_names) {
-            std::vector<std::set<int64_t>> tag_set_vec;
+            std::vector<CellTag> tag_set_vec;
             for (const auto& tag_set_names : tag_set_names_vec) {
-                tag_set_vec.push_back(mesh.string_set_to_cell_tag(tag_set_names));
+                auto expr = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
+                logger().info("Parsed tight_seal_tag_sets expression: {}", expr->to_string());
+                if (!expr->contains_only_and()) {
+                    log_and_throw_error(
+                        "Only AND operation is allowed in tight_seal_tag_sets expression.");
+                }
+                auto tag_set = expr->tags_involved();
+                tag_set_vec.push_back(tag_set);
             }
             tag_sets.push_back(tag_set_vec);
         }
@@ -135,29 +154,57 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
             raw_threshold < 0 ? std::numeric_limits<double>::infinity() : raw_threshold;
         mesh.tight_seal_topo(tag_sets, threshold);
     } else if (operation == "keep_lcc") {
-        const std::vector<std::set<std::string>> lcc_tags_names = json_params["keep_lcc_tags"];
-        std::vector<std::set<int64_t>> lcc_tags;
+        const std::vector<std::string> lcc_tags_names = json_params["keep_lcc_tags"];
+        std::vector<CellTag> lcc_tags;
         for (const auto& tag_set_names : lcc_tags_names) {
-            lcc_tags.push_back(mesh.string_set_to_cell_tag(tag_set_names));
+            auto expr = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
+            logger().info("Parsed keep_lcc_tags expression: {}", expr->to_string());
+            if (!expr->contains_only_and()) {
+                log_and_throw_error("Only AND operation is allowed in keep_lcc_tags expression.");
+            }
+            lcc_tags.push_back(expr->tags_involved());
         }
         const size_t n_lcc = json_params["keep_lcc_num"];
         mesh.keep_largest_connected_component(lcc_tags, n_lcc);
     } else if (operation == "resolve_intersections") {
-        const std::vector<std::set<std::string>> tags_names =
-            json_params["resolve_intersections_tags"];
+        const std::vector<std::string> tags_names = json_params["resolve_intersections_tags"];
         std::vector<CellTag> tags;
         for (const auto& tag_set_names : tags_names) {
-            tags.push_back(mesh.string_set_to_cell_tag(tag_set_names));
+            auto expr = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
+            logger().info("Parsed resolve_intersections_tags expression: {}", expr->to_string());
+            if (!expr->contains_only_and()) {
+                log_and_throw_error(
+                    "Only AND operation is allowed in resolve_intersections_tags expression.");
+            }
+            auto tag_set = expr->tags_involved();
+            if (tag_set.size() != 2) {
+                log_and_throw_error(
+                    "Exactly two tags must be provided in each resolve_intersections_tags "
+                    "expression. Expression '{}' involves {} tags.",
+                    expr->to_string(),
+                    tag_set.size());
+            }
+            tags.push_back(tag_set);
         }
         mesh.resolve_intersections(tags);
     } else if (operation == "replace_tags") {
-        const std::vector<std::set<std::string>> tags_in_names = json_params["replace_tags_in"];
+        const std::vector<std::string> tags_in_names = json_params["replace_tags_in"];
         std::vector<CellTag> tags_in;
         for (const auto& tag_set_names : tags_in_names) {
-            tags_in.push_back(mesh.string_set_to_cell_tag(tag_set_names));
+            const auto expr_in = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
+            logger().info("Parsed tags_in expression: {}", expr_in->to_string());
+            if (!expr_in->contains_only_and()) {
+                log_and_throw_error("Only AND operation is allowed in replace_tags_in expression.");
+            }
+            tags_in.push_back(expr_in->tags_involved());
         }
-        const std::set<std::string> tag_out_name = json_params["replace_tags_out"];
-        CellTag tag_out = mesh.string_set_to_cell_tag(tag_out_name);
+        const std::string tag_out_name = json_params["replace_tags_out"];
+        const auto expr_out = expression_parser::parse(tag_out_name, mesh.m_tag_name_to_id);
+        logger().info("Parsed replace_tags_out expression: {}", expr_out->to_string());
+        if (!expr_out->contains_only_and()) {
+            log_and_throw_error("Only AND operation is allowed in replace_tags_out expression.");
+        }
+        CellTag tag_out = mesh.string_set_to_cell_tag(expr_out->tag_names_involved());
         mesh.replace_tags(tags_in, tag_out);
     } else if (operation == "tag_priority") {
         const std::vector<std::string> tag_priority_names = json_params["tag_priority"];
@@ -271,11 +318,16 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
     if (operation == "remeshing") {
         mesh.mesh_improvement(max_its); // <-- tetwild
     } else if (operation == "fill_holes_topo") {
-        const std::vector<std::set<std::string>> fill_holes_tags_names =
-            json_params["fill_holes_tags"];
-        std::vector<std::set<int64_t>> fill_holes_tags;
+        const std::vector<std::string> fill_holes_tags_names = json_params["fill_holes_tags"];
+        std::vector<CellTag> fill_holes_tags;
         for (const auto& tag_set_names : fill_holes_tags_names) {
-            fill_holes_tags.push_back(mesh.string_set_to_cell_tag(tag_set_names));
+            // fill_holes_tags.push_back(mesh.string_set_to_cell_tag(tag_set_names));
+            const auto expr = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
+            logger().info("Parsed fill_holes_tags expression: {}", expr->to_string());
+            if (!expr->contains_only_and()) {
+                log_and_throw_error("Only AND operation is allowed in fill_holes_tags expression.");
+            }
+            fill_holes_tags.push_back(expr->tags_involved());
         }
         const double raw_threshold = json_params["fill_holes_threshold"];
         const double threshold =
@@ -283,13 +335,20 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
         mesh.fill_holes_topo(fill_holes_tags, threshold);
     } else if (operation == "tight_seal_topo") {
         // tight_seal_tag_sets is a list of lists: [[t1,t2],[t3,...]]
-        const std::vector<std::vector<std::set<std::string>>> tag_sets_names =
+        const std::vector<std::vector<std::string>> tag_sets_names =
             json_params["tight_seal_tag_sets"];
-        std::vector<std::vector<std::set<int64_t>>> tag_sets;
+        std::vector<std::vector<CellTag>> tag_sets;
         for (const auto& tag_set_names_vec : tag_sets_names) {
-            std::vector<std::set<int64_t>> tag_set_vec;
+            std::vector<CellTag> tag_set_vec;
             for (const auto& tag_set_names : tag_set_names_vec) {
-                tag_set_vec.push_back(mesh.string_set_to_cell_tag(tag_set_names));
+                auto expr = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
+                logger().info("Parsed tight_seal_tag_sets expression: {}", expr->to_string());
+                if (!expr->contains_only_and()) {
+                    log_and_throw_error(
+                        "Only AND operation is allowed in tight_seal_tag_sets expression.");
+                }
+                auto tag_set = expr->tags_involved();
+                tag_set_vec.push_back(tag_set);
             }
             tag_sets.push_back(tag_set_vec);
         }
@@ -298,29 +357,57 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
             raw_threshold < 0 ? std::numeric_limits<double>::infinity() : raw_threshold;
         mesh.tight_seal_topo(tag_sets, threshold);
     } else if (operation == "keep_lcc") {
-        const std::vector<std::set<std::string>> lcc_tags_names = json_params["keep_lcc_tags"];
-        std::vector<std::set<int64_t>> lcc_tags;
+        const std::vector<std::string> lcc_tags_names = json_params["keep_lcc_tags"];
+        std::vector<CellTag> lcc_tags;
         for (const auto& tag_set_names : lcc_tags_names) {
-            lcc_tags.push_back(mesh.string_set_to_cell_tag(tag_set_names));
+            auto expr = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
+            logger().info("Parsed keep_lcc_tags expression: {}", expr->to_string());
+            if (!expr->contains_only_and()) {
+                log_and_throw_error("Only AND operation is allowed in keep_lcc_tags expression.");
+            }
+            lcc_tags.push_back(expr->tags_involved());
         }
         const size_t n_lcc = json_params["keep_lcc_num"];
         mesh.keep_largest_connected_component(lcc_tags, n_lcc);
     } else if (operation == "resolve_intersections") {
-        const std::vector<std::set<std::string>> tags_names =
-            json_params["resolve_intersections_tags"];
+        const std::vector<std::string> tags_names = json_params["resolve_intersections_tags"];
         std::vector<CellTag> tags;
         for (const auto& tag_set_names : tags_names) {
-            tags.push_back(mesh.string_set_to_cell_tag(tag_set_names));
+            auto expr = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
+            logger().info("Parsed resolve_intersections_tags expression: {}", expr->to_string());
+            if (!expr->contains_only_and()) {
+                log_and_throw_error(
+                    "Only AND operation is allowed in resolve_intersections_tags expression.");
+            }
+            auto tag_set = expr->tags_involved();
+            if (tag_set.size() != 2) {
+                log_and_throw_error(
+                    "Exactly two tags must be provided in each resolve_intersections_tags "
+                    "expression. Expression '{}' involves {} tags.",
+                    expr->to_string(),
+                    tag_set.size());
+            }
+            tags.push_back(tag_set);
         }
         mesh.resolve_intersections(tags);
     } else if (operation == "replace_tags") {
-        const std::vector<std::set<std::string>> tags_in_names = json_params["replace_tags_in"];
+        const std::vector<std::string> tags_in_names = json_params["replace_tags_in"];
         std::vector<CellTag> tags_in;
         for (const auto& tag_set_names : tags_in_names) {
-            tags_in.push_back(mesh.string_set_to_cell_tag(tag_set_names));
+            const auto expr_in = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
+            logger().info("Parsed tags_in expression: {}", expr_in->to_string());
+            if (!expr_in->contains_only_and()) {
+                log_and_throw_error("Only AND operation is allowed in replace_tags_in expression.");
+            }
+            tags_in.push_back(expr_in->tags_involved());
         }
-        const std::set<std::string> tag_out_name = json_params["replace_tags_out"];
-        CellTag tag_out = mesh.string_set_to_cell_tag(tag_out_name);
+        const std::string tag_out_name = json_params["replace_tags_out"];
+        const auto expr_out = expression_parser::parse(tag_out_name, mesh.m_tag_name_to_id);
+        logger().info("Parsed replace_tags_out expression: {}", expr_out->to_string());
+        if (!expr_out->contains_only_and()) {
+            log_and_throw_error("Only AND operation is allowed in replace_tags_out expression.");
+        }
+        CellTag tag_out = mesh.string_set_to_cell_tag(expr_out->tag_names_involved());
         mesh.replace_tags(tags_in, tag_out);
     } else if (operation == "tag_priority") {
         const std::vector<std::string> tag_priority_names = json_params["tag_priority"];

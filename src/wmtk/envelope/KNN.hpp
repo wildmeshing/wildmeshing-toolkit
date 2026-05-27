@@ -43,6 +43,11 @@ public:
         std::vector<uint32_t>& nearest_point_indices,
         std::vector<double>& sq_dist) const;
 
+    void r_nearest_neighbors(
+        const Vector3d& query_point,
+        const double& radius,
+        std::vector<nanoflann::ResultItem<uint32_t, double>>& matches) const;
+
     const Vector3d& point(const uint32_t& index) const { return point_cloud.pts[index]; }
 
 private:
