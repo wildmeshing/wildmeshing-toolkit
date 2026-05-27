@@ -129,15 +129,20 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>        std::vector&lt;uint32_t&gt;&amp; nearest_point_indices,</div>
 <div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>        std::vector&lt;double&gt;&amp; sq_dist) <span class="keyword">const</span>;</div>
 <div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span> </div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    <span class="keyword">const</span> Vector3d&amp; point(<span class="keyword">const</span> uint32_t&amp; index)<span class="keyword"> const </span>{ <span class="keywordflow">return</span> point_cloud.pts[index]; }</div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span> </div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span><span class="keyword">private</span>:</div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>    <a class="code hl_struct" href="structwmtk_1_1_point_cloud.html">PointCloud</a> point_cloud;</div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>    std::unique_ptr&lt;my_kd_tree_t&gt; m_kd_tree;</div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>};</div>
-</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    <span class="keywordtype">void</span> r_nearest_neighbors(</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>        <span class="keyword">const</span> Vector3d&amp; query_point,</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>        <span class="keyword">const</span> <span class="keywordtype">double</span>&amp; radius,</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>        std::vector&lt;nanoflann::ResultItem&lt;uint32_t, double&gt;&gt;&amp; matches) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span> </div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>    <span class="keyword">const</span> Vector3d&amp; point(<span class="keyword">const</span> uint32_t&amp; index)<span class="keyword"> const </span>{ <span class="keywordflow">return</span> point_cloud.pts[index]; }</div>
 <div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span> </div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>} <span class="comment">// namespace wmtk</span></div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span><span class="keyword">private</span>:</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>    <a class="code hl_struct" href="structwmtk_1_1_point_cloud.html">PointCloud</a> point_cloud;</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>    std::unique_ptr&lt;my_kd_tree_t&gt; m_kd_tree;</div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>};</div>
+</div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span> </div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>} <span class="comment">// namespace wmtk</span></div>
 <div class="ttc" id="aclasswmtk_1_1_k_n_n_html"><div class="ttname"><a href="classwmtk_1_1_k_n_n.html">wmtk::KNN</a></div><div class="ttdef"><b>Definition</b> KNN.hpp:28</div></div>
 <div class="ttc" id="astructwmtk_1_1_point_cloud_html"><div class="ttname"><a href="structwmtk_1_1_point_cloud.html">wmtk::PointCloud</a></div><div class="ttdef"><b>Definition</b> KNN.hpp:9</div></div>
 <div class="ttc" id="astructwmtk_1_1_point_cloud_html_a8a5ee08f920008a95123018d5a661b28"><div class="ttname"><a href="structwmtk_1_1_point_cloud.html#a8a5ee08f920008a95123018d5a661b28">wmtk::PointCloud::coord_t</a></div><div class="ttdeci">double coord_t</div><div class="ttdoc">The type of each coordinate.</div><div class="ttdef"><b>Definition</b> KNN.hpp:10</div></div>
