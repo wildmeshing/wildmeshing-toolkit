@@ -5,12 +5,14 @@
 #include "Parameters.h"
 #include "SimplicialComplexBVH.hpp"
 
+using CellTag = std::set<int64_t>;
+
 
 namespace wmtk::components::topological_offset {
 
 
 const int64_t TEMP_OFFSET_TRI_TAG = -1;
-const std::set<int64_t> TEMP_OFFSET_TRI_TAG_SET{TEMP_OFFSET_TRI_TAG};
+const CellTag TEMP_OFFSET_TRI_TAG_SET{TEMP_OFFSET_TRI_TAG};
 
 
 class VertexAttributes2d
@@ -35,7 +37,7 @@ class FaceAttributes2d
 {
 public:
     int label = 0;
-    std::set<int64_t> tag;
+    CellTag tag;
 };
 
 
@@ -62,8 +64,8 @@ public:
     // tag name maps
     std::map<std::string, int64_t> m_tag_name_to_id;
     std::map<int64_t, std::string> m_tag_id_to_name;
-    std::vector<std::set<int64_t>> m_offset_tags_ids;
-    std::set<int64_t> m_offset_output_tag_ids;
+    // std::vector<CellTag> m_offset_tags_ids;
+    CellTag m_offset_output_tag_ids;
 
     // if in 'singlebody' mode
     bool m_singlebody = false;
@@ -109,6 +111,11 @@ public:
         const MatrixXd& V_env,
         const MatrixXi& F_env,
         const std::vector<std::string>& tag_names);
+
+    /**
+     * @brief label input complex simplices as per boolean expression (or single body mode)
+     */
+    void label_input_complex();
 
     /**
      * @brief check if the input complex is empty. Only valid after calling init_from_image(...).
@@ -206,7 +213,7 @@ public:
     //// output stuff
     void write_input_complex(const std::string& path);
     void write_vtu(const std::string& path);
-    void write_msh(const std::string& file);
+    // void write_msh(const std::string& file);
     void write_msh_groups(const std::string& file);
     //// output stuff
 
@@ -247,7 +254,7 @@ private: // helpers
     /**
      * @brief determine if any tag from tag1 is also present in tag2.
      */
-    bool any_tag_present(const std::set<int64_t>& tag1, const std::set<int64_t>& tag2) const
+    bool any_tag_present(const CellTag& tag1, const CellTag& tag2) const
     {
         for (const int64_t& i : tag1) {
             if (tag2.find(i) != tag2.end()) {

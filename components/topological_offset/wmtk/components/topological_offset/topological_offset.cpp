@@ -12,17 +12,17 @@
 #include <igl/is_vertex_manifold.h>
 #include <igl/remove_unreferenced.h>
 #include <igl/write_triangle_mesh.h>
+#include <wmtk/components/image_simulation/expression_parser/Parser.hpp>
+#include <wmtk/components/image_simulation/read_image_msh.hpp>
 #include "Parameters.h"
 #include "TopoOffsetTetMesh.h"
 #include "TopoOffsetTriMesh.h"
-#include "read_image_msh.hpp"
-
 #include "topological_offset_spec.hpp"
+
+using namespace wmtk::components::image_simulation;
 
 
 namespace wmtk::components::topological_offset {
-
-
 void topological_offset(nlohmann::json json_params)
 {
     using wmtk::utils::resolve_path;
@@ -45,13 +45,15 @@ void topological_offset(nlohmann::json json_params)
 
     // load params
     Parameters params;
-    params.offset_tags = json_params["offset_tags"];
-    for (const std::string& tag : json_params["offset_output_tag"]) {
+    const std::string offset_selection_str = json_params["offset_selection"];
+    for (const std::string& tag : json_params["offset_output_tags"]) {
         params.offset_output_tag.insert(tag);
     }
+    // const std::string offset_output_tags_str = json_params["offset_output_tags"];
     for (const std::string& tag : json_params["protected_tags"]) {
-        params.protected_tags.push_back(tag);
+        params.protected_tags.insert(tag);
     }
+    // const std::string protected_tags_str = json_params["protected_tags"];
     params.respect_all_topologies = json_params["respect_all_topologies"];
     params.overwrite = json_params["overwrite_tags"];
     params.offset_in = json_params["offset_in"];
@@ -104,10 +106,15 @@ void topological_offset(nlohmann::json json_params)
         mesh.init_from_image(
             input_data.V_input,
             input_data.T_input,
-            input_data.T_input_tags,
+            input_data.T_input_tag,
             input_data.V_envelope,
             input_data.F_envelope,
             input_data.tag_names);
+
+        // label input complex
+        mesh.m_params.offset_selection =
+            expression_parser::parse(offset_selection_str, mesh.m_tag_name_to_id);
+        mesh.label_input_complex();
 
         // check empty input
         if (mesh.empty_input_complex()) {
@@ -209,7 +216,7 @@ void topological_offset(nlohmann::json json_params)
                     bad_tris_str += (" " + std::to_string(t.fid(mesh)));
                 }
             }
-            mesh.write_msh(output_filename.string()); // DEBUG: write .msh anyway
+            // mesh.write_msh_groups(output_filename.string()); // DEBUG: write .msh anyway
             log_and_throw_error("INVERSION DURING OFFSET! bad tri ids: {}", bad_tris_str);
         }
 
@@ -218,7 +225,7 @@ void topological_offset(nlohmann::json json_params)
             if (mesh.offset_is_manifold()) {
                 logger().info("Offset region manifold check passed.");
             } else {
-                mesh.write_msh(output_filename.string()); // DEBUG: write .msh anyway
+                // mesh.write_msh_groups(output_filename.string()); // DEBUG: write .msh anyway
                 log_and_throw_error("OFFSET REGION IS NOT MANIFOLD");
             }
         }
@@ -255,10 +262,15 @@ void topological_offset(nlohmann::json json_params)
         mesh.init_from_image(
             input_data.V_input,
             input_data.T_input,
-            input_data.T_input_tags,
+            input_data.T_input_tag,
             input_data.V_envelope,
             input_data.F_envelope,
             input_data.tag_names);
+
+        // label input complex
+        mesh.m_params.offset_selection =
+            expression_parser::parse(offset_selection_str, mesh.m_tag_name_to_id);
+        mesh.label_input_complex();
 
         // check empty input
         if (mesh.empty_input_complex()) {
@@ -366,7 +378,7 @@ void topological_offset(nlohmann::json json_params)
                     bad_tets_str += (" " + std::to_string(t.tid(mesh)));
                 }
             }
-            // mesh.write_msh(output_filename.string()); // DEBUG write .msh anyway
+            // mesh.write_msh_groups(output_filename.string()); // DEBUG write .msh anyway
             log_and_throw_error("INVERSION DURING OFFSET! bad tet ids: {}", bad_tets_str);
         }
 
@@ -375,7 +387,7 @@ void topological_offset(nlohmann::json json_params)
             if (mesh.offset_is_manifold()) {
                 logger().info("Offset region manifold check passed.");
             } else {
-                // mesh.write_msh(output_filename.string()); // DEBUG: write .msh anyway
+                // mesh.write_msh_groups(output_filename.string()); // DEBUG: write .msh anyway
                 log_and_throw_error("OFFSET REGION IS NOT MANIFOLD");
             }
         }
