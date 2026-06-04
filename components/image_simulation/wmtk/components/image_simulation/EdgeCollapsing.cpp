@@ -389,7 +389,11 @@ void ImageSimulationMesh::simplify()
         m_envelope = nullptr;
         m_V_envelope.clear();
         m_F_envelope.clear();
-        init_envelope(V, F);
+        if (V.size() > 0 && F.size() > 0) {
+            init_envelope(V, F);
+        } else {
+            logger().warn("No surface faces left after simplification, skip re-building envelope");
+        }
     }
     logger().info("===== Simplification done =====");
 }

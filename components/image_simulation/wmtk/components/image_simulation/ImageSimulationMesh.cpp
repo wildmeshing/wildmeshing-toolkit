@@ -586,8 +586,11 @@ void ImageSimulationMesh::init_envelope(const MatrixXd& V, const MatrixXi& F)
     if (m_envelope) {
         log_and_throw_error("Envelope was already initialized once.");
     }
+    if (V.size() == 0 || F.size() == 0) {
+        log_and_throw_error("Envelope vertices and faces cannot be empty.");
+    }
+
     assert(m_V_envelope.empty() && m_F_envelope.empty());
-    assert(V.size() != 0 && F.size() != 0);
     assert(V.cols() == 3); // vertices must be in 3D
     assert(F.cols() == 3); // envelope must be triangles
 
