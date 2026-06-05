@@ -45,14 +45,12 @@ public:
         int num_threads = 1,
         bool use_exact_envelope = true);
 
-    void set_freeze(const TriMesh::Tuple& v);
-
-    void create_mesh_nofreeze(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris);
+    void freeze_boundary();
 
     void create_mesh(
         size_t n_vertices,
         const std::vector<std::array<size_t, 3>>& tris,
-        const std::vector<size_t>& frozen_verts = std::vector<size_t>(),
+        const std::vector<size_t>& frozen_verts = {},
         double eps = 0);
 
     ~ShortestEdgeCollapse() {}
@@ -63,6 +61,8 @@ public:
     {
         return vertex_attrs[loc.vid(*this)].partition_id;
     }
+
+    void write_vtu(const std::string& path);
 
 public:
     bool collapse_edge_before(const Tuple& t) override;

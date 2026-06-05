@@ -37,6 +37,8 @@ std::vector<std::string> input_files{
     "isotropic_remeshing_bunny.json",
     "isotropic_remeshing_piece.json",
     "qslim_octocat.json",
+    "shortest_edge_collapse_101633.json",
+    "shortest_edge_collapse_double_sphere.json",
     "shortest_edge_collapse_octocat.json",
     "shortest_edge_collapse_sphere_with_env.json",
     "tetwild_octocat.json",
@@ -100,6 +102,10 @@ TEST_CASE("Integration_Tests", tags_integration)
         logger().info(">>>>>>>>>> Integration test: {} <<<<<<<<<<", f.filename().string());
         CHECK(fs::exists(f));
         CHECK_NOTHROW(wmtk_wrapper(f));
+    }
+    logger().info("Tested {} files:", input_files.size());
+    for (const auto& input_file : input_files) {
+        logger().info("    {}", input_file);
     }
 }
 

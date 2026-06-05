@@ -4,12 +4,6 @@
 #include <CLI/CLI.hpp>
 
 #include <igl/Timer.h>
-#include <igl/is_edge_manifold.h>
-#include <igl/is_vertex_manifold.h>
-#include <igl/readOFF.h>
-#include <igl/read_triangle_mesh.h>
-#include <igl/remove_duplicate_vertices.h>
-#include <igl/writeDMAT.h>
 
 #include <stdlib.h>
 #include <chrono>
@@ -19,6 +13,7 @@
 #include <jse/jse.h>
 #include <nlohmann/json.hpp>
 #include <wmtk/Types.hpp>
+#include <wmtk/io/read_triangle_mesh.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
@@ -45,6 +40,7 @@ void run_shortest_collapse(
     logger().info("runtime {:.4}s", timer.getElapsedTimeInSec());
     m.consolidate_mesh();
     m.write_triangle_mesh(output);
+    // m.write_vtu(std::filesystem::path(output).stem().string());
     logger().info("After collapse: #V = {}, #F = {}", m.vert_capacity(), m.tri_capacity());
 }
 
@@ -73,20 +69,7 @@ void shortest_edge_collapse(nlohmann::json json_params)
 
     MatrixXd V;
     MatrixXi F;
-    // read input and remove duplicates
-    {
-        if (!igl::read_triangle_mesh(path, V, F)) {
-            log_and_throw_error("Could not read mesh {}", path);
-        }
-        VectorXi SVI, SVJ;
-        MatrixXd temp_V = V;
-        igl::remove_duplicate_vertices(temp_V, 0, V, SVI, SVJ);
-        for (int i = 0; i < F.rows(); i++) {
-            for (int j = 0; j < 3; ++j) {
-                F(i, j) = SVJ[F(i, j)];
-            }
-        }
-    }
+    io::read_triangle_mesh(path, V, F, -1, -1);
     logger().info("Input: #V = {}, #F = {}", V.rows(), F.rows());
 
 
@@ -108,11 +91,11 @@ void shortest_edge_collapse(nlohmann::json json_params)
     const double envelope_size = env_rel * diag;
     VectorXi dummy;
     std::vector<size_t> modified_v;
-    if (!igl::is_edge_manifold(F) || !igl::is_vertex_manifold(F, dummy)) {
-        auto v1 = v;
-        auto tri1 = tri;
-        wmtk::separate_to_manifold(v1, tri1, v, tri, modified_v);
-    }
+    // if (!igl::is_edge_manifold(F) || !igl::is_vertex_manifold(F, dummy)) {
+    //     auto v1 = v;
+    //     auto tri1 = tri;
+    //     wmtk::separate_to_manifold(v1, tri1, v, tri, modified_v);
+    // }
 
     ShortestEdgeCollapse m(v, num_threads, !use_sample_envelope);
     m.create_mesh(v.size(), tri, modified_v, envelope_size);
