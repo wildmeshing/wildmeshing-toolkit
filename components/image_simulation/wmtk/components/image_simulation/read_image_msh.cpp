@@ -475,15 +475,45 @@ InputData read_mesh(
     const bool use_sample_envelope = json_params["use_sample_envelope"];
     const int NUM_THREADS = json_params["num_threads"];
     const int max_its = json_params["max_iterations"];
-    const bool write_vtu = json_params["write_vtu"];
+    const bool debug_output = json_params["DEBUG_output"];
     const bool preserve_topology = json_params["preserve_topology"];
+    const bool skip_simplify = json_params["skip_simplify"];
+    const double epsr_simplify = json_params["eps_simplify_rel"];
+    double eps_simplify = json_params["eps_simplify"];
     const std::vector<std::string> input_names = json_params["input_names"];
 
-    // convert mesh into tet mesh
-    EmbedSurface image_mesh(input_paths, input_transforms);
+    double tol_rel = -1;
+    double tol_abs = -1;
+    if (!preserve_topology) {
+        tol_rel = 0.1 * epsr_simplify;
+        tol_abs = 0.1 * eps_simplify;
+    }
 
-    if (write_vtu) {
+    // convert mesh into tet mesh
+    EmbedSurface image_mesh(input_paths, input_transforms, tol_rel, tol_abs);
+
+    if (debug_output) {
         image_mesh.write_surf_off(output_filename + "_input.off");
+    }
+
+    if (!preserve_topology && !skip_simplify) {
+        /**
+         * Simplify the input surface only if topology preservation is not required, since
+         * simplification can change the topology.
+         * If topology preservation is required, simplification is performed after insertion.
+         */
+        auto [bbox_min, bbox_max] = image_mesh.bbox_surf_minmax();
+        double diag = (bbox_max - bbox_min).norm();
+        if (epsr_simplify > 0) {
+            eps_simplify = diag * epsr_simplify;
+        }
+        logger().info("Simplify before insertion with eps = {:.4}", eps_simplify);
+
+        image_mesh.simplify_surface(eps_simplify, NUM_THREADS);
+
+        if (debug_output) {
+            image_mesh.write_surf_off(output_filename + "_input_simplified.off");
+        }
     }
 
     input_data.V_envelope = image_mesh.V_surface();
@@ -494,7 +524,7 @@ InputData read_mesh(
                                  : image_mesh.embed_surface(preserve_topology);
     image_mesh.consolidate();
 
-    if (write_vtu) {
+    if (debug_output) {
         image_mesh.write_emb_surf_off(output_filename + "_input_emb.off");
     }
 
