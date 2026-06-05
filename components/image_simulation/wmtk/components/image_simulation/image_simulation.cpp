@@ -99,8 +99,9 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     write_unique_vtu();
 
 
-    if (!skip_simplify) {
+    if (params.preserve_topology && !skip_simplify) {
         // collapse for getting the right edge length
+        logger().info("Simplify after insertion");
         mesh.simplify();
     }
 

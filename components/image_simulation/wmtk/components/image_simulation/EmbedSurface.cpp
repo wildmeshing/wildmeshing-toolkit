@@ -19,6 +19,7 @@
 #include <bitset>
 #include <filesystem>
 #include <paraviewo/VTUWriter.hpp>
+#include <wmtk/io/read_triangle_mesh.hpp>
 #include <wmtk/utils/InsertTriangleUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/ManifoldUtils.hpp>
@@ -856,7 +857,9 @@ EmbedSurface::EmbedSurface(const std::vector<std::string>& img_filenames, const 
 
 EmbedSurface::EmbedSurface(
     const std::vector<std::string>& img_filenames,
-    const std::vector<Matrix4d>& img_transform)
+    const std::vector<Matrix4d>& img_transform,
+    const double tol_rel,
+    const double tol_abs)
     : m_img_filenames(img_filenames)
 {
     assert(img_filenames.size() == img_transform.size());
@@ -869,7 +872,7 @@ EmbedSurface::EmbedSurface(
             log_and_throw_error("Input file {} does not exist", m_img_filenames[i]);
         }
         MatrixXi F_single;
-        igl::read_triangle_mesh(m_img_filenames[i], Vs[i], F_single);
+        io::read_triangle_mesh(m_img_filenames[i], Vs[i], F_single, tol_rel, tol_abs);
 
         assert(Vs[i].cols() == 3);
         assert(F_single.cols() == 3);
@@ -920,13 +923,13 @@ EmbedSurface::EmbedSurface(
     F_surf_from_vector(tris);
 }
 
-void EmbedSurface::simplify_surface(const double eps)
+void EmbedSurface::simplify_surface(const double eps, const int num_threads)
 {
     // convert to STL vectors
     std::vector<Eigen::Vector3d> verts = V_surf_to_vector();
     std::vector<std::array<size_t, 3>> tris = F_surf_to_vector();
 
-    shortest_edge_collapse::ShortestEdgeCollapse surf_mesh(verts, 0, false);
+    shortest_edge_collapse::ShortestEdgeCollapse surf_mesh(verts, num_threads, false);
 
     // must be a small envelope to ensure correct tet tags later on
     surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, eps);
@@ -1371,6 +1374,14 @@ std::pair<Vector3d, Vector3d> EmbedSurface::bbox_minmax() const
 {
     const Vector3d bbox_max = m_V_emb.colwise().maxCoeff();
     const Vector3d bbox_min = m_V_emb.colwise().minCoeff();
+
+    return std::make_pair(bbox_min, bbox_max);
+}
+
+std::pair<Vector3d, Vector3d> EmbedSurface::bbox_surf_minmax() const
+{
+    const Vector3d bbox_max = m_V_surface.colwise().maxCoeff();
+    const Vector3d bbox_min = m_V_surface.colwise().minCoeff();
 
     return std::make_pair(bbox_min, bbox_max);
 }
