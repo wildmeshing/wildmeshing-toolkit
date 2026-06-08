@@ -637,7 +637,7 @@ void ImageSimulationMesh::init_from_image(
 
     for (int i = 0; i < vert_capacity(); i++) {
         m_vertex_attribute[i].m_pos = V.row(i);
-        m_vertex_attribute[i].m_posf = to_double(V.row(i));
+        m_vertex_attribute[i].m_posf = to_double(m_vertex_attribute[i].m_pos);
     }
 
     // sanity check
@@ -704,8 +704,8 @@ void ImageSimulationMesh::init_from_image(
     m_face_attribute.m_attributes.resize(T.rows() * 4);
 
     for (int i = 0; i < vert_capacity(); i++) {
-        m_vertex_attribute[i].m_pos = to_rational(V.row(i));
         m_vertex_attribute[i].m_posf = V.row(i);
+        m_vertex_attribute[i].m_pos = to_rational(m_vertex_attribute[i].m_posf);
         m_vertex_attribute[i].m_is_rounded = true;
     }
 

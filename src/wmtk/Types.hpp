@@ -48,9 +48,21 @@ using VectorS = Eigen::SparseVector<T>;
 using VectorSi = VectorS<int>;
 using VectorSd = VectorS<double>;
 
+inline Vector2r to_rational(const Vector2d& p0)
+{
+    Vector2r p(p0[0], p0[1]);
+    return p;
+}
+
 inline Vector3r to_rational(const Vector3d& p0)
 {
     Vector3r p(p0[0], p0[1], p0[2]);
+    return p;
+}
+
+inline Vector2d to_double(const Vector2r& p0)
+{
+    Vector2d p(p0[0].to_double(), p0[1].to_double());
     return p;
 }
 
