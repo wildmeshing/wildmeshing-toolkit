@@ -205,6 +205,71 @@ std::tuple<double, double> TriWildMesh::local_operations(
     return energy;
 }
 
+void TriWildMesh::init_mesh(const MatrixXd& V, const MatrixXi& F, const MatrixXi& E)
+{
+    assert(V.cols() == 2);
+    assert(F.cols() == 3);
+    assert(E.cols() == 2);
+
+    init(F);
+
+    assert(check_mesh_connectivity_validity());
+
+    m_vertex_attribute.m_attributes.resize(V.rows());
+    m_edge_attribute.m_attributes.resize(F.rows() * 3);
+
+    for (int i = 0; i < vert_capacity(); i++) {
+        m_vertex_attribute[i].m_pos = to_rational(Vector2d(V.row(i)));
+        m_vertex_attribute[i].m_posf = V.row(i);
+    }
+
+    // init quality and check for inverted mesh
+    bool is_mesh_inverted = false;
+    for (const Tuple& t : get_faces()) {
+        if (is_mesh_inverted ^ is_inverted(t)) {
+            if (!is_mesh_inverted) {
+                is_mesh_inverted = true;
+            } else {
+                log_and_throw_error("Tets with different orientations in the input!");
+            }
+        }
+        m_face_attribute[t.fid(*this)].m_quality = get_quality(t);
+    }
+
+    if (is_mesh_inverted) {
+        log_and_throw_error(
+            "Input mesh is fully inverted! This should not happen... Might be a bug.");
+    }
+
+    // mark edges as on surface if they are in E
+    for (int i = 0; i < E.rows(); i++) {
+        std::array<size_t, 2> vids = {(size_t)E(i, 0), (size_t)E(i, 1)};
+        const auto [e, eid] = tuple_from_edge(vids);
+        if (!e.is_valid(*this)) {
+            log_and_throw_error("Edge {} in E is not found in the mesh!", vids);
+        }
+        m_edge_attribute[eid].m_is_surface_fs = true;
+    }
+
+    // init envelope
+    if (m_envelope) {
+        log_and_throw_error("Envelope was already initialized once.");
+    }
+    assert(m_V_envelope.empty() && m_E_envelope.empty());
+
+    m_V_envelope.resize(V.rows());
+    for (size_t i = 0; i < m_V_envelope.size(); ++i) {
+        m_V_envelope[i] = V.row(i);
+    }
+    m_E_envelope.resize(E.rows());
+    for (size_t i = 0; i < m_E_envelope.size(); ++i) {
+        m_E_envelope[i] = E.row(i);
+    }
+
+    m_envelope = std::make_shared<SampleEnvelope>();
+    m_envelope->init(m_V_envelope, m_E_envelope, m_envelope_eps);
+}
+
 bool TriWildMesh::adjust_sizing_field_serial(double max_energy)
 {
     wmtk::logger().info("#V {}, #F {}", vert_capacity(), tri_capacity());
@@ -589,16 +654,17 @@ bool TriWildMesh::is_inverted(const std::array<size_t, 3>& vs) const
         }
         return true;
     } else {
-        log_and_throw_error("TODO: non-rounded orientation test");
-        // Vector3r n =
-        //     ((m_vertex_attribute[vs[1]].m_pos) - m_vertex_attribute[vs[0]].m_pos)
-        //         .cross((m_vertex_attribute[vs[2]].m_pos) - m_vertex_attribute[vs[0]].m_pos);
-        // Vector3r d = (m_vertex_attribute[vs[3]].m_pos) - m_vertex_attribute[vs[0]].m_pos;
-        // auto res = n.dot(d);
-        // if (res > 0) // predicates returns pos value: non-inverted
-        //     return false;
-        // else
-        //     return true;
+        const Vector2r& v0 = m_vertex_attribute[vs[0]].m_pos;
+        const Vector2r& v1 = m_vertex_attribute[vs[1]].m_pos;
+        const Vector2r& v2 = m_vertex_attribute[vs[2]].m_pos;
+        const Vector2r a = v1 - v0;
+        const Vector2r b = v2 - v0;
+        Rational res = a.x() * b.y() - a.y() * b.x();
+        if (res > 0) {
+            return false;
+        } else {
+            return true;
+        }
     }
 }
 
@@ -655,6 +721,68 @@ double TriWildMesh::get_quality(const Tuple& loc) const
 {
     auto its = oriented_tri_vids(loc);
     return get_quality(its);
+}
+
+void TriWildMesh::write_vtu(const std::string& path) const
+{
+    // consolidate_mesh();
+    const std::string out_path = path + ".vtu";
+    logger().info("Write {}", out_path);
+    const auto& faces = get_faces();
+    const auto edges = get_edges_by_condition([](auto& f) { return f.m_is_surface_fs; });
+
+    Eigen::MatrixXd V(vert_capacity(), 2);
+    Eigen::MatrixXi F(tri_capacity(), 3);
+    Eigen::MatrixXi E(edges.size(), 2);
+
+    V.setZero();
+    F.setZero();
+    E.setZero();
+
+    Eigen::VectorXd v_sizing_field(vert_capacity());
+    v_sizing_field.setZero();
+
+    Eigen::MatrixXd amips(tri_capacity(), 1);
+
+    int index = 0;
+    for (const Tuple& t : faces) {
+        size_t tid = t.fid(*this);
+        amips(index, 0) = m_face_attribute[tid].m_quality;
+
+        const auto vs = oriented_tri_vids(t);
+        for (size_t j = 0; j < 3; j++) {
+            F(index, j) = (int)vs[j];
+        }
+        ++index;
+    }
+
+    for (size_t i = 0; i < edges.size(); ++i) {
+        for (size_t j = 0; j < 2; ++j) {
+            E(i, j) = (int)edges[i][j];
+        }
+    }
+
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        V.row(vid) = m_vertex_attribute[vid].m_posf;
+        v_sizing_field[vid] = m_vertex_attribute[vid].m_sizing_scalar;
+    }
+
+    paraviewo::VTUWriter writer;
+
+    writer.add_cell_field("quality", amips);
+    writer.add_field("sizing_field", v_sizing_field);
+    writer.write_mesh(path + ".vtu", V, F, paraviewo::CellType::Triangle);
+
+    // surface
+    {
+        const auto surf_out_path = path + "_surf.vtu";
+        paraviewo::VTUWriter surf_writer;
+        surf_writer.add_field("sizing_field", v_sizing_field);
+
+        logger().info("Write {}", surf_out_path);
+        surf_writer.write_mesh(surf_out_path, V, E, paraviewo::CellType::Line);
+    }
 }
 
 std::vector<std::array<size_t, 2>> TriWildMesh::get_edges_by_condition(

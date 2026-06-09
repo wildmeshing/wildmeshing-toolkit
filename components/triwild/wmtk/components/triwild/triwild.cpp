@@ -1,128 +1,20 @@
 #include "triwild.hpp"
 
-#include "Parameters.h"
-#include "TriWildMesh.h"
-
+#include <igl/Timer.h>
 #include <igl/write_triangle_mesh.h>
 #include <jse/jse.h>
-#include <wmtk/TriMesh.h>
 #include <bitset>
 #include <memory>
 #include <vector>
-#include <wmtk/envelope/Envelope.hpp>
-#include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
-#include <igl/Timer.h>
-#include <wmtk/utils/Delaunay.hpp>
-
+#include "Parameters.h"
+#include "TriWildMesh.h"
+#include "init_from_delaunay.hpp"
 #include "triwild_spec.hpp"
 
 namespace wmtk::components::triwild {
-
-void init_from_delaunay_box_mesh(
-    const MatrixXd& V,
-    const MatrixXi& E,
-    MatrixXd& V_out,
-    MatrixXi& F_out,
-    MatrixXi& E_out)
-{
-    assert(V.cols() == 2);
-
-    // points for delaunay
-    std::vector<wmtk::delaunay::Point2D> points(V.rows());
-    // add points from surface
-    for (int i = 0; i < V.rows(); i++) {
-        for (int j = 0; j < 2; j++) {
-            points[i][j] = V(i, j);
-        }
-    }
-
-    // bbox
-    Vector2d box_min = V.colwise().minCoeff();
-    Vector2d box_max = V.colwise().maxCoeff();
-
-    // increase bbox by 30% of diagonal length
-    const double diagonal_length = (box_max - box_min).norm();
-    const double delta = diagonal_length / 15.0;
-    box_min -= Vector2d(delta, delta);
-    box_max += Vector2d(delta, delta);
-
-    // add corners of domain
-    for (int i = 0; i < 4; i++) {
-        Vector2d p;
-        std::bitset<sizeof(int) * 4> a(i);
-        for (int j = 0; j < 2; j++) {
-            if (a.test(j)) {
-                p[j] = box_max[j];
-            } else {
-                p[j] = box_min[j];
-            }
-        }
-        points.push_back({{p[0], p[1]}});
-    }
-
-    const double voxel_resolution = diagonal_length / 20.0;
-    std::array<int, 2> N; // number of grid points per dimension
-    std::array<double, 2> h; // distance between grid points per dimension
-    for (int i = 0; i < 2; i++) {
-        const double D = box_max[i] - box_min[i];
-        N[i] = (D / voxel_resolution) + 1;
-        h[i] = D / N[i];
-    }
-
-    std::array<std::vector<double>, 2> ds;
-    for (int i = 0; i < 2; i++) {
-        ds[i].push_back(box_min[i]);
-        for (int j = 0; j < N[i] - 1; j++) {
-            ds[i].push_back(box_min[i] + h[i] * (j + 1));
-        }
-        ds[i].push_back(box_max[i]);
-    }
-
-    wmtk::SampleEnvelope envelope;
-    // init envelope
-    {
-        std::vector<Vector2d> V_envelope;
-        std::vector<Vector2i> E_envelope;
-        for (int i = 0; i < E.rows(); i++) {
-            E_envelope.push_back(Vector2i(E(i, 0), E(i, 1)));
-        }
-        for (int i = 0; i < V.rows(); i++) {
-            V_envelope.push_back(V.row(i));
-        }
-        envelope.init(V_envelope, E_envelope, 0);
-    }
-
-
-    const double min_dis = voxel_resolution * voxel_resolution / 4;
-    //    double min_dis = state.target_edge_len * state.target_edge_len;//epsilon*2
-    for (int i = 0; i < ds[0].size(); i++) {
-        for (int j = 0; j < ds[1].size(); j++) {
-            if ((i == 0 || i == ds[0].size() - 1) && (j == 0 || j == ds[1].size() - 1)) {
-                continue;
-            }
-            const Vector2d p(ds[0][i], ds[1][j]);
-
-            Eigen::Vector2d n;
-            const double sqd = envelope.nearest_point(p, n);
-
-            if (sqd < min_dis) {
-                continue;
-            }
-            points.push_back({{ds[0][i], ds[1][j]}});
-        }
-    }
-
-    // CDT
-    MatrixXd V_cdt;
-    V_cdt.resize(points.size(), 2);
-    for (int i = 0; i < points.size(); i++) {
-        V_cdt.row(i) = Eigen::Vector2d(points[i][0], points[i][1]);
-    }
-    delaunay::constrained_delaunay2D(V_cdt, E, V_out, F_out, E_out);
-}
 
 void triwild(nlohmann::json json_params)
 {
@@ -172,50 +64,11 @@ void triwild(nlohmann::json json_params)
     params.debug_output = json_params["DEBUG_output"];
     params.perform_sanity_checks = json_params["DEBUG_sanity_checks"];
 
-    std::vector<MatrixXd> Vs;
-    std::vector<MatrixXi> Es;
-    // read input edge meshes
-    for (const std::string& path : input_paths) {
-        MatrixXd V;
-        MatrixXi E;
-        io::read_edge_mesh(path, V, E);
-        logger().info("Read edge mesh {}: #V = {}, #E = {}", path, V.rows(), E.rows());
-        V = V.block(0, 0, V.rows(), 2).eval(); // only keep x, y
-        Vs.push_back(V);
-        Es.push_back(E);
-    }
-
-    // generate Delaunay triangulation of the input vertices as the initial mesh
+    // CDT on all input meshes
     MatrixXd V;
     MatrixXi F;
-    MatrixXi E;
-    {
-        MatrixXd V_all;
-        MatrixXi E_all;
-        std::vector<Eigen::Vector2d> V_vec;
-        std::vector<Eigen::Vector2i> E_vec;
-        for (const auto& V : Vs) {
-            for (int i = 0; i < V.rows(); i++) {
-                V_vec.push_back(V.row(i));
-            }
-        }
-        for (const auto& E : Es) {
-            for (int i = 0; i < E.rows(); i++) {
-                E_vec.push_back(E.row(i));
-            }
-        }
-        V_all.resize(V_vec.size(), 2);
-        for (int i = 0; i < V_vec.size(); i++) {
-            V_all.row(i) = V_vec[i];
-        }
-        E_all.resize(E_vec.size(), 2);
-        for (int i = 0; i < E_vec.size(); i++) {
-            E_all.row(i) = E_vec[i];
-        }
-        init_from_delaunay_box_mesh(V_all, E_all, V, F, E);
-
-        logger().info("Initial delaunay mesh: #V = {}, #F = {}", V.rows(), F.rows());
-    }
+    MatrixXi E; // constraint edges in CDT
+    init_from_paths(input_paths, V, F, E);
 
     if (params.debug_output) {
         MatrixXd V3(V.rows(), 3);
@@ -233,126 +86,20 @@ void triwild(nlohmann::json json_params)
         edge_out.close();
     }
 
-    // insert edges one by one
-    {
-        // copy code from deprecated WMTK
+    Vector2d box_min = V.colwise().minCoeff();
+    Vector2d box_max = V.colwise().maxCoeff();
+    params.init(box_min, box_max);
+
+    TriWildMesh mesh(params, params.eps, NUM_THREADS);
+    mesh.init_mesh(V, F, E);
+
+    if (params.debug_output) {
+        mesh.write_vtu(output_path + "_initial");
     }
-
-    //// Old code
-
-    // std::vector<Eigen::Vector3d> verts;
-    // std::vector<std::array<size_t, 3>> tris;
-    // std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax;
-    // // double remove_duplicate_esp = params.epsr;
-    // double remove_duplicate_esp = 2e-3;
-    // std::vector<size_t> modified_nonmanifold_v;
-    // wmtk::stl_to_manifold_wmtk_input(
-    //     input_paths,
-    //     remove_duplicate_esp,
-    //     box_minmax,
-    //     verts,
-    //     tris,
-    //     modified_nonmanifold_v);
-
-    // {
-    //     Eigen::MatrixXi F(tris.size(), 3);
-    //     for (int i = 0; i < tris.size(); ++i) {
-    //         F.row(i) = Eigen::Vector3i((int)tris[i][0], (int)tris[i][1], (int)tris[i][2]);
-    //     }
-
-    //     const auto ecs = compute_euler_characteristics(F);
-    //     logger().info("Input euler characteristic: {}", ecs);
-    // }
-
-    // double diag = (box_minmax.first - box_minmax.second).norm();
-    // const double envelope_size = params.epsr * diag;
-    // shortest_edge_collapse::ShortestEdgeCollapse surf_mesh(
-    //     verts,
-    //     NUM_THREADS,
-    //     !use_sample_envelope);
-    // surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, envelope_size / 2);
-    // assert(surf_mesh.check_mesh_connectivity_validity());
-
-    // if (skip_simplify == false) {
-    //     wmtk::logger().info("input {} simplification", input_paths);
-    //     surf_mesh.collapse_shortest(0);
-    //     surf_mesh.consolidate_mesh();
-    //     surf_mesh.write_triangle_mesh(output_path + "_simplified_input.obj");
-    // }
-
-    // params.output_path = output_path;
-
-    // //// get the simplified input
-    // std::vector<Eigen::Vector3d> vsimp(surf_mesh.vert_capacity());
-    // std::vector<std::array<size_t, 3>> fsimp(surf_mesh.tri_capacity());
-    // for (auto& t : surf_mesh.get_vertices()) {
-    //     auto i = t.vid(surf_mesh);
-    //     vsimp[i] = surf_mesh.vertex_attrs[i].pos;
-    // }
-
-    // for (auto& t : surf_mesh.get_faces()) {
-    //     auto i = t.fid(surf_mesh);
-    //     auto vs = surf_mesh.oriented_tri_vertices(t);
-    //     for (int j = 0; j < 3; j++) {
-    //         fsimp[i][j] = vs[j].vid(surf_mesh);
-    //     }
-    // }
-
 
     // // /////////
     // // // Prepare Envelope and parameter for TriWild
     // // /////////
-
-
-    // params.init(box_minmax.first, box_minmax.second);
-    // wmtk::remove_duplicates(vsimp, fsimp, 1e-10 * params.diag_l);
-
-    // triwild::TriWildMesh mesh(params, surf_mesh.m_envelope, NUM_THREADS);
-
-    // /////////////////////////////////////////////////////
-
-    // igl::Timer timer;
-    // timer.start();
-    // std::vector<size_t> partition_id(vsimp.size());
-    // wmtk::partition_vertex_morton(
-    //     vsimp.size(),
-    //     [&vsimp](auto i) { return vsimp[i]; },
-    //     std::max(NUM_THREADS, 1),
-    //     partition_id);
-
-
-    // // triangle insertion with volumeremesher on the simplified mesh
-    // std::vector<Vector3r> v_rational;
-    // std::vector<std::array<size_t, 3>> facets;
-    // std::vector<bool> is_v_on_input;
-    // std::vector<std::array<size_t, 4>> tets;
-    // std::vector<bool> tet_face_on_input_surface;
-
-    // logger().info("simplified: #v = {}, #f = {}", vsimp.size(), fsimp.size());
-
-    // igl::Timer insertion_timer;
-    // insertion_timer.start();
-
-    // mesh.insertion_by_volumeremesher_old(
-    //     vsimp,
-    //     fsimp,
-    //     v_rational,
-    //     facets,
-    //     is_v_on_input,
-    //     tets,
-    //     tet_face_on_input_surface);
-
-    // logger().info("=== finished insertion");
-
-    // // generate new mesh
-    // triwild::TriWildMesh mesh_new(params, surf_mesh.m_envelope, NUM_THREADS);
-
-    // mesh_new.init_from_Volumeremesher(
-    //     v_rational,
-    //     facets,
-    //     is_v_on_input,
-    //     tets,
-    //     tet_face_on_input_surface);
 
     // double insertion_time = insertion_timer.getElapsedTime();
 

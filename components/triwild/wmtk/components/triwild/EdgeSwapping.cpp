@@ -11,6 +11,11 @@
 
 namespace wmtk::components::triwild {
 
+size_t TriWildMesh::swap_all_edges()
+{
+    log_and_throw_error("edge swapping is not implemented yet");
+}
+
 bool TriWildMesh::swap_edge_before(const Tuple& t)
 {
     log_and_throw_error("edge swapping is not implemented yet");

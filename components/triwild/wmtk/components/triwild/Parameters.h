@@ -9,10 +9,8 @@ struct Parameters
     double l = -1.;
     double l_min = -1;
     double diag_l = -1.;
-    Vector3d min = Vector3d::Zero();
-    Vector3d max = Vector3d::Ones();
-    Vector3d box_min = Vector3d::Zero();
-    Vector3d box_max = Vector3d::Ones();
+    Vector2d box_min = Vector2d::Zero();
+    Vector2d box_max = Vector2d::Ones();
     bool preserve_topology = false;
     std::string output_path;
 
@@ -28,39 +26,45 @@ struct Parameters
     double w_amips = 1e-4;
     double w_envelope = 0;
 
-    void init(const Vector3d& min_, const Vector3d& max_)
+    void init(const Vector2d& min_, const Vector2d& max_)
     {
-        min = min_;
-        max = max_;
-        diag_l = (max - min).norm();
-        if (l > 0)
+        box_min = min_;
+        box_max = max_;
+        diag_l = (box_max - box_min).norm();
+        if (l > 0) {
             lr = l / diag_l;
-        else
+        } else {
             l = lr * diag_l;
+        }
         splitting_l2 = l * l * (16 / 9.);
         collapsing_l2 = l * l * (16 / 25.);
 
-        if (eps > 0)
+        if (eps > 0) {
             epsr = eps / diag_l;
-        else
+        } else {
             eps = epsr * diag_l;
+        }
 
         l_min = eps;
     }
     void init(
-        const std::vector<Vector3d>& vertices,
+        const std::vector<Vector2d>& vertices,
         const std::vector<std::array<size_t, 3>>& faces)
     {
-        Vector3d min_, max_;
+        Vector2d min_, max_;
         for (size_t i = 0; i < vertices.size(); i++) {
             if (i == 0) {
                 min_ = vertices[i];
                 max_ = vertices[i];
                 continue;
             }
-            for (int j = 0; j < 3; j++) {
-                if (vertices[i][j] < min_[j]) min_[j] = vertices[i][j];
-                if (vertices[i][j] > max_[j]) max_[j] = vertices[i][j];
+            for (int j = 0; j < 2; j++) {
+                if (vertices[i][j] < min_[j]) {
+                    min_[j] = vertices[i][j];
+                }
+                if (vertices[i][j] > max_[j]) {
+                    max_[j] = vertices[i][j];
+                }
             }
         }
 

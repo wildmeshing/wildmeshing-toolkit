@@ -53,11 +53,10 @@ public:
      * -1: none
      * 0/1: x min/max
      * 2/3: y min/max
-     * 4/5: z min/max
      *
      * This bbox side ID is used to keep the bbox from collapsing.
      */
-    int m_is_bbox_fs = -1; //-1; 0~5
+    int m_is_bbox_fs = -1; //-1; 0~3
 
     void reset()
     {
@@ -97,8 +96,6 @@ public:
     std::shared_ptr<SampleEnvelope> m_envelope;
     double m_envelope_eps = -1;
 
-    // for open boundary
-    SampleEnvelope m_open_boundary_envelope; // todo: add sample envelope option
     using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
     using EdgeAttCol = wmtk::AttributeCollection<EdgeAttributes>;
     using FaceAttCol = wmtk::AttributeCollection<FaceAttributes>;
@@ -154,19 +151,13 @@ public:
 
 public:
     /**
-     * @brief Init from meshes image.
+     * @brief Init mesh from IGL-style matrices.
      *
      * @param V #Vx3 vertices of the tet mesh
-     * @param T #Tx4 vertex IDs for all faces
-     * @param T_tags #Tx1 image data represented by the individual faces
-     * @param tag_names Names for each tag in T_tags. The size must be the same as the number of
-     * columns in T_tags.
+     * @param F #Fx3 vertex IDs for all faces
+     * @param E #Ex2 vertex IDs for all constraint edges
      */
-    void init_from_image(
-        const MatrixXd& V,
-        const MatrixXi& T,
-        const MatrixSi& T_tags,
-        const std::vector<std::string>& tag_names);
+    void init_mesh(const MatrixXd& V, const MatrixXi& F, const MatrixXi& E);
 
     void init_surfaces_and_boundaries();
 
@@ -196,7 +187,7 @@ public:
      *
      * Used to determine the priority and weight of a swap operation.
      */
-    double swap_weight(const Tuple& t) const;
+    // double swap_weight(const Tuple& t) const;
     bool swap_edge_before(const Tuple& t) override;
     bool swap_edge_after(const Tuple& t) override;
 

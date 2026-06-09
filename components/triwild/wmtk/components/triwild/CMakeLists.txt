@@ -18,11 +18,12 @@ set(SRC_FILES
 	EdgeSwapping.cpp
 	Smooth.cpp
 
-	EdgeInsertion.cpp
-
 	triwild.hpp
 	triwild.cpp
 	triwild_spec.hpp
+
+	init_from_delaunay.hpp
+	init_from_delaunay.cpp
 )
 
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
