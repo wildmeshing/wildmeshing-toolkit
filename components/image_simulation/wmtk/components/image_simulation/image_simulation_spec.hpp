@@ -147,7 +147,7 @@ nlohmann::json image_simulation_spec = R"(
   {
     "pointer": "/skip_simplify",
     "type": "bool",
-    "default": true,
+    "default": false,
     "doc": "If true, input simplification will be skipped."
   },
   {
@@ -189,7 +189,7 @@ nlohmann::json image_simulation_spec = R"(
   {
     "pointer": "/eps_simplify_rel",
     "type": "float",
-    "default": 2e-3,
+    "default": 2e-4,
     "doc": "Envelope thickness relative to the bounding box for the initial simplification."
   },
   {

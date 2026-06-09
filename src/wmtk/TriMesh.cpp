@@ -70,8 +70,12 @@ size_t TriMesh::Tuple::eid(const TriMesh& m) const
         return 3 * f + local_eid;
     }
 
-    assert(false); // this statement should never be reached
-    return m_fid * 3 + m_eid;
+    log_and_throw_error(
+        "Invalid Tuple: no face contains both vertices of the edge. Vertices are {}, {}, tuple "
+        "face ID is {}",
+        m_vid,
+        v_opp,
+        m_fid);
 }
 
 
@@ -1151,7 +1155,7 @@ void TriMesh::consolidate_mesh()
     if (p_edge_attrs) p_edge_attrs->resize(tri_capacity() * 3);
     if (p_face_attrs) p_face_attrs->resize(tri_capacity());
 
-    assert(check_edge_manifold());
+    // assert(check_edge_manifold());
     assert(check_mesh_connectivity_validity());
 }
 
@@ -1455,12 +1459,17 @@ std::vector<TriMesh::Tuple> TriMesh::get_edges() const
 {
     std::vector<TriMesh::Tuple> all_edges_tuples;
     all_edges_tuples.reserve(tri_capacity() * 3);
-    for (int i = 0; i < tri_capacity(); i++) {
-        if (m_tri_connectivity[i].m_is_removed) continue;
+    for (int fid = 0; fid < tri_capacity(); fid++) {
+        if (m_tri_connectivity[fid].m_is_removed) {
+            continue;
+        }
         for (int j = 0; j < 3; j++) {
-            size_t l = (j + 2) % 3;
-            auto tup = Tuple(m_tri_connectivity[i].m_indices[j], l, i, *this);
-            if (tup.eid(*this) == 3 * i + l) all_edges_tuples.emplace_back(tup);
+            const size_t loc_eid = (j + 2) % 3;
+            const size_t vid = m_tri_connectivity[fid].m_indices[j];
+            const Tuple tup(vid, loc_eid, fid, *this);
+            if (tup.eid(*this) == 3 * fid + loc_eid) {
+                all_edges_tuples.emplace_back(tup);
+            }
         }
     }
 

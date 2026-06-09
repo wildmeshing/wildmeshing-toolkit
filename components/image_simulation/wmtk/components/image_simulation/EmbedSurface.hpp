@@ -101,14 +101,16 @@ public:
      */
     EmbedSurface(
         const std::vector<std::string>& img_filenames,
-        const std::vector<Matrix4d>& img_transform = {});
+        const std::vector<Matrix4d>& img_transform = {},
+        const double tol_rel = -1,
+        const double tol_abs = -1);
 
     /**
      * @brief Simplify the input surface while staying within the eps envelope.
      *
      * @param eps The absolute envelope thickness.
      */
-    void simplify_surface(const double eps);
+    void simplify_surface(const double eps, const int num_threads = 0);
 
     /**
      * @brief Merge vertices that are closer than eps.
@@ -151,6 +153,7 @@ public:
     void write_emb_vtu(const std::string& filename) const;
 
     std::pair<Vector3d, Vector3d> bbox_minmax() const;
+    std::pair<Vector3d, Vector3d> bbox_surf_minmax() const;
 
     std::vector<Eigen::Vector3d> V_surf_to_vector() const;
     std::vector<std::array<size_t, 3>> F_surf_to_vector() const;

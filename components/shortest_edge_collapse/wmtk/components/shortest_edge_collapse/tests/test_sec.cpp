@@ -76,7 +76,7 @@ TEST_CASE("shortest_edge_collapse", "[test_sec]")
     v_positions[5] = Eigen::Vector3d(0, -3, 0);
     ShortestEdgeCollapse m(v_positions);
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 3}}, {{1, 2, 4}}, {{1, 4, 3}}, {{3, 4, 5}}};
-    m.create_mesh_nofreeze(6, tris);
+    m.create_mesh(6, tris);
     std::vector<TriMesh::Tuple> edges = m.get_edges();
     // find the shortest edge
     double shortest = std::numeric_limits<double>::max();
@@ -115,7 +115,7 @@ TEST_CASE("shortest_edge_collapse_boundary_edge", "[test_sec]")
     v_positions[4] = Eigen::Vector3d(0.5, 0, 0);
     ShortestEdgeCollapse m(v_positions);
     std::vector<std::array<size_t, 3>> tris = {{{0, 1, 3}}, {{1, 2, 4}}, {{3, 1, 4}}};
-    m.create_mesh_nofreeze(5, tris);
+    m.create_mesh(5, tris);
     std::vector<TriMesh::Tuple> edges = m.get_edges();
     // find the shortest edge
     double shortest = std::numeric_limits<double>::max();
@@ -154,7 +154,7 @@ TEST_CASE("shortest_edge_collapse_closed_mesh", "[test_sec]")
             {{1, 2, 3}},
             {{0, 3, 2}},
             {{0, 1, 2}}};
-        m.create_mesh_nofreeze(4, tris);
+        m.create_mesh(4, tris);
         m.collapse_shortest(100);
         REQUIRE(m.vert_capacity() == 4);
 

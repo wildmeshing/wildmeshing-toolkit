@@ -6,6 +6,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <paraviewo/VTUWriter.hpp>
 
 namespace wmtk::components::shortest_edge_collapse {
 
@@ -24,21 +25,14 @@ ShortestEdgeCollapse::ShortestEdgeCollapse(
         vertex_attrs[i] = {_m_vertex_positions[i], 0, false};
 }
 
-void ShortestEdgeCollapse::set_freeze(const TriMesh::Tuple& v)
+void ShortestEdgeCollapse::freeze_boundary()
 {
-    for (const Tuple& e : get_one_ring_edges_for_vertex(v)) {
+    for (const Tuple& e : get_edges()) {
         if (is_boundary_edge(e)) {
-            vertex_attrs[v.vid(*this)].freeze = true;
-            continue;
+            vertex_attrs[e.vid(*this)].freeze = true;
+            vertex_attrs[e.switch_vertex(*this).vid(*this)].freeze = true;
         }
     }
-}
-
-void ShortestEdgeCollapse::create_mesh_nofreeze(
-    size_t n_vertices,
-    const std::vector<std::array<size_t, 3>>& tris)
-{
-    wmtk::TriMesh::init(n_vertices, tris);
 }
 
 void ShortestEdgeCollapse::create_mesh(
@@ -65,9 +59,7 @@ void ShortestEdgeCollapse::create_mesh(
     for (size_t v : frozen_verts) {
         vertex_attrs[v].freeze = true;
     }
-    for (const Tuple& v : get_vertices()) { // the better way is to iterate through edges.
-        set_freeze(v);
-    }
+    freeze_boundary();
 }
 
 void ShortestEdgeCollapse::partition_mesh()
@@ -111,6 +103,36 @@ bool ShortestEdgeCollapse::write_triangle_mesh(std::string path)
 
     logger().info("Write {}", path);
     return igl::write_triangle_mesh(path, V, F);
+}
+
+void ShortestEdgeCollapse::write_vtu(const std::string& path)
+{
+    const std::string out_path = path + ".vtu";
+    logger().info("Write {}", out_path);
+
+    MatrixXd V = MatrixXd::Zero(vert_capacity(), 3);
+    MatrixXi F = MatrixXi::Zero(tri_capacity(), 3);
+
+    VectorXd freeze(vertex_attrs.size());
+    freeze.setZero();
+
+    for (Tuple& t : get_vertices()) {
+        const size_t i = t.vid(*this);
+        V.row(i) = vertex_attrs[i].pos;
+        freeze(i) = vertex_attrs[i].freeze ? 1 : 0;
+    }
+
+    for (Tuple& t : get_faces()) {
+        const size_t i = t.fid(*this);
+        const auto vs = oriented_tri_vertices(t);
+        for (int j = 0; j < 3; j++) {
+            F(i, j) = (int)vs[j].vid(*this);
+        }
+    }
+
+    paraviewo::VTUWriter writer;
+    writer.add_field("freeze", freeze);
+    writer.write_mesh(out_path, V, F, paraviewo::CellType::Triangle);
 }
 
 bool ShortestEdgeCollapse::collapse_edge_before(const Tuple& t)
