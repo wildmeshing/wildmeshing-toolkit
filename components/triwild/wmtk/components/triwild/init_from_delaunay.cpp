@@ -1,5 +1,6 @@
 #include "init_from_delaunay.hpp"
 
+#include <bitset>
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/utils/Delaunay.hpp>

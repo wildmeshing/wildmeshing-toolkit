@@ -187,7 +187,7 @@ public:
      *
      * Used to determine the priority and weight of a swap operation.
      */
-    // double swap_weight(const Tuple& t) const;
+    double swap_weight(const Tuple& t) const;
     bool swap_edge_before(const Tuple& t) override;
     bool swap_edge_after(const Tuple& t) override;
 
@@ -210,10 +210,13 @@ public:
      * @brief Inversion check using only floating point numbers.
      */
     bool is_inverted_f(const Tuple& loc) const;
+    bool is_inverted_f(const size_t fid) const;
     bool is_inverted(const std::array<size_t, 3>& vs) const;
     bool is_inverted(const Tuple& loc) const;
+    bool is_inverted(const size_t fid) const;
     double get_quality(const std::array<size_t, 3>& vs) const;
     double get_quality(const Tuple& loc) const;
+    double get_quality(const size_t fid) const;
     bool round(const Tuple& loc);
     //
     bool is_edge_on_surface(const Tuple& loc) const;

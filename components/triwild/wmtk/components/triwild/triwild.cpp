@@ -3,9 +3,6 @@
 #include <igl/Timer.h>
 #include <igl/write_triangle_mesh.h>
 #include <jse/jse.h>
-#include <bitset>
-#include <memory>
-#include <vector>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
@@ -97,18 +94,8 @@ void triwild(nlohmann::json json_params)
         mesh.write_vtu(output_path + "_initial");
     }
 
-    // // /////////
-    // // // Prepare Envelope and parameter for TriWild
-    // // /////////
-
-    // double insertion_time = insertion_timer.getElapsedTime();
-
-    // wmtk::logger().info("volume remesher insertion time: {:.4}s", insertion_time);
-
-    // mesh_new.consolidate_mesh();
-
-    // // /////////mesh improvement
-    // mesh_new.mesh_improvement(max_its);
+    /////////mesh improvement
+    mesh.mesh_improvement(max_its);
 
     // bool all_rounded = true;
     // for (const auto& v : mesh_new.get_vertices()) {
