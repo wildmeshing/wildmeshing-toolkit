@@ -6,6 +6,7 @@
 #include <igl/write_triangle_mesh.h>
 #include <jse/jse.h>
 #include <wmtk/TriMesh.h>
+#include <bitset>
 #include <memory>
 #include <vector>
 #include <wmtk/envelope/Envelope.hpp>
@@ -20,7 +21,12 @@
 
 namespace wmtk::components::triwild {
 
-void init_from_delaunay_box_mesh(const MatrixXd& V, const MatrixXi& E, MatrixXd& V_out, MatrixXi& F)
+void init_from_delaunay_box_mesh(
+    const MatrixXd& V,
+    const MatrixXi& E,
+    MatrixXd& V_out,
+    MatrixXi& F_out,
+    MatrixXi& E_out)
 {
     assert(V.cols() == 2);
 
@@ -109,26 +115,13 @@ void init_from_delaunay_box_mesh(const MatrixXd& V, const MatrixXi& E, MatrixXd&
         }
     }
 
-    ///delaunay
-    auto [unused_points, faces] = delaunay::delaunay2D(points);
-    logger().info("After delaunay F = {}, V = {}", faces.size(), points.size());
-
-    if (points.size() != unused_points.size()) {
-        logger().warn(
-            "Delaunay triangulation generated {} points, but input has {} points.",
-            unused_points.size(),
-            points.size());
-    }
-
-    // convert to output format
-    F.resize(faces.size(), 3);
-    for (int i = 0; i < faces.size(); i++) {
-        F.row(i) = Eigen::Vector3i((int)faces[i][0], (int)faces[i][1], (int)faces[i][2]);
-    }
-    V_out.resize(points.size(), 2);
+    // CDT
+    MatrixXd V_cdt;
+    V_cdt.resize(points.size(), 2);
     for (int i = 0; i < points.size(); i++) {
-        V_out.row(i) = Eigen::Vector2d(points[i][0], points[i][1]);
+        V_cdt.row(i) = Eigen::Vector2d(points[i][0], points[i][1]);
     }
+    delaunay::constrained_delaunay2D(V_cdt, E, V_out, F_out, E_out);
 }
 
 void triwild(nlohmann::json json_params)
@@ -195,6 +188,7 @@ void triwild(nlohmann::json json_params)
     // generate Delaunay triangulation of the input vertices as the initial mesh
     MatrixXd V;
     MatrixXi F;
+    MatrixXi E;
     {
         MatrixXd V_all;
         MatrixXi E_all;
@@ -218,18 +212,30 @@ void triwild(nlohmann::json json_params)
         for (int i = 0; i < E_vec.size(); i++) {
             E_all.row(i) = E_vec[i];
         }
-        init_from_delaunay_box_mesh(V_all, E_all, V, F);
+        init_from_delaunay_box_mesh(V_all, E_all, V, F, E);
 
         logger().info("Initial delaunay mesh: #V = {}, #F = {}", V.rows(), F.rows());
+    }
 
+    if (params.debug_output) {
         MatrixXd V3(V.rows(), 3);
         V3.setZero();
         V3.block(0, 0, V.rows(), 2) = V;
         igl::write_triangle_mesh(output_path + "_initial_delaunay.obj", V3, F);
+
+        // write edges
+        std::ofstream edge_out(output_path + "_initial_edges.obj");
+        for (int i = 0; i < E.rows(); i++) {
+            edge_out << "v " << V(E(i, 0), 0) << " " << V(E(i, 0), 1) << " 0\n";
+            edge_out << "v " << V(E(i, 1), 0) << " " << V(E(i, 1), 1) << " 0\n";
+            edge_out << "l " << 2 * i + 1 << " " << 2 * i + 2 << "\n";
+        }
+        edge_out.close();
     }
 
     // insert edges one by one
     {
+        // copy code from deprecated WMTK
     }
 
     //// Old code
