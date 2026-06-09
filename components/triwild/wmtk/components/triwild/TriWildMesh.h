@@ -224,10 +224,6 @@ public:
     bool is_edge_on_bbox(const Tuple& loc) const;
     bool is_edge_on_bbox(const std::array<size_t, 2>& vids) const;
 
-    /**
-     * @brief Check if the vertex is on the boundary of a tracked surface.
-     */
-    bool is_vertex_on_boundary(const size_t vid);
     //
     void mesh_improvement(int max_its = 80);
 
@@ -236,21 +232,8 @@ public:
         bool collapse_limit_length = true);
     std::tuple<double, double> get_max_avg_energy();
 
-    /**
-     * @brief Compute the winding number.
-     *
-     * If `vertices` and `faces` are empty, compute the winding number for the tracked surface.
-     * Otherwise, compute the winding number for the input surface given by `vertices` and `faces`.
-     */
-    void compute_winding_number(
-        const std::vector<Vector3d>& vertices = {},
-        const std::vector<std::array<size_t, 3>>& faces = {});
-
     void compute_winding_numbers(const std::vector<std::string>& input_paths);
-
-    void filter_with_input_surface_winding_number();
-    void filter_with_tracked_surface_winding_number();
-    void filter_with_flood_fill();
+    int flood_fill();
 
     bool vertex_is_on_surface(const size_t vid) const override
     {

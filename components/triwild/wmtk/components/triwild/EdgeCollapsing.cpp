@@ -112,8 +112,24 @@ bool TriWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
             return false; // do not collapse away from surface
         }
 
-        if (m_params.preserve_topology && get_order_of_vertex(v1_id) > 1) {
-            return false; // do not move singular/boundary vertices
+        if (VA[v1_id].m_is_rounded && get_order_of_vertex(v1_id) > 1 &&
+            get_order_of_vertex(v2_id) <= 1) {
+            /**
+             * In general, we don't want to collapse away from feature vertices. It is always fine
+             * to collapse into a feature vertex, though. However, we allow to feature vertices to
+             * be collapsed.
+             */
+            return false;
+        }
+
+        // if both vertices are on the surface, the collapsing edge should be inside the envelope
+        const size_t eid = loc.eid(*this);
+        if (VA[v2_id].m_is_on_surface && !m_edge_attribute.at(eid).m_is_surface_fs) {
+            const Vector2d& p1 = VA[v1_id].m_posf;
+            const Vector2d& p2 = VA[v2_id].m_posf;
+            if (m_envelope->is_outside(std::array<Vector2d, 2>{p1, p2})) {
+                return false;
+            }
         }
     }
 

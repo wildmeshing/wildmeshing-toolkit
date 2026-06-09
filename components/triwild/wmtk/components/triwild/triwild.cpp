@@ -47,10 +47,8 @@ void triwild(nlohmann::json json_params)
     triwild::Parameters params;
 
     std::string output_path = json_params["output"];
-    bool skip_simplify = json_params["skip_simplify"];
     int NUM_THREADS = json_params["num_threads"];
     int max_its = json_params["max_iterations"];
-    std::string filter_option = json_params["filter"];
 
     params.epsr = json_params["eps_rel"];
     params.lr = json_params["length_rel"];
@@ -96,83 +94,65 @@ void triwild(nlohmann::json json_params)
 
     /////////mesh improvement
     mesh.mesh_improvement(max_its);
+    mesh.consolidate_mesh();
 
-    // bool all_rounded = true;
-    // for (const auto& v : mesh_new.get_vertices()) {
-    //     if (!mesh_new.m_vertex_attribute[v.vid(mesh_new)].m_is_rounded) {
-    //         all_rounded = false;
-    //         break;
-    //     }
-    // }
-    // if (all_rounded) {
-    //     wmtk::logger().info("All vertices are rounded");
-    // } else {
-    //     wmtk::logger().error("Not all vertices rounded!");
-    // }
+    bool all_rounded = true;
+    for (const auto& v : mesh.get_vertices()) {
+        if (!mesh.m_vertex_attribute[v.vid(mesh)].m_is_rounded) {
+            all_rounded = false;
+            break;
+        }
+    }
+    if (all_rounded) {
+        logger().info("All vertices are rounded");
+    } else {
+        logger().error("Not all vertices rounded!");
+    }
 
-    // // apply input winding number
-    // mesh_new.compute_winding_number(verts, tris);
-    // // apply tracked surface winding number
-    // mesh_new.compute_winding_number();
-    // // apply flood fill
-    // {
-    //     int num_parts = mesh_new.flood_fill();
-    //     logger().info("flood fill parts {}", num_parts);
-    // }
-    // // compute per-input winding number
-    // mesh_new.compute_winding_numbers(input_paths);
-
-    // // ////winding number
-    // if (filter_option == "input") {
-    //     mesh_new.filter_with_input_surface_winding_number();
-    // } else if (filter_option == "tracked") {
-    //     mesh_new.filter_with_tracked_surface_winding_number();
-    // } else if (filter_option == "flood") {
-    //     mesh_new.filter_with_flood_fill();
-    // } else if (filter_option != "none") {
-    //     logger().error("Unknown filter option '{}'. No filtering performed.", filter_option);
-    // }
-    // mesh_new.consolidate_mesh();
+    // apply flood fill
+    {
+        int num_parts = mesh.flood_fill();
+        logger().info("flood fill parts {}", num_parts);
+    }
+    // compute per-input winding number
+    mesh.compute_winding_numbers(input_paths);
 
     // double time = timer.getElapsedTime();
     // logger().info("total time {:.4}s", time);
-    // if (mesh_new.tet_size() == 0) {
-    //     log_and_throw_error("Empty Output after Filter!");
-    // }
 
-    // /////////output
-    // auto [max_energy, avg_energy] = mesh_new.get_max_avg_energy();
-    // wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
+    /////////output
+    auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
+    wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
 
-    // const std::string report_file = json_params["report"];
-    // if (!report_file.empty()) {
-    //     std::ofstream fout(report_file);
-    //     nlohmann::json report;
-    //     report["#t"] = mesh_new.tet_size();
-    //     report["#v"] = mesh_new.vertex_size();
-    //     report["max_energy"] = max_energy;
-    //     report["avg_energy"] = avg_energy;
-    //     report["eps"] = params.eps;
-    //     report["threads"] = NUM_THREADS;
-    //     report["time"] = time;
-    //     report["all_rounded"] = all_rounded;
-    //     report["insertion_and_preprocessing"] = insertion_time;
-    //     fout << std::setw(4) << report;
-    //     fout.close();
-    // }
+    const std::string report_file = json_params["report"];
+    if (!report_file.empty()) {
+        std::ofstream fout(report_file);
+        nlohmann::json report;
+        report["#t"] = mesh.tri_capacity();
+        report["#v"] = mesh.vert_capacity();
+        report["max_energy"] = max_energy;
+        report["avg_energy"] = avg_energy;
+        report["eps"] = params.eps;
+        report["threads"] = NUM_THREADS;
+        // report["time"] = time;
+        report["all_rounded"] = all_rounded;
+        // report["insertion_and_preprocessing"] = insertion_time;
+        fout << std::setw(4) << report;
+        fout.close();
+    }
 
-    // // check metrics
-    // if (json_params["throw_on_fail"]) {
-    //     if (!all_rounded) {
-    //         log_and_throw_error("Not all vertices rounded!");
-    //     }
-    //     if (max_energy > params.stop_energy) {
-    //         log_and_throw_error("Max energy is too large.");
-    //     }
-    // }
+    // check metrics
+    if (json_params["throw_on_fail"]) {
+        if (!all_rounded) {
+            log_and_throw_error("Not all vertices rounded!");
+        }
+        if (max_energy > params.stop_energy) {
+            log_and_throw_error("Max energy is too large.");
+        }
+    }
 
-    // mesh_new.write_vtu(output_path);
-    // mesh_new.write_msh_groups(output_path + "_final.msh");
+    mesh.write_vtu(output_path);
+    mesh.write_msh_groups(output_path + ".msh");
 
     logger().info("======= finish =========");
 }

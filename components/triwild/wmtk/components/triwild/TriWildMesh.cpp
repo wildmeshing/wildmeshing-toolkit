@@ -6,6 +6,7 @@
 #include <wmtk/utils/AMIPS.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/envelope/KNN.hpp>
+#include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/io.hpp>
@@ -42,8 +43,6 @@ void TriWildMesh::mesh_improvement(int max_its)
 {
     ////preprocessing
     partition_mesh_morton();
-
-    // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
 
     logger().info("========it pre========");
     local_operations({{0, 1, 0, 0}}, false);
@@ -442,212 +441,255 @@ bool TriWildMesh::adjust_sizing_field_serial(double max_energy)
     return is_hit_min_edge_length.load();
 }
 
-void TriWildMesh::compute_winding_number(
-    const std::vector<Vector3d>& vertices,
-    const std::vector<std::array<size_t, 3>>& faces)
+void TriWildMesh::write_msh_groups(std::string file, const bool write_envelope)
 {
-    log_and_throw_error("winding number not implemented yet");
-    // Eigen::MatrixXd V;
-    // Eigen::MatrixXi F;
-    // if (!vertices.empty()) {
-    //     V.resize(vertices.size(), 3);
-    //     F.resize(faces.size(), 3);
+    consolidate_mesh();
 
-    //     for (size_t i = 0; i < (size_t)V.rows(); i++) {
-    //         V.row(i) = vertices[i];
-    //     }
-    //     for (size_t i = 0; i < (size_t)F.rows(); i++) {
-    //         for (size_t j = 0; j < 3; j++) {
-    //             F(i, j) = (int)faces[i][j];
-    //         }
-    //     }
-    // } else { // use track to filter
-    //     auto outface = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
-    //     V = Eigen::MatrixXd::Zero(vert_capacity(), 3);
-    //     for (auto v : get_vertices()) {
-    //         auto vid = v.vid(*this);
-    //         V.row(vid) = m_vertex_attribute[vid].m_posf;
-    //     }
-    //     F.resize(outface.size(), 3);
-    //     for (auto i = 0; i < outface.size(); i++) {
-    //         F.row(i) << (int)outface[i][0], (int)outface[i][1], (int)outface[i][2];
-    //     }
-    //     // logger().info("Output face size {}", outface.size());
-    //     auto F0 = F;
-    //     Eigen::VectorXi C;
-    //     bfs_orient(F0, F, C);
-    //     // logger().info("BFS orient {}", F.rows());
-    // }
+    wmtk::MshData msh;
 
-    // const auto& tets = get_tets();
-    // Eigen::MatrixXd C = Eigen::MatrixXd::Zero(tets.size(), 3);
-    // for (size_t i = 0; i < tets.size(); i++) {
-    //     auto vs = oriented_tet_vertices(tets[i]);
-    //     for (auto& v : vs) C.row(i) += m_vertex_attribute[v.vid(*this)].m_posf;
-    //     C.row(i) /= 4;
-    // }
+    const auto& vtx = get_vertices();
+    msh.add_face_vertices(vtx.size(), [&](size_t k) {
+        auto i = vtx[k].vid(*this);
+        Vector2d p2 = m_vertex_attribute[i].m_posf;
+        return Vector3d(p2[0], p2[1], 0);
+    });
 
-    // Eigen::VectorXd W;
-    // igl::winding_number(V, F, C, W);
+    const auto& faces = get_faces();
 
-    // if (W.maxCoeff() <= 0.5) {
-    //     // all removed, let's invert.
-    //     logger().info("Correcting winding number");
-    //     for (auto i = 0; i < F.rows(); i++) {
-    //         auto temp = F(i, 0);
-    //         F(i, 0) = F(i, 1);
-    //         F(i, 1) = temp;
-    //     }
-    //     igl::winding_number(V, F, C, W);
-    // }
+    int64_t max_tag = -1;
+    for (const Tuple& t : faces) {
+        const size_t fid = t.fid(*this);
+        const auto& tags = m_face_attribute[fid].tags;
+        if (tags.size() == 0) {
+            continue;
+        }
+        int64_t mt = *tags.rbegin();
+        max_tag = std::max(max_tag, mt);
+    }
 
-    // if (W.maxCoeff() <= 0.5) {
-    //     logger().critical("Still Inverting..., Empty Output");
-    //     return;
-    // }
+    if (m_tags_count < max_tag + 1) {
+        logger().warn(
+            "Max tag is {} but m_tags_count is {}. Adjusting m_tags_count.",
+            max_tag,
+            m_tags_count);
+        m_tags_count = max_tag + 1;
+    }
 
-    // // store winding number in mesh
-    // if (vertices.empty()) {
-    //     // from tracked surface
-    //     for (int i = 0; i < tets.size(); ++i) {
-    //         const size_t tid = tets[i].tid(*this);
-    //         m_tet_attribute[tid].m_winding_number_tracked = W(i);
-    //     }
-    // } else {
-    //     // from input surface
-    //     for (int i = 0; i < tets.size(); ++i) {
-    //         const size_t tid = tets[i].tid(*this);
-    //         m_tet_attribute[tid].m_winding_number_input = W(i);
-    //     }
-    // }
+    std::vector<Tuple> faces_with_tag;
+    faces_with_tag.reserve(faces.size());
+
+    auto msh_add_faces = [&]() {
+        msh.add_faces(faces_with_tag.size(), [&](size_t k) {
+            auto vs = oriented_tri_vids(faces_with_tag[k]);
+            std::array<size_t, 3> data;
+            for (int j = 0; j < 3; j++) {
+                data[j] = vs[j];
+            }
+            return data;
+        });
+    };
+
+    // ambient mesh (no non-zero tags)
+    for (const Tuple& t : faces) {
+        const size_t fid = t.fid(*this);
+        if (m_face_attribute[fid].tags.empty()) {
+            faces_with_tag.push_back(t);
+        }
+    }
+    msh_add_faces();
+
+    msh.add_physical_group("ambient");
+
+
+    // add a group for each tag
+    for (size_t tag_img = 0; tag_img < m_tags_count; ++tag_img) {
+        faces_with_tag.clear();
+        for (const Tuple& t : faces) {
+            const size_t fid = t.fid(*this);
+            if (m_face_attribute[fid].tags.count(tag_img)) {
+                faces_with_tag.push_back(t);
+            }
+        }
+
+        if (faces_with_tag.empty()) {
+            continue;
+        }
+
+        msh.add_empty_vertices(2);
+        msh_add_faces();
+
+        std::string group_name;
+        if (m_tag_id_to_name.count(tag_img)) {
+            group_name = m_tag_id_to_name[tag_img];
+        } else {
+            group_name = fmt::format("tag_{}", tag_img);
+            while (m_tag_name_to_id.count(group_name)) {
+                group_name += "_";
+            }
+            m_tag_name_to_id[group_name] = tag_img;
+            m_tag_id_to_name[tag_img] = group_name;
+            logger().warn(
+                "Tag {} does not have a name. Assigning the name {}.",
+                tag_img,
+                group_name);
+        }
+        msh.add_physical_group(group_name);
+    }
+
+    if (m_envelope && write_envelope) {
+        msh.add_edge_vertices(m_V_envelope.size(), [this](size_t k) {
+            return Vector3d(m_V_envelope[k][0], m_V_envelope[k][1], 0);
+        });
+        msh.add_edges(m_E_envelope.size(), [this](size_t k) { return m_E_envelope[k]; });
+        msh.add_physical_group("EnvelopeSurface");
+    }
+
+    logger().info("Write {}", file);
+    msh.save(file, true);
 }
 
 void TriWildMesh::compute_winding_numbers(const std::vector<std::string>& input_paths)
 {
-    log_and_throw_error("winding number not implemented yet");
+    const auto& faces = get_faces();
+    MatrixXd C = MatrixXd::Zero(faces.size(), 2);
+    for (size_t i = 0; i < faces.size(); i++) {
+        const auto vs = oriented_tri_vids(faces[i]);
+        for (size_t v : vs) {
+            C.row(i) += m_vertex_attribute[v].m_posf;
+        }
+        C.row(i) /= 3;
+    }
 
-    // const auto& tets = get_tets();
-    // Eigen::MatrixXd C = Eigen::MatrixXd::Zero(tets.size(), 3);
-    // for (size_t i = 0; i < tets.size(); i++) {
-    //     const auto vs = oriented_tet_vids(tets[i]);
-    //     for (size_t v : vs) {
-    //         C.row(i) += m_vertex_attribute[v].m_posf;
-    //     }
-    //     C.row(i) /= 4;
-    // }
+    m_tags_count = input_paths.size();
+    int64_t input_idx = 0;
+    for (const std::string& input_path : input_paths) {
+        MatrixXd V;
+        MatrixXi E;
+        io::read_edge_mesh(input_path, V, E);
+        assert(V.cols() == 3);
+        assert(E.cols() == 2);
 
-    // for (const std::string& input_path : input_paths) {
-    //     MatrixXd inV, V;
-    //     MatrixXi inF, F;
-    //     igl::read_triangle_mesh(input_path, inV, inF);
-    //     VectorXi _I;
-    //     igl::remove_unreferenced(inV, inF, V, F, _I);
-    //     assert(V.cols() == 3);
-    //     assert(F.cols() == 3);
+        V = V.block(0, 0, V.rows(), 2).eval(); // only use x,y for winding number
 
-    //     // compute winding number for V,F
-    //     Eigen::VectorXd W;
-    //     igl::winding_number(V, F, C, W);
+        // compute winding number for V,F
+        Eigen::VectorXd W;
+        igl::winding_number(V, E, C, W);
 
-    //     if (W.maxCoeff() <= 0.5) {
-    //         // all removed, let's invert.
-    //         logger().info("Correcting winding number");
-    //         for (auto i = 0; i < F.rows(); i++) {
-    //             auto temp = F(i, 0);
-    //             F(i, 0) = F(i, 1);
-    //             F(i, 1) = temp;
-    //         }
-    //         igl::winding_number(V, F, C, W);
-    //     }
+        if (W.maxCoeff() <= 0.5) {
+            // all removed, let's invert.
+            logger().info("Correcting winding number");
+            for (auto i = 0; i < E.rows(); i++) {
+                auto temp = E(i, 0);
+                E(i, 0) = E(i, 1);
+                E(i, 1) = temp;
+            }
+            igl::winding_number(V, E, C, W);
+        }
 
-    //     if (W.maxCoeff() <= 0.5) {
-    //         logger().warn("No winding number above 0.5 for input_path {}", input_path);
-    //     }
+        if (W.maxCoeff() <= 0.5) {
+            logger().warn("No winding number above 0.5 for input_path {}", input_path);
+        }
 
-    //     // store winding number in mesh
-    //     for (int i = 0; i < tets.size(); ++i) {
-    //         const size_t tid = tets[i].tid(*this);
-    //         m_tet_attribute[tid].m_winding_number_per_input.push_back(W(i));
-    //     }
-    // }
+        // store winding number in mesh
+        for (int i = 0; i < faces.size(); ++i) {
+            const size_t fid = faces[i].fid(*this);
+            if (W(i) > 0.5) {
+                m_face_attribute[fid].tags.insert(input_idx);
+            }
+        }
+        ++input_idx;
+    }
 }
 
-void TriWildMesh::filter_with_input_surface_winding_number()
+int TriWildMesh::flood_fill()
 {
-    log_and_throw_error("winding number not implemented yet");
-    // std::vector<size_t> rm_tids;
-    // for (const Tuple& t : get_tets()) {
-    //     const size_t tid = t.tid(*this);
-    //     if (m_tet_attribute[tid].m_winding_number_input <= 0.5) {
-    //         rm_tids.emplace_back(tid);
-    //     }
-    // }
+    int current_id = 0;
+    const auto faces = get_faces();
+    std::map<size_t, bool> visited;
 
-    // remove_tets_by_ids(rm_tids);
-}
+    for (const Tuple& t : faces) {
+        size_t fid = t.fid(*this);
+        if (visited.find(fid) != visited.end()) {
+            continue;
+        }
 
-void TriWildMesh::filter_with_tracked_surface_winding_number()
-{
-    log_and_throw_error("winding number not implemented yet");
-    // std::vector<size_t> rm_tids;
-    // for (const Tuple& t : get_tets()) {
-    //     const size_t tid = t.tid(*this);
-    //     if (m_tet_attribute[tid].m_winding_number_tracked <= 0.5) {
-    //         rm_tids.emplace_back(tid);
-    //     }
-    // }
+        visited[fid] = true;
+        m_face_attribute[fid].part_id = current_id;
 
-    // remove_tets_by_ids(rm_tids);
-}
+        const Tuple f1 = t;
+        const Tuple f2 = t.switch_edge(*this);
+        const Tuple f3 = t.switch_vertex(*this).switch_edge(*this);
 
-void TriWildMesh::filter_with_flood_fill()
-{
-    log_and_throw_error("flood fill filter not implemented yet");
-    // std::map<int, size_t> id_counter;
+        std::queue<Tuple> bfs_queue;
 
-    // // find ID that appears the most on the boundary
-    // for (const Tuple& t : get_faces()) {
-    //     if (t.switch_tetrahedron(*this)) {
-    //         // face is interior
-    //         continue;
-    //     }
-    //     // face is boundary
-    //     const int id = m_tet_attribute[t.tid(*this)].part_id;
+        if (!m_edge_attribute[f1.eid(*this)].m_is_surface_fs) {
+            auto oppo_t = f1.switch_face(*this);
+            if (oppo_t.has_value()) {
+                if (visited.find((*oppo_t).fid(*this)) == visited.end()) {
+                    bfs_queue.push(*oppo_t);
+                }
+            }
+        }
+        if (!m_edge_attribute[f2.eid(*this)].m_is_surface_fs) {
+            auto oppo_t = f2.switch_face(*this);
+            if (oppo_t.has_value()) {
+                if (visited.find((*oppo_t).fid(*this)) == visited.end()) {
+                    bfs_queue.push(*oppo_t);
+                }
+            }
+        }
+        if (!m_edge_attribute[f3.eid(*this)].m_is_surface_fs) {
+            auto oppo_t = f3.switch_face(*this);
+            if (oppo_t.has_value()) {
+                if (visited.find((*oppo_t).fid(*this)) == visited.end()) {
+                    bfs_queue.push(*oppo_t);
+                }
+            }
+        }
 
-    //     if (id_counter.count(id) == 0) {
-    //         id_counter[id] = 1;
-    //     } else {
-    //         id_counter[id]++;
-    //     }
-    // }
+        while (!bfs_queue.empty()) {
+            auto tmp = bfs_queue.front();
+            bfs_queue.pop();
+            size_t tmp_id = tmp.fid(*this);
+            if (visited.find(tmp_id) != visited.end()) continue;
 
-    // if (id_counter.size() != 1) {
-    //     logger().warn(
-    //         "There were {} flood fill IDs found at the boundary. Using the one with most "
-    //         "occurances.",
-    //         id_counter.size());
-    // }
+            visited[tmp_id] = true;
 
-    // int best_id = id_counter.begin()->first;
-    // size_t best_count = id_counter.begin()->second;
-    // for (const auto& [id, count] : id_counter) {
-    //     if (count > best_count) {
-    //         best_id = id;
-    //         best_count = count;
-    //     }
-    // }
+            m_face_attribute[tmp_id].part_id = current_id;
 
-    // logger().info("Filter with flood fill ID {}", best_id);
+            const Tuple f_tmp1 = tmp;
+            const Tuple f_tmp2 = tmp.switch_edge(*this);
+            const Tuple f_tmp3 = tmp.switch_vertex(*this).switch_edge(*this);
 
-    // std::vector<size_t> rm_tids;
-    // for (const Tuple& t : get_tets()) {
-    //     const size_t tid = t.tid(*this);
-    //     if (m_tet_attribute[tid].part_id == best_id) {
-    //         rm_tids.emplace_back(tid);
-    //     }
-    // }
+            if (!m_edge_attribute[f_tmp1.eid(*this)].m_is_surface_fs) {
+                auto oppo_t = f_tmp1.switch_face(*this);
+                if (oppo_t.has_value()) {
+                    if (visited.find((*oppo_t).fid(*this)) == visited.end()) {
+                        bfs_queue.push(*oppo_t);
+                    }
+                }
+            }
+            if (!m_edge_attribute[f_tmp2.eid(*this)].m_is_surface_fs) {
+                auto oppo_t = f_tmp2.switch_face(*this);
+                if (oppo_t.has_value()) {
+                    if (visited.find((*oppo_t).fid(*this)) == visited.end()) {
+                        bfs_queue.push(*oppo_t);
+                    }
+                }
+            }
+            if (!m_edge_attribute[f_tmp3.eid(*this)].m_is_surface_fs) {
+                auto oppo_t = f_tmp3.switch_face(*this);
+                if (oppo_t.has_value()) {
+                    if (visited.find((*oppo_t).fid(*this)) == visited.end()) {
+                        bfs_queue.push(*oppo_t);
+                    }
+                }
+            }
+        }
 
-    // remove_tets_by_ids(rm_tids);
+        current_id++;
+    }
+    return current_id;
 }
 
 void TriWildMesh::partition_mesh()
@@ -927,12 +969,23 @@ void TriWildMesh::write_vtu(const std::string& path) const
     Eigen::VectorXd v_sizing_field(vert_capacity());
     v_sizing_field.setZero();
 
-    Eigen::MatrixXd amips(tri_capacity(), 1);
+    std::vector<MatrixXd> tags(m_tags_count, MatrixXd(tri_capacity(), 1));
+    for (size_t j = 0; j < m_tags_count; ++j) {
+        tags[j].setZero();
+    }
+    MatrixXd amips(tri_capacity(), 1);
+    amips.setZero();
+    MatrixXd flood_fill(tri_capacity(), 1);
+    flood_fill.setZero();
 
     int index = 0;
     for (const Tuple& t : faces) {
-        size_t tid = t.fid(*this);
-        amips(index, 0) = m_face_attribute[tid].m_quality;
+        size_t fid = t.fid(*this);
+        amips(index, 0) = m_face_attribute[fid].m_quality;
+        for (size_t j = 0; j < m_tags_count; ++j) {
+            tags[j](index, 0) = m_face_attribute[fid].tags.count(j) ? 1 : 0;
+        }
+        flood_fill(index, 0) = m_face_attribute[fid].part_id;
 
         const auto vs = oriented_tri_vids(t);
         for (size_t j = 0; j < 3; j++) {
@@ -955,7 +1008,11 @@ void TriWildMesh::write_vtu(const std::string& path) const
 
     paraviewo::VTUWriter writer;
 
+    for (size_t j = 0; j < m_tags_count; ++j) {
+        writer.add_cell_field(fmt::format("tag_{}", j), tags[j]);
+    }
     writer.add_cell_field("quality", amips);
+    writer.add_cell_field("flood_fill", flood_fill);
     writer.add_field("sizing_field", v_sizing_field);
     writer.write_mesh(path + ".vtu", V, F, paraviewo::CellType::Triangle);
 
@@ -1024,62 +1081,6 @@ bool TriWildMesh::is_edge_on_bbox(const std::array<size_t, 2>& vids) const
     }
     const auto [_, eid] = tuple_from_edge(vids);
     return m_edge_attribute[eid].m_is_bbox_fs >= 0;
-}
-
-bool TriWildMesh::is_vertex_on_boundary(const size_t e0)
-{
-    log_and_throw_error("TODO: implement is_vertex_on_boundary");
-    // if (!m_vertex_attribute.at(e0).m_is_on_open_boundary) {
-    //     return false;
-    // }
-
-    // const auto neigh_vids = get_one_ring_vids_for_vertex(e0);
-    // const auto e0_tids = get_one_ring_tids_for_vertex(e0);
-
-    // for (const size_t e1 : neigh_vids) {
-    //     if (!m_vertex_attribute.at(e1).m_is_on_open_boundary) {
-    //         continue;
-    //     }
-    //     int cnt = 0;
-    //     for (size_t t_id : e0_tids) {
-    //         const auto vs = oriented_tet_vids(t_id);
-    //         std::array<int, 4> opp_js; // DZ: all vertices that are adjacent to e1 except for e2
-    //         int ii = 0;
-    //         for (int j = 0; j < 4; j++) {
-    //             if (vs[j] == e0 || vs[j] == e1) {
-    //                 continue;
-    //             }
-    //             opp_js[ii++] = j;
-    //         }
-    //         // DZ: if the tet contains e1 and e2, then ii == 2
-    //         if (ii != 2) {
-    //             continue;
-    //         }
-    //         // DZ: opp_js vertices form a tet together with v1,v2
-    //         if (m_vertex_attribute.at(vs[opp_js[0]]).m_is_on_surface) {
-    //             const auto [f0_tup, f0_id] = tuple_from_face({{e0, e1, vs[opp_js[0]]}});
-    //             if (m_face_attribute.at(f0_id).m_is_surface_fs) {
-    //                 cnt++;
-    //             }
-    //         }
-    //         if (m_vertex_attribute.at(vs[opp_js[1]]).m_is_on_surface) {
-    //             const auto [f1_tup, f1_id] = tuple_from_face({{e0, e1, vs[opp_js[1]]}});
-    //             if (m_face_attribute.at(f1_id).m_is_surface_fs) {
-    //                 cnt++;
-    //             }
-    //         }
-    //         if (cnt > 2) {
-    //             break;
-    //         }
-    //     }
-    //     // all faces are visited twice, so cnt == 2 means there is one boundary face
-    //     if (cnt == 2) {
-    //         // this is a boundary edge
-    //         return true;
-    //     }
-    // }
-
-    // return false;
 }
 
 } // namespace wmtk::components::triwild
