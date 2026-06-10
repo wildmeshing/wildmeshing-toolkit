@@ -7,6 +7,7 @@
 // clang-format on
 
 #include <igl/predicates/predicates.h>
+#include <wmtk/utils/Logger.hpp>
 
 
 #include <cassert>
@@ -179,6 +180,95 @@ auto delaunay2D(const std::vector<Point2D>& points)
     }
 
     return {vertices, triangles};
+}
+
+void constrained_delaunay2D(
+    const MatrixXd& V,
+    const MatrixXi& E,
+    MatrixXd& V_out,
+    MatrixXi& F_out,
+    MatrixXi& E_out)
+{
+    if (V.cols() != 2) {
+        log_and_throw_error("Input vertices must be 2D");
+    }
+    if (E.cols() != 2) {
+        log_and_throw_error("Input edges must be 2D");
+    }
+
+    GEO::CDT2d cdt;
+    // GEO::ExactCDT2d cdt;
+    std::vector<GEO::index_t> vertex_ids(V.rows());
+
+    cdt.create_enclosing_rectangle(
+        V.col(0).minCoeff(),
+        V.col(1).minCoeff(),
+        V.col(0).maxCoeff(),
+        V.col(1).maxCoeff());
+
+    for (size_t i = 0; i < V.rows(); ++i) {
+        const GEO::vec2 p(V(i, 0), V(i, 1));
+        const GEO::index_t id = cdt.insert(p);
+        vertex_ids[i] = id;
+    }
+    for (size_t i = 0; i < E.rows(); ++i) {
+        const int v0 = E(i, 0);
+        const int v1 = E(i, 1);
+        if (v0 >= V.rows() || v1 >= V.rows()) {
+            log_and_throw_error("Edge index out of bounds at index {}: {}", i, E.row(i));
+        }
+        cdt.insert_constraint(vertex_ids[v0], vertex_ids[v1]);
+    }
+
+    GEO::index_t nv = cdt.nv();
+    GEO::index_t nt = cdt.nT();
+
+    // get constrained edges
+    std::set<std::pair<int, int>> constrained_edges;
+
+    for (GEO::index_t t = 0; t < nt; ++t) {
+        for (GEO::index_t le = 0; le < 3; ++le) {
+            if (cdt.Tedge_cnstr_first(t, le) == GEO::NO_INDEX) {
+                continue;
+            }
+
+            int a = int(cdt.Tv(t, (le + 1) % 3));
+            int b = int(cdt.Tv(t, (le + 2) % 3));
+
+            if (a > b) {
+                std::swap(a, b);
+            }
+            constrained_edges.insert({a, b});
+        }
+    }
+
+    logger().info("CDT: #V = {}, #F = {}, #E_constrained = {}", nv, nt, constrained_edges.size());
+
+    V_out.resize(nv, 2);
+
+    for (GEO::index_t v = 0; v < nv; ++v) {
+        const GEO::vec2& p = cdt.point(v);
+        V_out(v, 0) = p.x;
+        V_out(v, 1) = p.y;
+    }
+
+    F_out.resize(nt, 3);
+
+    for (GEO::index_t t = 0; t < nt; ++t) {
+        F_out(t, 0) = int(cdt.Tv(t, 0));
+        F_out(t, 1) = int(cdt.Tv(t, 1));
+        F_out(t, 2) = int(cdt.Tv(t, 2));
+    }
+
+    E_out.resize(constrained_edges.size(), 2);
+    {
+        int idx = 0;
+        for (const auto& edge : constrained_edges) {
+            E_out(idx, 0) = edge.first;
+            E_out(idx, 1) = edge.second;
+            ++idx;
+        }
+    }
 }
 
 } // namespace wmtk::delaunay

@@ -47,7 +47,8 @@ std::vector<std::string> input_files{
     "topological_offset_2d_vertex_input.json",
     "topological_offset_3d_edge_input.json",
     "topological_offset_3d.json",
-    "manifold_extraction_3d.json"};
+    "manifold_extraction_3d.json",
+    "triwild_puzzle.json"};
 
 
 nlohmann::json load_json(const path& json_input_file)

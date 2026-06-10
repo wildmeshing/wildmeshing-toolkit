@@ -32,6 +32,7 @@ target_link_libraries(wmtk_tests PUBLIC
     wmtk::data
     Catch2::Catch2WithMain
 )
+add_sanitizers(wmtk_tests) # for detecting memory errors in unit tests
 wmtk_copy_dll(wmtk_tests)
 
 # Register unit tests
@@ -51,6 +52,7 @@ if(WMTK_BUILD_INTEGRATION_TESTS)
         wmtk::data
         Catch2::Catch2WithMain
     )
+    add_sanitizers(wmtk_integration_tests) # for detecting memory errors in integration tests
     wmtk_copy_dll(wmtk_integration_tests)
 
     # Register unit tests

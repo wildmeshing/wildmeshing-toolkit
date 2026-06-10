@@ -1273,7 +1273,6 @@ bool ImageSimulationMeshTri::collapse_edge_before(const Tuple& loc)
 }
 
 bool ImageSimulationMeshTri::collapse_edge_after(const Tuple& loc)
-
 {
     auto& VA = m_vertex_attribute;
     auto& cache = collapse_cache.local();
