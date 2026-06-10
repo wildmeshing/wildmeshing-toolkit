@@ -342,16 +342,6 @@ public:
 
     void init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>& vertices);
 
-    void finalize_triangle_insertion(const std::vector<std::array<size_t, 3>>& faces);
-
-    void init_from_input_surface(
-        const std::vector<Vector3d>& vertices,
-        const std::vector<std::array<size_t, 3>>& faces,
-        const std::vector<size_t>& partition_id);
-    bool triangle_insertion_before(const std::vector<Tuple>& faces) override;
-    bool triangle_insertion_after(const std::vector<std::vector<Tuple>>& new_faces) override;
-
-
 public:
     void split_all_edges();
     bool split_edge_before(const Tuple& t) override;
@@ -442,14 +432,6 @@ private:
     // tags: correspondence map from new tet-face node indices to in-triangle ids.
     // built up while triangles are inserted.
     tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;
-
-    struct TriangleInsertionLocalInfoCache
-    {
-        // local info: for each face insertion
-        int face_id;
-        std::vector<std::array<size_t, 3>> old_face_vids;
-    };
-    tbb::enumerable_thread_specific<TriangleInsertionLocalInfoCache> triangle_insertion_local_cache;
 
     ////// Operations
 

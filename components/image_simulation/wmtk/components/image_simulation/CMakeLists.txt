@@ -25,8 +25,7 @@ set(SRC_FILES
 	EdgeCollapsing.cpp
 	EdgeSwapping.cpp
 	Smooth.cpp
-
-	TriangleInsertion.cpp
+	
 	VolumemesherInsertion.cpp
 
 	image_simulation.hpp
