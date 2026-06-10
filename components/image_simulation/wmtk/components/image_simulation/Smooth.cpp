@@ -111,7 +111,7 @@ bool ImageSimulationMesh::smooth_after(const Tuple& t)
     logger().trace("old pos {} -> new pos {}", old_pos, VA[vid].m_posf);
 
     // check surface containment
-    if (VA[vid].m_is_on_surface && !m_params.smooth_without_envelope) {
+    if (VA[vid].m_is_on_surface) {
         // write_vtu_with_energies(fmt::format("debug_smooth_{}", debug_print_counter++));
         const simplex::SimplexCollection surf_assembles = get_surface_faces_for_vertex(vid);
         for (size_t i = 0; i < surf_assembles.faces().size(); ++i) {
@@ -185,35 +185,6 @@ void ImageSimulationMesh::smooth_all_vertices(const size_t n_iters = 1)
             write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
         }
     }
-
-    // re-build envelope
-    if (m_params.smooth_without_envelope) {
-        logger().warn("Update envelope");
-        MatrixXd V;
-        V.resize(vert_capacity(), 3);
-        V.setZero();
-        for (size_t i = 0; i < vert_capacity(); ++i) {
-            const Tuple v = tuple_from_vertex(i);
-            if (!v.is_valid(*this)) {
-                continue;
-            }
-            const size_t vid = v.vid(*this);
-            V.row(i) = m_vertex_attribute.at(vid).m_posf;
-        }
-
-        const auto surf_faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
-        MatrixXi F;
-        F.resize(surf_faces.size(), 3);
-        for (size_t i = 0; i < surf_faces.size(); ++i) {
-            F.row(i) =
-                Vector3i((int)surf_faces[i][0], (int)surf_faces[i][1], (int)surf_faces[i][2]);
-        }
-
-        m_envelope = nullptr;
-        m_V_envelope.clear();
-        m_F_envelope.clear();
-        init_envelope(V, F);
-    }
 }
 
 std::vector<std::array<double, 12>> ImageSimulationMesh::get_amips_assembles(const Tuple& t) const
@@ -271,8 +242,7 @@ std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMesh::get_envelope
             m_vertex_attribute[vid].m_order);
     }
 
-    auto envelope_energy =
-        std::make_shared<optimization::EnvelopeEnergy3D>(env, w, !m_params.smooth_without_envelope);
+    auto envelope_energy = std::make_shared<optimization::EnvelopeEnergy3D>(env, w);
     return envelope_energy;
 }
 

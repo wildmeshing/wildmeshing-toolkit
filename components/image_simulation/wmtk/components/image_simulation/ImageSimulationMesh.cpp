@@ -632,54 +632,6 @@ void ImageSimulationMesh::write_msh(std::string file, const bool write_envelope)
     });
 
     const auto& tets = get_tets();
-    msh.add_tets(tets.size(), [&](size_t k) {
-        auto i = tets[k].tid(*this);
-        auto vs = oriented_tet_vertices(tets[k]);
-        std::array<size_t, 4> data;
-        for (int j = 0; j < 4; j++) {
-            data[j] = vs[j].vid(*this);
-            assert(data[j] < vtx.size());
-        }
-        return data;
-    });
-
-    msh.add_tet_vertex_attribute<1>("tv index", [&](size_t i) {
-        return m_vertex_attribute[i].m_sizing_scalar;
-    });
-    msh.add_tet_attribute<1>("t energy", [&](size_t i) {
-        return std::cbrt(m_tet_attribute[i].m_quality);
-    });
-
-    for (size_t j = 0; j < m_tags_count; ++j) {
-        msh.add_tet_attribute<1>(fmt::format("tag_{}", j), [&](size_t i) {
-            return m_tet_attribute[i].tags.count(j) ? 1 : 0;
-        });
-    }
-
-    msh.add_physical_group("ImageVolume");
-
-    if (m_envelope && write_envelope) {
-        msh.add_face_vertices(m_V_envelope.size(), [this](size_t k) { return m_V_envelope[k]; });
-        msh.add_faces(m_F_envelope.size(), [this](size_t k) { return m_F_envelope[k]; });
-        msh.add_physical_group("EnvelopeSurface");
-    }
-
-    msh.save(file, true);
-}
-
-void ImageSimulationMesh::write_msh_groups(std::string file, const bool write_envelope)
-{
-    consolidate_mesh();
-
-    wmtk::MshData msh;
-
-    const auto& vtx = get_vertices();
-    msh.add_tet_vertices(vtx.size(), [&](size_t k) {
-        auto i = vtx[k].vid(*this);
-        return m_vertex_attribute[i].m_posf;
-    });
-
-    const auto& tets = get_tets();
 
     int64_t max_tag = -1;
     for (const Tuple& t : tets) {

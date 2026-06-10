@@ -14,59 +14,146 @@
 #include "ImageSimulationMeshTri.hpp"
 #include "Parameters.h"
 #include "expression_parser/Parser.hpp"
-#include "extract_soup.hpp"
 #include "read_image_msh.hpp"
 
 #include "image_simulation_spec.hpp"
 
 namespace wmtk::components::image_simulation {
 
+template <typename MeshT>
+void apply_operation(MeshT& mesh, const nlohmann::json& json_params)
+{
+    static_assert(
+        std::is_same_v<MeshT, ImageSimulationMesh> ||
+            std::is_same_v<MeshT, tri::ImageSimulationMeshTri>,
+        "MeshT must be either ImageSimulationMesh or ImageSimulationMeshTri");
+
+    if constexpr (std::is_same_v<MeshT, ImageSimulationMesh>) {
+        logger().info("Use 3D operation");
+    } else if constexpr (std::is_same_v<MeshT, tri::ImageSimulationMeshTri>) {
+        logger().info("Use 2D operation");
+    }
+
+    const std::string operation = json_params["operation"];
+    if (operation == "remeshing") {
+        if constexpr (std::is_same_v<MeshT, ImageSimulationMesh>) {
+            mesh.set_length_regions(json_params["length_region"]);
+        }
+        mesh.mesh_improvement(json_params["max_iterations"]); // <-- tetwild
+    } else if (operation == "fill_holes_topo") {
+        const std::vector<std::string> fill_holes_tags_names = json_params["fill_holes_tags"];
+        std::vector<CellTag> fill_holes_tags;
+        for (const auto& tag_set_names : fill_holes_tags_names) {
+            // fill_holes_tags.push_back(mesh.string_set_to_cell_tag(tag_set_names));
+            const auto expr = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
+            logger().info("Parsed fill_holes_tags expression: {}", expr->to_string());
+            if (!expr->contains_only_and()) {
+                log_and_throw_error("Only AND operation is allowed in fill_holes_tags expression.");
+            }
+            fill_holes_tags.push_back(expr->tags_involved());
+        }
+        const double raw_threshold = json_params["fill_holes_threshold"];
+        const double threshold =
+            raw_threshold < 0 ? std::numeric_limits<double>::infinity() : raw_threshold;
+        mesh.fill_holes_topo(fill_holes_tags, threshold);
+    } else if (operation == "tight_seal_topo") {
+        // tight_seal_tag_sets is a list of lists: [[t1,t2],[t3,...]]
+        const std::vector<std::vector<std::string>> tag_sets_names =
+            json_params["tight_seal_tag_sets"];
+        std::vector<std::vector<CellTag>> tag_sets;
+        for (const auto& tag_set_names_vec : tag_sets_names) {
+            std::vector<CellTag> tag_set_vec;
+            for (const auto& tag_set_names : tag_set_names_vec) {
+                auto expr = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
+                logger().info("Parsed tight_seal_tag_sets expression: {}", expr->to_string());
+                if (!expr->contains_only_and()) {
+                    log_and_throw_error(
+                        "Only AND operation is allowed in tight_seal_tag_sets expression.");
+                }
+                auto tag_set = expr->tags_involved();
+                tag_set_vec.push_back(tag_set);
+            }
+            tag_sets.push_back(tag_set_vec);
+        }
+        const double raw_threshold = json_params["tight_seal_threshold"];
+        const double threshold =
+            raw_threshold < 0 ? std::numeric_limits<double>::infinity() : raw_threshold;
+        mesh.tight_seal_topo(tag_sets, threshold);
+    } else if (operation == "keep_lcc") {
+        const std::vector<std::string> lcc_tags_names = json_params["keep_lcc_tags"];
+        std::vector<CellTag> lcc_tags;
+        for (const auto& tag_set_names : lcc_tags_names) {
+            auto expr = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
+            logger().info("Parsed keep_lcc_tags expression: {}", expr->to_string());
+            if (!expr->contains_only_and()) {
+                log_and_throw_error("Only AND operation is allowed in keep_lcc_tags expression.");
+            }
+            lcc_tags.push_back(expr->tags_involved());
+        }
+        const size_t n_lcc = json_params["keep_lcc_num"];
+        mesh.keep_largest_connected_component(lcc_tags, n_lcc);
+    } else if (operation == "resolve_intersections") {
+        const std::vector<std::string> tags_names = json_params["resolve_intersections_tags"];
+        std::vector<CellTag> tags;
+        for (const auto& tag_set_names : tags_names) {
+            auto expr = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
+            logger().info("Parsed resolve_intersections_tags expression: {}", expr->to_string());
+            if (!expr->contains_only_and()) {
+                log_and_throw_error(
+                    "Only AND operation is allowed in resolve_intersections_tags expression.");
+            }
+            auto tag_set = expr->tags_involved();
+            if (tag_set.size() != 2) {
+                log_and_throw_error(
+                    "Exactly two tags must be provided in each resolve_intersections_tags "
+                    "expression. Expression '{}' involves {} tags.",
+                    expr->to_string(),
+                    tag_set.size());
+            }
+            tags.push_back(tag_set);
+        }
+        mesh.resolve_intersections(tags);
+    } else if (operation == "replace_tags") {
+        const std::vector<std::string> tags_in_names = json_params["replace_tags_in"];
+        std::vector<CellTag> tags_in;
+        for (const auto& tag_set_names : tags_in_names) {
+            const auto expr_in = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
+            logger().info("Parsed tags_in expression: {}", expr_in->to_string());
+            if (!expr_in->contains_only_and()) {
+                log_and_throw_error("Only AND operation is allowed in replace_tags_in expression.");
+            }
+            tags_in.push_back(expr_in->tags_involved());
+        }
+        const std::string tag_out_name = json_params["replace_tags_out"];
+        const auto expr_out = expression_parser::parse(tag_out_name, mesh.m_tag_name_to_id);
+        logger().info("Parsed replace_tags_out expression: {}", expr_out->to_string());
+        if (!expr_out->contains_only_and()) {
+            log_and_throw_error("Only AND operation is allowed in replace_tags_out expression.");
+        }
+        CellTag tag_out = mesh.string_set_to_cell_tag(expr_out->tag_names_involved());
+        mesh.replace_tags(tags_in, tag_out);
+    } else if (operation == "tag_priority") {
+        const std::vector<std::string> tag_priority_names = json_params["tag_priority"];
+        std::vector<int64_t> tag_priority;
+        for (const auto& tag_name : tag_priority_names) {
+            CellTag tag = mesh.string_set_to_cell_tag({tag_name});
+            tag_priority.push_back(*tag.begin());
+        }
+        mesh.tag_priority(tag_priority);
+    } else {
+        log_and_throw_error("Unknown image simulation operation");
+    }
+}
 
 void run_3D(const nlohmann::json& json_params, const InputData& input_data)
 {
-    using wmtk::utils::resolve_path;
-    using Tuple = TetMesh::Tuple;
-
-    const std::filesystem::path root =
-        json_params.contains("json_input_file") ? json_params["json_input_file"] : "";
-
-    Parameters params;
-    params.output_path = json_params["output"];
-    const bool skip_simplify = json_params["skip_simplify"];
-    const bool use_sample_envelope = json_params["use_sample_envelope"];
-    const int NUM_THREADS = json_params["num_threads"];
-    const int max_its = json_params["max_iterations"];
-
-    params.epsr = json_params["eps_rel"];
-    params.eps = json_params["eps"];
-    params.lr = json_params["length_rel"];
-    params.l = json_params["length"];
-    params.stop_energy = json_params["stop_energy"];
-    params.stop_at_float = json_params["stop_at_float"];
-    params.preserve_topology = json_params["preserve_topology"];
-
-    params.epsr_simplify = json_params["eps_simplify_rel"];
-    params.eps_simplify = json_params["eps_simplify"];
-
-    params.smooth_without_envelope = json_params["smooth_without_envelope"];
-
-    params.w_amips = json_params["w_amips"];
-
-    const bool write_vtu = json_params["write_vtu"];
-
-    params.debug_output = json_params["DEBUG_output"];
-    params.perform_sanity_checks = json_params["DEBUG_sanity_checks"];
-
-    params.operation = json_params["operation"];
-
-    std::filesystem::path output_filename = params.output_path;
-
+    Parameters params(json_params);
     params.init(input_data.V_input.colwise().minCoeff(), input_data.V_input.colwise().maxCoeff());
 
     igl::Timer timer;
     timer.start();
 
-    image_simulation::ImageSimulationMesh mesh(params, params.eps, NUM_THREADS);
+    image_simulation::ImageSimulationMesh mesh(params, params.eps, params.NUM_THREADS);
     // first init envelope
     if (input_data.V_envelope.size() != 0) {
         mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);
@@ -87,10 +174,10 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
             input_data.tag_names);
     }
 
-    auto write_unique_vtu = [&write_vtu, &mesh, &output_filename]() {
+    auto write_unique_vtu = [&params, &mesh]() {
         static size_t vtu_counter = 0;
-        if (write_vtu) {
-            mesh.write_vtu(fmt::format("{}_{}", output_filename.string(), vtu_counter++));
+        if (params.write_vtu) {
+            mesh.write_vtu(fmt::format("{}_{}", params.output_path, vtu_counter++));
         }
     };
 
@@ -99,7 +186,7 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     write_unique_vtu();
 
 
-    if (params.preserve_topology && !skip_simplify) {
+    if (params.preserve_topology && !params.skip_simplify) {
         // collapse for getting the right edge length
         logger().info("Simplify after insertion");
         mesh.simplify();
@@ -111,185 +198,46 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     logger().info("Parsed tags_selection expression: {}", tags_selection_expr->to_string());
 
     // /////////apply operation
-    const std::string operation = params.operation;
-    if (operation == "remeshing") {
-        mesh.set_length_regions(json_params["length_region"]);
-        mesh.mesh_improvement(max_its); // <-- tetwild
-    } else if (operation == "fill_holes_topo") {
-        const std::vector<std::string> fill_holes_tags_names = json_params["fill_holes_tags"];
-        std::vector<CellTag> fill_holes_tags;
-        for (const auto& tag_set_names : fill_holes_tags_names) {
-            // fill_holes_tags.push_back(mesh.string_set_to_cell_tag(tag_set_names));
-            const auto expr = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
-            logger().info("Parsed fill_holes_tags expression: {}", expr->to_string());
-            if (!expr->contains_only_and()) {
-                log_and_throw_error("Only AND operation is allowed in fill_holes_tags expression.");
-            }
-            fill_holes_tags.push_back(expr->tags_involved());
-        }
-        const double raw_threshold = json_params["fill_holes_threshold"];
-        const double threshold =
-            raw_threshold < 0 ? std::numeric_limits<double>::infinity() : raw_threshold;
-        mesh.fill_holes_topo(fill_holes_tags, threshold);
-    } else if (operation == "tight_seal_topo") {
-        // tight_seal_tag_sets is a list of lists: [[t1,t2],[t3,...]]
-        const std::vector<std::vector<std::string>> tag_sets_names =
-            json_params["tight_seal_tag_sets"];
-        std::vector<std::vector<CellTag>> tag_sets;
-        for (const auto& tag_set_names_vec : tag_sets_names) {
-            std::vector<CellTag> tag_set_vec;
-            for (const auto& tag_set_names : tag_set_names_vec) {
-                auto expr = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
-                logger().info("Parsed tight_seal_tag_sets expression: {}", expr->to_string());
-                if (!expr->contains_only_and()) {
-                    log_and_throw_error(
-                        "Only AND operation is allowed in tight_seal_tag_sets expression.");
-                }
-                auto tag_set = expr->tags_involved();
-                tag_set_vec.push_back(tag_set);
-            }
-            tag_sets.push_back(tag_set_vec);
-        }
-        const double raw_threshold = json_params["tight_seal_threshold"];
-        const double threshold =
-            raw_threshold < 0 ? std::numeric_limits<double>::infinity() : raw_threshold;
-        mesh.tight_seal_topo(tag_sets, threshold);
-    } else if (operation == "keep_lcc") {
-        const std::vector<std::string> lcc_tags_names = json_params["keep_lcc_tags"];
-        std::vector<CellTag> lcc_tags;
-        for (const auto& tag_set_names : lcc_tags_names) {
-            auto expr = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
-            logger().info("Parsed keep_lcc_tags expression: {}", expr->to_string());
-            if (!expr->contains_only_and()) {
-                log_and_throw_error("Only AND operation is allowed in keep_lcc_tags expression.");
-            }
-            lcc_tags.push_back(expr->tags_involved());
-        }
-        const size_t n_lcc = json_params["keep_lcc_num"];
-        mesh.keep_largest_connected_component(lcc_tags, n_lcc);
-    } else if (operation == "resolve_intersections") {
-        const std::vector<std::string> tags_names = json_params["resolve_intersections_tags"];
-        std::vector<CellTag> tags;
-        for (const auto& tag_set_names : tags_names) {
-            auto expr = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
-            logger().info("Parsed resolve_intersections_tags expression: {}", expr->to_string());
-            if (!expr->contains_only_and()) {
-                log_and_throw_error(
-                    "Only AND operation is allowed in resolve_intersections_tags expression.");
-            }
-            auto tag_set = expr->tags_involved();
-            if (tag_set.size() != 2) {
-                log_and_throw_error(
-                    "Exactly two tags must be provided in each resolve_intersections_tags "
-                    "expression. Expression '{}' involves {} tags.",
-                    expr->to_string(),
-                    tag_set.size());
-            }
-            tags.push_back(tag_set);
-        }
-        mesh.resolve_intersections(tags);
-    } else if (operation == "replace_tags") {
-        const std::vector<std::string> tags_in_names = json_params["replace_tags_in"];
-        std::vector<CellTag> tags_in;
-        for (const auto& tag_set_names : tags_in_names) {
-            const auto expr_in = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
-            logger().info("Parsed tags_in expression: {}", expr_in->to_string());
-            if (!expr_in->contains_only_and()) {
-                log_and_throw_error("Only AND operation is allowed in replace_tags_in expression.");
-            }
-            tags_in.push_back(expr_in->tags_involved());
-        }
-        const std::string tag_out_name = json_params["replace_tags_out"];
-        const auto expr_out = expression_parser::parse(tag_out_name, mesh.m_tag_name_to_id);
-        logger().info("Parsed replace_tags_out expression: {}", expr_out->to_string());
-        if (!expr_out->contains_only_and()) {
-            log_and_throw_error("Only AND operation is allowed in replace_tags_out expression.");
-        }
-        CellTag tag_out = mesh.string_set_to_cell_tag(expr_out->tag_names_involved());
-        mesh.replace_tags(tags_in, tag_out);
-    } else if (operation == "tag_priority") {
-        const std::vector<std::string> tag_priority_names = json_params["tag_priority"];
-        std::vector<int64_t> tag_priority;
-        for (const auto& tag_name : tag_priority_names) {
-            CellTag tag = mesh.string_set_to_cell_tag({tag_name});
-            tag_priority.push_back(*tag.begin());
-        }
-        mesh.tag_priority(tag_priority);
-    } else {
-        log_and_throw_error("Unknown image simulation operation");
-    }
+    apply_operation(mesh, json_params);
 
     mesh.consolidate_mesh();
     double time = timer.getElapsedTime();
-    wmtk::logger().info("total time {}s", time);
+    logger().info("total time {}s", time);
 
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
-    std::string report_filename = json_params["report"];
-    if (!report_filename.empty()) {
-        std::ofstream fout(report_filename);
-        fout << "#t: " << mesh.tet_size() << std::endl;
-        fout << "#v: " << mesh.vertex_size() << std::endl;
-        fout << "max_energy: " << max_energy << std::endl;
-        fout << "avg_energy: " << avg_energy << std::endl;
-        fout << "eps: " << params.eps << std::endl;
-        fout << "threads: " << NUM_THREADS << std::endl;
-        fout << "time: " << time << std::endl;
+    const std::string report_file = json_params["report"];
+    if (!report_file.empty()) {
+        std::ofstream fout(report_file);
+        nlohmann::json report;
+        report["#t"] = mesh.get_faces().size();
+        report["#v"] = mesh.get_vertices().size();
+        report["max_energy"] = max_energy;
+        report["avg_energy"] = avg_energy;
+        report["eps"] = params.eps;
+        report["threads"] = params.NUM_THREADS;
+        report["time"] = time;
+        fout << std::setw(4) << report;
         fout.close();
     }
 
     logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
-    const bool write_envelope = json_params["write_envelope"];
-    // mesh.write_msh(output_filename.string() + ".msh", write_envelope);
-    mesh.write_msh_groups(output_filename.string() + ".msh", write_envelope);
+    mesh.write_msh(params.output_path + ".msh", params.write_envelope);
     write_unique_vtu();
-    if (write_vtu) {
-        mesh.write_surface(output_filename.string() + "_surface.obj");
+    if (params.write_vtu) {
+        mesh.write_surface(params.output_path + "_surface.obj");
     }
 }
 
 void run_2D(const nlohmann::json& json_params, const InputData& input_data)
 {
-    using wmtk::utils::resolve_path;
-    using Tuple = TetMesh::Tuple;
-
-    const std::filesystem::path root =
-        json_params.contains("json_input_file") ? json_params["json_input_file"] : "";
-
-    Parameters params;
-    params.output_path = json_params["output"];
-    const bool skip_simplify = json_params["skip_simplify"];
-    const bool use_sample_envelope = json_params["use_sample_envelope"];
-    const int NUM_THREADS = json_params["num_threads"];
-    const int max_its = json_params["max_iterations"];
-
-    params.epsr = json_params["eps_rel"];
-    params.eps = json_params["eps"];
-    params.lr = json_params["length_rel"];
-    params.l = json_params["length"];
-    params.stop_energy = json_params["stop_energy"];
-    params.stop_at_float = json_params["stop_at_float"];
-    params.preserve_topology = json_params["preserve_topology"];
-
-    params.smooth_without_envelope = json_params["smooth_without_envelope"];
-
-    params.w_amips = json_params["w_amips"];
-
-    const bool write_vtu = json_params["write_vtu"];
-
-    params.debug_output = json_params["DEBUG_output"];
-    params.perform_sanity_checks = json_params["DEBUG_sanity_checks"];
-
-    params.operation = json_params["operation"];
-
-    std::filesystem::path output_filename = params.output_path;
-
+    Parameters params(json_params);
     params.init(input_data.V_input.colwise().minCoeff(), input_data.V_input.colwise().maxCoeff());
 
     igl::Timer timer;
     timer.start();
 
-    image_simulation::tri::ImageSimulationMeshTri mesh(params, params.eps, NUM_THREADS);
+    image_simulation::tri::ImageSimulationMeshTri mesh(params, params.eps, params.NUM_THREADS);
     // first init envelope
     if (input_data.V_envelope.size() != 0) {
         mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);
@@ -303,155 +251,48 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
         input_data.T_input_tag,
         input_data.tag_names);
 
-    auto write_unique_vtu = [&write_vtu, &mesh, &output_filename]() {
+    auto write_unique_vtu = [&params, &mesh]() {
         static size_t vtu_counter = 0;
-        if (write_vtu) {
-            mesh.write_vtu(fmt::format("{}_{}", output_filename.string(), vtu_counter++));
+        if (params.write_vtu) {
+            mesh.write_vtu(fmt::format("{}_{}", params.output_path, vtu_counter++));
         }
     };
 
     mesh.consolidate_mesh();
-
     write_unique_vtu();
 
     // /////////apply operation
-    const std::string operation = params.operation;
-    if (operation == "remeshing") {
-        mesh.mesh_improvement(max_its); // <-- tetwild
-    } else if (operation == "fill_holes_topo") {
-        const std::vector<std::string> fill_holes_tags_names = json_params["fill_holes_tags"];
-        std::vector<CellTag> fill_holes_tags;
-        for (const auto& tag_set_names : fill_holes_tags_names) {
-            // fill_holes_tags.push_back(mesh.string_set_to_cell_tag(tag_set_names));
-            const auto expr = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
-            logger().info("Parsed fill_holes_tags expression: {}", expr->to_string());
-            if (!expr->contains_only_and()) {
-                log_and_throw_error("Only AND operation is allowed in fill_holes_tags expression.");
-            }
-            fill_holes_tags.push_back(expr->tags_involved());
-        }
-        const double raw_threshold = json_params["fill_holes_threshold"];
-        const double threshold =
-            raw_threshold < 0 ? std::numeric_limits<double>::infinity() : raw_threshold;
-        mesh.fill_holes_topo(fill_holes_tags, threshold);
-    } else if (operation == "tight_seal_topo") {
-        // tight_seal_tag_sets is a list of lists: [[t1,t2],[t3,...]]
-        const std::vector<std::vector<std::string>> tag_sets_names =
-            json_params["tight_seal_tag_sets"];
-        std::vector<std::vector<CellTag>> tag_sets;
-        for (const auto& tag_set_names_vec : tag_sets_names) {
-            std::vector<CellTag> tag_set_vec;
-            for (const auto& tag_set_names : tag_set_names_vec) {
-                auto expr = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
-                logger().info("Parsed tight_seal_tag_sets expression: {}", expr->to_string());
-                if (!expr->contains_only_and()) {
-                    log_and_throw_error(
-                        "Only AND operation is allowed in tight_seal_tag_sets expression.");
-                }
-                auto tag_set = expr->tags_involved();
-                tag_set_vec.push_back(tag_set);
-            }
-            tag_sets.push_back(tag_set_vec);
-        }
-        const double raw_threshold = json_params["tight_seal_threshold"];
-        const double threshold =
-            raw_threshold < 0 ? std::numeric_limits<double>::infinity() : raw_threshold;
-        mesh.tight_seal_topo(tag_sets, threshold);
-    } else if (operation == "keep_lcc") {
-        const std::vector<std::string> lcc_tags_names = json_params["keep_lcc_tags"];
-        std::vector<CellTag> lcc_tags;
-        for (const auto& tag_set_names : lcc_tags_names) {
-            auto expr = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
-            logger().info("Parsed keep_lcc_tags expression: {}", expr->to_string());
-            if (!expr->contains_only_and()) {
-                log_and_throw_error("Only AND operation is allowed in keep_lcc_tags expression.");
-            }
-            lcc_tags.push_back(expr->tags_involved());
-        }
-        const size_t n_lcc = json_params["keep_lcc_num"];
-        mesh.keep_largest_connected_component(lcc_tags, n_lcc);
-    } else if (operation == "resolve_intersections") {
-        const std::vector<std::string> tags_names = json_params["resolve_intersections_tags"];
-        std::vector<CellTag> tags;
-        for (const auto& tag_set_names : tags_names) {
-            auto expr = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
-            logger().info("Parsed resolve_intersections_tags expression: {}", expr->to_string());
-            if (!expr->contains_only_and()) {
-                log_and_throw_error(
-                    "Only AND operation is allowed in resolve_intersections_tags expression.");
-            }
-            auto tag_set = expr->tags_involved();
-            if (tag_set.size() != 2) {
-                log_and_throw_error(
-                    "Exactly two tags must be provided in each resolve_intersections_tags "
-                    "expression. Expression '{}' involves {} tags.",
-                    expr->to_string(),
-                    tag_set.size());
-            }
-            tags.push_back(tag_set);
-        }
-        mesh.resolve_intersections(tags);
-    } else if (operation == "replace_tags") {
-        const std::vector<std::string> tags_in_names = json_params["replace_tags_in"];
-        std::vector<CellTag> tags_in;
-        for (const auto& tag_set_names : tags_in_names) {
-            const auto expr_in = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
-            logger().info("Parsed tags_in expression: {}", expr_in->to_string());
-            if (!expr_in->contains_only_and()) {
-                log_and_throw_error("Only AND operation is allowed in replace_tags_in expression.");
-            }
-            tags_in.push_back(expr_in->tags_involved());
-        }
-        const std::string tag_out_name = json_params["replace_tags_out"];
-        const auto expr_out = expression_parser::parse(tag_out_name, mesh.m_tag_name_to_id);
-        logger().info("Parsed replace_tags_out expression: {}", expr_out->to_string());
-        if (!expr_out->contains_only_and()) {
-            log_and_throw_error("Only AND operation is allowed in replace_tags_out expression.");
-        }
-        CellTag tag_out = mesh.string_set_to_cell_tag(expr_out->tag_names_involved());
-        mesh.replace_tags(tags_in, tag_out);
-    } else if (operation == "tag_priority") {
-        const std::vector<std::string> tag_priority_names = json_params["tag_priority"];
-        std::vector<int64_t> tag_priority;
-        for (const auto& tag_name : tag_priority_names) {
-            CellTag tag = mesh.string_set_to_cell_tag({tag_name});
-            tag_priority.push_back(*tag.begin());
-        }
-        mesh.tag_priority(tag_priority);
-    } else {
-        log_and_throw_error("Unknown image simulation operation");
-    }
+    apply_operation(mesh, json_params);
 
     mesh.consolidate_mesh();
     double time = timer.getElapsedTime();
-    wmtk::logger().info("total time {}s", time);
+    logger().info("total time {}s", time);
 
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
-    std::string report_filename = json_params["report"];
-    if (!report_filename.empty()) {
-        std::ofstream fout(report_filename);
-        fout << "#t: " << mesh.get_faces().size() << std::endl;
-        fout << "#v: " << mesh.get_vertices().size() << std::endl;
-        fout << "max_energy: " << max_energy << std::endl;
-        fout << "avg_energy: " << avg_energy << std::endl;
-        fout << "eps: " << params.eps << std::endl;
-        fout << "threads: " << NUM_THREADS << std::endl;
-        fout << "time: " << time << std::endl;
+    const std::string report_file = json_params["report"];
+    if (!report_file.empty()) {
+        std::ofstream fout(report_file);
+        nlohmann::json report;
+        report["#t"] = mesh.get_faces().size();
+        report["#v"] = mesh.get_vertices().size();
+        report["max_energy"] = max_energy;
+        report["avg_energy"] = avg_energy;
+        report["eps"] = params.eps;
+        report["threads"] = params.NUM_THREADS;
+        report["time"] = time;
+        fout << std::setw(4) << report;
         fout.close();
     }
 
-    wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
-    const bool write_envelope = json_params["write_envelope"];
-    // mesh.write_msh(output_filename.string() + ".msh", write_envelope);
-    mesh.write_msh_groups(output_filename.string() + ".msh", write_envelope);
+    logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
+    mesh.write_msh(params.output_path + ".msh", params.write_envelope);
     write_unique_vtu();
 }
 
 void image_simulation(nlohmann::json json_params)
 {
     using wmtk::utils::resolve_path;
-    using Tuple = TetMesh::Tuple;
 
     // verify input and inject defaults
     {
@@ -502,8 +343,6 @@ void image_simulation(nlohmann::json json_params)
     std::string extension = std::filesystem::path(input_paths[0]).extension().string();
     if (extension == ".msh") {
         input_data = read_image_msh(input_paths[0]);
-    } else if (extension == ".raw") {
-        input_data = read_image(input_paths, output_filename.string(), json_params);
     } else {
         input_data = read_mesh(input_paths, output_filename.string(), json_params);
     }
@@ -513,7 +352,7 @@ void image_simulation(nlohmann::json json_params)
     } else {
         run_2D(json_params, input_data);
     }
-    wmtk::logger().info("======= finish =========");
+    logger().info("======= finish =========");
 }
 
 } // namespace wmtk::components::image_simulation

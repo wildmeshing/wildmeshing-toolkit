@@ -13,9 +13,6 @@ set(SRC_FILES
     ImageSimulationMesh.cpp
 	ImageSimulationMesh.h
 
-	extract_soup.hpp
-	extract_soup.cpp
-
 	EmbedSurface.hpp
 	EmbedSurface.cpp
 
@@ -54,7 +51,6 @@ target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC
 	wmtk::shortest_edge_collapse
 	VolumeRemesher::VolumeRemesher
 	jse::jse
-	igl_copyleft::tetgen
 )
 
 ######################
