@@ -1259,7 +1259,7 @@ bool EmbedSurface::embed_surface_tetgen()
 
     m_V_emb_r.resizeLike(m_V_emb);
     for (int i = 0; i < m_V_emb.rows(); ++i) {
-        m_V_emb_r.row(i) = to_rational(m_V_emb.row(i));
+        m_V_emb_r.row(i) = to_rational(Vector3d(m_V_emb.row(i)));
     }
 
     // add tags
