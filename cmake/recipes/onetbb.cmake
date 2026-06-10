@@ -18,11 +18,8 @@ message(STATUS "Third-party (external): creating targets 'TBB::tbb'")
 include(FetchContent)
 FetchContent_Declare(
     tbb
-    URL https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.6.0-rc1.zip
-    URL_HASH MD5=88f1dd24a1e393e66d7a851de6e8dc0c
-    # someday it would be nice to update tbb a bit more
-    #    URL https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.7.0.zip
-    #    URL_HASH MD5=011557fa6b7ff1b70345ef39de4ff4ad
+    URL https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.12.0.zip
+    URL_HASH MD5=0919a8eda74333e1aafa8d602bb9cc90
 )
 
 option(TBB_TEST "Enable testing" OFF)
@@ -58,5 +55,12 @@ foreach(name IN ITEMS tbb tbbmalloc tbbmalloc_proxy)
         # Without this macro, TBB will explicitly link against "tbb12_debug.lib" in Debug configs.
         # This is undesirable, since our pre-compiled version of MKL is linked against "tbb12.dll".
         target_compile_definitions(${name} PUBLIC -D__TBB_NO_IMPLICIT_LINKAGE=1)
+
+        # following https://github.com/Oneflow-Inc/oneflow/pull/10236 because the current fix in 
+        # https://github.com/oneapi-src/oneTBB/issues/843 seems to not be fully solved
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12)
+            target_compile_options(${name} PRIVATE "-Wno-error=stringop-overflow")
+        endif()
+
     endif()
 endforeach()

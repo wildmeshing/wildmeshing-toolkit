@@ -6,9 +6,9 @@
 
 #include <tbb/parallel_for.h>
 
-#include <tracy/Tracy.hpp>
+namespace wmtk {
 
-int wmtk::TetMesh::get_next_empty_slot_t()
+int TetMesh::get_next_empty_slot_t()
 {
     while (current_tet_size + MAX_THREADS >= m_tet_connectivity.size() ||
            tet_connectivity_synchronizing_flag) {
@@ -41,7 +41,7 @@ int wmtk::TetMesh::get_next_empty_slot_t()
     return new_idx;
 }
 
-int wmtk::TetMesh::get_next_empty_slot_v()
+int TetMesh::get_next_empty_slot_v()
 {
     while (current_vert_size + MAX_THREADS >= m_vertex_connectivity.size() ||
            vertex_connectivity_synchronizing_flag) {
@@ -66,7 +66,7 @@ int wmtk::TetMesh::get_next_empty_slot_v()
     return current_vert_size++;
 }
 
-wmtk::TetMesh::TetMesh()
+TetMesh::TetMesh()
 {
     // p_vertex_attrs = &vertex_attrs;
     // p_edge_attrs = &edge_attrs;
@@ -74,12 +74,12 @@ wmtk::TetMesh::TetMesh()
     // p_tet_attrs = &tet_attrs;
 }
 
-void wmtk::TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& tets)
+void TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& tets)
 {
     m_vertex_connectivity.resize(n_vertices);
     m_tet_connectivity.resize(tets.size());
-    current_vert_size = n_vertices;
-    current_tet_size = tets.size();
+    current_vert_size = (long)n_vertices;
+    current_tet_size = (long)tets.size();
     for (int i = 0; i < tets.size(); i++) {
         m_tet_connectivity[i].m_indices = tets[i];
         for (int j = 0; j < 4; j++) {
@@ -92,28 +92,30 @@ void wmtk::TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t,
     m_vertex_mutex.grow_to_at_least(n_vertices);
 
     // resize attributes
-    if (p_vertex_attrs) {
+    if (p_vertex_attrs != nullptr) {
         p_vertex_attrs->resize(n_vertices);
     }
-    if (p_tet_attrs) {
+    if (p_tet_attrs != nullptr) {
         p_tet_attrs->resize(tets.size());
     }
-    if (p_face_attrs) {
+    if (p_face_attrs != nullptr) {
         p_face_attrs->resize(4 * tets.size());
     }
-    if (p_edge_attrs) {
+    if (p_edge_attrs != nullptr) {
         p_edge_attrs->resize(6 * tets.size());
     }
 }
 
-void wmtk::TetMesh::init_with_isolated_vertices(
+void TetMesh::init_with_isolated_vertices(
     size_t n_vertices,
     const std::vector<std::array<size_t, 4>>& tets)
 {
+    m_vertex_connectivity.clear();
     m_vertex_connectivity.resize(n_vertices);
+    m_tet_connectivity.clear();
     m_tet_connectivity.resize(tets.size());
-    current_vert_size = n_vertices;
-    current_tet_size = tets.size();
+    current_vert_size = (long)n_vertices;
+    current_tet_size = (long)tets.size();
     for (size_t i = 0; i < tets.size(); i++) {
         m_tet_connectivity[i].m_indices = tets[i];
         for (int j = 0; j < 4; j++) {
@@ -133,20 +135,24 @@ void wmtk::TetMesh::init_with_isolated_vertices(
 
     // resize attributes
     if (p_vertex_attrs) {
+        p_vertex_attrs->clear();
         p_vertex_attrs->resize(n_vertices);
     }
     if (p_tet_attrs) {
+        p_tet_attrs->clear();
         p_tet_attrs->resize(tets.size());
     }
     if (p_face_attrs) {
+        p_face_attrs->clear();
         p_face_attrs->resize(4 * tets.size());
     }
     if (p_edge_attrs) {
+        p_edge_attrs->clear();
         p_edge_attrs->resize(6 * tets.size());
     }
 }
 
-void wmtk::TetMesh::init(const MatrixXi& T)
+void TetMesh::init(const MatrixXi& T)
 {
     size_t n_vertices = T.maxCoeff() + 1;
 
@@ -159,13 +165,12 @@ void wmtk::TetMesh::init(const MatrixXi& T)
         }
     }
 
-    TetMesh::init(n_vertices, tets);
+    TetMesh::init_with_isolated_vertices(n_vertices, tets);
 }
 
 
-std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_edges() const
+std::vector<TetMesh::Tuple> TetMesh::get_edges() const
 {
-    ZoneScoped;
     std::vector<std::tuple<size_t, size_t, TetMesh::Tuple>> edges;
     edges.reserve(tet_capacity() * 6);
     for (int i = 0; i < tet_capacity(); i++) {
@@ -197,7 +202,7 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_edges() const
 }
 
 
-void wmtk::TetMesh::for_each_face(const std::function<void(const TetMesh::Tuple&)>& func)
+void TetMesh::for_each_face(const std::function<void(const TetMesh::Tuple&)>& func)
 {
     for (int i = 0; i < tet_capacity(); i++) {
         if (!tuple_from_tet(i).is_valid(*this)) continue;
@@ -211,7 +216,7 @@ void wmtk::TetMesh::for_each_face(const std::function<void(const TetMesh::Tuple&
 }
 
 
-std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_faces() const
+std::vector<TetMesh::Tuple> TetMesh::get_faces() const
 {
     auto faces = std::vector<TetMesh::Tuple>();
     for (int i = 0; i < tet_capacity(); i++) {
@@ -226,7 +231,7 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_faces() const
 }
 
 
-bool wmtk::TetMesh::check_mesh_connectivity_validity() const
+bool TetMesh::check_mesh_connectivity_validity() const
 {
     std::vector<std::vector<size_t>> conn_tets(vert_capacity());
     for (size_t i = 0; i < tet_capacity(); i++) {
@@ -258,7 +263,7 @@ bool wmtk::TetMesh::check_mesh_connectivity_validity() const
     }
     for (size_t i = 0; i < vert_capacity(); i++) {
         if (m_vertex_connectivity[i].m_is_removed) continue;
-        for (int tid : m_vertex_connectivity[i].m_conn_tets)
+        for (size_t tid : m_vertex_connectivity[i].m_conn_tets)
             assert(!m_tet_connectivity[tid].m_is_removed && "m_tet_connectivity[tid].m_is_removed");
     }
 
@@ -300,7 +305,7 @@ bool wmtk::TetMesh::check_mesh_connectivity_validity() const
 }
 
 
-std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_tets() const
+std::vector<TetMesh::Tuple> TetMesh::get_tets() const
 {
     std::vector<TetMesh::Tuple> tets;
     for (auto i = 0; i < tet_capacity(); i++) {
@@ -315,7 +320,7 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_tets() const
 }
 
 
-std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_vertices() const
+std::vector<TetMesh::Tuple> TetMesh::get_vertices() const
 {
     std::vector<TetMesh::Tuple> verts;
     for (auto i = 0; i < vert_capacity(); i++) {
@@ -331,7 +336,7 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_vertices() const
     return verts;
 }
 
-bool wmtk::TetMesh::smooth_vertex(const Tuple& loc0)
+bool TetMesh::smooth_vertex(const Tuple& loc0)
 {
     if (!smooth_before(loc0)) return false;
     start_protect_attributes();
@@ -345,22 +350,22 @@ bool wmtk::TetMesh::smooth_vertex(const Tuple& loc0)
 }
 
 
-wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_edge(size_t tid, int local_eid) const
+TetMesh::Tuple TetMesh::tuple_from_edge(size_t tid, int local_eid) const
 {
     assert(tid < tet_capacity());
     assert(local_eid >= 0 && local_eid < m_local_edges.size());
 
-    int vid = m_tet_connectivity[tid][m_local_edges[local_eid][0]];
-    int fid = m_map_edge2face[local_eid];
+    size_t vid = m_tet_connectivity[tid][m_local_edges[local_eid][0]];
+    size_t fid = m_map_edge2face[local_eid];
     return Tuple(*this, vid, local_eid, fid, tid);
 }
 
-wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_face(size_t tid, int local_fid) const
+TetMesh::Tuple TetMesh::tuple_from_face(size_t tid, int local_fid) const
 {
     assert(tid < tet_capacity());
     assert(local_fid >= 0 && local_fid < m_local_faces.size());
 
-    int vid = m_tet_connectivity[tid][m_local_faces[local_fid][0]];
+    size_t vid = m_tet_connectivity[tid][m_local_faces[local_fid][0]];
     int lvid1 = m_local_faces[local_fid][0];
     int lvid2 = m_local_faces[local_fid][1];
     int eid = -1;
@@ -375,25 +380,110 @@ wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_face(size_t tid, int local_fid) c
     return Tuple(*this, vid, eid, local_fid, tid);
 }
 
-std::tuple<wmtk::TetMesh::Tuple, size_t> wmtk::TetMesh::tuple_from_face(
-    const std::array<size_t, 3>& vids) const
+std::tuple<TetMesh::Tuple, size_t> TetMesh::tuple_from_face(const std::array<size_t, 3>& vids) const
 {
-    auto tmp = set_intersection(
-        m_vertex_connectivity[vids[0]].m_conn_tets,
-        m_vertex_connectivity[vids[1]].m_conn_tets);
-    auto n12_t_ids = set_intersection(tmp, m_vertex_connectivity[vids[2]].m_conn_tets);
-    if (n12_t_ids.size() == 0 || n12_t_ids.size() > 2) {
-        return {Tuple(), -1};
+    size_t v0_id = vids[0];
+    size_t v1_id = vids[1];
+    size_t v2_id = vids[2];
+
+    size_t global_tid = std::numeric_limits<size_t>::max();
+
+    // find lowest common tet id
+    {
+        const auto& t0 = m_vertex_connectivity[v0_id].m_conn_tets;
+        const auto& t1 = m_vertex_connectivity[v1_id].m_conn_tets;
+        const auto& t2 = m_vertex_connectivity[v2_id].m_conn_tets;
+        size_t i0 = 0;
+        size_t i1 = 0;
+        size_t i2 = 0;
+
+        if (t0.empty() || t1.empty() || t2.empty()) {
+            return {Tuple(), -1};
+        }
+
+        while (true) {
+            if (t0[i0] < t1[i1] || t0[i0] < t2[i2]) {
+                i0++;
+                if (i0 == t0.size()) {
+                    return {Tuple(), -1};
+                }
+            }
+            if (t1[i1] < t2[i2] || t1[i1] < t0[i0]) {
+                i1++;
+                if (i1 == t1.size()) {
+                    return {Tuple(), -1};
+                }
+            }
+            if (t2[i2] < t0[i0] || t2[i2] < t1[i1]) {
+                i2++;
+                if (i2 == t2.size()) {
+                    return {Tuple(), -1};
+                }
+            }
+            if (t0[i0] == t1[i1] && t0[i0] == t2[i2]) {
+                global_tid = t0[i0];
+                break;
+            }
+        }
     }
+
+    //// alternative implementation but slower
+    //{
+    //    // make v0 the one with the fewest incident tets
+    //    if (m_vertex_connectivity[v1_id].m_conn_tets.size() <
+    //        m_vertex_connectivity[v0_id].m_conn_tets.size()) {
+    //        std::swap(v0_id, v1_id);
+    //    }
+    //    if (m_vertex_connectivity[v2_id].m_conn_tets.size() <
+    //        m_vertex_connectivity[v0_id].m_conn_tets.size()) {
+    //        std::swap(v0_id, v2_id);
+    //    }
+    //
+    //    for (const size_t tid : m_vertex_connectivity[v0_id].m_conn_tets) {
+    //        bool v1_found = false;
+    //        bool v2_found = false;
+    //        for (const size_t vid : m_tet_connectivity[tid].m_indices) {
+    //            if (vid == v1_id) {
+    //                v1_found = true;
+    //                if (v2_found) {
+    //                    break;
+    //                }
+    //            }
+    //            if (vid == v2_id) {
+    //                v2_found = true;
+    //                if (v1_found) {
+    //                    break;
+    //                }
+    //            }
+    //        }
+    //        if (v1_found && v2_found) {
+    //            // global_tid = std::min(global_tid, tid);
+    //            global_tid = tid;
+    //            break;
+    //        }
+    //    }
+    //
+    //    if (global_tid == std::numeric_limits<size_t>::max()) {
+    //        return {Tuple(), -1};
+    //    }
+    //}
 
     // tid
     Tuple face;
-    face.m_global_tid = n12_t_ids[0];
-    if (n12_t_ids.size() > 1 && n12_t_ids[1] < n12_t_ids[0]) face.m_global_tid = n12_t_ids[1];
+    face.m_global_tid = global_tid;
     // fid
     std::array<int, 3> f;
-    for (int j = 0; j < 3; j++) {
-        f[j] = m_tet_connectivity[face.m_global_tid].find(vids[j]);
+    // for (int j = 0; j < 3; j++) {
+    //     f[j] = m_tet_connectivity[face.m_global_tid].find(vids[j]);
+    // }
+    {
+        const auto& vs = m_tet_connectivity[face.m_global_tid];
+        int k = 0;
+        for (int j = 0; j < 4; ++j) {
+            if (vs[j] == vids[0] || vs[j] == vids[1] || vs[j] == vids[2]) {
+                f[k++] = j;
+            }
+        }
     }
     std::sort(f.begin(), f.end());
     face.m_local_fid =
@@ -411,9 +501,49 @@ std::tuple<wmtk::TetMesh::Tuple, size_t> wmtk::TetMesh::tuple_from_face(
     assert(face.fid(*this) == global_fid);
 
     return std::make_tuple(face, global_fid);
+
+    // auto tmp = set_intersection(
+    //     m_vertex_connectivity[vids[0]].m_conn_tets,
+    //     m_vertex_connectivity[vids[1]].m_conn_tets);
+    // auto n12_t_ids = set_intersection(tmp, m_vertex_connectivity[vids[2]].m_conn_tets);
+    // if (n12_t_ids.size() == 0 || n12_t_ids.size() > 2) {
+    //     return {Tuple(), -1};
+    // }
+
+    //// tid
+    // Tuple face;
+    // face.m_global_tid = n12_t_ids[0];
+    // if (n12_t_ids.size() > 1 && n12_t_ids[1] < n12_t_ids[0]) face.m_global_tid = n12_t_ids[1];
+    //// fid
+    // std::array<int, 3> f;
+    // for (int j = 0; j < 3; j++) {
+    //     f[j] = m_tet_connectivity[face.m_global_tid].find(vids[j]);
+    // }
+    // std::sort(f.begin(), f.end());
+    // face.m_local_fid =
+    //     std::find(m_local_faces.begin(), m_local_faces.end(), f) - m_local_faces.begin();
+    //// eid
+    // face.m_local_eid = m_local_edges_in_a_face[face.m_local_fid][0];
+    //// vid
+    // face.m_global_vid =
+    // m_tet_connectivity[face.m_global_tid][m_local_edges[face.m_local_eid][0]];
+
+    // size_t global_fid = face.m_global_tid * 4 + face.m_local_fid;
+
+    // face.m_hash = m_tet_connectivity[face.m_global_tid].hash;
+
+    // assert(face.is_valid(*this));
+    // assert(face.fid(*this) == global_fid);
+
+    // return std::make_tuple(face, global_fid);
 }
 
-wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_edge(const std::array<size_t, 2>& vids) const
+std::tuple<TetMesh::Tuple, size_t> TetMesh::tuple_from_face(const simplex::Face& f) const
+{
+    return tuple_from_face(f.vertices());
+}
+
+TetMesh::Tuple TetMesh::tuple_from_edge(const std::array<size_t, 2>& vids) const
 {
     auto tets = set_intersection(
         m_vertex_connectivity[vids[0]].m_conn_tets,
@@ -434,13 +564,12 @@ wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_edge(const std::array<size_t, 2>&
 }
 
 
-wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_vertex(size_t vid) const
+TetMesh::Tuple TetMesh::tuple_from_vertex(size_t vid) const
 {
     assert(vid < vert_capacity());
     if (m_vertex_connectivity[vid].m_is_removed) return Tuple();
 
-    if (m_vertex_connectivity[vid].m_is_removed) return Tuple();
-    int tid = m_vertex_connectivity[vid].m_conn_tets[0];
+    size_t tid = m_vertex_connectivity[vid].m_conn_tets[0];
     int j = m_tet_connectivity[tid].find(vid);
     int eid = m_map_vertex2edge[j];
     int fid = m_map_edge2face[eid];
@@ -448,19 +577,71 @@ wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_vertex(size_t vid) const
     return Tuple(*this, vid, eid, fid, tid);
 }
 
-wmtk::TetMesh::Tuple wmtk::TetMesh::tuple_from_tet(size_t tid) const
+TetMesh::Tuple TetMesh::tuple_from_tet(size_t tid) const
 {
     assert(tid < tet_capacity());
     if (m_tet_connectivity[tid].m_is_removed) return Tuple();
 
-    int vid = m_tet_connectivity[tid][0];
+    size_t vid = m_tet_connectivity[tid][0];
     int eid = m_map_vertex2edge[0];
     int fid = m_map_edge2face[eid];
     return Tuple(*this, vid, eid, fid, tid);
 }
 
+TetMesh::Tuple TetMesh::tuple_from_vids(size_t vid0, size_t vid1, size_t vid2, size_t vid3) const
+{
+    const auto& vf0 = m_vertex_connectivity[vid0];
+    const auto& vf1 = m_vertex_connectivity[vid1];
+    const auto& vf2 = m_vertex_connectivity[vid2];
+    const auto& vf3 = m_vertex_connectivity[vid3];
 
-std::array<wmtk::TetMesh::Tuple, 4> wmtk::TetMesh::oriented_tet_vertices(const Tuple& t) const
+    const std::vector<size_t> tets01 = set_intersection(vf0.m_conn_tets, vf1.m_conn_tets);
+    const std::vector<size_t> tets012 = set_intersection(tets01, vf2.m_conn_tets);
+    const std::vector<size_t> tets0123 = set_intersection(tets012, vf3.m_conn_tets);
+
+    if (tets0123.size() != 1) {
+        log_and_throw_error("Cannot find tet with vids ({},{},{},{})", vid0, vid1, vid2, vid3);
+    }
+
+    const size_t tid = tets0123[0];
+
+    const auto& tc = m_tet_connectivity[tid].m_indices;
+    size_t local_vid = -1;
+    for (int i = 0; i < 4; ++i) {
+        if (tc[i] == vid0) {
+            local_vid = i;
+            break;
+        }
+    }
+    assert(local_vid != -1);
+
+    const size_t eid = m_tet_connectivity[tid].find_local_edge(vid0, vid1);
+    const size_t fid = m_tet_connectivity[tid].find_local_face(vid0, vid1, vid2);
+
+    return Tuple(*this, vid0, eid, fid, tid);
+}
+
+simplex::Tet TetMesh::simplex_from_tet(const Tuple& t) const
+{
+    return simplex_from_tet(t.tid(*this));
+}
+
+simplex::Tet TetMesh::simplex_from_tet(const size_t tid) const
+{
+    const auto v = oriented_tet_vids(tid);
+    const simplex::Tet tet(v[0], v[1], v[2], v[3]);
+    return tet;
+}
+
+simplex::Edge TetMesh::simplex_from_edge(const Tuple& t) const
+{
+    size_t v0 = t.vid(*this);
+    size_t v1 = t.switch_vertex(*this).vid(*this);
+    return simplex::Edge(v0, v1);
+}
+
+
+std::array<TetMesh::Tuple, 4> TetMesh::oriented_tet_vertices(const Tuple& t) const
 {
     std::array<Tuple, 4> vs;
     for (int j = 0; j < 4; j++) {
@@ -472,16 +653,17 @@ std::array<wmtk::TetMesh::Tuple, 4> wmtk::TetMesh::oriented_tet_vertices(const T
     return vs;
 }
 
-std::array<size_t, 4> wmtk::TetMesh::oriented_tet_vids(const Tuple& t) const
+std::array<size_t, 4> TetMesh::oriented_tet_vids(const Tuple& t) const
 {
-    std::array<size_t, 4> vs;
-    for (int j = 0; j < 4; j++) {
-        vs[j] = m_tet_connectivity[t.m_global_tid][j];
-    }
-    return vs;
+    return oriented_tet_vids(t.m_global_tid);
 }
 
-std::array<wmtk::TetMesh::Tuple, 3> wmtk::TetMesh::get_face_vertices(const Tuple& t) const
+std::array<size_t, 4> TetMesh::oriented_tet_vids(const size_t tid) const
+{
+    return m_tet_connectivity[tid].m_indices;
+}
+
+std::array<TetMesh::Tuple, 3> TetMesh::get_face_vertices(const Tuple& t) const
 {
     std::array<Tuple, 3> vs;
     vs[0] = t;
@@ -490,7 +672,16 @@ std::array<wmtk::TetMesh::Tuple, 3> wmtk::TetMesh::get_face_vertices(const Tuple
     return vs;
 }
 
-std::array<wmtk::TetMesh::Tuple, 6> wmtk::TetMesh::tet_edges(const Tuple& t) const
+std::array<size_t, 3> TetMesh::get_face_vids(const Tuple& t) const
+{
+    std::array<size_t, 3> vs;
+    vs[0] = t.vid(*this);
+    vs[1] = t.switch_vertex(*this).vid(*this);
+    vs[2] = t.switch_edge(*this).switch_vertex(*this).vid(*this);
+    return vs;
+}
+
+std::array<TetMesh::Tuple, 6> TetMesh::tet_edges(const Tuple& t) const
 {
     std::array<Tuple, 6> es;
     for (int j = 0; j < 6; j++) {
@@ -503,18 +694,18 @@ std::array<wmtk::TetMesh::Tuple, 6> wmtk::TetMesh::tet_edges(const Tuple& t) con
     return es;
 }
 
-std::vector<size_t> wmtk::TetMesh::get_one_ring_tids_for_vertex(const Tuple& t) const
+std::vector<size_t> TetMesh::get_one_ring_tids_for_vertex(const Tuple& t) const
 {
-    std::vector<size_t> tets;
-    tets.reserve(m_vertex_connectivity[t.m_global_vid].m_conn_tets.size());
-    for (int t_id : m_vertex_connectivity[t.m_global_vid].m_conn_tets) {
-        tets.emplace_back(t_id);
-    }
-    return tets;
+    return get_one_ring_tids_for_vertex(t.m_global_vid);
+}
+
+std::vector<size_t> TetMesh::get_one_ring_tids_for_vertex(const size_t vid) const
+{
+    return m_vertex_connectivity[vid].m_conn_tets;
 }
 
 
-std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_one_ring_tets_for_vertex(const Tuple& t) const
+std::vector<TetMesh::Tuple> TetMesh::get_one_ring_tets_for_vertex(const Tuple& t) const
 {
     std::vector<Tuple> tets;
     auto& tids = m_vertex_connectivity[t.m_global_vid].m_conn_tets;
@@ -525,12 +716,11 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_one_ring_tets_for_vertex(co
     return tets;
 }
 
-std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_one_ring_vertices_for_vertex(
-    const Tuple& t) const
+std::vector<TetMesh::Tuple> TetMesh::get_one_ring_vertices_for_vertex(const Tuple& t) const
 {
     std::vector<size_t> v_ids;
-    for (int t_id : m_vertex_connectivity[t.m_global_vid].m_conn_tets) {
-        for (int j = 0; j < 4; j++) {
+    for (size_t t_id : m_vertex_connectivity[t.m_global_vid].m_conn_tets) {
+        for (size_t j = 0; j < 4; j++) {
             v_ids.push_back(m_tet_connectivity[t_id][j]);
         }
     }
@@ -543,13 +733,12 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_one_ring_vertices_for_verte
     return vertices;
 }
 
-std::vector<size_t> wmtk::TetMesh::get_one_ring_vids_for_vertex(size_t vid) const
+std::vector<size_t> TetMesh::get_one_ring_vids_for_vertex(size_t vid) const
 {
-    ZoneScoped;
     std::vector<size_t> v_ids;
     v_ids.reserve(m_vertex_connectivity[vid].m_conn_tets.size() * 4);
-    for (int t_id : m_vertex_connectivity[vid].m_conn_tets) {
-        for (int j = 0; j < 4; j++) {
+    for (size_t t_id : m_vertex_connectivity[vid].m_conn_tets) {
+        for (size_t j = 0; j < 4; j++) {
             v_ids.push_back(m_tet_connectivity[t_id][j]);
         }
     }
@@ -558,13 +747,12 @@ std::vector<size_t> wmtk::TetMesh::get_one_ring_vids_for_vertex(size_t vid) cons
     return v_ids;
 }
 
-std::vector<size_t> wmtk::TetMesh::get_one_ring_vids_for_vertex_adj(size_t vid) const
+std::vector<size_t> TetMesh::get_one_ring_vids_for_vertex_adj(size_t vid) const
 {
-    ZoneScoped;
     std::vector<size_t> v_ids;
     v_ids.reserve(m_vertex_connectivity[vid].m_conn_tets.size() * 4);
-    for (int t_id : m_vertex_connectivity[vid].m_conn_tets) {
-        for (int j = 0; j < 4; j++) {
+    for (size_t t_id : m_vertex_connectivity[vid].m_conn_tets) {
+        for (size_t j = 0; j < 4; j++) {
             v_ids.push_back(m_tet_connectivity[t_id][j]);
         }
     }
@@ -573,52 +761,69 @@ std::vector<size_t> wmtk::TetMesh::get_one_ring_vids_for_vertex_adj(size_t vid) 
     return v_ids;
 }
 
-std::vector<size_t> wmtk::TetMesh::get_one_ring_vids_for_vertex(
-    size_t vid,
-    std::vector<size_t>& cache)
+std::vector<size_t> TetMesh::get_one_ring_vids_for_vertex(size_t vid, std::vector<size_t>& cache)
 {
     cache.clear();
-    for (int t_id : m_vertex_connectivity[vid].m_conn_tets) {
-        for (int j = 0; j < 4; j++) {
+    for (size_t t_id : m_vertex_connectivity[vid].m_conn_tets) {
+        for (size_t j = 0; j < 4; j++) {
             cache.push_back(m_tet_connectivity[t_id][j]);
         }
     }
     return cache;
 }
 
-std::vector<size_t> wmtk::TetMesh::get_one_ring_vids_for_vertex_adj(
+std::vector<size_t> TetMesh::get_one_ring_vids_for_vertex_adj(
     size_t vid,
     std::vector<size_t>& cache)
 {
-    ZoneScoped;
     cache.clear();
-    for (int t_id : m_vertex_connectivity[vid].m_conn_tets) {
-        for (int j = 0; j < 4; j++) {
+    for (size_t t_id : m_vertex_connectivity[vid].m_conn_tets) {
+        for (size_t j = 0; j < 4; j++) {
             cache.push_back(m_tet_connectivity[t_id][j]);
         }
     }
     return cache;
 }
 
-std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_incident_tets_for_edge(const Tuple& t) const
+std::vector<TetMesh::Tuple> TetMesh::get_incident_tets_for_edge(const Tuple& t) const
 {
-    int v1_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][0]];
-    int v2_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][1]];
+    size_t v1_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][0]];
+    size_t v2_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][1]];
+    return get_incident_tets_for_edge(v1_id, v2_id);
+}
 
-    auto tids = set_intersection(
-        m_vertex_connectivity[v1_id].m_conn_tets,
-        m_vertex_connectivity[v2_id].m_conn_tets);
+std::vector<TetMesh::Tuple> TetMesh::get_incident_tets_for_edge(
+    const size_t vid0,
+    const size_t vid1) const
+{
+    auto tids = get_incident_tids_for_edge(vid0, vid1);
     std::vector<Tuple> tets;
-    for (int t_id : tids) {
+    for (size_t t_id : tids) {
         tets.push_back(tuple_from_tet(t_id));
+        assert(tets.back().is_valid(*this));
     }
     return tets;
 }
 
-std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_one_ring_tets_for_edge(const Tuple& t) const
+std::vector<size_t> TetMesh::get_incident_tids_for_edge(const Tuple& t) const
 {
-    int v1_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][0]];
-    int v2_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][1]];
+    size_t v1_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][0]];
+    size_t v2_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][1]];
+    return get_incident_tids_for_edge(v1_id, v2_id);
+}
+
+std::vector<size_t> TetMesh::get_incident_tids_for_edge(const size_t vid0, const size_t vid1) const
+{
+    auto tids = set_intersection(
+        m_vertex_connectivity[vid0].m_conn_tets,
+        m_vertex_connectivity[vid1].m_conn_tets);
+    return tids;
+}
+
+std::vector<TetMesh::Tuple> TetMesh::get_one_ring_tets_for_edge(const Tuple& t) const
+{
+    size_t v1_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][0]];
+    size_t v2_id = m_tet_connectivity[t.m_global_tid][m_local_edges[t.m_local_eid][1]];
 
     auto tids = m_vertex_connectivity[v1_id].m_conn_tets;
     tids.insert(
@@ -628,14 +833,14 @@ std::vector<wmtk::TetMesh::Tuple> wmtk::TetMesh::get_one_ring_tets_for_edge(cons
     vector_unique(tids);
 
     std::vector<Tuple> tets;
-    for (int t_id : tids) {
+    for (size_t t_id : tids) {
         tets.emplace_back(tuple_from_tet(t_id));
     }
     return tets;
 }
 
 
-void wmtk::TetMesh::consolidate_mesh()
+void TetMesh::consolidate_mesh()
 {
     auto v_cnt = 0;
     std::vector<size_t> map_v_ids(vert_capacity(), -1);
@@ -714,18 +919,17 @@ void wmtk::TetMesh::consolidate_mesh()
     assert(check_mesh_connectivity_validity());
 }
 
-std::vector<std::array<size_t, 3>> wmtk::TetMesh::vertex_adjacent_boundary_faces(
-    const Tuple& tup) const
+std::vector<std::array<size_t, 3>> TetMesh::vertex_adjacent_boundary_faces(const Tuple& tup) const
 {
     auto v = tup.vid(*this);
     auto result_faces = std::set<std::array<size_t, 3>>();
-    for (auto t : m_vertex_connectivity[v].m_conn_tets) {
-        auto& tet = m_tet_connectivity[t];
+    for (const size_t t : m_vertex_connectivity[v].m_conn_tets) {
+        const auto& tet = m_tet_connectivity[t];
         for (auto j = 0; j < 4; j++) {
             if (tet[m_map_vertex2oppo_face[j]] == v)
                 continue; // only consider those not connecting to it.
-            auto& f = m_local_faces[j];
-            auto face = std::array<size_t, 3>{{tet[f[0]], tet[f[1]], tet[f[2]]}};
+            const auto& f = m_local_faces[j];
+            std::array<size_t, 3> face{{tet[f[0]], tet[f[1]], tet[f[2]]}};
             std::sort(face.begin(), face.end());
             auto it = result_faces.find(face);
             if (it == result_faces.end()) { // delete those appearing twice.
@@ -740,11 +944,11 @@ std::vector<std::array<size_t, 3>> wmtk::TetMesh::vertex_adjacent_boundary_faces
 
 // concurrent
 
-int wmtk::TetMesh::release_vertex_mutex_in_stack()
+int TetMesh::release_vertex_mutex_in_stack()
 {
     int num_released = 0;
     auto& stack = mutex_release_stack.local();
-    for (int i = stack.size() - 1; i >= 0; i--) {
+    for (int i = (int)stack.size() - 1; i >= 0; i--) {
         unlock_vertex_mutex(stack[i]);
         num_released++;
     }
@@ -752,7 +956,7 @@ int wmtk::TetMesh::release_vertex_mutex_in_stack()
     return num_released;
 }
 
-bool wmtk::TetMesh::try_set_vertex_mutex_two_ring(const Tuple& v, int threadid)
+bool TetMesh::try_set_vertex_mutex_two_ring(const Tuple& v, int threadid)
 {
     auto& stack = mutex_release_stack.local();
     for (auto v_one_ring : get_one_ring_vertices_for_vertex(v)) {
@@ -774,7 +978,7 @@ bool wmtk::TetMesh::try_set_vertex_mutex_two_ring(const Tuple& v, int threadid)
     return true;
 }
 
-bool wmtk::TetMesh::try_set_vertex_mutex_two_ring_vid(const Tuple& v, int threadid)
+bool TetMesh::try_set_vertex_mutex_two_ring_vid(const Tuple& v, int threadid)
 {
     auto& cache = get_one_ring_cache.local();
     auto& stack = mutex_release_stack.local();
@@ -799,7 +1003,7 @@ bool wmtk::TetMesh::try_set_vertex_mutex_two_ring_vid(const Tuple& v, int thread
     return true;
 }
 
-bool wmtk::TetMesh::try_set_vertex_mutex_two_ring_vid(size_t v, int threadid)
+bool TetMesh::try_set_vertex_mutex_two_ring_vid(size_t v, int threadid)
 {
     auto& cache = get_one_ring_cache.local();
     auto& stack = mutex_release_stack.local();
@@ -823,7 +1027,7 @@ bool wmtk::TetMesh::try_set_vertex_mutex_two_ring_vid(size_t v, int threadid)
 }
 
 
-bool wmtk::TetMesh::try_set_edge_mutex_two_ring(const Tuple& e, int threadid)
+bool TetMesh::try_set_edge_mutex_two_ring(const Tuple& e, int threadid)
 {
     const Tuple& v1 = e;
     auto& stack = mutex_release_stack.local();
@@ -869,7 +1073,7 @@ bool wmtk::TetMesh::try_set_edge_mutex_two_ring(const Tuple& e, int threadid)
     return true;
 }
 
-bool wmtk::TetMesh::try_set_face_mutex_two_ring(const Tuple& f, int threadid)
+bool TetMesh::try_set_face_mutex_two_ring(const Tuple& f, int threadid)
 {
     Tuple v1 = f;
     bool release_flag = false;
@@ -952,7 +1156,7 @@ bool wmtk::TetMesh::try_set_face_mutex_two_ring(const Tuple& f, int threadid)
     return true;
 }
 
-bool wmtk::TetMesh::try_set_face_mutex_two_ring(
+bool TetMesh::try_set_face_mutex_two_ring(
     const Tuple& v1,
     const Tuple& v2,
     const Tuple& v3,
@@ -1036,7 +1240,7 @@ bool wmtk::TetMesh::try_set_face_mutex_two_ring(
     return true;
 }
 
-bool wmtk::TetMesh::try_set_face_mutex_two_ring(size_t v1, size_t v2, size_t v3, int threadid)
+bool TetMesh::try_set_face_mutex_two_ring(size_t v1, size_t v2, size_t v3, int threadid)
 {
     bool release_flag = false;
     auto& stack = mutex_release_stack.local();
@@ -1069,7 +1273,7 @@ bool wmtk::TetMesh::try_set_face_mutex_two_ring(size_t v1, size_t v2, size_t v3,
     return true;
 }
 
-bool wmtk::TetMesh::try_set_vertex_mutex_one_ring(const Tuple& v, int threadid)
+bool TetMesh::try_set_vertex_mutex_one_ring(const Tuple& v, int threadid)
 {
     auto& stack = mutex_release_stack.local();
     auto& cache = get_one_ring_cache.local();
@@ -1094,7 +1298,7 @@ bool wmtk::TetMesh::try_set_vertex_mutex_one_ring(const Tuple& v, int threadid)
     return true;
 }
 
-void wmtk::TetMesh::for_each_edge(const std::function<void(const TetMesh::Tuple&)>& func)
+void TetMesh::for_each_edge(const std::function<void(const TetMesh::Tuple&)>& func)
 {
     if (NUM_THREADS == 0) {
         for (int i = 0; i < tet_capacity(); i++) {
@@ -1110,9 +1314,9 @@ void wmtk::TetMesh::for_each_edge(const std::function<void(const TetMesh::Tuple&
         tbb::task_arena arena(NUM_THREADS);
         arena.execute([&] {
             tbb::parallel_for(
-                tbb::blocked_range<int>(0, tet_capacity()),
-                [&](tbb::blocked_range<int> r) {
-                    for (int i = r.begin(); i < r.end(); i++) {
+                tbb::blocked_range<size_t>(0, tet_capacity()),
+                [&](tbb::blocked_range<size_t> r) {
+                    for (size_t i = r.begin(); i < r.end(); i++) {
                         if (!tuple_from_tet(i).is_valid(*this)) continue;
                         for (int j = 0; j < 6; j++) {
                             auto tup = tuple_from_edge(i, j);
@@ -1127,24 +1331,24 @@ void wmtk::TetMesh::for_each_edge(const std::function<void(const TetMesh::Tuple&
 }
 
 
-void wmtk::TetMesh::for_each_tetra(const std::function<void(const TetMesh::Tuple&)>& func)
+void TetMesh::for_each_tetra(const std::function<void(const TetMesh::Tuple&)>& func)
 {
     if (NUM_THREADS == 0) {
-        std::cout << "in serial for each tet" << std::endl;
+        // std::cout << "in serial for each tet" << std::endl;
         for (int i = 0; i < tet_capacity(); i++) {
             auto tup = tuple_from_tet(i);
             if (!tup.is_valid(*this)) continue;
             func(tup);
         }
     } else {
-        std::cout << "in parallel for each tet" << std::endl;
+        // std::cout << "in parallel for each tet" << std::endl;
 
         tbb::task_arena arena(NUM_THREADS);
         arena.execute([&] {
             tbb::parallel_for(
-                tbb::blocked_range<int>(0, tet_capacity()),
-                [&](tbb::blocked_range<int> r) {
-                    for (int i = r.begin(); i < r.end(); i++) {
+                tbb::blocked_range<size_t>(0, tet_capacity()),
+                [&](tbb::blocked_range<size_t> r) {
+                    for (size_t i = r.begin(); i < r.end(); i++) {
                         auto tup = tuple_from_tet(i);
                         if (!tup.is_valid(*this)) continue;
                         func(tup);
@@ -1155,23 +1359,23 @@ void wmtk::TetMesh::for_each_tetra(const std::function<void(const TetMesh::Tuple
 }
 
 
-void wmtk::TetMesh::for_each_vertex(const std::function<void(const TetMesh::Tuple&)>& func)
+void TetMesh::for_each_vertex(const std::function<void(const TetMesh::Tuple&)>& func)
 {
     if (NUM_THREADS == 0) {
-        std::cout << "in serial for each vertex" << std::endl;
+        // std::cout << "in serial for each vertex" << std::endl;
         for (int i = 0; i < vert_capacity(); i++) {
             auto tup = tuple_from_vertex(i);
             if (!tup.is_valid(*this)) continue;
             func(tup);
         }
     } else {
-        std::cout << "in parallel for each vertex" << std::endl;
+        // std::cout << "in parallel for each vertex" << std::endl;
         tbb::task_arena arena(NUM_THREADS);
         arena.execute([&] {
             tbb::parallel_for(
-                tbb::blocked_range<int>(0, vert_capacity()),
-                [&](tbb::blocked_range<int> r) {
-                    for (int i = r.begin(); i < r.end(); i++) {
+                tbb::blocked_range<size_t>(0, vert_capacity()),
+                [&](tbb::blocked_range<size_t> r) {
+                    for (size_t i = r.begin(); i < r.end(); i++) {
                         auto tup = tuple_from_vertex(i);
                         if (!tup.is_valid(*this)) continue;
                         func(tup);
@@ -1180,3 +1384,5 @@ void wmtk::TetMesh::for_each_vertex(const std::function<void(const TetMesh::Tupl
         });
     }
 }
+
+} // namespace wmtk

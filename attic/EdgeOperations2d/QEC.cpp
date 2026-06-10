@@ -62,8 +62,9 @@ double Edge2d::EdgeOperations2d::compute_cost_for_e(const TriMesh::Tuple& v_tupl
 
     Eigen::Vector4d v;
     if (vQ.determinant() < 1e-6) {
-        Eigen::Vector3d tmp =
-            (vertex_attrs[v_tuple.vid(*this)].pos + vertex_attrs[switch_vertex(v_tuple).vid(*this)].pos) / 2;
+        Eigen::Vector3d tmp = (vertex_attrs[v_tuple.vid(*this)].pos +
+                               vertex_attrs[switch_vertex(v_tuple).vid(*this)].pos) /
+                              2;
         v << tmp, 1.0;
     }
 

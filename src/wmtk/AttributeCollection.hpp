@@ -11,6 +11,7 @@
 #include <cassert>
 #include <map>
 #include <optional>
+#include <unordered_map>
 #include <vector>
 
 namespace wmtk {
@@ -22,8 +23,9 @@ class AbstractAttributeContainer
 {
 public:
     virtual ~AbstractAttributeContainer() = default;
-    virtual void move(size_t from, size_t to){};
+    virtual void move(size_t from, size_t to) {};
     virtual void resize(size_t) = 0;
+    virtual void clear() = 0;
     virtual void rollback() = 0;
     virtual void begin_protect() = 0;
     virtual void end_protect() = 0;
@@ -47,6 +49,7 @@ struct AttributeCollection : public AbstractAttributeContainer
         // }
         // TODO: in Concurrent, vertex partition id, vertex mutex should be part of attribute
     }
+    void clear() override { m_attributes.clear(); }
 
     bool assign(size_t to, T&& val) // always use this in OP_after
     {
@@ -85,7 +88,9 @@ struct AttributeCollection : public AbstractAttributeContainer
         recording.local() = false;
     }
 
-    const T& operator[](size_t i) const { return m_attributes[i]; }
+    const T& at(size_t i) const { return m_attributes[i]; }
+
+    const T& operator[](size_t i) const { return at(i); }
 
     T& operator[](size_t i)
     {
@@ -95,10 +100,9 @@ struct AttributeCollection : public AbstractAttributeContainer
         return m_attributes[i];
     }
 
-    const T& at(size_t i) const { return m_attributes[i]; }
 
     size_t size() const { return m_attributes.size(); }
-    tbb::enumerable_thread_specific<std::map<size_t, T>> m_rollback_list;
+    tbb::enumerable_thread_specific<std::unordered_map<size_t, T>> m_rollback_list;
     // experimenting with tbb, could be templated as well.
     tbb::concurrent_vector<T> m_attributes;
     tbb::enumerable_thread_specific<bool> recording{false};

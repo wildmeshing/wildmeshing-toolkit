@@ -25,7 +25,15 @@ function(add_component COMPONENT_NAME)
      "components_map[\"${COMPONENT_NAME}\"] = wmtk::components::${COMPONENT_NAME}::${COMPONENT_NAME};\n")
 
     # add component to wmtk app
-    target_link_libraries(wmtk_app PRIVATE wmtk::${COMPONENT_NAME})
+    target_link_libraries(wmtk_app PUBLIC wmtk::${COMPONENT_NAME})
+    # add component to python bindings
+    if(WMTK_PYBIND)
+        target_link_libraries(pywmtk PUBLIC wmtk::${COMPONENT_NAME})
+    endif()
+    # add component to integration tests
+    if(WMTK_BUILD_INTEGRATION_TESTS)
+        target_link_libraries(wmtk_integration_tests PUBLIC wmtk::${COMPONENT_NAME})
+    endif()
 
     # Group source files for IDEs
     file(GLOB_RECURSE COMPONENTS_FILES_FOR_SOURCE_GROUP "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp" "${CMAKE_CURRENT_SOURCE_DIR}/*.h")

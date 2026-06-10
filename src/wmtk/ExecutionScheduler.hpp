@@ -18,8 +18,6 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
-#include <tracy/Tracy.hpp>
-
 #include <atomic>
 #include <cassert>
 #include <cstddef>
@@ -32,7 +30,7 @@ enum class ExecutionPolicy { kSeq, kUnSeq, kPartition, kColor, kMax };
 
 using Op = std::string;
 
-template <class AppMesh, ExecutionPolicy policy = ExecutionPolicy::kSeq>
+template <class AppMesh>
 struct ExecutePass
 {
     using Tuple = typename AppMesh::Tuple;
@@ -48,21 +46,22 @@ struct ExecutePass
      * @brief Priority function (default to edge length)
      *
      */
-    std::function<double(const AppMesh&, Op op, const Tuple&)> priority = [](auto&, auto, auto&) {
-        return 0.;
-    };
+    std::function<double(const AppMesh&, Op op, const Tuple&)> priority =
+        [](const AppMesh&, Op, const Tuple&) { return 0.; };
     /**
      * @brief check on wheather new operations should be added to the priority queue
      *
      */
-    std::function<bool(double)> should_renew = [](auto) { return true; };
+    std::function<bool(double)> should_renew = [](double) { return true; };
     /**
      * @brief renew neighboring Tuples after each operation depends on the operation
      *
      */
     std::function<std::vector<std::pair<Op, Tuple>>(const AppMesh&, Op, const std::vector<Tuple>&)>
         renew_neighbor_tuples =
-            [](auto&, auto, auto&) -> std::vector<std::pair<Op, Tuple>> { return {}; };
+            [](const AppMesh&, Op, const std::vector<Tuple>&) -> std::vector<std::pair<Op, Tuple>> {
+        return {};
+    };
     /**
      * @brief lock the vertices concerned depends on the operation
      *
@@ -99,10 +98,12 @@ struct ExecutePass
     /**
      * @brief used to collect operations that are not finished and used for later re-execution
      */
-    std::function<void(const AppMesh&, Op, const Tuple& t)> on_fail = [](auto&, auto, auto&) {};
+    std::function<void(const AppMesh&, Op, const Tuple& t)> on_fail =
+        [](const AppMesh&, Op, const Tuple& t) {};
 
+    ExecutionPolicy policy;
 
-    size_t num_threads = 1;
+    int num_threads = 1;
 
     /**
      * To Avoid mutual locking, retry limit is set, and then put in a serial queue in the end.
@@ -115,9 +116,10 @@ struct ExecutePass
      *@note the constructor is differentiated by the type of mesh, namingly wmtk::TetMesh or
      *wmtk::TriMesh
      */
-    ExecutePass()
+    ExecutePass(const ExecutionPolicy& policy_ = ExecutionPolicy::kSeq)
+        : policy(policy_)
     {
-        if constexpr (std::is_base_of<wmtk::TetMesh, AppMesh>::value) {
+        if constexpr (std::is_base_of<TetMesh, AppMesh>::value) {
             edit_operation_maps = {
                 {"edge_collapse",
                  [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
@@ -139,6 +141,14 @@ struct ExecutePass
                  [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
                      std::vector<Tuple> ret;
                      if (m.swap_edge_44(t, ret))
+                         return ret;
+                     else
+                         return {};
+                 }},
+                {"edge_swap_56",
+                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
+                     std::vector<Tuple> ret;
+                     if (m.swap_edge_56(t, ret))
                          return ret;
                      else
                          return {};
@@ -165,9 +175,24 @@ struct ExecutePass
                          return std::vector<Tuple>{};
                      else
                          return {};
+                 }},
+                {"face_split",
+                 [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
+                     std::vector<Tuple> ret;
+                     if (m.split_face(t, ret))
+                         return ret;
+                     else
+                         return {};
+                 }},
+                {"tet_split", [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
+                     std::vector<Tuple> ret;
+                     if (m.split_tet(t, ret))
+                         return ret;
+                     else
+                         return {};
                  }}};
         }
-        if constexpr (std::is_base_of<wmtk::TriMesh, AppMesh>::value) {
+        if constexpr (std::is_base_of<TriMesh, AppMesh>::value) {
             edit_operation_maps = {
                 {"edge_collapse",
                  [](AppMesh& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
@@ -210,13 +235,15 @@ struct ExecutePass
         }
     };
 
+    ExecutePass(ExecutePass&) = delete;
+
 private:
     void operation_cleanup(AppMesh& m)
     { //
         // class ResourceManger
         // what about RAII mesh edit locking?
         // release mutex, but this should be implemented in TetMesh class.
-        if constexpr (policy == ExecutionPolicy::kSeq)
+        if (policy == ExecutionPolicy::kSeq)
             return;
         else {
             m.release_vertex_mutex_in_stack();
@@ -225,13 +252,10 @@ private:
 
     size_t get_partition_id(const AppMesh& m, const Tuple& e)
     {
-        if constexpr (policy == ExecutionPolicy::kSeq) return 0;
-        if constexpr (std::is_base_of<wmtk::TetMesh, AppMesh>::value)
-            return m.get_partition_id(e);
-        else if constexpr (std::is_base_of<wmtk::TriMesh, AppMesh>::value) // TODO: make same
-                                                                           // interface.
-            return m.vertex_attrs[e.vid(m)].partition_id; // TODO: this is temporary.
-        return 0;
+        if (policy == ExecutionPolicy::kSeq) {
+            return 0;
+        }
+        return m.get_partition_id(e);
     }
 
 public:
@@ -248,10 +272,10 @@ public:
         using Elem = std::tuple<double, Op, Tuple, size_t>; // priority, operation, tuple, #retries
         using Queue = tbb::concurrent_priority_queue<Elem>;
 
-        auto cnt_update = std::atomic<int>(0);
-        auto cnt_success = std::atomic<int>(0);
-        auto cnt_fail = std::atomic<int>(0);
-        auto stop = std::atomic<bool>(false);
+        std::atomic<bool> stop(false);
+        cnt_success = 0;
+        cnt_fail = 0;
+        cnt_update = 0;
 
         std::vector<Queue> queues(num_threads);
         Queue final_queue;
@@ -310,7 +334,9 @@ public:
                     Q.emplace(e);
                 }
 
-                if (stop.load(std::memory_order_acquire)) return;
+                if (stop.load(std::memory_order_acquire)) {
+                    return;
+                }
                 if (cnt_success > stopping_criterion_checking_frequency) {
                     if (stopping_criterion(m)) {
                         stop.store(true);
@@ -318,19 +344,22 @@ public:
                     }
                     cnt_update.store(0, std::memory_order_release);
                 }
-                FrameMark;
             }
         };
 
-        if constexpr (policy == ExecutionPolicy::kSeq) {
-            for (auto& [op, e] : operation_tuples) {
-                if (!e.is_valid(m)) continue;
+        if (policy == ExecutionPolicy::kSeq) {
+            for (const auto& [op, e] : operation_tuples) {
+                if (!e.is_valid(m)) {
+                    continue;
+                }
                 final_queue.emplace(priority(m, op, e), op, e, 0);
             }
             run_single_queue(final_queue, 0);
         } else {
-            for (auto& [op, e] : operation_tuples) {
-                if (!e.is_valid(m)) continue;
+            for (const auto& [op, e] : operation_tuples) {
+                if (!e.is_valid(m)) {
+                    continue;
+                }
                 queues[get_partition_id(m, e)].emplace(priority(m, op, e), op, e, 0);
             }
             // Comment out parallel: work on serial first.
@@ -348,8 +377,20 @@ public:
             run_single_queue(final_queue, 0);
         }
 
-        logger().info("cnt_success {} cnt_fail {}", cnt_success, cnt_fail);
+        logger().info(
+            "executed: {} | success / fail: {} / {}",
+            (int)cnt_success + (int)cnt_fail,
+            (int)cnt_success,
+            (int)cnt_fail);
         return true;
     }
+
+    int get_cnt_success() const { return cnt_success; }
+    int get_cnt_fail() const { return cnt_fail; }
+
+private:
+    std::atomic_int cnt_update = 0;
+    std::atomic_int cnt_success = 0;
+    std::atomic_int cnt_fail = 0;
 };
 } // namespace wmtk

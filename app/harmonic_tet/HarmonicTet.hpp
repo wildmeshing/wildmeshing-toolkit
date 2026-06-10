@@ -57,8 +57,8 @@ public:
 
         compute_vertex_partition_morton();
     }
-    HarmonicTet(){};
-    ~HarmonicTet(){};
+    HarmonicTet() {};
+    ~HarmonicTet() {};
 
     ////// Attributes related
     // TODO: this should not be exposed in the application

@@ -8,8 +8,8 @@
 namespace wmtk {
 
 /**
- * @brief This table contains all possible configurations for curring a tetrahedra with a plane. 
- * The script for generating the table is avilable at https://github.com/wildmeshing/fTetWild 
+ * @brief This table contains all possible configurations for curring a tetrahedra with a plane.
+ * The script for generating the table is avilable at https://github.com/wildmeshing/fTetWild
  *
  */
 class CutTable

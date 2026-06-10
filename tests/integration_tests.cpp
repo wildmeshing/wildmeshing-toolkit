@@ -1,0 +1,119 @@
+#include <catch2/catch_test_macros.hpp>
+
+#include <filesystem>
+#include <map>
+#include <nlohmann/json.hpp>
+#include <wmtk/utils/Logger.hpp>
+
+// components
+#include <components_include.hpp>
+
+using namespace wmtk;
+using path = std::filesystem::path;
+
+const std::string tags_integration = "[integration_test]";
+
+const path data_dir = WMTK_DATA_DIR;
+const path integration_tests_dir = data_dir / "integration_tests";
+
+/**
+ * Add any test you want to run to this list!
+ */
+std::vector<std::string> input_files{
+    "image_simulation_remeshing_2d.json",
+    // "image_simulation_energies_2d.json",
+    "image_simulation_fill_holes_2d.json",
+    "image_simulation_keep_lcc_2d.json",
+    "image_simulation_tight_seal_2d.json",
+    "image_simulation_replace_tags_2d.json",
+    "image_simulation_resolve_intersections_2d.json",
+    "image_simulation_tag_priority_2d.json",
+    "image_simulation_double_sphere_3d.json",
+    "image_simulation_double_sphere_notop_3d.json",
+    "image_simulation_tight_seal_3d.json",
+    "image_simulation_replace_tags_3d.json",
+    "image_simulation_resolve_intersections_3d.json",
+    "image_simulation_tag_priority_3d.json",
+    "isotropic_remeshing_bunny.json",
+    "isotropic_remeshing_piece.json",
+    "qslim_octocat.json",
+    "shortest_edge_collapse_101633.json",
+    "shortest_edge_collapse_double_sphere.json",
+    "shortest_edge_collapse_octocat.json",
+    "shortest_edge_collapse_sphere_with_env.json",
+    "tetwild_octocat.json",
+    "tetwild_sphere.json",
+    "topological_offset_2d.json",
+    "topological_offset_2d_vertex_input.json",
+    "topological_offset_3d_edge_input.json",
+    "topological_offset_3d.json",
+    "manifold_extraction_3d.json",
+    "triwild_puzzle.json"};
+
+
+nlohmann::json load_json(const path& json_input_file)
+{
+    // read JSON input file
+    nlohmann::json j;
+    try {
+        std::ifstream ifs(json_input_file);
+        j = nlohmann::json::parse(ifs);
+    } catch (const std::exception& e) {
+        log_and_throw_error("Could not load or parse JSON input file \n{}", e.what());
+    }
+
+    // add path to input file to the json so that it can be used for relative output paths
+    j["json_input_file"] = json_input_file.string();
+
+    return j;
+}
+
+void wmtk_wrapper(const nlohmann::json& j)
+{
+    std::map<std::string, std::function<void(nlohmann::json)>> components_map;
+    // include auto-generated map
+#include <components_map.hpp>
+
+    // make sure input file contains the application name
+    if (!j.contains("application")) {
+        log_and_throw_error("JSON input file must contain entry `application`.");
+    }
+
+    std::string app_str = j["application"];
+    if (components_map.count(app_str) == 0) {
+        log_and_throw_error("Application {} unknown", app_str);
+    }
+
+    // execute
+    components_map[app_str](j);
+}
+
+void wmtk_wrapper(const path& json_input_file)
+{
+    const auto j = load_json(json_input_file);
+    wmtk_wrapper(j);
+}
+
+TEST_CASE("Integration_Tests", tags_integration)
+{
+    namespace fs = std::filesystem;
+
+    for (const auto& input_file : input_files) {
+        const path& f = integration_tests_dir / input_file;
+        logger().info(">>>>>>>>>> Integration test: {} <<<<<<<<<<", f.filename().string());
+        CHECK(fs::exists(f));
+        CHECK_NOTHROW(wmtk_wrapper(f));
+    }
+    logger().info("Tested {} files:", input_files.size());
+    for (const auto& input_file : input_files) {
+        logger().info("    {}", input_file);
+    }
+}
+
+TEST_CASE("TetWild", tags_integration + "[.]")
+{
+    const path f = integration_tests_dir / "tetwild_octocat.json";
+    nlohmann::json j;
+    REQUIRE_NOTHROW(j = load_json(f));
+    REQUIRE_NOTHROW(wmtk_wrapper(j));
+}

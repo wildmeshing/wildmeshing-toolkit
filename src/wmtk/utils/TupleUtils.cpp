@@ -1,19 +1,19 @@
 #include <wmtk/utils/TupleUtils.hpp>
 
-#include <tracy/Tracy.hpp>
-
 #include <algorithm>
 #include "wmtk/TriMesh.h"
 
 namespace wmtk {
 void unique_edge_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& edges)
 {
-    auto edge_ids = std::vector<size_t>();
-    for (auto& e : edges) edge_ids.push_back(e.eid(m));
+    std::vector<size_t> edge_ids;
+    for (const TetMesh::Tuple& e : edges) {
+        edge_ids.push_back(e.eid(m));
+    }
     std::sort(edge_ids.begin(), edge_ids.end());
     edge_ids.erase(std::unique(edge_ids.begin(), edge_ids.end()), edge_ids.end());
     edges.clear();
-    for (auto i : edge_ids) {
+    for (size_t i : edge_ids) {
         edges.emplace_back(m.tuple_from_edge(i / 6, i % 6));
     }
 }
@@ -21,7 +21,7 @@ void unique_edge_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& edges)
 void unique_edge_tuples(const TriMesh& m, std::vector<TriMesh::Tuple>& edges)
 {
     std::vector<size_t> all_eids;
-    for (auto e : edges) {
+    for (const TriMesh::Tuple& e : edges) {
         all_eids.emplace_back(e.eid(m));
     }
     vector_unique(all_eids);
@@ -55,7 +55,7 @@ void unique_directed_edge_tuples(const TetMesh& m, std::vector<TetMesh::Tuple>& 
         edges.end(),
         [&](const TetMesh::Tuple& a, const TetMesh::Tuple& b) {
             throw "check me!";
-            const int aeid = a.eid(m), beid = b.eid(m);
+            const size_t aeid = a.eid(m), beid = b.eid(m);
             if (aeid == beid) return a.vid(m) < b.vid(m);
             return aeid < beid;
         });

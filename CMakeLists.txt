@@ -8,14 +8,17 @@ else()
 endif()
 
 # Check required CMake version
-set(REQUIRED_CMAKE_VERSION "3.15.0")
-
+set(REQUIRED_CMAKE_VERSION "3.25.0")
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     cmake_minimum_required(VERSION ${REQUIRED_CMAKE_VERSION})
+    if(CMAKE_VERSION VERSION_GREATER_EQUAL "4.0.0")
+        message(WARNING "CMake version is ${CMAKE_VERSION}, setting stuff for dependencies.")
+        SET(CMAKE_POLICY_VERSION_MINIMUM ${REQUIRED_CMAKE_VERSION})
+    endif()
 else()
     # Don't use cmake_minimum_required here to avoid implicitly overriding parent policies
     if(${CMAKE_VERSION} VERSION_LESS ${REQUIRED_CMAKE_VERSION})
-        message(FATAL_ERROR "CMake required version to build the toolkit is ${REQUIRED_CMAKE_VERSION}")
+        message(FATAL_ERROR "CMake required version to build WildMeshingToolkit is ${REQUIRED_CMAKE_VERSION}")
     endif()
 endif()
 
@@ -38,11 +41,22 @@ if(WMTK_WITH_CCACHE AND CCACHE_PROGRAM)
     endforeach()
 endif()
 
+################################################################################
+# CMake Policies
+################################################################################
+
+cmake_policy(SET CMP0054 NEW) # Only interpret if() arguments as variables or keywords when unquoted.
+cmake_policy(SET CMP0076 NEW) # target_sources() command converts relative paths to absolute.
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24")
+  cmake_policy(SET CMP0135 NEW) # Set the timestamps of all extracted contents to the time of the extraction.
+endif()
+
 # ###############################################################################
 project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
 
 # ###############################################################################
 option(WMTK_BUILD_DOCS "Build doxygen" OFF)
+option(WMTK_BUILD_INTEGRATION_TESTS "Build integration tests (might take very long to run)" OFF) # off by default
 option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option due to use of TBB
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -54,28 +68,33 @@ include(sanitizers)
 include(wmtk_colors)
 include(wmtk_warnings)
 include(wmtk_copy_dll)
-include(tracy)
 include(nlohmann_json)
-include(hdf5)
-include(high_five)
-include(geogram)
+include(eigen)
+include(delaunay_psm)
 include(onetbb)
 include(mshio)
 include(metis)
 include(gmp)
-include(probabilistic_quadrics)
 include(lagrange)
-include(nlohmann_json)
 include(libigl)
-igl_include(predicates)
 include(spdlog)
 include(paraviewo)
+include(fenvelope)
+include(nanoflann)
+include(polysolve)
 
+include(simple_bvh)
 # Sort projects inside the solution
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Generate position independent code by default
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+option(WMTK_PYBIND "Generate python bindings" ON)
+if(WMTK_PYBIND)
+    include(pybind11)
+    include(pybind11_json)
+endif()
 
 # ###############################################################################
 # WildMeshingToolkit library
@@ -111,28 +130,21 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     igl::core
     igl::predicates
     gmp::gmp
-    geogram
+    geogram::delaunay_psm
     TBB::tbb
     mshio::mshio
     metis::metis
     lagrange::core
-    Tracy::TracyClient
     nlohmann_json::nlohmann_json
-    HighFive::HighFive
-    hdf5::hdf5
-    probabilistic_quadrics::probabilistic_quadrics
+    nanoflann::nanoflann
     paraviewo::paraviewo
+    FastEnvelope::FastEnvelope
+    simple_bvh::simple_bvh
+    polysolve::polysolve
 )
 
 if(MSVC)
     target_compile_options(wildmeshing_toolkit PUBLIC /MP)
-    target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/GL>)
-    target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/LTCG>)
-    target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/Ob2>) # inline whenever suitable
-    target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/Ot>) # favor faster code over binary size
-    target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELEASE>:/GL>)
-    target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELEASE>:/LTCG>)
-    target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELEASE>:/Ot>)
     target_compile_definitions(wildmeshing_toolkit PUBLIC _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS)
 endif()
 
@@ -142,13 +154,18 @@ endif()
 
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
-    # Unit tests
-    enable_testing()
-    add_subdirectory(tests)
-
     # wmtk_app
-    add_subdirectory(app)
-    # components (automatically added to the app)
+    add_subdirectory(app) # also contains python bindings
+
+    include(CTest)
+
+    # Unit tests
+    if(BUILD_TESTING)
+        enable_testing()
+        add_subdirectory(tests)
+    endif()
+
+    # components (automatically added to the app and integration tests)
     add_subdirectory(components)
 endif()
 

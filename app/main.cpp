@@ -43,6 +43,9 @@ int main(int argc, char** argv)
         log_and_throw_error("JSON input file must contain entry `application`.");
     }
 
+    // add path to input file to the json so that it can be used for relative output paths
+    j["json_input_file"] = json_input_file;
+
     std::string app_str = j["application"];
     if (components_map.count(app_str) == 0) {
         log_and_throw_error("Applictaion {} unknown", app_str);

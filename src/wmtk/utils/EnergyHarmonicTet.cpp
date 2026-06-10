@@ -6,10 +6,10 @@
 // from sympy.printing import ccode
 // from sympy import symbols, cse, numbered_symbols, Matrix, det,diff
 // a00,a01,a02,a10,a11,a12,a20,a21,a22, a30,a31,a32 = symbols(','.join([f'T[{i}]' for i in
-// range(12)])) 
-// pts = Matrix([[a00,a01,a02],[a10,a11,a12],[a20,a21,a22],[a30,a31,a32]]) 
+// range(12)]))
+// pts = Matrix([[a00,a01,a02],[a10,a11,a12],[a20,a21,a22],[a30,a31,a32]])
 // vol =
-// det(Matrix([pts.row(1) - pts.row(0), pts.row(2) - pts.row(0),pts.row(3) - pts.row(0)])) 
+// det(Matrix([pts.row(1) - pts.row(0), pts.row(2) - pts.row(0),pts.row(3) - pts.row(0)]))
 // def area2(i,j,k):
 //     cr = (pts.row(i) - pts.row(j)).cross(pts.row(i) - pts.row(k))
 //     squ_area = cr.dot(cr) / 4
@@ -68,26 +68,26 @@ double wmtk::harmonic_tet_energy(const std::array<double, 12>& T)
     double helper30 = T[4] + helper21;
     double helper31 = T[5] + helper19;
     double helper32 = T[5] + helper25;
-    auto denom = (-T[0] * helper11 + T[0] * helper2 + T[10] * helper4 - T[10] * helper7 + T[11] * helper6 -
+    auto denom =
+        (-T[0] * helper11 + T[0] * helper2 + T[10] * helper4 - T[10] * helper7 + T[11] * helper6 -
          T[11] * helper9 - T[1] * helper4 + T[1] * helper7 - T[2] * helper6 + T[2] * helper9 +
          T[3] * helper3 - T[3] * helper5 + T[4] * helper1 - T[4] * helper10 - T[5] * helper0 +
          T[5] * helper8 - T[6] * helper3 + T[6] * helper5 - T[7] * helper1 + T[7] * helper10 +
          T[8] * helper0 - T[8] * helper8 + T[9] * helper11 - T[9] * helper2);
     if (denom < 0) return std::numeric_limits<double>::infinity();
-    auto result_0 =
-        ((1.0 / 4.0) * pow(helper12 * helper14 - helper16 * helper17, 2) +
-         (1.0 / 4.0) * pow(-helper12 * helper20 + helper16 * helper18, 2) +
-         (1.0 / 4.0) * pow(helper12 * helper22 - helper17 * helper24, 2) +
-         (1.0 / 4.0) * pow(-helper12 * helper26 + helper18 * helper24, 2) +
-         (1.0 / 4.0) * pow(-helper14 * helper18 + helper17 * helper20, 2) +
-         (1.0 / 4.0) * pow(helper14 * helper24 - helper16 * helper22, 2) +
-         (1.0 / 4.0) * pow(-helper14 * helper26 + helper20 * helper22, 2) +
-         (1.0 / 4.0) * pow(helper16 * helper26 - helper20 * helper24, 2) +
-         (1.0 / 4.0) * pow(helper17 * helper26 - helper18 * helper22, 2) +
-         (1.0 / 4.0) * pow(helper27 * helper28 - helper29 * helper30, 2) +
-         (1.0 / 4.0) * pow(-helper27 * helper32 + helper30 * helper31, 2) +
-         (1.0 / 4.0) * pow(-helper28 * helper31 + helper29 * helper32, 2)) / denom
-        ;
+    auto result_0 = ((1.0 / 4.0) * pow(helper12 * helper14 - helper16 * helper17, 2) +
+                     (1.0 / 4.0) * pow(-helper12 * helper20 + helper16 * helper18, 2) +
+                     (1.0 / 4.0) * pow(helper12 * helper22 - helper17 * helper24, 2) +
+                     (1.0 / 4.0) * pow(-helper12 * helper26 + helper18 * helper24, 2) +
+                     (1.0 / 4.0) * pow(-helper14 * helper18 + helper17 * helper20, 2) +
+                     (1.0 / 4.0) * pow(helper14 * helper24 - helper16 * helper22, 2) +
+                     (1.0 / 4.0) * pow(-helper14 * helper26 + helper20 * helper22, 2) +
+                     (1.0 / 4.0) * pow(helper16 * helper26 - helper20 * helper24, 2) +
+                     (1.0 / 4.0) * pow(helper17 * helper26 - helper18 * helper22, 2) +
+                     (1.0 / 4.0) * pow(helper27 * helper28 - helper29 * helper30, 2) +
+                     (1.0 / 4.0) * pow(-helper27 * helper32 + helper30 * helper31, 2) +
+                     (1.0 / 4.0) * pow(-helper28 * helper31 + helper29 * helper32, 2)) /
+                    denom;
     return result_0;
 }
 

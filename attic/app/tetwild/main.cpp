@@ -27,8 +27,6 @@
 
 int main(int argc, char** argv)
 {
-    ZoneScopedN("tetwildmain");
-
     tetwild::Parameters params;
 
     CLI::App app{argv[0]};

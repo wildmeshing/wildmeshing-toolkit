@@ -1,23 +1,21 @@
 #pragma once
 
 #include <wmtk/utils/VectorUtils.h>
-#include <type_traits>
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/Types.hpp>
+#include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/simplex/SimplexCollection.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <tbb/concurrent_vector.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/spin_mutex.h>
 
-#include <tracy/Tracy.hpp>
-
 #include <array>
 #include <cassert>
 #include <limits>
 #include <map>
 #include <optional>
-#include <queue>
 #include <vector>
 
 namespace wmtk {
@@ -172,6 +170,7 @@ public:
          * @return nullopt if the Tuple is the switch goes off the boundary.
          */
         std::optional<Tuple> switch_tetrahedron(const TetMesh& m) const;
+        std::optional<Tuple> switch_tetrahedron_slow(const TetMesh& m) const;
 
 
         ////testing code
@@ -191,6 +190,51 @@ public:
                 std::tie(a.m_global_vid, a.m_local_eid, a.m_local_fid, a.m_global_tid, a.m_hash) <
                 std::tie(t.m_global_vid, t.m_local_eid, t.m_local_fid, t.m_global_tid, t.m_hash));
         }
+    };
+
+    /**
+     * A Tuple that holds a reference to the mesh.
+     * This is a utility to simplify switching sequences.
+     */
+    class SmartTuple
+    {
+        Tuple m_tuple;
+        const TetMesh& m_mesh;
+
+    public:
+        SmartTuple(const TetMesh& mesh, const Tuple& t)
+            : m_mesh(mesh)
+            , m_tuple(t)
+        {}
+
+        const Tuple& tuple() { return m_tuple; }
+        const TetMesh& mesh() { return m_mesh; }
+
+        SmartTuple& operator=(const SmartTuple& t)
+        {
+            m_tuple = t.m_tuple;
+            return *this;
+        }
+
+        bool is_valid() const { return m_tuple.is_valid(m_mesh); }
+        bool is_boundary_edge() const { return m_tuple.is_boundary_edge(m_mesh); }
+        bool is_boundary_face() const { return m_tuple.is_boundary_face(m_mesh); }
+        size_t vid() const { return m_tuple.vid(m_mesh); }
+        size_t eid() const { return m_tuple.eid(m_mesh); }
+        size_t fid() const { return m_tuple.fid(m_mesh); }
+        size_t tid() const { return m_tuple.tid(m_mesh); }
+        SmartTuple switch_vertex() const { return {m_mesh, m_tuple.switch_vertex(m_mesh)}; }
+        SmartTuple switch_edge() const { return {m_mesh, m_tuple.switch_edge(m_mesh)}; }
+        SmartTuple switch_face() const { return {m_mesh, m_tuple.switch_face(m_mesh)}; }
+        std::optional<SmartTuple> switch_tetrahedron() const
+        {
+            const std::optional<Tuple> t = m_tuple.switch_tetrahedron(m_mesh);
+            if (t) {
+                return std::optional<SmartTuple>({m_mesh, t.value()});
+            }
+            return {};
+        }
+        void check_validity() const { return m_tuple.check_validity(m_mesh); }
     };
 
     /**
@@ -375,7 +419,75 @@ public:
      * @param[out] new_tets a vector of Tuples for all the newly introduced tetra.
      * @return if collapse succeed
      */
-    bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_tets);
+    virtual bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_tets);
+
+    bool link_condition(const Tuple& t);
+
+    /**
+     * Collapse edge connectivity change part. Constains a link condition check and the connecticity
+     * update
+     *
+     * @param loc0 Input Tuple for the edge to collapse
+     * @param[out] new_tets a vector of Tuples for all the newly introduced tetra.
+     * @param[out] v1_id vertex id of the input tuple
+     * @param[out] new_loc result vertex tuple
+     * @param[out] rollback_vert_conn vertex connectivity got changed and will be involed in
+     * rollback
+     * @param[out] n1_t_ids_copy origninal (before collape) one ring tet ids connected to the input
+     * vertex
+     * @param[out] new_tet_id new tet ids added to v2
+     * @param[out] old_tets tets tv connectivities in n1_t_ids_copy
+     *
+     * @return if true collapse pass link condition check
+     */
+    bool collapse_edge_conn(
+        const Tuple& loc0,
+        std::vector<Tuple>& new_edges,
+        size_t& v1_id,
+        Tuple& new_loc,
+        std::map<size_t, wmtk::TetMesh::VertexConnectivity>& rollback_vert_conn,
+        std::vector<size_t>& n1_t_ids_copy,
+        std::vector<size_t>& new_tet_id,
+        std::vector<TetrahedronConnectivity>& old_tets);
+
+    /**
+     * @brief Check topology after collapse connectivity change. This is a sanity check and should
+     * not be necessary.
+     *
+     * @param new_tet_id new tet ids added to v2
+     *
+     * @return if true the topology is valid
+     */
+    bool collapse_edge_check_topology(const std::vector<size_t>& new_tet_id);
+
+    /**
+     *  rollback function for collapse edges
+     *
+     * @param[out] v1_id vertex id of the input tuple
+     * @param[out] rollback_vert_conn vertex connectivity got changed and will be involed in
+     * rollback
+     * @param[out] n1_t_ids origninal (before collape) one ring tet ids connected to the input
+     * vertex
+     * @param[out] new_tet_id new tet ids added to v2
+     * @param[out] old_tets tets tv connectivities in n1_t_ids
+     *
+     */
+    void collapse_edge_rollback(
+        size_t& v1_id,
+        std::map<size_t, wmtk::TetMesh::VertexConnectivity>& rollback_vert_conn,
+        std::vector<size_t>& n1_t_ids,
+        std::vector<size_t>& new_tet_id,
+        std::vector<TetrahedronConnectivity>& old_tets);
+
+    /**
+     *Perform 5-6 swap
+     *
+     * @param t Input Tuple for the edge to swap.
+     * @param[out] new_tets a vector of Tuples for all the newly introduced tetra.
+     * @return true if swap succeed
+     * @note only happens on internal edges
+     */
+    bool swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tets);
     /**
      *Perform 4-4 swap between 2 tets
      *
@@ -409,7 +521,27 @@ public:
      * @return if smooth succeed
      */
     bool smooth_vertex(const Tuple& t);
+
+    /**
+     * @brief Split a tet in 4 tets.
+     *
+     * @param t Input tuple for the tet to split.
+     * @param[out] new_t A vector of Tuples refering to the tets incident to the new vertex.
+     * introduced
+     * @return true, if split succeed
+     */
     bool split_tet(const Tuple& t, std::vector<Tuple>& new_tets);
+
+    /**
+     * @brief Split a face in 3 faces.
+     *
+     * The TetMesh is assumed to be face manifold, i.e., a face has at most two incident tets.
+     *
+     * @param t Input tuple for the face to split.
+     * @param[out] new_t A vector of Tuples refering to the tets incident to the new vertex.
+     * introduced
+     * @return true, if split succeed
+     */
     bool split_face(const Tuple& t, std::vector<Tuple>& new_tets);
 
     /**
@@ -540,8 +672,10 @@ private:
         std::vector<size_t>& new_center_vids,
         std::vector<std::array<size_t, 4>>& center_split_tets);
 
-protected:
+public:
     virtual bool invariants(const std::vector<Tuple>&) { return true; }
+
+protected:
     virtual bool triangle_insertion_before(const std::vector<Tuple>& faces) { return true; }
     virtual bool triangle_insertion_after(const std::vector<std::vector<Tuple>>&) { return true; }
 
@@ -592,12 +726,59 @@ protected:
      */
     virtual bool swap_edge_44_before(const Tuple& t) { return true; }
     /**
+     * @brief User specified energy to decide which of the 4 possible orientations should be
+     * chosen.
+     *
+     * Accepts the last shown orientation if not overridden.
+     *
+     * @param tets New tets after performing a 4-4 swap.
+     * @param op_case The operation case, where 0 are the tets before swap.
+     * @return energy The swap giving the tets with the lowest energy are chosen.
+     */
+    virtual double swap_edge_44_energy(
+        const std::vector<std::array<size_t, 4>>& tets,
+        const int op_case)
+    {
+        return -op_case;
+    }
+    /**
      * @brief User specified modifications and desideratas for after a 4-4 edge swap
      *
      * @param t edge Tuple that's swaped
      * @return true if the modification succeed
      */
     virtual bool swap_edge_44_after(const Tuple& t) { return true; }
+    /**
+     * @brief User specified preparations and desideratas for a 5-6 edge swap before changing the
+     * connectivity
+     *
+     * @param t edge Tuple to be swaped
+     * @return true if the preparation succeed
+     */
+    virtual bool swap_edge_56_before(const Tuple& t) { return true; }
+    /**
+     * @brief User specified energy to decide which of the 5 possible orientations should be
+     * chosen.
+     *
+     * Accepts the last shown orientation if not overridden.
+     *
+     * @param tets New tets after performing a 5-6 swap.
+     * @param op_case The operation case, where 0 are the tets before swap.
+     * @return energy The swap giving the tets with the lowest energy are chosen.
+     */
+    virtual double swap_edge_56_energy(
+        const std::vector<std::array<size_t, 4>>& tets,
+        const int op_case)
+    {
+        return -op_case;
+    }
+    /**
+     * @brief User specified modifications and desideratas for after a 5-6 edge swap
+     *
+     * @param t edge Tuple that's swaped
+     * @return true if the modification succeed
+     */
+    virtual bool swap_edge_56_after(const Tuple& t) { return true; }
     /**
      * @brief User specified preparations and desideratas for an 3-2 edge swap before changing the
      * conenctivity
@@ -643,6 +824,40 @@ protected:
      */
     virtual bool smooth_after(const Tuple& t) { return true; }
 
+    /**
+     * @brief User specified preparations and desideratas for a face split before changing the
+     * connectivity.
+     * @param t The face tuple to be split.
+     * @return true if the preparation succeed.
+     */
+    virtual bool split_face_before(const Tuple& t) { return true; }
+
+    /**
+     * @brief Compute the attributes for the added simplices.
+     *
+     * User specified modifications and desideratas for after a face split
+     * @param t The face tuple to be split.
+     * @return true if the modification succeed
+     */
+    virtual bool split_face_after(const Tuple& t) { return true; }
+
+    /**
+     * @brief User specified preparations and desideratas for a tet split before changing the
+     * connectivity.
+     * @param t The tet tuple to be split.
+     * @return true if the preparation succeed.
+     */
+    virtual bool split_tet_before(const Tuple& t) { return true; }
+
+    /**
+     * @brief Compute the attributes for the added simplices.
+     *
+     * User specified modifications and desideratas for after a tet split
+     * @param t The tet tuple to be split.
+     * @return true if the modification succeed
+     */
+    virtual bool split_tet_after(const Tuple& t) { return true; }
+
     // virtual void resize_vertex_mutex(size_t v) {}
 
 public:
@@ -674,6 +889,7 @@ public:
      * @param vids Global vertex index of the face
      */
     std::tuple<Tuple, size_t> tuple_from_face(const std::array<size_t, 3>& vids) const;
+    std::tuple<Tuple, size_t> tuple_from_face(const simplex::Face& f) const;
 
     /**
      * @brief get a Tuple from global vertex index
@@ -688,6 +904,16 @@ public:
      * @param tid Global tetra index
      */
     Tuple tuple_from_tet(size_t tid) const;
+
+    /**
+     * @brief Get a Tuple from global vertex IDs.
+     *
+     */
+    Tuple tuple_from_vids(size_t vid0, size_t vid1, size_t vid2, size_t vid3) const;
+
+    simplex::Tet simplex_from_tet(const Tuple& t) const;
+    simplex::Tet simplex_from_tet(const size_t tid) const;
+    simplex::Edge simplex_from_edge(const Tuple& t) const;
 
 
     /**
@@ -741,6 +967,7 @@ public:
      * @return std::vector<size_t> a vector of vids
      */
     std::vector<size_t> get_one_ring_tids_for_vertex(const Tuple& t) const;
+    std::vector<size_t> get_one_ring_tids_for_vertex(const size_t vid) const;
 
     /**
      * @brief Get the one ring vertices for a vertex
@@ -782,6 +1009,10 @@ public:
      * @return incident tets
      */
     std::vector<Tuple> get_incident_tets_for_edge(const Tuple& t) const;
+    std::vector<Tuple> get_incident_tets_for_edge(const size_t vid0, const size_t vid1) const;
+
+    std::vector<size_t> get_incident_tids_for_edge(const Tuple& t) const;
+    std::vector<size_t> get_incident_tids_for_edge(const size_t vid0, const size_t vid1) const;
 
     /**
      * @brief Get the one ring tets for edge
@@ -808,6 +1039,7 @@ public:
      * @return std::array<size_t, 4> of the vertex ids.
      */
     std::array<size_t, 4> oriented_tet_vids(const Tuple& t) const;
+    std::array<size_t, 4> oriented_tet_vids(const size_t tid) const;
     /**
      * @brief Get the 3 vertices of a face represented by Tuple
      *
@@ -815,6 +1047,8 @@ public:
      * @return std::array<Tuple, 3> an array of 3 Tuple points to the 3 vertices of a face
      */
     std::array<Tuple, 3> get_face_vertices(const Tuple& t) const;
+    std::array<size_t, 3> get_face_vids(const Tuple& t) const;
+
     /**
      * @brief get the 6 edges of a tet represented by Tuples
      *
@@ -851,29 +1085,35 @@ public:
             if (v.m_conn_tets.empty()) v.m_is_removed = true;
         }
     }
-    bool m_collapse_check_link_condition = true;
+    bool m_collapse_check_link_condition = true; // classical link condition
+    bool m_collapse_check_topology = false; // sanity check
+    bool m_collapse_check_manifold = true; // manifoldness check after collapse
 
 private:
-    std::map<size_t, wmtk::TetMesh::VertexConnectivity> operation_update_connectivity_impl(
+    std::map<size_t, VertexConnectivity> operation_update_connectivity_impl(
         std::vector<size_t>& affected_tid,
         const std::vector<std::array<size_t, 4>>& new_tet_conn);
     void operation_failure_rollback_imp(
-        std::map<size_t, wmtk::TetMesh::VertexConnectivity>& rollback_vert_conn,
+        std::map<size_t, VertexConnectivity>& rollback_vert_conn,
         const std::vector<size_t>& affected,
         const std::vector<size_t>& new_tet_id,
-        const std::vector<wmtk::TetMesh::TetrahedronConnectivity>& old_tets);
-    std::map<size_t, wmtk::TetMesh::VertexConnectivity> operation_update_connectivity_impl(
+        const std::vector<TetrahedronConnectivity>& old_tets);
+    std::map<size_t, VertexConnectivity> operation_update_connectivity_impl(
         const std::vector<size_t>& remove_id,
         const std::vector<std::array<size_t, 4>>& new_tet_conn,
         std::vector<size_t>& allocate_id);
-    static std::vector<wmtk::TetMesh::TetrahedronConnectivity> record_old_tet_connectivity(
-        const wmtk::TetMesh::vector<wmtk::TetMesh::TetrahedronConnectivity>& conn,
+    static std::vector<TetrahedronConnectivity> record_old_tet_connectivity(
+        const TetMesh::vector<TetrahedronConnectivity>& conn,
         const std::vector<size_t>& tets)
     {
-        auto tet_conn = std::vector<wmtk::TetMesh::TetrahedronConnectivity>();
-        for (auto i : tets) tet_conn.push_back(conn[i]);
+        std::vector<TetrahedronConnectivity> tet_conn;
+        for (size_t i : tets) {
+            tet_conn.push_back(conn[i]);
+        }
         return tet_conn;
     }
+
+public:
     void start_protect_attributes()
     {
         if (p_vertex_attrs) {
@@ -921,56 +1161,6 @@ private:
             p_tet_attrs->rollback();
         }
     }
-
-public:
-    class OperationBuilder
-    {
-    public:
-        OperationBuilder() = default;
-        ~OperationBuilder() = default;
-        bool before(const Tuple&) { return true; }
-        bool after(const std::vector<Tuple>&) { return true; }
-        std::vector<size_t> removed_tids(const Tuple&);
-        int request_vert_slots() { return 0; };
-        std::vector<std::array<size_t, 4>> replacing_tets(const std::vector<size_t>&);
-    };
-
-    // dangerous usage, backdoor for private access.
-    template <int id>
-    class InternalOperationBuilder : public OperationBuilder
-    {
-    };
-
-    template <typename T, typename = std::enable_if_t<std::is_base_of_v<OperationBuilder, T>>>
-    bool customized_operation(T& op, const Tuple& tup, std::vector<Tuple>& new_tet_tuples)
-    {
-        if (op.before(tup) == false) return false;
-        const auto& affected = op.removed_tids(tup);
-        auto old_tets = record_old_tet_connectivity(m_tet_connectivity, affected);
-
-        auto new_vnum = op.request_vert_slots();
-        std::vector<size_t> new_vids(new_vnum);
-        for (auto i = 0; i < new_vnum; i++) {
-            new_vids[i] = get_next_empty_slot_v();
-        }
-        const auto& new_tets = op.replacing_tets(new_vids);
-
-        auto new_tet_id = affected;
-        auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets);
-
-        for (auto ti : new_tet_id) new_tet_tuples.emplace_back(tuple_from_tet(ti));
-
-        start_protect_attributes();
-        if (!op.after(new_tet_tuples) || !invariants(new_tet_tuples)) { // rollback post-operation
-
-            logger().trace("rolling back");
-            operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
-            return false;
-        }
-        release_protect_attributes();
-        return true;
-    }
-
 
 public:
     class VertexMutex
@@ -1121,6 +1311,97 @@ public:
      */
     void for_each_tetra(const std::function<void(const TetMesh::Tuple&)>&);
     int NUM_THREADS = 0;
+
+public:
+    // substructure functionality
+
+    /**
+     * @brief Is a vertex part of the substructure
+     *
+     * @param vid Vertex ID
+     */
+    virtual bool vertex_is_on_surface(const size_t vid) const { return false; }
+
+    /**
+     * @brief Is a face part of the substructure
+     *
+     * @param fid Face ID
+     */
+    virtual bool face_is_on_surface(const size_t fid) const { return false; }
+
+    /**
+     * @brief Get all faces on the surface that are incident to vid.
+     *
+     * @param vid Vertex ID
+     */
+    simplex::SimplexCollection get_surface_faces_for_vertex(const size_t vid) const;
+
+    /**
+     * @brief Get all faces on the surface that are incident to the edge.
+     *
+     * @param vids The vertex IDs of the edge
+     */
+    simplex::SimplexCollection get_surface_faces_for_edge(const std::array<size_t, 2>& vids) const;
+    /**
+     * @brief Get the number of surface faces incident to the edge.
+     *
+     * @param vids The vertex IDs of the edge
+     */
+    size_t get_num_surface_faces_for_edge(const std::array<size_t, 2>& vids) const;
+
+
+    /**
+     * @brief Compute the vertex order for a single vertex.
+     *
+     * This is expensive. It is recommended to store the vertex order as vertex attribute and only
+     * compute it once.
+     *
+     * @param vid Vertex ID
+     */
+    size_t compute_vertex_order(const size_t vid) const;
+
+    /**
+     * @brief Get the order of a vertex
+     *
+     * The order of a vertex in a TetMesh is as follows:
+     * 0: vertex is not on the surface
+     * 1: vertex is on the surface
+     * 2: vertex is on the surface boundary or a non-manifold edge
+     * 3: vertex is at the boundary of a non-manifold edge or a non-manifold vertex
+     *
+     * Computing the vertex order is expensive. It is recommended to store the vertex order as a
+     * vertex attribute and override this method.
+     *
+     * @param vid Vertex ID
+     */
+    virtual size_t get_order_of_vertex(const size_t vid) const { return compute_vertex_order(vid); }
+
+    /**
+     * @brief Compute the order of an edge.
+     *
+     * The order of an edge in a TetMesh is as follows:
+     * 0: the edge is not on the surface
+     * 1: the edge is on the surface
+     * 2: the edge is on the surface boundary or non-manifold
+     *
+     * @param vids The vertex IDs of the edge
+     */
+    size_t get_order_of_edge(const std::array<size_t, 2>& vids) const;
+
+    /**
+     * @brief Link condition that also considers substructures.
+     *
+     * Implementation based on the pseudo code from the paper:
+     * Vivodtzev et. al. - Substructure Topology Preserving Simplification of Tetrahedral Meshes
+     *
+     * The math and the pseudo code in the paper contain errors! The theory itself is correct.
+     *
+     * The link condition must be evaluated for the mesh and all substructures (surfaces, lines,
+     * points). If there is a substructure simplex in the star, the simplex is extended with a dummy
+     * vertex (e.g., an edge becomes a face) and this extended simplex must also be considered for
+     * the link.
+     */
+    bool substructure_link_condition(const Tuple& e_tuple) const;
 };
 
 

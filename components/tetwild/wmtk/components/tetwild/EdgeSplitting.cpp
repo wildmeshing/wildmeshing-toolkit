@@ -15,7 +15,7 @@ void TetWildMesh::split_all_edges()
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_split", loc);
     time = timer.getElapsedTime();
-    wmtk::logger().info("edge split prepare time: {}s", time);
+    wmtk::logger().info("edge split prepare time: {:.4}s", time);
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = wmtk::renewal_simple;
 
@@ -38,38 +38,45 @@ void TetWildMesh::split_all_edges()
     };
     if (NUM_THREADS > 0) {
         timer.start();
-        auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kPartition>();
+        auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kPartition);
         executor.lock_vertices = [&](auto& m, const auto& e, int task_id) -> bool {
             return m.try_set_edge_mutex_two_ring(e, task_id);
         };
         setup_and_execute(executor);
         time = timer.getElapsedTime();
-        wmtk::logger().info("edge split operation time parallel: {}s", time);
+        wmtk::logger().info("edge split operation time parallel: {:.4}s", time);
     } else {
         timer.start();
-        auto executor = wmtk::ExecutePass<TetWildMesh, wmtk::ExecutionPolicy::kSeq>();
+        auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         time = timer.getElapsedTime();
-        wmtk::logger().info("edge split operation time serial: {}s", time);
+        wmtk::logger().info("edge split operation time serial: {:.4}s", time);
     }
 }
 
 bool TetWildMesh::split_edge_before(const Tuple& loc0)
 {
-    split_cache.local().changed_faces.clear();
+    auto& cache = split_cache.local();
 
-    split_cache.local().v1_id = loc0.vid(*this);
+    cache.changed_faces.clear();
+
+    cache.v1_id = loc0.vid(*this);
     auto loc1 = loc0.switch_vertex(*this);
-    split_cache.local().v2_id = loc1.vid(*this);
+    cache.v2_id = loc1.vid(*this);
     //
-    size_t v1_id = split_cache.local().v1_id;
-    size_t v2_id = split_cache.local().v2_id;
+    size_t v1_id = cache.v1_id;
+    size_t v2_id = cache.v2_id;
 
-    split_cache.local().is_edge_on_surface = is_edge_on_surface(loc0);
+    cache.is_edge_on_surface = is_edge_on_surface(loc0);
+
+    if (cache.is_edge_on_surface) {
+        cache.edge_order = get_order_of_edge({{cache.v1_id, cache.v2_id}});
+    } else {
+        cache.edge_order = 0;
+    }
 
     // todo: can be optimized
-    split_cache.local().is_edge_open_boundary =
-        split_cache.local().is_edge_on_surface && is_open_boundary_edge(loc0);
+    cache.is_edge_open_boundary = cache.is_edge_on_surface && is_open_boundary_edge(loc0);
 
     /// save face track info
     auto comp = [](const std::pair<FaceAttributes, std::array<size_t, 3>>& v1,
@@ -107,16 +114,21 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
             loc)) // note: call from super class, cannot be done with pure virtual classes
         return false;
 
+    auto& cache = split_cache.local();
+
     std::vector<Tuple> locs = get_one_ring_tets_for_vertex(loc);
     size_t v_id = loc.vid(*this);
 
-    size_t v1_id = split_cache.local().v1_id;
-    size_t v2_id = split_cache.local().v2_id;
+    size_t v1_id = cache.v1_id;
+    size_t v2_id = cache.v2_id;
 
     /// check inversion & rounding
     m_vertex_attribute[v_id].m_posf =
         (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2;
     m_vertex_attribute[v_id].m_is_rounded = true;
+
+    // this has to be done before the inversion check
+    m_vertex_attribute[v_id].m_pos = to_rational(m_vertex_attribute[v_id].m_posf);
 
     for (auto& loc : locs) {
         if (is_inverted(loc)) {
@@ -128,8 +140,7 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
         m_vertex_attribute[v_id].m_pos =
             (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
         m_vertex_attribute[v_id].m_posf = to_double(m_vertex_attribute[v_id].m_pos);
-    } else
-        m_vertex_attribute[v_id].m_pos = to_rational(m_vertex_attribute[v_id].m_posf);
+    }
 
     /// update quality
     for (auto& loc : locs) {
@@ -142,14 +153,15 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
         m_vertex_attribute[v1_id].on_bbox_faces,
         m_vertex_attribute[v2_id].on_bbox_faces);
     // surface
-    m_vertex_attribute[v_id].m_is_on_surface = split_cache.local().is_edge_on_surface;
+    m_vertex_attribute[v_id].m_is_on_surface = cache.is_edge_on_surface;
+    m_vertex_attribute[v_id].m_order = cache.edge_order;
 
     // open boundary
-    m_vertex_attribute[v_id].m_is_on_open_boundary = split_cache.local().is_edge_open_boundary;
+    m_vertex_attribute[v_id].m_is_on_open_boundary = cache.is_edge_open_boundary;
 
     /// update face attribute
     // add new and erase old
-    for (auto& info : split_cache.local().changed_faces) {
+    for (auto& info : cache.changed_faces) {
         auto& f_attr = info.first;
         auto& old_vids = info.second;
         std::vector<int> j_vn;

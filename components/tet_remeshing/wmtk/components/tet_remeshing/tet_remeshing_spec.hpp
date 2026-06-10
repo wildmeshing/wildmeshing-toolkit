@@ -1,0 +1,184 @@
+#pragma once
+#include <nlohmann/json.hpp>
+namespace {
+
+nlohmann::json tet_remeshing_spec = R"(
+[
+  {
+    "pointer": "/",
+    "type": "object",
+    "required": ["application", "input"],
+    "optional": [
+      "output",
+      "ijk_to_ras",
+      "skip_simplify",
+      "use_sample_envelope",
+      "use_tetgen",
+      "num_threads",
+      "max_iterations",
+      "surface_smoothing",
+      "eps_rel",
+      "eps",
+      "length_rel",
+      "stop_energy",
+      "preserve_topology",
+      "edge_length_convergence",
+      "write_vtu",
+      "log_file",
+      "report",
+      "DEBUG_output",
+      "DEBUG_sanity_checks"
+    ]
+  },
+  {
+    "pointer": "/application",
+    "type": "string",
+    "options": ["tet_remeshing"],
+    "doc": "Application name must be tet_remeshing."
+  },
+  {
+    "pointer": "/input",
+    "type": "list",
+    "doc": "List of triangular input meshes.",
+    "min": 1
+  },
+  {
+    "pointer": "/input/*",
+    "type": "string",
+    "doc": "Triangular input mesh."
+  },
+  {
+    "pointer": "/output",
+    "type": "string",
+    "default": "out",
+    "doc": "Output file name (without extension)."
+  },
+  {
+    "pointer": "/ijk_to_ras",
+    "type": "list",
+    "doc": "Transformation matrix (4x4 homogeneous coordinates) from image coordinates to the RAS coordinate system.",
+    "min": 4,
+    "max": 4,
+    "default": [
+      [1, 0, 0, 0],
+      [0, 1, 0, 0],
+      [0, 0, 1, 0],
+      [0, 0, 0, 1]
+    ]
+  },
+  {
+    "pointer": "/ijk_to_ras/*",
+    "type": "list",
+    "min": 4,
+    "max": 4
+  },
+  {
+    "pointer": "/ijk_to_ras/*/*",
+    "type": "float"
+  },
+  {
+    "pointer": "/skip_simplify",
+    "type": "bool",
+    "default": false,
+    "doc": "If true, input simplification will be skipped."
+  },
+  {
+    "pointer": "/use_sample_envelope",
+    "type": "bool",
+    "default": false,
+    "doc": "Use sample envelope instead of exact one."
+  },
+  {
+    "pointer": "/use_tetgen",
+    "type": "bool",
+    "default": false,
+    "doc": "Use tetgen for embedding an image. Potentially faster but could fail."
+  },
+  {
+    "pointer": "/num_threads",
+    "type": "int",
+    "default": 0,
+    "doc": "Number of threads used by the application"
+  },
+  {
+    "pointer": "/max_iterations",
+    "type": "int",
+    "default": 80,
+    "doc": "Maximum iterations before stopping."
+  },
+  {
+    "pointer": "/surface_smoothing",
+    "type": "int",
+    "default": 0,
+    "doc": "When greater 0, remeshing will be performed multiple times, and before each iteration, the surface is smoothed."
+  },
+  {
+    "pointer": "/eps_rel",
+    "type": "float",
+    "default": 2e-3,
+    "doc": "Envelope thickness relative to the bounding box"
+  },
+  {
+    "pointer": "/eps",
+    "type": "float",
+    "default": -1,
+    "doc": "Absolute envelope thickness. If this value is negative, the relative envelope thickness is used to compute the absolute one."
+  },
+  {
+    "pointer": "/length_rel",
+    "type": "float",
+    "default": 5e-2,
+    "doc": "Target edge length relative to the bounding box"
+  },
+  {
+    "pointer": "/stop_energy",
+    "type": "float",
+    "default": 1000,
+    "doc": "Target energy. If all tets have an energy below this, tetwild will stop."
+  },
+  {
+    "pointer": "/preserve_topology",
+    "type": "bool",
+    "default": true,
+    "doc": "Preserve topology of input."
+  },
+  {
+    "pointer": "/edge_length_convergence",
+    "type": "float",
+    "default": 1e-2,
+    "doc": "The iteration will stop once the relative change of the mean and standard deviation of all edge lengths is below that value."
+  },
+  {
+    "pointer": "/write_vtu",
+    "type": "bool",
+    "default": false,
+    "doc": "Write not just MSH but also VTU output."
+  },
+  {
+    "pointer": "/log_file",
+    "type": "string",
+    "default": "",
+    "doc": "Logs are not just printed on the terminal but also saved in this file."
+  },
+  {
+    "pointer": "/report",
+    "type": "string",
+    "default": "",
+    "doc": "A JSON file that stores information about the result and the method execution, e.g., runtime."
+  },
+  {
+    "pointer": "/DEBUG_output",
+    "type": "bool",
+    "default": false,
+    "doc": "Write the mesh as debug_{}.vtu after every operation."
+  },
+  {
+    "pointer": "/DEBUG_sanity_checks",
+    "type": "bool",
+    "default": false,
+    "doc": "Perform sanity checks after every operation. This can be very slow and should only be used for debugging."
+  }
+]
+)"_json;
+
+}

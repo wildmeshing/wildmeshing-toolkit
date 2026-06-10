@@ -3,8 +3,8 @@
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/Types.hpp>
-#include <wmtk/simplex/RawSimplex.hpp>
-#include <wmtk/simplex/RawSimplexCollection.hpp>
+#include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/simplex/SimplexCollection.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 // clang-format off
@@ -112,13 +112,17 @@ public:
          */
         Tuple switch_edge(const TriMesh& m) const;
         /**
-         * Switch operation for the adjacent triangle
+         * Switch operation for the adjacent triangle.
+         *
+         * This operation only works for manifold meshes!!!
          *
          * @param m Mesh
          * @return Tuple for the edge-adjacent triangle, sharing same edge, and vertex.
          * @note nullopt if the Tuple of the switch goes off the boundary.
          */
         std::optional<Tuple> switch_face(const TriMesh& m) const;
+
+        std::vector<Tuple> switch_faces(const TriMesh& m) const;
 
         /**
          * @brief check if a Tuple is valid
@@ -141,6 +145,42 @@ public:
             return (
                 std::tie(a.m_vid, a.m_eid, a.m_fid, a.m_hash) <
                 std::tie(t.m_vid, t.m_eid, t.m_fid, t.m_hash));
+        }
+    };
+
+    class SmartTuple
+    {
+        Tuple m_tuple;
+        const TriMesh& m_mesh;
+
+    public:
+        SmartTuple(const TriMesh& mesh, const Tuple& t)
+            : m_mesh(mesh)
+            , m_tuple(t)
+        {}
+
+        const Tuple& tuple() const { return m_tuple; }
+        const TriMesh& mesh() const { return m_mesh; }
+
+        SmartTuple& operator=(const SmartTuple& t)
+        {
+            m_tuple = t.m_tuple;
+            return *this;
+        }
+
+        bool is_valid() const { return m_tuple.is_valid(m_mesh); }
+        size_t vid() const { return m_tuple.vid(m_mesh); }
+        size_t eid() const { return m_tuple.eid(m_mesh); }
+        size_t fid() const { return m_tuple.fid(m_mesh); }
+        SmartTuple switch_vertex() const { return {m_mesh, m_tuple.switch_vertex(m_mesh)}; }
+        SmartTuple switch_edge() const { return {m_mesh, m_tuple.switch_edge(m_mesh)}; }
+        std::optional<SmartTuple> switch_face() const
+        {
+            const std::optional<Tuple> t = m_tuple.switch_face(m_mesh);
+            if (t) {
+                return std::optional<SmartTuple>({m_mesh, t.value()});
+            }
+            return {};
         }
     };
 
@@ -216,10 +256,12 @@ public:
          * @return local vid of the vertex given the triangle
          * \n -1 if the vertex is not incident to the triangle
          */
-        inline int find(int v_id) const
+        inline int find(size_t v_id) const
         {
             for (int j = 0; j < 3; j++) {
-                if (v_id == m_indices[j]) return j;
+                if (v_id == m_indices[j]) {
+                    return j;
+                }
             }
             return -1;
         }
@@ -272,7 +314,7 @@ public:
 
     /**
      * Generate a tuple using local vid and global fid
-     * @param vid1, vid2 are local vids
+     * @param vid1, vid2 are local vids TODO: these are global vids
      * @param fid globale fid for the triangle
      * @note tuple refers to vid1
      * @return vector of Tuples
@@ -284,15 +326,16 @@ public:
     simplex::Vertex simplex_from_vertex(const Tuple& t) const;
     simplex::Edge simplex_from_edge(const Tuple& t) const;
     simplex::Face simplex_from_face(const Tuple& t) const;
+    simplex::Face simplex_from_face(const size_t fid) const;
 
     Tuple tuple_from_simplex(const simplex::Face& s) const;
     // Tuple tuple_from_simplex(const simplex::Edge& s) const;
 
-    simplex::RawSimplexCollection simplex_incident_triangles(const simplex::Vertex& v) const;
-    simplex::RawSimplexCollection simplex_incident_triangles(const simplex::Edge& e) const;
-    simplex::RawSimplexCollection simplex_link_vertices(const simplex::Vertex& v) const;
-    simplex::RawSimplexCollection simplex_link_vertices(const simplex::Edge& e) const;
-    simplex::RawSimplexCollection simplex_link_edges(const simplex::Vertex& v) const;
+    simplex::SimplexCollection simplex_incident_triangles(const simplex::Vertex& v) const;
+    simplex::SimplexCollection simplex_incident_triangles(const simplex::Edge& e) const;
+    simplex::SimplexCollection simplex_link_vertices(const simplex::Vertex& v) const;
+    simplex::SimplexCollection simplex_link_vertices(const simplex::Edge& e) const;
+    simplex::SimplexCollection simplex_link_edges(const simplex::Vertex& v) const;
 
     template <typename T>
     using vector = tbb::concurrent_vector<T>;
@@ -325,7 +368,7 @@ private:
      */
     size_t get_next_empty_slot_v();
 
-protected:
+public:
     /**
      * @brief User specified invariants that can't be violated
      * @param std::vector<Tuple> a vector of Tuples that are concerned in a given operation
@@ -459,11 +502,7 @@ public:
      *
      * @param t Tuple refering to an edge
      */
-    bool is_boundary_edge(const TriMesh::Tuple& t) const
-    {
-        if (!t.switch_face(*this).has_value()) return true;
-        return false;
-    }
+    bool is_boundary_edge(const TriMesh::Tuple& t) const { return t.switch_faces(*this).empty(); }
 
     /**
      * @brief check if the vertex that's represented by a Tuple is at the boundary of the mesh
@@ -497,14 +536,39 @@ public:
      * @note collapse edge a,b and generate a new vertex c
      * @return if collapse succeed
      */
-    bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_t);
+    virtual bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_t);
+
+    /**
+     * Collpase an edge connectivity part
+     */
+    void collapse_edge_conn(
+        const Tuple& loc0,
+        std::vector<Tuple>& new_tris,
+        Tuple& return_t,
+        size_t& new_vid,
+        std::vector<std::pair<size_t, TriangleConnectivity>>& old_tris,
+        std::vector<std::pair<size_t, VertexConnectivity>>& old_vertices,
+        std::vector<std::pair<size_t, size_t>>& same_edge_vid_fid,
+        std::vector<size_t>& n12_intersect_fids);
+
+    /**
+     * collapse edge rollback
+     */
+
+    void collapse_edge_rollback(
+        size_t& new_vid,
+        std::vector<std::pair<size_t, TriangleConnectivity>>& old_tris,
+        std::vector<std::pair<size_t, VertexConnectivity>>& old_vertices,
+        std::vector<std::pair<size_t, size_t>>& same_edge_vid_fid,
+        std::vector<size_t>& n12_intersect_fids);
+
 
     /**
      * Swap an edge
      *
      * @param t Input Tuple for the edge to be swaped.
-     * @param[out] new_edges a vector of Tuples refering to the triangles incident to the new edge
-     * introduced
+     * @param[out] new_edges a vector of Tuples refering to the triangles incident to the new
+     * edge introduced
      * @note swap edge a,b to edge c,d
      * @return if swap succeed
      */
@@ -547,6 +611,8 @@ public:
      * @return a vector of Tuples refering to one-ring tris
      */
     std::vector<Tuple> get_one_ring_tris_for_vertex(const Tuple& t) const;
+    const std::vector<size_t>& get_one_ring_fids_for_vertex(const Tuple& t) const;
+    const std::vector<size_t>& get_one_ring_fids_for_vertex(const size_t vid) const;
     /**
      * @brief Get the vids of the incident one ring tris for a vertex
      *
@@ -554,14 +620,23 @@ public:
      * @return a vector of vids that can have duplicates
      */
     std::vector<size_t> get_one_ring_vids_for_vertex_duplicate(const size_t& t) const;
+    void get_one_ring_vids_for_vertex_duplicate(const size_t& t, std::vector<size_t>& one_ring)
+        const;
+
+    std::vector<size_t> get_incident_fids_for_edge(const Tuple& t) const;
+    std::vector<size_t> get_incident_fids_for_edge(const size_t vid0, const size_t vid1) const;
 
     /**
-     * @brief Get the one ring edges for a vertex, edges are the incident edges
+     * @brief Get all edges that are incident to the vertex of Tuple `t`.
+     *
+     * The return tuples contain the edge and the adjacent vertex:
+     *      return_tuple.switch_vertex().vid == t.vid()
      *
      * @param t tuple pointing to a vertex
      * @return one-ring
      */
     std::vector<Tuple> get_one_ring_edges_for_vertex(const Tuple& t) const;
+    std::vector<Tuple> get_one_ring_edges_for_vertex(const size_t vid) const;
 
     /**
      * @brief Get the incident vertices for a triangle
@@ -578,7 +653,10 @@ public:
      * @return global vids of incident vertices
      */
     std::array<size_t, 3> oriented_tri_vids(const Tuple& t) const;
-    std::array<size_t, 3> oriented_tri_vids(const int i) const;
+    std::array<size_t, 3> oriented_tri_vids(const size_t i) const;
+
+    std::array<Tuple, 2> get_edge_vertices(const Tuple& t) const;
+    std::array<size_t, 2> get_edge_vids(const Tuple& t) const;
 
     /**
      * Generate a face Tuple using global fid
@@ -602,7 +680,7 @@ public:
     Tuple tuple_from_vertex(size_t vid) const
     {
         auto fid = m_vertex_connectivity[vid][0];
-        auto eid = m_tri_connectivity[fid].find(vid);
+        auto eid = m_tri_connectivity[fid].find((int)vid);
         return Tuple(vid, (eid + 1) % 3, fid, *this);
     }
     /**
@@ -617,7 +695,9 @@ public:
         return Tuple(vid, local_eid, fid, *this);
     }
 
-private:
+    std::tuple<Tuple, size_t> tuple_from_edge(const std::array<size_t, 2>& vids) const;
+
+public:
     /**
      * @brief Start the phase where the attributes that will be modified can be recorded
      *
@@ -749,6 +829,68 @@ public:
      */
     void for_each_vertex(const std::function<void(const Tuple&)>&);
     int NUM_THREADS = 0;
+
+public:
+    // substructure functionality
+
+    /**
+     * @brief Is a vertex part of the substructure
+     *
+     * @param vid Vertex ID
+     */
+    virtual bool vertex_is_on_surface(const size_t vid) const { return false; }
+
+    /**
+     * @brief Is an edge part of the substructure
+     *
+     * @param vids The vertex IDs of the edge
+     */
+    virtual bool edge_is_on_surface(const std::array<size_t, 2>& vids) const { return false; }
+
+    /**
+     * @brief Get all edges on the surface that are incident to vid.
+     *
+     * @param vid Vertex ID
+     */
+    simplex::SimplexCollection get_surface_edges_for_vertex(const size_t vid) const;
+
+    /**
+     * @brief Compute the order of an edge.
+     *
+     * The order of an edge in a TriMesh is as follows:
+     * 0: the edge is not on the surface
+     * 1: the edge is on the surface
+     *
+     * @param vids The vertex IDs of the edge
+     */
+    size_t get_order_of_edge(const std::array<size_t, 2>& vids) const;
+
+    /**
+     * @brief Get the order of a vertex
+     *
+     * The order of a vertex in a TriMesh is as follows:
+     * 0: vertex is not on the surface
+     * 1: vertex is on the surface
+     * 2: vertex is a non-manifold vertex in the substructure
+     *
+     * @param vid Vertex ID
+     */
+    size_t get_order_of_vertex(const size_t vid) const;
+
+    /**
+     * @brief Link condition that also considers substructures.
+     *
+     * Implementation based on the pseudo code from the paper:
+     * Vivodtzev et. al. - Substructure Topology Preserving Simplification of Tetrahedral Meshes
+     *
+     * The math and the pseudo code in the paper contain errors! The theory itself is correct.
+     *
+     * The link condition must be evaluated for the mesh and all substructures (surfaces, lines,
+     * points). If there is a substructure simplex in the star, the simplex is extended with a dummy
+     * vertex (e.g., an edge becomes a face) and this extended simplex must also be considered for
+     * the link.
+     */
+    bool substructure_link_condition(const Tuple& e_tuple) const;
 };
 
 } // namespace wmtk

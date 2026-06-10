@@ -1,5 +1,4 @@
 #pragma once
-#include "common.h"
 
 namespace wmtk::components::tetwild {
 struct Parameters
@@ -22,6 +21,9 @@ struct Parameters
         std::numeric_limits<double>::max(); // the upper bound length (squared) for edge collapse
 
     double stop_energy = 10;
+
+    bool debug_output = false;
+    bool perform_sanity_checks = false;
 
     void init(const Vector3d& min_, const Vector3d& max_)
     {

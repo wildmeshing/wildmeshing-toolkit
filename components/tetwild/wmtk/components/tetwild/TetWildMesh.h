@@ -4,9 +4,8 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Morton.h>
 #include <wmtk/utils/PartitionMesh.h>
+#include <wmtk/envelope/Envelope.hpp>
 #include "Parameters.h"
-#include "common.h"
-#include "sec/envelope/SampleEnvelope.hpp"
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -38,16 +37,24 @@ public:
     bool m_is_rounded = false;
 
     bool m_is_on_surface = false;
-    std::vector<int> on_bbox_faces; // same as is_bbox_fs?
+    /**
+     * The order of a vertex in a TetMesh is as follows:
+     * 0: vertex is not on the surface
+     * 1: vertex is on the surface
+     * 2: vertex is on the boundary of the surface or a non-manifold edge
+     * 3: vertex is at the boundary of a non-manifold edge or a non-manifold vertex
+     */
+    size_t m_order = 0;
+    std::vector<int> on_bbox_faces;
 
-    Scalar m_sizing_scalar = 1;
+    double m_sizing_scalar = 1;
 
     size_t partition_id = 0;
 
     // for open boundary
     bool m_is_on_open_boundary = false;
 
-    VertexAttributes(){};
+    VertexAttributes() {};
     VertexAttributes(const Vector3r& p);
 };
 
@@ -62,7 +69,7 @@ public:
 class FaceAttributes
 {
 public:
-    Scalar tag;
+    double tag;
 
     bool m_is_surface_fs = false; // 0; 1
     int m_is_bbox_fs = -1; //-1; 0~5
@@ -84,9 +91,11 @@ public:
 class TetAttributes
 {
 public:
-    Scalar m_quality;
-    Scalar m_winding_number = 0;
-    int part_id = -1;
+    double m_quality;
+    double m_winding_number_input = 0; // winding number w.r.t. the input
+    double m_winding_number_tracked = 0; // winding number w.r.t. the tracked surface
+    std::vector<double> m_winding_number_per_input;
+    int part_id = -1; // flood fill ID
 };
 
 class TetWildMesh : public wmtk::TetMesh
@@ -97,28 +106,21 @@ public:
     const double MAX_ENERGY = 1e50;
 
     Parameters& m_params;
-    wmtk::Envelope& m_envelope;
-    // for surface projection
-    sample_envelope::SampleEnvelope& triangles_tree;
+    SampleEnvelope& m_envelope;
 
     // for open boundary
-    wmtk::ExactEnvelope m_open_boundary_envelope; // todo: add sample envelope option
-    sample_envelope::SampleEnvelope boundaries_tree;
+    SampleEnvelope m_open_boundary_envelope; // todo: add sample envelope option
 
-    TetWildMesh(
-        Parameters& _m_params,
-        wmtk::Envelope& _m_envelope,
-        sample_envelope::SampleEnvelope& _triangles_tree,
-        int _num_threads = 1)
+    TetWildMesh(Parameters& _m_params, SampleEnvelope& _m_envelope, int _num_threads = 1)
         : m_params(_m_params)
         , m_envelope(_m_envelope)
-        , triangles_tree(_triangles_tree)
     {
         NUM_THREADS = _num_threads;
         p_vertex_attrs = &m_vertex_attribute;
         p_face_attrs = &m_face_attribute;
         p_tet_attrs = &m_tet_attribute;
         m_collapse_check_link_condition = false;
+        m_collapse_check_manifold = false;
     }
 
     ~TetWildMesh() {}
@@ -173,9 +175,9 @@ public:
             std::vector<Eigen::Vector3d> V_v(vert_capacity());
 
             tbb::parallel_for(
-                tbb::blocked_range<int>(0, V_v.size()),
-                [&](tbb::blocked_range<int> r) {
-                    for (int i = r.begin(); i < r.end(); i++) {
+                tbb::blocked_range<size_t>(0, V_v.size()),
+                [&](tbb::blocked_range<size_t> r) {
+                    for (size_t i = r.begin(); i < r.end(); i++) {
                         V_v[i] = m_vertex_attribute[i].m_posf;
                     }
                 });
@@ -183,7 +185,7 @@ public:
 
             struct sortstruct
             {
-                int order;
+                size_t order;
                 Resorting::MortonCode64 morton;
             };
 
@@ -206,11 +208,13 @@ public:
             // get_bb_corners(V, vmin, vmax);
             Eigen::Vector3d center = (vmin + vmax) / 2;
 
-            tbb::parallel_for(tbb::blocked_range<int>(0, V.size()), [&](tbb::blocked_range<int> r) {
-                for (int i = r.begin(); i < r.end(); i++) {
-                    V[i] = V[i] - center;
-                }
-            });
+            tbb::parallel_for(
+                tbb::blocked_range<size_t>(0, V.size()),
+                [&](tbb::blocked_range<size_t> r) {
+                    for (size_t i = r.begin(); i < r.end(); i++) {
+                        V[i] = V[i] - center;
+                    }
+                });
 
             Eigen::Vector3d scale_point =
                 vmax - center; // after placing box at origin, vmax and vmin are symetric.
@@ -222,24 +226,26 @@ public:
             double scale = std::max(std::max(xscale, yscale), zscale);
             if (scale > 300) {
                 tbb::parallel_for(
-                    tbb::blocked_range<int>(0, V.size()),
-                    [&](tbb::blocked_range<int> r) {
-                        for (int i = r.begin(); i < r.end(); i++) {
+                    tbb::blocked_range<size_t>(0, V.size()),
+                    [&](tbb::blocked_range<size_t> r) {
+                        for (size_t i = r.begin(); i < r.end(); i++) {
                             V[i] = V[i] / scale;
                         }
                     });
             }
 
             constexpr int multi = 1000;
-            tbb::parallel_for(tbb::blocked_range<int>(0, V.size()), [&](tbb::blocked_range<int> r) {
-                for (int i = r.begin(); i < r.end(); i++) {
-                    list_v[i].morton = Resorting::MortonCode64(
-                        int(V[i][0] * multi),
-                        int(V[i][1] * multi),
-                        int(V[i][2] * multi));
-                    list_v[i].order = i;
-                }
-            });
+            tbb::parallel_for(
+                tbb::blocked_range<size_t>(0, V.size()),
+                [&](tbb::blocked_range<size_t> r) {
+                    for (size_t i = r.begin(); i < r.end(); i++) {
+                        list_v[i].morton = Resorting::MortonCode64(
+                            int(V[i][0] * multi),
+                            int(V[i][1] * multi),
+                            int(V[i][2] * multi));
+                        list_v[i].order = i;
+                    }
+                });
 
             const auto morton_compare = [](const sortstruct& a, const sortstruct& b) {
                 return (a.morton < b.morton);
@@ -247,12 +253,12 @@ public:
 
             tbb::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
 
-            int interval = list_v.size() / NUM_THREADS + 1;
+            size_t interval = list_v.size() / NUM_THREADS + 1;
 
             tbb::parallel_for(
-                tbb::blocked_range<int>(0, list_v.size()),
-                [&](tbb::blocked_range<int> r) {
-                    for (int i = r.begin(); i < r.end(); i++) {
+                tbb::blocked_range<size_t>(0, list_v.size()),
+                [&](tbb::blocked_range<size_t> r) {
+                    for (size_t i = r.begin(); i < r.end(); i++) {
                         m_vertex_attribute[list_v[i].order].partition_id = i / interval;
                     }
                 });
@@ -280,7 +286,6 @@ public:
     bool triangle_insertion_before(const std::vector<Tuple>& faces) override;
     bool triangle_insertion_after(const std::vector<std::vector<Tuple>>& new_faces) override;
 
-
 public:
     void split_all_edges();
     bool split_edge_before(const Tuple& t) override;
@@ -294,40 +299,76 @@ public:
     bool collapse_edge_before(const Tuple& t) override;
     bool collapse_edge_after(const Tuple& t) override;
 
-    void swap_all_edges_44();
+    size_t swap_all_edges_44();
     bool swap_edge_44_before(const Tuple& t) override;
+    double swap_edge_44_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
+        override;
     bool swap_edge_44_after(const Tuple& t) override;
 
-    void swap_all_edges();
+    size_t swap_all_edges_56();
+    bool swap_edge_56_before(const Tuple& t) override;
+    double swap_edge_56_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
+        override;
+    bool swap_edge_56_after(const Tuple& t) override;
+
+    size_t swap_all_edges_32();
     bool swap_edge_before(const Tuple& t) override;
     bool swap_edge_after(const Tuple& t) override;
 
-    void swap_all_faces();
+    size_t swap_all_faces();
     bool swap_face_before(const Tuple& t) override;
     bool swap_face_after(const Tuple& t) override;
 
+    size_t swap_all_edges_all();
+
+    /**
+     * @brief Inversion check using only floating point numbers.
+     */
+    bool is_inverted_f(const Tuple& loc) const;
+    bool is_inverted(const std::array<size_t, 4>& vs) const;
     bool is_inverted(const Tuple& loc) const;
+    double get_quality(const std::array<size_t, 4>& vs) const;
     double get_quality(const Tuple& loc) const;
     bool round(const Tuple& loc);
     //
     bool is_edge_on_surface(const Tuple& loc);
     bool is_edge_on_bbox(const Tuple& loc);
+    /**
+     * brief Check if the vertex has an incident boundary edge.
+     * This performs a topological check.
+     */
+    bool is_vertex_on_boundary(const size_t vid);
     //
-    bool adjust_sizing_field(double max_energy);
     void mesh_improvement(int max_its = 80);
+    /**
+     * @brief Call the original TetWild code.
+     */
+    void mesh_improvement_legacy(int max_its = 80);
     std::tuple<double, double> local_operations(
         const std::array<int, 4>& ops,
         bool collapse_limit_length = true);
     std::tuple<double, double> get_max_avg_energy();
-    void filter_outside(
+
+    /**
+     * @brief Compute the winding number.
+     *
+     * If `vertices` and `faces` are empty, compute the winding number for the tracked surface.
+     * Otherwise, compute the winding number for the input surface given by `vertices` and `faces`.
+     */
+    void compute_winding_number(
         const std::vector<Vector3d>& vertices = {},
-        const std::vector<std::array<size_t, 3>>& faces = {},
-        bool remove_ouside = true);
+        const std::vector<std::array<size_t, 3>>& faces = {});
+
+    void compute_winding_numbers(const std::vector<std::string>& input_paths);
+
+    void filter_with_input_surface_winding_number();
+    void filter_with_tracked_surface_winding_number();
+    void filter_with_flood_fill();
 
     bool check_attributes();
 
     std::vector<std::array<size_t, 3>> get_faces_by_condition(
-        std::function<bool(const FaceAttributes&)> cond);
+        std::function<bool(const FaceAttributes&)> cond) const;
 
     bool invariants(const std::vector<Tuple>& t) override; // this is now automatically checked
 
@@ -357,6 +398,7 @@ private:
         size_t v2_id;
         bool is_edge_on_surface = false;
         bool is_edge_open_boundary = false;
+        size_t edge_order = 0;
         std::vector<size_t> v1_param_type;
         std::vector<size_t> v2_param_type;
 
@@ -373,8 +415,12 @@ private:
         bool is_limit_length;
 
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
+        // all faces incident to the delete vertex (v1) that are on the tracked surface
         std::vector<std::array<size_t, 3>> surface_faces;
+        // all edges incident to the deleted vertex(v1) that are on the open boundary
+        std::vector<std::array<size_t, 2>> boundary_edges;
         std::vector<size_t> changed_tids;
+        std::vector<double> changed_energies;
 
         std::vector<std::array<size_t, 2>> failed_edges;
 
@@ -403,6 +449,22 @@ private:
 
     // for incremental tetwild
 public:
+    /**
+     * Will be removed as soon as the bug in the faster version is fixed.
+     */
+    void insertion_by_volumeremesher_old(
+        const std::vector<Vector3d>& vertices,
+        const std::vector<std::array<size_t, 3>>& faces,
+        std::vector<Vector3r>& v_rational,
+        std::vector<std::array<size_t, 3>>& facets_after,
+        std::vector<bool>& is_v_on_input,
+        std::vector<std::array<size_t, 4>>& tets_after,
+        std::vector<bool>& tet_face_on_input_surface);
+
+    /**
+     * This version of insertion should be faster BUT IS BROKEN!!!
+     * DO NOT USE!!!!!
+     */
     void insertion_by_volumeremesher(
         const std::vector<Vector3d>& vertices,
         const std::vector<std::array<size_t, 3>>& faces,
@@ -422,7 +484,7 @@ public:
     void init_from_file(std::string input_dir);
 
     std::vector<std::array<size_t, 3>> triangulate_polygon_face(std::vector<Vector3r> points);
-    bool check_polygon_face_validity(std::vector<tetwild::Vector3r> points);
+    bool check_polygon_face_validity(std::vector<Vector3r> points);
 
     bool check_nondegenerate_tets();
     void output_embedded_polygon_mesh(
@@ -447,91 +509,29 @@ public:
 
     void output_init_tetmesh(std::string output_dir);
 
-    long long checksum_vidx();
-    wmtk::Rational checksum_vpos();
-    long long checksum_tidx();
-    Scalar checksum_tquality();
+    void output_tracked_surface(std::string output_file);
 
     bool adjust_sizing_field_serial(double max_energy);
 
     // for open boundary
     void find_open_boundary();
     bool is_open_boundary_edge(const Tuple& e);
+    bool is_open_boundary_edge(const std::array<size_t, 2>& e);
 
-    // for topology preservation
-    int count_vertex_links(const Tuple& v);
-    int count_edge_links(const Tuple& e);
+public:
+    // substructure functions
 
-    // for geometry preservation
-    struct coplanar_triangle_collection
-    {
-        bool effective = false;
-        std::vector<size_t> face_ids;
-        std::vector<size_t> tracked_face_ids;
-        // std::map<std::pair<size_t, size_t>, bool> presented_edges;
-        Vector3r normal;
-        Vector3r a_pos; // a is the origin of the uv plane
-        Vector3r b_pos;
-        Vector3r c_pos;
-        Vector3r param_u; // b-a // can be vector3d then can be normalized
-        Vector3r param_v; // u.cross(b-a)
-        // for nearly
-        Vector3d normal_f = Vector3d(0, 0, 0);
-        Vector3d a_pos_f = Vector3d(0, 0, 0);
-        Vector3d param_u_f = Vector3d(0, 0, 0);
-        Vector3d param_v_f = Vector3d(0, 0, 0);
-    };
+    bool vertex_is_on_surface(const size_t vid) const override;
 
-    bool is_triangle_coplanar_collection(
-        const Vector3r& v1,
-        const Vector3r& v2,
-        const Vector3r& v3,
-        const coplanar_triangle_collection& collection);
+    bool face_is_on_surface(const size_t fid) const override;
 
-    bool is_triangle_nearly_coplanar_collection(
-        const Vector3r& v1,
-        const Vector3r& v2,
-        const Vector3r& v3,
-        const coplanar_triangle_collection& collection,
-        double theta);
+    size_t get_order_of_vertex(const size_t vid) const override;
+    /**
+     * @brief Compute the vertex order for every vertex.
+     */
+    void init_vertex_order();
 
-    std::vector<std::vector<size_t>> transfer_vf_to_face_face_connectivity(
-        size_t num_v,
-        std::vector<std::array<size_t, 3>> faces);
-
-
-    struct triangle_collections
-    {
-        std::vector<coplanar_triangle_collection> collections;
-        std::vector<coplanar_triangle_collection> nearly_coplanar_collections;
-        std::vector<size_t> exact_to_nearly_map;
-        std::vector<Vector3r> input_vertices_rational;
-        std::vector<std::array<size_t, 3>> input_faces;
-        // can add parameterizations here
-    };
-    triangle_collections triangle_collections_from_input_surface;
-
-    struct edge_parametrization
-    {
-        Vector3d direction;
-        Vector3d origin;
-    };
-    std::vector<edge_parametrization> edge_params;
-
-    void detect_coplanar_triangle_collections(
-        const std::vector<Vector3d>& vertices,
-        const std::vector<std::array<size_t, 3>>& faces);
-
-    int find_collection_for_tracked_surface(const Tuple& t);
-
-    bool is_point_in_triangle(
-        const Vector3r& p,
-        const Vector3r& a,
-        const Vector3r& b,
-        const Vector3r& c);
-    bool is_point_in_collection(const Vector3r& p, size_t collection_id);
-
-
+public:
     // debug functions
     int orient3D(
         vol_rem::bigrational px,
@@ -547,12 +547,12 @@ public:
         vol_rem::bigrational sy,
         vol_rem::bigrational sz);
 
-    bool checkTrackedFaces(
-        std::vector<vol_rem::bigrational>& vol_coords,
-        const std::vector<double>& surf_coords,
-        std::vector<uint32_t>& facets,
-        std::vector<uint32_t>& facets_on_input,
-        const std::vector<uint32_t>& surf_tris);
+    // bool checkTrackedFaces(
+    //     std::vector<vol_rem::bigrational>& vol_coords,
+    //     const std::vector<double>& surf_coords,
+    //     std::vector<uint32_t>& facets,
+    //     std::vector<uint32_t>& facets_on_input,
+    //     const std::vector<uint32_t>& surf_tris);
 
     int orient3D_wmtk_rational(
         wmtk::Rational px,
@@ -584,6 +584,24 @@ public:
 
     // initialize sizing field (for topology preservation)
     void init_sizing_field();
+
+public:
+    struct ExportStruct
+    {
+        // tet mesh
+        MatrixXd V;
+        MatrixXi T;
+        // tracked surface
+        MatrixXi F;
+        // attributes
+        VectorXd t_amips;
+        VectorXd t_winding_number_input;
+        VectorXd t_winding_number_tracked;
+        MatrixXd t_winding_number_per_input;
+        VectorXi t_part;
+    };
+    // export functionality
+    ExportStruct export_mesh_data() const;
 };
 
 

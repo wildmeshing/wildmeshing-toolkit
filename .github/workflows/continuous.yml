@@ -2,17 +2,12 @@ name: Build
 
 on:
   push:
-    branches:
-      - main
-      - hackathon/dev
+    branches: [main]
   pull_request:
-    branches:
-      - main
-      - hackathon/dev
 
 env:
   CTEST_OUTPUT_ON_FAILURE: ON
-  CTEST_PARALLEL_LEVEL: 2
+  CTEST_PARALLEL_LEVEL: 1
 
 jobs:
   ####################
@@ -21,37 +16,42 @@ jobs:
 
   Linux:
     name: ${{ matrix.name }} (${{ matrix.config }})
-    runs-on: [self-hosted,Linux]
-    #runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        config: [Debug, Release]
         include:
           - os: ubuntu-latest
+            config: Debug
+            integration_tests_flag: &integration_tests_off ""
+            name: Linux
+          - os: ubuntu-latest
+            config: Release
+            integration_tests_flag: &integration_tests_on "-DWMTK_BUILD_INTEGRATION_TESTS=ON"
             name: Linux
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v1
+        uses: actions/checkout@v6
         with:
           fetch-depth: 10
 
       - name: Dependencies
         run: |
-          echo 'CACHE_PATH=~/.ccache' >> "$GITHUB_ENV"
+          sudo apt-get update
+          sudo apt-get -o Acquire::Retries=3 install ccache
+          echo 'CACHE_PATH=~/.cache/ccache' >> "$GITHUB_ENV"
 
       - name: Cache Build
         id: cache-build
-        uses: actions/cache@v2
+        uses: actions/cache@v5
         with:
           path: ${{ env.CACHE_PATH }}
-          key: ${{ runner.os }}-${{ matrix.config }}-${{ matrix.tbb }}-cache-${{ github.sha }}
-          restore-keys: ${{ runner.os }}-${{ matrix.config }}-${{ matrix.tbb }}-cache
+          key: ${{ runner.os }}-${{ matrix.config }}-cache-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-${{ matrix.config }}-cache
 
       - name: Prepare ccache
         run: |
-          ccache --max-size=20.0G
+          # ccache --max-size=20.0G
           ccache -V && ccache --show-stats && ccache --zero-stats
 
       - name: Configure
@@ -60,10 +60,11 @@ jobs:
           cd build
           cmake .. \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_BUILD_TYPE=${{ matrix.config }}
+            -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
+            ${{ matrix.integration_tests_flag }}
 
       - name: Build
-        run: cd build; make -j8; ccache --show-stats
+        run: cd build; make -j2; ccache --show-stats
 
       - name: Tests
         run: cd build; ctest --verbose --output-on-failure
@@ -73,40 +74,47 @@ jobs:
   ####################
 
   MacOS:
-    name: ${{ matrix.name }}-${{ matrix.arch }} (${{ matrix.config }})
-    #runs-on: ${{ matrix.os }}
-    runs-on: [self-hosted, MacOS]
+    name: ${{ matrix.os }} (${{ matrix.config }})
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest]
-        arch: [arm64] # arm64 no arm as GMP is binary
-        config: [Debug, Release]
         include:
           - os: macos-latest
-            name: macOS
+            config: Debug
+            integration_tests_flag: *integration_tests_off
+          - os: macos-latest
+            config: Release
+            integration_tests_flag: *integration_tests_on
+          - os: macos-14
+            config: Debug
+            integration_tests_flag: *integration_tests_off
+          - os: macos-14
+            config: Release
+            integration_tests_flag: *integration_tests_on
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v1
+        uses: actions/checkout@v6
         with:
           fetch-depth: 10
 
       - name: Dependencies
         run: |
+          brew install ccache
           echo 'CACHE_PATH=~/Library/Caches/ccache' >> "$GITHUB_ENV"
 
       - name: Cache Build
         id: cache-build
-        uses: actions/cache@v2
+        uses: actions/cache@v5
         with:
           path: ${{ env.CACHE_PATH }}
-          key: ${{ runner.os }}-${{ matrix.config }}-${{ matrix.arch }}-${{ matrix.tbb }}-cache-${{ github.sha }}
-          restore-keys: ${{ runner.os }}-${{ matrix.config }}-${{ matrix.arch }}-${{ matrix.tbb }}-cache
+          key: ${{ matrix.os }}-${{ matrix.config }}-cache-${{ github.sha }}
+          restore-keys: ${{ matrix.os }}-${{ matrix.config }}-cache
 
       - name: Prepare ccache
         run: |
-          ccache --max-size=20.0G
+          # ccache --max-size=20.0G
           ccache -V && ccache --show-stats && ccache --zero-stats
 
       - name: Configure
@@ -115,14 +123,13 @@ jobs:
           cd build
           cmake .. \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }} \
-            -DCMAKE_BUILD_TYPE=${{ matrix.config }}
+            -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
+            ${{ matrix.integration_tests_flag }}
 
       - name: Build
-        run: cd build; make -j8; ccache --show-stats
+        run: cd build; make -j2; ccache --show-stats
 
       - name: Tests
-        #if: matrix.arch == 'x86_64' # no ARM vm on actions yet
         run: cd build; ctest --verbose --output-on-failure
 
   ####################
@@ -130,34 +137,109 @@ jobs:
   ####################
 
   Windows:
-    name: Windows (${{ matrix.config }})
-    runs-on: [self-hosted, Windows]
-    #runs-on: windows-2022
+    name: ${{ matrix.name }} (${{ matrix.config }})
+    runs-on: ${{ matrix.os }}
     env:
-      CC: cl.exe
-      CXX: cl.exe
       SCCACHE_IDLE_TIMEOUT: "12000"
     strategy:
       fail-fast: false
       matrix:
-        config: [Debug, Release]
+        include:
+          - os: windows-2022
+            name: Windows 2022
+            config: Debug
+            vs_path: &vs_path_2022 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat'
+            integration_tests_flag: *integration_tests_off
+          - os: windows-2022
+            name: Windows 2022
+            config: Release
+            vs_path: *vs_path_2022
+            integration_tests_flag: *integration_tests_on
+          - os: windows-2025-vs2026
+            name: Windows 2025 (VS 2026)
+            config: Debug
+            vs_path: &vs_path_2026 'C:\Program Files\Microsoft Visual Studio\18\Enterprise\Common7\Tools\VsDevCmd.bat'
+            integration_tests_flag: *integration_tests_off
+          - os: windows-2025-vs2026
+            name: Windows 2025 (VS 2026)
+            config: Release
+            vs_path: *vs_path_2026
+            integration_tests_flag: *integration_tests_on
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v1
+        uses: actions/checkout@v6
         with:
           fetch-depth: 10
-         
-      - name: Configure and build
+
+      # - name: Install Ninja
+      #   uses: seanmiddleditch/gha-setup-ninja@master
+
+      # - name: VCPKG
+      #   run: |
+      #     vcpkg install gmp:x64-windows
+
+      - name: Dependencies (install sccache)
+        shell: pwsh
+        run: |
+          $version = "v0.8.2"
+          $zip = "sccache-$version-x86_64-pc-windows-msvc.zip"
+          $url = "https://github.com/mozilla/sccache/releases/download/$version/$zip"
+
+          $dest = "$env:RUNNER_TEMP\sccache"
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+
+          Invoke-WebRequest -Uri $url -OutFile "$dest\sccache.zip"
+          Expand-Archive -Path "$dest\sccache.zip" -DestinationPath $dest -Force
+
+          # Find where sccache.exe actually ended up
+          $exe = Get-ChildItem -Path $dest -Recurse -Filter "sccache.exe" | Select-Object -First 1
+          if (-not $exe) { throw "sccache.exe not found after extracting $zip into $dest" }
+
+          Add-Content $env:GITHUB_PATH $exe.DirectoryName
+
+          "SCCACHE_DIR=$env:LOCALAPPDATA\Mozilla\sccache" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+          # Sanity check
+          & $exe.FullName -V
+
+      - name: Cache build
+        id: cache-build
+        uses: actions/cache@v5
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key: ${{ runner.os }}-${{ matrix.config }}-cache-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-${{ matrix.config }}-cache
+
+      - name: Prepare sccache
+        run: |
+          sccache --max-size=1.0G
+          sccache -V && sccache --show-stats && sccache --zero-stats
+
+      - name: Configure
         shell: cmd
         run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat" -arch=x64
-          cmake --version
+          echo Runner OS: ${{ matrix.os }}
+          echo Build Config: ${{ matrix.config }}
+          echo VS Dev Cmd: ${{ matrix.vs_path }}
+          call "${{ matrix.vs_path }}" -arch=x64
           cmake -G Ninja ^
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache ^
+            -DCMAKE_POLICY_DEFAULT_CMP0141=NEW ^
+            -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded ^
             -DCMAKE_BUILD_TYPE=${{ matrix.config }} ^
+            ${{ matrix.integration_tests_flag }} ^
             -B build ^
             -S .
-          cd build
-          ninja -j8
+
+      - name: Build
+        shell: cmd
+        run: |
+          echo Runner OS: ${{ matrix.os }}
+          echo Build Config: ${{ matrix.config }}
+          echo VS Dev Cmd: ${{ matrix.vs_path }}
+          call "${{ matrix.vs_path }}" -arch=x64
+          cmake --build build -j2 && sccache --show-stats
 
       - name: Tests
         run: |

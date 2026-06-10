@@ -22,10 +22,7 @@ namespace manifold_internal {
 using Vertices = Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
 using Facets = Eigen::Matrix<uint64_t, Eigen::Dynamic, 3, Eigen::RowMajor>;
 
-void resolve_nonmanifoldness(
-    Vertices& V,
-    Facets& F,
-    std::vector<size_t>& modified_vertices);
+void resolve_nonmanifoldness(Vertices& V, Facets& F, std::vector<size_t>& modified_vertices);
 
 } // namespace manifold_internal
 

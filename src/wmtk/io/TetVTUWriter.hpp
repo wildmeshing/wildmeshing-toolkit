@@ -35,7 +35,7 @@ public:
      *
      * @param f A function that takes the vertex ID as input and returns the position.
      */
-    void add_vertex_positions(const std::function<VectorXd(const int)>& f);
+    void add_vertex_positions(const std::function<VectorXd(const size_t)>& f);
 
     /**
      * @brief Add vertex attribute.
@@ -50,13 +50,17 @@ public:
      * @param f A function that takes the vertex ID as input and returns the attribute value for
      * that vertex.
      */
-    void add_vertex_attribute(const std::string& name, const std::function<VectorXd(const int)>& f);
+    void add_vertex_attribute(
+        const std::string& name,
+        const std::function<VectorXd(const size_t)>& f);
     /**
      * @brief Add edge attribute.
      *
      * See `add_vertex_attribute` for details.
      */
-    void add_edge_attribute(const std::string& name, const std::function<VectorXd(const int)>& f);
+    void add_edge_attribute(
+        const std::string& name,
+        const std::function<VectorXd(const size_t)>& f);
 
     /**
      * @brief Add triangle attribute.
@@ -65,14 +69,14 @@ public:
      */
     void add_triangle_attribute(
         const std::string& name,
-        const std::function<VectorXd(const int)>& f);
+        const std::function<VectorXd(const size_t)>& f);
 
     /**
      * @brief Add tet attribute.
      *
      * See `add_vertex_attribute` for details.
      */
-    void add_tet_attribute(const std::string& name, const std::function<VectorXd(const int)>& f);
+    void add_tet_attribute(const std::string& name, const std::function<VectorXd(const size_t)>& f);
 
     /**
      * @brief Write the tet mesh with tet and vertex attributes.

@@ -4,14 +4,18 @@
 
 namespace wmtk {
 
-constexpr auto renewal_edges = [](const auto& m, auto op, const auto& newt) {
-    std::vector<std::pair<std::string, wmtk::TetMesh::Tuple>> op_tups;
-    auto new_edges = std::vector<wmtk::TetMesh::Tuple>();
-    for (auto ti : newt) {
-        for (auto j = 0; j < 6; j++) new_edges.push_back(m.tuple_from_edge(ti.tid(m), j));
+constexpr auto renewal_edges = [](const auto& m, auto op, const std::vector<TetMesh::Tuple>& newt) {
+    std::vector<std::pair<std::string, TetMesh::Tuple>> op_tups;
+    std::vector<TetMesh::Tuple> new_edges;
+    for (const TetMesh::Tuple& ti : newt) {
+        for (auto j = 0; j < 6; j++) {
+            new_edges.push_back(m.tuple_from_edge(ti.tid(m), j));
+        }
     };
     wmtk::unique_edge_tuples(m, new_edges);
-    for (auto f : new_edges) op_tups.emplace_back(op, f);
+    for (const auto& f : new_edges) {
+        op_tups.emplace_back(op, f);
+    }
     return op_tups;
 };
 

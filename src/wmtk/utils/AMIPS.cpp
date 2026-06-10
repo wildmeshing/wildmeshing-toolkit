@@ -3,7 +3,6 @@
 namespace wmtk {
 
 
-
 double AMIPS_energy(const std::array<double, 12>& T)
 {
     double helper_0[12];

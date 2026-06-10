@@ -1,6 +1,5 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/components/tetwild/TetWildMesh.h>
-#include <wmtk/components/tetwild/common.h>
 
 #include <igl/read_triangle_mesh.h>
 #include <igl/write_triangle_mesh.h>

@@ -11,12 +11,14 @@ class Rational
 public:
     mpq_t value;
     void canonicalize() { mpq_canonicalize(value); }
-    int get_sign() { return mpq_sgn(value); }
+    int get_sign() const { return mpq_sgn(value); }
     template <typename T>
     void init(const T& v)
     {
         mpq_set(value, v);
     }
+
+    void init_from_bin(const std::string& bin) { mpq_set_str(value, bin.c_str(), 2); }
 
     Rational()
     {
@@ -43,6 +45,7 @@ public:
         mpq_init(value);
         mpq_set(value, other.value);
     }
+
 
     ~Rational() { mpq_clear(value); }
 

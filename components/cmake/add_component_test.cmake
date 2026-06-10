@@ -13,6 +13,11 @@
 # endfunction()
 
 function(add_component_test COMPONENT_NAME)
+    # Unit tests
+    if(NOT BUILD_TESTING)
+        return()
+    endif()
+
     set(COMPONENT_TEST_NAME wmtk_test_${COMPONENT_NAME})
 
     option(WMTK_ENABLE_COMPONENT_TEST_${COMPONENT_NAME} "Enable wmtk component test for ${COMPONENT_NAME}" ON)
@@ -29,6 +34,7 @@ function(add_component_test COMPONENT_NAME)
         Catch2::Catch2WithMain
         wmtk::warnings 
         wmtk::toolkit
+        wmtk::data
     )
 
     # Group source files for IDEs

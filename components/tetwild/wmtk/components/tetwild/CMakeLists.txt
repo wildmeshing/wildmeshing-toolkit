@@ -1,7 +1,5 @@
 # incremental tetwild
 
-include(gmp)
-include(fenvelope)
 include(volumemesher)
 
 set(COMPONENT_NAME tetwild)
@@ -15,8 +13,6 @@ set(SRC_FILES
     TetWildMesh.cpp
 	TetWildMesh.h
 
-	common.h
-	common.cpp
 	Parameters.h
 
 	EdgeSplitting.cpp
@@ -30,16 +26,35 @@ set(SRC_FILES
 	tetwild.hpp
 	tetwild.cpp
 	tetwild_spec.hpp
+
+	orig/Args.h
+	orig/Common.cpp
+	orig/Common.h
+	orig/EdgeCollapser.cpp
+	orig/EdgeCollapser.h
+	orig/EdgeRemover.cpp
+	orig/EdgeRemover.h
+	orig/EdgeSplitter.cpp
+	orig/EdgeSplitter.h
+	orig/ForwardDecls.h
+	orig/LocalOperations.cpp
+	orig/LocalOperations.h
+	orig/MeshRefinement.cpp
+	orig/MeshRefinement.h
+	orig/State.cpp
+	orig/State.h
+	orig/TetmeshElements.cpp
+	orig/TetmeshElements.h
+	orig/VertexSmoother.cpp
+	orig/VertexSmoother.h
     )
 
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
 
 target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC
-	Tracy::TracyClient
 	wmtk::toolkit
 	wmtk::data
-	wmtk::sec_lib
-	wmtk::remeshing_lib
+	wmtk::shortest_edge_collapse
 	igl::predicates
 	VolumeRemesher::VolumeRemesher
 	jse::jse
