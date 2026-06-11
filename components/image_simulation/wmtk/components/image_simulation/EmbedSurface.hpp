@@ -141,6 +141,7 @@ private:
     MatrixXi m_F_on_surface;
     // tags on the tets
     MatrixSi m_T_tags;
+    std::vector<std::set<int64_t>> m_tags;
 
     // input from triangle meshes
     std::vector<MatrixXd> Vs;

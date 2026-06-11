@@ -115,6 +115,11 @@ void apply_operation(MeshT& mesh, const nlohmann::json& json_params)
         mesh.resolve_intersections(tags);
     } else if (operation == "replace_tags") {
         const std::vector<std::string> tags_in_names = json_params["replace_tags_in"];
+        const std::vector<std::string> tag_out_names = json_params["replace_tags_out"];
+        if (tags_in_names.size() != tag_out_names.size()) {
+            log_and_throw_error(
+                "replace_tags_in and replace_tags_out must have the same number of expressions.");
+        }
         std::vector<CellTag> tags_in;
         for (const auto& tag_set_names : tags_in_names) {
             const auto expr_in = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
@@ -124,14 +129,18 @@ void apply_operation(MeshT& mesh, const nlohmann::json& json_params)
             }
             tags_in.push_back(expr_in->tags_involved());
         }
-        const std::string tag_out_name = json_params["replace_tags_out"];
-        const auto expr_out = expression_parser::parse(tag_out_name, mesh.m_tag_name_to_id);
-        logger().info("Parsed replace_tags_out expression: {}", expr_out->to_string());
-        if (!expr_out->contains_only_and()) {
-            log_and_throw_error("Only AND operation is allowed in replace_tags_out expression.");
+        std::vector<CellTag> tags_out;
+        for (const auto& tag_out_name : tag_out_names) {
+            const auto expr_out = expression_parser::parse(tag_out_name, mesh.m_tag_name_to_id);
+            logger().info("Parsed replace_tags_out expression: {}", expr_out->to_string());
+            if (!expr_out->contains_only_and()) {
+                log_and_throw_error(
+                    "Only AND operation is allowed in replace_tags_out expression.");
+            }
+            CellTag tag_out = mesh.string_set_to_cell_tag(expr_out->tag_names_involved());
+            tags_out.push_back(tag_out);
         }
-        CellTag tag_out = mesh.string_set_to_cell_tag(expr_out->tag_names_involved());
-        mesh.replace_tags(tags_in, tag_out);
+        mesh.replace_tags(tags_in, tags_out);
     } else if (operation == "tag_priority") {
         const std::vector<std::string> tag_priority_names = json_params["tag_priority"];
         std::vector<int64_t> tag_priority;
@@ -186,7 +195,7 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     write_unique_vtu();
 
 
-    if (params.preserve_topology && !params.skip_simplify) {
+    if (params.operation == "remeshing" && params.preserve_topology && !params.skip_simplify) {
         // collapse for getting the right edge length
         logger().info("Simplify after insertion");
         mesh.simplify();

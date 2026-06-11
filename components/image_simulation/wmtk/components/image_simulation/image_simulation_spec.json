@@ -347,9 +347,14 @@
   },
   {
     "pointer": "/replace_tags_out",
+    "type": "list",
+    "default": [],
+    "doc": "The output tags (written as intersection) that should replace the input tags. For each input tag, an output tag must be provided. The order of the output tags should correspond to the order of the input tags."
+  },
+  {
+    "pointer": "/replace_tags_out/*",
     "type": "string",
-    "default": "_",
-    "doc": "The output tags (written as intersection) that should replace the input tags."
+    "doc": "An intersection of tags that should replace the input tags."
   },
   {
     "pointer": "/tag_priority",

@@ -608,7 +608,7 @@ public:
 
     void resolve_intersections(const std::vector<CellTag>& intersecting_tags);
 
-    void replace_tags(const std::vector<CellTag>& tags_in, const CellTag& tag_out);
+    void replace_tags(const std::vector<CellTag>& tags_in, const std::vector<CellTag>& tags_out);
 
     /**
      * @brief Gives tags priority over others.

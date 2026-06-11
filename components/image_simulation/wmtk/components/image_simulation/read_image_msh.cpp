@@ -389,9 +389,7 @@ InputData read_mesh(
         input_transforms[i] = get_input_transform(json_params, i);
     }
 
-    const bool use_sample_envelope = json_params["use_sample_envelope"];
     const int NUM_THREADS = json_params["num_threads"];
-    const int max_its = json_params["max_iterations"];
     const bool debug_output = json_params["DEBUG_output"];
     const bool preserve_topology = json_params["preserve_topology"];
     const bool skip_simplify = json_params["skip_simplify"];
@@ -416,8 +414,8 @@ InputData read_mesh(
     if (!preserve_topology && !skip_simplify) {
         /**
          * Simplify the input surface only if topology preservation is not required, since
-         * simplification can change the topology.
-         * If topology preservation is required, simplification is performed after insertion.
+         * simplification can change the topology. If topology preservation is required,
+         * simplification is performed after insertion.
          */
         auto [bbox_min, bbox_max] = image_mesh.bbox_surf_minmax();
         double diag = (bbox_max - bbox_min).norm();
@@ -449,10 +447,11 @@ InputData read_mesh(
     }
     input_data.T_input = image_mesh.T_emb();
     input_data.T_input_tag = image_mesh.T_tags();
+    // create generic tag names first
     for (int i = 0; i < input_data.T_input_tag.cols(); ++i) {
         input_data.tag_names.push_back("tag_" + std::to_string(i));
     }
-
+    // use provided tag names if possible
     for (int i = 0; i < input_data.T_input_tag.cols(); ++i) {
         if (i < input_names.size()) {
             input_data.tag_names[i] = input_names[i];

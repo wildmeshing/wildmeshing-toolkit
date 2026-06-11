@@ -311,7 +311,7 @@ public:
 
     void resolve_intersections(const std::vector<CellTag>& intersecting_tags);
 
-    void replace_tags(const std::vector<CellTag>& tags_in, const CellTag& tag_out);
+    void replace_tags(const std::vector<CellTag>& tags_in, const std::vector<CellTag>& tags_out);
 
     void tag_priority(const std::vector<int64_t>& tags_order);
 

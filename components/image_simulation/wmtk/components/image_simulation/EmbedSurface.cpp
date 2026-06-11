@@ -1,11 +1,7 @@
 #include "EmbedSurface.hpp"
 
 // clang-format off
-#include <igl/is_edge_manifold.h>
-#include <igl/is_vertex_manifold.h>
-#include <igl/remove_duplicate_vertices.h>
 #include <igl/remove_unreferenced.h>
-#include <igl/adjacency_list.h>
 #include <igl/tet_tet_adjacency.h>
 #include <igl/read_triangle_mesh.h>
 #include <igl/winding_number.h>
@@ -792,7 +788,7 @@ bool EmbedSurface::embed_surface(const bool flood_fill)
             }
 
             // get all tags for one image
-            for (size_t img_id = 0; img_id < m_T_tags.cols(); ++img_id) {
+            for (size_t img_id = 0; img_id < Fs.size(); ++img_id) {
                 std::map<int, int> m;
                 for (size_t j = 0; j < region.size(); ++j) {
                     int tag = m_T_tags.coeff(region[j], img_id);
@@ -984,6 +980,7 @@ void EmbedSurface::tag_from_winding_number()
 {
     m_T_tags.resize(m_T_emb.rows(), Fs.size());
     m_T_tags.setZero();
+    m_tags.resize(m_T_emb.rows());
 
     MatrixXd P;
     P.resize(m_T_emb.rows(), 3);
@@ -1005,6 +1002,7 @@ void EmbedSurface::tag_from_winding_number()
                 continue;
             }
             m_T_tags.coeffRef(j, i) = 1;
+            m_tags[j].insert(i);
         }
     }
     m_T_tags.makeCompressed();
