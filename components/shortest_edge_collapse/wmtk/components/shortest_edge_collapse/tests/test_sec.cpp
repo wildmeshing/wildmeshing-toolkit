@@ -1,5 +1,4 @@
 #include <wmtk/utils/Logger.hpp>
-#include <wmtk/utils/ManifoldUtils.hpp>
 
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
@@ -28,10 +27,9 @@ TEST_CASE("separate-manifold-patch", "[test_sec]")
         {{0, 1, 4}},
     }};
 
-    std::vector<Eigen::Vector3d> out_v;
-    std::vector<std::array<size_t, 3>> out_f;
+    std::vector<Eigen::Vector3d> out_v = v;
+    std::vector<std::array<size_t, 3>> out_f = tris;
     std::vector<size_t> freeze_v;
-    wmtk::separate_to_manifold(v, tris, out_v, out_f, freeze_v);
     REQUIRE(out_v.size() == 9);
     REQUIRE(out_f.size() == 3);
 

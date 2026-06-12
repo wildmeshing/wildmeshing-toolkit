@@ -6,7 +6,6 @@
 #include <wmtk/utils/getRSS.h>
 #include <wmtk/Types.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
-#include <wmtk/utils/Reader.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
 #include "IsotropicRemeshing.h"
@@ -83,13 +82,6 @@ void isotropic_remeshing(nlohmann::json json_params)
     std::vector<size_t> modified_nonmanifold_v;
     {
         double remove_duplicate_eps = 1e-5;
-        // wmtk::stl_to_manifold_wmtk_input(
-        //     input_path,
-        //     remove_duplicate_eps,
-        //     box_minmax,
-        //     verts,
-        //     tris,
-        //     modified_nonmanifold_v);
         MatrixXd V;
         MatrixXi F;
         wmtk::io::read_triangle_mesh(input_path, V, F, remove_duplicate_eps);

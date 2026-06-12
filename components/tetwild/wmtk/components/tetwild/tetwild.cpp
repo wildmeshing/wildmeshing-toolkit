@@ -12,7 +12,6 @@
 #include <memory>
 #include <vector>
 #include <wmtk/envelope/Envelope.hpp>
-#include <wmtk/utils/ManifoldUtils.hpp>
 #include <wmtk/utils/partition_utils.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 #include "wmtk/utils/InsertTriangleUtils.hpp"

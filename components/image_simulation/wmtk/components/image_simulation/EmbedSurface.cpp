@@ -17,8 +17,6 @@
 #include <wmtk/io/read_triangle_mesh.hpp>
 #include <wmtk/utils/InsertTriangleUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include <wmtk/utils/ManifoldUtils.hpp>
-#include <wmtk/utils/Reader.hpp>
 #include <wmtk/utils/io.hpp>
 
 #include <wmtk/components/shortest_edge_collapse/ShortestEdgeCollapse.h>
@@ -605,9 +603,7 @@ EmbedSurface::EmbedSurface(
 
     std::vector<Eigen::Vector3d> verts;
     std::vector<std::array<size_t, 3>> tris;
-    verts.resize(V.rows());
-    tris.resize(F.rows());
-    wmtk::eigen_to_wmtk_input(verts, tris, V, F);
+    VF_to_vectors(V, F, verts, tris);
 
     V_surf_from_vector(verts);
     F_surf_from_vector(tris);
