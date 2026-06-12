@@ -1,5 +1,6 @@
 #pragma once
 
+#include <set>
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/utils/Delaunay.hpp>

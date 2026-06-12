@@ -1002,7 +1002,7 @@ void EmbedSurface::tag_from_winding_number()
                 continue;
             }
             m_T_tags.coeffRef(j, i) = 1;
-            m_tags[j].insert(i);
+            m_tags[j].insert((int64_t)i);
         }
     }
     m_T_tags.makeCompressed();
