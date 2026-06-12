@@ -6,7 +6,7 @@
 #include <jse/jse.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
-#include <wmtk/utils/Reader.hpp>
+#include <wmtk/io/read_triangle_mesh.hpp>
 
 #include <wmtk/components/shortest_edge_collapse/ShortestEdgeCollapse.h>
 #include <memory>
@@ -134,33 +134,16 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     std::vector<Eigen::Vector3d> verts;
     std::vector<std::array<size_t, 3>> tris;
     std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax;
-    // double remove_duplicate_esp = params.epsr;
-    double remove_duplicate_esp = 2e-3;
     std::vector<size_t> modified_nonmanifold_v;
-    wmtk::stl_to_manifold_wmtk_input(
-        input_paths,
-        remove_duplicate_esp,
-        box_minmax,
-        verts,
-        tris,
-        modified_nonmanifold_v);
-
-    // rotate by an arbitrary angle
-    // double theta = M_PI * 0.2;
-    // Eigen::Matrix3d rotation_m;
-    // rotation_m << 1, 0, 0, 0, cos(theta), -sin(theta), 0, sin(theta), cos(theta);
-
-    // box_minmax.first = Eigen::Vector3d(10000, 10000, 10000);
-    // box_minmax.second = Eigen::Vector3d(-10000, -10000, -10000);
-    // for (size_t i = 0; i < verts.size(); i++) {
-    //     verts[i] = rotation_m * verts[i];
-    //     if (verts[i][0] < box_minmax.first[0]) box_minmax.first[0] = verts[i][0];
-    //     if (verts[i][1] < box_minmax.first[1]) box_minmax.first[1] = verts[i][1];
-    //     if (verts[i][2] < box_minmax.first[0]) box_minmax.first[2] = verts[i][2];
-    //     if (verts[i][0] > box_minmax.second[0]) box_minmax.second[0] = verts[i][0];
-    //     if (verts[i][1] > box_minmax.second[1]) box_minmax.second[1] = verts[i][1];
-    //     if (verts[i][2] > box_minmax.second[2]) box_minmax.second[2] = verts[i][2];
-    // }
+    {
+        double remove_duplicate_eps = 2e-3;
+        MatrixXd V;
+        MatrixXi F;
+        io::read_triangle_mesh(input_paths, V, F, remove_duplicate_eps);
+        box_minmax.first = V.colwise().minCoeff();
+        box_minmax.second = V.colwise().maxCoeff();
+        VF_to_vectors(V, F, verts, tris);
+    }
 
     {
         Eigen::MatrixXi F(tris.size(), 3);

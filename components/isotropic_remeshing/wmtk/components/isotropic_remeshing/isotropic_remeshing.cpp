@@ -4,6 +4,8 @@
 #include <jse/jse.h>
 
 #include <wmtk/utils/getRSS.h>
+#include <wmtk/Types.hpp>
+#include <wmtk/io/read_triangle_mesh.hpp>
 #include <wmtk/utils/Reader.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
@@ -78,15 +80,23 @@ void isotropic_remeshing(nlohmann::json json_params)
     std::vector<Eigen::Vector3d> verts;
     std::vector<std::array<size_t, 3>> tris;
     std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax;
-    double remove_duplicate_eps = 1e-5;
     std::vector<size_t> modified_nonmanifold_v;
-    wmtk::stl_to_manifold_wmtk_input(
-        input_path,
-        remove_duplicate_eps,
-        box_minmax,
-        verts,
-        tris,
-        modified_nonmanifold_v);
+    {
+        double remove_duplicate_eps = 1e-5;
+        // wmtk::stl_to_manifold_wmtk_input(
+        //     input_path,
+        //     remove_duplicate_eps,
+        //     box_minmax,
+        //     verts,
+        //     tris,
+        //     modified_nonmanifold_v);
+        MatrixXd V;
+        MatrixXi F;
+        wmtk::io::read_triangle_mesh(input_path, V, F, remove_duplicate_eps);
+        box_minmax.first = V.colwise().minCoeff();
+        box_minmax.second = V.colwise().maxCoeff();
+        VF_to_vectors(V, F, verts, tris);
+    }
 
     double diag = (box_minmax.first - box_minmax.second).norm();
     const double envelope_size = env_rel * diag;

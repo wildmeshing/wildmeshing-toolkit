@@ -27,4 +27,11 @@ void read_triangle_mesh(
     double tol_rel = 2e-4,
     double tol_abs = -1);
 
+void read_triangle_mesh(
+    const std::vector<std::string>& paths,
+    Eigen::MatrixXd& V,
+    Eigen::MatrixXi& F,
+    double tol_rel = 2e-4,
+    double tol_abs = -1);
+
 } // namespace wmtk::io
