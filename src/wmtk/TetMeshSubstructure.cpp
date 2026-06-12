@@ -126,7 +126,7 @@ size_t TetMesh::compute_vertex_order(const size_t vid) const
     const auto vvs = get_one_ring_vids_for_vertex(vid);
     std::map<size_t, size_t> edge_orders_count;
     for (const size_t v : vvs) {
-        const size_t nf = get_num_surface_faces_for_edge({v, vid});
+        const size_t nf = get_num_surface_faces_for_edge({{v, vid}});
         if (nf == 0 || nf == 2) {
             continue;
         }
