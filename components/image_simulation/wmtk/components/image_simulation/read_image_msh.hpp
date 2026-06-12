@@ -24,16 +24,6 @@ struct InputData
 InputData read_image_msh(const std::string& path);
 
 /**
- * @brief Read one or multiple images and convert them into a tet mesh.
- *
- * The color in the image become tet tags.
- */
-InputData read_image(
-    const std::vector<std::string>& input_paths,
-    const std::string& output_filename,
-    const nlohmann::json& json_params);
-
-/**
  * @brief Read one or multiple meshes and convert them into a tet mesh.
  *
  * Winding number is used to tag inside/outside.

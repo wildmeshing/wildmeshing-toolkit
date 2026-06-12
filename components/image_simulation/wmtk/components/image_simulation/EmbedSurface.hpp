@@ -1,5 +1,6 @@
 #pragma once
 
+#include <set>
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/utils/Delaunay.hpp>
@@ -38,24 +39,6 @@ void delaunay_box_mesh(
  * @param T_vol Tets.
  * @param[out] V_emb Vertices after embedding.
  * @param[out] T_emb Tets after embedding.
- */
-void embed_surface(
-    const MatrixXd& V_surface,
-    const MatrixXi& F_surface,
-    const MatrixXd& V_vol,
-    const MatrixXi& T_vol,
-    MatrixXr& V_emb,
-    MatrixXi& T_emb);
-
-/**
- * @brief Embed a surface in the given volumetric mesh.
- *
- * @param V_surface Surface vertices.
- * @param F_surface Surface faces (triangles).
- * @param V_vol Tet vertices.
- * @param T_vol Tets.
- * @param[out] V_emb Vertices after embedding.
- * @param[out] T_emb Tets after embedding.
  * @param[out] F_on_surface Faces that are on the surface.
  */
 void embed_surface(
@@ -67,35 +50,12 @@ void embed_surface(
     MatrixXi& T_emb,
     MatrixXi& F_on_surface);
 
-void tag_tets_from_image(
-    const std::string& filename,
-    const Matrix4d& xyz2ijk,
-    const MatrixXd& V,
-    const MatrixXi& T,
-    VectorXi& T_tags);
-
-void tag_tets_from_image(
-    const ImageData& data,
-    const Matrix4d& xyz2ijk,
-    const MatrixXd& V,
-    const MatrixXi& T,
-    VectorXi& T_tags);
-
-void tag_tets_from_images(
-    const std::vector<ImageData>& data,
-    const Matrix4d& xyz2ijk,
-    const MatrixXd& V,
-    const MatrixXi& T,
-    MatrixXi& T_tags);
-
 /**
  * A class for reading an image and converting it into a tet mesh.
  */
 class EmbedSurface
 {
 public:
-    EmbedSurface(const std::vector<std::string>& img_filenames, const Matrix4d& ijk2xyz);
-
     /**
      * @brief Input from meshes.
      */
@@ -118,8 +78,6 @@ public:
     void remove_duplicates(const double eps);
 
     bool embed_surface(const bool flood_fill = false);
-
-    bool embed_surface_tetgen();
 
     /**
      * @brief Remove unreferenced vertices.
@@ -167,8 +125,6 @@ private:
 private:
     std::vector<std::string> m_img_filenames;
     std::vector<ImageData> m_img_datas;
-    Matrix4d m_ijk2xyz; // transformation matrix from image to xyz coordinates
-    Matrix4d m_xyz2ijk;
 
     // the surface separating all tags
     MatrixXd m_V_surface;
@@ -186,6 +142,7 @@ private:
     MatrixXi m_F_on_surface;
     // tags on the tets
     MatrixSi m_T_tags;
+    std::vector<std::set<int64_t>> m_tags;
 
     // input from triangle meshes
     std::vector<MatrixXd> Vs;

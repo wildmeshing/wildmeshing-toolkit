@@ -10,32 +10,6 @@
 
 namespace wmtk::components::image_simulation {
 
-Matrix4d get_ijk2xyz(const nlohmann::json& json_params)
-{
-    const std::array<std::array<double, 4>, 4> ijk_to_ras = json_params["ijk_to_ras"];
-    Matrix4d ijk2ras;
-    for (size_t i = 0; i < 4; ++i) {
-        for (size_t j = 0; j < 4; ++j) {
-            ijk2ras(i, j) = ijk_to_ras[i][j];
-        }
-    }
-    logger().info("IJK to RAS:\n{}", ijk2ras);
-
-    /**
-     * R = -x
-     * A = z
-     * S = y
-     */
-    Matrix4d ras2xyz;
-    ras2xyz << -1, 0, 0, 0, //
-        0, 0, 1, 0, //
-        0, 1, 0, 0, //
-        0, 0, 0, 1;
-    Matrix4d ijk2xyz = ras2xyz * ijk2ras;
-
-    return ijk2xyz;
-}
-
 Matrix4d get_input_transform(const nlohmann::json& json_params, const size_t input_index)
 {
     const nlohmann::json& its_j = json_params["input_transform"];
@@ -403,63 +377,6 @@ InputData read_image_msh(const std::string& path)
     return input_data;
 }
 
-InputData read_image(
-    const std::vector<std::string>& input_paths,
-    const std::string& output_filename,
-    const nlohmann::json& json_params)
-{
-    InputData input_data;
-
-    Matrix4d ijk2xyz = get_ijk2xyz(json_params);
-
-    const bool use_sample_envelope = json_params["use_sample_envelope"];
-    const int NUM_THREADS = json_params["num_threads"];
-    const int max_its = json_params["max_iterations"];
-    const bool write_vtu = json_params["write_vtu"];
-
-    const Vector4d single_voxel_max = ijk2xyz * Vector4d::Ones();
-    const Vector4d single_voxel_min = ijk2xyz * Vector4d(0, 0, 0, 1);
-    double eps = (from_homogenuous(single_voxel_max) - from_homogenuous(single_voxel_min))
-                     .cwiseAbs()
-                     .minCoeff() *
-                 0.1;
-    if (eps <= 0) {
-        logger().warn("EPS = {}, ijk_to_ras matix might be broken! Changing eps to 1e-4", eps);
-        eps = 1e-4;
-    }
-
-    // convert image into tet mesh
-    EmbedSurface image_mesh(input_paths, ijk2xyz);
-
-    if (write_vtu) {
-        image_mesh.write_surf_off(output_filename + "_input.off");
-    }
-
-    // input_data.V_envelope = image_mesh.V_surface();
-    // input_data.F_envelope = image_mesh.F_surface();
-
-    // const bool all_rounded = image_mesh.embed_surface();
-    const bool all_rounded =
-        json_params["use_tetgen"] ? image_mesh.embed_surface_tetgen() : image_mesh.embed_surface();
-    image_mesh.consolidate();
-
-    if (write_vtu) {
-        // image_mesh.write_emb_vtu(get_unique_vtu_name());
-        image_mesh.write_emb_surf_off(output_filename + "_input_emb.off");
-    }
-
-    input_data.V_input = image_mesh.V_emb();
-    if (!all_rounded) {
-        input_data.V_input_r = image_mesh.V_emb_r();
-    }
-    input_data.T_input = image_mesh.T_emb();
-    input_data.T_input_tag = image_mesh.T_tags();
-
-    wmtk::logger().info("======= finish image-tet conversion =========");
-
-    return input_data;
-}
-
 InputData read_mesh(
     const std::vector<std::string>& input_paths,
     const std::string& output_filename,
@@ -472,9 +389,7 @@ InputData read_mesh(
         input_transforms[i] = get_input_transform(json_params, i);
     }
 
-    const bool use_sample_envelope = json_params["use_sample_envelope"];
     const int NUM_THREADS = json_params["num_threads"];
-    const int max_its = json_params["max_iterations"];
     const bool debug_output = json_params["DEBUG_output"];
     const bool preserve_topology = json_params["preserve_topology"];
     const bool skip_simplify = json_params["skip_simplify"];
@@ -499,8 +414,8 @@ InputData read_mesh(
     if (!preserve_topology && !skip_simplify) {
         /**
          * Simplify the input surface only if topology preservation is not required, since
-         * simplification can change the topology.
-         * If topology preservation is required, simplification is performed after insertion.
+         * simplification can change the topology. If topology preservation is required,
+         * simplification is performed after insertion.
          */
         auto [bbox_min, bbox_max] = image_mesh.bbox_surf_minmax();
         double diag = (bbox_max - bbox_min).norm();
@@ -519,9 +434,7 @@ InputData read_mesh(
     input_data.V_envelope = image_mesh.V_surface();
     input_data.F_envelope = image_mesh.F_surface();
 
-    const bool all_rounded = json_params["use_tetgen"]
-                                 ? image_mesh.embed_surface_tetgen()
-                                 : image_mesh.embed_surface(preserve_topology);
+    const bool all_rounded = image_mesh.embed_surface(preserve_topology);
     image_mesh.consolidate();
 
     if (debug_output) {
@@ -534,10 +447,11 @@ InputData read_mesh(
     }
     input_data.T_input = image_mesh.T_emb();
     input_data.T_input_tag = image_mesh.T_tags();
+    // create generic tag names first
     for (int i = 0; i < input_data.T_input_tag.cols(); ++i) {
         input_data.tag_names.push_back("tag_" + std::to_string(i));
     }
-
+    // use provided tag names if possible
     for (int i = 0; i < input_data.T_input_tag.cols(); ++i) {
         if (i < input_names.size()) {
             input_data.tag_names[i] = input_names[i];

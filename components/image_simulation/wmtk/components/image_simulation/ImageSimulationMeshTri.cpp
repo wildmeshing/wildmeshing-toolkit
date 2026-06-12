@@ -488,56 +488,6 @@ void ImageSimulationMeshTri::write_msh(std::string file, const bool write_envelo
         return Vector3d(p2[0], p2[1], 0);
     });
 
-    const auto faces = get_faces();
-    msh.add_faces(faces.size(), [&](size_t k) {
-        const size_t fid = faces[k].fid(*this);
-        auto vs = oriented_tri_vertices(faces[k]);
-        std::array<size_t, 3> data;
-        for (size_t j = 0; j < 3; j++) {
-            data[j] = vs[j].vid(*this);
-            assert(data[j] < vtx.size());
-        }
-        return data;
-    });
-
-    msh.add_face_vertex_attribute<1>("sizing_scalar", [&](size_t i) {
-        return m_vertex_attribute[i].m_sizing_scalar;
-    });
-    msh.add_face_attribute<1>("quality", [&](size_t i) { return m_face_attribute[i].m_quality; });
-
-    for (size_t j = 0; j < m_tags_count; ++j) {
-        msh.add_face_attribute<1>(fmt::format("tag_{}", j), [&](size_t i) {
-            return m_face_attribute[i].tags.count(j) ? 1 : 0;
-        });
-    }
-
-    msh.add_physical_group("ImageVolume");
-
-    if (m_envelope && write_envelope) {
-        msh.add_edge_vertices(m_V_envelope.size(), [this](size_t k) {
-            return Vector3d(m_V_envelope[k][0], m_V_envelope[k][1], 0);
-        });
-        msh.add_edges(m_E_envelope.size(), [this](size_t k) { return m_E_envelope[k]; });
-        msh.add_physical_group("EnvelopeSurface");
-    }
-
-    logger().info("Write {}", file);
-    msh.save(file, true);
-}
-
-void ImageSimulationMeshTri::write_msh_groups(std::string file, const bool write_envelope)
-{
-    consolidate_mesh();
-
-    wmtk::MshData msh;
-
-    const auto& vtx = get_vertices();
-    msh.add_face_vertices(vtx.size(), [&](size_t k) {
-        auto i = vtx[k].vid(*this);
-        Vector2d p2 = m_vertex_attribute[i].m_pos;
-        return Vector3d(p2[0], p2[1], 0);
-    });
-
     const auto& faces = get_faces();
 
     int64_t max_tag = -1;
@@ -1491,34 +1441,6 @@ void ImageSimulationMeshTri::smooth_all_vertices(const size_t n_iters)
             write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
         }
     }
-
-    // re-build envelope
-    if (m_params.smooth_without_envelope) {
-        logger().warn("Update envelope");
-        MatrixXd V;
-        V.resize(vert_capacity(), 2);
-        V.setZero();
-        for (size_t i = 0; i < vert_capacity(); ++i) {
-            const Tuple v = tuple_from_vertex(i);
-            if (!v.is_valid(*this)) {
-                continue;
-            }
-            const size_t vid = v.vid(*this);
-            V.row(i) = m_vertex_attribute.at(vid).m_pos;
-        }
-
-        const auto surf_edges = get_edges_by_condition([](auto& f) { return f.m_is_surface_fs; });
-        MatrixXi E;
-        E.resize(surf_edges.size(), 2);
-        for (size_t i = 0; i < surf_edges.size(); ++i) {
-            E.row(i) = Vector2i((int)surf_edges[i][0], (int)surf_edges[i][1]);
-        }
-
-        m_envelope = nullptr;
-        m_V_envelope.clear();
-        m_E_envelope.clear();
-        init_envelope(V, E);
-    }
 }
 
 bool ImageSimulationMeshTri::smooth_before(const Tuple& t)
@@ -1593,7 +1515,7 @@ bool ImageSimulationMeshTri::smooth_after(const Tuple& t)
     logger().trace("old pos {} -> new pos {}", old_pos.transpose(), VA[vid].m_pos.transpose());
 
     // check surface containment
-    if (VA[vid].m_is_on_surface && !m_params.smooth_without_envelope) {
+    if (VA[vid].m_is_on_surface) {
         // write_vtu_with_energies(fmt::format("debug_smooth_{}", m_debug_print_counter++));
 
         for (size_t i = 1; i < surf_assembles.size(); ++i) {
@@ -1656,10 +1578,7 @@ std::shared_ptr<polysolve::nonlinear::Problem> ImageSimulationMeshTri::get_envel
 {
     const double w = m_s_envelope * m_params.w_envelope;
 
-    auto envelope_energy = std::make_shared<optimization::EnvelopeEnergy2D>(
-        m_envelope_orig,
-        w,
-        !m_params.smooth_without_envelope);
+    auto envelope_energy = std::make_shared<optimization::EnvelopeEnergy2D>(m_envelope_orig, w);
     return envelope_energy;
 }
 

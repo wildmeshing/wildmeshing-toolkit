@@ -183,7 +183,6 @@ public:
     bool adjust_sizing_field_serial(double max_energy);
 
     void write_msh(std::string file, const bool write_envelope = true);
-    void write_msh_groups(std::string file, const bool write_envelope = true);
 
     void write_vtu(const std::string& path) const;
     void write_vtu_with_energies(const std::string& path) const;
@@ -312,7 +311,7 @@ public:
 
     void resolve_intersections(const std::vector<CellTag>& intersecting_tags);
 
-    void replace_tags(const std::vector<CellTag>& tags_in, const CellTag& tag_out);
+    void replace_tags(const std::vector<CellTag>& tags_in, const std::vector<CellTag>& tags_out);
 
     void tag_priority(const std::vector<int64_t>& tags_order);
 

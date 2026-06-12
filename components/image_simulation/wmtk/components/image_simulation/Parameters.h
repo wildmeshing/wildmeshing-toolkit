@@ -1,4 +1,5 @@
 #pragma once
+#include <nlohmann/json.hpp>
 #include <wmtk/Types.hpp>
 
 namespace wmtk::components::image_simulation {
@@ -18,12 +19,8 @@ struct Parameters
 
     // parameters set in `init` function based on mesh bbox
     double diag_l = -1.;
-    double diag_l2 = -1.;
-    double diag_l3 = -1.;
-    double diag_l4 = -1.;
     VectorXd box_min;
     VectorXd box_max;
-    double vol = -1; // bbox volume
     double splitting_l2 = -1.; // the lower bound length (squared) for edge split
     double collapsing_l2 =
         std::numeric_limits<double>::max(); // the upper bound length (squared) for edge collapse
@@ -34,23 +31,55 @@ struct Parameters
     bool debug_output = false;
     bool perform_sanity_checks = false;
 
-    bool smooth_without_envelope = false;
-
     // weighting terms for the optimization
     double w_amips = 1e-4;
     double w_envelope = 0;
 
     std::string operation = "remeshing";
 
+    bool skip_simplify = true;
+    bool use_sample_envelope = false;
+    int NUM_THREADS = 0;
+    int max_its = 80;
+    bool write_vtu = false;
+    bool write_envelope = true;
+
+    Parameters() = default;
+
+    Parameters(const nlohmann::json& json_params)
+    {
+        output_path = json_params["output"];
+        skip_simplify = json_params["skip_simplify"];
+        use_sample_envelope = json_params["use_sample_envelope"];
+        NUM_THREADS = json_params["num_threads"];
+        max_its = json_params["max_iterations"];
+        write_vtu = json_params["write_vtu"];
+        write_envelope = json_params["write_envelope"];
+
+        epsr = json_params["eps_rel"];
+        eps = json_params["eps"];
+        lr = json_params["length_rel"];
+        l = json_params["length"];
+        stop_energy = json_params["stop_energy"];
+        stop_at_float = json_params["stop_at_float"];
+        preserve_topology = json_params["preserve_topology"];
+
+        epsr_simplify = json_params["eps_simplify_rel"];
+        eps_simplify = json_params["eps_simplify"];
+
+        w_amips = json_params["w_amips"];
+
+        debug_output = json_params["DEBUG_output"];
+        perform_sanity_checks = json_params["DEBUG_sanity_checks"];
+
+        operation = json_params["operation"];
+    }
+
     void init(const VectorXd& min_, const VectorXd& max_)
     {
         box_min = min_;
         box_max = max_;
-        vol = (box_max - box_min).prod();
         diag_l = (box_max - box_min).norm();
-        diag_l2 = diag_l * diag_l;
-        diag_l3 = diag_l * diag_l * diag_l;
-        diag_l4 = diag_l * diag_l * diag_l * diag_l;
         if (l > 0)
             lr = l / diag_l;
         else

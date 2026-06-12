@@ -12,11 +12,9 @@ nlohmann::json image_simulation_spec = R"(
       "operation",
       "output",
       "input_names",
-      "ijk_to_ras",
       "input_transform",
       "skip_simplify",
       "use_sample_envelope",
-      "use_tetgen",
       "num_threads",
       "max_iterations",
       "eps_rel",
@@ -30,7 +28,6 @@ nlohmann::json image_simulation_spec = R"(
       "stop_at_float",
       "preserve_topology",
       "w_amips",
-      "smooth_without_envelope",
       "write_vtu",
       "write_envelope",
       "log_file",
@@ -100,29 +97,6 @@ nlohmann::json image_simulation_spec = R"(
     "doc": "Output file name (without extension)."
   },
   {
-    "pointer": "/ijk_to_ras",
-    "type": "list",
-    "doc": "Transformation matrix (4x4 homogeneous coordinates) from image coordinates to the RAS coordinate system.",
-    "min": 4,
-    "max": 4,
-    "default": [
-      [1, 0, 0, 0],
-      [0, 1, 0, 0],
-      [0, 0, 1, 0],
-      [0, 0, 0, 1]
-    ]
-  },
-  {
-    "pointer": "/ijk_to_ras/*",
-    "type": "list",
-    "min": 4,
-    "max": 4
-  },
-  {
-    "pointer": "/ijk_to_ras/*/*",
-    "type": "float"
-  },
-  {
     "pointer": "/input_transform",
     "type": "list",
     "doc": "Transformation matrices for the inputs. Transformations are optional and don't need to be described for all inputs.",
@@ -155,12 +129,6 @@ nlohmann::json image_simulation_spec = R"(
     "type": "bool",
     "default": false,
     "doc": "Use sample envelope instead of exact one."
-  },
-  {
-    "pointer": "/use_tetgen",
-    "type": "bool",
-    "default": false,
-    "doc": "Use tetgen for insertion instead of binary space partitioning."
   },
   {
     "pointer": "/num_threads",
@@ -265,12 +233,6 @@ nlohmann::json image_simulation_spec = R"(
     "min": 0,
     "max": 1,
     "doc": "AMIPS energy"
-  },
-  {
-    "pointer": "/smooth_without_envelope",
-    "type": "bool",
-    "default": false,
-    "doc": "Ignore the envelope during smoothing and re-compute it afterwards. This may cause the geometry to drift!"
   },
   {
     "pointer": "/write_vtu",
@@ -390,9 +352,14 @@ nlohmann::json image_simulation_spec = R"(
   },
   {
     "pointer": "/replace_tags_out",
+    "type": "list",
+    "default": [],
+    "doc": "The output tags (written as intersection) that should replace the input tags. For each input tag, an output tag must be provided. The order of the output tags should correspond to the order of the input tags."
+  },
+  {
+    "pointer": "/replace_tags_out/*",
     "type": "string",
-    "default": "_",
-    "doc": "The output tags (written as intersection) that should replace the input tags."
+    "doc": "An intersection of tags that should replace the input tags."
   },
   {
     "pointer": "/tag_priority",

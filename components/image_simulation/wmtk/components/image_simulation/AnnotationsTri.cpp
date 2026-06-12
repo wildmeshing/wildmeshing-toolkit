@@ -535,22 +535,29 @@ void ImageSimulationMeshTri::resolve_intersections(const std::vector<CellTag>& i
 
 void ImageSimulationMeshTri::replace_tags(
     const std::vector<CellTag>& tags_in,
-    const CellTag& tag_out)
+    const std::vector<CellTag>& tags_out)
 {
     for (const Tuple& t : get_faces()) {
         CellTag& tags = m_face_attribute[t.fid(*this)].tags;
-        bool found_some = false;
-        for (const CellTag& tag : tags_in) {
-            if (set_includes(tags, tag)) {
-                found_some = true;
-                // remove tag from tags
-                for (const size_t t : tag) {
-                    tags.erase(t);
+        std::vector<bool> found_tags(tags_in.size(), false);
+        for (size_t i = 0; i < tags_in.size(); ++i) {
+            if (set_includes(tags, tags_in[i])) {
+                found_tags[i] = true;
+            }
+        }
+        // remove "tags_in" from tags
+        for (size_t i = 0; i < tags_in.size(); ++i) {
+            if (found_tags[i]) {
+                for (const int64_t tt : tags_in[i]) {
+                    tags.erase(tt);
                 }
             }
         }
-        if (found_some) {
-            tags.insert(tag_out.begin(), tag_out.end());
+        // add "tags_out" to tags
+        for (size_t i = 0; i < tags_out.size(); ++i) {
+            if (found_tags[i]) {
+                tags.insert(tags_out[i].begin(), tags_out[i].end());
+            }
         }
     }
 
