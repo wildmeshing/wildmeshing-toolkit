@@ -127,7 +127,7 @@ bool TriWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
         if (VA[v2_id].m_is_on_surface && !m_edge_attribute.at(eid).m_is_surface_fs) {
             const Vector2d& p1 = VA[v1_id].m_posf;
             const Vector2d& p2 = VA[v2_id].m_posf;
-            if (m_envelope->is_outside(std::array<Vector2d, 2>{p1, p2})) {
+            if (m_envelope->is_outside(std::array<Vector2d, 2>{{p1, p2}})) {
                 return false;
             }
         }
@@ -266,7 +266,7 @@ bool TriWildMesh::collapse_edge_after(const Tuple& loc)
             const Vector2d a = VA.at(vids[0]).m_posf;
             const Vector2d b = VA.at(vids[1]).m_posf;
             // surface envelope
-            bool is_out = m_envelope->is_outside(std::array<Vector2d, 2>{a, b});
+            bool is_out = m_envelope->is_outside(std::array<Vector2d, 2>{{a, b}});
             if (is_out) {
                 return false;
             }

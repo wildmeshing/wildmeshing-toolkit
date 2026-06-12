@@ -251,7 +251,7 @@ bool ImageSimulationMesh::swap_face_before(const Tuple& t)
         const size_t v2 = tt.switch_edge().switch_vertex().vid();
         const size_t v3 = tt.switch_face().switch_edge().switch_vertex().vid();
 
-        std::array<size_t, 3> tri{v0, v1, v2};
+        std::array<size_t, 3> tri{{v0, v1, v2}};
 
         for (auto i = 0; i < 3; i++) {
             std::array<size_t, 4> new_tet = t1_vids;

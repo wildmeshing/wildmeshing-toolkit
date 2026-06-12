@@ -413,9 +413,9 @@ void TetWildMesh::finalize_triangle_insertion(const std::vector<std::array<size_
 
                 for (int input_fid : fids) {
                     std::array<Vector3r, 3> tri = {
-                        m_vertex_attribute[faces[input_fid][0]].m_pos,
-                        m_vertex_attribute[faces[input_fid][1]].m_pos,
-                        m_vertex_attribute[faces[input_fid][2]].m_pos};
+                        {m_vertex_attribute[faces[input_fid][0]].m_pos,
+                         m_vertex_attribute[faces[input_fid][1]].m_pos,
+                         m_vertex_attribute[faces[input_fid][2]].m_pos}};
                     if (projected_point_in_triangle(c, tri)) {
                         auto [_, global_tet_fid] = tuple_from_face(vids);
                         m_face_attribute[global_tet_fid].m_is_surface_fs = 1;

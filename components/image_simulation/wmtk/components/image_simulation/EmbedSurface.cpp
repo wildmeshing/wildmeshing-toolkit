@@ -53,9 +53,7 @@ std::vector<std::array<size_t, 3>> triangulate_polygon_face(std::vector<wmtk::Ve
                   (b[0] * c[2] - b[2] * c[0]) != 0))) {
                 no_colinear = false;
                 std::array<size_t, 3> t = {
-                    size_t(cur.second),
-                    size_t(next.second),
-                    size_t(nextnext.second)};
+                    {size_t(cur.second), size_t(next.second), size_t(nextnext.second)}};
                 triangulated_faces.push_back(t);
                 points_vector.erase(points_vector.begin() + ((i + 1) % points_vector.size()));
                 break;
@@ -72,9 +70,9 @@ std::vector<std::array<size_t, 3>> triangulate_polygon_face(std::vector<wmtk::Ve
     // cleanup convex polygon
     while (points_vector.size() >= 3) {
         std::array<size_t, 3> t = {
-            size_t(points_vector[0].second),
-            size_t(points_vector[1].second),
-            size_t(points_vector[points_vector.size() - 1].second)};
+            {size_t(points_vector[0].second),
+             size_t(points_vector[1].second),
+             size_t(points_vector[points_vector.size() - 1].second)}};
         triangulated_faces.push_back(t);
         points_vector.erase(points_vector.begin());
     }
@@ -325,9 +323,7 @@ void embed_surface(
         if (polygon_face.size() == 3) {
             // already a triangle
             std::array<size_t, 3> triangle_face = {
-                polygon_face[0],
-                polygon_face[1],
-                polygon_face[2]};
+                {polygon_face[0], polygon_face[1], polygon_face[2]}};
             int idx = triangulated_faces.size();
             triangulated_faces.push_back(triangle_face);
             if (polygon_faces_on_input_surface[i]) {
@@ -346,9 +342,9 @@ void embed_surface(
             for (int j = 0; j < clipped_indices.size(); j++) {
                 // need to map oldface index to new face indices
                 std::array<size_t, 3> triangle_face = {
-                    polygon_face[clipped_indices[j][0]],
-                    polygon_face[clipped_indices[j][1]],
-                    polygon_face[clipped_indices[j][2]]};
+                    {polygon_face[clipped_indices[j][0]],
+                     polygon_face[clipped_indices[j][1]],
+                     polygon_face[clipped_indices[j][2]]}};
                 int idx = triangulated_faces.size();
                 triangulated_faces.push_back(triangle_face);
 
@@ -402,14 +398,14 @@ void embed_surface(
                 }
             }
 
-            std::array<size_t, 4> tetra = {v0, v1, v2, v3};
+            std::array<size_t, 4> tetra = {{v0, v1, v2, v3}};
 
             // if inverted then fix the orientation
             Vector3r v0v1 = v_rational[v1] - v_rational[v0];
             Vector3r v0v2 = v_rational[v2] - v_rational[v0];
             Vector3r v0v3 = v_rational[v3] - v_rational[v0];
             if ((v0v1.cross(v0v2)).dot(v0v3) < 0) {
-                tetra = {v1, v0, v2, v3};
+                tetra = {{v1, v0, v2, v3}};
             }
 
             // push the tet to final queue;
@@ -465,10 +461,10 @@ void embed_surface(
         for (const size_t f : polygon_cell) {
             for (const size_t t : map_poly_to_tri_face[f]) {
                 std::array<size_t, 4> tetra = {
-                    triangulated_faces[t][0],
-                    triangulated_faces[t][1],
-                    triangulated_faces[t][2],
-                    centroid_idx};
+                    {triangulated_faces[t][0],
+                     triangulated_faces[t][1],
+                     triangulated_faces[t][2],
+                     centroid_idx}};
                 // check inverted tet and fix
                 Vector3r v0v1 = v_rational[tetra[1]] - v_rational[tetra[0]];
                 Vector3r v0v2 = v_rational[tetra[2]] - v_rational[tetra[0]];
