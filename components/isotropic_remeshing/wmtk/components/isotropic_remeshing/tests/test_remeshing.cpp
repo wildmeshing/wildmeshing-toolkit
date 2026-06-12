@@ -82,8 +82,12 @@ TEST_CASE("test_swap", "[test_remeshing]")
     std::vector<TriMesh::Tuple> new_e;
     int cnt = 0;
     for (auto edge : edges) {
-        if (cnt > 200) break;
-        if (!edge.is_valid(m)) continue;
+        if (cnt > 200) {
+            break;
+        }
+        if (!edge.is_valid(m)) {
+            continue;
+        }
         if (!(edge.switch_face(m)).has_value()) {
             REQUIRE_FALSE(m.swap_edge(edge, new_e));
             continue;
