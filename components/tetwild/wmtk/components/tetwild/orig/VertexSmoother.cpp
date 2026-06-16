@@ -364,10 +364,10 @@ void VertexSmoother::smoothSurface()
         for (int i = 0; i < tri_ids.size(); i++) {
             auto jt = std::find(tri_ids[i].begin(), tri_ids[i].end(), v_id);
             int k = jt - tri_ids[i].begin();
-            std::array<Vector3d, 3> tri{
+            std::array<Vector3d, 3> tri{{
                 to_double(p),
                 tet_vertices[tri_ids[i][(k + 1) % 3]].posf,
-                tet_vertices[tri_ids[i][(k + 2) % 3]].posf};
+                tet_vertices[tri_ids[i][(k + 2) % 3]].posf}};
             trisf.push_back(tri);
         }
 

@@ -516,10 +516,10 @@ bool EdgeCollapser::isCollapsable_epsilon(int v1_id, int v2_id)
         if (std::find(tri_ids[i].begin(), tri_ids[i].end(), v2_id) != tri_ids[i].end()) continue;
         auto jt = std::find(tri_ids[i].begin(), tri_ids[i].end(), v1_id);
         *jt = v2_id; // replace v1 with v2
-        std::array<Vector3d, 3> tri{
+        std::array<Vector3d, 3> tri{{
             tet_vertices[tri_ids[i][0]].posf,
             tet_vertices[tri_ids[i][1]].posf,
-            tet_vertices[tri_ids[i][2]].posf};
+            tet_vertices[tri_ids[i][2]].posf}};
         tris.push_back(tri);
     }
 
