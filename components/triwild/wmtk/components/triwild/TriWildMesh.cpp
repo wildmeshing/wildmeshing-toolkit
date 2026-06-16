@@ -119,7 +119,7 @@ std::tuple<double, double> TriWildMesh::local_operations(
         for (const auto& verts : faces) {
             const auto& p0 = m_vertex_attribute[verts[0]].m_posf;
             const auto& p1 = m_vertex_attribute[verts[1]].m_posf;
-            if (m_envelope->is_outside(std::array<Vector2d, 2>{p0, p1})) {
+            if (m_envelope->is_outside(std::array<Vector2d, 2>{{p0, p1}})) {
                 logger().error("Edge {} is outside!", verts);
             }
         }
@@ -238,7 +238,7 @@ void TriWildMesh::init_mesh(const MatrixXd& V, const MatrixXi& F, const MatrixXi
 
     // mark edges as on surface if they are in E
     for (int i = 0; i < E.rows(); i++) {
-        std::array<size_t, 2> vids = {(size_t)E(i, 0), (size_t)E(i, 1)};
+        std::array<size_t, 2> vids = {{(size_t)E(i, 0), (size_t)E(i, 1)}};
         const auto [e, eid] = tuple_from_edge(vids);
         if (!e.is_valid(*this)) {
             log_and_throw_error("Edge {} in E is not found in the mesh!", vids);
@@ -272,8 +272,7 @@ void TriWildMesh::init_mesh(const MatrixXd& V, const MatrixXi& F, const MatrixXi
         const auto surf_edges = get_edges_by_condition([](auto& f) { return f.m_is_surface_fs; });
         for (const auto& verts : surf_edges) {
             std::array<Vector2d, 2> pp = {
-                m_vertex_attribute[verts[0]].m_posf,
-                m_vertex_attribute[verts[1]].m_posf};
+                {m_vertex_attribute[verts[0]].m_posf, m_vertex_attribute[verts[1]].m_posf}};
             if (m_envelope->is_outside(pp)) {
                 log_and_throw_error("Edge {} is outside!", verts);
             }

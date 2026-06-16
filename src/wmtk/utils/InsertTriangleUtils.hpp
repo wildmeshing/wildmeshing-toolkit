@@ -61,9 +61,7 @@ auto triangle_insert_prepare_info(
     std::set<size_t> visited;
 
     std::array<Vector3r, 3> tri = {
-        vertex_pos_r(face_v[0]),
-        vertex_pos_r(face_v[1]),
-        vertex_pos_r(face_v[2])};
+        {vertex_pos_r(face_v[0]), vertex_pos_r(face_v[1]), vertex_pos_r(face_v[2])}};
     //
     Vector3r tri_normal = (tri[1] - tri[0]).cross(tri[2] - tri[0]);
     //

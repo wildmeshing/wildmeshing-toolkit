@@ -11,7 +11,6 @@ set(TEST_SOURCES
     test_io.cpp
     test_knn.cpp
     test_link_condition.cpp
-    test_manifold.cpp
     test_operations.cpp
     test_raw_simplex_collection.cpp
     test_simplex_navigation.cpp

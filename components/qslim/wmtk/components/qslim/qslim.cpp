@@ -1,9 +1,9 @@
 #include "qslim.hpp"
 
 #include <igl/Timer.h>
-#include <igl/read_triangle_mesh.h>
 #include <jse/jse.h>
-#include <wmtk/utils/Reader.hpp>
+#include <wmtk/Types.hpp>
+#include <wmtk/io/read_triangle_mesh.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
 #include "QSlimMesh.h"
@@ -62,18 +62,20 @@ void qslim(nlohmann::json json_params)
     const int num_thread = json_params["num_threads"];
     double target_abs = json_params["target_abs"];
 
+    const double remove_duplicate_eps = 1e-5;
+    MatrixXd V;
+    MatrixXi F;
+    io::read_triangle_mesh(input_path, V, F, remove_duplicate_eps);
+
     std::vector<Eigen::Vector3d> verts;
     std::vector<std::array<size_t, 3>> tris;
     std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax;
-    const double remove_duplicate_esp = 1e-5;
     std::vector<size_t> modified_nonmanifold_v;
-    stl_to_manifold_wmtk_input(
-        input_path,
-        remove_duplicate_esp,
-        box_minmax,
-        verts,
-        tris,
-        modified_nonmanifold_v);
+
+    box_minmax.first = V.colwise().minCoeff();
+    box_minmax.second = V.colwise().maxCoeff();
+    VF_to_vectors(V, F, verts, tris);
+
 
     const double diag = (box_minmax.first - box_minmax.second).norm();
     const double envelope_size = env_rel * diag;

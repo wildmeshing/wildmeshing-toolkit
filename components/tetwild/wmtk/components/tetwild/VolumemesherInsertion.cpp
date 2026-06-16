@@ -234,9 +234,7 @@ std::vector<std::array<size_t, 3>> TetWildMesh::triangulate_polygon_face(
                   (b[0] * c[2] - b[2] * c[0]) != 0))) {
                 no_colinear = false;
                 std::array<size_t, 3> t = {
-                    size_t(cur.second),
-                    size_t(next.second),
-                    size_t(nextnext.second)};
+                    {size_t(cur.second), size_t(next.second), size_t(nextnext.second)}};
                 triangulated_faces.push_back(t);
                 points_vector.erase(points_vector.begin() + ((i + 1) % points_vector.size()));
                 break;
@@ -251,9 +249,9 @@ std::vector<std::array<size_t, 3>> TetWildMesh::triangulate_polygon_face(
     // cleanup convex polygon
     while (points_vector.size() >= 3) {
         std::array<size_t, 3> t = {
-            size_t(points_vector[0].second),
-            size_t(points_vector[1].second),
-            size_t(points_vector[points_vector.size() - 1].second)};
+            {size_t(points_vector[0].second),
+             size_t(points_vector[1].second),
+             size_t(points_vector[points_vector.size() - 1].second)}};
         triangulated_faces.push_back(t);
         points_vector.erase(points_vector.begin());
     }
@@ -601,9 +599,7 @@ void TetWildMesh::insertion_by_volumeremesher_old(
         if (polygon_face.size() == 3) {
             // already a triangle
             std::array<size_t, 3> triangle_face = {
-                polygon_face[0],
-                polygon_face[1],
-                polygon_face[2]};
+                {polygon_face[0], polygon_face[1], polygon_face[2]}};
             size_t idx = triangulated_faces.size();
             triangulated_faces.push_back(triangle_face);
             if (polygon_faces_on_input_surface[i]) {
@@ -632,9 +628,9 @@ void TetWildMesh::insertion_by_volumeremesher_old(
             for (int j = 0; j < clipped_indices.size(); j++) {
                 // need to map oldface index to new face indices
                 std::array<size_t, 3> triangle_face = {
-                    polygon_face[clipped_indices[j][0]],
-                    polygon_face[clipped_indices[j][1]],
-                    polygon_face[clipped_indices[j][2]]};
+                    {polygon_face[clipped_indices[j][0]],
+                     polygon_face[clipped_indices[j][1]],
+                     polygon_face[clipped_indices[j][2]]}};
                 // std::cout<<triangle_face[0]<<" "<<triangle_face[1]<<"
                 // "<<triangle_face[2]<<std::endl;
                 size_t idx = triangulated_faces.size();
@@ -723,14 +719,14 @@ void TetWildMesh::insertion_by_volumeremesher_old(
                 }
             }
 
-            std::array<size_t, 4> tetra = {v0, v1, v2, v3};
+            std::array<size_t, 4> tetra = {{v0, v1, v2, v3}};
 
             // if inverted then fix the orientation
             Vector3r v0v1 = v_rational[v1] - v_rational[v0];
             Vector3r v0v2 = v_rational[v2] - v_rational[v0];
             Vector3r v0v3 = v_rational[v3] - v_rational[v0];
             if ((v0v1.cross(v0v2)).dot(v0v3) < 0) {
-                tetra = {v1, v0, v2, v3};
+                tetra = {{v1, v0, v2, v3}};
             }
 
             // push the tet to final queue;
@@ -786,10 +782,10 @@ void TetWildMesh::insertion_by_volumeremesher_old(
         for (auto f : polygon_cell) {
             for (auto t : map_poly_to_tri_face[f]) {
                 std::array<size_t, 4> tetra = {
-                    triangulated_faces[t][0],
-                    triangulated_faces[t][1],
-                    triangulated_faces[t][2],
-                    centroid_idx};
+                    {triangulated_faces[t][0],
+                     triangulated_faces[t][1],
+                     triangulated_faces[t][2],
+                     centroid_idx}};
                 // std::sort(tetra.begin(), tetra.end());
                 // check inverted tet and fix
                 Vector3r v0v1 = v_rational[tetra[1]] - v_rational[tetra[0]];
@@ -797,10 +793,10 @@ void TetWildMesh::insertion_by_volumeremesher_old(
                 Vector3r v0v3 = v_rational[tetra[3]] - v_rational[tetra[0]];
                 if ((v0v1.cross(v0v2)).dot(v0v3) < 0) {
                     tetra = {
-                        triangulated_faces[t][1],
-                        triangulated_faces[t][0],
-                        triangulated_faces[t][2],
-                        centroid_idx};
+                        {triangulated_faces[t][1],
+                         triangulated_faces[t][0],
+                         triangulated_faces[t][2],
+                         centroid_idx}};
                 }
 
                 tets_final.push_back(tetra);
@@ -1582,7 +1578,7 @@ void TetWildMesh::init_from_Volumeremesher(
 
     init_vertex_order();
     {
-        std::array<size_t, 4> vo{0, 0, 0, 0};
+        std::array<size_t, 4> vo{{0, 0, 0, 0}};
         const auto vs = get_vertices();
         for (const Tuple& t : vs) {
             const size_t o = m_vertex_attribute.at(t.vid(*this)).m_order;

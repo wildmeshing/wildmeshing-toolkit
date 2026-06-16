@@ -1238,7 +1238,7 @@ size_t ImageSimulationMesh::get_order_of_vertex(const size_t vid) const
 
 void ImageSimulationMesh::init_vertex_order()
 {
-    std::array<size_t, 4> count{0, 0, 0, 0};
+    std::array<size_t, 4> count{{0, 0, 0, 0}};
 
     for (const Tuple& t : get_vertices()) {
         const size_t vid = t.vid(*this);

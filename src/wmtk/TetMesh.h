@@ -198,8 +198,8 @@ public:
      */
     class SmartTuple
     {
-        Tuple m_tuple;
         const TetMesh& m_mesh;
+        Tuple m_tuple;
 
     public:
         SmartTuple(const TetMesh& mesh, const Tuple& t)

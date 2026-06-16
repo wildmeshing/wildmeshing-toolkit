@@ -1,6 +1,3 @@
-
-#include <wmtk/utils/ManifoldUtils.hpp>
-
 #include <CLI/CLI.hpp>
 
 #include <igl/Timer.h>
@@ -91,11 +88,6 @@ void shortest_edge_collapse(nlohmann::json json_params)
     const double envelope_size = env_rel * diag;
     VectorXi dummy;
     std::vector<size_t> modified_v;
-    // if (!igl::is_edge_manifold(F) || !igl::is_vertex_manifold(F, dummy)) {
-    //     auto v1 = v;
-    //     auto tri1 = tri;
-    //     wmtk::separate_to_manifold(v1, tri1, v, tri, modified_v);
-    // }
 
     ShortestEdgeCollapse m(v, num_threads, !use_sample_envelope);
     m.create_mesh(v.size(), tri, modified_v, envelope_size);

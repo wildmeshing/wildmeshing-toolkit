@@ -1324,12 +1324,12 @@ std::array<size_t, 3> TriMesh::oriented_tri_vids(const size_t fid) const
 
 std::array<TriMesh::Tuple, 2> TriMesh::get_edge_vertices(const Tuple& t) const
 {
-    return std::array<TriMesh::Tuple, 2>{t, t.switch_vertex(*this)};
+    return std::array<TriMesh::Tuple, 2>{{t, t.switch_vertex(*this)}};
 }
 
 std::array<size_t, 2> TriMesh::get_edge_vids(const Tuple& t) const
 {
-    return std::array<size_t, 2>{t.vid(*this), t.switch_vertex(*this).vid(*this)};
+    return std::array<size_t, 2>{{t.vid(*this), t.switch_vertex(*this).vid(*this)}};
 }
 
 std::tuple<TriMesh::Tuple, size_t> TriMesh::tuple_from_edge(const std::array<size_t, 2>& vids) const
@@ -1987,7 +1987,7 @@ void wmtk::TriMesh::for_each_face(const std::function<void(const TriMesh::Tuple&
 }
 
 
-inline simplex::SimplexCollection TriMesh::get_surface_edges_for_vertex(const size_t vid) const
+simplex::SimplexCollection TriMesh::get_surface_edges_for_vertex(const size_t vid) const
 {
     using namespace simplex;
 

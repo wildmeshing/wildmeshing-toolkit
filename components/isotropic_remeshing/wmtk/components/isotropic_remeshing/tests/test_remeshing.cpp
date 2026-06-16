@@ -4,7 +4,6 @@
 #include <igl/remove_duplicate_vertices.h>
 #include <wmtk/components/isotropic_remeshing/IsotropicRemeshing.h>
 #include <catch2/catch_test_macros.hpp>
-#include <wmtk/utils/ManifoldUtils.hpp>
 
 using namespace wmtk;
 using namespace components::isotropic_remeshing;
@@ -83,8 +82,12 @@ TEST_CASE("test_swap", "[test_remeshing]")
     std::vector<TriMesh::Tuple> new_e;
     int cnt = 0;
     for (auto edge : edges) {
-        if (cnt > 200) break;
-        if (!edge.is_valid(m)) continue;
+        if (cnt > 200) {
+            break;
+        }
+        if (!edge.is_valid(m)) {
+            continue;
+        }
         if (!(edge.switch_face(m)).has_value()) {
             REQUIRE_FALSE(m.swap_edge(edge, new_e));
             continue;
@@ -158,11 +161,6 @@ TEST_CASE("remeshing_hanging", "[test_remeshing]")
     const double envelope_size = env_rel * diag;
     Eigen::VectorXi dummy;
     std::vector<size_t> modified_v;
-    if (!igl::is_edge_manifold(F) || !igl::is_vertex_manifold(F, dummy)) {
-        auto v1 = v;
-        auto tri1 = tri;
-        wmtk::separate_to_manifold(v1, tri1, v, tri, modified_v);
-    }
 
     IsotropicRemeshing m(v, thread);
     m.create_mesh(v.size(), tri, modified_v, envelope_size);

@@ -75,7 +75,6 @@ include(onetbb)
 include(mshio)
 include(metis)
 include(gmp)
-include(lagrange)
 include(libigl)
 include(spdlog)
 include(paraviewo)
@@ -134,7 +133,6 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     TBB::tbb
     mshio::mshio
     metis::metis
-    lagrange::core
     nlohmann_json::nlohmann_json
     nanoflann::nanoflann
     paraviewo::paraviewo
