@@ -1987,7 +1987,7 @@ void wmtk::TriMesh::for_each_face(const std::function<void(const TriMesh::Tuple&
 }
 
 
-inline simplex::SimplexCollection TriMesh::get_surface_edges_for_vertex(const size_t vid) const
+simplex::SimplexCollection TriMesh::get_surface_edges_for_vertex(const size_t vid) const
 {
     using namespace simplex;
 

@@ -278,9 +278,9 @@ void ImageSimulationMeshTri::init_surfaces_and_boundaries()
         logger().info("Envelope sanity check");
         const auto surf_edges = get_edges_by_condition([](auto& f) { return f.m_is_surface_fs; });
         for (const auto& verts : surf_edges) {
-            std::array<Vector2d, 2> pp = {
+            std::array<Vector2d, 2> pp = {{
                 m_vertex_attribute[verts[0]].m_pos,
-                m_vertex_attribute[verts[1]].m_pos};
+                m_vertex_attribute[verts[1]].m_pos}};
             if (m_envelope->is_outside(pp)) {
                 log_and_throw_error("Edge {} is outside!", verts);
             }
@@ -1239,7 +1239,7 @@ bool ImageSimulationMeshTri::collapse_edge_after(const Tuple& loc)
             const Vector2d a = VA.at(vids[0]).m_pos;
             const Vector2d b = VA.at(vids[1]).m_pos;
             // surface envelope
-            bool is_out = m_envelope->is_outside(std::array<Vector2d, 2>{a, b});
+            bool is_out = m_envelope->is_outside(std::array<Vector2d, 2>{{a, b}});
             if (is_out) {
                 return false;
             }
@@ -1854,7 +1854,7 @@ std::tuple<double, double> ImageSimulationMeshTri::local_operations(
         for (const auto& verts : faces) {
             const auto& p0 = m_vertex_attribute[verts[0]].m_pos;
             const auto& p1 = m_vertex_attribute[verts[1]].m_pos;
-            if (m_envelope->is_outside(std::array<Vector2d, 2>{p0, p1})) {
+            if (m_envelope->is_outside(std::array<Vector2d, 2>{{p0, p1}})) {
                 logger().error("Edge {} is outside!", verts);
             }
         }

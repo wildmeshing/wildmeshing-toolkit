@@ -150,8 +150,8 @@ public:
 
     class SmartTuple
     {
-        Tuple m_tuple;
         const TriMesh& m_mesh;
+        Tuple m_tuple;
 
     public:
         SmartTuple(const TriMesh& mesh, const Tuple& t)
