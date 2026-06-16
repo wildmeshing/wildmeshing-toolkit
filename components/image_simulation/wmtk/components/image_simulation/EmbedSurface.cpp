@@ -470,11 +470,11 @@ void embed_surface(
                 Vector3r v0v2 = v_rational[tetra[2]] - v_rational[tetra[0]];
                 Vector3r v0v3 = v_rational[tetra[3]] - v_rational[tetra[0]];
                 if ((v0v1.cross(v0v2)).dot(v0v3) < 0) {
-                    tetra = {{
-                        triangulated_faces[t][1],
-                        triangulated_faces[t][0],
-                        triangulated_faces[t][2],
-                        centroid_idx}};
+                    tetra = {
+                        {triangulated_faces[t][1],
+                         triangulated_faces[t][0],
+                         triangulated_faces[t][2],
+                         centroid_idx}};
                 }
 
                 tets_final.push_back(tetra);

@@ -278,9 +278,8 @@ void ImageSimulationMeshTri::init_surfaces_and_boundaries()
         logger().info("Envelope sanity check");
         const auto surf_edges = get_edges_by_condition([](auto& f) { return f.m_is_surface_fs; });
         for (const auto& verts : surf_edges) {
-            std::array<Vector2d, 2> pp = {{
-                m_vertex_attribute[verts[0]].m_pos,
-                m_vertex_attribute[verts[1]].m_pos}};
+            std::array<Vector2d, 2> pp = {
+                {m_vertex_attribute[verts[0]].m_pos, m_vertex_attribute[verts[1]].m_pos}};
             if (m_envelope->is_outside(pp)) {
                 log_and_throw_error("Edge {} is outside!", verts);
             }
