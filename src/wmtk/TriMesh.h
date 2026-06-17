@@ -835,7 +835,7 @@ public:
     bool try_set_face_mutex_one_ring(const Tuple& f, int threadid);
 
 
-    // ONLY SUPPORT THREAD SAFE FUNCTIONS
+    // for_each_* ONLY SUPPORT THREAD SAFE FUNCTIONS
     /**
      * @brief perform the given function for each face
      *

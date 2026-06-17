@@ -1148,9 +1148,9 @@ void TriMesh::consolidate_mesh()
     current_tri_size = t_cnt;
 
     m_vertex_connectivity.resize(v_cnt);
-    m_vertex_connectivity.shrink_to_fit();
+    // m_vertex_connectivity.shrink_to_fit();
     m_tri_connectivity.resize(t_cnt);
-    m_tri_connectivity.shrink_to_fit();
+    // m_tri_connectivity.shrink_to_fit();
 
     resize_mutex(vert_capacity());
 

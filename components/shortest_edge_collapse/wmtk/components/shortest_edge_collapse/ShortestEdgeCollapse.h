@@ -6,10 +6,10 @@
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <igl/write_triangle_mesh.h>
-#include <tbb/concurrent_priority_queue.h>
-#include <tbb/concurrent_vector.h>
-#include <tbb/enumerable_thread_specific.h>
-#include <tbb/parallel_for.h>
+// #include <tbb/concurrent_priority_queue.h>
+// #include <tbb/concurrent_vector.h>
+// #include <tbb/enumerable_thread_specific.h>
+// #include <tbb/parallel_for.h>
 #include <fastenvelope/FastEnvelope.h>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
@@ -77,7 +77,8 @@ private:
         Eigen::Vector3d v1p;
         Eigen::Vector3d v2p;
     };
-    tbb::enumerable_thread_specific<PositionInfoCache> position_cache;
+    // tbb::enumerable_thread_specific<PositionInfoCache> position_cache;
+    thread_local PositionInfoCache position_cache;
 
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& t) const;
 };
