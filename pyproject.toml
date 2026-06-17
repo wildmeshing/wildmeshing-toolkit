@@ -11,6 +11,28 @@ requires-python = ">=3.8"
 license = { file = "LICENSE" }
 authors = [{ name = "WildMeshingToolkit" }]
 
+[tool.cibuildwheel.linux]
+before-all = "yum install -y gmp-devel"
+
+[tool.cibuildwheel.macos]
+# Install GMP from source since the Homebrew version causes issues.
+before-all = """
+    set -e
+    GMP_VERSION=6.2.1
+    curl -L https://ftp.gnu.org/gnu/gmp/gmp-${GMP_VERSION}.tar.xz -o gmp.tar.xz
+    tar xf gmp.tar.xz
+    cd gmp-${GMP_VERSION}
+    # MPFR is sometimes needed by GMP, but we can disable it for a minimal build
+    ./configure --prefix=$PWD/gmp-install --disable-assembly --enable-cxx --with-pic --disable-mpfr
+    make -j4
+    make install
+    cd ..
+"""
+
+[tool.cibuildwheel.macos.environment]
+GMP_DIR = "gmp-6.2.1/gmp-install"
+
+
 [tool.scikit-build]
 cmake.minimum-version = "3.25"
 

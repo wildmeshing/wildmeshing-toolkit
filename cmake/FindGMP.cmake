@@ -1,11 +1,16 @@
 # Try to find the GNU Multiple Precision Arithmetic Library (GMP)
 # See http://gmplib.org/
 
+Message(STATUS "GMP_DIR = ${GMP_DIR}")
+Message(STATUS "GMP_DIR (env var) = $ENV{GMP_DIR}")
+
 find_path(GMP_INCLUDES
     NAMES
         gmp.h
-    PATHS
+    HINTS
+        ${GMP_DIR}
         ENV GMP_DIR
+    PATHS
         ${INCLUDE_INSTALL_DIR}
     PATH_SUFFIXES
         include
@@ -15,8 +20,11 @@ find_library(GMP_LIBRARIES
     NAMES
         gmp
         libgmp-10
-    PATHS
+        libgmp
+    HINTS
+        ${GMP_DIR}
         ENV GMP_DIR
+    PATHS
         ${LIB_INSTALL_DIR}
     PATH_SUFFIXES
         lib
@@ -30,8 +38,10 @@ if(WIN32)
             gmp.dll
             gmp-10.dll
             libgmp-10.dll
-        PATHS
+        HINTS
+            ${GMP_DIR}
             ENV GMP_DIR
+        PATHS
             ${LIB_INSTALL_DIR}
         PATH_SUFFIXES
             bin
@@ -40,6 +50,8 @@ if(WIN32)
     list(APPEND GMP_EXTRA_VARS GMP_RUNTIME_LIB)
 
     message(STATUS "Windows GMP Paths: \n  ${GMP_INCLUDES}\n  ${GMP_LIBRARIES}\n  ${GMP_RUNTIME_LIB}")
+else()
+    message(STATUS "GMP Paths: \n  ${GMP_INCLUDES}\n  ${GMP_LIBRARIES}")
 endif()
 
 
