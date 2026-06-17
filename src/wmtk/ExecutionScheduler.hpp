@@ -8,13 +8,13 @@
 #include <functional>
 #include <limits>
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <tbb/concurrent_priority_queue.h>
-#include <tbb/concurrent_queue.h>
-#include <tbb/parallel_for.h>
-#include <tbb/parallel_reduce.h>
-#include <tbb/spin_mutex.h>
-#include <tbb/task_arena.h>
-#include <tbb/task_group.h>
+// #include <tbb/concurrent_priority_queue.h>
+// #include <tbb/concurrent_queue.h>
+// #include <tbb/parallel_for.h>
+// #include <tbb/parallel_reduce.h>
+// #include <tbb/spin_mutex.h>
+// #include <tbb/task_arena.h>
+// #include <tbb/task_group.h>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
@@ -23,7 +23,9 @@
 #include <cstddef>
 #include <queue>
 #include <stdexcept>
+#include <thread>
 #include <type_traits>
+
 
 namespace wmtk {
 enum class ExecutionPolicy { kSeq, kUnSeq, kPartition, kColor, kMax };
@@ -270,7 +272,8 @@ public:
     bool operator()(AppMesh& m, const std::vector<std::pair<Op, Tuple>>& operation_tuples)
     {
         using Elem = std::tuple<double, Op, Tuple, size_t>; // priority, operation, tuple, #retries
-        using Queue = tbb::concurrent_priority_queue<Elem>;
+        // using Queue = tbb::concurrent_priority_queue<Elem>;
+        using Queue = std::priority_queue<Elem>;
 
         std::atomic<bool> stop(false);
         cnt_success = 0;
@@ -278,11 +281,15 @@ public:
         cnt_update = 0;
 
         std::vector<Queue> queues(num_threads);
+        std::vector<Queue> failed_queues(std::max(num_threads, 1));
         Queue final_queue;
 
         auto run_single_queue = [&](Queue& Q, int task_id) {
             Elem ele_in_queue;
-            while ([&]() { return Q.try_pop(ele_in_queue); }()) {
+            // while ([&]() { return Q.try_pop(ele_in_queue); }()) {
+            while (!Q.empty()) {
+                ele_in_queue = Q.top();
+                Q.pop();
                 auto& [weight, op, tup, retry] = ele_in_queue;
                 if (!tup.is_valid(m)) {
                     continue;
@@ -300,7 +307,7 @@ public:
                             Q.emplace(ele_in_queue);
                         } else {
                             retry = 0;
-                            final_queue.emplace(ele_in_queue);
+                            failed_queues[task_id].emplace(ele_in_queue);
                         }
                         continue;
                     }
@@ -362,18 +369,35 @@ public:
                 }
                 queues[get_partition_id(m, e)].emplace(priority(m, op, e), op, e, 0);
             }
-            // Comment out parallel: work on serial first.
-            tbb::task_arena arena(num_threads);
-            tbb::task_group tg;
-            arena.execute([&queues, &run_single_queue, &tg]() {
-                for (int task_id = 0; task_id < queues.size(); task_id++) {
-                    tg.run([&run_single_queue, &queues, task_id] {
-                        run_single_queue(queues[task_id], task_id);
-                    });
+            // // Comment out parallel: work on serial first.
+            // tbb::task_arena arena(num_threads);
+            // tbb::task_group tg;
+            // arena.execute([&queues, &run_single_queue, &tg]() {
+            //     for (int task_id = 0; task_id < queues.size(); task_id++) {
+            //         tg.run([&run_single_queue, &queues, task_id] {
+            //             run_single_queue(queues[task_id], task_id);
+            //         });
+            //     }
+            //     tg.wait();
+            // });
+
+            std::vector<std::jthread> threads(num_threads);
+            for (int task_id = 0; task_id < num_threads; ++task_id) {
+                threads.emplace_back(run_single_queue(queues[task_id], task_id), task_id);
+            }
+
+            logger().debug("Parallel Complete, merging failing queues");
+            for (auto& q : failed_queues) {
+                while (!q.empty) {
+                    Elem ele_in_queue = q.top();
+                    q.pop();
+                    final_queue.push(ele_in_queue);
                 }
-                tg.wait();
-            });
-            logger().debug("Parallel Complete, remains element {}", final_queue.size());
+            }
+
+            // logger().debug("Parallel Complete, remains element {}", final_queue.size());
+            logger().debug("Merging Complete, remains element {}", final_queue.size());
+
             run_single_queue(final_queue, 0);
         }
 

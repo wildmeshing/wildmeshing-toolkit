@@ -271,6 +271,11 @@ public:
     };
 
     TriMesh() {}
+    TriMesh(const size_t max_t_capacity)
+        : MAX_T_CAPACITY(max_t_capacity)
+    {
+        MAX_V_CAPACITY = 3 * MAX_T_CAPACITY;
+    }
     virtual ~TriMesh() {}
 
     /**
