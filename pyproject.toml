@@ -52,5 +52,6 @@ cmake.args = [
   # "-DBUILD_TESTING=OFF",
   # "-DWMTK_APP_HARMTET=OFF",
   # "-DWMTK_APP_INTERIOR_TET_OPT=OFF",
+  "-D_GLIBCXX_USE_TBB_PAR_BACKEND=0",
 ]
 install.components = ["python_bindings"]
