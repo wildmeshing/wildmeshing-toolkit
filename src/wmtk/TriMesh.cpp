@@ -8,9 +8,13 @@
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <tbb/parallel_for.h>
+// #include <tbb/parallel_for.h>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
+
+#include <algorithm>
+#include <execution>
+#include <thread>
 
 using namespace wmtk;
 
@@ -1619,53 +1623,71 @@ simplex::SimplexCollection wmtk::TriMesh::simplex_link_edges(const simplex::Vert
     return sc;
 }
 
+// size_t TriMesh::get_next_empty_slot_t()
+// {
+//     while (current_tri_size + MAX_THREADS >= m_tri_connectivity.size() ||
+//            tri_connectivity_synchronizing_flag) {
+//         if (tri_connectivity_lock.try_lock()) {
+//             if (current_tri_size + MAX_THREADS < m_tri_connectivity.size()) {
+//                 tri_connectivity_lock.unlock();
+//                 break;
+//             }
+//             tri_connectivity_synchronizing_flag = true;
+//             auto current_capacity = m_tri_connectivity.size();
+//             if (p_edge_attrs) {
+//                 p_edge_attrs->resize(2 * current_capacity * 3);
+//             }
+//             if (p_face_attrs) {
+//                 p_face_attrs->resize(2 * current_capacity);
+//             }
+//             m_tri_connectivity.grow_to_at_least(2 * current_capacity);
+//             tri_connectivity_synchronizing_flag = false;
+//             tri_connectivity_lock.unlock();
+//             break;
+//         }
+//     }
+
+//     return current_tri_size++;
+// }
+
 size_t TriMesh::get_next_empty_slot_t()
 {
-    while (current_tri_size + MAX_THREADS >= m_tri_connectivity.size() ||
-           tri_connectivity_synchronizing_flag) {
-        if (tri_connectivity_lock.try_lock()) {
-            if (current_tri_size + MAX_THREADS < m_tri_connectivity.size()) {
-                tri_connectivity_lock.unlock();
-                break;
-            }
-            tri_connectivity_synchronizing_flag = true;
-            auto current_capacity = m_tri_connectivity.size();
-            if (p_edge_attrs) {
-                p_edge_attrs->resize(2 * current_capacity * 3);
-            }
-            if (p_face_attrs) {
-                p_face_attrs->resize(2 * current_capacity);
-            }
-            m_tri_connectivity.grow_to_at_least(2 * current_capacity);
-            tri_connectivity_synchronizing_flag = false;
-            tri_connectivity_lock.unlock();
-            break;
-        }
+    if (current_tri_size + MAX_THREADS > MAX_T_CAPACITY) {
+        overflow_flag = true;
+        throw std::runtime_error("Triangle size exceeded max capacity.");
     }
-
     return current_tri_size++;
 }
 
+// size_t TriMesh::get_next_empty_slot_v()
+// {
+//     while (current_vert_size + MAX_THREADS >= m_vertex_connectivity.size() ||
+//            vertex_connectivity_synchronizing_flag) {
+//         if (vertex_connectivity_lock.try_lock()) {
+//             if (current_vert_size + MAX_THREADS < m_vertex_connectivity.size()) {
+//                 vertex_connectivity_lock.unlock();
+//                 break;
+//             }
+//             vertex_connectivity_synchronizing_flag = true;
+//             auto current_capacity = m_vertex_connectivity.size();
+//             if (p_vertex_attrs) p_vertex_attrs->resize(2 * current_capacity);
+//             resize_mutex(2 * current_capacity);
+//             m_vertex_connectivity.grow_to_at_least(2 * current_capacity);
+//             vertex_connectivity_synchronizing_flag = false;
+//             vertex_connectivity_lock.unlock();
+//             break;
+//         }
+//     }
+
+//     return current_vert_size++;
+// }
+
 size_t TriMesh::get_next_empty_slot_v()
 {
-    while (current_vert_size + MAX_THREADS >= m_vertex_connectivity.size() ||
-           vertex_connectivity_synchronizing_flag) {
-        if (vertex_connectivity_lock.try_lock()) {
-            if (current_vert_size + MAX_THREADS < m_vertex_connectivity.size()) {
-                vertex_connectivity_lock.unlock();
-                break;
-            }
-            vertex_connectivity_synchronizing_flag = true;
-            auto current_capacity = m_vertex_connectivity.size();
-            if (p_vertex_attrs) p_vertex_attrs->resize(2 * current_capacity);
-            resize_mutex(2 * current_capacity);
-            m_vertex_connectivity.grow_to_at_least(2 * current_capacity);
-            vertex_connectivity_synchronizing_flag = false;
-            vertex_connectivity_lock.unlock();
-            break;
-        }
+    if (current_vert_size + MAX_THREADS > MAX_V_CAPACITY) {
+        overflow_flag = true;
+        throw std::runtime_error("Vertex size exceeded max capacity.");
     }
-
     return current_vert_size++;
 }
 
@@ -1936,54 +1958,95 @@ bool TriMesh::try_set_face_mutex_one_ring(const Tuple& f, int threadid)
 
 void wmtk::TriMesh::for_each_edge(const std::function<void(const TriMesh::Tuple&)>& func)
 {
-    tbb::task_arena arena(NUM_THREADS);
-    arena.execute([&] {
-        tbb::parallel_for(
-            tbb::blocked_range<size_t>(0, tri_capacity()),
-            [&](const tbb::blocked_range<size_t>& r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    if (!tuple_from_tri(i).is_valid(*this)) continue;
-                    for (int j = 0; j < 3; j++) {
-                        auto tup = tuple_from_edge(i, j);
-                        if (tup.eid(*this) == 3 * i + j) {
-                            func(tup);
-                        }
-                    }
+    // tbb::task_arena arena(NUM_THREADS);
+    // arena.execute([&] {
+    //     tbb::parallel_for(
+    //         tbb::blocked_range<size_t>(0, tri_capacity()),
+    //         [&](const tbb::blocked_range<size_t>& r) {
+    //             for (size_t i = r.begin(); i < r.end(); i++) {
+    //                 if (!tuple_from_tri(i).is_valid(*this)) continue;
+    //                 for (int j = 0; j < 3; j++) {
+    //                     auto tup = tuple_from_edge(i, j);
+    //                     if (tup.eid(*this) == 3 * i + j) {
+    //                         func(tup);
+    //                     }
+    //                 }
+    //             }
+    //         });
+    // });
+
+    std::for_each_n(
+        std::execution::par,
+        m_tri_connectivity.begin(),
+        current_tri_size,
+        [&](const TriangleConnectivity& t) {
+            size_t i =
+                &t - &m_tri_connectivity[0]; // get index. TODO: replace with c++23 range/enumerate?
+            if (!tuple_from_tri(i).is_valid(*this)) continue;
+            for (int j = 0; j < 3; j++) {
+                auto tup = tuple_from_edge(i, j);
+                if (tup.eid(*this) == 3 * i + j) {
+                    func(tup);
                 }
-            });
-    });
+            }
+        });
 }
 
 void wmtk::TriMesh::for_each_vertex(const std::function<void(const TriMesh::Tuple&)>& func)
 {
-    tbb::task_arena arena(NUM_THREADS);
-    arena.execute([&] {
-        tbb::parallel_for(
-            tbb::blocked_range<size_t>(0, vert_capacity()),
-            [&](tbb::blocked_range<size_t> r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    auto tup = tuple_from_vertex(i);
-                    if (!tup.is_valid(*this)) continue;
-                    func(tup);
-                }
-            });
-    });
+    // tbb::task_arena arena(NUM_THREADS);
+    // arena.execute([&] {
+    //     tbb::parallel_for(
+    //         tbb::blocked_range<size_t>(0, vert_capacity()),
+    //         [&](tbb::blocked_range<size_t> r) {
+    //             for (size_t i = r.begin(); i < r.end(); i++) {
+    //                 auto tup = tuple_from_vertex(i);
+    //                 if (!tup.is_valid(*this)) continue;
+    //                 func(tup);
+    //             }
+    //         });
+    // });
+
+    std::for_each_n(
+        std::execution::par,
+        m_vertex_connectivity.begin(),
+        current_vert_size,
+        [&](const VertexConnectivity& v) {
+            size_t i =
+                &v -
+                &m_vertex_connectivity[0]; // get index. TODO: replace with c++23 range/enumerate?
+            auto tup = tuple_from_vertex(i);
+            if (!tup.is_valid(*this)) continue;
+            func(tup);
+        });
 }
 
 void wmtk::TriMesh::for_each_face(const std::function<void(const TriMesh::Tuple&)>& func)
 {
-    tbb::task_arena arena(NUM_THREADS);
-    arena.execute([&] {
-        tbb::parallel_for(
-            tbb::blocked_range<size_t>(0, tri_capacity()),
-            [&](tbb::blocked_range<size_t> r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    auto tup = tuple_from_tri(i);
-                    if (!tup.is_valid(*this)) continue;
-                    func(tup);
-                }
-            });
-    });
+    // tbb::task_arena arena(NUM_THREADS);
+    // arena.execute([&] {
+    //     tbb::parallel_for(
+    //         tbb::blocked_range<size_t>(0, tri_capacity()),
+    //         [&](tbb::blocked_range<size_t> r) {
+    //             for (size_t i = r.begin(); i < r.end(); i++) {
+    //                 auto tup = tuple_from_tri(i);
+    //                 if (!tup.is_valid(*this)) continue;
+    //                 func(tup);
+    //             }
+    //         });
+    // });
+
+    std::for_each_n(
+        std::execution::par,
+        m_tri_connectivity.begin(),
+        current_tri_size,
+        [&](const TriangleConnectivity& t) {
+            size_t i =
+                &t - &m_tri_connectivity[0]; // get index. TODO: replace with c++23 range/enumerate?
+            auto tup = tuple_from_tri(i);
+            if (!tup.is_valid(*this)) continue;
+            func(tup);
+        });
 }
 
 

@@ -9,8 +9,11 @@
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <tbb/concurrent_vector.h>
-#include <tbb/spin_mutex.h>
+// #include <tbb/concurrent_vector.h>
+// #include <tbb/spin_mutex.h>
+
+#include <mutex>
+
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
@@ -338,7 +341,8 @@ public:
     simplex::SimplexCollection simplex_link_edges(const simplex::Vertex& v) const;
 
     template <typename T>
-    using vector = tbb::concurrent_vector<T>;
+    // using vector = tbb::concurrent_vector<T>;
+    using vector = std::vector<T>;
 
 public:
     AbstractAttributeContainer* p_vertex_attrs = nullptr;
@@ -350,11 +354,15 @@ private:
     vector<TriangleConnectivity> m_tri_connectivity;
     std::atomic_long current_vert_size;
     std::atomic_long current_tri_size;
-    tbb::spin_mutex vertex_connectivity_lock;
-    tbb::spin_mutex tri_connectivity_lock;
+    std::atomic_bool overflow_flag = false;
+    // tbb::spin_mutex vertex_connectivity_lock;
+    // tbb::spin_mutex tri_connectivity_lock;
+
     bool vertex_connectivity_synchronizing_flag = false;
     bool tri_connectivity_synchronizing_flag = false;
     int MAX_THREADS = 128;
+    int MAX_T_CAPACITY = 1e4; // max triangle capacity;
+    int MAX_V_CAPACITY = 3e4; // max vertex capacity; 3 * MAX_T_CAPACITY
     /**
      * @brief Get the next avaiblie global index for the triangle
      *
@@ -734,7 +742,8 @@ public:
 public:
     class VertexMutex
     {
-        tbb::spin_mutex mutex;
+        // tbb::spin_mutex mutex;
+        std::mutex;
         int owner = std::numeric_limits<int>::max();
 
     public:
@@ -754,7 +763,8 @@ public:
     };
 
 private:
-    tbb::concurrent_vector<VertexMutex> m_vertex_mutex;
+    // tbb::concurrent_vector<VertexMutex> m_vertex_mutex;
+    std::vector<VertexMutex> m_vertex_mutex;
 
     bool try_set_vertex_mutex(const Tuple& v, int threadid)
     {
@@ -773,10 +783,16 @@ private:
     void unlock_vertex_mutex(size_t vid) { m_vertex_mutex[vid].unlock(); }
 
 protected:
-    void resize_mutex(size_t v) { m_vertex_mutex.grow_to_at_least(v); }
+    // void resize_mutex(size_t v) { m_vertex_mutex.grow_to_at_least(v); }
+
+    void resize_mutex(size_t v) { m_vertex_mutex.resize(v); }
+
 
 public:
-    tbb::enumerable_thread_specific<std::vector<size_t>> mutex_release_stack;
+    // tbb::enumerable_thread_specific<std::vector<size_t>> mutex_release_stack;
+
+    thread_local std::vector<size_t> mutex_release_stack;
+
 
     int release_vertex_mutex_in_stack();
     /**
@@ -813,6 +829,8 @@ public:
      */
     bool try_set_face_mutex_one_ring(const Tuple& f, int threadid);
 
+
+    // ONLY SUPPORT THREAD SAFE FUNCTIONS
     /**
      * @brief perform the given function for each face
      *
