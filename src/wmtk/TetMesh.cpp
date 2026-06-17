@@ -4,35 +4,45 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 
-#include <tbb/parallel_for.h>
+// #include <tbb/parallel_for.h>
 
 namespace wmtk {
 
 int TetMesh::get_next_empty_slot_t()
 {
-    while (current_tet_size + MAX_THREADS >= m_tet_connectivity.size() ||
-           tet_connectivity_synchronizing_flag) {
-        if (tet_connectivity_lock.try_lock()) {
-            if (current_tet_size + MAX_THREADS < m_tet_connectivity.size()) {
-                tet_connectivity_lock.unlock();
-                break;
-            }
-            tet_connectivity_synchronizing_flag = true;
-            auto current_capacity = m_tet_connectivity.size();
-            if (p_edge_attrs) {
-                p_edge_attrs->resize(2 * current_capacity * 6);
-            }
-            if (p_face_attrs) {
-                p_face_attrs->resize(2 * current_capacity * 4);
-            }
-            if (p_tet_attrs) {
-                p_tet_attrs->resize(2 * current_capacity);
-            }
-            m_tet_connectivity.grow_to_at_least(2 * current_capacity);
-            tet_connectivity_synchronizing_flag = false;
-            tet_connectivity_lock.unlock();
-            break;
-        }
+    // while (current_tet_size + MAX_THREADS >= m_tet_connectivity.size() ||
+    //        tet_connectivity_synchronizing_flag) {
+    //     if (tet_connectivity_lock.try_lock()) {
+    //         if (current_tet_size + MAX_THREADS < m_tet_connectivity.size()) {
+    //             tet_connectivity_lock.unlock();
+    //             break;
+    //         }
+    //         tet_connectivity_synchronizing_flag = true;
+    //         auto current_capacity = m_tet_connectivity.size();
+    //         if (p_edge_attrs) {
+    //             p_edge_attrs->resize(2 * current_capacity * 6);
+    //         }
+    //         if (p_face_attrs) {
+    //             p_face_attrs->resize(2 * current_capacity * 4);
+    //         }
+    //         if (p_tet_attrs) {
+    //             p_tet_attrs->resize(2 * current_capacity);
+    //         }
+    //         m_tet_connectivity.grow_to_at_least(2 * current_capacity);
+    //         tet_connectivity_synchronizing_flag = false;
+    //         tet_connectivity_lock.unlock();
+    //         break;
+    //     }
+    // }
+
+    // auto new_idx = current_tet_size++;
+    // m_tet_connectivity[new_idx].hash = -1;
+
+    // return new_idx;
+
+    if (current_tri_size + MAX_THREADS > MAX_T_CAPACITY) {
+        overflow_flag = true;
+        throw std::runtime_error("Tet size exceeded max capacity.");
     }
 
     auto new_idx = current_tet_size++;
@@ -43,26 +53,32 @@ int TetMesh::get_next_empty_slot_t()
 
 int TetMesh::get_next_empty_slot_v()
 {
-    while (current_vert_size + MAX_THREADS >= m_vertex_connectivity.size() ||
-           vertex_connectivity_synchronizing_flag) {
-        if (vertex_connectivity_lock.try_lock()) {
-            if (current_vert_size + MAX_THREADS < m_vertex_connectivity.size()) {
-                vertex_connectivity_lock.unlock();
-                break;
-            }
-            vertex_connectivity_synchronizing_flag = true;
-            auto current_capacity = m_vertex_connectivity.size();
-            if (p_vertex_attrs) {
-                p_vertex_attrs->resize(2 * current_capacity);
-            }
-            resize_vertex_mutex(2 * current_capacity);
-            m_vertex_connectivity.grow_to_at_least(2 * current_capacity);
-            vertex_connectivity_synchronizing_flag = false;
-            vertex_connectivity_lock.unlock();
-            break;
-        }
-    }
+    // while (current_vert_size + MAX_THREADS >= m_vertex_connectivity.size() ||
+    //        vertex_connectivity_synchronizing_flag) {
+    //     if (vertex_connectivity_lock.try_lock()) {
+    //         if (current_vert_size + MAX_THREADS < m_vertex_connectivity.size()) {
+    //             vertex_connectivity_lock.unlock();
+    //             break;
+    //         }
+    //         vertex_connectivity_synchronizing_flag = true;
+    //         auto current_capacity = m_vertex_connectivity.size();
+    //         if (p_vertex_attrs) {
+    //             p_vertex_attrs->resize(2 * current_capacity);
+    //         }
+    //         resize_vertex_mutex(2 * current_capacity);
+    //         m_vertex_connectivity.grow_to_at_least(2 * current_capacity);
+    //         vertex_connectivity_synchronizing_flag = false;
+    //         vertex_connectivity_lock.unlock();
+    //         break;
+    //     }
+    // }
 
+    // return current_vert_size++;
+
+    if (current_vert_size + MAX_THREADS > MAX_V_CAPACITY) {
+        overflow_flag = true;
+        throw std::runtime_error("Vertex size exceeded max capacity.");
+    }
     return current_vert_size++;
 }
 
@@ -1311,22 +1327,39 @@ void TetMesh::for_each_edge(const std::function<void(const TetMesh::Tuple&)>& fu
             }
         }
     } else {
-        tbb::task_arena arena(NUM_THREADS);
-        arena.execute([&] {
-            tbb::parallel_for(
-                tbb::blocked_range<size_t>(0, tet_capacity()),
-                [&](tbb::blocked_range<size_t> r) {
-                    for (size_t i = r.begin(); i < r.end(); i++) {
-                        if (!tuple_from_tet(i).is_valid(*this)) continue;
-                        for (int j = 0; j < 6; j++) {
-                            auto tup = tuple_from_edge(i, j);
-                            if (tup.eid(*this) == 6 * i + j) {
-                                func(tup);
-                            }
-                        }
+        // tbb::task_arena arena(NUM_THREADS);
+        // arena.execute([&] {
+        //     tbb::parallel_for(
+        //         tbb::blocked_range<size_t>(0, tet_capacity()),
+        //         [&](tbb::blocked_range<size_t> r) {
+        //             for (size_t i = r.begin(); i < r.end(); i++) {
+        //                 if (!tuple_from_tet(i).is_valid(*this)) continue;
+        //                 for (int j = 0; j < 6; j++) {
+        //                     auto tup = tuple_from_edge(i, j);
+        //                     if (tup.eid(*this) == 6 * i + j) {
+        //                         func(tup);
+        //                     }
+        //                 }
+        //             }
+        //         });
+        // });
+
+        std::for_each_n(
+            std::execution::par,
+            m_tet_connectivity.begin(),
+            current_tet_size,
+            [&](const TetrahedronConnectivity& t) {
+                size_t i =
+                    &t -
+                    &m_tet_connectivity[0]; // get index. TODO: replace with c++23 range/enumerate?
+                if (!tuple_from_tet(i).is_valid(*this)) continue;
+                for (int j = 0; j < 6; ++j) {
+                    auto tup = tuple_from_edge(i, j);
+                    if (tup.eid(*this) == 6 * i + j) {
+                        func(tup);
                     }
-                });
-        });
+                }
+            });
     }
 }
 
@@ -1341,20 +1374,33 @@ void TetMesh::for_each_tetra(const std::function<void(const TetMesh::Tuple&)>& f
             func(tup);
         }
     } else {
-        // std::cout << "in parallel for each tet" << std::endl;
+        // // std::cout << "in parallel for each tet" << std::endl;
 
-        tbb::task_arena arena(NUM_THREADS);
-        arena.execute([&] {
-            tbb::parallel_for(
-                tbb::blocked_range<size_t>(0, tet_capacity()),
-                [&](tbb::blocked_range<size_t> r) {
-                    for (size_t i = r.begin(); i < r.end(); i++) {
-                        auto tup = tuple_from_tet(i);
-                        if (!tup.is_valid(*this)) continue;
-                        func(tup);
-                    }
-                });
-        });
+        // tbb::task_arena arena(NUM_THREADS);
+        // arena.execute([&] {
+        //     tbb::parallel_for(
+        //         tbb::blocked_range<size_t>(0, tet_capacity()),
+        //         [&](tbb::blocked_range<size_t> r) {
+        //             for (size_t i = r.begin(); i < r.end(); i++) {
+        //                 auto tup = tuple_from_tet(i);
+        //                 if (!tup.is_valid(*this)) continue;
+        //                 func(tup);
+        //             }
+        //         });
+        // });
+
+        std::for_each_n(
+            std::execution::par,
+            m_tet_connectivity.begin(),
+            current_tet_size,
+            [&](const TetrahedronConnectivity& t) {
+                size_t i =
+                    &t -
+                    &m_tet_connectivity[0]; // get index. TODO: replace with c++23 range/enumerate?
+                auto tup = tuple_from_tet(i);
+                if (!tup.is_valid(*this)) continue;
+                func(tup);
+            });
     }
 }
 
@@ -1369,19 +1415,31 @@ void TetMesh::for_each_vertex(const std::function<void(const TetMesh::Tuple&)>& 
             func(tup);
         }
     } else {
-        // std::cout << "in parallel for each vertex" << std::endl;
-        tbb::task_arena arena(NUM_THREADS);
-        arena.execute([&] {
-            tbb::parallel_for(
-                tbb::blocked_range<size_t>(0, vert_capacity()),
-                [&](tbb::blocked_range<size_t> r) {
-                    for (size_t i = r.begin(); i < r.end(); i++) {
-                        auto tup = tuple_from_vertex(i);
-                        if (!tup.is_valid(*this)) continue;
-                        func(tup);
-                    }
-                });
-        });
+        // // std::cout << "in parallel for each vertex" << std::endl;
+        // tbb::task_arena arena(NUM_THREADS);
+        // arena.execute([&] {
+        //     tbb::parallel_for(
+        //         tbb::blocked_range<size_t>(0, vert_capacity()),
+        //         [&](tbb::blocked_range<size_t> r) {
+        //             for (size_t i = r.begin(); i < r.end(); i++) {
+        //                 auto tup = tuple_from_vertex(i);
+        //                 if (!tup.is_valid(*this)) continue;
+        //                 func(tup);
+        //             }
+        //         });
+        // });
+
+        std::for_each_n(
+            std::execution::par,
+            m_vertex_connectivity.begin(),
+            current_vert_size,
+            [&](const VertexConnectivity& v) {
+                size_t i = &v - &m_vertex_connectivity
+                                    [0]; // get index. TODO: replace with c++23 range/enumerate?
+                auto tup = tuple_from_vertex(i);
+                if (!tup.is_valid(*this)) continue;
+                func(tup);
+            });
     }
 }
 

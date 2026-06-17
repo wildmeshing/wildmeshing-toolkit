@@ -7,9 +7,9 @@
 #include <wmtk/simplex/SimplexCollection.hpp>
 #include <wmtk/utils/Logger.hpp>
 
-#include <tbb/concurrent_vector.h>
-#include <tbb/enumerable_thread_specific.h>
-#include <tbb/spin_mutex.h>
+// #include <tbb/concurrent_vector.h>
+// #include <tbb/enumerable_thread_specific.h>
+// #include <tbb/spin_mutex.h>
 
 #include <array>
 #include <cassert>
@@ -626,7 +626,8 @@ public:
 
 public:
     template <typename T>
-    using vector = tbb::concurrent_vector<T>;
+    // using vector = tbb::concurrent_vector<T>;
+    using vector = std::vector<T>;
 
 public:
     AbstractAttributeContainer* p_vertex_attrs = nullptr;
@@ -642,11 +643,14 @@ private:
     vector<TetrahedronConnectivity> m_tet_connectivity;
     std::atomic_long current_vert_size;
     std::atomic_long current_tet_size;
-    tbb::spin_mutex vertex_connectivity_lock;
-    tbb::spin_mutex tet_connectivity_lock;
+    std::atomic_bool overflow_flag = false;
+    // tbb::spin_mutex vertex_connectivity_lock;
+    // tbb::spin_mutex tet_connectivity_lock;
     bool vertex_connectivity_synchronizing_flag = false;
     bool tet_connectivity_synchronizing_flag = false;
     int MAX_THREADS = 128;
+    int MAX_T_CAPACITY = 1e4; // max tet capacity;
+    int MAX_V_CAPACITY = 4e4; // max vertex capacity; 4 * MAX_T_CAPACITY
 
     int m_t_empty_slot = 0;
     int m_v_empty_slot = 0;
@@ -1165,7 +1169,8 @@ public:
 public:
     class VertexMutex
     {
-        tbb::spin_mutex mutex;
+        // tbb::spin_mutex mutex;
+        std::mutex mutex;
         int owner = std::numeric_limits<int>::max();
 
     public:
@@ -1204,11 +1209,17 @@ private:
     void unlock_vertex_mutex(size_t vid) { m_vertex_mutex[vid].unlock(); }
 
 protected:
-    void resize_vertex_mutex(size_t v) { m_vertex_mutex.grow_to_at_least(v); }
+    // void resize_vertex_mutex(size_t v) { m_vertex_mutex.grow_to_at_least(v); }
+
+    void resize_vertex_mutex(size_t v) { m_vertex_mutex.resize(v); }
 
 public:
-    tbb::enumerable_thread_specific<std::vector<size_t>> mutex_release_stack;
-    tbb::enumerable_thread_specific<std::vector<size_t>> get_one_ring_cache;
+    // tbb::enumerable_thread_specific<std::vector<size_t>> mutex_release_stack;
+    // tbb::enumerable_thread_specific<std::vector<size_t>> get_one_ring_cache;
+
+    thread_local std::vector<size_t> mutex_release_stack;
+    thread_local std::vector<size_t> get_one_ring_cache;
+
 
     // void init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& tets);
     int release_vertex_mutex_in_stack();
@@ -1295,6 +1306,7 @@ public:
     bool try_set_vertex_mutex_one_ring(const Tuple& v, int threadid = 0);
 
 public:
+    // for_each_* ONLY SUPPORT THREAD SAFE FUNCTIONS
     /**
      * @brief perform the given function for each edge
      *

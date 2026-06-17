@@ -748,7 +748,7 @@ public:
     class VertexMutex
     {
         // tbb::spin_mutex mutex;
-        std::mutex;
+        std::mutex mutex;
         int owner = std::numeric_limits<int>::max();
 
     public:
