@@ -12,7 +12,8 @@ license = { file = "LICENSE" }
 authors = [{ name = "WildMeshingToolkit" }]
 
 [tool.cibuildwheel]
-skip = ["*-win_arm64"]
+# Skip 32 bit builds and Windows ARM.
+skip = ["*-win32", "*-win_arm64", "*-*linux_i686"]
 
 [tool.cibuildwheel.linux]
 before-all = "yum install -y gmp-devel"

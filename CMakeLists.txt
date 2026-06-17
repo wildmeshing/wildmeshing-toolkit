@@ -62,6 +62,9 @@ option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to di
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
 
+# Generate position independent code by default
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 include(wmtk_cpm_cache)
 include(CPM)
 include(sanitizers)
@@ -85,9 +88,6 @@ include(polysolve)
 include(simple_bvh)
 # Sort projects inside the solution
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-
-# Generate position independent code by default
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 option(WMTK_PYBIND "Generate python bindings" ON)
 if(WMTK_PYBIND)
