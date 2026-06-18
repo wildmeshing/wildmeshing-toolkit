@@ -139,9 +139,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>compute_vertex_partit
 <tr class="memitem:acf9b9cc2c17fe8da49c0a5cedc71d0e6" id="r_acf9b9cc2c17fe8da49c0a5cedc71d0e6"><td class="memItemLeft" align="right" valign="top"><a id="acf9b9cc2c17fe8da49c0a5cedc71d0e6" name="acf9b9cc2c17fe8da49c0a5cedc71d0e6"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>get_partition_id</b> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;loc) const</td></tr>
 <tr class="separator:acf9b9cc2c17fe8da49c0a5cedc71d0e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a310d76ab1b915ac82766a31d98f91fc5" id="r_a310d76ab1b915ac82766a31d98f91fc5"><td class="memItemLeft" align="right" valign="top"><a id="a310d76ab1b915ac82766a31d98f91fc5" name="a310d76ab1b915ac82766a31d98f91fc5"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>init_envelope</b> (const MatrixXd &amp;V, const MatrixXi &amp;F)</td></tr>
-<tr class="separator:a310d76ab1b915ac82766a31d98f91fc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9e19f681d232412290af2542eba0f0a0" id="r_a9e19f681d232412290af2542eba0f0a0"><td class="memItemLeft" align="right" valign="top"><a id="a9e19f681d232412290af2542eba0f0a0" name="a9e19f681d232412290af2542eba0f0a0"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>init_envelope</b> (const MatrixXd &amp;V, const MatrixXi &amp;F, const bool use_exact)</td></tr>
+<tr class="separator:a9e19f681d232412290af2542eba0f0a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1f035a0a650578a0a764acfac3267308" id="r_a1f035a0a650578a0a764acfac3267308"><td class="memItemLeft" align="right" valign="top"><a id="a1f035a0a650578a0a764acfac3267308" name="a1f035a0a650578a0a764acfac3267308"></a>
 CellTag&#160;</td><td class="memItemRight" valign="bottom"><b>string_set_to_cell_tag</b> (const std::set&lt; std::string &gt; &amp;str_set)</td></tr>
 <tr class="separator:a1f035a0a650578a0a764acfac3267308"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1188,6 +1188,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
 <p>ops</p>
 <p>energy check</p>
 <p>sizing field</p>
+<p>Update pre energies only if they are smaller than current energies. This helps to adjust the sizing field in case the energy alternates between two states.</p>
 
 </div>
 </div>
