@@ -1,4 +1,6 @@
 if(WIN32)
+    message(STATUS "Trying to find gmp+mpfr system-wide... (Windows only)")
+    
     find_path(GMP_TRY_FIND_INCLUDES
     NAMES
         gmp.h

@@ -11,6 +11,35 @@ requires-python = ">=3.8"
 license = { file = "LICENSE" }
 authors = [{ name = "WildMeshingToolkit" }]
 
+[tool.cibuildwheel]
+# Skip 32 bit builds and Windows ARM.
+skip = ["*-win32", "*-win_arm64", "*-*linux_i686"]
+
+[tool.cibuildwheel.linux]
+before-all = "yum install -y gmp-devel"
+
+[tool.cibuildwheel.linux.environment]
+CXXFLAGS = "-D_GLIBCXX_USE_TBB_PAR_BACKEND=0"
+
+[tool.cibuildwheel.macos]
+# Install GMP from source since the Homebrew version causes issues.
+before-all = """
+    set -e
+    GMP_VERSION=6.2.1
+    curl -L https://ftp.gnu.org/gnu/gmp/gmp-${GMP_VERSION}.tar.xz -o gmp.tar.xz
+    tar xf gmp.tar.xz
+    cd gmp-${GMP_VERSION}
+    # MPFR is sometimes needed by GMP, but we can disable it for a minimal build
+    ./configure --prefix=$PWD/gmp-install --disable-assembly --enable-cxx --with-pic --disable-mpfr
+    make -j4
+    make install
+    cd ..
+"""
+
+[tool.cibuildwheel.macos.environment]
+GMP_DIR = "gmp-6.2.1/gmp-install"
+
+
 [tool.scikit-build]
 cmake.minimum-version = "3.25"
 
@@ -27,8 +56,8 @@ build-dir = "build/RelWithDebInfo"
 cmake.args = [
   "-DWMTK_PYBIND=ON",
   "-DCMAKE_INSTALL_DEFAULT_COMPONENT_NAME=python_bindings",
-  # "-DBUILD_TESTING=OFF",
-  # "-DWMTK_APP_HARMTET=OFF",
-  # "-DWMTK_APP_INTERIOR_TET_OPT=OFF",
+  "-DBUILD_TESTING=OFF",
+  "-DWMTK_APP_HARMTET=OFF",
+  "-DWMTK_APP_INTERIOR_TET_OPT=OFF",
 ]
 install.components = ["python_bindings"]
