@@ -93,6 +93,11 @@ void ImageSimulationMesh::mesh_improvement(int max_its)
             m++;
             if (m == M) {
                 logger().info(">>>>adjust_sizing_field...");
+                if (is_hit_min_edge_length) {
+                    logger().warn(
+                        "Adjust sizing field although min edge length was already hit. This should "
+                        "not happen.");
+                }
                 is_hit_min_edge_length = adjust_sizing_field_serial(max_energy);
                 // is_hit_min_edge_length = adjust_sizing_field(max_energy);
                 logger().info(">>>>adjust_sizing_field finished...");
@@ -100,8 +105,12 @@ void ImageSimulationMesh::mesh_improvement(int max_its)
             }
         } else {
             m = 0;
-            pre_max_energy = max_energy;
-            pre_avg_energy = avg_energy;
+            /**
+             * Update pre energies only if they are smaller than current energies. This helps to
+             * adjust the sizing field in case the energy alternates between two states.
+             */
+            pre_max_energy = std::min(pre_max_energy, max_energy);
+            pre_avg_energy = std::min(pre_avg_energy, avg_energy);
         }
         if (is_hit_min_edge_length) {
             // todo: maybe to do sth
