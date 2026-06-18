@@ -835,7 +835,7 @@ void TriMesh::collapse_edge_conn(
 
     // CHANGE: change vf connectivity f v2 instead of adding new
 
-    // add preseved v1 faces to v2
+    // add preserved v1 faces to v2
     // clear v2 conn first
     m_vertex_connectivity[vid2].m_conn_tris.clear();
     for (size_t fid : n12_union_fids) {
