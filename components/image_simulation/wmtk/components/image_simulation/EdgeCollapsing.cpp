@@ -386,11 +386,12 @@ void ImageSimulationMesh::simplify()
                 Vector3i((int)surf_faces[i][0], (int)surf_faces[i][1], (int)surf_faces[i][2]);
         }
 
+        bool use_exact = m_envelope->use_exact;
         m_envelope = nullptr;
         m_V_envelope.clear();
         m_F_envelope.clear();
         if (V.size() > 0 && F.size() > 0) {
-            init_envelope(V, F);
+            init_envelope(V, F, use_exact);
         } else {
             logger().warn("No surface faces left after simplification, skip re-building envelope");
         }

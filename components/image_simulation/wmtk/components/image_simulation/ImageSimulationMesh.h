@@ -326,7 +326,7 @@ public:
         return m_vertex_attribute[loc.vid(*this)].partition_id;
     }
 
-    void init_envelope(const MatrixXd& V, const MatrixXi& F);
+    void init_envelope(const MatrixXd& V, const MatrixXi& F, const bool use_exact);
 
     CellTag string_set_to_cell_tag(const std::set<std::string>& str_set);
 

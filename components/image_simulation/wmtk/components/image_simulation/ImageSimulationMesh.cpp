@@ -581,7 +581,7 @@ void ImageSimulationMesh::output_faces(
 }
 
 
-void ImageSimulationMesh::init_envelope(const MatrixXd& V, const MatrixXi& F)
+void ImageSimulationMesh::init_envelope(const MatrixXd& V, const MatrixXi& F, const bool use_exact)
 {
     if (m_envelope) {
         log_and_throw_error("Envelope was already initialized once.");
@@ -605,7 +605,7 @@ void ImageSimulationMesh::init_envelope(const MatrixXd& V, const MatrixXi& F)
     }
 
     m_envelope = std::make_shared<SampleEnvelope>();
-    m_envelope->use_exact = true;
+    m_envelope->use_exact = use_exact;
     m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
     m_envelope_orig = m_envelope;
 }

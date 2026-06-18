@@ -165,7 +165,8 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     image_simulation::ImageSimulationMesh mesh(params, params.eps, params.NUM_THREADS);
     // first init envelope
     if (input_data.V_envelope.size() != 0) {
-        mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);
+        bool use_exact = !json_params["use_sample_envelope"];
+        mesh.init_envelope(input_data.V_envelope, input_data.F_envelope, use_exact);
     }
     if (input_data.V_input_r.size() == 0) {
         logger().info("Use float input for TetWild");
