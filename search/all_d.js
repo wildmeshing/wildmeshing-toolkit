@@ -1,13 +1,14 @@
 var searchData=
 [
-  ['m_5fconn_5ftris_0',['m_conn_tris',['../classwmtk_1_1_tri_mesh_1_1_vertex_connectivity.html#a5cad173122b7b137272f4bbe6756835e',1,'wmtk::TriMesh::VertexConnectivity']]],
-  ['m_5findices_1',['m_indices',['../classwmtk_1_1_tri_mesh_1_1_triangle_connectivity.html#afd6528ae2e0fbc209ad5ea1802d7a7d5',1,'wmtk::TriMesh::TriangleConnectivity']]],
-  ['m_5fis_5fremoved_2',['m_is_removed',['../classwmtk_1_1_tri_mesh_1_1_vertex_connectivity.html#af85b47973f5937266c235d9f688b6742',1,'wmtk::TriMesh::VertexConnectivity::m_is_removed'],['../classwmtk_1_1_tri_mesh_1_1_triangle_connectivity.html#a1753f3561e7cb7c824b534db353e32e9',1,'wmtk::TriMesh::TriangleConnectivity::m_is_removed']]],
-  ['m_5fl_5fw_5frow_3',['m_l_w_row',['../classwmtk_1_1optimization_1_1_biharmonic_energy2_d.html#a5d13f38fe0cd861b42537adfe1a17d55',1,'wmtk::optimization::BiharmonicEnergy2D::m_L_w_row'],['../classwmtk_1_1optimization_1_1_biharmonic_energy3_d.html#a824c54daa4f3e2c1a93644da2f3a7552',1,'wmtk::optimization::BiharmonicEnergy3D::m_L_w_row']]],
-  ['m_5flocal_5fedges_4',['m_local_edges',['../classwmtk_1_1_tet_mesh.html#ade7fb5d05c627df8d2b47fb27b1bd69b',1,'wmtk::TetMesh']]],
-  ['m_5fltml_5frow_5',['m_ltml_row',['../classwmtk_1_1optimization_1_1_biharmonic_energy2_d.html#a0411834214252d9394bdc7e0207c7137',1,'wmtk::optimization::BiharmonicEnergy2D::m_LTML_row'],['../classwmtk_1_1optimization_1_1_biharmonic_energy3_d.html#a5e9ce1e3f686a2a400e9ac0bf2e38611',1,'wmtk::optimization::BiharmonicEnergy3D::m_LTML_row']]],
-  ['m_5fpts_6',['m_pts',['../classwmtk_1_1optimization_1_1_biharmonic_energy2_d.html#a66af4f6ef683d9cb3dc361e62eef8314',1,'wmtk::optimization::BiharmonicEnergy2D::m_pts'],['../classwmtk_1_1optimization_1_1_biharmonic_energy3_d.html#ad7d22fef619eca270f8828bd52fb30f2',1,'wmtk::optimization::BiharmonicEnergy3D::m_pts']]],
-  ['max_5fretry_5flimit_7',['max_retry_limit',['../structwmtk_1_1_execute_pass.html#a02a89f6f7fe09f5c6f1d1c2207ed4c58',1,'wmtk::ExecutePass']]],
-  ['mortoncode64_8',['MortonCode64',['../class_resorting_1_1_morton_code64.html',1,'Resorting']]],
-  ['mshdata_9',['MshData',['../classwmtk_1_1_msh_data.html',1,'wmtk']]]
+  ['label_5finput_5fcomplex_0',['label_input_complex',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aaed4f7af1b15e9fc3d7c0cfb9afaeb8c',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::label_input_complex()'],['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a0c0888f13524e6cbc0b9f2a817ea4c0f',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::label_input_complex()']]],
+  ['label_5fnon_5fmanifold_1',['label_non_manifold',['../classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_mesh.html#a8b3f1b5367e9d0f2f63fefe73210dee1',1,'wmtk::components::manifold_extraction::ManExtractMesh']]],
+  ['label_5fsurface_5fsimplices_2',['label_surface_simplices',['../classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_mesh.html#a4af8e289122a2964e003c983148920aa',1,'wmtk::components::manifold_extraction::ManExtractMesh']]],
+  ['layoutpartinfo_3',['LayoutPartInfo',['../structwmtk_1_1components_1_1c1__simplification_1_1_m_m_surface_mesh_1_1_layout_part_info.html',1,'wmtk::components::c1_simplification::MMSurfaceMesh']]],
+  ['license_4',['License',['../index.html#autotoc_md31',1,'']]],
+  ['line_20executions_20for_20example_20applications_5',['Command Line Executions for Example Applications',['../index.html#autotoc_md30',1,'']]],
+  ['link_5fcondition_6',['link_condition',['../classwmtk_1_1_tet_mesh.html#a5dde52f8c3642ed037019ff31daf6330',1,'wmtk::TetMesh']]],
+  ['local_5feid_7',['local_eid',['../classwmtk_1_1_tri_mesh_1_1_tuple.html#af74485b73b9169fc3978dc11264b2b1b',1,'wmtk::TriMesh::Tuple']]],
+  ['localoperations_8',['LocalOperations',['../classwmtk_1_1components_1_1tetwild_1_1orig_1_1_local_operations.html',1,'wmtk::components::tetwild::orig']]],
+  ['lock_5fvertices_9',['lock_vertices',['../structwmtk_1_1_execute_pass.html#a69daee2667787799dc04e5e24e62cc95',1,'wmtk::ExecutePass']]],
+  ['log_5ftotal_5fsurface_5fenergy_10',['log_total_surface_energy',['../classwmtk_1_1components_1_1image__simulation_1_1tri_1_1_image_simulation_mesh_tri.html#a2ba52b315b190d160ecdd738df342845',1,'wmtk::components::image_simulation::tri::ImageSimulationMeshTri']]]
 ];

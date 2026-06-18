@@ -1,9 +1,9 @@
 var searchData=
 [
-  ['operation_5fupdate_5fconnectivity_5fimpl_0',['operation_update_connectivity_impl',['../classwmtk_1_1_tet_mesh.html#aded83c1cb87c1553c47f6370c5fa1ef9',1,'wmtk::TetMesh']]],
-  ['operator_28_29_1',['operator()',['../structwmtk_1_1_execute_pass.html#ac7d73ef75b92299972f3fb90c5ef048b',1,'wmtk::ExecutePass']]],
-  ['oriented_5ftet_5fvertices_2',['oriented_tet_vertices',['../classwmtk_1_1_tet_mesh.html#a3bd670ddb854a278d5760bdde3e9cda3',1,'wmtk::TetMesh']]],
-  ['oriented_5ftet_5fvids_3',['oriented_tet_vids',['../classwmtk_1_1_tet_mesh.html#a448bea95db3c98b8bae56c9c2edc0589',1,'wmtk::TetMesh']]],
-  ['oriented_5ftri_5fvertices_4',['oriented_tri_vertices',['../classwmtk_1_1_tri_mesh_1_1_tuple.html#a5ccb6872291134383402772bb8234101',1,'wmtk::TriMesh::Tuple::oriented_tri_vertices()'],['../classwmtk_1_1_tri_mesh.html#aaab31eef8e025f6185a4760ed80be722',1,'wmtk::TriMesh::oriented_tri_vertices(const Tuple &amp;t) const']]],
-  ['oriented_5ftri_5fvids_5',['oriented_tri_vids',['../classwmtk_1_1_tri_mesh.html#a07f1bdac973f713076d7ea8073082ef5',1,'wmtk::TriMesh']]]
+  ['label_5finput_5fcomplex_0',['label_input_complex',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aaed4f7af1b15e9fc3d7c0cfb9afaeb8c',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::label_input_complex()'],['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a0c0888f13524e6cbc0b9f2a817ea4c0f',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::label_input_complex()']]],
+  ['label_5fnon_5fmanifold_1',['label_non_manifold',['../classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_mesh.html#a8b3f1b5367e9d0f2f63fefe73210dee1',1,'wmtk::components::manifold_extraction::ManExtractMesh']]],
+  ['label_5fsurface_5fsimplices_2',['label_surface_simplices',['../classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_mesh.html#a4af8e289122a2964e003c983148920aa',1,'wmtk::components::manifold_extraction::ManExtractMesh']]],
+  ['link_5fcondition_3',['link_condition',['../classwmtk_1_1_tet_mesh.html#a5dde52f8c3642ed037019ff31daf6330',1,'wmtk::TetMesh']]],
+  ['local_5feid_4',['local_eid',['../classwmtk_1_1_tri_mesh_1_1_tuple.html#af74485b73b9169fc3978dc11264b2b1b',1,'wmtk::TriMesh::Tuple']]],
+  ['log_5ftotal_5fsurface_5fenergy_5',['log_total_surface_energy',['../classwmtk_1_1components_1_1image__simulation_1_1tri_1_1_image_simulation_mesh_tri.html#a2ba52b315b190d160ecdd738df342845',1,'wmtk::components::image_simulation::tri::ImageSimulationMeshTri']]]
 ];

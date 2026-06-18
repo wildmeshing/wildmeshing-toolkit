@@ -1,28 +1,5 @@
 var searchData=
 [
-  ['about_20us_0',['About Us',['..//home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/README.md#autotoc_md7',1,'']]],
-  ['abstractattributecontainer_1',['AbstractAttributeContainer',['../classwmtk_1_1_abstract_attribute_container.html',1,'wmtk']]],
-  ['add_2',['add',['../classwmtk_1_1simplex_1_1_simplex_collection.html#a33d7c91dea1b2dd6ccd8d546a18acd97',1,'wmtk::simplex::SimplexCollection']]],
-  ['add_5fedge_5fattribute_3',['add_edge_attribute',['../classwmtk_1_1io_1_1_tri_v_t_u_writer.html#a9a29de04161b8ef34bd88991dfaa9150',1,'wmtk::io::TriVTUWriter::add_edge_attribute()'],['../classwmtk_1_1io_1_1_tet_v_t_u_writer.html#a767ec9b2338187acf1aadee45a93af9b',1,'wmtk::io::TetVTUWriter::add_edge_attribute()']]],
-  ['add_5fenergy_4',['add_energy',['../classwmtk_1_1optimization_1_1_energy_sum.html#a01440f38f3998f390b9e1adc6c0f5212',1,'wmtk::optimization::EnergySum']]],
-  ['add_5fface_5fvertices_5',['add_face_vertices',['../classwmtk_1_1_msh_data.html#ad46529f098d386d7d1d086d095133c01',1,'wmtk::MshData']]],
-  ['add_5ffaces_6',['add_faces',['../classwmtk_1_1_msh_data.html#a6cd5022e3aec2e52eff3e614aa95b588',1,'wmtk::MshData']]],
-  ['add_5fphysical_5fgroup_7',['add_physical_group',['../classwmtk_1_1_msh_data.html#a2cca8600a38697cbcebf14002ab7f34b',1,'wmtk::MshData']]],
-  ['add_5ftet_5fattribute_8',['add_tet_attribute',['../classwmtk_1_1io_1_1_tet_v_t_u_writer.html#a2e4fc3f699396ee5c18230a468a39a2e',1,'wmtk::io::TetVTUWriter']]],
-  ['add_5ftriangle_5fattribute_9',['add_triangle_attribute',['../classwmtk_1_1io_1_1_tet_v_t_u_writer.html#ad71c8cc3ca7b0b9b2db4e47b75e7720e',1,'wmtk::io::TetVTUWriter::add_triangle_attribute()'],['../classwmtk_1_1io_1_1_tri_v_t_u_writer.html#adee26003d6a5dc634bae3553e9605aac',1,'wmtk::io::TriVTUWriter::add_triangle_attribute()']]],
-  ['add_5fvertex_5fattribute_10',['add_vertex_attribute',['../classwmtk_1_1io_1_1_tet_v_t_u_writer.html#a7b38528511ef1c6e4bc05a327bbbd008',1,'wmtk::io::TetVTUWriter::add_vertex_attribute()'],['../classwmtk_1_1io_1_1_tri_v_t_u_writer.html#aa7fe61fd2391c509e6bbb94e8521f215',1,'wmtk::io::TriVTUWriter::add_vertex_attribute(const std::string &amp;name, const std::function&lt; VectorXd(const size_t)&gt; &amp;f)']]],
-  ['add_5fvertex_5fpositions_11',['add_vertex_positions',['../classwmtk_1_1io_1_1_tri_v_t_u_writer.html#a5d1c873bea2e29eb44100706e18095eb',1,'wmtk::io::TriVTUWriter::add_vertex_positions()'],['../classwmtk_1_1io_1_1_tet_v_t_u_writer.html#a31053aef1ae2d5bb3b2d1a04232b419e',1,'wmtk::io::TetVTUWriter::add_vertex_positions()']]],
-  ['add_5fwith_5ffaces_12',['add_with_faces',['../classwmtk_1_1simplex_1_1_simplex_collection.html#a107a3d51de663a0e2b053cc9ce4330a8',1,'wmtk::simplex::SimplexCollection']]],
-  ['adjacency_5ffrom_5fstiffness_13',['adjacency_from_stiffness',['../classwmtk_1_1optimization_1_1_biharmonic_energy3_d.html#a13960234469ac4695b1ac71b75a0388b',1,'wmtk::optimization::BiharmonicEnergy3D']]],
-  ['algorithm_14',['Basic Algorithm',['..//home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/README.md#autotoc_md8',1,'']]],
-  ['amipsenergy2d_15',['amipsenergy2d',['../classwmtk_1_1optimization_1_1_a_m_i_p_s_energy2_d.html#a3459476c6f50cd3cafd3e912b6aeadbd',1,'wmtk::optimization::AMIPSEnergy2D::AMIPSEnergy2D()'],['../classwmtk_1_1optimization_1_1_a_m_i_p_s_energy2_d.html',1,'wmtk::optimization::AMIPSEnergy2D']]],
-  ['amipsenergy3d_16',['amipsenergy3d',['../classwmtk_1_1optimization_1_1_a_m_i_p_s_energy3_d.html#a8a54e033030688532327ffb8010979e3',1,'wmtk::optimization::AMIPSEnergy3D::AMIPSEnergy3D()'],['../classwmtk_1_1optimization_1_1_a_m_i_p_s_energy3_d.html',1,'wmtk::optimization::AMIPSEnergy3D']]],
-  ['applications_17',['Command Line Executions for Example Applications',['..//home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/README.md#autotoc_md16',1,'']]],
-  ['are_5fsimplex_5fcollections_5fequal_18',['are_simplex_collections_equal',['../classwmtk_1_1simplex_1_1_simplex_collection.html#a156241f0bd0aa0e054347929261a9db0',1,'wmtk::simplex::SimplexCollection']]],
-  ['attribute_20update_19',['Explicit Attribute Update',['..//home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/README.md#autotoc_md10',1,'']]],
-  ['attributecollection_20',['AttributeCollection',['../structwmtk_1_1_attribute_collection.html',1,'wmtk']]],
-  ['attributecollection_3c_20app_3a_3ainterior_5ftet_5fopt_3a_3atetraattribute_20_3e_21',['AttributeCollection&lt; app::interior_tet_opt::TetraAttribute &gt;',['../structwmtk_1_1_attribute_collection.html',1,'wmtk']]],
-  ['attributecollection_3c_20app_3a_3ainterior_5ftet_5fopt_3a_3avertexattribute_20_3e_22',['AttributeCollection&lt; app::interior_tet_opt::VertexAttribute &gt;',['../structwmtk_1_1_attribute_collection.html',1,'wmtk']]],
-  ['attributecollection_3c_20harmonic_5ftet_3a_3aharmonictet_3a_3atetattribute_20_3e_23',['AttributeCollection&lt; harmonic_tet::HarmonicTet::TetAttribute &gt;',['../structwmtk_1_1_attribute_collection.html',1,'wmtk']]],
-  ['attributecollection_3c_20harmonic_5ftet_3a_3aharmonictet_3a_3avertexattributes_20_3e_24',['AttributeCollection&lt; harmonic_tet::HarmonicTet::VertexAttributes &gt;',['../structwmtk_1_1_attribute_collection.html',1,'wmtk']]]
+  ['3_20replace_20tags_0',['3. Replace Tags',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2image__simulation_2_r_e_a_d_m_e.html#autotoc_md6',1,'']]],
+  ['3d_20operations_1',['3D operations',['../index.html#autotoc_md28',1,'']]]
 ];

@@ -1,8 +1,5 @@
 var searchData=
 [
-  ['license_0',['License',['..//home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/README.md#autotoc_md17',1,'']]],
-  ['line_20executions_20for_20example_20applications_1',['Command Line Executions for Example Applications',['..//home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/README.md#autotoc_md16',1,'']]],
-  ['link_5fcondition_2',['link_condition',['../classwmtk_1_1_tet_mesh.html#a5dde52f8c3642ed037019ff31daf6330',1,'wmtk::TetMesh']]],
-  ['local_5feid_3',['local_eid',['../classwmtk_1_1_tri_mesh_1_1_tuple.html#af74485b73b9169fc3978dc11264b2b1b',1,'wmtk::TriMesh::Tuple']]],
-  ['lock_5fvertices_4',['lock_vertices',['../structwmtk_1_1_execute_pass.html#a69daee2667787799dc04e5e24e62cc95',1,'wmtk::ExecutePass']]]
+  ['keep_5flargest_5fconnected_5fcomponent_0',['keep_largest_connected_component',['../classwmtk_1_1components_1_1image__simulation_1_1_image_simulation_mesh.html#abaadfe7b81caa5802ed05039b438dc37',1,'wmtk::components::image_simulation::ImageSimulationMesh::keep_largest_connected_component()'],['../classwmtk_1_1components_1_1image__simulation_1_1tri_1_1_image_simulation_mesh_tri.html#a98da12ac1cc78bedf47f5af034ad91c5',1,'wmtk::components::image_simulation::tri::ImageSimulationMeshTri::keep_largest_connected_component()']]],
+  ['knn_1',['KNN',['../classwmtk_1_1_k_n_n.html',1,'wmtk']]]
 ];

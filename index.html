@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: Wildmeshing Toolkit</title>
+<title>Wildmeshing Toolkit: Wildmeshing-toolkit: Declarative Specification for Unstructured Mesh Editing Algorithms</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -69,10 +69,192 @@ $(function() {
 </div>
 
 <div><div class="header">
-  <div class="headertitle"><div class="title">Wildmeshing Toolkit </div></div>
+  <div class="headertitle"><div class="title">Wildmeshing-toolkit: Declarative Specification for Unstructured Mesh Editing Algorithms </div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p><a class="anchor" id="md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2src_2wmtk_2envelope_2_r_e_a_d_m_e"></a></p>
+<div class="textblock"><p><a class="anchor" id="md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2_r_e_a_d_m_e"></a> </p>
+<h1><a class="anchor" id="autotoc_md17"></a>
+Installation</h1>
+<h3><a class="anchor" id="autotoc_md18"></a>
+via CMake</h3>
+<ul>
+<li>Clone the repository into your local machine:</li>
+</ul>
+<div class="fragment"><div class="line">git clone https://github.com/wildmeshing/wildmeshing-toolkit.git</div>
+</div><!-- fragment --><ul>
+<li>Compile the code using cmake&gt;3.20.0</li>
+</ul>
+<div class="fragment"><div class="line">cd wildmeshing-toolkit</div>
+<div class="line">mkdir build</div>
+<div class="line">cd build</div>
+<div class="line">cmake -DCMAKE_BUILD_TYPE=Release ..</div>
+<div class="line">make</div>
+</div><!-- fragment --><p>You may need to install <code>gmp</code> before compiling the code. You can install <code>gmp</code> via <a href="https://brew.sh/">homebrew</a>.</p>
+<h1><a class="anchor" id="autotoc_md19"></a>
+Usage</h1>
+<p>When executing CMake, the <a href="https://github.com/wildmeshing/data2">data repository</a> will be automatically cloned into the <code>data</code> folder. You can find example meshes and json files for testing there. After compiling the code, you can run the applications under the <code>app</code> folder, e.g. for isotropic remeshing:</p>
+<div class="fragment"><div class="line">./build/app/wmtk_app -j data/integration_tests/isotropic_remeshing_bunny.json</div>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md20"></a>
+About Us</h1>
+<p>This toolkit is a novel approach to describe mesh generation, mesh adaptation, and geometric modeling algorithms relying on changing mesh connectivity using a high-level abstraction. The main motivation is to enable easy customization and development of these algorithms via a declarative specification consisting of a set of per-element invariants, operation scheduling,and attribute transfer for each editing operation.</p>
+<p>Many widely used algorithms editing surfaces and volumes can be compactly expressed with our abstraction, and their implementation within our framework is simple, automatically parallelizable on shared-memory architectures, and with guaranteed satisfaction of the prescribed invariants. These algorithms are readable and easy to customize for specific use cases.</p>
+<p>This software library implements the abstractiona in our paper and providing automatic shared memory parallelization.</p>
+<p>We will use the implementation of the shortest edge collapse algorithm as an example to introduce the framework and run through the basic software structures and APIs of the toolkit.</p>
+<h1><a class="anchor" id="autotoc_md21"></a>
+Example: Shortest Edge Collapse</h1>
+<h2><a class="anchor" id="autotoc_md22"></a>
+Basic Algorithm</h2>
+<p>The algorithm is after [Hoppe 1996] Progressive Meshes which performs a series of collapse operations prioritizing the shorter edges. The algorithm requires only one local operation, edge collapse. We terminate when the mesh reaches a desired number of mesh elements.</p>
+<p>We implemented <code>class ShortestEdgeCollapse</code> as a child class of <code><a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></code>. The 3d vertex positions are stored as a field of the <code>VertexAttributes</code>.</p>
+<div class="fragment"><div class="line"> ++</div>
+<div class="line"><span class="keyword">struct </span>VertexAttributes</div>
+<div class="line">{</div>
+<div class="line">    Eigen::Vector3d pos;</div>
+<div class="line">    <span class="keywordtype">size_t</span> partition_id = 0;</div>
+<div class="line">    <span class="keywordtype">bool</span> freeze = <span class="keyword">false</span>;</div>
+<div class="line">};</div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md23"></a>
+Explicit Invariant Design</h2>
+<p>It is common to have a set of desiderata on the mesh that needs to be satisfied, such as avoiding triangle insertions or self-intersections. The responsibility of ensuring the user-defined explicit invariants being checked after every mesh modification, and after the input is loaded is assumed by the toolkit. It is much easier to ensure correctness for the user, as the checks are handled transparently by the toolkit.</p>
+<p>As an example of user-defined invariants, in our shortest edge collapse implementation, we created an envelope around the original surface and designated that any operation shall not cause any vertex to move outside of the envelop, so that during local operations we can roughly keep the shape of the input mesh.</p>
+<div class="fragment"><div class="line"> ++</div>
+<div class="line"><span class="keywordtype">bool</span> ShortestEdgeCollapse::invariants(<span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; new_tris)</div>
+<div class="line">{</div>
+<div class="line">    <span class="keywordflow">if</span> (m_has_envelope) {</div>
+<div class="line">        <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; t : new_tris) {</div>
+<div class="line">            std::array&lt;Eigen::Vector3d, 3&gt; tris;</div>
+<div class="line">            <span class="keyword">auto</span> vs = oriented_tri_vertices(t);</div>
+<div class="line">            <span class="keywordflow">for</span> (<span class="keyword">auto</span> j = 0; j &lt; 3; j++) tris[j] = vertex_attrs[vs[j].vid(*<span class="keyword">this</span>)].pos;</div>
+<div class="line">            <span class="keywordtype">bool</span> outside = m_envelope.is_outside(tris);</div>
+<div class="line">            <span class="keywordflow">if</span> (outside) <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line">        }</div>
+<div class="line">    }</div>
+<div class="line">    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p>The envelope development is after <a href="https://cims.nyu.edu/gcl/papers/2020-Fast-Envelope.pdf">Exact and Efficient Polyhedral Envelope Containment Check</a></p>
+<h2><a class="anchor" id="autotoc_md24"></a>
+Explicit Attribute Update</h2>
+<p>Opposed to the common practice of attaching mesh attributes to mesh elements we enable the users to only provide the rules on how to update attributes after local operations in a high-level specifications. The actual update is handled entirely by the toolkit.</p>
+<p>This easy-to-write user-specified update rule is examplified in our shortest edge collapse as below</p>
+<div class="fragment"><div class="line"> ++</div>
+<div class="line"><span class="keywordtype">bool</span> ShortestEdgeCollapse::collapse_edge_after(<span class="keyword">const</span> TriMesh::Tuple&amp; t)</div>
+<div class="line">{</div>
+<div class="line">    <span class="keyword">const</span> Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;</div>
+<div class="line">    <span class="keyword">auto</span> vid = t.vid(*<span class="keyword">this</span>);</div>
+<div class="line">    vertex_attrs[vid].pos = p;</div>
+<div class="line">    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line">}</div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md25"></a>
+Operation Rollback</h2>
+<p>It is common to perform mesh editing to improve a given energy functional, such as mesh quality or element size. However, due to the discrete nature of the operations, it is not possible to use standard smooth optimization techniques, and instead the effect of the energy is evaluated before and after every operation to measure its effect on the energy. If the user desires a certain property of the mesh for each operation, the desiderata can be easily coded up as a check in the after operation.</p>
+<p>If either the user specified invariants or the after operation check/update has failed, the toolkit will perform an operation rollback that restores the mesh configuration to before the operation. And our toolkit also handles the recovery of element attributes on this occasion. The rollback and attribute protection gurantee both topology and geometry consistency for the mesh. Users would not need to perform any manual updates were the operations to fail, thanks to the rollback.</p>
+<h2><a class="anchor" id="autotoc_md26"></a>
+Operation Demonstration</h2>
+<p>For easier usage and customization, here we demonstrate the before and after state of each operation and the vertex, edge, face, and tet (in 3d) that is reference.</p>
+<h3><a class="anchor" id="autotoc_md27"></a>
+2D operations</h3>
+<ul>
+<li><p class="startli"><b>edge split</b></p>
+<p class="startli"><img src="img/2d_split.svg" alt="img" style="pointer-events: none;" class="inline"/></p>
+</li>
+<li><p class="startli"><b>edge collapse</b></p>
+<p class="startli"><img src="img/2d_collapse.svg" alt="img" style="pointer-events: none;" class="inline"/></p>
+</li>
+<li><p class="startli"><b>edge swap</b></p>
+<p class="startli"><img src="img/2d_swap.svg" alt="img" style="pointer-events: none;" class="inline"/></p>
+</li>
+<li><p class="startli"><b>vertex smooth</b></p>
+<p class="startli">This operation does not change the mesh connectivity.</p>
+</li>
+</ul>
+<h3><a class="anchor" id="autotoc_md28"></a>
+3D operations</h3>
+<ul>
+<li><p class="startli"><b>edge split</b></p>
+<p class="startli"><img src="img/3d_split.svg" alt="img" style="pointer-events: none;" class="inline"/></p>
+</li>
+<li><p class="startli"><b>edge collapse</b></p>
+<p class="startli"><img src="img/3d_collapse.svg" alt="img" style="pointer-events: none;" class="inline"/></p>
+</li>
+<li><p class="startli"><b>edge swap / face swap</b></p>
+<p class="startli"><img src="img/3d_swap_edge_face.svg" alt="img" style="pointer-events: none;" class="inline"/></p>
+</li>
+<li><p class="startli"><b>edge swap 4-4</b></p>
+<p class="startli"><img src="img/3d_swap_edge44.svg" alt="img" style="pointer-events: none;" class="inline"/></p>
+</li>
+<li><p class="startli"><b>edge swap 5-6</b></p>
+<p class="startli">Similar to 4-4 edge swap.</p>
+</li>
+<li><p class="startli"><b>vertex smooth</b></p>
+<p class="startli">This operation does not change the mesh connectivity.</p>
+</li>
+</ul>
+<h1><a class="anchor" id="autotoc_md29"></a>
+Parallel Scheduling</h1>
+<p>The type and scheduling of local operations is crucial in mesh editing algorithms. This involves maintaining a priority queue of operations, which is updated after every local operation.</p>
+<p>We provide a direct way of controlling the operations performed and how the queue is updated through our scheduler. The main purpose of the scheduler is to abstract the operation order and hide parallelization details from the user. Our scheduler provides customizable callbacks, including, <em>Priority</em>, <em>Renew neighbor</em>, <em>Lock vertices</em>, <em>Stopping criterion</em>.</p>
+<p>For shortest edge collapse, we want to attempt to collapse all edges, prioritizing the shortest ones, until we reach a fixed number of vertices.</p>
+<div class="fragment"><div class="line"> ++</div>
+<div class="line"><span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; loc : get_edges()) collect_all_ops.emplace_back(<span class="stringliteral">&quot;edge_collapse&quot;</span>, loc);</div>
+</div><!-- fragment --><p>We put here the example of our shortest edge collapse implementation of the <em>Priority</em> and <em>Renew neighbor</em>, and how they are used in scheduler.</p>
+<div class="fragment"><div class="line">++</div>
+<div class="line"> <span class="keyword">auto</span> renew = [](<span class="keyword">auto</span>&amp; m, <span class="keyword">auto</span> op, <span class="keyword">auto</span>&amp; tris) {</div>
+<div class="line">     <span class="keyword">auto</span> edges = m.new_edges_after(tris);</div>
+<div class="line">     <span class="keyword">auto</span> optup = std::vector&lt;std::pair&lt;std::string, Tuple&gt;&gt;();</div>
+<div class="line">     <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; e : edges) optup.emplace_back(<span class="stringliteral">&quot;edge_collapse&quot;</span>, e);</div>
+<div class="line">     <span class="keywordflow">return</span> optup;</div>
+<div class="line"> };</div>
+<div class="line"> <span class="keyword">auto</span> measure_len2 = [](<span class="keyword">auto</span>&amp; m, <span class="keyword">auto</span> op, <span class="keyword">const</span> Tuple&amp; new_e) {</div>
+<div class="line">     <span class="keyword">auto</span> len2 =</div>
+<div class="line">         (m.vertex_attrs[new_e.vid(m)].pos - m.vertex_attrs[new_e.switch_vertex(m).vid(m)].pos)</div>
+<div class="line">             .squaredNorm();</div>
+<div class="line">     <span class="keywordflow">return</span> -len2;</div>
+<div class="line"> };</div>
+<div class="line"> <span class="keyword">auto</span> setup_and_execute = [&amp;](<span class="keyword">auto</span> executor) {</div>
+<div class="line">     executor.num_threads = NUM_THREADS;</div>
+<div class="line"> &gt;&gt; executor.renew_neighbor_tuples = renew;</div>
+<div class="line"> &gt;&gt; executor.priority = measure_len2;</div>
+<div class="line">     executor.stopping_criterion_checking_frequency =</div>
+<div class="line">         target_vert_number &gt; 0 ? (initial_size - target_vert_number - 1)</div>
+<div class="line">                                 : std::numeric_limits&lt;int&gt;::max();</div>
+<div class="line">     executor.stopping_criterion = [](<span class="keyword">auto</span>&amp; m) { <span class="keywordflow">return</span> <span class="keyword">true</span>; };</div>
+<div class="line">     executor(*<span class="keyword">this</span>, collect_all_ops);</div>
+<div class="line"> };</div>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md30"></a>
+Command Line Executions for Example Applications</h1>
+<p>To showcase the generality and effectiveness of our approach, we implemented five popular mesh editing algorithms in our framework. All algorithms are accessed through the same application <code>wmtk_app</code> and the user can specify which algorithm to run through the input JSON file. The five algorithms are listed below.</p>
+<p>The JSON files are processed with the <a href="https://github.com/geometryprocessing/json-spec-engine">JSON Spec Engine</a>.</p>
+<ul>
+<li>Shortest Edge Collpase :<ul>
+<li>Paper: <a href="https://hhoppe.com/pm.pdf">Progressive Meshes</a></li>
+<li><a href="components/shortest_edge_collapse/wmtk/components/shortest_edge_collapse/shortest_edge_collapse_spec.json">shortest_edge_collapse_spec.json</a></li>
+</ul>
+</li>
+<li>Qslim :<ul>
+<li>Paper: <a href="https://dl.acm.org/doi/pdf/10.1145/258734.258849">Surface Simplification Using Quadric Error Metrics</a></li>
+<li><a href="components/qslim/wmtk/components/qslim/qslim_spec.json">qslim_spec.json</a></li>
+</ul>
+</li>
+<li>Isotropic Remeshing :<ul>
+<li>Paper: <a href="https://ls7-gv.cs.tu-dortmund.de/downloads/publications/2004/sgp04.pdf">A Remeshing Approach to Multiresolution Modeling</a></li>
+<li><a href="components/isotropic_remeshing/wmtk/components/isotropic_remeshing/isotropic_remeshing_spec.json">isotropic_remeshing_spec.json</a></li>
+</ul>
+</li>
+<li>TetWild :<ul>
+<li>Paper: <a href="https://cims.nyu.edu/gcl/papers/2018-TetWild.pdf">Tetrahedral Meshing in the Wild</a></li>
+<li><a href="components/tetwild/wmtk/components/tetwild/tetwild_spec.json">tetwild_spec.json</a></li>
+</ul>
+</li>
+<li>TriWild :<ul>
+<li>Paper: <a href="https://cims.nyu.edu/gcl/papers/2019-TriWild.pdf">Triangular Meshing in the Wild</a></li>
+<li><a href="components/triwild/wmtk/components/triwild/triwild_spec.json">triwild_spec.json</a></li>
+</ul>
+</li>
+</ul>
+<p>Examples for all algorithms can be found in the <a href="https://github.com/wildmeshing/data2">data repository</a>.</p>
+<h1><a class="anchor" id="autotoc_md31"></a>
+License</h1>
+<p>MIT License. </p>
 </div></div><!-- PageDoc -->
 </div><!-- contents -->
 <!-- start footer part -->

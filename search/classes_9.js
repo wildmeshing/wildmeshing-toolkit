@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['mortoncode64_0',['MortonCode64',['../class_resorting_1_1_morton_code64.html',1,'Resorting']]],
-  ['mshdata_1',['MshData',['../classwmtk_1_1_msh_data.html',1,'wmtk']]]
+  ['layoutpartinfo_0',['LayoutPartInfo',['../structwmtk_1_1components_1_1c1__simplification_1_1_m_m_surface_mesh_1_1_layout_part_info.html',1,'wmtk::components::c1_simplification::MMSurfaceMesh']]],
+  ['localoperations_1',['LocalOperations',['../classwmtk_1_1components_1_1tetwild_1_1orig_1_1_local_operations.html',1,'wmtk::components::tetwild::orig']]]
 ];
