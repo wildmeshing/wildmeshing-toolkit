@@ -1,0 +1,45 @@
+name: pip install
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  MacOS:
+  name: ${{ matrix.os }} (pip install)
+  runs-on: ${{ matrix.os }}
+  strategy:
+    fail-fast: false
+    matrix:
+      include:
+        - os: macos-latest
+          name: macOS
+        - os: macos-14
+          name: macOS 14
+        - os: ubuntu-latest
+          name: Linux
+        - os: windows-2025-vs2026
+          name: Windows
+        - os: windows-2022
+          name: Windows 2022
+
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v6
+      with:
+        fetch-depth: 10
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Build and install
+      run: |
+        # Install the package
+        pip install --verbose .
+
+    - name: Test import
+      run: |
+        python -c "import pywmtk; print('pywmtk imported successfully')"
