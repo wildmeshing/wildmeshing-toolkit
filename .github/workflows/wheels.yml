@@ -1,0 +1,176 @@
+name: wheels
+
+# Build the pywmtk wheels for the three target platforms (macOS arm64,
+# Windows x86_64, Linux x86_64), build the source distribution, run the Python
+# tests against the freshly built wheels, and (on a GitHub Release) publish
+# everything to PyPI.
+#
+# Building every wheel compiles the whole C++ toolkit from scratch, so this is
+# intentionally NOT run on every push/PR. Trigger it manually from the Actions
+# tab, or let it run automatically when you publish a release.
+#
+# To also build on pull requests (more expensive), add:
+#   pull_request:
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+  push:
+    tags:
+      - "v*"
+
+# Data repo pinned to the same revision as cmake/wmtk_data.cmake. Keep in sync.
+env:
+  WMTK_DATA_REPO: https://github.com/wildmeshing/data2.git
+  WMTK_DATA_TAG: f21aa84d50a3ac6ffb3b04daf8a3e132b24803b0
+
+jobs:
+  # -------------------------------------------------------------------------
+  # 1. Build the wheels (one job per target platform)
+  # -------------------------------------------------------------------------
+  build_wheels:
+    name: wheel · ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14        # Apple Silicon -> macosx_arm64
+            label: macOS arm64
+          - os: windows-2022    # Intel/AMD64   -> win_amd64
+            label: Windows x86_64
+          - os: ubuntu-latest   # Intel/AMD64   -> manylinux x86_64
+            label: Linux x86_64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 10
+
+      # Builds wheels + runs the per-wheel smoke test from [tool.cibuildwheel]
+      # in pyproject.toml. cibuildwheel auto-repairs the wheels (delocate on
+      # macOS, auditwheel on Linux; the GMP DLL is installed into the wheel on
+      # Windows by app/pywmtk/CMakeLists.txt).
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.21.3   # bump as needed
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: cibw-wheels-${{ matrix.os }}
+          path: ./wheelhouse/*.whl
+
+  # -------------------------------------------------------------------------
+  # 2. Build the source distribution (sdist)
+  # -------------------------------------------------------------------------
+  make_sdist:
+    name: sdist
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 10
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build sdist
+        run: |
+          python -m pip install --upgrade build
+          python -m build --sdist --outdir dist
+
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: cibw-sdist
+          path: ./dist/*.tar.gz
+
+  # -------------------------------------------------------------------------
+  # 3. Run the Python tests against the freshly built wheels
+  # -------------------------------------------------------------------------
+  test_wheels:
+    name: test · ${{ matrix.label }}
+    needs: build_wheels
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            label: macOS arm64
+          - os: windows-2022
+            label: Windows x86_64
+          - os: ubuntu-latest
+            label: Linux x86_64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 10
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download wheels for this platform
+        uses: actions/download-artifact@v4
+        with:
+          name: cibw-wheels-${{ matrix.os }}
+          path: dist
+
+      - name: Install the built wheel
+        # pytest comes from PyPI; pywmtk is installed from the local wheelhouse
+        # only (--no-index), letting pip pick the wheel matching this runner's
+        # Python (cp312). pywmtk has no runtime dependencies.
+        run: |
+          python -m pip install pytest
+          python -m pip install pywmtk --no-index --find-links dist
+
+      - name: Fetch test data
+        shell: bash
+        run: |
+          git clone --filter=blob:none "$WMTK_DATA_REPO" data
+          git -C data checkout "$WMTK_DATA_TAG"
+
+      # Runs tests/python (smoke + integration). The native wmtk_app reference
+      # is not present here, so the integration suite verifies that every
+      # application runs end-to-end on real data without raising (the
+      # byte-for-byte comparison against wmtk_app is exercised by the local
+      # C++/Python comparison, not in the wheel job).
+      - name: Run Python tests
+        run: python -m pytest tests/python -v
+
+  # -------------------------------------------------------------------------
+  # 4. Publish to PyPI (only when a GitHub Release is published)
+  # -------------------------------------------------------------------------
+  publish:
+    name: publish to PyPI
+    needs: [build_wheels, make_sdist, test_wheels]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    environment:
+      name: pypi
+      url: https://pypi.org/project/pywmtk/
+    permissions:
+      id-token: write   # required for PyPI trusted publishing (OIDC)
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: cibw-*
+          path: dist
+          merge-multiple: true
+
+      - name: Publish distribution to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        # No API token needed when using PyPI Trusted Publishing (configured on
+        # the PyPI project). To use an API token instead, delete the
+        # `permissions`/`environment` above and set:
+        #   with:
+        #     password: ${{ secrets.PYPI_API_TOKEN }}

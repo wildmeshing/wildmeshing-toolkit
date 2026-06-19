@@ -7,13 +7,23 @@ name = "pywmtk"
 version = "0.1.0"
 description = "Python bindings for WildMeshingToolkit"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = { file = "LICENSE" }
 authors = [{ name = "WildMeshingToolkit" }]
 
 [tool.cibuildwheel]
-# Skip 32 bit builds and Windows ARM.
-skip = ["*-win32", "*-win_arm64", "*-*linux_i686"]
+# Build CPython 3.9–3.13 wheels.
+build = ["cp39-*", "cp310-*", "cp311-*", "cp312-*", "cp313-*"]
+# Skip 32-bit builds, Windows ARM, PyPy, and musllinux (the Linux `before-all`
+# below uses `yum`, which only exists on the manylinux images).
+skip = ["*-win32", "*-win_arm64", "*-*linux_i686", "pp*", "*-musllinux*"]
+
+# Smoke-test every built wheel on its target platform/Python: install it into an
+# isolated environment and confirm the extension imports and dispatches. This
+# needs no test data. The full data-driven integration suite is run separately
+# in the `test_wheels` CI job (see .github/workflows/wheels.yml).
+test-requires = "pytest"
+test-command = "pytest {project}/tests/python/test_smoke.py"
 
 [tool.cibuildwheel.linux]
 before-all = "yum install -y gmp-devel"

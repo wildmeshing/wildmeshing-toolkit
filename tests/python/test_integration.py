@@ -31,6 +31,7 @@ import json
 import os
 import subprocess
 import sys
+import warnings
 from pathlib import Path
 
 import pytest
@@ -194,11 +195,23 @@ def test_integration(input_file, tmp_path):
 
     # (2) Result parity: serial runs are deterministic, so the binding's output
     #     must match the native C++ app byte-for-byte.
+    #
+    #     When the reference app is unavailable (e.g. when testing an installed
+    #     wheel in CI, where only the binding is present) we cannot compare, but
+    #     the binding has still run the whole application end-to-end on real
+    #     data, so the test passes on termination. We just record that the
+    #     byte-for-byte comparison was not performed.
     if not APP.exists():
-        pytest.skip(
-            f"reference app not found at {APP}; "
-            f"set WMTK_APP to enable C++/Python result comparison"
+        assert _result_files(py_dir), (
+            f"{input_file}: run produced no output files"
         )
+        warnings.warn(
+            f"{input_file}: reference app not found at {APP}; "
+            f"skipped C++/Python byte-for-byte comparison "
+            f"(set WMTK_APP to enable it)",
+            stacklevel=2,
+        )
+        return
 
     cpp_dir = tmp_path / "cpp"
     _run_app_reference(json_file, app, cpp_dir)
