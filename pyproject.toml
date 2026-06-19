@@ -44,14 +44,17 @@ GMP_DIR = "gmp-6.2.1/gmp-install"
 cmake.minimum-version = "3.25"
 
 # --- Build Configuration ---
-# To switch to Debug, comment out the Release lines and uncomment the Debug lines
-# cmake.build-type = "Release"
-# build-dir = "build/Release"
+# Release (optimized, no debug symbols) is the default for the published bindings.
+# To switch to RelWithDebInfo or Debug, comment out the Release lines and
+# uncomment the desired pair below.
+cmake.build-type = "Release"
+build-dir = "build/Release"
+
+# cmake.build-type = "RelWithDebInfo"
+# build-dir = "build/RelWithDebInfo"
 
 # cmake.build-type = "Debug"
 # build-dir = "build/Debug"
-cmake.build-type = "RelWithDebInfo"
-build-dir = "build/RelWithDebInfo"
 
 cmake.args = [
   "-DWMTK_PYBIND=ON",
