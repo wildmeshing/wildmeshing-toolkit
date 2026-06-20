@@ -5,19 +5,19 @@ name: wheels
 # tests against the freshly built wheels, and (on a GitHub Release) publish
 # everything to PyPI.
 #
-# Building every wheel compiles the whole C++ toolkit from scratch, so this is
-# intentionally NOT run on every push/PR. Trigger it manually from the Actions
-# tab, or let it run automatically when you publish a release.
-#
-# To also build on pull requests (more expensive), add:
-#   pull_request:
+# NOTE: every wheel compiles the whole C++ toolkit from scratch, so this runs on
+# every push and is expensive. Once it is stable you may want to restrict it
+# (e.g. to `push: { tags: ['v*'] }` + `workflow_dispatch`) to save CI minutes.
 on:
+  push:
   workflow_dispatch:
   release:
     types: [published]
-  push:
-    tags:
-      - "v*"
+
+# Cancel superseded runs on the same ref so rapid commits don't pile up builds.
+concurrency:
+  group: wheels-${{ github.ref }}
+  cancel-in-progress: true
 
 # Data repo pinned to the same revision as cmake/wmtk_data.cmake. Keep in sync.
 env:
