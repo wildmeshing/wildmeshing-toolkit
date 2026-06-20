@@ -1,9 +1,12 @@
 name: wheels
 
 # Build the pywmtk wheels for the three target platforms (macOS arm64,
-# Windows x86_64, Linux x86_64), build the source distribution, run the Python
-# tests against the freshly built wheels, and (on a GitHub Release) publish
-# everything to PyPI.
+# Windows x86_64, Linux x86_64), build the source distribution, and (on a
+# GitHub Release) publish everything to PyPI.
+#
+# The Python test suite is run by the `pip` workflow (.github/workflows/pip.yml),
+# not here. cibuildwheel still runs a quick per-wheel import smoke test
+# (see [tool.cibuildwheel] test-command in pyproject.toml).
 #
 # NOTE: every wheel compiles the whole C++ toolkit from scratch, so this runs on
 # every push and is expensive. Once it is stable you may want to restrict it
@@ -18,11 +21,6 @@ on:
 concurrency:
   group: wheels-${{ github.ref }}
   cancel-in-progress: true
-
-# Data repo pinned to the same revision as cmake/wmtk_data.cmake. Keep in sync.
-env:
-  WMTK_DATA_REPO: https://github.com/wildmeshing/data2.git
-  WMTK_DATA_TAG: f21aa84d50a3ac6ffb3b04daf8a3e132b24803b0
 
 jobs:
   # -------------------------------------------------------------------------
@@ -90,68 +88,11 @@ jobs:
           path: ./dist/*.tar.gz
 
   # -------------------------------------------------------------------------
-  # 3. Run the Python tests against the freshly built wheels
-  # -------------------------------------------------------------------------
-  test_wheels:
-    name: test · ${{ matrix.label }}
-    needs: build_wheels
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: macos-14
-            label: macOS arm64
-          - os: windows-2022
-            label: Windows x86_64
-          - os: ubuntu-latest
-            label: Linux x86_64
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 10
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Download wheels for this platform
-        uses: actions/download-artifact@v4
-        with:
-          name: cibw-wheels-${{ matrix.os }}
-          path: dist
-
-      - name: Install the built wheel
-        # pytest comes from PyPI; pywmtk is installed from the local wheelhouse
-        # only (--no-index), letting pip pick the wheel matching this runner's
-        # Python (cp312). pywmtk has no runtime dependencies.
-        run: |
-          python -m pip install pytest
-          python -m pip install pywmtk --no-index --find-links dist
-
-      - name: Fetch test data
-        shell: bash
-        run: |
-          git clone --filter=blob:none "$WMTK_DATA_REPO" data
-          git -C data checkout "$WMTK_DATA_TAG"
-
-      # Runs tests/python (smoke + integration). The native wmtk_app reference
-      # is not present here, so the integration suite verifies that every
-      # application runs end-to-end on real data without raising (the
-      # byte-for-byte comparison against wmtk_app is exercised by the local
-      # C++/Python comparison, not in the wheel job).
-      - name: Run Python tests
-        run: python -m pytest tests/python -v
-
-  # -------------------------------------------------------------------------
-  # 4. Publish to PyPI (only when a GitHub Release is published)
+  # 3. Publish to PyPI (only when a GitHub Release is published)
   # -------------------------------------------------------------------------
   publish:
     name: publish to PyPI
-    needs: [build_wheels, make_sdist, test_wheels]
+    needs: [build_wheels, make_sdist]
     runs-on: ubuntu-latest
     if: github.event_name == 'release'
     environment:
