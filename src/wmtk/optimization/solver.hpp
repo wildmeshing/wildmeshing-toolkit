@@ -7,7 +7,7 @@ namespace wmtk::optimization {
 
 const polysolve::json basic_linear_solver_params = R"({"solver": "Eigen::LDLT"})"_json;
 const polysolve::json basic_nonlinear_solver_params =
-    R"({"solver": "DenseNewton", "max_iterations": 10, "allow_out_of_iterations": true})"_json;
+    R"({"solver": "DenseNewton", "max_iterations": 10, "allow_out_of_iterations": true, "rel_grad_norm_tol": 0})"_json;
 
 inline std::unique_ptr<polysolve::nonlinear::Solver> create_basic_solver()
 {
