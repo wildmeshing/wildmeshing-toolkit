@@ -19,8 +19,11 @@ C++ application (``wmtk_app``):
   the parallel scheduler, whose ordering is non-deterministic; their output is
   *not* expected to be identical, so for those we only check termination.
 
-The result comparison needs the ``wmtk_app`` binary (built in ``build/app``).
-If it is missing the comparison is skipped (set ``WMTK_APP`` to point at it).
+The result comparison needs a ``wmtk_app`` binary. To keep the comparison
+apples-to-apples it prefers the ``wmtk_app`` that scikit-build co-builds next to
+the binding (``build/<config>/app/wmtk_app``), falling back to a top-level
+``build/app/wmtk_app``; set ``WMTK_APP`` to override. If none is found the
+comparison is skipped and only termination is checked.
 
 Run with::
 
@@ -45,8 +48,33 @@ DATA_DIR = Path(
 )
 
 # Native C++ CLI used as the reference for the result comparison.
-_APP_ENV = os.environ.get("WMTK_APP")
-APP = Path(_APP_ENV) if _APP_ENV else REPO_ROOT / "build" / "app" / "wmtk_app"
+#
+# The byte-for-byte comparison is only meaningful when the reference app and the
+# binding are built from the same configuration: the iterative geometry code is
+# sensitive enough that two independently-configured build trees (e.g. a stock
+# `cmake build/` vs. the scikit-build `build/<config>/` tree the wheel is built
+# in) can take divergent discrete decisions on the heaviest cases. So we prefer
+# the `wmtk_app` that scikit-build co-builds alongside the binding under
+# `build/<config>/app/`, and only fall back to a top-level `build/app/`.
+# Override explicitly with WMTK_APP.
+def _find_reference_app():
+    env = os.environ.get("WMTK_APP")
+    if env:
+        return Path(env)
+    exe = "wmtk_app.exe" if os.name == "nt" else "wmtk_app"
+    candidates = [
+        REPO_ROOT / "build" / "Release" / "app" / exe,
+        REPO_ROOT / "build" / "RelWithDebInfo" / "app" / exe,
+        REPO_ROOT / "build" / "Debug" / "app" / exe,
+        REPO_ROOT / "build" / "app" / exe,
+    ]
+    for c in candidates:
+        if c.exists():
+            return c
+    return candidates[-1]  # nominal default; if missing, comparison is skipped
+
+
+APP = _find_reference_app()
 
 # Subprocess helper that loads a JSON and calls pywmtk.wmtk (see _run_binding.py).
 RUN_BINDING = HERE / "_run_binding.py"
