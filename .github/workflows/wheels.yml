@@ -12,9 +12,10 @@ name: wheels
 # every push and is expensive. Once it is stable you may want to restrict it
 # (e.g. to `push: { tags: ['v*'] }` + `workflow_dispatch`) to save CI minutes.
 on:
+  pull_request:
   push:
+    branches: [main]
   workflow_dispatch:
-  pull_request: # only for testing!!!
   release:
     types: [published]
 
@@ -55,7 +56,7 @@ jobs:
         uses: pypa/cibuildwheel@v2.21.3 # bump as needed
 
       - name: Upload wheels
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cibw-wheels-${{ matrix.os }}
           path: ./wheelhouse/*.whl
@@ -73,7 +74,7 @@ jobs:
           fetch-depth: 10
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -83,7 +84,7 @@ jobs:
           python -m build --sdist --outdir dist
 
       - name: Upload sdist
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cibw-sdist
           path: ./dist/*.tar.gz

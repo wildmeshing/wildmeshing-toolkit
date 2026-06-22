@@ -3,7 +3,7 @@ requires = ["scikit-build-core>=0.10", "pybind11>=2.11"]
 build-backend = "scikit_build_core.build"
 
 [project]
-name = "pywmtk"
+name = "wildmeshing"
 version = "0.1.0"
 description = "Python bindings for WildMeshingToolkit"
 readme = "README.md"
