@@ -1,4 +1,4 @@
-"""Python integration tests for the WildMeshingToolkit bindings (``pywmtk``).
+"""Python integration tests for the WildMeshingToolkit bindings (``wildmeshing``).
 
 These mirror the C++ integration tests in ``tests/integration_tests.cpp``: the
 same list of JSON inputs from ``data/integration_tests`` is driven through the
@@ -57,6 +57,8 @@ DATA_DIR = Path(
 # the `wmtk_app` that scikit-build co-builds alongside the binding under
 # `build/<config>/app/`, and only fall back to a top-level `build/app/`.
 # Override explicitly with WMTK_APP.
+
+
 def _find_reference_app():
     env = os.environ.get("WMTK_APP")
     if env:
@@ -76,7 +78,7 @@ def _find_reference_app():
 
 APP = _find_reference_app()
 
-# Subprocess helper that loads a JSON and calls pywmtk.wmtk (see _run_binding.py).
+# Subprocess helper that loads a JSON and calls wildmeshing.wildmeshing (see _run_binding.py).
 RUN_BINDING = HERE / "_run_binding.py"
 
 # Per-run wall-clock cap (seconds) so a hang fails loudly instead of stalling.
@@ -174,7 +176,7 @@ def _run_binding(json_file: Path, app: str, out_dir: Path):
     _run(
         [sys.executable, RUN_BINDING, json_file, _output_base(app, out_dir)],
         cwd=out_dir,
-        what=f"pywmtk binding on {json_file.name}",
+        what=f"wildmeshing binding on {json_file.name}",
     )
 
 

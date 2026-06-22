@@ -29,5 +29,5 @@ target_link_libraries(wmtk_app PUBLIC
 wmtk_copy_dll(wmtk_app)
 
 if(WMTK_PYBIND)
-    add_subdirectory(pywmtk)
+    add_subdirectory(pywildmeshing)
 endif()

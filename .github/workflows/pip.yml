@@ -42,7 +42,7 @@ jobs:
 
       - name: Test import
         run: |
-          python -c "import pywmtk; print('pywmtk imported successfully')"
+          python -c "import wildmeshing; print('wildmeshing imported successfully')"
 
       # Test data, pinned to the same revision as cmake/wmtk_data.cmake.
       # Checked out into ./data so tests/python finds <repo>/data/integration_tests.

@@ -1,11 +1,11 @@
-"""Subprocess helper: run a single integration-test JSON through the pywmtk binding.
+"""Subprocess helper: run a single integration-test JSON through the wildmeshing binding.
 
 This mirrors what the C++ side does in both ``tests/integration_tests.cpp``
 (``load_json`` + ``wmtk_wrapper``) and ``app/main.cpp``:
 
     1. parse the JSON input file,
     2. inject ``json_input_file`` so components can resolve relative paths,
-    3. dispatch on the ``application`` key (done inside ``pywmtk.wmtk``).
+    3. dispatch on the ``application`` key (done inside ``wildmeshing.wildmeshing``).
 
 It is executed as its own process so that each test gets an isolated working
 directory and global state, and so a crash in the native code fails only the
@@ -18,7 +18,7 @@ Usage:
 import json
 import sys
 
-import pywmtk
+from wildmeshing import *
 
 
 def main() -> int:
@@ -38,7 +38,7 @@ def main() -> int:
     if output_override is not None:
         j["output"] = output_override
 
-    pywmtk.wmtk(j)
+    wildmeshing(j)
     return 0
 
 

@@ -33,15 +33,15 @@ void wmtk_wrapper(const py::dict& obj)
 
     std::string app_str = j["application"];
     if (components_map.count(app_str) == 0) {
-        log_and_throw_error("Applictaion {} unknown", app_str);
+        log_and_throw_error("Application {} unknown", app_str);
     }
 
     // execute
     components_map[app_str](j);
 }
 
-PYBIND11_MODULE(pywmtk, m, py::mod_gil_not_used())
+PYBIND11_MODULE(wildmeshing, m, py::mod_gil_not_used())
 {
     m.doc() = "Python bindings for the Wildmeshing-Toolkit"; // optional module docstring
-    m.def("wmtk", &wmtk_wrapper, "Wildmeshing-Toolkit application");
+    m.def("wildmeshing", &wmtk_wrapper, "Wildmeshing-Toolkit application");
 }

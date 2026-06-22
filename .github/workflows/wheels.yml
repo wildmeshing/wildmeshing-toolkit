@@ -1,6 +1,6 @@
 name: wheels
 
-# Build the pywmtk wheels for the three target platforms (macOS arm64,
+# Build the wildmeshing wheels for the three target platforms (macOS arm64,
 # Windows x86_64, Linux x86_64), build the source distribution, and (on a
 # GitHub Release) publish everything to PyPI.
 #
@@ -51,7 +51,7 @@ jobs:
       # Builds wheels + runs the per-wheel smoke test from [tool.cibuildwheel]
       # in pyproject.toml. cibuildwheel auto-repairs the wheels (delocate on
       # macOS, auditwheel on Linux; the GMP DLL is installed into the wheel on
-      # Windows by app/pywmtk/CMakeLists.txt).
+      # Windows by app/wildmeshing/CMakeLists.txt).
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.21.3 # bump as needed
 
@@ -96,11 +96,30 @@ jobs:
     name: publish to PyPI
     needs: [build_wheels, make_sdist]
     runs-on: ubuntu-latest
-    # if: github.event_name == 'release'
-    # environment:
-    #   name: pypi
-    #   url: https://pypi.org/project/wildmeshing/
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'release' && github.event.action == 'published'
+    environment:
+      name: pypi
+      url: https://pypi.org/project/wildmeshing/
+    permissions:
+      id-token: write # required for PyPI trusted publishing (OIDC)
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: cibw-*
+          path: dist
+          merge-multiple: true
+
+      - name: Publish distribution to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  # -------------------------------------------------------------------------
+  # 4. Test publishing to TestPyPI
+  # -------------------------------------------------------------------------
+  publish_testpypi:
+    name: publish to TestPyPI
+    needs: [build_wheels, make_sdist]
+    runs-on: ubuntu-latest
     environment:
       name: testpypi
       url: https://test.pypi.org/project/wildmeshing/
@@ -118,8 +137,3 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
-        # No API token needed when using PyPI Trusted Publishing (configured on
-        # the PyPI project). To use an API token instead, delete the
-        # `permissions`/`environment` above and set:
-        #   with:
-        #     password: ${{ secrets.PYPI_API_TOKEN }}
