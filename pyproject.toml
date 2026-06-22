@@ -10,6 +10,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 license = { file = "LICENSE" }
 authors = [{ name = "WildMeshingToolkit" }]
+urls = { GitHub = "https://github.com/wildmeshing/wildmeshing-toolkit/" }
 
 [tool.cibuildwheel]
 # # Build CPython wheels.
