@@ -12,8 +12,9 @@ license = { file = "LICENSE" }
 authors = [{ name = "WildMeshingToolkit" }]
 
 [tool.cibuildwheel]
-# Build CPython 3.9–3.13 wheels.
-build = ["cp39-*", "cp310-*", "cp311-*", "cp312-*", "cp313-*"]
+# # Build CPython wheels.
+build = ["cp*-*"]
+
 # Skip 32-bit builds, Windows ARM, PyPy, and musllinux (the Linux `before-all`
 # below uses `yum`, which only exists on the manylinux images).
 skip = ["*-win32", "*-win_arm64", "*-*linux_i686", "pp*", "*-musllinux*"]
