@@ -114,7 +114,7 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
 
   # -------------------------------------------------------------------------
-  # 4. Test publishing to TestPyPI
+  # 4. (Optional) Test publishing to TestPyPI
   # -------------------------------------------------------------------------
   publish_testpypi:
     name: publish to TestPyPI
