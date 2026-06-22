@@ -116,6 +116,8 @@ jobs:
 
       - name: Publish distribution to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
         # No API token needed when using PyPI Trusted Publishing (configured on
         # the PyPI project). To use an API token instead, delete the
         # `permissions`/`environment` above and set:
