@@ -14,6 +14,7 @@ name: wheels
 on:
   push:
   workflow_dispatch:
+  pull_request: # only for testing!!!
   release:
     types: [published]
 
@@ -33,11 +34,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-14        # Apple Silicon -> macosx_arm64
+          - os: macos-14 # Apple Silicon -> macosx_arm64
             label: macOS arm64
-          - os: windows-2022    # Intel/AMD64   -> win_amd64
+          - os: windows-2022 # Intel/AMD64   -> win_amd64
             label: Windows x86_64
-          - os: ubuntu-latest   # Intel/AMD64   -> manylinux x86_64
+          - os: ubuntu-latest # Intel/AMD64   -> manylinux x86_64
             label: Linux x86_64
 
     steps:
@@ -51,7 +52,7 @@ jobs:
       # macOS, auditwheel on Linux; the GMP DLL is installed into the wheel on
       # Windows by app/pywmtk/CMakeLists.txt).
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.21.3   # bump as needed
+        uses: pypa/cibuildwheel@v2.21.3 # bump as needed
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -94,15 +95,19 @@ jobs:
     name: publish to PyPI
     needs: [build_wheels, make_sdist]
     runs-on: ubuntu-latest
-    if: github.event_name == 'release'
+    # if: github.event_name == 'release'
+    # environment:
+    #   name: pypi
+    #   url: https://pypi.org/project/wildmeshing/
+    if: github.event_name == 'pull_request'
     environment:
-      name: pypi
-      url: https://pypi.org/project/pywmtk/
+      name: testpypi
+      url: https://test.pypi.org/project/wildmeshing/
     permissions:
-      id-token: write   # required for PyPI trusted publishing (OIDC)
+      id-token: write # required for PyPI trusted publishing (OIDC)
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: cibw-*
           path: dist
