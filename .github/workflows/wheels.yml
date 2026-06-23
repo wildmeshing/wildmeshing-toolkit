@@ -12,9 +12,7 @@ name: wheels
 # every push and is expensive. Once it is stable you may want to restrict it
 # (e.g. to `push: { tags: ['v*'] }` + `workflow_dispatch`) to save CI minutes.
 on:
-  pull_request:
-  push:
-    branches: [main]
+  # pull_request: # only for testing
   workflow_dispatch:
   release:
     types: [published]
@@ -113,27 +111,27 @@ jobs:
       - name: Publish distribution to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
 
-  # -------------------------------------------------------------------------
-  # 4. (Optional) Test publishing to TestPyPI
-  # -------------------------------------------------------------------------
-  publish_testpypi:
-    name: publish to TestPyPI
-    needs: [build_wheels, make_sdist]
-    runs-on: ubuntu-latest
-    environment:
-      name: testpypi
-      url: https://test.pypi.org/project/wildmeshing/
-    permissions:
-      id-token: write # required for PyPI trusted publishing (OIDC)
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v8
-        with:
-          pattern: cibw-*
-          path: dist
-          merge-multiple: true
+  # # -------------------------------------------------------------------------
+  # # 4. (Optional) Test publishing to TestPyPI
+  # # -------------------------------------------------------------------------
+  # publish_testpypi:
+  #   name: publish to TestPyPI
+  #   needs: [build_wheels, make_sdist]
+  #   runs-on: ubuntu-latest
+  #   environment:
+  #     name: testpypi
+  #     url: https://test.pypi.org/project/wildmeshing/
+  #   permissions:
+  #     id-token: write # required for PyPI trusted publishing (OIDC)
+  #   steps:
+  #     - name: Download all artifacts
+  #       uses: actions/download-artifact@v8
+  #       with:
+  #         pattern: cibw-*
+  #         path: dist
+  #         merge-multiple: true
 
-      - name: Publish distribution to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
+  #     - name: Publish distribution to PyPI
+  #       uses: pypa/gh-action-pypi-publish@release/v1
+  #       with:
+  #         repository-url: https://test.pypi.org/legacy/
