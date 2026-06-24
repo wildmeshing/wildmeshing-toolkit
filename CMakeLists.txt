@@ -7,6 +7,14 @@ else()
     set(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT ON)
 endif()
 
+# required cxx version
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    add_compile_options(-fexperimental-library)
+endif()
+
 # Check required CMake version
 set(REQUIRED_CMAKE_VERSION "3.25.0")
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
@@ -21,6 +29,7 @@ else()
         message(FATAL_ERROR "CMake required version to build WildMeshingToolkit is ${REQUIRED_CMAKE_VERSION}")
     endif()
 endif()
+
 
 # Enable ccache if available
 find_program(CCACHE_PROGRAM ccache)

@@ -2,10 +2,10 @@
 include(wmtk_data)
 include(jse)
 
-option(WMTK_APP_HARMTET "Harmonic Triangulation app" ON)
-option(WMTK_APP_INTERIOR_TET_OPT "interior tet opt application" ON)
+option(WMTK_APP_HARMTET "Harmonic Triangulation app" OFF)
+option(WMTK_APP_INTERIOR_TET_OPT "interior tet opt application" OFF)
 
-option(WMTK_APP_UNIT_TESTS "unit tests for applications" ON)
+option(WMTK_APP_UNIT_TESTS "unit tests for applications" OFF)
 
 if(WMTK_APP_INTERIOR_TET_OPT)
 add_subdirectory(interior_tet_opt)

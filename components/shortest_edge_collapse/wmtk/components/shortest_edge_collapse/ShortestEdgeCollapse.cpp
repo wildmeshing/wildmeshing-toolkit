@@ -10,6 +10,8 @@
 
 namespace wmtk::components::shortest_edge_collapse {
 
+thread_local ShortestEdgeCollapse::PositionInfoCache ShortestEdgeCollapse::position_cache;
+
 ShortestEdgeCollapse::ShortestEdgeCollapse(
     std::vector<Eigen::Vector3d> _m_vertex_positions,
     int num_threads,
@@ -140,15 +142,15 @@ bool ShortestEdgeCollapse::collapse_edge_before(const Tuple& t)
     if (!TriMesh::collapse_edge_before(t)) return false;
     if (vertex_attrs[t.vid(*this)].freeze || vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
         return false;
-    position_cache.local().v1p = vertex_attrs[t.vid(*this)].pos;
-    position_cache.local().v2p = vertex_attrs[t.switch_vertex(*this).vid(*this)].pos;
+    position_cache.v1p = vertex_attrs[t.vid(*this)].pos;
+    position_cache.v2p = vertex_attrs[t.switch_vertex(*this).vid(*this)].pos;
     return true;
 }
 
 
 bool ShortestEdgeCollapse::collapse_edge_after(const TriMesh::Tuple& t)
 {
-    const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
+    const Eigen::Vector3d p = (position_cache.v1p + position_cache.v2p) / 2.0;
     auto vid = t.vid(*this);
     vertex_attrs[vid].pos = p;
 

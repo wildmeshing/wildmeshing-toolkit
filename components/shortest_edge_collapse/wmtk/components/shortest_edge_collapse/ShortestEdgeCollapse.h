@@ -78,7 +78,7 @@ private:
         Eigen::Vector3d v2p;
     };
     // tbb::enumerable_thread_specific<PositionInfoCache> position_cache;
-    thread_local PositionInfoCache position_cache;
+    static thread_local PositionInfoCache position_cache;
 
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& t) const;
 };
