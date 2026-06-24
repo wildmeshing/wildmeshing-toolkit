@@ -752,6 +752,9 @@ public:
         int owner = std::numeric_limits<int>::max();
 
     public:
+        VertexMutex() = default;
+        VertexMutex(const VertexMutex& other) { owner = other.owner; }
+
         bool trylock() { return mutex.try_lock(); }
 
         void unlock()
@@ -796,7 +799,7 @@ protected:
 public:
     // tbb::enumerable_thread_specific<std::vector<size_t>> mutex_release_stack;
 
-    thread_local std::vector<size_t> mutex_release_stack;
+    static thread_local std::vector<size_t> mutex_release_stack;
 
 
     int release_vertex_mutex_in_stack();

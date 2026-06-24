@@ -381,14 +381,28 @@ public:
             //     tg.wait();
             // });
 
-            std::vector<std::jthread> threads(num_threads);
+            // TODO: use jthread after support c++20 with clang?
+            // std::vector<std::jthread> threads(num_threads);
+            // for (int task_id = 0; task_id < num_threads; ++task_id) {
+            //     threads.emplace_back(run_single_queue(queues[task_id], task_id), task_id);
+            // }
+
+            std::vector<std::thread> threads;
+            threads.reserve(num_threads);
             for (int task_id = 0; task_id < num_threads; ++task_id) {
-                threads.emplace_back(run_single_queue(queues[task_id], task_id), task_id);
+                threads.emplace_back(
+                    std::thread(run_single_queue, std::ref(queues[task_id]), task_id));
+            }
+
+            for (auto& th : threads) {
+                if (th.joinable()) {
+                    th.join();
+                }
             }
 
             logger().debug("Parallel Complete, merging failing queues");
             for (auto& q : failed_queues) {
-                while (!q.empty) {
+                while (!q.empty()) {
                     Elem ele_in_queue = q.top();
                     q.pop();
                     final_queue.push(ele_in_queue);

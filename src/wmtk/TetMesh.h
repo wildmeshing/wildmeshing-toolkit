@@ -15,6 +15,7 @@
 #include <cassert>
 #include <limits>
 #include <map>
+#include <mutex>
 #include <optional>
 #include <vector>
 
@@ -1174,6 +1175,8 @@ public:
         int owner = std::numeric_limits<int>::max();
 
     public:
+        VertexMutex() = default;
+        VertexMutex(const VertexMutex& other) { owner = other.owner; }
         bool trylock() { return mutex.try_lock(); }
 
         void unlock()
@@ -1190,7 +1193,8 @@ public:
     };
 
 private:
-    tbb::concurrent_vector<VertexMutex> m_vertex_mutex;
+    // tbb::concurrent_vector<VertexMutex> m_vertex_mutex;
+    std::vector<VertexMutex> m_vertex_mutex;
 
     bool try_set_vertex_mutex(const Tuple& v, int threadid)
     {
@@ -1217,8 +1221,8 @@ public:
     // tbb::enumerable_thread_specific<std::vector<size_t>> mutex_release_stack;
     // tbb::enumerable_thread_specific<std::vector<size_t>> get_one_ring_cache;
 
-    thread_local std::vector<size_t> mutex_release_stack;
-    thread_local std::vector<size_t> get_one_ring_cache;
+    static thread_local std::vector<size_t> mutex_release_stack;
+    static thread_local std::vector<size_t> get_one_ring_cache;
 
 
     // void init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& tets);

@@ -8,6 +8,9 @@
 
 namespace wmtk {
 
+thread_local std::vector<size_t> TetMesh::mutex_release_stack;
+thread_local std::vector<size_t> TetMesh::get_one_ring_cache;
+
 int TetMesh::get_next_empty_slot_t()
 {
     // while (current_tet_size + MAX_THREADS >= m_tet_connectivity.size() ||
@@ -40,7 +43,7 @@ int TetMesh::get_next_empty_slot_t()
 
     // return new_idx;
 
-    if (current_tri_size + MAX_THREADS > MAX_T_CAPACITY) {
+    if (current_tet_size + MAX_THREADS > MAX_T_CAPACITY) {
         overflow_flag = true;
         throw std::runtime_error("Tet size exceeded max capacity.");
     }
@@ -105,7 +108,7 @@ void TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& 
     }
 
     // concurrent
-    m_vertex_mutex.grow_to_at_least(n_vertices);
+    m_vertex_mutex.resize(n_vertices);
 
     // resize attributes
     if (p_vertex_attrs != nullptr) {
@@ -147,7 +150,7 @@ void TetMesh::init_with_isolated_vertices(
     }
 
     // concurrent
-    m_vertex_mutex.grow_to_at_least(n_vertices);
+    m_vertex_mutex.resize(n_vertices);
 
     // resize attributes
     if (p_vertex_attrs) {
@@ -963,7 +966,8 @@ std::vector<std::array<size_t, 3>> TetMesh::vertex_adjacent_boundary_faces(const
 int TetMesh::release_vertex_mutex_in_stack()
 {
     int num_released = 0;
-    auto& stack = mutex_release_stack.local();
+    // auto& stack = mutex_release_stack.local();
+    auto& stack = mutex_release_stack;
     for (int i = (int)stack.size() - 1; i >= 0; i--) {
         unlock_vertex_mutex(stack[i]);
         num_released++;
@@ -974,7 +978,9 @@ int TetMesh::release_vertex_mutex_in_stack()
 
 bool TetMesh::try_set_vertex_mutex_two_ring(const Tuple& v, int threadid)
 {
-    auto& stack = mutex_release_stack.local();
+    // auto& stack = mutex_release_stack.local();
+    auto& stack = mutex_release_stack;
+
     for (auto v_one_ring : get_one_ring_vertices_for_vertex(v)) {
         if (m_vertex_mutex[v_one_ring.vid(*this)].get_owner() == threadid) continue;
         if (try_set_vertex_mutex(v_one_ring, threadid)) {
@@ -996,8 +1002,10 @@ bool TetMesh::try_set_vertex_mutex_two_ring(const Tuple& v, int threadid)
 
 bool TetMesh::try_set_vertex_mutex_two_ring_vid(const Tuple& v, int threadid)
 {
-    auto& cache = get_one_ring_cache.local();
-    auto& stack = mutex_release_stack.local();
+    // auto& cache = get_one_ring_cache.local();
+    // auto& stack = mutex_release_stack.local();
+    auto& cache = get_one_ring_cache;
+    auto& stack = mutex_release_stack;
     for (auto v_one_ring : get_one_ring_vids_for_vertex(v.vid(*this), cache)) {
         if (m_vertex_mutex[v_one_ring].get_owner() == threadid) continue;
         if (try_set_vertex_mutex(v_one_ring, threadid)) {
@@ -1021,8 +1029,10 @@ bool TetMesh::try_set_vertex_mutex_two_ring_vid(const Tuple& v, int threadid)
 
 bool TetMesh::try_set_vertex_mutex_two_ring_vid(size_t v, int threadid)
 {
-    auto& cache = get_one_ring_cache.local();
-    auto& stack = mutex_release_stack.local();
+    // auto& cache = get_one_ring_cache.local();
+    // auto& stack = mutex_release_stack.local();
+    auto& cache = get_one_ring_cache;
+    auto& stack = mutex_release_stack;
     for (auto v_one_ring : get_one_ring_vids_for_vertex(v, cache)) {
         if (m_vertex_mutex[v_one_ring].get_owner() == threadid) continue;
         if (try_set_vertex_mutex(v_one_ring, threadid)) {
@@ -1046,7 +1056,9 @@ bool TetMesh::try_set_vertex_mutex_two_ring_vid(size_t v, int threadid)
 bool TetMesh::try_set_edge_mutex_two_ring(const Tuple& e, int threadid)
 {
     const Tuple& v1 = e;
-    auto& stack = mutex_release_stack.local();
+    // auto& stack = mutex_release_stack.local();
+    auto& stack = mutex_release_stack;
+
 
     stack.reserve(128);
 
@@ -1093,7 +1105,8 @@ bool TetMesh::try_set_face_mutex_two_ring(const Tuple& f, int threadid)
 {
     Tuple v1 = f;
     bool release_flag = false;
-    auto& stack = mutex_release_stack.local();
+    // auto& stack = mutex_release_stack.local();
+    auto& stack = mutex_release_stack;
 
 
     // try v1
@@ -1179,7 +1192,8 @@ bool TetMesh::try_set_face_mutex_two_ring(
     int threadid)
 {
     bool release_flag = false;
-    auto& stack = mutex_release_stack.local();
+    // auto& stack = mutex_release_stack.local();
+    auto& stack = mutex_release_stack;
 
     // try v1
     if (m_vertex_mutex[v1.vid(*this)].get_owner() != threadid) {
@@ -1259,7 +1273,9 @@ bool TetMesh::try_set_face_mutex_two_ring(
 bool TetMesh::try_set_face_mutex_two_ring(size_t v1, size_t v2, size_t v3, int threadid)
 {
     bool release_flag = false;
-    auto& stack = mutex_release_stack.local();
+    // auto& stack = mutex_release_stack.local();
+    auto& stack = mutex_release_stack;
+
 
     auto try_all = [&]() {
         for (auto vv : {v1, v2, v3}) {
@@ -1291,8 +1307,10 @@ bool TetMesh::try_set_face_mutex_two_ring(size_t v1, size_t v2, size_t v3, int t
 
 bool TetMesh::try_set_vertex_mutex_one_ring(const Tuple& v, int threadid)
 {
-    auto& stack = mutex_release_stack.local();
-    auto& cache = get_one_ring_cache.local();
+    // auto& stack = mutex_release_stack.local();
+    // auto& cache = get_one_ring_cache.local();
+    auto& stack = mutex_release_stack;
+    auto& cache = get_one_ring_cache;
     if (m_vertex_mutex[v.vid(*this)].get_owner() != threadid) {
         if (try_set_vertex_mutex(v, threadid)) {
             stack.push_back(v.vid(*this));
@@ -1316,131 +1334,145 @@ bool TetMesh::try_set_vertex_mutex_one_ring(const Tuple& v, int threadid)
 
 void TetMesh::for_each_edge(const std::function<void(const TetMesh::Tuple&)>& func)
 {
-    if (NUM_THREADS == 0) {
-        for (int i = 0; i < tet_capacity(); i++) {
-            if (!tuple_from_tet(i).is_valid(*this)) continue;
-            for (int j = 0; j < 6; j++) {
-                auto tup = tuple_from_edge(i, j);
-                if (tup.eid(*this) == 6 * i + j) {
-                    func(tup);
-                }
+    for (int i = 0; i < tet_capacity(); i++) {
+        if (!tuple_from_tet(i).is_valid(*this)) continue;
+        for (int j = 0; j < 6; j++) {
+            auto tup = tuple_from_edge(i, j);
+            if (tup.eid(*this) == 6 * i + j) {
+                func(tup);
             }
         }
-    } else {
-        // tbb::task_arena arena(NUM_THREADS);
-        // arena.execute([&] {
-        //     tbb::parallel_for(
-        //         tbb::blocked_range<size_t>(0, tet_capacity()),
-        //         [&](tbb::blocked_range<size_t> r) {
-        //             for (size_t i = r.begin(); i < r.end(); i++) {
-        //                 if (!tuple_from_tet(i).is_valid(*this)) continue;
-        //                 for (int j = 0; j < 6; j++) {
-        //                     auto tup = tuple_from_edge(i, j);
-        //                     if (tup.eid(*this) == 6 * i + j) {
-        //                         func(tup);
-        //                     }
-        //                 }
-        //             }
-        //         });
-        // });
-
-        std::for_each_n(
-            std::execution::par,
-            m_tet_connectivity.begin(),
-            current_tet_size,
-            [&](const TetrahedronConnectivity& t) {
-                size_t i =
-                    &t -
-                    &m_tet_connectivity[0]; // get index. TODO: replace with c++23 range/enumerate?
-                if (!tuple_from_tet(i).is_valid(*this)) continue;
-                for (int j = 0; j < 6; ++j) {
-                    auto tup = tuple_from_edge(i, j);
-                    if (tup.eid(*this) == 6 * i + j) {
-                        func(tup);
-                    }
-                }
-            });
     }
+
+    // TODO: resurrect multi thread
+    // if (NUM_THREADS == 0) {
+    //     for (int i = 0; i < tet_capacity(); i++) {
+    //         if (!tuple_from_tet(i).is_valid(*this)) continue;
+    //         for (int j = 0; j < 6; j++) {
+    //             auto tup = tuple_from_edge(i, j);
+    //             if (tup.eid(*this) == 6 * i + j) {
+    //                 func(tup);
+    //             }
+    //         }
+    //     }
+    // } else {
+    //     // tbb::task_arena arena(NUM_THREADS);
+    //     // arena.execute([&] {
+    //     //     tbb::parallel_for(
+    //     //         tbb::blocked_range<size_t>(0, tet_capacity()),
+    //     //         [&](tbb::blocked_range<size_t> r) {
+    //     //             for (size_t i = r.begin(); i < r.end(); i++) {
+    //     //                 if (!tuple_from_tet(i).is_valid(*this)) continue;
+    //     //                 for (int j = 0; j < 6; j++) {
+    //     //                     auto tup = tuple_from_edge(i, j);
+    //     //                     if (tup.eid(*this) == 6 * i + j) {
+    //     //                         func(tup);
+    //     //                     }
+    //     //                 }
+    //     //             }
+    //     //         });
+    //     // });
+
+    //     std::for_each_n(
+    //         std::execution::par,
+    //         m_tet_connectivity.begin(),
+    //         current_tet_size,
+    //         [&](const TetrahedronConnectivity& t) {
+    //             size_t i =
+    //                 &t -
+    //                 &m_tet_connectivity[0]; // get index. TODO: replace with c++23 range/enumerate?
+    //             if (!tuple_from_tet(i).is_valid(*this)) return;
+    //             for (int j = 0; j < 6; ++j) {
+    //                 auto tup = tuple_from_edge(i, j);
+    //                 if (tup.eid(*this) == 6 * i + j) {
+    //                     func(tup);
+    //                 }
+    //             }
+    //         });
+    // }
 }
 
 
 void TetMesh::for_each_tetra(const std::function<void(const TetMesh::Tuple&)>& func)
 {
-    if (NUM_THREADS == 0) {
-        // std::cout << "in serial for each tet" << std::endl;
-        for (int i = 0; i < tet_capacity(); i++) {
-            auto tup = tuple_from_tet(i);
-            if (!tup.is_valid(*this)) continue;
-            func(tup);
-        }
-    } else {
-        // // std::cout << "in parallel for each tet" << std::endl;
-
-        // tbb::task_arena arena(NUM_THREADS);
-        // arena.execute([&] {
-        //     tbb::parallel_for(
-        //         tbb::blocked_range<size_t>(0, tet_capacity()),
-        //         [&](tbb::blocked_range<size_t> r) {
-        //             for (size_t i = r.begin(); i < r.end(); i++) {
-        //                 auto tup = tuple_from_tet(i);
-        //                 if (!tup.is_valid(*this)) continue;
-        //                 func(tup);
-        //             }
-        //         });
-        // });
-
-        std::for_each_n(
-            std::execution::par,
-            m_tet_connectivity.begin(),
-            current_tet_size,
-            [&](const TetrahedronConnectivity& t) {
-                size_t i =
-                    &t -
-                    &m_tet_connectivity[0]; // get index. TODO: replace with c++23 range/enumerate?
-                auto tup = tuple_from_tet(i);
-                if (!tup.is_valid(*this)) continue;
-                func(tup);
-            });
+    // TODO: resurrect multi threading
+    // if (NUM_THREADS == 0) {
+    // std::cout << "in serial for each tet" << std::endl;
+    for (int i = 0; i < tet_capacity(); i++) {
+        auto tup = tuple_from_tet(i);
+        if (!tup.is_valid(*this)) continue;
+        func(tup);
     }
+    // } else {
+    //     // // std::cout << "in parallel for each tet" << std::endl;
+
+    //     // tbb::task_arena arena(NUM_THREADS);
+    //     // arena.execute([&] {
+    //     //     tbb::parallel_for(
+    //     //         tbb::blocked_range<size_t>(0, tet_capacity()),
+    //     //         [&](tbb::blocked_range<size_t> r) {
+    //     //             for (size_t i = r.begin(); i < r.end(); i++) {
+    //     //                 auto tup = tuple_from_tet(i);
+    //     //                 if (!tup.is_valid(*this)) continue;
+    //     //                 func(tup);
+    //     //             }
+    //     //         });
+    //     // });
+
+    //     std::for_each_n(
+    //         std::execution::par,
+    //         m_tet_connectivity.begin(),
+    //         current_tet_size,
+    //         [&](const TetrahedronConnectivity& t) {
+    //             size_t i =
+    //                 &t -
+    //                 &m_tet_connectivity[0]; // get index. TODO: replace with c++23 range/enumerate?
+    //             auto tup = tuple_from_tet(i);
+    //             if (!tup.is_valid(*this)) return;
+    //             func(tup);
+    //         });
+    // }
 }
 
 
 void TetMesh::for_each_vertex(const std::function<void(const TetMesh::Tuple&)>& func)
 {
-    if (NUM_THREADS == 0) {
-        // std::cout << "in serial for each vertex" << std::endl;
-        for (int i = 0; i < vert_capacity(); i++) {
-            auto tup = tuple_from_vertex(i);
-            if (!tup.is_valid(*this)) continue;
-            func(tup);
-        }
-    } else {
-        // // std::cout << "in parallel for each vertex" << std::endl;
-        // tbb::task_arena arena(NUM_THREADS);
-        // arena.execute([&] {
-        //     tbb::parallel_for(
-        //         tbb::blocked_range<size_t>(0, vert_capacity()),
-        //         [&](tbb::blocked_range<size_t> r) {
-        //             for (size_t i = r.begin(); i < r.end(); i++) {
-        //                 auto tup = tuple_from_vertex(i);
-        //                 if (!tup.is_valid(*this)) continue;
-        //                 func(tup);
-        //             }
-        //         });
-        // });
+    // TODO: resurrect multi threading
 
-        std::for_each_n(
-            std::execution::par,
-            m_vertex_connectivity.begin(),
-            current_vert_size,
-            [&](const VertexConnectivity& v) {
-                size_t i = &v - &m_vertex_connectivity
-                                    [0]; // get index. TODO: replace with c++23 range/enumerate?
-                auto tup = tuple_from_vertex(i);
-                if (!tup.is_valid(*this)) continue;
-                func(tup);
-            });
+    // if (NUM_THREADS == 0) {
+    // std::cout << "in serial for each vertex" << std::endl;
+    for (int i = 0; i < vert_capacity(); i++) {
+        auto tup = tuple_from_vertex(i);
+        if (!tup.is_valid(*this)) continue;
+        func(tup);
     }
+    // } else {
+    //     // // std::cout << "in parallel for each vertex" << std::endl;
+    //     // tbb::task_arena arena(NUM_THREADS);
+    //     // arena.execute([&] {
+    //     //     tbb::parallel_for(
+    //     //         tbb::blocked_range<size_t>(0, vert_capacity()),
+    //     //         [&](tbb::blocked_range<size_t> r) {
+    //     //             for (size_t i = r.begin(); i < r.end(); i++) {
+    //     //                 auto tup = tuple_from_vertex(i);
+    //     //                 if (!tup.is_valid(*this)) continue;
+    //     //                 func(tup);
+    //     //             }
+    //     //         });
+    //     // });
+
+    //     std::for_each_n(
+    //         std::execution::par,
+    //         m_vertex_connectivity.begin(),
+    //         current_vert_size,
+    //         [&](const VertexConnectivity& v) {
+    //             size_t i = &v - &m_vertex_connectivity
+    //                                 [0]; // get index. TODO: replace with c++23 range/enumerate?
+    //             auto tup = tuple_from_vertex(i);
+    //             if (!tup.is_valid(*this)) return;
+    //             func(tup);
+    //         });
+    // }
 }
 
 } // namespace wmtk

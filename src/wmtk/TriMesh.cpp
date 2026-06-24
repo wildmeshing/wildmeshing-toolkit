@@ -18,6 +18,8 @@
 
 using namespace wmtk;
 
+thread_local std::vector<size_t> TriMesh::mutex_release_stack;
+
 void TriMesh::Tuple::update_hash(const TriMesh& m)
 {
     m_hash = m.m_tri_connectivity[m_fid].hash;
@@ -1387,7 +1389,7 @@ void TriMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 3>>& 
     current_vert_size = (long)n_vertices;
     current_tri_size = (long)tris.size();
 
-    m_vertex_mutex.grow_to_at_least(n_vertices);
+    m_vertex_mutex.resize(n_vertices);
 
     // Resize user class attributes
     if (p_vertex_attrs) p_vertex_attrs->resize(vert_capacity());
@@ -1809,12 +1811,19 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
 
 int TriMesh::release_vertex_mutex_in_stack()
 {
+    // int num_released = 0;
+    // for (int i = (int)mutex_release_stack.local().size() - 1; i >= 0; i--) {
+    //     unlock_vertex_mutex(mutex_release_stack.local()[i]);
+    //     num_released++;
+    // }
+    // mutex_release_stack.local().clear();
+
     int num_released = 0;
-    for (int i = (int)mutex_release_stack.local().size() - 1; i >= 0; i--) {
-        unlock_vertex_mutex(mutex_release_stack.local()[i]);
+    for (int i = (int)mutex_release_stack.size() - 1; i >= 0; i--) {
+        unlock_vertex_mutex(mutex_release_stack[i]);
         num_released++;
     }
-    mutex_release_stack.local().clear();
+    mutex_release_stack.clear();
     return num_released;
 }
 
@@ -1825,13 +1834,13 @@ bool TriMesh::try_set_vertex_mutex_two_ring(const Tuple& v, int threadid)
             continue;
         }
         if (try_set_vertex_mutex(v_one_ring, threadid)) {
-            mutex_release_stack.local().push_back(v_one_ring.vid(*this));
+            mutex_release_stack.push_back(v_one_ring.vid(*this));
             for (const Tuple& v_two_ring : get_one_ring_edges_for_vertex(v_one_ring)) {
                 if (m_vertex_mutex[v_two_ring.vid(*this)].get_owner() == threadid) {
                     continue;
                 }
                 if (try_set_vertex_mutex(v_two_ring, threadid)) {
-                    mutex_release_stack.local().push_back(v_two_ring.vid(*this));
+                    mutex_release_stack.push_back(v_two_ring.vid(*this));
                 } else {
                     return false;
                 }
@@ -1851,7 +1860,7 @@ bool TriMesh::try_set_edge_mutex_two_ring(const Tuple& e, int threadid)
     // try v1
     if (m_vertex_mutex[v1.vid(*this)].get_owner() != threadid) {
         if (try_set_vertex_mutex(v1, threadid)) {
-            mutex_release_stack.local().push_back(v1.vid(*this));
+            mutex_release_stack.push_back(v1.vid(*this));
         } else {
             release_flag = true;
         }
@@ -1869,7 +1878,7 @@ bool TriMesh::try_set_edge_mutex_two_ring(const Tuple& e, int threadid)
     Tuple v2 = switch_vertex(e);
     if (m_vertex_mutex[v2.vid(*this)].get_owner() != threadid) {
         if (try_set_vertex_mutex(v2, threadid)) {
-            mutex_release_stack.local().push_back(v2.vid(*this));
+            mutex_release_stack.push_back(v2.vid(*this));
         } else {
             release_flag = true;
         }
@@ -1903,7 +1912,7 @@ bool TriMesh::try_set_edge_mutex_two_ring(const Tuple& e, int threadid)
 
 bool wmtk::TriMesh::try_set_vertex_mutex_one_ring(const Tuple& v, int threadid)
 {
-    auto& stack = mutex_release_stack.local();
+    auto& stack = mutex_release_stack;
     auto vid = v.vid(*this);
     if (m_vertex_mutex[vid].get_owner() != threadid) {
         if (try_set_vertex_mutex(v, threadid)) {
@@ -1935,7 +1944,7 @@ bool TriMesh::try_set_face_mutex_one_ring(const Tuple& f, int threadid)
             return false;
         }
         if (try_set_vertex_mutex(v, threadid)) {
-            mutex_release_stack.local().push_back(v.vid(*this));
+            mutex_release_stack.push_back(v.vid(*this));
         } else {
             release_vertex_mutex_in_stack();
             return false;
@@ -1958,6 +1967,17 @@ bool TriMesh::try_set_face_mutex_one_ring(const Tuple& f, int threadid)
 
 void wmtk::TriMesh::for_each_edge(const std::function<void(const TriMesh::Tuple&)>& func)
 {
+    for (int i = 0; i < tri_capacity(); ++i) {
+        if (!tuple_from_tri(i).is_valid(*this)) continue;
+        for (int j = 0; j < 3; j++) {
+            auto tup = tuple_from_edge(i, j);
+            if (tup.eid(*this) == 3 * i + j) {
+                func(tup);
+            }
+        }
+    }
+
+    // TODO: resurrect multi threading
     // tbb::task_arena arena(NUM_THREADS);
     // arena.execute([&] {
     //     tbb::parallel_for(
@@ -1975,25 +1995,32 @@ void wmtk::TriMesh::for_each_edge(const std::function<void(const TriMesh::Tuple&
     //         });
     // });
 
-    std::for_each_n(
-        std::execution::par,
-        m_tri_connectivity.begin(),
-        current_tri_size,
-        [&](const TriangleConnectivity& t) {
-            size_t i =
-                &t - &m_tri_connectivity[0]; // get index. TODO: replace with c++23 range/enumerate?
-            if (!tuple_from_tri(i).is_valid(*this)) continue;
-            for (int j = 0; j < 3; j++) {
-                auto tup = tuple_from_edge(i, j);
-                if (tup.eid(*this) == 3 * i + j) {
-                    func(tup);
-                }
-            }
-        });
+    // std::for_each_n(
+    //     std::execution::par,
+    //     m_tri_connectivity.begin(),
+    //     current_tri_size,
+    //     [&](const TriangleConnectivity& t) {
+    //         size_t i =
+    //             &t - &m_tri_connectivity[0]; // get index. TODO: replace with c++23 range/enumerate?
+    //         if (!tuple_from_tri(i).is_valid(*this)) continue;
+    //         for (int j = 0; j < 3; j++) {
+    //             auto tup = tuple_from_edge(i, j);
+    //             if (tup.eid(*this) == 3 * i + j) {
+    //                 func(tup);
+    //             }
+    //         }
+    //     });
 }
 
 void wmtk::TriMesh::for_each_vertex(const std::function<void(const TriMesh::Tuple&)>& func)
 {
+    for (size_t i = 0; i < vert_capacity(); ++i) {
+        auto tup = tuple_from_vertex(i);
+        if (!tup.is_valid(*this)) continue;
+        func(tup);
+    }
+
+    // TODO: resurrect multi threading
     // tbb::task_arena arena(NUM_THREADS);
     // arena.execute([&] {
     //     tbb::parallel_for(
@@ -2007,22 +2034,29 @@ void wmtk::TriMesh::for_each_vertex(const std::function<void(const TriMesh::Tupl
     //         });
     // });
 
-    std::for_each_n(
-        std::execution::par,
-        m_vertex_connectivity.begin(),
-        current_vert_size,
-        [&](const VertexConnectivity& v) {
-            size_t i =
-                &v -
-                &m_vertex_connectivity[0]; // get index. TODO: replace with c++23 range/enumerate?
-            auto tup = tuple_from_vertex(i);
-            if (!tup.is_valid(*this)) continue;
-            func(tup);
-        });
+    // std::for_each_n(
+    //     std::execution::par,
+    //     m_vertex_connectivity.begin(),
+    //     current_vert_size,
+    //     [&](const VertexConnectivity& v) {
+    //         size_t i =
+    //             &v -
+    //             &m_vertex_connectivity[0]; // get index. TODO: replace with c++23 range/enumerate?
+    //         auto tup = tuple_from_vertex(i);
+    //         if (!tup.is_valid(*this)) continue;
+    //         func(tup);
+    //     });
 }
 
 void wmtk::TriMesh::for_each_face(const std::function<void(const TriMesh::Tuple&)>& func)
 {
+    for (size_t i = 0; i < tri_capacity(); ++i) {
+        auto tup = tuple_from_tri(i);
+        if (!tup.is_valid(*this)) continue;
+        func(tup);
+    }
+
+    // TODO: resurrect multi threading
     // tbb::task_arena arena(NUM_THREADS);
     // arena.execute([&] {
     //     tbb::parallel_for(
@@ -2036,17 +2070,17 @@ void wmtk::TriMesh::for_each_face(const std::function<void(const TriMesh::Tuple&
     //         });
     // });
 
-    std::for_each_n(
-        std::execution::par,
-        m_tri_connectivity.begin(),
-        current_tri_size,
-        [&](const TriangleConnectivity& t) {
-            size_t i =
-                &t - &m_tri_connectivity[0]; // get index. TODO: replace with c++23 range/enumerate?
-            auto tup = tuple_from_tri(i);
-            if (!tup.is_valid(*this)) continue;
-            func(tup);
-        });
+    // std::for_each_n(
+    //     std::execution::par,
+    //     m_tri_connectivity.begin(),
+    //     current_tri_size,
+    //     [&](const TriangleConnectivity& t) {
+    //         size_t i =
+    //             &t - &m_tri_connectivity[0]; // get index. TODO: replace with c++23 range/enumerate?
+    //         auto tup = tuple_from_tri(i);
+    //         if (!tup.is_valid(*this)) continue;
+    //         func(tup);
+    //     });
 }
 
 
