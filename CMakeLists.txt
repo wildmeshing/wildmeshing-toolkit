@@ -146,6 +146,11 @@ if(MSVC)
     target_compile_definitions(wildmeshing_toolkit PUBLIC _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS)
 endif()
 
+#################################################################################
+# JSON specifications
+#################################################################################
+set(WMTK_GENERATED_INCLUDE_DIR "${PROJECT_BINARY_DIR}/generated")
+
 # ###############################################################################
 # Subdirectories
 # ###############################################################################

@@ -12,8 +12,13 @@ function(add_component COMPONENT_NAME)
     add_library(${COMPONENT_TARGET_NAME})
     add_library(wmtk::${COMPONENT_NAME} ALIAS ${COMPONENT_TARGET_NAME})
 
+    # Generate spec from JSON
+    jse_add_spec(${COMPONENT_TARGET_NAME}_spec
+        INPUT "${COMPONENT_NAME}_spec.json"
+        OUTPUT "${WMTK_GENERATED_INCLUDE_DIR}/${COMPONENT_NAME}/${COMPONENT_NAME}_spec.hpp"
+    )
 
-    target_link_libraries(${COMPONENT_TARGET_NAME} PRIVATE wmtk::warnings wmtk::toolkit jse::jse)
+    target_link_libraries(${COMPONENT_TARGET_NAME} PRIVATE wmtk::warnings wmtk::toolkit jse::jse ${COMPONENT_TARGET_NAME}_spec)
 
     target_include_directories(${COMPONENT_TARGET_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../../..")
 

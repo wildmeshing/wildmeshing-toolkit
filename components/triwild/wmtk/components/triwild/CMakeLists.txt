@@ -20,7 +20,6 @@ set(SRC_FILES
 
 	triwild.hpp
 	triwild.cpp
-	triwild_spec.hpp
 
 	init_from_delaunay.hpp
 	init_from_delaunay.cpp
