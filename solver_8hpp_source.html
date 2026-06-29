@@ -90,7 +90,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span> </div>
 <div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span><span class="keyword">const</span> polysolve::json basic_linear_solver_params = R<span class="stringliteral">&quot;({&quot;solver&quot;: &quot;Eigen::LDLT&quot;})&quot;_json;</span></div>
 <div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span><span class="stringliteral"></span><span class="keyword">const</span> polysolve::json basic_nonlinear_solver_params =</div>
-<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span>    R<span class="stringliteral">&quot;({&quot;solver&quot;: &quot;DenseNewton&quot;, &quot;max_iterations&quot;: 10, &quot;allow_out_of_iterations&quot;: true})&quot;_json;</span></div>
+<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span>    R<span class="stringliteral">&quot;({&quot;solver&quot;: &quot;DenseNewton&quot;, &quot;max_iterations&quot;: 10, &quot;allow_out_of_iterations&quot;: true, &quot;rel_grad_norm_tol&quot;: 0})&quot;_json;</span></div>
 <div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span><span class="stringliteral"></span> </div>
 <div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span><span class="stringliteral"></span><span class="keyword">inline</span> std::unique_ptr&lt;polysolve::nonlinear::Solver&gt; create_basic_solver()</div>
 <div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span>{</div>

@@ -3,7 +3,7 @@ var searchData=
   ['wildmeshing_20toolkit_3a_20declarative_20specification_20for_20unstructured_20mesh_20editing_20algorithms_0',['Wildmeshing-toolkit: Declarative Specification for Unstructured Mesh Editing Algorithms',['../index.html',1,'']]],
   ['wmtk_20and_20original_20tetwild_1',['Difference WMTK and original TetWild',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2tetwild_2wmtk_2co1405dc598c001876e505c2a179a9ed8f.html#autotoc_md11',1,'']]],
   ['wmtk_20components_2',['WMTK Components',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2_r_e_a_d_m_e.html',1,'']]],
-  ['wmtk_20python_20bindings_3',['WMTK Python Bindings',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2app_2pywmtk_2_r_e_a_d_m_e.html',1,'']]],
+  ['wmtk_20python_20bindings_3',['WMTK Python Bindings',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2app_2pywildmeshing_2_r_e_a_d_m_e.html',1,'']]],
   ['write_5fedges_4',['write_edges',['../classwmtk_1_1io_1_1_tet_v_t_u_writer.html#a15ada683bb3977684e69171f08fdcc2a',1,'wmtk::io::TetVTUWriter::write_edges()'],['../classwmtk_1_1io_1_1_tri_v_t_u_writer.html#a4053d887e2def1b077540951bc31e81f',1,'wmtk::io::TriVTUWriter::write_edges()']]],
   ['write_5femb_5fsurf_5foff_5',['write_emb_surf_off',['../classwmtk_1_1components_1_1image__simulation_1_1_embed_surface.html#a7c445fd9a87934d48ef2ea224a0b5af6',1,'wmtk::components::image_simulation::EmbedSurface']]],
   ['write_5finput_5fcomplex_6',['write_input_complex',['../classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_mesh.html#aba72cc2edf7fce93f2ca8c07a204516b',1,'wmtk::components::manifold_extraction::ManExtractMesh']]],

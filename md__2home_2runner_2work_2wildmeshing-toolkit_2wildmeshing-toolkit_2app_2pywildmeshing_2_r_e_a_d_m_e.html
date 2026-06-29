@@ -72,7 +72,7 @@ $(function() {
   <div class="headertitle"><div class="title">WMTK Python Bindings</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p><a class="anchor" id="autotoc_md0"></a> <code>pywmtk</code> provides Python bindings for WildMeshingToolkit through a single module entry point, <code>pywmtk.wmtk(...)</code>.</p>
+<div class="textblock"><p><a class="anchor" id="autotoc_md0"></a> <code>wildmeshing</code> provides Python bindings for WildMeshingToolkit through a single module entry point, <code>wildmeshing.wildmeshing(...)</code>.</p>
 <h1><a class="anchor" id="autotoc_md1"></a>
 Installation</h1>
 <p>The recommended way to build and install the bindings is through <code>pip</code>, which uses <code>scikit-build-core</code> to drive CMake:</p>
@@ -87,8 +87,8 @@ Installation</h1>
 <p>The Python package metadata in <code>pyproject.toml</code> already enables the binding build and installs only the <code>python_bindings</code> component.</p>
 <h1><a class="anchor" id="autotoc_md2"></a>
 Usage</h1>
-<p>Import the module, build a Python dictionary, and pass it to <code>pywmtk.wmtk</code>:</p>
-<div class="fragment"><div class="line"><span class="keyword">import</span> pywmtk</div>
+<p>Import the module, build a Python dictionary, and pass it to <code>wildmeshing.wildmeshing</code>:</p>
+<div class="fragment"><div class="line"><span class="keyword">from</span> wildmeshing <span class="keyword">import</span> *</div>
 <div class="line"> </div>
 <div class="line">j = {</div>
 <div class="line">    <span class="stringliteral">&quot;application&quot;</span>: <span class="stringliteral">&quot;tetwild&quot;</span>,</div>
@@ -96,7 +96,7 @@ Usage</h1>
 <div class="line">    <span class="stringliteral">&quot;output&quot;</span>: <span class="stringliteral">&quot;output&quot;</span>,</div>
 <div class="line">}</div>
 <div class="line"> </div>
-<div class="line">pywmtk.wmtk(j)</div>
+<div class="line">wildmeshing(j)</div>
 </div><!-- fragment --><p>The <code>application</code> key is required. The wrapper checks that key, looks it up in the generated component map, and dispatches to the matching application. If <code>application</code> is missing or unknown, the call fails with an error. </p>
 </div></div><!-- contents -->
 </div><!-- PageDoc -->

@@ -16,7 +16,7 @@ var searchData=
   ['insertion_5fby_5fvolumeremesher_13',['insertion_by_volumeremesher',['../classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a3f43020858d2d5514a334aa2d4ad00b7',1,'wmtk::components::tetwild::TetWildMesh']]],
   ['insertion_5fby_5fvolumeremesher_5fold_14',['insertion_by_volumeremesher_old',['../classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a452b92f78cbdb34458347f51b06f272e',1,'wmtk::components::tetwild::TetWildMesh']]],
   ['inside_5fany_5ftet_15',['inside_any_tet',['../classwmtk_1_1components_1_1topological__offset_1_1_simplicial_complex_b_v_h.html#a27412f26d6f28751f4917b47885841ea',1,'wmtk::components::topological_offset::SimplicialComplexBVH']]],
-  ['installation_16',['installation',['../index.html#autotoc_md17',1,'Installation'],['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2app_2pywmtk_2_r_e_a_d_m_e.html#autotoc_md1',1,'Installation']]],
+  ['installation_16',['installation',['../index.html#autotoc_md17',1,'Installation'],['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2app_2pywildmeshing_2_r_e_a_d_m_e.html#autotoc_md1',1,'Installation']]],
   ['integration_20tests_17',['Integration Tests',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2_r_e_a_d_m_e.html#autotoc_md9',1,'']]],
   ['interiortetopt_18',['InteriorTetOpt',['../structapp_1_1interior__tet__opt_1_1_interior_tet_opt.html',1,'app::interior_tet_opt']]],
   ['invariant_20design_19',['Explicit Invariant Design',['../index.html#autotoc_md23',1,'']]],
