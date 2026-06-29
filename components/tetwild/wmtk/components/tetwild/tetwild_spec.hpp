@@ -10,6 +10,7 @@ nlohmann::json tetwild_spec = R"(
     "required": ["application", "input"],
     "optional": [
       "output",
+      "input_dir",
       "skip_simplify",
       "use_sample_envelope",
       "use_legacy_code",
@@ -50,6 +51,12 @@ nlohmann::json tetwild_spec = R"(
     "type": "string",
     "default": "out",
     "doc": "Output file name (without extension)."
+  },
+  {
+    "pointer": "/input_dir",
+    "type": "string",
+    "default": "",
+    "doc": "Directory where the input files are located. This is injected by the application and should not be set by the user."
   },
   {
     "pointer": "/skip_simplify",

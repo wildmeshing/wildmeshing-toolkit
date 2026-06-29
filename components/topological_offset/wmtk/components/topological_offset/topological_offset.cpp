@@ -37,8 +37,7 @@ void topological_offset(nlohmann::json json_params)
         json_params = spec_engine.inject_defaults(json_params, topological_offset_spec);
     }
 
-    const std::filesystem::path root =
-        json_params.contains("json_input_file") ? json_params["json_input_file"] : "";
+    const std::filesystem::path root = json_params["input_dir"];
 
     // load input file path
     std::string input_path = resolve_path(root, json_params["input"]).string();
@@ -67,7 +66,8 @@ void topological_offset(nlohmann::json json_params)
             "Invalid relative_ball_threshold [{}], must be between 0 and 1.",
             params.relative_ball_threshold);
     }
-    params.output_path = resolve_path(root, json_params["output"]).string();
+    // params.output_path = resolve_path(root, json_params["output"]).string();
+    params.output_path = json_params["output"];
     bool check_manifoldness = json_params["check_manifoldness"];
 
     std::filesystem::path output_filename = params.output_path;

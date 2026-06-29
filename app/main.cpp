@@ -44,7 +44,7 @@ int main(int argc, char** argv)
     }
 
     // add path to input file to the json so that it can be used for relative output paths
-    j["json_input_file"] = json_input_file;
+    j["input_dir"] = json_input_file.parent_path().string();
 
     std::string app_str = j["application"];
     if (components_map.count(app_str) == 0) {

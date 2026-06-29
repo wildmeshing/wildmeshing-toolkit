@@ -314,8 +314,7 @@ void image_simulation(nlohmann::json json_params)
         json_params = spec_engine.inject_defaults(json_params, image_simulation_spec);
     }
 
-    const std::filesystem::path root =
-        json_params.contains("json_input_file") ? json_params["json_input_file"] : "";
+    const std::filesystem::path root = json_params["input_dir"];
 
     // logger settings
     {
@@ -332,7 +331,8 @@ void image_simulation(nlohmann::json json_params)
         p = resolve_path(root, p).string();
     }
 
-    std::filesystem::path output_filename = resolve_path(root, json_params["output"]);
+    // std::filesystem::path output_filename = resolve_path(root, json_params["output"]);
+    std::filesystem::path output_filename = json_params["output"];
 
     if (output_filename.has_extension() && output_filename.extension() != ".msh") {
         output_filename.replace_extension(".msh");

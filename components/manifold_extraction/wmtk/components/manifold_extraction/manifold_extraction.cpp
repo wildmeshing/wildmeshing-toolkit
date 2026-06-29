@@ -43,8 +43,7 @@ void manifold_extraction(nlohmann::json json_params)
         json_params = spec_engine.inject_defaults(json_params, manifold_extraction_spec);
     }
 
-    const std::filesystem::path root =
-        json_params.contains("json_input_file") ? json_params["json_input_file"] : "";
+    const std::filesystem::path root = json_params["input_dir"];
 
     // load input file path
     std::string input_path = resolve_path(root, json_params["input"]).string();
@@ -58,7 +57,8 @@ void manifold_extraction(nlohmann::json json_params)
         params.replace_tag.insert(i);
     }
     params.manifold_union = json_params["manifold_union"];
-    params.output_path = resolve_path(root, json_params["output"]).string();
+    // params.output_path = resolve_path(root, json_params["output"]).string();
+    params.output_path = json_params["output"];
     params.debug_output = json_params["DEBUG_output"];
     params.write_surface = json_params["write_surface"];
     std::filesystem::path output_filename = params.output_path;

@@ -54,8 +54,7 @@ void shortest_edge_collapse(nlohmann::json json_params)
         }
         json_params = spec_engine.inject_defaults(json_params, shortest_edge_collapse_spec);
     }
-    const std::filesystem::path root =
-        json_params.contains("json_input_file") ? json_params["json_input_file"] : "";
+    const std::filesystem::path root = json_params["input_dir"];
 
     const std::string path = resolve_path(root, json_params["input"]).string();
     const std::string output = json_params["output"];

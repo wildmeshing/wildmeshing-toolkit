@@ -2,12 +2,10 @@
   {
     "pointer": "/",
     "type": "object",
-    "required": [
-      "application",
-      "input"
-    ],
+    "required": ["application", "input"],
     "optional": [
       "output",
+      "input_dir",
       "in_tag",
       "manifold_union",
       "replace_tag",
@@ -18,9 +16,7 @@
   {
     "pointer": "/application",
     "type": "string",
-    "options": [
-      "manifold_extraction"
-    ],
+    "options": ["manifold_extraction"],
     "doc": "Application name must be manifold_extraction."
   },
   {
@@ -33,6 +29,12 @@
     "type": "string",
     "default": "out",
     "doc": "Output file name (without extension)."
+  },
+  {
+    "pointer": "/input_dir",
+    "type": "string",
+    "default": "",
+    "doc": "Directory where the input files are located. This is injected by the application and should not be set by the user."
   },
   {
     "pointer": "/in_tag",

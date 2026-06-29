@@ -4,7 +4,7 @@ These tests mirror the C++ integration tests in
 [`tests/integration_tests.cpp`](../integration_tests.cpp): the same list of JSON
 inputs from [`data/integration_tests`](../../data/integration_tests) is driven
 through the `wildmeshing` bindings the same way the C++ `wmtk_wrapper` / `app/main.cpp`
-drives it (parse JSON, inject `json_input_file`, dispatch on `application`).
+drives it (parse JSON, inject `input_dir`).
 
 For every input the test checks — like the C++ `CHECK_NOTHROW` — that the
 binding runs to completion without raising. In addition it verifies that the

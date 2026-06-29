@@ -4,15 +4,14 @@ This mirrors what the C++ side does in both ``tests/integration_tests.cpp``
 (``load_json`` + ``wmtk_wrapper``) and ``app/main.cpp``:
 
     1. parse the JSON input file,
-    2. inject ``json_input_file`` so components can resolve relative paths,
-    3. dispatch on the ``application`` key (done inside ``wildmeshing.wildmeshing``).
+    2. inject ``input_dir`` so components can resolve relative paths,
 
 It is executed as its own process so that each test gets an isolated working
 directory and global state, and so a crash in the native code fails only the
 one parametrized case instead of the whole pytest session.
 
 Usage:
-    python _run_binding.py <json_input_file> [output_override]
+    python _run_binding.py <input_dir>
 """
 
 import json
@@ -22,21 +21,13 @@ from wildmeshing import *
 
 
 def main() -> int:
-    json_input_file = sys.argv[1]
-    output_override = sys.argv[2] if len(sys.argv) > 2 else None
+    input_dir = sys.argv[1]
 
-    with open(json_input_file) as f:
+    with open(input_dir) as f:
         j = json.load(f)
 
     # Components resolve relative `input`/`output` paths against this entry.
-    j["json_input_file"] = json_input_file
-
-    # Pin the output to an absolute path so every component writes into the
-    # caller-provided directory regardless of whether it resolves `output`
-    # relative to the cwd (e.g. isotropic_remeshing) or relative to the JSON
-    # file's directory (e.g. image_simulation / topological_offset).
-    if output_override is not None:
-        j["output"] = output_override
+    j["input_dir"] = input_dir
 
     wildmeshing(j)
     return 0

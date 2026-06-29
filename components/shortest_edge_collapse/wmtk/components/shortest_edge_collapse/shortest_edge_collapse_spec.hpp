@@ -10,6 +10,7 @@ nlohmann::json shortest_edge_collapse_spec = R"(
     "required": ["application", "input"],
     "optional": [
       "output",
+      "input_dir",
       "num_threads",
       "target_rel",
       "eps_rel",
@@ -33,6 +34,12 @@ nlohmann::json shortest_edge_collapse_spec = R"(
     "type": "string",
     "default": "out.obj",
     "doc": "Output file name (with extension)."
+  },
+  {
+    "pointer": "/input_dir",
+    "type": "string",
+    "default": "",
+    "doc": "Directory where the input files are located. This is injected by the application and should not be set by the user."
   },
   {
     "pointer": "/num_threads",

@@ -732,6 +732,7 @@ bool EmbedSurface::embed_surface(const bool flood_fill)
      * m_F_tags_surface. This is more work so I took a shortcut here.
      */
     if (flood_fill) {
+        logger().info("Use flood fill to unify tags.");
         std::set<simplex::Face> surface;
         for (size_t i = 0; i < m_F_on_surface.rows(); ++i) {
             const simplex::Face f(m_F_on_surface(i, 0), m_F_on_surface(i, 1), m_F_on_surface(i, 2));

@@ -10,6 +10,7 @@ nlohmann::json triwild_spec = R"(
     "required": ["application", "input"],
     "optional": [
       "output",
+      "input_dir",
       "num_threads",
       "max_iterations",
       "eps_rel",
@@ -45,6 +46,12 @@ nlohmann::json triwild_spec = R"(
     "type": "string",
     "default": "out",
     "doc": "Output file name (without extension)."
+  },
+  {
+    "pointer": "/input_dir",
+    "type": "string",
+    "default": "",
+    "doc": "Directory where the input files are located. This is injected by the application and should not be set by the user."
   },
   {
     "pointer": "/num_threads",

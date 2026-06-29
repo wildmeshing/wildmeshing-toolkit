@@ -7,12 +7,10 @@ nlohmann::json topological_offset_spec = R"(
   {
     "pointer": "/",
     "type": "object",
-    "required": [
-      "application",
-      "input"
-    ],
+    "required": ["application", "input"],
     "optional": [
       "output",
+      "input_dir",
       "offset_selection",
       "offset_output_tags",
       "protected_tags",
@@ -32,9 +30,7 @@ nlohmann::json topological_offset_spec = R"(
   {
     "pointer": "/application",
     "type": "string",
-    "options": [
-      "topological_offset"
-    ],
+    "options": ["topological_offset"],
     "doc": "Application name must be topological_offset."
   },
   {
@@ -47,6 +43,12 @@ nlohmann::json topological_offset_spec = R"(
     "type": "string",
     "default": "out",
     "doc": "Output file name (without extension)."
+  },
+  {
+    "pointer": "/input_dir",
+    "type": "string",
+    "default": "",
+    "doc": "Directory where the input files are located. This is injected by the application and should not be set by the user."
   },
   {
     "pointer": "/offset_selection",
