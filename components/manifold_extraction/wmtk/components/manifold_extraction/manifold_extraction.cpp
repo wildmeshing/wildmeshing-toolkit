@@ -16,7 +16,7 @@
 #include "Parameters.h"
 #include "read_image_msh.hpp"
 
-#include "manifold_extraction_spec.hpp"
+#include <manifold_extraction_spec.hpp>
 
 // // Enables passing Eigen matrices to fmt/spdlog.
 // template <typename T>
@@ -35,12 +35,14 @@ void manifold_extraction(nlohmann::json json_params)
 
     // verify input and inject defaults
     {
+        const auto spec =
+            jse::embed::wmtk_manifold_extraction_spec::manifold_extraction_spec::spec();
         jse::JSE spec_engine;
-        bool r = spec_engine.verify_json(json_params, manifold_extraction_spec);
+        bool r = spec_engine.verify_json(json_params, spec);
         if (!r) {
             log_and_throw_error(spec_engine.log2str());
         }
-        json_params = spec_engine.inject_defaults(json_params, manifold_extraction_spec);
+        json_params = spec_engine.inject_defaults(json_params, spec);
     }
 
     const std::filesystem::path root = json_params["input_dir"];

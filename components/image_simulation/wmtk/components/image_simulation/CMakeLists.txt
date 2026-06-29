@@ -27,7 +27,6 @@ set(SRC_FILES
 
 	image_simulation.hpp
 	image_simulation.cpp
-	image_simulation_spec.hpp
 
 	read_image_msh.hpp
 	read_image_msh.cpp

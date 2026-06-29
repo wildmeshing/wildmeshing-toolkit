@@ -8,8 +8,8 @@
 #include <wmtk/io/read_triangle_mesh.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
+#include <isotropic_remeshing_spec.hpp>
 #include "IsotropicRemeshing.h"
-#include "isotropic_remeshing_spec.hpp"
 
 namespace wmtk::components::isotropic_remeshing {
 
@@ -43,12 +43,14 @@ void isotropic_remeshing(nlohmann::json json_params)
 
     // verify input and inject defaults
     {
+        const auto spec =
+            jse::embed::wmtk_isotropic_remeshing_spec::isotropic_remeshing_spec::spec();
         jse::JSE spec_engine;
-        bool r = spec_engine.verify_json(json_params, isotropic_remeshing_spec);
+        bool r = spec_engine.verify_json(json_params, spec);
         if (!r) {
             log_and_throw_error(spec_engine.log2str());
         }
-        json_params = spec_engine.inject_defaults(json_params, isotropic_remeshing_spec);
+        json_params = spec_engine.inject_defaults(json_params, spec);
     }
 
     const std::filesystem::path root = json_params["input_dir"];

@@ -11,7 +11,6 @@ set(SRC_FILES
 
 	qslim.hpp
 	qslim.cpp
-	qslim_spec.hpp
 )
 
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

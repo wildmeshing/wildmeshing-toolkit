@@ -6,8 +6,8 @@
 #include <wmtk/io/read_triangle_mesh.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
+#include <qslim_spec.hpp>
 #include "QSlimMesh.h"
-#include "qslim_spec.hpp"
 
 namespace wmtk::components::qslim {
 
@@ -34,12 +34,13 @@ void qslim(nlohmann::json json_params)
 
     // verify input and inject defaults
     {
+        const auto spec = jse::embed::wmtk_qslim_spec::qslim_spec::spec();
         jse::JSE spec_engine;
-        bool r = spec_engine.verify_json(json_params, qslim_spec);
+        bool r = spec_engine.verify_json(json_params, spec);
         if (!r) {
             log_and_throw_error(spec_engine.log2str());
         }
-        json_params = spec_engine.inject_defaults(json_params, qslim_spec);
+        json_params = spec_engine.inject_defaults(json_params, spec);
     }
 
     const std::filesystem::path root = json_params["input_dir"];

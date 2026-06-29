@@ -24,7 +24,6 @@ set(SRC_FILES
 
 	topological_offset.hpp
 	topological_offset.cpp
-	topological_offset_spec.hpp
 )
 
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

@@ -25,7 +25,6 @@ set(SRC_FILES
 
 	tetwild.hpp
 	tetwild.cpp
-	tetwild_spec.hpp
 
 	orig/Args.h
 	orig/Common.cpp

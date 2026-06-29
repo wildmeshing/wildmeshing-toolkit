@@ -28,7 +28,7 @@
 #include <igl/write_triangle_mesh.h>
 #include <spdlog/common.h>
 
-#include "tetwild_spec.hpp"
+#include <tetwild_spec.hpp>
 
 namespace wmtk::components::tetwild {
 
@@ -87,12 +87,13 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     // verify input and inject defaults
     {
+        const auto spec = jse::embed::wmtk_tetwild_spec::tetwild_spec::spec();
         jse::JSE spec_engine;
-        bool r = spec_engine.verify_json(json_params, tetwild_spec);
+        bool r = spec_engine.verify_json(json_params, spec);
         if (!r) {
             log_and_throw_error(spec_engine.log2str());
         }
-        json_params = spec_engine.inject_defaults(json_params, tetwild_spec);
+        json_params = spec_engine.inject_defaults(json_params, spec);
     }
     const std::filesystem::path root = json_params["input_dir"];
 
