@@ -28,7 +28,7 @@ function(add_component COMPONENT_NAME)
     target_link_libraries(wmtk_app PUBLIC wmtk::${COMPONENT_NAME})
     # add component to python bindings
     if(WMTK_PYBIND)
-        target_link_libraries(pywmtk PUBLIC wmtk::${COMPONENT_NAME})
+        target_link_libraries(wildmeshing PUBLIC wmtk::${COMPONENT_NAME})
     endif()
     # add component to integration tests
     if(WMTK_BUILD_INTEGRATION_TESTS)

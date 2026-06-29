@@ -94,8 +94,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         }
         json_params = spec_engine.inject_defaults(json_params, tetwild_spec);
     }
-    const std::filesystem::path root =
-        json_params.contains("json_input_file") ? json_params["json_input_file"] : "";
+    const std::filesystem::path root = json_params["input_dir"];
 
     // logger settings
     {

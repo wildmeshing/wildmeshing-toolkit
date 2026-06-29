@@ -14,7 +14,7 @@ include(CPM)
 CPMAddPackage(
     NAME polysolve
     GITHUB_REPOSITORY polyfem/polysolve
-    GIT_TAG 57dbeadcb65932a38508e3a5a07e98732a1c50bc
+    GIT_TAG 231f7e8ed6fc36aad41f21d9b3bf0cdf7816f78c
     OPTIONS
     "POLYSOLVE_WITH_ACCELERATE OFF"
     "POLYSOLVE_WITH_CHOLMOD OFF"

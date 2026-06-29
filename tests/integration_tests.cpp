@@ -15,44 +15,7 @@ const std::string tags_integration = "[integration_test]";
 
 const path data_dir = WMTK_DATA_DIR;
 const path integration_tests_dir = data_dir / "integration_tests";
-
-/**
- * Add any test you want to run to this list!
- */
-std::vector<std::string> input_files{
-    "image_simulation_remeshing_2d.json",
-    // "image_simulation_energies_2d.json",
-    "image_simulation_fill_holes_2d.json",
-    "image_simulation_keep_lcc_2d.json",
-    "image_simulation_tight_seal_2d.json",
-    "image_simulation_replace_tags_2d.json",
-    "image_simulation_resolve_intersections_2d.json",
-    "image_simulation_tag_priority_2d.json",
-    "image_simulation_double_sphere_3d.json",
-    "image_simulation_double_sphere_notop_3d.json",
-    "image_simulation_tight_seal_3d.json",
-    "image_simulation_replace_tags_3d.json",
-    "image_simulation_resolve_intersections_3d.json",
-    "image_simulation_tag_priority_3d.json",
-    "isotropic_remeshing_bunny.json",
-    "isotropic_remeshing_double_sphere.json",
-    "isotropic_remeshing_piece.json",
-    "qslim_double_sphere.json",
-    "qslim_octocat.json",
-    "shortest_edge_collapse_101633.json",
-    "shortest_edge_collapse_double_sphere.json",
-    "shortest_edge_collapse_octocat.json",
-    "shortest_edge_collapse_sphere_with_env.json",
-    "tetwild_double_sphere.json",
-    "tetwild_octocat.json",
-    "tetwild_sphere.json",
-    "topological_offset_2d.json",
-    "topological_offset_2d_vertex_input.json",
-    "topological_offset_3d_edge_input.json",
-    "topological_offset_3d.json",
-    "manifold_extraction_3d.json",
-    "triwild_puzzle.json"};
-
+const path integration_tests_json_file = integration_tests_dir / "integration_tests.json";
 
 nlohmann::json load_json(const path& json_input_file)
 {
@@ -66,7 +29,7 @@ nlohmann::json load_json(const path& json_input_file)
     }
 
     // add path to input file to the json so that it can be used for relative output paths
-    j["json_input_file"] = json_input_file.string();
+    j["input_dir"] = json_input_file.parent_path().string();
 
     return j;
 }
@@ -100,6 +63,12 @@ void wmtk_wrapper(const path& json_input_file)
 TEST_CASE("Integration_Tests", tags_integration)
 {
     namespace fs = std::filesystem;
+
+    nlohmann::json integration_tests_json;
+    REQUIRE_NOTHROW(integration_tests_json = load_json(integration_tests_json_file));
+
+    std::vector<std::string> input_files;
+    REQUIRE_NOTHROW(input_files = integration_tests_json["integration_tests"]);
 
     for (const auto& input_file : input_files) {
         const path& f = integration_tests_dir / input_file;

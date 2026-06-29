@@ -199,23 +199,23 @@ The JSON files are processed with the [JSON Spec Engine](https://github.com/geom
 
 - Shortest Edge Collpase :
   - Paper: [Progressive Meshes](https://hhoppe.com/pm.pdf)
-  - [shortest_edge_collapse_spec.json](components/shortest_edge_collapse/wmtk/components/shortest_edge_collapse/shortest_edge_collapse_spec.json)
+  - [shortest_edge_collapse_spec.json](https://github.com/wildmeshing/wildmeshing-toolkit/blob/main/components/shortest_edge_collapse/wmtk/components/shortest_edge_collapse/shortest_edge_collapse_spec.json)
 
 - Qslim :
   - Paper: [Surface Simplification Using Quadric Error Metrics](https://dl.acm.org/doi/pdf/10.1145/258734.258849)
-  - [qslim_spec.json](components/qslim/wmtk/components/qslim/qslim_spec.json)
+  - [qslim_spec.json](https://github.com/wildmeshing/wildmeshing-toolkit/blob/main/components/qslim/wmtk/components/qslim/qslim_spec.json)
 
 - Isotropic Remeshing :
   - Paper: [A Remeshing Approach to Multiresolution Modeling](https://ls7-gv.cs.tu-dortmund.de/downloads/publications/2004/sgp04.pdf)
-  - [isotropic_remeshing_spec.json](components/isotropic_remeshing/wmtk/components/isotropic_remeshing/isotropic_remeshing_spec.json)
+  - [isotropic_remeshing_spec.json](https://github.com/wildmeshing/wildmeshing-toolkit/blob/main/components/isotropic_remeshing/wmtk/components/isotropic_remeshing/isotropic_remeshing_spec.json)
 
 - TetWild :
   - Paper: [Tetrahedral Meshing in the Wild](https://cims.nyu.edu/gcl/papers/2018-TetWild.pdf)
-  - [tetwild_spec.json](components/tetwild/wmtk/components/tetwild/tetwild_spec.json)
+  - [tetwild_spec.json](https://github.com/wildmeshing/wildmeshing-toolkit/blob/main/components/tetwild/wmtk/components/tetwild/tetwild_spec.json)
 
 - TriWild :
   - Paper: [Triangular Meshing in the Wild](https://cims.nyu.edu/gcl/papers/2019-TriWild.pdf)
-  - [triwild_spec.json](components/triwild/wmtk/components/triwild/triwild_spec.json)
+  - [triwild_spec.json](https://github.com/wildmeshing/wildmeshing-toolkit/blob/main/components/triwild/wmtk/components/triwild/triwild_spec.json)
 
 Examples for all algorithms can be found in the [data repository](https://github.com/wildmeshing/data2).
 

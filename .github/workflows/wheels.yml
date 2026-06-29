@@ -1,0 +1,137 @@
+name: wheels
+
+# Build the wildmeshing wheels for the three target platforms (macOS arm64,
+# Windows x86_64, Linux x86_64), build the source distribution, and (on a
+# GitHub Release) publish everything to PyPI.
+#
+# The Python test suite is run by the `pip` workflow (.github/workflows/pip.yml),
+# not here. cibuildwheel still runs a quick per-wheel import smoke test
+# (see [tool.cibuildwheel] test-command in pyproject.toml).
+#
+# NOTE: every wheel compiles the whole C++ toolkit from scratch, so this runs on
+# every push and is expensive. Once it is stable you may want to restrict it
+# (e.g. to `push: { tags: ['v*'] }` + `workflow_dispatch`) to save CI minutes.
+on:
+  # pull_request: # only for testing
+  workflow_dispatch:
+  release:
+    types: [published]
+
+# Cancel superseded runs on the same ref so rapid commits don't pile up builds.
+concurrency:
+  group: wheels-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # -------------------------------------------------------------------------
+  # 1. Build the wheels (one job per target platform)
+  # -------------------------------------------------------------------------
+  build_wheels:
+    name: wheel · ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14 # Apple Silicon -> macosx_arm64
+            label: macOS arm64
+          - os: windows-2022 # Intel/AMD64   -> win_amd64
+            label: Windows x86_64
+          - os: ubuntu-latest # Intel/AMD64   -> manylinux x86_64
+            label: Linux x86_64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 10
+
+      # Builds wheels + runs the per-wheel smoke test from [tool.cibuildwheel]
+      # in pyproject.toml. cibuildwheel auto-repairs the wheels (delocate on
+      # macOS, auditwheel on Linux; the GMP DLL is installed into the wheel on
+      # Windows by app/wildmeshing/CMakeLists.txt).
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.21.3 # bump as needed
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v7
+        with:
+          name: cibw-wheels-${{ matrix.os }}
+          path: ./wheelhouse/*.whl
+
+  # -------------------------------------------------------------------------
+  # 2. Build the source distribution (sdist)
+  # -------------------------------------------------------------------------
+  make_sdist:
+    name: sdist
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 10
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Build sdist
+        run: |
+          python -m pip install --upgrade build
+          python -m build --sdist --outdir dist
+
+      - name: Upload sdist
+        uses: actions/upload-artifact@v7
+        with:
+          name: cibw-sdist
+          path: ./dist/*.tar.gz
+
+  # -------------------------------------------------------------------------
+  # 3. Publish to PyPI (only when a GitHub Release is published)
+  # -------------------------------------------------------------------------
+  publish:
+    name: publish to PyPI
+    needs: [build_wheels, make_sdist]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' && github.event.action == 'published'
+    environment:
+      name: pypi
+      url: https://pypi.org/project/wildmeshing/
+    permissions:
+      id-token: write # required for PyPI trusted publishing (OIDC)
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: cibw-*
+          path: dist
+          merge-multiple: true
+
+      - name: Publish distribution to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  # # -------------------------------------------------------------------------
+  # # 4. (Optional) Test publishing to TestPyPI
+  # # -------------------------------------------------------------------------
+  # publish_testpypi:
+  #   name: publish to TestPyPI
+  #   needs: [build_wheels, make_sdist]
+  #   runs-on: ubuntu-latest
+  #   environment:
+  #     name: testpypi
+  #     url: https://test.pypi.org/project/wildmeshing/
+  #   permissions:
+  #     id-token: write # required for PyPI trusted publishing (OIDC)
+  #   steps:
+  #     - name: Download all artifacts
+  #       uses: actions/download-artifact@v8
+  #       with:
+  #         pattern: cibw-*
+  #         path: dist
+  #         merge-multiple: true
+
+  #     - name: Publish distribution to PyPI
+  #       uses: pypa/gh-action-pypi-publish@release/v1
+  #       with:
+  #         repository-url: https://test.pypi.org/legacy/

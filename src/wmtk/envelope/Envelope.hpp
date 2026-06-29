@@ -10,11 +10,6 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
-namespace GEO {
-class MeshFacetsAABBWithEps;
-class Mesh;
-} // namespace GEO
-
 namespace wmtk {
 class Envelope
 {

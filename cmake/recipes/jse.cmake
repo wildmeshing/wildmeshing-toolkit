@@ -9,7 +9,7 @@ include(CPM)
 CPMAddPackage(
     NAME jse
     GITHUB_REPOSITORY geometryprocessing/json-spec-engine
-    GIT_TAG d7d22e32ebe14f89180a43f6d48c1296847baca6
+    GIT_TAG 81c4dc4092115f37a841285dede3d39559f7fb86
 )
 FetchContent_MakeAvailable(jse)
 

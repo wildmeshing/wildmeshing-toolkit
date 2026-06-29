@@ -7,12 +7,10 @@ nlohmann::json manifold_extraction_spec = R"(
   {
     "pointer": "/",
     "type": "object",
-    "required": [
-      "application",
-      "input"
-    ],
+    "required": ["application", "input"],
     "optional": [
       "output",
+      "input_dir",
       "in_tag",
       "manifold_union",
       "replace_tag",
@@ -23,9 +21,7 @@ nlohmann::json manifold_extraction_spec = R"(
   {
     "pointer": "/application",
     "type": "string",
-    "options": [
-      "manifold_extraction"
-    ],
+    "options": ["manifold_extraction"],
     "doc": "Application name must be manifold_extraction."
   },
   {
@@ -40,11 +36,17 @@ nlohmann::json manifold_extraction_spec = R"(
     "doc": "Output file name (without extension)."
   },
   {
+    "pointer": "/input_dir",
+    "type": "string",
+    "default": "",
+    "doc": "Directory where the input files are located. This is injected by the application and should not be set by the user."
+  },
+  {
     "pointer": "/in_tag",
     "type": "list",
     "default": ["tag_0"],
     "min": 1,
-    "doc": "Tag set to considered inside the surface (empty for ambient)."
+    "doc": "Tag set to considered inside the surface"
   },
   {
     "pointer": "/in_tag/*",
@@ -61,7 +63,7 @@ nlohmann::json manifold_extraction_spec = R"(
     "pointer": "/replace_tag",
     "type": "list",
     "default": [],
-    "doc": "Only relevant for subtract mode (manifold_union=false). Tag set to fill subtracted regions with. Empty for ambient."
+    "doc": "Only relevant for subtract mode (manifold_union=false). Tag set to fill subtracted regions with"
   },
   {
     "pointer": "/replace_tag/*",

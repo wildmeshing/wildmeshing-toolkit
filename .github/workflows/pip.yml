@@ -31,7 +31,7 @@ jobs:
           fetch-depth: 10
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
@@ -42,4 +42,24 @@ jobs:
 
       - name: Test import
         run: |
-          python -c "import pywmtk; print('pywmtk imported successfully')"
+          python -c "import wildmeshing; print('wildmeshing imported successfully')"
+
+      # Test data, pinned to the same revision as cmake/wmtk_data.cmake.
+      # Checked out into ./data so tests/python finds <repo>/data/integration_tests.
+      - name: Fetch test data
+        uses: actions/checkout@v6
+        with:
+          repository: wildmeshing/data2
+          ref: f21aa84d50a3ac6ffb3b04daf8a3e132b24803b0
+          path: data
+          fetch-depth: 1
+
+      # Runs the Python test suite (tests/python: smoke + integration). The
+      # native wmtk_app reference is not installed here, so the integration
+      # suite verifies that every application runs end-to-end on real data
+      # without raising (the byte-for-byte comparison against wmtk_app is
+      # exercised by the C++ tests / locally).
+      - name: Run Python tests
+        run: |
+          python -m pip install pytest
+          python -m pytest tests/python -v

@@ -10,6 +10,7 @@ nlohmann::json qslim_spec = R"(
     "required": ["application", "input"],
     "optional": [
       "output",
+      "input_dir",
       "num_threads",
       "eps_rel",
       "target_rel",
@@ -35,6 +36,12 @@ nlohmann::json qslim_spec = R"(
     "type": "string",
     "default": "out.obj",
     "doc": "Output file name."
+  },
+  {
+    "pointer": "/input_dir",
+    "type": "string",
+    "default": "",
+    "doc": "Directory where the input files are located. This is injected by the application and should not be set by the user."
   },
   {
     "pointer": "/num_threads",

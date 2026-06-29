@@ -13,6 +13,7 @@ nlohmann::json image_simulation_spec = R"(
       "output",
       "input_names",
       "input_transform",
+      "input_dir",
       "skip_simplify",
       "use_sample_envelope",
       "num_threads",
@@ -117,6 +118,12 @@ nlohmann::json image_simulation_spec = R"(
   {
     "pointer": "/input_transform/*/*",
     "type": "float"
+  },
+  {
+    "pointer": "/input_dir",
+    "type": "string",
+    "default": "",
+    "doc": "Directory where the input files are located. This is injected by the application and should not be set by the user."
   },
   {
     "pointer": "/skip_simplify",

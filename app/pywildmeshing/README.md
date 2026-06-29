@@ -1,6 +1,6 @@
 # WMTK Python Bindings
 
-`pywmtk` provides Python bindings for WildMeshingToolkit through a single module entry point, `pywmtk.wmtk(...)`.
+`wildmeshing` provides Python bindings for WildMeshingToolkit through a single module entry point, `wildmeshing.wildmeshing(...)`.
 
 ## Installation
 
@@ -25,10 +25,10 @@ The Python package metadata in `pyproject.toml` already enables the binding buil
 
 ## Usage
 
-Import the module, build a Python dictionary, and pass it to `pywmtk.wmtk`:
+Import the module, build a Python dictionary, and pass it to `wildmeshing.wildmeshing`:
 
 ```python
-import pywmtk
+from wildmeshing import *
 
 j = {
     "application": "tetwild",
@@ -36,7 +36,7 @@ j = {
     "output": "output",
 }
 
-pywmtk.wmtk(j)
+wildmeshing(j)
 ```
 
 The `application` key is required. The wrapper checks that key, looks it up in the generated component map, and dispatches to the matching application. If `application` is missing or unknown, the call fails with an error.
