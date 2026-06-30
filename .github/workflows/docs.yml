@@ -3,7 +3,6 @@ name: Docs
 on:
   push:
     branches: [main]
-  pull_request: # for testing only
 
 jobs:
   deploy:
