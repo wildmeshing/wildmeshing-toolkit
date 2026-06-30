@@ -135,20 +135,23 @@ void init_from_paths(
 
     // generate Delaunay triangulation of the input vertices as the initial mesh
     {
+        size_t num_vertices = 0;
         MatrixXd V_all;
         MatrixXi E_all;
         std::vector<Eigen::Vector2d> V_vec;
         std::vector<Eigen::Vector2i> E_vec;
-        for (const auto& V : Vs) {
-            for (int i = 0; i < V.rows(); i++) {
-                V_vec.push_back(V.row(i));
+        for (size_t i = 0; i < Vs.size(); i++) {
+            for (int j = 0; j < Vs[i].rows(); j++) {
+                V_vec.push_back(Vs[i].row(j));
             }
-        }
-        for (const auto& E : Es) {
-            for (int i = 0; i < E.rows(); i++) {
-                E_vec.push_back(E.row(i));
+            MatrixXi E = Es[i];
+            E.array() += num_vertices; // offset the vertex indices
+            for (int j = 0; j < E.rows(); j++) {
+                E_vec.push_back(E.row(j));
             }
+            num_vertices += Vs[i].rows();
         }
+
         V_all.resize(V_vec.size(), 2);
         for (int i = 0; i < V_vec.size(); i++) {
             V_all.row(i) = V_vec[i];
