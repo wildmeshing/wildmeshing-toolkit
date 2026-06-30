@@ -1,15 +1,14 @@
-name: Doxygen Deploy
+name: Docs
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - name: Install Dependencies
         run: |
           wget "https://github.com/doxygen/doxygen/releases/download/Release_1_9_8/doxygen-1.9.8.linux.bin.tar.gz"
@@ -27,7 +26,19 @@ jobs:
           touch docs_doxygen/html/.nojekyll
 
       - name: Deploy 🚀
-        uses: JamesIves/github-pages-deploy-action@v4.3.3
+        uses: JamesIves/github-pages-deploy-action@v4.8.0
         with:
           branch: gh-pages # The branch the action should deploy to.
           folder: build/docs_doxygen/html/ # The folder the action should deploy.
+
+      - name: Launch JSON Spec Documentation Runner
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ secrets.WMTK_DOCS_PAT }} # personal access token with actions and workflow write permissions
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'wildmeshing',
+              repo: 'wildmeshing.github.io',
+              workflow_id: 'build.yml',
+              ref: 'doc'
+            })
