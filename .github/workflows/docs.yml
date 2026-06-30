@@ -35,11 +35,11 @@ jobs:
       - name: Launch JSON Spec Documentation Runner
         uses: actions/github-script@v9
         with:
-          github-token: ${{ secrets.WMTK_DOCS_PAT }}
+          github-token: ${{ secrets.WMTK_DOCS_PAT }} # personal access token with actions and workflow write permissions
           script: |
             await github.rest.actions.createWorkflowDispatch({
               owner: 'wildmeshing',
               repo: 'wildmeshing.github.io',
               workflow_id: 'build.yml',
-              ref: 'docs'
+              ref: 'doc'
             })
