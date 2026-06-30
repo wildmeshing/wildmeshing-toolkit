@@ -156,8 +156,13 @@ public:
      * @param V #Vx3 vertices of the tet mesh
      * @param F #Fx3 vertex IDs for all faces
      * @param E #Ex2 vertex IDs for all constraint edges
+     * @param tag_names Names for each tag.
      */
-    void init_mesh(const MatrixXd& V, const MatrixXi& F, const MatrixXi& E);
+    void init_mesh(
+        const MatrixXd& V,
+        const MatrixXi& F,
+        const MatrixXi& E,
+        const std::vector<std::string>& tag_names);
 
     void init_surfaces_and_boundaries();
 

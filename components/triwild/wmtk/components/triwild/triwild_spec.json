@@ -6,6 +6,7 @@
     "required": ["application", "input"],
     "optional": [
       "output",
+      "input_names",
       "input_dir",
       "num_threads",
       "max_iterations",
@@ -42,6 +43,17 @@
     "type": "string",
     "default": "out",
     "doc": "Output file name (without extension)."
+  },
+  {
+    "pointer": "/input_names",
+    "type": "list",
+    "doc": "List of names for the input meshes. If no names are assigned, the meshes will be named tag_0, tag_1, etc.",
+    "default": []
+  },
+  {
+    "pointer": "/input_names/*",
+    "type": "string",
+    "doc": "Name for one input mesh."
   },
   {
     "pointer": "/input_dir",

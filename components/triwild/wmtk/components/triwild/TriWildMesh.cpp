@@ -200,7 +200,11 @@ std::tuple<double, double> TriWildMesh::local_operations(
     return energy;
 }
 
-void TriWildMesh::init_mesh(const MatrixXd& V, const MatrixXi& F, const MatrixXi& E)
+void TriWildMesh::init_mesh(
+    const MatrixXd& V,
+    const MatrixXi& F,
+    const MatrixXi& E,
+    const std::vector<std::string>& tag_names)
 {
     assert(V.cols() == 2);
     assert(F.cols() == 3);
@@ -314,6 +318,12 @@ void TriWildMesh::init_mesh(const MatrixXd& V, const MatrixXi& F, const MatrixXi
 
     for_each_vertex(
         [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
+
+    // add tag names
+    for (size_t i = 0; i < tag_names.size(); ++i) {
+        m_tag_id_to_name[i] = tag_names[i];
+        m_tag_name_to_id[tag_names[i]] = i;
+    }
 
     //// rounding
     size_t cnt_round = 0;
