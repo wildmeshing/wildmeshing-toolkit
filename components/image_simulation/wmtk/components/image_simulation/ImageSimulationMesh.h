@@ -141,7 +141,7 @@ public:
     double m_envelope_eps = -1;
 
     using ExprPtr = expression_parser::ExpressionPtr;
-    std::vector<std::tuple<ExprPtr, double>> m_length_regions;
+    std::vector<std::tuple<ExprPtr, double>> m_sizing_field;
 
     bool m_collapse_check_quality = true;
 
@@ -330,7 +330,7 @@ public:
 
     CellTag string_set_to_cell_tag(const std::set<std::string>& str_set);
 
-    void set_length_regions(const nlohmann::json& length_region_json);
+    void set_sizing_field(const nlohmann::json& m_sizing_field_json);
 
     double get_length2(const Tuple& l) const;
 

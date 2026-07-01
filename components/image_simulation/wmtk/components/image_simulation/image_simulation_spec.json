@@ -20,7 +20,7 @@
       "eps_simplify",
       "length",
       "length_rel",
-      "length_region",
+      "sizing_field",
       "stop_energy",
       "stop_at_float",
       "preserve_topology",
@@ -182,31 +182,31 @@
     "doc": "Target edge length relative to the bounding box"
   },
   {
-    "pointer": "/length_region",
+    "pointer": "/sizing_field",
     "type": "list",
     "default": [],
-    "doc": "Prescribe a length for a specific region defined by tags. The length can be absolute (length) or relative (length_rel). The smallest prescibed length will be used for each region."
+    "doc": "Prescribe a length for a specific region defined by tags. The length can be absolute (length) or relative (length_rel). The smallest prescibed length will be used for each region. Example: [{\"tags\": \"tag_0 & tag_1\", \"length\": 0.1}, {\"tags\": \"tag_2\", \"length_rel\": 0.05}]"
   },
   {
-    "pointer": "/length_region/*",
+    "pointer": "/sizing_field/*",
     "type": "object",
     "required": ["tags"],
     "optional": ["length", "length_rel"],
     "doc": "A region and its target length."
   },
   {
-    "pointer": "/length_region/*/tags",
+    "pointer": "/sizing_field/*/tags",
     "type": "string",
     "doc": "A region of tags."
   },
   {
-    "pointer": "/length_region/*/length",
+    "pointer": "/sizing_field/*/length",
     "type": "float",
     "default": -1,
     "doc": "Absolute target edge length for the region."
   },
   {
-    "pointer": "/length_region/*/length_rel",
+    "pointer": "/sizing_field/*/length_rel",
     "type": "float",
     "default": 5e-2,
     "doc": "Relative target edge length for the region."

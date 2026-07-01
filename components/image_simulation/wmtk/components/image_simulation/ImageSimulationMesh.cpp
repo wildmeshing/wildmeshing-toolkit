@@ -285,27 +285,27 @@ CellTag wmtk::components::image_simulation::ImageSimulationMesh::string_set_to_c
     return cell_tag;
 }
 
-void ImageSimulationMesh::set_length_regions(const nlohmann::json& length_region_json)
+void ImageSimulationMesh::set_sizing_field(const nlohmann::json& sizing_field_json)
 {
-    if (!length_region_json.is_array()) {
+    if (!sizing_field_json.is_array()) {
         log_and_throw_error(
-            "length_region should be an array of objects, each defining a region and its target "
+            "sizing_field should be an array of objects, each defining a region and its target "
             "length.");
     }
 
-    for (const auto& region_json : length_region_json) {
+    for (const auto& region_json : sizing_field_json) {
         if (!region_json.contains("tags")) {
-            log_and_throw_error("Each length_region entry must contain a 'tags' field.");
+            log_and_throw_error("Each sizing_field entry must contain a 'tags' field.");
         }
         const std::string tags_str_set = region_json["tags"];
-        auto& [expr, length] = m_length_regions.emplace_back();
+        auto& [expr, length] = m_sizing_field.emplace_back();
         expr = expression_parser::parse(tags_str_set, m_tag_name_to_id);
 
         length = region_json["length"];
         double length_rel = region_json["length_rel"];
         if (length < 0 && length_rel < 0) {
             log_and_throw_error(
-                "Each length_region entry must specify at least one of 'length' or 'length_rel'.");
+                "Each sizing_field entry must specify at least one of 'length' or 'length_rel'.");
         }
 
         if (length_rel > 0) {
@@ -313,8 +313,8 @@ void ImageSimulationMesh::set_length_regions(const nlohmann::json& length_region
         }
     }
 
-    // apply length regions to vertices
-    for (const auto& [expr, length] : m_length_regions) {
+    // apply sizing fields to vertices
+    for (const auto& [expr, length] : m_sizing_field) {
         for (const Tuple& t : get_tets()) {
             const auto tid = t.tid(*this);
             if (!expr->eval(m_tet_attribute[tid].tags)) {
@@ -421,7 +421,7 @@ bool ImageSimulationMesh::adjust_sizing_field_serial(double max_energy)
     }
 
     // apply length regions to vertices
-    for (const auto& [expr, length] : m_length_regions) {
+    for (const auto& [expr, length] : m_sizing_field) {
         for (const Tuple& t : get_tets()) {
             const auto tid = t.tid(*this);
             if (!expr->eval(m_tet_attribute[tid].tags)) {

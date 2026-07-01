@@ -197,7 +197,7 @@ def surf_to_tet(meshes=[], tags=[], output="out", stop_energy=100, eps_rel=2e-3,
 # TODO add line_to_tri function to convert line meshes to triangle meshes for 2D meshing
 
 
-def remeshing(mesh, output="out", stop_energy=10, eps_rel=2e-3, preserve_topology=True, keep_envelope=False, num_threads=0, others={}):
+def remeshing(mesh, output="out", stop_energy=10, eps_rel=2e-3, length_rel=5e-2, sizing_field=[], preserve_topology=True, keep_envelope=False, num_threads=0, others={}):
     """
     Improve the quality of a tetrahedral mesh through remeshing.
 
@@ -206,6 +206,8 @@ def remeshing(mesh, output="out", stop_energy=10, eps_rel=2e-3, preserve_topolog
     - output: Output file path for the improved mesh, without extension (e.g., "out" will generate "out.msh").
     - stop_energy: Energy threshold for mesh optimization (lower is more aggressive). We recommend to not go below 10.
     - eps_rel: Relative tolerance for mesh optimization.
+    - length_rel: Relative target edge length.
+    - sizing_field: Prescribe a length for a specific region defined by tags. The length can be absolute (length) or relative (length_rel). Example: [{"tags": "tag_0 & tag_1", "length": 0.1}, {"tags": "tag_2", "length_rel": 0.05}]
     - preserve_topology: Whether to preserve the topology of the input meshes.
     - keep_envelope: Whether to keep the envelope of the input mesh.
     - num_threads: Number of threads to use for parallel processing. 0 threads means single threaded execution.
@@ -221,6 +223,8 @@ def remeshing(mesh, output="out", stop_energy=10, eps_rel=2e-3, preserve_topolog
     j["preserve_topology"] = preserve_topology
     j["eps_rel"] = eps_rel
     j["stop_energy"] = stop_energy
+    j["length_rel"] = length_rel
+    j["sizing_field"] = sizing_field
     j["write_envelope"] = keep_envelope
     j["num_threads"] = num_threads
 
