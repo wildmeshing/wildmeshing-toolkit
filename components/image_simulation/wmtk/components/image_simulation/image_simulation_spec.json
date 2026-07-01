@@ -185,7 +185,7 @@
     "pointer": "/sizing_field",
     "type": "list",
     "default": [],
-    "doc": "Prescribe a length for a specific region defined by tags. The length can be absolute (length) or relative (length_rel). The smallest prescibed length will be used for each region. Example: [{\"tags\": \"tag_0 & tag_1\", \"length\": 0.1}, {\"tags\": \"tag_2\", \"length_rel\": 0.05}]"
+    "doc": "Prescribe a length for a specific region defined by tags. The length can be absolute (length) or relative (length_rel). The smallest prescibed length will be used for each vertex. Example: [{\"tags\": \"tag_0 & tag_1\", \"length\": 0.1}, {\"tags\": \"tag_2\", \"length_rel\": 0.05}]"
   },
   {
     "pointer": "/sizing_field/*",

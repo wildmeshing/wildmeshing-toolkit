@@ -314,24 +314,38 @@ void ImageSimulationMesh::set_sizing_field(const nlohmann::json& sizing_field_js
     }
 
     // apply sizing fields to vertices
-    for (const auto& [expr, length] : m_sizing_field) {
-        for (const Tuple& t : get_tets()) {
-            const auto tid = t.tid(*this);
+    for (const Tuple& t : get_tets()) {
+        const auto tid = t.tid(*this);
+        for (const auto& [expr, length] : m_sizing_field) {
             if (!expr->eval(m_tet_attribute[tid].tags)) {
                 continue;
             }
             const auto vs = oriented_tet_vids(tid);
             for (const size_t& vid : vs) {
                 auto& s = m_vertex_attribute[vid].m_sizing_scalar;
-                s = std::min(s, length / m_params.l);
+                s = length / m_params.l; // overwrite previous value
             }
+        }
+    }
+    for (const Tuple& t : get_tets()) {
+        const auto tid = t.tid(*this);
+        double sizing = 1.0; // default
+        for (const auto& [expr, length] : m_sizing_field) {
+            if (expr->eval(m_tet_attribute[tid].tags)) {
+                sizing = length / m_params.l;
+            }
+        }
+        const auto vs = oriented_tet_vids(tid);
+        for (const size_t& vid : vs) {
+            auto& s = m_vertex_attribute[vid].m_sizing_scalar;
+            s = std::min(s, sizing);
         }
     }
 }
 
 bool ImageSimulationMesh::adjust_sizing_field_serial(double max_energy)
 {
-    logger().info("#vertices {}, #tets {}", vert_capacity(), tet_capacity());
+    logger().info("#V = {}, #T = {}", vert_capacity(), tet_capacity());
 
     const double stop_filter_energy = m_params.stop_energy * 0.8;
     double filter_energy = std::max(max_energy / 100, stop_filter_energy);
@@ -369,7 +383,28 @@ bool ImageSimulationMesh::adjust_sizing_field_serial(double max_energy)
         pts.emplace_back(c / 4);
     }
 
-    logger().info("filter energy {} Low Quality Tets {}", filter_energy, pts.size());
+    logger().info("filter energy = {}; Number of low quality tets {}", filter_energy, pts.size());
+
+    // compute maximum sizing scalar for each vertex based on the sizing field
+    std::vector<double> max_sizing_scalars(vert_capacity(), std::numeric_limits<double>::max());
+    for (const Tuple& t : get_tets()) {
+        const auto tid = t.tid(*this);
+        double sizing = std::numeric_limits<double>::max();
+        bool tet_has_sizing_field = false;
+        for (const auto& [expr, length] : m_sizing_field) {
+            if (expr->eval(m_tet_attribute[tid].tags)) {
+                sizing = std::min(sizing, length / m_params.l);
+                tet_has_sizing_field = true;
+            }
+        }
+        if (!tet_has_sizing_field) {
+            sizing = 1.0; // default sizing scalar
+        }
+        const auto vs = oriented_tet_vids(tid);
+        for (const size_t& vid : vs) {
+            max_sizing_scalars[vid] = std::min(max_sizing_scalars[vid], sizing);
+        }
+    }
 
     const double R = m_params.l * 1.8;
 
@@ -401,7 +436,7 @@ bool ImageSimulationMesh::adjust_sizing_field_serial(double max_energy)
         auto& v_scalar = m_vertex_attribute[vid].m_sizing_scalar;
 
         if (matches.empty()) {
-            v_scalar = std::min(recover_scalar * v_scalar, 1.);
+            v_scalar = std::min(recover_scalar * v_scalar, max_sizing_scalars[vid]);
             continue;
         }
 
@@ -420,18 +455,19 @@ bool ImageSimulationMesh::adjust_sizing_field_serial(double max_energy)
         }
     }
 
-    // apply length regions to vertices
-    for (const auto& [expr, length] : m_sizing_field) {
-        for (const Tuple& t : get_tets()) {
-            const auto tid = t.tid(*this);
-            if (!expr->eval(m_tet_attribute[tid].tags)) {
-                continue;
+    // restrict sizing scalar according to sizing field
+    for (const Tuple& t : get_tets()) {
+        const auto tid = t.tid(*this);
+        double sizing = std::numeric_limits<double>::max();
+        for (const auto& [expr, length] : m_sizing_field) {
+            if (expr->eval(m_tet_attribute[tid].tags)) {
+                sizing = std::min(sizing, length / m_params.l);
             }
-            const auto vs = oriented_tet_vids(tid);
-            for (const size_t& vid : vs) {
-                auto& s = m_vertex_attribute[vid].m_sizing_scalar;
-                s = std::min(s, length / m_params.l);
-            }
+        }
+        const auto vs = oriented_tet_vids(tid);
+        for (const size_t& vid : vs) {
+            auto& s = m_vertex_attribute[vid].m_sizing_scalar;
+            s = std::min(s, sizing);
         }
     }
 
