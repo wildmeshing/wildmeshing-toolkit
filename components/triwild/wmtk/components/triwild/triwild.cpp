@@ -154,7 +154,9 @@ void triwild(nlohmann::json json_params)
         }
     }
 
-    mesh.write_vtu(output_path);
+    if (json_params["write_vtu"]) {
+        mesh.write_vtu(output_path);
+    }
     mesh.write_msh_groups(output_path + ".msh");
 
     logger().info("======= finish =========");

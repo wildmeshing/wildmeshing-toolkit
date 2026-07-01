@@ -150,7 +150,7 @@ def strip_envelope(msh_path, output_path=None):
         gmsh.finalize()
 
 
-def surf_to_tet(meshes=[], tags=[], output="out", stop_energy=100, eps_rel=2e-3, eps_simplify_rel=2e-4, skip_simplify=False, preserve_topology=True, num_threads=0, others={}):
+def surf_to_tet(meshes=[], tags=[], output="out", stop_energy=100, eps_rel=2e-3, eps_simplify_rel=2e-4, skip_simplify=False, preserve_topology=False, num_threads=0, others={}):
     """
     Convert surface meshes to a tetrahedral mesh.
 
@@ -194,7 +194,46 @@ def surf_to_tet(meshes=[], tags=[], output="out", stop_energy=100, eps_rel=2e-3,
     _ensure_output_dir(output)
     wildmeshing(j)
 
-# TODO add line_to_tri function to convert line meshes to triangle meshes for 2D meshing
+
+def lines_to_tri(meshes=[], tags=[], output="out", stop_energy=10, eps_rel=2e-3, preserve_topology=False, num_threads=0, others={}):
+    """
+    Convert 2D lines to a triangle mesh.
+
+    Parameters:
+    - meshes: List of input lines file paths (.obj).
+    - tags: List of tags for each input mesh (e.g., ["tag_1", "tag_2"]).
+    - output: Output file path for the generated triangle mesh, without extension (e.g., "out" will generate "out.msh").
+    - stop_energy: Energy threshold for mesh optimization (lower is more aggressive).
+    - eps_rel: Relative tolerance for mesh optimization.
+    - preserve_topology: Whether to preserve the topology of the input meshes.
+    - num_threads: Number of threads to use for parallel processing. 0 threads means single threaded execution.
+    - others: Additional parameters (optional).
+    """
+    if len(meshes) == 0:
+        raise ValueError("At least one mesh must be provided.")
+
+    if len(tags) != len(meshes):
+        raise ValueError("Number of tags must match the number of meshes.")
+
+    j = {}
+    j["application"] = "triwild"
+    j["output"] = output
+    j["input"] = meshes
+    j["input_names"] = tags
+    j["preserve_topology"] = preserve_topology
+    j["eps_rel"] = eps_rel
+    j["stop_energy"] = stop_energy
+    j["num_threads"] = num_threads
+
+    # copy any additional parameters from others into j
+    for key, value in others.items():
+        if key in j:
+            raise ValueError(
+                f"Key '{key}' already exists in the main parameters. Cannot set this key in others.")
+        j[key] = value
+
+    _ensure_output_dir(output)
+    wildmeshing(j)
 
 
 def remeshing(mesh, output="out", stop_energy=10, eps_rel=2e-3, length_rel=5e-2, sizing_field=[], preserve_topology=True, keep_envelope=False, num_threads=0, others={}):
