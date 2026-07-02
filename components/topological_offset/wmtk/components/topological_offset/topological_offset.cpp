@@ -12,15 +12,15 @@
 #include <igl/is_vertex_manifold.h>
 #include <igl/remove_unreferenced.h>
 #include <igl/write_triangle_mesh.h>
-#include <wmtk/components/image_simulation/expression_parser/Parser.hpp>
-#include <wmtk/components/image_simulation/read_image_msh.hpp>
+#include <wmtk/components/simwild/expression_parser/Parser.hpp>
+#include <wmtk/components/simwild/read_image_msh.hpp>
 #include "Parameters.h"
 #include "TopoOffsetTetMesh.h"
 #include "TopoOffsetTriMesh.h"
 
 #include <topological_offset_spec.hpp>
 
-using namespace wmtk::components::image_simulation;
+using namespace wmtk::components::simwild;
 
 
 namespace wmtk::components::topological_offset {

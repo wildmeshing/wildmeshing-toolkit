@@ -8,15 +8,15 @@
 #include <catch2/catch_test_macros.hpp>
 #include <queue>
 #include <wmtk/Types.hpp>
-#include <wmtk/components/image_simulation/expression_parser/Expression.hpp>
-#include <wmtk/components/image_simulation/expression_parser/Parser.hpp>
+#include <wmtk/components/simwild/expression_parser/Expression.hpp>
+#include <wmtk/components/simwild/expression_parser/Parser.hpp>
 #include <wmtk/components/topological_offset/Circle.hpp>
 #include <wmtk/components/topological_offset/Sphere.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 
 using namespace wmtk;
 using namespace components::topological_offset;
-using namespace components::image_simulation::expression_parser;
+using namespace components::simwild::expression_parser;
 
 
 // used for checking attribute propagation. values are arbitrary

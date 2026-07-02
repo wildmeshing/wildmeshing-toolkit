@@ -86,8 +86,10 @@ void triwild(nlohmann::json json_params)
     Vector2d box_max = V.colwise().maxCoeff();
     params.init(box_min, box_max);
 
+    const std::vector<std::string> tag_names = json_params["input_names"];
+
     TriWildMesh mesh(params, params.eps, NUM_THREADS);
-    mesh.init_mesh(V, F, E);
+    mesh.init_mesh(V, F, E, tag_names);
 
     if (params.debug_output) {
         mesh.write_vtu(output_path + "_initial");
@@ -152,7 +154,9 @@ void triwild(nlohmann::json json_params)
         }
     }
 
-    mesh.write_vtu(output_path);
+    if (json_params["write_vtu"]) {
+        mesh.write_vtu(output_path);
+    }
     mesh.write_msh_groups(output_path + ".msh");
 
     logger().info("======= finish =========");

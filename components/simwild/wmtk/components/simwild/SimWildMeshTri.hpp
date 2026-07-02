@@ -1,5 +1,8 @@
 #pragma once
 
+#include <limits>
+#include <unordered_set>
+
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <polysolve/nonlinear/Problem.hpp>
@@ -10,27 +13,24 @@
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <fastenvelope/FastEnvelope.h>
+#include <igl/write_triangle_mesh.h>
 #include <tbb/concurrent_priority_queue.h>
 #include <tbb/concurrent_vector.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/parallel_for.h>
 #include <tbb/parallel_sort.h>
+#include <fastenvelope/FastEnvelope.h>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
+#include "ConnectedComponent.hpp"
 #include "Parameters.h"
 
-namespace wmtk::components::triwild {
+namespace wmtk::components::simwild::tri {
 
-// TODO: missing comments on what these attributes are
-class VertexAttributes
+struct VertexAttributes
 {
-public:
-    Vector2d m_posf;
-    Vector2r m_pos;
-    bool m_is_rounded = false;
-
+    Vector2d m_pos;
     bool m_is_on_surface = false;
     std::vector<int> on_bbox_faces;
 
@@ -39,7 +39,9 @@ public:
     size_t partition_id = 0;
 
     VertexAttributes() {}
-    VertexAttributes(const Vector2r& p);
+    VertexAttributes(const Vector2d& p)
+        : m_pos(p)
+    {}
 };
 
 class EdgeAttributes
@@ -53,10 +55,11 @@ public:
      * -1: none
      * 0/1: x min/max
      * 2/3: y min/max
+     * 4/5: z min/max
      *
      * This bbox side ID is used to keep the bbox from collapsing.
      */
-    int m_is_bbox_fs = -1; //-1; 0~3
+    int m_is_bbox_fs = -1; //-1; 0~5
 
     void reset()
     {
@@ -76,11 +79,11 @@ class FaceAttributes
 public:
     double m_quality;
     double m_winding_number = 0;
-    std::set<int64_t> tags;
+    CellTag tags;
     int part_id = -1;
 };
 
-class TriWildMesh : public wmtk::TriMesh
+class SimWildMeshTri : public wmtk::TriMesh
 {
 public:
     int m_debug_print_counter = 0;
@@ -88,20 +91,25 @@ public:
     std::map<int64_t, std::string> m_tag_id_to_name;
     std::map<std::string, int64_t> m_tag_name_to_id;
 
-    const double MAX_ENERGY = 1e50;
+    const double MAX_ENERGY = std::numeric_limits<double>::max();
 
     Parameters& m_params;
     std::vector<Vector2d> m_V_envelope;
     std::vector<Vector2i> m_E_envelope;
     std::shared_ptr<SampleEnvelope> m_envelope;
+    std::shared_ptr<SampleEnvelope> m_envelope_orig;
     double m_envelope_eps = -1;
 
-    using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
-    using EdgeAttCol = wmtk::AttributeCollection<EdgeAttributes>;
-    using FaceAttCol = wmtk::AttributeCollection<FaceAttributes>;
+    using VertAttCol = AttributeCollection<VertexAttributes>;
+    using EdgeAttCol = AttributeCollection<EdgeAttributes>;
+    using FaceAttCol = AttributeCollection<FaceAttributes>;
     VertAttCol m_vertex_attribute;
     EdgeAttCol m_edge_attribute;
     FaceAttCol m_face_attribute;
+
+    bool m_collapse_check_link_condition = false; // classical link condition
+    bool m_collapse_check_topology = false; // sanity check
+    bool m_collapse_check_manifold = false; // manifoldness check after collapse
 
     tbb::enumerable_thread_specific<std::unique_ptr<polysolve::nonlinear::Solver>> m_solver;
 
@@ -109,7 +117,7 @@ public:
     double m_s_amips = -1;
     double m_s_envelope = -1;
 
-    TriWildMesh(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
+    SimWildMeshTri(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
         : m_params(_m_params)
         , m_envelope_eps(envelope_eps)
     {
@@ -134,7 +142,7 @@ public:
         logger().info("w_envelope = {}", we);
     }
 
-    ~TriWildMesh() {}
+    ~SimWildMeshTri() {}
 
     // TODO: this should not be here
     void partition_mesh();
@@ -149,30 +157,35 @@ public:
 
     double get_length2(const Tuple& l) const;
 
+
 public:
     /**
-     * @brief Init mesh from IGL-style matrices.
+     * @brief Init from meshes image.
      *
      * @param V #Vx3 vertices of the tet mesh
-     * @param F #Fx3 vertex IDs for all faces
-     * @param E #Ex2 vertex IDs for all constraint edges
-     * @param tag_names Names for each tag.
+     * @param T #Tx4 vertex IDs for all faces
+     * @param T_tags #Tx1 image data represented by the individual faces
+     * @param tag_names Names for each tag in T_tags. The size must be the same as the number of
+     * columns in T_tags.
      */
-    void init_mesh(
+    void init_from_image(
         const MatrixXd& V,
-        const MatrixXi& F,
-        const MatrixXi& E,
+        const MatrixXi& T,
+        const MatrixSi& T_tags,
         const std::vector<std::string>& tag_names);
 
     void init_surfaces_and_boundaries();
 
     void init_envelope(const MatrixXd& V, const MatrixXi& F);
 
+    CellTag string_set_to_cell_tag(const std::set<std::string>& str_set);
+
     bool adjust_sizing_field_serial(double max_energy);
 
-    void write_msh_groups(std::string file, const bool write_envelope = true);
+    void write_msh(std::string file, const bool write_envelope = true);
 
     void write_vtu(const std::string& path) const;
+    void write_vtu_with_energies(const std::string& path) const;
 
     std::vector<std::array<size_t, 2>> get_edges_by_condition(
         std::function<bool(const EdgeAttributes&)> cond) const;
@@ -212,33 +225,95 @@ public:
     std::shared_ptr<polysolve::nonlinear::Problem> get_amips_energy(const Tuple& t) const;
 
     /**
+     * For debugging purposes.
+     */
+    void log_total_surface_energy();
+    //
+    /**
      * @brief Inversion check using only floating point numbers.
      */
-    bool is_inverted_f(const Tuple& loc) const;
-    bool is_inverted_f(const size_t fid) const;
     bool is_inverted(const std::array<size_t, 3>& vs) const;
     bool is_inverted(const Tuple& loc) const;
     bool is_inverted(const size_t fid) const;
     double get_quality(const std::array<size_t, 3>& vs) const;
     double get_quality(const Tuple& loc) const;
     double get_quality(const size_t fid) const;
-    bool round(const Tuple& loc);
+
+    double triangle_area(const size_t fid) const;
+
     //
     bool is_edge_on_surface(const Tuple& loc) const;
     bool is_edge_on_surface(const std::array<size_t, 2>& vids) const;
     bool is_edge_on_bbox(const Tuple& loc) const;
     bool is_edge_on_bbox(const std::array<size_t, 2>& vids) const;
-
     //
     void mesh_improvement(int max_its = 80);
-
     std::tuple<double, double> local_operations(
         const std::array<int, 4>& ops,
         bool collapse_limit_length = true);
     std::tuple<double, double> get_max_avg_energy();
 
-    void compute_winding_numbers(const std::vector<std::string>& input_paths);
-    int flood_fill();
+    /**
+     * @brief Find all connected components that contain the `tag_in` tags.
+     */
+    std::vector<ConnectedComponent> compute_connected_components(const CellTag& tag_in) const;
+
+    /**
+     * @brief Find all regions that do not contain the tags from `tag_in`.
+     *
+     * The `tag_in` vector represents a list of tag intersections.
+     * Example: tag_in = {{1,2},{3}}
+     * A face will be considered as a hole if its tags neither include {1,2} or {3}.
+     * The following would be holes:
+     * {}
+     * {1,4}
+     * The following would be NOT holes:
+     * {1,2,4} <- contains 1 and 2
+     * {3} <- contains 3
+     * {1,3} <- contains 3
+     *
+     * The returned vector also contains "holes" that touch the boundary. They should be ommitted in
+     * hole filling.
+     */
+    std::vector<ConnectedComponent> find_holes(const std::vector<CellTag>& tag_in) const;
+
+    /**
+     * @brief Compute the boundary of a tag.
+     *
+     * @param tag A set of tags that must be present in a triangle for being considered as tagged.
+     * @param V Vertices of the tag boundary.
+     * @param E Edges of the tag boundary.
+     */
+    void compute_tag_boundary(const CellTag& tag, MatrixXd& V, MatrixXi& E) const;
+
+    /**
+     * @brief Keep only the largest connected component for each of the distinct tag_0 values, and
+     * engulf all other components.
+     *
+     * @param lcc_tags
+     * @param n_lcc The number of largest components that should be kept.
+     */
+    void keep_largest_connected_component(
+        const std::vector<CellTag>& lcc_tags,
+        const size_t n_lcc = 1);
+
+    void fill_holes_topo(
+        const std::vector<CellTag>& fill_holes_tags,
+        double threshold = std::numeric_limits<double>::infinity());
+
+    void seal_connected_components(
+        const std::vector<CellTag>& tag_sets,
+        const std::vector<ConnectedComponent>& components);
+
+    void tight_seal_topo(
+        const std::vector<std::vector<CellTag>>& tight_seal_tag_sets,
+        double threshold = std::numeric_limits<double>::infinity());
+
+    void resolve_intersections(const std::vector<CellTag>& intersecting_tags);
+
+    void replace_tags(const std::vector<CellTag>& tags_in, const std::vector<CellTag>& tags_out);
+
+    void tag_priority(const std::vector<int64_t>& tags_order);
 
     bool vertex_is_on_surface(const size_t vid) const override
     {
@@ -302,10 +377,14 @@ private:
     {
         double max_energy;
         std::map<simplex::Edge, EdgeAttributes> changed_edges;
-        std::set<int64_t> face_tags;
+        CellTag face_tags;
     };
     tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
+
+    // When set, split_edge_after binary-searches vmid onto the zero-crossing of this function.
+    // Negative = stays on v1 side, positive = stays on v2 side.
+    // Set before split_edge(), cleared immediately after.
+    std::function<double(const Vector2d&)> m_voronoi_split_fn = nullptr;
 };
 
-
-} // namespace wmtk::components::triwild
+} // namespace wmtk::components::simwild::tri

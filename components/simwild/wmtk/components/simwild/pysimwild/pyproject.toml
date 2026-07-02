@@ -1,0 +1,8 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "simwild"
+version = "0.1.0"
+dependencies = ["numpy>=2.0", "gmsh"]

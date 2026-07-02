@@ -1,10 +1,12 @@
 [
   {
+    "doc": "",
     "pointer": "/",
     "type": "object",
     "required": ["application", "input"],
     "optional": [
       "output",
+      "input_names",
       "input_dir",
       "num_threads",
       "max_iterations",
@@ -15,6 +17,7 @@
       "throw_on_fail",
       "log_file",
       "report",
+      "write_vtu",
       "DEBUG_output",
       "DEBUG_sanity_checks"
     ]
@@ -41,6 +44,17 @@
     "type": "string",
     "default": "out",
     "doc": "Output file name (without extension)."
+  },
+  {
+    "pointer": "/input_names",
+    "type": "list",
+    "doc": "List of names for the input meshes. If no names are assigned, the meshes will be named tag_0, tag_1, etc.",
+    "default": []
+  },
+  {
+    "pointer": "/input_names/*",
+    "type": "string",
+    "doc": "Name for one input mesh."
   },
   {
     "pointer": "/input_dir",
@@ -103,6 +117,12 @@
     "doc": "A JSON file that stores information about the result and the method execution, e.g., runtime."
   },
   {
+    "pointer": "/write_vtu",
+    "type": "bool",
+    "default": false,
+    "doc": "Write not just MSH but also VTU output."
+  },
+  {
     "pointer": "/DEBUG_output",
     "type": "bool",
     "default": false,
@@ -113,11 +133,5 @@
     "type": "bool",
     "default": false,
     "doc": "Perform sanity checks after every operation. This can be very slow and should only be used for debugging."
-  },
-  {
-    "pointer": "/DEBUG_hausdorff",
-    "type": "bool",
-    "default": false,
-    "doc": "Sanity Check: Compute and report the Hausdorff distance of the output to the input. Should be always smaller than eps."
   }
 ]

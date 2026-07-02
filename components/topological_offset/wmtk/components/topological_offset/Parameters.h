@@ -1,8 +1,8 @@
 #pragma once
 #include <wmtk/Types.hpp>
-#include <wmtk/components/image_simulation/expression_parser/Expression.hpp>
+#include <wmtk/components/simwild/expression_parser/Expression.hpp>
 
-using ExpressionPtr = wmtk::components::image_simulation::expression_parser::ExpressionPtr;
+using ExpressionPtr = wmtk::components::simwild::expression_parser::ExpressionPtr;
 
 namespace wmtk::components::topological_offset {
 struct Parameters

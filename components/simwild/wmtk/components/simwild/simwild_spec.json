@@ -1,0 +1,384 @@
+[
+  {
+    "doc": "[README](https://github.com/wildmeshing/wildmeshing-toolkit/blob/main/components/simwild/README.md)",
+    "pointer": "/",
+    "type": "object",
+    "required": ["application", "input"],
+    "optional": [
+      "operation",
+      "output",
+      "input_names",
+      "input_transform",
+      "input_dir",
+      "skip_simplify",
+      "use_sample_envelope",
+      "num_threads",
+      "max_iterations",
+      "eps_rel",
+      "eps",
+      "eps_simplify_rel",
+      "eps_simplify",
+      "length",
+      "length_rel",
+      "sizing_field",
+      "stop_energy",
+      "stop_at_float",
+      "preserve_topology",
+      "w_amips",
+      "write_vtu",
+      "write_envelope",
+      "log_file",
+      "report",
+      "DEBUG_output",
+      "DEBUG_sanity_checks",
+      "fill_holes_tags",
+      "fill_holes_threshold",
+      "tight_seal_tag_sets",
+      "tight_seal_threshold",
+      "keep_lcc_tags",
+      "keep_lcc_num",
+      "resolve_intersections_tags",
+      "replace_tags_in",
+      "replace_tags_out",
+      "tag_priority",
+      "tags_selection"
+    ]
+  },
+  {
+    "pointer": "/application",
+    "type": "string",
+    "options": ["simwild"],
+    "doc": "Application name must be simwild."
+  },
+  {
+    "pointer": "/input",
+    "type": "list",
+    "doc": "List of triangular input meshes.",
+    "min": 1
+  },
+  {
+    "pointer": "/input/*",
+    "type": "string",
+    "doc": "Triangular input mesh."
+  },
+  {
+    "pointer": "/input_names",
+    "type": "list",
+    "doc": "List of names for the input meshes. If no names are assigned, the meshes will be named tag_0, tag_1, etc.",
+    "default": []
+  },
+  {
+    "pointer": "/input_names/*",
+    "type": "string",
+    "doc": "Name for one input mesh."
+  },
+  {
+    "pointer": "/operation",
+    "type": "string",
+    "default": "remeshing",
+    "options": [
+      "remeshing",
+      "fill_holes_topo",
+      "tight_seal_topo",
+      "keep_lcc",
+      "resolve_intersections",
+      "replace_tags",
+      "tag_priority"
+    ],
+    "doc": "Image simulation contains multiple operations for modifying the image. Depending on the operation, more parameters might be required."
+  },
+  {
+    "pointer": "/output",
+    "type": "string",
+    "default": "out",
+    "doc": "Output file name (without extension)."
+  },
+  {
+    "pointer": "/input_transform",
+    "type": "list",
+    "doc": "Transformation matrices for the inputs. Transformations are optional and don't need to be described for all inputs.",
+    "default": []
+  },
+  {
+    "pointer": "/input_transform/*",
+    "type": "list",
+    "doc": "Transformation matrix (4x4 homogeneous coordinates) for one input.",
+    "max": 4
+  },
+  {
+    "pointer": "/input_transform/*/*",
+    "type": "list",
+    "min": 4,
+    "max": 4
+  },
+  {
+    "pointer": "/input_transform/*/*",
+    "type": "float"
+  },
+  {
+    "pointer": "/input_dir",
+    "type": "string",
+    "default": "",
+    "doc": "Directory where the input files are located. This is injected by the application and should not be set by the user."
+  },
+  {
+    "pointer": "/skip_simplify",
+    "type": "bool",
+    "default": false,
+    "doc": "If true, input simplification will be skipped."
+  },
+  {
+    "pointer": "/use_sample_envelope",
+    "type": "bool",
+    "default": false,
+    "doc": "Use sample envelope instead of exact one."
+  },
+  {
+    "pointer": "/num_threads",
+    "type": "int",
+    "default": 0,
+    "doc": "Number of threads used by the application"
+  },
+  {
+    "pointer": "/max_iterations",
+    "type": "int",
+    "default": 80,
+    "doc": "Maximum iterations before stopping."
+  },
+  {
+    "pointer": "/eps_rel",
+    "type": "float",
+    "default": 2e-3,
+    "doc": "Envelope thickness relative to the bounding box"
+  },
+  {
+    "pointer": "/eps",
+    "type": "float",
+    "default": -1,
+    "doc": "Absolute envelope thickness. If this value is negative, the relative envelope thickness is used to compute the absolute one."
+  },
+  {
+    "pointer": "/eps_simplify_rel",
+    "type": "float",
+    "default": 2e-4,
+    "doc": "Envelope thickness relative to the bounding box for the initial simplification."
+  },
+  {
+    "pointer": "/eps_simplify",
+    "type": "float",
+    "default": -1,
+    "doc": "Absolute envelope thickness for the initial simplification. If this value is negative, the relative envelope thickness is used to compute the absolute one."
+  },
+  {
+    "pointer": "/length",
+    "type": "float",
+    "default": -1,
+    "doc": "Absolute target edge length. If this value is negative, the relative length is used to compute the absolute one."
+  },
+  {
+    "pointer": "/length_rel",
+    "type": "float",
+    "default": 5e-2,
+    "doc": "Target edge length relative to the bounding box"
+  },
+  {
+    "pointer": "/sizing_field",
+    "type": "list",
+    "default": [],
+    "doc": "Prescribe a length for a specific region defined by tags. The length can be absolute (length) or relative (length_rel). The smallest prescibed length will be used for each vertex. Example: [{\"tags\": \"tag_0 & tag_1\", \"length\": 0.1}, {\"tags\": \"tag_2\", \"length_rel\": 0.05}]"
+  },
+  {
+    "pointer": "/sizing_field/*",
+    "type": "object",
+    "required": ["tags"],
+    "optional": ["length", "length_rel"],
+    "doc": "A region and its target length."
+  },
+  {
+    "pointer": "/sizing_field/*/tags",
+    "type": "string",
+    "doc": "A region of tags."
+  },
+  {
+    "pointer": "/sizing_field/*/length",
+    "type": "float",
+    "default": -1,
+    "doc": "Absolute target edge length for the region."
+  },
+  {
+    "pointer": "/sizing_field/*/length_rel",
+    "type": "float",
+    "default": 5e-2,
+    "doc": "Relative target edge length for the region."
+  },
+  {
+    "pointer": "/stop_energy",
+    "type": "float",
+    "default": 10,
+    "doc": "Target energy. If all tets have an energy below this, tetwild will stop."
+  },
+  {
+    "pointer": "/stop_at_float",
+    "type": "bool",
+    "default": false,
+    "doc": "Stop when all vertices are in floating point precision, i.e., no more rational numbers are needed. stop_energy will be ignored when this is true."
+  },
+  {
+    "pointer": "/preserve_topology",
+    "type": "bool",
+    "default": true,
+    "doc": "Preserve topology of input."
+  },
+  {
+    "pointer": "/w_amips",
+    "type": "float",
+    "default": 1e-4,
+    "min": 0,
+    "max": 1,
+    "doc": "AMIPS energy"
+  },
+  {
+    "pointer": "/write_vtu",
+    "type": "bool",
+    "default": false,
+    "doc": "Write not just MSH but also VTU output."
+  },
+  {
+    "pointer": "/write_envelope",
+    "type": "bool",
+    "default": true,
+    "doc": "Save the envelope in the MSH output (as a separate physical group with tag 'envelope')."
+  },
+  {
+    "pointer": "/log_file",
+    "type": "string",
+    "default": "",
+    "doc": "Logs are not just printed on the terminal but also saved in this file."
+  },
+  {
+    "pointer": "/report",
+    "type": "string",
+    "default": "",
+    "doc": "A JSON file that stores information about the result and the method execution, e.g., runtime."
+  },
+  {
+    "pointer": "/DEBUG_output",
+    "type": "bool",
+    "default": false,
+    "doc": "Write the mesh as debug_{}.vtu after every operation."
+  },
+  {
+    "pointer": "/DEBUG_sanity_checks",
+    "type": "bool",
+    "default": false,
+    "doc": "Perform sanity checks after every operation. This can be very slow and should only be used for debugging."
+  },
+  {
+    "pointer": "/fill_holes_tags",
+    "type": "list",
+    "default": [],
+    "doc": "For fill_holes_topo: list of tag values used to fill enclosed connected components (processed in order)."
+  },
+  {
+    "pointer": "/fill_holes_tags/*",
+    "type": "string",
+    "doc": "An intersection of tag values to fill holes."
+  },
+  {
+    "pointer": "/fill_holes_threshold",
+    "type": "float",
+    "default": -1,
+    "doc": "For fill_holes_topo: only fill a connected component if its area is less than this threshold. Negative value means no threshold (fill all enclosed components)."
+  },
+  {
+    "pointer": "/tight_seal_tag_sets",
+    "type": "list",
+    "default": [],
+    "doc": "For tight_seal_topo: list of tag sets. Each inner list defines a group of tags whose enclosed holes are filled, e.g. [[1,2],[3]]."
+  },
+  {
+    "pointer": "/tight_seal_tag_sets/*",
+    "type": "list",
+    "min": 2,
+    "max": 2,
+    "doc": "One tag set: a list of tag values that are treated as a group for hole filling."
+  },
+  {
+    "pointer": "/tight_seal_tag_sets/*/*",
+    "type": "string",
+    "doc": "An intersection of tags."
+  },
+  {
+    "pointer": "/tight_seal_threshold",
+    "type": "float",
+    "default": -1,
+    "doc": "For tight_seal_topo: only fill a hole cluster if its total area is less than this threshold. Negative value means no threshold."
+  },
+  {
+    "pointer": "/keep_lcc_tags",
+    "type": "list",
+    "default": [],
+    "doc": "For keep_lcc: list of tag values for which only the largest connected component is kept."
+  },
+  {
+    "pointer": "/keep_lcc_tags/*",
+    "type": "string",
+    "doc": "An intersection of tags whose smaller connected components will be removed."
+  },
+  {
+    "pointer": "/keep_lcc_num",
+    "type": "int",
+    "default": 1,
+    "doc": "Number of largest connected components that are kept. By default, only the largest one is kept."
+  },
+  {
+    "pointer": "/resolve_intersections_tags",
+    "type": "list",
+    "default": [],
+    "doc": "Resolve intersections between tags by filling the areas with intersections with the nearest of the intersecting tags."
+  },
+  {
+    "pointer": "/resolve_intersections_tags/*",
+    "type": "string",
+    "doc": "An intersection of two tags"
+  },
+  {
+    "pointer": "/replace_tags_in",
+    "type": "list",
+    "default": [],
+    "doc": "Replace the tags by the output tags."
+  },
+  {
+    "pointer": "/replace_tags_in/*",
+    "type": "string",
+    "doc": "An intersection of tags that should be replaced."
+  },
+  {
+    "pointer": "/replace_tags_out",
+    "type": "list",
+    "default": [],
+    "doc": "The output tags (written as intersection) that should replace the input tags. For each input tag, an output tag must be provided. The order of the output tags should correspond to the order of the input tags."
+  },
+  {
+    "pointer": "/replace_tags_out/*",
+    "type": "string",
+    "doc": "An intersection of tags that should replace the input tags."
+  },
+  {
+    "pointer": "/tag_priority",
+    "type": "list",
+    "default": [],
+    "doc": "List of tags for the tag_priority operation. Tags earlier in the list have higher priority."
+  },
+  {
+    "pointer": "/tag_priority/*",
+    "type": "string",
+    "doc": "A tag value."
+  },
+  {
+    "pointer": "/tags_selection",
+    "type": "string",
+    "default": "_ | !_",
+    "doc": "A boolean expression that defines the input selection for intent operations. `_` represents empty tags."
+  }
+]
