@@ -135,9 +135,9 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>get_partition_id</b
 <tr class="memitem:a9506789674a4234d3e727c63af4b178a" id="r_a9506789674a4234d3e727c63af4b178a"><td class="memItemLeft" align="right" valign="top"><a id="a9506789674a4234d3e727c63af4b178a" name="a9506789674a4234d3e727c63af4b178a"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>get_length2</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;l) const</td></tr>
 <tr class="separator:a9506789674a4234d3e727c63af4b178a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3bc6df7b23eb6ae6f7f97c83336fe085" id="r_a3bc6df7b23eb6ae6f7f97c83336fe085"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a3bc6df7b23eb6ae6f7f97c83336fe085">init_mesh</a> (const MatrixXd &amp;V, const MatrixXi &amp;F, const MatrixXi &amp;E)</td></tr>
-<tr class="memdesc:a3bc6df7b23eb6ae6f7f97c83336fe085"><td class="mdescLeft">&#160;</td><td class="mdescRight">Init mesh from IGL-style matrices.  <br /></td></tr>
-<tr class="separator:a3bc6df7b23eb6ae6f7f97c83336fe085"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5eee0beec277753b98c805654fce3133" id="r_a5eee0beec277753b98c805654fce3133"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a5eee0beec277753b98c805654fce3133">init_mesh</a> (const MatrixXd &amp;V, const MatrixXi &amp;F, const MatrixXi &amp;E, const std::vector&lt; std::string &gt; &amp;tag_names)</td></tr>
+<tr class="memdesc:a5eee0beec277753b98c805654fce3133"><td class="mdescLeft">&#160;</td><td class="mdescRight">Init mesh from IGL-style matrices.  <br /></td></tr>
+<tr class="separator:a5eee0beec277753b98c805654fce3133"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2513e9e9b7776b5915c40ebcf34472d0" id="r_a2513e9e9b7776b5915c40ebcf34472d0"><td class="memItemLeft" align="right" valign="top"><a id="a2513e9e9b7776b5915c40ebcf34472d0" name="a2513e9e9b7776b5915c40ebcf34472d0"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>init_surfaces_and_boundaries</b> ()</td></tr>
 <tr class="separator:a2513e9e9b7776b5915c40ebcf34472d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -744,8 +744,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 
 </div>
 </div>
-<a id="a3bc6df7b23eb6ae6f7f97c83336fe085" name="a3bc6df7b23eb6ae6f7f97c83336fe085"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3bc6df7b23eb6ae6f7f97c83336fe085">&#9670;&#160;</a></span>init_mesh()</h2>
+<a id="a5eee0beec277753b98c805654fce3133" name="a5eee0beec277753b98c805654fce3133"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5eee0beec277753b98c805654fce3133">&#9670;&#160;</a></span>init_mesh()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -766,7 +766,13 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const MatrixXi &amp;&#160;</td>
-          <td class="paramname"><em>E</em>&#160;</td>
+          <td class="paramname"><em>E</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; std::string &gt; &amp;&#160;</td>
+          <td class="paramname"><em>tag_names</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -782,6 +788,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
     <tr><td class="paramname">V</td><td>Vx3 vertices of the tet mesh </td></tr>
     <tr><td class="paramname">F</td><td>Fx3 vertex IDs for all faces </td></tr>
     <tr><td class="paramname">E</td><td>Ex2 vertex IDs for all constraint edges </td></tr>
+    <tr><td class="paramname">tag_names</td><td>Names for each tag. </td></tr>
   </table>
   </dd>
 </dl>

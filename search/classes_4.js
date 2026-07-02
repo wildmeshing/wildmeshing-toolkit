@@ -1,7 +1,7 @@
 var searchData=
 [
   ['edge_0',['Edge',['../classwmtk_1_1simplex_1_1_edge.html',1,'wmtk::simplex']]],
-  ['edgeattributes_1',['edgeattributes',['../classwmtk_1_1components_1_1image__simulation_1_1tri_1_1_edge_attributes.html',1,'wmtk::components::image_simulation::tri::EdgeAttributes'],['../classwmtk_1_1components_1_1manifold__extraction_1_1_edge_attributes.html',1,'wmtk::components::manifold_extraction::EdgeAttributes'],['../structwmtk_1_1components_1_1qslim_1_1_edge_attributes.html',1,'wmtk::components::qslim::EdgeAttributes'],['../classwmtk_1_1components_1_1topological__offset_1_1_edge_attributes.html',1,'wmtk::components::topological_offset::EdgeAttributes'],['../classwmtk_1_1components_1_1triwild_1_1_edge_attributes.html',1,'wmtk::components::triwild::EdgeAttributes']]],
+  ['edgeattributes_1',['edgeattributes',['../classwmtk_1_1components_1_1manifold__extraction_1_1_edge_attributes.html',1,'wmtk::components::manifold_extraction::EdgeAttributes'],['../structwmtk_1_1components_1_1qslim_1_1_edge_attributes.html',1,'wmtk::components::qslim::EdgeAttributes'],['../classwmtk_1_1components_1_1simwild_1_1tri_1_1_edge_attributes.html',1,'wmtk::components::simwild::tri::EdgeAttributes'],['../classwmtk_1_1components_1_1topological__offset_1_1_edge_attributes.html',1,'wmtk::components::topological_offset::EdgeAttributes'],['../classwmtk_1_1components_1_1triwild_1_1_edge_attributes.html',1,'wmtk::components::triwild::EdgeAttributes']]],
   ['edgeattributes2d_2',['EdgeAttributes2d',['../classwmtk_1_1components_1_1topological__offset_1_1_edge_attributes2d.html',1,'wmtk::components::topological_offset']]],
   ['edgecollapser_3',['EdgeCollapser',['../classwmtk_1_1components_1_1tetwild_1_1orig_1_1_edge_collapser.html',1,'wmtk::components::tetwild::orig']]],
   ['edgeremover_4',['EdgeRemover',['../classwmtk_1_1components_1_1tetwild_1_1orig_1_1_edge_remover.html',1,'wmtk::components::tetwild::orig']]],
@@ -10,8 +10,8 @@ var searchData=
   ['elementinqueue_5fec_7',['ElementInQueue_ec',['../classwmtk_1_1components_1_1tetwild_1_1orig_1_1_element_in_queue__ec.html',1,'wmtk::components::tetwild::orig']]],
   ['elementinqueue_5fer_8',['ElementInQueue_er',['../classwmtk_1_1components_1_1tetwild_1_1orig_1_1_element_in_queue__er.html',1,'wmtk::components::tetwild::orig']]],
   ['elementinqueue_5fes_9',['ElementInQueue_es',['../classwmtk_1_1components_1_1tetwild_1_1orig_1_1_element_in_queue__es.html',1,'wmtk::components::tetwild::orig']]],
-  ['embedsurface_10',['EmbedSurface',['../classwmtk_1_1components_1_1image__simulation_1_1_embed_surface.html',1,'wmtk::components::image_simulation']]],
-  ['emptyexpr_11',['EmptyExpr',['../classwmtk_1_1components_1_1image__simulation_1_1expression__parser_1_1_empty_expr.html',1,'wmtk::components::image_simulation::expression_parser']]],
+  ['embedsurface_10',['EmbedSurface',['../classwmtk_1_1components_1_1simwild_1_1_embed_surface.html',1,'wmtk::components::simwild']]],
+  ['emptyexpr_11',['EmptyExpr',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_empty_expr.html',1,'wmtk::components::simwild::expression_parser']]],
   ['energysum_12',['EnergySum',['../classwmtk_1_1optimization_1_1_energy_sum.html',1,'wmtk::optimization']]],
   ['envelope_13',['Envelope',['../classwmtk_1_1_envelope.html',1,'wmtk']]],
   ['envelopeenergy2d_14',['EnvelopeEnergy2D',['../classwmtk_1_1optimization_1_1_envelope_energy2_d.html',1,'wmtk::optimization']]],
@@ -19,5 +19,5 @@ var searchData=
   ['exactenvelope_16',['ExactEnvelope',['../classwmtk_1_1_exact_envelope.html',1,'wmtk']]],
   ['executepass_17',['ExecutePass',['../structwmtk_1_1_execute_pass.html',1,'wmtk']]],
   ['exportstruct_18',['ExportStruct',['../structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct.html',1,'wmtk::components::tetwild::TetWildMesh']]],
-  ['expression_19',['Expression',['../classwmtk_1_1components_1_1image__simulation_1_1expression__parser_1_1_expression.html',1,'wmtk::components::image_simulation::expression_parser']]]
+  ['expression_19',['Expression',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_expression.html',1,'wmtk::components::simwild::expression_parser']]]
 ];

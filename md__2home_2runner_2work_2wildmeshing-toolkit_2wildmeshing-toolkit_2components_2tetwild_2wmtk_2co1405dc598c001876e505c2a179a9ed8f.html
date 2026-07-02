@@ -72,7 +72,7 @@ $(function() {
   <div class="headertitle"><div class="title">TetWild (original)</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p><a class="anchor" id="autotoc_md10"></a> This folder contains a copy of the original TetWild mesh refinement code. It does not contain the embedding part. The CGAL and Geogram dependencies were replaced by WMTK functionality.</p>
+<div class="textblock"><p><a class="anchor" id="autotoc_md18"></a> This folder contains a copy of the original TetWild mesh refinement code. It does not contain the embedding part. The CGAL and Geogram dependencies were replaced by WMTK functionality.</p>
 <p>The point of entry is the <code>MeshRefinement</code> class:</p>
 <div class="fragment"><div class="line">orig::MeshRefinement legacy_tetwild(*env, *env_b, args, state);</div>
 <div class="line"> </div>
@@ -80,7 +80,7 @@ $(function() {
 <div class="line"> </div>
 <div class="line">legacy_tetwild.prepareData();</div>
 <div class="line">legacy_tetwild.refine(); // the actual tetwild</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md11"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md19"></a>
 Difference WMTK and original TetWild</h1>
 <ul>
 <li>Priority queue is slightly different as one of them is using the tbb::queue and the other the std::queue. Also, the queue elements might be added in a different order. That could be fixed if really necessary but should not have a large impact overall.</li>

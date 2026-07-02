@@ -1,16 +1,20 @@
 var searchData=
 [
-  ['wildmeshing_20toolkit_3a_20declarative_20specification_20for_20unstructured_20mesh_20editing_20algorithms_0',['Wildmeshing-toolkit: Declarative Specification for Unstructured Mesh Editing Algorithms',['../index.html',1,'']]],
-  ['wmtk_20and_20original_20tetwild_1',['Difference WMTK and original TetWild',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2tetwild_2wmtk_2co1405dc598c001876e505c2a179a9ed8f.html#autotoc_md11',1,'']]],
-  ['wmtk_20components_2',['WMTK Components',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2_r_e_a_d_m_e.html',1,'']]],
-  ['wmtk_20python_20bindings_3',['WMTK Python Bindings',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2app_2pywildmeshing_2_r_e_a_d_m_e.html',1,'']]],
-  ['write_5fedges_4',['write_edges',['../classwmtk_1_1io_1_1_tet_v_t_u_writer.html#a15ada683bb3977684e69171f08fdcc2a',1,'wmtk::io::TetVTUWriter::write_edges()'],['../classwmtk_1_1io_1_1_tri_v_t_u_writer.html#a4053d887e2def1b077540951bc31e81f',1,'wmtk::io::TriVTUWriter::write_edges()']]],
-  ['write_5femb_5fsurf_5foff_5',['write_emb_surf_off',['../classwmtk_1_1components_1_1image__simulation_1_1_embed_surface.html#a7c445fd9a87934d48ef2ea224a0b5af6',1,'wmtk::components::image_simulation::EmbedSurface']]],
-  ['write_5finput_5fcomplex_6',['write_input_complex',['../classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_mesh.html#aba72cc2edf7fce93f2ca8c07a204516b',1,'wmtk::components::manifold_extraction::ManExtractMesh']]],
-  ['write_5fmsh_5fgroups_7',['write_msh_groups',['../classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_mesh.html#a2c2ad3b97c4e9445ae5a55ae319c282c',1,'wmtk::components::manifold_extraction::ManExtractMesh']]],
-  ['write_5fsurf_5foff_8',['write_surf_off',['../classwmtk_1_1components_1_1image__simulation_1_1_embed_surface.html#ab90082d6e51cd82e7599220ad792a864',1,'wmtk::components::image_simulation::EmbedSurface']]],
-  ['write_5fsurface_9',['write_surface',['../classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_mesh.html#a4951f0d4cf025a831e9d0c7065b2d9ba',1,'wmtk::components::manifold_extraction::ManExtractMesh']]],
-  ['write_5ftets_10',['write_tets',['../classwmtk_1_1io_1_1_tet_v_t_u_writer.html#a5c2e367ab03f0940e91195abc65d60be',1,'wmtk::io::TetVTUWriter']]],
-  ['write_5ftriangles_11',['write_triangles',['../classwmtk_1_1io_1_1_tet_v_t_u_writer.html#a6239f07c6babee792affa6f5cb58caec',1,'wmtk::io::TetVTUWriter::write_triangles()'],['../classwmtk_1_1io_1_1_tri_v_t_u_writer.html#a6806fb50bc931b36b61be4a1624411b1',1,'wmtk::io::TriVTUWriter::write_triangles()']]],
-  ['write_5fvtu_12',['write_vtu',['../classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_mesh.html#aa39f24cde6b0f604d22a07d0376176b4',1,'wmtk::components::manifold_extraction::ManExtractMesh']]]
+  ['radius_0',['radius',['../classwmtk_1_1components_1_1topological__offset_1_1_circle.html#ac2b183a3d597b7b3b04b91561ecd5356',1,'wmtk::components::topological_offset::Circle::radius()'],['../classwmtk_1_1components_1_1topological__offset_1_1_sphere.html#ad3f9995766aaf03297fa77e017040e27',1,'wmtk::components::topological_offset::Sphere::radius()']]],
+  ['rational_1',['Rational',['../classwmtk_1_1_rational.html',1,'wmtk']]],
+  ['readme_2',['readme',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2src_2wmtk_2simplex_2_r_e_a_d_m_e.html',1,'README'],['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2src_2wmtk_2envelope_2_r_e_a_d_m_e.html',1,'README']]],
+  ['refine_3',['refine',['../classwmtk_1_1components_1_1tetwild_1_1orig_1_1_mesh_refinement.html#aa397d8680a4adf352a3b4291419a3e0e',1,'wmtk::components::tetwild::orig::MeshRefinement::refine()'],['../classwmtk_1_1components_1_1topological__offset_1_1_circle.html#a65ade4734c0b2bb6bf34b4ddaa82d91d',1,'wmtk::components::topological_offset::Circle::refine()'],['../classwmtk_1_1components_1_1topological__offset_1_1_sphere.html#a890c4e19a85657073e33a9584586b752',1,'wmtk::components::topological_offset::Sphere::refine()']]],
+  ['region_20tags_4',['Offset region tags',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2topological__offs89360d0c8b426dd4f0f6509cf6b9f065.html#autotoc_md22',1,'']]],
+  ['release_5fprotect_5fattributes_5',['release_protect_attributes',['../classwmtk_1_1_tri_mesh.html#a225083671f68132708976d88be0e2de4',1,'wmtk::TriMesh']]],
+  ['remeshing_6',['2. Remeshing',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md10',1,'']]],
+  ['remove_5fduplicates_7',['remove_duplicates',['../classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#aa74c124f5249f70b274105df856a699a',1,'wmtk::components::simwild::EmbedSurface']]],
+  ['remove_5ftets_5fby_5fids_8',['remove_tets_by_ids',['../classwmtk_1_1_tet_mesh.html#afcb8ea0a43e2a2063af41b6a2ba8c91f',1,'wmtk::TetMesh']]],
+  ['renew_5fneighbor_5ftuples_9',['renew_neighbor_tuples',['../structwmtk_1_1_execute_pass.html#a76cbf1fcebd336fd5d7afb36f2f1091c',1,'wmtk::ExecutePass']]],
+  ['replace_20tags_10',['3. Replace Tags',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md11',1,'']]],
+  ['reset_5fconnected_5fcomponents_11',['reset_connected_components',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3830922378a6f040f5f242af381c57a8',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
+  ['resolve_20intersections_12',['4. Resolve Intersections',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md12',1,'']]],
+  ['respected_20topologies_13',['Respected topologies',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2topological__offs89360d0c8b426dd4f0f6509cf6b9f065.html#autotoc_md23',1,'']]],
+  ['rollback_14',['rollback',['../index.html#autotoc_md33',1,'Operation Rollback'],['../structwmtk_1_1_attribute_collection.html#a15d5ca94f6995d3e1363804f79d7c287',1,'wmtk::AttributeCollection::rollback()']]],
+  ['rollback_5fprotected_5fattributes_15',['rollback_protected_attributes',['../classwmtk_1_1_tri_mesh.html#a6419d01660badf33195e0c3ad52d07f1',1,'wmtk::TriMesh']]],
+  ['round_16',['round',['../classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ad7558616aa2479ba9c410d55911e8bdb',1,'wmtk::components::simwild::SimWildMesh']]]
 ];

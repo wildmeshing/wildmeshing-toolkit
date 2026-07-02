@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['keep_5flargest_5fconnected_5fcomponent_0',['keep_largest_connected_component',['../classwmtk_1_1components_1_1image__simulation_1_1_image_simulation_mesh.html#abaadfe7b81caa5802ed05039b438dc37',1,'wmtk::components::image_simulation::ImageSimulationMesh::keep_largest_connected_component()'],['../classwmtk_1_1components_1_1image__simulation_1_1tri_1_1_image_simulation_mesh_tri.html#a98da12ac1cc78bedf47f5af034ad91c5',1,'wmtk::components::image_simulation::tri::ImageSimulationMeshTri::keep_largest_connected_component()']]]
+  ['keep_5flargest_5fconnected_5fcomponent_0',['keep_largest_connected_component',['../classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#aa439f1707d1065d9e793847654520021',1,'wmtk::components::simwild::SimWildMesh::keep_largest_connected_component()'],['../classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a1df75be9788512a92e9f141dde127a57',1,'wmtk::components::simwild::tri::SimWildMeshTri::keep_largest_connected_component()']]]
 ];

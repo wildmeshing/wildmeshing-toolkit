@@ -1,9 +1,24 @@
 var searchData=
 [
-  ['unstructured_20mesh_20editing_20algorithms_0',['Wildmeshing-toolkit: Declarative Specification for Unstructured Mesh Editing Algorithms',['../index.html',1,'']]],
-  ['update_1',['Explicit Attribute Update',['../index.html#autotoc_md24',1,'']]],
-  ['us_2',['About Us',['../index.html#autotoc_md20',1,'']]],
-  ['usage_3',['usage',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2app_2pywildmeshing_2_r_e_a_d_m_e.html#autotoc_md2',1,'Usage'],['../index.html#autotoc_md19',1,'Usage']]],
-  ['uvcollpaseinfocache_4',['UVCollpaseInfoCache',['../structwmtk_1_1components_1_1c1__simplification_1_1_m_m_u_v_mesh_1_1_u_v_collpase_info_cache.html',1,'wmtk::components::c1_simplification::MMUVMesh']]],
-  ['uvmeshvertexattribute_5',['UVMeshVertexAttribute',['../structwmtk_1_1components_1_1c1__simplification_1_1_u_v_mesh_vertex_attribute.html',1,'wmtk::components::c1_simplification']]]
+  ['parallel_20scheduling_0',['Parallel Scheduling',['../index.html#autotoc_md37',1,'']]],
+  ['parameters_1',['parameters',['../structwmtk_1_1components_1_1simwild_1_1_parameters.html',1,'wmtk::components::simwild::Parameters'],['../structwmtk_1_1components_1_1triwild_1_1_parameters.html',1,'wmtk::components::triwild::Parameters'],['../structwmtk_1_1components_1_1tetwild_1_1_parameters.html',1,'wmtk::components::tetwild::Parameters'],['../structwmtk_1_1components_1_1manifold__extraction_1_1_parameters.html',1,'wmtk::components::manifold_extraction::Parameters'],['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html',1,'wmtk::components::topological_offset::Parameters']]],
+  ['parametrize_5fpatch_5fboundaries_2',['parametrize_patch_boundaries',['../class_clough_tocher_patch.html#a05505a01d244070dc1ff742631e499a1',1,'CloughTocherPatch']]],
+  ['parse_3',['parse',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_parser.html#aaba02e4fb4af504d54d6699913fa17b4',1,'wmtk::components::simwild::expression_parser::Parser']]],
+  ['parseand_4',['parseAnd',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_parser.html#a733c057427c2360482f9eda07f930338',1,'wmtk::components::simwild::expression_parser::Parser']]],
+  ['parseidentifier_5',['parseIdentifier',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_parser.html#aa1c18f3a3ebbd2eb75fa9dffd1f08feb',1,'wmtk::components::simwild::expression_parser::Parser']]],
+  ['parseor_6',['parseOr',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_parser.html#adad686b711f1ff3f8312fda1fdcc2b3a',1,'wmtk::components::simwild::expression_parser::Parser']]],
+  ['parseprimary_7',['parsePrimary',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_parser.html#a722aa2c61115c15e8ea473ee11a383e4',1,'wmtk::components::simwild::expression_parser::Parser']]],
+  ['parser_8',['parser',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_parser.html',1,'wmtk::components::simwild::expression_parser::Parser'],['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_parser.html#a27f77ed4e0ebde1bda8c653688b6939e',1,'wmtk::components::simwild::expression_parser::Parser::Parser()']]],
+  ['parser_20for_20tags_9',['Expression Parser for Tags',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2wmtk_2coe458f49cabfb51348f9d7982efe81432.html',1,'']]],
+  ['parseunary_10',['parseUnary',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_parser.html#a9c1626b174ac406bdee40f06f35f872c',1,'wmtk::components::simwild::expression_parser::Parser']]],
+  ['partition_5fid_11',['partition_id',['../classwmtk_1_1components_1_1simwild_1_1_vertex_attributes.html#a2a7c642942a4b0e6d9225da0145c37e2',1,'wmtk::components::simwild::VertexAttributes']]],
+  ['perform_5foffset_12',['perform_offset',['../classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_mesh.html#a17efc070b7498493b0da667d5cecd021',1,'wmtk::components::manifold_extraction::ManExtractMesh']]],
+  ['pointcloud_13',['PointCloud',['../structwmtk_1_1_point_cloud.html',1,'wmtk']]],
+  ['posf_14',['posf',['../classwmtk_1_1components_1_1tetwild_1_1orig_1_1_tet_vertex.html#a63871cc4ff2d7215ca80b08e4e458ee8',1,'wmtk::components::tetwild::orig::TetVertex']]],
+  ['positioninfocache_15',['positioninfocache',['../structwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse_1_1_position_info_cache.html',1,'wmtk::components::shortest_edge_collapse::ShortestEdgeCollapse::PositionInfoCache'],['../structwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing_1_1_position_info_cache.html',1,'wmtk::components::isotropic_remeshing::IsotropicRemeshing::PositionInfoCache']]],
+  ['print_5finfo_16',['print_info',['../classwmtk_1_1_tet_mesh_1_1_tuple.html#a49fd88de6c7178861506864665c4eaa3',1,'wmtk::TetMesh::Tuple::print_info() const'],['../classwmtk_1_1_tet_mesh_1_1_tuple.html#a6b102f37bc5870ed46df2630f412394b',1,'wmtk::TetMesh::Tuple::print_info(const TetMesh &amp;m) const']]],
+  ['priority_17',['priority',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md13',1,'5. Tag Priority'],['../structwmtk_1_1_execute_pass.html#a8862fb195ad95a30e1f99cc13f4855fc',1,'wmtk::ExecutePass::priority']]],
+  ['python_20bindings_18',['WMTK Python Bindings',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2app_2pywildmeshing_2_r_e_a_d_m_e.html',1,'']]],
+  ['python_20wrapper_19',['Python Wrapper',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md6',1,'']]],
+  ['python_20wrapper_20installation_20',['Python Wrapper Installation',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md7',1,'']]]
 ];

@@ -5,5 +5,5 @@ var searchData=
   ['label_5fsurface_5fsimplices_2',['label_surface_simplices',['../classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_mesh.html#a4af8e289122a2964e003c983148920aa',1,'wmtk::components::manifold_extraction::ManExtractMesh']]],
   ['link_5fcondition_3',['link_condition',['../classwmtk_1_1_tet_mesh.html#a5dde52f8c3642ed037019ff31daf6330',1,'wmtk::TetMesh']]],
   ['local_5feid_4',['local_eid',['../classwmtk_1_1_tri_mesh_1_1_tuple.html#af74485b73b9169fc3978dc11264b2b1b',1,'wmtk::TriMesh::Tuple']]],
-  ['log_5ftotal_5fsurface_5fenergy_5',['log_total_surface_energy',['../classwmtk_1_1components_1_1image__simulation_1_1tri_1_1_image_simulation_mesh_tri.html#a2ba52b315b190d160ecdd738df342845',1,'wmtk::components::image_simulation::tri::ImageSimulationMeshTri']]]
+  ['log_5ftotal_5fsurface_5fenergy_5',['log_total_surface_energy',['../classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a42414110473cbf3b104e02c3105ecee5',1,'wmtk::components::simwild::tri::SimWildMeshTri']]]
 ];

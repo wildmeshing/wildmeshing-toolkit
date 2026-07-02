@@ -73,9 +73,9 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p><a class="anchor" id="md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2_r_e_a_d_m_e"></a> </p>
-<h1><a class="anchor" id="autotoc_md17"></a>
+<h1><a class="anchor" id="autotoc_md25"></a>
 Installation</h1>
-<h3><a class="anchor" id="autotoc_md18"></a>
+<h3><a class="anchor" id="autotoc_md26"></a>
 via CMake</h3>
 <ul>
 <li>Clone the repository into your local machine:</li>
@@ -90,19 +90,19 @@ via CMake</h3>
 <div class="line">cmake -DCMAKE_BUILD_TYPE=Release ..</div>
 <div class="line">make</div>
 </div><!-- fragment --><p>You may need to install <code>gmp</code> before compiling the code. You can install <code>gmp</code> via <a href="https://brew.sh/">homebrew</a>.</p>
-<h1><a class="anchor" id="autotoc_md19"></a>
+<h1><a class="anchor" id="autotoc_md27"></a>
 Usage</h1>
 <p>When executing CMake, the <a href="https://github.com/wildmeshing/data2">data repository</a> will be automatically cloned into the <code>data</code> folder. You can find example meshes and json files for testing there. After compiling the code, you can run the applications under the <code>app</code> folder, e.g. for isotropic remeshing:</p>
 <div class="fragment"><div class="line">./build/app/wmtk_app -j data/integration_tests/isotropic_remeshing_bunny.json</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md20"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md28"></a>
 About Us</h1>
 <p>This toolkit is a novel approach to describe mesh generation, mesh adaptation, and geometric modeling algorithms relying on changing mesh connectivity using a high-level abstraction. The main motivation is to enable easy customization and development of these algorithms via a declarative specification consisting of a set of per-element invariants, operation scheduling,and attribute transfer for each editing operation.</p>
 <p>Many widely used algorithms editing surfaces and volumes can be compactly expressed with our abstraction, and their implementation within our framework is simple, automatically parallelizable on shared-memory architectures, and with guaranteed satisfaction of the prescribed invariants. These algorithms are readable and easy to customize for specific use cases.</p>
 <p>This software library implements the abstractiona in our paper and providing automatic shared memory parallelization.</p>
 <p>We will use the implementation of the shortest edge collapse algorithm as an example to introduce the framework and run through the basic software structures and APIs of the toolkit.</p>
-<h1><a class="anchor" id="autotoc_md21"></a>
+<h1><a class="anchor" id="autotoc_md29"></a>
 Example: Shortest Edge Collapse</h1>
-<h2><a class="anchor" id="autotoc_md22"></a>
+<h2><a class="anchor" id="autotoc_md30"></a>
 Basic Algorithm</h2>
 <p>The algorithm is after [Hoppe 1996] Progressive Meshes which performs a series of collapse operations prioritizing the shorter edges. The algorithm requires only one local operation, edge collapse. We terminate when the mesh reaches a desired number of mesh elements.</p>
 <p>We implemented <code>class ShortestEdgeCollapse</code> as a child class of <code><a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></code>. The 3d vertex positions are stored as a field of the <code>VertexAttributes</code>.</p>
@@ -113,7 +113,7 @@ Basic Algorithm</h2>
 <div class="line">    <span class="keywordtype">size_t</span> partition_id = 0;</div>
 <div class="line">    <span class="keywordtype">bool</span> freeze = <span class="keyword">false</span>;</div>
 <div class="line">};</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md23"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md31"></a>
 Explicit Invariant Design</h2>
 <p>It is common to have a set of desiderata on the mesh that needs to be satisfied, such as avoiding triangle insertions or self-intersections. The responsibility of ensuring the user-defined explicit invariants being checked after every mesh modification, and after the input is loaded is assumed by the toolkit. It is much easier to ensure correctness for the user, as the checks are handled transparently by the toolkit.</p>
 <p>As an example of user-defined invariants, in our shortest edge collapse implementation, we created an envelope around the original surface and designated that any operation shall not cause any vertex to move outside of the envelop, so that during local operations we can roughly keep the shape of the input mesh.</p>
@@ -132,7 +132,7 @@ Explicit Invariant Design</h2>
 <div class="line">    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
 <div class="line">}</div>
 </div><!-- fragment --><p>The envelope development is after <a href="https://cims.nyu.edu/gcl/papers/2020-Fast-Envelope.pdf">Exact and Efficient Polyhedral Envelope Containment Check</a></p>
-<h2><a class="anchor" id="autotoc_md24"></a>
+<h2><a class="anchor" id="autotoc_md32"></a>
 Explicit Attribute Update</h2>
 <p>Opposed to the common practice of attaching mesh attributes to mesh elements we enable the users to only provide the rules on how to update attributes after local operations in a high-level specifications. The actual update is handled entirely by the toolkit.</p>
 <p>This easy-to-write user-specified update rule is examplified in our shortest edge collapse as below</p>
@@ -144,14 +144,14 @@ Explicit Attribute Update</h2>
 <div class="line">    vertex_attrs[vid].pos = p;</div>
 <div class="line">    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
 <div class="line">}</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md25"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md33"></a>
 Operation Rollback</h2>
 <p>It is common to perform mesh editing to improve a given energy functional, such as mesh quality or element size. However, due to the discrete nature of the operations, it is not possible to use standard smooth optimization techniques, and instead the effect of the energy is evaluated before and after every operation to measure its effect on the energy. If the user desires a certain property of the mesh for each operation, the desiderata can be easily coded up as a check in the after operation.</p>
 <p>If either the user specified invariants or the after operation check/update has failed, the toolkit will perform an operation rollback that restores the mesh configuration to before the operation. And our toolkit also handles the recovery of element attributes on this occasion. The rollback and attribute protection gurantee both topology and geometry consistency for the mesh. Users would not need to perform any manual updates were the operations to fail, thanks to the rollback.</p>
-<h2><a class="anchor" id="autotoc_md26"></a>
+<h2><a class="anchor" id="autotoc_md34"></a>
 Operation Demonstration</h2>
 <p>For easier usage and customization, here we demonstrate the before and after state of each operation and the vertex, edge, face, and tet (in 3d) that is reference.</p>
-<h3><a class="anchor" id="autotoc_md27"></a>
+<h3><a class="anchor" id="autotoc_md35"></a>
 2D operations</h3>
 <ul>
 <li><p class="startli"><b>edge split</b></p>
@@ -167,7 +167,7 @@ Operation Demonstration</h2>
 <p class="startli">This operation does not change the mesh connectivity.</p>
 </li>
 </ul>
-<h3><a class="anchor" id="autotoc_md28"></a>
+<h3><a class="anchor" id="autotoc_md36"></a>
 3D operations</h3>
 <ul>
 <li><p class="startli"><b>edge split</b></p>
@@ -189,7 +189,7 @@ Operation Demonstration</h2>
 <p class="startli">This operation does not change the mesh connectivity.</p>
 </li>
 </ul>
-<h1><a class="anchor" id="autotoc_md29"></a>
+<h1><a class="anchor" id="autotoc_md37"></a>
 Parallel Scheduling</h1>
 <p>The type and scheduling of local operations is crucial in mesh editing algorithms. This involves maintaining a priority queue of operations, which is updated after every local operation.</p>
 <p>We provide a direct way of controlling the operations performed and how the queue is updated through our scheduler. The main purpose of the scheduler is to abstract the operation order and hide parallelization details from the user. Our scheduler provides customizable callbacks, including, <em>Priority</em>, <em>Renew neighbor</em>, <em>Lock vertices</em>, <em>Stopping criterion</em>.</p>
@@ -220,7 +220,7 @@ Parallel Scheduling</h1>
 <div class="line">     executor.stopping_criterion = [](<span class="keyword">auto</span>&amp; m) { <span class="keywordflow">return</span> <span class="keyword">true</span>; };</div>
 <div class="line">     executor(*<span class="keyword">this</span>, collect_all_ops);</div>
 <div class="line"> };</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md30"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md38"></a>
 Command Line Executions for Example Applications</h1>
 <p>To showcase the generality and effectiveness of our approach, we implemented five popular mesh editing algorithms in our framework. All algorithms are accessed through the same application <code>wmtk_app</code> and the user can specify which algorithm to run through the input JSON file. The five algorithms are listed below.</p>
 <p>The JSON files are processed with the <a href="https://github.com/geometryprocessing/json-spec-engine">JSON Spec Engine</a>.</p>
@@ -252,7 +252,7 @@ Command Line Executions for Example Applications</h1>
 </li>
 </ul>
 <p>Examples for all algorithms can be found in the <a href="https://github.com/wildmeshing/data2">data repository</a>.</p>
-<h1><a class="anchor" id="autotoc_md31"></a>
+<h1><a class="anchor" id="autotoc_md39"></a>
 License</h1>
 <p>MIT License. </p>
 </div></div><!-- PageDoc -->
