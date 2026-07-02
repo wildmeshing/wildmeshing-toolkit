@@ -86,8 +86,7 @@ RUN_BINDING = HERE / "_run_binding.py"
 # Per-run wall-clock cap (seconds) so a hang fails loudly instead of stalling.
 RUN_TIMEOUT = 1800
 
-# Exactly the `input_files` list from tests/integration_tests.cpp.
-# (image_simulation_energies_2d is commented out there as well.)
+# Integration test inputs are listed in the JSON file.
 INPUT_FILES = []
 
 # load integration tests from JSON file
