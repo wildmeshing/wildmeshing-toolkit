@@ -230,7 +230,7 @@ std::shared_ptr<polysolve::nonlinear::Problem> SimWildMesh::get_envelope_energy(
     const double w = m_s_envelope * m_params.w_envelope;
 
     auto env = m_envelope_orig;
-    if (m_vertex_attribute[vid].m_order > 1) {
+    if (m_vertex_attribute[vid].m_order == 2) {
         env = m_order_2_edge_envelope;
     }
 
