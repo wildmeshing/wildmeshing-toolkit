@@ -124,6 +124,8 @@ public:
 class SimWildMesh : public wmtk::TetMesh
 {
 public:
+    using ExprPtr = expression_parser::ExpressionPtr;
+
     int m_debug_print_counter = 0;
     size_t m_tags_count = 0;
     std::map<int64_t, std::string> m_tag_id_to_name;
@@ -140,7 +142,6 @@ public:
     std::shared_ptr<SampleEnvelope> m_envelope_orig;
     double m_envelope_eps = -1;
 
-    using ExprPtr = expression_parser::ExpressionPtr;
     std::vector<std::tuple<ExprPtr, double>> m_sizing_field;
 
     bool m_collapse_check_quality = true;
@@ -553,6 +554,7 @@ public:
      * @brief Find all connected components that contain the `tag_in` tags.
      */
     std::vector<ConnectedComponent> compute_connected_components(const CellTag& tag_in) const;
+    std::vector<ConnectedComponent> compute_connected_components(const ExprPtr& expr) const;
 
     /**
      * @brief Find all regions that do not contain the tags from `tag_in`.
@@ -606,7 +608,7 @@ public:
         const std::vector<std::vector<CellTag>>& tight_seal_tag_sets,
         double threshold = std::numeric_limits<double>::infinity());
 
-    void resolve_intersections(const std::vector<CellTag>& intersecting_tags);
+    void resolve_intersections(const std::vector<std::array<ExprPtr, 2>>& intersecting_tags);
 
     void replace_tags(const std::vector<CellTag>& tags_in, const std::vector<CellTag>& tags_out);
 

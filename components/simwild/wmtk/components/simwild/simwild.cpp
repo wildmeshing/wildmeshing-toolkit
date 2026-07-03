@@ -23,6 +23,8 @@ namespace wmtk::components::simwild {
 template <typename MeshT>
 void apply_operation(MeshT& mesh, const nlohmann::json& json_params)
 {
+    using ExprPtr = expression_parser::ExpressionPtr;
+
     static_assert(
         std::is_same_v<MeshT, SimWildMesh> || std::is_same_v<MeshT, tri::SimWildMeshTri>,
         "MeshT must be either SimWildMesh or SimWildMeshTri");
@@ -92,24 +94,20 @@ void apply_operation(MeshT& mesh, const nlohmann::json& json_params)
         const size_t n_lcc = json_params["keep_lcc_num"];
         mesh.keep_largest_connected_component(lcc_tags, n_lcc);
     } else if (operation == "resolve_intersections") {
-        const std::vector<std::string> tags_names = json_params["resolve_intersections_tags"];
-        std::vector<CellTag> tags;
+        const std::vector<std::vector<std::string>> tags_names =
+            json_params["resolve_intersections_tags"];
+        std::vector<std::array<ExprPtr, 2>> tags;
         for (const auto& tag_set_names : tags_names) {
-            auto expr = expression_parser::parse(tag_set_names, mesh.m_tag_name_to_id);
-            logger().info("Parsed resolve_intersections_tags expression: {}", expr->to_string());
-            if (!expr->contains_only_and()) {
+            if (tag_set_names.size() != 2) {
                 log_and_throw_error(
-                    "Only AND operation is allowed in resolve_intersections_tags expression.");
+                    "Each resolve_intersections_tags entry must contain exactly two "
+                    "expressions.");
             }
-            auto tag_set = expr->tags_involved();
-            if (tag_set.size() != 2) {
-                log_and_throw_error(
-                    "Exactly two tags must be provided in each resolve_intersections_tags "
-                    "expression. Expression '{}' involves {} tags.",
-                    expr->to_string(),
-                    tag_set.size());
+            std::array<ExprPtr, 2> tags_expr;
+            for (size_t i = 0; i < 2; ++i) {
+                tags_expr[i] = expression_parser::parse(tag_set_names[i], mesh.m_tag_name_to_id);
             }
-            tags.push_back(tag_set);
+            tags.push_back(tags_expr);
         }
         mesh.resolve_intersections(tags);
     } else if (operation == "replace_tags") {

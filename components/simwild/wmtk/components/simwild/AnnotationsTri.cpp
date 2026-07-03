@@ -62,6 +62,66 @@ std::vector<ConnectedComponent> SimWildMeshTri::compute_connected_components(
     return components;
 }
 
+std::vector<ConnectedComponent> SimWildMeshTri::compute_connected_components(
+    const ExprPtr& expr) const
+{
+    std::vector<int> comp_id(tri_capacity(), -1);
+    std::vector<ConnectedComponent> components;
+
+    for (const Tuple& t : get_faces()) {
+        const size_t fid = t.fid(*this);
+        if (comp_id[fid] != -1) {
+            continue;
+        }
+
+        const CellTag& tag = m_face_attribute[fid].tags;
+
+        // check if face contains the tag_in tags
+        if (!expr->eval(tag)) {
+            continue;
+        }
+
+        const int comp_idx = (int)components.size();
+        ConnectedComponent& comp = components.emplace_back();
+
+        comp.cells.push_back(fid);
+        comp_id[fid] = comp_idx;
+
+        for (size_t i = 0; i < comp.cells.size(); ++i) { // BFS loop with comp.cells growing
+            const size_t cur = comp.cells[i];
+            comp.volume += triangle_area(cur);
+            for (int j = 0; j < 3; ++j) {
+                const Tuple edge_tup = tuple_from_edge(cur, j);
+                const auto t_opp = edge_tup.switch_face(*this);
+                if (!t_opp) {
+                    comp.touches_boundary = true;
+                    continue;
+                }
+                const size_t nbr = t_opp->fid(*this);
+                if (comp_id[nbr] != -1) {
+                    // components should never connect to other components
+                    if (comp_id[nbr] != comp_idx) {
+                        log_and_throw_error(
+                            "Components {} and {} are neighboring.",
+                            comp_idx,
+                            comp_id[nbr]);
+                    }
+                    // already in a component
+                    continue;
+                }
+                const CellTag& ntag = m_face_attribute[nbr].tags;
+                if (!expr->eval(ntag)) {
+                    continue;
+                }
+                comp_id[nbr] = comp_idx;
+                comp.cells.push_back(nbr);
+            }
+        }
+    }
+
+    return components;
+}
+
 std::vector<ConnectedComponent> SimWildMeshTri::find_holes(const std::vector<CellTag>& tag_in) const
 {
     std::vector<int> comp_id(tri_capacity(), -1);
@@ -468,43 +528,84 @@ void SimWildMeshTri::tight_seal_topo(
     m_envelope.reset();
 }
 
-void SimWildMeshTri::resolve_intersections(const std::vector<CellTag>& intersecting_tags)
+void SimWildMeshTri::resolve_intersections(
+    const std::vector<std::array<ExprPtr, 2>>& intersecting_tags)
 {
-    for (const CellTag& tag_set : intersecting_tags) {
-        if (tag_set.size() != 2) {
-            log_and_throw_error(
-                "Can only resolve intersections between two tags at once. Input was {}",
-                tag_set);
+    for (const auto& expressions : intersecting_tags) {
+        for (const auto& expr : expressions) {
+            if (!expr->contains_only_and()) {
+                log_and_throw_error(
+                    "Only AND expressions are supported for resolving intersections. Expression "
+                    "is {}",
+                    expr->to_string());
+            }
         }
-        std::vector<ConnectedComponent> components = compute_connected_components(tag_set);
+
+        const ExprPtr& expr1 = expressions[0];
+        const ExprPtr& expr2 = expressions[1];
+        auto intersection_region = std::make_shared<expression_parser::AndExpr>(expr1, expr2);
+
+        std::vector<ConnectedComponent> components =
+            compute_connected_components(intersection_region);
         if (components.empty()) {
-            logger().info("No intersections in between tags {}", tag_set);
+            logger().info("No cell contains the expression {}", intersection_region->to_string());
             continue;
         }
-        logger().info("Resolve {} intersections in between tags {}", components.size(), tag_set);
+        logger().info(
+            "Resolve {} intersections in region {}",
+            components.size(),
+            intersection_region->to_string());
+
+        const CellTag tags1 = expr1->tags_involved();
+        const CellTag tags2 = expr2->tags_involved();
+        const CellTag intersection_tags = intersection_region->tags_involved();
 
         // remove tags from components
         for (const ConnectedComponent& comp : components) {
             for (const size_t fid : comp.cells) {
                 auto& tag = m_face_attribute[fid].tags;
-                for (const size_t tt : tag_set) {
+                for (const size_t tt : intersection_tags) {
                     tag.erase(tt);
                 }
             }
         }
 
-        std::vector<CellTag> tag_vec;
-        tag_vec.reserve(2);
-        for (const size_t tag : tag_set) {
-            CellTag ct;
-            ct.insert(tag);
-            tag_vec.push_back(ct);
-        }
+        std::vector<CellTag> tag_vec(2);
+        tag_vec[0] = tags1;
+        tag_vec[1] = tags2;
         seal_connected_components(tag_vec, components);
+
+
+        //// OLD
+        // std::vector<ConnectedComponent> components = compute_connected_components(tag_set);
+        // if (components.empty()) {
+        //     logger().info("No intersections in between tags {}", tag_set);
+        //     continue;
+        // }
+        // logger().info("Resolve {} intersections in between tags {}", components.size(), tag_set);
+
+        // // remove tags from components
+        // for (const ConnectedComponent& comp : components) {
+        //     for (const size_t fid : comp.cells) {
+        //         auto& tag = m_face_attribute[fid].tags;
+        //         for (const size_t tt : tag_set) {
+        //             tag.erase(tt);
+        //         }
+        //     }
+        // }
+
+        // std::vector<CellTag> tag_vec;
+        // tag_vec.reserve(2);
+        // for (const size_t tag : tag_set) {
+        //     CellTag ct;
+        //     ct.insert(tag);
+        //     tag_vec.push_back(ct);
+        // }
+        // seal_connected_components(tag_vec, components);
     }
 
     // report other intersections
-    std::map<size_t, std::set<size_t>> intersections;
+    std::map<size_t, CellTag> intersections;
     for (const Tuple& t : get_faces()) {
         const auto& tags = m_face_attribute[t.fid(*this)].tags;
         if (tags.size() < 2) {

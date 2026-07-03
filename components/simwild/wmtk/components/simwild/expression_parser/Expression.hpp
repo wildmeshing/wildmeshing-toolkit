@@ -75,7 +75,7 @@ public:
     virtual std::set<std::string> tag_names_involved() const = 0;
 };
 
-using ExpressionPtr = std::unique_ptr<Expression>;
+using ExpressionPtr = std::shared_ptr<Expression>;
 
 /**
  * An expression that evaluates to true if a specific tag is present.
