@@ -528,8 +528,7 @@ void SimWildMeshTri::tight_seal_topo(
     m_envelope.reset();
 }
 
-void SimWildMeshTri::resolve_intersections(
-    const std::vector<std::array<ExprPtr, 2>>& intersecting_tags)
+void SimWildMeshTri::resolve_overlaps(const std::vector<std::array<ExprPtr, 2>>& intersecting_tags)
 {
     for (const auto& expressions : intersecting_tags) {
         for (const auto& expr : expressions) {

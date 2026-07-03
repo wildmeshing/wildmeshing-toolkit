@@ -93,14 +93,14 @@ void apply_operation(MeshT& mesh, const nlohmann::json& json_params)
         }
         const size_t n_lcc = json_params["keep_lcc_num"];
         mesh.keep_largest_connected_component(lcc_tags, n_lcc);
-    } else if (operation == "resolve_intersections") {
+    } else if (operation == "resolve_overlaps") {
         const std::vector<std::vector<std::string>> tags_names =
-            json_params["resolve_intersections_tags"];
+            json_params["resolve_overlaps_tags"];
         std::vector<std::array<ExprPtr, 2>> tags;
         for (const auto& tag_set_names : tags_names) {
             if (tag_set_names.size() != 2) {
                 log_and_throw_error(
-                    "Each resolve_intersections_tags entry must contain exactly two "
+                    "Each resolve_overlaps_tags entry must contain exactly two "
                     "expressions.");
             }
             std::array<ExprPtr, 2> tags_expr;
@@ -109,7 +109,7 @@ void apply_operation(MeshT& mesh, const nlohmann::json& json_params)
             }
             tags.push_back(tags_expr);
         }
-        mesh.resolve_intersections(tags);
+        mesh.resolve_overlaps(tags);
     } else if (operation == "replace_tags") {
         const std::vector<std::string> tags_in_names = json_params["replace_tags_in"];
         const std::vector<std::string> tag_out_names = json_params["replace_tags_out"];

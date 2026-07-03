@@ -314,7 +314,7 @@ public:
         const std::vector<std::vector<CellTag>>& tight_seal_tag_sets,
         double threshold = std::numeric_limits<double>::infinity());
 
-    void resolve_intersections(const std::vector<std::array<ExprPtr, 2>>& intersecting_tags);
+    void resolve_overlaps(const std::vector<std::array<ExprPtr, 2>>& intersecting_tags);
 
     void replace_tags(const std::vector<CellTag>& tags_in, const std::vector<CellTag>& tags_out);
 

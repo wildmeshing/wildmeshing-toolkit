@@ -281,7 +281,7 @@ def remeshing(mesh, output="out", stop_energy=10, eps_rel=2e-3, length_rel=5e-2,
     wildmeshing(j)
 
 
-def resolve_intersections(mesh, tags, output="out", others={}):
+def resolve_overlaps(mesh, tags, output="out", others={}):
     """
     Resolve intersections between two objects in the mesh.
 
@@ -296,10 +296,10 @@ def resolve_intersections(mesh, tags, output="out", others={}):
 
     j = {}
     j["application"] = "simwild"
-    j["operation"] = "resolve_intersections"
+    j["operation"] = "resolve_overlaps"
     j["input"] = [mesh]
     j["output"] = output
-    j["resolve_intersections_tags"] = tags
+    j["resolve_overlaps_tags"] = tags
 
     # copy any additional parameters from others into j
     for key, value in others.items():
@@ -661,7 +661,7 @@ if __name__ == "__main__":
         # resolve intersections
         mesh = "m1_2d.msh"
         tags = ["tag_1 & tag_2"]
-        resolve_intersections(mesh=mesh, tags=tags, output="m2_2d")
+        resolve_overlaps(mesh=mesh, tags=tags, output="m2_2d")
 
         # replace tags
         mesh = "m2_2d.msh"
@@ -715,7 +715,7 @@ if __name__ == "__main__":
         # laplacian smoothing (not a WMTK op — see docstring above the __main__ block)
         # Strip the WMTK envelope group before polyfem (it duplicates surface
         # vertices and confuses MeshNodes), then smooth the tag_0 ↔ tag_1
-        # intersection surface produced by resolve_intersections above.
+        # intersection surface produced by resolve_overlaps above.
         # from pathlib import Path
         # import sys
         # sys.path.append('..')

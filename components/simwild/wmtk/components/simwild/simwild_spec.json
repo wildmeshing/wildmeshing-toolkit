@@ -37,7 +37,7 @@
       "tight_seal_threshold",
       "keep_lcc_tags",
       "keep_lcc_num",
-      "resolve_intersections_tags",
+      "resolve_overlaps_tags",
       "replace_tags_in",
       "replace_tags_out",
       "tag_priority",
@@ -81,7 +81,7 @@
       "fill_holes_topo",
       "tight_seal_topo",
       "keep_lcc",
-      "resolve_intersections",
+      "resolve_overlaps",
       "replace_tags",
       "tag_priority"
     ],
@@ -332,20 +332,20 @@
     "doc": "Number of largest connected components that are kept. By default, only the largest one is kept."
   },
   {
-    "pointer": "/resolve_intersections_tags",
+    "pointer": "/resolve_overlaps_tags",
     "type": "list",
     "default": [],
     "doc": "Resolve intersections between tags by filling the areas with intersections with the nearest of the intersecting tags."
   },
   {
-    "pointer": "/resolve_intersections_tags/*",
+    "pointer": "/resolve_overlaps_tags/*",
     "type": "list",
     "min": 2,
     "max": 2,
     "doc": "Two Boolean expressions that define the two intersecting regions."
   },
   {
-    "pointer": "/resolve_intersections_tags/*/*",
+    "pointer": "/resolve_overlaps_tags/*/*",
     "type": "string",
     "doc": "A Boolean expression that defines a region of tags."
   },
