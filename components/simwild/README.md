@@ -96,7 +96,7 @@ If two regions overlap, one can use `resolve_intersections`. The overlapping reg
 
 ```python
 mesh = "m2"
-tags = ["rectangle & circle", "rectangle & blob"]
+tags = [["rectangle", "circle"], ["rectangle", "blob"]]
 simwild.resolve_intersections(mesh=mesh, tags=tags, output="m3")
 ```
 

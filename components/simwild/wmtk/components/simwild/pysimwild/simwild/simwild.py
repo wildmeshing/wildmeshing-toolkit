@@ -287,7 +287,7 @@ def resolve_intersections(mesh, tags, output="out", others={}):
 
     Parameters:
     - mesh: Input tetrahedral mesh file path (.msh). The extension can be omitted, and it will be automatically added, e.g. "mesh" will be treated as "mesh.msh". Other extensions will raise an error.
-    - tags: List of tags corresponding to each input mesh (e.g., ["tag_0 & tag_1"]).
+    - tags: List of intersecting regions. Each region is a Boolean expression, (e.g., [["tag_0 & tag_1", "tag_2"]]). For each intersection, two regions must be provided. Multiple intersections can be resolved in a single call by providing multiple pairs of regions (e.g., [["tag_0 & tag_1", "tag_2"], ["tag_3", "tag_4"]]).
     - output: Output file path for the resolved meshes, without extension (e.g., "out" will generate "out.msh").
     - others: Additional parameters (optional).
     """
