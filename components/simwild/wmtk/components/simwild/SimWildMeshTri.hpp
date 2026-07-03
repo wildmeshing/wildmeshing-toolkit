@@ -343,6 +343,7 @@ private:
     struct SplitInfoCache
     {
         //        VertexAttributes vertex_info;
+        size_t v_new;
         size_t v1_id;
         size_t v2_id;
         std::vector<size_t> v1_param_type;

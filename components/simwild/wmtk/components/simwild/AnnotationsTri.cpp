@@ -328,6 +328,8 @@ void SimWildMeshTri::seal_connected_components(
     // seal holes
     for (const ConnectedComponent& hole : components) {
         std::vector<simplex::Edge> split_edges;
+        std::unordered_set<size_t> vids;
+        std::unordered_set<size_t> vids_left;
         for (const size_t fid : hole.cells) {
             const Vector2d p = get_center(fid);
             const double d = m_voronoi_split_fn(p);
@@ -342,12 +344,20 @@ void SimWildMeshTri::seal_connected_components(
                 const Tuple t = tuple_from_edge(fid, j);
                 const size_t v0 = t.vid(*this);
                 const size_t v1 = t.switch_vertex(*this).vid(*this);
+                vids.insert(v0);
+                vids.insert(v1);
                 const double d0 = m_voronoi_split_fn(m_vertex_attribute.at(v0).m_pos);
                 const double d1 = m_voronoi_split_fn(m_vertex_attribute.at(v1).m_pos);
                 // only split edges if their endpoints aren't already on the surface
                 if ((d0 < -1e-20 && d1 > 1e-20) || (d1 < -1e-20 && d0 > 1e-20)) {
                     split_edges.emplace_back(v0, v1);
                 }
+            }
+        }
+        for (const size_t vid : vids) {
+            const double d = m_voronoi_split_fn(m_vertex_attribute.at(vid).m_pos);
+            if (d < 0) {
+                vids_left.insert(vid);
             }
         }
         vector_unique(split_edges);
@@ -357,30 +367,61 @@ void SimWildMeshTri::seal_connected_components(
         }
 
         std::vector<Tuple> new_tris;
+        std::unordered_set<size_t> new_vertices;
         for (const simplex::Edge& e : split_edges) {
             const auto [t, eid] = tuple_from_edge(e.vertices());
             if (!split_edge(t, new_tris)) {
                 continue;
             }
-            for (const Tuple& f_tup : new_tris) {
-                const size_t fid = f_tup.fid(*this);
+
+            const size_t v_new = split_cache.local().v_new;
+            std::vector<size_t> fids = get_one_ring_fids_for_vertex(v_new);
+
+            new_vertices.insert(v_new);
+
+            for (const size_t fid : fids) {
                 const auto vs = oriented_tri_vids(fid);
                 // find vertex from splitted edge
                 size_t vid = -1;
+                bool is_inside = true;
                 for (const size_t v : vs) {
+                    if (v == v_new) {
+                        continue;
+                    }
                     if (e.vertices()[0] == v || e.vertices()[1] == v) {
                         vid = v;
+                    } else if (vids.count(v) == 0 && new_vertices.count(v) == 0) {
+                        // check the other vertex if it is a hole vertex
+                        is_inside = false;
                         break;
                     }
                 }
+
+                if (!is_inside) {
+                    // not inside the hole, do not change tags
+                    continue;
+                }
+
                 if (vid == -1) {
                     log_and_throw_error("Could not find edge-vertex after split.");
                 }
 
-                const Vector2d& p = m_vertex_attribute[vid].m_pos;
-                const double d = m_voronoi_split_fn(p);
+                // const Vector2d& p = m_vertex_attribute[vid].m_pos;
+                // const double d = m_voronoi_split_fn(p);
+                // auto& tag = m_face_attribute[fid].tags;
+                // if (d < 0) {
+                //     for (const size_t tt : tag_set[1]) {
+                //         tag.erase(tt);
+                //     }
+                //     tag.insert(tag_set[0].begin(), tag_set[0].end());
+                // } else {
+                //     for (const size_t tt : tag_set[0]) {
+                //         tag.erase(tt);
+                //     }
+                //     tag.insert(tag_set[1].begin(), tag_set[1].end());
+                // }
                 auto& tag = m_face_attribute[fid].tags;
-                if (d < 0) {
+                if (vids_left.count(vid) > 0) {
                     for (const size_t tt : tag_set[1]) {
                         tag.erase(tt);
                     }
@@ -573,34 +614,6 @@ void SimWildMeshTri::resolve_overlaps(const std::vector<std::array<ExprPtr, 2>>&
         tag_vec[0] = tags1;
         tag_vec[1] = tags2;
         seal_connected_components(tag_vec, components);
-
-
-        //// OLD
-        // std::vector<ConnectedComponent> components = compute_connected_components(tag_set);
-        // if (components.empty()) {
-        //     logger().info("No intersections in between tags {}", tag_set);
-        //     continue;
-        // }
-        // logger().info("Resolve {} intersections in between tags {}", components.size(), tag_set);
-
-        // // remove tags from components
-        // for (const ConnectedComponent& comp : components) {
-        //     for (const size_t fid : comp.cells) {
-        //         auto& tag = m_face_attribute[fid].tags;
-        //         for (const size_t tt : tag_set) {
-        //             tag.erase(tt);
-        //         }
-        //     }
-        // }
-
-        // std::vector<CellTag> tag_vec;
-        // tag_vec.reserve(2);
-        // for (const size_t tag : tag_set) {
-        //     CellTag ct;
-        //     ct.insert(tag);
-        //     tag_vec.push_back(ct);
-        // }
-        // seal_connected_components(tag_vec, components);
     }
 
     // report other intersections
@@ -633,6 +646,13 @@ void SimWildMeshTri::replace_tags(
     const std::vector<CellTag>& tags_in,
     const std::vector<CellTag>& tags_out)
 {
+    if (tags_in.size() != tags_out.size()) {
+        log_and_throw_error(
+            "replace_tags: tags_in and tags_out must have the same size. Got {} and {}.",
+            tags_in.size(),
+            tags_out.size());
+    }
+
     for (const Tuple& t : get_faces()) {
         CellTag& tags = m_face_attribute[t.fid(*this)].tags;
         std::vector<bool> found_tags(tags_in.size(), false);

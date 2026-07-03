@@ -283,7 +283,7 @@ def remeshing(mesh, output="out", stop_energy=10, eps_rel=2e-3, length_rel=5e-2,
 
 def resolve_overlaps(mesh, tags, output="out", others={}):
     """
-    Resolve intersections between two objects in the mesh.
+    Resolve overlaps between two regions in the mesh.
 
     Parameters:
     - mesh: Input tetrahedral mesh file path (.msh). The extension can be omitted, and it will be automatically added, e.g. "mesh" will be treated as "mesh.msh". Other extensions will raise an error.
