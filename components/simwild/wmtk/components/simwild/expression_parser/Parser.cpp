@@ -24,7 +24,7 @@ ExpressionPtr Parser::parseOr()
 
         if (match('|')) {
             auto right = parseAnd();
-            left = std::make_unique<OrExpr>(std::move(left), std::move(right));
+            left = std::make_shared<OrExpr>(left, right);
         } else {
             break;
         }
@@ -42,7 +42,7 @@ ExpressionPtr Parser::parseAnd()
 
         if (match('&')) {
             auto right = parseUnary();
-            left = std::make_unique<AndExpr>(std::move(left), std::move(right));
+            left = std::make_shared<AndExpr>(left, right);
         } else {
             break;
         }
@@ -56,7 +56,7 @@ ExpressionPtr Parser::parseUnary()
     skipWhitespace();
 
     if (match('!')) {
-        return std::make_unique<NotExpr>(parseUnary());
+        return std::make_shared<NotExpr>(parseUnary());
     }
 
     return parsePrimary();
@@ -87,7 +87,7 @@ ExpressionPtr Parser::parsePrimary()
     int64_t tag_id = -1;
     if (ident == "_") {
         // treat "_" as empty tag
-        return std::make_unique<EmptyExpr>();
+        return std::make_shared<EmptyExpr>();
     }
 
     auto it = m_tag_name_to_id.find(ident);
@@ -97,7 +97,7 @@ ExpressionPtr Parser::parsePrimary()
         logger().warn("Tag name {} does not exist!", ident);
     }
 
-    return std::make_unique<TagExpr>(tag_id, ident);
+    return std::make_shared<TagExpr>(tag_id, ident);
 }
 
 std::string Parser::parseIdentifier()

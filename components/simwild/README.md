@@ -87,22 +87,22 @@ simwild.replace_tags(mesh=mesh, tags_in=tags_in, tags_out=tags_out, output="m2")
 
 [JSON Example](https://github.com/wildmeshing/data2/blob/main/integration_tests/simwild_replace_tags_3d.json)
 
-#### 4. Resolve Intersections
+#### 4. Resolve Overlaps
 
-If two regions overlap, one can use `resolve_intersections`. The overlapping regions are removed and split into the two regions.
+If two regions overlap, one can use `resolve_overlaps`. The overlapping regions are removed and split into the two regions.
 
 <details>
 <summary>Python Example</summary>
 
 ```python
 mesh = "m2"
-tags = ["rectangle & circle", "rectangle & blob"]
-simwild.resolve_intersections(mesh=mesh, tags=tags, output="m3")
+tags = [["rectangle", "circle"], ["rectangle", "blob"]]
+simwild.resolve_overlaps(mesh=mesh, tags=tags, output="m3")
 ```
 
 </details>
 
-[JSON Example](https://github.com/wildmeshing/data2/blob/main/integration_tests/simwild_resolve_intersections_3d.json)
+[JSON Example](https://github.com/wildmeshing/data2/blob/main/integration_tests/simwild_resolve_overlaps_3d.json)
 
 #### 5. Tag Priority
 
@@ -121,7 +121,7 @@ simwild.tag_priority(mesh=mesh, tags=tags, output="m5")
 
 #### 6. Tight Seal Topo
 
-If there are holes between two regions, one can use `tight_seal_topo` to close the holes. The holes are split into the two regions, similar to `resolve_intersections`.
+If there are holes between two regions, one can use `tight_seal_topo` to close the holes. The holes are split into the two regions, similar to `resolve_overlaps`.
 
 <details>
 <summary>Python Example</summary>

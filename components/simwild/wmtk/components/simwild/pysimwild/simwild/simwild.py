@@ -281,13 +281,13 @@ def remeshing(mesh, output="out", stop_energy=10, eps_rel=2e-3, length_rel=5e-2,
     wildmeshing(j)
 
 
-def resolve_intersections(mesh, tags, output="out", others={}):
+def resolve_overlaps(mesh, tags, output="out", others={}):
     """
-    Resolve intersections between two objects in the mesh.
+    Resolve overlaps between two regions in the mesh.
 
     Parameters:
     - mesh: Input tetrahedral mesh file path (.msh). The extension can be omitted, and it will be automatically added, e.g. "mesh" will be treated as "mesh.msh". Other extensions will raise an error.
-    - tags: List of tags corresponding to each input mesh (e.g., ["tag_0 & tag_1"]).
+    - tags: List of intersecting regions. Each region is a Boolean expression, (e.g., [["tag_0 & tag_1", "tag_2"]]). For each intersection, two regions must be provided. Multiple intersections can be resolved in a single call by providing multiple pairs of regions (e.g., [["tag_0 & tag_1", "tag_2"], ["tag_3", "tag_4"]]).
     - output: Output file path for the resolved meshes, without extension (e.g., "out" will generate "out.msh").
     - others: Additional parameters (optional).
     """
@@ -296,10 +296,10 @@ def resolve_intersections(mesh, tags, output="out", others={}):
 
     j = {}
     j["application"] = "simwild"
-    j["operation"] = "resolve_intersections"
+    j["operation"] = "resolve_overlaps"
     j["input"] = [mesh]
     j["output"] = output
-    j["resolve_intersections_tags"] = tags
+    j["resolve_overlaps_tags"] = tags
 
     # copy any additional parameters from others into j
     for key, value in others.items():
@@ -661,7 +661,7 @@ if __name__ == "__main__":
         # resolve intersections
         mesh = "m1_2d.msh"
         tags = ["tag_1 & tag_2"]
-        resolve_intersections(mesh=mesh, tags=tags, output="m2_2d")
+        resolve_overlaps(mesh=mesh, tags=tags, output="m2_2d")
 
         # replace tags
         mesh = "m2_2d.msh"
@@ -715,7 +715,7 @@ if __name__ == "__main__":
         # laplacian smoothing (not a WMTK op — see docstring above the __main__ block)
         # Strip the WMTK envelope group before polyfem (it duplicates surface
         # vertices and confuses MeshNodes), then smooth the tag_0 ↔ tag_1
-        # intersection surface produced by resolve_intersections above.
+        # intersection surface produced by resolve_overlaps above.
         # from pathlib import Path
         # import sys
         # sys.path.append('..')
