@@ -104,6 +104,9 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
+<tr class="memitem:ae9adefa5f23de5d8f2ae7b04e7d2271b" id="r_ae9adefa5f23de5d8f2ae7b04e7d2271b"><td class="memItemLeft" align="right" valign="top"><a id="ae9adefa5f23de5d8f2ae7b04e7d2271b" name="ae9adefa5f23de5d8f2ae7b04e7d2271b"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>ExprPtr</b> = expression_parser::ExpressionPtr</td></tr>
+<tr class="separator:ae9adefa5f23de5d8f2ae7b04e7d2271b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4513d14f5ab3acf4c78f687b22bf1024" id="r_a4513d14f5ab3acf4c78f687b22bf1024"><td class="memItemLeft" align="right" valign="top"><a id="a4513d14f5ab3acf4c78f687b22bf1024" name="a4513d14f5ab3acf4c78f687b22bf1024"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>VertAttCol</b> = <a class="el" href="structwmtk_1_1_attribute_collection.html">AttributeCollection</a>&lt; <a class="el" href="structwmtk_1_1components_1_1simwild_1_1tri_1_1_vertex_attributes.html">VertexAttributes</a> &gt;</td></tr>
 <tr class="separator:a4513d14f5ab3acf4c78f687b22bf1024"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -261,6 +264,9 @@ std::tuple&lt; double, double &gt;&#160;</td><td class="memItemRight" valign="bo
 std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1simwild_1_1_connected_component.html">ConnectedComponent</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>compute_connected_components</b> (const CellTag &amp;tag_in) const</td></tr>
 <tr class="memdesc:a1fbd330920ae959631f8c838b647dee1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find all connected components that contain the <code>tag_in</code> tags. <br /></td></tr>
 <tr class="separator:a1fbd330920ae959631f8c838b647dee1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9966e4e819d2a648b63af40f89b7f8ed" id="r_a9966e4e819d2a648b63af40f89b7f8ed"><td class="memItemLeft" align="right" valign="top"><a id="a9966e4e819d2a648b63af40f89b7f8ed" name="a9966e4e819d2a648b63af40f89b7f8ed"></a>
+std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1simwild_1_1_connected_component.html">ConnectedComponent</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>compute_connected_components</b> (const ExprPtr &amp;expr) const</td></tr>
+<tr class="separator:a9966e4e819d2a648b63af40f89b7f8ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeb7267abf813ce048b1ad26df58da4b1" id="r_aeb7267abf813ce048b1ad26df58da4b1"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1simwild_1_1_connected_component.html">ConnectedComponent</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#aeb7267abf813ce048b1ad26df58da4b1">find_holes</a> (const std::vector&lt; CellTag &gt; &amp;tag_in) const</td></tr>
 <tr class="memdesc:aeb7267abf813ce048b1ad26df58da4b1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find all regions that do not contain the tags from <code>tag_in</code>.  <br /></td></tr>
 <tr class="separator:aeb7267abf813ce048b1ad26df58da4b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -279,9 +285,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>seal_connected_compon
 <tr class="memitem:abe6b94c0c28155929eabb605eb3ab3b8" id="r_abe6b94c0c28155929eabb605eb3ab3b8"><td class="memItemLeft" align="right" valign="top"><a id="abe6b94c0c28155929eabb605eb3ab3b8" name="abe6b94c0c28155929eabb605eb3ab3b8"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>tight_seal_topo</b> (const std::vector&lt; std::vector&lt; CellTag &gt; &gt; &amp;tight_seal_tag_sets, double threshold=std::numeric_limits&lt; double &gt;::infinity())</td></tr>
 <tr class="separator:abe6b94c0c28155929eabb605eb3ab3b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a04b93670c286b31f09f67418df012c1e" id="r_a04b93670c286b31f09f67418df012c1e"><td class="memItemLeft" align="right" valign="top"><a id="a04b93670c286b31f09f67418df012c1e" name="a04b93670c286b31f09f67418df012c1e"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>resolve_intersections</b> (const std::vector&lt; CellTag &gt; &amp;intersecting_tags)</td></tr>
-<tr class="separator:a04b93670c286b31f09f67418df012c1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5dc655ff30a7fb347ccf821f2bcc7ae4" id="r_a5dc655ff30a7fb347ccf821f2bcc7ae4"><td class="memItemLeft" align="right" valign="top"><a id="a5dc655ff30a7fb347ccf821f2bcc7ae4" name="a5dc655ff30a7fb347ccf821f2bcc7ae4"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>resolve_overlaps</b> (const std::vector&lt; std::array&lt; ExprPtr, 2 &gt; &gt; &amp;intersecting_tags)</td></tr>
+<tr class="separator:a5dc655ff30a7fb347ccf821f2bcc7ae4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a41e19a85a2448dc5ca212b5d89cf0dc8" id="r_a41e19a85a2448dc5ca212b5d89cf0dc8"><td class="memItemLeft" align="right" valign="top"><a id="a41e19a85a2448dc5ca212b5d89cf0dc8" name="a41e19a85a2448dc5ca212b5d89cf0dc8"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>replace_tags</b> (const std::vector&lt; CellTag &gt; &amp;tags_in, const std::vector&lt; CellTag &gt; &amp;tags_out)</td></tr>
 <tr class="separator:a41e19a85a2448dc5ca212b5d89cf0dc8"><td class="memSeparator" colspan="2">&#160;</td></tr>

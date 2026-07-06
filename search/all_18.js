@@ -12,7 +12,7 @@ var searchData=
   ['renew_5fneighbor_5ftuples_9',['renew_neighbor_tuples',['../structwmtk_1_1_execute_pass.html#a76cbf1fcebd336fd5d7afb36f2f1091c',1,'wmtk::ExecutePass']]],
   ['replace_20tags_10',['3. Replace Tags',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md11',1,'']]],
   ['reset_5fconnected_5fcomponents_11',['reset_connected_components',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3830922378a6f040f5f242af381c57a8',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
-  ['resolve_20intersections_12',['4. Resolve Intersections',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md12',1,'']]],
+  ['resolve_20overlaps_12',['4. Resolve Overlaps',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md12',1,'']]],
   ['respected_20topologies_13',['Respected topologies',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2topological__offs89360d0c8b426dd4f0f6509cf6b9f065.html#autotoc_md23',1,'']]],
   ['rollback_14',['rollback',['../index.html#autotoc_md33',1,'Operation Rollback'],['../structwmtk_1_1_attribute_collection.html#a15d5ca94f6995d3e1363804f79d7c287',1,'wmtk::AttributeCollection::rollback()']]],
   ['rollback_5fprotected_5fattributes_15',['rollback_protected_attributes',['../classwmtk_1_1_tri_mesh.html#a6419d01660badf33195e0c3ad52d07f1',1,'wmtk::TriMesh']]],

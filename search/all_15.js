@@ -19,6 +19,7 @@ var searchData=
   ['oriented_5ftri_5fvids_16',['oriented_tri_vids',['../classwmtk_1_1_tri_mesh.html#a07f1bdac973f713076d7ea8073082ef5',1,'wmtk::TriMesh']]],
   ['original_17',['TetWild (original)',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2tetwild_2wmtk_2co1405dc598c001876e505c2a179a9ed8f.html',1,'']]],
   ['original_20tetwild_18',['Difference WMTK and original TetWild',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2tetwild_2wmtk_2co1405dc598c001876e505c2a179a9ed8f.html#autotoc_md19',1,'']]],
-  ['overlaps_5ftet_19',['overlaps_tet',['../classwmtk_1_1components_1_1topological__offset_1_1_sphere.html#a2a694e6ed8ca258a1ff91f7e57da381d',1,'wmtk::components::topological_offset::Sphere']]],
-  ['overlaps_5ftri_20',['overlaps_tri',['../classwmtk_1_1components_1_1topological__offset_1_1_circle.html#ade6d25996c7d81b8df6584b185c4a819',1,'wmtk::components::topological_offset::Circle']]]
+  ['overlaps_19',['4. Resolve Overlaps',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md12',1,'']]],
+  ['overlaps_5ftet_20',['overlaps_tet',['../classwmtk_1_1components_1_1topological__offset_1_1_sphere.html#a2a694e6ed8ca258a1ff91f7e57da381d',1,'wmtk::components::topological_offset::Sphere']]],
+  ['overlaps_5ftri_21',['overlaps_tri',['../classwmtk_1_1components_1_1topological__offset_1_1_circle.html#ade6d25996c7d81b8df6584b185c4a819',1,'wmtk::components::topological_offset::Circle']]]
 ];

@@ -140,19 +140,19 @@ Python Example</summary>
 </details>
 <p><a href="https://github.com/wildmeshing/data2/blob/main/integration_tests/simwild_replace_tags_3d.json">JSON Example</a></p>
 <h3><a class="anchor" id="autotoc_md12"></a>
-4. Resolve Intersections</h3>
-<p>If two regions overlap, one can use <code>resolve_intersections</code>. The overlapping regions are removed and split into the two regions.</p>
+4. Resolve Overlaps</h3>
+<p>If two regions overlap, one can use <code>resolve_overlaps</code>. The overlapping regions are removed and split into the two regions.</p>
 <details >
 <summary >
 Python Example</summary>
 <p></p>
 <div class="fragment"><div class="line">mesh = <span class="stringliteral">&quot;m2&quot;</span></div>
-<div class="line">tags = [<span class="stringliteral">&quot;rectangle &amp; circle&quot;</span>, <span class="stringliteral">&quot;rectangle &amp; blob&quot;</span>]</div>
-<div class="line"><a class="code hl_function" href="simwild_8py.html#a27a59c6e5c83df6e0a24ab02a1d0b352">simwild.resolve_intersections</a>(mesh=mesh, tags=tags, output=<span class="stringliteral">&quot;m3&quot;</span>)</div>
-<div class="ttc" id="asimwild_8py_html_a27a59c6e5c83df6e0a24ab02a1d0b352"><div class="ttname"><a href="simwild_8py.html#a27a59c6e5c83df6e0a24ab02a1d0b352">simwild.resolve_intersections</a></div><div class="ttdeci">resolve_intersections(mesh, tags, output=&quot;out&quot;, others={})</div><div class="ttdef"><b>Definition</b> simwild.py:284</div></div>
+<div class="line">tags = [[<span class="stringliteral">&quot;rectangle&quot;</span>, <span class="stringliteral">&quot;circle&quot;</span>], [<span class="stringliteral">&quot;rectangle&quot;</span>, <span class="stringliteral">&quot;blob&quot;</span>]]</div>
+<div class="line"><a class="code hl_function" href="simwild_8py.html#a56b48dce595dac040b2d93f8dbc195c3">simwild.resolve_overlaps</a>(mesh=mesh, tags=tags, output=<span class="stringliteral">&quot;m3&quot;</span>)</div>
+<div class="ttc" id="asimwild_8py_html_a56b48dce595dac040b2d93f8dbc195c3"><div class="ttname"><a href="simwild_8py.html#a56b48dce595dac040b2d93f8dbc195c3">simwild.resolve_overlaps</a></div><div class="ttdeci">resolve_overlaps(mesh, tags, output=&quot;out&quot;, others={})</div><div class="ttdef"><b>Definition</b> simwild.py:284</div></div>
 </div><!-- fragment --><p></p>
 </details>
-<p><a href="https://github.com/wildmeshing/data2/blob/main/integration_tests/simwild_resolve_intersections_3d.json">JSON Example</a></p>
+<p><a href="https://github.com/wildmeshing/data2/blob/main/integration_tests/simwild_resolve_overlaps_3d.json">JSON Example</a></p>
 <h3><a class="anchor" id="autotoc_md13"></a>
 5. Tag Priority</h3>
 <p>If a tet contains multiple tags, only the one with the highest priority is kept.</p>
@@ -168,7 +168,7 @@ Python Example</summary>
 </details>
 <h3><a class="anchor" id="autotoc_md14"></a>
 6. Tight Seal Topo</h3>
-<p>If there are holes between two regions, one can use <code>tight_seal_topo</code> to close the holes. The holes are split into the two regions, similar to <code>resolve_intersections</code>.</p>
+<p>If there are holes between two regions, one can use <code>tight_seal_topo</code> to close the holes. The holes are split into the two regions, similar to <code>resolve_overlaps</code>.</p>
 <details >
 <summary >
 Python Example</summary>
