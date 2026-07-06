@@ -498,11 +498,11 @@ def manifold_extraction(mesh, in_tag, union, replace_tag=[], output="out", other
     wildmeshing(j)
 
 
-def topological_offset(mesh, offset_selection, target_distance, offset_output_tags, overwrite_tags,
+def topological_offset(mesh, offset_selection, target_distance, offset_output_tags,
                        offset_in=False, offset_out=True, protected_tags=[], rel_ball_threshold=0.01,
                        output="out", others={}):
     """
-    Create topological offset.
+    Create topological offset. NOTE: ambient is represented as 'ambient', not '_'.
 
     Parameters:
     - mesh: mesh: Input tetrahedral mesh file path (must be .msh). The extension can be omitted, and it will be automatically added, e.g. "mesh" will be treated as "mesh.msh". Other extensions will raise an error.
@@ -512,7 +512,6 @@ def topological_offset(mesh, offset_selection, target_distance, offset_output_ta
     - offset_out: Bool, only relevant if single body mode. If True, create offset outwards (at least
         one of offset_in and offset_out must be true in single body mode)
     - offset_output_tags: List[Str], tag set for the newly createad offset volume (e.g. ["newtag", "newtag2"]).
-    - overwrite_tags: Bool, if True then offset_output_tags will overwrite tags in offset region
     - protected_tags: List[Str], only relevant if overwrite_tags=True. Set of tags that will never be overwritten.
     - target_distance: Float, the target distance for the offset. If <= 0, midpoint splitting is used to create the offset.
     - rel_ball_threshold: Float, circle/sphere radius relative to target_distance to terminate conservative inside checks.
@@ -533,7 +532,6 @@ def topological_offset(mesh, offset_selection, target_distance, offset_output_ta
     j["offset_in"] = offset_in
     j["offset_out"] = offset_out
     j["offset_output_tags"] = offset_output_tags
-    j["overwrite_tags"] = overwrite_tags
     j["protected_tags"] = protected_tags
     j["target_distance"] = target_distance
     j["relative_ball_threshold"] = rel_ball_threshold
