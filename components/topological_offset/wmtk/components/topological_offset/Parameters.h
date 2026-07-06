@@ -12,7 +12,6 @@ struct Parameters
     std::set<std::string> offset_output_tag;
     std::set<std::string> protected_tags;
     bool respect_all_topologies;
-    bool overwrite;
     bool offset_in;
     bool offset_out;
     double target_distance;
@@ -29,13 +28,22 @@ struct Parameters
     Parameters(const nlohmann::json& json_params)
     {
         for (const std::string& tag : json_params["offset_output_tags"]) {
+            if (tag == "ambient") {
+                logger().warn(
+                    "'ambient' tag cannot be given explicitly to offset_output_tags, ignoring. To "
+                    "set offset to 'ambient', pass offset_output_tags=[].");
+                continue;
+            }
             offset_output_tag.insert(tag);
         }
         for (const std::string& tag : json_params["protected_tags"]) {
+            if (tag == "ambient") {
+                logger().warn("'ambient' tag cannot be protected, ignoring.");
+                continue;
+            }
             protected_tags.insert(tag);
         }
         respect_all_topologies = json_params["respect_all_topologies"];
-        overwrite = json_params["overwrite_tags"];
         offset_in = json_params["offset_in"];
         offset_out = json_params["offset_out"];
         target_distance = json_params["target_distance"];

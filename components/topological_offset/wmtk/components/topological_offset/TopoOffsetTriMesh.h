@@ -14,7 +14,6 @@ namespace wmtk::components::topological_offset {
 const int64_t TEMP_OFFSET_TRI_TAG = -1;
 const CellTag TEMP_OFFSET_TRI_TAG_SET{TEMP_OFFSET_TRI_TAG};
 
-
 class VertexAttributes2d
 {
 public:
@@ -111,6 +110,11 @@ public:
         const MatrixXd& V_env,
         const MatrixXi& F_env,
         const std::vector<std::string>& tag_names);
+
+    /**
+     * @brief ensure ambient tag does not overlap any other tags in mesh.
+     */
+    bool ambient_assert();
 
     /**
      * @brief label input complex simplices as per boolean expression (or single body mode)

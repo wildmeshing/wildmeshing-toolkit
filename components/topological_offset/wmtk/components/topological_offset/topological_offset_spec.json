@@ -11,7 +11,6 @@
       "offset_output_tags",
       "protected_tags",
       "respect_all_topologies",
-      "overwrite_tags",
       "offset_in",
       "offset_out",
       "target_distance",
@@ -70,18 +69,12 @@
     "pointer": "/protected_tags",
     "type": "list",
     "default": [],
-    "doc": "Only relevant if overwrite_tags=true. Set of tags that will not be overwritten by the offset."
+    "doc": "Set of tags that will not be overwritten by the offset."
   },
   {
     "pointer": "/protected_tags/*",
     "type": "string",
     "doc": "A tag."
-  },
-  {
-    "pointer": "/overwrite_tags",
-    "type": "bool",
-    "default": false,
-    "doc": "If true, offset_output_tag overwrites existing tags in the offset."
   },
   {
     "pointer": "/offset_in",

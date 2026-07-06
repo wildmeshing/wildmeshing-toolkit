@@ -132,6 +132,11 @@ public:
         const std::vector<std::string>& tag_names);
 
     /**
+     * @brief check that the ambient tag does not overlap with any other tags
+     */
+    bool ambient_assert();
+
+    /**
      * @brief label input simplicial complex simplices, as defined in m_params.offset_selection
      */
     void label_input_complex();

@@ -43,7 +43,7 @@ void TopoOffsetTetMesh::init_from_image(
     assert(T.rows() == T_tags.rows());
     assert((V_env.rows() == 0) || (V_env.cols() == 3));
     assert((F_env.rows() == 0) || (F_env.cols() == 3));
-    m_tags_count = T_tags.cols();
+    m_tags_count = T_tags.cols() + 1; // + 1 is for ambient
 
     // initialize connectivity
     init(T);
@@ -60,17 +60,12 @@ void TopoOffsetTetMesh::init_from_image(
         m_F_envelope = F_env;
     }
 
-    // ensure all protected tags exist in mesh
-    for (const std::string& name : m_params.protected_tags) {
-        if (std::find(tag_names.begin(), tag_names.end(), name) == tag_names.end()) {
-            log_and_throw_error("Given protected_tag '{}' does not exist in mesh.", name);
-        }
-    }
-
     // set tag string/id maps
+    m_tag_id_to_name[0] = "ambient";
+    m_tag_name_to_id["ambient"] = 0;
     for (int64_t i = 0; i < tag_names.size(); i++) {
-        m_tag_id_to_name[i] = tag_names[i];
-        m_tag_name_to_id[tag_names[i]] = i;
+        m_tag_id_to_name[i + 1] = tag_names[i];
+        m_tag_name_to_id[tag_names[i]] = i + 1;
     }
 
     // add potential new tags to maps
@@ -95,10 +90,15 @@ void TopoOffsetTetMesh::init_from_image(
         size_t t_id = t.tid(*this);
         for (int j = 0; j < T_tags.cols(); j++) {
             if (T_tags.coeff(t_id, j) == 1) {
-                m_tet_attribute[t_id].tag.insert(j);
+                m_tet_attribute[t_id].tag.insert(j + 1);
             }
         }
+        if (m_tet_attribute[t_id].tag.size() == 0) { // tet is ambient
+            m_tet_attribute[t_id].tag.insert(0);
+        }
     }
+
+    assert(ambient_assert());
 
     // set vertex positions
     const auto& verts = get_vertices();
@@ -106,6 +106,25 @@ void TopoOffsetTetMesh::init_from_image(
         size_t v_id = v.vid(*this);
         m_vertex_attribute[v_id].m_posf = V.row(v_id);
     }
+}
+
+
+bool TopoOffsetTetMesh::ambient_assert()
+{
+    auto tets = get_tets();
+    for (const Tuple& t : tets) {
+        size_t t_id = t.tid(*this);
+        bool has_ambient = (m_tet_attribute[t_id].tag.count(0) != 0);
+        if (has_ambient && (m_tet_attribute[t_id].tag.size() != 1)) {
+            std::string err_str = "";
+            for (int64_t tag : m_tet_attribute[t_id].tag) {
+                err_str = err_str + " " + std::to_string(tag);
+            }
+            logger().info(err_str);
+            return false;
+        }
+    }
+    return true;
 }
 
 
@@ -322,148 +341,6 @@ void TopoOffsetTetMesh::label_input_complex()
                 m_vertex_attribute[v_id].label = 1;
             }
         }
-
-
-        // for (const Tuple& t : tets) {
-        //     size_t t_id = t.tid(*this);
-        //     bool in_input = true;
-        //     const CellTag t_tag = m_tet_attribute[t_id].tag;
-        //     for (const CellTag tag : m_offset_tags_ids) {
-        //         if (!any_tag_present(t_tag, tag)) {
-        //             in_input = false;
-        //             break;
-        //         }
-        //     }
-        //     if (in_input) {
-        //         m_tet_attribute[t_id].label = 1;
-        //         // propagate to faces, edges, verts
-        //         auto v_ids = oriented_tet_vids(t_id);
-        //         for (const size_t& v_id : v_ids) {
-        //             m_vertex_attribute[v_id].label = 1;
-        //         }
-        //         for (int i = 0; i < 6; i++) {
-        //             m_edge_attribute[tuple_from_edge(t_id, i).eid(*this)].label = 1;
-        //         }
-        //         for (int i = 0; i < 4; i++) {
-        //             m_face_attribute[tuple_from_face(t_id, i).fid(*this)].label = 1;
-        //         }
-        //     }
-        // }
-
-        // // identify offset input faces
-        // const auto& faces = get_faces();
-        // for (const Tuple& f : faces) {
-        //     // check if parent tet tagged
-        //     size_t f_id = f.fid(*this);
-        //     if (m_face_attribute[f_id].label == 1) {
-        //         continue;
-        //     }
-
-        //     // gather incident tet tag(s)
-        //     std::vector<CellTag> inc_tags;
-        //     inc_tags.push_back(m_tet_attribute[f.tid(*this)].tag);
-        //     auto other = f.switch_tetrahedron(*this);
-        //     if (other) {
-        //         inc_tags.push_back(m_tet_attribute[other.value().tid(*this)].tag);
-        //     }
-
-        //     // check if in intersection of unions
-        //     bool in_input = true;
-        //     for (const CellTag tag : m_offset_tags_ids) {
-        //         bool union_present = false;
-        //         for (const CellTag t_tag : inc_tags) {
-        //             if (any_tag_present(t_tag, tag)) {
-        //                 union_present = true;
-        //                 break;
-        //             }
-        //         }
-        //         if (!union_present) {
-        //             in_input = false;
-        //             break;
-        //         }
-        //     }
-        //     if (in_input) {
-        //         m_face_attribute[f_id].label = 1;
-        //         // propagate to children simplices
-        //         m_edge_attribute[f.eid(*this)].label = 1;
-        //         m_edge_attribute[f.switch_edge(*this).eid(*this)].label = 1;
-        //         m_edge_attribute[f.switch_vertex(*this).switch_edge(*this).eid(*this)].label = 1;
-        //         m_vertex_attribute[f.vid(*this)].label = 1;
-        //         m_vertex_attribute[f.switch_vertex(*this).vid(*this)].label = 1;
-        //         m_vertex_attribute[f.switch_edge(*this).switch_vertex(*this).vid(*this)].label =
-        //         1;
-        //     }
-        // }
-
-        // // identify offset input edges
-        // const auto& edges = get_edges();
-        // for (const Tuple& e : edges) {
-        //     // check if already labelled from parent simplex
-        //     size_t e_id = e.eid(*this);
-        //     if (m_edge_attribute[e_id].label == 1) {
-        //         continue;
-        //     }
-
-        //     // gather incident tag sets
-        //     auto inc_tids = get_incident_tids_for_edge(e);
-        //     std::vector<CellTag> inc_tags;
-        //     for (const size_t& t_id : inc_tids) {
-        //         inc_tags.push_back(m_tet_attribute[t_id].tag);
-        //     }
-
-        //     // check if criteria met
-        //     bool in_input = true;
-        //     for (const CellTag& tag : m_offset_tags_ids) {
-        //         bool union_present = false;
-        //         for (const CellTag& t_tag : inc_tags) {
-        //             if (any_tag_present(t_tag, tag)) {
-        //                 union_present = true;
-        //                 break;
-        //             }
-        //         }
-        //         if (!union_present) {
-        //             in_input = false;
-        //             break;
-        //         }
-        //     }
-        //     if (in_input) {
-        //         m_edge_attribute[e_id].label = 1;
-        //         m_vertex_attribute[e.vid(*this)].label = 1;
-        //         m_vertex_attribute[e.switch_vertex(*this).vid(*this)].label = 1;
-        //     }
-        // }
-
-        //     // identify vertices in input
-        //     for (const Tuple& v : verts) {
-        //         size_t v_id = v.vid(*this);
-        //         if (m_vertex_attribute[v_id].label == 1) {
-        //             continue;
-        //         }
-
-        //         auto inc_tids = get_one_ring_tids_for_vertex(v_id);
-        //         std::vector<CellTag> inc_tags;
-        //         for (const size_t& t_id : inc_tids) {
-        //             inc_tags.push_back(m_tet_attribute[t_id].tag);
-        //         }
-
-        //         bool in_input = true;
-        //         for (const CellTag& tag : m_offset_tags_ids) {
-        //             bool union_present = false;
-        //             for (const CellTag& t_tag : inc_tags) {
-        //                 if (any_tag_present(t_tag, tag)) {
-        //                     union_present = true;
-        //                     break;
-        //                 }
-        //             }
-        //             if (!union_present) {
-        //                 in_input = false;
-        //                 break;
-        //             }
-        //         }
-        //         if (in_input) {
-        //             m_vertex_attribute[v_id].label = 1;
-        //         }
-        //     }
     }
 }
 
@@ -867,7 +744,6 @@ void TopoOffsetTetMesh::marching_tets()
         for (const size_t& t_id : t_ids) {
             if (m_tet_attribute[t_id].label == 0) {
                 m_tet_attribute[t_id].label = 2;
-                // m_tet_attribute[t_id].tag = TEMP_OFFSET_TET_TAG_SET;
                 // propagate to children
                 for (int i = 0; i < 4; i++) {
                     size_t f_id = tuple_from_face(t_id, i).fid(*this);
@@ -925,7 +801,6 @@ void TopoOffsetTetMesh::grow_offset_conservative()
             m_params.relative_ball_threshold * m_params.target_distance);
         if (in_offset) {
             m_tet_attribute[tet_id].label = 2;
-            // m_tet_attribute[tet_id].tag = TEMP_OFFSET_TET_TAG_SET;
             for (int i = 0; i < 4; i++) { // propagate label to faces
                 size_t f_id = tuple_from_face(tet_id, i).fid(*this);
                 if (m_face_attribute[f_id].label != 1) {
@@ -964,30 +839,30 @@ void TopoOffsetTetMesh::set_offset_tet_tags()
     for (const Tuple& t : tets) {
         size_t t_id = t.tid(*this);
         if (m_tet_attribute[t_id].label == 2) {
-            if (m_params.overwrite) {
-                CellTag new_tag;
+            CellTag new_tag;
 
-                // add existing protected tags
-                for (const int64_t& existing_tag : m_tet_attribute[t_id].tag) {
-                    if (std::find(
-                            m_params.protected_tags.begin(),
-                            m_params.protected_tags.end(),
-                            m_tag_id_to_name[existing_tag]) != m_params.protected_tags.end()) {
-                        new_tag.insert(existing_tag);
-                    }
+            // add existing protected tags
+            for (const int64_t& existing_tag : m_tet_attribute[t_id].tag) {
+                if (std::find(
+                        m_params.protected_tags.begin(),
+                        m_params.protected_tags.end(),
+                        m_tag_id_to_name[existing_tag]) != m_params.protected_tags.end()) {
+                    new_tag.insert(existing_tag);
                 }
+            }
 
-                // add offset tags
+            // add actual offset tags
+            if (m_offset_output_tag_ids.size() == 0) {
+                if (new_tag.size() == 0) { // no protected tags, write ambient
+                    new_tag.insert(0);
+                }
+            } else {
                 for (const int64_t& tag : m_offset_output_tag_ids) {
                     new_tag.insert(tag);
                 }
-
-                m_tet_attribute[t_id].tag = new_tag;
-            } else {
-                for (const int64_t& tag : m_offset_output_tag_ids) {
-                    m_tet_attribute[t_id].tag.insert(tag);
-                }
             }
+
+            m_tet_attribute[t_id].tag = new_tag;
         }
     }
 }
@@ -1144,18 +1019,17 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     V.setZero();
     T.setZero();
 
-    // last two are ambient, offset
-    std::vector<MatrixXd> tags(m_tags_count + 2, MatrixXd(tet_capacity(), 1));
+    // last matrix is offset
+    std::vector<MatrixXd> tags(m_tags_count + 1, MatrixXd(tet_capacity(), 1));
 
     for (const Tuple& t : tets) {
         size_t t_id = t.tid(*this);
 
         // set tet tags
-        tags[m_tags_count](t_id, 0) = (m_tet_attribute[t_id].tag.empty()) ? 1 : 0;
         for (int i = 0; i < m_tags_count; i++) {
             tags[i](t_id, 0) = (m_tet_attribute[t_id].tag.count(i) == 1) ? 1 : 0;
         }
-        tags[m_tags_count + 1](t_id, 0) = (m_tet_attribute[t_id].label == 2) ? 1 : 0;
+        tags[m_tags_count](t_id, 0) = (m_tet_attribute[t_id].label == 2) ? 1 : 0;
     }
 
     // set tet verts
@@ -1174,11 +1048,10 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
 
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
     writer = std::make_shared<paraviewo::VTUWriter>();
-    writer->add_cell_field("ambient", tags[m_tags_count]);
     for (int64_t i = 0; i < m_tags_count; i++) {
         writer->add_cell_field(m_tag_id_to_name[i], tags[i]);
     }
-    writer->add_cell_field("offset_tag", tags[m_tags_count + 1]);
+    writer->add_cell_field("offset_tag", tags[m_tags_count]);
     writer->write_mesh(path + ".vtu", V, T, paraviewo::CellType::Tetrahedron);
 
     // envelope
@@ -1193,55 +1066,9 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
 }
 
 
-// void TopoOffsetTetMesh::write_msh(const std::string& file)
-// {
-//     logger().info("Write {}.msh", file);
-//     consolidate_mesh();
-
-//     wmtk::MshData msh;
-
-//     const auto& vtx = get_vertices();
-//     msh.add_tet_vertices(vtx.size(), [&](size_t k) {
-//         auto i = vtx[k].vid(*this);
-//         return m_vertex_attribute[i].m_posf;
-//     });
-
-//     const auto& tets = get_tets();
-//     msh.add_tets(tets.size(), [&](size_t k) {
-//         auto i = tets[k].tid(*this);
-//         auto vs = oriented_tet_vertices(tets[k]);
-//         std::array<size_t, 4> data;
-//         for (int j = 0; j < 4; j++) {
-//             data[j] = vs[j].vid(*this);
-//             assert(data[j] < vtx.size());
-//         }
-//         return data;
-//     });
-
-//     // add tags under ImageVolume physical group
-//     for (int64_t j = 0; j < m_tags_count; j++) {
-//         msh.add_tet_attribute<1>(m_tag_id_to_name[j], [&](size_t i) {
-//             return (m_tet_attribute[i].tag.count(j) == 1) ? 1 : 0;
-//         });
-//     }
-//     msh.add_physical_group("ImageVolume");
-
-//     // envelope
-//     if (m_has_envelope) {
-//         msh.add_edge_vertices(m_V_envelope.rows(), [this](size_t k) {
-//             return m_V_envelope.row(k);
-//         });
-//         msh.add_edges(m_F_envelope.rows(), [this](size_t k) { return m_F_envelope.row(k); });
-//         msh.add_physical_group("EnvelopeSurface");
-//     }
-
-//     msh.save(file + ".msh", true);
-// }
-
-
 void TopoOffsetTetMesh::write_msh_groups(const std::string& file)
 {
-    logger().info("Write {}.msh", file);
+    logger().info("Write {}.msh, {} tags", file, m_tags_count);
     consolidate_mesh();
 
     wmtk::MshData msh;
@@ -1272,7 +1099,7 @@ void TopoOffsetTetMesh::write_msh_groups(const std::string& file)
     // add ambient
     for (const Tuple& t : tets) {
         size_t t_id = t.tid(*this);
-        if (m_tet_attribute[t_id].tag.empty()) {
+        if (m_tet_attribute[t_id].tag.count(0) != 0) {
             tets_with_tag.push_back(t);
         }
     }
@@ -1280,7 +1107,7 @@ void TopoOffsetTetMesh::write_msh_groups(const std::string& file)
     msh.add_physical_group("ambient");
 
     // group for each tag
-    for (int64_t tag_img = 0; tag_img < m_tags_count; tag_img++) {
+    for (int64_t tag_img = 1; tag_img < m_tags_count; tag_img++) {
         tets_with_tag.clear();
         for (const Tuple& t : tets) {
             size_t t_id = t.tid(*this);
