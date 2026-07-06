@@ -53,7 +53,7 @@ GMP_DIR = "gmp-6.2.1/gmp-install"
 
 
 [tool.scikit-build]
-cmake.minimum-version = "3.25"
+cmake.version = ">=3.25"
 
 # --- Build Configuration ---
 # Release (optimized, no debug symbols) is the default for the published bindings.
