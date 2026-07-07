@@ -64,10 +64,11 @@ public: // mode for splitting in marching tets
         Midpoint = 0,
         BinarySearch = 1, // requires that every edge being split has one vertex labelled 0 and the
                           // other 1 or 2
-        Initial = 2 // requires that every edge being split has one vertex labelled 0 and the other
-                    // 1 or 2. This is really hacky. This initializes the offset using the minimum
-                    // of half the target distance and half the edge length. Basically we want to
-                    // initialize the offset with as high of quality as possible
+        Initial = 2, // requires that every edge being split has one vertex labelled 0 and the other
+                     // 1 or 2. This is really hacky. This initializes the offset using the minimum
+                     // of half the target distance and half the edge length. Basically we want to
+                     // initialize the offset with as high of quality as possible
+        LogRootFind = 3 // 'custom' root finding, using the fact that d(x) - d* < 0 at first vertex
     };
 
 public:
@@ -158,6 +159,14 @@ public:
      * distance field is monotonic along edge. May give weird results if not monotonic
      */
     void edge_split_binary_search(const size_t v1, const size_t v2, Vector3d& p_new) const;
+    void edge_split_binary_search(const Vector3d& v1_pos, const Vector3d& v2_pos, Vector3d& p_new)
+        const;
+
+    /**
+     * @brief uses custom root finding routine, attempting to find first root (nearest to v1)
+     * to split edge at
+     */
+    void edge_split_log_root_find(const size_t v1, const size_t v2, Vector3d& p_new) const;
 
     /**
      * @brief label connected simplicial complex components (simplices labelled 1 or 2)
@@ -173,6 +182,11 @@ public:
     bool split_tet_after(const Tuple& t) override;
     bool invariants(const std::vector<Tuple>& tets) override;
     //// overriden splits/invariants
+
+    /**
+     * @brief main function from which all others are called
+     */
+    void execute_offset(const std::filesystem::path& output_file);
 
     /**
      * @brief execute simplistic marching tets. All edges with one vertex labelled 0 and the other 1/2

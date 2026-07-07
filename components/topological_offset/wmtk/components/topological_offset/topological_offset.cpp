@@ -299,63 +299,10 @@ void topological_offset(nlohmann::json json_params)
             mesh.write_input_complex(output_filename.string() + "_input_complex");
         }
 
-        // start timer
+        // execute offset
         igl::Timer timer;
         timer.start();
-
-        // make embedding simplicial (split components per Alg 1)
-        logger().info("Creating simplicial embedding...");
-        mesh.m_edge_split_mode = TopoOffsetTetMesh::EdgeSplitMode::Midpoint;
-        if (!mesh.is_simplicially_embedded()) { // internally prints to console
-            mesh.simplicial_embedding();
-            bool dummy = mesh.is_simplicially_embedded(); // internally prints to console
-        }
-        mesh.consolidate_mesh();
-        if (mesh.m_params.debug_output) { // intermediate output
-            mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
-        }
-
-        logger().info("Performing offset...");
-
-        // initialize offset
-        logger().info("Initializing offset...");
-        mesh.m_edge_split_mode = TopoOffsetTetMesh::EdgeSplitMode::Initial;
-        mesh.marching_tets();
-        mesh.consolidate_mesh();
-        if (mesh.m_params.debug_output) { // intermediate output
-            mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
-        }
-
-        // run BFS
-        mesh.grow_offset_conservative();
-        mesh.consolidate_mesh();
-        if (mesh.m_params.debug_output) { // intermediate output
-            mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
-        }
-
-        // simplicially embed again, if needed
-        mesh.m_edge_split_mode = TopoOffsetTetMesh::EdgeSplitMode::Midpoint;
-        if (!mesh.is_simplicially_embedded()) {
-            mesh.simplicial_embedding();
-            bool dummy = mesh.is_simplicially_embedded();
-            mesh.consolidate_mesh();
-        }
-        if (mesh.m_params.debug_output) { // intermediate output
-            mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
-        }
-
-        // marching tets (using binary search edge split)
-        mesh.m_edge_split_mode = TopoOffsetTetMesh::EdgeSplitMode::BinarySearch;
-        mesh.marching_tets();
-        mesh.set_offset_tet_tags();
-        mesh.consolidate_mesh();
-        if (mesh.m_params.debug_output) { // intermediate output
-            mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
-        }
-
-        assert(mesh.ambient_assert());
-
-        // stop timer
+        mesh.execute_offset(output_filename);
         double time = timer.getElapsedTime();
         wmtk::logger().info("total time {}s", time);
 
@@ -420,9 +367,6 @@ void topological_offset(nlohmann::json json_params)
 
         // mesh.write_msh(output_filename.string()); // write .msh
         mesh.write_msh_groups(output_filename.string()); // write .msh with physical groups
-        if (mesh.m_params.debug_output) {
-            mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
-        }
         if (mesh.m_params.save_vtu) { // write .vtu
             mesh.write_vtu(output_filename.string());
         }

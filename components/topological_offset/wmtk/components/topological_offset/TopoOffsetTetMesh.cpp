@@ -557,6 +557,60 @@ size_t TopoOffsetTetMesh::flood_fill()
 }
 
 
+void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
+{
+    // make embedding simplicial (split components per Alg 1)
+    logger().info("Creating simplicial embedding...");
+    m_edge_split_mode = EdgeSplitMode::Midpoint;
+    if (!is_simplicially_embedded()) { // internally prints to console
+        simplicial_embedding();
+        bool dummy = is_simplicially_embedded(); // internally prints to console
+    }
+    consolidate_mesh();
+    if (m_params.debug_output) { // intermediate output
+        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+    }
+
+    // initialize offset
+    logger().info("Initializing offset...");
+    m_edge_split_mode = EdgeSplitMode::Initial;
+    marching_tets();
+    consolidate_mesh();
+    if (m_params.debug_output) { // intermediate output
+        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+    }
+
+    // run BFS
+    grow_offset_conservative();
+    consolidate_mesh();
+    if (m_params.debug_output) { // intermediate output
+        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+    }
+
+    // simplicially embed again, if needed
+    m_edge_split_mode = EdgeSplitMode::Midpoint;
+    if (is_simplicially_embedded()) {
+        simplicial_embedding();
+        bool dummy = is_simplicially_embedded();
+        consolidate_mesh();
+    }
+    if (m_params.debug_output) { // intermediate output
+        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+    }
+
+    // marching tets (using binary search edge split)
+    m_edge_split_mode = EdgeSplitMode::LogRootFind;
+    marching_tets();
+    set_offset_tet_tags();
+    consolidate_mesh();
+    if (m_params.debug_output) { // intermediate output
+        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+    }
+
+    assert(ambient_assert());
+}
+
+
 bool TopoOffsetTetMesh::is_simplicially_embedded() const
 {
     int bad_tets = 0;
