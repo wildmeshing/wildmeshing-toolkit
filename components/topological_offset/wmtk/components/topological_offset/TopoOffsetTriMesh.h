@@ -47,10 +47,12 @@ public: // mode for splitting in marching tets
         Midpoint = 0,
         BinarySearch = 1, // requires that every edge being split has one vertex labelled 0 and the
                           // other 1 or 2
-        Initial = 2 // requires that every edge being split has one vertex labelled 0 and the other
-                    // 1 or 2. This is really hacky. This initializes the offset using the minimum
-                    // of half the target distance and half the edge length. Basically we want to
-                    // initialize the offset with as high of quality as possible
+        Initial = 2, // requires that every edge being split has one vertex labelled 0 and the other
+                     // 1 or 2. This is really hacky. This initializes the offset using the minimum
+                     // of half the target distance and half the edge length. Basically we want to
+                     // initialize the offset with as high of quality as possible
+        LogRootFind = 3 // 'custom' root finding, using the fact that d(x) - d* < 0 at first vertex
+
     };
 
 public:
@@ -63,7 +65,6 @@ public:
     // tag name maps
     std::map<std::string, int64_t> m_tag_name_to_id;
     std::map<int64_t, std::string> m_tag_id_to_name;
-    // std::vector<CellTag> m_offset_tags_ids;
     CellTag m_offset_output_tag_ids;
 
     // if in 'singlebody' mode
@@ -138,6 +139,14 @@ public:
      * distance field is monotonic along edge. May give weird results if not monotonic
      */
     void edge_split_binary_search(const size_t v1, const size_t v2, Vector2d& p_new) const;
+    void edge_split_binary_search(const Vector2d& v1_pos, const Vector2d& v2_pos, Vector2d& p_new)
+        const;
+
+    /**
+     * @brief split edge at root of d() - target_distance, using fact that this is negative at
+     * v1.
+     */
+    void edge_split_log_root_find(const size_t v1, const size_t v2, Vector2d& p_new) const;
 
     //// overriden splits/invariants
     bool split_edge_before(const Tuple& t) override;
@@ -147,6 +156,10 @@ public:
     bool invariants(const std::vector<Tuple>& tris) override;
     //// overriden splits/invariants
 
+    /**
+     * @brief entry point for offset procedure
+     */
+    void execute_offset(const std::filesystem::path& output_file);
 
     /**
      * @brief execute simplistic marching tets. All edges with one vertex labelled 0 and the other 1/2

@@ -140,50 +140,10 @@ void topological_offset(nlohmann::json json_params)
             mesh.write_input_complex(output_filename.string() + "_input_complex");
         }
 
-        // start timer
+        // execute offset
         igl::Timer timer;
         timer.start();
-
-        // make embedding simplicial
-        mesh.m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Midpoint;
-        logger().info("Creating simplicial embedding...");
-        if (!mesh.is_simplicially_embedded()) {
-            mesh.simplicial_embedding();
-            bool dummy = mesh.is_simplicially_embedded();
-        }
-        mesh.consolidate_mesh();
-        if (mesh.m_params.debug_output) {
-            mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
-        }
-
-        logger().info("Performing offset...");
-
-        // initializing offset
-        mesh.m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Initial;
-        mesh.marching_tris();
-        mesh.consolidate_mesh();
-
-        // run BFS
-        mesh.grow_offset_conservative();
-        mesh.consolidate_mesh();
-
-        // simplicially embed again, if needed
-        mesh.m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Midpoint;
-        if (!mesh.is_simplicially_embedded()) {
-            mesh.simplicial_embedding();
-            bool dummy = mesh.is_simplicially_embedded();
-            mesh.consolidate_mesh();
-        }
-
-        // marching tets (using binary search edge split)
-        mesh.m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::BinarySearch;
-        mesh.marching_tris();
-        mesh.set_offset_tri_tags();
-        mesh.consolidate_mesh();
-
-        assert(mesh.ambient_assert());
-
-        // stop timer
+        mesh.execute_offset(output_filename);
         double time = timer.getElapsedTime();
         wmtk::logger().info("total time {}s", time);
 
@@ -231,9 +191,6 @@ void topological_offset(nlohmann::json json_params)
         }
 
         mesh.write_msh_groups(output_filename.string()); // write .msh with physical groups
-        if (mesh.m_params.debug_output) {
-            mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
-        }
         if (mesh.m_params.save_vtu) { // write .vtu
             mesh.write_vtu(output_filename.string());
         }

@@ -81,7 +81,6 @@ public:
     // tag map stuff
     std::map<std::string, int64_t> m_tag_name_to_id;
     std::map<int64_t, std::string> m_tag_id_to_name;
-    // std::vector<CellTag> m_offset_tags_ids;
     CellTag m_offset_output_tag_ids;
 
     // if in 'singlebody' mode

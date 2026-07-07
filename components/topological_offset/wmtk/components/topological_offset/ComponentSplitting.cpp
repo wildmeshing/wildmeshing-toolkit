@@ -147,7 +147,7 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
             edge_split_log_root_find(cache.v1_id, cache.v2_id, p_new);
         } else {
             log_and_throw_error(
-                "Invalid edge [{}] for root finding edge split. Both vertices in/out of "
+                "Invalid edge [{}] for log root finding edge split. Both vertices in/out of "
                 "offset/input complex.",
                 e_id);
         }
@@ -537,10 +537,16 @@ bool TopoOffsetTetMesh::split_tet_after(const Tuple& t)
 void TopoOffsetTriMesh::edge_split_binary_search(const size_t v1, const size_t v2, Vector2d& p_new)
     const
 {
-    const double eps = m_params.edge_search_term_len;
     const Vector2d v1_pos = m_vertex_attribute[v1].m_posf;
     const Vector2d v2_pos = m_vertex_attribute[v2].m_posf;
-
+    edge_split_binary_search(v1_pos, v2_pos, p_new);
+}
+void TopoOffsetTriMesh::edge_split_binary_search(
+    const Vector2d& v1_pos,
+    const Vector2d& v2_pos,
+    Vector2d& p_new) const
+{
+    const double eps = m_params.edge_search_term_len;
     Vector2d p1 = v1_pos;
     Vector2d p2 = v2_pos;
     while ((p2 - p1).norm() > eps) {
@@ -553,6 +559,48 @@ void TopoOffsetTriMesh::edge_split_binary_search(const size_t v1, const size_t v
         }
     }
     p_new = (p1 + p2) / 2.0;
+}
+
+
+void TopoOffsetTriMesh::edge_split_log_root_find(const size_t v1, const size_t v2, Vector2d& p_new)
+    const
+{
+    const double eps = m_params.edge_search_term_len;
+    const Vector2d v1_pos = m_vertex_attribute[v1].m_posf;
+    const Vector2d v2_pos = m_vertex_attribute[v2].m_posf;
+    const Vector2d v_hat = (v2_pos - v1_pos).normalized();
+    const double l_max = (v2_pos - v1_pos).norm();
+    if (l_max < eps) {
+        logger().warn("near degenerate edge given to edge_split_root_find. splitting at midpoint");
+        p_new = (v1_pos + v2_pos) / 2.0;
+        return;
+    }
+
+    double l_curr = eps;
+    Vector2d p1 = v1_pos;
+    Vector2d p2 = v1_pos + (l_curr * v_hat);
+    double f2 = m_input_complex_bvh.dist(p2);
+    while (f2 < m_params.target_distance) {
+        l_curr *= 2.0;
+        p2 = v1_pos + (l_curr * v_hat);
+        f2 = m_input_complex_bvh.dist(p2);
+        if (l_curr > l_max) {
+            if (f2 < m_params.target_distance) { // entire edge is (likely) within offset.
+                logger().warn(
+                    "edge (likely) entirely in offset for root finding edge split. Splitting edge "
+                    "at 99\% of length");
+                p_new = v1_pos + (0.99 * l_max * v_hat);
+                return;
+            } else { // zero is (likely) between last two chunks. use binary search here
+                p1 = v1_pos + (0.5 * l_curr * v_hat);
+                p2 = v2_pos;
+                edge_split_binary_search(p1, p2, p_new);
+                return;
+            }
+        }
+    }
+    p1 = v1_pos + (0.5 * l_curr * v_hat);
+    edge_split_binary_search(p1, p2, p_new);
 }
 
 
@@ -607,6 +655,20 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
             log_and_throw_error(
                 "Invalid edge [{}] for initial edge split. Both vertices in/out of input "
                 "complex.",
+                e_id);
+        }
+    } else if (m_edge_split_mode == EdgeSplitMode::LogRootFind) {
+        if ((m_vertex_attribute[cache.v1_id].label == 0) &&
+            (m_vertex_attribute[cache.v2_id].label != 0)) {
+            edge_split_log_root_find(cache.v2_id, cache.v1_id, p_new);
+        } else if (
+            (m_vertex_attribute[cache.v1_id].label != 0) &&
+            (m_vertex_attribute[cache.v2_id].label == 0)) {
+            edge_split_log_root_find(cache.v1_id, cache.v2_id, p_new);
+        } else {
+            log_and_throw_error(
+                "Invalid edge [{}] for log root finding edge split. Both vertices in/out of "
+                "offset/input complex.",
                 e_id);
         }
     } else {

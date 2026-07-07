@@ -393,6 +393,61 @@ void TopoOffsetTriMesh::init_input_complex_bvh()
 }
 
 
+void TopoOffsetTriMesh::execute_offset(const std::filesystem::path& output_file)
+{
+    // make embedding simplicial
+    m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Midpoint;
+    logger().info("Creating simplicial embedding...");
+    if (!is_simplicially_embedded()) {
+        simplicial_embedding();
+        bool dummy = is_simplicially_embedded();
+    }
+    consolidate_mesh();
+    if (m_params.debug_output) {
+        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+    }
+
+
+    // initializing offset
+    logger().info("Initializing offset...");
+    m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Initial;
+    marching_tris();
+    consolidate_mesh();
+    if (m_params.debug_output) {
+        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+    }
+
+    // run BFS
+    grow_offset_conservative();
+    consolidate_mesh();
+    if (m_params.debug_output) {
+        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+    }
+
+    // simplicially embed again, if needed
+    m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Midpoint;
+    if (!is_simplicially_embedded()) {
+        simplicial_embedding();
+        bool dummy = is_simplicially_embedded();
+        consolidate_mesh();
+    }
+    if (m_params.debug_output) {
+        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+    }
+
+    // marching tets (using binary search edge split)
+    m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::LogRootFind;
+    marching_tris();
+    set_offset_tri_tags();
+    consolidate_mesh();
+    if (m_params.debug_output) {
+        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+    }
+
+    assert(ambient_assert());
+}
+
+
 bool TopoOffsetTriMesh::is_simplicially_embedded() const
 {
     int bad_tris = 0;
