@@ -8,21 +8,25 @@ if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
 endif()
 
 set(SRC_FILES
-	ManExtractMesh.cpp
-	ManExtractMesh.h
+	ManExtractTetMesh.cpp
+	ManExtractTetMesh.h
 
 	Parameters.h
-	ComponentSplitting.cpp
 
-	manifold_extraction.hpp
 	manifold_extraction.cpp
 	manifold_extraction.hpp
-
-	read_image_msh.hpp
-	read_image_msh.cpp
 )
 
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
+
+target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC
+	wmtk::toolkit
+	wmtk::simwild
+	wmtk::topological_offset
+	wmtk_topological_offset_spec
+	igl::predicates
+	jse::jse
+)
 
 # #####################
 # # TESTS

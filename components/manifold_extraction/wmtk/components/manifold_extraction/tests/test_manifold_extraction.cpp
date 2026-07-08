@@ -3,7 +3,8 @@
 #include <igl/predicates/predicates.h>
 #include <igl/remove_unreferenced.h>
 #include <wmtk/TetMesh.h>
-#include <wmtk/components/manifold_extraction/ManExtractMesh.h>
+#include <wmtk/components/manifold_extraction/ManExtractTetMesh.h>
+#include <wmtk/components/topological_offset/Parameters.h>
 #include <catch2/catch_get_random_seed.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/utils/Delaunay.hpp>
@@ -12,6 +13,7 @@
 using namespace wmtk;
 using namespace wmtk::delaunay;
 using namespace components::manifold_extraction;
+using namespace components;
 
 
 // used for checking attribute propagatoin. values are arbitrary
@@ -48,7 +50,8 @@ TEST_CASE("edge_split", "[split_op]")
     MatrixXi F_env_dummy;
 
     Parameters param;
-    ManExtractMesh mesh(param, 0);
+    topological_offset::Parameters o_param = param.generate_offset_params();
+    ManExtractTetMesh mesh(param, o_param, 0);
     mesh.init_from_image(V, T, Tag, V_env_dummy, F_env_dummy, tag_names);
 
     // give every component unique tag combo
@@ -143,7 +146,8 @@ TEST_CASE("face_split", "[split_op]")
     MatrixXi F_env_dummy;
 
     Parameters param;
-    ManExtractMesh mesh(param, 0);
+    topological_offset::Parameters o_param = param.generate_offset_params();
+    ManExtractTetMesh mesh(param, o_param, 0);
     mesh.init_from_image(V, T, Tag, V_env_dummy, F_env_dummy, tag_names);
 
     // give every component unique tag combo
@@ -242,7 +246,8 @@ TEST_CASE("tet_split", "[split_op]")
     MatrixXi F_env_dummy;
 
     Parameters param;
-    ManExtractMesh mesh(param, 0);
+    topological_offset::Parameters o_param = param.generate_offset_params();
+    ManExtractTetMesh mesh(param, o_param, 0);
     mesh.init_from_image(V, T, Tag, V_env_dummy, F_env_dummy, tag_names);
 
     // give every component unique tag combo

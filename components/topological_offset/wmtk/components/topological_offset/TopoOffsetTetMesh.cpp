@@ -1,6 +1,5 @@
 
 #include "TopoOffsetTetMesh.h"
-
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/io.hpp>
 

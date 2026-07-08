@@ -463,16 +463,15 @@ def fill_holes_topo(mesh, tags, output="out", others={}):
     wildmeshing(j)
 
 
-def manifold_extraction(mesh, in_tag, union, replace_tag=[], output="out", others={}):
+def manifold_extraction(mesh, tag_selection, radius, fill_tags=[], output="out", others={}):
     """
     Make boundary of in_tag set manifold (Only 3D supported as of now).
 
     Parameters:
     - mesh: Input mesh file path (must be .msh). The extension can be omitted, and it will be automatically added, e.g. "mesh" will be treated as "mesh.msh". Other extensions will raise an error.
-    - in_tag: List of tags considered inside the input (e.g. ["tag_0", "tag_1"]). The boundary of the union of these tags is
-        considered the surface to make manifold.
-    - union: True to join the offset with in_tag, False to set to replace_tag
-    - replace_tag: Only relevant if union=False. The tag set to fill offsets around non manifold simplices (e.g. [2])
+    - tag_selection: selection for elements considered inside the surface, e.g. "tag_0 | tag_1"
+    - radius: Float, radius for offset created around nonmanifold components
+    - fill_tags: Tag set for offset created around nonmanifold components, e.g. ["tag_0", "tag_1"]. Use [] for ambient.
     - output: Output file path for the modified mesh, without extension (e.g. "out" will generate "out.msh")
     - others: Additional parameters (optional).
     """
@@ -482,9 +481,9 @@ def manifold_extraction(mesh, in_tag, union, replace_tag=[], output="out", other
     j = {}
     j["application"] = "manifold_extraction"
     j["input"] = mesh
-    j["in_tag"] = in_tag
-    j["manifold_union"] = union
-    j["replace_tag"] = replace_tag
+    j["tag_selection"] = tag_selection
+    j["radius"] = radius
+    j["fill_tags"] = fill_tags
     j["output"] = output
 
     # copy any additional parameters from others into j
