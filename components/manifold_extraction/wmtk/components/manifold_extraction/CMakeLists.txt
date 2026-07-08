@@ -10,6 +10,8 @@ endif()
 set(SRC_FILES
 	ManExtractTetMesh.cpp
 	ManExtractTetMesh.h
+	ManExtractTriMesh.cpp
+	ManExtractTriMesh.h
 
 	Parameters.h
 

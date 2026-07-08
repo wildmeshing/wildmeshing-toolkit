@@ -250,7 +250,7 @@ bool ManExtractTetMesh::vertex_is_manifold(const Tuple& t) const
 
     // run 'out' dfs from arbitrary out nb tet
     std::set<size_t> visited_tids_out;
-    bool is_bound_v = is_boundary_vertex(t.vid(*this));
+    bool is_bound_v = is_boundary_vertex(t);
     if (is_bound_v) {
         out_b_faces.clear(); // should already be empty, just to be safe
         auto out_b_faces = get_boundary_faces_for_out_tets(t.vid(*this));
@@ -314,18 +314,18 @@ void ManExtractTetMesh::vertex_dfs_helper(
 }
 
 
-// NOTE: this function is very slow, but necessary to handle nonmanifold verts on boundary of
-// mesh
-bool ManExtractTetMesh::is_boundary_vertex(size_t vid) const
+// NOTE: this is really slow. there is probably a better way of doing things
+bool ManExtractTetMesh::is_boundary_vertex(const Tuple& v) const
 {
-    auto t_ids = get_one_ring_tids_for_vertex(vid);
+    const size_t v_id = v.vid(*this);
+    auto t_ids = get_one_ring_tids_for_vertex(v_id);
     for (size_t t_id : t_ids) {
         auto vs = oriented_tet_vids(t_id);
         for (int i = 0; i < 4; i++) {
             size_t v1 = vs[i];
             size_t v2 = vs[(i + 1) % 4];
             size_t v3 = vs[(i + 2) % 4];
-            if ((v1 == vid) || (v2 == vid) || (v3 == vid)) {
+            if ((v1 == v_id) || (v2 == v_id) || (v3 == v_id)) {
                 auto [ftup, _] = tuple_from_face({{v1, v2, v3}});
                 if (!ftup.switch_tetrahedron(*this)) { // is boundary face
                     return true;
@@ -460,16 +460,31 @@ void ManExtractTetMesh::write_surface(const std::string& path)
     MatrixXd pre_V_out;
     MatrixXi pre_F_out;
     extract_surface_mesh(pre_V_out, pre_F_out);
-    MatrixXd pre_V_out_reduced;
-    MatrixXi pre_F_out_reduced;
+    MatrixXd V_out;
+    MatrixXi F_out;
     MatrixXi pre_I; // index map, don't actually need
     MatrixXi pre_B; // dummy variable
-    igl::remove_unreferenced(pre_V_out, pre_F_out, pre_V_out_reduced, pre_F_out_reduced, pre_I);
-    logger().info("\tEdge manifoldness check: {}", igl::is_edge_manifold(pre_F_out_reduced));
-    logger().info(
-        "\tVertex manifoldness check: {}",
-        igl::is_vertex_manifold(pre_F_out_reduced, pre_B));
-    igl::write_triangle_mesh(path + ".obj", pre_V_out_reduced, pre_F_out_reduced);
+    igl::remove_unreferenced(pre_V_out, pre_F_out, V_out, F_out, pre_I);
+
+    bool vertex_manifold = igl::is_vertex_manifold(F_out, pre_B);
+    if (vertex_manifold) {
+        logger().info("\tVertex manifoldness check passed.");
+    } else {
+        logger().warn(
+            "\tSurface is not vertex manifold. Likely due to a nonmanifold vertex/edge on the mesh "
+            "boundary.");
+    }
+
+    bool edge_manifold = igl::is_edge_manifold(F_out);
+    if (edge_manifold) {
+        logger().info("\tEdge manifoldness check passed.");
+    } else {
+        logger().warn(
+            "\tSurface is not edge manifold. Likely due to a nonmanifold vertex/edge on the mesh "
+            "boundary.");
+    }
+
+    igl::write_triangle_mesh(path + ".obj", V_out, F_out);
 }
 
 

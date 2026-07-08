@@ -28,7 +28,6 @@ class ManExtractTetMesh : public topological_offset::TopoOffsetTetMesh
 public:
     int m_vtu_counter = 0;
     int m_surfvtu_counter = 0;
-    bool m_boundary_input_vert_found = false;
 
     Parameters& m_man_params;
 
@@ -78,9 +77,9 @@ public:
         const std::vector<simplex::Face>& b_out_faces) const;
 
     /**
-     * @brief check if a vertex is on the boundary of the mesh
+     * @brief determine if a vertex is on the boundary of the mesh
      */
-    bool is_boundary_vertex(size_t vid) const;
+    bool is_boundary_vertex(const Tuple& v) const;
 
     /**
      * @brief collect faces on the boundary of the mesh that belong to an 'outside' tet.
