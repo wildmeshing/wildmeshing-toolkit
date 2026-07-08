@@ -430,12 +430,15 @@ bool SimWildMesh::adjust_sizing_field_serial(double max_energy)
         const size_t vid = v.vid(*this);
         const auto& pos_v = m_vertex_attribute[vid].m_posf;
 
+        // all low quality tet centroids within R-ball of vertex
         std::vector<nanoflann::ResultItem<uint32_t, double>> matches;
         knn.r_nearest_neighbors(pos_v, R * R, matches);
 
         auto& v_scalar = m_vertex_attribute[vid].m_sizing_scalar;
 
         if (matches.empty()) {
+            // if no low quality tet within R-ball, increase sizing scalar to recover from previous
+            // refinement
             v_scalar = std::min(recover_scalar * v_scalar, max_sizing_scalars[vid]);
             continue;
         }
@@ -443,8 +446,13 @@ bool SimWildMesh::adjust_sizing_field_serial(double max_energy)
         for (const auto& [index, sq_dist] : matches) {
             const auto& pt = pts[index];
             const double dist = std::sqrt(sq_dist);
+            const double R_tet = R * pts_scalars[index]; // scale R by sizing scalar of tet
+            if (dist > R_tet) {
+                continue;
+            }
             // linear interpolate between refine_scalar and 1 based on distance
-            double u = dist / R * (1 - refine_scalar) + refine_scalar;
+            // double u = dist / R * (1 - refine_scalar) + refine_scalar;
+            double u = dist / R_tet * (1 - refine_scalar) + refine_scalar;
             double scalar = u * pts_scalars[index];
             v_scalar = std::min(v_scalar, scalar);
         }
