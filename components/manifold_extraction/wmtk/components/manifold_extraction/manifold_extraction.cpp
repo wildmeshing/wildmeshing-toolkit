@@ -1,14 +1,8 @@
 #include "manifold_extraction.hpp"
-#include <igl/is_edge_manifold.h>
-#include <igl/is_vertex_manifold.h>
-#include <igl/remove_unreferenced.h>
-#include <igl/write_triangle_mesh.h>
+#include <igl/Timer.h>
 #include <jse/jse.h>
-#include <wmtk/TetMesh.h>
 #include <wmtk/components/topological_offset/Parameters.h>
 #include <manifold_extraction_spec.hpp>
-#include <vector>
-#include <wmtk/Types.hpp>
 #include <wmtk/components/simwild/expression_parser/Parser.hpp>
 #include <wmtk/components/simwild/read_image_msh.hpp>
 #include <wmtk/utils/Logger.hpp>

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <igl/Timer.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/simplex/Simplex.hpp>
 #include "Parameters.h"

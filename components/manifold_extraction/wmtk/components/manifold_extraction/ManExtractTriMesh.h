@@ -1,21 +1,8 @@
 #pragma once
 
-#include <igl/Timer.h>
 #include <wmtk/components/topological_offset/Parameters.h>
 #include <wmtk/components/topological_offset/TopoOffsetTriMesh.h>
-#include <wmtk/utils/Morton.h>
-#include <wmtk/utils/PartitionMesh.h>
-#include <bitset>
-#include <wmtk/envelope/Envelope.hpp>
-#include <wmtk/simplex/Simplex.hpp>
 #include "Parameters.h"
-
-// clang-format off
-#include <wmtk/utils/DisableWarnings.hpp>
-#include <tbb/concurrent_map.h>
-#include <tbb/parallel_sort.h>
-#include <wmtk/utils/EnableWarnings.hpp>
-// clang-format on
 
 using namespace wmtk::components;
 

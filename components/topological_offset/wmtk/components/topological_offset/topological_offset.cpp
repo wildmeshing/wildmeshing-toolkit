@@ -1,24 +1,16 @@
 #include "topological_offset.hpp"
-
-#include <vector>
-
+#include <igl/Timer.h>
 #include <jse/jse.h>
 #include <wmtk/TetMesh.h>
-#include <wmtk/Types.hpp>
-#include <wmtk/utils/Logger.hpp>
-#include <wmtk/utils/resolve_path.hpp>
-
-#include <igl/is_edge_manifold.h>
-#include <igl/is_vertex_manifold.h>
-#include <igl/remove_unreferenced.h>
-#include <igl/write_triangle_mesh.h>
+#include <topological_offset_spec.hpp>
+#include <vector>
 #include <wmtk/components/simwild/expression_parser/Parser.hpp>
 #include <wmtk/components/simwild/read_image_msh.hpp>
+#include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/resolve_path.hpp>
 #include "Parameters.h"
 #include "TopoOffsetTetMesh.h"
 #include "TopoOffsetTriMesh.h"
-
-#include <topological_offset_spec.hpp>
 
 using namespace wmtk::components::simwild;
 

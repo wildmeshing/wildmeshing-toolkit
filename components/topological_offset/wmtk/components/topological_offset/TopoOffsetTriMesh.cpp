@@ -2,7 +2,6 @@
 #include <igl/is_edge_manifold.h>
 #include <igl/is_vertex_manifold.h>
 #include <igl/predicates/predicates.h>
-#include <igl/remove_unreferenced.h>
 #include <paraviewo/VTUWriter.hpp>
 #include <queue>
 #include <wmtk/utils/io.hpp>

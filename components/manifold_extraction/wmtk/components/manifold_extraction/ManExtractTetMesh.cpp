@@ -1,33 +1,16 @@
 #include "ManExtractTetMesh.h"
-#include <wmtk/utils/AMIPS.h>
-#include <wmtk/envelope/KNN.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include <wmtk/utils/TetraQualityUtils.hpp>
-#include <wmtk/utils/io.hpp>
-#include "wmtk/utils/Rational.hpp"
 
 // clang-format off
-#include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
 #include <igl/is_vertex_manifold.h>
-#include <igl/orientable_patches.h>
-#include <igl/predicates/predicates.h>
 #include <igl/remove_unreferenced.h>
-#include <igl/winding_number.h>
 #include <igl/write_triangle_mesh.h>
-#include <spdlog/fmt/bundled/format.h>
-#include <spdlog/fmt/ostr.h>
-#include <tbb/concurrent_vector.h>
-#include <wmtk/utils/GeoUtils.h>
-#include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
-#include <wmtk/utils/ExecutorUtils.hpp>
 // clang-format on
 
-#include <cmath>
 #include <limits>
-#include <paraviewo/VTUWriter.hpp>
 #include <set>
 
 

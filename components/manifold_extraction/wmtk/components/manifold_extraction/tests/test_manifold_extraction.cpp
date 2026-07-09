@@ -1,11 +1,6 @@
-#include <igl/is_edge_manifold.h>
-#include <igl/is_vertex_manifold.h>
-#include <igl/predicates/predicates.h>
-#include <igl/remove_unreferenced.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/components/manifold_extraction/ManExtractTetMesh.h>
 #include <wmtk/components/topological_offset/Parameters.h>
-#include <catch2/catch_get_random_seed.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/utils/Delaunay.hpp>
 
@@ -32,7 +27,13 @@ const int F1_LABEL = 31;
 const int F2_LABEL = 32;
 const int F3_LABEL = 33;
 const int T0_LABEL = 40;
-const std::set<int64_t> T0_TAG = {{2}};
+const std::set<std::string> T0_TAGS = {{"c"}};
+
+
+/**
+ * NOTE: these split tests are redundant, they just call the TopoOffsetTetMesh split functions which
+ * have their own unit tests. This should contain manifoldness checks for 2d and 3d instead
+ */
 
 
 TEST_CASE("edge_split", "[split_op]")
@@ -126,7 +127,13 @@ TEST_CASE("edge_split", "[split_op]")
     // tets
     for (int i = 0; i < 2; i++) {
         REQUIRE(mesh.m_tet_attribute[i].label == T0_LABEL);
-        REQUIRE(mesh.m_tet_attribute[i].tag == T0_TAG);
+
+        // convert tags to string for check
+        std::set<std::string> tags;
+        for (const size_t tag_int : mesh.m_tet_attribute[i].tag) {
+            tags.insert(mesh.m_tag_id_to_name[tag_int]);
+        }
+        REQUIRE(tags == T0_TAGS);
     }
 }
 
@@ -226,7 +233,13 @@ TEST_CASE("face_split", "[split_op]")
     // tets
     for (int i = 0; i < 3; i++) {
         REQUIRE(mesh.m_tet_attribute[i].label == T0_LABEL);
-        REQUIRE(mesh.m_tet_attribute[i].tag == T0_TAG);
+
+        // convert tags to string for check
+        std::set<std::string> tags;
+        for (const size_t tag_int : mesh.m_tet_attribute[i].tag) {
+            tags.insert(mesh.m_tag_id_to_name[tag_int]);
+        }
+        REQUIRE(tags == T0_TAGS);
     }
 }
 
@@ -327,6 +340,12 @@ TEST_CASE("tet_split", "[split_op]")
     // tets
     for (int i = 0; i < 4; i++) {
         REQUIRE(mesh.m_tet_attribute[i].label == T0_LABEL);
-        REQUIRE(mesh.m_tet_attribute[i].tag == T0_TAG);
+
+        // convert tags to string for check
+        std::set<std::string> tags;
+        for (const size_t tag_int : mesh.m_tet_attribute[i].tag) {
+            tags.insert(mesh.m_tag_id_to_name[tag_int]);
+        }
+        REQUIRE(tags == T0_TAGS);
     }
 }

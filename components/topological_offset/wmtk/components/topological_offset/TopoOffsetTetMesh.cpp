@@ -5,10 +5,8 @@
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <spdlog/fmt/ostr.h>
 #include <spdlog/fmt/bundled/format.h>
 #include <igl/predicates/predicates.h>
-#include <igl/Timer.h>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
