@@ -2,7 +2,6 @@
 #include <igl/is_edge_manifold.h>
 #include <igl/is_vertex_manifold.h>
 #include <igl/predicates/predicates.h>
-#include <igl/remove_unreferenced.h>
 #include <paraviewo/VTUWriter.hpp>
 #include <queue>
 #include <wmtk/utils/io.hpp>
@@ -30,7 +29,7 @@ void TopoOffsetTriMesh::init_from_image(
     assert(F.rows() == F_tags.rows());
     assert((V_env.rows() == 0) || (V_env.cols() == 2));
     assert((F_env.rows() == 0) || (F_env.cols() == 2)); // edges, envelope
-    m_tags_count = F_tags.cols();
+    m_tags_count = F_tags.cols() + 1; // + 1 for ambient
 
     // initialize connectivity
     init(F);
@@ -50,21 +49,15 @@ void TopoOffsetTriMesh::init_from_image(
         m_F_envelope = F_env;
     }
 
-    // // check that all tags are present
-    // for (const std::set<std::string>& nameset : m_params.offset_tags) {
-    //     for (const std::string& name : nameset) {
-    //         if (std::find(tag_names.begin(), tag_names.end(), name) == tag_names.end()) {
-    //             log_and_throw_error("Given tag '{}' in offset_tags does not exist in mesh.",
-    //             name);
-    //         }
-    //     }
-    // }
-
-    // set tag string/id maps
+    // set tag string/id maps. Internally, ambient is explicit
+    m_tag_id_to_name[0] = "ambient";
+    m_tag_name_to_id["ambient"] = 0;
     for (int64_t i = 0; i < tag_names.size(); i++) {
-        m_tag_id_to_name[i] = tag_names[i];
-        m_tag_name_to_id[tag_names[i]] = i;
+        m_tag_id_to_name[i + 1] = tag_names[i];
+        m_tag_name_to_id[tag_names[i]] = i + 1;
     }
+
+    // add any new tags to map
     for (const std::string& tag : m_params.offset_output_tag) {
         if (std::find(tag_names.begin(), tag_names.end(), tag) == tag_names.end()) {
             logger().warn("Tag '{}' does not exist. Adding to mesh.", tag);
@@ -86,10 +79,16 @@ void TopoOffsetTriMesh::init_from_image(
         size_t f_id = f.fid(*this);
         for (int j = 0; j < F_tags.cols(); j++) {
             if (F_tags.coeff(f_id, j) == 1) {
-                m_face_attribute[f_id].tag.insert(j);
+                m_face_attribute[f_id].tag.insert(j + 1);
             }
         }
+        if (m_face_attribute[f_id].tag.size() == 0) { // tri is ambient
+            m_face_attribute[f_id].tag.insert(0);
+        }
     }
+
+    // check for no ambient overlap
+    assert(ambient_assert());
 
     // set position of verts
     auto verts = get_vertices();
@@ -97,6 +96,20 @@ void TopoOffsetTriMesh::init_from_image(
         size_t v_id = v.vid(*this);
         m_vertex_attribute[v_id].m_posf = V.row(v_id);
     }
+}
+
+
+bool TopoOffsetTriMesh::ambient_assert()
+{
+    auto faces = get_faces();
+    for (const Tuple& f : faces) {
+        size_t f_id = f.fid(*this);
+        bool has_ambient = (m_face_attribute[f_id].tag.count(0) != 0);
+        if (has_ambient && (m_face_attribute[f_id].tag.size() != 1)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 
@@ -254,104 +267,6 @@ void TopoOffsetTriMesh::label_input_complex()
                 m_vertex_attribute[v_id].label = 1;
             }
         }
-
-
-        // // compute intersection of unions for faces.
-        // for (const Tuple& f : faces) {
-        //     size_t f_id = f.fid(*this);
-        //     bool in_input = true; // json specifies at least one tag set, so can safely set this.
-        //     const CellTag f_tag = m_face_attribute[f_id].tag;
-        //     for (const CellTag& tag : m_offset_tags_ids) {
-        //         if (!any_tag_present(f_tag, tag)) {
-        //             in_input = false;
-        //             break;
-        //         }
-        //     }
-        //     if (in_input) {
-        //         m_face_attribute[f_id].label = 1;
-        //         // propagate to edges and verts in tri
-        //         m_edge_attribute[f.eid(*this)].label = 1;
-        //         m_edge_attribute[f.switch_edge(*this).eid(*this)].label = 1;
-        //         m_edge_attribute[f.switch_vertex(*this).switch_edge(*this).eid(*this)].label = 1;
-        //         m_vertex_attribute[f.vid(*this)].label = 1;
-        //         m_vertex_attribute[f.switch_vertex(*this).vid(*this)].label = 1;
-        //         m_vertex_attribute[f.switch_edge(*this).switch_vertex(*this).vid(*this)].label =
-        //         1;
-        //     }
-        // }
-
-        // // compute intersection of unions for edges.
-        // auto edges = get_edges();
-        // for (const Tuple& e : edges) {
-        //     // check if edge already in input via face
-        //     size_t e_id = e.eid(*this);
-        //     if (m_edge_attribute[e_id].label == 1) {
-        //         continue;
-        //     }
-
-        //     // gather incident face(s)
-        //     std::vector<CellTag> inc_tags;
-        //     inc_tags.push_back(m_face_attribute[e.fid(*this)].tag);
-        //     auto other = e.switch_face(*this);
-        //     if (other) {
-        //         inc_tags.push_back(m_face_attribute[other.value().fid(*this)].tag);
-        //     }
-
-        //     // check if criteria met
-        //     bool in_input = true;
-        //     for (const CellTag& tag : m_offset_tags_ids) {
-        //         bool union_present = false;
-        //         for (const CellTag& inc_tag : inc_tags) {
-        //             if (any_tag_present(inc_tag, tag)) {
-        //                 union_present = true;
-        //             }
-        //         }
-        //         if (!union_present) {
-        //             in_input = false;
-        //             break;
-        //         }
-        //     }
-        //     if (in_input) {
-        //         m_edge_attribute[e_id].label = 1;
-        //         // propagate to vertices
-        //         m_vertex_attribute[e.vid(*this)].label = 1;
-        //         m_vertex_attribute[e.switch_vertex(*this).vid(*this)].label = 1;
-        //     }
-        // }
-
-        // // compute intersection of unions for vertices.
-        // for (const Tuple& v : verts) {
-        //     // check if vertex already in input via face or edge
-        //     size_t v_id = v.vid(*this);
-        //     if (m_vertex_attribute[v_id].label == 1) {
-        //         continue;
-        //     }
-
-        //     // get incident face tags
-        //     auto inc_fids = get_one_ring_fids_for_vertex(v_id);
-        //     std::vector<CellTag> inc_tags;
-        //     for (const size_t& f_id : inc_fids) {
-        //         inc_tags.push_back(m_face_attribute[f_id].tag);
-        //     }
-
-        //     // check if vertex meets criteria
-        //     bool in_input = true;
-        //     for (const CellTag& tag : m_offset_tags_ids) {
-        //         bool union_present = false;
-        //         for (const CellTag& inc_tag : inc_tags) {
-        //             if (any_tag_present(inc_tag, tag)) {
-        //                 union_present = true;
-        //             }
-        //         }
-        //         if (!union_present) {
-        //             in_input = false;
-        //             break;
-        //         }
-        //     }
-        //     if (in_input) {
-        //         m_vertex_attribute[v_id].label = 1;
-        //     }
-        // }
     }
 }
 
@@ -474,6 +389,62 @@ void TopoOffsetTriMesh::init_input_complex_bvh()
     // set BVH
     m_input_complex_bvh.clear(); // in case resetting it now
     m_input_complex_bvh.init(V, T, F, E, P);
+}
+
+
+void TopoOffsetTriMesh::execute_offset(const std::filesystem::path& output_file)
+{
+    // make embedding simplicial
+    m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Midpoint;
+    logger().info("Creating simplicial embedding...");
+    if (!is_simplicially_embedded()) {
+        simplicial_embedding();
+        bool dummy = is_simplicially_embedded();
+    }
+    consolidate_mesh();
+    if (m_params.debug_output) {
+        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+    }
+
+
+    // initializing offset
+    logger().info("Initializing offset...");
+    m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Initial;
+    marching_tris();
+    consolidate_mesh();
+    if (m_params.debug_output) {
+        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+    }
+
+    // run BFS
+    grow_offset_conservative();
+    consolidate_mesh();
+    if (m_params.debug_output) {
+        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+    }
+
+    // simplicially embed again, if needed
+    m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Midpoint;
+    if (!is_simplicially_embedded()) {
+        simplicial_embedding();
+        bool dummy = is_simplicially_embedded();
+        consolidate_mesh();
+    }
+    if (m_params.debug_output) {
+        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+    }
+
+    // marching tris
+    m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::SphereTracing;
+    logger().info("Using sphere tracing for distance field edge splitting.");
+    marching_tris();
+    set_offset_tri_tags();
+    consolidate_mesh();
+    if (m_params.debug_output) {
+        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+    }
+
+    assert(ambient_assert());
 }
 
 
@@ -633,7 +604,6 @@ void TopoOffsetTriMesh::marching_tris()
             size_t f_id = t.fid(*this);
             if (m_face_attribute[f_id].label == 0) { // dont want to overwrite if in input
                 m_face_attribute[f_id].label = 2;
-                // m_face_attribute[f_id].tag = TEMP_OFFSET_TRI_TAG_SET;
                 // propagate to children
                 auto vs = oriented_tri_vids(f_id);
                 for (int i = 0; i < 3; i++) {
@@ -685,7 +655,6 @@ void TopoOffsetTriMesh::grow_offset_conservative()
             m_params.relative_ball_threshold * m_params.target_distance);
         if (in_offset) {
             m_face_attribute[tri_id].label = 2;
-            // m_face_attribute[tri_id].tag = TEMP_OFFSET_TRI_TAG_SET;
             auto vs = oriented_tri_vids(tri_id);
             for (int i = 0; i < 3; i++) { // propagate labels to edges and verts
                 if (m_vertex_attribute[vs[i]].label != 1) {
@@ -716,30 +685,30 @@ void TopoOffsetTriMesh::set_offset_tri_tags()
     for (const Tuple& f : faces) {
         size_t f_id = f.fid(*this);
         if (m_face_attribute[f_id].label == 2) {
-            if (m_params.overwrite) {
-                CellTag new_tag;
+            CellTag new_tag;
 
-                // add existing protected tags
-                for (const int64_t& existing_tag : m_face_attribute[f_id].tag) {
-                    if (std::find(
-                            m_params.protected_tags.begin(),
-                            m_params.protected_tags.end(),
-                            m_tag_id_to_name[existing_tag]) != m_params.protected_tags.end()) {
-                        new_tag.insert(existing_tag);
-                    }
+            // add existing protected tags
+            for (const int64_t& existing_tag : m_face_attribute[f_id].tag) {
+                if (std::find(
+                        m_params.protected_tags.begin(),
+                        m_params.protected_tags.end(),
+                        m_tag_id_to_name[existing_tag]) != m_params.protected_tags.end()) {
+                    new_tag.insert(existing_tag);
                 }
+            }
 
-                // add offset tags
+            // add actual offset tags
+            if (m_offset_output_tag_ids.size() == 0) {
+                if (new_tag.size() == 0) { // no protected tags, should be ambient
+                    new_tag.insert(0);
+                }
+            } else {
                 for (const int64_t& tag : m_offset_output_tag_ids) {
                     new_tag.insert(tag);
                 }
-
-                m_face_attribute[f_id].tag = new_tag;
-            } else {
-                for (const int64_t& tag : m_offset_output_tag_ids) {
-                    m_face_attribute[f_id].tag.insert(tag);
-                }
             }
+
+            m_face_attribute[f_id].tag = new_tag;
         }
     }
 }
@@ -886,14 +855,13 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
     V.setZero();
     F.setZero();
 
-    // last two are ambient, offset
-    std::vector<MatrixXd> tags(m_tags_count + 2, MatrixXd(tris.size(), 1));
+    // last matrix is for offset
+    std::vector<MatrixXd> tags(m_tags_count + 1, MatrixXd(tris.size(), 1));
 
     for (const Tuple& f : tris) {
         size_t f_id = f.fid(*this);
 
         // set tri tags
-        tags[m_tags_count](f_id, 0) = (m_face_attribute[f_id].tag.empty()) ? 1 : 0;
         for (int j = 0; j < m_tags_count; j++) {
             tags[j](f_id, 0) = (m_face_attribute[f_id].tag.count(j) == 1) ? 1 : 0;
         }
@@ -915,11 +883,10 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
 
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
     writer = std::make_shared<paraviewo::VTUWriter>();
-    writer->add_cell_field("ambient", tags[m_tags_count]);
     for (int64_t i = 0; i < m_tags_count; i++) {
         writer->add_cell_field(m_tag_id_to_name[i], tags[i]);
     }
-    writer->add_cell_field("offset_tag", tags[m_tags_count + 1]); // also hacky but it works.
+    writer->add_cell_field("offset_tag", tags[m_tags_count]); // also hacky but it works.
     writer->write_mesh(path + ".vtu", V, F, paraviewo::CellType::Triangle);
 
     // surface output
@@ -932,54 +899,6 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
             ->write_mesh(out_surf_path, m_V_envelope, m_F_envelope, paraviewo::CellType::Line);
     }
 }
-
-
-// void TopoOffsetTriMesh::write_msh(const std::string& file)
-// {
-//     logger().info("Write {}.msh", file);
-//     consolidate_mesh();
-
-//     wmtk::MshData msh;
-
-//     // set vertices
-//     const auto& verts = get_vertices();
-//     msh.add_face_vertices(verts.size(), [&](size_t k) {
-//         size_t i = verts[k].vid(*this);
-//         Vector2d p2d = m_vertex_attribute[i].m_posf;
-//         return Vector3d(p2d(0), p2d(1), 0.0);
-//     });
-
-//     // set faces
-//     const auto& tris = get_faces();
-//     msh.add_faces(tris.size(), [&](size_t k) {
-//         auto i = tris[k].fid(*this);
-//         auto vs = oriented_tri_vids(i);
-//         std::array<size_t, 3> f_verts;
-//         for (int j = 0; j < 3; j++) {
-//             f_verts[j] = vs[j];
-//             assert(f_verts[j] < verts.size());
-//         }
-//         return f_verts;
-//     });
-
-//     // add tags under ImageVolume physical group
-//     for (int64_t j = 0; j < m_tags_count; j++) {
-//         msh.add_face_attribute<1>(m_tag_id_to_name[j], [&](size_t i) {
-//             return ((m_face_attribute[i].tag.count(j) == 1) ? 1 : 0);
-//         });
-//     }
-//     msh.add_physical_group("ImageVolume");
-
-//     if (m_has_envelope) {
-//         msh.add_edge_vertices(m_V_envelope.rows(), [this](size_t k) {
-//             return Vector3d(m_V_envelope(k, 0), m_V_envelope(k, 1), 0);
-//         });
-//         msh.add_edges(m_F_envelope.rows(), [this](size_t k) { return m_F_envelope.row(k); });
-//         msh.add_physical_group("EnvelopeSurface");
-//     }
-
-//     msh.save(file + ".msh", true);
-// }
 
 
 void TopoOffsetTriMesh::write_msh_groups(const std::string& file)
@@ -1013,10 +932,10 @@ void TopoOffsetTriMesh::write_msh_groups(const std::string& file)
         });
     };
 
-    // add ambient
+    // add ambient (tag id=0). assumed that ambient does not overlap with anything
     for (const Tuple& f : faces) {
         size_t f_id = f.fid(*this);
-        if (m_face_attribute[f_id].tag.empty()) {
+        if (m_face_attribute[f_id].tag.count(0) != 0) {
             faces_with_tag.push_back(f);
         }
     }
@@ -1024,7 +943,7 @@ void TopoOffsetTriMesh::write_msh_groups(const std::string& file)
     msh.add_physical_group("ambient");
 
     // group for each tag
-    for (int64_t tag_img = 0; tag_img < m_tags_count; tag_img++) {
+    for (int64_t tag_img = 1; tag_img < m_tags_count; tag_img++) {
         faces_with_tag.clear();
         for (const Tuple& f : faces) {
             size_t f_id = f.fid(*this);

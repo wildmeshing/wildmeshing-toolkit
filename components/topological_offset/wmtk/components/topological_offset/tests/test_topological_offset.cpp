@@ -1,5 +1,3 @@
-#include <igl/point_simplex_squared_distance.h>
-#include <igl/predicates/predicates.h>
 #include <math.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/TriMesh.h>
@@ -8,8 +6,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <queue>
 #include <wmtk/Types.hpp>
-#include <wmtk/components/simwild/expression_parser/Expression.hpp>
-#include <wmtk/components/simwild/expression_parser/Parser.hpp>
 #include <wmtk/components/topological_offset/Circle.hpp>
 #include <wmtk/components/topological_offset/Sphere.hpp>
 #include <wmtk/simplex/Simplex.hpp>
@@ -35,9 +31,9 @@ const int F1_LABEL = 31;
 const int F2_LABEL = 32;
 const int F3_LABEL = 33;
 const int T0_LABEL = 40;
-const CellTag T0_TAGS = {{2}};
-const CellTag F0_TAGS = {{2}}; // for trimesh
-const CellTag F1_TAGS = {{1}}; // for trimesh
+const std::set<std::string> T0_TAGS = {{"c"}};
+const std::set<std::string> F0_TAGS = {{"c"}};
+const std::set<std::string> F1_TAGS = {{"b"}};
 
 
 TEST_CASE("edge_split_3d", "[split_op][3d]")
@@ -47,12 +43,18 @@ TEST_CASE("edge_split_3d", "[split_op][3d]")
     Eigen::MatrixXi T(1, 4);
     T << 0, 1, 2, 3;
 
-    // tet has tag 2
+    // set tet tags
     MatrixSi Tags(1, 3);
     std::vector<std::string> tag_names = {"a", "b", "c"};
-    Tags.coeffRef(0, 0) = 0;
-    Tags.coeffRef(0, 1) = 0;
-    Tags.coeffRef(0, 2) = 1;
+    for (int i = 0; i < tag_names.size(); i++) {
+        bool exists = false;
+        for (const std::string& tag : T0_TAGS) {
+            if (tag == tag_names[i]) {
+                exists = true;
+            }
+        }
+        Tags.coeffRef(0, i) = exists ? 1 : 0;
+    }
 
     Parameters param;
     // param.offset_selection = parse("tag_0 & tag_1");
@@ -133,7 +135,13 @@ TEST_CASE("edge_split_3d", "[split_op][3d]")
     // tets
     for (int i = 0; i < 2; i++) {
         REQUIRE(mesh.m_tet_attribute[i].label == T0_LABEL);
-        REQUIRE(mesh.m_tet_attribute[i].tag == T0_TAGS);
+
+        // convert tags to string for check
+        std::set<std::string> tags;
+        for (const size_t tag_int : mesh.m_tet_attribute[i].tag) {
+            tags.insert(mesh.m_tag_id_to_name[tag_int]);
+        }
+        REQUIRE(tags == T0_TAGS);
     }
 }
 
@@ -145,12 +153,18 @@ TEST_CASE("face_split_3d", "[split_op][3d]")
     Eigen::MatrixXi T(1, 4);
     T << 0, 1, 2, 3;
 
-    // tet has tag 2
+    // set tet tags
     MatrixSi Tags(1, 3);
     std::vector<std::string> tag_names = {"a", "b", "c"};
-    Tags.coeffRef(0, 0) = 0;
-    Tags.coeffRef(0, 1) = 0;
-    Tags.coeffRef(0, 2) = 1;
+    for (int i = 0; i < tag_names.size(); i++) {
+        bool exists = false;
+        for (const std::string& tag : T0_TAGS) {
+            if (tag == tag_names[i]) {
+                exists = true;
+            }
+        }
+        Tags.coeffRef(0, i) = exists ? 1 : 0;
+    }
 
     Parameters param;
     // param.offset_selection = parse("tag_0 & tag_1");
@@ -235,7 +249,13 @@ TEST_CASE("face_split_3d", "[split_op][3d]")
     // tets
     for (int i = 0; i < 3; i++) {
         REQUIRE(mesh.m_tet_attribute[i].label == T0_LABEL);
-        REQUIRE(mesh.m_tet_attribute[i].tag == T0_TAGS);
+
+        // convert tags to string for check
+        std::set<std::string> tags;
+        for (const size_t tag_int : mesh.m_tet_attribute[i].tag) {
+            tags.insert(mesh.m_tag_id_to_name[tag_int]);
+        }
+        REQUIRE(tags == T0_TAGS);
     }
 }
 
@@ -247,12 +267,18 @@ TEST_CASE("tet_split_3d", "[split_op][3d]")
     Eigen::MatrixXi T(1, 4);
     T << 0, 1, 2, 3;
 
-    // tet has tag 2
+    // set tet tags
     MatrixSi Tags(1, 3);
     std::vector<std::string> tag_names = {"a", "b", "c"};
-    Tags.coeffRef(0, 0) = 0;
-    Tags.coeffRef(0, 1) = 0;
-    Tags.coeffRef(0, 2) = 1;
+    for (int i = 0; i < tag_names.size(); i++) {
+        bool exists = false;
+        for (const std::string& tag : T0_TAGS) {
+            if (tag == tag_names[i]) {
+                exists = true;
+            }
+        }
+        Tags.coeffRef(0, i) = exists ? 1 : 0;
+    }
 
     Parameters param;
     // param.offset_selection = parse("tag_0 & tag_1");
@@ -338,7 +364,13 @@ TEST_CASE("tet_split_3d", "[split_op][3d]")
     // tets
     for (int i = 0; i < 4; i++) {
         REQUIRE(mesh.m_tet_attribute[i].label == T0_LABEL);
-        REQUIRE(mesh.m_tet_attribute[i].tag == T0_TAGS);
+
+        // convert tags to string for check
+        std::set<std::string> tags;
+        for (const size_t tag_int : mesh.m_tet_attribute[i].tag) {
+            tags.insert(mesh.m_tag_id_to_name[tag_int]);
+        }
+        REQUIRE(tags == T0_TAGS);
     }
 }
 
@@ -444,7 +476,13 @@ TEST_CASE("edge_split_2d_1face", "[split_op][2d]")
     // faces
     for (int i = 0; i < 2; i++) {
         REQUIRE(mesh.m_face_attribute[i].label == F0_LABEL);
-        REQUIRE(mesh.m_face_attribute[i].tag == F0_TAGS);
+
+        // convert tags to string for check
+        std::set<std::string> tags;
+        for (const size_t tag_int : mesh.m_face_attribute[i].tag) {
+            tags.insert(mesh.m_tag_id_to_name[tag_int]);
+        }
+        REQUIRE(tags == F0_TAGS);
     }
 }
 
@@ -526,10 +564,22 @@ TEST_CASE("edge_split_2d_2faces", "[split_op][2d]")
         size_t f_id = ftup.fid(mesh);
         if (i < 2) {
             REQUIRE(mesh.m_face_attribute[f_id].label == F0_LABEL);
-            REQUIRE(mesh.m_face_attribute[f_id].tag == F0_TAGS);
+
+            // convert tags to string for check
+            std::set<std::string> tags;
+            for (const size_t tag_int : mesh.m_face_attribute[f_id].tag) {
+                tags.insert(mesh.m_tag_id_to_name[tag_int]);
+            }
+            REQUIRE(tags == F0_TAGS);
         } else {
             REQUIRE(mesh.m_face_attribute[f_id].label == F1_LABEL);
-            REQUIRE(mesh.m_face_attribute[f_id].tag == F1_TAGS);
+
+            // convert tags to string for check
+            std::set<std::string> tags;
+            for (const size_t tag_int : mesh.m_face_attribute[f_id].tag) {
+                tags.insert(mesh.m_tag_id_to_name[tag_int]);
+            }
+            REQUIRE(tags == F1_TAGS);
         }
     }
 }
@@ -600,7 +650,13 @@ TEST_CASE("face_split_2d", "[split_op][2d]")
             mesh.tuple_from_simplex(simplex::Face(faces[i][0], faces[i][1], faces[i][2]));
         size_t f_id = ftup.fid(mesh);
         REQUIRE(mesh.m_face_attribute[f_id].label == F0_LABEL);
-        REQUIRE(mesh.m_face_attribute[f_id].tag == F0_TAGS);
+
+        // convert tags to string for check
+        std::set<std::string> tags;
+        for (const size_t tag_int : mesh.m_face_attribute[i].tag) {
+            tags.insert(mesh.m_tag_id_to_name[tag_int]);
+        }
+        REQUIRE(tags == F0_TAGS);
     }
 }
 

@@ -14,7 +14,6 @@ namespace wmtk::components::topological_offset {
 const int64_t TEMP_OFFSET_TRI_TAG = -1;
 const CellTag TEMP_OFFSET_TRI_TAG_SET{TEMP_OFFSET_TRI_TAG};
 
-
 class VertexAttributes2d
 {
 public:
@@ -45,13 +44,13 @@ class TopoOffsetTriMesh : public wmtk::TriMesh
 {
 public: // mode for splitting in marching tets
     enum class EdgeSplitMode {
-        Midpoint = 0,
-        BinarySearch = 1, // requires that every edge being split has one vertex labelled 0 and the
-                          // other 1 or 2
-        Initial = 2 // requires that every edge being split has one vertex labelled 0 and the other
-                    // 1 or 2. This is really hacky. This initializes the offset using the minimum
-                    // of half the target distance and half the edge length. Basically we want to
-                    // initialize the offset with as high of quality as possible
+        Midpoint = 0, // used for simplicial embedding steps
+        Initial = 1, // this is used to initialize the complex. Its a little hacky
+
+        // only one of these is used, hard coded in execute_offset()
+        BinarySearch = 2, // bisection root finding algo
+        LogRootFind = 3, // 'custom' root finding, using the fact that d(x) - d* < 0 at first vertex
+        SphereTracing = 4 // use sphere tracing to compute the zero of the distance field
     };
 
 public:
@@ -64,7 +63,6 @@ public:
     // tag name maps
     std::map<std::string, int64_t> m_tag_name_to_id;
     std::map<int64_t, std::string> m_tag_id_to_name;
-    // std::vector<CellTag> m_offset_tags_ids;
     CellTag m_offset_output_tag_ids;
 
     // if in 'singlebody' mode
@@ -113,6 +111,11 @@ public:
         const std::vector<std::string>& tag_names);
 
     /**
+     * @brief ensure ambient tag does not overlap any other tags in mesh.
+     */
+    bool ambient_assert();
+
+    /**
      * @brief label input complex simplices as per boolean expression (or single body mode)
      */
     void label_input_complex();
@@ -129,11 +132,28 @@ public:
     void init_input_complex_bvh();
 
     /**
+     * @deprecated
      * @brief split edge at point by minimizing m_params.target_distance - d() (where d() is
      * distance to input complex via BVH) along the edge. Uses binary search, so implicitly assumes
      * distance field is monotonic along edge. May give weird results if not monotonic
      */
     void edge_split_binary_search(const size_t v1, const size_t v2, Vector2d& p_new) const;
+    void edge_split_binary_search(const Vector2d& v1_pos, const Vector2d& v2_pos, Vector2d& p_new)
+        const;
+
+    /**
+     * @deprecated
+     * @brief split edge at root of d() - target_distance, using fact that this is negative at
+     * v1.
+     */
+    void edge_split_log_root_find(const size_t v1, const size_t v2, Vector2d& p_new) const;
+
+    /**
+     * @brief split edge at first root of d(l) - d*, where d(l) is distance to input complex,
+     * using sphere tracing method. This is the best method and should be used instead of
+     * binary or log root finding methods
+     */
+    void edge_split_sphere_tracing(const size_t v1, const size_t v2, Vector2d& p_new) const;
 
     //// overriden splits/invariants
     bool split_edge_before(const Tuple& t) override;
@@ -143,6 +163,10 @@ public:
     bool invariants(const std::vector<Tuple>& tris) override;
     //// overriden splits/invariants
 
+    /**
+     * @brief entry point for offset procedure
+     */
+    void execute_offset(const std::filesystem::path& output_file);
 
     /**
      * @brief execute simplistic marching tets. All edges with one vertex labelled 0 and the other 1/2
