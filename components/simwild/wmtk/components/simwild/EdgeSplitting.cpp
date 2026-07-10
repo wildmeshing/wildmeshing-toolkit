@@ -12,19 +12,26 @@ void SimWildMesh::split_all_edges()
     igl::Timer timer;
     double time;
     timer.start();
-    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_split", loc);
+    std::vector<std::pair<std::string, Tuple>> collect_all_ops;
+    for (const Tuple& loc : get_edges()) {
+        collect_all_ops.emplace_back("edge_split", loc);
+    }
     time = timer.getElapsedTime();
     wmtk::logger().info("edge split prepare time: {:.4}s", time);
     auto setup_and_execute = [&](auto& executor) {
-        executor.renew_neighbor_tuples = wmtk::renewal_simple;
+        executor.renew_neighbor_tuples = wmtk::renewal_edges;
 
-        executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
+        executor.priority = [&](const SimWildMesh& m, std::string op, const Tuple& t) {
+            return m.get_length2(t);
+        };
         executor.num_threads = NUM_THREADS;
-        executor.is_weight_up_to_date = [&](const auto& m, const auto& ele) {
+        executor.is_weight_up_to_date = [&](const SimWildMesh& m,
+                                            const std::tuple<double, std::string, Tuple>& ele) {
             auto [weight, op, tup] = ele;
             auto length = m.get_length2(tup);
-            if (length != weight) return false;
+            if (length != weight) {
+                return false;
+            }
             //
             size_t v1_id = tup.vid(*this);
             size_t v2_id = tup.switch_vertex(*this).vid(*this);

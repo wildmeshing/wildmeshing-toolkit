@@ -7,6 +7,6 @@ endif()
 message(STATUS "Third-party: creating target 'VolumeMesher'")
 
 include(CPM)
-CPMAddPackage("gh:JcDai/VolumeRemesher#c9b2e0c856d8a05d9fd351724116f989ec41fcee")
+CPMAddPackage("gh:JcDai/VolumeRemesher#a42ad61931bcae84fd723e6c49cdcac4b2eb234c")
 
 set_target_properties(mesh_generator_lib PROPERTIES FOLDER third-party)

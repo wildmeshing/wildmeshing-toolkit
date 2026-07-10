@@ -308,9 +308,11 @@ void SimWildMesh::set_sizing_field(const nlohmann::json& sizing_field_json)
                 "Each sizing_field entry must specify at least one of 'length' or 'length_rel'.");
         }
 
-        if (length_rel > 0) {
+        if (length < 0) {
             length = length_rel * m_params.diag_l;
         }
+
+        logger().info("Added sizing field: expr = {}, length = {}", expr->to_string(), length);
     }
 
     // apply sizing fields to vertices
