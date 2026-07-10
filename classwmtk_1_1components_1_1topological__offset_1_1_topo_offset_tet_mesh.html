@@ -90,7 +90,8 @@ Inheritance diagram for wmtk::components::topological_offset::TopoOffsetTetMesh:
  <div class="center">
   <img src="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.png" usemap="#wmtk::components::topological_5Foffset::TopoOffsetTetMesh_map" alt=""/>
   <map id="wmtk::components::topological_5Foffset::TopoOffsetTetMesh_map" name="wmtk::components::topological_5Foffset::TopoOffsetTetMesh_map">
-<area href="classwmtk_1_1_tet_mesh.html" alt="wmtk::TetMesh" shape="rect" coords="0,0,333,24"/>
+<area href="classwmtk_1_1_tet_mesh.html" alt="wmtk::TetMesh" shape="rect" coords="0,0,345,24"/>
+<area href="classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_tet_mesh.html" alt="wmtk::components::manifold_extraction::ManExtractTetMesh" shape="rect" coords="0,112,345,136"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -105,9 +106,14 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a8447ef01e5a45efb44e580a73495cb3f" id="r_a8447ef01e5a45efb44e580a73495cb3f"><td class="memItemLeft" align="right" valign="top"><a id="a8447ef01e5a45efb44e580a73495cb3f" name="a8447ef01e5a45efb44e580a73495cb3f"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><b>EdgeSplitMode</b> { <b>Midpoint</b> = 0
-, <b>BinarySearch</b> = 1
-, <b>Initial</b> = 2
+<tr class="memitem:a8447ef01e5a45efb44e580a73495cb3f" id="r_a8447ef01e5a45efb44e580a73495cb3f"><td class="memItemLeft" align="right" valign="top"><a id="a8447ef01e5a45efb44e580a73495cb3f" name="a8447ef01e5a45efb44e580a73495cb3f"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><b>EdgeSplitMode</b> { <br />
+&#160;&#160;<b>Midpoint</b> = 0
+, <b>Initial</b> = 1
+, <b>BinarySearch</b> = 2
+, <b>LogRootFind</b> = 3
+, <br />
+&#160;&#160;<b>SphereTracing</b> = 4
+<br />
  }</td></tr>
 <tr class="separator:a8447ef01e5a45efb44e580a73495cb3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acf20c536e9cb57f9a1688b6f28168e01" id="r_acf20c536e9cb57f9a1688b6f28168e01"><td class="memItemLeft" align="right" valign="top"><a id="acf20c536e9cb57f9a1688b6f28168e01" name="acf20c536e9cb57f9a1688b6f28168e01"></a>
@@ -136,6 +142,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a3989abf55e57dc14b0f15d2f04533d3f" id="r_a3989abf55e57dc14b0f15d2f04533d3f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3989abf55e57dc14b0f15d2f04533d3f">init_from_image</a> (const MatrixXd &amp;V, const MatrixXi &amp;T, const MatrixSi &amp;T_tags, const MatrixXd &amp;V_env, const MatrixXi F_env, const std::vector&lt; std::string &gt; &amp;tag_names)</td></tr>
 <tr class="memdesc:a3989abf55e57dc14b0f15d2f04533d3f"><td class="mdescLeft">&#160;</td><td class="mdescRight">initialize <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> from vertex, tet, and tag data  <br /></td></tr>
 <tr class="separator:a3989abf55e57dc14b0f15d2f04533d3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a51d702db14d25696845238ff4170d348" id="r_a51d702db14d25696845238ff4170d348"><td class="memItemLeft" align="right" valign="top"><a id="a51d702db14d25696845238ff4170d348" name="a51d702db14d25696845238ff4170d348"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>ambient_assert</b> ()</td></tr>
+<tr class="memdesc:a51d702db14d25696845238ff4170d348"><td class="mdescLeft">&#160;</td><td class="mdescRight">check that the ambient tag does not overlap with any other tags <br /></td></tr>
+<tr class="separator:a51d702db14d25696845238ff4170d348"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaed4f7af1b15e9fc3d7c0cfb9afaeb8c" id="r_aaed4f7af1b15e9fc3d7c0cfb9afaeb8c"><td class="memItemLeft" align="right" valign="top"><a id="aaed4f7af1b15e9fc3d7c0cfb9afaeb8c" name="aaed4f7af1b15e9fc3d7c0cfb9afaeb8c"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>label_input_complex</b> ()</td></tr>
 <tr class="memdesc:aaed4f7af1b15e9fc3d7c0cfb9afaeb8c"><td class="mdescLeft">&#160;</td><td class="mdescRight">label input simplicial complex simplices, as defined in m_params.offset_selection <br /></td></tr>
@@ -148,10 +158,19 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>empty_input_complex</
 void&#160;</td><td class="memItemRight" valign="bottom"><b>init_input_complex_bvh</b> ()</td></tr>
 <tr class="memdesc:aa442804568f190cef942f2c4ebf2b04d"><td class="mdescLeft">&#160;</td><td class="mdescRight">initialize BVH for input complex. Must be called after init_from_image(...) <br /></td></tr>
 <tr class="separator:aa442804568f190cef942f2c4ebf2b04d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a388318e5cbc411a269f70eb79810a87a" id="r_a388318e5cbc411a269f70eb79810a87a"><td class="memItemLeft" align="right" valign="top"><a id="a388318e5cbc411a269f70eb79810a87a" name="a388318e5cbc411a269f70eb79810a87a"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>edge_split_binary_search</b> (const size_t v1, const size_t v2, Vector3d &amp;p_new) const</td></tr>
-<tr class="memdesc:a388318e5cbc411a269f70eb79810a87a"><td class="mdescLeft">&#160;</td><td class="mdescRight">split edge at point by minimizing m_params.target_distance - d() (where d() is distance to input complex via BVH) along the edge. Uses binary search, so implicitly assumes distance field is monotonic along edge. May give weird results if not monotonic <br /></td></tr>
+<tr class="memitem:a388318e5cbc411a269f70eb79810a87a" id="r_a388318e5cbc411a269f70eb79810a87a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a388318e5cbc411a269f70eb79810a87a">edge_split_binary_search</a> (const size_t v1, const size_t v2, Vector3d &amp;p_new) const</td></tr>
+<tr class="memdesc:a388318e5cbc411a269f70eb79810a87a"><td class="mdescLeft">&#160;</td><td class="mdescRight">split edge at point by minimizing m_params.target_distance - d() (where d() is distance to input complex via BVH) along the edge. Uses binary search, so implicitly assumes distance field is monotonic along edge. May give weird results if not monotonic  <br /></td></tr>
 <tr class="separator:a388318e5cbc411a269f70eb79810a87a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7c35ce03af4a1af15a4ea51e05c00fd5" id="r_a7c35ce03af4a1af15a4ea51e05c00fd5"><td class="memItemLeft" align="right" valign="top"><a id="a7c35ce03af4a1af15a4ea51e05c00fd5" name="a7c35ce03af4a1af15a4ea51e05c00fd5"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>edge_split_binary_search</b> (const Vector3d &amp;v1_pos, const Vector3d &amp;v2_pos, Vector3d &amp;p_new) const</td></tr>
+<tr class="separator:a7c35ce03af4a1af15a4ea51e05c00fd5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a18fa56369bba2e05ec7c846c5b5275b7" id="r_a18fa56369bba2e05ec7c846c5b5275b7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a18fa56369bba2e05ec7c846c5b5275b7">edge_split_log_root_find</a> (const size_t v1, const size_t v2, Vector3d &amp;p_new) const</td></tr>
+<tr class="memdesc:a18fa56369bba2e05ec7c846c5b5275b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">uses custom root finding routine, attempting to find first root (nearest to v1) to split edge at  <br /></td></tr>
+<tr class="separator:a18fa56369bba2e05ec7c846c5b5275b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae242d4aad6da023ab4b2a83c2acbbe0f" id="r_ae242d4aad6da023ab4b2a83c2acbbe0f"><td class="memItemLeft" align="right" valign="top"><a id="ae242d4aad6da023ab4b2a83c2acbbe0f" name="ae242d4aad6da023ab4b2a83c2acbbe0f"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>edge_split_sphere_tracing</b> (const size_t v1, const size_t v2, Vector3d &amp;p_new) const</td></tr>
+<tr class="memdesc:ae242d4aad6da023ab4b2a83c2acbbe0f"><td class="mdescLeft">&#160;</td><td class="mdescRight">split edge at first root of d(l) - d*, where d(l) is distance to input complex, using sphere tracing method. This is the best method and should be used instead of binary or log root finding methods <br /></td></tr>
+<tr class="separator:ae242d4aad6da023ab4b2a83c2acbbe0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a38ec47f3edbe7a73169bc448ff40523a" id="r_a38ec47f3edbe7a73169bc448ff40523a"><td class="memItemLeft" align="right" valign="top"><a id="a38ec47f3edbe7a73169bc448ff40523a" name="a38ec47f3edbe7a73169bc448ff40523a"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>flood_fill</b> ()</td></tr>
 <tr class="memdesc:a38ec47f3edbe7a73169bc448ff40523a"><td class="mdescLeft">&#160;</td><td class="mdescRight">label connected simplicial complex components (simplices labelled 1 or 2) <br /></td></tr>
@@ -176,6 +195,10 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>flood_fill</b> ()</
 <tr class="separator:a4be55e8088b395f5f6285a30e721e969"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abeaef293c4a15ce1927d949960438847" id="r_abeaef293c4a15ce1927d949960438847"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#abeaef293c4a15ce1927d949960438847">invariants</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;tets) override</td></tr>
 <tr class="separator:abeaef293c4a15ce1927d949960438847"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7d7171eba2ae3bf030e8f456c9965c86" id="r_a7d7171eba2ae3bf030e8f456c9965c86"><td class="memItemLeft" align="right" valign="top"><a id="a7d7171eba2ae3bf030e8f456c9965c86" name="a7d7171eba2ae3bf030e8f456c9965c86"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>execute_offset</b> (const std::filesystem::path &amp;output_file)</td></tr>
+<tr class="memdesc:a7d7171eba2ae3bf030e8f456c9965c86"><td class="mdescLeft">&#160;</td><td class="mdescRight">main function from which all others are called <br /></td></tr>
+<tr class="separator:a7d7171eba2ae3bf030e8f456c9965c86"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4898de71f1b7b8f2159cea5d8b6a2458" id="r_a4898de71f1b7b8f2159cea5d8b6a2458"><td class="memItemLeft" align="right" valign="top"><a id="a4898de71f1b7b8f2159cea5d8b6a2458" name="a4898de71f1b7b8f2159cea5d8b6a2458"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>marching_tets</b> ()</td></tr>
 <tr class="memdesc:a4898de71f1b7b8f2159cea5d8b6a2458"><td class="mdescLeft">&#160;</td><td class="mdescRight">execute simplistic marching tets. All edges with one vertex labelled 0 and the other 1/2 are split. If m_edge_split_mode=BinarySearch, edges are split according to BVH distance field and the offset target distance (m_params.target_distance). If m_edge_split_mode=Midpoint, edges are split at the midpoint <br /></td></tr>
@@ -711,6 +734,80 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
 
 <p>determine if any tag from tag1 is also present in tag2. </p>
 <dl class="section note"><dt>Note</dt><dd>if tag2 is empty (ambient), return true if tag1 is empty, otherwise false (tag2 is ambient, so only 'element' is ambient) </dd></dl>
+
+</div>
+</div>
+<a id="a388318e5cbc411a269f70eb79810a87a" name="a388318e5cbc411a269f70eb79810a87a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a388318e5cbc411a269f70eb79810a87a">&#9670;&#160;</a></span>edge_split_binary_search()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::topological_offset::TopoOffsetTetMesh::edge_split_binary_search </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>v1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>v2</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>p_new</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>split edge at point by minimizing m_params.target_distance - d() (where d() is distance to input complex via BVH) along the edge. Uses binary search, so implicitly assumes distance field is monotonic along edge. May give weird results if not monotonic </p>
+<dl class="deprecated"><dt><b><a class="el" href="deprecated.html#_deprecated000001">Deprecated:</a></b></dt><dd></dd></dl>
+
+</div>
+</div>
+<a id="a18fa56369bba2e05ec7c846c5b5275b7" name="a18fa56369bba2e05ec7c846c5b5275b7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a18fa56369bba2e05ec7c846c5b5275b7">&#9670;&#160;</a></span>edge_split_log_root_find()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::topological_offset::TopoOffsetTetMesh::edge_split_log_root_find </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>v1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>v2</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>p_new</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>uses custom root finding routine, attempting to find first root (nearest to v1) to split edge at </p>
+<dl class="deprecated"><dt><b><a class="el" href="deprecated.html#_deprecated000002">Deprecated:</a></b></dt><dd></dd></dl>
 
 </div>
 </div>

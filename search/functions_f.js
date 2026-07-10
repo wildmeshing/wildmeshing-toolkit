@@ -7,7 +7,7 @@ var searchData=
   ['tet_5fcapacity_4',['tet_capacity',['../classwmtk_1_1_tet_mesh.html#ae694542b2ee771a6ab0824c138b66212',1,'wmtk::TetMesh']]],
   ['tet_5fedges_5',['tet_edges',['../classwmtk_1_1_tet_mesh.html#a1ee6a0754114ac59ab11703808d83bac',1,'wmtk::TetMesh']]],
   ['tet_5fis_5fin_5foffset_5fconservative_6',['tet_is_in_offset_conservative',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a30aa3e4becd968f272a6330207774a90',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
-  ['tet_5fis_5fsimp_5femb_7',['tet_is_simp_emb',['../classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_mesh.html#a53b25db4bd32a2193855ef07980af5c4',1,'wmtk::components::manifold_extraction::ManExtractMesh::tet_is_simp_emb()'],['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#abc35230db64d9f7a7b0d0955ad149b3f',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::tet_is_simp_emb()']]],
+  ['tet_5fis_5fsimp_5femb_7',['tet_is_simp_emb',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#abc35230db64d9f7a7b0d0955ad149b3f',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
   ['tet_5fsize_8',['tet_size',['../classwmtk_1_1_tet_mesh.html#a156ff6a09869e74b8ad2aa239301d360',1,'wmtk::TetMesh']]],
   ['tetvtuwriter_9',['TetVTUWriter',['../classwmtk_1_1io_1_1_tet_v_t_u_writer.html#a277bdbcec2d01076b00c7f522dcd9562',1,'wmtk::io::TetVTUWriter']]],
   ['tid_10',['tid',['../classwmtk_1_1_tet_mesh_1_1_tuple.html#ab8af2ebc7c790390f1b719077b4aae66',1,'wmtk::TetMesh::Tuple']]],

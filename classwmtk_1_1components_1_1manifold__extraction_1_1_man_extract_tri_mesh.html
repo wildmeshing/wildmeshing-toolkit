@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: wmtk::components::topological_offset::TopoOffsetTriMesh Class Reference</title>
+<title>Wildmeshing Toolkit: wmtk::components::manifold_extraction::ManExtractTriMesh Class Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -69,183 +69,170 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>components</b></li><li class="navelem"><b>topological_offset</b></li><li class="navelem"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html">TopoOffsetTriMesh</a></li>  </ul>
+<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>components</b></li><li class="navelem"><b>manifold_extraction</b></li><li class="navelem"><a class="el" href="classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_tri_mesh.html">ManExtractTriMesh</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Classes</a> &#124;
-<a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pri-methods">Private Member Functions</a> &#124;
-<a href="#pri-attribs">Private Attributes</a> &#124;
-<a href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">wmtk::components::topological_offset::TopoOffsetTriMesh Class Reference</div></div>
+<a href="classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_tri_mesh-members.html">List of all members</a>  </div>
+  <div class="headertitle"><div class="title">wmtk::components::manifold_extraction::ManExtractTriMesh Class Reference</div></div>
 </div><!--header-->
 <div class="contents">
 <div class="dynheader">
-Inheritance diagram for wmtk::components::topological_offset::TopoOffsetTriMesh:</div>
+Inheritance diagram for wmtk::components::manifold_extraction::ManExtractTriMesh:</div>
 <div class="dyncontent">
  <div class="center">
-  <img src="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.png" usemap="#wmtk::components::topological_5Foffset::TopoOffsetTriMesh_map" alt=""/>
-  <map id="wmtk::components::topological_5Foffset::TopoOffsetTriMesh_map" name="wmtk::components::topological_5Foffset::TopoOffsetTriMesh_map">
+  <img src="classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_tri_mesh.png" usemap="#wmtk::components::manifold_5Fextraction::ManExtractTriMesh_map" alt=""/>
+  <map id="wmtk::components::manifold_5Fextraction::ManExtractTriMesh_map" name="wmtk::components::manifold_5Fextraction::ManExtractTriMesh_map">
+<area href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html" alt="wmtk::components::topological_offset::TopoOffsetTriMesh" shape="rect" coords="0,56,343,80"/>
 <area href="classwmtk_1_1_tri_mesh.html" alt="wmtk::TriMesh" shape="rect" coords="0,0,343,24"/>
-<area href="classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_tri_mesh.html" alt="wmtk::components::manifold_extraction::ManExtractTriMesh" shape="rect" coords="0,112,343,136"/>
   </map>
 </div></div>
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
-Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_edge_split_cache.html">EdgeSplitCache</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_face_split_cache.html">FaceSplitCache</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
-Public Types</h2></td></tr>
-<tr class="memitem:addbcdb8e756d5f5c94e67fbb46012ed3" id="r_addbcdb8e756d5f5c94e67fbb46012ed3"><td class="memItemLeft" align="right" valign="top"><a id="addbcdb8e756d5f5c94e67fbb46012ed3" name="addbcdb8e756d5f5c94e67fbb46012ed3"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><b>EdgeSplitMode</b> { <br />
-&#160;&#160;<b>Midpoint</b> = 0
-, <b>Initial</b> = 1
-, <b>BinarySearch</b> = 2
-, <b>LogRootFind</b> = 3
-, <br />
-&#160;&#160;<b>SphereTracing</b> = 4
-<br />
- }</td></tr>
-<tr class="separator:addbcdb8e756d5f5c94e67fbb46012ed3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:add5ade338d297cd80273cc2a77d0828b" id="r_add5ade338d297cd80273cc2a77d0828b"><td class="memItemLeft" align="right" valign="top"><a id="add5ade338d297cd80273cc2a77d0828b" name="add5ade338d297cd80273cc2a77d0828b"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>VertAttCol</b> = <a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_attributes2d.html">VertexAttributes2d</a> &gt;</td></tr>
-<tr class="separator:add5ade338d297cd80273cc2a77d0828b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac2666f5f5bab4fae9386cb587dc1dbf8" id="r_ac2666f5f5bab4fae9386cb587dc1dbf8"><td class="memItemLeft" align="right" valign="top"><a id="ac2666f5f5bab4fae9386cb587dc1dbf8" name="ac2666f5f5bab4fae9386cb587dc1dbf8"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>EdgeAttCol</b> = <a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_edge_attributes2d.html">EdgeAttributes2d</a> &gt;</td></tr>
-<tr class="separator:ac2666f5f5bab4fae9386cb587dc1dbf8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4d42f17d9bca021f33acb0a274c273b2" id="r_a4d42f17d9bca021f33acb0a274c273b2"><td class="memItemLeft" align="right" valign="top"><a id="a4d42f17d9bca021f33acb0a274c273b2" name="a4d42f17d9bca021f33acb0a274c273b2"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>FaceAttCol</b> = <a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_face_attributes2d.html">FaceAttributes2d</a> &gt;</td></tr>
-<tr class="separator:a4d42f17d9bca021f33acb0a274c273b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_types_classwmtk_1_1_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classwmtk_1_1_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></td></tr>
-<tr class="memitem:a789f9bdc3ece59a5f11143e6ae1d5cd1 inherit pub_types_classwmtk_1_1_tri_mesh" id="r_a789f9bdc3ece59a5f11143e6ae1d5cd1"><td class="memTemplParams" colspan="2">
-template&lt;typename T &gt; </td></tr>
-<tr class="memitem:a789f9bdc3ece59a5f11143e6ae1d5cd1 inherit pub_types_classwmtk_1_1_tri_mesh"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>vector</b> = tbb::concurrent_vector&lt; T &gt;</td></tr>
-<tr class="separator:a789f9bdc3ece59a5f11143e6ae1d5cd1 inherit pub_types_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a8e32220a7a21977c04435613285d9a47" id="r_a8e32220a7a21977c04435613285d9a47"><td class="memItemLeft" align="right" valign="top"><a id="a8e32220a7a21977c04435613285d9a47" name="a8e32220a7a21977c04435613285d9a47"></a>
+<tr class="memitem:a357de1f70a0bc18342e33a7746b4a0dc" id="r_a357de1f70a0bc18342e33a7746b4a0dc"><td class="memItemLeft" align="right" valign="top"><a id="a357de1f70a0bc18342e33a7746b4a0dc" name="a357de1f70a0bc18342e33a7746b4a0dc"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>ManExtractTriMesh</b> (<a class="el" href="structwmtk_1_1components_1_1manifold__extraction_1_1_parameters.html">Parameters</a> &amp;_m_man_params, <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html">topological_offset::Parameters</a> &amp;_m_top_params, int _num_threads=0)</td></tr>
+<tr class="separator:a357de1f70a0bc18342e33a7746b4a0dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a217b40b140c28cef4fb8c42c4b97240b" id="r_a217b40b140c28cef4fb8c42c4b97240b"><td class="memItemLeft" align="right" valign="top"><a id="a217b40b140c28cef4fb8c42c4b97240b" name="a217b40b140c28cef4fb8c42c4b97240b"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>label_non_manifold</b> ()</td></tr>
+<tr class="memdesc:a217b40b140c28cef4fb8c42c4b97240b"><td class="mdescLeft">&#160;</td><td class="mdescRight">label nonmanifold simplices (edges and verts). Corresponding attributes have label set to 1 <br /></td></tr>
+<tr class="separator:a217b40b140c28cef4fb8c42c4b97240b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a201df20a11b0af60ab4d731840cdb6ef" id="r_a201df20a11b0af60ab4d731840cdb6ef"><td class="memItemLeft" align="right" valign="top"><a id="a201df20a11b0af60ab4d731840cdb6ef" name="a201df20a11b0af60ab4d731840cdb6ef"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>vertex_is_manifold</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;v) const</td></tr>
+<tr class="memdesc:a201df20a11b0af60ab4d731840cdb6ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if a vertex is manifold. A vertex is manifold if all 'inside' and all 'outside' tets adjacent to the vertex form single face-reachable connected components, respectively. For vertices on the boundary of the mesh, external space is considered an 'outside' polyhedra that is face connected to all tets on the mesh boundary. <br /></td></tr>
+<tr class="separator:a201df20a11b0af60ab4d731840cdb6ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5d6d2815e2f7144b4a76867ad1a524e6" id="r_a5d6d2815e2f7144b4a76867ad1a524e6"><td class="memItemLeft" align="right" valign="top"><a id="a5d6d2815e2f7144b4a76867ad1a524e6" name="a5d6d2815e2f7144b4a76867ad1a524e6"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>vertex_dfs_helper</b> (std::set&lt; size_t &gt; &amp;visited_fids, const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;f) const</td></tr>
+<tr class="memdesc:a5d6d2815e2f7144b4a76867ad1a524e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">dfs helper for vertex manifold check <br /></td></tr>
+<tr class="separator:a5d6d2815e2f7144b4a76867ad1a524e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a677ffc3e0f6c1b7a009e90933c4c4101" id="r_a677ffc3e0f6c1b7a009e90933c4c4101"><td class="memItemLeft" align="right" valign="top"><a id="a677ffc3e0f6c1b7a009e90933c4c4101" name="a677ffc3e0f6c1b7a009e90933c4c4101"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>extract_curve_mesh</b> (MatrixXd &amp;V, MatrixXi &amp;F) const</td></tr>
+<tr class="memdesc:a677ffc3e0f6c1b7a009e90933c4c4101"><td class="mdescLeft">&#160;</td><td class="mdescRight">extract edge mesh separating 'inside' faces from 'outside' faces. Resulting curve is guaranteed to be manifold. <br /></td></tr>
+<tr class="separator:a677ffc3e0f6c1b7a009e90933c4c4101"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8703c86bf47280d484722bd63a5e3257" id="r_a8703c86bf47280d484722bd63a5e3257"><td class="memItemLeft" align="right" valign="top"><a id="a8703c86bf47280d484722bd63a5e3257" name="a8703c86bf47280d484722bd63a5e3257"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>write_curve</b> (const std::string &amp;path)</td></tr>
+<tr class="memdesc:a8703c86bf47280d484722bd63a5e3257"><td class="mdescLeft">&#160;</td><td class="mdescRight">write curve .obj (boundary of in_tag) <br /></td></tr>
+<tr class="separator:a8703c86bf47280d484722bd63a5e3257"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html">wmtk::components::topological_offset::TopoOffsetTriMesh</a></td></tr>
+<tr class="memitem:a8e32220a7a21977c04435613285d9a47 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a8e32220a7a21977c04435613285d9a47"><td class="memItemLeft" align="right" valign="top">
 &#160;</td><td class="memItemRight" valign="bottom"><b>TopoOffsetTriMesh</b> (<a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html">Parameters</a> &amp;_m_params, int _num_threads=0)</td></tr>
-<tr class="separator:a8e32220a7a21977c04435613285d9a47"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a10e50807f823e4dd6a0ff587250af2ea" id="r_a10e50807f823e4dd6a0ff587250af2ea"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a10e50807f823e4dd6a0ff587250af2ea">init_from_image</a> (const MatrixXd &amp;V, const MatrixXi &amp;F, const MatrixSi &amp;F_tags, const MatrixXd &amp;V_env, const MatrixXi &amp;F_env, const std::vector&lt; std::string &gt; &amp;tag_names)</td></tr>
-<tr class="memdesc:a10e50807f823e4dd6a0ff587250af2ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">initialize <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> from vertex, face, tag data  <br /></td></tr>
-<tr class="separator:a10e50807f823e4dd6a0ff587250af2ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae5d6e6ce51a4fed24491a9078509db62" id="r_ae5d6e6ce51a4fed24491a9078509db62"><td class="memItemLeft" align="right" valign="top"><a id="ae5d6e6ce51a4fed24491a9078509db62" name="ae5d6e6ce51a4fed24491a9078509db62"></a>
+<tr class="separator:a8e32220a7a21977c04435613285d9a47 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a10e50807f823e4dd6a0ff587250af2ea inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a10e50807f823e4dd6a0ff587250af2ea"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a10e50807f823e4dd6a0ff587250af2ea">init_from_image</a> (const MatrixXd &amp;V, const MatrixXi &amp;F, const MatrixSi &amp;F_tags, const MatrixXd &amp;V_env, const MatrixXi &amp;F_env, const std::vector&lt; std::string &gt; &amp;tag_names)</td></tr>
+<tr class="memdesc:a10e50807f823e4dd6a0ff587250af2ea inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">initialize <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> from vertex, face, tag data  <br /></td></tr>
+<tr class="separator:a10e50807f823e4dd6a0ff587250af2ea inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae5d6e6ce51a4fed24491a9078509db62 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_ae5d6e6ce51a4fed24491a9078509db62"><td class="memItemLeft" align="right" valign="top">
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>ambient_assert</b> ()</td></tr>
-<tr class="memdesc:ae5d6e6ce51a4fed24491a9078509db62"><td class="mdescLeft">&#160;</td><td class="mdescRight">ensure ambient tag does not overlap any other tags in mesh. <br /></td></tr>
-<tr class="separator:ae5d6e6ce51a4fed24491a9078509db62"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0c0888f13524e6cbc0b9f2a817ea4c0f" id="r_a0c0888f13524e6cbc0b9f2a817ea4c0f"><td class="memItemLeft" align="right" valign="top"><a id="a0c0888f13524e6cbc0b9f2a817ea4c0f" name="a0c0888f13524e6cbc0b9f2a817ea4c0f"></a>
+<tr class="memdesc:ae5d6e6ce51a4fed24491a9078509db62 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">ensure ambient tag does not overlap any other tags in mesh. <br /></td></tr>
+<tr class="separator:ae5d6e6ce51a4fed24491a9078509db62 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0c0888f13524e6cbc0b9f2a817ea4c0f inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a0c0888f13524e6cbc0b9f2a817ea4c0f"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>label_input_complex</b> ()</td></tr>
-<tr class="memdesc:a0c0888f13524e6cbc0b9f2a817ea4c0f"><td class="mdescLeft">&#160;</td><td class="mdescRight">label input complex simplices as per boolean expression (or single body mode) <br /></td></tr>
-<tr class="separator:a0c0888f13524e6cbc0b9f2a817ea4c0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3f5639dc1bc651e98e85e58dbdd830a7" id="r_a3f5639dc1bc651e98e85e58dbdd830a7"><td class="memItemLeft" align="right" valign="top"><a id="a3f5639dc1bc651e98e85e58dbdd830a7" name="a3f5639dc1bc651e98e85e58dbdd830a7"></a>
+<tr class="memdesc:a0c0888f13524e6cbc0b9f2a817ea4c0f inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">label input complex simplices as per boolean expression (or single body mode) <br /></td></tr>
+<tr class="separator:a0c0888f13524e6cbc0b9f2a817ea4c0f inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3f5639dc1bc651e98e85e58dbdd830a7 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a3f5639dc1bc651e98e85e58dbdd830a7"><td class="memItemLeft" align="right" valign="top">
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>empty_input_complex</b> ()</td></tr>
-<tr class="memdesc:a3f5639dc1bc651e98e85e58dbdd830a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if the input complex is empty. Only valid after calling init_from_image(...). Checks if any vertices (therefore any simplices) are labelled 1, if not returns true <br /></td></tr>
-<tr class="separator:a3f5639dc1bc651e98e85e58dbdd830a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a42e2f9ce5d18df257bec140417e7b0f5" id="r_a42e2f9ce5d18df257bec140417e7b0f5"><td class="memItemLeft" align="right" valign="top"><a id="a42e2f9ce5d18df257bec140417e7b0f5" name="a42e2f9ce5d18df257bec140417e7b0f5"></a>
+<tr class="memdesc:a3f5639dc1bc651e98e85e58dbdd830a7 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if the input complex is empty. Only valid after calling init_from_image(...). Checks if any vertices (therefore any simplices) are labelled 1, if not returns true <br /></td></tr>
+<tr class="separator:a3f5639dc1bc651e98e85e58dbdd830a7 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a42e2f9ce5d18df257bec140417e7b0f5 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a42e2f9ce5d18df257bec140417e7b0f5"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>init_input_complex_bvh</b> ()</td></tr>
-<tr class="memdesc:a42e2f9ce5d18df257bec140417e7b0f5"><td class="mdescLeft">&#160;</td><td class="mdescRight">initialize BVH for input complex. Must be called after init_from_image(...) <br /></td></tr>
-<tr class="separator:a42e2f9ce5d18df257bec140417e7b0f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab13b0ebe5bbb22aa1dddef2d10c1a2eb" id="r_ab13b0ebe5bbb22aa1dddef2d10c1a2eb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ab13b0ebe5bbb22aa1dddef2d10c1a2eb">edge_split_binary_search</a> (const size_t v1, const size_t v2, Vector2d &amp;p_new) const</td></tr>
-<tr class="memdesc:ab13b0ebe5bbb22aa1dddef2d10c1a2eb"><td class="mdescLeft">&#160;</td><td class="mdescRight">split edge at point by minimizing m_params.target_distance - d() (where d() is distance to input complex via BVH) along the edge. Uses binary search, so implicitly assumes distance field is monotonic along edge. May give weird results if not monotonic  <br /></td></tr>
-<tr class="separator:ab13b0ebe5bbb22aa1dddef2d10c1a2eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aec98e234dbbe91c419a6d1b982c17eb9" id="r_aec98e234dbbe91c419a6d1b982c17eb9"><td class="memItemLeft" align="right" valign="top"><a id="aec98e234dbbe91c419a6d1b982c17eb9" name="aec98e234dbbe91c419a6d1b982c17eb9"></a>
+<tr class="memdesc:a42e2f9ce5d18df257bec140417e7b0f5 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">initialize BVH for input complex. Must be called after init_from_image(...) <br /></td></tr>
+<tr class="separator:a42e2f9ce5d18df257bec140417e7b0f5 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab13b0ebe5bbb22aa1dddef2d10c1a2eb inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_ab13b0ebe5bbb22aa1dddef2d10c1a2eb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ab13b0ebe5bbb22aa1dddef2d10c1a2eb">edge_split_binary_search</a> (const size_t v1, const size_t v2, Vector2d &amp;p_new) const</td></tr>
+<tr class="memdesc:ab13b0ebe5bbb22aa1dddef2d10c1a2eb inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">split edge at point by minimizing m_params.target_distance - d() (where d() is distance to input complex via BVH) along the edge. Uses binary search, so implicitly assumes distance field is monotonic along edge. May give weird results if not monotonic  <br /></td></tr>
+<tr class="separator:ab13b0ebe5bbb22aa1dddef2d10c1a2eb inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aec98e234dbbe91c419a6d1b982c17eb9 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_aec98e234dbbe91c419a6d1b982c17eb9"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>edge_split_binary_search</b> (const Vector2d &amp;v1_pos, const Vector2d &amp;v2_pos, Vector2d &amp;p_new) const</td></tr>
-<tr class="separator:aec98e234dbbe91c419a6d1b982c17eb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad4618b1347d9c23a685a50ed133dfcd2" id="r_ad4618b1347d9c23a685a50ed133dfcd2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ad4618b1347d9c23a685a50ed133dfcd2">edge_split_log_root_find</a> (const size_t v1, const size_t v2, Vector2d &amp;p_new) const</td></tr>
-<tr class="memdesc:ad4618b1347d9c23a685a50ed133dfcd2"><td class="mdescLeft">&#160;</td><td class="mdescRight">split edge at root of d() - target_distance, using fact that this is negative at v1.  <br /></td></tr>
-<tr class="separator:ad4618b1347d9c23a685a50ed133dfcd2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a65bf65f10137410ede5000cd13e3e8e5" id="r_a65bf65f10137410ede5000cd13e3e8e5"><td class="memItemLeft" align="right" valign="top"><a id="a65bf65f10137410ede5000cd13e3e8e5" name="a65bf65f10137410ede5000cd13e3e8e5"></a>
+<tr class="separator:aec98e234dbbe91c419a6d1b982c17eb9 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad4618b1347d9c23a685a50ed133dfcd2 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_ad4618b1347d9c23a685a50ed133dfcd2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ad4618b1347d9c23a685a50ed133dfcd2">edge_split_log_root_find</a> (const size_t v1, const size_t v2, Vector2d &amp;p_new) const</td></tr>
+<tr class="memdesc:ad4618b1347d9c23a685a50ed133dfcd2 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">split edge at root of d() - target_distance, using fact that this is negative at v1.  <br /></td></tr>
+<tr class="separator:ad4618b1347d9c23a685a50ed133dfcd2 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a65bf65f10137410ede5000cd13e3e8e5 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a65bf65f10137410ede5000cd13e3e8e5"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>edge_split_sphere_tracing</b> (const size_t v1, const size_t v2, Vector2d &amp;p_new) const</td></tr>
-<tr class="memdesc:a65bf65f10137410ede5000cd13e3e8e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">split edge at first root of d(l) - d*, where d(l) is distance to input complex, using sphere tracing method. This is the best method and should be used instead of binary or log root finding methods <br /></td></tr>
-<tr class="separator:a65bf65f10137410ede5000cd13e3e8e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8ec7f99c282c8cee843820035ee10fc5" id="r_a8ec7f99c282c8cee843820035ee10fc5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a8ec7f99c282c8cee843820035ee10fc5">split_edge_before</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) override</td></tr>
-<tr class="memdesc:a8ec7f99c282c8cee843820035ee10fc5"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified preparations and desideratas for an edge split.  <br /></td></tr>
-<tr class="separator:a8ec7f99c282c8cee843820035ee10fc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a69203c47154411d70120dfb9c59afc2a" id="r_a69203c47154411d70120dfb9c59afc2a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a69203c47154411d70120dfb9c59afc2a">split_edge_after</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) override</td></tr>
-<tr class="memdesc:a69203c47154411d70120dfb9c59afc2a"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified modifications and desideratas after an edge split.  <br /></td></tr>
-<tr class="separator:a69203c47154411d70120dfb9c59afc2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1d390ec515a74231442cf1e249e65f1e" id="r_a1d390ec515a74231442cf1e249e65f1e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a1d390ec515a74231442cf1e249e65f1e">split_face_before</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) override</td></tr>
-<tr class="memdesc:a1d390ec515a74231442cf1e249e65f1e"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified preparations and desideratas for a face split.  <br /></td></tr>
-<tr class="separator:a1d390ec515a74231442cf1e249e65f1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8efee7d9f5be7da6edb43b01673d5ffa" id="r_a8efee7d9f5be7da6edb43b01673d5ffa"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a8efee7d9f5be7da6edb43b01673d5ffa">split_face_after</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) override</td></tr>
-<tr class="memdesc:a8efee7d9f5be7da6edb43b01673d5ffa"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified modifications and desideratas after a face split.  <br /></td></tr>
-<tr class="separator:a8efee7d9f5be7da6edb43b01673d5ffa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6e2860310660ea8a8eeb8faf0512c998" id="r_a6e2860310660ea8a8eeb8faf0512c998"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a6e2860310660ea8a8eeb8faf0512c998">invariants</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;tris) override</td></tr>
-<tr class="memdesc:a6e2860310660ea8a8eeb8faf0512c998"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified invariants that can't be violated.  <br /></td></tr>
-<tr class="separator:a6e2860310660ea8a8eeb8faf0512c998"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6ff3f39908a066bcc044e73fdce80b97" id="r_a6ff3f39908a066bcc044e73fdce80b97"><td class="memItemLeft" align="right" valign="top"><a id="a6ff3f39908a066bcc044e73fdce80b97" name="a6ff3f39908a066bcc044e73fdce80b97"></a>
+<tr class="memdesc:a65bf65f10137410ede5000cd13e3e8e5 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">split edge at first root of d(l) - d*, where d(l) is distance to input complex, using sphere tracing method. This is the best method and should be used instead of binary or log root finding methods <br /></td></tr>
+<tr class="separator:a65bf65f10137410ede5000cd13e3e8e5 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8ec7f99c282c8cee843820035ee10fc5 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a8ec7f99c282c8cee843820035ee10fc5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a8ec7f99c282c8cee843820035ee10fc5">split_edge_before</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) override</td></tr>
+<tr class="memdesc:a8ec7f99c282c8cee843820035ee10fc5 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified preparations and desideratas for an edge split.  <br /></td></tr>
+<tr class="separator:a8ec7f99c282c8cee843820035ee10fc5 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a69203c47154411d70120dfb9c59afc2a inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a69203c47154411d70120dfb9c59afc2a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a69203c47154411d70120dfb9c59afc2a">split_edge_after</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) override</td></tr>
+<tr class="memdesc:a69203c47154411d70120dfb9c59afc2a inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified modifications and desideratas after an edge split.  <br /></td></tr>
+<tr class="separator:a69203c47154411d70120dfb9c59afc2a inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1d390ec515a74231442cf1e249e65f1e inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a1d390ec515a74231442cf1e249e65f1e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a1d390ec515a74231442cf1e249e65f1e">split_face_before</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) override</td></tr>
+<tr class="memdesc:a1d390ec515a74231442cf1e249e65f1e inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified preparations and desideratas for a face split.  <br /></td></tr>
+<tr class="separator:a1d390ec515a74231442cf1e249e65f1e inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8efee7d9f5be7da6edb43b01673d5ffa inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a8efee7d9f5be7da6edb43b01673d5ffa"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a8efee7d9f5be7da6edb43b01673d5ffa">split_face_after</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) override</td></tr>
+<tr class="memdesc:a8efee7d9f5be7da6edb43b01673d5ffa inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified modifications and desideratas after a face split.  <br /></td></tr>
+<tr class="separator:a8efee7d9f5be7da6edb43b01673d5ffa inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6e2860310660ea8a8eeb8faf0512c998 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a6e2860310660ea8a8eeb8faf0512c998"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a6e2860310660ea8a8eeb8faf0512c998">invariants</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;tris) override</td></tr>
+<tr class="memdesc:a6e2860310660ea8a8eeb8faf0512c998 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified invariants that can't be violated.  <br /></td></tr>
+<tr class="separator:a6e2860310660ea8a8eeb8faf0512c998 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ff3f39908a066bcc044e73fdce80b97 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a6ff3f39908a066bcc044e73fdce80b97"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>execute_offset</b> (const std::filesystem::path &amp;output_file)</td></tr>
-<tr class="memdesc:a6ff3f39908a066bcc044e73fdce80b97"><td class="mdescLeft">&#160;</td><td class="mdescRight">entry point for offset procedure <br /></td></tr>
-<tr class="separator:a6ff3f39908a066bcc044e73fdce80b97"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4d441bedc0773f511659914d15038e82" id="r_a4d441bedc0773f511659914d15038e82"><td class="memItemLeft" align="right" valign="top"><a id="a4d441bedc0773f511659914d15038e82" name="a4d441bedc0773f511659914d15038e82"></a>
+<tr class="memdesc:a6ff3f39908a066bcc044e73fdce80b97 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">entry point for offset procedure <br /></td></tr>
+<tr class="separator:a6ff3f39908a066bcc044e73fdce80b97 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d441bedc0773f511659914d15038e82 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a4d441bedc0773f511659914d15038e82"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>marching_tris</b> ()</td></tr>
-<tr class="memdesc:a4d441bedc0773f511659914d15038e82"><td class="mdescLeft">&#160;</td><td class="mdescRight">execute simplistic marching tets. All edges with one vertex labelled 0 and the other 1/2 are split. If m_edge_split_mode=BinarySearch, edges are split according to BVH distance field and the offset target distance (m_params.target_distance). If m_edge_split_mode=Midpoint, edges are split at the midpoint <br /></td></tr>
-<tr class="separator:a4d441bedc0773f511659914d15038e82"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aea264b1a223b4f7135aee933d9f266eb" id="r_aea264b1a223b4f7135aee933d9f266eb"><td class="memItemLeft" align="right" valign="top"><a id="aea264b1a223b4f7135aee933d9f266eb" name="aea264b1a223b4f7135aee933d9f266eb"></a>
+<tr class="memdesc:a4d441bedc0773f511659914d15038e82 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">execute simplistic marching tets. All edges with one vertex labelled 0 and the other 1/2 are split. If m_edge_split_mode=BinarySearch, edges are split according to BVH distance field and the offset target distance (m_params.target_distance). If m_edge_split_mode=Midpoint, edges are split at the midpoint <br /></td></tr>
+<tr class="separator:a4d441bedc0773f511659914d15038e82 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea264b1a223b4f7135aee933d9f266eb inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_aea264b1a223b4f7135aee933d9f266eb"><td class="memItemLeft" align="right" valign="top">
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_simplicially_embedded</b> () const</td></tr>
-<tr class="memdesc:aea264b1a223b4f7135aee933d9f266eb"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if the input complex (simplices labelled 1) are simplicially embedded w.r.t. the entire mesh <br /></td></tr>
-<tr class="separator:aea264b1a223b4f7135aee933d9f266eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af2747b0f6734e560fd33047237aac490" id="r_af2747b0f6734e560fd33047237aac490"><td class="memItemLeft" align="right" valign="top"><a id="af2747b0f6734e560fd33047237aac490" name="af2747b0f6734e560fd33047237aac490"></a>
+<tr class="memdesc:aea264b1a223b4f7135aee933d9f266eb inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if the input complex (simplices labelled 1) are simplicially embedded w.r.t. the entire mesh <br /></td></tr>
+<tr class="separator:aea264b1a223b4f7135aee933d9f266eb inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af2747b0f6734e560fd33047237aac490 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_af2747b0f6734e560fd33047237aac490"><td class="memItemLeft" align="right" valign="top">
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>tri_is_simp_emb</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
-<tr class="memdesc:af2747b0f6734e560fd33047237aac490"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if a triangle satisfies simpicial embedding criteria w.r.t. input complex (simplices labelled 1) <br /></td></tr>
-<tr class="separator:af2747b0f6734e560fd33047237aac490"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac2eb3c671593be59d472d30e3a51ad55" id="r_ac2eb3c671593be59d472d30e3a51ad55"><td class="memItemLeft" align="right" valign="top"><a id="ac2eb3c671593be59d472d30e3a51ad55" name="ac2eb3c671593be59d472d30e3a51ad55"></a>
+<tr class="memdesc:af2747b0f6734e560fd33047237aac490 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if a triangle satisfies simpicial embedding criteria w.r.t. input complex (simplices labelled 1) <br /></td></tr>
+<tr class="separator:af2747b0f6734e560fd33047237aac490 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac2eb3c671593be59d472d30e3a51ad55 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_ac2eb3c671593be59d472d30e3a51ad55"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>simplicial_embedding</b> ()</td></tr>
-<tr class="memdesc:ac2eb3c671593be59d472d30e3a51ad55"><td class="mdescLeft">&#160;</td><td class="mdescRight">make mesh a simplicial embedding of the input complex (simplices labelled 1) <br /></td></tr>
-<tr class="separator:ac2eb3c671593be59d472d30e3a51ad55"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a39ceaa846532a23f2703bfd514dad757" id="r_a39ceaa846532a23f2703bfd514dad757"><td class="memItemLeft" align="right" valign="top"><a id="a39ceaa846532a23f2703bfd514dad757" name="a39ceaa846532a23f2703bfd514dad757"></a>
+<tr class="memdesc:ac2eb3c671593be59d472d30e3a51ad55 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">make mesh a simplicial embedding of the input complex (simplices labelled 1) <br /></td></tr>
+<tr class="separator:ac2eb3c671593be59d472d30e3a51ad55 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a39ceaa846532a23f2703bfd514dad757 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a39ceaa846532a23f2703bfd514dad757"><td class="memItemLeft" align="right" valign="top">
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>tag_tri_consistent_topology</b> (size_t f_id, int64_t tag) const</td></tr>
-<tr class="memdesc:a39ceaa846532a23f2703bfd514dad757"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if removing the given face from the given tag set would retain its topology <br /></td></tr>
-<tr class="separator:a39ceaa846532a23f2703bfd514dad757"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aac4b5dd47ed5f8ad7cb46d4584290bae" id="r_aac4b5dd47ed5f8ad7cb46d4584290bae"><td class="memItemLeft" align="right" valign="top"><a id="aac4b5dd47ed5f8ad7cb46d4584290bae" name="aac4b5dd47ed5f8ad7cb46d4584290bae"></a>
+<tr class="memdesc:a39ceaa846532a23f2703bfd514dad757 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if removing the given face from the given tag set would retain its topology <br /></td></tr>
+<tr class="separator:a39ceaa846532a23f2703bfd514dad757 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aac4b5dd47ed5f8ad7cb46d4584290bae inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_aac4b5dd47ed5f8ad7cb46d4584290bae"><td class="memItemLeft" align="right" valign="top">
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>offset_tri_consistent_topology</b> (const size_t f_id) const</td></tr>
-<tr class="memdesc:aac4b5dd47ed5f8ad7cb46d4584290bae"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if adding a triangle to the offset region does not change the topology of the offset. Returns true if topology would not be changed <br /></td></tr>
-<tr class="separator:aac4b5dd47ed5f8ad7cb46d4584290bae"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aadf197c0abbb810ae0628e2a396641e4" id="r_aadf197c0abbb810ae0628e2a396641e4"><td class="memItemLeft" align="right" valign="top"><a id="aadf197c0abbb810ae0628e2a396641e4" name="aadf197c0abbb810ae0628e2a396641e4"></a>
+<tr class="memdesc:aac4b5dd47ed5f8ad7cb46d4584290bae inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if adding a triangle to the offset region does not change the topology of the offset. Returns true if topology would not be changed <br /></td></tr>
+<tr class="separator:aac4b5dd47ed5f8ad7cb46d4584290bae inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aadf197c0abbb810ae0628e2a396641e4 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_aadf197c0abbb810ae0628e2a396641e4"><td class="memItemLeft" align="right" valign="top">
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>tri_is_in_offset_conservative</b> (const size_t f_id, const double threshold_r) const</td></tr>
-<tr class="memdesc:aadf197c0abbb810ae0628e2a396641e4"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if a triangle is inside the offset (implicitly defined via BVH distance field to input complex) via conservative circle subdivision estimation <br /></td></tr>
-<tr class="separator:aadf197c0abbb810ae0628e2a396641e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3e24f566972007ab04e0a1728d43af3e" id="r_a3e24f566972007ab04e0a1728d43af3e"><td class="memItemLeft" align="right" valign="top"><a id="a3e24f566972007ab04e0a1728d43af3e" name="a3e24f566972007ab04e0a1728d43af3e"></a>
+<tr class="memdesc:aadf197c0abbb810ae0628e2a396641e4 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if a triangle is inside the offset (implicitly defined via BVH distance field to input complex) via conservative circle subdivision estimation <br /></td></tr>
+<tr class="separator:aadf197c0abbb810ae0628e2a396641e4 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3e24f566972007ab04e0a1728d43af3e inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a3e24f566972007ab04e0a1728d43af3e"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>grow_offset_conservative</b> ()</td></tr>
-<tr class="memdesc:a3e24f566972007ab04e0a1728d43af3e"><td class="mdescLeft">&#160;</td><td class="mdescRight">grow offset region conservatively using conservative checks while ensuring consistent topology <br /></td></tr>
-<tr class="separator:a3e24f566972007ab04e0a1728d43af3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a22c2c56b12efefeb7cc67ef7d89f40e0" id="r_a22c2c56b12efefeb7cc67ef7d89f40e0"><td class="memItemLeft" align="right" valign="top"><a id="a22c2c56b12efefeb7cc67ef7d89f40e0" name="a22c2c56b12efefeb7cc67ef7d89f40e0"></a>
+<tr class="memdesc:a3e24f566972007ab04e0a1728d43af3e inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">grow offset region conservatively using conservative checks while ensuring consistent topology <br /></td></tr>
+<tr class="separator:a3e24f566972007ab04e0a1728d43af3e inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a22c2c56b12efefeb7cc67ef7d89f40e0 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a22c2c56b12efefeb7cc67ef7d89f40e0"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>set_offset_tri_tags</b> ()</td></tr>
-<tr class="memdesc:a22c2c56b12efefeb7cc67ef7d89f40e0"><td class="mdescLeft">&#160;</td><td class="mdescRight">update 'tags' data for triangles in the offset region (tris labelled 2) based on the given offset tag values in m_params.offset_tag_value <br /></td></tr>
-<tr class="separator:a22c2c56b12efefeb7cc67ef7d89f40e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2b3c7ca40684046e26339df736452893" id="r_a2b3c7ca40684046e26339df736452893"><td class="memItemLeft" align="right" valign="top"><a id="a2b3c7ca40684046e26339df736452893" name="a2b3c7ca40684046e26339df736452893"></a>
+<tr class="memdesc:a22c2c56b12efefeb7cc67ef7d89f40e0 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">update 'tags' data for triangles in the offset region (tris labelled 2) based on the given offset tag values in m_params.offset_tag_value <br /></td></tr>
+<tr class="separator:a22c2c56b12efefeb7cc67ef7d89f40e0 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2b3c7ca40684046e26339df736452893 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a2b3c7ca40684046e26339df736452893"><td class="memItemLeft" align="right" valign="top">
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>offset_is_manifold</b> ()</td></tr>
-<tr class="memdesc:a2b3c7ca40684046e26339df736452893"><td class="mdescLeft">&#160;</td><td class="mdescRight">verify that the closed offset region (simplices labelled 1 or 2) form a manifold region. This should be true for any offset. This function is for verification <br /></td></tr>
-<tr class="separator:a2b3c7ca40684046e26339df736452893"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3efba2d2c001bda1211a56079a856e33" id="r_a3efba2d2c001bda1211a56079a856e33"><td class="memItemLeft" align="right" valign="top"><a id="a3efba2d2c001bda1211a56079a856e33" name="a3efba2d2c001bda1211a56079a856e33"></a>
+<tr class="memdesc:a2b3c7ca40684046e26339df736452893 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">verify that the closed offset region (simplices labelled 1 or 2) form a manifold region. This should be true for any offset. This function is for verification <br /></td></tr>
+<tr class="separator:a2b3c7ca40684046e26339df736452893 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3efba2d2c001bda1211a56079a856e33 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a3efba2d2c001bda1211a56079a856e33"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>write_input_complex</b> (const std::string &amp;path)</td></tr>
-<tr class="separator:a3efba2d2c001bda1211a56079a856e33"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a57cca735524dccdb2462d5896577fdd4" id="r_a57cca735524dccdb2462d5896577fdd4"><td class="memItemLeft" align="right" valign="top"><a id="a57cca735524dccdb2462d5896577fdd4" name="a57cca735524dccdb2462d5896577fdd4"></a>
+<tr class="separator:a3efba2d2c001bda1211a56079a856e33 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a57cca735524dccdb2462d5896577fdd4 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a57cca735524dccdb2462d5896577fdd4"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>write_vtu</b> (const std::string &amp;path)</td></tr>
-<tr class="separator:a57cca735524dccdb2462d5896577fdd4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0e69dc73870b8f759d3ce85783dc9a21" id="r_a0e69dc73870b8f759d3ce85783dc9a21"><td class="memItemLeft" align="right" valign="top"><a id="a0e69dc73870b8f759d3ce85783dc9a21" name="a0e69dc73870b8f759d3ce85783dc9a21"></a>
+<tr class="separator:a57cca735524dccdb2462d5896577fdd4 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0e69dc73870b8f759d3ce85783dc9a21 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a0e69dc73870b8f759d3ce85783dc9a21"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>write_msh_groups</b> (const std::string &amp;file)</td></tr>
-<tr class="separator:a0e69dc73870b8f759d3ce85783dc9a21"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4507c08cd896298f3be246dd08f59bbe" id="r_a4507c08cd896298f3be246dd08f59bbe"><td class="memItemLeft" align="right" valign="top"><a id="a4507c08cd896298f3be246dd08f59bbe" name="a4507c08cd896298f3be246dd08f59bbe"></a>
+<tr class="separator:a0e69dc73870b8f759d3ce85783dc9a21 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4507c08cd896298f3be246dd08f59bbe inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a4507c08cd896298f3be246dd08f59bbe"><td class="memItemLeft" align="right" valign="top">
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>edge_id_from_simplex</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_edge.html">simplex::Edge</a> &amp;e) const</td></tr>
-<tr class="memdesc:a4507c08cd896298f3be246dd08f59bbe"><td class="mdescLeft">&#160;</td><td class="mdescRight">get global id of edge from <a class="el" href="classwmtk_1_1simplex_1_1_edge.html">simplex::Edge</a> object <br /></td></tr>
-<tr class="separator:a4507c08cd896298f3be246dd08f59bbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4c7900b169b34c05bd6f7f42aab70c53" id="r_a4c7900b169b34c05bd6f7f42aab70c53"><td class="memItemLeft" align="right" valign="top"><a id="a4c7900b169b34c05bd6f7f42aab70c53" name="a4c7900b169b34c05bd6f7f42aab70c53"></a>
+<tr class="memdesc:a4507c08cd896298f3be246dd08f59bbe inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">get global id of edge from <a class="el" href="classwmtk_1_1simplex_1_1_edge.html">simplex::Edge</a> object <br /></td></tr>
+<tr class="separator:a4507c08cd896298f3be246dd08f59bbe inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4c7900b169b34c05bd6f7f42aab70c53 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a4c7900b169b34c05bd6f7f42aab70c53"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>get_tuple_from_edge</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_edge.html">simplex::Edge</a> &amp;e) const</td></tr>
-<tr class="memdesc:a4c7900b169b34c05bd6f7f42aab70c53"><td class="mdescLeft">&#160;</td><td class="mdescRight">get Tuple <a class="el" href="classwmtk_1_1simplex_1_1_edge.html">simplex::Edge</a> object <br /></td></tr>
-<tr class="separator:a4c7900b169b34c05bd6f7f42aab70c53"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad932e203fece31d3f61207bcba41f973" id="r_ad932e203fece31d3f61207bcba41f973"><td class="memItemLeft" align="right" valign="top"><a id="ad932e203fece31d3f61207bcba41f973" name="ad932e203fece31d3f61207bcba41f973"></a>
+<tr class="memdesc:a4c7900b169b34c05bd6f7f42aab70c53 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">get Tuple <a class="el" href="classwmtk_1_1simplex_1_1_edge.html">simplex::Edge</a> object <br /></td></tr>
+<tr class="separator:a4c7900b169b34c05bd6f7f42aab70c53 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad932e203fece31d3f61207bcba41f973 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_ad932e203fece31d3f61207bcba41f973"><td class="memItemLeft" align="right" valign="top">
 std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_edge_adjacent_faces</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;f) const</td></tr>
-<tr class="memdesc:ad932e203fece31d3f61207bcba41f973"><td class="mdescLeft">&#160;</td><td class="mdescRight">get faces (as Tuples) that are edge-adjacent to the given face (as Tuple) <br /></td></tr>
-<tr class="separator:ad932e203fece31d3f61207bcba41f973"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memdesc:ad932e203fece31d3f61207bcba41f973 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">get faces (as Tuples) that are edge-adjacent to the given face (as Tuple) <br /></td></tr>
+<tr class="separator:ad932e203fece31d3f61207bcba41f973 inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classwmtk_1_1_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></td></tr>
 <tr class="memitem:a8b73b58387664feb724e992e2395d3cc inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_a8b73b58387664feb724e992e2395d3cc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a8b73b58387664feb724e992e2395d3cc">init</a> (size_t n_vertices, const std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;tris)</td></tr>
 <tr class="separator:a8b73b58387664feb724e992e2395d3cc inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -476,57 +463,67 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>for_each_vertex</b> (
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a3d7205fdfc20bede7047bf6bc8475f5d" id="r_a3d7205fdfc20bede7047bf6bc8475f5d"><td class="memItemLeft" align="right" valign="top"><a id="a3d7205fdfc20bede7047bf6bc8475f5d" name="a3d7205fdfc20bede7047bf6bc8475f5d"></a>
+<tr class="memitem:a9c9e673efd9f3f6aba8b01815be662fa" id="r_a9c9e673efd9f3f6aba8b01815be662fa"><td class="memItemLeft" align="right" valign="top"><a id="a9c9e673efd9f3f6aba8b01815be662fa" name="a9c9e673efd9f3f6aba8b01815be662fa"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>m_vtu_counter</b> = 0</td></tr>
-<tr class="separator:a3d7205fdfc20bede7047bf6bc8475f5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a72b05924571db09a0c7f3486057fad3c" id="r_a72b05924571db09a0c7f3486057fad3c"><td class="memItemLeft" align="right" valign="top"><a id="a72b05924571db09a0c7f3486057fad3c" name="a72b05924571db09a0c7f3486057fad3c"></a>
+<tr class="separator:a9c9e673efd9f3f6aba8b01815be662fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a481105cd8afba347aa4a0b62250bcc9e" id="r_a481105cd8afba347aa4a0b62250bcc9e"><td class="memItemLeft" align="right" valign="top"><a id="a481105cd8afba347aa4a0b62250bcc9e" name="a481105cd8afba347aa4a0b62250bcc9e"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>m_surfvtu_counter</b> = 0</td></tr>
+<tr class="separator:a481105cd8afba347aa4a0b62250bcc9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae0c7eeafe2052b3e7f0195eb4a029d41" id="r_ae0c7eeafe2052b3e7f0195eb4a029d41"><td class="memItemLeft" align="right" valign="top"><a id="ae0c7eeafe2052b3e7f0195eb4a029d41" name="ae0c7eeafe2052b3e7f0195eb4a029d41"></a>
+<a class="el" href="structwmtk_1_1components_1_1manifold__extraction_1_1_parameters.html">Parameters</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>m_man_params</b></td></tr>
+<tr class="separator:ae0c7eeafe2052b3e7f0195eb4a029d41"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Public Attributes inherited from <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html">wmtk::components::topological_offset::TopoOffsetTriMesh</a></td></tr>
+<tr class="memitem:a3d7205fdfc20bede7047bf6bc8475f5d inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a3d7205fdfc20bede7047bf6bc8475f5d"><td class="memItemLeft" align="right" valign="top">
+int&#160;</td><td class="memItemRight" valign="bottom"><b>m_vtu_counter</b> = 0</td></tr>
+<tr class="separator:a3d7205fdfc20bede7047bf6bc8475f5d inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a72b05924571db09a0c7f3486057fad3c inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a72b05924571db09a0c7f3486057fad3c"><td class="memItemLeft" align="right" valign="top">
 std::array&lt; size_t, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_init_counts</b> = {{0, 0, 0}}</td></tr>
-<tr class="separator:a72b05924571db09a0c7f3486057fad3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aae821759d904ca500f5c584ef364863a" id="r_aae821759d904ca500f5c584ef364863a"><td class="memItemLeft" align="right" valign="top"><a id="aae821759d904ca500f5c584ef364863a" name="aae821759d904ca500f5c584ef364863a"></a>
+<tr class="separator:a72b05924571db09a0c7f3486057fad3c inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aae821759d904ca500f5c584ef364863a inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_aae821759d904ca500f5c584ef364863a"><td class="memItemLeft" align="right" valign="top">
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_tags_count</b></td></tr>
-<tr class="separator:aae821759d904ca500f5c584ef364863a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaccb15a06063ad5a61cf4d67f388a9cb" id="r_aaccb15a06063ad5a61cf4d67f388a9cb"><td class="memItemLeft" align="right" valign="top"><a id="aaccb15a06063ad5a61cf4d67f388a9cb" name="aaccb15a06063ad5a61cf4d67f388a9cb"></a>
+<tr class="separator:aae821759d904ca500f5c584ef364863a inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaccb15a06063ad5a61cf4d67f388a9cb inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_aaccb15a06063ad5a61cf4d67f388a9cb"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_simplicial_complex_b_v_h.html">SimplicialComplexBVH</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_input_complex_bvh</b></td></tr>
-<tr class="separator:aaccb15a06063ad5a61cf4d67f388a9cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afad75bd0e72e4eeefbc9527f8754f8e6" id="r_afad75bd0e72e4eeefbc9527f8754f8e6"><td class="memItemLeft" align="right" valign="top"><a id="afad75bd0e72e4eeefbc9527f8754f8e6" name="afad75bd0e72e4eeefbc9527f8754f8e6"></a>
+<tr class="separator:aaccb15a06063ad5a61cf4d67f388a9cb inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afad75bd0e72e4eeefbc9527f8754f8e6 inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_afad75bd0e72e4eeefbc9527f8754f8e6"><td class="memItemLeft" align="right" valign="top">
 EdgeSplitMode&#160;</td><td class="memItemRight" valign="bottom"><b>m_edge_split_mode</b> = EdgeSplitMode::Midpoint</td></tr>
-<tr class="separator:afad75bd0e72e4eeefbc9527f8754f8e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8390c837ffd2ed040535d7b7033eb6f1" id="r_a8390c837ffd2ed040535d7b7033eb6f1"><td class="memItemLeft" align="right" valign="top"><a id="a8390c837ffd2ed040535d7b7033eb6f1" name="a8390c837ffd2ed040535d7b7033eb6f1"></a>
+<tr class="separator:afad75bd0e72e4eeefbc9527f8754f8e6 inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8390c837ffd2ed040535d7b7033eb6f1 inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a8390c837ffd2ed040535d7b7033eb6f1"><td class="memItemLeft" align="right" valign="top">
 std::map&lt; std::string, int64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_tag_name_to_id</b></td></tr>
-<tr class="separator:a8390c837ffd2ed040535d7b7033eb6f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac0f73ba36069e593db7710d581129bf3" id="r_ac0f73ba36069e593db7710d581129bf3"><td class="memItemLeft" align="right" valign="top"><a id="ac0f73ba36069e593db7710d581129bf3" name="ac0f73ba36069e593db7710d581129bf3"></a>
+<tr class="separator:a8390c837ffd2ed040535d7b7033eb6f1 inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac0f73ba36069e593db7710d581129bf3 inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_ac0f73ba36069e593db7710d581129bf3"><td class="memItemLeft" align="right" valign="top">
 std::map&lt; int64_t, std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_tag_id_to_name</b></td></tr>
-<tr class="separator:ac0f73ba36069e593db7710d581129bf3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af73e84785ab5b77c05584e82517f516d" id="r_af73e84785ab5b77c05584e82517f516d"><td class="memItemLeft" align="right" valign="top"><a id="af73e84785ab5b77c05584e82517f516d" name="af73e84785ab5b77c05584e82517f516d"></a>
+<tr class="separator:ac0f73ba36069e593db7710d581129bf3 inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af73e84785ab5b77c05584e82517f516d inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_af73e84785ab5b77c05584e82517f516d"><td class="memItemLeft" align="right" valign="top">
 CellTag&#160;</td><td class="memItemRight" valign="bottom"><b>m_offset_output_tag_ids</b></td></tr>
-<tr class="separator:af73e84785ab5b77c05584e82517f516d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a032a76e0a71392a42194843ba478526e" id="r_a032a76e0a71392a42194843ba478526e"><td class="memItemLeft" align="right" valign="top"><a id="a032a76e0a71392a42194843ba478526e" name="a032a76e0a71392a42194843ba478526e"></a>
+<tr class="separator:af73e84785ab5b77c05584e82517f516d inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a032a76e0a71392a42194843ba478526e inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a032a76e0a71392a42194843ba478526e"><td class="memItemLeft" align="right" valign="top">
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_singlebody</b> = false</td></tr>
-<tr class="separator:a032a76e0a71392a42194843ba478526e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a10b30e53e1aff126096754d29cdff4bf" id="r_a10b30e53e1aff126096754d29cdff4bf"><td class="memItemLeft" align="right" valign="top"><a id="a10b30e53e1aff126096754d29cdff4bf" name="a10b30e53e1aff126096754d29cdff4bf"></a>
+<tr class="separator:a032a76e0a71392a42194843ba478526e inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a10b30e53e1aff126096754d29cdff4bf inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a10b30e53e1aff126096754d29cdff4bf"><td class="memItemLeft" align="right" valign="top">
 int64_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_single_tag</b></td></tr>
-<tr class="separator:a10b30e53e1aff126096754d29cdff4bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6d8590ba830e0d6633ab8c4fde2a52da" id="r_a6d8590ba830e0d6633ab8c4fde2a52da"><td class="memItemLeft" align="right" valign="top"><a id="a6d8590ba830e0d6633ab8c4fde2a52da" name="a6d8590ba830e0d6633ab8c4fde2a52da"></a>
+<tr class="separator:a10b30e53e1aff126096754d29cdff4bf inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6d8590ba830e0d6633ab8c4fde2a52da inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a6d8590ba830e0d6633ab8c4fde2a52da"><td class="memItemLeft" align="right" valign="top">
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_has_envelope</b> = false</td></tr>
-<tr class="separator:a6d8590ba830e0d6633ab8c4fde2a52da"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3d026e5028558637e87f6e7e15cb8ba1" id="r_a3d026e5028558637e87f6e7e15cb8ba1"><td class="memItemLeft" align="right" valign="top"><a id="a3d026e5028558637e87f6e7e15cb8ba1" name="a3d026e5028558637e87f6e7e15cb8ba1"></a>
+<tr class="separator:a6d8590ba830e0d6633ab8c4fde2a52da inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3d026e5028558637e87f6e7e15cb8ba1 inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a3d026e5028558637e87f6e7e15cb8ba1"><td class="memItemLeft" align="right" valign="top">
 MatrixXd&#160;</td><td class="memItemRight" valign="bottom"><b>m_V_envelope</b></td></tr>
-<tr class="separator:a3d026e5028558637e87f6e7e15cb8ba1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7e94b3c1d545724f39877103bfa6a081" id="r_a7e94b3c1d545724f39877103bfa6a081"><td class="memItemLeft" align="right" valign="top"><a id="a7e94b3c1d545724f39877103bfa6a081" name="a7e94b3c1d545724f39877103bfa6a081"></a>
+<tr class="separator:a3d026e5028558637e87f6e7e15cb8ba1 inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7e94b3c1d545724f39877103bfa6a081 inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a7e94b3c1d545724f39877103bfa6a081"><td class="memItemLeft" align="right" valign="top">
 MatrixXi&#160;</td><td class="memItemRight" valign="bottom"><b>m_F_envelope</b></td></tr>
-<tr class="separator:a7e94b3c1d545724f39877103bfa6a081"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a07c695db8afce5976990eb4d15053de8" id="r_a07c695db8afce5976990eb4d15053de8"><td class="memItemLeft" align="right" valign="top"><a id="a07c695db8afce5976990eb4d15053de8" name="a07c695db8afce5976990eb4d15053de8"></a>
+<tr class="separator:a7e94b3c1d545724f39877103bfa6a081 inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a07c695db8afce5976990eb4d15053de8 inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a07c695db8afce5976990eb4d15053de8"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html">Parameters</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>m_params</b></td></tr>
-<tr class="separator:a07c695db8afce5976990eb4d15053de8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af330715830bfffd85d0e0a669a56d0c8" id="r_af330715830bfffd85d0e0a669a56d0c8"><td class="memItemLeft" align="right" valign="top"><a id="af330715830bfffd85d0e0a669a56d0c8" name="af330715830bfffd85d0e0a669a56d0c8"></a>
+<tr class="separator:a07c695db8afce5976990eb4d15053de8 inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af330715830bfffd85d0e0a669a56d0c8 inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_af330715830bfffd85d0e0a669a56d0c8"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="structwmtk_1_1_attribute_collection.html">VertAttCol</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_attribute</b></td></tr>
-<tr class="separator:af330715830bfffd85d0e0a669a56d0c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad51fd6c67d5418e353e0e241cbdf27a0" id="r_ad51fd6c67d5418e353e0e241cbdf27a0"><td class="memItemLeft" align="right" valign="top"><a id="ad51fd6c67d5418e353e0e241cbdf27a0" name="ad51fd6c67d5418e353e0e241cbdf27a0"></a>
+<tr class="separator:af330715830bfffd85d0e0a669a56d0c8 inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad51fd6c67d5418e353e0e241cbdf27a0 inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_ad51fd6c67d5418e353e0e241cbdf27a0"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="structwmtk_1_1_attribute_collection.html">EdgeAttCol</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_edge_attribute</b></td></tr>
-<tr class="separator:ad51fd6c67d5418e353e0e241cbdf27a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6c213726b5e01417f1f1f0d98469b1c6" id="r_a6c213726b5e01417f1f1f0d98469b1c6"><td class="memItemLeft" align="right" valign="top"><a id="a6c213726b5e01417f1f1f0d98469b1c6" name="a6c213726b5e01417f1f1f0d98469b1c6"></a>
+<tr class="separator:ad51fd6c67d5418e353e0e241cbdf27a0 inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6c213726b5e01417f1f1f0d98469b1c6 inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a6c213726b5e01417f1f1f0d98469b1c6"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="structwmtk_1_1_attribute_collection.html">FaceAttCol</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_face_attribute</b></td></tr>
-<tr class="separator:a6c213726b5e01417f1f1f0d98469b1c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a6c213726b5e01417f1f1f0d98469b1c6 inherit pub_attribs_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_attribs_classwmtk_1_1_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_classwmtk_1_1_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Public Attributes inherited from <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></td></tr>
 <tr class="memitem:a0ab2ef76d0893ba8694c7a9c554fa76f inherit pub_attribs_classwmtk_1_1_tri_mesh" id="r_a0ab2ef76d0893ba8694c7a9c554fa76f"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="classwmtk_1_1_abstract_attribute_container.html">AbstractAttributeContainer</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>p_vertex_attrs</b> = nullptr</td></tr>
@@ -546,360 +543,54 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>NUM_THREADS</b> = 0</t
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
-<tr class="memitem:aa864e3744a0b193a862bdd2ecda5e7dc" id="r_aa864e3744a0b193a862bdd2ecda5e7dc"><td class="memItemLeft" align="right" valign="top"><a id="aa864e3744a0b193a862bdd2ecda5e7dc" name="aa864e3744a0b193a862bdd2ecda5e7dc"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>any_tag_present</b> (const CellTag &amp;tag1, const CellTag &amp;tag2) const</td></tr>
-<tr class="memdesc:aa864e3744a0b193a862bdd2ecda5e7dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">determine if any tag from tag1 is also present in tag2. <br /></td></tr>
-<tr class="separator:aa864e3744a0b193a862bdd2ecda5e7dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a562bc5a2db9c98b3ebd56a6a0da161bf" id="r_a562bc5a2db9c98b3ebd56a6a0da161bf"><td class="memItemLeft" align="right" valign="top"><a id="a562bc5a2db9c98b3ebd56a6a0da161bf" name="a562bc5a2db9c98b3ebd56a6a0da161bf"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>sort_edges_by_length</b> (std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_edge.html">simplex::Edge</a> &gt; &amp;edges)</td></tr>
-<tr class="memdesc:a562bc5a2db9c98b3ebd56a6a0da161bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">sort vector of edge simplices in place by decreasing length <br /></td></tr>
-<tr class="separator:a562bc5a2db9c98b3ebd56a6a0da161bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
-Private Attributes</h2></td></tr>
-<tr class="memitem:a264eb9dd02c98068e5d9a72095e29bfd" id="r_a264eb9dd02c98068e5d9a72095e29bfd"><td class="memItemLeft" align="right" valign="top"><a id="a264eb9dd02c98068e5d9a72095e29bfd" name="a264eb9dd02c98068e5d9a72095e29bfd"></a>
-tbb::enumerable_thread_specific&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_edge_split_cache.html">EdgeSplitCache</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>edge_split_cache</b></td></tr>
-<tr class="separator:a264eb9dd02c98068e5d9a72095e29bfd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a53751e326d0f2f6e3b6decd06231c417" id="r_a53751e326d0f2f6e3b6decd06231c417"><td class="memItemLeft" align="right" valign="top"><a id="a53751e326d0f2f6e3b6decd06231c417" name="a53751e326d0f2f6e3b6decd06231c417"></a>
-tbb::enumerable_thread_specific&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_face_split_cache.html">FaceSplitCache</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>face_split_cache</b></td></tr>
-<tr class="separator:a53751e326d0f2f6e3b6decd06231c417"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aae40868ad68ccd1a03fbb601cd5911cd" id="r_aae40868ad68ccd1a03fbb601cd5911cd"><td class="memItemLeft" align="right" valign="top"><a id="aae40868ad68ccd1a03fbb601cd5911cd" name="aae40868ad68ccd1a03fbb601cd5911cd"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_curve_vertex</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;v) const</td></tr>
+<tr class="separator:aae40868ad68ccd1a03fbb601cd5911cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeea7598bccf8fe8031b2e24d952ea064" id="r_aeea7598bccf8fe8031b2e24d952ea064"><td class="memItemLeft" align="right" valign="top"><a id="aeea7598bccf8fe8031b2e24d952ea064" name="aeea7598bccf8fe8031b2e24d952ea064"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_curve_edge</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;e) const</td></tr>
+<tr class="separator:aeea7598bccf8fe8031b2e24d952ea064"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4f8884aa3b438b6f4fc8cee16a5068f8" id="r_a4f8884aa3b438b6f4fc8cee16a5068f8"><td class="memItemLeft" align="right" valign="top"><a id="a4f8884aa3b438b6f4fc8cee16a5068f8" name="a4f8884aa3b438b6f4fc8cee16a5068f8"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_interior_face</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;f) const</td></tr>
+<tr class="separator:a4f8884aa3b438b6f4fc8cee16a5068f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad534fd6505389b85c30c020345683bdf" id="r_ad534fd6505389b85c30c020345683bdf"><td class="memItemLeft" align="right" valign="top"><a id="ad534fd6505389b85c30c020345683bdf" name="ad534fd6505389b85c30c020345683bdf"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_interior_face</b> (size_t f_id) const</td></tr>
+<tr class="separator:ad534fd6505389b85c30c020345683bdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
+<tr class="inherit_header pub_types_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html">wmtk::components::topological_offset::TopoOffsetTriMesh</a></td></tr>
+<tr class="memitem:addbcdb8e756d5f5c94e67fbb46012ed3 inherit pub_types_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_addbcdb8e756d5f5c94e67fbb46012ed3"><td class="memItemLeft" align="right" valign="top"><a id="addbcdb8e756d5f5c94e67fbb46012ed3" name="addbcdb8e756d5f5c94e67fbb46012ed3"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><b>EdgeSplitMode</b> { <br />
+&#160;&#160;<b>Midpoint</b> = 0
+, <b>Initial</b> = 1
+, <b>BinarySearch</b> = 2
+, <b>LogRootFind</b> = 3
+, <br />
+&#160;&#160;<b>SphereTracing</b> = 4
+<br />
+ }</td></tr>
+<tr class="separator:addbcdb8e756d5f5c94e67fbb46012ed3 inherit pub_types_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:add5ade338d297cd80273cc2a77d0828b inherit pub_types_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_add5ade338d297cd80273cc2a77d0828b"><td class="memItemLeft" align="right" valign="top">
+using&#160;</td><td class="memItemRight" valign="bottom"><b>VertAttCol</b> = <a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_attributes2d.html">VertexAttributes2d</a> &gt;</td></tr>
+<tr class="separator:add5ade338d297cd80273cc2a77d0828b inherit pub_types_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac2666f5f5bab4fae9386cb587dc1dbf8 inherit pub_types_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_ac2666f5f5bab4fae9386cb587dc1dbf8"><td class="memItemLeft" align="right" valign="top">
+using&#160;</td><td class="memItemRight" valign="bottom"><b>EdgeAttCol</b> = <a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_edge_attributes2d.html">EdgeAttributes2d</a> &gt;</td></tr>
+<tr class="separator:ac2666f5f5bab4fae9386cb587dc1dbf8 inherit pub_types_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d42f17d9bca021f33acb0a274c273b2 inherit pub_types_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh" id="r_a4d42f17d9bca021f33acb0a274c273b2"><td class="memItemLeft" align="right" valign="top">
+using&#160;</td><td class="memItemRight" valign="bottom"><b>FaceAttCol</b> = <a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_face_attributes2d.html">FaceAttributes2d</a> &gt;</td></tr>
+<tr class="separator:a4d42f17d9bca021f33acb0a274c273b2 inherit pub_types_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_types_classwmtk_1_1_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classwmtk_1_1_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></td></tr>
+<tr class="memitem:a789f9bdc3ece59a5f11143e6ae1d5cd1 inherit pub_types_classwmtk_1_1_tri_mesh" id="r_a789f9bdc3ece59a5f11143e6ae1d5cd1"><td class="memTemplParams" colspan="2">
+template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a789f9bdc3ece59a5f11143e6ae1d5cd1 inherit pub_types_classwmtk_1_1_tri_mesh"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>vector</b> = tbb::concurrent_vector&lt; T &gt;</td></tr>
+<tr class="separator:a789f9bdc3ece59a5f11143e6ae1d5cd1 inherit pub_types_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classwmtk_1_1_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classwmtk_1_1_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></td></tr>
 <tr class="memitem:ae1fa52701ce0be73479b416da52fd77e inherit pro_methods_classwmtk_1_1_tri_mesh" id="r_ae1fa52701ce0be73479b416da52fd77e"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (size_t v)</td></tr>
 <tr class="separator:ae1fa52701ce0be73479b416da52fd77e inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Member Function Documentation</h2>
-<a id="ab13b0ebe5bbb22aa1dddef2d10c1a2eb" name="ab13b0ebe5bbb22aa1dddef2d10c1a2eb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab13b0ebe5bbb22aa1dddef2d10c1a2eb">&#9670;&#160;</a></span>edge_split_binary_search()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void wmtk::components::topological_offset::TopoOffsetTriMesh::edge_split_binary_search </td>
-          <td>(</td>
-          <td class="paramtype">const size_t&#160;</td>
-          <td class="paramname"><em>v1</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const size_t&#160;</td>
-          <td class="paramname"><em>v2</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">Vector2d &amp;&#160;</td>
-          <td class="paramname"><em>p_new</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>split edge at point by minimizing m_params.target_distance - d() (where d() is distance to input complex via BVH) along the edge. Uses binary search, so implicitly assumes distance field is monotonic along edge. May give weird results if not monotonic </p>
-<dl class="deprecated"><dt><b><a class="el" href="deprecated.html#_deprecated000003">Deprecated:</a></b></dt><dd></dd></dl>
-
-</div>
-</div>
-<a id="ad4618b1347d9c23a685a50ed133dfcd2" name="ad4618b1347d9c23a685a50ed133dfcd2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad4618b1347d9c23a685a50ed133dfcd2">&#9670;&#160;</a></span>edge_split_log_root_find()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void wmtk::components::topological_offset::TopoOffsetTriMesh::edge_split_log_root_find </td>
-          <td>(</td>
-          <td class="paramtype">const size_t&#160;</td>
-          <td class="paramname"><em>v1</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const size_t&#160;</td>
-          <td class="paramname"><em>v2</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">Vector2d &amp;&#160;</td>
-          <td class="paramname"><em>p_new</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>split edge at root of d() - target_distance, using fact that this is negative at v1. </p>
-<dl class="deprecated"><dt><b><a class="el" href="deprecated.html#_deprecated000004">Deprecated:</a></b></dt><dd></dd></dl>
-
-</div>
-</div>
-<a id="a10e50807f823e4dd6a0ff587250af2ea" name="a10e50807f823e4dd6a0ff587250af2ea"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a10e50807f823e4dd6a0ff587250af2ea">&#9670;&#160;</a></span>init_from_image()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void wmtk::components::topological_offset::TopoOffsetTriMesh::init_from_image </td>
-          <td>(</td>
-          <td class="paramtype">const MatrixXd &amp;&#160;</td>
-          <td class="paramname"><em>V</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const MatrixXi &amp;&#160;</td>
-          <td class="paramname"><em>F</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const MatrixSi &amp;&#160;</td>
-          <td class="paramname"><em>F_tags</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const MatrixXd &amp;&#160;</td>
-          <td class="paramname"><em>V_env</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const MatrixXi &amp;&#160;</td>
-          <td class="paramname"><em>F_env</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const std::vector&lt; std::string &gt; &amp;&#160;</td>
-          <td class="paramname"><em>tag_names</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>initialize <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> from vertex, face, tag data </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">V</td><td>#V by 2 vertex matrix </td></tr>
-    <tr><td class="paramname">F</td><td>#F by 3 face matrix </td></tr>
-    <tr><td class="paramname">F_tags</td><td>#F by physical groups tag matrix </td></tr>
-    <tr><td class="paramname">V_env</td><td>V_env by 2 EnvelopeSurface vertex matrix </td></tr>
-    <tr><td class="paramname">F_env</td><td>F_env by 2 EnvelopeSurface edge matrix </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="a6e2860310660ea8a8eeb8faf0512c998" name="a6e2860310660ea8a8eeb8faf0512c998"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6e2860310660ea8a8eeb8faf0512c998">&#9670;&#160;</a></span>invariants()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTriMesh::invariants </td>
-          <td>(</td>
-          <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>User specified invariants that can't be violated. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">std::vector&lt;Tuple&gt;</td><td>a vector of Tuples that are concerned in a given operation </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>true if the invairnats are not violated </dd></dl>
-
-<p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_mesh.html#a3d8bb552e20bda83d8113874e62f54fe">wmtk::TriMesh</a>.</p>
-
-</div>
-</div>
-<a id="a69203c47154411d70120dfb9c59afc2a" name="a69203c47154411d70120dfb9c59afc2a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a69203c47154411d70120dfb9c59afc2a">&#9670;&#160;</a></span>split_edge_after()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTriMesh::split_edge_after </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>t</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>User specified modifications and desideratas after an edge split. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">the</td><td>edge Tuple to be split </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>true if the modifications succeed </dd></dl>
-
-<p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_mesh.html#a0546648a3a6611054148240e7fe729d7">wmtk::TriMesh</a>.</p>
-
-</div>
-</div>
-<a id="a8ec7f99c282c8cee843820035ee10fc5" name="a8ec7f99c282c8cee843820035ee10fc5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8ec7f99c282c8cee843820035ee10fc5">&#9670;&#160;</a></span>split_edge_before()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTriMesh::split_edge_before </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>t</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>User specified preparations and desideratas for an edge split. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">the</td><td>edge Tuple to be split </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>true if the preparation succeed </dd></dl>
-
-<p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_mesh.html#abf13b037d7eabeec3de1d96043540928">wmtk::TriMesh</a>.</p>
-
-</div>
-</div>
-<a id="a8efee7d9f5be7da6edb43b01673d5ffa" name="a8efee7d9f5be7da6edb43b01673d5ffa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8efee7d9f5be7da6edb43b01673d5ffa">&#9670;&#160;</a></span>split_face_after()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTriMesh::split_face_after </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>t</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>User specified modifications and desideratas after a face split. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">the</td><td>face Tuple to be split </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>true if the modifications succeed </dd></dl>
-
-<p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_mesh.html#a56202a9964d52f60d527279e9f690ca2">wmtk::TriMesh</a>.</p>
-
-</div>
-</div>
-<a id="a1d390ec515a74231442cf1e249e65f1e" name="a1d390ec515a74231442cf1e249e65f1e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1d390ec515a74231442cf1e249e65f1e">&#9670;&#160;</a></span>split_face_before()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTriMesh::split_face_before </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>t</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>User specified preparations and desideratas for a face split. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">the</td><td>face Tuple to be split </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>true if the preparation succeed </dd></dl>
-
-<p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_mesh.html#ab9dfbe0e8d78e778b6bdd3135096180f">wmtk::TriMesh</a>.</p>
-
-</div>
-</div>
 <hr/>The documentation for this class was generated from the following files:<ul>
-<li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/topological_offset/wmtk/components/topological_offset/<a class="el" href="_topo_offset_tri_mesh_8h_source.html">TopoOffsetTriMesh.h</a></li>
-<li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/topological_offset/wmtk/components/topological_offset/<b>ComponentSplitting.cpp</b></li>
-<li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/topological_offset/wmtk/components/topological_offset/<b>Spatial.cpp</b></li>
-<li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/topological_offset/wmtk/components/topological_offset/<b>TopoOffsetTriMesh.cpp</b></li>
+<li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/manifold_extraction/wmtk/components/manifold_extraction/<a class="el" href="_man_extract_tri_mesh_8h_source.html">ManExtractTriMesh.h</a></li>
+<li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/manifold_extraction/wmtk/components/manifold_extraction/<b>ManExtractTriMesh.cpp</b></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

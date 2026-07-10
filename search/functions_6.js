@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['get_5fboundary_5ffaces_5ffor_5fout_5ftets_0',['get_boundary_faces_for_out_tets',['../classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_mesh.html#a6fb0e6027dfb482216e51cb73c6ee49e',1,'wmtk::components::manifold_extraction::ManExtractMesh']]],
+  ['get_5fboundary_5ffaces_5ffor_5fout_5ftets_0',['get_boundary_faces_for_out_tets',['../classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_tet_mesh.html#acd79f1d41fa2517b8122d85760801bf5',1,'wmtk::components::manifold_extraction::ManExtractTetMesh']]],
   ['get_5fedge_5fadjacent_5ffaces_1',['get_edge_adjacent_faces',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ad932e203fece31d3f61207bcba41f973',1,'wmtk::components::topological_offset::TopoOffsetTriMesh']]],
   ['get_5fedges_2',['get_edges',['../classwmtk_1_1_tri_mesh.html#aed585e848ce149908ce1e88f6331fc03',1,'wmtk::TriMesh::get_edges()'],['../classwmtk_1_1_tet_mesh.html#aaf33e8c597e334a7d3bfea6462c0a0e5',1,'wmtk::TetMesh::get_edges()']]],
   ['get_5fface_5fadjacent_5ftets_3',['get_face_adjacent_tets',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a0b37835ebd7234fd4013b50bcfb6e88c',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
