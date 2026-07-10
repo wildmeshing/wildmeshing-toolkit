@@ -62,6 +62,14 @@ void topological_offset(nlohmann::json json_params)
 
     int NUM_THREADS = 0;
 
+    // input must be .msh
+    if (std::filesystem::path(input_path).extension() != ".msh") {
+        log_and_throw_error("Input must be a .msh file.");
+    }
+
+    // read input data, init params from bounding box
+    InputData input_data = read_image_msh(input_path);
+    params.init(input_data.V_input.colwise().minCoeff(), input_data.V_input.colwise().maxCoeff());
     if (params.debug_output) {
         logger().info("====== input parameters =======");
         logger().info("target_distance: {}", params.target_distance);
@@ -70,13 +78,6 @@ void topological_offset(nlohmann::json json_params)
         logger().info("===============================");
     }
 
-    // input must be .msh
-    if (std::filesystem::path(input_path).extension() != ".msh") {
-        log_and_throw_error("Input must be a .msh file.");
-    }
-
-    InputData input_data = read_image_msh(input_path);
-    params.init(input_data.V_input.colwise().minCoeff(), input_data.V_input.colwise().maxCoeff());
     if (input_data.T_input.cols() == 3) { // input is a 2d tri mesh
         logger().info("Input mesh (2D trimesh): {}", input_path);
 

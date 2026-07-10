@@ -434,8 +434,9 @@ void TopoOffsetTriMesh::execute_offset(const std::filesystem::path& output_file)
         write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
     }
 
-    // marching tets (using binary search edge split)
-    m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::LogRootFind;
+    // marching tris
+    m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::SphereTracing;
+    logger().info("Using sphere tracing for distance field edge splitting.");
     marching_tris();
     set_offset_tri_tags();
     consolidate_mesh();

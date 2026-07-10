@@ -60,14 +60,13 @@ class TopoOffsetTetMesh : public wmtk::TetMesh
 {
 public: // mode for splitting in marching tets
     enum class EdgeSplitMode {
-        Midpoint = 0,
-        BinarySearch = 1, // requires that every edge being split has one vertex labelled 0 and the
-                          // other 1 or 2
-        Initial = 2, // requires that every edge being split has one vertex labelled 0 and the other
-                     // 1 or 2. This is really hacky. This initializes the offset using the minimum
-                     // of half the target distance and half the edge length. Basically we want to
-                     // initialize the offset with as high of quality as possible
-        LogRootFind = 3 // 'custom' root finding, using the fact that d(x) - d* < 0 at first vertex
+        Midpoint = 0, // used for simplicial embedding steps
+        Initial = 1, // this is used to initialize the complex. Its a little hacky
+
+        // only one of these is used, hard coded in execute_offset()
+        BinarySearch = 2, // bisection root finding algo
+        LogRootFind = 3, // 'custom' root finding, using the fact that d(x) - d* < 0 at first vertex
+        SphereTracing = 4 // use sphere tracing to compute the zero of the distance field
     };
 
 public:
@@ -152,6 +151,7 @@ public:
     void init_input_complex_bvh();
 
     /**
+     * @deprecated
      * @brief split edge at point by minimizing m_params.target_distance - d() (where d() is
      * distance to input complex via BVH) along the edge. Uses binary search, so implicitly assumes
      * distance field is monotonic along edge. May give weird results if not monotonic
@@ -161,10 +161,18 @@ public:
         const;
 
     /**
+     * @deprecated
      * @brief uses custom root finding routine, attempting to find first root (nearest to v1)
      * to split edge at
      */
     void edge_split_log_root_find(const size_t v1, const size_t v2, Vector3d& p_new) const;
+
+    /**
+     * @brief split edge at first root of d(l) - d*, where d(l) is distance to input complex,
+     * using sphere tracing method. This is the best method and should be used instead of
+     * binary or log root finding methods
+     */
+    void edge_split_sphere_tracing(const size_t v1, const size_t v2, Vector3d& p_new) const;
 
     /**
      * @brief label connected simplicial complex components (simplices labelled 1 or 2)

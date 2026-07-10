@@ -596,7 +596,8 @@ void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
     }
 
     // marching tets (using binary search edge split)
-    m_edge_split_mode = EdgeSplitMode::LogRootFind;
+    m_edge_split_mode = EdgeSplitMode::SphereTracing;
+    logger().info("Using sphere tracing for distance field edge splitting.");
     marching_tets();
     set_offset_tet_tags();
     consolidate_mesh();

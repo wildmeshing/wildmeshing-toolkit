@@ -79,6 +79,44 @@ void TopoOffsetTetMesh::edge_split_log_root_find(const size_t v1, const size_t v
 }
 
 
+void TopoOffsetTetMesh::edge_split_sphere_tracing(const size_t v1, const size_t v2, Vector3d& p_new)
+    const
+{
+    const double eps = m_params.edge_search_term_len;
+    const Vector3d v1_pos = m_vertex_attribute[v1].m_posf;
+    const Vector3d v2_pos = m_vertex_attribute[v2].m_posf;
+    const double L = (v2_pos - v1_pos).norm();
+    const Vector3d u_hat = (v2_pos - v1_pos) / L;
+    const double D = m_params.target_distance;
+
+    // if near degenerate, fall to midpoint split
+    if (L < eps) {
+        p_new = (v1_pos + v2_pos) * 0.5;
+        return;
+    }
+
+    p_new = v1_pos;
+    double t = 0;
+    double dp = m_input_complex_bvh.dist(p_new);
+    while (D - dp > eps) { // note: guaranteed that D - dp > 0
+        t += D - dp;
+        if (t >= L) { // entire edge is in offset. return split at 0.99 edge length
+            p_new = v1_pos + (0.99 * L * u_hat);
+            return;
+        }
+        p_new = v1_pos + (t * u_hat);
+        dp = m_input_complex_bvh.dist(p_new);
+    }
+
+    // snap solution point away from v1 and v2 if too close
+    if ((p_new - v1_pos).norm() < (0.01 * L)) {
+        p_new = v1_pos + (0.01 * L * u_hat);
+    } else if ((p_new - v2_pos).norm() < (0.01 * L)) {
+        p_new = v1_pos + (0.99 * L * u_hat);
+    }
+}
+
+
 bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
 {
     // load and reset cache
@@ -145,6 +183,20 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
             (m_vertex_attribute[cache.v1_id].label != 0) &&
             (m_vertex_attribute[cache.v2_id].label == 0)) {
             edge_split_log_root_find(cache.v1_id, cache.v2_id, p_new);
+        } else {
+            log_and_throw_error(
+                "Invalid edge [{}] for log root finding edge split. Both vertices in/out of "
+                "offset/input complex.",
+                e_id);
+        }
+    } else if (m_edge_split_mode == EdgeSplitMode::SphereTracing) {
+        if ((m_vertex_attribute[cache.v1_id].label == 0) &&
+            (m_vertex_attribute[cache.v2_id].label != 0)) {
+            edge_split_sphere_tracing(cache.v2_id, cache.v1_id, p_new);
+        } else if (
+            (m_vertex_attribute[cache.v1_id].label != 0) &&
+            (m_vertex_attribute[cache.v2_id].label == 0)) {
+            edge_split_sphere_tracing(cache.v1_id, cache.v2_id, p_new);
         } else {
             log_and_throw_error(
                 "Invalid edge [{}] for log root finding edge split. Both vertices in/out of "
@@ -604,6 +656,44 @@ void TopoOffsetTriMesh::edge_split_log_root_find(const size_t v1, const size_t v
 }
 
 
+void TopoOffsetTriMesh::edge_split_sphere_tracing(const size_t v1, const size_t v2, Vector2d& p_new)
+    const
+{
+    const double eps = m_params.edge_search_term_len;
+    const Vector2d v1_pos = m_vertex_attribute[v1].m_posf;
+    const Vector2d v2_pos = m_vertex_attribute[v2].m_posf;
+    const double L = (v2_pos - v1_pos).norm();
+    const Vector2d u_hat = (v2_pos - v1_pos) / L;
+    const double D = m_params.target_distance;
+
+    // if near degenerate, fall to midpoint split
+    if (L < eps) {
+        p_new = (v1_pos + v2_pos) * 0.5;
+        return;
+    }
+
+    p_new = v1_pos;
+    double t = 0;
+    double dp = m_input_complex_bvh.dist(p_new);
+    while (D - dp > eps) { // note: guaranteed that D - dp > 0
+        t += D - dp;
+        if (t >= L) { // entire edge is in offset. return split at 0.99 edge length
+            p_new = v1_pos + (0.99 * L * u_hat);
+            return;
+        }
+        p_new = v1_pos + (t * u_hat);
+        dp = m_input_complex_bvh.dist(p_new);
+    }
+
+    // snap solution point away from v1 and v2 if too close
+    if ((p_new - v1_pos).norm() < (0.01 * L)) {
+        p_new = v1_pos + (0.01 * L * u_hat);
+    } else if ((p_new - v2_pos).norm() < (0.01 * L)) {
+        p_new = v1_pos + (0.99 * L * u_hat);
+    }
+}
+
+
 bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
 {
     // load and clear cache
@@ -665,6 +755,20 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
             (m_vertex_attribute[cache.v1_id].label != 0) &&
             (m_vertex_attribute[cache.v2_id].label == 0)) {
             edge_split_log_root_find(cache.v1_id, cache.v2_id, p_new);
+        } else {
+            log_and_throw_error(
+                "Invalid edge [{}] for log root finding edge split. Both vertices in/out of "
+                "offset/input complex.",
+                e_id);
+        }
+    } else if (m_edge_split_mode == EdgeSplitMode::SphereTracing) {
+        if ((m_vertex_attribute[cache.v1_id].label == 0) &&
+            (m_vertex_attribute[cache.v2_id].label != 0)) {
+            edge_split_sphere_tracing(cache.v2_id, cache.v1_id, p_new);
+        } else if (
+            (m_vertex_attribute[cache.v1_id].label != 0) &&
+            (m_vertex_attribute[cache.v2_id].label == 0)) {
+            edge_split_sphere_tracing(cache.v1_id, cache.v2_id, p_new);
         } else {
             log_and_throw_error(
                 "Invalid edge [{}] for log root finding edge split. Both vertices in/out of "
