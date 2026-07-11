@@ -1250,9 +1250,12 @@ void TetWildMesh::insertion_by_volumeremesher(
 #endif
     }
 
-    // Sanity check the remesher's own tetrahedra. The remesher now returns tets
-    // already in the WMTK orientation ((v1-v0)x(v2-v0).(v3-v0) > 0), so out_tets
-    // is used directly (no orientation fix-up when filling tets_after below).
+    // Debug-only sanity check: the remesher now returns tets already in the WMTK
+    // orientation ((v1-v0)x(v2-v0).(v3-v0) > 0), so out_tets is used directly (no
+    // orientation fix-up when filling tets_after below). This verification is
+    // exact-rational and O(#tets) -- prohibitively expensive on large meshes --
+    // so it is compiled out of release builds.
+#ifndef NDEBUG
     for (const auto& vids : out_tets) {
         Vector3r n = (v_rational[vids[1]] - v_rational[vids[0]])
                          .cross(v_rational[vids[2]] - v_rational[vids[0]]);
@@ -1272,6 +1275,7 @@ void TetWildMesh::insertion_by_volumeremesher(
             logger().error("v3 = {}", to_double(v_rational[vids[3]]).transpose());
         }
     }
+#endif
 
 
     // Step 4b: decode embedded_facets into triangles. KEY DIFFERENCE vs "_old":
@@ -1453,8 +1457,10 @@ void TetWildMesh::insertion_by_volumeremesher(
         tet_face_on_input_surface[4 * i + 3] = fl0;
     }
 
-    // Final sanity check: after the swap, every tet must be positively oriented
-    // under the WMTK convention ((v1-v0)x(v2-v0)).(v3-v0) > 0.
+    // Debug-only final sanity check: every published tet must be positively
+    // oriented under the WMTK convention ((v1-v0)x(v2-v0)).(v3-v0) > 0. Exact-
+    // rational and O(#tets), so it is compiled out of release builds.
+#ifndef NDEBUG
     for (const auto& vids : tets_after) {
         Vector3r n = (v_rational[vids[1]] - v_rational[vids[0]])
                          .cross(v_rational[vids[2]] - v_rational[vids[0]]);
@@ -1469,6 +1475,7 @@ void TetWildMesh::insertion_by_volumeremesher(
             // logger().error("res == 0 ? --> {}", res == 0);
         }
     }
+#endif
 
     // Everything below is dead (commented-out) code: it is the "_old"-style
     // polygonal-cell tetrahedralization (decode embedded_cells, triangulate
