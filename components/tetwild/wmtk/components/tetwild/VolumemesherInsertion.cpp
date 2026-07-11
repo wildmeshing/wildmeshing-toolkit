@@ -1744,11 +1744,24 @@ void TetWildMesh::init_from_Volumeremesher(
     m_tet_attribute.m_attributes.resize(tets.size());
     m_face_attribute.m_attributes.resize(tets.size() * 4);
 
+    // A VolumeRemesher output vertex is either a direct (explicit) point -- whose
+    // exact coordinate is already a double -- or an indirect (implicit) point that
+    // is genuinely rational. A direct point rounds for free: its coordinate already
+    // equals its double, so snapping it cannot invert any tet. Mark those rounded
+    // here and remember which are direct, so the rounding pass below only does real
+    // work (and can do it in parallel) for the indirect points.
+    std::vector<char> is_direct_point(vert_capacity(), 0);
     for (int i = 0; i < vert_capacity(); i++) {
         m_vertex_attribute[i].m_pos = v_rational[i];
         // wmtk::logger().info("rational: {}", m_vertex_attribute[i].m_pos);
         m_vertex_attribute[i].m_posf = to_double(v_rational[i]);
         // wmtk::logger().info("double: {}", m_vertex_attribute[i].m_posf);
+        const Vector3r& r = m_vertex_attribute[i].m_pos;
+        const Vector3d& d = m_vertex_attribute[i].m_posf;
+        const bool direct = (wmtk::Rational(d[0]) == r[0]) && (wmtk::Rational(d[1]) == r[1]) &&
+                            (wmtk::Rational(d[2]) == r[2]);
+        is_direct_point[i] = direct ? 1 : 0;
+        m_vertex_attribute[i].m_is_rounded = direct;
     }
 
     // check here
@@ -1894,32 +1907,67 @@ void TetWildMesh::init_from_Volumeremesher(
     // std::cout << std::endl;
 
 
-    // // rounding
-    // std::atomic_int cnt_round(0);
-    // std::atomic_int cnt_valid(0);
+    // Round the indirect vertices in parallel. Rounding snaps m_pos to its double
+    // and may not invert any incident tet, so it is not independent across adjacent
+    // vertices and the old code did it serially (round() per vertex, an exact-
+    // rational inversion check over each vertex's incident tets). Instead, snap all
+    // indirect vertices at once and then revalidate/revert the few conflicts:
+    //   1. snap every not-yet-rounded (indirect) vertex to its double (parallel);
+    //   2. scan all tets (parallel) -- any inverted tet must contain an indirect
+    //      vertex (a direct vertex never moves, so cannot cause an inversion), so
+    //      revert those indirect vertices to their exact rational coordinate;
+    //   3. repeat until no tet is inverted.
+    // This terminates: every non-empty pass un-rounds at least one vertex, and the
+    // all-rational mesh is valid. Direct points are skipped throughout.
+    for_each_vertex([&](const Tuple& v) {
+        const size_t i = v.vid(*this);
+        if (!m_vertex_attribute[i].m_is_rounded) {
+            m_vertex_attribute[i].m_pos << m_vertex_attribute[i].m_posf[0],
+                m_vertex_attribute[i].m_posf[1], m_vertex_attribute[i].m_posf[2];
+            m_vertex_attribute[i].m_is_rounded = true;
+        }
+    });
 
-    // auto vertices = get_vertices();
-    // for (auto v : vertices) {
-    //     // debug code
-    //     if (v.is_valid(*this)) cnt_valid++;
-
-    //     if (round(v)) cnt_round++;
-    // }
-
-    // wmtk::logger().info("cnt_round {}/{}", cnt_round, cnt_valid);
-    // // rounding
-    std::atomic_int cnt_round(0);
-    std::atomic_int cnt_valid(0);
-
-    auto vertices = get_vertices();
-    for (auto v : vertices) {
-        // debug code
-        if (v.is_valid(*this)) cnt_valid++;
-
-        if (round(v)) cnt_round++;
+    while (true) {
+        tbb::concurrent_vector<size_t> to_revert;
+        for_each_tetra([&](const Tuple& t) {
+            if (is_inverted(t)) {
+                for (const size_t vid : oriented_tet_vids(t)) {
+                    if (!is_direct_point[vid] && m_vertex_attribute[vid].m_is_rounded)
+                        to_revert.push_back(vid);
+                }
+            }
+        });
+        if (to_revert.empty()) break;
+        for (const size_t vid : to_revert) {
+            if (m_vertex_attribute[vid].m_is_rounded) {
+                m_vertex_attribute[vid].m_pos = v_rational[vid];
+                m_vertex_attribute[vid].m_is_rounded = false;
+            }
+        }
     }
 
-    wmtk::logger().info("cnt_round {}/{}", (int)cnt_round, (int)cnt_valid);
+    const auto vertices = get_vertices();
+    size_t cnt_round_parallel = 0;
+    for (const auto& v : vertices)
+        if (m_vertex_attribute[v.vid(*this)].m_is_rounded) ++cnt_round_parallel;
+
+    // Final serial sweep: the parallel batch reverts a vertex whenever it lies in
+    // any inverted tet, which can over-revert (a vertex may round fine once its
+    // neighbours are committed). Retry the leftovers one at a time -- round() is a
+    // no-op for the already-rounded majority, so this only pays for the few that
+    // remain, and recovers vertices the batch conservatively reverted.
+    for (const auto& v : vertices) round(v);
+
+    size_t cnt_round = 0;
+    for (const auto& v : vertices)
+        if (m_vertex_attribute[v.vid(*this)].m_is_rounded) ++cnt_round;
+    wmtk::logger().info(
+        "cnt_round {}/{} (parallel {}, serial recovered {})",
+        cnt_round,
+        vertices.size(),
+        cnt_round_parallel,
+        cnt_round - cnt_round_parallel);
 
     // init qualities
     auto& m = *this;
