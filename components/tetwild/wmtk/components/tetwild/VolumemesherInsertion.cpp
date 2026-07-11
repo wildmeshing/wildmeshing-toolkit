@@ -284,10 +284,10 @@ std::vector<std::array<size_t, 3>> TetWildMesh::triangulate_polygon_face(
 //   5. Emit the triangle faces, the tets, and the on-surface tags for faces and
 //      vertices.
 //
-// This "_old" variant tetrahedralizes the polygonal cells itself (steps 4-5).
-// The newer insertion_by_volumeremesher instead consumes the tets the remesher
-// returns directly, but it is currently broken (it throws on entry), so this
-// routine is the one actually used. See the header comment on
+// This "_old" variant tetrahedralizes the polygonal cells itself (steps 4-5) by
+// coning each cell to a per-cell centroid. It is kept for reference; the default
+// path is now insertion_by_volumeremesher, which consumes the tetrahedralization
+// the remesher returns directly. See the header comment on
 // insertion_by_volumeremesher below for a side-by-side of the differences.
 //
 // Parameters:
@@ -1054,25 +1054,28 @@ void TetWildMesh::insertion_by_volumeremesher_old(
 
 
 // ---------------------------------------------------------------------------
-// insertion_by_volumeremesher  (the "new" variant -- currently DISABLED)
+// insertion_by_volumeremesher  (the fast variant -- the default path)
 //
 // Same goal as insertion_by_volumeremesher_old: conformally insert the input
 // surface into a background tet mesh via vol_rem::embed_tri_in_poly_mesh. Steps
 // 1-3 (build background mesh, flatten inputs, run the remesher) are identical.
 // The difference is entirely in what it does with the remesher output.
 //
-// *** This function is DISABLED: it throws on the very first line. *** It is
-// kept as the intended replacement for the "_old" path but is known to produce
-// wrong results, so the throw forces callers back to the working "_old" routine.
+// This is the variant actually used. It consumes the tetrahedralization the
+// remesher now returns directly (see the VolumeRemesher changes that emit a full
+// conforming tetrahedralization with surface-tracking metadata), which is
+// cheaper and adds no interior Steiner points. The older "_old" routine, which
+// re-tetrahedralizes the polygonal cells by coning to per-cell centroids, is
+// kept for reference.
 //
 // How it differs from insertion_by_volumeremesher_old (steps 4-5):
 //   * Tets come straight from the remesher. It consumes the remesher's own
 //     tetrahedra (out_tets) directly instead of re-tetrahedralizing the
 //     polygonal cells. Consequently it adds NO centroid Steiner points -- the
 //     output has fewer, better-shaped tets and no extra interior vertices.
-//   * Facets must already be triangles. embedded_facets is parsed with a fixed
-//     stride of 4 (1 size prefix + 3 vertex ids) and it throws if any facet is
-//     not a triangle, whereas "_old" triangulates arbitrary polygon faces.
+//   * Facets are already triangles. The remesher triangulates every face, so
+//     embedded_facets is parsed with a fixed stride of 4 (1 size prefix + 3
+//     vertex ids), whereas "_old" triangulates arbitrary polygon faces itself.
 //   * Surface tracking uses remesher metadata. It relies on final_tets_parent
 //     (which polygonal cell each output tet came from), final_tets_parent_faces
 //     (which polygon faces bound that tet) and cells_with_faces_on_input (a fast
@@ -1081,15 +1084,13 @@ void TetWildMesh::insertion_by_volumeremesher_old(
 //   * Vertices are compacted. Vertices left unreferenced by out_tets are removed
 //     and all indices are remapped (see the "removing unreferenced vertices"
 //     block); "_old" keeps every vertex.
-//   * Orientation is converted, not re-derived. The remesher tets have a fixed
-//     orientation, so tets_after is produced by swapping local indices 2 and 3
-//     (and reordering the 4 face flags to match WMTK's local face order) rather
-//     than flipping each tet by an exact signed-volume test.
+//   * Orientation is passed through. The remesher already emits WMTK-positively
+//     oriented tets, so out_tets is copied straight into tets_after (only the 4
+//     per-tet face flags are reordered to WMTK's local face order).
 //
 // The `polygon_faces` OUTPUT parameter here is a list of triangles
-// (std::array<size_t,3>), reflecting that facets are required to be triangles;
-// in "_old" the corresponding internal structure was a variable-length polygon
-// list.
+// (std::array<size_t,3>), reflecting that facets are already triangles; in
+// "_old" the corresponding internal structure was a variable-length polygon list.
 // ---------------------------------------------------------------------------
 void TetWildMesh::insertion_by_volumeremesher(
     const std::vector<Vector3d>& vertices, // input surface vertices (double)
@@ -1100,9 +1101,6 @@ void TetWildMesh::insertion_by_volumeremesher(
     std::vector<std::array<size_t, 4>>& tets_after, // out: output tets
     std::vector<bool>& tet_face_on_input_surface) // out: 4 face-on-surface flags per tet
 {
-    // Hard stop: this variant is broken. Callers must use the "_old" routine.
-    log_and_throw_error("This insertion is broken! Use insertion_by_volumeremesher_old instead!");
-
     std::cout << "vertices size: " << vertices.size() << std::endl;
     std::cout << "faces size: " << faces.size() << std::endl;
 
@@ -1252,14 +1250,13 @@ void TetWildMesh::insertion_by_volumeremesher(
 #endif
     }
 
-    // Sanity check the remesher's own tetrahedra. Note the orientation
-    // convention used here is (v1-v0)x(v3-v0).(v2-v0) > 0, i.e. with v2 and v3
-    // swapped relative to the final WMTK convention -- consistent with the
-    // index swap applied when filling tets_after further down.
+    // Sanity check the remesher's own tetrahedra. The remesher now returns tets
+    // already in the WMTK orientation ((v1-v0)x(v2-v0).(v3-v0) > 0), so out_tets
+    // is used directly (no orientation fix-up when filling tets_after below).
     for (const auto& vids : out_tets) {
         Vector3r n = (v_rational[vids[1]] - v_rational[vids[0]])
-                         .cross(v_rational[vids[3]] - v_rational[vids[0]]);
-        Vector3r d = v_rational[vids[2]] - v_rational[vids[0]];
+                         .cross(v_rational[vids[2]] - v_rational[vids[0]]);
+        Vector3r d = v_rational[vids[3]] - v_rational[vids[0]];
         auto res = n.dot(d);
         if (res <= 0) {
             logger().error(
@@ -1428,33 +1425,32 @@ void TetWildMesh::insertion_by_volumeremesher(
     }
     wmtk::logger().info("done");
 
-    // Step 5: publish the tets. KEY DIFFERENCE vs "_old", which fixes each tet's
-    // orientation with an exact signed-volume test: the remesher tets have a
-    // fixed (inverted-relative-to-WMTK) orientation, so we convert by swapping
-    // local vertices 2 and 3. The 4 face flags produced by the tracking loop
-    // above (in remesher-tet face order f0..f3 opposite v0..v3) are permuted to
-    // match WMTK's local face order, accounting for that same 2<->3 swap.
+    // Step 5: publish the tets. makeTetrahedra already emits WMTK-positively
+    // oriented tets, so the vertices are copied straight through -- no swap. Only
+    // the per-tet face flags need reordering: the tracking loop stored them in
+    // "opposite-vertex" order (fl[k] = flag of the face opposite out_tets[i][k]),
+    // which we map to WMTK's local face order.
     tets_after.resize(out_tets.size());
     for (size_t i = 0; i < out_tets.size(); ++i) {
         tets_after[i][0] = out_tets[i][0];
         tets_after[i][1] = out_tets[i][1];
-        tets_after[i][2] = out_tets[i][3]; // inverting the tet here!
-        tets_after[i][3] = out_tets[i][2];
+        tets_after[i][2] = out_tets[i][2];
+        tets_after[i][3] = out_tets[i][3];
 
-        bool b0 = tet_face_on_input_surface[4 * i + 0];
-        bool b1 = tet_face_on_input_surface[4 * i + 1];
-        bool b2 = tet_face_on_input_surface[4 * i + 3]; // inverting tet
-        bool b3 = tet_face_on_input_surface[4 * i + 2];
+        const bool fl0 = tet_face_on_input_surface[4 * i + 0]; // opp v0
+        const bool fl1 = tet_face_on_input_surface[4 * i + 1]; // opp v1
+        const bool fl2 = tet_face_on_input_surface[4 * i + 2]; // opp v2
+        const bool fl3 = tet_face_on_input_surface[4 * i + 3]; // opp v3
 
-        // adjust order to the WMTK face order
-        // local_f0: (v0, v1, v2)
-        // local_f1: (v0, v2, v3)
-        // local_f2: (v0, v1, v3)
-        // local_f3: (v1, v2, v3)
-        tet_face_on_input_surface[4 * i + 0] = b3;
-        tet_face_on_input_surface[4 * i + 1] = b1;
-        tet_face_on_input_surface[4 * i + 2] = b2;
-        tet_face_on_input_surface[4 * i + 3] = b0;
+        // WMTK local face order:
+        //   local_f0: (v0, v1, v2) = opposite v3
+        //   local_f1: (v0, v2, v3) = opposite v1
+        //   local_f2: (v0, v1, v3) = opposite v2
+        //   local_f3: (v1, v2, v3) = opposite v0
+        tet_face_on_input_surface[4 * i + 0] = fl3;
+        tet_face_on_input_surface[4 * i + 1] = fl1;
+        tet_face_on_input_surface[4 * i + 2] = fl2;
+        tet_face_on_input_surface[4 * i + 3] = fl0;
     }
 
     // Final sanity check: after the swap, every tet must be positively oriented

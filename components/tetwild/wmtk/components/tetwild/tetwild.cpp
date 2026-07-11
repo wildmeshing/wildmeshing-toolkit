@@ -227,7 +227,9 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     igl::Timer insertion_timer;
     insertion_timer.start();
 
-    mesh.insertion_by_volumeremesher_old(
+    // Fast tetrahedralization: use the remesher's own tets directly instead of
+    // the centroid-coning path in insertion_by_volumeremesher_old.
+    mesh.insertion_by_volumeremesher(
         vsimp,
         fsimp,
         v_rational,
