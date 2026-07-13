@@ -1,5 +1,3 @@
-#include <igl/point_simplex_squared_distance.h>
-#include <limits>
 #include <queue>
 #include "Circle.hpp"
 #include "Sphere.hpp"

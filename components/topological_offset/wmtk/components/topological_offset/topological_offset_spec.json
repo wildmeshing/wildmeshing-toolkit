@@ -11,16 +11,18 @@
       "offset_output_tags",
       "protected_tags",
       "respect_all_topologies",
-      "overwrite_tags",
       "offset_in",
       "offset_out",
       "target_distance",
+      "target_distance_rel",
       "relative_ball_threshold",
       "edge_search_termination_len",
       "sorted_marching",
       "check_manifoldness",
       "save_vtu",
-      "DEBUG_output"
+      "DEBUG_output",
+      "log_file",
+      "report"
     ]
   },
   {
@@ -67,18 +69,12 @@
     "pointer": "/protected_tags",
     "type": "list",
     "default": [],
-    "doc": "Only relevant if overwrite_tags=true. Set of tags that will not be overwritten by the offset."
+    "doc": "Set of tags that will not be overwritten by the offset."
   },
   {
     "pointer": "/protected_tags/*",
     "type": "string",
     "doc": "A tag."
-  },
-  {
-    "pointer": "/overwrite_tags",
-    "type": "bool",
-    "default": false,
-    "doc": "If true, offset_output_tag overwrites existing tags in the offset."
   },
   {
     "pointer": "/offset_in",
@@ -99,16 +95,22 @@
     "doc": "If true, the topology (after offset initialization) of every tag is respected as if the offset was to replace all tags. If false, only the topology of the offset is respected."
   },
   {
+    "pointer": "/target_distance_rel",
+    "type": "float",
+    "default": 1e-2,
+    "doc": "Target offset distance relative to bounding box of mesh."
+  },
+  {
     "pointer": "/target_distance",
     "type": "float",
     "default": -1.0,
-    "doc": "Target distance for offset. If negative, the offset is created by splitting adjacent edges at their midpoints."
+    "doc": "Target distance for offset. If < 0, the relative target distance is used to compute this one."
   },
   {
     "pointer": "/relative_ball_threshold",
     "type": "float",
     "default": 0.1,
-    "doc": "Radius relative to target_distance to stop circle (2d) or sphere (3d) splitting in conservative distance approximation."
+    "doc": "Float between 0 and 1, radius relative to target_distance to stop circle/sphere splitting in conservative distance approximation. Smaller means more accurate offset growth but longer run time."
   },
   {
     "pointer": "/edge_search_termination_len",
@@ -139,5 +141,17 @@
     "type": "bool",
     "default": false,
     "doc": "Write the tet mesh as out_{}.vtu after every operation."
+  },
+  {
+    "pointer": "/log_file",
+    "type": "string",
+    "default": "",
+    "doc": "Logs are not just printed on the terminal but also saved in this file."
+  },
+  {
+    "pointer": "/report",
+    "type": "string",
+    "default": "",
+    "doc": "A JSON file that stores information about the result and the method execution, e.g., runtime."
   }
 ]

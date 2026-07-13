@@ -463,16 +463,15 @@ def fill_holes_topo(mesh, tags, output="out", others={}):
     wildmeshing(j)
 
 
-def manifold_extraction(mesh, in_tag, union, replace_tag=[], output="out", others={}):
+def manifold_extraction(mesh, tag_selection, radius, fill_tags=[], output="out", others={}):
     """
     Make boundary of in_tag set manifold (Only 3D supported as of now).
 
     Parameters:
     - mesh: Input mesh file path (must be .msh). The extension can be omitted, and it will be automatically added, e.g. "mesh" will be treated as "mesh.msh". Other extensions will raise an error.
-    - in_tag: List of tags considered inside the input (e.g. ["tag_0", "tag_1"]). The boundary of the union of these tags is
-        considered the surface to make manifold.
-    - union: True to join the offset with in_tag, False to set to replace_tag
-    - replace_tag: Only relevant if union=False. The tag set to fill offsets around non manifold simplices (e.g. [2])
+    - tag_selection: selection for elements considered inside the surface, e.g. "tag_0 | tag_1"
+    - radius: Float, radius for offset created around nonmanifold components
+    - fill_tags: Tag set for offset created around nonmanifold components, e.g. ["tag_0", "tag_1"]. Use [] for ambient.
     - output: Output file path for the modified mesh, without extension (e.g. "out" will generate "out.msh")
     - others: Additional parameters (optional).
     """
@@ -482,9 +481,9 @@ def manifold_extraction(mesh, in_tag, union, replace_tag=[], output="out", other
     j = {}
     j["application"] = "manifold_extraction"
     j["input"] = mesh
-    j["in_tag"] = in_tag
-    j["manifold_union"] = union
-    j["replace_tag"] = replace_tag
+    j["tag_selection"] = tag_selection
+    j["radius"] = radius
+    j["fill_tags"] = fill_tags
     j["output"] = output
 
     # copy any additional parameters from others into j
@@ -498,11 +497,11 @@ def manifold_extraction(mesh, in_tag, union, replace_tag=[], output="out", other
     wildmeshing(j)
 
 
-def topological_offset(mesh, offset_selection, target_distance, offset_output_tags, overwrite_tags,
+def topological_offset(mesh, offset_selection, target_distance, offset_output_tags,
                        offset_in=False, offset_out=True, protected_tags=[], rel_ball_threshold=0.01,
                        output="out", others={}):
     """
-    Create topological offset.
+    Create topological offset. NOTE: ambient is represented as 'ambient', not '_'.
 
     Parameters:
     - mesh: mesh: Input tetrahedral mesh file path (must be .msh). The extension can be omitted, and it will be automatically added, e.g. "mesh" will be treated as "mesh.msh". Other extensions will raise an error.
@@ -512,7 +511,6 @@ def topological_offset(mesh, offset_selection, target_distance, offset_output_ta
     - offset_out: Bool, only relevant if single body mode. If True, create offset outwards (at least
         one of offset_in and offset_out must be true in single body mode)
     - offset_output_tags: List[Str], tag set for the newly createad offset volume (e.g. ["newtag", "newtag2"]).
-    - overwrite_tags: Bool, if True then offset_output_tags will overwrite tags in offset region
     - protected_tags: List[Str], only relevant if overwrite_tags=True. Set of tags that will never be overwritten.
     - target_distance: Float, the target distance for the offset. If <= 0, midpoint splitting is used to create the offset.
     - rel_ball_threshold: Float, circle/sphere radius relative to target_distance to terminate conservative inside checks.
@@ -533,7 +531,6 @@ def topological_offset(mesh, offset_selection, target_distance, offset_output_ta
     j["offset_in"] = offset_in
     j["offset_out"] = offset_out
     j["offset_output_tags"] = offset_output_tags
-    j["overwrite_tags"] = overwrite_tags
     j["protected_tags"] = protected_tags
     j["target_distance"] = target_distance
     j["relative_ball_threshold"] = rel_ball_threshold
