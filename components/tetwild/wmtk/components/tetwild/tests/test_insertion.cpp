@@ -224,7 +224,7 @@ TEST_CASE("vertex_order", "[tetwild]")
     std::vector<bool> tet_face_on_input_surface;
     {
         TetWildMesh mesh_insertion(params, surf_mesh.m_envelope, 0);
-        mesh_insertion.insertion_by_volumeremesher_old(
+        mesh_insertion.insertion_by_volumeremesher(
             vertices,
             faces,
             v_rational,
