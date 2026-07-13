@@ -33,7 +33,11 @@ set(MY_FLAGS
     -Werror=sequence-point
     -Werror=return-type
     -Werror=trigraphs
-    -Werror=array-bounds
+    # array-bounds is prone to false positives in vectorized (AVX) Eigen/libigl
+    # code on GCC (e.g. GCC 13 flags avxintrin.h as reading "partly outside" a
+    # 1x3 Eigen matrix). Keep the warning but do not make it a hard error, so a
+    # compiler bug does not break the build.
+    -Wno-error=array-bounds
     -Werror=write-strings
     -Werror=address
     -Werror=int-to-pointer-cast
