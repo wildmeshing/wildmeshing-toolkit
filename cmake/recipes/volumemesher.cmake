@@ -7,6 +7,13 @@ endif()
 message(STATUS "Third-party: creating target 'VolumeMesher'")
 
 include(CPM)
-CPMAddPackage("gh:JcDai/VolumeRemesher#4543ab03e4852df319afb378e873aa629d546cf6")
+CPMAddPackage(
+    NAME VolumeRemesher
+    GITHUB_REPOSITORY JcDai/VolumeRemesher
+    GIT_TAG 3a38afab245089798f30415be6ee480232f570aa
+    OPTIONS
+    "VOLREM_ENABLE_SSE2 OFF"
+    "VOLREM_ENABLE_AVX2 OFF"
+    )
 
 set_target_properties(mesh_generator_lib PROPERTIES FOLDER third-party)
