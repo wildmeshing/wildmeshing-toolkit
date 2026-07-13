@@ -15,7 +15,5 @@ CPMAddPackage(
         # LIBIGL_COPYLEFT_TETGEN ON
 )
 
-set_target_properties(igl_core PROPERTIES SYSTEM TRUE)
-
 # include(eigen)
 FetchContent_MakeAvailable(libigl)
