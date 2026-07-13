@@ -328,8 +328,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>output_init_tetmesh</
 <tr class="memitem:a16ac17052b59af076894fe7ce7ec0df3" id="r_a16ac17052b59af076894fe7ce7ec0df3"><td class="memItemLeft" align="right" valign="top"><a id="a16ac17052b59af076894fe7ce7ec0df3" name="a16ac17052b59af076894fe7ce7ec0df3"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>output_tracked_surface</b> (std::string output_file)</td></tr>
 <tr class="separator:a16ac17052b59af076894fe7ce7ec0df3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a58db92dd3d79effcf5686403a1534f11" id="r_a58db92dd3d79effcf5686403a1534f11"><td class="memItemLeft" align="right" valign="top"><a id="a58db92dd3d79effcf5686403a1534f11" name="a58db92dd3d79effcf5686403a1534f11"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>adjust_sizing_field_serial</b> (double max_energy)</td></tr>
+<tr class="memitem:a58db92dd3d79effcf5686403a1534f11" id="r_a58db92dd3d79effcf5686403a1534f11"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a58db92dd3d79effcf5686403a1534f11">adjust_sizing_field_serial</a> (double max_energy)</td></tr>
 <tr class="separator:a58db92dd3d79effcf5686403a1534f11"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6d338f7c949ce190af434c3814ab24ef" id="r_a6d338f7c949ce190af434c3814ab24ef"><td class="memItemLeft" align="right" valign="top"><a id="a6d338f7c949ce190af434c3814ab24ef" name="a6d338f7c949ce190af434c3814ab24ef"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>find_open_boundary</b> ()</td></tr>
@@ -750,6 +749,26 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
 <tr class="separator:ad9d6052a670ae32551b614f1e291429c inherit pro_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a58db92dd3d79effcf5686403a1534f11" name="a58db92dd3d79effcf5686403a1534f11"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a58db92dd3d79effcf5686403a1534f11">&#9670;&#160;</a></span>adjust_sizing_field_serial()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::tetwild::TetWildMesh::adjust_sizing_field_serial </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>max_energy</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Iterate through all vertices. For each vertex, find all pts in the R-ball neighborhood. Compute scalar based on the distance to the point. Take smallest of all computed values.</p>
+<p>If no neighbor, multiply by recover_scalar.</p>
+
+</div>
+</div>
 <a id="a3d530525965a217149919f12b1a1c572" name="a3d530525965a217149919f12b1a1c572"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3d530525965a217149919f12b1a1c572">&#9670;&#160;</a></span>collapse_edge_after()</h2>
 
