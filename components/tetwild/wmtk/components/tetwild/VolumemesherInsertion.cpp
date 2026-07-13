@@ -429,7 +429,7 @@ void TetWildMesh::insertion_by_volumeremesher_old(
     // Sanity check the flattened inputs before handing them to the remesher:
     // warn about collinear (degenerate) input triangles and coplanar
     // (degenerate) background tets. These are warnings only; embedding proceeds.
-    {
+    if (m_params.perform_sanity_checks) {
         logger().info("Check degenerate before embedding...");
         for (int i = 0; i < tri_index.size(); i += 3) {
             int id0 = tri_index[i + 0];
@@ -1255,27 +1255,29 @@ void TetWildMesh::insertion_by_volumeremesher(
     // orientation fix-up when filling tets_after below). This verification is
     // exact-rational and O(#tets) -- prohibitively expensive on large meshes --
     // so it is compiled out of release builds.
-#ifndef NDEBUG
-    for (const auto& vids : out_tets) {
-        Vector3r n = (v_rational[vids[1]] - v_rational[vids[0]])
-                         .cross(v_rational[vids[2]] - v_rational[vids[0]]);
-        Vector3r d = v_rational[vids[3]] - v_rational[vids[0]];
-        auto res = n.dot(d);
-        if (res <= 0) {
-            logger().error(
-                "After embed_tri_in_poly_mesh: Tet {} is inverted! res = {}",
-                vids,
-                res.to_double());
-            if (res == 0) {
-                logger().error("Tet has 0 volume.");
+    if (m_params.perform_sanity_checks) {
+        logger().info("Check tet orientation after embedding...");
+        for (const auto& vids : out_tets) {
+            Vector3r n = (v_rational[vids[1]] - v_rational[vids[0]])
+                             .cross(v_rational[vids[2]] - v_rational[vids[0]]);
+            Vector3r d = v_rational[vids[3]] - v_rational[vids[0]];
+            auto res = n.dot(d);
+            if (res <= 0) {
+                logger().error(
+                    "After embed_tri_in_poly_mesh: Tet {} is inverted! res = {}",
+                    vids,
+                    res.to_double());
+                if (res == 0) {
+                    logger().error("Tet has 0 volume.");
+                }
+                logger().error("v0 = {}", to_double(v_rational[vids[0]]).transpose());
+                logger().error("v1 = {}", to_double(v_rational[vids[1]]).transpose());
+                logger().error("v2 = {}", to_double(v_rational[vids[2]]).transpose());
+                logger().error("v3 = {}", to_double(v_rational[vids[3]]).transpose());
             }
-            logger().error("v0 = {}", to_double(v_rational[vids[0]]).transpose());
-            logger().error("v1 = {}", to_double(v_rational[vids[1]]).transpose());
-            logger().error("v2 = {}", to_double(v_rational[vids[2]]).transpose());
-            logger().error("v3 = {}", to_double(v_rational[vids[3]]).transpose());
         }
+        logger().info("done");
     }
-#endif
 
 
     // Step 4b: decode embedded_facets into triangles. KEY DIFFERENCE vs "_old":
