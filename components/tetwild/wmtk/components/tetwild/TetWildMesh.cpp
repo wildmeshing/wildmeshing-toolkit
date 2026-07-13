@@ -542,120 +542,163 @@ std::tuple<double, double> TetWildMesh::local_operations(
 
 bool TetWildMesh::adjust_sizing_field_serial(double max_energy)
 {
-    wmtk::logger().info("#V {}, #T {}", vert_capacity(), tet_capacity());
+    logger().info("#V = {}, #T = {}", vert_capacity(), tet_capacity());
 
     const double stop_filter_energy = m_params.stop_energy * 0.8;
     double filter_energy = std::max(max_energy / 100, stop_filter_energy);
     filter_energy = std::min(filter_energy, 100.);
 
-    const auto recover_scalar = 1.5;
-    const auto refine_scalar = 0.5;
-    const auto min_refine_scalar = m_params.l_min / m_params.l;
+    const double recover_scalar = 1.5;
+    const double refine_scalar = 0.5;
+    const double min_refine_scalar = m_params.l_min / m_params.l;
 
-    // outputs scale_multipliers
-    std::vector<double> scale_multipliers(vert_capacity(), recover_scalar);
+    // // outputs scale_multipliers
+    // std::vector<double> scale_multipliers(vert_capacity(), recover_scalar);
 
     std::vector<Vector3d> pts;
+    std::map<size_t, double> pts_scalars;
     std::queue<size_t> v_queue;
 
     for (int i = 0; i < tet_capacity(); i++) {
-        auto t = tuple_from_tet(i);
-        if (!t.is_valid(*this)) continue;
-        auto tid = t.tid(*this);
-        if (std::cbrt(m_tet_attribute[tid].m_quality) < filter_energy) continue;
-        auto vs = oriented_tet_vids(t);
+        const Tuple t = tuple_from_tet(i);
+        if (!t.is_valid(*this)) {
+            continue;
+        }
+        const size_t tid = t.tid(*this);
+        if (std::cbrt(m_tet_attribute[tid].m_quality) < filter_energy) {
+            continue;
+        }
+        const auto vs = oriented_tet_vids(t);
         Vector3d c(0, 0, 0);
+        double s = 0;
         for (int j = 0; j < 4; j++) {
             c += (m_vertex_attribute[vs[j]].m_posf);
             v_queue.emplace(vs[j]);
-            // std::cout << vs[j] << " ";
+            s = std::max(s, m_vertex_attribute[vs[j]].m_sizing_scalar);
         }
+        pts_scalars[pts.size()] = s;
         pts.emplace_back(c / 4);
     }
 
-    // std::cout << std::endl;
-
-
-    wmtk::logger().info("filter energy {} Low Quality Tets {}", filter_energy, pts.size());
-
-    // debug code
-    // std::queue<size_t> v_queue_serial;
-    // for (tbb::concurrent_queue<size_t>::const_iterator i(v_queue.unsafe_begin());
-    //      i != v_queue.unsafe_end();
-    //      ++i) {
-    //     // std::cout << *i << " ";
-    //     v_queue_serial.push(*i);
-    // }
-    // std::cout << std::endl;
+    logger().info("filter energy = {}; Number of low quality tets {}", filter_energy, pts.size());
 
     const double R = m_params.l * 1.8;
 
     int sum = 0;
     int adjcnt = 0;
 
-    std::vector<bool> visited(vert_capacity(), false);
-
     KNN knn(pts);
 
-    std::vector<size_t> cache_one_ring;
-    // size_t vid;
+    bool is_hit_min_edge_length = false;
+    /**
+     * Iterate through all vertices.
+     * For each vertex, find all pts in the R-ball neighborhood.
+     * Compute scalar based on the distance to the point.
+     * Take smallest of all computed values.
+     *
+     * If no neighbor, multiply by recover_scalar.
+     */
+    for (int i = 0; i < vert_capacity(); i++) {
+        const Tuple v = tuple_from_vertex(i);
+        if (!v.is_valid(*this)) {
+            continue;
+        }
+        const size_t vid = v.vid(*this);
+        const auto& pos_v = m_vertex_attribute[vid].m_posf;
 
-    while (!v_queue.empty()) {
-        // std::cout << vid << " ";
-        sum++;
-        size_t vid = v_queue.front();
-        // std::cout << vid << " ";
-        v_queue.pop();
-        if (visited[vid]) continue;
-        visited[vid] = true;
-        adjcnt++;
+        // all low quality tet centroids within R-ball of vertex
+        std::vector<nanoflann::ResultItem<uint32_t, double>> matches;
+        knn.r_nearest_neighbors(pos_v, R * R, matches);
 
-        auto& pos_v = m_vertex_attribute[vid].m_posf;
-        double sq_dist = 0.;
-        uint32_t idx;
-        knn.nearest_neighbor(pos_v, idx, sq_dist);
-        const double dist = std::sqrt(sq_dist);
+        auto& v_scalar = m_vertex_attribute[vid].m_sizing_scalar;
 
-        if (dist > R) { // outside R-ball, unmark.
+        if (matches.empty()) {
+            // if no low quality tet within R-ball, increase sizing scalar to recover from previous
+            // refinement
+            v_scalar = std::min(recover_scalar * v_scalar, 1.0);
             continue;
         }
 
-        scale_multipliers[vid] = std::min(
-            scale_multipliers[vid],
-            dist / R * (1 - refine_scalar) + refine_scalar); // linear interpolate
+        for (const auto& [index, sq_dist] : matches) {
+            const auto& pt = pts[index];
+            const double dist = std::sqrt(sq_dist);
+            const double R_tet = R * pts_scalars[index]; // scale R by sizing scalar of tet
+            if (dist > R_tet) {
+                continue;
+            }
+            // linear interpolate between refine_scalar and 1 based on distance
+            // double u = dist / R * (1 - refine_scalar) + refine_scalar;
+            double u = dist / R_tet * (1 - refine_scalar) + refine_scalar;
+            double scalar = u * pts_scalars[index];
+            v_scalar = std::min(v_scalar, scalar);
+        }
 
-        auto vids = get_one_ring_vids_for_vertex_adj(vid, cache_one_ring);
-        for (size_t n_vid : vids) {
-            if (visited[n_vid]) continue;
-            v_queue.push(n_vid);
+        if (v_scalar < min_refine_scalar) {
+            v_scalar = min_refine_scalar;
+            is_hit_min_edge_length = true;
         }
     }
 
-    // std::cout << std::endl;
+    // std::vector<bool> visited(vert_capacity(), false);
+    // std::vector<size_t> cache_one_ring;
+    // // size_t vid;
 
-    std::cout << sum << " " << adjcnt << std::endl;
+    // while (!v_queue.empty()) {
+    //     sum++;
+    //     size_t vid = v_queue.front();
+    //     v_queue.pop();
+    //     if (visited[vid]) {
+    //         continue;
+    //     }
+    //     visited[vid] = true;
+    //     adjcnt++;
 
-    std::atomic_bool is_hit_min_edge_length = false;
+    //     const Vector3d& pos_v = m_vertex_attribute[vid].m_posf;
+    //     double sq_dist = 0.;
+    //     uint32_t idx;
+    //     knn.nearest_neighbor(pos_v, idx, sq_dist);
 
-    for (int i = 0; i < vert_capacity(); i++) {
-        auto v = tuple_from_vertex(i);
-        if (!v.is_valid(*this)) continue;
-        auto vid = v.vid(*this);
-        // std::cout << vid << " ";
-        auto& v_attr = m_vertex_attribute[vid];
+    //     const double dist = std::sqrt(sq_dist);
 
-        auto new_scale = v_attr.m_sizing_scalar * scale_multipliers[vid];
-        if (new_scale > 1)
-            v_attr.m_sizing_scalar = 1;
-        else if (new_scale < min_refine_scalar) {
-            is_hit_min_edge_length = true;
-            v_attr.m_sizing_scalar = min_refine_scalar;
-        } else
-            v_attr.m_sizing_scalar = new_scale;
-    }
-    // std::cout << std::endl;
+    //     if (dist > R) { // outside R-ball, unmark.
+    //         continue;
+    //     }
 
-    return is_hit_min_edge_length.load();
+    //     scale_multipliers[vid] = std::min(
+    //         scale_multipliers[vid],
+    //         dist / R * (1 - refine_scalar) + refine_scalar); // linear interpolate
+
+    //     const auto vids = get_one_ring_vids_for_vertex_adj(vid, cache_one_ring);
+    //     for (size_t n_vid : vids) {
+    //         if (visited[n_vid]) {
+    //             continue;
+    //         }
+    //         v_queue.push(n_vid);
+    //     }
+    // }
+
+    // std::cout << sum << " " << adjcnt << std::endl;
+
+    // bool is_hit_min_edge_length = false;
+    // for (int i = 0; i < vert_capacity(); i++) {
+    //     const Tuple v = tuple_from_vertex(i);
+    //     if (!v.is_valid(*this)) {
+    //         continue;
+    //     }
+    //     const size_t vid = v.vid(*this);
+    //     auto& v_attr = m_vertex_attribute[vid];
+
+    //     const double new_scale = v_attr.m_sizing_scalar * scale_multipliers[vid];
+    //     if (new_scale > 1)
+    //         v_attr.m_sizing_scalar = 1;
+    //     else if (new_scale < min_refine_scalar) {
+    //         is_hit_min_edge_length = true;
+    //         v_attr.m_sizing_scalar = min_refine_scalar;
+    //     } else
+    //         v_attr.m_sizing_scalar = new_scale;
+    // }
+
+    return is_hit_min_edge_length;
 }
 
 void bfs_orient(const Eigen::MatrixXi& F, Eigen::MatrixXi& FF, Eigen::VectorXi& C)
