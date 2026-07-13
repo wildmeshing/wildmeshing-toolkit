@@ -1,6 +1,7 @@
 import os
 import argparse
 from pathlib import Path
+
 from wildmeshing import *
 
 """
@@ -22,6 +23,16 @@ def _ensure_output_dir(output: str) -> None:
         os.makedirs(parent, exist_ok=True)
 
 
+def _run_wmtk(j: dict, output: str) -> None:
+    """Final common step for every op: default the path-resolution root and
+    invoke wmtk. wmtk resolves relative paths against j["input_dir"];
+    libstdc++ throws on the empty default, so fall back to the CWD (same
+    fix the old pywmtk_wrapper._wmtk_call applied via json_input_file)."""
+    j.setdefault("input_dir", os.getcwd())
+    _ensure_output_dir(output)
+    wildmeshing(j)
+
+
 def _ensure_msh_extension(path: str) -> str:
     """Ensure the path ends with .msh. If it has a different extension, raise ValueError."""
     p = Path(path)
@@ -31,71 +42,6 @@ def _ensure_msh_extension(path: str) -> str:
                 f"Input mesh file must be a .msh file. Got: {path}")
         return str(p.with_suffix(".msh"))
     return str(p)
-
-
-def _name_to_internal_tag(mesh_path: str) -> dict:
-    """For a wmtk-compatible `.msh` file, return {phys_group_name: int}.
-
-    Mirrors wmtk's `read_image_msh.cpp` Path A: physical groups are iterated
-    in tag-id order; Fs[0] (typically `ambient`) is dropped; the remaining
-    groups map to internal ids starting at 0 (so `tag_0` -> 0, `tag_1` -> 1,
-    ...). The dropped group is intentionally not in the returned map -- it
-    has no internal id.
-
-    Mesh dimension is the highest physical-group dim present (3D mesh ->
-    iterate dim-3 groups; 2D mesh -> iterate dim-2 groups).
-    """
-    import gmsh
-    gmsh.initialize()
-    try:
-        gmsh.open(mesh_path)
-        dim = 3 if gmsh.model.getPhysicalGroups(3) else 2
-        groups = list(gmsh.model.getPhysicalGroups(dim))
-        groups.sort(key=lambda dt: dt[1])  # by phys-tag id
-        name_to_id = {}
-        for fs_idx, (d, t) in enumerate(groups):
-            if fs_idx == 0:
-                continue  # ambient, dropped by wmtk
-            name = gmsh.model.getPhysicalName(d, t)
-            if name:
-                name_to_id[name] = fs_idx - 1
-        return name_to_id
-    finally:
-        gmsh.finalize()
-
-
-_AMBIENT = object()  # sentinel: "ambient" (= no tag); dropped from its set
-
-
-def _resolve_tags(tags, name_to_id: dict):
-    """Recursively walk a (possibly nested) tag structure and convert string
-    physical-group names to wmtk internal int ids. Integers pass through.
-    Lists/tuples preserve their type.
-
-    `"ambient"` (in any nesting depth) is treated as "no tag" and dropped
-    from the enclosing list/tuple -- so e.g. `["ambient"]` becomes `[]`
-    (ambient as a tag set), and `["tag_0", "ambient"]` becomes `[0]`. This
-    matches wmtk's convention where the ambient region is represented as the
-    empty tag set, e.g. `topological_offset(offset_tags=[[], [1, 2]])`.
-
-    Unknown non-ambient names raise ValueError.
-    """
-    if isinstance(tags, str):
-        if tags == "ambient":
-            return _AMBIENT
-        if tags not in name_to_id:
-            raise ValueError(
-                f"Unknown wmtk tag name '{tags}'. Available names: "
-                f"{sorted(name_to_id)} (or 'ambient', which becomes [])."
-            )
-        return name_to_id[tags]
-    if isinstance(tags, list):
-        return [r for r in (_resolve_tags(t, name_to_id) for t in tags)
-                if r is not _AMBIENT]
-    if isinstance(tags, tuple):
-        return tuple(r for r in (_resolve_tags(t, name_to_id) for t in tags)
-                     if r is not _AMBIENT)
-    return tags
 
 
 def strip_envelope(msh_path, output_path=None):
@@ -194,8 +140,7 @@ def surf_to_tet(meshes=[], tags=[], output="out", stop_energy=100, eps_rel=2e-3,
                 f"Key '{key}' already exists in the main parameters. Cannot set this key in others.")
         j[key] = value
 
-    _ensure_output_dir(output)
-    wildmeshing(j)
+    _run_wmtk(j, output)
 
 
 def lines_to_tri(meshes=[], tags=[], output="out", stop_energy=10, eps_rel=2e-3, preserve_topology=False, num_threads=0, others={}):
@@ -235,8 +180,7 @@ def lines_to_tri(meshes=[], tags=[], output="out", stop_energy=10, eps_rel=2e-3,
                 f"Key '{key}' already exists in the main parameters. Cannot set this key in others.")
         j[key] = value
 
-    _ensure_output_dir(output)
-    wildmeshing(j)
+    _run_wmtk(j, output)
 
 
 def remeshing(mesh, output="out", stop_energy=10, eps_rel=2e-3, length_rel=5e-2, sizing_field=[], preserve_topology=True, keep_envelope=False, num_threads=0, others={}):
@@ -277,8 +221,7 @@ def remeshing(mesh, output="out", stop_energy=10, eps_rel=2e-3, length_rel=5e-2,
                 f"Key '{key}' already exists in the main parameters. Cannot set this key in others.")
         j[key] = value
 
-    _ensure_output_dir(output)
-    wildmeshing(j)
+    _run_wmtk(j, output)
 
 
 def resolve_overlaps(mesh, tags, output="out", others={}):
@@ -308,8 +251,7 @@ def resolve_overlaps(mesh, tags, output="out", others={}):
                 f"Key '{key}' already exists in the main parameters. Cannot set this key in others.")
         j[key] = value
 
-    _ensure_output_dir(output)
-    wildmeshing(j)
+    _run_wmtk(j, output)
 
 
 def replace_tags(mesh, tags_in, tags_out, output="out", others={}):
@@ -341,8 +283,7 @@ def replace_tags(mesh, tags_in, tags_out, output="out", others={}):
                 f"Key '{key}' already exists in the main parameters. Cannot set this key in others.")
         j[key] = value
 
-    _ensure_output_dir(output)
-    wildmeshing(j)
+    _run_wmtk(j, output)
 
 
 def tag_priority(mesh, tags, output="out", others={}):
@@ -372,8 +313,7 @@ def tag_priority(mesh, tags, output="out", others={}):
                 f"Key '{key}' already exists in the main parameters. Cannot set this key in others.")
         j[key] = value
 
-    _ensure_output_dir(output)
-    wildmeshing(j)
+    _run_wmtk(j, output)
 
 
 def tight_seal_topo(mesh, tags, output="out", others={}):
@@ -382,7 +322,8 @@ def tight_seal_topo(mesh, tags, output="out", others={}):
 
     Parameters:
     - mesh: Input mesh file path (must be .msh). The extension can be omitted, and it will be automatically added, e.g. "mesh" will be treated as "mesh.msh". Other extensions will raise an error.
-    - tags: Intersection of tags (e.g., ["tag_0 & tag_1"]).
+    - tags: List of expression pairs; each pair [expr_A, expr_B] seals the holes
+      between the regions selected by expr_A and expr_B (e.g. [["tag_0", "tag_1"]]).
     - output: Output file path for the sealed mesh, without extension (e.g., "out" will generate "out.msh").
     - others: Additional parameters (optional).
     """
@@ -403,8 +344,7 @@ def tight_seal_topo(mesh, tags, output="out", others={}):
                 f"Key '{key}' already exists in the main parameters. Cannot set this key in others.")
         j[key] = value
 
-    _ensure_output_dir(output)
-    wildmeshing(j)
+    _run_wmtk(j, output)
 
 
 def keep_lcc(mesh, tags, lcc_num=1, output="out", others={}):
@@ -436,8 +376,7 @@ def keep_lcc(mesh, tags, lcc_num=1, output="out", others={}):
                 f"Key '{key}' already exists in the main parameters. Cannot set this key in others.")
         j[key] = value
 
-    _ensure_output_dir(output)
-    wildmeshing(j)
+    _run_wmtk(j, output)
 
 
 def fill_holes_topo(mesh, tags, output="out", others={}):
@@ -459,8 +398,15 @@ def fill_holes_topo(mesh, tags, output="out", others={}):
     j["input"] = [mesh]
     j["output"] = output
     j["fill_holes_tags"] = tags
-    _ensure_output_dir(output)
-    wildmeshing(j)
+
+    # copy any additional parameters from others into j
+    for key, value in others.items():
+        if key in j:
+            raise ValueError(
+                f"Key '{key}' already exists in the main parameters. Cannot set this key in others.")
+        j[key] = value
+
+    _run_wmtk(j, output)
 
 
 def manifold_extraction(mesh, tag_selection, radius, fill_tags=[], output="out", others={}):
@@ -493,11 +439,10 @@ def manifold_extraction(mesh, tag_selection, radius, fill_tags=[], output="out",
                 f"Key '{key}' already exists in the main parameters. Cannot set this key in others.")
         j[key] = value
 
-    _ensure_output_dir(output)
-    wildmeshing(j)
+    _run_wmtk(j, output)
 
 
-def topological_offset(mesh, offset_selection, target_distance, offset_output_tags,
+def topological_offset(mesh, offset_selection, target_distance, offset_output_tags, overwrite_tags=False,
                        offset_in=False, offset_out=True, protected_tags=[], rel_ball_threshold=0.01,
                        output="out", others={}):
     """
@@ -506,7 +451,9 @@ def topological_offset(mesh, offset_selection, target_distance, offset_output_ta
     Parameters:
     - mesh: mesh: Input tetrahedral mesh file path (must be .msh). The extension can be omitted, and it will be automatically added, e.g. "mesh" will be treated as "mesh.msh". Other extensions will raise an error.
     - offset_selection: Str, boolean expression to identify simplicial complex to offset (e.g. "tag_0 & tag_1"). If one pure
-        tag given (e.g. "tag_0"), single body mode is used.
+        tag given (e.g. "tag_0"), single body mode is used. `_` denotes the ambient (empty tag-set) region, e.g. "!_" = every
+        tagged cell; note "tag_0 & _" cannot select the body<->ambient skin (the incident-tag union is non-empty) — use
+        single body mode with offset_in/offset_out for skins.
     - offset_in: Bool, only relevant if single body mode. If True, create offset inwards
     - offset_out: Bool, only relevant if single body mode. If True, create offset outwards (at least
         one of offset_in and offset_out must be true in single body mode)
@@ -522,9 +469,6 @@ def topological_offset(mesh, offset_selection, target_distance, offset_output_ta
     mesh = _ensure_msh_extension(mesh)
 
     j = {}
-    if "edge_search_termination_len" not in j.keys():
-        j["edge_search_termination_len"] = min(1e-6, target_distance*1e-3)
-
     j["application"] = "topological_offset"
     j["input"] = mesh
     j["offset_selection"] = offset_selection
@@ -542,99 +486,120 @@ def topological_offset(mesh, offset_selection, target_distance, offset_output_ta
             raise ValueError(
                 f"Key '{key}' already exists in the main parameters. Cannot set this key in others.")
         j[key] = value
+    j.setdefault("edge_search_termination_len", min(1e-6, target_distance * 1e-3))
 
-    _ensure_output_dir(output)
-    wildmeshing(j)
-
-
-# ---------------------------------------------------------------------------
-# Minimum separation
-# ---------------------------------------------------------------------------
-# `ms.run(cfg)` (from `minimum_separation` at image-simulation/) is NOT a
-# WMTK op — it drives polyfem to push specified bodies apart by a target
-# distance. Typically chained after the WMTK ops above as the next pipeline
-# stage (see example_py/aeropress/aeropress.py).
-#
-# Minimum cfg fields:
-#   input_msh        : path to .msh
-#   sep              : target minimum separation distance (mesh units)
-#   collision_pairs  : list of [side_A, side_B] pairs; each side is either a
-#                      list of tag names (id auto-assigned) or
-#                      {"oriented_tagset": [...], "id": int}. The first tag
-#                      in each oriented_tagset is the body interior — face
-#                      normals point from interior outward. Reuse the same
-#                      `id` across pairs to mark the same collision body. Specify explicity `id`
-#                      when the same selection is used in multiple pairs (e.g. A-B and A-C) to
-#                      ensure consistent collision body ids across pairs.
-#
-# Common optional fields:
-#   scale            : mesh-to-solver unit scale (default 0.001)
-#   useFitting       : add fitting penalty (default True)
-#   useLaplacian     : add Laplacian smoothness penalty (default False)
-#   normalizePenalties : normalize penalty matrices (default False)
-#   amips_weights    : {"tag_name": float} — per-tag AMIPS weight overrides
-#   rtol             : relative tolerance for separation convergence
-#   output_msh       : path for the deformed mesh (default <stem>_separated.msh)
-#
-# Run with `ms.run(cfg, out_dir=Path("output/sep"))`. Outputs in `out_dir`:
-#   interface_collision.obj     — collision proxy mesh
-#   collision_body_ids.txt      — per-triangle body id lists
-#   interface_constraint.hdf5   — fitting constraint
-#   interface_constraint_laplacian.hdf5 — Laplacian smoothness
-#   <output_msh>                — deformed .msh
+    _run_wmtk(j, output)
 
 
 # ---------------------------------------------------------------------------
-# Laplacian smoothing
+# Polyfem-based ops (validated against simwild/specs/*.json, same rule format
+# as simwild_spec.json; engine: minimum_separation.py)
 # ---------------------------------------------------------------------------
-# `ms.run_smoothing(cfg)` (also from `minimum_separation`) is the
-# smoothing-only sibling of `ms.run`: a single polyfem solve that fairs
-# material-interface manifolds with AMIPS + fitting + Laplacian. No contact,
-# no `sep`, no dhat loop. Use for surface fairing across per-tag boundaries
-# (see example_py/aeropress/aeropress.py stage -1).
-#
-# Required cfg fields:
-#   input_msh        : path to .msh
-#
-# Common optional fields:
-#   useLaplacian     : add Laplacian smoothness penalty (default False;
-#                      turn ON for "laplacian smoothing")
-#   useFitting       : fitting penalty anchors interface vertices near rest
-#                      pose (default True; set False to let the smoother
-#                      move them freely)
-#   weight_laplacian : soft-constraint weight on Laplacian (default 1)
-#   weight_fitting   : soft-constraint weight on fitting (default 1)
-#   normalizePenalties : normalize penalty matrices (default False)
-#   useGraphLaplacian : use combinatorial Laplacian instead of geometric
-#                       (default False)
-#   amips_weights    : {"tag_name": float} — per-tag AMIPS weight overrides
-#   scale            : mesh-to-solver unit scale (default 0.001)
-#   output_msh       : path for the deformed mesh (default <stem>_smoothed.msh)
-#   save_vtu         : emit paraview .vtu/.pvd output (slow; default False)
-#   smoothDisplacementsOrPositions : 0 = displacement-mode (L·u=0), 1 =
-#                       positions-mode (L·x=0, RHS pulls toward rest).
-#                       Forced to 1 by default — displacement-mode is
-#                       already at zero gradient at rest and does nothing.
-#
-# Optional scoping:
-#   interfaces : flat list of oriented_tagsets scoping which manifolds are
-#                smoothed. Each entry is a list of tag names or
-#                {"oriented_tagset": [...]}. First tag is the interior; all
-#                selected face sets are unioned into one triangle patch.
-#                If omitted, every material interface in the mesh is
-#                smoothed (legacy auto-detect path).
-#
-# Ignored (separation-only fields print a warning if passed): sep, init_dhat,
-#   max_iterations, rtol, barrier_stiffness, alpha_n, alpha_t,
-#   use_rest_shape_measure, use_adaptive_dhat. contact_enabled is forced False.
-#
-# Run with `ms.run_smoothing(cfg, out_dir=Path("output/smooth"))`. Outputs:
-#   interface_constraint.hdf5            — fitting (when useFitting=True)
-#   interface_constraint_laplacian.hdf5  — Laplacian smoothness
-#   smoothing.json                       — polyfem JSON
-#   solution.txt                         — per-node displacement
-#   <output_msh>                         — deformed .msh
-#   smooth_output/                       — polyfem run dir (paraview when save_vtu)
+
+def _run_polyfem_op(op_name, params, engine):
+    """Validate `params` against the op's spec.json and run the engine on
+    the validated, defaults-filled dict. The PolyFEM binary comes from
+    $POLYFEM_BIN (the engines raise if it is unset)."""
+    from .polyfem_ops import spec as _spec
+    p = _spec.validate(_spec.load_spec(op_name), params)
+    _ensure_output_dir(p["output"])
+    engine(p)
+    return p
+
+
+def minimum_separation(mesh, collision_pairs, sep, output="out", others={}):
+    """
+    Push collision bodies apart to a target separation (polyfem: AMIPS +
+    fitting + Laplacian + GCP contact with a dhat line-search).
+
+    Parameters:
+    - mesh: Input multi-tag mesh file path (.msh).
+    - collision_pairs: List of [side_A, side_B]; each side is a selection —
+      the boundary of `region`, kept where the outside cell satisfies
+      `filter`: {"region": expr, "filter": expr, "id": int} or a bare region
+      string. Normals point out of the region. Identical selections dedupe
+      to one collision body; reuse an explicit id to merge distinct
+      selections into one body.
+      E.g. [[{"region": "tag_0", "filter": "ambient"},
+             {"region": "tag_1", "filter": "ambient"}]].
+    - sep: Target minimum separation in solver units (mesh units * scale).
+    - output: Output path stem; writes <output>.msh (artifacts next to it).
+    - others: Additional parameters — see polyfem_ops/minimum_separation/spec.json
+      (scale, use_laplacian, weight_*, rtol, max_iterations, ...). PolyFEM binary: export POLYFEM_BIN.
+    """
+    from .polyfem_ops import minimum_separation as _op
+
+    def engine(p):
+        cfg = {
+            "input_msh": p["input"],
+            "collision_pairs": p["collision_pairs"],
+            "sep": p["sep"],
+            "scale": p["scale"],
+            "useFitting": p["use_fitting"],
+            "useLaplacian": p["use_laplacian"],
+            "useGraphLaplacian": p["use_graph_laplacian"],
+            "normalizePenalties": p["normalize_penalties"],
+            "weight_fitting": p["weight_fitting"],
+            "weight_laplacian": p["weight_laplacian"],
+            "amips_weights": p["amips_weights"],
+            "max_iterations": p["max_iterations"],
+            "rtol": p["rtol"],
+            "nl_max_iterations": p["nl_max_iterations"],
+            "barrier_stiffness": p["barrier_stiffness"],
+            "alpha_n": p["alpha_n"],
+            "alpha_t": p["alpha_t"],
+            "save_vtu": p["save_vtu"],
+            "output_msh": f"{p['output']}.msh",
+        }
+        if p["init_dhat"] > 0:
+            cfg["init_dhat"] = p["init_dhat"]
+        out_dir = os.path.dirname(p["output"]) or "."
+        _op.run(cfg, out_dir=Path(out_dir))
+
+    j = {"input": mesh, "collision_pairs": collision_pairs, "sep": sep,
+         "output": output, **others}
+    _run_polyfem_op("minimum_separation", j, engine)
+
+
+def laplacian_smoothing(mesh, interfaces=[], output="out", others={}):
+    """
+    Fair material interfaces with a single polyfem solve (AMIPS + fitting +
+    Laplacian; no contact).
+
+    Parameters:
+    - mesh: Input multi-tag mesh file path (.msh).
+    - interfaces: Selections to smooth — the boundary of `region`, kept
+      where the outside satisfies `filter` (e.g. "tag_2" for tag_2's whole
+      boundary, {"region": "tag_0", "filter": "tag_1"} for one interface).
+      Empty = every material interface.
+    - output: Output path stem; writes <output>.msh (artifacts next to it).
+    - others: Additional parameters — see polyfem_ops/laplacian_smoothing/spec.json
+      (weight_laplacian, smooth_positions, ...). PolyFEM binary: export POLYFEM_BIN.
+    """
+    from .polyfem_ops import laplacian_smoothing as _op
+
+    def engine(p):
+        cfg = {
+            "input_msh": p["input"],
+            "scale": p["scale"],
+            "useFitting": p["use_fitting"],
+            "useLaplacian": p["use_laplacian"],
+            "useGraphLaplacian": p["use_graph_laplacian"],
+            "normalizePenalties": p["normalize_penalties"],
+            "weight_fitting": p["weight_fitting"],
+            "weight_laplacian": p["weight_laplacian"],
+            "max_iterations": p["max_iterations"],
+            "smoothDisplacementsOrPositions": 1 if p["smooth_positions"] else 0,
+            "save_vtu": p["save_vtu"],
+            "output_msh": f"{p['output']}.msh",
+        }
+        if p["interfaces"]:
+            cfg["interfaces"] = p["interfaces"]
+        out_dir = os.path.dirname(p["output"]) or "."
+        _op.run(cfg, out_dir=Path(out_dir))
+
+    j = {"input": mesh, "interfaces": interfaces, "output": output, **others}
+    _run_polyfem_op("laplacian_smoothing", j, engine)
 
 
 if __name__ == "__main__":
@@ -655,9 +620,9 @@ if __name__ == "__main__":
         tags = [["tag_0", "tag_1"]]
         tight_seal_topo(mesh=mesh, tags=tags, output="m1_2d")
 
-        # resolve intersections
+        # resolve overlaps
         mesh = "m1_2d.msh"
-        tags = ["tag_1 & tag_2"]
+        tags = [["tag_1", "tag_2"]]
         resolve_overlaps(mesh=mesh, tags=tags, output="m2_2d")
 
         # replace tags
@@ -683,55 +648,29 @@ if __name__ == "__main__":
 
         # topological offset
         mesh = "m6_2d.msh"
-        topological_offset(mesh=mesh, offset_tags=[[1], [2, 3, 4]], offset_output_tag=[5],
+        topological_offset(mesh=mesh,
+                           offset_selection="(tag_1 & tag_2) | (tag_1 & tag_3) | (tag_1 & tag_4)",
+                           offset_output_tags=["tag_5"],
                            target_distance=0.1, rel_ball_threshold=0.001, output="m7_2d")
 
-        # # minimum separation (not a WMTK op — see docstring above the __main__ block)
-        # from pathlib import Path
-        # import minimum_separation as ms
-        # ms_cfg = {
-        #     "polyfem": "/path/to/PolyFEM_bin",
-        #     "input_msh": "m6.msh",
-        #     "collision_pairs": [
-        #         [
-        #             {"oriented_tagset": ["tag_0", "ambient"], "id": 1},
-        #             {"oriented_tagset": ["tag_1", "ambient"], "id": 2},
-        #         ],
-        #     ],
-        #     "sep": 5e-5,
-        #     "useFitting": True,
-        #     "useLaplacian": True,
-        #     "normalizePenalties": True,
-        #     "amips_weights": {"ambient": 1e-6, "tag_0": 1, "tag_1": 1},
-        #     "scale": 0.001,
-        #     "rtol": 1e-1,
-        #     "output_msh": "m7.msh",
-        # }
-        # ms.run(ms_cfg, out_dir=Path("output/sep"))
+        # # minimum separation — spec-validated op (engine: polyfem)
+        # minimum_separation(
+        #     mesh="m6.msh",
+        #     collision_pairs=[[{"region": "tag_0", "filter": "ambient"},
+        #                       {"region": "tag_1", "filter": "ambient"}]],
+        #     sep=5e-5,
+        #     output="output/sep/m7",
+        #     others={"rtol": 1e-1},        # needs $POLYFEM_BIN exported
+        # )
 
-        # laplacian smoothing (not a WMTK op — see docstring above the __main__ block)
-        # Strip the WMTK envelope group before polyfem (it duplicates surface
-        # vertices and confuses MeshNodes), then smooth the tag_0 ↔ tag_1
-        # intersection surface produced by resolve_overlaps above.
-        # from pathlib import Path
-        # import sys
-        # sys.path.append('..')
-        # import minimum_separation as ms
+        # # laplacian smoothing — spec-validated op (engine: polyfem)
         # strip_envelope("m1.msh", output_path="m1_strip.msh")
-        # smooth_cfg = {
-        #     "polyfem": "/Users/uday/Research/simwild/polyfem/build/PolyFEM_bin",
-        #     "input_msh": "m1_strip.msh",
-        #     "useFitting": True,
-        #     "useLaplacian": True,
-        #     "weight_laplacian": 1e3,
-        #     "scale": 1,
-        #     "save_vtu": True,
-        #     # Optional: scope which manifolds get smoothed (omit to smooth all).
-        #     "interfaces": [
-        #         ["tag_0", "tag_1"]
-        #     ],
-        # }
-        # ms.run_smoothing(smooth_cfg, out_dir=Path("output/smooth"))
+        # laplacian_smoothing(
+        #     mesh="m1_strip.msh",
+        #     interfaces=[{"region": "tag_0", "filter": "tag_1"}],  # omit = all
+        #     output="output/smooth/m1",
+        #     others={"weight_laplacian": 1e3, "scale": 1.0},
+        # )
 
     else:
         print("Running 3D operations...")
@@ -741,7 +680,7 @@ if __name__ == "__main__":
         others = {}
         others["input_transform"] = [
             [], [[1, 0, 0, 0.3], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]]
-        surf_to_tet(meshes=meshes, output="m1",
+        surf_to_tet(meshes=meshes, tags=["tag_0", "tag_1"], output="m1",
                     stop_energy=100, eps_rel=1e-2, others=others)
 
         # replace_tags
@@ -762,13 +701,14 @@ if __name__ == "__main__":
 
         # topological offset
         mesh = "m1.msh"
-        topological_offset(mesh=mesh, offset_tags=[[0], [1]], offset_output_tag=[2],
+        topological_offset(mesh=mesh, offset_selection="tag_0 & tag_1",
+                           offset_output_tags=["tag_2"],
                            target_distance=0.1, rel_ball_threshold=0.001, output="m6")
 
         # manifold extraction
         mesh = "m3.msh"
-        manifold_extraction(mesh=mesh, in_tag=[
-                            0, 1], union=False, replace_tag=[], output="m7")
+        manifold_extraction(mesh=mesh, in_tag=["tag_0", "tag_1"],
+                            union=False, replace_tag=[], output="m7")
 
         # tag priority
         mesh = "m1.msh"

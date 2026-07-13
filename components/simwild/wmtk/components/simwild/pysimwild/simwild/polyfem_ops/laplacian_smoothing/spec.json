@@ -1,0 +1,125 @@
+[
+    {
+        "pointer": "/",
+        "type": "object",
+        "required": [
+            "input"
+        ],
+        "optional": [
+            "interfaces",
+            "output",
+            "scale",
+            "use_fitting",
+            "use_laplacian",
+            "use_graph_laplacian",
+            "normalize_penalties",
+            "weight_fitting",
+            "weight_laplacian",
+            "max_iterations",
+            "smooth_positions",
+            "save_vtu"
+        ],
+        "doc": "Fair material interfaces with one polyfem solve (AMIPS + fitting + Laplacian; no contact)."
+    },
+    {
+        "pointer": "/input",
+        "type": "string",
+        "doc": "Input multi-tag .msh path."
+    },
+    {
+        "pointer": "/output",
+        "type": "string",
+        "default": "out",
+        "doc": "Output path stem; the smoothed mesh is written to <output>.msh and working artifacts next to it."
+    },
+    {
+        "pointer": "/interfaces",
+        "type": "list",
+        "default": [],
+        "doc": "Interfaces to smooth; empty = every material interface."
+    },
+    {
+        "pointer": "/interfaces/*",
+        "type": [
+            "string",
+            "object"
+        ],
+        "required": [
+            "region"
+        ],
+        "optional": [
+            "filter"
+        ],
+        "doc": "One selection: the boundary of `region`, kept where the outside cell satisfies `filter` (a bare string is a region), e.g. \"tag_2\" for tag_2's whole boundary or {\"region\": \"tag_0\", \"filter\": \"tag_1\"} for one interface."
+    },
+    {
+        "pointer": "/interfaces/*/region",
+        "type": "string",
+        "doc": "Boolean expression for the region whose boundary is smoothed."
+    },
+    {
+        "pointer": "/interfaces/*/filter",
+        "type": "string",
+        "doc": "Boolean expression the outside cell must satisfy (optional)."
+    },
+    {
+        "pointer": "/scale",
+        "type": "float",
+        "default": 0.001,
+        "doc": "Mesh-to-solver unit scale."
+    },
+    {
+        "pointer": "/use_fitting",
+        "type": "bool",
+        "default": true,
+        "doc": "Anchor interface nodes near rest pose."
+    },
+    {
+        "pointer": "/use_laplacian",
+        "type": "bool",
+        "default": true,
+        "doc": "Add the Laplacian smoothness penalty."
+    },
+    {
+        "pointer": "/use_graph_laplacian",
+        "type": "bool",
+        "default": false,
+        "doc": "Combinatorial instead of geometric Laplacian."
+    },
+    {
+        "pointer": "/normalize_penalties",
+        "type": "bool",
+        "default": true,
+        "doc": "Normalize the penalty matrices."
+    },
+    {
+        "pointer": "/weight_fitting",
+        "type": "float",
+        "default": 1.0,
+        "doc": "Soft-constraint weight on fitting."
+    },
+    {
+        "pointer": "/weight_laplacian",
+        "type": "float",
+        "default": 1.0,
+        "doc": "Soft-constraint weight on the Laplacian."
+    },
+    {
+        "pointer": "/max_iterations",
+        "type": "int",
+        "default": 1000,
+        "doc": "Polyfem nonlinear solver iteration cap."
+    },
+    {
+        "pointer": "/smooth_positions",
+        "type": "bool",
+        "default": true,
+        "doc": "Smooth absolute positions (L*x=0) instead of displacements; positions mode is what actually moves the surface."
+    },
+    {
+        "pointer": "/save_vtu",
+        "type": "bool",
+        "default": false,
+        "doc": "Emit paraview output (slow)."
+    }
+]

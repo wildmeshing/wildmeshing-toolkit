@@ -1,0 +1,191 @@
+[
+    {
+        "pointer": "/",
+        "type": "object",
+        "required": [
+            "input",
+            "collision_pairs",
+            "sep"
+        ],
+        "optional": [
+            "output",
+            "scale",
+            "use_fitting",
+            "use_laplacian",
+            "use_graph_laplacian",
+            "normalize_penalties",
+            "weight_fitting",
+            "weight_laplacian",
+            "amips_weights",
+            "init_dhat",
+            "max_iterations",
+            "rtol",
+            "nl_max_iterations",
+            "barrier_stiffness",
+            "alpha_n",
+            "alpha_t",
+            "save_vtu"
+        ],
+        "doc": "Push collision bodies apart to a target separation with polyfem (AMIPS + fitting + Laplacian + GCP contact, dhat line-search)."
+    },
+    {
+        "pointer": "/input",
+        "type": "string",
+        "doc": "Input multi-tag .msh path."
+    },
+    {
+        "pointer": "/output",
+        "type": "string",
+        "default": "out",
+        "doc": "Output path stem; the deformed mesh is written to <output>.msh and working artifacts next to it."
+    },
+    {
+        "pointer": "/collision_pairs",
+        "type": "list",
+        "min": 1,
+        "doc": "Pairs of interfaces to push apart."
+    },
+    {
+        "pointer": "/collision_pairs/*",
+        "type": "list",
+        "min": 2,
+        "max": 2,
+        "doc": "One collision pair: [side_A, side_B]."
+    },
+    {
+        "pointer": "/collision_pairs/*/*",
+        "type": [
+            "string",
+            "object"
+        ],
+        "required": [
+            "region"
+        ],
+        "optional": [
+            "filter",
+            "id"
+        ],
+        "doc": "One side: the boundary of `region`, kept where the outside cell satisfies `filter` (both wmtk Boolean expressions; a bare string is a region). Normals point out of the region. Identical selections dedupe to one collision body; reuse an explicit id to merge distinct selections into one body."
+    },
+    {
+        "pointer": "/collision_pairs/*/*/region",
+        "type": "string",
+        "doc": "Boolean expression for the region whose boundary is selected."
+    },
+    {
+        "pointer": "/collision_pairs/*/*/filter",
+        "type": "string",
+        "doc": "Boolean expression the outside cell must satisfy (optional; omit to keep the whole boundary)."
+    },
+    {
+        "pointer": "/collision_pairs/*/*/id",
+        "type": "int",
+        "doc": "Collision body id; auto-assigned when omitted."
+    },
+    {
+        "pointer": "/sep",
+        "type": "float",
+        "doc": "Target minimum separation distance in solver units (mesh units * scale)."
+    },
+    {
+        "pointer": "/scale",
+        "type": "float",
+        "default": 0.001,
+        "doc": "Mesh-to-solver unit scale."
+    },
+    {
+        "pointer": "/use_fitting",
+        "type": "bool",
+        "default": true,
+        "doc": "Add the fitting penalty anchoring interface nodes near rest pose."
+    },
+    {
+        "pointer": "/use_laplacian",
+        "type": "bool",
+        "default": true,
+        "doc": "Add the Laplacian smoothness penalty."
+    },
+    {
+        "pointer": "/use_graph_laplacian",
+        "type": "bool",
+        "default": false,
+        "doc": "Combinatorial instead of geometric Laplacian."
+    },
+    {
+        "pointer": "/normalize_penalties",
+        "type": "bool",
+        "default": true,
+        "doc": "Normalize the penalty matrices."
+    },
+    {
+        "pointer": "/weight_fitting",
+        "type": "float",
+        "default": 1.0,
+        "doc": "Soft-constraint weight on fitting."
+    },
+    {
+        "pointer": "/weight_laplacian",
+        "type": "float",
+        "default": 1.0,
+        "doc": "Soft-constraint weight on the Laplacian."
+    },
+    {
+        "pointer": "/amips_weights",
+        "type": "object",
+        "default": {},
+        "doc": "Per-tag AMIPS weight overrides, e.g. {\"ambient\": 1e-6}."
+    },
+    {
+        "pointer": "/amips_weights/*",
+        "type": "float",
+        "doc": "AMIPS weight for one tag."
+    },
+    {
+        "pointer": "/init_dhat",
+        "type": "float",
+        "default": -1.0,
+        "doc": "Initial contact dhat; <= 0 means start at sep."
+    },
+    {
+        "pointer": "/max_iterations",
+        "type": "int",
+        "default": 5,
+        "doc": "Max dhat line-search iterations."
+    },
+    {
+        "pointer": "/rtol",
+        "type": "float",
+        "default": 0.01,
+        "doc": "Relative tolerance on the achieved separation."
+    },
+    {
+        "pointer": "/nl_max_iterations",
+        "type": "int",
+        "default": 1000,
+        "doc": "Polyfem nonlinear solver iteration cap."
+    },
+    {
+        "pointer": "/barrier_stiffness",
+        "type": "float",
+        "default": 1000.0,
+        "doc": "Contact barrier stiffness."
+    },
+    {
+        "pointer": "/alpha_n",
+        "type": "float",
+        "default": 0.1,
+        "doc": "GCP normal smoothing parameter."
+    },
+    {
+        "pointer": "/alpha_t",
+        "type": "float",
+        "default": 0.1,
+        "doc": "GCP tangential smoothing parameter."
+    },
+    {
+        "pointer": "/save_vtu",
+        "type": "bool",
+        "default": false,
+        "doc": "Emit paraview output (slow)."
+    }
+]
