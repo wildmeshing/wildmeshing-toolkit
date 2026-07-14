@@ -9,12 +9,7 @@
 #include "wmtk/utils/InsertTriangleUtils.hpp"
 #include "wmtk/utils/Logger.hpp"
 
-#include <tbb/concurrent_priority_queue.h>
-#include <tbb/concurrent_queue.h>
-#include <tbb/concurrent_vector.h>
-#include <tbb/parallel_for.h>
-#include <tbb/task_arena.h>
-#include <tbb/task_group.h>
+#include <wmtk/utils/Concurrency.hpp>
 
 #include <random>
 #include <unordered_set>
@@ -100,9 +95,9 @@ void TetWildMesh::init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>
     init(points.size(), tets);
     logger().info("init finished");
     // attr
-    m_vertex_attribute.m_attributes.resize(points.size());
-    m_tet_attribute.m_attributes.resize(tets.size());
-    m_face_attribute.m_attributes.resize(tets.size() * 4);
+    m_vertex_attribute.resize(points.size());
+    m_tet_attribute.resize(tets.size());
+    m_face_attribute.resize(tets.size() * 4);
     for (int i = 0; i < vert_capacity(); i++) {
         m_vertex_attribute[i].m_pos = Vector3r(points[i][0], points[i][1], points[i][2]);
         m_vertex_attribute[i].m_posf = Vector3d(points[i][0], points[i][1], points[i][2]);
@@ -234,13 +229,13 @@ void TetWildMesh::init_from_input_surface(
     init_from_delaunay_box_mesh(vertices);
 
     // match faces preserved in delaunay
-    tbb::concurrent_vector<bool> is_matched;
+    wmtk::concurrent_vector<bool> is_matched;
     wmtk::match_tet_faces_to_triangles(*this, faces, is_matched, tet_face_tags);
     wmtk::logger().info("is_matched: {}", std::count(is_matched.begin(), is_matched.end(), true));
 
-    std::vector<tbb::concurrent_priority_queue<std::tuple<double, int, size_t>>> insertion_queues(
+    std::vector<wmtk::concurrent_priority_queue<std::tuple<double, int, size_t>>> insertion_queues(
         std::max(NUM_THREADS, 1));
-    tbb::concurrent_priority_queue<std::tuple<double, int, size_t>> expired_queue;
+    wmtk::concurrent_priority_queue<std::tuple<double, int, size_t>> expired_queue;
     std::default_random_engine generator;
     std::uniform_real_distribution<double> distribution(0.0, 100.0);
     for (size_t face_id = 0; face_id < faces.size(); face_id++) {
@@ -253,8 +248,8 @@ void TetWildMesh::init_from_input_surface(
         wmtk::logger().info("insertion queue {}: {}", i, insertion_queues[i].size());
     }
 
-    tbb::task_arena arena((int)insertion_queues.size());
-    tbb::task_group tg;
+    wmtk::task_arena arena((int)insertion_queues.size());
+    wmtk::task_group tg;
 
     arena.execute([&, &m = *this, &tet_face_tags = this->tet_face_tags]() {
         for (int task_id = 0; task_id < insertion_queues.size(); task_id++) {
@@ -388,10 +383,10 @@ void TetWildMesh::init_from_input_surface(
 
 void TetWildMesh::finalize_triangle_insertion(const std::vector<std::array<size_t, 3>>& faces)
 {
-    tbb::task_arena arena(std::max(NUM_THREADS, 1));
+    wmtk::task_arena arena(std::max(NUM_THREADS, 1));
 
     arena.execute([&faces, this] {
-        tbb::parallel_for(this->tet_face_tags.range(), [&faces, this](auto& r) {
+        wmtk::parallel_for(this->tet_face_tags.range(), [&faces, this](auto& r) {
             auto projected_point_in_triangle = [](auto& c, auto& tri) {
                 std::array<Vector2r, 3> tri2d;
                 int squeeze_to_2d_dir = wmtk::project_triangle_to_2d(tri, tri2d);

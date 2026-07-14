@@ -1,4 +1,5 @@
 #include "tetwild.hpp"
+#include <wmtk/utils/Preallocation.hpp>
 
 #include "Parameters.h"
 #include "TetWildMesh.h"
@@ -198,6 +199,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     wmtk::remove_duplicates(vsimp, fsimp, 1e-10 * params.diag_l);
 
     tetwild::TetWildMesh mesh(params, surf_mesh.m_envelope, NUM_THREADS);
+    wmtk::set_preallocation_factor_from_json(mesh, json_params);
 
     /////////////////////////////////////////////////////
 
@@ -242,6 +244,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     // generate new mesh
     tetwild::TetWildMesh mesh_new(params, surf_mesh.m_envelope, NUM_THREADS);
+    wmtk::set_preallocation_factor_from_json(mesh_new, json_params);
 
     mesh_new.init_from_Volumeremesher(
         v_rational,

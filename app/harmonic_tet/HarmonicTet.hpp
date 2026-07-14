@@ -5,7 +5,7 @@
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <tbb/enumerable_thread_specific.h>
+#include <wmtk/utils/Concurrency.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
@@ -92,7 +92,7 @@ public:
     {
         double total_energy = 0.;
     };
-    tbb::enumerable_thread_specific<SwapInfoCache> edgeswap_cache, faceswap_cache;
+    wmtk::enumerable_thread_specific<SwapInfoCache> edgeswap_cache, faceswap_cache;
 
     void smooth_all_vertices(bool interior_only = false);
     bool smooth_after(const Tuple& t) override;

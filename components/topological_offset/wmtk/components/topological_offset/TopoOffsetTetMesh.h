@@ -1,3 +1,4 @@
+#include <wmtk/utils/Concurrency.hpp>
 #pragma once
 
 #include <wmtk/TetMesh.h>
@@ -294,7 +295,7 @@ private:
         // cache tet attributes
         std::map<simplex::Edge, TetAttributes> tets;
     };
-    tbb::enumerable_thread_specific<EdgeSplitCache> edge_split_cache;
+    wmtk::enumerable_thread_specific<EdgeSplitCache> edge_split_cache;
 
     struct FaceSplitCache
     {
@@ -312,7 +313,7 @@ private:
         // cache tet attributes
         std::map<size_t, TetAttributes> tets;
     };
-    tbb::enumerable_thread_specific<FaceSplitCache> face_split_cache;
+    wmtk::enumerable_thread_specific<FaceSplitCache> face_split_cache;
 
     struct TetSplitCache
     {
@@ -327,7 +328,7 @@ private:
         // cache tet attribute
         TetAttributes tet;
     };
-    tbb::enumerable_thread_specific<TetSplitCache> tet_split_cache;
+    wmtk::enumerable_thread_specific<TetSplitCache> tet_split_cache;
 
 private: // helpers
     /**

@@ -1,5 +1,5 @@
+#include <wmtk/utils/Concurrency.hpp>
 #include "TriWildMesh.h"
-#include "oneapi/tbb/concurrent_vector.h"
 #include "wmtk/TriMesh.h"
 
 #include <igl/Timer.h>

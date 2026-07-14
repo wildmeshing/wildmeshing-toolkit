@@ -7,12 +7,12 @@
 #include <wmtk/simplex/SimplexCollection.hpp>
 #include <wmtk/utils/Logger.hpp>
 
-#include <tbb/concurrent_vector.h>
-#include <tbb/enumerable_thread_specific.h>
-#include <tbb/spin_mutex.h>
+#include <wmtk/utils/Concurrency.hpp>
 
 #include <array>
+#include <atomic>
 #include <cassert>
+#include <cmath>
 #include <limits>
 #include <map>
 #include <optional>
@@ -626,7 +626,7 @@ public:
 
 public:
     template <typename T>
-    using vector = tbb::concurrent_vector<T>;
+    using vector = std::vector<T>;
 
 public:
     AbstractAttributeContainer* p_vertex_attrs = nullptr;
@@ -636,17 +636,68 @@ public:
     // AbstractAttributeContainer vertex_attrs, edge_attrs, face_attrs, tet_attrs;
 
 
+public:
+    /**
+     * @brief Preallocation factor: init/consolidate reserve capacity =
+     * max(floor, ceil(factor * live_count)) so operations can grab fresh slots
+     * without resizing the storage. When a pass exhausts the reserved capacity the
+     * affected operations fail (and are retried later after a consolidate). Tune
+     * per application (e.g. from JSON); values < 1 are clamped to 1.
+     */
+    void set_preallocation_factor(double factor)
+    {
+        if (factor >= 1.0) m_preallocation_factor = factor;
+    }
+    double preallocation_factor() const { return m_preallocation_factor; }
+
+    // Atomically reserve `n` contiguous fresh tet/vertex slots. Returns the first
+    // index of the block, or -1 if that would exceed the preallocated capacity (the
+    // caller must then abort the operation before mutating any connectivity).
+    long request_tet_slots(size_t n);
+    long request_vert_slots(size_t n);
+
+    // Construction/insertion helpers (single-threaded ONLY): guarantee at least
+    // `extra` free tet/vertex slots beyond the current used count, growing the
+    // storage geometrically if necessary. Unlike request_*_slots these never fail;
+    // they are used by the (legacy, non-concurrent) triangle-insertion path where
+    // the mesh is being built rather than edited by concurrent operations.
+    void ensure_free_tet_capacity(size_t extra)
+    {
+        const size_t need = static_cast<size_t>(current_tet_size.load()) + extra;
+        if (m_tet_connectivity.size() >= need) return;
+        const size_t newcap = std::max(need, m_tet_connectivity.size() * 2 + 1);
+        m_tet_connectivity.resize(newcap);
+        if (p_tet_attrs) p_tet_attrs->resize(newcap);
+        if (p_face_attrs) p_face_attrs->resize(4 * newcap);
+        if (p_edge_attrs) p_edge_attrs->resize(6 * newcap);
+    }
+    void ensure_free_vert_capacity(size_t extra)
+    {
+        const size_t need = static_cast<size_t>(current_vert_size.load()) + extra;
+        if (m_vertex_connectivity.size() >= need) return;
+        const size_t newcap = std::max(need, m_vertex_connectivity.size() * 2 + 1);
+        m_vertex_connectivity.resize(newcap);
+        resize_vertex_mutex(newcap);
+        if (p_vertex_attrs) p_vertex_attrs->resize(newcap);
+    }
+
 private:
+    // capacity to reserve for a live element count
+    size_t reserved_capacity(size_t live_count) const
+    {
+        const size_t floor = 64;
+        double c = std::ceil(m_preallocation_factor * static_cast<double>(live_count));
+        size_t capacity = static_cast<size_t>(c);
+        if (capacity < live_count) capacity = live_count;
+        return capacity < floor ? floor : capacity;
+    }
+
     // Stores the connectivity of the mesh
     vector<VertexConnectivity> m_vertex_connectivity;
     vector<TetrahedronConnectivity> m_tet_connectivity;
     std::atomic_long current_vert_size;
     std::atomic_long current_tet_size;
-    tbb::spin_mutex vertex_connectivity_lock;
-    tbb::spin_mutex tet_connectivity_lock;
-    bool vertex_connectivity_synchronizing_flag = false;
-    bool tet_connectivity_synchronizing_flag = false;
-    int MAX_THREADS = 128;
+    double m_preallocation_factor = 6.0;
 
     int m_t_empty_slot = 0;
     int m_v_empty_slot = 0;
@@ -1090,9 +1141,12 @@ public:
     bool m_collapse_check_manifold = true; // manifoldness check after collapse
 
 private:
+    // `ok` is set to false if the operation ran out of preallocated tet slots; in
+    // that case no connectivity is mutated and the caller must abort the operation.
     std::map<size_t, VertexConnectivity> operation_update_connectivity_impl(
         std::vector<size_t>& affected_tid,
-        const std::vector<std::array<size_t, 4>>& new_tet_conn);
+        const std::vector<std::array<size_t, 4>>& new_tet_conn,
+        bool& ok);
     void operation_failure_rollback_imp(
         std::map<size_t, VertexConnectivity>& rollback_vert_conn,
         const std::vector<size_t>& affected,
@@ -1101,7 +1155,8 @@ private:
     std::map<size_t, VertexConnectivity> operation_update_connectivity_impl(
         const std::vector<size_t>& remove_id,
         const std::vector<std::array<size_t, 4>>& new_tet_conn,
-        std::vector<size_t>& allocate_id);
+        std::vector<size_t>& allocate_id,
+        bool& ok);
     static std::vector<TetrahedronConnectivity> record_old_tet_connectivity(
         const TetMesh::vector<TetrahedronConnectivity>& conn,
         const std::vector<size_t>& tets)
@@ -1165,7 +1220,7 @@ public:
 public:
     class VertexMutex
     {
-        tbb::spin_mutex mutex;
+        wmtk::spin_mutex mutex;
         int owner = std::numeric_limits<int>::max();
 
     public:
@@ -1185,7 +1240,7 @@ public:
     };
 
 private:
-    tbb::concurrent_vector<VertexMutex> m_vertex_mutex;
+    std::vector<VertexMutex> m_vertex_mutex;
 
     bool try_set_vertex_mutex(const Tuple& v, int threadid)
     {
@@ -1204,11 +1259,14 @@ private:
     void unlock_vertex_mutex(size_t vid) { m_vertex_mutex[vid].unlock(); }
 
 protected:
-    void resize_vertex_mutex(size_t v) { m_vertex_mutex.grow_to_at_least(v); }
+    void resize_vertex_mutex(size_t v)
+    {
+        if (m_vertex_mutex.size() < v) m_vertex_mutex.resize(v);
+    }
 
 public:
-    tbb::enumerable_thread_specific<std::vector<size_t>> mutex_release_stack;
-    tbb::enumerable_thread_specific<std::vector<size_t>> get_one_ring_cache;
+    wmtk::enumerable_thread_specific<std::vector<size_t>> mutex_release_stack;
+    wmtk::enumerable_thread_specific<std::vector<size_t>> get_one_ring_cache;
 
     // void init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& tets);
     int release_vertex_mutex_in_stack();

@@ -44,7 +44,7 @@ struct InteriorTetOpt : wmtk::TetMesh
         bool bnd = false;
         double max_quality = -1.;
     };
-    tbb::enumerable_thread_specific<SplitInfoCache> split_cache;
+    wmtk::enumerable_thread_specific<SplitInfoCache> split_cache;
 
     struct CollapseInfoCache
     {
@@ -59,7 +59,7 @@ struct InteriorTetOpt : wmtk::TetMesh
 
         std::vector<std::array<size_t, 2>> failed_edges;
     };
-    tbb::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
+    wmtk::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
 
     bool split_edge_before(const Tuple& loc0) override;
 
@@ -122,7 +122,7 @@ struct InteriorTetOpt : wmtk::TetMesh
     {
         double max_energy;
     };
-    tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
+    wmtk::enumerable_thread_specific<SwapInfoCache> swap_cache;
     bool swap_edge_before(const Tuple& t) override;
     bool swap_edge_after(const Tuple& t) override;
     bool swap_face_before(const Tuple& t) override;

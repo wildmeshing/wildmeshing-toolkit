@@ -9,14 +9,15 @@
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <tbb/concurrent_vector.h>
-#include <tbb/spin_mutex.h>
+#include <wmtk/utils/Concurrency.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cassert>
+#include <cmath>
 #include <map>
 #include <memory>
 #include <optional>
@@ -338,23 +339,48 @@ public:
     simplex::SimplexCollection simplex_link_edges(const simplex::Vertex& v) const;
 
     template <typename T>
-    using vector = tbb::concurrent_vector<T>;
+    using vector = std::vector<T>;
 
 public:
     AbstractAttributeContainer* p_vertex_attrs = nullptr;
     AbstractAttributeContainer* p_edge_attrs = nullptr;
     AbstractAttributeContainer* p_face_attrs = nullptr;
 
+public:
+    /**
+     * @brief Preallocation factor: init/consolidate reserve capacity =
+     * max(floor, ceil(factor * live_count)) so operations can grab fresh slots
+     * without resizing the storage. When a pass exhausts the reserved capacity the
+     * affected operations fail (retried later after a consolidate). Values < 1 are
+     * clamped to 1.
+     */
+    void set_preallocation_factor(double factor)
+    {
+        if (factor >= 1.0) m_preallocation_factor = factor;
+    }
+    double preallocation_factor() const { return m_preallocation_factor; }
+
+    // Atomically reserve `n` contiguous fresh triangle/vertex slots. Returns the
+    // first index of the block, or -1 if that would exceed the preallocated
+    // capacity (the caller must then abort the operation before mutating).
+    long request_tri_slots(size_t n);
+    long request_vert_slots(size_t n);
+
 private:
+    size_t reserved_capacity(size_t live_count) const
+    {
+        const size_t floor = 64;
+        double c = std::ceil(m_preallocation_factor * static_cast<double>(live_count));
+        size_t capacity = static_cast<size_t>(c);
+        if (capacity < live_count) capacity = live_count;
+        return capacity < floor ? floor : capacity;
+    }
+
     vector<VertexConnectivity> m_vertex_connectivity;
     vector<TriangleConnectivity> m_tri_connectivity;
     std::atomic_long current_vert_size;
     std::atomic_long current_tri_size;
-    tbb::spin_mutex vertex_connectivity_lock;
-    tbb::spin_mutex tri_connectivity_lock;
-    bool vertex_connectivity_synchronizing_flag = false;
-    bool tri_connectivity_synchronizing_flag = false;
-    int MAX_THREADS = 128;
+    double m_preallocation_factor = 6.0;
     /**
      * @brief Get the next avaiblie global index for the triangle
      *
@@ -734,7 +760,7 @@ public:
 public:
     class VertexMutex
     {
-        tbb::spin_mutex mutex;
+        wmtk::spin_mutex mutex;
         int owner = std::numeric_limits<int>::max();
 
     public:
@@ -754,7 +780,7 @@ public:
     };
 
 private:
-    tbb::concurrent_vector<VertexMutex> m_vertex_mutex;
+    std::vector<VertexMutex> m_vertex_mutex;
 
     bool try_set_vertex_mutex(const Tuple& v, int threadid)
     {
@@ -773,10 +799,13 @@ private:
     void unlock_vertex_mutex(size_t vid) { m_vertex_mutex[vid].unlock(); }
 
 protected:
-    void resize_mutex(size_t v) { m_vertex_mutex.grow_to_at_least(v); }
+    void resize_mutex(size_t v)
+    {
+        if (m_vertex_mutex.size() < v) m_vertex_mutex.resize(v);
+    }
 
 public:
-    tbb::enumerable_thread_specific<std::vector<size_t>> mutex_release_stack;
+    wmtk::enumerable_thread_specific<std::vector<size_t>> mutex_release_stack;
 
     int release_vertex_mutex_in_stack();
     /**

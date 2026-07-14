@@ -1,5 +1,5 @@
+#include <wmtk/utils/Concurrency.hpp>
 #include "TetWildMesh.h"
-#include "oneapi/tbb/concurrent_vector.h"
 #include "wmtk/TetMesh.h"
 
 #include <igl/Timer.h>
@@ -25,7 +25,7 @@ void TetWildMesh::collapse_all_edges(bool is_limit_length)
         collect_all_ops.emplace_back("edge_collapse", loc);
         collect_all_ops.emplace_back("edge_collapse", loc.switch_vertex(*this));
     }
-    auto collect_failure_ops = tbb::concurrent_vector<std::pair<std::string, Tuple>>();
+    auto collect_failure_ops = wmtk::concurrent_vector<std::pair<std::string, Tuple>>();
     std::atomic_int count_success = 0;
     time = timer.getElapsedTime();
     wmtk::logger().info("edge collapse prepare time: {:.4}s", time);
