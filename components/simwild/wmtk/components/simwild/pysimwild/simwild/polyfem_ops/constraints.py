@@ -65,13 +65,18 @@ def _error(msg: str) -> None:
     raise ValueError(msg)
 
 
-def _orient_edge_loops_ccw_2d(
+def _orient_edge_loops_2d(
     coords: np.ndarray,
     oriented_edges: list[tuple[int, int]],
 ) -> list[tuple[int, int]]:
-    """Re-emit every simple closed loop of directed 2D edges in CCW order;
-    non-loop components (open chains, branch points) pass through with their
-    original order and orientation."""
+    """Chain directed 2D edges into loops. Each simple closed loop keeps the
+    direction its input edges agree on — the explicit region/filter
+    orientation from _selected_interfaces, which is the only hole-safe source
+    of truth (a cavity loop is wound CW, an outer loop CCW; signed area can't
+    tell the material side). A loop whose inputs contradict each other (the
+    same interface selected from both sides, so no single direction can be
+    correct for both bodies) raises. Non-loop components (open chains, branch
+    points) pass through with their original order and orientation."""
     if not oriented_edges:
         return oriented_edges
 
@@ -132,12 +137,19 @@ def _orient_edge_loops_ccw_2d(
             if curr != start:
                 loop.append(curr)
 
-        pts = coords[np.array(loop)]
-        x = pts[:, 0]
-        y = pts[:, 1]
-        signed_area = 0.5 * np.sum(x * np.roll(y, -1) - np.roll(x, -1) * y)
-
-        if signed_area < 0:
+        directed = {oriented_edges[i] for i in comp_edges_idx}
+        agree = sum((loop[i], loop[(i + 1) % len(loop)]) in directed
+                    for i in range(len(loop)))
+        disagree = sum((loop[(i + 1) % len(loop)], loop[i]) in directed
+                       for i in range(len(loop)))
+        if agree and disagree:
+            _error(
+                f"interface loop through vertex {min(comp_vertices)} has "
+                f"contradictory orientations ({agree} edges one way, "
+                f"{disagree} the other): the same interface was selected "
+                f"from both sides, so no single orientation is correct — "
+                f"drop one side of the selection")
+        if disagree:
             loop = loop[::-1]
 
         for i in range(len(loop)):
@@ -153,8 +165,8 @@ def _orient_edge_loops_ccw_2d(
 def _selected_interfaces(mesh: TaggedMesh, selections: list):
     """Selection-scoped interfaces: returns (oriented_faces_3d,
     oriented_edges_2d, tags_rows). Orientation: 3D normals point out of the
-    region; 2D left-normals point toward the region (legacy GCP convention),
-    then closed loops are re-oriented CCW downstream."""
+    region; 2D left-normals point toward the region (legacy GCP convention);
+    the downstream loop pass preserves this orientation and only dedupes."""
     try:
         unique, _ = assign_selection_ids(selections)
         records = select_boundary_faces(mesh, unique)
@@ -249,15 +261,15 @@ def load_mesh(msh_path: str, selections: list | None = None):
             g2l = {g: i for i, g in enumerate(collision_node_ids)}
             collision_edges_local = [(g2l[a], g2l[b]) for a, b in interface_edges]
     else:
-        # The CCW loop pass collapses opposite-direction copies of an edge
-        # into one CCW edge; union their id rows (multi-interface edges keep
-        # every id).
+        # The loop pass preserves the explicit per-edge orientation and
+        # raises on contradictions; union id rows per undirected edge
+        # (multi-interface edges keep every id).
         edge_to_tags: dict = {}
         for (a, b), t in zip(edges2d, face_tags):
             key = (min(a, b), max(a, b))
             edge_to_tags[key] = (sorted(set(edge_to_tags[key]) | set(t))
                                  if key in edge_to_tags else t)
-        interface_edges = _orient_edge_loops_ccw_2d(mesh.coords, edges2d)
+        interface_edges = _orient_edge_loops_2d(mesh.coords, edges2d)
         face_tags = [edge_to_tags[(min(a, b), max(a, b))]
                      for a, b in interface_edges]
         interface_faces = []
