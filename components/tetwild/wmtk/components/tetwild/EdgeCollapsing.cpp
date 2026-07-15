@@ -5,6 +5,7 @@
 #include <igl/Timer.h>
 #include <algorithm>
 #include <atomic>
+#include <mutex>
 #include <unordered_set>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
@@ -19,13 +20,39 @@ void TetWildMesh::collapse_all_edges(bool is_limit_length)
     double time;
     timer.start();
 
-    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    logger().info("#edges = {}", get_edges().size());
-    for (const Tuple& loc : get_edges()) {
-        // collect all edges. Filtering too long edges happens in `is_weight_up_to_date`
-        collect_all_ops.emplace_back("edge_collapse", loc);
-        collect_all_ops.emplace_back("edge_collapse", loc.switch_vertex(*this));
+    // Build the operation list in parallel: reconstruct each canonical edge over the tet
+    // range and append per chunk (also avoids the two serial get_edges() enumerations the
+    // old code did). Filtering of too-long edges still happens in is_weight_up_to_date.
+    // The list order differs from serial but the executor's priority queue reorders it, so
+    // the processed set is identical.
+    std::vector<std::pair<std::string, Tuple>> collect_all_ops;
+    {
+        std::mutex merge_mutex;
+        wmtk::task_arena arena(std::max(1, NUM_THREADS));
+        arena.execute([&] {
+            wmtk::parallel_for(
+                wmtk::blocked_range<size_t>(0, tet_capacity()),
+                [&](wmtk::blocked_range<size_t> r) {
+                    std::vector<std::pair<std::string, Tuple>> local;
+                    for (size_t i = r.begin(); i < r.end(); i++) {
+                        if (!tuple_from_tet(i).is_valid(*this)) continue;
+                        for (int j = 0; j < 6; j++) {
+                            const Tuple e = tuple_from_edge(i, j);
+                            if (e.eid(*this) != 6 * i + j) continue; // canonical edge only
+                            local.emplace_back("edge_collapse", e);
+                            local.emplace_back("edge_collapse", e.switch_vertex(*this));
+                        }
+                    }
+                    if (local.empty()) return;
+                    std::lock_guard<std::mutex> lk(merge_mutex);
+                    collect_all_ops.insert(
+                        collect_all_ops.end(),
+                        std::make_move_iterator(local.begin()),
+                        std::make_move_iterator(local.end()));
+                });
+        });
     }
+    logger().info("#edges = {}", collect_all_ops.size() / 2);
     time = timer.getElapsedTime();
     wmtk::logger().info("edge collapse prepare time: {:.4}s", time);
     auto setup_and_execute = [&](auto& executor) {
