@@ -525,7 +525,9 @@ def minimum_separation(mesh, collision_pairs, sep, output="out", others={}):
     - sep: Target minimum separation in solver units (mesh units * scale).
     - output: Output path stem; writes <output>.msh (artifacts next to it).
     - others: Additional parameters — see polyfem_ops/minimum_separation/spec.json
-      (scale, use_laplacian, weight_*, rtol, max_iterations, ...). PolyFEM binary: export POLYFEM_BIN.
+      (scale, use_laplacian, weight_*, rtol, max_iterations, strategy
+      ["dhat" default | "stiffness" experimental], ...). PolyFEM binary:
+      export POLYFEM_BIN.
     """
     from .polyfem_ops import minimum_separation as _op
 
@@ -549,6 +551,11 @@ def minimum_separation(mesh, collision_pairs, sep, output="out", others={}):
             "alpha_n": p["alpha_n"],
             "alpha_t": p["alpha_t"],
             "save_vtu": p["save_vtu"],
+            "strategy": p["strategy"],
+            "dhat_growth": p["dhat_growth"],
+            "max_stiffness_multiplier": p["max_stiffness_multiplier"],
+            "protected_regions": p["protected_regions"],
+            "ambient_like_tags": p["ambient_like_tags"],
             "output_msh": f"{p['output']}.msh",
         }
         if p["init_dhat"] > 0:
@@ -591,6 +598,7 @@ def laplacian_smoothing(mesh, interfaces=[], output="out", others={}):
             "max_iterations": p["max_iterations"],
             "smoothDisplacementsOrPositions": 1 if p["smooth_positions"] else 0,
             "save_vtu": p["save_vtu"],
+            "ambient_like_tags": p["ambient_like_tags"],
             "output_msh": f"{p['output']}.msh",
         }
         if p["interfaces"]:

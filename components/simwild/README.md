@@ -15,10 +15,19 @@ The input and output is still stored on the disk.
 
 Install the wildmeshing package first, as described in the [README](../../README.md).
 
-To install the SimWild wrapper, execute:
+To install the SimWild wrapper, execute (from the repository root):
 
 ```bash
-python -m pip install -e /components/simwild/wmtk/components/simwild/pysimwild
+python -m pip install -e components/simwild/wmtk/components/simwild/pysimwild
+```
+
+Development alternative — reuse an existing CMake build of the bindings
+instead of installing a wheel:
+
+```bash
+cmake -S . -B build -DWMTK_PYBIND=ON
+cmake --build build -j --target wildmeshing
+export PYTHONPATH=/path/to/wildmeshing-toolkit/build/bin
 ```
 
 For a full documentation of the wrapper functions call `help(simwild)` in Python after importing the module.
@@ -162,3 +171,77 @@ simwild.topological_offset(
 ```
 
 </details>
+
+## PolyFEM Operations
+
+The wrapper also provides PolyFEM-backed operations: `minimum_separation`,
+`laplacian_smoothing`, and `polyfem_sim` (full simulation). They share the
+same .msh-in/.msh-out interface; parameters are validated against the
+`spec.json` packaged with each op.
+
+These ops locate the PolyFEM binary **only** through the `POLYFEM_BIN`
+environment variable and raise if it is unset:
+
+```bash
+export POLYFEM_BIN=/path/to/polyfem/build/PolyFEM_bin
+```
+
+(If the PolyFEM link fails with `access beyond end of merged section`, add
+`-DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld"` — a binutils bug with debug-info
+merging.)
+
+Selections everywhere are *the boundary of `region`, kept where the outside
+cell satisfies `filter`* — both are Boolean tag expressions (`&`, `|`, `!`,
+parentheses); a bare string is a region (whole boundary).
+
+#### 9. Minimum Separation
+
+Deform regions apart until a target minimum distance `sep` is reached
+(GCP-based contact solve; `sep` is a hard floor, `rtol` bounds the
+overshoot).
+
+<details>
+<summary>Python Example</summary>
+
+```python
+mesh = "m5"
+collision_pairs = [[{"region": "L", "filter": "ambient"},
+                    {"region": "R", "filter": "ambient"}]]
+simwild.minimum_separation(mesh=mesh, collision_pairs=collision_pairs,
+                           sep=1.5e-3, output="m6")
+```
+
+</details>
+
+#### 10. Laplacian Interface Smoothing
+
+Fair material interfaces with a single PolyFEM solve (AMIPS + fitting +
+Laplacian; no contact).
+
+<details>
+<summary>Python Example</summary>
+
+```python
+mesh = "m6"
+simwild.laplacian_smoothing(mesh=mesh, interfaces=["L"], output="m7")
+```
+
+</details>
+
+#### 11. Simulation
+
+Run a full PolyFEM simulation on an extracted simulation mesh (materials
+and boundary conditions selected by tag name); see
+`simwild.polyfem_ops.polyfem_sim` and its `msh_boundary_extractor`.
+
+## Tests
+
+From `pysimwild/`:
+
+```bash
+python -m pytest tests
+```
+
+Tier-1 runs anywhere (the bindings are found in `<toolkit>/build/bin`
+automatically if not installed). The end-to-end tests (measured minimum
+separation, smoothing roughness decrease) run iff `POLYFEM_BIN` is exported.
