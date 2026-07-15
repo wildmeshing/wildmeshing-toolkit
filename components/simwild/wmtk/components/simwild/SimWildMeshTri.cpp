@@ -1,4 +1,5 @@
 #include "SimWildMeshTri.hpp"
+#include <algorithm>
 
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
@@ -370,7 +371,11 @@ bool SimWildMeshTri::adjust_sizing_field_serial(double max_energy)
 {
     wmtk::logger().info("#V {}, #F {}", vert_capacity(), tri_capacity());
 
-    const double stop_filter_energy = m_params.stop_energy * 0.8;
+    // default 1.0: only seed genuinely failing faces (the legacy 0.8
+    // TetWild hysteresis causes a refinement spiral on stalls — see
+    // Parameters::adjust_filter_rel; the 3D/TriWild/TetWild copies still
+    // hardcode 0.8).
+    const double stop_filter_energy = m_params.stop_energy * m_params.adjust_filter_rel;
     double filter_energy = std::max(max_energy / 100, stop_filter_energy);
     filter_energy = std::min(filter_energy, 100.);
 
@@ -390,7 +395,10 @@ bool SimWildMeshTri::adjust_sizing_field_serial(double max_energy)
             continue;
         }
         const size_t fid = t.fid(*this);
-        if (m_face_attribute.at(fid).m_quality < filter_energy) {
+        // per-face floor: ambient faces with a looser stop only seed when
+        // they exceed THEIR stop (scaled by the same adjust_filter_rel)
+        if (m_face_attribute.at(fid).m_quality <
+            std::max(filter_energy, m_params.adjust_filter_rel * stop_energy_for(fid))) {
             continue;
         }
         const auto vs = oriented_tri_vids(t);
@@ -1057,6 +1065,69 @@ void SimWildMeshTri::collapse_all_edges(bool is_limit_length)
     }
 }
 
+bool SimWildMeshTri::is_pure_ambient_face(size_t fid) const
+{
+    const auto it = m_tag_name_to_id.find("ambient");
+    const int64_t ambient_id = it != m_tag_name_to_id.end() ? it->second : 0;
+    // ambient-like iff every tag is ambient itself or in ambient_like_tags
+    // (user primitives like box_0); a single body tag makes it body
+    for (const int64_t tag : m_face_attribute.at(fid).tags) {
+        if (tag == ambient_id) {
+            continue;
+        }
+        const auto nit = m_tag_id_to_name.find(tag);
+        const std::string name = nit != m_tag_id_to_name.end() ? nit->second : "";
+        if (std::find(m_params.ambient_like_tags.begin(), m_params.ambient_like_tags.end(), name) ==
+            m_params.ambient_like_tags.end()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+double SimWildMeshTri::stop_energy_for(size_t fid) const
+{
+    if (m_params.stop_energy_ambient <= 0) {
+        return m_params.stop_energy;
+    }
+    return is_pure_ambient_face(fid) ? m_params.stop_energy_ambient : m_params.stop_energy;
+}
+
+double SimWildMeshTri::get_max_body_energy() const
+{
+    double max_energy = 0.;
+    for (int i = 0; i < tri_capacity(); i++) {
+        const Tuple t = tuple_from_tri(i);
+        if (!t.is_valid(*this)) {
+            continue;
+        }
+        const size_t fid = t.fid(*this);
+        if (is_pure_ambient_face(fid)) {
+            continue;
+        }
+        max_energy = std::max(max_energy, m_face_attribute.at(fid).m_quality);
+    }
+    return max_energy;
+}
+
+bool SimWildMeshTri::all_faces_below_stop() const
+{
+    if (m_params.stop_energy_ambient <= 0) {
+        return false; // uniform stop: caller's max-energy check already decides
+    }
+    for (int i = 0; i < tri_capacity(); i++) {
+        const Tuple t = tuple_from_tri(i);
+        if (!t.is_valid(*this)) {
+            continue;
+        }
+        const size_t fid = t.fid(*this);
+        if (m_face_attribute.at(fid).m_quality >= stop_energy_for(fid)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool SimWildMeshTri::collapse_edge_before(const Tuple& loc)
 // input is an edge
 {
@@ -1134,7 +1205,7 @@ bool SimWildMeshTri::collapse_edge_before(const Tuple& loc)
             return false;
         }
         double q = get_quality(vs);
-        if (q > m_params.stop_energy && q > cache.max_energy) {
+        if (q > stop_energy_for(tid) && q > cache.max_energy) {
             return false;
         }
         cache.changed_energies.emplace_back(q);
@@ -1804,7 +1875,13 @@ void SimWildMeshTri::mesh_improvement(int max_its)
 
         ///energy check
         wmtk::logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
-        if (max_energy < m_params.stop_energy) {
+        wmtk::logger().info(
+            "max body energy {} (ambient stop {})",
+            get_max_body_energy(),
+            m_params.stop_energy_ambient);
+        // terminate when every face satisfies its per-face stop (ambient may
+        // have a looser stop_energy_ambient than the bodies)
+        if (max_energy < m_params.stop_energy || all_faces_below_stop()) {
             break;
         }
         consolidate_mesh();
@@ -1887,6 +1964,7 @@ std::tuple<double, double> SimWildMeshTri::local_operations(
             }
             auto [max_energy, avg_energy] = get_max_avg_energy();
             wmtk::logger().info("split max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+            wmtk::logger().info("split max body energy = {:.6}", get_max_body_energy());
             sanity_checks();
         } else if (i == 1) {
             for (int n = 0; n < ops[i]; n++) {
@@ -1902,6 +1980,7 @@ std::tuple<double, double> SimWildMeshTri::local_operations(
             }
             auto [max_energy, avg_energy] = get_max_avg_energy();
             wmtk::logger().info("collapse max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+            wmtk::logger().info("collapse max body energy = {:.6}", get_max_body_energy());
             sanity_checks();
         } else if (i == 2) {
             for (int n = 0; n < ops[i]; n++) {
@@ -1916,17 +1995,20 @@ std::tuple<double, double> SimWildMeshTri::local_operations(
             }
             auto [max_energy, avg_energy] = get_max_avg_energy();
             wmtk::logger().info("swap max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+            wmtk::logger().info("swap max body energy = {:.6}", get_max_body_energy());
             sanity_checks();
         } else if (i == 3) {
             wmtk::logger().info("==smoothing ==");
             smooth_all_vertices(ops[i]);
             auto [max_energy, avg_energy] = get_max_avg_energy();
             wmtk::logger().info("smooth max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+            wmtk::logger().info("smooth max body energy = {:.6}", get_max_body_energy());
             sanity_checks();
         }
     }
     energy = get_max_avg_energy();
     wmtk::logger().info("max energy = {:.6}", std::get<0>(energy));
+    wmtk::logger().info("max body energy = {:.6}", get_max_body_energy());
     wmtk::logger().info("avg energy = {:.6}", std::get<1>(energy));
     wmtk::logger().info("time = {:.4}s", timer.getElapsedTimeInSec());
 

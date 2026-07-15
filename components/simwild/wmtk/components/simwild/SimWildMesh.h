@@ -415,6 +415,15 @@ public:
         const std::array<int, 4>& ops,
         bool collapse_limit_length = true);
     std::tuple<double, double> get_max_avg_energy();
+    // true iff the tet's tag set is empty or exactly {ambient}
+    bool is_pure_ambient_tet(size_t tid) const;
+    // per-tet stop energy (cbrt units, like stop_energy); pure-ambient tets
+    // may use the looser stop_energy_ambient (<= 0 means: follow stop_energy)
+    double stop_energy_for(size_t tid) const;
+    // true iff every valid tet satisfies its per-tet stop energy
+    bool all_tets_below_stop() const;
+    // max cbrt-quality over non-pure-ambient tets (0 if there are none)
+    double get_max_body_energy() const;
 
     bool check_attributes();
 

@@ -1,5 +1,6 @@
 
 #include "SimWildMesh.h"
+#include <algorithm>
 
 #include "wmtk/utils/Rational.hpp"
 
@@ -69,7 +70,13 @@ void SimWildMesh::mesh_improvement(int max_its)
 
         ///energy check
         logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
-        if (max_energy < m_params.stop_energy) {
+        logger().info(
+            "max body energy {} (ambient stop {})",
+            get_max_body_energy(),
+            m_params.stop_energy_ambient);
+        // terminate when every tet satisfies its per-tet stop (ambient may
+        // have a looser stop_energy_ambient than the bodies)
+        if (max_energy < m_params.stop_energy || all_tets_below_stop()) {
             break;
         }
         consolidate_mesh();
@@ -191,8 +198,9 @@ std::tuple<double, double> SimWildMesh::local_operations(
                 }
                 auto [max_energy, avg_energy] = get_max_avg_energy();
                 logger().info("split max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+                logger().info("split max body energy = {:.6}", get_max_body_energy());
                 sanity_checks();
-                if (max_energy < m_params.stop_energy) {
+                if (max_energy < m_params.stop_energy || all_tets_below_stop()) {
                     return std::make_tuple(max_energy, avg_energy);
                 }
             }
@@ -220,8 +228,9 @@ std::tuple<double, double> SimWildMesh::local_operations(
                 }
                 auto [max_energy, avg_energy] = get_max_avg_energy();
                 logger().info("collapse max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+                logger().info("collapse max body energy = {:.6}", get_max_body_energy());
                 sanity_checks();
-                if (max_energy < m_params.stop_energy) {
+                if (max_energy < m_params.stop_energy || all_tets_below_stop()) {
                     return std::make_tuple(max_energy, avg_energy);
                 }
             }
@@ -239,8 +248,9 @@ std::tuple<double, double> SimWildMesh::local_operations(
                 }
                 auto [max_energy, avg_energy] = get_max_avg_energy();
                 logger().info("swap max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+                logger().info("swap max body energy = {:.6}", get_max_body_energy());
                 sanity_checks();
-                if (max_energy < m_params.stop_energy) {
+                if (max_energy < m_params.stop_energy || all_tets_below_stop()) {
                     return std::make_tuple(max_energy, avg_energy);
                 }
             }
@@ -249,8 +259,9 @@ std::tuple<double, double> SimWildMesh::local_operations(
             smooth_all_vertices(ops[i]);
             auto [max_energy, avg_energy] = get_max_avg_energy();
             logger().info("smooth max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+            logger().info("smooth max body energy = {:.6}", get_max_body_energy());
             sanity_checks();
-            if (ops[i] > 0 && max_energy < m_params.stop_energy) {
+            if (ops[i] > 0 && (max_energy < m_params.stop_energy || all_tets_below_stop())) {
                 return std::make_tuple(max_energy, avg_energy);
             }
         }
@@ -259,6 +270,7 @@ std::tuple<double, double> SimWildMesh::local_operations(
     // write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
     energy = get_max_avg_energy();
     logger().info("max energy = {:.6}", std::get<0>(energy));
+    logger().info("max body energy = {:.6}", get_max_body_energy());
     logger().info("avg energy = {:.6}", std::get<1>(energy));
     logger().info("time = {}", timer.getElapsedTime());
 
@@ -349,7 +361,9 @@ bool SimWildMesh::adjust_sizing_field_serial(double max_energy)
 {
     logger().info("#V = {}, #T = {}", vert_capacity(), tet_capacity());
 
-    const double stop_filter_energy = m_params.stop_energy * 0.8;
+    // default 1.0: only seed genuinely failing tets (legacy 0.8 causes a
+    // refinement spiral on stalls; see Parameters::adjust_filter_rel)
+    const double stop_filter_energy = m_params.stop_energy * m_params.adjust_filter_rel;
     double filter_energy = std::max(max_energy / 100, stop_filter_energy);
     filter_energy = std::min(filter_energy, 100.);
 
@@ -370,7 +384,8 @@ bool SimWildMesh::adjust_sizing_field_serial(double max_energy)
             continue;
         }
         const size_t tid = t.tid(*this);
-        if (std::cbrt(m_tet_attribute[tid].m_quality) < filter_energy) {
+        if (std::cbrt(m_tet_attribute[tid].m_quality) <
+            std::max(filter_energy, m_params.adjust_filter_rel * stop_energy_for(tid))) {
             continue;
         }
         const auto vs = oriented_tet_vids(t);
@@ -772,6 +787,69 @@ void SimWildMesh::write_msh(std::string file, const bool write_envelope)
     }
 
     msh.save(file, true);
+}
+
+bool SimWildMesh::is_pure_ambient_tet(size_t tid) const
+{
+    const auto it = m_tag_name_to_id.find("ambient");
+    const int64_t ambient_id = it != m_tag_name_to_id.end() ? it->second : 0;
+    // ambient-like iff every tag is ambient itself or in ambient_like_tags
+    // (user primitives like box_0); a single body tag makes it body
+    for (const int64_t tag : m_tet_attribute.at(tid).tags) {
+        if (tag == ambient_id) {
+            continue;
+        }
+        const auto nit = m_tag_id_to_name.find(tag);
+        const std::string name = nit != m_tag_id_to_name.end() ? nit->second : "";
+        if (std::find(m_params.ambient_like_tags.begin(), m_params.ambient_like_tags.end(), name) ==
+            m_params.ambient_like_tags.end()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+double SimWildMesh::stop_energy_for(size_t tid) const
+{
+    if (m_params.stop_energy_ambient <= 0) {
+        return m_params.stop_energy;
+    }
+    return is_pure_ambient_tet(tid) ? m_params.stop_energy_ambient : m_params.stop_energy;
+}
+
+bool SimWildMesh::all_tets_below_stop() const
+{
+    if (m_params.stop_energy_ambient <= 0) {
+        return false; // uniform stop: the caller's max-energy check already decides
+    }
+    for (int i = 0; i < tet_capacity(); i++) {
+        const Tuple t = tuple_from_tet(i);
+        if (!t.is_valid(*this)) {
+            continue;
+        }
+        const size_t tid = t.tid(*this);
+        if (std::cbrt(m_tet_attribute.at(tid).m_quality) >= stop_energy_for(tid)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+double SimWildMesh::get_max_body_energy() const
+{
+    double max_energy = 0.;
+    for (int i = 0; i < tet_capacity(); i++) {
+        const Tuple t = tuple_from_tet(i);
+        if (!t.is_valid(*this)) {
+            continue;
+        }
+        const size_t tid = t.tid(*this);
+        if (is_pure_ambient_tet(tid)) {
+            continue;
+        }
+        max_energy = std::max(max_energy, std::cbrt(m_tet_attribute.at(tid).m_quality));
+    }
+    return max_energy;
 }
 
 std::tuple<double, double> SimWildMesh::get_max_avg_energy()

@@ -200,6 +200,15 @@ public:
     bool split_edge_after(const Tuple& loc) override;
 
     void collapse_all_edges(bool is_limit_length = true);
+    // true iff the face's tag set is empty or exactly {ambient}
+    bool is_pure_ambient_face(size_t fid) const;
+    // per-face stop energy: pure-ambient faces may use the looser
+    // stop_energy_ambient (<= 0 means: follow stop_energy)
+    double stop_energy_for(size_t fid) const;
+    // true iff every valid face satisfies its per-face stop energy
+    bool all_faces_below_stop() const;
+    // max quality over non-pure-ambient faces (0 if there are none)
+    double get_max_body_energy() const;
     bool collapse_edge_before(const Tuple& t) override;
     bool collapse_edge_after(const Tuple& t) override;
 

@@ -26,6 +26,22 @@ struct Parameters
         std::numeric_limits<double>::max(); // the upper bound length (squared) for edge collapse
 
     double stop_energy = 10;
+    // <= 0: ambient follows stop_energy. Otherwise pure-ambient faces use
+    // this (typically looser) stop: quality where the physics lives (bodies,
+    // interfaces), tolerance in the ambient filler. Currently 2D only.
+    double stop_energy_ambient = -1;
+    // tag names whose cells count as ambient space when ALL of a cell's
+    // tags are in this list (plus ambient itself) — e.g. user-added
+    // primitives like box_0: {box_0} is ambient-like, {box_0, dragon} is
+    // body. Consulted wherever ambient is discriminated (stop_energy_ambient,
+    // body-energy logs, sizing-adjust seeding).
+    std::vector<std::string> ambient_like_tags;
+    // sizing-adjust seeding threshold as a fraction of stop_energy. The
+    // legacy value 0.8 (TetWild hysteresis) seeds refinement around faces
+    // that already satisfy stop_energy — feature-pinned junction faces live
+    // in (0.8*stop, stop] forever and cause a mesh-wide refinement spiral
+    // when the improvement loop stalls. 1.0 = only seed failing faces.
+    double adjust_filter_rel = 1.0;
     bool stop_at_float = false;
 
     bool debug_output = false;
@@ -61,6 +77,9 @@ struct Parameters
         lr = json_params["length_rel"];
         l = json_params["length"];
         stop_energy = json_params["stop_energy"];
+        stop_energy_ambient = json_params["stop_energy_ambient"];
+        adjust_filter_rel = json_params["adjust_filter_rel"];
+        ambient_like_tags = json_params["ambient_like_tags"].get<std::vector<std::string>>();
         stop_at_float = json_params["stop_at_float"];
         preserve_topology = json_params["preserve_topology"];
 

@@ -22,6 +22,9 @@
       "length_rel",
       "sizing_field",
       "stop_energy",
+      "stop_energy_ambient",
+      "adjust_filter_rel",
+      "ambient_like_tags",
       "stop_at_float",
       "preserve_topology",
       "w_amips",
@@ -216,6 +219,29 @@
     "type": "float",
     "default": 10,
     "doc": "Target energy. If all tets have an energy below this, tetwild will stop."
+  },
+  {
+    "pointer": "/stop_energy_ambient",
+    "type": "float",
+    "default": -1,
+    "doc": "Optional looser target energy for pure-ambient cells (<= 0: use stop_energy). Applies to remeshing termination, the collapse quality gate, and sizing-adjust seeding. Currently 2D only."
+  },
+  {
+    "pointer": "/ambient_like_tags",
+    "type": "list",
+    "default": [],
+    "doc": "Tag names whose cells count as ambient space when every tag of a cell is in this list (e.g. user-added primitives like box_0): affects stop_energy_ambient, body-energy logging, and sizing-adjust seeding. Cells that also carry a body tag (e.g. {box_0, dragon}) remain body."
+  },
+  {
+    "pointer": "/ambient_like_tags/*",
+    "type": "string",
+    "doc": "A tag name."
+  },
+  {
+    "pointer": "/adjust_filter_rel",
+    "type": "float",
+    "default": 1.0,
+    "doc": "Sizing-adjust seeding threshold as a fraction of stop_energy (2D only). 1.0 = only refine around faces that fail stop_energy. The legacy TetWild value 0.8 also seeds acceptable faces in (0.8*stop, stop] and can cause a mesh-wide refinement spiral when the improvement loop stalls on unfixable elements."
   },
   {
     "pointer": "/stop_at_float",

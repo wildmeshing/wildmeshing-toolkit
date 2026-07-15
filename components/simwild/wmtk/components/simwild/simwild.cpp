@@ -229,6 +229,7 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     }
 
     logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
+    logger().info("final max body energy = {}", mesh.get_max_body_energy());
     mesh.write_msh(params.output_path + ".msh", params.write_envelope);
     write_unique_vtu();
     if (params.write_vtu) {
@@ -293,6 +294,7 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
     }
 
     logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
+    logger().info("final max body energy = {}", mesh.get_max_body_energy());
     mesh.write_msh(params.output_path + ".msh", params.write_envelope);
     write_unique_vtu();
 }
