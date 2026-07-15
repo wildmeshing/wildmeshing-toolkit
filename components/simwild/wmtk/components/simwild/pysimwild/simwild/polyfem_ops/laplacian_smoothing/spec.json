@@ -17,7 +17,8 @@
             "weight_laplacian",
             "max_iterations",
             "smooth_positions",
-            "save_vtu"
+            "save_vtu",
+            "ambient_like_tags"
         ],
         "doc": "Fair material interfaces with one polyfem solve (AMIPS + fitting + Laplacian; no contact)."
     },
@@ -121,5 +122,16 @@
         "type": "bool",
         "default": false,
         "doc": "Emit paraview output (slow)."
+    },
+    {
+        "pointer": "/ambient_like_tags",
+        "type": "list",
+        "default": [],
+        "doc": "Tag names treated as ambient in the polyfem reduction (cells whose tags are all ambient-like get the ambient AMIPS weight/volume normalization)."
+    },
+    {
+        "pointer": "/ambient_like_tags/*",
+        "type": "string",
+        "doc": "A tag name."
     }
 ]

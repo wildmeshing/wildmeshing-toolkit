@@ -30,10 +30,11 @@ def run(cfg: dict, out_dir=None) -> None:
     the smoothed manifolds via the boundary-of-S rule (face selected iff
     (A ∪ B) ⊇ S AND NOT (A ⊇ S AND B ⊇ S)), unioned into one triangle patch;
     `max_iterations`/`nl_max_iterations` both cap the nonlinear solver
-    (default 1000). Writes constraint artifacts + smoothing.json +
-    solution.txt to out_dir (default: the mesh's folder), polyfem output to
-    out_dir/smooth_output, and the deformed mesh to output_msh (default
-    <stem>_smoothed.msh).
+    (default 1000). Writes the generated polyfem inputs (smoothing.json,
+    constraint hdf5s, reduced mesh) to out_dir/smooth_input, polyfem output
+    (logs, solution.txt) to out_dir/smooth_output, and the deformed mesh to
+    output_msh (default <stem>_smoothed.msh); out_dir defaults to the mesh's
+    folder.
     """
     cfg = dict(cfg)
     ignored_present = [k for k in _SMOOTHING_IGNORED_KEYS if k in cfg]
@@ -46,6 +47,14 @@ def run(cfg: dict, out_dir=None) -> None:
     # alias it to `nl_max_iterations` for the polyfem nonlinear solver.
     if "max_iterations" in cfg and "nl_max_iterations" not in cfg:
         cfg["nl_max_iterations"] = cfg["max_iterations"]
+
+    # With volume-normalized AMIPS the weights share the Laplacian's
+    # currency; smoothing wants the fairing to win, so the body's
+    # element-quality guard defaults low (pre-normalization it was
+    # effectively ~1e-9 relative to the Laplacian).
+    if "amips_body_weight" not in cfg and not any(
+            k != "ambient" for k in (cfg.get("amips_weights") or {})):
+        cfg["amips_body_weight"] = 1e-4
 
     interfaces_norm, _ = assign_selection_ids(cfg.get("interfaces", []))
 
@@ -68,21 +77,24 @@ def run(cfg: dict, out_dir=None) -> None:
     output_msh = Path(cfg.get(
         "output_msh", str(out_dir / (msh_path.stem + "_smoothed.msh"))
     )).resolve()
+    sim_in_dir = (out_dir / "smooth_input").resolve()
     sim_out_dir = (out_dir / "smooth_output").resolve()
-    sim_json_path = (out_dir / "smoothing.json").resolve()
-    sol_path = (out_dir / "solution.txt").resolve()
+    sim_json_path = (sim_in_dir / "smoothing.json").resolve()
+    sol_path = (sim_out_dir / "solution.txt").resolve()
 
     print(f"Input  : {msh_path}")
     print(f"Output : {output_msh}")
     print(f"scale={scale}")
 
+    sim_in_dir.mkdir(parents=True, exist_ok=True)
     sim_out_dir.mkdir(parents=True, exist_ok=True)
 
     # Interface constraint uses the ORIGINAL mesh — we want the multi-tag
     # info (e.g. {tag_0, tag_1} overlap tets) preserved so the boundary-of-S
-    # selector picks the right faces.
+    # selector picks the right faces. Generated polyfem inputs go to
+    # smooth_input/.
     step_make_interface_constraint(
-        str(msh_path), out_dir, use_graph, normalize, scale,
+        str(msh_path), sim_in_dir, use_graph, normalize, scale,
         selections=interfaces_norm if interfaces_norm else None,
         smooth_positions=smooth_positions,
         skip_collision_artifacts=True,
@@ -92,11 +104,13 @@ def run(cfg: dict, out_dir=None) -> None:
     # tet for each tag in its tag-set. Polyfem reads these as distinct
     # elements, double-counting AMIPS at shared vertices and corrupting
     # assembly (segfault during constraint setup). Reduce to a 2-body mesh.
-    polyfem_msh_path = (out_dir / (msh_path.stem + "_polyfem.msh")).resolve()
+    polyfem_msh_path = (sim_in_dir / (msh_path.stem + "_polyfem.msh")).resolve()
     print(f"\n[reduce mesh for polyfem]")
-    _write_polyfem_reduced_msh(str(msh_path), str(polyfem_msh_path))
+    _write_polyfem_reduced_msh(str(msh_path), str(polyfem_msh_path),
+                               ambient_like_tags=cfg.get("ambient_like_tags", []))
 
-    material_tags, mesh_dim, name_to_tag, tag_to_count = get_mesh_info(str(polyfem_msh_path))
+    material_tags, mesh_dim, name_to_tag, tag_to_count, tag_to_volume = \
+        get_mesh_info(str(polyfem_msh_path))
     print(f"\nReduced material tags : {material_tags}  dim={mesh_dim}")
     print(f"Group name → tag map: {name_to_tag}")
     print(f"Element counts per tag: {tag_to_count}")
@@ -107,8 +121,9 @@ def run(cfg: dict, out_dir=None) -> None:
     cfg["amips_weights"] = _resolve_amips_weights(cfg)
 
     sim_json = build_polyfem_json(
-        cfg, polyfem_msh_path, out_dir, material_tags, mesh_dim, sol_path,
-        name_to_tag=name_to_tag, tag_to_count=tag_to_count)
+        cfg, polyfem_msh_path, sim_in_dir, material_tags, mesh_dim, sol_path,
+        name_to_tag=name_to_tag, tag_to_count=tag_to_count,
+        tag_to_volume=tag_to_volume)
 
     step_run_polyfem_single(polyfem, sim_json, sim_json_path, sim_out_dir)
 
