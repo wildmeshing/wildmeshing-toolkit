@@ -4,6 +4,7 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
+#include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "spdlog/spdlog.h"
 #include "wmtk/utils/TupleUtils.hpp"
@@ -87,11 +88,12 @@ size_t TetWildMesh::swap_all_edges_32()
     }
     time = timer.getElapsedTime();
     wmtk::logger().info("edge swap prepare time: {:.4}s", time);
+    size_t total_success = 0;
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = wmtk::renewal_edges;
         executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
         executor.num_threads = NUM_THREADS;
-        executor(*this, collect_all_ops);
+        total_success = wmtk::run_localized_to_convergence(*this, executor, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
         timer.start();
@@ -102,14 +104,14 @@ size_t TetWildMesh::swap_all_edges_32()
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge swap operation time parallel: {:.4}s", time);
-        return executor.get_cnt_success();
+        return total_success;
     } else {
         timer.start();
         auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge swap operation time serial: {:.4}s", time);
-        return executor.get_cnt_success();
+        return total_success;
     }
 }
 
@@ -180,11 +182,12 @@ size_t TetWildMesh::swap_all_faces()
     }
     time = timer.getElapsedTime();
     wmtk::logger().info("face swap prepare time: {:.4}s", time);
+    size_t total_success = 0;
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = wmtk::renewal_faces;
         executor.priority = [](auto& m, auto op, auto& t) { return m.get_length2(t); };
         executor.num_threads = NUM_THREADS;
-        executor(*this, collect_all_ops);
+        total_success = wmtk::run_localized_to_convergence(*this, executor, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
         timer.start();
@@ -195,14 +198,14 @@ size_t TetWildMesh::swap_all_faces()
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("face swap operation time parallel: {:.4}s", time);
-        return executor.get_cnt_success();
+        return total_success;
     } else {
         timer.start();
         auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("face swap operation time serial: {:.4}s", time);
-        return executor.get_cnt_success();
+        return total_success;
     }
 }
 
@@ -290,6 +293,7 @@ size_t TetWildMesh::swap_all_edges_all()
     }
     time = timer.getElapsedTime();
     wmtk::logger().info("edge swap prepare time: {:.4}s", time);
+    size_t total_success = 0;
     auto setup_and_execute = [&](auto& executor) {
         // executor.renew_neighbor_tuples = wmtk::renewal_edges;
         executor.renew_neighbor_tuples =
@@ -312,7 +316,7 @@ size_t TetWildMesh::swap_all_edges_all()
             };
         executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
         executor.num_threads = NUM_THREADS;
-        executor(*this, collect_all_ops);
+        total_success = wmtk::run_localized_to_convergence(*this, executor, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
         timer.start();
@@ -323,14 +327,14 @@ size_t TetWildMesh::swap_all_edges_all()
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge swap operation time parallel: {:.4}s", time);
-        return executor.get_cnt_success();
+        return total_success;
     } else {
         timer.start();
         auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge swap operation time serial: {:.4}s", time);
-        return executor.get_cnt_success();
+        return total_success;
     }
 }
 
@@ -346,11 +350,12 @@ size_t TetWildMesh::swap_all_edges_44()
     }
     time = timer.getElapsedTime();
     wmtk::logger().info("edge swap 44 prepare time: {:.4}s", time);
+    size_t total_success = 0;
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = wmtk::renewal_edges;
         executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
         executor.num_threads = NUM_THREADS;
-        executor(*this, collect_all_ops);
+        total_success = wmtk::run_localized_to_convergence(*this, executor, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
         timer.start();
@@ -361,14 +366,14 @@ size_t TetWildMesh::swap_all_edges_44()
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge swap 44 operation time parallel: {:.4}s", time);
-        return executor.get_cnt_success();
+        return total_success;
     } else {
         timer.start();
         auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge swap 44 operation time serial: {:.4}s", time);
-        return executor.get_cnt_success();
+        return total_success;
     }
 }
 
@@ -453,11 +458,12 @@ size_t TetWildMesh::swap_all_edges_56()
     }
     time = timer.getElapsedTime();
     wmtk::logger().info("edge swap 56 prepare time: {:.4}s", time);
+    size_t total_success = 0;
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = wmtk::renewal_edges;
         executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
         executor.num_threads = NUM_THREADS;
-        executor(*this, collect_all_ops);
+        total_success = wmtk::run_localized_to_convergence(*this, executor, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
         timer.start();
@@ -468,14 +474,14 @@ size_t TetWildMesh::swap_all_edges_56()
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge swap 56 operation time parallel: {:.4}s", time);
-        return executor.get_cnt_success();
+        return total_success;
     } else {
         timer.start();
         auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge swap 56 operation time serial: {:.4}s", time);
-        return executor.get_cnt_success();
+        return total_success;
     }
 }
 

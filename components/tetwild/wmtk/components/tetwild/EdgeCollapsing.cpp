@@ -8,6 +8,7 @@
 #include <unordered_set>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
+#include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 namespace wmtk::components::tetwild {
@@ -25,13 +26,10 @@ void TetWildMesh::collapse_all_edges(bool is_limit_length)
         collect_all_ops.emplace_back("edge_collapse", loc);
         collect_all_ops.emplace_back("edge_collapse", loc.switch_vertex(*this));
     }
-    auto collect_failure_ops = wmtk::concurrent_vector<std::pair<std::string, Tuple>>();
-    std::atomic_int count_success = 0;
     time = timer.getElapsedTime();
     wmtk::logger().info("edge collapse prepare time: {:.4}s", time);
     auto setup_and_execute = [&](auto& executor) {
-        executor.renew_neighbor_tuples = [&](const auto& m, auto op, const auto& newts) {
-            count_success++;
+        executor.renew_neighbor_tuples = [](const auto& m, auto op, const auto& newts) {
             std::vector<std::pair<std::string, wmtk::TetMesh::Tuple>> op_tups;
             for (auto t : newts) {
                 op_tups.emplace_back(op, t);
@@ -54,26 +52,9 @@ void TetWildMesh::collapse_all_edges(bool is_limit_length)
                 return false;
             return true;
         };
-
-        executor.on_fail = [&](auto& m, auto op, auto& t) {
-            collect_failure_ops.emplace_back(op, t);
-        };
-        // Execute!!
-        do {
-            count_success.store(0, std::memory_order_release);
-            wmtk::logger().info("Prepare to collapse {}", collect_all_ops.size());
-            igl::Timer t1;
-            t1.start();
-            executor(*this, collect_all_ops);
-            wmtk::logger().info("edge collapse execute time: {:.4}s", t1.getElapsedTimeInSec());
-            wmtk::logger().info(
-                "Collapsed {}, retrying failed {}",
-                (int)count_success,
-                collect_failure_ops.size());
-            collect_all_ops.clear();
-            for (auto& item : collect_failure_ops) collect_all_ops.emplace_back(item);
-            collect_failure_ops.clear();
-        } while (count_success.load(std::memory_order_acquire) > 0);
+        // Retry a failed collapse only where the mesh actually changed this round
+        // (dirty-epoch localized retry), instead of re-testing every failure every pass.
+        wmtk::run_localized_to_convergence(*this, executor, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
         timer.start();
