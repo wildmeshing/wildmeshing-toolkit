@@ -5,6 +5,7 @@
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/ParallelCollect.hpp>
 
 namespace wmtk::components::tetwild {
 
@@ -13,8 +14,10 @@ void TetWildMesh::split_all_edges()
     igl::Timer timer;
     double time;
     timer.start();
-    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_split", loc);
+    auto collect_all_ops =
+        wmtk::parallel_collect_edge_ops(*this, NUM_THREADS, [](auto&, const auto& e, auto& out) {
+            out.emplace_back("edge_split", e);
+        });
     time = timer.getElapsedTime();
     wmtk::logger().info("edge split prepare time: {:.4}s", time);
     auto setup_and_execute = [&](auto& executor) {
