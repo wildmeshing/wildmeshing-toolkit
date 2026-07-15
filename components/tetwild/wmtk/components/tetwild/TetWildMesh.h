@@ -347,11 +347,26 @@ public:
      * If `vertices` and `faces` are empty, compute the winding number for the tracked surface.
      * Otherwise, compute the winding number for the input surface given by `vertices` and `faces`.
      */
+    /**
+     * @brief Barycenter (row per tet) of each tet in `tets`. Computed once and
+     * passed to the winding-number passes so they do not each rebuild it.
+     */
+    Eigen::MatrixXd tet_barycenters(const std::vector<Tuple>& tets) const;
+
     void compute_winding_number(
+        const std::vector<Tuple>& tets,
+        const Eigen::MatrixXd& barycenters,
         const std::vector<Vector3d>& vertices = {},
         const std::vector<std::array<size_t, 3>>& faces = {});
 
-    void compute_winding_numbers(const std::vector<std::string>& input_paths);
+    // `in_vertices`/`in_faces` let the single-input case reuse the already-loaded
+    // surface instead of re-reading it from disk.
+    void compute_winding_numbers(
+        const std::vector<std::string>& input_paths,
+        const std::vector<Tuple>& tets,
+        const Eigen::MatrixXd& barycenters,
+        const std::vector<Vector3d>& in_vertices = {},
+        const std::vector<std::array<size_t, 3>>& in_faces = {});
 
     void filter_with_input_surface_winding_number();
     void filter_with_tracked_surface_winding_number();
