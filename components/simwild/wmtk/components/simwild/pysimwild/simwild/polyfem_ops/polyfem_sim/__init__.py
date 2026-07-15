@@ -28,7 +28,7 @@ Config (dict):
   save_vtu           : bool  — emit paraview .vtu/.pvd (default True)
   save_restart       : bool  — write state.hdf5/restart.json checkpoints so
                                a later run can resume (default True)
-  resume             : bool  — resume from restart files found in out_dir
+  resume             : bool  — resume from restart files found in out_dir/sim_output
                                (default True); set False or delete them to
                                start fresh
 
@@ -309,14 +309,22 @@ def build_polyfem_sim_json(cfg: dict, msh_path: Path, sim_out_dir: Path,
 # Runner
 # ---------------------------------------------------------------------------
 
-def run(cfg: dict, out_dir=None) -> Path:
+def run(cfg: dict, out_dir=None, in_dirname: str = "sim_input",
+        out_dirname: str = "sim_output") -> Path:
     msh_path = Path(cfg["input_msh"]).resolve()
     if not msh_path.exists():
         raise FileNotFoundError(f"input_msh not found: {msh_path}")
 
     out_dir = Path(out_dir) if out_dir is not None else (
         msh_path.parent / "sim")
-    out_dir.mkdir(parents=True, exist_ok=True)
+    # Mirror minimum_separation's layout: generated polyfem inputs go to
+    # in_dirname/, everything polyfem writes (vtu/pvd, log, restart/state)
+    # to out_dirname/. Override the names e.g. to "input"/"output" when
+    # out_dir is already a per-simulation folder.
+    sim_in_dir = out_dir / in_dirname
+    sim_out_dir = out_dir / out_dirname
+    sim_in_dir.mkdir(parents=True, exist_ok=True)
+    sim_out_dir.mkdir(parents=True, exist_ok=True)
 
     polyfem = _polyfem_bin()
 
@@ -336,7 +344,7 @@ def run(cfg: dict, out_dir=None) -> Path:
     id_map = (parse_id_map(str(id_map_path))
               if id_map_path.exists() else {"bodies": {}, "selections": {}})
 
-    _, mesh_dim, name_to_tag, _ = get_mesh_info(str(msh_path))
+    _, mesh_dim, name_to_tag, _, _ = get_mesh_info(str(msh_path))
 
     print(f"\n[polyfem_sim] mesh: {msh_path} (dim={mesh_dim})")
     if name_to_tag:
@@ -348,10 +356,10 @@ def run(cfg: dict, out_dir=None) -> Path:
     sim_json = build_polyfem_sim_json(
         cfg, msh_path, out_dir, name_to_tag, id_map, mesh_dim)
 
-    sim_json_path = out_dir / "simulation.json"
+    sim_json_path = sim_in_dir / "simulation.json"
 
     # Resume from the latest polyfem-written restart_<N>.json if one is in
-    # out_dir. Polyfem's restart file references simulation.json via `common`,
+    # sim_output/. Polyfem's restart file references simulation.json via `common`,
     # so the saved state must match the cfg used to produce it — bail out if
     # the freshly-built cfg has drifted from the saved simulation.json.
     resume = cfg.get("resume", True)
@@ -359,12 +367,12 @@ def run(cfg: dict, out_dir=None) -> Path:
     if resume:
         # Prefer the overwrite-style `restart.json`; fall back to legacy
         # per-timestep `restart_<N>.json` from older runs.
-        restart_single = out_dir / "restart.json"
+        restart_single = sim_out_dir / "restart.json"
         if restart_single.exists():
             restarts = [restart_single]
         else:
             restarts = sorted(
-                out_dir.glob("restart_*.json"),
+                sim_out_dir.glob("restart_*.json"),
                 key=lambda p: int(p.stem.split("_")[-1]) if p.stem.split("_")[-1].isdigit() else -1,
             )
         if restarts and sim_json_path.exists():
@@ -388,7 +396,7 @@ def run(cfg: dict, out_dir=None) -> Path:
                         f"  silently mix old state vectors with new settings.\n"
                         f"  Fix one of:\n"
                         f"    - cfg['resume'] = False  (start fresh, keeps the old files around)\n"
-                        f"    - delete {out_dir}/restart*.json and state*.hdf5  (clean slate)\n"
+                        f"    - delete {sim_out_dir}/restart*.json and state*.hdf5  (clean slate)\n"
                         f"    - cfg['force_resume'] = True  (override at your own risk)\n"
                         f"    - revert cfg so it matches {sim_json_path}")
                 if unsafe:
@@ -401,9 +409,9 @@ def run(cfg: dict, out_dir=None) -> Path:
     sim_json_path.write_text(json.dumps(sim_json, indent=4))
     print(f"  wrote {sim_json_path}")
 
-    cmd = [polyfem, "-j", str(json_to_run), "-o", str(out_dir)]
+    cmd = [polyfem, "-j", str(json_to_run), "-o", str(sim_out_dir)]
     print(f"  running: {' '.join(cmd)}\n")
-    returncode, stdout_lines = run_streaming(cmd, log_path=out_dir / "polyfem.log")
+    returncode, stdout_lines = run_streaming(cmd, log_path=sim_out_dir / "polyfem.log")
 
     if returncode != 0:
         last = next((l.strip() for l in reversed(stdout_lines) if "Finished:" in l),
