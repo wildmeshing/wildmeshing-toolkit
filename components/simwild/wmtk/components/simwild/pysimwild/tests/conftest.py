@@ -98,6 +98,10 @@ def _tet_grid(nx, ny, nz):
                     for ax in perm:
                         p = p + np.array(axes[ax])
                         verts.append(nid(*p))
+                    # signed volume = permutation parity; flip odd perms so
+                    # every tet is positively oriented (polyfem requires it)
+                    if perm in (("x", "z", "y"), ("y", "x", "z"), ("z", "y", "x")):
+                        verts[2], verts[3] = verts[3], verts[2]
                     tets.append(tuple(verts))
                 cube_tets[(i, j, k)] = tets
     return ordered, cube_tets

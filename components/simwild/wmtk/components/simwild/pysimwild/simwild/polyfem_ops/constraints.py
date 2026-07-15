@@ -306,6 +306,23 @@ def write_fitting_constraint_hdf5(path: str, node_ids: np.ndarray, dim: int = 2,
         grp.create_dataset("shape",  data=np.array([n, n], dtype=np.int64))
         f.create_dataset("b", data=np.zeros((n, dim), dtype=np.float64))
 
+def write_pin_constraint_hdf5(path: str, node_ids: np.ndarray, dim: int) -> None:
+    """Write a pin constraint (A = I on node_ids, b = 0): as a polyfem HARD
+    constraint (constraints/hard) it holds those nodes exactly at rest via
+    the augmented Lagrangian — used for min-sep protected_regions."""
+    n = len(node_ids)
+    with h5py.File(path, "w") as f:
+        # h5pp reads local2global as vector<int> — must be int32 on disk
+        f.create_dataset("local2global", data=np.asarray(node_ids, dtype=np.int32))
+        grp = f.create_group("A_triplets")
+        grp.create_dataset("rows",   data=np.arange(n, dtype=np.int32))
+        grp.create_dataset("cols",   data=np.arange(n, dtype=np.int32))
+        grp.create_dataset("values", data=np.ones(n, dtype=np.float64))
+        grp.create_dataset("shape",  data=np.array([n, n], dtype=np.int64))
+        f.create_dataset("b", data=np.zeros((n, dim), dtype=np.float64))
+    print(f"  pinned     : {path}  ({n} nodes)")
+
+
 def get_mass_matrix(coords: np.ndarray, interface_edges: list, node_ids: np.ndarray, graph: bool,
                     interface_faces: list = None) -> np.ndarray:
     """Lumped mass matrix over the interface as diagonal COO triplets, indexed

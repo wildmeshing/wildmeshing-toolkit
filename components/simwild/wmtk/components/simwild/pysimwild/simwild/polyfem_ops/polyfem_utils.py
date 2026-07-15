@@ -227,59 +227,104 @@ def tag_centroid(msh_path, tag_name):
 # ---------------------------------------------------------------------------
 # Config defaults (all overridable via config JSON)
 # ---------------------------------------------------------------------------
+
+def _minsep_spec_defaults() -> dict:
+    """Root-level defaults from minimum_separation/spec.json — the single
+    source of truth for op-level defaults. The op validator fills spec
+    defaults into every cfg, so an engine-side copy that disagreed would be
+    silently shadowed on the op path anyway (the max_iterations 5-vs-10
+    trap); deriving keeps direct-engine callers consistent."""
+    path = os.path.join(os.path.dirname(__file__),
+                        "minimum_separation", "spec.json")
+    with open(path) as f:
+        rules = json.load(f)
+    return {r["pointer"].lstrip("/"): r["default"]
+            for r in rules
+            if r["pointer"].count("/") == 1 and "default" in r}
+
+
+_SPEC = _minsep_spec_defaults()
+
 OPT_DEFAULTS = {
-    "scale":              0.001,
-    "useFitting":         True,
-    "useLaplacian":       True,
-    "useGraphLaplacian":  False,
-    "normalizePenalties": True,
+    # ---- derived from minimum_separation/spec.json (single source) ----
+    "scale":              _SPEC["scale"],
+    "useFitting":         _SPEC["use_fitting"],
+    "useLaplacian":       _SPEC["use_laplacian"],
+    "useGraphLaplacian":  _SPEC["use_graph_laplacian"],
+    "normalizePenalties": _SPEC["normalize_penalties"],
+    "weight_fitting":     _SPEC["weight_fitting"],
+    "weight_laplacian":   _SPEC["weight_laplacian"],
+    "max_iterations":     _SPEC["max_iterations"],
+    "rtol":               _SPEC["rtol"],
+    "alpha_n":             _SPEC["alpha_n"],
+    "alpha_t":             _SPEC["alpha_t"],
+    "dhat_growth":        _SPEC["dhat_growth"],
+    "save_vtu":           _SPEC["save_vtu"],
+    # ---- engine-only knobs (no spec counterpart) ----
     "amips_weight_bg":    1e-6,   # tag 0 (background)
     "amips_weight_body":  1e0,    # all other tags
-    "barrier_stiffness":  1e3,
-    "alpha_n":            0.1,
-    "alpha_t":            0.1,
+    # NOT the spec default (that is -1 = auto): this is the resolved auto
+    # value for strategy="dhat", which never adjusts kappa (too-soft stalls
+    # at the ramp's fixed point; over-stiff only makes the gap hug dhat).
+    # strategy="stiffness" auto-starts at 1 and raises kappa itself.
+    "barrier_stiffness":  1e6,
     "sep":                None,
-    "weight_fitting":     1,
-    "weight_laplacian":   1,
     "smoothDisplacementsOrPositions": 0,
-    "max_iterations":     5,
-    "rtol":              1e-2,
+    # volume normalization puts AMIPS in the same currency as the normalized
+    # fit/laplacian penalties (uniform strain eps costs w*eps^2); by_count is
+    # the legacy fallback when volume normalization is disabled
+    "amips_normalize_by_volume": True,
     "amips_normalize_by_count": True,
-    "save_vtu":           False,   # paraview/vtu output -- slow; on for debugging
-    "contact_enabled":     True,
+    "contact_enabled":    True,
 }
-# OPT_DEFAULTS["init_dhat"] = OPT_DEFAULTS["sep"]
 
 
 # ---------------------------------------------------------------------------
 # Mesh helpers
 # ---------------------------------------------------------------------------
 
-def get_mesh_info(msh_path: str) -> tuple[list[int], int, dict, dict]:
+def get_mesh_info(msh_path: str) -> tuple[list[int], int, dict, dict, dict]:
     """Read a .msh's material physical groups; returns (sorted material tags,
-    mesh dimension 2|3, {group name: tag}, {tag: element count}). Elements are
-    counted once per group even when a group spans multi-tag entities."""
+    mesh dimension 2|3, {group name: tag}, {tag: element count},
+    {tag: rest area/volume in mesh units}). Elements are counted once per
+    group even when a group spans multi-tag entities."""
     gmsh.initialize()
     gmsh.open(msh_path)
     has_3d = len(gmsh.model.getPhysicalGroups(dim=3)) > 0
     dim = 3 if has_3d else 2
     elem_type = 4 if dim == 3 else 2  # gmsh: 4=Tet, 2=Triangle
+    node_tags, coord_flat, _ = gmsh.model.mesh.getNodes()
+    idx = {int(t): i for i, t in enumerate(node_tags)}
+    P = np.array(coord_flat, dtype=np.float64).reshape(-1, 3)
     name_to_tag: dict = {}
     tag_to_count: dict = {}
+    tag_to_volume: dict = {}
     tags: set = set()
+    npp = 4 if dim == 3 else 3
     for d, ptag in gmsh.model.getPhysicalGroups(dim=dim):
         name = gmsh.model.getPhysicalName(d, ptag)
         if name:
             name_to_tag[name] = int(ptag)
         tags.add(int(ptag))
-        seen = set()
+        seen = {}
         for ent in gmsh.model.getEntitiesForPhysicalGroup(d, ptag):
-            etags, _ = gmsh.model.mesh.getElementsByType(elem_type, ent)
-            for e in etags:
-                seen.add(int(e))
+            etags, ntags = gmsh.model.mesh.getElementsByType(elem_type, ent)
+            conn = np.array(ntags, dtype=np.int64).reshape(-1, npp)
+            for e, row in zip(etags, conn):
+                seen[int(e)] = row
+        vol = 0.0
+        for row in seen.values():
+            v = P[[idx[int(t)] for t in row]]
+            if dim == 3:
+                vol += abs(np.linalg.det(np.stack(
+                    [v[1] - v[0], v[2] - v[0], v[3] - v[0]]))) / 6.0
+            else:
+                e1, e2 = v[1] - v[0], v[2] - v[0]
+                vol += 0.5 * abs(e1[0] * e2[1] - e1[1] * e2[0])
         tag_to_count[int(ptag)] = len(seen)
+        tag_to_volume[int(ptag)] = vol
     gmsh.finalize()
-    return sorted(tags), dim, name_to_tag, tag_to_count
+    return sorted(tags), dim, name_to_tag, tag_to_count, tag_to_volume
 
 
 def read_msh_nodes(msh_path: str) -> tuple[list[int], np.ndarray, dict]:
@@ -411,7 +456,8 @@ def build_polyfem_json(cfg: dict, msh_path: Path, out_dir: Path,
                         material_tags: list[int], mesh_dim: int,
                         sol_path: Path,
                         name_to_tag: dict | None = None,
-                        tag_to_count: dict | None = None) -> dict:
+                        tag_to_count: dict | None = None,
+                        tag_to_volume: dict | None = None) -> dict:
     """Build the polyfem simulation JSON shared by run() and run_smoothing():
     per-tag AMIPS materials, soft fitting/Laplacian constraints from out_dir,
     an optional contact block, quasistatic time, and an all-fixed Dirichlet
@@ -425,13 +471,22 @@ def build_polyfem_json(cfg: dict, msh_path: Path, out_dir: Path,
     use_fitting = cfg.get("useFitting", OPT_DEFAULTS["useFitting"])
     use_laplacian = (cfg.get("useLaplacian", OPT_DEFAULTS["useLaplacian"])
                      or cfg.get("useGraphLaplacian", OPT_DEFAULTS["useGraphLaplacian"]))
-    # AMIPS is summed over all elements; without normalization a denser mesh
-    # contributes proportionally more energy. Divide each material's weight by
-    # the number of elements it owns so total per-material AMIPS is
-    # mesh-density-independent (same scaling philosophy as normalizePenalties
-    # for fitting/laplacian).
+    # AMIPS is integrated over element volumes in SOLVER units, so its raw
+    # magnitude carries a hidden scale^dim factor (1e-6 in 2D, 1e-9 in 3D at
+    # scale=1e-3) relative to the normalized fit/laplacian penalties — at
+    # equal nominal weights the fit silently dominates by ~6-9 orders.
+    # Volume normalization divides each material's weight by its rest
+    # volume in solver units, putting AMIPS in the same currency as the
+    # other penalties: a uniform strain eps costs ~w*eps^2 exactly as a
+    # uniform displacement u costs w_fit*u^2 — scale-, dimension- and
+    # resolution-invariant. The legacy by-count mode only divides by
+    # element count (resolution-stable but not scale-comparable) and
+    # applies when volume normalization is off.
+    amips_norm_by_volume = cfg.get("amips_normalize_by_volume",
+                                    OPT_DEFAULTS["amips_normalize_by_volume"])
     amips_norm_by_count = cfg.get("amips_normalize_by_count",
                                    OPT_DEFAULTS["amips_normalize_by_count"])
+    tag_to_volume = tag_to_volume or {}
 
     # Build a tag -> physical-group-name map so amips_weights can be keyed by
     # either the numeric tag (int / numeric str) or the group name (e.g.
@@ -448,7 +503,11 @@ def build_polyfem_json(cfg: dict, msh_path: Path, out_dir: Path,
                   amips_weights_cfg.get(name) if name else None))
         if w is None:
             w = OPT_DEFAULTS["amips_weight_bg"] if tag == 0 else OPT_DEFAULTS["amips_weight_body"]
-        if amips_norm_by_count:
+        if amips_norm_by_volume:
+            vol_solver = tag_to_volume.get(int(tag), 0.0) * scale ** mesh_dim
+            if vol_solver > 0:
+                w = w / vol_solver
+        elif amips_norm_by_count:
             n_elems = tag_to_count.get(int(tag), 0)
             if n_elems > 0:
                 w = w / n_elems
@@ -581,13 +640,18 @@ _RED = "\033[31m"
 _RESET = "\033[0m"
 
 
-def _write_polyfem_reduced_msh(input_msh: str, output_msh: str) -> None:
+def _write_polyfem_reduced_msh(input_msh: str, output_msh: str,
+                               ambient_like_tags=()) -> None:
     """Reduce a multi-tag mesh to a 2-body ("ambient"/"body") polyfem mesh.
     WMTK's `write_msh_groups` writes one copy of each multi-tagged tet per
     tag; polyfem reads the copies as distinct elements, double-counting AMIPS
     and corrupting assembly. Tets are deduped by sorted-vertex-tuple and
     classified by their unioned tag set (ambient → body id 1, other tags →
-    body id 2, both → ValueError, tagless → skipped). All original node tags
+    body id 2, both → ValueError, tagless → skipped). Tags listed in
+    `ambient_like_tags` (e.g. user primitives like box_0) count as ambient:
+    a cell whose tags are ALL ambient-like is classified ambient (and gets
+    the ambient AMIPS weight/volume normalization); a cell that also carries
+    a body tag stays body. All original node tags
     are kept, sorted, so geogram's input-vertex-id stays `tag - 1` for both
     the original and reduced mesh (collision artifacts index either)."""
     from collections import defaultdict
@@ -629,11 +693,12 @@ def _write_polyfem_reduced_msh(input_msh: str, output_msh: str) -> None:
                     if vt not in vtuple_to_nodes:
                         vtuple_to_nodes[vt] = ordered
 
+        ambient_like = set(ambient_like_tags) | {"ambient"}
         ambient_prims: list = []
         body_prims: list = []
         for vt, tags in vtuple_to_tags.items():
             has_ambient = "ambient" in tags
-            non_ambient = tags - {"ambient"}
+            non_ambient = tags - ambient_like
             if has_ambient and non_ambient:
                 msg = (
                     f"Element with vertices {sorted(vt)} has both 'ambient' "
@@ -643,7 +708,7 @@ def _write_polyfem_reduced_msh(input_msh: str, output_msh: str) -> None:
                 print(f"{_RED}ERROR:{_RESET} {msg}", file=sys.stderr)
                 raise ValueError(msg)
             ordered = vtuple_to_nodes[vt]
-            if has_ambient:
+            if tags and not non_ambient:  # all tags ambient-like → ambient
                 ambient_prims.append(ordered)
             elif non_ambient:
                 body_prims.append(ordered)

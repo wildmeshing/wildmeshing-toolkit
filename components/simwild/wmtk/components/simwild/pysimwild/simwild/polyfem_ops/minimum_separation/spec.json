@@ -24,9 +24,14 @@
             "barrier_stiffness",
             "alpha_n",
             "alpha_t",
-            "save_vtu"
+            "save_vtu",
+            "strategy",
+            "dhat_growth",
+            "max_stiffness_multiplier",
+            "protected_regions",
+            "ambient_like_tags"
         ],
-        "doc": "Push collision bodies apart to a target separation with polyfem (AMIPS + fitting + Laplacian + GCP contact, dhat line-search)."
+        "doc": "Push collision bodies apart to a target separation with polyfem (AMIPS + fitting + Laplacian + GCP contact); outer loop per `strategy`."
     },
     {
         "pointer": "/input",
@@ -144,13 +149,13 @@
         "pointer": "/init_dhat",
         "type": "float",
         "default": -1.0,
-        "doc": "Initial contact dhat; <= 0 means start at sep."
+        "doc": "Initial contact dhat; <= 0 (default) means measure the initial gap with a zero-stiffness probe solve and start the ramp at dhat_growth * gap."
     },
     {
         "pointer": "/max_iterations",
         "type": "int",
-        "default": 5,
-        "doc": "Max dhat line-search iterations."
+        "default": 10,
+        "doc": "Max outer iterations (dhat ramp / stiffness loop)."
     },
     {
         "pointer": "/rtol",
@@ -167,8 +172,8 @@
     {
         "pointer": "/barrier_stiffness",
         "type": "float",
-        "default": 1000.0,
-        "doc": "Contact barrier stiffness."
+        "default": -1.0,
+        "doc": "Contact barrier stiffness; <= 0 (default) = auto per strategy. dhat ramp: 1e6 (fixed for the whole ramp — too soft stalls below the target, over-stiff only makes the gap hug dhat; transfers across resolutions with normalize_penalties). stiffness strategy: 1 (soft start does the bulk displacement cheaply; the loop raises kappa itself)."
     },
     {
         "pointer": "/alpha_n",
@@ -187,5 +192,46 @@
         "type": "bool",
         "default": false,
         "doc": "Emit paraview output (slow)."
+    },
+    {
+        "pointer": "/strategy",
+        "type": "string",
+        "default": "dhat",
+        "options": ["dhat", "stiffness"],
+        "doc": "Outer loop: \"dhat\" ramps dhat multiplicatively from the measured geometric gap (next dhat = dhat_growth * active) at fixed barrier stiffness, binary-searching on overshoot; \"stiffness\" (experimental) pins dhat at sep*(1+rtol) and raises the barrier stiffness until the separation clears sep (overshoot bounded by rtol by construction)."
+    },
+    {
+        "pointer": "/dhat_growth",
+        "type": "float",
+        "default": 1.9,
+        "doc": "strategy=dhat: multiplicative dhat schedule — next dhat = dhat_growth * measured active distance. Values <= 2 keep the measured gap on the exact (4/3)(1-x)^3 outer branch of the GCP barrier (x = active/dhat >= 0.5)."
+    },
+    {
+        "pointer": "/max_stiffness_multiplier",
+        "type": "float",
+        "default": 100.0,
+        "doc": "strategy=stiffness: cap on the per-iteration barrier-stiffness growth factor (protects Newton conditioning)."
+    },
+    {
+        "pointer": "/protected_regions",
+        "type": "list",
+        "default": [],
+        "doc": "Regions held exactly at rest during the solve (hard pin on every node of the matching cells): the contact pushes only the unprotected side and protected geometry stays bit-identical."
+    },
+    {
+        "pointer": "/protected_regions/*",
+        "type": "string",
+        "doc": "wmtk Boolean cell expression, e.g. \"floor\" or \"rod | anchor\"."
+    },
+    {
+        "pointer": "/ambient_like_tags",
+        "type": "list",
+        "default": [],
+        "doc": "Tag names treated as ambient in the polyfem reduction (e.g. user primitives like box_0): cells whose tags are all ambient-like get the ambient AMIPS weight and volume normalization; cells also carrying a body tag stay body. Mirror of the wmtk remeshing key."
+    },
+    {
+        "pointer": "/ambient_like_tags/*",
+        "type": "string",
+        "doc": "A tag name."
     }
 ]

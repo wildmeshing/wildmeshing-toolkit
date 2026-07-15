@@ -262,3 +262,20 @@ def select_boundary_faces(mesh: TaggedMesh, selections):
             out.append({"face": mesh.face_repr[fk], "a_prim": a_prim,
                         "b_prim": b_prim, "ids": sorted(ids)})
     return out
+
+
+def select_region_nodes(mesh: TaggedMesh, exprs) -> np.ndarray:
+    """Sorted 0-indexed node ids of every cell whose tag-set satisfies any
+    of the wmtk Boolean expressions in `exprs` (e.g. ["floor", "rod | anchor"]).
+    Raises if an expression selects no cells (almost always a typo'd tag)."""
+    ids = set()
+    for expr in exprs:
+        pred, _ = parse_expression(expr)
+        hit = False
+        for key, tags in mesh.prim_tags.items():
+            if pred(tags):
+                hit = True
+                ids.update(mesh.prim_nodes[key])
+        if not hit:
+            raise ValueError(f"region expression {expr!r} selects no cells")
+    return np.array(sorted(ids), dtype=np.int64)
