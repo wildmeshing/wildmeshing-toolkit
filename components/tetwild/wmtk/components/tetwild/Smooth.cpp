@@ -261,8 +261,18 @@ void TetWildMesh::smooth_all_vertices()
     double time;
     timer.start();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    for (auto& loc : get_vertices()) {
-        collect_all_ops.emplace_back("vertex_smooth", loc);
+    if (m_params.skip_good_regions) {
+        // Only smooth vertices incident to an "active" (non-good) tet -- smoothing
+        // a vertex surrounded by good tets does nothing. Smooth is the only op
+        // gated this way: it never changes topology/sizing, so skipping good
+        // regions cannot starve the optimizer or bloat the element count.
+        for (const size_t v : active_vertices()) {
+            collect_all_ops.emplace_back("vertex_smooth", tuple_from_vertex(v));
+        }
+    } else {
+        for (auto& loc : get_vertices()) {
+            collect_all_ops.emplace_back("vertex_smooth", loc);
+        }
     }
     time = timer.getElapsedTime();
     wmtk::logger().info("vertex smoothing prepare time: {:.4}s", time);

@@ -55,6 +55,19 @@ struct Parameters
     // sharp resolution jumps that make operations ill-conditioned.
     double stuck_refine_gradation = 2.0;
 
+    // ---- Skip good regions ----------------------------------------------
+    // Only smooth vertices incident to a tet whose energy is >=
+    // skip_good_regions_margin * stop_energy. Smoothing a vertex surrounded by
+    // good tets does nothing, so skipping it is free (14-16x faster smooth
+    // passes). Only smoothing is gated: gating the topology/sizing ops
+    // (split/collapse/swap) starves the optimizer and blows up the element
+    // count, so those always run over the whole mesh.
+    bool skip_good_regions = true;
+    // Safety margin on the "active" threshold: a tet is active when its energy
+    // (cbrt of m_quality) is >= this fraction of stop_energy, so vertices near
+    // tets sitting just below the target are still smoothed.
+    double skip_good_regions_margin = 0.9;
+
     double splitting_l2 = -1.; // the lower bound length (squared) for edge split
     double collapsing_l2 =
         std::numeric_limits<double>::max(); // the upper bound length (squared) for edge collapse

@@ -1046,6 +1046,24 @@ std::tuple<double, double> TetWildMesh::get_max_avg_energy()
     return std::make_tuple(std::cbrt(max_energy), avg_energy);
 }
 
+std::vector<size_t> TetWildMesh::active_vertices() const
+{
+    const double thr = active_quality_threshold();
+    std::vector<char> seen(vert_capacity(), 0);
+    std::vector<size_t> out;
+    for (size_t i = 0; i < tet_capacity(); ++i) {
+        if (!tuple_from_tet(i).is_valid(*this)) continue;
+        if (m_tet_attribute[i].m_quality < thr) continue;
+        for (const size_t v : oriented_tet_vids(i)) {
+            if (!seen[v]) {
+                seen[v] = 1;
+                out.push_back(v);
+            }
+        }
+    }
+    return out;
+}
+
 
 bool TetWildMesh::is_inverted_f(const Tuple& loc) const
 {
