@@ -398,6 +398,7 @@ std::tuple<TetMesh::Tuple, size_t> TetMesh::tuple_from_face(const std::array<siz
         size_t i2 = 0;
 
         if (t0.empty() || t1.empty() || t2.empty()) {
+            assert(false && "tuple_from_face: one of the vertices has no incident tets");
             return {Tuple(), -1};
         }
 
@@ -405,18 +406,21 @@ std::tuple<TetMesh::Tuple, size_t> TetMesh::tuple_from_face(const std::array<siz
             if (t0[i0] < t1[i1] || t0[i0] < t2[i2]) {
                 i0++;
                 if (i0 == t0.size()) {
+                    assert(false && "tuple_from_face: no common tet found for the three vertices");
                     return {Tuple(), -1};
                 }
             }
             if (t1[i1] < t2[i2] || t1[i1] < t0[i0]) {
                 i1++;
                 if (i1 == t1.size()) {
+                    assert(false && "tuple_from_face: no common tet found for the three vertices");
                     return {Tuple(), -1};
                 }
             }
             if (t2[i2] < t0[i0] || t2[i2] < t1[i1]) {
                 i2++;
                 if (i2 == t2.size()) {
+                    assert(false && "tuple_from_face: no common tet found for the three vertices");
                     return {Tuple(), -1};
                 }
             }

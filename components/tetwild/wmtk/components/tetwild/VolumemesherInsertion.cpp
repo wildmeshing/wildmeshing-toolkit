@@ -1248,6 +1248,33 @@ void TetWildMesh::insertion_by_volumeremesher(
         }
         logger().info("done");
     }
+
+    // TODO this is a sanity check, but it is checked all the time for now, until insertion is
+    // stable.
+    // check for consistent orientation between tets
+    std::set<std::array<size_t, 3>> face_set; // each face must be unique
+    for (int i = 0; i < tets_after.size(); ++i) {
+        const auto& t = tets_after[i];
+        std::array<std::array<size_t, 3>, 4> faces = {{
+            {{t[1], t[3], t[2]}}, // opposite t[0]
+            {{t[0], t[2], t[3]}}, // opposite t[1]
+            {{t[0], t[3], t[1]}}, // opposite t[2]
+            {{t[0], t[1], t[2]}}, // opposite t[3]
+        }};
+        // Rotate vertex IDs in faces to start with the lowest vertex ID. This ensures that the
+        // same face is represented by the same set of vertex IDs, regardless of the order in
+        // which they appear in the tet.
+        for (auto& f : faces) {
+            std::rotate(f.begin(), std::min_element(f.begin(), f.end()), f.end());
+        }
+
+        for (const auto& f : faces) {
+            if (face_set.count(f) > 0) {
+                log_and_throw_error("Face {} appears more than once in the tet list", f);
+            }
+            face_set.insert(f);
+        }
+    }
 }
 
 bool TetWildMesh::check_nondegenerate_tets()
@@ -1420,10 +1447,11 @@ void TetWildMesh::init_from_Volumeremesher(
 
     const auto vertices = get_vertices();
     size_t cnt_round_parallel = 0;
-    for (const Tuple& v : vertices)
+    for (const Tuple& v : vertices) {
         if (VA[v.vid(*this)].m_is_rounded) {
             ++cnt_round_parallel;
         }
+    }
 
     // Final serial sweep: the parallel batch reverts a vertex whenever it lies in
     // any inverted tet, which can over-revert (a vertex may round fine once its
@@ -1440,8 +1468,9 @@ void TetWildMesh::init_from_Volumeremesher(
             ++cnt_round;
         }
     }
+
     logger().info(
-        "cnt_round {}/{} (parallel {}, serial recovered {})",
+        "Rounded vertices {}/{} (parallel {}, serial recovered {})",
         cnt_round,
         vertices.size(),
         cnt_round_parallel,
@@ -1451,130 +1480,6 @@ void TetWildMesh::init_from_Volumeremesher(
     for_each_tetra(
         [this](const Tuple& t) { m_tet_attribute[t.tid(*this)].m_quality = get_quality(t); });
 }
-
-// void init_from_file(std::string input_dir)
-// {
-//     std::ifstream input(input_dir);
-//     size_t v_num, f_num, t_num;
-//     input >> v_num >> f_num >> t_num;
-
-//     std::vector<Vector3r> v_rational;
-//     std::vector<std::array<size_t, 4>> tets;
-//     std::vector<bool> is_v_on_surface;
-//     std::vector<bool> is_f_on_surface;
-//     std::vector<int> is_f_on_bbox;
-
-//     v_rational.reserve(v_num);
-//     tets.reserve(t_num);
-//     is_v_on_surface.reserve(v_num);
-//     is_f_on_surface.reserve(f_num);
-//     is_f_on_bbox.reserve(f_num);
-
-//     for (size_t i = 0; i < v_num; i++) {
-//         char type;
-//         double x, y, z;
-//         bool on_surface;
-//         input >> type >> x >> y >> z >> on_surface;
-//         Vector3d p(x, y, z);
-//         v_rational.push_back(to_rational(p));
-//         is_v_on_surface.push_back(on_surface);
-//     }
-
-//     for (size_t i = 0; i < f_num; i++) {
-//         char type;
-//         size_t v1, v2, v3;
-//         bool on_surface;
-//         int on_bbox;
-//         input >> type >> v1 >> v2 >> v3 >> on_surface >> on_bbox;
-//         is_f_on_surface.push_back(on_surface);
-//         is_f_on_bbox.push_back(on_bbox);
-//     }
-
-//     for (size_t i = 0; i < t_num; i++) {
-//         char type;
-//         size_t v1, v2, v3, v4;
-//         input >> type >> v1 >> v2 >> v3 >> v4;
-//         if (v1 >= v_num || v2 >= v_num || v3 >= v_num || v4 >= v_num) {
-//             std::cout << "wrong vertex id!!!" << std::endl;
-//             // exit(0);
-//         }
-//         std::array<size_t, 4> tet = {{v1, v2, v3, v4}};
-//         tets.push_back(tet);
-//     }
-
-//     init(v_num, tets);
-//     m_vertex_attribute.m_attributes.resize(v_num);
-//     m_tet_attribute.m_attributes.resize(tets.size());
-//     m_face_attribute.m_attributes.resize(tets.size() * 4);
-
-//     for (int i = 0; i < vert_capacity(); i++) {
-//         m_vertex_attribute[i].m_pos = v_rational[i];
-//         m_vertex_attribute[i].m_posf = to_double(v_rational[i]);
-//     }
-
-//     auto faces = get_faces();
-//     if (faces.size() != f_num) {
-//         std::cout << "wrong face size!!" << std::endl;
-//         // exit(0);
-//     }
-
-//     for (size_t i = 0; i < faces.size(); i++) {
-//         size_t f_id = faces[i].fid(*this);
-//         m_face_attribute[f_id].m_is_surface_fs = is_f_on_surface[i];
-//         // m_face_attribute[f_id].m_is_on_bbox = is_f_on_bbox[f_id];
-//     }
-
-//     // track bbox
-//     for (size_t i = 0; i < faces.size(); i++) {
-//         auto vs = get_face_vertices(faces[i]);
-//         std::array<size_t, 3> vids = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
-//         int on_bbox = -1;
-//         for (int k = 0; k < 3; k++) {
-//             if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_min[k] &&
-//                 m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_min[k] &&
-//                 m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_min[k]) {
-//                 on_bbox = k * 2;
-//                 break;
-//             }
-//             if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_max[k] &&
-//                 m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_max[k] &&
-//                 m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_max[k]) {
-//                 on_bbox = k * 2 + 1;
-//                 break;
-//             }
-//         }
-//         if (on_bbox < 0) continue;
-//         auto fid = faces[i].fid(*this);
-//         m_face_attribute[fid].m_is_bbox_fs = on_bbox;
-
-//         for (size_t vid : vids) {
-//             m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
-//         }
-//     }
-
-//     for_each_vertex(
-//         [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
-
-
-//     // set v surface and rounding
-//     auto vertices = get_vertices();
-
-//     std::atomic_int cnt_round(0);
-//     for (auto v : vertices) {
-//         size_t v_id = v.vid(*this);
-//         m_vertex_attribute[v_id].m_is_on_surface = is_v_on_surface[v_id];
-//         if (round(v)) cnt_round++;
-//     }
-
-//     wmtk::logger().info("cnt_round {}/{}", cnt_round, vert_capacity());
-
-//     // init tet quality
-//     auto& m = *this;
-//     for_each_tetra([&m](auto& t) { m.m_tet_attribute[t.tid(m)].m_quality = m.get_quality(t); });
-
-
-//     input.close();
-// }
 
 void TetWildMesh::find_open_boundary()
 {

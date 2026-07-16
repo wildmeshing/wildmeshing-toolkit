@@ -482,7 +482,9 @@ bool TetMesh::collapse_edge_conn(
     const size_t v_C = v_C_tuple.value().switch_face().switch_edge().switch_vertex().vid();
     const size_t v_A = tt.switch_edge().switch_vertex().vid();
     const size_t v_D = tt.switch_face().switch_edge().switch_vertex().vid();
-
+    assert(v_A != v_B && v_A != v_C && v_A != v_D);
+    assert(v_B != v_C && v_B != v_D);
+    assert(v_C != v_D);
 
     // should be a copy, for the purpose of rollback
     const auto n1_t_ids =

@@ -391,6 +391,7 @@ InputData read_mesh(
 
     const int NUM_THREADS = json_params["num_threads"];
     const bool debug_output = json_params["DEBUG_output"];
+    const bool perform_sanity_checks = json_params["DEBUG_sanity_checks"];
     const bool preserve_topology = json_params["preserve_topology"];
     const bool skip_simplify = json_params["skip_simplify"];
     const double epsr_simplify = json_params["eps_simplify_rel"];
@@ -406,6 +407,7 @@ InputData read_mesh(
 
     // convert mesh into tet mesh
     EmbedSurface image_mesh(input_paths, input_transforms, tol_rel, tol_abs);
+    image_mesh.m_perform_sanity_checks = perform_sanity_checks;
 
     if (debug_output) {
         image_mesh.write_surf_off(output_filename + "_input.off");

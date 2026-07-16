@@ -158,6 +158,12 @@ bool SimWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
     }
     assert(cache.changed_energies.size() == cache.changed_tids.size());
 
+    if (m_params.perform_sanity_checks) {
+        if (!link_condition(loc)) {
+            log_and_throw_error("link condition failed for edge ({}, {})", v1_id, v2_id);
+        }
+    }
+
     //
     const auto n12_locs = get_incident_tids_for_edge(loc);
     for (const size_t& tid : n12_locs) {
