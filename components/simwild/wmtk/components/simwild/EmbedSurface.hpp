@@ -48,7 +48,29 @@ void embed_surface(
     const MatrixXi& T_vol,
     MatrixXr& V_emb,
     MatrixXi& T_emb,
-    MatrixXi& F_on_surface);
+    MatrixXi& F_on_surface,
+    const bool perform_sanity_checks = false);
+
+/**
+ * @brief Embed a surface in the given volumetric mesh.
+ *
+ * @param V_surface Surface vertices.
+ * @param F_surface Surface faces (triangles).
+ * @param V_vol Tet vertices.
+ * @param T_vol Tets.
+ * @param[out] V_emb Vertices after embedding.
+ * @param[out] T_emb Tets after embedding.
+ * @param[out] F_on_surface Faces that are on the surface.
+ */
+void embed_surface_old(
+    const MatrixXd& V_surface,
+    const MatrixXi& F_surface,
+    const MatrixXd& V_vol,
+    const MatrixXi& T_vol,
+    MatrixXr& V_emb,
+    MatrixXi& T_emb,
+    MatrixXi& F_on_surface,
+    const bool perform_sanity_checks = false);
 
 /**
  * A class for reading an image and converting it into a tet mesh.
@@ -150,6 +172,7 @@ private:
 
 public:
     bool m_smooth_surface = false;
+    bool m_perform_sanity_checks = false;
 };
 
 } // namespace wmtk::components::simwild

@@ -199,11 +199,6 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
         mesh.simplify();
     }
 
-    const std::string tags_selection_str = json_params["tags_selection"];
-    const auto tags_selection_expr =
-        expression_parser::parse(tags_selection_str, mesh.m_tag_name_to_id);
-    logger().info("Parsed tags_selection expression: {}", tags_selection_expr->to_string());
-
     // /////////apply operation
     apply_operation(mesh, json_params);
 

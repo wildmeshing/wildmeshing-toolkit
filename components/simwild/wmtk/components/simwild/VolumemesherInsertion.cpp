@@ -28,16 +28,19 @@ void SimWildMesh::init_from_image(
     m_tet_attribute.m_attributes.resize(T.rows());
     m_face_attribute.m_attributes.resize(T.rows() * 4);
 
+    auto& VA = m_vertex_attribute;
+
     for (int i = 0; i < vert_capacity(); i++) {
-        m_vertex_attribute[i].m_pos = V.row(i);
-        m_vertex_attribute[i].m_posf = to_double(m_vertex_attribute[i].m_pos);
+        VA[i].m_pos = V.row(i);
+        VA[i].m_posf = to_double(VA[i].m_pos);
     }
 
-    // sanity check
-    for (const Tuple& t : get_tets()) {
-        if (is_inverted(t)) {
-            log_and_throw_error("Inverted tet in the input!");
-        }
+    if (m_params.perform_sanity_checks) {
+        for_each_tetra([this](const Tuple& t) {
+            if (is_inverted(t)) {
+                log_and_throw_error("Inverted tet in the input!");
+            }
+        });
     }
 
     // add tags
@@ -61,19 +64,114 @@ void SimWildMesh::init_from_image(
         init_vertex_order();
     }
 
-    // rounding
-    size_t cnt_round = 0;
-    const auto vertices = get_vertices();
-    for (const Tuple& v : vertices) {
-        if (round(v)) {
-            cnt_round++;
-        }
+    if (m_params.perform_sanity_checks) {
+        logger().info("Check tet orientation after initialization...");
+        for_each_tetra([this](const Tuple& t) {
+            if (is_inverted(t)) {
+                log_and_throw_error("Inverted tet in input!");
+            }
+        });
+        logger().info("done");
     }
-    logger().info("Rounded vertices {} / {}", cnt_round, vertices.size());
+
+    // rounding
+    {
+        std::vector<bool> is_direct_point(vert_capacity(), false);
+        // mark everything as rounded where rational and double are the same
+        for (int i = 0; i < vert_capacity(); i++) {
+            const Vector3r& r = VA[i].m_pos;
+            const Vector3r r_from_d = to_rational(VA[i].m_posf);
+            is_direct_point[i] = (r_from_d == r);
+            VA[i].m_is_rounded = is_direct_point[i];
+        }
+
+        // Round the indirect vertices in parallel. Rounding snaps m_pos to its double
+        // and may not invert any incident tet, so it is not independent across adjacent
+        // vertices and the old code did it serially (round() per vertex, an exact-
+        // rational inversion check over each vertex's incident tets). Instead, snap all
+        // indirect vertices at once and then revalidate/revert the few conflicts:
+        //   1. snap every not-yet-rounded (indirect) vertex to its double (parallel);
+        //   2. scan all tets (parallel) -- any inverted tet must contain an indirect
+        //      vertex (a direct vertex never moves, so cannot cause an inversion), so
+        //      revert those indirect vertices to their exact rational coordinate;
+        //   3. repeat until no tet is inverted.
+        // This terminates: every non-empty pass un-rounds at least one vertex, and the
+        // all-rational mesh is valid. Direct points are skipped throughout.
+        for_each_vertex([&](const Tuple& v) {
+            const size_t i = v.vid(*this);
+            if (!VA[i].m_is_rounded) {
+                VA[i].m_pos = to_rational(VA[i].m_posf);
+                VA[i].m_is_rounded = true;
+            }
+        });
+
+        while (true) {
+            tbb::concurrent_vector<size_t> to_revert;
+            for_each_tetra([&](const Tuple& t) {
+                if (is_inverted(t)) {
+                    for (const size_t vid : oriented_tet_vids(t)) {
+                        if (!is_direct_point[vid] && VA[vid].m_is_rounded) {
+                            to_revert.push_back(vid);
+                        }
+                    }
+                }
+            });
+            if (to_revert.empty()) {
+                break;
+            }
+            for (const size_t vid : to_revert) {
+                if (VA[vid].m_is_rounded) {
+                    VA[vid].m_pos = V.row(vid);
+                    VA[vid].m_is_rounded = false;
+                }
+            }
+        }
+
+        const auto vertices = get_vertices();
+        size_t cnt_round_parallel = 0;
+        for (const Tuple& v : vertices) {
+            if (VA[v.vid(*this)].m_is_rounded) {
+                ++cnt_round_parallel;
+            }
+        }
+
+        // Final serial sweep: the parallel batch reverts a vertex whenever it lies in
+        // any inverted tet, which can over-revert (a vertex may round fine once its
+        // neighbours are committed). Retry the leftovers one at a time -- round() is a
+        // no-op for the already-rounded majority, so this only pays for the few that
+        // remain, and recovers vertices the batch conservatively reverted.
+        for (const Tuple& v : vertices) {
+            round(v);
+        }
+
+        size_t cnt_round = 0;
+        for (const Tuple& v : vertices) {
+            if (VA[v.vid(*this)].m_is_rounded) {
+                ++cnt_round;
+            }
+        }
+
+        logger().info(
+            "Rounded vertices {}/{} (parallel {}, serial recovered {})",
+            cnt_round,
+            vertices.size(),
+            cnt_round_parallel,
+            cnt_round - cnt_round_parallel);
+    }
 
     // init qualities
     for_each_tetra(
         [this](const Tuple& t) { m_tet_attribute[t.tid(*this)].m_quality = get_quality(t); });
+
+    if (m_params.perform_sanity_checks) {
+        logger().info("Check tet orientation after rounding...");
+        for_each_tetra([this](const Tuple& t) {
+            if (is_inverted(t)) {
+                log_and_throw_error("Inverted tet in input after rounding!");
+            }
+        });
+        logger().info("done");
+    }
 }
 
 void SimWildMesh::init_from_image(
