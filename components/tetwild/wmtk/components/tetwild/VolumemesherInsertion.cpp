@@ -455,6 +455,13 @@ void TetWildMesh::insertion_by_volumeremesher_old(
         logger().info("done");
     }
 
+    std::vector<double> edge_vrt_coords;
+    std::vector<uint32_t> edge_indexes;
+    std::vector<double> point_coords;
+    std::vector<std::vector<std::array<uint32_t, 4>>> out_triangle_provenance;
+    std::vector<std::vector<std::array<uint32_t, 3>>> out_edge_provenance;
+    std::vector<std::array<uint32_t, 2>> out_point_provenance;
+
     // Step 3: compute the exact arrangement. This intersects the input triangles
     // with the background tets and returns the conforming polygonal complex in
     // the embedded_* / out_* outputs declared above. The trailing `true`
@@ -473,6 +480,12 @@ void TetWildMesh::insertion_by_volumeremesher_old(
         embedded_facets_on_input,
         cells_with_faces_on_input,
         final_tets_parent_faces,
+        edge_vrt_coords,
+        edge_indexes,
+        point_coords,
+        out_triangle_provenance,
+        out_edge_provenance,
+        out_point_provenance,
         true);
 
     // Step 4a: copy the arrangement vertices into wmtk rational Vector3r. The
@@ -991,6 +1004,13 @@ void TetWildMesh::insertion_by_volumeremesher(
         logger().warn("Check done");
     }
 
+    std::vector<double> edge_vrt_coords;
+    std::vector<uint32_t> edge_indexes;
+    std::vector<double> point_coords;
+    std::vector<std::vector<std::array<uint32_t, 4>>> out_triangle_provenance;
+    std::vector<std::vector<std::array<uint32_t, 3>>> out_edge_provenance;
+    std::vector<std::array<uint32_t, 2>> out_point_provenance;
+
     // Step 3: run the exact arrangement (identical call to the "_old" variant).
     // volumeremesher embed
     vol_rem::embed_tri_in_poly_mesh(
@@ -1006,6 +1026,12 @@ void TetWildMesh::insertion_by_volumeremesher(
         embedded_facets_on_input,
         cells_with_faces_on_input,
         final_tets_parent_faces,
+        edge_vrt_coords,
+        edge_indexes,
+        point_coords,
+        out_triangle_provenance,
+        out_edge_provenance,
+        out_point_provenance,
         true);
 
     // Step 4a: copy the arrangement vertices to exact rational Vector3r (same as

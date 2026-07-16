@@ -52,7 +52,9 @@ void SimWildMesh::mesh_improvement(int max_its)
 
     compute_vertex_partition_morton();
 
-    // write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+    if (m_params.debug_output) {
+        write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+    }
 
     logger().info("========it pre========");
     local_operations({{0, 1, 0, 0}});

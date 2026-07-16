@@ -239,6 +239,13 @@ void embed_surface(
     std::vector<bool> cells_with_faces_on_input;
     std::vector<std::vector<uint32_t>> final_tets_parent_faces;
 
+    std::vector<double> edge_vrt_coords;
+    std::vector<uint32_t> edge_indexes;
+    std::vector<double> point_coords;
+    std::vector<std::vector<std::array<uint32_t, 4>>> out_triangle_provenance;
+    std::vector<std::vector<std::array<uint32_t, 3>>> out_edge_provenance;
+    std::vector<std::array<uint32_t, 2>> out_point_provenance;
+
     // Step 3: run the exact arrangement (identical call to the "_old" variant).
     // volumeremesher embed
     vol_rem::embed_tri_in_poly_mesh(
@@ -254,6 +261,12 @@ void embed_surface(
         embedded_facets_on_input,
         cells_with_faces_on_input,
         final_tets_parent_faces,
+        edge_vrt_coords,
+        edge_indexes,
+        point_coords,
+        out_triangle_provenance,
+        out_edge_provenance,
+        out_point_provenance,
         true);
 
     // Step 4a: copy the arrangement vertices to exact rational Vector3r (same as
@@ -609,6 +622,13 @@ void embed_surface_old(
     std::vector<bool> cells_with_faces_on_input;
     std::vector<std::vector<uint32_t>> final_tets_parent_faces;
 
+    std::vector<double> edge_vrt_coords;
+    std::vector<uint32_t> edge_indexes;
+    std::vector<double> point_coords;
+    std::vector<std::vector<std::array<uint32_t, 4>>> out_triangle_provenance;
+    std::vector<std::vector<std::array<uint32_t, 3>>> out_edge_provenance;
+    std::vector<std::array<uint32_t, 2>> out_point_provenance;
+
     // volumeremesher embed
     vol_rem::embed_tri_in_poly_mesh(
         tri_vrt_coord,
@@ -623,6 +643,12 @@ void embed_surface_old(
         embedded_facets_on_input,
         cells_with_faces_on_input,
         final_tets_parent_faces,
+        edge_vrt_coords,
+        edge_indexes,
+        point_coords,
+        out_triangle_provenance,
+        out_edge_provenance,
+        out_point_provenance,
         true);
 
     assert(embedded_vertices.size() % 3 == 0);
@@ -1214,7 +1240,7 @@ bool EmbedSurface::embed_surface(const bool flood_fill)
 
         for (const auto& f : faces) {
             if (face_set.count(f) > 0) {
-                log_and_throw_error("Face {} appears more than once in the tet list", f);
+                logger().warn("Face {} appears more than once in the tet list", f);
             }
             face_set.insert(f);
         }
