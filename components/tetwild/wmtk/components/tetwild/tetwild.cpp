@@ -7,6 +7,7 @@
 #include <jse/jse.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
+#include <cstdlib>
 #include <wmtk/io/read_triangle_mesh.hpp>
 
 #include <wmtk/components/shortest_edge_collapse/ShortestEdgeCollapse.h>
@@ -130,6 +131,17 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     params.debug_output = json_params["DEBUG_output"];
     params.perform_sanity_checks = json_params["DEBUG_sanity_checks"];
+
+    // Surface-edge swap (surface diagonal flip). Optional JSON keys with the
+    // Parameters defaults; env-var overrides are provided for quick A/B
+    // benchmarking without editing the config spec.
+    params.allow_surface_swap = json_params.value("allow_surface_swap", params.allow_surface_swap);
+    params.check_surface_topology =
+        json_params.value("check_surface_topology", params.check_surface_topology);
+    if (const char* e = std::getenv("TW_ALLOW_SURFACE_SWAP"))
+        params.allow_surface_swap = (std::string(e) != "0");
+    if (const char* e = std::getenv("TW_CHECK_SURFACE_TOPO"))
+        params.check_surface_topology = (std::string(e) == "1");
 
     std::vector<Eigen::Vector3d> verts;
     std::vector<std::array<size_t, 3>> tris;

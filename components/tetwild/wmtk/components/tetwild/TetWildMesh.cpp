@@ -72,6 +72,7 @@ void TetWildMesh::mesh_improvement(int max_its)
 
         ///energy check
         wmtk::logger().info("max energy {:.6} | stop {:.6}", max_energy, m_params.stop_energy);
+
         if (max_energy < m_params.stop_energy) break;
         consolidate_mesh();
 
@@ -516,6 +517,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
             }
             auto [max_energy, avg_energy] = get_max_avg_energy();
             wmtk::logger().info("swap max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+            wmtk::logger().info("cnt_surface_swap (cumulative) = {}", cnt_surface_swap.load());
             sanity_checks();
         } else if (i == 3) {
             for (int n = 0; n < ops[i]; n++) {
