@@ -29,6 +29,8 @@
 #include <bitset>
 #include <limits>
 #include <paraviewo/VTUWriter.hpp>
+#include <queue>
+#include <unordered_set>
 
 #include "orig/Args.h"
 #include "orig/MeshRefinement.h"
@@ -61,10 +63,8 @@ void TetWildMesh::mesh_improvement(int max_its)
     local_operations({{0, 1, 0, 0}}, false);
 
     ////operation loops
-    bool is_hit_min_edge_length = false;
-    const int M = 2;
-    int m = 0;
-    double pre_max_energy = 0., pre_avg_energy = 0.;
+    double pre_max_energy = 0.;
+    int refine_cooldown = 0; // iterations left before stuck-refine may fire again
     for (int it = 0; it < max_its; it++) {
         ///ops
         wmtk::logger().info("\n========it {}========", it);
@@ -89,25 +89,22 @@ void TetWildMesh::mesh_improvement(int max_its)
             wmtk::logger().info("All rounded!", cnt_round, cnt_verts);
         }
 
-        ///sizing field
-        if (it > 0 && pre_max_energy - max_energy < 5e-1 &&
-            (pre_avg_energy - avg_energy) / avg_energy < 0.1) {
-            m++;
-            if (m == M) {
-                wmtk::logger().info(">>>>adjust_sizing_field...");
-                is_hit_min_edge_length = adjust_sizing_field_serial(max_energy);
-                // is_hit_min_edge_length = adjust_sizing_field(max_energy);
-                wmtk::logger().info(">>>>adjust_sizing_field finished...");
-                m = 0;
-            }
-        } else {
-            m = 0;
-            pre_max_energy = max_energy;
-            pre_avg_energy = avg_energy;
+        /// sizing field: when the max energy stalls, refine around the worst
+        /// elements to escape stuck configurations (replaces the old global
+        /// adjust_sizing_field mechanism). After a refinement, wait
+        /// stuck_refine_cooldown iterations so the operations get full passes on
+        /// the new sizing field before more refinement is added.
+        if (refine_cooldown > 0) {
+            --refine_cooldown;
+        } else if (
+            m_params.stuck_refine && it > 0 && max_energy > m_params.stop_energy &&
+            (pre_max_energy - max_energy) <= m_params.stuck_refine_stall_eps * pre_max_energy) {
+            wmtk::logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", max_energy);
+            refine_sizing_around_worst();
+            wmtk::logger().info(">>>>stuck-refine finished...");
+            refine_cooldown = m_params.stuck_refine_cooldown;
         }
-        if (is_hit_min_edge_length) {
-            // todo: maybe to do sth
-        }
+        pre_max_energy = max_energy;
     }
 
     wmtk::logger().info("========it post========");
@@ -543,165 +540,98 @@ std::tuple<double, double> TetWildMesh::local_operations(
     return energy;
 }
 
-bool TetWildMesh::adjust_sizing_field_serial(double max_energy)
+size_t TetWildMesh::refine_sizing_around_worst()
 {
-    logger().info("#V = {}, #T = {}", vert_capacity(), tet_capacity());
+    const int num_worst = std::max(1, m_params.stuck_refine_num_worst);
+    const int n_rings = std::max(0, m_params.stuck_refine_rings);
+    const double factor = m_params.stuck_refine_factor;
+    const double floor = m_params.stuck_refine_min_scalar;
 
-    const double stop_filter_energy = m_params.stop_energy * 0.8;
-    double filter_energy = std::max(max_energy / 100, stop_filter_energy);
-    filter_energy = std::min(filter_energy, 100.);
-
-    const double recover_scalar = 1.5;
-    const double refine_scalar = 0.5;
-    const double min_refine_scalar = m_params.l_min / m_params.l;
-
-    // // outputs scale_multipliers
-    // std::vector<double> scale_multipliers(vert_capacity(), recover_scalar);
-
-    std::vector<Vector3d> pts;
-    std::map<size_t, double> pts_scalars;
-    std::queue<size_t> v_queue;
-
-    for (int i = 0; i < tet_capacity(); i++) {
-        const Tuple t = tuple_from_tet(i);
-        if (!t.is_valid(*this)) {
-            continue;
+    // Find the num_worst valid tets with the highest energy. `worst` is kept
+    // sorted ascending by quality, size <= num_worst (front = smallest kept).
+    std::vector<std::pair<double, size_t>> worst;
+    for (size_t t = 0; t < tet_capacity(); ++t) {
+        const Tuple tt = tuple_from_tet(t);
+        if (!tt.is_valid(*this)) continue;
+        const double q = m_tet_attribute[t].m_quality;
+        if (static_cast<int>(worst.size()) < num_worst) {
+            worst.emplace_back(q, t);
+            std::sort(worst.begin(), worst.end());
+        } else if (q > worst.front().first) {
+            worst.front() = {q, t};
+            std::sort(worst.begin(), worst.end());
         }
-        const size_t tid = t.tid(*this);
-        if (std::cbrt(m_tet_attribute[tid].m_quality) < filter_energy) {
-            continue;
-        }
-        const auto vs = oriented_tet_vids(t);
-        Vector3d c(0, 0, 0);
-        double s = 0;
-        for (int j = 0; j < 4; j++) {
-            c += (m_vertex_attribute[vs[j]].m_posf);
-            v_queue.emplace(vs[j]);
-            s = std::max(s, m_vertex_attribute[vs[j]].m_sizing_scalar);
-        }
-        pts_scalars[pts.size()] = s;
-        pts.emplace_back(c / 4);
     }
+    if (worst.empty()) return 0;
 
-    logger().info("filter energy = {}; Number of low quality tets {}", filter_energy, pts.size());
-
-    const double R = m_params.l * 1.8;
-
-    int sum = 0;
-    int adjcnt = 0;
-
-    KNN knn(pts);
-
-    bool is_hit_min_edge_length = false;
-    /**
-     * Iterate through all vertices.
-     * For each vertex, find all pts in the R-ball neighborhood.
-     * Compute scalar based on the distance to the point.
-     * Take smallest of all computed values.
-     *
-     * If no neighbor, multiply by recover_scalar.
-     */
-    for (int i = 0; i < vert_capacity(); i++) {
-        const Tuple v = tuple_from_vertex(i);
-        if (!v.is_valid(*this)) {
-            continue;
+    // Seed the region with the worst tets' vertices, then BFS n_rings hops.
+    std::unordered_set<size_t> region;
+    std::vector<size_t> frontier;
+    for (const auto& [q, tid] : worst) {
+        const auto vs = oriented_tet_vids(tid);
+        for (const size_t v : vs) {
+            if (region.insert(v).second) frontier.push_back(v);
         }
-        const size_t vid = v.vid(*this);
-        const auto& pos_v = m_vertex_attribute[vid].m_posf;
-
-        // all low quality tet centroids within R-ball of vertex
-        std::vector<nanoflann::ResultItem<uint32_t, double>> matches;
-        knn.r_nearest_neighbors(pos_v, R * R, matches);
-
-        auto& v_scalar = m_vertex_attribute[vid].m_sizing_scalar;
-
-        if (matches.empty()) {
-            // if no low quality tet within R-ball, increase sizing scalar to recover from previous
-            // refinement
-            v_scalar = std::min(recover_scalar * v_scalar, 1.0);
-            continue;
-        }
-
-        for (const auto& [index, sq_dist] : matches) {
-            const auto& pt = pts[index];
-            const double dist = std::sqrt(sq_dist);
-            const double R_tet = R * pts_scalars[index]; // scale R by sizing scalar of tet
-            if (dist > R_tet) {
-                continue;
+    }
+    for (int r = 0; r < n_rings && !frontier.empty(); ++r) {
+        std::vector<size_t> next;
+        for (const size_t v : frontier) {
+            for (const size_t u : get_one_ring_vids_for_vertex_adj(v)) {
+                if (region.insert(u).second) next.push_back(u);
             }
-            // linear interpolate between refine_scalar and 1 based on distance
-            // double u = dist / R * (1 - refine_scalar) + refine_scalar;
-            double u = dist / R_tet * (1 - refine_scalar) + refine_scalar;
-            double scalar = u * pts_scalars[index];
-            v_scalar = std::min(v_scalar, scalar);
         }
+        frontier.swap(next);
+    }
 
-        if (v_scalar < min_refine_scalar) {
-            v_scalar = min_refine_scalar;
-            is_hit_min_edge_length = true;
+    // Apply the multiplicative refinement, clamped at the floor.
+    std::vector<size_t> refined;
+    refined.reserve(region.size());
+    for (const size_t v : region) {
+        double& s = m_vertex_attribute[v].m_sizing_scalar;
+        const double ns = std::max(floor, s * factor);
+        if (ns < s) {
+            s = ns;
+            refined.push_back(v);
         }
     }
 
-    // std::vector<bool> visited(vert_capacity(), false);
-    // std::vector<size_t> cache_one_ring;
-    // // size_t vid;
+    // Grade the refined region into its surroundings (monotone, only lowers).
+    gradation_smooth_sizing(m_params.stuck_refine_gradation, refined);
 
-    // while (!v_queue.empty()) {
-    //     sum++;
-    //     size_t vid = v_queue.front();
-    //     v_queue.pop();
-    //     if (visited[vid]) {
-    //         continue;
-    //     }
-    //     visited[vid] = 1;
-    //     adjcnt++;
+    // m_quality stores AMIPS^3; report its cube root to match the "max energy".
+    logger().info(
+        "[stuck-refine] worst {} tets (maxE {:.4}), refined {} of {} region vertices",
+        worst.size(),
+        std::cbrt(worst.back().first),
+        refined.size(),
+        region.size());
+    return refined.size();
+}
 
-    //     const Vector3d& pos_v = m_vertex_attribute[vid].m_posf;
-    //     double sq_dist = 0.;
-    //     uint32_t idx;
-    //     knn.nearest_neighbor(pos_v, idx, sq_dist);
+void TetWildMesh::gradation_smooth_sizing(double grade, const std::vector<size_t>& seeds)
+{
+    if (grade <= 1.0) return;
 
-    //     const double dist = std::sqrt(sq_dist);
-
-    //     if (dist > R) { // outside R-ball, unmark.
-    //         continue;
-    //     }
-
-    //     scale_multipliers[vid] = std::min(
-    //         scale_multipliers[vid],
-    //         dist / R * (1 - refine_scalar) + refine_scalar); // linear interpolate
-
-    //     const auto vids = get_one_ring_vids_for_vertex_adj(vid, cache_one_ring);
-    //     for (size_t n_vid : vids) {
-    //         if (visited[n_vid]) {
-    //             continue;
-    //         }
-    //         v_queue.push(n_vid);
-    //     }
-    // }
-
-    // std::cout << sum << " " << adjcnt << std::endl;
-
-    // bool is_hit_min_edge_length = false;
-    // for (int i = 0; i < vert_capacity(); i++) {
-    //     const Tuple v = tuple_from_vertex(i);
-    //     if (!v.is_valid(*this)) {
-    //         continue;
-    //     }
-    //     const size_t vid = v.vid(*this);
-    //     auto& v_attr = m_vertex_attribute[vid];
-
-    //     const double new_scale = v_attr.m_sizing_scalar * scale_multipliers[vid];
-    //     if (new_scale > 1)
-    //         v_attr.m_sizing_scalar = 1;
-    //     else if (new_scale < min_refine_scalar) {
-    //         is_hit_min_edge_length = true;
-    //         v_attr.m_sizing_scalar = min_refine_scalar;
-    //     } else
-    //         v_attr.m_sizing_scalar = new_scale;
-    // }
-
-    return is_hit_min_edge_length;
+    // Min-relaxation (Dijkstra/Bellman-Ford style): vertex u caps each neighbor
+    // at grade * sizing[u]. Only ever decreases sizings, so it spreads more
+    // refinement outward without raising the already-refined (seed) values.
+    // Sizings are always in (0, 1], so once grade*sizing[u] >= 1 the cap can no
+    // longer lower any neighbor and propagation stops -- this bounds the halo.
+    std::queue<size_t> q;
+    for (const size_t v : seeds) q.push(v);
+    while (!q.empty()) {
+        const size_t u = q.front();
+        q.pop();
+        const double cap = grade * m_vertex_attribute[u].m_sizing_scalar;
+        if (cap >= 1.0) continue;
+        for (const size_t w : get_one_ring_vids_for_vertex_adj(u)) {
+            double& sw = m_vertex_attribute[w].m_sizing_scalar;
+            if (sw > cap) {
+                sw = cap;
+                q.push(w);
+            }
+        }
+    }
 }
 
 void bfs_orient(const Eigen::MatrixXi& F, Eigen::MatrixXi& FF, Eigen::VectorXi& C)

@@ -572,7 +572,29 @@ public:
 
     void output_tracked_surface(std::string output_file);
 
-    bool adjust_sizing_field_serial(double max_energy);
+    /**
+     * @brief Escape a stuck max energy by refining the sizing field around the
+     * worst elements.
+     *
+     * Finds the m_params.stuck_refine_num_worst tets with the highest energy,
+     * gathers all vertices within m_params.stuck_refine_rings graph rings of
+     * them, and multiplies each such vertex's m_sizing_scalar by
+     * m_params.stuck_refine_factor (clamped at m_params.stuck_refine_min_scalar).
+     * Then runs gradation_smooth_sizing so the refined region blends smoothly
+     * into the surrounding resolution. Replaces the old global
+     * adjust_sizing_field mechanism. Returns the number of vertices refined.
+     */
+    size_t refine_sizing_around_worst();
+
+    /**
+     * @brief Monotone (only-decreasing) gradation smoothing of the sizing field.
+     *
+     * Enforces m_sizing_scalar[v] <= grade * m_sizing_scalar[u] for every edge
+     * (u,v), propagating outward from `seeds` with a min-relaxation. It never
+     * raises a sizing value, so it only ever spreads more refinement into the
+     * halo around already-refined vertices, avoiding sharp resolution jumps.
+     */
+    void gradation_smooth_sizing(double grade, const std::vector<size_t>& seeds);
 
     // for open boundary
     void find_open_boundary();

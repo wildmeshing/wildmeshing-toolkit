@@ -25,6 +25,36 @@ struct Parameters
     // across each swap pass. Off by default (used by tests / debugging).
     bool check_surface_topology = false;
 
+    // ---- Stuck-element sizing refinement --------------------------------
+    // When the max energy stops improving, aggressively refine the sizing field
+    // around the worst elements so subsequent split/smooth/swap get more DOF to
+    // untangle stubborn (surface) slivers. Replaces the old global
+    // adjust_sizing_field mechanism.
+    bool stuck_refine = true;
+    // Trigger threshold: fire when the max energy did not improve by more than
+    // this *fraction* since the previous iteration, i.e. refine when
+    // (prev_max - max) <= stall_eps * prev_max. 0 => only when it does not
+    // improve at all (or gets worse).
+    double stuck_refine_stall_eps = 0.01;
+    // Cooldown: after a refinement, skip this many improvement iterations before
+    // refining again, so the operations get full passes to act on the new sizing
+    // field before more refinement is added. 0 => may refine every iteration.
+    int stuck_refine_cooldown = 2;
+    // Number of worst tets (by energy) whose neighborhoods are refined.
+    int stuck_refine_num_worst = 50;
+    // Graph rings around each worst tet's vertices included in the refinement.
+    int stuck_refine_rings = 3;
+    // Multiplicative reduction of m_sizing_scalar per refinement (0.5 => /2).
+    double stuck_refine_factor = 0.5;
+    // Lower bound on m_sizing_scalar. Much smaller than the old l_min/l floor;
+    // still far above the position-rounding scale so it stays numerically safe.
+    double stuck_refine_min_scalar = 1e-3;
+    // Gradation cap for the monotone sizing smoothing: neighboring sizings may
+    // differ by at most this factor. The smoothing only ever *lowers* sizings
+    // (spreads refinement outward), never raises the refined values, avoiding
+    // sharp resolution jumps that make operations ill-conditioned.
+    double stuck_refine_gradation = 2.0;
+
     double splitting_l2 = -1.; // the lower bound length (squared) for edge split
     double collapsing_l2 =
         std::numeric_limits<double>::max(); // the upper bound length (squared) for edge collapse

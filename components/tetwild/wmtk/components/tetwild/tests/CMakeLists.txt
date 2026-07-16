@@ -13,6 +13,7 @@ set(SRC_FILES
     test_operation_smooth.cpp
     test_operations.cpp
     test_surface_swap.cpp
+    test_sizing_refine.cpp
     test_runner.cpp
     )
 
