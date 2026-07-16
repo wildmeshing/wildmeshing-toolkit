@@ -384,6 +384,27 @@ public:
     std::tuple<double, double> get_max_avg_energy();
 
     /**
+     * @brief m_quality threshold above which a tet is "active" (worth operating
+     * on) for the skip-good-regions filter. m_quality stores AMIPS^3 and the
+     * energy is its cube root, so a tet is active when its energy is at least
+     * skip_good_regions_margin * stop_energy, i.e. m_quality >=
+     * (margin * stop_energy)^3.
+     */
+    double active_quality_threshold() const
+    {
+        const double e = m_params.skip_good_regions_margin * m_params.stop_energy;
+        return e * e * e;
+    }
+
+    /**
+     * @brief vids of the vertices incident to at least one "active" tet
+     * (m_quality >= active_quality_threshold()). Used by the skip-good-regions
+     * filter to restrict smoothing to non-good regions (smoothing a vertex
+     * surrounded by good tets does nothing).
+     */
+    std::vector<size_t> active_vertices() const;
+
+    /**
      * @brief Compute the winding number.
      *
      * If `vertices` and `faces` are empty, compute the winding number for the tracked surface.

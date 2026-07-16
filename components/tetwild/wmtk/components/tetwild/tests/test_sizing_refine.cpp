@@ -160,3 +160,36 @@ TEST_CASE("stuck-refine-disabled-noop", "[tetwild_operation][stuck_refine]")
     CHECK(sz(mesh, 2) == 1.0);
     CHECK(sz(mesh, 3) == 1.0);
 }
+
+TEST_CASE("skip-good-regions-active-vertices", "[tetwild_operation][skip_good_regions]")
+{
+    Parameters params;
+    params.init(Vector3d(-1, -1, -1), Vector3d(12, 2, 2));
+    params.stop_energy = 100;
+    params.skip_good_regions_margin = 0.9; // active energy >= 90 -> m_quality >= 90^3 = 729000
+
+    SampleEnvelope env;
+    TetWildMesh mesh(params, env, 1);
+    build_two_tets(mesh);
+
+    SECTION("only the bad tet's vertices are active")
+    {
+        mesh.m_tet_attribute[0].m_quality = 1e9; // energy 1000 >= 90 -> active
+        mesh.m_tet_attribute[1].m_quality = 1000; // energy 10 < 90 -> good
+        auto av = mesh.active_vertices();
+        std::sort(av.begin(), av.end());
+        CHECK(av == std::vector<size_t>{0, 1, 2, 3});
+    }
+    SECTION("all-good -> no active vertices")
+    {
+        mesh.m_tet_attribute[0].m_quality = 1000;
+        mesh.m_tet_attribute[1].m_quality = 1000;
+        CHECK(mesh.active_vertices().empty());
+    }
+    SECTION("both bad -> every vertex active")
+    {
+        mesh.m_tet_attribute[0].m_quality = 1e9;
+        mesh.m_tet_attribute[1].m_quality = 1e9;
+        CHECK(mesh.active_vertices().size() == 8);
+    }
+}
