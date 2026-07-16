@@ -143,6 +143,24 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     if (const char* e = std::getenv("TW_CHECK_SURFACE_TOPO"))
         params.check_surface_topology = (std::string(e) == "1");
 
+    // Stuck-element sizing refinement.
+    params.stuck_refine = json_params.value("stuck_refine", params.stuck_refine);
+    params.stuck_refine_stall_eps =
+        json_params.value("stuck_refine_stall_eps", params.stuck_refine_stall_eps);
+    params.stuck_refine_cooldown =
+        json_params.value("stuck_refine_cooldown", params.stuck_refine_cooldown);
+    params.stuck_refine_num_worst =
+        json_params.value("stuck_refine_num_worst", params.stuck_refine_num_worst);
+    params.stuck_refine_rings = json_params.value("stuck_refine_rings", params.stuck_refine_rings);
+    params.stuck_refine_factor =
+        json_params.value("stuck_refine_factor", params.stuck_refine_factor);
+    params.stuck_refine_min_scalar =
+        json_params.value("stuck_refine_min_scalar", params.stuck_refine_min_scalar);
+    params.stuck_refine_gradation =
+        json_params.value("stuck_refine_gradation", params.stuck_refine_gradation);
+    if (const char* e = std::getenv("TW_STUCK_REFINE"))
+        params.stuck_refine = (std::string(e) != "0");
+
     std::vector<Eigen::Vector3d> verts;
     std::vector<std::array<size_t, 3>> tris;
     std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax;
