@@ -1420,10 +1420,20 @@ size_t TetWildMesh::get_order_of_vertex(const size_t vid) const
 
 void TetWildMesh::init_vertex_order()
 {
-    for (const Tuple& t : get_vertices()) {
-        const size_t vid = t.vid(*this);
-        m_vertex_attribute[vid].m_order = compute_vertex_order(vid);
-    }
+    // Per-vertex, independent: compute_vertex_order is const (reads connectivity
+    // only) and each vid writes only its own m_order slot.
+    const std::vector<Tuple> vs = get_vertices();
+    wmtk::task_arena arena(std::max(1, NUM_THREADS));
+    arena.execute([&] {
+        wmtk::parallel_for(
+            wmtk::blocked_range<size_t>(0, vs.size()),
+            [&](wmtk::blocked_range<size_t> range) {
+                for (size_t k = range.begin(); k < range.end(); ++k) {
+                    const size_t vid = vs[k].vid(*this);
+                    m_vertex_attribute[vid].m_order = compute_vertex_order(vid);
+                }
+            });
+    });
 }
 
 bool TetWildMesh::check_vertex_param_type()
