@@ -1,7 +1,7 @@
 #include <igl/predicates/ear_clipping.h>
 #include <fstream>
 #include <set>
-#include <wmtk/threading/Concurrency.hpp>
+#include <wmtk/threading/concurrent_vector.hpp>
 #include <wmtk/utils/predicates.hpp>
 #include "TetWildMesh.h"
 

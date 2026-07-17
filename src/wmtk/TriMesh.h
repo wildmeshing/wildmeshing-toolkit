@@ -5,13 +5,9 @@
 #include <wmtk/Types.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
+#include <wmtk/threading/enumerable_thread_specific.hpp>
+#include <wmtk/threading/spin_mutex.hpp>
 #include <wmtk/utils/Logger.hpp>
-
-// clang-format off
-#include <wmtk/utils/DisableWarnings.hpp>
-#include <wmtk/threading/Concurrency.hpp>
-#include <wmtk/utils/EnableWarnings.hpp>
-// clang-format on
 
 #include <algorithm>
 #include <array>

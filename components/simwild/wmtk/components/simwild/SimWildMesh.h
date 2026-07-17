@@ -8,6 +8,11 @@
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/threading/concurrent_map.hpp>
+#include <wmtk/threading/enumerable_thread_specific.hpp>
+#include <wmtk/threading/parallel_for.hpp>
+#include <wmtk/threading/parallel_sort.hpp>
+#include <wmtk/threading/task_arena.hpp>
 
 #include "ConnectedComponent.hpp"
 #include "Parameters.h"
@@ -15,9 +20,8 @@
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <fastenvelope/FastEnvelope.h>
-#include <wmtk/threading/Concurrency.hpp>
-#include <wmtk/utils/EnableWarnings.hpp>
 #include <VolumeRemesher/embed.h>
+#include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
 #include <igl/remove_unreferenced.h>

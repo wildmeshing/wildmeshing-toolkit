@@ -1,5 +1,8 @@
 #include "IsotropicRemeshing.h"
-#include <wmtk/threading/Concurrency.hpp>
+#include <wmtk/threading/concurrent_vector.hpp>
+#include <wmtk/threading/parallel_for.hpp>
+#include <wmtk/threading/parallel_sort.hpp>
+#include <wmtk/threading/task_arena.hpp>
 
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>

@@ -19,7 +19,7 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
-#include <wmtk/threading/Concurrency.hpp>
+#include <wmtk/threading/parallel_for.hpp>
 
 #include <algorithm>
 

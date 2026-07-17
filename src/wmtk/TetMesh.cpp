@@ -1,10 +1,10 @@
 #include <wmtk/TetMesh.h>
 
 #include <wmtk/AttributeCollection.hpp>
+#include <wmtk/threading/parallel_for.hpp>
+#include <wmtk/threading/task_arena.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
-
-#include <wmtk/threading/Concurrency.hpp>
 
 namespace wmtk {
 

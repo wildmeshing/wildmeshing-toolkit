@@ -1,5 +1,9 @@
 #include "QSlimMesh.h"
-#include <wmtk/threading/Concurrency.hpp>
+#include <wmtk/threading/concurrent_vector.hpp>
+#include <wmtk/threading/enumerable_thread_specific.hpp>
+#include <wmtk/threading/parallel_for.hpp>
+#include <wmtk/threading/parallel_sort.hpp>
+#include <wmtk/threading/task_arena.hpp>
 
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/VectorUtils.h>

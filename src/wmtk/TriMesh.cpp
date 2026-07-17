@@ -1,16 +1,12 @@
 #include <igl/is_edge_manifold.h>
 #include <igl/writeDMAT.h>
 #include <wmtk/TriMesh.h>
+#include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
+#include <wmtk/threading/parallel_for.hpp>
+#include <wmtk/threading/task_arena.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
-#include "wmtk/utils/VectorUtils.h"
-
-// clang-format off
-#include <wmtk/utils/DisableWarnings.hpp>
-#include <wmtk/threading/Concurrency.hpp>
-#include <wmtk/utils/EnableWarnings.hpp>
-// clang-format on
 
 using namespace wmtk;
 

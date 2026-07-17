@@ -1,5 +1,7 @@
 #include "InsertTriangleUtils.hpp"
-#include <wmtk/threading/Concurrency.hpp>
+
+#include <wmtk/threading/concurrent_map.hpp>
+#include <wmtk/threading/concurrent_vector.hpp>
 
 #include <igl/remove_duplicate_vertices.h>
 #include <map>

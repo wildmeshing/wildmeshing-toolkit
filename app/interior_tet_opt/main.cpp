@@ -13,7 +13,7 @@
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <wmtk/threading/Concurrency.hpp>
+#include <wmtk/threading/concurrent_vector.hpp>
 #include <CLI/CLI.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on

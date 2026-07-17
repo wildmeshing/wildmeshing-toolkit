@@ -1,8 +1,8 @@
-#include <wmtk/threading/Concurrency.hpp>
 #pragma once
 
 #include <wmtk/TetMesh.h>
 #include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/threading/enumerable_thread_specific.hpp>
 #include "Parameters.h"
 #include "SimplicialComplexBVH.hpp"
 

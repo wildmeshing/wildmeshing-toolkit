@@ -1,14 +1,16 @@
 #pragma once
 
-#include "wmtk/TetMesh.h"
-#include "wmtk/TriMesh.h"
-#include "wmtk/utils/Logger.hpp"
+#include <wmtk/TetMesh.h>
+#include <wmtk/TriMesh.h>
+#include <wmtk/threading/concurrent_priority_queue.hpp>
+#include <wmtk/threading/task_arena.hpp>
+#include <wmtk/threading/task_group.hpp>
+#include <wmtk/utils/Logger.hpp>
 
 // clang-format off
 #include <functional>
 #include <limits>
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <wmtk/threading/Concurrency.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 

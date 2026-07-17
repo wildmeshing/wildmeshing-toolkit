@@ -1,12 +1,9 @@
 #include "partition_utils.hpp"
 
-// clang-format off
-#include <wmtk/utils/DisableWarnings.hpp>
-#include <wmtk/threading/Concurrency.hpp>
-#include <wmtk/utils/EnableWarnings.hpp>
-// clang-format on
-
 #include <wmtk/utils/Morton.h>
+#include <wmtk/threading/parallel_for.hpp>
+#include <wmtk/threading/parallel_sort.hpp>
+#include <wmtk/threading/task_arena.hpp>
 
 void wmtk::partition_vertex_morton(
     size_t vert_size,

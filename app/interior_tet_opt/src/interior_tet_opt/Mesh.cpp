@@ -1,15 +1,16 @@
 #include "Mesh.hpp"
 #include <Eigen/src/Core/functors/UnaryFunctors.h>
 #include <igl/predicates/predicates.h>
+#include <wmtk/utils/AMIPS.h>
 #include <wmtk/utils/Morton.h>
 #include <cassert>
 #include <cmath>
-#include "wmtk/ExecutionScheduler.hpp"
-#include "wmtk/utils/AMIPS.h"
-#include "wmtk/utils/ExecutorUtils.hpp"
-#include "wmtk/utils/Logger.hpp"
-#include "wmtk/utils/TetraQualityUtils.hpp"
-#include "wmtk/utils/io.hpp"
+#include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/threading/concurrent_vector.hpp>
+#include <wmtk/utils/ExecutorUtils.hpp>
+#include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/TetraQualityUtils.hpp>
+#include <wmtk/utils/io.hpp>
 
 namespace app::interior_tet_opt {
 

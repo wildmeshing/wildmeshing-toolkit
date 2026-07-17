@@ -9,7 +9,12 @@
 #include "wmtk/utils/InsertTriangleUtils.hpp"
 #include "wmtk/utils/Logger.hpp"
 
-#include <wmtk/threading/Concurrency.hpp>
+#include <wmtk/threading/concurrent_priority_queue.hpp>
+#include <wmtk/threading/concurrent_vector.hpp>
+#include <wmtk/threading/enumerable_thread_specific.hpp>
+#include <wmtk/threading/parallel_for.hpp>
+#include <wmtk/threading/task_arena.hpp>
+#include <wmtk/threading/task_group.hpp>
 
 #include <random>
 #include <unordered_set>

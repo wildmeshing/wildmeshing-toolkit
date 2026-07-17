@@ -5,7 +5,7 @@
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <wmtk/threading/Concurrency.hpp>
+#include <wmtk/threading/enumerable_thread_specific.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 

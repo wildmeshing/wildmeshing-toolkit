@@ -1,4 +1,4 @@
-#include <wmtk/threading/Concurrency.hpp>
+#include <wmtk/threading/enumerable_thread_specific.hpp>
 #include "TetWildMesh.h"
 #include "wmtk/TetMesh.h"
 
@@ -7,6 +7,7 @@
 #include <atomic>
 #include <unordered_set>
 #include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/threading/concurrent_vector.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
 

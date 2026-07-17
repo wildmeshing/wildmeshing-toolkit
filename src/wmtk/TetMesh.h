@@ -5,9 +5,9 @@
 #include <wmtk/Types.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
+#include <wmtk/threading/enumerable_thread_specific.hpp>
+#include <wmtk/threading/spin_mutex.hpp>
 #include <wmtk/utils/Logger.hpp>
-
-#include <wmtk/threading/Concurrency.hpp>
 
 #include <array>
 #include <atomic>

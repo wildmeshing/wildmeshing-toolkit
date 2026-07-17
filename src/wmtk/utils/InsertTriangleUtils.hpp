@@ -1,13 +1,9 @@
 #pragma once
 
-#include "wmtk/TetMesh.h"
-#include "wmtk/utils/GeoUtils.h"
-
-// clang-format off
-#include <wmtk/utils/DisableWarnings.hpp>
-#include <wmtk/threading/Concurrency.hpp>
-#include <wmtk/utils/EnableWarnings.hpp>
-// clang-format on
+#include <wmtk/TetMesh.h>
+#include <wmtk/utils/GeoUtils.h>
+#include <wmtk/threading/concurrent_map.hpp>
+#include <wmtk/threading/concurrent_vector.hpp>
 
 #include <Eigen/Core>
 #include <array>

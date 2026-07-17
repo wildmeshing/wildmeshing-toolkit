@@ -7,13 +7,15 @@
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/envelope/KNN.hpp>
 #include <wmtk/io/read_edge_mesh.hpp>
+#include <wmtk/threading/parallel_for.hpp>
+#include <wmtk/threading/parallel_sort.hpp>
+#include <wmtk/threading/task_arena.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/io.hpp>
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <wmtk/threading/Concurrency.hpp>
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/fmt/bundled/format.h>
 #include <igl/predicates/predicates.h>

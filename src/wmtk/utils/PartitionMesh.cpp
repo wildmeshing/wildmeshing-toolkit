@@ -3,7 +3,9 @@
 #include <igl/remove_unreferenced.h>
 #include <wmtk/utils/Morton.h>
 #include <wmtk/utils/Partitioning.h>
-#include <wmtk/threading/Concurrency.hpp>
+#include <wmtk/threading/parallel_for.hpp>
+#include <wmtk/threading/parallel_sort.hpp>
+#include <wmtk/threading/task_arena.hpp>
 
 namespace wmtk {
 

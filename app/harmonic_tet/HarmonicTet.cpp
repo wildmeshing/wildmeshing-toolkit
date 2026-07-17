@@ -2,6 +2,7 @@
 
 #include <wmtk/TetMesh.h>
 #include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/threading/concurrent_vector.hpp>
 #include <wmtk/utils/EnergyHarmonicTet.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>

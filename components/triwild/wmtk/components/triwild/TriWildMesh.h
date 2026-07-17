@@ -7,11 +7,11 @@
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/optimization/solver.hpp>
+#include <wmtk/threading/enumerable_thread_specific.hpp>
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <fastenvelope/FastEnvelope.h>
-#include <wmtk/threading/Concurrency.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 

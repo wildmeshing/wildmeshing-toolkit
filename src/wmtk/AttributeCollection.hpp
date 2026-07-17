@@ -3,7 +3,7 @@
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/utils/Logger.hpp>
 
-#include <wmtk/threading/Concurrency.hpp>
+#include <wmtk/threading/enumerable_thread_specific.hpp>
 
 #include <algorithm>
 #include <array>

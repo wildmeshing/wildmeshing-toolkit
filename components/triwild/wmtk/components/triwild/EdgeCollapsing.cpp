@@ -1,4 +1,3 @@
-#include <wmtk/threading/Concurrency.hpp>
 #include "TriWildMesh.h"
 #include "wmtk/TriMesh.h"
 
