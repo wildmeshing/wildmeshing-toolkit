@@ -12,8 +12,10 @@ message(STATUS "Third-party: creating target 'FastEnvelope::FastEnvelope'")
 include(CPM)
 CPMAddPackage(
     NAME FastEnvelope
-    GITHUB_REPOSITORY daniel-zint/fast-envelope
-    GIT_TAG 0a7a6c8f5ada9bbdd66da0b861680453f91e3846
+    # wildmeshing fork tracking PR #1 (perf: hoist per-node box-cut work).
+    # Forked from daniel-zint/fast-envelope @ 0a7a6c8; GIT_TAG is the PR branch tip.
+    GITHUB_REPOSITORY wildmeshing/fast-envelope
+    GIT_TAG 86d41345aa80179790a9142bbafaaf2de21d9054
     OPTIONS
     "FAST_ENVELOPE_WITH_UNIT_TESTS OFF"
     "FAST_ENVELOPE_ENABLE_TBB OFF"
