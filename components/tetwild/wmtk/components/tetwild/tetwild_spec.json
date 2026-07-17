@@ -33,6 +33,7 @@
       "stuck_refine_factor",
       "stuck_refine_min_scalar",
       "stuck_refine_gradation",
+      "stuck_refine_rational_split",
       "skip_good_regions",
       "skip_good_regions_margin"
     ]
@@ -222,6 +223,12 @@
     "type": "float",
     "default": 2.0,
     "doc": "Gradation cap for the monotone sizing smoothing: adjacent sizings may differ by at most this factor (smoothing only lowers values)."
+  },
+  {
+    "pointer": "/stuck_refine_rational_split",
+    "type": "bool",
+    "default": true,
+    "doc": "When a split's rounded (double) midpoint would invert an incident tet, allow edges of the current worst-tet set to fall back to the exact rational midpoint (never inverts, keeps the new vertex un-rounded) instead of rejecting the split."
   },
   {
     "pointer": "/skip_good_regions",

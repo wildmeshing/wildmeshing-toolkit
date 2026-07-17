@@ -158,8 +158,12 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         json_params.value("stuck_refine_min_scalar", params.stuck_refine_min_scalar);
     params.stuck_refine_gradation =
         json_params.value("stuck_refine_gradation", params.stuck_refine_gradation);
+    params.stuck_refine_rational_split =
+        json_params.value("stuck_refine_rational_split", params.stuck_refine_rational_split);
     if (const char* e = std::getenv("TW_STUCK_REFINE"))
         params.stuck_refine = (std::string(e) != "0");
+    if (const char* e = std::getenv("TW_STUCK_REFINE_RATIONAL_SPLIT"))
+        params.stuck_refine_rational_split = (std::string(e) != "0");
 
     // Skip good regions.
     params.skip_good_regions = json_params.value("skip_good_regions", params.skip_good_regions);
