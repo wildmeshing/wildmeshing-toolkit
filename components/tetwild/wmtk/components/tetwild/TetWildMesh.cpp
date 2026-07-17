@@ -564,19 +564,39 @@ size_t TetWildMesh::refine_sizing_around_worst()
     }
     if (worst.empty()) return 0;
 
-    // Record the worst tets' own vertices for the exact-rational split fallback
-    // (split_edge_after checks is_worst_region_edge). Only the seed worst tets.
+    // Record the worst tets' own vertices (for the exact-rational split fallback)
+    // and, if force-split is on, the LONGEST edge of each worst tet. split_all_edges
+    // force-splits exactly those edges (bypasses the length gate), so a stuck
+    // sliver's long edge is split immediately -- WITHOUT changing the sizing field.
     m_worst_region_vids.clear();
+    m_force_split_edges.clear();
+    for (const auto& [q, tid] : worst) {
+        const auto vs = oriented_tet_vids(tid);
+        for (const size_t v : vs) m_worst_region_vids.insert(v);
+        if (m_params.stuck_refine_force_split) {
+            double l2max = -1;
+            size_t ea = vs[0], eb = vs[1];
+            for (int a = 0; a < 4; ++a)
+                for (int b = a + 1; b < 4; ++b) {
+                    const double l2 =
+                        (m_vertex_attribute[vs[a]].m_posf - m_vertex_attribute[vs[b]].m_posf)
+                            .squaredNorm();
+                    if (l2 > l2max) {
+                        l2max = l2;
+                        ea = vs[a];
+                        eb = vs[b];
+                    }
+                }
+            m_force_split_edges.insert({std::min(ea, eb), std::max(ea, eb)});
+        }
+    }
 
     // Seed the region with the worst tets' vertices, then BFS n_rings hops.
     std::unordered_set<size_t> region;
     std::vector<size_t> frontier;
-    for (const auto& [q, tid] : worst) {
-        const auto vs = oriented_tet_vids(tid);
-        for (const size_t v : vs) {
-            m_worst_region_vids.insert(v);
-            if (region.insert(v).second) frontier.push_back(v);
-        }
+    for (const size_t v : m_worst_region_vids) {
+        region.insert(v);
+        frontier.push_back(v);
     }
     for (int r = 0; r < n_rings && !frontier.empty(); ++r) {
         std::vector<size_t> next;

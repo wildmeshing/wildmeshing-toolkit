@@ -17,7 +17,9 @@
 
 #include <igl/remove_unreferenced.h>
 #include <memory>
+#include <set>
 #include <unordered_set>
+#include <utility>
 
 namespace wmtk::components::tetwild {
 
@@ -628,11 +630,29 @@ public:
      */
     std::unordered_set<size_t> m_worst_region_vids;
 
+    /// The longest edge of each current worst tet (as a sorted {min,max} vid pair).
+    /// split_all_edges force-splits exactly these edges (bypasses the length gate),
+    /// so a stuck sliver's long edge is split immediately without changing the sizing
+    /// field. Populated serially by refine_sizing_around_worst; read-only during the
+    /// parallel split pass, then cleared once split_all_edges has consumed it.
+    std::set<std::pair<size_t, size_t>> m_force_split_edges;
+
+    /// Count of force-splits taken in the current split pass (atomic_ref from the
+    /// parallel split; reset + logged by split_all_edges). Diagnostic only.
+    size_t m_force_split_count = 0;
+
     /// True iff edge (v1,v2) is an edge of a current worst tet.
     bool is_worst_region_edge(size_t v1, size_t v2) const
     {
         return m_worst_region_vids.find(v1) != m_worst_region_vids.end() &&
                m_worst_region_vids.find(v2) != m_worst_region_vids.end();
+    }
+
+    /// True iff edge (v1,v2) is a worst tet's longest edge queued for force-split.
+    bool is_force_split_edge(size_t v1, size_t v2) const
+    {
+        return m_force_split_edges.find({std::min(v1, v2), std::max(v1, v2)}) !=
+               m_force_split_edges.end();
     }
 
     // for open boundary

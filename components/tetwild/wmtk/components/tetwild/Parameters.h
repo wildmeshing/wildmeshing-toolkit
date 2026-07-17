@@ -54,6 +54,12 @@ struct Parameters
     // (spreads refinement outward), never raises the refined values, avoiding
     // sharp resolution jumps that make operations ill-conditioned.
     double stuck_refine_gradation = 2.0;
+    // Force-split: when the max energy stalls, split each worst tet's longest edge
+    // once, bypassing the split length gate. This unsticks a sliver whose edges are
+    // too short to be split-eligible, WITHOUT touching the sizing field (which the
+    // *factor ratchet above still drives). Adds at most one split per worst tet per
+    // stall, so it does not bloat the tet count.
+    bool stuck_refine_force_split = true;
     // When a split's rounded (double) midpoint would invert an incident tet, the
     // split is normally rejected. If this is on, splits of edges that belong to
     // the current worst-tet set (the seeds used by refine_sizing_around_worst)
