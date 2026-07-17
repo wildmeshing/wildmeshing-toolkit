@@ -1,5 +1,9 @@
 #pragma once
 
+#include <algorithm>
+#include <functional>
+#include <vector>
+
 #include "detail/ets_id_counter.hpp"
 
 namespace wmtk::threading {
