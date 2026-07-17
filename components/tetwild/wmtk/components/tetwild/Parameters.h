@@ -54,6 +54,12 @@ struct Parameters
     // (spreads refinement outward), never raises the refined values, avoiding
     // sharp resolution jumps that make operations ill-conditioned.
     double stuck_refine_gradation = 2.0;
+    // When a split's rounded (double) midpoint would invert an incident tet, the
+    // split is normally rejected. If this is on, splits of edges that belong to
+    // the current worst-tet set (the seeds used by refine_sizing_around_worst)
+    // instead fall back to the EXACT rational midpoint (never inverts) and keep
+    // the new vertex un-rounded, so the worst region can still be refined.
+    bool stuck_refine_rational_split = true;
 
     // ---- Skip good regions ----------------------------------------------
     // Only smooth vertices incident to a tet whose energy is >=
