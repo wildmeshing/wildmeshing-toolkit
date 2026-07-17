@@ -13,6 +13,7 @@ void TetWildMesh::split_all_edges()
 {
     igl::Timer timer;
     double time;
+    m_force_split_count = 0;
     timer.start();
     auto collect_all_ops =
         wmtk::parallel_collect_edge_ops(*this, NUM_THREADS, [](auto&, const auto& e, auto& out) {
@@ -32,6 +33,12 @@ void TetWildMesh::split_all_edges()
             //
             size_t v1_id = tup.vid(*this);
             size_t v2_id = tup.switch_vertex(*this).vid(*this);
+            // Force-split: a worst tet's longest edge (queued by
+            // refine_sizing_around_worst when the max energy stalls) is split once
+            // regardless of the length gate, to unstick a sliver without changing the
+            // sizing field. The new midpoint is not in m_force_split_edges, so the
+            // two halves are NOT force-split again -- exactly one split per edge.
+            if (is_force_split_edge(v1_id, v2_id)) return true;
             double sizing_ratio = (m_vertex_attribute[v1_id].m_sizing_scalar +
                                    m_vertex_attribute[v2_id].m_sizing_scalar) /
                                   2;
@@ -56,6 +63,12 @@ void TetWildMesh::split_all_edges()
         time = timer.getElapsedTime();
         wmtk::logger().info("edge split operation time serial: {:.4}s", time);
     }
+    if (m_force_split_count > 0) {
+        wmtk::logger().info(
+            "[force-split] {} worst-tet longest edges force-split", m_force_split_count);
+    }
+    // Consumed: the queued force-split edges no longer exist after this pass.
+    m_force_split_edges.clear();
 }
 
 bool TetWildMesh::split_edge_before(const Tuple& loc0)
@@ -140,6 +153,8 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
             break;
         }
     }
+    if (is_force_split_edge(v1_id, v2_id))
+        std::atomic_ref<size_t>(m_force_split_count).fetch_add(1, std::memory_order_relaxed);
     if (!m_vertex_attribute[v_id].m_is_rounded) {
         // The rounded (double) midpoint inverts an incident tet. By default reject
         // the split. But if this edge belongs to the current worst-tet set (the

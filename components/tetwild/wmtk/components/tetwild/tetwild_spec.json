@@ -33,6 +33,7 @@
       "stuck_refine_factor",
       "stuck_refine_min_scalar",
       "stuck_refine_gradation",
+      "stuck_refine_force_split",
       "stuck_refine_rational_split",
       "skip_good_regions",
       "skip_good_regions_margin"
@@ -223,6 +224,12 @@
     "type": "float",
     "default": 2.0,
     "doc": "Gradation cap for the monotone sizing smoothing: adjacent sizings may differ by at most this factor (smoothing only lowers values)."
+  },
+  {
+    "pointer": "/stuck_refine_force_split",
+    "type": "bool",
+    "default": true,
+    "doc": "When the max energy stalls, split each worst tet's longest edge once, bypassing the split length gate, to unstick a sliver without changing the sizing field. Adds at most one split per worst tet per stall."
   },
   {
     "pointer": "/stuck_refine_rational_split",
