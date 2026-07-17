@@ -15,7 +15,7 @@ CPMAddPackage(
     # wildmeshing fork tracking PR #1 (perf: hoist per-node box-cut work).
     # Forked from daniel-zint/fast-envelope @ 0a7a6c8; GIT_TAG is the PR branch tip.
     GITHUB_REPOSITORY wildmeshing/fast-envelope
-    GIT_TAG f8bd35d46eaf52898d9653531e5f618826b51c69
+    GIT_TAG 86d41345aa80179790a9142bbafaaf2de21d9054
     OPTIONS
     "FAST_ENVELOPE_WITH_UNIT_TESTS OFF"
     "FAST_ENVELOPE_ENABLE_TBB OFF"
