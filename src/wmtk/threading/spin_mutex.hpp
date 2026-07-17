@@ -42,4 +42,4 @@ public:
     void unlock() { m_locked.store(false, std::memory_order_release); }
 };
 
-}
+} // namespace wmtk::threading
