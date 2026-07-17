@@ -65,7 +65,8 @@ void TetWildMesh::split_all_edges()
     }
     if (m_force_split_count > 0) {
         wmtk::logger().info(
-            "[force-split] {} worst-tet longest edges force-split", m_force_split_count);
+            "[force-split] {} worst-tet longest edges force-split",
+            m_force_split_count);
     }
     // Consumed: the queued force-split edges no longer exist after this pass.
     m_force_split_edges.clear();
