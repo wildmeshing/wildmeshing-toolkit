@@ -12,7 +12,7 @@
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <wmtk/utils/Concurrency.hpp>
+#include <wmtk/threading/Concurrency.hpp>
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/fmt/bundled/format.h>
 #include <igl/predicates/predicates.h>

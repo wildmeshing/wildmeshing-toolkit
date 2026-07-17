@@ -2,7 +2,7 @@
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <wmtk/utils/Concurrency.hpp>
+#include <wmtk/threading/Concurrency.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
@@ -14,13 +14,13 @@ void wmtk::partition_vertex_morton(
     int num_partition,
     std::vector<size_t>& result)
 {
-    wmtk::task_arena arena(num_partition);
+    wmtk::threading::task_arena arena(num_partition);
 
     std::vector<Eigen::Vector3d> V_v(vert_size);
     arena.execute([&] {
-        wmtk::parallel_for(
-            wmtk::blocked_range<size_t>(0, V_v.size()),
-            [&](wmtk::blocked_range<size_t> r) {
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<size_t>(0, V_v.size()),
+            [&](wmtk::threading::blocked_range<size_t> r) {
                 for (size_t i = r.begin(); i < r.end(); i++) {
                     V_v[i] = pos(i);
                 }
@@ -54,9 +54,9 @@ void wmtk::partition_vertex_morton(
         // get_bb_corners(V, vmin, vmax);
         Eigen::Vector3d center = (vmin + vmax) / 2;
 
-        wmtk::parallel_for(
-            wmtk::blocked_range<size_t>(0, V.size()),
-            [&](wmtk::blocked_range<size_t> r) {
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<size_t>(0, V.size()),
+            [&](wmtk::threading::blocked_range<size_t> r) {
                 for (size_t i = r.begin(); i < r.end(); i++) {
                     V[i] = V[i] - center;
                 }
@@ -71,18 +71,18 @@ void wmtk::partition_vertex_morton(
         zscale = fabs(scale_point[2]);
         double scale = std::max(std::max(xscale, yscale), zscale);
         if (scale > 300) {
-            wmtk::parallel_for(
-                wmtk::blocked_range<size_t>(0, V.size()),
-                [&](wmtk::blocked_range<size_t> r) {
+            wmtk::threading::parallel_for(
+                wmtk::threading::blocked_range<size_t>(0, V.size()),
+                [&](wmtk::threading::blocked_range<size_t> r) {
                     for (size_t i = r.begin(); i < r.end(); i++) {
                         V[i] = V[i] / scale;
                     }
                 });
         }
 
-        wmtk::parallel_for(
-            wmtk::blocked_range<size_t>(0, V.size()),
-            [&](wmtk::blocked_range<size_t> r) {
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<size_t>(0, V.size()),
+            [&](wmtk::threading::blocked_range<size_t> r) {
                 for (size_t i = r.begin(); i < r.end(); i++) {
                     list_v[i].morton = Resorting::MortonCode64(
                         int(V[i][0] * multi),
@@ -96,15 +96,15 @@ void wmtk::partition_vertex_morton(
             return (a.morton < b.morton);
         };
 
-        wmtk::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
+        wmtk::threading::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
 
         size_t interval = list_v.size() / num_partition + 1;
 
         result.clear();
         result.resize(vert_size);
-        wmtk::parallel_for(
-            wmtk::blocked_range<size_t>(0, list_v.size()),
-            [&](wmtk::blocked_range<size_t> r) {
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<size_t>(0, list_v.size()),
+            [&](wmtk::threading::blocked_range<size_t> r) {
                 for (size_t i = r.begin(); i < r.end(); i++) {
                     result[list_v[i].order] = i / interval;
                 }

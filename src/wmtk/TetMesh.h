@@ -7,7 +7,7 @@
 #include <wmtk/simplex/SimplexCollection.hpp>
 #include <wmtk/utils/Logger.hpp>
 
-#include <wmtk/utils/Concurrency.hpp>
+#include <wmtk/threading/Concurrency.hpp>
 
 #include <array>
 #include <atomic>
@@ -1220,7 +1220,7 @@ public:
 public:
     class VertexMutex
     {
-        wmtk::spin_mutex mutex;
+        wmtk::threading::spin_mutex mutex;
         int owner = std::numeric_limits<int>::max();
 
     public:
@@ -1265,8 +1265,8 @@ protected:
     }
 
 public:
-    wmtk::enumerable_thread_specific<std::vector<size_t>> mutex_release_stack;
-    wmtk::enumerable_thread_specific<std::vector<size_t>> get_one_ring_cache;
+    wmtk::threading::enumerable_thread_specific<std::vector<size_t>> mutex_release_stack;
+    wmtk::threading::enumerable_thread_specific<std::vector<size_t>> get_one_ring_cache;
 
     // void init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& tets);
     int release_vertex_mutex_in_stack();

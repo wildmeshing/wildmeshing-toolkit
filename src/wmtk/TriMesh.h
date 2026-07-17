@@ -9,7 +9,7 @@
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <wmtk/utils/Concurrency.hpp>
+#include <wmtk/threading/Concurrency.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
@@ -760,7 +760,7 @@ public:
 public:
     class VertexMutex
     {
-        wmtk::spin_mutex mutex;
+        wmtk::threading::spin_mutex mutex;
         int owner = std::numeric_limits<int>::max();
 
     public:
@@ -805,7 +805,7 @@ protected:
     }
 
 public:
-    wmtk::enumerable_thread_specific<std::vector<size_t>> mutex_release_stack;
+    wmtk::threading::enumerable_thread_specific<std::vector<size_t>> mutex_release_stack;
 
     int release_vertex_mutex_in_stack();
     /**

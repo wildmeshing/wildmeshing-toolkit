@@ -1,5 +1,5 @@
 #include "IsotropicRemeshing.h"
-#include <wmtk/utils/Concurrency.hpp>
+#include <wmtk/threading/Concurrency.hpp>
 
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
@@ -115,14 +115,14 @@ void IsotropicRemeshing::partition_mesh_morton()
     if (NUM_THREADS == 0) return;
     wmtk::logger().info("Number of parts: {} by morton", NUM_THREADS);
 
-    wmtk::task_arena arena(NUM_THREADS);
+    wmtk::threading::task_arena arena(NUM_THREADS);
 
     arena.execute([&] {
         std::vector<Eigen::Vector3d> V_v(vert_capacity());
 
-        wmtk::parallel_for(
-            wmtk::blocked_range<size_t>(0, V_v.size()),
-            [&](wmtk::blocked_range<size_t> r) {
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<size_t>(0, V_v.size()),
+            [&](wmtk::threading::blocked_range<size_t> r) {
                 for (size_t i = r.begin(); i < r.end(); i++) {
                     V_v[i] = vertex_attrs[i].pos;
                 }
@@ -153,9 +153,9 @@ void IsotropicRemeshing::partition_mesh_morton()
 
         Eigen::Vector3d center = (vmin + vmax) / 2;
 
-        wmtk::parallel_for(
-            wmtk::blocked_range<size_t>(0, V.size()),
-            [&](wmtk::blocked_range<size_t> r) {
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<size_t>(0, V.size()),
+            [&](wmtk::threading::blocked_range<size_t> r) {
                 for (size_t i = r.begin(); i < r.end(); i++) {
                     V[i] = V[i] - center;
                 }
@@ -170,18 +170,18 @@ void IsotropicRemeshing::partition_mesh_morton()
         zscale = fabs(scale_point[2]);
         double scale = std::max(std::max(xscale, yscale), zscale);
         if (scale > 300) {
-            wmtk::parallel_for(
-                wmtk::blocked_range<size_t>(0, V.size()),
-                [&](wmtk::blocked_range<size_t> r) {
+            wmtk::threading::parallel_for(
+                wmtk::threading::blocked_range<size_t>(0, V.size()),
+                [&](wmtk::threading::blocked_range<size_t> r) {
                     for (size_t i = r.begin(); i < r.end(); i++) {
                         V[i] = V[i] / scale;
                     }
                 });
         }
 
-        wmtk::parallel_for(
-            wmtk::blocked_range<size_t>(0, V.size()),
-            [&](wmtk::blocked_range<size_t> r) {
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<size_t>(0, V.size()),
+            [&](wmtk::threading::blocked_range<size_t> r) {
                 for (size_t i = r.begin(); i < r.end(); i++) {
                     list_v[i].morton = Resorting::MortonCode64(
                         int(V[i][0] * multi),
@@ -195,13 +195,13 @@ void IsotropicRemeshing::partition_mesh_morton()
             return (a.morton < b.morton);
         };
 
-        wmtk::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
+        wmtk::threading::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
 
         size_t interval = list_v.size() / NUM_THREADS + 1;
 
-        wmtk::parallel_for(
-            wmtk::blocked_range<size_t>(0, list_v.size()),
-            [&](wmtk::blocked_range<size_t> r) {
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<size_t>(0, list_v.size()),
+            [&](wmtk::threading::blocked_range<size_t> r) {
                 for (size_t i = r.begin(); i < r.end(); i++) {
                     vertex_attrs[list_v[i].order].partition_id = i / interval;
                 }
@@ -430,7 +430,7 @@ bool IsotropicRemeshing::collapse_remeshing(double L)
     igl::Timer timer;
     timer.start();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    auto collect_tuples = wmtk::concurrent_vector<Tuple>();
+    auto collect_tuples = wmtk::threading::concurrent_vector<Tuple>();
 
     for_each_edge([&](auto& tup) { collect_tuples.emplace_back(tup); });
     collect_all_ops.reserve(collect_tuples.size());
@@ -472,7 +472,7 @@ bool IsotropicRemeshing::split_remeshing(double L)
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     size_t vid_threshold = 0;
     std::atomic_int count_success = 0;
-    auto collect_tuples = wmtk::concurrent_vector<Tuple>();
+    auto collect_tuples = wmtk::threading::concurrent_vector<Tuple>();
 
     for_each_edge([&](auto& tup) { collect_tuples.emplace_back(tup); });
     collect_all_ops.reserve(collect_tuples.size());
@@ -482,7 +482,7 @@ bool IsotropicRemeshing::split_remeshing(double L)
         timer.getElapsedTimeInMilliSec());
 
     wmtk::logger().info("size for edges to be split is {}", collect_all_ops.size());
-    auto edges2 = wmtk::concurrent_vector<std::pair<std::string, TriMesh::Tuple>>();
+    auto edges2 = wmtk::threading::concurrent_vector<std::pair<std::string, TriMesh::Tuple>>();
     auto setup_and_execute = [&](auto& executor) {
         vid_threshold = vert_capacity();
         executor.num_threads = NUM_THREADS;
@@ -555,7 +555,7 @@ bool IsotropicRemeshing::swap_remeshing()
     timer.start();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     wmtk::logger().info("size for edges to swap is {}", collect_all_ops.size());
-    auto collect_tuples = wmtk::concurrent_vector<Tuple>();
+    auto collect_tuples = wmtk::threading::concurrent_vector<Tuple>();
 
     for_each_edge([&](auto& tup) { collect_tuples.emplace_back(tup); });
     collect_all_ops.reserve(collect_tuples.size());

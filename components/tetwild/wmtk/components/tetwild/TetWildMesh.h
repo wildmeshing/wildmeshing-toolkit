@@ -10,7 +10,7 @@
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <fastenvelope/FastEnvelope.h>
-#include <wmtk/utils/Concurrency.hpp>
+#include <wmtk/threading/Concurrency.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 #include <VolumeRemesher/embed.h>
 // clang-format on
@@ -161,14 +161,14 @@ public:
 
         wmtk::logger().info("Number of parts: {} by morton", NUM_THREADS);
 
-        wmtk::task_arena arena(NUM_THREADS);
+        wmtk::threading::task_arena arena(NUM_THREADS);
 
         arena.execute([&] {
             std::vector<Eigen::Vector3d> V_v(vert_capacity());
 
-            wmtk::parallel_for(
-                wmtk::blocked_range<size_t>(0, V_v.size()),
-                [&](wmtk::blocked_range<size_t> r) {
+            wmtk::threading::parallel_for(
+                wmtk::threading::blocked_range<size_t>(0, V_v.size()),
+                [&](wmtk::threading::blocked_range<size_t> r) {
                     for (size_t i = r.begin(); i < r.end(); i++) {
                         V_v[i] = m_vertex_attribute[i].m_posf;
                     }
@@ -200,9 +200,9 @@ public:
             // get_bb_corners(V, vmin, vmax);
             Eigen::Vector3d center = (vmin + vmax) / 2;
 
-            wmtk::parallel_for(
-                wmtk::blocked_range<size_t>(0, V.size()),
-                [&](wmtk::blocked_range<size_t> r) {
+            wmtk::threading::parallel_for(
+                wmtk::threading::blocked_range<size_t>(0, V.size()),
+                [&](wmtk::threading::blocked_range<size_t> r) {
                     for (size_t i = r.begin(); i < r.end(); i++) {
                         V[i] = V[i] - center;
                     }
@@ -217,9 +217,9 @@ public:
             zscale = fabs(scale_point[2]);
             double scale = std::max(std::max(xscale, yscale), zscale);
             if (scale > 300) {
-                wmtk::parallel_for(
-                    wmtk::blocked_range<size_t>(0, V.size()),
-                    [&](wmtk::blocked_range<size_t> r) {
+                wmtk::threading::parallel_for(
+                    wmtk::threading::blocked_range<size_t>(0, V.size()),
+                    [&](wmtk::threading::blocked_range<size_t> r) {
                         for (size_t i = r.begin(); i < r.end(); i++) {
                             V[i] = V[i] / scale;
                         }
@@ -227,9 +227,9 @@ public:
             }
 
             constexpr int multi = 1000;
-            wmtk::parallel_for(
-                wmtk::blocked_range<size_t>(0, V.size()),
-                [&](wmtk::blocked_range<size_t> r) {
+            wmtk::threading::parallel_for(
+                wmtk::threading::blocked_range<size_t>(0, V.size()),
+                [&](wmtk::threading::blocked_range<size_t> r) {
                     for (size_t i = r.begin(); i < r.end(); i++) {
                         list_v[i].morton = Resorting::MortonCode64(
                             int(V[i][0] * multi),
@@ -243,13 +243,13 @@ public:
                 return (a.morton < b.morton);
             };
 
-            wmtk::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
+            wmtk::threading::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
 
             size_t interval = list_v.size() / NUM_THREADS + 1;
 
-            wmtk::parallel_for(
-                wmtk::blocked_range<size_t>(0, list_v.size()),
-                [&](wmtk::blocked_range<size_t> r) {
+            wmtk::threading::parallel_for(
+                wmtk::threading::blocked_range<size_t>(0, list_v.size()),
+                [&](wmtk::threading::blocked_range<size_t> r) {
                     for (size_t i = r.begin(); i < r.end(); i++) {
                         m_vertex_attribute[list_v[i].order].partition_id = i / interval;
                     }
@@ -386,7 +386,7 @@ public:
 private:
     // tags: correspondence map from new tet-face node indices to in-triangle ids.
     // built up while triangles are inserted.
-    wmtk::concurrent_map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;
+    wmtk::threading::concurrent_map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;
 
     struct TriangleInsertionLocalInfoCache
     {
@@ -394,7 +394,7 @@ private:
         int face_id;
         std::vector<std::array<size_t, 3>> old_face_vids;
     };
-    wmtk::enumerable_thread_specific<TriangleInsertionLocalInfoCache>
+    wmtk::threading::enumerable_thread_specific<TriangleInsertionLocalInfoCache>
         triangle_insertion_local_cache;
 
     ////// Operations
@@ -412,7 +412,7 @@ private:
 
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
     };
-    wmtk::enumerable_thread_specific<SplitInfoCache> split_cache;
+    wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
 
     struct CollapseInfoCache
     {
@@ -444,7 +444,7 @@ private:
         // for geometry preservation
         std::vector<size_t> edge_incident_param_type;
     };
-    wmtk::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
+    wmtk::threading::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
 
 
     struct SwapInfoCache
@@ -452,7 +452,7 @@ private:
         double max_energy;
         std::map<std::array<size_t, 3>, FaceAttributes> changed_faces;
     };
-    wmtk::enumerable_thread_specific<SwapInfoCache> swap_cache;
+    wmtk::threading::enumerable_thread_specific<SwapInfoCache> swap_cache;
 
 
     // for incremental tetwild

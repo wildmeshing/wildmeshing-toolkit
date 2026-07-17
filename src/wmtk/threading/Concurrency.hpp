@@ -35,7 +35,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace wmtk {
+namespace wmtk::threading {
 
 // ---------------------------------------------------------------------------
 // spin_mutex: replaces tbb::spin_mutex.
@@ -580,4 +580,4 @@ void parallel_sort(RandomIt first, RandomIt last, Compare comp)
     std::sort(first, last, comp);
 }
 
-} // namespace wmtk
+} // namespace wmtk::threading

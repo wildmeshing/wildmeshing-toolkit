@@ -13,7 +13,7 @@
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <wmtk/utils/Concurrency.hpp>
+#include <wmtk/threading/Concurrency.hpp>
 #include <CLI/CLI.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
@@ -52,7 +52,9 @@ bool adjust_sizing_field(
     const auto min_refine_scalar = 0.25;
 
     // outputs scale_multipliers
-    wmtk::concurrent_vector<double> scale_multipliers(mesh.vert_capacity(), recover_scalar);
+    wmtk::threading::concurrent_vector<double> scale_multipliers(
+        mesh.vert_capacity(),
+        recover_scalar);
 
     std::vector<Vector3d> pts;
     std::queue<size_t> v_queue;

@@ -8,7 +8,7 @@
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <wmtk/utils/Concurrency.hpp>
+#include <wmtk/threading/Concurrency.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
@@ -1977,11 +1977,11 @@ bool TriMesh::try_set_face_mutex_one_ring(const Tuple& f, int threadid)
 
 void wmtk::TriMesh::for_each_edge(const std::function<void(const TriMesh::Tuple&)>& func)
 {
-    wmtk::task_arena arena(NUM_THREADS);
+    wmtk::threading::task_arena arena(NUM_THREADS);
     arena.execute([&] {
-        wmtk::parallel_for(
-            wmtk::blocked_range<size_t>(0, tri_capacity()),
-            [&](const wmtk::blocked_range<size_t>& r) {
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<size_t>(0, tri_capacity()),
+            [&](const wmtk::threading::blocked_range<size_t>& r) {
                 for (size_t i = r.begin(); i < r.end(); i++) {
                     if (!tuple_from_tri(i).is_valid(*this)) continue;
                     for (int j = 0; j < 3; j++) {
@@ -1997,11 +1997,11 @@ void wmtk::TriMesh::for_each_edge(const std::function<void(const TriMesh::Tuple&
 
 void wmtk::TriMesh::for_each_vertex(const std::function<void(const TriMesh::Tuple&)>& func)
 {
-    wmtk::task_arena arena(NUM_THREADS);
+    wmtk::threading::task_arena arena(NUM_THREADS);
     arena.execute([&] {
-        wmtk::parallel_for(
-            wmtk::blocked_range<size_t>(0, vert_capacity()),
-            [&](wmtk::blocked_range<size_t> r) {
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<size_t>(0, vert_capacity()),
+            [&](wmtk::threading::blocked_range<size_t> r) {
                 for (size_t i = r.begin(); i < r.end(); i++) {
                     auto tup = tuple_from_vertex(i);
                     if (!tup.is_valid(*this)) continue;
@@ -2013,11 +2013,11 @@ void wmtk::TriMesh::for_each_vertex(const std::function<void(const TriMesh::Tupl
 
 void wmtk::TriMesh::for_each_face(const std::function<void(const TriMesh::Tuple&)>& func)
 {
-    wmtk::task_arena arena(NUM_THREADS);
+    wmtk::threading::task_arena arena(NUM_THREADS);
     arena.execute([&] {
-        wmtk::parallel_for(
-            wmtk::blocked_range<size_t>(0, tri_capacity()),
-            [&](wmtk::blocked_range<size_t> r) {
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<size_t>(0, tri_capacity()),
+            [&](wmtk::threading::blocked_range<size_t> r) {
                 for (size_t i = r.begin(); i < r.end(); i++) {
                     auto tup = tuple_from_tri(i);
                     if (!tup.is_valid(*this)) continue;

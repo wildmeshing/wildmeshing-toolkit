@@ -378,7 +378,7 @@ void InteriorTetOpt::collapse_all_edges(bool is_limit_length)
         collect_all_ops.emplace_back("edge_collapse", loc);
         collect_all_ops.emplace_back("edge_collapse", loc.switch_vertex(*this));
     }
-    auto collect_failure_ops = wmtk::concurrent_vector<std::pair<std::string, Tuple>>();
+    auto collect_failure_ops = wmtk::threading::concurrent_vector<std::pair<std::string, Tuple>>();
     std::atomic_int count_success = 0;
     time = timer.getElapsedTime();
     wmtk::logger().info("edge collapse prepare time: {}s", time);

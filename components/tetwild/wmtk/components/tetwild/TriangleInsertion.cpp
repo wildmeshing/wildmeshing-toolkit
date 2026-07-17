@@ -9,7 +9,7 @@
 #include "wmtk/utils/InsertTriangleUtils.hpp"
 #include "wmtk/utils/Logger.hpp"
 
-#include <wmtk/utils/Concurrency.hpp>
+#include <wmtk/threading/Concurrency.hpp>
 
 #include <random>
 #include <unordered_set>
@@ -229,13 +229,13 @@ void TetWildMesh::init_from_input_surface(
     init_from_delaunay_box_mesh(vertices);
 
     // match faces preserved in delaunay
-    wmtk::concurrent_vector<bool> is_matched;
+    wmtk::threading::concurrent_vector<bool> is_matched;
     wmtk::match_tet_faces_to_triangles(*this, faces, is_matched, tet_face_tags);
     wmtk::logger().info("is_matched: {}", std::count(is_matched.begin(), is_matched.end(), true));
 
-    std::vector<wmtk::concurrent_priority_queue<std::tuple<double, int, size_t>>> insertion_queues(
-        std::max(NUM_THREADS, 1));
-    wmtk::concurrent_priority_queue<std::tuple<double, int, size_t>> expired_queue;
+    std::vector<wmtk::threading::concurrent_priority_queue<std::tuple<double, int, size_t>>>
+        insertion_queues(std::max(NUM_THREADS, 1));
+    wmtk::threading::concurrent_priority_queue<std::tuple<double, int, size_t>> expired_queue;
     std::default_random_engine generator;
     std::uniform_real_distribution<double> distribution(0.0, 100.0);
     for (size_t face_id = 0; face_id < faces.size(); face_id++) {
@@ -248,8 +248,8 @@ void TetWildMesh::init_from_input_surface(
         wmtk::logger().info("insertion queue {}: {}", i, insertion_queues[i].size());
     }
 
-    wmtk::task_arena arena((int)insertion_queues.size());
-    wmtk::task_group tg;
+    wmtk::threading::task_arena arena((int)insertion_queues.size());
+    wmtk::threading::task_group tg;
 
     arena.execute([&, &m = *this, &tet_face_tags = this->tet_face_tags]() {
         for (int task_id = 0; task_id < insertion_queues.size(); task_id++) {
@@ -383,10 +383,10 @@ void TetWildMesh::init_from_input_surface(
 
 void TetWildMesh::finalize_triangle_insertion(const std::vector<std::array<size_t, 3>>& faces)
 {
-    wmtk::task_arena arena(std::max(NUM_THREADS, 1));
+    wmtk::threading::task_arena arena(std::max(NUM_THREADS, 1));
 
     arena.execute([&faces, this] {
-        wmtk::parallel_for(this->tet_face_tags.range(), [&faces, this](auto& r) {
+        wmtk::threading::parallel_for(this->tet_face_tags.range(), [&faces, this](auto& r) {
             auto projected_point_in_triangle = [](auto& c, auto& tri) {
                 std::array<Vector2r, 3> tri2d;
                 int squeeze_to_2d_dir = wmtk::project_triangle_to_2d(tri, tri2d);

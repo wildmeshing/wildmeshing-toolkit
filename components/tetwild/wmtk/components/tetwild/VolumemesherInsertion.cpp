@@ -1,7 +1,7 @@
 #include <igl/predicates/ear_clipping.h>
 #include <fstream>
 #include <set>
-#include <wmtk/utils/Concurrency.hpp>
+#include <wmtk/threading/Concurrency.hpp>
 #include <wmtk/utils/predicates.hpp>
 #include "TetWildMesh.h"
 
@@ -1932,7 +1932,7 @@ void TetWildMesh::init_from_Volumeremesher(
     });
 
     while (true) {
-        wmtk::concurrent_vector<size_t> to_revert;
+        wmtk::threading::concurrent_vector<size_t> to_revert;
         for_each_tetra([&](const Tuple& t) {
             if (is_inverted(t)) {
                 for (const size_t vid : oriented_tet_vids(t)) {

@@ -1,5 +1,5 @@
 #include "SimWildMeshTri.hpp"
-#include <wmtk/utils/Concurrency.hpp>
+#include <wmtk/threading/Concurrency.hpp>
 
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
@@ -65,14 +65,14 @@ void SimWildMeshTri::partition_mesh_morton()
     if (NUM_THREADS == 0) return;
     wmtk::logger().info("Number of parts: {} by morton", NUM_THREADS);
 
-    wmtk::task_arena arena(NUM_THREADS);
+    wmtk::threading::task_arena arena(NUM_THREADS);
 
     arena.execute([&] {
         std::vector<Vector2d> V_v(vert_capacity());
 
-        wmtk::parallel_for(
-            wmtk::blocked_range<size_t>(0, V_v.size()),
-            [&](wmtk::blocked_range<size_t> r) {
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<size_t>(0, V_v.size()),
+            [&](wmtk::threading::blocked_range<size_t> r) {
                 for (size_t i = r.begin(); i < r.end(); i++) {
                     V_v[i] = m_vertex_attribute[i].m_pos;
                 }
@@ -103,9 +103,9 @@ void SimWildMeshTri::partition_mesh_morton()
 
         Vector2d center = (vmin + vmax) / 2;
 
-        wmtk::parallel_for(
-            wmtk::blocked_range<size_t>(0, V.size()),
-            [&](wmtk::blocked_range<size_t> r) {
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<size_t>(0, V.size()),
+            [&](wmtk::threading::blocked_range<size_t> r) {
                 for (size_t i = r.begin(); i < r.end(); i++) {
                     V[i] = V[i] - center;
                 }
@@ -119,18 +119,18 @@ void SimWildMeshTri::partition_mesh_morton()
         yscale = fabs(scale_point[1]);
         double scale = std::max(xscale, yscale);
         if (scale > 300) {
-            wmtk::parallel_for(
-                wmtk::blocked_range<size_t>(0, V.size()),
-                [&](wmtk::blocked_range<size_t> r) {
+            wmtk::threading::parallel_for(
+                wmtk::threading::blocked_range<size_t>(0, V.size()),
+                [&](wmtk::threading::blocked_range<size_t> r) {
                     for (size_t i = r.begin(); i < r.end(); i++) {
                         V[i] = V[i] / scale;
                     }
                 });
         }
 
-        wmtk::parallel_for(
-            wmtk::blocked_range<size_t>(0, V.size()),
-            [&](wmtk::blocked_range<size_t> r) {
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<size_t>(0, V.size()),
+            [&](wmtk::threading::blocked_range<size_t> r) {
                 for (size_t i = r.begin(); i < r.end(); i++) {
                     list_v[i].morton =
                         Resorting::MortonCode64(int(V[i][0] * multi), int(V[i][1] * multi), 0);
@@ -142,13 +142,13 @@ void SimWildMeshTri::partition_mesh_morton()
             return (a.morton < b.morton);
         };
 
-        wmtk::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
+        wmtk::threading::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
 
         size_t interval = list_v.size() / NUM_THREADS + 1;
 
-        wmtk::parallel_for(
-            wmtk::blocked_range<size_t>(0, list_v.size()),
-            [&](wmtk::blocked_range<size_t> r) {
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<size_t>(0, list_v.size()),
+            [&](wmtk::threading::blocked_range<size_t> r) {
                 for (size_t i = r.begin(); i < r.end(); i++) {
                     m_vertex_attribute[list_v[i].order].partition_id = i / interval;
                 }

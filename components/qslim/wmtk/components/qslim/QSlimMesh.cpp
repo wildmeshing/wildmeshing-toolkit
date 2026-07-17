@@ -1,5 +1,5 @@
 #include "QSlimMesh.h"
-#include <wmtk/utils/Concurrency.hpp>
+#include <wmtk/threading/Concurrency.hpp>
 
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
@@ -120,14 +120,14 @@ void QSlimMesh::partition_mesh_morton()
     if (NUM_THREADS == 0) return;
     wmtk::logger().info("Number of parts: {} by morton", NUM_THREADS);
 
-    wmtk::task_arena arena(NUM_THREADS);
+    wmtk::threading::task_arena arena(NUM_THREADS);
 
     arena.execute([&] {
         std::vector<Eigen::Vector3d> V_v(vert_capacity());
 
-        wmtk::parallel_for(
-            wmtk::blocked_range<int>(0, V_v.size()),
-            [&](wmtk::blocked_range<int> r) {
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<int>(0, V_v.size()),
+            [&](wmtk::threading::blocked_range<int> r) {
                 for (int i = r.begin(); i < r.end(); i++) {
                     V_v[i] = vertex_attrs[i].pos;
                 }
@@ -158,11 +158,13 @@ void QSlimMesh::partition_mesh_morton()
 
         Eigen::Vector3d center = (vmin + vmax) / 2;
 
-        wmtk::parallel_for(wmtk::blocked_range<int>(0, V.size()), [&](wmtk::blocked_range<int> r) {
-            for (int i = r.begin(); i < r.end(); i++) {
-                V[i] = V[i] - center;
-            }
-        });
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<int>(0, V.size()),
+            [&](wmtk::threading::blocked_range<int> r) {
+                for (int i = r.begin(); i < r.end(); i++) {
+                    V[i] = V[i] - center;
+                }
+            });
 
         Eigen::Vector3d scale_point =
             vmax - center; // after placing box at origin, vmax and vmin are symetric.
@@ -173,36 +175,38 @@ void QSlimMesh::partition_mesh_morton()
         zscale = fabs(scale_point[2]);
         double scale = std::max(std::max(xscale, yscale), zscale);
         if (scale > 300) {
-            wmtk::parallel_for(
-                wmtk::blocked_range<int>(0, V.size()),
-                [&](wmtk::blocked_range<int> r) {
+            wmtk::threading::parallel_for(
+                wmtk::threading::blocked_range<int>(0, V.size()),
+                [&](wmtk::threading::blocked_range<int> r) {
                     for (int i = r.begin(); i < r.end(); i++) {
                         V[i] = V[i] / scale;
                     }
                 });
         }
 
-        wmtk::parallel_for(wmtk::blocked_range<int>(0, V.size()), [&](wmtk::blocked_range<int> r) {
-            for (int i = r.begin(); i < r.end(); i++) {
-                list_v[i].morton = Resorting::MortonCode64(
-                    int(V[i][0] * multi),
-                    int(V[i][1] * multi),
-                    int(V[i][2] * multi));
-                list_v[i].order = i;
-            }
-        });
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<int>(0, V.size()),
+            [&](wmtk::threading::blocked_range<int> r) {
+                for (int i = r.begin(); i < r.end(); i++) {
+                    list_v[i].morton = Resorting::MortonCode64(
+                        int(V[i][0] * multi),
+                        int(V[i][1] * multi),
+                        int(V[i][2] * multi));
+                    list_v[i].order = i;
+                }
+            });
 
         const auto morton_compare = [](const sortstruct& a, const sortstruct& b) {
             return (a.morton < b.morton);
         };
 
-        wmtk::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
+        wmtk::threading::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
 
         int interval = list_v.size() / NUM_THREADS + 1;
 
-        wmtk::parallel_for(
-            wmtk::blocked_range<int>(0, list_v.size()),
-            [&](wmtk::blocked_range<int> r) {
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<int>(0, list_v.size()),
+            [&](wmtk::threading::blocked_range<int> r) {
                 for (int i = r.begin(); i < r.end(); i++) {
                     vertex_attrs[list_v[i].order].partition_id = i / interval;
                 }
@@ -357,7 +361,7 @@ bool QSlimMesh::collapse_qslim(int target_vert_number)
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     int starting_num = vert_capacity();
 
-    auto collect_tuples = wmtk::concurrent_vector<Tuple>();
+    auto collect_tuples = wmtk::threading::concurrent_vector<Tuple>();
 
     for_each_edge([&](auto& tup) { collect_tuples.emplace_back(tup); });
     collect_all_ops.reserve(collect_tuples.size());
