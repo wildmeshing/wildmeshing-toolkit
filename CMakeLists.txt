@@ -66,6 +66,28 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
 # Generate position independent code by default
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+# Strict, reproducible floating point for the golden-hash integration tests. Set
+# GLOBALLY here -- before any dependency or target is configured -- so that every
+# translation unit (the toolkit, the components, the app, and third-party code
+# such as Eigen, libigl, geogram and polysolve) is compiled identically. Two
+# effects, both required for bit-identical output across compilers/OSes/CPUs:
+#   * FMA contraction (a*b+c fused into a single rounding) is the main source of
+#     cross-compiler divergence, so disable it; and never allow fast-math.
+#   * EIGEN_DONT_VECTORIZE forces Eigen's scalar code path so SIMD reductions sum
+#     in the same order on every architecture (ARM NEON vs x86 SSE/AVX otherwise
+#     differ at ~1 ULP, which can cascade into different discrete mesh decisions).
+#     It also pins Eigen's alignment/ABI, which is why it must be global and
+#     consistent across every target.
+if(WMTK_FP_STRICT)
+    if(MSVC)
+        add_compile_options(/fp:strict)
+    else()
+        add_compile_options(-ffp-contract=off -fno-fast-math)
+    endif()
+    add_compile_definitions(EIGEN_DONT_VECTORIZE)
+    message(STATUS "WMTK_FP_STRICT: reproducible floating point enabled (no FMA contraction, no fast-math, Eigen scalar path)")
+endif()
+
 include(wmtk_cpm_cache)
 include(CPM)
 include(sanitizers)
@@ -154,21 +176,6 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
 if(MSVC)
     target_compile_options(wildmeshing_toolkit PUBLIC /MP)
     target_compile_definitions(wildmeshing_toolkit PUBLIC _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS)
-endif()
-
-# Strict, reproducible floating point. FMA contraction (a*b+c fused into one
-# rounding) is the main source of cross-compiler / cross-OS result divergence, so
-# disable it, and make sure fast-math is never on. Applied PUBLIC so the flags
-# propagate through the toolkit to the components and the app (and to the
-# header-only Eigen/libigl code compiled into those translation units). Enable
-# together with the golden-hash integration tests (see tests/integration_hashes.py).
-if(WMTK_FP_STRICT)
-    if(MSVC)
-        target_compile_options(wildmeshing_toolkit PUBLIC /fp:strict)
-    else()
-        target_compile_options(wildmeshing_toolkit PUBLIC -ffp-contract=off -fno-fast-math)
-    endif()
-    message(STATUS "WMTK_FP_STRICT: strict/reproducible floating point enabled")
 endif()
 
 #################################################################################
