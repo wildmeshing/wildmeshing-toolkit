@@ -57,6 +57,7 @@ project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
 # ###############################################################################
 option(WMTK_BUILD_DOCS "Build doxygen" OFF)
 option(WMTK_BUILD_INTEGRATION_TESTS "Build integration tests (might take very long to run)" OFF) # off by default
+option(WMTK_FP_STRICT "Compile with strict, reproducible floating point (no FMA contraction / fast-math) so integration-test outputs are bit-identical across compilers and OSes" OFF)
 option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option due to use of TBB
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -153,6 +154,21 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
 if(MSVC)
     target_compile_options(wildmeshing_toolkit PUBLIC /MP)
     target_compile_definitions(wildmeshing_toolkit PUBLIC _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS)
+endif()
+
+# Strict, reproducible floating point. FMA contraction (a*b+c fused into one
+# rounding) is the main source of cross-compiler / cross-OS result divergence, so
+# disable it, and make sure fast-math is never on. Applied PUBLIC so the flags
+# propagate through the toolkit to the components and the app (and to the
+# header-only Eigen/libigl code compiled into those translation units). Enable
+# together with the golden-hash integration tests (see tests/integration_hashes.py).
+if(WMTK_FP_STRICT)
+    if(MSVC)
+        target_compile_options(wildmeshing_toolkit PUBLIC /fp:strict)
+    else()
+        target_compile_options(wildmeshing_toolkit PUBLIC -ffp-contract=off -fno-fast-math)
+    endif()
+    message(STATUS "WMTK_FP_STRICT: strict/reproducible floating point enabled")
 endif()
 
 #################################################################################
