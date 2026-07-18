@@ -37,7 +37,8 @@
       "stuck_refine_force_split",
       "stuck_refine_rational_split",
       "skip_good_regions",
-      "skip_good_regions_margin"
+      "skip_good_regions_margin",
+      "skip_winding_number"
     ]
   },
   {
@@ -105,6 +106,12 @@
     "options": ["flood", "input", "tracked", "none"],
     "default": "none",
     "doc": "Remove the outside region based on different criteria. 'flood': flood fill. 'input': winding number w.r.t. the input. 'tracked': winding number w.r.t. the tracked surface. 'none': Do not filter. Flood fill only works if the input is closed. Otherwise, it results in an empty mesh. Filtering w.r.t. the input might cause wrinkles along the surface as some tets might be falsely tagged. Filtering w.r.t. the tracked surface can lead to missing pieces if the input consists of multiple components."
+  },
+  {
+    "pointer": "/skip_winding_number",
+    "type": "bool",
+    "default": false,
+    "doc": "Skip the finalize-phase winding-number and flood-fill computation. These per-tet quantities are needed to filter the outside region (filter != 'none') and are otherwise written only as output annotation fields; the (three) winding-number evaluations dominate the finalize phase on large meshes. When set, they are skipped and the corresponding output fields are left at their defaults. Ignored (with a warning) when filter != 'none', which requires them."
   },
   {
     "pointer": "/eps_rel",
