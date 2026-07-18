@@ -825,22 +825,33 @@ void TetWildMesh::compute_winding_numbers(
     const std::vector<Vector3d>& in_vertices,
     const std::vector<std::array<size_t, 3>>& in_faces)
 {
-    // For a single input we already have the surface in memory (in_vertices/in_faces)
-    // so there is no need to re-read the (potentially large) file from disk.
-    const bool reuse_in_memory =
-        input_paths.size() == 1 && !in_vertices.empty() && !in_faces.empty();
+    // Single-input fast path: with one input surface, the per-input winding number is
+    // evaluated from exactly the same surface (in_vertices/in_faces) and the same query
+    // barycenters as the input-surface winding number that compute_winding_number(...)
+    // has already computed and stored in m_winding_number_input. Recomputing it here
+    // repeats the full winding-number evaluation (the dominant cost of the finalize
+    // phase on large meshes) for an identical result, so reuse the stored value.
+    //
+    // Precondition: compute_winding_number(tets, barycenters, in_vertices, in_faces) has
+    // run before this call (as tetwild does), so m_winding_number_input is populated.
+    // Reusing it also sidesteps a stale/racy value that igl's WindingNumberAABB static
+    // cache can return on a second, independent evaluation of the same surface.
+    if (input_paths.size() == 1 && !in_vertices.empty() && !in_faces.empty()) {
+        for (int i = 0; i < (int)tets.size(); ++i) {
+            const size_t tid = tets[i].tid(*this);
+            m_tet_attribute[tid].m_winding_number_per_input.assign(
+                1,
+                m_tet_attribute[tid].m_winding_number_input);
+        }
+        return;
+    }
 
+    // Multiple inputs: evaluate each input surface's winding number independently,
+    // reading every file from disk (the in-memory surface is only the merged input).
     for (size_t p = 0; p < input_paths.size(); ++p) {
         MatrixXd V;
         MatrixXi F;
-        if (reuse_in_memory) {
-            V.resize(in_vertices.size(), 3);
-            F.resize(in_faces.size(), 3);
-            for (size_t i = 0; i < in_vertices.size(); ++i) V.row(i) = in_vertices[i];
-            for (size_t i = 0; i < in_faces.size(); ++i) {
-                for (size_t j = 0; j < 3; ++j) F(i, j) = (int)in_faces[i][j];
-            }
-        } else {
+        {
             MatrixXd inV;
             MatrixXi inF;
             igl::read_triangle_mesh(input_paths[p], inV, inF);
