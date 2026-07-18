@@ -23,6 +23,7 @@
       "DEBUG_output",
       "DEBUG_sanity_checks",
       "DEBUG_hausdorff",
+      "DEBUG_euler",
       "allow_surface_swap",
       "check_surface_topology",
       "stuck_refine",
@@ -164,6 +165,12 @@
     "type": "bool",
     "default": false,
     "doc": "Sanity Check: Compute and report the Hausdorff distance of the output to the input. Should be always smaller than eps."
+  },
+  {
+    "pointer": "/DEBUG_euler",
+    "type": "bool",
+    "default": false,
+    "doc": "Sanity Check: Compute and report the Euler characteristic of the input and output surfaces and warn if they differ. Off by default because on meshes with many components it can take tens of seconds. It is computed regardless when preserve_topology is set (the topology check needs it)."
   },
   {
     "pointer": "/allow_surface_swap",

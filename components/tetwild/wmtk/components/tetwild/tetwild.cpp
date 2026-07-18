@@ -196,7 +196,9 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     t_load = phase_timer.getElapsedTime();
     phase_timer.start(); // surface simplification begins
 
-    {
+    // Informational input-topology report; gated behind DEBUG_euler because the
+    // Euler-characteristic computation is expensive on meshes with many components.
+    if (json_params["DEBUG_euler"]) {
         Eigen::MatrixXi F(tris.size(), 3);
         for (int i = 0; i < tris.size(); ++i) {
             F.row(i) = Eigen::Vector3i((int)tris[i][0], (int)tris[i][1], (int)tris[i][2]);
@@ -511,12 +513,18 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             }
         }
 
-        ecs_input = compute_euler_characteristics(F);
-        logger().info("Input euler characteristic: {}", ecs_input);
-        ecs_output = compute_euler_characteristics(matF);
-        logger().info("Output euler characteristic: {}", ecs_output);
-        if (ecs_input != ecs_output) {
-            logger().warn("Output topology is not the same as the input topology!");
+        // The Euler-characteristic check is a topology sanity check. It is expensive on
+        // meshes with many components (tens of seconds), so it is off by default and only
+        // computed when explicitly requested (DEBUG_euler) or when it is actually needed
+        // for the preserve_topology throw check below.
+        if (json_params["DEBUG_euler"] || params.preserve_topology) {
+            ecs_input = compute_euler_characteristics(F);
+            logger().info("Input euler characteristic: {}", ecs_input);
+            ecs_output = compute_euler_characteristics(matF);
+            logger().info("Output euler characteristic: {}", ecs_output);
+            if (ecs_input != ecs_output) {
+                logger().warn("Output topology is not the same as the input topology!");
+            }
         }
     }
 
