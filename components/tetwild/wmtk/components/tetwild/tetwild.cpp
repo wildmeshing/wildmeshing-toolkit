@@ -363,22 +363,40 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         wmtk::logger().error("Not all vertices rounded!");
     }
 
-    // Precompute the tets and their barycenters once; all winding-number passes
-    // below reuse them (they used to each rebuild get_tets() + the barycenters).
-    const auto finalize_tets = mesh_new.get_tets();
-    const Eigen::MatrixXd finalize_barycenters = mesh_new.tet_barycenters(finalize_tets);
-
-    // apply input winding number
-    mesh_new.compute_winding_number(finalize_tets, finalize_barycenters, verts, tris);
-    // apply tracked surface winding number
-    mesh_new.compute_winding_number(finalize_tets, finalize_barycenters);
-    // apply flood fill
-    {
-        int num_parts = mesh_new.flood_fill();
-        logger().info("flood fill parts {}", num_parts);
+    // Winding-number / flood-fill annotations. They are required to filter the outside
+    // region (filter != "none") and are otherwise written only as output annotation
+    // fields. On large meshes the three winding-number evaluations dominate the finalize
+    // phase, so skip_winding_number lets a caller that does not filter and does not need
+    // the annotations opt out of them. When filtering is requested the flag is ignored
+    // (the winding number is needed), with a warning.
+    const bool skip_winding = json_params["skip_winding_number"] && filter_option == "none";
+    if (json_params["skip_winding_number"] && filter_option != "none") {
+        logger().warn(
+            "skip_winding_number is set but filter='{}' requires the winding number; "
+            "computing it anyway.",
+            filter_option);
     }
-    // compute per-input winding number (reuse in-memory verts/tris to avoid re-read)
-    mesh_new.compute_winding_numbers(input_paths, finalize_tets, finalize_barycenters, verts, tris);
+    if (!skip_winding) {
+        // Precompute the tets and their barycenters once; all winding-number passes
+        // below reuse them (they used to each rebuild get_tets() + the barycenters).
+        const auto finalize_tets = mesh_new.get_tets();
+        const Eigen::MatrixXd finalize_barycenters = mesh_new.tet_barycenters(finalize_tets);
+
+        // apply input winding number
+        mesh_new.compute_winding_number(finalize_tets, finalize_barycenters, verts, tris);
+        // apply tracked surface winding number
+        mesh_new.compute_winding_number(finalize_tets, finalize_barycenters);
+        // apply flood fill
+        {
+            int num_parts = mesh_new.flood_fill();
+            logger().info("flood fill parts {}", num_parts);
+        }
+        // compute per-input winding number (reuse in-memory verts/tris to avoid re-read)
+        mesh_new
+            .compute_winding_numbers(input_paths, finalize_tets, finalize_barycenters, verts, tris);
+    } else {
+        logger().info("Skipping winding-number and flood-fill computation (skip_winding_number)");
+    }
 
     // ////winding number
     if (filter_option == "input") {
