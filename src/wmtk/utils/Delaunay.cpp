@@ -10,8 +10,11 @@
 #include <wmtk/utils/Logger.hpp>
 
 
+#include <algorithm>
 #include <cassert>
 #include <mutex>
+#include <numeric>
+#include <vector>
 
 namespace {
 bool is_inverted(
@@ -196,11 +199,19 @@ void constrained_delaunay2D(
         log_and_throw_error("Input edges must be 2D");
     }
 
+    // ExactCDT2d relies on geogram's exact predicate kernel (PCK), which must be
+    // initialized first. (The plain CDT2d did not need this, so the call was absent.)
     static std::once_flag once_flag;
     std::call_once(once_flag, []() { GEO::initialize(); });
 
-    GEO::CDT2d cdt;
-    // GEO::ExactCDT2d cdt;
+    // ExactCDT2d (exact predicates + symbolic perturbation) instead of the plain
+    // CDT2d: the plain version breaks ties between the two valid diagonals of a
+    // cocircular quad with floating-point-dependent logic, so it can produce
+    // *different* (but equally valid) triangulations of the same points on
+    // different CPU architectures. That non-determinism cascades into a completely
+    // different output mesh. The exact version resolves those ties deterministically,
+    // so the triangulation is identical everywhere.
+    GEO::ExactCDT2d cdt;
     std::vector<GEO::index_t> vertex_ids(V.rows());
 
     cdt.create_enclosing_rectangle(
@@ -210,8 +221,8 @@ void constrained_delaunay2D(
         V.col(1).maxCoeff());
 
     for (size_t i = 0; i < V.rows(); ++i) {
-        const GEO::vec2 p(V(i, 0), V(i, 1));
-        const GEO::index_t id = cdt.insert(p);
+        const GEO::index_t id =
+            cdt.insert(GEO::ExactCDT2d::ExactPoint(GEO::vec2(V(i, 0), V(i, 1))));
         vertex_ids[i] = id;
     }
     for (size_t i = 0; i < E.rows(); ++i) {
@@ -250,9 +261,13 @@ void constrained_delaunay2D(
     V_out.resize(nv, 2);
 
     for (GEO::index_t v = 0; v < nv; ++v) {
-        const GEO::vec2& p = cdt.point(v);
-        V_out(v, 0) = p.x;
-        V_out(v, 1) = p.y;
+        // ExactCDT2d stores homogeneous exact coordinates; project back to double
+        // (the same way geogram itself does). estimate() + a single IEEE division
+        // are deterministic across architectures.
+        const GEO::ExactCDT2d::ExactPoint& p = cdt.point(v);
+        const double w = p.w.estimate();
+        V_out(v, 0) = p.x.estimate() / w;
+        V_out(v, 1) = p.y.estimate() / w;
     }
 
     F_out.resize(nt, 3);
@@ -261,6 +276,35 @@ void constrained_delaunay2D(
         F_out(t, 0) = int(cdt.Tv(t, 0));
         F_out(t, 1) = int(cdt.Tv(t, 1));
         F_out(t, 2) = int(cdt.Tv(t, 2));
+    }
+
+    // Canonicalize the triangle order. Even with exact predicates the triangulation
+    // is only unique as a *set* of triangles: geogram stores them in an order that
+    // depends on the (floating-point) point-location walk, so the row order (and the
+    // in-row rotation) can differ between machines/architectures for the same input.
+    // Downstream the mesh is built directly from these rows, so that ordering would
+    // make the whole result non-reproducible. Rotate each triangle so its smallest
+    // vertex is first (preserving orientation), then sort the rows lexicographically.
+    {
+        for (int t = 0; t < F_out.rows(); ++t) {
+            int m = 0;
+            if (F_out(t, 1) < F_out(t, m)) m = 1;
+            if (F_out(t, 2) < F_out(t, m)) m = 2;
+            const int v0 = F_out(t, m), v1 = F_out(t, (m + 1) % 3), v2 = F_out(t, (m + 2) % 3);
+            F_out(t, 0) = v0;
+            F_out(t, 1) = v1;
+            F_out(t, 2) = v2;
+        }
+        std::vector<int> order(F_out.rows());
+        std::iota(order.begin(), order.end(), 0);
+        std::sort(order.begin(), order.end(), [&](int i, int j) {
+            if (F_out(i, 0) != F_out(j, 0)) return F_out(i, 0) < F_out(j, 0);
+            if (F_out(i, 1) != F_out(j, 1)) return F_out(i, 1) < F_out(j, 1);
+            return F_out(i, 2) < F_out(j, 2);
+        });
+        MatrixXi F_sorted(F_out.rows(), 3);
+        for (int i = 0; i < (int)order.size(); ++i) F_sorted.row(i) = F_out.row(order[i]);
+        F_out = F_sorted;
     }
 
     E_out.resize(constrained_edges.size(), 2);
