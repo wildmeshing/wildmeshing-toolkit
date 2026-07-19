@@ -7,6 +7,7 @@
 #include <wmtk/envelope/KNN.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
+#include <wmtk/utils/deterministic_cbrt.hpp>
 #include <wmtk/utils/io.hpp>
 
 // clang-format off
@@ -369,7 +370,7 @@ bool SimWildMesh::adjust_sizing_field_serial(double max_energy)
             continue;
         }
         const size_t tid = t.tid(*this);
-        if (std::cbrt(m_tet_attribute[tid].m_quality) < filter_energy) {
+        if (wmtk::utils::deterministic_cbrt(m_tet_attribute[tid].m_quality) < filter_energy) {
             continue;
         }
         const auto vs = oriented_tet_vids(t);
@@ -793,13 +794,13 @@ std::tuple<double, double> SimWildMesh::get_max_avg_energy()
         //                   << m_vertex_attribute[v.vid(*this)].m_posf[2] << std::endl;
         //     }
         // }
-        avg_energy += std::cbrt(q);
+        avg_energy += wmtk::utils::deterministic_cbrt(q);
         cnt++;
     }
 
     avg_energy /= cnt;
 
-    return std::make_tuple(std::cbrt(max_energy), avg_energy);
+    return std::make_tuple(wmtk::utils::deterministic_cbrt(max_energy), avg_energy);
 }
 
 bool SimWildMesh::is_inverted_f(const Tuple& loc) const
@@ -1172,7 +1173,7 @@ void SimWildMesh::write_vtu(const std::string& path)
         for (size_t j = 0; j < m_tags_count; ++j) {
             tags[j](index, 0) = m_tet_attribute[tid].tags.count(j) ? 1 : 0;
         }
-        amips(index, 0) = std::cbrt(m_tet_attribute[tid].m_quality);
+        amips(index, 0) = wmtk::utils::deterministic_cbrt(m_tet_attribute[tid].m_quality);
 
         const auto& vs = oriented_tet_vertices(t);
         for (int j = 0; j < 4; j++) {
