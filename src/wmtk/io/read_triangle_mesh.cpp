@@ -3,12 +3,100 @@
 #include <igl/is_edge_manifold.h>
 #include <igl/is_vertex_manifold.h>
 #include <igl/read_triangle_mesh.h>
-#include <igl/remove_duplicate_vertices.h>
 #include <igl/remove_unreferenced.h>
+#include <algorithm>
+#include <cmath>
 #include <filesystem>
+#include <numeric>
+#include <vector>
 #include <wmtk/utils/Logger.hpp>
 
 namespace wmtk::io {
+
+namespace {
+
+/**
+ * @brief Deterministic replacement for igl::remove_duplicate_vertices(V, epsilon, ...).
+ *
+ * igl rounds every vertex to a grid of cell size `epsilon` and keeps one
+ * representative per occupied cell, emitting the unique cells in ascending
+ * coordinate order. It selects the representative with igl::sortrows, whose
+ * std::sort comparator compares only the (rounded) coordinates -- so vertices
+ * that fall in the SAME cell compare equal and std::sort leaves them in an
+ * implementation-defined order. A different vertex then survives under libc++
+ * (macOS) vs libstdc++ (Linux), which makes the cleaned mesh -- and everything
+ * downstream (surface simplification, tetrahedralization, ...) -- differ across
+ * OSes. Meshes with no in-cell duplicates are unaffected (distinct keys sort
+ * deterministically), which is why most inputs already reproduced.
+ *
+ * This version reproduces igl's result exactly -- same grid rounding, unique
+ * cells emitted in ascending coordinate order, representative position taken
+ * verbatim from V -- but breaks ties in the sort on the original vertex index,
+ * so the representative is always the lowest-indexed vertex in the cell and the
+ * output is bit-identical on every platform. When there are no in-cell
+ * duplicates the tie-break never fires and the output equals igl's.
+ *
+ * @param V       input vertices (one per row)
+ * @param epsilon grid cell size (vertices within a cell are merged)
+ * @param SV      surviving (unique) vertices, ascending by rounded coordinate
+ * @param SVJ     for each original vertex, the row of its representative in SV
+ */
+void remove_duplicate_vertices_deterministic(
+    const Eigen::MatrixXd& V,
+    double epsilon,
+    Eigen::MatrixXd& SV,
+    Eigen::VectorXi& SVJ)
+{
+    const int n = static_cast<int>(V.rows());
+    const int dim = static_cast<int>(V.cols());
+
+    // Rounded integer grid coordinates. std::llround rounds half away from zero,
+    // matching igl::round (std::round); the quotient and the rounding are the
+    // IEEE-correctly-rounded '/' and a correctly-rounded round, so R is
+    // bit-identical on every platform.
+    Eigen::Matrix<long long, Eigen::Dynamic, Eigen::Dynamic> R(n, dim);
+    for (int i = 0; i < n; ++i) {
+        for (int c = 0; c < dim; ++c) {
+            R(i, c) = std::llround(V(i, c) / epsilon);
+        }
+    }
+
+    std::vector<int> order(n);
+    std::iota(order.begin(), order.end(), 0);
+    std::sort(order.begin(), order.end(), [&](int a, int b) {
+        for (int c = 0; c < dim; ++c) {
+            if (R(a, c) < R(b, c)) return true;
+            if (R(b, c) < R(a, c)) return false;
+        }
+        return a < b; // tie-break by original index: total order => deterministic
+    });
+
+    SVJ.resize(n);
+    std::vector<int> reps;
+    reps.reserve(n);
+    for (int k = 0; k < n; ++k) {
+        const int i = order[k];
+        bool new_cell = (k == 0);
+        if (!new_cell) {
+            const int p = order[k - 1];
+            for (int c = 0; c < dim; ++c) {
+                if (R(i, c) != R(p, c)) {
+                    new_cell = true;
+                    break;
+                }
+            }
+        }
+        if (new_cell) reps.push_back(i);
+        SVJ(i) = static_cast<int>(reps.size()) - 1;
+    }
+
+    SV.resize(static_cast<int>(reps.size()), dim);
+    for (int k = 0; k < static_cast<int>(reps.size()); ++k) {
+        SV.row(k) = V.row(reps[k]);
+    }
+}
+
+} // namespace
 
 /**
  * @brief Clean the input triangle mesh by removing duplicated vertices, degenerate faces, and
@@ -43,9 +131,12 @@ void clean_triangle_mesh(MatrixXd& V, MatrixXi& F, double tol_rel = -1, double t
 
     // remove duplicated vertices
     if (tol_abs >= 0) {
-        VectorXi SVI, SVJ;
+        VectorXi SVJ;
         MatrixXd temp_V = V;
-        igl::remove_duplicate_vertices(temp_V, tol_abs, V, SVI, SVJ);
+        // Deterministic (see above): igl::remove_duplicate_vertices picks a cell
+        // representative with a non-stable sort, so the survivor differs across
+        // OSes and the cleaned mesh is not reproducible.
+        remove_duplicate_vertices_deterministic(temp_V, tol_abs, V, SVJ);
         for (int i = 0; i < F.rows(); i++) {
             for (int j = 0; j < 3; ++j) {
                 F(i, j) = SVJ[F(i, j)];
