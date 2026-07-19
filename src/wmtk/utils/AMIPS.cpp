@@ -1,11 +1,8 @@
 #include "AMIPS.h"
 
-#include "deterministic_cbrt.hpp"
+#include "Transcendentals.hpp"
 
 namespace wmtk {
-
-using wmtk::utils::deterministic_cbrt;
-
 
 double AMIPS_energy(const std::array<double, 12>& T)
 {
@@ -65,7 +62,7 @@ double AMIPS_energy(const std::array<double, 12>& T)
           helper_7 * (0.5 * helper_10 + helper_20 - 1.5 * helper_7) +
           helper_8 * (0.5 * helper_10 + 0.5 * helper_7 - 1.5 * helper_8 + 0.5 * helper_9) +
           helper_9 * (0.5 * helper_10 + 0.5 * helper_7 + 0.5 * helper_8 - 1.5 * helper_9)) /
-        deterministic_cbrt(helper_22 * helper_22);
+        wmtk::cbrt(helper_22 * helper_22);
     //                 * pow(pow((helper_1 - helper_2) * (helper_11 * helper_6 - helper_12 *
     //                 helper_14) -
     //                         (-helper_10 + helper_7) * (-helper_14 * helper_18 + helper_17 *
@@ -132,7 +129,7 @@ void AMIPS_jacobian(const std::array<double, 12>& T, Eigen::Vector3d& result_0)
     double helper_38 = helper_4 - helper_6;
     double helper_39 = helper_23 * helper_3 - helper_24 * (helper_32 - helper_37) -
                        helper_38 * (helper_16 * helper_36 - helper_20 * helper_31);
-    double helper_40 = 1.0 / deterministic_cbrt(helper_39 * helper_39);
+    double helper_40 = 1.0 / wmtk::cbrt(helper_39 * helper_39);
     double helper_41 = 0.707106781186548 * helper_10 - 0.707106781186548 * helper_12;
     double helper_42 = 0.707106781186548 * helper_26 - 0.707106781186548 * helper_28;
     double helper_43 = 0.5 * helper_21 + 0.5 * helper_5;
@@ -242,7 +239,7 @@ void AMIPS_hessian(const std::array<double, 12>& T, Eigen::Matrix3d& result_0)
     double helper_53 = helper_49 * helper_52;
     double helper_54 = helper_32 + helper_48 - helper_53;
     double helper_55 = helper_54 * helper_54;
-    double helper_56 = 1.0 / deterministic_cbrt(helper_55);
+    double helper_56 = 1.0 / wmtk::cbrt(helper_55);
     double helper_57 = 1.0 * helper_27 - 3.0 * helper_4 + 1.0 * helper_6 + 1.0 * helper_8;
     double helper_58 = 0.707106781186548 * helper_13;
     double helper_59 = 0.707106781186548 * helper_15;
@@ -276,7 +273,7 @@ void AMIPS_hessian(const std::array<double, 12>& T, Eigen::Matrix3d& result_0)
     double helper_84 = helper_66 * helper_82;
     double helper_85 = -helper_32 - helper_48 + helper_53;
     double helper_86 = 1.0 / helper_85;
-    double helper_87 = helper_86 * 1.0 / deterministic_cbrt(helper_85 * helper_85);
+    double helper_87 = helper_86 * 1.0 / wmtk::cbrt(helper_85 * helper_85);
     double helper_88 = 0.707106781186548 * helper_6;
     double helper_89 = 0.707106781186548 * helper_27;
     double helper_90 = helper_88 - helper_89;

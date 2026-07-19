@@ -69,8 +69,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # Strict, reproducible floating point for the golden-hash integration tests. Set
 # GLOBALLY here -- before any dependency or target is configured -- so that every
 # translation unit (the toolkit, the components, the app, and third-party code
-# such as Eigen, libigl, geogram and polysolve) is compiled identically. Two
-# effects, both required for bit-identical output across compilers/OSes/CPUs:
+# such as Eigen, libigl, geogram and polysolve) is compiled identically. Three
+# effects, all required for bit-identical output across compilers/OSes/CPUs:
 #   * FMA contraction (a*b+c fused into a single rounding) is the main source of
 #     cross-compiler divergence, so disable it; and never allow fast-math.
 #   * EIGEN_DONT_VECTORIZE forces Eigen's scalar code path so SIMD reductions sum
@@ -78,6 +78,13 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 #     differ at ~1 ULP, which can cascade into different discrete mesh decisions).
 #     It also pins Eigen's alignment/ABI, which is why it must be global and
 #     consistent across every target.
+#   * The WMTK_FP_STRICT macro switches the wmtk::cbrt / wmtk::atan2 / wmtk::atan
+#     wrappers (src/wmtk/utils/Transcendentals.hpp) from the fast, architecture-
+#     specific std:: libm functions to hand-rolled deterministic versions. libm's
+#     transcendentals are not correctly rounded and differ by a few ULP between
+#     platforms; the wrappers use the fast path by default and only pay for
+#     determinism here. The winding number (src/wmtk/utils/WindingNumber.hpp) is a
+#     direct solid-angle sum in both builds and reduces to this same atan2 gate.
 if(WMTK_FP_STRICT)
     if(MSVC)
         add_compile_options(/fp:strict)
@@ -85,7 +92,8 @@ if(WMTK_FP_STRICT)
         add_compile_options(-ffp-contract=off -fno-fast-math)
     endif()
     add_compile_definitions(EIGEN_DONT_VECTORIZE)
-    message(STATUS "WMTK_FP_STRICT: reproducible floating point enabled (no FMA contraction, no fast-math, Eigen scalar path)")
+    add_compile_definitions(WMTK_FP_STRICT)
+    message(STATUS "WMTK_FP_STRICT: reproducible floating point enabled (no FMA contraction, no fast-math, Eigen scalar path, deterministic transcendentals)")
 endif()
 
 include(wmtk_cpm_cache)

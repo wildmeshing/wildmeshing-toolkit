@@ -8,7 +8,7 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/WindingNumber.hpp>
-#include <wmtk/utils/deterministic_cbrt.hpp>
+#include <wmtk/utils/Transcendentals.hpp>
 #include <wmtk/utils/io.hpp>
 
 // clang-format off
@@ -566,7 +566,7 @@ bool TetWildMesh::adjust_sizing_field_serial(double max_energy)
             continue;
         }
         const size_t tid = t.tid(*this);
-        if (wmtk::utils::deterministic_cbrt(m_tet_attribute[tid].m_quality) < filter_energy) {
+        if (wmtk::cbrt(m_tet_attribute[tid].m_quality) < filter_energy) {
             continue;
         }
         const auto vs = oriented_tet_vids(t);
@@ -1041,16 +1041,16 @@ void TetWildMesh::output_mesh(std::string file)
         return m_vertex_attribute[i].m_sizing_scalar;
     });
     msh.add_tet_attribute<1>("t energy", [&](size_t i) {
-        return wmtk::utils::deterministic_cbrt(m_tet_attribute[i].m_quality);
+        return wmtk::cbrt(m_tet_attribute[i].m_quality);
     });
     msh.add_tet_attribute<1>("winding_number_input", [&](size_t i) {
-        return wmtk::utils::deterministic_cbrt(m_tet_attribute[i].m_winding_number_input);
+        return wmtk::cbrt(m_tet_attribute[i].m_winding_number_input);
     });
     msh.add_tet_attribute<1>("winding_number_tracked", [&](size_t i) {
-        return wmtk::utils::deterministic_cbrt(m_tet_attribute[i].m_winding_number_tracked);
+        return wmtk::cbrt(m_tet_attribute[i].m_winding_number_tracked);
     });
     msh.add_tet_attribute<1>("part", [&](size_t i) {
-        return wmtk::utils::deterministic_cbrt(m_tet_attribute[i].part_id);
+        return wmtk::cbrt(m_tet_attribute[i].part_id);
     });
 
     // per input winding number
@@ -1058,7 +1058,7 @@ void TetWildMesh::output_mesh(std::string file)
         const size_t n = m_tet_attribute[tets[0].tid(*this)].m_winding_number_per_input.size();
         for (size_t j = 0; j < n; ++j) {
             msh.add_tet_attribute<1>(fmt::format("wn_{}", j), [&](size_t i) {
-                return wmtk::utils::deterministic_cbrt(
+                return wmtk::cbrt(
                     m_tet_attribute[i].m_winding_number_per_input[j]);
             });
         }
@@ -1087,7 +1087,7 @@ std::tuple<double, double> TetWildMesh::get_max_avg_energy()
     // TetMesh::for_each_tetra([&](auto& t) {
     //     auto q = m_tet_attribute[t.tid(*this)].m_quality;
     //     max_energy = std::max(max_energy, q);
-    //     avg_energy += wmtk::utils::deterministic_cbrt(q);
+    //     avg_energy += wmtk::cbrt(q);
     //     cnt++;
     // });
     // std::ofstream large_tet("large_energy_tet.obj");
@@ -1106,13 +1106,13 @@ std::tuple<double, double> TetWildMesh::get_max_avg_energy()
         //                   << m_vertex_attribute[v.vid(*this)].m_posf[2] << std::endl;
         //     }
         // }
-        avg_energy += wmtk::utils::deterministic_cbrt(q);
+        avg_energy += wmtk::cbrt(q);
         cnt++;
     }
 
     avg_energy /= cnt;
 
-    return std::make_tuple(wmtk::utils::deterministic_cbrt(max_energy), avg_energy);
+    return std::make_tuple(wmtk::cbrt(max_energy), avg_energy);
 }
 
 
@@ -1639,7 +1639,7 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
         parts(index, 0) = m_tet_attribute[tid].part_id;
         wn_input(index, 0) = m_tet_attribute[tid].m_winding_number_input;
         wn_tracked(index, 0) = m_tet_attribute[tid].m_winding_number_tracked;
-        t_energy(index, 0) = wmtk::utils::deterministic_cbrt(m_tet_attribute[tid].m_quality);
+        t_energy(index, 0) = wmtk::cbrt(m_tet_attribute[tid].m_quality);
 
         for (size_t i = 0; i < wn_per_input.size(); ++i) {
             wn_per_input[i][index] = m_tet_attribute[tid].m_winding_number_per_input[i];
@@ -1863,7 +1863,7 @@ TetWildMesh::ExportStruct TetWildMesh::export_mesh_data() const
         e.t_part(index, 0) = m_tet_attribute[tid].part_id;
         e.t_winding_number_input(index, 0) = m_tet_attribute[tid].m_winding_number_input;
         e.t_winding_number_tracked(index, 0) = m_tet_attribute[tid].m_winding_number_tracked;
-        e.t_amips(index, 0) = wmtk::utils::deterministic_cbrt(m_tet_attribute[tid].m_quality);
+        e.t_amips(index, 0) = wmtk::cbrt(m_tet_attribute[tid].m_quality);
 
         for (size_t i = 0; i < (size_t)e.t_winding_number_per_input.cols(); ++i) {
             e.t_winding_number_per_input(index, i) =
