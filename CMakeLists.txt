@@ -57,6 +57,7 @@ project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
 # ###############################################################################
 option(WMTK_BUILD_DOCS "Build doxygen" OFF)
 option(WMTK_BUILD_INTEGRATION_TESTS "Build integration tests (might take very long to run)" OFF) # off by default
+option(WMTK_FP_STRICT "Compile with strict, reproducible floating point (no FMA contraction / fast-math) so integration-test outputs are bit-identical across compilers and OSes" OFF)
 option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option due to use of TBB
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -64,6 +65,36 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
 
 # Generate position independent code by default
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+# Strict, reproducible floating point for the golden-hash integration tests. Set
+# GLOBALLY here -- before any dependency or target is configured -- so that every
+# translation unit (the toolkit, the components, the app, and third-party code
+# such as Eigen, libigl, geogram and polysolve) is compiled identically. Three
+# effects, all required for bit-identical output across compilers/OSes/CPUs:
+#   * FMA contraction (a*b+c fused into a single rounding) is the main source of
+#     cross-compiler divergence, so disable it; and never allow fast-math.
+#   * EIGEN_DONT_VECTORIZE forces Eigen's scalar code path so SIMD reductions sum
+#     in the same order on every architecture (ARM NEON vs x86 SSE/AVX otherwise
+#     differ at ~1 ULP, which can cascade into different discrete mesh decisions).
+#     It also pins Eigen's alignment/ABI, which is why it must be global and
+#     consistent across every target.
+#   * The WMTK_FP_STRICT macro switches the wmtk::cbrt / wmtk::atan2 / wmtk::atan
+#     wrappers (src/wmtk/utils/Transcendentals.hpp) from the fast, architecture-
+#     specific std:: libm functions to hand-rolled deterministic versions. libm's
+#     transcendentals are not correctly rounded and differ by a few ULP between
+#     platforms; the wrappers use the fast path by default and only pay for
+#     determinism here. The winding number (src/wmtk/utils/WindingNumber.hpp) is a
+#     direct solid-angle sum in both builds and reduces to this same atan2 gate.
+if(WMTK_FP_STRICT)
+    if(MSVC)
+        add_compile_options(/fp:strict)
+    else()
+        add_compile_options(-ffp-contract=off -fno-fast-math)
+    endif()
+    add_compile_definitions(EIGEN_DONT_VECTORIZE)
+    add_compile_definitions(WMTK_FP_STRICT)
+    message(STATUS "WMTK_FP_STRICT: reproducible floating point enabled (no FMA contraction, no fast-math, Eigen scalar path, deterministic transcendentals)")
+endif()
 
 include(wmtk_cpm_cache)
 include(CPM)
@@ -74,6 +105,10 @@ include(wmtk_copy_dll)
 include(nlohmann_json)
 include(eigen)
 include(delaunay_psm)
+# TBB is no longer used by wmtk itself (replaced by the std::thread shim), but a
+# transitive dependency (geogram, pulled in via FastEnvelope) links against it on
+# Linux, so the library must still be built and available. wmtk does not link
+# TBB::tbb.
 include(onetbb)
 include(mshio)
 include(metis)
@@ -123,6 +158,11 @@ target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
 #target_compile_options(wildmeshing_toolkit PUBLIC  -fconcepts)
 
 
+# std::thread (used by the concurrency shim that replaced TBB) needs the platform
+# threading library; TBB used to pull this in transitively.
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
 target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
@@ -130,7 +170,6 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     igl::predicates
     gmp::gmp
     geogram::delaunay_psm
-    TBB::tbb
     mshio::mshio
     metis::metis
     nlohmann_json::nlohmann_json
@@ -139,6 +178,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     FastEnvelope::FastEnvelope
     simple_bvh::simple_bvh
     polysolve::polysolve
+    Threads::Threads
 )
 
 if(MSVC)

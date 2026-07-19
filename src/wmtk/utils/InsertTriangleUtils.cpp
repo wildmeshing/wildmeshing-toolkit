@@ -1,5 +1,8 @@
 #include "InsertTriangleUtils.hpp"
 
+#include <wmtk/threading/concurrent_map.hpp>
+#include <wmtk/threading/concurrent_vector.hpp>
+
 #include <igl/remove_duplicate_vertices.h>
 #include <map>
 
@@ -8,8 +11,8 @@ namespace wmtk {
 void match_tet_faces_to_triangles(
     const TetMesh& m,
     const std::vector<std::array<size_t, 3>>& faces,
-    tbb::concurrent_vector<bool>& is_matched,
-    tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>>& tet_face_tags)
+    wmtk::threading::concurrent_vector<bool>& is_matched,
+    wmtk::threading::concurrent_map<std::array<size_t, 3>, std::vector<int>>& tet_face_tags)
 {
     is_matched.resize(faces.size(), false);
 

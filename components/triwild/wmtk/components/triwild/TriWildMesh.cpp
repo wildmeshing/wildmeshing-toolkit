@@ -7,13 +7,15 @@
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/envelope/KNN.hpp>
 #include <wmtk/io/read_edge_mesh.hpp>
+#include <wmtk/threading/parallel_for.hpp>
+#include <wmtk/threading/parallel_sort.hpp>
+#include <wmtk/threading/task_arena.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/io.hpp>
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <tbb/concurrent_vector.h>
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/fmt/bundled/format.h>
 #include <igl/predicates/predicates.h>
@@ -214,8 +216,8 @@ void TriWildMesh::init_mesh(
 
     assert(check_mesh_connectivity_validity());
 
-    m_vertex_attribute.m_attributes.resize(V.rows());
-    m_edge_attribute.m_attributes.resize(F.rows() * 3);
+    m_vertex_attribute.resize(V.rows());
+    m_edge_attribute.resize(F.rows() * 3);
 
     for (int i = 0; i < vert_capacity(); i++) {
         m_vertex_attribute[i].m_pos = to_rational(Vector2d(V.row(i)));
@@ -714,14 +716,14 @@ void TriWildMesh::partition_mesh_morton()
     if (NUM_THREADS == 0) return;
     logger().info("Number of parts: {} by morton", NUM_THREADS);
 
-    tbb::task_arena arena(NUM_THREADS);
+    wmtk::threading::task_arena arena(NUM_THREADS);
 
     arena.execute([&] {
         std::vector<Vector2d> V_v(vert_capacity());
 
-        tbb::parallel_for(
-            tbb::blocked_range<size_t>(0, V_v.size()),
-            [&](tbb::blocked_range<size_t> r) {
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<size_t>(0, V_v.size()),
+            [&](wmtk::threading::blocked_range<size_t> r) {
                 for (size_t i = r.begin(); i < r.end(); i++) {
                     V_v[i] = m_vertex_attribute[i].m_posf;
                 }
@@ -752,9 +754,9 @@ void TriWildMesh::partition_mesh_morton()
 
         Vector2d center = (vmin + vmax) / 2;
 
-        tbb::parallel_for(
-            tbb::blocked_range<size_t>(0, V.size()),
-            [&](tbb::blocked_range<size_t> r) {
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<size_t>(0, V.size()),
+            [&](wmtk::threading::blocked_range<size_t> r) {
                 for (size_t i = r.begin(); i < r.end(); i++) {
                     V[i] = V[i] - center;
                 }
@@ -768,18 +770,18 @@ void TriWildMesh::partition_mesh_morton()
         yscale = fabs(scale_point[1]);
         double scale = std::max(xscale, yscale);
         if (scale > 300) {
-            tbb::parallel_for(
-                tbb::blocked_range<size_t>(0, V.size()),
-                [&](tbb::blocked_range<size_t> r) {
+            wmtk::threading::parallel_for(
+                wmtk::threading::blocked_range<size_t>(0, V.size()),
+                [&](wmtk::threading::blocked_range<size_t> r) {
                     for (size_t i = r.begin(); i < r.end(); i++) {
                         V[i] = V[i] / scale;
                     }
                 });
         }
 
-        tbb::parallel_for(
-            tbb::blocked_range<size_t>(0, V.size()),
-            [&](tbb::blocked_range<size_t> r) {
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<size_t>(0, V.size()),
+            [&](wmtk::threading::blocked_range<size_t> r) {
                 for (size_t i = r.begin(); i < r.end(); i++) {
                     list_v[i].morton =
                         Resorting::MortonCode64(int(V[i][0] * multi), int(V[i][1] * multi), 0);
@@ -791,13 +793,13 @@ void TriWildMesh::partition_mesh_morton()
             return (a.morton < b.morton);
         };
 
-        tbb::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
+        wmtk::threading::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
 
         size_t interval = list_v.size() / NUM_THREADS + 1;
 
-        tbb::parallel_for(
-            tbb::blocked_range<size_t>(0, list_v.size()),
-            [&](tbb::blocked_range<size_t> r) {
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<size_t>(0, list_v.size()),
+            [&](wmtk::threading::blocked_range<size_t> r) {
                 for (size_t i = r.begin(); i < r.end(); i++) {
                     m_vertex_attribute[list_v[i].order].partition_id = i / interval;
                 }

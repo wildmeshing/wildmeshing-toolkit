@@ -7,15 +7,11 @@
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/optimization/solver.hpp>
+#include <wmtk/threading/enumerable_thread_specific.hpp>
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <fastenvelope/FastEnvelope.h>
-#include <tbb/concurrent_priority_queue.h>
-#include <tbb/concurrent_vector.h>
-#include <tbb/enumerable_thread_specific.h>
-#include <tbb/parallel_for.h>
-#include <tbb/parallel_sort.h>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
@@ -103,7 +99,8 @@ public:
     EdgeAttCol m_edge_attribute;
     FaceAttCol m_face_attribute;
 
-    tbb::enumerable_thread_specific<std::unique_ptr<polysolve::nonlinear::Solver>> m_solver;
+    wmtk::threading::enumerable_thread_specific<std::unique_ptr<polysolve::nonlinear::Solver>>
+        m_solver;
 
     // scaling factors
     double m_s_amips = -1;
@@ -279,7 +276,7 @@ private:
          */
         std::map<size_t, FaceAttributes> faces;
     };
-    tbb::enumerable_thread_specific<SplitInfoCache> split_cache;
+    wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
 
     struct CollapseInfoCache
     {
@@ -295,7 +292,7 @@ private:
         std::vector<size_t> changed_fids;
         std::vector<double> changed_energies;
     };
-    tbb::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
+    wmtk::threading::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
 
 
     struct SwapInfoCache
@@ -304,7 +301,7 @@ private:
         std::map<simplex::Edge, EdgeAttributes> changed_edges;
         std::set<int64_t> face_tags;
     };
-    tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
+    wmtk::threading::enumerable_thread_specific<SwapInfoCache> swap_cache;
 };
 
 

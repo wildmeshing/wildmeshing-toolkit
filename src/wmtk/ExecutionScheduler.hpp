@@ -1,20 +1,16 @@
 #pragma once
 
-#include "wmtk/TetMesh.h"
-#include "wmtk/TriMesh.h"
-#include "wmtk/utils/Logger.hpp"
+#include <wmtk/TetMesh.h>
+#include <wmtk/TriMesh.h>
+#include <wmtk/threading/concurrent_priority_queue.hpp>
+#include <wmtk/threading/task_arena.hpp>
+#include <wmtk/threading/task_group.hpp>
+#include <wmtk/utils/Logger.hpp>
 
 // clang-format off
 #include <functional>
 #include <limits>
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <tbb/concurrent_priority_queue.h>
-#include <tbb/concurrent_queue.h>
-#include <tbb/parallel_for.h>
-#include <tbb/parallel_reduce.h>
-#include <tbb/spin_mutex.h>
-#include <tbb/task_arena.h>
-#include <tbb/task_group.h>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
@@ -270,7 +266,7 @@ public:
     bool operator()(AppMesh& m, const std::vector<std::pair<Op, Tuple>>& operation_tuples)
     {
         using Elem = std::tuple<double, Op, Tuple, size_t>; // priority, operation, tuple, #retries
-        using Queue = tbb::concurrent_priority_queue<Elem>;
+        using Queue = wmtk::threading::concurrent_priority_queue<Elem>;
 
         std::atomic<bool> stop(false);
         cnt_success = 0;
@@ -363,8 +359,8 @@ public:
                 queues[get_partition_id(m, e)].emplace(priority(m, op, e), op, e, 0);
             }
             // Comment out parallel: work on serial first.
-            tbb::task_arena arena(num_threads);
-            tbb::task_group tg;
+            wmtk::threading::task_arena arena(num_threads);
+            wmtk::threading::task_group tg;
             arena.execute([&queues, &run_single_queue, &tg]() {
                 for (int task_id = 0; task_id < queues.size(); task_id++) {
                     tg.run([&run_single_queue, &queues, task_id] {

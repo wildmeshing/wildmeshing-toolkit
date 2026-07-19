@@ -1,6 +1,7 @@
 #include <igl/predicates/ear_clipping.h>
 #include <fstream>
 #include <set>
+#include <wmtk/threading/concurrent_vector.hpp>
 #include <wmtk/utils/predicates.hpp>
 #include "TetWildMesh.h"
 
@@ -1742,9 +1743,9 @@ void TetWildMesh::init_from_Volumeremesher(
     init_with_isolated_vertices(v_rational.size(), tets);
     assert(check_mesh_connectivity_validity());
 
-    m_vertex_attribute.m_attributes.resize(v_rational.size());
-    m_tet_attribute.m_attributes.resize(tets.size());
-    m_face_attribute.m_attributes.resize(tets.size() * 4);
+    m_vertex_attribute.resize(v_rational.size());
+    m_tet_attribute.resize(tets.size());
+    m_face_attribute.resize(tets.size() * 4);
 
     // A VolumeRemesher output vertex is either a direct (explicit) point -- whose
     // exact coordinate is already a double -- or an indirect (implicit) point that
@@ -1931,7 +1932,7 @@ void TetWildMesh::init_from_Volumeremesher(
     });
 
     while (true) {
-        tbb::concurrent_vector<size_t> to_revert;
+        wmtk::threading::concurrent_vector<size_t> to_revert;
         for_each_tetra([&](const Tuple& t) {
             if (is_inverted(t)) {
                 for (const size_t vid : oriented_tet_vids(t)) {
@@ -2027,9 +2028,9 @@ void TetWildMesh::init_from_Volumeremesher(
 //     }
 
 //     init(v_num, tets);
-//     m_vertex_attribute.m_attributes.resize(v_num);
-//     m_tet_attribute.m_attributes.resize(tets.size());
-//     m_face_attribute.m_attributes.resize(tets.size() * 4);
+//     m_vertex_attribute.resize(v_num);
+//     m_tet_attribute.resize(tets.size());
+//     m_face_attribute.resize(tets.size() * 4);
 
 //     for (int i = 0; i < vert_capacity(); i++) {
 //         m_vertex_attribute[i].m_pos = v_rational[i];

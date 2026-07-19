@@ -67,8 +67,19 @@ TEST_CASE("Integration_Tests", tags_integration)
     nlohmann::json integration_tests_json;
     REQUIRE_NOTHROW(integration_tests_json = load_json(integration_tests_json_file));
 
+    // Each catalog entry is either a bare filename (unblessed) or a
+    // {"file": ..., "hashes": {...}} object -- the golden hashes used by the
+    // Python integration_hashes.py check (see tests/README.md). Accept both so
+    // this C++ runner stays compatible with the blessed schema.
     std::vector<std::string> input_files;
-    REQUIRE_NOTHROW(input_files = integration_tests_json["integration_tests"]);
+    REQUIRE_NOTHROW(input_files = [&] {
+        std::vector<std::string> files;
+        for (const auto& entry : integration_tests_json.at("integration_tests")) {
+            files.push_back(
+                entry.is_string() ? entry.get<std::string>() : entry.at("file").get<std::string>());
+        }
+        return files;
+    }());
 
     for (const auto& input_file : input_files) {
         const path& f = integration_tests_dir / input_file;

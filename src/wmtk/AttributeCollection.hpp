@@ -3,8 +3,7 @@
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/utils/Logger.hpp>
 
-#include <tbb/concurrent_vector.h>
-#include <tbb/enumerable_thread_specific.h>
+#include <wmtk/threading/enumerable_thread_specific.hpp>
 
 #include <algorithm>
 #include <array>
@@ -40,14 +39,14 @@ struct AttributeCollection : public AbstractAttributeContainer
         if (from == to) return;
         m_attributes[to] = std::move(m_attributes[from]);
     }
+    // In the preallocated model this sets the storage capacity: it is called
+    // (single-threaded) at init / consolidation with the reserved size. It is
+    // grow-only so live data below `s` is never dropped. During operations the
+    // storage is never resized -- operations only fail when they run out of the
+    // preallocated slots.
     void resize(size_t s) override
     {
-        m_attributes.grow_to_at_least(s);
-        // if (m_attributes.size() > s) {
-        //     m_attributes.resize(s);
-        //     m_attributes.shrink_to_fit();
-        // }
-        // TODO: in Concurrent, vertex partition id, vertex mutex should be part of attribute
+        if (s > m_attributes.size()) m_attributes.resize(s);
     }
     void clear() override { m_attributes.clear(); }
 
@@ -102,9 +101,9 @@ struct AttributeCollection : public AbstractAttributeContainer
 
 
     size_t size() const { return m_attributes.size(); }
-    tbb::enumerable_thread_specific<std::unordered_map<size_t, T>> m_rollback_list;
-    // experimenting with tbb, could be templated as well.
-    tbb::concurrent_vector<T> m_attributes;
-    tbb::enumerable_thread_specific<bool> recording{false};
+    wmtk::threading::enumerable_thread_specific<std::unordered_map<size_t, T>> m_rollback_list;
+    // Plain preallocated storage: never grows during operations.
+    std::vector<T> m_attributes;
+    wmtk::threading::enumerable_thread_specific<bool> recording{false};
 };
 } // namespace wmtk

@@ -27,7 +27,9 @@ jobs:
             name: Linux
           - os: ubuntu-latest
             config: Release
-            integration_tests_flag: &integration_tests_on "-DWMTK_BUILD_INTEGRATION_TESTS=ON"
+            # WMTK_FP_STRICT makes the golden-hash integration check
+            # (tests/integration_hashes.py) bit-identical across OS/compiler.
+            integration_tests_flag: &integration_tests_on "-DWMTK_BUILD_INTEGRATION_TESTS=ON -DWMTK_FP_STRICT=ON"
             name: Linux
     steps:
       - name: Checkout repository
@@ -84,12 +86,6 @@ jobs:
             config: Debug
             integration_tests_flag: *integration_tests_off
           - os: macos-latest
-            config: Release
-            integration_tests_flag: *integration_tests_on
-          - os: macos-14
-            config: Debug
-            integration_tests_flag: *integration_tests_off
-          - os: macos-14
             config: Release
             integration_tests_flag: *integration_tests_on
 

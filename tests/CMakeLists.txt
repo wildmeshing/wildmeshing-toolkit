@@ -57,4 +57,33 @@ if(WMTK_BUILD_INTEGRATION_TESTS)
     # Register unit tests
     catch_discover_tests(wmtk_integration_tests)
 
+    # Golden-hash integration check: run the blessed integration tests through
+    # wmtk_app single-threaded and verify each run's output hashes against the
+    # reference stored in data/integration_tests/integration_tests.json. Build with
+    # -DWMTK_FP_STRICT=ON for the outputs to be bit-identical across OS/compiler.
+    # See tests/integration_hashes.py.
+    # The golden output hashes are only reproducible in a WMTK_FP_STRICT build.
+    # A default build uses the fast, architecture-specific code paths (libm
+    # transcendentals, non-stable sorts, igl's dedup), whose output is not
+    # bit-identical across OS/compiler, so only register the check when
+    # WMTK_FP_STRICT is ON.
+    if(WMTK_FP_STRICT)
+        find_package(Python3 COMPONENTS Interpreter)
+        if(Python3_Interpreter_FOUND)
+            add_test(
+                NAME integration_hashes
+                COMMAND ${Python3_EXECUTABLE}
+                    "${CMAKE_CURRENT_SOURCE_DIR}/integration_hashes.py"
+                    --app "$<TARGET_FILE:wmtk_app>"
+                    check
+            )
+            set_tests_properties(integration_hashes PROPERTIES
+                ENVIRONMENT "WMTK_DATA_DIR=${WMTK_DATA_ROOT}/integration_tests")
+        else()
+            message(WARNING "Python3 not found: integration_hashes ctest not registered.")
+        endif()
+    else()
+        message(STATUS "WMTK_FP_STRICT is OFF: integration_hashes golden-hash ctest not registered.")
+    endif()
+
 endif()

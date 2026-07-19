@@ -7,11 +7,12 @@
 #include <wmtk/envelope/KNN.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
+#include <wmtk/utils/Transcendentals.hpp>
+#include <wmtk/utils/WindingNumber.hpp>
 #include <wmtk/utils/io.hpp>
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <tbb/concurrent_vector.h>
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/fmt/bundled/format.h>
 #include <igl/predicates/predicates.h>
@@ -565,7 +566,7 @@ bool TetWildMesh::adjust_sizing_field_serial(double max_energy)
             continue;
         }
         const size_t tid = t.tid(*this);
-        if (std::cbrt(m_tet_attribute[tid].m_quality) < filter_energy) {
+        if (wmtk::cbrt(m_tet_attribute[tid].m_quality) < filter_energy) {
             continue;
         }
         const auto vs = oriented_tet_vids(t);
@@ -650,7 +651,7 @@ bool TetWildMesh::adjust_sizing_field_serial(double max_energy)
     //     if (visited[vid]) {
     //         continue;
     //     }
-    //     visited[vid] = true;
+    //     visited[vid] = 1;
     //     adjcnt++;
 
     //     const Vector3d& pos_v = m_vertex_attribute[vid].m_posf;
@@ -774,7 +775,20 @@ void bfs_orient(const Eigen::MatrixXi& F, Eigen::MatrixXi& FF, Eigen::VectorXi& 
     }
 }
 
+Eigen::MatrixXd TetWildMesh::tet_barycenters(const std::vector<Tuple>& tets) const
+{
+    Eigen::MatrixXd C = Eigen::MatrixXd::Zero(tets.size(), 3);
+    for (size_t i = 0; i < tets.size(); i++) {
+        const auto vs = oriented_tet_vids(tets[i]);
+        for (size_t v : vs) C.row(i) += m_vertex_attribute[v].m_posf;
+        C.row(i) /= 4;
+    }
+    return C;
+}
+
 void TetWildMesh::compute_winding_number(
+    const std::vector<Tuple>& tets,
+    const Eigen::MatrixXd& barycenters,
     const std::vector<Vector3d>& vertices,
     const std::vector<std::array<size_t, 3>>& faces)
 {
@@ -810,16 +824,10 @@ void TetWildMesh::compute_winding_number(
         // wmtk::logger().info("BFS orient {}", F.rows());
     }
 
-    const auto& tets = get_tets();
-    Eigen::MatrixXd C = Eigen::MatrixXd::Zero(tets.size(), 3);
-    for (size_t i = 0; i < tets.size(); i++) {
-        auto vs = oriented_tet_vertices(tets[i]);
-        for (auto& v : vs) C.row(i) += m_vertex_attribute[v.vid(*this)].m_posf;
-        C.row(i) /= 4;
-    }
-
+    // `tets` and their `barycenters` are precomputed once by the caller and shared
+    // across the winding-number passes (input / tracked / per-input).
     Eigen::VectorXd W;
-    igl::winding_number(V, F, C, W);
+    wmtk::utils::winding_number(V, F, barycenters, W, NUM_THREADS);
 
     if (W.maxCoeff() <= 0.5) {
         // all removed, let's invert.
@@ -829,7 +837,7 @@ void TetWildMesh::compute_winding_number(
             F(i, 0) = F(i, 1);
             F(i, 1) = temp;
         }
-        igl::winding_number(V, F, C, W);
+        wmtk::utils::winding_number(V, F, barycenters, W, NUM_THREADS);
     }
 
     if (W.maxCoeff() <= 0.5) {
@@ -853,30 +861,41 @@ void TetWildMesh::compute_winding_number(
     }
 }
 
-void TetWildMesh::compute_winding_numbers(const std::vector<std::string>& input_paths)
+void TetWildMesh::compute_winding_numbers(
+    const std::vector<std::string>& input_paths,
+    const std::vector<Tuple>& tets,
+    const Eigen::MatrixXd& barycenters,
+    const std::vector<Vector3d>& in_vertices,
+    const std::vector<std::array<size_t, 3>>& in_faces)
 {
-    const auto& tets = get_tets();
-    Eigen::MatrixXd C = Eigen::MatrixXd::Zero(tets.size(), 3);
-    for (size_t i = 0; i < tets.size(); i++) {
-        const auto vs = oriented_tet_vids(tets[i]);
-        for (size_t v : vs) {
-            C.row(i) += m_vertex_attribute[v].m_posf;
-        }
-        C.row(i) /= 4;
-    }
+    // For a single input we already have the surface in memory (in_vertices/in_faces)
+    // so there is no need to re-read the (potentially large) file from disk.
+    const bool reuse_in_memory =
+        input_paths.size() == 1 && !in_vertices.empty() && !in_faces.empty();
 
-    for (const std::string& input_path : input_paths) {
-        MatrixXd inV, V;
-        MatrixXi inF, F;
-        igl::read_triangle_mesh(input_path, inV, inF);
-        VectorXi _I;
-        igl::remove_unreferenced(inV, inF, V, F, _I);
+    for (size_t p = 0; p < input_paths.size(); ++p) {
+        MatrixXd V;
+        MatrixXi F;
+        if (reuse_in_memory) {
+            V.resize(in_vertices.size(), 3);
+            F.resize(in_faces.size(), 3);
+            for (size_t i = 0; i < in_vertices.size(); ++i) V.row(i) = in_vertices[i];
+            for (size_t i = 0; i < in_faces.size(); ++i) {
+                for (size_t j = 0; j < 3; ++j) F(i, j) = (int)in_faces[i][j];
+            }
+        } else {
+            MatrixXd inV;
+            MatrixXi inF;
+            igl::read_triangle_mesh(input_paths[p], inV, inF);
+            VectorXi _I;
+            igl::remove_unreferenced(inV, inF, V, F, _I);
+        }
         assert(V.cols() == 3);
         assert(F.cols() == 3);
 
-        // compute winding number for V,F
+        // compute winding number for V,F using the shared barycenters
         Eigen::VectorXd W;
-        igl::winding_number(V, F, C, W);
+        wmtk::utils::winding_number(V, F, barycenters, W, NUM_THREADS);
 
         if (W.maxCoeff() <= 0.5) {
             // all removed, let's invert.
@@ -886,15 +905,15 @@ void TetWildMesh::compute_winding_numbers(const std::vector<std::string>& input_
                 F(i, 0) = F(i, 1);
                 F(i, 1) = temp;
             }
-            igl::winding_number(V, F, C, W);
+            wmtk::utils::winding_number(V, F, barycenters, W, NUM_THREADS);
         }
 
         if (W.maxCoeff() <= 0.5) {
-            wmtk::logger().warn("No winding number above 0.5 for input_path {}", input_path);
+            wmtk::logger().warn("No winding number above 0.5 for input_path {}", input_paths[p]);
         }
 
         // store winding number in mesh
-        for (int i = 0; i < tets.size(); ++i) {
+        for (int i = 0; i < (int)tets.size(); ++i) {
             const size_t tid = tets[i].tid(*this);
             m_tet_attribute[tid].m_winding_number_per_input.push_back(W(i));
         }
@@ -1022,16 +1041,16 @@ void TetWildMesh::output_mesh(std::string file)
         return m_vertex_attribute[i].m_sizing_scalar;
     });
     msh.add_tet_attribute<1>("t energy", [&](size_t i) {
-        return std::cbrt(m_tet_attribute[i].m_quality);
+        return wmtk::cbrt(m_tet_attribute[i].m_quality);
     });
     msh.add_tet_attribute<1>("winding_number_input", [&](size_t i) {
-        return std::cbrt(m_tet_attribute[i].m_winding_number_input);
+        return wmtk::cbrt(m_tet_attribute[i].m_winding_number_input);
     });
     msh.add_tet_attribute<1>("winding_number_tracked", [&](size_t i) {
-        return std::cbrt(m_tet_attribute[i].m_winding_number_tracked);
+        return wmtk::cbrt(m_tet_attribute[i].m_winding_number_tracked);
     });
     msh.add_tet_attribute<1>("part", [&](size_t i) {
-        return std::cbrt(m_tet_attribute[i].part_id);
+        return wmtk::cbrt(m_tet_attribute[i].part_id);
     });
 
     // per input winding number
@@ -1039,7 +1058,7 @@ void TetWildMesh::output_mesh(std::string file)
         const size_t n = m_tet_attribute[tets[0].tid(*this)].m_winding_number_per_input.size();
         for (size_t j = 0; j < n; ++j) {
             msh.add_tet_attribute<1>(fmt::format("wn_{}", j), [&](size_t i) {
-                return std::cbrt(m_tet_attribute[i].m_winding_number_per_input[j]);
+                return wmtk::cbrt(m_tet_attribute[i].m_winding_number_per_input[j]);
             });
         }
     }
@@ -1067,7 +1086,7 @@ std::tuple<double, double> TetWildMesh::get_max_avg_energy()
     // TetMesh::for_each_tetra([&](auto& t) {
     //     auto q = m_tet_attribute[t.tid(*this)].m_quality;
     //     max_energy = std::max(max_energy, q);
-    //     avg_energy += std::cbrt(q);
+    //     avg_energy += wmtk::cbrt(q);
     //     cnt++;
     // });
     // std::ofstream large_tet("large_energy_tet.obj");
@@ -1086,13 +1105,13 @@ std::tuple<double, double> TetWildMesh::get_max_avg_energy()
         //                   << m_vertex_attribute[v.vid(*this)].m_posf[2] << std::endl;
         //     }
         // }
-        avg_energy += std::cbrt(q);
+        avg_energy += wmtk::cbrt(q);
         cnt++;
     }
 
     avg_energy /= cnt;
 
-    return std::make_tuple(std::cbrt(max_energy), avg_energy);
+    return std::make_tuple(wmtk::cbrt(max_energy), avg_energy);
 }
 
 
@@ -1468,15 +1487,15 @@ int TetWildMesh::flood_fill()
 {
     int current_id = 0;
     auto tets = get_tets();
-    std::map<size_t, bool> visited;
+    std::vector<char> visited(tet_capacity(), 0);
 
     for (const Tuple& t : tets) {
         size_t tid = t.tid(*this);
-        if (visited.find(tid) != visited.end()) continue;
+        if (visited[tid]) continue;
 
         // std::cout << "for loop current id: " << current_id << std::endl;
 
-        visited[tid] = true;
+        visited[tid] = 1;
 
         m_tet_attribute[tid].part_id = current_id;
 
@@ -1491,28 +1510,28 @@ int TetWildMesh::flood_fill()
             // std::cout << "in 1" << std::endl;
             auto oppo_t = f1.switch_tetrahedron(*this);
             if (oppo_t.has_value()) {
-                if (visited.find((*oppo_t).tid(*this)) == visited.end()) bfs_queue.push(*oppo_t);
+                if (!visited[(*oppo_t).tid(*this)]) bfs_queue.push(*oppo_t);
             }
         }
         if (!m_face_attribute[f2.fid(*this)].m_is_surface_fs) {
             // std::cout << "in 2" << std::endl;
             auto oppo_t = f2.switch_tetrahedron(*this);
             if (oppo_t.has_value()) {
-                if (visited.find((*oppo_t).tid(*this)) == visited.end()) bfs_queue.push(*oppo_t);
+                if (!visited[(*oppo_t).tid(*this)]) bfs_queue.push(*oppo_t);
             }
         }
         if (!m_face_attribute[f3.fid(*this)].m_is_surface_fs) {
             // std::cout << "in 3" << std::endl;
             auto oppo_t = f3.switch_tetrahedron(*this);
             if (oppo_t.has_value()) {
-                if (visited.find((*oppo_t).tid(*this)) == visited.end()) bfs_queue.push(*oppo_t);
+                if (!visited[(*oppo_t).tid(*this)]) bfs_queue.push(*oppo_t);
             }
         }
         if (!m_face_attribute[f4.fid(*this)].m_is_surface_fs) {
             // std::cout << "in 4" << std::endl;
             auto oppo_t = f4.switch_tetrahedron(*this);
             if (oppo_t.has_value()) {
-                if (visited.find((*oppo_t).tid(*this)) == visited.end()) bfs_queue.push(*oppo_t);
+                if (!visited[(*oppo_t).tid(*this)]) bfs_queue.push(*oppo_t);
             }
         }
 
@@ -1522,9 +1541,9 @@ int TetWildMesh::flood_fill()
             auto tmp = bfs_queue.front();
             bfs_queue.pop();
             size_t tmp_id = tmp.tid(*this);
-            if (visited.find(tmp_id) != visited.end()) continue;
+            if (visited[tmp_id]) continue;
 
-            visited[tmp_id] = true;
+            visited[tmp_id] = 1;
             // std::cout << tmp_id << " ";
 
             m_tet_attribute[tmp_id].part_id = current_id;
@@ -1537,29 +1556,25 @@ int TetWildMesh::flood_fill()
             if (!m_face_attribute[f_tmp1.fid(*this)].m_is_surface_fs) {
                 auto oppo_t = f_tmp1.switch_tetrahedron(*this);
                 if (oppo_t.has_value()) {
-                    if (visited.find((*oppo_t).tid(*this)) == visited.end())
-                        bfs_queue.push(*oppo_t);
+                    if (!visited[(*oppo_t).tid(*this)]) bfs_queue.push(*oppo_t);
                 }
             }
             if (!m_face_attribute[f_tmp2.fid(*this)].m_is_surface_fs) {
                 auto oppo_t = f_tmp2.switch_tetrahedron(*this);
                 if (oppo_t.has_value()) {
-                    if (visited.find((*oppo_t).tid(*this)) == visited.end())
-                        bfs_queue.push(*oppo_t);
+                    if (!visited[(*oppo_t).tid(*this)]) bfs_queue.push(*oppo_t);
                 }
             }
             if (!m_face_attribute[f_tmp3.fid(*this)].m_is_surface_fs) {
                 auto oppo_t = f_tmp3.switch_tetrahedron(*this);
                 if (oppo_t.has_value()) {
-                    if (visited.find((*oppo_t).tid(*this)) == visited.end())
-                        bfs_queue.push(*oppo_t);
+                    if (!visited[(*oppo_t).tid(*this)]) bfs_queue.push(*oppo_t);
                 }
             }
             if (!m_face_attribute[f_tmp4.fid(*this)].m_is_surface_fs) {
                 auto oppo_t = f_tmp4.switch_tetrahedron(*this);
                 if (oppo_t.has_value()) {
-                    if (visited.find((*oppo_t).tid(*this)) == visited.end())
-                        bfs_queue.push(*oppo_t);
+                    if (!visited[(*oppo_t).tid(*this)]) bfs_queue.push(*oppo_t);
                 }
             }
         }
@@ -1623,7 +1638,7 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
         parts(index, 0) = m_tet_attribute[tid].part_id;
         wn_input(index, 0) = m_tet_attribute[tid].m_winding_number_input;
         wn_tracked(index, 0) = m_tet_attribute[tid].m_winding_number_tracked;
-        t_energy(index, 0) = std::cbrt(m_tet_attribute[tid].m_quality);
+        t_energy(index, 0) = wmtk::cbrt(m_tet_attribute[tid].m_quality);
 
         for (size_t i = 0; i < wn_per_input.size(); ++i) {
             wn_per_input[i][index] = m_tet_attribute[tid].m_winding_number_per_input[i];
@@ -1794,7 +1809,7 @@ void TetWildMesh::init_sizing_field()
             size_t vid = v_queue.front();
             v_queue.pop();
             if (visited[vid]) continue;
-            visited[vid] = true;
+            visited[vid] = 1;
             double dist =
                 (m_vertex_attribute[vid].m_posf - m_vertex_attribute[v.vid(*this)].m_posf).norm();
             if (dist > R) continue;
@@ -1847,7 +1862,7 @@ TetWildMesh::ExportStruct TetWildMesh::export_mesh_data() const
         e.t_part(index, 0) = m_tet_attribute[tid].part_id;
         e.t_winding_number_input(index, 0) = m_tet_attribute[tid].m_winding_number_input;
         e.t_winding_number_tracked(index, 0) = m_tet_attribute[tid].m_winding_number_tracked;
-        e.t_amips(index, 0) = std::cbrt(m_tet_attribute[tid].m_quality);
+        e.t_amips(index, 0) = wmtk::cbrt(m_tet_attribute[tid].m_quality);
 
         for (size_t i = 0; i < (size_t)e.t_winding_number_per_input.cols(); ++i) {
             e.t_winding_number_per_input(index, i) =

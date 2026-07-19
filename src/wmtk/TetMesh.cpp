@@ -1,69 +1,72 @@
 #include <wmtk/TetMesh.h>
 
 #include <wmtk/AttributeCollection.hpp>
+#include <wmtk/threading/parallel_for.hpp>
+#include <wmtk/threading/task_arena.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 
-#include <tbb/parallel_for.h>
-
 namespace wmtk {
+
+// Atomically reserve `n` contiguous fresh tet slots from the preallocated storage.
+// Returns the first index of the block, or -1 if the reservation would exceed the
+// preallocated capacity -- in that case the caller must abort the operation. On the
+// (rare) failure the counter is left advanced; those unusable slots are reclaimed at
+// the next consolidate_mesh(). This is the only place the tet counter grows during
+// operations, and it never resizes the storage (no more thread-safe growth).
+long TetMesh::request_tet_slots(size_t n)
+{
+    if (n == 0) return (long)current_tet_size.load();
+    const long cap = (long)m_tet_connectivity.size();
+    // CAS loop: only advance the counter when there is room, so a failed request
+    // never leaks slots (which would push current_tet_size past the storage size
+    // and make later iteration go out of bounds).
+    long first = current_tet_size.load(std::memory_order_relaxed);
+    do {
+        if (first + (long)n > cap) return -1;
+    } while (!current_tet_size.compare_exchange_weak(
+        first,
+        first + (long)n,
+        std::memory_order_acq_rel,
+        std::memory_order_relaxed));
+    // Reset the handed-out slots to a clean state. The old tbb::concurrent_vector
+    // shrank on consolidate and regrew fresh slots, so allocations were always
+    // clean; the preallocated std::vector keeps stale data in the spare region, so
+    // we must clear it here (matches old behaviour: default tet, hash = -1).
+    for (long i = first; i < first + (long)n; ++i) {
+        m_tet_connectivity[i] = TetrahedronConnectivity{};
+        m_tet_connectivity[i].hash = -1;
+    }
+    return first;
+}
+
+long TetMesh::request_vert_slots(size_t n)
+{
+    if (n == 0) return (long)current_vert_size.load();
+    const long cap = (long)m_vertex_connectivity.size();
+    long first = current_vert_size.load(std::memory_order_relaxed);
+    do {
+        if (first + (long)n > cap) return -1;
+    } while (!current_vert_size.compare_exchange_weak(
+        first,
+        first + (long)n,
+        std::memory_order_acq_rel,
+        std::memory_order_relaxed));
+    // Reset the handed-out vertex slots to a clean state (see request_tet_slots).
+    for (long i = first; i < first + (long)n; ++i) {
+        m_vertex_connectivity[i] = VertexConnectivity{};
+    }
+    return first;
+}
 
 int TetMesh::get_next_empty_slot_t()
 {
-    while (current_tet_size + MAX_THREADS >= m_tet_connectivity.size() ||
-           tet_connectivity_synchronizing_flag) {
-        if (tet_connectivity_lock.try_lock()) {
-            if (current_tet_size + MAX_THREADS < m_tet_connectivity.size()) {
-                tet_connectivity_lock.unlock();
-                break;
-            }
-            tet_connectivity_synchronizing_flag = true;
-            auto current_capacity = m_tet_connectivity.size();
-            if (p_edge_attrs) {
-                p_edge_attrs->resize(2 * current_capacity * 6);
-            }
-            if (p_face_attrs) {
-                p_face_attrs->resize(2 * current_capacity * 4);
-            }
-            if (p_tet_attrs) {
-                p_tet_attrs->resize(2 * current_capacity);
-            }
-            m_tet_connectivity.grow_to_at_least(2 * current_capacity);
-            tet_connectivity_synchronizing_flag = false;
-            tet_connectivity_lock.unlock();
-            break;
-        }
-    }
-
-    auto new_idx = current_tet_size++;
-    m_tet_connectivity[new_idx].hash = -1;
-
-    return new_idx;
+    return (int)request_tet_slots(1);
 }
 
 int TetMesh::get_next_empty_slot_v()
 {
-    while (current_vert_size + MAX_THREADS >= m_vertex_connectivity.size() ||
-           vertex_connectivity_synchronizing_flag) {
-        if (vertex_connectivity_lock.try_lock()) {
-            if (current_vert_size + MAX_THREADS < m_vertex_connectivity.size()) {
-                vertex_connectivity_lock.unlock();
-                break;
-            }
-            vertex_connectivity_synchronizing_flag = true;
-            auto current_capacity = m_vertex_connectivity.size();
-            if (p_vertex_attrs) {
-                p_vertex_attrs->resize(2 * current_capacity);
-            }
-            resize_vertex_mutex(2 * current_capacity);
-            m_vertex_connectivity.grow_to_at_least(2 * current_capacity);
-            vertex_connectivity_synchronizing_flag = false;
-            vertex_connectivity_lock.unlock();
-            break;
-        }
-    }
-
-    return current_vert_size++;
+    return (int)request_vert_slots(1);
 }
 
 TetMesh::TetMesh()
@@ -76,8 +79,13 @@ TetMesh::TetMesh()
 
 void TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& tets)
 {
-    m_vertex_connectivity.resize(n_vertices);
-    m_tet_connectivity.resize(tets.size());
+    // Preallocate spare capacity so operations can grab fresh slots without
+    // resizing the storage. Only [0, live) is filled; the rest is spare capacity
+    // that operations consume (and fail past). See reserved_capacity().
+    const size_t vcap = reserved_capacity(n_vertices);
+    const size_t tcap = reserved_capacity(tets.size());
+    m_vertex_connectivity.resize(vcap);
+    m_tet_connectivity.resize(tcap);
     current_vert_size = (long)n_vertices;
     current_tet_size = (long)tets.size();
     for (int i = 0; i < tets.size(); i++) {
@@ -89,20 +97,20 @@ void TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& 
     }
 
     // concurrent
-    m_vertex_mutex.grow_to_at_least(n_vertices);
+    resize_vertex_mutex(vcap);
 
-    // resize attributes
+    // resize attributes to the preallocated capacity
     if (p_vertex_attrs != nullptr) {
-        p_vertex_attrs->resize(n_vertices);
+        p_vertex_attrs->resize(vcap);
     }
     if (p_tet_attrs != nullptr) {
-        p_tet_attrs->resize(tets.size());
+        p_tet_attrs->resize(tcap);
     }
     if (p_face_attrs != nullptr) {
-        p_face_attrs->resize(4 * tets.size());
+        p_face_attrs->resize(4 * tcap);
     }
     if (p_edge_attrs != nullptr) {
-        p_edge_attrs->resize(6 * tets.size());
+        p_edge_attrs->resize(6 * tcap);
     }
 }
 
@@ -110,10 +118,12 @@ void TetMesh::init_with_isolated_vertices(
     size_t n_vertices,
     const std::vector<std::array<size_t, 4>>& tets)
 {
+    const size_t vcap = reserved_capacity(n_vertices);
+    const size_t tcap = reserved_capacity(tets.size());
     m_vertex_connectivity.clear();
-    m_vertex_connectivity.resize(n_vertices);
+    m_vertex_connectivity.resize(vcap);
     m_tet_connectivity.clear();
-    m_tet_connectivity.resize(tets.size());
+    m_tet_connectivity.resize(tcap);
     current_vert_size = (long)n_vertices;
     current_tet_size = (long)tets.size();
     for (size_t i = 0; i < tets.size(); i++) {
@@ -131,24 +141,24 @@ void TetMesh::init_with_isolated_vertices(
     }
 
     // concurrent
-    m_vertex_mutex.grow_to_at_least(n_vertices);
+    resize_vertex_mutex(vcap);
 
-    // resize attributes
+    // resize attributes to the preallocated capacity
     if (p_vertex_attrs) {
         p_vertex_attrs->clear();
-        p_vertex_attrs->resize(n_vertices);
+        p_vertex_attrs->resize(vcap);
     }
     if (p_tet_attrs) {
         p_tet_attrs->clear();
-        p_tet_attrs->resize(tets.size());
+        p_tet_attrs->resize(tcap);
     }
     if (p_face_attrs) {
         p_face_attrs->clear();
-        p_face_attrs->resize(4 * tets.size());
+        p_face_attrs->resize(4 * tcap);
     }
     if (p_edge_attrs) {
         p_edge_attrs->clear();
-        p_edge_attrs->resize(6 * tets.size());
+        p_edge_attrs->resize(6 * tcap);
     }
 }
 
@@ -183,9 +193,24 @@ std::vector<TetMesh::Tuple> TetMesh::get_edges() const
             edges.emplace_back(v0, v1, tup);
         }
     }
-    std::sort(edges.begin(), edges.end(), [](auto& a, auto& b) {
+    auto by_vertex_pair = [](auto& a, auto& b) {
         return std::tie(std::get<0>(a), std::get<1>(a)) < std::tie(std::get<0>(b), std::get<1>(b));
-    });
+    };
+#ifdef WMTK_FP_STRICT
+    // stable_sort (not sort): the comparator only orders by the (v0, v1) vertex pair,
+    // so the many tuples that represent the same edge (one per incident tet) compare
+    // equal. std::sort would leave those equal elements in an implementation-defined
+    // order, so std::unique below would keep a different representative tuple on
+    // different STL implementations (libc++ vs libstdc++). That representative feeds
+    // the operation scheduler's priority-queue tie-break, so the whole 3D optimization
+    // would take divergent decisions across platforms. stable_sort keeps the tuples in
+    // their deterministic enumeration order (by tet id, then local edge), so the kept
+    // representative is identical everywhere. Only needed for reproducible builds; the
+    // default build uses the faster std::sort (see WMTK_FP_STRICT in CMakeLists.txt).
+    std::stable_sort(edges.begin(), edges.end(), by_vertex_pair);
+#else
+    std::sort(edges.begin(), edges.end(), by_vertex_pair);
+#endif
     edges.erase(
         std::unique(
             edges.begin(),
@@ -900,20 +925,26 @@ void TetMesh::consolidate_mesh()
     current_vert_size = v_cnt;
     current_tet_size = t_cnt;
 
-    m_vertex_connectivity.resize(v_cnt);
-    m_tet_connectivity.resize(t_cnt);
+    // Re-establish spare capacity for the next round of operations (only [0,live)
+    // is live; the rest is preallocated headroom that operations consume).
+    const size_t vcap = reserved_capacity(v_cnt);
+    const size_t tcap = reserved_capacity(t_cnt);
+
+    m_vertex_connectivity.resize(vcap);
+    m_tet_connectivity.resize(tcap);
+    resize_vertex_mutex(vcap);
 
     if (p_vertex_attrs) {
-        p_vertex_attrs->resize(v_cnt);
+        p_vertex_attrs->resize(vcap);
     }
     if (p_edge_attrs) {
-        p_edge_attrs->resize(6 * t_cnt);
+        p_edge_attrs->resize(6 * tcap);
     }
     if (p_face_attrs) {
-        p_face_attrs->resize(4 * t_cnt);
+        p_face_attrs->resize(4 * tcap);
     }
     if (p_tet_attrs) {
-        p_tet_attrs->resize(t_cnt);
+        p_tet_attrs->resize(tcap);
     }
 
     assert(check_mesh_connectivity_validity());
@@ -1311,11 +1342,11 @@ void TetMesh::for_each_edge(const std::function<void(const TetMesh::Tuple&)>& fu
             }
         }
     } else {
-        tbb::task_arena arena(NUM_THREADS);
+        wmtk::threading::task_arena arena(NUM_THREADS);
         arena.execute([&] {
-            tbb::parallel_for(
-                tbb::blocked_range<size_t>(0, tet_capacity()),
-                [&](tbb::blocked_range<size_t> r) {
+            wmtk::threading::parallel_for(
+                wmtk::threading::blocked_range<size_t>(0, tet_capacity()),
+                [&](wmtk::threading::blocked_range<size_t> r) {
                     for (size_t i = r.begin(); i < r.end(); i++) {
                         if (!tuple_from_tet(i).is_valid(*this)) continue;
                         for (int j = 0; j < 6; j++) {
@@ -1343,11 +1374,11 @@ void TetMesh::for_each_tetra(const std::function<void(const TetMesh::Tuple&)>& f
     } else {
         // std::cout << "in parallel for each tet" << std::endl;
 
-        tbb::task_arena arena(NUM_THREADS);
+        wmtk::threading::task_arena arena(NUM_THREADS);
         arena.execute([&] {
-            tbb::parallel_for(
-                tbb::blocked_range<size_t>(0, tet_capacity()),
-                [&](tbb::blocked_range<size_t> r) {
+            wmtk::threading::parallel_for(
+                wmtk::threading::blocked_range<size_t>(0, tet_capacity()),
+                [&](wmtk::threading::blocked_range<size_t> r) {
                     for (size_t i = r.begin(); i < r.end(); i++) {
                         auto tup = tuple_from_tet(i);
                         if (!tup.is_valid(*this)) continue;
@@ -1370,11 +1401,11 @@ void TetMesh::for_each_vertex(const std::function<void(const TetMesh::Tuple&)>& 
         }
     } else {
         // std::cout << "in parallel for each vertex" << std::endl;
-        tbb::task_arena arena(NUM_THREADS);
+        wmtk::threading::task_arena arena(NUM_THREADS);
         arena.execute([&] {
-            tbb::parallel_for(
-                tbb::blocked_range<size_t>(0, vert_capacity()),
-                [&](tbb::blocked_range<size_t> r) {
+            wmtk::threading::parallel_for(
+                wmtk::threading::blocked_range<size_t>(0, vert_capacity()),
+                [&](wmtk::threading::blocked_range<size_t> r) {
                     for (size_t i = r.begin(); i < r.end(); i++) {
                         auto tup = tuple_from_vertex(i);
                         if (!tup.is_valid(*this)) continue;

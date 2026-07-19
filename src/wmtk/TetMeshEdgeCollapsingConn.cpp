@@ -533,7 +533,11 @@ bool TetMesh::collapse_edge_conn(
         }
     }
 
-    rollback_vert_conn = operation_update_connectivity_impl(n1_t_ids, new_tet_conn, preserved_tids);
+    // collapse never allocates new tets (allocate ids are pre-assigned), so this
+    // cannot run out of space; conn_ok is always true here.
+    bool conn_ok = true;
+    rollback_vert_conn =
+        operation_update_connectivity_impl(n1_t_ids, new_tet_conn, preserved_tids, conn_ok);
 
     new_tet_id = preserved_tids;
 

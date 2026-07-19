@@ -1,4 +1,5 @@
 #include "triwild.hpp"
+#include <wmtk/utils/Preallocation.hpp>
 
 #include <igl/Timer.h>
 #include <igl/write_triangle_mesh.h>
@@ -89,6 +90,7 @@ void triwild(nlohmann::json json_params)
     const std::vector<std::string> tag_names = json_params["input_names"];
 
     TriWildMesh mesh(params, params.eps, NUM_THREADS);
+    wmtk::set_preallocation_factor_from_json(mesh, json_params);
     mesh.init_mesh(V, F, E, tag_names);
 
     if (params.debug_output) {

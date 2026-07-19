@@ -2,6 +2,7 @@
 
 #include <wmtk/TetMesh.h>
 #include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/threading/enumerable_thread_specific.hpp>
 #include "Parameters.h"
 #include "SimplicialComplexBVH.hpp"
 
@@ -72,7 +73,7 @@ public: // mode for splitting in marching tets
 public:
     int m_vtu_counter = 0;
     std::array<size_t, 4> m_init_counts = {{0, 0, 0, 0}};
-    size_t m_tags_count;
+    size_t m_tags_count = 0;
     SimplicialComplexBVH m_input_complex_bvh;
     EdgeSplitMode m_edge_split_mode = EdgeSplitMode::Midpoint;
 
@@ -86,7 +87,7 @@ public:
     int64_t m_single_tag;
 
     // dont actually use, just for retaining in output
-    bool m_has_envelope;
+    bool m_has_envelope = false;
     MatrixXd m_V_envelope;
     MatrixXi m_F_envelope;
 
@@ -294,7 +295,7 @@ private:
         // cache tet attributes
         std::map<simplex::Edge, TetAttributes> tets;
     };
-    tbb::enumerable_thread_specific<EdgeSplitCache> edge_split_cache;
+    wmtk::threading::enumerable_thread_specific<EdgeSplitCache> edge_split_cache;
 
     struct FaceSplitCache
     {
@@ -312,7 +313,7 @@ private:
         // cache tet attributes
         std::map<size_t, TetAttributes> tets;
     };
-    tbb::enumerable_thread_specific<FaceSplitCache> face_split_cache;
+    wmtk::threading::enumerable_thread_specific<FaceSplitCache> face_split_cache;
 
     struct TetSplitCache
     {
@@ -327,7 +328,7 @@ private:
         // cache tet attribute
         TetAttributes tet;
     };
-    tbb::enumerable_thread_specific<TetSplitCache> tet_split_cache;
+    wmtk::threading::enumerable_thread_specific<TetSplitCache> tet_split_cache;
 
 private: // helpers
     /**
@@ -367,7 +368,19 @@ private: // helpers
                 double len2 = (m_vertex_attribute[e2.vertices()[0]].m_posf -
                                m_vertex_attribute[e2.vertices()[1]].m_posf)
                                   .norm();
+#ifdef WMTK_FP_STRICT
+                // Break ties deterministically: many edges of a symmetric input
+                // share the exact same length, and std::sort would leave those
+                // equal elements in an implementation-defined order (libc++ vs
+                // libstdc++), so a different edge would be split first and the
+                // offset would differ across OSes. simplex::Edge has a total order
+                // on its vertex pair. Only for reproducible builds (WMTK_FP_STRICT);
+                // the default build keeps the plain length comparator.
+                if (len1 != len2) return len1 > len2;
+                return e1 < e2;
+#else
                 return len1 > len2;
+#endif
             });
     }
 
