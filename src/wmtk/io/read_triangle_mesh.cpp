@@ -3,6 +3,7 @@
 #include <igl/is_edge_manifold.h>
 #include <igl/is_vertex_manifold.h>
 #include <igl/read_triangle_mesh.h>
+#include <igl/remove_duplicate_vertices.h>
 #include <igl/remove_unreferenced.h>
 #include <algorithm>
 #include <cmath>
@@ -14,6 +15,8 @@
 namespace wmtk::io {
 
 namespace {
+
+#ifdef WMTK_FP_STRICT
 
 /**
  * @brief Deterministic replacement for igl::remove_duplicate_vertices(V, epsilon, ...).
@@ -96,6 +99,8 @@ void remove_duplicate_vertices_deterministic(
     }
 }
 
+#endif // WMTK_FP_STRICT
+
 } // namespace
 
 /**
@@ -133,10 +138,16 @@ void clean_triangle_mesh(MatrixXd& V, MatrixXi& F, double tol_rel = -1, double t
     if (tol_abs >= 0) {
         VectorXi SVJ;
         MatrixXd temp_V = V;
+#ifdef WMTK_FP_STRICT
         // Deterministic (see above): igl::remove_duplicate_vertices picks a cell
         // representative with a non-stable sort, so the survivor differs across
-        // OSes and the cleaned mesh is not reproducible.
+        // OSes and the cleaned mesh is not reproducible. Only the reproducible
+        // build pays for this; the default build uses igl directly.
         remove_duplicate_vertices_deterministic(temp_V, tol_abs, V, SVJ);
+#else
+        VectorXi SVI;
+        igl::remove_duplicate_vertices(temp_V, tol_abs, V, SVI, SVJ);
+#endif
         for (int i = 0; i < F.rows(); i++) {
             for (int j = 0; j < 3; ++j) {
                 F(i, j) = SVJ[F(i, j)];

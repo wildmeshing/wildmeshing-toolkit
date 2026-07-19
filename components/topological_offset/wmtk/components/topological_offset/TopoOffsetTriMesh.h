@@ -318,11 +318,17 @@ private: // helpers
                 double len2 = (m_vertex_attribute[e2.vertices()[0]].m_posf -
                                m_vertex_attribute[e2.vertices()[1]].m_posf)
                                   .squaredNorm();
+#ifdef WMTK_FP_STRICT
                 // Break ties deterministically (see TopoOffsetTetMesh): equal-length
                 // edges must be split in a platform-independent order or the offset
-                // output diverges across OSes. simplex::Edge has a total order.
+                // output diverges across OSes. simplex::Edge has a total order. Only
+                // for reproducible builds; the default build keeps the plain
+                // length comparator.
                 if (len1 != len2) return len1 > len2;
                 return e1 < e2;
+#else
+                return len1 > len2;
+#endif
             });
     }
 
