@@ -126,11 +126,18 @@ def _absolutize_inputs(cfg: dict, cfg_dir: Path) -> None:
 
 
 def sha256_file(path: Path) -> str:
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(1 << 20), b""):
-            h.update(chunk)
-    return h.hexdigest()
+    """Hash a test output, normalizing line endings so a Windows run matches a
+    Unix run. Text writers (e.g. libigl's writeOBJ) open files in text mode, so on
+    Windows every '\\n' becomes '\\r\\n' and the bytes -- and thus the hash --
+    differ from Unix. We normalize CRLF -> LF, but ONLY for text outputs: binary
+    outputs (.msh / .vtu) legitimately contain 0x0D 0x0A byte pairs as data and
+    must be hashed verbatim. Binary files are detected by the presence of a NUL
+    byte, which never appears in the ASCII mesh formats. On Unix, where text files
+    already use LF, this is a no-op, so the stored hashes are unchanged."""
+    data = path.read_bytes()
+    if b"\x00" not in data:  # text output: make line endings platform-independent
+        data = data.replace(b"\r\n", b"\n")
+    return hashlib.sha256(data).hexdigest()
 
 
 def run_and_hash(app: Path, test_file: str, threads: int, verbose: bool):
