@@ -73,7 +73,7 @@ public: // mode for splitting in marching tets
 public:
     int m_vtu_counter = 0;
     std::array<size_t, 4> m_init_counts = {{0, 0, 0, 0}};
-    size_t m_tags_count;
+    size_t m_tags_count = 0;
     SimplicialComplexBVH m_input_complex_bvh;
     EdgeSplitMode m_edge_split_mode = EdgeSplitMode::Midpoint;
 
@@ -87,7 +87,7 @@ public:
     int64_t m_single_tag;
 
     // dont actually use, just for retaining in output
-    bool m_has_envelope;
+    bool m_has_envelope = false;
     MatrixXd m_V_envelope;
     MatrixXi m_F_envelope;
 

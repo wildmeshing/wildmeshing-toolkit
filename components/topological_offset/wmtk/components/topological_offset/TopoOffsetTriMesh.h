@@ -57,7 +57,7 @@ public: // mode for splitting in marching tets
 public:
     int m_vtu_counter = 0;
     std::array<size_t, 3> m_init_counts = {{0, 0, 0}};
-    size_t m_tags_count;
+    size_t m_tags_count = 0;
     SimplicialComplexBVH m_input_complex_bvh;
     EdgeSplitMode m_edge_split_mode = EdgeSplitMode::Midpoint;
 
