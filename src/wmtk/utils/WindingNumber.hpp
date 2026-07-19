@@ -54,8 +54,8 @@ inline double solid_angle_2pi(
     const double lc = std::sqrt(c0 * c0 + c1 * c1 + c2 * c2);
 
     // determinant of [a; b; c]
-    const double detf = a0 * b1 * c2 + b0 * c1 * a2 + c0 * a1 * b2 - c0 * b1 * a2 -
-                        b0 * a1 * c2 - a0 * c1 * b2;
+    const double detf =
+        a0 * b1 * c2 + b0 * c1 * a2 + c0 * a1 * b2 - c0 * b1 * a2 - b0 * a1 * c2 - a0 * c1 * b2;
 
     // pairwise dot products
     const double dp0 = b0 * c0 + b1 * c1 + b2 * c2; // b . c
@@ -96,11 +96,7 @@ inline void winding_number(
                     const Eigen::RowVector3d p = O.row(o);
                     double w = 0.0;
                     for (int f = 0; f < nf; ++f) {
-                        w += solid_angle_2pi(
-                            V.row(F(f, 0)),
-                            V.row(F(f, 1)),
-                            V.row(F(f, 2)),
-                            p);
+                        w += solid_angle_2pi(V.row(F(f, 0)), V.row(F(f, 1)), V.row(F(f, 2)), p);
                     }
                     W(o) = w;
                 }

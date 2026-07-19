@@ -76,8 +76,7 @@ TEST_CASE("Integration_Tests", tags_integration)
         std::vector<std::string> files;
         for (const auto& entry : integration_tests_json.at("integration_tests")) {
             files.push_back(
-                entry.is_string() ? entry.get<std::string>()
-                                  : entry.at("file").get<std::string>());
+                entry.is_string() ? entry.get<std::string>() : entry.at("file").get<std::string>());
         }
         return files;
     }());

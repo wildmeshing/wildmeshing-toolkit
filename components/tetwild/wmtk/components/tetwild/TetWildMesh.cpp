@@ -7,8 +7,8 @@
 #include <wmtk/envelope/KNN.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
-#include <wmtk/utils/WindingNumber.hpp>
 #include <wmtk/utils/Transcendentals.hpp>
+#include <wmtk/utils/WindingNumber.hpp>
 #include <wmtk/utils/io.hpp>
 
 // clang-format off
@@ -1058,8 +1058,7 @@ void TetWildMesh::output_mesh(std::string file)
         const size_t n = m_tet_attribute[tets[0].tid(*this)].m_winding_number_per_input.size();
         for (size_t j = 0; j < n; ++j) {
             msh.add_tet_attribute<1>(fmt::format("wn_{}", j), [&](size_t i) {
-                return wmtk::cbrt(
-                    m_tet_attribute[i].m_winding_number_per_input[j]);
+                return wmtk::cbrt(m_tet_attribute[i].m_winding_number_per_input[j]);
             });
         }
     }
