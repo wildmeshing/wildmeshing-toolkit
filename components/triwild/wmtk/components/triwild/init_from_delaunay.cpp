@@ -3,10 +3,13 @@
 #include <VolumeRemesher/2d/embed2d.h>
 #include <VolumeRemesher/numerics.h>
 
+#include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
 
+#include <array>
+#include <bitset>
 #include <cstdint>
 #include <set>
 
@@ -29,6 +32,89 @@ double to_double(const vol_rem::bigrational& r)
     return q.to_double();
 }
 
+/**
+ * @brief Append a voxel lattice covering the input's bounding box, grown by a fifteenth of
+ * its diagonal, to the flat coordinate array `coords`.
+ *
+ * The arrangement triangulates every point it is handed, whether or not a segment
+ * references it, so these act purely as background points. Lattice points closer than half
+ * a voxel to an input segment are skipped: they would only crowd the constraints, which the
+ * arrangement is about to refine anyway.
+ *
+ * Seeding this way is what the geogram CDT path did before the arrangement replaced it.
+ * Without it the initial mesh is just the arrangement of the input curves -- valid, but
+ * sparse and badly shaped away from the input, which costs mesh quality and makes the
+ * optimization phase work harder to recover.
+ */
+void append_background_grid(const MatrixXd& V, const MatrixXi& E, std::vector<double>& coords)
+{
+    Vector2d box_min = V.colwise().minCoeff();
+    Vector2d box_max = V.colwise().maxCoeff();
+
+    const double diagonal_length = (box_max - box_min).norm();
+    const double delta = diagonal_length / 15.0;
+    box_min -= Vector2d(delta, delta);
+    box_max += Vector2d(delta, delta);
+
+    const auto push = [&coords](double x, double y) {
+        coords.push_back(x);
+        coords.push_back(y);
+    };
+
+    // corners of the domain
+    for (int i = 0; i < 4; i++) {
+        const std::bitset<2> a(i);
+        push(a.test(0) ? box_max[0] : box_min[0], a.test(1) ? box_max[1] : box_min[1]);
+    }
+
+    const double voxel_resolution = diagonal_length / 20.0;
+    std::array<int, 2> N; // number of grid points per dimension
+    std::array<double, 2> h; // distance between grid points per dimension
+    for (int i = 0; i < 2; i++) {
+        const double D = box_max[i] - box_min[i];
+        N[i] = (D / voxel_resolution) + 1;
+        h[i] = D / N[i];
+    }
+
+    std::array<std::vector<double>, 2> ds;
+    for (int i = 0; i < 2; i++) {
+        ds[i].push_back(box_min[i]);
+        for (int j = 0; j < N[i] - 1; j++) {
+            ds[i].push_back(box_min[i] + h[i] * (j + 1));
+        }
+        ds[i].push_back(box_max[i]);
+    }
+
+    SampleEnvelope envelope;
+    {
+        std::vector<Vector2d> V_envelope;
+        std::vector<Vector2i> E_envelope;
+        for (int i = 0; i < E.rows(); i++) {
+            E_envelope.push_back(Vector2i(E(i, 0), E(i, 1)));
+        }
+        for (int i = 0; i < V.rows(); i++) {
+            V_envelope.push_back(V.row(i));
+        }
+        envelope.init(V_envelope, E_envelope, 0);
+    }
+
+    const double min_dis = voxel_resolution * voxel_resolution / 4;
+    for (size_t i = 0; i < ds[0].size(); i++) {
+        for (size_t j = 0; j < ds[1].size(); j++) {
+            if ((i == 0 || i == ds[0].size() - 1) && (j == 0 || j == ds[1].size() - 1)) {
+                continue; // the four corners went in above
+            }
+            const Vector2d p(ds[0][i], ds[1][j]);
+
+            Eigen::Vector2d n;
+            if (envelope.nearest_point(p, n) < min_dis) {
+                continue; // too close to an input segment
+            }
+            push(ds[0][i], ds[1][j]);
+        }
+    }
+}
+
 } // namespace
 
 void init_from_delaunay_box_mesh(
@@ -42,7 +128,9 @@ void init_from_delaunay_box_mesh(
     assert(E.cols() == 2);
 
     // Flatten the input into the segment soup the remesher expects: the points as
-    // x0,y0,x1,y1,... and the segments as endpoint index pairs into that array.
+    // x0,y0,x1,y1,... and the segments as endpoint index pairs into that array. The input
+    // points go first so the segment indices below can index them directly, which also
+    // leaves room to append background points afterwards without disturbing them.
     std::vector<double> seg_vrt_coords(2 * V.rows());
     for (int i = 0; i < V.rows(); ++i) {
         seg_vrt_coords[2 * i + 0] = V(i, 0);
@@ -58,6 +146,10 @@ void init_from_delaunay_box_mesh(
             segment_indexes[2 * i + k] = uint32_t(E(i, k));
         }
     }
+
+    // Seed the triangulation with background points. Appended after the input points, and
+    // referenced by no segment, so the indices above stay valid.
+    append_background_grid(V, E, seg_vrt_coords);
 
     // Exact arrangement of the segment soup, as a triangulation covering the input
     // bounding box grown by 10%. Segments may cross, overlap or be duplicated; the
