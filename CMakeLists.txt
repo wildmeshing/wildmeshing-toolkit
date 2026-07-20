@@ -57,7 +57,7 @@ project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
 # ###############################################################################
 option(WMTK_BUILD_DOCS "Build doxygen" OFF)
 option(WMTK_BUILD_INTEGRATION_TESTS "Build integration tests (might take very long to run)" OFF) # off by default
-option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option due to use of TBB
+option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
@@ -76,11 +76,6 @@ include(eigen)
 # The Delaunay triangulations come from VolumeRemesher (VolumeRemesher/delaunay.h and
 # 2d/delaunay2d.h); this used to be geogram's Delaunay_psm amalgamation.
 include(volumemesher)
-# TBB is no longer used by wmtk itself (replaced by the std::thread shim), but a
-# transitive dependency (geogram, pulled in via FastEnvelope) links against it on
-# Linux, so the library must still be built and available. wmtk does not link
-# TBB::tbb.
-include(onetbb)
 include(mshio)
 include(metis)
 include(gmp)
