@@ -73,7 +73,9 @@ include(wmtk_warnings)
 include(wmtk_copy_dll)
 include(nlohmann_json)
 include(eigen)
-include(delaunay_psm)
+# The Delaunay triangulations come from VolumeRemesher (VolumeRemesher/delaunay.h and
+# 2d/delaunay2d.h); this used to be geogram's Delaunay_psm amalgamation.
+include(volumemesher)
 # TBB is no longer used by wmtk itself (replaced by the std::thread shim), but a
 # transitive dependency (geogram, pulled in via FastEnvelope) links against it on
 # Linux, so the library must still be built and available. wmtk does not link
@@ -138,7 +140,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     igl::core
     igl::predicates
     gmp::gmp
-    geogram::delaunay_psm
+    VolumeRemesher::VolumeRemesher
     mshio::mshio
     metis::metis
     nlohmann_json::nlohmann_json
