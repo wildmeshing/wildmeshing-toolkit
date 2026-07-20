@@ -1,12 +1,35 @@
 #include "init_from_delaunay.hpp"
 
-#include <bitset>
-#include <wmtk/envelope/Envelope.hpp>
+#include <VolumeRemesher/2d/embed2d.h>
+#include <VolumeRemesher/numerics.h>
+
 #include <wmtk/io/read_edge_mesh.hpp>
-#include <wmtk/utils/Delaunay.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/Rational.hpp>
+
+#include <cstdint>
+#include <set>
 
 namespace wmtk::components::triwild {
+
+namespace {
+
+// The remesher hands back exact coordinates; which concrete bignum type depends on
+// how VolumeRemesher was configured (see cmake/recipes/volumemesher.cmake). Go
+// through wmtk::Rational -- the same conversion the 3D insertion uses -- so both
+// backends are handled, then round once to double.
+double to_double(const vol_rem::bigrational& r)
+{
+    Rational q;
+#ifdef USE_GNU_GMP_CLASSES
+    q.init(r.get_mpq_t());
+#else
+    q.init_from_bin(r.get_str());
+#endif
+    return q.to_double();
+}
+
+} // namespace
 
 void init_from_delaunay_box_mesh(
     const MatrixXd& V,
@@ -16,99 +39,92 @@ void init_from_delaunay_box_mesh(
     MatrixXi& E_out)
 {
     assert(V.cols() == 2);
+    assert(E.cols() == 2);
 
-    // points for delaunay
-    std::vector<wmtk::delaunay::Point2D> points(V.rows());
-    // add points from surface
-    for (int i = 0; i < V.rows(); i++) {
-        for (int j = 0; j < 2; j++) {
-            points[i][j] = V(i, j);
-        }
+    // Flatten the input into the segment soup the remesher expects: the points as
+    // x0,y0,x1,y1,... and the segments as endpoint index pairs into that array.
+    std::vector<double> seg_vrt_coords(2 * V.rows());
+    for (int i = 0; i < V.rows(); ++i) {
+        seg_vrt_coords[2 * i + 0] = V(i, 0);
+        seg_vrt_coords[2 * i + 1] = V(i, 1);
     }
 
-    // bbox
-    Vector2d box_min = V.colwise().minCoeff();
-    Vector2d box_max = V.colwise().maxCoeff();
-
-    // increase bbox by 30% of diagonal length
-    const double diagonal_length = (box_max - box_min).norm();
-    const double delta = diagonal_length / 15.0;
-    box_min -= Vector2d(delta, delta);
-    box_max += Vector2d(delta, delta);
-
-    // add corners of domain
-    for (int i = 0; i < 4; i++) {
-        Vector2d p;
-        std::bitset<sizeof(int) * 4> a(i);
-        for (int j = 0; j < 2; j++) {
-            if (a.test(j)) {
-                p[j] = box_max[j];
-            } else {
-                p[j] = box_min[j];
+    std::vector<uint32_t> segment_indexes(2 * E.rows());
+    for (int i = 0; i < E.rows(); ++i) {
+        for (int k = 0; k < 2; ++k) {
+            if (E(i, k) < 0 || E(i, k) >= V.rows()) {
+                log_and_throw_error("Edge index out of bounds at index {}: {}", i, E.row(i));
             }
+            segment_indexes[2 * i + k] = uint32_t(E(i, k));
         }
-        points.push_back({{p[0], p[1]}});
     }
 
-    const double voxel_resolution = diagonal_length / 20.0;
-    std::array<int, 2> N; // number of grid points per dimension
-    std::array<double, 2> h; // distance between grid points per dimension
-    for (int i = 0; i < 2; i++) {
-        const double D = box_max[i] - box_min[i];
-        N[i] = (D / voxel_resolution) + 1;
-        h[i] = D / N[i];
+    // Exact arrangement of the segment soup, as a triangulation covering the input
+    // bounding box grown by 10%. Segments may cross, overlap or be duplicated; the
+    // remesher resolves all of that and reports, per input segment, the output
+    // triangle edges that tile it.
+    std::vector<vol_rem::bigrational> vertices;
+    std::vector<std::array<uint32_t, 3>> tris;
+    std::vector<std::vector<std::array<uint32_t, 3>>> segment_provenance;
+    std::vector<std::array<uint32_t, 2>> point_provenance;
+
+    if (!vol_rem::embed_seg_in_tri_mesh(
+            seg_vrt_coords,
+            segment_indexes,
+            vertices,
+            tris,
+            segment_provenance,
+            point_provenance,
+            false)) {
+        log_and_throw_error("2D arrangement of the input segments failed");
+    }
+    assert(vertices.size() % 2 == 0);
+
+    const int nv = int(vertices.size() / 2);
+    V_out.resize(nv, 2);
+    for (int v = 0; v < nv; ++v) {
+        V_out(v, 0) = to_double(vertices[2 * v + 0]);
+        V_out(v, 1) = to_double(vertices[2 * v + 1]);
     }
 
-    std::array<std::vector<double>, 2> ds;
-    for (int i = 0; i < 2; i++) {
-        ds[i].push_back(box_min[i]);
-        for (int j = 0; j < N[i] - 1; j++) {
-            ds[i].push_back(box_min[i] + h[i] * (j + 1));
+    F_out.resize(tris.size(), 3);
+    for (size_t t = 0; t < tris.size(); ++t) {
+        F_out(t, 0) = int(tris[t][0]);
+        F_out(t, 1) = int(tris[t][1]);
+        F_out(t, 2) = int(tris[t][2]);
+    }
+
+    // The constrained edges of the output are the union of the per-segment edge
+    // lists. Overlapping input segments share output edges, so deduplicate; a
+    // std::set keyed on the sorted vertex pair also fixes the row order, which
+    // keeps the result reproducible.
+    std::set<std::pair<int, int>> constrained_edges;
+    for (const auto& seg : segment_provenance) {
+        for (const auto& e : seg) {
+            int a = int(e[1]);
+            int b = int(e[2]);
+            if (a > b) {
+                std::swap(a, b);
+            }
+            constrained_edges.insert({a, b});
         }
-        ds[i].push_back(box_max[i]);
     }
 
-    wmtk::SampleEnvelope envelope;
-    // init envelope
+    E_out.resize(constrained_edges.size(), 2);
     {
-        std::vector<Vector2d> V_envelope;
-        std::vector<Vector2i> E_envelope;
-        for (int i = 0; i < E.rows(); i++) {
-            E_envelope.push_back(Vector2i(E(i, 0), E(i, 1)));
-        }
-        for (int i = 0; i < V.rows(); i++) {
-            V_envelope.push_back(V.row(i));
-        }
-        envelope.init(V_envelope, E_envelope, 0);
-    }
-
-
-    const double min_dis = voxel_resolution * voxel_resolution / 4;
-    //    double min_dis = state.target_edge_len * state.target_edge_len;//epsilon*2
-    for (int i = 0; i < ds[0].size(); i++) {
-        for (int j = 0; j < ds[1].size(); j++) {
-            if ((i == 0 || i == ds[0].size() - 1) && (j == 0 || j == ds[1].size() - 1)) {
-                continue;
-            }
-            const Vector2d p(ds[0][i], ds[1][j]);
-
-            Eigen::Vector2d n;
-            const double sqd = envelope.nearest_point(p, n);
-
-            if (sqd < min_dis) {
-                continue;
-            }
-            points.push_back({{ds[0][i], ds[1][j]}});
+        int idx = 0;
+        for (const auto& edge : constrained_edges) {
+            E_out(idx, 0) = edge.first;
+            E_out(idx, 1) = edge.second;
+            ++idx;
         }
     }
 
-    // CDT
-    MatrixXd V_cdt;
-    V_cdt.resize(points.size(), 2);
-    for (int i = 0; i < points.size(); i++) {
-        V_cdt.row(i) = Eigen::Vector2d(points[i][0], points[i][1]);
-    }
-    delaunay::constrained_delaunay2D(V_cdt, E, V_out, F_out, E_out);
+    logger().info(
+        "2D arrangement: #V = {}, #F = {}, #E_constrained = {}",
+        V_out.rows(),
+        F_out.rows(),
+        E_out.rows());
 }
 
 void init_from_paths(

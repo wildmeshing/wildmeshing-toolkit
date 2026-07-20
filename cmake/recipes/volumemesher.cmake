@@ -6,11 +6,23 @@ endif()
 
 message(STATUS "Third-party: creating target 'VolumeMesher'")
 
+# PR #15 (branch `2d`), a descendant of the previous pin, which adds the 2D pipeline:
+# vol_rem::embed_seg_in_tri_mesh in VolumeRemesher/2d/embed2d.h, used by triwild to
+# insert its input segments. The 3D entry point is unchanged.
+#
+# Exact-arithmetic backend: VOLUMEREMESHER_WITH_GMP defaults to OFF, so
+# `vol_rem::bigrational` is upstream's built-in bignum rather than mpq_class and
+# USE_GNU_GMP_CLASSES is not defined. That selects the `init_from_bin(get_str())`
+# branch of the arrangement-vertex conversions in tetwild, simwild and triwild, which
+# is exact: the built-in bigrational::get_str() emits the fraction in base 2, the base
+# init_from_bin parses.
 include(CPM)
 CPMAddPackage(
     NAME VolumeRemesher
     GITHUB_REPOSITORY wildmeshing/VolumeRemesher
-    GIT_TAG 9e32fe8329890d564e179ed3176f266d8f519f12
+    GIT_TAG 8077213e53022549ac66f3d9befdf6f0bd6c404c
+    OPTIONS
+    "VOLUMEREMESHER_BUILD_TESTS OFF"
     )
 
 set_target_properties(mesh_generator_lib PROPERTIES FOLDER third-party)
