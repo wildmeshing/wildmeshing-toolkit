@@ -318,7 +318,14 @@ private: // helpers
                 double len2 = (m_vertex_attribute[e2.vertices()[0]].m_posf -
                                m_vertex_attribute[e2.vertices()[1]].m_posf)
                                   .squaredNorm();
-                return len1 > len2;
+                // Symmetric inputs have many edges of exactly equal length. Length alone
+                // leaves those in an implementation-defined order (libc++ vs libstdc++ vs
+                // MSVC), and that order decides which edge marching splits first, so the
+                // offset mesh differs across platforms. simplex::Edge orders totally on
+                // its vertex pair, so use it to break the tie.
+                if (len1 > len2) return true;
+                if (len2 > len1) return false;
+                return e1 < e2;
             });
     }
 

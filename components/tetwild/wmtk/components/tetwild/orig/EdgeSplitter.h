@@ -34,7 +34,12 @@ struct cmp_es
 {
     bool operator()(const ElementInQueue_es& e1, const ElementInQueue_es& e2)
     {
-        return e1.weight < e2.weight;
+        // Equal-length edges are everywhere on a symmetric mesh. On weight alone they compare
+        // equivalent and the heap pops them in an order that differs between libc++, libstdc++
+        // and MSVC -- and that order decides which edge gets split first, so the resulting mesh
+        // differs per platform. Break on the vertex ids for a total order, as cmp_ec/cmp_er do.
+        if (e1.weight == e2.weight) return e1.v_ids < e2.v_ids;
+        return e1.weight < e2.weight; ///choose longer edge for splitting
     }
 };
 
