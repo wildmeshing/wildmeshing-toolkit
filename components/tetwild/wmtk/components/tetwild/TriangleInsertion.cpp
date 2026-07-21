@@ -10,7 +10,6 @@
 #include "wmtk/utils/Logger.hpp"
 
 #include <wmtk/threading/concurrent_priority_queue.hpp>
-#include <wmtk/threading/concurrent_vector.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/threading/task_group.hpp>
@@ -233,7 +232,7 @@ void TetWildMesh::init_from_input_surface(
     init_from_delaunay_box_mesh(vertices);
 
     // match faces preserved in delaunay
-    wmtk::threading::concurrent_vector<bool> is_matched;
+    std::vector<bool> is_matched;
     wmtk::match_tet_faces_to_triangles(*this, faces, is_matched, tet_face_tags);
     wmtk::logger().info("is_matched: {}", std::count(is_matched.begin(), is_matched.end(), true));
 

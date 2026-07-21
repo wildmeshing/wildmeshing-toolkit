@@ -1,27 +1,27 @@
 #pragma once
 
-#include <deque>
 #include <mutex>
+#include <vector>
 
 namespace wmtk::threading {
-// ---------------------------------------------------------------------------
-// concurrent_vector: replaces tbb::concurrent_vector for the "append from a
-// parallel loop, read afterwards" use cases. Backed by std::deque so that
-// (a) references to existing elements survive concurrent appends, and
-// (b) bool is stored unpacked (safe concurrent distinct-index writes).
-// ---------------------------------------------------------------------------
+/**
+ * concurrent_vector replaces tbb::concurrent_vector for the "append from a parallel loop, read
+ * afterwards" use cases.
+ * Writes with `push_back` and `emplace_back` are thread-safe, but reads with `operator[]` are not
+ * thread-safe! Reads should only be done after all writes are complete.
+ */
 template <typename T>
 class concurrent_vector
 {
-    std::deque<T> m_data;
+    std::vector<T> m_data;
     mutable std::mutex m_mutex;
 
 public:
     using value_type = T;
-    using iterator = typename std::deque<T>::iterator;
-    using const_iterator = typename std::deque<T>::const_iterator;
-    using reference = typename std::deque<T>::reference;
-    using const_reference = typename std::deque<T>::const_reference;
+    using iterator = typename std::vector<T>::iterator;
+    using const_iterator = typename std::vector<T>::const_iterator;
+    using reference = typename std::vector<T>::reference;
+    using const_reference = typename std::vector<T>::const_reference;
 
     concurrent_vector() = default;
     explicit concurrent_vector(std::size_t n)
@@ -49,11 +49,10 @@ public:
         m_data.push_back(std::move(v));
     }
     template <typename... Args>
-    reference emplace_back(Args&&... args)
+    void emplace_back(Args&&... args)
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         m_data.emplace_back(std::forward<Args>(args)...);
-        return m_data.back();
     }
 
     void resize(std::size_t n)
@@ -71,24 +70,28 @@ public:
         std::lock_guard<std::mutex> lock(m_mutex);
         m_data.clear();
     }
-    // void reserve(std::size_t) {}
+    void reserve(std::size_t n)
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_data.reserve(n);
+    }
 
     /**
      * @brief operator[] is not thread-safe for concurrent writes, but is safe for concurrent reads
-     * after all writes are done.
+     * after all writes are done. Only const reference is provided to prevent accidental writes.
+     * @param i index
+     * @return const reference to the element at index i
      */
-    reference operator[](std::size_t i) { return m_data[i]; }
     const_reference operator[](std::size_t i) const { return m_data[i]; }
+    // reference operator[](std::size_t i) { return m_data[i]; }
 
     std::size_t size() const { return m_data.size(); }
     bool empty() const { return m_data.empty(); }
 
-    iterator begin() { return m_data.begin(); }
-    iterator end() { return m_data.end(); }
+    // iterator begin() { return m_data.begin(); }
+    // iterator end() { return m_data.end(); }
     const_iterator begin() const { return m_data.begin(); }
     const_iterator end() const { return m_data.end(); }
-    const_iterator cbegin() const { return m_data.cbegin(); }
-    const_iterator cend() const { return m_data.cend(); }
 };
 
 } // namespace wmtk::threading

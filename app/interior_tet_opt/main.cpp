@@ -52,9 +52,7 @@ bool adjust_sizing_field(
     const auto min_refine_scalar = 0.25;
 
     // outputs scale_multipliers
-    wmtk::threading::concurrent_vector<double> scale_multipliers(
-        mesh.vert_capacity(),
-        recover_scalar);
+    std::vector<double> scale_multipliers(mesh.vert_capacity(), recover_scalar);
 
     std::vector<Vector3d> pts;
     std::queue<size_t> v_queue;

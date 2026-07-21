@@ -3,7 +3,6 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/GeoUtils.h>
 #include <wmtk/threading/concurrent_map.hpp>
-#include <wmtk/threading/concurrent_vector.hpp>
 
 #include <Eigen/Core>
 #include <array>
@@ -22,7 +21,7 @@ namespace wmtk {
 void match_tet_faces_to_triangles(
     const wmtk::TetMesh& m,
     const std::vector<std::array<size_t, 3>>& faces,
-    wmtk::threading::concurrent_vector<bool>& is_matched,
+    std::vector<bool>& is_matched,
     wmtk::threading::concurrent_map<std::array<size_t, 3>, std::vector<int>>& tet_face_tags);
 
 bool remove_duplicates(

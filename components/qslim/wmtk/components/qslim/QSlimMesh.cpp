@@ -1,6 +1,6 @@
 #include "QSlimMesh.h"
-#include <wmtk/threading/concurrent_vector.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
+#include <wmtk/threading/indexed_collector.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/threading/parallel_sort.hpp>
 
@@ -367,11 +367,19 @@ bool QSlimMesh::collapse_qslim(int target_vert_number)
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     int starting_num = vert_capacity();
 
-    auto collect_tuples = wmtk::threading::concurrent_vector<Tuple>();
-
-    for_each_edge([&](auto& tup) { collect_tuples.emplace_back(tup); });
-    collect_all_ops.reserve(collect_tuples.size());
-    for (auto& t : collect_tuples) collect_all_ops.emplace_back("edge_collapse", t);
+    // One slot per (triangle, local edge): for_each_edge only invokes the callback for
+    // the triangle that owns the edge, so eid() is unique and no two threads write the
+    // same slot -- no lock, and the order is the slot order rather than whichever thread
+    // won a mutex.
+    {
+        auto collect_tuples = threading::indexed_collector<Tuple>(3 * tri_capacity());
+        for_each_edge([&](auto& tup) { collect_tuples.set(tup.eid(*this), tup); });
+        const auto collected = collect_tuples.compact();
+        collect_all_ops.reserve(collected.size());
+        for (const auto& t : collected) {
+            collect_all_ops.emplace_back("edge_collapse", t);
+        }
+    }
 
     auto renew = [](auto& m, auto op, auto& tris) {
         auto edges = m.new_edges_after(tris);
