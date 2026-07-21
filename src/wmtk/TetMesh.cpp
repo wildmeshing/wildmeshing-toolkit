@@ -28,7 +28,7 @@ long TetMesh::request_tet_slots(size_t n)
         first + (long)n,
         std::memory_order_acq_rel,
         std::memory_order_relaxed));
-    // Reset the handed-out slots to a clean state. The old tbb::concurrent_vector
+    // Reset the handed-out slots to a clean state. The old tbb::collector
     // shrank on consolidate and regrew fresh slots, so allocations were always
     // clean; the preallocated std::vector keeps stale data in the spare region, so
     // we must clear it here (matches old behaviour: default tet, hash = -1).

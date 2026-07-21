@@ -2,7 +2,7 @@
 
 #include <wmtk/TetMesh.h>
 #include <wmtk/ExecutionScheduler.hpp>
-#include <wmtk/threading/concurrent_vector.hpp>
+#include <wmtk/threading/collector.hpp>
 #include <wmtk/utils/EnergyHarmonicTet.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
@@ -393,7 +393,7 @@ void HarmonicTet::swap_all_edges(bool parallel)
     if (NUM_THREADS == 0) parallel = false;
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
 
-    auto collect_tuples = wmtk::threading::concurrent_vector<Tuple>();
+    auto collect_tuples = wmtk::threading::collector<Tuple>();
     for_each_edge([&](auto& tup) {
         if (compute_operation_gain(*this, std::string("edge_swap"), tup) > 0)
             collect_tuples.emplace_back(tup);

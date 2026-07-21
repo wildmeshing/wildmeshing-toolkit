@@ -4,13 +4,11 @@
 
 namespace wmtk::threading {
 
-// indexed_collector: when the loop already knows a unique slot for each result --
-// the edge collectors know it as `tup.eid(m)`, which is what the loop tests to decide
-// which triangle owns an edge -- each thread writes to a slot no other thread can
-// touch, so no synchronisation is required at all. compact() then returns the results
-// in slot order, which does not depend on how the range was scheduled: unlike a
-// mutex-guarded append, whose order is whichever thread got the lock first, this is
-// reproducible run to run.
+/**
+ * A collector that is not thread-safe for concurrent writes to the same index, but is thread-safe
+ * for concurrent writes to distinct indices. This is useful when each thread knows a unique slot
+ * for its result, allowing for lock-free writes.
+ */
 template <typename T>
 class indexed_collector
 {
@@ -18,6 +16,10 @@ class indexed_collector
     std::vector<char> m_filled;
 
 public:
+    /**
+     * @brief Construct an indexed_collector with n slots.
+     * @param n The number of slots to allocate.
+     */
     explicit indexed_collector(std::size_t n)
         : m_slots(n)
         , m_filled(n, 0)
@@ -36,6 +38,12 @@ public:
         m_filled[i] = 1;
     }
 
+    /**
+     * @brief Get a compacted vector of all filled slots.
+     * This function is not thread-safe and should only be called after all writes are complete.
+     *
+     * @return A vector containing all values that have been set, in the order of their indices.
+     */
     std::vector<T> compact() const
     {
         std::vector<T> out;

@@ -7,7 +7,7 @@
 #include <atomic>
 #include <unordered_set>
 #include <wmtk/ExecutionScheduler.hpp>
-#include <wmtk/threading/concurrent_vector.hpp>
+#include <wmtk/threading/collector.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -26,7 +26,7 @@ void TetWildMesh::collapse_all_edges(bool is_limit_length)
         collect_all_ops.emplace_back("edge_collapse", loc);
         collect_all_ops.emplace_back("edge_collapse", loc.switch_vertex(*this));
     }
-    wmtk::threading::concurrent_vector<std::pair<std::string, Tuple>> collect_failure_ops;
+    wmtk::threading::collector<std::pair<std::string, Tuple>> collect_failure_ops;
     std::atomic_int count_success = 0;
     time = timer.getElapsedTime();
     logger().info("edge collapse prepare time: {:.4}s", time);

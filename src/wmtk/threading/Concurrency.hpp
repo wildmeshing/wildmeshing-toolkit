@@ -11,7 +11,7 @@
 // Notes / intentional simplifications:
 //  * Containers that used to grow concurrently (attribute / connectivity storage)
 //    are NOT provided here -- they became plain std::vector, preallocated up front
-//    (see TetMesh/TriMesh). `concurrent_vector` here only backs the few "collect
+//    (see TetMesh/TriMesh). `collector` here only backs the few "collect
 //    results from parallel loops" sites, and is a mutex-guarded deque so that
 //    references to existing elements stay valid while other threads append and so
 //    that bool elements are not bit-packed (concurrent distinct-index writes stay
@@ -20,11 +20,11 @@
 //    small thread_local list of (instance-id -> value) slots.
 
 #include "blocked_range.hpp"
+#include "collector.hpp"
 #include "concurrent_map.hpp"
 #include "concurrent_priority_queue.hpp"
 #include "concurrent_queue.hpp"
 #include "concurrent_unordered_map.hpp"
-#include "concurrent_vector.hpp"
 #include "detail/concurrent_associative.hpp"
 #include "detail/ets_id_counter.hpp"
 #include "enumerable_thread_specific.hpp"

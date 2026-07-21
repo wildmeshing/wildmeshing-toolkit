@@ -1666,7 +1666,7 @@ long TriMesh::request_tri_slots(size_t n)
         std::memory_order_acq_rel,
         std::memory_order_relaxed));
     // Reset the handed-out slots to a clean state (the preallocated std::vector
-    // keeps stale data in the spare region; the old tbb::concurrent_vector regrew
+    // keeps stale data in the spare region; the old tbb::collector regrew
     // fresh slots on consolidate).
     for (long i = first; i < first + (long)n; ++i) {
         m_tri_connectivity[i] = TriangleConnectivity{};

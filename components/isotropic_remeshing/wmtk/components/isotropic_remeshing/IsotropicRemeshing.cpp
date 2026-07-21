@@ -1,5 +1,5 @@
 #include "IsotropicRemeshing.h"
-#include <wmtk/threading/concurrent_vector.hpp>
+#include <wmtk/threading/collector.hpp>
 #include <wmtk/threading/indexed_collector.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/threading/parallel_sort.hpp>
@@ -501,7 +501,7 @@ bool IsotropicRemeshing::split_remeshing(double L)
     logger().info("***** split get edges time *****: {} ms", timer.getElapsedTimeInMilliSec());
 
     logger().info("size for edges to be split is {}", collect_all_ops.size());
-    wmtk::threading::concurrent_vector<std::pair<std::string, Tuple>> edges2;
+    wmtk::threading::collector<std::pair<std::string, Tuple>> edges2;
     auto setup_and_execute = [&](auto& executor) {
         vid_threshold = vert_capacity();
         executor.num_threads = NUM_THREADS;
