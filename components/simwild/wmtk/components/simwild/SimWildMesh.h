@@ -228,10 +228,10 @@ public:
 
         std::vector<Eigen::Vector3d> V_v(vert_capacity());
 
-        wmtk::threading::parallel_for(
-            wmtk::threading::blocked_range<int>(0, V_v.size()),
-            [&](wmtk::threading::blocked_range<int> r) {
-                for (int i = r.begin(); i < r.end(); i++) {
+        threading::parallel_for(
+            threading::range(0, V_v.size()),
+            [&](const threading::range& r) {
+                for (size_t i = r.begin(); i < r.end(); i++) {
                     V_v[i] = m_vertex_attribute[i].m_posf;
                 }
             },
@@ -263,10 +263,10 @@ public:
         // get_bb_corners(V, vmin, vmax);
         Eigen::Vector3d center = (vmin + vmax) / 2;
 
-        wmtk::threading::parallel_for(
-            wmtk::threading::blocked_range<int>(0, V.size()),
-            [&](wmtk::threading::blocked_range<int> r) {
-                for (int i = r.begin(); i < r.end(); i++) {
+        threading::parallel_for(
+            threading::range(0, V.size()),
+            [&](const threading::range& r) {
+                for (size_t i = r.begin(); i < r.end(); i++) {
                     V[i] = V[i] - center;
                 }
             },
@@ -281,10 +281,10 @@ public:
         zscale = fabs(scale_point[2]);
         double scale = std::max(std::max(xscale, yscale), zscale);
         if (scale > 300) {
-            wmtk::threading::parallel_for(
-                wmtk::threading::blocked_range<int>(0, V.size()),
-                [&](wmtk::threading::blocked_range<int> r) {
-                    for (int i = r.begin(); i < r.end(); i++) {
+            threading::parallel_for(
+                threading::range(0, V.size()),
+                [&](const threading::range& r) {
+                    for (size_t i = r.begin(); i < r.end(); i++) {
                         V[i] = V[i] / scale;
                     }
                 },
@@ -292,10 +292,10 @@ public:
         }
 
         constexpr int multi = 1000;
-        wmtk::threading::parallel_for(
-            wmtk::threading::blocked_range<int>(0, V.size()),
-            [&](wmtk::threading::blocked_range<int> r) {
-                for (int i = r.begin(); i < r.end(); i++) {
+        threading::parallel_for(
+            threading::range(0, V.size()),
+            [&](const threading::range& r) {
+                for (size_t i = r.begin(); i < r.end(); i++) {
                     list_v[i].morton = Resorting::MortonCode64(
                         int(V[i][0] * multi),
                         int(V[i][1] * multi),
@@ -313,10 +313,10 @@ public:
 
         int interval = list_v.size() / NUM_THREADS + 1;
 
-        wmtk::threading::parallel_for(
-            wmtk::threading::blocked_range<int>(0, list_v.size()),
-            [&](wmtk::threading::blocked_range<int> r) {
-                for (int i = r.begin(); i < r.end(); i++) {
+        threading::parallel_for(
+            threading::range(0, list_v.size()),
+            [&](const threading::range& r) {
+                for (size_t i = r.begin(); i < r.end(); i++) {
                     m_vertex_attribute[list_v[i].order].partition_id = i / interval;
                 }
             },

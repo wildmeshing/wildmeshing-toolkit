@@ -28,7 +28,7 @@ namespace wmtk::utils {
 /**
  * @brief Winding number of every query point O.row(i) with respect to the triangle
  * mesh (V, F). Equivalent to igl::winding_number(V, F, O, W), but the query loop is
- * parallelised with wmtk::threading::parallel_for.
+ * parallelised with threading::parallel_for.
  */
 inline void winding_number(
     const Eigen::MatrixXd& V,
@@ -48,9 +48,9 @@ inline void winding_number(
 
     // hier.winding_number(p) is const and used by igl the same way from parallel_for,
     // so concurrent queries against the shared hierarchy are safe.
-    wmtk::threading::parallel_for(
-        wmtk::threading::blocked_range<int>(0, static_cast<int>(O.rows())),
-        [&](wmtk::threading::blocked_range<int> r) {
+    threading::parallel_for(
+        threading::range(0, static_cast<size_t>(O.rows())),
+        [&](const threading::range& r) {
             for (int o = r.begin(); o < r.end(); ++o) {
                 W(o) = hier.winding_number(O.row(o));
             }

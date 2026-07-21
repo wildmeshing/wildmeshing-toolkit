@@ -19,12 +19,12 @@
 //  * enumerable_thread_specific is lock-free on the hot path: each thread keeps a
 //    small thread_local list of (instance-id -> value) slots.
 
-#include "blocked_range.hpp"
 #include "collector.hpp"
 #include "concurrent_map.hpp"
 #include "concurrent_priority_queue.hpp"
 #include "concurrent_queue.hpp"
 #include "enumerable_thread_specific.hpp"
 #include "parallel_for.hpp"
+#include "range.hpp"
 #include "spin_mutex.hpp"
 #include "task_group.hpp"

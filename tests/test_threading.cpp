@@ -14,8 +14,8 @@ TEST_CASE("parallel_for", "[threading]")
     {
         std::vector<int> v(1000, 0);
         threading::parallel_for(
-            threading::blocked_range<size_t>(0, v.size()),
-            [&](const threading::blocked_range<size_t>& r) {
+            threading::range(0, v.size()),
+            [&](const threading::range& r) {
                 for (size_t i = r.begin(); i < r.end(); ++i) {
                     v[i] = i;
                 }
@@ -30,8 +30,8 @@ TEST_CASE("parallel_for", "[threading]")
     {
         REQUIRE_THROWS_AS(
             threading::parallel_for(
-                threading::blocked_range<size_t>(0, 8),
-                [&](const threading::blocked_range<size_t>& r) {
+                threading::range(0, 8),
+                [&](const threading::range& r) {
                     if (r.begin() == 0) {
                         throw std::runtime_error("parallel_for failure");
                     }
@@ -43,15 +43,15 @@ TEST_CASE("parallel_for", "[threading]")
     SECTION("negative range")
     {
         threading::parallel_for(
-            threading::blocked_range<size_t>(0, 0),
-            [](const threading::blocked_range<size_t>& r) {
+            threading::range(0, 0),
+            [](const threading::range& r) {
                 REQUIRE(false); // should not be called
             },
             10);
 
         threading::parallel_for(
-            threading::blocked_range<size_t>(2, 0),
-            [](const threading::blocked_range<size_t>& r) {
+            threading::range(2, 0),
+            [](const threading::range& r) {
                 REQUIRE(false); // should not be called
             },
             10);
@@ -75,7 +75,7 @@ TEST_CASE("parallel_for_performance", "[threading][.]")
         VectorXd b = VectorXd::Random(N);
         VectorXd c = VectorXd::Zero(N);
 
-        auto sum_func = [&](const threading::blocked_range<size_t>& r) {
+        auto sum_func = [&](const threading::range& r) {
             for (size_t i = r.begin(); i < r.end(); ++i) {
                 c[i] = a[i] + b[i];
             }
@@ -92,10 +92,7 @@ TEST_CASE("parallel_for_performance", "[threading][.]")
 
         auto parallel_execute = [&](int num_threads) {
             timer.start();
-            threading::parallel_for(
-                threading::blocked_range<size_t>(0, c.size()),
-                sum_func,
-                num_threads);
+            threading::parallel_for(threading::range(0, c.size()), sum_func, num_threads);
             timer.stop();
 
             double duration = timer.getElapsedTimeInMilliSec();
@@ -122,7 +119,7 @@ TEST_CASE("parallel_for_performance", "[threading][.]")
         VectorXd c = VectorXd::Zero(N);
         MatrixXd A = MatrixXd::Random(N, N);
 
-        auto matmul_func = [&](const threading::blocked_range<size_t>& r) {
+        auto matmul_func = [&](const threading::range& r) {
             for (size_t i = r.begin(); i < r.end(); ++i) {
                 c[i] = A.row(i).dot(a);
             }
@@ -139,10 +136,7 @@ TEST_CASE("parallel_for_performance", "[threading][.]")
 
         auto parallel_execute = [&](int num_threads) {
             timer.start();
-            threading::parallel_for(
-                threading::blocked_range<size_t>(0, c.size()),
-                matmul_func,
-                num_threads);
+            threading::parallel_for(threading::range(0, c.size()), matmul_func, num_threads);
             timer.stop();
 
             double duration = timer.getElapsedTimeInMilliSec();

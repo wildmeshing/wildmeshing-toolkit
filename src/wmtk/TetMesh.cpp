@@ -1328,9 +1328,9 @@ void TetMesh::for_each_edge(const std::function<void(const TetMesh::Tuple&)>& fu
         }
     } else {
         // TODO: This can probably be optimized by avoiding computing eid that often.
-        wmtk::threading::parallel_for(
-            wmtk::threading::blocked_range<size_t>(0, tet_capacity()),
-            [&](wmtk::threading::blocked_range<size_t> r) {
+        threading::parallel_for(
+            threading::range(0, tet_capacity()),
+            [&](const threading::range& r) {
                 for (size_t i = r.begin(); i < r.end(); i++) {
                     if (!tuple_from_tet(i).is_valid(*this)) continue;
                     for (int j = 0; j < 6; j++) {
@@ -1358,9 +1358,9 @@ void TetMesh::for_each_tetra(const std::function<void(const TetMesh::Tuple&)>& f
     } else {
         // std::cout << "in parallel for each tet" << std::endl;
 
-        wmtk::threading::parallel_for(
-            wmtk::threading::blocked_range<size_t>(0, tet_capacity()),
-            [&](wmtk::threading::blocked_range<size_t> r) {
+        threading::parallel_for(
+            threading::range(0, tet_capacity()),
+            [&](const threading::range& r) {
                 for (size_t i = r.begin(); i < r.end(); i++) {
                     auto tup = tuple_from_tet(i);
                     if (!tup.is_valid(*this)) continue;
@@ -1383,9 +1383,9 @@ void TetMesh::for_each_vertex(const std::function<void(const TetMesh::Tuple&)>& 
         }
     } else {
         // std::cout << "in parallel for each vertex" << std::endl;
-        wmtk::threading::parallel_for(
-            wmtk::threading::blocked_range<size_t>(0, vert_capacity()),
-            [&](wmtk::threading::blocked_range<size_t> r) {
+        threading::parallel_for(
+            threading::range(0, vert_capacity()),
+            [&](const threading::range& r) {
                 for (size_t i = r.begin(); i < r.end(); i++) {
                     auto tup = tuple_from_vertex(i);
                     if (!tup.is_valid(*this)) continue;
