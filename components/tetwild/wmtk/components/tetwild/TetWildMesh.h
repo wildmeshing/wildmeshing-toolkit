@@ -4,6 +4,7 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Morton.h>
 #include <wmtk/utils/PartitionMesh.h>
+#include <algorithm>
 #include <wmtk/envelope/Envelope.hpp>
 #include "Parameters.h"
 
@@ -244,10 +245,16 @@ public:
             NUM_THREADS);
 
         const auto morton_compare = [](const sortstruct& a, const sortstruct& b) {
-            return (a.morton < b.morton);
+            // Morton codes are quantised, so distinct vertices routinely share one. Without
+            // the tie-break they compare equal and std::sort, which is not stable, orders
+            // them differently on libc++, libstdc++ and MSVC -- and that order decides the
+            // partition each vertex lands in. Break on the original index for a total order.
+            if (a.morton < b.morton) return true;
+            if (b.morton < a.morton) return false;
+            return a.order < b.order;
         };
 
-        wmtk::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
+        std::sort(list_v.begin(), list_v.end(), morton_compare);
 
         size_t interval = list_v.size() / NUM_THREADS + 1;
 

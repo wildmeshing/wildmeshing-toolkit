@@ -1,6 +1,7 @@
 #include "partition_utils.hpp"
 
 // clang-format off
+#include <algorithm>
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <wmtk/utils/Concurrency.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
@@ -94,10 +95,16 @@ void wmtk::partition_vertex_morton(
         num_partition);
 
     const auto morton_compare = [](const sortstruct& a, const sortstruct& b) {
-        return (a.morton < b.morton);
+        // Morton codes are quantised, so distinct vertices routinely share one. Without
+        // the tie-break they compare equal and std::sort, which is not stable, orders
+        // them differently on libc++, libstdc++ and MSVC -- and that order decides the
+        // partition each vertex lands in. Break on the original index for a total order.
+        if (a.morton < b.morton) return true;
+        if (b.morton < a.morton) return false;
+        return a.order < b.order;
     };
 
-    wmtk::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
+    std::sort(list_v.begin(), list_v.end(), morton_compare);
 
     size_t interval = list_v.size() / num_partition + 1;
 
