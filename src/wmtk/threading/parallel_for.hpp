@@ -1,6 +1,8 @@
 #pragma once
 
+#include <exception>
 #include <functional>
+#include <mutex>
 
 #include "range.hpp"
 

@@ -3,6 +3,9 @@
 #include <igl/Timer.h>
 #include <stdexcept>
 #include <wmtk/Types.hpp>
+#include <wmtk/threading/collector.hpp>
+#include <wmtk/threading/enumerable_thread_specific.hpp>
+#include <wmtk/threading/indexed_collector.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -154,4 +157,65 @@ TEST_CASE("parallel_for_performance", "[threading][.]")
         parallel_execute(8);
         parallel_execute(16);
     }
+}
+
+TEST_CASE("threading_collector", "[threading]")
+{
+    threading::collector<size_t> c;
+    threading::indexed_collector<size_t> ic(100);
+
+    threading::parallel_for(
+        threading::range(0, 100),
+        [&](const threading::range& r) {
+            for (size_t i = r.begin(); i < r.end(); ++i) {
+                c.push_back(i);
+                ic.set(i, i);
+            }
+        },
+        10);
+
+    REQUIRE(c.size() == 100);
+    std::vector<bool> seen(100, false);
+    for (size_t i = 0; i < c.size(); ++i) {
+        REQUIRE((c[i] >= 0 && c[i] < 100));
+        seen[c[i]] = true;
+    }
+    for (size_t i = 0; i < seen.size(); ++i) {
+        CHECK(seen[i]);
+    }
+
+    const auto compact_ic = ic.compact();
+    REQUIRE(compact_ic.size() == 100);
+    for (size_t i = 0; i < compact_ic.size(); ++i) {
+        REQUIRE(compact_ic[i] == i);
+    }
+}
+
+TEST_CASE("enumerable_thread_specific", "[threading]")
+{
+    threading::enumerable_thread_specific<size_t> ets;
+    threading::collector<size_t> c;
+
+    constexpr size_t N = 100;
+    const size_t num_threads = 4;
+
+    threading::parallel_for(
+        threading::range(0, N),
+        [&](const threading::range& r) {
+            ets.local() = 0;
+            for (size_t i = r.begin(); i < r.end(); ++i) {
+                ets.local() += i;
+            }
+            c.push_back(ets.local());
+        },
+        num_threads);
+
+    REQUIRE(c.size() == num_threads);
+
+    size_t total_sum = 0;
+    for (const size_t v : c) {
+        total_sum += v;
+    }
+
+    CHECK(total_sum == (N * (N - 1)) / 2);
 }
