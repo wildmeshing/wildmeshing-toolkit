@@ -31,5 +31,4 @@
 #include "parallel_for.hpp"
 #include "parallel_sort.hpp"
 #include "spin_mutex.hpp"
-#include "task_arena.hpp"
 #include "task_group.hpp"

@@ -3,7 +3,6 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/TriMesh.h>
 #include <wmtk/threading/concurrent_priority_queue.hpp>
-#include <wmtk/threading/task_arena.hpp>
 #include <wmtk/threading/task_group.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -359,16 +358,13 @@ public:
                 queues[get_partition_id(m, e)].emplace(priority(m, op, e), op, e, 0);
             }
             // Comment out parallel: work on serial first.
-            wmtk::threading::task_arena arena(num_threads);
             wmtk::threading::task_group tg;
-            arena.execute([&queues, &run_single_queue, &tg]() {
-                for (int task_id = 0; task_id < queues.size(); task_id++) {
-                    tg.run([&run_single_queue, &queues, task_id] {
-                        run_single_queue(queues[task_id], task_id);
-                    });
-                }
-                tg.wait();
-            });
+            for (int task_id = 0; task_id < queues.size(); task_id++) {
+                tg.run([&run_single_queue, &queues, task_id] {
+                    run_single_queue(queues[task_id], task_id);
+                });
+            }
+            tg.wait();
             logger().debug("Parallel Complete, remains element {}", final_queue.size());
             run_single_queue(final_queue, 0);
         }

@@ -64,8 +64,11 @@ public:
     {
         auto& slots = thread_slots();
         for (auto& s : slots) {
-            if (s.id == m_id) return *s.value;
+            if (s.id == m_id) {
+                return *s.value;
+            }
         }
+        // No slot for this thread yet, create one.
         slots.push_back(Slot{m_id, std::make_unique<T>(m_factory())});
         return *slots.back().value;
     }

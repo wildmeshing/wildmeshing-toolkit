@@ -4,7 +4,6 @@
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/threading/parallel_for.hpp>
-#include <wmtk/threading/task_arena.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 
@@ -1973,54 +1972,54 @@ bool TriMesh::try_set_face_mutex_one_ring(const Tuple& f, int threadid)
 
 void wmtk::TriMesh::for_each_edge(const std::function<void(const TriMesh::Tuple&)>& func)
 {
-    wmtk::threading::task_arena arena(NUM_THREADS);
-    arena.execute([&] {
-        wmtk::threading::parallel_for(
-            wmtk::threading::blocked_range<size_t>(0, tri_capacity()),
-            [&](const wmtk::threading::blocked_range<size_t>& r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    if (!tuple_from_tri(i).is_valid(*this)) continue;
-                    for (int j = 0; j < 3; j++) {
-                        auto tup = tuple_from_edge(i, j);
-                        if (tup.eid(*this) == 3 * i + j) {
-                            func(tup);
-                        }
+    wmtk::threading::parallel_for(
+        wmtk::threading::blocked_range<size_t>(0, tri_capacity()),
+        [&](const wmtk::threading::blocked_range<size_t>& r) {
+            for (size_t i = r.begin(); i < r.end(); i++) {
+                if (!tuple_from_tri(i).is_valid(*this)) {
+                    continue;
+                }
+                for (int j = 0; j < 3; j++) {
+                    auto tup = tuple_from_edge(i, j);
+                    if (tup.eid(*this) == 3 * i + j) {
+                        func(tup);
                     }
                 }
-            });
-    });
+            }
+        },
+        NUM_THREADS);
 }
 
 void wmtk::TriMesh::for_each_vertex(const std::function<void(const TriMesh::Tuple&)>& func)
 {
-    wmtk::threading::task_arena arena(NUM_THREADS);
-    arena.execute([&] {
-        wmtk::threading::parallel_for(
-            wmtk::threading::blocked_range<size_t>(0, vert_capacity()),
-            [&](wmtk::threading::blocked_range<size_t> r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    auto tup = tuple_from_vertex(i);
-                    if (!tup.is_valid(*this)) continue;
-                    func(tup);
+    wmtk::threading::parallel_for(
+        wmtk::threading::blocked_range<size_t>(0, vert_capacity()),
+        [&](wmtk::threading::blocked_range<size_t> r) {
+            for (size_t i = r.begin(); i < r.end(); i++) {
+                auto tup = tuple_from_vertex(i);
+                if (!tup.is_valid(*this)) {
+                    continue;
                 }
-            });
-    });
+                func(tup);
+            }
+        },
+        NUM_THREADS);
 }
 
 void wmtk::TriMesh::for_each_face(const std::function<void(const TriMesh::Tuple&)>& func)
 {
-    wmtk::threading::task_arena arena(NUM_THREADS);
-    arena.execute([&] {
-        wmtk::threading::parallel_for(
-            wmtk::threading::blocked_range<size_t>(0, tri_capacity()),
-            [&](wmtk::threading::blocked_range<size_t> r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    auto tup = tuple_from_tri(i);
-                    if (!tup.is_valid(*this)) continue;
-                    func(tup);
+    wmtk::threading::parallel_for(
+        wmtk::threading::blocked_range<size_t>(0, tri_capacity()),
+        [&](wmtk::threading::blocked_range<size_t> r) {
+            for (size_t i = r.begin(); i < r.end(); i++) {
+                auto tup = tuple_from_tri(i);
+                if (!tup.is_valid(*this)) {
+                    continue;
                 }
-            });
-    });
+                func(tup);
+            }
+        },
+        NUM_THREADS);
 }
 
 

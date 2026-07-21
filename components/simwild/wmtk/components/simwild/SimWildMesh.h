@@ -12,7 +12,6 @@
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/threading/parallel_sort.hpp>
-#include <wmtk/threading/task_arena.hpp>
 
 #include "ConnectedComponent.hpp"
 #include "Parameters.h"
@@ -223,104 +222,107 @@ public:
     // TODO This should not be here but inside wmtk
     void compute_vertex_partition_morton()
     {
-        if (NUM_THREADS == 0) return;
+        if (NUM_THREADS == 0) {
+            return;
+        }
 
-        wmtk::logger().info("Number of parts: {} by morton", NUM_THREADS);
+        logger().info("Number of parts: {} by morton", NUM_THREADS);
 
-        wmtk::threading::task_arena arena(NUM_THREADS);
+        std::vector<Eigen::Vector3d> V_v(vert_capacity());
 
-        arena.execute([&] {
-            std::vector<Eigen::Vector3d> V_v(vert_capacity());
-
-            wmtk::threading::parallel_for(
-                wmtk::threading::blocked_range<int>(0, V_v.size()),
-                [&](wmtk::threading::blocked_range<int> r) {
-                    for (int i = r.begin(); i < r.end(); i++) {
-                        V_v[i] = m_vertex_attribute[i].m_posf;
-                    }
-                });
-
-
-            struct sortstruct
-            {
-                int order;
-                Resorting::MortonCode64 morton;
-            };
-
-            std::vector<sortstruct> list_v;
-            list_v.resize(V_v.size());
-            // since the morton code requires a correct scale of input vertices,
-            //  we need to scale the vertices if their coordinates are out of range
-            std::vector<Eigen::Vector3d> V = V_v; // this is for rescaling vertices
-            Eigen::Vector3d vmin, vmax;
-            vmin = V.front();
-            vmax = V.front();
-
-            for (size_t j = 0; j < V.size(); j++) {
-                for (int i = 0; i < 3; i++) {
-                    vmin(i) = std::min(vmin(i), V[j](i));
-                    vmax(i) = std::max(vmax(i), V[j](i));
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<int>(0, V_v.size()),
+            [&](wmtk::threading::blocked_range<int> r) {
+                for (int i = r.begin(); i < r.end(); i++) {
+                    V_v[i] = m_vertex_attribute[i].m_posf;
                 }
+            },
+            NUM_THREADS);
+
+
+        struct sortstruct
+        {
+            int order;
+            Resorting::MortonCode64 morton;
+        };
+
+        std::vector<sortstruct> list_v;
+        list_v.resize(V_v.size());
+        // since the morton code requires a correct scale of input vertices,
+        //  we need to scale the vertices if their coordinates are out of range
+        std::vector<Eigen::Vector3d> V = V_v; // this is for rescaling vertices
+        Eigen::Vector3d vmin, vmax;
+        vmin = V.front();
+        vmax = V.front();
+
+        for (size_t j = 0; j < V.size(); j++) {
+            for (int i = 0; i < 3; i++) {
+                vmin(i) = std::min(vmin(i), V[j](i));
+                vmax(i) = std::max(vmax(i), V[j](i));
             }
+        }
 
-            // get_bb_corners(V, vmin, vmax);
-            Eigen::Vector3d center = (vmin + vmax) / 2;
+        // get_bb_corners(V, vmin, vmax);
+        Eigen::Vector3d center = (vmin + vmax) / 2;
 
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<int>(0, V.size()),
+            [&](wmtk::threading::blocked_range<int> r) {
+                for (int i = r.begin(); i < r.end(); i++) {
+                    V[i] = V[i] - center;
+                }
+            },
+            NUM_THREADS);
+
+        Eigen::Vector3d scale_point =
+            vmax - center; // after placing box at origin, vmax and vmin are symetric.
+
+        double xscale, yscale, zscale;
+        xscale = fabs(scale_point[0]);
+        yscale = fabs(scale_point[1]);
+        zscale = fabs(scale_point[2]);
+        double scale = std::max(std::max(xscale, yscale), zscale);
+        if (scale > 300) {
             wmtk::threading::parallel_for(
                 wmtk::threading::blocked_range<int>(0, V.size()),
                 [&](wmtk::threading::blocked_range<int> r) {
                     for (int i = r.begin(); i < r.end(); i++) {
-                        V[i] = V[i] - center;
+                        V[i] = V[i] / scale;
                     }
-                });
+                },
+                NUM_THREADS);
+        }
 
-            Eigen::Vector3d scale_point =
-                vmax - center; // after placing box at origin, vmax and vmin are symetric.
+        constexpr int multi = 1000;
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<int>(0, V.size()),
+            [&](wmtk::threading::blocked_range<int> r) {
+                for (int i = r.begin(); i < r.end(); i++) {
+                    list_v[i].morton = Resorting::MortonCode64(
+                        int(V[i][0] * multi),
+                        int(V[i][1] * multi),
+                        int(V[i][2] * multi));
+                    list_v[i].order = i;
+                }
+            },
+            NUM_THREADS);
 
-            double xscale, yscale, zscale;
-            xscale = fabs(scale_point[0]);
-            yscale = fabs(scale_point[1]);
-            zscale = fabs(scale_point[2]);
-            double scale = std::max(std::max(xscale, yscale), zscale);
-            if (scale > 300) {
-                wmtk::threading::parallel_for(
-                    wmtk::threading::blocked_range<int>(0, V.size()),
-                    [&](wmtk::threading::blocked_range<int> r) {
-                        for (int i = r.begin(); i < r.end(); i++) {
-                            V[i] = V[i] / scale;
-                        }
-                    });
-            }
+        const auto morton_compare = [](const sortstruct& a, const sortstruct& b) {
+            return (a.morton < b.morton);
+        };
 
-            constexpr int multi = 1000;
-            wmtk::threading::parallel_for(
-                wmtk::threading::blocked_range<int>(0, V.size()),
-                [&](wmtk::threading::blocked_range<int> r) {
-                    for (int i = r.begin(); i < r.end(); i++) {
-                        list_v[i].morton = Resorting::MortonCode64(
-                            int(V[i][0] * multi),
-                            int(V[i][1] * multi),
-                            int(V[i][2] * multi));
-                        list_v[i].order = i;
-                    }
-                });
+        wmtk::threading::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
 
-            const auto morton_compare = [](const sortstruct& a, const sortstruct& b) {
-                return (a.morton < b.morton);
-            };
+        int interval = list_v.size() / NUM_THREADS + 1;
 
-            wmtk::threading::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
-
-            int interval = list_v.size() / NUM_THREADS + 1;
-
-            wmtk::threading::parallel_for(
-                wmtk::threading::blocked_range<int>(0, list_v.size()),
-                [&](wmtk::threading::blocked_range<int> r) {
-                    for (int i = r.begin(); i < r.end(); i++) {
-                        m_vertex_attribute[list_v[i].order].partition_id = i / interval;
-                    }
-                });
-        });
+        wmtk::threading::parallel_for(
+            wmtk::threading::blocked_range<int>(0, list_v.size()),
+            [&](wmtk::threading::blocked_range<int> r) {
+                for (int i = r.begin(); i < r.end(); i++) {
+                    m_vertex_attribute[list_v[i].order].partition_id = i / interval;
+                }
+            },
+            NUM_THREADS);
     }
 
     size_t get_partition_id(const Tuple& loc) const
@@ -428,10 +430,6 @@ public:
     std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;
 
 private:
-    // tags: correspondence map from new tet-face node indices to in-triangle ids.
-    // built up while triangles are inserted.
-    wmtk::threading::concurrent_map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;
-
     ////// Operations
 
     struct SplitInfoCache

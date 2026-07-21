@@ -56,12 +56,27 @@ public:
         return m_data.back();
     }
 
-    // Single-threaded sizing/clearing (used outside parallel regions).
-    void resize(std::size_t n) { m_data.resize(n); }
-    void resize(std::size_t n, const T& value) { m_data.resize(n, value); }
-    void clear() { m_data.clear(); }
-    void reserve(std::size_t) {}
+    void resize(std::size_t n)
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_data.resize(n);
+    }
+    void resize(std::size_t n, const T& value)
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_data.resize(n, value);
+    }
+    void clear()
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_data.clear();
+    }
+    // void reserve(std::size_t) {}
 
+    /**
+     * @brief operator[] is not thread-safe for concurrent writes, but is safe for concurrent reads
+     * after all writes are done.
+     */
     reference operator[](std::size_t i) { return m_data[i]; }
     const_reference operator[](std::size_t i) const { return m_data[i]; }
 

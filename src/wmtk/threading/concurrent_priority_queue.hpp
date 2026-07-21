@@ -23,7 +23,9 @@ public:
     bool try_pop(T& out)
     {
         std::lock_guard<std::mutex> lock(m_mutex);
-        if (m_queue.empty()) return false;
+        if (m_queue.empty()) {
+            return false;
+        }
         out = m_queue.top();
         m_queue.pop();
         return true;

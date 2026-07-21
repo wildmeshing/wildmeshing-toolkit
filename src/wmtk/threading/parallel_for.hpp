@@ -1,5 +1,7 @@
 #pragma once
 
+#include <thread>
+
 #include "blocked_range.hpp"
 #include "container_range.hpp"
 #include "detail/arena_concurrency.hpp"
@@ -8,23 +10,24 @@ namespace wmtk::threading {
 
 // ---------------------------------------------------------------------------
 // parallel_for: replaces tbb::parallel_for.
+// The thread count is an explicit argument: `num_threads >= 0` runs on that many
+// threads, anything else (`num_threads` is negative) falls back to hardware_concurrency().
 // ---------------------------------------------------------------------------
 template <typename Index, typename Func>
-void parallel_for(const blocked_range<Index>& range, Func&& func)
+void parallel_for(const blocked_range<Index>& range, Func&& func, int num_threads = -1)
 {
-    const Index begin = range.begin();
-    const Index end = range.end();
-    if (!(begin < end)) return;
+    if (range.empty()) {
+        return;
+    }
 
-    const std::size_t total = static_cast<std::size_t>(end - begin);
+    const std::size_t total = range.size();
 
-    unsigned hw = std::thread::hardware_concurrency();
-    if (hw == 0) hw = 1;
-    int requested = detail::arena_concurrency();
-    std::size_t nthreads = requested > 0 ? static_cast<std::size_t>(requested) : hw;
+    const unsigned hw = std::thread::hardware_concurrency();
+    int requested = num_threads;
+    std::size_t nthreads = requested >= 0 ? static_cast<std::size_t>(requested) : hw;
     nthreads = std::min<std::size_t>(nthreads, total);
     if (nthreads <= 1) {
-        func(blocked_range<Index>(begin, end));
+        func(range);
         return;
     }
 
@@ -37,9 +40,13 @@ void parallel_for(const blocked_range<Index>& range, Func&& func)
             func(blocked_range<Index>(cb, ce));
         } catch (...) {
             std::lock_guard<std::mutex> lock(eptr_mutex);
-            if (!eptr) eptr = std::current_exception();
+            if (!eptr) {
+                eptr = std::current_exception();
+            }
         }
     };
+
+    const Index begin = range.begin();
 
     std::vector<std::thread> workers;
     workers.reserve(nthreads - 1);
@@ -57,9 +64,13 @@ void parallel_for(const blocked_range<Index>& range, Func&& func)
             workers.emplace_back([&run, rb, re]() { run(rb, re); });
         }
     }
-    for (auto& w : workers) w.join();
+    for (auto& w : workers) {
+        w.join();
+    }
 
-    if (eptr) std::rethrow_exception(eptr);
+    if (eptr) {
+        std::rethrow_exception(eptr);
+    }
 }
 
 // Serial overload used for iterating a concurrent_map via .range().
