@@ -86,12 +86,15 @@ void wmtk::TetMesh::triangle_insertion(
         }
     }
     // unique old_face_vids
+    // A face shared by two tets is pushed once per tet, with the same vids but a different
+    // (tid, l_fid), and std::unique below keeps whichever came first. Ordering on the vids
+    // alone leaves that up to std::sort, which is not stable, so the tid that ends up in
+    // old_faces would differ between libc++, libstdc++ and MSVC. Comparing the whole array
+    // keeps the vid grouping and adds (tid, l_fid) as a tie-break, giving a total order.
     std::sort(
         old_face_vids.begin(),
         old_face_vids.end(),
-        [](const std::array<size_t, 5>& v1, const std::array<size_t, 5>& v2) {
-            return std::tie(v1[0], v1[1], v1[2]) < std::tie(v2[0], v2[1], v2[2]);
-        });
+        [](const std::array<size_t, 5>& v1, const std::array<size_t, 5>& v2) { return v1 < v2; });
     auto it = std::unique(
         old_face_vids.begin(),
         old_face_vids.end(),
@@ -396,11 +399,15 @@ void wmtk::TetMesh::subdivide_a_tet(
     }
 
     for (auto& info : new_face_vids) { // erase duplicates <-- must have duplicates
+        // Same as for old_face_vids above: the duplicates being erased carry different
+        // (tid, l_fid), and both the survivor and the order of what is left become the
+        // face tuples handed to triangle_insertion_after. Comparing the whole array adds
+        // (tid, l_fid) as a tie-break so the result does not depend on sort stability.
         std::sort(
             info.second.begin(),
             info.second.end(),
             [](const std::array<size_t, 5>& v1, const std::array<size_t, 5>& v2) {
-                return std::make_tuple(v1[0], v1[1], v1[2]) < std::make_tuple(v2[0], v2[1], v2[2]);
+                return v1 < v2;
             });
         auto it = std::unique(
             info.second.begin(),

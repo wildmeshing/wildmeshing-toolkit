@@ -193,8 +193,17 @@ std::vector<TetMesh::Tuple> TetMesh::get_edges() const
             edges.emplace_back(v0, v1, tup);
         }
     }
+    // std::unique below keeps the first tuple of each edge, and every tet incident to an
+    // edge contributes one, so comparing the endpoints alone leaves the survivor -- the tet
+    // the returned tuple lives in -- up to std::sort, which is not stable and orders
+    // equivalent elements differently on libc++, libstdc++ and MSVC. The Tuple tie-break
+    // makes this a total order, so the representative is the same everywhere.
     std::sort(edges.begin(), edges.end(), [](auto& a, auto& b) {
-        return std::tie(std::get<0>(a), std::get<1>(a)) < std::tie(std::get<0>(b), std::get<1>(b));
+        const auto ka = std::tie(std::get<0>(a), std::get<1>(a));
+        const auto kb = std::tie(std::get<0>(b), std::get<1>(b));
+        if (ka < kb) return true;
+        if (kb < ka) return false;
+        return std::get<2>(a) < std::get<2>(b);
     });
     edges.erase(
         std::unique(
