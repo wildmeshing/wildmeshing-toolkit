@@ -4,7 +4,6 @@
 #include <wmtk/utils/Morton.h>
 #include <wmtk/utils/Partitioning.h>
 #include <wmtk/threading/parallel_for.hpp>
-#include <wmtk/threading/parallel_sort.hpp>
 
 namespace wmtk {
 
@@ -114,7 +113,7 @@ std::vector<size_t> partition_morton(std::vector<Eigen::Vector3d> vertex_positio
     const auto morton_compare = [](const sortstruct& a, const sortstruct& b) {
         return (a.morton < b.morton);
     };
-    wmtk::threading::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
+    std::sort(list_v.begin(), list_v.end(), morton_compare);
     size_t interval = list_v.size() / NUM_THREADS + 1;
 
     wmtk::threading::parallel_for(

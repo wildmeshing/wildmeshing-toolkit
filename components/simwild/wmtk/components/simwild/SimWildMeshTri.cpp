@@ -1,7 +1,6 @@
 #include "SimWildMeshTri.hpp"
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 #include <wmtk/threading/parallel_for.hpp>
-#include <wmtk/threading/parallel_sort.hpp>
 
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
@@ -147,7 +146,7 @@ void SimWildMeshTri::partition_mesh_morton()
         return (a.morton < b.morton);
     };
 
-    wmtk::threading::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
+    std::sort(list_v.begin(), list_v.end(), morton_compare);
 
     size_t interval = list_v.size() / NUM_THREADS + 1;
 

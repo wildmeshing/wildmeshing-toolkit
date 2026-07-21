@@ -2,7 +2,6 @@
 
 #include <wmtk/utils/Morton.h>
 #include <wmtk/threading/parallel_for.hpp>
-#include <wmtk/threading/parallel_sort.hpp>
 
 void wmtk::partition_vertex_morton(
     size_t vert_size,
@@ -94,7 +93,7 @@ void wmtk::partition_vertex_morton(
         return (a.morton < b.morton);
     };
 
-    wmtk::threading::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
+    std::sort(list_v.begin(), list_v.end(), morton_compare);
 
     size_t interval = list_v.size() / num_partition + 1;
 

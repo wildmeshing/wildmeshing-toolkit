@@ -8,7 +8,6 @@
 #include <wmtk/envelope/KNN.hpp>
 #include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/threading/parallel_for.hpp>
-#include <wmtk/threading/parallel_sort.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/io.hpp>
@@ -795,7 +794,7 @@ void TriWildMesh::partition_mesh_morton()
         return (a.morton < b.morton);
     };
 
-    wmtk::threading::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
+    std::sort(list_v.begin(), list_v.end(), morton_compare);
 
     size_t interval = list_v.size() / NUM_THREADS + 1;
 

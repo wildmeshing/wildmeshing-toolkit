@@ -10,7 +10,6 @@
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 #include <wmtk/threading/parallel_for.hpp>
-#include <wmtk/threading/parallel_sort.hpp>
 
 #include "ConnectedComponent.hpp"
 #include "Parameters.h"
@@ -310,7 +309,7 @@ public:
             return (a.morton < b.morton);
         };
 
-        wmtk::threading::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
+        std::sort(list_v.begin(), list_v.end(), morton_compare);
 
         int interval = list_v.size() / NUM_THREADS + 1;
 

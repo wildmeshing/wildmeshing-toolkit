@@ -2,7 +2,6 @@
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 #include <wmtk/threading/indexed_collector.hpp>
 #include <wmtk/threading/parallel_for.hpp>
-#include <wmtk/threading/parallel_sort.hpp>
 
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
@@ -206,7 +205,7 @@ void QSlimMesh::partition_mesh_morton()
         return (a.morton < b.morton);
     };
 
-    wmtk::threading::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
+    std::sort(list_v.begin(), list_v.end(), morton_compare);
 
     int interval = list_v.size() / NUM_THREADS + 1;
 
