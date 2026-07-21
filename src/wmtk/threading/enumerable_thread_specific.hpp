@@ -1,12 +1,21 @@
 #pragma once
 
 #include <algorithm>
+#include <atomic>
 #include <functional>
+#include <thread>
 #include <vector>
 
-#include "detail/ets_id_counter.hpp"
-
 namespace wmtk::threading {
+
+namespace detail {
+inline std::atomic<std::uint64_t>& ets_id_counter()
+{
+    static std::atomic<std::uint64_t> counter{1};
+    return counter;
+}
+} // namespace detail
+
 // ---------------------------------------------------------------------------
 // enumerable_thread_specific: replaces tbb::enumerable_thread_specific.
 // Only `.local()` (and construction with an optional initial value) is used.

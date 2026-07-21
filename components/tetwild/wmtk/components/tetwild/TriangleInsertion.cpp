@@ -379,43 +379,41 @@ void TetWildMesh::init_from_input_surface(
 
 void TetWildMesh::finalize_triangle_insertion(const std::vector<std::array<size_t, 3>>& faces)
 {
-    wmtk::threading::parallel_for(this->tet_face_tags.range(), [&faces, this](auto& r) {
-        auto projected_point_in_triangle = [](auto& c, auto& tri) {
-            std::array<Vector2r, 3> tri2d;
-            int squeeze_to_2d_dir = wmtk::project_triangle_to_2d(tri, tri2d);
-            auto c2d = wmtk::project_point_to_2d(c, squeeze_to_2d_dir);
-            //// should exclude the points on the edges of tri2d -- NO
-            return wmtk::is_point_inside_triangle(c2d, tri2d);
-        };
-        for (auto i = r.begin(); i != r.end(); i++) {
-            auto& vids = i->first;
-            auto fids = i->second;
-            if (fids.empty()) continue;
+    auto projected_point_in_triangle = [](auto& c, auto& tri) {
+        std::array<Vector2r, 3> tri2d;
+        int squeeze_to_2d_dir = wmtk::project_triangle_to_2d(tri, tri2d);
+        auto c2d = wmtk::project_point_to_2d(c, squeeze_to_2d_dir);
+        //// should exclude the points on the edges of tri2d -- NO
+        return wmtk::is_point_inside_triangle(c2d, tri2d);
+    };
+    for (auto i = tet_face_tags.begin(); i != tet_face_tags.end(); i++) {
+        auto& vids = i->first;
+        auto fids = i->second;
+        if (fids.empty()) continue;
 
-            Vector3r c = (m_vertex_attribute[vids[0]].m_pos + m_vertex_attribute[vids[1]].m_pos +
-                          m_vertex_attribute[vids[2]].m_pos) /
-                         3;
+        Vector3r c = (m_vertex_attribute[vids[0]].m_pos + m_vertex_attribute[vids[1]].m_pos +
+                      m_vertex_attribute[vids[2]].m_pos) /
+                     3;
 
-            wmtk::vector_unique(fids);
+        wmtk::vector_unique(fids);
 
-            for (int input_fid : fids) {
-                std::array<Vector3r, 3> tri = {
-                    {m_vertex_attribute[faces[input_fid][0]].m_pos,
-                     m_vertex_attribute[faces[input_fid][1]].m_pos,
-                     m_vertex_attribute[faces[input_fid][2]].m_pos}};
-                if (projected_point_in_triangle(c, tri)) {
-                    auto [_, global_tet_fid] = tuple_from_face(vids);
-                    m_face_attribute[global_tet_fid].m_is_surface_fs = 1;
-                    //
-                    for (auto vid : vids) {
-                        m_vertex_attribute[vid].m_is_on_surface = true;
-                    }
-                    //
-                    break;
+        for (int input_fid : fids) {
+            std::array<Vector3r, 3> tri = {
+                {m_vertex_attribute[faces[input_fid][0]].m_pos,
+                 m_vertex_attribute[faces[input_fid][1]].m_pos,
+                 m_vertex_attribute[faces[input_fid][2]].m_pos}};
+            if (projected_point_in_triangle(c, tri)) {
+                auto [_, global_tet_fid] = tuple_from_face(vids);
+                m_face_attribute[global_tet_fid].m_is_surface_fs = 1;
+                //
+                for (auto vid : vids) {
+                    m_vertex_attribute[vid].m_is_on_surface = true;
                 }
+                //
+                break;
             }
         }
-    });
+    }
 
     {
         //// track bbox

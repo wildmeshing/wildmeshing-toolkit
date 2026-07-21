@@ -3,8 +3,6 @@
 #include <thread>
 
 #include "blocked_range.hpp"
-#include "container_range.hpp"
-#include "detail/arena_concurrency.hpp"
 
 namespace wmtk::threading {
 
@@ -71,13 +69,6 @@ void parallel_for(const blocked_range<Index>& range, Func&& func, int num_thread
     if (eptr) {
         std::rethrow_exception(eptr);
     }
-}
-
-// Serial overload used for iterating a concurrent_map via .range().
-template <typename It, typename Func>
-void parallel_for(container_range<It> range, Func&& func)
-{
-    func(range);
 }
 
 } // namespace wmtk::threading

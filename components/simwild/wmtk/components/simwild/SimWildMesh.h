@@ -8,7 +8,6 @@
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/simplex/Simplex.hpp>
-#include <wmtk/threading/concurrent_map.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/threading/parallel_sort.hpp>
