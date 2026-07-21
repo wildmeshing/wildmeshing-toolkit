@@ -11,13 +11,19 @@
 // Notes / intentional simplifications:
 //  * Containers that used to grow concurrently (attribute / connectivity storage)
 //    are NOT provided here -- they became plain std::vector, preallocated up front
-//    (see TetMesh/TriMesh). `concurrent_vector` here only backs the few "collect
-//    results from parallel loops" sites, and is a mutex-guarded deque so that
-//    references to existing elements stay valid while other threads append and so
-//    that bool elements are not bit-packed (concurrent distinct-index writes stay
-//    safe).
+//    (see TetMesh/TriMesh). What remains is collecting results out of a parallel
+//    loop: `indexed_collector` where the loop already knows a unique slot per result
+//    (no synchronisation at all, and a reproducible output order), and
+//    `concurrent_vector` for the scattered appends that have no such slot.
 //  * enumerable_thread_specific is lock-free on the hot path: each thread keeps a
-//    small thread_local list of (instance-id -> value) slots.
+//    small thread_local list of (instance-id -> value) slots. It cannot enumerate
+//    them, though -- they live in thread_local storage, so the owning object cannot
+//    reach other threads' copies.
+//  * Thread count is an explicit argument to parallel_for. It used to travel through
+//    a thread_local set by a task_arena shim, which meant a parallel_for's width
+//    depended on invisible caller state -- and silently fell back to
+//    hardware_concurrency() anywhere the arena had not been entered, including inside
+//    threads spawned by task_group.
 
 #include <algorithm>
 #include <atomic>
@@ -454,46 +460,12 @@ public:
 };
 
 // ---------------------------------------------------------------------------
-// task_arena: replaces tbb::task_arena. It only limits concurrency; here we just
-// record the requested concurrency in a thread-local that parallel_for reads.
-// ---------------------------------------------------------------------------
-namespace detail {
-inline int& arena_concurrency()
-{
-    static thread_local int value = 0; // 0 => auto (hardware_concurrency)
-    return value;
-}
-} // namespace detail
-
-class task_arena
-{
-    int m_max_concurrency;
-
-public:
-    explicit task_arena(int max_concurrency = 0)
-        : m_max_concurrency(max_concurrency)
-    {}
-
-    template <typename F>
-    void execute(F&& f)
-    {
-        int previous = detail::arena_concurrency();
-        detail::arena_concurrency() = m_max_concurrency;
-        try {
-            f();
-        } catch (...) {
-            detail::arena_concurrency() = previous;
-            throw;
-        }
-        detail::arena_concurrency() = previous;
-    }
-};
-
-// ---------------------------------------------------------------------------
 // parallel_for: replaces tbb::parallel_for.
+// The thread count is an explicit argument: `num_threads > 0` runs on that many
+// threads, anything else (the default 0) falls back to hardware_concurrency().
 // ---------------------------------------------------------------------------
 template <typename Index, typename Func>
-void parallel_for(const blocked_range<Index>& range, Func&& func)
+void parallel_for(const blocked_range<Index>& range, Func&& func, int num_threads = 0)
 {
     const Index begin = range.begin();
     const Index end = range.end();
@@ -503,7 +475,7 @@ void parallel_for(const blocked_range<Index>& range, Func&& func)
 
     unsigned hw = std::thread::hardware_concurrency();
     if (hw == 0) hw = 1;
-    int requested = detail::arena_concurrency();
+    int requested = num_threads;
     std::size_t nthreads = requested > 0 ? static_cast<std::size_t>(requested) : hw;
     nthreads = std::min<std::size_t>(nthreads, total);
     if (nthreads <= 1) {
@@ -547,7 +519,7 @@ void parallel_for(const blocked_range<Index>& range, Func&& func)
 
 // Serial overload used for iterating a concurrent_map via .range().
 template <typename It, typename Func>
-void parallel_for(container_range<It> range, Func&& func)
+void parallel_for(container_range<It> range, Func&& func, int /*num_threads*/ = 0)
 {
     func(range);
 }

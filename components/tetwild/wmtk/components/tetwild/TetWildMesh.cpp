@@ -1459,17 +1459,15 @@ void TetWildMesh::init_vertex_order()
     // Per-vertex, independent: compute_vertex_order is const (reads connectivity
     // only) and each vid writes only its own m_order slot.
     const std::vector<Tuple> vs = get_vertices();
-    wmtk::task_arena arena(std::max(1, NUM_THREADS));
-    arena.execute([&] {
-        wmtk::parallel_for(
-            wmtk::blocked_range<size_t>(0, vs.size()),
-            [&](wmtk::blocked_range<size_t> range) {
-                for (size_t k = range.begin(); k < range.end(); ++k) {
-                    const size_t vid = vs[k].vid(*this);
-                    m_vertex_attribute[vid].m_order = compute_vertex_order(vid);
-                }
-            });
-    });
+    wmtk::parallel_for(
+        wmtk::blocked_range<size_t>(0, vs.size()),
+        [&](wmtk::blocked_range<size_t> range) {
+            for (size_t k = range.begin(); k < range.end(); ++k) {
+                const size_t vid = vs[k].vid(*this);
+                m_vertex_attribute[vid].m_order = compute_vertex_order(vid);
+            }
+        },
+        std::max(1, NUM_THREADS));
 }
 
 bool TetWildMesh::check_vertex_param_type()

@@ -1786,24 +1786,22 @@ void TetWildMesh::init_from_Volumeremesher(
         // Per-vertex, independent: each i writes only its own m_pos/m_posf/
         // m_is_rounded/is_direct_point; the rational->double conversion and the
         // exact comparison read only local data.
-        wmtk::task_arena arena(std::max(1, NUM_THREADS));
-        arena.execute([&] {
-            wmtk::parallel_for(
-                wmtk::blocked_range<size_t>(0, vert_capacity()),
-                [&](wmtk::blocked_range<size_t> range) {
-                    for (size_t i = range.begin(); i < range.end(); ++i) {
-                        m_vertex_attribute[i].m_pos = v_rational[i];
-                        m_vertex_attribute[i].m_posf = to_double(v_rational[i]);
-                        const Vector3r& rp = m_vertex_attribute[i].m_pos;
-                        const Vector3d& d = m_vertex_attribute[i].m_posf;
-                        const bool direct = (wmtk::Rational(d[0]) == rp[0]) &&
-                                            (wmtk::Rational(d[1]) == rp[1]) &&
-                                            (wmtk::Rational(d[2]) == rp[2]);
-                        is_direct_point[i] = direct ? 1 : 0;
-                        m_vertex_attribute[i].m_is_rounded = direct;
-                    }
-                });
-        });
+        wmtk::parallel_for(
+            wmtk::blocked_range<size_t>(0, vert_capacity()),
+            [&](wmtk::blocked_range<size_t> range) {
+                for (size_t i = range.begin(); i < range.end(); ++i) {
+                    m_vertex_attribute[i].m_pos = v_rational[i];
+                    m_vertex_attribute[i].m_posf = to_double(v_rational[i]);
+                    const Vector3r& rp = m_vertex_attribute[i].m_pos;
+                    const Vector3d& d = m_vertex_attribute[i].m_posf;
+                    const bool direct = (wmtk::Rational(d[0]) == rp[0]) &&
+                                        (wmtk::Rational(d[1]) == rp[1]) &&
+                                        (wmtk::Rational(d[2]) == rp[2]);
+                    is_direct_point[i] = direct ? 1 : 0;
+                    m_vertex_attribute[i].m_is_rounded = direct;
+                }
+            },
+            std::max(1, NUM_THREADS));
     }
 
     // check here
@@ -1815,27 +1813,24 @@ void TetWildMesh::init_from_Volumeremesher(
     const auto faces = get_faces();
     logger().info("#faces = {}", faces.size());
 
-    wmtk::task_arena arena(std::max(1, NUM_THREADS));
-
     // mark surface vertices (parallel). Different faces write `true` to the shared
     // m_is_on_surface of a common vertex; atomic_ref makes those same-value writes
     // well-defined instead of a data race.
-    arena.execute([&] {
-        wmtk::parallel_for(
-            wmtk::blocked_range<size_t>(0, faces.size()),
-            [&](wmtk::blocked_range<size_t> r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    const Tuple& f = faces[i];
-                    if (m_face_attribute[f.fid(*this)].m_is_surface_fs != 1) continue;
-                    const size_t v1 = f.vid(*this);
-                    const size_t v2 = f.switch_vertex(*this).vid(*this);
-                    const size_t v3 = f.switch_edge(*this).switch_vertex(*this).vid(*this);
-                    std::atomic_ref<bool>(m_vertex_attribute[v1].m_is_on_surface).store(true);
-                    std::atomic_ref<bool>(m_vertex_attribute[v2].m_is_on_surface).store(true);
-                    std::atomic_ref<bool>(m_vertex_attribute[v3].m_is_on_surface).store(true);
-                }
-            });
-    });
+    wmtk::parallel_for(
+        wmtk::blocked_range<size_t>(0, faces.size()),
+        [&](wmtk::blocked_range<size_t> r) {
+            for (size_t i = r.begin(); i < r.end(); i++) {
+                const Tuple& f = faces[i];
+                if (m_face_attribute[f.fid(*this)].m_is_surface_fs != 1) continue;
+                const size_t v1 = f.vid(*this);
+                const size_t v2 = f.switch_vertex(*this).vid(*this);
+                const size_t v3 = f.switch_edge(*this).switch_vertex(*this).vid(*this);
+                std::atomic_ref<bool>(m_vertex_attribute[v1].m_is_on_surface).store(true);
+                std::atomic_ref<bool>(m_vertex_attribute[v2].m_is_on_surface).store(true);
+                std::atomic_ref<bool>(m_vertex_attribute[v3].m_is_on_surface).store(true);
+            }
+        },
+        std::max(1, NUM_THREADS));
 
     // track bounding box (parallel). The per-face exact-rational corner test is the
     // cost; on-bbox faces are rare, so each chunk collects (vertex, bbox-side) pairs
@@ -1843,39 +1838,38 @@ void TetWildMesh::init_from_Volumeremesher(
     {
         std::vector<std::pair<size_t, int>> bbox_vert_faces;
         std::mutex bbox_mutex;
-        arena.execute([&] {
-            wmtk::parallel_for(
-                wmtk::blocked_range<size_t>(0, faces.size()),
-                [&](wmtk::blocked_range<size_t> r) {
-                    std::vector<std::pair<size_t, int>> local;
-                    for (size_t i = r.begin(); i < r.end(); i++) {
-                        auto vs = get_face_vertices(faces[i]);
-                        std::array<size_t, 3> vids = {
-                            {vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
-                        int on_bbox = -1;
-                        for (int k = 0; k < 3; k++) {
-                            if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_min[k] &&
-                                m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_min[k] &&
-                                m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_min[k]) {
-                                on_bbox = k * 2;
-                                break;
-                            }
-                            if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_max[k] &&
-                                m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_max[k] &&
-                                m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_max[k]) {
-                                on_bbox = k * 2 + 1;
-                                break;
-                            }
+        wmtk::parallel_for(
+            wmtk::blocked_range<size_t>(0, faces.size()),
+            [&](wmtk::blocked_range<size_t> r) {
+                std::vector<std::pair<size_t, int>> local;
+                for (size_t i = r.begin(); i < r.end(); i++) {
+                    auto vs = get_face_vertices(faces[i]);
+                    std::array<size_t, 3> vids = {
+                        {vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
+                    int on_bbox = -1;
+                    for (int k = 0; k < 3; k++) {
+                        if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_min[k] &&
+                            m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_min[k] &&
+                            m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_min[k]) {
+                            on_bbox = k * 2;
+                            break;
                         }
-                        if (on_bbox < 0) continue;
-                        m_face_attribute[faces[i].fid(*this)].m_is_bbox_fs = on_bbox;
-                        for (size_t vid : vids) local.emplace_back(vid, on_bbox);
+                        if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_max[k] &&
+                            m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_max[k] &&
+                            m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_max[k]) {
+                            on_bbox = k * 2 + 1;
+                            break;
+                        }
                     }
-                    if (local.empty()) return;
-                    std::lock_guard<std::mutex> lk(bbox_mutex);
-                    bbox_vert_faces.insert(bbox_vert_faces.end(), local.begin(), local.end());
-                });
-        });
+                    if (on_bbox < 0) continue;
+                    m_face_attribute[faces[i].fid(*this)].m_is_bbox_fs = on_bbox;
+                    for (size_t vid : vids) local.emplace_back(vid, on_bbox);
+                }
+                if (local.empty()) return;
+                std::lock_guard<std::mutex> lk(bbox_mutex);
+                bbox_vert_faces.insert(bbox_vert_faces.end(), local.begin(), local.end());
+            },
+            std::max(1, NUM_THREADS));
         for (const auto& [vid, on_bbox] : bbox_vert_faces)
             m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
     }
@@ -2182,55 +2176,49 @@ void TetWildMesh::find_open_boundary()
         v_posf[i] = m_vertex_attribute[i].m_posf;
     }
 
-    wmtk::task_arena arena(std::max(1, NUM_THREADS));
-
     // count incident surface faces per edge (parallel; atomic_ref increments the shared array)
-    arena.execute([&] {
-        wmtk::parallel_for(
-            wmtk::blocked_range<size_t>(0, fs.size()),
-            [&](wmtk::blocked_range<size_t> r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    const Tuple& f = fs[i];
-                    if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
-                    const size_t eid1 = f.eid(*this);
-                    const size_t eid2 = f.switch_edge(*this).eid(*this);
-                    const size_t eid3 = f.switch_vertex(*this).switch_edge(*this).eid(*this);
-                    std::atomic_ref<int>(edge_on_open_boundary[eid1])
-                        .fetch_add(1, std::memory_order_relaxed);
-                    std::atomic_ref<int>(edge_on_open_boundary[eid2])
-                        .fetch_add(1, std::memory_order_relaxed);
-                    std::atomic_ref<int>(edge_on_open_boundary[eid3])
-                        .fetch_add(1, std::memory_order_relaxed);
-                }
-            });
-    });
+    wmtk::parallel_for(
+        wmtk::blocked_range<size_t>(0, fs.size()),
+        [&](wmtk::blocked_range<size_t> r) {
+            for (size_t i = r.begin(); i < r.end(); i++) {
+                const Tuple& f = fs[i];
+                if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
+                const size_t eid1 = f.eid(*this);
+                const size_t eid2 = f.switch_edge(*this).eid(*this);
+                const size_t eid3 = f.switch_vertex(*this).switch_edge(*this).eid(*this);
+                std::atomic_ref<int>(edge_on_open_boundary[eid1])
+                    .fetch_add(1, std::memory_order_relaxed);
+                std::atomic_ref<int>(edge_on_open_boundary[eid2])
+                    .fetch_add(1, std::memory_order_relaxed);
+                std::atomic_ref<int>(edge_on_open_boundary[eid3])
+                    .fetch_add(1, std::memory_order_relaxed);
+            }
+        },
+        std::max(1, NUM_THREADS));
 
     // collect open-boundary edges (exactly one incident surface face), parallel with a
     // per-chunk merge. The collected order differs from serial but the set is identical
     // and the boundary envelope built from it is order-independent.
     {
         std::mutex ob_mutex;
-        arena.execute([&] {
-            wmtk::parallel_for(
-                wmtk::blocked_range<size_t>(0, es.size()),
-                [&](wmtk::blocked_range<size_t> r) {
-                    std::vector<Eigen::Vector2i> local;
-                    for (size_t i = r.begin(); i < r.end(); i++) {
-                        const Tuple& e = es[i];
-                        if (edge_on_open_boundary[e.eid(*this)] != 1) continue;
-                        const size_t v1 = e.vid(*this);
-                        const size_t v2 = e.switch_vertex(*this).vid(*this);
-                        std::atomic_ref<bool>(m_vertex_attribute[v1].m_is_on_open_boundary)
-                            .store(true);
-                        std::atomic_ref<bool>(m_vertex_attribute[v2].m_is_on_open_boundary)
-                            .store(true);
-                        local.emplace_back(v1, v2);
-                    }
-                    if (local.empty()) return;
-                    std::lock_guard<std::mutex> lk(ob_mutex);
-                    open_boundaries.insert(open_boundaries.end(), local.begin(), local.end());
-                });
-        });
+        wmtk::parallel_for(
+            wmtk::blocked_range<size_t>(0, es.size()),
+            [&](wmtk::blocked_range<size_t> r) {
+                std::vector<Eigen::Vector2i> local;
+                for (size_t i = r.begin(); i < r.end(); i++) {
+                    const Tuple& e = es[i];
+                    if (edge_on_open_boundary[e.eid(*this)] != 1) continue;
+                    const size_t v1 = e.vid(*this);
+                    const size_t v2 = e.switch_vertex(*this).vid(*this);
+                    std::atomic_ref<bool>(m_vertex_attribute[v1].m_is_on_open_boundary).store(true);
+                    std::atomic_ref<bool>(m_vertex_attribute[v2].m_is_on_open_boundary).store(true);
+                    local.emplace_back(v1, v2);
+                }
+                if (local.empty()) return;
+                std::lock_guard<std::mutex> lk(ob_mutex);
+                open_boundaries.insert(open_boundaries.end(), local.begin(), local.end());
+            },
+            std::max(1, NUM_THREADS));
     }
 
     wmtk::logger().info("open boundary num: {}", open_boundaries.size());

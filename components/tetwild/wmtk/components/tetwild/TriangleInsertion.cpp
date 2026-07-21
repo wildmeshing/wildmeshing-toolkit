@@ -248,96 +248,90 @@ void TetWildMesh::init_from_input_surface(
         wmtk::logger().info("insertion queue {}: {}", i, insertion_queues[i].size());
     }
 
-    wmtk::task_arena arena((int)insertion_queues.size());
     wmtk::task_group tg;
 
-    arena.execute([&, &m = *this, &tet_face_tags = this->tet_face_tags]() {
-        for (int task_id = 0; task_id < insertion_queues.size(); task_id++) {
-            tg.run([&insertion_queues,
-                    &expired_queue,
-                    &tet_face_tags,
-                    &m,
-                    &vertices,
-                    &faces,
-                    task_id] {
-                auto try_acquire_tetra = [&m, task_id](const auto& intersected_tets) {
-                    if (m.NUM_THREADS == 0) return true;
-                    for (auto t_int : intersected_tets) {
-                        for (auto v_int : m.oriented_tet_vertices(t_int)) {
-                            if (!m.try_set_vertex_mutex_one_ring(v_int, task_id)) {
-                                return false;
-                            }
-                        }
-                    }
-                    return true;
-                };
+    // Aliases the per-task lambdas below capture by reference.
+    auto& m = *this;
+    auto& tet_face_tags = this->tet_face_tags;
 
-                auto try_acquire_edge = [&m, task_id](const auto& intersected_edges) {
-                    if (m.NUM_THREADS == 0) return true;
-                    for (auto e_int : intersected_edges) {
-                        if (!m.try_set_vertex_mutex_one_ring(e_int, task_id)) {
-                            return false;
-                        }
-                        if (!m.try_set_vertex_mutex_one_ring(e_int.switch_vertex(m), task_id)) {
+    for (int task_id = 0; task_id < insertion_queues.size(); task_id++) {
+        tg.run([&insertion_queues, &expired_queue, &tet_face_tags, &m, &vertices, &faces, task_id] {
+            auto try_acquire_tetra = [&m, task_id](const auto& intersected_tets) {
+                if (m.NUM_THREADS == 0) return true;
+                for (auto t_int : intersected_tets) {
+                    for (auto v_int : m.oriented_tet_vertices(t_int)) {
+                        if (!m.try_set_vertex_mutex_one_ring(v_int, task_id)) {
                             return false;
                         }
                     }
-                    return true;
-                };
+                }
+                return true;
+            };
 
-                std::default_random_engine generator;
-                std::uniform_real_distribution<double> distribution(0.0, 100.0);
-                auto retry_processing = [&,
-                                         &Q = insertion_queues[task_id]](auto id, auto retry_time) {
-                    double rand = distribution(generator);
-                    if (retry_time < 5) {
-                        Q.push(std::make_tuple(rand, retry_time + 1, id));
-                    } else {
-                        expired_queue.push(std::make_tuple(rand, 0, id));
+            auto try_acquire_edge = [&m, task_id](const auto& intersected_edges) {
+                if (m.NUM_THREADS == 0) return true;
+                for (auto e_int : intersected_edges) {
+                    if (!m.try_set_vertex_mutex_one_ring(e_int, task_id)) {
+                        return false;
                     }
-                };
-                auto try_acquire_triangle = [&m, task_id](const auto& f) {
-                    if (m.NUM_THREADS == 0) return true;
-                    return m.try_set_face_mutex_two_ring(f[0], f[1], f[2], task_id);
-                };
-
-                auto supply_element = [&m,
-                                       &Q = insertion_queues[task_id],
-                                       &face_id_cache =
-                                           m.triangle_insertion_local_cache.local().face_id,
-                                       &retry_processing](const auto& func) {
-                    std::tuple<double, int, size_t> eiq;
-                    while (Q.try_pop(eiq)) {
-                        const auto& [_, retry_time, face_id] = eiq;
-
-                        face_id_cache = face_id;
-                        if (func(face_id) == false) {
-                            retry_processing(face_id, retry_time);
-                            continue;
-                        };
-                        m.release_vertex_mutex_in_stack();
+                    if (!m.try_set_vertex_mutex_one_ring(e_int.switch_vertex(m), task_id)) {
+                        return false;
                     }
-                };
+                }
+                return true;
+            };
 
-                supply_element([&](auto face_id) {
-                    std::vector<std::array<size_t, 3>> marked_tet_faces;
-                    auto success = internal_insert_single_triangle(
-                        m,
-                        m.m_vertex_attribute,
-                        vertices,
-                        faces[face_id],
-                        marked_tet_faces,
-                        try_acquire_triangle,
-                        try_acquire_edge,
-                        try_acquire_tetra);
-                    if (!success) return false;
-                    for (auto& f : marked_tet_faces) tet_face_tags[f].push_back(face_id);
-                    return true;
-                });
-            }); // tg.run
-        } // parallel for loop
-        tg.wait();
-    });
+            std::default_random_engine generator;
+            std::uniform_real_distribution<double> distribution(0.0, 100.0);
+            auto retry_processing = [&, &Q = insertion_queues[task_id]](auto id, auto retry_time) {
+                double rand = distribution(generator);
+                if (retry_time < 5) {
+                    Q.push(std::make_tuple(rand, retry_time + 1, id));
+                } else {
+                    expired_queue.push(std::make_tuple(rand, 0, id));
+                }
+            };
+            auto try_acquire_triangle = [&m, task_id](const auto& f) {
+                if (m.NUM_THREADS == 0) return true;
+                return m.try_set_face_mutex_two_ring(f[0], f[1], f[2], task_id);
+            };
+
+            auto supply_element = [&m,
+                                   &Q = insertion_queues[task_id],
+                                   &face_id_cache =
+                                       m.triangle_insertion_local_cache.local().face_id,
+                                   &retry_processing](const auto& func) {
+                std::tuple<double, int, size_t> eiq;
+                while (Q.try_pop(eiq)) {
+                    const auto& [_, retry_time, face_id] = eiq;
+
+                    face_id_cache = face_id;
+                    if (func(face_id) == false) {
+                        retry_processing(face_id, retry_time);
+                        continue;
+                    };
+                    m.release_vertex_mutex_in_stack();
+                }
+            };
+
+            supply_element([&](auto face_id) {
+                std::vector<std::array<size_t, 3>> marked_tet_faces;
+                auto success = internal_insert_single_triangle(
+                    m,
+                    m.m_vertex_attribute,
+                    vertices,
+                    faces[face_id],
+                    marked_tet_faces,
+                    try_acquire_triangle,
+                    try_acquire_edge,
+                    try_acquire_tetra);
+                if (!success) return false;
+                for (auto& f : marked_tet_faces) tet_face_tags[f].push_back(face_id);
+                return true;
+            });
+        }); // tg.run
+    } // parallel for loop
+    tg.wait();
 
     wmtk::logger().info("retry insert 5 times expired size: {}", expired_queue.size());
 
@@ -383,10 +377,9 @@ void TetWildMesh::init_from_input_surface(
 
 void TetWildMesh::finalize_triangle_insertion(const std::vector<std::array<size_t, 3>>& faces)
 {
-    wmtk::task_arena arena(std::max(NUM_THREADS, 1));
-
-    arena.execute([&faces, this] {
-        wmtk::parallel_for(this->tet_face_tags.range(), [&faces, this](auto& r) {
+    wmtk::parallel_for(
+        this->tet_face_tags.range(),
+        [&faces, this](auto& r) {
             auto projected_point_in_triangle = [](auto& c, auto& tri) {
                 std::array<Vector2r, 3> tri2d;
                 int squeeze_to_2d_dir = wmtk::project_triangle_to_2d(tri, tri2d);
@@ -423,56 +416,56 @@ void TetWildMesh::finalize_triangle_insertion(const std::vector<std::array<size_
                     }
                 }
             }
-        });
+        },
+        std::max(NUM_THREADS, 1));
 
-        //// track bbox
-        auto faces = get_faces();
+    //// track bbox
+    auto bbox_faces = get_faces();
 
-        for (int i = 0; i < faces.size(); i++) {
-            auto vs = get_face_vertices(faces[i]);
-            std::array<size_t, 3> vids = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
-            int on_bbox = -1;
-            for (int k = 0; k < 3; k++) {
-                if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_min[k] &&
-                    m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_min[k] &&
-                    m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_min[k]) {
-                    on_bbox = k * 2;
-                    break;
-                }
-                if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_max[k] &&
-                    m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_max[k] &&
-                    m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_max[k]) {
-                    on_bbox = k * 2 + 1;
-                    break;
-                }
+    for (int i = 0; i < bbox_faces.size(); i++) {
+        auto vs = get_face_vertices(bbox_faces[i]);
+        std::array<size_t, 3> vids = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
+        int on_bbox = -1;
+        for (int k = 0; k < 3; k++) {
+            if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_min[k] &&
+                m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_min[k] &&
+                m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_min[k]) {
+                on_bbox = k * 2;
+                break;
             }
-            if (on_bbox < 0) continue;
-            auto fid = faces[i].fid(*this);
-            m_face_attribute[fid].m_is_bbox_fs = on_bbox;
-            //
-            for (size_t vid : vids) {
-                m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
+            if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_max[k] &&
+                m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_max[k] &&
+                m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_max[k]) {
+                on_bbox = k * 2 + 1;
+                break;
             }
         }
-
-        for_each_vertex(
-            [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
-
-        //// rounding
-        std::atomic_int cnt_round(0);
-
-        for (int i = 0; i < vert_capacity(); i++) {
-            auto v = tuple_from_vertex(i);
-            if (round(v)) cnt_round++;
+        if (on_bbox < 0) continue;
+        auto fid = bbox_faces[i].fid(*this);
+        m_face_attribute[fid].m_is_bbox_fs = on_bbox;
+        //
+        for (size_t vid : vids) {
+            m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
         }
+    }
+
+    for_each_vertex(
+        [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
+
+    //// rounding
+    std::atomic_int cnt_round(0);
+
+    for (int i = 0; i < vert_capacity(); i++) {
+        auto v = tuple_from_vertex(i);
+        if (round(v)) cnt_round++;
+    }
 
 
-        wmtk::logger().info("cnt_round {}/{}", (int)cnt_round, vert_capacity());
+    wmtk::logger().info("cnt_round {}/{}", (int)cnt_round, vert_capacity());
 
-        //// init qualities
-        auto& m = *this;
-        for_each_tetra([&m](auto& t) { m.m_tet_attribute[t.tid(m)].m_quality = m.get_quality(t); });
-    });
+    //// init qualities
+    auto& m = *this;
+    for_each_tetra([&m](auto& t) { m.m_tet_attribute[t.tid(m)].m_quality = m.get_quality(t); });
 }
 
 } // namespace wmtk::components::tetwild

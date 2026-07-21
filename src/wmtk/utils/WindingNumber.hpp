@@ -1,8 +1,8 @@
 #pragma once
 
 // A local copy of libigl's winding-number evaluation, but with the per-query
-// parallelism driven by wmtk's own threading framework (task_arena + parallel_for)
-// instead of igl::parallel_for. This means the winding number honours the
+// parallelism driven by wmtk's own threading framework (wmtk::parallel_for, given
+// an explicit thread count) instead of igl::parallel_for. This means the winding number honours the
 // requested `num_threads` (like every other parallel section in wmtk) rather than
 // always grabbing all hardware cores.
 //
@@ -28,7 +28,7 @@ namespace wmtk::utils {
 /**
  * @brief Winding number of every query point O.row(i) with respect to the triangle
  * mesh (V, F). Equivalent to igl::winding_number(V, F, O, W), but the query loop is
- * parallelised with wmtk::parallel_for inside a wmtk::task_arena(num_threads).
+ * parallelised with wmtk::parallel_for, passed `num_threads` explicitly.
  */
 inline void winding_number(
     const Eigen::MatrixXd& V,
@@ -48,16 +48,14 @@ inline void winding_number(
 
     // hier.winding_number(p) is const and used by igl the same way from parallel_for,
     // so concurrent queries against the shared hierarchy are safe.
-    wmtk::task_arena arena(std::max(num_threads, 1));
-    arena.execute([&]() {
-        wmtk::parallel_for(
-            wmtk::blocked_range<int>(0, static_cast<int>(O.rows())),
-            [&](wmtk::blocked_range<int> r) {
-                for (int o = r.begin(); o < r.end(); ++o) {
-                    W(o) = hier.winding_number(O.row(o));
-                }
-            });
-    });
+    wmtk::parallel_for(
+        wmtk::blocked_range<int>(0, static_cast<int>(O.rows())),
+        [&](wmtk::blocked_range<int> r) {
+            for (int o = r.begin(); o < r.end(); ++o) {
+                W(o) = hier.winding_number(O.row(o));
+            }
+        },
+        std::max(num_threads, 1));
 }
 
 } // namespace wmtk::utils
