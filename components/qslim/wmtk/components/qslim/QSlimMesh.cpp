@@ -357,11 +357,16 @@ bool QSlimMesh::collapse_qslim(int target_vert_number)
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     int starting_num = vert_capacity();
 
-    auto collect_tuples = wmtk::concurrent_vector<Tuple>();
+    // One slot per (triangle, local edge): for_each_edge only invokes the callback for
+    // the triangle that owns the edge, so eid() is unique and no two threads write the
+    // same slot -- no lock, and the order is the slot order rather than whichever thread
+    // won a mutex.
+    auto collect_tuples = wmtk::indexed_collector<Tuple>(3 * tri_capacity());
 
-    for_each_edge([&](auto& tup) { collect_tuples.emplace_back(tup); });
-    collect_all_ops.reserve(collect_tuples.size());
-    for (auto& t : collect_tuples) collect_all_ops.emplace_back("edge_collapse", t);
+    for_each_edge([&](auto& tup) { collect_tuples.set(tup.eid(*this), tup); });
+    const auto collected = collect_tuples.compact();
+    collect_all_ops.reserve(collected.size());
+    for (const auto& t : collected) collect_all_ops.emplace_back("edge_collapse", t);
 
     auto renew = [](auto& m, auto op, auto& tris) {
         auto edges = m.new_edges_after(tris);

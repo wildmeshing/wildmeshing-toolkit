@@ -430,11 +430,16 @@ bool IsotropicRemeshing::collapse_remeshing(double L)
     igl::Timer timer;
     timer.start();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    auto collect_tuples = wmtk::concurrent_vector<Tuple>();
+    // One slot per (triangle, local edge): for_each_edge only invokes the callback for
+    // the triangle that owns the edge, so eid() is unique and no two threads write the
+    // same slot -- no lock, and the order is the slot order rather than whichever thread
+    // won a mutex.
+    auto collect_tuples = wmtk::indexed_collector<Tuple>(3 * tri_capacity());
 
-    for_each_edge([&](auto& tup) { collect_tuples.emplace_back(tup); });
-    collect_all_ops.reserve(collect_tuples.size());
-    for (auto& t : collect_tuples) collect_all_ops.emplace_back("edge_collapse", t);
+    for_each_edge([&](auto& tup) { collect_tuples.set(tup.eid(*this), tup); });
+    const auto collected = collect_tuples.compact();
+    collect_all_ops.reserve(collected.size());
+    for (const auto& t : collected) collect_all_ops.emplace_back("edge_collapse", t);
     wmtk::logger().info(
         "***** collapse get edges time *****: {} ms",
         timer.getElapsedTimeInMilliSec());
@@ -472,11 +477,16 @@ bool IsotropicRemeshing::split_remeshing(double L)
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     size_t vid_threshold = 0;
     std::atomic_int count_success = 0;
-    auto collect_tuples = wmtk::concurrent_vector<Tuple>();
+    // One slot per (triangle, local edge): for_each_edge only invokes the callback for
+    // the triangle that owns the edge, so eid() is unique and no two threads write the
+    // same slot -- no lock, and the order is the slot order rather than whichever thread
+    // won a mutex.
+    auto collect_tuples = wmtk::indexed_collector<Tuple>(3 * tri_capacity());
 
-    for_each_edge([&](auto& tup) { collect_tuples.emplace_back(tup); });
-    collect_all_ops.reserve(collect_tuples.size());
-    for (auto& t : collect_tuples) collect_all_ops.emplace_back("edge_split", t);
+    for_each_edge([&](auto& tup) { collect_tuples.set(tup.eid(*this), tup); });
+    const auto collected = collect_tuples.compact();
+    collect_all_ops.reserve(collected.size());
+    for (const auto& t : collected) collect_all_ops.emplace_back("edge_split", t);
     wmtk::logger().info(
         "***** split get edges time *****: {} ms",
         timer.getElapsedTimeInMilliSec());
@@ -555,11 +565,16 @@ bool IsotropicRemeshing::swap_remeshing()
     timer.start();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     wmtk::logger().info("size for edges to swap is {}", collect_all_ops.size());
-    auto collect_tuples = wmtk::concurrent_vector<Tuple>();
+    // One slot per (triangle, local edge): for_each_edge only invokes the callback for
+    // the triangle that owns the edge, so eid() is unique and no two threads write the
+    // same slot -- no lock, and the order is the slot order rather than whichever thread
+    // won a mutex.
+    auto collect_tuples = wmtk::indexed_collector<Tuple>(3 * tri_capacity());
 
-    for_each_edge([&](auto& tup) { collect_tuples.emplace_back(tup); });
-    collect_all_ops.reserve(collect_tuples.size());
-    for (auto& t : collect_tuples) collect_all_ops.emplace_back("edge_swap", t);
+    for_each_edge([&](auto& tup) { collect_tuples.set(tup.eid(*this), tup); });
+    const auto collected = collect_tuples.compact();
+    collect_all_ops.reserve(collected.size());
+    for (const auto& t : collected) collect_all_ops.emplace_back("edge_swap", t);
     wmtk::logger().info("***** swap get edges time *****: {} ms", timer.getElapsedTimeInMilliSec());
 
 

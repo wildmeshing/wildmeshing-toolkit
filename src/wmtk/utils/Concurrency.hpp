@@ -148,23 +148,66 @@ public:
 };
 
 // ---------------------------------------------------------------------------
-// concurrent_vector: replaces tbb::concurrent_vector for the "append from a
-// parallel loop, read afterwards" use cases. Backed by std::deque so that
-// (a) references to existing elements survive concurrent appends, and
-// (b) bool is stored unpacked (safe concurrent distinct-index writes).
+// Collecting results out of a parallel loop. This is all tbb::concurrent_vector was
+// ever used for here, and neither of the two shapes below needs a lock.
 // ---------------------------------------------------------------------------
+
+// indexed_collector: when the loop already knows a unique slot for each result --
+// the edge collectors know it as `tup.eid(m)`, which is what the loop tests to decide
+// which triangle owns an edge -- each thread writes to a slot no other thread can
+// touch, so no synchronisation is required at all. compact() then returns the results
+// in slot order, which does not depend on how the range was scheduled: unlike a
+// mutex-guarded append, whose order is whichever thread got the lock first, this is
+// reproducible run to run.
+template <typename T>
+class indexed_collector
+{
+    std::vector<T> m_slots;
+    std::vector<char> m_filled;
+
+public:
+    explicit indexed_collector(std::size_t n)
+        : m_slots(n)
+        , m_filled(n, 0)
+    {}
+
+    // Callable concurrently as long as callers pass distinct `i`.
+    void set(std::size_t i, const T& v)
+    {
+        m_slots[i] = v;
+        m_filled[i] = 1;
+    }
+
+    std::vector<T> compact() const
+    {
+        std::vector<T> out;
+        out.reserve(m_slots.size());
+        for (std::size_t i = 0; i < m_slots.size(); ++i) {
+            if (m_filled[i]) out.push_back(m_slots[i]);
+        }
+        return out;
+    }
+};
+
+// concurrent_vector: the remaining shape, where results arrive from scattered points
+// inside an operation rather than from an indexed sweep, so there is no slot to write
+// to. Kept mutex-guarded over a std::vector. A per-thread-bucket version would be
+// lock-free, but this shim's enumerable_thread_specific cannot enumerate its slots
+// (they live in thread_local storage, so the owner cannot reach other threads'), and
+// the remaining users append at most once per *failed mesh operation* -- the lock is
+// nowhere near the cost of the operation that preceded it.
 template <typename T>
 class concurrent_vector
 {
-    std::deque<T> m_data;
+    std::vector<T> m_data;
     mutable std::mutex m_mutex;
 
 public:
     using value_type = T;
-    using iterator = typename std::deque<T>::iterator;
-    using const_iterator = typename std::deque<T>::const_iterator;
-    using reference = typename std::deque<T>::reference;
-    using const_reference = typename std::deque<T>::const_reference;
+    using iterator = typename std::vector<T>::iterator;
+    using const_iterator = typename std::vector<T>::const_iterator;
+    using reference = typename std::vector<T>::reference;
+    using const_reference = typename std::vector<T>::const_reference;
 
     concurrent_vector() = default;
     explicit concurrent_vector(std::size_t n)
@@ -186,24 +229,18 @@ public:
         std::lock_guard<std::mutex> lock(m_mutex);
         m_data.push_back(v);
     }
-    void push_back(T&& v)
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        m_data.push_back(std::move(v));
-    }
     template <typename... Args>
-    reference emplace_back(Args&&... args)
+    void emplace_back(Args&&... args)
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         m_data.emplace_back(std::forward<Args>(args)...);
-        return m_data.back();
     }
 
     // Single-threaded sizing/clearing (used outside parallel regions).
     void resize(std::size_t n) { m_data.resize(n); }
     void resize(std::size_t n, const T& value) { m_data.resize(n, value); }
     void clear() { m_data.clear(); }
-    void reserve(std::size_t) {}
+    void reserve(std::size_t n) { m_data.reserve(n); }
 
     reference operator[](std::size_t i) { return m_data[i]; }
     const_reference operator[](std::size_t i) const { return m_data[i]; }
@@ -215,8 +252,6 @@ public:
     iterator end() { return m_data.end(); }
     const_iterator begin() const { return m_data.begin(); }
     const_iterator end() const { return m_data.end(); }
-    const_iterator cbegin() const { return m_data.cbegin(); }
-    const_iterator cend() const { return m_data.cend(); }
 };
 
 // ---------------------------------------------------------------------------
