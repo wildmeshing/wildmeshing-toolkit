@@ -27,6 +27,15 @@ namespace wmtk::io {
  */
 void clean_triangle_mesh(MatrixXd& V, MatrixXi& F, double tol_rel = -1, double tol_abs = -1)
 {
+    // An empty mesh has no bounding box: V.colwise().minCoeff() below is undefined on a
+    // zero-row matrix and segfaults in a release build, where Eigen's asserts are compiled
+    // out. (igl::read_triangle_mesh returns success for a binary STL that declares zero
+    // triangles, which is how Thingi10K's empty models reach here.) Reject it with a clear
+    // error instead; callers treat a thrown error as a failed run.
+    if (V.rows() == 0 || F.rows() == 0) {
+        log_and_throw_error("Input mesh is empty (V rows: {}, F rows: {}).", V.rows(), F.rows());
+    }
+
     if (tol_abs >= 0 && tol_rel >= 0) {
         log_and_throw_error(
             "Only one of tol_abs and tol_rel can be non-negative. Got abs = {} and rel = {}",
