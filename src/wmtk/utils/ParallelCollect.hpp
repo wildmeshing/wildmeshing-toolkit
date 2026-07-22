@@ -1,7 +1,7 @@
 #pragma once
 
 #include <wmtk/ExecutionScheduler.hpp> // for wmtk::Op
-#include <wmtk/utils/Concurrency.hpp>
+#include <wmtk/threading/parallel_for.hpp>
 
 #include <mutex>
 #include <utility>
@@ -24,27 +24,27 @@ parallel_collect_edge_ops(Mesh& m, int num_threads, Emit&& emit)
     using Tuple = typename Mesh::Tuple;
     std::vector<std::pair<Op, Tuple>> out;
     std::mutex merge_mutex;
-    wmtk::task_arena arena(std::max(1, num_threads));
-    arena.execute([&] {
-        wmtk::parallel_for(
-            wmtk::blocked_range<size_t>(0, m.tet_capacity()),
-            [&](wmtk::blocked_range<size_t> r) {
-                std::vector<std::pair<Op, Tuple>> local;
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    if (!m.tuple_from_tet(i).is_valid(m)) continue;
-                    for (int j = 0; j < 6; j++) {
-                        const Tuple e = m.tuple_from_edge(i, j);
-                        if (e.eid(m) == 6 * i + j) emit(m, e, local); // canonical edge only
-                    }
+
+    threading::parallel_for(
+        threading::range(0, m.tet_capacity()),
+        [&](const threading::range& r) {
+            std::vector<std::pair<Op, Tuple>> local;
+            for (size_t i = r.begin(); i < r.end(); i++) {
+                if (!m.tuple_from_tet(i).is_valid(m)) continue;
+                for (int j = 0; j < 6; j++) {
+                    const Tuple e = m.tuple_from_edge(i, j);
+                    if (e.eid(m) == 6 * i + j) emit(m, e, local); // canonical edge only
                 }
-                if (local.empty()) return;
-                std::lock_guard<std::mutex> lk(merge_mutex);
-                out.insert(
-                    out.end(),
-                    std::make_move_iterator(local.begin()),
-                    std::make_move_iterator(local.end()));
-            });
-    });
+            }
+            if (local.empty()) return;
+            std::lock_guard<std::mutex> lk(merge_mutex);
+            out.insert(
+                out.end(),
+                std::make_move_iterator(local.begin()),
+                std::make_move_iterator(local.end()));
+        },
+        num_threads);
+
     return out;
 }
 
@@ -55,27 +55,27 @@ parallel_collect_face_ops(Mesh& m, int num_threads, Emit&& emit)
     using Tuple = typename Mesh::Tuple;
     std::vector<std::pair<Op, Tuple>> out;
     std::mutex merge_mutex;
-    wmtk::task_arena arena(std::max(1, num_threads));
-    arena.execute([&] {
-        wmtk::parallel_for(
-            wmtk::blocked_range<size_t>(0, m.tet_capacity()),
-            [&](wmtk::blocked_range<size_t> r) {
-                std::vector<std::pair<Op, Tuple>> local;
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    if (!m.tuple_from_tet(i).is_valid(m)) continue;
-                    for (int j = 0; j < 4; j++) {
-                        const Tuple f = m.tuple_from_face(i, j);
-                        if (f.fid(m) == 4 * i + j) emit(m, f, local); // canonical face only
-                    }
+
+    threading::parallel_for(
+        threading::range(0, m.tet_capacity()),
+        [&](const threading::range& r) {
+            std::vector<std::pair<Op, Tuple>> local;
+            for (size_t i = r.begin(); i < r.end(); i++) {
+                if (!m.tuple_from_tet(i).is_valid(m)) continue;
+                for (int j = 0; j < 4; j++) {
+                    const Tuple f = m.tuple_from_face(i, j);
+                    if (f.fid(m) == 4 * i + j) emit(m, f, local); // canonical face only
                 }
-                if (local.empty()) return;
-                std::lock_guard<std::mutex> lk(merge_mutex);
-                out.insert(
-                    out.end(),
-                    std::make_move_iterator(local.begin()),
-                    std::make_move_iterator(local.end()));
-            });
-    });
+            }
+            if (local.empty()) return;
+            std::lock_guard<std::mutex> lk(merge_mutex);
+            out.insert(
+                out.end(),
+                std::make_move_iterator(local.begin()),
+                std::make_move_iterator(local.end()));
+        },
+        num_threads);
+
     return out;
 }
 

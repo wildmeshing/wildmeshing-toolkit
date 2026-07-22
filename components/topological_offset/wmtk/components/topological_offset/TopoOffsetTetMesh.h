@@ -1,8 +1,8 @@
-#include <wmtk/utils/Concurrency.hpp>
 #pragma once
 
 #include <wmtk/TetMesh.h>
 #include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/threading/enumerable_thread_specific.hpp>
 #include "Parameters.h"
 #include "SimplicialComplexBVH.hpp"
 
@@ -295,7 +295,7 @@ private:
         // cache tet attributes
         std::map<simplex::Edge, TetAttributes> tets;
     };
-    wmtk::enumerable_thread_specific<EdgeSplitCache> edge_split_cache;
+    wmtk::threading::enumerable_thread_specific<EdgeSplitCache> edge_split_cache;
 
     struct FaceSplitCache
     {
@@ -313,7 +313,7 @@ private:
         // cache tet attributes
         std::map<size_t, TetAttributes> tets;
     };
-    wmtk::enumerable_thread_specific<FaceSplitCache> face_split_cache;
+    wmtk::threading::enumerable_thread_specific<FaceSplitCache> face_split_cache;
 
     struct TetSplitCache
     {
@@ -328,7 +328,7 @@ private:
         // cache tet attribute
         TetAttributes tet;
     };
-    wmtk::enumerable_thread_specific<TetSplitCache> tet_split_cache;
+    wmtk::threading::enumerable_thread_specific<TetSplitCache> tet_split_cache;
 
 private: // helpers
     /**

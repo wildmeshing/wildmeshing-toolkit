@@ -3,7 +3,7 @@
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/utils/Logger.hpp>
 
-#include <wmtk/utils/Concurrency.hpp>
+#include <wmtk/threading/enumerable_thread_specific.hpp>
 
 #include <algorithm>
 #include <array>
@@ -101,9 +101,9 @@ struct AttributeCollection : public AbstractAttributeContainer
 
 
     size_t size() const { return m_attributes.size(); }
-    wmtk::enumerable_thread_specific<std::unordered_map<size_t, T>> m_rollback_list;
+    wmtk::threading::enumerable_thread_specific<std::unordered_map<size_t, T>> m_rollback_list;
     // Plain preallocated storage: never grows during operations.
     std::vector<T> m_attributes;
-    wmtk::enumerable_thread_specific<bool> recording{false};
+    wmtk::threading::enumerable_thread_specific<bool> recording{false};
 };
 } // namespace wmtk

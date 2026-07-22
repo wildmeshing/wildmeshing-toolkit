@@ -1,13 +1,8 @@
 #pragma once
 
-#include "wmtk/TetMesh.h"
-#include "wmtk/utils/GeoUtils.h"
-
-// clang-format off
-#include <wmtk/utils/DisableWarnings.hpp>
-#include <wmtk/utils/Concurrency.hpp>
-#include <wmtk/utils/EnableWarnings.hpp>
-// clang-format on
+#include <wmtk/TetMesh.h>
+#include <wmtk/utils/GeoUtils.h>
+#include <wmtk/threading/concurrent_map.hpp>
 
 #include <Eigen/Core>
 #include <array>
@@ -26,8 +21,8 @@ namespace wmtk {
 void match_tet_faces_to_triangles(
     const wmtk::TetMesh& m,
     const std::vector<std::array<size_t, 3>>& faces,
-    wmtk::concurrent_vector<bool>& is_matched,
-    wmtk::concurrent_map<std::array<size_t, 3>, std::vector<int>>& tet_face_tags);
+    std::vector<bool>& is_matched,
+    wmtk::threading::concurrent_map<std::array<size_t, 3>, std::vector<int>>& tet_face_tags);
 
 bool remove_duplicates(
     std::vector<Vector3d>& vertices,

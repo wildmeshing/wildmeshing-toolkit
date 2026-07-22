@@ -1,4 +1,4 @@
-#include <wmtk/utils/Concurrency.hpp>
+#include <wmtk/threading/enumerable_thread_specific.hpp>
 #include "TetWildMesh.h"
 #include "wmtk/TetMesh.h"
 
@@ -8,6 +8,7 @@
 #include <mutex>
 #include <unordered_set>
 #include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/threading/collector.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -30,7 +31,7 @@ void TetWildMesh::collapse_all_edges(bool is_limit_length)
         });
     logger().info("#edges = {}", collect_all_ops.size() / 2);
     time = timer.getElapsedTime();
-    wmtk::logger().info("edge collapse prepare time: {:.4}s", time);
+    logger().info("edge collapse prepare time: {:.4}s", time);
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = [](const auto& m, auto op, const auto& newts) {
             std::vector<std::pair<std::string, wmtk::TetMesh::Tuple>> op_tups;

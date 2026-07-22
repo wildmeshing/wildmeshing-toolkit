@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/threading/collector.hpp>
 
 #include <cstdint>
 #include <utility>
@@ -46,7 +47,7 @@ size_t run_localized_to_convergence(
     // any vertex created during the phase (splits) has an id below this capacity.
     std::vector<uint64_t> vertex_epoch(m.vert_capacity(), 0);
     uint64_t round = 0;
-    wmtk::concurrent_vector<std::pair<Op, Tuple>> failures;
+    threading::collector<std::pair<Op, Tuple>> failures;
 
     auto region_epoch = [&vertex_epoch](const AppMesh& mm, const Tuple& t) -> uint64_t {
         const size_t a = t.vid(mm);
