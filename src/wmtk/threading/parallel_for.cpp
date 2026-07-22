@@ -66,4 +66,4 @@ void parallel_for(
     }
 }
 
-}
+} // namespace wmtk::threading
