@@ -5,22 +5,17 @@
 #include <wmtk/utils/Morton.h>
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/envelope/Envelope.hpp>
+#include <wmtk/threading/concurrent_map.hpp>
+#include <wmtk/threading/enumerable_thread_specific.hpp>
+#include <wmtk/threading/parallel_for.hpp>
+
 #include "Parameters.h"
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <fastenvelope/FastEnvelope.h>
-#include <tbb/concurrent_queue.h>
-#include <tbb/concurrent_priority_queue.h>
-#include <tbb/concurrent_vector.h>
-#include <tbb/concurrent_map.h>
-#include <tbb/concurrent_unordered_map.h>
-#include <tbb/enumerable_thread_specific.h>
-#include <tbb/parallel_for.h>
-#include <tbb/task_arena.h>
-#include <tbb/parallel_sort.h>
-#include <wmtk/utils/EnableWarnings.hpp>
 #include <VolumeRemesher/embed.h>
+#include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
 #include <igl/remove_unreferenced.h>
@@ -148,7 +143,7 @@ public:
 
         for (auto i = 0; i < _vertex_attribute.size(); i++)
             m_vertex_attribute[i] = _vertex_attribute[i];
-        m_tet_attribute.m_attributes = tbb::concurrent_vector<TetAttributes>(_tet_attribute.size());
+        m_tet_attribute.m_attributes = std::vector<TetAttributes>(_tet_attribute.size());
         for (auto i = 0; i < _tet_attribute.size(); i++) m_tet_attribute[i] = _tet_attribute[i];
         for (auto i = 0; i < _tet_attribute.size(); i++)
             m_tet_attribute[i].m_quality = get_quality(tuple_from_tet(i));
@@ -165,104 +160,107 @@ public:
     // TODO This should not be here but inside wmtk
     void compute_vertex_partition_morton()
     {
-        if (NUM_THREADS == 0) return;
+        if (NUM_THREADS == 0) {
+            return;
+        }
 
-        wmtk::logger().info("Number of parts: {} by morton", NUM_THREADS);
+        logger().info("Number of parts: {} by morton", NUM_THREADS);
 
-        tbb::task_arena arena(NUM_THREADS);
+        std::vector<Eigen::Vector3d> V_v(vert_capacity());
 
-        arena.execute([&] {
-            std::vector<Eigen::Vector3d> V_v(vert_capacity());
-
-            tbb::parallel_for(
-                tbb::blocked_range<size_t>(0, V_v.size()),
-                [&](tbb::blocked_range<size_t> r) {
-                    for (size_t i = r.begin(); i < r.end(); i++) {
-                        V_v[i] = m_vertex_attribute[i].m_posf;
-                    }
-                });
-
-
-            struct sortstruct
-            {
-                size_t order;
-                Resorting::MortonCode64 morton;
-            };
-
-            std::vector<sortstruct> list_v;
-            list_v.resize(V_v.size());
-            // since the morton code requires a correct scale of input vertices,
-            //  we need to scale the vertices if their coordinates are out of range
-            std::vector<Eigen::Vector3d> V = V_v; // this is for rescaling vertices
-            Eigen::Vector3d vmin, vmax;
-            vmin = V.front();
-            vmax = V.front();
-
-            for (size_t j = 0; j < V.size(); j++) {
-                for (int i = 0; i < 3; i++) {
-                    vmin(i) = std::min(vmin(i), V[j](i));
-                    vmax(i) = std::max(vmax(i), V[j](i));
+        threading::parallel_for(
+            threading::range(0, V_v.size()),
+            [&](const threading::range& r) {
+                for (size_t i = r.begin(); i < r.end(); i++) {
+                    V_v[i] = m_vertex_attribute[i].m_posf;
                 }
+            },
+            NUM_THREADS);
+
+
+        struct sortstruct
+        {
+            size_t order;
+            Resorting::MortonCode64 morton;
+        };
+
+        std::vector<sortstruct> list_v;
+        list_v.resize(V_v.size());
+        // since the morton code requires a correct scale of input vertices,
+        //  we need to scale the vertices if their coordinates are out of range
+        std::vector<Eigen::Vector3d> V = V_v; // this is for rescaling vertices
+        Eigen::Vector3d vmin, vmax;
+        vmin = V.front();
+        vmax = V.front();
+
+        for (size_t j = 0; j < V.size(); j++) {
+            for (int i = 0; i < 3; i++) {
+                vmin(i) = std::min(vmin(i), V[j](i));
+                vmax(i) = std::max(vmax(i), V[j](i));
             }
+        }
 
-            // get_bb_corners(V, vmin, vmax);
-            Eigen::Vector3d center = (vmin + vmax) / 2;
+        // get_bb_corners(V, vmin, vmax);
+        Eigen::Vector3d center = (vmin + vmax) / 2;
 
-            tbb::parallel_for(
-                tbb::blocked_range<size_t>(0, V.size()),
-                [&](tbb::blocked_range<size_t> r) {
+        threading::parallel_for(
+            threading::range(0, V.size()),
+            [&](const threading::range& r) {
+                for (size_t i = r.begin(); i < r.end(); i++) {
+                    V[i] = V[i] - center;
+                }
+            },
+            NUM_THREADS);
+
+        Eigen::Vector3d scale_point =
+            vmax - center; // after placing box at origin, vmax and vmin are symetric.
+
+        double xscale, yscale, zscale;
+        xscale = fabs(scale_point[0]);
+        yscale = fabs(scale_point[1]);
+        zscale = fabs(scale_point[2]);
+        double scale = std::max(std::max(xscale, yscale), zscale);
+        if (scale > 300) {
+            threading::parallel_for(
+                threading::range(0, V.size()),
+                [&](const threading::range& r) {
                     for (size_t i = r.begin(); i < r.end(); i++) {
-                        V[i] = V[i] - center;
+                        V[i] = V[i] / scale;
                     }
-                });
+                },
+                NUM_THREADS);
+        }
 
-            Eigen::Vector3d scale_point =
-                vmax - center; // after placing box at origin, vmax and vmin are symetric.
+        constexpr int multi = 1000;
+        threading::parallel_for(
+            threading::range(0, V.size()),
+            [&](const threading::range& r) {
+                for (size_t i = r.begin(); i < r.end(); i++) {
+                    list_v[i].morton = Resorting::MortonCode64(
+                        int(V[i][0] * multi),
+                        int(V[i][1] * multi),
+                        int(V[i][2] * multi));
+                    list_v[i].order = i;
+                }
+            },
+            NUM_THREADS);
 
-            double xscale, yscale, zscale;
-            xscale = fabs(scale_point[0]);
-            yscale = fabs(scale_point[1]);
-            zscale = fabs(scale_point[2]);
-            double scale = std::max(std::max(xscale, yscale), zscale);
-            if (scale > 300) {
-                tbb::parallel_for(
-                    tbb::blocked_range<size_t>(0, V.size()),
-                    [&](tbb::blocked_range<size_t> r) {
-                        for (size_t i = r.begin(); i < r.end(); i++) {
-                            V[i] = V[i] / scale;
-                        }
-                    });
-            }
+        const auto morton_compare = [](const sortstruct& a, const sortstruct& b) {
+            return (a.morton < b.morton);
+        };
 
-            constexpr int multi = 1000;
-            tbb::parallel_for(
-                tbb::blocked_range<size_t>(0, V.size()),
-                [&](tbb::blocked_range<size_t> r) {
-                    for (size_t i = r.begin(); i < r.end(); i++) {
-                        list_v[i].morton = Resorting::MortonCode64(
-                            int(V[i][0] * multi),
-                            int(V[i][1] * multi),
-                            int(V[i][2] * multi));
-                        list_v[i].order = i;
-                    }
-                });
+        std::sort(list_v.begin(), list_v.end(), morton_compare);
 
-            const auto morton_compare = [](const sortstruct& a, const sortstruct& b) {
-                return (a.morton < b.morton);
-            };
+        size_t interval = list_v.size() / NUM_THREADS + 1;
 
-            tbb::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
-
-            size_t interval = list_v.size() / NUM_THREADS + 1;
-
-            tbb::parallel_for(
-                tbb::blocked_range<size_t>(0, list_v.size()),
-                [&](tbb::blocked_range<size_t> r) {
-                    for (size_t i = r.begin(); i < r.end(); i++) {
-                        m_vertex_attribute[list_v[i].order].partition_id = i / interval;
-                    }
-                });
-        });
+        threading::parallel_for(
+            threading::range(0, list_v.size()),
+            [&](const threading::range& r) {
+                for (size_t i = r.begin(); i < r.end(); i++) {
+                    m_vertex_attribute[list_v[i].order].partition_id = i / interval;
+                }
+            },
+            NUM_THREADS);
     }
 
     size_t get_partition_id(const Tuple& loc) const
@@ -355,11 +353,26 @@ public:
      * If `vertices` and `faces` are empty, compute the winding number for the tracked surface.
      * Otherwise, compute the winding number for the input surface given by `vertices` and `faces`.
      */
+    /**
+     * @brief Barycenter (row per tet) of each tet in `tets`. Computed once and
+     * passed to the winding-number passes so they do not each rebuild it.
+     */
+    Eigen::MatrixXd tet_barycenters(const std::vector<Tuple>& tets) const;
+
     void compute_winding_number(
+        const std::vector<Tuple>& tets,
+        const Eigen::MatrixXd& barycenters,
         const std::vector<Vector3d>& vertices = {},
         const std::vector<std::array<size_t, 3>>& faces = {});
 
-    void compute_winding_numbers(const std::vector<std::string>& input_paths);
+    // `in_vertices`/`in_faces` let the single-input case reuse the already-loaded
+    // surface instead of re-reading it from disk.
+    void compute_winding_numbers(
+        const std::vector<std::string>& input_paths,
+        const std::vector<Tuple>& tets,
+        const Eigen::MatrixXd& barycenters,
+        const std::vector<Vector3d>& in_vertices = {},
+        const std::vector<std::array<size_t, 3>>& in_faces = {});
 
     void filter_with_input_surface_winding_number();
     void filter_with_tracked_surface_winding_number();
@@ -379,7 +392,7 @@ public:
 private:
     // tags: correspondence map from new tet-face node indices to in-triangle ids.
     // built up while triangles are inserted.
-    tbb::concurrent_map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;
+    wmtk::threading::concurrent_map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;
 
     struct TriangleInsertionLocalInfoCache
     {
@@ -387,7 +400,8 @@ private:
         int face_id;
         std::vector<std::array<size_t, 3>> old_face_vids;
     };
-    tbb::enumerable_thread_specific<TriangleInsertionLocalInfoCache> triangle_insertion_local_cache;
+    wmtk::threading::enumerable_thread_specific<TriangleInsertionLocalInfoCache>
+        triangle_insertion_local_cache;
 
     ////// Operations
 
@@ -404,7 +418,7 @@ private:
 
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
     };
-    tbb::enumerable_thread_specific<SplitInfoCache> split_cache;
+    wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
 
     struct CollapseInfoCache
     {
@@ -436,7 +450,7 @@ private:
         // for geometry preservation
         std::vector<size_t> edge_incident_param_type;
     };
-    tbb::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
+    wmtk::threading::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
 
 
     struct SwapInfoCache
@@ -444,7 +458,7 @@ private:
         double max_energy;
         std::map<std::array<size_t, 3>, FaceAttributes> changed_faces;
     };
-    tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
+    wmtk::threading::enumerable_thread_specific<SwapInfoCache> swap_cache;
 
 
     // for incremental tetwild

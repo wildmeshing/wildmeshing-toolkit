@@ -24,9 +24,9 @@ void SimWildMesh::init_from_image(
 
     m_tags_count = T_tags.cols();
 
-    m_vertex_attribute.m_attributes.resize(V.rows());
-    m_tet_attribute.m_attributes.resize(T.rows());
-    m_face_attribute.m_attributes.resize(T.rows() * 4);
+    m_vertex_attribute.resize(V.rows());
+    m_tet_attribute.resize(T.rows());
+    m_face_attribute.resize(T.rows() * 4);
 
     for (int i = 0; i < vert_capacity(); i++) {
         m_vertex_attribute[i].m_pos = V.row(i);
@@ -92,9 +92,9 @@ void SimWildMesh::init_from_image(
 
     m_tags_count = T_tags.cols();
 
-    m_vertex_attribute.m_attributes.resize(V.rows());
-    m_tet_attribute.m_attributes.resize(T.rows());
-    m_face_attribute.m_attributes.resize(T.rows() * 4);
+    m_vertex_attribute.resize(V.rows());
+    m_tet_attribute.resize(T.rows());
+    m_face_attribute.resize(T.rows() * 4);
 
     for (int i = 0; i < vert_capacity(); i++) {
         m_vertex_attribute[i].m_posf = V.row(i);

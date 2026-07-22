@@ -42,6 +42,7 @@ void wmtk::TetMesh::triangle_insertion(
             m_vertex_connectivity[e[1]].m_conn_tets);
         surrounding_tids.insert(surrounding_tids.end(), tids.begin(), tids.end());
 
+        ensure_free_vert_capacity(1); // construction path: grow storage as needed
         auto new_vid = get_next_empty_slot_v();
         map_edge2vid[e] = new_vid;
         new_vids.push_back(new_vid);
@@ -336,6 +337,7 @@ void wmtk::TetMesh::subdivide_a_tet(
         TetrahedronConnectivity tet;
         for (int j = 0; j < 4; j++) {
             if (!is_add_centroid && t[j] >= 4 + config_bits.count()) {
+                ensure_free_vert_capacity(1); // construction path: grow storage as needed
                 auto vid = get_next_empty_slot_v();
                 new_center_vids.push_back(vid);
                 all_v_ids.push_back(vid);
@@ -347,6 +349,7 @@ void wmtk::TetMesh::subdivide_a_tet(
         }
         size_t new_t_id = t_id;
         if (i < config.size() - 1) {
+            ensure_free_tet_capacity(1); // construction path: grow storage as needed
             new_t_id = get_next_empty_slot_t();
             new_tids.push_back(new_t_id);
         }

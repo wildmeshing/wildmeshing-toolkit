@@ -2,6 +2,7 @@
 #include <wmtk/TriMesh.h>
 #include <algorithm>
 #include <set>
+#include <wmtk/threading/enumerable_thread_specific.hpp>
 #include "Parameters.h"
 #include "SimplicialComplexBVH.hpp"
 
@@ -260,7 +261,7 @@ private:
         // cache face attributes
         std::map<size_t, FaceAttributes2d> opp_v_fattr;
     };
-    tbb::enumerable_thread_specific<EdgeSplitCache> edge_split_cache;
+    wmtk::threading::enumerable_thread_specific<EdgeSplitCache> edge_split_cache;
 
     struct FaceSplitCache
     {
@@ -272,7 +273,7 @@ private:
         std::map<simplex::Edge, EdgeAttributes2d> existing_eattr; // 3 orig edges
         FaceAttributes2d split_fattr; // split face attributes
     };
-    tbb::enumerable_thread_specific<FaceSplitCache> face_split_cache;
+    wmtk::threading::enumerable_thread_specific<FaceSplitCache> face_split_cache;
 
 private: // helpers
     /**

@@ -1,16 +1,11 @@
 #include <igl/is_edge_manifold.h>
 #include <igl/writeDMAT.h>
 #include <wmtk/TriMesh.h>
+#include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
+#include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
-#include "wmtk/utils/VectorUtils.h"
-
-// clang-format off
-#include <wmtk/utils/DisableWarnings.hpp>
-#include <tbb/parallel_for.h>
-#include <wmtk/utils/EnableWarnings.hpp>
-// clang-format on
 
 using namespace wmtk;
 
@@ -368,6 +363,21 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     std::vector<size_t> new_fids(fids.size());
     for (size_t i = 0; i < fids.size(); ++i) {
         new_fids[i] = get_next_empty_slot_t();
+    }
+
+    // abort before mutating if we ran out of preallocated slots; mark any reserved
+    // slots removed so they don't become live-but-empty phantoms.
+    {
+        constexpr size_t INVALID_SLOT = static_cast<size_t>(-1);
+        bool slots_ok = (new_vid != INVALID_SLOT);
+        for (size_t f : new_fids)
+            if (f == INVALID_SLOT) slots_ok = false;
+        if (!slots_ok) {
+            if (new_vid != INVALID_SLOT) m_vertex_connectivity[new_vid].m_is_removed = true;
+            for (size_t f : new_fids)
+                if (f != INVALID_SLOT) m_tri_connectivity[f].m_is_removed = true;
+            return false;
+        }
     }
 
     // first work on the vids
@@ -1034,6 +1044,18 @@ bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
     const size_t new_fid1 = get_next_empty_slot_t();
     const size_t new_fid2 = get_next_empty_slot_t();
 
+    // abort before mutating if we ran out of preallocated slots; mark any reserved
+    // slots removed so they don't become live-but-empty phantoms.
+    {
+        constexpr size_t INVALID_SLOT = static_cast<size_t>(-1);
+        if (new_vid == INVALID_SLOT || new_fid1 == INVALID_SLOT || new_fid2 == INVALID_SLOT) {
+            if (new_vid != INVALID_SLOT) m_vertex_connectivity[new_vid].m_is_removed = true;
+            if (new_fid1 != INVALID_SLOT) m_tri_connectivity[new_fid1].m_is_removed = true;
+            if (new_fid2 != INVALID_SLOT) m_tri_connectivity[new_fid2].m_is_removed = true;
+            return false;
+        }
+    }
+
     vector_erase(conn_tris(0), fid);
     conn_tris(0).emplace_back(new_fid1);
     conn_tris(0).emplace_back(new_fid2);
@@ -1143,17 +1165,21 @@ void TriMesh::consolidate_mesh()
     current_vert_size = v_cnt;
     current_tri_size = t_cnt;
 
-    m_vertex_connectivity.resize(v_cnt);
+    // Re-establish spare capacity for the next round of operations.
+    const size_t vcap = reserved_capacity(v_cnt);
+    const size_t tcap = reserved_capacity(t_cnt);
+
+    m_vertex_connectivity.resize(vcap);
     m_vertex_connectivity.shrink_to_fit();
-    m_tri_connectivity.resize(t_cnt);
+    m_tri_connectivity.resize(tcap);
     m_tri_connectivity.shrink_to_fit();
 
-    resize_mutex(vert_capacity());
+    resize_mutex(vcap);
 
-    // Resize user class attributes
-    if (p_vertex_attrs) p_vertex_attrs->resize(vert_capacity());
-    if (p_edge_attrs) p_edge_attrs->resize(tri_capacity() * 3);
-    if (p_face_attrs) p_face_attrs->resize(tri_capacity());
+    // Resize user class attributes to the preallocated capacity
+    if (p_vertex_attrs) p_vertex_attrs->resize(vcap);
+    if (p_edge_attrs) p_edge_attrs->resize(tcap * 3);
+    if (p_face_attrs) p_face_attrs->resize(tcap);
 
     // assert(check_edge_manifold());
     assert(check_mesh_connectivity_validity());
@@ -1369,8 +1395,12 @@ std::tuple<TriMesh::Tuple, size_t> TriMesh::tuple_from_edge(const std::array<siz
 
 void TriMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris)
 {
-    m_vertex_connectivity.resize(n_vertices);
-    m_tri_connectivity.resize(tris.size());
+    // Preallocate spare capacity; only [0, live) is filled, the rest is headroom
+    // that operations consume (and fail past). See reserved_capacity().
+    const size_t vcap = reserved_capacity(n_vertices);
+    const size_t tcap = reserved_capacity(tris.size());
+    m_vertex_connectivity.resize(vcap);
+    m_tri_connectivity.resize(tcap);
     size_t hash_cnt = 0;
     for (int i = 0; i < tris.size(); i++) {
         m_tri_connectivity[i].m_indices = tris[i];
@@ -1383,12 +1413,12 @@ void TriMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 3>>& 
     current_vert_size = (long)n_vertices;
     current_tri_size = (long)tris.size();
 
-    m_vertex_mutex.grow_to_at_least(n_vertices);
+    resize_mutex(vcap);
 
-    // Resize user class attributes
-    if (p_vertex_attrs) p_vertex_attrs->resize(vert_capacity());
-    if (p_edge_attrs) p_edge_attrs->resize(tri_capacity() * 3);
-    if (p_face_attrs) p_face_attrs->resize(tri_capacity());
+    // Resize user class attributes to the preallocated capacity
+    if (p_vertex_attrs) p_vertex_attrs->resize(vcap);
+    if (p_edge_attrs) p_edge_attrs->resize(tcap * 3);
+    if (p_face_attrs) p_face_attrs->resize(tcap);
 }
 
 void wmtk::TriMesh::init(const MatrixXi& F)
@@ -1619,54 +1649,60 @@ simplex::SimplexCollection wmtk::TriMesh::simplex_link_edges(const simplex::Vert
     return sc;
 }
 
+// Atomically reserve `n` contiguous fresh triangle slots from the preallocated
+// storage. Returns the first index, or -1 if that would exceed the preallocated
+// capacity (the caller must abort the operation). See TetMesh::request_tet_slots.
+long TriMesh::request_tri_slots(size_t n)
+{
+    if (n == 0) return (long)current_tri_size.load();
+    const long cap = (long)m_tri_connectivity.size();
+    // CAS loop: only advance the counter when there is room (see TetMesh version).
+    long first = current_tri_size.load(std::memory_order_relaxed);
+    do {
+        if (first + (long)n > cap) return -1;
+    } while (!current_tri_size.compare_exchange_weak(
+        first,
+        first + (long)n,
+        std::memory_order_acq_rel,
+        std::memory_order_relaxed));
+    // Reset the handed-out slots to a clean state (the preallocated std::vector
+    // keeps stale data in the spare region; the old tbb::collector regrew
+    // fresh slots on consolidate).
+    for (long i = first; i < first + (long)n; ++i) {
+        m_tri_connectivity[i] = TriangleConnectivity{};
+    }
+    return first;
+}
+
+long TriMesh::request_vert_slots(size_t n)
+{
+    if (n == 0) return (long)current_vert_size.load();
+    const long cap = (long)m_vertex_connectivity.size();
+    long first = current_vert_size.load(std::memory_order_relaxed);
+    do {
+        if (first + (long)n > cap) return -1;
+    } while (!current_vert_size.compare_exchange_weak(
+        first,
+        first + (long)n,
+        std::memory_order_acq_rel,
+        std::memory_order_relaxed));
+    // Reset the handed-out vertex slots to a clean state (see request_tri_slots).
+    for (long i = first; i < first + (long)n; ++i) {
+        m_vertex_connectivity[i] = VertexConnectivity{};
+    }
+    return first;
+}
+
 size_t TriMesh::get_next_empty_slot_t()
 {
-    while (current_tri_size + MAX_THREADS >= m_tri_connectivity.size() ||
-           tri_connectivity_synchronizing_flag) {
-        if (tri_connectivity_lock.try_lock()) {
-            if (current_tri_size + MAX_THREADS < m_tri_connectivity.size()) {
-                tri_connectivity_lock.unlock();
-                break;
-            }
-            tri_connectivity_synchronizing_flag = true;
-            auto current_capacity = m_tri_connectivity.size();
-            if (p_edge_attrs) {
-                p_edge_attrs->resize(2 * current_capacity * 3);
-            }
-            if (p_face_attrs) {
-                p_face_attrs->resize(2 * current_capacity);
-            }
-            m_tri_connectivity.grow_to_at_least(2 * current_capacity);
-            tri_connectivity_synchronizing_flag = false;
-            tri_connectivity_lock.unlock();
-            break;
-        }
-    }
-
-    return current_tri_size++;
+    const long r = request_tri_slots(1);
+    return r < 0 ? static_cast<size_t>(-1) : static_cast<size_t>(r);
 }
 
 size_t TriMesh::get_next_empty_slot_v()
 {
-    while (current_vert_size + MAX_THREADS >= m_vertex_connectivity.size() ||
-           vertex_connectivity_synchronizing_flag) {
-        if (vertex_connectivity_lock.try_lock()) {
-            if (current_vert_size + MAX_THREADS < m_vertex_connectivity.size()) {
-                vertex_connectivity_lock.unlock();
-                break;
-            }
-            vertex_connectivity_synchronizing_flag = true;
-            auto current_capacity = m_vertex_connectivity.size();
-            if (p_vertex_attrs) p_vertex_attrs->resize(2 * current_capacity);
-            resize_mutex(2 * current_capacity);
-            m_vertex_connectivity.grow_to_at_least(2 * current_capacity);
-            vertex_connectivity_synchronizing_flag = false;
-            vertex_connectivity_lock.unlock();
-            break;
-        }
-    }
-
-    return current_vert_size++;
+    const long r = request_vert_slots(1);
+    return r < 0 ? static_cast<size_t>(-1) : static_cast<size_t>(r);
 }
 
 bool TriMesh::swap_edge_before(const Tuple& t)
@@ -1936,54 +1972,54 @@ bool TriMesh::try_set_face_mutex_one_ring(const Tuple& f, int threadid)
 
 void wmtk::TriMesh::for_each_edge(const std::function<void(const TriMesh::Tuple&)>& func)
 {
-    tbb::task_arena arena(NUM_THREADS);
-    arena.execute([&] {
-        tbb::parallel_for(
-            tbb::blocked_range<size_t>(0, tri_capacity()),
-            [&](const tbb::blocked_range<size_t>& r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    if (!tuple_from_tri(i).is_valid(*this)) continue;
-                    for (int j = 0; j < 3; j++) {
-                        auto tup = tuple_from_edge(i, j);
-                        if (tup.eid(*this) == 3 * i + j) {
-                            func(tup);
-                        }
+    threading::parallel_for(
+        threading::range(0, tri_capacity()),
+        [&](const threading::range& r) {
+            for (size_t i = r.begin(); i < r.end(); i++) {
+                if (!tuple_from_tri(i).is_valid(*this)) {
+                    continue;
+                }
+                for (int j = 0; j < 3; j++) {
+                    auto tup = tuple_from_edge(i, j);
+                    if (tup.eid(*this) == 3 * i + j) {
+                        func(tup);
                     }
                 }
-            });
-    });
+            }
+        },
+        NUM_THREADS);
 }
 
 void wmtk::TriMesh::for_each_vertex(const std::function<void(const TriMesh::Tuple&)>& func)
 {
-    tbb::task_arena arena(NUM_THREADS);
-    arena.execute([&] {
-        tbb::parallel_for(
-            tbb::blocked_range<size_t>(0, vert_capacity()),
-            [&](tbb::blocked_range<size_t> r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    auto tup = tuple_from_vertex(i);
-                    if (!tup.is_valid(*this)) continue;
-                    func(tup);
+    threading::parallel_for(
+        threading::range(0, vert_capacity()),
+        [&](const threading::range& r) {
+            for (size_t i = r.begin(); i < r.end(); i++) {
+                auto tup = tuple_from_vertex(i);
+                if (!tup.is_valid(*this)) {
+                    continue;
                 }
-            });
-    });
+                func(tup);
+            }
+        },
+        NUM_THREADS);
 }
 
 void wmtk::TriMesh::for_each_face(const std::function<void(const TriMesh::Tuple&)>& func)
 {
-    tbb::task_arena arena(NUM_THREADS);
-    arena.execute([&] {
-        tbb::parallel_for(
-            tbb::blocked_range<size_t>(0, tri_capacity()),
-            [&](tbb::blocked_range<size_t> r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    auto tup = tuple_from_tri(i);
-                    if (!tup.is_valid(*this)) continue;
-                    func(tup);
+    threading::parallel_for(
+        threading::range(0, tri_capacity()),
+        [&](const threading::range& r) {
+            for (size_t i = r.begin(); i < r.end(); i++) {
+                auto tup = tuple_from_tri(i);
+                if (!tup.is_valid(*this)) {
+                    continue;
                 }
-            });
-    });
+                func(tup);
+            }
+        },
+        NUM_THREADS);
 }
 
 

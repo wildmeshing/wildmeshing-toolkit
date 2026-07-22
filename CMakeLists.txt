@@ -74,6 +74,10 @@ include(wmtk_copy_dll)
 include(nlohmann_json)
 include(eigen)
 include(delaunay_psm)
+# TBB is no longer used by wmtk itself (replaced by the std::thread shim), but a
+# transitive dependency (geogram, pulled in via FastEnvelope) links against it on
+# Linux, so the library must still be built and available. wmtk does not link
+# TBB::tbb.
 include(onetbb)
 include(mshio)
 include(metis)
@@ -123,6 +127,11 @@ target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
 #target_compile_options(wildmeshing_toolkit PUBLIC  -fconcepts)
 
 
+# std::thread (used by the concurrency shim that replaced TBB) needs the platform
+# threading library; TBB used to pull this in transitively.
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
 target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
@@ -130,7 +139,6 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     igl::predicates
     gmp::gmp
     geogram::delaunay_psm
-    TBB::tbb
     mshio::mshio
     metis::metis
     nlohmann_json::nlohmann_json
@@ -139,6 +147,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     FastEnvelope::FastEnvelope
     simple_bvh::simple_bvh
     polysolve::polysolve
+    Threads::Threads
 )
 
 if(MSVC)

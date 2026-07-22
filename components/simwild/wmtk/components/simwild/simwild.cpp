@@ -10,6 +10,7 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
+#include <wmtk/utils/Preallocation.hpp>
 #include "Parameters.h"
 #include "SimWildMesh.h"
 #include "SimWildMeshTri.hpp"
@@ -160,6 +161,7 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     timer.start();
 
     simwild::SimWildMesh mesh(params, params.eps, params.NUM_THREADS);
+    wmtk::set_preallocation_factor_from_json(mesh, json_params);
     // first init envelope
     if (input_data.V_envelope.size() != 0) {
         bool use_exact = !json_params["use_sample_envelope"];
@@ -245,6 +247,7 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
     timer.start();
 
     simwild::tri::SimWildMeshTri mesh(params, params.eps, params.NUM_THREADS);
+    wmtk::set_preallocation_factor_from_json(mesh, json_params);
     // first init envelope
     if (input_data.V_envelope.size() != 0) {
         mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);

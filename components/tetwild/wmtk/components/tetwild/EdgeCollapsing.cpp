@@ -1,5 +1,5 @@
+#include <wmtk/threading/enumerable_thread_specific.hpp>
 #include "TetWildMesh.h"
-#include "oneapi/tbb/concurrent_vector.h"
 #include "wmtk/TetMesh.h"
 
 #include <igl/Timer.h>
@@ -7,6 +7,7 @@
 #include <atomic>
 #include <unordered_set>
 #include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/threading/collector.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -25,10 +26,10 @@ void TetWildMesh::collapse_all_edges(bool is_limit_length)
         collect_all_ops.emplace_back("edge_collapse", loc);
         collect_all_ops.emplace_back("edge_collapse", loc.switch_vertex(*this));
     }
-    auto collect_failure_ops = tbb::concurrent_vector<std::pair<std::string, Tuple>>();
+    wmtk::threading::collector<std::pair<std::string, Tuple>> collect_failure_ops;
     std::atomic_int count_success = 0;
     time = timer.getElapsedTime();
-    wmtk::logger().info("edge collapse prepare time: {:.4}s", time);
+    logger().info("edge collapse prepare time: {:.4}s", time);
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = [&](const auto& m, auto op, const auto& newts) {
             count_success++;
@@ -61,17 +62,19 @@ void TetWildMesh::collapse_all_edges(bool is_limit_length)
         // Execute!!
         do {
             count_success.store(0, std::memory_order_release);
-            wmtk::logger().info("Prepare to collapse {}", collect_all_ops.size());
+            logger().info("Prepare to collapse {}", collect_all_ops.size());
             igl::Timer t1;
             t1.start();
             executor(*this, collect_all_ops);
-            wmtk::logger().info("edge collapse execute time: {:.4}s", t1.getElapsedTimeInSec());
-            wmtk::logger().info(
+            logger().info("edge collapse execute time: {:.4}s", t1.getElapsedTimeInSec());
+            logger().info(
                 "Collapsed {}, retrying failed {}",
                 (int)count_success,
                 collect_failure_ops.size());
             collect_all_ops.clear();
-            for (auto& item : collect_failure_ops) collect_all_ops.emplace_back(item);
+            for (auto& item : collect_failure_ops) {
+                collect_all_ops.emplace_back(item);
+            }
             collect_failure_ops.clear();
         } while (count_success.load(std::memory_order_acquire) > 0);
     };

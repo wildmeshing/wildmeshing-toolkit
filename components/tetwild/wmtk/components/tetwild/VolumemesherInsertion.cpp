@@ -1742,9 +1742,9 @@ void TetWildMesh::init_from_Volumeremesher(
     init_with_isolated_vertices(v_rational.size(), tets);
     assert(check_mesh_connectivity_validity());
 
-    m_vertex_attribute.m_attributes.resize(v_rational.size());
-    m_tet_attribute.m_attributes.resize(tets.size());
-    m_face_attribute.m_attributes.resize(tets.size() * 4);
+    m_vertex_attribute.resize(v_rational.size());
+    m_tet_attribute.resize(tets.size());
+    m_face_attribute.resize(tets.size() * 4);
 
     // A VolumeRemesher output vertex is either a direct (explicit) point -- whose
     // exact coordinate is already a double -- or an indirect (implicit) point that
@@ -1931,17 +1931,34 @@ void TetWildMesh::init_from_Volumeremesher(
     });
 
     while (true) {
-        tbb::concurrent_vector<size_t> to_revert;
+        // A flag per vertex rather than a shared appended list: a vertex is reachable
+        // from several tets, so the old version took a lock per push and then pushed the
+        // same vid repeatedly. Every write here stores the same value to a slot indexed
+        // by vid, so the threads cannot disagree -- relaxed is enough, and the duplicates
+        // collapse for free.
+        std::vector<std::atomic<uint8_t>> to_revert(vert_capacity());
+        for (auto& f : to_revert) {
+            f.store(0, std::memory_order_relaxed);
+        }
+
+        std::atomic<bool> any{false};
         for_each_tetra([&](const Tuple& t) {
             if (is_inverted(t)) {
                 for (const size_t vid : oriented_tet_vids(t)) {
-                    if (!is_direct_point[vid] && m_vertex_attribute[vid].m_is_rounded)
-                        to_revert.push_back(vid);
+                    if (!is_direct_point[vid] && m_vertex_attribute[vid].m_is_rounded) {
+                        to_revert[vid].store(1, std::memory_order_relaxed);
+                        any.store(true, std::memory_order_relaxed);
+                    }
                 }
             }
         });
-        if (to_revert.empty()) break;
-        for (const size_t vid : to_revert) {
+        if (!any.load(std::memory_order_relaxed)) {
+            break;
+        }
+        for (size_t vid = 0; vid < to_revert.size(); ++vid) {
+            if (!to_revert[vid].load(std::memory_order_relaxed)) {
+                continue;
+            }
             if (m_vertex_attribute[vid].m_is_rounded) {
                 m_vertex_attribute[vid].m_pos = v_rational[vid];
                 m_vertex_attribute[vid].m_is_rounded = false;
@@ -2027,9 +2044,9 @@ void TetWildMesh::init_from_Volumeremesher(
 //     }
 
 //     init(v_num, tets);
-//     m_vertex_attribute.m_attributes.resize(v_num);
-//     m_tet_attribute.m_attributes.resize(tets.size());
-//     m_face_attribute.m_attributes.resize(tets.size() * 4);
+//     m_vertex_attribute.resize(v_num);
+//     m_tet_attribute.resize(tets.size());
+//     m_face_attribute.resize(tets.size() * 4);
 
 //     for (int i = 0; i < vert_capacity(); i++) {
 //         m_vertex_attribute[i].m_pos = v_rational[i];

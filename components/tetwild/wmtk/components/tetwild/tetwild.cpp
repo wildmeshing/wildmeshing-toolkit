@@ -1,4 +1,5 @@
 #include "tetwild.hpp"
+#include <wmtk/utils/Preallocation.hpp>
 
 #include "Parameters.h"
 #include "TetWildMesh.h"
@@ -134,6 +135,10 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     std::vector<std::array<size_t, 3>> tris;
     std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax;
     std::vector<size_t> modified_nonmanifold_v;
+    // --- phase timing (TETWILD_PHASES) ---
+    igl::Timer phase_timer;
+    double t_load = 0, t_simplify = 0, t_optimize = 0, t_finalize = 0, t_output = 0;
+    phase_timer.start();
     {
         double remove_duplicate_eps = 2e-3;
         MatrixXd V;
@@ -143,6 +148,8 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         box_minmax.second = V.colwise().maxCoeff();
         VF_to_vectors(V, F, verts, tris);
     }
+    t_load = phase_timer.getElapsedTime();
+    phase_timer.start(); // surface simplification begins
 
     {
         Eigen::MatrixXi F(tris.size(), 3);
@@ -187,6 +194,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             fsimp[i][j] = vs[j].vid(surf_mesh);
         }
     }
+    t_simplify = phase_timer.getElapsedTime(); // surface simplification done
 
 
     // /////////
@@ -198,6 +206,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     wmtk::remove_duplicates(vsimp, fsimp, 1e-10 * params.diag_l);
 
     tetwild::TetWildMesh mesh(params, surf_mesh.m_envelope, NUM_THREADS);
+    wmtk::set_preallocation_factor_from_json(mesh, json_params);
 
     /////////////////////////////////////////////////////
 
@@ -242,6 +251,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     // generate new mesh
     tetwild::TetWildMesh mesh_new(params, surf_mesh.m_envelope, NUM_THREADS);
+    wmtk::set_preallocation_factor_from_json(mesh_new, json_params);
 
     mesh_new.init_from_Volumeremesher(
         v_rational,
@@ -278,12 +288,15 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     // });
 
     // /////////mesh improvement
+    phase_timer.start(); // optimization begins
     if (json_params["use_legacy_code"]) {
         logger().warn("Using legacy code for mesh improvement!");
         mesh_new.mesh_improvement_legacy(max_its);
     } else {
         mesh_new.mesh_improvement(max_its);
     }
+    t_optimize = phase_timer.getElapsedTime(); // optimization done
+    phase_timer.start(); // finalize (winding/flood/filter) begins
 
     // mesh_new.output_mesh(output_path + "after_optimization.msh");
     // mesh_new.output_faces(output_path + "after_optimization_surface.obj", [](auto& f) {
@@ -303,17 +316,22 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         wmtk::logger().error("Not all vertices rounded!");
     }
 
+    // Precompute the tets and their barycenters once; all winding-number passes
+    // below reuse them (they used to each rebuild get_tets() + the barycenters).
+    const auto finalize_tets = mesh_new.get_tets();
+    const Eigen::MatrixXd finalize_barycenters = mesh_new.tet_barycenters(finalize_tets);
+
     // apply input winding number
-    mesh_new.compute_winding_number(verts, tris);
+    mesh_new.compute_winding_number(finalize_tets, finalize_barycenters, verts, tris);
     // apply tracked surface winding number
-    mesh_new.compute_winding_number();
+    mesh_new.compute_winding_number(finalize_tets, finalize_barycenters);
     // apply flood fill
     {
         int num_parts = mesh_new.flood_fill();
         logger().info("flood fill parts {}", num_parts);
     }
-    // compute per-input winding number
-    mesh_new.compute_winding_numbers(input_paths);
+    // compute per-input winding number (reuse in-memory verts/tris to avoid re-read)
+    mesh_new.compute_winding_numbers(input_paths, finalize_tets, finalize_barycenters, verts, tris);
 
     // ////winding number
     if (filter_option == "input") {
@@ -326,6 +344,9 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         logger().error("Unknown filter option '{}'. No filtering performed.", filter_option);
     }
     mesh_new.consolidate_mesh();
+
+    t_finalize = phase_timer.getElapsedTime(); // winding/flood/filter done
+    phase_timer.start(); // output (surface extraction) begins
 
     double time = timer.getElapsedTime();
     wmtk::logger().info("total time {:.4}s", time);
@@ -379,6 +400,18 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
         wmtk::logger().info("#output faces = {}", outface.size());
     }
+    t_output = phase_timer.getElapsedTime(); // output (surface extraction) done
+
+    wmtk::logger().info(
+        "TETWILD_PHASES threads {} load {:.6}s simplify {:.6}s insertion {:.6}s "
+        "optimization {:.6}s finalize {:.6}s output {:.6}s",
+        NUM_THREADS,
+        t_load,
+        t_simplify,
+        insertion_time,
+        t_optimize,
+        t_finalize,
+        t_output);
 
     // Hausdorff + Euler Characteristic
     double hausdorff_distance = -1;

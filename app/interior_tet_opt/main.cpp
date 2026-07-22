@@ -13,8 +13,6 @@
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <tbb/parallel_for.h>
-#include <tbb/task_arena.h>
 #include <CLI/CLI.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
@@ -53,7 +51,7 @@ bool adjust_sizing_field(
     const auto min_refine_scalar = 0.25;
 
     // outputs scale_multipliers
-    tbb::concurrent_vector<double> scale_multipliers(mesh.vert_capacity(), recover_scalar);
+    std::vector<double> scale_multipliers(mesh.vert_capacity(), recover_scalar);
 
     std::vector<Vector3d> pts;
     std::queue<size_t> v_queue;

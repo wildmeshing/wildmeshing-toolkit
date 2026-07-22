@@ -1,4 +1,7 @@
 #include "IsotropicRemeshing.h"
+#include <wmtk/threading/collector.hpp>
+#include <wmtk/threading/indexed_collector.hpp>
+#include <wmtk/threading/parallel_for.hpp>
 
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
@@ -111,101 +114,104 @@ void IsotropicRemeshing::partition_mesh()
 // TODO: morton should not be here, but inside wmtk
 void IsotropicRemeshing::partition_mesh_morton()
 {
-    if (NUM_THREADS == 0) return;
-    wmtk::logger().info("Number of parts: {} by morton", NUM_THREADS);
+    if (NUM_THREADS == 0) {
+        return;
+    }
+    logger().info("Number of parts: {} by morton", NUM_THREADS);
 
-    tbb::task_arena arena(NUM_THREADS);
+    std::vector<Eigen::Vector3d> V_v(vert_capacity());
 
-    arena.execute([&] {
-        std::vector<Eigen::Vector3d> V_v(vert_capacity());
-
-        tbb::parallel_for(
-            tbb::blocked_range<size_t>(0, V_v.size()),
-            [&](tbb::blocked_range<size_t> r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    V_v[i] = vertex_attrs[i].pos;
-                }
-            });
-
-        struct sortstruct
-        {
-            size_t order;
-            Resorting::MortonCode64 morton;
-        };
-
-        std::vector<sortstruct> list_v;
-        list_v.resize(V_v.size());
-        const int multi = 1000;
-        // since the morton code requires a correct scale of input vertices,
-        //  we need to scale the vertices if their coordinates are out of range
-        std::vector<Eigen::Vector3d> V = V_v; // this is for rescaling vertices
-        Eigen::Vector3d vmin, vmax;
-        vmin = V.front();
-        vmax = V.front();
-
-        for (size_t j = 0; j < V.size(); j++) {
-            for (int i = 0; i < 3; i++) {
-                vmin(i) = std::min(vmin(i), V[j](i));
-                vmax(i) = std::max(vmax(i), V[j](i));
+    threading::parallel_for(
+        threading::range(0, V_v.size()),
+        [&](const threading::range& r) {
+            for (size_t i = r.begin(); i < r.end(); i++) {
+                V_v[i] = vertex_attrs[i].pos;
             }
+        },
+        NUM_THREADS);
+
+    struct sortstruct
+    {
+        size_t order;
+        Resorting::MortonCode64 morton;
+    };
+
+    std::vector<sortstruct> list_v;
+    list_v.resize(V_v.size());
+    const int multi = 1000;
+    // since the morton code requires a correct scale of input vertices,
+    //  we need to scale the vertices if their coordinates are out of range
+    std::vector<Eigen::Vector3d> V = V_v; // this is for rescaling vertices
+    Eigen::Vector3d vmin, vmax;
+    vmin = V.front();
+    vmax = V.front();
+
+    for (size_t j = 0; j < V.size(); j++) {
+        for (int i = 0; i < 3; i++) {
+            vmin(i) = std::min(vmin(i), V[j](i));
+            vmax(i) = std::max(vmax(i), V[j](i));
         }
+    }
 
-        Eigen::Vector3d center = (vmin + vmax) / 2;
+    Eigen::Vector3d center = (vmin + vmax) / 2;
 
-        tbb::parallel_for(
-            tbb::blocked_range<size_t>(0, V.size()),
-            [&](tbb::blocked_range<size_t> r) {
+    threading::parallel_for(
+        threading::range(0, V.size()),
+        [&](const threading::range& r) {
+            for (size_t i = r.begin(); i < r.end(); i++) {
+                V[i] = V[i] - center;
+            }
+        },
+        NUM_THREADS);
+
+    Eigen::Vector3d scale_point =
+        vmax - center; // after placing box at origin, vmax and vmin are symetric.
+
+    double xscale, yscale, zscale;
+    xscale = fabs(scale_point[0]);
+    yscale = fabs(scale_point[1]);
+    zscale = fabs(scale_point[2]);
+    double scale = std::max(std::max(xscale, yscale), zscale);
+    if (scale > 300) {
+        threading::parallel_for(
+            threading::range(0, V.size()),
+            [&](const threading::range& r) {
                 for (size_t i = r.begin(); i < r.end(); i++) {
-                    V[i] = V[i] - center;
+                    V[i] = V[i] / scale;
                 }
-            });
+            },
+            NUM_THREADS);
+    }
 
-        Eigen::Vector3d scale_point =
-            vmax - center; // after placing box at origin, vmax and vmin are symetric.
+    threading::parallel_for(
+        threading::range(0, V.size()),
+        [&](const threading::range& r) {
+            for (size_t i = r.begin(); i < r.end(); i++) {
+                list_v[i].morton = Resorting::MortonCode64(
+                    int(V[i][0] * multi),
+                    int(V[i][1] * multi),
+                    int(V[i][2] * multi));
+                list_v[i].order = i;
+            }
+        },
+        NUM_THREADS);
 
-        double xscale, yscale, zscale;
-        xscale = fabs(scale_point[0]);
-        yscale = fabs(scale_point[1]);
-        zscale = fabs(scale_point[2]);
-        double scale = std::max(std::max(xscale, yscale), zscale);
-        if (scale > 300) {
-            tbb::parallel_for(
-                tbb::blocked_range<size_t>(0, V.size()),
-                [&](tbb::blocked_range<size_t> r) {
-                    for (size_t i = r.begin(); i < r.end(); i++) {
-                        V[i] = V[i] / scale;
-                    }
-                });
-        }
+    const auto morton_compare = [](const sortstruct& a, const sortstruct& b) {
+        return (a.morton < b.morton);
+    };
 
-        tbb::parallel_for(
-            tbb::blocked_range<size_t>(0, V.size()),
-            [&](tbb::blocked_range<size_t> r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    list_v[i].morton = Resorting::MortonCode64(
-                        int(V[i][0] * multi),
-                        int(V[i][1] * multi),
-                        int(V[i][2] * multi));
-                    list_v[i].order = i;
-                }
-            });
+    std::sort(list_v.begin(), list_v.end(), morton_compare);
 
-        const auto morton_compare = [](const sortstruct& a, const sortstruct& b) {
-            return (a.morton < b.morton);
-        };
+    size_t interval = list_v.size() / NUM_THREADS + 1;
 
-        tbb::parallel_sort(list_v.begin(), list_v.end(), morton_compare);
-
-        size_t interval = list_v.size() / NUM_THREADS + 1;
-
-        tbb::parallel_for(
-            tbb::blocked_range<size_t>(0, list_v.size()),
-            [&](tbb::blocked_range<size_t> r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    vertex_attrs[list_v[i].order].partition_id = i / interval;
-                }
-            });
-    });
+    threading::parallel_for(
+        threading::range(0, list_v.size()),
+        [&](const threading::range& r) {
+            for (size_t i = r.begin(); i < r.end(); i++) {
+                vertex_attrs[list_v[i].order].partition_id = i / interval;
+            }
+        },
+        NUM_THREADS);
 }
 
 std::vector<TriMesh::Tuple> IsotropicRemeshing::new_edges_after(
@@ -428,12 +434,21 @@ bool IsotropicRemeshing::collapse_remeshing(double L)
 {
     igl::Timer timer;
     timer.start();
-    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    auto collect_tuples = tbb::concurrent_vector<Tuple>();
+    std::vector<std::pair<std::string, Tuple>> collect_all_ops;
+    // One slot per (triangle, local edge): for_each_edge only invokes the callback for
+    // the triangle that owns the edge, so eid() is unique and no two threads write the
+    // same slot -- no lock, and the order is the slot order rather than whichever thread
+    // won a mutex.
+    {
+        auto collect_tuples = threading::indexed_collector<Tuple>(3 * tri_capacity());
+        for_each_edge([&](auto& tup) { collect_tuples.set(tup.eid(*this), tup); });
+        const auto collected = collect_tuples.compact();
+        collect_all_ops.reserve(collected.size());
+        for (const auto& t : collected) {
+            collect_all_ops.emplace_back("edge_collapse", t);
+        }
+    }
 
-    for_each_edge([&](auto& tup) { collect_tuples.emplace_back(tup); });
-    collect_all_ops.reserve(collect_tuples.size());
-    for (auto& t : collect_tuples) collect_all_ops.emplace_back("edge_collapse", t);
     wmtk::logger().info(
         "***** collapse get edges time *****: {} ms",
         timer.getElapsedTimeInMilliSec());
@@ -468,29 +483,37 @@ bool IsotropicRemeshing::split_remeshing(double L)
 {
     igl::Timer timer;
     timer.start();
-    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
+    std::vector<std::pair<std::string, Tuple>> collect_all_ops;
     size_t vid_threshold = 0;
     std::atomic_int count_success = 0;
-    auto collect_tuples = tbb::concurrent_vector<Tuple>();
 
-    for_each_edge([&](auto& tup) { collect_tuples.emplace_back(tup); });
-    collect_all_ops.reserve(collect_tuples.size());
-    for (auto& t : collect_tuples) collect_all_ops.emplace_back("edge_split", t);
-    wmtk::logger().info(
-        "***** split get edges time *****: {} ms",
-        timer.getElapsedTimeInMilliSec());
+    {
+        auto collect_tuples = threading::indexed_collector<Tuple>(3 * tri_capacity());
+        for_each_edge([&](auto& tup) { collect_tuples.set(tup.eid(*this), tup); });
+        const auto collected = collect_tuples.compact();
+        collect_all_ops.reserve(collected.size());
+        for (const auto& t : collected) {
+            collect_all_ops.emplace_back("edge_split", t);
+        }
+    }
 
-    wmtk::logger().info("size for edges to be split is {}", collect_all_ops.size());
-    auto edges2 = tbb::concurrent_vector<std::pair<std::string, TriMesh::Tuple>>();
+    logger().info("***** split get edges time *****: {} ms", timer.getElapsedTimeInMilliSec());
+
+    logger().info("size for edges to be split is {}", collect_all_ops.size());
+    wmtk::threading::collector<std::pair<std::string, Tuple>> edges2;
     auto setup_and_execute = [&](auto& executor) {
         vid_threshold = vert_capacity();
         executor.num_threads = NUM_THREADS;
         executor.renew_neighbor_tuples = [&](auto& m, auto op, auto& tris) {
             count_success++;
             auto edges = m.replace_edges_after_split(tris, vid_threshold);
-            for (auto e2 : m.new_sub_edges_after_split(tris)) edges2.emplace_back(op, e2);
-            auto optup = std::vector<std::pair<std::string, TriMesh::Tuple>>();
-            for (auto& e : edges) optup.emplace_back(op, e);
+            for (const auto& e2 : m.new_sub_edges_after_split(tris)) {
+                edges2.emplace_back(op, e2);
+            }
+            std::vector<std::pair<std::string, Tuple>> optup;
+            for (auto& e : edges) {
+                optup.emplace_back(op, e);
+            }
             return optup;
         };
         executor.priority = [&](auto& m, auto _, auto& e) {
@@ -507,7 +530,9 @@ bool IsotropicRemeshing::split_remeshing(double L)
             count_success.store(0, std::memory_order_release);
             executor(*this, collect_all_ops);
             collect_all_ops.clear();
-            for (auto& item : edges2) collect_all_ops.emplace_back(item);
+            for (auto& item : edges2) {
+                collect_all_ops.emplace_back(item);
+            }
             edges2.clear();
         } while (count_success.load(std::memory_order_acquire) > 0);
     };
@@ -553,13 +578,18 @@ bool IsotropicRemeshing::swap_remeshing()
     igl::Timer timer;
     timer.start();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    wmtk::logger().info("size for edges to swap is {}", collect_all_ops.size());
-    auto collect_tuples = tbb::concurrent_vector<Tuple>();
+    logger().info("size for edges to swap is {}", collect_all_ops.size());
 
-    for_each_edge([&](auto& tup) { collect_tuples.emplace_back(tup); });
-    collect_all_ops.reserve(collect_tuples.size());
-    for (auto& t : collect_tuples) collect_all_ops.emplace_back("edge_swap", t);
-    wmtk::logger().info("***** swap get edges time *****: {} ms", timer.getElapsedTimeInMilliSec());
+    {
+        auto collect_tuples = threading::indexed_collector<Tuple>(3 * tri_capacity());
+        for_each_edge([&](auto& tup) { collect_tuples.set(tup.eid(*this), tup); });
+        const auto collected = collect_tuples.compact();
+        collect_all_ops.reserve(collected.size());
+        for (const auto& t : collected) {
+            collect_all_ops.emplace_back("edge_swap", t);
+        }
+    }
+    logger().info("***** swap get edges time *****: {} ms", timer.getElapsedTimeInMilliSec());
 
 
     auto setup_and_execute = [&](auto& executor) {
@@ -689,6 +719,12 @@ bool IsotropicRemeshing::uniform_remeshing(double L, int iterations)
         wmtk::logger().info("--------smooth time-------: {} ms", timer.getElapsedTimeInMilliSec());
 
         partition_mesh_morton();
+
+        // Reclaim the slots leaked by this iteration's operations (removed elements
+        // are not freed until consolidation). With the preallocated storage this is
+        // required so long runs do not exhaust the reserved capacity; it is
+        // transparent to the mesh content.
+        consolidate_mesh();
     }
     wmtk::logger().info("finished {} remeshing iterations", iterations);
     wmtk::logger().info("+++++++++finished+++++++++");
