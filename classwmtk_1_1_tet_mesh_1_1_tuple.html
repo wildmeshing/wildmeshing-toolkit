@@ -259,6 +259,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>operator&lt;</b> (con
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>size_t </dd></dl>
 <dl class="section note"><dt>Note</dt><dd>The global id may not be consecutive. The edges are undirected and different tetra share the same edge. </dd></dl>
+<p>TODO: optimize the computation of the lowest tet ID: All tet IDs are stored consecutively in the vertex connectivity. Find the smallest common tet ID and construct edge ID from that. See <code><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html#ad3376e7f1748f776a15d3e9de6ea019d">fid()</a></code> for a similar implementation.</p>
 
 </div>
 </div>

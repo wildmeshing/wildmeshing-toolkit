@@ -338,6 +338,25 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>consolidate_mesh</b> 
 <tr class="memitem:a7139838491f2cc1e77551a4de5f62378 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a7139838491f2cc1e77551a4de5f62378"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a7139838491f2cc1e77551a4de5f62378">for_each_face</a> (const std::function&lt; void(const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">TetMesh::Tuple</a> &amp;)&gt; &amp;)</td></tr>
 <tr class="memdesc:a7139838491f2cc1e77551a4de5f62378 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">looping through all the unique edges and perform the given function  <br /></td></tr>
 <tr class="separator:a7139838491f2cc1e77551a4de5f62378 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a262276d320a4261eddfb27c8edd361b5 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a262276d320a4261eddfb27c8edd361b5"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_preallocation_factor</b> (double factor)</td></tr>
+<tr class="memdesc:a262276d320a4261eddfb27c8edd361b5 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Preallocation factor: init/consolidate reserve capacity = max(floor, ceil(factor * live_count)) so operations can grab fresh slots without resizing the storage. When a pass exhausts the reserved capacity the affected operations fail (and are retried later after a consolidate). Tune per application (e.g. from JSON); values &lt; 1 are clamped to 1. <br /></td></tr>
+<tr class="separator:a262276d320a4261eddfb27c8edd361b5 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade6cd29e4785209bc24216b8033c4a4b inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_ade6cd29e4785209bc24216b8033c4a4b"><td class="memItemLeft" align="right" valign="top">
+double&#160;</td><td class="memItemRight" valign="bottom"><b>preallocation_factor</b> () const</td></tr>
+<tr class="separator:ade6cd29e4785209bc24216b8033c4a4b inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0600823a821626eca17a674a5fde9b69 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a0600823a821626eca17a674a5fde9b69"><td class="memItemLeft" align="right" valign="top">
+long&#160;</td><td class="memItemRight" valign="bottom"><b>request_tet_slots</b> (size_t n)</td></tr>
+<tr class="separator:a0600823a821626eca17a674a5fde9b69 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a705aa747779887b9ecda2d92f839c71f inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a705aa747779887b9ecda2d92f839c71f"><td class="memItemLeft" align="right" valign="top">
+long&#160;</td><td class="memItemRight" valign="bottom"><b>request_vert_slots</b> (size_t n)</td></tr>
+<tr class="separator:a705aa747779887b9ecda2d92f839c71f inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1646ff821bf9087f21129cf5e425366d inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a1646ff821bf9087f21129cf5e425366d"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>ensure_free_tet_capacity</b> (size_t extra)</td></tr>
+<tr class="separator:a1646ff821bf9087f21129cf5e425366d inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa8aaf9487edea3dc4c9105cee56fed41 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_aa8aaf9487edea3dc4c9105cee56fed41"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>ensure_free_vert_capacity</b> (size_t extra)</td></tr>
+<tr class="separator:aa8aaf9487edea3dc4c9105cee56fed41 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a994201bc6b9c05cca284e544228bffc3 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a994201bc6b9c05cca284e544228bffc3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a994201bc6b9c05cca284e544228bffc3">tuple_from_edge</a> (size_t tid, int local_eid) const</td></tr>
 <tr class="memdesc:a994201bc6b9c05cca284e544228bffc3 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">get a <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html" title="a Tuple refers to a global vid and a global tet id, and a local edge id and local face id">Tuple</a> from global tetra index and <b>local</b> edge index (from 0-5).  <br /></td></tr>
 <tr class="separator:a994201bc6b9c05cca284e544228bffc3 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -619,12 +638,12 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_collapse_check_topo
 <tr class="memitem:ab3f6ac72488441bc8dd32e7f5519b5e9 inherit pub_attribs_classwmtk_1_1_tet_mesh" id="r_ab3f6ac72488441bc8dd32e7f5519b5e9"><td class="memItemLeft" align="right" valign="top">
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_collapse_check_manifold</b> = true</td></tr>
 <tr class="separator:ab3f6ac72488441bc8dd32e7f5519b5e9 inherit pub_attribs_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad71a426299d1605dc8b46c4a628183aa inherit pub_attribs_classwmtk_1_1_tet_mesh" id="r_ad71a426299d1605dc8b46c4a628183aa"><td class="memItemLeft" align="right" valign="top">
-tbb::enumerable_thread_specific&lt; std::vector&lt; size_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mutex_release_stack</b></td></tr>
-<tr class="separator:ad71a426299d1605dc8b46c4a628183aa inherit pub_attribs_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3a49f3c2ba50e4b56d420e4cafc2d6c2 inherit pub_attribs_classwmtk_1_1_tet_mesh" id="r_a3a49f3c2ba50e4b56d420e4cafc2d6c2"><td class="memItemLeft" align="right" valign="top">
-tbb::enumerable_thread_specific&lt; std::vector&lt; size_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_one_ring_cache</b></td></tr>
-<tr class="separator:a3a49f3c2ba50e4b56d420e4cafc2d6c2 inherit pub_attribs_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad7014b2f83e03bfc7cfc412e3188bec1 inherit pub_attribs_classwmtk_1_1_tet_mesh" id="r_ad7014b2f83e03bfc7cfc412e3188bec1"><td class="memItemLeft" align="right" valign="top">
+<a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; std::vector&lt; size_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mutex_release_stack</b></td></tr>
+<tr class="separator:ad7014b2f83e03bfc7cfc412e3188bec1 inherit pub_attribs_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a16d221afab563bcf85278e41a51b1807 inherit pub_attribs_classwmtk_1_1_tet_mesh" id="r_a16d221afab563bcf85278e41a51b1807"><td class="memItemLeft" align="right" valign="top">
+<a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; std::vector&lt; size_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_one_ring_cache</b></td></tr>
+<tr class="separator:a16d221afab563bcf85278e41a51b1807 inherit pub_attribs_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa8490823a03a4b4194b4d424486db314 inherit pub_attribs_classwmtk_1_1_tet_mesh" id="r_aa8490823a03a4b4194b4d424486db314"><td class="memItemLeft" align="right" valign="top">
 int&#160;</td><td class="memItemRight" valign="bottom"><b>NUM_THREADS</b> = 0</td></tr>
 <tr class="separator:aa8490823a03a4b4194b4d424486db314 inherit pub_attribs_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -673,10 +692,10 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>FaceAttCol</b> = <a 
 using&#160;</td><td class="memItemRight" valign="bottom"><b>TetAttCol</b> = <a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_tet_attributes.html">TetAttributes</a> &gt;</td></tr>
 <tr class="separator:a8e1978f31f9bf20198eccaaef40352b3 inherit pub_types_classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_types_classwmtk_1_1_tet_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classwmtk_1_1_tet_mesh')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></td></tr>
-<tr class="memitem:afa18c4842fdf84ea4b80a6e96a54574e inherit pub_types_classwmtk_1_1_tet_mesh" id="r_afa18c4842fdf84ea4b80a6e96a54574e"><td class="memTemplParams" colspan="2">
+<tr class="memitem:a2800e82bb0cb3288c8cefb78b2f834e1 inherit pub_types_classwmtk_1_1_tet_mesh" id="r_a2800e82bb0cb3288c8cefb78b2f834e1"><td class="memTemplParams" colspan="2">
 template&lt;typename T &gt; </td></tr>
-<tr class="memitem:afa18c4842fdf84ea4b80a6e96a54574e inherit pub_types_classwmtk_1_1_tet_mesh"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>vector</b> = tbb::concurrent_vector&lt; T &gt;</td></tr>
-<tr class="separator:afa18c4842fdf84ea4b80a6e96a54574e inherit pub_types_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2800e82bb0cb3288c8cefb78b2f834e1 inherit pub_types_classwmtk_1_1_tet_mesh"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>vector</b> = std::vector&lt; T &gt;</td></tr>
+<tr class="separator:a2800e82bb0cb3288c8cefb78b2f834e1 inherit pub_types_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classwmtk_1_1_tet_mesh"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classwmtk_1_1_tet_mesh')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></td></tr>
 <tr class="memitem:a8e721b4f8d5679988869b984f03fe6e1 inherit pro_methods_classwmtk_1_1_tet_mesh" id="r_a8e721b4f8d5679988869b984f03fe6e1"><td class="memItemLeft" align="right" valign="top">
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>triangle_insertion_before</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;faces)</td></tr>

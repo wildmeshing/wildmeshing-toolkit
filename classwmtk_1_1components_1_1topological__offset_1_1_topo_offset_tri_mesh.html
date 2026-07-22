@@ -124,10 +124,10 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>EdgeAttCol</b> = <a 
 using&#160;</td><td class="memItemRight" valign="bottom"><b>FaceAttCol</b> = <a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_face_attributes2d.html">FaceAttributes2d</a> &gt;</td></tr>
 <tr class="separator:a4d42f17d9bca021f33acb0a274c273b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_types_classwmtk_1_1_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classwmtk_1_1_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></td></tr>
-<tr class="memitem:a789f9bdc3ece59a5f11143e6ae1d5cd1 inherit pub_types_classwmtk_1_1_tri_mesh" id="r_a789f9bdc3ece59a5f11143e6ae1d5cd1"><td class="memTemplParams" colspan="2">
+<tr class="memitem:ae5819441284a260b3ce7682e019d174f inherit pub_types_classwmtk_1_1_tri_mesh" id="r_ae5819441284a260b3ce7682e019d174f"><td class="memTemplParams" colspan="2">
 template&lt;typename T &gt; </td></tr>
-<tr class="memitem:a789f9bdc3ece59a5f11143e6ae1d5cd1 inherit pub_types_classwmtk_1_1_tri_mesh"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>vector</b> = tbb::concurrent_vector&lt; T &gt;</td></tr>
-<tr class="separator:a789f9bdc3ece59a5f11143e6ae1d5cd1 inherit pub_types_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae5819441284a260b3ce7682e019d174f inherit pub_types_classwmtk_1_1_tri_mesh"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>vector</b> = std::vector&lt; T &gt;</td></tr>
+<tr class="separator:ae5819441284a260b3ce7682e019d174f inherit pub_types_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -293,6 +293,19 @@ std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple
 <tr class="memitem:a66c65292c6100e5ab1a95ddb1e951480 inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_a66c65292c6100e5ab1a95ddb1e951480"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html">simplex::SimplexCollection</a>&#160;</td><td class="memItemRight" valign="bottom"><b>simplex_link_edges</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_vertex.html">simplex::Vertex</a> &amp;v) const</td></tr>
 <tr class="separator:a66c65292c6100e5ab1a95ddb1e951480 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0611d5127a3704d39d5afb045ced5ace inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_a0611d5127a3704d39d5afb045ced5ace"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_preallocation_factor</b> (double factor)</td></tr>
+<tr class="memdesc:a0611d5127a3704d39d5afb045ced5ace inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Preallocation factor: init/consolidate reserve capacity = max(floor, ceil(factor * live_count)) so operations can grab fresh slots without resizing the storage. When a pass exhausts the reserved capacity the affected operations fail (retried later after a consolidate). Values &lt; 1 are clamped to 1. <br /></td></tr>
+<tr class="separator:a0611d5127a3704d39d5afb045ced5ace inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8bc7f3ea9a9128004a59ad8804c9e178 inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_a8bc7f3ea9a9128004a59ad8804c9e178"><td class="memItemLeft" align="right" valign="top">
+double&#160;</td><td class="memItemRight" valign="bottom"><b>preallocation_factor</b> () const</td></tr>
+<tr class="separator:a8bc7f3ea9a9128004a59ad8804c9e178 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae1a729e0062cf29ec9fed50ed4d5488e inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_ae1a729e0062cf29ec9fed50ed4d5488e"><td class="memItemLeft" align="right" valign="top">
+long&#160;</td><td class="memItemRight" valign="bottom"><b>request_tri_slots</b> (size_t n)</td></tr>
+<tr class="separator:ae1a729e0062cf29ec9fed50ed4d5488e inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afb7785eb2381dec13a0aa00aadb6203c inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_afb7785eb2381dec13a0aa00aadb6203c"><td class="memItemLeft" align="right" valign="top">
+long&#160;</td><td class="memItemRight" valign="bottom"><b>request_vert_slots</b> (size_t n)</td></tr>
+<tr class="separator:afb7785eb2381dec13a0aa00aadb6203c inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af004507051c4f5cf2c0c515baf366372 inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_af004507051c4f5cf2c0c515baf366372"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#af004507051c4f5cf2c0c515baf366372">collapse_edge_before</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
 <tr class="memdesc:af004507051c4f5cf2c0c515baf366372 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified preparations and desideratas for an edge collapse including the link check as collapse prerequisite.  <br /></td></tr>
 <tr class="separator:af004507051c4f5cf2c0c515baf366372 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -537,9 +550,9 @@ MatrixXi&#160;</td><td class="memItemRight" valign="bottom"><b>m_F_envelope</b><
 <tr class="memitem:a5d24607eb938d53a7d0e35d72afe0846 inherit pub_attribs_classwmtk_1_1_tri_mesh" id="r_a5d24607eb938d53a7d0e35d72afe0846"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="classwmtk_1_1_abstract_attribute_container.html">AbstractAttributeContainer</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>p_face_attrs</b> = nullptr</td></tr>
 <tr class="separator:a5d24607eb938d53a7d0e35d72afe0846 inherit pub_attribs_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aca451bcd61095fe567b3305a6fc469ce inherit pub_attribs_classwmtk_1_1_tri_mesh" id="r_aca451bcd61095fe567b3305a6fc469ce"><td class="memItemLeft" align="right" valign="top">
-tbb::enumerable_thread_specific&lt; std::vector&lt; size_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mutex_release_stack</b></td></tr>
-<tr class="separator:aca451bcd61095fe567b3305a6fc469ce inherit pub_attribs_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aebb0ff10ef5a65483e8d05ab016f4e82 inherit pub_attribs_classwmtk_1_1_tri_mesh" id="r_aebb0ff10ef5a65483e8d05ab016f4e82"><td class="memItemLeft" align="right" valign="top">
+<a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; std::vector&lt; size_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mutex_release_stack</b></td></tr>
+<tr class="separator:aebb0ff10ef5a65483e8d05ab016f4e82 inherit pub_attribs_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a84fa74eb2b0a35d205729459b55e70f0 inherit pub_attribs_classwmtk_1_1_tri_mesh" id="r_a84fa74eb2b0a35d205729459b55e70f0"><td class="memItemLeft" align="right" valign="top">
 int&#160;</td><td class="memItemRight" valign="bottom"><b>NUM_THREADS</b> = 0</td></tr>
 <tr class="separator:a84fa74eb2b0a35d205729459b55e70f0 inherit pub_attribs_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -557,12 +570,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>sort_edges_by_length<
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a264eb9dd02c98068e5d9a72095e29bfd" id="r_a264eb9dd02c98068e5d9a72095e29bfd"><td class="memItemLeft" align="right" valign="top"><a id="a264eb9dd02c98068e5d9a72095e29bfd" name="a264eb9dd02c98068e5d9a72095e29bfd"></a>
-tbb::enumerable_thread_specific&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_edge_split_cache.html">EdgeSplitCache</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>edge_split_cache</b></td></tr>
-<tr class="separator:a264eb9dd02c98068e5d9a72095e29bfd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a53751e326d0f2f6e3b6decd06231c417" id="r_a53751e326d0f2f6e3b6decd06231c417"><td class="memItemLeft" align="right" valign="top"><a id="a53751e326d0f2f6e3b6decd06231c417" name="a53751e326d0f2f6e3b6decd06231c417"></a>
-tbb::enumerable_thread_specific&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_face_split_cache.html">FaceSplitCache</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>face_split_cache</b></td></tr>
-<tr class="separator:a53751e326d0f2f6e3b6decd06231c417"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9423ea839d4d95cad5260d47bcb52088" id="r_a9423ea839d4d95cad5260d47bcb52088"><td class="memItemLeft" align="right" valign="top"><a id="a9423ea839d4d95cad5260d47bcb52088" name="a9423ea839d4d95cad5260d47bcb52088"></a>
+<a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_edge_split_cache.html">EdgeSplitCache</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>edge_split_cache</b></td></tr>
+<tr class="separator:a9423ea839d4d95cad5260d47bcb52088"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad82a4a6ba06d7c969bc5feef968309df" id="r_ad82a4a6ba06d7c969bc5feef968309df"><td class="memItemLeft" align="right" valign="top"><a id="ad82a4a6ba06d7c969bc5feef968309df" name="ad82a4a6ba06d7c969bc5feef968309df"></a>
+<a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_face_split_cache.html">FaceSplitCache</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>face_split_cache</b></td></tr>
+<tr class="separator:ad82a4a6ba06d7c969bc5feef968309df"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>

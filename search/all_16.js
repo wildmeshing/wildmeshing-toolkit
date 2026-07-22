@@ -17,7 +17,8 @@ var searchData=
   ['positioninfocache_14',['positioninfocache',['../structwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse_1_1_position_info_cache.html',1,'wmtk::components::shortest_edge_collapse::ShortestEdgeCollapse::PositionInfoCache'],['../structwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing_1_1_position_info_cache.html',1,'wmtk::components::isotropic_remeshing::IsotropicRemeshing::PositionInfoCache']]],
   ['print_5finfo_15',['print_info',['../classwmtk_1_1_tet_mesh_1_1_tuple.html#a49fd88de6c7178861506864665c4eaa3',1,'wmtk::TetMesh::Tuple::print_info() const'],['../classwmtk_1_1_tet_mesh_1_1_tuple.html#a6b102f37bc5870ed46df2630f412394b',1,'wmtk::TetMesh::Tuple::print_info(const TetMesh &amp;m) const']]],
   ['priority_16',['priority',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md13',1,'5. Tag Priority'],['../structwmtk_1_1_execute_pass.html#a8862fb195ad95a30e1f99cc13f4855fc',1,'wmtk::ExecutePass::priority']]],
-  ['python_20bindings_17',['WMTK Python Bindings',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2app_2pywildmeshing_2_r_e_a_d_m_e.html',1,'']]],
-  ['python_20wrapper_18',['Python Wrapper',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md6',1,'']]],
-  ['python_20wrapper_20installation_19',['Python Wrapper Installation',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md7',1,'']]]
+  ['push_5fback_17',['push_back',['../classwmtk_1_1threading_1_1collector.html#ad97029619feeb1a4acee0b954a17f4d8',1,'wmtk::threading::collector']]],
+  ['python_20bindings_18',['WMTK Python Bindings',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2app_2pywildmeshing_2_r_e_a_d_m_e.html',1,'']]],
+  ['python_20wrapper_19',['Python Wrapper',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md6',1,'']]],
+  ['python_20wrapper_20installation_20',['Python Wrapper Installation',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md7',1,'']]]
 ];

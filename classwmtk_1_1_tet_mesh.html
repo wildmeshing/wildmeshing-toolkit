@@ -119,10 +119,10 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:afa18c4842fdf84ea4b80a6e96a54574e" id="r_afa18c4842fdf84ea4b80a6e96a54574e"><td class="memTemplParams" colspan="2"><a id="afa18c4842fdf84ea4b80a6e96a54574e" name="afa18c4842fdf84ea4b80a6e96a54574e"></a>
+<tr class="memitem:a2800e82bb0cb3288c8cefb78b2f834e1" id="r_a2800e82bb0cb3288c8cefb78b2f834e1"><td class="memTemplParams" colspan="2"><a id="a2800e82bb0cb3288c8cefb78b2f834e1" name="a2800e82bb0cb3288c8cefb78b2f834e1"></a>
 template&lt;typename T &gt; </td></tr>
-<tr class="memitem:afa18c4842fdf84ea4b80a6e96a54574e"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>vector</b> = tbb::concurrent_vector&lt; T &gt;</td></tr>
-<tr class="separator:afa18c4842fdf84ea4b80a6e96a54574e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2800e82bb0cb3288c8cefb78b2f834e1"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>vector</b> = std::vector&lt; T &gt;</td></tr>
+<tr class="separator:a2800e82bb0cb3288c8cefb78b2f834e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -206,6 +206,25 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>consolidate_mesh</b> 
 <tr class="memitem:a7139838491f2cc1e77551a4de5f62378" id="r_a7139838491f2cc1e77551a4de5f62378"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a7139838491f2cc1e77551a4de5f62378">for_each_face</a> (const std::function&lt; void(const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">TetMesh::Tuple</a> &amp;)&gt; &amp;)</td></tr>
 <tr class="memdesc:a7139838491f2cc1e77551a4de5f62378"><td class="mdescLeft">&#160;</td><td class="mdescRight">looping through all the unique edges and perform the given function  <br /></td></tr>
 <tr class="separator:a7139838491f2cc1e77551a4de5f62378"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a262276d320a4261eddfb27c8edd361b5" id="r_a262276d320a4261eddfb27c8edd361b5"><td class="memItemLeft" align="right" valign="top"><a id="a262276d320a4261eddfb27c8edd361b5" name="a262276d320a4261eddfb27c8edd361b5"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_preallocation_factor</b> (double factor)</td></tr>
+<tr class="memdesc:a262276d320a4261eddfb27c8edd361b5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Preallocation factor: init/consolidate reserve capacity = max(floor, ceil(factor * live_count)) so operations can grab fresh slots without resizing the storage. When a pass exhausts the reserved capacity the affected operations fail (and are retried later after a consolidate). Tune per application (e.g. from JSON); values &lt; 1 are clamped to 1. <br /></td></tr>
+<tr class="separator:a262276d320a4261eddfb27c8edd361b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade6cd29e4785209bc24216b8033c4a4b" id="r_ade6cd29e4785209bc24216b8033c4a4b"><td class="memItemLeft" align="right" valign="top"><a id="ade6cd29e4785209bc24216b8033c4a4b" name="ade6cd29e4785209bc24216b8033c4a4b"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>preallocation_factor</b> () const</td></tr>
+<tr class="separator:ade6cd29e4785209bc24216b8033c4a4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0600823a821626eca17a674a5fde9b69" id="r_a0600823a821626eca17a674a5fde9b69"><td class="memItemLeft" align="right" valign="top"><a id="a0600823a821626eca17a674a5fde9b69" name="a0600823a821626eca17a674a5fde9b69"></a>
+long&#160;</td><td class="memItemRight" valign="bottom"><b>request_tet_slots</b> (size_t n)</td></tr>
+<tr class="separator:a0600823a821626eca17a674a5fde9b69"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a705aa747779887b9ecda2d92f839c71f" id="r_a705aa747779887b9ecda2d92f839c71f"><td class="memItemLeft" align="right" valign="top"><a id="a705aa747779887b9ecda2d92f839c71f" name="a705aa747779887b9ecda2d92f839c71f"></a>
+long&#160;</td><td class="memItemRight" valign="bottom"><b>request_vert_slots</b> (size_t n)</td></tr>
+<tr class="separator:a705aa747779887b9ecda2d92f839c71f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1646ff821bf9087f21129cf5e425366d" id="r_a1646ff821bf9087f21129cf5e425366d"><td class="memItemLeft" align="right" valign="top"><a id="a1646ff821bf9087f21129cf5e425366d" name="a1646ff821bf9087f21129cf5e425366d"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>ensure_free_tet_capacity</b> (size_t extra)</td></tr>
+<tr class="separator:a1646ff821bf9087f21129cf5e425366d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa8aaf9487edea3dc4c9105cee56fed41" id="r_aa8aaf9487edea3dc4c9105cee56fed41"><td class="memItemLeft" align="right" valign="top"><a id="aa8aaf9487edea3dc4c9105cee56fed41" name="aa8aaf9487edea3dc4c9105cee56fed41"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>ensure_free_vert_capacity</b> (size_t extra)</td></tr>
+<tr class="separator:aa8aaf9487edea3dc4c9105cee56fed41"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2f91416a429a4b8f8d0ece88b460b520" id="r_a2f91416a429a4b8f8d0ece88b460b520"><td class="memItemLeft" align="right" valign="top"><a id="a2f91416a429a4b8f8d0ece88b460b520" name="a2f91416a429a4b8f8d0ece88b460b520"></a>
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>invariants</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;)</td></tr>
 <tr class="separator:a2f91416a429a4b8f8d0ece88b460b520"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -425,12 +444,12 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_collapse_check_topo
 <tr class="memitem:ab3f6ac72488441bc8dd32e7f5519b5e9" id="r_ab3f6ac72488441bc8dd32e7f5519b5e9"><td class="memItemLeft" align="right" valign="top"><a id="ab3f6ac72488441bc8dd32e7f5519b5e9" name="ab3f6ac72488441bc8dd32e7f5519b5e9"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_collapse_check_manifold</b> = true</td></tr>
 <tr class="separator:ab3f6ac72488441bc8dd32e7f5519b5e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad71a426299d1605dc8b46c4a628183aa" id="r_ad71a426299d1605dc8b46c4a628183aa"><td class="memItemLeft" align="right" valign="top"><a id="ad71a426299d1605dc8b46c4a628183aa" name="ad71a426299d1605dc8b46c4a628183aa"></a>
-tbb::enumerable_thread_specific&lt; std::vector&lt; size_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mutex_release_stack</b></td></tr>
-<tr class="separator:ad71a426299d1605dc8b46c4a628183aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3a49f3c2ba50e4b56d420e4cafc2d6c2" id="r_a3a49f3c2ba50e4b56d420e4cafc2d6c2"><td class="memItemLeft" align="right" valign="top"><a id="a3a49f3c2ba50e4b56d420e4cafc2d6c2" name="a3a49f3c2ba50e4b56d420e4cafc2d6c2"></a>
-tbb::enumerable_thread_specific&lt; std::vector&lt; size_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_one_ring_cache</b></td></tr>
-<tr class="separator:a3a49f3c2ba50e4b56d420e4cafc2d6c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad7014b2f83e03bfc7cfc412e3188bec1" id="r_ad7014b2f83e03bfc7cfc412e3188bec1"><td class="memItemLeft" align="right" valign="top"><a id="ad7014b2f83e03bfc7cfc412e3188bec1" name="ad7014b2f83e03bfc7cfc412e3188bec1"></a>
+<a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; std::vector&lt; size_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mutex_release_stack</b></td></tr>
+<tr class="separator:ad7014b2f83e03bfc7cfc412e3188bec1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a16d221afab563bcf85278e41a51b1807" id="r_a16d221afab563bcf85278e41a51b1807"><td class="memItemLeft" align="right" valign="top"><a id="a16d221afab563bcf85278e41a51b1807" name="a16d221afab563bcf85278e41a51b1807"></a>
+<a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; std::vector&lt; size_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_one_ring_cache</b></td></tr>
+<tr class="separator:a16d221afab563bcf85278e41a51b1807"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa8490823a03a4b4194b4d424486db314" id="r_aa8490823a03a4b4194b4d424486db314"><td class="memItemLeft" align="right" valign="top"><a id="aa8490823a03a4b4194b4d424486db314" name="aa8490823a03a4b4194b4d424486db314"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>NUM_THREADS</b> = 0</td></tr>
 <tr class="separator:aa8490823a03a4b4194b4d424486db314"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -508,6 +527,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
+<tr class="memitem:ac03118abec84059a60bdf99afbd8b7f8" id="r_ac03118abec84059a60bdf99afbd8b7f8"><td class="memItemLeft" align="right" valign="top"><a id="ac03118abec84059a60bdf99afbd8b7f8" name="ac03118abec84059a60bdf99afbd8b7f8"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>reserved_capacity</b> (size_t live_count) const</td></tr>
+<tr class="separator:ac03118abec84059a60bdf99afbd8b7f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab9a34df448167bcf88e1fcad01ba63f1" id="r_ab9a34df448167bcf88e1fcad01ba63f1"><td class="memItemLeft" align="right" valign="top"><a id="ab9a34df448167bcf88e1fcad01ba63f1" name="ab9a34df448167bcf88e1fcad01ba63f1"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>get_next_empty_slot_t</b> ()</td></tr>
 <tr class="separator:ab9a34df448167bcf88e1fcad01ba63f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -518,14 +540,14 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>get_next_empty_slot_v<
 <tr class="separator:a50fa5e5489cc9b3b274a311a90c41f07"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a556fc89003d2b4704944a6ede67849c7" id="r_a556fc89003d2b4704944a6ede67849c7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a556fc89003d2b4704944a6ede67849c7">subdivide_a_tet</a> (size_t t_id, const std::array&lt; int, 6 &gt; &amp;new_v_ids, bool mark_surface, std::map&lt; std::array&lt; size_t, 3 &gt;, std::vector&lt; std::array&lt; size_t, 5 &gt; &gt; &gt; &amp;new_face_vids, std::vector&lt; size_t &gt; &amp;new_tids, std::vector&lt; size_t &gt; &amp;new_center_vids, std::vector&lt; std::array&lt; size_t, 4 &gt; &gt; &amp;center_split_tets)</td></tr>
 <tr class="separator:a556fc89003d2b4704944a6ede67849c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aded83c1cb87c1553c47f6370c5fa1ef9" id="r_aded83c1cb87c1553c47f6370c5fa1ef9"><td class="memItemLeft" align="right" valign="top">std::map&lt; size_t, <a class="el" href="classwmtk_1_1_tet_mesh_1_1_vertex_connectivity.html">VertexConnectivity</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#aded83c1cb87c1553c47f6370c5fa1ef9">operation_update_connectivity_impl</a> (std::vector&lt; size_t &gt; &amp;affected_tid, const std::vector&lt; std::array&lt; size_t, 4 &gt; &gt; &amp;new_tet_conn)</td></tr>
-<tr class="separator:aded83c1cb87c1553c47f6370c5fa1ef9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a902b1af12dde3976b41041a8abee44c0" id="r_a902b1af12dde3976b41041a8abee44c0"><td class="memItemLeft" align="right" valign="top">std::map&lt; size_t, <a class="el" href="classwmtk_1_1_tet_mesh_1_1_vertex_connectivity.html">VertexConnectivity</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a902b1af12dde3976b41041a8abee44c0">operation_update_connectivity_impl</a> (std::vector&lt; size_t &gt; &amp;affected_tid, const std::vector&lt; std::array&lt; size_t, 4 &gt; &gt; &amp;new_tet_conn, bool &amp;ok)</td></tr>
+<tr class="separator:a902b1af12dde3976b41041a8abee44c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a16a1e8d5c1b5a2a4dbdfa077163f008b" id="r_a16a1e8d5c1b5a2a4dbdfa077163f008b"><td class="memItemLeft" align="right" valign="top"><a id="a16a1e8d5c1b5a2a4dbdfa077163f008b" name="a16a1e8d5c1b5a2a4dbdfa077163f008b"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>operation_failure_rollback_imp</b> (std::map&lt; size_t, <a class="el" href="classwmtk_1_1_tet_mesh_1_1_vertex_connectivity.html">VertexConnectivity</a> &gt; &amp;rollback_vert_conn, const std::vector&lt; size_t &gt; &amp;affected, const std::vector&lt; size_t &gt; &amp;new_tet_id, const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tetrahedron_connectivity.html">TetrahedronConnectivity</a> &gt; &amp;old_tets)</td></tr>
 <tr class="separator:a16a1e8d5c1b5a2a4dbdfa077163f008b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2f8dfc9ed1ff1f304c4e73ef879bcf2e" id="r_a2f8dfc9ed1ff1f304c4e73ef879bcf2e"><td class="memItemLeft" align="right" valign="top"><a id="a2f8dfc9ed1ff1f304c4e73ef879bcf2e" name="a2f8dfc9ed1ff1f304c4e73ef879bcf2e"></a>
-std::map&lt; size_t, <a class="el" href="classwmtk_1_1_tet_mesh_1_1_vertex_connectivity.html">VertexConnectivity</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>operation_update_connectivity_impl</b> (const std::vector&lt; size_t &gt; &amp;remove_id, const std::vector&lt; std::array&lt; size_t, 4 &gt; &gt; &amp;new_tet_conn, std::vector&lt; size_t &gt; &amp;allocate_id)</td></tr>
-<tr class="separator:a2f8dfc9ed1ff1f304c4e73ef879bcf2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f438c75a99a49d2c0544eda02cc7fca" id="r_a9f438c75a99a49d2c0544eda02cc7fca"><td class="memItemLeft" align="right" valign="top"><a id="a9f438c75a99a49d2c0544eda02cc7fca" name="a9f438c75a99a49d2c0544eda02cc7fca"></a>
+std::map&lt; size_t, <a class="el" href="classwmtk_1_1_tet_mesh_1_1_vertex_connectivity.html">VertexConnectivity</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>operation_update_connectivity_impl</b> (const std::vector&lt; size_t &gt; &amp;remove_id, const std::vector&lt; std::array&lt; size_t, 4 &gt; &gt; &amp;new_tet_conn, std::vector&lt; size_t &gt; &amp;allocate_id, bool &amp;ok)</td></tr>
+<tr class="separator:a9f438c75a99a49d2c0544eda02cc7fca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1253e053dfbd27ded45d159e0404a25c" id="r_a1253e053dfbd27ded45d159e0404a25c"><td class="memItemLeft" align="right" valign="top"><a id="a1253e053dfbd27ded45d159e0404a25c" name="a1253e053dfbd27ded45d159e0404a25c"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>try_set_vertex_mutex</b> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;v, int threadid)</td></tr>
 <tr class="separator:a1253e053dfbd27ded45d159e0404a25c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -559,30 +581,18 @@ std::atomic_long&#160;</td><td class="memItemRight" valign="bottom"><b>current_v
 <tr class="memitem:a64695a1504d58c4d96e51f65ddecc3f6" id="r_a64695a1504d58c4d96e51f65ddecc3f6"><td class="memItemLeft" align="right" valign="top"><a id="a64695a1504d58c4d96e51f65ddecc3f6" name="a64695a1504d58c4d96e51f65ddecc3f6"></a>
 std::atomic_long&#160;</td><td class="memItemRight" valign="bottom"><b>current_tet_size</b></td></tr>
 <tr class="separator:a64695a1504d58c4d96e51f65ddecc3f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad8c5ca5782fbc428d8b7e2301f322cd9" id="r_ad8c5ca5782fbc428d8b7e2301f322cd9"><td class="memItemLeft" align="right" valign="top"><a id="ad8c5ca5782fbc428d8b7e2301f322cd9" name="ad8c5ca5782fbc428d8b7e2301f322cd9"></a>
-tbb::spin_mutex&#160;</td><td class="memItemRight" valign="bottom"><b>vertex_connectivity_lock</b></td></tr>
-<tr class="separator:ad8c5ca5782fbc428d8b7e2301f322cd9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9bc34ad7f28c3d0b7ada21902f70c9b0" id="r_a9bc34ad7f28c3d0b7ada21902f70c9b0"><td class="memItemLeft" align="right" valign="top"><a id="a9bc34ad7f28c3d0b7ada21902f70c9b0" name="a9bc34ad7f28c3d0b7ada21902f70c9b0"></a>
-tbb::spin_mutex&#160;</td><td class="memItemRight" valign="bottom"><b>tet_connectivity_lock</b></td></tr>
-<tr class="separator:a9bc34ad7f28c3d0b7ada21902f70c9b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af9f337e18603dff9bb91a3a744d3c52c" id="r_af9f337e18603dff9bb91a3a744d3c52c"><td class="memItemLeft" align="right" valign="top"><a id="af9f337e18603dff9bb91a3a744d3c52c" name="af9f337e18603dff9bb91a3a744d3c52c"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>vertex_connectivity_synchronizing_flag</b> = false</td></tr>
-<tr class="separator:af9f337e18603dff9bb91a3a744d3c52c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7c843d126c6d8e14d6c47a5e670f0fe5" id="r_a7c843d126c6d8e14d6c47a5e670f0fe5"><td class="memItemLeft" align="right" valign="top"><a id="a7c843d126c6d8e14d6c47a5e670f0fe5" name="a7c843d126c6d8e14d6c47a5e670f0fe5"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>tet_connectivity_synchronizing_flag</b> = false</td></tr>
-<tr class="separator:a7c843d126c6d8e14d6c47a5e670f0fe5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2e54408bbab09ff9753efd640a361032" id="r_a2e54408bbab09ff9753efd640a361032"><td class="memItemLeft" align="right" valign="top"><a id="a2e54408bbab09ff9753efd640a361032" name="a2e54408bbab09ff9753efd640a361032"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>MAX_THREADS</b> = 128</td></tr>
-<tr class="separator:a2e54408bbab09ff9753efd640a361032"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ace4961e3c5e9d0e4f2899357afc2e24e" id="r_ace4961e3c5e9d0e4f2899357afc2e24e"><td class="memItemLeft" align="right" valign="top"><a id="ace4961e3c5e9d0e4f2899357afc2e24e" name="ace4961e3c5e9d0e4f2899357afc2e24e"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>m_preallocation_factor</b> = 6.0</td></tr>
+<tr class="separator:ace4961e3c5e9d0e4f2899357afc2e24e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1129f091d7f04043e43671afa0434cfd" id="r_a1129f091d7f04043e43671afa0434cfd"><td class="memItemLeft" align="right" valign="top"><a id="a1129f091d7f04043e43671afa0434cfd" name="a1129f091d7f04043e43671afa0434cfd"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>m_t_empty_slot</b> = 0</td></tr>
 <tr class="separator:a1129f091d7f04043e43671afa0434cfd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad3a48653df59c91d885d598066a24273" id="r_ad3a48653df59c91d885d598066a24273"><td class="memItemLeft" align="right" valign="top"><a id="ad3a48653df59c91d885d598066a24273" name="ad3a48653df59c91d885d598066a24273"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>m_v_empty_slot</b> = 0</td></tr>
 <tr class="separator:ad3a48653df59c91d885d598066a24273"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa70cd9418f4a7e2fc6f340d489bf5bf5" id="r_aa70cd9418f4a7e2fc6f340d489bf5bf5"><td class="memItemLeft" align="right" valign="top"><a id="aa70cd9418f4a7e2fc6f340d489bf5bf5" name="aa70cd9418f4a7e2fc6f340d489bf5bf5"></a>
-tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_vertex_mutex.html">VertexMutex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_mutex</b></td></tr>
-<tr class="separator:aa70cd9418f4a7e2fc6f340d489bf5bf5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0a403d5dff5a1dc28b3ffe6af28daf8d" id="r_a0a403d5dff5a1dc28b3ffe6af28daf8d"><td class="memItemLeft" align="right" valign="top"><a id="a0a403d5dff5a1dc28b3ffe6af28daf8d" name="a0a403d5dff5a1dc28b3ffe6af28daf8d"></a>
+std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_vertex_mutex.html">VertexMutex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_mutex</b></td></tr>
+<tr class="separator:a0a403d5dff5a1dc28b3ffe6af28daf8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-static-attribs" name="pri-static-attribs"></a>
 Static Private Attributes</h2></td></tr>
@@ -1590,8 +1600,8 @@ false </dd></dl>
 
 </div>
 </div>
-<a id="aded83c1cb87c1553c47f6370c5fa1ef9" name="aded83c1cb87c1553c47f6370c5fa1ef9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aded83c1cb87c1553c47f6370c5fa1ef9">&#9670;&#160;</a></span>operation_update_connectivity_impl()</h2>
+<a id="a902b1af12dde3976b41041a8abee44c0" name="a902b1af12dde3976b41041a8abee44c0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a902b1af12dde3976b41041a8abee44c0">&#9670;&#160;</a></span>operation_update_connectivity_impl()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1609,7 +1619,13 @@ false </dd></dl>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const std::vector&lt; std::array&lt; size_t, 4 &gt; &gt; &amp;&#160;</td>
-          <td class="paramname"><em>new_tet_conn</em>&#160;</td>
+          <td class="paramname"><em>new_tet_conn</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool &amp;&#160;</td>
+          <td class="paramname"><em>ok</em>&#160;</td>
         </tr>
         <tr>
           <td></td>

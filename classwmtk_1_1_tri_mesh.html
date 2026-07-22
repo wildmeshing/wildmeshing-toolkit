@@ -117,10 +117,10 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a789f9bdc3ece59a5f11143e6ae1d5cd1" id="r_a789f9bdc3ece59a5f11143e6ae1d5cd1"><td class="memTemplParams" colspan="2"><a id="a789f9bdc3ece59a5f11143e6ae1d5cd1" name="a789f9bdc3ece59a5f11143e6ae1d5cd1"></a>
+<tr class="memitem:ae5819441284a260b3ce7682e019d174f" id="r_ae5819441284a260b3ce7682e019d174f"><td class="memTemplParams" colspan="2"><a id="ae5819441284a260b3ce7682e019d174f" name="ae5819441284a260b3ce7682e019d174f"></a>
 template&lt;typename T &gt; </td></tr>
-<tr class="memitem:a789f9bdc3ece59a5f11143e6ae1d5cd1"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>vector</b> = tbb::concurrent_vector&lt; T &gt;</td></tr>
-<tr class="separator:a789f9bdc3ece59a5f11143e6ae1d5cd1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae5819441284a260b3ce7682e019d174f"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>vector</b> = std::vector&lt; T &gt;</td></tr>
+<tr class="separator:ae5819441284a260b3ce7682e019d174f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -170,6 +170,19 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a66c65292c6100e5ab1a95ddb1e951480" id="r_a66c65292c6100e5ab1a95ddb1e951480"><td class="memItemLeft" align="right" valign="top"><a id="a66c65292c6100e5ab1a95ddb1e951480" name="a66c65292c6100e5ab1a95ddb1e951480"></a>
 <a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html">simplex::SimplexCollection</a>&#160;</td><td class="memItemRight" valign="bottom"><b>simplex_link_edges</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_vertex.html">simplex::Vertex</a> &amp;v) const</td></tr>
 <tr class="separator:a66c65292c6100e5ab1a95ddb1e951480"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0611d5127a3704d39d5afb045ced5ace" id="r_a0611d5127a3704d39d5afb045ced5ace"><td class="memItemLeft" align="right" valign="top"><a id="a0611d5127a3704d39d5afb045ced5ace" name="a0611d5127a3704d39d5afb045ced5ace"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_preallocation_factor</b> (double factor)</td></tr>
+<tr class="memdesc:a0611d5127a3704d39d5afb045ced5ace"><td class="mdescLeft">&#160;</td><td class="mdescRight">Preallocation factor: init/consolidate reserve capacity = max(floor, ceil(factor * live_count)) so operations can grab fresh slots without resizing the storage. When a pass exhausts the reserved capacity the affected operations fail (retried later after a consolidate). Values &lt; 1 are clamped to 1. <br /></td></tr>
+<tr class="separator:a0611d5127a3704d39d5afb045ced5ace"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8bc7f3ea9a9128004a59ad8804c9e178" id="r_a8bc7f3ea9a9128004a59ad8804c9e178"><td class="memItemLeft" align="right" valign="top"><a id="a8bc7f3ea9a9128004a59ad8804c9e178" name="a8bc7f3ea9a9128004a59ad8804c9e178"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>preallocation_factor</b> () const</td></tr>
+<tr class="separator:a8bc7f3ea9a9128004a59ad8804c9e178"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae1a729e0062cf29ec9fed50ed4d5488e" id="r_ae1a729e0062cf29ec9fed50ed4d5488e"><td class="memItemLeft" align="right" valign="top"><a id="ae1a729e0062cf29ec9fed50ed4d5488e" name="ae1a729e0062cf29ec9fed50ed4d5488e"></a>
+long&#160;</td><td class="memItemRight" valign="bottom"><b>request_tri_slots</b> (size_t n)</td></tr>
+<tr class="separator:ae1a729e0062cf29ec9fed50ed4d5488e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afb7785eb2381dec13a0aa00aadb6203c" id="r_afb7785eb2381dec13a0aa00aadb6203c"><td class="memItemLeft" align="right" valign="top"><a id="afb7785eb2381dec13a0aa00aadb6203c" name="afb7785eb2381dec13a0aa00aadb6203c"></a>
+long&#160;</td><td class="memItemRight" valign="bottom"><b>request_vert_slots</b> (size_t n)</td></tr>
+<tr class="separator:afb7785eb2381dec13a0aa00aadb6203c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3d8bb552e20bda83d8113874e62f54fe" id="r_a3d8bb552e20bda83d8113874e62f54fe"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a3d8bb552e20bda83d8113874e62f54fe">invariants</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;)</td></tr>
 <tr class="memdesc:a3d8bb552e20bda83d8113874e62f54fe"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified invariants that can't be violated.  <br /></td></tr>
 <tr class="separator:a3d8bb552e20bda83d8113874e62f54fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -377,9 +390,9 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:a5d24607eb938d53a7d0e35d72afe0846" id="r_a5d24607eb938d53a7d0e35d72afe0846"><td class="memItemLeft" align="right" valign="top"><a id="a5d24607eb938d53a7d0e35d72afe0846" name="a5d24607eb938d53a7d0e35d72afe0846"></a>
 <a class="el" href="classwmtk_1_1_abstract_attribute_container.html">AbstractAttributeContainer</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>p_face_attrs</b> = nullptr</td></tr>
 <tr class="separator:a5d24607eb938d53a7d0e35d72afe0846"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aca451bcd61095fe567b3305a6fc469ce" id="r_aca451bcd61095fe567b3305a6fc469ce"><td class="memItemLeft" align="right" valign="top"><a id="aca451bcd61095fe567b3305a6fc469ce" name="aca451bcd61095fe567b3305a6fc469ce"></a>
-tbb::enumerable_thread_specific&lt; std::vector&lt; size_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mutex_release_stack</b></td></tr>
-<tr class="separator:aca451bcd61095fe567b3305a6fc469ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aebb0ff10ef5a65483e8d05ab016f4e82" id="r_aebb0ff10ef5a65483e8d05ab016f4e82"><td class="memItemLeft" align="right" valign="top"><a id="aebb0ff10ef5a65483e8d05ab016f4e82" name="aebb0ff10ef5a65483e8d05ab016f4e82"></a>
+<a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; std::vector&lt; size_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mutex_release_stack</b></td></tr>
+<tr class="separator:aebb0ff10ef5a65483e8d05ab016f4e82"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a84fa74eb2b0a35d205729459b55e70f0" id="r_a84fa74eb2b0a35d205729459b55e70f0"><td class="memItemLeft" align="right" valign="top"><a id="a84fa74eb2b0a35d205729459b55e70f0" name="a84fa74eb2b0a35d205729459b55e70f0"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>NUM_THREADS</b> = 0</td></tr>
 <tr class="separator:a84fa74eb2b0a35d205729459b55e70f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -392,6 +405,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
+<tr class="memitem:ae1a65fbc84ed4e239cac6a40df473f52" id="r_ae1a65fbc84ed4e239cac6a40df473f52"><td class="memItemLeft" align="right" valign="top"><a id="ae1a65fbc84ed4e239cac6a40df473f52" name="ae1a65fbc84ed4e239cac6a40df473f52"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>reserved_capacity</b> (size_t live_count) const</td></tr>
+<tr class="separator:ae1a65fbc84ed4e239cac6a40df473f52"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a28d98d996ddd4e6f2c30f1fe8368e1f0" id="r_a28d98d996ddd4e6f2c30f1fe8368e1f0"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a28d98d996ddd4e6f2c30f1fe8368e1f0">get_next_empty_slot_t</a> ()</td></tr>
 <tr class="memdesc:a28d98d996ddd4e6f2c30f1fe8368e1f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the next avaiblie global index for the triangle.  <br /></td></tr>
 <tr class="separator:a28d98d996ddd4e6f2c30f1fe8368e1f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -425,24 +441,12 @@ std::atomic_long&#160;</td><td class="memItemRight" valign="bottom"><b>current_v
 <tr class="memitem:a1967e6c9005c5fcf4759344cc9d4894c" id="r_a1967e6c9005c5fcf4759344cc9d4894c"><td class="memItemLeft" align="right" valign="top"><a id="a1967e6c9005c5fcf4759344cc9d4894c" name="a1967e6c9005c5fcf4759344cc9d4894c"></a>
 std::atomic_long&#160;</td><td class="memItemRight" valign="bottom"><b>current_tri_size</b></td></tr>
 <tr class="separator:a1967e6c9005c5fcf4759344cc9d4894c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a54963a792687dbbdfaf3fd63b5d9d223" id="r_a54963a792687dbbdfaf3fd63b5d9d223"><td class="memItemLeft" align="right" valign="top"><a id="a54963a792687dbbdfaf3fd63b5d9d223" name="a54963a792687dbbdfaf3fd63b5d9d223"></a>
-tbb::spin_mutex&#160;</td><td class="memItemRight" valign="bottom"><b>vertex_connectivity_lock</b></td></tr>
-<tr class="separator:a54963a792687dbbdfaf3fd63b5d9d223"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a991080ba41496d33da06792023f0a753" id="r_a991080ba41496d33da06792023f0a753"><td class="memItemLeft" align="right" valign="top"><a id="a991080ba41496d33da06792023f0a753" name="a991080ba41496d33da06792023f0a753"></a>
-tbb::spin_mutex&#160;</td><td class="memItemRight" valign="bottom"><b>tri_connectivity_lock</b></td></tr>
-<tr class="separator:a991080ba41496d33da06792023f0a753"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab5fcd091a71aabb819a814f2f573da97" id="r_ab5fcd091a71aabb819a814f2f573da97"><td class="memItemLeft" align="right" valign="top"><a id="ab5fcd091a71aabb819a814f2f573da97" name="ab5fcd091a71aabb819a814f2f573da97"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>vertex_connectivity_synchronizing_flag</b> = false</td></tr>
-<tr class="separator:ab5fcd091a71aabb819a814f2f573da97"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab17b0572059bd91b8378ce30346a1e6f" id="r_ab17b0572059bd91b8378ce30346a1e6f"><td class="memItemLeft" align="right" valign="top"><a id="ab17b0572059bd91b8378ce30346a1e6f" name="ab17b0572059bd91b8378ce30346a1e6f"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>tri_connectivity_synchronizing_flag</b> = false</td></tr>
-<tr class="separator:ab17b0572059bd91b8378ce30346a1e6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a094f36de31a7583fefe7bdd02dde7ff7" id="r_a094f36de31a7583fefe7bdd02dde7ff7"><td class="memItemLeft" align="right" valign="top"><a id="a094f36de31a7583fefe7bdd02dde7ff7" name="a094f36de31a7583fefe7bdd02dde7ff7"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>MAX_THREADS</b> = 128</td></tr>
-<tr class="separator:a094f36de31a7583fefe7bdd02dde7ff7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad88b9b081507a2438d0bfab58ea43205" id="r_ad88b9b081507a2438d0bfab58ea43205"><td class="memItemLeft" align="right" valign="top"><a id="ad88b9b081507a2438d0bfab58ea43205" name="ad88b9b081507a2438d0bfab58ea43205"></a>
-tbb::concurrent_vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex_mutex.html">VertexMutex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_mutex</b></td></tr>
-<tr class="separator:ad88b9b081507a2438d0bfab58ea43205"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a200582e84cc4a054e38708c877d1b581" id="r_a200582e84cc4a054e38708c877d1b581"><td class="memItemLeft" align="right" valign="top"><a id="a200582e84cc4a054e38708c877d1b581" name="a200582e84cc4a054e38708c877d1b581"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>m_preallocation_factor</b> = 6.0</td></tr>
+<tr class="separator:a200582e84cc4a054e38708c877d1b581"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a852800c3ada3a82e38a4d955ff2e6794" id="r_a852800c3ada3a82e38a4d955ff2e6794"><td class="memItemLeft" align="right" valign="top"><a id="a852800c3ada3a82e38a4d955ff2e6794" name="a852800c3ada3a82e38a4d955ff2e6794"></a>
+std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex_mutex.html">VertexMutex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_mutex</b></td></tr>
+<tr class="separator:a852800c3ada3a82e38a4d955ff2e6794"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="ae3dca4cc8f5751b15375589789c14a9e" name="ae3dca4cc8f5751b15375589789c14a9e"></a>
