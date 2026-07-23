@@ -83,10 +83,10 @@ size_t TetWildMesh::swap_all_edges_32()
     igl::Timer timer;
     double time;
     timer.start();
-    auto collect_all_ops =
-        wmtk::parallel_collect_edge_ops(*this, NUM_THREADS, [](auto&, const auto& e, auto& out) {
-            out.emplace_back("edge_swap", e);
-        });
+    auto collect_all_ops = wmtk::parallel_collect_edge_ops(
+        *this,
+        NUM_THREADS,
+        [](TetWildMesh&, const Tuple& e, auto& out) { out.emplace_back("edge_swap", e); });
     time = timer.getElapsedTime();
     wmtk::logger().info("edge swap prepare time: {:.4}s", time);
     size_t total_success = 0;
