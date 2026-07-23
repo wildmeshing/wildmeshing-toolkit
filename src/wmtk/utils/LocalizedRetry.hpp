@@ -34,13 +34,13 @@ namespace wmtk {
  * "affected" and re-enqueues within a pass -- so this stays consistent with the existing
  * intra-pass renewal logic.
  */
-template <class AppMesh>
+template <class Mesh>
 size_t run_localized_to_convergence(
-    AppMesh& m,
-    ExecutePass<AppMesh>& executor,
-    std::vector<std::pair<Op, typename AppMesh::Tuple>> ops)
+    Mesh& m,
+    ExecutePass<Mesh>& executor,
+    std::vector<std::pair<Op, typename Mesh::Tuple>> ops)
 {
-    using Tuple = typename AppMesh::Tuple;
+    using Tuple = typename Mesh::Tuple;
 
     // vertex_epoch[v] = the last round in which v was in some successful operation's
     // modified region. Capacity is fixed within a phase (storage is preallocated), and
@@ -49,9 +49,9 @@ size_t run_localized_to_convergence(
     uint64_t round = 0;
     threading::collector<std::pair<Op, Tuple>> failures;
 
-    auto region_epoch = [&vertex_epoch](const AppMesh& mm, const Tuple& t) -> uint64_t {
-        const size_t a = t.vid(mm);
-        const size_t b = t.switch_vertex(mm).vid(mm);
+    auto edge_epoch = [&vertex_epoch](const Mesh& m_, const Tuple& t) -> uint64_t {
+        const size_t a = t.vid(m_);
+        const size_t b = t.switch_vertex(m_).vid(m_);
         const uint64_t ea = a < vertex_epoch.size() ? vertex_epoch[a] : 0;
         const uint64_t eb = b < vertex_epoch.size() ? vertex_epoch[b] : 0;
         return std::max(ea, eb);
@@ -62,18 +62,23 @@ size_t run_localized_to_convergence(
     // round so the between-pass filter can find the failures adjacent to them.
     auto driver_renew = executor.renew_neighbor_tuples;
     executor.renew_neighbor_tuples =
-        [&, driver_renew](const AppMesh& mm, Op op, const std::vector<Tuple>& newts) {
-            auto tups = driver_renew(mm, op, newts);
-            for (const auto& pr : tups) {
-                const Tuple& t = pr.second;
-                const size_t a = t.vid(mm);
-                const size_t b = t.switch_vertex(mm).vid(mm);
-                if (a < vertex_epoch.size()) vertex_epoch[a] = round;
-                if (b < vertex_epoch.size()) vertex_epoch[b] = round;
+        [&, driver_renew](const Mesh& m_, Op op, const std::vector<Tuple>& newts) {
+            auto tups = driver_renew(m_, op, newts);
+            for (const auto& [_, t] : tups) {
+                const size_t a = t.vid(m_);
+                const size_t b = t.switch_vertex(m_).vid(m_);
+                if (a < vertex_epoch.size()) {
+                    // this is thread-safe because each vertex is only ever modified by one
+                    // operation at a time (the two-ring lock)
+                    vertex_epoch[a] = round;
+                }
+                if (b < vertex_epoch.size()) {
+                    vertex_epoch[b] = round;
+                }
             }
             return tups;
         };
-    executor.on_fail = [&failures](const AppMesh&, Op op, const Tuple& t) {
+    executor.on_fail = [&failures](const Mesh&, Op op, const Tuple& t) {
         failures.emplace_back(op, t);
     };
 
@@ -86,9 +91,13 @@ size_t run_localized_to_convergence(
         ops.clear();
         for (const auto& pr : failures) {
             const Tuple& t = pr.second;
-            if (!t.is_valid(m)) continue;
+            if (!t.is_valid(m)) {
+                continue;
+            }
             // retry only if this failure's neighborhood was modified during this round
-            if (region_epoch(m, t) == round) ops.emplace_back(pr);
+            if (edge_epoch(m, t) == round) {
+                ops.emplace_back(pr);
+            }
         }
     } while (executor.get_cnt_success() > 0 && !ops.empty());
     return total_success;

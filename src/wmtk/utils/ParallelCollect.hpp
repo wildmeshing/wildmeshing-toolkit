@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/ExecutionScheduler.hpp> // for wmtk::Op
+#include <wmtk/threading/collector.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 
 #include <mutex>
@@ -22,7 +23,7 @@ std::vector<std::pair<Op, typename Mesh::Tuple>>
 parallel_collect_edge_ops(Mesh& m, int num_threads, Emit&& emit)
 {
     using Tuple = typename Mesh::Tuple;
-    std::vector<std::pair<Op, Tuple>> out;
+    threading::collector<std::pair<Op, Tuple>> collect;
     std::mutex merge_mutex;
 
     threading::parallel_for(
@@ -30,22 +31,24 @@ parallel_collect_edge_ops(Mesh& m, int num_threads, Emit&& emit)
         [&](const threading::range& r) {
             std::vector<std::pair<Op, Tuple>> local;
             for (size_t i = r.begin(); i < r.end(); i++) {
-                if (!m.tuple_from_tet(i).is_valid(m)) continue;
+                if (!m.tuple_from_tet(i).is_valid(m)) {
+                    continue;
+                }
                 for (int j = 0; j < 6; j++) {
                     const Tuple e = m.tuple_from_edge(i, j);
-                    if (e.eid(m) == 6 * i + j) emit(m, e, local); // canonical edge only
+                    if (e.eid(m) == 6 * i + j) {
+                        emit(m, e, local); // canonical edge only
+                    }
                 }
             }
-            if (local.empty()) return;
-            std::lock_guard<std::mutex> lk(merge_mutex);
-            out.insert(
-                out.end(),
-                std::make_move_iterator(local.begin()),
-                std::make_move_iterator(local.end()));
+            if (local.empty()) {
+                return;
+            }
+            collect.append(local);
         },
         num_threads);
 
-    return out;
+    return collect.data();
 }
 
 template <class Mesh, class Emit>
@@ -53,7 +56,7 @@ std::vector<std::pair<Op, typename Mesh::Tuple>>
 parallel_collect_face_ops(Mesh& m, int num_threads, Emit&& emit)
 {
     using Tuple = typename Mesh::Tuple;
-    std::vector<std::pair<Op, Tuple>> out;
+    threading::collector<std::pair<Op, Tuple>> collect;
     std::mutex merge_mutex;
 
     threading::parallel_for(
@@ -61,22 +64,24 @@ parallel_collect_face_ops(Mesh& m, int num_threads, Emit&& emit)
         [&](const threading::range& r) {
             std::vector<std::pair<Op, Tuple>> local;
             for (size_t i = r.begin(); i < r.end(); i++) {
-                if (!m.tuple_from_tet(i).is_valid(m)) continue;
+                if (!m.tuple_from_tet(i).is_valid(m)) {
+                    continue;
+                }
                 for (int j = 0; j < 4; j++) {
                     const Tuple f = m.tuple_from_face(i, j);
-                    if (f.fid(m) == 4 * i + j) emit(m, f, local); // canonical face only
+                    if (f.fid(m) == 4 * i + j) {
+                        emit(m, f, local); // canonical face only
+                    }
                 }
             }
-            if (local.empty()) return;
-            std::lock_guard<std::mutex> lk(merge_mutex);
-            out.insert(
-                out.end(),
-                std::make_move_iterator(local.begin()),
-                std::make_move_iterator(local.end()));
+            if (local.empty()) {
+                return;
+            }
+            collect.append(local);
         },
         num_threads);
 
-    return out;
+    return collect.data();
 }
 
 } // namespace wmtk

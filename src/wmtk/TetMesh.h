@@ -442,7 +442,6 @@ public:
      */
     bool collapse_edge_conn(
         const Tuple& loc0,
-        std::vector<Tuple>& new_edges,
         size_t& v1_id,
         Tuple& new_loc,
         std::map<size_t, wmtk::TetMesh::VertexConnectivity>& rollback_vert_conn,

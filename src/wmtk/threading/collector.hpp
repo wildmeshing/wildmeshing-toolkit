@@ -67,6 +67,17 @@ public:
     }
 
     /**
+     * @brief Append a vector of elements to the end of the collector.
+     * This function is thread-safe.
+     * @param v The vector of elements to append.
+     */
+    void append(const std::vector<T>& v)
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_data.insert(m_data.end(), v.begin(), v.end());
+    }
+
+    /**
      * @brief Resize the collector to contain n elements.
      * This function is thread-safe.
      * @param n The new size of the collector.
@@ -100,6 +111,13 @@ public:
         std::lock_guard<std::mutex> lock(m_mutex);
         m_data.reserve(n);
     }
+
+    /**
+     * @brief Get the underlying data vector.
+     * This function is NOT thread-safe.
+     * @return The underlying data vector.
+     */
+    const std::vector<T>& data() const { return m_data; }
 
     /**
      * @brief operator[] is not thread-safe for concurrent writes, but is safe for concurrent reads

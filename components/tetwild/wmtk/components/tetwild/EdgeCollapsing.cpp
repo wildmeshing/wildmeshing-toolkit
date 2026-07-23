@@ -24,8 +24,10 @@ void TetWildMesh::collapse_all_edges(bool is_limit_length)
 
     // Build the collapse op list in parallel (both edge directions). Filtering of
     // too-long edges still happens in is_weight_up_to_date.
-    auto collect_all_ops =
-        wmtk::parallel_collect_edge_ops(*this, NUM_THREADS, [](auto& m, const auto& e, auto& out) {
+    auto collect_all_ops = wmtk::parallel_collect_edge_ops(
+        *this,
+        NUM_THREADS,
+        [](TetWildMesh& m, const Tuple& e, auto& out) {
             out.emplace_back("edge_collapse", e);
             out.emplace_back("edge_collapse", e.switch_vertex(m));
         });
@@ -35,7 +37,7 @@ void TetWildMesh::collapse_all_edges(bool is_limit_length)
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = [](const auto& m, auto op, const auto& newts) {
             std::vector<std::pair<std::string, wmtk::TetMesh::Tuple>> op_tups;
-            for (auto t : newts) {
+            for (const Tuple& t : newts) {
                 op_tups.emplace_back(op, t);
                 op_tups.emplace_back(op, t.switch_vertex(m));
             }
