@@ -126,6 +126,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>push_back</b> (T &amp
 <tr class="memitem:a869cf60fe935df42df06e2a294529dd1"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1threading_1_1collector.html#a869cf60fe935df42df06e2a294529dd1">emplace_back</a> (Args &amp;&amp;... args)</td></tr>
 <tr class="memdesc:a869cf60fe935df42df06e2a294529dd1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Emplace an element at the end of the collector. This function is thread-safe.  <br /></td></tr>
 <tr class="separator:a869cf60fe935df42df06e2a294529dd1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9981842b57ca4bc6830e525c210ce8c4" id="r_a9981842b57ca4bc6830e525c210ce8c4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1threading_1_1collector.html#a9981842b57ca4bc6830e525c210ce8c4">append</a> (const std::vector&lt; T &gt; &amp;v)</td></tr>
+<tr class="memdesc:a9981842b57ca4bc6830e525c210ce8c4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Append a vector of elements to the end of the collector. This function is thread-safe.  <br /></td></tr>
+<tr class="separator:a9981842b57ca4bc6830e525c210ce8c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae42cf15f595eef9a39c83ff189759995" id="r_ae42cf15f595eef9a39c83ff189759995"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1threading_1_1collector.html#ae42cf15f595eef9a39c83ff189759995">resize</a> (std::size_t n)</td></tr>
 <tr class="memdesc:ae42cf15f595eef9a39c83ff189759995"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resize the collector to contain n elements. This function is thread-safe.  <br /></td></tr>
 <tr class="separator:ae42cf15f595eef9a39c83ff189759995"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -139,6 +142,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>clear</b> ()</td></tr
 <tr class="memitem:ad62cad66dc5f9b2d33a90339029bfa24" id="r_ad62cad66dc5f9b2d33a90339029bfa24"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1threading_1_1collector.html#ad62cad66dc5f9b2d33a90339029bfa24">reserve</a> (std::size_t n)</td></tr>
 <tr class="memdesc:ad62cad66dc5f9b2d33a90339029bfa24"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reserve space in the collector. This function is thread-safe.  <br /></td></tr>
 <tr class="separator:ad62cad66dc5f9b2d33a90339029bfa24"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a641ee7ff44b9fd25dd59f6e7c31a587a" id="r_a641ee7ff44b9fd25dd59f6e7c31a587a"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; T &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1threading_1_1collector.html#a641ee7ff44b9fd25dd59f6e7c31a587a">data</a> () const</td></tr>
+<tr class="memdesc:a641ee7ff44b9fd25dd59f6e7c31a587a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the underlying data vector. This function is NOT thread-safe.  <br /></td></tr>
+<tr class="separator:a641ee7ff44b9fd25dd59f6e7c31a587a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4a3e69f6d652e0b23c5158887f4a410d" id="r_a4a3e69f6d652e0b23c5158887f4a410d"><td class="memItemLeft" align="right" valign="top">const_reference&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1threading_1_1collector.html#a4a3e69f6d652e0b23c5158887f4a410d">operator[]</a> (std::size_t i) const</td></tr>
 <tr class="memdesc:a4a3e69f6d652e0b23c5158887f4a410d"><td class="mdescLeft">&#160;</td><td class="mdescRight">operator[] is not thread-safe for concurrent writes, but is safe for concurrent reads after all writes are done. Only const reference is provided to prevent accidental writes.  <br /></td></tr>
 <tr class="separator:a4a3e69f6d652e0b23c5158887f4a410d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -169,6 +175,72 @@ std::mutex&#160;</td><td class="memItemRight" valign="bottom"><b>m_mutex</b></td
 class wmtk::threading::collector&lt; T &gt;</div><p>collector replaces tbb::concurrent_vector for the "append from a parallel loop, read
 afterwards" use cases. Writes with <code>push_back</code> and <code>emplace_back</code> are thread-safe, but reads with <code>operator[]</code> are not thread-safe! Reads should only be done after all writes are complete. </p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
+<a id="a9981842b57ca4bc6830e525c210ce8c4" name="a9981842b57ca4bc6830e525c210ce8c4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9981842b57ca4bc6830e525c210ce8c4">&#9670;&#160;</a></span>append()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classwmtk_1_1threading_1_1collector.html">wmtk::threading::collector</a>&lt; T &gt;::append </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; T &gt; &amp;&#160;</td>
+          <td class="paramname"><em>v</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Append a vector of elements to the end of the collector. This function is thread-safe. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">v</td><td>The vector of elements to append. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a641ee7ff44b9fd25dd59f6e7c31a587a" name="a641ee7ff44b9fd25dd59f6e7c31a587a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a641ee7ff44b9fd25dd59f6e7c31a587a">&#9670;&#160;</a></span>data()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const std::vector&lt; T &gt; &amp; <a class="el" href="classwmtk_1_1threading_1_1collector.html">wmtk::threading::collector</a>&lt; T &gt;::data </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get the underlying data vector. This function is NOT thread-safe. </p>
+<dl class="section return"><dt>Returns</dt><dd>The underlying data vector. </dd></dl>
+
+</div>
+</div>
 <a id="a869cf60fe935df42df06e2a294529dd1" name="a869cf60fe935df42df06e2a294529dd1"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a869cf60fe935df42df06e2a294529dd1">&#9670;&#160;</a></span>emplace_back()</h2>
 
