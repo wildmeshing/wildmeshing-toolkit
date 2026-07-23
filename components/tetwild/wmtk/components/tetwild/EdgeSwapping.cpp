@@ -90,6 +90,8 @@ size_t TetWildMesh::swap_all_edges_32()
     time = timer.getElapsedTime();
     wmtk::logger().info("edge swap prepare time: {:.4}s", time);
     size_t total_success = 0;
+    SurfaceTopoSignature sig_before;
+    if (m_params.check_surface_topology) sig_before = surface_topology_signature();
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = wmtk::renewal_edges;
         executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
@@ -105,15 +107,16 @@ size_t TetWildMesh::swap_all_edges_32()
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge swap operation time parallel: {:.4}s", time);
-        return total_success;
     } else {
         timer.start();
         auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge swap operation time serial: {:.4}s", time);
-        return total_success;
     }
+    if (m_params.check_surface_topology)
+        warn_if_surface_topology_changed(sig_before, "swap_all_edges_32");
+    return total_success;
 }
 
 bool TetWildMesh::swap_edge_before(const Tuple& t)
@@ -127,21 +130,129 @@ bool TetWildMesh::swap_edge_before(const Tuple& t)
         return false;
     }
 
-    if (is_edge_on_surface(t) || is_edge_on_bbox(t)) {
+    auto& cache = swap_cache.local();
+    cache.is_surface_flip = false;
+
+    // bbox edges are never swapped.
+    if (is_edge_on_bbox(t)) {
         return false;
     }
+    // Surface edges are allowed only as a topology-preserving surface diagonal
+    // flip (see prepare_surface_flip_32). If disabled, keep the old behavior of
+    // rejecting all surface-edge swaps.
+    if (is_edge_on_surface(t)) {
+        if (!m_params.allow_surface_swap) return false;
+        if (!prepare_surface_flip_32(t, incident_tets)) return false;
+    }
+
     auto max_energy = -1.0;
     for (const size_t l : incident_tets) {
         max_energy = std::max(m_tet_attribute[l].m_quality, max_energy);
     }
-    swap_cache.local().max_energy = max_energy;
+    cache.max_energy = max_energy;
 
-    face_attribute_tracker(
-        *this,
-        incident_tets,
-        m_face_attribute,
-        swap_cache.local().changed_faces);
+    face_attribute_tracker(*this, incident_tets, m_face_attribute, cache.changed_faces);
 
+    return true;
+}
+
+bool TetWildMesh::prepare_surface_flip_32(const Tuple& t, const std::vector<size_t>& incident_tets)
+{
+    auto& cache = swap_cache.local();
+
+    const size_t a = t.vid(*this);
+    const size_t b = t.switch_vertex(*this).vid(*this);
+
+    // Flipping an open-boundary edge would change the surface's boundary loops.
+    if (is_open_boundary_edge(t)) return false;
+
+    // The three "ring" vertices are the incident-tet vertices other than a,b.
+    std::array<size_t, 3> ring{};
+    int nr = 0;
+    for (const size_t tid : incident_tets) {
+        const auto vs = oriented_tet_vids(tid);
+        for (const size_t v : vs) {
+            if (v == a || v == b) continue;
+            bool seen = false;
+            for (int k = 0; k < nr; ++k) {
+                if (ring[k] == v) {
+                    seen = true;
+                    break;
+                }
+            }
+            if (!seen) {
+                if (nr >= 3) return false; // not a clean 3->2 ring
+                ring[nr++] = v;
+            }
+        }
+    }
+    if (nr != 3) return false;
+
+    // Of the three ring faces (a,b,ring[k]), exactly two must be surface faces
+    // (manifold surface edge). Their apexes are the new surface edge (c,d); the
+    // remaining apex is the interior one (e).
+    int n_surf = 0;
+    size_t c = 0, d = 0, e = 0;
+    bool e_set = false;
+    for (int k = 0; k < 3; ++k) {
+        auto [ftup, fid] = tuple_from_face(std::array<size_t, 3>{{a, b, ring[k]}});
+        (void)ftup;
+        if (m_face_attribute[fid].m_is_surface_fs) {
+            if (n_surf == 0) {
+                c = ring[k];
+                cache.sf_face_attr = m_face_attribute[fid];
+            } else if (n_surf == 1) {
+                d = ring[k];
+            } else {
+                return false; // > 2 surface faces: non-manifold edge
+            }
+            ++n_surf;
+        } else {
+            e = ring[k];
+            e_set = true;
+        }
+    }
+    if (n_surf != 2 || !e_set) return false;
+
+    // The flip adds two surface faces (a,c,d),(b,c,d) on edge (c,d). If any
+    // surface face is already incident to edge (c,d), the result is a
+    // non-manifold surface edge (> 2 surface faces) -> reject. This counts the
+    // incident surface faces directly and does NOT rely on the m_is_on_surface
+    // vertex flags (which can be stale), unlike is_edge_on_surface().
+    {
+        const Tuple cd = tuple_from_edge(std::array<size_t, 2>{{c, d}});
+        if (cd.is_valid(*this)) {
+            const auto cd_tets = get_incident_tets_for_edge(cd);
+            for (const auto& ct : cd_tets) {
+                const auto vs = oriented_tet_vids(ct.tid(*this));
+                for (const size_t w : vs) {
+                    if (w == c || w == d) continue;
+                    auto [wf, wfid] = tuple_from_face(std::array<size_t, 3>{{c, d, w}});
+                    (void)wf;
+                    if (wfid != static_cast<size_t>(-1) && m_face_attribute[wfid].m_is_surface_fs)
+                        return false;
+                }
+            }
+        }
+    }
+
+    // The two would-be new surface faces (a,c,d),(b,c,d) must not already be
+    // tagged surface, otherwise the flip corrupts manifoldness / boundaries.
+    {
+        auto [ft1, fid1] = tuple_from_face(std::array<size_t, 3>{{a, c, d}});
+        auto [ft2, fid2] = tuple_from_face(std::array<size_t, 3>{{b, c, d}});
+        (void)ft1;
+        (void)ft2;
+        if (fid1 != static_cast<size_t>(-1) && m_face_attribute[fid1].m_is_surface_fs) return false;
+        if (fid2 != static_cast<size_t>(-1) && m_face_attribute[fid2].m_is_surface_fs) return false;
+    }
+
+    cache.is_surface_flip = true;
+    cache.sf_a = a;
+    cache.sf_b = b;
+    cache.sf_c = c;
+    cache.sf_d = d;
+    cache.sf_e = e;
     return true;
 }
 
@@ -154,6 +265,7 @@ bool TetWildMesh::swap_edge_after(const Tuple& t)
     assert(oppo_tet.has_value() && "Should not swap boundary.");
 
     auto twotets = std::vector<Tuple>{{t, *oppo_tet}};
+    auto& cache = swap_cache.local();
     auto max_energy = -1.0;
     for (auto& l : twotets) {
         if (is_inverted(l)) return false;
@@ -161,11 +273,42 @@ bool TetWildMesh::swap_edge_after(const Tuple& t)
         m_tet_attribute[l.tid(*this)].m_quality = q;
         max_energy = std::max(q, max_energy);
     }
-    if (max_energy >= swap_cache.local().max_energy) {
+    if (max_energy >= cache.max_energy) {
         return false;
     }
 
-    tracker_assign_after(*this, twotets, swap_cache.local().changed_faces, m_face_attribute);
+    if (cache.is_surface_flip) {
+        // The two new surface faces (a,c,d),(b,c,d) must stay within the
+        // Hausdorff envelope, exactly like a surface-edge collapse.
+        const auto& VA = m_vertex_attribute;
+        if (m_envelope.is_outside(
+                {{VA[cache.sf_a].m_posf, VA[cache.sf_c].m_posf, VA[cache.sf_d].m_posf}}))
+            return false;
+        if (m_envelope.is_outside(
+                {{VA[cache.sf_b].m_posf, VA[cache.sf_c].m_posf, VA[cache.sf_d].m_posf}}))
+            return false;
+    }
+
+    tracker_assign_after(*this, twotets, cache.changed_faces, m_face_attribute);
+
+    if (cache.is_surface_flip) {
+        // The generic tracker copied the old (interior) attributes onto the new
+        // faces (a,c,d),(b,c,d) and reset the new middle face (c,d,e). Re-tag the
+        // two new faces as the flipped surface, carrying the original surface
+        // face attributes. Net surface change: -(a,b,c) -(a,b,d) +(a,c,d) +(b,c,d).
+        auto [ft1, fid1] =
+            tuple_from_face(std::array<size_t, 3>{{cache.sf_a, cache.sf_c, cache.sf_d}});
+        auto [ft2, fid2] =
+            tuple_from_face(std::array<size_t, 3>{{cache.sf_b, cache.sf_c, cache.sf_d}});
+        (void)ft1;
+        (void)ft2;
+        m_face_attribute[fid1] = cache.sf_face_attr;
+        m_face_attribute[fid2] = cache.sf_face_attr;
+        m_face_attribute[fid1].m_is_surface_fs = true;
+        m_face_attribute[fid2].m_is_surface_fs = true;
+        cnt_surface_swap++;
+    }
+
     cnt_swap++;
 
     return true;
@@ -295,6 +438,8 @@ size_t TetWildMesh::swap_all_edges_all()
     time = timer.getElapsedTime();
     wmtk::logger().info("edge swap prepare time: {:.4}s", time);
     size_t total_success = 0;
+    SurfaceTopoSignature sig_before;
+    if (m_params.check_surface_topology) sig_before = surface_topology_signature();
     auto setup_and_execute = [&](auto& executor) {
         // executor.renew_neighbor_tuples = wmtk::renewal_edges;
         executor.renew_neighbor_tuples =
@@ -328,15 +473,16 @@ size_t TetWildMesh::swap_all_edges_all()
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge swap operation time parallel: {:.4}s", time);
-        return total_success;
     } else {
         timer.start();
         auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge swap operation time serial: {:.4}s", time);
-        return total_success;
     }
+    if (m_params.check_surface_topology)
+        warn_if_surface_topology_changed(sig_before, "swap_all_edges_all");
+    return total_success;
 }
 
 

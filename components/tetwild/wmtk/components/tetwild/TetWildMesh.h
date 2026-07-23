@@ -313,6 +313,48 @@ public:
     bool swap_edge_before(const Tuple& t) override;
     bool swap_edge_after(const Tuple& t) override;
 
+    /**
+     * @brief Prepare a surface 3->2 edge swap (a surface diagonal flip).
+     *
+     * Called from swap_edge_before when the swapped edge (a,b) is on the surface
+     * and has exactly 3 incident tets. Verifies the local guards that guarantee
+     * the flip preserves surface manifoldness / topology, and fills the
+     * surface-flip fields of swap_cache. Returns false (rejecting the swap) if
+     * any guard fails: open-boundary edge, non-manifold edge (!= 2 surface
+     * faces), or one of the two would-be new surface faces already tagged
+     * surface. The tets sharing (a,b) are passed in to avoid recomputation.
+     */
+    bool prepare_surface_flip_32(const Tuple& t, const std::vector<size_t>& incident_tets);
+
+    /**
+     * @brief A topological fingerprint of the tracked surface (m_is_surface_fs).
+     *
+     * Cheap-to-compare summary used to assert that surface-modifying operations
+     * (surface edge flips) do not change the surface topology: number of
+     * connected components, surface V/E/F, Euler characteristic, and number of
+     * boundary loops. A valid surface diagonal flip leaves all of these
+     * invariant. O(#surface faces); only used by tests / check_surface_topology.
+     */
+    struct SurfaceTopoSignature
+    {
+        long long components = 0;
+        long long V = 0;
+        long long E = 0;
+        long long F = 0;
+        long long euler = 0; // V - E + F
+        long long boundary_loops = 0;
+        bool operator==(const SurfaceTopoSignature&) const = default;
+    };
+    SurfaceTopoSignature surface_topology_signature() const;
+
+    /**
+     * @brief Compare a surface signature against the current one and log an
+     * error if it changed. Used (when m_params.check_surface_topology is set) to
+     * guard swap passes that can flip surface edges.
+     */
+    void warn_if_surface_topology_changed(const SurfaceTopoSignature& before, const char* where)
+        const;
+
     size_t swap_all_faces();
     bool swap_face_before(const Tuple& t) override;
     bool swap_face_after(const Tuple& t) override;
@@ -388,6 +430,8 @@ public:
     double get_length2(const Tuple& loc) const;
     // debug use
     std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;
+    // Successful surface diagonal flips (subset of cnt_swap). Diagnostic.
+    std::atomic<int> cnt_surface_swap = 0;
 
 private:
     // tags: correspondence map from new tet-face node indices to in-triangle ids.
@@ -457,6 +501,15 @@ private:
     {
         double max_energy;
         std::map<std::array<size_t, 3>, FaceAttributes> changed_faces;
+
+        // Surface 3->2 flip bookkeeping (filled by swap_edge_before when the
+        // swapped edge (a,b) lies on the surface). a,b are the removed-edge
+        // endpoints, c,d are the new surface-edge endpoints, e is the interior
+        // apex. sf_face_attr is copied onto the two new surface faces (a,c,d),
+        // (b,c,d). is_surface_flip gates the extra handling in swap_edge_after.
+        bool is_surface_flip = false;
+        size_t sf_a = 0, sf_b = 0, sf_c = 0, sf_d = 0, sf_e = 0;
+        FaceAttributes sf_face_attr;
     };
     wmtk::threading::enumerable_thread_specific<SwapInfoCache> swap_cache;
 

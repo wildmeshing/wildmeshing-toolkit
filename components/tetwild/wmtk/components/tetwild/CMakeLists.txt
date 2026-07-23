@@ -18,6 +18,7 @@ set(SRC_FILES
 	EdgeSplitting.cpp
 	EdgeCollapsing.cpp
 	EdgeSwapping.cpp
+	SurfaceTopology.cpp
 	Smooth.cpp
 
 	TriangleInsertion.cpp
