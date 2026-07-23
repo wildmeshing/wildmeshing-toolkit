@@ -5,11 +5,14 @@
 #include <igl/Timer.h>
 #include <algorithm>
 #include <atomic>
+#include <mutex>
 #include <unordered_set>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/threading/collector.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
+#include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/ParallelCollect.hpp>
 
 namespace wmtk::components::tetwild {
 
@@ -19,22 +22,22 @@ void TetWildMesh::collapse_all_edges(bool is_limit_length)
     double time;
     timer.start();
 
-    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    logger().info("#edges = {}", get_edges().size());
-    for (const Tuple& loc : get_edges()) {
-        // collect all edges. Filtering too long edges happens in `is_weight_up_to_date`
-        collect_all_ops.emplace_back("edge_collapse", loc);
-        collect_all_ops.emplace_back("edge_collapse", loc.switch_vertex(*this));
-    }
-    wmtk::threading::collector<std::pair<std::string, Tuple>> collect_failure_ops;
-    std::atomic_int count_success = 0;
+    // Build the collapse op list in parallel (both edge directions). Filtering of
+    // too-long edges still happens in is_weight_up_to_date.
+    auto collect_all_ops = wmtk::parallel_collect_edge_ops(
+        *this,
+        NUM_THREADS,
+        [](TetWildMesh& m, const Tuple& e, auto& out) {
+            out.emplace_back("edge_collapse", e);
+            out.emplace_back("edge_collapse", e.switch_vertex(m));
+        });
+    logger().info("#edges = {}", collect_all_ops.size() / 2);
     time = timer.getElapsedTime();
     logger().info("edge collapse prepare time: {:.4}s", time);
     auto setup_and_execute = [&](auto& executor) {
-        executor.renew_neighbor_tuples = [&](const auto& m, auto op, const auto& newts) {
-            count_success++;
+        executor.renew_neighbor_tuples = [](const auto& m, auto op, const auto& newts) {
             std::vector<std::pair<std::string, wmtk::TetMesh::Tuple>> op_tups;
-            for (auto t : newts) {
+            for (const Tuple& t : newts) {
                 op_tups.emplace_back(op, t);
                 op_tups.emplace_back(op, t.switch_vertex(m));
             }
@@ -55,28 +58,9 @@ void TetWildMesh::collapse_all_edges(bool is_limit_length)
                 return false;
             return true;
         };
-
-        executor.on_fail = [&](auto& m, auto op, auto& t) {
-            collect_failure_ops.emplace_back(op, t);
-        };
-        // Execute!!
-        do {
-            count_success.store(0, std::memory_order_release);
-            logger().info("Prepare to collapse {}", collect_all_ops.size());
-            igl::Timer t1;
-            t1.start();
-            executor(*this, collect_all_ops);
-            logger().info("edge collapse execute time: {:.4}s", t1.getElapsedTimeInSec());
-            logger().info(
-                "Collapsed {}, retrying failed {}",
-                (int)count_success,
-                collect_failure_ops.size());
-            collect_all_ops.clear();
-            for (auto& item : collect_failure_ops) {
-                collect_all_ops.emplace_back(item);
-            }
-            collect_failure_ops.clear();
-        } while (count_success.load(std::memory_order_acquire) > 0);
+        // Retry a failed collapse only where the mesh actually changed this round
+        // (dirty-epoch localized retry), instead of re-testing every failure every pass.
+        wmtk::run_localized_to_convergence(*this, executor, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
         timer.start();

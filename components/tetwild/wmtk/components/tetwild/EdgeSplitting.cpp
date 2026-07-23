@@ -3,7 +3,9 @@
 #include <igl/Timer.h>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
+#include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/ParallelCollect.hpp>
 
 namespace wmtk::components::tetwild {
 
@@ -12,8 +14,10 @@ void TetWildMesh::split_all_edges()
     igl::Timer timer;
     double time;
     timer.start();
-    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_split", loc);
+    auto collect_all_ops = wmtk::parallel_collect_edge_ops(
+        *this,
+        NUM_THREADS,
+        [](TetWildMesh&, const Tuple& e, auto& out) { out.emplace_back("edge_split", e); });
     time = timer.getElapsedTime();
     wmtk::logger().info("edge split prepare time: {:.4}s", time);
     auto setup_and_execute = [&](auto& executor) {
@@ -34,7 +38,7 @@ void TetWildMesh::split_all_edges()
             if (length < m_params.splitting_l2 * sizing_ratio * sizing_ratio) return false;
             return true;
         };
-        executor(*this, collect_all_ops);
+        wmtk::run_localized_to_convergence(*this, executor, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
         timer.start();
@@ -137,9 +141,9 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
         }
     }
     if (!m_vertex_attribute[v_id].m_is_rounded) {
-        m_vertex_attribute[v_id].m_pos =
-            (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
-        m_vertex_attribute[v_id].m_posf = to_double(m_vertex_attribute[v_id].m_pos);
+        // Exact-rational fallback is forbidden: if the rounded (double) midpoint
+        // inverts an incident tet, reject the entire split operation.
+        return false;
     }
 
     /// update quality
