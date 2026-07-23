@@ -800,6 +800,19 @@ protected:
      */
     virtual bool swap_edge_44_after(const Tuple& t) { return true; }
     /**
+     * @brief Filter which of the 4-4 orientations may be chosen.
+     *
+     * Called for every candidate 4-4 case (identified by its new edge) BEFORE the energy-based
+     * selection; a candidate whose new edge is rejected here is not considered. The default
+     * accepts everything, so interior edges keep the pure min-energy behavior. A derived mesh can
+     * override this to force a specific retetrahedralization (e.g. tetwild forces the case that
+     * realizes a surface diagonal flip).
+     *
+     * @param new_edge The unordered pair of vertices of the candidate's new edge.
+     * @return true if this candidate case is allowed.
+     */
+    virtual bool swap_edge_44_accept_case(const std::array<size_t, 2>& new_edge) { return true; }
+    /**
      * @brief User specified preparations and desideratas for a 5-6 edge swap before changing the
      * connectivity
      *
@@ -830,6 +843,19 @@ protected:
      * @return true if the modification succeed
      */
     virtual bool swap_edge_56_after(const Tuple& t) { return true; }
+    /**
+     * @brief Filter which of the 5-6 orientations may be chosen.
+     *
+     * Called for every candidate 5-6 case (identified by its new fan face) BEFORE the energy-based
+     * selection; a candidate whose new face is rejected here is not considered. The default accepts
+     * everything, so interior edges keep the pure min-energy behavior. `new_face[0]` is the fan
+     * apex. A derived mesh can override this to force a specific retetrahedralization (e.g. tetwild
+     * forces the fan that realizes a surface diagonal flip).
+     *
+     * @param new_face The candidate's new fan face; new_face[0] is the fan apex.
+     * @return true if this candidate case is allowed.
+     */
+    virtual bool swap_edge_56_accept_case(const std::array<size_t, 3>& new_face) { return true; }
     /**
      * @brief User specified preparations and desideratas for an 3-2 edge swap before changing the
      * conenctivity
