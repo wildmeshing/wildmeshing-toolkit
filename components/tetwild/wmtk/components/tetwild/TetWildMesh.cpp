@@ -514,7 +514,12 @@ std::tuple<double, double> TetWildMesh::local_operations(
             }
             auto [max_energy, avg_energy] = get_max_avg_energy();
             wmtk::logger().info("swap max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
-            wmtk::logger().info("cnt_surface_swap (cumulative) = {}", cnt_surface_swap.load());
+            wmtk::logger().info(
+                "cnt_surface_swap (cumulative) = {} [3-2: {}, 4-4: {}, 5-6: {}]",
+                cnt_surface_swap.load(),
+                cnt_surface_swap_32.load(),
+                cnt_surface_swap_44.load(),
+                cnt_surface_swap_56.load());
             sanity_checks();
         } else if (i == 3) {
             for (int n = 0; n < ops[i]; n++) {
@@ -1273,6 +1278,31 @@ bool TetWildMesh::is_edge_on_surface(const Tuple& loc)
     }
 
     return false;
+}
+
+int TetWildMesh::edge_incident_surface_face_count(const Tuple& e)
+{
+    const size_t v1_id = e.vid(*this);
+    const size_t v2_id = e.switch_vertex(*this).vid(*this);
+
+    const auto tets = get_incident_tets_for_edge(e);
+    std::vector<size_t> n_vids;
+    for (const auto& t : tets) {
+        const auto vs = oriented_tet_vertices(t);
+        for (int j = 0; j < 4; ++j) {
+            const size_t v = vs[j].vid(*this);
+            if (v != v1_id && v != v2_id) n_vids.push_back(v);
+        }
+    }
+    wmtk::vector_unique(n_vids);
+
+    int count = 0;
+    for (const size_t vid : n_vids) {
+        auto [ftup, fid] = tuple_from_face({{v1_id, v2_id, vid}});
+        (void)ftup;
+        if (fid != static_cast<size_t>(-1) && m_face_attribute[fid].m_is_surface_fs) ++count;
+    }
+    return count;
 }
 
 
