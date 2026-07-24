@@ -14,10 +14,10 @@ void TetWildMesh::split_all_edges()
     igl::Timer timer;
     double time;
     timer.start();
-    auto collect_all_ops =
-        wmtk::parallel_collect_edge_ops(*this, NUM_THREADS, [](auto&, const auto& e, auto& out) {
-            out.emplace_back("edge_split", e);
-        });
+    auto collect_all_ops = wmtk::parallel_collect_edge_ops(
+        *this,
+        NUM_THREADS,
+        [](TetWildMesh&, const Tuple& e, auto& out) { out.emplace_back("edge_split", e); });
     time = timer.getElapsedTime();
     wmtk::logger().info("edge split prepare time: {:.4}s", time);
     auto setup_and_execute = [&](auto& executor) {
