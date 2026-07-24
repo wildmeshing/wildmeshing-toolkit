@@ -963,6 +963,7 @@ public:
 
     simplex::Tet simplex_from_tet(const Tuple& t) const;
     simplex::Tet simplex_from_tet(const size_t tid) const;
+    simplex::Face simplex_from_face(const Tuple& t) const;
     simplex::Edge simplex_from_edge(const Tuple& t) const;
 
 

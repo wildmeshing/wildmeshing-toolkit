@@ -64,8 +64,6 @@ public:
 class FaceAttributes
 {
 public:
-    double tag;
-
     bool m_is_surface_fs = false; // 0; 1
     int m_is_bbox_fs = -1; //-1; 0~5
 
