@@ -1,4 +1,4 @@
-#include <wmtk/TetMesh.h>
+#include "TetMesh.h"
 
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/threading/parallel_for.hpp>
@@ -640,6 +640,12 @@ simplex::Tet TetMesh::simplex_from_tet(const size_t tid) const
     const auto v = oriented_tet_vids(tid);
     const simplex::Tet tet(v[0], v[1], v[2], v[3]);
     return tet;
+}
+
+simplex::Face TetMesh::simplex_from_face(const Tuple& t) const
+{
+    const auto vs = get_face_vids(t);
+    return simplex::Face(vs[0], vs[1], vs[2]);
 }
 
 simplex::Edge TetMesh::simplex_from_edge(const Tuple& t) const
