@@ -25,9 +25,6 @@
       "DEBUG_output",
       "DEBUG_sanity_checks",
       "DEBUG_hausdorff",
-      "allow_surface_swap",
-      "check_surface_topology",
-      "stuck_refine",
       "stuck_refine_stall_eps",
       "stuck_refine_cooldown",
       "stuck_refine_num_worst",
@@ -174,24 +171,6 @@
     "type": "bool",
     "default": false,
     "doc": "Sanity Check: Compute and report the Hausdorff distance of the output to the input. Should be always smaller than eps."
-  },
-  {
-    "pointer": "/allow_surface_swap",
-    "type": "bool",
-    "default": true,
-    "doc": "Allow the 3->2 edge swap to operate on surface edges as a topology-preserving surface diagonal flip."
-  },
-  {
-    "pointer": "/check_surface_topology",
-    "type": "bool",
-    "default": false,
-    "doc": "Debug: verify the surface topology signature is unchanged across each swap pass. Expensive."
-  },
-  {
-    "pointer": "/stuck_refine",
-    "type": "bool",
-    "default": true,
-    "doc": "When the max energy stalls, refine the sizing field around the worst elements to escape stuck configurations."
   },
   {
     "pointer": "/stuck_refine_stall_eps",

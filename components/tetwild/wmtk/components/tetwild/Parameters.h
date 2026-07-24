@@ -26,11 +26,6 @@ struct Parameters
     bool check_surface_topology = false;
 
     // ---- Stuck-element sizing refinement --------------------------------
-    // When the max energy stops improving, aggressively refine the sizing field
-    // around the worst elements so subsequent split/smooth/swap get more DOF to
-    // untangle stubborn (surface) slivers. Replaces the old global
-    // adjust_sizing_field mechanism.
-    bool stuck_refine = true;
     // Trigger threshold: fire when the max energy did not improve by more than
     // this *fraction* since the previous iteration, i.e. refine when
     // (prev_max - max) <= stall_eps * prev_max. 0 => only when it does not

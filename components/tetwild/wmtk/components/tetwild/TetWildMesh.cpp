@@ -58,7 +58,7 @@ void TetWildMesh::mesh_improvement(int max_its)
 
     // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
 
-    wmtk::logger().info("========it pre========");
+    logger().info("========it pre========");
     local_operations({{0, 1, 0, 0}}, false);
 
     ////operation loops
@@ -66,16 +66,16 @@ void TetWildMesh::mesh_improvement(int max_its)
     int refine_cooldown = 0; // iterations left before stuck-refine may fire again
     for (int it = 0; it < max_its; it++) {
         ///ops
-        wmtk::logger().info("\n========it {}========", it);
+        logger().info("\n========it {}========", it);
         auto [max_energy, avg_energy] = local_operations({{1, 1, 1, 1}});
 
         ///energy check
-        wmtk::logger().info("max energy {:.6} | stop {:.6}", max_energy, m_params.stop_energy);
+        logger().info("max energy {:.6} | stop {:.6}", max_energy, m_params.stop_energy);
 
         if (max_energy < m_params.stop_energy) break;
         consolidate_mesh();
 
-        wmtk::logger().info("#V = {}, #T = {}", vert_capacity(), tet_capacity());
+        logger().info("#V = {}, #T = {}", vert_capacity(), tet_capacity());
 
         auto cnt_round = 0, cnt_verts = 0;
         TetMesh::for_each_vertex([&](auto& v) {
@@ -83,9 +83,9 @@ void TetWildMesh::mesh_improvement(int max_its)
             cnt_verts++;
         });
         if (cnt_round < cnt_verts) {
-            wmtk::logger().info("rounded {}/{}", cnt_round, cnt_verts);
+            logger().info("rounded {}/{}", cnt_round, cnt_verts);
         } else {
-            wmtk::logger().info("All rounded!", cnt_round, cnt_verts);
+            logger().info("All rounded!", cnt_round, cnt_verts);
         }
 
         /// sizing field: when the max energy stalls, refine around the worst
@@ -96,17 +96,17 @@ void TetWildMesh::mesh_improvement(int max_its)
         if (refine_cooldown > 0) {
             --refine_cooldown;
         } else if (
-            m_params.stuck_refine && it > 0 && max_energy > m_params.stop_energy &&
+            it > 0 && max_energy > m_params.stop_energy &&
             (pre_max_energy - max_energy) <= m_params.stuck_refine_stall_eps * pre_max_energy) {
-            wmtk::logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", max_energy);
+            logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", max_energy);
             refine_sizing_around_worst();
-            wmtk::logger().info(">>>>stuck-refine finished...");
+            logger().info(">>>>stuck-refine finished...");
             refine_cooldown = m_params.stuck_refine_cooldown;
         }
         pre_max_energy = max_energy;
     }
 
-    wmtk::logger().info("========it post========");
+    logger().info("========it post========");
     local_operations({{0, 1, 0, 0}});
 }
 
@@ -445,9 +445,9 @@ std::tuple<double, double> TetWildMesh::local_operations(
         timer.start();
         if (i == 0) {
             for (int n = 0; n < ops[i]; n++) {
-                wmtk::logger().info("==splitting {}==", n);
+                logger().info("==splitting {}==", n);
                 split_all_edges();
-                wmtk::logger().info(
+                logger().info(
                     "#V = {}, #T = {} after split",
                     get_vertices().size(),
                     get_tets().size());
@@ -467,13 +467,13 @@ std::tuple<double, double> TetWildMesh::local_operations(
                 save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
             }
             auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("split max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+            logger().info("split max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             sanity_checks();
         } else if (i == 1) {
             for (int n = 0; n < ops[i]; n++) {
-                wmtk::logger().info("==collapsing {}==", n);
+                logger().info("==collapsing {}==", n);
                 collapse_all_edges(collapse_limit_length);
-                wmtk::logger().info(
+                logger().info(
                     "#V = {}, #T = {} after collapse",
                     get_vertices().size(),
                     get_tets().size());
@@ -493,11 +493,11 @@ std::tuple<double, double> TetWildMesh::local_operations(
                 save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
             }
             auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("collapse max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+            logger().info("collapse max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             sanity_checks();
         } else if (i == 2) {
             for (int n = 0; n < ops[i]; n++) {
-                wmtk::logger().info("==swapping {}==", n);
+                logger().info("==swapping {}==", n);
                 size_t cnt_success = 0;
                 cnt_success += swap_all_edges_all();
                 // cnt_success += swap_all_edges_56();
@@ -512,28 +512,28 @@ std::tuple<double, double> TetWildMesh::local_operations(
                 save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
             }
             auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("swap max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
-            wmtk::logger().info("cnt_surface_swap (cumulative) = {}", cnt_surface_swap.load());
+            logger().info("swap max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+            logger().info("cnt_surface_swap (cumulative) = {}", cnt_surface_swap.load());
             sanity_checks();
         } else if (i == 3) {
             for (int n = 0; n < ops[i]; n++) {
-                wmtk::logger().info("==smoothing {}==", n);
+                logger().info("==smoothing {}==", n);
                 smooth_all_vertices();
             }
             if (m_params.debug_output) {
                 save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
             }
             auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("smooth max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+            logger().info("smooth max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             sanity_checks();
         }
         // output_faces(fmt::format("out-op{}.obj", i), [](auto& f) { return f.m_is_surface_fs; });
     }
     // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
     energy = get_max_avg_energy();
-    wmtk::logger().info("max energy = {:.6}", std::get<0>(energy));
-    wmtk::logger().info("avg energy = {:.6}", std::get<1>(energy));
-    wmtk::logger().info("time = {:.4}s", timer.getElapsedTime());
+    logger().info("max energy = {:.6}", std::get<0>(energy));
+    logger().info("avg energy = {:.6}", std::get<1>(energy));
+    logger().info("time = {:.4}s", timer.getElapsedTime());
 
 
     return energy;
@@ -748,11 +748,11 @@ void TetWildMesh::compute_winding_number(
         for (auto i = 0; i < outface.size(); i++) {
             F.row(i) << (int)outface[i][0], (int)outface[i][1], (int)outface[i][2];
         }
-        // wmtk::logger().info("Output face size {}", outface.size());
+        // logger().info("Output face size {}", outface.size());
         auto F0 = F;
         Eigen::VectorXi C;
         bfs_orient(F0, F, C);
-        // wmtk::logger().info("BFS orient {}", F.rows());
+        // logger().info("BFS orient {}", F.rows());
     }
 
     // `tets` and their `barycenters` are precomputed once by the caller and shared
@@ -762,7 +762,7 @@ void TetWildMesh::compute_winding_number(
 
     if (W.maxCoeff() <= 0.5) {
         // all removed, let's invert.
-        wmtk::logger().info("Correcting winding number");
+        logger().info("Correcting winding number");
         for (auto i = 0; i < F.rows(); i++) {
             auto temp = F(i, 0);
             F(i, 0) = F(i, 1);
@@ -772,7 +772,7 @@ void TetWildMesh::compute_winding_number(
     }
 
     if (W.maxCoeff() <= 0.5) {
-        wmtk::logger().critical("Still Inverting..., Empty Output");
+        logger().critical("Still Inverting..., Empty Output");
         return;
     }
 
@@ -830,7 +830,7 @@ void TetWildMesh::compute_winding_numbers(
 
         if (W.maxCoeff() <= 0.5) {
             // all removed, let's invert.
-            wmtk::logger().info("Correcting winding number");
+            logger().info("Correcting winding number");
             for (auto i = 0; i < F.rows(); i++) {
                 auto temp = F(i, 0);
                 F(i, 0) = F(i, 1);
@@ -840,7 +840,7 @@ void TetWildMesh::compute_winding_numbers(
         }
 
         if (W.maxCoeff() <= 0.5) {
-            wmtk::logger().warn("No winding number above 0.5 for input_path {}", input_paths[p]);
+            logger().warn("No winding number above 0.5 for input_path {}", input_paths[p]);
         }
 
         // store winding number in mesh
@@ -939,7 +939,7 @@ void TetWildMesh::output_faces(std::string file, std::function<bool(const FaceAt
     for (auto i = 0; i < outface.size(); i++) {
         matF.row(i) << (int)outface[i][0], (int)outface[i][1], (int)outface[i][2];
     }
-    wmtk::logger().info("Output face size {}", outface.size());
+    logger().info("Output face size {}", outface.size());
     igl::write_triangle_mesh(file, matV, matF);
 }
 
@@ -1314,7 +1314,7 @@ bool TetWildMesh::check_attributes()
             if (!(m_vertex_attribute[vs[0].vid(*this)].m_is_on_surface &&
                   m_vertex_attribute[vs[1].vid(*this)].m_is_on_surface &&
                   m_vertex_attribute[vs[2].vid(*this)].m_is_on_surface)) {
-                wmtk::logger().critical("surface track wrong");
+                logger().critical("surface track wrong");
                 return false;
             }
             bool is_out = m_envelope.is_outside(
@@ -1322,7 +1322,7 @@ bool TetWildMesh::check_attributes()
                   m_vertex_attribute[vs[1].vid(*this)].m_posf,
                   m_vertex_attribute[vs[2].vid(*this)].m_posf}});
             if (is_out) {
-                wmtk::logger().critical(
+                logger().critical(
                     "is_out f {} {} {}",
                     vs[0].vid(*this),
                     vs[1].vid(*this),
@@ -1334,7 +1334,7 @@ bool TetWildMesh::check_attributes()
             if (!(!m_vertex_attribute[vs[0].vid(*this)].on_bbox_faces.empty() &&
                   !m_vertex_attribute[vs[1].vid(*this)].on_bbox_faces.empty() &&
                   !m_vertex_attribute[vs[2].vid(*this)].on_bbox_faces.empty())) {
-                wmtk::logger().critical("bbox track wrong {}", fid);
+                logger().critical("bbox track wrong {}", fid);
                 return false;
             }
         }
@@ -1346,7 +1346,7 @@ bool TetWildMesh::check_attributes()
         if (m_vertex_attribute[i].m_is_on_surface) {
             bool is_out = m_envelope.is_outside(m_vertex_attribute[i].m_posf);
             if (is_out) {
-                wmtk::logger().critical("is_out v");
+                logger().critical("is_out v");
                 return false;
             }
         }
@@ -1356,13 +1356,13 @@ bool TetWildMesh::check_attributes()
             if (m_vertex_attribute[i].m_pos[0] != m_vertex_attribute[i].m_posf[0] ||
                 m_vertex_attribute[i].m_pos[1] != m_vertex_attribute[i].m_posf[1] ||
                 m_vertex_attribute[i].m_pos[2] != m_vertex_attribute[i].m_posf[2]) {
-                wmtk::logger().critical("rounding error {} rounded", i);
+                logger().critical("rounding error {} rounded", i);
                 return false;
             }
         } else {
             Vector3d p = to_double(m_vertex_attribute[i].m_pos);
             if (p != m_vertex_attribute[i].m_posf) {
-                wmtk::logger().critical("rounding error {} unrounded", i);
+                logger().critical("rounding error {} unrounded", i);
                 return false;
             }
         }
@@ -1374,7 +1374,7 @@ bool TetWildMesh::check_attributes()
         size_t i = t.tid(*this);
         double q = get_quality(t);
         if (q != m_tet_attribute[i].m_quality) {
-            wmtk::logger().critical(
+            logger().critical(
                 "q!=m_tet_attribute[i].m_quality {} {}",
                 q,
                 m_tet_attribute[i].m_quality);
