@@ -34,7 +34,7 @@ struct Parameters
     // Cooldown: after a refinement, skip this many improvement iterations before
     // refining again, so the operations get full passes to act on the new sizing
     // field before more refinement is added. 0 => may refine every iteration.
-    int stuck_refine_cooldown = 2;
+    int stuck_refine_cooldown = 1;
     // Number of worst tets (by energy) whose neighborhoods are refined.
     int stuck_refine_num_worst = 50;
     // Graph rings around each worst tet's vertices included in the refinement.

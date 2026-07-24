@@ -576,6 +576,8 @@ public:
 
     void output_tracked_surface(std::string output_file);
 
+    bool adjust_sizing_field_serial(double max_energy);
+
     /**
      * @brief Escape a stuck max energy by refining the sizing field around the
      * worst elements.
