@@ -26,11 +26,6 @@ struct Parameters
     bool check_surface_topology = false;
 
     // ---- Stuck-element sizing refinement --------------------------------
-    // When the max energy stops improving, aggressively refine the sizing field
-    // around the worst elements so subsequent split/smooth/swap get more DOF to
-    // untangle stubborn (surface) slivers. Replaces the old global
-    // adjust_sizing_field mechanism.
-    bool stuck_refine = true;
     // Trigger threshold: fire when the max energy did not improve by more than
     // this *fraction* since the previous iteration, i.e. refine when
     // (prev_max - max) <= stall_eps * prev_max. 0 => only when it does not
@@ -39,7 +34,7 @@ struct Parameters
     // Cooldown: after a refinement, skip this many improvement iterations before
     // refining again, so the operations get full passes to act on the new sizing
     // field before more refinement is added. 0 => may refine every iteration.
-    int stuck_refine_cooldown = 2;
+    int stuck_refine_cooldown = 1;
     // Number of worst tets (by energy) whose neighborhoods are refined.
     int stuck_refine_num_worst = 50;
     // Graph rings around each worst tet's vertices included in the refinement.

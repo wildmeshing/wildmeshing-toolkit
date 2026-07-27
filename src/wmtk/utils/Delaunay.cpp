@@ -196,6 +196,9 @@ void constrained_delaunay2D(
         log_and_throw_error("Input edges must be 2D");
     }
 
+    static std::once_flag once_flag;
+    std::call_once(once_flag, []() { GEO::initialize(); });
+
     GEO::CDT2d cdt;
     // GEO::ExactCDT2d cdt;
     std::vector<GEO::index_t> vertex_ids(V.rows());
