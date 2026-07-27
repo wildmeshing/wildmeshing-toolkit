@@ -5,6 +5,7 @@
 
 #include <wmtk/utils/AMIPS.h>
 #include <wmtk/envelope/KNN.hpp>
+#include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/WindingNumber.hpp>
@@ -1543,10 +1544,18 @@ size_t TetWildMesh::get_order_of_vertex(const size_t vid) const
 
 void TetWildMesh::init_vertex_order()
 {
-    for (const Tuple& t : get_vertices()) {
-        const size_t vid = t.vid(*this);
-        m_vertex_attribute[vid].m_order = compute_vertex_order(vid);
-    }
+    // Per-vertex, independent: compute_vertex_order is const (reads connectivity
+    // only) and each vid writes only its own m_order slot.
+    const std::vector<Tuple> vs = get_vertices();
+    threading::parallel_for(
+        threading::range(0, vs.size()),
+        [&](const threading::range& range) {
+            for (size_t k = range.begin(); k < range.end(); ++k) {
+                const size_t vid = vs[k].vid(*this);
+                m_vertex_attribute[vid].m_order = compute_vertex_order(vid);
+            }
+        },
+        NUM_THREADS);
 }
 
 bool TetWildMesh::check_vertex_param_type()
