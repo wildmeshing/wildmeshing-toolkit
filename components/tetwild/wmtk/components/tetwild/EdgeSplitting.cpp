@@ -134,7 +134,7 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
     // this has to be done before the inversion check
     m_vertex_attribute[v_id].m_pos = to_rational(m_vertex_attribute[v_id].m_posf);
 
-    for (auto& loc : locs) {
+    for (const Tuple& loc : locs) {
         if (is_inverted(loc)) {
             m_vertex_attribute[v_id].m_is_rounded = false;
             break;
@@ -156,13 +156,15 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
             (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
         // Guard against a pre-existing inverted incident tet: re-check in exact
         // arithmetic (un-rounded v_id => is_inverted uses the rational path).
-        for (auto& loc2 : locs) {
-            if (is_inverted(loc2)) return false;
+        for (const Tuple& loc : locs) {
+            if (is_inverted(loc)) {
+                return false;
+            }
         }
     }
 
     /// update quality
-    for (auto& loc : locs) {
+    for (const Tuple& loc : locs) {
         m_tet_attribute[loc.tid(*this)].m_quality = get_quality(loc);
     }
 

@@ -681,11 +681,11 @@ size_t TetWildMesh::refine_sizing_around_worst(double max_energy)
     for (const auto& [_, tid] : worst) {
         const auto vs = oriented_tet_vids(tid);
         for (const size_t v : vs) {
-            m_worst_region_vids.insert(v);
             region.insert(v);
         }
     }
     frontier.insert(frontier.end(), region.begin(), region.end());
+    m_worst_region_vids.insert(region.begin(), region.end());
 
     // grow region by n rings starting from the worst tets' vertices
     for (int r = 0; r < n_rings; ++r) {
