@@ -144,6 +144,10 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     params.stuck_refine_min_scalar = json_params["stuck_refine_min_scalar"];
     params.stuck_refine_gradation = json_params["stuck_refine_gradation"];
 
+    // Skip good regions.
+    params.skip_good_regions = json_params["skip_good_regions"];
+    params.skip_good_regions_margin = json_params["skip_good_regions_margin"];
+
     std::vector<Eigen::Vector3d> verts;
     std::vector<std::array<size_t, 3>> tris;
     std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax;
