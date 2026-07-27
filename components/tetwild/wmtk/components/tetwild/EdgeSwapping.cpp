@@ -83,15 +83,17 @@ size_t TetWildMesh::swap_all_edges_32()
     igl::Timer timer;
     double time;
     timer.start();
-    auto collect_all_ops =
-        wmtk::parallel_collect_edge_ops(*this, NUM_THREADS, [](auto&, const auto& e, auto& out) {
-            out.emplace_back("edge_swap", e);
-        });
+    auto collect_all_ops = wmtk::parallel_collect_edge_ops(
+        *this,
+        NUM_THREADS,
+        [](TetWildMesh&, const Tuple& e, auto& out) { out.emplace_back("edge_swap", e); });
     time = timer.getElapsedTime();
-    wmtk::logger().info("edge swap prepare time: {:.4}s", time);
+    logger().info("edge swap prepare time: {:.4}s", time);
     size_t total_success = 0;
     SurfaceTopoSignature sig_before;
-    if (m_params.check_surface_topology) sig_before = surface_topology_signature();
+    if (m_params.check_surface_topology) {
+        sig_before = surface_topology_signature();
+    }
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = wmtk::renewal_edges;
         executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
@@ -106,16 +108,17 @@ size_t TetWildMesh::swap_all_edges_32()
         };
         setup_and_execute(executor);
         time = timer.getElapsedTime();
-        wmtk::logger().info("edge swap operation time parallel: {:.4}s", time);
+        logger().info("edge swap operation time parallel: {:.4}s", time);
     } else {
         timer.start();
         auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         time = timer.getElapsedTime();
-        wmtk::logger().info("edge swap operation time serial: {:.4}s", time);
+        logger().info("edge swap operation time serial: {:.4}s", time);
     }
-    if (m_params.check_surface_topology)
+    if (m_params.check_surface_topology) {
         warn_if_surface_topology_changed(sig_before, "swap_all_edges_32");
+    }
     return total_success;
 }
 
@@ -141,11 +144,15 @@ bool TetWildMesh::swap_edge_before(const Tuple& t)
     // flip (see prepare_surface_flip_32). If disabled, keep the old behavior of
     // rejecting all surface-edge swaps.
     if (is_edge_on_surface(t)) {
-        if (!m_params.allow_surface_swap) return false;
-        if (!prepare_surface_flip_32(t, incident_tets)) return false;
+        if (!m_params.allow_surface_swap) {
+            return false;
+        }
+        if (!prepare_surface_flip_32(t, incident_tets)) {
+            return false;
+        }
     }
 
-    auto max_energy = -1.0;
+    double max_energy = -1.0;
     for (const size_t l : incident_tets) {
         max_energy = std::max(m_tet_attribute[l].m_quality, max_energy);
     }
@@ -164,7 +171,9 @@ bool TetWildMesh::prepare_surface_flip_32(const Tuple& t, const std::vector<size
     const size_t b = t.switch_vertex(*this).vid(*this);
 
     // Flipping an open-boundary edge would change the surface's boundary loops.
-    if (is_open_boundary_edge(t)) return false;
+    if (is_open_boundary_edge(t)) {
+        return false;
+    }
 
     // The three "ring" vertices are the incident-tet vertices other than a,b.
     std::array<size_t, 3> ring{};
@@ -172,7 +181,9 @@ bool TetWildMesh::prepare_surface_flip_32(const Tuple& t, const std::vector<size
     for (const size_t tid : incident_tets) {
         const auto vs = oriented_tet_vids(tid);
         for (const size_t v : vs) {
-            if (v == a || v == b) continue;
+            if (v == a || v == b) {
+                continue;
+            }
             bool seen = false;
             for (int k = 0; k < nr; ++k) {
                 if (ring[k] == v) {
@@ -180,23 +191,30 @@ bool TetWildMesh::prepare_surface_flip_32(const Tuple& t, const std::vector<size
                     break;
                 }
             }
-            if (!seen) {
-                if (nr >= 3) return false; // not a clean 3->2 ring
-                ring[nr++] = v;
+            if (seen) {
+                continue;
             }
+            if (nr > 2) {
+                log_and_throw_error("prepare_surface_flip_32: more than 3 ring vertices");
+                // return false; // not a clean 3->2 ring
+            }
+            ring[nr++] = v;
         }
     }
-    if (nr != 3) return false;
+    if (nr != 3) {
+        log_and_throw_error("prepare_surface_flip_32: not exactly 3 ring vertices");
+        // return false;
+    }
 
     // Of the three ring faces (a,b,ring[k]), exactly two must be surface faces
     // (manifold surface edge). Their apexes are the new surface edge (c,d); the
-    // remaining apex is the interior one (e).
+    // remaining apex is the other one (e).
     int n_surf = 0;
-    size_t c = 0, d = 0, e = 0;
+    size_t c = 0, d = 0, e = 0; // vertex ids; c/d on surface, e not
     bool e_set = false;
     for (int k = 0; k < 3; ++k) {
-        auto [ftup, fid] = tuple_from_face(std::array<size_t, 3>{{a, b, ring[k]}});
-        (void)ftup;
+        const auto [_, fid] = tuple_from_face(std::array<size_t, 3>{{a, b, ring[k]}});
+        (void)_; // tell compiler this variable is not needed
         if (m_face_attribute[fid].m_is_surface_fs) {
             if (n_surf == 0) {
                 c = ring[k];
@@ -208,11 +226,21 @@ bool TetWildMesh::prepare_surface_flip_32(const Tuple& t, const std::vector<size
             }
             ++n_surf;
         } else {
+            if (e_set) {
+                return false; // > 1 non-surface face
+            }
             e = ring[k];
             e_set = true;
         }
     }
-    if (n_surf != 2 || !e_set) return false;
+    if (n_surf != 2 || !e_set) {
+        /**
+         * This statement should never be reached because the previous loop already checks for the
+         * number of surface faces and non-surface faces. If this statement is reached, it indicates
+         * a logical error in the code or an unexpected input configuration.
+         */
+        log_and_throw_error("prepare_surface_flip_32: invalid surface face configuration");
+    }
 
     // The flip adds two surface faces (a,c,d),(b,c,d) on edge (c,d). If any
     // surface face is already incident to edge (c,d), the result is a
@@ -220,31 +248,13 @@ bool TetWildMesh::prepare_surface_flip_32(const Tuple& t, const std::vector<size
     // incident surface faces directly and does NOT rely on the m_is_on_surface
     // vertex flags (which can be stale), unlike is_edge_on_surface().
     {
-        const Tuple cd = tuple_from_edge(std::array<size_t, 2>{{c, d}});
-        if (cd.is_valid(*this)) {
-            const auto cd_tets = get_incident_tets_for_edge(cd);
-            for (const auto& ct : cd_tets) {
-                const auto vs = oriented_tet_vids(ct.tid(*this));
-                for (const size_t w : vs) {
-                    if (w == c || w == d) continue;
-                    auto [wf, wfid] = tuple_from_face(std::array<size_t, 3>{{c, d, w}});
-                    (void)wf;
-                    if (wfid != static_cast<size_t>(-1) && m_face_attribute[wfid].m_is_surface_fs)
-                        return false;
-                }
-            }
+        std::array<size_t, 2> cd{{c, d}};
+        assert(tuple_from_edge(cd).is_valid(*this));
+        const auto sf_edge = get_surface_faces_for_edge(cd);
+        if (sf_edge.size() > 0) {
+            // (c,d) already has a surface face incident
+            return false;
         }
-    }
-
-    // The two would-be new surface faces (a,c,d),(b,c,d) must not already be
-    // tagged surface, otherwise the flip corrupts manifoldness / boundaries.
-    {
-        auto [ft1, fid1] = tuple_from_face(std::array<size_t, 3>{{a, c, d}});
-        auto [ft2, fid2] = tuple_from_face(std::array<size_t, 3>{{b, c, d}});
-        (void)ft1;
-        (void)ft2;
-        if (fid1 != static_cast<size_t>(-1) && m_face_attribute[fid1].m_is_surface_fs) return false;
-        if (fid2 != static_cast<size_t>(-1) && m_face_attribute[fid2].m_is_surface_fs) return false;
     }
 
     cache.is_surface_flip = true;
@@ -258,18 +268,23 @@ bool TetWildMesh::prepare_surface_flip_32(const Tuple& t, const std::vector<size
 
 bool TetWildMesh::swap_edge_after(const Tuple& t)
 {
-    if (!TetMesh::swap_edge_after(t)) return false;
+    if (!TetMesh::swap_edge_after(t)) {
+        return false;
+    }
+
+    const auto& cache = swap_cache.local();
 
     // after swap, t points to a face with 2 neighboring tets.
     auto oppo_tet = t.switch_tetrahedron(*this);
     assert(oppo_tet.has_value() && "Should not swap boundary.");
 
-    auto twotets = std::vector<Tuple>{{t, *oppo_tet}};
-    auto& cache = swap_cache.local();
-    auto max_energy = -1.0;
-    for (auto& l : twotets) {
-        if (is_inverted(l)) return false;
-        auto q = get_quality(l);
+    std::vector<Tuple> twotets{{t, *oppo_tet}};
+    double max_energy = -1.0;
+    for (const Tuple& l : twotets) {
+        if (is_inverted(l)) {
+            return false;
+        }
+        const double q = get_quality(l);
         m_tet_attribute[l.tid(*this)].m_quality = q;
         max_energy = std::max(q, max_energy);
     }
@@ -304,8 +319,12 @@ bool TetWildMesh::swap_edge_after(const Tuple& t)
         (void)ft2;
         m_face_attribute[fid1] = cache.sf_face_attr;
         m_face_attribute[fid2] = cache.sf_face_attr;
-        m_face_attribute[fid1].m_is_surface_fs = true;
-        m_face_attribute[fid2].m_is_surface_fs = true;
+        /**
+         * Setting the m_is_surface_fs flag to true is not necessary. This is already true in
+         * cache.sf_face_attr.
+         */
+        // m_face_attribute[fid1].m_is_surface_fs = true;
+        // m_face_attribute[fid2].m_is_surface_fs = true;
         cnt_surface_swap++;
     }
 
@@ -325,7 +344,7 @@ size_t TetWildMesh::swap_all_faces()
             out.emplace_back("face_swap", f);
         });
     time = timer.getElapsedTime();
-    wmtk::logger().info("face swap prepare time: {:.4}s", time);
+    logger().info("face swap prepare time: {:.4}s", time);
     size_t total_success = 0;
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = wmtk::renewal_faces;
@@ -341,14 +360,14 @@ size_t TetWildMesh::swap_all_faces()
         };
         setup_and_execute(executor);
         time = timer.getElapsedTime();
-        wmtk::logger().info("face swap operation time parallel: {:.4}s", time);
+        logger().info("face swap operation time parallel: {:.4}s", time);
         return total_success;
     } else {
         timer.start();
         auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         time = timer.getElapsedTime();
-        wmtk::logger().info("face swap operation time serial: {:.4}s", time);
+        logger().info("face swap operation time serial: {:.4}s", time);
         return total_success;
     }
 }
@@ -436,10 +455,12 @@ size_t TetWildMesh::swap_all_edges_all()
             out.emplace_back("edge_swap_56", e);
         });
     time = timer.getElapsedTime();
-    wmtk::logger().info("edge swap prepare time: {:.4}s", time);
+    logger().info("edge swap prepare time: {:.4}s", time);
     size_t total_success = 0;
     SurfaceTopoSignature sig_before;
-    if (m_params.check_surface_topology) sig_before = surface_topology_signature();
+    if (m_params.check_surface_topology) {
+        sig_before = surface_topology_signature();
+    }
     auto setup_and_execute = [&](auto& executor) {
         // executor.renew_neighbor_tuples = wmtk::renewal_edges;
         executor.renew_neighbor_tuples =
@@ -472,16 +493,17 @@ size_t TetWildMesh::swap_all_edges_all()
         };
         setup_and_execute(executor);
         time = timer.getElapsedTime();
-        wmtk::logger().info("edge swap operation time parallel: {:.4}s", time);
+        logger().info("edge swap operation time parallel: {:.4}s", time);
     } else {
         timer.start();
         auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         time = timer.getElapsedTime();
-        wmtk::logger().info("edge swap operation time serial: {:.4}s", time);
+        logger().info("edge swap operation time serial: {:.4}s", time);
     }
-    if (m_params.check_surface_topology)
+    if (m_params.check_surface_topology) {
         warn_if_surface_topology_changed(sig_before, "swap_all_edges_all");
+    }
     return total_success;
 }
 
@@ -496,7 +518,7 @@ size_t TetWildMesh::swap_all_edges_44()
             out.emplace_back("edge_swap_44", e);
         });
     time = timer.getElapsedTime();
-    wmtk::logger().info("edge swap 44 prepare time: {:.4}s", time);
+    logger().info("edge swap 44 prepare time: {:.4}s", time);
     size_t total_success = 0;
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = wmtk::renewal_edges;
@@ -512,14 +534,14 @@ size_t TetWildMesh::swap_all_edges_44()
         };
         setup_and_execute(executor);
         time = timer.getElapsedTime();
-        wmtk::logger().info("edge swap 44 operation time parallel: {:.4}s", time);
+        logger().info("edge swap 44 operation time parallel: {:.4}s", time);
         return total_success;
     } else {
         timer.start();
         auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         time = timer.getElapsedTime();
-        wmtk::logger().info("edge swap 44 operation time serial: {:.4}s", time);
+        logger().info("edge swap 44 operation time serial: {:.4}s", time);
         return total_success;
     }
 }
@@ -604,7 +626,7 @@ size_t TetWildMesh::swap_all_edges_56()
             out.emplace_back("edge_swap_56", e);
         });
     time = timer.getElapsedTime();
-    wmtk::logger().info("edge swap 56 prepare time: {:.4}s", time);
+    logger().info("edge swap 56 prepare time: {:.4}s", time);
     size_t total_success = 0;
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = wmtk::renewal_edges;
@@ -620,14 +642,14 @@ size_t TetWildMesh::swap_all_edges_56()
         };
         setup_and_execute(executor);
         time = timer.getElapsedTime();
-        wmtk::logger().info("edge swap 56 operation time parallel: {:.4}s", time);
+        logger().info("edge swap 56 operation time parallel: {:.4}s", time);
         return total_success;
     } else {
         timer.start();
         auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kSeq);
         setup_and_execute(executor);
         time = timer.getElapsedTime();
-        wmtk::logger().info("edge swap 56 operation time serial: {:.4}s", time);
+        logger().info("edge swap 56 operation time serial: {:.4}s", time);
         return total_success;
     }
 }

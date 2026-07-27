@@ -276,7 +276,6 @@ bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     // collapse edge connectivity change with link condition check
     if (!collapse_edge_conn(
             loc0,
-            new_edges,
             v1_id,
             new_loc,
             rollback_vert_conn,
@@ -448,7 +447,6 @@ void TetMesh::collapse_edge_rollback(
 
 bool TetMesh::collapse_edge_conn(
     const Tuple& loc0,
-    std::vector<Tuple>& new_edges,
     size_t& v1_id,
     Tuple& new_loc,
     std::map<size_t, wmtk::TetMesh::VertexConnectivity>& rollback_vert_conn,
