@@ -617,99 +617,103 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00578" name="l00578"></a><span class="lineno">  578</span> </div>
 <div class="line"><a id="l00579" name="l00579"></a><span class="lineno">  579</span>    <span class="keywordtype">bool</span> adjust_sizing_field_serial(<span class="keywordtype">double</span> max_energy);</div>
 <div class="line"><a id="l00580" name="l00580"></a><span class="lineno">  580</span> </div>
-<div class="line"><a id="l00581" name="l00581"></a><span class="lineno">  581</span>    <span class="comment">// for open boundary</span></div>
-<div class="line"><a id="l00582" name="l00582"></a><span class="lineno">  582</span>    <span class="keywordtype">void</span> find_open_boundary();</div>
-<div class="line"><a id="l00583" name="l00583"></a><span class="lineno">  583</span>    <span class="keywordtype">bool</span> is_open_boundary_edge(<span class="keyword">const</span> <a class="code hl_class" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a>&amp; e);</div>
-<div class="line"><a id="l00584" name="l00584"></a><span class="lineno">  584</span>    <span class="keywordtype">bool</span> is_open_boundary_edge(<span class="keyword">const</span> std::array&lt;size_t, 2&gt;&amp; e);</div>
-<div class="line"><a id="l00585" name="l00585"></a><span class="lineno">  585</span> </div>
-<div class="line"><a id="l00586" name="l00586"></a><span class="lineno">  586</span><span class="keyword">public</span>:</div>
-<div class="line"><a id="l00587" name="l00587"></a><span class="lineno">  587</span>    <span class="comment">// substructure functions</span></div>
-<div class="line"><a id="l00588" name="l00588"></a><span class="lineno">  588</span> </div>
-<div class="line"><a id="l00589" name="l00589"></a><span class="lineno">  589</span>    <span class="keywordtype">bool</span> vertex_is_on_surface(<span class="keyword">const</span> <span class="keywordtype">size_t</span> vid) <span class="keyword">const override</span>;</div>
-<div class="line"><a id="l00590" name="l00590"></a><span class="lineno">  590</span> </div>
-<div class="line"><a id="l00591" name="l00591"></a><span class="lineno">  591</span>    <span class="keywordtype">bool</span> face_is_on_surface(<span class="keyword">const</span> <span class="keywordtype">size_t</span> fid) <span class="keyword">const override</span>;</div>
-<div class="line"><a id="l00592" name="l00592"></a><span class="lineno">  592</span> </div>
-<div class="line"><a id="l00593" name="l00593"></a><span class="lineno">  593</span>    <span class="keywordtype">size_t</span> get_order_of_vertex(<span class="keyword">const</span> <span class="keywordtype">size_t</span> vid) <span class="keyword">const override</span>;</div>
-<div class="line"><a id="l00597" name="l00597"></a><span class="lineno">  597</span>    <span class="keywordtype">void</span> init_vertex_order();</div>
-<div class="line"><a id="l00598" name="l00598"></a><span class="lineno">  598</span> </div>
-<div class="line"><a id="l00599" name="l00599"></a><span class="lineno">  599</span><span class="keyword">public</span>:</div>
-<div class="line"><a id="l00600" name="l00600"></a><span class="lineno">  600</span>    <span class="comment">// debug functions</span></div>
-<div class="line"><a id="l00601" name="l00601"></a><span class="lineno">  601</span>    <span class="keywordtype">int</span> orient3D(</div>
-<div class="line"><a id="l00602" name="l00602"></a><span class="lineno">  602</span>        vol_rem::bigrational px,</div>
-<div class="line"><a id="l00603" name="l00603"></a><span class="lineno">  603</span>        vol_rem::bigrational py,</div>
-<div class="line"><a id="l00604" name="l00604"></a><span class="lineno">  604</span>        vol_rem::bigrational pz,</div>
-<div class="line"><a id="l00605" name="l00605"></a><span class="lineno">  605</span>        vol_rem::bigrational qx,</div>
-<div class="line"><a id="l00606" name="l00606"></a><span class="lineno">  606</span>        vol_rem::bigrational qy,</div>
-<div class="line"><a id="l00607" name="l00607"></a><span class="lineno">  607</span>        vol_rem::bigrational qz,</div>
-<div class="line"><a id="l00608" name="l00608"></a><span class="lineno">  608</span>        vol_rem::bigrational rx,</div>
-<div class="line"><a id="l00609" name="l00609"></a><span class="lineno">  609</span>        vol_rem::bigrational ry,</div>
-<div class="line"><a id="l00610" name="l00610"></a><span class="lineno">  610</span>        vol_rem::bigrational rz,</div>
-<div class="line"><a id="l00611" name="l00611"></a><span class="lineno">  611</span>        vol_rem::bigrational sx,</div>
-<div class="line"><a id="l00612" name="l00612"></a><span class="lineno">  612</span>        vol_rem::bigrational sy,</div>
-<div class="line"><a id="l00613" name="l00613"></a><span class="lineno">  613</span>        vol_rem::bigrational sz);</div>
+<div class="line"><a id="l00593" name="l00593"></a><span class="lineno">  593</span>    <span class="keywordtype">size_t</span> refine_sizing_around_worst(<span class="keywordtype">double</span> max_energy);</div>
+<div class="line"><a id="l00594" name="l00594"></a><span class="lineno">  594</span> </div>
+<div class="line"><a id="l00603" name="l00603"></a><span class="lineno">  603</span>    <span class="keywordtype">void</span> gradation_smooth_sizing(<span class="keywordtype">double</span> grade, <span class="keyword">const</span> std::vector&lt;size_t&gt;&amp; seeds);</div>
+<div class="line"><a id="l00604" name="l00604"></a><span class="lineno">  604</span> </div>
+<div class="line"><a id="l00605" name="l00605"></a><span class="lineno">  605</span>    <span class="comment">// for open boundary</span></div>
+<div class="line"><a id="l00606" name="l00606"></a><span class="lineno">  606</span>    <span class="keywordtype">void</span> find_open_boundary();</div>
+<div class="line"><a id="l00607" name="l00607"></a><span class="lineno">  607</span>    <span class="keywordtype">bool</span> is_open_boundary_edge(<span class="keyword">const</span> <a class="code hl_class" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a>&amp; e);</div>
+<div class="line"><a id="l00608" name="l00608"></a><span class="lineno">  608</span>    <span class="keywordtype">bool</span> is_open_boundary_edge(<span class="keyword">const</span> std::array&lt;size_t, 2&gt;&amp; e);</div>
+<div class="line"><a id="l00609" name="l00609"></a><span class="lineno">  609</span> </div>
+<div class="line"><a id="l00610" name="l00610"></a><span class="lineno">  610</span><span class="keyword">public</span>:</div>
+<div class="line"><a id="l00611" name="l00611"></a><span class="lineno">  611</span>    <span class="comment">// substructure functions</span></div>
+<div class="line"><a id="l00612" name="l00612"></a><span class="lineno">  612</span> </div>
+<div class="line"><a id="l00613" name="l00613"></a><span class="lineno">  613</span>    <span class="keywordtype">bool</span> vertex_is_on_surface(<span class="keyword">const</span> <span class="keywordtype">size_t</span> vid) <span class="keyword">const override</span>;</div>
 <div class="line"><a id="l00614" name="l00614"></a><span class="lineno">  614</span> </div>
-<div class="line"><a id="l00615" name="l00615"></a><span class="lineno">  615</span>    <span class="comment">// bool checkTrackedFaces(</span></div>
-<div class="line"><a id="l00616" name="l00616"></a><span class="lineno">  616</span>    <span class="comment">//     std::vector&lt;vol_rem::bigrational&gt;&amp; vol_coords,</span></div>
-<div class="line"><a id="l00617" name="l00617"></a><span class="lineno">  617</span>    <span class="comment">//     const std::vector&lt;double&gt;&amp; surf_coords,</span></div>
-<div class="line"><a id="l00618" name="l00618"></a><span class="lineno">  618</span>    <span class="comment">//     std::vector&lt;uint32_t&gt;&amp; facets,</span></div>
-<div class="line"><a id="l00619" name="l00619"></a><span class="lineno">  619</span>    <span class="comment">//     std::vector&lt;uint32_t&gt;&amp; facets_on_input,</span></div>
-<div class="line"><a id="l00620" name="l00620"></a><span class="lineno">  620</span>    <span class="comment">//     const std::vector&lt;uint32_t&gt;&amp; surf_tris);</span></div>
-<div class="line"><a id="l00621" name="l00621"></a><span class="lineno">  621</span> </div>
-<div class="line"><a id="l00622" name="l00622"></a><span class="lineno">  622</span>    <span class="keywordtype">int</span> orient3D_wmtk_rational(</div>
-<div class="line"><a id="l00623" name="l00623"></a><span class="lineno">  623</span>        <a class="code hl_class" href="classwmtk_1_1_rational.html">wmtk::Rational</a> px,</div>
-<div class="line"><a id="l00624" name="l00624"></a><span class="lineno">  624</span>        <a class="code hl_class" href="classwmtk_1_1_rational.html">wmtk::Rational</a> py,</div>
-<div class="line"><a id="l00625" name="l00625"></a><span class="lineno">  625</span>        <a class="code hl_class" href="classwmtk_1_1_rational.html">wmtk::Rational</a> pz,</div>
-<div class="line"><a id="l00626" name="l00626"></a><span class="lineno">  626</span>        <a class="code hl_class" href="classwmtk_1_1_rational.html">wmtk::Rational</a> qx,</div>
-<div class="line"><a id="l00627" name="l00627"></a><span class="lineno">  627</span>        <a class="code hl_class" href="classwmtk_1_1_rational.html">wmtk::Rational</a> qy,</div>
-<div class="line"><a id="l00628" name="l00628"></a><span class="lineno">  628</span>        <a class="code hl_class" href="classwmtk_1_1_rational.html">wmtk::Rational</a> qz,</div>
-<div class="line"><a id="l00629" name="l00629"></a><span class="lineno">  629</span>        <a class="code hl_class" href="classwmtk_1_1_rational.html">wmtk::Rational</a> rx,</div>
-<div class="line"><a id="l00630" name="l00630"></a><span class="lineno">  630</span>        <a class="code hl_class" href="classwmtk_1_1_rational.html">wmtk::Rational</a> ry,</div>
-<div class="line"><a id="l00631" name="l00631"></a><span class="lineno">  631</span>        <a class="code hl_class" href="classwmtk_1_1_rational.html">wmtk::Rational</a> rz,</div>
-<div class="line"><a id="l00632" name="l00632"></a><span class="lineno">  632</span>        <a class="code hl_class" href="classwmtk_1_1_rational.html">wmtk::Rational</a> sx,</div>
-<div class="line"><a id="l00633" name="l00633"></a><span class="lineno">  633</span>        <a class="code hl_class" href="classwmtk_1_1_rational.html">wmtk::Rational</a> sy,</div>
-<div class="line"><a id="l00634" name="l00634"></a><span class="lineno">  634</span>        <a class="code hl_class" href="classwmtk_1_1_rational.html">wmtk::Rational</a> sz);</div>
-<div class="line"><a id="l00635" name="l00635"></a><span class="lineno">  635</span> </div>
-<div class="line"><a id="l00636" name="l00636"></a><span class="lineno">  636</span>    <span class="keywordtype">bool</span> checkTrackedFaces_wmtk_rational(</div>
-<div class="line"><a id="l00637" name="l00637"></a><span class="lineno">  637</span>        std::vector&lt;wmtk::Rational&gt;&amp; vol_coords,</div>
-<div class="line"><a id="l00638" name="l00638"></a><span class="lineno">  638</span>        <span class="keyword">const</span> std::vector&lt;double&gt;&amp; surf_coords,</div>
-<div class="line"><a id="l00639" name="l00639"></a><span class="lineno">  639</span>        std::vector&lt;uint32_t&gt;&amp; facets,</div>
-<div class="line"><a id="l00640" name="l00640"></a><span class="lineno">  640</span>        std::vector&lt;uint32_t&gt;&amp; facets_on_input,</div>
-<div class="line"><a id="l00641" name="l00641"></a><span class="lineno">  641</span>        <span class="keyword">const</span> std::vector&lt;uint32_t&gt;&amp; surf_tris);</div>
-<div class="line"><a id="l00642" name="l00642"></a><span class="lineno">  642</span> </div>
-<div class="line"><a id="l00643" name="l00643"></a><span class="lineno">  643</span>    <span class="keywordtype">bool</span> check_vertex_param_type();</div>
-<div class="line"><a id="l00644" name="l00644"></a><span class="lineno">  644</span> </div>
-<div class="line"><a id="l00645" name="l00645"></a><span class="lineno">  645</span>    <span class="comment">// for boolean operations</span></div>
-<div class="line"><a id="l00646" name="l00646"></a><span class="lineno">  646</span>    <span class="keywordtype">int</span> flood_fill();</div>
-<div class="line"><a id="l00647" name="l00647"></a><span class="lineno">  647</span> </div>
-<div class="line"><a id="l00648" name="l00648"></a><span class="lineno">  648</span>    <span class="keywordtype">void</span> save_paraview(<span class="keyword">const</span> std::string&amp; path, <span class="keyword">const</span> <span class="keywordtype">bool</span> use_hdf5);</div>
-<div class="line"><a id="l00649" name="l00649"></a><span class="lineno">  649</span> </div>
-<div class="line"><a id="l00650" name="l00650"></a><span class="lineno">  650</span>    <span class="comment">// initialize sizing field (for topology preservation)</span></div>
-<div class="line"><a id="l00651" name="l00651"></a><span class="lineno">  651</span>    <span class="keywordtype">void</span> init_sizing_field();</div>
-<div class="line"><a id="l00652" name="l00652"></a><span class="lineno">  652</span> </div>
-<div class="line"><a id="l00653" name="l00653"></a><span class="lineno">  653</span><span class="keyword">public</span>:</div>
-<div class="foldopen" id="foldopen00654" data-start="{" data-end="};">
-<div class="line"><a id="l00654" name="l00654"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct.html">  654</a></span>    <span class="keyword">struct </span><a class="code hl_struct" href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct.html">ExportStruct</a></div>
-<div class="line"><a id="l00655" name="l00655"></a><span class="lineno">  655</span>    {</div>
-<div class="line"><a id="l00656" name="l00656"></a><span class="lineno">  656</span>        <span class="comment">// tet mesh</span></div>
-<div class="line"><a id="l00657" name="l00657"></a><span class="lineno">  657</span>        MatrixXd V;</div>
-<div class="line"><a id="l00658" name="l00658"></a><span class="lineno">  658</span>        MatrixXi T;</div>
-<div class="line"><a id="l00659" name="l00659"></a><span class="lineno">  659</span>        <span class="comment">// tracked surface</span></div>
-<div class="line"><a id="l00660" name="l00660"></a><span class="lineno">  660</span>        MatrixXi F;</div>
-<div class="line"><a id="l00661" name="l00661"></a><span class="lineno">  661</span>        <span class="comment">// attributes</span></div>
-<div class="line"><a id="l00662" name="l00662"></a><span class="lineno">  662</span>        VectorXd t_amips;</div>
-<div class="line"><a id="l00663" name="l00663"></a><span class="lineno">  663</span>        VectorXd t_winding_number_input;</div>
-<div class="line"><a id="l00664" name="l00664"></a><span class="lineno">  664</span>        VectorXd t_winding_number_tracked;</div>
-<div class="line"><a id="l00665" name="l00665"></a><span class="lineno">  665</span>        MatrixXd t_winding_number_per_input;</div>
-<div class="line"><a id="l00666" name="l00666"></a><span class="lineno">  666</span>        VectorXi t_part;</div>
-<div class="line"><a id="l00667" name="l00667"></a><span class="lineno">  667</span>    };</div>
-</div>
-<div class="line"><a id="l00668" name="l00668"></a><span class="lineno">  668</span>    <span class="comment">// export functionality</span></div>
-<div class="line"><a id="l00669" name="l00669"></a><span class="lineno">  669</span>    <a class="code hl_struct" href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct.html">ExportStruct</a> export_mesh_data() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00670" name="l00670"></a><span class="lineno">  670</span>};</div>
-</div>
+<div class="line"><a id="l00615" name="l00615"></a><span class="lineno">  615</span>    <span class="keywordtype">bool</span> face_is_on_surface(<span class="keyword">const</span> <span class="keywordtype">size_t</span> fid) <span class="keyword">const override</span>;</div>
+<div class="line"><a id="l00616" name="l00616"></a><span class="lineno">  616</span> </div>
+<div class="line"><a id="l00617" name="l00617"></a><span class="lineno">  617</span>    <span class="keywordtype">size_t</span> get_order_of_vertex(<span class="keyword">const</span> <span class="keywordtype">size_t</span> vid) <span class="keyword">const override</span>;</div>
+<div class="line"><a id="l00621" name="l00621"></a><span class="lineno">  621</span>    <span class="keywordtype">void</span> init_vertex_order();</div>
+<div class="line"><a id="l00622" name="l00622"></a><span class="lineno">  622</span> </div>
+<div class="line"><a id="l00623" name="l00623"></a><span class="lineno">  623</span><span class="keyword">public</span>:</div>
+<div class="line"><a id="l00624" name="l00624"></a><span class="lineno">  624</span>    <span class="comment">// debug functions</span></div>
+<div class="line"><a id="l00625" name="l00625"></a><span class="lineno">  625</span>    <span class="keywordtype">int</span> orient3D(</div>
+<div class="line"><a id="l00626" name="l00626"></a><span class="lineno">  626</span>        vol_rem::bigrational px,</div>
+<div class="line"><a id="l00627" name="l00627"></a><span class="lineno">  627</span>        vol_rem::bigrational py,</div>
+<div class="line"><a id="l00628" name="l00628"></a><span class="lineno">  628</span>        vol_rem::bigrational pz,</div>
+<div class="line"><a id="l00629" name="l00629"></a><span class="lineno">  629</span>        vol_rem::bigrational qx,</div>
+<div class="line"><a id="l00630" name="l00630"></a><span class="lineno">  630</span>        vol_rem::bigrational qy,</div>
+<div class="line"><a id="l00631" name="l00631"></a><span class="lineno">  631</span>        vol_rem::bigrational qz,</div>
+<div class="line"><a id="l00632" name="l00632"></a><span class="lineno">  632</span>        vol_rem::bigrational rx,</div>
+<div class="line"><a id="l00633" name="l00633"></a><span class="lineno">  633</span>        vol_rem::bigrational ry,</div>
+<div class="line"><a id="l00634" name="l00634"></a><span class="lineno">  634</span>        vol_rem::bigrational rz,</div>
+<div class="line"><a id="l00635" name="l00635"></a><span class="lineno">  635</span>        vol_rem::bigrational sx,</div>
+<div class="line"><a id="l00636" name="l00636"></a><span class="lineno">  636</span>        vol_rem::bigrational sy,</div>
+<div class="line"><a id="l00637" name="l00637"></a><span class="lineno">  637</span>        vol_rem::bigrational sz);</div>
+<div class="line"><a id="l00638" name="l00638"></a><span class="lineno">  638</span> </div>
+<div class="line"><a id="l00639" name="l00639"></a><span class="lineno">  639</span>    <span class="comment">// bool checkTrackedFaces(</span></div>
+<div class="line"><a id="l00640" name="l00640"></a><span class="lineno">  640</span>    <span class="comment">//     std::vector&lt;vol_rem::bigrational&gt;&amp; vol_coords,</span></div>
+<div class="line"><a id="l00641" name="l00641"></a><span class="lineno">  641</span>    <span class="comment">//     const std::vector&lt;double&gt;&amp; surf_coords,</span></div>
+<div class="line"><a id="l00642" name="l00642"></a><span class="lineno">  642</span>    <span class="comment">//     std::vector&lt;uint32_t&gt;&amp; facets,</span></div>
+<div class="line"><a id="l00643" name="l00643"></a><span class="lineno">  643</span>    <span class="comment">//     std::vector&lt;uint32_t&gt;&amp; facets_on_input,</span></div>
+<div class="line"><a id="l00644" name="l00644"></a><span class="lineno">  644</span>    <span class="comment">//     const std::vector&lt;uint32_t&gt;&amp; surf_tris);</span></div>
+<div class="line"><a id="l00645" name="l00645"></a><span class="lineno">  645</span> </div>
+<div class="line"><a id="l00646" name="l00646"></a><span class="lineno">  646</span>    <span class="keywordtype">int</span> orient3D_wmtk_rational(</div>
+<div class="line"><a id="l00647" name="l00647"></a><span class="lineno">  647</span>        <a class="code hl_class" href="classwmtk_1_1_rational.html">wmtk::Rational</a> px,</div>
+<div class="line"><a id="l00648" name="l00648"></a><span class="lineno">  648</span>        <a class="code hl_class" href="classwmtk_1_1_rational.html">wmtk::Rational</a> py,</div>
+<div class="line"><a id="l00649" name="l00649"></a><span class="lineno">  649</span>        <a class="code hl_class" href="classwmtk_1_1_rational.html">wmtk::Rational</a> pz,</div>
+<div class="line"><a id="l00650" name="l00650"></a><span class="lineno">  650</span>        <a class="code hl_class" href="classwmtk_1_1_rational.html">wmtk::Rational</a> qx,</div>
+<div class="line"><a id="l00651" name="l00651"></a><span class="lineno">  651</span>        <a class="code hl_class" href="classwmtk_1_1_rational.html">wmtk::Rational</a> qy,</div>
+<div class="line"><a id="l00652" name="l00652"></a><span class="lineno">  652</span>        <a class="code hl_class" href="classwmtk_1_1_rational.html">wmtk::Rational</a> qz,</div>
+<div class="line"><a id="l00653" name="l00653"></a><span class="lineno">  653</span>        <a class="code hl_class" href="classwmtk_1_1_rational.html">wmtk::Rational</a> rx,</div>
+<div class="line"><a id="l00654" name="l00654"></a><span class="lineno">  654</span>        <a class="code hl_class" href="classwmtk_1_1_rational.html">wmtk::Rational</a> ry,</div>
+<div class="line"><a id="l00655" name="l00655"></a><span class="lineno">  655</span>        <a class="code hl_class" href="classwmtk_1_1_rational.html">wmtk::Rational</a> rz,</div>
+<div class="line"><a id="l00656" name="l00656"></a><span class="lineno">  656</span>        <a class="code hl_class" href="classwmtk_1_1_rational.html">wmtk::Rational</a> sx,</div>
+<div class="line"><a id="l00657" name="l00657"></a><span class="lineno">  657</span>        <a class="code hl_class" href="classwmtk_1_1_rational.html">wmtk::Rational</a> sy,</div>
+<div class="line"><a id="l00658" name="l00658"></a><span class="lineno">  658</span>        <a class="code hl_class" href="classwmtk_1_1_rational.html">wmtk::Rational</a> sz);</div>
+<div class="line"><a id="l00659" name="l00659"></a><span class="lineno">  659</span> </div>
+<div class="line"><a id="l00660" name="l00660"></a><span class="lineno">  660</span>    <span class="keywordtype">bool</span> checkTrackedFaces_wmtk_rational(</div>
+<div class="line"><a id="l00661" name="l00661"></a><span class="lineno">  661</span>        std::vector&lt;wmtk::Rational&gt;&amp; vol_coords,</div>
+<div class="line"><a id="l00662" name="l00662"></a><span class="lineno">  662</span>        <span class="keyword">const</span> std::vector&lt;double&gt;&amp; surf_coords,</div>
+<div class="line"><a id="l00663" name="l00663"></a><span class="lineno">  663</span>        std::vector&lt;uint32_t&gt;&amp; facets,</div>
+<div class="line"><a id="l00664" name="l00664"></a><span class="lineno">  664</span>        std::vector&lt;uint32_t&gt;&amp; facets_on_input,</div>
+<div class="line"><a id="l00665" name="l00665"></a><span class="lineno">  665</span>        <span class="keyword">const</span> std::vector&lt;uint32_t&gt;&amp; surf_tris);</div>
+<div class="line"><a id="l00666" name="l00666"></a><span class="lineno">  666</span> </div>
+<div class="line"><a id="l00667" name="l00667"></a><span class="lineno">  667</span>    <span class="keywordtype">bool</span> check_vertex_param_type();</div>
+<div class="line"><a id="l00668" name="l00668"></a><span class="lineno">  668</span> </div>
+<div class="line"><a id="l00669" name="l00669"></a><span class="lineno">  669</span>    <span class="comment">// for boolean operations</span></div>
+<div class="line"><a id="l00670" name="l00670"></a><span class="lineno">  670</span>    <span class="keywordtype">int</span> flood_fill();</div>
 <div class="line"><a id="l00671" name="l00671"></a><span class="lineno">  671</span> </div>
-<div class="line"><a id="l00672" name="l00672"></a><span class="lineno">  672</span> </div>
-<div class="line"><a id="l00673" name="l00673"></a><span class="lineno">  673</span>} <span class="comment">// namespace wmtk::components::tetwild</span></div>
+<div class="line"><a id="l00672" name="l00672"></a><span class="lineno">  672</span>    <span class="keywordtype">void</span> save_paraview(<span class="keyword">const</span> std::string&amp; path, <span class="keyword">const</span> <span class="keywordtype">bool</span> use_hdf5);</div>
+<div class="line"><a id="l00673" name="l00673"></a><span class="lineno">  673</span> </div>
+<div class="line"><a id="l00674" name="l00674"></a><span class="lineno">  674</span>    <span class="comment">// initialize sizing field (for topology preservation)</span></div>
+<div class="line"><a id="l00675" name="l00675"></a><span class="lineno">  675</span>    <span class="keywordtype">void</span> init_sizing_field();</div>
+<div class="line"><a id="l00676" name="l00676"></a><span class="lineno">  676</span> </div>
+<div class="line"><a id="l00677" name="l00677"></a><span class="lineno">  677</span><span class="keyword">public</span>:</div>
+<div class="foldopen" id="foldopen00678" data-start="{" data-end="};">
+<div class="line"><a id="l00678" name="l00678"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct.html">  678</a></span>    <span class="keyword">struct </span><a class="code hl_struct" href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct.html">ExportStruct</a></div>
+<div class="line"><a id="l00679" name="l00679"></a><span class="lineno">  679</span>    {</div>
+<div class="line"><a id="l00680" name="l00680"></a><span class="lineno">  680</span>        <span class="comment">// tet mesh</span></div>
+<div class="line"><a id="l00681" name="l00681"></a><span class="lineno">  681</span>        MatrixXd V;</div>
+<div class="line"><a id="l00682" name="l00682"></a><span class="lineno">  682</span>        MatrixXi T;</div>
+<div class="line"><a id="l00683" name="l00683"></a><span class="lineno">  683</span>        <span class="comment">// tracked surface</span></div>
+<div class="line"><a id="l00684" name="l00684"></a><span class="lineno">  684</span>        MatrixXi F;</div>
+<div class="line"><a id="l00685" name="l00685"></a><span class="lineno">  685</span>        <span class="comment">// attributes</span></div>
+<div class="line"><a id="l00686" name="l00686"></a><span class="lineno">  686</span>        VectorXd t_amips;</div>
+<div class="line"><a id="l00687" name="l00687"></a><span class="lineno">  687</span>        VectorXd t_winding_number_input;</div>
+<div class="line"><a id="l00688" name="l00688"></a><span class="lineno">  688</span>        VectorXd t_winding_number_tracked;</div>
+<div class="line"><a id="l00689" name="l00689"></a><span class="lineno">  689</span>        MatrixXd t_winding_number_per_input;</div>
+<div class="line"><a id="l00690" name="l00690"></a><span class="lineno">  690</span>        VectorXi t_part;</div>
+<div class="line"><a id="l00691" name="l00691"></a><span class="lineno">  691</span>    };</div>
+</div>
+<div class="line"><a id="l00692" name="l00692"></a><span class="lineno">  692</span>    <span class="comment">// export functionality</span></div>
+<div class="line"><a id="l00693" name="l00693"></a><span class="lineno">  693</span>    <a class="code hl_struct" href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct.html">ExportStruct</a> export_mesh_data() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00694" name="l00694"></a><span class="lineno">  694</span>};</div>
+</div>
+<div class="line"><a id="l00695" name="l00695"></a><span class="lineno">  695</span> </div>
+<div class="line"><a id="l00696" name="l00696"></a><span class="lineno">  696</span> </div>
+<div class="line"><a id="l00697" name="l00697"></a><span class="lineno">  697</span>} <span class="comment">// namespace wmtk::components::tetwild</span></div>
 <div class="ttc" id="aclass_resorting_1_1_morton_code64_html"><div class="ttname"><a href="class_resorting_1_1_morton_code64.html">Resorting::MortonCode64</a></div><div class="ttdef"><b>Definition</b> Morton.h:35</div></div>
 <div class="ttc" id="aclasswmtk_1_1_rational_html"><div class="ttname"><a href="classwmtk_1_1_rational.html">wmtk::Rational</a></div><div class="ttdef"><b>Definition</b> Rational.hpp:10</div></div>
 <div class="ttc" id="aclasswmtk_1_1_sample_envelope_html"><div class="ttname"><a href="classwmtk_1_1_sample_envelope.html">wmtk::SampleEnvelope</a></div><div class="ttdef"><b>Definition</b> Envelope.hpp:51</div></div>
@@ -728,7 +732,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="ttc" id="astructwmtk_1_1_attribute_collection_html"><div class="ttname"><a href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection&lt; VertexAttributes &gt;</a></div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_parameters_html"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html">wmtk::components::tetwild::Parameters</a></div><div class="ttdef"><b>Definition</b> Parameters.h:5</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_collapse_info_cache_html"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_collapse_info_cache.html">wmtk::components::tetwild::TetWildMesh::CollapseInfoCache</a></div><div class="ttdef"><b>Definition</b> TetWildMesh.h:466</div></div>
-<div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct_html"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct.html">wmtk::components::tetwild::TetWildMesh::ExportStruct</a></div><div class="ttdef"><b>Definition</b> TetWildMesh.h:655</div></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct_html"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct.html">wmtk::components::tetwild::TetWildMesh::ExportStruct</a></div><div class="ttdef"><b>Definition</b> TetWildMesh.h:679</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_split_info_cache_html"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_split_info_cache.html">wmtk::components::tetwild::TetWildMesh::SplitInfoCache</a></div><div class="ttdef"><b>Definition</b> TetWildMesh.h:451</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_surface_topo_signature_html"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_surface_topo_signature.html">wmtk::components::tetwild::TetWildMesh::SurfaceTopoSignature</a></div><div class="ttdoc">A topological fingerprint of the tracked surface (m_is_surface_fs).</div><div class="ttdef"><b>Definition</b> TetWildMesh.h:337</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_swap_info_cache_html"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_swap_info_cache.html">wmtk::components::tetwild::TetWildMesh::SwapInfoCache</a></div><div class="ttdef"><b>Definition</b> TetWildMesh.h:499</div></div>
