@@ -597,6 +597,8 @@ public:
 
     void output_tracked_surface(std::string output_file);
 
+    bool adjust_sizing_field_serial(double max_energy);
+
     /**
      * @brief Escape a stuck max energy by refining the sizing field around the
      * worst elements.
@@ -609,7 +611,7 @@ public:
      * into the surrounding resolution. Replaces the old global
      * adjust_sizing_field mechanism. Returns the number of vertices refined.
      */
-    size_t refine_sizing_around_worst();
+    size_t refine_sizing_around_worst(double max_energy);
 
     /**
      * @brief Monotone (only-decreasing) gradation smoothing of the sizing field.
