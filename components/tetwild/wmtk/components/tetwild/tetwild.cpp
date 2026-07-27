@@ -198,14 +198,15 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     // Informational input-topology report; gated behind DEBUG_euler because the
     // Euler-characteristic computation is expensive on meshes with many components.
+    std::vector<int> ecs_input;
     if (json_params["DEBUG_euler"]) {
         Eigen::MatrixXi F(tris.size(), 3);
         for (int i = 0; i < tris.size(); ++i) {
             F.row(i) = Eigen::Vector3i((int)tris[i][0], (int)tris[i][1], (int)tris[i][2]);
         }
 
-        const auto ecs = compute_euler_characteristics(F);
-        logger().info("Input euler characteristic: {}", ecs);
+        ecs_input = compute_euler_characteristics(F);
+        logger().info("Input euler characteristic: {}", ecs_input);
     }
 
     double diag = (box_minmax.first - box_minmax.second).norm();
@@ -462,7 +463,6 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     // Hausdorff + Euler Characteristic
     double hausdorff_distance = -1;
-    std::vector<int> ecs_input;
     std::vector<int> ecs_output;
     {
         Eigen::MatrixXd V(verts.size(), 3);
@@ -517,8 +517,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         // meshes with many components (tens of seconds), so it is off by default and only
         // computed when explicitly requested (DEBUG_euler) or when it is actually needed
         // for the preserve_topology throw check below.
-        if (json_params["DEBUG_euler"] || params.preserve_topology) {
-            ecs_input = compute_euler_characteristics(F);
+        if (json_params["DEBUG_euler"]) {
             logger().info("Input euler characteristic: {}", ecs_input);
             ecs_output = compute_euler_characteristics(matF);
             logger().info("Output euler characteristic: {}", ecs_output);
