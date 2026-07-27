@@ -132,34 +132,17 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     params.debug_output = json_params["DEBUG_output"];
     params.perform_sanity_checks = json_params["DEBUG_sanity_checks"];
 
-    // Surface-edge swap (surface diagonal flip). Optional JSON keys with the
-    // Parameters defaults; env-var overrides are provided for quick A/B
-    // benchmarking without editing the config spec.
-    params.allow_surface_swap = json_params.value("allow_surface_swap", params.allow_surface_swap);
-    params.check_surface_topology =
-        json_params.value("check_surface_topology", params.check_surface_topology);
-    if (const char* e = std::getenv("TW_ALLOW_SURFACE_SWAP"))
-        params.allow_surface_swap = (std::string(e) != "0");
-    if (const char* e = std::getenv("TW_CHECK_SURFACE_TOPO"))
-        params.check_surface_topology = (std::string(e) == "1");
+    params.allow_surface_swap = json_params["allow_surface_swap"];
+    params.check_surface_topology = json_params["check_surface_topology"];
 
     // Stuck-element sizing refinement.
-    params.stuck_refine = json_params.value("stuck_refine", params.stuck_refine);
-    params.stuck_refine_stall_eps =
-        json_params.value("stuck_refine_stall_eps", params.stuck_refine_stall_eps);
-    params.stuck_refine_cooldown =
-        json_params.value("stuck_refine_cooldown", params.stuck_refine_cooldown);
-    params.stuck_refine_num_worst =
-        json_params.value("stuck_refine_num_worst", params.stuck_refine_num_worst);
-    params.stuck_refine_rings = json_params.value("stuck_refine_rings", params.stuck_refine_rings);
-    params.stuck_refine_factor =
-        json_params.value("stuck_refine_factor", params.stuck_refine_factor);
-    params.stuck_refine_min_scalar =
-        json_params.value("stuck_refine_min_scalar", params.stuck_refine_min_scalar);
-    params.stuck_refine_gradation =
-        json_params.value("stuck_refine_gradation", params.stuck_refine_gradation);
-    if (const char* e = std::getenv("TW_STUCK_REFINE"))
-        params.stuck_refine = (std::string(e) != "0");
+    params.stuck_refine_stall_eps = json_params["stuck_refine_stall_eps"];
+    params.stuck_refine_cooldown = json_params["stuck_refine_cooldown"];
+    params.stuck_refine_num_worst = json_params["stuck_refine_num_worst"];
+    params.stuck_refine_rings = json_params["stuck_refine_rings"];
+    params.stuck_refine_factor = json_params["stuck_refine_factor"];
+    params.stuck_refine_min_scalar = json_params["stuck_refine_min_scalar"];
+    params.stuck_refine_gradation = json_params["stuck_refine_gradation"];
 
     // Skip good regions.
     params.skip_good_regions = json_params.value("skip_good_regions", params.skip_good_regions);
