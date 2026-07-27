@@ -1,4 +1,5 @@
 #include "qslim.hpp"
+#include <wmtk/utils/Preallocation.hpp>
 
 #include <igl/Timer.h>
 #include <jse/jse.h>
@@ -81,6 +82,7 @@ void qslim(nlohmann::json json_params)
     const double envelope_size = env_rel * diag;
 
     QSlimMesh m(verts, num_thread);
+    wmtk::set_preallocation_factor_from_json(m, json_params);
     m.create_mesh(verts.size(), tris, modified_nonmanifold_v, envelope_size);
     assert(m.check_mesh_connectivity_validity());
     logger().info("collapsing mesh {}", input_path);

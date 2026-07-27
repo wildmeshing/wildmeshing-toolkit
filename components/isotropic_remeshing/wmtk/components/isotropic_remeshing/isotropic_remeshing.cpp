@@ -1,4 +1,5 @@
 #include "isotropic_remeshing.hpp"
+#include <wmtk/utils/Preallocation.hpp>
 
 #include <igl/Timer.h>
 #include <jse/jse.h>
@@ -96,6 +97,7 @@ void isotropic_remeshing(nlohmann::json json_params)
     igl::Timer timer;
 
     IsotropicRemeshing m(verts, num_threads, !sample_envelope);
+    wmtk::set_preallocation_factor_from_json(m, json_params);
     m.create_mesh(verts.size(), tris, modified_nonmanifold_v, freeze_boundary, envelope_size);
 
     {

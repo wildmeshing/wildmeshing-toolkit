@@ -16,6 +16,53 @@ struct Parameters
     bool preserve_topology = false;
     std::string output_path;
 
+    // Allow the 3->2 edge swap to operate on surface edges (a surface diagonal
+    // flip) instead of forbidding them outright. Enabled by default; can be
+    // turned off to reproduce the old surface-frozen behavior for A/B testing.
+    bool allow_surface_swap = true;
+    // Expensive debug check: verify the global surface topology signature
+    // (connected components, Euler characteristic, boundary loops) is unchanged
+    // across each swap pass. Off by default (used by tests / debugging).
+    bool check_surface_topology = false;
+
+    // ---- Stuck-element sizing refinement --------------------------------
+    // Trigger threshold: fire when the max energy did not improve by more than
+    // this *fraction* since the previous iteration, i.e. refine when
+    // (prev_max - max) <= stall_eps * prev_max. 0 => only when it does not
+    // improve at all (or gets worse).
+    double stuck_refine_stall_eps = 0.01;
+    // Cooldown: after a refinement, skip this many improvement iterations before
+    // refining again, so the operations get full passes to act on the new sizing
+    // field before more refinement is added. 0 => may refine every iteration.
+    int stuck_refine_cooldown = 1;
+    // Number of worst tets (by energy) whose neighborhoods are refined.
+    int stuck_refine_num_worst = 50;
+    // Graph rings around each worst tet's vertices included in the refinement.
+    int stuck_refine_rings = 3;
+    // Multiplicative reduction of m_sizing_scalar per refinement (0.5 => /2).
+    double stuck_refine_factor = 0.5;
+    // Lower bound on m_sizing_scalar. Much smaller than the old l_min/l floor;
+    // still far above the position-rounding scale so it stays numerically safe.
+    double stuck_refine_min_scalar = 1e-3;
+    // Gradation cap for the monotone sizing smoothing: neighboring sizings may
+    // differ by at most this factor. The smoothing only ever *lowers* sizings
+    // (spreads refinement outward), never raises the refined values, avoiding
+    // sharp resolution jumps that make operations ill-conditioned.
+    double stuck_refine_gradation = 2.0;
+
+    // ---- Skip good regions ----------------------------------------------
+    // Only smooth vertices incident to a tet whose energy is >=
+    // skip_good_regions_margin * stop_energy. Smoothing a vertex surrounded by
+    // good tets does nothing, so skipping it is free (14-16x faster smooth
+    // passes). Only smoothing is gated: gating the topology/sizing ops
+    // (split/collapse/swap) starves the optimizer and blows up the element
+    // count, so those always run over the whole mesh.
+    bool skip_good_regions = true;
+    // Safety margin on the "active" threshold: a tet is active when its energy
+    // (cbrt of m_quality) is >= this fraction of stop_energy, so vertices near
+    // tets sitting just below the target are still smoothed.
+    double skip_good_regions_margin = 0.9;
+
     double splitting_l2 = -1.; // the lower bound length (squared) for edge split
     double collapsing_l2 =
         std::numeric_limits<double>::max(); // the upper bound length (squared) for edge collapse

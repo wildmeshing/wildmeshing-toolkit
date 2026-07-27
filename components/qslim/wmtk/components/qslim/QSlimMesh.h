@@ -8,10 +8,7 @@
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <igl/write_triangle_mesh.h>
-#include <tbb/enumerable_thread_specific.h>
-#include <tbb/parallel_for.h>
-#include <tbb/parallel_sort.h>
-#include <tbb/task_arena.h>
+#include <wmtk/threading/enumerable_thread_specific.hpp>
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
@@ -112,7 +109,7 @@ private:
         Quadrics Q2;
         int partition_id;
     };
-    tbb::enumerable_thread_specific<InfoCache> cache;
+    wmtk::threading::enumerable_thread_specific<InfoCache> cache;
 
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& t) const;
 };

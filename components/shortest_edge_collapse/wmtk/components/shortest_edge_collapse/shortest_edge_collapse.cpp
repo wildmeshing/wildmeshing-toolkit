@@ -1,4 +1,5 @@
 #include <CLI/CLI.hpp>
+#include <wmtk/utils/Preallocation.hpp>
 
 #include <igl/Timer.h>
 
@@ -92,6 +93,7 @@ void shortest_edge_collapse(nlohmann::json json_params)
     std::vector<size_t> modified_v;
 
     ShortestEdgeCollapse m(v, num_threads, !use_sample_envelope);
+    wmtk::set_preallocation_factor_from_json(m, json_params);
     m.create_mesh(v.size(), tri, modified_v, envelope_size);
     if (!m.check_mesh_connectivity_validity()) {
         log_and_throw_error("Mesh connectivity is invalid!");
