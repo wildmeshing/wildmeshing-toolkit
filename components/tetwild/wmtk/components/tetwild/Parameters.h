@@ -16,6 +16,15 @@ struct Parameters
     bool preserve_topology = false;
     std::string output_path;
 
+    // Allow the 3->2 edge swap to operate on surface edges (a surface diagonal
+    // flip) instead of forbidding them outright. Enabled by default; can be
+    // turned off to reproduce the old surface-frozen behavior for A/B testing.
+    bool allow_surface_swap = true;
+    // Expensive debug check: verify the global surface topology signature
+    // (connected components, Euler characteristic, boundary loops) is unchanged
+    // across each swap pass. Off by default (used by tests / debugging).
+    bool check_surface_topology = false;
+
     double splitting_l2 = -1.; // the lower bound length (squared) for edge split
     double collapsing_l2 =
         std::numeric_limits<double>::max(); // the upper bound length (squared) for edge collapse

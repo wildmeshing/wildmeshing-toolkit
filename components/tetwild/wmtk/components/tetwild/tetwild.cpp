@@ -7,6 +7,7 @@
 #include <jse/jse.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
+#include <cstdlib>
 #include <wmtk/io/read_triangle_mesh.hpp>
 
 #include <wmtk/components/shortest_edge_collapse/ShortestEdgeCollapse.h>
@@ -130,6 +131,9 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     params.debug_output = json_params["DEBUG_output"];
     params.perform_sanity_checks = json_params["DEBUG_sanity_checks"];
+
+    params.allow_surface_swap = json_params["allow_surface_swap"];
+    params.check_surface_topology = json_params["check_surface_topology"];
 
     std::vector<Eigen::Vector3d> verts;
     std::vector<std::array<size_t, 3>> tris;
