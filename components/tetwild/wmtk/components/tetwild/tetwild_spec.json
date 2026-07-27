@@ -187,14 +187,16 @@
   {
     "pointer": "/stuck_refine_num_worst",
     "type": "int",
-    "default": 50,
-    "doc": "Number of worst tets whose neighborhoods are refined when stuck."
+    "default": 0,
+    "min": 0,
+    "doc": "Number of worst tets whose neighborhoods are refined when stuck. 0 => refine all tets with energy above the filter_energy."
   },
   {
     "pointer": "/stuck_refine_rings",
     "type": "int",
-    "default": 3,
-    "doc": "Graph rings around each worst tet included in the stuck refinement."
+    "default": 0,
+    "min": 0,
+    "doc": "Graph rings around each worst tet included in the stuck refinement. 0 => only the worst tet itself, 1 => its neighbors, 2 => neighbors of neighbors, etc."
   },
   {
     "pointer": "/stuck_refine_factor",

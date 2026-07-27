@@ -590,7 +590,7 @@ public:
      * into the surrounding resolution. Replaces the old global
      * adjust_sizing_field mechanism. Returns the number of vertices refined.
      */
-    size_t refine_sizing_around_worst();
+    size_t refine_sizing_around_worst(double max_energy);
 
     /**
      * @brief Monotone (only-decreasing) gradation smoothing of the sizing field.

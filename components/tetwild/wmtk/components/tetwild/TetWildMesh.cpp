@@ -102,22 +102,16 @@ void TetWildMesh::mesh_improvement(int max_its)
         /// adjust_sizing_field mechanism). After a refinement, wait
         /// stuck_refine_cooldown iterations so the operations get full passes on
         /// the new sizing field before more refinement is added.
-        if (it > 0 && max_energy > m_params.stop_energy &&
+        if (refine_cooldown > 0) {
+            --refine_cooldown;
+        } else if (
+            it > 0 && max_energy > m_params.stop_energy &&
             (pre_max_energy - max_energy) <= m_params.stuck_refine_stall_eps * pre_max_energy) {
-            logger().info(
-                "energy stalled; diff = {:.6}, required = {:.6}",
-                (pre_max_energy - max_energy) / pre_max_energy,
-                m_params.stuck_refine_stall_eps);
-            if (refine_cooldown > 0) {
-                logger().info("attempts before refinement: {}", refine_cooldown);
-                --refine_cooldown;
-            } else {
-                logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", max_energy);
-                refine_sizing_around_worst();
-                // adjust_sizing_field_serial(m_params.stop_energy);
-                logger().info(">>>>stuck-refine finished...");
-                refine_cooldown = m_params.stuck_refine_cooldown;
-            }
+            logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", max_energy);
+            refine_sizing_around_worst(max_energy);
+            // adjust_sizing_field_serial(max_energy); // The old update
+            logger().info(">>>>stuck-refine finished...");
+            refine_cooldown = m_params.stuck_refine_cooldown;
         }
         pre_max_energy = max_energy;
     }
@@ -635,36 +629,43 @@ bool TetWildMesh::adjust_sizing_field_serial(double max_energy)
     return is_hit_min_edge_length;
 }
 
-size_t TetWildMesh::refine_sizing_around_worst()
+size_t TetWildMesh::refine_sizing_around_worst(double max_energy)
 {
-    // const int num_worst = std::max(1, m_params.stuck_refine_num_worst);
+    const int num_worst = std::max(0, m_params.stuck_refine_num_worst);
     const int n_rings = std::max(0, m_params.stuck_refine_rings);
     const double factor = m_params.stuck_refine_factor;
     const double floor = m_params.stuck_refine_min_scalar;
 
+    const double filter_energy = std::max(max_energy / 100, m_params.stop_energy);
+
     // Find the num_worst valid tets with the highest energy. `worst` is kept
     // sorted ascending by quality, size <= num_worst (front = smallest kept).
     std::vector<std::pair<double, size_t>> worst;
-    // worst.reserve(num_worst);
+    worst.reserve(num_worst);
     for (size_t tid = 0; tid < tet_capacity(); ++tid) {
         const Tuple t = tuple_from_tet(tid);
         if (!t.is_valid(*this)) {
             continue;
         }
         const double& q = m_tet_attribute[tid].m_quality;
-        if (std::cbrt(q) < m_params.stop_energy) {
+        if (std::cbrt(q) < filter_energy) {
             continue;
         }
-        // if (static_cast<int>(worst.size()) < num_worst) {
-        //     worst.emplace_back(q, tid);
-        //     std::sort(worst.begin(), worst.end());
-        // } else if (q > worst.front().first) {
-        //     worst.front() = {q, tid};
-        //     std::sort(worst.begin(), worst.end());
-        // }
-        worst.emplace_back(q, tid);
+        if (num_worst > 0) {
+            if (static_cast<int>(worst.size()) < num_worst) {
+                worst.emplace_back(q, tid);
+                std::sort(worst.begin(), worst.end());
+            } else if (q > worst.front().first) {
+                worst.front() = {q, tid};
+                std::sort(worst.begin(), worst.end());
+            }
+        } else {
+            worst.emplace_back(q, tid);
+        }
     }
-    std::sort(worst.begin(), worst.end());
+    if (num_worst == 0) {
+        std::sort(worst.begin(), worst.end());
+    }
     if (worst.empty()) {
         return 0;
     }
@@ -672,15 +673,16 @@ size_t TetWildMesh::refine_sizing_around_worst()
     // Seed the region with the worst tets' vertices, then BFS n_rings hops.
     std::unordered_set<size_t> region;
     std::vector<size_t> frontier;
-    for (const auto& [q, tid] : worst) {
+    for (const auto& [_, tid] : worst) {
         const auto vs = oriented_tet_vids(tid);
         for (const size_t v : vs) {
-            if (region.insert(v).second) {
-                frontier.push_back(v);
-            }
+            region.insert(v);
         }
     }
-    for (int r = 0; r < n_rings && !frontier.empty(); ++r) {
+    frontier.insert(frontier.end(), region.begin(), region.end());
+
+    // grow region by n rings starting from the worst tets' vertices
+    for (int r = 0; r < n_rings; ++r) {
         std::vector<size_t> next;
         for (const size_t v : frontier) {
             for (const size_t u : get_one_ring_vids_for_vertex_adj(v)) {
@@ -709,17 +711,21 @@ size_t TetWildMesh::refine_sizing_around_worst()
 
     // m_quality stores AMIPS^3; report its cube root to match the "max energy".
     logger().info(
-        "[stuck-refine] worst {} tets (maxE {:.4}), refined {} of {} region vertices",
+        "[stuck-refine] worst {} tets (maxE {:.4}), refined {} of {} region vertices, "
+        "filter_energy {:.4}",
         worst.size(),
         std::cbrt(worst.back().first),
         refined.size(),
-        region.size());
+        region.size(),
+        filter_energy);
     return refined.size();
 }
 
 void TetWildMesh::gradation_smooth_sizing(double grade, const std::vector<size_t>& seeds)
 {
-    if (grade <= 1.0) return;
+    if (grade <= 1.0) {
+        return;
+    }
 
     // Min-relaxation (Dijkstra/Bellman-Ford style): vertex u caps each neighbor
     // at grade * sizing[u]. Only ever decreases sizings, so it spreads more
@@ -727,12 +733,16 @@ void TetWildMesh::gradation_smooth_sizing(double grade, const std::vector<size_t
     // Sizings are always in (0, 1], so once grade*sizing[u] >= 1 the cap can no
     // longer lower any neighbor and propagation stops -- this bounds the halo.
     std::queue<size_t> q;
-    for (const size_t v : seeds) q.push(v);
+    for (const size_t v : seeds) {
+        q.push(v);
+    }
     while (!q.empty()) {
         const size_t u = q.front();
         q.pop();
         const double cap = grade * m_vertex_attribute[u].m_sizing_scalar;
-        if (cap >= 1.0) continue;
+        if (cap >= 1.0) {
+            continue;
+        }
         for (const size_t w : get_one_ring_vids_for_vertex_adj(u)) {
             double& sw = m_vertex_attribute[w].m_sizing_scalar;
             if (sw > cap) {
