@@ -145,11 +145,8 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     params.stuck_refine_gradation = json_params["stuck_refine_gradation"];
 
     // Skip good regions.
-    params.skip_good_regions = json_params.value("skip_good_regions", params.skip_good_regions);
-    params.skip_good_regions_margin =
-        json_params.value("skip_good_regions_margin", params.skip_good_regions_margin);
-    if (const char* e = std::getenv("TW_SKIP_GOOD_REGIONS"))
-        params.skip_good_regions = (std::string(e) != "0");
+    params.skip_good_regions = json_params["skip_good_regions"];
+    params.skip_good_regions_margin = json_params["skip_good_regions_margin"];
 
     std::vector<Eigen::Vector3d> verts;
     std::vector<std::array<size_t, 3>> tris;

@@ -1171,8 +1171,12 @@ std::vector<size_t> TetWildMesh::active_vertices() const
     std::vector<char> seen(vert_capacity(), 0);
     std::vector<size_t> out;
     for (size_t i = 0; i < tet_capacity(); ++i) {
-        if (!tuple_from_tet(i).is_valid(*this)) continue;
-        if (m_tet_attribute[i].m_quality < thr) continue;
+        if (!tuple_from_tet(i).is_valid(*this)) {
+            continue;
+        }
+        if (m_tet_attribute[i].m_quality < thr) {
+            continue;
+        }
         for (const size_t v : oriented_tet_vids(i)) {
             if (!seen[v]) {
                 seen[v] = 1;
