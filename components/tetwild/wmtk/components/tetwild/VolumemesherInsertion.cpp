@@ -493,6 +493,14 @@ void TetWildMesh::insertion_by_volumeremesher_old(
     // the embedded_* / out_* outputs declared above. The trailing `true`
     // requests the on-input-surface tagging (embedded_facets_on_input).
     // volumeremesher embed
+    // PR #12 (wildmeshing/VolumeRemesher) added input edges/points and per-simplex
+    // provenance outputs. tetwild only embeds triangles, so the edge/point inputs
+    // are empty and the provenance outputs are unused.
+    std::vector<double> vr_edge_coords, vr_point_coords;
+    std::vector<uint32_t> vr_edge_indexes;
+    std::vector<std::vector<std::array<uint32_t, 4>>> vr_tri_provenance;
+    std::vector<std::vector<std::array<uint32_t, 3>>> vr_edge_provenance;
+    std::vector<std::array<uint32_t, 2>> vr_point_provenance;
     vol_rem::embed_tri_in_poly_mesh(
         tri_ver_coord,
         tri_index,
@@ -506,6 +514,12 @@ void TetWildMesh::insertion_by_volumeremesher_old(
         embedded_facets_on_input,
         cells_with_faces_on_input,
         final_tets_parent_faces,
+        vr_edge_coords,
+        vr_edge_indexes,
+        vr_point_coords,
+        vr_tri_provenance,
+        vr_edge_provenance,
+        vr_point_provenance,
         true);
 
     // marco's test
@@ -1224,6 +1238,11 @@ void TetWildMesh::insertion_by_volumeremesher(
 
     // Step 3: run the exact arrangement (identical call to the "_old" variant).
     // volumeremesher embed
+    std::vector<double> vr_edge_coords, vr_point_coords;
+    std::vector<uint32_t> vr_edge_indexes;
+    std::vector<std::vector<std::array<uint32_t, 4>>> vr_tri_provenance;
+    std::vector<std::vector<std::array<uint32_t, 3>>> vr_edge_provenance;
+    std::vector<std::array<uint32_t, 2>> vr_point_provenance;
     vol_rem::embed_tri_in_poly_mesh(
         tri_vrt_coord,
         triangle_indices,
@@ -1237,6 +1256,12 @@ void TetWildMesh::insertion_by_volumeremesher(
         embedded_facets_on_input,
         cells_with_faces_on_input,
         final_tets_parent_faces,
+        vr_edge_coords,
+        vr_edge_indexes,
+        vr_point_coords,
+        vr_tri_provenance,
+        vr_edge_provenance,
+        vr_point_provenance,
         true);
 
     // Step 4a: copy the arrangement vertices to exact rational Vector3r (same as

@@ -239,6 +239,12 @@ void embed_surface(
     std::vector<std::vector<uint32_t>> final_tets_parent_faces;
 
     // volumeremesher embed
+    // PR #12 added input edges/points + provenance outputs (unused here).
+    std::vector<double> vr_edge_coords, vr_point_coords;
+    std::vector<uint32_t> vr_edge_indexes;
+    std::vector<std::vector<std::array<uint32_t, 4>>> vr_tri_provenance;
+    std::vector<std::vector<std::array<uint32_t, 3>>> vr_edge_provenance;
+    std::vector<std::array<uint32_t, 2>> vr_point_provenance;
     vol_rem::embed_tri_in_poly_mesh(
         tri_ver_coord,
         tri_index,
@@ -252,6 +258,12 @@ void embed_surface(
         embedded_facets_on_input,
         cells_with_faces_on_input,
         final_tets_parent_faces,
+        vr_edge_coords,
+        vr_edge_indexes,
+        vr_point_coords,
+        vr_tri_provenance,
+        vr_edge_provenance,
+        vr_point_provenance,
         true);
 
     assert(embedded_vertices.size() % 3 == 0);
