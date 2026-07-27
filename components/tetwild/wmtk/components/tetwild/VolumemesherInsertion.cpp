@@ -1786,24 +1786,22 @@ void TetWildMesh::init_from_Volumeremesher(
         // Per-vertex, independent: each i writes only its own m_pos/m_posf/
         // m_is_rounded/is_direct_point; the rational->double conversion and the
         // exact comparison read only local data.
-        wmtk::task_arena arena(std::max(1, NUM_THREADS));
-        arena.execute([&] {
-            wmtk::parallel_for(
-                wmtk::blocked_range<size_t>(0, vert_capacity()),
-                [&](wmtk::blocked_range<size_t> range) {
-                    for (size_t i = range.begin(); i < range.end(); ++i) {
-                        m_vertex_attribute[i].m_pos = v_rational[i];
-                        m_vertex_attribute[i].m_posf = to_double(v_rational[i]);
-                        const Vector3r& rp = m_vertex_attribute[i].m_pos;
-                        const Vector3d& d = m_vertex_attribute[i].m_posf;
-                        const bool direct = (wmtk::Rational(d[0]) == rp[0]) &&
-                                            (wmtk::Rational(d[1]) == rp[1]) &&
-                                            (wmtk::Rational(d[2]) == rp[2]);
-                        is_direct_point[i] = direct ? 1 : 0;
-                        m_vertex_attribute[i].m_is_rounded = direct;
-                    }
-                });
-        });
+        threading::parallel_for(
+            threading::range(0, vert_capacity()),
+            [&](const threading::range& range) {
+                for (size_t i = range.begin(); i < range.end(); ++i) {
+                    m_vertex_attribute[i].m_pos = v_rational[i];
+                    m_vertex_attribute[i].m_posf = to_double(v_rational[i]);
+                    const Vector3r& rp = m_vertex_attribute[i].m_pos;
+                    const Vector3d& d = m_vertex_attribute[i].m_posf;
+                    const bool direct = (wmtk::Rational(d[0]) == rp[0]) &&
+                                        (wmtk::Rational(d[1]) == rp[1]) &&
+                                        (wmtk::Rational(d[2]) == rp[2]);
+                    is_direct_point[i] = direct ? 1 : 0;
+                    m_vertex_attribute[i].m_is_rounded = direct;
+                }
+            },
+            NUM_THREADS);
     }
 
     // check here
