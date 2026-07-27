@@ -1,16 +1,11 @@
 #include <igl/is_edge_manifold.h>
 #include <igl/writeDMAT.h>
 #include <wmtk/TriMesh.h>
+#include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
+#include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
-#include "wmtk/utils/VectorUtils.h"
-
-// clang-format off
-#include <wmtk/utils/DisableWarnings.hpp>
-#include <wmtk/utils/Concurrency.hpp>
-#include <wmtk/utils/EnableWarnings.hpp>
-// clang-format on
 
 using namespace wmtk;
 
@@ -1671,7 +1666,7 @@ long TriMesh::request_tri_slots(size_t n)
         std::memory_order_acq_rel,
         std::memory_order_relaxed));
     // Reset the handed-out slots to a clean state (the preallocated std::vector
-    // keeps stale data in the spare region; the old tbb::concurrent_vector regrew
+    // keeps stale data in the spare region; the old tbb::collector regrew
     // fresh slots on consolidate).
     for (long i = first; i < first + (long)n; ++i) {
         m_tri_connectivity[i] = TriangleConnectivity{};
@@ -1977,54 +1972,54 @@ bool TriMesh::try_set_face_mutex_one_ring(const Tuple& f, int threadid)
 
 void wmtk::TriMesh::for_each_edge(const std::function<void(const TriMesh::Tuple&)>& func)
 {
-    wmtk::task_arena arena(NUM_THREADS);
-    arena.execute([&] {
-        wmtk::parallel_for(
-            wmtk::blocked_range<size_t>(0, tri_capacity()),
-            [&](const wmtk::blocked_range<size_t>& r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    if (!tuple_from_tri(i).is_valid(*this)) continue;
-                    for (int j = 0; j < 3; j++) {
-                        auto tup = tuple_from_edge(i, j);
-                        if (tup.eid(*this) == 3 * i + j) {
-                            func(tup);
-                        }
+    threading::parallel_for(
+        threading::range(0, tri_capacity()),
+        [&](const threading::range& r) {
+            for (size_t i = r.begin(); i < r.end(); i++) {
+                if (!tuple_from_tri(i).is_valid(*this)) {
+                    continue;
+                }
+                for (int j = 0; j < 3; j++) {
+                    auto tup = tuple_from_edge(i, j);
+                    if (tup.eid(*this) == 3 * i + j) {
+                        func(tup);
                     }
                 }
-            });
-    });
+            }
+        },
+        NUM_THREADS);
 }
 
 void wmtk::TriMesh::for_each_vertex(const std::function<void(const TriMesh::Tuple&)>& func)
 {
-    wmtk::task_arena arena(NUM_THREADS);
-    arena.execute([&] {
-        wmtk::parallel_for(
-            wmtk::blocked_range<size_t>(0, vert_capacity()),
-            [&](wmtk::blocked_range<size_t> r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    auto tup = tuple_from_vertex(i);
-                    if (!tup.is_valid(*this)) continue;
-                    func(tup);
+    threading::parallel_for(
+        threading::range(0, vert_capacity()),
+        [&](const threading::range& r) {
+            for (size_t i = r.begin(); i < r.end(); i++) {
+                auto tup = tuple_from_vertex(i);
+                if (!tup.is_valid(*this)) {
+                    continue;
                 }
-            });
-    });
+                func(tup);
+            }
+        },
+        NUM_THREADS);
 }
 
 void wmtk::TriMesh::for_each_face(const std::function<void(const TriMesh::Tuple&)>& func)
 {
-    wmtk::task_arena arena(NUM_THREADS);
-    arena.execute([&] {
-        wmtk::parallel_for(
-            wmtk::blocked_range<size_t>(0, tri_capacity()),
-            [&](wmtk::blocked_range<size_t> r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    auto tup = tuple_from_tri(i);
-                    if (!tup.is_valid(*this)) continue;
-                    func(tup);
+    threading::parallel_for(
+        threading::range(0, tri_capacity()),
+        [&](const threading::range& r) {
+            for (size_t i = r.begin(); i < r.end(); i++) {
+                auto tup = tuple_from_tri(i);
+                if (!tup.is_valid(*this)) {
+                    continue;
                 }
-            });
-    });
+                func(tup);
+            }
+        },
+        NUM_THREADS);
 }
 
 
