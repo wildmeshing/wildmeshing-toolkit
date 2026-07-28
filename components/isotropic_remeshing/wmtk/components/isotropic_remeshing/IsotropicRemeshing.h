@@ -8,7 +8,7 @@
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <igl/write_triangle_mesh.h>
-#include <wmtk/utils/Concurrency.hpp>
+#include <wmtk/threading/enumerable_thread_specific.hpp>
 #include <fastenvelope/FastEnvelope.h>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
@@ -59,7 +59,7 @@ public:
         Eigen::Vector3d v2p;
         size_t partition_id;
     };
-    wmtk::enumerable_thread_specific<PositionInfoCache> position_cache;
+    wmtk::threading::enumerable_thread_specific<PositionInfoCache> position_cache;
 
     void cache_edge_positions(const Tuple& t);
 

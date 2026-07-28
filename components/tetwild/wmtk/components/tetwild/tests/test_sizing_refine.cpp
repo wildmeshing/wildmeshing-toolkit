@@ -65,7 +65,7 @@ TEST_CASE("stuck-refine-region-and-factor", "[tetwild_operation][stuck_refine]")
     mesh.m_tet_attribute[0].m_quality = 1e40;
     mesh.m_tet_attribute[1].m_quality = 30.0;
 
-    const size_t n = mesh.refine_sizing_around_worst();
+    const size_t n = mesh.refine_sizing_around_worst(0);
     CHECK(n == 4); // exactly tet 0's four vertices
 
     // tet 0's vertices halved; tet 1's vertices untouched.
@@ -92,7 +92,7 @@ TEST_CASE("stuck-refine-floor-clamp", "[tetwild_operation][stuck_refine]")
     mesh.m_tet_attribute[0].m_quality = 1e40;
     mesh.m_tet_attribute[1].m_quality = 30.0;
 
-    mesh.refine_sizing_around_worst();
+    mesh.refine_sizing_around_worst(0);
     for (size_t v : {0, 1, 2, 3}) CHECK(sz(mesh, v) == 0.7); // max(0.7, 0.5)
     for (size_t v : {4, 5, 6, 7}) CHECK(sz(mesh, v) == 1.0);
 }
@@ -113,7 +113,7 @@ TEST_CASE("stuck-refine-num-worst", "[tetwild_operation][stuck_refine]")
     mesh.m_tet_attribute[0].m_quality = 1e40;
     mesh.m_tet_attribute[1].m_quality = 1e30;
 
-    const size_t n = mesh.refine_sizing_around_worst();
+    const size_t n = mesh.refine_sizing_around_worst(0);
     CHECK(n == 8); // all vertices of both worst tets
     for (size_t v = 0; v < 8; ++v) CHECK(sz(mesh, v) == 0.5);
     // Each worst tet queues its own longest edge for force-split.

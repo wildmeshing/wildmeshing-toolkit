@@ -132,49 +132,23 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     params.debug_output = json_params["DEBUG_output"];
     params.perform_sanity_checks = json_params["DEBUG_sanity_checks"];
 
-    // Surface-edge swap (surface diagonal flip). Optional JSON keys with the
-    // Parameters defaults; env-var overrides are provided for quick A/B
-    // benchmarking without editing the config spec.
-    params.allow_surface_swap = json_params.value("allow_surface_swap", params.allow_surface_swap);
-    params.check_surface_topology =
-        json_params.value("check_surface_topology", params.check_surface_topology);
-    if (const char* e = std::getenv("TW_ALLOW_SURFACE_SWAP"))
-        params.allow_surface_swap = (std::string(e) != "0");
-    if (const char* e = std::getenv("TW_CHECK_SURFACE_TOPO"))
-        params.check_surface_topology = (std::string(e) == "1");
+    params.allow_surface_swap = json_params["allow_surface_swap"];
+    params.check_surface_topology = json_params["check_surface_topology"];
 
     // Stuck-element sizing refinement.
-    params.stuck_refine = json_params.value("stuck_refine", params.stuck_refine);
-    params.stuck_refine_stall_eps =
-        json_params.value("stuck_refine_stall_eps", params.stuck_refine_stall_eps);
-    params.stuck_refine_cooldown =
-        json_params.value("stuck_refine_cooldown", params.stuck_refine_cooldown);
-    params.stuck_refine_num_worst =
-        json_params.value("stuck_refine_num_worst", params.stuck_refine_num_worst);
-    params.stuck_refine_rings = json_params.value("stuck_refine_rings", params.stuck_refine_rings);
-    params.stuck_refine_factor =
-        json_params.value("stuck_refine_factor", params.stuck_refine_factor);
-    params.stuck_refine_min_scalar =
-        json_params.value("stuck_refine_min_scalar", params.stuck_refine_min_scalar);
-    params.stuck_refine_gradation =
-        json_params.value("stuck_refine_gradation", params.stuck_refine_gradation);
-    params.stuck_refine_force_split =
-        json_params.value("stuck_refine_force_split", params.stuck_refine_force_split);
-    params.stuck_refine_rational_split =
-        json_params.value("stuck_refine_rational_split", params.stuck_refine_rational_split);
-    if (const char* e = std::getenv("TW_STUCK_REFINE"))
-        params.stuck_refine = (std::string(e) != "0");
-    if (const char* e = std::getenv("TW_STUCK_REFINE_FORCE_SPLIT"))
-        params.stuck_refine_force_split = (std::string(e) != "0");
-    if (const char* e = std::getenv("TW_STUCK_REFINE_RATIONAL_SPLIT"))
-        params.stuck_refine_rational_split = (std::string(e) != "0");
+    params.stuck_refine_stall_eps = json_params["stuck_refine_stall_eps"];
+    params.stuck_refine_cooldown = json_params["stuck_refine_cooldown"];
+    params.stuck_refine_num_worst = json_params["stuck_refine_num_worst"];
+    params.stuck_refine_rings = json_params["stuck_refine_rings"];
+    params.stuck_refine_factor = json_params["stuck_refine_factor"];
+    params.stuck_refine_force_split = json_params["stuck_refine_force_split"];
+    params.stuck_refine_min_scalar = json_params["stuck_refine_min_scalar"];
+    params.stuck_refine_gradation = json_params["stuck_refine_gradation"];
+    params.stuck_refine_rational_split = json_params["stuck_refine_rational_split"];
 
     // Skip good regions.
-    params.skip_good_regions = json_params.value("skip_good_regions", params.skip_good_regions);
-    params.skip_good_regions_margin =
-        json_params.value("skip_good_regions_margin", params.skip_good_regions_margin);
-    if (const char* e = std::getenv("TW_SKIP_GOOD_REGIONS"))
-        params.skip_good_regions = (std::string(e) != "0");
+    params.skip_good_regions = json_params["skip_good_regions"];
+    params.skip_good_regions_margin = json_params["skip_good_regions_margin"];
 
     std::vector<Eigen::Vector3d> verts;
     std::vector<std::array<size_t, 3>> tris;
@@ -198,14 +172,15 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     // Informational input-topology report; gated behind DEBUG_euler because the
     // Euler-characteristic computation is expensive on meshes with many components.
+    std::vector<int> ecs_input;
     if (json_params["DEBUG_euler"]) {
         Eigen::MatrixXi F(tris.size(), 3);
         for (int i = 0; i < tris.size(); ++i) {
             F.row(i) = Eigen::Vector3i((int)tris[i][0], (int)tris[i][1], (int)tris[i][2]);
         }
 
-        const auto ecs = compute_euler_characteristics(F);
-        logger().info("Input euler characteristic: {}", ecs);
+        ecs_input = compute_euler_characteristics(F);
+        logger().info("Input euler characteristic: {}", ecs_input);
     }
 
     double diag = (box_minmax.first - box_minmax.second).norm();
@@ -404,6 +379,13 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     } else if (filter_option == "tracked") {
         mesh_new.filter_with_tracked_surface_winding_number();
     } else if (filter_option == "flood") {
+        // Flood fill (a serial BFS over all tets) is only needed to identify the
+        // outside connected component for this filter. It used to run
+        // unconditionally just to color the output part_id field, which is a very
+        // expensive no-op on large multi-component meshes (e.g. ~1-2 min of
+        // serial BFS on 765k tets / 6600 parts). Only run it when it is used.
+        const int num_parts = mesh_new.flood_fill();
+        logger().info("flood fill parts {}", num_parts);
         mesh_new.filter_with_flood_fill();
     } else if (filter_option != "none") {
         logger().error("Unknown filter option '{}'. No filtering performed.", filter_option);
@@ -480,7 +462,6 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     // Hausdorff + Euler Characteristic
     double hausdorff_distance = -1;
-    std::vector<int> ecs_input;
     std::vector<int> ecs_output;
     {
         Eigen::MatrixXd V(verts.size(), 3);
@@ -535,8 +516,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         // meshes with many components (tens of seconds), so it is off by default and only
         // computed when explicitly requested (DEBUG_euler) or when it is actually needed
         // for the preserve_topology throw check below.
-        if (json_params["DEBUG_euler"] || params.preserve_topology) {
-            ecs_input = compute_euler_characteristics(F);
+        if (json_params["DEBUG_euler"]) {
             logger().info("Input euler characteristic: {}", ecs_input);
             ecs_output = compute_euler_characteristics(matF);
             logger().info("Output euler characteristic: {}", ecs_output);
