@@ -60,7 +60,7 @@ double AMIPS_energy_stable_p3(const std::array<double, 12>& T)
     auto res = AMIPS_energy(T);
 
     if (res < 1e8 && res > 2) {
-        return res * res * res; // deterministic (std::pow(res, 3) is not guaranteed bit-identical)
+        return res * res * res;
     } else {
         return AMIPS_energy_rational_p3<rational>(T);
     }
