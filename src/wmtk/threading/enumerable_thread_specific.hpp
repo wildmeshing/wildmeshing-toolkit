@@ -1,12 +1,21 @@
 #pragma once
 
 #include <algorithm>
+#include <atomic>
 #include <functional>
+#include <thread>
 #include <vector>
 
-#include "detail/ets_id_counter.hpp"
-
 namespace wmtk::threading {
+
+namespace detail {
+inline std::atomic<std::uint64_t>& ets_id_counter()
+{
+    static std::atomic<std::uint64_t> counter{1};
+    return counter;
+}
+} // namespace detail
+
 // ---------------------------------------------------------------------------
 // enumerable_thread_specific: replaces tbb::enumerable_thread_specific.
 // Only `.local()` (and construction with an optional initial value) is used.
@@ -64,8 +73,11 @@ public:
     {
         auto& slots = thread_slots();
         for (auto& s : slots) {
-            if (s.id == m_id) return *s.value;
+            if (s.id == m_id) {
+                return *s.value;
+            }
         }
+        // No slot for this thread yet, create one.
         slots.push_back(Slot{m_id, std::make_unique<T>(m_factory())});
         return *slots.back().value;
     }

@@ -29,7 +29,9 @@ public:
                 f();
             } catch (...) {
                 std::lock_guard<std::mutex> lock(m_eptr_mutex);
-                if (!m_eptr) m_eptr = std::current_exception();
+                if (!m_eptr) {
+                    m_eptr = std::current_exception();
+                }
             }
         });
     }
@@ -37,7 +39,9 @@ public:
     void wait()
     {
         for (auto& t : m_threads) {
-            if (t.joinable()) t.join();
+            if (t.joinable()) {
+                t.join();
+            }
         }
         m_threads.clear();
         if (m_eptr) {
@@ -50,7 +54,9 @@ public:
     ~task_group()
     {
         for (auto& t : m_threads) {
-            if (t.joinable()) t.join();
+            if (t.joinable()) {
+                t.join();
+            }
         }
     }
 };

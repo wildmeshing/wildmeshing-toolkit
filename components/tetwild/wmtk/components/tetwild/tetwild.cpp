@@ -7,6 +7,7 @@
 #include <jse/jse.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
+#include <cstdlib>
 #include <wmtk/io/read_triangle_mesh.hpp>
 
 #include <wmtk/components/shortest_edge_collapse/ShortestEdgeCollapse.h>
@@ -131,6 +132,24 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     params.debug_output = json_params["DEBUG_output"];
     params.perform_sanity_checks = json_params["DEBUG_sanity_checks"];
 
+    params.allow_surface_swap = json_params["allow_surface_swap"];
+    params.check_surface_topology = json_params["check_surface_topology"];
+
+    // Stuck-element sizing refinement.
+    params.stuck_refine_stall_eps = json_params["stuck_refine_stall_eps"];
+    params.stuck_refine_cooldown = json_params["stuck_refine_cooldown"];
+    params.stuck_refine_num_worst = json_params["stuck_refine_num_worst"];
+    params.stuck_refine_rings = json_params["stuck_refine_rings"];
+    params.stuck_refine_factor = json_params["stuck_refine_factor"];
+    params.stuck_refine_force_split = json_params["stuck_refine_force_split"];
+    params.stuck_refine_min_scalar = json_params["stuck_refine_min_scalar"];
+    params.stuck_refine_gradation = json_params["stuck_refine_gradation"];
+    params.stuck_refine_rational_split = json_params["stuck_refine_rational_split"];
+
+    // Skip good regions.
+    params.skip_good_regions = json_params["skip_good_regions"];
+    params.skip_good_regions_margin = json_params["skip_good_regions_margin"];
+
     std::vector<Eigen::Vector3d> verts;
     std::vector<std::array<size_t, 3>> tris;
     std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax;
@@ -151,14 +170,17 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     t_load = phase_timer.getElapsedTime();
     phase_timer.start(); // surface simplification begins
 
-    {
+    // Informational input-topology report; gated behind DEBUG_euler because the
+    // Euler-characteristic computation is expensive on meshes with many components.
+    std::vector<int> ecs_input;
+    if (json_params["DEBUG_euler"]) {
         Eigen::MatrixXi F(tris.size(), 3);
         for (int i = 0; i < tris.size(); ++i) {
             F.row(i) = Eigen::Vector3i((int)tris[i][0], (int)tris[i][1], (int)tris[i][2]);
         }
 
-        const auto ecs = compute_euler_characteristics(F);
-        logger().info("Input euler characteristic: {}", ecs);
+        ecs_input = compute_euler_characteristics(F);
+        logger().info("Input euler characteristic: {}", ecs_input);
     }
 
     double diag = (box_minmax.first - box_minmax.second).norm();
@@ -325,11 +347,6 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     mesh_new.compute_winding_number(finalize_tets, finalize_barycenters, verts, tris);
     // apply tracked surface winding number
     mesh_new.compute_winding_number(finalize_tets, finalize_barycenters);
-    // apply flood fill
-    {
-        int num_parts = mesh_new.flood_fill();
-        logger().info("flood fill parts {}", num_parts);
-    }
     // compute per-input winding number (reuse in-memory verts/tris to avoid re-read)
     mesh_new.compute_winding_numbers(input_paths, finalize_tets, finalize_barycenters, verts, tris);
 
@@ -339,6 +356,13 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     } else if (filter_option == "tracked") {
         mesh_new.filter_with_tracked_surface_winding_number();
     } else if (filter_option == "flood") {
+        // Flood fill (a serial BFS over all tets) is only needed to identify the
+        // outside connected component for this filter. It used to run
+        // unconditionally just to color the output part_id field, which is a very
+        // expensive no-op on large multi-component meshes (e.g. ~1-2 min of
+        // serial BFS on 765k tets / 6600 parts). Only run it when it is used.
+        const int num_parts = mesh_new.flood_fill();
+        logger().info("flood fill parts {}", num_parts);
         mesh_new.filter_with_flood_fill();
     } else if (filter_option != "none") {
         logger().error("Unknown filter option '{}'. No filtering performed.", filter_option);
@@ -415,7 +439,6 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     // Hausdorff + Euler Characteristic
     double hausdorff_distance = -1;
-    std::vector<int> ecs_input;
     std::vector<int> ecs_output;
     {
         Eigen::MatrixXd V(verts.size(), 3);
@@ -466,12 +489,17 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             }
         }
 
-        ecs_input = compute_euler_characteristics(F);
-        logger().info("Input euler characteristic: {}", ecs_input);
-        ecs_output = compute_euler_characteristics(matF);
-        logger().info("Output euler characteristic: {}", ecs_output);
-        if (ecs_input != ecs_output) {
-            logger().warn("Output topology is not the same as the input topology!");
+        // The Euler-characteristic check is a topology sanity check. It is expensive on
+        // meshes with many components (tens of seconds), so it is off by default and only
+        // computed when explicitly requested (DEBUG_euler) or when it is actually needed
+        // for the preserve_topology throw check below.
+        if (json_params["DEBUG_euler"]) {
+            logger().info("Input euler characteristic: {}", ecs_input);
+            ecs_output = compute_euler_characteristics(matF);
+            logger().info("Output euler characteristic: {}", ecs_output);
+            if (ecs_input != ecs_output) {
+                logger().warn("Output topology is not the same as the input topology!");
+            }
         }
     }
 

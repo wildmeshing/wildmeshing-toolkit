@@ -442,7 +442,6 @@ public:
      */
     bool collapse_edge_conn(
         const Tuple& loc0,
-        std::vector<Tuple>& new_edges,
         size_t& v1_id,
         Tuple& new_loc,
         std::map<size_t, wmtk::TetMesh::VertexConnectivity>& rollback_vert_conn,
@@ -964,6 +963,7 @@ public:
 
     simplex::Tet simplex_from_tet(const Tuple& t) const;
     simplex::Tet simplex_from_tet(const size_t tid) const;
+    simplex::Face simplex_from_face(const Tuple& t) const;
     simplex::Edge simplex_from_edge(const Tuple& t) const;
 
 

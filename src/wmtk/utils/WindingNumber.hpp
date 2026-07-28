@@ -1,8 +1,10 @@
 #pragma once
 
-// A winding-number evaluation copied from libigl (igl::solid_angle /
-// igl::winding_number, Alec Jacobson et al., github.com/libigl/libigl, MPL-2.0),
-// renamed into wmtk, with two deliberate departures from igl:
+// A local copy of libigl's winding-number evaluation, but with the per-query
+// parallelism driven by wmtk's own threading framework (parallel_for)
+// instead of igl::parallel_for. This means the winding number honours the
+// requested `num_threads` (like every other parallel section in wmtk) rather than
+// always grabbing all hardware cores.
 //
 //   * the solid-angle formula's atan2 is routed through wmtk::atan2, which is the
 //     fast architecture-specific std::atan2 by default and the hand-rolled
@@ -71,9 +73,8 @@ inline double solid_angle_2pi(
 
 /**
  * @brief Winding number of every query point O.row(i) with respect to the triangle
- * mesh (V, F), by direct summation of per-face solid angles. Equivalent to
- * igl::winding_number(V, F, O, W) up to floating point, with the query loop
- * parallelised over num_threads.
+ * mesh (V, F). Equivalent to igl::winding_number(V, F, O, W), but the query loop is
+ * parallelised with threading::parallel_for.
  */
 inline void winding_number(
     const Eigen::MatrixXd& V,
@@ -87,21 +88,16 @@ inline void winding_number(
 
     const int nf = static_cast<int>(F.rows());
 
-    wmtk::threading::task_arena arena(std::max(num_threads, 1));
-    arena.execute([&]() {
-        wmtk::threading::parallel_for(
-            wmtk::threading::blocked_range<int>(0, static_cast<int>(O.rows())),
-            [&](wmtk::threading::blocked_range<int> r) {
-                for (int o = r.begin(); o < r.end(); ++o) {
-                    const Eigen::RowVector3d p = O.row(o);
-                    double w = 0.0;
-                    for (int f = 0; f < nf; ++f) {
-                        w += solid_angle_2pi(V.row(F(f, 0)), V.row(F(f, 1)), V.row(F(f, 2)), p);
-                    }
-                    W(o) = w;
-                }
-            });
-    });
+    // hier.winding_number(p) is const and used by igl the same way from parallel_for,
+    // so concurrent queries against the shared hierarchy are safe.
+    threading::parallel_for(
+        threading::range(0, static_cast<size_t>(O.rows())),
+        [&](const threading::range& r) {
+            for (int o = r.begin(); o < r.end(); ++o) {
+                W(o) = hier.winding_number(O.row(o));
+            }
+        },
+        std::max(num_threads, 1));
 }
 
 } // namespace wmtk::utils

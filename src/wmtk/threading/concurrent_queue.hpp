@@ -21,7 +21,9 @@ public:
     bool try_pop(T& out)
     {
         std::lock_guard<std::mutex> lock(m_mutex);
-        if (m_queue.empty()) return false;
+        if (m_queue.empty()) {
+            return false;
+        }
         out = std::move(m_queue.front());
         m_queue.pop_front();
         return true;
@@ -37,7 +39,9 @@ public:
         std::lock_guard<std::mutex> lock(m_mutex);
         m_queue.emplace_back(std::forward<Args>(args)...);
     }
-    std::size_t unsafe_size() const { return m_queue.size(); }
+
+    // std::size_t unsafe_size() const { return m_queue.size(); }
+
     bool empty() const
     {
         std::lock_guard<std::mutex> lock(m_mutex);
