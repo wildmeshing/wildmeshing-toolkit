@@ -17,15 +17,14 @@
       "length_rel",
       "stop_energy",
       "preserve_topology",
+      "allow_surface_swap",
+      "check_surface_topology",
       "throw_on_fail",
       "log_file",
       "report",
       "DEBUG_output",
       "DEBUG_sanity_checks",
       "DEBUG_hausdorff",
-      "allow_surface_swap",
-      "check_surface_topology",
-      "stuck_refine",
       "stuck_refine_stall_eps",
       "stuck_refine_cooldown",
       "stuck_refine_num_worst",
@@ -130,6 +129,18 @@
     "doc": "Preserve the topology of the input surface."
   },
   {
+    "pointer": "/allow_surface_swap",
+    "type": "bool",
+    "default": true,
+    "doc": "Allow surface edge swapping."
+  },
+  {
+    "pointer": "/check_surface_topology",
+    "type": "bool",
+    "default": false,
+    "doc": "Check if the surface topology is preserved after each operation. This can be very slow and should only be used for debugging."
+  },
+  {
     "pointer": "/throw_on_fail",
     "type": "bool",
     "default": false,
@@ -166,24 +177,6 @@
     "doc": "Sanity Check: Compute and report the Hausdorff distance of the output to the input. Should be always smaller than eps."
   },
   {
-    "pointer": "/allow_surface_swap",
-    "type": "bool",
-    "default": true,
-    "doc": "Allow the 3->2 edge swap to operate on surface edges as a topology-preserving surface diagonal flip."
-  },
-  {
-    "pointer": "/check_surface_topology",
-    "type": "bool",
-    "default": false,
-    "doc": "Debug: verify the surface topology signature is unchanged across each swap pass. Expensive."
-  },
-  {
-    "pointer": "/stuck_refine",
-    "type": "bool",
-    "default": true,
-    "doc": "When the max energy stalls, refine the sizing field around the worst elements to escape stuck configurations."
-  },
-  {
     "pointer": "/stuck_refine_stall_eps",
     "type": "float",
     "default": 0.01,
@@ -192,20 +185,22 @@
   {
     "pointer": "/stuck_refine_cooldown",
     "type": "int",
-    "default": 2,
+    "default": 1,
     "doc": "After a refinement, skip this many improvement iterations before refining again (let the operations act on the new sizing field)."
   },
   {
     "pointer": "/stuck_refine_num_worst",
     "type": "int",
-    "default": 50,
-    "doc": "Number of worst tets whose neighborhoods are refined when stuck."
+    "default": 0,
+    "min": 0,
+    "doc": "Number of worst tets whose neighborhoods are refined when stuck. 0 => refine all tets with energy above the filter_energy."
   },
   {
     "pointer": "/stuck_refine_rings",
     "type": "int",
-    "default": 3,
-    "doc": "Graph rings around each worst tet included in the stuck refinement."
+    "default": 0,
+    "min": 0,
+    "doc": "Graph rings around each worst tet included in the stuck refinement. 0 => only the worst tet itself, 1 => its neighbors, 2 => neighbors of neighbors, etc."
   },
   {
     "pointer": "/stuck_refine_factor",

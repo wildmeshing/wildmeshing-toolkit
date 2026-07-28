@@ -1,4 +1,4 @@
-#include <wmtk/utils/Concurrency.hpp>
+#include <wmtk/threading/enumerable_thread_specific.hpp>
 #include "TetWildMesh.h"
 #include "wmtk/TetMesh.h"
 
@@ -8,6 +8,7 @@
 #include <mutex>
 #include <unordered_set>
 #include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/threading/collector.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -23,18 +24,20 @@ void TetWildMesh::collapse_all_edges(bool is_limit_length)
 
     // Build the collapse op list in parallel (both edge directions). Filtering of
     // too-long edges still happens in is_weight_up_to_date.
-    auto collect_all_ops =
-        wmtk::parallel_collect_edge_ops(*this, NUM_THREADS, [](auto& m, const auto& e, auto& out) {
+    auto collect_all_ops = wmtk::parallel_collect_edge_ops(
+        *this,
+        NUM_THREADS,
+        [](TetWildMesh& m, const Tuple& e, auto& out) {
             out.emplace_back("edge_collapse", e);
             out.emplace_back("edge_collapse", e.switch_vertex(m));
         });
     logger().info("#edges = {}", collect_all_ops.size() / 2);
     time = timer.getElapsedTime();
-    wmtk::logger().info("edge collapse prepare time: {:.4}s", time);
+    logger().info("edge collapse prepare time: {:.4}s", time);
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = [](const auto& m, auto op, const auto& newts) {
             std::vector<std::pair<std::string, wmtk::TetMesh::Tuple>> op_tups;
-            for (auto t : newts) {
+            for (const Tuple& t : newts) {
                 op_tups.emplace_back(op, t);
                 op_tups.emplace_back(op, t.switch_vertex(m));
             }
