@@ -159,7 +159,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     double t_load = 0, t_simplify = 0, t_optimize = 0, t_finalize = 0, t_output = 0;
     phase_timer.start();
     {
-        double remove_duplicate_eps = 2e-3;
+        double remove_duplicate_eps = json_params["remove_duplicate_eps"];
         MatrixXd V;
         MatrixXi F;
         io::read_triangle_mesh(input_paths, V, F, remove_duplicate_eps);
@@ -193,11 +193,13 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     assert(surf_mesh.check_mesh_connectivity_validity());
 
     if (skip_simplify == false) {
-        wmtk::logger().info("input {} simplification", input_paths);
+        logger().info("input {} simplification", input_paths);
         surf_mesh.collapse_shortest(0);
         surf_mesh.consolidate_mesh();
-        surf_mesh.write_triangle_mesh(output_path + "_simplified_input.obj");
+    } else {
+        logger().info("skip simplification");
     }
+    surf_mesh.write_triangle_mesh(output_path + "_simplified_input.obj");
 
     params.output_path = output_path;
 
