@@ -1,5 +1,7 @@
 # triwild
 
+include(volumemesher)
+
 set(COMPONENT_NAME triwild)
 add_component(${COMPONENT_NAME})
 
@@ -32,6 +34,7 @@ target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC
 	wmtk::data
 	igl::predicates
 	jse::jse
+	VolumeRemesher::VolumeRemesher
 )
 
 ######################
