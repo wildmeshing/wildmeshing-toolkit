@@ -73,9 +73,7 @@ include(wmtk_warnings)
 include(wmtk_copy_dll)
 include(nlohmann_json)
 include(eigen)
-# The Delaunay triangulations come from VolumeRemesher (VolumeRemesher/delaunay.h and
-# 2d/delaunay2d.h); this used to be geogram's Delaunay_psm amalgamation.
-include(volumemesher)
+include(volumeremesher) # target VolumeRemesher::VolumeRemesher
 include(mshio)
 include(metis)
 include(gmp)
