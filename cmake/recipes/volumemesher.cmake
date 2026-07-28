@@ -20,10 +20,10 @@ include(CPM)
 CPMAddPackage(
     NAME VolumeRemesher
     GITHUB_REPOSITORY wildmeshing/VolumeRemesher
-    GIT_TAG 8077213e53022549ac66f3d9befdf6f0bd6c404c
+    GIT_TAG 39884cecf50464fc618257faa15aca7e702534ac
     OPTIONS
     "VOLUMEREMESHER_BUILD_TESTS OFF"
-    )
+)
 
 set_target_properties(mesh_generator_lib PROPERTIES FOLDER third-party)
 
