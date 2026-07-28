@@ -683,8 +683,8 @@ size_t TetWildMesh::refine_sizing_around_worst(double max_energy)
             double l2max = -1;
             size_t ea = vs[0];
             size_t eb = vs[1];
-            for (int a = 0; a < 4; ++a)
-                for (int b = a + 1; b < 4; ++b) {
+            for (size_t a = 0; a < 4; ++a) {
+                for (size_t b = a + 1; b < 4; ++b) {
                     const Vector3d& pa = m_vertex_attribute[vs[a]].m_posf;
                     const Vector3d& pb = m_vertex_attribute[vs[b]].m_posf;
                     const double l2 = (pa - pb).squaredNorm();
@@ -694,7 +694,8 @@ size_t TetWildMesh::refine_sizing_around_worst(double max_energy)
                         eb = vs[b];
                     }
                 }
-            m_force_split_edges.insert({std::min(ea, eb), std::max(ea, eb)});
+            }
+            m_force_split_edges.insert(simplex::Edge(ea, eb));
         }
     }
 
