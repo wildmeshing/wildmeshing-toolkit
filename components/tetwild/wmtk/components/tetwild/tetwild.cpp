@@ -141,6 +141,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     params.stuck_refine_num_worst = json_params["stuck_refine_num_worst"];
     params.stuck_refine_rings = json_params["stuck_refine_rings"];
     params.stuck_refine_factor = json_params["stuck_refine_factor"];
+    params.stuck_refine_force_split = json_params["stuck_refine_force_split"];
     params.stuck_refine_min_scalar = json_params["stuck_refine_min_scalar"];
     params.stuck_refine_gradation = json_params["stuck_refine_gradation"];
     params.stuck_refine_rational_split = json_params["stuck_refine_rational_split"];

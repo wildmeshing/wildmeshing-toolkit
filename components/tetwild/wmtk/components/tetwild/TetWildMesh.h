@@ -20,7 +20,9 @@
 
 #include <igl/remove_unreferenced.h>
 #include <memory>
+#include <set>
 #include <unordered_set>
+#include <utility>
 
 namespace wmtk::components::tetwild {
 
@@ -623,6 +625,23 @@ public:
      * halo around already-refined vertices, avoiding sharp resolution jumps.
      */
     void gradation_smooth_sizing(double grade, const std::vector<size_t>& seeds);
+
+    /// The longest edge of each current worst tet (as a sorted {min,max} vid pair).
+    /// split_all_edges force-splits exactly these edges (bypasses the length gate),
+    /// so a stuck sliver's long edge is split immediately without changing the sizing
+    /// field. Populated serially by refine_sizing_around_worst; read-only during the
+    /// parallel split pass, then cleared once split_all_edges has consumed it.
+    std::set<simplex::Edge> m_force_split_edges;
+
+    /// Count of force-splits taken in the current split pass (atomic_ref from the
+    /// parallel split; reset + logged by split_all_edges). Diagnostic only.
+    size_t m_force_split_count = 0;
+
+    /// True iff edge (v1,v2) is a worst tet's longest edge queued for force-split.
+    bool is_force_split_edge(size_t v1, size_t v2) const
+    {
+        return m_force_split_edges.find(simplex::Edge(v1, v2)) != m_force_split_edges.end();
+    }
 
     // for open boundary
     void find_open_boundary();

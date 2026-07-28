@@ -664,11 +664,39 @@ size_t TetWildMesh::refine_sizing_around_worst(double max_energy)
             worst.emplace_back(q, tid);
         }
     }
+
     if (num_worst == 0) {
         std::sort(worst.begin(), worst.end());
     }
     if (worst.empty()) {
         return 0;
+    }
+
+    // Record the worst tets' own vertices (for the exact-rational split fallback)
+    // and, if force-split is on, the LONGEST edge of each worst tet. split_all_edges
+    // force-splits exactly those edges (bypasses the length gate), so a stuck
+    // sliver's long edge is split immediately -- WITHOUT changing the sizing field.
+    m_force_split_edges.clear();
+    for (const auto& [q, tid] : worst) {
+        const auto vs = oriented_tet_vids(tid);
+        if (m_params.stuck_refine_force_split) {
+            double l2max = -1;
+            size_t ea = vs[0];
+            size_t eb = vs[1];
+            for (size_t a = 0; a < 4; ++a) {
+                for (size_t b = a + 1; b < 4; ++b) {
+                    const Vector3d& pa = m_vertex_attribute[vs[a]].m_posf;
+                    const Vector3d& pb = m_vertex_attribute[vs[b]].m_posf;
+                    const double l2 = (pa - pb).squaredNorm();
+                    if (l2 > l2max) {
+                        l2max = l2;
+                        ea = vs[a];
+                        eb = vs[b];
+                    }
+                }
+            }
+            m_force_split_edges.insert(simplex::Edge(ea, eb));
+        }
     }
 
     // Seed the region with the worst tets' vertices, then BFS n_rings hops.
