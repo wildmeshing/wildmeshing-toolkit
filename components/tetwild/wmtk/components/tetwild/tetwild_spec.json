@@ -17,6 +17,7 @@
       "length_rel",
       "stop_energy",
       "preserve_topology",
+      "remove_duplicate_eps",
       "allow_surface_swap",
       "check_surface_topology",
       "throw_on_fail",
@@ -135,6 +136,12 @@
     "type": "bool",
     "default": false,
     "doc": "Preserve the topology of the input surface."
+  },
+  {
+    "pointer": "/remove_duplicate_eps",
+    "type": "float",
+    "default": 2e-3,
+    "doc": "Remove duplicate vertices in the input meshes that are closer than this fraction of the bounding box diagonal. This is applied to each input mesh separately."
   },
   {
     "pointer": "/allow_surface_swap",
