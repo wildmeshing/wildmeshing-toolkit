@@ -183,6 +183,7 @@
     "default": false,
     "doc": "Sanity Check: Compute and report the Euler characteristic of the input and output surfaces and warn if they differ. Off by default because on meshes with many components it can take tens of seconds. It is computed regardless when preserve_topology is set (the topology check needs it)."
   },
+  {
     "pointer": "/stuck_refine_stall_eps",
     "type": "float",
     "default": 0.01,
