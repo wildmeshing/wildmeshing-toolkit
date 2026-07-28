@@ -5,9 +5,9 @@
 #include <wmtk/Types.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
+#include <wmtk/threading/enumerable_thread_specific.hpp>
+#include <wmtk/threading/spin_mutex.hpp>
 #include <wmtk/utils/Logger.hpp>
-
-#include <wmtk/utils/Concurrency.hpp>
 
 #include <array>
 #include <atomic>
@@ -442,7 +442,6 @@ public:
      */
     bool collapse_edge_conn(
         const Tuple& loc0,
-        std::vector<Tuple>& new_edges,
         size_t& v1_id,
         Tuple& new_loc,
         std::map<size_t, wmtk::TetMesh::VertexConnectivity>& rollback_vert_conn,
@@ -964,6 +963,7 @@ public:
 
     simplex::Tet simplex_from_tet(const Tuple& t) const;
     simplex::Tet simplex_from_tet(const size_t tid) const;
+    simplex::Face simplex_from_face(const Tuple& t) const;
     simplex::Edge simplex_from_edge(const Tuple& t) const;
 
 
@@ -1220,7 +1220,7 @@ public:
 public:
     class VertexMutex
     {
-        wmtk::spin_mutex mutex;
+        wmtk::threading::spin_mutex mutex;
         int owner = std::numeric_limits<int>::max();
 
     public:
@@ -1265,8 +1265,8 @@ protected:
     }
 
 public:
-    wmtk::enumerable_thread_specific<std::vector<size_t>> mutex_release_stack;
-    wmtk::enumerable_thread_specific<std::vector<size_t>> get_one_ring_cache;
+    wmtk::threading::enumerable_thread_specific<std::vector<size_t>> mutex_release_stack;
+    wmtk::threading::enumerable_thread_specific<std::vector<size_t>> get_one_ring_cache;
 
     // void init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& tets);
     int release_vertex_mutex_in_stack();
