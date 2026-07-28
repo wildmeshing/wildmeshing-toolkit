@@ -57,7 +57,7 @@ public: // mode for splitting in marching tets
 public:
     int m_vtu_counter = 0;
     std::array<size_t, 3> m_init_counts = {{0, 0, 0}};
-    size_t m_tags_count;
+    size_t m_tags_count = 0;
     SimplicialComplexBVH m_input_complex_bvh;
     EdgeSplitMode m_edge_split_mode = EdgeSplitMode::Midpoint;
 
@@ -318,7 +318,15 @@ private: // helpers
                 double len2 = (m_vertex_attribute[e2.vertices()[0]].m_posf -
                                m_vertex_attribute[e2.vertices()[1]].m_posf)
                                   .squaredNorm();
-                return len1 > len2;
+                // Break ties deterministically (see TopoOffsetTetMesh): equal-length
+                // edges must be split in a platform-independent order or the offset
+                // output diverges across OSes. simplex::Edge has a total order. Only
+                // for reproducible builds; the default build keeps the plain
+                // length comparator.
+                if (len1 != len2) {
+                    return len1 > len2;
+                }
+                return e1 < e2;
             });
     }
 

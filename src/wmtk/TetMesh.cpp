@@ -192,9 +192,24 @@ std::vector<TetMesh::Tuple> TetMesh::get_edges() const
             edges.emplace_back(v0, v1, tup);
         }
     }
-    std::sort(edges.begin(), edges.end(), [](auto& a, auto& b) {
+    auto by_vertex_pair = [](auto& a, auto& b) {
         return std::tie(std::get<0>(a), std::get<1>(a)) < std::tie(std::get<0>(b), std::get<1>(b));
-    });
+    };
+#ifdef WMTK_FP_STRICT
+    // stable_sort (not sort): the comparator only orders by the (v0, v1) vertex pair,
+    // so the many tuples that represent the same edge (one per incident tet) compare
+    // equal. std::sort would leave those equal elements in an implementation-defined
+    // order, so std::unique below would keep a different representative tuple on
+    // different STL implementations (libc++ vs libstdc++). That representative feeds
+    // the operation scheduler's priority-queue tie-break, so the whole 3D optimization
+    // would take divergent decisions across platforms. stable_sort keeps the tuples in
+    // their deterministic enumeration order (by tet id, then local edge), so the kept
+    // representative is identical everywhere. Only needed for reproducible builds; the
+    // default build uses the faster std::sort (see WMTK_FP_STRICT in CMakeLists.txt).
+    std::stable_sort(edges.begin(), edges.end(), by_vertex_pair);
+#else
+    std::sort(edges.begin(), edges.end(), by_vertex_pair);
+#endif
     edges.erase(
         std::unique(
             edges.begin(),
