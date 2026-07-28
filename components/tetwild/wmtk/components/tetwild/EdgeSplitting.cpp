@@ -15,10 +15,10 @@ void TetWildMesh::split_all_edges()
     double time;
     m_force_split_count = 0;
     timer.start();
-    auto collect_all_ops =
-        wmtk::parallel_collect_edge_ops(*this, NUM_THREADS, [](auto&, const auto& e, auto& out) {
-            out.emplace_back("edge_split", e);
-        });
+    auto collect_all_ops = wmtk::parallel_collect_edge_ops(
+        *this,
+        NUM_THREADS,
+        [](TetWildMesh&, const Tuple& e, auto& out) { out.emplace_back("edge_split", e); });
     time = timer.getElapsedTime();
     wmtk::logger().info("edge split prepare time: {:.4}s", time);
     auto setup_and_execute = [&](auto& executor) {
@@ -38,11 +38,15 @@ void TetWildMesh::split_all_edges()
             // regardless of the length gate, to unstick a sliver without changing the
             // sizing field. The new midpoint is not in m_force_split_edges, so the
             // two halves are NOT force-split again -- exactly one split per edge.
-            if (is_force_split_edge(v1_id, v2_id)) return true;
+            if (is_force_split_edge(v1_id, v2_id)) {
+                return true;
+            }
             double sizing_ratio = (m_vertex_attribute[v1_id].m_sizing_scalar +
                                    m_vertex_attribute[v2_id].m_sizing_scalar) /
                                   2;
-            if (length < m_params.splitting_l2 * sizing_ratio * sizing_ratio) return false;
+            if (length < m_params.splitting_l2 * sizing_ratio * sizing_ratio) {
+                return false;
+            }
             return true;
         };
         wmtk::run_localized_to_convergence(*this, executor, collect_all_ops);
@@ -148,14 +152,15 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
     // this has to be done before the inversion check
     m_vertex_attribute[v_id].m_pos = to_rational(m_vertex_attribute[v_id].m_posf);
 
-    for (auto& loc : locs) {
+    for (const Tuple& loc : locs) {
         if (is_inverted(loc)) {
             m_vertex_attribute[v_id].m_is_rounded = false;
             break;
         }
     }
-    if (is_force_split_edge(v1_id, v2_id))
+    if (is_force_split_edge(v1_id, v2_id)) {
         std::atomic_ref<size_t>(m_force_split_count).fetch_add(1, std::memory_order_relaxed);
+    }
     if (!m_vertex_attribute[v_id].m_is_rounded) {
         // The rounded (double) midpoint inverts an incident tet. By default reject
         // the split. But if this edge belongs to the current worst-tet set (the
@@ -165,20 +170,23 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
         // invert a previously-valid incident tet -- the split always succeeds and
         // the worst region can keep being refined. The vertex stays un-rounded
         // (m_pos exact, m_is_rounded=false) until a later round() reclaims it.
-        if (!m_params.stuck_refine_rational_split || !is_worst_region_edge(v1_id, v2_id)) {
+        if (!m_params.stuck_refine_rational_split) {
             return false;
         }
+
         m_vertex_attribute[v_id].m_pos =
             (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
         // Guard against a pre-existing inverted incident tet: re-check in exact
         // arithmetic (un-rounded v_id => is_inverted uses the rational path).
-        for (auto& loc2 : locs) {
-            if (is_inverted(loc2)) return false;
+        for (const Tuple& loc : locs) {
+            if (is_inverted(loc)) {
+                return false;
+            }
         }
     }
 
     /// update quality
-    for (auto& loc : locs) {
+    for (const Tuple& loc : locs) {
         m_tet_attribute[loc.tid(*this)].m_quality = get_quality(loc);
     }
 
