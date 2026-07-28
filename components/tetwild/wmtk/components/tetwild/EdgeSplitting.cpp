@@ -149,9 +149,10 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
         // invert a previously-valid incident tet -- the split always succeeds and
         // the worst region can keep being refined. The vertex stays un-rounded
         // (m_pos exact, m_is_rounded=false) until a later round() reclaims it.
-        if (!m_params.stuck_refine_rational_split || !is_worst_region_edge(v1_id, v2_id)) {
+        if (!m_params.stuck_refine_rational_split) {
             return false;
         }
+
         m_vertex_attribute[v_id].m_pos =
             (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
         // Guard against a pre-existing inverted incident tet: re-check in exact

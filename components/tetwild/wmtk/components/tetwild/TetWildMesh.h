@@ -624,23 +624,6 @@ public:
      */
     void gradation_smooth_sizing(double grade, const std::vector<size_t>& seeds);
 
-    /**
-     * Vertices belonging to the current worst-tet set (the seeds picked by
-     * refine_sizing_around_worst). A split edge whose BOTH endpoints are in this
-     * set is an edge of a worst tet and, when m_params.stuck_refine_rational_split
-     * is on, may fall back to an exact-rational midpoint if the double midpoint
-     * would invert. Written serially by refine_sizing_around_worst; read-only
-     * during the parallel split pass.
-     */
-    std::unordered_set<size_t> m_worst_region_vids;
-
-    /// True iff edge (v1,v2) is an edge of a current worst tet.
-    bool is_worst_region_edge(size_t v1, size_t v2) const
-    {
-        return m_worst_region_vids.find(v1) != m_worst_region_vids.end() &&
-               m_worst_region_vids.find(v2) != m_worst_region_vids.end();
-    }
-
     // for open boundary
     void find_open_boundary();
     bool is_open_boundary_edge(const Tuple& e);

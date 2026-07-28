@@ -671,10 +671,6 @@ size_t TetWildMesh::refine_sizing_around_worst(double max_energy)
         return 0;
     }
 
-    // Record the worst tets' own vertices for the exact-rational split fallback
-    // (split_edge_after checks is_worst_region_edge). Only the seed worst tets.
-    m_worst_region_vids.clear();
-
     // Seed the region with the worst tets' vertices, then BFS n_rings hops.
     std::unordered_set<size_t> region;
     std::vector<size_t> frontier;
@@ -685,7 +681,6 @@ size_t TetWildMesh::refine_sizing_around_worst(double max_energy)
         }
     }
     frontier.insert(frontier.end(), region.begin(), region.end());
-    m_worst_region_vids.insert(region.begin(), region.end());
 
     // grow region by n rings starting from the worst tets' vertices
     for (int r = 0; r < n_rings; ++r) {
