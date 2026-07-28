@@ -360,6 +360,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>output_tracked_surfac
 <tr class="memitem:a8df4b9bba34a7beaae24fac332bcc2b4" id="r_a8df4b9bba34a7beaae24fac332bcc2b4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a8df4b9bba34a7beaae24fac332bcc2b4">gradation_smooth_sizing</a> (double grade, const std::vector&lt; size_t &gt; &amp;seeds)</td></tr>
 <tr class="memdesc:a8df4b9bba34a7beaae24fac332bcc2b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Monotone (only-decreasing) gradation smoothing of the sizing field.  <br /></td></tr>
 <tr class="separator:a8df4b9bba34a7beaae24fac332bcc2b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ace6e16e8be4e1b5565a831c3e7ecdf34" id="r_ace6e16e8be4e1b5565a831c3e7ecdf34"><td class="memItemLeft" align="right" valign="top"><a id="ace6e16e8be4e1b5565a831c3e7ecdf34" name="ace6e16e8be4e1b5565a831c3e7ecdf34"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_force_split_edge</b> (size_t v1, size_t v2) const</td></tr>
+<tr class="memdesc:ace6e16e8be4e1b5565a831c3e7ecdf34"><td class="mdescLeft">&#160;</td><td class="mdescRight">True iff edge (v1,v2) is a worst tet's longest edge queued for force-split. <br /></td></tr>
+<tr class="separator:ace6e16e8be4e1b5565a831c3e7ecdf34"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6d338f7c949ce190af434c3814ab24ef" id="r_a6d338f7c949ce190af434c3814ab24ef"><td class="memItemLeft" align="right" valign="top"><a id="a6d338f7c949ce190af434c3814ab24ef" name="a6d338f7c949ce190af434c3814ab24ef"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>find_open_boundary</b> ()</td></tr>
 <tr class="separator:a6d338f7c949ce190af434c3814ab24ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -734,6 +738,10 @@ std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>c
 <tr class="memitem:ac3781b8c094bfb17d1df73e384154493" id="r_ac3781b8c094bfb17d1df73e384154493"><td class="memItemLeft" align="right" valign="top"><a id="ac3781b8c094bfb17d1df73e384154493" name="ac3781b8c094bfb17d1df73e384154493"></a>
 std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>cnt_surface_swap</b> = 0</td></tr>
 <tr class="separator:ac3781b8c094bfb17d1df73e384154493"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac3efaef67baf9a8157b39849813cf5c2" id="r_ac3efaef67baf9a8157b39849813cf5c2"><td class="memItemLeft" align="right" valign="top">std::set&lt; <a class="el" href="classwmtk_1_1simplex_1_1_edge.html">simplex::Edge</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#ac3efaef67baf9a8157b39849813cf5c2">m_force_split_edges</a></td></tr>
+<tr class="separator:ac3efaef67baf9a8157b39849813cf5c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4ba743cfa5c3f896570c9b183b908c75" id="r_a4ba743cfa5c3f896570c9b183b908c75"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a4ba743cfa5c3f896570c9b183b908c75">m_force_split_count</a> = 0</td></tr>
+<tr class="separator:a4ba743cfa5c3f896570c9b183b908c75"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_attribs_classwmtk_1_1_tet_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_classwmtk_1_1_tet_mesh')"><img src="closed.png" alt="-"/>&#160;Public Attributes inherited from <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></td></tr>
 <tr class="memitem:a261adc9caf17372cca2270e876ac7b7b inherit pub_attribs_classwmtk_1_1_tet_mesh" id="r_a261adc9caf17372cca2270e876ac7b7b"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="classwmtk_1_1_abstract_attribute_container.html">AbstractAttributeContainer</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>p_vertex_attrs</b> = nullptr</td></tr>
@@ -1945,6 +1953,37 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
 </dl>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_mesh.html#aad8ff59652ffd269251e99e86296ab33">wmtk::TetMesh</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a4ba743cfa5c3f896570c9b183b908c75" name="a4ba743cfa5c3f896570c9b183b908c75"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4ba743cfa5c3f896570c9b183b908c75">&#9670;&#160;</a></span>m_force_split_count</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::components::tetwild::TetWildMesh::m_force_split_count = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Count of force-splits taken in the current split pass (atomic_ref from the parallel split; reset + logged by split_all_edges). Diagnostic only. </p>
+
+</div>
+</div>
+<a id="ac3efaef67baf9a8157b39849813cf5c2" name="ac3efaef67baf9a8157b39849813cf5c2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac3efaef67baf9a8157b39849813cf5c2">&#9670;&#160;</a></span>m_force_split_edges</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::set&lt;<a class="el" href="classwmtk_1_1simplex_1_1_edge.html">simplex::Edge</a>&gt; wmtk::components::tetwild::TetWildMesh::m_force_split_edges</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The longest edge of each current worst tet (as a sorted {min,max} vid pair). split_all_edges force-splits exactly these edges (bypasses the length gate), so a stuck sliver's long edge is split immediately without changing the sizing field. Populated serially by refine_sizing_around_worst; read-only during the parallel split pass, then cleared once split_all_edges has consumed it. </p>
 
 </div>
 </div>
