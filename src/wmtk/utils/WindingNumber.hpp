@@ -94,7 +94,12 @@ inline void winding_number(
         threading::range(0, static_cast<size_t>(O.rows())),
         [&](const threading::range& r) {
             for (int o = r.begin(); o < r.end(); ++o) {
-                W(o) = hier.winding_number(O.row(o));
+                const Eigen::RowVector3d p = O.row(o);
+                double w = 0.0;
+                for (int f = 0; f < nf; ++f) {
+                    w += solid_angle_2pi(V.row(F(f, 0)), V.row(F(f, 1)), V.row(F(f, 2)), p);
+                }
+                W(o) = w;
             }
         },
         std::max(num_threads, 1));
