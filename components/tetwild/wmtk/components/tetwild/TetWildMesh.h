@@ -20,6 +20,7 @@
 
 #include <igl/remove_unreferenced.h>
 #include <memory>
+#include <unordered_set>
 
 namespace wmtk::components::tetwild {
 

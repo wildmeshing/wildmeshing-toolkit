@@ -143,6 +143,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     params.stuck_refine_factor = json_params["stuck_refine_factor"];
     params.stuck_refine_min_scalar = json_params["stuck_refine_min_scalar"];
     params.stuck_refine_gradation = json_params["stuck_refine_gradation"];
+    params.stuck_refine_rational_split = json_params["stuck_refine_rational_split"];
 
     // Skip good regions.
     params.skip_good_regions = json_params["skip_good_regions"];

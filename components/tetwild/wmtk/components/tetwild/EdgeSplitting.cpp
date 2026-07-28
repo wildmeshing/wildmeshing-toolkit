@@ -134,20 +134,38 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
     // this has to be done before the inversion check
     m_vertex_attribute[v_id].m_pos = to_rational(m_vertex_attribute[v_id].m_posf);
 
-    for (auto& loc : locs) {
+    for (const Tuple& loc : locs) {
         if (is_inverted(loc)) {
             m_vertex_attribute[v_id].m_is_rounded = false;
             break;
         }
     }
     if (!m_vertex_attribute[v_id].m_is_rounded) {
-        // Exact-rational fallback is forbidden: if the rounded (double) midpoint
-        // inverts an incident tet, reject the entire split operation.
-        return false;
+        // The rounded (double) midpoint inverts an incident tet. By default reject
+        // the split. But if this edge belongs to the current worst-tet set (the
+        // seeds picked by refine_sizing_around_worst) and the rational fallback is
+        // enabled, place the new vertex at the EXACT rational midpoint of the two
+        // endpoints instead. That midpoint lies on the shared edge, so it can never
+        // invert a previously-valid incident tet -- the split always succeeds and
+        // the worst region can keep being refined. The vertex stays un-rounded
+        // (m_pos exact, m_is_rounded=false) until a later round() reclaims it.
+        if (!m_params.stuck_refine_rational_split) {
+            return false;
+        }
+
+        m_vertex_attribute[v_id].m_pos =
+            (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
+        // Guard against a pre-existing inverted incident tet: re-check in exact
+        // arithmetic (un-rounded v_id => is_inverted uses the rational path).
+        for (const Tuple& loc : locs) {
+            if (is_inverted(loc)) {
+                return false;
+            }
+        }
     }
 
     /// update quality
-    for (auto& loc : locs) {
+    for (const Tuple& loc : locs) {
         m_tet_attribute[loc.tid(*this)].m_quality = get_quality(loc);
     }
 
