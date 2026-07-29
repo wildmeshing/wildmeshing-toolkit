@@ -972,6 +972,13 @@ std::vector<size_t> SimWildMesh::active_vertices() const
             }
         }
     }
+    // add surface vertices
+    for (size_t i = 0; i < vert_capacity(); ++i) {
+        if (!seen[i] && m_vertex_attribute[i].m_is_on_surface) {
+            seen[i] = 1;
+            out.push_back(i);
+        }
+    }
     return out;
 }
 
