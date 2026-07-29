@@ -1341,6 +1341,8 @@ void TetWildMesh::init_from_Volumeremesher(
     init_with_isolated_vertices(v_rational.size(), tets);
     assert(check_mesh_connectivity_validity());
 
+    auto& VA = m_vertex_attribute;
+
     m_vertex_attribute.resize(v_rational.size());
     m_tet_attribute.resize(tets.size());
     m_face_attribute.resize(tets.size() * 4);

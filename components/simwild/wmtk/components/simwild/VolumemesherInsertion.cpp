@@ -76,14 +76,21 @@ void SimWildMesh::init_from_image(
 
     // rounding
     {
-        std::vector<bool> is_direct_point(vert_capacity(), false);
-        // mark everything as rounded where rational and double are the same
-        for (int i = 0; i < vert_capacity(); i++) {
-            const Vector3r& r = VA[i].m_pos;
-            const Vector3r r_from_d = to_rational(VA[i].m_posf);
-            is_direct_point[i] = (r_from_d == r);
-            VA[i].m_is_rounded = is_direct_point[i];
-        }
+        std::vector<char> is_direct_point(vert_capacity(), 0);
+        // Per-vertex, independent: each i writes only its own m_pos/m_posf/
+        // m_is_rounded/is_direct_point; the rational->double conversion and the
+        // exact comparison read only local data.
+        threading::parallel_for(
+            threading::range(0, vert_capacity()),
+            [&](const threading::range& range) {
+                for (size_t i = range.begin(); i < range.end(); ++i) {
+                    const Vector3r& r = VA[i].m_pos;
+                    const Vector3r r_from_d = to_rational(VA[i].m_posf);
+                    is_direct_point[i] = (r_from_d == r);
+                    VA[i].m_is_rounded = is_direct_point[i];
+                }
+            },
+            NUM_THREADS);
 
         // Round the indirect vertices in parallel. Rounding snaps m_pos to its double
         // and may not invert any incident tet, so it is not independent across adjacent
@@ -106,23 +113,37 @@ void SimWildMesh::init_from_image(
         });
 
         while (true) {
-            tbb::concurrent_vector<size_t> to_revert;
+            // A flag per vertex rather than a shared appended list: a vertex is reachable
+            // from several tets, so the old version took a lock per push and then pushed the
+            // same vid repeatedly. Every write here stores the same value to a slot indexed
+            // by vid, so the threads cannot disagree -- relaxed is enough, and the duplicates
+            // collapse for free.
+            std::vector<std::atomic<uint8_t>> to_revert(vert_capacity());
+            for (auto& f : to_revert) {
+                f.store(0, std::memory_order_relaxed);
+            }
+
+            std::atomic<bool> any{false};
             for_each_tetra([&](const Tuple& t) {
                 if (is_inverted(t)) {
                     for (const size_t vid : oriented_tet_vids(t)) {
-                        if (!is_direct_point[vid] && VA[vid].m_is_rounded) {
-                            to_revert.push_back(vid);
+                        if (!is_direct_point[vid] && m_vertex_attribute[vid].m_is_rounded) {
+                            to_revert[vid].store(1, std::memory_order_relaxed);
+                            any.store(true, std::memory_order_relaxed);
                         }
                     }
                 }
             });
-            if (to_revert.empty()) {
+            if (!any.load(std::memory_order_relaxed)) {
                 break;
             }
-            for (const size_t vid : to_revert) {
-                if (VA[vid].m_is_rounded) {
-                    VA[vid].m_pos = V.row(vid);
-                    VA[vid].m_is_rounded = false;
+            for (size_t vid = 0; vid < to_revert.size(); ++vid) {
+                if (!to_revert[vid].load(std::memory_order_relaxed)) {
+                    continue;
+                }
+                if (m_vertex_attribute[vid].m_is_rounded) {
+                    m_vertex_attribute[vid].m_pos = V.row(vid);
+                    m_vertex_attribute[vid].m_is_rounded = false;
                 }
             }
         }
