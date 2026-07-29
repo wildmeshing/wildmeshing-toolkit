@@ -407,6 +407,7 @@ InputData read_mesh(
 
     // convert mesh into tet mesh
     EmbedSurface image_mesh(input_paths, input_transforms, tol_rel, tol_abs);
+    image_mesh.m_num_threads = NUM_THREADS;
     image_mesh.m_perform_sanity_checks = perform_sanity_checks;
 
     if (debug_output) {

@@ -206,7 +206,7 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
 
     mesh.consolidate_mesh();
     double time = timer.getElapsedTime();
-    logger().info("total time {}s", time);
+    logger().info("total optimization time {}s", time);
 
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
@@ -271,7 +271,7 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
 
     mesh.consolidate_mesh();
     double time = timer.getElapsedTime();
-    logger().info("total time {}s", time);
+    logger().info("total optimization time {}s", time);
 
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
@@ -344,6 +344,9 @@ void simwild(nlohmann::json json_params)
         return fmt::format("{}_{}", output_filename.string(), vtu_counter++);
     };
 
+    igl::Timer timer;
+    timer.start();
+
     // read image or .msh
     InputData input_data;
     std::string extension = std::filesystem::path(input_paths[0]).extension().string();
@@ -358,6 +361,8 @@ void simwild(nlohmann::json json_params)
     } else {
         run_2D(json_params, input_data);
     }
+    double time = timer.getElapsedTime();
+    logger().info("total runtime {}s", time);
     logger().info("======= finish =========");
 }
 

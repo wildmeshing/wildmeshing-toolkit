@@ -18,6 +18,7 @@ set(SRC_FILES
 	EdgeCollapsing.cpp
 	EdgeSwapping.cpp
 	Smooth.cpp
+	SurfaceTopology.cpp
 	
 	VolumemesherInsertion.cpp
 

@@ -173,6 +173,7 @@ private:
 public:
     bool m_smooth_surface = false;
     bool m_perform_sanity_checks = false;
+    int m_num_threads = 0;
 };
 
 } // namespace wmtk::components::simwild

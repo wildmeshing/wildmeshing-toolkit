@@ -17,6 +17,7 @@
 #include <wmtk/io/read_triangle_mesh.hpp>
 #include <wmtk/utils/InsertTriangleUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/WindingNumber.hpp>
 #include <wmtk/utils/io.hpp>
 
 #include <wmtk/components/shortest_edge_collapse/ShortestEdgeCollapse.h>
@@ -1543,7 +1544,8 @@ void EmbedSurface::tag_from_winding_number()
     VectorXd W;
     W.resize(m_T_emb.rows());
     for (size_t i = 0; i < Fs.size(); ++i) {
-        igl::winding_number(Vs[i], Fs[i], P, W);
+        // igl::winding_number(Vs[i], Fs[i], P, W);
+        utils::winding_number(Vs[i], Fs[i], P, W, m_num_threads);
         assert(W.size() == m_T_tags.rows());
         for (size_t j = 0; j < W.size(); ++j) {
             if (W[j] < 0.5) {
