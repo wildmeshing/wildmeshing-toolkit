@@ -7,6 +7,7 @@
 #include <wmtk/components/simwild/expression_parser/Parser.hpp>
 #include <wmtk/components/simwild/read_image_msh.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/Preallocation.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 #include "Parameters.h"
 #include "TopoOffsetTetMesh.h"
@@ -83,6 +84,7 @@ void topological_offset(nlohmann::json json_params)
 
         // initialize mesh
         TopoOffsetTriMesh mesh(params, NUM_THREADS);
+        wmtk::set_preallocation_factor_from_json(mesh, json_params);
         mesh.init_from_image(
             input_data.V_input,
             input_data.T_input,
@@ -194,6 +196,7 @@ void topological_offset(nlohmann::json json_params)
 
         // initialize mesh
         TopoOffsetTetMesh mesh(params, NUM_THREADS);
+        wmtk::set_preallocation_factor_from_json(mesh, json_params);
         mesh.init_from_image(
             input_data.V_input,
             input_data.T_input,

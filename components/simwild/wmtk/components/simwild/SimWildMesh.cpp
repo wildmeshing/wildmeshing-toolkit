@@ -11,7 +11,6 @@
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <tbb/concurrent_vector.h>
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/fmt/bundled/format.h>
 #include <igl/predicates/predicates.h>

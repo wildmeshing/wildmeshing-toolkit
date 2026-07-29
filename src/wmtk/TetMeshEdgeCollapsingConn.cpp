@@ -276,7 +276,6 @@ bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     // collapse edge connectivity change with link condition check
     if (!collapse_edge_conn(
             loc0,
-            new_edges,
             v1_id,
             new_loc,
             rollback_vert_conn,
@@ -448,7 +447,6 @@ void TetMesh::collapse_edge_rollback(
 
 bool TetMesh::collapse_edge_conn(
     const Tuple& loc0,
-    std::vector<Tuple>& new_edges,
     size_t& v1_id,
     Tuple& new_loc,
     std::map<size_t, wmtk::TetMesh::VertexConnectivity>& rollback_vert_conn,
@@ -535,7 +533,11 @@ bool TetMesh::collapse_edge_conn(
         }
     }
 
-    rollback_vert_conn = operation_update_connectivity_impl(n1_t_ids, new_tet_conn, preserved_tids);
+    // collapse never allocates new tets (allocate ids are pre-assigned), so this
+    // cannot run out of space; conn_ok is always true here.
+    bool conn_ok = true;
+    rollback_vert_conn =
+        operation_update_connectivity_impl(n1_t_ids, new_tet_conn, preserved_tids, conn_ok);
 
     new_tet_id = preserved_tids;
 

@@ -33,7 +33,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-14 # Apple Silicon -> macosx_arm64
+          - os: macos-latest # Apple Silicon -> macosx_arm64
             label: macOS arm64
           - os: windows-2022 # Intel/AMD64   -> win_amd64
             label: Windows x86_64

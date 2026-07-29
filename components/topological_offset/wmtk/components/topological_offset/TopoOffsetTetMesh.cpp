@@ -45,10 +45,10 @@ void TopoOffsetTetMesh::init_from_image(
     // initialize connectivity
     init(T);
     assert(check_mesh_connectivity_validity());
-    m_vertex_attribute.m_attributes.resize(V.rows());
-    m_edge_attribute.m_attributes.resize(6 * T.rows());
-    m_face_attribute.m_attributes.resize(4 * T.rows());
-    m_tet_attribute.m_attributes.resize(T.rows());
+    m_vertex_attribute.resize(V.rows());
+    m_edge_attribute.resize(6 * T.rows());
+    m_face_attribute.resize(4 * T.rows());
+    m_tet_attribute.resize(T.rows());
 
     // set envelope data
     if (V_env.rows() > 0) {

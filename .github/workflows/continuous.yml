@@ -86,12 +86,6 @@ jobs:
           - os: macos-latest
             config: Release
             integration_tests_flag: *integration_tests_on
-          - os: macos-14
-            config: Debug
-            integration_tests_flag: *integration_tests_off
-          - os: macos-14
-            config: Release
-            integration_tests_flag: *integration_tests_on
 
     steps:
       - name: Checkout repository

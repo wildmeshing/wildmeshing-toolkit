@@ -3,13 +3,6 @@
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/Morton.h>
 
-// clang-format off
-#include <wmtk/utils/DisableWarnings.hpp>
-#include <tbb/parallel_for.h>
-#include <tbb/task_arena.h>
-#include <wmtk/utils/EnableWarnings.hpp>
-// clang-format on
-
 namespace wmtk {
 
 std::vector<size_t> partition_TriMesh(const wmtk::TriMesh& m, int num_partition);
