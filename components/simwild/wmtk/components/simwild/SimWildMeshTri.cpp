@@ -26,6 +26,8 @@
 #include <wmtk/utils/TupleUtils.hpp>
 #include <wmtk/utils/io.hpp>
 
+#include "expression_parser/Parser.hpp"
+
 namespace wmtk::components::simwild::tri {
 
 auto renew = [](const SimWildMeshTri& m, auto op, auto& tris) {
@@ -371,6 +373,66 @@ CellTag SimWildMeshTri::string_set_to_cell_tag(const std::set<std::string>& str_
     return cell_tag;
 }
 
+void SimWildMeshTri::set_sizing_field(const nlohmann::json& sizing_field_json)
+{
+    if (!sizing_field_json.is_array()) {
+        log_and_throw_error(
+            "sizing_field should be an array of objects, each defining a region and its target "
+            "length.");
+    }
+
+    for (const auto& region_json : sizing_field_json) {
+        if (!region_json.contains("tags")) {
+            log_and_throw_error("Each sizing_field entry must contain a 'tags' field.");
+        }
+        const std::string tags_str_set = region_json["tags"];
+        auto& [expr, length] = m_sizing_field.emplace_back();
+        expr = expression_parser::parse(tags_str_set, m_tag_name_to_id);
+
+        length = region_json["length"];
+        double length_rel = region_json["length_rel"];
+        if (length < 0 && length_rel < 0) {
+            log_and_throw_error(
+                "Each sizing_field entry must specify at least one of 'length' or 'length_rel'.");
+        }
+
+        if (length < 0) {
+            length = length_rel * m_params.diag_l;
+        }
+
+        logger().info("Added sizing field: expr = {}, length = {}", expr->to_string(), length);
+    }
+
+    // apply sizing fields to vertices
+    for (const Tuple& t : get_faces()) {
+        const auto tid = t.fid(*this);
+        for (const auto& [expr, length] : m_sizing_field) {
+            if (!expr->eval(m_face_attribute[tid].tags)) {
+                continue;
+            }
+            const auto vs = oriented_tri_vids(tid);
+            for (const size_t& vid : vs) {
+                auto& s = m_vertex_attribute[vid].m_sizing_scalar;
+                s = length / m_params.l; // overwrite previous value
+            }
+        }
+    }
+    for (const Tuple& t : get_faces()) {
+        const auto tid = t.fid(*this);
+        double sizing = 1.0; // default
+        for (const auto& [expr, length] : m_sizing_field) {
+            if (expr->eval(m_face_attribute[tid].tags)) {
+                sizing = length / m_params.l;
+            }
+        }
+        const auto vs = oriented_tri_vids(tid);
+        for (const size_t& vid : vs) {
+            auto& s = m_vertex_attribute[vid].m_sizing_scalar;
+            s = std::min(s, sizing);
+        }
+    }
+}
+
 bool SimWildMeshTri::adjust_sizing_field_serial(double max_energy)
 {
     wmtk::logger().info("#V {}, #F {}", vert_capacity(), tri_capacity());
@@ -387,6 +449,7 @@ bool SimWildMeshTri::adjust_sizing_field_serial(double max_energy)
     std::vector<double> scale_multipliers(vert_capacity(), recover_scalar);
 
     std::vector<Vector3d> pts;
+    std::map<size_t, double> pts_scalars;
     std::queue<size_t> v_queue;
 
     for (int i = 0; i < tri_capacity(); i++) {
@@ -400,83 +463,114 @@ bool SimWildMeshTri::adjust_sizing_field_serial(double max_energy)
         }
         const auto vs = oriented_tri_vids(t);
         Vector2d c(0, 0); // center
+        double s = 0;
         for (int j = 0; j < 3; j++) {
             c += m_vertex_attribute.at(vs[j]).m_pos;
             v_queue.emplace(vs[j]);
+            s = std::max(s, m_vertex_attribute[vs[j]].m_sizing_scalar);
         }
         c /= 3;
+        pts_scalars[pts.size()] = s;
         pts.emplace_back(Vector3d(c[0], c[1], 0));
     }
 
     wmtk::logger().info("filter energy {} Low Quality Tets {}", filter_energy, pts.size());
+
+    // compute maximum sizing scalar for each vertex based on the sizing field
+    std::vector<double> max_sizing_scalars(vert_capacity(), std::numeric_limits<double>::max());
+    for (const Tuple& t : get_faces()) {
+        const auto tid = t.fid(*this);
+        double sizing = std::numeric_limits<double>::max();
+        bool tet_has_sizing_field = false;
+        for (const auto& [expr, length] : m_sizing_field) {
+            if (expr->eval(m_face_attribute[tid].tags)) {
+                sizing = std::min(sizing, length / m_params.l);
+                tet_has_sizing_field = true;
+            }
+        }
+        if (!tet_has_sizing_field) {
+            sizing = 1.0; // default sizing scalar
+        }
+        const auto vs = oriented_tri_vids(tid);
+        for (const size_t& vid : vs) {
+            max_sizing_scalars[vid] = std::min(max_sizing_scalars[vid], sizing);
+        }
+    }
 
     const double R = m_params.l * 1.8;
 
     int sum = 0;
     int adjcnt = 0;
 
-    std::vector<bool> visited(vert_capacity(), false);
-
     KNN knn(pts);
 
-    std::vector<size_t> cache_one_ring;
-    // size_t vid;
-    while (!v_queue.empty()) {
-        sum++;
-        const size_t vid = v_queue.front();
-        v_queue.pop();
-        if (visited[vid]) continue;
-        visited[vid] = true;
-        adjcnt++;
-
-        const auto& pos_v = m_vertex_attribute.at(vid).m_pos;
-        const Vector3d p(pos_v[0], pos_v[1], 0);
-        double sq_dist = 0.;
-        uint32_t idx;
-        knn.nearest_neighbor(p, idx, sq_dist);
-        const double dist = std::sqrt(sq_dist);
-
-        if (dist > R) { // outside R-ball, unmark.
-            continue;
-        }
-
-        scale_multipliers[vid] = std::min(
-            scale_multipliers[vid],
-            dist / R * (1 - refine_scalar) + refine_scalar); // linear interpolate
-
-        get_one_ring_vids_for_vertex_duplicate(vid, cache_one_ring);
-        for (size_t n_vid : cache_one_ring) {
-            if (visited[n_vid]) {
-                continue;
-            }
-            v_queue.push(n_vid);
-        }
-    }
-
-    logger().info("sum = {}; adjacent = {}", sum, adjcnt);
-
-    std::atomic_bool is_hit_min_edge_length = false;
-
+    bool is_hit_min_edge_length = false;
+    /**
+     * Iterate through all vertices.
+     * For each vertex, find all pts in the R-ball neighborhood.
+     * Compute scalar based on the distance to the point.
+     * Take smallest of all computed values.
+     *
+     * If no neighbor, multiply by recover_scalar.
+     */
     for (int i = 0; i < vert_capacity(); i++) {
         const Tuple v = tuple_from_vertex(i);
         if (!v.is_valid(*this)) {
             continue;
         }
         const size_t vid = v.vid(*this);
-        auto& v_attr = m_vertex_attribute[vid];
+        const auto& pos_v = m_vertex_attribute[vid].m_pos;
 
-        auto new_scale = v_attr.m_sizing_scalar * scale_multipliers[vid];
-        if (new_scale > 1) {
-            v_attr.m_sizing_scalar = 1;
-        } else if (new_scale < min_refine_scalar) {
+        // all low quality tet centroids within R-ball of vertex
+        std::vector<nanoflann::ResultItem<uint32_t, double>> matches;
+        knn.r_nearest_neighbors(Vector3d(pos_v[0], pos_v[1], 0), R * R, matches);
+
+        auto& v_scalar = m_vertex_attribute[vid].m_sizing_scalar;
+
+        if (matches.empty()) {
+            // if no low quality tet within R-ball, increase sizing scalar to recover from previous
+            // refinement
+            v_scalar = std::min(recover_scalar * v_scalar, max_sizing_scalars[vid]);
+            continue;
+        }
+
+        for (const auto& [index, sq_dist] : matches) {
+            const auto& pt = pts[index];
+            const double dist = std::sqrt(sq_dist);
+            const double R_tet = R * pts_scalars[index]; // scale R by sizing scalar of tet
+            if (dist > R_tet) {
+                continue;
+            }
+            // linear interpolate between refine_scalar and 1 based on distance
+            // double u = dist / R * (1 - refine_scalar) + refine_scalar;
+            double u = dist / R_tet * (1 - refine_scalar) + refine_scalar;
+            double scalar = u * pts_scalars[index];
+            v_scalar = std::min(v_scalar, scalar);
+        }
+
+        if (v_scalar < min_refine_scalar) {
+            v_scalar = min_refine_scalar;
             is_hit_min_edge_length = true;
-            v_attr.m_sizing_scalar = min_refine_scalar;
-        } else {
-            v_attr.m_sizing_scalar = new_scale;
         }
     }
 
-    return is_hit_min_edge_length.load();
+    // restrict sizing scalar according to sizing field
+    for (const Tuple& t : get_faces()) {
+        const auto tid = t.fid(*this);
+        double sizing = std::numeric_limits<double>::max();
+        for (const auto& [expr, length] : m_sizing_field) {
+            if (expr->eval(m_face_attribute[tid].tags)) {
+                sizing = std::min(sizing, length / m_params.l);
+            }
+        }
+        const auto vs = oriented_tri_vids(tid);
+        for (const size_t& vid : vs) {
+            auto& s = m_vertex_attribute[vid].m_sizing_scalar;
+            s = std::min(s, sizing);
+        }
+    }
+
+    return is_hit_min_edge_length;
 }
 
 void SimWildMeshTri::write_msh(std::string file, const bool write_envelope)
@@ -1795,7 +1889,7 @@ void SimWildMeshTri::mesh_improvement(int max_its)
     // write_vtu(fmt::format("debug_{}", m_m_debug_print_counter++));
 
     wmtk::logger().info("========it pre========");
-    local_operations({{0, 1, 0, 0}}, false);
+    local_operations({{0, 1, 0, 0}}, true);
 
     ////operation loops
     bool is_hit_min_edge_length = false;

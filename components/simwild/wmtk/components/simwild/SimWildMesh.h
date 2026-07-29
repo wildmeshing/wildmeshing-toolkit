@@ -332,7 +332,7 @@ public:
 
     CellTag string_set_to_cell_tag(const std::set<std::string>& str_set);
 
-    void set_sizing_field(const nlohmann::json& m_sizing_field_json);
+    void set_sizing_field(const nlohmann::json& sizing_field_json);
 
     double get_length2(const Tuple& l) const;
 
@@ -372,11 +372,74 @@ public:
     bool swap_edge_before(const Tuple& t) override;
     bool swap_edge_after(const Tuple& t) override;
 
+    /**
+     * @brief Prepare a surface 3->2 edge swap (a surface diagonal flip).
+     *
+     * Called from swap_edge_before when the swapped edge (a,b) is on the surface
+     * and has exactly 3 incident tets. Verifies the local guards that guarantee
+     * the flip preserves surface manifoldness / topology, and fills the
+     * surface-flip fields of swap_cache. Returns false (rejecting the swap) if
+     * any guard fails: open-boundary edge, non-manifold edge (!= 2 surface
+     * faces), or one of the two would-be new surface faces already tagged
+     * surface. The tets sharing (a,b) are passed in to avoid recomputation.
+     */
+    bool prepare_surface_flip_32(const Tuple& t, const std::vector<size_t>& incident_tets);
+
+    /**
+     * @brief A topological fingerprint of the tracked surface (m_is_surface_fs).
+     *
+     * Cheap-to-compare summary used to assert that surface-modifying operations
+     * (surface edge flips) do not change the surface topology: number of
+     * connected components, surface V/E/F, Euler characteristic, and number of
+     * boundary loops. A valid surface diagonal flip leaves all of these
+     * invariant. O(#surface faces); only used by tests / check_surface_topology.
+     */
+    struct SurfaceTopoSignature
+    {
+        long long components = 0;
+        long long V = 0;
+        long long E = 0;
+        long long F = 0;
+        long long euler = 0; // V - E + F
+        long long boundary_loops = 0;
+        bool operator==(const SurfaceTopoSignature&) const = default;
+    };
+    SurfaceTopoSignature surface_topology_signature() const;
+
+    /**
+     * @brief Compare a surface signature against the current one and log an
+     * error if it changed. Used (when m_params.check_surface_topology is set) to
+     * guard swap passes that can flip surface edges.
+     */
+    void warn_if_surface_topology_changed(const SurfaceTopoSignature& before, const char* where)
+        const;
+
     size_t swap_all_faces();
     bool swap_face_before(const Tuple& t) override;
     bool swap_face_after(const Tuple& t) override;
 
     size_t swap_all_edges_all();
+
+    /**
+     * @brief m_quality threshold above which a tet is "active" (worth operating
+     * on) for the skip-good-regions filter. m_quality stores AMIPS^3 and the
+     * energy is its cube root, so a tet is active when its energy is at least
+     * skip_good_regions_margin * stop_energy, i.e. m_quality >=
+     * (margin * stop_energy)^3.
+     */
+    double active_quality_threshold() const
+    {
+        const double e = m_params.skip_good_regions_margin * m_params.stop_energy;
+        return e * e * e;
+    }
+
+    /**
+     * @brief vids of the vertices incident to at least one "active" tet
+     * (m_quality >= active_quality_threshold()). Used by the skip-good-regions
+     * filter to restrict smoothing to non-good regions (smoothing a vertex
+     * surrounded by good tets does nothing).
+     */
+    std::vector<size_t> active_vertices() const;
 
     /**
      * @brief Inversion check using only floating point numbers.
@@ -426,6 +489,8 @@ public:
 
     // debug use
     std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;
+    // Successful surface diagonal flips (subset of cnt_swap). Diagnostic.
+    std::atomic<int> cnt_surface_swap = 0;
 
 private:
     ////// Operations
@@ -475,6 +540,15 @@ private:
         double max_energy;
         std::map<std::array<size_t, 3>, FaceAttributes> changed_faces;
         CellTag tet_tags;
+
+        // Surface 3->2 flip bookkeeping (filled by swap_edge_before when the
+        // swapped edge (a,b) lies on the surface). a,b are the removed-edge
+        // endpoints, c,d are the new surface-edge endpoints, e is the interior
+        // apex. sf_face_attr is copied onto the two new surface faces (a,c,d),
+        // (b,c,d). is_surface_flip gates the extra handling in swap_edge_after.
+        bool is_surface_flip = false;
+        size_t sf_a = 0, sf_b = 0, sf_c = 0, sf_d = 0, sf_e = 0;
+        FaceAttributes sf_face_attr;
     };
     wmtk::threading::enumerable_thread_specific<SwapInfoCache> swap_cache;
 
@@ -501,7 +575,48 @@ public:
 
     std::vector<std::array<size_t, 3>> triangulate_polygon_face(std::vector<Vector3r> points);
 
+    /**
+     * @brief Escape a stuck max energy by refining the sizing field around the
+     * worst elements.
+     *
+     * Finds the m_params.stuck_refine_num_worst tets with the highest energy,
+     * gathers all vertices within m_params.stuck_refine_rings graph rings of
+     * them, and multiplies each such vertex's m_sizing_scalar by
+     * m_params.stuck_refine_factor (clamped at m_params.stuck_refine_min_scalar).
+     * Then runs gradation_smooth_sizing so the refined region blends smoothly
+     * into the surrounding resolution. Replaces the old global
+     * adjust_sizing_field mechanism. Returns the number of vertices refined.
+     */
+    size_t refine_sizing_around_worst(double max_energy);
+
+    /**
+     * @brief Monotone (only-decreasing) gradation smoothing of the sizing field.
+     *
+     * Enforces m_sizing_scalar[v] <= grade * m_sizing_scalar[u] for every edge
+     * (u,v), propagating outward from `seeds` with a min-relaxation. It never
+     * raises a sizing value, so it only ever spreads more refinement into the
+     * halo around already-refined vertices, avoiding sharp resolution jumps.
+     */
+    void gradation_smooth_sizing(double grade, const std::vector<size_t>& seeds);
+
     bool adjust_sizing_field_serial(double max_energy);
+
+    /// The longest edge of each current worst tet (as a sorted {min,max} vid pair).
+    /// split_all_edges force-splits exactly these edges (bypasses the length gate),
+    /// so a stuck sliver's long edge is split immediately without changing the sizing
+    /// field. Populated serially by refine_sizing_around_worst; read-only during the
+    /// parallel split pass, then cleared once split_all_edges has consumed it.
+    std::set<simplex::Edge> m_force_split_edges;
+
+    /// Count of force-splits taken in the current split pass (atomic_ref from the
+    /// parallel split; reset + logged by split_all_edges). Diagnostic only.
+    size_t m_force_split_count = 0;
+
+    /// True iff edge (v1,v2) is a worst tet's longest edge queued for force-split.
+    bool is_force_split_edge(size_t v1, size_t v2) const
+    {
+        return m_force_split_edges.find(simplex::Edge(v1, v2)) != m_force_split_edges.end();
+    }
 
     /**
      * @brief Find open boundary edges of the embedded surface and initialize a BVH for the open

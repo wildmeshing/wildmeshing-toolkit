@@ -11,6 +11,7 @@ void SimWildMesh::split_all_edges()
 {
     igl::Timer timer;
     double time;
+    m_force_split_count = 0;
     timer.start();
     std::vector<std::pair<std::string, Tuple>> collect_all_ops;
     for (const Tuple& loc : get_edges()) {
@@ -35,6 +36,14 @@ void SimWildMesh::split_all_edges()
             //
             size_t v1_id = tup.vid(*this);
             size_t v2_id = tup.switch_vertex(*this).vid(*this);
+            // Force-split: a worst tet's longest edge (queued by
+            // refine_sizing_around_worst when the max energy stalls) is split once
+            // regardless of the length gate, to unstick a sliver without changing the
+            // sizing field. The new midpoint is not in m_force_split_edges, so the
+            // two halves are NOT force-split again -- exactly one split per edge.
+            if (is_force_split_edge(v1_id, v2_id)) {
+                return true;
+            }
             double sizing_ratio = (m_vertex_attribute[v1_id].m_sizing_scalar +
                                    m_vertex_attribute[v2_id].m_sizing_scalar) /
                                   2;
@@ -61,6 +70,13 @@ void SimWildMesh::split_all_edges()
         time = timer.getElapsedTime();
         wmtk::logger().info("edge split operation time serial: {:.4}s", time);
     }
+    if (m_force_split_count > 0) {
+        wmtk::logger().info(
+            "[force-split] {} worst-tet longest edges force-split",
+            m_force_split_count);
+    }
+    // Consumed: the queued force-split edges no longer exist after this pass.
+    m_force_split_edges.clear();
 }
 
 bool SimWildMesh::split_edge_before(const Tuple& loc0)
@@ -146,16 +162,30 @@ bool SimWildMesh::split_edge_after(const Tuple& loc)
     // this has to be done before the inversion check
     m_vertex_attribute[v_id].m_pos = to_rational(p);
 
-    for (auto& loc : locs) {
-        if (is_inverted(loc)) {
+    for (const Tuple& t : locs) {
+        if (is_inverted(t)) {
             m_vertex_attribute[v_id].m_is_rounded = false;
             break;
         }
     }
+    if (is_force_split_edge(v1_id, v2_id)) {
+        std::atomic_ref<size_t>(m_force_split_count).fetch_add(1, std::memory_order_relaxed);
+    }
     if (!m_vertex_attribute[v_id].m_is_rounded) {
+        if (!m_params.stuck_refine_rational_split) {
+            return false;
+        }
+
         m_vertex_attribute[v_id].m_pos =
             (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
         p = to_double(m_vertex_attribute[v_id].m_pos);
+        // Guard against a pre-existing inverted incident tet: re-check in exact
+        // arithmetic (un-rounded v_id => is_inverted uses the rational path).
+        for (const Tuple& t : locs) {
+            if (is_inverted(t)) {
+                return false;
+            }
+        }
     }
 
     // If a Voronoi split function is set, binary-search vmid onto its zero-crossing.
