@@ -100,6 +100,8 @@ public:
     std::shared_ptr<SampleEnvelope> m_envelope_orig;
     double m_envelope_eps = -1;
 
+    std::vector<std::tuple<ExprPtr, double>> m_sizing_field;
+
     using VertAttCol = AttributeCollection<VertexAttributes>;
     using EdgeAttCol = AttributeCollection<EdgeAttributes>;
     using FaceAttCol = AttributeCollection<FaceAttributes>;
@@ -180,6 +182,8 @@ public:
     void init_envelope(const MatrixXd& V, const MatrixXi& F);
 
     CellTag string_set_to_cell_tag(const std::set<std::string>& str_set);
+
+    void set_sizing_field(const nlohmann::json& sizing_field_json);
 
     bool adjust_sizing_field_serial(double max_energy);
 
