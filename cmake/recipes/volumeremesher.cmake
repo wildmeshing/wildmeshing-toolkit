@@ -4,7 +4,7 @@ if(TARGET VolumeRemesher::VolumeRemesher)
     return()
 endif()
 
-message(STATUS "Third-party: creating target 'VolumeMesher'")
+message(STATUS "Third-party: creating target 'VolumeRemesher::VolumeRemesher'")
 
 # PR #15 (branch `2d`), a descendant of the previous pin, which adds the 2D pipeline:
 # vol_rem::embed_seg_in_tri_mesh in VolumeRemesher/2d/embed2d.h, used by triwild to

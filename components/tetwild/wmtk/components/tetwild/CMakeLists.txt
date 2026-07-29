@@ -1,7 +1,5 @@
 # incremental tetwild
 
-include(volumemesher)
-
 set(COMPONENT_NAME tetwild)
 add_component(${COMPONENT_NAME})
 
@@ -56,7 +54,6 @@ target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC
 	wmtk::data
 	wmtk::shortest_edge_collapse
 	igl::predicates
-	VolumeRemesher::VolumeRemesher
 	jse::jse
 )
 

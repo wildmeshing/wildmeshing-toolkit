@@ -57,7 +57,7 @@ project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
 # ###############################################################################
 option(WMTK_BUILD_DOCS "Build doxygen" OFF)
 option(WMTK_BUILD_INTEGRATION_TESTS "Build integration tests (might take very long to run)" OFF) # off by default
-option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option due to use of TBB
+option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
@@ -73,12 +73,7 @@ include(wmtk_warnings)
 include(wmtk_copy_dll)
 include(nlohmann_json)
 include(eigen)
-include(delaunay_psm)
-# TBB is no longer used by wmtk itself (replaced by the std::thread shim), but a
-# transitive dependency (geogram, pulled in via FastEnvelope) links against it on
-# Linux, so the library must still be built and available. wmtk does not link
-# TBB::tbb.
-include(onetbb)
+include(volumeremesher) # target VolumeRemesher::VolumeRemesher
 include(mshio)
 include(metis)
 include(gmp)
@@ -138,7 +133,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     igl::core
     igl::predicates
     gmp::gmp
-    geogram::delaunay_psm
+    VolumeRemesher::VolumeRemesher
     mshio::mshio
     metis::metis
     nlohmann_json::nlohmann_json
