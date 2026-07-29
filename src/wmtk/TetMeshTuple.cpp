@@ -110,25 +110,73 @@ size_t TetMesh::Tuple::vid(const TetMesh&) const
 
 size_t TetMesh::Tuple::eid(const TetMesh& m) const
 {
-    /**
-     * TODO: optimize the computation of the lowest tet ID:
-     * All tet IDs are stored consecutively in the vertex connectivity. Find the smallest common
-     * tet ID and construct edge ID from that. See `fid()` for a similar implementation.
-     */
-    auto v1_id = m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][0]];
-    auto v2_id = m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][1]];
-    if (v1_id > v2_id) std::swap(v1_id, v2_id);
-    auto n12_t_ids = set_intersection(
-        m.m_vertex_connectivity[v1_id].m_conn_tets,
-        m.m_vertex_connectivity[v2_id].m_conn_tets);
-    assert(!n12_t_ids.empty());
+    // auto v1_id = m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][0]];
+    // auto v2_id = m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][1]];
+    // if (v1_id > v2_id) std::swap(v1_id, v2_id);
+    // auto n12_t_ids = set_intersection(
+    //     m.m_vertex_connectivity[v1_id].m_conn_tets,
+    //     m.m_vertex_connectivity[v2_id].m_conn_tets);
+    // assert(!n12_t_ids.empty());
 
-    auto tid = *std::min_element(n12_t_ids.begin(), n12_t_ids.end());
+    // auto tid = *std::min_element(n12_t_ids.begin(), n12_t_ids.end());
+    // for (int j = 0; j < 6; j++) {
+    //     auto tmp_v1_id = m.m_tet_connectivity[tid][m_local_edges[j][0]];
+    //     auto tmp_v2_id = m.m_tet_connectivity[tid][m_local_edges[j][1]];
+    //     if (tmp_v1_id > tmp_v2_id) std::swap(tmp_v1_id, tmp_v2_id);
+    //     if (tmp_v1_id == v1_id && tmp_v2_id == v2_id) return tid * 6 + j;
+    // }
+    // return std::numeric_limits<size_t>::max();
+
+    size_t v0_id = m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][0]];
+    size_t v1_id = m.m_tet_connectivity[m_global_tid][m_local_edges[m_local_eid][1]];
+    if (v0_id > v1_id) {
+        std::swap(v0_id, v1_id);
+    }
+
+    size_t tid = std::numeric_limits<size_t>::max();
+
+    // find lowest common tet id
+    {
+        const auto& t0 = m.m_vertex_connectivity[v0_id].m_conn_tets;
+        const auto& t1 = m.m_vertex_connectivity[v1_id].m_conn_tets;
+        size_t i0 = 0;
+        size_t i1 = 0;
+
+        if (t0.empty() || t1.empty()) {
+            log_and_throw_error(
+                "Tuple::eid(*this) error: One of the vertices has an empty tet vector");
+        }
+
+        while (true) {
+            if (t0[i0] < t1[i1]) {
+                i0++;
+                if (i0 == t0.size()) {
+                    log_and_throw_error("Tuple::eid(*this) error");
+                }
+            }
+            if (t1[i1] < t0[i0]) {
+                i1++;
+                if (i1 == t1.size()) {
+                    log_and_throw_error("Tuple::eid(*this) error");
+                }
+            }
+            if (t0[i0] == t1[i1]) {
+                tid = t0[i0];
+                break;
+            }
+        }
+    }
+    assert(tid != std::numeric_limits<size_t>::max());
+
     for (int j = 0; j < 6; j++) {
-        auto tmp_v1_id = m.m_tet_connectivity[tid][m_local_edges[j][0]];
-        auto tmp_v2_id = m.m_tet_connectivity[tid][m_local_edges[j][1]];
-        if (tmp_v1_id > tmp_v2_id) std::swap(tmp_v1_id, tmp_v2_id);
-        if (tmp_v1_id == v1_id && tmp_v2_id == v2_id) return tid * 6 + j;
+        size_t tmp_v0_id = m.m_tet_connectivity[tid][m_local_edges[j][0]];
+        size_t tmp_v1_id = m.m_tet_connectivity[tid][m_local_edges[j][1]];
+        if (tmp_v0_id > tmp_v1_id) {
+            std::swap(tmp_v0_id, tmp_v1_id);
+        }
+        if (tmp_v0_id == v0_id && tmp_v1_id == v1_id) {
+            return tid * 6 + j;
+        }
     }
     return std::numeric_limits<size_t>::max();
 }
