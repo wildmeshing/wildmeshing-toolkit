@@ -155,6 +155,12 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:a21c2d1e3ce925bc663af361355539af8" id="r_a21c2d1e3ce925bc663af361355539af8"><td class="memItemLeft" align="right" valign="top"><a id="a21c2d1e3ce925bc663af361355539af8" name="a21c2d1e3ce925bc663af361355539af8"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_smooth_surface</b> = false</td></tr>
 <tr class="separator:a21c2d1e3ce925bc663af361355539af8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1fc5265a5b69b6a2725c4b5be759c751" id="r_a1fc5265a5b69b6a2725c4b5be759c751"><td class="memItemLeft" align="right" valign="top"><a id="a1fc5265a5b69b6a2725c4b5be759c751" name="a1fc5265a5b69b6a2725c4b5be759c751"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_perform_sanity_checks</b> = false</td></tr>
+<tr class="separator:a1fc5265a5b69b6a2725c4b5be759c751"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2921b1b5d2d0f9cddffbbfc1f779ac78" id="r_a2921b1b5d2d0f9cddffbbfc1f779ac78"><td class="memItemLeft" align="right" valign="top"><a id="a2921b1b5d2d0f9cddffbbfc1f779ac78" name="a2921b1b5d2d0f9cddffbbfc1f779ac78"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>m_num_threads</b> = 0</td></tr>
+<tr class="separator:a2921b1b5d2d0f9cddffbbfc1f779ac78"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
@@ -231,6 +237,7 @@ std::vector&lt; MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Only do a trivial rounding here. The more complex rounding is performed later on.</p>
 <p>Cluster tags by flood-filling regions that are bounded by the surface. All tags within one region are unified by taking the tag with most occurances.</p>
 <p>This is for several reasons not the best way to do this.</p><ol type="1">
 <li>The tags should be volume-weighted so that the tag that represents the most volume should be picked.</li>

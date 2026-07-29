@@ -150,8 +150,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>init_envelope</b> (co
 <tr class="memitem:ab70b379c1b2762311097b5d7cb067483" id="r_ab70b379c1b2762311097b5d7cb067483"><td class="memItemLeft" align="right" valign="top"><a id="ab70b379c1b2762311097b5d7cb067483" name="ab70b379c1b2762311097b5d7cb067483"></a>
 CellTag&#160;</td><td class="memItemRight" valign="bottom"><b>string_set_to_cell_tag</b> (const std::set&lt; std::string &gt; &amp;str_set)</td></tr>
 <tr class="separator:ab70b379c1b2762311097b5d7cb067483"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae7397c36e3aa69e3f116a3e47a068d1c" id="r_ae7397c36e3aa69e3f116a3e47a068d1c"><td class="memItemLeft" align="right" valign="top"><a id="ae7397c36e3aa69e3f116a3e47a068d1c" name="ae7397c36e3aa69e3f116a3e47a068d1c"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>adjust_sizing_field_serial</b> (double max_energy)</td></tr>
+<tr class="memitem:a07f906eddb22a866866c3169954a9ec3" id="r_a07f906eddb22a866866c3169954a9ec3"><td class="memItemLeft" align="right" valign="top"><a id="a07f906eddb22a866866c3169954a9ec3" name="a07f906eddb22a866866c3169954a9ec3"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_sizing_field</b> (const nlohmann::json &amp;sizing_field_json)</td></tr>
+<tr class="separator:a07f906eddb22a866866c3169954a9ec3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae7397c36e3aa69e3f116a3e47a068d1c" id="r_ae7397c36e3aa69e3f116a3e47a068d1c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#ae7397c36e3aa69e3f116a3e47a068d1c">adjust_sizing_field_serial</a> (double max_energy)</td></tr>
 <tr class="separator:ae7397c36e3aa69e3f116a3e47a068d1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5cc4a1c0e2b8864b452afdfc3cb2d43d" id="r_a5cc4a1c0e2b8864b452afdfc3cb2d43d"><td class="memItemLeft" align="right" valign="top"><a id="a5cc4a1c0e2b8864b452afdfc3cb2d43d" name="a5cc4a1c0e2b8864b452afdfc3cb2d43d"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>write_msh</b> (std::string file, const bool write_envelope=true)</td></tr>
@@ -561,6 +563,9 @@ std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">Samp
 <tr class="memitem:a9b2e6c37bee0d33fe41242869e3242bd" id="r_a9b2e6c37bee0d33fe41242869e3242bd"><td class="memItemLeft" align="right" valign="top"><a id="a9b2e6c37bee0d33fe41242869e3242bd" name="a9b2e6c37bee0d33fe41242869e3242bd"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope_eps</b> = -1</td></tr>
 <tr class="separator:a9b2e6c37bee0d33fe41242869e3242bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7146618cd54dc54923f3f80dabde5e70" id="r_a7146618cd54dc54923f3f80dabde5e70"><td class="memItemLeft" align="right" valign="top"><a id="a7146618cd54dc54923f3f80dabde5e70" name="a7146618cd54dc54923f3f80dabde5e70"></a>
+std::vector&lt; std::tuple&lt; ExprPtr, double &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_sizing_field</b></td></tr>
+<tr class="separator:a7146618cd54dc54923f3f80dabde5e70"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a316dcb8a6f8b5b108dc33d1db1d23a3b" id="r_a316dcb8a6f8b5b108dc33d1db1d23a3b"><td class="memItemLeft" align="right" valign="top"><a id="a316dcb8a6f8b5b108dc33d1db1d23a3b" name="a316dcb8a6f8b5b108dc33d1db1d23a3b"></a>
 <a class="el" href="structwmtk_1_1_attribute_collection.html">VertAttCol</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_attribute</b></td></tr>
 <tr class="separator:a316dcb8a6f8b5b108dc33d1db1d23a3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -672,6 +677,26 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="ae7397c36e3aa69e3f116a3e47a068d1c" name="ae7397c36e3aa69e3f116a3e47a068d1c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae7397c36e3aa69e3f116a3e47a068d1c">&#9670;&#160;</a></span>adjust_sizing_field_serial()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::simwild::tri::SimWildMeshTri::adjust_sizing_field_serial </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>max_energy</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Iterate through all vertices. For each vertex, find all pts in the R-ball neighborhood. Compute scalar based on the distance to the point. Take smallest of all computed values.</p>
+<p>If no neighbor, multiply by recover_scalar.</p>
+
+</div>
+</div>
 <a id="a8f2a6453455d79548dadccaaae82963a" name="a8f2a6453455d79548dadccaaae82963a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8f2a6453455d79548dadccaaae82963a">&#9670;&#160;</a></span>collapse_edge_after()</h2>
 

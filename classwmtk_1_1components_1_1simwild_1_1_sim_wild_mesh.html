@@ -99,6 +99,9 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_split_info_cache.html">SplitInfoCache</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_surface_topo_signature.html">SurfaceTopoSignature</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A topological fingerprint of the tracked surface (m_is_surface_fs).  <a href="structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_surface_topo_signature.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_swap_info_cache.html">SwapInfoCache</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -145,9 +148,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>init_envelope</b> (co
 <tr class="memitem:a3f38d5edcdd30a57f4e21297a86d2174" id="r_a3f38d5edcdd30a57f4e21297a86d2174"><td class="memItemLeft" align="right" valign="top"><a id="a3f38d5edcdd30a57f4e21297a86d2174" name="a3f38d5edcdd30a57f4e21297a86d2174"></a>
 CellTag&#160;</td><td class="memItemRight" valign="bottom"><b>string_set_to_cell_tag</b> (const std::set&lt; std::string &gt; &amp;str_set)</td></tr>
 <tr class="separator:a3f38d5edcdd30a57f4e21297a86d2174"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac3313087517f69acb8ec1d4cf982e39a" id="r_ac3313087517f69acb8ec1d4cf982e39a"><td class="memItemLeft" align="right" valign="top"><a id="ac3313087517f69acb8ec1d4cf982e39a" name="ac3313087517f69acb8ec1d4cf982e39a"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>set_sizing_field</b> (const nlohmann::json &amp;m_sizing_field_json)</td></tr>
-<tr class="separator:ac3313087517f69acb8ec1d4cf982e39a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6b3f6bd2fd3ef88cdbbaa7dce00e4674" id="r_a6b3f6bd2fd3ef88cdbbaa7dce00e4674"><td class="memItemLeft" align="right" valign="top"><a id="a6b3f6bd2fd3ef88cdbbaa7dce00e4674" name="a6b3f6bd2fd3ef88cdbbaa7dce00e4674"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_sizing_field</b> (const nlohmann::json &amp;sizing_field_json)</td></tr>
+<tr class="separator:a6b3f6bd2fd3ef88cdbbaa7dce00e4674"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a33a766f40112f85bba2d4bedb64e8f01" id="r_a33a766f40112f85bba2d4bedb64e8f01"><td class="memItemLeft" align="right" valign="top"><a id="a33a766f40112f85bba2d4bedb64e8f01" name="a33a766f40112f85bba2d4bedb64e8f01"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>get_length2</b> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;l) const</td></tr>
 <tr class="separator:a33a766f40112f85bba2d4bedb64e8f01"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -220,6 +223,16 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>swap_all_edges_32</
 <tr class="memitem:ab4f5072436d3d021e2b2872b2376ed3e" id="r_ab4f5072436d3d021e2b2872b2376ed3e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ab4f5072436d3d021e2b2872b2376ed3e">swap_edge_after</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t) override</td></tr>
 <tr class="memdesc:ab4f5072436d3d021e2b2872b2376ed3e"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified modifications and desideratas for after a 3-2 edge swap.  <br /></td></tr>
 <tr class="separator:ab4f5072436d3d021e2b2872b2376ed3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ada4b8c34dfe58e3b3f47c7c8343247e9" id="r_ada4b8c34dfe58e3b3f47c7c8343247e9"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ada4b8c34dfe58e3b3f47c7c8343247e9">prepare_surface_flip_32</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t, const std::vector&lt; size_t &gt; &amp;incident_tets)</td></tr>
+<tr class="memdesc:ada4b8c34dfe58e3b3f47c7c8343247e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Prepare a surface 3-&gt;2 edge swap (a surface diagonal flip).  <br /></td></tr>
+<tr class="separator:ada4b8c34dfe58e3b3f47c7c8343247e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acb4c20d1e5f7dcb1e80b569820243514" id="r_acb4c20d1e5f7dcb1e80b569820243514"><td class="memItemLeft" align="right" valign="top"><a id="acb4c20d1e5f7dcb1e80b569820243514" name="acb4c20d1e5f7dcb1e80b569820243514"></a>
+<a class="el" href="structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_surface_topo_signature.html">SurfaceTopoSignature</a>&#160;</td><td class="memItemRight" valign="bottom"><b>surface_topology_signature</b> () const</td></tr>
+<tr class="separator:acb4c20d1e5f7dcb1e80b569820243514"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a744dc40816511be0c2997e28796f2f1b" id="r_a744dc40816511be0c2997e28796f2f1b"><td class="memItemLeft" align="right" valign="top"><a id="a744dc40816511be0c2997e28796f2f1b" name="a744dc40816511be0c2997e28796f2f1b"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>warn_if_surface_topology_changed</b> (const <a class="el" href="structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_surface_topo_signature.html">SurfaceTopoSignature</a> &amp;before, const char *where) const</td></tr>
+<tr class="memdesc:a744dc40816511be0c2997e28796f2f1b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compare a surface signature against the current one and log an error if it changed. Used (when m_params.check_surface_topology is set) to guard swap passes that can flip surface edges. <br /></td></tr>
+<tr class="separator:a744dc40816511be0c2997e28796f2f1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a739b4fdcfb148bcf17623dfb37b60a33" id="r_a739b4fdcfb148bcf17623dfb37b60a33"><td class="memItemLeft" align="right" valign="top"><a id="a739b4fdcfb148bcf17623dfb37b60a33" name="a739b4fdcfb148bcf17623dfb37b60a33"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>swap_all_faces</b> ()</td></tr>
 <tr class="separator:a739b4fdcfb148bcf17623dfb37b60a33"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -232,6 +245,14 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>swap_all_faces</b> 
 <tr class="memitem:ac8429c71bac143018c40f83e8e82d7fb" id="r_ac8429c71bac143018c40f83e8e82d7fb"><td class="memItemLeft" align="right" valign="top"><a id="ac8429c71bac143018c40f83e8e82d7fb" name="ac8429c71bac143018c40f83e8e82d7fb"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>swap_all_edges_all</b> ()</td></tr>
 <tr class="separator:ac8429c71bac143018c40f83e8e82d7fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a24889cb63a2a0157a3193d15a5cc605a" id="r_a24889cb63a2a0157a3193d15a5cc605a"><td class="memItemLeft" align="right" valign="top"><a id="a24889cb63a2a0157a3193d15a5cc605a" name="a24889cb63a2a0157a3193d15a5cc605a"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>active_quality_threshold</b> () const</td></tr>
+<tr class="memdesc:a24889cb63a2a0157a3193d15a5cc605a"><td class="mdescLeft">&#160;</td><td class="mdescRight">m_quality threshold above which a tet is "active" (worth operating on) for the skip-good-regions filter. m_quality stores AMIPS^3 and the energy is its cube root, so a tet is active when its energy is at least skip_good_regions_margin * stop_energy, i.e. m_quality &gt;= (margin * stop_energy)^3. <br /></td></tr>
+<tr class="separator:a24889cb63a2a0157a3193d15a5cc605a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a16a15f75176af957283a8ce7d79bca76" id="r_a16a15f75176af957283a8ce7d79bca76"><td class="memItemLeft" align="right" valign="top"><a id="a16a15f75176af957283a8ce7d79bca76" name="a16a15f75176af957283a8ce7d79bca76"></a>
+std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>active_vertices</b> () const</td></tr>
+<tr class="memdesc:a16a15f75176af957283a8ce7d79bca76"><td class="mdescLeft">&#160;</td><td class="mdescRight">vids of the vertices incident to at least one "active" tet (m_quality &gt;= <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a24889cb63a2a0157a3193d15a5cc605a" title="m_quality threshold above which a tet is &quot;active&quot; (worth operating on) for the skip-good-regions filt...">active_quality_threshold()</a>). Used by the skip-good-regions filter to restrict smoothing to non-good regions (smoothing a vertex surrounded by good tets does nothing). <br /></td></tr>
+<tr class="separator:a16a15f75176af957283a8ce7d79bca76"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a298fefc146e56e9e3585f1be274f4ee6" id="r_a298fefc146e56e9e3585f1be274f4ee6"><td class="memItemLeft" align="right" valign="top"><a id="a298fefc146e56e9e3585f1be274f4ee6" name="a298fefc146e56e9e3585f1be274f4ee6"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_inverted_f</b> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;loc) const</td></tr>
 <tr class="memdesc:a298fefc146e56e9e3585f1be274f4ee6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Inversion check using only floating point numbers. <br /></td></tr>
@@ -298,8 +319,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>init_surfaces_and_bou
 <tr class="memitem:aa7db77af32609f3eb71b5f98d500caf1" id="r_aa7db77af32609f3eb71b5f98d500caf1"><td class="memItemLeft" align="right" valign="top"><a id="aa7db77af32609f3eb71b5f98d500caf1" name="aa7db77af32609f3eb71b5f98d500caf1"></a>
 std::vector&lt; std::array&lt; size_t, 3 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>triangulate_polygon_face</b> (std::vector&lt; Vector3r &gt; points)</td></tr>
 <tr class="separator:aa7db77af32609f3eb71b5f98d500caf1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1436bc586077e4103e0a21061801831a" id="r_a1436bc586077e4103e0a21061801831a"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a1436bc586077e4103e0a21061801831a">refine_sizing_around_worst</a> (double max_energy)</td></tr>
+<tr class="memdesc:a1436bc586077e4103e0a21061801831a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Escape a stuck max energy by refining the sizing field around the worst elements.  <br /></td></tr>
+<tr class="separator:a1436bc586077e4103e0a21061801831a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae3379f946dce240a703ced67af2ada07" id="r_ae3379f946dce240a703ced67af2ada07"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ae3379f946dce240a703ced67af2ada07">gradation_smooth_sizing</a> (double grade, const std::vector&lt; size_t &gt; &amp;seeds)</td></tr>
+<tr class="memdesc:ae3379f946dce240a703ced67af2ada07"><td class="mdescLeft">&#160;</td><td class="mdescRight">Monotone (only-decreasing) gradation smoothing of the sizing field.  <br /></td></tr>
+<tr class="separator:ae3379f946dce240a703ced67af2ada07"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a01fc2c729b708994b8e57b5e43db5c1c" id="r_a01fc2c729b708994b8e57b5e43db5c1c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a01fc2c729b708994b8e57b5e43db5c1c">adjust_sizing_field_serial</a> (double max_energy)</td></tr>
 <tr class="separator:a01fc2c729b708994b8e57b5e43db5c1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a86f557f048620ee10314cd476f817513" id="r_a86f557f048620ee10314cd476f817513"><td class="memItemLeft" align="right" valign="top"><a id="a86f557f048620ee10314cd476f817513" name="a86f557f048620ee10314cd476f817513"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_force_split_edge</b> (size_t v1, size_t v2) const</td></tr>
+<tr class="memdesc:a86f557f048620ee10314cd476f817513"><td class="mdescLeft">&#160;</td><td class="mdescRight">True iff edge (v1,v2) is a worst tet's longest edge queued for force-split. <br /></td></tr>
+<tr class="separator:a86f557f048620ee10314cd476f817513"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a71b1976a08c067917b9344550efbfe0a" id="r_a71b1976a08c067917b9344550efbfe0a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a71b1976a08c067917b9344550efbfe0a">find_order_2_edges</a> ()</td></tr>
 <tr class="memdesc:a71b1976a08c067917b9344550efbfe0a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find open boundary edges of the embedded surface and initialize a BVH for the open boundary.  <br /></td></tr>
 <tr class="separator:a71b1976a08c067917b9344550efbfe0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -732,6 +763,13 @@ std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>c
 <tr class="memitem:a99b74fb3b1f115c1c81cd6dbe307373e" id="r_a99b74fb3b1f115c1c81cd6dbe307373e"><td class="memItemLeft" align="right" valign="top"><a id="a99b74fb3b1f115c1c81cd6dbe307373e" name="a99b74fb3b1f115c1c81cd6dbe307373e"></a>
 std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>cnt_swap</b> = 0</td></tr>
 <tr class="separator:a99b74fb3b1f115c1c81cd6dbe307373e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a555135fdb947f3fa19b649cb541251c9" id="r_a555135fdb947f3fa19b649cb541251c9"><td class="memItemLeft" align="right" valign="top"><a id="a555135fdb947f3fa19b649cb541251c9" name="a555135fdb947f3fa19b649cb541251c9"></a>
+std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>cnt_surface_swap</b> = 0</td></tr>
+<tr class="separator:a555135fdb947f3fa19b649cb541251c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad599417e2eabedfd4f909435ebf4d600" id="r_ad599417e2eabedfd4f909435ebf4d600"><td class="memItemLeft" align="right" valign="top">std::set&lt; <a class="el" href="classwmtk_1_1simplex_1_1_edge.html">simplex::Edge</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ad599417e2eabedfd4f909435ebf4d600">m_force_split_edges</a></td></tr>
+<tr class="separator:ad599417e2eabedfd4f909435ebf4d600"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a59fab4ba48473b4cea4811f73e8f25e0" id="r_a59fab4ba48473b4cea4811f73e8f25e0"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a59fab4ba48473b4cea4811f73e8f25e0">m_force_split_count</a> = 0</td></tr>
+<tr class="separator:a59fab4ba48473b4cea4811f73e8f25e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_attribs_classwmtk_1_1_tet_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_classwmtk_1_1_tet_mesh')"><img src="closed.png" alt="-"/>&#160;Public Attributes inherited from <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></td></tr>
 <tr class="memitem:a261adc9caf17372cca2270e876ac7b7b inherit pub_attribs_classwmtk_1_1_tet_mesh" id="r_a261adc9caf17372cca2270e876ac7b7b"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="classwmtk_1_1_abstract_attribute_container.html">AbstractAttributeContainer</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>p_vertex_attrs</b> = nullptr</td></tr>
@@ -1056,6 +1094,37 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
 
 </div>
 </div>
+<a id="ae3379f946dce240a703ced67af2ada07" name="ae3379f946dce240a703ced67af2ada07"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae3379f946dce240a703ced67af2ada07">&#9670;&#160;</a></span>gradation_smooth_sizing()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::simwild::SimWildMesh::gradation_smooth_sizing </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>grade</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; size_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>seeds</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Monotone (only-decreasing) gradation smoothing of the sizing field. </p>
+<p>Enforces m_sizing_scalar[v] &lt;= grade * m_sizing_scalar[u] for every edge (u,v), propagating outward from <code>seeds</code> with a min-relaxation. It never raises a sizing value, so it only ever spreads more refinement into the halo around already-refined vertices, avoiding sharp resolution jumps. </p>
+
+</div>
+</div>
 <a id="abdcc4eb62ed58fd829df000906101fd6" name="abdcc4eb62ed58fd829df000906101fd6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abdcc4eb62ed58fd829df000906101fd6">&#9670;&#160;</a></span>init_from_image()</h2>
 
@@ -1209,8 +1278,60 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
 </div><div class="memdoc">
 <p>ops</p>
 <p>energy check</p>
-<p>sizing field</p>
-<p>Update pre energies only if they are smaller than current energies. This helps to adjust the sizing field in case the energy alternates between two states.</p>
+<p>sizing field: when the max energy stalls, refine around the worst elements to escape stuck configurations (replaces the old global adjust_sizing_field mechanism). After a refinement, wait stuck_refine_cooldown iterations so the operations get full passes on the new sizing field before more refinement is added.</p>
+
+</div>
+</div>
+<a id="ada4b8c34dfe58e3b3f47c7c8343247e9" name="ada4b8c34dfe58e3b3f47c7c8343247e9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ada4b8c34dfe58e3b3f47c7c8343247e9">&#9670;&#160;</a></span>prepare_surface_flip_32()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::simwild::SimWildMesh::prepare_surface_flip_32 </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>t</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; size_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>incident_tets</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Prepare a surface 3-&gt;2 edge swap (a surface diagonal flip). </p>
+<p>Called from swap_edge_before when the swapped edge (a,b) is on the surface and has exactly 3 incident tets. Verifies the local guards that guarantee the flip preserves surface manifoldness / topology, and fills the surface-flip fields of swap_cache. Returns false (rejecting the swap) if any guard fails: open-boundary edge, non-manifold edge (!= 2 surface faces), or one of the two would-be new surface faces already tagged surface. The tets sharing (a,b) are passed in to avoid recomputation. </p>
+<p>This statement should never be reached because the previous loop already checks for the number of surface faces and non-surface faces. If this statement is reached, it indicates a logical error in the code or an unexpected input configuration.</p>
+
+</div>
+</div>
+<a id="a1436bc586077e4103e0a21061801831a" name="a1436bc586077e4103e0a21061801831a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1436bc586077e4103e0a21061801831a">&#9670;&#160;</a></span>refine_sizing_around_worst()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::components::simwild::SimWildMesh::refine_sizing_around_worst </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>max_energy</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Escape a stuck max energy by refining the sizing field around the worst elements. </p>
+<p>Finds the m_params.stuck_refine_num_worst tets with the highest energy, gathers all vertices within m_params.stuck_refine_rings graph rings of them, and multiplies each such vertex's m_sizing_scalar by m_params.stuck_refine_factor (clamped at m_params.stuck_refine_min_scalar). Then runs gradation_smooth_sizing so the refined region blends smoothly into the surrounding resolution. Replaces the old global adjust_sizing_field mechanism. Returns the number of vertices refined. </p>
 
 </div>
 </div>
@@ -1668,6 +1789,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if the modification succeed </dd></dl>
+<p>Setting the m_is_surface_fs flag to true is not necessary. This is already true in cache.sf_face_attr.</p>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_mesh.html#a27a1c776c1e60c9466b5a9b4db894e1b">wmtk::TetMesh</a>.</p>
 
@@ -1847,6 +1969,37 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
 
 </div>
 </div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a59fab4ba48473b4cea4811f73e8f25e0" name="a59fab4ba48473b4cea4811f73e8f25e0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a59fab4ba48473b4cea4811f73e8f25e0">&#9670;&#160;</a></span>m_force_split_count</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::components::simwild::SimWildMesh::m_force_split_count = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Count of force-splits taken in the current split pass (atomic_ref from the parallel split; reset + logged by split_all_edges). Diagnostic only. </p>
+
+</div>
+</div>
+<a id="ad599417e2eabedfd4f909435ebf4d600" name="ad599417e2eabedfd4f909435ebf4d600"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad599417e2eabedfd4f909435ebf4d600">&#9670;&#160;</a></span>m_force_split_edges</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::set&lt;<a class="el" href="classwmtk_1_1simplex_1_1_edge.html">simplex::Edge</a>&gt; wmtk::components::simwild::SimWildMesh::m_force_split_edges</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The longest edge of each current worst tet (as a sorted {min,max} vid pair). split_all_edges force-splits exactly these edges (bypasses the length gate), so a stuck sliver's long edge is split immediately without changing the sizing field. Populated serially by refine_sizing_around_worst; read-only during the parallel split pass, then cleared once split_all_edges has consumed it. </p>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/simwild/wmtk/components/simwild/<a class="el" href="_sim_wild_mesh_8h_source.html">SimWildMesh.h</a></li>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/simwild/wmtk/components/simwild/<b>AnnotationsTet.cpp</b></li>
@@ -1855,6 +2008,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/simwild/wmtk/components/simwild/<b>EdgeSwapping.cpp</b></li>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/simwild/wmtk/components/simwild/<b>SimWildMesh.cpp</b></li>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/simwild/wmtk/components/simwild/<b>Smooth.cpp</b></li>
+<li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/simwild/wmtk/components/simwild/<b>SurfaceTopology.cpp</b></li>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/simwild/wmtk/components/simwild/<b>VolumemesherInsertion.cpp</b></li>
 </ul>
 </div><!-- contents -->
