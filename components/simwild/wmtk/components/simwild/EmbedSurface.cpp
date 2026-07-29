@@ -521,38 +521,20 @@ void embed_surface(
         V_emb.row(i) = v_rational[i];
     }
 
-    // std::set<size_t> v_on_input;
-    // for (int i = 0; i < polygon_faces.size(); ++i) {
-    //     if (!polygon_faces_on_input[i]) {
-    //         continue;
-    //     }
-    //     const auto& f = polygon_faces[i];
-    //     v_on_input.insert(f[0]);
-    //     v_on_input.insert(f[1]);
-    //     v_on_input.insert(f[2]);
-    // }
-
-    // size_t n_face_on_input = 0;
-    // for (const bool b : polygon_faces_on_input) {
-    //     if (b) {
-    //         ++n_face_on_input;
-    //     }
-    // }
-
-    // F_on_surface.resize(n_face_on_input, 3);
-    // n_face_on_input = 0;
-    // for (int i = 0; i < polygon_faces.size(); ++i) {
-    //     if (!polygon_faces_on_input[i]) {
-    //         continue;
-    //     }
-    //     const auto& f = polygon_faces[i];
-    //     F_on_surface.row(n_face_on_input++) = Vector3i(f[0], f[1], f[2]);
-    // }
-
-    F_on_surface.resize(polygon_faces.size(), 3);
+    size_t n_face_on_input = 0;
+    for (const bool b : polygon_faces_on_input) {
+        if (b) {
+            ++n_face_on_input;
+        }
+    }
+    F_on_surface.resize(n_face_on_input, 3);
+    n_face_on_input = 0;
     for (int i = 0; i < polygon_faces.size(); ++i) {
+        if (!polygon_faces_on_input[i]) {
+            continue;
+        }
         const auto& f = polygon_faces[i];
-        F_on_surface.row(i) = Vector3i(f[0], f[1], f[2]);
+        F_on_surface.row(n_face_on_input++) = Vector3i(f[0], f[1], f[2]);
     }
 }
 
@@ -1098,6 +1080,7 @@ bool EmbedSurface::embed_surface(const bool flood_fill)
         T_vol.row(i) = Vector4i(t[0], t[1], t[2], t[3]);
     }
 
+    // simwild::embed_surface_old(
     simwild::embed_surface(
         m_V_surface,
         m_F_surface,
