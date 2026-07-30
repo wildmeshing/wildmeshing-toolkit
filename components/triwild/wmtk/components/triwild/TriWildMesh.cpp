@@ -49,10 +49,15 @@ void TriWildMesh::mesh_improvement(int max_its)
     local_operations({{0, 1, 0, 0}}, false);
 
     ////operation loops
-    bool is_hit_min_edge_length = false;
-    const int M = 2;
-    int m = 0;
-    double pre_max_energy = 0., pre_avg_energy = 0.;
+    double pre_max_energy = 0.;
+    {
+        auto [max_energy, avg_energy] = get_max_avg_energy();
+        pre_max_energy = max_energy;
+        logger().info("max energy {:.6} | stop {:.6}", max_energy, m_params.stop_energy);
+    }
+    int refine_cooldown =
+        m_params.stuck_refine_cooldown; // iterations left before stuck-refine may fire again
+
     for (int it = 0; it < max_its; it++) {
         ///ops
         logger().info("\n========it {}========", it);
@@ -78,25 +83,23 @@ void TriWildMesh::mesh_improvement(int max_its)
             logger().info("All rounded!", cnt_round, cnt_verts);
         }
 
-        ///sizing field
-        if (it > 0 && pre_max_energy - max_energy < 5e-1 &&
-            (pre_avg_energy - avg_energy) / avg_energy < 0.1) {
-            m++;
-            if (m == M) {
-                logger().info(">>>>adjust_sizing_field...");
-                is_hit_min_edge_length = adjust_sizing_field_serial(max_energy);
-                // is_hit_min_edge_length = adjust_sizing_field(max_energy);
-                logger().info(">>>>adjust_sizing_field finished...");
-                m = 0;
-            }
-        } else {
-            m = 0;
-            pre_max_energy = max_energy;
-            pre_avg_energy = avg_energy;
+        /// sizing field: when the max energy stalls, refine around the worst
+        /// elements to escape stuck configurations (replaces the old global
+        /// adjust_sizing_field mechanism). After a refinement, wait
+        /// stuck_refine_cooldown iterations so the operations get full passes on
+        /// the new sizing field before more refinement is added.
+        if (refine_cooldown > 0) {
+            --refine_cooldown;
+        } else if (
+            it > 0 && max_energy > m_params.stop_energy &&
+            (pre_max_energy - max_energy) <= m_params.stuck_refine_stall_eps * pre_max_energy) {
+            logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", max_energy);
+            refine_sizing_around_worst(max_energy);
+            // adjust_sizing_field_serial(max_energy); // The old update
+            logger().info(">>>>stuck-refine finished...");
+            refine_cooldown = m_params.stuck_refine_cooldown;
         }
-        if (is_hit_min_edge_length) {
-            // todo: maybe to do sth
-        }
+        pre_max_energy = max_energy;
     }
 
     logger().info("========it post========");
@@ -341,6 +344,79 @@ void TriWildMesh::init_mesh(
     } else {
         logger().info("All rounded!", cnt_round, vert_capacity());
     }
+}
+
+size_t TriWildMesh::refine_sizing_around_worst(double max_energy)
+{
+    const int n_rings = std::max(0, m_params.stuck_refine_rings);
+    const double filter_energy = std::max(max_energy / 100, m_params.stop_energy);
+
+    // m_quality is the AMIPS2D energy itself here, so no cube root (unlike tetwild/simwild).
+    const auto worst = utils::select_worst_cells(
+        tri_capacity(),
+        [this](size_t fid) { return tuple_from_tri(fid).is_valid(*this); },
+        [this](size_t fid) { return m_face_attribute[fid].m_quality; },
+        [](double q) { return q; },
+        filter_energy,
+        m_params.stuck_refine_num_worst);
+
+    if (worst.empty()) {
+        return 0;
+    }
+
+    // If force-split is on, record the LONGEST edge of each worst triangle.
+    // split_all_edges force-splits exactly those edges (bypasses the length gate), so a
+    // stuck sliver's long edge is split immediately -- WITHOUT changing the sizing field.
+    m_force_split_edges.clear();
+    if (m_params.stuck_refine_force_split) {
+        for (const auto& [q, fid] : worst) {
+            m_force_split_edges.insert(
+                utils::longest_edge(oriented_tri_vids(fid), [this](size_t vid) -> const Vector2d& {
+                    return m_vertex_attribute[vid].m_posf;
+                }));
+        }
+    }
+
+    // Seed the region with the worst triangles' vertices, then BFS n_rings hops.
+    std::vector<size_t> seeds;
+    seeds.reserve(3 * worst.size());
+    for (const auto& [_, fid] : worst) {
+        for (const size_t v : oriented_tri_vids(fid)) {
+            seeds.push_back(v);
+        }
+    }
+    const auto region = utils::grow_vertex_region(seeds, n_rings, [this](size_t v) {
+        return get_one_ring_vids_for_vertex_duplicate(v);
+    });
+
+    // Apply the multiplicative refinement, clamped at the floor.
+    const auto refined = utils::apply_sizing_refinement(
+        region,
+        m_params.stuck_refine_factor,
+        m_params.stuck_refine_min_scalar,
+        [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; });
+
+    // Grade the refined region into its surroundings (monotone, only lowers).
+    gradation_smooth_sizing(m_params.stuck_refine_gradation, refined);
+
+    logger().info(
+        "[stuck-refine] worst {} tris (maxE {:.4}), refined {} of {} region vertices, "
+        "filter_energy {:.4}",
+        worst.size(),
+        worst.back().first,
+        refined.size(),
+        region.size(),
+        filter_energy);
+    return refined.size();
+}
+
+void TriWildMesh::gradation_smooth_sizing(double grade, const std::vector<size_t>& seeds)
+{
+    utils::gradation_smooth_sizing(
+        grade,
+        seeds,
+        [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; },
+        [this](size_t v) { return get_one_ring_vids_for_vertex_duplicate(v); });
 }
 
 bool TriWildMesh::adjust_sizing_field_serial(double max_energy)

@@ -170,7 +170,7 @@
     "type": "int",
     "default": 0,
     "min": 0,
-    "doc": "Number of worst triangles whose neighborhoods are refined when stuck. 0 => refine all triangles with energy above the filter_energy."
+    "doc": "Number of worst triangles whose neighborhoods are refined when stuck. 0 => refine all triangles with energy above the filter_energy, which is max(max_energy / 100, stop_energy). Note that the AMIPS2D energy of an equilateral triangle is 2, so with a small stop_energy the filter catches nearly the whole mesh; set this to a positive value there."
   },
   {
     "pointer": "/stuck_refine_rings",
@@ -201,7 +201,7 @@
     "pointer": "/stuck_refine_force_split",
     "type": "bool",
     "default": true,
-    "doc": "When the max energy stalls, split each worst triangle's longest edge once, bypassing the split length gate, to unstick a sliver without changing the sizing field. Adds at most one split per worst triangle per stall."
+    "doc": "When the max energy stalls, split each worst triangle's longest edge once, bypassing the split length gate, to unstick a sliver without changing the sizing field. Adds at most one split per worst triangle per stall -- but 'worst' means every triangle above the filter energy when stuck_refine_num_worst is 0, so on a mesh whose stop_energy sits close to the AMIPS2D floor of 2 this can force thousands of splits in one pass and blow up the element count. Bound stuck_refine_num_worst or turn this off in that regime."
   },
   {
     "pointer": "/stuck_refine_rational_split",
@@ -219,6 +219,6 @@
     "pointer": "/skip_good_regions_margin",
     "type": "float",
     "default": 0.9,
-    "doc": "A triangle is 'active' (worth smoothing around) when its energy is at least this fraction of stop_energy."
+    "doc": "A triangle is 'active' (worth smoothing around) when its energy is at least this fraction of stop_energy. The AMIPS2D energy of an equilateral triangle is 2, so the filter only skips anything once skip_good_regions_margin * stop_energy exceeds 2."
   }
 ]

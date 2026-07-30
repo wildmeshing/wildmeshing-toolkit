@@ -1,6 +1,7 @@
 #include "TriWildMesh.h"
 
 #include <igl/Timer.h>
+#include <atomic>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/LocalizedRetry.hpp>
@@ -13,6 +14,7 @@ void TriWildMesh::split_all_edges()
 {
     igl::Timer timer;
     double time;
+    m_force_split_count = 0;
     timer.start();
     auto collect_all_ops = wmtk::parallel_collect_edge_ops(
         *this,
@@ -45,6 +47,14 @@ void TriWildMesh::split_all_edges()
             //
             size_t v1_id = tup.vid(*this);
             size_t v2_id = tup.switch_vertex(*this).vid(*this);
+            // Force-split: a worst triangle's longest edge (queued by
+            // refine_sizing_around_worst when the max energy stalls) is split once
+            // regardless of the length gate, to unstick a sliver without changing the
+            // sizing field. The new midpoint is not in m_force_split_edges, so the two
+            // halves are NOT force-split again -- exactly one split per edge.
+            if (is_force_split_edge(v1_id, v2_id)) {
+                return true;
+            }
             const auto& VA = m_vertex_attribute;
             double sizing_ratio = 0.5 * (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar);
             if (length < m_params.splitting_l2 * sizing_ratio * sizing_ratio) {
@@ -72,6 +82,13 @@ void TriWildMesh::split_all_edges()
         time = timer.getElapsedTime();
         wmtk::logger().info("edge split operation time serial: {:.4}s", time);
     }
+    if (m_force_split_count > 0) {
+        wmtk::logger().info(
+            "[force-split] {} worst-triangle longest edges force-split",
+            m_force_split_count);
+    }
+    // Consumed: the queued force-split edges no longer exist after this pass.
+    m_force_split_edges.clear();
 }
 
 bool TriWildMesh::split_edge_before(const Tuple& loc0)
@@ -142,10 +159,35 @@ bool TriWildMesh::split_edge_after(const Tuple& loc)
             break;
         }
     }
+    if (is_force_split_edge(v1_id, v2_id)) {
+        std::atomic_ref<size_t>(m_force_split_count).fetch_add(1, std::memory_order_relaxed);
+    }
     if (!m_vertex_attribute[v_id].m_is_rounded) {
+        // The rounded (double) midpoint inverts an incident triangle. By default reject
+        // the split. If the rational fallback is enabled, place the new vertex at the
+        // EXACT rational midpoint of the two endpoints instead. That midpoint lies on the
+        // shared edge, so it can never invert a previously-valid incident triangle -- the
+        // split always succeeds and the worst region can keep being refined. The vertex
+        // stays un-rounded (m_pos exact, m_is_rounded = false) until a later round()
+        // reclaims it.
+        if (!m_params.stuck_refine_rational_split) {
+            return false;
+        }
+
         m_vertex_attribute[v_id].m_pos =
             (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
+        // Unlike tetwild, keep m_posf in step with the exact position: when an endpoint is
+        // itself un-rounded, the rounded midpoint of the two *approximations* is a worse
+        // approximation of the exact midpoint than rounding the exact midpoint once.
         p = to_double(m_vertex_attribute[v_id].m_pos);
+        // Guard against a pre-existing inverted incident triangle: re-check in exact
+        // arithmetic (un-rounded v_id => is_inverted uses the rational path). This check
+        // was missing, so a split could leave an inverted triangle behind.
+        for (const Tuple& loc : locs) {
+            if (is_inverted(loc)) {
+                return false;
+            }
+        }
     }
 
     // update face attributes

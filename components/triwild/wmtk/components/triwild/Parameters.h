@@ -41,7 +41,10 @@ struct Parameters
     // field before more refinement is added. 0 => may refine every iteration.
     int stuck_refine_cooldown = 1;
     // Number of worst triangles (by energy) whose neighborhoods are refined.
-    // 0 => every triangle above the filter energy.
+    // 0 => every triangle above the filter energy, max(max_energy / 100, stop_energy).
+    // Beware in 2D: the AMIPS2D energy of an equilateral triangle is 2, so a stop_energy
+    // close to that makes the filter catch nearly the whole mesh, and with force_split on
+    // that means thousands of gate-bypassing splits per stall.
     int stuck_refine_num_worst = 0;
     // Graph rings around each worst triangle's vertices included in the refinement.
     int stuck_refine_rings = 0;
