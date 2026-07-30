@@ -39,6 +39,9 @@ void apply_operation(MeshT& mesh, const nlohmann::json& json_params)
     const std::string operation = json_params["operation"];
     if (operation == "remeshing") {
         mesh.set_sizing_field(json_params["sizing_field"]);
+        if constexpr (std::is_same_v<MeshT, tri::SimWildMeshTri>) {
+            mesh.set_quality_field(json_params["quality_field"]);
+        }
         mesh.mesh_improvement(json_params["max_iterations"]); // <-- tetwild
     } else if (operation == "fill_holes_topo") {
         const std::vector<std::string> fill_holes_tags_names = json_params["fill_holes_tags"];

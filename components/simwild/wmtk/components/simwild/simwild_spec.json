@@ -21,6 +21,7 @@
       "length",
       "length_rel",
       "sizing_field",
+      "quality_field",
       "stop_energy",
       "stop_at_float",
       "preserve_topology",
@@ -219,10 +220,27 @@
     "doc": "Absolute target edge length for the region."
   },
   {
-    "pointer": "/sizing_field/*/length_rel",
+    "pointer": "/quality_field",
+    "type": "list",
+    "default": [],
+    "doc": "Prescribe a target quality for a specific region defined by tags. The last prescibed quality will be used for each element. Example: [{\"tags\": \"tag_0 & tag_1\", \"quality\": 100}, {\"tags\": \"tag_2\", \"quality\": 50}]"
+  },
+  {
+    "pointer": "/quality_field/*",
+    "type": "object",
+    "required": ["tags", "quality"],
+    "doc": "A region and its target quality."
+  },
+  {
+    "pointer": "/quality_field/*/tags",
+    "type": "string",
+    "doc": "A region of tags."
+  },
+  {
+    "pointer": "/quality_field/*/quality",
     "type": "float",
-    "default": 5e-2,
-    "doc": "Relative target edge length for the region."
+    "min": 0,
+    "doc": "Target quality for the region."
   },
   {
     "pointer": "/stop_energy",

@@ -433,6 +433,84 @@ void SimWildMeshTri::set_sizing_field(const nlohmann::json& sizing_field_json)
     }
 }
 
+void SimWildMeshTri::set_quality_field(const nlohmann::json& quality_field_json)
+{
+    if (!quality_field_json.is_array()) {
+        log_and_throw_error(
+            "quality_field should be an array of objects, each defining a region and its "
+            "target "
+            "quality.");
+    }
+
+    for (const auto& region_json : quality_field_json) {
+        if (!region_json.contains("tags")) {
+            log_and_throw_error("Each quality_field entry must contain a 'tags' field.");
+        }
+        if (!region_json.contains("quality")) {
+            log_and_throw_error("Each quality_field entry must contain a 'quality' field.");
+        }
+        const std::string tags_str_set = region_json["tags"];
+        auto& [expr, quality] = m_quality_field.emplace_back();
+        expr = expression_parser::parse(tags_str_set, m_tag_name_to_id);
+
+        quality = region_json["quality"];
+
+        logger().info("Added quality field: expr = {}, quality = {}", expr->to_string(), quality);
+    }
+}
+
+double SimWildMeshTri::target_quality(const size_t tid) const
+{
+    double quality = m_params.stop_energy; // default
+    for (const auto& [expr, q] : m_quality_field) {
+        if (expr->eval(m_face_attribute[tid].tags)) {
+            quality = q;
+        }
+    }
+    return quality;
+}
+
+double SimWildMeshTri::target_quality(const Tuple& t) const
+{
+    const auto tid = t.fid(*this);
+    return target_quality(tid);
+}
+
+bool SimWildMeshTri::check_quality(const size_t tid) const
+{
+    return m_face_attribute[tid].m_quality <= target_quality(tid);
+}
+
+bool SimWildMeshTri::check_quality(const Tuple& t) const
+{
+    const auto tid = t.fid(*this);
+    return check_quality(tid);
+}
+
+bool SimWildMeshTri::check_mesh_quality(double& max_energy, const bool verbose) const
+{
+    bool all_good = true;
+    size_t num_bad = 0;
+    size_t num_total = 0;
+    max_energy = 0;
+    for (int i = 0; i < tri_capacity(); i++) {
+        const Tuple tup = tuple_from_tri(i);
+        if (!tup.is_valid(*this)) {
+            continue;
+        }
+        num_total++;
+        max_energy = std::max(max_energy, m_face_attribute[i].m_quality);
+        if (!check_quality(tup)) {
+            all_good = false;
+            num_bad++;
+        }
+    }
+    if (verbose && num_bad > 0) {
+        logger().info("Bad elements: {} of {}, max energy: {:.6}", num_bad, num_total, max_energy);
+    }
+    return all_good;
+}
+
 size_t SimWildMeshTri::refine_sizing_around_worst(double max_energy)
 {
     const int num_worst = std::max(0, m_params.stuck_refine_num_worst);
@@ -452,7 +530,7 @@ size_t SimWildMeshTri::refine_sizing_around_worst(double max_energy)
             continue;
         }
         const double& q = m_face_attribute[tid].m_quality;
-        if (q < filter_energy) {
+        if (q < target_quality(tid)) {
             continue;
         }
         if (num_worst > 0) {
@@ -531,13 +609,11 @@ size_t SimWildMeshTri::refine_sizing_around_worst(double max_energy)
     }
 
     logger().info(
-        "[stuck-refine] worst {} tets (maxE {:.4}), refined {} of {} region vertices, "
-        "filter_energy {:.4}",
+        "[stuck-refine] worst {} tets (maxE {:.4}), refined {} of {} region vertices",
         worst.size(),
         worst.back().first,
         refined.size(),
-        region.size(),
-        filter_energy);
+        region.size());
     return refined.size();
 }
 
@@ -841,7 +917,8 @@ void SimWildMeshTri::write_vtu(const std::string& path) const
     v_sizing_field.setZero();
 
     std::vector<MatrixXd> tags(m_tags_count, MatrixXd(tri_capacity(), 1));
-    Eigen::MatrixXd amips(tri_capacity(), 1);
+    VectorXd amips(tri_capacity());
+    VectorXd amips_target(tri_capacity());
 
     int index = 0;
     for (const Tuple& t : faces) {
@@ -849,11 +926,12 @@ void SimWildMeshTri::write_vtu(const std::string& path) const
         for (size_t j = 0; j < m_tags_count; ++j) {
             tags[j](index, 0) = m_face_attribute[tid].tags.count(j) ? 1 : 0;
         }
-        amips(index, 0) = m_face_attribute[tid].m_quality;
+        amips[index] = m_face_attribute[tid].m_quality;
+        amips_target[index] = target_quality(tid);
 
-        const auto& vs = oriented_tri_vids(t);
+        const auto tv = oriented_tri_vids(t);
         for (size_t j = 0; j < 3; j++) {
-            F(index, j) = (int)vs[j];
+            F(index, j) = (int)tv[j];
         }
         ++index;
     }
@@ -877,6 +955,7 @@ void SimWildMeshTri::write_vtu(const std::string& path) const
         writer->add_cell_field(fmt::format("tag_{}", j), tags[j]);
     }
     writer->add_cell_field("quality", amips);
+    writer->add_cell_field("quality_target", amips_target);
     writer->add_field("sizing_field", v_sizing_field);
     writer->write_mesh(path + ".vtu", V, F, paraviewo::CellType::Triangle);
 
@@ -929,9 +1008,9 @@ void SimWildMeshTri::write_vtu_with_energies(const std::string& path) const
         }
         amips(index, 0) = m_face_attribute[tid].m_quality;
 
-        const auto& vs = oriented_tri_vids(t);
+        const auto tv = oriented_tri_vids(t);
         for (size_t j = 0; j < 3; j++) {
-            F(index, j) = (int)vs[j];
+            F(index, j) = (int)tv[j];
         }
         ++index;
     }
@@ -1373,7 +1452,7 @@ bool SimWildMeshTri::collapse_edge_before(const Tuple& loc)
             return false;
         }
         double q = get_quality(vs);
-        if (q > m_params.stop_energy && q > cache.max_energy) {
+        if (q > target_quality(tid) && q > cache.max_energy) {
             return false;
         }
         cache.changed_energies.emplace_back(q);
@@ -2035,20 +2114,21 @@ void SimWildMeshTri::mesh_improvement(int max_its)
     ////operation loops
     double pre_max_energy = 0.;
     {
-        auto [max_energy, avg_energy] = get_max_avg_energy();
-        pre_max_energy = max_energy;
-        logger().info("max energy {:.6} | stop {:.6}", max_energy, m_params.stop_energy);
+        // auto [max_energy, avg_energy] = get_max_avg_energy();
+        // pre_max_energy = max_energy;
+        // logger().info("max energy {:.6} | stop {:.6}", max_energy, m_params.stop_energy);
+        check_mesh_quality(pre_max_energy, true);
     }
     int refine_cooldown =
         m_params.stuck_refine_cooldown; // iterations left before stuck-refine may fire again
     for (int it = 0; it < max_its; it++) {
         ///ops
         wmtk::logger().info("\n========it {}========", it);
-        auto [max_energy, avg_energy] = local_operations({{1, 1, 1, 1}});
+        double max_energy = local_operations({{1, 1, 1, 1}});
 
         ///energy check
         wmtk::logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
-        if (max_energy < m_params.stop_energy) {
+        if (check_mesh_quality(max_energy, true)) {
             break;
         }
         consolidate_mesh();
@@ -2078,13 +2158,11 @@ void SimWildMeshTri::mesh_improvement(int max_its)
     local_operations({{0, 1, 0, 0}});
 }
 
-std::tuple<double, double> SimWildMeshTri::local_operations(
-    const std::array<int, 4>& ops,
-    bool collapse_limit_length)
+double SimWildMeshTri::local_operations(const std::array<int, 4>& ops, bool collapse_limit_length)
 {
     igl::Timer timer;
 
-    std::tuple<double, double> energy;
+    double max_energy = 0;
 
     auto sanity_checks = [this]() {
         if (!m_params.perform_sanity_checks) {
@@ -2127,8 +2205,7 @@ std::tuple<double, double> SimWildMeshTri::local_operations(
             if (m_params.debug_output) {
                 write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
             }
-            auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("split max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+            check_mesh_quality(max_energy, true);
             sanity_checks();
         } else if (i == 1) {
             for (int n = 0; n < ops[i]; n++) {
@@ -2142,8 +2219,7 @@ std::tuple<double, double> SimWildMeshTri::local_operations(
             if (m_params.debug_output) {
                 write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
             }
-            auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("collapse max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+            check_mesh_quality(max_energy, true);
             sanity_checks();
         } else if (i == 2) {
             for (int n = 0; n < ops[i]; n++) {
@@ -2156,24 +2232,20 @@ std::tuple<double, double> SimWildMeshTri::local_operations(
             if (m_params.debug_output) {
                 write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
             }
-            auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("swap max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+            check_mesh_quality(max_energy, true);
             sanity_checks();
         } else if (i == 3) {
             wmtk::logger().info("==smoothing ==");
             smooth_all_vertices(ops[i]);
-            auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("smooth max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+            check_mesh_quality(max_energy, true);
             sanity_checks();
         }
     }
-    energy = get_max_avg_energy();
-    wmtk::logger().info("max energy = {:.6}", std::get<0>(energy));
-    wmtk::logger().info("avg energy = {:.6}", std::get<1>(energy));
+    check_mesh_quality(max_energy, true);
     wmtk::logger().info("time = {:.4}s", timer.getElapsedTimeInSec());
 
 
-    return energy;
+    return max_energy;
 }
 
 std::tuple<double, double> SimWildMeshTri::get_max_avg_energy()
