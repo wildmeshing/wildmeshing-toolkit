@@ -360,6 +360,21 @@ public:
     size_t tet_capacity() const { return current_tet_size; }
 
     /**
+     * @name Dimension-generic cell accessors
+     *
+     * A "cell" is the top-dimensional element: a tet here, a triangle in TriMesh. These
+     * three members plus EDGES_PER_CELL are the whole interface the dimension-generic
+     * helpers in wmtk/utils (ParallelCollect, SizingField) need, so the same helper works
+     * on both meshes without traits or overloads.
+     * @{
+     */
+    static constexpr int EDGES_PER_CELL = 6;
+    static constexpr int FACES_PER_CELL = 4;
+    size_t cell_capacity() const { return tet_capacity(); }
+    Tuple tuple_from_cell(size_t cid) const { return tuple_from_tet(cid); }
+    /** @} */
+
+    /**
      * @brief get the number of unremoved verticies
      *
      */

@@ -483,6 +483,20 @@ public:
      * @return size_t
      */
     size_t vert_capacity() const { return current_vert_size; }
+
+    /**
+     * @name Dimension-generic cell accessors
+     *
+     * A "cell" is the top-dimensional element: a triangle here, a tet in TetMesh. These
+     * three members plus EDGES_PER_CELL are the whole interface the dimension-generic
+     * helpers in wmtk/utils (ParallelCollect, SizingField) need, so the same helper works
+     * on both meshes without traits or overloads.
+     * @{
+     */
+    static constexpr int EDGES_PER_CELL = 3;
+    size_t cell_capacity() const { return tri_capacity(); }
+    Tuple tuple_from_cell(size_t cid) const { return tuple_from_tri(cid); }
+    /** @} */
     /**
      * @brief removing the elements that are removed
      *
