@@ -11,6 +11,7 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/SizingField.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
+#include <wmtk/utils/WindingNumber.hpp>
 #include <wmtk/utils/io.hpp>
 
 // clang-format off
@@ -634,8 +635,12 @@ void TriWildMesh::write_msh_groups(std::string file, const bool write_envelope)
     msh.save(file, true);
 }
 
-void TriWildMesh::compute_winding_numbers(const std::vector<std::string>& input_paths)
+void TriWildMesh::compute_winding_numbers(
+    const std::vector<MatrixXd>& Vs,
+    const std::vector<MatrixXi>& Es)
 {
+    assert(Vs.size() == Es.size());
+
     const auto& faces = get_faces();
     MatrixXd C = MatrixXd::Zero(faces.size(), 2);
     for (size_t i = 0; i < faces.size(); i++) {
@@ -646,20 +651,17 @@ void TriWildMesh::compute_winding_numbers(const std::vector<std::string>& input_
         C.row(i) /= 3;
     }
 
-    m_tags_count = input_paths.size();
-    int64_t input_idx = 0;
-    for (const std::string& input_path : input_paths) {
-        MatrixXd V;
-        MatrixXi E;
-        io::read_edge_mesh(input_path, V, E);
-        assert(V.cols() == 3);
+    m_tags_count = Vs.size();
+    for (int64_t input_idx = 0; input_idx < static_cast<int64_t>(Vs.size()); ++input_idx) {
+        // The inputs were already read (and their x,y extracted) when the initial mesh was
+        // built; reuse them instead of parsing every file a second time.
+        const MatrixXd& V = Vs[input_idx];
+        MatrixXi E = Es[input_idx];
+        assert(V.cols() == 2);
         assert(E.cols() == 2);
 
-        V = V.block(0, 0, V.rows(), 2).eval(); // only use x,y for winding number
-
-        // compute winding number for V,F
         Eigen::VectorXd W;
-        igl::winding_number(V, E, C, W);
+        utils::winding_number_2d(V, E, C, W, NUM_THREADS);
 
         if (W.maxCoeff() <= 0.5) {
             // all removed, let's invert.
@@ -669,11 +671,11 @@ void TriWildMesh::compute_winding_numbers(const std::vector<std::string>& input_
                 E(i, 0) = E(i, 1);
                 E(i, 1) = temp;
             }
-            igl::winding_number(V, E, C, W);
+            utils::winding_number_2d(V, E, C, W, NUM_THREADS);
         }
 
         if (W.maxCoeff() <= 0.5) {
-            logger().warn("No winding number above 0.5 for input_path {}", input_path);
+            logger().warn("No winding number above 0.5 for input {}", input_idx);
         }
 
         // store winding number in mesh
@@ -683,8 +685,65 @@ void TriWildMesh::compute_winding_numbers(const std::vector<std::string>& input_
                 m_face_attribute[fid].tags.insert(input_idx);
             }
         }
-        ++input_idx;
     }
+}
+
+void TriWildMesh::filter_with_input_winding_number()
+{
+    // A face is inside when it is inside at least one input, i.e. when it carries a tag.
+    std::vector<size_t> rm_fids;
+    for (const Tuple& t : get_faces()) {
+        const size_t fid = t.fid(*this);
+        if (m_face_attribute[fid].tags.empty()) {
+            rm_fids.emplace_back(fid);
+        }
+    }
+    logger().info("Filter with input winding number: removing {} faces", rm_fids.size());
+    remove_tris_by_ids(rm_fids);
+}
+
+void TriWildMesh::filter_with_flood_fill()
+{
+    // Find the flood-fill region that appears the most on the mesh boundary: that is the
+    // one outside the input. Mirrors TetWildMesh::filter_with_flood_fill.
+    std::map<int, size_t> id_counter;
+    for (const Tuple& e : get_edges()) {
+        if (e.switch_face(*this)) {
+            continue; // interior edge
+        }
+        ++id_counter[m_face_attribute[e.fid(*this)].part_id];
+    }
+
+    if (id_counter.empty()) {
+        logger().warn("Flood fill filter found no boundary edges. Nothing removed.");
+        return;
+    }
+    if (id_counter.size() != 1) {
+        logger().warn(
+            "There were {} flood fill IDs found at the boundary. Using the one with most "
+            "occurances.",
+            id_counter.size());
+    }
+
+    int best_id = id_counter.begin()->first;
+    size_t best_count = id_counter.begin()->second;
+    for (const auto& [id, count] : id_counter) {
+        if (count > best_count) {
+            best_id = id;
+            best_count = count;
+        }
+    }
+
+    logger().info("Filter with flood fill ID {}", best_id);
+
+    std::vector<size_t> rm_fids;
+    for (const Tuple& t : get_faces()) {
+        const size_t fid = t.fid(*this);
+        if (m_face_attribute[fid].part_id == best_id) {
+            rm_fids.emplace_back(fid);
+        }
+    }
+    remove_tris_by_ids(rm_fids);
 }
 
 int TriWildMesh::flood_fill()

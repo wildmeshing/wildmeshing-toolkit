@@ -58,4 +58,37 @@ inline void winding_number(
         std::max(num_threads, 1));
 }
 
+/**
+ * @brief Winding number of every query point O.row(i) with respect to the segment soup
+ * (V, E), with V and O two-column. Equivalent to igl::winding_number(V, E, O, W), but the
+ * query points are processed in parallel chunks.
+ *
+ * The 2D winding number has no hierarchical accelerator in libigl -- it is a direct
+ * O(#E) sweep per query -- so unlike the 3D version above there is nothing to build once;
+ * chunking the queries and letting igl handle each chunk is both the simplest and the
+ * fastest thing to do, and gives bit-identical results to the serial call.
+ */
+inline void winding_number_2d(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& E,
+    const Eigen::MatrixXd& O,
+    Eigen::VectorXd& W,
+    int num_threads)
+{
+    W.setZero(O.rows());
+    if (O.rows() == 0 || E.rows() == 0 || V.rows() == 0) return;
+
+    threading::parallel_for(
+        threading::range(0, static_cast<size_t>(O.rows())),
+        [&](const threading::range& r) {
+            const Eigen::Index begin = static_cast<Eigen::Index>(r.begin());
+            const Eigen::Index n = static_cast<Eigen::Index>(r.end()) - begin;
+            if (n <= 0) return;
+            Eigen::VectorXd w_chunk;
+            igl::winding_number(V, E, Eigen::MatrixXd(O.middleRows(begin, n)), w_chunk);
+            W.segment(begin, n) = w_chunk;
+        },
+        std::max(num_threads, 1));
+}
+
 } // namespace wmtk::utils

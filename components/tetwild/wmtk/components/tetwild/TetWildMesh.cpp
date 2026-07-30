@@ -1718,7 +1718,11 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
     writer->add_cell_field("winding_number_tracked", wn_tracked);
     writer->add_cell_field("t_energy", t_energy);
     for (size_t i = 0; i < wn_per_input.size(); ++i) {
-        std::string wn_name = fmt::format("wn_{}", i);
+        // Named after the input when the caller supplied input_names, as in triwild's MSH
+        // groups; otherwise numbered.
+        const std::string wn_name = i < m_input_names.size()
+                                        ? fmt::format("wn_{}", m_input_names[i])
+                                        : fmt::format("wn_{}", i);
         writer->add_cell_field(wn_name, wn_per_input[i]);
     }
     writer->add_field("sizing_field", v_sizing_field);

@@ -303,7 +303,19 @@ public:
      */
     std::vector<size_t> active_vertices() const;
 
-    void compute_winding_numbers(const std::vector<std::string>& input_paths);
+    /**
+     * @brief Tag every face with the inputs it lies inside, by winding number.
+     *
+     * `Vs`/`Es` are the per-input meshes as read when the initial mesh was built (2D, x/y
+     * only) -- they are passed in rather than re-read from disk.
+     */
+    void compute_winding_numbers(const std::vector<MatrixXd>& Vs, const std::vector<MatrixXi>& Es);
+
+    /// Remove the faces that lie inside no input (needs compute_winding_numbers).
+    void filter_with_input_winding_number();
+    /// Remove the flood-fill region that dominates the mesh boundary (needs flood_fill).
+    void filter_with_flood_fill();
+
     int flood_fill();
 
     bool vertex_is_on_surface(const size_t vid) const override

@@ -10,10 +10,13 @@
       "input_dir",
       "num_threads",
       "max_iterations",
+      "filter",
+      "skip_winding_number",
       "eps_rel",
       "length_rel",
       "stop_energy",
       "preserve_topology",
+      "remove_duplicate_eps",
       "throw_on_fail",
       "log_file",
       "report",
@@ -21,6 +24,7 @@
       "preallocation_factor",
       "DEBUG_output",
       "DEBUG_sanity_checks",
+      "DEBUG_hausdorff",
       "stuck_refine_stall_eps",
       "stuck_refine_cooldown",
       "stuck_refine_num_worst",
@@ -87,10 +91,35 @@
     "doc": "Maximum iterations before stopping."
   },
   {
+    "pointer": "/filter",
+    "type": "string",
+    "options": ["flood", "input", "none"],
+    "default": "none",
+    "doc": "Remove the outside region based on different criteria. 'flood': flood fill; the region that dominates the mesh boundary is dropped. 'input': winding number w.r.t. the inputs; faces inside no input are dropped. 'none': Do not filter. Both filters need closed input curves -- on an open polyline 'inside' is not defined and the result is arbitrary."
+  },
+  {
+    "pointer": "/skip_winding_number",
+    "type": "bool",
+    "default": false,
+    "doc": "Skip the finalize-phase winding-number and flood-fill computation. These per-face quantities are needed to filter the outside region (filter != 'none') and to tag the faces per input, which is what the MSH groups are built from -- so skipping them also empties the output groups. Ignored (with a warning) when filter != 'none', which requires them."
+  },
+  {
     "pointer": "/eps_rel",
     "type": "float",
     "default": 2e-3,
     "doc": "Envelope thickness relative to the bounding box"
+  },
+  {
+    "pointer": "/remove_duplicate_eps",
+    "type": "float",
+    "default": 2e-3,
+    "doc": "Merge vertices in the input meshes that are closer than this fraction of the bounding box diagonal, dropping the edges that become degenerate or duplicated. This is applied to each input mesh separately. Negative disables it."
+  },
+  {
+    "pointer": "/DEBUG_hausdorff",
+    "type": "bool",
+    "default": false,
+    "doc": "Sanity Check: Compute and report the Hausdorff distance of the input to the output. Should always be smaller than eps."
   },
   {
     "pointer": "/length_rel",

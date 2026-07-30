@@ -25,10 +25,23 @@ void init_from_delaunay_box_mesh(
     MatrixXi& F_out,
     MatrixXi& E_out);
 
+/**
+ * @brief Read every input edge mesh and build the initial triangulation from their union.
+ *
+ * @param input_paths        files to read
+ * @param remove_duplicate_eps  merge input vertices closer than this fraction of the
+ *                           bounding-box diagonal (negative disables)
+ * @param V_out, F_out, E_out the initial mesh and its constrained edges
+ * @param Vs_out, Es_out     the per-input meshes as read, handed back so the winding-number
+ *                           pass can reuse them instead of re-reading every file from disk
+ */
 void init_from_paths(
     const std::vector<std::string>& input_paths,
+    double remove_duplicate_eps,
     MatrixXd& V_out,
     MatrixXi& F_out,
-    MatrixXi& E_out);
+    MatrixXi& E_out,
+    std::vector<MatrixXd>& Vs_out,
+    std::vector<MatrixXi>& Es_out);
 
 } // namespace wmtk::components::triwild
