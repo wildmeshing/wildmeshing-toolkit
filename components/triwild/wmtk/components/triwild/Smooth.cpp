@@ -148,8 +148,18 @@ void TriWildMesh::smooth_all_vertices(const size_t n_iters)
         igl::Timer timer;
         timer.start();
         std::vector<std::pair<std::string, Tuple>> collect_all_ops;
-        for (const Tuple& t : get_vertices()) {
-            collect_all_ops.emplace_back("vertex_smooth", t);
+        if (m_params.skip_good_regions) {
+            // Only smooth vertices incident to an "active" (non-good) face -- smoothing a
+            // vertex surrounded by good faces does nothing. Smooth is the only op gated
+            // this way: it never changes topology/sizing, so skipping good regions cannot
+            // starve the optimizer or bloat the element count.
+            for (const size_t v : active_vertices()) {
+                collect_all_ops.emplace_back("vertex_smooth", tuple_from_vertex(v));
+            }
+        } else {
+            for (const Tuple& t : get_vertices()) {
+                collect_all_ops.emplace_back("vertex_smooth", t);
+            }
         }
         logger().info("vertex smoothing prepare time: {:.4}s", timer.getElapsedTimeInSec());
         logger().info("#V = {}", collect_all_ops.size());

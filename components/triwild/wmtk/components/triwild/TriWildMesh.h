@@ -234,6 +234,26 @@ public:
         bool collapse_limit_length = true);
     std::tuple<double, double> get_max_avg_energy();
 
+    /**
+     * @brief m_quality threshold above which a face is "active" (worth operating on) for
+     * the skip-good-regions filter.
+     *
+     * Unlike the tet applications, m_quality here *is* the AMIPS2D energy (tetwild stores
+     * AMIPS^3 and cube-roots it), so the threshold is the energy directly.
+     */
+    double active_quality_threshold() const
+    {
+        return m_params.skip_good_regions_margin * m_params.stop_energy;
+    }
+
+    /**
+     * @brief vids of the vertices incident to at least one "active" face
+     * (m_quality >= active_quality_threshold()). Used by the skip-good-regions filter to
+     * restrict smoothing to non-good regions (smoothing a vertex surrounded by good faces
+     * does nothing).
+     */
+    std::vector<size_t> active_vertices() const;
+
     void compute_winding_numbers(const std::vector<std::string>& input_paths);
     int flood_fill();
 

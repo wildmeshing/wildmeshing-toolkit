@@ -9,6 +9,7 @@
 #include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/SizingField.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/io.hpp>
 
@@ -137,8 +138,8 @@ std::tuple<double, double> TriWildMesh::local_operations(
 
     sanity_checks();
 
-    timer.start();
     for (int i = 0; i < ops.size(); i++) {
+        timer.start();
         if (i == 0) {
             for (int n = 0; n < ops[i]; n++) {
                 logger().info("==splitting {}==", n);
@@ -614,15 +615,18 @@ int TriWildMesh::flood_fill()
 {
     int current_id = 0;
     const auto faces = get_faces();
-    std::map<size_t, bool> visited;
+    // Indexed by fid, not a std::map: this is a BFS over every face, so the per-lookup
+    // red-black tree cost dominated the pass on large meshes.
+    std::vector<char> visited(tri_capacity(), 0);
+    const auto seen = [&visited](size_t fid) { return visited[fid] != 0; };
 
     for (const Tuple& t : faces) {
         size_t fid = t.fid(*this);
-        if (visited.find(fid) != visited.end()) {
+        if (seen(fid)) {
             continue;
         }
 
-        visited[fid] = true;
+        visited[fid] = 1;
         m_face_attribute[fid].part_id = current_id;
 
         const Tuple f1 = t;
@@ -634,7 +638,7 @@ int TriWildMesh::flood_fill()
         if (!m_edge_attribute[f1.eid(*this)].m_is_surface_fs) {
             auto oppo_t = f1.switch_face(*this);
             if (oppo_t.has_value()) {
-                if (visited.find((*oppo_t).fid(*this)) == visited.end()) {
+                if (!seen((*oppo_t).fid(*this))) {
                     bfs_queue.push(*oppo_t);
                 }
             }
@@ -642,7 +646,7 @@ int TriWildMesh::flood_fill()
         if (!m_edge_attribute[f2.eid(*this)].m_is_surface_fs) {
             auto oppo_t = f2.switch_face(*this);
             if (oppo_t.has_value()) {
-                if (visited.find((*oppo_t).fid(*this)) == visited.end()) {
+                if (!seen((*oppo_t).fid(*this))) {
                     bfs_queue.push(*oppo_t);
                 }
             }
@@ -650,7 +654,7 @@ int TriWildMesh::flood_fill()
         if (!m_edge_attribute[f3.eid(*this)].m_is_surface_fs) {
             auto oppo_t = f3.switch_face(*this);
             if (oppo_t.has_value()) {
-                if (visited.find((*oppo_t).fid(*this)) == visited.end()) {
+                if (!seen((*oppo_t).fid(*this))) {
                     bfs_queue.push(*oppo_t);
                 }
             }
@@ -660,9 +664,9 @@ int TriWildMesh::flood_fill()
             auto tmp = bfs_queue.front();
             bfs_queue.pop();
             size_t tmp_id = tmp.fid(*this);
-            if (visited.find(tmp_id) != visited.end()) continue;
+            if (seen(tmp_id)) continue;
 
-            visited[tmp_id] = true;
+            visited[tmp_id] = 1;
 
             m_face_attribute[tmp_id].part_id = current_id;
 
@@ -673,7 +677,7 @@ int TriWildMesh::flood_fill()
             if (!m_edge_attribute[f_tmp1.eid(*this)].m_is_surface_fs) {
                 auto oppo_t = f_tmp1.switch_face(*this);
                 if (oppo_t.has_value()) {
-                    if (visited.find((*oppo_t).fid(*this)) == visited.end()) {
+                    if (!seen((*oppo_t).fid(*this))) {
                         bfs_queue.push(*oppo_t);
                     }
                 }
@@ -681,7 +685,7 @@ int TriWildMesh::flood_fill()
             if (!m_edge_attribute[f_tmp2.eid(*this)].m_is_surface_fs) {
                 auto oppo_t = f_tmp2.switch_face(*this);
                 if (oppo_t.has_value()) {
-                    if (visited.find((*oppo_t).fid(*this)) == visited.end()) {
+                    if (!seen((*oppo_t).fid(*this))) {
                         bfs_queue.push(*oppo_t);
                     }
                 }
@@ -689,7 +693,7 @@ int TriWildMesh::flood_fill()
             if (!m_edge_attribute[f_tmp3.eid(*this)].m_is_surface_fs) {
                 auto oppo_t = f_tmp3.switch_face(*this);
                 if (oppo_t.has_value()) {
-                    if (visited.find((*oppo_t).fid(*this)) == visited.end()) {
+                    if (!seen((*oppo_t).fid(*this))) {
                         bfs_queue.push(*oppo_t);
                     }
                 }
@@ -841,6 +845,16 @@ std::tuple<double, double> TriWildMesh::get_max_avg_energy()
     return std::make_tuple(max_energy, avg_energy);
 }
 
+std::vector<size_t> TriWildMesh::active_vertices() const
+{
+    return utils::active_vertices(
+        vert_capacity(),
+        tri_capacity(),
+        [this](size_t fid) { return tuple_from_tri(fid).is_valid(*this); },
+        [this](size_t fid) { return m_face_attribute[fid].m_quality; },
+        [this](size_t fid) { return oriented_tri_vids(fid); },
+        active_quality_threshold());
+}
 
 bool TriWildMesh::is_inverted_f(const Tuple& loc) const
 {

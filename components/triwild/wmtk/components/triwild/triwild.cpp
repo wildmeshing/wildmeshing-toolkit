@@ -46,20 +46,11 @@ void triwild(nlohmann::json json_params)
         p = resolve_path(root, p).string();
     }
 
-    triwild::Parameters params;
+    triwild::Parameters params(json_params);
 
     std::string output_path = json_params["output"];
     int NUM_THREADS = json_params["num_threads"];
     int max_its = json_params["max_iterations"];
-
-    params.epsr = json_params["eps_rel"];
-    params.lr = json_params["length_rel"];
-    params.stop_energy = json_params["stop_energy"];
-
-    params.preserve_topology = json_params["preserve_topology"];
-
-    params.debug_output = json_params["DEBUG_output"];
-    params.perform_sanity_checks = json_params["DEBUG_sanity_checks"];
 
     // CDT on all input meshes
     MatrixXd V;
