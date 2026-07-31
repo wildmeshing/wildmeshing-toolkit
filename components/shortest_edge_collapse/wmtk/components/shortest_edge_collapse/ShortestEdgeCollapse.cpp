@@ -138,19 +138,42 @@ void ShortestEdgeCollapse::write_vtu(const std::string& path)
 bool ShortestEdgeCollapse::collapse_edge_before(const Tuple& t)
 {
     if (!TriMesh::collapse_edge_before(t)) return false;
-    if (vertex_attrs[t.vid(*this)].freeze || vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
+
+    // v1 is removed by the collapse, v2 survives (TriMesh::collapse_edge_conn keeps vid2).
+    const size_t v1 = t.vid(*this);
+    const size_t v2 = t.switch_vertex(*this).vid(*this);
+    auto& cache = position_cache.local();
+    cache.v1_frozen = vertex_attrs[v1].freeze;
+    cache.v2_frozen = vertex_attrs[v2].freeze;
+
+    // Two frozen endpoints cannot be merged without moving one of them. In particular this
+    // is what keeps the outline of an open surface from retracting: the envelope is a
+    // containment test, so it would not notice a boundary sliding inwards along itself.
+    if (cache.v1_frozen && cache.v2_frozen) {
         return false;
-    position_cache.local().v1p = vertex_attrs[t.vid(*this)].pos;
-    position_cache.local().v2p = vertex_attrs[t.switch_vertex(*this).vid(*this)].pos;
+    }
+
+    cache.v1p = vertex_attrs[v1].pos;
+    cache.v2p = vertex_attrs[v2].pos;
     return true;
 }
 
 
 bool ShortestEdgeCollapse::collapse_edge_after(const TriMesh::Tuple& t)
 {
-    const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
-    auto vid = t.vid(*this);
+    const auto& cache = position_cache.local();
+    // Collapse onto the frozen endpoint when exactly one is frozen, so its position is
+    // preserved exactly and the collapse is still allowed; onto the midpoint otherwise.
+    // Rejecting these outright, as this used to, froze not just the boundary but every
+    // vertex adjacent to it.
+    const Eigen::Vector3d p = cache.v1_frozen   ? cache.v1p
+                              : cache.v2_frozen ? cache.v2p
+                                                : (cache.v1p + cache.v2p) / 2.0;
+    const size_t vid = t.vid(*this);
     vertex_attrs[vid].pos = p;
+    // The survivor now stands exactly where the frozen vertex stood, so it takes over its
+    // frozen role -- otherwise a later collapse could move that position after all.
+    vertex_attrs[vid].freeze = cache.v1_frozen || cache.v2_frozen;
 
     return true;
 }

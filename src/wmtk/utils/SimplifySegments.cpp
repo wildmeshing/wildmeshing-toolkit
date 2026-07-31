@@ -86,7 +86,8 @@ size_t simplify_segments(MatrixXd& V, MatrixXi& E, const SampleEnvelope& envelop
         }
 
         // Collapse onto the frozen endpoint when there is one, so junctions and open ends
-        // keep their exact position; otherwise onto the midpoint, as the 3D version does.
+        // keep their exact position; onto the midpoint otherwise. Same rule as the 3D
+        // ShortestEdgeCollapse.
         int keep, drop;
         Vector2d m;
         if (frozen[a]) {

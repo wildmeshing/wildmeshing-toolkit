@@ -24,9 +24,11 @@ namespace wmtk::utils {
  * - Vertices of valence != 2 are frozen: open endpoints, T/Y junctions, and (because they
  *   have valence >= 4) any vertex shared between two different input curves. A segment with
  *   one frozen endpoint still collapses, onto the frozen vertex's exact position, so the
- *   junction geometry is preserved bit-exactly; only both-endpoints-frozen is rejected.
- *   This is where it deviates from the 3D version, which rejects outright -- on a curve
- *   network that rule leaves a ring of un-collapsible short segments around every junction.
+ *   junction geometry is preserved bit-exactly; only both-endpoints-frozen is rejected,
+ *   because merging two frozen vertices has to move one of them. Same rule as the 3D
+ *   ShortestEdgeCollapse. Rejecting whenever *either* endpoint is frozen would strand one
+ *   un-collapsible vertex on every chain between two frozen ones -- twice the segments on a
+ *   network of short chains.
  * - Otherwise the two endpoints merge at their midpoint, as in 3D.
  * - Collapses that would leave a degenerate or duplicated segment are rejected.
  *
