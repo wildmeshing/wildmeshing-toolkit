@@ -190,10 +190,9 @@ public:
 
     double target_quality(const size_t tid) const;
     double target_quality(const Tuple& t) const;
-
-    bool check_quality(const size_t tid) const;
-    bool check_quality(const Tuple& t) const;
-    bool check_mesh_quality(double& max_energy, const bool verbose = false) const;
+    double quality_rel(const size_t tid) const;
+    double quality_rel(const Tuple& t) const;
+    bool check_mesh_quality(double& max_rel_quality, const bool verbose = false) const;
 
     /**
      * @brief Escape a stuck max energy by refining the sizing field around the
@@ -207,7 +206,7 @@ public:
      * into the surrounding resolution. Replaces the old global
      * adjust_sizing_field mechanism. Returns the number of vertices refined.
      */
-    size_t refine_sizing_around_worst(double max_energy);
+    size_t refine_sizing_around_worst();
 
     /**
      * @brief Monotone (only-decreasing) gradation smoothing of the sizing field.

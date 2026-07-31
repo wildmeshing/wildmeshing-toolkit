@@ -136,6 +136,7 @@ public:
     double m_envelope_eps = -1;
 
     std::vector<std::tuple<ExprPtr, double>> m_sizing_field;
+    std::vector<std::tuple<ExprPtr, double>> m_quality_field;
 
     bool m_collapse_check_quality = true;
 
@@ -334,6 +335,14 @@ public:
 
     void set_sizing_field(const nlohmann::json& sizing_field_json);
 
+    void set_quality_field(const nlohmann::json& quality_field_json);
+
+    double target_quality(const size_t tid) const;
+    double target_quality(const Tuple& t) const;
+    double quality_rel(const size_t tid) const;
+    double quality_rel(const Tuple& t) const;
+    bool check_mesh_quality(double& max_rel_quality, const bool verbose = false) const;
+
     double get_length2(const Tuple& l) const;
 
     ////// Attributes related
@@ -475,9 +484,7 @@ public:
     bool is_edge_on_bbox(const Tuple& loc);
     //
     void mesh_improvement(int max_its = 80);
-    std::tuple<double, double> local_operations(
-        const std::array<int, 4>& ops,
-        bool collapse_limit_length = true);
+    double local_operations(const std::array<int, 4>& ops, bool collapse_limit_length = true);
     std::tuple<double, double> get_max_avg_energy();
 
     bool check_attributes();
@@ -587,7 +594,7 @@ public:
      * into the surrounding resolution. Replaces the old global
      * adjust_sizing_field mechanism. Returns the number of vertices refined.
      */
-    size_t refine_sizing_around_worst(double max_energy);
+    size_t refine_sizing_around_worst();
 
     /**
      * @brief Monotone (only-decreasing) gradation smoothing of the sizing field.

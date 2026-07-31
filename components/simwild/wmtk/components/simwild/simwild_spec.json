@@ -220,6 +220,12 @@
     "doc": "Absolute target edge length for the region."
   },
   {
+    "pointer": "/sizing_field/*/length_rel",
+    "type": "float",
+    "default": 5e-2,
+    "doc": "Target edge length relative to the bounding box for the region."
+  },
+  {
     "pointer": "/quality_field",
     "type": "list",
     "default": [],
